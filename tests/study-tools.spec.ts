@@ -167,7 +167,10 @@ for (const width of [1440, 390, 320]) {
               .locator('img:visible')
               .evaluateAll((images) =>
                 images.every(
-                  (image) => image.complete && image.naturalWidth > 0,
+                  (image) =>
+                    image instanceof HTMLImageElement &&
+                    image.complete &&
+                    image.naturalWidth > 0,
                 ),
               ),
           )
