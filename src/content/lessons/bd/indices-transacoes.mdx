@@ -5,6 +5,10 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import transacao from '../../bd/transacao.typ?raw';
+
 Duas perguntas fecham a gestão da base de dados: como responder depressa quando as tabelas crescem, e como garantir que operações a meio não deixam a loja num estado impossível. A resposta à primeira é o **índice** (_index_); à segunda, a **transação** (_transaction_).
 
 ## Índices: quando e qual
@@ -16,6 +20,16 @@ CREATE INDEX idx_encomenda_cliente ON Encomenda(idCliente);
 ```
 
 Agora "encomendas do cliente 1" salta direto às linhas 100 e 101. A regra de escolha: indexa colunas que aparecem em condições de igualdade e junções frequentes, tipicamente chaves estrangeiras, e evita indexar tudo, porque cada índice atrasa escritas e ocupa espaço. A chave primária já traz índice próprio, por isso `CREATE INDEX` em `id` seria redundante. Perante "que índice crias para esta consulta?", procura a coluna do `WHERE` ou do `ON` com mais repetições de pesquisa e menos escritas.
+
+Vê a diferença no plano de execução, antes e depois de criar o índice:[^eqp]
+
+<CodePlayground
+  language="sql"
+  title="EXPLAIN QUERY PLAN antes e depois do índice"
+  code={'CREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL);\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nEXPLAIN QUERY PLAN SELECT id FROM Encomenda WHERE idCliente = 1;\nCREATE INDEX idx_encomenda_cliente ON Encomenda(idCliente);\nEXPLAIN QUERY PLAN SELECT id FROM Encomenda WHERE idCliente = 1;'}
+/>
+
+O primeiro plano diz `SCAN Encomenda`: percorre a tabela toda. O segundo diz `SEARCH Encomenda USING ... INDEX idx_encomenda_cliente`: salta direto às linhas do cliente. Quando uma consulta está lenta, este é o primeiro comando a correr.
 
 ## Transações e ACID
 
@@ -31,6 +45,21 @@ ROLLBACK;
 
 O `ROLLBACK` anula tudo: a encomenda 103 desaparece e o stock do Monitor volta a 5, como se nada tivesse corrido. Troca por `COMMIT` e as três escritas tornam-se permanentes de uma vez. A concorrência entra aqui: dois caixas a vender o último Monitor ao mesmo tempo são duas transações sobre o mesmo `stock`, e o isolamento mais as restrições garante que uma delas falha em vez de venderem o mesmo exemplar duas vezes.
 
+Os dois destinos da mesma sequência de escritas:
+
+<Typst
+  source={transacao}
+  format="svg"
+  alt="Linha temporal de uma transação: BEGIN, três escritas e depois COMMIT, que torna tudo visível, ou ROLLBACK, que anula tudo e deixa a base de dados como estava."
+/>
+
 :::tip[Como pensar em teste]
 Perante um cenário de falha a meio ("o que fica guardado?"), conta as escritas dentro da transação: sem `COMMIT`, nada fica; com `COMMIT` antes da falha, fica tudo até aí. E perante "falta atomicidade", procura operações compostas sem `BEGIN`/`COMMIT`, que deixam estados intermédios visíveis.
 :::
+
+## Para saber mais
+
+- Sintaxe do `CREATE INDEX`: [sqlite.org/lang_createindex.html](https://www.sqlite.org/lang_createindex.html).
+- `EXPLAIN QUERY PLAN` para distinguir `SCAN` de `SEARCH`: [sqlite.org/eqp.html](https://sqlite.org/eqp.html).
+
+[^eqp]: A leitura de `SCAN` contra `SEARCH ... USING INDEX` segue a documentação do SQLite em [sqlite.org/eqp.html](https://sqlite.org/eqp.html).

@@ -1,0 +1,137 @@
+---
+title: Consultas SQL
+description: SELECT, junções, agregação e subconsultas sobre a loja.
+section: conteudo
+order: 6
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+A DML de leitura é o `SELECT`, e a sua estrutura segue a álgebra relacional: filtra linhas (`WHERE`), combina tabelas (`JOIN`), agrupa (`GROUP BY`), filtra grupos (`HAVING`) e projeta colunas (`SELECT`). A ordem de escrita é fixa, `SELECT ... FROM ... WHERE ... GROUP BY ... HAVING ... ORDER BY`, mesmo quando só usas metade das cláusulas.
+
+A ordem lógica em figura, do `WHERE` ao `ORDER BY`:
+
+<Dot
+  source={`digraph Plano { rankdir = LR; WHERE -> JOIN; JOIN -> GROUPBY [label = "GROUP BY"]; GROUPBY -> HAVING; HAVING -> SELECT; SELECT -> ORDERBY [label = "ORDER BY"]; }`}
+  alt="Ordem lógica de uma consulta: WHERE filtra linhas, JOIN combina tabelas, GROUP BY agrupa, HAVING filtra grupos, SELECT projeta colunas e ORDER BY ordena."
+/>
+
+## Filtrar e ordenar
+
+"Produtos com preço acima de 30, do mais caro ao mais barato":
+
+```sql
+SELECT nome, preco FROM Produto
+WHERE preco > 30
+ORDER BY preco DESC;
+```
+
+Resultado: Monitor 180.0, Teclado 45.0. O `WHERE` é a seleção $\sigma$, a lista do `SELECT` é a projeção $\pi$. Repara que o Rato ficou de fora pelo filtro e a ordem é decrescente pelo `DESC`.
+
+## Juntar e agregar
+
+"Total gasto por cada cliente, incluindo quem nunca comprou":
+
+```sql
+SELECT Cliente.nome, COALESCE(SUM(Item.qtd * Produto.preco), 0) AS total
+FROM Cliente
+LEFT JOIN Encomenda ON Encomenda.idCliente = Cliente.id
+LEFT JOIN Item ON Item.idEncomenda = Encomenda.id
+LEFT JOIN Produto ON Produto.id = Item.idProduto
+GROUP BY Cliente.nome
+ORDER BY total DESC;
+```
+
+O `LEFT JOIN` mantém os clientes sem encomendas, onde a soma seria nula e o `COALESCE` a converte em 0. Contas: Ana, 2 Teclados (90) mais 1 Rato (25) mais 1 Monitor (180), total 295; Rui, 3 Ratos, total 75; Mia, sem linhas, total 0.
+
+Corre a consulta sobre a loja completa e confirma os três totais:
+
+<CodePlayground
+  language="sql"
+  title="Totais por cliente sobre a loja completa"
+  code={'PRAGMA foreign_keys = ON;\nCREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL);\nCREATE TABLE Produto(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, preco REAL NOT NULL, stock INTEGER NOT NULL);\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, data TEXT NOT NULL, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nCREATE TABLE Item(idEncomenda INTEGER REFERENCES Encomenda(id), idProduto INTEGER REFERENCES Produto(id), qtd INTEGER NOT NULL, PRIMARY KEY (idEncomenda, idProduto));\nINSERT INTO Cliente VALUES (1, \u0027Ana\u0027, \u0027ana@mail\u0027), (2, \u0027Rui\u0027, \u0027rui@mail\u0027), (3, \u0027Mia\u0027, \u0027mia@mail\u0027);\nINSERT INTO Produto VALUES (10, \u0027Teclado\u0027, 45.0, 20), (11, \u0027Rato\u0027, 25.0, 50), (12, \u0027Monitor\u0027, 180.0, 5);\nINSERT INTO Encomenda VALUES (100, \u00272026-01-05\u0027, 1), (101, \u00272026-01-12\u0027, 1), (102, \u00272026-01-08\u0027, 2);\nINSERT INTO Item VALUES (100, 10, 2), (100, 11, 1), (101, 12, 1), (102, 11, 3);\nSELECT Cliente.nome, COALESCE(SUM(Item.qtd * Produto.preco), 0) AS total FROM Cliente LEFT JOIN Encomenda ON Encomenda.idCliente = Cliente.id LEFT JOIN Item ON Item.idEncomenda = Encomenda.id LEFT JOIN Produto ON Produto.id = Item.idProduto GROUP BY Cliente.nome ORDER BY total DESC;'}
+/>
+
+O resultado é `Ana|295.0`, `Rui|75.0`, `Mia|0`: os separadores verticais são o formato de lista do SQLite, e a Mia aparece com 0 graças ao `COALESCE`.
+
+Duas armadilhas habituais: agregar sem `GROUP BY` quando há colunas soltas, e filtrar grupos com `WHERE` em vez de `HAVING`. `WHERE` filtra linhas antes de agrupar; `HAVING` filtra grupos depois. "Clientes com total acima de 100" acrescenta `HAVING total > 100` e devolve só a Ana.
+
+## Subconsultas
+
+"Clientes que compraram o Monitor", com uma subconsulta que primeiro descobre quem:
+
+```sql
+SELECT nome FROM Cliente
+WHERE id IN (
+  SELECT Encomenda.idCliente FROM Encomenda
+  JOIN Item ON Item.idEncomenda = Encomenda.id
+  JOIN Produto ON Produto.id = Item.idProduto
+  WHERE Produto.nome = 'Monitor'
+);
+```
+
+A consulta interior devolve o cliente 1 (a encomenda 101 leva o produto 12) e a exterior traduz para `Ana`. Sempre que a pergunta tem um "os X que ..." com condição noutra tabela, uma subconsulta com `IN` é a formulação direta.
+
+A mesma pergunta em três formulações, para comparares:
+
+<Tabs id="consultas-monitor" labels={['IN', 'EXISTS', 'JOIN']}>
+  <div slot="panel-0">
+
+A subconsulta devolve os ids e o `IN` testa pertença. É a leitura mais direta do "clientes que ...".
+
+```sql
+SELECT nome FROM Cliente
+WHERE id IN (
+  SELECT Encomenda.idCliente FROM Encomenda
+  JOIN Item ON Item.idEncomenda = Encomenda.id
+  JOIN Produto ON Produto.id = Item.idProduto
+  WHERE Produto.nome = 'Monitor'
+);
+```
+
+  </div>
+  <div slot="panel-1">
+
+O `EXISTS` testa linha a linha se há prova da compra, correlacionando a interior com a exterior pelo cliente. Costuma ser a mais rápida com índices.
+
+```sql
+SELECT nome FROM Cliente c
+WHERE EXISTS (
+  SELECT 1 FROM Encomenda e
+  JOIN Item i ON i.idEncomenda = e.id
+  JOIN Produto p ON p.id = i.idProduto
+  WHERE e.idCliente = c.id AND p.nome = 'Monitor'
+);
+```
+
+  </div>
+  <div slot="panel-2">
+
+A junção direta seguida de `DISTINCT` elimina os duplicados (um cliente com duas compras do Monitor apareceria duas vezes). Prefere-a quando também queres colunas das outras tabelas.
+
+```sql
+SELECT DISTINCT c.nome FROM Cliente c
+JOIN Encomenda e ON e.idCliente = c.id
+JOIN Item i ON i.idEncomenda = e.id
+JOIN Produto p ON p.id = i.idProduto
+WHERE p.nome = 'Monitor';
+```
+
+  </div>
+</Tabs>
+
+:::warning[O erro mais comum]
+Juntar sem condição de junção e obter o produto cartesiano: cada cliente repetido por cada encomenda de todos. Se o resultado tem linhas a mais e valores absurdos, falta o `ON` ou ele compara as colunas erradas. Confere sempre que cada `JOIN` tem o seu `ON` com PK de um lado e FK do outro.
+:::
+
+## Para ver em vídeo
+
+<YouTube id="HXV3zeQKqGY" title="SQL Tutorial - Full Database Course for Beginners" />
+<YouTube id="9prkapPewGs" title="6 SQL Joins you MUST know! (Animated + Practice)" />
+
+## Para saber mais
+
+- Gramática do `SELECT`, junções e agregação na documentação oficial: [sqlite.org/lang_select.html](https://sqlite.org/lang_select.html).
