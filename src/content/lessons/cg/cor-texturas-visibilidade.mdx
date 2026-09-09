@@ -5,6 +5,11 @@ section: conteudo
 order: 6
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import mipmap from './mipmap.typ?raw';
+
 A [iluminação](iluminacao-sombreamento/) calcula um número por ponto; esta página transforma-o em imagem final. A **cor** diz como representar esse número, as **texturas** vestem a geometria com detalhe sem geometria extra, e a **visibilidade** com as **sombras** decidem o que chega ao ecrã. São quatro mecanismos independentes que se combinam no mesmo fragmento.
 
 ## Cor: perceção e modelos
@@ -12,6 +17,26 @@ A [iluminação](iluminacao-sombreamento/) calcula um número por ponto; esta p�
 O olho tem recetores para três gamas de comprimentos de onda, e por isso três números chegam para descrever uma cor. O modelo **RGB** soma luz vermelha, verde e azul: $(1, 1, 1)$ é branco e $(0, 0, 0)$ é preto. É aditivo porque parte do escuro do ecrã apagado. Para imprimir vale o contrário: o modelo **CMYK** subtrai do branco do papel com tintas ciano, magenta, amarela e preta. Quando precisas de escolher cores, o modelo **HSV** (matiz, saturação, valor) é mais intuitivo: rodas o matiz para mudar a cor, baixas a saturação para a desmaiar e baixas o valor para a escurecer.
 
 Um aviso prático: aritmética ingénua em RGB não preserva o brilho percebido, porque o olho é mais sensível ao verde que ao azul. É por isso que converter para cinzento usa pesos e não a média simples.
+
+Cada modelo serve um momento do trabalho. Escolhe pelo que estás a fazer, não pelo hábito.
+
+<Tabs id="modelos-cor" labels={['RGB', 'CMYK', 'HSV']}>
+  <div slot="panel-0">
+
+Somar luz no ecrã e nos _shaders_. A iluminação calcula em RGB e o framebuffer guarda em RGB. Usa-o sempre que a cor nasce de luz: materiais, luzes, mistura aditiva.
+
+  </div>
+  <div slot="panel-1">
+
+Subtrair tinta no papel. Cada número diz quanta luz a tinta absorve. Aparece na impressão e em formatos de ficheiro, raramente nos cálculos da pipeline.
+
+  </div>
+  <div slot="panel-2">
+
+Escolher cores como pessoa. O matiz anda à roda, a saturação mede a pureza e o valor o brilho. Usa-o nos seletores de cor das ferramentas e converte para RGB antes de calcular.
+
+  </div>
+</Tabs>
 
 ## Texturas
 
@@ -24,6 +49,24 @@ $$
 $$
 
 porque $0{,}37 \times 256 = 94{,}72$ e $0{,}62 \times 256 = 158{,}72$. Ler só esse texel (_nearest_) é rápido mas tremido quando a superfície se move; a **filtragem bilinear** mistura os quatro vizinhos e a **mipmapping** escolhe uma versão reduzida da textura conforme a distância, o que elimina o tremido ao longe. O preço é memória: a pirâmide de mipmaps ocupa cerca de mais um terço.
+
+Confirma o texel e compara as duas filtragens. A bilinear usa as partes fracionárias $0{,}72$ e $0{,}72$ para pesar os quatro vizinhos; com vizinhos a $100$, $150$, $200$ e $250$, o resultado é $208$, contra $100$ do nearest se o texel $(94, 158)$ valer $100$.
+
+<CodePlayground
+  language="javascript"
+  title="Texel e filtragem em JavaScript"
+  code={
+    'const u = 0.37, v = 0.62, N = 256;\nconst tx = Math.floor(u * N), ty = Math.floor(v * N);\nconsole.log("texel:", tx, ty);\nconst fx = u * N - tx, fy = v * N - ty;\nconsole.log("fração:", fx.toFixed(2), fy.toFixed(2));\nconst a = 100, b = 150, c = 200, d = 250;\nconst bilinear = a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy;\nconsole.log("nearest:", a);\nconsole.log("bilinear:", bilinear.toFixed(1));'
+  }
+/>
+
+Cada nível da pirâmide tem um quarto dos texeis do anterior ($128^2$ é um quarto de $256^2$), por isso a soma $1 + \frac{1}{4} + \frac{1}{16} + \dots$ tende para $\frac{4}{3}$: cerca de mais um terço de memória.
+
+<Typst
+  source={mipmap}
+  format="svg"
+  alt="Três quadrados lado a lado cada vez mais pequenos, rotulados 256, 128 e 64, a representar três níveis da pirâmide de mipmaps."
+/>
 
 ## Visibilidade
 
@@ -38,3 +81,7 @@ O **_shadow mapping_** reutiliza a mesma ideia para a luz: renderiza a cena do p
 :::details[Ver o raciocínio da sombra]
 Imagina a luz como uma câmara que só mede distâncias. O mapa de sombras diz, para cada direção, onde está o objeto mais próximo da luz. Se o teu fragmento estiver mais longe que esse valor, há um objeto no caminho e a luz direta não chega lá. Tudo o resto, incluindo a luz ambiente e reflexos, continua a aplicar-se normalmente.
 :::
+
+## Para saber mais
+
+- [Texturas em OpenGL](https://learnopengl.com/Getting-started/Textures): coordenadas UV, unidades de textura e filtragem com exemplos executáveis.

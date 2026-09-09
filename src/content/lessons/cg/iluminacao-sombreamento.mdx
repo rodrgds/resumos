@@ -5,6 +5,11 @@ section: conteudo
 order: 5
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import phong from './phong-vetores.typ?raw';
+
 A geometria diz onde está a superfície; a **iluminação** diz que cor ela tem em cada ponto. O modelo de iluminação combina a luz que chega, a orientação da superfície e o material do objeto. O modelo de **sombreamento** decide onde essa conta se faz: em cada vértice ou em cada fragmento. Confundir os dois é o erro conceptual mais comum desta parte da matéria.
 
 ## O modelo local: Phong
@@ -19,6 +24,14 @@ Cada símbolo tem um papel. $I_a$ é a luz **ambiente**, que existe em todo o la
 
 A variante **Blinn-Phong** troca o vetor de reflexão pelo **vetor halfway** $\mathbf{h}$, a bissetriz entre $\mathbf{l}$ e $\mathbf{v}$: a parcela especular passa a $k_s I_l \max(0, \mathbf{n} \cdot \mathbf{h})^{\alpha}$. É mais barata e comporta-se melhor em ângulos rasantes, por isso é a que vais implementar.
 
+O desenho junta os cinco vetores no mesmo ponto da superfície: a normal para cima, a luz e o observador de cada lado, a reflexão simétrica da luz e o halfway entre a luz e o observador.
+
+<Typst
+  source={phong}
+  format="svg"
+  alt="Ponto da superfície com cinco setas: normal n para cima, luz l e observador v de cada lado, reflexão r simétrica da luz e halfway h entre a luz e o observador."
+/>
+
 ## Exemplo com números
 
 Um ponto tem normal $\mathbf{n} = (0, 0, 1)$ e recebe luz branca de intensidade $1$ vinda de $\mathbf{l} = (0,\ 0{,}6,\ 0{,}8)$ (confirma que está normalizado: $0{,}6^2 + 0{,}8^2 = 1$). O observador está em $\mathbf{v} = (0, 0, 1)$ e o material tem $k_a = 0{,}1$, $k_d = 0{,}7$, $k_s = 0{,}5$ e $\alpha = 16$.
@@ -31,6 +44,33 @@ $$
 
 Então $\mathbf{n} \cdot \mathbf{h} \approx 0{,}9487$ e $0{,}9487^{16} \approx 0{,}43$, o que dá $0{,}5 \times 0{,}43 \approx 0{,}22$. O total é $0{,}1 + 0{,}56 + 0{,}22 = 0{,}88$: um ponto bem iluminado com um brilho moderado. Se o observador se movesse, só a parcela especular mudava, porque ambiente e difusa não dependem de $\mathbf{v}$. Essa é a observação que distingue quem decorou a fórmula de quem a percebeu.
 
+Corre as três parcelas e confirma o total $0{,}88$. Muda o expoente para $64$ e observa como o brilho encolhe: a parcela especular cai e o ponto escurece.
+
+<CodePlayground
+  language="javascript"
+  title="Phong em JavaScript"
+  code={
+    'const n = [0, 0, 1], l = [0, 0.6, 0.8], v = [0, 0, 1];\nconst ka = 0.1, kd = 0.7, ks = 0.5, alpha = 16;\nconst dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);\nconst norm = a => { const m = Math.hypot(...a); return a.map(x => x / m); };\nconst h = norm(l.map((x, i) => x + v[i]));\nconst ambiente = ka * 1;\nconst difusa = kd * Math.max(0, dot(n, l));\nconst especular = ks * Math.pow(Math.max(0, dot(n, h)), alpha);\nconsole.log("ambiente:", ambiente.toFixed(2));\nconsole.log("difusa:", difusa.toFixed(2));\nconsole.log("especular:", especular.toFixed(2));\nconsole.log("total:", (ambiente + difusa + especular).toFixed(2));'
+  }
+/>
+
+## Duas formas de especular
+
+Phong e Blinn-Phong diferem só na parcela especular. Compara a fórmula e o custo antes de escolheres qual implementar.
+
+<Tabs id="phong-blinn" labels={['Phong', 'Blinn-Phong']}>
+  <div slot="panel-0">
+
+Especular com o vetor de reflexão: $k_s I_l \max(0, \mathbf{r} \cdot \mathbf{v})^{\alpha}$. Exige calcular $\mathbf{r} = 2(\mathbf{n} \cdot \mathbf{l})\mathbf{n} - \mathbf{l}$ por fragmento e falha em ângulos rasantes, onde o reflexo desaparece de repente.
+
+  </div>
+  <div slot="panel-1">
+
+Especular com o halfway: $k_s I_l \max(0, \mathbf{n} \cdot \mathbf{h})^{\alpha}$, com $\mathbf{h}$ normalizado de $\mathbf{l} + \mathbf{v}$. Evita o cálculo de $\mathbf{r}$, é mais barata e o brilho degrada-se suavemente. É a escolha habitual nos exercícios e no projeto.
+
+  </div>
+</Tabs>
+
 ## Iluminação global e sombreamento
 
 A iluminação local não explica espelhos nem sombras suaves, porque ignora a luz que viaja entre objetos. A **iluminação global** segue esses caminhos: _ray tracing_ para reflexões e refrações exatas, **radiosidade** para a luz difusa que se espalha entre superfícies. É mais realista e muito mais cara, por isso aparece em cinema e cada vez mais em jogos com aceleração dedicada.
@@ -40,3 +80,8 @@ Quanto ao **sombreamento**, há duas escolhas. O sombreamento de **Gouraud** cal
 :::tip[Como cai em teste]
 O enunciado típico dá normal, luz, observador e coeficientes e pede as três parcelas. O método é sempre o mesmo: verifica que os vetores estão normalizados, calcula os dois produtos escalares, eleva à potência e soma. Aponta o resultado parcial de cada parcela antes de somar, porque cada uma vale pontos.
 :::
+
+## Para saber mais
+
+- [Phong em shader de fragmentos](https://learnopengl.com/Lighting/Basic-Lighting): ambiente, difusa e especular separadas em código executável.
+- [Phong e BRDF](https://www.scratchapixel.com/lessons/3d-basic-rendering/phong-shader-BRDF/phong-illumination-models-brdf.html): o modelo com crítica à falta de conservação de energia.

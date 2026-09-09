@@ -1,0 +1,97 @@
+---
+title: Curvas e superfícies
+description: Curvas paramétricas de Bézier avaliadas por de Casteljau e a passagem a superfícies.
+section: conteudo
+order: 4
+---
+
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import bezier from './bezier.typ?raw';
+import retalho from './retalho.typ?raw';
+
+Malhas de triângulos aproximam superfícies suaves à força de subdivisão. As **curvas e superfícies paramétricas** descrevem a suavidade diretamente com fórmulas, e só no fim se convertem em triângulos para renderizar. São elas que desenham letras, carroçarias e personagens. A curva de Bézier é a porta de entrada: simples, geométrica e com um algoritmo de avaliação que se faz à mão.
+
+## Curvas paramétricas
+
+Uma **curva paramétrica** é uma função $\mathbf{P}(t)$ que para cada $t$ num intervalo (normalmente $[0, 1]$) devolve um ponto. Uma **curva de Bézier cúbica** fica definida por quatro pontos de controlo $P_0, P_1, P_2, P_3$: a curva começa em $P_0$, termina em $P_3$ e os dois do meio puxam-na sem a tocar. Mover um ponto de controlo deforma só a vizinhança, o que torna a edição intuitiva.
+
+A avaliação faz-se pelo algoritmo de **de Casteljau**: interpolação linear repetida. Para um dado $t$, interpola cada par de pontos adjacentes com peso $t$, obtendo menos um ponto; repete até restar um só, que é $\mathbf{P}(t)$. Com $t = 0{,}5$ cada passo é uma média simples, ideal para fazer à mão.[^mtu]
+
+<YouTube id="aVwxzDHniEw" title="The Beauty of Bézier Curves" />
+
+## Exemplo: um ponto da curva
+
+Sejam $P_0 = (0, 0)$, $P_1 = (1, 2)$, $P_2 = (3, 2)$ e $P_3 = (4, 0)$, com $t = 0{,}5$. Primeira ronda de médias:
+
+$$
+Q_0 = \frac{P_0 + P_1}{2} = (0{,}5,\ 1), \qquad
+Q_1 = \frac{P_1 + P_2}{2} = (2,\ 2), \qquad
+Q_2 = \frac{P_2 + P_3}{2} = (3{,}5,\ 1).
+$$
+
+Segunda ronda:
+
+$$
+R_0 = \frac{Q_0 + Q_1}{2} = (1{,}25,\ 1{,}5), \qquad
+R_1 = \frac{Q_1 + Q_2}{2} = (2{,}75,\ 1{,}5).
+$$
+
+Ronda final:
+
+$$
+S = \frac{R_0 + R_1}{2} = (2,\ 1{,}5).
+$$
+
+O ponto da curva em $t = 0{,}5$ é $(2,\ 1{,}5)$. Repara que ficou abaixo dos pontos de controlo do meio, que estão em altura 2: a curva não passa por eles, apenas é atraída. E repara ainda que o algoritmo subdivide a curva ao meio como bónus: os pontos $P_0, Q_0, R_0, S$ definem a metade esquerda e $S, R_1, Q_2, P_3$ a metade direita.
+
+O desenho marca cada ronda com a sua cor: os pontos de controlo a cheio, os $Q$ intermédios, os $R$ e o ponto final $S$. Segue as linhas e confirma que cada ponto nasce da média dos dois vizinhos da ronda anterior.
+
+<Typst
+  source={bezier}
+  format="svg"
+  alt="Pontos de controlo P0 a P3 a tracejado, pontos intermédios Q0 a Q2, pontos R0 e R1 e o ponto final S em (2, 1,5)."
+/>
+
+:::warning[O erro mais comum]
+Interpolar pontos não adjacentes ou saltar uma ronda. O de Casteljau só mistura vizinhos e reduz a lista de um ponto por ronda: 4 pontos, depois 3, depois 2, depois 1. Se o teu esquema não encolhe assim, volta atrás.
+:::
+
+Corre o algoritmo e confirma cada ronda com os valores acima. Muda $t$ para $0{,}25$ e prevê onde cai o ponto antes de executares: fica mais perto de $P_0$ ou de $P_3$?
+
+<CodePlayground
+  language="javascript"
+  title="De Casteljau em JavaScript"
+  code={
+    'const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];\nconst ronda = (pts, t) => pts.slice(1).map((p, i) => lerp(pts[i], p, t));\nconst P = [[0, 0], [1, 2], [3, 2], [4, 0]];\nconst Q = ronda(P, 0.5);\nconst R = ronda(Q, 0.5);\nconst S = ronda(R, 0.5);\nconsole.log("Q:", JSON.stringify(Q));\nconsole.log("R:", JSON.stringify(R));\nconsole.log("S:", JSON.stringify(S));'
+  }
+/>
+
+## A forma polinomial
+
+O de Casteljau é geométrico, mas a mesma curva tem forma fechada: a combinação dos pontos de controlo com os **polinómios de Bernstein** de grau 3. Para $t$ genérico:
+
+$$
+\mathbf{P}(t) = (1-t)^3 P_0 + 3(1-t)^2 t\, P_1 + 3(1-t) t^2 P_2 + t^3 P_3.
+$$
+
+Em $t = 0{,}5$ os pesos são $\frac{1}{8}$, $\frac{3}{8}$, $\frac{3}{8}$ e $\frac{1}{8}$. A coordenada $x$ dá $\frac{0 + 3 + 9 + 4}{8} = 2$ e a $y$ dá $\frac{0 + 6 + 6 + 0}{8} = 1{,}5$: o mesmo $(2,\ 1{,}5)$ do algoritmo. As duas formas concordam sempre; o de Casteljau é estável para desenhar e o polinómio é direto para derivar.
+
+## De curvas a superfícies
+
+Uma **superfície paramétrica** é $\mathbf{S}(u, v)$ com dois parâmetros: uma grelha de pontos de controlo em vez de uma fila. O **retalho de Bézier** bicúbico usa $4 \times 4$ pontos e avalia-se aplicando de Casteljau numa direção e depois na outra. Coser vários retalhos exige continuidade nas fronteiras: continuidade $C^0$ significa que os retalhos se tocam (posições coincidem na fronteira), continuidade $C^1$ exige ainda que as tangentes coincidam, sem quinas visíveis. É aí que entram as variantes usadas na indústria (_splines_, B-splines, NURBS), que garantem suavidade automática entre troços. Para a cadeira, fixa a ideia central: a superfície suave nasce de pontos de controlo e só vira [malha de triângulos](modelacao-malhas/) na altura de desenhar.
+
+A grelha mostra os $16$ pontos de um retalho bicúbico, com a fronteira partilhada a verde: é nessa aresta que a continuidade $C^0$ ou $C^1$ se decide quando coseres o retalho seguinte.
+
+<Typst
+  source={retalho}
+  format="svg"
+  alt="Grelha de 4 por 4 pontos de controlo dentro de um quadrado, com a fronteira direita e superior destacada a verde."
+/>
+
+## Para saber mais
+
+- [De Casteljau passo a passo](https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/de-casteljau.html): as rondas com figuras, com os mesmos valores deste exemplo.
+
+[^mtu]: C.-K. Shene, notas de de Casteljau do curso de curvas e superfícies: [Michigan Tech](https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/de-casteljau.html).
