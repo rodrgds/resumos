@@ -1,0 +1,16 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  draw.line((-3.6, 0), (3.6, 0), mark: (end: ">"))
+  draw.line((0, -3.6), (0, 3.6), mark: (end: ">"))
+  draw.content((3.8, 0.25), [$x$])
+  draw.content((0.3, 3.6), [$y$])
+  draw.circle((0, 0), radius: 3)
+  draw.circle((3, 0), radius: 2.5pt, fill: rgb("8c2d3b"), stroke: none)
+  draw.content((3.35, -0.35), [$bold(r)(0) = (1, 0, 0)$])
+  draw.line((3, 0), (3, 1.8), mark: (end: ">"), stroke: rgb("8c2d3b"))
+  draw.content((3.35, 1.5), [$bold(T)(0)$])
+  draw.line((3, 0), (1.4, 0), mark: (end: ">"), stroke: rgb("28716c"))
+  draw.content((1.9, 0.35), [$bold(N)(0)$])
+})
