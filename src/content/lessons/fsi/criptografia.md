@@ -1,0 +1,38 @@
+---
+title: Criptografia simétrica, assimétrica e PKI
+description: Cifrar, assinar e verificar cadeias de certificados, com um exemplo RSA em números pequenos.
+section: conteudo
+order: 3
+---
+
+A criptografia transforma dois problemas difíceis, guardar segredos e provar identidades, em um problema tratável: guardar chaves. Esta página mostra as duas famílias de cifras, como se combinam, como se assina e como se confia numa chave que chegou pela Internet.
+
+## Simétrica e assimétrica
+
+Na **criptografia simétrica**, a mesma chave cifra e decifra. O AES (_Advanced Encryption Standard_) é o exemplo atual: rápido e seguro com chaves de 128 ou 256 bits, ideal para grandes volumes. O problema é a distribuição: Ana e Bruno precisam de partilhar a chave secreta sem que ninguém a intercete, o que é precisamente o problema que queriam resolver.
+
+Na **criptografia assimétrica** (ou de chave pública), cada pessoa tem um par: a **chave pública**, que se distribui livremente, e a **chave privada**, que nunca sai do dono. O que uma cifra, só a outra decifra. O RSA é o exemplo clássico. É milhares de vezes mais lento que o AES, por isso na prática usa-se o melhor dos dois mundos: gera-se uma **chave de sessão** aleatória, cifra-se a mensagem grande com AES usando essa chave e cifra-se só a chave pequena com RSA usando a chave pública do destinatário.
+
+Para **autenticação** de mensagens usa-se um código MAC (_message authentication code_) com chave partilhada, ou uma **assinatura digital** com chave privada: o autor resume a mensagem com uma função de síntese (_hash_, como o SHA-256) e cifra esse resumo com a sua chave privada. Quem recebe repete a síntese e compara com o valor decifrado com a chave pública do autor. Se bater certo, a mensagem não foi alterada e só o dono da chave privada a podia ter assinado: integridade mais autenticidade da origem, que a cifra sozinha não dá.
+
+## Gestão de chaves e PKI
+
+Chaves perdem-se, são roubadas e expiram, por isso existe **gestão de chaves**: gerar com aleatoriedade real, distribuir por canais seguros, armazenar protegidas, trocar periodicamente e revogar quando comprometidas. A parte mais delicada é a pergunta inicial: esta chave pública é mesmo do Bruno?
+
+A resposta é a **PKI** (_public key infrastructure_): uma hierarquia de **certificados digitais**. Um certificado liga uma identidade a uma chave pública e vem assinado por uma **autoridade de certificação** (CA). O certificado do servidor da loja vem assinado por uma CA intermédia, o dessa intermédia por uma CA raiz, e a chave da CA raiz já vem instalada no teu navegador. **Verificar a cadeia** é confirmar cada assinatura até à raiz confiável, mais a validade das datas e a lista de revogações. Confias em centenas de chaves porque confias nas poucas raízes e na matemática das assinaturas entre elas.
+
+## Exemplo: troca completa em números pequenos
+
+Ana quer enviar ao Bruno a mensagem $m = 5$ (pensa num código de 5 euros de desconto) de forma confidencial e assinada. O par RSA de brinquedo do Bruno usa $n = 33$ com expoente público $e = 3$ e privado $d = 7$. Na realidade as chaves têm 2048 bits ou mais; estes números servem só para veres o mecanismo a funcionar à mão.
+
+**Cifrar.** Ana calcula $c = m^e \bmod n = 5^3 \bmod 33$. Ora $5^3 = 125$ e $125 - 99 = 26$, por isso envia $c = 26$. Só quem tiver $d$ recupera o 5.
+
+**Assinar.** Ana resume a mensagem (neste brinquedo, o resumo é o próprio 5) e cifra com a sua chave privada, obtendo a assinatura $s = 14$. Envia o par $(26, 14)$.
+
+**Verificar e decifrar.** O Bruno decifra com a sua chave privada e obtém 5. Depois verifica a assinatura com a chave pública da Ana: $14^3 \bmod 33$. Ora $14^2 = 196$ e $196 - 165 = 31$; depois $31 \times 14 = 434$ e $434 - 429 = 5$. O resultado bate certo com a mensagem recebida, por isso aceita-a: veio da Ana e ninguém a alterou.
+
+Numa troca real, estes passos RSA protegem apenas a chave de sessão, a mensagem segue em AES e cada chave pública chega dentro de um certificado cuja cadeia se verifica até à raiz. O esqueleto lógico é exatamente o deste exemplo: cifrar com a pública do destino, assinar com a privada da origem, verificar antes de confiar.
+
+:::tip[O que a cifra não resolve]
+A criptografia protege dados, não intenções. Não impede que o programa tenha erros, que o utilizador seja enganado nem que a chave privada esteja num ficheiro legível por todos. Quando um sistema "com cifragem" falha, a causa está quase sempre fora da matemática: na gestão das chaves, no código ou nas pessoas. É por isso que a [programação defensiva](programacao-defensiva/) e o [controlo de acessos](controlo-acessos/) vêm a seguir.
+:::
