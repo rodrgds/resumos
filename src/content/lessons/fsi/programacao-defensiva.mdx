@@ -5,6 +5,11 @@ section: conteudo
 order: 5
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import pilha from '../../fsi/pilha.typ?raw';
+
 A maioria das intrusões não parte a criptografia nem adivinha senhas: entra por programas que confiam demasiado na entrada que recebem. **Programação defensiva** é escrever código que continua correto mesmo quando a entrada é hostil. Esta página mostra a regra de ouro da validação e o ataque clássico que a motiva.
 
 ## Validar entradas: permitir, não proibir
@@ -25,7 +30,15 @@ void saudar(char *nome) {
 }
 ```
 
-Com a entrada `Ana`, cabem 4 bytes (`A`, `n`, `a`, terminador) e está tudo bem. Com uma entrada de 12 letras, os bytes a mais transbordam para a zona vizinha da pilha. Numa versão com uma variável `autenticado` declarada a seguir ao vetor, esses bytes extra podem sobrescrevê-la e virar uma verificação que devia falhar. A disposição exata depende do compilador, mas o mecanismo é sempre o mesmo: escrita sem limite atinge memória que o programador julgava intocável.
+Com a entrada `Ana`, cabem 4 bytes (`A`, `n`, `a`, terminador) e está tudo bem. Com uma entrada de 12 letras, os bytes a mais transbordam para a zona vizinha da pilha. Numa versão com uma variável `autenticado` declarada a seguir ao vetor, esses bytes extra podem sobrescrevê-la e virar uma verificação que devia falhar. A disposição exata depende do compilador[^pilha], mas o mecanismo é sempre o mesmo: escrita sem limite atinge memória que o programador julgava intocável.
+
+[^pilha]: A ordem das variáveis locais e o preenchimento entre elas variam com o compilador, as opções e a arquitetura. O desenho mostra a disposição típica num x86 com um compilador comum, suficiente para seguir o ataque.
+
+<Typst
+  source={pilha}
+  format="svg"
+  alt="Pilha com o vetor buf de oito bytes em baixo, outras variáveis no meio e o endereço de retorno em cima. Uma seta da entrada de vinte bytes aponta para o vetor e indica o transbordo para cima."
+/>
 
 A correção tem duas camadas. Primeiro, valida: rejeita nomes fora da lista de permissão antes de copiar. Depois, limita mesmo assim, porque a validação pode ter falhas:
 
@@ -42,7 +55,21 @@ void saudar(char *nome) {
 }
 ```
 
+Corre a versão corrigida com um nome comprido e confirma que a validação o apanha antes da cópia:
+
+<CodePlayground
+  language="c"
+  code={
+    '#include <stdio.h>\n#include <string.h>\n\nvoid saudar(char *nome) {\n  char buf[8];\n  if (strlen(nome) > 6) {\n    printf("Nome demasiado comprido.\\n");\n    return;\n  }\n  strncpy(buf, nome, sizeof(buf) - 1);\n  buf[sizeof(buf) - 1] = \'\\0\';\n  printf("Olá, %s!\\n", buf);\n}\n\nint main(void) {\n  saudar("AlexandraConstantina");\n  return 0;\n}'
+  }
+/>
+
 O `strncpy` com o terminador forçado garante que, mesmo que a validação falhe um dia, a escrita nunca passa dos 8 bytes. Defesa em profundidade dentro de uma função.
+
+<YouTube
+  id="1S0aBV-Waeo"
+  title="Um ataque de buffer overflow explicado, Computerphile"
+/>
 
 ## Race conditions e atualizações
 
