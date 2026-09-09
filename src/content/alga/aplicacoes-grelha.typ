@@ -1,0 +1,16 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  draw.line((0, 0), (2, 0))
+  draw.line((0, 1), (2, 1))
+  draw.line((0, 2), (2, 2))
+  draw.line((0, 0), (0, 2))
+  draw.line((1, 0), (1, 2))
+  draw.line((2, 0), (2, 2))
+  draw.content((1, -0.35), [antes])
+  draw.line((6, 0), (10, 2), (12, 6), (8, 4), close: true)
+  draw.line((8, 1), (10, 5))
+  draw.line((7, 2), (11, 4))
+  draw.content((9, -0.35), [depois de $S$])
+})
