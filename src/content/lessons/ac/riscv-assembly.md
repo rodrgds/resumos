@@ -11,14 +11,14 @@ Em FSC programaste em LEGv8, um conjunto de instruções inventado para ensinar.
 
 O RISC-V tem 32 registos inteiros, `x0` a `x31`. Cada um tem um nome de função que deves usar no código:
 
-| Nome      | Registos  | Para que serve                                    |
-| --------- | --------- | ------------------------------------------------- |
-| `zero`    | `x0`      | Vale sempre 0; escritas são ignoradas             |
-| `ra`      | `x1`      | Endereço de regresso das chamadas                 |
-| `sp`      | `x2`      | Apontador da pilha                                |
-| `a0`–`a7` | `x10`–`x17` | Argumentos das funções e valor de retorno (`a0`) |
-| `t0`–`t6` | `x5`–`x7`, `x28`–`x31` | Temporários (o chamado pode estragá-los) |
-| `s0`–`s11` | `x8`, `x9`, `x18`–`x27` | Guardados (o chamado tem de os preservar) |
+| Nome       | Registos                | Para que serve                                   |
+| ---------- | ----------------------- | ------------------------------------------------ |
+| `zero`     | `x0`                    | Vale sempre 0; escritas são ignoradas            |
+| `ra`       | `x1`                    | Endereço de regresso das chamadas                |
+| `sp`       | `x2`                    | Apontador da pilha                               |
+| `a0`–`a7`  | `x10`–`x17`             | Argumentos das funções e valor de retorno (`a0`) |
+| `t0`–`t6`  | `x5`–`x7`, `x28`–`x31`  | Temporários (o chamado pode estragá-los)         |
+| `s0`–`s11` | `x8`, `x9`, `x18`–`x27` | Guardados (o chamado tem de os preservar)        |
 
 Há duas diferenças grandes em relação ao LEGv8. A primeira: não há um registo de zero inventado, há o `zero` (`x0`), que vale sempre 0 e serve para inicializar registos e sintetizar instruções. A segunda: em vez de `X30` como registo de ligação, há o `ra`, e em vez de pares dedicados há uma convenção explícita sobre que registos cada função pode estragar.
 
