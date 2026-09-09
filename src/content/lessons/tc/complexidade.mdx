@@ -5,6 +5,10 @@ section: conteudo
 order: 7
 ---
 
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+
 Entre os problemas decidíveis, alguns têm algoritmos rápidos e outros só têm algoritmos que demoram mais que a idade do universo para entradas modestas. A teoria da complexidade classifica-os. Esta página apresenta **P** e **NP**, a ideia de **redução polinomial** e a **NP-completude**, com o SAT como exemplo canónico.
 
 ## P: resolver depressa
@@ -15,9 +19,19 @@ Entre os problemas decidíveis, alguns têm algoritmos rápidos e outros só tê
 
 **NP** é a classe das linguagens cuja pertença se **verifica** em tempo polinomial com a ajuda de um **certificado**. Formalmente: $L \in$ NP se existe um verificador $V$ polinomial e um polinómio $p$ tais que $w \in L$ se e só se existe um certificado $c$ com $|c| \le p(|w|)$ e $V$ aceita $\langle w, c\rangle$.
 
-Exemplo: "este grafo tem um caminho que visita todos os vértices exatamente uma vez?" (caminho hamiltoniano). Encontrar o caminho parece difícil, mas **verificar** um candidato é fácil: percorre a lista de vértices proposta e confirma que cada aresta existe e nenhum vértice repete. O certificado é a lista; o verificador corre em tempo polinomial. Equivalentemente, NP é o que uma TM **não determinística** decide em tempo polinomial (adivinha o certificado e verifica).
+Exemplo: "este grafo tem um caminho que visita todos os vértices exatamente uma vez?" (caminho hamiltoniano). Encontrar o caminho parece difícil, mas **verificar** um candidato é fácil: percorre a lista de vértices proposta e confirma que cada aresta existe e nenhum vértice repete. O certificado é a lista; o verificador corre em tempo polinomial. Corre-o e confirma os dois veredictos.
 
-Vale sempre P $\subseteq$ NP: se consegues resolver depressa, consegues verificar depressa (ignora o certificado e resolve). A pergunta aberta mais famosa da computação é se P $=$ NP, com um milhão de dólares de prémio. Acredita-se que não, mas ninguém provou.
+<CodePlayground
+  language="python"
+  title="Verificar caminho hamiltoniano"
+  code={
+    'def verifica(grafo, caminho):\n    if sorted(caminho) != sorted(grafo):\n        return False\n    return all(caminho[i + 1] in grafo[caminho[i]] for i in range(len(caminho) - 1))\n\ngrafo = {"a": ["b", "c"], "b": ["a", "c"], "c": ["a", "b"]}\nfor caminho in [["a", "b", "c"], ["a", "c", "b", "a"]]:\n    print(caminho, "válido" if verifica(grafo, caminho) else "inválido")'
+  }
+/>
+
+O programa imprime `válido` e `inválido`: `["a", "b", "c"]` usa só arestas do triângulo e visita cada vértice uma vez, enquanto `["a", "c", "b", "a"]` repete o `a` e nem sequer tem o mesmo multiconjunto de vértices. Repara que o verificador nunca procura o caminho, só confirma o candidato: é essa a assimetria de NP. Equivalentemente, NP é o que uma TM **não determinística** decide em tempo polinomial (adivinha o certificado e verifica).
+
+Vale sempre P $\subseteq$ NP: se consegues resolver depressa, consegues verificar depressa (ignora o certificado e resolve). A pergunta aberta mais famosa da computação é se P $=$ NP, com um milhão de dólares de prémio[^premio-milhao]. Acredita-se que não, mas ninguém provou.
 
 :::tip[Resolver contra verificar]
 Esta assimetria aparece no dia a dia: corrigir um teste é mais rápido que o resolver, rever uma prova é mais rápido que a descobrir. NP formaliza "difícil de encontrar, fácil de confirmar". Quando um enunciado pedir para mostrar que um problema está em NP, descreve o certificado e o verificador, não um algoritmo que resolva.
@@ -33,7 +47,18 @@ Exemplo de ideia: reduzir caminho hamiltoniano a "o grafo tem um ciclo que passa
 
 Um problema é **NP-difícil** se todos os problemas de NP se reduzem a ele; é **NP-completo** se além disso pertence a NP. São os problemas mais difíceis de NP: se um deles estiver em P, então P $=$ NP.
 
-O primeiro foi o **SAT** (satisfazibilidade booleana): dada uma fórmula proposicional, existe uma atribuição que a torna verdadeira? Está em NP (o certificado é a atribuição; avaliar é polinomial) e o teorema de Cook-Levin mostra que todo o problema de NP se reduz a ele, codificando a computação do verificador como fórmula. A partir do SAT, prova-se NP-completude de centenas de problemas por reduções em cadeia: SAT $\le_p$ 3-SAT $\le_p$ clique $\le_p$ cobertura de vértices, e por aí fora. Se estudaste [lógica proposicional](/cadeiras/md/logica-proposicional/), o SAT é "existe um modelo para esta fórmula?", agora com custo quantificado.
+O primeiro foi o **SAT** (satisfazibilidade booleana): dada uma fórmula proposicional, existe uma atribuição que a torna verdadeira? Está em NP (o certificado é a atribuição; avaliar é polinomial) e o teorema de Cook-Levin mostra que todo o problema de NP se reduz a ele, codificando a computação do verificador como fórmula. A partir do SAT, prova-se NP-completude de centenas de problemas por reduções em cadeia:
+
+<Dot
+  source={`digraph Reducoes {
+  rankdir=LR;
+  node [shape=box, style=rounded];
+  SAT -> "3-SAT" -> clique -> "cobertura de vértices";
+}`}
+  alt="Cadeia de reduções: SAT para 3-SAT, para clique, para cobertura de vértices."
+/>
+
+Cada seta é uma redução polinomial: quem resolver o problema da direita em tempo polinomial resolve também o da esquerda. Se estudaste [lógica proposicional](/cadeiras/md/logica-proposicional/), o SAT é "existe um modelo para esta fórmula?", agora com custo quantificado.
 
 ## Porque é que isto importa
 
@@ -42,6 +67,17 @@ Quase todos os problemas de otimização que vais encontrar (horários, rotas, e
 :::warning[NP não quer dizer não polinomial]
 NP vem de "não determinístico polinomial". Dizer "este problema é NP" não prova que é difícil: P está contido em NP. Dificuldade a sério é NP-completude (ou NP-dificuldade).
 :::
+
+## Para saber mais
+
+<YouTube
+  id="6OPsH8PK7xM"
+  title="Sobre o que é realmente P contra NP, Polylog"
+/>
+
+- A [cadeira Theory of Computation do MIT](https://ocw.mit.edu/courses/18-404j-theory-of-computation-fall-2020/) (Sipser), com calendário e notas abertas.
+
+[^premio-milhao]: O Clay Mathematics Institute oferece um milhão de dólares por cada um dos sete Problemas do Milénio, incluindo P contra NP: [página oficial do problema](https://www.claymath.org/millennium/p-vs-np/).
 
 ## Para fechar a cadeira
 
