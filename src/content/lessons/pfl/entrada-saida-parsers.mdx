@@ -5,6 +5,13 @@ section: conteudo
 order: 5
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import arvores from '../../pfl/p5arvores.typ?raw';
+import chamadas from '../../pfl/p5parser.dot?raw';
+
 Uma função pura não pode ler do teclado: o mesmo input teria de dar sempre o mesmo output, e o utilizador não colabora. Haskell separa o cálculo puro do contacto com o mundo no tipo **`IO`**. Um valor `IO ()` é uma **ação**, uma receita que, quando executada, interage e devolve `()`. O `main` do programa é uma ação composta.
 
 ## I/O com do
@@ -95,7 +102,19 @@ symbol :: Char -> Parser Char
 symbol c = token (sat (== c))
 ```
 
-(`return` é `pure`; o `do` usa o `>>=` acima.) Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta. A gramática com precedência compõe-nos:
+(`return` é `pure`; o `do` usa o `>>=` acima.) Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta.
+
+Experimenta a base no navegador com o prelúdio completo do parser. O `nat` lê um número natural e diz o que sobrou:
+
+<CodePlayground
+  language="haskell"
+  title="nat e many1 digit no navegador"
+  code={
+    'import Data.Char (isDigit)\n\nnewtype Parser a = P (String -> [(a, String)])\n\nparse :: Parser a -> String -> [(a, String)]\nparse (P p) = p\n\nitem :: Parser Char\nitem = P (\\inp -> case inp of\n                   []     -> []\n                   (c:cs) -> [(c, cs)])\n\ninstance Functor Parser where\n  fmap f p = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> [(f v, out)])\n\ninstance Applicative Parser where\n  pure v = P (\\inp -> [(v, inp)])\n  pf <*> px = P (\\inp -> case parse pf inp of\n                            []        -> []\n                            [(f,out)] -> parse (fmap f px) out)\n\ninstance Monad Parser where\n  p >>= f = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> parse (f v) out)\n  return v = P (\\inp -> [(v, inp)])\n\n(+++) :: Parser a -> Parser a -> Parser a\np +++ q = P (\\inp -> case parse p inp of\n                       []        -> parse q inp\n                       [(v,out)] -> [(v,out)])\n\nsat :: (Char -> Bool) -> Parser Char\nsat pr = do c <- item\n              if pr c then return c else P (const [])\n\ndigit :: Parser Char\ndigit = sat isDigit\n\nmany :: Parser a -> Parser [a]\nmany p = many1 p +++ return []\n\nmany1 :: Parser a -> Parser [a]\nmany1 p = do v  <- p\n               vs <- many p\n               return (v:vs)\n\nnat :: Parser Int\nnat = do xs <- many1 digit\n         return (read xs)\n\nmain :: IO ()\nmain = do\n  print (parse nat "42x")\n  print (parse (many1 digit) "7+8")'
+  }
+/>
+
+Carrega em **Executar**: imprime `[(42,"x")]` e `[("7","+8")]`. O número é lido e o resto fica por consumir, que é exatamente o contrato do parser. A gramática com precedência compõe-nos:
 
 ```haskell
 expr :: Parser Int
@@ -117,8 +136,30 @@ factor = (do symbol '('
              return e) +++ token nat
 ```
 
-A precedência vive na estrutura: `expr` soma `term`s e `term` multiplica `factor`s, por isso `*` liga mais que `+`. Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`; dá `[(14, "")]`. E `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro.
+A precedência vive na estrutura: `expr` soma `term`s e `term` multiplica `factor`s, por isso `*` liga mais que `+`. As duas árvores mostram a diferença: sem parênteses o `*` fica por baixo do `+`; com parênteses a soma desce primeiro.
+
+<Typst
+  source={arvores}
+  format="svg"
+  alt="Árvores sintáticas de 2+3*4 e de (2+3)*4: na primeira o vezes agrupa 3 e 4 por baixo do mais; na segunda o mais agrupa 2 e 3 por baixo do vezes."
+/>
+
+O grafo de chamadas resume quem chama quem: `expr` e `term` chamam-se a si próprios na recursão dos operadores, e a base da cadeia é o número.
+
+<Dot
+  source={chamadas}
+  alt="Grafo de chamadas do parser: expr chama term e a si própria; term chama factor e a si próprio; factor chama expr e nat; nat usa many1 e digit."
+/>
+
+Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`; dá `[(14, "")]`. E `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro.
 
 :::warning[Escolha comprometida]
 O `+++` só tenta a alternativa se a primeira falhar **sem consumir nada**. Se `symbol '('` tem sucesso e o interior falha, o parser falha em vez de recuar para `token nat`. Em gramáticas pequenas isto resolve-se ordenando as alternativas da mais específica para a mais geral; em gramáticas grandes é o argumento para bibliotecas como Parsec.
+
+## Para saber mais
+
+<YouTube
+  id="dDtZLm7HIJs"
+  title="Parsing funcional com Graham Hutton (Computerphile)"
+/>
 :::

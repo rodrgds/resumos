@@ -1,0 +1,91 @@
+---
+title: Tipos algébricos e recursão
+description: Definir tipos com data, encaixe de padrões e recursão sobre listas e árvores.
+section: conteudo
+order: 4
+---
+
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import arvoreBST from '../../pfl/p4arvore.typ?raw';
+
+Os tipos predefinidos chegam para exercícios pequenos. Para modelar os teus próprios dados, defines **tipos algébricos** com `data`: enumeras os construtores e o que cada um guarda. Depois as funções escolhem a equação pelo **padrão** do construtor, e a recursão segue a forma dos dados.
+
+## data e padrões
+
+Uma árvore binária ou está vazia ou é um nó com um valor e duas subárvores. A definição é quase essa frase:
+
+```haskell
+data Arvore a = Vazia | No a (Arvore a) (Arvore a)
+```
+
+`Vazia` é um construtor sem argumentos e `No` guarda um valor e duas árvores. Funções sobre a árvore têm uma equação por construtor:
+
+```haskell
+emOrdem :: Arvore a -> [a]
+emOrdem Vazia = []
+emOrdem (No x esq dir) = emOrdem esq ++ [x] ++ emOrdem dir
+```
+
+O padrão `(No x esq dir)` desmonta o nó e dá nome às peças. A travessia em ordem lista a esquerda, depois o valor, depois a direita. O caso base `Vazia` devolve a lista vazia, e é ele que termina a recursão, como o `[]` nas listas da [primeira página](haskell-expressoes-tipos/).
+
+## Exemplo completo: pesquisa binária
+
+Inserir mantém a invariância: valores menores à esquerda, maiores ou iguais à direita. Procurar desce só para o lado certo:
+
+```haskell
+inserir :: Ord a => a -> Arvore a -> Arvore a
+inserir x Vazia = No x Vazia Vazia
+inserir x (No y esq dir)
+  | x < y     = No y (inserir x esq) dir
+  | otherwise = No y esq (inserir x dir)
+
+procura :: Ord a => a -> Arvore a -> Bool
+procura _ Vazia = False
+procura x (No y esq dir)
+  | x == y    = True
+  | x < y     = procura x esq
+  | otherwise = procura x dir
+```
+
+Constrói a árvore inserindo `3, 1, 4, 1, 5` por ordem em `Vazia`. O `3` abre a raiz. O `1` vai para a esquerda. O `4` vai para a direita. O segundo `1` é igual, por isso cai no `otherwise` e vai para a direita do primeiro `1`. O `5` vai para a direita do `4`.
+
+<Typst
+  source={arvoreBST}
+  format="svg"
+  alt="Árvore binária após inserir 3, 1, 4, 1 e 5: o 3 na raiz, o 1 à esquerda com o segundo 1 à sua direita, o 4 à direita com o 5 à sua direita."
+/>
+
+A travessia em ordem devolve `[1,1,3,4,5]`: a invariância garante que a travessia sai ordenada, incluindo o duplicado.
+
+Agora `procura 4`: compara com `3`, desce à direita, compara com `4`, encontra, `True`. E `procura 2`: compara com `3`, desce à esquerda, compara com `1`, cai no `otherwise`, desce à direita do `1`, encontra `Vazia`, `False`. Cada comparação elimina metade da árvore[^metade], e é essa a promessa da estrutura.
+
+Monta a árvore do exemplo no navegador e confirma a travessia e as duas procuras:
+
+<CodePlayground
+  language="haskell"
+  title="árvore de pesquisa no navegador"
+  code={
+    'data Arvore a = Vazia | No a (Arvore a) (Arvore a)\n\nemOrdem :: Arvore a -> [a]\nemOrdem Vazia = []\nemOrdem (No x esq dir) = emOrdem esq ++ [x] ++ emOrdem dir\n\ninserir :: Ord a => a -> Arvore a -> Arvore a\ninserir x Vazia = No x Vazia Vazia\ninserir x (No y esq dir)\n  | x < y     = No y (inserir x esq) dir\n  | otherwise = No y esq (inserir x dir)\n\nprocura :: Ord a => a -> Arvore a -> Bool\nprocura _ Vazia = False\nprocura x (No y esq dir)\n  | x == y    = True\n  | x < y     = procura x esq\n  | otherwise = procura x dir\n\narv :: Arvore Int\narv = foldl (flip inserir) Vazia [3,1,4,1,5]\n\nmain :: IO ()\nmain = do\n  print (emOrdem arv)\n  print (procura 4 arv)\n  print (procura 2 arv)'
+  }
+/>
+
+Carrega em **Executar**: imprime `[1,1,3,4,5]`, `True` e `False`.
+
+## Quando a resposta pode faltar
+
+A média das aprovações falhava na lista vazia por dividir por zero. O tipo que declara "valor ou ausência" é o `Maybe`:
+
+```haskell
+mediaSegura :: [Double] -> Maybe Double
+mediaSegura [] = Nothing
+mediaSegura xs = Just (sum xs / fromIntegral (length xs))
+```
+
+`Nothing` é a ausência e `Just` embrulha o valor presente. `mediaSegura []` dá `Nothing`; `mediaSegura [8.0,12.0]` dá `Just 10.0`. Quem chama a função é obrigado pelo tipo a tratar os dois casos com padrões, e é assim que o erro da divisão passa de surpresa em execução para caso tipificado.
+
+[^metade]: A promessa vale quando a árvore está equilibrada: cada nível elimina metade dos valores restantes, e a altura cresce com o logaritmo do tamanho. Numa árvore degenerada em lista, a procura degrada-se para linear. É por isso que as árvores da biblioteca se auto-equilibram.
+
+:::tip[Desenha antes de codificar]
+Perante um tipo novo, escreve primeiro um valor concreto à mão, como o `No 3 ...` acima, e só depois as equações. Se consegues desenhar o valor, os padrões saem sozinhos; se os padrões te confundem, é o valor que ainda não está claro.
+:::

@@ -5,6 +5,11 @@ section: conteudo
 order: 8
 ---
 
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import labirinto from '../../pfl/p8labirinto.dot?raw';
+
 Com factos, regras e unificação já respondes a queries sobre relações. Falta o resto do kit: **listas** para coleções, **aritmética** para contas, o **corte** para podar a procura, o **`findall`** para juntar todas as respostas, e a **procura** propriamente dita. É a [recursão](/cadeiras/fp/recursao/) outra vez, agora com cláusulas em vez de equações.
 
 ## Listas e aritmética
@@ -28,6 +33,15 @@ max(_, Y, Y).
 ```
 
 Com o corte, `max(3, 5, M)` usa a primeira cláusula, falha no teste, e o corte nunca chega a correr; a segunda dá `M = 5`. Com `max(7, 5, M)`, o teste passa, o corte elimina a segunda cláusula, e `M = 7` sem deixar alternativa pendente. Este é um **corte verde**: só remove soluções redundantes, não muda as respostas. Um corte que mude respostas é vermelho, e é fonte clássica de erros.
+
+Contrasta com um corte vermelho, que decide antes de testar:
+
+```prolog
+mau_max(X, Y, X) :- !.
+mau_max(_, Y, Y).
+```
+
+A query `?- mau_max(3, 5, M).` responde `M = 3`, que está errado: o corte compromete-se com a primeira cláusula antes de comparar. A diferença entre os dois é a posição do teste em relação ao corte: no verde, o teste guarda a cláusula; no vermelho, o corte dispara primeiro e o teste nunca corre.
 
 Para juntar **todas** as respostas numa lista em vez de as pedir uma a uma, usa `findall`:
 
@@ -54,4 +68,48 @@ caminho(X, Z, Visitados, [X|Resto]) :-
 
 (`member/2` vem de `library(lists)`; em SICStus carrega-se com `:- use_module(library(lists)).`.) A query `?- caminho(a, e, [a], C).` faz **procura em profundidade**: de `a` vai a `b` (única saída); de `b` tenta `c` primeiro (ordem das cláusulas); de `c` chega a `e`, que unifica com o caso base. Responde `C = [a, b, c, e]`, e ao pedir mais soluções retrocede até `b`, tenta `d`, e encontra o segundo caminho `[a, b, d, e]`.
 
+O mapa numerado pela ordem de descoberta: o primeiro caminho sai pelos números 1 a 3, o segundo pelos números 4 e 5.
+
+<Dot
+  source={labirinto}
+  alt="Labirinto de a até e: a liga a b; b liga a c e a d; c e d ligam a e. A descoberta segue a ordem 1 a 5."
+/>
+
+Corre a soma e o máximo verde no navegador:
+
+<CodePlayground
+  language="prolog"
+  title="soma e máximo no navegador"
+  code={
+    'soma([], 0).\nsoma([H|T], S) :- soma(T, R), S is H + R.\n\nmax(X, Y, X) :- X >= Y, !.\nmax(_, Y, Y).\n\nmain :- soma([1,2,3], S), writeln(S), max(7, 5, M), writeln(M).'
+  }
+/>
+
+Carrega em **Executar**: imprime `6` e `7`.
+
 Repara nos três travões que impedem a procura de se perder: a lista de visitados com negação (não revisita), o caso base (para ao chegar), e a ordem das cláusulas (decide que caminho sai primeiro). Quando um programa de procura entra em ciclo, um destes três é quase sempre o culpado.
+
+## SICStus na aula, SWI em casa
+
+O Prolog da cadeira é o SICStus; o do navegador destas páginas é o SWI. A sintaxe destas páginas corre nos dois. O que muda é o ambiente:
+
+<Tabs id="sicstus-swi" labels={['SICStus (aula)', 'SWI e SWISH (casa)']}>
+  <div slot="panel-0">
+
+```prolog
+:- use_module(library(lists)).
+```
+
+Carrega a biblioteca no arranque com `sicstus -l labirinto.pl` e consulta o predicado com `?- member(X, [1,2]).`. Para seguir a execução, liga o traço com `?- trace.` antes da query.
+
+  </div>
+  <div slot="panel-1">
+
+A biblioteca `lists` carrega sozinha quando precisas dela. No [SWISH](https://swish.swi-prolog.org/) escreves o programa no painel da esquerda e a query no da direita, sem instalar nada. O traço também existe, com `?- trace.`.
+
+  </div>
+</Tabs>
+
+## Para saber mais
+
+- [Documentação do SICStus](https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html): o manual oficial do Prolog usado na cadeira.
