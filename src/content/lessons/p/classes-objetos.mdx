@@ -5,6 +5,11 @@ section: conteudo
 order: 3
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import aluno from '../../p/aluno.typ?raw';
+
 Nos [fundamentos](/cadeiras/p/cpp-fundamentos/) separaste dados (variáveis) de comportamento (funções). Uma **classe** junta os dois: descreve um tipo novo com os seus dados (**atributos**) e as operações sobre esses dados (**métodos**). Cada variável desse tipo é um **objeto**. Se programaste com tuplos e dicionários em [Tuplos e listas](/cadeiras/fp/tuplos-listas/), pensa numa classe como um contentor de dados que já traz as suas próprias funções coladas.
 
 ## Definir uma classe e criar objetos
@@ -35,6 +40,49 @@ int main() {
 ```
 
 Isto escreve `Ana (202400123)`. O objeto `a` guarda o nome e o número, e o método `apresentar` sabe ir buscar esses dados sem receber argumentos: dentro de um método, os atributos do próprio objeto estão sempre ao alcance. O operador ponto (`.`) escolhe o membro de um objeto concreto.
+
+<Typst
+  source={aluno}
+  format="svg"
+  alt="Diagrama do objeto a: liga-se aos métodos públicos como apresentar, mas não toca diretamente nos atributos privados nome e numero."
+/>
+
+Métodos curtos definem-se dentro da classe, como acima. Métodos compridos lêem-se melhor fora, com o nome qualificado `Aluno::`:
+
+<Tabs id="metodo-dentro-fora" labels={['Dentro da classe', 'Fora da classe']}>
+  <div slot="panel-0">
+
+```cpp
+class Aluno {
+public:
+    void apresentar() {
+        std::cout << nome << " (" << numero << ")\n";
+    }
+    // ...
+};
+```
+
+Declaração e corpo juntos. Serve para métodos de uma ou duas linhas; a classe continua a ler-se de uma vez.
+
+  </div>
+  <div slot="panel-1">
+
+```cpp
+class Aluno {
+public:
+    void apresentar();
+    // ...
+};
+
+void Aluno::apresentar() {
+    std::cout << nome << " (" << numero << ")\n";
+}
+```
+
+A classe mostra só a interface e o corpo vive fora, qualificado com `Aluno::`. É a organização dos projetos com ficheiros separados: declarações no `.h`, definições no `.cpp`.
+
+  </div>
+</Tabs>
 
 ## Construtores e destrutor
 
@@ -68,6 +116,53 @@ int main() {
 Isto escreve `0 11`. O `c1` usou o construtor sem argumentos e começou em `0`; o `c2` começou em `10` e o incremento levou-o a `11`. O compilador escolhe o construtor pelos argumentos, tal como escolhe entre funções sobrecarregadas.
 
 O simétrico do construtor é o **destrutor** (`~Contador()`), que corre quando o objeto morre, ao sair de âmbito ou por `delete`. Numa classe simples não precisas de o escrever. Mas quando a classe pedir memória com `new` nos [apontadores](/cadeiras/p/apontadores-memoria/), o destrutor é o sítio onde essa memória se liberta: é o mecanismo por trás do RAII.
+
+## Copiar objetos com memória própria
+
+Por omissão, copiar um objeto copia os atributos um a um. Para atributos simples isso chega; para um apontador, copia-se o endereço, e ficam dois objetos a partilhar a mesma memória: o primeiro destrutor liberta-a e o segundo liberta-a outra vez (double-free). Uma classe com `new` precisa de definir a cópia: construtor de cópia, operador de atribuição e destrutor, a chamada **regra dos três**:
+
+```cpp
+#include <iostream>
+
+class Bloco {
+public:
+    Bloco(int n) : tamanho(n), dados(new int[n]) {}
+    ~Bloco() { delete[] dados; }
+
+    Bloco(const Bloco& outro)
+        : tamanho(outro.tamanho), dados(new int[outro.tamanho]) {
+        for (int i = 0; i < tamanho; i++) dados[i] = outro.dados[i];
+    }
+
+    Bloco& operator=(const Bloco& outro) {
+        if (this != &outro) {
+            int* novos = new int[outro.tamanho];
+            for (int i = 0; i < outro.tamanho; i++) novos[i] = outro.dados[i];
+            delete[] dados;
+            dados = novos;
+            tamanho = outro.tamanho;
+        }
+        return *this;
+    }
+
+    void escrever(int i, int v) { dados[i] = v; }
+    int ler(int i) const { return dados[i]; }
+
+private:
+    int tamanho;
+    int* dados;
+};
+
+int main() {
+    Bloco a(2);
+    a.escrever(0, 7);
+    Bloco b = a;
+    b.escrever(0, 9);
+    std::cout << a.ler(0) << " " << b.ler(0) << "\n";
+}
+```
+
+Isto escreve `7 9`: cada bloco tem o seu array e a escrita em `b` não toca em `a`. Sem o construtor de cópia, `Bloco b = a` copiava só o endereço e o programa avariava no fim do `main`, com dois `delete[]` sobre o mesmo array. Repara nos dois cuidados do operador de atribuição: testa a auto-atribuição (`this != &outro`) e aloca a memória nova antes de libertar a antiga, para o objeto nunca ficar a meio. Se a tua classe só tem atributos simples (`string`, `int`, `vector`), não escrevas nada disto: a cópia automática já está certa.
 
 ## Encapsulamento
 
@@ -164,41 +259,44 @@ int main() {
 
 Isto escreve `1 0`. O método `operator==` recebe o ponto da direita como parâmetro e compara com o da esquerda, que é o próprio objeto. Repara nos dois `const`: o método não altera nenhum dos dois pontos. Sem esta sobrecarga, `a == b` compararia os objetos como blocos de memória, o que raramente é o que queres.
 
-## Exemplo completo: uma fração
-
-Vamos construir uma classe `Fracao` com construtor, leitura, soma e comparação, e usá-la num programa completo. Uma fração guarda numerador e denominador; somar $a/b + c/d$ dá $(a d + c b)/(b d)$.
+O `operator<<` para imprimir com `std::cout << p` não pode ser método, porque o objeto da esquerda é o fluxo, não o ponto. Escreve-se como função amiga ou livre que recebe o fluxo e o objeto:
 
 ```cpp
 #include <iostream>
 
-class Fracao {
+class Ponto {
 public:
-    Fracao(int n, int d) : num(n), den(d) {}
+    Ponto(double px, double py) : x(px), y(py) {}
 
-    Fracao operator+(const Fracao& outra) const {
-        return Fracao(num * outra.den + outra.num * den, den * outra.den);
-    }
-
-    bool operator==(const Fracao& outra) const {
-        return num * outra.den == outra.num * den;
-    }
-
-    void mostrar() const {
-        std::cout << num << "/" << den << "\n";
-    }
+    friend std::ostream& operator<<(std::ostream& saida, const Ponto& p);
 
 private:
-    int num, den;
+    double x, y;
 };
 
+std::ostream& operator<<(std::ostream& saida, const Ponto& p) {
+    return saida << "(" << p.x << ", " << p.y << ")";
+}
+
 int main() {
-    Fracao a(1, 2);
-    Fracao b(1, 3);
-    Fracao soma = a + b;
-    soma.mostrar();
-    std::cout << (soma == Fracao(5, 6)) << "\n";
+    Ponto p(1.5, 2.0);
+    std::cout << p << "\n";
 }
 ```
+
+Isto escreve `(1.5, 2)`. O `friend` dá à função livre acesso aos atributos privados; sem ele, o operador só veria a parte pública. Devolver o fluxo (`return saida`) permite encadear saídas, como `std::cout << p << "\n"`. Este é o operador que os projetos pedem com mais frequência: substitui todos os métodos `mostrar` por esta forma.
+
+## Exemplo completo: uma fração
+
+Vamos construir uma classe `Fracao` com construtor, leitura, soma e comparação, e usá-la num programa completo. Uma fração guarda numerador e denominador; somar $a/b + c/d$ dá $(a d + c b)/(b d)$. Corre o programa:
+
+<CodePlayground
+  language="cpp"
+  title="Classe Fracao com soma e comparação"
+  code={
+    '#include <iostream>\n\nclass Fracao {\npublic:\n    Fracao(int n, int d) : num(n), den(d) {}\n\n    Fracao operator+(const Fracao& outra) const {\n        return Fracao(num * outra.den + outra.num * den, den * outra.den);\n    }\n\n    bool operator==(const Fracao& outra) const {\n        return num * outra.den == outra.num * den;\n    }\n\n    void mostrar() const {\n        std::cout << num << "/" << den << "\\n";\n    }\n\nprivate:\n    int num, den;\n};\n\nint main() {\n    Fracao a(1, 2);\n    Fracao b(1, 3);\n    Fracao soma = a + b;\n    soma.mostrar();\n    std::cout << (soma == Fracao(5, 6)) << "\\n";\n}'
+  }
+/>
 
 Isto escreve `5/6` e depois `1`. Confere a soma: $1/2 + 1/3 = (1 times 3 + 1 times 2)/(2 times 3) = 5/6$. E a comparação evita divisões reais: $5/6 == 5/6$ porque $5 times 6 == 5 times 6$. Repara que `operator+` devolve um objeto novo sem tocar nos operandos, tal como `+` entre inteiros não altera os inteiros.
 
