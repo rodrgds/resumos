@@ -5,13 +5,58 @@ section: conteudo
 order: 2
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import fasesGcc from './fases-gcc.typ?raw';
+
 Todo o resto da cadeira é C a falar com o núcleo, por isso esta página afina a ferramenta: o que o compilador faz ao teu código, a diferença entre programa e processo, como as bibliotecas encaixam e como a memória se gere sem rede de segurança. É revisão orientada a sistemas, não um curso de C. Se os [apontadores](/cadeiras/p/apontadores-memoria/) ainda tremem, revê-os antes de continuar.
 
 ## Do fonte ao executável
 
-O `gcc` não compila de uma vez: **pré-processa** (expande `#include` e macros), **compila** (traduz C para assembly), **monta** (gera código objeto) e **liga** (junta o teu código objeto com as bibliotecas num executável). Podes ver as fases com `gcc -save-temps`. O erro que o compilador te dá pertence sempre a uma fase: um `#include` errado falha no pré-processamento, um `;` em falta falha na compilação, uma função declarada mas nunca definida falha na ligação com `undefined reference`.
+O `gcc` não compila de uma vez: **pré-processa** (expande `#include` e macros), **compila** (traduz C para assembly), **monta** (gera código objeto) e **liga** (junta o teu código objeto com as bibliotecas num executável).
+
+<Typst
+  source={fasesGcc}
+  format="svg"
+  alt="As cinco fases do gcc em cadeia: ficheiro fonte, pré-processador, compilador, montador, ligador e executável."
+/>
+
+Podes ver as fases com `gcc -save-temps`. O erro que o compilador te dá pertence sempre a uma fase: um `#include` errado falha no pré-processamento, um `;` em falta falha na compilação, uma função declarada mas nunca definida falha na ligação com `undefined reference`.
 
 Um **programa** é o ficheiro executável parado no disco. Um **processo** é o programa em execução, com o seu espaço de memória, descritores e estado de execução. O mesmo programa lançado duas vezes dá dois processos independentes, cada um com a sua memória.
+
+<Tabs id="opcoes-gcc" labels={['Avisos', 'Ver as fases', 'Depurar']}>
+  <div slot="panel-0">
+
+```sh
+gcc -Wall -Wextra programa.c -o programa
+```
+
+Liga os avisos: apanha variáveis por usar, comparações suspeitas e formatos errados no `printf` antes de correres.
+
+  </div>
+  <div slot="panel-1">
+
+```sh
+gcc -save-temps programa.c -o programa
+ls programa.*
+```
+
+Guarda os ficheiros intermédios (`.i` pré-processado, `.s` em assembly, `.o` objeto) para veres cada fase do diagrama.
+
+  </div>
+  <div slot="panel-2">
+
+```sh
+gcc -g programa.c -o programa
+gdb ./programa
+```
+
+Inclui símbolos de depuração para poderes parar em linhas e inspecionar variáveis no `gdb`.
+
+  </div>
+</Tabs>
 
 ## Bibliotecas e APIs
 
@@ -21,7 +66,15 @@ A distinção que interessa: chamar `printf` é chamar uma função de bibliotec
 
 ## Gestão de memória em C
 
-Cada processo vê três zonas principais: o **código** e os dados fixos, a **pilha** (_stack_), que cresce e encolhe com as chamadas de função, e a **área livre** (_heap_), onde o `malloc` reserva blocos do tamanho que pedires e o `free` os devolve. A pilha limpa-se sozinha quando a função retorna; a área livre só se limpa se tu a libertares.
+Cada processo vê três zonas principais: o **código** e os dados fixos, a **pilha** (_stack_), que cresce e encolhe com as chamadas de função, e a **área livre** (_heap_), onde o `malloc` reserva blocos do tamanho que pedires e o `free` os devolve. A pilha limpa-se sozinha quando a função retorna; a área livre só se limpa se tu a libertares. Confirma os tamanhos base no teu ambiente:
+
+<CodePlayground
+  language="c"
+  title="Tamanhos em C"
+  code={'#include <stdio.h>\n\nint main(void) {\n    printf("int: %zu, ponteiro: %zu\\n", sizeof(int), sizeof(void *));\n    return 0;\n}'}
+/>
+
+Isto imprime `int: 4, ponteiro: 8` num Linux de 64 bits. O `sizeof` conta bytes em tempo de compilação: é com ele que se calcula o argumento do `malloc`, como `3 * sizeof(int)` mais abaixo.
 
 O erro clássico é escrever fora do bloco reservado. Este programa pede espaço para 3 inteiros e escreve 4:
 

@@ -5,15 +5,26 @@ section: conteudo
 order: 3
 ---
 
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+import ciclo from './ciclo-processo.dot?raw';
+
 Um processo nasce, corre, pode criar filhos e morre. O sistema operativo gere esse **ciclo de vida** com quatro chamadas de sistema que formam o vocabulário central da cadeira: `fork` para criar, `exec` para trocar de programa, `exit` para terminar e `wait` para recolher. Esta página mostra as quatro a trabalhar juntas.
 
 ## O ciclo de vida
 
-Um processo está sempre num estado: **pronto** (quer correr e espera pelo processador), **a correr** (tem o processador agora), **bloqueado** (espera por algo, como leitura do disco ou um filho terminar) ou **terminado** (acabou e espera que o pai recolha o seu estado). O núcleo move os processos entre estes estados à medida que os eventos acontecem. Quando escreves `ls` na shell, ela cria um processo filho, o filho troca-se pelo programa `ls`, e a shell bloqueia à espera que ele termine.
+Um processo está sempre num estado: **pronto** (quer correr e espera pelo processador), **a correr** (tem o processador agora), **bloqueado** (espera por algo, como leitura do disco ou um filho terminar) ou **terminado** (acabou e espera que o pai recolha o seu estado). O núcleo move os processos entre estes estados à medida que os eventos acontecem.
+
+<Dot
+  source={ciclo}
+  alt="Grafo do ciclo de vida: pronto, a correr, bloqueado, zombie e terminado, com as transições entre eles."
+/>
+
+Segue o grafo da esquerda para a direita: o processo espera em pronto, corre quando é escalonado, bloqueia à espera de eventos e termina com `exit`, ficando zombie até o pai o recolher com `wait`. Quando escreves `ls` na shell, ela cria um processo filho, o filho troca-se pelo programa `ls`, e a shell bloqueia à espera que ele termine.
 
 ## Criar com fork
 
-O `fork` cria um processo filho como cópia do pai: mesmo código, mesmos dados, mesmos descritores abertos. A única diferença inicial é o valor devolvido: o pai recebe o PID do filho e o filho recebe 0. É assim que o programa distingue quem é quem depois da bifurcação:
+O `fork` cria um processo filho como cópia do pai: mesmo código, mesmos dados, mesmos descritores abertos.[^fork] A única diferença inicial é o valor devolvido: o pai recebe o PID do filho e o filho recebe 0. É assim que o programa distingue quem é quem depois da bifurcação:
 
 ```c
 #include <stdio.h>
@@ -59,7 +70,7 @@ Se o `execlp` funcionar, o filho deixa de correr o teu código e passa a correr 
 
 Um processo termina com `exit` (ou retornando do `main`) e deixa um **estado de saída**, o número que a shell guarda em `$?`. Mas terminar não chega: o pai tem de recolher esse estado com `wait`, que bloqueia o pai até um filho terminar e devolve o seu PID. Um filho terminado à espera de recolha chama-se **zombie**: já não corre nem ocupa memória de trabalho, mas ocupa a sua entrada na tabela de processos. Zombies acumulados são lixo do pai distraído, não do sistema.
 
-Junta as quatro peças. O pai cria o filho, o filho troca-se por outro programa, o pai espera e lê o estado:
+Junta as quatro peças, com os dois ramos de erro que um programa a sério não dispensa. O pai cria o filho, o filho troca-se por outro programa, o pai espera e lê o estado. Corre no teu terminal Linux:
 
 ```c
 #include <stdio.h>
@@ -68,19 +79,34 @@ Junta as quatro peças. O pai cria o filho, o filho troca-se por outro programa,
 
 int main(void) {
     pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        return 1;
+    }
     if (pid == 0) {
         execlp("ls", "ls", NULL);
-    } else {
-        int estado;
-        wait(&estado);
-        printf("O filho terminou\n");
+        perror("execlp");
+        _exit(127);
+    }
+    int estado;
+    wait(&estado);
+    if (WIFEXITED(estado)) {
+        printf("O filho terminou com estado %d\n", WEXITSTATUS(estado));
     }
     return 0;
 }
 ```
 
-Sem o `wait`, o pai podia terminar primeiro e o filho ficava **órfão**, adotado pelo processo de arranque. Com o `wait`, a ordem é garantida: a mensagem do pai sai sempre depois da listagem.
+Há três decisões aqui. O `fork` pode falhar (sem memória para outro processo, por exemplo), por isso testa-se o valor negativo. Se o `execlp` falhar, o filho não pode fazer `return`: isso correria o resto do programa duas vezes, uma em cada processo. Usa-se `_exit`, que termina sem correr limpezas do pai. E o pai lê o estado com as macros `WIFEXITED` e `WEXITSTATUS` em vez de interpretar o número bruto, porque a codificação varia. A saída é a listagem do `ls` seguida de `O filho terminou com estado 0`. Sem o `wait`, o pai podia terminar primeiro e o filho ficava **órfão**, adotado pelo processo de arranque. Com o `wait`, a ordem é garantida.
+
+<YouTube id="cex9XrZCU14" title="The fork() function in C" />
+
+## Para saber mais
+
+- O núcleo didático [xv6 do MIT](https://pdos.csail.mit.edu/6.1810/2024/xv6.html) implementa `fork`, `exec` e `wait` num sistema real e pequeno; o [livro do xv6](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf) explica cada chamada processo a processo.
 
 ## Para levar para a próxima página
 
 Criar, trocar, terminar e recolher chegam para gerir um processo de cada vez. Mas há dezenas de processos prontos e um processador: quem corre a seguir decide-se no [escalonamento](escalonamento/).
+
+[^fork]: O manual oficial documenta o que o filho herda do pai, descritores incluídos: `fork(2)` em [man7.org](https://man7.org/linux/man-pages/man2/fork.2.html).

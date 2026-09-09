@@ -5,6 +5,10 @@ section: conteudo
 order: 1
 ---
 
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import arranque from './arranque.typ?raw';
+
 Quando corres um programa, há uma camada entre ele e o hardware que decide quando o processador o executa, que memória pode tocar e como os seus bytes chegam ao disco. Essa camada é o **sistema operativo**: o programa que gere todos os outros. Esta página mostra o que ele faz, como a máquina lá chega e como o vês a trabalhar.
 
 ## O que o sistema operativo faz
@@ -13,11 +17,19 @@ O SO tem duas funções que parecem contraditórias e andam sempre juntas. Como 
 
 Sem o SO, cada programa teria de trazer os seus próprios drivers, o seu próprio escalonador e as suas próprias defesas contra os vizinhos. Com o SO, cada programa vive na ilusão simpática de que tem a máquina só para si, e o núcleo trata de arbitrar a realidade partilhada por baixo.
 
+<YouTube id="26QPDBe-NB8" title="Operating Systems: Crash Course Computer Science #18" />
+
 ## Do botão ao primeiro processo
 
 Carregas no botão e o processador acorda a correr firmware gravado na máquina, que faz testes básicos e localiza o disco de arranque. Aí entra o **carregador** (_bootloader_), que carrega o núcleo (_kernel_) para a memória e lhe passa o controlo. O núcleo inicializa drivers e estruturas internas, monta o sistema de ficheiros raiz e lança o primeiro processo, do qual todos os outros descendem. Só então aparece a janela de login ou a shell: tudo o que vês no ecrã já é um processo a correr por cima do núcleo.
 
-Repara que o hardware sozinho não sabe o que é um ficheiro nem um utilizador. Cada camada do arranque constrói uma abstração que a seguinte usa: firmware encontra setores, bootloader carrega ficheiros, núcleo cria processos, processos servem pessoas.
+<Typst
+  source={arranque}
+  format="svg"
+  alt="Cadeia de arranque: firmware, bootloader, núcleo, primeiro processo e shell, cada camada a servir a seguinte."
+/>
+
+Repara que o hardware sozinho não sabe o que é um ficheiro nem um utilizador. Cada camada do diagrama constrói uma abstração que a seguinte usa: firmware encontra setores, bootloader carrega ficheiros, núcleo cria processos, processos servem pessoas.
 
 ## A shell e as chamadas de sistema
 
@@ -37,14 +49,14 @@ int main(void) {
 }
 ```
 
-Compila e corre com `strace`, que mostra cada chamada de sistema feita pelo processo:
+Compila e corre com `strace`, que mostra cada chamada de sistema feita pelo processo. Este exemplo corre no teu terminal Linux, não no playground da página, porque precisa do núcleo a sério por baixo:
 
 ```sh
 gcc -Wall -Wextra st.c -o st
 strace -e trace=openat,write,close ./st
 ```
 
-Na saída vês algo como `openat(...) = 3`, `write(3, "ola\n", 4) = 4` e `close(3) = 0`. O `openat` devolve o **descritor** `3`, que é o número que identifica o ficheiro aberto dentro do processo (0, 1 e 2 já estão ocupados pela entrada, saída e erro padrão). O `write` confirma que escreveu 4 bytes. O programa em C que escreveste é só um invólucro fino: o trabalho real foi feito pelo núcleo, a pedido, uma chamada de cada vez.
+Na saída vês algo como `openat(...) = 3`, `write(3, "ola\n", 4) = 4` e `close(3) = 0`. O `openat` devolve o **descritor** `3`, que é o número que identifica o ficheiro aberto dentro do processo (0, 1 e 2 já estão ocupados pela entrada, saída e erro padrão). O `write` confirma que escreveu 4 bytes. O programa em C que escreveste é só um invólucro fino: o trabalho real foi feito pelo núcleo, a pedido, uma chamada de cada vez.[^ficha]
 
 :::tip[Como ler o strace]
 Cada linha mostra o nome da chamada, os argumentos e, depois do `=`, o valor devolvido. Um valor negativo (como `-1 ENOENT`) é um erro, e o nome diz qual. Quando um programa com ficheiros falhar sem mensagem clara, corre-o com `strace` e lê a última chamada antes do erro.
@@ -53,3 +65,5 @@ Cada linha mostra o nome da chamada, os argumentos e, depois do `=`, o valor dev
 ## Para levar para a próxima página
 
 O SO gere processos, memória, ficheiros e dispositivos através de chamadas de sistema, e a shell é só mais um programa que as usa. Para pedires esses serviços vais precisar de C ao nível do sistema: compilador, bibliotecas e gestão de memória. É isso que revê o [C avançado](c-avancado/).
+
+[^ficha]: Ficha da unidade curricular de Sistemas Operativos (L.EIC015), ocorrência de 2025/26: [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560100).

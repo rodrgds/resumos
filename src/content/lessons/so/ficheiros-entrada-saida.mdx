@@ -5,6 +5,10 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import caminhoWrite from './caminho-write.typ?raw';
+
 Os processos morrem e a RAM esquece, mas os dados ficam: é o sistema de ficheiros que lhes dá nomes e persistência, e são os drivers que falam com os dispositivos. Esta página mostra como os ficheiros se implementam por baixo e como a entrada e saída chega ao hardware, retomando o [polling, as interrupções e o DMA](/cadeiras/ac/entrada-saida/) do lado do sistema operativo.
 
 ## Ficheiros e a sua implementação
@@ -34,11 +38,51 @@ int main(void) {
 }
 ```
 
-Isto escreve `Li 15 bytes: primeira linha` e deixa o ficheiro com 15 bytes. Confirma com `ls -l nota.txt` (o tamanho) e `stat nota.txt` (os instantes de modificação e o número do inode). O `0644` são as permissões em octal: leitura e escrita para o dono, só leitura para os outros. Cada `open` devolve um descritor novo, por isso as duas fases são independentes: podias fechar o programa entre elas e o ficheiro continuava lá.
+Isto escreve `Li 15 bytes: primeira linha` e deixa o ficheiro com 15 bytes. Confirma com estes comandos depois de correres o programa:
+
+<Tabs id="confirmar-ficheiro" labels={['Tamanho', 'Metadados', 'Bytes']}>
+  <div slot="panel-0">
+
+```sh
+ls -l nota.txt
+```
+
+A quinta coluna mostra `15`: o tamanho em bytes, que bate certo com a contagem do `write`, incluindo o `\n` final.
+
+  </div>
+  <div slot="panel-1">
+
+```sh
+stat nota.txt
+```
+
+Mostra o número do inode, as permissões `0644`, o tamanho e os três instantes: acesso, modificação e mudança de estado.
+
+  </div>
+  <div slot="panel-2">
+
+```sh
+od -c nota.txt
+```
+
+Despeja os bytes um a um: vês `p r i m e i r a`, o espaço, `l i n h a` e o `\n`, quinze no total.
+
+  </div>
+</Tabs>
+
+O `0644` são as permissões em octal: leitura e escrita para o dono, só leitura para os outros. Cada `open` devolve um descritor novo, por isso as duas fases são independentes: podias fechar o programa entre elas e o ficheiro continuava lá.
 
 ## Do pedido ao dispositivo
 
-Entre o `write` e os bits no disco há uma cadeia. O núcleo resolve o caminho até ao inode, verifica permissões, traduz a posição em blocos e entrega o pedido ao **driver** (_device driver_), o módulo que sabe falar com aquele hardware concreto. O driver programa o controlador e espera pela conclusão, que chega por **interrupção**: o dispositivo avisa, o núcleo suspende o que corria, o driver recolhe o resultado e o processo bloqueado acorda. Para grandes transferências o driver usa **DMA**, e o processador só intervém no início e no fim. É a mesma divisão de trabalho do hardware, agora vista de cima: o processo pede, o núcleo gere, o driver traduz, o dispositivo executa.
+Entre o `write` e os bits no disco há uma cadeia. O núcleo resolve o caminho até ao inode, verifica permissões, traduz a posição em blocos e entrega o pedido ao **driver** (_device driver_), o módulo que sabe falar com aquele hardware concreto.
+
+<Typst
+  source={caminhoWrite}
+  format="svg"
+  alt="Caminho do write até ao disco: inode, driver, controlador e interrupção que acorda o processo, com ramo DMA para blocos grandes."
+/>
+
+O driver programa o controlador e espera pela conclusão, que chega por **interrupção**: o dispositivo avisa, o núcleo suspende o que corria, o driver recolhe o resultado e o processo bloqueado acorda. Para grandes transferências o driver usa **DMA**, e o processador só intervém no início e no fim. É a mesma divisão de trabalho do hardware, agora vista de cima: o processo pede, o núcleo gere, o driver traduz, o dispositivo executa.
 
 ## O diretório /dev
 
