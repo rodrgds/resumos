@@ -1,31 +1,66 @@
-# Design
+---
+name: Resumos LEIC FEUP
+description: A course index with distinct course colours and a burgundy FEUP accent.
+colors:
+  primary: '#8c2d3b'
+  page: '#faf9f7'
+  surface: '#ffffff'
+  text: '#292a30'
+  muted: '#68666c'
+  line: '#e5e2df'
+  dark-page: '#1b1b1e'
+  dark-surface: '#242427'
+  dark-text: '#eeedf0'
+  dark-primary: '#eda1ae'
+rounded:
+  control: '8px'
+  card: '12px'
+  search-dialog: '14px'
+  dialog: '16px'
+---
 
-A FEUP course index based on the user's Resumos LEIC reference. Distinct course colours and a burgundy site accent are explicit user choices. Preserve this visual system when adding content.
+## Overview
 
-## Structure
+A FEUP course index based on the user's Resumos LEIC reference. Distinct course colours, plain Portuguese and the real institutional logos define the site. Preserve this system when adding content.
 
-A quiet text header, short introduction with the real FEUP logo, contribution notice and course grid. Years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester has two card columns. The homepage has no course-only search, year filters, extra catalogue heading or hero CTA.
+## Colors
 
-The global search opens from the header and finds courses, lesson text and nuclei. The nuclei directory uses the groups' real logos, with brand-coloured cards. The separate fictional course contains two example lessons.
+Warm off-white and charcoal page themes use burgundy accents, with blue and green alternatives in reading options. Eight opaque course colours keep white labels readable. Elective groups use neutral cards.
 
-## Visual system
+Nucleus cards use their own brand colours. ACM FEUP and IEEE FEUP have white logo areas with original blue artwork and blue lower panels with white text in both themes. Keep logo artwork and proportions unchanged.
 
-Manrope for navigation and headings. Readers can choose Source Serif 4 for content. Warm off-white and charcoal themes. Burgundy accent with blue and green alternatives. Eight opaque course colours keep white labels readable. Larger Lucide icons use 1.7px strokes on course cards. Unpublished elective groups use neutral cards.
+## Typography
 
-Institutional and group logos retain their original artwork and proportions. Their background preserves legibility in both themes. The site has no invented symbol. Fictional-course notices are plain text, not uppercase labels above headings.
+Manrope serves navigation and headings. Readers can choose Source Serif 4 for prose, with a line height of 1.8 and adjustable size. Fictional-course notices are plain text. Code uses a high-contrast theme and scrolls horizontally.
 
-## Behaviour
+## Layout
 
-Appearance, global search and shortcuts use native dialogs. Escape closes them and focus returns to the opener. Preferences apply before the first paint. A small lift marks interactive cards; reduced motion removes animation. Real course cards explain the unpublished state.
+A quiet header, short introduction with the FEUP logo, contribution notice and course grid. The container is 1120px, or 1440px in wide mode. Lessons use an 860px container.
 
-The scratchpad stays beside the page on wide screens and becomes a lower panel below 1000px. It saves locally and offers a text download. Keyboard settings allow remapping, disabling single-key shortcuts and optional spatial hjkl card navigation. Shortcuts leave text entry alone.
+LEIC and MIEIC are plain links above the course grid. MIEIC is a separate five-year archive with options marked on their cards. Years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. The nucleus directory uses two columns on desktop and one on mobile.
 
-Page actions offer copying and a native AI popover. Providers receive the public page context, never scratchpad notes. Local pages and Gemini use a clipboard path with a visible fallback.
+The scratchpad stays beside the page on wide screens and becomes a lower panel below 1000px.
 
-## Reading
+## Elevation & Depth
 
-Lesson content uses a narrow layout and Prose styles. Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG on white figure backgrounds. Code blocks use a high-contrast theme and scroll horizontally when needed. YouTube loads only on request.
+Cards use flat colour. Course hover adds a small lift and a soft shadow (0 8px 14px #00000018). Dialogs use a deeper shadow (0 16px 80px #0003). The AI popover and notes panel use softer shadows (0 8px 30px #0002 and 0 10px 40px #0002). Reduced motion removes animation.
 
-## Content
+## Shapes
 
-Use simple Portuguese. Course names and semester assignments follow the linked SIGARRA 2026/27 plan. State that the project is independent of FEUP and U.Porto. Keep real unpublished courses separate from the fictional examples. Contributions link to the public GitHub guide.
+Controls have gently rounded corners. Cards and the AI popover use larger corners, followed by search and shortcut dialogs, then appearance and course dialogs. Course icons use larger Lucide outlines with 1.7px strokes.
+
+## Components
+
+The header opens global search, notes and appearance. Search finds courses, lessons and nuclei. Native dialogs close with Escape and restore focus to the opener. Preferences apply before the first paint. Real course cards explain their unpublished state.
+
+Lesson pages offer a native AI popover with provider icons. Its links ask the provider to read the public page URL. Gemini uses a copy-prompt fallback. The homepage has no page actions.
+
+The scratchpad saves locally and offers a text download. Keyboard settings support remapping, disabling single-key shortcuts and optional spatial hjkl card navigation. Shortcuts leave text entry alone.
+
+Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG on white figure backgrounds. YouTube loads only on request.
+
+## Do's and Don'ts
+
+Use simple Portuguese, distinct course colours and the real FEUP logo. Keep unpublished real courses separate from the fictional examples. Keep logos legible in both themes.
+
+Do not add a course-only search, year filters, extra catalogue heading, hero CTA or invented logo. Do not copy lesson text or private notes into AI prompts.

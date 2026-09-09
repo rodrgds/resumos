@@ -80,6 +80,7 @@ type Course = {
   color:
     'blue' | 'indigo' | 'red' | 'teal' | 'green' | 'ochre' | 'purple' | 'slate';
   elective?: boolean;
+  optional?: boolean;
 };
 
 export const courses: Course[] = [

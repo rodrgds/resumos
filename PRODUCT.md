@@ -19,3 +19,7 @@ The user's screenshots of resumos.leic.pt define the direction: a colourful cour
 ## Assumptions
 
 Working title: Resumos LEIC, with FEUP as the identifying label. Follow the device theme by default. Public repository: github.com/rodrgds/resumos. Cloudflare Pages publishes pushes to main. Use real institutional and group logos, without a separate invented site logo.
+
+The homepage has no page-copy or AI actions. Lesson AI links ask providers to read the public page URL. The nuclei directory includes NIAEFEUP; ACM FEUP and IEEE FEUP use white logo areas and blue lower panels with white text.
+
+MIEIC has a separate archive page using the complete 2020/21 plan, including named options. The homepage links to it beside LEIC. Useful links include TTS, Uni for Android and Resumos SofiaViP.

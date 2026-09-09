@@ -2,7 +2,9 @@
 
 Apontamentos de LEIC da FEUP, feitos em Astro. [Abrir o site](https://resumos-feup.pages.dev).
 
-A página inicial reúne as cadeiras de 2026/27 por ano e semestre. Ainda não há resumos das cadeiras reais. A [cadeira fictícia de exemplo](https://resumos-feup.pages.dev/exemplo/) mostra os formatos de conteúdo. A página de Núcleos liga à JuniFEUP, ACM FEUP, IEEE FEUP e NCGM.
+A página inicial reúne as cadeiras de 2026/27 por ano e semestre. Ainda não há resumos das cadeiras reais. A [cadeira fictícia de exemplo](https://resumos-feup.pages.dev/exemplo/) mostra os formatos de conteúdo. A página de Núcleos liga ao NIAEFEUP, JuniFEUP, ACM FEUP, IEEE FEUP e NCGM.
+
+Os links úteis incluem o TTS, a app Uni para Android e os Resumos SofiaViP.
 
 ## Correr
 
@@ -51,7 +53,7 @@ As preferências de leitura, os atalhos e o bloco de notas ficam em `localStorag
 
 Por predefinição, `/` pesquisa, `n` abre as notas, `,` abre a aparência, `?` abre os atalhos e `a` abre o menu de IA nas páginas que o têm. Ctrl ou ⌘ K também pesquisa. Os atalhos não atuam em campos de texto. Podes mudar ou desativar as teclas e ativar navegação com `h`, `j`, `k`, `l`.
 
-O menu de IA abre ChatGPT, Claude, Perplexity ou Gemini. Os três primeiros recebem uma pergunta no URL. Gemini usa copiar e abrir. Estes links são convenções das interfaces dos fornecedores, não uma API estável. Há sempre uma pergunta visível para copiar. Em localhost, copia-se o conteúdo público da página, pois os fornecedores não conseguem ler endereços locais. O bloco de notas nunca é incluído. Não há chaves de API.
+O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](https://github.com/fuma-nama/fumadocs/blob/main/packages/base-ui/src/layouts/shared/page-actions.tsx) para ChatGPT e Claude: envia o URL público e uma instrução para ler a página. Perplexity recebe a mesma pergunta. Gemini usa copiar e abrir. Estes links são convenções das interfaces dos fornecedores, não uma API estável. Há uma pergunta visível para copiar se necessário. Em localhost usa-se o endereço público configurado em `astro.config.mjs`. O conteúdo da página e o bloco de notas nunca são copiados ou enviados. Não há chaves de API.
 
 ## Organização
 
@@ -64,6 +66,8 @@ O menu de IA abre ChatGPT, Claude, Perplexity ou Gemini. Os três primeiros rece
 - `src/styles/tools.css`: ferramentas, grupos e leitura.
 
 Os dados curriculares vêm do [plano oficial de 2026/27](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2026&pv_origem=CUR&pv_plano_id=31224&pv_tipo_cur_sigla=), consultado a 9 de setembro de 2026. CT I, II e III são grupos de opções. Projeto UP substitui o nome antigo Projeto FEUP.
+
+O arquivo [MIEIC](/mieic/) inclui as cadeiras obrigatórias e todas as optativas com nome no [plano SIGARRA de 2020/21](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2020&pv_origem=CUR&pv_plano_id=2496&pv_tipo_cur_sigla=MI). A distribuição mostrada põe a Preparação da Dissertação no 1.º semestre e a Dissertação no 2.º; o plano também permite a alternativa inversa.
 
 ## Publicar
 
