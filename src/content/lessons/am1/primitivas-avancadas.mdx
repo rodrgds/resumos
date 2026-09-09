@@ -5,7 +5,17 @@ section: conteudo
 order: 7
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import escolha from './primitivas-escolha.typ?raw';
+
 Esta página trata os integrandos que resistem aos métodos básicos: quocientes de polinómios, potências trigonométricas e raízes. Cada família tem um procedimento sistemático; a competência é reconhecer a família e aplicar o procedimento sem saltar passos.
+
+<Typst
+  source={escolha}
+  format="svg"
+  alt="Diagrama de escolha do método: frações de polinómios pedem decomposição em frações simples, integrandos trigonométricos pedem guardar fator, linearizar ou substituição universal, e raízes pedem substituição pela raiz ou trigonométrica."
+/>
 
 ## Frações racionais
 
@@ -23,9 +33,25 @@ $$
 \int \frac{dx}{x(x-1)^2} = \int \left(\frac{1}{x} - \frac{1}{x-1} + \frac{1}{(x-1)^2}\right)dx = \ln|x| - \ln|x-1| - \frac{1}{x-1} + C.
 $$
 
-Deriva para confirmar: $1/x - 1/(x-1) + 1/(x-1)^2$, que recompõe a fração original. Certo.
+Deriva para confirmar: $1/x - 1/(x-1) + 1/(x-1)^2$, que recompõe a fração original. Certo. Confirma também numericamente que a decomposição reproduz a fração em dois pontos:
 
-Os casos que pedem atenção: raízes múltiplas (cada potência $(x-a)^k$ gera $k$ frações) e fatores quadráticos irredutíveis $x^2 + bx + c$, que geram termos $(Mx+N)/(x^2+bx+c)$ e conduzem a logaritmos e arco tangentes. Por exemplo, $\int \frac{dx}{x^2+1} = \arctan x + C$.
+<CodePlayground
+  language="javascript"
+  title="Confirmar a decomposição em dois pontos"
+  code={'function original(x) {\n  return 1 / (x * (x - 1) ** 2);\n}\nfunction decomposta(x) {\n  return 1 / x - 1 / (x - 1) + 1 / (x - 1) ** 2;\n}\nfor (const x of [2, 3]) {\n  console.log(x, original(x).toFixed(6), decomposta(x).toFixed(6));\n}'}
+/>
+
+As linhas imprimem `2 0.500000 0.500000` e `3 0.083333 0.083333`: original e decomposição coincidem.
+
+Os casos que pedem atenção: raízes múltiplas (cada potência $(x-a)^k$ gera $k$ frações) e fatores quadráticos irredutíveis $x^2 + bx + c$, que geram termos $(Mx+N)/(x^2+bx+c)$ e conduzem a logaritmos e arco tangentes.
+
+Um exemplo completo com quadrático irredutível: $\int \frac{dx}{x^2+4x+5}$. Completa o quadrado: $x^2+4x+5 = (x+2)^2 + 1$. Com $u = x + 2$ e $du = dx$:
+
+$$
+\int \frac{dx}{(x+2)^2+1} = \int \frac{du}{u^2+1} = \arctan u + C = \arctan(x+2) + C.
+$$
+
+Deriva para confirmar: a derivada de $\arctan(x+2)$ é $1/((x+2)^2+1) = 1/(x^2+4x+5)$. Certo. Se o numerador tivesse um termo em $x$, partir-se-ia em duas frações: uma com o numerador proporcional à derivada do denominador (que dá logaritmo) e outra constante (que dá arco tangente).
 
 ## Potências e produtos trigonométricos
 
@@ -41,13 +67,27 @@ Para potências pares, usam-se as fórmulas de linearização, $\cos^2 x = (1 + 
 
 ## Substituição universal
 
-Qualquer função racional de seno e cosseno, $R(\sin x, \cos x)$, reduz-se a uma fração racional com a **substituição universal** $t = \tan(x/2)$:
+Qualquer função racional de seno e cosseno, $R(\sin x, \cos x)$, reduz-se a uma fração racional com a **substituição universal** $t = \tan(x/2)$:[^universal]
 
 $$
 \sin x = \frac{2t}{1+t^2}, \qquad \cos x = \frac{1-t^2}{1+t^2}, \qquad dx = \frac{2\,dt}{1+t^2}.
 $$
 
 É um método garantido, mas produz frações por vezes pesadas; por isso, para potências simples prefere as técnicas da secção anterior e guarda a substituição universal para quocientes trigonométricos sem simetria aproveitável.
+
+Exemplo completo: $\int \frac{dx}{2+\cos x}$. Substituindo,
+
+$$
+\int \frac{2\,dt/(1+t^2)}{2 + (1-t^2)/(1+t^2)} = \int \frac{2\,dt}{2(1+t^2) + 1 - t^2} = \int \frac{2\,dt}{t^2+3}.
+$$
+
+Isto é um arco tangente disfarçado: $\int \frac{2\,dt}{t^2+3} = \frac{2}{\sqrt{3}}\arctan\frac{t}{\sqrt{3}} + C$. Voltando a $t = \tan(x/2)$:
+
+$$
+\int \frac{dx}{2+\cos x} = \frac{2}{\sqrt{3}}\arctan\left(\frac{\tan(x/2)}{\sqrt{3}}\right) + C.
+$$
+
+Derivar para confirmar é penoso à mão, mas a estrutura garante: cada substituição foi equivalência onde $\cos(x/2) \ne 0$.
 
 ## Expressões irracionais
 
@@ -59,9 +99,11 @@ $$
 
 Derivando obténs $1/\sqrt{x} - 1/((1+\sqrt{x})\sqrt{x}) = 1/(1+\sqrt{x})$. Certo. Para raízes de expressões quadráticas surgem as **substituições trigonométricas**: $\sqrt{a^2-x^2}$ pede $x = a\sin t$, $\sqrt{a^2+x^2}$ pede $x = a\tan t$ e $\sqrt{x^2-a^2}$ pede $x = a\sec t$.
 
-:::warning[Escolhe o método pela forma]
+::::warning[Escolhe o método pela forma]
 Substituição e partes primeiro; fração de polinómios, decomposição; potências trigonométricas com expoente ímpar, guardar um fator; potências pares, linearizar; quociente trigonométrico genérico, substituição universal; raízes, substituição pela raiz ou trigonométrica. Classificar antes de calcular poupa a maioria das contas falhadas.
-:::
+::::
+
+[^universal]: As três fórmulas deduzem-se de $\tan(x/2) = t$ com as fórmulas do ângulo duplo: $\sin x = 2t/(1+t^2)$ e $\cos x = (1-t^2)/(1+t^2)$, e $dx = 2\,dt/(1+t^2)$ por derivação de $x = 2\arctan t$.
 
 ## Para onde ir
 
