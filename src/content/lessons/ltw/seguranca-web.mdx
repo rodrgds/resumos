@@ -1,0 +1,146 @@
+---
+title: Segurança web
+description: Injeção SQL, XSS, CSRF, travessia de caminho, HTTPS e guarda de palavras passe, com correção guiada.
+section: conteudo
+order: 6
+---
+
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import csrf from '../../ltw/ataque-csrf.dot?raw';
+
+Todas as páginas que escreveste até aqui confiam no utilizador: mostram o que ele escreve, executam o que ele envia, abrem o ficheiro que ele pede. A segurança web é inverter essa confiança por omissão. Cada ataque desta página explora um sítio onde o programador misturou dados com instruções; cada defesa volta a separá-los. Vê cada par antes e depois com os teus olhos antes de leres a explicação.
+
+<Tabs id="antes-depois" labels={['Injeção SQL', 'XSS no echo', 'CSRF no formulário']}>
+  <div slot="panel-0">
+
+Antes, com o parâmetro colado no SQL:
+
+```php
+$sql = "SELECT nome, preco FROM produtos WHERE nome LIKE '%$termo%'";
+```
+
+Depois, com o marcador a separar dado de instrução:
+
+```php
+$stmt = $db->prepare('SELECT nome, preco FROM produtos WHERE nome LIKE :t');
+$stmt->execute([':t' => '%' . $termo . '%']);
+```
+
+  </div>
+  <div slot="panel-1">
+
+Antes, com a saída crua a executar o que o utilizador escreveu:
+
+```php
+echo '<p>' . $comentario . '</p>';
+```
+
+Depois, com o escape a transformar etiquetas em texto visível:
+
+```php
+echo '<p>' . htmlspecialchars($comentario) . '</p>';
+```
+
+  </div>
+  <div slot="panel-2">
+
+Antes, sem segredo que o atacante desconheça:
+
+```html
+<form method="post">
+  <input type="hidden" name="acao" value="apagar" />
+  <button>Apagar conta</button>
+</form>
+```
+
+Depois, com o token que só a tua página conhece:
+
+```html
+<form method="post">
+  <input type="hidden" name="csrf" value="<?= $_SESSION['csrf'] ?>" />
+  <input type="hidden" name="acao" value="apagar" />
+  <button>Apagar conta</button>
+</form>
+```
+
+  </div>
+</Tabs>
+
+## Injeção SQL: nunca colar entrada no SQL
+
+A página de pesquisa do [PHP](php-dinamicas-bd/) já usa a defesa certa, por isso vê primeiro o ataque contra a versão ingénua. Se o código colar o parâmetro no SQL:
+
+```php
+$sql = "SELECT nome, preco FROM produtos WHERE nome LIKE '%$termo%'";
+```
+
+então pesquisar `' OR '1'='1` transforma a consulta em algo que casa com todas as linhas, e pesquisar com ponto e vírgula pode empilhar comandos destrutivos. A correção é o `prepare` com marcadores, que já usas: o termo viaja como dado e nunca é interpretado como SQL[^pdo]. Regra sem exceções: nenhum `$_GET`, `$_POST` ou cookie entra em texto de SQL. Nem o campo escondido do formulário, nem o nome do ficheiro enviado: tudo o que vem do cliente é entrada.
+
+[^pdo]: Manual do PHP sobre prepared statements com PDO: https://www.php.net/manual/en/pdo.prepared-statements.php.
+
+<YouTube id="_jKylhJtPmI" title="Hacking Websites with SQL Injection" />
+
+## XSS: escapar tudo o que se mostra
+
+O XSS (scripts entre sítios) injeta JavaScript na tua página através de dados que mostras sem escapar[^owasp-xss]. Um comentário com o texto `<script>alert(1)</script>` corre código no navegador de quem o ler, e uma carga a sério rouba a sessão em vez de mostrar um alerta. A defesa no servidor é o `htmlspecialchars` que já usas em cada `echo`, e no cliente é preferir `textContent` a `innerHTML` com dados do utilizador, como na [lista de tarefas](javascript-dom-eventos/).
+
+[^owasp-xss]: OWASP, página sobre XSS com os tipos de ataque e os vetores mais comuns: https://owasp.org/www-community/attacks/xss/.
+
+Experimenta a neutralização: com escape, a carga aparece na página como texto literal `<script>...` visível e inofensivo; sem escape, o navegador executa-a. É a mesma cadeia de caracteres nos dois casos, e só a saída decide se é texto ou código. Por isso a regra se aplica na saída, em todas as páginas, mesmo nas "só de leitura".
+
+## CSRF: confirmar quem mandou o pedido
+
+O CSRF (falsificação de pedido entre sítios) aproveita a sessão aberta: uma página maliciosa faz o navegador da vítima submeter um formulário ao teu sítio, e o servidor obedece porque o cookie da sessão vai junto. Segue as setas: a vítima cai na isca, o navegador junta o cookie ao pedido forjado e o servidor obedece por reconhecer a sessão.
+
+<Dot
+  source={csrf}
+  alt="Ataque CSRF em três passos: o sítio malicioso atrai a vítima com um formulário que se submete sozinho, o navegador da vítima envia o pedido com o cookie da sessão, e a loja obedece por não haver token a confirmar a origem."
+/>
+
+A defesa é um segredo que o atacante não conhece: um token por sessão que cada formulário inclui e o servidor confirma.
+
+```php
+<?php
+session_start();
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+}
+?>
+<form method="post">
+  <input type="hidden" name="csrf" value="<?= $_SESSION['csrf'] ?>">
+  <!-- resto do formulário -->
+</form>
+```
+
+No processamento, compara e recusa tudo o que não bater certo. Sem piedade nem mensagens simpáticas para o atacante: pedido sem token válido morre aqui.
+
+```php
+<?php
+session_start();
+$token = $_POST['csrf'] ?? '';
+if (!hash_equals($_SESSION['csrf'] ?? '', $token)) {
+    http_response_code(403);
+    exit('Pedido recusado.');
+}
+// daqui para a frente, o pedido veio de um formulário teu
+?>
+```
+
+O `hash_equals` compara em tempo constante, sem atalhos que denunciem os primeiros caracteres. A página maliciosa não lê o token, por isso os pedidos forjados falham a comparação. Aplica o token a todas as ações que alteram algo: encomendar, apagar, mudar a palavra passe. Leituras por `GET` não precisam dele, o que é mais uma razão para `GET` nunca alterar nada.
+
+## O resto da lista curta
+
+- **Travessia de caminho**: se o utilizador escolhe um ficheiro, `../../etc/passwd` não pode sair da pasta permitida. Valida o nome contra uma lista ou resolve o caminho e confirma que continua dentro da pasta.
+- **Palavras passe**: guarda resumos com `password_hash` e confirma com `password_verify`, como no [login](php-dinamicas-bd/). Nunca guardes nem registes palavras passe em claro.
+- **HTTPS**: cifra a conversa entre navegador e servidor. Sem ele, palavras passe e sessões viajam legíveis para quem espreitar a rede. Em produção é obrigatório; em desenvolvimento local, assume que tudo o que corre em HTTP é observável.
+
+:::tip[Como rever o teu projeto]
+Percorre esta lista por cada página: alguma entrada chega ao SQL sem `prepare`? Alguma saída chega ao HTML sem escape? Alguma ação por `POST` não confirma o token? Algum ficheiro abre com um nome vindo do utilizador? Quatro perguntas, e cada "sim" é uma correção concreta antes da entrega.
+:::
+
+## Para saber mais
+
+- Página da OWASP sobre XSS, com tipos e vetores de ataque: https://owasp.org/www-community/attacks/xss/.
+- Cheat sheet da OWASP de prevenção de XSS, por contexto de saída: https://cheatsheetseries.owasp.org/cheatsheets/Cross%5FSite%5FScripting%5FPrevention%5FCheat%5FSheet.html.

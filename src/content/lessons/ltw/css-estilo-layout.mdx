@@ -5,6 +5,11 @@ section: conteudo
 order: 2
 ---
 
+import WebPlayground from '../../../components/WebPlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import caixa from '../../ltw/modelo-caixa.dot?raw';
+
 O CSS veste o [esqueleto HTML](html-estrutura/): escolhe que elementos pintar, como se mede cada caixa e como as caixas se dispõem na página. São três mecanismos separados: os seletores dizem onde aplicar, a cascata decide quem ganha em caso de conflito e os modos de layout posicionam as caixas.
 
 ## Seletores e a conta da especificidade
@@ -28,7 +33,14 @@ Escreve os trios lado a lado e compara da esquerda para a direita, como números
 
 ## O modelo de caixa
 
-Cada elemento é uma caixa com quatro camadas, de dentro para fora: conteúdo, enchimento (`padding`), borda (`border`) e margem (`margin`). A largura que declaras cobre por omissão só o conteúdo, e o enchimento e a borda somam-se por fora, o que parte contas de layout. A primeira linha de quase todas as folhas de estilo resolve isto:
+Cada elemento é uma caixa com quatro camadas, de dentro para fora: conteúdo, enchimento (`padding`), borda (`border`) e margem (`margin`). Lê o diagrama de fora para dentro: a margem separa caixas vizinhas e não recebe cor de fundo, a borda é a linha visível, o enchimento respira dentro da borda e o conteúdo é o que declaras na largura.
+
+<Dot
+  source={caixa}
+  alt="Modelo de caixa em quatro camadas encaixadas: por fora a margem, depois a borda, depois o enchimento e no centro o conteúdo."
+/>
+
+A largura que declaras cobre por omissão só o conteúdo, e o enchimento e a borda somam-se por fora, o que parte contas de layout. A primeira linha de quase todas as folhas de estilo resolve isto:
 
 ```css
 * {
@@ -40,7 +52,21 @@ Com `border-box`, a largura declarada inclui conteúdo, enchimento e borda, e o 
 
 ## Dispor cartões com flexbox e grelha
 
-A montra da mercearia é uma fila de cartões que se ajusta ao ecrã. A grelha trata das colunas, e o flexbox do interior de cada cartão:
+A montra da mercearia é uma fila de cartões que se ajusta ao ecrã. Experimenta: muda o `minmax(200px, 1fr)` para `minmax(350px, 1fr)` e prime **Pré-visualizar** para veres a grelha partir para menos colunas.
+
+<WebPlayground
+  html={
+    '<div class="montra">\n  <div class="cartao"><h3>Queijo</h3><p>8,50 €</p><button>Comprar</button></div>\n  <div class="cartao"><h3>Presunto</h3><p>12,00 €</p><button>Comprar</button></div>\n  <div class="cartao"><h3>Azeite</h3><p>6,00 €</p><button>Comprar</button></div>\n</div>'
+  }
+  css={
+    '.montra {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));\n  gap: 1rem;\n}\n.cartao {\n  display: flex;\n  flex-direction: column;\n  border: 1px solid #ccc;\n  padding: 1rem;\n}\n.cartao button {\n  margin-top: auto;\n}'
+  }
+/>
+
+A grelha cria tantas colunas de 200 píxeis quantas couberem e parte para a linha seguinte sozinha. Dentro de cada cartão, a coluna flexível empurra o botão para o fundo com `margin-top: auto`, por isso todos os botões ficam alinhados mesmo quando os nomes dos produtos têm tamanhos diferentes. A mesma montra se fosse só flexbox:
+
+<Tabs id="montra-grelha-flex" labels={['Grelha', 'Flexbox']}>
+  <div slot="panel-0">
 
 ```css
 .montra {
@@ -48,18 +74,30 @@ A montra da mercearia é uma fila de cartões que se ajusta ao ecrã. A grelha t
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
 }
-.cartao {
+```
+
+A grelha decide o número de colunas pela largura disponível. Usa-a para a página e para conjuntos de cartões.
+
+  </div>
+  <div slot="panel-1">
+
+```css
+.montra {
   display: flex;
-  flex-direction: column;
-  border: 1px solid #ccc;
-  padding: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
-.cartao button {
-  margin-top: auto;
+.cartao {
+  flex: 1 1 200px;
 }
 ```
 
-A grelha cria tantas colunas de 200 píxeis quantas couberem e parte para a linha seguinte sozinha. Dentro de cada cartão, a coluna flexível empurra o botão para o fundo com `margin-top: auto`, por isso todos os botões ficam alinhados mesmo quando os nomes dos produtos têm tamanhos diferentes. Regra prática: grelha para a página e para conjuntos de cartões, flexbox para alinhar coisas dentro de uma caixa.
+O flexbox embrulha os cartões e cada um cresce para encher a linha. Usa-o para alinhar coisas dentro de uma caixa, como o botão no fundo do cartão.
+
+  </div>
+</Tabs>
+
+Regra prática: grelha para a página e para conjuntos de cartões, flexbox para alinhar coisas dentro de uma caixa.
 
 ## Desenho responsivo com media queries
 
@@ -81,3 +119,7 @@ Testa com as ferramentas de desenvolvimento do navegador, que simulam larguras d
 :::details[Ver o raciocínio do mobile first]
 Começa com uma coluna e sem floreados: tudo o que é essencial aparece. Depois, para ecrãs com pelo menos 600 píxeis, liga a grelha de cartões; para ecrãs grandes, alarga o conteúdo com uma largura máxima centrada. Cada media query acrescenta, nenhuma remenda. Se um elemento só faz sentido no computador, pergunta se faz sentido de todo.
 :::
+
+## Para saber mais
+
+- Guia de flexbox da MDN, com conceitos e casos de uso: https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Flexible_box_layout.
