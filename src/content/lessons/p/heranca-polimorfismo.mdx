@@ -5,6 +5,11 @@ section: conteudo
 order: 4
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import slicing from '../../p/slicing.typ?raw';
+
 Quando duas [classes](/cadeiras/p/classes-objetos/) partilham dados e comportamento, copiar os membros de uma para a outra duplica código e espalha cada correção por vários sítios. A **herança** resolve isto: uma classe **derivada** herda os membros de uma classe **base** e acrescenta ou especializa o que precisa. O **polimorfismo** vai um passo além: trata objetos de classes diferentes através da mesma interface, e cada objeto responde à sua maneira.
 
 ## Herdar de uma classe base
@@ -127,6 +132,13 @@ int main() {
 
 Isto escreve `9`. Tentar declarar `Forma f;` nem compilava: uma forma genérica não tem área calculável, por isso a linguagem impede que exista. Cada forma concreta (quadrado, círculo, triângulo) implementa o seu `area`, e o código que usa formas fala só com a interface `Forma`. É o padrão do exemplo completo abaixo.
 
+<Dot
+  source={
+    'digraph Formas { rankdir=TB; Forma [shape=box, label="Forma (abstrata)\\narea() = 0"]; Quadrado [shape=box, label="Quadrado\\narea() override"]; Circulo [shape=box, label="Circulo\\narea() override"]; Forma -> Quadrado; Forma -> Circulo; }'
+  }
+  alt="Hierarquia de classes: Forma abstrata com o método virtual puro area, da qual derivam Quadrado e Circulo, cada uma com a sua implementação."
+/>
+
 ## A armadilha do slicing
 
 Guardar um objeto derivado numa variável do tipo base **corta** a parte derivada: chama-se **slicing** (fatiamento). A variável base só tem espaço para a parte base, e o resto perde-se, incluindo o comportamento polimórfico:
@@ -156,6 +168,12 @@ int main() {
 
 Isto escreve `base` e depois `derivada`. A `copia` sofreu slicing: é um `Base` genuíno construído a partir da parte `Base` de `d`, por isso responde `base`. A referência `ref` aponta para o objeto completo, por isso o `virtual` escolhe `derivada`. A regra prática: polimorfismo usa-se com referências ou apontadores, nunca com objetos por valor. É também por isto que contentores de objetos polimórficos guardam apontadores (de preferência smart pointers, como viste nos [apontadores](/cadeiras/p/apontadores-memoria/)).
 
+<Typst
+  source={slicing}
+  format="svg"
+  alt="A cópia por valor guarda só a parte Base e corta o resto; a referência aponta ao objeto Derivada completo e vê tudo."
+/>
+
 ## A regra do destrutor virtual
 
 Se uma classe tem pelo menos uma função virtual, o destrutor também deve ser virtual. Quando apagas um objeto derivado através de um apontador para a base, só o destrutor virtual garante que corre o destrutor da derivada antes do da base:
@@ -183,45 +201,14 @@ Isto escreve `limpa derivada` e depois `limpa base`. Sem o `virtual`, só correr
 
 ## Exemplo completo: áreas de formas
 
-Vamos juntar classe abstrata, duas derivadas e uma função que trata ambas pela interface comum. A área do círculo é $pi r^2$; usamos $3.1416$ como valor de $pi$.
+Vamos juntar classe abstrata, duas derivadas e uma função que trata ambas pela interface comum. A área do círculo é $pi r^2$; usamos $3.1416$ como valor de $pi$. Corre o programa:
 
-```cpp
-#include <iostream>
-
-class Forma {
-public:
-    virtual ~Forma() = default;
-    virtual double area() const = 0;
-};
-
-class Quadrado : public Forma {
-public:
-    Quadrado(double l) : lado(l) {}
-    double area() const override { return lado * lado; }
-
-private:
-    double lado;
-};
-
-class Circulo : public Forma {
-public:
-    Circulo(double r) : raio(r) {}
-    double area() const override { return 3.1416 * raio * raio; }
-
-private:
-    double raio;
-};
-
-void mostrar_area(const Forma& f) {
-    std::cout << "Area: " << f.area() << "\n";
-}
-
-int main() {
-    Quadrado q(3.0);
-    Circulo c(1.0);
-    mostrar_area(q);
-    mostrar_area(c);
-}
-```
+<CodePlayground
+  language="cpp"
+  title="Áreas por polimorfismo"
+  code={
+    '#include <iostream>\n\nclass Forma {\npublic:\n    virtual ~Forma() = default;\n    virtual double area() const = 0;\n};\n\nclass Quadrado : public Forma {\npublic:\n    Quadrado(double l) : lado(l) {}\n    double area() const override { return lado * lado; }\n\nprivate:\n    double lado;\n};\n\nclass Circulo : public Forma {\npublic:\n    Circulo(double r) : raio(r) {}\n    double area() const override { return 3.1416 * raio * raio; }\n\nprivate:\n    double raio;\n};\n\nvoid mostrar_area(const Forma& f) {\n    std::cout << "Area: " << f.area() << "\\n";\n}\n\nint main() {\n    Quadrado q(3.0);\n    Circulo c(1.0);\n    mostrar_area(q);\n    mostrar_area(c);\n}'
+  }
+/>
 
 Isto escreve `Area: 9` e `Area: 3.1416`. A mesma função `mostrar_area` calcula áreas de formas diferentes sem saber quais: recebe referências para a base (sem slicing) e o `virtual` escolhe a fórmula certa em cada chamada. Confere o círculo: $3.1416 times 1^2 = 3.1416$. Se acrescentares um `Triangulo` amanhã, esta função continua igual: esse é o ganho do polimorfismo, código novo sem mexer no código que já funciona.
