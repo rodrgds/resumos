@@ -87,7 +87,6 @@ export function setupSelection(
         onSelect(anchor, action);
       });
   }
-  document.querySelector('#dismiss-selection')!.addEventListener('click', hide);
   document.addEventListener('keydown', (event) => {
     if (toolbar.hidden) return;
     if (event.key === 'Escape') {

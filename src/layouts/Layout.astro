@@ -5,12 +5,14 @@ import '../styles/global.css';
 import '../styles/tools.css';
 import '../styles/notebook.css';
 import '../styles/fonts.css';
+import '../styles/code.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import StudyTools from '../components/StudyTools.astro';
 import preferences from '../scripts/preferences.ts?raw';
 import { build } from 'esbuild';
 import { resolve } from 'node:path';
+import { getReadingPages } from '../lib/reading-pages';
 interface Props {
   title?: string;
   description?: string;
@@ -20,6 +22,8 @@ const {
   description = 'Um lugar para os apontamentos de LEIC da FEUP. Encontra as cadeiras por ano e semestre e ajuda a construir os primeiros resumos.',
 } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
+const readingPages =
+  Astro.url.pathname === '/' ? await getReadingPages() : undefined;
 const bundled = await build({
   stdin: {
     contents: preferences,
@@ -32,6 +36,17 @@ const bundled = await build({
   platform: 'browser',
 });
 const code = bundled.outputFiles[0].text;
+const snippets = await build({
+  stdin: {
+    contents:
+      "import { applySnippets } from './css-snippets'; applySnippets();",
+    resolveDir: resolve('src/lib'),
+  },
+  bundle: true,
+  write: false,
+  minify: true,
+  platform: 'browser',
+});
 ---
 
 <!doctype html>
@@ -60,9 +75,19 @@ const code = bundled.outputFiles[0].text;
       }
     />
     <title>{title}</title>
+    {readingPages && (
+      <script
+        is:inline
+        type="application/json"
+        id="reading-pages"
+        set:html={JSON.stringify(readingPages).replaceAll('<', '\\u003c')}
+      ></script>
+    )}
     <script is:inline set:html={code}></script>
   </head>
   <body>
+    <!-- After Astro's head styles, before any visible content. -->
+    <script is:inline set:html={snippets.outputFiles[0].text}></script>
     <a class="skip-link" href="#conteudo">
       Saltar para o conteúdo
     </a>

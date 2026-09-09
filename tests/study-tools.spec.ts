@@ -34,8 +34,7 @@ test('shortcuts can be remapped, reject conflicts and survive reload', async ({
   // button opens the detail dialog instead of navigating.
   for (let i = 0; i < 12; i++) {
     if (
-      (await page.locator(':focus').getAttribute('aria-haspopup')) ===
-      'dialog'
+      (await page.locator(':focus').getAttribute('aria-haspopup')) === 'dialog'
     )
       break;
     await page.keyboard.press('j');
@@ -101,9 +100,7 @@ test('mock course renders diagrams and only loads YouTube on request', async ({
   page,
 }) => {
   await page.goto('/');
-  await page
-    .getByRole('link', { name: 'cadeira de exemplo', exact: true })
-    .click();
+  await page.getByRole('link', { name: 'Quero ajudar', exact: true }).click();
   await page
     .locator('.prose')
     .getByRole('link', { name: 'Gráficos e diagramas', exact: true })

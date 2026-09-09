@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-for (const palette of ['feup', 'gruvbox', 'catppuccin', 'nord', 'dracula']) {
+for (const palette of [
+  'feup',
+  'gruvbox',
+  'catppuccin',
+  'nord',
+  'dracula',
+  'flexoki',
+  'solarized',
+]) {
   for (const appearance of ['light', 'dark'] as const) {
     test(`selected code stays readable on every line in ${palette} ${appearance}`, async ({
       page,

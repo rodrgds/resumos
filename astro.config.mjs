@@ -8,6 +8,7 @@ import remarkContainers from './src/lib/remark-containers.mjs';
 import remarkMath from 'remark-math';
 import rehypeDisclosures from './src/lib/rehype-disclosures.mjs';
 import rehypeKatex from 'rehype-katex';
+import { createCssVariablesTheme } from 'shiki';
 
 const content = {
   remarkPlugins: [remarkMath, remarkDirective, remarkContainers],
@@ -46,7 +47,9 @@ export default defineConfig({
   ],
   markdown: {
     processor: unified(content),
-    shikiConfig: { theme: 'github-dark-high-contrast' },
+    shikiConfig: {
+      theme: createCssVariablesTheme({ variablePrefix: '--code-' }),
+    },
   },
   devToolbar: { enabled: false },
 });

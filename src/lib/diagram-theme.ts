@@ -17,6 +17,13 @@ const colors: Record<string, string> = {
 export function themeDiagram(svg: string) {
   const fragment = parseFragment(svg);
   function visit(node: (typeof fragment.childNodes)[number]) {
+    // SVG defaults to black when no ancestor declares a fill, including DOT labels.
+    if (
+      'tagName' in node &&
+      node.tagName === 'svg' &&
+      !node.attrs.some((attr) => attr.name === 'fill')
+    )
+      node.attrs.push({ name: 'fill', value: 'var(--text)' });
     if ('attrs' in node)
       for (const attribute of node.attrs) {
         if (attribute.name !== 'fill' && attribute.name !== 'stroke') continue;

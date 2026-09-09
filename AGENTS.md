@@ -28,3 +28,7 @@
 
 - RISC-V uses one RARS instance per disposable Worker. Keep `new Worker(new URL(..., import.meta.url))` static so Vite bundles each runtime. Markdown disclosure icons come from the same Heroicons package through `rehype-disclosures.mjs`.
 - Give each parallel content lane its own branch and Worktrunk-managed worktree. After `wt switch --create`, verify each worktree's HEAD with `git -C <path> rev-parse --abbrev-ref HEAD` before spawning agents. One branch per checkout, never shared. Lane agents assert HEAD and a clean tree at start (prefixing git commands with `git -C <worktree>`) and stop and report on mismatch instead of repairing refs.
+
+- CSS snippets are local-only. Preserve the customization selectors documented in README and the `?sem-css=1` recovery path. Apply snippets after generated styles but before visible content; insert CSS as text, never HTML.
+- Static and runnable code share `--code-*` tokens and `--code-font`. Keep the shared Shiki configuration in `markdown.shikiConfig` so Markdown and MDX follow the selected palette.
+- Homepage introduction visibility follows valid reading history, applied before paint and refreshed when history is cleared. Pinned semesters duplicate course cards at the top; original fragment IDs belong only to the catalogue.

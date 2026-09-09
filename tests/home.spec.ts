@@ -52,28 +52,40 @@ test('unpublished courses explain their status and restore focus', async ({
   await expect(card).toBeFocused();
 });
 
-test('semester pins stick and survive reload', async ({ page }) => {
-  const pin = page.locator('.semester-pin').first();
-  const section = page.locator('.semester').first();
-  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+test('semester pins add horizontal cards at the top and survive reload', async ({
+  page,
+}) => {
+  const original = page.locator('#cadeiras .semester').first();
+  const pin = original.locator('.semester-pin');
   await pin.click();
+  const pinned = page.locator('[data-pinned-semesters]');
+  await expect(pinned).toBeVisible();
+  await expect(original).toBeVisible();
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
-  await expect(section).toHaveAttribute('data-pinned', 'true');
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+  const card = pinned.locator('[data-course]').first();
+  const bounds = (await card.boundingBox())!;
+  expect(bounds.width).toBeGreaterThan(bounds.height);
   await page.reload();
-  await expect(page.locator('.semester-pin').first()).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
-  await expect(page.locator('.semester').first()).toHaveAttribute(
-    'data-pinned',
-    'true',
-  );
+  await expect(pinned).toBeVisible();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await pinned.locator('[data-acronym="PUP"]').click();
+  await expect(page.locator('#course-detail')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(pinned.locator('[data-acronym="PUP"]')).toBeFocused();
+  await pinned.locator('.semester-pin').click();
+  await expect(pinned).toBeHidden();
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  await page.reload();
+  await expect(pinned).toBeHidden();
 });
 
-test('returning visitors skip the hero', async ({ page }) => {
+test('visiting the catalogue alone keeps the introduction visible', async ({
+  page,
+}) => {
   await expect(page.locator('#page-hero')).toBeVisible();
   await page.reload();
-  await expect(page.locator('#page-hero')).toBeHidden();
+  await expect(page.locator('#page-hero')).toBeVisible();
 });
 
 test('appearance persists, follows system, and resets', async ({ page }) => {
