@@ -17,6 +17,8 @@
 
 - Annotations are local-only and restricted to `[data-annotatable]` lesson content. Keep storage in `src/lib/annotations.ts` and passage anchoring in `src/lib/text-anchors.ts`. Preserve legacy `resumos-notes` data. Missing or ambiguous passages retain their notes without highlighting unrelated text.
 
-- Executable examples use `CodePlayground` and Runno in disposable Workers. Java lives in `runners/` on the separate `resumos-code.pages.dev` origin. Never host reading pages or notes there; see README before changing execution or isolation.
+- Executable examples use `CodePlayground` and disposable Workers. Java, Haskell, Prolog and PHP use the separate `resumos-code.pages.dev` origin; build it with `npm run build:runners`. Never host reading pages or notes there; see README before changing execution or isolation.
 - `markdown-export.mjs` generates public Markdown from built pages, never raw content directories or browser storage. Keep drafts and local notes private.
 - Add tests only for meaningful user-visible regressions or execution/privacy boundaries. Avoid assertions that freeze incidental copy, count markup, or mirror implementation.
+
+- Use Heroicons through `Icon.astro` for interface and course icons. Preserve official brand logos. Do not use Unicode glyphs as icons or add footers to executable code blocks.

@@ -76,7 +76,8 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
     };
     send({ type: 'status', text: 'A carregar o motor…' });
     if (language === 'python') fs = await filesystem('python-3.11.3.tar.gz');
-    if (language === 'cpp') fs = await filesystem('clang-fs.tar.gz');
+    if (language === 'cpp' || language === 'c')
+      fs = await filesystem('clang-fs.tar.gz');
     const date = new Date();
     fs['/program'] = {
       path: '/program',
@@ -85,7 +86,7 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
       timestamps: { access: date, modification: date, change: date },
     };
     let exitCode: number;
-    if (language === 'cpp') {
+    if (language === 'cpp' || language === 'c') {
       send({ type: 'status', text: 'A compilar…' });
       exitCode = await run('clang.wasm', [
         'clang',
@@ -106,11 +107,11 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
         '-fmessage-length',
         '80',
         '-O2',
-        '-std=c++17',
+        language === 'c' ? '-std=c17' : '-std=c++17',
         '-o',
         '/program.o',
         '-x',
-        'c++',
+        language === 'c' ? 'c' : 'c++',
         '/program',
       ]);
       if (exitCode === 0)
@@ -145,8 +146,9 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
         javascript: ['wasmedge_quickjs.wasm', ['quickjs', '/program']],
         sql: ['sqlite.wasm', ['sqlite', '-batch', '-cmd', '.read /program']],
       } as const;
-      if (language === 'java') throw new Error('Java usa o motor CheerpJ.');
-      const [binary, args] = commands[language];
+      if (!(language in commands))
+        throw new Error('Esta linguagem usa um motor isolado.');
+      const [binary, args] = commands[language as keyof typeof commands];
       exitCode = await run(binary, [...args]);
     }
     send({ type: 'done', exitCode });

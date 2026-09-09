@@ -128,7 +128,7 @@ O pull request deve dizer o que acrescentaste ou corrigiste. Uma alteração peq
 
 ## Código que o leitor pode executar
 
-Em MDX, usa `CodePlayground` para Python, JavaScript, SQL, C++ ou Java:
+Em MDX, usa `CodePlayground` para os exemplos das linguagens abaixo:
 
 ```mdx
 import CodePlayground from '../../../components/CodePlayground.astro';
@@ -142,7 +142,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 />
 ```
 
-`language` aceita `python`, `javascript`, `sql`, `cpp` ou `java`. `code` é o programa completo; `input` fornece a entrada padrão e `title` muda o título do bloco. Java precisa da classe `Main`, sem declaração de pacote. Os exemplos usam Python 3.11, C++17, Java 8, QuickJS e SQLite. Não dependas de pacotes externos, rede ou ficheiros do computador do leitor. Cada execução começa de novo. Os motores só são descarregados ao executar.
+`language` aceita `python`, `c`, `cpp`, `java`, `javascript`, `sql`, `haskell`, `prolog` ou `php`. `code` é o programa completo; `input` fornece a entrada padrão, ou o corpo HTTP acessível por `php://input` em PHP e `title` muda o título do bloco. Java precisa da classe `Main`, sem declaração de pacote. Haskell precisa de `main` e não suporta entrada interativa; GHC requer WebAssembly JSPI, disponível nas versões recentes de Chrome e Edge. Prolog executa o predicado `main/0` com SWI-Prolog, não SICStus. Os exemplos usam Python 3.11, C17, C++17, Java 8, QuickJS, SQLite, GHC 9.14 e PHP 8.4. Não dependas de pacotes externos, rede ou ficheiros do computador do leitor. Cada execução começa de novo. Os motores só são descarregados ao executar.
 
 Para HTML, CSS e JavaScript com DOM, usa `WebPlayground`. A pré-visualização não tem acesso às notas nem à rede:
 
@@ -152,7 +152,9 @@ import WebPlayground from '../../../components/WebPlayground.astro';
 <WebPlayground html={'<h1>Olá!</h1>'} css={'h1 { color: teal; }'} js={''} />
 ```
 
-Consulta [os exemplos](https://resumos.rgo.pt/exemplo/codigo/). Testa o resultado com entradas conhecidas antes de publicar. Para testar Java localmente, serve a pasta `runners` noutra origem: `python3 -m http.server 4324 --bind 127.0.0.1 --directory runners`. Essa porta é exclusiva do motor e não deve servir o site.
+Consulta [os exemplos](https://resumos.rgo.pt/exemplo/codigo/). Testa o resultado com entradas conhecidas antes de publicar. Para testar os motores isolados localmente, executa `npm run build:runners` e serve o resultado noutra origem: `python3 -m http.server 4324 --bind 127.0.0.1 --directory runners/dist`. Essa porta é exclusiva do motor e não deve servir o site.
+
+Para Dart/Flutter e RISC-V, usa `<ToolEmbed tool="dartpad" />` ou `<ToolEmbed tool="ripes" />`, importando `components/ToolEmbed.astro`. DartPad também aceita `gist="ID"` para carregar um exemplo público. Estes serviços só carregam depois de o leitor escolher abrir o editor. O DartPad usa compilação externa. Consulta [linguagens e limites](docs/linguagens.md) antes de preparar conteúdo para uma cadeira.
 
 ## Leitura e versões Markdown
 

@@ -87,7 +87,7 @@ O workflow GitHub Actions verifica formatação, tipos, testes de navegador e bu
 
 ## Créditos
 
-Oito fontes de leitura alojadas localmente: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata e IBM Plex Mono. O navegador descarrega a fonte escolhida. Ícones Lucide. [Fontes dos logótipos](public/logos/README.md). A ilustração dos pontos foi criada para este projeto.
+Oito fontes de leitura alojadas localmente: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata e IBM Plex Mono. O navegador descarrega a fonte escolhida. Ícones [Heroicons](https://heroicons.com/) via `Icon.astro` e `@iconify-json/heroicons`, sem JavaScript no navegador. [Fontes dos logótipos](public/logos/README.md). A ilustração dos pontos foi criada para este projeto.
 
 Inspirado nos [Resumos LEIC do Técnico](https://resumos.leic.pt/), com código novo. O site é independente da FEUP e da U.Porto. `data/` e `_data/` são referências locais, ignoradas pelo Git, TypeScript e formatação.
 
@@ -95,10 +95,10 @@ Inspirado nos [Resumos LEIC do Técnico](https://resumos.leic.pt/), com código 
 
 A aparência inclui FEUP e adaptações das paletas [Gruvbox](https://github.com/morhetz/gruvbox), [Catppuccin](https://github.com/catppuccin/catppuccin), [Nord](https://www.nordtheme.com/docs/colors-and-palettes) e [Dracula / Alucard](https://github.com/dracula/dracula-theme). `src/data/reading-themes.ts` define as variantes claras e escuras. As larguras da página e do texto têm controlos separados.
 
-Os exemplos usam [CodeMirror](https://codemirror.net/) e [Runno WASI](https://github.com/taybenlor/runno). Um Worker por execução recebe apenas código e entrada padrão, sem acesso ao DOM ou ao armazenamento das notas. Parar termina o Worker. Os binários do Runno incluem Python 3.11.3, Clang 8 para C++17, QuickJS e SQLite. Java usa CheerpJ 4.3 com Java 8 e Eclipse JDT 3.26. Os downloads iniciais podem demorar; existe um limite de dois minutos por execução e 32 mil caracteres de saída.
+Os exemplos usam [CodeMirror](https://codemirror.net/) e [Runno WASI](https://github.com/taybenlor/runno). Um Worker por execução recebe apenas código e entrada padrão, sem acesso ao DOM ou ao armazenamento das notas. Parar termina o Worker. Os binários do Runno incluem Python 3.11.3, Clang 8 para C17 e C++17, QuickJS e SQLite. Java usa CheerpJ 4.3 com Java 8 e Eclipse JDT 3.26. Haskell usa o GHC in Browser 9.14 de haskell-wasm, Prolog usa SWI-Prolog 8.1.2 (pacote WASM) e PHP 8.4 usa os pacotes oficiais do WordPress Playground. Os downloads iniciais podem demorar; existe um limite de dois minutos por execução e 32 mil caracteres de saída.
 
-Java precisa de uma origem própria porque a JVM usa armazenamento do navegador. O projeto Cloudflare Pages `resumos-code` publica apenas `runners/`, em `resumos-code.pages.dev`, a partir do mesmo repositório. Nunca sirvas as páginas de leitura nessa origem. Para desenvolvimento, serve `runners/` em `127.0.0.1:4324`; o site pode continuar em `localhost:4321`. Os avisos e as fontes das licenças estão em [runners/NOTICE.md](runners/NOTICE.md).
+Os motores com acesso a JavaScript ou armazenamento precisam de uma origem própria para proteger as notas. O projeto Cloudflare Pages `resumos-code` executa `npm ci && npm run build:runners` na raiz e publica apenas `runners/dist/`, em `resumos-code.pages.dev`, a partir do mesmo repositório. Nunca sirvas as páginas de leitura nessa origem. Para desenvolvimento, executa `npm run build:runners` e serve `runners/dist/` em `127.0.0.1:4324`; o site pode continuar em `localhost:4321`. Os avisos e as fontes das licenças estão em [runners/NOTICE.md](runners/NOTICE.md).
 
-`WebPlayground` usa um iframe com origem opaca e uma política que bloqueia a rede. Os exemplos executáveis são opcionais por página. O site continua estático, sem servidor de execução nem chaves de API.
+`WebPlayground` usa um iframe com origem opaca e uma política que bloqueia a rede. Os exemplos executáveis são opcionais por página. O site continua estático. `ToolEmbed` carrega DartPad ou Ripes apenas por escolha do leitor. DartPad compila no serviço externo da Google; Ripes simula RISC-V no navegador. [Linguagens e limites por cadeira](docs/linguagens.md).
 
 `src/lib/markdown-export.mjs` gera os ficheiros públicos `.md`, os SVG de referência e `/llms.txt` após o build. O botão "Perguntar ao Chat" inclui a versão Markdown para facilitar a leitura por assistentes.

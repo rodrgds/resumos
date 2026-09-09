@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt">
+  <meta charset="utf-8" /><meta name="robots" content="noindex" /><title>
+    Executor
+  </title>
+  <script type="module">
+    let worker;
+    window.addEventListener('message', (event) => {
+      if (worker || event.source !== parent || !event.ports[0]) return;
+      if (
+        !['https://resumos.rgo.pt', 'https://resumos-feup.pages.dev'].includes(
+          event.origin,
+        ) &&
+        !/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(event.origin)
+      )
+        return;
+      const { language, code, input } = event.data || {};
+      if (
+        !['haskell', 'prolog', 'php'].includes(language) ||
+        typeof code !== 'string' ||
+        typeof input !== 'string'
+      )
+        return;
+      const port = event.ports[0];
+      worker = new Worker(
+        `./${language}.worker.js`,
+        language === 'prolog' ? {} : { type: 'module' },
+      );
+      worker.onmessage = ({ data }) => port.postMessage(data);
+      worker.onerror = () =>
+        port.postMessage({
+          type: 'error',
+          text: 'Não foi possível carregar o motor. Verifica a ligação e tenta novamente.',
+        });
+      worker.postMessage({ code, input });
+    });
+    window.addEventListener('pagehide', () => worker?.terminate());
+  </script>
+</html>

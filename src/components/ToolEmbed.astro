@@ -1,0 +1,60 @@
+---
+import Icon from './Icon.astro';
+import '../styles/playground.css';
+interface Props {
+  tool: 'dartpad' | 'ripes';
+  gist?: string;
+}
+const { tool, gist } = Astro.props;
+const name = tool === 'dartpad' ? 'DartPad' : 'Ripes';
+const url = new URL(
+  tool === 'dartpad' ? 'https://dartpad.dev/' : 'https://ripes.dk/',
+);
+if (tool === 'dartpad' && gist) url.searchParams.set('id', gist);
+---
+
+<section
+  class="tool-embed"
+  data-tool-embed
+  data-url={url.href}
+  data-name={name}
+  data-annotation-ignore
+  data-pagefind-ignore
+>
+  <div class="playground-toolbar">
+    <strong>{tool === 'dartpad' ? 'Dart e Flutter' : 'Assembly RISC-V'}</strong>
+    <a href={url.href} target="_blank" rel="noreferrer">
+      Abrir {name}
+      <Icon name="arrow-top-right-on-square" size={16} />
+    </a>
+  </div>
+  <div class="tool-start">
+    <p>
+      {tool === 'dartpad'
+        ? 'O DartPad envia o código para o serviço de compilação da Google.'
+        : 'O Ripes simula o processador no navegador. Usa um ecrã largo para veres os registos e as instruções.'}
+    </p>
+    <button type="button" data-load-tool>
+      <Icon name="play" size={16} /> Carregar {name}
+    </button>
+  </div>
+</section>
+<script>
+  document
+    .querySelectorAll<HTMLElement>('[data-tool-embed]')
+    .forEach((root) => {
+      root.querySelector<HTMLButtonElement>('[data-load-tool]')!.onclick =
+        () => {
+          const frame = document.createElement('iframe');
+          frame.title = root.dataset.name!;
+          frame.src = root.dataset.url!;
+          frame.referrerPolicy = 'no-referrer';
+          frame.sandbox.add(
+            'allow-scripts',
+            'allow-same-origin',
+            'allow-downloads',
+          );
+          root.querySelector('.tool-start')!.replaceWith(frame);
+        };
+    });
+</script>

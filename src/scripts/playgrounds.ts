@@ -1,4 +1,5 @@
-import { basicSetup, EditorView } from 'codemirror';
+import { EditorView } from '@codemirror/view';
+import { editorSetup } from '../lib/editor-setup';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { keymap } from '@codemirror/view';
@@ -6,15 +7,28 @@ import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
 import { sql } from '@codemirror/lang-sql';
 import { cpp } from '@codemirror/lang-cpp';
+import { StreamLanguage } from '@codemirror/language';
+import { haskell } from '@codemirror/legacy-modes/mode/haskell';
+import { php } from '@codemirror/lang-php';
 import { java } from '@codemirror/lang-java';
 import {
   OUTPUT_LIMIT,
   type Language,
   type RunMessage,
 } from '../lib/runners/types';
-import { runJava } from '../lib/runners/java';
+import { runIsolated } from '../lib/runners/isolated';
 
-const languages = { python, javascript, sql, cpp, java };
+const languages = {
+  python,
+  javascript,
+  sql,
+  cpp,
+  java,
+  c: cpp,
+  haskell: () => StreamLanguage.define(haskell),
+  prolog: () => [],
+  php,
+};
 const MAX_RUN_MS = 120_000;
 export function setupPlaygrounds() {
   document
@@ -67,9 +81,12 @@ export function setupPlaygrounds() {
         const request = {
           language,
           code: editor.state.doc.toString(),
-          input: root.querySelector<HTMLTextAreaElement>('[data-stdin]')!.value,
+          input:
+            root.querySelector<HTMLTextAreaElement>('[data-stdin]')?.value ||
+            '',
         };
-        if (language === 'java') cancel = runJava(request, receive, root);
+        if (['java', 'haskell', 'prolog', 'php'].includes(language))
+          cancel = runIsolated(request, receive, root);
         else {
           const worker = new Worker(
             new URL('./runners/wasi.worker.ts', import.meta.url),
@@ -92,7 +109,7 @@ export function setupPlaygrounds() {
         doc: original,
         parent: root.querySelector('[data-editor]')!,
         extensions: [
-          basicSetup,
+          editorSetup(root),
           languages[language](),
           EditorView.lineWrapping,
           syntaxHighlighting(
