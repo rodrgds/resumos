@@ -102,3 +102,7 @@ Os motores com acesso a JavaScript ou armazenamento precisam de uma origem próp
 `WebPlayground` usa um iframe com origem opaca e uma política que bloqueia a rede. Os exemplos executáveis são opcionais por página. O site continua estático. `ToolEmbed` carrega DartPad ou Ripes apenas por escolha do leitor. DartPad compila no serviço externo da Google; Ripes simula RISC-V no navegador. [Linguagens e limites por cadeira](docs/linguagens.md).
 
 `src/lib/markdown-export.mjs` gera os ficheiros públicos `.md`, os SVG de referência e `/llms.txt` após o build. O botão "Perguntar ao Chat" inclui a versão Markdown para facilitar a leitura por assistentes.
+
+### Histórico de leitura
+
+A homepage mostra a última leitura e até quatro páginas recentes depois da primeira visita a um conteúdo. “Continuar a ler” retoma a posição; ao chegar ao fim, sugere o tópico seguinte. O histórico guarda até 20 páginas apenas neste navegador. “Limpar histórico” apaga-o. Não entra na pesquisa, nos ficheiros Markdown nem nos pedidos ao Chat.

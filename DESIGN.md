@@ -104,6 +104,8 @@ Lesson pages offer a native AI popover with provider icons. Floating UI anchors 
 
 Selecting lesson text offers “Destacar” and “Comentar”. Highlighting saves without opening the notebook. Commenting opens it and saves while typing. Readers can browse this page or all notes, return to a passage, undo deletion and export Markdown. Notes stay in this browser. Previous scratchpad notes remain editable under “Notas anteriores” and are included in exports. Missing or ambiguous passages keep their notes without highlighting unrelated text.
 
+Returning readers see “Continuar a ler” and up to four recently opened pages on the homepage. The main card resumes their position or offers the next published topic after they reach the end. First visits show neither section. History stays in this browser and can be cleared.
+
 Keyboard settings support remapping, disabling single-key shortcuts and optional spatial hjkl card navigation. Shortcuts leave text entry alone.
 
 Course navigation groups published lessons by section and marks the current page with an accent fill. The page index links to second- and third-level headings. Previous and next links continue the reading sequence below the article.
