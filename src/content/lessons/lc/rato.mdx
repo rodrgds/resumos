@@ -5,6 +5,11 @@ section: conteudo
 order: 6
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import pacote from '../../lc/pacote-rato.typ?raw';
+
 O **rato** PS/2 envia a cada movimento um pacote de três bytes: botões e sinais no primeiro, deslocamentos nos outros dois. O teu programa sincroniza-se no primeiro byte, junta os três e reconstrói o movimento. É o exercício mais completo de manipulação de bits da cadeira, porque quase toda a informação está partida em campos de poucos bits.
 
 ## Anatomia do pacote
@@ -29,8 +34,43 @@ Chegam três bytes: `0x28`, `0x05`, `0xFB`. A reconstrução:
 2. Segundo byte `0x05`: deslocamento em X de +5.
 3. Terceiro byte `0xFB`: em complemento para dois, $-(256 - 251) = -5$ em Y do protocolo (para baixo), ou seja 5 unidades para cima no ecrã.
 
-Resultado: o cursor move-se 5 píxeis para a direita e 5 para cima, sem botões. Três bytes opacos transformados num movimento com direção, módulo e estado de botões, só com máscaras e aritmética de bytes.
+<Typst
+  source={pacote}
+  format="svg"
+  alt="Os três bytes do pacote do rato e o que cada um produz: sincronização e botões, mais 5 em X, menos 5 em Y."
+/>
+
+Resultado: o cursor move-se 5 píxeis para a direita e 5 para cima, sem botões. Confirma correndo o descodificador: a saída é deslocamento `dx=5`, `dy` de protocolo `-5` (5 para cima no ecrã) e nenhum botão.
+
+<CodePlayground
+  language="c"
+  title="Descodificar um pacote"
+  code={'#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t b1 = 0x28, b2 = 0x05, b3 = 0xFB;\n    int sinc = (b1 & 0x08) != 0;\n    int esq = (b1 & 0x01) != 0;\n    int dx = (int8_t)b2;\n    int dy = (int8_t)b3;\n    printf("sinc=%d esq=%d dx=%d dy_prot=%d\\n", sinc, esq, dx, dy);\n    printf("cima=%d\\n", -dy);\n    return 0;\n}'}
+/>
+
+Três bytes opacos transformados num movimento com direção, módulo e estado de botões, só com máscaras e aritmética de bytes.
+
+## Com e sem botões
+
+O único campo que muda quando o utilizador prime um botão é o primeiro byte. Compara:
+
+<Tabs id="pacote-botoes" labels={['Sem botões', 'Botão esquerdo']}>
+  <div slot="panel-0">
+
+Pacote `0x28 0x05 0xFB`: bits 0 a 2 a 0, nenhum botão premido. O movimento é o do exemplo acima, 5 para a direita e 5 para cima.
+
+  </div>
+  <div slot="panel-1">
+
+Pacote `0x29 0x05 0xFB`: o primeiro byte passa a `0b00101001`, com o bit 0 a 1. O movimento é igual, mas o botão esquerdo está premido durante o deslocamento, o gesto de arrastar.
+
+  </div>
+</Tabs>
 
 :::warning[Ordem de leitura e sincronização]
 Os três bytes têm de ser lidos por ordem e sem misturar pacotes: se o handler guardar os bytes num buffer, o consumidor tem de os retirar três a três a começar sempre por um byte sincronizado. Perder um byte sem dar por isso desloca todos os pacotes seguintes. A verificação do bit 3 em cada primeiro byte é o alarme que deteta a dessincronização.
 :::
+
+## Para saber mais
+
+- [PS/2 Mouse (OSDev)](http://wiki.osdev.org/PS/2_Mouse): o formato do pacote de 3 bytes e os modos com roda de scroll.

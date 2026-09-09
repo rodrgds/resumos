@@ -5,13 +5,46 @@ section: conteudo
 order: 3
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import fluxo from '../../lc/fluxo-irq.typ?raw';
+import caminho from '../../lc/caminho-irq.dot?raw';
+
 O polling prende o processador a perguntar. As **interrupções** invertem o sentido da conversa: o periférico avisa quando tem algo a dizer, e o processador atende. O preço é um mecanismo com mais peças, subscrição de linhas de interrupção, rotinas de atendimento e máscaras, que esta página monta peça a peça.
 
 ## Quem avisa quem
 
-Cada periférico capaz de interromper está ligado a uma linha **IRQ** (_interrupt request_). Quando o evento acontece, o controlador de interrupções assinala o pedido e, se essa linha estiver desmascarada, o processador suspende o programa, corre a **rotina de atendimento** (_handler_) e depois retoma onde parou. A rotina deve ser curta: lê o estado, recolhe os dados, assinala que há trabalho novo e sai. O processamento pesado fica para o programa principal, que consome o que a rotina recolheu.
+Cada periférico capaz de interromper está ligado a uma linha **IRQ** (_interrupt request_). O pedido não chega direto ao processador: passa pelo **controlador de interrupções** (PIC), que assinala o pedido e só o entrega se essa linha estiver desmascarada. O processador suspende o programa, corre a **rotina de atendimento** (_handler_) e depois retoma onde parou. A rotina deve ser curta: lê o estado, recolhe os dados, assinala que há trabalho novo e sai. O processamento pesado fica para o programa principal, que consome o que a rotina recolheu.
+
+<Typst
+  source={fluxo}
+  format="svg"
+  alt="Fluxo de uma interrupção: o periférico gera o evento, o PIC assinala o IRQ, o CPU suspende o programa, o handler recolhe os dados e o programa principal consome-os."
+/>
 
 O resultado disto é que entre eventos o processador é livre. Um teclado que gera meia dúzia de interrupções por segundo custa meia dúzia de atendimentos; em polling, o mesmo teclado custaria milhões de perguntas por segundo.
+
+## As linhas de cada periférico
+
+O PC clássico tem 16 linhas, da IRQ0 à IRQ15, e cada periférico da cadeira tem a sua fixa. Decora esta tabela, porque a máscara de subscrição e o diagnóstico de "não chega nada" passam sempre por ela:
+
+| Periférico       | Linha  |
+| ---------------- | ------ |
+| Temporizador     | IRQ0   |
+| Teclado          | IRQ1   |
+| Porta série COM2 | IRQ3   |
+| Porta série COM1 | IRQ4   |
+| RTC              | IRQ8   |
+| Rato             | IRQ12  |
+
+Em DOT, a topologia é sempre a mesma: periféricos pendurados no controlador, controlador a falar com o CPU, CPU a despachar para o handler certo.
+
+<Dot
+  source={caminho}
+  alt="Diagrama do caminho de uma interrupção: teclado e temporizador ligam ao PIC, o PIC ao CPU e o CPU ao handler."
+/>
 
 ## Subscrever uma interrupção
 
@@ -54,7 +87,24 @@ void timer_handler(void) {
 }
 ```
 
-Com `ticks` a subir de 60 em 60 por segundo, esperar `ticks >= 60` é esperar um segundo, e esperar `ticks >= 300` são cinco segundos. A conta é direta porque a frequência é conhecida: número de interrupções a dividir pela frequência dá o tempo decorrido. Este mesmo contador serve de relógio para tudo o resto, do ritmo de um jogo ao timeout de uma operação.
+Com `ticks` a subir de 60 em 60 por segundo, esperar `ticks >= 60` é esperar um segundo, e esperar `ticks >= 300` são cinco segundos. A conta é direta porque a frequência é conhecida: número de interrupções a dividir pela frequência dá o tempo decorrido. Confirma a aritmética correndo a simulação: 60 tiques dão 1 segundo, 300 dão 5 e 3600 dão 60.
+
+<CodePlayground
+  language="c"
+  title="Tiques em segundos"
+  code={'#include <stdio.h>\n\nint main(void) {\n    int periodos[] = {60, 300, 3600};\n    for (int i = 0; i < 3; i++) {\n        int ticks = 0;\n        for (int t = 0; t < periodos[i]; t++) ticks++;\n        printf("%d tiques = %d s\\n", periodos[i], ticks / 60);\n    }\n    return 0;\n}'}
+/>
+
+Este mesmo contador serve de relógio para tudo o resto, do ritmo de um jogo ao timeout de uma operação.
+
+## Ver também
+
+Este vídeo explica as diferenças entre polling, interrupções e DMA com exemplos visuais. Vê-o depois de perceberes a subscrição acima: cada mecanismo do vídeo mapeia para uma sequência desta página.
+
+<YouTube
+  id="LNPBr3WvuNg"
+  title="Diferenças entre polling, interrupções e DMA explicadas"
+/>
 
 :::tip[Como depurar interrupções que não chegam]
 Se o handler nunca corre, verifica por esta ordem: a linha foi subscrita e ativada, a máscara corresponde ao IRQ certo, o ciclo chama `driver_receive` de verdade em vez de fazer polling por cima, e a subscrição foi feita antes de ativares. Em nove de dez casos, o problema está nesta lista, não no hardware.

@@ -5,6 +5,11 @@ section: conteudo
 order: 7
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import fb from '../../lc/framebuffer.typ?raw';
+
 A **placa de vídeo** em modo gráfico expõe a imagem como um **framebuffer**: uma zona de memória onde cada posição corresponde a um píxel no ecrã. Desenhar é escrever bytes nos endereços certos. O trabalho desta página é mapear o modo gráfico, calcular o endereço de cada píxel e eliminar a cintilação com dois buffers.
 
 ## Modo gráfico e framebuffer
@@ -14,6 +19,12 @@ O modo define-se pelo padrão VBE: resolução, bits por píxel e endereço base
 $$
 \text{endereço} = \text{base} + y \times \text{bytes\_por\_linha} + x \times \text{bytes\_por\_píxel}
 $$
+
+<Typst
+  source={fb}
+  format="svg"
+  alt="Grelha de píxeis com coordenadas e a fórmula do índice: linha vezes bytes por linha mais coluna vezes bytes por píxel."
+/>
 
 Com 8 bits por píxel, `bytes_por_píxel` é 1 e `bytes_por_linha` é 1024 (mais eventuais bytes de enchimento no fim de cada linha, que se lêem nas informações do modo e nunca se assumem). Com mais bits por píxel, cada píxel ocupa vários bytes seguidos e a cor escreve-se por componentes.
 
@@ -29,7 +40,32 @@ for (int y = 150; y < 150 + 50; y++) {
 }
 ```
 
-São $100 \times 50 = 5000$ bytes escritos. O cálculo do índice usa sempre `bytes_por_linha` (1024), nunca a largura visível assumida de cor: se o modo tiver enchimento, usar a largura desalinhava todas as linhas abaixo da primeira. Cada primitiva gráfica (linha, círculo, sprite) é uma variação deste padrão de percorrer posições e escrever cores.
+São $100 \times 50 = 5000$ bytes escritos. O cálculo do índice usa sempre `bytes_por_linha` (1024), nunca a largura visível assumida de cor: se o modo tiver enchimento, usar a largura desalinhava todas as linhas abaixo da primeira. Confirma a aritmética: o índice do píxel $(200, 150)$ é 153800 e o framebuffer total tem 786432 bytes.
+
+<CodePlayground
+  language="c"
+  title="Índice e tamanho do framebuffer"
+  code={'#include <stdio.h>\n\nint main(void) {\n    int largura = 1024, altura = 768, bpp = 1;\n    int x = 200, y = 150;\n    int indice = y * largura + x * bpp;\n    printf("indice=%d\\n", indice);\n    printf("total=%d\\n", largura * altura * bpp);\n    return 0;\n}'}
+/>
+
+Cada primitiva gráfica (linha, círculo, sprite) é uma variação deste padrão de percorrer posições e escrever cores.
+
+## 8 ou 16 bits por píxel
+
+A única coisa que muda com a profundidade de cor é quantos bytes cada píxel ocupa:
+
+<Tabs id="profundidade-cor" labels={['8 bpp', '16 bpp']}>
+  <div slot="panel-0">
+
+Um byte por píxel: `bytes_por_píxel` é 1, o índice é `y * 1024 + x` e o total é 786432 bytes. A cor é um índice para a paleta de 256 cores.
+
+  </div>
+  <div slot="panel-1">
+
+Dois bytes por píxel: `bytes_por_píxel` é 2, o índice é `y * bytes_por_linha + x * 2` e o total é 1572864 bytes. A cor escreve-se por componentes (vermelho, verde, azul) nos dois bytes.
+
+  </div>
+</Tabs>
 
 ## Double buffering contra a cintilação
 
@@ -40,3 +76,8 @@ A regra de ouro: nunca mistures desenho e apresentação no mesmo buffer. O cicl
 :::tip[Como depurar gráficos]
 Quando o ecrã mostra lixo, verifica por esta ordem: o modo foi bem definido e o endereço base é o anunciado, o cálculo do índice usa os bytes por linha do modo, a cor escrita cabe nos bits por píxel, e estás a desenhar no buffer escondido e a apresentar depois. A maioria dos ecrãs estranhos é um índice mal calculado, não hardware avariado.
 :::
+
+## Para saber mais
+
+- [Modos de vídeo VBE (OSDev)](https://wiki.osdev.org/VESA_Video_Modes): estrutura de informação do modo e ativação do framebuffer linear.
+- [Desenhar no framebuffer linear (OSDev)](https://wiki.osdev.org/Drawing_In_a_Linear_Framebuffer): desenho com `pitch` e bits por píxel.
