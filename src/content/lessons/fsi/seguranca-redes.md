@@ -1,0 +1,42 @@
+---
+title: Segurança de redes e negação de serviço
+description: Ataques ao nível da rede, SYN flood e a leitura de um registo que revela um DoS simples.
+section: conteudo
+order: 6
+---
+
+A rede é o único componente do sistema que o atacante pode tocar sem conta nem convite. Esta página passa pelos ataques ao nível da rede, explica a negação de serviço mais instrutiva e termina a ler um registo que denuncia um ataque em curso.
+
+## O que a rede expõe
+
+Quem partilha o caminho dos pacotes pode **escutar** (_sniffing_): numa rede sem fios aberta ou num segmento comprometido, o tráfego não cifrado lê-se como um postal. A resposta é cifrar o transporte, com TLS na Web e redes privadas virtuais onde for preciso, porque a escuta passiva não deixa marcas.
+
+Pode também **falsificar** (_spoofing_): mentir sobre a origem dos pacotes ou sobre quem responde a cada endereço. O exemplo clássico é o envenenamento ARP, em que o atacante diz à rede local "eu sou o router" e recebe o tráfego alheio para escutar ou alterar. A defesa combina segmentação da rede, deteção destas mentiras e, outra vez, cifragem com autenticação: mesmo recebendo os pacotes, o atacante não os lê nem os forja sem as chaves.
+
+A **negação de serviço** (DoS, _denial of service_) ataca o terceiro pilar da tríade, a disponibilidade: em vez de roubar ou alterar, esgota um recurso até o serviço deixar de responder. A variante **distribuída** (DDoS) usa milhares de origens em simultâneo, muitas vezes aparelhos infetados, o que torna inútil bloquear um endereço.
+
+## O SYN flood, passo a passo
+
+O aperto de mão do TCP tem três passos: o cliente envia SYN, o servidor reserva recursos e responde SYN-ACK, o cliente confirma com ACK. No **SYN flood**, o atacante envia vagas de SYN com endereços de origem falsos e nunca responde ao SYN-ACK. Cada meio-aberto ocupa um lugar na fila do servidor durante dezenas de segundos, e a fila enche-se de fantasmas. Os clientes legítimos passam a receber recusas: o servidor está ocupado com ligações que nunca vão existir.
+
+Repara por que funciona: explora um comportamento legítimo do protocolo, não um erro de código, e custa pouco a cada pacote falso. As contramedidas atuam em camadas: aumentar e gerir a fila, responder com _cookies_ SYN sem reservar recursos, filtrar origens impossíveis na firewall e absorver o volume a montante, no fornecedor ou numa rede de distribuição de conteúdo.
+
+Do lado da defesa permanente, a receita é a mesma de sempre: firewall com regras mínimas, segmentação entre serviços, apenas as portas necessárias expostas e registos que permitam perceber o que aconteceu. Sem registos, um ataque é só "o site esteve lento".
+
+## Exemplo: o registo que denuncia um DoS simples
+
+A loja queixa-se de lentidão na pesquisa. O ritmo normal ronda 2 pedidos por segundo, de endereços variados e a páginas diversas. Um excerto do registo de acessos mostra outra história:
+
+```text
+10:31:02  198.51.100.23  GET /pesquisa?q=telemovel
+10:31:02  203.0.113.7    GET /pesquisa?q=a
+10:31:02  203.0.113.7    GET /pesquisa?q=ab
+10:31:02  203.0.113.7    GET /pesquisa?q=abc
+10:31:02  203.0.113.7    GET /pesquisa?q=abcd
+10:31:03  198.51.100.23  GET /contactos
+10:31:03  203.0.113.7    GET /pesquisa?q=abcde
+```
+
+Um só endereço a martelar o endpoint mais pesado, dezenas de vezes por segundo, enquanto o resto do tráfego segue normal. Conta e confirma: `grep -c '203.0.113.7' acessos.log` devolve 1843 linhas num minuto, cerca de 30 por segundo, contra uma média de 2 dos restantes. Uma origem, um alvo caro, volume anómalo: é uma negação de serviço simples, não um pico de clientes.
+
+A contramedida justifica-se pela leitura: como há uma só origem, basta limitar o débito desse endereço na firewall ou bloqueá-lo temporariamente, e o serviço recupera. Se em vez de um endereço fossem milhares, cada um com débito modesto, o bloqueio pontual não chegaria e seria preciso filtrar a montante. O diagnóstico decide a defesa: primeiro lê, depois bloqueia.
