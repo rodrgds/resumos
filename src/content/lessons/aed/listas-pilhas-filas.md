@@ -1,0 +1,43 @@
+---
+title: Listas, pilhas e filas
+description: Listas ligadas com nós e apontadores, pilha LIFO, fila FIFO e a fila feita de duas pilhas.
+section: conteudo
+order: 3
+---
+
+Um vetor guarda os elementos lado a lado e por isso insere devagar no meio: é preciso deslocar tudo. As estruturas desta página trocam o acesso direto por **nós** ligados por apontadores: inserir e remover no sítio certo passa a $O(1)$, à custa de só conseguir chegar aos elementos caminhando. É a primeira vez que implementas um tipo abstrato de dados do zero, por isso revê [apontadores e `new`/`delete`](/cadeiras/p/apontadores-memoria/) e [classes](/cadeiras/p/classes-objetos/) antes de continuares.
+
+## Listas ligadas
+
+Uma **lista ligada** é uma cadeia de nós, cada um com o valor e o apontador para o seguinte. A lista guarda só a **cabeça** (head); o último nó aponta para `nullptr`. Inserir no início é criar o nó e pendurá-lo à frente ($O(1)$); remover o primeiro é avançar a cabeça e libertar o nó ($O(1)$). Mas chegar à posição $i$ obriga a caminhar $i$ ligações: acesso e pesquisa são $O(n)$.
+
+A **lista duplamente ligada** dá a cada nó também o apontador para o anterior. Gasta mais um apontador por nó, mas permite caminhar para trás e remover um nó conhecido em $O(1)$ (na simples, remover exige encontrar o antecessor). Com um apontador para a **cauda** (tail), inserir no fim também é $O(1)$.
+
+O erro clássico é perder nós: se fizeres `cabeca = cabeca->seguinte` sem `delete` no nó antigo, a memória fica ocupada sem ninguém a apontar para ela. Cada `new` no código da lista precisa do seu `delete` na remoção e no destrutor. Desenha as setas no papel antes de as mexeres no código: mudar a ordem de duas atribuições de apontadores é a diferença entre inserir e partir a lista.
+
+## Pilha e fila
+
+A **pilha** (stack) é LIFO: o último a entrar é o primeiro a sair. Operações `push` (empilha), `pop` (desempilha) e `top` (espreita), todas $O(1)$. Serve onde a ordem é "desfazer": chamadas de função, avaliação de expressões, voltar atrás numa pesquisa.
+
+A **fila** (queue) é FIFO: o primeiro a entrar é o primeiro a sair. Operações `enqueue` (entra no fim), `dequeue` (sai da frente) e `front`, todas $O(1)$. Serve onde a ordem é "atender por chegada": impressoras, pacotes de rede, a pesquisa em largura dos grafos.
+
+Ambas se implementam sobre lista ligada (empilhar é inserir na cabeça; desenfileirar é remover da cabeça mantendo cauda para entrar no fim) ou sobre vetor circular. O tipo abstrato diz **o que** (LIFO contra FIFO); a implementação escolhe **como**.
+
+## Uma fila feita de duas pilhas
+
+Duas pilhas LIFO combinam-se numa fila FIFO. Mantém uma pilha de **entrada** e uma de **saída**: `enqueue` empilha na entrada; `dequeue` desempilha da saída, e se a saída estiver vazia, despeja a entrada toda para a saída primeiro (o que inverte a ordem duas vezes e a repõe). Simula `push 1, push 2, pop, push 3, pop, pop`, onde push é enqueue e pop é dequeue:
+
+| Passo | Entrada (topo à direita) | Saída (topo à direita) | Devolve |
+| ----- | ------------------------ | ---------------------- | ------- |
+| push 1 | [1] | [] | |
+| push 2 | [1, 2] | [] | |
+| pop | [] | [2, 1] após despejo | 1 |
+| push 3 | [3] | [2] | |
+| pop | [3] | [] | 2 |
+| pop | [] | [3] após despejo | 3 |
+
+A saída é $1, 2, 3$: ordem de chegada, portanto FIFO. Cada elemento muda de pilha no máximo uma vez, por isso o custo é $O(1)$ **amortizado**: um `pop` isolado pode custar $O(n)$ no despejo, mas $n$ operações custam $O(n)$ no total. A distinção entre "cada operação" e "a média da sequência" é a ideia de amortização, que vais reencontrar nas tabelas de dispersão e nos vetores que crescem.
+
+:::tip[Como escolher na prova]
+Vetor quando o acesso por índice domina e o tamanho é estável; lista quando as inserções e remoções no meio dominam; pilha quando precisas de desfazer; fila quando precisas de atender por ordem. Justifica sempre com o custo da operação dominante, não com preferência.
+:::
