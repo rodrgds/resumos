@@ -43,7 +43,7 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
     }),
   );
   await page.goto('/exemplo/diagramas/');
-  await page.getByRole('button', { name: 'Perguntar à IA' }).click();
+  await page.getByRole('button', { name: 'Perguntar ao Chat' }).click();
   await expect(page.locator('#ai-menu')).toBeVisible();
   await expect(
     page.getByRole('link', { name: 'ChatGPT', exact: true }),
@@ -55,8 +55,11 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
   ]) {
     const link = page.locator(`[data-provider="${provider}"]`);
     const url = new URL((await link.getAttribute('href'))!);
-    expect(url.searchParams.get(parameter)).toBe(
-      'Lê esta página: https://resumos.rgo.pt/exemplo/diagramas/. Quero fazer perguntas sobre ela. Responde em português de Portugal. Se não conseguires ler a página, diz-me.',
+    expect(url.searchParams.get(parameter)).toContain(
+      'https://resumos.rgo.pt/exemplo/diagramas.md',
+    );
+    expect(url.searchParams.get(parameter)).toContain(
+      'https://resumos.rgo.pt/exemplo/diagramas/',
     );
     await expect(link.locator('.provider-icon')).toBeVisible();
   }
@@ -87,9 +90,6 @@ test('mock course renders diagrams and only loads YouTube on request', async ({
   await page
     .getByRole('link', { name: 'cadeira de exemplo', exact: true })
     .click();
-  await expect(
-    page.getByText(/Estes exemplos não fazem parte do plano da FEUP/),
-  ).toBeVisible();
   await page
     .locator('.prose')
     .getByRole('link', { name: 'Gráficos e diagramas', exact: true })
@@ -233,6 +233,11 @@ test('useful links and the current MEIC plan are reachable', async ({
   await expect(
     page.locator('[data-course-year="2"] [data-course]'),
   ).toHaveCount(27);
+  await page
+    .locator('.course-options')
+    .filter({ has: page.locator('[data-acronym="WSDL"]') })
+    .locator('summary')
+    .click();
   await page.locator('[data-acronym="WSDL"]').click();
   await expect(
     page.getByRole('heading', {

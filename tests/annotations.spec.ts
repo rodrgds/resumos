@@ -97,7 +97,7 @@ test('comment directly, return from another page, export and keep private data o
   expect(text).toContain(passage);
   expect(text).toContain('Comentário privado de teste');
   await page.getByRole('button', { name: 'Fechar caderno' }).click();
-  await page.getByRole('button', { name: 'Perguntar à IA' }).click();
+  await page.getByRole('button', { name: 'Perguntar ao Chat' }).click();
   await expect(page.locator('#ai-prompt')).not.toHaveValue(
     /Comentário privado/,
   );

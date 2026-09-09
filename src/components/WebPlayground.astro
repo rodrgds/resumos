@@ -1,0 +1,76 @@
+---
+import { Play, RotateCcw } from '@lucide/astro';
+import '../styles/playground.css';
+interface Props {
+  html: string;
+  css?: string;
+  js?: string;
+}
+const { html, css = '', js = '' } = Astro.props;
+---
+
+<section
+  data-annotation-ignore
+  class="web-playground"
+  data-web-playground
+  aria-label="Experimentar HTML, CSS e JavaScript"
+>
+  <div class="playground-toolbar" data-pagefind-ignore>
+    <strong>HTML / CSS / JavaScript</strong>
+    <div>
+      <button data-web-reset aria-label="Repor exemplo web">
+        <RotateCcw size={15} />
+      </button>
+      <button data-web-run>
+        <Play size={15} /> Pré-visualizar
+      </button>
+    </div>
+  </div>
+  <div class="web-editors">
+    <label>
+      HTML<textarea data-html rows="4" spellcheck="false">{html}</textarea>
+    </label>
+    <details>
+      <summary>CSS e JavaScript</summary>
+      <label>
+        CSS<textarea data-css rows="4" spellcheck="false">{css}</textarea>
+      </label>
+      <label>
+        JavaScript<textarea data-js rows="4" spellcheck="false">{js}</textarea>
+      </label>
+    </details>
+  </div>
+  <iframe
+    title="Pré-visualização do exemplo web"
+    sandbox="allow-scripts"
+    referrerpolicy="no-referrer"
+  ></iframe>
+</section>
+<script>
+  document
+    .querySelectorAll<HTMLElement>('[data-web-playground]')
+    .forEach((root) => {
+      const html = root.querySelector<HTMLTextAreaElement>('[data-html]')!;
+      const css = root.querySelector<HTMLTextAreaElement>('[data-css]')!;
+      const js = root.querySelector<HTMLTextAreaElement>('[data-js]')!;
+      const frame = root.querySelector('iframe')!;
+      const original = [html.value, css.value, js.value];
+      const render = () => {
+        // Opaque origin, no parent/storage access, no network or form submissions.
+        frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{font-family:system-ui;padding:16px}${css.value}</style></head><body>${html.value}<script>${js.value}<\/script></body></html>`;
+      };
+      root.querySelector<HTMLButtonElement>('[data-web-run]')!.onclick = render;
+      root.querySelector<HTMLButtonElement>('[data-web-reset]')!.onclick =
+        () => {
+          [html.value, css.value, js.value] = original;
+          render();
+        };
+      root.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          render();
+        }
+      });
+      render();
+    });
+</script>

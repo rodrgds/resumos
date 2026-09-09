@@ -1,9 +1,16 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import CourseYears from '../components/CourseYears.astro';
+import CourseCard from '../components/CourseCard.astro';
+import { getCourseGuides } from '../lib/course-content';
+import { icons } from '../data/courses';
+import { ChevronDown } from '@lucide/astro';
+import '../styles/catalog.css';
 import CourseDialog from '../components/CourseDialog.astro';
 import ProgramNav from '../components/ProgramNav.astro';
 import { courses, curriculum } from '../data/meic';
+const published = new Map(
+  (await getCourseGuides()).map((course) => [course.id, course.path]),
+);
 ---
 
 <Layout title="MEIC · Resumos LEIC FEUP">
@@ -20,7 +27,75 @@ import { courses, curriculum } from '../data/meic';
       As cadeiras marcadas como opção são alternativas. Escolhes 24 ECTS de
       optativas em cada ano e 1,5 ECTS de Competências Transversais no 2.º ano.
     </p>
-    <CourseYears courses={courses} years={[1, 2]} />
+    {[1, 2].map((year) => (
+      <section class="year-section" data-course-year={year}>
+        <div class="year-heading">
+          <h2>{year}.º ano</h2>
+          <span>60 ECTS</span>
+        </div>
+        {[1, 2].map((semester) => {
+          const group = courses.filter(
+            (course) => course.year === year && course.semester === semester,
+          );
+          const required = group.filter((course) => !course.optional);
+          const options = group.filter((course) => course.optional);
+          return (
+            <section class="meic-semester">
+              <h3>{semester}.º semestre</h3>
+              {required.length > 0 && (
+                <div class="meic-required">
+                  {required.map((course) => (
+                    <CourseCard
+                      course={course}
+                      href={published.get(course.id)}
+                    />
+                  ))}
+                </div>
+              )}
+              {options.length > 0 && (
+                <details class="course-options">
+                  <summary>
+                    Optativas <span>{options.length} cadeiras</span>
+                    <ChevronDown size={18} />
+                  </summary>
+                  <div class="course-options-list">
+                    {options.map((course) => {
+                      const Icon = icons[course.icon];
+                      const href = published.get(course.id);
+                      const Tag = href ? 'a' : 'button';
+                      return (
+                        <Tag
+                          href={href}
+                          class="course-option"
+                          id={`cadeira-${course.id}`}
+                          data-course
+                          data-title={course.name}
+                          data-acronym={course.acronym}
+                          data-meta={`${year}.º ano · ${semester}.º semestre · ${course.ects} ECTS`}
+                          aria-haspopup={href ? undefined : 'dialog'}
+                        >
+                          <Icon size={23} aria-hidden="true" />
+                          <span>
+                            <h4 id={`resumo-${course.id}`}>
+                              {course.acronym}
+                              <span class="sr-only"> · {course.name}</span>
+                            </h4>{' '}
+                            {course.name}
+                          </span>
+                          <small>
+                            {course.ects.toLocaleString('pt-PT')} ECTS
+                          </small>
+                        </Tag>
+                      );
+                    })}
+                  </div>
+                </details>
+              )}
+            </section>
+          );
+        })}
+      </section>
+    ))}
     <p class="catalog-note">
       O conjunto de opções precisa de aprovação e deve incluir uma a três
       cadeiras de Métodos Quantitativos e Gestão. Também podem ser aceites

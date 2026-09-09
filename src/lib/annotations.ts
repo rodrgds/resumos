@@ -1,6 +1,7 @@
 import { readLocal, writeLocal } from './storage';
 
 export interface TextAnchor {
+  version?: 2;
   exact: string;
   prefix: string;
   suffix: string;

@@ -125,3 +125,37 @@ O vídeo mostra uma miniatura do YouTube. O leitor só carrega o player quando c
 - Corre `npm run format`, `npm run check`, `npm test` e `npm run build`.
 
 O pull request deve dizer o que acrescentaste ou corrigiste. Uma alteração pequena e completa é suficiente.
+
+## Código que o leitor pode executar
+
+Em MDX, usa `CodePlayground` para Python, JavaScript, SQL, C++ ou Java:
+
+```mdx
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+<CodePlayground
+  language="cpp"
+  input="5"
+  code={
+    '#include <iostream>\nint main() { int n; std::cin >> n; std::cout << n * n; }'
+  }
+/>
+```
+
+`language` aceita `python`, `javascript`, `sql`, `cpp` ou `java`. `code` é o programa completo; `input` fornece a entrada padrão e `title` muda o título do bloco. Java precisa da classe `Main`, sem declaração de pacote. Os exemplos usam Python 3.11, C++17, Java 8, QuickJS e SQLite. Não dependas de pacotes externos, rede ou ficheiros do computador do leitor. Cada execução começa de novo. Os motores só são descarregados ao executar.
+
+Para HTML, CSS e JavaScript com DOM, usa `WebPlayground`. A pré-visualização não tem acesso às notas nem à rede:
+
+```mdx
+import WebPlayground from '../../../components/WebPlayground.astro';
+
+<WebPlayground html={'<h1>Olá!</h1>'} css={'h1 { color: teal; }'} js={''} />
+```
+
+Consulta [os exemplos](https://resumos.rgo.pt/exemplo/codigo/). Testa o resultado com entradas conhecidas antes de publicar. Para testar Java localmente, serve a pasta `runners` noutra origem: `python3 -m http.server 4324 --bind 127.0.0.1 --directory runners`. Essa porta é exclusiva do motor e não deve servir o site.
+
+## Leitura e versões Markdown
+
+A largura da página e a largura do texto são independentes. Os temas mudam as cores de leitura; os cartões das cadeiras mantêm as suas cores. Nos diagramas Typst e DOT, preto, branco e as cores base do projeto acompanham o tema. Outras cores escolhidas pelo autor são preservadas. Não uses apenas a cor para distinguir dados.
+
+O build gera uma versão `.md` de cada página pública e um índice `/llms.txt`. Usa o endereço sem a barra final, por exemplo `/exemplo/diagramas.md`. O Markdown vem do HTML publicado, incluindo fórmulas, código e links para SVG com descrição. Não inclui rascunhos nem notas locais. Não edites esses ficheiros gerados.

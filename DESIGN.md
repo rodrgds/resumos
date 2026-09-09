@@ -43,6 +43,7 @@ rounded:
   footnote-target: '4px'
   notebook-action: '6px'
   notebook-toolbar: '10px'
+  playground: '10px'
   control: '8px'
   card: '12px'
   search-dialog: '14px'
@@ -55,7 +56,7 @@ A FEUP course index based on the user's Resumos LEIC reference. Distinct course 
 
 ## Colors
 
-Warm off-white and charcoal page themes use burgundy accents, with blue and green alternatives in reading options. Eight opaque course colours keep white labels readable. Elective groups use neutral cards.
+FEUP uses warm off-white and charcoal themes with a burgundy accent, plus blue and green accent choices. Readers can also choose Gruvbox, Catppuccin, Nord or Dracula, each with light and dark palettes. Eight opaque course colours keep white labels readable. LEIC elective groups use neutral cards.
 
 Nucleus cards use their own brand colours. ACM FEUP and IEEE FEUP have white logo areas with original blue artwork and blue lower panels with white text in both themes. Keep logo artwork and proportions unchanged.
 
@@ -65,17 +66,17 @@ Reading callouts use blue for information and notes, green for tips, amber for w
 
 ## Typography
 
-Manrope serves navigation and headings. Prose offers eight locally hosted fonts: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata and IBM Plex Mono. Reading options group them by sans serif, serif and monospace, with a live preview. Prose has adjustable size and a line height of 1.8. Lesson titles use 36px type, reduced to 30px at 700px and below. Fictional-course notices are plain text. Code uses a high-contrast theme and scrolls horizontally.
+Manrope serves navigation and headings. Prose offers eight locally hosted fonts: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata and IBM Plex Mono. Reading options group them by sans serif, serif and monospace, with a live preview. Prose has adjustable size and a line height of 1.8. Lesson titles use 36px type, reduced to 30px at 700px and below. Code uses a high-contrast theme and scrolls horizontally.
 
 ## Layout
 
-A quiet header, short introduction with the FEUP logo, contribution notice and course grid. The catalogue container is 1120px, or 1440px in wide mode.
+A quiet header, short introduction with the FEUP logo, contribution notice and course grid. Page width defaults to 1360px and adjusts from 1040px to 1920px in 80px steps.
 
-Course pages use a grid with a maximum width of 1350px, 32px horizontal padding and 40px gaps. The columns hold a 220px course sidebar, an article up to 760px wide and a 170px page index. Prose is capped at 72ch. Both navigation columns stay sticky and scroll when needed.
+Course pages use 32px horizontal padding and 40px gaps. The columns hold a 200px course sidebar, the article and a 170px page index. Text width defaults to 720px and adjusts independently from 560px to 1000px in 40px steps, within the available space. Both navigation columns stay sticky and scroll when needed.
 
 At 1280px and below, the page index becomes a disclosure above the article; the grid uses a 210px sidebar and a flexible article within 1120px. At 1100px and below, course navigation also becomes a collapsed disclosure and the page uses one column within 840px. Horizontal padding falls to 24px, then 20px at 700px and below.
 
-LEIC and MEIC are plain links above the course grid. MEIC is a separate two-year course with options marked on their cards. Years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. The nucleus directory uses two columns on desktop and one on mobile.
+LEIC and MEIC are plain links above the course grid. LEIC years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. MEIC required courses use coloured cards; named options appear as compact rows inside initially collapsed semester disclosures. Option rows use two columns on desktop and one at 700px and below. The nucleus directory uses two columns on desktop and one on mobile.
 
 The notebook sits beside the page in a 380px sidebar above 1000px. At 1000px and below, it becomes a bottom panel capped at 62dvh and adjusts to the on-screen keyboard.
 
@@ -99,7 +100,7 @@ Callouts and content images use 8px corners. Linked footnotes use a 4px rounded 
 
 The header opens global search, the notebook and appearance. Search finds courses, lessons and nuclei. Native dialogs close with Escape and restore focus to the opener. Preferences apply before the first paint. Real course cards explain their unpublished state.
 
-Lesson pages offer a native AI popover with provider icons. Floating UI anchors it below the trigger with a 6px offset, flips it when needed and keeps it within 12px of the viewport edges. Available height limits the menu so its contents can scroll. Its links ask the provider to read the public page URL. Gemini uses a copy-prompt fallback. The homepage has no page actions.
+Lesson pages offer a native AI popover with provider icons. Floating UI anchors it below the trigger with a 6px offset, flips it when needed and keeps it within 12px of the viewport edges. Available height limits the menu so its contents can scroll. The button reads “Perguntar ao Chat”. Its links ask the provider to read the public Markdown and page URLs. Gemini uses a copy-prompt fallback. The homepage has no page actions.
 
 Selecting lesson text offers “Destacar” and “Comentar”. Highlighting saves without opening the notebook. Commenting opens it and saves while typing. Readers can browse this page or all notes, return to a passage, undo deletion and export Markdown. Notes stay in this browser. Previous scratchpad notes remain editable under “Notas anteriores” and are included in exports. Missing or ambiguous passages keep their notes without highlighting unrelated text.
 
@@ -107,11 +108,19 @@ Keyboard settings support remapping, disabling single-key shortcuts and optional
 
 Course navigation groups published lessons by section and marks the current page with an accent fill. The page index links to second- and third-level headings. Previous and next links continue the reading sequence below the article.
 
-Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG on white figure backgrounds. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links.
+Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links.
 
 Figures require descriptive alt text and offer an original-image link beside the caption. Authors can preserve, dim or invert images in dark mode; print keeps the original image. Tabs use an accent underline for the selected option, scroll horizontally when needed and support arrow, Home and End keys.
 
 YouTube previews load a remote thumbnail behind a dark overlay, a red play button and the video title. Clicking loads the player from youtube-nocookie.com. A caption explains when the thumbnail and player load and provides a direct YouTube link.
+
+**The Reading Controls Rule.** Keep light, system and dark appearance separate from the palette choice. Put FEUP accent choices and independent page and text width sliders inside “Ajustar cores e largura”. Hide FEUP accent choices for other palettes. Width values and sliders occupy separate rows.
+
+**The Playground Theme Rule.** Executable examples use the reading palette for editor backgrounds, text, gutters, selection and output. Containers have 10px corners and thin dividers. CodeMirror uses 14px IBM Plex Mono with a line height of 1.6. Run is the accent action; reset is secondary. HTML previews keep their own white canvas.
+
+**The Mobile Playground Rule.** At 480px and below, the HTML playground title occupies its own toolbar row. Reset and preview stay together below it, with unbroken labels and controls at least 36px high.
+
+**The Diagram Theme Rule.** Diagram neutrals and shared example accents follow the reading palette. Preserve distinct data-series colours and transparency.
 
 ## Do's and Don'ts
 

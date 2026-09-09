@@ -1,0 +1,85 @@
+---
+import { Play, Square, RotateCcw } from '@lucide/astro';
+import type { Language } from '../lib/runners/types';
+import '../styles/playground.css';
+interface Props {
+  language: Language;
+  code: string;
+  input?: string;
+  title?: string;
+}
+const { language, code, input = '', title } = Astro.props;
+const labels = {
+  python: 'Python',
+  javascript: 'JavaScript',
+  sql: 'SQL',
+  cpp: 'C++',
+  java: 'Java',
+};
+---
+
+<section
+  data-annotation-ignore
+  class="playground"
+  data-playground
+  data-language={language}
+  aria-label={title || `Experimentar ${labels[language]}`}
+>
+  <div class="playground-toolbar" data-pagefind-ignore>
+    <strong>{title || labels[language]}</strong>
+    <div>
+      <button type="button" data-reset aria-label="Repor código">
+        <RotateCcw size={15} />
+      </button>
+      <button type="button" data-stop hidden>
+        <Square size={14} /> Parar
+      </button>
+      <button type="button" data-run title="Executar (Ctrl+Enter ou ⌘+Enter)">
+        <Play size={15} /> Executar
+      </button>
+    </div>
+  </div>
+  <pre
+    data-source
+  ><code class={`language-${language}`}>{code.trim()}</code></pre>
+  <div data-editor></div>
+  <div data-pagefind-ignore>
+    <details class="playground-input">
+      <summary>Dados de entrada</summary>
+      <label>
+        Uma entrada por linha
+        <textarea data-stdin rows="3" spellcheck="false">{input}</textarea>
+      </label>
+    </details>
+    <div class="playground-result" hidden>
+      <div class="playground-status" role="status"></div>
+      <pre data-output aria-label="Resultado" tabindex="0"></pre>
+    </div>
+    <small class="playground-credit">
+      {language === 'java' ? (
+        <a href="https://cheerpj.com/" target="_blank" rel="noreferrer">
+          Java 8 · CheerpJ + Eclipse JDT
+        </a>
+      ) : (
+        <a href="https://runno.dev/" target="_blank" rel="noreferrer">
+          {language === 'cpp' ? 'C++17 · ' : ''}Runno
+        </a>
+      )}{' '}
+      · Executado no teu navegador
+    </small>
+  </div>
+</section>
+<script>
+  const observer = new IntersectionObserver(
+    async (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      const { setupPlaygrounds } = await import('../scripts/playgrounds');
+      setupPlaygrounds();
+    },
+    { rootMargin: '200px' },
+  );
+  document
+    .querySelectorAll('[data-playground]')
+    .forEach((element) => observer.observe(element));
+</script>

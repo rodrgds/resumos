@@ -23,6 +23,11 @@ function focusCourse() {
     decodeURIComponent(location.hash.slice(1)),
   );
   const card = target?.closest<HTMLButtonElement>('[data-course]');
+  const group = card?.closest('details');
+  if (group) {
+    group.open = true;
+    card?.scrollIntoView({ block: 'center' });
+  }
   card?.focus({ preventScroll: true });
 }
 window.addEventListener('hashchange', focusCourse);

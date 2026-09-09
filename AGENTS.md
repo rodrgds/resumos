@@ -9,10 +9,14 @@
 - Content fixtures belong under `tests/fixtures`; `RESUMOS_TEST_CONTENT=1` is for tests only and must never be set for a production build.
 - Leave root `/data/` and `/_data/` as ignored local reference material. Never publish them. Keep ignore rules rooted so `src/data/` remains tracked.
 - Pagefind indexes built public content only. Keep study tools and local notes outside `data-pagefind-body`; use `data-pagefind-ignore` for controls. Rebuild to refresh development search.
-- DOT renders through `src/lib/dot.ts` at build time. Never ship compilers or author-source evaluation to visitors.
+- DOT renders through `src/lib/dot.ts` at build time. Do not ship Typst or DOT compilers to visitors.
 - Cloudflare Pages builds pushes to `main` with `scripts/cloudflare-build.sh`. Keep its pinned Typst release in sync with CI and the documented environment.
 
 - AI actions belong on lessons, not the homepage. Send only the public page URL and a reading prompt; never send page text or private notes.
 - MEIC named optional courses use `optional`; LEIC elective placeholder groups use `elective`. Keep their explanations distinct. MEIC includes all named options, including courses without an occurrence link in SIGARRA.
 
 - Annotations are local-only and restricted to `[data-annotatable]` lesson content. Keep storage in `src/lib/annotations.ts` and passage anchoring in `src/lib/text-anchors.ts`. Preserve legacy `resumos-notes` data. Missing or ambiguous passages retain their notes without highlighting unrelated text.
+
+- Executable examples use `CodePlayground` and Runno in disposable Workers. Java lives in `runners/` on the separate `resumos-code.pages.dev` origin. Never host reading pages or notes there; see README before changing execution or isolation.
+- `markdown-export.mjs` generates public Markdown from built pages, never raw content directories or browser storage. Keep drafts and local notes private.
+- Add tests only for meaningful user-visible regressions or execution/privacy boundaries. Avoid assertions that freeze incidental copy, count markup, or mirror implementation.
