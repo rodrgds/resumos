@@ -1,4 +1,13 @@
-export type Language = 'python' | 'javascript' | 'sql' | 'cpp' | 'java';
+export type Language =
+  | 'python'
+  | 'javascript'
+  | 'sql'
+  | 'cpp'
+  | 'java'
+  | 'c'
+  | 'haskell'
+  | 'prolog'
+  | 'php';
 export interface RunRequest {
   language: Language;
   code: string;

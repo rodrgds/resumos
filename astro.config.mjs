@@ -14,6 +14,7 @@ const content = {
   remarkRehype: {
     footnoteLabel: 'Notas de rodapé',
     footnoteBackLabel: 'Voltar à referência',
+    footnoteBackContent: 'Voltar',
   },
 };
 export default defineConfig({

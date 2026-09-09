@@ -18,7 +18,7 @@ async function copyPrompt() {
     menu.querySelector('details')!.open = true;
     promptField.focus();
     promptField.select();
-    aiStatus.textContent = 'Copia a pergunta abaixo com Ctrl ou ⌘ C.';
+    aiStatus.textContent = 'Copia a pergunta abaixo com Ctrl ou Cmd C.';
   }
 }
 

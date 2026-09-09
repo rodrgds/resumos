@@ -1,6 +1,6 @@
 import type { RunRequest, RunMessage } from './types';
 
-export function runJava(
+export function runIsolated(
   request: RunRequest,
   receive: (message: RunMessage) => void,
   parent: HTMLElement,
@@ -8,13 +8,13 @@ export function runJava(
   // CheerpJ needs browser storage. A different site keeps it away from private notes.
   const local = ['localhost', '127.0.0.1'].includes(location.hostname);
   const url = new URL(
-    '/java.html',
+    request.language === 'java' ? '/java.html' : '/worker.html',
     local ? 'http://127.0.0.1:4324' : 'https://resumos-code.pages.dev',
   );
   if (url.origin === location.origin)
-    throw new Error('O motor Java precisa de uma origem separada.');
+    throw new Error('O motor precisa de uma origem separada.');
   const iframe = document.createElement('iframe');
-  iframe.title = 'Motor Java';
+  iframe.title = `Motor ${request.language}`;
   iframe.hidden = true;
   iframe.sandbox.add('allow-scripts', 'allow-same-origin');
   iframe.src = url.href;

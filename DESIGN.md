@@ -90,7 +90,7 @@ The selection toolbar uses a 0 6px 28px #0003 shadow. Save and undo feedback use
 
 ## Shapes
 
-Controls have gently rounded corners. Cards and the AI popover use larger corners, followed by search and shortcut dialogs, then appearance and course dialogs. Course icons use larger Lucide outlines with 1.7px strokes.
+Controls have gently rounded corners. Cards and the AI popover use larger corners, followed by search and shortcut dialogs, then appearance and course dialogs. Interface and course icons use Heroicons SVGs through `Icon.astro`. Course icons are 56px. Keep official brand logos separate; do not use Unicode characters as icons.
 
 Notebook panels use 12px corners. Selection toolbars and feedback use 10px corners, with 6px action corners. Quotes and comment fields use 8px corners. Notebook actions have a minimum height of 44px.
 
@@ -116,7 +116,7 @@ YouTube previews load a remote thumbnail behind a dark overlay, a red play butto
 
 **The Reading Controls Rule.** Keep light, system and dark appearance separate from the palette choice. Put FEUP accent choices and independent page and text width sliders inside “Ajustar cores e largura”. Hide FEUP accent choices for other palettes. Width values and sliders occupy separate rows.
 
-**The Playground Theme Rule.** Executable examples use the reading palette for editor backgrounds, text, gutters, selection and output. Containers have 10px corners and thin dividers. CodeMirror uses 14px IBM Plex Mono with a line height of 1.6. Run is the accent action; reset is secondary. HTML previews keep their own white canvas.
+**The Playground Theme Rule.** Executable examples use the reading palette for editor backgrounds, text, gutters, selection and output. Containers have 10px corners and thin dividers. CodeMirror uses 14px IBM Plex Mono with a line height of 1.6. Run is the accent action; reset is secondary. Editors have no attribution footer; runtime versions and credits belong in the authoring guide. HTML previews keep their own white canvas.
 
 **The Mobile Playground Rule.** At 480px and below, the HTML playground title occupies its own toolbar row. Reset and preview stay together below it, with unbroken labels and controls at least 36px high.
 
