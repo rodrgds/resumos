@@ -5,11 +5,24 @@ section: conteudo
 order: 5
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import conversa from '../../ltw/conversa-http.typ?raw';
+
 O navegador e o servidor conversam por HTTP: o cliente envia um pedido e o servidor devolve uma resposta. Cada clique, cada formulário e cada pesquisa com `fetch` é um pedido destes. Perceber o formato da conversa permite depurar os dois lados e desenhar interfaces limpas entre eles.
+
+<YouTube id="0OrmKCB0UrQ" title="Hyper Text Transfer Protocol Crash Course" />
 
 ## Ler um pedido e uma resposta
 
-Um pedido tem um método, um caminho, cabeçalhos e às vezes um corpo. Uma resposta tem um estado, cabeçalhos e um corpo. Eis a pesquisa da mercearia escrita à mão:
+Um pedido tem um método, um caminho, cabeçalhos e às vezes um corpo. Uma resposta tem um estado, cabeçalhos e um corpo. Eis a pesquisa da mercearia escrita à mão, com o pedido a ir do navegador para o servidor e a resposta a voltar:
+
+<Typst
+  source={conversa}
+  format="svg"
+  alt="Conversa HTTP da pesquisa: o navegador envia GET /pesquisa.php?q=queijo ao servidor PHP, que devolve 200 OK com corpo em application/json."
+/>
 
 ```
 GET /pesquisa.php?q=queijo HTTP/1.1
@@ -25,7 +38,33 @@ Content-Length: 42
 
 A primeira linha do pedido diz o método (`GET`), o caminho com os parâmetros (`/pesquisa.php?q=queijo`) e a versão do protocolo. A primeira linha da resposta diz o estado: `200 OK` correu bem, `404` não encontrou, `500` partiu no servidor. O cabeçalho `Content-Type` diz em que formato vem o corpo, e o corpo traz os dados. Quando uma página falhar, abre o separador de rede das ferramentas de desenvolvimento e lê esta conversa: o estado e o corpo dizem de que lado está o erro antes de tocares no código.
 
-Os métodos mais usados são `GET` para ler, `POST` para criar ou enviar formulários, `PUT` para substituir e `DELETE` para apagar. Regra prática: `GET` nunca altera nada no servidor, por isso é seguro repetir e marcar como favorito; tudo o que altera vai por `POST` ou pelos outros métodos.
+Os métodos mais usados são `GET` para ler, `POST` para criar ou enviar formulários, `PUT` para substituir e `DELETE` para apagar. A diferença que decide qual usar:
+
+<Tabs id="get-post" labels={['GET', 'POST']}>
+  <div slot="panel-0">
+
+```http
+GET /pesquisa.php?q=queijo HTTP/1.1
+```
+
+O `GET` lê sem alterar nada no servidor: é seguro repetir, marcar como favorito e recarregar. Os parâmetros viajam no endereço, por isso nunca levam palavras passe nem ações. Leituras e pesquisas vão por aqui.
+
+  </div>
+  <div slot="panel-1">
+
+```http
+POST /encomenda.php HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+nome=Ana&qtd=2
+```
+
+O `POST` entrega um corpo para o servidor guardar ou alterar algo: encomendar, entrar, apagar. Repetir pode duplicar a ação, por isso o navegador avisa antes de reenviar. Tudo o que altera vai por aqui ou pelos outros métodos de escrita.
+
+  </div>
+</Tabs>
+
+Regra prática: `GET` nunca altera nada no servidor, por isso é seguro repetir e marcar como favorito; tudo o que altera vai por `POST` ou pelos outros métodos.
 
 ## REST e JSON
 
@@ -35,7 +74,22 @@ Uma interface REST organiza o servidor por recursos com endereços estáveis: `G
 { "nome": "Queijo da Serra", "preco": 8.5, "stock": true }
 ```
 
-Em [PHP](php-dinamicas-bd/), uma página que devolve JSON em vez de HTML é um serviço que qualquer cliente consome: `echo json_encode($linhas);` com o cabeçalho `Content-Type: application/json`. Em JavaScript, `JSON.parse` transforma texto em objeto e `JSON.stringify` faz o inverso.
+Em [PHP](php-dinamicas-bd/), uma página que devolve JSON em vez de HTML é um serviço que qualquer cliente consome. O par do `fetch` da secção seguinte é este `api.php` mínimo, que reaproveita a consulta da página de pesquisa:
+
+```php
+<?php
+header('Content-Type: application/json');
+$db = new PDO('sqlite:loja.sqlite');
+$termo = $_GET['q'] ?? '';
+$stmt = $db->prepare('SELECT nome, preco FROM produtos WHERE nome LIKE :t');
+$stmt->execute([':t' => '%' . $termo . '%']);
+echo json_encode($stmt->fetchAll());
+?>
+```
+
+O `header` antes de qualquer saída declara o formato, e o `json_encode` transforma as linhas em texto JSON. Sem o cabeçalho certo, o `fetch` recebe texto que o `r.json()` recusa. Em JavaScript, `JSON.parse` transforma texto em objeto e `JSON.stringify` faz o inverso.
+
+<YouTube id="-MTSQjw5DrM" title="RESTful APIs in 100 Seconds" />
 
 ## Pesquisa com fetch sem recarregar
 
