@@ -1,0 +1,46 @@
+---
+title: Entrada e saída
+description: Polling, interrupções e DMA, armazenamento secundário e desempenho com E/S significativa.
+section: conteudo
+order: 9
+---
+
+Um computador sem periféricos é uma calculadora isolada: o trabalho útil entra por dispositivos de entrada, sai por dispositivos de saída e espera em armazenamento secundário. A arquitetura da entrada e saída decide quanto do processador se gasta a mover dados em vez de os transformar. Há três formas de gerir essa conversa, por ordem crescente de autonomia do hardware.
+
+## Polling: perguntar sem parar
+
+No **polling** (_programmed I/O_, varrimento), o processador interroga o dispositivo em ciclo: "tens dados? tens dados?". Quando o dispositivo responde que sim, o processador transfere o dado com instruções normais de leitura e escrita.
+
+É o mecanismo mais simples e não precisa de hardware extra, mas desperdiça o processador: enquanto o disco procura o setor ou o teclado espera pelo dedo, o CPU queima ciclos a perguntar. Serve para dispositivos rápidos e previsíveis, ou quando não há mais nada para fazer entretanto. Como estratégia geral, é péssima: ata o recurso mais caro do sistema ao ritmo do mais lento.
+
+## Interrupções: ser chamado
+
+Com **interrupções**, o dispositivo avisa o processador quando precisa de atenção: o CPU trabalha noutra coisa até chegar o sinal. Nesse momento, o hardware guarda o PC e os registos essenciais, salta para a **rotina de atendimento** (_interrupt handler_), que transfere os dados e resolve o pedido, e depois retoma o programa interrompido exatamente onde parou.
+
+O custo passa a ser por evento em vez de por espera: cada interrupção paga a troca de contexto e a rotina, mas entre eventos o processador é livre. O problema aparece com dispositivos muito ativos: milhares de interrupções por segundo afogam o CPU em trocas de contexto (_interrupt livelock_ no extremo). As interrupções resolvem a espera, não o volume.
+
+## DMA: delegar a transferência
+
+O **DMA** (_direct memory access_) entrega a transferência a um controlador dedicado: o processador programa o controlador (origem, destino, tamanho) e segue a sua vida; o controlador move o bloco inteiro entre o dispositivo e a memória sem passar pelo CPU; no fim, uma única interrupção anuncia que está pronto.
+
+Compara o custo de mover 1 MiB: por polling ou interrupções, o processador toca em cada palavra; por DMA, toca em meia dúzia de registos de configuração mais uma interrupção. Para blocos grandes, a diferença é de ordens de grandeza em ciclos de CPU libertados. É por isso que discos, placas de rede e GPUs usam DMA: o processador manda, o controlador transporta, a interrupção confirma.
+
+| Mecanismo    | Quem transfere | Custo no CPU                    | Quando usar                             |
+| ------------ | -------------- | ------------------------------- | --------------------------------------- |
+| Polling      | o processador  | um ciclo de espera por pergunta | dispositivos simples, sem mais trabalho |
+| Interrupções | o processador  | uma rotina por evento           | eventos esporádicos                     |
+| DMA          | o controlador  | configuração + 1 interrupção    | blocos grandes e frequentes             |
+
+## Armazenamento secundário
+
+A hierarquia não acaba na RAM. O **HDD** (disco magnético) guarda bits em pratos a rodar: cada acesso paga procura da cabeça (_seek_) mais espera pela rotação mais a transferência. Milissegundos, uma eternidade face aos nanossegundos da RAM. O **SSD** (flash) não tem partes móveis: paga só eletrónica e é dezenas a centenas de vezes mais rápido no acesso aleatório, embora cada célula se desgaste com escritas e o controlador faça gestão de desgaste e recolha de lixo por baixo.
+
+Para o desempenho, a lição é uma só: o nível onde os dados vivem domina o tempo. Um programa que lê do disco em cada iteração é limitado pelo disco por mais cache e pipeline que tenha, tal como a [lei de Amdahl](desempenho/) prevê para qualquer fração não acelerada.
+
+## Estimar desempenho com E/S
+
+A estimação com E/S significativa soma o tempo de computação ao tempo de transferência. Um exemplo: processar um ficheiro de 100 MiB com um SSD que transfere a 500 MiB/s e um núcleo que processa a 200 MiB/s. A leitura demora $100/500 = 0{,}2$ s, o processamento $100/200 = 0{,}5$ s. Em sequência, $0{,}7$ s; com DMA e sobreposição (o controlador traz o próximo bloco enquanto o CPU processa o atual), o total aproxima-se do máximo das parcelas, $0{,}5$ s. O DMA não é só poupança de ciclos: permite esconder a latência da E/S atrás da computação.
+
+:::details[Ver o raciocínio da sobreposição]
+Desenha duas linhas do tempo, uma para o DMA e outra para o CPU, divididas em blocos. Sem sobreposição, cada bloco ocupa primeiro a linha do DMA e depois a do CPU. Com sobreposição (_double buffering_), o bloco N+1 viaja no DMA enquanto o bloco N é processado no CPU: o tempo total tende para o maior dos dois ritmos, e a E/S "desaparece" da fatura desde que o processamento mande.
+:::
