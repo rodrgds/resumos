@@ -99,7 +99,7 @@ Os exemplos usam [CodeMirror](https://codemirror.net/) e [Runno WASI](https://gi
 
 Os motores com acesso a JavaScript ou armazenamento precisam de uma origem própria para proteger as notas. O projeto Cloudflare Pages `resumos-code` executa `npm ci && npm run build:runners` na raiz e publica apenas `runners/dist/`, em `resumos-code.pages.dev`, a partir do mesmo repositório. Nunca sirvas as páginas de leitura nessa origem. Para desenvolvimento, executa `npm run build:runners` e serve `runners/dist/` em `127.0.0.1:4324`; o site pode continuar em `localhost:4321`. Os avisos e as fontes das licenças estão em [runners/NOTICE.md](runners/NOTICE.md).
 
-`WebPlayground` usa um iframe com origem opaca e uma política que bloqueia a rede. Os exemplos executáveis são opcionais por página. O site continua estático. `ToolEmbed` carrega DartPad ou Ripes apenas por escolha do leitor. DartPad compila no serviço externo da Google; Ripes simula RISC-V no navegador. [Linguagens e limites por cadeira](docs/linguagens.md).
+`WebPlayground` usa um iframe com origem opaca e uma política que bloqueia a rede. Os exemplos executáveis são opcionais por página. O site continua estático. `ToolEmbed` carrega DartPad por escolha do leitor e abre Ripes numa janela separada. DartPad compila no serviço externo da Google; Ripes simula RISC-V no navegador. [Linguagens e limites por cadeira](docs/linguagens.md).
 
 `src/lib/markdown-export.mjs` gera os ficheiros públicos `.md`, os SVG de referência e `/llms.txt` após o build. O botão "Perguntar ao Chat" inclui a versão Markdown para facilitar a leitura por assistentes.
 
