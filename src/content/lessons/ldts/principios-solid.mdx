@@ -1,0 +1,80 @@
+---
+title: Princípios SOLID
+description: Os cinco princípios com sinais de violação em código Java e a refatoração de uma classe de jogo.
+section: conteudo
+order: 3
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import solid from '../../ldts/solid.typ?raw';
+
+SOLID são cinco princípios para desenhar classes que aguentam mudanças. Não são regras de sintaxe que o compilador verifica: são cheiros que aprendes a detetar. Cada princípio responde a uma forma típica de o código apodrecer, e todos pagam dividendos quando o projeto cresce nas seis semanas do integrador.
+
+## Os cinco princípios
+
+**S de Single Responsibility**: uma classe tem uma razão para mudar. Uma classe `Jogo` que lê input, atualiza monstros, desenha o ecrã e guarda recordes tem quatro razões para mudar, logo quatro fontes de bugs.
+
+**O de Open/Closed**: aberta a extensão, fechada a modificação. Para adicionar um monstro novo, deves criar uma classe nova, não editar a antiga. A composição da página anterior é a técnica que torna isto possível: o `Monstro` aceita qualquer `Comportamento` sem ser modificado.
+
+**L de Liskov Substitution**: uma subclasse deve poder substituir a classe mãe sem partir nada. Se `Retangulo` tem `setLargura` e `setAltura` independentes, um `Quadrado` que herda dele e força os lados iguais viola o princípio: código que funcionava com retângulos parte-se com quadrados.[^liskov] Quando a herança mente sobre a relação, troca por composição.
+
+**I de Interface Segregation**: interfaces pequenas e específicas em vez de uma interface gorda. Uma interface `Entidade` que obriga paredes e itens a implementar `mover` está errada: separa em `Desenhavel`, `Movivel` e `Coletavel`, e cada classe implementa só o que usa.
+
+**D de Dependency Inversion**: depender de abstrações, não de concretizações. O `Monstro` da página anterior recebe um `Comportamento` (interface), não um `AndarEmZigZag` concreto. Isto também é o que permite testar com doubles, como vais ver nos testes.
+
+[^liskov]: O exemplo do quadrado e do retângulo é o caso clássico de violação, descrito na entrada sobre o princípio de substituição de Liskov na Wikipédia (https://en.wikipedia.org/wiki/Liskov_substitution_principle).
+
+## Exemplo: refatorar uma classe que faz tudo
+
+Parte deste `ControladorArena` que viola Single Responsibility e Open/Closed:
+
+```java
+public class ControladorArena {
+    public void passo(String tecla) {
+        if (tecla.equals("cima")) heroi.subir();
+        else if (tecla.equals("baixo")) heroi.descer();
+        // ... mais teclas, desenho do ecrã e lógica de monstros aqui
+    }
+}
+```
+
+Cada tecla nova, cada monstro novo e cada mudança no desenho mexem nesta classe. A refatoração separa as responsabilidades:
+
+```java
+public class ControladorArena {
+    private final Heroi heroi;
+    private final Map<String, Comando> comandos;
+
+    public void passo(String tecla) {
+        comandos.getOrDefault(tecla, Comando.nada()).executar(heroi);
+    }
+}
+```
+
+Agora cada tecla é um objeto `Comando` registado no mapa. Adicionar uma tecla é criar uma classe e registá-la: extensão sem modificação (Open/Closed), e a classe voltou a ter uma só razão para mudar (Single Responsibility). O desenho do ecrã e a lógica dos monstros saem para as suas próprias classes pelo mesmo processo:
+
+<Typst
+  source={solid}
+  format="svg"
+  alt="Diagrama com a caixa ControladorArena faz tudo a apontar para três caixas separadas: ControladorArena passo, Comando executar e VistaArena desenhar."
+/>
+
+Executa a versão refatorada: regista uma tecla, prime uma tecla registada e uma por registar, e confirma que o controlador nunca precisou de ser editado:
+
+<CodePlayground
+  language="java"
+  title="Comandos sem editar o controlador"
+  code={
+    'import java.util.HashMap;\nimport java.util.Map;\n\ninterface Comando {\n    String executar();\n}\n\nclass Subir implements Comando {\n    public String executar() { return "heroi sobe"; }\n}\n\nclass Nada implements Comando {\n    public String executar() { return "tecla ignorada"; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Map<String, Comando> comandos = new HashMap<>();\n        comandos.put("cima", new Subir());\n        String[] teclas = {"cima", "espaco"};\n        for (String tecla : teclas) {\n            Comando comando = comandos.getOrDefault(tecla, new Nada());\n            System.out.println(tecla + " -> " + comando.executar());\n        }\n    }\n}'
+  }
+/>
+
+A saída mostra `cima -> heroi sobe` e `espaco -> tecla ignorada`. Repara que `Subir` é uma classe nova e o código que escolhe o comando não mudou: é o Open/Closed a funcionar.
+
+:::warning[SOLID não é burocracia]
+Cinco classes de uma linha para substituir um `if` com dois ramos é pior, não melhor. Aplica os princípios onde o código muda com frequência: no núcleo do jogo, não nos cantos que ninguém toca.
+:::
+
+<YouTube id="_InRvNmB1Ug" title="SOLID Principles in Java (NodePrism)" />
