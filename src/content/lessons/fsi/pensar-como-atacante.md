@@ -33,13 +33,13 @@ Perante um desafio novo, resiste ao impulso de experimentar comandos ao acaso:
 
 Aplica os cinco passos à loja da [apresentação](index/), que vende em linha e guarda dados de clientes:
 
-| Ativo | Atacante plausível | Vetor | Cenário | Contramedida (página) |
-| ----- | ------------------ | ----- | ------- | --------------------- |
-| Dados de clientes e cartões | criminoso organizado | formulário de registo | injeção SQL devolve a tabela inteira | consultas parametrizadas e conta só de leitura ([Segurança Web](/cadeiras/fsi/seguranca-web/)) |
-| Preços e stock | concorrente ou cliente malicioso | painel de administração | palavra-passe fraca permite alterar preços | chaves SSH, sem `root` remoto, papéis por função ([Controlo de acessos](controlo-acessos/)) |
-| Disponibilidade do site | extorsionista | rede exposta | SYN flood ou avalanche HTTP na véspera de saldos | fila gerida, limitação de débito, filtragem a montante ([Segurança de redes](seguranca-redes/)) |
-| Cópias de segurança | ex-funcionário com acessos antigos | pasta partilhada | leitura de arquivos com dados de clientes | utilizador próprio, arquivos cifrados, acessos revogados ([Criptografia](criptografia/), [Controlo de acessos](controlo-acessos/)) |
-| Código da aplicação | fornecedor ou erro interno | dependência desatualizada | biblioteca vulnerável abre execução remota | atualizações e validação de entradas ([Programação defensiva](programacao-defensiva/)) |
+| Ativo                       | Atacante plausível                 | Vetor                     | Cenário                                          | Contramedida (página)                                                                                                              |
+| --------------------------- | ---------------------------------- | ------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Dados de clientes e cartões | criminoso organizado               | formulário de registo     | injeção SQL devolve a tabela inteira             | consultas parametrizadas e conta só de leitura ([Segurança Web](/cadeiras/fsi/seguranca-web/))                                     |
+| Preços e stock              | concorrente ou cliente malicioso   | painel de administração   | palavra-passe fraca permite alterar preços       | chaves SSH, sem `root` remoto, papéis por função ([Controlo de acessos](controlo-acessos/))                                        |
+| Disponibilidade do site     | extorsionista                      | rede exposta              | SYN flood ou avalanche HTTP na véspera de saldos | fila gerida, limitação de débito, filtragem a montante ([Segurança de redes](seguranca-redes/))                                    |
+| Cópias de segurança         | ex-funcionário com acessos antigos | pasta partilhada          | leitura de arquivos com dados de clientes        | utilizador próprio, arquivos cifrados, acessos revogados ([Criptografia](criptografia/), [Controlo de acessos](controlo-acessos/)) |
+| Código da aplicação         | fornecedor ou erro interno         | dependência desatualizada | biblioteca vulnerável abre execução remota       | atualizações e validação de entradas ([Programação defensiva](programacao-defensiva/))                                             |
 
 Para reutilizares, copia a tabela e preenche-a para o teu alvo: uma linha por ativo, sem linhas decorativas. Se uma célula te obrigar a inventar, marca-a como dúvida e vai verificar ao sistema em vez de a fechar com imaginação. O modelo vale pela honestidade, não pelo tamanho.
 

@@ -25,7 +25,7 @@ Depois usa-se como tabela: `SELECT * FROM TotalPorCliente WHERE total > 100;` de
 
 ## Gatilhos: regras que se cumprem sozinhas
 
-O `CHECK (stock >= 0)` impede stock negativo em escritas diretas, mas uma venda deve *decrementar* o stock e falhar se não houver. Um gatilho corre antes de cada atualização e aborta a operação proibida:
+O `CHECK (stock >= 0)` impede stock negativo em escritas diretas, mas uma venda deve _decrementar_ o stock e falhar se não houver. Um gatilho corre antes de cada atualização e aborta a operação proibida:
 
 ```sql
 CREATE TRIGGER impede_stock_negativo
@@ -37,7 +37,7 @@ BEGIN
 END;
 ```
 
-Teste: `UPDATE Produto SET stock = stock - 1 WHERE id = 12;` passa (5 para 4). Mas `UPDATE Produto SET stock = stock - 10 WHERE id = 12;` aborta com a mensagem do gatilho e o stock continua 4, porque a transação da instrução é desfeita. Repara na diferença para o `CHECK`: o gatilho reage ao *evento* (a tentativa de atualização) e pode olhar para os valores antigos (`OLD`) e novos (`NEW`).
+Teste: `UPDATE Produto SET stock = stock - 1 WHERE id = 12;` passa (5 para 4). Mas `UPDATE Produto SET stock = stock - 10 WHERE id = 12;` aborta com a mensagem do gatilho e o stock continua 4, porque a transação da instrução é desfeita. Repara na diferença para o `CHECK`: o gatilho reage ao _evento_ (a tentativa de atualização) e pode olhar para os valores antigos (`OLD`) e novos (`NEW`).
 
 ## Controlo de acessos
 

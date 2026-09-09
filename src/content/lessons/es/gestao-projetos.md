@@ -25,12 +25,12 @@ Isto diz quantos pontos cabem no próximo sprint (cerca de 20) e quando termina 
 
 ## Gestão clássica contra gestão ágil
 
-| | Gestão clássica | Gestão ágil |
-|---|---|---|
-| Plano | Detalhado no início, mudar custa | Revisto a cada sprint, mudar é rotina |
-| Requisitos | Fixos por contrato | Ordenados por valor, evoluem |
-| Controlo | Cumprir o plano inicial | Entregar valor a cada iteração |
-| Cliente | Vê o produto no fim | Vê incrementos e decide o rumo |
+|            | Gestão clássica                        | Gestão ágil                             |
+| ---------- | -------------------------------------- | --------------------------------------- |
+| Plano      | Detalhado no início, mudar custa       | Revisto a cada sprint, mudar é rotina   |
+| Requisitos | Fixos por contrato                     | Ordenados por valor, evoluem            |
+| Controlo   | Cumprir o plano inicial                | Entregar valor a cada iteração          |
+| Cliente    | Vê o produto no fim                    | Vê incrementos e decide o rumo          |
 | Adequada a | Requisitos estáveis, contratos rígidos | Requisitos incertos, feedback frequente |
 
 Nenhuma vence sempre. Um contrato com âmbito fechado e preço fixo pede gestão clássica. Um produto novo, em que ninguém sabe ao certo o que os utilizadores querem, pede gestão ágil. Numa pergunta de comparação, ancora a escolha na estabilidade dos requisitos.

@@ -27,11 +27,11 @@ O bit **setuid** é a exceção controlada: um programa com setuid corre com as 
 
 O ficheiro `/srv/loja/precos.csv` tem dono `loja` com `rw-`, grupo `vendas` com `r--` e outros sem nada. A pasta `/srv/loja` tem `rwx` para `root`, `r-x` para `vendas` e nada para outros. Decide quatro pedidos:
 
-| Pedido | Decisão | Porquê |
-| ------ | ------- | ------ |
-| A Ana, do grupo `vendas`, quer ler os preços | Sim | Atravessa a pasta com o x do grupo e lê com o r do grupo |
-| O Bruno, do grupo `vendas`, quer corrigir um preço | Não | O grupo só tem r no ficheiro. O que não foi permitido é proibido: nega por defeito |
-| O Carlos, de fora das `vendas`, quer ler os preços | Não | A pasta fecha-lhe a passagem antes sequer de olhar para o ficheiro. Cada acesso é verificado, sem atalhos |
-| O script de atualização, com setuid do dono `loja`, quer escrever | Sim | Corre com as permissões do dono, que tem w. Só este programa ganha esse poder, não o utilizador que o corre |
+| Pedido                                                            | Decisão | Porquê                                                                                                      |
+| ----------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
+| A Ana, do grupo `vendas`, quer ler os preços                      | Sim     | Atravessa a pasta com o x do grupo e lê com o r do grupo                                                    |
+| O Bruno, do grupo `vendas`, quer corrigir um preço                | Não     | O grupo só tem r no ficheiro. O que não foi permitido é proibido: nega por defeito                          |
+| O Carlos, de fora das `vendas`, quer ler os preços                | Não     | A pasta fecha-lhe a passagem antes sequer de olhar para o ficheiro. Cada acesso é verificado, sem atalhos   |
+| O script de atualização, com setuid do dono `loja`, quer escrever | Sim     | Corre com as permissões do dono, que tem w. Só este programa ganha esse poder, não o utilizador que o corre |
 
 Repara no caso do Bruno: é o negar por defeito da página anterior a trabalhar. E repara no Carlos: a proteção da pasta torna irrelevante a permissão do ficheiro, o que mostra por que razão camadas independentes contam. Se um dia o grupo `vendas` precisar de escrever, a resposta certa é um papel novo ou uma permissão explícita e registada, nunca abrir a pasta a toda a gente.

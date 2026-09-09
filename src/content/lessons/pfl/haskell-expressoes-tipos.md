@@ -49,14 +49,14 @@ sinal n | n > 0     = "positivo"
 
 Os tipos que vais usar já na primeira semana:
 
-| Tipo | Valores | Exemplo |
-| ---- | ------- | ------- |
-| `Int` | inteiros de precisão fixa | `42`, `-7` |
-| `Integer` | inteiros sem limite | `10^100` |
-| `Double` | reais em vírgula flutuante | `3.14` |
-| `Bool` | lógicos | `True`, `False` |
-| `Char` | carateres | `'a'` |
-| `String` | listas de carateres | `"ola"` |
+| Tipo      | Valores                    | Exemplo         |
+| --------- | -------------------------- | --------------- |
+| `Int`     | inteiros de precisão fixa  | `42`, `-7`      |
+| `Integer` | inteiros sem limite        | `10^100`        |
+| `Double`  | reais em vírgula flutuante | `3.14`          |
+| `Bool`    | lógicos                    | `True`, `False` |
+| `Char`    | carateres                  | `'a'`           |
+| `String`  | listas de carateres        | `"ola"`         |
 
 `String` é só um sinónimo de `[Char]`, por isso `"ola"` é a lista `'o':'l':'a':[]` e todas as funções de listas funcionam em strings. Já `Int` contra `Double` é uma distinção a sério: `3 / 2` dá `1.5` em `Double`, mas com `Int` precisas de `div 3 2`, que dá `1`. Quando o GHC se queixar de tipos numa divisão, esta é quase sempre a causa.
 

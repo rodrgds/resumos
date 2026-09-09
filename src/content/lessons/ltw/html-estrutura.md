@@ -14,23 +14,23 @@ Toda a página HTML5 começa com a mesma base. Guarda isto em `produto.html`:
 ```html
 <!DOCTYPE html>
 <html lang="pt">
-<head>
-  <meta charset="utf-8">
-  <title>Queijo da Serra : Mercearia</title>
-  <link rel="stylesheet" href="estilo.css">
-</head>
-<body>
-  <header>
-    <h1>Mercearia Central</h1>
-    <nav><a href="index.html">Início</a></nav>
-  </header>
-  <main>
-    <article>
-      <h2>Queijo da Serra</h2>
-      <p>Curado 60 dias. Preço: 8,50 €.</p>
-    </article>
-  </main>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Queijo da Serra : Mercearia</title>
+    <link rel="stylesheet" href="estilo.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Mercearia Central</h1>
+      <nav><a href="index.html">Início</a></nav>
+    </header>
+    <main>
+      <article>
+        <h2>Queijo da Serra</h2>
+        <p>Curado 60 dias. Preço: 8,50 €.</p>
+      </article>
+    </main>
+  </body>
 </html>
 ```
 
@@ -45,9 +45,9 @@ O formulário de encomenda mostra a regra de ouro da acessibilidade: cada campo 
 ```html
 <form action="encomenda.php" method="post">
   <label for="nome">Nome:</label>
-  <input type="text" id="nome" name="nome" required>
+  <input type="text" id="nome" name="nome" required />
   <label for="qtd">Quantidade:</label>
-  <input type="number" id="qtd" name="qtd" min="1" value="1">
+  <input type="number" id="qtd" name="qtd" min="1" value="1" />
   <button type="submit">Encomendar</button>
 </form>
 ```
@@ -64,10 +64,21 @@ A lista de preços da mercearia é uma tabela, com cabeçalho em `th` e legenda 
 
 ```html
 <table>
-  <caption>Preços por quilo</caption>
-  <tr><th>Produto</th><th>Preço</th></tr>
-  <tr><td>Queijo da Serra</td><td>8,50 €</td></tr>
-  <tr><td>Presunto</td><td>12,00 €</td></tr>
+  <caption>
+    Preços por quilo
+  </caption>
+  <tr>
+    <th>Produto</th>
+    <th>Preço</th>
+  </tr>
+  <tr>
+    <td>Queijo da Serra</td>
+    <td>8,50 €</td>
+  </tr>
+  <tr>
+    <td>Presunto</td>
+    <td>12,00 €</td>
+  </tr>
 </table>
 ```
 

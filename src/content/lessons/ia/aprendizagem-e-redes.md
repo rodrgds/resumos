@@ -23,10 +23,10 @@ A lição não é que penas seja sempre a resposta, é o método: calcula a entr
 
 Para avaliar um classificador, conta acertos e erros por classe na **matriz de confusão**. Testa a regra ingénua "voa, logo é ave" em 6 animais (pardal, águia e pinguim aves; morcego, cão e golfinho mamíferos):
 
-| Real \ Previsto | Ave       | Mamífero  |
-| --------------- | --------- | --------- |
-| Ave             | 2 (pardal, águia) | 1 (pinguim) |
-| Mamífero        | 1 (morcego) | 2 (cão, golfinho) |
+| Real \ Previsto | Ave               | Mamífero          |
+| --------------- | ----------------- | ----------------- |
+| Ave             | 2 (pardal, águia) | 1 (pinguim)       |
+| Mamífero        | 1 (morcego)       | 2 (cão, golfinho) |
 
 Exatidão: 4 em 6. O pinguim é um **falso negativo** (ave prevista mamífero) e o morcego um **falso positivo** (mamífero previsto ave). Repara como a exatidão sozinha engana: se 95 por cento dos animais fossem mamíferos, prever sempre mamífero dava 95 por cento de exatidão sem aprender nada. É por isso que se olha para a matriz e não só para o número global.
 

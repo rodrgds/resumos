@@ -20,7 +20,9 @@ console.log('Total: ' + preco * qtd);
 Isto escreve `Total: 17` na consola do navegador, que abres nas ferramentas de desenvolvimento. As funções são valores como outros quaisquer, por isso passam-se como argumentos, o que vais usar em todos os eventos:
 
 ```js
-function soma(a, b) { return a + b; }
+function soma(a, b) {
+  return a + b;
+}
 const dobro = (x) => x * 2;
 ```
 
@@ -33,16 +35,16 @@ O DOM é a página vista como uma árvore de objetos: cada etiqueta é um nó qu
 ```js
 const lista = document.querySelector('#tarefas');
 document.querySelector('#form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const texto = document.querySelector('#texto').value.trim();
-    if (!texto) return;
-    const li = document.createElement('li');
-    li.textContent = texto;
-    const btn = document.createElement('button');
-    btn.textContent = 'Remover';
-    btn.addEventListener('click', () => li.remove());
-    li.append(btn);
-    lista.append(li);
+  e.preventDefault();
+  const texto = document.querySelector('#texto').value.trim();
+  if (!texto) return;
+  const li = document.createElement('li');
+  li.textContent = texto;
+  const btn = document.createElement('button');
+  btn.textContent = 'Remover';
+  btn.addEventListener('click', () => li.remove());
+  li.append(btn);
+  lista.append(li);
 });
 ```
 
@@ -53,11 +55,12 @@ O `querySelector` escolhe elementos com a mesma sintaxe do CSS. O `addEventListe
 Um clique num botão dentro de um cartão dentro da página atravessa os três: primeiro desce do documento até ao botão (captura) e depois sobe de volta (propagação). Por omissão, os teus tratadores correm na subida. Experimenta este exercício com um botão dentro de uma `div`:
 
 ```js
-document.querySelector('#caixa').addEventListener('click', () =>
-    console.log('caixa'));
+document
+  .querySelector('#caixa')
+  .addEventListener('click', () => console.log('caixa'));
 document.querySelector('#botao').addEventListener('click', (e) => {
-    e.stopPropagation();
-    console.log('botão');
+  e.stopPropagation();
+  console.log('botão');
 });
 ```
 
@@ -69,12 +72,11 @@ O HTML já valida o básico com `required` e `type`, mas regras como "a data de 
 
 ```js
 document.querySelector('#encomenda').addEventListener('submit', (e) => {
-    const qtd = Number(document.querySelector('#qtd').value);
-    if (!(qtd >= 1)) {
-        e.preventDefault();
-        document.querySelector('#erro').textContent =
-            'A quantidade mínima é 1.';
-    }
+  const qtd = Number(document.querySelector('#qtd').value);
+  if (!(qtd >= 1)) {
+    e.preventDefault();
+    document.querySelector('#erro').textContent = 'A quantidade mínima é 1.';
+  }
 });
 ```
 

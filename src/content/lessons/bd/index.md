@@ -1,5 +1,5 @@
 ---
-title: "Bases de Dados: guia da cadeira"
+title: 'Bases de Dados: guia da cadeira'
 description: O que a cadeira exige, o mapa das páginas e como estudar do modelo conceptual ao NoSQL.
 section: conteudo
 order: 0

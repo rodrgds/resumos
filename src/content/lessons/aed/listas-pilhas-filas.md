@@ -27,14 +27,14 @@ Ambas se implementam sobre lista ligada (empilhar é inserir na cabeça; desenfi
 
 Duas pilhas LIFO combinam-se numa fila FIFO. Mantém uma pilha de **entrada** e uma de **saída**: `enqueue` empilha na entrada; `dequeue` desempilha da saída, e se a saída estiver vazia, despeja a entrada toda para a saída primeiro (o que inverte a ordem duas vezes e a repõe). Simula `push 1, push 2, pop, push 3, pop, pop`, onde push é enqueue e pop é dequeue:
 
-| Passo | Entrada (topo à direita) | Saída (topo à direita) | Devolve |
-| ----- | ------------------------ | ---------------------- | ------- |
-| push 1 | [1] | [] | |
-| push 2 | [1, 2] | [] | |
-| pop | [] | [2, 1] após despejo | 1 |
-| push 3 | [3] | [2] | |
-| pop | [3] | [] | 2 |
-| pop | [] | [3] após despejo | 3 |
+| Passo  | Entrada (topo à direita) | Saída (topo à direita) | Devolve |
+| ------ | ------------------------ | ---------------------- | ------- |
+| push 1 | [1]                      | []                     |         |
+| push 2 | [1, 2]                   | []                     |         |
+| pop    | []                       | [2, 1] após despejo    | 1       |
+| push 3 | [3]                      | [2]                    |         |
+| pop    | [3]                      | []                     | 2       |
+| pop    | []                       | [3] após despejo       | 3       |
 
 A saída é $1, 2, 3$: ordem de chegada, portanto FIFO. Cada elemento muda de pilha no máximo uma vez, por isso o custo é $O(1)$ **amortizado**: um `pop` isolado pode custar $O(n)$ no despejo, mas $n$ operações custam $O(n)$ no total. A distinção entre "cada operação" e "a média da sequência" é a ideia de amortização, que vais reencontrar nas tabelas de dispersão e nos vetores que crescem.
 

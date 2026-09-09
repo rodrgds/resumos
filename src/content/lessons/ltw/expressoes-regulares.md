@@ -24,8 +24,12 @@ Lê `/^9\d{8}$/` em voz alta: começa (`^`), um `9`, oito dígitos (`\d{8}`), te
 O formulário de registo da mercearia pede email, data de nascimento e telemóvel. No HTML, o atributo `pattern` valida antes de enviar:
 
 ```html
-<input type="text" name="tel" pattern="9[0-9]{8}"
-       title="Nove dígitos a começar por 9">
+<input
+  type="text"
+  name="tel"
+  pattern="9[0-9]{8}"
+  title="Nove dígitos a começar por 9"
+/>
 ```
 
 No PHP, confirma no servidor com `preg_match`, que devolve 1 se casar:

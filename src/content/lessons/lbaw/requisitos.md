@@ -51,12 +51,12 @@ Cada história deve ser pequena o suficiente para caber numa entrega e concreta 
 
 Junta tudo numa tabela com identificador, descrição, ator e prioridade. A tabela é o contrato do grupo: o que lá está faz-se, o que lá não está não se faz.
 
-| Id | Requisito | Ator | Prioridade |
-| -- | --------- | ---- | ---------- |
-| R1 | Comprar bilhetes para uma sessão com lugares livres | Comprador | Alta |
-| R2 | Registar conta com email único | Visitante | Alta |
-| R3 | Pesquisar eventos por data | Visitante | Média |
-| R4 | Consultar o histórico de compras | Comprador | Média |
+| Id  | Requisito                                           | Ator      | Prioridade |
+| --- | --------------------------------------------------- | --------- | ---------- |
+| R1  | Comprar bilhetes para uma sessão com lugares livres | Comprador | Alta       |
+| R2  | Registar conta com email único                      | Visitante | Alta       |
+| R3  | Pesquisar eventos por data                          | Visitante | Média      |
+| R4  | Consultar o histórico de compras                    | Comprador | Média      |
 
 E agora o requisito rejeitado: "o sistema deve ser rápido". Parece razoável, mas não diz quanto é rápido, a medir onde nem em que condições. Rejeita-o na forma atual e substitui-o por algo verificável, por exemplo "a pesquisa de eventos responde em menos de 2 segundos com 1000 eventos na base de dados". Um requisito que não se consegue testar não se consegue cumprir.
 

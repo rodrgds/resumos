@@ -11,13 +11,13 @@ A pesquisa cega expande por ordem geométrica e só encontra o objetivo por exau
 
 Grelha 4 por 4, início em (0, 0), objetivo em (3, 3), movimentos nas quatro direções com custo 1. Casas bloqueadas: (1, 1), (1, 2) e (2, 1). As casas livres e a heurística de Manhattan $h(r, c) = (3 - r) + (3 - c)$ são:
 
-| Casa  | h | Casa  | h | Casa  | h |
-| ----- | - | ----- | - | ----- | - |
-| (0,0) | 6 | (0,1) | 5 | (0,2) | 4 |
-| (0,3) | 3 | (1,0) | 5 | (1,3) | 2 |
-| (2,0) | 4 | (2,2) | 2 | (2,3) | 1 |
-| (3,0) | 3 | (3,1) | 2 | (3,2) | 1 |
-| (3,3) | 0 |       |   |       |   |
+| Casa  | h   | Casa  | h   | Casa  | h   |
+| ----- | --- | ----- | --- | ----- | --- |
+| (0,0) | 6   | (0,1) | 5   | (0,2) | 4   |
+| (0,3) | 3   | (1,0) | 5   | (1,3) | 2   |
+| (2,0) | 4   | (2,2) | 2   | (2,3) | 1   |
+| (3,0) | 3   | (3,1) | 2   | (3,2) | 1   |
+| (3,3) | 0   |       |     |       |     |
 
 Há dois caminhos ótimos com 6 passos: por cima, (0,0), (0,1), (0,2), (0,3), (1,3), (2,3), (3,3); e por baixo, (0,0), (1,0), (2,0), (3,0), (3,1), (3,2), (3,3). Confirma que nenhum caminho tem 5 passos: são precisas pelo menos 3 descidas e 3 direitas, e os bloqueios não permitem atalhos na diagonal.
 

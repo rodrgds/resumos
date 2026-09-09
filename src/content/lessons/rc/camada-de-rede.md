@@ -17,12 +17,12 @@ Cada sub-rede reserva dois endereços: o primeiro identifica a própria rede e o
 
 Pegar na rede `192.168.1.0/24` e parti-la em 4 sub-redes iguais pede 2 bits emprestados à parte das máquinas: o prefixo passa a `/26` e a máscara a `255.255.255.192`. Cada sub-rede fica com $2^6 = 64$ endereços, 62 utilizáveis. A tabela fica assim:
 
-| Sub-rede | Rede | Utilizáveis | Difusão |
-| --- | --- | --- | --- |
-| 1 | `192.168.1.0/26` | `192.168.1.1` a `192.168.1.62` | `192.168.1.63` |
-| 2 | `192.168.1.64/26` | `192.168.1.65` a `192.168.1.126` | `192.168.1.127` |
-| 3 | `192.168.1.128/26` | `192.168.1.129` a `192.168.1.190` | `192.168.1.191` |
-| 4 | `192.168.1.192/26` | `192.168.1.193` a `192.168.1.254` | `192.168.1.255` |
+| Sub-rede | Rede               | Utilizáveis                       | Difusão         |
+| -------- | ------------------ | --------------------------------- | --------------- |
+| 1        | `192.168.1.0/26`   | `192.168.1.1` a `192.168.1.62`    | `192.168.1.63`  |
+| 2        | `192.168.1.64/26`  | `192.168.1.65` a `192.168.1.126`  | `192.168.1.127` |
+| 3        | `192.168.1.128/26` | `192.168.1.129` a `192.168.1.190` | `192.168.1.191` |
+| 4        | `192.168.1.192/26` | `192.168.1.193` a `192.168.1.254` | `192.168.1.255` |
 
 Confere a segunda: começa em 64 porque cada bloco tem 64 endereços ($0$, $64$, $128$, $192$); o último utilizável é $64 + 62 = 126$ e a difusão é $127$. O método geral é sempre este: $n$ bits emprestados dão $2^n$ sub-redes, e cada bloco começa em múltiplo do seu tamanho.
 

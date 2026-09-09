@@ -30,12 +30,12 @@ Aplica os princípios passo a passo:
 3. **Defesa em profundidade.** Fecha a pasta de destino a todos menos ao utilizador `copias`, cifra os arquivos com uma chave guardada noutro local e regista cada execução com data e resultado. Para ler uma cópia, o atacante precisa agora de vencer as permissões, a localização isolada e a cifragem, e o registo denuncia a tentativa.
 4. **Negar por defeito.** O restauro de uma cópia exige confirmação explícita e repõe permissões restritas, em vez de devolver ficheiros abertos a toda a gente. Nada ganha acesso por ser novo ou por ser urgente.
 
-| Antes | Depois | Princípio aplicado |
-| ----- | ------ | ------------------ |
-| Corre como `root` | Utilizador `copias` só com o necessário | privilégio mínimo |
-| Na mesma máquina do site | Contentor ou máquina dedicada | isolamento |
-| Pasta aberta, sem registo | Permissões fechadas, arquivos cifrados, registo de cada execução | defesa em profundidade |
-| Restauro devolve ficheiros abertos | Restauro com confirmação e permissões restritas | negar por defeito |
+| Antes                              | Depois                                                           | Princípio aplicado     |
+| ---------------------------------- | ---------------------------------------------------------------- | ---------------------- |
+| Corre como `root`                  | Utilizador `copias` só com o necessário                          | privilégio mínimo      |
+| Na mesma máquina do site           | Contentor ou máquina dedicada                                    | isolamento             |
+| Pasta aberta, sem registo          | Permissões fechadas, arquivos cifrados, registo de cada execução | defesa em profundidade |
+| Restauro devolve ficheiros abertos | Restauro com confirmação e permissões restritas                  | negar por defeito      |
 
 :::warning[Camadas independentes, não empilhadas no mesmo ponto]
 Duas verificações da mesma palavra-passe no mesmo programa não são defesa em profundidade, são a mesma camada duas vezes. Camadas contam quando falham por razões diferentes: a firewall pode estar mal configurada e as permissões de ficheiros continuarem certas, porque são mecanismos distintos geridos em pontos distintos.

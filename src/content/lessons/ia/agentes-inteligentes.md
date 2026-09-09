@@ -29,12 +29,12 @@ Aspirar duas salas é discreto, estático na prática, sequencial e parcialmente
 
 O agente **reativo** (ou reflexo simples) decide só com a perceção atual, por regras condição-ação. Para o aspirador:
 
-| Perceção      | Ação      |
-| ------------- | --------- |
-| (A, sujo)     | `Aspirar` |
-| (A, limpo)    | `Direita` |
-| (B, sujo)     | `Aspirar` |
-| (B, limpo)    | `Esquerda` |
+| Perceção   | Ação       |
+| ---------- | ---------- |
+| (A, sujo)  | `Aspirar`  |
+| (A, limpo) | `Direita`  |
+| (B, sujo)  | `Aspirar`  |
+| (B, limpo) | `Esquerda` |
 
 Isto limpa as duas salas se começarem sujas, e é baratíssimo. Mas repara na fraqueza: depois de limpar A e ir para B, se B já estava limpo, o agente volta para A, encontra-a limpa, volta para B, e vagueia para sempre sem saber que o trabalho acabou. Sem memória, não há noção de progresso.
 

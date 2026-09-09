@@ -13,12 +13,12 @@ Desenhar o segmento de $(0, 0)$ a $(5, 2)$ parece pedir a reta $y = 0{,}4x$ com 
 
 Aqui $\Delta x = 5$ e $\Delta y = 2$, logo $d$ começa em $2 \times 2 - 5 = -1$. Segue os passos a partir de $(0, 0)$:
 
-| $x$ | $d$ antes | Escolha | Píxel | $d$ depois |
-| --- | --------- | ------- | ----- | ---------- |
-| 1   | $-1$      | E       | $(1, 0)$ | $-1 + 4 = 3$ |
-| 2   | $3$       | NE      | $(2, 1)$ | $3 - 6 = -3$ |
-| 3   | $-3$      | E       | $(3, 1)$ | $-3 + 4 = 1$ |
-| 4   | $1$       | NE      | $(4, 2)$ | $1 - 6 = -5$ |
+| $x$ | $d$ antes | Escolha | Píxel    | $d$ depois    |
+| --- | --------- | ------- | -------- | ------------- |
+| 1   | $-1$      | E       | $(1, 0)$ | $-1 + 4 = 3$  |
+| 2   | $3$       | NE      | $(2, 1)$ | $3 - 6 = -3$  |
+| 3   | $-3$      | E       | $(3, 1)$ | $-3 + 4 = 1$  |
+| 4   | $1$       | NE      | $(4, 2)$ | $1 - 6 = -5$  |
 | 5   | $-5$      | E       | $(5, 2)$ | $-5 + 4 = -1$ |
 
 Os píxeis acesos são $(0, 0)$, $(1, 0)$, $(2, 1)$, $(3, 1)$, $(4, 2)$ e $(5, 2)$. Confirma com a reta: em $x = 2$, $y = 0{,}8$ arredonda para $1$; em $x = 4$, $y = 1{,}6$ arredonda para $2$. O algoritmo nunca calculou $0{,}8$ nem $1{,}6$: seguiu o sinal de $d$ com inteiros. Para outros octantes troca-se o eixo de avanço ou o sinal, mas a estrutura é a mesma.

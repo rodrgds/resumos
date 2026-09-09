@@ -36,13 +36,13 @@ Jakob Nielsen resumiu a avaliação de interfaces em dez pontos. Usa-os como per
 
 Avalia o ecrã de carregamento do cartão e o ecrã de consulta de saldo ementa da semana:
 
-| # | Carregar cartão | Consultar ementa |
-| - | --------------- | ---------------- |
-| 1 | Sem indicador de progresso; o utilizador não sabe se o pagamento foi processado. Gravidade alta. | OK, mostra "ementa desta semana" com datas. |
-| 3 | Sem botão de cancelar a meio do pagamento. Gravidade média. | OK, voltar atrás é trivial. |
-| 5 | Aceita valores negativos no montante e só reclama no fim. Gravidade alta. | Não aplicável. |
-| 6 | Pede o número do cartão, impresso no verso do cartão físico que está na carteira. Gravidade média. | OK, nada a decorar. |
-| 9 | Erro "transação 0x41 recusada", sem dizer se foi o banco ou o saldo. Gravidade alta. | OK. |
+| #   | Carregar cartão                                                                                    | Consultar ementa                            |
+| --- | -------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 1   | Sem indicador de progresso; o utilizador não sabe se o pagamento foi processado. Gravidade alta.   | OK, mostra "ementa desta semana" com datas. |
+| 3   | Sem botão de cancelar a meio do pagamento. Gravidade média.                                        | OK, voltar atrás é trivial.                 |
+| 5   | Aceita valores negativos no montante e só reclama no fim. Gravidade alta.                          | Não aplicável.                              |
+| 6   | Pede o número do cartão, impresso no verso do cartão físico que está na carteira. Gravidade média. | OK, nada a decorar.                         |
+| 9   | Erro "transação 0x41 recusada", sem dizer se foi o banco ou o saldo. Gravidade alta.               | OK.                                         |
 
 Repara no método: heurística a heurística, ecrã a ecrã, cada violação com descrição concreta e gravidade. "Gravidade" combina frequência, impacto e persistência: um erro raro mas destrutivo (pagar duas vezes) supera um incómodo diário pequeno. Esta tabela é o formato esperado numa [avaliação heurística](avaliacao-usabilidade/); guarda-o.
 
