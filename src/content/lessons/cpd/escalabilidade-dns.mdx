@@ -5,6 +5,12 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+import arvore from '../../cpd/arvore-dns.typ?raw';
+import passos from '../../cpd/passos-dns.dot?raw';
+
 Escalabilidade é a capacidade de servir mais carga acrescentando recursos, sem redesenhar o sistema. Depois de distribuir o trabalho e tolerar falhas, esta página fecha a cadeira com as técnicas que fazem sistemas crescerem e com o exemplo maior de todos, o DNS.
 
 ## As três técnicas básicas
@@ -12,6 +18,12 @@ Escalabilidade é a capacidade de servir mais carga acrescentando recursos, sem 
 A **replicação** põe cópias dos mesmos dados ou serviços em várias máquinas. Ganha-se disponibilidade e capacidade de leitura, paga-se com a necessidade de manter as cópias coerentes. A **partição** (_sharding_) divide os dados em fatias, cada uma entregue a um grupo de máquinas. Ganha-se capacidade de escrita e de armazenamento, paga-se com operações que atravessam fatias. A **cache** guarda respostas recentes perto de quem pergunta, com um prazo de validade (TTL). Ganha-se velocidade e alívio nos servidores, paga-se com dados potencialmente desatualizados dentro do TTL.
 
 Quase todos os sistemas grandes combinam as três, e o DNS mostra como.
+
+<Typst
+  source={arvore}
+  format="svg"
+  alt="Árvore do DNS. A raiz aponta para ponto pt e ponto com, ponto pt aponta para exemplo ponto pt. Ao lado, o resolvedor com cache e TTL consulta cada nível por ordem."
+/>
 
 ## Exemplo completo
 
@@ -22,7 +34,20 @@ Resolução de `www.exemplo.pt` por um resolvedor que parte de cache vazia:
 3. Pergunta ao servidor **autoritativo** de `exemplo.pt` qual o endereço de `www.exemplo.pt` e recebe a resposta final.
 4. Guarda cada resposta em cache pelo seu TTL. O próximo pedido igual resolve-se localmente, sem nenhum pacote na rede.
 
-Onde está a escalabilidade: a hierarquia distribui a carga, porque os raiz só apontam e nunca resolvem nomes finais. A partição por zona divide o espaço de nomes pelo mundo. A cache absorve a repetição, porque poucos nomes concentram a maioria dos pedidos. Nenhum servidor precisa de conhecer o sistema todo, e é por isso que o DNS escala para milhares de milhões de consultas diárias.
+Onde está a escalabilidade: a hierarquia distribui a carga, porque os raiz só apontam e nunca resolvem nomes finais. A partição por zona divide o espaço de nomes pelo mundo. A cache absorve a repetição, porque poucos nomes concentram a maioria dos pedidos. Nenhum servidor precisa de conhecer o sistema todo, e é por isso que o DNS escala para milhares de milhões de consultas diárias[^volume-dns].
+
+<Dot
+  source={passos}
+  alt="Os 4 passos da resolução. O resolvedor pergunta à raiz, depois ao servidor ponto pt, depois ao autoritativo, e guarda tudo em cache com TTL."
+/>
+
+<YouTube id="uOfonONtIuk" title="How DNS Works - Computerphile" />
+
+## Para saber mais
+
+- [How DNS Works](https://howdns.works/): a resolução passo a passo e interativa, que espelha o exemplo desta página.
+
+[^volume-dns]: A ordem de grandeza vem da combinação das três técnicas. Como a cache absorve a repetição e cada nível só aponta para o seguinte, os servidores autoritativos veem uma fração minúscula do total, e é essa fração pequena que permite ao sistema aguentar um volume planetário.
 
 :::tip[Como pensar em teste]
 Perante "como escala este sistema", procura as três técnicas pelo nome. Réplicas para ler mais e sobreviver a falhas, partição para guardar mais e escrever mais, cache com TTL para repetir barato. Depois identifica o preço de cada uma, coerência, operações entre fatias e dados temporariamente velhos.

@@ -5,11 +5,20 @@ section: conteudo
 order: 4
 ---
 
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+import pipeline from '../../cpd/pipeline.dot?raw';
+
 Há três formas de dividir trabalho, e cada uma pede uma ferramenta diferente. Esta página distingue-as e mete-te a paralelizar um ciclo real com OpenMP, o modelo de memória partilhada da primeira metade da cadeira.
 
 ## Os três tipos
 
 No paralelismo **funcional**, tarefas diferentes correm ao mesmo tempo. Um núcleo comprime imagens enquanto outro trata do áudio. No paralelismo **de dados**, a mesma operação aplica-se a fatias diferentes dos dados. Cada núcleo soma uma parte do vetor. No paralelismo **em streams** (_pipeline_), os dados atravessam fases encadeadas. Enquanto a fase 3 trata a imagem 1, a fase 2 trata a imagem 2 e a fase 1 recebe a imagem 3.
+
+<Dot
+  source={pipeline}
+  alt="Três fases encadeadas. A fase 1 tem a imagem 3, a fase 2 tem a imagem 2 e a fase 3 tem a imagem 1."
+/>
 
 O paralelismo de dados é o mais comum em computação numérica e é o que o OpenMP serve melhor, porque um ciclo com iterações independentes é exatamente uma operação repetida sobre fatias de dados.
 
@@ -35,11 +44,20 @@ int main(void) {
 }
 ```
 
-Compila com `gcc -O2 -fopenmp soma.c -o soma` e corre com `./soma`. A cláusula `reduction(+:soma)` dá a cada thread um acumulador privado e soma-os no fim, por isso o resultado é exato sem proteção manual. Numa medição típica com 4 núcleos, o tempo cai de cerca de 0,32 s para cerca de 0,09 s, um speedup de 3,5 com eficiência de 88 por cento.
+Compila com `gcc -O2 -fopenmp soma.c -o soma` e corre com `./soma`. A cláusula `reduction(+:soma)` dá a cada thread um acumulador privado e soma-os no fim, por isso o resultado é exato sem proteção manual. Numa medição típica com 4 núcleos[^tempos-openmp], o tempo cai de cerca de 0,32 s para cerca de 0,09 s, um speedup de 3,5 com eficiência de 88 por cento.
 
 ## Quando não compensa
 
 Repete com $N = 1000$ e o programa paralelo fica mais lento que o sequencial. Criar a equipa de threads e juntar os acumuladores custa dezenas de microsegundos, e para mil iterações esse custo fixo supera o ganho. A regra prática: paraleliza ciclos longos com iterações independentes e mede sempre. Iterações com dependências entre si, como uma recorrência em que cada passo usa o anterior, não se paralelizam com `parallel for`.
+
+<YouTube id="cMWGeJyrc9w" title="Introduction to OpenMP: 02 part 1 Module 1" />
+
+## Para saber mais
+
+- [Especificações oficiais do OpenMP](https://www.openmp.org/specifications/): a referência para diretivas e cláusulas.
+- [Recursos de OpenMP em Princeton](https://researchcomputing.princeton.edu/education/external-online-resources/openmp): coleção comentada com o curso de Tim Mattson.
+
+[^tempos-openmp]: Valores ilustrativos para vetor de $10^8$ doubles num processador concreto com 4 núcleos. Verifica na tua máquina com `omp_get_wtime`, porque a largura de banda da memória manda tanto como o número de núcleos.
 
 :::details[Ver a saída esperada]
 Com o vetor cheio de uns, a soma tem de dar exatamente 100000000. Se der outro valor, a redução está mal escrita ou falta a cláusula, e tens uma condição de corrida, o tema da próxima página. O tempo varia com a máquina, mas a relação deve manter-se, paralelo claramente mais rápido para $N$ grande e mais lento para $N$ pequeno.
