@@ -1,0 +1,80 @@
+---
+title: Amostragem e Teorema do Limite Central
+description: Amostragem aleatória, distribuição da média amostral e a aproximação normal para amostras grandes.
+section: conteudo
+order: 5
+---
+
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import clt from '../../me/clt.typ?raw';
+
+Até aqui modelámos populações inteiras. Na prática observas uma **amostra** e queres concluir sobre a **população**. Esta página faz a ponte: o que se pode esperar da média de uma amostra e o teorema que justifica tratar essa média como normal mesmo quando os dados originais não são.
+
+## Amostragem aleatória
+
+Uma **amostra aleatória** $X_1, \dots, X_n$ são $n$ observações independentes da mesma distribuição, a da população com média $\mu$ e variância $\sigma^2$. "Aleatória" aqui tem sentido técnico: cada elemento da população tem a mesma hipótese de entrar, e entrar um não influencia entrar outro. Sem isto, tudo o que se segue colapsa: uma amostra enviesada (só medir o servidor de madrugada) estima a população errada com precisão crescente.
+
+A **média amostral** $\bar{X} = \frac{1}{n}\sum X_i$ é ela própria uma variável aleatória: cada amostra dá um valor diferente. Tem média $E[\bar{X}] = \mu$ (não tem viés) e variância $Var(\bar{X}) = \sigma^2/n$. O desvio padrão da média, $\sigma/\sqrt{n}$, chama-se **erro padrão** e mede quanto a média de uma amostra salta de amostra para amostra. Duplicar a precisão exige quadruplicar a amostra, porque o erro cai com $\sqrt{n}$.
+
+## Teorema do Limite Central
+
+O resultado central da cadeira: para $n$ grande, a média amostral é aproximadamente normal, **qualquer que seja** a distribuição da população:
+
+$$
+\bar{X} \;\dot{\sim}\; N\left(\mu, \frac{\sigma^2}{n}\right).
+$$
+
+Regra prática: $n \ge 30$ chega na maioria dos casos[^n30]; se a população for muito assimétrica, pede-se mais. Repara no que o teorema não diz: não diz que os dados ficam normais (o histograma da amostra continua com a forma original), diz que a **média** fica normal. É uma afirmação sobre a distribuição amostral da estatística, não sobre os dados.
+
+[^n30]: O 30 não é um teorema, é uma regra de bolso das tabelas: com $n \ge 30$, a $t$ com $n - 1$ graus já está tão perto da normal que a diferença some no arredondamento, e a aproximação do Teorema do Limite Central costuma bastar para populações com assimetria moderada. Populações muito assimétricas ou com caudas pesadas pedem amostras maiores.
+
+Vê a convergência a acontecer: a população assimétrica esbate-se nas médias de 5 observações e vira sino nas médias de 100.
+
+<Typst
+  source={clt}
+  format="svg"
+  alt="Três histogramas esquemáticos. A população é assimétrica à direita. As médias de amostras de 5 já são mais simétricas. As médias de amostras de 100 formam um sino centrado na média populacional."
+/>
+
+O painel do meio é a mensagem toda: não é preciso $n = 100$ para ver a normalização a começar, e $n = 100$ chega para a forma original desaparecer.
+
+Intuição rápida: cada observação é um "empurrão" aleatório em torno de $\mu$; somar muitos empurrões independentes dilui as assimetrias e o total comporta-se como uma soma de muitos efeitos pequenos, que é exatamente o regime da [normal](distribuicoes/). Se a população já for normal, a média é exatamente normal para qualquer $n$, sem aproximação.
+
+## Exemplo: média de 100 medições de latência
+
+A latência de um serviço tem média populacional $\mu = 48$ ms e desvio $\sigma = 12$ ms, com distribuição desconhecida e assimétrica. Recolhem-se $n = 100$ medições. Qual a probabilidade de a média amostral sair mais de 2 ms longe de 48?
+
+Com $n = 100 \ge 30$, o Teorema do Limite Central aplica-se: $\bar{X} \dot{\sim} N(48; 12^2/100)$, ou seja, desvio $\sigma/\sqrt{n} = 12/10 = 1{,}2$ ms. Padronizando a margem:
+
+$$
+P(|\bar{X} - 48| > 2) \approx P\left(|Z| > \frac{2}{1{,}2}\right) = P(|Z| > 1{,}67) = 2(1 - \Phi(1{,}67)) \approx 2 \times 0{,}0475 = 0{,}095.
+$$
+
+Cerca de 9,5 por cento. Mesmo sem saber a forma da distribuição original, a média de 100 observações comporta-se de forma previsível. E nota a ligação com os [integrais de probabilidades contínuas](/cadeiras/am1/integral-definido/): a área nas caudas é a resposta, e a padronização é o que permite lê-la na tabela.
+
+Simula a situação para veres o teorema em ação: 2000 amostras de 100 observações de uma população assimétrica com média 48 e desvio 12, contando as médias que saem da margem.
+
+<CodePlayground
+  language="python"
+  title="Simulação do Teorema do Limite Central"
+  code={
+    'import random, statistics\nrandom.seed(20260909)\nmedias = [statistics.mean(36 + random.expovariate(1 / 12) for _ in range(100)) for _ in range(2000)]\nfora = sum(1 for m in medias if abs(m - 48) > 2)\nprint("amostras:", len(medias))\nprint("fracao fora de +-2 ms:", round(fora / len(medias), 4))'
+  }
+/>
+
+A saída dá fração 0,095: o mesmo 9,5 por cento da conta com a tabela. A população simulada (exponencial deslocada) não tem nada de normal, e ainda assim as médias obedecem. Muda a semente ou o $n$ e vê a fração mexer-se cada vez menos à medida que $n$ cresce.
+
+## Ver e experimentar
+
+<YouTube
+  id="zeJD6dqJ5lo"
+  title="Mas o que é o Teorema do Limite Central?, 3Blue1Brown"
+/>
+
+## Para saber mais
+
+- [O artigo do vídeo do Teorema do Limite Central](https://www.3blue1brown.com/lessons/clt/): a versão escrita com as visualizações, para rever ao teu ritmo.
+- [Demonstrador do Teorema do Limite Central](https://elysiatools.com/pt/tools/central-limit-theorem-demonstrator): simulador que mostra as médias amostrais a tender para a normal à medida que $n$ cresce.
+- [Usar o Teorema do Limite Central, OpenStax em português](https://query.libretexts.org/Idioma_Portugues/Livro%3A_Estatisticas_introdutorias_(OpenStax)/07%3A_O_teorema_do_limite_central/7.04%3A_Usando_o_Teorema_do_Limite_Central): exemplos resolvidos de aplicação do teorema.
