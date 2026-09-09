@@ -19,7 +19,9 @@ O RTC tem um registo por campo (segundos, minutos, horas e por aí fora), em BCD
 <CodePlayground
   language="c"
   title="Converter BCD em decimal"
-  code={'#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t reg = 0x23;\n    int horas = (reg >> 4) * 10 + (reg & 0x0F);\n    printf("horas=%d\\n", horas);\n    return 0;\n}'}
+  code={
+    '#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t reg = 0x23;\n    int horas = (reg >> 4) * 10 + (reg & 0x0F);\n    printf("horas=%d\\n", horas);\n    return 0;\n}'
+  }
 />
 
 O pormenor crítico é o bit de atualização em curso (_update in progress_): o RTC atualiza os registos uma vez por segundo, e ler a meio da atualização devolve uma hora inconsistente (os minutos novos com os segundos velhos). A sequência correta é esperar que o bit desligue, ler todos os campos de seguida e, por segurança, confirmar que continuam coerentes. Uma leitura sem esta espera funciona quase sempre e falha exatamente no segundo em que estás a demonstrar o projeto.
@@ -51,7 +53,9 @@ Corre a verificação em código: o programa conta os 1s de `0x5B` (que é `0b10
 <CodePlayground
   language="c"
   title="Verificar paridade par"
-  code={'#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t dados = 0x5B;\n    int paridade = 1;\n    int uns = 0;\n    for (int i = 0; i < 7; i++) if (dados & (1 << i)) uns++;\n    int total = uns + paridade;\n    printf("uns=%d total=%d %s\\n", uns, total, total % 2 == 0 ? "valida" : "invalida");\n    return 0;\n}'}
+  code={
+    '#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t dados = 0x5B;\n    int paridade = 1;\n    int uns = 0;\n    for (int i = 0; i < 7; i++) if (dados & (1 << i)) uns++;\n    int total = uns + paridade;\n    printf("uns=%d total=%d %s\\n", uns, total, total % 2 == 0 ? "valida" : "invalida");\n    return 0;\n}'
+  }
 />
 
 Se o total desse ímpar, o byte descartava-se e o protocolo pedia retransmissão. Repara que a verificação é uma conta de dois passos feita em todos os bytes recebidos: barata, automática e a única defesa contra um fio ruidoso.
@@ -60,15 +64,9 @@ Se o total desse ímpar, o byte descartava-se e o protocolo pedia retransmissão
 
 Estes dois vídeos mostram o protocolo RS-232 a nível dos sinais no fio, com o bit de arranque, os dados e a paragem desenhados no osciloscópio. Vê o primeiro para a trama e o segundo para a eletrónica da UART.
 
-<YouTube
-  id="AHYNxpqKqwo"
-  title="O protocolo RS-232, Ben Eater"
-/>
+<YouTube id="AHYNxpqKqwo" title="O protocolo RS-232, Ben Eater" />
 
-<YouTube
-  id="zsERDRM1oy8"
-  title="Interface RS-232 com o UART 6551, Ben Eater"
-/>
+<YouTube id="zsERDRM1oy8" title="Interface RS-232 com o UART 6551, Ben Eater" />
 
 :::warning[Bits de configuração: confirmar, nunca assumir]
 Taxa de transmissão, bits de dados, paridade e stop bits têm de ser iguais nos dois lados da porta série. Com qualquer divergência, os bytes chegam mas descodificam lixo consistente, o sintoma mais enganador da cadeira: tudo parece funcionar exceto o conteúdo. Perante lixo consistente, confere a configuração antes de culpares o código.
