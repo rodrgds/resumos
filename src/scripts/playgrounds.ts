@@ -122,12 +122,27 @@ export function setupPlaygrounds() {
           EditorView.lineWrapping,
           syntaxHighlighting(
             HighlightStyle.define([
-              { tag: [tags.keyword, tags.operator], color: 'var(--accent)' },
               {
-                tag: [tags.string, tags.number, tags.bool],
-                color: 'var(--diagram-secondary)',
+                tag: [tags.keyword, tags.operator],
+                color: 'var(--code-token-keyword)',
               },
-              { tag: tags.comment, color: 'var(--muted)', fontStyle: 'italic' },
+              {
+                tag: tags.string,
+                color: 'var(--code-token-string)',
+              },
+              {
+                tag: [tags.number, tags.bool, tags.null],
+                color: 'var(--code-token-constant)',
+              },
+              {
+                tag: [tags.function(tags.variableName), tags.typeName],
+                color: 'var(--code-token-function)',
+              },
+              {
+                tag: tags.comment,
+                color: 'var(--code-token-comment)',
+                fontStyle: 'italic',
+              },
             ]),
           ),
           EditorView.contentAttributes.of({

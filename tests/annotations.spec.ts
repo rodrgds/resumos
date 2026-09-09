@@ -108,6 +108,9 @@ test('keyboard selection can reach actions and Escape dismisses without creating
 }) => {
   await page.goto('/exemplo/apontamentos/');
   await selectText(page, passage);
+  await expect(
+    page.getByRole('button', { name: 'Ignorar seleção', exact: true }),
+  ).toHaveCount(0);
   await page.keyboard.press('Tab');
   await expect(
     page.getByRole('button', { name: 'Destacar', exact: true }),

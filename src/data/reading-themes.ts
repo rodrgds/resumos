@@ -9,8 +9,10 @@ const tokens = [
   'accent',
   'accent-soft',
 ] as const;
-const palette = (values: string[]): Record<string, string> =>
-  Object.fromEntries(tokens.map((key, i) => [key, values[i]]));
+const palette = (values: string[]): Record<string, string> => ({
+  ...Object.fromEntries(tokens.map((key, i) => [key, values[i]])),
+  'diagram-secondary': `color-mix(in srgb, ${values[6]} 65%, ${values[2]})`,
+});
 export const readingThemes: readonly {
   id: string;
   name: string;
@@ -112,6 +114,54 @@ export const readingThemes: readonly {
       '#44475a',
       '#bd93f9',
       '#403550',
+    ]),
+  },
+  {
+    id: 'flexoki',
+    name: 'Flexoki',
+    light: palette([
+      '#fffcf0',
+      '#f2f0e5',
+      '#100f0f',
+      '#6f6e69',
+      '#dad8ce',
+      '#e6e4d9',
+      '#a02f6f',
+      '#f4dce5',
+    ]),
+    dark: palette([
+      '#100f0f',
+      '#1c1b1a',
+      '#cecdc3',
+      '#9f9d96',
+      '#403e3c',
+      '#282726',
+      '#ce5d97',
+      '#35232c',
+    ]),
+  },
+  {
+    id: 'solarized',
+    name: 'Solarized',
+    light: palette([
+      '#fdf6e3',
+      '#eee8d5',
+      '#3e545b',
+      '#586e75',
+      '#c9c5b7',
+      '#e4decc',
+      '#006f99',
+      '#d7e4df',
+    ]),
+    dark: palette([
+      '#002b36',
+      '#073642',
+      '#b3c1c1',
+      '#93a1a1',
+      '#36545b',
+      '#123e48',
+      '#69b5e0',
+      '#123e48',
     ]),
   },
 ] as const;

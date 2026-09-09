@@ -1,27 +1,10 @@
 ---
-import { getCourseGuides, lessonPath } from '../lib/course-content';
 import Icon from './Icon.astro';
-const guides = await getCourseGuides();
-const pages = guides.flatMap((course) => {
-  const entries = [
-    ...(course.introduction ? [course.introduction] : []),
-    ...course.lessons,
-  ];
-  return entries.map((entry, index) => ({
-    path: lessonPath(course, entry),
-    title: entry.data.title,
-    course: course.name,
-    next: entries[index + 1]
-      ? lessonPath(course, entries[index + 1])
-      : undefined,
-  }));
-});
 ---
 
 <section
   class="reading-history container"
   data-reading-history
-  data-pages={JSON.stringify(pages)}
   hidden
   data-pagefind-ignore
   aria-labelledby="history-title"
@@ -52,10 +35,13 @@ const pages = guides.flatMap((course) => {
   import { readingHistory, clearReadingHistory } from '../lib/reading-history';
   const root = document.querySelector<HTMLElement>('[data-reading-history]')!;
   type Page = { path: string; title: string; course: string; next?: string };
-  const pages: Page[] = JSON.parse(root.dataset.pages!);
+  const pages: Page[] = JSON.parse(
+    document.querySelector('#reading-pages')!.textContent!,
+  );
   const catalog = new Map(pages.map((page) => [page.path, page]));
   const render = () => {
     const visits = readingHistory().filter((visit) => catalog.has(visit.path));
+    document.documentElement.dataset.hasHistory = String(visits.length > 0);
     root.hidden = !visits.length;
     if (!visits.length) return;
     const last = visits[0];

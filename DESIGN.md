@@ -56,7 +56,7 @@ A FEUP course index based on the user's Resumos LEIC reference. Distinct course 
 
 ## Colors
 
-FEUP uses warm off-white and charcoal themes with a burgundy accent, plus blue and green accent choices. Readers can also choose Gruvbox, Catppuccin, Nord or Dracula, each with light and dark palettes. Eight opaque course colours keep white labels readable. LEIC elective groups use neutral cards.
+FEUP uses warm off-white and charcoal themes with a burgundy accent, plus blue and green accent choices. Readers can also choose Gruvbox, Catppuccin, Nord, Dracula, Flexoki or Solarized, each with light and dark palettes. Eight opaque course colours keep white labels readable. LEIC elective groups use neutral cards.
 
 Nucleus cards use their own brand colours. ACM FEUP and IEEE FEUP have white logo areas with original blue artwork and blue lower panels with white text in both themes. Keep logo artwork and proportions unchanged.
 
@@ -76,7 +76,7 @@ Course pages use 32px horizontal padding and 40px gaps. The columns hold a 200px
 
 At 1280px and below, the page index becomes a disclosure above the article; the grid uses a 210px sidebar and a flexible article within 1120px. At 1100px and below, course navigation also becomes a collapsed disclosure and the page uses one column within 840px. Horizontal padding falls to 24px, then 20px at 700px and below.
 
-LEIC and MEIC are plain links above the course grid. LEIC years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. MEIC required courses use coloured cards; named options appear as compact rows inside initially collapsed semester disclosures. Option rows use two columns on desktop and one at 700px and below. The nucleus directory uses two columns on desktop and one on mobile.
+LEIC and MEIC are plain links above the course grid. LEIC years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. MEIC required courses use coloured cards; named options appear as compact rows inside initially collapsed semester disclosures. Option rows use two columns on desktop and one at 700px and below. The nucleus directory uses three columns above 1100px, two on tablets and one on mobile.
 
 The notebook sits beside the page in a 380px sidebar above 1000px. At 1000px and below, it becomes a bottom panel capped at 62dvh and adjusts to the on-screen keyboard.
 
@@ -118,7 +118,7 @@ YouTube previews load a remote thumbnail behind a dark overlay, a red play butto
 
 **The Reading Controls Rule.** Keep light, system and dark appearance separate from the palette choice. Put FEUP accent choices and independent page and text width sliders inside “Ajustar cores e largura”. Hide FEUP accent choices for other palettes. Width values and sliders occupy separate rows.
 
-**The Playground Theme Rule.** Executable examples use the reading palette for editor backgrounds, text, gutters, selection and output. Containers have 10px corners and thin dividers. CodeMirror uses 14px IBM Plex Mono with a line height of 1.6. Run is the accent action; reset is secondary. Editors have no attribution footer; runtime versions and credits belong in the authoring guide. HTML previews keep their own white canvas.
+**The Playground Theme Rule.** Executable examples use the reading palette for editor backgrounds, text, gutters, selection and output. Containers have 10px corners and thin dividers. Static code and CodeMirror use the same 14px monospace font and a line height of 1.6, with shared syntax tokens. Readers choose IBM Plex Mono, JetBrains Mono or system monospace. Toolbars use compact 13px interface text and 6px vertical padding. The editor uses its caret and active line for focus, without an outline around the editing area. Run is the accent action; reset is secondary. Editors have no attribution footer; runtime versions and credits belong in the authoring guide. HTML previews keep their own white canvas.
 
 **The Mobile Playground Rule.** At 480px and below, the HTML playground title occupies its own toolbar row. Reset and preview stay together below it, with unbroken labels and controls at least 36px high.
 
@@ -129,3 +129,7 @@ YouTube previews load a remote thumbnail behind a dark overlay, a red play butto
 Use simple Portuguese, distinct course colours and the real FEUP logo. Keep unpublished real courses separate from the fictional examples. Keep logos legible in both themes.
 
 Do not add a course-only search, year filters, extra catalogue heading, hero CTA or invented logo. Do not copy lesson text or private notes into AI prompts.
+
+Semester pushpins add compact horizontal course cards at the top of the homepage, keeping the original grid in place. Returning readers skip the introduction before first paint; clearing history restores it.
+
+CSS snippets sit in a disclosure below the appearance controls. Suggestions start disabled; editing uses explicit Save and Cancel actions. The footer keeps an appearance action available when the simplified header preset hides its controls.

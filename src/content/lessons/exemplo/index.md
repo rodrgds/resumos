@@ -1,21 +1,22 @@
 ---
-title: Laboratório de apontamentos
-description: Uma cadeira de exemplo para experimentar o site e aprender a escrever resumos.
+title: Contribuir
+description: Corrige um erro, partilha apontamentos ou experimenta os formatos do site.
 ---
 
-Esta cadeira é fictícia. Usa-a para testar os formatos antes de começares a escrever para uma cadeira da FEUP.
+Não precisas de escrever uma cadeira inteira. Uma correção, um exercício resolvido ou uma página de apontamentos já ajuda.
 
-## Começa por aqui
+## Como podes ajudar
+
+- **Encontraste um erro?** [Abre uma sugestão no GitHub](https://github.com/rodrgds/resumos/issues/new). Indica a página e o que deve mudar.
+- **Tens apontamentos?** [Segue o guia de contribuição](https://github.com/rodrgds/resumos/blob/main/CONTRIBUTING.md). Podes começar com uma só página.
+
+## Ver um exemplo
+
+Esta cadeira é fictícia. Escolhe uma página para veres o formato esperado e experimentares as ferramentas do site.
 
 - [Texto e fórmulas](/exemplo/apontamentos/): Markdown, LaTeX, tabelas e notas de rodapé.
 - [Gráficos e diagramas](/exemplo/diagramas/): Typst, CeTZ, Fletcher, DOT e vídeo.
 - [Código que podes executar](/exemplo/codigo/): Python, C++, Java, JavaScript, SQL e uma pré-visualização web.
 - [Caixas e imagens](/exemplo/formatacao/): avisos, soluções, separadores e imagens nos dois temas.
 
-## Experimenta enquanto lês
-
-Seleciona um trecho para o destacar ou juntar um comentário. O teu caderno fica guardado neste navegador. Podes mudar a fonte e o tamanho do texto no menu de aparência.
-
-## Escrever para uma cadeira
-
-Segue o [guia de contribuição](https://github.com/rodrgds/resumos/blob/main/CONTRIBUTING.md). Os exemplos têm o código e uma ligação ao ficheiro original no fim de cada página.
+Cada exemplo liga ao respetivo ficheiro no GitHub. Seleciona texto para o destacar ou comentar e usa o menu de aparência para testar fontes, tamanhos e cores.

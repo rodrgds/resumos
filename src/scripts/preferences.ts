@@ -1,5 +1,7 @@
 import { readingThemes } from '../data/reading-themes';
 import { readingFonts } from '../data/reading-fonts';
+import { readingHistory } from '../lib/reading-history';
+import { codeFonts } from '../data/code-fonts';
 const allowed = {
   theme: ['system', 'light', 'dark'],
   accent: ['red', 'blue', 'green'],
@@ -7,11 +9,23 @@ const allowed = {
   width: Array.from({ length: 12 }, (_, i) => String(1040 + i * 80)),
   measure: Array.from({ length: 12 }, (_, i) => String(560 + i * 40)),
   font: readingFonts.map((font) => font.id),
+  codeFont: codeFonts.map((font) => font.id),
   size: ['100', '110', '120'],
 } as const;
 type Key = keyof typeof allowed;
 const storageKey = 'resumos-preferences';
 const root = document.documentElement;
+const readingPages = document.querySelector('#reading-pages');
+if (readingPages) {
+  const paths = new Set(
+    (JSON.parse(readingPages.textContent!) as { path: string }[]).map(
+      (page) => page.path,
+    ),
+  );
+  root.dataset.hasHistory = String(
+    readingHistory().some((visit) => paths.has(visit.path)),
+  );
+}
 const media = matchMedia('(prefers-color-scheme: dark)');
 const defaults = Object.fromEntries(
   Object.entries(allowed).map(([key, values]) => [key, values[0]]),
@@ -32,6 +46,10 @@ try {
 }
 
 function apply() {
+  root.style.setProperty(
+    '--code-font',
+    codeFonts.find((font) => font.id === preferences.codeFont)!.family,
+  );
   root.style.setProperty(
     '--reading-font',
     readingFonts.find((font) => font.id === preferences.font)!.family,
@@ -55,6 +73,7 @@ function apply() {
     'soft',
     'accent',
     'accent-soft',
+    'diagram-secondary',
   ])
     root.style.removeProperty(`--${key}`);
   const palette = readingThemes.find(

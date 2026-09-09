@@ -106,3 +106,28 @@ Os motores com acesso a JavaScript ou armazenamento precisam de uma origem próp
 ### Histórico de leitura
 
 A homepage mostra a última leitura e até quatro páginas recentes depois da primeira visita a um conteúdo. “Continuar a ler” retoma a posição; ao chegar ao fim, sugere o tópico seguinte. O histórico guarda até 20 páginas apenas neste navegador. “Limpar histórico” apaga-o. Não entra na pesquisa, nos ficheiros Markdown nem nos pedidos ao Chat.
+
+### Personalização local
+
+Os pins de semestre acrescentam cartões horizontais no topo da homepage e mantêm a grelha original. A introdução aparece enquanto não houver histórico de leitura. Limpar o histórico volta a mostrá-la.
+
+A aparência também inclui adaptações de [Flexoki](https://stephango.com/flexoki) e [Solarized](https://ethanschoonover.com/solarized/). Os blocos estáticos e executáveis partilham as variáveis `--code-*` e a fonte escolhida para código: IBM Plex Mono, JetBrains Mono ou a fonte monoespaçada do sistema.
+
+Em **CSS personalizado**, podes ativar as sugestões, editar o seu CSS ou adicionar snippets. Guardar e ativar são ações separadas. Cada snippet pode ser desativado ou eliminado. Os snippets ficam em `resumos-css-snippets`, só neste navegador, e não entram na pesquisa, exportação Markdown ou pedidos de IA.
+
+Seletores de personalização estáveis:
+
+| Elemento              | Seletor                                               |
+| --------------------- | ----------------------------------------------------- |
+| Cabeçalho             | `.site-header`                                        |
+| Links de navegação    | `[data-nav="nucleos"]`, `[data-nav="contribute"]`     |
+| Botões de ferramentas | `[data-action="notes"]`, `[data-action="appearance"]` |
+| Continuar a ler       | `[data-reading-history]`                              |
+| Semestres fixados     | `[data-pinned-semesters]`                             |
+| Cartões de cadeiras   | `.course-card`                                        |
+| Texto da página       | `.prose`                                              |
+| Código estático       | `.astro-code`                                         |
+| Exemplos executáveis  | `[data-playground]`, `.web-playground`                |
+| Ações da página       | `.page-actions`, `[data-open-ai]`, `#copy-prompt`     |
+
+Usa `--page`, `--surface`, `--text`, `--muted`, `--line`, `--accent` e `--accent-soft` para acompanhar o tema. Se um snippet esconder os controlos, acrescenta `?sem-css=1` ao URL. A página abre a aparência com os snippets suspensos, para os poderes corrigir. Também podes abrir a aparência pela tecla vírgula ou pelo rodapé.
