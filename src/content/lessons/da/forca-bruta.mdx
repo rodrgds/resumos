@@ -1,0 +1,108 @@
+---
+title: Força bruta
+description: Enumerar todas as soluções, medir o custo exponencial e saber quando ele ainda é aceitável.
+section: conteudo
+order: 2
+---
+
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import arvore from '../../da/mochila-arvore.typ?raw';
+
+A força bruta é a técnica mais honesta que existe: gera todas as soluções candidatas, avalia cada uma e fica com a melhor. Não há astúcia nenhuma, e é exatamente por isso que ela é o ponto de partida. Dá-te sempre uma solução correta de referência, e o seu custo exponencial diz-te quanto precisas de ser mais esperto.
+
+## Quando usar
+
+Usa força bruta quando o espaço de soluções é pequeno (dezenas de casos, não milhões), quando precisas de uma solução de referência para testar um algoritmo mais esperto, ou quando o problema é tão irregular que nenhuma estrutura o simplifica. O padrão é sempre o mesmo: um contador ou uma recursão que percorre todas as combinações, um teste de validade e um registo do melhor valor visto.
+
+O custo segue da contagem: $n$ decisões binárias (levo ou não levo, ponho ou não ponho) dão $2^n$ candidatos. Cada bit a mais na entrada duplica o tempo. Com $n = 20$ são cerca de um milhão de candidatos, ainda confortável; com $n = 50$ são $10^{15}$, impossível. Esta parede é o motivo de existirem as outras sete páginas da cadeira.
+
+## Exemplo: mochila 0-1 com 4 objetos
+
+Tens uma mochila com capacidade 7 e quatro objetos:
+
+| Objeto | Peso | Valor |
+| ------ | ---- | ----- |
+| A      | 2    | 3     |
+| B      | 3    | 4     |
+| C      | 4    | 5     |
+| D      | 5    | 8     |
+
+Há $2^4 = 16$ subconjuntos. A enumeração completa, descartando os que passam da capacidade, dá estes totais (peso, valor): vazio (0, 0); A (2, 3); B (3, 4); C (4, 5); D (5, 8); AB (5, 7); AC (6, 8); AD (7, 11); BC (7, 9); os restantes excedem a capacidade. O melhor é **AD, valor 11 com peso 7**.
+
+A árvore de decisões mostra a mesma enumeração como escolhas: em cada nível decides levar ou ignorar um objeto, e os ramos que excedem a capacidade morrem ali.
+
+<Typst
+  source={arvore}
+  format="svg"
+  alt="Árvore de decisões parcial da mochila: da capacidade 7, levar A deixa 5 e ignorar A mantém 7; de levar A, levar B deixa 2 e ignorar B mantém 5; os ramos levar C e levar D excedem a capacidade e são podados, restando a folha AB com peso 5 e valor 7."
+/>
+
+Repara em dois factos. Primeiro, o ótimo não é óbvio à partida: D sozinho vale 8 mas a combinação AD vale 11, e BC enche a mochila com um valor pior. Segundo, o trabalho cresce depressa: com 4 objetos avaliaste 16 candidatos, com 10 seriam 1024, com 30 seriam mil milhões. Guarda este exemplo, porque a [programação dinâmica](/cadeiras/da/programacao-dinamica/) resolve a mesma mochila sem enumerar tudo, e o [retrocesso com poda](/cadeiras/da/retrocesso-ramificacao/) corta ramos inteiros desta mesma árvore de subconjuntos.
+
+:::tip[Como cai em teste]
+"Enumera" não quer dizer "adivinha": escreve os candidatos por ordem sistemática (binário de 0000 a 1111, por exemplo) e risca os inválidos. Uma tabela como a de cima mostra o método e evita que te percas a meio.
+:::
+
+## Enumerar os 16 subconjuntos em C++
+
+O contador binário abaixo percorre as máscaras de 0 a 15 e imprime os 9 subconjuntos que cabem, marcando cada novo melhor. A saída termina em `otimo: 11`, o AD da tabela. Muda a capacidade para 6 e confirma que AD deixa de caber e o ótimo passa a 8, com D sozinho ou AC.
+
+<CodePlayground
+  language="cpp"
+  title="Enumeração binária da mochila"
+  code={'#include <iostream>\n\nint main() {\n    int peso[4] = {2, 3, 4, 5}, valor[4] = {3, 4, 5, 8};\n    int melhor = -1;\n    for (int m = 0; m < 16; m++) {\n        int p = 0, v = 0;\n        for (int i = 0; i < 4; i++)\n            if (m & (1 << i)) { p += peso[i]; v += valor[i]; }\n        if (p <= 7) {\n            std::cout << m << \": peso \" << p << \" valor \" << v;\n            if (v > melhor) { melhor = v; std::cout << \" <- melhor\"; }\n            std::cout << \"\\n\";\n        }\n    }\n    std::cout << \"otimo: \" << melhor << \"\\n\";\n}'}
+/>
+
+## Duas formas de gerar tudo
+
+O contador binário e a recursão gera-testa visitam os mesmos 16 subconjuntos por ordens diferentes. Escolhe a que te sair mais naturalmente no teste; o custo é igual.
+
+<Tabs id="enumerar-subconjuntos" labels={['Contador binário', 'Recursão gera-testa']}>
+  <div slot="panel-0">
+
+```cpp
+// Cada máscara de 0 a 15 é um subconjunto:
+// o bit i diz se o objeto i entra.
+for (int m = 0; m < 16; m++) {
+    int p = 0, v = 0;
+    for (int i = 0; i < 4; i++)
+        if (m & (1 << i)) { p += peso[i]; v += valor[i]; }
+    if (p <= 7) avalia(p, v);
+}
+```
+
+  </div>
+  <div slot="panel-1">
+
+```cpp
+// Gera e testa: decide o objeto i e desce.
+// Excerto: avalia regista o melhor admissível.
+void gera(int i, std::vector<int> &esc) {
+    if (i == 4) { avalia(esc); return; }
+    gera(i + 1, esc);            // ignora o objeto i
+    esc.push_back(i);
+    gera(i + 1, esc);            // leva o objeto i
+    esc.pop_back();
+}
+```
+
+  </div>
+</Tabs>
+
+## Do teste ao projeto
+
+O trabalho prático corre em C++ com GoogleTest e CLion. O hábito que paga é este: escreve primeiro a força bruta como referência e prende-a com um teste, e só depois otimiza. O teste guarda o ótimo conhecido e apanha regressões quando trocares a técnica.
+
+```cpp
+#include <gtest/gtest.h>
+
+int melhorValor();  // a tua enumeração, devolvendo o ótimo
+
+TEST(Mochila, OtimoAD) {
+    EXPECT_EQ(melhorValor(), 11);
+}
+```
+
+Compila com a biblioteca de testes ligada, corre o executável e lê o veredicto: verde significa que a referência está certa e podes comparar contra ela a [tabela da programação dinâmica](/cadeiras/da/programacao-dinamica/) e a poda do [retrocesso](/cadeiras/da/retrocesso-ramificacao/).
