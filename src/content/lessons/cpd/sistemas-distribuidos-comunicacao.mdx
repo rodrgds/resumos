@@ -5,6 +5,9 @@ section: conteudo
 order: 6
 ---
 
+import Dot from '../../../components/Dot.astro';
+import duvida from '../../cpd/duvida-rede.dot?raw';
+
 Na segunda metade da cadeira, cada máquina tem a sua memória e a sua velocidade, e a única ponte entre elas é a rede. Um sistema distribuído é um conjunto de processos assim que coopera para um objetivo comum, parecendo ao utilizador um sistema coerente.
 
 ## Os modelos de comunicação
@@ -12,6 +15,11 @@ Na segunda metade da cadeira, cada máquina tem a sua memória e a sua velocidad
 Na **troca de mensagens**, os processos enviam e recebem bytes explicitamente, como cartas. Sockets TCP e UDP vivem aqui. Na **invocação remota** (RPC, _remote procedure call_), o programador chama uma função que executa noutra máquina, e a biblioteca trata de empacotar argumentos, enviar, esperar e desembrulhar o resultado. Parece uma chamada local, mas atravessa a rede com latência e risco de falha. O **multicast** envia uma mensagem para um grupo de processos de uma vez, útil para difusão de atualizações e descoberta de serviços.
 
 A diferença decisiva para a memória partilhada: aqui não há relógio comum nem memória comum. Cada processo vê apenas as mensagens que já lhe chegaram, e uma resposta que demora pode significar máquina lenta ou máquina morta. Essa ambiguidade, a **falha parcial**, é o tema recorrente daqui até ao fim da cadeira.
+
+<Dot
+  source={duvida}
+  alt="Cliente e servidor trocam pedido e resposta. Após timeout o cliente repete, sem saber se o servidor está lento ou morto."
+/>
 
 ## Exemplo completo
 
@@ -39,7 +47,29 @@ func main() {
 
 Guarda em `servidor.go`, corre com `go run servidor.go` e testa noutro terminal com `nc localhost 8080` ou com um pequeno cliente Go com `net.Dial("tcp", "localhost:8080")` seguido de leitura até EOF. A saída é uma linha como `2026-03-14T10:30:00Z`.
 
+Go é também a ferramenta da ficha para concorrência dentro de cada processo. O essencial de um canal cabe em cinco linhas, uma goroutine envia e o programa principal recebe:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    ch := make(chan string)
+    go func() { ch <- "pontual" }()
+    fmt.Println(<-ch) // imprime "pontual"
+}
+```
+
+O envio bloqueia até haver recetor, por isso a ordem é garantida sem relógios nem esperas. É este mecanismo, canais entre goroutines, que o projeto distribuído usa para falar entre máquinas.
+
 Agora a análise que o teste pede. Se uma mensagem se perde, o TCP retransmite e o cliente espera, por isso com TCP a perda vira atraso. Se o servidor cai a meio, o cliente fica à espera até ao timeout sem distinguir "lento" de "morto". E se o cliente repetir o pedido por timeout e o servidor afinal estava vivo, o pedido executa duas vezes. Operações que se repetem sem efeito extra, como ler a hora, chamam-se **idempotentes** e são a resposta padrão a este problema.
+
+O multicast poupa envios mas não dispensa confirmações. Imagina o coordenador a difundir `commit` para o grupo `{A, B, C}` de uma vez. A e B respondem `ok`, o C cala-se. O coordenador reenvia só ao C, agora em unicast, até ele confirmar ou o timeout declarar a falha. Um envio chegou aos três, mas sem os acks ninguém sabia a quem tinha chegado.
+
+## Para saber mais
+
+- [Pacote `net` de Go](https://pkg.go.dev/net): a documentação oficial usada no servidor de exemplo.
 
 :::tip[Como pensar em teste]
 Perante um cenário com falhas, pergunta sempre três coisas. O que cada processo sabe quando decide, porque só vê as mensagens recebidas. Se a falha é distinguível de atraso, e com que timeout. E se repetir a operação é seguro, ou seja, se ela é idempotente.

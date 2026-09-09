@@ -5,6 +5,12 @@ section: conteudo
 order: 3
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import curva from '../../cpd/curva-amdahl.typ?raw';
+
 A [introdução](computacao-paralela-introducao/) mostrou que o speedup real fica abaixo do ideal. A lei de Amdahl quantifica esse teto a partir de uma só pergunta, que fração do programa não se divide.
 
 ## A lei
@@ -17,6 +23,14 @@ $$
 
 O denominador lê-se como orçamento de tempo. A parcela $f$ nunca mexe. A parcela paralela encolhe com $p$, mas nunca chega a zero enquanto $p$ for finito. Quando $p$ tende para infinito, o speedup tende para $1/f$. É esse o teto, e ele depende só da fração serial.
 
+A curva para $f = 0{,}2$ sobe depressa no início e encosta no teto 5 sem nunca lá chegar. Cada duplicação de núcleos compra menos speedup que a anterior.
+
+<Typst
+  source={curva}
+  format="svg"
+  alt="Speedup em função de p para f igual a 0,2. A curva sobe de 1 até encostar no teto horizontal 5."
+/>
+
 ## Exemplo completo
 
 Um simulador passa 20 por cento do tempo a ler dados e a escrever resultados, trabalho serial, e 80 por cento a calcular, trabalho paralelizável. Então $f = 0{,}2$.
@@ -27,11 +41,20 @@ $$
 S_4 = \frac{1}{0{,}2 + 0{,}8/4} = \frac{1}{0{,}2 + 0{,}2} = 2{,}5
 $$
 
-Com 16 núcleos:
+Com 16 núcleos, resolve tu antes de abrir o separador:
 
-$$
-S_{16} = \frac{1}{0{,}2 + 0{,}8/16} = \frac{1}{0{,}2 + 0{,}05} = 4{,}0
-$$
+<Tabs id="amdahl-casos" labels={['16 núcleos', 'Treino: f = 0,3']}>
+  <div slot="panel-0">
+
+$$S_{16} = \frac{1}{0{,}2 + 0{,}8/16} = \frac{1}{0{,}2 + 0{,}05} = 4{,}0$$
+
+  </div>
+  <div slot="panel-1">
+
+Com $f = 0{,}3$ e $p = 8$: $S_8 = 1 / (0{,}3 + 0{,}7/8) = 1 / 0{,}3875 \approx 2{,}58$. Com 30 por cento serial, nem 8 núcleos chegam a 3.
+
+  </div>
+</Tabs>
 
 Com infinitos núcleos:
 
@@ -41,10 +64,23 @@ $$
 
 Repara no rendimento decrescente. Quadruplicar de 4 para 16 núcleos sobe o speedup de 2,5 para 4, um ganho de 60 por cento por 4 vezes mais hardware. E nenhum hardware do mundo passa de 5. A conclusão prática: quando o speedup estabiliza, o trabalho útil é atacar a fração serial, não comprar núcleos.
 
+<CodePlayground
+  language="python"
+  title="Calculadora de Amdahl"
+  code={
+    'f = 0.2\nfor p in [1, 2, 4, 16]:\n    s = 1 / (f + (1 - f) / p)\n    print(p, round(s, 2))'
+  }
+/>
+
+<YouTube id="KfgWmQpzD74" title="Amdahl's Law in the Multicore Era" />
+
 :::tip[Como pensar em teste]
 O enunciado dá-te a fração serial de outra forma, por exemplo "30 por cento do tempo é leitura de ficheiros". Essa é o teu $f$, direto para a fórmula. Se te pedirem o número de núcleos para atingir certo speedup, resolve a equação em $p$ e arredonda para cima. Se não houver solução finita, o speedup pedido está acima do teto $1/f$, e é isso que deves responder.
 :::
 
 :::warning[O que a lei não conta]
-Amdahl assume trabalho fixo e ignora custos de coordenação, por isso é um teto otimista. O speedup medido fica abaixo do calculado. Quando o problema cresce com o número de núcleos, a leitura muda e entra a lei de Gustafson, que a ficha não exige mas que explica por que programas reais escalam melhor do que Amdahl prevê para tamanho fixo.
-:::
+Amdahl assume trabalho fixo e ignora custos de coordenação[^amdahl-limites], por isso é um teto otimista. O speedup medido fica abaixo do calculado. Quando o problema cresce com o número de núcleos, a leitura muda e entra a lei de Gustafson, que a ficha não exige mas que explica por que programas reais escalam melhor do que Amdahl prevê para tamanho fixo.
+
+[^amdahl-limites]:
+    Trabalho fixo significa que o enunciado não cresce quando juntas núcleos. Na prática, criar threads, sincronizar e comunicar somam tempo que a fórmula não tem, por isso mede sempre depois de calcular.
+    :::

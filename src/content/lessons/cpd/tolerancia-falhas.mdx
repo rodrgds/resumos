@@ -5,6 +5,13 @@ section: conteudo
 order: 7
 ---
 
+import Dot from '../../../components/Dot.astro';
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import anel from '../../cpd/anel-eleicao.dot?raw';
+import sequencia from '../../cpd/sequencia-2pc.typ?raw';
+
 Num sistema distribuído, máquinas falham enquanto as outras continuam. A tolerância a falhas é o conjunto de protocolos que mantém o serviço correto apesar disso. Esta página cobre os três que a ficha exige, com garantias de cada um.
 
 ## Eleição de líder
@@ -23,12 +30,46 @@ Quatro processos com identificadores 2, 5, 7 e 9 em anel, pela ordem 2, 5, 7, 9.
 
 Total de mensagens de eleição: 4, uma por processo, mais 3 de anúncio. Se o 2 tivesse detetado a falha primeiro, teria enviado `eleição(2)`, que o 5 substituiria por 5 e o 7 por 7, com o mesmo vencedor. O invariante é esse, o maior identificador sobrevivente dá sempre a volta completa e vence.
 
+<Dot
+  source={anel}
+  alt="Anel com os processos 2, 5 e 7 mais o 9 assinalado como falhado. A mensagem eleição com 7 circula pelos três sobreviventes."
+/>
+
 ## Two-phase commit e primary-backup
 
 O **two-phase commit** (2PC) garante que uma transação distribuída ou acontece em todos os participantes ou em nenhum. O coordenador pergunta a todos se podem confirmar (fase 1) e só envia a ordem de confirmação se todos disserem sim (fase 2). A garantia, atomicidade total, paga-se com bloqueio, se o coordenador falha a meio, os participantes ficam presos à espera.
 
+<Typst
+  source={sequencia}
+  format="svg"
+  alt="Sequência do two-phase commit. O coordenador pergunta preparar, os participantes votam sim, e o coordenador ordena confirmar. Se falhar entre o voto e a ordem, os participantes bloqueiam."
+/>
+
+<YouTube
+  id="sZVCpjuVUL8"
+  title="Two Phase Commit to power Distributed Transactions in a Distributed System"
+/>
+
 O **primary-backup** (primário apoio) replica um serviço com um primário que executa e um apoio que observa. O primário envia atualizações de estado ao apoio. Se o primário falha, o apoio assume depois de uma eleição. A garantia é continuidade do serviço, não atomicidade fina como o 2PC, e o custo é o atraso de replicar cada atualização antes de responder ao cliente.
 
-:::details[Ver a comparação para responder em teste]
-Eleição responde a "quem manda agora". 2PC responde a "todos ou nenhum". Primary-backup responde a "o serviço continua". Se o enunciado fala de transação em várias bases de dados, é 2PC. Se fala de um servidor que cai e outro que assume, é primary-backup precedido de eleição.
-:::
+<Tabs id="protocolos-perguntas" labels={['Eleição', '2PC', 'Primary-backup']}>
+  <div slot="panel-0">
+
+Responde a "quem manda agora". Usa-se quando o coordenador falha e é preciso exatamente um substituto. Aparece antes do primary-backup e depois de qualquer falha de líder.
+
+  </div>
+  <div slot="panel-1">
+
+Responde a "todos ou nenhum". Usa-se em transações que tocam várias máquinas, como uma transferência entre duas bases de dados. O preço é o bloqueio se o coordenador falhar a meio.
+
+  </div>
+  <div slot="panel-2">
+
+Responde a "o serviço continua". Usa-se para um servidor que cai e outro que assume sem interromper os clientes. O preço é replicar cada atualização antes de responder.
+
+  </div>
+</Tabs>
+
+## Para saber mais
+
+- [Transações distribuídas no MIT](https://dsg.csail.mit.edu/6.5830/2022/lectures/lec17-2022.pdf): slides com diagramas de mensagens do two-phase commit.

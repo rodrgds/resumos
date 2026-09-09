@@ -5,6 +5,10 @@ section: conteudo
 order: 2
 ---
 
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import linha from '../../cpd/linha-cache.typ?raw';
+
 Dois programas com as mesmas operações podem demorar tempos muito diferentes conforme a ordem em que tocam na memória. Esta página explica porquê, e é a base prática do primeiro projeto da cadeira.
 
 ## Duas organizações de memória
@@ -19,6 +23,12 @@ Entre o núcleo e a memória principal há caches pequenas e rápidas, organizad
 
 Em C, uma matriz `double a[N][N]` guarda cada linha seguida em memória. Percorrer por linhas usa cada linha de cache até ao fim, 8 doubles por linha de 64 bytes. Percorrer por colunas salta $N \times 8$ bytes a cada acesso e desperdiça 7 doubles de cada linha trazida.
 
+<Typst
+  source={linha}
+  format="svg"
+  alt="Uma linha de cache com 8 doubles. No percurso por linhas os 8 são úteis. No percurso por colunas só 1 é útil e 7 são desperdiçados."
+/>
+
 ## Exemplo completo
 
 Multiplicação ingénua $C = A \times B$ com $N = 1024$, somando ao longo de $k$. A versão por linhas fixa $i$ e $j$ e percorre $k$ em sequência, aproveitando a cache. A versão por colunas percorre a matriz saltando entre linhas. Numa medição típica num portátil atual:
@@ -28,7 +38,31 @@ Multiplicação ingénua $C = A \times B$ com $N = 1024$, somando ao longo de $k
 | Por linhas  | cerca de 1,1 s |
 | Por colunas | cerca de 3,9 s |
 
-A diferença, um fator de 3 a 4, vem quase toda da cache, porque as operações aritméticas são as mesmas. A leitura crítica: antes de paralelizar, ordena os acessos. Um programa paralelo com mau padrão de acesso multiplica o problema pelo número de núcleos, que passam a disputar a largura de banda da memória em vez de calcular.
+A diferença, um fator de 3 a 4, vem quase toda da cache, porque as operações aritméticas são as mesmas.[^tempos-cache] A leitura crítica: antes de paralelizar, ordena os acessos. Um programa paralelo com mau padrão de acesso multiplica o problema pelo número de núcleos, que passam a disputar a largura de banda da memória em vez de calcular.
+
+Os dois percursos em C, a única diferença é a ordem dos índices:
+
+```c
+#define N 1024
+static double a[N][N], b[N][N];
+
+/* Por linhas: cada linha de cache serve 8 acessos. */
+for (long i = 0; i < N; i++)
+    for (long j = 0; j < N; j++)
+        b[i][j] = a[i][j] + 1.0;
+
+/* Por colunas: cada acesso cai numa linha nova. */
+for (long j = 0; j < N; j++)
+    for (long i = 0; i < N; i++)
+        b[i][j] = a[i][j] + 1.0;
+```
+
+<YouTube
+  id="4YeRe60KWTc"
+  title="Storage Hierarchy, Caching, and Locality, Princeton COS 217"
+/>
+
+[^tempos-cache]: Os valores 1,1 s e 3,9 s são ilustrativos, medidos num portátil concreto para $N = 1024$. Noutra máquina mudam, mas a ordem de grandeza da diferença mantém-se enquanto a linha tiver 64 bytes.
 
 :::details[Ver por que 8 doubles por linha]
 Um `double` ocupa 8 bytes e a linha de cache tem 64 bytes, por isso cada linha traz 8 elementos seguidos. No percurso por linhas, cada falta à cache serve 8 acessos úteis. No percurso por colunas com $N = 1024$, cada acesso cai numa linha diferente e cada falta serve 1 acesso útil, pelo que o programa traz cerca de 8 vezes mais dados da memória.
