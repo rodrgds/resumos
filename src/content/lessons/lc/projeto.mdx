@@ -5,6 +5,10 @@ section: conteudo
 order: 9
 ---
 
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import maquina from '../../lc/maquina-jogo.dot?raw';
+
 O **projeto** junta tudo: dois ou mais periféricos a gerar eventos ao mesmo tempo, um programa que reage sem polling e uma sessão de demonstração onde nada pode falhar. A técnica que organiza o caos é a **máquina de estados**, a mesma ideia das máquinas finitas de [Circuitos sequenciais](/cadeiras/fsc/circuitos-sequenciais/), agora a conduzir um jogo em vez de um circuito. E quando algo falhar, o método para o caçar é o método científico.
 
 ## Programação por eventos
@@ -22,6 +26,11 @@ Um jogo simples com teclado e temporizador vive em quatro estados:
 | PAUSA  | imagem congelada e aviso | tecla P volta a JOGO, tecla Esc volta a MENU                                 |
 | FIM    | pontuação final          | tecla Enter volta a MENU                                                     |
 
+<Dot
+  source={maquina}
+  alt="Máquina de estados do mini jogo: MENU vai a JOGO com Enter, JOGO vai a PAUSA com P e a FIM sem vidas, PAUSA volta a JOGO com P e a MENU com Esc, FIM volta a MENU com Enter."
+/>
+
 Cada evento (tecla ou tique) entra numa função que olha para o estado atual e decide: em JOGO, a tecla P pausa; em PAUSA, a mesma tecla retoma. O desenho de cada imagem depende só do estado e dos dados, nunca do histórico de eventos. Quando um comportamento estranho aparecer, a primeira pergunta é sempre "em que estado estávamos e que evento chegou": nove em dez bugs do projeto são transições em falta ou a mais.
 
 ## Debugging como ciência experimental
@@ -34,8 +43,25 @@ Quando o programa falha, não mudes código à toa. O método que funciona:
 4. **Testa uma coisa de cada vez**: instrumenta o código para registar só essa observação e corre.
 5. **Conclui e itera**: hipótese confirmada, corrige; refutada, formula a próxima com o que aprendeste.
 
-Um registo realista cabe numa tabela: cada linha com a hipótese, a previsão, o resultado e a conclusão. Três linhas destas valem mais que uma tarde a mudar máscaras ao acaso.
+Um registo realista cabe numa tabela: cada linha com a hipótese, a previsão, o resultado e a conclusão. Três linhas destas valem mais que uma tarde a mudar máscaras ao acaso. Duas hipóteses típicas do projeto, para treinares o formato:
+
+<Tabs id="hipoteses-debugging" labels={['Dessincronização', 'Overflow']}>
+  <div slot="panel-0">
+
+Hipótese: o cursor salta porque o pacote chega dessincronizado. Previsão: se for isto, o bit 3 do primeiro byte está a 0 nos pacotes dos saltos. Teste: regista o primeiro byte de cada pacote durante dez segundos de movimento e conta quantos têm o bit 3 desligado.
+
+  </div>
+  <div slot="panel-1">
+
+Hipótese: o cursor salta porque o movimento é rápido demais e há overflow. Previsão: se for isto, os bits 6 ou 7 do primeiro byte estão ligados nos pacotes dos saltos. Teste: regista os mesmos pacotes e conta quantos têm overflow assinalado.
+
+  </div>
+</Tabs>
 
 :::tip[Para a demonstração]
 Congela uma versão que funciona uns dias antes e testa-a de rajada: reinícios, teclas erradas, rato parado, overflow propositado. O júri vai fazer exatamente o que não testaste. Uma máquina de estados com um estado FIM bem tratado e um programa que nunca fica pendurado impressionam mais que uma funcionalidade extra a meio.
 :::
+
+## Para saber mais
+
+- [Documentação do Minix 3](https://www.minix3.org/docs/): guias oficiais do sistema onde o projeto corre.

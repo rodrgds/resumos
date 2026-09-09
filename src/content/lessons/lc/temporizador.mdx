@@ -5,6 +5,11 @@ section: conteudo
 order: 4
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import cadeia from '../../lc/cadeia-timer.typ?raw';
+
 O **temporizador** (i8254) é o periférico mais simples e o primeiro que vais programar: gera interrupções a um ritmo que tu defines. É também o relógio de todo o projeto, porque quase tudo o resto (ritmo de jogo, timeouts, medições) se conta em tiques dele. Perceber o divisor aqui é perceber metade dos periféricos seguintes.
 
 ## O relógio de entrada e o divisor
@@ -14,6 +19,12 @@ O i8254 recebe um relógio fixo de 1193182 Hz e divide-o por um **divisor** que 
 $$
 f_{saída} = \frac{1193182}{\text{divisor}}
 $$
+
+<Typst
+  source={cadeia}
+  format="svg"
+  alt="Cadeia do temporizador: o relógio fixo de 1193182 Hz dividido por 19886 produz interrupções a 60 Hz."
+/>
 
 O modo habitual gera uma onda quadrada: a saída fica metade do período a 1 e metade a 0, e cada flanco pode gerar uma interrupção. Programar o temporizador é escolher o divisor para a frequência que queres e escrever os dois bytes dele (menos e mais significativo) no registo do contador, depois de enviar a palavra de controlo que seleciona o contador e o modo.
 
@@ -25,9 +36,34 @@ $$
 f_{real} = \frac{1193182}{19886} = 60 + \frac{22}{19886} \approx 60{,}0011\ \text{Hz}
 $$
 
-porque $19886 \times 60 = 1193160$ e sobram 22. O erro é de cerca de uma parte em 55000: numa hora, o relógio desvia-se menos de um décimo de segundo. Moral dupla: o hardware real raramente dá a frequência exata que pediste, e quase nunca isso importa, desde que saibas quantificar o desvio em vez de o ignorar.
+porque $19886 \times 60 = 1193160$ e sobram 22. O erro é de cerca de uma parte em 55000: numa hora, o relógio desvia-se menos de um décimo de segundo. Confirma a conta correndo o programa: o divisor sai 19886 e a frequência real sai 60,0011 Hz.
+
+<CodePlayground
+  language="c"
+  title="Divisor e frequência real"
+  code={'#include <stdio.h>\n\nint main(void) {\n    long clock = 1193182;\n    int divisor = (int)(clock / 60);\n    long real = (clock * 10000L) / divisor;\n    printf("divisor=%d\\n", divisor);\n    printf("f=%ld.%04ld Hz\\n", real / 10000, real % 10000);\n    return 0;\n}'}
+/>
+
+Moral dupla: o hardware real raramente dá a frequência exata que pediste, e quase nunca isso importa, desde que saibas quantificar o desvio em vez de o ignorar.
 
 Com 60 interrupções por segundo, cada tique vale $1/60$ de segundo (cerca de 16,7 ms). O contador da página anterior transforma-se em cronómetro: divide o número de tiques por 60 e tens segundos.
+
+## Outra frequência: 100 Hz
+
+Se precisares de mais resolução temporal, o método é o mesmo com outro alvo. Compara os dois casos:
+
+<Tabs id="divisor-frequencias" labels={['60 Hz', '100 Hz']}>
+  <div slot="panel-0">
+
+Alvo 60 Hz, o caso dos trabalhos: divisor 19886, frequência real 60,0011 Hz, tique de 16,7 ms. Erro de uma parte em 55000.
+
+  </div>
+  <div slot="panel-1">
+
+Alvo 100 Hz: $1193182 / 100 = 11931{,}82$, programa-se o divisor 11931. A frequência real é $1193182 / 11931 \approx 100{,}0069$ Hz e cada tique vale 10 ms. Pagas o preço em interrupções por segundo: quase o dobro de atendimentos para o mesmo trabalho.
+
+  </div>
+</Tabs>
 
 ## Medir um intervalo conhecido
 
@@ -36,6 +72,11 @@ Para cronometrar algo, regista o contador no início e no fim e subtrai. Se o in
 :::warning[O contador dá a volta]
 O contador de tiques é um inteiro com tamanho finito. Se o usares como relógio durante muito tempo, ele transborda e a subtração fim menos início deixa de funcionar. Nos trabalhos, ou usas um contador de 32 bits (que a 60 Hz demora mais de dois anos a dar a volta) ou tratas o transbordo explicitamente na subtração.
 :::
+
+## Para saber mais
+
+- [Programação do i8254 (OSDev)](https://osdev.wiki/wiki/Programmable_Interval_Timer): palavra de controlo, divisor e um exemplo `timer_phase` para comparar com o teu.
+- [Intel 8253/8254 (Wikipédia)](https://en.wikipedia.org/wiki/intel_8254): os três canais do chip e a que está ligado cada um no PC.
 
 ## Para levar para a próxima página
 

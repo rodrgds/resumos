@@ -5,13 +5,20 @@ section: conteudo
 order: 5
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+import maquina from '../../lc/maquina-teclado.dot?raw';
+
 O **teclado** fala com o PC através do controlador i8042: cada tecla premida ou libertada gera um ou mais bytes chamados **scancodes**. O teu programa lê esses bytes do buffer de saída do controlador e reconstrói o que o utilizador fez. É o primeiro periférico esporádico e o primeiro exercício sério de descodificação byte a byte.
 
 ## Make e break
 
-Cada tecla produz dois eventos: o **make**, quando é premida, e o **break**, quando é libertada. No conjunto de scancodes usado nos trabalhos, o make de uma tecla normal é um byte, e o break são dois: o prefixo `0xF0` seguido do mesmo byte. Por exemplo, a tecla A tem make `0x1C` e break `0xF0 0x1C`.
+Cada tecla produz dois eventos: o **make**, quando é premida, e o **break**, quando é libertada. No conjunto de scancodes usado nos trabalhos, o make de uma tecla normal é um byte, e o break são dois: o prefixo `0xF0` seguido do mesmo byte. Por exemplo, a tecla A tem make `0x1C` e break `0xF0 0x1C`.[^scancodes]
 
 As teclas especiais (setas, Insert, Delete e companhia) usam um prefixo extra `0xE0`. A seta direita, por exemplo, tem make `0xE0 0x74` e break `0xE0 0xF0 0x74`. Repara na estrutura: o `0xE0` diz "tecla estendida", e o resto segue a regra normal de make e break.
+
+[^scancodes]: Tabela de scancodes do conjunto 2 e comandos do controlador i8042 em [PS/2 Keyboard (OSDev)](https://wiki.osdev.org/PS/2_Keyboard).
 
 ## Ler com polling ou interrupção
 
@@ -27,7 +34,33 @@ O utilizador prime e liberta a tecla A. O programa recebe três bytes: `0x1C`, `
 2. Chega `0xF0`. É o prefixo de break: o próximo byte completa um break, não é um evento sozinho. Guarda o estado "à espera do segundo byte".
 3. Chega `0x1C` com o estado pendente: é o break da tecla `0x1C`. Regista "A libertada" e limpa o estado.
 
-Três bytes, dois eventos, uma máquina de estados com dois estados (normal e à espera). Se chegar `0xE0`, entra-se no ramo das teclas estendidas com a mesma lógica. O padrão é sempre este: cada byte ou é um evento completo ou muda o estado do descodificador para interpretar o seguinte.
+Três bytes, dois eventos, uma máquina de estados com três ramos: o normal, a espera após `0xF0` e o ramo estendido após `0xE0`.
+
+<Dot
+  source={maquina}
+  alt="Máquina de estados do descodificador: do estado normal, um byte normal fica, 0xF0 vai para espera de break, 0xE0 vai para o ramo estendido; ambos regressam ao normal."
+/>
+
+Corre o descodificador sobre o vetor fixo e confirma que produz um make e um break da mesma tecla:
+
+<CodePlayground
+  language="c"
+  title="Descodificar make e break"
+  code={'#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t seq[] = {0x1C, 0xF0, 0x1C};\n    int espera_break = 0;\n    for (int i = 0; i < 3; i++) {\n        uint8_t b = seq[i];\n        if (b == 0xF0) { espera_break = 1; continue; }\n        if (espera_break) {\n            printf("break 0x%02X\\n", b);\n            espera_break = 0;\n        } else {\n            printf("make 0x%02X\\n", b);\n        }\n    }\n    return 0;\n}'}
+/>
+
+Se chegar `0xE0`, entra-se no ramo das teclas estendidas com a mesma lógica. O padrão é sempre este: cada byte ou é um evento completo ou muda o estado do descodificador para interpretar o seguinte.
+
+## Ver também
+
+Este vídeo abre um teclado PS/2 real e mostra no osciloscópio os bytes que cada tecla gera, incluindo os prefixos. Vê-o para ligares os scancodes desta página aos sinais no fio.
+
+<YouTube
+  id="7aXbh9VUB3U"
+  title="Como funciona a interface de um teclado PS/2, Ben Eater"
+/>
+
+Para a tabela completa de scancodes e os comandos do controlador, a referência é [PS/2 Keyboard (OSDev)](https://wiki.osdev.org/PS/2_Keyboard).
 
 :::tip[Como testar sem dedos rápidos]
 Para depurar, não toques no teclado de verdade: alimenta o descodificador com sequências fixas no código (por exemplo o vetor `{0x1C, 0xF0, 0x1C}`) e confirma os eventos produzidos. Só quando a sequência fixa passar é que ligas o hardware real. Separar a descodificação da leitura é o que torna isto possível.
