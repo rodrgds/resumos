@@ -5,6 +5,11 @@ section: conteudo
 order: 7
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import janela from '../../ac/superescalar-janela.typ?raw';
+import dependencias from '../../ac/dependencias.dot?raw';
+
 O pipeline escalar completa no máximo uma instrução por ciclo. O processador **superescalar** replica hardware para buscar, descodificar e executar **várias instruções por ciclo**: CPI abaixo de 1, ou, na linguagem do mercado, IPC (_instructions per cycle_) acima de 1. O preço é decidir em hardware, a cada ciclo, que instruções podem avançar juntas sem violar o programa.
 
 ## Emissão múltipla
@@ -28,6 +33,11 @@ Entre duas instruções há três relações possíveis, comparando o que cada u
 
 RAW limita de verdade; WAR e WAW são **dependências falsas**, artefactos da reutilização de nomes. E é aqui que entra a técnica central desta página.
 
+<Dot
+  source={dependencias}
+  alt="Quatro instruções com as três dependências: RAW a cheio de 1 para 2 e de 3 para 4 em t0, WAR a tracejado de 2 para 3 em t3 e WAW a tracejado de 1 para 4 em t0."
+/>
+
 ## Execução fora de ordem
 
 O processador **fora de ordem** não espera pela instrução bloqueada: olha para a frente (a **janela de instruções**), encontra trabalho independente mais à frente e executa-o já. Toma esta sequência:
@@ -40,7 +50,23 @@ sub  t5, t6, t7    # 3: independente, pode avancar
 
 Um pipeline em ordem parava na 2 e a 3 esperava também. O fora de ordem executa a 3 enquanto a 1 espera pela memória, e faz a 2 quando `t0` chegar. O programa observa exatamente a mesma sequência de resultados, mas o hardware preenche os vazios com trabalho útil.
 
+<Typst
+  source={janela}
+  format="svg"
+  alt="Emissão em duas vias: a instrução 2 bloqueada ocupa a via B enquanto a instrução 3, independente, passa à frente pela via livre."
+/>
+
 Para isto funcionar, o processador resolve as dependências falsas com **renomeação de registos**: dá a cada escrita um registo físico novo e separado, por isso WAR e WAW desaparecem (nomes diferentes nunca colidem) e só as RAW verdadeiras impõem ordem. O registo arquitetural `t0` do programa passa a ser uma etiqueta; por baixo há um ficheiro de registos físicos maior que o programador nunca vê.
+
+Segue três escritas em `t0` a receberem físicos distintos, com `p` para os registos físicos:
+
+| Instrução        | Lê físicos    | Escreve físico novo |
+| ---------------- | ------------- | ------------------- |
+| `add t0, t1, t2` | `t1`, `t2`    | `p40` para `t0`     |
+| `sub t3, t0, t4` | `p40` (`t0`)  | `p42` para `t3`     |
+| `add t0, t5, t6` | `t5`, `t6`    | `p41` para `t0`     |
+
+A segunda escrita em `t0` recebe `p41` em vez de reutilizar `p40`: a WAW entre a primeira e a terceira instrução desaparece, e um leitor atrasado de `p40` continua a ver o valor certo. É assim que nomes diferentes eliminam as dependências falsas sem mudar o programa.
 
 ## Commit em ordem
 
@@ -48,4 +74,6 @@ Executar fora de ordem não significa terminar fora de ordem para o mundo exteri
 
 ## O limite do paralelismo implícito
 
-Junta as peças e vês o teto: a largura de emissão, o tamanho da janela, a precisão da [predição de saltos](predicao-saltos/) (cada erro deita fora a janela inteira) e, acima de tudo, o paralelismo real do programa. Passar de 2 para 4 vias duplica o hardware de emissão e de forwarding, mas o IPC típico sobe muito menos, porque os programas comuns têm paralelismo limitado. É este rendimento decrescente, somado ao muro da energia, que empurrou a indústria para vários núcleos em vez de núcleos cada vez mais largos. E isso é a próxima página.
+Junta as peças e vês o teto: a largura de emissão, o tamanho da janela, a precisão da [predição de saltos](predicao-saltos/) (cada erro deita fora a janela inteira) e, acima de tudo, o paralelismo real do programa. Como regra prática, passar de 2 para 4 vias duplica o hardware de emissão e de forwarding, mas o IPC típico sobe muito menos, porque os programas comuns têm paralelismo limitado.[^vias] É este rendimento decrescente, somado ao muro da energia, que empurrou a indústria para vários núcleos em vez de núcleos cada vez mais largos. E isso é a próxima página.
+
+[^vias]: A quantificação exata depende do programa e da microarquitetura; o _Computer Organization and Design_ de Patterson e Hennessy, livro de referência da cadeira, mede estes rendimentos com benchmarks SPEC.
