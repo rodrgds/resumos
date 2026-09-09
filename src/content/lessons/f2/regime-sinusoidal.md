@@ -1,0 +1,58 @@
+---
+title: Regime forçado sinusoidal
+description: Fasores, impedância, ressonância no RLC e potência ativa.
+section: conteudo
+order: 6
+---
+
+Quando a fonte é sinusoidal e o transitório já morreu, todas as tensões e correntes do circuito são sinusoides à mesma frequência, diferindo só em amplitude e fase. Os **fasores** exploram isto: representam cada sinusoide por um número complexo e transformam equações diferenciais em álgebra, exatamente como o método dos nós mas com complexos.
+
+## Fasores e impedância
+
+Uma tensão $v(t) = V_m\cos(\omega t + \phi)$ representa-se pelo fasor $\mathbf{V}$, um número complexo de módulo $V_m$ e argumento $\phi$. Derivar em ordem ao tempo multiplica o fasor por $j\omega$, por isso cada componente ganha uma "resistência complexa", a **impedância** $\mathbf{Z}$:
+
+- Resistência: $\mathbf{Z}_R = R$.
+- Bobina: $\mathbf{Z}_L = j\omega L$.
+- Condensador: $\mathbf{Z}_C = 1/(j\omega C) = -j/(\omega C)$.
+
+A lei de Ohm generaliza-se a $\mathbf{V} = \mathbf{Z}\mathbf{I}$, e as leis de Kirchhoff, o divisor de tensão e Thévenin funcionam iguais, com complexos. Nesta cadeira usamos valores eficazes ($V_{\text{ef}} = V_m/\sqrt{2}$) nos fasores salvo indicação contrária: com eficazes, $P = V_{\text{ef}}I_{\text{ef}}$ dá diretamente a potência em watts.
+
+Repara nos limites: quando $\omega \to 0$, a bobina tende para um curto ($j\omega L \to 0$) e o condensador para um aberto ($1/(j\omega C) \to \infty$); quando $\omega \to \infty$ trocam os papéis. Estes dois casos verificam qualquer expressão de impedância.
+
+## Ressonância no RLC série
+
+Num RLC série, $\mathbf{Z} = R + j(\omega L - 1/(\omega C))$. A parte imaginária anula-se quando
+
+$$
+\omega_0 L = \frac{1}{\omega_0 C} \quad\Rightarrow\quad \omega_0 = \frac{1}{\sqrt{LC}},
+$$
+
+a **frequência de ressonância**, a mesma $\omega_0$ da resposta livre dos [circuitos reativos](/cadeiras/f2/circuitos-reativos/). Nessa frequência a impedância é mínima ($\mathbf{Z} = R$, puramente resistiva) e a corrente é máxima. É o fenómeno gémeo da ressonância mecânica das [oscilações](/cadeiras/f1/oscilacoes/): a bobina e o condensador trocam energia entre si e a fonte só repõe o que a resistência dissipa.
+
+## Potência ativa
+
+Com $\mathbf{V}$ e $\mathbf{I}$ eficazes e diferença de fase $\phi = \arg\mathbf{V} - \arg\mathbf{I}$, a potência média (ativa) é
+
+$$
+P = V_{\text{ef}}\,I_{\text{ef}}\cos\phi.
+$$
+
+Só a resistência consome potência média: na bobina e no condensador ideais, $\phi = \pm 90^{\circ}$ e $\cos\phi = 0$, porque a energia entra metade do ciclo e sai na outra metade. Na ressonância, tensão e corrente estão em fase e toda a potência da fonte acaba em calor na resistência.
+
+## Exemplo: RLC série na ressonância
+
+Sejam $R = 20\ \Omega$, $L = 50\ \text{mH}$, $C = 20\ \mu\text{F}$ e fonte $v_s(t) = 10\sqrt{2}\cos(\omega t)\ \text{V}$ (valor eficaz $10\ \text{V}$) com $\omega = 1000\ \text{rad/s}$.
+
+Primeiro, confirma a ressonância: $\omega_0 = 1/\sqrt{LC} = 1/\sqrt{50 \times 10^{-3} \times 20 \times 10^{-6}} = 1/\sqrt{10^{-6}} = 1000\ \text{rad/s}$. A fonte está exatamente na ressonância. As reatâncias são $X_L = \omega L = 1000 \times 0{,}050 = 50\ \Omega$ e $X_C = 1/(\omega C) = 1/(1000 \times 20 \times 10^{-6}) = 1/0{,}020 = 50\ \Omega$: iguais, como a condição de ressonância exige.
+
+A impedância é $\mathbf{Z} = 20 + j(50 - 50) = 20\ \Omega$. A corrente eficaz é $I_{\text{ef}} = 10/20 = 0{,}50\ \text{A}$, em fase com a fonte. As tensões: $V_R = 0{,}50 \times 20 = 10\ \text{V}$, $V_L = 0{,}50 \times 50 = 25\ \text{V}$, $V_C = 25\ \text{V}$. Repara que $V_L$ e $V_C$ excedem a tensão da fonte: estão em oposição de fase e cancelam-se ($+j25 - j25 = 0$), sobrando os $10\ \text{V}$ da resistência. O fator de qualidade é $Q = \omega_0 L/R = 50/20 = 2{,}5$, e $V_L = Q \times V_s = 25\ \text{V}$ confirma. A potência ativa é $P = 10 \times 0{,}50 = 5{,}0\ \text{W}$, toda dissipada em $R$ (confirma: $RI^2 = 20 \times 0{,}25 = 5{,}0\ \text{W}$).
+
+No laboratório, este é o ensaio clássico: varia a frequência da fonte, mede $V_R$, $V_L$ e $V_C$ com o osciloscópio e localiza a ressonância no pico de $V_R$ (ou de corrente). O cancelamento $V_L \approx V_C$ nessa frequência é a verificação experimental de que as fases estão certas, não só os módulos.
+
+:::warning[Não somes módulos de tensões em CA]
+$V_R + V_L + V_C = 10 + 25 + 25 = 60\ \text{V}$ não é a tensão da fonte. Em regime sinusoidal somam-se fasores, com fases: aqui $10 + j25 - j25 = 10\ \text{V}$. Somar módulos só funciona para componentes em fase.
+:::
+
+## Para onde ir
+
+Viste o circuito como resolvedor de equações a uma frequência. Na próxima página ele passa a sistema: os [sistemas lineares invariantes](/cadeiras/f2/sistemas-lti/) descrevem a relação entrada-saída para qualquer sinal, não só sinusoides.
