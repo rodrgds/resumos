@@ -33,7 +33,8 @@ test('global search finds courses and content without filtering the homepage', a
   await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
   await search.fill('JuniFEUP');
   await expect(page.locator('#search-results')).toContainText('Núcleos');
-  await search.fill('zzzzinexistente');
+  // Pagefind falls back to shorter prefixes for unquoted queries.
+  await search.fill('"zzzzinexistente"');
   await expect(page.locator('#search-status')).toContainText('Não encontrámos');
 });
 
