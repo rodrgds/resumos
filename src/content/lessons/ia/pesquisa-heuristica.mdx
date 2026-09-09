@@ -32,12 +32,14 @@ Há dois caminhos ótimos com 6 passos: por cima, (0,0), (0,1), (0,2), (0,3), (1
   alt="Grelha 4 por 4 com a heurística de Manhattan em cada casa livre. Três casas bloqueadas a escuro junto ao canto superior esquerdo. O início está marcado no canto superior esquerdo e o objetivo no canto inferior direito."
 />
 
-O A* sobre esta grelha, executável abaixo, expande por f crescente e devolve um caminho de custo 6.[^redblob]
+O A\* sobre esta grelha, executável abaixo, expande por f crescente e devolve um caminho de custo 6.[^redblob]
 
 <CodePlayground
   language="python"
   title="A* na grelha"
-  code={'import heapq\n\nbloqueados = {(1, 1), (1, 2), (2, 1)}\ninicio, objetivo = (0, 0), (3, 3)\nh = lambda n: (3 - n[0]) + (3 - n[1])\n\ndef vizinhos(n):\n    r, c = n\n    for dr, dc in [(0, 1), (1, 0), (0, -1), (-1, 0)]:\n        m = (r + dr, c + dc)\n        if 0 <= m[0] < 4 and 0 <= m[1] < 4 and m not in bloqueados:\n            yield m\n\nfronteira = [(6, 0, inicio, [inicio])]\nvisto = {}\nwhile fronteira:\n    f, g, n, caminho = heapq.heappop(fronteira)\n    if n in visto:\n        continue\n    visto[n] = g\n    if n == objetivo:\n        print("expandidos:", list(visto))\n        print("custo:", g)\n        break\n    for m in vizinhos(n):\n        if m not in visto:\n            heapq.heappush(fronteira, (g + 1 + h(m), g + 1, m, caminho + [m]))'}
+  code={
+    'import heapq\n\nbloqueados = {(1, 1), (1, 2), (2, 1)}\ninicio, objetivo = (0, 0), (3, 3)\nh = lambda n: (3 - n[0]) + (3 - n[1])\n\ndef vizinhos(n):\n    r, c = n\n    for dr, dc in [(0, 1), (1, 0), (0, -1), (-1, 0)]:\n        m = (r + dr, c + dc)\n        if 0 <= m[0] < 4 and 0 <= m[1] < 4 and m not in bloqueados:\n            yield m\n\nfronteira = [(6, 0, inicio, [inicio])]\nvisto = {}\nwhile fronteira:\n    f, g, n, caminho = heapq.heappop(fronteira)\n    if n in visto:\n        continue\n    visto[n] = g\n    if n == objetivo:\n        print("expandidos:", list(visto))\n        print("custo:", g)\n        break\n    for m in vizinhos(n):\n        if m not in visto:\n            heapq.heappush(fronteira, (g + 1 + h(m), g + 1, m, caminho + [m]))'
+  }
 />
 
 Isto expande `(0, 0), (0, 1), (1, 0), (0, 2), (2, 0), (0, 3)` antes de continuar pela fronteira com f 6, exatamente a ordem calculada à mão acima, e termina com custo 6.
@@ -48,7 +50,7 @@ A pesquisa **gulosa** expande sempre o nó com menor $h$, ignorando o custo já 
 
 Não confies na sorte. A gulosa segue o $h$ como um gradiente e fica presa em becos: se a casa (0,3) estivesse bloqueada, ela descia até (0,2), via o $h$ subir para trás e hesitava, podendo explorar muito antes de recuar. Pior, a gulosa não é ótima em geral: nada a impede de devolver um caminho comprido quando um curto existe, porque nunca compara o custo acumulado. É útil quando precisas de uma solução rápida e o ótimo não importa.
 
-## A*: o melhor dos dois
+## A\*: o melhor dos dois
 
 O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real já pago do início até $n$. Junta o cuidado do custo uniforme com a direção da heurística. Segue os primeiros passos na grelha, com a fronteira entre parênteses:
 
@@ -59,21 +61,21 @@ O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real j
 5. Expande (2,0) com f 6: gera (3,0) com g 3, h 3, f 6.
 6. Expande (0,3) com f 6: gera (1,3) com g 4, h 2, f 6.
 
-Repara no padrão: todos os nós expandidos têm f 6, que é o custo ótimo. O A* continua a expandir a fronteira com f 6, (3,0), (1,3), (3,1), (2,3), até gerar o objetivo (3,3) com g 6, h 0, f 6. Quando o objetivo sai da fronteira com o menor f, nenhum outro caminho pode ser melhor, porque todos os restantes têm f maior ou igual. É este o argumento de otimalidade, e ele depende da honestidade da heurística.
+Repara no padrão: todos os nós expandidos têm f 6, que é o custo ótimo. O A\* continua a expandir a fronteira com f 6, (3,0), (1,3), (3,1), (2,3), até gerar o objetivo (3,3) com g 6, h 0, f 6. Quando o objetivo sai da fronteira com o menor f, nenhum outro caminho pode ser melhor, porque todos os restantes têm f maior ou igual. É este o argumento de otimalidade, e ele depende da honestidade da heurística.
 
 ## Admissível e consistente
 
 A heurística é **admissível** quando nunca sobrestima: $h(n) \le h^*(n)$ para todo o nó, onde $h^*$ é o custo real mínimo. A Manhattan é admissível em grelhas com 4 direções porque cada passo muda a distância de Manhattan no máximo 1, por isso 6 passos no mínimo exigem $h \le 6$ no início, e de facto $h = 6$.
 
-A heurística é **consistente** (ou monótona) quando $h(n) \le custo(n, n') + h(n')$ para cada aresta, isto é, a estimativa nunca cai mais depressa que o custo real. Verifica na aresta (0,1) para (0,2): $5 \le 1 + 4$. Consistência implica admissibilidade e ainda garante que o A* nunca precisa de reabrir nós já expandidos. Na prática dos testes, mostra a desigualdade numa aresta e conclui; para provar admissibilidade de Manhattan, usa o argumento do parágrafo anterior.
+A heurística é **consistente** (ou monótona) quando $h(n) \le custo(n, n') + h(n')$ para cada aresta, isto é, a estimativa nunca cai mais depressa que o custo real. Verifica na aresta (0,1) para (0,2): $5 \le 1 + 4$. Consistência implica admissibilidade e ainda garante que o A\* nunca precisa de reabrir nós já expandidos. Na prática dos testes, mostra a desigualdade numa aresta e conclui; para provar admissibilidade de Manhattan, usa o argumento do parágrafo anterior.
 
 :::tip[Como cai em teste]
-O enunciado dá-te a grelha, a heurística e pede a ordem de expansão do A* até ao objetivo, ou pergunta se a heurística é admissível. Faz uma tabela com colunas de nó, g, h e f, e expande sempre o menor f, desempatando como o enunciado disser. Para a admissibilidade, compara h com o custo real mínimo em cada nó suspeito, normalmente o inicial.
+O enunciado dá-te a grelha, a heurística e pede a ordem de expansão do A\* até ao objetivo, ou pergunta se a heurística é admissível. Faz uma tabela com colunas de nó, g, h e f, e expande sempre o menor f, desempatando como o enunciado disser. Para a admissibilidade, compara h com o custo real mínimo em cada nó suspeito, normalmente o inicial.
 :::
 
 ## Porque é que isto importa
 
-Sem heurística, a largura expande tudo até à profundidade do objetivo. Com uma boa heurística, o A* expande sobretudo nós com $f$ próximo do ótimo e ignora o resto. É por isso que problemas intratáveis na prática, como os da página de [complexidade](/cadeiras/tc/complexidade/), se resolvem todos os dias com heurísticas: abdicas da garantia barata da exaustão e compras velocidade com uma estimativa honesta.
+Sem heurística, a largura expande tudo até à profundidade do objetivo. Com uma boa heurística, o A\* expande sobretudo nós com $f$ próximo do ótimo e ignora o resto. É por isso que problemas intratáveis na prática, como os da página de [complexidade](/cadeiras/tc/complexidade/), se resolvem todos os dias com heurísticas: abdicas da garantia barata da exaustão e compras velocidade com uma estimativa honesta.
 
 <YouTube id="ySN5Wnu88nE" title="A Star Search Algorithm (Computerphile)" />
 
