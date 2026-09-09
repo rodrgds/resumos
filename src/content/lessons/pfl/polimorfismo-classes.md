@@ -43,14 +43,14 @@ O `(==)` entre parênteses é o operador usado como função. `contem 3 [1,2,3]`
 
 ## As classes que vais encontrar
 
-| Classe | Capacidade | Exemplos de membros |
-| ------ | ---------- | ------------------- |
-| `Eq` | comparar com `==` e `/=` | `Int`, `Char`, `Bool`, listas deles |
-| `Ord` | ordenar com `<`, `>`, `compare` | `Int`, `Double`, `String` |
-| `Show` | converter para string | quase todos (é o que o GHCi usa para imprimir) |
-| `Num` | aritmética com `+`, `*`, `-` | `Int`, `Integer`, `Double` |
-| `Integral` | inteiros com `div` e `mod` | `Int`, `Integer` |
-| `Fractional` | reais com `/` | `Double` |
+| Classe       | Capacidade                      | Exemplos de membros                            |
+| ------------ | ------------------------------- | ---------------------------------------------- |
+| `Eq`         | comparar com `==` e `/=`        | `Int`, `Char`, `Bool`, listas deles            |
+| `Ord`        | ordenar com `<`, `>`, `compare` | `Int`, `Double`, `String`                      |
+| `Show`       | converter para string           | quase todos (é o que o GHCi usa para imprimir) |
+| `Num`        | aritmética com `+`, `*`, `-`    | `Int`, `Integer`, `Double`                     |
+| `Integral`   | inteiros com `div` e `mod`      | `Int`, `Integer`                               |
+| `Fractional` | reais com `/`                   | `Double`                                       |
 
 Repara que `Ord` implica `Eq` e `Num` implica `Eq`: para ordenar é preciso comparar igualdade, e a hierarquia reflete isso. Quando vires uma assinatura com várias restrições, como `(Ord a, Show a) => ...`, lê como uma lista de capacidades exigidas.
 

@@ -31,11 +31,11 @@ A conta é igual, a pergunta muda. Se sortearam 200 utilizadores e classificaram
 
 Duzentos utilizadores classificados por dispositivo e conversão:
 
-| | Converteu | Não converteu | Total |
-| --- | ---: | ---: | ---: |
-| Telemóvel | 45 | 75 | 120 |
-| Computador | 50 | 30 | 80 |
-| Total | 95 | 105 | 200 |
+|            | Converteu | Não converteu | Total |
+| ---------- | --------: | ------------: | ----: |
+| Telemóvel  |        45 |            75 |   120 |
+| Computador |        50 |            30 |    80 |
+| Total      |        95 |           105 |   200 |
 
 $H_0$: dispositivo e conversão são independentes. As esperadas sob $H_0$: telemóvel e converteu, $120 \times 95/200 = 57$; telemóvel e não, $120 \times 105/200 = 63$; computador e converteu, $80 \times 95/200 = 38$; computador e não, $80 \times 105/200 = 42$. Todas acima de 5, por isso a aproximação vale.
 

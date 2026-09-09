@@ -22,7 +22,7 @@ Vendas(idEnc, dataEnc, idCliente, nomeCliente, idProd, nomeProd, preco, qtd)
 ```
 
 - **1FN**: cada célula tem um valor atómico, sem listas nem grupos repetidos. Assume-se cumprida.
-- **2FN**: nenhum atributo fora da chave depende de *parte* da chave. Falha aqui: `idEnc -> dataEnc` e `idProd -> nomeProd, preco` usam só metade da chave. São **dependências parciais**.
+- **2FN**: nenhum atributo fora da chave depende de _parte_ da chave. Falha aqui: `idEnc -> dataEnc` e `idProd -> nomeProd, preco` usam só metade da chave. São **dependências parciais**.
 - **3FN**: nenhum atributo fora da chave depende de outro atributo fora da chave. Mesmo depois de resolver as parciais, `idCliente -> nomeCliente` seria uma **dependência transitiva** se `idCliente` não fosse chave.
 - **Boyce-Codd (BCNF)**: todo o determinante de uma FD não trivial é superchave. É a versão sem exceções da 3FN: em BCNF, cada seta parte de uma (super)chave.
 

@@ -1,5 +1,5 @@
 ---
-title: "Segurança Web: sessões e autenticação"
+title: 'Segurança Web: sessões e autenticação'
 description: Modelo de segurança Web, sessões, palavras-passe, XSS refletido e injeção SQL com correções.
 section: conteudo
 order: 7

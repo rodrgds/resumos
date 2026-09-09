@@ -15,12 +15,12 @@ Há variantes que deves reconhecer: encontrar a **primeira** ou a **última** oc
 
 ## Ordenação por comparação
 
-| Algoritmo | Pior caso | Caso médio | Espaço extra | Estável |
-| --------- | --------- | ---------- | ------------ | ------- |
-| Seleção   | $O(n^2)$  | $O(n^2)$   | $O(1)$       | não     |
-| Inserção  | $O(n^2)$  | $O(n^2)$   | $O(1)$       | sim     |
-| Mergesort | $O(n \log n)$ | $O(n \log n)$ | $O(n)$  | sim     |
-| Quicksort | $O(n^2)$  | $O(n \log n)$ | $O(\log n)$ | não    |
+| Algoritmo | Pior caso     | Caso médio    | Espaço extra | Estável |
+| --------- | ------------- | ------------- | ------------ | ------- |
+| Seleção   | $O(n^2)$      | $O(n^2)$      | $O(1)$       | não     |
+| Inserção  | $O(n^2)$      | $O(n^2)$      | $O(1)$       | sim     |
+| Mergesort | $O(n \log n)$ | $O(n \log n)$ | $O(n)$       | sim     |
+| Quicksort | $O(n^2)$      | $O(n \log n)$ | $O(\log n)$  | não     |
 
 A **ordenação por seleção** repete "escolhe o mínimo do que falta e põe-no na posição": simples, sempre quadrática, boa quando trocar é caro e comparar é barato. A **ordenação por inserção** insere cada elemento na parte já ordenada: quadrática no geral, mas $O(n)$ num vetor quase ordenado, por isso é a escolha para entradas pequenas. **Estável** significa que elementos iguais mantêm a ordem relativa original, o que interessa quando ordenas por uma chave e há desempates noutra.
 

@@ -15,7 +15,7 @@ Um ou mais atributos identificam cada instância sem ambiguidade e formam a **ch
 
 ## Associações e multiplicidades
 
-Uma **associação** liga duas classes: um cliente *faz* encomendas, uma encomenda *contém* produtos. A **multiplicidade** diz quantos de cada lado participam, e é a decisão mais importante do diagrama:
+Uma **associação** liga duas classes: um cliente _faz_ encomendas, uma encomenda _contém_ produtos. A **multiplicidade** diz quantos de cada lado participam, e é a decisão mais importante do diagrama:
 
 - `1`: exatamente um. Cada encomenda pertence a exatamente um cliente.
 - `0..1`: zero ou um. Um produto pode estar sem encomenda nenhuma.
@@ -46,4 +46,4 @@ Para cada associação, inventa um caso concreto e testa as duas direções: "a 
 
 ## Para levar para a próxima página
 
-O diagrama diz *o quê*, mas o SQLite só percebe tabelas. A página sobre [mapeamento relacional](mapeamento-relacional/) converte cada classe e cada associação em tabelas com chaves primárias e estrangeiras, incluindo a tabela que nasce da classe associativa.
+O diagrama diz _o quê_, mas o SQLite só percebe tabelas. A página sobre [mapeamento relacional](mapeamento-relacional/) converte cada classe e cada associação em tabelas com chaves primárias e estrangeiras, incluindo a tabela que nasce da classe associativa.

@@ -28,7 +28,7 @@ Segundo, **um rótulo por campo**, ligado ao campo:
 
 ```html
 <label for="email">Email para envio dos bilhetes</label>
-<input id="email" name="email" type="email" required autocomplete="email">
+<input id="email" name="email" type="email" required autocomplete="email" />
 ```
 
 O `for` ligado ao `id` faz o leitor de ecrã anunciar o rótulo ao entrar no campo, e o `type="email"` com `required` repete no navegador as regras do servidor. Um campo sem rótulo visível é invisível para parte dos utilizadores, por mais bonito que seja o desenho.

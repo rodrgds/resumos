@@ -39,10 +39,10 @@ Avalia dois cenários da loja em linha com a escala de 1 a 3.
 
 **Cenário B: SSH com palavra-passe fraca exposto na Internet.** O servidor aceita `root` com uma palavra-passe curta e se encontra numa gama que robôs varrem continuamente. Ameaça: varrimento automático. Vulnerabilidade: autenticação fraca numa conta privilegiada. Probabilidade alta (3): este varrimento chega em minutos, não em dias. Impacto alto (3): acesso total ao servidor da loja. Risco: $3 \times 3 = 9$, o mais alto da matriz. Medida: autenticação só com chaves, conta `root` sem acesso remoto e firewall a limitar a porta. Cada medida ataca um fator diferente: as chaves baixam a probabilidade de adivinhação para perto de zero.
 
-| Cenário | Probabilidade | Impacto | Risco | Medida |
-| ------- | ------------- | ------- | ----- | ------ |
-| A: portátil perdido | 2 (média) | 3 (alto) | 6 (alto) | cifragem total do disco |
-| B: SSH fraco exposto | 3 (alta) | 3 (alto) | 9 (alto) | chaves, sem `root` remoto, firewall |
+| Cenário              | Probabilidade | Impacto  | Risco    | Medida                              |
+| -------------------- | ------------- | -------- | -------- | ----------------------------------- |
+| A: portátil perdido  | 2 (média)     | 3 (alto) | 6 (alto) | cifragem total do disco             |
+| B: SSH fraco exposto | 3 (alta)      | 3 (alto) | 9 (alto) | chaves, sem `root` remoto, firewall |
 
 O cenário B resolve-se primeiro. Repara ainda que a mesma pontuação pode esconder histórias diferentes: um $2 \times 3$ e um $3 \times 2$ valem ambos 6, mas um pede medidas contra o impacto e o outro contra a probabilidade. A matriz ordena, não decide sozinha: o custo e a rapidez de cada medida entram na decisão final.
 

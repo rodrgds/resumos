@@ -49,13 +49,13 @@ Segue o protocolo com atenção. O filho fecha a ponta de leitura e escreve na d
 - Um **socket** é um canal bidirecional que tanto liga processos na mesma máquina como máquinas diferentes pela rede. É a base de quase toda a comunicação em rede, mas paga-se em complexidade: endereços, ligações e protocolos.
 - A **memória partilhada** com `mmap` mapeia a mesma zona física no espaço dos dois processos, que passam a ler e escrever nela diretamente. É o mecanismo mais rápido para grandes volumes, porque não copia dados pelo núcleo. O preço é a sincronização: sem [mutexes e semáforos](programacao-concorrente/) para ordenar os acessos, os dois processos pisam-se e o resultado varia de execução para execução.
 
-| Mecanismo        | Sentido      | Entre quem           | Quando usar                    |
-| ---------------- | ------------ | -------------------- | ------------------------------ |
-| Sinais           | aviso        | qualquer processo    | notificar eventos simples      |
-| Pipes            | unidirecional | pai e filho         | conversa simples entre parentes |
-| FIFOs            | unidirecional | qualquer processo   | pipe sem parentesco            |
-| Sockets          | bidirecional  | qualquer processo   | rede ou protocolo completo     |
-| Memória partilhada | direto      | qualquer processo   | grandes volumes, com sincronização |
+| Mecanismo          | Sentido       | Entre quem        | Quando usar                        |
+| ------------------ | ------------- | ----------------- | ---------------------------------- |
+| Sinais             | aviso         | qualquer processo | notificar eventos simples          |
+| Pipes              | unidirecional | pai e filho       | conversa simples entre parentes    |
+| FIFOs              | unidirecional | qualquer processo | pipe sem parentesco                |
+| Sockets            | bidirecional  | qualquer processo | rede ou protocolo completo         |
+| Memória partilhada | direto        | qualquer processo | grandes volumes, com sincronização |
 
 ## Para levar para a próxima página
 

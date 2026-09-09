@@ -24,11 +24,11 @@ O preço é claro: os dados do armazém têm a idade da última carga, nunca o s
 
 ## A tabela de decisão
 
-| Situação | Escolha | Porquê |
-| -------- | ------- | ------ |
-| Registar vendas da loja sem contradições | Relacional | Integridade e transações por cada escrita |
-| Relatório anual de vendas por mês e categoria | Armazém de dados | Agregações históricas sobre a estrela, sem pesar no operacional |
-| Catálogo onde cada produto tem atributos próprios | Documento (NoSQL) | Esquema flexível, sem colunas nulas para todos |
-| Carrinho de compras com milhões de acessos por chave | Chave-valor (NoSQL) | Leitura e escrita por chave a grande escala |
+| Situação                                             | Escolha             | Porquê                                                          |
+| ---------------------------------------------------- | ------------------- | --------------------------------------------------------------- |
+| Registar vendas da loja sem contradições             | Relacional          | Integridade e transações por cada escrita                       |
+| Relatório anual de vendas por mês e categoria        | Armazém de dados    | Agregações históricas sobre a estrela, sem pesar no operacional |
+| Catálogo onde cada produto tem atributos próprios    | Documento (NoSQL)   | Esquema flexível, sem colunas nulas para todos                  |
+| Carrinho de compras com milhões de acessos por chave | Chave-valor (NoSQL) | Leitura e escrita por chave a grande escala                     |
 
 A pergunta de teste típica dá-te um cenário e pede a escolha justificada: identifica primeiro o padrão de acesso (escritas com integridade, análise agregada ou escala sem esquema) e só depois casa com a coluna da esquerda. E quando o cenário mistura os dois mundos, como a loja real, a resposta honesta é híbrida: relacional para operar, armazém para analisar.

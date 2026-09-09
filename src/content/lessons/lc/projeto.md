@@ -1,5 +1,5 @@
 ---
-title: "Projeto: eventos e debugging"
+title: 'Projeto: eventos e debugging'
 description: Máquinas de estados com vários periféricos e debugging pelo método científico.
 section: conteudo
 order: 9
@@ -15,12 +15,12 @@ Com interrupções, o programa principal não pergunta nada: bloqueia à espera 
 
 Um jogo simples com teclado e temporizador vive em quatro estados:
 
-| Estado | O que mostra | Transições |
-| ------ | ------------ | ---------- |
-| MENU | título e instruções | tecla Enter passa a JOGO |
-| JOGO | sprites e pontuação | tecla P passa a PAUSA, fim das vidas passa a FIM, cada tique avança a lógica |
-| PAUSA | imagem congelada e aviso | tecla P volta a JOGO, tecla Esc volta a MENU |
-| FIM | pontuação final | tecla Enter volta a MENU |
+| Estado | O que mostra             | Transições                                                                   |
+| ------ | ------------------------ | ---------------------------------------------------------------------------- |
+| MENU   | título e instruções      | tecla Enter passa a JOGO                                                     |
+| JOGO   | sprites e pontuação      | tecla P passa a PAUSA, fim das vidas passa a FIM, cada tique avança a lógica |
+| PAUSA  | imagem congelada e aviso | tecla P volta a JOGO, tecla Esc volta a MENU                                 |
+| FIM    | pontuação final          | tecla Enter volta a MENU                                                     |
 
 Cada evento (tecla ou tique) entra numa função que olha para o estado atual e decide: em JOGO, a tecla P pausa; em PAUSA, a mesma tecla retoma. O desenho de cada imagem depende só do estado e dos dados, nunca do histórico de eventos. Quando um comportamento estranho aparecer, a primeira pergunta é sempre "em que estado estávamos e que evento chegou": nove em dez bugs do projeto são transições em falta ou a mais.
 

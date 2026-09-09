@@ -37,13 +37,14 @@ Para o início de sessão, com os requisitos R1 (iniciar sessão com email e pal
 
 1. **Matriz de rastreabilidade.** Liga cada requisito aos seus testes numa tabela:
 
-   | Requisito | Testes |
-   |---|---|
-   | R1, credenciais válidas | TI1 (integração com a base de dados), TS1 (fluxo completo na app) |
-   | R1, conta bloqueada | TI2 (bloqueio após 5 tentativas), TA1 (aceitação do fluxo de bloqueio) |
-   | R2, desempenho | TS2 (100 inícios de sessão, medir percentil 95) |
+   | Requisito               | Testes                                                                 |
+   | ----------------------- | ---------------------------------------------------------------------- |
+   | R1, credenciais válidas | TI1 (integração com a base de dados), TS1 (fluxo completo na app)      |
+   | R1, conta bloqueada     | TI2 (bloqueio após 5 tentativas), TA1 (aceitação do fluxo de bloqueio) |
+   | R2, desempenho          | TS2 (100 inícios de sessão, medir percentil 95)                        |
 
    Cada requisito tem pelo menos um teste; cada teste aponta para o requisito que verifica. Um requisito sem linha na matriz não está testado, por mais código que exista.
+
 2. **Dois casos de aceitação.** Escreve no formato dado, quando e então: "Dado um utilizador registado com a conta ativa, quando inicia sessão com email e palavra passe corretos, então entra na app em menos de 2 segundos." E: "Dado um utilizador com 5 tentativas falhadas, quando tenta de novo, então vê a mensagem de conta bloqueada e recebe o email de recuperação." Repara que o dono do produto consegue ler e assinar isto sem saber programar: é essa a função da aceitação.
 3. **Um defeito registado.** "D-14, grave. Ambiente: versão 1.3, Android 14. Passos: criar conta com o email `ana+loja@mail.com`, terminar sessão, iniciar sessão com o mesmo email. Obtido: erro genérico. Esperado: entrada na app. Suspeita: o sinal de adição não é escapado na pesquisa." Este registo permite a qualquer pessoa reproduzir, e a suspeita final é um palpite identificado como tal, não um diagnóstico disfarçado.
 

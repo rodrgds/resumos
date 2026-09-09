@@ -28,14 +28,14 @@ Uma amostra de 40 tempos de resposta de um servidor, em milissegundos:
 
 São dados quantitativos contínuos. A tabela de frequências com classes de amplitude 5 resume-os:
 
-| Classe | Frequência | Frequência relativa |
-| ------ | ---------: | ------------------: |
-| [35, 40[ | 3 | 0,075 |
-| [40, 45[ | 9 | 0,225 |
-| [45, 50[ | 13 | 0,325 |
-| [50, 55[ | 9 | 0,225 |
-| [55, 60[ | 5 | 0,125 |
-| [60, 65[ | 1 | 0,025 |
+| Classe   | Frequência | Frequência relativa |
+| -------- | ---------: | ------------------: |
+| [35, 40[ |          3 |               0,075 |
+| [40, 45[ |          9 |               0,225 |
+| [45, 50[ |         13 |               0,325 |
+| [50, 55[ |          9 |               0,225 |
+| [55, 60[ |          5 |               0,125 |
+| [60, 65[ |          1 |               0,025 |
 
 O **histograma** desenha estas frequências como barras: aqui verias uma forma quase simétrica centrada perto de 47, com uma cauda curta para a direita por causa do 61. O gráfico mostra num segundo o que a tabela mostra num minuto.
 

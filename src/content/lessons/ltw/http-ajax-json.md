@@ -32,7 +32,7 @@ Os métodos mais usados são `GET` para ler, `POST` para criar ou enviar formul�
 Uma interface REST organiza o servidor por recursos com endereços estáveis: `GET /produtos` lista, `GET /produtos/3` lê um, `POST /produtos` cria. O formato de troca é quase sempre JSON, que é texto com a sintaxe dos objetos e arrays do JavaScript:
 
 ```json
-{"nome": "Queijo da Serra", "preco": 8.5, "stock": true}
+{ "nome": "Queijo da Serra", "preco": 8.5, "stock": true }
 ```
 
 Em [PHP](php-dinamicas-bd/), uma página que devolve JSON em vez de HTML é um serviço que qualquer cliente consome: `echo json_encode($linhas);` com o cabeçalho `Content-Type: application/json`. Em JavaScript, `JSON.parse` transforma texto em objeto e `JSON.stringify` faz o inverso.
@@ -43,22 +43,22 @@ O `fetch` faz um pedido HTTP a partir do JavaScript e devolve uma promessa com a
 
 ```js
 async function pesquisar(termo) {
-    const r = await fetch('api.php?q=' + encodeURIComponent(termo));
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const produtos = await r.json();
-    const lista = document.querySelector('#resultados');
-    lista.replaceChildren();
-    for (const p of produtos) {
-        const li = document.createElement('li');
-        li.textContent = p.nome + ' : ' + p.preco + ' €';
-        lista.append(li);
-    }
+  const r = await fetch('api.php?q=' + encodeURIComponent(termo));
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const produtos = await r.json();
+  const lista = document.querySelector('#resultados');
+  lista.replaceChildren();
+  for (const p of produtos) {
+    const li = document.createElement('li');
+    li.textContent = p.nome + ' : ' + p.preco + ' €';
+    lista.append(li);
+  }
 }
 document.querySelector('#q').addEventListener('input', (e) => {
-    pesquisar(e.target.value).catch(() => {
-        document.querySelector('#resultados').textContent =
-            'Pesquisa indisponível.';
-    });
+  pesquisar(e.target.value).catch(() => {
+    document.querySelector('#resultados').textContent =
+      'Pesquisa indisponível.';
+  });
 });
 ```
 

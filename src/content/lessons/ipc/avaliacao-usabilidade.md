@@ -33,11 +33,11 @@ A frase mais difícil de engolir é o silêncio enquanto o participante se debat
 
 Testas o fluxo de combinar sessão com três colegas, um de cada vez:
 
-| Tarefa | P1 | P2 | P3 |
-| ------ | -- | -- | -- |
-| Criar sessão para quarta | concluiu, 2 min, 1 erro | concluiu com ajuda, 4 min | desistiu |
-| Escolher sala sugerida | concluiu, 1 min | concluiu, 1 min, 1 erro | concluiu, 2 min |
-| Confirmar e notificar | concluiu, 1 min | concluiu, 1 min | concluiu com ajuda, 3 min |
+| Tarefa                   | P1                      | P2                        | P3                        |
+| ------------------------ | ----------------------- | ------------------------- | ------------------------- |
+| Criar sessão para quarta | concluiu, 2 min, 1 erro | concluiu com ajuda, 4 min | desistiu                  |
+| Escolher sala sugerida   | concluiu, 1 min         | concluiu, 1 min, 1 erro   | concluiu, 2 min           |
+| Confirmar e notificar    | concluiu, 1 min         | concluiu, 1 min           | concluiu com ajuda, 3 min |
 
 Leitura: criar a sessão falha em 2 de 3 casos (ajuda e desistência), sempre no passo de escolher o dia: P2 tocou fora da zona ativa à espera de um calendário, P3 não percebeu que os blocos propostos já incluíam sala. Correções, por prioridade: (1) mostrar calendário semanal em vez de lista de blocos; (2) juntar sala e hora na mesma linha com mapa; (3) só depois, polir textos de confirmação. Repara que a segunda tarefa correu bem e não precisa de nada: avaliar também diz o que não mexer.
 

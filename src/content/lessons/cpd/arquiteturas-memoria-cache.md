@@ -23,9 +23,9 @@ Em C, uma matriz `double a[N][N]` guarda cada linha seguida em memória. Percorr
 
 Multiplicação ingénua $C = A \times B$ com $N = 1024$, somando ao longo de $k$. A versão por linhas fixa $i$ e $j$ e percorre $k$ em sequência, aproveitando a cache. A versão por colunas percorre a matriz saltando entre linhas. Numa medição típica num portátil atual:
 
-| Versão | Tempo |
-| ------ | ----- |
-| Por linhas | cerca de 1,1 s |
+| Versão      | Tempo          |
+| ----------- | -------------- |
+| Por linhas  | cerca de 1,1 s |
 | Por colunas | cerca de 3,9 s |
 
 A diferença, um fator de 3 a 4, vem quase toda da cache, porque as operações aritméticas são as mesmas. A leitura crítica: antes de paralelizar, ordena os acessos. Um programa paralelo com mau padrão de acesso multiplica o problema pelo número de núcleos, que passam a disputar a largura de banda da memória em vez de calcular.
