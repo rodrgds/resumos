@@ -32,3 +32,51 @@ function focusCourse() {
 }
 window.addEventListener('hashchange', focusCourse);
 focusCourse();
+
+const PIN_KEY = 'resumos-pinned-semesters';
+function readPins(): string[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PIN_KEY) || '[]');
+    return Array.isArray(saved)
+      ? saved.filter((id): id is string => typeof id === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+const pins = new Set(readPins());
+for (const section of document.querySelectorAll<HTMLElement>(
+  '.semester[data-semester]',
+)) {
+  const id = section.dataset.semester;
+  const button = section.querySelector<HTMLButtonElement>('.semester-pin');
+  if (!id || !button) continue;
+  const apply = (pinned: boolean) => {
+    if (pinned) section.dataset.pinned = 'true';
+    else delete section.dataset.pinned;
+    button.setAttribute('aria-pressed', String(pinned));
+  };
+  apply(pins.has(id));
+  button.addEventListener('click', () => {
+    const pinned = section.dataset.pinned !== 'true';
+    apply(pinned);
+    if (pinned) pins.add(id);
+    else pins.delete(id);
+    try {
+      localStorage.setItem(PIN_KEY, JSON.stringify([...pins]));
+    } catch {
+      /* Private mode: the pin works for this visit only. */
+    }
+  });
+}
+
+try {
+  const hero = document.querySelector('#page-hero');
+  if (hero) {
+    if (localStorage.getItem('resumos-visited'))
+      hero.setAttribute('hidden', '');
+    else localStorage.setItem('resumos-visited', '1');
+  }
+} catch {
+  /* Private mode: keep the hero visible. */
+}

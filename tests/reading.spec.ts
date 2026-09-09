@@ -87,14 +87,13 @@ test('footnotes, containers and details work in Markdown and MDX', async ({
 test('vector arrows render above their letters', async ({ page }) => {
   await page.goto('/cadeiras/f1/trabalho-energia/');
   const placed = await page.evaluate(() => {
-    const svgs = [
-      ...document.querySelectorAll('.katex .accent-body svg'),
-    ];
+    const svgs = [...document.querySelectorAll('.katex .accent-body svg')];
     if (!svgs.length) return false;
     return svgs.every((svg) => {
+      const overlay = svg.parentElement;
       // With mismatched KaTeX CSS the overlay flows inline after the
       // letter; positioned correctly it is a block above it.
-      if (getComputedStyle(svg.parentElement).display === 'inline')
+      if (!overlay || getComputedStyle(overlay).display === 'inline')
         return false;
       const accent = svg.closest('.katex-accent');
       const base = accent?.querySelector('.mord.mathnormal');
