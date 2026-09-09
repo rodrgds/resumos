@@ -1,0 +1,227 @@
+---
+title: Aplicação web com Laravel
+description: Rotas, controladores, modelos e vistas para recursos REST apoiados na base de dados.
+section: conteudo
+order: 6
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Com a base de dados a guardar e a proteger os dados, falta a aplicação que os mostra e os altera. O Laravel organiza essa aplicação em peças com papéis fixos: a **rota** recebe o pedido HTTP, o **controlador** executa a lógica, o **modelo** fala com a tabela e a **vista** gera o HTML. Cada pedido atravessa estas quatro peças por esta ordem.
+
+## O recurso Sessões de ponta a ponta
+
+Um **recurso** é uma coisa com endereço próprio que se cria, lê, atualiza e apaga. As sessões da loja são um recurso, e as rotas seguem a convenção REST, com o verbo HTTP a dizer a operação:
+
+```php
+Route::get('/sessoes', [SessaoController::class, 'index']);
+Route::post('/sessoes', [SessaoController::class, 'store']);
+```
+
+O `GET` lista, o `POST` cria. O controlador recebe o pedido já encaminhado e devolve uma resposta, sem gerar HTML à mão:
+
+<Tabs id="laravel-rotas" labels={['GET: listar sessões', 'POST: criar sessão']}>
+  <div slot="panel-0">
+
+```php
+// ler não muda nada: pode repetir-se e ficar na história do navegador
+Route::get('/sessoes', [SessaoController::class, 'index']);
+```
+
+O `index` lê as sessões futuras ordenadas e entrega-as à vista. Nada é escrito, por isso recarregar a página é seguro.
+
+  </div>
+  <div slot="panel-1">
+
+```php
+// escrever muda o estado: exige validação e redirecionamento
+Route::post('/sessoes', [SessaoController::class, 'store']);
+```
+
+O `store` valida primeiro e só depois escreve. Em caso de erro volta ao formulário; em caso de sucesso redireciona, para recarregar não criar a sessão duas vezes.
+
+  </div>
+</Tabs>
+
+```php
+class SessaoController extends Controller
+{
+    public function index()
+    {
+        $sessoes = Sessao::where('data_hora', '>', now())
+            ->orderBy('data_hora')
+            ->get();
+        return view('sessoes.index', ['sessoes' => $sessoes]);
+    }
+
+    public function store(Request $request)
+    {
+        $dados = $request->validate([
+            'evento_id' => 'required|exists:eventos,id',
+            'data_hora' => 'required|date|after:now',
+            'preco' => 'required|numeric|min:0',
+            'lotacao' => 'required|integer|min:1',
+        ]);
+        $sessao = Sessao::create($dados);
+        return redirect('/sessoes/' . $sessao->id);
+    }
+}
+```
+
+O método `validate` é o ponto a fixar: se os dados cumprirem as regras, devolve-os limpos; se falharem, interrompe e devolve o utilizador ao formulário com os erros. A regra `exists:eventos,id` repete na aplicação a chave estrangeira da base de dados, para dar erro amigável antes do erro técnico. A regra `after:now` repete a restrição do modelo de que sessões passadas não se vendem.
+
+## Migração e modelo
+
+A tabela nasce de uma **migração**, código versionado que cria e altera o esquema. É a mesma tabela do [esquema relacional](esquema-relacional/), escrita para o Laravel a aplicar e o grupo a rever:
+
+```php
+Schema::create('sessoes', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('evento_id')->constrained('eventos');
+    $table->dateTime('data_hora');
+    $table->decimal('preco', 8, 2);
+    $table->integer('lotacao');
+    $table->timestamps();
+});
+```
+
+O modelo liga a classe à tabela e declara o que se pode preencher em massa:
+
+```php
+class Sessao extends Model
+{
+    protected $fillable = ['evento_id', 'data_hora', 'preco', 'lotacao'];
+
+    public function evento()
+    {
+        return $this->belongsTo(Evento::class);
+    }
+}
+```
+
+O `belongsTo` espelha a associação do UML: cada sessão pertence a um evento. A partir daqui, `$sessao->evento->titulo` navega da sessão ao evento sem SQL escrito à mão.
+
+## Um POST que falha a validação
+
+Preenche o formulário de nova sessão com lotação `0` e carrega em guardar. O pedido `POST /sessoes` chega ao `store`, o `validate` rejeita `lotacao` por violar `min:1`, e o utilizador volta ao formulário com a mensagem de erro junto ao campo e os restantes valores preservados. Nenhuma linha tocou na base de dados: a validação correu antes de qualquer escrita.
+
+Se a validação passasse, o `create` inseria a sessão e o redirecionamento mostrava a página da nova sessão. E se dois administradores criassem a sessão 101 ao mesmo tempo, o [trigger da lotação](triggers-transacoes/) continuava a decidir na base de dados. As camadas somam, nenhuma substitui a outra.
+
+A mesma regra `min:1`, isolada do framework para a experimentares. Corre e confirma que imprime o erro da lotação:
+
+<CodePlayground
+  language="php"
+  title="Validação isolada da lotação"
+  code={
+    "function validar($dados) {\n    $erros = [];\n    if (!isset($dados['lotacao']) || !is_int($dados['lotacao']) || $dados['lotacao'] < 1) {\n        $erros['lotacao'] = 'A lotação tem de ser um inteiro a partir de 1.';\n    }\n    return $erros;\n}\n$erros = validar(['evento_id' => 3, 'preco' => 10, 'lotacao' => 0]);\nforeach ($erros as $campo => $mensagem) {\n    echo \"$campo: $mensagem\n\";\n}"
+  }
+/>
+
+A saída é `lotacao: A lotação tem de ser um inteiro a partir de 1.` No Laravel real, este erro voltava ao formulário junto ao campo em vez de sair impresso; a condição que o produz é a mesma.
+
+<Dot
+  source={
+    'digraph Laravel {\n  graph [bgcolor="transparent", rankdir=LR, pad=0.3];\n  node [shape=box, style="rounded,filled", fillcolor="#f3e9e9", color="#8c2d3b", fontcolor="#292a30", fontname="Arial", fontsize=13];\n  edge [color="#8c2d3b"];\n  Rota -> Controlador [label="encaminha"];\n  Controlador -> Modelo [label="lê e escreve"];\n  Controlador -> Vista [label="responde"];\n  Vista -> Rota [label="novo pedido", style=dashed];\n}'
+  }
+  alt="Ciclo do pedido: Rota encaminha para o Controlador, que lê e escreve no Modelo e responde pela Vista. Um novo pedido volta a entrar pela Rota."
+/>
+
+## Entrar e proteger rotas
+
+A loja tem registo e login nos requisitos, e as compras exigem saber quem compra. A autenticação no Laravel segue o mesmo molde do recurso: formulário, validação e tentativa de entrada.
+
+```php
+public function entrar(Request $request)
+{
+    $dados = $request->validate([
+        'email' => 'required|email|exists:utilizadores,email',
+        'palavra_passe' => 'required',
+    ]);
+    if (!Auth::attempt([
+        'email' => $dados['email'],
+        'password' => $dados['palavra_passe'],
+    ])) {
+        return back()->withErrors([
+            'email' => 'Credenciais inválidas.',
+        ]);
+    }
+    return redirect('/sessoes');
+}
+```
+
+O `Auth::attempt` verifica a palavra-passe com hash e inicia a sessão. Se falhar, volta atrás com erro genérico de propósito: dizer "email certo, palavra-passe errada" ajuda quem ataca a adivinhar contas.
+
+Com a entrada feita, protege as rotas que precisam de comprador autenticado com o middleware `auth`:
+
+```php
+Route::middleware('auth')->group(function () {
+    Route::post('/compras', [CompraController::class, 'store']);
+});
+```
+
+Quem não entrou é redirecionado para o login em vez de chegar ao controlador. A regra de autorização vive na rota, não escondida dentro do método: lê-se a proteção sem abrir o controlador.
+
+## Git, Docker e o arranque do projeto
+
+O projeto corre em grupo desde o primeiro dia, por isso o ambiente também é matéria. A base de dados vive em Docker e o código em Git, e ambos se configuram uma vez.
+
+```yaml
+# compose.yaml: a base de dados do grupo, igual para todos
+services:
+  bd:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: loja
+      POSTGRES_PASSWORD: segredo
+    ports:
+      - '5432:5432'
+    volumes:
+      - dados:/var/lib/postgresql/data
+volumes:
+  dados:
+```
+
+Com este ficheiro, `docker compose up -d` levanta o PostgreSQL 16 com base `loja` e guarda os dados no volume mesmo que o contentor seja apagado. O Laravel aponta para ela com as variáveis de ambiente habituais. Se a base responder no arranque e o `migrate` correr sem erros, o ambiente está pronto.
+
+No Git, o fluxo que evita conflitos no projeto é curto: um ramo por funcionalidade, com revisão do grupo antes de juntar.
+
+```sh
+git checkout -b sessao-lista      # cria o ramo da funcionalidade
+git add .                         # junta as alterações feitas
+git commit -m "Lista sessões futuras"  # regista com mensagem clara
+git push -u origin sessao-lista   # publica o ramo para revisão
+git checkout main                 # volta ao principal atualizado
+git pull                          # traz o que o grupo já juntou
+```
+
+Cada funcionalidade viaja num ramo com nome claro e só entra no `main` depois de revista. Commits pequenos com mensagens que dizem o que mudou valem mais do que um commit gigante na véspera.
+
+## O que o relatório deve conter
+
+O projeto avalia-se pelo produto e pela documentação. Guarda decisões à medida que as tomas, uma secção por fase:
+
+- Requisitos: a tabela R1 a R4 final e os requisitos rejeitados com o motivo.
+- Modelo: o diagrama UML e as restrições escritas que o desenho não mostra.
+- Esquema: as tabelas e o teste de papel com os casos de uso que as validaram.
+- Integridade: que regras vivem na base de dados e porquê, com o trigger da lotação.
+- Aplicação: rotas, validação e autenticação, com os erros que cada camada produz.
+- Interfaces: as decisões de usabilidade e a verificação de contraste e teclado.
+
+Reconstruir isto na véspera produz relatórios vagos. Uma frase por decisão, escrita no dia, chega.
+
+<YouTube
+  id="SjeYhB5O45Q"
+  title="How to build a CRUD (Create,Read,Update and Delete) with Laravel 11 and Vuejs 3"
+/>
+
+## Para saber mais
+
+- [Validation](https://laravel.com/docs/11.x/validation), a referência oficial do `validate`, das regras `exists` e das mensagens de erro.
+- [Routing](https://laravel.com/docs/11.x/routing), a referência oficial de verbos, controladores e grupos de rotas.
+
+:::details[Onde ver cada erro]
+Erro de validação: volta ao formulário com mensagens por campo, sem tocar na base de dados. Erro de chave estrangeira ou de trigger: exceção da base de dados que o controlador deve apanhar e transformar em mensagem. Erro 500 genérico: quase sempre uma peça em falta, como uma vista com nome errado ou um campo fora do `$fillable`. Lê a mensagem de cima para baixo até à primeira linha do teu código.
+:::

@@ -5,6 +5,11 @@ section: conteudo
 order: 5
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import triggersFigura from '../../lbaw/triggers-timeline.typ?raw';
+
 Há regras que nenhuma interface consegue garantir sozinha. Dois compradores a clicar ao mesmo tempo no último lugar passam ambos pela validação da página. As regras de negócio críticas vivem por isso na base de dados, onde todas as escritas passam, vindas de qualquer página ou de qualquer programa.
 
 ## Três lugares para cada regra
@@ -31,6 +36,24 @@ COMMIT;
 
 Se a segunda instrução falhar, o `ROLLBACK` anula também a primeira e a base de dados fica como estava. Sem transação, uma falha a meio deixava um bilhete reservado sem pagamento, nem vendido nem livre. Testa sempre o caminho da falha: corre a transação até meio, anula-a e confirma que nada mudou.
 
+<Typst
+  source={triggersFigura}
+  format="svg"
+  alt="Linha temporal da compra: BEGIN, INSERT do bilhete, UPDATE do pagamento, COMMIT em sequência. Uma seta lateral marcada se falhar sai do UPDATE para ROLLBACK."
+/>
+
+Corre o caminho feliz e confirma o estado final. A última linha imprime `B-1043|pago`:
+
+<CodePlayground
+  language="sql"
+  title="Compra numa transação"
+  code={
+    "CREATE TABLE bilhetes (\n    id INTEGER PRIMARY KEY,\n    utilizador_id INTEGER NOT NULL,\n    sessao_id INTEGER NOT NULL,\n    codigo TEXT NOT NULL UNIQUE,\n    estado TEXT NOT NULL\n);\nBEGIN;\nINSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)\nVALUES (7, 12, 'B-1043', 'reservado');\nUPDATE bilhetes SET estado = 'pago' WHERE codigo = 'B-1043';\nCOMMIT;\nSELECT codigo, estado FROM bilhetes;"
+  }
+/>
+
+Troca o `COMMIT` por `ROLLBACK`, corre outra vez e confirma que a tabela fica vazia. É esse o teste do caminho da falha: a mesma sequência, com o fim trocado, não deixa rasto.
+
 ## Trigger que impede vender acima da lotação
 
 A restrição `CHECK` não chega aqui, porque compara linhas de duas tabelas: conta os bilhetes de uma sessão e compara com a lotação da sessão. Essa verificação vive num **trigger**, uma função que corre automaticamente antes de cada inserção:
@@ -53,7 +76,15 @@ BEFORE INSERT ON bilhetes
 FOR EACH ROW EXECUTE FUNCTION lotacao_ok();
 ```
 
-Compra agora o lugar 101 de uma sala de 100: o `INSERT` dispara o trigger, a contagem dá 100 bilhetes ativos contra lotação 100, e a inserção é recusada com a exceção. Funciona para dois compradores em simultâneo, porque a verificação corre dentro da transação de cada um, junto aos dados. A aplicação apanha o erro e mostra "sessão esgotada", mas a decisão foi da base de dados.
+Compra agora o lugar 101 de uma sala de 100: o `INSERT` dispara o trigger, a contagem dá 100 bilhetes ativos contra lotação 100, e a inserção é recusada com a exceção. Funciona para dois compradores em simultâneo, porque a verificação corre dentro da transação de cada um, junto aos dados. A aplicação apanha o erro e mostra "sessão esgotada", mas a decisão foi da base de dados.[^trigger]
+
+<YouTube id="GAe5oB742dw" title="ACID Properties in Databases With Examples" />
+
+## Para saber mais
+
+- [CREATE TRIGGER](https://www.postgresql.org/docs/current/sql-createtrigger.html), a referência oficial da sintaxe do trigger e das funções que ele executa.
+
+[^trigger]: PostgreSQL, [CREATE TRIGGER](https://www.postgresql.org/docs/current/sql-createtrigger.html), a documentação da sintaxe usada nesta página.
 
 :::tip[Trigger não substitui desenho]
 O trigger protege a regra, mas não explica os dados. Mantém a lotação como coluna da sessão e o estado em cada bilhete, como no esquema, para conseguires interrogar "quantos lugares livres" sem o trigger. Regras na base de dados e dados bem desenhados andam juntos.
