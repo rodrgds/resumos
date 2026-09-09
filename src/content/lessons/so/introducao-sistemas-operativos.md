@@ -1,0 +1,55 @@
+---
+title: Introdução aos sistemas operativos
+description: Funções do SO, arranque, shell, abstrações e chamadas de sistema seguidas com strace.
+section: conteudo
+order: 1
+---
+
+Quando corres um programa, há uma camada entre ele e o hardware que decide quando o processador o executa, que memória pode tocar e como os seus bytes chegam ao disco. Essa camada é o **sistema operativo**: o programa que gere todos os outros. Esta página mostra o que ele faz, como a máquina lá chega e como o vês a trabalhar.
+
+## O que o sistema operativo faz
+
+O SO tem duas funções que parecem contraditórias e andam sempre juntas. Como **gestor de recursos**, reparte o processador, a memória e os dispositivos pelos programas e impede que um estrague o trabalho dos outros. Como **máquina estendida**, esconde o hardware real atrás de **abstrações** cómodas: ficheiros em vez de setores do disco, processos em vez de interrupções do processador, sockets em vez de pacotes da placa de rede.
+
+Sem o SO, cada programa teria de trazer os seus próprios drivers, o seu próprio escalonador e as suas próprias defesas contra os vizinhos. Com o SO, cada programa vive na ilusão simpática de que tem a máquina só para si, e o núcleo trata de arbitrar a realidade partilhada por baixo.
+
+## Do botão ao primeiro processo
+
+Carregas no botão e o processador acorda a correr firmware gravado na máquina, que faz testes básicos e localiza o disco de arranque. Aí entra o **carregador** (_bootloader_), que carrega o núcleo (_kernel_) para a memória e lhe passa o controlo. O núcleo inicializa drivers e estruturas internas, monta o sistema de ficheiros raiz e lança o primeiro processo, do qual todos os outros descendem. Só então aparece a janela de login ou a shell: tudo o que vês no ecrã já é um processo a correr por cima do núcleo.
+
+Repara que o hardware sozinho não sabe o que é um ficheiro nem um utilizador. Cada camada do arranque constrói uma abstração que a seguinte usa: firmware encontra setores, bootloader carrega ficheiros, núcleo cria processos, processos servem pessoas.
+
+## A shell e as chamadas de sistema
+
+A **shell** é o programa que lê os teus comandos e os transforma em pedidos ao núcleo. Quando escreves `ls`, a shell cria um processo, pede ao núcleo para trocar esse processo pelo programa `ls` e espera pelo resultado. Nada disto é magia da shell: são **chamadas de sistema**, a interface de programação que o núcleo oferece aos processos para pedir serviços como criar processos, abrir ficheiros ou enviar bytes para um socket.
+
+Podes ver as chamadas de sistema acontecer. Escreve um programa que grava uma linha num ficheiro:
+
+```c
+#include <fcntl.h>
+#include <unistd.h>
+
+int main(void) {
+    int fd = open("saida.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    write(fd, "ola\n", 4);
+    close(fd);
+    return 0;
+}
+```
+
+Compila e corre com `strace`, que mostra cada chamada de sistema feita pelo processo:
+
+```sh
+gcc -Wall -Wextra st.c -o st
+strace -e trace=openat,write,close ./st
+```
+
+Na saída vês algo como `openat(...) = 3`, `write(3, "ola\n", 4) = 4` e `close(3) = 0`. O `openat` devolve o **descritor** `3`, que é o número que identifica o ficheiro aberto dentro do processo (0, 1 e 2 já estão ocupados pela entrada, saída e erro padrão). O `write` confirma que escreveu 4 bytes. O programa em C que escreveste é só um invólucro fino: o trabalho real foi feito pelo núcleo, a pedido, uma chamada de cada vez.
+
+:::tip[Como ler o strace]
+Cada linha mostra o nome da chamada, os argumentos e, depois do `=`, o valor devolvido. Um valor negativo (como `-1 ENOENT`) é um erro, e o nome diz qual. Quando um programa com ficheiros falhar sem mensagem clara, corre-o com `strace` e lê a última chamada antes do erro.
+:::
+
+## Para levar para a próxima página
+
+O SO gere processos, memória, ficheiros e dispositivos através de chamadas de sistema, e a shell é só mais um programa que as usa. Para pedires esses serviços vais precisar de C ao nível do sistema: compilador, bibliotecas e gestão de memória. É isso que revê o [C avançado](c-avancado/).
