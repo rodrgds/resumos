@@ -1,0 +1,101 @@
+---
+title: Padrões de desenho
+description: Os dez padrões do programa aplicados a problemas concretos do jogo.
+section: conteudo
+order: 7
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import observer from '../../ldts/observer.dot?raw';
+import strategy from '../../ldts/strategy-state.typ?raw';
+
+Um **padrão de desenho** é uma solução reutilizável para um problema recorrente, com nome, estrutura e consequências conhecidas. O programa lista dez: Factory-Method, Command, Composite, Observer, Strategy, Abstract Factory, State, Adapter, Decorator e Singleton. Não os decores como definições: aprende a reconhecer o problema que cada um resolve, porque nos exercícios e nas provas a pergunta é sempre "que padrão aplicavas aqui".
+
+## Os dez padrões em rascunho rápido
+
+**Strategy** troca algoritmos em tempo de execução: o `Monstro` recebe um `Comportamento` diferente. Usa quando há várias formas de fazer a mesma coisa.
+
+**State** troca comportamento conforme o estado interno: um monstro calmo foge, um monstro alerta persegue. Usa quando um objeto se comporta de forma muito diferente consoante o estado, em vez de um `switch` gigante.
+
+**Observer** avisa interessados quando algo muda: a pontuação observa os monstros e atualiza-se quando um cai. Usa para dependências um para muitos sem acoplamento.
+
+**Command** transforma um pedido num objeto: cada tecla vira um `Comando` com `executar`. Usa para desfazer, filas e menus.
+
+**Factory Method** e **Abstract Factory** criam objetos sem expor a classe concreta. A diferença está no tamanho da encomenda: o Factory Method cria **um** objeto (uma fábrica de monstros que devolve o tipo certo para cada nível), enquanto a Abstract Factory cria **famílias** coerentes (uma fábrica de nível que devolve monstros, paredes e itens no mesmo estilo). Usa o primeiro quando a criação de um objeto tem lógica, o segundo quando vários objetos têm de combinar entre si.
+
+**Composite** trata um grupo como um objeto: uma parede feita de segmentos desenha-se como uma peça. Usa para estruturas em árvore.
+
+**Decorator** acrescenta comportamento por embrulho: um monstro com bónus de velocidade embrulha o monstro base. Usa para combinações que explodiriam em subclasses.
+
+**Adapter** converte uma interface noutra: adapta a biblioteca de ecrã à interface `Ecra` do jogo. Usa para integrar código que não controlas.
+
+**Singleton** garante uma só instância: o registo de recordes. Usa com moderação, porque estado global dificulta testes.
+
+## Exemplo: Strategy e State nos monstros
+
+O movimento dos monstros usa Strategy, como na página de [Java](java-orientado-objetos/):
+
+```java
+Comportamento zigzag = new AndarEmZigZag();
+Comportamento perseguir = new PerseguirHeroi(heroi);
+Monstro m1 = new Monstro(new Posicao(5, 5), zigzag);
+Monstro m2 = new Monstro(new Posicao(8, 2), perseguir);
+```
+
+Quando o nível aperta, o estado do monstro muda a estratégia por dentro:
+
+```java
+public class MonstroAlerta implements EstadoMonstro {
+    public Comportamento comportamento(Heroi heroi) {
+        return new PerseguirHeroi(heroi);
+    }
+}
+```
+
+O `Monstro` pede ao seu estado o comportamento atual. Calmo devolve passeio, alerta devolve perseguição:
+
+<Typst
+  source={strategy}
+  format="svg"
+  alt="Diagrama com Monstro no centro, EstadoCalmo e EstadoAlerta a devolverem o Comportamento correspondente."
+/>
+
+O `switch` sobre o estado desapareceu, e um estado novo é uma classe nova. Troca a estratégia em tempo de execução e vê a diferença:
+
+<CodePlayground
+  language="java"
+  title="Trocar de estratégia a meio"
+  code={
+    'interface Comportamento {\n    String mover();\n}\n\nclass AndarEmZigZag implements Comportamento {\n    public String mover() { return "ziguezagueia"; }\n}\n\nclass PerseguirHeroi implements Comportamento {\n    public String mover() { return "persegue o heroi"; }\n}\n\nclass Monstro {\n    private Comportamento comportamento;\n\n    Monstro(Comportamento comportamento) {\n        this.comportamento = comportamento;\n    }\n\n    void setComportamento(Comportamento comportamento) {\n        this.comportamento = comportamento;\n    }\n\n    String agir() {\n        return comportamento.mover();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Monstro monstro = new Monstro(new AndarEmZigZag());\n        System.out.println("nivel facil: " + monstro.agir());\n        monstro.setComportamento(new PerseguirHeroi());\n        System.out.println("nivel dificil: " + monstro.agir());\n    }\n}'
+  }
+/>
+
+A saída mostra `nivel facil: ziguezagueia` e `nivel dificil: persegue o heroi`. Nenhuma classe do monstro foi editada: a variação vive nos objetos de comportamento.
+
+## Exemplo: Observer na pontuação
+
+A pontuação observa cada monstro sem os monstros saberem dela:
+
+```java
+monstro.adicionarObservador(pontuacao);
+// ... quando o monstro cai:
+observadores.forEach(o -> o.notificar(100));
+```
+
+Adicionar um contador de mortes ou um efeito sonoro é registar mais um observador:
+
+<Dot
+  source={observer}
+  alt="Grafo com Monstro a notificar Pontuacao, Mortes e Som, sem setas de volta."
+/>
+
+Nenhum monstro muda, porque nenhum monstro conhece os observadores: é o desacoplamento que o padrão promete.
+
+<YouTube id="wiQdrH2YpT4" title="Observer Design Pattern (Derek Banas)" />
+
+:::tip[Como escolher na prova]
+Pergunta o que varia: algoritmos que se trocam é Strategy, comportamento que depende de estado é State, notificações a vários interessados é Observer, pedidos como objetos é Command, criação com lógica é Factory. O nome do padrão descreve a solução, não o problema.
+:::
