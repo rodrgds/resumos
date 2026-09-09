@@ -1,0 +1,35 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#canvas({
+  import draw: *
+  // Injetiva: sem colisões
+  content((0.7, 2.6), [injetiva])
+  content((0, 2), [1])
+  content((0, 1.3), [2])
+  content((0, 0.6), [3])
+  content((1.4, 2), [a])
+  content((1.4, 1.3), [b])
+  content((1.4, 0.6), [c])
+  line((0.2, 2), (1.2, 2), mark: (end: ">"))
+  line((0.2, 1.3), (1.2, 1.3), mark: (end: ">"))
+  line((0.2, 0.6), (1.2, 0.6), mark: (end: ">"))
+  // Sobrejetiva mas não injetiva: tudo atingido, com colisão
+  content((3.2, 2.6), [sobrejetiva])
+  content((2.5, 2), [1])
+  content((2.5, 1.3), [2])
+  content((2.5, 0.6), [3])
+  content((3.9, 1.7), [a])
+  content((3.9, 0.9), [b])
+  line((2.7, 2), (3.7, 1.7), mark: (end: ">"))
+  line((2.7, 1.3), (3.7, 1.7), mark: (end: ">"))
+  line((2.7, 0.6), (3.7, 0.9), mark: (end: ">"))
+  // Não sobrejetiva: c nunca é atingido
+  content((5.7, 2.6), [não sobrejetiva])
+  content((5, 1.7), [1])
+  content((5, 0.9), [2])
+  content((6.4, 2), [a])
+  content((6.4, 1.3), [b])
+  content((6.4, 0.6), [c])
+  line((5.2, 1.7), (6.2, 1.5), mark: (end: ">"))
+  line((5.2, 0.9), (6.2, 1.2), mark: (end: ">"))
+})
