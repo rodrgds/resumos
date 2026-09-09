@@ -5,11 +5,24 @@ section: conteudo
 order: 3
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import trama from '../../rc/trama.typ?raw';
+
 A camada física entrega bits; a camada de ligação de dados entrega **tramas** entre vizinhos diretos, com princípio, fim e garantia de que o conteúdo chegou intacto ou então volta a pedir-se. É o contrato "do próximo salto", usado em cada cabo e em cada troço de rádio da rede.
 
 ## Delimitar e proteger a trama
 
 O recetor precisa de saber onde começa e acaba cada trama. A técnica comum é reservar sequências especiais como delimitadores e fugir dessas sequências quando aparecem nos dados (**bit stuffing**): depois de cinco uns seguidos, o emissor insere um zero extra, e o recetor remove-o. Assim o delimitador nunca aparece por acidente dentro dos dados.
+
+Uma trama típica junta os delimitadores ao cabeçalho, aos dados e ao CRC calculado no exemplo abaixo:
+
+<Typst
+  source={trama}
+  format="svg"
+  alt="Estrutura da trama do exemplo: delimitador, cabeçalho, dados 1010, CRC 011, delimitador."
+/>
 
 Proteger significa detetar erros. O mecanismo de trabalho é o **CRC** (verificação de redundância cíclica): o emissor divide os dados por um gerador acordado e cola o resto à trama; o recetor repete a divisão e só aceita a trama se o resto der zero. Todo o cálculo é feito bit a bit com ou-exclusivo, sem empréstimos nem transportes.
 
@@ -20,7 +33,19 @@ Segue um exemplo completo. Dados `1010`, gerador `1011` (grau 3, por isso três 
 - Começa por 0, não faz nada; desce o último zero e fica `1000`.
 - Começa por 1, faz ou-exclusivo com `1011` e dá `0011`. Acabaram os bits: o CRC é `011`.
 
-A trama transmitida é `1010011`. Confirma: dividir `1010011` por `1011` dá resto zero, por isso o recetor aceita. Se um bit se corromper pelo caminho, o resto deixa de dar zero e a trama é descartada. O CRC não corrige, só acusa, e fá-lo muito bem: com um gerador decente, erros de rajada curtos são sempre apanhados.
+A trama transmitida é `1010011`. Confirma: dividir `1010011` por `1011` dá resto zero, por isso o recetor aceita. Se um bit se corromper pelo caminho, o resto deixa de dar zero e a trama é descartada. O CRC não corrige, só acusa, e fá-lo muito bem: com um gerador decente, erros de rajada curtos são sempre apanhados.[^rajada]
+
+[^rajada]: A garantia exata depende do gerador: um CRC de grau $r$ apanha todas as rajadas de comprimento até $r$ e quase todas as mais longas. Ver Tanenbaum e Wetherall, Computer Networks, capítulo da camada de ligação de dados.
+
+Refaz a divisão do exemplo com o programa. Ele percorre os bits da esquerda para a direita, faz ou-exclusivo com o gerador sempre que o bit atual é 1, e imprime `CRC: 011`:
+
+<CodePlayground
+  language="python"
+  title="CRC dos dados 1010 com gerador 1011"
+  code={'dados = [1, 0, 1, 0]\ngerador = [1, 0, 1, 1]\nresto = dados + [0] * 3\nfor i in range(len(resto) - len(gerador) + 1):\n    if resto[i] == 1:\n        for j in range(len(gerador)):\n            resto[i + j] ^= gerador[j]\nprint("CRC:", "".join(str(b) for b in resto[-3:]))'}
+/>
+
+<YouTube id="izG7qT0EpBw" title="How do CRCs work?" />
 
 ## ARQ: pedir outra vez
 
@@ -31,3 +56,12 @@ O stop-and-wait mostra o custo da espera. Uma trama de 1000 bits a 1 Mbps demora
 ## Controlo de fluxo
 
 O emissor também não pode afogar o recetor. O **controlo de fluxo** limita quantas tramas podem estar em voo sem confirmação: a **janela deslizante** do emissor avança à medida que chegam ACKs, e o tamanho da janela é negociado com a capacidade do recetor. É uma ideia simples com uma consequência importante: a janela limita o débito máximo a $\text{janela} / RTT$, por muito rápida que seja a ligação. Vais reencontrar esta fração no [controlo de congestionamento](transporte-e-aplicacoes/), onde o limite passa a ser a rede em vez do recetor.
+
+## Lista de verificação do projeto da camada 2
+
+O trabalho laboratorial pede um protocolo de ligação de dados a funcionar. Antes de entregar, confirma:
+
+1. As tramas têm delimitadores e o recetor rejeita tramas partidas.
+2. O CRC é calculado e verificado nos dois lados, com um caso de teste que corrompe um bit de propósito.
+3. Há retransmissão com temporizador e números de sequência, sem duplicar entregas.
+4. O relatório mostra uma medição de utilização (como a do stop-and-wait acima) e explica o que limita o débito.
