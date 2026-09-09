@@ -1,0 +1,16 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  draw.line((0, 0), (4.4, 0), mark: (end: ">"))
+  draw.line((0, 0), (0, 4.4), mark: (end: ">"))
+  draw.content((4.6, 0.3), [$x$])
+  draw.content((0.3, 4.4), [$y$])
+  draw.line((0, 0), (4, 0))
+  draw.line((0, 0), (0, 4))
+  draw.line((4, 0), (0, 4))
+  draw.content((4.3, 0.9), [$x + y = 1$])
+  draw.line((1.2, 1.2), (1.2, 2.6), mark: (end: ">"), stroke: (dash: "dashed"))
+  draw.content((1.2, 2.9), [$z$ de $0$ a $1 - x - y$])
+  draw.content((1.2, 0.6), [projeção])
+})

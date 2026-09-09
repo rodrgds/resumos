@@ -1,0 +1,17 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  draw.line((-0.5, 0), (4.5, 0), mark: (end: ">"))
+  draw.line((0, -2.5), (0, 2.5), mark: (end: ">"))
+  draw.content((4.7, 0.3), [$x$])
+  draw.content((0.3, 2.5), [$y$])
+  draw.line((1, 0), (3, -1), mark: (end: ">"), stroke: rgb("8c2d3b"))
+  draw.content((3.6, -1.1), [$nabla f(1, 0) = (2, -1)$])
+  draw.line((1, 0), (1.7, 0.7), mark: (end: ">"), stroke: rgb("28716c"))
+  draw.content((2.15, 0.95), [$bold(u)$])
+  draw.line((0.5, -1), (1.5, 1), stroke: (dash: "dashed"))
+  draw.content((0.35, 1.25), [curva de nível])
+  draw.circle((1, 0), radius: 2.5pt, fill: rgb("8c2d3b"), stroke: none)
+  draw.content((1, -0.4), [$(1, 0)$])
+})
