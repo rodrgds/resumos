@@ -1,0 +1,35 @@
+---
+import { render } from 'astro:content';
+import {
+  getCourseGuides,
+  lessonPath,
+  type CourseGuide,
+  type Lesson,
+} from '../lib/course-content';
+import LessonLayout from '../layouts/Lesson.astro';
+
+export async function getStaticPaths() {
+  const courses = await getCourseGuides();
+  return courses.flatMap((course) => [
+    {
+      params: { path: course.path.slice(1, -1) },
+      props: { course, entry: course.introduction },
+    },
+    ...course.lessons.map((entry) => ({
+      params: { path: lessonPath(course, entry).slice(1, -1) },
+      props: { course, entry },
+    })),
+  ]);
+}
+interface Props {
+  course: CourseGuide;
+  entry?: Lesson;
+}
+const { course, entry } = Astro.props;
+const rendered = entry ? await render(entry) : null;
+const Content = rendered?.Content;
+---
+
+<LessonLayout course={course} entry={entry} headings={rendered?.headings || []}>
+  {Content ? <Content /> : <p>Escolhe um resumo no menu da cadeira.</p>}
+</LessonLayout>

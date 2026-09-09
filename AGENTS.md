@@ -2,7 +2,7 @@
 
 - Use `devenv shell` for project commands. `README.md` covers authoring and checks.
 - `src/data/courses.ts` owns the LEIC curriculum; `src/data/meic.ts` owns the 2026/27 MEIC plan. Verify changes against its SIGARRA source, including the academic year. LEIC Competências Transversais are elective groups; MEIC lists the named options.
-- Real courses remain unpublished. Keep the fictional example course separate from the FEUP curriculum. New content pages use `Lesson.astro` and `Prose.astro`.
+- Keep the fictional example course separate from the FEUP curriculum. Author lessons in `src/content/lessons/<course-id>/` with the schema in `src/content.config.ts`. `course-content.ts` owns navigation and published course links; drafts never generate routes or search entries. `Lesson.astro` and `Prose.astro` own the reading layout.
 - Preserve the user's colourful course grid and FEUP accent. See `PRODUCT.md` and `DESIGN.md` for the approved direction.
 - Compile trusted Typst sources at build time through `src/lib/typst.ts`. HTML export requires Typst 0.15+ and is experimental. Test equations and diagrams when changing this adapter.
 - Reading content uses `Prose.astro`. Markdown and MDX share the unified maths pipeline. Typst SVG requires descriptive alt text.

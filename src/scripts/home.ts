@@ -1,5 +1,7 @@
 const detail = document.querySelector<HTMLDialogElement>('#course-detail')!;
-const cards = document.querySelectorAll<HTMLButtonElement>('[data-course]');
+const cards = document.querySelectorAll<HTMLButtonElement>(
+  'button[data-course]',
+);
 for (const card of cards)
   card.addEventListener('click', () => {
     document.querySelector('#course-title')!.textContent = card.dataset.title!;

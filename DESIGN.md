@@ -20,7 +20,27 @@ colors:
   dark-notebook-highlight-active: '#856a27'
   dark-notebook-highlight-active-text: '#fff4d4'
   notebook-excerpt-underline: '#dbc26c'
+  callout-info: '#2459a1'
+  callout-info-bg: '#edf3fb'
+  callout-tip: '#22694f'
+  callout-tip-bg: '#edf5f0'
+  callout-warning: '#79500a'
+  callout-warning-bg: '#fcf3df'
+  callout-danger: '#9c293c'
+  callout-danger-bg: '#fbeef0'
+  dark-callout-info: '#a5c6fa'
+  dark-callout-info-bg: '#242f40'
+  dark-callout-tip: '#a3d8b9'
+  dark-callout-tip-bg: '#21352c'
+  dark-callout-warning: '#ebcc86'
+  dark-callout-warning-bg: '#342e20'
+  dark-callout-danger: '#f0adb8'
+  dark-callout-danger-bg: '#40272d'
+  video-overlay: '#0009'
+  video-overlay-hover: '#0007'
+  video-play: '#b12434'
 rounded:
+  footnote-target: '4px'
   notebook-action: '6px'
   notebook-toolbar: '10px'
   control: '8px'
@@ -41,17 +61,25 @@ Nucleus cards use their own brand colours. ACM FEUP and IEEE FEUP have white log
 
 Notebook highlights use muted gold in both themes, independent of the reading accent. Comments keep their passage highlighted. The active passage has a stronger fill and an underline.
 
+Reading callouts use blue for information and notes, green for tips, amber for warnings and red for danger. Each has a matching pale background in light mode and a darker background in dark mode.
+
 ## Typography
 
-Manrope serves navigation and headings. Readers can choose Source Serif 4 for prose, with a line height of 1.8 and adjustable size. Fictional-course notices are plain text. Code uses a high-contrast theme and scrolls horizontally.
+Manrope serves navigation and headings. Prose offers eight locally hosted fonts: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata and IBM Plex Mono. Reading options group them by sans serif, serif and monospace, with a live preview. Prose has adjustable size and a line height of 1.8. Lesson titles use 36px type, reduced to 30px at 700px and below. Fictional-course notices are plain text. Code uses a high-contrast theme and scrolls horizontally.
 
 ## Layout
 
-A quiet header, short introduction with the FEUP logo, contribution notice and course grid. The container is 1120px, or 1440px in wide mode. Lessons use an 860px container.
+A quiet header, short introduction with the FEUP logo, contribution notice and course grid. The catalogue container is 1120px, or 1440px in wide mode.
+
+Course pages use a grid with a maximum width of 1350px, 32px horizontal padding and 40px gaps. The columns hold a 220px course sidebar, an article up to 760px wide and a 170px page index. Prose is capped at 72ch. Both navigation columns stay sticky and scroll when needed.
+
+At 1280px and below, the page index becomes a disclosure above the article; the grid uses a 210px sidebar and a flexible article within 1120px. At 1100px and below, course navigation also becomes a collapsed disclosure and the page uses one column within 840px. Horizontal padding falls to 24px, then 20px at 700px and below.
 
 LEIC and MEIC are plain links above the course grid. MEIC is a separate two-year course with options marked on their cards. Years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. The nucleus directory uses two columns on desktop and one on mobile.
 
 The notebook sits beside the page in a 380px sidebar above 1000px. At 1000px and below, it becomes a bottom panel capped at 62dvh and adjusts to the on-screen keyboard.
+
+With the notebook open above 1100px, the course grid uses a 180px sidebar, a flexible article, 28px gaps and 24px horizontal padding. The page index becomes an inline disclosure. At 1100px and below, the course page keeps its single-column layout.
 
 ## Elevation & Depth
 
@@ -65,17 +93,25 @@ Controls have gently rounded corners. Cards and the AI popover use larger corner
 
 Notebook panels use 12px corners. Selection toolbars and feedback use 10px corners, with 6px action corners. Quotes and comment fields use 8px corners. Notebook actions have a minimum height of 44px.
 
+Callouts and content images use 8px corners. Linked footnotes use a 4px rounded accent background on the targeted note.
+
 ## Components
 
 The header opens global search, the notebook and appearance. Search finds courses, lessons and nuclei. Native dialogs close with Escape and restore focus to the opener. Preferences apply before the first paint. Real course cards explain their unpublished state.
 
-Lesson pages offer a native AI popover with provider icons. Its links ask the provider to read the public page URL. Gemini uses a copy-prompt fallback. The homepage has no page actions.
+Lesson pages offer a native AI popover with provider icons. Floating UI anchors it below the trigger with a 6px offset, flips it when needed and keeps it within 12px of the viewport edges. Available height limits the menu so its contents can scroll. Its links ask the provider to read the public page URL. Gemini uses a copy-prompt fallback. The homepage has no page actions.
 
 Selecting lesson text offers “Destacar” and “Comentar”. Highlighting saves without opening the notebook. Commenting opens it and saves while typing. Readers can browse this page or all notes, return to a passage, undo deletion and export Markdown. Notes stay in this browser. Previous scratchpad notes remain editable under “Notas anteriores” and are included in exports. Missing or ambiguous passages keep their notes without highlighting unrelated text.
 
 Keyboard settings support remapping, disabling single-key shortcuts and optional spatial hjkl card navigation. Shortcuts leave text entry alone.
 
-Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG on white figure backgrounds. YouTube loads only on request.
+Course navigation groups published lessons by section and marks the current page with an accent fill. The page index links to second- and third-level headings. Previous and next links continue the reading sequence below the article.
+
+Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG on white figure backgrounds. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links.
+
+Figures require descriptive alt text and offer an original-image link beside the caption. Authors can preserve, dim or invert images in dark mode; print keeps the original image. Tabs use an accent underline for the selected option, scroll horizontally when needed and support arrow, Home and End keys.
+
+YouTube previews load a remote thumbnail behind a dark overlay, a red play button and the video title. Clicking loads the player from youtube-nocookie.com. A caption explains when the thumbnail and player load and provides a direct YouTube link.
 
 ## Do's and Don'ts
 

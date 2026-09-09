@@ -1,46 +1,106 @@
 ---
+import type { MarkdownHeading } from 'astro';
 import Layout from './Layout.astro';
 import Prose from '../components/Prose.astro';
 import PageActions from '../components/PageActions.astro';
-import { ArrowLeft, ArrowUpRight } from '@lucide/astro';
+import CourseSidebar from '../components/CourseSidebar.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  ChevronDown,
+} from '@lucide/astro';
+import {
+  lessonPath,
+  type CourseGuide,
+  type Lesson,
+} from '../lib/course-content';
+import '../styles/reading.css';
 interface Props {
-  title?: string;
-  description?: string;
-  source?: string;
-  frontmatter?: { title: string; description: string; source: string };
+  course: CourseGuide;
+  entry?: Lesson;
+  headings?: MarkdownHeading[];
 }
-const metadata = Astro.props.frontmatter || Astro.props;
-const { title, description, source } = metadata;
+const { course, entry, headings = [] } = Astro.props;
+const title = entry?.data.title || course.name;
+const description =
+  entry?.data.description || `Apontamentos de ${course.name}.`;
+const index = course.lessons.findIndex((page) => page.id === entry?.id);
+const previous = index > 0 ? course.lessons[index - 1] : undefined;
+const next = course.lessons[index + 1];
 ---
 
-<Layout title={`${title} · Cadeira de exemplo`} description={description}>
-  <main id="conteudo" class="container lesson-page" data-pagefind-body>
-    <a class="text-link" href="/exemplo/">
-      <ArrowLeft size={17} /> Cadeira de exemplo
-    </a>
-    <header class="page-heading">
-      <h1>{title}</h1>
-      <p>{description} Esta página pertence à cadeira fictícia de exemplo.</p>
-    </header>
-    <PageActions />
-    <p class="annotation-hint" data-pagefind-ignore>
-      Seleciona texto para destacar ou comentar. Encontras as tuas notas no{' '}
-      <button data-action="notes">caderno</button>.
-    </p>
-    <div class="lesson-body" data-annotatable>
-      <Prose>
-        <slot />
-      </Prose>
-    </div>
-    <a
-      class="text-link"
-      href={`https://github.com/rodrgds/resumos/blob/main/${source}`}
-    >
-      Ver o ficheiro no GitHub <ArrowUpRight size={17} />
-    </a>
-    <nav class="lesson-nav" aria-label="Páginas de exemplo">
-      <a href="/exemplo/apontamentos/">Texto e fórmulas</a>
-      <a href="/exemplo/diagramas/">Gráficos e diagramas</a>
-    </nav>
-  </main>
+<Layout title={`${title} · ${course.name}`} description={description}>
+  <div class="course-shell">
+    <CourseSidebar course={course} />
+    <main id="conteudo" class="course-article" data-pagefind-body>
+      <header class="lesson-heading">
+        <h1>{title}</h1>
+        <p>{description}</p>
+        {course.example && (
+          <p class="example-notice">
+            Cadeira fictícia. Estes exemplos não fazem parte do plano da FEUP.
+          </p>
+        )}
+      </header>
+      <PageActions />
+      <p class="annotation-hint" data-pagefind-ignore>
+        Seleciona texto para destacar ou comentar. Encontras as tuas notas no{' '}
+        <button data-action="notes">caderno</button>.
+      </p>
+      {headings.length > 0 && (
+        <details class="mobile-toc" data-pagefind-ignore>
+          <summary>
+            Nesta página <ChevronDown size={16} />
+          </summary>
+          <TableOfContents headings={headings} />
+        </details>
+      )}
+      <div class="lesson-body" data-annotatable>
+        <Prose>
+          <slot />
+        </Prose>
+      </div>
+      {entry && (
+        <a
+          class="text-link lesson-source"
+          href={`https://github.com/rodrgds/resumos/blob/main/${entry.filePath}`}
+          data-pagefind-ignore
+        >
+          Ver o ficheiro no GitHub <ArrowUpRight size={17} />
+        </a>
+      )}
+      <nav
+        class="lesson-pagination"
+        aria-label="Continuar a leitura"
+        data-pagefind-ignore
+      >
+        {index >= 0 && (
+          <a href={previous ? lessonPath(course, previous) : course.path}>
+            <ArrowLeft size={17} />
+            <span>
+              <small>Anterior</small>
+              {previous?.data.title || 'Apresentação'}
+            </span>
+          </a>
+        )}
+        {next && (
+          <a class="next-lesson" href={lessonPath(course, next)}>
+            <span>
+              <small>Seguinte</small>
+              {next.data.title}
+            </span>
+            <ArrowRight size={17} />
+          </a>
+        )}
+      </nav>
+    </main>
+    {headings.length > 0 && (
+      <aside class="page-toc" aria-label="Nesta página" data-pagefind-ignore>
+        <h2>Nesta página</h2>
+        <TableOfContents headings={headings} />
+      </aside>
+    )}
+  </div>
 </Layout>

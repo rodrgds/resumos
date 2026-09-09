@@ -1,8 +1,8 @@
 ---
-layout: ../../layouts/Lesson.astro
 title: Texto e fórmulas
 description: Um exemplo simples, escrito em Markdown.
-source: src/pages/exemplo/apontamentos.md
+section: conteudo
+order: 1
 ---
 
 ## Uma ideia de cada vez
@@ -48,3 +48,25 @@ A imagem representa a mesma soma. É um SVG local e inclui uma descrição para 
 A [documentação do Markdown no Astro](https://docs.astro.build/en/guides/markdown-content/) explica como escrever páginas. As fórmulas usam [KaTeX](https://katex.org/docs/supported.html).
 
 Na página seguinte, juntamos [gráficos, diagramas e vídeo](/exemplo/diagramas/) num ficheiro MDX.
+
+## Notas de rodapé
+
+As notas de rodapé servem para uma fonte ou uma explicação que pode ficar para depois.[^fonte]
+
+[^fonte]: Este é um exemplo de nota de rodapé. A seta no fim volta ao ponto do texto onde estavas. Podes incluir [ligações](https://www.markdownguide.org/extended-syntax/#footnotes) e **formatação**.
+
+```md
+Uma afirmação com uma fonte.[^fonte]
+
+[^fonte]: Autor, título e ligação à fonte.
+```
+
+## Avisos em Markdown
+
+:::tip[Uma ideia por parágrafo]
+Começa pela ideia principal. Junta um exemplo e só depois acrescenta os detalhes.
+:::
+
+:::details[Ver uma solução]
+Para somar os primeiros quatro naturais, podemos juntar os extremos: $1 + 4 = 5$ e $2 + 3 = 5$. A soma é $10$.
+:::

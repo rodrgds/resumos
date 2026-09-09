@@ -1,0 +1,73 @@
+---
+import { ArrowLeft, ChevronDown, BookOpen } from '@lucide/astro';
+import { sections, lessonPath, type CourseGuide } from '../lib/course-content';
+interface Props {
+  course: CourseGuide;
+}
+const { course } = Astro.props;
+---
+
+<details class="course-sidebar" open data-pagefind-ignore>
+  <summary>
+    <BookOpen size={18} /> Conteúdos da cadeira <ChevronDown size={17} />
+  </summary>
+  <nav aria-label="Conteúdos da cadeira">
+    <a
+      class="course-back"
+      href={course.id.startsWith('meic-') ? '/meic/' : '/#cadeiras'}
+    >
+      <ArrowLeft size={16} /> Todas as cadeiras
+    </a>
+    <h2>{course.name}</h2>
+    <a
+      class="course-overview"
+      href={course.path}
+      aria-current={Astro.url.pathname === course.path ? 'page' : undefined}
+    >
+      Apresentação
+    </a>
+    {Object.entries(sections).map(([key, name]) => {
+      const lessons = course.lessons.filter(
+        (lesson) => lesson.data.section === key,
+      );
+      return (
+        lessons.length > 0 && (
+          <section>
+            <h3>{name}</h3>
+            <ul>
+              {lessons.map((lesson) => (
+                <li>
+                  <a
+                    href={lessonPath(course, lesson)}
+                    aria-current={
+                      Astro.url.pathname === lessonPath(course, lesson)
+                        ? 'page'
+                        : undefined
+                    }
+                  >
+                    {lesson.data.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      );
+    })}
+    <a
+      class="course-contribute"
+      href="https://github.com/rodrgds/resumos/blob/main/CONTRIBUTING.md"
+    >
+      Contribuir para esta cadeira
+    </a>
+  </nav>
+</details>
+<script>
+  const sidebar = document.querySelector<HTMLDetailsElement>('.course-sidebar');
+  const mobile = matchMedia('(max-width: 1100px)');
+  function adapt() {
+    if (sidebar) sidebar.open = !mobile.matches;
+  }
+  adapt();
+  mobile.addEventListener('change', adapt);
+</script>
