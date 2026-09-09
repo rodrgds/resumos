@@ -5,6 +5,10 @@ section: conteudo
 order: 3
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import caminhoBombeamento from './caminho-bombeamento.typ?raw';
+
 Os autómatos finitos têm memória finita: $k$ estados guardam $\log k$ bits, e nada mais. Por isso há linguagens que eles nunca reconhecem, como $\{0^n 1^n\}$ (zeros seguidos de igual número de uns), que exigiria contar sem limite. Esta página dá a ferramenta para o provar, o **lema da repetição** (pumping lemma), mais as propriedades de fecho e os problemas decidíveis das linguagens regulares.
 
 ## O lema da repetição
@@ -17,8 +21,16 @@ Os autómatos finitos têm memória finita: $k$ estados guardam $\log k$ bits, e
 
 Porquê isto vale? Toma um DFA com $p$ estados que reconheça $L$ e corre $s$ com $|s| \ge p$. O caminho visita $|s|+1 \ge p+1$ estados, por isso algum estado repete (princípio da casa dos pombos). Seja $y$ o pedaço lido entre as duas visitas ao estado repetido: $|y| > 0$ porque o caminho andou. Escolhendo a **primeira** repetição, ela acontece dentro dos primeiros $p$ símbolos, logo $|xy| \le p$. E como $y$ é um ciclo (sai e volta ao mesmo estado), percorrê-lo $i$ vezes continua a terminar no mesmo estado final. Isto prova as três condições.
 
+<Typst
+  source={caminhoBombeamento}
+  format="svg"
+  alt="Caminho de uma palavra num DFA: do estado inicial q0 até um estado qj que se repete, depois até ao estado final. O pedaço x leva de q0 a qj, o ciclo y sai de qj e volta a qj, e o pedaço z leva de qj ao fim."
+/>
+
+O desenho é a prova em imagem: $x$ é o caminho até à primeira repetição, $y$ é o ciclo e $z$ é o resto. Repetir ou apagar o ciclo nunca sai do estado final.
+
 :::warning[O lema serve para provar que não é regular]
-O lema diz "se regular, então repetível". Usa-se o contrapositivo: "se não repetível, então não regular". Nunca proves que uma linguagem **é** regular com o lema: há linguagens não regulares que satisfazem as três condições. Para mostrar que é regular, constrói um DFA, um NFA ou uma expressão regular.
+O lema diz "se regular, então repetível"[^lema-sentido]. Usa-se o contrapositivo: "se não repetível, então não regular". Nunca proves que uma linguagem **é** regular com o lema: há linguagens não regulares que satisfazem as três condições. Para mostrar que é regular, constrói um DFA, um NFA ou uma expressão regular.
 :::
 
 ## Prova completa: $\{0^n 1^n\}$ não é regular
@@ -31,17 +43,28 @@ Seja $L = \{0^n 1^n \mid n \ge 0\}$. Prova por contradição.
 4. **Repete e conta.** O lema garante $xy^2z \in L$. Mas $xy^2z = 0^a 0^{2k} 0^{p-a-k} 1^p = 0^{p+k}1^p$. Como $k \ge 1$, há $p + k > p$ zeros e só $p$ uns: a palavra tem números diferentes de zeros e uns, logo $xy^2z \notin L$. Contradição.
 5. **Conclui.** A suposição é falsa: $L$ não é regular.
 
-Repara na estrutura, que deves reutilizar em qualquer aplicação do lema: supõe e fixa $p$; escolhe $s$ em função de $p$ (quase sempre com um bloco de comprimento $p$); toma partição arbitrária e usa $|xy| \le p$ para localizar $y$; escolhe um $i$ (aqui $i = 2$; $i = 0$ também servia) que parte a propriedade definidora; conclui por contradição.
+Repara na estrutura, que deves reutilizar em qualquer aplicação do lema: supõe e fixa $p$; escolhe $s$ em função de $p$ (quase sempre com um bloco de comprimento $p$); toma partição arbitrária e usa $|xy| \le p$ para localizar $y$; escolhe um $i$ que parte a propriedade definidora; conclui por contradição. Os dois $i$ mais usados, para este exemplo:
 
-:::details[Porque é que $i = 0$ também servia aqui]
-Apagar dá $xy^0z = xz = 0^{p-k}1^p$, com $p - k < p$ zeros contra $p$ uns. Também sai de $L$. Em geral, experimenta $i = 0$ quando a linguagem exige "pelo menos tantos" e $i = 2$ quando exige "no máximo tantos" ou igualdade.
-:::
+<Tabs id="lema-i" labels={['Apagar: i = 0', 'Repetir: i = 2']}>
+  <div slot="panel-0">
+
+Apagar dá $xy^0z = xz = 0^{p-k}1^p$, com $p - k \lt p$ zeros contra $p$ uns. Também sai de $L$. Em geral, experimenta $i = 0$ quando a linguagem exige "pelo menos tantos" e $i = 2$ quando exige "no máximo tantos" ou igualdade.
+
+  </div>
+  <div slot="panel-1">
+
+Repetir dá $xy^2z = 0^{p+k}1^p$, com $p + k \gt p$ zeros contra $p$ uns. Também sai de $L$. Qualquer dos dois $i$ chega; no teste escolhe o que tornar a contagem mais curta.
+
+  </div>
+</Tabs>
 
 ## Propriedades de fecho
 
 As linguagens regulares são **fechadas** para: união, concatenação, estrela, interseção, complemento e diferença. Isto significa que aplicar estas operações a linguagens regulares produz linguagens regulares. As provas são construções: união por NFA com novo inicial e transições $\varepsilon$ para os dois NFA; interseção pelo produto da página anterior; complemento trocando finais com não finais num DFA (atenção: isto exige um DFA completo, num NFA não funciona); diferença via $A \setminus B = A \cap \overline{B}$.
 
-O fecho dá uma segunda técnica para provar não regularidade: se $L$ fosse regular, então $L \cap R$ seria regular para qualquer regular $R$. Escolhendo $R$ que isole a parte "difícil" de $L$ e caindo num caso conhecido como $\{0^n 1^n\}$, concluis por contradição. Exemplo: $\{w \mid w \text{ tem igual número de } 0 \text{ e } 1\}$ intersetada com a regular $0^*1^*$ dá $\{0^n 1^n\}$, logo não é regular.
+O fecho dá uma segunda técnica para provar não regularidade: se $L$ fosse regular, então $L \cap R$ seria regular para qualquer regular $R$. Escolhendo $R$ que isole a parte "difícil" de $L$ e caindo num caso conhecido como $\{0^n 1^n\}$, concluis por contradição.
+
+Exemplo resolvido. Seja $L = \{w \mid w \text{ tem igual número de } 0 \text{ e } 1\}$. Supõe que $L$ é regular. A linguagem $R = 0^*1^*$ é regular (é dada por uma expressão regular). Pelo fecho para interseção, $L \cap R$ seria regular. Mas $L \cap R = \{0^n 1^n \mid n \ge 0\}$: uma palavra com igual número de zeros e uns que tenha a forma $0^*1^*$ tem necessariamente todos os zeros antes dos uns, logo é $0^n1^n$. Ora $\{0^n 1^n\}$ não é regular, pela prova acima. Contradição, por isso $L$ não é regular. Repara no passo delicado: $L \cap R$ não é "mais ou menos" $0^n1^n$, é exatamente; sem essa igualdade a prova cai.
 
 ## Problemas decidíveis
 
@@ -53,6 +76,8 @@ Para DFA, estas perguntas têm sempre resposta algorítmica:
 - **Inclusão:** $L(M_1) \subseteq L(M_2)$? Testa se $L(M_1) \cap \overline{L(M_2)} = \emptyset$.
 
 "Decidível" aqui quer dizer que existe um algoritmo que responde sempre sim ou não em tempo finito. Guarda esta palavra: em [máquinas de Turing e decidibilidade](turing-decidibilidade/) vais ver problemas onde isto deixa de ser possível.
+
+[^lema-sentido]: O lema é uma condição necessária, não suficiente: cumprir as três condições não prova que a linguagem é regular. É o que a torna uma ferramenta de refutação, não de confirmação.
 
 ## Para levar para a próxima página
 

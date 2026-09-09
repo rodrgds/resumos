@@ -5,6 +5,10 @@ section: conteudo
 order: 1
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import arvoreRegex from './arvore-regex.typ?raw';
+
 Antes de falar de máquinas, é preciso falar de dados. Um autómato lê palavras sobre um alfabeto, e uma linguagem é um conjunto de palavras. Esta página fixa esse vocabulário e apresenta as expressões regulares, a notação compacta para descrever linguagens simples. Se "conjunto", "união" e "função" soam a novidade, revê [conjuntos e relações](/cadeiras/md/conjuntos-relacoes/) primeiro.
 
 ## Alfabetos e palavras
@@ -39,7 +43,7 @@ Sobre linguagens definem-se três operações, além das operações de conjunto
 Exemplo: se $A = \{0, 11\}$, então $A^2 = \{00, 011, 110, 1111\}$ e $A^*$ contém $\varepsilon$, $0$, $11$, $000$, $011$, e por aí fora.
 
 :::warning[Concatenação de linguagens não é concatenação de palavras]
-$AB$ é um conjunto de palavras, não uma palavra. E $A^*$ contém $\varepsilon$ sempre, mesmo que $A$ não contenha: $A^0 = \{\varepsilon\}$ por definição. Quando um exercício pergunta se $\varepsilon \in A^*$, a resposta é sempre sim.
+$AB$ é um conjunto de palavras, não uma palavra. E $A^*$ contém $\varepsilon$ sempre, mesmo que $A$ não contenha[^estrela-epsilon]: $A^0 = \{\varepsilon\}$ por definição. Quando um exercício pergunta se $\varepsilon \in A^*$, a resposta é sempre sim.
 :::
 
 ## Expressões regulares
@@ -73,6 +77,38 @@ Raciocínio: "pelo menos dois $a$ consecutivos" significa que algures na palavra
 $$(a \cup b)^* aa (a \cup b)^*.$$
 
 Confirma com casos: $aa$ pertence (escolhe $\varepsilon$ dos dois lados). $baaab$ pertence (prefixo $b$, sufixo $ab$). $aba$ não pertence, porque qualquer decomposição $x \cdot aa \cdot y$ exigiria dois $a$ seguidos algures, e $aba$ não os tem. Repara que a verificação "não pertence" usa sempre o mesmo argumento: supõe uma decomposição e mostra que é impossível. Este estilo volta na página sobre [limites das linguagens regulares](limites-regulares/).
+
+## Ver a expressão como árvore
+
+Cada expressão regular tem uma árvore sintática: as folhas são os símbolos e os nós interiores são as operações. Para $(a \cup b)^* aa (a \cup b)^*$ aplicada a $baaab$, a raiz é uma concatenação de três partes: a primeira estrela casa o prefixo $b$, o bloco $aa$ casa a si próprio e a segunda estrela casa o sufixo $ab$.
+
+<Typst
+  source={arvoreRegex}
+  format="svg"
+  alt="Árvore da expressão (a união b) estrela, aa, (a união b) estrela. A raiz concatena três partes: a primeira estrela casa o b inicial, o bloco aa casa a si próprio e a segunda estrela casa o sufixo ab."
+/>
+
+Ler a árvore da esquerda para a direita devolve a palavra. É o mesmo raciocínio que vais usar para [árvores sintáticas de gramáticas](gramaticas-livres/), só que aqui cada estrela pode repetir zero ou mais vezes.
+
+## Experimenta a expressão
+
+O JavaScript usa uma sintaxe parecida (com `|` em vez de $\cup$). Corre o teste e confirma os três resultados antes de continuares.
+
+<CodePlayground
+  language="javascript"
+  title="Testar a expressão"
+  code={
+    'const re = /(a|b)*aa(a|b)*/;\nfor (const w of ["aa", "baaab", "aba"]) {\n  console.log(w, re.test(w));\n}'
+  }
+/>
+
+O programa imprime `true`, `true` e `false`: `aa` casa com as estrelas vazias, `baaab` com o prefixo `b` e o sufixo `ab`, e `aba` não tem dois $a$ seguidos. Repara que `test` procura uma ocorrência em qualquer posição, o que aqui equivale à pertença porque a expressão já permite qualquer prefixo e sufixo.
+
+## Para saber mais
+
+O [regex101](https://regex101.com/) testa expressões regulares com explicação por cada símbolo, útil para confirmar uma resposta antes de a escreveres no teste.
+
+[^estrela-epsilon]: Segue diretamente da definição de estrela: $A^*$ é a união de todos os $A^n$ com $n \ge 0$, e $A^0 = \{\varepsilon\}$.
 
 ## Para levar para a próxima página
 

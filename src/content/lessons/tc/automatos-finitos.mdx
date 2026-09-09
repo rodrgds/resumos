@@ -5,6 +5,10 @@ section: conteudo
 order: 2
 ---
 
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+
 Um **autómato finito** é uma máquina com memória limitada: um conjunto finito de estados, um estado inicial e uma regra que diz, para cada estado e cada símbolo lido, para onde ir. Não tem pilha nem fita, só o estado atual. Esta página mostra os dois sabores (determinístico e não determinístico) e três construções que tens de saber executar: de NFA para DFA, minimização e teste de equivalência.
 
 ## DFA: definição e leitura
@@ -32,6 +36,31 @@ Transições:
 
 Testa $w = 01$: $q_0 \xrightarrow{0} q_0 \xrightarrow{1} q_1$, que é de aceitação, por isso $01 \in L(M)$. Testa $w = 10$: $q_0 \xrightarrow{1} q_1 \xrightarrow{0} q_0$, rejeitada. E $\varepsilon$: fica em $q_0$, rejeitada, o que está certo porque $\varepsilon$ não termina em $1$.
 
+<Dot
+  source={`digraph DFA {
+  rankdir=LR;
+  node [shape=circle];
+  start [shape=none, label=""];
+  start -> q0;
+  q0 -> q0 [label="0"];
+  q0 -> q1 [label="1"];
+  q1 -> q0 [label="0"];
+  q1 -> q1 [label="1"];
+  q1 [shape=doublecircle];
+}`}
+  alt="DFA com dois estados. O estado q0 tem um ciclo com 0 e vai para q1 com 1. O estado q1, de aceitação, volta a q0 com 0 e tem um ciclo com 1."
+/>
+
+O círculo duplo marca o estado de aceitação. Corre o simulador e confirma os três resultados.
+
+<CodePlayground
+  language="python"
+  title="Simular o DFA"
+  code={
+    'd = {"q0": {"0": "q0", "1": "q1"}, "q1": {"0": "q0", "1": "q1"}}\naceites = {"q1"}\n\ndef corre(w):\n    e = "q0"\n    for s in w:\n        e = d[e][s]\n    return e\n\nfor w in ["01", "10", ""]:\n    print(w or "epsilon", "aceite" if corre(w) in aceites else "rejeitada")'
+  }
+/>
+
 :::tip[Desenha antes de formalizar]
 Num exercício de construção, desenha primeiro os estados com nomes que digam o que memorizam ("resto 0", "vi um $a$"). Depois escreve a tabela de $\delta$. Só no fim, se pedirem, apresenta o quíntuplo. Nomes com significado evitam transições trocadas.
 :::
@@ -54,6 +83,20 @@ Transições:
 ```
 
 Para $w = 001$: o caminho $p_0 \xrightarrow{0} p_0 \xrightarrow{0} p_1 \xrightarrow{1} p_2$ aceita. Repara que outros caminhos morrem (por exemplo ficar sempre em $p_0$), mas um basta. Os NFA são quase sempre mais pequenos e mais fáceis de inventar que o DFA equivalente.
+
+<Dot
+  source={`digraph NFA {
+  rankdir=LR;
+  node [shape=circle];
+  start [shape=none, label=""];
+  start -> p0;
+  p0 -> p0 [label="0,1"];
+  p0 -> p1 [label="0"];
+  p1 -> p2 [label="1"];
+  p2 [shape=doublecircle];
+}`}
+  alt="NFA com três estados. O estado p0 tem um ciclo com 0 e 1 e uma transição com 0 para p1. O estado p1 vai para p2 com 1. O estado p2, de aceitação, não tem saídas."
+/>
 
 ## De NFA para DFA: construção de subconjuntos
 
@@ -80,7 +123,18 @@ DFA resultante:
   B --0--> B,  B --1--> A
 ```
 
-Reconheces a linguagem? É "palavras que contêm pelo menos um $0$": o $B$ significa "já vi um $0$". O método funciona sempre, mas pode gerar até $2^n$ estados para um NFA de $n$ estados. Na prática só constróis os alcançáveis a partir do inicial, como acima.
+Reconheces a linguagem? É "palavras que terminam em $0$": só o estado $B$ é final, e só se chega a $B$ a ler um $0$ (confirma com $01$, que contém um $0$ mas termina em $1$ e é rejeitada). O método funciona sempre, mas pode gerar até $2^n$ estados para um NFA de $n$ estados. Na prática só constróis os alcançáveis a partir do inicial, como acima.
+
+### Quando há transições epsilon
+
+O exemplo anterior não tinha transições $\varepsilon$, por isso o fecho nunca fez nada. Vê um onde faz: NFA com estados $\{p, q\}$, inicial $p$, aceitação $\{q\}$, transições $p \xrightarrow{\varepsilon} q$ e $q \xrightarrow{0} q$ (linguagem $0^*$).
+
+- Inicial do DFA: fecho $\varepsilon$ de $\{p\} = \{p, q\}$. Chama-lhe $A = \{p, q\}$, que já é de aceitação porque contém $q$.
+- De $A$ com $0$: de $p$ nada sai com $0$; de $q$ sai $q$. O fecho $\varepsilon$ de $\{q\}$ é só $\{q\}$, porque a transição $\varepsilon$ vai de $p$ para $q$ e nunca ao contrário. Novo estado $B = \{q\}$, de aceitação.
+- De $A$ com $1$: nada sai. Estado vazio $C = \emptyset$ (morto, não final).
+- De $B$ com $0$: fica em $B$. De $B$ com $1$ e de $C$ com tudo: fica em $C$.
+
+Repara no ponto onde quase todos erram: o fecho $\varepsilon$ aplica-se sempre, inclusive no estado inicial e depois de cada símbolo. Sem ele, o estado $A$ começaria só com $\{p\}$ e a palavra vazia seria (mal) rejeitada.
 
 ## Minimização por preenchimento de tabela
 
@@ -114,6 +168,15 @@ Isto reconhece "palavras que terminam em $1$", e dois estados são o mínimo (é
 ## Teste de equivalência
 
 Dois DFA $M_1$ e $M_2$ são **equivalentes** quando $L(M_1) = L(M_2)$. Para testar, constrói o DFA produto (pares de estados, transição componente a componente) e verifica se algum estado alcançável é "um final e outro não". Se nenhum existir, são equivalentes. Como bónus, o mesmo produto com a condição de aceitação "ambos finais" reconhece a interseção, o que prova que as linguagens regulares são fechadas para interseção. O fecho e os limites destas linguagens são o tema de [limites das linguagens regulares](limites-regulares/).
+
+## Para saber mais
+
+O [JFLAP](https://www.jflap.org/) é um simulador onde desenhas o autómato e o corres em palavras, incluindo a construção de subconjuntos passo a passo. Para rever a conversão com outro exemplo resolvido:
+
+<YouTube
+  id="fiT1nYM1j0Q"
+  title="Conversão de NFA para DFA por construção de subconjuntos, Deeba Kannan"
+/>
 
 ## Para levar para a próxima página
 
