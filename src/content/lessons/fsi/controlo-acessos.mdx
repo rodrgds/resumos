@@ -5,15 +5,42 @@ section: conteudo
 order: 4
 ---
 
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import matriz from '../../fsi/matriz.dot?raw';
+
 A autenticação responde a "quem és?", provando a identidade. O **controlo de acessos** responde à pergunta seguinte: "já sei quem és, e agora, o que podes fazer?". Esta página organiza essa resposta em modelos e termina a decidir acessos concretos numa tabela de permissões Unix.
 
 ## Modelos: matriz, papéis e níveis
 
 O modelo mental base é a **matriz de acessos**: linhas de sujeitos (utilizadores, processos), colunas de objetos (ficheiros, tabelas, impressoras) e em cada célula as operações permitidas (ler, escrever, executar). Tudo o resto é uma forma compacta de representar esta matriz.
 
+<Dot
+  source={matriz}
+  alt="Matriz de acessos desenhada como grafo: Ana e Bruno leem precos.csv, o Carlos tem o acesso negado e o script escreve."
+/>
+
 Duas representações dominam. As **ACL** (_access control lists_) guardam, junto de cada objeto, quem pode o quê: é a coluna da matriz, e é o que as permissões Unix fazem. As **capacidades** (_capabilities_) guardam, junto de cada sujeito, os bilhetes de acesso que possui: é a linha da matriz, como um descritor de ficheiro aberto que já não volta a perguntar.
 
-Sobre quem decide, há três políticas. No controlo **discricionário** (DAC), o dono do objeto decide quem acede, como nas permissões de ficheiros. No controlo **obrigatório** (MAC), o sistema impõe níveis, como "confidencial" contra "público", e nem o dono pode baixar a classificação. No controlo por **papéis** (RBAC), as permissões vão para papéis como "vendas" ou "contabilidade" e os utilizadores recebem papéis: quando a Ana muda de equipa, troca-se-lhe um papel em vez de dezenas de permissões.
+Sobre quem decide, há três políticas:
+
+<Tabs id="politicas-acesso" labels={['Discricionário (DAC)', 'Obrigatório (MAC)', 'Por papéis (RBAC)']}>
+  <div slot="panel-0">
+
+No controlo **discricionário**, o dono do objeto decide quem acede, como nas permissões de ficheiros. A loja, dona de `precos.csv`, dá leitura ao grupo `vendas`. É flexível, mas cada dono decide à sua maneira e os erros acumulam-se.
+
+  </div>
+  <div slot="panel-1">
+
+No controlo **obrigatório**, o sistema impõe níveis, como "confidencial" contra "público", e nem o dono pode baixar a classificação. Um relatório confidencial nunca sai para um objeto público, mesmo que o dono queira partilhá-lo. É rígido, mas a regra vale para todos sem exceção.
+
+  </div>
+  <div slot="panel-2">
+
+No controlo **por papéis**, as permissões vão para papéis e os utilizadores recebem papéis. O papel `vendas` tem duas permissões: ler `precos.csv` e escrever `encomendas.csv`. A Ana e o Bruno recebem o papel `vendas` e herdam as duas. Quando a Ana muda para a contabilidade, troca-se-lhe um papel em vez de dezenas de permissões, e nada fica esquecido para trás.
+
+  </div>
+</Tabs>
 
 Para fluxos de dados, a regra sensata é simples: a informação só flui para níveis iguais ou superiores de confiança, nunca para baixo sem desinfeção. Um relatório confidencial pode alimentar um resumo público depois de anonimizado; o caminho inverso, dados públicos a contaminar decisões confidenciais sem verificação, é uma fuga ou uma injeção à espera de acontecer.
 
