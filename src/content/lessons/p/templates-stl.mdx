@@ -5,6 +5,12 @@ section: conteudo
 order: 5
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import intervalos from '../../p/intervalos.typ?raw';
+
 Muitas funções fazem exatamente o mesmo com tipos diferentes: o máximo de dois inteiros e o máximo de dois reais só diferem no tipo. Copiar a função para cada tipo duplica código e cada correção tem de ser repetida. Os **templates** evitam isso: escreves a função uma vez com um tipo genérico e o compilador cria uma versão para cada tipo usado. A **STL** (Standard Template Library) é a coleção de estruturas e algoritmos genéricos que a linguagem já traz: vetores, iteradores e funções como ordenar e pesquisar.
 
 ## Funções template
@@ -63,6 +69,8 @@ int main() {
 
 Isto escreve `42 ola`. Na declaração do objeto o tipo já não se deduz: tens de o escrever (`Caixa<int>`), porque o compilador precisa de saber quanto espaço reservar. É assim que funcionam o `vector<int>` e as outras estruturas da STL: classes template que já alguém escreveu e testou por ti.
 
+<YouTube id="Jh2urtP00Zg" title="C++ Tutorial: Using the STL std::vector" />
+
 ## vector: o array que cresce
 
 O `vector` é o substituto moderno do array de C que viste nos [apontadores](/cadeiras/p/apontadores-memoria/): guarda os elementos num bloco contíguo, sabe o seu tamanho e cresce com `push_back`. Vem de [Tuplos e listas](/cadeiras/fp/tuplos-listas/) a ideia de lista que cresce com `append`; o `push_back` é o equivalente:
@@ -92,24 +100,69 @@ Isto escreve `3`, depois `12 10` e depois `12 18 10`. O `size()` devolve o núme
 Tal como nos arrays, `notas[10]` num vetor de três elementos não dá erro de compilação: lê lixo ou avaria o programa. Para acesso verificado existe `notas.at(1)`, que lança uma exceção se o índice for inválido (vais perceber exceções na [próxima página](/cadeiras/p/excecoes-testes/)). Nos exercícios, usa `[]` quando já garantiste os limites com o `size()` e `at()` quando o índice vem de fora.
 :::
 
-## Iteradores
+## map e set: chaves e conjuntos
 
-Um **iterador** é um objeto que aponta para um elemento de um contentor e sabe avançar para o seguinte. É a abstração que permite aos algoritmos da STL trabalharem sobre qualquer contentor: o algoritmo só vê iteradores, nunca o vetor ou a lista por baixo. Todo o contentor oferece `begin()` (primeiro elemento) e `end()` (posição a seguir ao último):
+Nem tudo é uma sequência. O `map` associa chaves a valores, como um dicionário de Python: serve para contar ocorrências ou guardar registos por nome. O `set` guarda valores únicos e ordenados, e diz em tempo logarítmico se um valor lá está:
 
 ```cpp
 #include <iostream>
-#include <vector>
+#include <map>
+#include <set>
+#include <string>
 
 int main() {
-    std::vector<int> v = {10, 20, 30};
-    for (std::vector<int>::iterator it = v.begin(); it != v.end(); it++) {
-        std::cout << *it << " ";
+    std::map<std::string, int> notas = {{"Ana", 15}, {"Rui", 12}};
+    notas["Iris"] = 18;
+    std::cout << notas["Ana"] << " " << notas.size() << "\n";
+    std::set<int> vistos = {3, 1, 3, 2, 1};
+    std::cout << vistos.size() << ":";
+    for (int x : vistos) {
+        std::cout << " " << x;
     }
     std::cout << "\n";
 }
 ```
 
-Isto escreve `10 20 30`. O `*it` dereferencia o iterador (lê o elemento, tal como nos [apontadores](/cadeiras/p/apontadores-memoria/)) e o `it++` avança. Na prática escreves `auto it = v.begin()`, que pede ao compilador para deduzir o tipo comprido por ti. E o ciclo por intervalo (`for (int n : v)`) que usaste acima é açúcar sintático sobre estes mesmos iteradores.
+Isto escreve `15 3` e depois `3: 1 2 3`. O `map` tem três entradas depois da inserção e `notas["Ana"]` vale `15`. O `set` ignorou os repetidos e guardou `1 2 3` por ordem, por isso o tamanho é `3`. A regra de ouro: sequência ordenada ou acesso por posição pede `vector`; procura por chave pede `map`; pertença sem repetições pede `set`.
+
+## Iteradores
+
+Um **iterador** é um objeto que aponta para um elemento de um contentor e sabe avançar para o seguinte. É a abstração que permite aos algoritmos da STL trabalharem sobre qualquer contentor: o algoritmo só vê iteradores, nunca o vetor ou a lista por baixo. Todo o contentor oferece `begin()` (primeiro elemento) e `end()` (posição a seguir ao último):
+
+<Typst
+  source={intervalos}
+  format="svg"
+  alt="Vetor com os elementos 10, 20 e 30. begin aponta ao 10 e end aponta à posição a seguir ao 30."
+/>
+
+Há duas formas de percorrer, e convém reconheceres ambas porque os exercícios misturam-nas:
+
+<Tabs id="percorrer-vetor" labels={['Ciclo por intervalo', 'Iteradores explícitos']}>
+  <div slot="panel-0">
+
+```cpp
+for (int n : v) {
+    std::cout << n << " ";
+}
+```
+
+A forma curta para ler todos os elementos. Esconde os iteradores, mas é sobre eles que o ciclo corre por baixo.
+
+  </div>
+  <div slot="panel-1">
+
+```cpp
+for (auto it = v.begin(); it != v.end(); it++) {
+    std::cout << *it << " ";
+}
+```
+
+A forma explícita: `*it` lê o elemento e `it++` avança. Precisas dela quando o algoritmo pede iteradores, como o `sort` e o `find` abaixo.
+
+  </div>
+</Tabs>
+
+Na prática escreves `auto it = v.begin()`, que pede ao compilador para deduzir o tipo comprido (`std::vector<int>::iterator`) por ti.
 
 ## Algoritmos: sort e find
 
@@ -136,34 +189,35 @@ int main() {
 
 Isto escreve `10 20 30` e depois `Encontrei na posicao 1`. Repara que `find` devolve um iterador, não um índice: subtrair `v.begin()` converte para posição, e comparar com `v.end()` diz se a procura falhou. Este padrão (testar contra `end()`) aparece em quase todos os algoritmos de procura da STL. Se precisares de ordenar por outro critério, o `sort` aceita um terceiro argumento com a comparação, que escreves como função ou `lambda`; a ideia de passar comportamento como argumento vem da [programação funcional](/cadeiras/fp/programacao-funcional/) que já conheces.
 
-## Exemplo completo: contar e ordenar
-
-Vamos escrever uma função genérica `contar_maiores` que conta quantos elementos de um vetor excedem um limite, e usá-la com dois tipos diferentes. Depois ordenamos um dos vetores com `sort`:
+Para somar (ou juntar) todos os elementos com um valor inicial existe o `accumulate` de `<numeric>`:
 
 ```cpp
-#include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <vector>
 
-template <typename T>
-int contar_maiores(const std::vector<T>& v, const T& limite) {
-    int n = 0;
-    for (const T& x : v) {
-        if (x > limite) {
-            n++;
-        }
-    }
-    return n;
-}
-
 int main() {
-    std::vector<int> notas = {8, 12, 15, 9, 18};
-    std::vector<double> temps = {36.5, 37.8, 36.9, 38.2};
-    std::cout << contar_maiores(notas, 10) << "\n";
-    std::cout << contar_maiores(temps, 37.0) << "\n";
-    std::sort(notas.begin(), notas.end());
-    std::cout << notas.front() << " " << notas.back() << "\n";
+    std::vector<int> v = {1, 2, 3, 4};
+    std::cout << std::accumulate(v.begin(), v.end(), 0) << "\n";
 }
 ```
 
+Isto escreve `10`. O terceiro argumento é o valor inicial e o tipo do resultado: com `0` somas inteiros, com `0.0` somavas reais.
+
+## Exemplo completo: contar e ordenar
+
+Vamos escrever uma função genérica `contar_maiores` que conta quantos elementos de um vetor excedem um limite, e usá-la com dois tipos diferentes. Depois ordenamos um dos vetores com `sort`. Corre o programa:
+
+<CodePlayground
+  language="cpp"
+  title="Contar e ordenar com templates e STL"
+  code={
+    '#include <algorithm>\n#include <iostream>\n#include <vector>\n\ntemplate <typename T>\nint contar_maiores(const std::vector<T>& v, const T& limite) {\n    int n = 0;\n    for (const T& x : v) {\n        if (x > limite) {\n            n++;\n        }\n    }\n    return n;\n}\n\nint main() {\n    std::vector<int> notas = {8, 12, 15, 9, 18};\n    std::vector<double> temps = {36.5, 37.8, 36.9, 38.2};\n    std::cout << contar_maiores(notas, 10) << "\\n";\n    std::cout << contar_maiores(temps, 37.0) << "\\n";\n    std::sort(notas.begin(), notas.end());\n    std::cout << notas.front() << " " << notas.back() << "\\n";\n}'
+  }
+/>
+
 Isto escreve `3`, `2` e `8 18`. Confere: em `notas`, excedem `10` o `12`, o `15` e o `18`; em `temps`, excedem `37.0` o `37.8` e o `38.2`. Depois de ordenar, `front()` é o menor (`8`) e `back()` é o maior (`18`). A função serviu os dois tipos sem duplicação, e o vetor passou por referência constante: sem cópia e sem alterações.
+
+## Para saber mais
+
+- [Referência de `std::vector`](https://en.cppreference.com/cpp/container/vector): métodos, complexidade e exemplos na documentação oficial.

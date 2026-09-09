@@ -5,6 +5,12 @@ section: conteudo
 order: 2
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import caixas from '../../p/caixas.typ?raw';
+
 Cada variável do teu programa vive num sítio concreto da memória, e esse sítio tem um **endereço**, um número que o identifica. Até agora ignoraste os endereços, e fizeste bem. Mas há estruturas, como listas ligadas e vetores que crescem, que só consegues construir se guardares e seguires endereços. Um **apontador** é exatamente isso: uma variável que guarda o endereço de outra variável.
 
 ## Endereço de e dereferenciação
@@ -27,9 +33,18 @@ Isto escreve `42` e depois `7`. O apontador `p` guarda o endereço de `x`, por i
 
 Se imprimires o próprio `p` com `std::cout << p`, vês o endereço em hexadecimal, algo como `0x7ffee3a1b2cc`. O valor concreto muda de cada vez que corres o programa; o que interessa é que dois apontadores para a mesma variável mostram o mesmo endereço.
 
+<Dot
+  source={
+    'digraph Apontador { rankdir=LR; p [shape=box, label="p"]; x [shape=box, label="x = 42"]; p -> x [label="endereço de x"]; }'
+  }
+  alt="Diagrama com duas caixas: p aponta com uma seta para x, que guarda 42."
+/>
+
 :::warning[Apontadores por inicializar]
 Um apontador declarado sem valor inicial, como `int* p;`, aponta para um endereço qualquer. Dereferenciá-lo (`*p = 7;`) escreve num sítio aleatório da memória e o programa pode avariar de formas estranhas. Inicializa sempre os apontadores: ou com um endereço válido (`&x`), ou com `nullptr` quando ainda não apontam para nada, e testa `if (p != nullptr)` antes de os usares.
 :::
+
+<YouTube id="DTxHyVn0ODg" title="POINTERS in C++, The Cherno" />
 
 ## Apontadores e arrays
 
@@ -52,29 +67,18 @@ O reverso também é verdade: `v[i]` num array usa a mesma aritmética. Quando s
 
 ## Alocação dinâmica com new e delete
 
-As variáveis que declaraste até aqui vivem na **pilha** (stack) e desaparecem quando a função termina. Quando precisas de memória que sobreviva à função, ou cujo tamanho só conheces enquanto o programa corre, pedes memória à **área livre** (heap) com `new` e devolve-la com `delete`:
+As variáveis que declaraste até aqui vivem na **pilha** (stack) e desaparecem quando a função termina. Quando precisas de memória que sobreviva à função, ou cujo tamanho só conheces enquanto o programa corre, pedes memória à **área livre** (heap) com `new` e devolve-la com `delete`. Corre o exemplo com a entrada `4`:
 
-```cpp
-#include <iostream>
+<CodePlayground
+  language="cpp"
+  title="Vetor com tamanho decidido em execução"
+  input="4"
+  code={
+    '#include <iostream>\n\nint main() {\n    int n;\n    std::cout << "Quantos valores? ";\n    std::cin >> n;\n    int* v = new int[n];\n    for (int i = 0; i < n; i++) {\n        v[i] = (i + 1) * 10;\n    }\n    int soma = 0;\n    for (int i = 0; i < n; i++) {\n        soma += v[i];\n    }\n    std::cout << "Soma: " << soma << "\\n";\n    delete[] v;\n}'
+  }
+/>
 
-int main() {
-    int n;
-    std::cout << "Quantos valores? ";
-    std::cin >> n;
-    int* v = new int[n];
-    for (int i = 0; i < n; i++) {
-        v[i] = (i + 1) * 10;
-    }
-    int soma = 0;
-    for (int i = 0; i < n; i++) {
-        soma += v[i];
-    }
-    std::cout << "Soma: " << soma << "\n";
-    delete[] v;
-}
-```
-
-Se a entrada for `4`, isto mostra `Quantos valores? Soma: 100`. O `new int[n]` reserva espaço para `n` inteiros escolhidos em tempo de execução, algo impossível com um array de tamanho fixo. Confere a soma: $10 + 20 + 30 + 40 = 100$. E repara no `delete[] v` com parênteses retos: array pedido com `new[]` devolve-se com `delete[]`; um único objeto pedido com `new` devolve-se com `delete` simples. Trocar os dois é um erro que o compilador não apanha.
+Isto mostra `Quantos valores? Soma: 100`. O `new int[n]` reserva espaço para `n` inteiros escolhidos em tempo de execução, algo impossível com um array de tamanho fixo. Confere a soma: $10 + 20 + 30 + 40 = 100$. E repara no `delete[] v` com parênteses retos: array pedido com `new[]` devolve-se com `delete[]`; um único objeto pedido com `new` devolve-se com `delete` simples. Trocar os dois é um erro que o compilador não apanha.
 
 ## Fugas de memória e double-free
 
@@ -115,6 +119,8 @@ int main() {
 
 Isto escreve `5`, tal como o exemplo anterior, mas sem `delete`: quando `p` sai de âmbito no fim de `main`, o destrutor liberta a memória sozinho. Nos teus primeiros exercícios continua a praticar `new` e `delete` à mão, porque o exame testa essa mecânica; nos teus projetos, prefere smart pointers e `vector`, que é onde o C++ moderno vive.
 
+<YouTube id="UOB7-B2MfwA" title="SMART POINTERS in C++, The Cherno" />
+
 ## Exemplo resolvido: ler a memória em palavras
 
 Segue este programa e descreve o estado da memória depois de cada linha, sem correres nada. É o exercício que mais treina para o exame.
@@ -128,4 +134,15 @@ int b = *p + 1; // (3)
 
 Depois de (1), há uma caixa chamada `a` com o valor `3`. Depois de (2), há uma segunda caixa chamada `p` que guarda o endereço de `a`; desenhada como uma seta, a seta aponta para a caixa de `a`. Depois de (3), `*p` vale `3` (segue a seta e lê), por isso nasce uma terceira caixa `b` com o valor `4`; a seta não muda. Depois de (4), segue a seta e escreve `10` na caixa de destino: `a` passa a `10` e `b` continua `4`.
 
+<Typst
+  source={caixas}
+  format="svg"
+  alt="Três caixas: a guarda 3, p aponta com uma seta para a, e b guarda 4. A seta mostra que *p = 10 escreve na caixa de a."
+/>
+
 O ponto onde os alunos tropeçam é a linha (4): `*p = 10` não toca em `p`, toca em `a` através de `p`. O apontador continua a apontar para o mesmo sítio; o que mudou foi o conteúdo do sítio. Sempre que vires `*p` do lado esquerdo de uma atribuição, pergunta: "para onde aponta `p`?", porque é essa caixa que vai mudar.
+
+## Para saber mais
+
+- [Referência de `unique_ptr`](https://en.cppreference.com/cpp/memory/unique_ptr): posse exclusiva e `make_unique` na documentação oficial.
+- [Tutorial de apontadores](https://www.learncpp.com/cpp-tutorial/introduction-to-pointers/): erros comuns de inicialização com exemplos mínimos.
