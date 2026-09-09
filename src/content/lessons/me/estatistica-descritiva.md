@@ -1,0 +1,63 @@
+---
+title: Estatística descritiva
+description: Tipos de dados, tabelas de frequências, gráficos e medidas de localização e dispersão com um exemplo completo.
+section: conteudo
+order: 1
+---
+
+Antes de qualquer probabilidade ou teste, há uma pergunta simples: o que dizem estes dados. A estatística descritiva resume uma amostra em tabelas, gráficos e meia dúzia de números bem escolhidos. O objetivo não é decorar fórmulas, é olhar para 40 medições e conseguir dizer onde está o centro, quanto espalham e se há valores estranhos.
+
+## Tipos de dados e escalas
+
+Nem todos os dados aceitam as mesmas contas. Classifica primeiro:
+
+- **Qualitativos nominais**: categorias sem ordem, como o sistema operativo do telemóvel. Podes contar, não podes ordenar nem somar.
+- **Qualitativos ordinais**: categorias com ordem, como "mau, razoável, bom". Podes ordenar e tirar a mediana, mas a média não faz sentido (quanto vale "razoável mais bom a dividir por dois"?).
+- **Quantitativos discretos**: contagens, como o número de erros por pedido. Média e o resto funcionam.
+- **Quantitativos contínuos**: medições, como tempos de resposta em milissegundos. Também aceitam tudo, e agrupam-se em classes para tabelas e histogramas.
+
+:::warning[Média de dados ordinais não existe]
+O erro clássico é calcular a média de uma escala de 1 a 5 de satisfação e tratar 3,7 como medida precisa. Os intervalos entre "2" e "3" e entre "4" e "5" não são iguais, por isso a média engana. Com dados ordinais usa a mediana e as frequências de cada categoria.
+:::
+
+## O exemplo: 40 tempos de resposta
+
+Uma amostra de 40 tempos de resposta de um servidor, em milissegundos:
+
+42, 38, 51, 47, 44, 55, 39, 48, 52, 46, 43, 57, 41, 49, 50, 45, 53, 40, 56, 47, 44, 52, 48, 39, 61, 46, 50, 43, 54, 49, 45, 58, 41, 47, 52, 44, 49, 55, 46, 51
+
+São dados quantitativos contínuos. A tabela de frequências com classes de amplitude 5 resume-os:
+
+| Classe | Frequência | Frequência relativa |
+| ------ | ---------: | ------------------: |
+| [35, 40[ | 3 | 0,075 |
+| [40, 45[ | 9 | 0,225 |
+| [45, 50[ | 13 | 0,325 |
+| [50, 55[ | 9 | 0,225 |
+| [55, 60[ | 5 | 0,125 |
+| [60, 65[ | 1 | 0,025 |
+
+O **histograma** desenha estas frequências como barras: aqui verias uma forma quase simétrica centrada perto de 47, com uma cauda curta para a direita por causa do 61. O gráfico mostra num segundo o que a tabela mostra num minuto.
+
+## Medidas de localização
+
+- **Média** $\bar{x} = \frac{1}{n}\sum x_i$. Aqui a soma dá 1917, logo $\bar{x} = 1917/40 = 47{,}925$, cerca de 47,9 ms.
+- **Mediana**: o valor do meio com os dados ordenados. Com $n = 40$ é a média do 20.º e do 21.º valores ordenados: $(47 + 48)/2 = 47{,}5$ ms. Metade das medições está abaixo, metade acima.
+- **Moda**: o valor mais frequente. Aqui há empate entre 47, 49 e 52 (três ocorrências cada), por isso a moda pouco informa e não a usamos.
+- **Quartis**: $Q_1 = 44$ ms (25 por cento abaixo), $Q_3 = 52$ ms (75 por cento abaixo). O intervalo interquartil $IQR = Q_3 - Q_1 = 8$ ms mede o espalhamento da metade central.
+
+Repara que média (47,9) e mediana (47,5) estão próximas: sinal de distribuição aproximadamente simétrica, sem valores extremos a puxar a média. Quando diferem muito, desconfia de outliers e prefere a mediana.
+
+## Medidas de dispersão
+
+- **Amplitude**: máximo menos mínimo, $61 - 38 = 23$ ms. Rápida mas refém dos extremos.
+- **Variância amostral**: $s^2 = \frac{1}{n-1}\sum (x_i - \bar{x})^2$. Com a soma dos quadrados a dar 93113, $s^2 = (93113/40 - 47{,}925^2)\times 40/39 \approx 31{,}8$.
+- **Desvio padrão amostral**: $s = \sqrt{31{,}8} \approx 5{,}6$ ms. É a medida de espalhamento que vais usar em tudo o resto, sempre na mesma unidade dos dados.
+
+:::tip[Populacional contra amostral: o $n - 1$]
+A variância da **população** divide por $n$; a variância **amostral** divide por $n - 1$. O $n - 1$ corrige o viés de estimar o espalhamento a partir da própria média da amostra, que está sempre "demasiado perto" dos dados. Nas fórmulas de inferência usa sempre a versão amostral $s$, a não ser que o enunciado diga explicitamente que o desvio populacional $\sigma$ é conhecido.
+:::
+
+## Leitura final do exemplo
+
+Em duas frases: os tempos centram-se perto de 48 ms, com metade das medições entre 44 e 52 ms e um espalhamento típico de cerca de 6 ms. Há um valor alto isolado (61 ms) que merece investigação, mas não chega para deslocar o centro. Esta é a matéria-prima das páginas seguintes: a média 47,9 e o desvio 5,6 voltam nos [intervalos de confiança](intervalos-confianca/) e nos [testes de hipóteses](testes-hipoteses/).
