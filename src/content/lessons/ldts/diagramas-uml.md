@@ -1,0 +1,38 @@
+---
+title: Diagramas UML
+description: Diagramas de classes, sequência e comunicação, lidos e desenhados à mão antes de codificar.
+section: conteudo
+order: 5
+---
+
+UML é uma linguagem de desenho para software: serve para pensar antes de codificar e para explicar depois. Em LDTS usas três diagramas. O diagrama de **classes** mostra a estrutura: que classes existem e como se relacionam. O de **sequência** mostra uma interação ao longo do tempo: quem chama quem, por que ordem. O de **comunicação** mostra a mesma interação focada nas ligações entre objetos.
+
+## Diagrama de classes
+
+Cada classe é um retângulo com três partes: nome, atributos e métodos. As setas entre retângulos dizem a relação:
+
+- **Associação** (linha simples): uma classe usa outra, como `Monstro` que conhece a sua `Posicao`.
+- **Herança** (seta com triângulo vazio): `MonstroVoador` estende `Monstro`.
+- **Implementação** (linha tracejada com triângulo vazio): `AndarEmZigZag` implementa `Comportamento`.
+- **Composição** (losango cheio): a parte morre com o todo, como os `Comando` que pertencem ao `ControladorArena`.
+- **Agregação** (losango vazio): a parte sobrevive ao todo, como o `Heroi` que existe fora da `Arena`.
+
+Lê-se o losango do lado do todo: "a arena é composta por comandos". Multiplicidades como `1` ou `*` dizem quantos objetos participam de cada lado.
+
+## Diagrama de sequência
+
+O tempo desce pela página. Cada participante tem uma linha de vida vertical, e cada chamada é uma seta horizontal com o nome do método. Uma caixa fina sobre a linha de vida mostra enquanto o método está ativo, e as setas tracejadas são os retornos. Lê-se de cima para baixo como um guião: primeiro isto, depois aquilo.
+
+## Diagrama de comunicação
+
+Mostra os mesmos objetos e as mesmas chamadas, mas sem eixo de tempo: as setas numeradas (`1: lerTecla()`, `2: desenhar(...)`) dão a ordem. É útil quando a estrutura das ligações importa mais que o timing exato.
+
+## Exemplo: completar o diagrama do Hero
+
+Imagina o Hero parado na arena e o utilizador a premir "cima". O diagrama de classes tem `ControladorArena` associado a `Heroi` e a `Ecra`, e `Heroi` associado a `Posicao`. Para o completares, verifica três coisas: cada associação tem o nome do papel e a multiplicidade, `Posicao` é imutável (métodos que devolvem `Posicao` nova), e nenhuma seta de herança aparece onde a relação é "usa".
+
+O passo em sequência descreve-se assim: a linha de vida do `ControladorArena` recebe `passo("cima")`, chama `somar(0, -1)` na `Posicao` atual do herói, recebe a nova posição, atualiza o herói e chama `desenhar` no `Ecra`. Cinco setas, por esta ordem, contam a história completa do movimento.
+
+:::tip[Desenha à mão primeiro]
+Um diagrama feito depois do código é decoração. O valor está em desenhar antes: se não consegues desenhar as cinco setas, ainda não percebeste a interação, e é mais barato descobrir isso no papel que no depurador.
+:::
