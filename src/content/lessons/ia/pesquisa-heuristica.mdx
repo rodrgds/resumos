@@ -5,6 +5,11 @@ section: conteudo
 order: 3
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import grelha from '../../ia/grelha-astar.typ?raw';
+
 A pesquisa cega expande por ordem geométrica e só encontra o objetivo por exaustão. Uma **heurística** $h(n)$ estima o custo que falta de cada nó $n$ até ao objetivo e permite expandir primeiro o que parece promissor. Quando a estimativa é honesta, a pesquisa encontra o ótimo muito mais depressa. Quando mente por excesso, pode devolver caminhos piores. Esta página mostra a diferença com uma grelha calculada até ao fim.
 
 ## O exemplo da grelha
@@ -21,6 +26,22 @@ Grelha 4 por 4, início em (0, 0), objetivo em (3, 3), movimentos nas quatro dir
 
 Há dois caminhos ótimos com 6 passos: por cima, (0,0), (0,1), (0,2), (0,3), (1,3), (2,3), (3,3); e por baixo, (0,0), (1,0), (2,0), (3,0), (3,1), (3,2), (3,3). Confirma que nenhum caminho tem 5 passos: são precisas pelo menos 3 descidas e 3 direitas, e os bloqueios não permitem atalhos na diagonal.
 
+<Typst
+  source={grelha}
+  format="svg"
+  alt="Grelha 4 por 4 com a heurística de Manhattan em cada casa livre. Três casas bloqueadas a escuro junto ao canto superior esquerdo. O início está marcado no canto superior esquerdo e o objetivo no canto inferior direito."
+/>
+
+O A* sobre esta grelha, executável abaixo, expande por f crescente e devolve um caminho de custo 6.[^redblob]
+
+<CodePlayground
+  language="python"
+  title="A* na grelha"
+  code={'import heapq\n\nbloqueados = {(1, 1), (1, 2), (2, 1)}\ninicio, objetivo = (0, 0), (3, 3)\nh = lambda n: (3 - n[0]) + (3 - n[1])\n\ndef vizinhos(n):\n    r, c = n\n    for dr, dc in [(0, 1), (1, 0), (0, -1), (-1, 0)]:\n        m = (r + dr, c + dc)\n        if 0 <= m[0] < 4 and 0 <= m[1] < 4 and m not in bloqueados:\n            yield m\n\nfronteira = [(6, 0, inicio, [inicio])]\nvisto = {}\nwhile fronteira:\n    f, g, n, caminho = heapq.heappop(fronteira)\n    if n in visto:\n        continue\n    visto[n] = g\n    if n == objetivo:\n        print("expandidos:", list(visto))\n        print("custo:", g)\n        break\n    for m in vizinhos(n):\n        if m not in visto:\n            heapq.heappush(fronteira, (g + 1 + h(m), g + 1, m, caminho + [m]))'}
+/>
+
+Isto expande `(0, 0), (0, 1), (1, 0), (0, 2), (2, 0), (0, 3)` antes de continuar pela fronteira com f 6, exatamente a ordem calculada à mão acima, e termina com custo 6.
+
 ## Gulosa: rápida e sem garantias
 
 A pesquisa **gulosa** expande sempre o nó com menor $h$, ignorando o custo já pago. Do início, empata entre (0,1) e (1,0), ambos com $h = 5$. Supõe que escolhe (0,1), depois (0,2), (0,3), (1,3), (2,3) e o objetivo, sempre a descer o $h$. Aqui acerta no ótimo por sorte do desempate.
@@ -31,7 +52,7 @@ Não confies na sorte. A gulosa segue o $h$ como um gradiente e fica presa em be
 
 O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real já pago do início até $n$. Junta o cuidado do custo uniforme com a direção da heurística. Segue os primeiros passos na grelha, com a fronteira entre parênteses:
 
-1. Fronteira {(0,0): g 0, h 6, f 6}. Expande (0,0): gera (0,1) com f 6 e (1,0) com f 6.
+1. Fronteira \{(0,0): g 0, h 6, f 6}. Expande (0,0): gera (0,1) com f 6 e (1,0) com f 6.
 2. Expande (0,1) com f 6: gera (0,2) com g 2, h 4, f 6.
 3. Expande (1,0) com f 6: gera (2,0) com g 2, h 4, f 6.
 4. Expande (0,2) com f 6: gera (0,3) com g 3, h 3, f 6.
@@ -53,3 +74,7 @@ O enunciado dá-te a grelha, a heurística e pede a ordem de expansão do A* at�
 ## Porque é que isto importa
 
 Sem heurística, a largura expande tudo até à profundidade do objetivo. Com uma boa heurística, o A* expande sobretudo nós com $f$ próximo do ótimo e ignora o resto. É por isso que problemas intratáveis na prática, como os da página de [complexidade](/cadeiras/tc/complexidade/), se resolvem todos os dias com heurísticas: abdicas da garantia barata da exaustão e compras velocidade com uma estimativa honesta.
+
+<YouTube id="ySN5Wnu88nE" title="A Star Search Algorithm (Computerphile)" />
+
+[^redblob]: Introdução interativa ao A* com grelhas manipuláveis, comparando BFS, Dijkstra, gulosa e A*: https://www.redblobgames.com/pathfinding/a-star/introduction.html.
