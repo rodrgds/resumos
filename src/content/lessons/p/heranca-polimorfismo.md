@@ -1,5 +1,5 @@
 ---
-title: "Herança e polimorfismo"
+title: 'Herança e polimorfismo'
 description: Classes derivadas, funções virtuais e override, classes abstratas, slicing e destrutor virtual.
 section: conteudo
 order: 4

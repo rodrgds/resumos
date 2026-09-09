@@ -5,7 +5,7 @@ section: conteudo
 order: 5
 ---
 
-Um **autómato de pilha** (PDA, de *pushdown automaton*) é um NFA com uma pilha: a cada passo, além de ler (ou não) um símbolo, pode empilhar ou desempilhar símbolos. A pilha é memória ilimitada mas só com acesso ao topo, e é exatamente o que faltava para reconhecer $\{0^n 1^n\}$. Esta página constrói esse autómato e enuncia a equivalência com gramáticas livres de contexto.
+Um **autómato de pilha** (PDA, de _pushdown automaton_) é um NFA com uma pilha: a cada passo, além de ler (ou não) um símbolo, pode empilhar ou desempilhar símbolos. A pilha é memória ilimitada mas só com acesso ao topo, e é exatamente o que faltava para reconhecer $\{0^n 1^n\}$. Esta página constrói esse autómato e enuncia a equivalência com gramáticas livres de contexto.
 
 ## O modelo
 
