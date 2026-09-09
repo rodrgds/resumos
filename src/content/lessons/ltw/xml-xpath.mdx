@@ -5,6 +5,10 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import arvore from '../../ltw/arvore-xml.typ?raw';
+
 O XML representa dados em texto com etiquetas: legível por pessoas, processável por máquinas e independente da linguagem. Nesta cadeira aparece como formato de troca e de configuração, e o XPath é a linguagem para ir buscar pedaços a um documento XML sem o percorrer à mão.
 
 ## Documentos bem formados
@@ -27,6 +31,14 @@ Um documento XML tem um elemento raiz único, etiquetas bem aninhadas e atributo
 </catalogo>
 ```
 
+Visto como árvore, que é como o XPath o navega: a raiz `catalogo` tem dois filhos `livro`, e cada livro tem os seus `titulo` e `preco`.
+
+<Typst
+  source={arvore}
+  format="svg"
+  alt="Árvore do catálogo: catalogo divide-se em dois livros; cada livro divide-se em titulo e preco."
+/>
+
 Cada `livro` é um elemento com um atributo (`isbn`) e três elementos filhos. A distinção entre atributo e elemento filho é uma decisão de modelação: atributos para identificadores e metadados curtos, elementos para conteúdo que pode crescer ou repetir-se. Ao contrário do HTML, o XML não perdoa: uma etiqueta por fechar ou mal aninhada invalida o documento inteiro. Valida sempre antes de culpares a consulta.
 
 ## Consultas XPath
@@ -40,10 +52,55 @@ O XPath navega na árvore com um caminho parecido com o dos ficheiros. Sobre o c
 
 Os parênteses retos são predicados: condições que filtram os nós. Lê a última de dentro para fora: para cada `livro`, fica com os que têm `preco` menor que 30 e devolve o `titulo`. É a mesma ideia do `WHERE` do SQL que usaste no [PHP](php-dinamicas-bd/), aplicada a uma árvore em vez de uma tabela.
 
+Em PHP, a consulta corre com `DOMDocument` e `DOMXPath`, sem percorreres a árvore à mão:
+
+```php
+<?php
+$xml = new DOMDocument();
+$xml->load('catalogo.xml');
+$xp = new DOMXPath($xml);
+foreach ($xp->query('//livro[preco<30]/titulo') as $t) {
+    echo $t->textContent, "\n";
+}
+?>
+```
+
+A saída é uma linha: `JavaScript: The Good Parts`. O `load` lê e valida a boa formação, o `query` avalia o XPath e devolve a lista de nós, e o `textContent` extrai o texto de cada um. Se a saída vier vazia, confirma os nomes das etiquetas e o aninhamento no documento antes de reescreveres a expressão.
+
 :::tip[Exercício por predicado]
 Escreve a expressão que devolve os autores dos livros com preço superior a 40. Resposta: `//livro[preco>40]/autor`, que devolve "Kernighan". E para contar quantos são? Envolve com `count(...)`: `count(//livro[preco>40])` devolve `1`. Se a tua expressão devolver vazio, confirma os nomes das etiquetas e o aninhamento no documento antes de a reescreveres.
 :::
 
 ## Quando usar XML
 
-Usa XML quando o formato precisa de validação formal contra um esquema, de namespaces para misturar vocabulários ou de ferramentas de transformação. Para trocar dados simples entre o teu JavaScript e o teu PHP, o JSON da página de [HTTP](http-ajax-json/) é mais leve e direto. A relação entre os dois resume-se assim: JSON para dados que o programa consome, XML para documentos que precisam de contrato.
+Usa XML quando o formato precisa de validação formal contra um esquema, de namespaces para misturar vocabulários ou de ferramentas de transformação. Para trocar dados simples entre o teu JavaScript e o teu PHP, o JSON da página de [HTTP](http-ajax-json/) é mais leve e direto. Lado a lado, para o mesmo produto:
+
+<Tabs id="json-xml" labels={['JSON', 'XML']}>
+  <div slot="panel-0">
+
+```json
+{ "titulo": "Queijo da Serra", "preco": 8.5 }
+```
+
+Troca simples que o programa consome: o JavaScript lê com `JSON.parse` e o PHP escreve com `json_encode`. Sem contrato formal, sem validação.
+
+  </div>
+  <div slot="panel-1">
+
+```xml
+<produto>
+  <titulo>Queijo da Serra</titulo>
+  <preco>8.5</preco>
+</produto>
+```
+
+Documento com contrato: valida contra um esquema, aceita namespaces e transforma-se com ferramentas próprias. Mais verboso, mais garantias.
+
+  </div>
+</Tabs>
+
+A relação entre os dois resume-se assim: JSON para dados que o programa consome, XML para documentos que precisam de contrato.
+
+## Para saber mais
+
+- Documentação MDN de XPath, com a linguagem, funções e uso em JavaScript: https://developer.mozilla.org/en-US/docs/Web/XML/XPath.

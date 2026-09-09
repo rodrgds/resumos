@@ -5,7 +5,15 @@ section: conteudo
 order: 4
 ---
 
+import WebPlayground from '../../../components/WebPlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import propagacao from '../../ltw/propagacao.dot?raw';
+
 O PHP monta a página no servidor antes de a enviar. O JavaScript corre no navegador depois de a página chegar e mexe nela sem pedir nada ao servidor. Vens de [funções em Python](/cadeiras/fp/funcoes/) e de [tipos estáticos em C++](/cadeiras/p/cpp-fundamentos/): o JavaScript tem funções parecidas com as de Python mas tipagem dinâmica ainda mais solta do que a do PHP, com conversões que surpreendem.
+
+<YouTube id="DHjqpvDnNGE" title="JavaScript in 100 Seconds" />
 
 ## Sintaxe sem surpresas, quase
 
@@ -30,7 +38,16 @@ Quanto às conversões, decora os dois casos clássicos: `'8' + 1` dá `'81'` po
 
 ## Mexer na página pelo DOM
 
-O DOM é a página vista como uma árvore de objetos: cada etiqueta é um nó que podes ler, criar e alterar. A lista de tarefas da mercearia, com adicionar e remover, cabe nestas linhas em `tarefas.js`:
+O DOM é a página vista como uma árvore de objetos: cada etiqueta é um nó que podes ler, criar e alterar. A lista de tarefas da mercearia, com adicionar e remover, cabe nestas linhas em `tarefas.js`. Experimenta-a aqui: escreve um item, prime Enter, e remove-o a seguir.
+
+<WebPlayground
+  html={
+    '<form id="form"><input id="texto" /><button>Adicionar</button></form>\n<ul id="tarefas"></ul>'
+  }
+  js={
+    'const lista = document.querySelector("#tarefas");\ndocument.querySelector("#form").addEventListener("submit", (e) => {\n  e.preventDefault();\n  const texto = document.querySelector("#texto").value.trim();\n  if (!texto) return;\n  const li = document.createElement("li");\n  li.textContent = texto;\n  const btn = document.createElement("button");\n  btn.textContent = "Remover";\n  btn.addEventListener("click", () => li.remove());\n  li.append(btn);\n  lista.append(li);\n});'
+  }
+/>
 
 ```js
 const lista = document.querySelector('#tarefas');
@@ -48,11 +65,39 @@ document.querySelector('#form').addEventListener('submit', (e) => {
 });
 ```
 
-O `querySelector` escolhe elementos com a mesma sintaxe do CSS. O `addEventListener` regista uma função que corre quando o evento acontece: aqui, submeter o formulário cria um `li` novo com um botão que se remove a si próprio. O `preventDefault` impede o comportamento normal do formulário, que seria recarregar a página e deitar fora a lista. Repara que o texto entra por `textContent`, nunca por `innerHTML` com dados do utilizador: a razão está na página de [segurança](seguranca-web/).
+O `querySelector` escolhe elementos com a mesma sintaxe do CSS. O `addEventListener` regista uma função que corre quando o evento acontece: aqui, submeter o formulário cria um `li` novo com um botão que se remove a si próprio. O `preventDefault` impede o comportamento normal do formulário, que seria recarregar a página e deitar fora a lista. O texto entra por `textContent`, nunca por `innerHTML` com dados do utilizador, e a diferença entre os dois é esta:
+
+<Tabs id="texto-html" labels={['textContent', 'innerHTML']}>
+  <div slot="panel-0">
+
+```js
+li.textContent = '<b>Queijo</b>';
+```
+
+O elemento mostra o texto literal `<b>Queijo</b>`, sem etiquetas. É o comportamento seguro para dados do utilizador: nada do que ele escreve vira código. A razão está na página de [segurança](seguranca-web/).
+
+  </div>
+  <div slot="panel-1">
+
+```js
+li.innerHTML = '<b>Queijo</b>';
+```
+
+O elemento mostra **Queijo** a negrito, porque a cadeia foi interpretada como HTML. Útil para o teu próprio modelo, perigoso para dados do utilizador: uma carga com `script` corria. Só usa com cadeias que escreveste tu.
+
+  </div>
+</Tabs>
 
 ## A propagação dos eventos
 
-Um clique num botão dentro de um cartão dentro da página atravessa os três: primeiro desce do documento até ao botão (captura) e depois sobe de volta (propagação). Por omissão, os teus tratadores correm na subida. Experimenta este exercício com um botão dentro de uma `div`:
+Um clique num botão dentro de um cartão dentro da página atravessa os três: primeiro desce do documento até ao botão (captura) e depois sobe de volta (bolha). Por omissão, os teus tratadores correm na subida.
+
+<Dot
+  source={propagacao}
+  alt="Propagação de um clique: desce do documento para a div e desta para o botão na fase de captura, e sobe do botão para a div e desta para o documento na fase de bolha."
+/>
+
+Experimenta este exercício com um botão dentro de uma `div`:
 
 ```js
 document

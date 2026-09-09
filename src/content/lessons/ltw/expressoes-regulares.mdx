@@ -5,11 +5,25 @@ section: conteudo
 order: 7
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import anatomia from '../../ltw/anatomia-regex.typ?raw';
+
 Uma expressão regular descreve um formato de texto: que caracteres, em que ordem, quantas vezes. Serve para validar entradas como emails e datas, para limpar texto e para extrair pedaços. Aparece nas três frentes da cadeira: no atributo `pattern` do HTML, no `preg_match` do PHP e no `test` do JavaScript.
+
+<YouTube id="rhzKDrUiJVk" title="Learn Regular Expressions In 20 Minutes" />
 
 ## As peças básicas
 
-Uma expressão lê-se da esquerda para a direita, com cada peça a casar com um pedaço do texto:
+Uma expressão lê-se da esquerda para a direita, com cada peça a casar com um pedaço do texto. Lê o diagrama da esquerda para a direita: cada caixa é uma peça, cada legenda diz o que ela exige.
+
+<Typst
+  source={anatomia}
+  format="svg"
+  alt="Anatomia da expressão de telemóvel: circunflexo ancora o início, 9 exige o dígito 9, barra-d oito vezes exige oito dígitos, dólar ancora o fim."
+/>
 
 - **Literais** casam consigo mesmos: `queijo` casa com "queijo".
 - **Classes** listam alternativas: `[abc]` casa com uma das três letras, `[0-9]` com um dígito, `\d` também com um dígito, `\w` com letra, dígito ou `_`.
@@ -21,7 +35,21 @@ Lê `/^9\d{8}$/` em voz alta: começa (`^`), um `9`, oito dígitos (`\d{8}`), te
 
 ## Validar nos três lados
 
-O formulário de registo da mercearia pede email, data de nascimento e telemóvel. No HTML, o atributo `pattern` valida antes de enviar:
+O formulário de registo da mercearia pede email, data de nascimento e telemóvel. Corre o testador com o caso bom, o caso mau e o caso manhoso, e confirma que só o primeiro passa:
+
+<CodePlayground
+  language="javascript"
+  code={
+    'const tel = /^9\\d{8}$/;\nconsole.log(tel.test("912345678"));\nconsole.log(tel.test("812345678"));\nconsole.log(tel.test("xx912345678xx"));'
+  }
+/>
+
+A saída é `true`, `false`, `false`: o número certo passa, o que começa por 8 falha no literal e o texto à volta falha nas âncoras. A mesma regra vive nas três frentes; compara-as:
+
+<Tabs id="tres-frentes" labels={['HTML', 'PHP', 'JavaScript']}>
+  <div slot="panel-0">
+
+No HTML, o atributo `pattern` valida antes de enviar:
 
 ```html
 <input
@@ -32,17 +60,26 @@ O formulário de registo da mercearia pede email, data de nascimento e telemóve
 />
 ```
 
+  </div>
+  <div slot="panel-1">
+
 No PHP, confirma no servidor com `preg_match`, que devolve 1 se casar:
 
 ```php
 $ok = preg_match('/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/', $email);
 ```
 
+  </div>
+  <div slot="panel-2">
+
 No JavaScript, valida ao escrever com `test`, que devolve verdadeiro ou falso:
 
 ```js
 const dataOk = /^\d{4}-\d{2}-\d{2}$/.test('2026-03-14');
 ```
+
+  </div>
+</Tabs>
 
 Repara na divisão de trabalho: o HTML e o JavaScript ajudam o utilizador honesto no momento, e o PHP decide, porque só o servidor é de confiança. As três expressões dizem o mesmo de três formas; quando mudares uma regra, muda as três.
 
@@ -62,3 +99,7 @@ A versão da secção anterior corrige os três defeitos: classes restritas em v
 :::warning[Expressões regulares não fazem tudo]
 Validar o formato do email não prova que o email existe: só uma mensagem de confirmação prova isso. E não uses expressões regulares para ler HTML ou XML: essas linguagens aninham-se, e as expressões regulares não contam aberturas e fechos. Para XML tens o [XPath](xml-xpath/).
 :::
+
+## Para saber mais
+
+- Testador interativo de expressões regulares, com explicação peça a peça: https://regex101.com/.

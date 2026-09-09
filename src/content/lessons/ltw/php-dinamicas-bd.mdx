@@ -5,7 +5,21 @@ section: conteudo
 order: 3
 ---
 
-O HTML e o CSS que viste até aqui são estáticos: todos os visitantes recebem a mesma página. O PHP corre no servidor e monta a página na hora, com dados que podem mudar a cada pedido. Vens de [programação procedimental](/cadeiras/fp/) em Python: as funções e os parâmetros são os mesmos de [sempre](/cadeiras/fp/funcoes/), mas a tipagem é dinâmica, as variáveis começam por `$` e cada pedido começa com a memória vazia.
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import ciclo from '../../ltw/ciclo-pedido.dot?raw';
+
+O HTML e o CSS que viste até aqui são estáticos: todos os visitantes recebem a mesma página. O PHP corre no servidor e monta a página na hora, com dados que podem mudar a cada pedido. Vens de [programação procedimental](/cadeiras/fp/) em Python: as funções e os parâmetros são os mesmos de [sempre](/cadeiras/fp/funcoes/), mas a tipagem é dinâmica, as variáveis começam por `$` e cada pedido começa com a memória vazia. O software da cadeira é PHP 7.4 com sqlite3, segundo a ficha da unidade curricular[^ficha-ltw].
+
+[^ficha-ltw]: Ficha da unidade curricular de Linguagens e Tecnologias Web, ocorrência de 2025/26: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104.
+
+Cada pedido à mercearia faz a mesma viagem: o navegador pede, o PHP prepara e executa a consulta, o SQLite devolve as linhas e o PHP monta o HTML da resposta.
+
+<Dot
+  source={ciclo}
+  alt="Ciclo de um pedido: o navegador envia o GET ao PHP no servidor, o PHP prepara e executa a consulta no ficheiro loja.sqlite, recebe as linhas e devolve HTML ao navegador."
+/>
 
 ## O primeiro script
 
@@ -17,6 +31,38 @@ $nome = $_GET['nome'] ?? 'visitante';
 echo '<p>Olá, ' . htmlspecialchars($nome) . '!</p>';
 ?>
 ```
+
+O operador `??` e o escape funcionam em qualquer contexto. Corre esta versão mínima, que usa o valor por omissão porque fora do servidor não há parâmetros:
+
+<CodePlayground
+  language="php"
+  code={
+    '<?php\n$nome = $_GET["nome"] ?? "visitante";\necho "Olá, " . htmlspecialchars($nome) . "!";'
+  }
+/>
+
+A saída é `Olá, visitante!`. No servidor, o mesmo ficheiro comporta-se conforme o endereço:
+
+<Tabs id="ola-parametro" labels={['Sem parâmetro', 'Com ?nome=Ana']}>
+  <div slot="panel-0">
+
+Abre `ola.php` sem nada a seguir. Como `$_GET['nome']` não existe, o `??` entrega `'visitante'` e a página mostra:
+
+```html
+<p>Olá, visitante!</p>
+```
+
+  </div>
+  <div slot="panel-1">
+
+Abre `ola.php?nome=Ana`. Agora o parâmetro existe, o `??` entrega `'Ana'` e a página mostra:
+
+```html
+<p>Olá, Ana!</p>
+```
+
+  </div>
+</Tabs>
 
 Abrir `ola.php?nome=Ana` mostra "Olá, Ana!". Abrir sem parâmetro mostra "Olá, visitante!", porque o operador `??` usa o valor da direita quando o parâmetro não existe. Repara em dois hábitos que vais repetir em todas as páginas: ler parâmetros de `$_GET` (endereço) ou `$_POST` (formulário) com um valor por omissão, e passar tudo o que vem do utilizador por `htmlspecialchars` antes de o mostrar, para etiquetas injetadas saírem como texto. A razão desta segunda regra está na página de [segurança](seguranca-web/).
 
@@ -85,5 +131,9 @@ include 'cabecalho.php';     // abre o HTML comum
 O `require_once` para a página com erro se o ficheiro faltar, e só o inclui uma vez; usa-o para o essencial, como a configuração. O `include` avisa e continua; serve para pedaços opcionais de apresentação. Um projeto típico tem `config.php` com a ligação, `cabecalho.php` e `rodape.php` com o HTML comum, e uma pasta por funcionalidade. Quando o tratamento de erros crescer para `try` e `catch`, a lógica é a mesma que já conheces do [tratamento de exceções](/cadeiras/fp/ficheiros-excecoes/): tenta, apanha o erro e mostra uma página amigável em vez do rastreio interno.
 
 :::details[O que foi verificado nesta página]
-Os trechos seguem a API do PDO e as funções de sessão e de palavras passe do PHP indicadas na ficha (PHP 7.4 com sqlite3). Não foram executados neste ambiente, por isso corre cada um no teu servidor local e confirma as saídas antes de os usares no projeto.
+Os trechos seguem a API do PDO e as funções de sessão e de palavras passe do PHP 7.4 indicadas na ficha. O comportamento do SQL foi confirmado contra o sqlite3: `LIKE '%queijo%'` devolve só o Queijo da Serra e `LIKE '%%'` devolve todos os produtos. Corre cada trecho no teu servidor local e confirma as saídas antes de os usares no projeto.
 :::
+
+## Para saber mais
+
+- Manual do PHP sobre prepared statements com PDO: https://www.php.net/manual/en/pdo.prepared-statements.php.
