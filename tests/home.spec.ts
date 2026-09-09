@@ -52,6 +52,30 @@ test('unpublished courses explain their status and restore focus', async ({
   await expect(card).toBeFocused();
 });
 
+test('semester pins stick and survive reload', async ({ page }) => {
+  const pin = page.locator('.semester-pin').first();
+  const section = page.locator('.semester').first();
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  await pin.click();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await expect(section).toHaveAttribute('data-pinned', 'true');
+  await page.reload();
+  await expect(page.locator('.semester-pin').first()).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.locator('.semester').first()).toHaveAttribute(
+    'data-pinned',
+    'true',
+  );
+});
+
+test('returning visitors skip the hero', async ({ page }) => {
+  await expect(page.locator('#page-hero')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('#page-hero')).toBeHidden();
+});
+
 test('appearance persists, follows system, and resets', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
