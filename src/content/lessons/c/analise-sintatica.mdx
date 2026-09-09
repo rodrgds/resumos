@@ -1,0 +1,107 @@
+---
+title: Análise sintática
+description: Gramáticas, árvores sintáticas, ambiguidade com precedência e construção de analisadores descendentes.
+section: conteudo
+order: 3
+---
+
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import derivacao from '../../c/derivacao.dot?raw';
+import arvores from '../../c/arvores.typ?raw';
+
+A análise sintática (_parsing_) recebe os símbolos do léxico e verifica se formam frases válidas da linguagem, produzindo a **árvore sintática** que todas as fases seguintes consomem. A gramática que define a sintaxe é uma [gramática livre de contexto](/cadeiras/tc/gramaticas-livres/): se já dominas derivação, árvores e ambiguidade, esta página é a aplicação direta disso a um compilador.
+
+## Da gramática ingénua à gramática com precedência
+
+A gramática ingénua de expressões, $E \to E + E \mid E \times E \mid (E) \mid \text{id} \mid \text{num}$, é ambígua: `a + a * a` tem duas árvores, uma com o `+` no topo e outra com o `×` no topo, que significam cálculos diferentes. Um compilador não pode adivinhar, por isso a gramática estratifica-se por precedência, um nível por operador:
+
+$$E \to E + T \mid T, \quad T \to T \times F \mid F, \quad F \to (E) \mid \text{id} \mid \text{num}.$$
+
+Agora deriva `a + a * a` e só há um caminho: o `+` fica no topo porque a soma vive no nível $E$, enquanto o produto fica preso dentro de $T$ no ramo direito. A árvore resultante calcula $(a + (a \times a))$, a leitura correta. A associatividade à esquerda vem da recursão à esquerda ($E \to E + T$): `a + a + a` agrupa como $((a+a)+a)$.
+
+<Typst
+  source={arvores}
+  format="svg"
+  alt="Duas árvores para a mais a vezes a: à esquerda a leitura errada com o produto no topo, à direita a leitura certa com a soma no topo e o produto no ramo direito."
+/>
+
+Compara as duas árvores nó a nó: só a da direita respeita a precedência, com o `*` enterrado no ramo direito. É esta forma que a gramática estratificada impõe, e é dela que sai o cálculo $(a + (a \times a))$.
+
+A mesma derivação vista como grafo, da raiz para as folhas. Segue cada ramo: $E$ parte-se em soma de $E$ com $T$, e o $T$ da direita parte-se no produto.
+
+<Dot
+  source={derivacao}
+  alt="Árvore de derivação de a mais a vezes a na gramática com precedência, com nós E, T e F até às três folhas a."
+/>
+
+## Construir o analisador
+
+Duas famílias de analisadores dominam:
+
+- **Descendentes** (_top-down_, LL): constroem a árvore da raiz para as folhas, prevendo a regra a aplicar a partir do próximo símbolo. São os que escreves à mão com mais facilidade: uma função por não terminal. Exigem gramáticas sem recursão à esquerda e com decisão local, o que muitas vezes obriga a transformar a gramática primeiro.
+- **Ascendentes** (_bottom-up_, LR): leem os símbolos empilhando e reduzem para não terminais quando reconhecem o lado direito de uma regra. Aceitam uma classe maior de gramáticas e são os gerados por ferramentas clássicas. No projeto, o gerador usado (por exemplo o ANTLR) constrói o analisador a partir da gramática que escreves, e perceber o que ele espera evita metade dos conflitos.
+
+Um conflito típico é o `else` pendente: numa gramática com `if (E) S` e `if (E) S else S`, um `else` pode pertencer a dois `if`s abertos. A convenção resolve sempre para o `if` mais próximo, e a gramática do projeto deve refletir essa decisão em vez de a deixar ao acaso.
+
+<Tabs id="else-pendente" labels={['Ambígua', 'Com associação fixa']}>
+  <div slot="panel-0">
+
+```
+S -> if (E) S
+S -> if (E) S else S
+S -> instrucao
+```
+
+Em `if (a) if (b) x(); else y();`, o `else` pode fechar o `if` interior ou o exterior. A gramática aceita as duas leituras e o analisador tem de adivinhar.
+
+  </div>
+  <div slot="panel-1">
+
+```
+S -> S_associado | S_livre
+S_associado -> if (E) S_associado else S_associado
+S_associado -> instrucao
+S_livre -> if (E) S
+S_livre -> if (E) S_associado else S_livre
+```
+
+Separar instruções associadas das livres fixa a convenção na gramática: o `else` pertence sempre ao `if` mais próximo ainda aberto, e a ambiguidade desaparece antes de gerar o analisador.
+
+  </div>
+</Tabs>
+
+## Decidir com um símbolo de avanço
+
+Um analisador descendente escolhe a regra olhando só para o próximo símbolo. Com a gramática sem recursão à esquerda $E \to T R$, $R \to + T R \mid \epsilon$, $T \to \text{id}$, os conjuntos de previsão são $\text{FIRST}(E) = \text{FIRST}(T) = \{\text{id}\}$, $\text{FIRST}(R) = \{+, \epsilon\}$ e $\text{FOLLOW}(R) = \{\$\}$. A tabela de decisão fica assim: em $E$ com `id` aplica $E \to T R$; em $R$ com `+` aplica $R \to + T R$; em $R$ com `$` aplica $R \to \epsilon$.
+
+Análise de `id + id`, com a pilha à esquerda e a entrada à direita:
+
+| Pilha           | Entrada     | Decisão                         |
+| --------------- | ----------- | ------------------------------- |
+| $E$ `$`         | `id + id $` | $E \to T R$ (vê `id`)           |
+| $T$ $R$ `$`     | `id + id $` | $T \to \text{id}$, consome `id` |
+| $R$ `$`         | `+ id $`    | $R \to + T R$ (vê `+`)          |
+| $+$ $T$ $R$ `$` | `+ id $`    | consome `+`                     |
+| $T$ $R$ `$`     | `id $`      | $T \to \text{id}$, consome `id` |
+| $R$ `$`         | `$`         | $R \to \epsilon$ (vê `$`)       |
+| `$`             | `$`         | aceite                          |
+
+Cada decisão usa um símbolo e nunca volta atrás: é por isso que este analisador corre em tempo linear. Se uma célula da tabela tivesse duas regras, a gramática não seria LL e terias de a transformar antes de escrever o analisador.
+
+Para ver como um gerador real transforma uma gramática em analisador, o guia oficial do ANTLR constrói uma gramática de exemplo e mostra a árvore resultante com o TestRig.[^antlr]
+
+[^antlr]: ANTLR 4, guia de início ([getting-started](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md)): gramática de exemplo, compilação e visualização da árvore. Leitura complementar para perceber o que o gerador espera da tua gramática.
+
+## Erros sintáticos úteis
+
+Quando o próximo símbolo não cabe em nenhuma continuação válida, o analisador para e deve dizer onde e o que esperava: "erro sintático na linha 7, coluna 12: esperava `;`". A recuperação simples é o modo de pânico: descartar símbolos até um ponto de sincronização (como `;` ou `}`) e continuar, para reportar vários erros numa passagem. No projeto, boas mensagens valem pontos e poupam horas de depuração, por isso trata o erro como parte da gramática, não como remendo final.
+
+:::warning[O erro mais comum]
+Aceitar a gramática ambígua e "resolver depois". Não há depois: a árvore errada propaga-se à semântica e ao código gerado. Sempre que dois operadores partilham o nível, estratifica antes de gerar o analisador.
+:::
+
+## Para levar para a próxima página
+
+A árvore está correta na forma, mas ainda não se sabe se faz sentido: `a + b` com `b` por declarar é sintaticamente perfeito e semanticamente errado. A [análise semântica](analise-semantica/) trata disso com a tabela de símbolos.

@@ -5,6 +5,11 @@ section: conteudo
 order: 2
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import automatoLex from '../../c/automato-lex.typ?raw';
+
 A análise lexical é a porta de entrada do compilador: transforma o texto fonte, uma sequência de caracteres, numa sequência de **símbolos** (_tokens_) com categoria e posição. Cada símbolo junta um tipo (identificador, número, operador) ao texto reconhecido e à linha e coluna onde apareceu. Tudo o resto do compilador trabalha sobre símbolos, nunca mais sobre caracteres soltos.
 
 ## Especificar com expressões regulares
@@ -24,6 +29,14 @@ Uma expressão regular descreve, um [autómato finito](/cadeiras/tc/automatos-fi
 1. **Prefixo mais longo** (_maximal munch_): fica o casamento que consome mais caracteres.
 2. **Primeira regra**: em empate de comprimento, ganha o padrão listado primeiro (é assim que `if` ganha a identificador).
 
+<Typst
+  source={automatoLex}
+  format="svg"
+  alt="Autómato com estado inicial q0, transição por letra para o estado final de identificador e por dígito para o estado final de inteiro, cada um com um ciclo sobre si próprio."
+/>
+
+Lê o diagrama como o reconhecedor corre: de `q0`, uma letra leva ao estado de identificador (moldura grossa significa estado final) e um dígito ao estado de inteiro. Os ciclos dizem para continuar a consumir enquanto o caráter for do mesmo tipo; quando chega um caráter que não casa, o símbolo fecha com tudo o que foi consumido. É o prefixo mais longo desenhado.
+
 ## Exemplo: o prefixo mais longo em ação
 
 Linha fonte: `soma12 = valor + 30;`. O reconhecedor avança caráter a caráter:
@@ -35,6 +48,27 @@ Linha fonte: `soma12 = valor + 30;`. O reconhecedor avança caráter a caráter:
 - `;`: pontuação.
 
 Resultado: `ID(soma12) = ID(valor) + NUM(30) ;`, cada um com a sua posição. Um erro lexical típico seria um caráter sem padrão, como `~`: o analisador deve parar com "caráter inesperado na linha L, coluna C", e é esta mensagem que vais agradecer no projeto.
+
+Confirma o algoritmo a correr sobre a mesma linha. Muda a entrada e vê onde cada símbolo fecha.
+
+<CodePlayground
+  language="python"
+  title="Prefixo mais longo"
+  code={
+    'texto = "soma12 = valor + 30;"\ni, simbolos = 0, []\nwhile i < len(texto):\n    c = texto[i]\n    if c.isspace():\n        i += 1\n    elif c.isalpha() or c == "_":\n        j = i\n        while j < len(texto) and (texto[j].isalnum() or texto[j] == "_"):\n            j += 1\n        simbolos.append(("ID", texto[i:j]))\n        i = j\n    elif c.isdigit():\n        j = i\n        while j < len(texto) and texto[j].isdigit():\n            j += 1\n        simbolos.append(("NUM", texto[i:j]))\n        i = j\n    else:\n        simbolos.append((c, c))\n        i += 1\nprint(simbolos)'
+  }
+/>
+
+O programa imprime `[('ID', 'soma12'), ('=', '='), ('ID', 'valor'), ('+', '+'), ('NUM', '30'), (';', ';')]`. Repara no ciclo interior de cada ramo: é ele que implementa o prefixo mais longo, estendendo o casamento enquanto o próximo caráter for do tipo certo. As palavras reservadas tratam-se depois, reclassificando o identificador reconhecido.
+
+Dois vídeos para ver as decisões do léxico em contexto real: ambiguidades entre padrões e um reconhecedor industrial explicado pelo autor.
+
+<YouTube
+  id="AbNVta331NE"
+  title="Compilers #6: Ambiguities in Lexical Analysis"
+/>
+
+<YouTube id="HxaD_trXwRE" title="Lexical Scanning in Go - Rob Pike" />
 
 :::tip[Como cai isto em teste]
 O enunciado típico dá-te os padrões e uma linha de código e pede a sequência de símbolos. Simula o autómato à mão, consumindo sempre o prefixo mais longo, e justifica cada fronteira: "para aqui porque o próximo caráter já não casa com nenhum padrão ativo".
