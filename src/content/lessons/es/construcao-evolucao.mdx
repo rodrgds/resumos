@@ -5,11 +5,23 @@ section: conteudo
 order: 6
 ---
 
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import fluxoBranch from '../../es/fluxo-branch.dot?raw';
+
 A construção é a atividade de transformar desenho em código a funcionar, todos os dias, sem que o trabalho de uns parta o dos outros. A evolução é o que acontece depois da entrega: corrigir, adaptar e melhorar durante anos. As duas partilham as mesmas ferramentas, porque ambas mexem em código partilhado que tem de continuar a funcionar.
+
+Para situar a app do exemplo: os ecrãs de início de sessão seriam construídos com o Flutter SDK no Android Studio, o software indicado na ficha da cadeira. O Git e a integração contínua desta página gerem esse código como gerem qualquer outro: ramos, revisões e testes automáticos não dependem da plataforma.
 
 ## Git e gestão de versões
 
 A **gestão de versões** guarda o histórico do código: quem mudou o quê, quando e porquê. Com Git, cada programador trabalha na sua cópia e propõe mudanças ao ramo principal através de um **pull request**, que é um pedido de revisão com discussão e testes associados. O fluxo habitual numa equipa:
+
+<Dot
+  source={fluxoBranch}
+  alt="Fluxo de branch: do ramo principal sai um ramo, que passa por pull request, integração contínua e revisão, e volta a juntar-se ao principal."
+/>
 
 1. Cria um ramo a partir do principal com um nome que diz a intenção (`sessao-bloqueio-conta`).
 2. Faz commits pequenos e frequentes, cada um com uma mensagem que explica o porquê.
@@ -18,9 +30,21 @@ A **gestão de versões** guarda o histórico do código: quem mudou o quê, qua
 
 Repara no que este ritual compra: nenhuma mudança entra sem revisão humana nem sem testes automáticos verdes. É caro em disciplina e barato em defeitos escapados.
 
+<YouTube
+  id="hwP7WQkmECE"
+  title="Git explicado em 100 segundos, Fireship"
+/>
+
+<YouTube
+  id="8lGpZkjnkt4"
+  title="Pull request no GitHub em 100 segundos, Fireship"
+/>
+
 ## Integração contínua
 
-A **integração contínua** (CI) é um servidor que, a cada mudança proposta, compila o código e corre a bateria de testes, acusando em minutos se algo partiu. Sem CI, cada um integra "no fim" e o fim é uma semana de resolver conflitos. Com CI, integrar várias vezes por dia é rotina porque cada integração é pequena e verificada.
+A **integração contínua** (CI) é um servidor que, a cada mudança proposta, compila o código e corre a bateria de testes, acusando em minutos se algo partiu.[^ci] Sem CI, cada um integra "no fim" e o fim é uma semana de resolver conflitos. Com CI, integrar várias vezes por dia é rotina porque cada integração é pequena e verificada.
+
+[^ci]: Fowler, M., Continuous Integration, 2006. A definição de referência: uma única linha principal, builds automáticas e commits diários, com cada integração verificada por testes.
 
 Para isto funcionar, a bateria tem de ser rápida e fiável: testes lentos ou que falham ao acaso ensinam a equipa a ignorar o CI, e um CI ignorado é decoração. Mantém os testes rápidos na CI e deixa os testes longos (sistema, aceitação completa) para corridas noturnas ou para antes da entrega.
 
@@ -32,11 +56,25 @@ Várias práticas do XP vivem nesta fase: **propriedade coletiva** (qualquer mem
 
 Depois de entregue, o software muda por três motivos, e cada pedido de mudança cai num tipo:
 
-- **Corretiva.** Corrigir defeitos: o início de sessão falha com emails que têm um sinal de adição.
-- **Adaptativa.** Adaptar a ambiente novo: a app passa a correr numa versão nova do sistema operativo.
-- **Perfeita** (ou perfectiva). Melhorar o que já funciona: acrescentar início de sessão com conta externa a pedido dos utilizadores.
+<Tabs id="es-construcao-manutencao" labels={['Corretiva', 'Adaptativa', 'Perfeita']}>
+  <div slot="panel-0">
 
-Classificar importa porque cada tipo tem risco e prioridade diferentes: a corretiva bloqueia utilizadores e passa à frente, a perfeita discute-se contra funcionalidade nova. A maior parte do custo total de um produto está aqui, na evolução, não na primeira escrita.
+**Corretiva.** Corrigir defeitos: o início de sessão falha com emails que têm um sinal de adição. Bloqueia utilizadores e passa à frente de tudo.
+
+  </div>
+  <div slot="panel-1">
+
+**Adaptativa.** Adaptar a ambiente novo: a app passa a correr numa versão nova do sistema operativo. Discute-se contra a obrigatoriedade do ambiente novo.
+
+  </div>
+  <div slot="panel-2">
+
+**Perfeita** (ou perfectiva). Melhorar o que já funciona: acrescentar início de sessão com conta externa a pedido dos utilizadores. Discute-se contra funcionalidade nova no próximo planeamento.
+
+  </div>
+</Tabs>
+
+Classificar importa porque cada tipo tem risco e prioridade diferentes, e a maior parte do custo total de um produto está aqui, na evolução, não na primeira escrita.
 
 :::tip[Defeitos reproduzíveis]
 Um bom registo de defeito inclui dados concretos para o reproduzir, como um email e passos exatos. Para treinar leitura de ficheiros e asserções que ajudam a prender esses dados em testes, revê [ficheiros e exceções](/cadeiras/fp/ficheiros-excecoes/).
@@ -49,5 +87,9 @@ A equipa vai implementar o bloqueio de conta após 5 tentativas falhadas:
 1. **Descreve o fluxo.** A Ana cria o ramo `sessao-bloqueio-conta` a partir do principal. Faz commits pequenos (contador de tentativas, bloqueio, mensagem de erro). Abre o pull request. A CI compila e corre os testes, incluindo os novos testes do bloqueio. O Bruno revê, pede para extrair uma constante para o limite de 5, a Ana corrige, a CI volta a passar e o ramo junta-se ao principal. Conta o que cada passo impediu: a CI impediu código que não compila de entrar; a revisão impediu um número mágico enterrado no código.
 2. **Classifica três pedidos.** "O bloqueio não dispara se as tentativas forem espaçadas" é corretiva (comportamento errado). "Suportar o novo sistema de notificações do telemóvel" é adaptativa (ambiente novo). "Lembrar o dispositivo para não pedir código sempre" é perfeita (melhoria pedida). Ordena por prioridade: corretiva primeiro, depois a adaptativa se o ambiente novo for obrigatório, e a perfeita discute-se no próximo planeamento.
 3. **Conclui.** Repara que o fluxo de branch com CI é o mesmo na construção e na evolução: só muda o motivo da mudança. É por isso que investir nestas ferramentas no início do projeto paga juros durante anos.
+
+## Para saber mais
+
+- [Integração contínua, Martin Fowler](https://martinfowler.com/articles/continuousIntegration.html): o artigo de referência sobre linha principal única, builds automáticas e commits diários.
 
 Na próxima e última página técnica, [Verificação e validação](verificacao-validacao/), vais ver os testes que a CI corre e os que ficam para o fim de cada incremento.
