@@ -5,6 +5,13 @@ section: conteudo
 order: 7
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import tabuleiro from '../../da/tabuleiro.typ?raw';
+import procura from '../../da/procura-rainhas.dot?raw';
+
 Quando não há estrutura para um guloso nem sobreposição para uma tabela, resta explorar o espaço de soluções. O retrocesso (**backtracking**) constrói candidatos passo a passo e desiste de um ramo assim que ele se revela inviável. A ramificação com poda (**branch and bound**) acrescenta um limite otimista que desiste de ramos que já não conseguem bater o melhor valor conhecido. Nos dois casos, a poda só é válida se provares que o ramo cortado não continha nada melhor.
 
 ## Retrocesso: desistir cedo
@@ -15,6 +22,36 @@ O retrocesso mantém uma solução parcial e tenta estendê-la. Se a extensão v
 
 Coloca 4 rainhas num tabuleiro 4 por 4 sem ataques mútuos, uma por coluna. Coluna 1 na linha 1. Coluna 2: as linhas 1 e 2 estão atacadas (linha e diagonal da rainha 1), por isso tenta a linha 3. Coluna 3: a linha 1 está atacada pela coluna 1, a linha 2 pela diagonal da coluna 2, a linha 3 pela linha da coluna 2 e a linha 4 pela diagonal da coluna 2. Beco sem saída: retrocede. A coluna 2 ainda tem a linha 4 livre, mas aí a coluna 3 só admite a linha 2 e a coluna 4 esgota-se (linhas 1 e 2 presas às linhas das colunas 1 e 3, linha 3 na diagonal da coluna 3, linha 4 na linha da coluna 2). Retrocede então até à coluna 1 e move-a para a linha 2. Coluna 2 na linha 4, coluna 3 na linha 1, coluna 4 na linha 3. Solução: **linhas [2, 4, 1, 3]**, que confirmas sem ataques em nenhum par. O algoritmo visitou uma fração minúscula das $4^4 = 256$ colocações, porque cada beco sem saída podou uma subárvore inteira.
 
+<Typst
+  source={tabuleiro}
+  format="svg"
+  alt="Dois tabuleiros 4 por 4: à esquerda a parcial com rainhas nas colunas 1 e 2 e todas as casas da coluna 3 atacadas, o beco; à direita a solução com rainhas nas linhas 2, 4, 1 e 3."
+/>
+
+A árvore de procura mostra os ramos explorados: dois becos podados por viabilidade antes de descer pelo ramo que contém a solução.
+
+<Dot
+  source={procura}
+  alt="Árvore de procura das 4 rainhas: da coluna 1, o ramo da linha 1 bifurca em dois becos podados por viabilidade; o ramo da linha 2 desce por 4 e 1 até à solução 2, 4, 1, 3."
+/>
+
+<CodePlayground
+  language="cpp"
+  title="As 4 rainhas com retrocesso"
+  code={'#include <cstdlib>\n#include <iostream>\n#include <vector>\n\nint nos = 0;\nbool ataca(const std::vector<int> &rainha, int col, int lin) {\n    for (int c = 0; c < col; c++)\n        if (rainha[c] == lin || abs(rainha[c] - lin) == col - c) return true;\n    return false;\n}\nbool resolve(std::vector<int> &rainha, int col) {\n    nos++;\n    if (col == 4) return true;\n    for (int lin = 1; lin <= 4; lin++)\n        if (!ataca(rainha, col, lin)) {\n            rainha[col] = lin;\n            if (resolve(rainha, col + 1)) return true;\n        }\n    return false;\n}\nint main() {\n    std::vector<int> rainha(4, 0);\n    resolve(rainha, 0);\n    std::cout << \"solucao:\";\n    for (int r : rainha) std::cout << \" \" << r;\n    std::cout << \"\\nnos visitados: \" << nos << \"\\n\";\n}'}
+/>
+
+O programa visita **9 nós** até à solução, contra as 256 colocações da força bruta. Muda a ordem das linhas para descer de 4 até 1 e conta de novo: a solução aparece noutro ramo e a contagem muda, mas continua minúscula.
+
+<YouTube
+  id="Ph95IHmRp5M"
+  title="N-Queens com retrocesso (NeetCode)"
+/>
+
+## Exemplo com cores: coloração de grafos
+
+Colorir os vértices de um grafo com $k$ cores sem vizinhos iguais é outro retrocesso clássico. Toma o triângulo 1-2-3 com um pendente 4 ligado ao 3, e 3 cores (R, G, B). Vértice 1: escolhe R. Vértice 2: vizinho de 1, por isso R está podado por viabilidade e escolhe G. Vértice 3: vizinho de 1 e de 2, por isso R e G estão podados e só resta B. Vértice 4: vizinho só de 3, por isso volta a R. Coloração: **1-R, 2-G, 3-B, 4-R**, e o triângulo mostra que 2 cores nunca chegariam: cada cor nova foi forçada por um vizinho já pintado, e cada poda tem a restrição violada escrita ao lado.
+
 ## Ramificação com poda: cortar por limite
 
 No branch and bound para otimização, cada nó tem um **limite**: uma estimativa otimista do melhor valor alcançável dali (para maximização, um teto). Se o teto não supera o melhor valor já conhecido, poda o ramo inteiro. Volta à [mochila da força bruta](/cadeiras/da/forca-bruta/) com capacidade 7, ordenando por razão valor por peso: D (1,6), A (1,5), B (1,33), C (1,25). Na raiz, enche fracionariamente: D inteiro (peso 5), A inteiro (peso 2, mochila cheia), teto $8 + 3 = 11$. Como D e A cabem mesmo, 11 é admissível e passa a melhor valor. No ramo que exclui D, o teto fracionário é A e B inteiros mais meia fração de C: $3 + 4 + 2{,}5 = 9{,}5$, abaixo de 11, por isso poda sem explorar. Resultado: **ótimo 11 provado visitando dois nós**, contra os 16 subconjuntos da enumeração.
@@ -22,3 +59,7 @@ No branch and bound para otimização, cada nó tem um **limite**: uma estimativ
 :::warning[Poda sem prova é adivinha]
 "Este ramo parecia mau" não poda nada. A poda por viabilidade exige mostrar a restrição violada; a poda por limite exige mostrar o cálculo do teto e compará-lo com o melhor conhecido. No teste, escreve os dois números lado a lado antes de riscar o ramo.
 :::
+
+## Para saber mais
+
+- Apontamentos de retrocesso e branch and bound com árvores de estados (U. Auckland): [Backtrack and branch and bound](https://www.cs.auckland.ac.nz/courses/compsci369s1c/lectures/GG-notes/CS369-Backtrack-BB.pdf).
