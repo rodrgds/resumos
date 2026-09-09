@@ -25,7 +25,9 @@ Mantém um diário de bordo (_logbook_): para cada experiência, regista o coman
 
 ## Avaliação
 
-Segundo a ficha de 2025/26, a avaliação é distribuída e sem exame final: um Teste conta 60 por cento e o Trabalho laboratorial 40 por cento, com a classificação final $CF = 0{,}6 \times T + 0{,}4 \times TL$. Na época normal, $T = 0{,}5 \times T1 + 0{,}5 \times T2$, há mínimo de 6 valores em cada teste, e o trabalho laboratorial faz-se em grupo nas aulas práticas, de frequência obrigatória. As regras mudam de ano para ano, por isso confirma sempre a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle.
+Segundo a ficha de 2025/26, a avaliação é distribuída e sem exame final: um Teste conta 60 por cento e o Trabalho laboratorial 40 por cento, com a classificação final $CF = 0{,}6 \times T + 0{,}4 \times TL$.[^avaliacao] Na época normal, $T = 0{,}5 \times T1 + 0{,}5 \times T2$, há mínimo de 6 valores em cada teste, e o trabalho laboratorial faz-se em grupo nas aulas práticas, de frequência obrigatória. As regras mudam de ano para ano, por isso confirma sempre a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle.
+
+[^avaliacao]: Pesos, mínimos e fórmula da nota final segundo a ficha da unidade curricular de Fundamentos de Segurança Informática, ocorrência de 2025/26, consultada em setembro de 2026 e ligada na secção de fontes.
 
 ## Fontes e âmbito
 
