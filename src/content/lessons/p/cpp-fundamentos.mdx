@@ -5,6 +5,12 @@ section: conteudo
 order: 1
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import divisao from '../../p/divisao.typ?raw';
+
 Em [Primeiros programas](/cadeiras/fp/primeiros-programas/) escrevias `x = 5` e Python decidia sozinho que `x` era um inteiro. Em C++ tens de dizer qual é o tipo antes de usar a variável, e esse tipo nunca mais muda. Isto parece burocracia, mas é uma troca: o compilador verifica os tipos antes de o programa correr e apanha uma classe inteira de erros ainda no editor.
 
 ## Declarar variáveis com tipos fixos
@@ -50,16 +56,57 @@ O prefixo `std::` indica que `cout` e `cin` pertencem à biblioteca padrão. Vai
 
 C++ é uma linguagem **compilada**: escreves o código num ficheiro, o compilador traduz esse ficheiro para código máquina e só depois executas o resultado. Guarda o programa acima em `dobro.cpp` e corre estes dois comandos no terminal, na pasta do ficheiro:
 
+<Tabs id="compilar-gpp" labels={['Linux', 'macOS', 'Windows (WSL)']}>
+  <div slot="panel-0">
+
 ```bash
 g++ -Wall -std=c++17 -o dobro dobro.cpp
 ./dobro
 ```
+
+O `g++` já vem instalado na maioria das distribuições Linux; se faltar, instala o pacote `g++` do teu gestor de pacotes.
+
+  </div>
+  <div slot="panel-1">
+
+```bash
+g++ -Wall -std=c++17 -o dobro dobro.cpp
+./dobro
+```
+
+No macOS, o comando `g++` é um atalho para o Clang, que aceita as mesmas opções para estes programas. Se o terminal responder `command not found`, instala as ferramentas com `xcode-select --install`.
+
+  </div>
+  <div slot="panel-2">
+
+```bash
+g++ -Wall -std=c++17 -o dobro dobro.cpp
+./dobro
+```
+
+No Windows, corre estes comandos dentro do WSL (Windows Subsystem for Linux) com uma distribuição Ubuntu, onde o `g++` se instala com `sudo apt install g++`. Evita compilar em pastas sincronizadas com o OneDrive, que costumam causar erros estranhos de escrita.
+
+  </div>
+</Tabs>
 
 O primeiro comando compila: `-o dobro` escolhe o nome do executável, `-std=c++17` fixa a versão da linguagem e `-Wall` liga os avisos do compilador, que apanham erros subtis antes de correres o programa. Se a compilação não escrever nada, correu bem. O segundo comando executa o programa. Quando houver um erro, o `g++` indica o ficheiro, a linha e a razão; lê essa mensagem primeiro e só depois olhes para o código.
 
 :::tip[Compila com avisos desde o primeiro dia]
 O `-Wall` não é opcional para quem está a aprender. Muitos programas que "compilam bem" sem avisos escondem conversões de tipos ou variáveis não usadas que depois aparecem como resultados errados. Habituar-te a compilar sem avisos poupa horas de depuração.
 :::
+
+## Projetos com CMake e CLion
+
+Um ficheiro compila-se com um comando `g++`, mas um projeto com vários ficheiros precisa de uma receita de compilação. O **CMake** descreve essa receita num ficheiro `CMakeLists.txt`, e o **CLion** é o ambiente da cadeira que corre o CMake por ti. Um projeto mínimo com um só programa precisa disto:
+
+```text
+cmake_minimum_required(VERSION 3.16)
+project(notas)
+set(CMAKE_CXX_STANDARD 17)
+add_executable(notas main.cpp)
+```
+
+Cada linha diz uma coisa: versão mínima do CMake, nome do projeto, versão da linguagem e que executável construir a partir de que ficheiros. No CLion, crias um projeto novo, colas o teu código no `main.cpp` e carregas no martelo para compilar e no triângulo para correr: o ambiente escreve estes comandos por ti, mas é o mesmo `g++` por baixo. Quando o CLion se queixar de que não encontra o compilador, verifica nas definições o caminho da toolchain; no WSL, o CLion precisa da toolchain remota apontada à distribuição Ubuntu.
 
 ## Referências contra cópias
 
@@ -83,6 +130,8 @@ int main() {
 Isto escreve `5` e depois `0`. A primeira chamada alterou apenas a cópia, por isso `a` continuou `5`. A segunda chamada alterou a própria variável `a` através da referência. Esta distinção não existia em [Funções](/cadeiras/fp/funcoes/): em Python, passar uma lista já permitia alterá-la, e passar um número nunca permitia. Em C++, és tu que escolhes, parâmetro a parâmetro.
 
 Usa referências também para evitar copiar valores grandes sem necessidade, como vais ver nas [strings](#strings) e nos vetores da [STL](/cadeiras/p/templates-stl/).
+
+<YouTube id="IzoFn3dfsPA" title="REFERENCES in C++, The Cherno" />
 
 ## const: prometer que não muda
 
@@ -124,42 +173,68 @@ int main() {
 }
 ```
 
-Se escreveres `Ana` na entrada, isto mostra `Como te chamas? Ola, Ana! O dobro do tamanho e 6`. O método `size()` devolve o número de caracteres, tal como `len` em Python. Repara que `std::cin >> nome` lê apenas até ao primeiro espaço: `Ana Maria` ficaria só `Ana`. (Para ler uma linha inteira existe `std::getline`, que aparece nos exercícios de ficheiros.)
+Se escreveres `Ana` na entrada, isto mostra `Como te chamas? Ola, Ana! O dobro do tamanho e 6`. O método `size()` devolve o número de caracteres, tal como `len` em Python. Repara que `std::cin >> nome` lê apenas até ao primeiro espaço: `Ana Maria` ficaria só `Ana`. Para ler uma linha inteira usa `std::getline`, como na secção de ficheiros abaixo.
 
-## Exemplo completo: média de três notas
+## Ler e escrever ficheiros
 
-Vamos juntar declarações, leitura, uma função com referência constante e saída formatada. O programa lê três notas, calcula a média numa função e diz se o aluno passa (média maior ou igual a 10):
+Teclado e ecrã chegam para os primeiros exercícios, mas os projetos leem e escrevem ficheiros. As classes `ifstream` (ler) e `ofstream` (escrever) trabalham como `cin` e `cout`, com `>>` e `<<`; a diferença é que abres um ficheiro pelo nome e o fechas no fim:
 
 ```cpp
+#include <fstream>
 #include <iostream>
-
-double media(double a, double b, double c) {
-    return (a + b + c) / 3.0;
-}
+#include <string>
 
 int main() {
-    double n1, n2, n3;
-    std::cout << "Tres notas: ";
-    std::cin >> n1 >> n2 >> n3;
-    double m = media(n1, n2, n3);
-    std::cout << "Media: " << m << "\n";
-    if (m >= 10.0) {
-        std::cout << "Aprovado\n";
-    } else {
-        std::cout << "Reprovado\n";
+    std::ofstream saida("notas.txt");
+    saida << "Ana 15\nRui 12\n";
+    saida.close();
+    std::ifstream entrada("notas.txt");
+    std::string nome;
+    int nota;
+    while (entrada >> nome >> nota) {
+        std::cout << nome << ": " << nota << "\n";
     }
 }
 ```
 
-Se a entrada for `12 15 9`, isto escreve:
+Isto escreve o ficheiro `notas.txt` com duas linhas e depois lê-o de volta, mostrando `Ana: 15` e `Rui: 12`. O ciclo `while (entrada >> nome >> nota)` funciona porque ler de um fluxo devolve o próprio fluxo, que em condição é falso quando a leitura falha, ou seja, no fim do ficheiro. Fecha sempre a escrita com `close()` antes de leres o mesmo ficheiro, para garantir que tudo foi gravado. Para ler uma linha inteira com espaços, troca `entrada >> nome` por `std::getline(entrada, nome)` e trata a linha depois.
+
+## Exemplo completo: média de três notas
+
+Vamos juntar declarações, leitura, uma função com referência constante e saída formatada. O programa lê três notas, calcula a média numa função e diz se o aluno passa (média maior ou igual a 10). Corre-o com a entrada `12 15 9`:
+
+<CodePlayground
+  language="cpp"
+  title="Média de três notas"
+  input="12 15 9"
+  code={
+    '#include <iostream>\n\ndouble media(double a, double b, double c) {\n    return (a + b + c) / 3.0;\n}\n\nint main() {\n    double n1, n2, n3;\n    std::cout << "Tres notas: ";\n    std::cin >> n1 >> n2 >> n3;\n    double m = media(n1, n2, n3);\n    std::cout << "Media: " << m << "\\n";\n    if (m >= 10.0) {\n        std::cout << "Aprovado\\n";\n    } else {\n        std::cout << "Reprovado\\n";\n    }\n}'
+  }
+/>
+
+Isto escreve:
 
 ```text
 Tres notas: Media: 12
 Aprovado
 ```
 
-Confere a conta: $(12 + 15 + 9) / 3 = 12$. O `3.0` em vez de `3` garante a divisão real: com inteiros, C++ corta a parte decimal, e `36 / 3` até daria certo aqui, mas `35 / 3` daria `11` em vez de `11.67`. Sempre que quiseres resultado real, envolve pelo menos um operando real na divisão.
+Confere a conta: $(12 + 15 + 9) / 3 = 12$. O `3.0` em vez de `3` garante a divisão real, e a diferença entre os dois tipos de divisão resume-se assim:
+
+<Typst
+  source={divisao}
+  format="svg"
+  alt="Tabela com duas linhas: 7 / 2 é divisão inteira e dá 3; 7 / 2.0 é divisão real e dá 3.5."
+/>
+
+Com inteiros, C++ corta a parte decimal, e `36 / 3` até daria certo aqui, mas `35 / 3` daria `11` em vez de `11.67`. Sempre que quiseres resultado real, envolve pelo menos um operando real na divisão.
 
 :::warning[Os erros mais comuns do início]
 Esquecer o ponto e vírgula; esquecer o `#include` da biblioteca usada (`<string>` para strings); comparar strings com `==` funciona em C++ (ao contrário de arrays de C, que vais conhecer nos [apontadores](/cadeiras/p/apontadores-memoria/)); e declarar a variável sem tipo por hábito de Python. Quando o compilador reclamar, lê a primeira mensagem de erro e ignora as seguintes, que costumam ser consequências da primeira.
 :::
+
+## Para continuar
+
+<YouTube id="vLnPwxZdW4Y" title="C++ Tutorial for Beginners, freeCodeCamp" />
+
+O curso acima revê estes fundamentos em vídeo. Para veres o que o compilador faz ao teu código, cola um exemplo no [Compiler Explorer](https://godbolt.org/) e observa o assembly gerado com `-O2` contra `-O0`.
