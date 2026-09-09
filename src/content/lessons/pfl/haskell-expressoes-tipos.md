@@ -1,0 +1,65 @@
+---
+title: Expressões, avaliação e tipos em Haskell
+description: Avaliar expressões por substituição, definir funções por equações e ler tipos predefinidos.
+section: conteudo
+order: 1
+---
+
+Em Haskell não dizes ao computador que passos executar. Escreves **equações** que dizem o que cada coisa é, e a avaliação calcula o valor por substituição, como simplificar uma expressão matemática no papel. Não há variáveis que mudam nem instruções por ordem: há expressões com valor e funções que as transformam.
+
+## Avaliar é substituir
+
+Toma esta definição:
+
+```haskell
+dobra :: Int -> Int
+dobra x = x * 2
+```
+
+A primeira linha é a **assinatura de tipo**: `dobra` recebe um `Int` e devolve um `Int`. A segunda é a equação. Avaliar `dobra (3 + 1)` é substituir o argumento na equação: `dobra (3 + 1)` dá `(3 + 1) * 2`, que dá `4 * 2`, que dá `8`. Este modelo mental, a **avaliação por substituição**, chega para prever o resultado de quase tudo nestas páginas. Guarda-o.
+
+## Funções por equações
+
+Uma função define-se por casos, um por linha, cada um com o seu padrão de argumento:
+
+```haskell
+somaQuadrados :: [Int] -> Int
+somaQuadrados [] = 0
+somaQuadrados (x:xs) = x^2 + somaQuadrados xs
+```
+
+`[Int]` é lista de inteiros. O padrão `[]` apanha a lista vazia (caso base). O padrão `(x:xs)` apanha uma lista não vazia e chama `x` à cabeça e `xs` à cauda. Segue `somaQuadrados [1,2,3]` por substituição: dá `1^2 + somaQuadrados [2,3]`, que dá `1 + (2^2 + somaQuadrados [3])`, que dá `1 + (4 + (3^2 + somaQuadrados []))`, que dá `1 + (4 + (9 + 0))`, que dá `14`. Repara que cada passo escolhe a equação cujo padrão encaixa, de cima para baixo. A ordem das equações importa: o caso base vem primeiro.
+
+Isto é a [recursão](/cadeiras/fp/recursao/) que já conheces de Python, mas sem `if` nem `return`: a decomposição vive nos padrões. Se te perderes, escreve a cadeia de substituições no papel até ao caso base.
+
+## Guardas para condições
+
+Quando a escolha depende de uma condição em vez da forma do argumento, usa **guardas**, barras verticais lidas de cima para baixo até à primeira verdadeira:
+
+```haskell
+sinal :: Int -> String
+sinal n | n > 0     = "positivo"
+        | n < 0     = "negativo"
+        | otherwise = "zero"
+```
+
+`otherwise` é só o valor `True`, por isso apanha tudo o que chega ali. `sinal 5` dá `"positivo"`, `sinal 0` dá `"zero"`. Usa padrões para a forma dos dados e guardas para condições sobre os valores; misturar os dois na mesma função é normal.
+
+## Tipos predefinidos
+
+Os tipos que vais usar já na primeira semana:
+
+| Tipo | Valores | Exemplo |
+| ---- | ------- | ------- |
+| `Int` | inteiros de precisão fixa | `42`, `-7` |
+| `Integer` | inteiros sem limite | `10^100` |
+| `Double` | reais em vírgula flutuante | `3.14` |
+| `Bool` | lógicos | `True`, `False` |
+| `Char` | carateres | `'a'` |
+| `String` | listas de carateres | `"ola"` |
+
+`String` é só um sinónimo de `[Char]`, por isso `"ola"` é a lista `'o':'l':'a':[]` e todas as funções de listas funcionam em strings. Já `Int` contra `Double` é uma distinção a sério: `3 / 2` dá `1.5` em `Double`, mas com `Int` precisas de `div 3 2`, que dá `1`. Quando o GHC se queixar de tipos numa divisão, esta é quase sempre a causa.
+
+:::tip[Como ler um erro de tipo]
+Abre o GHCi com `ghci` e confirma cada definição com `:t`, que mostra o tipo inferido. Quando o compilador reclamar, lê a primeira linha do erro: ela diz o tipo esperado contra o tipo recebido. O resto é o caminho até lá, e raramente precisas dele já.
+:::
