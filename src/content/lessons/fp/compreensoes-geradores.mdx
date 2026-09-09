@@ -5,6 +5,11 @@ section: conteudo
 order: 9
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import consumo from '../../fp/gerador-consumo.typ?raw';
+
 Um **iterável** é um objeto que representa uma sequência de dados e que pode ser percorrido, como uma lista ou uma string. Um **iterador** é o mecanismo que produz esses dados um de cada vez, andando só para a frente. Esta distinção permite escrever transformações de sequências de forma compacta (compreensões) e produzir sequências sem as guardar todas em memória (geradores).
 
 ## Compreensões de listas
@@ -41,6 +46,14 @@ print(soma)
 ```
 
 Isto escreve `332833500` (a soma dos quadrados de $0$ a $999$), sem nunca guardar os mil quadrados numa lista. A expressão entre parênteses é o gerador; o `sum` consome-o valor a valor.
+
+O esquema mostra o consumo único: a primeira travessia entrega valores, a segunda já vem vazia.
+
+<Typst
+  source={consumo}
+  format="svg"
+  alt="Diagrama do consumo único de um gerador: a primeira travessia entrega os valores, a segunda vem vazia."
+/>
 
 Uma função com `yield` define um gerador próprio: em vez de devolver um valor e terminar, **produz** um valor de cada vez que é pedida, retomando onde parou na vez seguinte.
 
@@ -81,6 +94,39 @@ print(quicksort([3, 6, 1, 5, 2, 4]))
 ```
 
 Isto escreve `[1, 2, 3, 4, 5, 6]`. Segue o primeiro nível: o pivô é `3`; `menores` é `[1, 2]`; `maiores` é `[6, 5, 4]`; o resultado é a ordenação de `[1, 2]`, seguida de `[3]`, seguida da ordenação de `[6, 5, 4]`. Cada chamada recursiva repete o processo com uma lista mais curta, por isso a recursão termina. Nota o custo: cada nível constrói listas novas, por isso esta versão elegante usa mais memória do que uma implementação que ordene no sítio.
+
+Corre com a lista do exemplo e confirma a ordenação.
+
+<CodePlayground
+  language="python"
+  title="Quicksort com compreensões"
+  code={
+    'def quicksort(valores):\n    if len(valores) <= 1:\n        return valores\n    pivo = valores[0]\n    menores = [x for x in valores[1:] if x <= pivo]\n    maiores = [x for x in valores[1:] if x > pivo]\n    return quicksort(menores) + [pivo] + quicksort(maiores)\n\nprint(quicksort([3, 6, 1, 5, 2, 4]))'
+  }
+/>
+
+A mesma ideia com lista materializada e com gerador, para veres a diferença de memória:
+
+<Tabs id="quicksort-memoria" labels={['Lista', 'Gerador']}>
+  <div slot="panel-0">
+
+```python
+menores = [x for x in valores[1:] if x <= pivo]
+```
+
+Guarda todos os menores de uma vez.
+
+  </div>
+  <div slot="panel-1">
+
+```python
+menores = (x for x in valores[1:] if x <= pivo)
+```
+
+Produz um de cada vez, sem guardar a lista.
+
+  </div>
+</Tabs>
 
 :::warning[Os erros mais comuns aqui]
 Confundir `[x for x in ...]` (lista, guarda tudo) com `(x for x in ...)` (gerador, produz sob pedido); tentar percorrer duas vezes o mesmo gerador (ele gasta-se, à segunda já está vazio); e esquecer o caso base nas funções recursivas com compreensões. Quando um gerador "vem vazio", verifica se já foi consumido antes.
