@@ -1,0 +1,15 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 9pt)
+#canvas({
+  draw.set-style(stroke: 1pt + rgb("8c2d3b"))
+  draw.rect((0, 0), (0.9, 1.4))
+  draw.rect((0.9, 0), (0.9 + 7.2, 1.4))
+  draw.rect((8.1, 0), (8.1 + 20.7, 1.4))
+  draw.content((0.45, 0.7), [$s$])
+  draw.content((4.5, 0.7), [expoente (8)])
+  draw.content((18.45, 0.7), [mantissa (23)])
+  draw.content((0.45, -0.5), [`1`])
+  draw.content((4.5, -0.5), [`10000010`])
+  draw.content((18.45, -0.5), [`00110110000000000000000`])
+})
