@@ -5,13 +5,24 @@ section: conteudo
 order: 5
 ---
 
+import Typst from '../../../components/Typst.astro';
+import entrelacamento from '../../cpd/entrelecamento.typ?raw';
+
 Duas threads a escrever na mesma variável sem coordenação produzem resultados errados de forma intermitente, os piores erros de depurar. Esta página mostra o mecanismo e a correção.
 
 ## A condição de corrida
 
 Uma **condição de corrida** acontece quando o resultado depende da ordem dos acessos entrelaçados das threads. Incrementar um contador parece atómico, mas são três passos, ler, somar 1, escrever. Se duas threads lerem o mesmo valor antes de qualquer uma escrever, um dos incrementos perde-se.
 
-A zona de código que só pode executar numa thread de cada vez chama-se **secção crítica**. Protegê-la é o trabalho da sincronização. Em OpenMP, `#pragma omp critical` garante exclusão mútua, e `#pragma omp atomic` faz o mesmo para operações simples com menos custo.
+A zona de código que só pode executar numa thread de cada vez chama-se **secção crítica**. Protegê-la é o trabalho da sincronização. Em OpenMP, `#pragma omp critical` garante exclusão mútua, e `#pragma omp atomic` faz o mesmo para operações simples com menos custo[^atomic-custo].
+
+O desenho mostra um incremento perdido em câmara lenta. As duas threads leem 0 antes de qualquer escrita, por isso ambas escrevem 1 e o contador termina a 1 em vez de 2.
+
+<Typst
+  source={entrelacamento}
+  format="svg"
+  alt="Duas threads leem o contador a 0, escrevem 1 cada uma, e o total fica a 1 em vez de 2."
+/>
 
 ## Exemplo completo
 
@@ -40,4 +51,7 @@ Agora imprime sempre 400000. O preço é a serialização dos incrementos, que a
 
 :::warning[O erro mais comum]
 Testar uma vez, ver o valor certo e concluir que está correto. Sem proteção, o valor certo sai muitas vezes por sorte do escalonamento. Corre em ciclo e com várias threads, porque a corrida só aparece quando os acessos colidem, e em teste o enunciado conta com essa colisão.
-:::
+
+[^atomic-custo]:
+    O `atomic` traduz-se numa só instrução de máquina com trava de barramento para operações simples, enquanto o `critical` usa um trinco com espera e gestão do sistema de execução. Para um incremento a diferença é grande, para blocos maiores o `critical` é a ferramenta certa.
+    :::
