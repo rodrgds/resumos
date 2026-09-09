@@ -30,6 +30,10 @@ menu
 const trigger = document.querySelector<HTMLElement>('[data-open-ai]')!;
 let cleanup: (() => void) | undefined;
 menu.addEventListener('toggle', (event) => {
+  trigger.setAttribute(
+    'aria-expanded',
+    String((event as ToggleEvent).newState === 'open'),
+  );
   cleanup?.();
   if ((event as ToggleEvent).newState !== 'open') {
     delete menu.dataset.positioned;

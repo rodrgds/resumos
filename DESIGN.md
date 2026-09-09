@@ -110,7 +110,7 @@ Keyboard settings support remapping, disabling single-key shortcuts and optional
 
 Course navigation groups published lessons by section and marks the current page with an accent fill. The page index links to second- and third-level headings. Previous and next links continue the reading sequence below the article.
 
-Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links.
+Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links. Collapsible explanations use a 20px Heroicons chevron with a 12px gap; it points right when closed and down when open. The Chat and mobile page-index chevrons point up while open.
 
 Figures require descriptive alt text and offer an original-image link beside the caption. Authors can preserve, dim or invert images in dark mode; print keeps the original image. Tabs use an accent underline for the selected option, scroll horizontally when needed and support arrow, Home and End keys.
 
