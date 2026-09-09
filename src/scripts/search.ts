@@ -49,7 +49,7 @@ export function setupSearch() {
           )
           .slice(0, 15);
         status.textContent = entries.length
-          ? `${entries.length} resultados`
+          ? `${entries.length} ${entries.length === 1 ? 'resultado' : 'resultados'}`
           : 'Não encontrámos resultados. Tenta outra palavra.';
         for (const entry of entries) {
           const item = document.createElement('li');
