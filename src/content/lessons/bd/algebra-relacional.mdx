@@ -1,0 +1,76 @@
+---
+title: Álgebra relacional
+description: Seleção, projeção, junções e conjuntos para formalizar perguntas.
+section: conteudo
+order: 5
+---
+
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import pipeline from '../../bd/pipeline-algebra.typ?raw';
+
+Antes do `SELECT` houve a matemática. A **álgebra relacional** é a linguagem formal de perguntas sobre tabelas: cada operador recebe relações e devolve uma relação, por isso os operadores **encadeiam-se** como funções. Percebê-la é perceber o que cada cláusula do SQL faz, e a cadeira pede-a explicitamente.
+
+## Os operadores essenciais
+
+Sobre uma tabela `Produto(id, nome, preco, stock)`:
+
+- **Seleção** $\sigma_{cond}(R)$: filtra linhas. $\sigma_{preco > 30}(Produto)$ devolve Teclado e Monitor.
+- **Projeção** $\pi_{cols}(R)$: escolhe colunas. $\pi_{nome, preco}(Produto)$ devolve os três nomes com preços.
+- **Produto cartesiano** $R \times S$: combina cada linha de uma com cada linha da outra.
+- **Junção natural** $R \bowtie S$: combina pelas colunas de nomes iguais, fundindo-as. É o produto cartesiano seguido da igualdade nas colunas comuns, sem as colunas duplicadas.
+- **Junção com condição** $R \bowtie_{cond} S$: combina pelas linhas que satisfazem a condição, mesmo quando as colunas têm nomes diferentes. Com o **operador de renomeação** $\rho$ mudas nomes de colunas para criar colunas comuns quando precisares da junção natural pura.
+- **União** $R \cup S$, **interseção** $R \cap S$ e **diferença** $R - S$: operações de conjuntos, que exigem tabelas compatíveis (mesmas colunas).
+
+A ordem clássica é filtrar antes de juntar: $\sigma$ reduz as linhas, $\bowtie$ combina, $\pi$ corta as colunas no fim.
+
+Cada operador e a sua cláusula SQL:
+
+<Tabs id="algebra-operadores" labels={['Seleção', 'Projeção', 'Junção', 'Conjuntos']}>
+  <div slot="panel-0">
+
+$\sigma_{cond}(R)$ filtra linhas e é o `WHERE`: $\sigma_{preco > 30}(Produto)$ vira `SELECT * FROM Produto WHERE preco > 30`.
+
+  </div>
+  <div slot="panel-1">
+
+$\pi_{cols}(R)$ escolhe colunas e é a lista do `SELECT`: $\pi_{nome, preco}(Produto)$ vira `SELECT nome, preco FROM Produto`.
+
+  </div>
+  <div slot="panel-2">
+
+$R \bowtie_{cond} S$ é o `JOIN ... ON`: a condição `ON` é a condição da junção. A junção natural pura ($\bowtie$ sem condição) só existe quando há colunas com o mesmo nome.
+
+  </div>
+  <div slot="panel-3">
+
+União, interseção e diferença pedem tabelas compatíveis: em SQL são `UNION`, `INTERSECT` e `EXCEPT`. A diferença $R - S$ ("os clientes sem encomendas") vira `EXCEPT`.
+
+  </div>
+</Tabs>
+
+## Uma pergunta completa
+
+"Nome dos clientes com encomendas em 2026-01-05." Primeiro filtra as encomendas, junta com os clientes e projeta o nome:
+
+$$\pi_{nome}(\sigma_{data = '2026-01-05'}(Encomenda) \bowtie_{idCliente = id} Cliente)$$
+
+O encadeamento em figura, da tabela à resposta:
+
+<Typst
+  source={pipeline}
+  format="svg"
+  alt="Encadeamento de operadores: Encomenda passa pela seleção da data, pela junção com Cliente e pela projeção do nome, e devolve Ana."
+/>
+
+Passo a passo com os dados da loja: a seleção deixa só a encomenda 100 (data 2026-01-05, cliente 1). A junção com `Cliente` na condição `idCliente = id` acrescenta a linha da Ana. A projeção final devolve uma tabela de uma coluna e uma linha: `Ana`. Cada operador intermédio é uma tabela válida, e é por isso que podes ler a expressão de dentro para fora a verificar cada etapa.
+
+:::tip[Junção natural contra junção com condição]
+Repara que as colunas se chamam `idCliente` num lado e `id` no outro: não há coluna comum, por isso a junção natural pura não se aplica aqui e a condição é explícita.[^join-condicao] Quando o enunciado disser só $\bowtie$, confirma primeiro os nomes das colunas; se forem diferentes, escreve a condição ou renomeia com $\rho$.
+:::
+
+:::tip[Como traduzir para SQL]
+Cada operador tem a sua cláusula: $\sigma$ é o `WHERE`, $\pi$ é a lista do `SELECT`, $\bowtie$ é o `JOIN ... ON` ou `USING`, e $-$ é `EXCEPT`. Se souberes escrever a pergunta em álgebra, a página de [consultas SQL](sql-consultas/) é transcrição quase direta.
+:::
+
+[^join-condicao]: A junção natural combina linhas pelas colunas com nomes iguais. Com `idCliente` e `id`, a junção do exemplo precisa da condição explícita `idCliente = id`; é uma junção com condição (teta-junção), não uma junção natural pura.
