@@ -5,6 +5,12 @@ section: conteudo
 order: 4
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import arvoresAmbiguidade from './arvores-ambiguidade.typ?raw';
+
 Uma **gramática livre de contexto** (CFG, de _context-free grammar_) gera palavras por substituição: cada regra troca um símbolo não terminal por uma sequência, independentemente do que está à volta (daí "livre de contexto"). São o formalismo por trás da sintaxe das linguagens de programação. Esta página mostra derivações, árvores, ambiguidade e a forma normal de Chomsky.
 
 ## Definição e derivações
@@ -28,7 +34,15 @@ Uma gramática é **ambígua** se alguma palavra tem duas árvores sintáticas d
 - Árvore 1: a raiz soma $(a + a)$ com $a$, ou seja $(a+a) \times a$. Lê o $\times$ no topo.
 - Árvore 2: a raiz multiplica $a$ por $(a \times a)$ no ramo direito, ou seja $a + (a \times a)$. Lê o $+$ no topo.
 
-As duas árvores dão valores diferentes ($2a^2$ contra $a + a^2$ com $a$ numérico), por isso um compilador não pode aceitar esta gramática: a mesma expressão teria dois significados. A cura é estratificar por precedência, com uma variável por nível:
+As duas árvores dão valores diferentes ($2a^2$ contra $a + a^2$ com $a$ numérico), por isso um compilador não pode aceitar esta gramática: a mesma expressão teria dois significados. Vê as duas lado a lado e confirma que as folhas, lidas da esquerda para a direita, dão $a + a \times a$ em ambas.
+
+<Typst
+  source={arvoresAmbiguidade}
+  format="svg"
+  alt="Duas árvores sintáticas para a mais a vezes a. Na árvore 1, a raiz é vezes com o filho esquerdo mais e o filho direito a. Na árvore 2, a raiz é mais com o filho esquerdo a e o filho direito vezes."
+/>
+
+A cura é estratificar por precedência, com uma variável por nível:
 
 $$E \to E + T \mid T, \quad T \to T \times F \mid F, \quad F \to (E) \mid a.$$
 
@@ -45,6 +59,44 @@ Uma CFG está na **forma normal de Chomsky** (CNF) se todas as regras têm uma d
 Para que serve? Em CNF, cada derivação de uma palavra $w$ de comprimento $n \ge 1$ usa exatamente $2n - 1$ passos: $n - 1$ regras binárias para ramificar em $n$ variáveis e $n$ regras terminais. Este número fixo permite o algoritmo CYK, que testa pertença $w \in L(G)$ por programação dinâmica sobre os comprimentos crescentes. Não precisas de decorar o CYK célula a célula, mas percebe a ideia: a CNF torna o custo da análise sintática previsível, e é por isso que os _parsers_ reais normalizam as gramáticas.
 
 Exemplo de conversão: a regra $S \to 0S1$ viola a CNF (mistura terminais com variável e tem três símbolos). Introduz $A \to 0$, $B \to 1$ e parte em duas regras com variável fresca $C$: $S \to AC$, $C \to SB$, $S \to AB$, $A \to 0$, $B \to 1$, $S \to \varepsilon$.
+
+Para confirmar que a conversão preserva a linguagem, deriva uma palavra curta na gramática nova e compara com a original: $S \Rightarrow AC \Rightarrow 0C \Rightarrow 0SB \Rightarrow 0ABB \Rightarrow 00BB \Rightarrow 001B \Rightarrow 0011$. Chega a $0011$, como a original, usando só regras em CNF.
+
+## CYK numa tabela pequena
+
+O algoritmo CYK preenche uma tabela por diagonais: primeiro cada símbolo, depois pares, depois trios. Usa a gramática clássica em CNF com regras $S \to AB \mid BA$, $A \to BA \mid a$, $B \to CC \mid b$, $C \to AB \mid a$. Compara o que acontece com `bab` (aceite) e `abb` (rejeitada).
+
+<Tabs id="cyk-tabela" labels={['Aceita: bab', 'Rejeita: abb']}>
+  <div slot="panel-0">
+
+Símbolos: a primeira casa tem `{B}`, a segunda `{A,C}` e a terceira `{B}`. Pares: `ba` dá `{S,A}` (regra $S \to BA$ e $A \to BA$) e `ab` dá `{S,C}` (regras $S \to AB$ e $C \to AB$). Trio `bab`: ou partes em `b` mais `ab` (`{B}` com `{S,C}`, sem regra), ou em `ba` mais `b` (`{S,A}` com `{B}`, com $S \to AB$ e $C \to AB$). Resultado `{S,C}`, que contém $S$: aceite.
+
+  </div>
+  <div slot="panel-1">
+
+Símbolos: `{A,C}`, `{B}`, `{B}`. Pares: `ab` dá `{S,C}` e `bb` dá vazio (nenhuma regra tem $BB$ do lado direito). Trio `abb`: ou `a` mais `bb` (`{A,C}` com vazio), ou `ab` mais `b` (`{S,C}` com `{B}`, sem regra $SB$ nem $CB$). Resultado vazio: rejeitada. Confirma por derivação: tenta gerar `abb` a partir de $S$ e vê que nenhuma escolha de regras produz exatamente essa palavra.
+
+  </div>
+</Tabs>
+
+Corre o algoritmo e confirma os dois veredictos.
+
+<CodePlayground
+  language="python"
+  title="CYK mínimo"
+  code={
+    'binarias = {("A", "B"): {"S", "C"}, ("B", "A"): {"S", "A"}, ("C", "C"): {"B"}}\nterminais = {"a": {"A", "C"}, "b": {"B"}}\n\ndef cyk(w):\n    n = len(w)\n    t = [[set() for _ in range(n)] for _ in range(n)]\n    for i, s in enumerate(w):\n        t[i][i] = set(terminais.get(s, ()))\n    for comp in range(2, n + 1):\n        for i in range(n - comp + 1):\n            j = i + comp - 1\n            for k in range(i, j):\n                for a in t[i][k]:\n                    for b in t[k + 1][j]:\n                        t[i][j] |= binarias.get((a, b), set())\n    return t\n\nfor w in ["bab", "abb"]:\n    t = cyk(w)\n    print(w, "aceite" if "S" in t[0][len(w) - 1] else "rejeitada")'
+  }
+/>
+
+## Para saber mais
+
+O lema da repetição também existe para linguagens livres de contexto, com duas partes repetíveis em vez de uma. Fica fora do programa desta cadeira, mas se quiseres espreitar a ideia:
+
+<YouTube
+  id="IpgZB4elzX4"
+  title="Linguagens não livres de contexto e o lema da repetição"
+/>
 
 ## Para levar para a próxima página
 

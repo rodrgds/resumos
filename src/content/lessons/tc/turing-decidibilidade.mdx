@@ -5,6 +5,12 @@ section: conteudo
 order: 6
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import fitaRiscar from './fita-riscar.typ?raw';
+
 Uma **máquina de Turing** (TM) é um autómato finito com uma fita infinita onde pode ler, escrever e andar para trás e para a frente. É o modelo geral de computação: tudo o que um computador faz, uma TM faz. E, surpreendentemente, há problemas que nem ela resolve. Esta página apresenta o modelo, distingue decidível de reconhecível e prova que o problema da paragem é indecidível.
 
 ## O modelo: fita, cabeça, estados
@@ -24,12 +30,61 @@ de riscar todos os 0 (ordem trocada) ou se sobrar um 0 sem um 1.
 
 A diferença para o PDA: a cabeça volta atrás e relê, por isso conta duas vezes sem pilha. A fita é memória ilimitada com acesso arbitrário.
 
+## A tabela de transições
+
+A descrição acima vira uma tabela estado/símbolo. Para a TM do exemplo, com estados $q_0$ (procura um $0$ por riscar), $q_1$ (procura um $1$ por riscar) e $q_2$ (volta à esquerda), mais aceitação e rejeição:
+
+```text
+q0: lê 0 -> escreve X, vai D, fica q1    (risca o 0 mais à esquerda)
+q0: lê X -> mantém X, vai D, fica q0     (salta riscados)
+q0: lê vazio -> aceita                    (já não há nada por riscar)
+q0: lê 1 -> rejeita                       (um 1 onde devia haver 0)
+q1: lê 0 ou X -> mantém, vai D, fica q1  (salta até aos uns)
+q1: lê 1 -> escreve X, vai E, fica q2    (risca o 1 mais à esquerda)
+q1: lê vazio -> rejeita                   (faltou um 1)
+q2: lê 0, 1 ou X -> mantém, vai E, fica q2 (volta atrás)
+q2: lê X após voltar -> mantém, vai D, fica q0 (nova ronda)
+```
+
+Cada linha é total nos casos alcançáveis: de $q_0$ só se chega a símbolos $0$, $X$, $1$ ou vazio, e cada um tem destino. O desenho mostra a primeira riscadela em $0011$: o $0$ inicial vira $X$ e o resto fica igual.
+
+<Typst
+  source={fitaRiscar}
+  format="svg"
+  alt="Fita com 0011 antes e com X011 depois de riscar o primeiro zero."
+/>
+
+A mesma ronda em código, com a fita trocada por uma lista e a ordem verificada no fim de cada ronda:
+
+<CodePlayground
+  language="python"
+  title="Riscar zeros e uns"
+  code={
+    'def decide(w):\n    fita = list(w)\n    while "0" in fita or "1" in fita:\n        if "0" in fita:\n            fita[fita.index("0")] = "X"\n            if "1" in fita:\n                fita[fita.index("1")] = "X"\n            else:\n                return False\n        else:\n            return False\n        resto = [s for s in fita if s in "01"]\n        if resto != sorted(resto):\n            return False\n    return True\n\nfor w in ["0011", "010", ""]:\n    print(w or "epsilon", "aceite" if decide(w) else "rejeitada")'
+  }
+/>
+
+O programa imprime `aceite`, `rejeitada` e `aceite`: `0011` risca aos pares por ordem, `010` falha na verificação de ordem (o `0` aparece depois do `1`), e a palavra vazia não entra no ciclo.
+
 ## Decidível contra reconhecível
 
 - $L$ é **reconhecível** (recursivamente enumerável) se existe uma TM que aceita todas as palavras de $L$ e nunca aceita palavras fora (mas pode correr para sempre nas de fora).
 - $L$ é **decidível** se existe uma TM que **para sempre**, aceitando as palavras de $L$ e rejeitando as de fora. A TM é então um **decisor**.
 
 Toda a linguagem decidível é reconhecível, mas o contrário falha. Intuição: reconhecer é "dizer sim quando sim"; decidir é "responder sempre". Para linguagens regulares e livres de contexto, pertença é decidível (simulação e CYK). O salto da cadeira é que isto nem sempre é possível.
+
+<Tabs id="decidivel-reconhecivel" labels={['Decidível: exemplo', 'Reconhecível: exemplo']}>
+  <div slot="panel-0">
+
+Pertença num DFA é decidível: simula a palavra e responde sempre, como o simulador da página sobre [autómatos finitos](automatos-finitos/). O algoritmo para em no máximo $|w|$ passos, com sim ou não.
+
+  </div>
+  <div slot="panel-1">
+
+O problema da paragem é reconhecível mas não decidível: simular $M$ em $w$ e aceitar se parar aceita exatamente os casos sim, mas corre para sempre nos casos não. A prova abaixo mostra que nenhum decisor faz melhor.
+
+  </div>
+</Tabs>
 
 ## O problema da paragem é indecidível
 
@@ -47,6 +102,24 @@ Repara que a prova não usa nada sobre como $H$ funciona por dentro, só o seu c
 :::details[Reconhecível mas não decidível: o próprio HALT]
 $HALT$ é reconhecível: uma TM que simula $M$ em $w$ e aceita se a simulação parar aceita exatamente os pares onde $M$ para. O que falta é parar nos pares onde $M$ não para, e a prova acima mostra que nenhuma TM consegue isso sempre. Por isso $HALT$ separa as duas classes.
 :::
+
+## Para saber mais
+
+Duas introduções em vídeo (em inglês) e simuladores para experimentar:
+
+<YouTube
+  id="dNRDvLACg5Q"
+  title="Máquinas de Turing explicadas, Computerphile"
+/>
+
+<YouTube
+  id="macM_MtS_w4"
+  title="Turing e o problema da paragem, Computerphile"
+/>
+
+- [Entrada sobre máquinas de Turing](https://plato.stanford.edu/entries/turing-machine/) na Stanford Encyclopedia, com definições e variantes.
+- [Entrada sobre computabilidade](https://plato.stanford.edu/entries/computability/) na Stanford Encyclopedia, com a tese de Church Turing.
+- [turingmachine.io](https://turingmachine.io/), simulador visual de máquinas de Turing no navegador, para correres pequenos programas.
 
 ## Para levar para a próxima página
 
