@@ -5,7 +5,16 @@ section: conteudo
 order: 10
 ---
 
-Uma **equação diferencial ordinária (EDO)** envolve uma função desconhecida $y(x)$ e as suas derivadas. A **ordem** é a da derivada mais alta. Resolver é encontrar as funções que satisfazem a equação, em geral uma família com constantes (**solução geral**); fixar as constantes com condições como $y(x_0) = y_0$ dá uma **solução particular**. A estratégia é classificar a equação e aplicar o método da família.
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import classificacao from './equacoes-classificacao.dot?raw';
+
+Uma **equação diferencial ordinária (EDO)** envolve uma função desconhecida $y(x)$ e as suas derivadas. A **ordem** é a da derivada mais alta. Resolver é encontrar as funções que satisfazem a equação, em geral uma família com constantes (**solução geral**); fixar as constantes com condições como $y(x_0) = y_0$ dá uma **solução particular**. A estratégia é classificar a equação e aplicar o método da família.[^classificar]
+
+<Dot
+  source={classificacao}
+  alt="Fluxograma de classificação de EDOs: se é de primeira ordem, testa separável, homogénea, linear e Bernoulli por essa ordem; se é de segunda ordem com coeficientes constantes, usa a equação característica."
+/>
 
 ## Variáveis separáveis
 
@@ -22,6 +31,16 @@ $$
 $$
 
 A condição $y(0) = 3$ dá $K = 3$, logo $y = 3e^{x^2}$. Confirma: $y' = 6xe^{x^2} = 2x(3e^{x^2}) = 2xy$. Certo. Perder a solução $y = 0$ ao dividir por $g(y)$ é o erro clássico: verifica sempre se os zeros de $g$ são soluções.
+
+Vê o método de Euler a aproximar esta solução: com passo $h$, cada iteração faz $y \gets y + h \cdot 2xy$. O valor exato em $x = 1$ é $3e \approx 8{,}1548$:
+
+<CodePlayground
+  language="javascript"
+  title="Euler para y' = 2xy com passo decrescente"
+  code={'function euler(h) {\n  let x = 0;\n  let y = 3;\n  while (x < 1 - 0.000000000001) {\n    y += h * 2 * x * y;\n    x += h;\n  }\n  return y;\n}\nfor (const h of [0.1, 0.01]) console.log(h, euler(h).toFixed(4));\nconsole.log((3 * Math.E).toFixed(4));'}
+/>
+
+O programa imprime `0.1 7.0039`, `0.01 8.0214` e `8.1548`: encolher o passo por dez recupera quase todo o erro. Euler é grosseiro mas honesto, cada passo segue a tangente e o erro acumula-se de forma previsível.
 
 ## Equações homogéneas de primeira ordem
 
@@ -77,7 +96,17 @@ Exemplo: $y'' + 7y' + 10y = 0$. A característica $r^2 + 7r + 10 = 0$ tem raíze
 
 Para a não homogénea $ay'' + by' + cy = f(x)$, a solução geral é $y = y_h + y_p$: a solução da homogénea mais uma solução particular. O **método dos coeficientes indeterminados** propõe $y_p$ com a forma de $f$ (polinómio, exponencial, seno ou cosseno) quando os coeficientes são constantes. Exemplo: $y'' - 3y' + 2y = e^{3x}$. Propõe $y_p = Ae^{3x}$: substituindo, $9A - 9A + 2A = 1$, logo $A = 1/2$ e $y_p = e^{3x}/2$. Se $f$ fosse solução da homogénea (ressonância), multiplicar-se-ia a proposta por $x$.
 
+Um exemplo ressonante completo: $y'' - 3y' + 2y = e^x$. A característica $r^2-3r+2 = 0$ tem raízes $r = 1$ e $r = 2$, por isso $e^x$ já é solução da homogénea e a proposta ingénua $Ae^x$ falharia (daria $0 = 1$). Multiplica por $x$: propõe $y_p = Axe^x$. Então $y_p' = Ae^x + Axe^x$ e $y_p'' = 2Ae^x + Axe^x$. Substituindo:
+
+$$
+(2A + Ax) - 3(A + Ax) + 2Ax = -A,
+$$
+
+porque os termos em $Ax$ cancelam: $A - 3A + 2A = 0$. Logo $-A = 1$, isto é $A = -1$, e $y_p = -xe^x$. A solução geral é $y = C_1 e^x + C_2 e^{2x} - xe^x$. Confirma o termo ressonante: com $y_p = -xe^x$, $y_p' = -e^x - xe^x$ e $y_p'' = -2e^x - xe^x$, donde $y_p'' - 3y_p' + 2y_p = (-2 + 3 - 2x + 2x)e^x = e^x$. Certo.
+
 Quando só se conhece uma solução da homogénea com coeficientes não constantes, a **redução de ordem** procura a segunda na forma $y_2 = v(x)y_1(x)$.
+
+[^classificar]: A taxonomia de EDOs e os métodos de cada família seguem o capítulo de equações diferenciais de _Análise Matemática 1, Conteúdo teórico e aplicações_ (Carlos A. Conceição António, AEFEUP, 2017), com os métodos de coeficientes indeterminados e redução de ordem de _Problemas de equações diferenciais ordinárias de Laplace_ (Luísa Madureira).
 
 ## Para onde ir
 
