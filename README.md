@@ -1,8 +1,8 @@
 # Resumos LEIC · FEUP
 
-Apontamentos de LEIC da FEUP, feitos em Astro. [Abrir o site](https://resumos-feup.pages.dev).
+Apontamentos de LEIC da FEUP, feitos em Astro. [Abrir o site](https://resumos.rgo.pt).
 
-A página inicial reúne as cadeiras de 2026/27 por ano e semestre. Ainda não há resumos das cadeiras reais. A [cadeira fictícia de exemplo](https://resumos-feup.pages.dev/exemplo/) mostra os formatos de conteúdo. A página de Núcleos liga ao NIAEFEUP, JuniFEUP, ACM FEUP, IEEE FEUP e NCGM.
+A página inicial reúne as cadeiras de 2026/27 por ano e semestre. Ainda não há resumos das cadeiras reais. A [cadeira fictícia de exemplo](https://resumos.rgo.pt/exemplo/) mostra os formatos de conteúdo. A página de Núcleos liga ao NIAEFEUP, JuniFEUP, ACM FEUP, IEEE FEUP e NCGM.
 
 Os links úteis incluem o TTS, a app Uni para Android e os Resumos SofiaViP.
 
@@ -67,11 +67,11 @@ O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](ht
 
 Os dados curriculares vêm do [plano oficial de 2026/27](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2026&pv_origem=CUR&pv_plano_id=31224&pv_tipo_cur_sigla=), consultado a 9 de setembro de 2026. CT I, II e III são grupos de opções. Projeto UP substitui o nome antigo Projeto FEUP.
 
-O arquivo [MIEIC](https://resumos-feup.pages.dev/mieic/) inclui as cadeiras obrigatórias e todas as optativas com nome no [plano SIGARRA de 2020/21](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2020&pv_origem=CUR&pv_plano_id=2496&pv_tipo_cur_sigla=MI). A distribuição mostrada põe a Preparação da Dissertação no 1.º semestre e a Dissertação no 2.º; o plano também permite a alternativa inversa.
+O [MEIC](https://resumos.rgo.pt/meic/) inclui as 57 cadeiras com nome no [plano SIGARRA de 2026/27](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2026&pv_plano_id=31204), incluindo as optativas e as opções de Competências Transversais.
 
 ## Publicar
 
-O projeto Cloudflare Pages `resumos-feup` está ligado a este repositório. Pushes para `main` publicam em `https://resumos-feup.pages.dev`; outros branches têm previews.
+O projeto Cloudflare Pages `resumos-feup` está ligado a este repositório. Pushes para `main` publicam em `https://resumos.rgo.pt`; outros branches têm previews.
 
 A configuração usa `bash scripts/cloudflare-build.sh`, pasta de saída `dist`, Node 24 e imagem de build v3. O script descarrega Typst 0.15.1, confirma o SHA-256 do arquivo oficial, instala as dependências do lockfile, verifica tipos e compila o site com a pesquisa. Não é preciso um token Cloudflare no GitHub.
 

@@ -1,7 +1,7 @@
 # Resumos FEUP
 
 - Use `devenv shell` for project commands. `README.md` covers authoring and checks.
-- `src/data/courses.ts` owns the LEIC curriculum; `src/data/mieic.ts` owns the archived 2020/21 MIEIC plan. Verify changes against its SIGARRA source, including the academic year. Competências Transversais are elective groups.
+- `src/data/courses.ts` owns the LEIC curriculum; `src/data/meic.ts` owns the 2026/27 MEIC plan. Verify changes against its SIGARRA source, including the academic year. LEIC Competências Transversais are elective groups; MEIC lists the named options.
 - Real courses remain unpublished. Keep the fictional example course separate from the FEUP curriculum. New content pages use `Lesson.astro` and `Prose.astro`.
 - Preserve the user's colourful course grid and FEUP accent. See `PRODUCT.md` and `DESIGN.md` for the approved direction.
 - Compile trusted Typst sources at build time through `src/lib/typst.ts`. HTML export requires Typst 0.15+ and is experimental. Test equations and diagrams when changing this adapter.
@@ -13,4 +13,4 @@
 - Cloudflare Pages builds pushes to `main` with `scripts/cloudflare-build.sh`. Keep its pinned Typst release in sync with CI and the documented environment.
 
 - AI actions belong on lessons, not the homepage. Send only the public page URL and a reading prompt; never send page text or scratchpad notes.
-- MIEIC named optional courses use `optional`; LEIC elective placeholder groups use `elective`. Keep their explanations distinct. MIEIC includes all named options, including courses without an occurrence link in SIGARRA.
+- MEIC named optional courses use `optional`; LEIC elective placeholder groups use `elective`. Keep their explanations distinct. MEIC includes all named options, including courses without an occurrence link in SIGARRA.

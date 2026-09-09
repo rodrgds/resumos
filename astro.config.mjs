@@ -10,7 +10,7 @@ const math = {
   rehypePlugins: [rehypeKatex],
 };
 export default defineConfig({
-  site: 'https://resumos-feup.pages.dev',
+  site: 'https://resumos.rgo.pt',
   integrations: [
     mdx(),
     pagefind({

@@ -22,4 +22,4 @@ Working title: Resumos LEIC, with FEUP as the identifying label. Follow the devi
 
 The homepage has no page-copy or AI actions. Lesson AI links ask providers to read the public page URL. The nuclei directory includes NIAEFEUP; ACM FEUP and IEEE FEUP use white logo areas and blue lower panels with white text.
 
-MIEIC has a separate archive page using the complete 2020/21 plan, including named options. The homepage links to it beside LEIC. Useful links include TTS, Uni for Android and Resumos SofiaViP.
+MEIC has a separate page using the complete 2026/27 plan, including named options and Competências Transversais. The homepage links to it beside LEIC. Useful links include TTS, Uni for Android and Resumos SofiaViP.
