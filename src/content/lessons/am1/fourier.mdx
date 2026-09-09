@@ -5,6 +5,11 @@ section: conteudo
 order: 12
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import serra from './fourier-serra.typ?raw';
+
 Enquanto a série de Taylor aproxima uma função perto de um ponto com polinómios, a **série de Fourier** representa uma função periódica em todo o seu domínio como soma de senos e cossenos. Para engenharia, é a linguagem natural de sinais e vibrações: cada termo é uma harmónica com frequência múltipla da fundamental.
 
 ## Funções periódicas e a forma da série
@@ -17,7 +22,7 @@ $$
 f(x) \sim \frac{a_0}{2} + \sum_{n=1}^{\infty} \big(a_n \cos(nx) + b_n \sin(nx)\big),
 $$
 
-onde $a_0, a_n, b_n$ são os **coeficientes de Fourier**. Escreve-se $a_0/2$ em vez de $a_0$ por conveniência: assim a fórmula de $a_n$ abaixo também produz $a_0$ para $n = 0$. O til indica que a igualdade depende da convergência, tratada no fim.
+onde $a_0, a_n, b_n$ são os **coeficientes de Fourier**. Escreve-se $a_0/2$ em vez de $a_0$ por conveniência: assim a fórmula de $a_n$ abaixo também produz $a_0$ para $n = 0$. O til indica que a igualdade depende da convergência, tratada no fim.[^dirichlet]
 
 ## Coeficientes: as fórmulas de Euler
 
@@ -57,12 +62,54 @@ $$
 
 Os primeiros termos já desenham a reta: com $n = 1$, $2\sin x$ acompanha $x$ perto da origem; somar $- \sin 2x$ corrige a curvatura. Quanto mais harmónicas, melhor o ajuste dentro de $]-\pi, \pi[$.
 
+<Typst
+  source={serra}
+  format="svg"
+  alt="A reta e as três primeiras somas parciais da série do dente de serra. Cada harmónica nova aproxima a reta no intervalo aberto, mantendo o salto nos extremos."
+/>
+
+Vê as somas parciais a tender para $x = 1$ somando as primeiras harmónicas nesse ponto:
+
+<CodePlayground
+  language="javascript"
+  title="Somas parciais da série em x = 1"
+  code={'function somaParcial(N) {\n  let s = 0;\n  for (let n = 1; n <= N; n++) {\n    s += ((2 * (-1) ** (n + 1)) * Math.sin(n * 1)) / n;\n  }\n  return s;\n}\nconsole.log(somaParcial(5).toFixed(4));\nconsole.log(somaParcial(20).toFixed(4));'}
+/>
+
+O programa imprime `0.8626` e `0.9447`: com $5$ harmónicas estamos a $0{,}14$ do valor $1$, e com $20$ a $0{,}06$.
+
+## Um exemplo par: $f(x) = x^2$ em $]-\pi, \pi[$
+
+Para treinar a outra metade das fórmulas, considera a função par que vale $x^2$ em $]-\pi, \pi[$. Sendo par, $b_n = 0$ para todo o $n$. Para $a_0$:
+
+$$
+a_0 = \frac{1}{\pi}\int_{-\pi}^{\pi} x^2\,dx = \frac{2}{\pi}\left[\frac{x^3}{3}\right]_0^{\pi} = \frac{2\pi^2}{3},
+$$
+
+logo o termo constante da série é $a_0/2 = \pi^2/3$: o valor médio de $x^2$ no intervalo. Para $n \ge 1$, primitiva por partes duas vezes e avalia de $0$ a $\pi$ (o integrando $x^2\cos(nx)$ é par, por isso dobra-se o integral em $[0, \pi]$):
+
+$$
+a_n = \frac{2}{\pi}\int_0^{\pi} x^2\cos(nx)\,dx = \frac{2}{\pi} \cdot \frac{2\pi(-1)^n}{n^2} = \frac{4(-1)^n}{n^2}.
+$$
+
+A série é $x^2 \sim \pi^2/3 + \sum_{n=1}^{\infty} 4(-1)^n\cos(nx)/n^2$. Em $x = \pi$, onde a extensão periódica é contínua (vale $\pi^2$ dos dois lados), a série soma $\pi^2$: substituir $x = \pi$ dá $\pi^2/3 + 4\sum (-1)^n(-1)^n/n^2 = \pi^2/3 + 4\pi^2/6 = \pi^2$, usando $\sum 1/n^2 = \pi^2/6$. É assim que a série de Fourier prova somas de séries numéricas.
+
 ## Convergência e o teorema da representação
 
 Nem sempre a série iguala a função ponto a ponto. O **teorema da representação** dá condições suficientes: se $f$ é periódica de período $2\pi$, contínua por partes e com derivadas laterais em cada ponto de $[-\pi, \pi]$, então a série de Fourier converge, e a sua soma vale $f(x)$ onde $f$ é contínua.
 
 Nos pontos de salto, a série converge para a **média dos limites laterais**, $(f(x^-) + f(x^+))/2$. No exemplo do dente de serra, em $x = \pi$ a função salta de $\pi$ para $-\pi$, e a série soma $0$, a média. Este comportamento nos saltos (com o fenómeno de Gibbs nas somas parciais) é normal e esperado, não um erro de cálculo.
 
-:::tip[Plano de ataque num exercício]
+<YouTube id="r6sGWTCMz2k" title="But what is a Fourier series? (3Blue1Brown)" />
+
+::::tip[Plano de ataque num exercício]
 Primeiro, identifica período e paridade para anular metade dos coeficientes. Depois calcula os restantes com as fórmulas de Euler, usando partes quando aparece $x$ vezes seno ou cosseno. Por fim, escreve a série e discute a convergência: igualdade onde a função é contínua, média dos limites laterais nos saltos.
-:::
+::::
+
+## Para saber mais
+
+- [Fourier series, artigo interativo](https://www.3blue1brown.com/lessons/fourier-series/), da equação do calor aos desenhos com círculos.
+- [My Fourier Epicycles](https://www.myfourierepicycles.com/), simulador onde desenhas uma curva e os epiciclos retraçam-na com as harmónicas de Fourier.
+
+[^dirichlet]: As condições de convergência e o valor da soma nos saltos (média dos limites laterais) seguem o teorema da representação no capítulo de séries de Fourier de _Análise Matemática 1, Conteúdo teórico e aplicações_ (Carlos A. Conceição António, AEFEUP, 2017).
+
