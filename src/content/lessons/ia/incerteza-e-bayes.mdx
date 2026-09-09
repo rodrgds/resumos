@@ -5,6 +5,12 @@ section: conteudo
 order: 7
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import rede from '../../ia/rede-bayes.typ?raw';
+
 A lógica da página anterior decide entre verdadeiro e falso. O mundo real raramente colabora: sensores com ruído, sintomas partilhados por várias doenças, palavras que aparecem em spam e em mensagens normais. A **probabilidade** quantifica a crença quando a informação não chega para a certeza, e a **regra de Bayes** atualiza essa crença perante evidência nova. O exemplo é um filtro de spam com 20 mensagens e todas as contas à mostra.
 
 ## O exemplo das 20 mensagens
@@ -23,6 +29,15 @@ $$
 
 Lê o resultado com cuidado: 75 por cento das mensagens com "grátis" são spam, que é exatamente 6 em 8. Bayes não inventou nada; inverteu a condicional de forma sistemática. O erro clássico é confundir $P(G \mid S)$ com $P(S \mid G)$: saber que 75 por cento do spam tem "grátis" não diz que 75 por cento do que tem "grátis" é spam. Aqui coincidem por acaso aritmético ($P(S) = P(G)$); em geral não coincidem.
 
+<Tabs id="uma-duas-palavras" labels={['Uma palavra', 'Duas palavras']}>
+  <div slot="panel-0">
+    Só com "grátis", Bayes dá $P(S \mid G) = 0{,}75$: conta direta, 6 spam em 8 mensagens com a palavra. Uma evidência fraca move pouco a crença.
+  </div>
+  <div slot="panel-1">
+    Com "grátis" e "prémio", o Naive Bayes da próxima secção combina as duas evidências e chega a 0,947. Duas evidências fracas e independentes valem mais que uma.
+  </div>
+</Tabs>
+
 ## Naive Bayes com duas palavras
 
 Junta a palavra "prémio": aparece em 4 das 8 spam e em 1 das 12 normais. Para classificar uma mensagem com as duas palavras, o **Naive Bayes** assume que as palavras são **condicionalmente independentes** dada a classe, isto é, $P(G, P \mid S) = P(G \mid S)\,P(P \mid S)$. Com $P(P \mid S) = 4/8 = 0{,}5$ e $P(P \mid \lnot S) = 1/12$:
@@ -32,6 +47,14 @@ Junta a palavra "prémio": aparece em 4 das 8 spam e em 1 das 12 normais. Para c
 
 Normaliza: $0{,}15 / (0{,}15 + 0{,}0083) \approx 0{,}947$. A mensagem é classificada spam com 94,7 por cento de confiança. A hipótese de independência é ingénua, as palavras "grátis" e "prémio" provavelmente correlacionam, mas o classificador funciona bem na prática porque para decidir basta a ordem das classes estar certa, não as probabilidades exatas.
 
+<CodePlayground
+  language="python"
+  title="Naive Bayes do spam"
+  code={'p_s = 8 / 20\nprint("uma palavra:", round(p_s * (6 / 8) / (8 / 20), 3))\nnum_s = p_s * (6 / 8) * (4 / 8)\nnum_h = (1 - p_s) * (2 / 12) * (1 / 12)\nprint("duas palavras:", round(num_s / (num_s + num_h), 3))'}
+/>
+
+Isto escreve `uma palavra: 0.75` e `duas palavras: 0.947`, as duas contas da página.
+
 :::tip[Como cai em teste]
 Dão-te a tabela de contagens e pedem $P(classe \mid evidência)$. Passos: conta os totais, escreve as condicionais a partir das contagens, aplica Bayes, e normaliza dividindo pela soma das hipóteses. Verifica no fim que as probabilidades das classes somam 1.
 :::
@@ -40,4 +63,14 @@ Dão-te a tabela de contagens e pedem $P(classe \mid evidência)$. Passos: conta
 
 Quando há muitas variáveis, a tabela conjunta é impossível: $n$ variáveis binárias pedem $2^n$ entradas. Uma **rede Bayesiana** é um grafo dirigido acíclico onde cada nó tem uma tabela só com os seus pais, e a conjunta fatoriza-se pelo produto. A estrutura codifica **independências**: cada variável é independente das não descendentes dados os pais.
 
-No spam, a rede ingénua é classe no topo com uma seta para cada palavra: $P(S, G, P) = P(S)\,P(G \mid S)\,P(P \mid S)$, que é exatamente a conta da secção anterior. Se "prémio" dependesse também de "grátis", acrescentava-se uma seta entre elas e a tabela crescia. A rede é o meio termo entre a tabela completa, que não escala, e a ingenuidade total, que ignora dependências reais. Inferência nela (perguntar uma variável dadas outras) é o tema que fecha a incerteza e abre a porta à aprendizagem com dados incompletos.
+No spam, a rede ingénua é classe no topo com uma seta para cada palavra: $P(S, G, P) = P(S)\,P(G \mid S)\,P(P \mid S)$, que é exatamente a conta da secção anterior. Se "prémio" dependesse também de "grátis", acrescentava-se uma seta entre elas e a tabela crescia. A rede é o meio termo entre a tabela completa, que não escala, e a ingenuidade total, que ignora dependências reais. Inferência nela (perguntar uma variável dadas outras) é o tema que fecha a incerteza e abre a porta à aprendizagem com dados incompletos. A intuição geométrica desta atualização está na lição interativa do 3Blue1Brown.[^bayes3b1b]
+
+<Typst
+  source={rede}
+  format="svg"
+  alt="Rede Bayesiana ingénua do spam: o nó Spam no topo com uma seta para a palavra grátis e outra para a palavra prémio."
+/>
+
+<YouTube id="HZGCoVF3YvM" title="Bayes theorem, the geometry of changing beliefs (3Blue1Brown)" />
+
+[^bayes3b1b]: A mesma atualização de crenças com geometria, na versão escrita e interativa da lição: https://www.3blue1brown.com/lessons/bayes-theorem/.

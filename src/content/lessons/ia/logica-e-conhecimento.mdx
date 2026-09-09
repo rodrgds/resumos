@@ -5,6 +5,10 @@ section: conteudo
 order: 6
 ---
 
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import prova from '../../ia/prova-acima.dot?raw';
+
 Para pesquisar, o agente precisa do problema bem descrito. A **representação do conhecimento** guarda factos e regras numa **base de conhecimento**, e a **inferência** deriva conclusões novas a partir dela. A lógica proposicional e a lógica de primeira ordem dão a linguagem; o encadeamento para a frente e para trás dão os dois sentidos de uso. O exemplo desta página usa blocos, com três regras e um objetivo provado das duas maneiras.
 
 ## A base de exemplo
@@ -27,6 +31,21 @@ O encadeamento para a frente parte dos factos e aplica regras até derivar o obj
 
 Cada passo instancia as variáveis com objetos concretos e só dispara quando as premissas já estão na base. É o modo dos sistemas que reagem a dados novos: chega um facto, disparam as regras, a base cresce. O risco é derivar muito que não interessa ao objetivo.
 
+<Dot
+  source={prova}
+  alt="Grafo da prova de Acima(a, mesa): os factos Sobre(a, b) e Sobre(b, mesa) derivam Acima(a, b) e Acima(b, mesa) pela regra R1, e estes derivam Acima(a, mesa) pela regra R2, destacada como objetivo."
+/>
+
+O mesmo encadeamento em código, que deriva os factos novos e os escreve:
+
+<CodePlayground
+  language="python"
+  title="Encadeamento para a frente"
+  code={'factos = {("Sobre", "a", "b"), ("Sobre", "b", "mesa")}\nfor _, x, y in [f for f in factos if f[0] == "Sobre"]:\n    factos.add(("Acima", x, y))  # R1\nfor _, x, y in [f for f in factos if f[0] == "Acima"]:\n    for _, y2, z in [f for f in factos if f[0] == "Acima"]:\n        if y == y2:\n            factos.add(("Acima", x, z))  # R2\nprint(sorted(f for f in factos if f[0] == "Acima"))'}
+/>
+
+Isto escreve `[('Acima', 'a', 'b'), ('Acima', 'a', 'mesa'), ('Acima', 'b', 'mesa')]`: os dois passos de R1 e depois o passo de R2 que prova o objetivo.
+
 ## Encadeamento para trás
 
 O encadeamento para trás parte do objetivo e procura regras que o conclusam, transformando-o em subobjetivos até chegar a factos. Para $Acima(a, mesa)$:
@@ -35,7 +54,11 @@ O encadeamento para trás parte do objetivo e procura regras que o conclusam, tr
 2. Tenta $y = b$. $Acima(a, b)$ conclui-se por R1 com $x = a$, $y = b$, cujo subobjetivo $Sobre(a, b)$ é facto. Primeiro ramo fechado.
 3. $Acima(b, mesa)$ conclui-se por R1 com $x = b$, $y = mesa$, cujo subobjetivo $Sobre(b, mesa)$ é facto. Segundo ramo fechado. Objetivo provado.
 
-Repara na escolha do passo 2: $y = b$ não caiu do céu, é o único objeto que aparece como "meio" nos factos $Sobre$. Em geral, o encadeamento para trás pesquisa sobre substituições possíveis, e é por isso que a programação em lógica (Prolog) se comporta como uma pesquisa com retrocesso: cada escolha de regra e de instância é um ramo.
+Repara na escolha do passo 2: $y = b$ não caiu do céu, é o único objeto que aparece como "meio" nos factos $Sobre$. Em geral, o encadeamento para trás pesquisa sobre substituições possíveis, e é por isso que a programação em lógica (Prolog) se comporta como uma pesquisa com retrocesso: cada escolha de regra e de instância é um ramo. A execução do Prolog, com unificação e retrocesso, está explicada na página de [lógica e Prolog](/cadeiras/pfl/logica-unificacao-prolog/).
+
+:::details[Ver a prova por resolução]
+A resolução trabalha com cláusulas e deriva a cláusula vazia a partir da base mais o objetivo negado. Instancia R2 com $x = a$ e $z = mesa$: $\lnot Acima(a, y) \lor \lnot Acima(y, mesa) \lor Acima(a, mesa)$. Passo 1: resolve com o facto $Acima(a, b)$ e obtém $\lnot Acima(b, mesa) \lor Acima(a, mesa)$. Passo 2: resolve com o facto $Acima(b, mesa)$ e obtém $Acima(a, mesa)$, que contradiz o objetivo negado. Dois passos de resolução fazem o trabalho dos dois encadeamentos.
+:::
 
 :::details[O papel de R3 no exemplo]
 R3 nunca foi usada na prova, e está no exemplo de propósito. O encadeamento para a frente com R3 derivaria $PrecisaDe(b, a)$ e $PrecisaDe(mesa, b)$, conclusões verdadeiras mas inúteis para este objetivo. É a demonstração viva do defeito do encadeamento para a frente: deriva tudo o que as regras permitem, não só o que precisas.

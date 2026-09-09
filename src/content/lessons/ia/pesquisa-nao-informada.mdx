@@ -5,6 +5,10 @@ section: conteudo
 order: 2
 ---
 
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import puzzle from '../../ia/puzzle8.dot?raw';
+
 Muitos problemas são labirintos disfarçados: do estado inicial ao objetivo há caminhos, e é preciso encontrar um. A **pesquisa não informada** (ou cega) explora o espaço de estados sem nenhuma pista sobre que direção é promissora. Distingue-se da pesquisa heurística, que usa pistas, mas a maquinaria é a mesma: gerar sucessores, lembrar visitados e escolher a ordem de expansão. A ordem é tudo, porque é ela que decide quanto trabalho se faz até ao objetivo.
 
 ## Espaço de estados
@@ -22,6 +26,21 @@ O exemplo desta página é um fragmento do 8-puzzle (tabuleiro 3 por 3 com 8 pe�
 - B1 (B, esquerda): `1 2 3 / 4 5 6 / _ 7 8`. B2 (B, direita): `1 2 3 / 4 5 6 / 7 8 _`, que é o objetivo.
 
 Confirma B2: mover a casa vazia de B para a direita troca-a com o 8, e a última fila fica `7 8 _`, que é a configuração objetivo. O caminho S, B, B2 tem custo 2, uma ação por passo.
+
+<Dot
+  source={puzzle}
+  alt="Grafo do fragmento do 8-puzzle: S no topo liga a A, B, C e D; A liga a A1 e A2; B liga a B1 e B2. O caminho S, B, B2 está destacado e B2 está marcado como objetivo."
+/>
+
+A largura sobre este fragmento, executável abaixo, expande por níveis e gera B2 na expansão de B.[^berkeley]
+
+<CodePlayground
+  language="python"
+  title="BFS no fragmento"
+  code={'from collections import deque\n\nsucessores = {\n    "S": ["A", "B", "C", "D"],\n    "A": ["A1", "A2"],\n    "B": ["B1", "B2"],\n}\nvisitados = {"S"}\nfila = deque(["S"])\nwhile fila:\n    n = fila.popleft()\n    print(n)\n    for m in sucessores.get(n, []):\n        if m not in visitados:\n            visitados.add(m)\n            fila.append(m)'}
+/>
+
+Isto escreve `S A B C D A1 A2 B1 B2`, a ordem de expansão da largura: B2 aparece durante a expansão de B, a distância 2 do início.
 
 ## Largura contra profundidade
 
@@ -48,3 +67,5 @@ No fragmento acima, com o objetivo B2 a distância 2 pelo ramo B:
 - Custo uniforme com custo 1 por ação: coincide com a largura neste fragmento. Se a ação S para B custasse 5 e as outras 1, expandiria A, C e D (custo 1) antes de B (custo 5), e o caminho ótimo podia deixar de passar por B.
 
 A moral do fragmento vale para o 8-puzzle inteiro: a estratégia de expansão decide que parte do espaço visitas, e sem heurística pagas sempre a visita a muitos estados irrelevantes. As heurísticas da próxima página servem para não os visitar.
+
+[^berkeley]: O projeto Search de Berkeley CS188 implementa BFS, DFS, UCS e A* com heurísticas admissíveis: https://berkeleyai.github.io/cs188-website/project1.html.
