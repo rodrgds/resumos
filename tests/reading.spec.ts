@@ -51,7 +51,7 @@ test('course navigation comes from content and keeps drafts private', async ({
   expect(await markdown.text()).toContain('$n^2$');
   expect(await markdown.text()).toContain('/exemplo/diagramas/figura-1.svg');
   await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
-  await page.getByRole('searchbox').fill('qzxw9182kvjm4');
+  await page.getByRole('searchbox').fill('"qzxw9182kvjm4"');
   await expect(page.locator('#search-status')).toContainText('Não');
   await expect(page.locator('#search-results a')).toHaveCount(0);
 });

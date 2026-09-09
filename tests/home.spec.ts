@@ -41,11 +41,9 @@ test('global search finds courses and content without filtering the homepage', a
 test('unpublished courses explain their status and restore focus', async ({
   page,
 }) => {
-  const card = page.locator('[data-course][data-acronym="LBAW"]');
+  const card = page.locator('[data-course][data-acronym="PUP"]');
   await card.click();
-  await expect(page.getByRole('dialog')).toContainText(
-    'Laboratório de Bases de Dados e Aplicações Web',
-  );
+  await expect(page.getByRole('dialog')).toContainText('Projeto UP');
   await expect(page.getByRole('dialog')).toContainText(
     'ainda estão por escrever',
   );
