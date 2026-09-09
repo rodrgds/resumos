@@ -1,0 +1,76 @@
+---
+title: Programação concorrente
+description: Threads, mutexes, semáforos, variáveis de condição e a ordem dos locks contra impasses.
+section: conteudo
+order: 6
+---
+
+Quando dois fluxos de execução tocam nos mesmos dados ao mesmo tempo, o resultado depende da ordem dos acessos, e a ordem varia. A programação concorrente é a disciplina de tornar esses programas corretos apesar da variação: **threads** para o paralelismo dentro de um processo e primitivas de sincronização para ordenar o que tem de ser ordenado.
+
+## Threads e a corrida
+
+Uma **thread** é um fluxo de execução dentro de um processo: tem a sua pilha e os seus registos, mas partilha código, dados e ficheiros abertos com as outras threads do processo. Partilhar por defeito é cómodo e perigoso. Este contador partilhado entre duas threads que incrementam mil vezes cada uma devia terminar em 2000:
+
+```c
+#include <pthread.h>
+#include <stdio.h>
+
+int contador = 0;
+
+void *incrementar(void *arg) {
+    for (int i = 0; i < 1000; i++) {
+        contador++;
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, incrementar, NULL);
+    pthread_create(&t2, NULL, incrementar, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    printf("%d\n", contador);
+    return 0;
+}
+```
+
+Na prática imprime quase sempre menos de 2000. O `contador++` é ler, somar e escrever, três passos. Se uma thread lê 100 e antes de escrever a outra também lê 100, ambas escrevem 101 e um incremento perde-se. A isto chama-se **corrida** (_race condition_): o resultado depende do entrelaçamento, e o entrelaçamento muda sempre. O programa até pode imprimir 2000 numa execução e falhar na seguinte.
+
+## Mutexes: uma de cada vez
+
+Um **mutex** garante **exclusão mútua**: só uma thread de cada vez atravessa a secção crítica. Envolve o incremento com `lock` e `unlock` e a corrida desaparece:
+
+```c
+pthread_mutex_t trinco = PTHREAD_MUTEX_INITIALIZER;
+
+void *incrementar(void *arg) {
+    for (int i = 0; i < 1000; i++) {
+        pthread_mutex_lock(&trinco);
+        contador++;
+        pthread_mutex_unlock(&trinco);
+    }
+    return NULL;
+}
+```
+
+A regra de ouro é que **todos** os acessos à variável partilhada passam pelo mesmo mutex. Um acesso esquecido fora do lock reabre a corrida, e o erro volta a ser intermitente e difícil de caçar. Mantém as secções críticas curtas: trabalho a mais dentro do lock serializa as threads e anula o paralelismo.
+
+## Semáforos e variáveis de condição
+
+- Um **semáforo** é um contador com operações atómicas de decrementar (esperar) e incrementar (sinalizar). Com valor inicial 1 comporta-se como um mutex; com valor inicial N limita N acessos simultâneos, como vagas num recurso com várias unidades.
+- Uma **variável de condição** deixa uma thread dormir até outra anunciar que algo mudou, como um lugar livre numa fila. Evita a espera ativa: em vez de testar a condição em ciclo a queimar processador, a thread dorme e acorda só quando vale a pena verificar.
+
+Usa mutex para proteger dados, semáforo para contar recursos e variável de condição para esperar por eventos. Misturar os papéis funciona por acidente até deixar de funcionar.
+
+## Impasses e a ordem dos locks
+
+Com dois locks nasce o **impasse** (_deadlock_): a thread A tem o lock 1 e quer o 2, a thread B tem o 2 e quer o 1, e nenhuma larga o que tem. Ambas esperam para sempre. A correção mais simples é uma **ordem fixa**: todos os troços de código obtêm os locks sempre pela mesma ordem (primeiro o 1, depois o 2). Se ninguém obtiver o 2 antes do 1, o ciclo de espera nunca se fecha e o impasse é impossível.
+
+:::warning[Impasse não avisa]
+Um programa em impasse não avaria nem consome processador: fica parado, silencioso, para sempre. Quando um programa com threads parar sem mensagem de erro, suspeita de locks obtidos por ordens diferentes antes de suspeitar do resto.
+:::
+
+## Para levar para a próxima página
+
+Threads partilham memória por defeito e a sincronização impõe a ordem. Mas que memória é essa que as threads veem, e como é que cada processo acredita que a tem só para si? A resposta é a [memória virtual](memoria-virtual/).
