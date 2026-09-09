@@ -5,6 +5,11 @@ section: conteudo
 order: 1
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import pipeline from '../../c/pipeline.typ?raw';
+
 Um compilador não traduz o programa de uma vez: organiza o trabalho em **fases**, cada uma com uma entrada e uma saída bem definidas. Esta separação é o que permite raciocinar sobre o programa a níveis diferentes, do texto à máquina. Vamos seguir a linha `x = a + b * 2` e ver quem trata de cada passo.
 
 ## O pipeline
@@ -19,6 +24,14 @@ As fases clássicas, por ordem:
 6. **Geração de código objeto**: emite instruções da máquina alvo e gere registos.
 
 Há ainda duas estruturas transversais: a **tabela de símbolos**, que guarda o que se sabe sobre cada nome, e o tratamento de erros, que cada fase deve reportar com posição e mensagem útil.
+
+<Typst
+  source={pipeline}
+  format="svg"
+  alt="Cadeia de seis fases da compilação, do léxico ao código objeto, com a tabela de símbolos ao lado."
+/>
+
+Lê o diagrama de cima para baixo: cada caixa recebe o artefacto da anterior e entrega o seguinte. A tabela de símbolos não está na cadeia porque todas as fases a consultam e atualizam, do léxico (que regista nomes e posições) à semântica (que regista tipos e âmbitos).
 
 ## Seguir `x = a + b * 2`
 
@@ -36,7 +49,51 @@ t2 = a + t1
 x = t2
 ```
 
-O otimizador pode dobrar constantes ou propagar cópias. Por fim, o gerador de código objeto escolhe instruções da máquina alvo, decide que valores vivem em registos e emite o código final, por exemplo para a JVM no caso do projeto.
+A mesma linha em três leituras, uma por nível do pipeline. Compara-as: cada nível esquece detalhes do anterior e explicita o que o seguinte precisa.
+
+<Tabs id="leituras-atribuicao" labels={['Símbolos', 'Três endereços', 'Jasmin']}>
+  <div slot="panel-0">
+
+```
+ID(x) = ID(a) + ID(b) * NUM(2)
+```
+
+  </div>
+  <div slot="panel-1">
+
+```
+t1 = b * 2
+t2 = a + t1
+x = t2
+```
+
+  </div>
+  <div slot="panel-2">
+
+```jasmin
+iload_1
+iload_2
+iconst_2
+imul
+iadd
+istore_3
+```
+
+Com `a`, `b` e `x` nas variáveis locais 1, 2 e 3: empilha `a` e `b`, empilha 2, multiplica, soma e guarda em `x`. A altura máxima da pilha é 3.
+
+  </div>
+</Tabs>
+
+O otimizador pode dobrar constantes ou propagar cópias. Por fim, o gerador de código objeto escolhe instruções da máquina alvo, decide que valores vivem em registos e emite o código final, por exemplo para a JVM no caso do projeto.[^alvo]
+
+Para ver o pipeline inteiro a mexer, este vídeo constrói um compilador pequeno do zero, uma fase de cada vez:
+
+<YouTube
+  id="QdnxjYj1pS0"
+  title="Compilers, How They Work, And Writing Them From Scratch"
+/>
+
+[^alvo]: O projeto da ocorrência usa a JVM como alvo, através do Jasmin. Confirma no enunciado do ano, na página da disciplina, antes de assumires instruções ou limites.
 
 ## Para levar para a próxima página
 
