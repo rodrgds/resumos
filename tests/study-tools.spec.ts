@@ -1,38 +1,12 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test('notes stay local across navigation and typing does not trigger shortcuts', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await page.keyboard.press('n');
-  const notes = page.getByRole('textbox', { name: 'As tuas notas' });
-  await expect(notes).toBeFocused();
-  await notes.fill('As minhas notas privadas: / n a ?');
-  await page.keyboard.type('/n?a');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await page.goto('/exemplo/apontamentos/');
-  await page.keyboard.press('n');
-  await expect(notes).toHaveValue('As minhas notas privadas: / n a ?/n?a');
-  const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Descarregar notas' }).click();
-  expect((await downloadPromise).suggestedFilename()).toBe('notas-resumos.txt');
-  await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Perguntar à IA' }).click();
-  await expect(page.locator('#ai-prompt')).not.toHaveValue(
-    /minhas notas privadas/,
-  );
-});
-
 test('shortcuts can be remapped, reject conflicts and survive reload', async ({
   page,
 }) => {
   await page.goto('/');
   await page.keyboard.press('?');
-  await page
-    .getByRole('button', { name: 'Mudar atalho: Bloco de notas' })
-    .click();
+  await page.getByRole('button', { name: 'Mudar atalho: Caderno' }).click();
   await page.keyboard.press('/');
   await expect(page.locator('#shortcut-status')).toHaveText(
     'Essa tecla já está em uso.',

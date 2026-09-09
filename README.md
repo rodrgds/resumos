@@ -49,11 +49,15 @@ Os testes em `tests/fixtures/` usam `RESUMOS_TEST_CONTENT=1`. Essa variável nun
 
 A pesquisa global usa Pagefind e funciona sem servidor de pesquisa. O build indexa o conteúdo de `data-pagefind-body`; ferramentas e notas locais ficam excluídas. Em desenvolvimento, a integração serve o último índice construído. Corre `npm run build` para o atualizar.
 
-As preferências de leitura, os atalhos e o bloco de notas ficam em `localStorage`, separados entre si. O bloco não sincroniza entre dispositivos. Permite descarregar um `.txt` e avisa quando não consegue guardar. Limpar os dados do navegador apaga estas preferências e notas.
+Seleciona texto numa página de apontamentos e escolhe **Destacar** ou **Comentar**. Tab chega às ações da seleção e Escape fecha-as. Clica num destaque para editar o comentário. O caderno reúne as notas desta página ou de todo o site, permite voltar ao trecho, desfazer uma remoção e descarregar tudo em Markdown. As notas do bloco antigo continuam em “Notas anteriores”.
+
+As preferências, os atalhos e o caderno ficam em `localStorage`. Não sincronizam entre dispositivos ou domínios. O caderno avisa quando não consegue guardar e permite descarregar o texto antes de sair. Limpar os dados do navegador apaga as notas.
+
+Os destaques usam a [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API), sem alterar o HTML do resumo. Em navegadores antigos, as notas continuam acessíveis no caderno. `src/lib/text-anchors.ts` guarda o trecho e o contexto: quando o conteúdo muda ou se torna ambíguo, a nota fica no caderno com um aviso. Fórmulas e imagens não entram na seleção de texto. `src/lib/annotations.ts` guarda uma entrada por nota para evitar que separadores diferentes sobrescrevam o caderno inteiro.
 
 Por predefinição, `/` pesquisa, `n` abre as notas, `,` abre a aparência, `?` abre os atalhos e `a` abre o menu de IA nas páginas que o têm. Ctrl ou ⌘ K também pesquisa. Os atalhos não atuam em campos de texto. Podes mudar ou desativar as teclas e ativar navegação com `h`, `j`, `k`, `l`.
 
-O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](https://github.com/fuma-nama/fumadocs/blob/main/packages/base-ui/src/layouts/shared/page-actions.tsx) para ChatGPT e Claude: envia o URL público e uma instrução para ler a página. Perplexity recebe a mesma pergunta. Gemini usa copiar e abrir. Estes links são convenções das interfaces dos fornecedores, não uma API estável. Há uma pergunta visível para copiar se necessário. Em localhost usa-se o endereço público configurado em `astro.config.mjs`. O conteúdo da página e o bloco de notas nunca são copiados ou enviados. Não há chaves de API.
+O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](https://github.com/fuma-nama/fumadocs/blob/main/packages/base-ui/src/layouts/shared/page-actions.tsx) para ChatGPT e Claude: envia o URL público e uma instrução para ler a página. Perplexity recebe a mesma pergunta. Gemini usa copiar e abrir. Estes links são convenções das interfaces dos fornecedores, não uma API estável. Há uma pergunta visível para copiar se necessário. Em localhost usa-se o endereço público configurado em `astro.config.mjs`. O conteúdo da página e as notas privadas nunca são copiados ou enviados. Não há chaves de API.
 
 ## Organização
 
