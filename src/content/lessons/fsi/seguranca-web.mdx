@@ -5,6 +5,9 @@ section: conteudo
 order: 7
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+
 A Web junta os piores ingredientes para a segurança: código de origens diferentes a correr no mesmo navegador, dados do utilizador misturados com instruções e sessões mantidas com truques. Esta página apresenta o modelo que contém essa mistura e dois ataques mínimos com as respetivas correções.
 
 ## O modelo: mesma origem, sessões e segredos
@@ -12,6 +15,16 @@ A Web junta os piores ingredientes para a segurança: código de origens diferen
 O navegador corre código de qualquer site, por isso precisa de uma regra de separação: a **política da mesma origem** (_same-origin policy_) impede que o código de um site leia os dados de outro. Sem ela, um separador malicioso lia o teu correio aberto noutro separador. É uma regra do navegador, não do servidor: protege o utilizador, e contorná-la do lado do servidor não a desliga.
 
 O HTTP não tem memória, por isso as aplicações inventaram as **sessões**: o servidor cria um identificador aleatório, entrega-o num _cookie_ e reconhece o cliente quando ele o devolve. Quem roubar esse identificador herda a sessão (**sequestro de sessão**), daí as proteções: gerar de novo o identificador ao iniciar sessão, marcá-lo como `HttpOnly` para o JavaScript não o ler, `Secure` para só viajar em HTTPS e `SameSite` para não seguir em pedidos vindos de outros sites.
+
+Vê a diferença que três palavras fazem no cabeçalho de resposta:
+
+```text
+# antes: o identificador viaja em claro e qualquer script o lê
+Set-Cookie: sessao=abc123
+
+# depois: só em HTTPS, invisível ao JavaScript, fora de sites terceiros
+Set-Cookie: sessao=abc123; HttpOnly; Secure; SameSite=Lax
+```
 
 Na **autenticação**, a regra de ouro é nunca guardar palavras-passe, nem cifradas: guarda o resultado de uma função lenta com **sal** único por utilizador (_salt_), como o bcrypt ou o Argon2. O sal derrota tabelas pré-computadas e a lentidão derrota a tentativa maciça. Verificar é repetir o cálculo e comparar; vazar a base de dados continua a ser mau, mas não entrega as palavras-passe de bandeja.
 
@@ -39,7 +52,23 @@ A correção é tratar dados como texto, nunca como código, no ponto de saída:
 echo "<p>Olá, " . htmlspecialchars($_GET["nome"], ENT_QUOTES, "UTF-8") . "!</p>";
 ```
 
-Os carateres `<` e `>` passam a entidades inofensivas e o navegador mostra a tentativa em vez de a executar. Aplica a regra a todas as saídas, porque basta uma página esquecida.
+Os carateres `<` e `>` passam a entidades inofensivas e o navegador mostra a tentativa em vez de a executar. Aplica a regra a todas as saídas, porque basta uma página esquecida.[^xss-owasp]
+
+[^xss-owasp]: Guia de prevenção de XSS da OWASP, com a regra de codificar a saída conforme o contexto onde ela cai (HTML, atributo, JavaScript ou URL).
+
+Corre a correção com a entrada do ataque e confirma que o navegador recebe texto morto:
+
+<CodePlayground
+  language="php"
+  code={
+    '<?php\n$ataque = \'<script>alert(document.cookie)</script>\';\necho "<p>Olá, " . htmlspecialchars($ataque, ENT_QUOTES, "UTF-8") . "!</p>";'
+  }
+/>
+
+<YouTube
+  id="L5l9lSnNMxg"
+  title="Atacar sites com cross-site scripting, Computerphile"
+/>
 
 ## Exemplo 2: injeção SQL mínima e a sua correção
 
@@ -60,8 +89,21 @@ $stmt = $db->prepare("SELECT * FROM clientes WHERE nome = ?");
 $stmt->execute([$_POST["nome"]]);
 ```
 
-O parâmetro nunca é interpretado como SQL, seja qual for o seu conteúdo. Junta a isto o privilégio mínimo na conta da base de dados, só leitura onde baste, e uma injeção que sobreviva encontra muito menos para levar.
+O parâmetro nunca é interpretado como SQL, seja qual for o seu conteúdo. Junta a isto o privilégio mínimo na conta da base de dados, só leitura onde baste, e uma injeção que sobreviva encontra muito menos para levar.[^sqli-owasp]
+
+[^sqli-owasp]: Guia de prevenção de injeção SQL da OWASP: consultas parametrizadas como defesa principal, com conta de base de dados de privilégio mínimo.
+
+<YouTube
+  id="ciNHn38EyRc"
+  title="Um ataque de injeção SQL explicado, Computerphile"
+/>
 
 :::tip[O padrão comum]
 XSS e injeção SQL são o mesmo erro em dois palcos: concatenar entrada não validada numa linguagem que o recetor interpreta. A cura também é a mesma em espírito: valida à entrada com a [lista de permissão](programacao-defensiva/) e codifica ou parametriza à saída. Quando vires concatenação de SQL, HTML ou comandos do sistema com dados do utilizador, desconfia por reflexo.
 :::
+
+## Para saber mais
+
+- [Guia OWASP de prevenção de XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html): codificar a saída conforme o contexto.
+- [Guia OWASP de prevenção de injeção SQL](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html): consultas parametrizadas como defesa principal.
+- [Ataques de injeção SQL na OWASP](https://owasp.org/www-community/attacks/SQL_Injection): exemplos de ataques para reconheceres o padrão.
