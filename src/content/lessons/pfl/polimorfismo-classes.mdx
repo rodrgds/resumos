@@ -5,6 +5,11 @@ section: conteudo
 order: 2
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import hierarquia from '../../pfl/p2classes.typ?raw';
+
 Em Python, `len` funciona em listas, strings e tuplos sem prometer nada sobre o conteúdo. Em Haskell, essa generalidade escreve-se no tipo. Há duas formas: o **polimorfismo paramétrico**, que funciona para qualquer tipo sem olhar para os valores, e as **classes de tipos**, que exigem uma capacidade específica, como comparar por igualdade.
 
 ## Paramétrico: funciona para tudo
@@ -41,6 +46,18 @@ ghci> :t (==)
 
 O `(==)` entre parênteses é o operador usado como função. `contem 3 [1,2,3]` dá `True`; `contem 'a' "ola"` dá `True`, porque `Char` também pertence a `Eq`. Se tentares `contem length [length]`, o compilador recusa: funções não têm instância de `Eq`.
 
+Confirma no navegador, com números e com carateres:
+
+<CodePlayground
+  language="haskell"
+  title="contem com Eq"
+  code={
+    'contem :: Eq a => a -> [a] -> Bool\ncontem x xs = x `elem` xs\n\nmain :: IO ()\nmain = do\n  print (contem 3 [1,2,3])\n  print (contem \'a\' "ola")'
+  }
+/>
+
+Carrega em **Executar**: imprime `True` duas vezes.
+
 ## As classes que vais encontrar
 
 | Classe       | Capacidade                      | Exemplos de membros                            |
@@ -52,8 +69,40 @@ O `(==)` entre parênteses é o operador usado como função. `contem 3 [1,2,3]`
 | `Integral`   | inteiros com `div` e `mod`      | `Int`, `Integer`                               |
 | `Fractional` | reais com `/`                   | `Double`                                       |
 
-Repara que `Ord` implica `Eq` e `Num` implica `Eq`: para ordenar é preciso comparar igualdade, e a hierarquia reflete isso. Quando vires uma assinatura com várias restrições, como `(Ord a, Show a) => ...`, lê como uma lista de capacidades exigidas.
+Repara que `Ord` implica `Eq` e `Num` implica `Eq`: para ordenar é preciso comparar igualdade, e a hierarquia reflete isso. O diagrama resume as dependências: cada seta lê-se "exige".
+
+<Typst
+  source={hierarquia}
+  format="svg"
+  alt="Hierarquia de classes: Eq no topo; Ord e Num dependem de Eq; Integral e Fractional dependem de Num."
+/>
+
+Quando vires uma assinatura com várias restrições, como `(Ord a, Show a) => ...`, lê como uma lista de capacidades exigidas.
 
 :::warning[O erro clássico de `Num`]
 Um literal como `3` tem tipo `Num a => a`: pode ser qualquer tipo numérico. Por isso `length [1,2] + 0.5` falha: o `+` exige os dois lados do mesmo tipo, mas `length` devolve `Int` e `0.5` é `Fractional`. A cura é converter explicitamente, como vais ver na página de [ordem superior](funcoes-ordem-superior/) com `fromIntegral`.
-:::
+
+<Tabs id="erro-num" labels={['O erro', 'A cura']}>
+  <div slot="panel-0">
+
+```text
+ghci> length [1,2] + 0.5
+-- erro: nenhum membro Fractional para Int.
+-- O + quer os dois lados do mesmo tipo.
+```
+
+  </div>
+  <div slot="panel-1">
+
+```text
+ghci> fromIntegral (length [1,2]) + 0.5
+2.5
+```
+
+  </div>
+</Tabs>
+
+## Para saber mais
+
+- [Hoogle](https://hoogle.haskell.org/): pesquisa funções de Haskell por nome ou por assinatura de tipo, como `Eq a => a -> [a] -> Bool`.
+  :::
