@@ -5,7 +5,14 @@ section: conteudo
 order: 5
 ---
 
-Os saltos condicionais são frequentes, cerca de uma em cada seis instruções nos programas típicos, e cada salto mal apostado no [pipeline](pipeline/) deita fora o trabalho das fases seguintes. A predição de saltos é o mecanismo que adivinha o resultado de cada salto antes de ele ser decidido, para o pipeline nunca parar. Os bons preditores modernos acertam mais de 95% das vezes.
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import contador from '../../ac/contador.dot?raw';
+
+Os saltos condicionais são frequentes, cerca de uma em cada seis instruções nos programas típicos, e cada salto mal apostado no [pipeline](pipeline/) deita fora o trabalho das fases seguintes.[^saltos] A predição de saltos é o mecanismo que adivinha o resultado de cada salto antes de ele ser decidido, para o pipeline nunca parar. Os bons preditores modernos acertam mais de 95% das vezes.
+
+[^saltos]: A frequência de saltos e as taxas de acerto típicas seguem o _Computer Organization and Design, versão RISC-V_, de Patterson e Hennessy, livro de referência da cadeira.
 
 ## O preço de falhar
 
@@ -54,7 +61,22 @@ A cura é exigir duas evidências antes de mudar de opinião. O **contador satur
 
 Cada salto tomado sobe um degrau (até 11), cada não tomado desce um (até 00). Repete o ciclo de 10 iterações a começar em 11: as 9 confirmações mantêm o contador em 11, a saída desce para 10 (a aposta continua tomado, acerta tudo até aqui) e só uma segunda saída seguida mudaria a aposta. Erros: só o da saída, 1 em 10 em vez de 2 em 11. O estado fraco absorve a exceção isolada sem virar a aposta.
 
+<Dot
+  source={contador}
+  alt="Máquina de quatro estados do contador saturante: T avança para a direita até 11 e N recua para a esquerda até 00, com saturação nos extremos."
+/>
+
 Este é o mecanismo que deves saber desenhar de cor: quatro estados, aposta dos dois de cima contra os dois de baixo, saturação nos extremos.
+
+Corre os dois preditores sobre a sequência T, T, T, N, T e compara os acertos:
+
+<CodePlayground
+  language="python"
+  title="Preditores de 1 e 2 bits"
+  code={'def simula(seq, estado, bits):\n    for r in seq:\n        aposta = "T" if (estado == 1 if bits == 1 else estado >= 2) else "N"\n        print(r, "aposta", aposta, "acerto" if aposta == r else "erro")\n        if bits == 1:\n            estado = 1 if r == "T" else 0\n        else:\n            estado = min(3, estado + 1) if r == "T" else max(0, estado - 1)\n\nseq = ["T", "T", "T", "N", "T"]\nprint("1 bit, comeca em 1:")\nsimula(seq, 1, 1)\nprint("2 bits, comeca em 11:")\nsimula(seq, 3, 2)'}
+/>
+
+O de 1 bit acerta 3 em 5; o de 2 bits acerta 4 em 5, falhando só na saída do ciclo.
 
 ## Onde vive o preditor: BHT e BTB
 
@@ -62,9 +84,18 @@ O preditor precisa de uma entrada por salto. A **tabela de histórico** (_BHT, b
 
 Saber **se** salta não chega: é preciso saber **para onde**. O **buffer de destino** (_BTB_) guarda, por salto recente, o endereço destino previsto. Na busca, o PC consulta o BTB: se lá estiver e o preditor apostar tomado, o pipeline continua logo no destino previsto sem esperar pela descodificação. Sem BTB, mesmo os saltos bem previstos pagariam um ciclo para calcular o destino.
 
+<YouTube
+  id="nczJ58WvtYo"
+  title="Como funciona a predição de saltos nos CPUs, Computerphile"
+/>
+
 :::tip[Como cai isto em teste]
 O enunciado típico dá-te uma sequência de resultados (por exemplo T, T, T, N, T) e um estado inicial, e pede a taxa de acerto do preditor de 1 bit e do de 2 bits. Simula passo a passo numa tabela como a de cima: estado, aposta, resultado, estado seguinte. Não tentes fazer de cabeça, a tabela é o método.
 :::
+
+## Para saber mais
+
+- [Medições reais de predição de saltos](https://danluu.com/branch-prediction/): dados de desempenho em CPUs modernas, para veres os 95% a acontecer.
 
 ## Para levar para a próxima página
 

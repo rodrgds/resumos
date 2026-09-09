@@ -5,7 +5,18 @@ section: conteudo
 order: 1
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import pilha from '../../ac/pilha.typ?raw';
+
 Em FSC programaste em LEGv8, um conjunto de instruções inventado para ensinar. Em AC programas em RISC-V, um conjunto real e aberto que equipa desde microcontroladores até supercomputadores. A boa notícia: as ideias são as mesmas, registos, memória endereçável ao byte, saltos e pilha, e só os nomes e os detalhes mudam. Esta página faz essa ponte.
+
+<YouTube
+  id="7tM4XkqoFro"
+  title="Introdução à arquitetura RISC-V, DDCA capítulo 6 parte 1"
+/>
 
 ## Os registos que interessam
 
@@ -55,6 +66,16 @@ sw   t0, 8(t1)     # memória[t1 + 8] = t0
 ld   t0, 0(sp)     # t0 = memória[sp], 64 bits
 ```
 
+Para bytes há `lb` e `sb`, com a variante `lbu` para bytes sem sinal:
+
+```riscv
+lb   t0, 0(t1)     # t0 = byte com sinal em memória[t1], estendido a 32 bits
+lbu  t0, 0(t1)     # t0 = byte sem sinal (0 a 255)
+sb   t0, 1(t1)     # guarda só o byte baixo de t0 em memória[t1 + 1]
+```
+
+Usa `lb` quando o byte representa um número com sinal (por exemplo um `char` em C) e `lbu` quando representa um valor de 0 a 255. O `sb` escreve um único byte sem mexer nos vizinhos, o que é essencial para cadeias de caracteres e estruturas compactas.
+
 Tal como no LEGv8, só as instruções de acesso tocam na memória; todo o resto trabalha entre registos. É a filosofia _load-store_ dos RISC.
 
 ## Saltos e decisões
@@ -102,11 +123,63 @@ fim:
 
 Segue com valores pequenos para verificar: vetor `[5, 7]` em algum endereço base `B`, com `n = 2`. Na primeira volta, `t2 = 0`, lê-se `memória[B] = 5`, a soma fica 5. Na segunda, `t2 = 4`, lê-se `memória[B+4] = 7`, a soma fica 12. Na terceira, `t1 = 2`, o `bge` confirma e sai do ciclo com `a0 = 12`.
 
+Corre a mesma soma com o vetor `[5, 7]` definido na secção de dados. O programa imprime `12` com uma chamada de sistema e termina:
+
+<CodePlayground
+  language="riscv"
+  title="Soma de um vetor curto"
+  code={`.text
+.globl main
+main:
+    la a0, vetor
+    li a1, 2
+    jal ra, soma_vetor
+    li a7, 1
+    ecall
+    li a7, 10
+    ecall
+soma_vetor:
+    li t0, 0
+    li t1, 0
+ciclo:
+    bge t1, a1, fim
+    slli t2, t1, 2
+    add t2, a0, t2
+    lw t3, 0(t2)
+    add t0, t0, t3
+    addi t1, t1, 1
+    jal zero, ciclo
+fim:
+    mv a0, t0
+    jalr zero, 0(ra)
+.data
+vetor: .word 5, 7`}
+/>
+
+O editor corre RISC-V de 32 bits com as chamadas de sistema do RARS: `ecall` com `a7 = 1` imprime o inteiro em `a0` e com `a7 = 10` termina o programa. No qtrvsim, as chamadas de sistema seguem a mesma convenção do SPIM para estes dois casos: `1` imprime inteiro, `10` termina.
+
 Duas instruções novas merecem atenção. `li` (_load immediate_) carrega uma constante qualquer num registo, o assembler trata de a decompor se ela não couber no imediato. `mv a0, t0` copia um registo para outro e é na verdade `addi a0, t0, 0`. Vais ver muitas destas pseudo-instruções nos exemplos: são abreviaturas que o assembler traduz para instruções reais.
 
 :::tip[Como ler um salto]
 Quando vires `bge t1, a1, fim`, lê em voz alta: "se t1 for maior ou igual a a1, vai para fim". Confirma sempre qual é o caso de saída e qual é o caso de continuar, porque trocar os dois é o erro mais comum nestes ciclos.
 :::
+
+## Correr nos simuladores
+
+O playground acima chega para exemplos curtos. Para os trabalhos, usa um simulador completo, que mostra registos e memória a cada instrução:
+
+<Tabs id="simuladores-riscv" labels={['qtrvsim', 'RARS']}>
+  <div slot="panel-0">
+
+Guarda o programa num ficheiro `.s`, abre-o no qtrvsim e corre instrução a instrução. Observa `ra` antes e depois de cada `jal` e confirma que `sp` só mexe dentro das funções que reservam pilha.
+
+  </div>
+  <div slot="panel-1">
+
+Abre o RARS, monta o mesmo ficheiro e corre instrução a instrução. As chamadas de sistema `1` e `10` comportam-se como no exemplo acima, por isso o que imprimires num lado imprime no outro.
+
+  </div>
+</Tabs>
 
 ## Chamadas e a pilha
 
@@ -126,7 +199,21 @@ maximo_3:
 
 A disciplina é rígida: reserva no início, guarda `ra` e todos os `s` que usares, repõe pela ordem inversa no fim. Uma função que não chama ninguém (_leaf_) e só usa temporários pode saltar a pilha toda. E lembra-te de que os argumentos vão em `a0`–`a7` e o resultado volta em `a0`: é assim que o chamador e o chamado combinam sem partilhar mais nada.
 
-Corre este padrão no WebRISC-V ou no qtrvsim com uma função que chama outra e observa `ra` e `sp` a cada passo. Ver o endereço de regresso a ser guardado e reposto tira a magia toda ao mecanismo.
+O diagrama mostra a pilha antes e depois da reserva: `sp` desce 16 bytes e a zona nova guarda `ra` e `s0`.
+
+<Typst
+  source={pilha}
+  format="svg"
+  alt="Pilha antes e depois de reservar 16 bytes: sp desce e a zona nova guarda ra em 8(sp) e s0 em 0(sp)."
+/>
+
+Corre este padrão no qtrvsim ou no RARS com uma função que chama outra e observa `ra` e `sp` a cada passo. Ver o endereço de regresso a ser guardado e reposto tira a magia toda ao mecanismo.
+
+## Para saber mais
+
+- [qtrvsim](https://github.com/cvut/qtrvsim): o simulador usado nos trabalhos, com código fonte e manuais.
+- [RARS](https://github.com/TheThirdOne/rars): simulador em Java para montar e correr RISC-V com chamadas de sistema.
+- [Especificações oficiais do RISC-V](https://riscv.org/technical/specifications/): os volumes ratificados, incluindo o conjunto base não privilegiado.
 
 ## Para levar para a próxima página
 

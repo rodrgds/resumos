@@ -5,6 +5,12 @@ section: conteudo
 order: 4
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import bolha from '../../ac/pipeline-bolha.typ?raw';
+
 No datapath monociclo de FSC, cada instrução atravessa tudo antes de a seguinte começar, e o relógio espera pela mais lenta. O pipeline parte esse caminho em **fases** separadas por registos e põe uma instrução diferente em cada fase ao mesmo tempo, como uma linha de montagem. O relógio passa a esperar só pela fase mais lenta, e o processador completa idealmente uma instrução por ciclo.
 
 ## As cinco fases
@@ -43,6 +49,61 @@ add  t3, t0, t4
 
 O `lw` só tem o dado no fim da fase MEM, mas o `add` precisava dele no início da fase EX do ciclo anterior. Nenhum atalho fabrica o valor antes de ele existir: o hardware deteta o caso, **congela** o pipeline um ciclo e injeta uma **bolha** (_bubble_, uma operação vazia que avança sem fazer nada). Custa 1 ciclo por cada par destes. O compilador ajuda evitando pôr uma instrução que use o valor logo a seguir ao load, preenchendo o intervalo com trabalho independente.
 
+A linha do tempo mostra o congelamento: o `add` repete IF e ID enquanto a bolha atravessa EX, e só avança quando o dado sai da MEM com forwarding.
+
+<Typst
+  source={bolha}
+  format="svg"
+  alt="Linha do tempo de 7 ciclos: o lw ocupa IF a WB nos ciclos 1 a 5; o add faz IF e ID nos ciclos 2 e 3, uma bolha em EX no ciclo 4 e EX a WB nos ciclos 5 a 7, com forwarding da MEM do lw para a EX do add."
+/>
+
+O mesmo raciocínio em C: a primeira versão usa cada valor carregado logo a seguir, a segunda dá ao pipeline dois acumuladores independentes para sobrepor. Ambas imprimem `24`.
+
+<Tabs id="carga-uso" labels={['Dependente', 'Reordenado']}>
+  <div slot="panel-0">
+
+```c
+#include <stdio.h>
+int main(void) {
+    int a[4] = {1, 2, 3, 4};
+    int soma = 0;
+    for (int i = 0; i < 4; i++)
+        soma += a[i] * 2 + 1;
+    printf("%d\n", soma);
+    return 0;
+}
+```
+
+Cada volta espera pelo `a[i]` antes de multiplicar: é o par carga-uso em software.
+
+  </div>
+  <div slot="panel-1">
+
+```c
+#include <stdio.h>
+int main(void) {
+    int a[4] = {1, 2, 3, 4};
+    int par = 0, impar = 0;
+    for (int i = 0; i < 4; i += 2) {
+        par += a[i] * 2 + 1;
+        impar += a[i + 1] * 2 + 1;
+    }
+    printf("%d\n", par + impar);
+    return 0;
+}
+```
+
+Com dois acumuladores, cada volta tem dois loads independentes para o hardware sobrepor.
+
+  </div>
+</Tabs>
+
+<CodePlayground
+  language="c"
+  title="Carga-uso em C"
+  code={'#include <stdio.h>\nint main(void) {\n    int a[4] = {1, 2, 3, 4};\n    int soma = 0;\n    for (int i = 0; i < 4; i++)\n        soma += a[i] * 2 + 1;\n    printf("%d\\n", soma);\n    return 0;\n}'}
+/>
+
 ## Hazards estruturais e de controlo
 
 O **hazard estrutural** acontece quando duas fases precisam do mesmo recurso ao mesmo tempo. O exemplo clássico: com uma só memória para instruções e dados, a fase IF de uma instrução e a fase MEM de outra colidem. A solução é mesmo estrutural: memórias separadas para instruções e dados (organização de Harvard ao nível da cache), por isso é que há caches L1 de instruções e de dados distintas.
@@ -65,8 +126,13 @@ $$
 
 Vê a estrutura da conta: frequência do evento vezes custo do evento, somada ao ideal. É a mesma ponderação do CPI médio da página de [desempenho](desempenho/), com os stalls no papel dos custos.
 
+<YouTube
+  id="jwnFQ58HU1Y"
+  title="Pipeline com e sem sobreposição, exemplo passo a passo"
+/>
+
 :::details[Ver a linha do tempo do par carga-uso]
-Escreve os ciclos em coluna e marca cada fase. O `lw` ocupa IF–ID–EX–MEM–WB nos ciclos 1–5. O `add` entraria em IF no ciclo 2, mas o hardware congela-o: repete IF/ID no ciclo 3 (a bolha passa por EX nesse ciclo) e só avança para EX no ciclo 4, quando o dado já saiu da MEM do `lw` e o forwarding o entrega. Desenha esta tabela uma vez na vida e o mecanismo deixa de ser abstrato.
+Escreve os ciclos em coluna e marca cada fase. O `lw` ocupa IF–ID–EX–MEM–WB nos ciclos 1–5. O `add` entraria em IF no ciclo 2, mas o hardware congela-o: repete IF e ID no ciclo 4 (a bolha passa por EX nesse ciclo) e só avança para EX no ciclo 5, quando o dado já saiu da MEM do `lw` e o forwarding o entrega. Desenha esta tabela uma vez na vida e o mecanismo deixa de ser abstrato.
 :::
 
 ## Para levar para a próxima página

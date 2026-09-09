@@ -5,6 +5,11 @@ section: conteudo
 order: 2
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import fatores from '../../ac/fatores-desempenho.typ?raw';
+
 Um processador é mais rápido quando executa um programa em menos tempo. Parece evidente, mas esta frase já exclui as medidas falsas mais comuns: a frequência do relógio sozinha, o número de instruções executadas e os pontos em testes sintéticos. Esta página fixa a medida certa, o tempo de execução, e as fórmulas que a decompõem.
 
 ## A medida certa
@@ -27,7 +32,15 @@ $$
 \text{Tempo de CPU} = N \times \text{CPI} \times T_c = \frac{N \times \text{CPI}}{f}
 $$
 
-onde $N$ é o número de instruções executadas, CPI (_cycles per instruction_) é a média de ciclos de relógio por instrução, $T_c$ é o período do relógio e $f$ a frequência. Cada técnica desta cadeira ataca um destes fatores: o pipeline e o superescalar baixam o CPI, as caches baixam o $N$ efetivo de ciclos de espera (contam como CPI na prática), e a frequência... já quase não sobe, como vais ver em [multicore e energia](multicore-energia/).
+onde $N$ é o número de instruções executadas, CPI (_cycles per instruction_) é a média de ciclos de relógio por instrução, $T_c$ é o período do relógio e $f$ a frequência. Cada técnica desta cadeira ataca um destes fatores: o pipeline e o superescalar baixam o CPI, as caches baixam o $N$ efetivo de ciclos de espera (contam como CPI na prática), e a frequência... já quase não sobe, como vais ver em [multicore e energia](multicore-energia/).[^freq]
+
+[^freq]: A estagnação da frequência nos poucos GHz desde cerca de 2005 se deve ao muro da potência, explicado na página sobre [multicore e energia](multicore-energia/).
+
+<Typst
+  source={fatores}
+  format="svg"
+  alt="A equação do processador em três fatores, N vezes CPI vezes período: menos instruções pelo compilador, menos ciclos por instrução pelo pipeline e caches, relógio mais rápido pela frequência."
+/>
 
 Um exemplo concreto. Um programa executa $N = 10^9$ instruções, com CPI médio de 1,5, a 3 GHz ($T_c \approx 0{,}33$ ns):
 
@@ -79,7 +92,22 @@ $$
 \frac{1}{0{,}4 + 0{,}6 / 4} = \frac{1}{0{,}4 + 0{,}15} = \frac{1}{0{,}55} \approx 1{,}82
 $$
 
+Confirma a conta e experimenta outros valores, por exemplo 90% do tempo paralelizável com 8 núcleos:
+
+<CodePlayground
+  language="python"
+  title="Lei de Amdahl"
+  code={'def amdahl(fracao, speedup):\n    return 1 / ((1 - fracao) + fracao / speedup)\n\nprint(f"{amdahl(0.6, 4):.2f}")\nprint(f"{amdahl(0.9, 8):.1f}")'}
+/>
+
+O programa imprime `1.82` e `4.7`: os dois exemplos desta página e da página sobre [multicore](multicore-energia/).
+
 Quadruplicaste a velocidade de 60% do programa e o programa todo nem duplicou. E mesmo que a unidade vetorial fosse infinitamente rápida ($s \to \infty$), o speedup nunca passaria de $1 / 0{,}4 = 2{,}5$. A moral: mede primeiro onde está o tempo e só depois acelera, porque a fração não acelerada manda no resultado.
+
+<YouTube
+  id="F16HqnYzJMU"
+  title="Desempenho, lei de Amdahl e benchmarks, Sarah Harris"
+/>
 
 :::warning[O erro mais comum]
 Somar speedups de partes diferentes. Se acelerares 50% do programa 2 vezes e outros 30% 3 vezes, o speedup não é 5 nem a média: é $1 / (0{,}2 + 0{,}5/2 + 0{,}3/3) = 1 / 0{,}55 \approx 1{,}82$. Aplica Amdahl à fração total de cada vez, sempre sobre o tempo original.
