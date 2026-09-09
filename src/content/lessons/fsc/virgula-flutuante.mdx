@@ -5,6 +5,11 @@ section: conteudo
 order: 3
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import float32bits from '../../fsc/float-32bits.typ?raw';
+
 Os inteiros não chegam para representar grandezas contínuas como $9{,}6875$ ou distâncias astronómicas. A **vírgula flutuante** resolve o problema com uma ideia emprestada da notação científica: guarda um número significativo e uma potência da base que posiciona a vírgula.
 
 ## Normalização
@@ -61,10 +66,46 @@ O resultado final, separado em sinal, expoente e mantissa, é:
 1 10000010 00110110000000000000000
 ```
 
+<Typst
+  source={float32bits}
+  format="svg"
+  alt="Barra de 32 bits dividida em três campos: 1 bit de sinal com valor 1, 8 bits de expoente com 10000010 e 23 bits de mantissa com 0011011 seguido de zeros."
+/>
+
+Repara nas larguras: o expoente ocupa 8 posições e a mantissa 23, e os valores por baixo são exatamente os bits calculados acima.
+
 Para descodificar, faz o caminho inverso: $s = 1$ dá o sinal negativo, $e = 130$ dá o expoente $130 - 127 = 3$, e a mantissa com o bit implícito dá $1{,}0011011_2 \times 2^3 = 1001{,}1011_2 = 9{,}6875$.
+
+Confirma os 32 bits com um programa curto, que empacota o valor em precisão simples e imprime os bits:
+
+<CodePlayground
+  language="python"
+  code={'import struct\nbits = format(struct.unpack(">I", struct.pack(">f", -9.6875))[0], "032b")\nprint(bits)'}
+/>
+
+A saída é `11000001000110110000000000000000`: o `1` inicial é o sinal, seguem-se os 8 bits do expoente e os 23 da mantissa, iguais ao código calculado à mão.
+
+## Valores especiais
+
+Nem todas as combinações de expoente e mantissa seguem a fórmula com bit implícito. Os extremos do campo de expoente estão reservados:
+
+| Expoente | Mantissa     | Valor                                |
+| -------- | ------------ | ------------------------------------ |
+| `00000000` | `000...0`  | Zero, com sinal: `+0` e `-0`         |
+| `00000000` | diferente de zero | Desnormalizado: $0{,}m \times 2^{-126}$, sem bit implícito |
+| `11111111` | `000...0`  | Infinito, com sinal: $+\infty$ e $-\infty$ |
+| `11111111` | diferente de zero | NaN (_not a number_), resultado de operações inválidas como $0/0$ |
+
+Os desnormalizados preenchem o intervalo entre zero e o menor normalizado, à custa de perderem precisão: quanto mais zeros à esquerda da mantissa, menos bits significativos restam. O infinito aparece em divisões por zero e em overflows, e o NaN propaga-se por qualquer conta em que entre.
 
 ## Limites do formato
 
-A vírgula flutuante cobre um intervalo enorme, mas nem todos os valores decimais são exatos em binário: $0{,}1$, por exemplo, gera uma dízima binária infinita e é guardado com um pequeno erro de arredondamento. É por isso que somar dinheiro com `float` acumula erros e os programas financeiros usam inteiros de cêntimos ou tipos decimais. Guarda também esta regra prática: compara com que precisão o problema precisa antes de escolheres entre `float` (32 bits) e `double` (64 bits).
+A vírgula flutuante cobre um intervalo enorme, mas nem todos os valores decimais são exatos em binário: $0{,}1$, por exemplo, gera uma dízima binária infinita e é guardado com um pequeno erro de arredondamento[^moeda]. É por isso que somar dinheiro com `float` acumula erros e os programas financeiros usam inteiros de cêntimos ou tipos decimais. Guarda também esta regra prática: compara com que precisão o problema precisa antes de escolheres entre `float` (32 bits) e `double` (64 bits).
+
+<YouTube id="PZRI1IfStY0" title="Floating Point Numbers - Computerphile" />
+
+O vídeo mostra o erro de guardar $0{,}1$ em binário, que é a razão física por trás do aviso sobre dinheiro acima.
 
 > Experimenta: codifica $5{,}25$ em precisão simples. (Resposta: $5{,}25 = 101{,}01_2 = 1{,}0101_2 \times 2^2$, logo $s = 0$, $e = 129 = 10000001_2$, mantissa `0101000...0`, e o código é `0 10000001 01010000000000000000000`.)
+
+[^moeda]: Podes ver os 64 bits exatos de $0{,}1$ no [conversor IEEE 754](https://www.h-schmidt.net/FloatConverter/IEEE754.html): a mantissa não termina em zeros, o que denuncia o arredondamento. A regra prática é esta: dinheiro conta-se em inteiros de cêntimos, nunca em `float`.

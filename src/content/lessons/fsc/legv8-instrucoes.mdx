@@ -5,6 +5,10 @@ section: conteudo
 order: 9
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import addCodificacao from '../../fsc/add-codificacao.typ?raw';
+
 Cada instrução LEGv8 ocupa 4 bytes, ou seja, 32 bits. O formato, a posição dos campos dentro desses 32 bits, depende da família da instrução. Há quatro famílias nesta cadeira: R, D, CB e B.
 
 ## Instruções do tipo R
@@ -19,6 +23,16 @@ As instruções do tipo R fazem contas entre registos: `ADD`, `SUB`, `AND` e `OR
 `Rn` é o primeiro operando, `Rm` o segundo, `Rd` o destino e `SHAMT` a quantidade de deslocamento (quase sempre `000000`, isto é, sem deslocar). O campo `ALUOp` da unidade de controlo vale `10` para este tipo, a dizer à ALU que a operação vem do campo de função da instrução.
 
 Um exemplo: `ADD X2, X3, X4` soma `X3` com `X4` e guarda em `X2`. Todos os operandos são registos; não há memória envolvida.
+
+Codifica agora `ADD X0, X1, X2` campo a campo. O opcode do `ADD` é `10001011000` (11 bits), `Rm` é `X2 = 00010`, `SHAMT` é `000000`, `Rn` é `X1 = 00001` e `Rd` é `X0 = 00000`:
+
+<Typst
+  source={addCodificacao}
+  format="svg"
+  alt="Barra de 32 bits da instrução ADD X0, X1, X2 dividida em cinco campos à escala: opcode com 10001011000, Rm com 00010, SHAMT com 000000, Rn com 00001 e Rd com 00000."
+/>
+
+Confere as contas: $11 + 5 + 6 + 5 + 5 = 32$ bits, e cada número de registo ocupa exatamente os 5 bits do seu campo. É este o exercício que cai em prova: do nome da instrução aos 32 bits, sem saltar campos.
 
 ## Instruções do tipo D
 
@@ -40,7 +54,14 @@ As instruções de salto condicional (tipo CB), como `CBZ` (_compare and branch 
 | ADDRESS   | Rt    |
 ```
 
-O novo valor do PC é `PC + ADDRESS × 4`, porque cada instrução ocupa 4 bytes e o campo guarda o deslocamento em unidades de instruções. O `ALUOp` vale `01` e o registo `Rt` é o registo comparado.
+O novo valor do PC é `PC + ADDRESS × 4`, porque cada instrução ocupa 4 bytes e o campo guarda o deslocamento em unidades de instruções[^unidades]. O `ALUOp` vale `01` e o registo `Rt` é o registo comparado.
+
+Confirma a conta do salto com um programa curto: com `PC = 100` e `ADDRESS = 12`, o destino é `148`:
+
+<CodePlayground
+  language="python"
+  code={'pc = 100\naddress = 12\nprint(pc + address * 4)'}
+/>
 
 O salto incondicional `B` tem só o campo de endereço e faz sempre `PC + ADDRESS × 4`. A instrução `BL` (salto com ligação) faz o mesmo e ainda guarda em X30 (LR) o endereço da instrução seguinte, para o procedimento saber para onde regressar. É por isso que o LR existe.
 
@@ -53,3 +74,9 @@ Segue uma chamada com atenção aos endereços. Se `BL func` está no endereço 
 :::warning[Três erros comuns]
 Esquecer que o deslocamento do salto se multiplica por 4; usar um OFFSET que não é múltiplo de 8 num acesso de 64 bits; e guardar registos na pilha sem os repor pela ordem inversa. Qualquer um deles desvia o programa para um endereço errado.
 :::
+
+## Para saber mais
+
+- [Simulador LEGv8](https://github.com/simdeistud/LEGv8-Simulator): simulador de código aberto para testar instruções e procedimentos antes da prova.
+
+[^unidades]: Cada instrução ocupa 4 bytes seguidos, por isso os endereços de instrução andam de 4 em 4. O campo `ADDRESS` conta instruções, não bytes: o hardware multiplica por 4 para converter a contagem em endereço.

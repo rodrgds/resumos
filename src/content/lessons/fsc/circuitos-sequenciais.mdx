@@ -5,6 +5,11 @@ section: conteudo
 order: 6
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import flipflopD from '../../fsc/flipflop-d.typ?raw';
+import fsmDetetor from '../../fsc/fsm-detetor.dot?raw';
+
 Há circuitos que um combinatório não consegue realizar: um contador precisa de se lembrar do valor anterior. Num **circuito sequencial**, a saída depende dos valores atuais das entradas **e** de todos os valores anteriores. A memória do passado vive em **variáveis de estado** binárias, guardadas em elementos de memória. Um circuito com $N$ variáveis de estado pode ter até $2^N$ estados.
 
 Duas notas antes dos componentes. O estado atual nem sempre depende do estado anterior (há circuitos que ignoram parte da história). E, como o comportamento depende da sequência, precisamos de conhecer sempre o estado inicial para prever o que o circuito faz.
@@ -12,6 +17,14 @@ Duas notas antes dos componentes. O estado atual nem sempre depende do estado an
 ## Flip-flops
 
 O **flip-flop do tipo D** é o elemento de memória básico. Tem uma entrada de dados $D$, uma entrada de relógio e duas saídas complementares, $Q$ e $\bar{Q}$. Após a transição ativa do relógio (em geral a subida, de 0 para 1), a saída $Q$ passa a valer o que estava em $D$. Entre transições, $Q$ mantém o valor guardado. Pode ter ainda uma entrada de habilitação (EN): com EN desativada, o flip-flop ignora o relógio e conserva o estado.
+
+<Typst
+  source={flipflopD}
+  format="svg"
+  alt="Bloco do flip-flop D com as entradas D, relógio com triângulo de subida e EN à esquerda e as saídas Q e Q negado à direita."
+/>
+
+O triângulo na entrada de relógio marca a transição ativa: só na subida é que $D$ passa para $Q$. Com EN a 0, nem a subida muda nada.
 
 O **flip-flop do tipo T** troca de estado a cada ciclo de relógio: se está em 0 passa a 1, e vice-versa. É o bloco natural para contadores, onde cada bit muda quando o anterior completa uma volta.
 
@@ -35,6 +48,20 @@ Uma **máquina de estados finitas** (FSM, do inglês _finite state machine_) des
 2. O produto lógico (AND) de cada par de expressões seja 0, ou seja, as transições são mutuamente exclusivas e nunca há ambiguidade sobre o próximo estado.
 
 Um exemplo mínimo: um detetor que assinala quando vê dois uns seguidos. Tem dois estados, `A` (ainda não vi um 1) e `B` (vi um 1). Em `A`, a entrada 0 mantém o circuito em `A` e a entrada 1 leva a `B`. Em `B`, a entrada 1 assinala a deteção e mantém `B`, e a entrada 0 regressa a `A`. Verifica as condições: em `A`, as expressões são $\bar{x}$ e $x$, cuja soma é 1 e cujo produto é 0. Em `B` passa-se o mesmo. As máquinas de estados permitem guardar pequenas quantidades de dados, como a fase de um protocolo, sem recorrer a uma memória de acesso direto.
+
+<Dot
+  source={fsmDetetor}
+  alt="Grafo do detetor de dois uns: o estado A tem um lacete com 0 e uma seta para B com 1; o estado B, marcado como deteção, tem um lacete com 1 e uma seta de regresso a A com 0."
+/>
+
+A tabela de transição resume o mesmo comportamento:
+
+| Estado atual | $x = 0$           | $x = 1$              |
+| ------------ | ----------------- | -------------------- |
+| `A`          | `A`, saída 0      | `B`, saída 0         |
+| `B`          | `A`, saída 0      | `B`, saída 1         |
+
+Lê cada célula como estado seguinte e saída: só a célula (`B`, $1$) produz saída 1, que é exatamente a deteção do segundo 1 seguido. O estado `B` com círculo duplo no grafo marca onde a deteção acontece.
 
 :::warning[Não confundas os dois mundos]
 Um circuito combinatório com realimentação acidental pode oscilar ou reter valores de forma imprevisível, mas isso não faz dele um sequencial bem projetado. A memória intencional vive nos flip-flops, com o relógio a marcar quando o estado pode mudar.

@@ -5,6 +5,12 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import doublewordMapa from '../../fsc/doubleword-mapa.typ?raw';
+import pilha from '../../fsc/pilha.typ?raw';
+
 O **LEGv8** é o conjunto de instruções usado na cadeira para mostrar como um processador real recebe ordens. É um subconjunto didático do ARMv8, com instruções de 32 bits e registos de 64 bits. Esta página apresenta onde os dados vivem: os registos e a memória.
 
 ## Os registos
@@ -20,9 +26,21 @@ O LEGv8 tem 32 registos de 64 bits, numerados de X0 a X30 mais um registo especi
 
 Os restantes, X0 a X27, são de uso geral: guardam operandos, resultados intermédios e argumentos de procedimentos. Aceder a um registo é muito mais rápido do que aceder à memória, por isso uma boa utilização dos registos evita instruções de LOAD. Constantes escritas diretamente na instrução chamam-se **operandos imediatos** e também evitam idas à memória.
 
+<YouTube id="3LVeEjsn8Ts" title="John Hennessy and David Patterson 2017 ACM A.M. Turing Award Lecture" />
+
+A palestra conta como nasceu o RISC, a filosofia que o LEGv8 herda do ARMv8: poucas instruções simples, muitos registos e o compilador a fazer o trabalho pesado.
+
 ## Memória endereçada ao byte
 
 A memória é **endereçada ao byte**: cada endereço identifica um byte de 8 bits. Uma instrução de acesso a uma palavra dupla (_doubleword_, 64 bits) como `LDUR X0, [X1, #0]` refere-se às posições de memória 5000 a 5007 se `X1` valer 5000.
+
+<Typst
+  source={doublewordMapa}
+  format="svg"
+  alt="Oito bytes em fila com os endereços 5000 a 5007. Uma chave por baixo indica que LDUR X0 com X1 igual a 5000 lê estes 8 bytes."
+/>
+
+Conta os bytes: do 5000 ao 5007 inclusive vão 8 posições, uma por cada byte da _doubleword_.
 
 Isto cria uma obrigação: para ler 8 bytes de uma vez, o endereço tem de ser múltiplo de 8. O hardware soma o deslocamento ao registo base e depois aplica um deslocamento lógico à esquerda (**LSL**) para alinhar o acesso. Na prática, quando escreveres um deslocamento para uma _doubleword_, pensa em múltiplos de 8.
 
@@ -30,14 +48,30 @@ Isto cria uma obrigação: para ler 8 bytes de uma vez, o endereço tem de ser m
 
 Quando um valor de vários bytes vive em endereços consecutivos, há duas convenções possíveis para a ordem dos bytes:
 
-- **Big-endian**: o byte mais significativo fica no menor endereço de memória.
-- **Little-endian**: o byte menos significativo fica no menor endereço de memória.
+<Tabs id="endianness" labels={['Big-endian', 'Little-endian']}>
+  <div slot="panel-0">
 
-O valor `0x12345678` guardado no endereço 1000 em big-endian põe `0x12` em 1000, `0x34` em 1001, `0x56` em 1002 e `0x78` em 1003. Em little-endian, a ordem inverte-se: `0x78` fica em 1000 e `0x12` em 1003. A convenção tem de ser igual nos dois lados de qualquer troca de dados, ou os valores saem trocados.
+O byte mais significativo fica no menor endereço. O valor `0x12345678` guardado no endereço 1000 põe `0x12` em 1000, `0x34` em 1001, `0x56` em 1002 e `0x78` em 1003. Lê-se como está escrito.
+
+  </div>
+  <div slot="panel-1">
+
+O byte menos significativo fica no menor endereço. O mesmo valor põe `0x78` em 1000, `0x56` em 1001, `0x34` em 1002 e `0x12` em 1003. A ordem inverte-se byte a byte.
+
+  </div>
+</Tabs>
+
+A convenção tem de ser igual nos dois lados de qualquer troca de dados, ou os valores saem trocados.
 
 ## A pilha
 
 A **pilha** (_stack_) é uma zona de memória com disciplina LIFO: o último a entrar é o primeiro a sair (_last in, first out_). O registo SP aponta sempre para o endereço mais recente da pilha.
+
+<Typst
+  source={pilha}
+  format="svg"
+  alt="Pilha de quatro casas com endereços altos em cima e baixos em baixo. Uma seta aponta o SP para a casa do topo e duas setas mostram o push a subtrair e o pop a adicionar."
+/>
 
 Colocar dados na pilha (**push**) significa subtrair ao SP, porque a pilha cresce para endereços mais baixos. Tirar dados (**pop**) significa adicionar ao SP. A pilha é necessária nos procedimentos **non-leaf**, os que invocam outros procedimentos: antes de chamar, o procedimento guarda os seus registos na pilha, e ao regressar repõe-nos.
 

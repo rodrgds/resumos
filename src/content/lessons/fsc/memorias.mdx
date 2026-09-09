@@ -5,6 +5,11 @@ section: conteudo
 order: 7
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import hierarquiaMemoria from '../../fsc/hierarquia-memoria.typ?raw';
+
 Os registos guardam poucas palavras junto ao processador. Para guardar quantidades maiores de dados usam-se **memórias de acesso direto**, onde qualquer posição se lê ou escreve indicando o seu endereço.
 
 ## Tipos de memória
@@ -17,6 +22,14 @@ Dentro da RAM há duas tecnologias com compromissos opostos:
 - **DRAM** (memória dinâmica): cada bit vive como carga num condensador minúsculo, que se descarrega com o tempo e **precisa de ser refrescada** periodicamente. É mais lenta no acesso, mas muito mais densa.
 
 Em geral, o tempo de escrita é maior do que o tempo de leitura.
+
+<Typst
+  source={hierarquiaMemoria}
+  format="svg"
+  alt="Pilha de quatro níveis: registos no topo, depois SRAM, DRAM e ROM na base. Uma seta indica mais rápida para cima e mais densa para baixo."
+/>
+
+Lê a pilha nos dois sentidos: para cima ganhas velocidade e perdes capacidade, para baixo ganhas densidade e pagas em tempo de acesso.
 
 ## Capacidade
 
@@ -32,6 +45,15 @@ $$
 2^{12} \times 8\ \text{bits} = 2^2 \times 2^{10}\ \text{bytes} = 4\ \text{KiB}
 $$
 
+Confirma a conta com um programa curto:
+
+<CodePlayground
+  language="python"
+  code={'bits = 2**12 * 8\nprint(bits)\nprint(bits // 8)\nprint(bits // 8 // 1024)'}
+/>
+
+A saída é `32768` bits, `4096` bytes e `4` KiB, exatamente a cadeia de conversões feita à mão.
+
 Decora as potências de referência: $2^{10} = 1024$ bytes $= 1$ KiB, $2^{20} = 1048576$ bytes $= 1$ MiB.
 
 ## Descodificação
@@ -40,6 +62,19 @@ Ligar as linhas de endereço às posições chama-se **descodificação**, e há
 
 - **Descodificação total**: cada endereço corresponde a uma posição. Todos os bits de endereço são usados na seleção.
 - **Descodificação parcial**: vários endereços correspondem à mesma posição. Nem todos os bits de endereço participam na seleção, por isso a mesma célula aparece em vários endereços (diz-se que tem imagem, _alias_).
+
+<Tabs id="descodificacao" labels={['Total', 'Parcial']}>
+  <div slot="panel-0">
+
+Na descodificação total, uma memória com 10 linhas de endereço usa os 10 bits para escolher entre $2^{10} = 1024$ posições. O endereço `0011010011` designa uma e uma só célula, e nenhum endereço se repete.
+
+  </div>
+  <div slot="panel-1">
+
+Na descodificação parcial, alguns bits de endereço são ignorados. Se o processador emite 12 bits mas a memória só usa os 10 mais baixos, os bits $A_{11}A_{10}$ não participam: a célula `0000000000` aparece nos endereços `000000000000`, `010000000000`, `100000000000` e `110000000000`. São 4 imagens por célula, e o espaço de $2^{12}$ endereços cobre só $2^{10}$ posições distintas.
+
+  </div>
+</Tabs>
 
 A descodificação parcial desperdiça espaço de endereçamento, mas poupa descodificadores e é comum quando a memória é mais pequena do que o espaço disponível.
 
