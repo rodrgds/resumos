@@ -1,0 +1,75 @@
+---
+title: Algoritmos gulosos
+description: Escolha local com prova de otimalidade, o contraexemplo que a destrói e a mochila fracionária.
+section: conteudo
+order: 3
+---
+
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import moedas from '../../da/moedas.typ?raw';
+
+Um algoritmo guloso decide passo a passo, escolhendo sempre a opção que parece melhor agora, sem nunca voltar atrás. Quando a escolha local é segura, o algoritmo é simples, rápido e ótimo. Quando não é, ele falha em silêncio e devolve uma resposta errada com ar confiante. A matéria desta página é saber distinguir os dois casos e prová-lo.
+
+## A estrutura do argumento
+
+Um guloso correto precisa de duas peças. A **escolha gulosa**: existe sempre uma solução ótima que começa com a nossa escolha local. E a **subestrutura ótima**: depois de fixar essa escolha, o resto do problema é uma instância menor do mesmo problema. Se provares as duas por indução, o algoritmo está correto. Se alguma falhar, há um contraexemplo à espera, e encontrá-lo faz parte do trabalho.
+
+## Exemplo que funciona: trocos canónicos
+
+Com moedas de 1, 2, 5, 10, 20 e 50 cêntimos, para dar 87 cêntimos o guloso escolhe sempre a maior moeda que cabe: 50, depois 20 (restam 17), depois 10 (restam 7), depois 5 (restam 2), depois 2. Total: **5 moedas**. Aqui a escolha é segura porque cada moeda é múltiplo útil das anteriores: nunca compensa trocar uma moeda grande por pequenas. A prova formal usa troca de argumentos, mas a intuição é esta regularidade do sistema.
+
+## Exemplo que parte: o contraexemplo
+
+Tira a moeda de 1 e considera o sistema com moedas de 3 e 4 para pagar 6. O guloso escolhe 4 (a maior que cabe) e ficam a faltar 2, que nenhuma moeda completa: ele declara falência. Mas **3 + 3 = 6** resolve com duas moedas. A escolha local destruiu a única solução. Sempre que desconfiares de um guloso, procura o caso pequeno onde a primeira decisão fecha a porta ao ótimo: é esse contraexemplo que deves apresentar no teste em vez de uma justificação vaga.
+
+<Typst
+  source={moedas}
+  format="svg"
+  alt="Comparação para pagar 6 com moedas de 3 e 4: o guloso escolhe 4 e fica com 2 em falta sem solução; o ótimo usa duas moedas de 3."
+/>
+
+## Exemplo com critério: mochila fracionária
+
+Na mochila fracionária podes levar frações de objetos, e aí o guloso pela **razão valor por peso** é ótimo. Capacidade 5, objetos A (peso 4, valor 6, razão 1,5), B (peso 3, valor 5, razão 1,67) e C (peso 2, valor 4, razão 2,0). Por ordem de razão: leva C inteiro (peso 2, sobram 3), leva B inteiro (peso 3, sobram 0). Valor total: **9**, com a mochila exatamente cheia. Confirma que nada bate isto: qualquer fração de A no lugar de B ou C troca razão 1,67 ou 2,0 por 1,5 e baixa o total. Repara no contraste com a [mochila 0-1 da força bruta](/cadeiras/da/forca-bruta/): sem frações, a razão engana e o ótimo AD não é o que o guloso escolheria primeiro. A fração é a condição que torna o guloso seguro aqui.
+
+O programa abaixo ordena por razão e enche. A saída mostra a ordem 2, 1 (os objetos C e B) e o total 9. Troca a capacidade para 6 e confirma que o guloso passa a levar uma fração de A e o total sobe para 10,5.
+
+<CodePlayground
+  language="cpp"
+  title="Guloso da mochila fracionária"
+  code={'#include <iostream>\n\nint main() {\n    double peso[3] = {4, 3, 2}, valor[3] = {6, 5, 4};\n    int ordem[3] = {0, 1, 2};\n    for (int i = 0; i < 3; i++)\n        for (int j = i + 1; j < 3; j++)\n            if (valor[ordem[j]] / peso[ordem[j]] > valor[ordem[i]] / peso[ordem[i]]) {\n                int t = ordem[i]; ordem[i] = ordem[j]; ordem[j] = t;\n            }\n    double cap = 5, total = 0;\n    for (int k = 0; k < 3 && cap > 0; k++) {\n        int i = ordem[k];\n        double leva = peso[i] < cap ? peso[i] : cap;\n        std::cout << "objeto " << i << \": leva \" << leva << \"\\n\";\n        total += leva / peso[i] * valor[i];\n        cap -= leva;\n    }\n    std::cout << \"total: \" << total << \"\\n\";\n}'}
+/>
+
+:::warning[O erro clássico]
+Apresentar um guloso sem discutir a escolha. "Escolho o mais barato em cada passo" não é uma prova. Mostra a escolha, mostra por que existe um ótimo que a contém (ou o contraexemplo que prova que não há) e só depois analisa o custo.
+:::
+
+## Quando o sistema ajuda e quando não ajuda
+
+O mesmo algoritmo, dois sistemas de moedas. No canónico, a regularidade paga; no sistema com 3 e 4, a primeira decisão mata a solução.
+
+<Tabs id="sistemas-moedas" labels={['Sistema canónico', 'Sistema 3 e 4']}>
+  <div slot="panel-0">
+
+Para 87 com 1, 2, 5, 10, 20 e 50, o guloso acerta: 50, 20, 10, 5 e 2, cinco moedas. Cada moeda grande vale sempre mais do que qualquer combinação de pequenas que a substitua, por isso nenhuma troca melhora o resultado e a prova por troca de argumentos fecha.
+
+  </div>
+  <div slot="panel-1">
+
+Para 6 com 3 e 4, o guloso escolhe 4, restam 2 e não há continuação. O ótimo é 3 + 3. Aqui uma moeda grande (4) vale menos do que a combinação de pequenas que a substitui (3 + 3 = 6 com duas moedas contra uma escolha morta), por isso a escolha local não é segura e o guloso nem sequer devolve uma solução válida.
+
+  </div>
+</Tabs>
+
+## Exemplo com intervalos: seleção de atividades
+
+Tens quatro atividades com início e fim: A (1, 3), B (2, 4), C (3, 5) e D (4, 6). Queres o maior conjunto sem sobreposições. O guloso ordena pelo **fim mais cedo** e escolhe cada atividade que comece depois do fim da última escolhida: A termina às 3, B começa às 2 e sai; C começa às 3 e entra; D começa às 4, antes do fim de C (5), e sai. Resultado: **{'{'}A, C{'}'}**, duas atividades, e não há conjunto maior (as alternativas de tamanho 2, como B com D, empatam sem bater).
+
+A prova é de avanço: depois de $k$ escolhas, o guloso termina sempre não mais tarde do que a $k$-ésima atividade de qualquer solução ótima, por isso nunca fica com menos escolhas. O critério "fim mais cedo" é a escolha segura; "duração mais curta" ou "começo mais cedo" falham em contraexemplos pequenos que deves saber construir.
+
+## Para saber mais
+
+- Notas sobre o paradigma guloso com prova por troca, de Paulo Feofiloff (IME-USP): [Algoritmos gulosos](https://www.ime.usp.br/~pf/analise_de_algoritmos/aulas/guloso.html).
+- Aula do MIT 6.046 sobre gulosos e árvores de suporte mínimas: [Greedy algorithms](https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/resources/lecture-12-greedy-algorithms-minimum-spanning-tree/).

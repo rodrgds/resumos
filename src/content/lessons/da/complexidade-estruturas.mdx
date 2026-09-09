@@ -5,6 +5,10 @@ section: conteudo
 order: 1
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import crescimento from '../../da/crescimento-ordens.typ?raw';
+
 Antes de desenhares um algoritmo, precisas de duas coisas: uma régua para medir o custo e uma caixa de ferramentas com as estruturas que fazem cada operação depressa. Esta página revê a notação assimptótica e mostra como a estrutura escolhida decide o custo antes de escreveres a primeira linha do algoritmo.
 
 ## A régua: O grande
@@ -13,9 +17,19 @@ Dizemos que $f(n)$ é $O(g(n))$ quando $f$ cresce no máximo tão depressa como 
 
 Duas regras chegam para quase tudo. Na **sequência**, somas e ficas com o pior: um passo $O(n)$ seguido de um passo $O(n^2)$ dá $O(n^2)$. Nos **ciclos aninhados**, multiplicas: dois ciclos de $n$ iterações com trabalho constante dão $O(n^2)$. E diz sempre o que é $n$ e o que estás a contar: " $n$ é o tamanho do vetor e conto comparações" evita metade das confusões.
 
+<Typst
+  source={crescimento}
+  format="svg"
+  alt="Gráfico com quatro curvas de crescimento entre n igual a 0 e 10: n sobe até 10, n log n até cerca de 33, n ao quadrado até 100 e 2 elevado a n sai do gráfico antes de n igual a 7."
+/>
+
+As quatro curvas contam a história da cadeira: entre linear e quadrático vivem os algoritmos simpáticos, e a exponencial é a parede contra a qual todas as técnicas das próximas páginas lutam. Repara como $2^n$ abandona o gráfico antes de $n = 7$: é por isso que "só" $2^{50}$ candidatos é sinónimo de impossível.
+
 :::warning[O custo esconde-se nos detalhes]
-$O(1)$ não quer dizer instantâneo, quer dizer independente de $n$. E o pior caso manda: um algoritmo que é rápido quase sempre mas explode numa entrada adversa é um algoritmo $O(\text{explosão})$. Nos mini-testes, identifica sempre se te pedem pior caso, caso médio ou amortizado.
+$O(1)$ não quer dizer instantâneo, quer dizer independente de $n$. E o pior caso manda: um algoritmo que é rápido quase sempre mas explode numa entrada adversa é um algoritmo $O(\text{explosão})$. Nos mini-testes, identifica sempre se te pedem pior caso, caso médio ou amortizado[^amortizado].
 :::
+
+[^amortizado]: A análise amortizada distribui o custo de operações caras mas raras pelas baratas: Cormen et al., Introduction to Algorithms, capítulo sobre análise amortizada (bibliografia obrigatória da cadeira).
 
 ## A caixa de ferramentas
 
@@ -26,3 +40,13 @@ Cada estrutura compra velocidade numa operação e paga-a noutra. O vetor dá ac
 Tens o vetor `[4, 1, 7, 3, 9, 2, 8, 5]` e queres saber se contém o valor `8` e em que posição. A procura linear percorre do início: compara `4`, `1`, `7`, `3`, `9`, `2` e só no sétimo elemento encontra `8`. São 7 comparações para $n = 8$, e no pior caso são $n$. Custo: $O(n)$ tempo e $O(1)$ memória extra.
 
 Com uma tabela de dispersão construída sobre os mesmos valores, a procura de `8` calcula a função de dispersão, salta diretamente para o balde e confirma em 1 comparação típica. Custo médio: $O(1)$ tempo, à custa de $O(n)$ memória para a tabela e de um pior caso $O(n)$ se tudo colidir no mesmo balde. Para $n = 8$ a diferença é irrelevante; para $n = 10^6$ com muitas procuras, é a diferença entre segundos e horas. É este raciocínio, feito antes de desenhar, que as próximas páginas assumem: cada técnica de [força bruta](/cadeiras/da/forca-bruta/) a [programação dinâmica](/cadeiras/da/programacao-dinamica/) vive ou morre do custo das operações que repete.
+
+## Contar comparações em C++
+
+O programa abaixo procura um valor ausente em mil posições ordenadas e conta as comparações dos dois métodos. A procura linear faz 1000 comparações; a binária faz 10, porque cada comparação parte o intervalo a metade. Corre e confirma: o rácio acompanha $n$ contra $\log n$, não é ruído de cronómetro.
+
+<CodePlayground
+  language="cpp"
+  title="Linear contra binária: contar comparações"
+  code={'#include <iostream>\n#include <vector>\n\nint main() {\n    const int n = 1000;\n    std::vector<int> v(n);\n    for (int i = 0; i < n; i++) v[i] = 2 * i;\n    int alvo = 2 * n + 1;  // ausente: pior caso\n    int lin = 0;\n    for (int x : v) { lin++; if (x == alvo) break; }\n    int bin = 0, lo = 0, hi = n - 1;\n    while (lo <= hi) {\n        bin++;\n        int m = (lo + hi) / 2;\n        if (v[m] == alvo) break;\n        else if (v[m] < alvo) lo = m + 1;\n        else hi = m - 1;\n    }\n    std::cout << \"linear: \" << lin << \"\\nbinaria: \" << bin << \"\\n\";\n}'}
+/>

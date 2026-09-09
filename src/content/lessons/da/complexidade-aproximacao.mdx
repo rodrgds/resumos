@@ -5,19 +5,56 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+import gadget from '../../da/gadget-cobertura.typ?raw';
+import tsp from '../../da/tsp-quadrado.typ?raw';
+import caminho from '../../da/caminho-cobertura.dot?raw';
+
 As técnicas anteriores resolvem problemas tratáveis. Esta página é sobre os outros: problemas onde o melhor algoritmo exato conhecido é exponencial e a entrada realista não cabe nele. A estratégia muda de "resolver exatamente" para "reconhecer a dificuldade, reduzir a casos conhecidos e aproximar com garantia".
 
 ## Reduzir para reconhecer
 
-Uma **redução** transforma o teu problema noutro já conhecido, preservando a resposta. Se o SAT se reduz ao teu problema, o teu problema é pelo menos tão difícil como o SAT. Na prática, a redução serve para classificar: perante um problema novo de horários ou rotas, reduzi-lo a um problema NP-completo conhecido diz-te para parares de procurar o algoritmo polinomial perfeito.
+Uma **redução**[^reducao] transforma o teu problema noutro já conhecido, preservando a resposta. Se o SAT se reduz ao teu problema, o teu problema é pelo menos tão difícil como o SAT. Na prática, a redução serve para classificar: perante um problema novo de horários ou rotas, reduzi-lo a um problema NP-completo conhecido diz-te para parares de procurar o algoritmo polinomial perfeito.
+
+[^reducao]: A teoria completa de P, NP e reduções polinomiais está em [complexidade](/cadeiras/tc/complexidade/); uma aula que percorre o mesmo caminho é a [lecture 16 do MIT 6.046 sobre P, NP e reduções](https://mitocw.ups.edu.ec/courses/electrical-engineering-and-computer-science/6-046j-design-and-analysis-of-algorithms-spring-2015/lecture-videos/lecture-16-complexity-p-np-np-completeness-reductions/).
 
 Exemplo pequeno: reduz satisfazibilidade a **cobertura de vértices**. Para cada variável cria uma aresta entre o literal e a sua negação (escolher um extremo é escolher o valor lógico); para cada cláusula cria um triângulo (obriga a escolher pelo menos dois vértices por cláusula); liga cada vértice do triângulo ao literal correspondente. Uma cobertura com $n + 2m$ vértices ($n$ variáveis, $m$ cláusulas) existe se e só se a fórmula é satisfazível: os $n$ vértices das arestas dão a atribuição e os $2m$ dos triângulos confirmam cada cláusula. Se recordares [lógica proposicional](/cadeiras/md/logica-proposicional/), o SAT é "existe um modelo?"; se quiseres a teoria completa de P, NP e reduções polinomiais, está em [complexidade](/cadeiras/tc/complexidade/).
+
+<Typst
+  source={gadget}
+  format="svg"
+  alt="Gadget da redução de SAT para cobertura de vértices: uma aresta vertical entre x e não x para a variável e um triângulo para a cláusula, com o vértice t1 ligado ao literal x."
+/>
+
+<YouTube
+  id="6OPsH8PK7xM"
+  title="Sobre o que é realmente P contra NP (Polylog)"
+/>
 
 ## Aproximar com garantia
 
 Quando o exato não cabe, um algoritmo de **aproximação** devolve uma solução válida com um fator de garantia: nunca pior que $k$ vezes o ótimo. O guloso ingénuo para cobertura de vértices, que toma as duas pontas de cada aresta de um emparelhamento maximal, é uma 2-aproximação: cada aresta do emparelhamento obriga o ótimo a usar pelo menos um vértice, e o algoritmo usa dois.
 
 Exemplo onde o fator 2 acontece mesmo: o caminho com 4 vértices $v_1, v_2, v_3, v_4$ e 3 arestas. O ótimo é $\{v_2, v_3\}$, tamanho 2. O algoritmo encontra o emparelhamento maximal $\{(v_1, v_2), (v_3, v_4)\}$ e devolve os 4 vértices: exatamente o dobro. A garantia de fator 2 é justa, e saber isto evita duas armadilhas: esperar sempre o ótimo de uma heurística, ou desprezar uma heurística que garante metade do ótimo quando o exato demoraria séculos.
+
+<Dot
+  source={caminho}
+  alt="Caminho de 4 vértices: as arestas do emparelhamento maximal a negrito escolhem os 4 vértices, enquanto o ótimo em círculo duplo usa só v2 e v3."
+/>
+
+## Aproximar rotas: caixeiro com fator 2
+
+O caixeiro viajante métrico (distâncias que respeitam a desigualdade triangular) se aproxima com a árvore de suporte mínima. Calcula a MST, percorre-a em pré-ordem e atalha as repetições pela aresta direta: cada aresta da árvore é atravessada no máximo duas vezes, por isso o passeio vale no máximo $2$ vezes a MST, e a MST nunca excede o ótimo (tirar uma aresta do ótimo dá uma árvore de suporte).
+
+No quadrado de lado 1, a MST usa 3 lados e pesa 3. A pré-ordem A, B, C, D com o atalho D para A dá o circuito de comprimento **4**, dentro do teto de 6. O atalho só encurta, pela desigualdade triangular, por isso a garantia vale para qualquer instância métrica.
+
+<Typst
+  source={tsp}
+  format="svg"
+  alt="Quadrado ABCD de lado 1: três lados a cheio formam a árvore de suporte mínima de peso 3 e o quarto lado a tracejado é o atalho que fecha o circuito de comprimento 4."
+/>
 
 :::tip[O método perante um problema exponencial]
 Primeiro, tenta reduzir a um NP-completo conhecido para confirmar a dificuldade. Depois escolhe a saída honesta: instâncias pequenas vão para [retrocesso com poda](/cadeiras/da/retrocesso-ramificacao/), restrições lineares para [programação linear inteira](/cadeiras/da/programacao-linear/), e o resto para aproximação com garantia ou heurísticas avaliadas empiricamente. "Exponencial" não quer dizer "impossível", quer dizer "exacto só até certo tamanho".
