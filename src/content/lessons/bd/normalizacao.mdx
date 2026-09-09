@@ -5,7 +5,10 @@ section: conteudo
 order: 3
 ---
 
-Uma tabela mal desenhada repete factos: o nome do cliente em cada encomenda, o preço do produto em cada linha vendida. A repetição traz **anomalias**: para mudar o preço tens de atualizar N linhas (atualização), não consegues registar um produto ainda sem vendas (inserção) e apagar a última venda apaga o produto (eliminação). A **normalização** remove a redundância decompondo tabelas, e as **formas normais** dizem quando parar.
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Uma tabela mal desenhada repete factos: o nome do cliente em cada encomenda, o preço do produto em cada linha vendida. A repetição traz **anomalias**: para mudar o preço tens de atualizar N linhas (atualização), não consegues registar um produto ainda sem vendas (inserção) e apagar a última venda apaga o produto (eliminação). A **normalização** remove a redundância decompondo tabelas, e as **formas normais** dizem quando parar.[^ullman]
 
 ## Dependências funcionais
 
@@ -26,6 +29,26 @@ Vendas(idEnc, dataEnc, idCliente, nomeCliente, idProd, nomeProd, preco, qtd)
 - **3FN**: nenhum atributo fora da chave depende de outro atributo fora da chave. Mesmo depois de resolver as parciais, `idCliente -> nomeCliente` seria uma **dependência transitiva** se `idCliente` não fosse chave.
 - **Boyce-Codd (BCNF)**: todo o determinante de uma FD não trivial é superchave. É a versão sem exceções da 3FN: em BCNF, cada seta parte de uma (super)chave.
 
+Para comparar de relance:
+
+| Forma | O que proíbe | Exemplo na tabela Vendas |
+| --- | --- | --- |
+| 2FN | Dependência de parte da chave | `idProd -> preco` usa metade da chave |
+| 3FN | Dependência transitiva entre não chaves | `idCliente -> nomeCliente` via atributo não chave |
+| BCNF | Determinante que não é superchave | Qualquer seta que parta de fora de uma chave |
+
+## Ver a contradição acontecer
+
+Na tabela única, nada impede dois preços diferentes para o mesmo produto. Executa e repara nas duas linhas do Teclado:
+
+<CodePlayground
+  language="sql"
+  title="Preço contraditório sem normalização"
+  code={'CREATE TABLE Vendas(idEnc INTEGER, idProd INTEGER, nomeProd TEXT, preco REAL, qtd INTEGER);\nINSERT INTO Vendas VALUES (100, 10, \u0027Teclado\u0027, 45.0, 2), (101, 10, \u0027Teclado\u0027, 40.0, 1);\nSELECT idProd, nomeProd, preco FROM Vendas WHERE idProd = 10;'}
+/>
+
+O resultado mostra `10|Teclado|45.0` e `10|Teclado|40.0`: o mesmo produto com dois preços, e nenhuma restrição reclama. Depois da decomposição, o preço vive só em `Produto(idProd, ...)` e esta contradição é impossível por construção.
+
 ## Decompor até BCNF
 
 Parte a tabela pelas FDs problemáticas, uma de cada vez, até cada tabela ter só setas a partir de chaves:
@@ -42,3 +65,10 @@ Cada facto vive num sítio só: o preço do Teclado está apenas em `Produto`. M
 :::tip[Como cai isto em teste]
 O enunciado dá-te uma tabela e as FDs. O método: sublinha a chave, marca cada FD como total, parcial ou transitiva, classifica a forma normal mais alta que passa e decompõe pela primeira FD que falha, repetindo até tudo passar. Mostra sempre as chaves das tabelas resultantes, porque é nelas que o corretor confirma BCNF.
 :::
+
+## Para ver em vídeo
+
+<YouTube id="GFQaEYEc8_8" title="Learn Database Normalization - 1NF, 2NF, 3NF, 4NF, 5NF" />
+<YouTube id="J-drts33N8g" title="1st, 2nd and 3rd Normal Form (Database Normalisation)" />
+
+[^ullman]: As definições de dependência funcional e de Boyce-Codd seguem Ullman, A First Course in Database Systems, a bibliografia obrigatória da cadeira.
