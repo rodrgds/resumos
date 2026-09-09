@@ -87,7 +87,7 @@ O workflow GitHub Actions verifica formatação, tipos, testes de navegador e bu
 
 ## Créditos
 
-Oito fontes de leitura alojadas localmente: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata e IBM Plex Mono. O navegador descarrega a fonte escolhida. Ícones [Heroicons](https://heroicons.com/) via `Icon.astro` e `@iconify-json/heroicons`, sem JavaScript no navegador. [Fontes dos logótipos](public/logos/README.md). A ilustração dos pontos foi criada para este projeto.
+Oito fontes de leitura alojadas localmente: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata e IBM Plex Mono. O navegador descarrega a fonte escolhida. Ícones [Heroicons](https://heroicons.com/) nos controlos. As cadeiras usam [Tabler Icons](https://github.com/tabler/tabler-icons) (MIT) e desenhos próprios através de `CourseIcon.astro`. O campo `icon` de cada cadeira escolhe o símbolo. Todos são SVG, sem JavaScript no navegador. [Fontes dos logótipos](public/logos/README.md). A ilustração dos pontos foi criada para este projeto.
 
 Inspirado nos [Resumos LEIC do Técnico](https://resumos.leic.pt/), com código novo. O site é independente da FEUP e da U.Porto. `data/` e `_data/` são referências locais, ignoradas pelo Git, TypeScript e formatação.
 

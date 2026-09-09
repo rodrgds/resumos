@@ -21,7 +21,7 @@
 - `markdown-export.mjs` generates public Markdown from built pages, never raw content directories or browser storage. Keep drafts and local notes private.
 - Add tests only for meaningful user-visible regressions or execution/privacy boundaries. Avoid assertions that freeze incidental copy, count markup, or mirror implementation.
 
-- Use Heroicons through `Icon.astro` for interface and course icons. Preserve official brand logos. Do not use Unicode glyphs as icons or add footers to executable code blocks.
+- Use Heroicons through `Icon.astro` for interface controls. Courses use subject-specific SVGs through `CourseIcon.astro`, with Tabler artwork and custom drawings in `course-icons.ts`; choose each course icon in its curriculum data. Preserve official brand logos. Do not use Unicode glyphs as icons or add footers to executable code blocks.
 
 - Reading history stays in browser storage through `reading-history.ts`. Resolve it against published course navigation; never export or index it. Only explicit resume links restore scroll position.
 

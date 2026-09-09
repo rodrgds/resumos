@@ -1,42 +1,9 @@
-import type { IconName } from '../components/Icon.astro';
+import type { CourseIconName } from '../lib/course-icons';
 
 export const curriculum = {
   year: '2026/27',
   url: 'https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2026&pv_origem=CUR&pv_plano_id=31224&pv_tipo_cur_sigla=',
 };
-
-const icons = {
-  algebra: 'table-cells',
-  analysis: 'calculator',
-  programming: 'code-bracket',
-  systems: 'cpu-chip',
-  discrete: 'share',
-  project: 'academic-cap',
-  architecture: 'cpu-chip',
-  physics: 'globe-alt',
-  theory: 'arrow-path-rounded-square',
-  algorithms: 'share',
-  database: 'circle-stack',
-  magnet: 'bolt',
-  testing: 'beaker',
-  os: 'command-line',
-  statistics: 'chart-bar',
-  design: 'arrows-right-left',
-  software: 'squares-plus',
-  lab: 'beaker',
-  web: 'code-bracket',
-  interaction: 'cursor-arrow-rays',
-  security: 'shield-check',
-  webapp: 'square-3-stack-3d',
-  functional: 'variable',
-  networks: 'signal',
-  compiler: 'arrows-right-left',
-  graphics: 'cube',
-  parallel: 'computer-desktop',
-  ai: 'light-bulb',
-  capstone: 'book-open',
-  electives: 'user-group',
-} satisfies Record<string, IconName>;
 
 type Course = {
   id: string;
@@ -45,7 +12,7 @@ type Course = {
   year: number;
   semester: number;
   ects: number;
-  icon: keyof typeof icons;
+  icon: CourseIconName;
   color:
     'blue' | 'indigo' | 'red' | 'teal' | 'green' | 'ochre' | 'purple' | 'slate';
   elective?: boolean;
@@ -60,7 +27,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 1,
     ects: 4.5,
-    icon: 'algebra',
+    icon: 'matrix',
     color: 'indigo',
   },
   {
@@ -70,7 +37,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 1,
     ects: 6,
-    icon: 'analysis',
+    icon: 'math-integral',
     color: 'blue',
   },
   {
@@ -80,7 +47,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 1,
     ects: 6,
-    icon: 'programming',
+    icon: 'brand-python',
     color: 'red',
   },
   {
@@ -90,7 +57,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 1,
     ects: 6,
-    icon: 'systems',
+    icon: 'logic-and',
     color: 'ochre',
   },
   {
@@ -100,7 +67,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 1,
     ects: 6,
-    icon: 'discrete',
+    icon: 'topology-ring',
     color: 'teal',
   },
   {
@@ -110,7 +77,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 1,
     ects: 1.5,
-    icon: 'project',
+    icon: 'school',
     color: 'slate',
   },
   {
@@ -120,7 +87,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 2,
     ects: 6,
-    icon: 'analysis',
+    icon: 'math-integrals',
     color: 'blue',
   },
   {
@@ -130,7 +97,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 2,
     ects: 6,
-    icon: 'architecture',
+    icon: 'cpu',
     color: 'ochre',
   },
   {
@@ -140,7 +107,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 2,
     ects: 6,
-    icon: 'physics',
+    icon: 'pendulum',
     color: 'teal',
   },
   {
@@ -150,7 +117,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 2,
     ects: 6,
-    icon: 'programming',
+    icon: 'brand-cpp',
     color: 'red',
   },
   {
@@ -160,7 +127,7 @@ export const courses: Course[] = [
     year: 1,
     semester: 2,
     ects: 6,
-    icon: 'theory',
+    icon: 'automaton',
     color: 'indigo',
   },
   {
@@ -170,7 +137,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 1,
     ects: 6,
-    icon: 'algorithms',
+    icon: 'binary-tree',
     color: 'green',
   },
   {
@@ -200,7 +167,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 1,
     ects: 6,
-    icon: 'testing',
+    icon: 'test-pipe',
     color: 'red',
   },
   {
@@ -210,7 +177,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 1,
     ects: 6,
-    icon: 'os',
+    icon: 'terminal-2',
     color: 'ochre',
   },
   {
@@ -220,7 +187,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 1,
     ects: 1.5,
-    icon: 'electives',
+    icon: 'users',
     color: 'slate',
     elective: true,
   },
@@ -231,7 +198,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 2,
     ects: 6,
-    icon: 'design',
+    icon: 'route',
     color: 'green',
   },
   {
@@ -241,7 +208,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 2,
     ects: 6,
-    icon: 'software',
+    icon: 'git-branch',
     color: 'red',
   },
   {
@@ -251,7 +218,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 2,
     ects: 6,
-    icon: 'lab',
+    icon: 'circuit-resistor',
     color: 'ochre',
   },
   {
@@ -261,7 +228,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 2,
     ects: 6,
-    icon: 'web',
+    icon: 'world-code',
     color: 'blue',
   },
   {
@@ -271,7 +238,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 2,
     ects: 4.5,
-    icon: 'statistics',
+    icon: 'chart-histogram',
     color: 'purple',
   },
   {
@@ -281,7 +248,7 @@ export const courses: Course[] = [
     year: 2,
     semester: 2,
     ects: 1.5,
-    icon: 'electives',
+    icon: 'messages',
     color: 'slate',
     elective: true,
   },
@@ -292,7 +259,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 1,
     ects: 6,
-    icon: 'security',
+    icon: 'shield-lock',
     color: 'green',
   },
   {
@@ -302,7 +269,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 1,
     ects: 4.5,
-    icon: 'interaction',
+    icon: 'hand-click',
     color: 'purple',
   },
   {
@@ -312,7 +279,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 1,
     ects: 6,
-    icon: 'webapp',
+    icon: 'browser',
     color: 'blue',
   },
   {
@@ -322,7 +289,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 1,
     ects: 6,
-    icon: 'functional',
+    icon: 'lambda',
     color: 'red',
   },
   {
@@ -332,7 +299,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 1,
     ects: 6,
-    icon: 'networks',
+    icon: 'router',
     color: 'ochre',
   },
   {
@@ -342,7 +309,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 1,
     ects: 1.5,
-    icon: 'electives',
+    icon: 'presentation',
     color: 'slate',
     elective: true,
   },
@@ -353,7 +320,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 2,
     ects: 6,
-    icon: 'compiler',
+    icon: 'transform',
     color: 'red',
   },
   {
@@ -363,7 +330,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 2,
     ects: 6,
-    icon: 'graphics',
+    icon: 'vector-bezier',
     color: 'purple',
   },
   {
@@ -373,7 +340,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 2,
     ects: 6,
-    icon: 'parallel',
+    icon: 'topology-star-3',
     color: 'teal',
   },
   {
@@ -383,7 +350,7 @@ export const courses: Course[] = [
     year: 3,
     semester: 2,
     ects: 6,
-    icon: 'ai',
+    icon: 'brain',
     color: 'indigo',
   },
   {
@@ -393,10 +360,9 @@ export const courses: Course[] = [
     year: 3,
     semester: 2,
     ects: 6,
-    icon: 'capstone',
+    icon: 'puzzle',
     color: 'slate',
   },
 ];
 
-export { icons };
 export type { Course };
