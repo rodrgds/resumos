@@ -1,0 +1,105 @@
+---
+title: Transporte e aplicações
+description: UDP e TCP, fiabilidade, congestionamento, sockets e as aplicações da Internet.
+section: conteudo
+order: 8
+---
+
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import aperto from '../../rc/handshake.typ?raw';
+
+A camada de rede entrega pacotes entre máquinas; a camada de transporte entrega entre **processos**, com a fiabilidade que cada aplicação precisa. Esta página mostra os dois transportes da Internet, como o TCP abre e fecha ligações, e como um programa cliente usa tudo isto.
+
+## UDP: simples e rápido
+
+O **UDP** cola um cabeçalho pequeno (portas de origem e destino, comprimento e soma de verificação) e envia. Não estabelece ligação, não confirma, não retransmite, não ordena. Parece pouco, mas é exatamente o que precisam o DNS (uma pergunta, uma resposta), o streaming (mais vale perder um pedaço que parar tudo) e os jogos (o estado novo substitui o velho). Quando a aplicação trata da fiabilidade ou não precisa dela, o UDP não atrapalha.
+
+## TCP: fiabilidade de ponta a ponta
+
+O **TCP** dá à aplicação a ilusão de um tubo fiável e ordenado de bytes. Por baixo, continua a haver pacotes IP que se perdem e baralham; o TCP numera cada byte, confirma a receção (**ACK cumulativo**: "recebi tudo até aqui") e retransmite o que falta, como um ARQ da [ligação de dados](ligacao-de-dados/) mas de ponta a ponta. A janela deslizante regressa aqui, agora limitada por dois lados: o que o recetor aguenta (controlo de fluxo) e o que a rede aguenta (controlo de congestionamento).
+
+Abrir uma ligação é o aperto de mão triplo. O cliente escolhe um número inicial, por exemplo 100, e envia SYN com seq 100. O servidor escolhe o seu, por exemplo 500, e responde SYN-ACK com seq 500 e ack 101 ("recebi o teu 100, espero o 101"). O cliente confirma com ACK de seq 101 e ack 501. A partir daqui, cada lado sabe que o outro está vivo e por onde começar a contar. Fechar é parecido mas com FINs em cada direção, porque cada lado pode ter ainda dados para enviar quando o outro já acabou.
+
+<Typst
+  source={aperto}
+  format="svg"
+  alt="Diagrama de sequência do aperto de mão: SYN com seq 100, SYN-ACK com seq 500 e ack 101, ACK com seq 101 e ack 501."
+/>
+
+<YouTube id="cIHiSR4j3g4" title="3 7 TCP Congestion Control" />
+
+O **controlo de congestionamento** é o TCP a sondar a rede: começa devagar, acelera enquanto chegam ACKs e trava quando deteta perdas, porque perda significa fila cheia algures. É um algoritmo distribuído sem dono: milhões de emissores a acelerar e travar produzem, em média, uma partilha justa das ligações. Falha em casos conhecidos (ligações sem fios com perdas que não são congestionamento), mas é o que mantém a Internet de pé desde os anos 80.[^sempre]
+
+:::warning[Fluxo contra congestionamento]
+O controlo de fluxo protege o recetor (a aplicação lenta); o controlo de congestionamento protege a rede (as filas cheias). Ambos limitam a janela, e vale o menor dos dois. Perante "por que está lento?", a primeira pergunta é qual dos dois está a mandar.
+:::
+
+## Sockets: a aplicação a pedir rede
+
+Um **socket** é o ponto onde o programa toca na rede: abre-se, liga-se a um endereço e porta, e depois lê-se e escreve-se como num ficheiro. O excerto abaixo é um cliente TCP mínimo em Python que pede uma página a um servidor e mostra a resposta. Lê-o como ilustração da sequência abrir, ligar, enviar, receber, fechar, que é igual em qualquer linguagem.
+
+```python
+import socket
+
+cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+cliente.connect(("exemplo.local", 8000))
+cliente.sendall(b"GET /dados HTTP/1.0\r\n\r\n")
+resposta = cliente.recv(4096)
+print(resposta.decode())
+cliente.close()
+```
+
+A chamada `connect` dispara o aperto de mão triplo; `sendall` entrega os bytes ao TCP, que trata de numerar, confirmar e retransmitir; `recv` devolve o que chegou por ordem; `close` inicia o encerramento com FIN. Por cima disto vivem as aplicações que usas todos os dias: o HTTP do navegador, o DNS que traduz nomes em endereços, o correio eletrónico e a transferência de ficheiros. Cada uma escolhe o transporte à sua medida, UDP para o rápido e simples, TCP para o fiável, e a pilha trata do resto.
+
+## Uma conversa HTTP de verdade
+
+O HTTP por cima do TCP é texto com regras. Um pedido mínimo tem uma linha de pedido, cabeçalhos e uma linha vazia a fechar:
+
+```http
+GET /dados HTTP/1.0
+Host: exemplo.local
+
+```
+
+E uma resposta mínima devolve uma linha de estado, cabeçalhos, linha vazia e corpo:
+
+```http
+HTTP/1.0 200 OK
+Content-Type: text/plain
+
+42
+```
+
+Lê a resposta com o programa: ele separa cabeçalhos de corpo na linha vazia e imprime `Estado: HTTP/1.0 200 OK` e `Corpo: 42`.
+
+<CodePlayground
+  language="python"
+  title="Pedir e ler uma resposta HTTP"
+  code={'pedido = "GET /dados HTTP/1.0\\r\\nHost: exemplo.local\\r\\n\\r\\n"\nprint(pedido)\nresposta = "HTTP/1.0 200 OK\\r\\nContent-Type: text/plain\\r\\n\\r\\n42"\ncabeca, corpo = resposta.split("\\r\\n\\r\\n")\nprint("Estado:", cabeca.split("\\r\\n")[0])\nprint("Corpo:", corpo)'}
+/>
+
+<YouTube id="MwxMsaFFycg" title="IP addresses and DNS | Internet 101 | Computer Science | Khan Academy" />
+
+## Ver com o Wireshark
+
+No laboratório, a teoria confirma-se a capturar tráfego. Instala o [Wireshark](https://www.wireshark.org/download.html), começa uma captura na tua interface e filtra: `tcp` mostra os apertos de mão e os ACKs desta página, `dns` mostra as perguntas e respostas de nomes. Compara os números de sequência que vires com os do exemplo do aperto de mão acima.
+
+## Lista de verificação do projeto cliente
+
+O trabalho laboratorial pede uma aplicação cliente a falar com um servidor. Antes de entregar, confirma:
+
+1. O cliente abre, usa e fecha a ligação sem deixar sockets pendurados.
+2. O protocolo da aplicação está documentado: formato dos pedidos, das respostas e dos erros.
+3. Há um caso de teste com o servidor desligado e outro com resposta malformada.
+4. O relatório inclui uma captura do Wireshark anotada com o essencial da conversa.
+
+## Para saber mais
+
+- [Laboratórios Wireshark de Kurose e Ross](https://gaia.cs.umass.edu/kurose_ross/wireshark.php): guiões de HTTP, DNS, TCP e IP com traços prontos.
+- [Programação com sockets em Python](https://www-net.cs.umass.edu/kurose_ross/programming.php): enunciados de cliente, servidor e servidor web.
+- [Guia HTTP do MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview): referência dos métodos, estados e cabeçalhos.
+- [Como funciona o DNS](https://www.cloudflare.com/learning/dns/what-is-dns/): explicação visual do recursivo e do autoritativo.
+
+[^sempre]: O controlo de congestionamento nasceu com o algoritmo de Jacobson em 1988, depois do primeiro colapso documentado da Internet em 1986. Ver Kurose e Ross, Computer Networking, capítulo da camada de transporte.
