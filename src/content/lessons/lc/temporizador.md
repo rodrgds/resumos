@@ -1,0 +1,42 @@
+---
+title: Temporizador
+description: O i8254, o divisor de frequência e a medida de tempo com interrupções.
+section: conteudo
+order: 4
+---
+
+O **temporizador** (i8254) é o periférico mais simples e o primeiro que vais programar: gera interrupções a um ritmo que tu defines. É também o relógio de todo o projeto, porque quase tudo o resto (ritmo de jogo, timeouts, medições) se conta em tiques dele. Perceber o divisor aqui é perceber metade dos periféricos seguintes.
+
+## O relógio de entrada e o divisor
+
+O i8254 recebe um relógio fixo de 1193182 Hz e divide-o por um **divisor** que tu programas, de 1 a 65535. A frequência de saída é a conta direta:
+
+$$
+f_{saída} = \frac{1193182}{\text{divisor}}
+$$
+
+O modo habitual gera uma onda quadrada: a saída fica metade do período a 1 e metade a 0, e cada flanco pode gerar uma interrupção. Programar o temporizador é escolher o divisor para a frequência que queres e escrever os dois bytes dele (menos e mais significativo) no registo do contador, depois de enviar a palavra de controlo que seleciona o contador e o modo.
+
+## Exemplo: 60 interrupções por segundo
+
+A frequência usada nos trabalhos é 60 Hz. O divisor ideal seria $1193182 / 60 = 19886{,}37$, mas o divisor tem de ser inteiro, por isso programa-se 19886. A frequência real fica:
+
+$$
+f_{real} = \frac{1193182}{19886} = 60 + \frac{22}{19886} \approx 60{,}0011\ \text{Hz}
+$$
+
+porque $19886 \times 60 = 1193160$ e sobram 22. O erro é de cerca de uma parte em 55000: numa hora, o relógio desvia-se menos de um décimo de segundo. Moral dupla: o hardware real raramente dá a frequência exata que pediste, e quase nunca isso importa, desde que saibas quantificar o desvio em vez de o ignorar.
+
+Com 60 interrupções por segundo, cada tique vale $1/60$ de segundo (cerca de 16,7 ms). O contador da página anterior transforma-se em cronómetro: divide o número de tiques por 60 e tens segundos.
+
+## Medir um intervalo conhecido
+
+Para cronometrar algo, regista o contador no início e no fim e subtrai. Se o início foi no tique 120 e o fim no tique 453, passaram $453 - 120 = 333$ tiques, ou seja $333 / 60 = 5{,}55$ segundos. A resolução é de um tique: intervalos abaixo de 16,7 ms medem-se em zero ou um tique, sem meio termo. Quando precisares de mais precisão, a solução é subir a frequência (com um divisor menor) e pagar o preço em interrupções por segundo.
+
+:::warning[O contador dá a volta]
+O contador de tiques é um inteiro com tamanho finito. Se o usares como relógio durante muito tempo, ele transborda e a subtração fim menos início deixa de funcionar. Nos trabalhos, ou usas um contador de 32 bits (que a 60 Hz demora mais de dois anos a dar a volta) ou tratas o transbordo explicitamente na subtração.
+:::
+
+## Para levar para a próxima página
+
+O temporizador é periódico e previsível: sabes sempre quando a próxima interrupção chega. O [Teclado](teclado/) é o oposto: interrupções esporádicas, ditadas por dedos humanos, com bytes que é preciso descodificar um a um.

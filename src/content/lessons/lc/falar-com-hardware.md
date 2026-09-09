@@ -1,0 +1,52 @@
+---
+title: Falar com o hardware
+description: Mapeamento em memória, registos e polling com máscaras de bits.
+section: conteudo
+order: 2
+---
+
+Um periférico, visto do programa, é um conjunto de **registos** indentados por endereços: escreves num endereço para lhe dar ordens e lês de outro para saber o estado e receber dados. A técnica chama-se mapeamento em memória (_memory-mapped I/O_), e dominá-la é falar com o hardware. Tudo o resto da cadeira é variação sobre este tema com registos diferentes.
+
+## Registos e portas
+
+Cada periférico expõe alguns endereços. Por convenção, uns são de **estado** (dizem o que se passa), outros de **dados** (transportam os bytes) e outros de **controlo** (configuram o comportamento). Lês o estado, decides, e só depois tocas nos dados ou no controlo. Nunca escrevas num registo sem saber que bits estás a mexer: muitos registos misturam campos independentes no mesmo byte, e escrever o byte inteiro pode mudar um campo que querias intacto.
+
+A leitura e a escrita fazem-se com funções de acesso a portas, que recebem o endereço e o valor. O padrão de cada operação é sempre o mesmo: máscara para isolar o campo, comparação para decidir, escrita cirúrgica para atuar.
+
+## Máscaras de bits
+
+Uma **máscara** é um valor com 1s exatamente nas posições que te interessam, combinada com o registo através de AND para leitura ou OR para escrita:
+
+```c
+uint8_t status = ler_registo(REG_ESTADO);
+
+if (status & BIT_PRONTO) {
+  uint8_t dado = ler_registo(REG_DADOS);
+  /* processar o byte recebido */
+}
+```
+
+`BIT_PRONTO` vale `1 << 0` se o bit de pronto for o bit 0. O teste `status & BIT_PRONTO` é diferente de zero quando o bit está ligado, seja qual for o resto do byte. Para ligar um bit sem tocar nos outros, usa OR: `controlo | BIT_ATIVAR`. Para desligar, usa AND com o complemento: `controlo & ~BIT_ATIVAR`. Estes três gestos, AND para testar, OR para ligar, AND com NOT para desligar, resolvem quase todas as manipulações de registos da cadeira.
+
+Um exemplo concreto: o registo de estado vale `0x21`, ou seja `0b00100001`. Se o bit de pronto for o bit 0, `0x21 & 0x01` dá `0x01`, diferente de zero, por isso há dado à espera. Se o bit de erro for o bit 5, `0x21 & 0x20` dá `0x20`, por isso há também um erro assinalado. Dois testes independentes no mesmo byte, cada um cego ao outro campo.
+
+## Polling: o ciclo de espera
+
+O **polling** pergunta ao dispositivo em ciclo até ele estar pronto. Se já viste a comparação entre mecanismos em [Entrada e saída](/cadeiras/ac/entrada-saida/), aqui está a implementação:
+
+```c
+while (!(ler_registo(REG_ESTADO) & BIT_PRONTO)) {
+  /* espera ativa: o processador não faz mais nada */
+}
+uint8_t dado = ler_registo(REG_DADOS);
+```
+
+Repara nas duas leituras separadas: o estado lê-se dentro do ciclo, os dados lêem-se uma vez fora dele. Ler os dados dentro do ciclo consumiria bytes antes de os processares. E repara que o ciclo não tem corpo: a espera ativa é propositada, mas é também o preço, porque o processador fica preso aqui até o dispositivo responder.
+
+:::warning[Os dois erros clássicos do polling]
+Primeiro, testar o bit errado ou com a máscara deslocada: o ciclo nunca sai, ou sai cedo demais. Confirma sempre a posição do bit no diagrama do registo antes de escreveres a máscara. Segundo, esquecer um limite de tentativas nos dispositivos lentos: se o hardware não responder, o programa fica pendurado sem dizer porquê. Nos trabalhos, um contador de tentativas com mensagem de erro poupa horas de depuração.
+:::
+
+## Para levar para a próxima página
+
+O polling funciona e é simples, mas ata o processador ao ritmo do periférico mais lento. A página sobre [Interrupções](interrupcoes/) inverte a relação: em vez de perguntares sem parar, subscreves o evento e segues a tua vida até o hardware te chamar.

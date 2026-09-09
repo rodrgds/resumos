@@ -1,0 +1,34 @@
+---
+title: Teclado
+description: O controlador i8042, scancodes de make e break e a descodificação de teclas.
+section: conteudo
+order: 5
+---
+
+O **teclado** fala com o PC através do controlador i8042: cada tecla premida ou libertada gera um ou mais bytes chamados **scancodes**. O teu programa lê esses bytes do buffer de saída do controlador e reconstrói o que o utilizador fez. É o primeiro periférico esporádico e o primeiro exercício sério de descodificação byte a byte.
+
+## Make e break
+
+Cada tecla produz dois eventos: o **make**, quando é premida, e o **break**, quando é libertada. No conjunto de scancodes usado nos trabalhos, o make de uma tecla normal é um byte, e o break são dois: o prefixo `0xF0` seguido do mesmo byte. Por exemplo, a tecla A tem make `0x1C` e break `0xF0 0x1C`.
+
+As teclas especiais (setas, Insert, Delete e companhia) usam um prefixo extra `0xE0`. A seta direita, por exemplo, tem make `0xE0 0x74` e break `0xE0 0xF0 0x74`. Repara na estrutura: o `0xE0` diz "tecla estendida", e o resto segue a regra normal de make e break.
+
+## Ler com polling ou interrupção
+
+O controlador assinala dado disponível no bit de pronto do registo de estado: em polling, esperas por esse bit e lês o byte do buffer de saída, exatamente como na página sobre [falar com o hardware](falar-com-hardware/). Por interrupção, subscreves o IRQ do teclado e cada byte que chega invoca o handler, que o guarda num buffer para o programa principal consumir.
+
+Nos dois casos, a leitura tem de tratar o erro de paridade e o timeout assinalados nos bits próprios do estado: um byte com erro descarta-se em vez de se descodificar, porque alimenta a máquina de estados com lixo.
+
+## Exemplo: descodificar premir e libertar
+
+O utilizador prime e liberta a tecla A. O programa recebe três bytes: `0x1C`, `0xF0`, `0x1C`. A descodificação corre assim:
+
+1. Chega `0x1C`. Não é prefixo (`0xE0` ou `0xF0`), por isso é um make: a tecla com código `0x1C` foi premida. Regista "A premida".
+2. Chega `0xF0`. É o prefixo de break: o próximo byte completa um break, não é um evento sozinho. Guarda o estado "à espera do segundo byte".
+3. Chega `0x1C` com o estado pendente: é o break da tecla `0x1C`. Regista "A libertada" e limpa o estado.
+
+Três bytes, dois eventos, uma máquina de estados com dois estados (normal e à espera). Se chegar `0xE0`, entra-se no ramo das teclas estendidas com a mesma lógica. O padrão é sempre este: cada byte ou é um evento completo ou muda o estado do descodificador para interpretar o seguinte.
+
+:::tip[Como testar sem dedos rápidos]
+Para depurar, não toques no teclado de verdade: alimenta o descodificador com sequências fixas no código (por exemplo o vetor `{0x1C, 0xF0, 0x1C}`) e confirma os eventos produzidos. Só quando a sequência fixa passar é que ligas o hardware real. Separar a descodificação da leitura é o que torna isto possível.
+:::
