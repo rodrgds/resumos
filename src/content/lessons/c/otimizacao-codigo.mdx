@@ -5,6 +5,11 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import otimizacao from '../../c/otimizacao.typ?raw';
+
 Otimizar é transformar o programa para correr mais rápido (ou ocupar menos espaço) **sem lhe mudar o significado observável**. Para transformar em segurança, o compilador primeiro analisa: calcula, para cada ponto do programa, factos como "que definições chegam aqui" ou "que variáveis estão vivas". Só depois reescreve, apoiado nesses factos.
 
 ## Análise de fluxo de dados
@@ -13,6 +18,32 @@ A análise propaga factos pelos blocos do grafo de fluxo até estabilizar (**pon
 
 - **Variáveis vivas**: uma variável está viva num ponto se o seu valor atual pode ser lido no futuro. Decide o que manter em registos e o que pode ser descartado.
 - **Definições que alcançam**: que atribuições podem ter produzido o valor lido em cada uso. Sustenta a propagação de constantes e de cópias.
+
+<Tabs id="analises-fluxo" labels={['Variáveis vivas', 'Definições que alcançam']}>
+  <div slot="panel-0">
+
+```
+t1 = 5       # t1 viva? só até à linha 2
+t2 = t1 + 3  # t2 viva? só até à linha 3
+x = t2       # x viva à saída (lê-se fora)
+y = 10       # y morta à saída (ninguém lê)
+```
+
+Pergunta para a frente: este valor ainda vai ser lido? `y` não, por isso a linha 4 pode sair.
+
+  </div>
+  <div slot="panel-1">
+
+```
+t1 = 5       # chega a t1 = 5 ao uso na linha 2? sim, única
+t2 = t1 + 3  # chega a t2 = t1 + 3 ao uso na linha 3? sim, única
+x = t2       # chega ao fim? sim, via x
+```
+
+Pergunta para trás: de onde veio este valor? Uma única definição a alcançar cada uso é o que autoriza substituir o nome pelo valor.
+
+  </div>
+</Tabs>
 
 ## Exemplo: propagar e eliminar
 
@@ -32,6 +63,26 @@ x = 8
 ```
 
 Confirma com o grafo de fluxo: o bloco continua a definir exatamente as variáveis vivas à saída com os mesmos valores, por isso nenhum caminho do programa distingue o antes do depois. É este o teste de cada otimização: os valores observáveis nos pontos de saída mantêm-se.
+
+<Typst
+  source={otimizacao}
+  format="svg"
+  alt="Bloco antes e depois da otimização: antes quatro instruções com as três mortas riscadas, depois só x igual a 8."
+/>
+
+Lê o antes com as linhas riscadas: tudo o que morreu na análise sai. O depois é o programa que corre, com o mesmo `x = 8` observável.
+
+A mesma otimização feita por um programa, sobre o bloco de entrada. Muda os valores e vê o resultado acompanhar.
+
+<CodePlayground
+  language="python"
+  title="Propagar e dobrar"
+  code={
+    'bloco = ["t1 = 5", "t2 = t1 + 3", "x = t2", "y = 10"]\nconstantes = {}\nsaida = []\nfor inst in bloco:\n    destino, expr = [p.strip() for p in inst.split("=", 1)]\n    for nome, valor in constantes.items():\n        expr = expr.replace(nome, str(valor))\n    try:\n        valor = eval(expr, {"__builtins__": {}}, {})\n        constantes[destino] = valor\n        expr = str(valor)\n    except (NameError, SyntaxError):\n        constantes.pop(destino, None)\n    saida.append(f"{destino} = {expr}")\nvivas = {"x"}\nfinal = [inst for inst in saida if inst.split("=")[0].strip() in vivas]\nprint(final)'
+  }
+/>
+
+O programa imprime `['x = 8']`. Segue o dicionário `constantes`: cada definição constante entra nele e reescreve os usos seguintes, até só restar o que está vivo. É uma dobragem ingénua (sem grafo de fluxo), mas mostra o mecanismo que a análise sustenta.
 
 :::warning[Otimizar cedo demais esconde erros]
 Aplica as otimizações sobre código intermédio já validado e confirma cada transformação no grafo de fluxo. No projeto, depura primeiro com as otimizações desligadas: um erro no código gerado com otimizações ligadas pode estar na otimização ou no código original, e sem a versão simples não distingues.

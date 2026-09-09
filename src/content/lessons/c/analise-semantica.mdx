@@ -5,6 +5,11 @@ section: conteudo
 order: 4
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import ambitos from '../../c/ambitos.typ?raw';
+
 A análise semântica percorre a árvore sintática e pergunta o que a gramática não consegue responder: este nome foi declarado? Neste ponto do programa, o que significa? Os tipos desta operação são compatíveis? O instrumento central é a **tabela de símbolos**, que regista cada declaração com o seu nome, tipo, âmbito e posição.
 
 ## Tabela de símbolos e âmbitos
@@ -12,6 +17,14 @@ A análise semântica percorre a árvore sintática e pergunta o que a gramátic
 Cada bloco abre um **âmbito** novo que vê os nomes dos âmbitos exteriores. Quando o mesmo nome é declarado dentro e fora, a declaração interior **esconde** (_shadowing_) a exterior dentro desse bloco, e a exterior volta a valer quando o bloco fecha. Na prática, a tabela é uma pilha de mapas: procurar um nome começa no âmbito atual e sobe até encontrar ou esgotar.
 
 Funções e parâmetros vivem no âmbito da função: os parâmetros comportam-se como variáveis locais inicializadas pela chamada, e o tipo de retorno regista-se na entrada da função para verificar cada `return`.
+
+<Typst
+  source={ambitos}
+  format="svg"
+  alt="Pilha de âmbitos com o x do bloco por cima do x global enquanto o bloco está aberto, e só o x global depois de o bloco fechar."
+/>
+
+Lê a pilha como o analisador a vê: com o bloco aberto há duas entradas para `x` e a procura encontra primeiro a de cima; fechado o bloco, a entrada interior desaparece e o `x` global volta a ser o único visível.
 
 ## Exemplo: bloco com shadowing e erro de tipo
 
@@ -31,6 +44,58 @@ Construção da tabela, por ordem:
 4. `print(x)`: resolve-se no âmbito do bloco, o `x` interior, que vale 4. Escreve 4.
 
 Agora a chamada com argumentos trocados. Com `int soma(int a, int b)` declarada, a chamada `soma(true, 2)` percorre a árvore da chamada e compara cada argumento com o parâmetro correspondente: o primeiro é booleano onde se esperava inteiro. Erro semântico com a posição da chamada, antes de gerar uma única instrução. Repara na divisão de trabalho: a sintaxe aceitou a chamada (a forma está certa), a semântica rejeita-a (o significado está errado).
+
+Os três erros mais comuns no projeto passam todos a sintaxe e morrem aqui. Confirma cada mensagem.
+
+<Tabs id="erros-semanticos" labels={['Por declarar', 'Tipo incompatível', 'Fora do âmbito']}>
+  <div slot="panel-0">
+
+```java
+int soma(int a, int b) {
+  return a + b + c;
+}
+```
+
+`c` nunca foi declarado em nenhum âmbito visível. A procura esgota a pilha sem encontrar e o erro aponta o uso, não a função.
+
+  </div>
+  <div slot="panel-1">
+
+```java
+int soma(int a, int b) {
+  return a + b;
+}
+int r = soma(true, 2);
+```
+
+A chamada casa na forma (dois argumentos) mas o primeiro é booleano onde se esperava inteiro. O erro aponta a chamada, com os tipos esperado e recebido.
+
+  </div>
+  <div slot="panel-2">
+
+```java
+{
+  int temp = 1;
+}
+temp = temp + 1;
+```
+
+A declaração morreu com o bloco que a continha. O uso seguinte encontra só os âmbitos exteriores e falha como nome por declarar.
+
+  </div>
+</Tabs>
+
+E a procura de nomes a correr, sem shadowing pelo meio para te distrair. Este bloco imprime 4.
+
+<CodePlayground
+  language="java"
+  title="Âmbitos aninhados"
+  code={
+    'public class Ambitos {\n    public static void main(String[] args) {\n        int x = 3;\n        {\n            int y = x + 1;\n            System.out.println(y);\n        }\n    }\n}'
+  }
+/>
+
+O `y` interior lê o `x` exterior porque a procura sobe a pilha até ao global. Repara que Java não deixa redeclarar `x` dentro do bloco: se precisares de shadowing para um teste, usa a linguagem do projeto, onde o exemplo desta página vale.
 
 ## Verificação de tipos
 
