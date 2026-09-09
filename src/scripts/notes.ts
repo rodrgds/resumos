@@ -1,55 +1,384 @@
 import { readLocal, writeLocal } from '../lib/storage';
-const NOTES_KEY = 'resumos-notes';
+import {
+  isAnnotationKey,
+  LEGACY_NOTES_KEY,
+  readAnnotations,
+  removeAnnotation,
+  saveAnnotation,
+  type Annotation,
+} from '../lib/annotations';
+import { resolveAnchor, textIndex } from '../lib/text-anchors';
+import { setupSelection } from './selection-tools';
+
 export function setupNotes() {
-  const panel = document.querySelector<HTMLElement>('#scratchpad')!;
-  const input = document.querySelector<HTMLTextAreaElement>('#notes-input')!;
-  const status = document.querySelector<HTMLElement>('#notes-status')!;
+  const element = <T extends HTMLElement = HTMLElement>(id: string) =>
+    document.querySelector<T>(`#${id}`)!;
+  const panel = element('scratchpad');
+  const browse = element('notebook-browse');
+  const editor = element('annotation-editor');
+  const list = element('annotation-list');
+  const input = element<HTMLTextAreaElement>('annotation-comment');
+  const status = element('notes-status');
+  const root = document.querySelector<HTMLElement>('[data-annotatable]');
+  const loaded = readAnnotations();
+  const notes = new Map(loaded.notes.map((note) => [note.id, note]));
+  const unsaved = new Set<string>();
+  const ranges = new Map<string, Range[]>();
+  const canHighlight = typeof Highlight !== 'undefined' && 'highlights' in CSS;
+  let active: string | null = null;
+  let filter: 'page' | 'all' = root ? 'page' : 'all';
   let opener: HTMLElement | null = null;
-  input.value = readLocal(NOTES_KEY) || '';
-  input.addEventListener('input', () => {
-    status.textContent = writeLocal(NOTES_KEY, input.value)
-      ? 'Guardado neste navegador'
-      : 'Não foi possível guardar. Descarrega uma cópia.';
-  });
+  let undo: (() => void) | null = null;
+  let feedbackNote: string | null = null;
+  let legacy = readLocal(LEGACY_NOTES_KEY) || '';
+  let legacyUnsaved = false;
+  const storageError =
+    'Não foi possível guardar. Descarrega as notas antes de sair.';
+  if (!loaded.available) status.textContent = storageError;
+
+  function notify(
+    message: string,
+    options: { undo?: () => void; note?: string } = {},
+  ) {
+    element('annotation-feedback').hidden = false;
+    element('annotation-message').textContent = message;
+    undo = options.undo || null;
+    feedbackNote = options.note || null;
+    element('annotation-undo').hidden = !undo;
+    element('annotation-open').hidden = !feedbackNote;
+  }
+  function persist(note: Annotation) {
+    notes.set(note.id, note);
+    const saved = saveAnnotation(note);
+    if (saved) unsaved.delete(note.id);
+    else unsaved.add(note.id);
+    status.textContent =
+      unsaved.size || legacyUnsaved ? storageError : 'Guardado neste navegador';
+    return saved;
+  }
+  function paint() {
+    ranges.clear();
+    if (!root) return;
+    const index = textIndex(root);
+    for (const note of notes.values()) {
+      if (note.path === location.pathname)
+        ranges.set(note.id, resolveAnchor(index, note.anchor));
+    }
+    if (!canHighlight) return;
+    const all = [...ranges.values()].flat();
+    CSS.highlights.set('notebook', new Highlight(...all));
+    CSS.highlights.set(
+      'notebook-active',
+      new Highlight(...(active ? ranges.get(active) || [] : [])),
+    );
+  }
+  function renderList() {
+    const all = [...notes.values()].sort((a, b) => b.created - a.created);
+    const onPage = all.filter((note) => note.path === location.pathname);
+    element('page-note-count').textContent = String(onPage.length);
+    element('all-note-count').textContent = String(all.length);
+    document
+      .querySelectorAll<HTMLButtonElement>('[data-note-filter]')
+      .forEach((button) => {
+        button.setAttribute(
+          'aria-pressed',
+          String(button.dataset.noteFilter === filter),
+        );
+      });
+    const shown = filter === 'page' ? onPage : all;
+    element('notebook-empty').hidden = !!shown.length;
+    list.replaceChildren();
+    for (const note of shown) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.className = 'annotation-card';
+      button.dataset.noteId = note.id;
+      const title = document.createElement('span');
+      title.className = 'annotation-page';
+      title.textContent = note.title;
+      const quote = document.createElement('span');
+      quote.className = 'annotation-excerpt';
+      quote.textContent = note.anchor.exact;
+      const comment = document.createElement('span');
+      comment.className = 'annotation-preview';
+      comment.textContent = note.comment || 'Adicionar comentário';
+      button.append(title, quote, comment);
+      button.addEventListener('click', () => edit(note.id));
+      item.append(button);
+      list.append(item);
+    }
+    element('legacy-notes').hidden = !legacy;
+  }
+  function setExpanded(expanded: boolean) {
+    document
+      .querySelectorAll('[data-action="notes"]')
+      .forEach((button) =>
+        button.setAttribute('aria-expanded', String(expanded)),
+      );
+  }
+  function open() {
+    hideSelection();
+    if (!panel.hidden) return;
+    opener =
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement !== document.body
+        ? document.activeElement
+        : document.querySelector<HTMLElement>('.brand');
+    panel.hidden = false;
+    document.body.classList.add('notes-open');
+    setExpanded(true);
+  }
+  function showList() {
+    active = null;
+    editor.hidden = true;
+    browse.hidden = false;
+    paint();
+    renderList();
+  }
   function close() {
     panel.hidden = true;
     document.body.classList.remove('notes-open');
-    document
-      .querySelectorAll('[data-action="notes"]')
-      .forEach((button) => button.setAttribute('aria-expanded', 'false'));
-    opener?.focus({ preventScroll: true });
+    setExpanded(false);
+    active = null;
+    paint();
+    if (opener?.checkVisibility()) opener.focus({ preventScroll: true });
+    else if (root) {
+      root.tabIndex = -1;
+      root.focus({ preventScroll: true });
+    }
   }
-  document.querySelector('#close-notes')!.addEventListener('click', close);
+  function edit(id: string) {
+    const note = notes.get(id);
+    if (!note) return;
+    open();
+    active = id;
+    browse.hidden = true;
+    editor.hidden = false;
+    element('annotation-page').textContent = note.title;
+    element('annotation-quote').textContent = note.anchor.exact;
+    input.value = note.comment;
+    paint();
+    const missing = note.path === location.pathname && !ranges.get(id)?.length;
+    element('annotation-missing').hidden = !missing;
+    element('locate-annotation').hidden = missing;
+    input.focus({ preventScroll: true });
+    input.scrollIntoView({ block: 'nearest' });
+  }
+  function locate() {
+    const note = active && notes.get(active);
+    if (!note) return;
+    if (note.path !== location.pathname) {
+      location.assign(`${note.path}#nota-${note.id}`);
+      return;
+    }
+    const range = ranges.get(note.id)?.[0];
+    if (!range) return;
+    const target = range.startContainer.parentElement!;
+    if (matchMedia('(max-width: 1000px)').matches) close();
+    target.tabIndex = -1;
+    target.focus({ preventScroll: true });
+    requestAnimationFrame(() => {
+      const top = range.getBoundingClientRect().top + scrollY - 150;
+      window.scrollTo({
+        top: Math.max(0, top),
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'instant'
+          : 'smooth',
+      });
+    });
+  }
+  function remove(id: string) {
+    const note = notes.get(id);
+    if (!note) return;
+    if (!removeAnnotation(id)) {
+      status.textContent = storageError;
+      return;
+    }
+    notes.delete(id);
+    unsaved.delete(id);
+    showList();
+    element('close-notes').focus();
+    notify('Destaque removido.', {
+      undo: () => {
+        persist(note);
+        paint();
+        renderList();
+        notify('Destaque reposto.', { note: id });
+      },
+    });
+  }
+  const hideSelection = setupSelection(root, (anchor, action) => {
+    const existing = [...notes.values()].find(
+      (note) =>
+        note.path === location.pathname &&
+        note.anchor.exact === anchor.exact &&
+        note.anchor.prefix === anchor.prefix &&
+        note.anchor.suffix === anchor.suffix,
+    );
+    const note: Annotation = existing || {
+      id: crypto.randomUUID(),
+      path: location.pathname,
+      title: document.querySelector('h1')?.textContent || document.title,
+      anchor,
+      comment: '',
+      created: Date.now(),
+    };
+    const saved = existing ? !unsaved.has(note.id) : persist(note);
+    paint();
+    renderList();
+    if (action === 'comment' || existing) edit(note.id);
+    else notify(saved ? 'Destaque guardado.' : storageError, { note: note.id });
+  });
+  input.addEventListener('input', () => {
+    const note = active && notes.get(active);
+    if (note) persist({ ...note, comment: input.value });
+  });
+  element('close-notes').addEventListener('click', close);
+  element('notes-back').addEventListener('click', () => {
+    const previous = active;
+    showList();
+    list
+      .querySelector<HTMLButtonElement>(`[data-note-id="${previous}"]`)
+      ?.focus();
+  });
   panel.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();
       close();
     }
   });
-  document.querySelector('#download-notes')!.addEventListener('click', () => {
+  element('remove-annotation').addEventListener('click', () => {
+    if (active) remove(active);
+  });
+  element('locate-annotation').addEventListener('click', locate);
+  element('annotation-undo').addEventListener('click', () => undo?.());
+  element('annotation-open').addEventListener('click', () => {
+    if (feedbackNote) edit(feedbackNote);
+    element('annotation-feedback').hidden = true;
+  });
+  element('annotation-dismiss').addEventListener('click', () => {
+    element('annotation-feedback').hidden = true;
+  });
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-note-filter]')
+    .forEach((button) =>
+      button.addEventListener('click', () => {
+        filter = button.dataset.noteFilter as 'page' | 'all';
+        renderList();
+      }),
+    );
+  const legacyInput = element<HTMLTextAreaElement>('legacy-notes-input');
+  legacyInput.value = legacy;
+  legacyInput.addEventListener('input', () => {
+    legacy = legacyInput.value;
+    legacyUnsaved = !writeLocal(LEGACY_NOTES_KEY, legacy);
+    status.textContent =
+      legacyUnsaved || unsaved.size ? storageError : 'Guardado neste navegador';
+  });
+  element('download-notes').addEventListener('click', () => {
+    const text = [
+      '# O meu caderno',
+      ...[...notes.values()]
+        .sort((a, b) => a.created - b.created)
+        .map(
+          (note) =>
+            `## ${note.title}\n\n${new URL(note.path, location.origin).href}\n\n${note.anchor.exact
+              .split('\n')
+              .map((line) => '> ' + line)
+              .join('\n')}\n\n${note.comment}`,
+        ),
+      ...(legacy ? ['## Notas anteriores\n\n' + legacy] : []),
+    ].join('\n\n');
     const url = URL.createObjectURL(
-      new Blob([input.value], { type: 'text/plain;charset=utf-8' }),
+      new Blob([text], { type: 'text/markdown;charset=utf-8' }),
     );
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'notas-resumos.txt';
+    link.download = 'caderno-resumos.md';
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+  root?.addEventListener('click', (event) => {
+    if (
+      !window.getSelection()?.isCollapsed ||
+      (event.target as Element).closest('a, button')
+    )
+      return;
+    for (const [id, spans] of ranges) {
+      if (
+        spans.some((range) =>
+          [...range.getClientRects()].some(
+            (rect) =>
+              event.clientX >= rect.left &&
+              event.clientX <= rect.right &&
+              event.clientY >= rect.top &&
+              event.clientY <= rect.bottom,
+          ),
+        )
+      ) {
+        edit(id);
+        return;
+      }
+    }
+  });
+  window.addEventListener('beforeunload', (event) => {
+    if (unsaved.size || legacyUnsaved) event.preventDefault();
+  });
+  window.addEventListener('storage', (event) => {
+    if (!isAnnotationKey(event.key)) return;
+    const fresh = readAnnotations();
+    if (!fresh.available) return;
+    for (const id of notes.keys()) if (!unsaved.has(id)) notes.delete(id);
+    for (const note of fresh.notes)
+      if (!unsaved.has(note.id)) notes.set(note.id, note);
+    paint();
+    renderList();
+    if (active && !notes.has(active)) showList();
+    else if (active && document.activeElement !== input)
+      input.value = notes.get(active)!.comment;
+  });
+  function openLinkedNote() {
+    const id = location.hash.startsWith('#nota-')
+      ? location.hash.slice(6)
+      : null;
+    if (id && notes.get(id)?.path === location.pathname) {
+      edit(id);
+      locate();
+    }
+  }
+  function fitViewport() {
+    const viewport = window.visualViewport;
+    panel.style.setProperty(
+      '--visual-height',
+      `${viewport?.height || innerHeight}px`,
+    );
+    document.documentElement.style.setProperty(
+      '--keyboard-inset',
+      `${Math.max(0, innerHeight - (viewport?.height || innerHeight) - (viewport?.offsetTop || 0))}px`,
+    );
+  }
+  window.visualViewport?.addEventListener('resize', () => {
+    fitViewport();
+    if (!panel.hidden && document.activeElement === input) {
+      requestAnimationFrame(() => input.scrollIntoView({ block: 'nearest' }));
+    }
+  });
+  window.visualViewport?.addEventListener('scroll', fitViewport);
+  fitViewport();
+  paint();
+  renderList();
+  if (!canHighlight && root)
+    status.textContent =
+      'Podes guardar notas. Este navegador não mostra os destaques no texto.';
+  window.addEventListener('hashchange', openLinkedNote);
+  openLinkedNote();
   return () => {
     if (!panel.hidden) {
       close();
       return;
     }
-    opener =
-      document.activeElement === document.body
-        ? document.querySelector<HTMLElement>('.brand')
-        : (document.activeElement as HTMLElement);
-    panel.hidden = false;
-    document.body.classList.add('notes-open');
-    document
-      .querySelectorAll('[data-action="notes"]')
-      .forEach((button) => button.setAttribute('aria-expanded', 'true'));
-    input.focus();
+    open();
+    showList();
+    element('close-notes').focus();
   };
 }

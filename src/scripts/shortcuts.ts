@@ -9,7 +9,7 @@ const defaults = {
 };
 const labels = {
   search: 'Pesquisar',
-  notes: 'Bloco de notas',
+  notes: 'Caderno',
   appearance: 'Aparência',
   shortcuts: 'Atalhos',
   ai: 'Perguntar à IA',
