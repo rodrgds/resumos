@@ -6,11 +6,12 @@ import markdownExport from './src/lib/markdown-export.mjs';
 import remarkDirective from 'remark-directive';
 import remarkContainers from './src/lib/remark-containers.mjs';
 import remarkMath from 'remark-math';
+import rehypeDisclosures from './src/lib/rehype-disclosures.mjs';
 import rehypeKatex from 'rehype-katex';
 
 const content = {
   remarkPlugins: [remarkMath, remarkDirective, remarkContainers],
-  rehypePlugins: [rehypeKatex],
+  rehypePlugins: [rehypeKatex, rehypeDisclosures],
   remarkRehype: {
     footnoteLabel: 'Notas de rodapé',
     footnoteBackLabel: 'Voltar à referência',

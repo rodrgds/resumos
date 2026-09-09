@@ -5,7 +5,9 @@ test('AI menu stays next to its trigger and ChatGPT enables web search', async (
 }) => {
   await page.goto('/exemplo/diagramas/');
   const trigger = page.getByRole('button', { name: 'Perguntar ao Chat' });
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   const button = (await trigger.boundingBox())!;
   const menu = (await page.locator('#ai-menu').boundingBox())!;
   expect(Math.abs(menu.x - button.x)).toBeLessThan(16);
@@ -14,6 +16,9 @@ test('AI menu stays next to its trigger and ChatGPT enables web search', async (
     .locator('[data-provider="chatgpt"]')
     .getAttribute('href');
   expect(new URL(href!).searchParams.get('hints')).toBe('search');
+  await page.keyboard.press('Escape');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#ai-menu')).toBeHidden();
 });
 
 test('course navigation comes from content and keeps drafts private', async ({
