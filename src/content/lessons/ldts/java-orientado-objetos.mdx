@@ -5,6 +5,11 @@ section: conteudo
 order: 2
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import composicao from '../../ldts/composicao.typ?raw';
+
 Java é a linguagem do projeto de LDTS. Se vens de [classes e objetos](/cadeiras/p/classes-objetos/) em C++, quase tudo te soa familiar: classes, construtores, encapsulamento e herança funcionam da mesma forma. As diferenças que interessam são a máquina virtual com recolha de lixo (adeus `delete`), uma só herança de classes com muitas interfaces, e uma biblioteca de coleções que vais usar todos os dias.
 
 ## Tipos e coleções
@@ -46,7 +51,17 @@ public class Posicao {
 }
 ```
 
-Repara nas escolhas: atributos privados e `final` (ninguém muda uma posição por fora), acesso por getters, e `somar` que devolve uma posição nova em vez de alterar a atual. Objetos imutáveis como este são muito mais fáceis de testar, como vais ver em [testes unitários](testes-unitarios/).
+Repara nas escolhas: atributos privados e `final` (ninguém muda uma posição por fora), acesso por getters, e `somar` que devolve uma posição nova em vez de alterar a atual. Objetos imutáveis como este são muito mais fáceis de testar, como vais ver em [testes unitários](testes-unitarios/). Corre o exemplo e confirma que a origem fica intacta:
+
+<CodePlayground
+  language="java"
+  title="Posicao imutável"
+  code={
+    'class Posicao {\n    private final int x;\n    private final int y;\n\n    Posicao(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    int getX() { return x; }\n    int getY() { return y; }\n\n    Posicao somar(int dx, int dy) {\n        return new Posicao(x + dx, y + dy);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Posicao origem = new Posicao(3, 4);\n        Posicao destino = origem.somar(1, -2);\n        System.out.println("origem: (" + origem.getX() + "," + origem.getY() + ")");\n        System.out.println("destino: (" + destino.getX() + "," + destino.getY() + ")");\n    }\n}'
+  }
+/>
+
+A saída mostra `origem: (3,4)` e `destino: (4,2)`: somar construiu um objeto novo e a origem não mexeu.
 
 ## Herança e composição
 
@@ -74,7 +89,44 @@ public class Monstro {
 }
 ```
 
-Um monstro **tem um** comportamento, não **é um** tipo de comportamento. Para criar um monstro novo, escreves uma classe pequena que implementa `Comportamento` e passas uma instância ao construtor. Nada de hierarquias de cinco níveis para representar "anda em zigzag".
+Um monstro **tem um** comportamento, não **é um** tipo de comportamento:
+
+<Typst
+  source={composicao}
+  format="svg"
+  alt="Diagrama com a caixa Monstro ligada por uma seta tem um à caixa Comportamento."
+/>
+
+Para criar um monstro novo, escreves uma classe pequena que implementa `Comportamento` e passas uma instância ao construtor. Nada de hierarquias de cinco níveis para representar "anda em zigzag".
+
+<Tabs id="monstro-heranca-composicao" labels={['Herança', 'Composição']}>
+  <div slot="panel-0">
+
+```java
+class MonstroVoador extends Monstro {
+    // herdou tudo; para mudar o voo,
+    // editas a hierarquia inteira
+}
+```
+
+A herança prende a variação à árvore de classes. Um monstro que voa e persegue precisa de um ramo novo na hierarquia, mesmo que só a combinação seja nova. Cada nível a mais torna o teste de cada folha mais caro.
+
+  </div>
+  <div slot="panel-1">
+
+```java
+Monstro morcego = new Monstro(
+    new Posicao(1, 1), new Voar()
+);
+Monstro cacador = new Monstro(
+    new Posicao(1, 1), new PerseguirHeroi()
+);
+```
+
+A composição troca peças ao construir. Para um monstro que muda a meio do nível, guarda o comportamento num campo com um método `setComportamento`: o mesmo monstro voa de manhã e persegue à tarde sem nenhuma classe nova. É por isto que o projeto prefere "tem um": o jogo muda de comportamento sem mudar de classes.
+
+  </div>
+</Tabs>
 
 :::tip[Herança para o estável, composição para o variável]
 Usa herança quando a relação nunca vai mudar (um `Retangulo` é sempre uma `Forma`). Usa composição quando o comportamento varia, porque trocar um objeto em tempo de execução é trivial e reescrever uma hierarquia não é.
