@@ -1,0 +1,131 @@
+---
+title: Apontadores e memória
+description: Endereços, dereferenciação, aritmética de apontadores, new e delete, fugas de memória e RAII.
+section: conteudo
+order: 2
+---
+
+Cada variável do teu programa vive num sítio concreto da memória, e esse sítio tem um **endereço**, um número que o identifica. Até agora ignoraste os endereços, e fizeste bem. Mas há estruturas, como listas ligadas e vetores que crescem, que só consegues construir se guardares e seguires endereços. Um **apontador** é exatamente isso: uma variável que guarda o endereço de outra variável.
+
+## Endereço de e dereferenciação
+
+O operador `&` devolve o endereço de uma variável e o operador `*` tem dois papéis: na declaração, marca a variável como apontador; fora dela, **dereferencia** o apontador, ou seja, acede ao valor que está no endereço guardado:
+
+```cpp
+#include <iostream>
+
+int main() {
+    int x = 42;
+    int* p = &x;
+    std::cout << *p << "\n";
+    *p = 7;
+    std::cout << x << "\n";
+}
+```
+
+Isto escreve `42` e depois `7`. O apontador `p` guarda o endereço de `x`, por isso `*p` lê o valor de `x` e `*p = 7` altera `x` sem lhe tocares pelo nome. Um apontador e a variável para onde aponta são duas vistas da mesma caixa: mudar por uma das vistas aparece na outra.
+
+Se imprimires o próprio `p` com `std::cout << p`, vês o endereço em hexadecimal, algo como `0x7ffee3a1b2cc`. O valor concreto muda de cada vez que corres o programa; o que interessa é que dois apontadores para a mesma variável mostram o mesmo endereço.
+
+:::warning[Apontadores por inicializar]
+Um apontador declarado sem valor inicial, como `int* p;`, aponta para um endereço qualquer. Dereferenciá-lo (`*p = 7;`) escreve num sítio aleatório da memória e o programa pode avariar de formas estranhas. Inicializa sempre os apontadores: ou com um endereço válido (`&x`), ou com `nullptr` quando ainda não apontam para nada, e testa `if (p != nullptr)` antes de os usares.
+:::
+
+## Apontadores e arrays
+
+Um array de C é um bloco contíguo de elementos do mesmo tipo, e o nome do array comporta-se como um apontador para o primeiro elemento. Somar um inteiro a um apontador avança esse número de elementos, não de bytes: chama-se **aritmética de apontadores**.
+
+```cpp
+#include <iostream>
+
+int main() {
+    int v[4] = {10, 20, 30, 40};
+    int* p = v;
+    std::cout << *p << " " << *(p + 2) << "\n";
+    std::cout << p[1] << "\n";
+}
+```
+
+Isto escreve `10 30` e depois `20`. O `p + 2` salta dois inteiros a partir do início e `*(p + 2)` lê o terceiro elemento, `30`. A notação `p[1]` é equivalente a `*(p + 1)`: indexar um apontador é dereferenciar com um deslocamento. É por isto que os índices começam em zero: `v[0]` é o elemento que está a zero posições do início.
+
+O reverso também é verdade: `v[i]` num array usa a mesma aritmética. Quando saíres dos limites do array, o compilador não te trava e lês ou escreves memória de outra variável. É uma das fontes clássicas de erros em C e C++, e a razão pela qual a [STL](/cadeiras/p/templates-stl/) prefere o `vector`, que sabe o seu próprio tamanho.
+
+## Alocação dinâmica com new e delete
+
+As variáveis que declaraste até aqui vivem na **pilha** (stack) e desaparecem quando a função termina. Quando precisas de memória que sobreviva à função, ou cujo tamanho só conheces enquanto o programa corre, pedes memória à **área livre** (heap) com `new` e devolve-la com `delete`:
+
+```cpp
+#include <iostream>
+
+int main() {
+    int n;
+    std::cout << "Quantos valores? ";
+    std::cin >> n;
+    int* v = new int[n];
+    for (int i = 0; i < n; i++) {
+        v[i] = (i + 1) * 10;
+    }
+    int soma = 0;
+    for (int i = 0; i < n; i++) {
+        soma += v[i];
+    }
+    std::cout << "Soma: " << soma << "\n";
+    delete[] v;
+}
+```
+
+Se a entrada for `4`, isto mostra `Quantos valores? Soma: 100`. O `new int[n]` reserva espaço para `n` inteiros escolhidos em tempo de execução, algo impossível com um array de tamanho fixo. Confere a soma: $10 + 20 + 30 + 40 = 100$. E repara no `delete[] v` com parênteses retos: array pedido com `new[]` devolve-se com `delete[]`; um único objeto pedido com `new` devolve-se com `delete` simples. Trocar os dois é um erro que o compilador não apanha.
+
+## Fugas de memória e double-free
+
+Cada `new` sem o `delete` correspondente é uma **fuga de memória** (memory leak): a memória fica reservada mas ninguém a pode usar nem libertar, e num programa longo as fugas acumulam-se até o computador ficar sem memória. O erro simétrico é o **double-free**, libertar duas vezes a mesma memória, que corrompe a gestão da área livre e costuma avariar o programa.
+
+```cpp
+#include <iostream>
+
+int main() {
+    int* p = new int(5);
+    std::cout << *p << "\n";
+    delete p;
+    p = nullptr;
+}
+```
+
+Isto escreve `5`. O `new int(5)` reserva um inteiro já inicializado a `5`. Depois do `delete`, o apontador fica **pendente** (dangling): aponta para memória que já não é nossa. Atribuir `nullptr` logo a seguir é um hábito barato que transforma usos acidentais em erros detetáveis em vez de corrupção silenciosa.
+
+:::tip[Um new, um delete, no mesmo nível]
+Escreve o `delete` logo que escreves o `new`, antes de escreveres o código do meio. Assim nunca te esqueces, e se o código do meio crescer com saídas antecipadas (`return` a meio da função), vês logo que precisas de libertar antes de cada saída. Quando este malabarismo começar a cansar, é sinal de que precisas da próxima secção.
+:::
+
+## O essencial de RAII e smart pointers
+
+Gerir `new` e `delete` à mão em programas grandes é impraticável: basta uma exceção ou um `return` esquecido para a fuga acontecer. A resposta do C++ moderno é o **RAII** (Resource Acquisition Is Initialization): um objeto que pede o recurso no construtor e o liberta no destrutor, por isso a libertação acontece automaticamente quando o objeto sai de âmbito, aconteça o que acontecer. Vais perceber construtores e destrutores nas [classes](/cadeiras/p/classes-objetos/), mas a ideia fica já registada.
+
+A aplicação direta são os **smart pointers** da biblioteca `<memory>`: `unique_ptr` para posse exclusiva e `shared_ptr` para posse partilhada. Com um `unique_ptr`, nem escreves `delete`:
+
+```cpp
+#include <iostream>
+#include <memory>
+
+int main() {
+    std::unique_ptr<int> p = std::make_unique<int>(5);
+    std::cout << *p << "\n";
+}
+```
+
+Isto escreve `5`, tal como o exemplo anterior, mas sem `delete`: quando `p` sai de âmbito no fim de `main`, o destrutor liberta a memória sozinho. Nos teus primeiros exercícios continua a praticar `new` e `delete` à mão, porque o exame testa essa mecânica; nos teus projetos, prefere smart pointers e `vector`, que é onde o C++ moderno vive.
+
+## Exemplo resolvido: ler a memória em palavras
+
+Segue este programa e descreve o estado da memória depois de cada linha, sem correres nada. É o exercício que mais treina para o exame.
+
+```cpp
+int a = 3;      // (1)
+int* p = &a;    // (2)
+int b = *p + 1; // (3)
+*p = 10;        // (4)
+```
+
+Depois de (1), há uma caixa chamada `a` com o valor `3`. Depois de (2), há uma segunda caixa chamada `p` que guarda o endereço de `a`; desenhada como uma seta, a seta aponta para a caixa de `a`. Depois de (3), `*p` vale `3` (segue a seta e lê), por isso nasce uma terceira caixa `b` com o valor `4`; a seta não muda. Depois de (4), segue a seta e escreve `10` na caixa de destino: `a` passa a `10` e `b` continua `4`.
+
+O ponto onde os alunos tropeçam é a linha (4): `*p = 10` não toca em `p`, toca em `a` através de `p`. O apontador continua a apontar para o mesmo sítio; o que mudou foi o conteúdo do sítio. Sempre que vires `*p` do lado esquerdo de uma atribuição, pergunta: "para onde aponta `p`?", porque é essa caixa que vai mudar.
