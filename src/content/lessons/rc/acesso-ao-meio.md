@@ -1,0 +1,30 @@
+---
+title: Acesso ao meio
+description: Partilha do canal com ALOHA, CSMA/CD e CSMA/CA, com contenção e recuo exponencial.
+section: conteudo
+order: 5
+---
+
+Quando várias estações partilham o mesmo canal, como no Wi-Fi ou no cabo coaxial antigo, é preciso decidir quem fala e quando. Sem regras, todos falam por cima de todos. Esta página apresenta as regras, do ingénuo ao usado na prática.
+
+## ALOHA: falar quando apetece
+
+No **ALOHA puro**, cada estação transmite quando tem dados. Se dois pacotes se sobrepuserem, há colisão e ambos são retransmitidos depois de um tempo aleatório. O período vulnerável dura dois tempos de trama: um pacote que demore $T$ a transmitir colide com qualquer outro que comece entre $T$ antes e $T$ depois.
+
+O **ALOHA com ranhuras** (slotted) disciplina isto: o tempo é dividido em ranhuras do tamanho de uma trama e só se pode começar no início de cada ranhura. O período vulnerável cai para metade e o débito máximo duplica, para cerca de 37 por cento da capacidade (o ALOHA puro fica-se pelos 18 por cento). Continua a ser pouco, mas a ideia das ranhuras e da retransmissão aleatória sobrevive em quase tudo o que vem a seguir.
+
+## CSMA: escutar antes de falar
+
+O **CSMA** acrescenta a escuta: a estação verifica se o canal está livre antes de transmitir. Isto evita as colisões óbvias, mas não todas: duas estações podem escutar um canal livre ao mesmo tempo e transmitir juntas, porque o sinal demora a viajar de uma à outra. O período vulnerável passa a ser o tempo de propagação, muito menor que o tempo de trama, e o débito sobe bastante.
+
+Nas redes com fios, a estação consegue ouvir a sua própria transmissão enquanto fala, por isso deteta a colisão a meio (**deteção de colisão**, CD) e aborta logo, sem desperdiçar a trama inteira. Depois de colidir, cada estação espera um número aleatório de ranhuras antes de tentar de novo, e esse intervalo duplica a cada colisão seguida (**recuo exponencial**): com poucas estações resolve-se depressa, com muitas o intervalo cresce até caber toda a gente.
+
+## CSMA/CA no sem fios
+
+No rádio, a estação não consegue escutar enquanto transmite, por isso o Wi-Fi evita colisões em vez de as detetar (**evitar colisões**, CA). O mecanismo: espera um intervalo fixo de silêncio, conta uma espera aleatória em ranhuras, e só transmite se o canal continuar livre; quem ouve tráfego congela a contagem e retoma depois.
+
+Segue duas estações, A e B, que acordam com o canal livre. A sorteia espera 2, B sorteia espera 5. Passam duas ranhuras em silêncio e a contagem de A chega a zero: A transmite e B congela a sua contagem em 3. Quando A termina e o canal volta a calar-se, B retoma do 3 e transmite três ranhuras depois, sem colidir. Se tivessem sorteado o mesmo número, colidiriam na mesma, e aí cada uma duplicaria o intervalo de sorteio antes de tentar outra vez.
+
+:::warning[CD contra CA]
+Nas redes com fios deteta-se a colisão (CD) porque dá para ouvir enquanto se fala; no sem fios evita-se (CA) porque não dá. Trocar os dois é o erro clássico. Lembra-te: cabo escuta-se, rádio adivinha-se.
+:::
