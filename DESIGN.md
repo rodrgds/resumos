@@ -90,7 +90,7 @@ The selection toolbar uses a 0 6px 28px #0003 shadow. Save and undo feedback use
 
 ## Shapes
 
-Controls have gently rounded corners. Cards and the AI popover use larger corners, followed by search and shortcut dialogs, then appearance and course dialogs. Interface and course icons use Heroicons SVGs through `Icon.astro`. Course icons are 56px. Keep official brand logos separate; do not use Unicode characters as icons.
+Controls have gently rounded corners. Cards and the AI popover use larger corners, followed by search and shortcut dialogs, then appearance and course dialogs. Interface controls use Heroicons SVGs through `Icon.astro`. Course artwork uses `CourseIcon.astro`: choose distinct subject-specific Tabler or custom SVGs, such as integrals, logic gates and automata. Course cards use 56px icons; MEIC option rows use 28px icons. Keep official brand logos separate; do not use Unicode characters as icons.
 
 Notebook panels use 12px corners. Selection toolbars and feedback use 10px corners, with 6px action corners. Quotes and comment fields use 8px corners. Notebook actions have a minimum height of 44px.
 
