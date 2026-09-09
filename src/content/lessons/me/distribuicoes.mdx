@@ -5,6 +5,11 @@ section: conteudo
 order: 4
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import normal from '../../me/normal.typ?raw';
+
 Três distribuições cobrem quase todos os exercícios da cadeira: a binomial conta sucessos em tentativas repetidas, a normal modela somas de muitos efeitos pequenos e a $t$ corrige a normal quando a amostra é pequena e o desvio é estimado. Esta página diz quando chamar cada uma e como ler os valores nas tabelas.
 
 ## Binomial: contar sucessos
@@ -27,6 +32,14 @@ $$
 
 Nunca precisas de integrar isto à mão: padronizas $Z = (X - \mu)/\sigma$, que segue a normal padrão $N(0, 1)$, e lês probabilidades na tabela de $\Phi(z) = P(Z \le z)$. Decora três marcos: $P(|Z| < 1) \approx 0{,}68$, $P(|Z| < 2) \approx 0{,}95$ e $P(|Z| < 3) \approx 0{,}997$. E lembra a simetria $\Phi(-z) = 1 - \Phi(z)$, porque a tabela só traz $z$ positivos.
 
+<Typst
+  source={normal}
+  format="svg"
+  alt="Curva da normal padrão com a área central sombreada. Entre menos 1 e 1 estão 68 por cento, entre menos 2 e 2 estão 95 por cento, entre menos 3 e 3 estão 99,7 por cento."
+/>
+
+Lê o gráfico de dentro para fora: a faixa central estreita já leva 68 por cento da área, alargar para $\pm 2$ apanha quase tudo, e para lá de $\pm 3$ quase não há área. É por isto que "a dois desvios" é o atalho mental para 95 por cento.
+
 ## Aproximação da binomial pela normal
 
 Quando $n$ é grande, a binomial fica com forma de sino e a normal aproxima-a bem. Condição prática: $np \ge 5$ e $n(1-p) \ge 5$. Usa-se $\mu = np$, $\sigma^2 = np(1-p)$ e a **correção de continuidade** de 0,5, porque aproximas uma escada discreta por uma curva contínua: $P(X \ge k)$ vira $P(X_{normal} > k - 0{,}5)$.
@@ -39,6 +52,31 @@ $$
 
 Cerca de 7,2 por cento. Sem a correção de continuidade teríamos padronizado o 15 em vez do 14,5 e o resultado sairia enviesado para baixo. A expressão binomial exata, $\sum_{k=15}^{200} \binom{200}{k} 0{,}05^k 0{,}95^{200-k}$, existe mas ninguém a calcula à mão: é exatamente para isto que serve a aproximação.
 
+Compara os dois valores correndo as contas:
+
+<CodePlayground
+  language="python"
+  title="Exata contra aproximação normal"
+  code={
+    'import math\nn, p, k = 200, 0.05, 15\nexata = sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))\nmu, sd = n * p, math.sqrt(n * p * (1 - p))\nPhi = lambda z: 0.5 * (1 + math.erf(z / math.sqrt(2)))\naprox = 1 - Phi((k - 0.5 - mu) / sd)\nprint("exata:", round(exata, 4))\nprint("aprox normal:", round(aprox, 4))'
+  }
+/>
+
+A saída dá exata 0,0781 e aproximação 0,0721: erro de seis milésimas, aceitável para uma conta de exame. Vê o efeito da correção comparando as duas padronizações:
+
+<Tabs id="correcao-continuidade" labels={['Com correção', 'Sem correção']}>
+  <div slot="panel-0">
+
+$P(X \ge 15) \approx P(Z > (14{,}5 - 10)/3{,}08) = P(Z > 1{,}46) \approx 0{,}072$. O 14,5 é a fronteira entre as barras do 14 e do 15 no histograma da binomial: é aí que começa a área que queres.
+
+  </div>
+  <div slot="panel-1">
+
+$P(X \ge 15) \approx P(Z > (15 - 10)/3{,}08) = P(Z > 1{,}62) \approx 0{,}053$. Perdes dois pontos percentuais por ignorar meio inteiro. Com $n$ grande a diferença encolhe, mas em exame a correção é esperada.
+
+  </div>
+</Tabs>
+
 ## A t de Student: normal com desvio estimado
 
 A normal exige $\sigma$ conhecido. Na prática estimas o desvio pela amostra, e essa estimativa acrescenta incerteza, sobretudo com poucos dados. A distribuição **$t$ de Student** com $\nu = n - 1$ graus de liberdade é a normal com caudas mais pesadas para compensar. Com $n$ grande (regra prática: $n \ge 30$), $t$ e $z$ quase coincidem e podes usar a normal.
@@ -46,3 +84,17 @@ A normal exige $\sigma$ conhecido. Na prática estimas o desvio pela amostra, e 
 :::warning[Escolher entre z e t]
 A decisão tem duas perguntas, por esta ordem. O desvio populacional $\sigma$ é conhecido? Se sim, usa $z$ sempre. Se não, usa $t$ com $n - 1$ graus de liberdade (e só aproxima por $z$ se $n \ge 30$). Trocar $t$ por $z$ com amostras pequenas e desvio estimado é o erro mais comum dos intervalos de confiança, e subestima sempre a margem de erro.
 :::
+
+## Ler a tabela t passo a passo
+
+A tabela $t$ cruza graus de liberdade (linhas) com probabilidade acumulada (colunas). Para o exemplo dos intervalos, com $n = 16$ e 95 por cento de confiança bilateral, sobram $2{,}5$ por cento em cada cauda, por isso precisas do quantil $0{,}975$ com $15$ graus de liberdade:
+
+1. Desce pela coluna dos graus até à linha do 15.
+2. Anda pela linha até à coluna do 0,975.
+3. Lê o cruzamento: $t_{15;\,0{,}975} = 2{,}131$.
+
+Três verificações antes de copiar: graus $= n - 1$ (aqui 15, não 16); coluna $1 - \alpha/2$ para bilateral (aqui 0,975, não 0,95); e o valor tem de sair maior que o $z$ equivalente (2,131 contra 1,96, como esperado). Se a tua tabela só traz caudas superiores, a coluna a usar é a do $\alpha/2 = 0{,}025$, que dá o mesmo número.
+
+## Para saber mais
+
+- [Calculadora de valores críticos](https://www.omnicalculator.com/pt/estatistica/valor-critico/): confirma valores $z$, $t$ e qui-quadrado quando a tabela impressa não chega ao número que precisas.
