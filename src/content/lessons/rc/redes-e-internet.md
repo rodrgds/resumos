@@ -1,0 +1,47 @@
+---
+title: Redes e a Internet
+description: Comutação de pacotes e de circuitos, a arquitetura da Internet e a pilha TCP/IP.
+section: conteudo
+order: 1
+---
+
+Quando envias uma mensagem, ela não viaja inteira por um fio dedicado até ao destino. É partida em pedaços chamados pacotes, e cada pacote atravessa a rede por si, saltando de equipamento em equipamento até chegar. Esta página explica por que a rede funciona assim, que peças a compõem e como se organizam em camadas.
+
+## Comutação de circuitos e de pacotes
+
+Na **comutação de circuitos**, como na chamada telefónica clássica, a rede reserva um caminho completo antes de falar: primeiro estabelece a ligação, depois transmite, no fim liberta. Enquanto falas, aquela fatia da rede é tua, mesmo nos silêncios. É simples de perceber e dá atraso constante, mas desperdiça capacidade quando ninguém está a falar.
+
+Na **comutação de pacotes**, a mensagem é dividida em pacotes com endereço de destino no cabeçalho, e cada pacote segue sozinho. Não há reserva: os pacotes de utilizadores diferentes partilham as mesmas ligações, à vez. Isto aproveita muito melhor a rede, porque os silêncios de uns preenchem os dados dos outros, mas obriga a gerir filas e a aceitar atrasos variáveis.
+
+Compara os dois com números. Uma mensagem de 3 Mbits numa ligação de 1 Mbps, com dois saltos até ao destino e 0,5 s de estabelecimento de chamada:
+
+- Em comutação de circuitos: 0,5 s de estabelecimento mais 3 Mbits a 1 Mbps, ou seja 3 s de transmissão. Total de 3,5 s.
+- Em comutação de pacotes com 3 pacotes de 1 Mbit: o primeiro pacote chega ao fim de 2 saltos de 1 s cada, ou seja aos 2 s; os outros dois chegam logo atrás, um por segundo. Total de 3 s, sem estabelecimento.
+
+Os pacotes ganham aqui, e ganham ainda mais quando a rede está partilhada: enquanto um utilizador pensa, os pacotes dos outros ocupam a ligação. O preço é a fila em cada equipamento, que estudas em [Desempenho e filas de espera](desempenho-e-filas/).
+
+## A arquitetura da Internet
+
+A Internet é uma rede de redes: redes locais e de operadores ligadas entre si por equipamentos que encaminham pacotes. Três papéis aparecem em todo o lado:
+
+- Os **terminais** (o teu portátil, o telemóvel, o servidor) são as pontas, onde nascem e morrem os pacotes.
+- Os **routers** ligam redes entre si e decidem, pacote a pacote, para onde o enviar a seguir.
+- As **ligações** (fibra, cabo, rádio) transportam os bits entre equipamentos, cada uma com o seu débito e o seu atraso.
+
+No bordo da rede estão as redes de acesso (a tua casa, a universidade); no centro, o núcleo de routers e fibras de grande débito que interliga tudo. Os protocolos que todos falam, do terminal ao núcleo, são a pilha TCP/IP.
+
+## A pilha TCP/IP em cinco camadas
+
+Cada camada resolve um problema e usa o serviço da camada de baixo:
+
+1. **Física**: põe bits no meio (tensões no cabo, ondas no ar).
+2. **Ligação de dados**: move tramas entre vizinhos diretos e trata os erros desse salto.
+3. **Rede**: leva pacotes da origem ao destino através de várias redes (é a camada do IP e dos routers).
+4. **Transporte**: entrega entre processos, com ou sem fiabilidade (TCP e UDP).
+5. **Aplicação**: o que os programas veem (HTTP, DNS, correio, FTP).
+
+Cada camada embrulha os dados da camada de cima com o seu cabeçalho, como envelopes dentro de envelopes. Quando um pacote chega, cada camada abre o seu envelope e passa o conteúdo para cima. Esta separação é o que permite trocar o Wi-Fi por cabo sem tocar no navegador: muda a camada física, o resto nem repara.
+
+:::tip[Como ler o resto da cadeira]
+Sempre que um conceito novo aparecer, pergunta em que camada vive e o que pede à camada de baixo. A deteção de erros, por exemplo, existe na ligação de dados (entre vizinhos) e outra vez no transporte (de ponta a ponta): o mesmo problema, resolvido em dois sítios por razões diferentes.
+:::

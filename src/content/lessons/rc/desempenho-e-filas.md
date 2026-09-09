@@ -1,0 +1,41 @@
+---
+title: Desempenho e filas de espera
+description: As quatro parcelas do atraso nodal e o cálculo do atraso total num trajeto.
+section: conteudo
+order: 4
+---
+
+"A rede está lenta" pode significar quatro coisas diferentes, e cada uma pede um remédio diferente. Esta página decompõe o atraso de um pacote nas suas parcelas e mostra como somá-las num trajeto completo.
+
+## As quatro parcelas
+
+Em cada nó (terminal ou router), um pacote sofre:
+
+- **Processamento** ($d_{proc}$): verificar o cabeçalho e decidir para onde enviar. Microssegundos, normalmente desprezável.
+- **Fila** ($d_{fila}$): esperar que os pacotes à frente sejam transmitidos. Zero com a rede vazia, enorme com a rede cheia; é a parcela imprevisível.
+- **Transmissão** ($d_{trans} = L/R$): empurrar os $L$ bits do pacote para a ligação de débito $R$. Depende do tamanho do pacote e da velocidade da ligação.
+- **Propagação** ($d_{prop} = d/s$): viajar à velocidade $s$ ao longo da distância $d$. Na fibra, $s$ anda perto de $2 \times 10^8$ m/s, por isso cada 200 km custam cerca de 1 ms.
+
+O atraso nodal é a soma das quatro. Num trajeto com vários saltos, somam-se as parcelas de todos os nós e ligações.
+
+## Um trajeto completo
+
+Um pacote de 4000 bits vai do Porto a um servidor com dois saltos. Ligação 1: 10 Mbps e 5000 km. Ligação 2: 2 Mbps e 1000 km. No router entre elas há 3 pacotes à frente na fila de saída, e o processamento demora 0,1 ms em cada nó.
+
+Calcula por parcelas:
+
+- Ligação 1: transmissão $4000 / 10^7 = 0{,}4$ ms; propagação $5 \times 10^6 / (2 \times 10^8) = 0{,}025$ s, ou seja 25 ms.
+- Router: processamento 0,1 ms; fila de 3 pacotes de 4000 bits a 2 Mbps, $3 \times 4000 / (2 \times 10^6) = 6$ ms.
+- Ligação 2: transmissão $4000 / (2 \times 10^6) = 2$ ms; propagação $10^6 / (2 \times 10^8) = 0{,}005$ s, ou seja 5 ms.
+
+Somando processamento nos dois nós ($0{,}2$ ms), dá cerca de $0{,}4 + 25 + 0{,}1 + 6 + 2 + 5 + 0{,}1 \approx 38{,}6$ ms. Repara na moral: a propagação dos 5000 km (25 ms) esmaga tudo o resto. Contra a distância não há protocolo que chegue, e é por isso que os centros de dados se aproximam dos utilizadores em vez de confiarem em ligações rápidas e longas.
+
+## Filas e o joelho da curva
+
+A fila merece atenção especial porque é a única parcela que depende do tráfego. Com pouca carga, os pacotes raramente esperam; à medida que a taxa de chegada se aproxima da capacidade da ligação, a fila média cresce sem limite. A curva tem um joelho: até aos 70 ou 80 por cento de utilização está tudo calmo, depois o atraso dispara.
+
+Isto explica dois comportamentos que vais medir no laboratório. Primeiro, a rede parece sempre "rápida ou entupida", sem meio termo estável perto do limite. Segundo, rajadas curtas de tráfego causam picos de atraso mesmo com utilização média baixa, porque a fila vê a rajada, não a média. Dimensionar redes é, em grande parte, decidir onde pôr o joelho.
+
+:::tip[Como atacar estes exercícios]
+Desenha o trajeto e escreve as quatro parcelas em cada nó antes de pegar na calculadora. A maioria dos erros vem de misturar unidades (km com metros, Mbps com bps) ou de esquecer a fila. Converte tudo para segundos e bits logo no início.
+:::
