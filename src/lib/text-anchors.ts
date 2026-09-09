@@ -2,23 +2,45 @@ import type { TextAnchor } from './annotations';
 
 const CONTEXT_LENGTH = 48;
 const EXCLUDED =
-  'script, style, svg, math, .katex, button, textarea, [data-pagefind-ignore], [aria-hidden="true"]';
+  'script, style, svg, button, textarea, [data-pagefind-ignore], [data-annotation-ignore], [aria-hidden="true"]';
+const MATH = '.katex, math';
 
-export function textIndex(root: HTMLElement) {
-  const nodes: { node: Text; start: number; end: number }[] = [];
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+export function textIndex(
+  root: HTMLElement,
+  options: { includeMath?: boolean } = {},
+) {
+  const nodes: { node: Text | Element; start: number; end: number }[] = [];
   let text = '';
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    if (node.parentElement?.closest(EXCLUDED)) continue;
-    const value = node.textContent || '';
-    nodes.push({
-      node: node as Text,
-      start: text.length,
-      end: text.length + value.length,
-    });
+  function append(node: Text | Element, value: string) {
+    nodes.push({ node, start: text.length, end: text.length + value.length });
     text += value;
   }
-  return { text, nodes };
+  function visit(node: Node) {
+    if (node instanceof Element) {
+      if (node.matches(EXCLUDED)) return;
+      if (node.matches(MATH)) {
+        if (options.includeMath !== false) {
+          const source = node.querySelector(
+            'annotation[encoding="application/x-tex"]',
+          )?.textContent;
+          append(
+            node,
+            source
+              ? `$${source}$`
+              : (node.getAttribute('aria-label') || node.textContent || '')
+                  .replace(/\s+/g, ' ')
+                  .trim(),
+          );
+        }
+        return;
+      }
+    }
+    if (node.nodeType === Node.TEXT_NODE)
+      append(node as Text, node.textContent || '');
+    else node.childNodes.forEach(visit);
+  }
+  visit(root);
+  return { root, text, nodes };
 }
 type TextIndex = ReturnType<typeof textIndex>;
 
@@ -37,14 +59,20 @@ export function anchorSelection(
   const first = selected[0];
   const last = selected[selected.length - 1];
   let start =
-    first.start + (range.startContainer === first.node ? range.startOffset : 0);
+    first.start +
+    (first.node.nodeType === Node.TEXT_NODE &&
+    range.startContainer === first.node
+      ? range.startOffset
+      : 0);
   let end =
-    last.start +
-    (range.endContainer === last.node ? range.endOffset : last.node.length);
+    last.node.nodeType === Node.TEXT_NODE && range.endContainer === last.node
+      ? last.start + range.endOffset
+      : last.end;
   while (start < end && /\s/.test(text[start])) start++;
   while (end > start && /\s/.test(text[end - 1])) end--;
   if (start === end) return null;
   return {
+    version: 2,
     exact: text.slice(start, end),
     start,
     prefix: text.slice(Math.max(0, start - CONTEXT_LENGTH), start),
@@ -52,8 +80,17 @@ export function anchorSelection(
   };
 }
 
+export function mathElement(range: Range): Element | null {
+  const node = range.startContainer.childNodes[range.startOffset];
+  return node instanceof Element && node.matches(MATH) ? node : null;
+}
+
 export function resolveAnchor(index: TextIndex, anchor: TextAnchor): Range[] {
-  const { text, nodes } = index;
+  // Old anchors excluded formulas. Keep their original text coordinate system.
+  const { text, nodes } =
+    anchor.version === 2
+      ? index
+      : textIndex(index.root, { includeMath: false });
   const matches: { start: number; score: number }[] = [];
   for (
     let start = text.indexOf(anchor.exact);
@@ -65,12 +102,13 @@ export function resolveAnchor(index: TextIndex, anchor: TextAnchor): Range[] {
       start + anchor.exact.length,
       start + anchor.exact.length + anchor.suffix.length,
     );
-    const score =
-      Number(prefix === anchor.prefix) + Number(suffix === anchor.suffix);
-    matches.push({ start, score });
+    matches.push({
+      start,
+      score:
+        Number(prefix === anchor.prefix) + Number(suffix === anchor.suffix),
+    });
   }
   matches.sort((a, b) => b.score - a.score);
-  // A changed or ambiguous passage stays in the notebook instead of moving to unrelated text.
   if (
     !matches.length ||
     (matches.length > 1 && matches[0].score === matches[1].score)
@@ -82,8 +120,11 @@ export function resolveAnchor(index: TextIndex, anchor: TextAnchor): Range[] {
     .filter((item) => item.end > start && item.start < end)
     .map((item) => {
       const range = new Range();
-      range.setStart(item.node, Math.max(0, start - item.start));
-      range.setEnd(item.node, Math.min(item.node.length, end - item.start));
+      if (item.node instanceof Element) range.selectNode(item.node);
+      else {
+        range.setStart(item.node, Math.max(0, start - item.start));
+        range.setEnd(item.node, Math.min(item.node.length, end - item.start));
+      }
       return range;
     });
 }

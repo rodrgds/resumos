@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import pagefind from 'astro-pagefind';
 import { unified } from '@astrojs/markdown-remark';
+import markdownExport from './src/lib/markdown-export.mjs';
 import remarkDirective from 'remark-directive';
 import remarkContainers from './src/lib/remark-containers.mjs';
 import remarkMath from 'remark-math';
@@ -19,6 +20,7 @@ export default defineConfig({
   site: 'https://resumos.rgo.pt',
   integrations: [
     mdx(),
+    markdownExport(),
     pagefind({
       indexConfig: {
         forceLanguage: 'pt',

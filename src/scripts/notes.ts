@@ -7,7 +7,7 @@ import {
   saveAnnotation,
   type Annotation,
 } from '../lib/annotations';
-import { resolveAnchor, textIndex } from '../lib/text-anchors';
+import { resolveAnchor, textIndex, mathElement } from '../lib/text-anchors';
 import { setupSelection } from './selection-tools';
 
 export function setupNotes() {
@@ -59,17 +59,35 @@ export function setupNotes() {
   function paint() {
     ranges.clear();
     if (!root) return;
+    root
+      .querySelectorAll('[data-math-highlight]')
+      .forEach((node) => node.removeAttribute('data-math-highlight'));
     const index = textIndex(root);
     for (const note of notes.values()) {
       if (note.path === location.pathname)
         ranges.set(note.id, resolveAnchor(index, note.anchor));
     }
+    for (const [id, spans] of ranges)
+      for (const span of spans) {
+        const formula = mathElement(span);
+        if (formula)
+          formula.setAttribute(
+            'data-math-highlight',
+            id === active ? 'active' : 'saved',
+          );
+      }
     if (!canHighlight) return;
-    const all = [...ranges.values()].flat();
+    const all = [...ranges.values()]
+      .flat()
+      .filter((range) => !mathElement(range));
     CSS.highlights.set('notebook', new Highlight(...all));
     CSS.highlights.set(
       'notebook-active',
-      new Highlight(...(active ? ranges.get(active) || [] : [])),
+      new Highlight(
+        ...(active ? ranges.get(active) || [] : []).filter(
+          (range) => !mathElement(range),
+        ),
+      ),
     );
   }
   function renderList() {

@@ -57,11 +57,11 @@ Seleciona texto numa página de apontamentos e escolhe **Destacar** ou **Comenta
 
 As preferências, os atalhos e o caderno ficam em `localStorage`. Não sincronizam entre dispositivos ou domínios. O caderno avisa quando não consegue guardar e permite descarregar o texto antes de sair. Limpar os dados do navegador apaga as notas.
 
-Os destaques usam a [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API), sem alterar o HTML do resumo. Em navegadores antigos, as notas continuam acessíveis no caderno. `src/lib/text-anchors.ts` guarda o trecho e o contexto: quando o conteúdo muda ou se torna ambíguo, a nota fica no caderno com um aviso. Fórmulas e imagens não entram na seleção de texto. `src/lib/annotations.ts` guarda uma entrada por nota para evitar que separadores diferentes sobrescrevam o caderno inteiro.
+Os destaques usam a [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API), sem alterar o HTML do resumo. Em navegadores antigos, as notas continuam acessíveis no caderno. `src/lib/text-anchors.ts` guarda o trecho e o contexto: quando o conteúdo muda ou se torna ambíguo, a nota fica no caderno com um aviso. As fórmulas entram como uma unidade, com o LaTeX original quando existe. Âncoras antigas continuam a usar as posições anteriores. Imagens não entram na seleção de texto. `src/lib/annotations.ts` guarda uma entrada por nota para evitar que separadores diferentes sobrescrevam o caderno inteiro.
 
 Por predefinição, `/` pesquisa, `n` abre as notas, `,` abre a aparência, `?` abre os atalhos e `a` abre o menu de IA nas páginas que o têm. Ctrl ou ⌘ K também pesquisa. Os atalhos não atuam em campos de texto. Podes mudar ou desativar as teclas e ativar navegação com `h`, `j`, `k`, `l`.
 
-O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](https://github.com/fuma-nama/fumadocs/blob/824a02860da9701584d12462069963d172c3588f/packages/base-ui/src/layouts/shared/page-actions.tsx) para ChatGPT e Claude: envia o URL público e uma instrução para ler a página. ChatGPT recebe também `hints=search`, como no Fumadocs. O popover acompanha o botão através de Floating UI e ajusta-se às margens do ecrã. Perplexity recebe a mesma pergunta. Gemini usa copiar e abrir. Estes links são convenções das interfaces dos fornecedores, não uma API estável. Há uma pergunta visível para copiar se necessário. Em localhost usa-se o endereço público configurado em `astro.config.mjs`. O conteúdo da página e as notas privadas nunca são copiados ou enviados. Não há chaves de API.
+O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](https://github.com/fuma-nama/fumadocs/blob/824a02860da9701584d12462069963d172c3588f/packages/base-ui/src/layouts/shared/page-actions.tsx) para ChatGPT e Claude: envia os URLs públicos do Markdown e da página, com uma instrução para os ler. ChatGPT recebe também `hints=search`, como no Fumadocs. O popover acompanha o botão através de Floating UI e ajusta-se às margens do ecrã. Perplexity recebe a mesma pergunta. Gemini usa copiar e abrir. Estes links são convenções das interfaces dos fornecedores, não uma API estável. Há uma pergunta visível para copiar se necessário. Em localhost usa-se o endereço público configurado em `astro.config.mjs`. O conteúdo da página e as notas privadas nunca são copiados ou enviados. Não há chaves de API.
 
 ## Organização
 
@@ -90,3 +90,15 @@ O workflow GitHub Actions verifica formatação, tipos, testes de navegador e bu
 Oito fontes de leitura alojadas localmente: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata e IBM Plex Mono. O navegador descarrega a fonte escolhida. Ícones Lucide. [Fontes dos logótipos](public/logos/README.md). A ilustração dos pontos foi criada para este projeto.
 
 Inspirado nos [Resumos LEIC do Técnico](https://resumos.leic.pt/), com código novo. O site é independente da FEUP e da U.Porto. `data/` e `_data/` são referências locais, ignoradas pelo Git, TypeScript e formatação.
+
+## Temas e exemplos executáveis
+
+A aparência inclui FEUP e adaptações das paletas [Gruvbox](https://github.com/morhetz/gruvbox), [Catppuccin](https://github.com/catppuccin/catppuccin), [Nord](https://www.nordtheme.com/docs/colors-and-palettes) e [Dracula / Alucard](https://github.com/dracula/dracula-theme). `src/data/reading-themes.ts` define as variantes claras e escuras. As larguras da página e do texto têm controlos separados.
+
+Os exemplos usam [CodeMirror](https://codemirror.net/) e [Runno WASI](https://github.com/taybenlor/runno). Um Worker por execução recebe apenas código e entrada padrão, sem acesso ao DOM ou ao armazenamento das notas. Parar termina o Worker. Os binários do Runno incluem Python 3.11.3, Clang 8 para C++17, QuickJS e SQLite. Java usa CheerpJ 4.3 com Java 8 e Eclipse JDT 3.26. Os downloads iniciais podem demorar; existe um limite de dois minutos por execução e 32 mil caracteres de saída.
+
+Java precisa de uma origem própria porque a JVM usa armazenamento do navegador. O projeto Cloudflare Pages `resumos-code` publica apenas `runners/`, em `resumos-code.pages.dev`, a partir do mesmo repositório. Nunca sirvas as páginas de leitura nessa origem. Para desenvolvimento, serve `runners/` em `127.0.0.1:4324`; o site pode continuar em `localhost:4321`. Os avisos e as fontes das licenças estão em [runners/NOTICE.md](runners/NOTICE.md).
+
+`WebPlayground` usa um iframe com origem opaca e uma política que bloqueia a rede. Os exemplos executáveis são opcionais por página. O site continua estático, sem servidor de execução nem chaves de API.
+
+`src/lib/markdown-export.mjs` gera os ficheiros públicos `.md`, os SVG de referência e `/llms.txt` após o build. O botão "Perguntar ao Chat" inclui a versão Markdown para facilitar a leitura por assistentes.

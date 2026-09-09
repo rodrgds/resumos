@@ -12,7 +12,7 @@ const labels = {
   notes: 'Caderno',
   appearance: 'Aparência',
   shortcuts: 'Atalhos',
-  ai: 'Perguntar à IA',
+  ai: 'Perguntar ao Chat',
 };
 type Action = keyof typeof defaults;
 const vimKeys = ['h', 'j', 'k', 'l'];

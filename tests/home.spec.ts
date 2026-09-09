@@ -57,14 +57,15 @@ test('appearance persists, follows system, and resets', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
   await page.getByRole('radio', { name: 'Escuro', exact: true }).check();
+  await page.getByText('Ajustar cores e largura', { exact: true }).click();
   await page.getByRole('radio', { name: 'Azul', exact: true }).check();
-  await page.getByRole('radio', { name: 'Larga', exact: true }).check();
+  await page.getByLabel('Largura da página').fill('1840');
   await page.getByLabel('Fonte de leitura').selectOption('serif');
-  await page.getByRole('slider').fill('120');
+  await page.getByRole('slider', { name: 'Tamanho do texto' }).fill('120');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.locator('html')).toHaveAttribute('data-accent', 'blue');
-  await expect(page.locator('html')).toHaveAttribute('data-width', 'wide');
+  await expect(page.locator('html')).toHaveAttribute('data-width', '1840');
   await expect(page.locator('html')).toHaveAttribute('data-font', 'serif');
   await expect(page.locator('html')).toHaveAttribute('data-size', '120');
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();

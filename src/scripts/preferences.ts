@@ -1,8 +1,11 @@
+import { readingThemes } from '../data/reading-themes';
 import { readingFonts } from '../data/reading-fonts';
 const allowed = {
   theme: ['system', 'light', 'dark'],
   accent: ['red', 'blue', 'green'],
-  width: ['normal', 'wide'],
+  palette: readingThemes.map((theme) => theme.id),
+  width: Array.from({ length: 12 }, (_, i) => String(1040 + i * 80)),
+  measure: Array.from({ length: 12 }, (_, i) => String(560 + i * 40)),
   font: readingFonts.map((font) => font.id),
   size: ['100', '110', '120'],
 } as const;
@@ -13,9 +16,13 @@ const media = matchMedia('(prefers-color-scheme: dark)');
 const defaults = Object.fromEntries(
   Object.entries(allowed).map(([key, values]) => [key, values[0]]),
 );
+defaults.width = '1360';
+defaults.measure = '720';
 let preferences: Record<string, string> = { ...defaults };
 try {
   const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+  if (saved.width === 'normal') saved.width = '1360';
+  if (saved.width === 'wide') saved.width = '1840';
   for (const key of Object.keys(allowed) as Key[]) {
     if ((allowed[key] as readonly string[]).includes(saved?.[key]))
       preferences[key] = saved[key];
@@ -37,6 +44,25 @@ function apply() {
         ? 'dark'
         : 'light'
       : preferences.theme;
+  root.style.setProperty('--container', `${preferences.width}px`);
+  root.style.setProperty('--reading-width', `${preferences.measure}px`);
+  for (const key of [
+    'page',
+    'surface',
+    'text',
+    'muted',
+    'line',
+    'soft',
+    'accent',
+    'accent-soft',
+  ])
+    root.style.removeProperty(`--${key}`);
+  const palette = readingThemes.find(
+    (theme) => theme.id === preferences.palette,
+  )!;
+  const colors = root.dataset.theme === 'dark' ? palette.dark : palette.light;
+  for (const [key, value] of Object.entries(colors))
+    root.style.setProperty(`--${key}`, value);
 }
 apply();
 media.addEventListener('change', apply);
@@ -54,10 +80,18 @@ function bind() {
       else input.value = preferences[input.name];
     }
     output.value = `${preferences.size}%`;
+    document.querySelector<HTMLOutputElement>('#width-value')!.value =
+      `${preferences.width} px`;
+    document.querySelector<HTMLOutputElement>('#measure-value')!.value =
+      `${preferences.measure} px`;
   };
   const save = () => {
     apply();
     output.value = `${preferences.size}%`;
+    document.querySelector<HTMLOutputElement>('#width-value')!.value =
+      `${preferences.width} px`;
+    document.querySelector<HTMLOutputElement>('#measure-value')!.value =
+      `${preferences.measure} px`;
     try {
       localStorage.setItem(storageKey, JSON.stringify(preferences));
     } catch {

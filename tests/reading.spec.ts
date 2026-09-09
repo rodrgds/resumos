@@ -4,7 +4,7 @@ test('AI menu stays next to its trigger and ChatGPT enables web search', async (
   page,
 }) => {
   await page.goto('/exemplo/diagramas/');
-  const trigger = page.getByRole('button', { name: 'Perguntar à IA' });
+  const trigger = page.getByRole('button', { name: 'Perguntar ao Chat' });
   await trigger.click();
   const button = (await trigger.boundingBox())!;
   const menu = (await page.locator('#ai-menu').boundingBox())!;
@@ -38,6 +38,13 @@ test('course navigation comes from content and keeps drafts private', async ({
   ).toBeVisible();
   await expect(sidebar).not.toContainText('Segredo do rascunho');
   expect((await page.request.get('/cadeiras/fp/rascunho/')).status()).toBe(404);
+  expect((await page.request.get('/cadeiras/fp/rascunho.md')).status()).toBe(
+    404,
+  );
+  const markdown = await page.request.get('/exemplo/diagramas.md');
+  expect(markdown.ok()).toBe(true);
+  expect(await markdown.text()).toContain('$n^2$');
+  expect(await markdown.text()).toContain('/exemplo/diagramas/figura-1.svg');
   await page.getByRole('button', { name: 'Pesquisar', exact: true }).click();
   await page.getByRole('searchbox').fill('rascunhoexclusivoxqz928');
   await expect(page.locator('#search-status')).toContainText('Não');
@@ -177,7 +184,7 @@ for (const width of [390, 320]) {
     await expect(
       page.getByRole('heading', { name: 'Caixas e imagens', exact: true }),
     ).toBeVisible();
-    const trigger = page.getByRole('button', { name: 'Perguntar à IA' });
+    const trigger = page.getByRole('button', { name: 'Perguntar ao Chat' });
     await trigger.click();
     await expect(page.locator('#ai-menu')).toBeVisible();
     const menu = (await page.locator('#ai-menu').boundingBox())!;

@@ -9,6 +9,7 @@ Esta cadeira é fictícia. Usa-a para testar os formatos antes de começares a e
 
 - [Texto e fórmulas](/exemplo/apontamentos/): Markdown, LaTeX, tabelas e notas de rodapé.
 - [Gráficos e diagramas](/exemplo/diagramas/): Typst, CeTZ, Fletcher, DOT e vídeo.
+- [Código que podes executar](/exemplo/codigo/): Python, C++, Java, JavaScript, SQL e uma pré-visualização web.
 - [Caixas e imagens](/exemplo/formatacao/): avisos, soluções, separadores e imagens nos dois temas.
 
 ## Experimenta enquanto lês
