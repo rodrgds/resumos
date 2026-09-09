@@ -5,6 +5,12 @@ section: conteudo
 order: 2
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import arvore from '../../aed/mergesort-arvore.typ?raw';
+
 Ordenar é o problema mais estudado da computação, porque aparece dentro de quase tudo: pesquisar depressa, remover duplicados, juntar conjuntos, preparar dados para outro algoritmo. Esta página fixa a pesquisa em vetores, apresenta as ordenações que tens de saber seguir à mão e explica por que nenhuma ordenação por comparação escapa a $O(n \log n)$.
 
 ## Pesquisar: sequencial e binária
@@ -37,11 +43,42 @@ O mergesort divide ao meio, ordena cada metade e **intercala** (merge) as metade
 
 Total: $1 + 1 + 3 + 1 + 2 + 6 = 14$ comparações. Repara no padrão: cada nível da divisão faz cerca de $n$ comparações e há $\log n$ níveis, daí o $O(n \log n)$. O preço é o vetor auxiliar de tamanho $n$ em cada intercalação.
 
+<Typst
+  source={arvore}
+  format="svg"
+  alt="Árvore de recursão do mergesort no vetor de 7 elementos, com o número de comparações em cada intercalação: 1, 1 e 1 no primeiro nível de junções, 3 e 2 no segundo, 6 na junção final, total 14."
+/>
+
+Lê a árvore de cima para baixo como divisão e de baixo para cima como junção: os números nas setas de subida são as comparações de cada intercalação, e a soma dá as 14 que contaste à mão.
+
 ## Quicksort no mesmo vetor
 
 O quicksort escolhe um **pivô**, **particiona** (menores à esquerda, maiores à direita) e resolve cada lado. Com o esquema de Lomuto e pivô na última posição, a primeira partição de $[5, 2, 7, 1, 6, 3, 4]$ com pivô $4$ faz 6 comparações e produz $[2, 1, 3, 4, 6, 7, 5]$, com o $4$ já na posição final. Resolve $[2, 1, 3]$ (pivô $3$, 2 comparações, fica igual), $[2, 1]$ (pivô $1$, 1 comparação, troca para $[1, 2]$), $[6, 7, 5]$ (pivô $5$, 2 comparações, passa a $[5, 7, 6]$) e $[7, 6]$ (1 comparação, troca para $[6, 7]$). Total: $6 + 2 + 1 + 2 + 1 = 12$ comparações.
 
+<CodePlayground
+  language="cpp"
+  title="Partição de Lomuto passo a passo"
+  code={
+    '#include <iostream>\n#include <vector>\nusing namespace std;\n\nint lomuto(vector<int>& v, int lo, int hi) {\n    int pivo = v[hi], i = lo;\n    for (int j = lo; j < hi; j++)\n        if (v[j] < pivo) swap(v[i++], v[j]);\n    swap(v[i], v[hi]);\n    return i;\n}\n\nint main() {\n    vector<int> v = {5, 2, 7, 1, 6, 3, 4};\n    int p = lomuto(v, 0, 6);\n    cout << "pivo na posicao " << p << ": ";\n    for (int x : v) cout << x << " ";\n    cout << "\\n";\n}'
+  }
+/>
+
+O programa imprime `pivo na posicao 3: 2 1 3 4 6 7 5`: seis comparações, o $4$ na posição final 3, menores à esquerda e maiores à direita, exatamente a primeira partição que seguiste acima.
+
 Neste vetor o quicksort fez menos comparações (12 contra 14) e não usou vetor auxiliar. Mas o seu pior caso é real: com o vetor já ordenado e pivô na ponta, cada partição só isola um elemento e o custo degrada para $O(n^2)$. A defesa é escolher bem o pivô (aleatório, ou mediana de três) e mudar para inserção nas partições pequenas. É por isso que a [STL](/cadeiras/p/templates-stl/) usa uma variante híbrida no `sort`, não o quicksort puro.
+
+<Tabs id="particao-lomuto-hoare" labels={['Lomuto', 'Hoare']}>
+  <div slot="panel-0">
+
+O esquema de **Lomuto** usa o último elemento como pivô e um índice que separa os menores. É o mais fácil de escrever sem erros e é o que os testes pedem para seguir à mão. Paga uma troca por cada elemento menor que o pivô, mesmo quando o vetor já está quase arrumado.
+
+  </div>
+  <div slot="panel-1">
+
+O esquema de **Hoare** usa dois índices que caminham um para o outro a partir das pontas e trocam quando se cruzam no sítio errado. Faz menos trocas que o Lomuto (cerca de três vezes menos em média) e é o que as bibliotecas preferem. Em compensação, o pivô não termina necessariamente na posição final, por isso a recursão trata os intervalos com mais cuidado.
+
+  </div>
+</Tabs>
 
 :::warning[Comparações não são tudo]
 Dois algoritmos com o mesmo $O$ podem diferir por constantes, localidade de cache e número de trocas. O quicksort costuma ganhar ao mergesort na prática porque trabalha no próprio vetor, com acessos sequenciais que a cache adora. A análise assintótica ordena os candidatos; a medição escolhe o vencedor.
@@ -49,4 +86,10 @@ Dois algoritmos com o mesmo $O$ podem diferir por constantes, localidade de cach
 
 ## Ordenação linear
 
-Sem comparar pares, o limite $n \log n$ não se aplica. A **counting sort** conta quantas vezes aparece cada valor (quando os valores estão num intervalo pequeno conhecido) e reescreve o vetor: $O(n + k)$ para $k$ valores possíveis. A **radix sort** ordena dígito a dígito com uma ordenação estável auxiliar. O truque é sempre o mesmo: trocar comparações por informação sobre os valores. Quando os valores são arbitrários, volta-se à comparação.
+Sem comparar pares, o limite $n \log n$ não se aplica. A **counting sort** conta quantas vezes aparece cada valor (quando os valores estão num intervalo pequeno conhecido) e reescreve o vetor: $O(n + k)$ para $k$ valores possíveis. Ordena $[2, 0, 2, 1, 3, 0, 2]$ com valores de 0 a 3: conta um $0$ duas vezes, um $1$ uma vez, um $2$ três vezes e um $3$ uma vez, ou seja a tabela $[2, 1, 3, 1]$; reescreve dois zeros, um um, três dois e um três, e obtém $[0, 0, 1, 2, 2, 2, 3]$. Nenhuma comparação entre elementos, só contagem e escrita. A **radix sort** ordena dígito a dígito com uma ordenação estável auxiliar. O truque é sempre o mesmo: trocar comparações por informação sobre os valores. Quando os valores são arbitrários, volta-se à comparação.
+
+## Ver também
+
+<YouTube id="kPRA0W1kECg" title="15 algoritmos de ordenação em 6 minutos" />
+
+O vídeo mostra as 15 ordenações a correr lado a lado: vê como o quicksort e o mergesort avançam depressa enquanto a seleção e a inserção ficam para trás. Para brincar com cada comparação, o [Visualgo](https://visualgo.net/en/sorting) anima as trocas passo a passo, e a [documentação do sort da STL](https://en.cppreference.com/w/cpp/algorithm/sort) diz que garantias a implementação real oferece.

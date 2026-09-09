@@ -5,6 +5,14 @@ section: conteudo
 order: 8
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import desenho from '../../aed/grafos.dot?raw';
+import camadas from '../../aed/bfs-camadas.typ?raw';
+
 Listas, árvores e heaps organizam os dados numa forma. Um **grafo** modela relações arbitrárias: páginas e ligações, estradas e cruzamentos, tarefas e dependências. É a estrutura mais geral da cadeira e também a mais recompensadora, porque dois algoritmos simples, BFS e DFS, respondem a uma lista surpreendente de perguntas.
 
 ## Representar
@@ -18,18 +26,52 @@ Num grafo dirigido distingue-se o **grau de saída** do de entrada; num caminho 
 
 ## BFS e DFS num grafo de 6 vértices
 
-Toma o grafo dirigido com vértices 1 a 6 e arestas $1 \to 2$, $1 \to 3$, $2 \to 4$, $3 \to 4$, $3 \to 5$, $4 \to 6$, $5 \to 6$. A **BFS** (pesquisa em largura) usa uma [fila](listas-pilhas-filas/) e visita por camadas de distância; a **DFS** (pesquisa em profundidade) usa uma pilha (ou recursão) e esgota cada ramo até ao fim. Ambas marcam cada vértice uma vez: tempo $O(V + E)$ com listas de adjacência.
+Toma o grafo dirigido com vértices 1 a 6 e arestas $1 \to 2$, $1 \to 3$, $2 \to 4$, $3 \to 4$, $3 \to 5$, $4 \to 6$, $5 \to 6$.
+
+<Dot
+  source={desenho}
+  alt="Grafo dirigido com 6 vértices: 1 aponta para 2 e 3, 2 aponta para 4, 3 aponta para 4 e 5, 4 e 5 apontam para 6."
+/>
+
+A **BFS** (pesquisa em largura) usa uma [fila](listas-pilhas-filas/) e visita por camadas de distância; a **DFS** (pesquisa em profundidade) usa uma pilha (ou recursão) e esgota cada ramo até ao fim. Ambas marcam cada vértice uma vez: tempo $O(V + E)$ com listas de adjacência.
 
 BFS a partir do 1, com vizinhos por ordem crescente: visita 1 e enfileira 2, 3; visita 2 e enfileira 4; visita 3 e enfileira 5 (o 4 já está marcado); visita 4 e enfileira 6; visita 5 (o 6 já está marcado); visita 6. Ordem: 1, 2, 3, 4, 5, 6. Como a BFS expande por distância crescente, esta ordem dá as distâncias mínimas do 1 em arestas: o 6 está a 3 passos ($1 \to 2 \to 4 \to 6$), e nenhum caminho mais curto existe.
 
+<Typst
+  source={camadas}
+  format="svg"
+  alt="A BFS por camadas a partir do vértice 1: camada de distância 0 com o 1, distância 1 com 2 e 3, distância 2 com 4 e 5, distância 3 com o 6."
+/>
+
 DFS a partir do 1, recursiva, mesma ordem de vizinhos: 1 desce a 2, que desce a 4, que desce a 6, que não tem saída nova; volta a 4, sem saída nova; volta a 2, sem saída nova; volta a 1, desce a 3, que desce a 5 (o 4 e o 6 já marcados). Ordem de primeira visita: 1, 2, 4, 6, 3, 5. Repara como difere da BFS: a DFS atravessa o grafo em vez de o varrer.
+
+<Tabs id="bfs-contra-dfs" labels={['BFS', 'DFS']}>
+  <div slot="panel-0">
+
+Usa uma **fila** e visita por camadas de distância crescente a partir da origem. Responde a "qual o caminho mais curto" em arestas e a "o que está a $k$ passos". O preço é guardar a fronteira toda, que pode ser larga.
+
+  </div>
+  <div slot="panel-1">
+
+Usa uma **pilha** (ou recursão) e esgota cada ramo até ao fim antes de voltar atrás. Responde a "há ciclo", "em que ordem topológica" e "o grafo é conexo". O preço é a pilha de recursão, que pode fundar num caminho comprido.
+
+  </div>
+</Tabs>
 
 ## Ciclos, topologia e conetividade
 
 A DFS classifica as arestas pelo que encontra: uma aresta para um vértice ainda **em processamento** (na pilha de recursão) fecha um ciclo. Aqui nenhuma aresta aponta para um antecessor em processamento (do 3, o 4 já terminou; do 5, o 6 já terminou), por isso o grafo **não tem ciclo**: é um DAG. Num DAG, a ordem inversa de término da DFS é uma **ordem topológica**, onde cada aresta vai de antes para depois: os términos saem por 6, 4, 2, 5, 3, 1, logo 1, 3, 5, 2, 4, 6 é topológica. Confirma: $1 \to 2$, $1 \to 3$, $2 \to 4$, $3 \to 4$, $3 \to 5$, $4 \to 6$, $5 \to 6$, todas da esquerda para a direita.
 
-Para **conetividade** em grafos não dirigidos, uma BFS ou DFS a partir de qualquer vértice que visite todos prova que o grafo é conexo; os vértices não visitados pedem nova pesquisa, e cada arranque conta uma **componente conexa**. A mesma ideia, no grafo dirigido, separa o alcance (quem chego a partir daqui) da conexidade mútua.
+Junta agora a aresta $6 \to 3$ ao grafo e repete a DFS: do 6, a aresta nova leva ao 3, ainda por descobrir; do 3 desce ao 5; do 5, a aresta para o 6 encontra-o ainda em processamento na pilha de recursão. Essa aresta fecha o ciclo $3 \to 5 \to 6 \to 3$, e o grafo deixa de ser DAG: já não há ordem topológica possível.
+
+Para **conetividade** em grafos não dirigidos, uma BFS ou DFS a partir de qualquer vértice que visite todos prova que o grafo é conexo; os vértices não visitados pedem nova pesquisa, e cada arranque conta uma **componente conexa**. Toma o grafo não dirigido com vértices 1 a 5 e arestas $1-2$, $2-3$ e $4-5$: a pesquisa a partir do 1 visita 1, 2 e 3 e para; o 4 continua por visitar, por isso arranca-se nova pesquisa no 4, que visita 4 e 5. Dois arranques, duas componentes conexas: $\{1, 2, 3\}$ e $\{4, 5\}$. A mesma ideia, no grafo dirigido, separa o alcance (quem chego a partir daqui) da conexidade mútua.
 
 :::tip[Como escolher entre BFS e DFS]
 BFS quando a pergunta envolve distância mínima ou camadas (menor número de arestas, redes sociais, labirintos). DFS quando envolve estrutura (ciclos, ordem topológica, componentes, resolver com voltar atrás). O código é quase igual; a fila contra a pilha muda o significado do percurso.
 :::
+
+## Ver também
+
+<YouTube id="s-CYnVz-uh4" title="Pesquisa em largura, MIT 6.006" />
+
+A aula do MIT executa a BFS à mão e prova que a primeira visita é pelo caminho mais curto. Para comparar as duas ordens no mesmo grafo, o [Visualgo](https://visualgo.net/en/dfsbfs) corre a BFS e a DFS lado a lado.

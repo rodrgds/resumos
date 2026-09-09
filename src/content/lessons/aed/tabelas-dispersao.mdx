@@ -5,6 +5,12 @@ section: conteudo
 order: 6
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import tabela from '../../aed/tabela-dispersao.typ?raw';
+
 A ABP pesquisa em $O(\log n)$ comparando chaves. Uma tabela de dispersão tenta $O(1)$: em vez de procurar a chave, **calcula** onde ela está. O cálculo raramente é perfeito, e esta página é sobre gerir as imperfeições sem perder o tempo constante.
 
 ## A ideia
@@ -12,6 +18,16 @@ A ABP pesquisa em $O(\log n)$ comparando chaves. Uma tabela de dispersão tenta 
 Uma **função de dispersão** $h$ transforma cada chave num índice da tabela: para guardar o par (chave, valor), põe-no na posição $h(chave)$; para o ler, recalcula $h(chave)$ e vai lá. Uma boa função espalha as chaves uniformemente pelos índices, é rápida e determinista (a mesma chave dá sempre o mesmo índice). O exemplo canónico para chaves inteiras é $h(k) = k \bmod m$, sendo $m$ o tamanho da tabela.
 
 Duas chaves com o mesmo índice fazem uma **colisão**. Colisões são inevitáveis quando há mais chaves que posições, e prováveis muito antes disso: com 23 pessoas numa sala, a probabilidade de dois aniversários coincidirem já passa de metade. Por isso a tabela precisa de uma estratégia de colisões, não de esperança.
+
+<CodePlayground
+  language="cpp"
+  title="Onde cai cada chave"
+  code={
+    '#include <iostream>\nusing namespace std;\nint main() {\n    int chaves[] = {12, 25, 9, 30, 18};\n    for (int k : chaves) cout << k << " -> posicao " << (k % 7) << "\\n";\n}'
+  }
+/>
+
+O programa imprime `12 -> posicao 5`, `25 -> posicao 4`, `9 -> posicao 2`, `30 -> posicao 2` e `18 -> posicao 4`: as duas colisões (na posição 2 e na 4) aparecem antes de desenhares a tabela.
 
 ## Encadeamento
 
@@ -23,6 +39,12 @@ No **encadeamento** (chaining), cada posição guarda uma lista ligada de pares.
 - $30 \bmod 7 = 2$: colisão com o 9; a posição 2 fica $[9, 30]$.
 - $18 \bmod 7 = 4$: colisão com o 25; a posição 4 fica $[25, 18]$.
 
+<Typst
+  source={tabela}
+  format="svg"
+  alt="Tabela de dispersão de tamanho 7 após as cinco inserções: cadeias com 9 e 30 na posição 2, com 25 e 18 na posição 4, e 12 sozinho na posição 5."
+/>
+
 Pesquisar o 30 recalcula o índice 2 e percorre a cadeia: compara com 9 (diferente), compara com 30 (igual). Duas comparações em vez de uma, o preço da colisão. Apagar remove o nó da cadeia, como numa lista ligada.
 
 O **fator de carga** $\alpha = n/m$ (chaves por posição) prevê o custo: com boa dispersão, cada cadeia tem cerca de $\alpha$ elementos e a pesquisa custa $O(1 + \alpha)$. Aqui $\alpha = 5/7 \approx 0{,}71$. Quando $\alpha$ cresce, a tabela **redimensiona**: cria uma tabela maior e reinsere tudo (rehashing). Redimensionar custa $O(n)$, mas acontece raramente, por isso o custo amortizado por inserção continua $O(1)$, como na fila de duas pilhas.
@@ -31,8 +53,27 @@ O **fator de carga** $\alpha = n/m$ (chaves por posição) prevê o custo: com b
 
 No **endereçamento aberto**, os pares vivem todos dentro da tabela; em colisão, tenta-se a próxima posição livre segundo uma **sondagem**. Na sondagem linear tenta-se $h(k), h(k)+1, h(k)+2, \dots$ (módulo $m$). É simples e amiga da cache, mas forma **aglomerados**: posições ocupadas atraem mais tentativas, que ocupam mais posições. A sondagem quadrática e a dispersão dupla espalham melhor as tentativas.
 
-O preço do endereçamento aberto aparece na remoção: apagar uma chave a meio de uma sequência de sondagem parte o caminho das chaves seguintes, por isso marca-se a posição como **apagada** (tombstone) em vez de livre. As remoções acumulam lixo e obrigam a redimensionar mais cedo. Escolhe encadeamento quando as remoções são frequentes e a memória não aperta; endereçamento aberto quando a tabela cabe na cache e as chaves são estáveis.
+O preço do endereçamento aberto aparece na remoção: apagar uma chave a meio de uma sequência de sondagem parte o caminho das chaves seguintes, por isso marca-se a posição como **apagada** (tombstone) em vez de livre. Segue com sondagem linear numa tabela de tamanho 7: insere 9 (posição 2), 30 (colide em 2, fica na 3) e 18 ($18 \bmod 7 = 4$). Apaga o 9: a posição 2 fica marcada como apagada, não livre. Pesquisa o 30: calcula o índice 2, encontra a marca de apagado e continua em vez de parar, e encontra o 30 na posição 3. Se a posição 2 tivesse ficado livre, a pesquisa parava logo e concluía, mal, que o 30 não existe. As remoções acumulam lixo e obrigam a redimensionar mais cedo. Escolhe encadeamento quando as remoções são frequentes e a memória não aperta; endereçamento aberto quando a tabela cabe na cache e as chaves são estáveis.
+
+<Tabs id="colisoes-encadeamento-aberto" labels={['Encadeamento', 'Endereçamento aberto']}>
+  <div slot="panel-0">
+
+Cada posição guarda uma lista: inserir é pendurar no fim da cadeia e apagar é remover o nó. A tabela nunca "enche" no sentido da sondagem, mas as cadeias alongam e o custo segue o fator de carga. É a escolha quando há muitas remoções ou o número de chaves é imprevisível.
+
+  </div>
+  <div slot="panel-1">
+
+Tudo vive no vetor: melhor localidade e sem apontadores, mas a tabela não passa de cerca de 70 por cento de ocupação sem degradar. Apagar exige tombstones e inserções falhadas exigem redimensionar. É a escolha quando as chaves são estáveis e a tabela cabe na cache.
+
+  </div>
+</Tabs>
 
 :::tip[Como cai em teste]
 Dão-te a função, o tamanho e a sequência de inserções e pedem a tabela final, ou dão-te a tabela e perguntam quantas comparações custa uma pesquisa. Segue a ordem dada sem saltos: cada inserção vê a tabela deixada pelas anteriores. E confirma sempre o módulo das tuas contas antes de escreveres a posição.
 :::
+
+## Ver também
+
+<YouTube id="KyUTuwz_b7Q" title="Tabelas e funções de dispersão" />
+
+O vídeo constrói a intuição da função de dispersão antes das estratégias de colisão, pela mesma ordem desta página.
