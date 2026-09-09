@@ -37,7 +37,7 @@ Manrope serves navigation and headings. Readers can choose Source Serif 4 for pr
 
 A quiet header, short introduction with the FEUP logo, contribution notice and course grid. The container is 1120px, or 1440px in wide mode. Lessons use an 860px container.
 
-LEIC and MIEIC are plain links above the course grid. MIEIC is a separate five-year archive with options marked on their cards. Years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. The nucleus directory uses two columns on desktop and one on mobile.
+LEIC and MEIC are plain links above the course grid. MEIC is a separate two-year course with options marked on their cards. Years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. The nucleus directory uses two columns on desktop and one on mobile.
 
 The scratchpad stays beside the page on wide screens and becomes a lower panel below 1000px.
 

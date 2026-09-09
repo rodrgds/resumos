@@ -82,7 +82,7 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
     const link = page.locator(`[data-provider="${provider}"]`);
     const url = new URL((await link.getAttribute('href'))!);
     expect(url.searchParams.get(parameter)).toBe(
-      'Lê esta página: https://resumos-feup.pages.dev/exemplo/diagramas/. Quero fazer perguntas sobre ela. Responde em português de Portugal. Se não conseguires ler a página, diz-me.',
+      'Lê esta página: https://resumos.rgo.pt/exemplo/diagramas/. Quero fazer perguntas sobre ela. Responde em português de Portugal. Se não conseguires ler a página, diz-me.',
     );
     await expect(link.locator('.provider-icon')).toBeVisible();
   }
@@ -98,7 +98,7 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
     page.getByRole('textbox', { name: 'Pergunta para a IA' }),
   ).toBeFocused();
   await expect(page.locator('#ai-prompt')).toHaveValue(
-    /https:\/\/resumos-feup.pages.dev\/exemplo\/diagramas\//,
+    /https:\/\/resumos.rgo.pt\/exemplo\/diagramas\//,
   );
   await expect(page.locator('#ai-prompt')).not.toHaveValue(/Fletcher/);
   await expect(page.locator('#ai-status')).toContainText(
@@ -140,7 +140,7 @@ for (const width of [1440, 390, 320]) {
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       for (const path of [
         '/nucleos/',
-        '/mieic/',
+        '/meic/',
         '/exemplo/apontamentos/',
         '/exemplo/diagramas/',
       ]) {
@@ -224,7 +224,7 @@ test('homepage stays simple and the nuclei include NIAEFEUP with white logo back
   ).toBe(true);
 });
 
-test('useful links and the complete archived MIEIC plan are reachable', async ({
+test('useful links and the current MEIC plan are reachable', async ({
   page,
 }) => {
   await page.goto('/');
@@ -243,22 +243,22 @@ test('useful links and the complete archived MIEIC plan are reachable', async ({
     'href',
     'https://drive.google.com/drive/folders/1PZYhtsUc6mDA96jnVR4wiLWWxNWeovdK',
   );
-  await page.getByRole('link', { name: 'MIEIC Arquivo' }).click();
+  await page.getByRole('link', { name: 'MEIC' }).click();
   await expect(
-    page.getByRole('heading', { name: 'MIEIC', exact: true }),
+    page.getByRole('heading', { name: 'MEIC', exact: true }),
   ).toBeVisible();
-  await expect(page.locator('.year-section')).toHaveCount(5);
-  await expect(page.locator('[data-course]')).toHaveCount(82);
+  await expect(page.locator('.year-section')).toHaveCount(2);
+  await expect(page.locator('[data-course]')).toHaveCount(57);
   await expect(
-    page.locator('[data-course-year="4"] [data-course]'),
-  ).toHaveCount(28);
+    page.locator('[data-course-year="1"] [data-course]'),
+  ).toHaveCount(30);
   await expect(
-    page.locator('[data-course-year="5"] [data-course]'),
-  ).toHaveCount(23);
-  await page.locator('[data-acronym="SESI"]').click();
+    page.locator('[data-course-year="2"] [data-course]'),
+  ).toHaveCount(27);
+  await page.locator('[data-acronym="WSDL"]').click();
   await expect(
     page.getByRole('heading', {
-      name: 'Seminário de Engenharia de Software e Sistemas de Informação',
+      name: 'Web Semântica e Dados Ligados',
       exact: true,
     }),
   ).toBeVisible();
@@ -267,8 +267,8 @@ test('useful links and the complete archived MIEIC plan are reachable', async ({
   );
   await page.keyboard.press('Escape');
   await page.keyboard.press('Control+k');
-  await page.getByRole('searchbox').fill('Microprocessadores');
+  await page.getByRole('searchbox').fill('Heterogénea');
   await page.locator('#search-results a').first().click();
-  await expect(page).toHaveURL(/\/mieic\/#resumo-mieic-mpcp-1/);
-  await expect(page.locator('[data-acronym="MPCP"]')).toBeFocused();
+  await expect(page).toHaveURL(/\/meic\/#resumo-meic-che/);
+  await expect(page.locator('[data-acronym="CHE"]')).toBeFocused();
 });
