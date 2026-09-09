@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt" data-pagefind-ignore="all">
+  <meta charset="utf-8" /><meta name="robots" content="noindex" /><title>
+    Java
+  </title>
+  <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+  <script type="module">
+    const runJava = async (code, input = '', send = console.log) => {
+      await cheerpjInit({ version: 8, status: 'none', clipboardMode: 'java' });
+      const cp = '/app/ecj-3.26.0.jar:/files/';
+      const lib = await cheerpjRunLibrary(cp);
+      const System = await lib.java.lang.System;
+      const Buffer = await lib.java.io.ByteArrayOutputStream;
+      const Stream = await lib.java.io.PrintStream;
+      const output = await new Buffer();
+      const stream = await new Stream(output, true, 'UTF-8');
+      await System.setOut(stream);
+      await System.setErr(stream);
+      const Input = await lib.java.io.FileInputStream;
+      cheerpOSAddStringFile('/str/input', input);
+      await System.setIn(await new Input('/str/input'));
+      cheerpOSAddStringFile('/str/Main.java', code);
+      send({ type: 'status', text: 'A compilar…' });
+      const Compiler =
+        await lib.org.eclipse.jdt.core.compiler.batch.BatchCompiler;
+      const Writer = await lib.java.io.PrintWriter;
+      const writer = await new Writer(stream);
+      const success = await Compiler.compile(
+        '-1.8 -d /files/ /str/Main.java',
+        writer,
+        writer,
+        null,
+      );
+      await writer.flush();
+      send({ type: 'output', text: await output.toString('UTF-8') });
+      if (!success) return send({ type: 'done', exitCode: 1 });
+      await output.reset();
+      send({ type: 'status', text: 'A executar…' });
+      const Main = await lib.Main;
+      await Main.main([]);
+      send({ type: 'output', text: await output.toString('UTF-8') });
+      send({ type: 'done', exitCode: 0 });
+    };
+    let started = false;
+    window.addEventListener('message', (event) => {
+      if (started || event.source !== parent || !event.ports[0]) return;
+      if (
+        !['https://resumos.rgo.pt', 'https://resumos-feup.pages.dev'].includes(
+          event.origin,
+        ) &&
+        !/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(event.origin)
+      )
+        return;
+      const { code, input } = event.data || {};
+      if (typeof code !== 'string' || typeof input !== 'string') return;
+      started = true;
+      const port = event.ports[0];
+      runJava(code, input, (message) => port.postMessage(message)).catch(
+        async (error) => {
+          port.postMessage({
+            type: 'error',
+            text:
+              (await error?.getMessage?.()) ||
+              error?.message ||
+              'Não foi possível executar Java.',
+          });
+        },
+      );
+    });
+  </script>
+</html>
