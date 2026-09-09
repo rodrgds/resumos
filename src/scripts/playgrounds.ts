@@ -27,6 +27,7 @@ const languages = {
   c: cpp,
   haskell: () => StreamLanguage.define(haskell),
   prolog: () => [],
+  riscv: () => [],
   php,
 };
 const MAX_RUN_MS = 120_000;
@@ -88,10 +89,17 @@ export function setupPlaygrounds() {
         if (['java', 'haskell', 'prolog', 'php'].includes(language))
           cancel = runIsolated(request, receive, root);
         else {
-          const worker = new Worker(
-            new URL('./runners/wasi.worker.ts', import.meta.url),
-            { type: 'module' },
-          );
+          // Keep each constructor static so Vite bundles both Worker entrypoints.
+          const worker =
+            language === 'riscv'
+              ? new Worker(
+                  new URL('./runners/riscv.worker.ts', import.meta.url),
+                  { type: 'module' },
+                )
+              : new Worker(
+                  new URL('./runners/wasi.worker.ts', import.meta.url),
+                  { type: 'module' },
+                );
           cancel = () => worker.terminate();
           worker.onmessage = (event) => receive(event.data);
           worker.onerror = () =>

@@ -154,7 +154,9 @@ import WebPlayground from '../../../components/WebPlayground.astro';
 
 Consulta [os exemplos](https://resumos.rgo.pt/exemplo/codigo/). Testa o resultado com entradas conhecidas antes de publicar. Para testar os motores isolados localmente, executa `npm run build:runners` e serve o resultado noutra origem: `python3 -m http.server 4324 --bind 127.0.0.1 --directory runners/dist`. Essa porta é exclusiva do motor e não deve servir o site.
 
-Para Dart/Flutter e RISC-V, usa `<ToolEmbed tool="dartpad" />` ou `<ToolEmbed tool="ripes" />`, importando `components/ToolEmbed.astro`. DartPad também aceita `gist="ID"` para carregar um exemplo público. Estes serviços só carregam depois de o leitor escolher abrir o editor. O DartPad usa compilação externa. Consulta [linguagens e limites](docs/linguagens.md) antes de preparar conteúdo para uma cadeira.
+Para RISC-V de 32 bits, usa `CodePlayground language="riscv"` com chamadas de sistema do RARS, como no exemplo. O programa começa em `main` e aceita dados de entrada para as chamadas de leitura. Não tem acesso a ficheiros do computador.
+
+Para Dart/Flutter e para explorar um processador RISC-V passo a passo, usa `<ToolEmbed tool="dartpad" />` ou `<ToolEmbed tool="ripes" />`, importando `components/ToolEmbed.astro`. DartPad também aceita `gist="ID"` para carregar um exemplo público. Estes serviços só carregam depois de o leitor escolher abrir o editor. O DartPad usa compilação externa. Consulta [linguagens e limites](docs/linguagens.md) antes de preparar conteúdo para uma cadeira.
 
 ## Leitura e versões Markdown
 
