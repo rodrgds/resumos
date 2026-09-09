@@ -2,12 +2,18 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import pagefind from 'astro-pagefind';
 import { unified } from '@astrojs/markdown-remark';
+import remarkDirective from 'remark-directive';
+import remarkContainers from './src/lib/remark-containers.mjs';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
-const math = {
-  remarkPlugins: [remarkMath],
+const content = {
+  remarkPlugins: [remarkMath, remarkDirective, remarkContainers],
   rehypePlugins: [rehypeKatex],
+  remarkRehype: {
+    footnoteLabel: 'Notas de rodapé',
+    footnoteBackLabel: 'Voltar à referência',
+  },
 };
 export default defineConfig({
   site: 'https://resumos.rgo.pt',
@@ -35,7 +41,7 @@ export default defineConfig({
       : []),
   ],
   markdown: {
-    processor: unified(math),
+    processor: unified(content),
     shikiConfig: { theme: 'github-dark-high-contrast' },
   },
   devToolbar: { enabled: false },

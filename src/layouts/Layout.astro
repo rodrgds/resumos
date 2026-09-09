@@ -4,11 +4,13 @@ import '@fontsource-variable/source-serif-4';
 import '../styles/global.css';
 import '../styles/tools.css';
 import '../styles/notebook.css';
+import '../styles/fonts.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import StudyTools from '../components/StudyTools.astro';
 import preferences from '../scripts/preferences.ts?raw';
-import { transform } from 'esbuild';
+import { build } from 'esbuild';
+import { resolve } from 'node:path';
 interface Props {
   title?: string;
   description?: string;
@@ -18,7 +20,18 @@ const {
   description = 'Um lugar para os apontamentos de LEIC da FEUP. Encontra as cadeiras por ano e semestre e ajuda a construir os primeiros resumos.',
 } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
-const { code } = await transform(preferences, { loader: 'ts', minify: true });
+const bundled = await build({
+  stdin: {
+    contents: preferences,
+    loader: 'ts',
+    resolveDir: resolve('src/scripts'),
+  },
+  bundle: true,
+  write: false,
+  minify: true,
+  platform: 'browser',
+});
+const code = bundled.outputFiles[0].text;
 ---
 
 <!doctype html>

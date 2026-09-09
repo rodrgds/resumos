@@ -1,8 +1,9 @@
+import { readingFonts } from '../data/reading-fonts';
 const allowed = {
   theme: ['system', 'light', 'dark'],
   accent: ['red', 'blue', 'green'],
   width: ['normal', 'wide'],
-  font: ['sans', 'serif'],
+  font: readingFonts.map((font) => font.id),
   size: ['100', '110', '120'],
 } as const;
 type Key = keyof typeof allowed;
@@ -24,6 +25,10 @@ try {
 }
 
 function apply() {
+  root.style.setProperty(
+    '--reading-font',
+    readingFonts.find((font) => font.id === preferences.font)!.family,
+  );
   for (const [key, value] of Object.entries(preferences))
     root.dataset[key] = value;
   root.dataset.theme =
@@ -41,8 +46,10 @@ function bind() {
   const output = document.querySelector<HTMLOutputElement>('#size-value');
   if (!form || !output) return;
   const sync = () => {
-    for (const input of form.querySelectorAll<HTMLInputElement>('input')) {
-      if (input.type === 'radio')
+    for (const input of form.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement
+    >('input, select')) {
+      if (input instanceof HTMLInputElement && input.type === 'radio')
         input.checked = input.value === preferences[input.name];
       else input.value = preferences[input.name];
     }
@@ -60,7 +67,10 @@ function bind() {
   sync();
   form.addEventListener('input', (event) => {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
+    if (!(
+      input instanceof HTMLInputElement || input instanceof HTMLSelectElement
+    ))
+      return;
     const key = input.name as Key;
     if (
       key in allowed &&

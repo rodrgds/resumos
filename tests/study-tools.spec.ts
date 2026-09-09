@@ -88,9 +88,12 @@ test('mock course renders diagrams and only loads YouTube on request', async ({
     .getByRole('link', { name: 'cadeira de exemplo', exact: true })
     .click();
   await expect(
-    page.getByText(/Esta cadeira não faz parte do plano da FEUP/),
+    page.getByText(/Estes exemplos não fazem parte do plano da FEUP/),
   ).toBeVisible();
-  await page.locator('.lesson-link').nth(1).click();
+  await page
+    .locator('.prose')
+    .getByRole('link', { name: 'Gráficos e diagramas', exact: true })
+    .click();
   await expect(page.locator('.typst-figure svg')).toHaveCount(2);
   await expect(page.locator('.diagram-figure svg')).toHaveCount(1);
   await expect(page.locator('.typst-content math')).toHaveCount(2);
@@ -117,6 +120,7 @@ for (const width of [1440, 390, 320]) {
         '/meic/',
         '/exemplo/apontamentos/',
         '/exemplo/diagramas/',
+        '/exemplo/formatacao/',
       ]) {
         await page.goto(path);
         await page.evaluate(() => document.fonts.ready);

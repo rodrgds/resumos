@@ -59,7 +59,7 @@ test('appearance persists, follows system, and resets', async ({ page }) => {
   await page.getByRole('radio', { name: 'Escuro', exact: true }).check();
   await page.getByRole('radio', { name: 'Azul', exact: true }).check();
   await page.getByRole('radio', { name: 'Larga', exact: true }).check();
-  await page.getByRole('radio', { name: 'Com serifas', exact: true }).check();
+  await page.getByLabel('Fonte de leitura').selectOption('serif');
   await page.getByRole('slider').fill('120');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

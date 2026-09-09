@@ -1,0 +1,76 @@
+---
+interface Props {
+  id: string;
+  labels: string[];
+}
+const { id, labels } = Astro.props;
+if (!/^[a-z][a-z0-9-]*$/.test(id) || labels.length < 2)
+  throw new Error('Tabs needs a unique id and at least two labels.');
+const panels = await Promise.all(
+  labels.map((_, index) => Astro.slots.render(`panel-${index}`)),
+);
+---
+
+<div class="content-tabs" data-tabs>
+  <div role="tablist" aria-label="Escolher exemplo">
+    {labels.map((label, index) => (
+      <button
+        role="tab"
+        id={`${id}-tab-${index}`}
+        aria-controls={`${id}-panel-${index}`}
+        aria-selected={index === 0 ? 'true' : 'false'}
+        tabindex={index === 0 ? 0 : -1}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+  {panels.map((panel, index) => (
+    <section
+      role="tabpanel"
+      id={`${id}-panel-${index}`}
+      aria-labelledby={`${id}-tab-${index}`}
+      tabindex="0"
+      set:html={panel}
+    />
+  ))}
+</div>
+<script>
+  for (const group of document.querySelectorAll<HTMLElement>('[data-tabs]')) {
+    const tabs = [
+      ...group.querySelectorAll<HTMLButtonElement>(
+        ':scope > [role="tablist"] > button',
+      ),
+    ];
+    const panels = [
+      ...group.querySelectorAll<HTMLElement>(':scope > [role="tabpanel"]'),
+    ];
+    function select(index: number) {
+      tabs.forEach((tab, i) => {
+        tab.setAttribute('aria-selected', String(index === i));
+        tab.tabIndex = index === i ? 0 : -1;
+        panels[i].hidden = index !== i;
+      });
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => select(index));
+      tab.addEventListener('keydown', (event) => {
+        const next =
+          event.key === 'ArrowRight'
+            ? (index + 1) % tabs.length
+            : event.key === 'ArrowLeft'
+              ? (index + tabs.length - 1) % tabs.length
+              : event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? tabs.length - 1
+                  : null;
+        if (next === null) return;
+        event.preventDefault();
+        select(next);
+        tabs[next].focus();
+      });
+    });
+    select(0);
+  }
+</script>
