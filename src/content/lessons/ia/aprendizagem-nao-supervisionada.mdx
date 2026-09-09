@@ -1,0 +1,36 @@
+---
+title: Aprendizagem não supervisionada
+description: Agrupar dados sem respostas com k-means, calculado à mão em duas iterações sobre seis pontos.
+section: conteudo
+order: 9
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Na página anterior, cada exemplo trazia a resposta certa. Na **aprendizagem não supervisionada** não há respostas: há só dados, e a tarefa é descobrir estrutura. O caso clássico é o **agrupamento** (clustering): partir os pontos em grupos de pontos parecidos. O exemplo desta página agrupa seis pontos do plano em dois grupos com o algoritmo k-means, com as duas iterações calculadas à mão.
+
+## O algoritmo em três linhas
+
+Escolhe $k$ (aqui 2) e $k$ centroides iniciais, um por grupo. Depois repete: atribui cada ponto ao centroide mais próximo e recalcula cada centroide como a média dos pontos do seu grupo. Para quando ninguém muda de grupo. Os centroides andam em direção aos pontos e os pontos reordenam-se à volta deles até estabilizar.
+
+## Duas iterações à mão
+
+Pontos: A(1, 1), B(1, 2), C(2, 1), D(5, 4), E(6, 5), F(5, 5). Centroides iniciais $\mu_1 = (1, 1)$ e $\mu_2 = (5, 5)$. Usa distância euclidiana ao quadrado, que dá a mesma ordem sem raízes.
+
+Iteração 1. Distâncias a $\mu_1$ e $\mu_2$: A dá 0 contra 32; B dá 1 contra 25; C dá 1 contra 25; D dá 25 contra 1; E dá 41 contra 1; F dá 32 contra 0. Grupos: \{A, B, C\} e \{D, E, F\}. Novos centroides: $\mu_1 = (4/3, 4/3)$ e $\mu_2 = (16/3, 14/3)$, ou seja, cerca de (1,33, 1,33) e (5,33, 4,67).
+
+Iteração 2. Com os centroides novos: A fica a 0,22 de $\mu_1$ contra 32,2 de $\mu_2$; B a 0,56 contra 25,9; C a 0,56 contra 25,9; D a 20,6 contra 0,56; E a 35,2 contra 0,56; F a 26,9 contra 0,56. Os grupos repetem-se: \{A, B, C\} e \{D, E, F\}. Ninguém muda, o algoritmo para. Dois grupos naturais, um canto inferior esquerdo e outro superior direito, descobertos sem nenhuma etiqueta.
+
+<CodePlayground
+  language="python"
+  title="k-means em duas iterações"
+  code={'pontos = {"A": (1, 1), "B": (1, 2), "C": (2, 1),\\n          "D": (5, 4), "E": (6, 5), "F": (5, 5)}\\nmus = [(1, 1), (5, 5)]\\nd2 = lambda p, m: (p[0] - m[0]) ** 2 + (p[1] - m[1]) ** 2\\nfor it in (1, 2):\\n    grupos = {0: [], 1: []}\\n    for nome, p in pontos.items():\\n        k = 0 if d2(p, mus[0]) <= d2(p, mus[1]) else 1\\n        grupos[k].append(nome)\\n    print(it, grupos)\\n    mus = [tuple(sum(c) / len(c) for c in zip(*[pontos[n] for n in grupos[k]]))\\n           for k in (0, 1)]'}
+/>
+
+Isto escreve `1 {0: ['A', 'B', 'C'], 1: ['D', 'E', 'F']}` e a seguir `2` com os mesmos grupos: a segunda iteração confirma a primeira e o algoritmo termina.
+
+## Quando resulta e quando não resulta
+
+O k-means resulta quando os grupos são mais ou menos esféricos e de tamanho parecido, como os dois cantos do exemplo. Exige que digas o $k$ à partida e é sensível aos centroides iniciais: começar com os dois centroides no mesmo canto pode prender o algoritmo num mau agrupamento. Repete com vários arranques e fica com o de menor dispersão interna.
+
+Duas alternativas para quando o k-means não chega: o **agrupamento hierárquico** junta (ou divide) grupos passo a passo e devolve uma árvore de partições em vez de um $k$ fixo; a **análise de componentes principais** (PCA) reduz as dimensões antes de agrupar, o que ajuda quando os pontos têm dezenas de coordenadas. E quando voltarem a aparecer etiquetas, voltas à página de [aprendizagem supervisionada](aprendizagem-e-redes/).

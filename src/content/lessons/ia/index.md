@@ -17,6 +17,8 @@ A segunda parte decide sob oposição e escassez: [Jogos e Minimax](jogos-e-mini
 
 A terceira parte raciocina e aprende: [Lógica e conhecimento](logica-e-conhecimento/) representa factos e regras e infere conclusões, [Incerteza e Bayes](incerteza-e-bayes/) decide com probabilidades quando o mundo é incerto, e [Aprendizagem e redes neuronais](aprendizagem-e-redes/) constrói classificadores a partir de dados e avalia-os com matrizes de confusão.
 
+A fechar, dois temas que o programa exige e as páginas técnicas não cobrem: [Aprendizagem não supervisionada](aprendizagem-nao-supervisionada/) agrupa dados sem respostas com o k-means, e [Ética e segurança](etica-e-seguranca/) pergunta o que corre mal quando estes decisores saem do caderno.
+
 ## O que convém rever
 
 A página de lógica usa conetivas e equivalências que podes rever em [Matemática Discreta](/cadeiras/md/) e em [Lógica proposicional](/cadeiras/md/logica-proposicional/). Os exemplos de código seguem o Python de [Fundamentos da Programação](/cadeiras/fp/). Quando se falar de problemas difíceis e heurísticas, a noção de P e NP está em [Teoria da Computação](/cadeiras/tc/).
