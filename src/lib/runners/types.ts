@@ -7,7 +7,8 @@ export type Language =
   | 'c'
   | 'haskell'
   | 'prolog'
-  | 'php';
+  | 'php'
+  | 'riscv';
 export interface RunRequest {
   language: Language;
   code: string;

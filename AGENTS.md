@@ -24,3 +24,5 @@
 - Use Heroicons through `Icon.astro` for interface and course icons. Preserve official brand logos. Do not use Unicode glyphs as icons or add footers to executable code blocks.
 
 - Reading history stays in browser storage through `reading-history.ts`. Resolve it against published course navigation; never export or index it. Only explicit resume links restore scroll position.
+
+- RISC-V uses one RARS instance per disposable Worker. Keep `new Worker(new URL(..., import.meta.url))` static so Vite bundles each runtime. Markdown disclosure icons come from the same Heroicons package through `rehype-disclosures.mjs`.
