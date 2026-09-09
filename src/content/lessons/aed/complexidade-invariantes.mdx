@@ -5,6 +5,11 @@ section: conteudo
 order: 1
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import curvas from '../../aed/complexidade-curvas.typ?raw';
+
 Dois programas fazem o mesmo e um deles demora o dobro. Qual escolhes? A resposta séria depende do tamanho da entrada: o dobro numa lista de dez elementos é ruído, numa lista de dez milhões é a diferença entre responder hoje e responder amanhã. A análise de complexidade mede como o custo cresce com a entrada, e os invariantes provam que o programa calcula o que promete. São as duas ferramentas que vais usar em todas as páginas desta cadeira.
 
 ## O que conta como custo
@@ -15,13 +20,31 @@ A notação Big-O descreve um **limite superior**: $f(n) = O(g(n))$ significa qu
 
 Os tempos que interessam, do melhor para o pior: $O(1)$ constante, $O(\log n)$ logarítmico, $O(n)$ linear, $O(n \log n)$, $O(n^2)$ quadrático e $O(2^n)$ exponencial. Decora a intuição, não a lista: logaritmo é "cortar o problema a metade em cada passo", $n \log n$ é "cortar e depois juntar", quadrático é "comparar tudo com tudo".
 
+<Typst
+  source={curvas}
+  format="svg"
+  alt="Gráfico das curvas O(1), O(log n), O(n), O(n log n) e O(n²) para n de 1 a 10. A curva quadrática sobe muito mais depressa que as outras."
+/>
+
+Repara como a quadrática se destaca das outras mesmo com $n$ pequeno: é por isso que um algoritmo $O(n^2)$ aguenta os testes pequenos do Mooshak e rebenta no limite de tempo dos grandes.
+
 ## Linear contra binária em $n = 1000$
 
 Recorda a [pesquisa linear e binária](/cadeiras/fp/algoritmos-complexidade/): a linear percorre o vetor até encontrar, a binária exige o vetor ordenado e descarta metade a cada comparação. Conta comparações no pior caso com $n = 1000$.
 
 Na linear, o pior caso é o elemento estar na última posição ou não existir: $1000$ comparações. Na binária, cada comparação elimina metade dos candidatos: depois de $k$ comparações restam $1000 / 2^k$ elementos, e o processo termina quando resta um, ou seja $2^k \geq 1000$. Como $2^9 = 512$ e $2^{10} = 1024$, bastam $k = 10$ comparações. Mil contra dez, e a diferença aumenta com $n$: para um milhão, a linear faz um milhão de comparações e a binária faz $20$, porque $2^{20} = 1\,048\,576$.
 
-O preço da binária está fora da pesquisa: alguém teve de ordenar o vetor primeiro, e ordenar custa pelo menos $O(n \log n)$. Se pesquisares uma vez num vetor desordenado, ordenar mais pesquisar sai mais caro que a linear. A análise decide consoante o uso, não em abstrato.
+O preço da binária está fora da pesquisa: alguém teve de ordenar o vetor primeiro, e ordenar custa pelo menos $O(n \log n)$[^limite]. Se pesquisares uma vez num vetor desordenado, ordenar mais pesquisar sai mais caro que a linear. A análise decide consoante o uso, não em abstrato.
+
+<CodePlayground
+  language="cpp"
+  title="Comparações: linear contra binária"
+  code={
+    '#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {\n    vector<int> v(1000);\n    for (int i = 0; i < 1000; i++) v[i] = i;\n    int alvo = 2000, linear = 0, binaria = 0;\n    for (int x : v) { linear++; if (x == alvo) break; }\n    int lo = 0, hi = 999;\n    while (lo <= hi) {\n        binaria++;\n        int meio = (lo + hi) / 2;\n        if (v[meio] == alvo) break;\n        if (v[meio] < alvo) lo = meio + 1; else hi = meio - 1;\n    }\n    cout << "linear: " << linear << "\\nbinaria: " << binaria << "\\n";\n}'
+  }
+/>
+
+O programa imprime `linear: 1000` e `binaria: 10`: o alvo 2000 não existe no vetor, por isso a linear percorre tudo e a binária parte o intervalo dez vezes até o esvaziar. Muda o alvo para 499 e vê as duas contagens caírem.
 
 ## Espaço também conta
 
@@ -45,6 +68,17 @@ O invariante é: antes da iteração com valor $i$, vale $soma = (i-1) \cdot i /
 :::tip[Como escrever um invariante]
 Descreve o que já está feito em função do contador: "antes da iteração $i$, as primeiras $i-1$ posições estão tratadas". Depois confirma três pontos: vale antes da primeira iteração, cada iteração preserva-o, e com a condição de saída ele implica o resultado. Se algum falhar, ou o invariante está mal escrito ou o programa tem um erro.
 :::
+
+## Ver também
+
+<YouTube
+  id="jZzyERW7h1A"
+  title="CS50x 2024, aula 3: algoritmos e análise de custo"
+/>
+
+Para rever o argumento das comparações com outra voz, a aula 3 do CS50x constrói a pesquisa binária e a notação assintótica a partir do zero.
+
+[^limite]: O limite $\Omega(n \log n)$ vale para ordenações que só comparam pares de elementos: com $n!$ ordens possíveis e dois resultados por comparação, são precisas pelo menos $\log_2(n!) \approx n \log n$ comparações. Segues a conta completa na [página de ordenação](pesquisa-ordenacao/).
 
 ## Para levar para a próxima página
 
