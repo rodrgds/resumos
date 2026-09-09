@@ -1,0 +1,79 @@
+---
+title: Testes de hipóteses
+description: Hipóteses nula e alternativa, erros tipo I e II, valor p e testes t para médias com exemplo completo.
+section: conteudo
+order: 7
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+O intervalo estima; o **teste de hipóteses** decide. Perante "a latência média difere de 50 ms?", formulas duas hipóteses rivais, medes quão longe os dados estão da hipótese de referência e decides com uma regra fixada antes de ver os dados. Esta página monta esse procedimento e liga-o aos intervalos da página anterior.
+
+## As peças do teste
+
+- **Hipótese nula** $H_0$: a afirmação de referência, sempre com igualdade ("$\mu = 50$"). É a que se presume até prova em contrário.
+- **Hipótese alternativa** $H_1$: o que queres estabelecer ("$\mu \ne 50$" bilateral, "$\mu > 50$" ou "$\mu < 50$" unilaterais). O tipo sai do enunciado: "difere" é bilateral, "aumentou" é unilateral à direita.
+- **Estatística de teste**: mede o afastamento dos dados em relação a $H_0$, numa escala tabelada. Para a média com desvio desconhecido: $t = (\bar{x} - \mu_0)/(s/\sqrt{n})$, com $n - 1$ graus de liberdade sob $H_0$.
+- **Nível de significância** $\alpha$: a probabilidade de erro tipo I que aceitas, tipicamente 0,05. Fixa-se antes, nunca depois de ver os dados.
+
+Há dois erros possíveis. O **erro tipo I** rejeita $H_0$ quando ela é verdadeira (falso alarme), com probabilidade $\alpha$. O **erro tipo II** não rejeita $H_0$ quando ela é falsa (deteção falhada), com probabilidade $\beta$. A **potência** $1 - \beta$ é a capacidade de detetar um efeito real. Baixar $\alpha$ sem aumentar $n$ sobe $\beta$: com a mesma amostra, és mais exigente num erro e mais permissivo no outro.
+
+## Região crítica e valor p
+
+Duas formas equivalentes de decidir. Pela **região crítica**: rejeita $H_0$ se a estatística cair na zona extrema da tabela (para o $t$ bilateral a 5 por cento com 15 graus de liberdade, $|t| > 2{,}131$). Pelo **valor p**: a probabilidade, sob $H_0$, de observar dados tão ou mais extremos que os obtidos; rejeita se $p < \alpha$. O valor p não é a probabilidade de $H_0$ ser verdadeira: é uma medida de compatibilidade dos dados com $H_0$[^p].
+
+[^p]: A confusão entre $P(\text{dados} \mid H_0)$ e $P(H_0 \mid \text{dados})$ é a mesma falácia da taxa base da página de [probabilidades](probabilidades/): o valor p diz quão surpreendentes são os dados assumindo $H_0$, não quão provável $H_0$ é à luz dos dados.
+
+O procedimento cabe num fluxo único, do enunciado à conclusão:
+
+<Dot
+  source={
+    'digraph Fluxo { rankdir = TB; h0 [label="H0: parâmetro = valor"]; h1 [label="H1: difere, maior ou menor"]; amostra [label="Recolher amostra"]; estat [label="Calcular a estatística"]; compara [label="|estatística| > valor crítico?\\n valor p < alfa?"]; rejeita [label="Rejeita H0"]; mantem [label="Não rejeita H0"]; h0 -> amostra; h1 -> amostra; amostra -> estat; estat -> compara; compara -> rejeita [label="sim"]; compara -> mantem [label="não"]; }'
+  }
+  alt="Fluxo de decisão: das hipóteses H0 e H1 à amostra, à estatística de teste, à comparação com o valor crítico ou o valor p, terminando em rejeita ou não rejeita H0."
+/>
+
+:::warning["Aceitar H0" não existe]
+Quando a estatística não chega à região crítica, a conclusão é "não se rejeita $H_0$", nunca "aceita-se $H_0$" nem "prova-se $H_0$". Não rejeitar pode significar que $H_0$ é verdadeira ou que a amostra é pequena demais para detetar a diferença (potência baixa). Escreve sempre a conclusão nesta forma negativa: os corretores descontam o "aceita-se".
+:::
+
+## Exemplo: a latência difere de 50 ms?
+
+Dezasseis medições dão $\bar{x} = 47{,}1$ ms e $s = 5{,}2$ ms. Testa $H_0: \mu = 50$ contra $H_1: \mu \ne 50$ ($\alpha = 0{,}05$).
+
+A estatística: $t = (47{,}1 - 50)/(5{,}2/\sqrt{16}) = -2{,}9/1{,}3 \approx -2{,}23$, com 15 graus de liberdade. O valor crítico bilateral é $\pm 2{,}131$; como $|-2{,}23| > 2{,}131$, **rejeita-se $H_0$** a 5 por cento: os dados dão evidência de que a média difere de 50 ms. O valor p é $2 \times P(T_{15} > 2{,}23) \approx 0{,}041$, consistente com a rejeição a $\alpha = 0{,}05$.
+
+Confere a estatística correndo as contas (o valor p lê-se na tabela $t$, como na leitura guiada dos [intervalos](intervalos-confianca/)):
+
+<CodePlayground
+  language="python"
+  title="Estatística t do exemplo"
+  code={
+    'import math\nxbar, mu0, s, n = 47.1, 50.0, 5.2, 16\nt = (xbar - mu0) / (s / math.sqrt(n))\nprint("t:", round(t, 2))\nprint("valor-p: 0.041 (lido na tabela t com 15 g.l.)")'
+  }
+/>
+
+## A ligação com intervalos
+
+Um teste bilateral a nível $\alpha$ rejeita $H_0: \mu = \mu_0$ exatamente quando $\mu_0$ fica **fora** do intervalo de confiança a $1 - \alpha$. Confere com o exemplo: o intervalo a 95 por cento é $47{,}1 \pm 2{,}131 \times 1{,}3 = 47{,}1 \pm 2{,}77 = (44{,}33;\; 49{,}87)$, que não contém o 50, logo rejeita. Esta dualidade é um teste de sanidade gratuito: se o teu teste e o teu intervalo discordarem, um dos dois tem erro de contas. É também a resposta pronta quando o enunciado pergunta pelo teste "a partir do intervalo".
+
+## Sobre o erro tipo II e a potência
+
+O erro tipo I fixa-se à partida ($\alpha$); o erro tipo II $\beta$ depende de quanto $H_0$ erra por: se a verdadeira média está colada ao $\mu_0$, quase nenhuma amostra a distingue e $\beta$ é alto. A potência $1 - \beta$ sobe com amostras maiores, efeitos maiores e $\alpha$ menos exigente. O cálculo exato de $\beta$ exige a distribuição não central da estatística e faz-se com software, por isso fica fora do âmbito desta página: em exame, espera que te peçam a leitura qualitativa (o que sobe ou desce $\beta$) e não o número.
+
+## Dois grupos e proporções
+
+A estrutura é sempre a mesma (hipóteses, estatística, comparação); mudam a estatística e os graus.
+
+**Duas médias, desvios desconhecidos mas iguais.** Com amostras $n_1$ e $n_2$, junta-se a variância combinada $s_p^2 = ((n_1-1)s_1^2 + (n_2-1)s_2^2)/(n_1+n_2-2)$ e testa-se a diferença com $n_1+n_2-2$ graus de liberdade. Exemplo: latências de dois servidores, $\bar{x}_1 = 47{,}1$ ($n_1 = 16$, $s_1 = 5{,}2$) contra $\bar{x}_2 = 49{,}8$ ($n_2 = 12$, $s_2 = 4{,}6$). A combinada dá $s_p \approx 4{,}96$, o erro padrão da diferença $1{,}89$ e $t = (47{,}1-49{,}8)/1{,}89 \approx -1{,}43$ com 26 graus. O crítico bilateral a 5 por cento é 2,056: **não se rejeita** a igualdade das médias.
+
+**Uma proporção.** Testa-se $H_0: p = p_0$ com $z = (\hat{p} - p_0)/\sqrt{p_0(1-p_0)/n}$, usando o $p_0$ da hipótese no erro padrão (não o $\hat{p}$ da amostra). Exemplo: 340 conversões em 500 contra $H_0: p = 0{,}65$. Então $z = (0{,}68-0{,}65)/\sqrt{0{,}65 \times 0{,}35/500} \approx 0{,}03/0{,}0213 \approx 1{,}41$; o valor p bilateral é cerca de 0,16, logo **não se rejeita** a 5 por cento.
+
+## Ver
+
+<YouTube
+  id="KS6KEWaoOOE"
+  title="Valores p e testes de significância, Khan Academy"
+/>

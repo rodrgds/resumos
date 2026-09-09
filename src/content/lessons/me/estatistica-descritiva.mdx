@@ -5,6 +5,10 @@ section: conteudo
 order: 1
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import histograma from '../../me/histograma.typ?raw';
+
 Antes de qualquer probabilidade ou teste, há uma pergunta simples: o que dizem estes dados. A estatística descritiva resume uma amostra em tabelas, gráficos e meia dúzia de números bem escolhidos. O objetivo não é decorar fórmulas, é olhar para 40 medições e conseguir dizer onde está o centro, quanto espalham e se há valores estranhos.
 
 ## Tipos de dados e escalas
@@ -39,6 +43,14 @@ São dados quantitativos contínuos. A tabela de frequências com classes de amp
 
 O **histograma** desenha estas frequências como barras: aqui verias uma forma quase simétrica centrada perto de 47, com uma cauda curta para a direita por causa do 61. O gráfico mostra num segundo o que a tabela mostra num minuto.
 
+<Typst
+  source={histograma}
+  format="svg"
+  alt="Histograma dos 40 tempos com 6 classes. As barras sobem até 13 na classe 45–50 e descem para 1 na classe 60–65, onde o valor isolado 61 está marcado. Linhas a tracejado marcam a média 47,9 e a mediana 47,5."
+/>
+
+Repara no gráfico: a média e a mediana caem quase na mesma barra central, e só a última barra foge do padrão. É assim que se lê um histograma em exame: centro, espalhamento e o que destoa.
+
 ## Medidas de localização
 
 - **Média** $\bar{x} = \frac{1}{n}\sum x_i$. Aqui a soma dá 1917, logo $\bar{x} = 1917/40 = 47{,}925$, cerca de 47,9 ms.
@@ -54,9 +66,23 @@ Repara que média (47,9) e mediana (47,5) estão próximas: sinal de distribuiç
 - **Variância amostral**: $s^2 = \frac{1}{n-1}\sum (x_i - \bar{x})^2$. Com a soma dos quadrados a dar 93113, $s^2 = (93113/40 - 47{,}925^2)\times 40/39 \approx 31{,}8$.
 - **Desvio padrão amostral**: $s = \sqrt{31{,}8} \approx 5{,}6$ ms. É a medida de espalhamento que vais usar em tudo o resto, sempre na mesma unidade dos dados.
 
+Confere as contas do exemplo correndo o cálculo:
+
+<CodePlayground
+  language="python"
+  title="Descritiva dos 40 tempos"
+  code={
+    'dados = [42, 38, 51, 47, 44, 55, 39, 48, 52, 46, 43, 57, 41, 49, 50, 45, 53, 40, 56, 47, 44, 52, 48, 39, 61, 46, 50, 43, 54, 49, 45, 58, 41, 47, 52, 44, 49, 55, 46, 51]\nn = len(dados)\nmedia = sum(dados) / n\nordem = sorted(dados)\nmediana = (ordem[n // 2 - 1] + ordem[n // 2]) / 2\nq1 = ordem[n // 4]\nq3 = ordem[3 * n // 4]\ns = (sum((x - media) ** 2 for x in dados) / (n - 1)) ** 0.5\nprint("media:", round(media, 2))\nprint("mediana:", mediana)\nprint("Q1:", q1, " Q3:", q3)\nprint("desvio s:", round(s, 2))'
+  }
+/>
+
+A saída dá média 47,92, mediana 47,5, quartis 44 e 52 e desvio 5,64: os mesmos números da página. O método dos quartis aqui (posição $n/4$ nos dados ordenados) é o que a cadeira usa nestes exemplos.
+
 :::tip[Populacional contra amostral: o $n - 1$]
-A variância da **população** divide por $n$; a variância **amostral** divide por $n - 1$. O $n - 1$ corrige o viés de estimar o espalhamento a partir da própria média da amostra, que está sempre "demasiado perto" dos dados. Nas fórmulas de inferência usa sempre a versão amostral $s$, a não ser que o enunciado diga explicitamente que o desvio populacional $\sigma$ é conhecido.
+A variância da **população** divide por $n$; a variância **amostral** divide por $n - 1$. O $n - 1$ corrige o viés de estimar o espalhamento a partir da própria média da amostra, que está sempre "demasiado perto" dos dados[^n1]. Nas fórmulas de inferência usa sempre a versão amostral $s$, a não ser que o enunciado diga explicitamente que o desvio populacional $\sigma$ é conhecido.
 :::
+
+[^n1]: Intuição dos graus de liberdade: depois de fixares a média da amostra, só $n - 1$ desvios são livres, porque o último fica determinado pelos outros. É por isso que a correção usa exatamente $n - 1$, e é também por isso que os testes $t$ mais à frente usam $n - 1$ graus de liberdade.
 
 ## Leitura final do exemplo
 

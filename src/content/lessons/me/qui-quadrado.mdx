@@ -5,6 +5,12 @@ section: conteudo
 order: 8
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import barras from '../../me/qui-barras.typ?raw';
+
 Os testes $t$ comparam médias de dados numéricos. Mas e perguntas como "o dispositivo influencia a conversão?" ou "estes dados seguem uma binomial?". Quando os dados são **qualitativos** (contagens em categorias), a estatística de trabalho é o **qui-quadrado**, que compara frequências observadas com frequências esperadas sob a hipótese.
 
 ## A estatística qui-quadrado
@@ -45,6 +51,58 @@ $$
 
 Com $(2-1)(2-1) = 1$ grau de liberdade, o valor crítico a 5 por cento é 3,84. Como $12{,}03 > 3{,}84$, **rejeita-se a independência**: os dados dão evidência de que a taxa de conversão depende do dispositivo (no computador, 50 em 80; no telemóvel, 45 em 120). Repara que o teste diz que há associação, não porquê: explicar a causa já é trabalho de produto, não de estatística.
 
+Vê onde mora a diferença: as barras observadas contra as esperadas sob independência.
+
+<Typst
+  source={barras}
+  format="svg"
+  alt="Barras lado a lado por célula: observadas contra esperadas. No telemóvel que converteu, observadas 45 contra esperadas 57; no computador que converteu, observadas 50 contra esperadas 38."
+/>
+
+As duas maiores folgas estão nas células de conversão: o telemóvel converte menos do que a independência previa e o computador mais. É essa assimetria que os 12,03 medem.
+
+Confere a conta correndo-a:
+
+<CodePlayground
+  language="python"
+  title="Qui-quadrado da tabela 2 por 2"
+  code={
+    'obs = [45, 75, 50, 30]\nesp = [57, 63, 38, 42]\nqui = sum((o - e) ** 2 / e for o, e in zip(obs, esp))\nprint("qui-quadrado:", round(qui, 2))'
+  }
+/>
+
+A mesma conta responde a outra pergunta se o desenho amostral mudar:
+
+<Tabs id="independencia-ou-homogeneidade" labels={['Independência', 'Homogeneidade']}>
+  <div slot="panel-0">
+
+Sortearam-se 200 utilizadores e classificou-se cada um por dispositivo e conversão: uma amostra, duas variáveis. $H_0$ diz que são independentes, e os 12,03 com 1 grau de liberdade rejeitam.
+
+  </div>
+  <div slot="panel-1">
+
+Sortearam-se 120 utilizadores de telemóvel e 80 de computador e mediu-se a conversão em cada grupo: duas amostras, uma variável. $H_0$ diz que as distribuições coincidem, e a conta dá os mesmos 12,03 com 1 grau de liberdade: rejeita-se a homogeneidade.
+
+  </div>
+</Tabs>
+
+## Exemplo: o dado é equilibrado?
+
+Sessenta lançamentos de um dado dão contagens 8, 12, 9, 11, 7 e 13 para as faces 1 a 6. $H_0$: o dado é equilibrado, logo cada face tem probabilidade $1/6$ e esperadas $E_i = 60 \times 1/6 = 10$.
+
+$$\chi^2 = \frac{(8-10)^2}{10} + \frac{(12-10)^2}{10} + \frac{(9-10)^2}{10} + \frac{(11-10)^2}{10} + \frac{(7-10)^2}{10} + \frac{(13-10)^2}{10} = \frac{4+4+1+1+9+9}{10} = 2{,}8.$$
+
+Com $6 - 1 = 5$ graus de liberdade, o crítico a 5 por cento é 11,07. Como $2{,}8 < 11{,}07$, **não se rejeita** o equilíbrio: estes desvios cabem no acaso de 60 lançamentos. Repara na diferença para a independência: aqui as esperadas vêm de probabilidades propostas ($E_i = n\,p_i$), não de totais de linhas e colunas.
+
 ## A ideia dos testes não paramétricos
 
 Os testes $t$ assumem populações normais (ou amostras grandes pelo Teorema do Limite Central). Quando a amostra é pequena e a normalidade é indefensável, os **testes não paramétricos** dispensam a distribuição: trabalham com ordens (_ranks_) ou sinais em vez dos valores. O teste dos sinais, por exemplo, decide sobre a mediana contando quantas observações ficam acima do valor de referência e comparando com uma binomial de $p = 0{,}5$. Pagam a robustez com menos potência: se a normalidade valer, o $t$ deteta mais. A regra de bolso fecha a cadeira: dados numéricos e condições verificadas, testes paramétricos; o resto, qui-quadrado para categorias e não paramétricos para o resto.
+
+Exemplo do teste dos sinais: 12 diferenças de latência antes e depois de uma mudança, 9 positivas. $H_0$: a mediana das diferenças é zero (a mudança não fez nada), logo cada diferença tem hipótese 1/2 de ser positiva. Sob $H_0$, o número de sinais positivos é $Bin(12;\, 0{,}5)$, e o valor p unilateral é $P(X \ge 9) = (\binom{12}{9} + \binom{12}{10} + \binom{12}{11} + \binom{12}{12})/2^{12} = (220 + 66 + 12 + 1)/4096 = 299/4096 \approx 0{,}073$. Acima de 0,05: **não se rejeita** a mediana nula. Nove em doze parece muito, mas com 12 observações o acaso chega lá 7 por cento das vezes.
+
+## Ver
+
+<YouTube
+  id="zOvUQWOzTlc"
+  title="Teste do qui-quadrado para associação (independência), Khan Academy"
+/>
