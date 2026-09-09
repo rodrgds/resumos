@@ -7,7 +7,15 @@
   <script type="module">
     const runJava = async (code, input = '', send = console.log) => {
       await cheerpjInit({ version: 8, status: 'none', clipboardMode: 'java' });
-      const cp = '/app/ecj-3.26.0.jar:/files/';
+      // Pages returns whole archives; mounting bytes avoids HTTP Range requests.
+      const response = await fetch('/ecj-3.26.0.jar');
+      if (!response.ok)
+        throw new Error('Não foi possível carregar o compilador Java.');
+      cheerpOSAddStringFile(
+        '/str/ecj.jar',
+        new Uint8Array(await response.arrayBuffer()),
+      );
+      const cp = '/str/ecj.jar:/files/';
       const lib = await cheerpjRunLibrary(cp);
       const System = await lib.java.lang.System;
       const Buffer = await lib.java.io.ByteArrayOutputStream;
