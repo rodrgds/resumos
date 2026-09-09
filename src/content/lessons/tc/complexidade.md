@@ -1,0 +1,48 @@
+---
+title: Complexidade
+description: P contra NP, verificadores, reduções polinomiais e NP-completude.
+section: conteudo
+order: 7
+---
+
+Entre os problemas decidíveis, alguns têm algoritmos rápidos e outros só têm algoritmos que demoram mais que a idade do universo para entradas modestas. A teoria da complexidade classifica-os. Esta página apresenta **P** e **NP**, a ideia de **redução polinomial** e a **NP-completude**, com o SAT como exemplo canónico.
+
+## P: resolver depressa
+
+**P** é a classe das linguagens decididas por uma TM determinística em **tempo polinomial**: existe $k$ tal que a máquina para em $O(n^k)$ passos para entradas de comprimento $n$. Exemplos: ordenar, testar se um número é primo, pertença em linguagens regulares e livres de contexto. "Polinomial" é o pacto da área para "tratável": $n^3$ com $n = 1000$ corre; $2^n$ com $n = 100$ nunca corre.
+
+## NP: verificar depressa
+
+**NP** é a classe das linguagens cuja pertença se **verifica** em tempo polinomial com a ajuda de um **certificado**. Formalmente: $L \in$ NP se existe um verificador $V$ polinomial e um polinómio $p$ tais que $w \in L$ se e só se existe um certificado $c$ com $|c| \le p(|w|)$ e $V$ aceita $\langle w, c\rangle$.
+
+Exemplo: "este grafo tem um caminho que visita todos os vértices exatamente uma vez?" (caminho hamiltoniano). Encontrar o caminho parece difícil, mas **verificar** um candidato é fácil: percorre a lista de vértices proposta e confirma que cada aresta existe e nenhum vértice repete. O certificado é a lista; o verificador corre em tempo polinomial. Equivalentemente, NP é o que uma TM **não determinística** decide em tempo polinomial (adivinha o certificado e verifica).
+
+Vale sempre P $\subseteq$ NP: se consegues resolver depressa, consegues verificar depressa (ignora o certificado e resolve). A pergunta aberta mais famosa da computação é se P $=$ NP, com um milhão de dólares de prémio. Acredita-se que não, mas ninguém provou.
+
+:::tip[Resolver contra verificar]
+Esta assimetria aparece no dia a dia: corrigir um teste é mais rápido que o resolver, rever uma prova é mais rápido que a descobrir. NP formaliza "difícil de encontrar, fácil de confirmar". Quando um enunciado pedir para mostrar que um problema está em NP, descreve o certificado e o verificador, não um algoritmo que resolva.
+:::
+
+## Reduções polinomiais
+
+Uma **redução polinomial** de $A$ para $B$ (escreve-se $A \le_p B$) é uma função computável em tempo polinomial que transforma entradas de $A$ em entradas de $B$ preservando a resposta: $w \in A$ se e só se $f(w) \in B$. Consequência: se $B \in$ P então $A \in$ P (transforma e resolve em $B$). Por contrapositivo, se $A$ é difícil e $A \le_p B$, então $B$ é pelo menos tão difícil.
+
+Exemplo de ideia: reduzir caminho hamiltoniano a "o grafo tem um ciclo que passa por todos os vértices?" (ciclo hamiltoniano), acrescentando um vértice ligado ao início e ao fim. A transformação é barata e preserva a resposta, por isso o segundo problema é pelo menos tão difícil como o primeiro.
+
+## NP-completude e SAT
+
+Um problema é **NP-difícil** se todos os problemas de NP se reduzem a ele; é **NP-completo** se além disso pertence a NP. São os problemas mais difíceis de NP: se um deles estiver em P, então P $=$ NP.
+
+O primeiro foi o **SAT** (satisfazibilidade booleana): dada uma fórmula proposicional, existe uma atribuição que a torna verdadeira? Está em NP (o certificado é a atribuição; avaliar é polinomial) e o teorema de Cook-Levin mostra que todo o problema de NP se reduz a ele, codificando a computação do verificador como fórmula. A partir do SAT, prova-se NP-completude de centenas de problemas por reduções em cadeia: SAT $\le_p$ 3-SAT $\le_p$ clique $\le_p$ cobertura de vértices, e por aí fora. Se estudaste [lógica proposicional](/cadeiras/md/logica-proposicional/), o SAT é "existe um modelo para esta fórmula?", agora com custo quantificado.
+
+## Porque é que isto importa
+
+Quase todos os problemas de otimização que vais encontrar (horários, rotas, escalonamento, carteiras) são NP-difíceis. Perante um deles, a teoria diz: não procures o algoritmo polinomial exato (provavelmente não existe); usa aproximações, heurísticas, restrições de tamanho ou solucionadores SAT. Reconhecer um problema NP-completo é uma competência prática: poupa semanas de procura de um algoritmo perfeito.
+
+:::warning[NP não quer dizer não polinomial]
+NP vem de "não determinístico polinomial". Dizer "este problema é NP" não prova que é difícil: P está contido em NP. Dificuldade a sério é NP-completude (ou NP-dificuldade).
+:::
+
+## Para fechar a cadeira
+
+Volta ao início: autómatos finitos para padrões simples ([expressões regulares e autómatos](automatos-finitos/)), pilha para estrutura aninhada ([gramáticas e PDA](gramaticas-livres/)), Turing para tudo o que é computável ([decidibilidade](turing-decidibilidade/)) e complexidade para o que é tratável (esta página). Se consegues dizer, para cada modelo, o que ele tem a mais que o anterior e que linguagem o separa, dominas a matéria.
