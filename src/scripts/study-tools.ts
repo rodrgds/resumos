@@ -8,7 +8,14 @@ function openDialog(id: string) {
     focused === document.body
       ? document.querySelector<HTMLElement>('.brand')!
       : focused;
-  const restoreFocus = () => opener.focus({ preventScroll: true });
+  const restoreFocus = () => {
+    // Native focus restoration can run before the asynchronous close event.
+    if (
+      document.activeElement === document.body ||
+      dialog.contains(document.activeElement)
+    )
+      opener.focus({ preventScroll: true });
+  };
   dialog.addEventListener('close', restoreFocus, { once: true });
   dialog.showModal();
 }
