@@ -1,0 +1,165 @@
+---
+title: Fundamentos de C++
+description: Tipos estáticos, declarações, entrada e saída, referências, const e strings, com compilação em g++.
+section: conteudo
+order: 1
+---
+
+Em [Primeiros programas](/cadeiras/fp/primeiros-programas/) escrevias `x = 5` e Python decidia sozinho que `x` era um inteiro. Em C++ tens de dizer qual é o tipo antes de usar a variável, e esse tipo nunca mais muda. Isto parece burocracia, mas é uma troca: o compilador verifica os tipos antes de o programa correr e apanha uma classe inteira de erros ainda no editor.
+
+## Declarar variáveis com tipos fixos
+
+Cada variável precisa de um **tipo** e de um **nome** antes do primeiro uso. Os tipos básicos que vais usar são `int` (inteiros), `double` (reais), `char` (caracteres) e `bool` (verdadeiro ou falso):
+
+```cpp
+#include <iostream>
+
+int main() {
+    int idade = 19;
+    double media = 14.5;
+    char inicial = 'A';
+    bool aprovado = true;
+    std::cout << idade << " " << media << " " << inicial << " " << aprovado << "\n";
+}
+```
+
+Isto escreve `19 14.5 A 1`. Repara que um `bool` sai como `1` (verdadeiro) ou `0` (falso) por omissão. E repara também que cada linha termina com ponto e vírgula: esquecer o ponto e vírgula é o erro de compilação mais comum das primeiras semanas, e a mensagem do compilador aponta quase sempre para a linha seguinte.
+
+O tipo fixa o que a variável pode guardar. Se escreveres `int x = 3.7;`, o compilador aceita mas corta a parte decimal e guarda `3`. Em Python o valor mudava de tipo sem avisar; em C++ a variável manda, não o valor.
+
+## Entrada e saída com iostream
+
+A biblioteca `iostream` trata da entrada e da saída. O operador `<<` envia valores para o ecrã (`std::cout`) e o operador `>>` lê valores do teclado (`std::cin`):
+
+```cpp
+#include <iostream>
+
+int main() {
+    int n;
+    std::cout << "Diz um numero: ";
+    std::cin >> n;
+    std::cout << "O dobro e " << 2 * n << "\n";
+}
+```
+
+Se escreveres `7` na entrada, isto mostra `Diz um numero: O dobro e 14`. A direção dos parênteses angulares ajuda a memorizar: os dados fluem na direção para onde as setas apontam, do programa para o ecrã com `<<` e do teclado para a variável com `>>`.
+
+O prefixo `std::` indica que `cout` e `cin` pertencem à biblioteca padrão. Vais ver programas que escrevem `using namespace std;` para o omitir, mas nos teus primeiros programas prefere o prefixo explícito: deixa claro de onde vem cada nome.
+
+## Compilar e correr com g++
+
+C++ é uma linguagem **compilada**: escreves o código num ficheiro, o compilador traduz esse ficheiro para código máquina e só depois executas o resultado. Guarda o programa acima em `dobro.cpp` e corre estes dois comandos no terminal, na pasta do ficheiro:
+
+```bash
+g++ -Wall -std=c++17 -o dobro dobro.cpp
+./dobro
+```
+
+O primeiro comando compila: `-o dobro` escolhe o nome do executável, `-std=c++17` fixa a versão da linguagem e `-Wall` liga os avisos do compilador, que apanham erros subtis antes de correres o programa. Se a compilação não escrever nada, correu bem. O segundo comando executa o programa. Quando houver um erro, o `g++` indica o ficheiro, a linha e a razão; lê essa mensagem primeiro e só depois olhes para o código.
+
+:::tip[Compila com avisos desde o primeiro dia]
+O `-Wall` não é opcional para quem está a aprender. Muitos programas que "compilam bem" sem avisos escondem conversões de tipos ou variáveis não usadas que depois aparecem como resultados errados. Habituar-te a compilar sem avisos poupa horas de depuração.
+:::
+
+## Referências contra cópias
+
+Quando passas uma variável a uma função em C++, a função recebe por omissão uma **cópia**: alterar o parâmetro dentro da função não toca na variável original. Para a função alterar o argumento, pede uma **referência** com `&`, que é um segundo nome para a mesma variável:
+
+```cpp
+#include <iostream>
+
+void por_copia(int x) { x = 0; }
+void por_referencia(int& x) { x = 0; }
+
+int main() {
+    int a = 5;
+    por_copia(a);
+    std::cout << a << "\n";
+    por_referencia(a);
+    std::cout << a << "\n";
+}
+```
+
+Isto escreve `5` e depois `0`. A primeira chamada alterou apenas a cópia, por isso `a` continuou `5`. A segunda chamada alterou a própria variável `a` através da referência. Esta distinção não existia em [Funções](/cadeiras/fp/funcoes/): em Python, passar uma lista já permitia alterá-la, e passar um número nunca permitia. Em C++, és tu que escolhes, parâmetro a parâmetro.
+
+Usa referências também para evitar copiar valores grandes sem necessidade, como vais ver nas [strings](#strings) e nos vetores da [STL](/cadeiras/p/templates-stl/).
+
+## const: prometer que não muda
+
+A palavra `const` declara que um valor não vai ser alterado. Usa-a em parâmetros que a função só lê, porque o compilador passa a impedir alterações acidentais:
+
+```cpp
+#include <iostream>
+
+int soma_tres(const int& x) {
+    return x + 3;
+}
+
+int main() {
+    int a = 5;
+    std::cout << soma_tres(a) << " " << a << "\n";
+}
+```
+
+Isto escreve `8 5`. O parâmetro é uma referência (sem cópia) mas é `const` (sem alterações): a função lê `x` e devolve `8`, e `a` continua `5`. Se tentasses escrever `x = 0;` dentro da função, o programa nem compilava. Mais tarde vais aplicar a mesma ideia aos métodos das tuas [classes](/cadeiras/p/classes-objetos/).
+
+## Strings
+
+Texto em C++ é a classe `std::string`, da biblioteca `<string>`. Ao contrário das strings de Python, que já conheces de [Tuplos e listas](/cadeiras/fp/tuplos-listas/), aqui precisas de incluir a biblioteca e de decidir como passar cada string às funções:
+
+```cpp
+#include <iostream>
+#include <string>
+
+int comprimento_duplo(const std::string& s) {
+    return 2 * s.size();
+}
+
+int main() {
+    std::string nome;
+    std::cout << "Como te chamas? ";
+    std::cin >> nome;
+    std::cout << "Ola, " << nome << "! O dobro do tamanho e "
+              << comprimento_duplo(nome) << "\n";
+}
+```
+
+Se escreveres `Ana` na entrada, isto mostra `Como te chamas? Ola, Ana! O dobro do tamanho e 6`. O método `size()` devolve o número de caracteres, tal como `len` em Python. Repara que `std::cin >> nome` lê apenas até ao primeiro espaço: `Ana Maria` ficaria só `Ana`. (Para ler uma linha inteira existe `std::getline`, que aparece nos exercícios de ficheiros.)
+
+## Exemplo completo: média de três notas
+
+Vamos juntar declarações, leitura, uma função com referência constante e saída formatada. O programa lê três notas, calcula a média numa função e diz se o aluno passa (média maior ou igual a 10):
+
+```cpp
+#include <iostream>
+
+double media(double a, double b, double c) {
+    return (a + b + c) / 3.0;
+}
+
+int main() {
+    double n1, n2, n3;
+    std::cout << "Tres notas: ";
+    std::cin >> n1 >> n2 >> n3;
+    double m = media(n1, n2, n3);
+    std::cout << "Media: " << m << "\n";
+    if (m >= 10.0) {
+        std::cout << "Aprovado\n";
+    } else {
+        std::cout << "Reprovado\n";
+    }
+}
+```
+
+Se a entrada for `12 15 9`, isto escreve:
+
+```text
+Tres notas: Media: 12
+Aprovado
+```
+
+Confere a conta: $(12 + 15 + 9) / 3 = 12$. O `3.0` em vez de `3` garante a divisão real: com inteiros, C++ corta a parte decimal, e `36 / 3` até daria certo aqui, mas `35 / 3` daria `11` em vez de `11.67`. Sempre que quiseres resultado real, envolve pelo menos um operando real na divisão.
+
+:::warning[Os erros mais comuns do início]
+Esquecer o ponto e vírgula; esquecer o `#include` da biblioteca usada (`<string>` para strings); comparar strings com `==` funciona em C++ (ao contrário de arrays de C, que vais conhecer nos [apontadores](/cadeiras/p/apontadores-memoria/)); e declarar a variável sem tipo por hábito de Python. Quando o compilador reclamar, lê a primeira mensagem de erro e ignora as seguintes, que costumam ser consequências da primeira.
+:::
