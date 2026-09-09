@@ -5,6 +5,11 @@ section: conteudo
 order: 9
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import dma from '../../ac/dma-tempos.typ?raw';
+
 Um computador sem periféricos é uma calculadora isolada: o trabalho útil entra por dispositivos de entrada, sai por dispositivos de saída e espera em armazenamento secundário. A arquitetura da entrada e saída decide quanto do processador se gasta a mover dados em vez de os transformar. Há três formas de gerir essa conversa, por ordem crescente de autonomia do hardware.
 
 ## Polling: perguntar sem parar
@@ -31,6 +36,21 @@ Compara o custo de mover 1 MiB: por polling ou interrupções, o processador toc
 | Interrupções | o processador  | uma rotina por evento           | eventos esporádicos                     |
 | DMA          | o controlador  | configuração + 1 interrupção    | blocos grandes e frequentes             |
 
+A escolha depende do tamanho do que há para mover:
+
+<Tabs id="quando-dma" labels={['Bloco de 4 KiB', 'Ficheiro de 100 MiB']}>
+  <div slot="panel-0">
+
+Ler 4 KiB de um sensor com polling custa milhares de ciclos de espera, mas programar o DMA e atender a interrupção final custaria quase o mesmo. Para transferências pequenas e raras, a simplicidade do polling ganha.
+
+  </div>
+  <div slot="panel-1">
+
+Mover 100 MiB por polling ou por interrupção por palavra amarra o processador à transferência inteira. Com DMA, o CPU programa o controlador uma vez e processa o bloco anterior enquanto o próximo viaja: é aqui que a delegação paga ordens de grandeza.
+
+  </div>
+</Tabs>
+
 ## Armazenamento secundário
 
 A hierarquia não acaba na RAM. O **HDD** (disco magnético) guarda bits em pratos a rodar: cada acesso paga procura da cabeça (_seek_) mais espera pela rotação mais a transferência. Milissegundos, uma eternidade face aos nanossegundos da RAM. O **SSD** (flash) não tem partes móveis: paga só eletrónica e é dezenas a centenas de vezes mais rápido no acesso aleatório, embora cada célula se desgaste com escritas e o controlador faça gestão de desgaste e recolha de lixo por baixo.
@@ -40,6 +60,20 @@ Para o desempenho, a lição é uma só: o nível onde os dados vivem domina o t
 ## Estimar desempenho com E/S
 
 A estimação com E/S significativa soma o tempo de computação ao tempo de transferência. Um exemplo: processar um ficheiro de 100 MiB com um SSD que transfere a 500 MiB/s e um núcleo que processa a 200 MiB/s. A leitura demora $100/500 = 0{,}2$ s, o processamento $100/200 = 0{,}5$ s. Em sequência, $0{,}7$ s; com DMA e sobreposição (o controlador traz o próximo bloco enquanto o CPU processa o atual), o total aproxima-se do máximo das parcelas, $0{,}5$ s. O DMA não é só poupança de ciclos: permite esconder a latência da E/S atrás da computação.
+
+<CodePlayground
+  language="python"
+  title="E/S sequencial e sobreposta"
+  code={'leitura = 100 / 500\nproc = 100 / 200\nprint(leitura, proc)\nprint(leitura + proc)\nprint(max(leitura, proc))'}
+/>
+
+O programa imprime `0.2 0.5`, o total sequencial `0.7` e o total sobreposto `0.5`.
+
+<Typst
+  source={dma}
+  format="svg"
+  alt="Duas linhas do tempo: sem sobreposição o bloco viaja no DMA e só depois é processado no CPU; com sobreposição o bloco seguinte viaja enquanto o atual é processado."
+/>
 
 :::details[Ver o raciocínio da sobreposição]
 Desenha duas linhas do tempo, uma para o DMA e outra para o CPU, divididas em blocos. Sem sobreposição, cada bloco ocupa primeiro a linha do DMA e depois a do CPU. Com sobreposição (_double buffering_), o bloco N+1 viaja no DMA enquanto o bloco N é processado no CPU: o tempo total tende para o maior dos dois ritmos, e a E/S "desaparece" da fatura desde que o processamento mande.
