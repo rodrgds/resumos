@@ -1,0 +1,118 @@
+---
+title: Derivadas e regras de derivação
+description: Conceito de derivada, regras do produto e do quociente, regra da cadeia e derivação de funções trigonométricas e da função inversa.
+section: conteudo
+order: 1
+---
+
+Quase todos os cálculos de AM1 começam aqui: estudar uma função, aproximá-la por um polinómio, primitivar por partes ou resolver uma equação diferencial exige derivar sem hesitar. Nesta página fixamos o conceito e as regras que vais usar na cadeira inteira, incluindo a derivada da função inversa e a derivação de potências com expoente variável.
+
+## O conceito de derivada
+
+A **derivada** de $f$ num ponto $a$ é o limite das taxas de variação média quando o incremento tende para zero:
+
+$$
+f'(a) = \lim_{h \to 0} \frac{f(a+h) - f(a)}{h},
+$$
+
+desde que o limite exista. Geometricamente, é o declive da reta tangente ao gráfico em $(a, f(a))$. Fisicamente, se $s(t)$ é a posição de um corpo no instante $t$, então $s'(t)$ é a velocidade instantânea.
+
+Vejamos a definição a funcionar com $f(x) = x^2$ em $a = 3$:
+
+$$
+f'(3) = \lim_{h \to 0} \frac{(3+h)^2 - 9}{h} = \lim_{h \to 0} \frac{6h + h^2}{h} = \lim_{h \to 0} (6 + h) = 6.
+$$
+
+Dizer que $f$ é **diferenciável** em $a$ é dizer que este limite existe. Uma função diferenciável num ponto é contínua nesse ponto, mas o contrário falha: $f(x) = |x|$ é contínua em $0$ mas não tem derivada aí, porque as taxas laterais valem $-1$ à esquerda e $1$ à direita.
+
+## Regras básicas
+
+Para as funções elementares, decoramos uma tabela curta e combinamo-la com as regras de cálculo. As derivadas de base são:
+
+$$
+\frac{d}{dx} x^n = n x^{n-1}, \quad \frac{d}{dx} e^x = e^x, \quad \frac{d}{dx} \ln x = \frac{1}{x}, \quad \frac{d}{dx} \sin x = \cos x, \quad \frac{d}{dx} \cos x = -\sin x.
+$$
+
+A derivada da soma e do produto por constante segue a linearidade: $(f+g)' = f' + g'$ e $(kf)' = kf'$. As duas regras que mais erros causam são as do produto e do quociente:
+
+$$
+(fg)' = f'g + fg', \qquad \left(\frac{f}{g}\right)' = \frac{f'g - fg'}{g^2}, \quad g \ne 0.
+$$
+
+No quociente, a ordem do numerador interessa: deriva-se a função de cima, multiplica-se pela de baixo sem derivar, e subtrai-se o simétrico. Um exemplo completo: para $f(x) = x^2 e^x$,
+
+$$
+f'(x) = 2x e^x + x^2 e^x = e^x (2x + x^2).
+$$
+
+Repara que pusemos $e^x$ em evidência no fim. Este hábito de fatorizar simplifica o estudo do sinal da derivada mais tarde.
+
+## Regra da cadeia
+
+Quando uma função está composta dentro de outra, $f = u \circ v$ com $f(x) = u(v(x))$, a derivada multiplica a derivada exterior (avaliada no ponto interior) pela derivada interior:
+
+$$
+f'(x) = u'(v(x)) \cdot v'(x).
+$$
+
+A técnica é: deriva a camada de fora como se o interior fosse uma variável simples, e multiplica pela derivada do interior. Para $f(x) = \sin(x^2)$, a camada exterior é o seno e a interior é $x^2$:
+
+$$
+f'(x) = \cos(x^2) \cdot 2x = 2x \cos(x^2).
+$$
+
+O erro típico é esquecer o segundo fator. Sempre que a função tem algo dentro de outra coisa (um quadrado dentro do seno, um quociente dentro do logaritmo), pergunta no fim: "multipliquei pela derivada do interior?".
+
+Um caso com duas camadas: $g(x) = e^{3x^2+1}$. Aqui $u(y) = e^y$ com $y = 3x^2 + 1$, logo
+
+$$
+g'(x) = e^{3x^2+1} \cdot 6x = 6x e^{3x^2+1}.
+$$
+
+## Derivadas das funções trigonométricas e inversas
+
+As derivadas do seno e do cosseno geram as restantes por quociente. Como $\tan x = \sin x / \cos x$,
+
+$$
+\frac{d}{dx} \tan x = \frac{\cos^2 x + \sin^2 x}{\cos^2 x} = \frac{1}{\cos^2 x} = \sec^2 x,
+$$
+
+válida onde $\cos x \ne 0$. Do mesmo modo se obtém $(\cot x)' = -\csc^2 x$, $(\sec x)' = \sec x \tan x$ e $(\csc x)' = -\csc x \cot x$.
+
+Para a **função inversa**, há uma fórmula que evita inverter explicitamente. Se $f$ é diferenciável e invertível com $f'(x) \ne 0$, e $g$ é a sua inversa, então
+
+$$
+g'(y) = \frac{1}{f'(x)}, \quad \text{onde } y = f(x).
+$$
+
+Ou seja, a derivada da inversa é o recíproco da derivada da função original, avaliado no ponto correspondente. Aplicando ao arco tangente: $y = \arctan x$ significa $x = \tan y$, com derivada $\sec^2 y = 1 + \tan^2 y = 1 + x^2$. Logo
+
+$$
+\frac{d}{dx} \arctan x = \frac{1}{1+x^2}.
+$$
+
+Pelo mesmo processo obténs $(\arcsin x)' = 1/\sqrt{1-x^2}$ e $(\arccos x)' = -1/\sqrt{1-x^2}$, nos respetivos domínios.
+
+## Potências com expoente variável
+
+Funções como $f(x) = x^{\sin x}$ não cabem nem na regra das potências nem na da exponencial, porque base e expoente variam ambos. A saída é a **derivação logarítmica**: escreve $\ln f(x) = \sin x \cdot \ln x$ e deriva implicitamente:
+
+$$
+\frac{f'(x)}{f(x)} = \cos x \cdot \ln x + \sin x \cdot \frac{1}{x},
+$$
+
+donde
+
+$$
+f'(x) = x^{\sin x} \left( \cos x \ln x + \frac{\sin x}{x} \right), \quad x > 0.
+$$
+
+A condição $x > 0$ é essencial, porque $\ln x$ só existe aí. Sempre que vires uma expressão do tipo $u(x)^{v(x)}$, com $u > 0$, este é o caminho: logaritmo, produto, cadeia, e multiplicar por $f$ no fim.
+
+:::tip[Como treinar esta página]
+Refaz cada exemplo com papel tapado e confirma o resultado derivando de outra forma quando possível (por exemplo, $\tan x$ por quociente e por calculadora simbólica mental). Os testes da cadeira pedem derivadas dentro de problemas maiores, por isso a meta é derivar corretamente à primeira, sem parar o raciocínio principal.
+:::
+
+## Para onde ir
+
+Com as regras dominadas, o passo seguinte é perceber o que a derivada garante sobre a função: o [teorema de Lagrange, a regra de L'Hôpital e o diferencial](teoremas-valor-medio/).

@@ -1,0 +1,70 @@
+---
+title: Vírgula flutuante
+description: Normalização, formato IEEE 754 em precisão simples e dupla e um exemplo completo de codificação.
+section: conteudo
+order: 3
+---
+
+Os inteiros não chegam para representar grandezas contínuas como $9{,}6875$ ou distâncias astronómicas. A **vírgula flutuante** resolve o problema com uma ideia emprestada da notação científica: guarda um número significativo e uma potência da base que posiciona a vírgula.
+
+## Normalização
+
+**Normalizar** é escrever o número com exatamente um dígito diferente de zero antes da vírgula. Em base 10:
+
+$$
+-3129422312{,}234 = -3{,}129422312234 \times 10^9
+$$
+
+O dígito antes da vírgula passou a ser o `3`, e o expoente $9$ regista quantas casas a vírgula andou. Em base 2, a forma normalizada começa sempre por `1,`:
+
+$$
+0{,}0001011111_2 = 1{,}011111_2 \times 2^{-4}
+$$
+
+Multiplicar por $2^{-4}$ desloca a vírgula quatro casas para a esquerda, desfazendo a normalização. Como em binário o único dígito não nulo é o `1`, o bit à esquerda da vírgula é sempre `1` e nem precisa de ser guardado. Esta é a ideia do **bit implícito**, que poupa um bit em cada número guardado.
+
+## O formato IEEE 754
+
+A norma **IEEE 754** fixa como os três ingredientes, sinal, expoente e mantissa, se arrumam nos bits. Há dois tamanhos:
+
+| Campo    | Precisão simples (_float_, 32 bits) | Precisão dupla (_double_, 64 bits) |
+| -------- | ----------------------------------- | ---------------------------------- |
+| Sinal    | 1 bit                               | 1 bit                              |
+| Expoente | 8 bits                              | 11 bits                            |
+| Mantissa | 23 bits                             | 52 bits                            |
+
+O valor codificado é:
+
+$$
+(-1)^s \times 1{,}m \times 2^{e - 127} \quad \text{(precisão simples)}
+$$
+
+$$
+(-1)^s \times 1{,}m \times 2^{e - 1023} \quad \text{(precisão dupla)}
+$$
+
+Aqui $s$ é o bit de sinal, $m$ é a mantissa (os bits à direita da vírgula, sem o `1` inicial) e $e$ é o expoente guardado. O expoente guardado tem um **viés** (_bias_): soma-se 127 (ou 1023) ao expoente verdadeiro para que o campo guardado seja sempre positivo e a comparação de expoentes funcione como comparação de inteiros sem sinal.
+
+## Exemplo completo
+
+Codifica $-9{,}6875$ em precisão simples. Primeiro separa a parte inteira da fracionária: $9 = 1001_2$. Para $0{,}6875$, multiplica por 2 sucessivamente: $0{,}6875 \times 2 = 1{,}375$ (regista 1), $0{,}375 \times 2 = 0{,}75$ (regista 0), $0{,}75 \times 2 = 1{,}5$ (regista 1), $0{,}5 \times 2 = 1{,}0$ (regista 1). A fração é $0{,}1011_2$, por isso:
+
+$$
+-9{,}6875 = -1001{,}1011_2 = -1{,}0011011_2 \times 2^3
+$$
+
+Agora identifica os campos. O sinal é negativo, logo $s = 1$. A mantissa são os bits depois de `1,`: `0011011`, completados com zeros até 23 bits. O expoente verdadeiro é $3$, logo o campo guardado é $e = 3 + 127 = 130 = 10000010_2$.
+
+O resultado final, separado em sinal, expoente e mantissa, é:
+
+```
+1 10000010 00110110000000000000000
+```
+
+Para descodificar, faz o caminho inverso: $s = 1$ dá o sinal negativo, $e = 130$ dá o expoente $130 - 127 = 3$, e a mantissa com o bit implícito dá $1{,}0011011_2 \times 2^3 = 1001{,}1011_2 = 9{,}6875$.
+
+## Limites do formato
+
+A vírgula flutuante cobre um intervalo enorme, mas nem todos os valores decimais são exatos em binário: $0{,}1$, por exemplo, gera uma dízima binária infinita e é guardado com um pequeno erro de arredondamento. É por isso que somar dinheiro com `float` acumula erros e os programas financeiros usam inteiros de cêntimos ou tipos decimais. Guarda também esta regra prática: compara com que precisão o problema precisa antes de escolheres entre `float` (32 bits) e `double` (64 bits).
+
+> Experimenta: codifica $5{,}25$ em precisão simples. (Resposta: $5{,}25 = 101{,}01_2 = 1{,}0101_2 \times 2^2$, logo $s = 0$, $e = 129 = 10000001_2$, mantissa `0101000...0`, e o código é `0 10000001 01010000000000000000000`.)

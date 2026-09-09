@@ -1,0 +1,83 @@
+---
+title: Retas e planos
+description: Equações vetoriais, paramétricas e cartesianas de retas e planos, posições relativas e distâncias.
+section: conteudo
+order: 6
+---
+
+A geometria analítica traduz objetos geométricos (retas e planos) para equações com vetores e usa os produtos da página anterior para estudar posições relativas e distâncias. O truque é separar sempre duas peças: um **ponto** que fixa a posição e um **vetor** (direção ou normal) que fixa a orientação.
+
+## Retas: ponto mais direção
+
+Uma reta fica definida por um ponto $P_0$ e um vetor direção $d \neq 0$. A **equação vetorial** é $P = P_0 + t\,d$, com $t \in \mathbb{R}$: quando $t$ varia, percorres todos os pontos da reta.
+
+Com $P_0 = (1, 2, 3)$ e $d = (1, -1, 2)$, a **equação paramétrica** separa as coordenadas:
+
+$$
+\begin{cases}
+x = 1 + t \\
+y = 2 - t \\
+z = 3 + 2t
+\end{cases} \qquad t \in \mathbb{R}.
+$$
+
+Para $t = 0$ estás em $P_0$; para $t = 1$ chegas a $(2, 1, 5)$. Eliminando $t$ obténs a **equação cartesiana**, que no espaço é um sistema de duas equações (cada uma é um plano, e a reta é a sua interseção):
+
+$$
+\frac{x - 1}{1} = \frac{y - 2}{-1} = \frac{z - 3}{2}.
+$$
+
+Se alguma componente da direção for zero, não podes dividir por ela: escreve antes a igualdade correspondente, como $x = 1$, e iguala as restantes frações. No plano ($\mathbb{R}^2$), uma reta também se escreve na forma familiar $ax + by = c$, onde $(a, b)$ é um vetor **normal** à reta.
+
+## Planos: ponto mais normal
+
+Um plano fica definido por um ponto $P_0$ e um vetor normal $n \neq 0$ (perpendicular ao plano). Um ponto $P = (x, y, z)$ pertence ao plano exatamente quando $(P - P_0) \cdot n = 0$, o que dá a **equação cartesiana** $ax + by + cz = d$.
+
+Exemplo: o plano que passa pelos pontos $(1, 0, 0)$, $(0, 1, 0)$ e $(0, 0, 1)$. Dois vetores do plano são $v_1 = (-1, 1, 0)$ e $v_2 = (-1, 0, 1)$. A normal é o produto vetorial:
+
+$$
+n = v_1 \times v_2 = (1 \cdot 1 - 0 \cdot 0,\; 0 \cdot (-1) - (-1) \cdot 1,\; (-1) \cdot 0 - 1 \cdot (-1)).
+$$
+
+Calculando com cuidado: $n_1 = 1 \cdot 1 - 0 \cdot 0 = 1$; $n_2 = 0 \cdot (-1) - (-1) \cdot 1 = 1$; $n_3 = (-1) \cdot 0 - 1 \cdot (-1) = 1$. Logo $n = (1, 1, 1)$ e o plano é $x + y + z = d$. Substituindo $(1, 0, 0)$, $d = 1$:
+
+$$
+x + y + z = 1.
+$$
+
+(Confirma com os outros dois pontos: $0 + 1 + 0 = 1$ e $0 + 0 + 1 = 1$.) O plano também admite **equação paramétrica** $P = P_0 + s\,u + t\,v$ com dois vetores diretores independentes, aqui por exemplo $P = (1, 0, 0) + s(-1, 1, 0) + t(-1, 0, 1)$.
+
+## Posições relativas
+
+Duas retas no espaço podem ser **concorrentes** (intersetam-se num ponto), **paralelas** (direções proporcionais, sem pontos comuns), **coincidentes** ou **enviesadas** (nem se intersetam nem são paralelas; isto só acontece em $\mathbb{R}^3$). O teste segue uma ordem: primeiro compara as direções; se forem proporcionais, testa se um ponto de uma pertence à outra (coincidentes) ou não (paralelas); se não forem, resolve o sistema conjunto e vê se há solução (concorrentes) ou não (enviesadas).
+
+Para reta e plano, substitui a paramétrica da reta na equação do plano. Com a reta $P = (1, 2, 3) + t(1, -1, 2)$ e o plano $x + y + z = 1$:
+
+$$
+(1 + t) + (2 - t) + (3 + 2t) = 1 \iff 6 + 2t = 1 \iff t = -\frac{5}{2}.
+$$
+
+Há exatamente uma solução: a reta fura o plano no ponto $(-3/2,\, 9/2,\, -2)$. Se a substituição desse $0 = 0$, a reta estaria contida no plano; se desse $6 = 1$, seria paralela a ele. O mesmo método resolve interseções de dois planos (em geral uma reta) e de três planos (que é simplesmente um sistema $3 \times 3$).
+
+## Distâncias
+
+A distância de um ponto $P_0$ a um plano $ax + by + cz = d$ é
+
+$$
+\operatorname{dist} = \frac{|a x_0 + b y_0 + c z_0 - d|}{\sqrt{a^2 + b^2 + c^2}}.
+$$
+
+A ideia: projeta o vetor de um ponto qualquer do plano até $P_0$ sobre a direção normal. Para o ponto $(1, 2, 3)$ e o plano $x + y + z = 1$:
+
+$$
+\operatorname{dist} = \frac{|1 + 2 + 3 - 1|}{\sqrt{3}} = \frac{5}{\sqrt{3}} = \frac{5\sqrt{3}}{3}.
+$$
+
+A distância entre dois planos paralelos reduz-se a este caso (escolhe um ponto de um e mede até ao outro). A distância de um ponto a uma reta usa a área do paralelogramo: $\operatorname{dist} = \|(P_0 - Q) \times d\| / \|d\|$, onde $Q$ é um ponto da reta e $d$ a sua direção. E a distância entre duas retas enviesadas é o módulo do produto misto de (direção 1, direção 2, vetor que une um ponto de cada) a dividir por $\|d_1 \times d_2\|$: o volume do paralelepípedo a dividir pela área da base dá a altura, que é precisamente a distância.
+
+## O que costuma correr mal
+
+- Confundir vetor direção com vetor normal: a reta usa a direção ao longo dela, o plano usa a normal perpendicular. Trocar um pelo outro dá o objeto perpendicular ao pretendido.
+- Dividir por uma componente nula da direção ao escrever a equação cartesiana da reta.
+- Classificar duas retas como paralelas só porque "não se intersetam": no espaço podem ser enviesadas. Segue a ordem do teste (direções primeiro).
+- Esquecer o módulo ou a normalização nas fórmulas de distância, ou aplicar a fórmula do plano com a equação ainda não na forma $ax + by + cz = d$.

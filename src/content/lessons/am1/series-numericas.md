@@ -1,0 +1,67 @@
+---
+title: Séries numéricas
+description: Convergência e soma de séries, do teste do termo geral aos critérios de comparação, d'Alembert, Cauchy e Leibniz.
+section: conteudo
+order: 4
+---
+
+Uma **série numérica** $\sum_{n} a_n$ é a soma de infinitas parcelas, definida como o limite das **somas parciais** $S_N = a_0 + \dots + a_N$. A pergunta central é dupla: a série converge (o limite existe e é finito)? E, se converge, quanto vale a soma? A ordem de ataque é sempre a mesma: primeiro o teste do termo geral, depois a identificação da família, e só então os critérios gerais.
+
+## O teste do termo geral e as séries geométricas
+
+Se $\lim a_n \ne 0$, a série $\sum a_n$ diverge forçosamente. É o **teste do termo geral** (ou do $n$-ésimo termo). Atenção à lógica: se o limite é zero, o teste não conclui nada. A série harmónica $\sum 1/n$ diverge apesar de $1/n \to 0$.
+
+A família mais importante é a **série geométrica** $\sum_{n=0}^{\infty} ar^n$, de razão $r$. Converge se e só se $|r| < 1$, e nesse caso a soma é
+
+$$
+S = \frac{a}{1-r}.
+$$
+
+Por exemplo, $\sum_{n=0}^{\infty} (1/2)^n$ tem $a = 1$ e $r = 1/2$, logo soma $1/(1 - 1/2) = 2$. Podes confirmar com as somas parciais: $1$, $1{,}5$, $1{,}75$, $1{,}875$, a aproximar-se de $2$. Se $|r| \ge 1$, a série diverge (para $r = 1$ a soma cresce sem limite; para $r = -1$ oscila).
+
+A **série-$p$**, $\sum_{n=1}^{\infty} 1/n^p$, converge se e só se $p > 1$. Serve de bitola para os testes de comparação: se o termo geral se comporta como $1/n^p$, já sabes a resposta esperada.
+
+## Séries telescópicas: somar por cancelamento
+
+Uma série é **telescópica** quando o termo geral se escreve como diferença de parcelas consecutivas de uma sucessão, de modo que quase tudo cancela na soma parcial.
+
+Exemplo completo: estudar $\sum_{n=0}^{\infty} 1/((n+1)(n+3))$. Começa pela decomposição:
+
+$$
+\frac{1}{(n+1)(n+3)} = \frac{1}{2}\left(\frac{1}{n+1} - \frac{1}{n+3}\right).
+$$
+
+Confirma: $\frac{1}{2} \cdot \frac{(n+3) - (n+1)}{(n+1)(n+3)} = \frac{1}{2} \cdot \frac{2}{(n+1)(n+3)}$. Certo. A soma parcial é
+
+$$
+S_N = \frac{1}{2}\left[\left(1 + \frac{1}{2} + \dots + \frac{1}{N+1}\right) - \left(\frac{1}{3} + \dots + \frac{1}{N+3}\right)\right].
+$$
+
+Tudo cancela exceto os dois primeiros termos da primeira lista e os dois últimos da segunda:
+
+$$
+S_N = \frac{1}{2}\left(1 + \frac{1}{2} - \frac{1}{N+2} - \frac{1}{N+3}\right) \xrightarrow[N \to \infty]{} \frac{1}{2} \cdot \frac{3}{2} = \frac{3}{4}.
+$$
+
+A série converge com soma $3/4$. Repara que o teste do termo geral aqui dá $0$ (inconclusivo), e é a estrutura telescópica que resolve.
+
+## Critérios de convergência
+
+Quando a série não é geométrica nem telescópica, há uma caixa de ferramentas. Para séries de termos positivos:
+
+- **Comparação:** se $0 \le a_n \le b_n$ e $\sum b_n$ converge, então $\sum a_n$ converge. Se $\sum a_n$ diverge, $\sum b_n$ também diverge. Compara com séries geométricas ou séries-$p$.
+- **Critério do integral:** se $a_n = f(n)$ com $f$ positiva e decrescente, $\sum a_n$ e $\int_1^{\infty} f(x)\,dx$ têm a mesma natureza.
+- **Critério de d'Alembert (razão):** calcula $L = \lim a_{n+1}/a_n$. Se $L < 1$, converge; se $L > 1$, diverge; se $L = 1$, inconclusivo. É o favorito quando há fatoriais ou exponenciais, como em $\sum n!/n^n$ ou $\sum 2^n/n!$.
+- **Critério de Cauchy (raiz):** calcula $L = \lim \sqrt[n]{a_n}$, com a mesma leitura. É o favorito quando há potências $n$-ésimas, como em $\sum (n/(2n+1))^n$.
+
+Um exemplo de d'Alembert: para $\sum_{n=1}^{\infty} 2^n/n!$, tem-se $a_{n+1}/a_n = 2/(n+1) \to 0 < 1$, logo converge.
+
+Para séries com sinais alternados, o **critério de Leibniz** diz que $\sum (-1)^n b_n$, com $b_n$ decrescente para $0$, converge. É o que garante a convergência de $\sum (-1)^{n+1}/n$. Distingue **convergência absoluta** (converge $\sum |a_n|$, o que implica convergência) de **convergência simples** (converge mas não absolutamente), como é o caso desta série alternada.
+
+## Estratégia de resolução
+
+Perante uma série nova, segue esta ordem. Primeiro, calcula $\lim a_n$: se não é zero, diverge e terminaste. Depois, pergunta se é geométrica, telescópica ou série-$p$ disfarçada. Só depois escolhe um critério pela forma do termo: fatoriais e exponenciais pedem d'Alembert, potências $n$ pedem Cauchy, frações racionais pedem comparação com séries-$p$, e sinais alternados pedem Leibniz.
+
+## Para onde ir
+
+Com as séries numéricas dominadas, passamos ao segundo grande bloco da cadeira: o [integral definido de Riemann](integral-definido/), onde as somas finitas dão lugar ao limite que define áreas.

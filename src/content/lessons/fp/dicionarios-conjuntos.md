@@ -1,0 +1,106 @@
+---
+title: Dicionários e conjuntos
+description: Associações chave-valor, métodos de dicionários, conjuntos e operações entre conjuntos.
+section: conteudo
+order: 6
+---
+
+Listas e tuplos encontram elementos pela **posição**. Muitos problemas pedem outra pergunta: dado um **nome**, qual é o **valor** associado? A nota do aluno `202400123`, a contagem da palavra `casa`, o código do produto e o seu preço. Para estas associações existe o **dicionário**; para coleções sem repetições nem ordem existe o **conjunto**.
+
+## Dicionários: chaves e valores
+
+Um dicionário guarda pares **chave-valor** entre chavetas. As chaves têm de ser de tipo imutável (strings, números e tuplos servem; listas não servem). Os valores podem ser de qualquer tipo.
+
+```python
+notas = {'Ana': 17, 'Bruno': 12}
+notas['Carla'] = 15
+print(notas['Ana'])
+print(len(notas))
+```
+
+Isto escreve `17` e `3`. Atribuir a uma chave nova acrescenta o par; atribuir a uma chave existente substitui o valor. Os dicionários são **mutáveis** e não têm ordem por posição: para encontrar um valor, dás a chave, e o acesso é muito rápido mesmo em dicionários grandes, graças a uma técnica chamada dispersão (hashing).
+
+Os métodos essenciais são:
+
+| Método                | O que faz                                            |
+| --------------------- | ---------------------------------------------------- |
+| `get(chave, omissao)` | Devolve o valor, ou `omissao` se a chave não existir |
+| `keys()`              | As chaves                                            |
+| `values()`            | Os valores                                           |
+| `items()`             | Os pares (chave, valor)                              |
+| `pop(chave)`          | Remove o par e devolve o valor                       |
+| `copy()`              | Cópia superficial do dicionário                      |
+
+Pedir uma chave inexistente com parênteses retos levanta `KeyError` e o programa morre se não tratar o erro. O `get` evita isso: `notas.get('Diana', 0)` devolve `0` quando a `Diana` não está no dicionário. Usa `get` com valor por omissão sempre que a ausência for um caso normal, como inicializar contagens.
+
+Percorrer um dicionário percorre as suas **chaves**. Para teres chaves e valores ao mesmo tempo, usa `items`:
+
+```python
+notas = {'Ana': 17, 'Bruno': 12, 'Carla': 15}
+for nome, nota in notas.items():
+    print(nome, nota)
+```
+
+Isto escreve as três linhas, numa ordem que não deves assumir como fixa. Repara ainda que o `in` aplicado a um dicionário testa apenas as **chaves**: `'Ana' in notas` é `True`, mas `17 in notas` é `False`.
+
+## Exemplo com dicionários: contar palavras
+
+Contar ocorrências é o exercício canónico dos dicionários. O padrão: para cada palavra, lê a contagem atual com `get` (que devolve `0` na primeira vez) e guarda a contagem mais um.
+
+```python
+def contar(texto):
+    """Devolve um dicionário com a contagem de cada palavra."""
+    contagem = {}
+    for palavra in texto.split():
+        contagem[palavra] = contagem.get(palavra, 0) + 1
+    return contagem
+
+print(contar('o rato roeu a rolha do rato'))
+```
+
+Isto escreve `{'o': 1, 'rato': 2, 'roeu': 1, 'a': 1, 'rolha': 1, 'do': 1}`. Segue a palavra `'rato'`: na primeira ocorrência, `get` devolve `0` e guarda `1`; na segunda, `get` devolve `1` e guarda `2`. Sem o `get`, a primeira ocorrência tentaria ler uma chave que ainda não existe e levantaria `KeyError`.
+
+## Conjuntos: elementos únicos sem ordem
+
+Um **conjunto** (set) é uma coleção mutável de elementos únicos e sem ordem. Escreve-se com chavetas, mas sem pares: `{'a', 'b'}` é um conjunto, `{'a': 1}` é um dicionário. O conjunto vazio escreve-se `set()`, porque `{}` cria um dicionário vazio. Tal como nas chaves dos dicionários, os elementos têm de ser imutáveis: um conjunto não pode conter outro conjunto mutável nem listas. A variante imutável chama-se **frozenset**.
+
+```python
+a = {1, 3, 2}
+print(a)
+a.add(4)
+a.discard(3)
+print(a)
+```
+
+A primeira escrita mostra `{1, 2, 3}` ou outra ordem qualquer: os conjuntos não guardam ordem, por isso nunca indexes um conjunto nem assumes a ordem de impressão. O `add` acrescenta um elemento; o `discard` remove sem reclamar se o elemento não existir (o método `remove` levantaria erro nesse caso).
+
+As operações entre conjuntos seguem a matemática: união (`|`), interseção (`&`) e diferença (`-`), com métodos equivalentes `union`, `intersection` e `difference`. Funcionam também misturando conjuntos e listas.
+
+```python
+a = {1, 2, 3}
+b = {2, 3, 4}
+print(a & b)
+print(a | b)
+print(a - b)
+print(a.issubset({1, 2, 3, 4}))
+```
+
+Isto escreve `{2, 3}`, `{1, 2, 3, 4}`, `{1}` e `True`. A interseção tem os elementos comuns; a união junta sem repetir; a diferença tem o que está em `a` mas não em `b`. O método `issubset` testa se todos os elementos de `a` estão no outro conjunto.
+
+## Exemplo com conjuntos: anagramas
+
+Duas palavras são **anagramas** quando têm exatamente as mesmas letras com as mesmas repetições, como `amor` e `roma`. Ordenar as letras resolve o problema: duas palavras são anagramas quando as suas letras ordenadas coincidem.
+
+```python
+def sao_anagramas(a, b):
+    return sorted(a) == sorted(b)
+
+print(sao_anagramas('amor', 'roma'))
+print(sao_anagramas('amor', 'ramo extra'))
+```
+
+Isto escreve `True` e `False`. `sorted('amor')` devolve `['a', 'm', 'o', 'r']`, e `sorted('roma')` devolve a mesma lista. Repara que um conjunto **não** serviria aqui: `set('amor') == set('roma')` também é verdadeiro, mas conjuntos ignoram repetições, por isso `set('aab') == set('abb')` daria `True` para palavras que não são anagramas. Escolher a estrutura certa faz parte da solução.
+
+:::warning[Os erros mais comuns nesta fase]
+Usar `{}` a pensar que é um conjunto vazio (é um dicionário vazio); usar uma lista como chave de dicionário ou elemento de conjunto; ler uma chave que pode não existir sem `get`; assumir ordem num conjunto; e iterar sobre um dicionário à espera de pares quando só vêm chaves (usa `items()`).
+:::

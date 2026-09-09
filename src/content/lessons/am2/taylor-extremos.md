@@ -1,0 +1,62 @@
+---
+title: Taylor e extremos em várias variáveis
+description: Polinómio de Taylor de segunda ordem, teste da hessiana e multiplicadores de Lagrange.
+section: conteudo
+order: 5
+---
+
+Aproximar por polinómios (Taylor) e procurar máximos e mínimos (extremos) são as duas utilizações mais diretas das derivadas. Em várias variáveis, a novidade é a **hessiana**, a matriz das segundas derivadas que distingue máximos de mínimos e de pontos de sela, e os **multiplicadores de Lagrange**, que tratam restrições.
+
+## Polinómio de Taylor de segunda ordem
+
+Se $f$ tem derivadas contínuas até à segunda ordem perto de $(a, b)$, o polinómio de Taylor de grau $2$ é
+
+$$
+P_2(x, y) = f(a,b) + f_x h + f_y k + \frac{1}{2}\left(f_{xx}h^2 + 2f_{xy}hk + f_{yy}k^2\right),
+$$
+
+com $h = x - a$, $k = y - b$ e derivadas avaliadas em $(a, b)$. É a aproximação quadrática que coincide com a função em valor, inclinação e curvatura no centro.
+
+Para $f(x, y) = e^x \cos y$ em $(0, 0)$: $f(0,0) = 1$, $f_x = e^x\cos y = 1$, $f_y = -e^x\sin y = 0$, $f_{xx} = e^x\cos y = 1$, $f_{xy} = -e^x\sin y = 0$, $f_{yy} = -e^x\cos y = -1$. Logo
+
+$$
+P_2(x, y) = 1 + x + \frac{x^2 - y^2}{2}.
+$$
+
+Confirma multiplicando as aproximações de uma variável: $(1 + x + x^2/2)(1 - y^2/2) \approx 1 + x + x^2/2 - y^2/2$. Bate certo até à segunda ordem. Repara na simetria: o termo cruzado $hk$ desaparece porque $f_{xy} = 0$, ou seja, perto da origem as variáveis não interagem.
+
+## Extremos livres e a hessiana
+
+Um ponto interior $(a, b)$ só pode ser extremo local se for **ponto crítico**: $f_x(a, b) = 0$ e $f_y(a, b) = 0$ (o plano tangente é horizontal). Para classificar, usa-se a matriz hessiana
+
+$$
+H = \begin{pmatrix} f_{xx} & f_{xy} \\ f_{xy} & f_{yy} \end{pmatrix}, \quad D = \det H = f_{xx}f_{yy} - f_{xy}^2.
+$$
+
+Se $D > 0$ e $f_{xx} > 0$, é mínimo local; se $D > 0$ e $f_{xx} < 0$, é máximo local; se $D < 0$, é **ponto de sela** (sobe numa direção e desce noutra); se $D = 0$, o teste é inconclusivo.
+
+Aplica a $f(x, y) = x^2 + y^2 - xy - 3x$. As condições $f_x = 2x - y - 3 = 0$ e $f_y = 2y - x = 0$ dão $x = 2y$ e $4y - y - 3 = 0$, logo o único ponto crítico é $(2, 1)$. A hessiana é constante, $\begin{pmatrix} 2 & -1 \\ -1 & 2 \end{pmatrix}$, com $D = 4 - 1 = 3 > 0$ e $f_{xx} = 2 > 0$: mínimo local, com valor $f(2, 1) = 4 + 1 - 2 - 6 = -3$.
+
+:::details[Porque aparece um ponto de sela?]
+O termo $-xy$ inclina a tigela: ao longo de $y = x$ a função cresce como $x^2$, mas noutras direções o comportamento difere. Sem esse termo, $x^2 + y^2 - 3x$ teria mínimo óbvio. O teste da hessiana deteta exatamente este acoplamento através de $f_{xy}$.
+:::
+
+## Extremos condicionados e Lagrange
+
+Quando o ponto está preso a uma restrição $g(x, y) = 0$ (por exemplo, uma curva), o extremo já não exige gradiente nulo: exige que $\nabla f$ seja paralelo a $\nabla g$, porque só interessa a variação **ao longo** da restrição. Isto dá as equações de Lagrange:
+
+$$
+\nabla f = \lambda \nabla g, \qquad g(x, y) = 0,
+$$
+
+onde $\lambda$ é o **multiplicador**. São três equações para $x$, $y$ e $\lambda$.
+
+Determina os extremos de $f(x, y) = x + y$ sobre a circunferência $x^2 + y^2 = 4$. O sistema é $1 = 2\lambda x$, $1 = 2\lambda y$, $x^2 + y^2 = 4$. Das duas primeiras, $x = y = 1/(2\lambda)$; na restrição, $2x^2 = 4$, logo $x = \pm\sqrt{2}$. Os candidatos são $(\sqrt{2}, \sqrt{2})$ com $f = 2\sqrt{2}$ (máximo) e $(-\sqrt{2}, -\sqrt{2})$ com $f = -2\sqrt{2}$ (mínimo). Como a circunferência é fechada e limitada, o teorema de Weierstrass garante que máximo e mínimo existem, por isso basta comparar os valores nos candidatos.
+
+:::tip[Classificar sem hessiana orlada]
+Em restrições fechadas e limitadas (circunferências, esferas, interseções destas), avalia $f$ em todos os candidatos de Lagrange e compara: o maior é o máximo, o menor é o mínimo. A existência está garantida pela continuidade em compactos, por isso não precisas de mais nenhum teste.
+:::
+
+## Falhas frequentes
+
+Esquecer soluções do sistema de Lagrange é o erro mais caro: equações como $x = 2\lambda x$ têm **duas** famílias de soluções ($x = 0$ ou $\lambda = 1/2$), e descartar uma perde candidatos. Outro erro é aplicar o teste da hessiana a pontos da restrição em vez de pontos críticos livres. E quando $D = 0$, não inventes a classificação: estuda o sinal de $f$ perto do ponto diretamente ou usa outro método.

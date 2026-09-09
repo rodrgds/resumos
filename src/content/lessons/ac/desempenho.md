@@ -1,0 +1,90 @@
+---
+title: Desempenho
+description: Tempo de execução, equação do processador, CPI médio, MIPS e a lei de Amdahl.
+section: conteudo
+order: 2
+---
+
+Um processador é mais rápido quando executa um programa em menos tempo. Parece evidente, mas esta frase já exclui as medidas falsas mais comuns: a frequência do relógio sozinha, o número de instruções executadas e os pontos em testes sintéticos. Esta página fixa a medida certa, o tempo de execução, e as fórmulas que a decompõem.
+
+## A medida certa
+
+O **tempo de execução** (_wall-clock time_) é o tempo total desde o início até ao fim do programa, incluindo tudo o que ele espera: acessos à memória, entrada e saída, o sistema operativo. É a única medida que interessa ao utilizador. O **tempo de CPU** conta só o tempo em que o processador trabalhou nesse programa e serve para comparar arquiteturas sem a confusão do resto do sistema.
+
+Para comparar duas máquinas, corre o mesmo programa nas duas e divide:
+
+$$
+\text{Speedup} = \frac{\text{Tempo antigo}}{\text{Tempo novo}}
+$$
+
+Dizer que B é "2 vezes mais rápida que A" significa que o programa demora metade do tempo em B. Repara que o speedup é uma razão de tempos, não de frequências: uma máquina de 5 GHz não é necessariamente mais rápida que uma de 3 GHz, porque pode precisar de mais ciclos por instrução.
+
+## A equação do processador
+
+O tempo de CPU decompõe-se em três fatores:
+
+$$
+\text{Tempo de CPU} = N \times \text{CPI} \times T_c = \frac{N \times \text{CPI}}{f}
+$$
+
+onde $N$ é o número de instruções executadas, CPI (_cycles per instruction_) é a média de ciclos de relógio por instrução, $T_c$ é o período do relógio e $f$ a frequência. Cada técnica desta cadeira ataca um destes fatores: o pipeline e o superescalar baixam o CPI, as caches baixam o $N$ efetivo de ciclos de espera (contam como CPI na prática), e a frequência... já quase não sobe, como vais ver em [multicore e energia](multicore-energia/).
+
+Um exemplo concreto. Um programa executa $N = 10^9$ instruções, com CPI médio de 1,5, a 3 GHz ($T_c \approx 0{,}33$ ns):
+
+$$
+\text{Tempo} = \frac{10^9 \times 1{,}5}{3 \times 10^9} = 0{,}5\ \text{s}
+$$
+
+Se um pipeline melhor baixar o CPI para 1,0, o tempo cai para $0{,}33$ s. Se em vez disso a frequência subir para 4,5 GHz com o mesmo CPI, dá o mesmo resultado. A equação mostra que há três botões para rodar, e a arte da arquitetura é saber qual compensa rodar.
+
+## CPI médio
+
+Nem todas as instruções custam o mesmo. O CPI médio pondera o custo de cada classe pela sua frequência no programa:
+
+$$
+\text{CPI} = \sum_i \text{CPI}_i \times F_i
+$$
+
+Toma um programa onde 50% das instruções são da ALU (1 ciclo), 30% são acessos à memória (4 ciclos, contando as esperas da cache) e 20% são saltos (2 ciclos):
+
+$$
+\text{CPI} = 0{,}5 \times 1 + 0{,}3 \times 4 + 0{,}2 \times 2 = 0{,}5 + 1{,}2 + 0{,}4 = 2{,}1
+$$
+
+Repara onde está o tempo: os acessos à memória são 30% das instruções mas $1{,}2 / 2{,}1 \approx 57\%$ dos ciclos. Esta conta diz-te onde otimizar: baixar o custo dos acessos, por exemplo com uma cache melhor, rende mais do que acelerar a ALU. É o mesmo raciocínio que vais repetir nas páginas de [cache](hierarquia-cache/) e de [predição de saltos](predicao-saltos/).
+
+## MIPS e as medidas enganadoras
+
+O **MIPS** (_million instructions per second_) mede ritmo de instruções, não trabalho feito:
+
+$$
+\text{MIPS} = \frac{N}{\text{Tempo} \times 10^6} = \frac{f}{\text{CPI} \times 10^6}
+$$
+
+O problema: nem todas as instruções fazem o mesmo trabalho. Uma máquina com instruções simples executa muitas instruções por segundo e parece rápida em MIPS, mesmo demorando mais a fazer o mesmo programa. Comparar MIPSs de arquiteturas diferentes é comparar velocidades sem olhar para a distância. Dentro da mesma arquitetura e do mesmo programa, o MIPS acompanha o tempo de execução, e aí pode usar-se. Fora disso, volta sempre ao tempo de execução.
+
+Os **benchmarks** tentam resolver isto com programas reais padronizados, como os da suíte SPEC: corre-se um conjunto de programas representativos e compara-se o tempo total ou a média geométrica dos speedups. Um benchmark só vale o que valem os seus programas: otimizar para o teste em vez de para o uso real é batota contra ti próprio.
+
+## A lei de Amdahl
+
+Quando aceleras só uma parte do programa, o ganho total fica limitado pela parte que não aceleraste. Se uma fração $f$ do tempo beneficia de um speedup $s$:
+
+$$
+\text{Speedup total} = \frac{1}{(1 - f) + f / s}
+$$
+
+Um exemplo: um programa passa 60% do tempo em cálculos vetoriais e 40% no resto. Compras uma unidade SIMD 4 vezes mais rápida para os cálculos. O speedup total é:
+
+$$
+\frac{1}{0{,}4 + 0{,}6 / 4} = \frac{1}{0{,}4 + 0{,}15} = \frac{1}{0{,}55} \approx 1{,}82
+$$
+
+Quadruplicaste a velocidade de 60% do programa e o programa todo nem duplicou. E mesmo que a unidade vetorial fosse infinitamente rápida ($s \to \infty$), o speedup nunca passaria de $1 / 0{,}4 = 2{,}5$. A moral: mede primeiro onde está o tempo e só depois acelera, porque a fração não acelerada manda no resultado.
+
+:::warning[O erro mais comum]
+Somar speedups de partes diferentes. Se acelerares 50% do programa 2 vezes e outros 30% 3 vezes, o speedup não é 5 nem a média: é $1 / (0{,}2 + 0{,}5/2 + 0{,}3/3) = 1 / 0{,}55 \approx 1{,}82$. Aplica Amdahl à fração total de cada vez, sempre sobre o tempo original.
+:::
+
+## Desenhar para o desempenho
+
+_Design for performance_ é o lema de abertura da cadeira: cada decisão de arquitetura avalia-se pelo efeito no tempo de execução de programas reais. As perguntas que vais fazer a cada técnica são sempre as mesmas: que fator da equação do processador ela melhora, que fração do tempo é que esse fator representa e o que se paga em troca (área, energia, complexidade). A cache paga área para poupar ciclos de memória; o pipeline paga complexidade de controlo para baixar o CPI; o multicore paga paralelização de software para multiplicar o débito. As próximas páginas passam cada uma destas trocas a limpo.

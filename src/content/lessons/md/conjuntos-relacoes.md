@@ -1,0 +1,81 @@
+---
+title: Conjuntos e relações
+description: Operações com conjuntos, produto cartesiano, relações binárias e equivalências.
+section: conteudo
+order: 4
+---
+
+Os conjuntos são o vocabulário da matemática: tudo o resto (relações, funções, números) se define a partir deles. Nesta cadeira usamos a definição ingénua, "um conjunto é uma coleção de objetos", que chega para tudo o que precisas. O objetivo prático: descrever conjuntos sem ambiguidade, operar com eles e classificar relações pelas suas propriedades.
+
+## Descrever conjuntos
+
+Há duas formas. Em **extensão**, listamos os elementos: $\{minho, douro, tejo\}$. Em **compreensão**, damos a propriedade: $\{x \mid P(x)\}$, "o conjunto dos $x$ tais que $P(x)$". Por exemplo, $\{2k \mid k \in \mathbb{N}\}$ é o conjunto dos pares positivos.
+
+Os conjuntos numéricos de referência, com a convenção da cadeira de que $\mathbb{N} = \{1, 2, 3, \dots\}$ **não inclui o zero**:
+
+- $\mathbb{N}$: naturais; $\mathbb{Z}$: inteiros; $\mathbb{Q}$: racionais (dízimas finitas ou periódicas); $\mathbb{R}$: reais; $\mathbb{C}$: complexos.
+
+Pertença escreve-se $x \in A$; inclusão, $A \subseteq B$ ("todo o elemento de $A$ está em $B$"). $A \subset B$ usa-se para inclusão estrita quando $A \ne B$, mas confirma a convenção do enunciado, porque alguns textos usam $\subset$ para a inclusão geral. O conjunto vazio $\emptyset$ é subconjunto de qualquer conjunto, e há exatamente um vazio.
+
+## Operações e as suas leis
+
+União, interseção, diferença, diferença simétrica e complementar:
+
+- $A \cup B = \{x \mid x \in A \lor x \in B\}$.
+- $A \cap B = \{x \mid x \in A \land x \in B\}$.
+- $A \setminus B = \{x \mid x \in A \land x \notin B\}$.
+- $A \oplus B = (A \setminus B) \cup (B \setminus A)$, os elementos que estão exatamente num deles.
+- $A^c$, o complementar, é relativo a um universo de discurso $U$ fixado: $\{x \in U \mid x \notin A\}$.
+
+Exemplo com $A = \{1, 2, 3, 4\}$ e $B = \{3, 4, 5\}$: $A \cup B = \{1, 2, 3, 4, 5\}$, $A \cap B = \{3, 4\}$, $A \setminus B = \{1, 2\}$ e $A \oplus B = \{1, 2, 5\}$.
+
+As leis que deves manejar: comutatividade, associatividade e distributividade de $\cup$ e $\cap$; De Morgan para conjuntos, $(A \cup B)^c = A^c \cap B^c$ e $(A \cap B)^c = A^c \cup B^c$; e $A \setminus B = A \cap B^c$. Para provar igualdades, mostra as duas inclusões, elemento a elemento. É o método padrão e os corretores esperam-no.
+
+O **conjunto das partes** $\mathcal{P}(A)$ é o conjunto de todos os subconjuntos de $A$. Se $|A| = n$ então $|\mathcal{P}(A)| = 2^n$, porque cada elemento tem duas opções: estar ou não estar no subconjunto. Para $A = \{1, 2\}$: $\mathcal{P}(A) = \{\emptyset, \{1\}, \{2\}, \{1, 2\}\}$, quatro elementos.
+
+:::warning[Conjunto das partes e diferença não comutam]
+Em geral $\mathcal{P}(A \setminus B) \ne \mathcal{P}(A) \setminus \mathcal{P}(B)$. Repara: $\emptyset$ pertence a qualquer conjunto das partes, por isso pertence a $\mathcal{P}(A \setminus B)$; mas $\emptyset$ pertence a $\mathcal{P}(A)$ e a $\mathcal{P}(B)$, logo **não** pertence à diferença $\mathcal{P}(A) \setminus \mathcal{P}(B)$. Com $A = \{1, 2\}$ e $B = \{1\}$: $\mathcal{P}(A \setminus B) = \{\emptyset, \{2\}\}$ enquanto $\mathcal{P}(A) \setminus \mathcal{P}(B) = \{\{2\}, \{1, 2\}\}$. Basta o $\emptyset$ para mostrar que a inclusão $\mathcal{P}(A \setminus B) \subseteq \mathcal{P}(A) \setminus \mathcal{P}(B)$ falha.
+:::
+
+## Produto cartesiano
+
+O **produto cartesiano** $A \times B$ é o conjunto de todos os pares ordenados $(a, b)$ com $a \in A$ e $b \in B$. A ordem importa: $(1, 2) \ne (2, 1)$. Se $|A| = m$ e $|B| = n$, então $|A \times B| = m \cdot n$.
+
+Exemplo: donos $P = \{ana, rui\}$ e carros $C = \{ford, volvo\}$. $C \times P$ tem quatro pares: $(ford, ana)$, $(ford, rui)$, $(volvo, ana)$, $(volvo, rui)$. Para registar "de quem é cada carro" precisamos de um subconjunto destes pares, e é exatamente isso que uma relação faz.
+
+## Relações binárias
+
+Uma **relação binária** de $A$ para $B$ é um subconjunto $R \subseteq A \times B$. Escreve-se $aRb$ para $(a, b) \in R$. No exemplo, $R = \{(ford, ana), (volvo, rui)\}$ diz que o Ford é da Ana e o Volvo é do Rui.
+
+Quando $A = B$, a relação vive num só conjunto e podemos perguntar pelas suas propriedades. Para uma relação $R$ em $A$:
+
+- **Reflexiva:** todo o elemento relaciona-se consigo próprio, $\forall x\, (xRx)$. Exemplo: $\le$ nos reais.
+- **Simétrica:** $xRy$ implica $yRx$. Exemplo: "é colega de turma de".
+- **Antissimétrica:** $xRy$ e $yRx$ implicam $x = y$. Exemplo: $\le$ (se $a \le b$ e $b \le a$, então $a = b$).
+- **Transitiva:** $xRy$ e $yRz$ implicam $xRz$. Exemplo: $<$ nos reais.
+- **Total (ou conexa):** para quaisquer $x, y$, vale $xRy$ ou $yRx$.
+
+:::tip[Simétrica contra antissimétrica: não são opostos]
+"Não simétrica" não é o mesmo que "antissimétrica". A relação $\le$ é antissimétrica mas não simétrica; "gosta de" não é nenhuma das duas; a relação vazia é ambas (vacuamente); e a igualdade é ambas. Testa cada propriedade pela definição, com os quantificadores, em vez de ir pela intuição do nome.
+:::
+
+## Relações de equivalência e partições
+
+Uma relação **reflexiva, simétrica e transitiva** chama-se **relação de equivalência**. Cada equivalência agrupa os elementos em **classes de equivalência**: $[a] = \{x \mid xRa\}$, o conjunto de tudo o que se relaciona com $a$. Classes distintas não se intersectam, e a sua união é o conjunto todo: a equivalência induz uma **partição**.
+
+Exemplo: em $\mathbb{Z}$, define $a \sim b$ se $a - b$ é par (têm a mesma paridade). É reflexiva ($a - a = 0$, par), simétrica (se $a - b$ é par, $b - a$ também é) e transitiva (soma de pares é par). Há duas classes: os pares e os ímpares. $[3] = \{\dots, -1, 1, 3, 5, \dots\}$. Esta ideia de "agrupar pelo resto" é o protótipo das [classes de congruência](/cadeiras/md/inteiros-congruencias/).
+
+## Encadeamentos úteis
+
+Uma relação $R$ de $A$ para $B$ tem **inversa** $R^{-1} = \{(b, a) \mid (a, b) \in R\}$, de $B$ para $A$. A **composta** $S \circ R$ (primeiro $R$, depois $S$) contém $(a, c)$ quando existe um $b$ intermédio com $(a, b) \in R$ e $(b, c) \in S$. A composição é associativa, e é nela que se baseia a composição de [funções](/cadeiras/md/ordens-funcoes/).
+
+## Exemplo resolvido: classificar uma relação
+
+Seja $R$ em $\mathbb{Z}$ definida por $aRb$ se e só se $a + b$ é par. Classifica $R$.
+
+- Reflexiva: $a + a = 2a$ é par para todo o $a$. Sim.
+- Simétrica: se $a + b$ é par, $b + a$ é o mesmo número, logo par. Sim.
+- Transitiva: supõe $a + b$ par e $b + c$ par. Somando, $a + 2b + c$ é par, e como $2b$ é par, $a + c$ é par. Sim.
+- Antissimétrica: $1R3$ (soma 4) e $3R1$, mas $1 \ne 3$. Não.
+
+Logo $R$ é uma relação de equivalência (na verdade, a mesma do exemplo da paridade, porque $a + b$ par equivale a $a - b$ par). Repara no padrão da prova de transitividade: somar as hipóteses e isolar o que se quer. E repara que um contraexemplo concreto ($1$ e $3$) chega para refutar a antissimetria.

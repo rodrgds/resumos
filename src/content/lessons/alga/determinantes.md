@@ -1,0 +1,101 @@
+---
+title: Determinantes
+description: Definição, propriedades, regra de Laplace, matriz adjunta, regra de Cramer e o determinante como área e volume.
+section: conteudo
+order: 3
+---
+
+O determinante associa a cada matriz quadrada um único número que resume várias perguntas: a matriz é invertível? O sistema $AX = B$ tem solução única? Que área ou volume sai de uma transformação? Vale a pena dominar o cálculo $2 \times 2$ e $3 \times 3$ e as propriedades que evitam contas longas.
+
+## Definição para ordens 2 e 3
+
+Para uma matriz $2 \times 2$, o determinante é a diferença dos produtos das diagonais:
+
+$$
+\det \begin{bmatrix} a & b \\ c & d \end{bmatrix} = ad - bc.
+$$
+
+Por exemplo, $\det \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix} = 2 \cdot 3 - 1 \cdot 1 = 5$, o número que já usámos na fórmula da inversa.
+
+Para ordem 3, uma forma prática é a **regra de Sarrus**: repete as duas primeiras colunas à direita e soma os produtos das três diagonais descendentes, subtraindo os produtos das três diagonais ascendentes. Para
+
+$$
+A = \begin{bmatrix}
+1 & 2 & 3 \\
+0 & 1 & 4 \\
+5 & 6 & 0
+\end{bmatrix},
+$$
+
+as descendentes dão $1 \cdot 1 \cdot 0 + 2 \cdot 4 \cdot 5 + 3 \cdot 0 \cdot 6 = 40$ e as ascendentes dão $3 \cdot 1 \cdot 5 + 1 \cdot 4 \cdot 6 + 2 \cdot 0 \cdot 0 = 39$. Logo $\det A = 40 - 39 = 1$.
+
+Atenção: Sarrus só funciona para ordem 3. Para ordens maiores (ou para demonstrar propriedades), usa-se a definição geral por **regra de Laplace**, que expande o determinante ao longo de uma linha ou coluna (ver abaixo).
+
+## Propriedades que poupam trabalho
+
+Estas regras valem para qualquer ordem e são elas que tornam os exercícios rápidos:
+
+- $\det I_n = 1$ e $\det 0 = 0$.
+- Trocar duas linhas (ou colunas) troca o sinal do determinante.
+- Multiplicar uma linha por $k$ multiplica o determinante por $k$. Consequência muito usada: $\det(kA) = k^n \det A$ para matrizes de ordem $n$.
+- Somar a uma linha um múltiplo de outra **não altera** o determinante. É a autorização para triangular a matriz antes de calcular.
+- Uma matriz com uma linha nula, com duas linhas iguais ou com uma linha combinação linear das outras tem determinante zero.
+- $\det(A^T) = \det A$ e $\det(AB) = \det A \cdot \det B$.
+- $A$ é invertível exatamente quando $\det A \neq 0$, e nesse caso $\det(A^{-1}) = 1 / \det A$.
+
+A estratégia habitual para um determinante $3 \times 3$ cheio de números é criar zeros com operações do tipo "somar um múltiplo de outra linha" e só depois expandir ou aplicar Sarrus. Cada zero que crias é uma parcela que desaparece.
+
+## Regra de Laplace e matriz adjunta
+
+Escolhe uma linha ou coluna. Para cada entrada $a_{ij}$, risca a sua linha e coluna e calcula o determinante da matriz menor que resta, $M_{ij}$. O **cofator** é $C_{ij} = (-1)^{i+j} \det M_{ij}$: o sinal segue o tabuleiro de xadrez $\begin{smallmatrix} + & - & + \\ - & + & - \\ + & - & + \end{smallmatrix}$. O determinante é a soma dos produtos das entradas pelos respetivos cofatores:
+
+$$
+\det A = a_{i1}C_{i1} + a_{i2}C_{i2} + \dots + a_{in}C_{in}.
+$$
+
+Vê com a matriz $A$ acima, expandindo pela primeira coluna (que tem um zero simpático em $a_{21} = 0$):
+
+$$
+\det A = 1 \cdot \det\begin{bmatrix} 1 & 4 \\ 6 & 0 \end{bmatrix}
+- 0 \cdot (\dots)
++ 5 \cdot (-1)^{3+1}\det\begin{bmatrix} 2 & 3 \\ 1 & 4 \end{bmatrix}.
+$$
+
+Isto dá $1 \cdot (0 - 24) + 5 \cdot (8 - 3) = -24 + 25 = 1$. Confirma o valor obtido por Sarrus. Escolhe sempre a linha ou coluna com mais zeros.
+
+A matriz dos cofatores, transposta, chama-se **matriz adjunta**, $\operatorname{adj}(A)$, e dá a inversa de qualquer matriz invertível:
+
+$$
+A^{-1} = \frac{1}{\det A}\operatorname{adj}(A).
+$$
+
+Para $2 \times 2$ isto reproduz a fórmula $\frac{1}{ad-bc}\begin{bmatrix} d & -b \\ -c & a \end{bmatrix}$ da página de matrizes. Para $3 \times 3$ a adjunta já dá bastante trabalho, por isso nos exercícios o método de Gauss-Jordan costuma ser mais rápido para inverter; a adjunta é sobretudo uma ferramenta teórica.
+
+## Regra de Cramer
+
+Se $AX = B$ tem matriz quadrada com $\det A \neq 0$, cada incógnita obtém-se por um quociente de determinantes: $x_j$ é o determinante da matriz que resulta de substituir a coluna $j$ de $A$ pela coluna $B$, a dividir por $\det A$.
+
+Exemplo: $\begin{cases} 2x + y = 7 \\ x + 3y = 11 \end{cases}$. O determinante do sistema é $2 \cdot 3 - 1 \cdot 1 = 5$. Então
+
+$$
+x = \frac{\det\begin{bmatrix} 7 & 1 \\ 11 & 3 \end{bmatrix}}{5}
+= \frac{21 - 11}{5} = 2, \qquad
+y = \frac{\det\begin{bmatrix} 2 & 7 \\ 1 & 11 \end{bmatrix}}{5}
+= \frac{22 - 7}{5} = 3.
+$$
+
+Cramer é elegante, mas só se aplica a sistemas quadrados com determinante não nulo e o custo cresce depressa: para um $3 \times 3$ precisas de quatro determinantes. Na prática, Gauss resolve mais depressa; Cramer brilha quando só precisas de uma incógnita ou quando os coeficientes dependem de um parâmetro.
+
+## O determinante como área e volume
+
+Em $\mathbb{R}^2$, o módulo do determinante $2 \times 2$ é a **área do paralelogramo** definido pelos dois vetores coluna (ou linha). Os vetores $(2, 0)$ e $(1, 3)$ definem um paralelogramo de área $|2 \cdot 3 - 0 \cdot 1| = 6$. Em $\mathbb{R}^3$, o módulo do determinante $3 \times 3$ é o **volume do paralelepípedo** definido pelos três vetores. O sinal também tem significado: diz se a orientação dos vetores é preservada ou invertida.
+
+Isto explica por que $\det A = 0$ significa matriz não invertível: as colunas são linearmente dependentes (vais ver o que isto quer dizer na página de espaços vetoriais), por isso "achatam" o espaço e o volume colapsa para zero. Uma matriz com determinante nulo não consegue ser bijetiva, logo não tem inversa.
+
+## O que costuma correr mal
+
+- Aplicar Sarrus a matrizes de ordem 4 ou mais. Não existe Sarrus para $n \geq 4$: usa Laplace ou triangularização.
+- Errar os sinais dos cofatores, sobretudo esquecer o $(-1)^{i+j}$ nas posições ímpares.
+- Pensar que $\det(A + B) = \det A + \det B$. É falso; o determinante não é linear na soma de matrizes.
+- Usar Cramer quando o determinante do sistema é zero, ou quando o sistema nem sequer é quadrado.
+- Confundir $\det(kA) = k^n \det A$ com $k \det A$ para matrizes de ordem $n > 1$.

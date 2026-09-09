@@ -1,0 +1,70 @@
+---
+title: Recursão
+description: Casos base, decomposição recursiva, o limite de recursão e exemplos com fatorial e listas aninhadas.
+section: conteudo
+order: 7
+---
+
+Uma função **recursiva** resolve um problema chamando-se a si própria com uma versão mais pequena do mesmo problema. A ideia parece circular, mas funciona desde que duas condições se verifiquem: cada chamada trata um caso estritamente mais pequeno, e existe um **caso base** que se resolve diretamente, sem nova chamada.
+
+## O modelo mental
+
+Pensa em recursão como uma delegação com contrato. Para calcular `fatorial(4)`, dizes: "`4 * fatorial(3)`, e o `fatorial(3)` logo se resolve". Cada chamada cria o seu próprio conjunto de variáveis locais, por isso os vários `n` em simultâneo não se confundem. A cadeia de chamadas só termina quando atinge o caso base, e depois os resultados combinam-se no regresso.
+
+```python
+def fatorial(n):
+    if n == 0:
+        return 1
+    return n * fatorial(n - 1)
+
+print(fatorial(4))
+```
+
+Isto escreve `24`. Segue a cadeia: `fatorial(4)` chama `fatorial(3)`, que chama `fatorial(2)`, que chama `fatorial(1)`, que chama `fatorial(0)`. O caso base devolve `1`. No regresso, `1` combina-se em `1 * 1 = 1`, depois `2 * 1 = 2`, depois `3 * 2 = 6`, depois `4 * 6 = 24`. Cada chamada resolve um problema de âmbito mais pequeno até chegar ao caso base.
+
+Sem caso base, ou se o argumento não diminuir, a cadeia nunca termina: cada chamada cria outra, até Python desistir com `RecursionError`. O limite por omissão ronda as 1000 chamadas encadeadas (podes consultá-lo com `sys.getrecursionlimit()`), e existe precisamente para transformar um esquecimento infinito numa mensagem de erro legível. Quando vires `RecursionError`, a primeira suspeita é o caso base: ou falta, ou a condição nunca se verifica.
+
+## Iteração contra recursão
+
+Qualquer problema resolvível por iteração também se resolve por recursão, e vice-versa. Como critério prático: a versão iterativa é normalmente mais rápida e usa menos memória, porque evita empilhar chamadas; a versão recursiva é muitas vezes mais fácil de ler quando o problema se decompõe naturalmente (listas aninhadas, árvores, divisões em metades). Se conseguires escrever as duas, compara a legibilidade; se só uma delas te sair, usa essa.
+
+## Exemplo 1: inverter uma string por recursão
+
+Para inverter uma string, separa o primeiro caráter e inverte o resto: `inverter('abc')` é `inverter('bc')` seguido de `'a'`. O caso base é a string com zero ou um caráter, que já está invertida.
+
+```python
+def inverter(s):
+    if len(s) <= 1:
+        return s
+    return inverter(s[1:]) + s[0]
+
+print(inverter('abc'))
+print(inverter(''))
+```
+
+Isto escreve `cba` e `` (string vazia). Segue `'abc'`: devolve `inverter('bc') + 'a'`; `inverter('bc')` devolve `inverter('c') + 'b'`; `inverter('c')` é o caso base e devolve `'c'`. No regresso: `'c' + 'b'` dá `'cb'`, e `'cb' + 'a'` dá `'cba'`. Repara que a condição do caso base usa `<=` para cobrir também a string vazia; com `== 1` apenas, a chamada com `''` nunca terminaria.
+
+## Exemplo 2: achatar uma lista aninhada
+
+Uma lista pode conter outras listas, que por sua vez contêm outras, sem limite de profundidade. **Achatar** (flatten) é produzir uma lista só com os elementos que não são listas, pela ordem em que aparecem. A recursão é a ferramenta natural: se o elemento é uma lista, achata-a; se não é, guarda-o.
+
+```python
+def achatar(lista):
+    """Devolve os elementos não lista, pela ordem de ocorrência."""
+    resultado = []
+    for elemento in lista:
+        if isinstance(elemento, list):
+            resultado.extend(achatar(elemento))
+        else:
+            resultado.append(elemento)
+    return resultado
+
+print(achatar(['Olá', [2, [[], False]], [True]]))
+print(achatar([[]]))
+```
+
+Isto escreve `['Olá', 2, False, True]` e `[]`. Segue o primeiro exemplo: `'Olá'` não é lista e é acrescentado; `[2, [[], False]]` é lista e achata-se para `[2, False]` (a lista vazia interior contribui com zero elementos); `[True]` achata-se para `[True]`. O `extend` junta os elementos da sublista achatada um a um, enquanto o `append` guardaria a sublista inteira como elemento único. Confundir estes dois métodos é o erro típico deste exercício.
+
+:::tip[Como escrever uma função recursiva]
+Escreve primeiro o caso base e testa-o isolado. Depois escreve o passo recursivo assumindo que a chamada mais pequena já funciona (não tentes seguir mentalmente todas as chamadas ao mesmo tempo). Por fim, confirma que cada chamada se aproxima do caso base. Se a função entrar em recursão infinita, verifica estas três coisas por esta ordem: o caso base existe, a condição do caso base é alcançável e o argumento diminui em cada chamada.
+:::

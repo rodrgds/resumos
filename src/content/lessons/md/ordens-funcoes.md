@@ -1,0 +1,75 @@
+---
+title: Ordens parciais e funções
+description: Relações de ordem, diagramas de Hasse, funções, composição, inversas e cardinalidade.
+section: conteudo
+order: 5
+---
+
+As [relações binárias](/cadeiras/md/conjuntos-relacoes/) dividem-se em duas grandes famílias com usos opostos. As relações de **equivalência** agrupam objetos iguais sob algum critério; as relações de **ordem** hierarquizam-nos. E as **funções** são o caso especial de relação onde cada entrada tem exatamente uma saída. Esta página cobre as três ideias: ordens, funções e o tamanho do infinito.
+
+## Ordens parciais
+
+Uma **ordem parcial** num conjunto $A$ é uma relação reflexiva, antissimétrica e transitiva, escrita $\preceq$. O par $(A, \preceq)$ chama-se **conjunto parcialmente ordenado**, ou cpo. Exemplos:
+
+- $(\mathbb{R}, \le)$: reflexiva ($a \le a$), antissimétrica e transitiva.
+- $(\mathcal{P}(S), \subseteq)$: a inclusão no conjunto das partes de qualquer $S$ é uma ordem parcial.
+- A divisibilidade em $\mathbb{N}$ ($a \mid b$): reflexiva, antissimétrica (se $a \mid b$ e $b \mid a$ com naturais, então $a = b$) e transitiva.
+
+Dois elementos $a, b$ dizem-se **comparáveis** se $a \preceq b$ ou $b \preceq a$. A ordem é **parcial** precisamente porque pode haver pares incomparáveis: em $(\mathcal{P}(\{1, 2, 3\}), \subseteq)$, os conjuntos $\{1\}$ e $\{2\}$ não se comparam. Se todos os pares forem comparáveis, a ordem é **total**: $(\mathbb{R}, \le)$ é total, e a ordem alfabética das palavras (ordem lexicográfica) é outro exemplo.
+
+Escreve-se $a \prec b$ para "$a \preceq b$ e $a \ne b$". Convém fixar esta notação porque os enunciados usam-na nos diagramas.
+
+## Diagramas de Hasse e elementos especiais
+
+Um **diagrama de Hasse** desenha a ordem sem setas redundantes: coloca $a$ abaixo de $b$ quando $a \prec b$, liga apenas as coberturas diretas e omite os laços reflexivos e as setas que a transitividade implicaria.
+
+Exemplo: os divisores de 12 ordenados por divisibilidade, $D = \{1, 2, 3, 4, 6, 12\}$. O 1 fica na base, ligado a 2 e 3; 2 liga a 4 e 6; 3 liga a 6; 4 e 6 ligam a 12. Não se desenha seta de 1 para 12 porque já se chega lá por caminhos (transitividade), nem de 2 para 12 pelo mesmo motivo.
+
+Num cpo distinguimos:
+
+- **Maximal:** nada está estritamente acima dele. **Minimal:** nada está estritamente abaixo.
+- **Máximo:** está acima de todos. **Mínimo:** está abaixo de todos. Máximo e mínimo, quando existem, são únicos; maximais pode haver vários.
+- **Majorante** de um subconjunto $X$: está acima de todos os elementos de $X$. **Supremo** ($\sup$): o menor dos majorantes. **Minorante** e **ínfimo** ($\inf$) por dualidade.
+
+No exemplo dos divisores de 12: 12 é o máximo, 1 é o mínimo. Para $X = \{2, 3\}$: os majorantes são 6 e 12, e o supremo é 6; o único minorante é 1, que é também o ínfimo. Repara que o supremo de $\{2, 3\}$ não pertence a $X$ nem precisa de pertencer: o supremo vive no conjunto ambiente, não necessariamente no subconjunto.
+
+## Funções: definição exigente
+
+Uma **função** $f: A \to B$ é uma relação de $A$ para $B$ onde **cada** $a \in A$ tem **exatamente um** $b \in B$ com $(a, b) \in f$. Escreve-se $b = f(a)$; $A$ é o **domínio**, $B$ o **conjunto de chegada**, e o conjunto dos valores efetivamente atingidos é a **imagem** (ou contradomínio).
+
+As duas condições chumbam candidatas com frequência:
+
+- Falha a existência: $f: \mathbb{R} \to \mathbb{R}$ com $f(x) = 1/x$ não é função em todo o $\mathbb{R}$, porque $0$ não tem imagem. Restringindo o domínio a $\mathbb{R} \setminus \{0\}$, já é.
+- Falha a unicidade: a relação " $y$ é raiz quadrada de $x$ " em $\mathbb{R}$ associa dois valores a cada $x > 0$, por isso não é função.
+
+## Injetiva, sobrejetiva, bijetiva
+
+- **Injetiva:** entradas diferentes dão saídas diferentes; $f(a_1) = f(a_2)$ implica $a_1 = a_2$. Nada de "colisões".
+- **Sobrejetiva:** todos os elementos do conjunto de chegada são atingidos; $\forall b \in B\, \exists a \in A\, (f(a) = b)$.
+- **Bijetiva:** ambas. Uma bijeção emparelha $A$ e $B$ elemento a elemento.
+
+Exemplo de referência: $f: \mathbb{R} \to \mathbb{R}$, $f(x) = 2x + 1$. É injetiva: $2x_1 + 1 = 2x_2 + 1$ dá $x_1 = x_2$. É sobrejetiva: dado $y$, $x = (y-1)/2$ verifica $f(x) = y$. Logo é bijetiva.
+
+Contrasta com $g: \mathbb{Z} \to \mathbb{Z}$, $g(x) = 2x$. É injetiva ($2x_1 = 2x_2$ dá $x_1 = x_2$), mas não é sobrejetiva: $3$ não é o dobro de nenhum inteiro. O mesmo "dobro" seria bijetivo de $\mathbb{Z}$ para os pares, o que mostra que a sobrejetividade depende do conjunto de chegada declarado, não só da fórmula.
+
+:::tip[O teste da equação]
+Para a injetividade, resolve $f(x_1) = f(x_2)$ e vê se forças $x_1 = x_2$; um par concreto com a mesma imagem refuta. Para a sobrejetividade, fixa $y$ genérico e tenta resolver $f(x) = y$; se a solução existe sempre no domínio, prova, e se falha para um $y$ concreto, refuta com esse $y$.
+:::
+
+## Composição e inversa
+
+A **composta** $(g \circ f)(x) = g(f(x))$ aplica $f$ e depois $g$; exige que a imagem de $f$ caiba no domínio de $g$. A composição é associativa, $(h \circ g) \circ f = h \circ (g \circ f)$, mas não é comutativa.
+
+A função **identidade** $\iota_A(x) = x$ é o elemento neutro: $f \circ \iota_A = \iota_B \circ f = f$. Uma função $f: A \to B$ tem **inversa** $f^{-1}: B \to A$ (com $f \circ f^{-1} = \iota_B$ e $f^{-1} \circ f = \iota_A$) **se e só se** é bijetiva.
+
+Exemplo completo: $A = \mathbb{R} \setminus \{0, 1\}$ com $f(x) = 1 - 1/x$ e $g(x) = 1/(1-x)$, ambas de $A$ em $A$. Então $(f \circ g)(x) = f(1/(1-x)) = 1 - (1 - x) = x$. Logo $f \circ g = \iota_A$, e com um cálculo análogo $g \circ f = \iota_A$, por isso $f$ e $g$ são inversas uma da outra. Repara que foi preciso excluir $0$ e $1$ do domínio para as fórmulas fazerem sentido: a inversa só existe onde a função está bem definida.
+
+## Cardinalidade: contar até ao infinito
+
+Dois conjuntos têm a **mesma cardinalidade** quando existe uma bijeção entre eles. Para conjuntos finitos isto coincide com "ter o mesmo número de elementos". Para infinitos, reserva surpresas:
+
+- $\mathbb{N}$ e $\mathbb{Z}$ têm a mesma cardinalidade, embora $\mathbb{N} \subset \mathbb{Z}$. A bijeção $f: \mathbb{N} \to \mathbb{Z}$ (com $\mathbb{N}$ a começar em 1, como na cadeira) dada por $f(n) = n/2$ se $n$ é par e $f(n) = -(n-1)/2$ se $n$ é ímpar produz $1 \mapsto 0$, $2 \mapsto 1$, $3 \mapsto -1$, $4 \mapsto 2$, $5 \mapsto -2$, e continua a intercalar. Todo o inteiro aparece exatamente uma vez.
+- $\mathbb{Q}$ também é **enumerável** (em bijeção com $\mathbb{N}$).
+- $\mathbb{R}$ é **não enumerável**: nenhuma lista cobre todos os reais. O argumento diagonal de Cantor mostra que, dada qualquer sequência de reais, se constrói um real fora dela.
+
+Para classificar: finito (bijeção com $\{1, \dots, n\}$), infinito enumerável (bijeção com $\mathbb{N}$) ou não enumerável. Um produto cartesiano de enumeráveis continua enumerável, e qualquer intervalo real não degenerado, como $]0, 1[$, já é não enumerável. Por exemplo, $\{(a, b) \in \mathbb{Q} \times \mathbb{Q} \mid a + b = 1\}$ é enumerável (está em bijeção com $\mathbb{Q}$ via $a \mapsto (a, 1-a)$), enquanto $\{(a, b) \in \mathbb{R} \times \mathbb{R} \mid b = 1 - a^2\}$ é não enumerável (a projeção no eixo dos $x$ cobre $\mathbb{R}$).

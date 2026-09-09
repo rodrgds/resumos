@@ -1,0 +1,92 @@
+---
+title: Inteiros e congruências
+description: Divisão, mdc e Euclides, primos, aritmética modular e dígitos de controlo.
+section: conteudo
+order: 6
+---
+
+A teoria dos números estuda os inteiros com as operações de sempre, mas com perguntas novas: quem divide quem, que restos são possíveis, como resolver equações só com restos. É a base da criptografia moderna (o RSA vive de aritmética modular) e dos dígitos de verificação do NIF e do NIB. Para acompanhar esta página basta a aritmética do secundário; o resto constrói-se aqui.
+
+## O algoritmo da divisão e a divisibilidade
+
+**Teorema da divisão:** dados $a, b \in \mathbb{Z}$ com $b \ne 0$, existem inteiros únicos $q$ (quociente) e $r$ (resto) com $a = qb + r$ e $0 \le r < |b|$.
+
+A condição $0 \le r < |b|$ é o que torna o par único. Exemplo: $19 = 4 \cdot 4 + 3$ (resto 3) e $-19 = (-5) \cdot 4 + 1$ (resto 1, não $-3$). Com divisores negativos funciona igual: $19 = (-4) \cdot (-4) + 3$. Se programares, atenção: algumas linguagens devolvem resto negativo para dividendos negativos, o que viola esta convenção matemática.
+
+Diz-se que $b$ **divide** $a$, $b \mid a$, quando existe $q$ com $a = qb$, isto é, quando o resto é zero. Exemplos: $3 \mid 12$, $-4 \mid 20$, e $n \mid 0$ para todo o $n \ne 0$. Não confundas $b \mid a$ (relação, verdadeira ou falsa) com $a/b$ (número).
+
+## Representação em bases
+
+Um número escreve-se numa base $b$ como soma de potências: $2159 = 2 \cdot 10^3 + 1 \cdot 10^2 + 5 \cdot 10 + 9$. Para converter por divisões sucessivas, divide-se por $b$ e lêem-se os restos de trás para a frente. Exemplo próprio: $43$ em binário.
+
+$43 = 21 \cdot 2 + 1$; $21 = 10 \cdot 2 + 1$; $10 = 5 \cdot 2 + 0$; $5 = 2 \cdot 2 + 1$; $2 = 1 \cdot 2 + 0$; $1 = 0 \cdot 2 + 1$. Restos de trás para a frente: $101011_2$. Confirma: $32 + 8 + 2 + 1 = 43$. Para hexadecimal, agrupa de quatro em quatro bits: $10_2 = 2$, $1011_2 = 11 = B$, logo $43 = 2B_{16}$. Confirma: $2 \cdot 16 + 11 = 43$.
+
+## Máximo divisor comum e Euclides
+
+O **máximo divisor comum** $mdc(a, b)$ é o maior inteiro que divide ambos. O **algoritmo de Euclides** calcula-o com divisões sucessivas: substitui o par pelo (divisor, resto) até o resto ser zero. O último divisor não nulo é o mdc.
+
+Exemplo: $mdc(1071, 462)$.
+
+1. $1071 = 2 \cdot 462 + 147$.
+2. $462 = 3 \cdot 147 + 21$.
+3. $147 = 7 \cdot 21 + 0$.
+
+O mdc é $21$. Confirma: $21 \cdot 51 = 1071$ e $21 \cdot 22 = 462$. E $51$ e $22$ não têm divisores comuns além de 1, por isso não há maior.
+
+Por trás disto está a **identidade de Bézout**: existem inteiros $s, t$ com $sa + tb = mdc(a, b)$. Para o exemplo, desfazendo as divisões: $21 = 462 - 3 \cdot 147 = 462 - 3 \cdot (1071 - 2 \cdot 462) = 7 \cdot 462 - 3 \cdot 1071$. Confirma: $7 \cdot 462 = 3234$, $3 \cdot 1071 = 3213$, diferença $21$. Esta identidade é o que permite inverter números módulo $n$, como vais ver.
+
+Podes experimentar o algoritmo com outros valores:
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+<CodePlayground
+  language="python"
+  code={
+    'def mdc(a, b):\n    while b:\n        a, b = b, a % b\n    return a\n\nprint(mdc(1071, 462))  # 21\nprint(mdc(100, 35))    # 5'
+  }
+/>
+
+## Primos e fatorização
+
+Um inteiro $p > 1$ é **primo** quando os seus únicos divisores positivos são $1$ e $p$. Os primeiros são $2, 3, 5, 7, 11, 13$. O **Teorema Fundamental da Aritmética** diz que todo o inteiro maior que 1 se escreve como produto de primos de forma única (a menos da ordem): $60 = 2^2 \cdot 3 \cdot 5$.
+
+Duas consequências úteis: $mdc(a, b) = 1$ significa que $a$ e $b$ são **primos entre si** (não partilham fatores), e se um primo $p$ divide um produto $ab$, então $p$ divide $a$ ou $p$ divide $b$ (lema de Euclides). É este lema que faz a fatorização ser única.
+
+## Congruências: igualdade a menos do resto
+
+**Definição:** fixa $n > 1$. Diz-se que $a$ é **congruente** com $b$ módulo $n$, $a \equiv b \pmod{n}$, quando $n \mid (a - b)$, isto é, quando $a$ e $b$ têm o mesmo resto na divisão por $n$.
+
+Exemplos: $17 \equiv 3 \pmod{7}$ porque $17 - 3 = 14$ é múltiplo de 7; $-2 \equiv 13 \pmod{3}$ porque $-2 - 13 = -15$ é múltiplo de 3. A intuição da "aritmética do relógio": módulo 12, $17$ horas são $5$ horas, e $8 + 6 = 14$ horas são $2$ horas.
+
+A congruência módulo $n$ é uma [relação de equivalência](/cadeiras/md/conjuntos-relacoes/): reflexiva, simétrica e transitiva. As suas classes, as **classes de congruência**, são os $n$ conjuntos dos inteiros com cada resto possível. Módulo 5, a classe de $2$ é $\{\dots, -8, -3, 2, 7, 12, \dots\}$.
+
+O essencial para calcular: podes somar, subtrair e multiplicar congruências como igualdades. Se $a \equiv b$ e $c \equiv d \pmod{n}$, então $a + c \equiv b + d$ e $ac \equiv bd \pmod{n}$. Para potências grandes, reduz a base primeiro: $7^{3} \pmod{5}$ calcula-se como $2^3 = 8 \equiv 3 \pmod{5}$, porque $7 \equiv 2 \pmod{5}$.
+
+:::warning[Dividir congruências exige cuidado]
+De $ac \equiv bc \pmod{n}$ não podes concluir $a \equiv b$ sem mais. Exemplo: $2 \cdot 4 \equiv 2 \cdot 9 \pmod{10}$ (ambos valem 8), mas $4 \not\equiv 9 \pmod{10}$. O cancelamento só é legítimo quando $c$ e $n$ são primos entre si. É por isto que resolver congruências pede o método da próxima secção, não "passar a dividir".
+:::
+
+## Resolver congruências lineares
+
+Resolver $ax \equiv b \pmod{n}$ é a operação central. O procedimento:
+
+1. Calcula $d = mdc(a, n)$. Se $d \nmid b$, não há solução.
+2. Se $d \mid b$, divide tudo por $d$: $a'x \equiv b' \pmod{n'}$, agora com $a'$ e $n'$ primos entre si.
+3. Inverte $a'$ módulo $n'$ com Euclides estendido (Bézout dá $sa' + tn' = 1$, logo $s$ é o inverso). A solução é $x \equiv s b' \pmod{n'}$.
+4. As soluções módulo $n$ original são $d$ valores espaçados de $n'$.
+
+Exemplo 1: $3x \equiv 2 \pmod{5}$. $mdc(3, 5) = 1$. O inverso de 3 módulo 5 é 2, porque $3 \cdot 2 = 6 \equiv 1$. Logo $x \equiv 2 \cdot 2 = 4 \pmod{5}$. Confirma: $3 \cdot 4 = 12 \equiv 2 \pmod{5}$.
+
+Exemplo 2: $6x \equiv 4 \pmod{10}$. $mdc(6, 10) = 2$, e $2 \mid 4$, por isso há solução. Divide por 2: $3x \equiv 2 \pmod{5}$, que dá $x \equiv 4 \pmod{5}$. As soluções módulo 10 são $x \equiv 4$ e $x \equiv 9$ (soma-se $n' = 5$). Confirma ambas: $6 \cdot 4 = 24 \equiv 4$ e $6 \cdot 9 = 54 \equiv 4 \pmod{10}$.
+
+## Aplicação: dígitos de verificação
+
+O NIF português tem 9 dígitos $a_1 \dots a_9$ com pesos $9$ a $1$, e é válido quando $9a_1 + 8a_2 + 7a_3 + 6a_4 + 5a_5 + 4a_6 + 3a_7 + 2a_8 + a_9 \equiv 0 \pmod{11}$. Testa a sequência $1\,2\,3\,4\,5\,6\,7\,8\,9$:
+
+$9\cdot1 + 8\cdot2 + 7\cdot3 + 6\cdot4 + 5\cdot5 + 4\cdot6 + 3\cdot7 + 2\cdot8 + 9 = 9 + 16 + 21 + 24 + 25 + 24 + 21 + 16 + 9 = 165$.
+
+Como $165 = 15 \cdot 11$, o resto módulo 11 é 0: a sequência passa na verificação. (É só um exemplo aritmético, não um NIF real.) O NIB usa a mesma ideia com módulo 97 sobre 21 dígitos. Estes esquemas detetam erros de digitação porque trocar um dígito muda a soma ponderada de forma que o resto quase sempre deixa de ser o exigido.
+
+## Para levar para a próxima página
+
+O algoritmo de Euclides e a aritmética modular são os teus primeiros algoritmos com prova de correção séria. A técnica para os provar, a [indução](/cadeiras/md/inducao-recorrencia/), é o tema seguinte.

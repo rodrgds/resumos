@@ -1,6 +1,7 @@
 # Resumos FEUP
 
 - Use `devenv shell` for project commands. `README.md` covers authoring and checks.
+- When writing or reviewing course summaries, worked exercises, or student guides, read [resumos-writing](.agents/skills/resumos-writing/SKILL.md) for the teaching voice and explanation style.
 - `src/data/courses.ts` owns the LEIC curriculum; `src/data/meic.ts` owns the 2026/27 MEIC plan. Verify changes against its SIGARRA source, including the academic year. LEIC Competências Transversais are elective groups; MEIC lists the named options.
 - Keep the fictional example course separate from the FEUP curriculum. Author lessons in `src/content/lessons/<course-id>/` with the schema in `src/content.config.ts`. `course-content.ts` owns navigation and published course links; drafts never generate routes or search entries. `Lesson.astro` and `Prose.astro` own the reading layout.
 - Preserve the user's colourful course grid and FEUP accent. See `PRODUCT.md` and `DESIGN.md` for the approved direction.
