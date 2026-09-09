@@ -5,6 +5,10 @@ section: conteudo
 order: 2
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import registo from '../../lc/registo-byte.typ?raw';
+
 Um periférico, visto do programa, é um conjunto de **registos** indentados por endereços: escreves num endereço para lhe dar ordens e lês de outro para saber o estado e receber dados. A técnica chama-se mapeamento em memória (_memory-mapped I/O_), e dominá-la é falar com o hardware. Tudo o resto da cadeira é variação sobre este tema com registos diferentes.
 
 ## Registos e portas
@@ -28,7 +32,23 @@ if (status & BIT_PRONTO) {
 
 `BIT_PRONTO` vale `1 << 0` se o bit de pronto for o bit 0. O teste `status & BIT_PRONTO` é diferente de zero quando o bit está ligado, seja qual for o resto do byte. Para ligar um bit sem tocar nos outros, usa OR: `controlo | BIT_ATIVAR`. Para desligar, usa AND com o complemento: `controlo & ~BIT_ATIVAR`. Estes três gestos, AND para testar, OR para ligar, AND com NOT para desligar, resolvem quase todas as manipulações de registos da cadeira.
 
-Um exemplo concreto: o registo de estado vale `0x21`, ou seja `0b00100001`. Se o bit de pronto for o bit 0, `0x21 & 0x01` dá `0x01`, diferente de zero, por isso há dado à espera. Se o bit de erro for o bit 5, `0x21 & 0x20` dá `0x20`, por isso há também um erro assinalado. Dois testes independentes no mesmo byte, cada um cego ao outro campo.
+Um exemplo concreto: o registo de estado vale `0x21`, ou seja `0b00100001`. Cada campo testa-se com a sua máscara, cego aos outros campos:
+
+<Typst
+  source={registo}
+  format="svg"
+  alt="Byte de estado com os campos nomeados: bit 0 é o pronto e testa-se com 0x01, bit 5 é o erro e testa-se com 0x20."
+/>
+
+Confirma os gestos correndo o exemplo: com `0x21`, o pronto dá 1 e o erro dá 1; ligar e desligar o bit 2 leva o controlo de `0x00` a `0x04` e de volta a `0x00`.
+
+<CodePlayground
+  language="c"
+  title="Testar, ligar e desligar bits"
+  code={'#include <stdio.h>\n#include <stdint.h>\n\n#define BIT_PRONTO (1 << 0)\n#define BIT_ERRO (1 << 5)\n\nint main(void) {\n    uint8_t status = 0x21;\n    printf("pronto=%d\\n", (status & BIT_PRONTO) != 0);\n    printf("erro=%d\\n", (status & BIT_ERRO) != 0);\n    uint8_t controlo = 0x00;\n    controlo = controlo | (1 << 2);\n    printf("controlo=0x%02X\\n", controlo);\n    controlo = controlo & ~(1 << 2);\n    printf("controlo=0x%02X\\n", controlo);\n    return 0;\n}'}
+/>
+
+Se o bit de pronto for o bit 0, `0x21 & 0x01` dá `0x01`, diferente de zero, por isso há dado à espera. Se o bit de erro for o bit 5, `0x21 & 0x20` dá `0x20`, por isso há também um erro assinalado. Dois testes independentes no mesmo byte, cada um cego ao outro campo.
 
 ## Polling: o ciclo de espera
 
