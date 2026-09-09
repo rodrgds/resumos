@@ -5,6 +5,12 @@ section: conteudo
 order: 4
 ---
 
+import Dot from '../../../components/Dot.astro';
+import Tabs from '../../../components/Tabs.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import thevenin from '../../f2/thevenin.dot?raw';
+
 Um circuito é um caminho fechado onde cargas se movem de forma organizada: a **corrente** $I$, em amperes ($\text{A}$), mede a carga que atravessa uma secção por segundo, e a **tensão** $V$, em volts ($\text{V}$), mede a energia por unidade de carga entre dois pontos. Nos circuitos resistivos só há fontes e resistências, sem memória: a resposta é instantânea e tudo se reduz a álgebra linear.
 
 ## Lei de Ohm e potência
@@ -32,6 +38,19 @@ Duas leis governam qualquer circuito, e ambas são conservação:
 
 O **método dos nós** sistematiza isto: escolhe um nó de referência (terra, $0\ \text{V}$), escreve a lei dos nós em cada um dos restantes usando $I = \Delta V/R$, e resolve o sistema para as tensões. Para circuitos pequenos, simplificar associações em série e paralelo chega lá mais depressa: $R_{\text{série}} = R_1 + R_2$ e $1/R_{\text{paralelo}} = 1/R_1 + 1/R_2$.
 
+<Tabs id="nos-ou-serie" labels={['Método dos nós', 'Série e paralelo']}>
+  <div slot="panel-0">
+
+Escreve a lei dos nós em cada nó (menos a terra) com $I = \Delta V/R$ e resolve o sistema. É mecânico e funciona em qualquer rede linear, por maior que seja. Usa-o quando o circuito tem três ou mais nós ou fontes em ramos internos.
+
+  </div>
+  <div slot="panel-1">
+
+Junta resistências em série ($R_1 + R_2$) e em paralelo ($R_1 R_2/(R_1 + R_2)$) até restar uma malha. É mais rápido em circuitos pequenos e mostra a estrutura, mas só chega ao fim se a rede for redutível por associações.
+
+  </div>
+</Tabs>
+
 ## Equivalente de Thévenin
 
 Qualquer rede linear vista de dois terminais comporta-se como uma fonte de tensão $V_{\text{th}}$ em série com uma resistência $R_{\text{th}}$:
@@ -43,7 +62,12 @@ Isto separa o circuito em "fonte complicada" e "carga": uma vez calculado o equi
 
 ## Exemplo: Thévenin de uma rede com duas malhas
 
-Uma fonte $V_s = 12\ \text{V}$ alimenta $R_1 = 2\ \text{k}\Omega$ em série; do nó intermédio $A$ sai $R_2 = 4\ \text{k}\Omega$ para a terra. Queremos o equivalente visto dos terminais $a = A$ e $b = \text{terra}$, e a potência numa carga $R_L = 4\ \text{k}\Omega$ ligada entre eles.
+Uma fonte $V_s = 12\ \text{V}$ alimenta $R_1 = 2\ \text{k}\Omega$ em série; do nó intermédio $A$ sai $R_2 = 4\ \text{k}\Omega$ para a terra. Queremos o equivalente visto dos terminais $a = A$ e $b = \text{terra}$, e a potência numa carga $R_L = 4\ \text{k}\Omega$ ligada entre eles. O diagrama marca o caminho da fonte à terra e os terminais onde se liga a carga.
+
+<Dot
+  source={thevenin}
+  alt="Grafo do exemplo: fonte de 12 V ligada a R1 de 2 kΩ, depois ao nó A, depois a R2 de 4 kΩ até à terra, com retorno tracejado da fonte à terra. Do nó A sai uma seta grossa para a carga RL de 4 kΩ, que também vai à terra."
+/>
 
 Em aberto (sem carga), $R_1$ e $R_2$ formam um divisor de tensão:
 
@@ -69,9 +93,41 @@ $$
 
 Verificação pela energia: a corrente total que sai da fonte com a carga ligada é $I = 12/(2 + (4 \parallel 4)) = 12/(2+2) = 3{,}0\ \text{mA}$, logo a fonte entrega $36\ \text{mW}$; em $R_1$ dissipam-se $2 \times 3^2 = 18\ \text{mW}$, e em $R_2$ e $R_L$ (ambas com $6\ \text{V}$) dissipam-se $9\ \text{mW}$ cada. A soma $18 + 9 + 9 = 36\ \text{mW}$ fecha com a fonte.
 
+Confirma os três valores correndo o programa: `Vth = 8.0 V, Rth = 1.33 kΩ` e `PL = 9.0 mW`.
+
+<CodePlayground
+  language="python"
+  title="Equivalente de Thévenin"
+  code={`Vs = 12.0
+R1 = 2000.0
+R2 = 4000.0
+RL = 4000.0
+Vth = Vs * R2 / (R1 + R2)
+Rth = R1 * R2 / (R1 + R2)
+VL = Vth * RL / (Rth + RL)
+PL = VL**2 / RL
+print(f"Vth = {Vth:.1f} V, Rth = {Rth/1000:.2f} kΩ")
+print(f"PL = {PL*1000:.1f} mW")`}
+/>
+
 :::warning[Thévenin só vale para redes lineares]
 Se houver um díodo, um transistor ou qualquer componente não linear entre os terminais, o equivalente de Thévenin não existe. Nos testes, a presença de um elemento não linear é o sinal de que o método pedido é outro.
 :::
+
+## Ver também
+
+O teorema de Thévenin estende-se aos circuitos em corrente alternada, com impedâncias no lugar das resistências:
+
+<YouTube
+  id="kiK6n7PYLuY"
+  title="Thevenin's Theorem in AC Circuits"
+/>
+
+## Para saber mais
+
+- [Manual de Thévenin com exemplos passo a passo](https://www.allaboutcircuits.com/textbook/direct-current/chpt-10/thevenins-theorem/): o método aplicado a várias redes em corrente contínua.
+- [Simulador de circuitos no navegador](https://www.falstad.com/circuit/): monta o exemplo desta página e mede as tensões antes de calcular.
+- [Laboratório virtual de circuitos CC](https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc): kit de construção da Universidade do Colorado para experimentar leis de Kirchhoff.
 
 ## Para onde ir
 

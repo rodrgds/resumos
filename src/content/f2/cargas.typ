@@ -1,0 +1,21 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  import draw: *
+  line((-4, 0), (4, 0), stroke: black + 0.5pt)
+  circle((-3, 0), radius: 0.22, fill: rgb("f3e9e9"), stroke: black)
+  content((-3, 0), [+])
+  circle((3, 0), radius: 0.22, fill: rgb("f3e9e9"), stroke: black)
+  content((3, 0), [–])
+  content((-3, -0.6), [$q_1$])
+  content((3, -0.6), [$q_2$])
+  circle((0, 4), radius: 0.07, fill: black)
+  content((0.4, 4), [$P$])
+  line((0, 4), (1.2, 5.6), mark: (end: ">"), stroke: rgb("8c2d3b") + 1pt)
+  content((1.7, 5.75), text(fill: rgb("8c2d3b"), [$vec(E)_1$]))
+  line((0, 4), (1.2, 2.4), mark: (end: ">"), stroke: rgb("28716c") + 1pt)
+  content((1.7, 2.25), text(fill: rgb("28716c"), [$vec(E)_2$]))
+  line((0, 4), (2.4, 4), mark: (end: ">"), stroke: black + 1.4pt)
+  content((2.4, 4.45), [$vec(E)$])
+})
