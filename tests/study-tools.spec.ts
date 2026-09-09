@@ -30,6 +30,20 @@ test('shortcuts can be remapped, reject conflicts and survive reload', async ({
   await expect(page.locator('[data-course]').first()).toBeFocused();
   await page.keyboard.press('l');
   await expect(page.locator('[data-course]').nth(1)).toBeFocused();
+  // Published cards are links, so move down to an unpublished card whose
+  // button opens the detail dialog instead of navigating.
+  for (let i = 0; i < 12; i++) {
+    if (
+      (await page.locator(':focus').getAttribute('aria-haspopup')) ===
+      'dialog'
+    )
+      break;
+    await page.keyboard.press('j');
+  }
+  await expect(page.locator(':focus')).toHaveAttribute(
+    'aria-haspopup',
+    'dialog',
+  );
   await page.keyboard.press('Enter');
   await expect(page.locator('#course-detail')).toBeVisible();
 });
