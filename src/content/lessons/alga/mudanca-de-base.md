@@ -1,0 +1,86 @@
+---
+title: Mudanças de base
+description: Coordenadas em bases diferentes, matriz de mudança de base e mudança da matriz de uma aplicação linear.
+section: conteudo
+order: 8
+---
+
+O mesmo vetor tem coordenadas diferentes em bases diferentes, e a mesma aplicação linear tem matrizes diferentes conforme as bases escolhidas. A matriz de mudança de base organiza essa tradução: permite trocar de referencial sem recalcular tudo de raiz. É também a ferramenta que prepara a diagonalização da próxima página.
+
+## Coordenadas e a matriz de passagem
+
+Seja $V$ um espaço de dimensão $n$ com duas bases ordenadas, $U = \{u_1, \dots, u_n\}$ e $E = \{e_1, \dots, e_n\}$. Cada vetor $v$ tem coordenadas $v_U$ em $U$ e $v_E$ em $E$. A **matriz de mudança de base de $U$ para $E$**, que se escreve $M_{U \to E}$, é a matriz que traduz:
+
+$$
+v_E = M_{U \to E} \, v_U.
+$$
+
+Constrói-se por colunas: a coluna $j$ contém as coordenadas do vetor $u_j$ escritas na base $E$. Em particular, a matriz de mudança de uma base qualquer para a base canónica tem como colunas os próprios vetores da base.
+
+Exemplo em $\mathbb{R}^2$ com $U = \{(1, 1), (1, -1)\}$ e $E$ a base canónica. As colunas são os vetores de $U$:
+
+$$
+M_{U \to E} = \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}.
+$$
+
+O vetor $v = (3, 1)$ tem coordenadas $v_U = (2, 1)$ (calculámos isto na página de espaços vetoriais: $(3,1) = 2(1,1) + 1(1,-1)$). Traduzindo:
+
+$$
+M_{U \to E} \, v_U = \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}
+\begin{bmatrix} 2 \\ 1 \end{bmatrix}
+= \begin{bmatrix} 3 \\ 1 \end{bmatrix} = v_E.
+$$
+
+Confirma: obtivemos as coordenadas canónicas $(3, 1)$. A matriz fez exatamente o que promete.
+
+## Voltar para trás
+
+A mudança inversa, de $E$ para $U$, é a matriz inversa: $M_{E \to U} = M_{U \to E}^{-1}$. No exemplo, $\det M_{U \to E} = -2$, logo
+
+$$
+M_{E \to U} = -\frac{1}{2}\begin{bmatrix} -1 & -1 \\ -1 & 1 \end{bmatrix}
+= \begin{bmatrix} 1/2 & 1/2 \\ 1/2 & -1/2 \end{bmatrix}.
+$$
+
+Testa com $v_E = (3, 1)$: obtemos $(3/2 + 1/2,\; 3/2 - 1/2) = (2, 1) = v_U$. De volta ao ponto de partida.
+
+:::warning[A direção da seta]
+$M_{U \to E}$ recebe coordenadas em $U$ e devolve coordenadas em $E$. Lê a seta como o sentido da tradução, não como a ordem das bases na construção. O erro típico é multiplicar $v_E$ por $M_{U \to E}$ quando se quer $v_U$: isso é a tradução ao contrário, e o resultado sai errado sem nenhum aviso.
+:::
+
+Para três bases $U$, $E$, $F$, as mudanças encadeiam-se por produto: $M_{U \to F} = M_{E \to F} \, M_{U \to E}$. A ordem segue o caminho das setas: primeiro de $U$ para $E$, depois de $E$ para $F$.
+
+## Mudar a matriz de uma aplicação linear
+
+Se $T: V \to V$ tem matriz $A$ nas bases antigas e queres a matriz $B$ nas bases novas, com $P$ a matriz de mudança da base nova para a antiga, então
+
+$$
+B = P^{-1} A P.
+$$
+
+Duas matrizes relacionadas desta forma dizem-se **semelhantes** e representam a mesma aplicação em referenciais diferentes. Têm o mesmo determinante, o mesmo traço e os mesmos valores próprios (vais perceber porquê na próxima página).
+
+Vê com números. Seja $T(x, y) = (2x + y, x + 2y)$, de matriz canónica $A = \begin{bmatrix} 2 & 1 \\ 1 & 2 \end{bmatrix}$, e considera a base nova $U = \{(1, 1), (1, -1)\}$. A matriz de mudança da base nova para a canónica é $P = M_{U \to E} = \begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}$, com inversa $P^{-1} = \begin{bmatrix} 1/2 & 1/2 \\ 1/2 & -1/2 \end{bmatrix}$. Primeiro,
+
+$$
+AP = \begin{bmatrix} 2 & 1 \\ 1 & 2 \end{bmatrix}
+\begin{bmatrix} 1 & 1 \\ 1 & -1 \end{bmatrix}
+= \begin{bmatrix} 3 & 1 \\ 3 & -1 \end{bmatrix},
+$$
+
+depois
+
+$$
+B = P^{-1}(AP) = \begin{bmatrix} 1/2 & 1/2 \\ 1/2 & -1/2 \end{bmatrix}
+\begin{bmatrix} 3 & 1 \\ 3 & -1 \end{bmatrix}
+= \begin{bmatrix} 3 & 0 \\ 0 & 1 \end{bmatrix}.
+$$
+
+A matriz nova é diagonal. Não foi coincidência: escolhemos uma base de vetores próprios, e a próxima página explica por que isso diagonaliza sempre.
+
+## O que costuma correr mal
+
+- Construir a matriz com os vetores em linha em vez de coluna, ou pôr as coordenadas na base errada nas colunas.
+- Aplicar $M_{U \to E}$ a coordenadas que já estão em $E$. Verifica sempre em que base estão as coordenadas antes de multiplicar.
+- Na fórmula $B = P^{-1}AP$, trocar $P$ por $P^{-1}$: $P$ é a mudança da base nova para a antiga, não o contrário.
+- Tentar mudar de base com uma matriz singular. As colunas têm de formar uma base (independentes); se o determinante for zero, algo está errado na escolha dos vetores.

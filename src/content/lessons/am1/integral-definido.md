@@ -1,0 +1,80 @@
+---
+title: Integral definido e teoremas fundamentais
+description: Somas de Riemann, cálculo de áreas entre curvas, teoremas do valor médio para integrais e os teoremas fundamentais do cálculo.
+section: conteudo
+order: 5
+---
+
+O integral definido nasce de um problema geométrico, calcular áreas, e de um processo de limite, as somas de Riemann. Os teoremas fundamentais ligam-no depois à primitivação, transformando áreas em contas com antiderivadas. Esta página constrói esse caminho completo.
+
+## Somas de Riemann e o integral definido
+
+Para integrar $f$ em $[a, b]$, partimos o intervalo em $n$ subintervalos, escolhemos um ponto em cada um e somamos as áreas dos retângulos $f(x_k^*) \Delta x$. O **integral definido** é o limite destas **somas de Riemann** quando a partição fica infinitamente fina:
+
+$$
+\int_a^b f(x)\,dx = \lim_{n \to \infty} \sum_{k=1}^{n} f(x_k^*) \Delta x.
+$$
+
+Uma função limitada com um número finito de descontinuidades em $[a, b]$ é integrável à Riemann, o que cobre todas as funções contínuas e as contínuas por partes que vais encontrar.
+
+Vejamos o processo a funcionar com $\int_0^2 x\,dx$, usando somas à direita com $n$ intervalos iguais. Cada intervalo tem largura $\Delta x = 2/n$ e os pontos são $x_k = 2k/n$:
+
+$$
+S_n = \sum_{k=1}^{n} \frac{2k}{n} \cdot \frac{2}{n} = \frac{4}{n^2}\sum_{k=1}^{n} k = \frac{4}{n^2} \cdot \frac{n(n+1)}{2} = \frac{2(n+1)}{n}.
+$$
+
+Quando $n \to \infty$, $S_n \to 2$. O integral vale $2$, que é de facto a área do triângulo de base $2$ e altura $2$. Este cálculo direto por somas é instrutivo mas trabalhoso; na prática usamos os teoremas fundamentais.
+
+As propriedades que mais usas: linearidade ($\int (f+g) = \int f + \int g$), aditividade em ordem ao intervalo ($\int_a^b + \int_b^c = \int_a^c$), troca de limites ($\int_b^a = -\int_a^b$) e monotonia (se $f \le g$, então $\int f \le \int g$).
+
+## Áreas entre curvas
+
+Se $f$ e $g$ são contínuas em $[a, b]$ com $f(x) \ge g(x)$, a área da região entre os gráficos é
+
+$$
+A = \int_a^b \big(f(x) - g(x)\big)\,dx.
+$$
+
+O método tem três passos: desenha ou localiza as interseções, decide qual função está por cima em cada troço e integra a diferença. Se as curvas se cruzam dentro do intervalo, parte o integral nos pontos de interseção, porque a função "de cima" muda.
+
+Exemplo: área entre $y = x$ e $y = x^2$. As curvas cruzam-se em $x = 0$ e $x = 1$ (resolve $x = x^2$). Em $]0, 1[$, a reta está por cima da parábola, logo
+
+$$
+A = \int_0^1 (x - x^2)\,dx = \left[\frac{x^2}{2} - \frac{x^3}{3}\right]_0^1 = \frac{1}{2} - \frac{1}{3} = \frac{1}{6}.
+$$
+
+Com módulos no integrando, como em $\int_{-2}^{3} |x^2 - 1|\,dx$, o procedimento é o mesmo: encontra onde a expressão muda de sinal ($x = -1$ e $x = 1$) e parte o integral em três troços, tirando o módulo em cada um com o sinal correto.
+
+## Teoremas do valor médio para integrais
+
+O **primeiro teorema do valor médio** diz que, para $f$ contínua em $[a, b]$, existe $c$ em $[a, b]$ tal que
+
+$$
+\int_a^b f(x)\,dx = f(c)\,(b-a).
+$$
+
+Ou seja, a área sob o gráfico iguala a área de um retângulo com a mesma base e altura $f(c)$. A **fórmula da média** define o valor médio de $f$ no intervalo como $\frac{1}{b-a}\int_a^b f(x)\,dx$.
+
+Exemplo: o valor médio de $f(x) = x^2$ em $[1, 3]$ é $\frac{1}{2}\int_1^3 x^2\,dx = \frac{1}{2}(9 - 1/3) = 13/3$. O teorema garante um $c$ com $c^2 = 13/3$, isto é $c = \sqrt{13/3} \approx 2{,}08$, dentro do intervalo.
+
+## Teoremas fundamentais do cálculo
+
+O **primeiro teorema fundamental** liga derivação e integração: se $f$ é contínua e $F(x) = \int_a^x f(t)\,dt$, então $F$ é diferenciável e $F'(x) = f(x)$. Na prática, permite derivar integrais com limites variáveis. Por exemplo,
+
+$$
+\frac{d}{dx} \int_1^x \sin(t^2)\,dt = \sin(x^2).
+$$
+
+Se o limite superior é uma função composta, entra a cadeia: para $G(x) = \int_0^{x^2} e^t\,dt$, tem-se $G'(x) = e^{x^2} \cdot 2x$.
+
+O **segundo teorema fundamental (fórmula de Barrow)** é a ferramenta de cálculo: se $P$ é uma primitiva de $f$ em $[a, b]$, então
+
+$$
+\int_a^b f(x)\,dx = P(b) - P(a).
+$$
+
+É isto que reduz áreas a antiderivadas. Por exemplo, $\int_0^1 (5x^3 - 3x + 6)\,dx = [5x^4/4 - 3x^2/2 + 6x]_0^1 = 5/4 - 3/2 + 6 = 23/4$. Encontrar primitivas é por isso a competência central das próximas páginas.
+
+## Para onde ir
+
+O teorema de Barrow transfere o problema para a primitivação. Começamos pelas duas técnicas universais: [primitivação por substituição e por partes](primitivas/).

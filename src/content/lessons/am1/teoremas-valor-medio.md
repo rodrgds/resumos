@@ -1,0 +1,104 @@
+---
+title: Teoremas do valor médio, L'Hôpital e diferencial
+description: Teoremas de Lagrange e Cauchy, levantamento de indeterminações com L'Hôpital e a noção de diferencial para aproximações.
+section: conteudo
+order: 2
+---
+
+A derivada mede variação instantânea, mas os teoremas desta página fazem a ponte contrária: a partir da derivada, garantem propriedades da função num intervalo. É daqui que saem a regra de L'Hôpital para limites difíceis e a aproximação linear que está por trás do diferencial.
+
+## Teorema de Lagrange
+
+O **teorema dos acréscimos finitos (Lagrange)** diz o seguinte: se $f$ é contínua em $[a, b]$ e diferenciável em $]a, b[$, então existe pelo menos um ponto $c$ entre $a$ e $b$ tal que
+
+$$
+f'(c) = \frac{f(b) - f(a)}{b - a}.
+$$
+
+Em palavras, a taxa de variação média num intervalo é atingida como taxa instantânea nalgum ponto interior. Geometricamente, há um ponto onde a tangente é paralela à secante que une $(a, f(a))$ a $(b, f(b))$.
+
+As hipóteses importam. A continuidade nos extremos e a diferenciabilidade no interior são ambas necessárias: com um salto ou um bico, o ponto $c$ pode não existir.
+
+Um exemplo verificável: $f(x) = x^2$ em $[1, 3]$. A taxa média vale $(9 - 1)/(3 - 1) = 4$. Como $f'(x) = 2x$, procuramos $c$ com $2c = 4$, ou seja $c = 2$, que está de facto entre $1$ e $3$.
+
+Uma consequência que vais usar muitas vezes: se $f'(x) = 0$ em todo um intervalo, então $f$ é constante aí. Basta aplicar Lagrange a qualquer par de pontos: $f(b) - f(a) = 0$.
+
+## Teorema de Cauchy e regra de L'Hôpital
+
+O **teorema de Cauchy** generaliza Lagrange a duas funções: se $f$ e $g$ são contínuas em $[a, b]$, diferenciáveis em $]a, b[$ e $g'(x) \ne 0$ no interior, então existe $c$ tal que
+
+$$
+\frac{f(b) - f(a)}{g(b) - g(a)} = \frac{f'(c)}{g'(c)}.
+$$
+
+Quando $g(x) = x$, recuperamos Lagrange. A importância de Cauchy é que dele segue a **regra de L'Hôpital**: para indeterminações do tipo $0/0$ ou $\infty/\infty$,
+
+$$
+\lim_{x \to a} \frac{f(x)}{g(x)} = \lim_{x \to a} \frac{f'(x)}{g'(x)},
+$$
+
+desde que o limite da direita exista (finito ou infinito) e $g'(x) \ne 0$ perto de $a$. A regra vale também para limites laterais e para $x \to \pm\infty$.
+
+Exemplo com verificação completa. Para calcular
+
+$$
+\lim_{x \to 0} \frac{e^x - 1 - x}{x^2},
+$$
+
+substituir dá $0/0$. Derivando numerador e denominador:
+
+$$
+\lim_{x \to 0} \frac{e^x - 1}{2x},
+$$
+
+que ainda é $0/0$. Aplicamos outra vez:
+
+$$
+\lim_{x \to 0} \frac{e^x}{2} = \frac{1}{2}.
+$$
+
+Cada aplicação exige confirmar a indeterminação antes de derivar. Derivar o quociente diretamente (regra do quociente) em vez de derivar numerador e denominador em separado é o erro mais comum aqui.
+
+:::warning[Quando L'Hôpital não se aplica]
+Se o limite não é uma indeterminação $0/0$ ou $\infty/\infty$, derivar numerador e denominador dá um resultado errado. Outras indeterminações ($0 \cdot \infty$, $\infty - \infty$, $0^0$, $1^\infty$, $\infty^0$) têm de ser primeiro convertidas, por exemplo escrevendo um produto como quociente ou aplicando logaritmos.
+:::
+
+## Diferencial e aproximação linear
+
+Se $y = f(x)$ é diferenciável, o **diferencial** $dy$ é a variação ao longo da reta tangente quando $x$ varia de $dx$:
+
+$$
+dy = f'(x) \, dx.
+$$
+
+Enquanto $\Delta y = f(x + \Delta x) - f(x)$ é a variação exata, o diferencial dá a aproximação $\Delta y \approx f'(x)\Delta x$, boa quando $\Delta x$ é pequeno. É a mesma ideia do polinómio de Taylor de grau 1, que vamos desenvolver na [página sobre Taylor](taylor/).
+
+Um cálculo típico: aproximar $\sqrt{4{,}02}$. Toma $f(x) = \sqrt{x}$ e $x = 4$, com $\Delta x = 0{,}02$. Como $f'(x) = 1/(2\sqrt{x})$, temos $f'(4) = 1/4$ e
+
+$$
+\sqrt{4{,}02} \approx 2 + \frac{1}{4} \cdot 0{,}02 = 2{,}005.
+$$
+
+O valor real é $2{,}00499\ldots$, por isso o erro é inferior a $10^{-5}$. Repara na estrutura que deves repetir: escolhe $f$, escolhe o ponto exato próximo, calcula $f'$ aí e multiplica pelo desvio.
+
+## Taxas relacionadas
+
+A regra da cadeia permite relacionar taxas de variação de grandezas ligadas por uma equação, um tipo de problema que aparece nos testes da cadeira. A receita é: escreve a relação entre as grandezas, deriva implicitamente em ordem ao tempo e substitui os valores do instante pedido.
+
+Exemplo: um balão esférico enche-se à taxa de $100 \, \text{cm}^3/\text{s}$. A que ritmo cresce o raio quando $r = 5 \, \text{cm}$? O volume é $V = \frac{4}{3}\pi r^3$. Derivando em ordem a $t$:
+
+$$
+\frac{dV}{dt} = 4\pi r^2 \frac{dr}{dt}.
+$$
+
+Com $dV/dt = 100$ e $r = 5$:
+
+$$
+100 = 4\pi \cdot 25 \cdot \frac{dr}{dt}, \qquad \frac{dr}{dt} = \frac{1}{\pi} \approx 0{,}318 \, \text{cm/s}.
+$$
+
+O passo onde os alunos mais falham é derivar em ordem a $r$ em vez de em ordem a $t$, esquecendo o fator $dr/dt$ que a cadeia exige.
+
+## Para onde ir
+
+A aproximação linear desta página é o primeiro termo de uma ideia maior: aproximar funções por polinómios de qualquer grau. É esse o tema do [polinómio e série de Taylor](taylor/).

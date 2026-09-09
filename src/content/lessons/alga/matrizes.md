@@ -1,0 +1,159 @@
+---
+title: Matrizes e operações matriciais
+description: O que é uma matriz, soma, produto, transposta e inversa, com um exemplo completo verificado.
+section: conteudo
+order: 1
+---
+
+Quase tudo em ALGA passa por matrizes: um sistema de equações escreve-se como $AX = B$, uma aplicação linear representa-se por uma matriz e um vetor próprio obedece a $Av = \lambda v$. Por isso, a primeira competência da cadeira é operar com matrizes sem erros de índices nem de dimensões.
+
+## O que é uma matriz
+
+Uma **matriz** do tipo $m \times n$ sobre os reais é um quadro com $m$ linhas e $n$ colunas de números reais:
+
+$$
+A = \begin{bmatrix}
+a_{11} & a_{12} & \dots & a_{1n} \\
+a_{21} & a_{22} & \dots & a_{2n} \\
+\vdots & \vdots & & \vdots \\
+a_{m1} & a_{m2} & \dots & a_{mn}
+\end{bmatrix}.
+$$
+
+A entrada $a_{ij}$ vive na linha $i$ e na coluna $j$. O **tipo** indica-se sempre como linhas $\times$ colunas: uma matriz $3 \times 2$ tem 3 linhas e 2 colunas. Uma matriz com $m = n$ diz-se **quadrada** (de ordem $n$); com $m = 1$ é uma **matriz linha** e com $n = 1$ é uma **matriz coluna**, que é como vamos escrever vetores quando multiplicamos por matrizes.
+
+Algumas matrizes têm nome próprio. A **matriz nula** $0$ tem todas as entradas iguais a zero. A **matriz identidade** $I_n$ é quadrada de ordem $n$, com uns na diagonal principal e zeros fora dela:
+
+$$
+I_2 = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}, \qquad
+I_3 = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}.
+$$
+
+Uma matriz quadrada diz-se **diagonal** quando só a diagonal principal pode ter entradas não nulas, **triangular superior** quando tudo abaixo da diagonal é zero e **simétrica** quando $a_{ij} = a_{ji}$ para todos os pares (vamos voltar às simétricas na página de valores próprios).
+
+## Soma e produto por escalar
+
+A **soma** de duas matrizes do mesmo tipo faz-se entrada a entrada, e o **produto por um escalar** $k$ multiplica todas as entradas por $k$:
+
+$$
+A + B = [a_{ij} + b_{ij}], \qquad kA = [k a_{ij}].
+$$
+
+Com as matrizes
+
+$$
+A = \begin{bmatrix} 2 & 1 \\ 0 & 3 \end{bmatrix}, \qquad
+B = \begin{bmatrix} 1 & -1 \\ 4 & 2 \end{bmatrix},
+$$
+
+temos
+
+$$
+A + B = \begin{bmatrix} 3 & 0 \\ 4 & 5 \end{bmatrix}, \qquad
+2A = \begin{bmatrix} 4 & 2 \\ 0 & 6 \end{bmatrix}.
+$$
+
+Somar matrizes de tipos diferentes não faz sentido, tal como somar vetores de dimensões diferentes. Se o enunciado pede $A + B$ e os tipos não coincidem, algo está errado antes de começares a conta.
+
+## Produto de matrizes
+
+O **produto** $AB$ só existe quando o número de colunas de $A$ iguala o número de linhas de $B$. Se $A$ é $m \times p$ e $B$ é $p \times n$, o produto é $m \times n$ e cada entrada combina uma linha de $A$ com uma coluna de $B$:
+
+$$
+(AB)_{ij} = a_{i1}b_{1j} + a_{i2}b_{2j} + \dots + a_{ip}b_{pj}.
+$$
+
+Em palavras: a entrada na linha $i$, coluna $j$ do produto é o produto escalar da linha $i$ de $A$ pela coluna $j$ de $B$. Com as matrizes $A$ e $B$ acima, ambas $2 \times 2$:
+
+$$
+AB = \begin{bmatrix}
+2 \cdot 1 + 1 \cdot 4 & 2 \cdot (-1) + 1 \cdot 2 \\
+0 \cdot 1 + 3 \cdot 4 & 0 \cdot (-1) + 3 \cdot 2
+\end{bmatrix}
+= \begin{bmatrix} 6 & 0 \\ 12 & 6 \end{bmatrix}.
+$$
+
+Repara que a ordem interessa. No sentido contrário:
+
+$$
+BA = \begin{bmatrix}
+1 \cdot 2 + (-1) \cdot 0 & 1 \cdot 1 + (-1) \cdot 3 \\
+4 \cdot 2 + 2 \cdot 0 & 4 \cdot 1 + 2 \cdot 3
+\end{bmatrix}
+= \begin{bmatrix} 2 & -2 \\ 8 & 10 \end{bmatrix} \neq AB.
+$$
+
+O produto de matrizes **não é comutativo** em geral. Este é o erro mais caro desta página: nunca troques a ordem de um produto para "simplificar". O que vale sempre é a associatividade, $A(BC) = (AB)C$, a distributividade, $A(B + C) = AB + AC$, e o papel da identidade, $AI_n = I_m A = A$ para $A$ do tipo $m \times n$.
+
+:::warning[Dimensões primeiro]
+Antes de multiplicares, escreve os tipos lado a lado: $(m \times p)(p \times n)$. Os dois $p$ interiores têm de coincidir e o resultado é $m \times n$. Se pedirem $AB$ e $BA$ com $A$ do tipo $2 \times 3$ e $B$ do tipo $3 \times 2$, o primeiro produto é $2 \times 2$ e o segundo é $3 \times 3$: existem os dois, mas têm tipos diferentes.
+:::
+
+## Transposta
+
+A **transposta** $A^T$ obtém-se trocando linhas por colunas: a linha $i$ de $A$ passa a ser a coluna $i$ de $A^T$. No exemplo,
+
+$$
+A^T = \begin{bmatrix} 2 & 0 \\ 1 & 3 \end{bmatrix}.
+$$
+
+As propriedades que vais usar são $(A^T)^T = A$, $(A + B)^T = A^T + B^T$ e, com atenção à ordem,
+
+$$
+(AB)^T = B^T A^T.
+$$
+
+A ordem inverte-se porque as linhas de $AB$ vêm das linhas de $A$, que passam a colunas. Uma matriz quadrada com $A^T = A$ é simétrica; com $A^T = -A$ diz-se **antissimétrica**.
+
+## Matriz inversa
+
+Uma matriz quadrada $A$ de ordem $n$ diz-se **invertível** (ou não singular) quando existe uma matriz $A^{-1}$ do mesmo tipo tal que
+
+$$
+AA^{-1} = A^{-1}A = I_n.
+$$
+
+Se existir, a inversa é única. Nem todas as matrizes quadradas têm inversa: a matriz nula, por exemplo, nunca é invertível, porque qualquer produto com ela continua a dar zero.
+
+Para matrizes $2 \times 2$ há uma fórmula direta. Se $A = \begin{bmatrix} a & b \\ c & d \end{bmatrix}$ e $ad - bc \neq 0$, então
+
+$$
+A^{-1} = \frac{1}{ad - bc}\begin{bmatrix} d & -b \\ -c & a \end{bmatrix}.
+$$
+
+O número $ad - bc$ é o **determinante** de $A$, que vais estudar na próxima página depois desta. Toma $C = \begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}$. O determinante vale $2 \cdot 3 - 1 \cdot 1 = 5$, logo
+
+$$
+C^{-1} = \frac{1}{5}\begin{bmatrix} 3 & -1 \\ -1 & 2 \end{bmatrix}
+= \begin{bmatrix} 3/5 & -1/5 \\ -1/5 & 2/5 \end{bmatrix}.
+$$
+
+Confirmamos multiplicando:
+
+$$
+CC^{-1} = \frac{1}{5}\begin{bmatrix} 2 & 1 \\ 1 & 3 \end{bmatrix}
+\begin{bmatrix} 3 & -1 \\ -1 & 2 \end{bmatrix}
+= \frac{1}{5}\begin{bmatrix} 5 & 0 \\ 0 & 5 \end{bmatrix}
+= I_2.
+$$
+
+Para ordens maiores, a inversa calcula-se pelo método de Gauss-Jordan (resolver $AX = I$ em simultâneo) ou pela matriz adjunta, que envolve determinantes. Ambos aparecem nas páginas seguintes. Para já, fixa as propriedades: $(A^{-1})^{-1} = A$, $(AB)^{-1} = B^{-1}A^{-1}$ (outra vez com a ordem trocada) e $(A^T)^{-1} = (A^{-1})^T$.
+
+## Exemplo resolvido
+
+Calcula $AB$, $BA$ e verifica se $C = AB - BA$ é simétrica, com as matrizes $A$ e $B$ do início.
+
+Já temos $AB = \begin{bmatrix} 6 & 0 \\ 12 & 6 \end{bmatrix}$ e $BA = \begin{bmatrix} 2 & -2 \\ 8 & 10 \end{bmatrix}$. Subtraindo:
+
+$$
+C = AB - BA = \begin{bmatrix} 4 & 2 \\ 4 & -4 \end{bmatrix}.
+$$
+
+Para $C$ ser simétrica seria preciso $C^T = C$, ou seja, as entradas fora da diagonal iguais: $c_{12} = 2$ contra $c_{21} = 4$. Não é simétrica. Nota que a diagonal de $AB - BA$ pode ser qualquer coisa, mas o traço (a soma da diagonal) é sempre zero quando $AB$ e $BA$ existem, porque $\operatorname{tr}(AB) = \operatorname{tr}(BA)$. Aqui, $\operatorname{tr}(AB) = 12$ e $\operatorname{tr}(BA) = 12$. Confirmado.
+
+## O que costuma correr mal
+
+- Multiplicar matrizes sem verificar os tipos e obter uma matriz com o formato errado, ou tentar somar matrizes de tipos diferentes.
+- Trocar a ordem de um produto ou de uma inversa de produto: $(AB)^{-1} = B^{-1}A^{-1}$, nunca $A^{-1}B^{-1}$ em geral.
+- Aplicar a fórmula da inversa $2 \times 2$ sem verificar que $ad - bc \neq 0$, ou trocar os sinais das entradas fora da diagonal.
+- Confundir $A^T$ com $A^{-1}$: a transposta existe sempre, a inversa só para quadradas com determinante não nulo.

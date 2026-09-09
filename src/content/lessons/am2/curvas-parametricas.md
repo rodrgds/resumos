@@ -1,0 +1,92 @@
+---
+title: Curvas paramétricas e funções vetoriais
+description: Parametrização de curvas, vetor tangente e normal, comprimento de arco e curvatura.
+section: conteudo
+order: 1
+---
+
+Em AM1, uma função recebe um número e devolve um número. Aqui, uma **função vetorial** recebe um parâmetro $t$ e devolve um vetor, que interpretamos como a posição de um ponto que se move. O rasto desse ponto é uma **curva paramétrica**, e quase tudo neste capítulo (integrais de linha, superfícies, teoremas) começa por saber descrever curvas desta forma.
+
+## Parametrizar uma curva
+
+Uma curva em $\mathbb{R}^2$ ou $\mathbb{R}^3$ descreve-se por
+
+$$
+\vec{r}(t) = \langle x(t), y(t), z(t) \rangle, \quad t \in [a, b],
+$$
+
+onde cada coordenada é uma função do parâmetro. O parâmetro representa muitas vezes o tempo, e $\vec{r}(t)$ a posição da partícula nesse instante.
+
+Para obter uma parametrização do segmento de reta de $P$ a $Q$, anda-se em linha reta a velocidade constante:
+
+$$
+\vec{r}(t) = P + t(Q - P), \quad t \in [0, 1].
+$$
+
+Por exemplo, de $P = (1, 0, 2)$ a $Q = (3, 2, 0)$ obtemos $\vec{r}(t) = \langle 1 + 2t, 2t, 2 - 2t \rangle$. Em $t = 0$ estamos em $P$ e em $t = 1$ chegamos a $Q$. A mesma curva admite muitas parametrizações (basta percorrê-la a outra velocidade), por isso o parâmetro faz parte da descrição.
+
+:::tip[Curvas que convém reconhecer]
+A circunferência unitária percorrida no sentido direto é $\vec{r}(t) = \langle \cos t, \sin t \rangle$, $t \in [0, 2\pi]$. A hélice circular é $\vec{r}(t) = \langle \cos t, \sin t, t \rangle$: roda no plano $xy$ enquanto sobe em $z$. Vamos usá-la como exemplo corrente nesta página.
+:::
+
+## Velocidade e vetor tangente unitário
+
+Derivar coordenada a coordenada dá o vetor velocidade $\vec{r}'(t)$, que aponta na direção do movimento. A sua norma $\lVert \vec{r}'(t) \rVert$ é a **velocidade escalar**. Normalizar a velocidade dá o **versor tangente** (vetor tangente unitário)
+
+$$
+\vec{T}(t) = \frac{\vec{r}'(t)}{\lVert \vec{r}'(t) \rVert}, \quad \vec{r}'(t) \neq \vec{0}.
+$$
+
+Para a hélice $\vec{r}(t) = \langle \cos t, \sin t, t \rangle$, temos $\vec{r}'(t) = \langle -\sin t, \cos t, 1 \rangle$ e $\lVert \vec{r}'(t) \rVert = \sqrt{\sin^2 t + \cos^2 t + 1} = \sqrt{2}$. A velocidade escalar é constante ($\sqrt{2}$) e
+
+$$
+\vec{T}(t) = \frac{1}{\sqrt{2}}\langle -\sin t, \cos t, 1 \rangle.
+$$
+
+Em $t = 0$, a partícula está em $(1, 0, 0)$ e move-se na direção $\langle 0, 1, 1 \rangle$ normalizada. A reta tangente nesse ponto é $(1, 0, 0) + s\langle 0, 1, 1 \rangle$, e o plano normal (perpendicular à curva) é $0(x - 1) + 1(y - 0) + 1(z - 0) = 0$, ou seja, $y + z = 0$.
+
+## Normal principal e binormal
+
+O versor tangente só muda de direção quando a curva faz uma curva, por isso a sua derivada aponta para o lado côncavo. O **versor normal principal** é
+
+$$
+\vec{N}(t) = \frac{\vec{T}'(t)}{\lVert \vec{T}'(t) \rVert},
+$$
+
+perpendicular a $\vec{T}(t)$. O **versor binormal** $\vec{B}(t) = \vec{T}(t) \times \vec{N}(t)$ completa o triedro: três vetores unitários perpendiculares entre si que viajam com a partícula.
+
+Na hélice, $\vec{T}'(t) = \frac{1}{\sqrt{2}}\langle -\cos t, -\sin t, 0 \rangle$, com norma $1/\sqrt{2}$, logo $\vec{N}(t) = \langle -\cos t, -\sin t, 0 \rangle$. Repara que aponta para o eixo $z$, isto é, para o centro da circunferência projetada: é mesmo para dentro da curva.
+
+## Comprimento de arco
+
+Somar os pedacinhos $\lVert \vec{r}'(t) \rVert \, dt$ dá o **comprimento de arco**
+
+$$
+L = \int_a^b \lVert \vec{r}'(t) \rVert \, dt.
+$$
+
+Na hélice entre $t = 0$ e $t = 2\pi$, a velocidade escalar é constante $\sqrt{2}$, por isso $L = \sqrt{2} \cdot 2\pi = 2\sqrt{2}\,\pi$. Uma volta completa de hélice é mais comprida do que a circunferência unitária ($2\pi$), como esperado, porque entretanto subiu $2\pi$ em $z$.
+
+:::warning[O comprimento depende da curva, não da parametrização]
+Percorrer a mesma curva duas vezes mais depressa muda $\vec{r}'(t)$ mas também muda o intervalo de integração, e os dois efeitos cancelam-se. Se obtiveres outro valor ao reparametrizar, há um erro de cálculo.
+:::
+
+## Curvatura
+
+A **curvatura** $\kappa(t)$ mede quanto a curva se desvia de uma reta em cada ponto. Define-se por
+
+$$
+\kappa(t) = \frac{\lVert \vec{T}'(t) \rVert}{\lVert \vec{r}'(t) \rVert}.
+$$
+
+O numerador mede quanto o tangente roda por unidade de parâmetro; dividir pela velocidade converte para rotação por unidade de comprimento percorrido.
+
+Na hélice, $\lVert \vec{T}'(t) \rVert = 1/\sqrt{2}$ e $\lVert \vec{r}'(t) \rVert = \sqrt{2}$, logo $\kappa = \frac{1/\sqrt{2}}{\sqrt{2}} = \frac{1}{2}$ em todos os pontos. O **raio de curvatura** é o inverso, $\rho = 1/\kappa = 2$. Uma reta tem curvatura zero; uma circunferência de raio $a$ tem curvatura constante $1/a$. A hélice, que combina rotação de raio $1$ com subida, curva menos do que a circunferência unitária, por isso $\kappa = 1/2$ faz sentido.
+
+:::details[Ver a conta da circunferência]
+Para $\vec{r}(t) = \langle a\cos t, a\sin t \rangle$: $\vec{r}'(t) = \langle -a\sin t, a\cos t \rangle$, $\lVert \vec{r}' \rVert = a$, $\vec{T}(t) = \langle -\sin t, \cos t \rangle$, $\vec{T}'(t) = \langle -\cos t, -\sin t \rangle$ com norma $1$. Logo $\kappa = 1/a$ e $\rho = a$: o raio de curvatura é o próprio raio.
+:::
+
+## Falhas frequentes
+
+Confundir $\vec{r}'(t) = \vec{0}$ com paragem inocente é o erro mais comum: se a velocidade se anula, $\vec{T}(t)$ não está definido e a curva pode ter um bico (como $\vec{r}(t) = \langle t^2, t^3 \rangle$ em $t = 0$). Outro erro é normalizar antes de derivar ao calcular $\vec{N}$: a definição usa $\vec{T}'$, não $\vec{r}''$ diretamente. Por fim, a curvatura nunca é negativa; o sinal da "viragem" vive no vetor $\vec{N}$, não em $\kappa$.

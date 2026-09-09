@@ -1,0 +1,80 @@
+---
+title: Volumes de revolução e coordenadas polares
+description: Cálculo de volumes por fatias, discos e coroas cilíndricas, e áreas em coordenadas polares.
+section: conteudo
+order: 8
+---
+
+O integral definido mede mais do que áreas planas: empilhando secções transversais obtemos volumes, e mudando para coordenadas polares descrevemos regiões circulares com integrais simples. As duas ideias partilham o mesmo esquema, fatiar, aproximar e passar ao limite.
+
+## Volumes por secções transversais
+
+Se um sólido entre $x = a$ e $x = b$ tem área de secção transversal $A(x)$ contínua, o seu volume é
+
+$$
+V = \int_a^b A(x)\,dx.
+$$
+
+Cada caso de revolução é uma escolha de $A(x)$. Rodando a região sob $y = f(x) \ge 0$ em torno do eixo $Ox$, cada secção é um disco de raio $f(x)$, com área $\pi f(x)^2$:
+
+$$
+V = \pi \int_a^b f(x)^2\,dx \quad \text{(discos)}.
+$$
+
+Exemplo de verificação: a esfera de raio $r$, obtida rodando o semicírculo $y = \sqrt{r^2-x^2}$ em $[-r, r]$:
+
+$$
+V = \pi \int_{-r}^{r} (r^2 - x^2)\,dx = \pi\left[2r^3 - \frac{2r^3}{3}\right] = \frac{4\pi r^3}{3}.
+$$
+
+Recuperámos a fórmula conhecida, o que confirma o método.
+
+Quando a região está entre duas curvas, $g(x) \le f(x)$, cada secção é uma coroa (**método das arandelas**):
+
+$$
+V = \pi \int_a^b \big(f(x)^2 - g(x)^2\big)\,dx.
+$$
+
+Exemplo: roda a região entre $y = x$ e $y = x^2$ em torno do eixo $Ox$. As curvas cruzam-se em $0$ e $1$, e a reta está por cima:
+
+$$
+V = \pi \int_0^1 (x^2 - x^4)\,dx = \pi\left[\frac{1}{3} - \frac{1}{5}\right] = \frac{2\pi}{15}.
+$$
+
+Se o eixo de rotação é uma reta horizontal $y = k$ exterior à região, cada raio mede-se a partir dela: o raio exterior é $|f(x) - k|$ e o interior $|g(x) - k|$. Desenha sempre a secção e marca os dois raios antes de escrever o integral; trocar raios ou esquecer o quadrado são os erros típicos.
+
+O **método das cascas cilíndricas** é a alternativa para rotações em torno de eixos verticais: com cascas de raio $x$ e altura $f(x)$,
+
+$$
+V = 2\pi \int_a^b x f(x)\,dx.
+$$
+
+Escolhe discos quando a secção perpendicular ao eixo é simples, e cascas quando a secção paralela o é.
+
+## Coordenadas polares
+
+Em **coordenadas polares**, um ponto descreve-se por $(r, \theta)$, com $x = r\cos\theta$ e $y = r\sin\theta$. Curvas com simetria circular tornam-se simples: $r = c$ é uma circunferência, $\theta = c$ é uma semirreta e $r = 1 + \cos\theta$ é uma cardioide.
+
+A área varrida por $r(\theta)$ entre $\theta = \alpha$ e $\theta = \beta$ é
+
+$$
+A = \frac{1}{2}\int_{\alpha}^{\beta} r(\theta)^2\,d\theta.
+$$
+
+A intuição: cada fatia infinitesimal é quase um setor circular de área $r^2\,d\theta/2$.
+
+Exemplo: área da cardioide $r = 1 + \cos\theta$. Como a curva fecha-se quando $\theta$ vai de $0$ a $2\pi$:
+
+$$
+A = \frac{1}{2}\int_0^{2\pi} (1 + \cos\theta)^2\,d\theta = \frac{1}{2}\int_0^{2\pi} \big(1 + 2\cos\theta + \cos^2\theta\big)\,d\theta.
+$$
+
+Ora $\int_0^{2\pi} 1\,d\theta = 2\pi$, $\int_0^{2\pi} \cos\theta\,d\theta = 0$ e $\int_0^{2\pi} \cos^2\theta\,d\theta = \pi$ (valor médio $1/2$ num período de $2\pi$). Logo $A = (2\pi + \pi)/2 = 3\pi/2$.
+
+:::tip[Intervalo de $\theta$ correto]
+Em polares, o erro mais caro é integrar no intervalo errado: cada ponto da curva deve ser contado exatamente uma vez. Para a cardioide completa, $[0, 2\pi]$ funciona; para meio plano ou rosáceas, estuda primeiro onde $r$ se anula e que ângulos cobrem a região pedida.
+:::
+
+## Para onde ir
+
+Fechamos o bloco de integração com dois tópicos que preparam o resto da cadeira: as [funções hiperbólicas e os integrais impróprios](hiperbolicas-improprios/).

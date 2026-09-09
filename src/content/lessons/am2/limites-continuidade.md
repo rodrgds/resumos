@@ -1,0 +1,70 @@
+---
+title: Limites e continuidade em várias variáveis
+description: Domínios, curvas de nível, limites por caminhos e continuidade de campos escalares.
+section: conteudo
+order: 2
+---
+
+Um **campo escalar** $f: D \subset \mathbb{R}^n \to \mathbb{R}$ atribui um número a cada ponto de uma região do plano ou do espaço (temperatura em cada ponto de uma chapa, altitude em cada ponto de um mapa). Antes de derivar ou integrar, é preciso saber onde a função existe, como se comporta perto de cada ponto e se tem saltos. Esta página trata dessas três perguntas.
+
+## Domínio: onde a função existe
+
+O **domínio** é o conjunto dos pontos onde a expressão faz sentido: denominadores não nulos, raízes de argumentos não negativos, logaritmos de argumentos positivos.
+
+Para $f(x, y) = \ln(16 - x^2 - y^2) + \sqrt{x^2 + y^2 - 4}$, as duas parcelas impõem $16 - x^2 - y^2 > 0$ e $x^2 + y^2 - 4 \geq 0$. Juntas, $4 \leq x^2 + y^2 < 16$: um anel (coroa circular) centrado na origem, incluindo a circunferência interior de raio $2$ e excluindo a exterior de raio $4$.
+
+:::tip[Desenha o domínio antes de calcular]
+Em várias variáveis, quase todos os erros de limites e integrais começam num domínio mal lido. Esboça sempre a região: interseções de uniões de discos, semiplanos e faixas aparecem em quase todos os exercícios.
+:::
+
+## Curvas de nível: ver a função sem 3D
+
+Fixar $f(x, y) = c$ e desenhar o conjunto resultante no plano dá uma **curva de nível**. O conjunto das curvas de nível é o mapa de contornos da função: curvas próximas significam variação rápida (como curvas de nível apertadas numa encosta íngreme).
+
+Para o paraboloide $f(x, y) = x^2 + y^2$, a curva de nível $c > 0$ é a circunferência $x^2 + y^2 = c$ de raio $\sqrt{c}$, e o nível $0$ é só a origem. Para $f(x, y) = xy$, o nível $0$ são os dois eixos e os outros níveis são hipérboles. Se as curvas de nível se cruzam ou mudam de topologia num ponto, esse ponto merece atenção redobrada nos limites.
+
+## Limites: chegar ao ponto por todo o lado
+
+Dizer que $\lim_{(x,y) \to (a,b)} f(x, y) = L$ significa que $f(x, y)$ fica arbitrariamente próximo de $L$ sempre que $(x, y)$ está suficientemente próximo de $(a, b)$, **venha de que direção vier**. No plano há infinitos caminhos de aproximação, e basta um caminho discordante para o limite não existir.
+
+Considera
+
+$$
+f(x, y) = \begin{cases} \dfrac{xy}{x^2 + y^2}, & (x, y) \neq (0, 0), \\ 0, & (x, y) = (0, 0). \end{cases}
+$$
+
+Ao longo do eixo $y = 0$, a função vale $0$, por isso o limite por esse caminho é $0$. Mas ao longo da reta $y = x$, vale $x^2/(2x^2) = 1/2$ para $x \neq 0$, logo o limite por esse caminho é $1/2$. Dois caminhos, dois valores: o limite na origem **não existe**.
+
+:::warning[Um caminho não chega para provar que existe]
+Mostrar que o limite vale $L$ ao longo de retas, parábolas ou qualquer família de curvas nunca prova a existência do limite. Para provar que existe, é preciso uma estimativa que controle todos os caminhos ao mesmo tempo (ver o exemplo da continuidade abaixo). Os caminhos só servem para provar que não existe.
+:::
+
+Por vezes o caminho que denuncia o problema não é uma reta. Para $g(x, y) = x^2y/(x^4 + y^2)$, todos os limites ao longo de retas $y = mx$ valem $0$, mas ao longo da parábola $y = x^2$ obtemos $x^4/(2x^4) = 1/2$. O limite não existe, e só a parábola o revelou. Quando as retas concordam todas, experimenta parábolas $y = x^2$ ou $x = y^2$ antes de conjeturar a existência.
+
+## Continuidade e o teorema do aperto
+
+A função é **contínua** em $(a, b)$ quando o limite existe e coincide com o valor da função:
+
+$$
+\lim_{(x,y) \to (a,b)} f(x, y) = f(a, b).
+$$
+
+Somas, produtos, quocientes (com denominador não nulo) e compostas de funções contínuas são contínuas, por isso polinómios, exponenciais e funções trigonométricas nos seus domínios não dão trabalho: basta substituir.
+
+O caso interessante é a origem de uma função definida por ramos. Para
+
+$$
+h(x, y) = \begin{cases} \dfrac{x^2 y}{x^2 + y^2}, & (x, y) \neq (0, 0), \\ 0, & (x, y) = (0, 0), \end{cases}
+$$
+
+observa que $|x^2 y| = x^2|y| \leq (x^2 + y^2)|y|$, logo
+
+$$
+|h(x, y) - 0| \leq \frac{(x^2 + y^2)|y|}{x^2 + y^2} = |y| \leq \sqrt{x^2 + y^2}.
+$$
+
+Quando $(x, y)$ tende para $(0,0)$, o majorante tende para $0$, por isso o limite é $0 = h(0, 0)$ e a função é contínua na origem. Esta técnica (majorar o módulo por algo que tende para zero) é o **teorema do aperto** aplicado a limites: funciona para todos os caminhos de uma só vez.
+
+## Falhas frequentes
+
+A mais grave é concluir existência a partir de alguns caminhos, como explicado acima. Outra é esquecer o domínio: estudar $\lim_{(x,y)\to(0,0)} \ln(y - x - 3)$ não faz sentido porque a origem nem pertence ao domínio ($-3 < 0$). E atenção às coordenadas polares: escrever $x = r\cos\theta$, $y = r\sin\theta$ e fazer $r \to 0$ só prova o limite se a estimativa final **não depender de $\theta$**; um majorante como $|\cos\theta|/r$ não serve.

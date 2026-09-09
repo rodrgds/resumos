@@ -1,0 +1,143 @@
+---
+title: Ficheiros e exceções
+description: Módulos e imports, leitura e escrita de ficheiros, try e except, raise e asserções.
+section: conteudo
+order: 11
+---
+
+Até aqui, os dados viviam apenas durante a execução: quando o programa terminava, tudo desaparecia. A **persistência** resolve isto guardando dados em **ficheiros** que sobrevivem ao programa. E como ficheiros podem faltar, entradas podem vir malformadas e contas podem falhar, a segunda metade da página trata os erros em execução sem deixar o programa morrer: **exceções**.
+
+## Módulos e imports
+
+Um **módulo** é um ficheiro com definições de Python destinadas a serem usadas noutros programas. Importá-lo dá acesso às suas funções. A biblioteca padrão traz módulos para matemática, aleatoriedade, ficheiros e muito mais.
+
+```python
+import math
+print(math.sqrt(2))
+print(math.pi)
+```
+
+Isto escreve `1.4142135623730951` e `3.141592653589793`. Há três formas de importar: `import math` (usa-se `math.sqrt`); `from math import sqrt, pi` (usa-se `sqrt` diretamente); e `import math as m` (abreviatura). Cada módulo tem o seu próprio **espaço de nomes**: a coleção de identificadores que ele define. É por isso que dois módulos podem definir funções com o mesmo nome sem conflito; o prefixo diz qual estás a chamar.
+
+Também podes criar os teus módulos: qualquer ficheiro `.py` na mesma pasta pode ser importado pelo nome (sem a extensão). Agrupar funções relacionadas num módulo e importá-lo onde precisas é o primeiro passo para programas maiores.
+
+## Ler e escrever ficheiros
+
+O padrão para trabalhar com ficheiros usa `open` dentro de um bloco `with`, que fecha o ficheiro automaticamente no fim, mesmo que algo corra mal:
+
+```python
+with open('notas.txt', 'w') as f:
+    f.write('Ana 17\nBruno 12\n')
+
+with open('notas.txt', 'r') as f:
+    conteudo = f.read()
+print(conteudo)
+```
+
+Isto escreve as duas linhas no ecrã. O modo `'w'` cria o ficheiro se não existir e **apaga** o conteúdo se existir; o modo `'r'` lê; o modo `'a'` acrescenta no fim sem apagar. O `\n` marca o fim de cada linha na escrita. Para processar linha a linha, itera diretamente sobre o ficheiro ou usa `readlines()`, que devolve a lista das linhas:
+
+```python
+with open('notas.txt', 'r') as f:
+    for linha in f:
+        nome, nota = linha.split()
+        print(nome, int(nota))
+```
+
+Isto escreve `Ana 17` e `Bruno 12`. Cada `linha` inclui o `\n` final, mas o `split()` corta nos espaços e ignora-o. A conversão `int(nota)` é necessária porque tudo o que vem de um ficheiro de texto é texto.
+
+:::warning[O modo 'w' apaga sem perguntar]
+Abrir um ficheiro existente em modo `'w'` destrói o conteúdo anterior imediatamente. Se queres acrescentar, usa `'a'`; se queres ler sem alterar, usa `'r'`. Antes de correres um programa que escreve ficheiros, confirma o modo e o nome do ficheiro.
+:::
+
+## Exceções: try, except, else e finally
+
+Quando ocorre um erro em execução, Python levanta uma **exceção** e o programa termina, a menos que a captures. O bloco `try` tenta executar código; se uma exceção ocorrer, o bloco `except` correspondente trata-a; o `else` opcional corre quando não houve erro; o `finally` opcional corre sempre, com ou sem erro.
+
+```python
+def ler_inteiro(texto):
+    try:
+        valor = int(texto)
+    except ValueError:
+        print('Não é um inteiro válido')
+        return None
+    else:
+        print('Conversão conseguida')
+        return valor
+    finally:
+        print('Fim da tentativa')
+
+print(ler_inteiro('42'))
+print(ler_inteiro('abc'))
+```
+
+Isto escreve, para `'42'`: `Conversão conseguida`, `Fim da tentativa` e `42`. Para `'abc'`: `Não é um inteiro válido`, `Fim da tentativa` e `None`. Repara que o `except` captura apenas `ValueError`: capturar o tipo específico evita esconder outros erros (um `KeyboardInterrupt` ou um erro de programação não devem ser silenciados pelo mesmo ramo).
+
+Podes levantar as tuas próprias exceções com `raise`, para assinalar que os argumentos violam o contrato da função:
+
+```python
+def raiz_quadrada(x):
+    if x < 0:
+        raise ValueError('x deve ser não negativo')
+    return x ** 0.5
+
+print(raiz_quadrada(16))
+```
+
+Isto escreve `4.0`. Chamar `raiz_quadrada(-1)` levantaria `ValueError` com a tua mensagem. A regra: a função deteta o problema com `raise`, e quem chama decide com `try` se trata o erro ali ou o deixa subir.
+
+## Asserções e testes
+
+Uma **asserção** verifica se o estado interno do programa é o que o programador esperava. Se a condição for falsa, levanta `AssertionError` e o programa pára.
+
+```python
+def fatorial(n):
+    assert n >= 0, 'n deve ser não negativo'
+    resultado = 1
+    for i in range(2, n + 1):
+        resultado *= i
+    return resultado
+
+print(fatorial(5))
+```
+
+Isto escreve `120`. Chamar `fatorial(-1)` falharia imediatamente na asserção, em vez de devolver silenciosamente `1` (o resultado errado que o ciclo produziria). Asserções documentam e verificam as tuas suposições; não servem para validar entrada do utilizador, porque podem ser desligadas.
+
+Para verificar automaticamente que o código funciona agora e continua a funcionar depois de futuras alterações, escreve **testes unitários**: um conjunto de testes que corre sozinho e compara resultados com valores conhecidos.
+
+```python
+def e_palindromo(s):
+    return s == s[::-1]
+
+assert e_palindromo('radar') is True
+assert e_palindromo('python') is False
+assert e_palindromo('') is True
+print('Todos os testes passaram')
+```
+
+Isto escreve `Todos os testes passaram`. Cada `assert` é um teste: se algum falhar, sabes imediatamente qual a propriedade que partiu. Hábito recomendado: sempre que corrigires um erro, acrescenta primeiro um teste que o reproduza e só depois corrige o código.
+
+## Exemplo completo: contar palavras num ficheiro
+
+O programa seguinte lê um ficheiro de texto e conta as linhas, as palavras e os carateres, como o utilitário `wc`. Trata dois erros realistas: o ficheiro não existir e o conteúdo não ser texto legível.
+
+```python
+def contar_ficheiro(caminho):
+    try:
+        with open(caminho, 'r', encoding='utf-8') as f:
+            texto = f.read()
+    except FileNotFoundError:
+        print('Ficheiro não encontrado:', caminho)
+        return None
+    linhas = texto.splitlines()
+    palavras = texto.split()
+    return len(linhas), len(palavras), len(texto)
+
+print(contar_ficheiro('notas.txt'))
+print(contar_ficheiro('inexistente.txt'))
+```
+
+Com o ficheiro `notas.txt` criado acima (`'Ana 17\nBruno 12\n'`), a primeira chamada escreve `(2, 4, 16)`: duas linhas, quatro palavras (`Ana`, `17`, `Bruno`, `12`) e dezasseis carateres ($7$ da primeira linha com a mudança de linha, mais $9$ da segunda). A segunda escreve a mensagem de erro seguida de `None`. O ponto importante é o padrão: `try` à volta da leitura, `except` específico para o ficheiro em falta, e processamento só depois de a leitura ter conseguido.
+
+:::tip[Como depurar nesta fase]
+Lê a última linha da mensagem de erro (diz o tipo e a causa) e a primeira linha do teu código no registo de chamadas (o traceback) diz onde começou o problema. Adiciona `print` temporários para ver valores, ou melhor, escreve um teste pequeno que reproduza o caso. Código extra para facilitar a depuração chama-se andaime (scaffolding); remove-o ou converte-o em testes quando o problema estiver resolvido.
+:::

@@ -1,0 +1,106 @@
+---
+title: Provas em lógica proposicional
+description: Regras de inferência, prova por casos e por contradição, condicionais e mapas de Karnaugh.
+section: conteudo
+order: 2
+---
+
+Uma tabela de verdade mostra _que_ uma fórmula é válida, mas não mostra _porquê_. Uma **prova** é uma sequência de passos, cada um justificado por uma regra, que vai das premissas até à conclusão. É este estilo que os testes pedem, com a ferramenta Fitch para construir provas formais e o Boole para tabelas de verdade. Esta página ensina o raciocínio; as ferramentas só registam o que já percebeste no papel.
+
+## As regras básicas de cada conetiva
+
+Cada conetiva tem uma regra de introdução (como concluir uma fórmula com ela) e uma de eliminação (o que podes extrair dela):
+
+- **Eliminação da conjunção:** de $P \land Q$ infere $P$, e infere $Q$.
+- **Introdução da conjunção:** de $P$ e $Q$ já provados, infere $P \land Q$.
+- **Introdução da disjunção:** de $P$ provado, infere $P \lor Q$ para qualquer $Q$.
+- **Dupla negação:** $\lnot\lnot P$ equivale a $P$, nos dois sentidos.
+
+Duas regras merecem destaque porque resolvem famílias inteiras de exercícios:
+
+**Prova por casos (eliminação da disjunção).** Se já provaste $P \lor Q$, e consegues chegar a $S$ assumindo $P$ e também chegar a $S$ assumindo $Q$, então concluis $S$. Como um dos dois tem de se verificar, $S$ vale em qualquer caso.
+
+**Prova por contradição (introdução da negação).** Para provar $\lnot S$, assume $S$ e deriva uma contradição (uma fórmula e a sua negação). Se a suposição leva ao absurdo, a suposição é falsa.
+
+## Exemplo: prova por casos
+
+Prova que $Pequeno(c)$ é consequência de $(Cubo(c) \land Pequeno(c)) \lor (Tet(c) \land Pequeno(c))$.
+
+1. A disjunção é a premissa.
+2. Caso 1: assume $Cubo(c) \land Pequeno(c)$. Por eliminação da conjunção, obténs $Pequeno(c)$.
+3. Caso 2: assume $Tet(c) \land Pequeno(c)$. Por eliminação da conjunção, obténs $Pequeno(c)$.
+4. Nos dois casos chega-se a $Pequeno(c)$, por isso concluis $Pequeno(c)$ por prova por casos.
+
+Repara que nunca foi preciso saber qual dos casos é o verdadeiro. Essa é a força do método: cobre todas as possibilidades sem as decidir.
+
+## Exemplo clássico: existe um racional escondido
+
+Mostra que existem números irracionais $b$ e $c$ tais que $b^c$ é racional. (Assume-se conhecido que $\sqrt{2}$ é irracional.)
+
+Considera o número $\sqrt{2}^{\sqrt{2}}$. Ele é racional ou irracional, pelo terceiro excluído.
+
+- Se for racional, escolhe $b = c = \sqrt{2}$ e está feito.
+- Se for irracional, escolhe $b = \sqrt{2}^{\sqrt{2}}$ e $c = \sqrt{2}$. Então $b^c = (\sqrt{2}^{\sqrt{2}})^{\sqrt{2}} = \sqrt{2}^{(\sqrt{2} \cdot \sqrt{2})} = \sqrt{2}^{2} = 2$, que é racional.
+
+Em qualquer dos casos existem os $b$ e $c$ pedidos. Esta prova é famosa por ser **não construtiva**: prova que os números existem sem dizer quais são, porque não sabemos em que caso estamos. Num teste, quando vires "mostre que existe" sem pista de como construir, pensa em prova por casos.
+
+## Condicionais: tradução e provas
+
+O condicional tem as suas regras. A **prova condicional** diz: para provar $P \to Q$, assume $P$ e prova $Q$ dentro dessa suposição. O **modus ponens** (eliminação do condicional) diz: de $P \to Q$ e $P$, infere $Q$.
+
+Antes de provar é preciso traduzir bem. A tabela de $P \to Q$ é sempre a mesma, mas a língua portuguesa esconde o antecedente de várias formas:
+
+| Expressão                                  | Tradução                     | Exemplo                                                     |
+| ------------------------------------------ | ---------------------------- | ----------------------------------------------------------- |
+| $P$ só se $Q$                              | $P \to Q$ ($Q$ é necessária) | "É aprovado só se assiste às aulas": $Aprovado \to Assiste$ |
+| $P$ se $Q$                                 | $Q \to P$ ($Q$ é suficiente) | "É bom aluno se tem média 15": $Media15 \to BomAluno$       |
+| $Q$ sempre que $P$ / quando $P$ / dado $P$ | $P \to Q$                    | "Chove sempre que vou à praia": $Praia(eu) \to Chove$       |
+| $Q$ a menos que $P$                        | $\lnot P \to Q$              | "Vai à praia a menos que chova": $\lnot Chove \to Praia$    |
+| $P$ só quando $Q$                          | $P \to Q$                    | igual a "só se"                                             |
+
+:::warning[O par que mais chumba: "só se" contra "se"]
+"$P$ só se $Q$" aponta para $P \to Q$, mas "$P$ se $Q$" aponta para $Q \to P$. A palavra "só" inverte a seta. Quando traduzires, pergunta: qual das duas é condição necessária? A condição necessária fica do lado direito da seta. Em "é aprovado só se assiste", assistir é necessário, por isso $Aprovado \to Assiste$.
+:::
+
+## Exemplo: traduzir e provar
+
+Traduz "todos os triângulos equiláteros são equiângulos" no vocabulário com predicados $EqLat(x)$ e $EqAng(x)$, e mostra a forma da prova de que um triângulo equilátero arbitrário é equiângulo a partir dessa frase.
+
+A tradução usa o padrão restritivo, que vais rever nos [quantificadores](/cadeiras/md/quantificadores/): $\forall x\,(EqLat(x) \to EqAng(x))$. Para provar $EqAng(t)$ para um $t$ com $EqLat(t)$:
+
+1. Instancia a universal em $t$: $EqLat(t) \to EqAng(t)$.
+2. Com a premissa $EqLat(t)$, aplica modus ponens e obténs $EqAng(t)$.
+
+Este esqueleto "traduzir o geral, instanciar no caso, aplicar modus ponens" resolve uma grande fatia dos exercícios com condicionais quantificados.
+
+## Que conjuntos de conetivas chegam?
+
+Uma pergunta natural: precisamos mesmo das cinco conetivas? Não. Como toda a tabela de verdade se escreve em **forma normal disjuntiva** (um "ou" de "ês", como $(P \land \lnot Q) \lor (\lnot P \land Q)$), as conetivas $\lnot$, $\land$ e $\lor$ representam qualquer conetiva. E dá para ir mais longe: $\{\lnot, \land\}$ é **completo**, porque $P \lor Q \equiv \lnot(\lnot P \land \lnot Q)$ por De Morgan. O par $\{\lnot, \to\}$ também é completo, porque $P \land Q \equiv \lnot(P \to \lnot Q)$. Confirma esta última: $P \to \lnot Q$ é falso só quando $P$ é V e $\lnot Q$ é F, isto é, $P$ e $Q$ ambos V, logo negá-lo dá exatamente $P \land Q$.
+
+Pelo contrário, $\{\land, \lor\}$ **não** é completo: sem negação nunca produces uma função que valha F quando todas as entradas são V. Este tipo de argumento ("mostra que X se exprime, mostra que Y é impossível") é o que os exercícios sobre conetivas pedem.
+
+## Formas normais e circuitos
+
+A **forma normal disjuntiva** (FND) de uma fórmula é um "ou" de conjunções de literais (variáveis ou as suas negações). Constrói-se a partir da tabela: para cada linha onde a fórmula vale V, escreve a conjunção que só é verdadeira nessa linha, e faz o "ou" de todas. Para a conetiva $*$ definida por $P * Q$ verdadeiro só na linha $(V, F)$, a FND é $P \land \lnot Q$.
+
+Um circuito lógico implementa a fórmula com portas NOT, AND e OR. Simplificar a fórmula antes de desenhar poupa portas, e é aqui que entram os mapas de Karnaugh.
+
+## Mapas de Karnaugh
+
+Um **mapa de Karnaugh** organiza a tabela de verdade num retângulo onde as casas vizinhas (incluindo as bordas opostas, como se o mapa desse a volta) diferem numa só variável. Agrupar os "uns" em blocos retangulares de tamanho potência de 2 revela os termos que se simplificam.
+
+Exemplo próprio: a função "maioria" de três variáveis, $F(A, B, C)$ verdadeira quando pelo menos duas entradas são V. Os "uns" estão nas linhas $011$, $101$, $110$ e $111$. No mapa de três variáveis:
+
+- As casas $011$ e $111$ diferem só em $A$ e agrupam-se em $B \land C$.
+- As casas $101$ e $111$ diferem só em $B$ e agrupam-se em $A \land C$.
+- As casas $110$ e $111$ diferem só em $C$ e agrupam-se em $A \land B$.
+
+Logo $F \equiv (B \land C) \lor (A \land C) \lor (A \land B)$. Verifica a linha $100$: nenhum dos três termos é V, e de facto só uma entrada é V. Verifica $011$: $B \land C$ é V. Cada grupo elimina a variável que muda dentro do grupo, e é essa a regra mecânica: num grupo, ficam só as variáveis constantes.
+
+:::tip[Como não errar no mapa]
+Só agrupa blocos de 1, 2, 4 ou 8 casas, sempre em retângulo, e as bordas esquerda-direita (e cima-baixo) são vizinhas. Cada "um" tem de ficar em pelo menos um grupo, e grupos maiores eliminam mais variáveis, por isso prefere sempre o maior grupo possível.
+:::
+
+## Provas informais contra provas formais
+
+Nos testes vais alternar entre dois registos. A **prova informal** é o texto em português com os passos lógicos explícitos, como os exemplos desta página. A **prova formal** no Fitch é a mesma prova com cada passo numerado e justificado pela regra usada. A estratégia que funciona: escreve primeiro a informal no rascunho, identifica que regra usaste em cada passo e só depois passa para o Fitch. Quem tenta escrever diretamente no Fitch costuma bloquear na escolha da próxima regra, e a informal já contém essa decisão.

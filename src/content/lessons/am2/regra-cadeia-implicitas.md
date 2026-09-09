@@ -1,0 +1,76 @@
+---
+title: Regra da cadeia e funções implícitas
+description: Derivação de funções compostas em várias variáveis e derivação de equações implícitas.
+section: conteudo
+order: 4
+---
+
+Quase nenhuma função real aparece isolada: a temperatura depende da posição, que depende do tempo; uma equação liga $x$ e $y$ sem nenhuma estar isolada. A **regra da cadeia** deriva o encadeamento, e o **teorema da função implícita** deriva relações do tipo $F(x, y) = 0$ sem as resolver.
+
+## A cadeia ao longo de uma curva
+
+Se $z = f(x, y)$ e o ponto $(x, y)$ percorre a curva $x = x(t)$, $y = y(t)$, então $z$ é indiretamente função de $t$ e
+
+$$
+\frac{dz}{dt} = \frac{\partial f}{\partial x}\frac{dx}{dt} + \frac{\partial f}{\partial y}\frac{dy}{dt} = \nabla f \cdot \vec{r}'(t).
+$$
+
+Cada termo segue um caminho pelo qual $t$ influencia $z$ (via $x$ ou via $y$), e a soma junta todos os caminhos.
+
+Um exemplo que mostra a força da fórmula: seja $z = x^2 + y^2$ com $x = \cos t$, $y = \sin t$. Pela cadeia,
+
+$$
+\frac{dz}{dt} = 2x(-\sin t) + 2y(\cos t) = -2\cos t \sin t + 2\sin t \cos t = 0.
+$$
+
+A derivada nula diz que $z$ é constante, o que é verdade ($z = \cos^2 t + \sin^2 t = 1$): andamos sobre a curva de nível $z = 1$, por isso a função não varia. Sempre que a curva percorre uma curva de nível, a cadeia devolve zero.
+
+## A cadeia geral
+
+Para $w = f(x, y)$ com $x = x(u, v)$, $y = y(u, v)$, há dois parâmetros independentes e duas fórmulas:
+
+$$
+\frac{\partial w}{\partial u} = \frac{\partial f}{\partial x}\frac{\partial x}{\partial u} + \frac{\partial f}{\partial y}\frac{\partial y}{\partial u}, \qquad \frac{\partial w}{\partial v} = \frac{\partial f}{\partial x}\frac{\partial x}{\partial v} + \frac{\partial f}{\partial y}\frac{\partial y}{\partial v}.
+$$
+
+O esquema é sempre o mesmo: para cada variável independente, soma sobre todas as variáveis intermédias o produto da derivada exterior pela derivada interior.
+
+Concretiza com $w = e^{xy}$, $x = u + v$, $y = u - v$. Então $\frac{\partial w}{\partial x} = ye^{xy}$ e $\frac{\partial w}{\partial y} = xe^{xy}$, e
+
+$$
+\frac{\partial w}{\partial u} = ye^{xy} \cdot 1 + xe^{xy} \cdot 1 = (x + y)e^{xy} = 2u\,e^{u^2 - v^2},
+$$
+
+porque $x + y = 2u$ e $xy = u^2 - v^2$. Confirma por substituição direta: $w = e^{u^2-v^2}$ e $\frac{\partial w}{\partial u} = 2ue^{u^2-v^2}$. Bate certo. Esta verificação (substituir e derivar diretamente) é a melhor forma de apanhar erros de cadeia nos testes.
+
+## Derivar sem isolar: uma equação
+
+A equação $x^2 + y^2 = 25$ define $y$ como função de $x$ perto de quase todos os pontos, mas isolar dá dois ramos ($y = \pm\sqrt{25-x^2}$). Para a derivada, isso é irrelevante: deriva ambos os membros em ordem a $x$, tratando $y$ como função de $x$:
+
+$$
+2x + 2y\frac{dy}{dx} = 0 \quad\Longrightarrow\quad \frac{dy}{dx} = -\frac{x}{y}, \quad y \neq 0.
+$$
+
+No ponto $(3, 4)$, o declive é $-3/4$. A fórmula geral para $F(x, y) = 0$ é
+
+$$
+\frac{dy}{dx} = -\frac{F_x}{F_y}, \qquad F_y \neq 0,
+$$
+
+que é a mesma conta: aqui $F = x^2 + y^2 - 25$, $F_x = 2x$, $F_y = 2y$. A condição $F_y \neq 0$ não é burocracia: em $y = 0$ (pontos $(\pm 5, 0)$) a tangente é vertical e $y$ deixa de ser função de $x$.
+
+## Sistemas de equações
+
+Duas equações podem definir duas variáveis em função de uma terceira. Se
+
+$$
+x^2 + zy^2 + 3xz - 4z^2 = 0, \qquad xyz = 0
+$$
+
+definem $z$ e $y$ como funções de $x$, deriva-se cada equação em ordem a $x$ e resolve-se o sistema linear em $\frac{dz}{dx}$ e $\frac{dy}{dx}$. Da segunda equação, $yz + x\frac{dy}{dx}z + xy\frac{dz}{dx} = 0$. No ponto $(2, 0, 2)$: $0 + 2\frac{dy}{dx}\cdot 2 + 0 = 0$, logo $\frac{dy}{dx} = 0$. Da primeira: $2x + \frac{dz}{dx}y^2 + 2zy\frac{dy}{dx} + 3z + 3x\frac{dz}{dx} - 8z\frac{dz}{dx} = 0$. Em $(2,0,2)$ com $\frac{dy}{dx} = 0$: $4 + 0 + 0 + 6 + 6\frac{dz}{dx} - 16\frac{dz}{dx} = 0$, isto é, $10 - 10\frac{dz}{dx} = 0$, logo $\frac{dz}{dx} = 1$.
+
+Isto só funciona quando o sistema linear é determinado, o que equivale ao determinante da matriz das derivadas em ordem às variáveis dependentes ser não nulo. Na prática dos exercícios, se o sistema der $0 = 5$ ou ficar indeterminado, o ponto provavelmente viola a hipótese do teorema.
+
+## Falhas frequentes
+
+Na cadeia, o erro clássico é derivar só o caminho direto e esquecer os indiretos (por exemplo, derivar $f$ em $x$ mas esquecer que $y$ também depende de $t$). Desenha sempre o diagrama de dependências antes de escrever a fórmula. Nas implícitas, não apliques a fórmula decorada sem verificar a condição ($F_y \neq 0$ ou determinante não nulo): metade dos exercícios de recurso testa exatamente o ponto onde a hipótese falha.

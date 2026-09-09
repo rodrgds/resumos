@@ -1,0 +1,110 @@
+---
+title: Sistemas de equações lineares e método de Gauss
+description: Escrever sistemas como AX = B, eliminar por Gauss, classificar pela característica e resolver um sistema 3x3.
+section: conteudo
+order: 2
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Um sistema de equações lineares é o problema mais concreto da cadeira: várias equações do primeiro grau nas mesmas incógnitas, para resolver em simultâneo. O método de Gauss resolve qualquer sistema destes de forma mecânica, e a leitura correta do resultado final diz-te se há uma solução, infinitas ou nenhuma.
+
+## Do sistema à matriz
+
+Um sistema de $m$ equações a $n$ incógnitas escreve-se como
+
+$$
+\begin{cases}
+a_{11}x_1 + a_{12}x_2 + \dots + a_{1n}x_n = b_1 \\
+a_{21}x_1 + a_{22}x_2 + \dots + a_{2n}x_n = b_2 \\
+\vdots \\
+a_{m1}x_1 + a_{m2}x_2 + \dots + a_{mn}x_n = b_m
+\end{cases}
+$$
+
+e condensa-se na forma matricial $AX = B$, onde $A$ é a **matriz dos coeficientes** ($m \times n$), $X$ é a coluna das incógnitas e $B$ é a coluna dos termos independentes. Para trabalhar, juntamos as duas na **matriz ampliada** $[A \mid B]$, que é onde o método de Gauss atua.
+
+Exemplo com três equações e três incógnitas:
+
+$$
+\begin{cases}
+x + y + z = 6 \\
+2x - y + z = 3 \\
+x + 2y - z = 2
+\end{cases}
+\qquad
+[A \mid B] = \begin{bmatrix}
+1 & 1 & 1 & \mid & 6 \\
+2 & -1 & 1 & \mid & 3 \\
+1 & 2 & -1 & \mid & 2
+\end{bmatrix}.
+$$
+
+Resolver o sistema é encontrar todos os $(x, y, z)$ que satisfazem as três equações ao mesmo tempo.
+
+## O método de Gauss
+
+A ideia é transformar a matriz ampliada noutra equivalente (com as mesmas soluções) mas em **escada de linhas**: cada linha não nula começa com um 1 (o **pivô**), cada pivô está à direita do pivô da linha anterior e as linhas nulas ficam em baixo. Só podes usar três **operações elementares**, porque são as únicas que preservam o conjunto das soluções:
+
+1. trocar duas linhas;
+2. multiplicar uma linha por um escalar não nulo;
+3. somar a uma linha um múltiplo de outra linha.
+
+Vamos eliminar no exemplo. Subtraímos o dobro da linha 1 à linha 2 e a linha 1 à linha 3:
+
+$$
+\begin{bmatrix}
+1 & 1 & 1 & \mid & 6 \\
+0 & -3 & -1 & \mid & -9 \\
+0 & 1 & -2 & \mid & -4
+\end{bmatrix}.
+$$
+
+Trocamos as linhas 2 e 3 para ter um pivô mais simples e eliminamos por baixo:
+
+$$
+\begin{bmatrix}
+1 & 1 & 1 & \mid & 6 \\
+0 & 1 & -2 & \mid & -4 \\
+0 & 0 & -7 & \mid & -21
+\end{bmatrix}.
+$$
+
+A última linha diz $-7z = -21$, logo $z = 3$. Subindo: $y - 2 \cdot 3 = -4$, logo $y = 2$; e $x + 2 + 3 = 6$, logo $x = 1$. A solução é $(x, y, z) = (1, 2, 3)$, que podes confirmar por substituição direta nas três equações originais.
+
+:::tip[Escolhe bem o pivô]
+Antes de eliminar uma coluna, vê se há uma troca de linhas que ponha um $1$ ou um $-1$ no lugar do pivô. Evitas frações desde o início e a conta fica muito mais curta. Só não podes trazer uma linha nula para cima nem multiplicar por zero.
+:::
+
+## Característica e classificação
+
+A **característica** de uma matriz, $\operatorname{car}(A)$, é o número de linhas não nulas da sua forma em escada, ou seja, o número de pivôs. Para classificar um sistema, compara-se a característica da matriz dos coeficientes com a da matriz ampliada:
+
+- se $\operatorname{car}(A) = \operatorname{car}([A \mid B]) = n$ (número de incógnitas), o sistema é **possível e determinado**: tem exatamente uma solução;
+- se $\operatorname{car}(A) = \operatorname{car}([A \mid B]) < n$, o sistema é **possível e indeterminado**: tem infinitas soluções, com $n - \operatorname{car}(A)$ variáveis livres;
+- se $\operatorname{car}(A) < \operatorname{car}([A \mid B])$, o sistema é **impossível**: não tem solução.
+
+No exemplo, ambas as características valem 3, igual ao número de incógnitas: sistema possível e determinado, como a solução única confirmou.
+
+Dois casos pequenos para fixar a leitura. O sistema $x + y = 1$ com $2x + 2y = 2$ tem ampliada $\begin{bmatrix} 1 & 1 & \mid & 1 \\ 0 & 0 & \mid & 0 \end{bmatrix}$: característica 1 de ambos os lados, uma variável livre, infinitas soluções da forma $(1 - t, t)$. Já $x + y = 1$ com $x + y = 2$ dá $\begin{bmatrix} 1 & 1 & \mid & 1 \\ 0 & 0 & \mid & 1 \end{bmatrix}$: a segunda linha lê-se $0 = 1$, impossível. Uma linha $[0 \;\; 0 \;\; \dots \;\; 0 \mid b]$ com $b \neq 0$ é sempre o sinal de impossibilidade.
+
+Um sistema com $B = 0$ diz-se **homogéneo**. Nunca é impossível, porque $(0, 0, \dots, 0)$ resolve-o sempre (a **solução trivial**). Tem outras soluções além da trivial exatamente quando $\operatorname{car}(A) < n$. Em particular, um sistema homogéneo com mais incógnitas do que equações tem sempre soluções não triviais.
+
+## Verificar com um programa
+
+O programa seguinte aplica eliminação de Gauss com pivotagem parcial ao exemplo desta página e imprime a solução. Corre-o e confirma que obténs $(1, 2, 3)$; depois muda os coeficientes para um dos teus exercícios e compara com a tua resolução à mão.
+
+<CodePlayground
+  language="python"
+  title="Eliminar por Gauss"
+  code={
+    'def gauss(a, b):\n    n = len(a)\n    m = [row[:] + [val] for row, val in zip(a, b)]\n    for col in range(n):\n        piv = max(range(col, n), key=lambda r: abs(m[r][col]))\n        m[col], m[piv] = m[piv], m[col]\n        assert m[col][col] != 0, "sistema sem solucao unica"\n        for row in range(n):\n            if row != col and m[row][col] != 0:\n                f = m[row][col] / m[col][col]\n                for k in range(col, n + 1):\n                    m[row][k] -= f * m[col][k]\n    return [m[i][n] / m[i][i] for i in range(n)]\n\na = [[1, 1, 1], [2, -1, 1], [1, 2, -1]]\nb = [6, 3, 2]\nprint(gauss(a, b))'
+  }
+/>
+
+## O que costuma correr mal
+
+- Fazer operações que não são elementares, como multiplicar duas linhas entre si ou somar a coluna dos termos independentes a uma coluna de coeficientes.
+- Esquecer a coluna $B$ durante a eliminação, ou aplicá-la só a algumas linhas. Leva-a sempre contigo até ao fim.
+- Declarar um sistema impossível por veres zeros à esquerda sem olhar para a última coluna: $[0 \;\; 0 \mid 0]$ é uma equação redundante, só $[0 \;\; 0 \mid b \neq 0]$ é contradição.
+- Contar mal as variáveis livres: são $n - \operatorname{car}(A)$, não o número de zeros que vês na matriz.

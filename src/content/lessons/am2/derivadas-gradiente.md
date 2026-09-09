@@ -1,0 +1,100 @@
+---
+title: Derivadas parciais, gradiente e jacobiana
+description: Derivação parcial e direcional, vetor gradiente, matriz jacobiana e plano tangente.
+section: conteudo
+order: 3
+---
+
+Saber para onde uma função de várias variáveis cresce mais depressa é essencial para otimizar, aproximar e resolver equações. A ideia é reduzir o problema a uma variável de cada vez: fixa todas menos uma, deriva, e repete. O **gradiente** junta essas informações num só vetor que aponta para a subida mais íngreme.
+
+## Derivadas parciais
+
+A **derivada parcial** de $f$ em ordem a $x$ mede a taxa de variação ao longo da direção do eixo $x$, tratando as restantes variáveis como constantes:
+
+$$
+\frac{\partial f}{\partial x}(a, b) = \lim_{h \to 0} \frac{f(a + h, b) - f(a, b)}{h}.
+$$
+
+Na prática, derivas como em AM I e tratas as outras letras como números. Para $f(x, y) = x^2 + 2y^3 - xy$:
+
+$$
+\frac{\partial f}{\partial x} = 2x - y, \qquad \frac{\partial f}{\partial y} = 6y^2 - x.
+$$
+
+No ponto $(1, 0)$, isto dá $\frac{\partial f}{\partial x}(1, 0) = 2$ e $\frac{\partial f}{\partial y}(1, 0) = -1$. Ou seja, ao andar um pouco na direção de $x$ a função sobe com declive $2$; ao andar na direção de $y$, desce com declive $1$. Vamos reutilizar este exemplo ao longo da página.
+
+As derivadas parciais só contam a história ao longo dos eixos. Uma função pode ter ambas as parciais num ponto e mesmo assim não ser contínua aí, como viste em [limites e continuidade](/cadeiras/am2/limites-continuidade/). A diferenciabilidade pede mais do que a existência das parciais: pede que o plano tangente aproxime bem a função em todas as direções.
+
+:::tip[Mistas trocadas dão o mesmo, quase sempre]
+Para $f$ acima, $\frac{\partial^2 f}{\partial y \partial x} = -1$ e $\frac{\partial^2 f}{\partial x \partial y} = -1$. O teorema de Clairaut (ou de Schwarz) garante esta igualdade quando as segundas parciais mistas são contínuas. Nos exercícios da cadeira podes assumir isto para as funções usuais.
+:::
+
+## Derivada direcional
+
+E se andarmos numa direção diagonal, como $(1, 1)$? Seja $\mathbf{u} = (u_1, u_2)$ um vetor **unitário**, isto é, com norma $1$. A **derivada direcional** de $f$ em $(a, b)$ segundo $\mathbf{u}$ é:
+
+$$
+D_{\mathbf{u}} f(a, b) = \lim_{h \to 0} \frac{f(a + h u_1, b + h u_2) - f(a, b)}{h}.
+$$
+
+É um número, não um vetor: diz a taxa de subida nessa direção. O pormenor que mais gente esquece é **normalizar** $\mathbf{u}$. A direção $(1, 1)$ corresponde ao vetor unitário $\mathbf{u} = (1/\sqrt{2}, 1/\sqrt{2})$. Sem esta divisão, o resultado vem multiplicado pela norma do vetor e deixa de ser uma taxa por unidade de distância.
+
+Para $f(x, y) = x^2 + 2y^3 - xy$ em $(1, 0)$ segundo $\mathbf{u} = (1/\sqrt{2}, 1/\sqrt{2})$, podíamos substituir na definição, mas a secção seguinte dá um atalho.
+
+## O gradiente
+
+O **gradiente** de $f$ é o vetor das derivadas parciais:
+
+$$
+\nabla f = \left( \frac{\partial f}{\partial x}, \frac{\partial f}{\partial y} \right).
+$$
+
+Para o nosso exemplo, $\nabla f(x, y) = (2x - y, 6y^2 - x)$, logo $\nabla f(1, 0) = (2, -1)$.
+
+O gradiente responde a três perguntas de uma vez:
+
+1. **Taxa em qualquer direção.** Se $f$ é diferenciável, $D_{\mathbf{u}} f = \nabla f \cdot \mathbf{u}$. No exemplo, $D_{\mathbf{u}} f(1, 0) = (2, -1) \cdot (1/\sqrt{2}, 1/\sqrt{2}) = 1/\sqrt{2}$. Confirma: a função sobe devagar nessa diagonal.
+2. **Direção de subida máxima.** É a direção do próprio gradiente, e a taxa máxima é a sua norma $\lVert \nabla f \rVert$. Em $(1, 0)$, a subida mais íngreme vai na direção $(2, -1)/\sqrt{5}$, com taxa $\sqrt{5}$. A descida mais íngreme vai no sentido oposto.
+3. **Direção de nível constante.** O gradiente é perpendicular às curvas de nível. Se $f(x, y) = c$ define uma curva, $\nabla f$ é perpendicular a essa curva em cada ponto. Por isso o método dos multiplicadores de Lagrange, que vês mais à frente, iguala gradientes.
+
+Repara na diferença de natureza: a derivada direcional é um **número** (quanto sobe naquela direção); o gradiente é um **vetor** (para onde subir mais). Misturar os dois é o erro mais comum nos testes.
+
+## A matriz jacobiana
+
+Quando a função devolve um vetor, como $F(x, y) = (x^2 - y, xy)$, cada componente tem o seu gradiente. A **matriz jacobiana** empilha esses gradientes em linhas:
+
+$$
+J_F = \begin{pmatrix}
+\frac{\partial F_1}{\partial x} & \frac{\partial F_1}{\partial y} \\
+\frac{\partial F_2}{\partial x} & \frac{\partial F_2}{\partial y}
+\end{pmatrix}
+=
+\begin{pmatrix}
+2x & -1 \\
+y & x
+\end{pmatrix}.
+$$
+
+Em $(1, 0)$, $J_F = \begin{pmatrix} 2 & -1 \\ 0 & 1 \end{pmatrix}$, com determinante $2$. A jacobiana é a aproximação linear de $F$ perto do ponto: transforma pequenos deslocamentos $(h, k)$ em $J_F (h, k)$. Quando $F$ vai de $\mathbb{R}^n$ em $\mathbb{R}^n$ e o determinante é diferente de zero, essa aproximação é invertível, e é daqui que parte o teorema da função inversa.
+
+Se a função devolve um número (como $f$), a jacobiana é uma linha e coincide com o gradiente transposto. O gradiente é o caso particular; a jacobiana é a versão geral.
+
+## Plano tangente
+
+O gradiente também escreve o **plano tangente** ao gráfico $z = f(x, y)$ em $(a, b)$. O plano passa por $(a, b, f(a, b))$ e tem vetor normal $(f_x, f_y, -1)$:
+
+$$
+z - f(a, b) = \frac{\partial f}{\partial x}(a, b)\,(x - a) + \frac{\partial f}{\partial y}(a, b)\,(y - b).
+$$
+
+Para $f(x, y) = x^2 + 2y^3 - xy$ em $(1, 0)$, temos $f(1, 0) = 1$ e:
+
+$$
+z - 1 = 2(x - 1) - (y - 0), \qquad \text{ou seja, } z = 2x - y - 1.
+$$
+
+Verifica com um ponto próximo: $f(1{,}1, 0{,}1) = 1{,}21 + 0{,}002 - 0{,}11 = 1{,}102$, enquanto o plano dá $2(1{,}1) - 0{,}1 - 1 = 1{,}1$. A diferença é $0{,}002$, pequena como se espera de uma boa aproximação linear. Esta aproximação é a base da fórmula de Taylor em várias variáveis e da [regra da cadeia](/cadeiras/am2/regra-cadeia-implicitas/), o tema seguinte.
+
+:::warning[Antes de calcular, confirma]
+Trata mesmo as outras variáveis como constantes ao derivar parcialmente. Normaliza sempre o vetor direção. E distingue o gradiente (vetor) da derivada direcional (número): se o enunciado pede "a taxa", calcula o produto escalar; se pede "a direção", entrega o vetor normalizado.
+:::
