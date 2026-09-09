@@ -5,6 +5,12 @@ section: conteudo
 order: 7
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import respostah from '../../f2/resposta-h.typ?raw';
+import blocos from '../../f2/blocos.dot?raw';
+
 Um filtro RC recebe um sinal e devolve outro. Em vez de resolveres uma equação diferencial para cada entrada possível, a teoria de sistemas caracteriza a caixa uma vez (a resposta impulsional) e depois calcula qualquer saída por uma integral (a convolução). Funciona para qualquer sistema **linear e invariante no tempo** (SLIT): a saída de uma soma é a soma das saídas, a saída de uma entrada atrasada é a saída atrasada, e nada muda com o passar do tempo.
 
 ## Resposta impulsional
@@ -19,6 +25,14 @@ $$
 
 onde $u(t)$ é o escalão unitário ($0$ para $t < 0$, $1$ para $t \geq 0$), que impõe a causalidade: sem entrada passada não há saída presente. Repara que $h(t)$ tem a forma do transitório dos [circuitos reativos](/cadeiras/f2/circuitos-reativos/), porque é o mesmo circuito a responder ao pulso mais simples possível.
 
+A curva (normalizada) mostra a janela de memória do sistema: passada uma largura de $\tau$, a contribuição do passado caiu para $37\%$ e continua a decair. É esta largura que decide se o sistema é rápido ou lento.
+
+<Typst
+  source={respostah}
+  format="svg"
+  alt="Curva da resposta impulsional a decair de um até zero, com uma linha vertical em tau a assinalar a largura da janela de memória."
+/>
+
 ## Convolução
 
 Qualquer entrada $x(t)$ decompõe-se numa sucessão de impulsos de área $x(\lambda)\,d\lambda$ em cada instante $\lambda$. Por linearidade e invariância, cada um contribui com $x(\lambda)h(t - \lambda)\,d\lambda$ para a saída no instante $t$. Somar todos dá a **integral de convolução**:
@@ -27,7 +41,12 @@ $$
 y(t) = \int_{-\infty}^{+\infty} x(\lambda)\,h(t - \lambda)\,d\lambda = (x * h)(t).
 $$
 
-Lê-se assim: para saber a saída agora, pesas o passado da entrada pela resposta impulsional. Se $h$ decai depressa (τ pequeno), só o passado recente conta e o sistema é rápido; se decai devagar, o sistema tem memória longa e é lento.
+Lê-se assim: para saber a saída agora, pesas o passado da entrada pela resposta impulsional. Se $h$ decai depressa (τ pequeno), só o passado recente conta e o sistema é rápido; se decai devagar, o sistema tem memória longa e é lento. Em diagrama de blocos, a convolução é a seta entre a entrada e a saída através do sistema.
+
+<Dot
+  source={blocos}
+  alt="Diagrama de blocos: elipse de entrada x de t, caixa do sistema h de t, elipse de saída y de t, com a seta de entrada marcada convolução."
+/>
 
 ## Exemplo: resposta do RC ao escalão
 
@@ -44,6 +63,24 @@ y(t) = V_0\left(1 - e^{-t/\tau}\right)u(t).
 $$
 
 É a exponencial de carga que já conheces, agora obtida por convolução em vez de resolver a equação diferencial. Aos $t = 2{,}0\ \text{ms}$ (dois $\tau$): $y = 5{,}0 \times (1 - e^{-2}) = 5{,}0 \times (1 - 0{,}1353) = 5{,}0 \times 0{,}8647 \approx 4{,}32\ \text{V}$. A constante de tempo volta a mandar: a saída atinge $63\%$ em $\tau$, e a convolução mostra porquê, porque $\tau$ é a largura da janela de memória $h(t)$.
+
+O programa abaixo integra a convolução numericamente (regra do ponto médio) em vez de usar a fórmula fechada: a saída deve dar `y(2 ms) = 4.32 V`, igual ao cálculo analítico.
+
+<CodePlayground
+  language="python"
+  title="Convolução numérica do escalão"
+  code={`import math
+V0 = 5.0
+tau = 1e-3
+t = 2e-3
+dt = 1e-6
+n = int(t / dt)
+s = 0.0
+for k in range(n):
+    lam = (k + 0.5) * dt
+    s += V0 * (1 / tau) * math.exp(-(t - lam) / tau) * dt
+print(f"y(2 ms) = {s:.2f} V")`}
+/>
 
 :::tip[Escolhe o método pelo problema]
 Uma entrada e condição inicial concretas pedem a equação diferencial direta. Uma família de entradas, ou a pergunta "como depende a saída da memória do sistema", pede a convolução. Nos testes, a convolução aparece quando o enunciado dá $h(t)$ e pergunta a resposta a um pulso ou escalão.
