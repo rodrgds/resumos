@@ -27,7 +27,7 @@ A avaliação é distribuída ao longo do semestre, sem exame final, e combina p
 
 ## Fontes e âmbito
 
-Estas páginas seguem o âmbito da unidade curricular de Engenharia de Software (L.EIC017) do 2.º ano, 2.º semestre da LEIC, ocorrência de 2025/26: introdução, processos de software, gestão de projetos, requisitos, arquitetura e desenho, construção e evolução, verificação e validação. A bibliografia obrigatória da ficha é Ian Sommerville, Software Engineering (10.ª edição), e o software indicado é o Flutter SDK com o Android Studio.
+Estas páginas seguem o âmbito da unidade curricular de Engenharia de Software (L.EIC017) do 2.º ano, 2.º semestre da LEIC, ocorrência de 2025/26: introdução, processos de software, gestão de projetos, requisitos, arquitetura e desenho, construção e evolução, verificação e validação. A bibliografia obrigatória da ficha é Ian Sommerville, Software Engineering (10.ª edição), cuja página oficial de livros está em [iansommerville.com/books](https://iansommerville.com/books/), e o software indicado é o Flutter SDK com o Android Studio.
 
 Material oficial da FEUP:
 
