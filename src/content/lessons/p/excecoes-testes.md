@@ -1,5 +1,5 @@
 ---
-title: "Exceções e testes"
+title: 'Exceções e testes'
 description: throw, try e catch, segurança com RAII, boas práticas, comentários de documentação e testes com asserts.
 section: conteudo
 order: 6

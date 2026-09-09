@@ -5,7 +5,7 @@ section: conteudo
 order: 4
 ---
 
-Uma **gramática livre de contexto** (CFG, de *context-free grammar*) gera palavras por substituição: cada regra troca um símbolo não terminal por uma sequência, independentemente do que está à volta (daí "livre de contexto"). São o formalismo por trás da sintaxe das linguagens de programação. Esta página mostra derivações, árvores, ambiguidade e a forma normal de Chomsky.
+Uma **gramática livre de contexto** (CFG, de _context-free grammar_) gera palavras por substituição: cada regra troca um símbolo não terminal por uma sequência, independentemente do que está à volta (daí "livre de contexto"). São o formalismo por trás da sintaxe das linguagens de programação. Esta página mostra derivações, árvores, ambiguidade e a forma normal de Chomsky.
 
 ## Definição e derivações
 
@@ -21,7 +21,7 @@ Cada aplicação de $S \to 0S1$ acrescenta um $0$ à esquerda e um $1$ à direit
 
 ## Árvores sintáticas e ambiguidade
 
-Uma **árvore sintática** (*parse tree*) mostra a estrutura da derivação: a raiz é $S$, cada nó interior é uma variável com os filhos dados por uma regra, e as folhas da esquerda para a direita formam a palavra.
+Uma **árvore sintática** (_parse tree_) mostra a estrutura da derivação: a raiz é $S$, cada nó interior é uma variável com os filhos dados por uma regra, e as folhas da esquerda para a direita formam a palavra.
 
 Uma gramática é **ambígua** se alguma palavra tem duas árvores sintáticas distintas (ou, equivalentemente, duas derivações mais à esquerda distintas). Exemplo clássico, expressões aritméticas com $E \to E + E \mid E \times E \mid (E) \mid a$, e a palavra $a + a \times a$:
 
@@ -35,14 +35,14 @@ $$E \to E + T \mid T, \quad T \to T \times F \mid F, \quad F \to (E) \mid a.$$
 Agora $a + a \times a$ só deriva com o $+$ no topo, porque o $\times$ fica preso dentro de $T$. Em exercícios, "remove a ambiguidade" significa quase sempre isto: introduz níveis para precedência e recursão à esquerda ou à direita para associatividade.
 
 :::warning[Ambiguidade é propriedade da gramática, não da linguagem]
-Uma linguagem é **inerentemente ambígua** só quando *todas* as gramáticas para ela são ambíguas (exemplo raro, fora do programa). Perante uma gramática ambígua, a primeira hipótese é reescrevê-la, como acima.
+Uma linguagem é **inerentemente ambígua** só quando _todas_ as gramáticas para ela são ambíguas (exemplo raro, fora do programa). Perante uma gramática ambígua, a primeira hipótese é reescrevê-la, como acima.
 :::
 
 ## Forma normal de Chomsky
 
 Uma CFG está na **forma normal de Chomsky** (CNF) se todas as regras têm uma destas formas: $A \to BC$ (duas variáveis), $A \to a$ (um terminal) ou $S \to \varepsilon$ (só no inicial). Toda a CFG pode ser convertida para CNF (adicionando variáveis para terminais em regras longas e partindo regras com mais de dois símbolos).
 
-Para que serve? Em CNF, cada derivação de uma palavra $w$ de comprimento $n \ge 1$ usa exatamente $2n - 1$ passos: $n - 1$ regras binárias para ramificar em $n$ variáveis e $n$ regras terminais. Este número fixo permite o algoritmo CYK, que testa pertença $w \in L(G)$ por programação dinâmica sobre os comprimentos crescentes. Não precisas de decorar o CYK célula a célula, mas percebe a ideia: a CNF torna o custo da análise sintática previsível, e é por isso que os *parsers* reais normalizam as gramáticas.
+Para que serve? Em CNF, cada derivação de uma palavra $w$ de comprimento $n \ge 1$ usa exatamente $2n - 1$ passos: $n - 1$ regras binárias para ramificar em $n$ variáveis e $n$ regras terminais. Este número fixo permite o algoritmo CYK, que testa pertença $w \in L(G)$ por programação dinâmica sobre os comprimentos crescentes. Não precisas de decorar o CYK célula a célula, mas percebe a ideia: a CNF torna o custo da análise sintática previsível, e é por isso que os _parsers_ reais normalizam as gramáticas.
 
 Exemplo de conversão: a regra $S \to 0S1$ viola a CNF (mistura terminais com variável e tem três símbolos). Introduz $A \to 0$, $B \to 1$ e parte em duas regras com variável fresca $C$: $S \to AC$, $C \to SB$, $S \to AB$, $A \to 0$, $B \to 1$, $S \to \varepsilon$.
 

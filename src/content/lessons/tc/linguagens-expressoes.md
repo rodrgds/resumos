@@ -53,11 +53,11 @@ A **precedência** poupa parênteses: estrela primeiro, depois concatenação, d
 
 Exemplos sobre $\Sigma = \{0, 1\}$:
 
-| Expressão        | Linguagem descrita                              |
-| ---------------- | ----------------------------------------------- |
-| $0^*1^*$         | zeros seguidos de uns (inclui $\varepsilon$)    |
-| $(0 \cup 1)^*$   | todas as palavras, ou seja $\Sigma^*$           |
-| $1(0 \cup 1)^*$  | palavras que começam em $1$                     |
+| Expressão         | Linguagem descrita                              |
+| ----------------- | ----------------------------------------------- |
+| $0^*1^*$          | zeros seguidos de uns (inclui $\varepsilon$)    |
+| $(0 \cup 1)^*$    | todas as palavras, ou seja $\Sigma^*$           |
+| $1(0 \cup 1)^*$   | palavras que começam em $1$                     |
 | $((0 \cup 1)0)^*$ | palavras de comprimento par que terminam em $0$ |
 
 :::tip[Traduzir descrições para expressões]
