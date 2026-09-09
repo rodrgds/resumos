@@ -19,12 +19,14 @@ Lê cada página com papel ao lado e refaz o exemplo antes de ver a resolução.
 
 ## Avaliação
 
-A avaliação é distribuída com exame final: o exame vale 60 por cento e o trabalho laboratorial 40 por cento. A frequência exige realizar, apresentar e entregar o relatório dos dois trabalhos laboratoriais, e há mínimos de 8,0 na avaliação distribuída e no exame. Como as regras e as fórmulas mudam de ano para ano, confirma sempre a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle.
+A avaliação é distribuída com exame final: o exame vale 60 por cento e o trabalho laboratorial 40 por cento. A frequência exige realizar, apresentar e entregar o relatório dos dois trabalhos laboratoriais, e há mínimos de 8,0 na avaliação distribuída e no exame.[^avaliacao] Como as regras e as fórmulas mudam de ano para ano, confirma sempre a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle.
 
 ## Fontes e âmbito
 
-Estas páginas seguem o âmbito da unidade curricular de Redes de Computadores (L.EIC025) do 3.º ano, 1.º semestre da LEIC, ocorrência de 2026/27: transmissão de dados, ligação de dados, desempenho, acesso ao meio, LANs, Internet, encaminhamento, congestionamento e aplicações, com projetos de um protocolo de ligação de dados e de uma aplicação cliente. A bibliografia de referência é Computer Networks de Tanenbaum e Wetherall.
+Estas páginas seguem o âmbito da unidade curricular de Redes de Computadores (L.EIC025) do 3.º ano, 1.º semestre da LEIC, ocorrência de 2026/27: transmissão de dados, ligação de dados, desempenho, acesso ao meio, LANs, Internet, encaminhamento, congestionamento e aplicações, com projetos de um protocolo de ligação de dados e de uma aplicação cliente. A bibliografia de referência é Computer Networks de Tanenbaum e Wetherall, cujo [material suplementar](https://www.cs.vu.nl/~ast/books/book_software.html) inclui software e exercícios.
 
 Material oficial da FEUP:
 
 - Ficha da unidade curricular de Redes de Computadores, ocorrência de 2026/27, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003).
+
+[^avaliacao]: Pesos, mínimos e regras de 2026/27 segundo a ficha da unidade curricular no SIGARRA, ligada acima.
