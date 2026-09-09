@@ -1,0 +1,141 @@
+---
+title: Lambda, currying e ordem superior
+description: Aplicação parcial, secções de operadores e pipelines com map, filter e foldr.
+section: conteudo
+order: 3
+---
+
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import pipeline from '../../pfl/p3pipeline.typ?raw';
+
+Toda a função em Haskell recebe na verdade um só argumento. Uma função "de dois argumentos" é uma função que recebe o primeiro e devolve outra função à espera do segundo. Esta convenção chama-se **currying** e transforma a aplicação parcial, passar só alguns argumentos, na ferramenta mais usada da linguagem.
+
+## Aplicação parcial
+
+```haskell
+soma :: Int -> Int -> Int
+soma x y = x + y
+
+soma5 :: Int -> Int
+soma5 = soma 5
+```
+
+`soma 5` é uma função à espera do segundo argumento, por isso `soma5 3` dá `8`. O mesmo vale para operadores por meio de **secções**: `(>= 9.5)` é a função que testa se o seu argumento é maior ou igual a `9.5`, e `(* 2)` é a função que dobra. Quando precisares de uma função pequena só uma vez, escreve-a anónima com **lambda**: `(\x -> x * 2)` lê-se "a função que a `x` associa `x * 2`".
+
+Isto generaliza o que viste em [FP](/cadeiras/fp/programacao-funcional/): o `lambda` do Python e o `\` do Haskell são o mesmo gesto, mas em Haskell a aplicação parcial dispensa a maioria dos lambdas.
+
+## map, filter e foldr
+
+O prelúdio traz as três de ordem superior que já conheces, com tipos honestos:
+
+```haskell
+map    :: (a -> b) -> [a] -> [b]
+filter :: (a -> Bool) -> [a] -> [a]
+foldr  :: (a -> b -> b) -> b -> [a] -> b
+```
+
+`map` transforma, `filter` seleciona, `foldr` combina tudo num valor partindo da direita com um acumulador inicial. `sum` é `foldr (+) 0` e `length` é `foldr (\_ n -> n + 1) 0`. Quando o problema for "transformar cada um", "ficar só com alguns" ou "resumir tudo", começa por estas antes de escreveres recursão à mão.
+
+## Exemplo completo: média das aprovações
+
+Dada uma pauta, calcular a média só das notas de aprovação (maior ou igual a 9.5):
+
+```haskell
+mediaAprovados :: [Int] -> Double
+mediaAprovados notas = fromIntegral soma / fromIntegral n
+  where
+    ap   = filter (>= 9.5) notas
+    soma = sum ap
+    n    = length ap
+```
+
+Segue com `[8,12,6,15,10]`. O `filter (>= 9.5)` usa uma secção para ficar com `[12,15,10]`. Depois `soma` vale `37` e `n` vale `3`. A divisão `/` exige `Double` dos dois lados, mas `soma` e `n` são `Int`: `fromIntegral` converte cada um, como prometido na página de [classes](polimorfismo-classes/). O resultado é `12.333333333333334`.
+
+O bloco `where` define nomes locais partilhados, avaliados só se usados. É o sítio para os passos intermédios com nome, enquanto o corpo da função fica a frase principal.
+
+O diagrama segue os dados da pauta `[8,12,6,15,10]` por esse pipeline, da esquerda para a direita:
+
+<Typst
+  source={pipeline}
+  format="svg"
+  alt="Pipeline da média das aprovações: a pauta passa pelo filter, fica 12, 15 e 10, soma 37 com 3 elementos e divide para 12,33."
+/>
+
+Corre o exemplo no navegador e muda a pauta para confirmar que a média acompanha:
+
+<CodePlayground
+  language="haskell"
+  title="média das aprovações no navegador"
+  code={
+    'mediaAprovados :: [Int] -> Double\nmediaAprovados notas = fromIntegral soma / fromIntegral n\n  where\n    ap   = filter (>= 9.5) notas\n    soma = sum ap\n    n    = length ap\n\nmain :: IO ()\nmain = print (mediaAprovados [8,12,6,15,10])'
+  }
+/>
+
+Carrega em **Executar**: imprime `12.333333333333334`.
+
+:::warning[Lista vazia dá infinito]
+Com `[]`, `soma` e `n` valem `0` e a divisão dá `Infinity` em vez de falhar. Num programa real, este caso pedia `Maybe Double` com `Nothing` para a lista vazia. Por agora, regista a lição: funções totais tratam todos os casos, e o tipo é o sítio onde isso se declara.
+:::
+
+## foldr contra foldl
+
+O `foldr` combina da direita e o `foldl` da esquerda, e a diferença aparece nos operadores que não comutam. Compara a subtração:
+
+```haskell
+somaD :: [Int] -> Int
+somaD = foldr (+) 0
+
+somaE :: [Int] -> Int
+somaE = foldl (+) 0
+```
+
+`foldr (-) 0 [1,2,3]` calcula `1 - (2 - (3 - 0))`, que dá `2`. Já `foldl (-) 0 [1,2,3]` calcula `((0 - 1) - 2) - 3`, que dá `-6`. Com `(+)` os dois concordam, e é por isso que o exemplo da média não distingue; com `(-)` ou com `(:)`, a direção decide o resultado. A versão com acumulador explícito é o `foldl` escrito à mão:
+
+<Tabs id="dobras" labels={['Com foldr', 'Recursão à mão']}>
+  <div slot="panel-0">
+
+```haskell
+soma :: [Int] -> Int
+soma = foldr (+) 0
+-- soma [1,2,3] = 1 + (2 + (3 + 0)) = 6
+```
+
+  </div>
+  <div slot="panel-1">
+
+```haskell
+soma :: [Int] -> Int
+soma [] = 0
+soma (x:xs) = x + soma xs
+-- soma [1,2,3] = 1 + (2 + (3 + 0)) = 6
+```
+
+  </div>
+</Tabs>
+
+## Listas infinitas e preguiça
+
+Haskell só calcula o que é preciso para responder, por isso uma lista infinita é um valor legítimo enquanto só consumires um prefixo finito:
+
+```text
+ghci> take 5 (iterate (+1) 0)
+[0,1,2,3,4]
+ghci> take 3 (repeat "ola")
+["ola","ola","ola"]
+```
+
+`iterate` aplica a função ao resultado anterior para sempre; o `take` puxa só os cinco primeiros e o resto nunca chega a existir. O caso limite mostra a regra: `length` numa lista infinita nunca termina, porque precisa de ver o fim que não existe. Quando uma função de consumo parcial, como `take`, encontra um produtor infinito, como `iterate`, a preguiça é o que torna a combinação possível.
+
+## Para saber mais
+
+<YouTube
+  id="LnX3B9oaKzw"
+  title="Programação funcional e Haskell (Computerphile)"
+/>
+
+<YouTube id="psmu_VAuiag" title="Funções currificadas (Computerphile)" />
+
+- [Capítulo 7 de Programming in Haskell](https://people.cs.nott.ac.uk/pszgmh/ch7.pdf): funções de ordem superior em profundidade, com os mesmos exemplos destas páginas.

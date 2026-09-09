@@ -5,6 +5,13 @@ section: conteudo
 order: 7
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import emparelha from '../../pfl/p7unifica.typ?raw';
+import arvoreSLD from '../../pfl/p7sld.dot?raw';
+
 Em Prolog não escreves como calcular. Declaras **factos** (o que é verdade) e **regras** (o que se conclui), fazes uma **query**, e o motor procura a resposta por ti. O programa é uma base de conhecimento; a execução é procura com retrocesso. A lógica por baixo é a [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD, restrita a **cláusulas de Horn**: no máximo um literal positivo, o que torna a procura tratável.
 
 ## Factos, regras e queries
@@ -28,6 +35,14 @@ Antes de procurar, o motor precisa de casar termos. **Unificar** dois termos é 
 
 A substituição aplica-se a toda a query de uma vez, o que propaga cada descoberta a todos os lugares onde a variável aparece. É este mecanismo, e não atribuição, que move valores pelo programa.
 
+O diagrama emparelha os dois primeiros exemplos com os factos: à esquerda a query, à direita o facto, e no meio a substituição que os iguala. O terceiro par não tem seta de sucesso porque nenhum facto casa `tomas` com `ana` na segunda posição.
+
+<Typst
+  source={emparelha}
+  format="svg"
+  alt="Unificação de pai(ana, X) com pai(ana, leo) pela substituição X igual a leo; pai(X, leo) com pai(tomas, ana) falha."
+/>
+
 ## Resolução SLD passo a passo
 
 Para responder `?- avo(ana, X).`, o motor constrói uma **árvore de procura**. Segue o ramo de sucesso:
@@ -37,6 +52,25 @@ Para responder `?- avo(ana, X).`, o motor constrói uma **árvore de procura**. 
 3. `pai(leo, X)` unifica com `pai(leo, rui)`: `{X/rui}`. Não resta nada: sucesso, e a resposta compõe as substituições, `X = rui`.
 
 Se pedires mais soluções (`;`), o motor faz **retrocesso**: volta ao último ponto com alternativas por explorar. Aqui não há mais factos `pai(ana, _)` nem `pai(leo, _)`, por isso responde `false`. Desenhar esta árvore é a técnica de estudo da página: quando o programa diz `false` onde esperavas resposta, o desenho mostra o ramo que morreu e a cláusula em falta.
+
+A árvore completa da query, com o ramo de sucesso e o beco do retrocesso:
+
+<Dot
+  source={arvoreSLD}
+  alt="Árvore SLD de avo(ana, X): a query unifica com a regra, pai(ana, Y) casa com o facto dando Y igual a leo, pai(leo, X) casa dando X igual a rui; o retrocesso não encontra alternativas."
+/>
+
+Corre a query no navegador com os factos da página:
+
+<CodePlayground
+  language="prolog"
+  title="avô da Ana no navegador"
+  code={
+    'pai(tomas, ana).\npai(ana, leo).\npai(leo, rui).\navo(X, Z) :- pai(X, Y), pai(Y, Z).\n\nmain :- avo(ana, X), writeln(X).'
+  }
+/>
+
+Carrega em **Executar**: imprime `rui`, a mesma resposta construída à mão na árvore.
 
 ## Negação por falha
 
@@ -52,3 +86,11 @@ Não há facto com `rui` como pai, a prova falha finitamente, e a negação suce
 :::warning[Variáveis livres na negação]
 `?- \+ pai(X, leo).` responde `false`, e não "ninguém". Como `pai(ana, leo)` prova-se com `X = ana`, a negação falha, e o `X` fica por ligar. Regra prática: só nega objetivos sem variáveis por preencher, ou liga-as antes. Este é o erro mais traiçoeiro dos primeiros programas.
 :::
+
+## Para saber mais
+
+<YouTube id="ycHLj12bm0M" title="Começar em Prolog (curso em português)" />
+
+- [SWISH](https://swish.swi-prolog.org/): corre Prolog no navegador, com tutoriais embutidos para experimentar as queries destas páginas.
+- [Learn Prolog Now, capítulo 2](https://lpn.swi-prolog.org/lpnpage.php?pageid=lpn-htmlch2&pagetype=html): unificação passo a passo, com exercícios.
+- [Unificação no Wikibooks](https://pt.wikibooks.org/wiki/Prolog/Unifica%C3%A7%C3%A3o): a mesma matéria explicada em português, com exemplos.
