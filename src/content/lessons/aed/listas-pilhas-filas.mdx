@@ -5,11 +5,22 @@ section: conteudo
 order: 3
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import Typst from '../../../components/Typst.astro';
+import fila from '../../aed/fila-duas-pilhas.typ?raw';
+import cadeia from '../../aed/lista.dot?raw';
+
 Um vetor guarda os elementos lado a lado e por isso insere devagar no meio: é preciso deslocar tudo. As estruturas desta página trocam o acesso direto por **nós** ligados por apontadores: inserir e remover no sítio certo passa a $O(1)$, à custa de só conseguir chegar aos elementos caminhando. É a primeira vez que implementas um tipo abstrato de dados do zero, por isso revê [apontadores e `new`/`delete`](/cadeiras/p/apontadores-memoria/) e [classes](/cadeiras/p/classes-objetos/) antes de continuares.
 
 ## Listas ligadas
 
 Uma **lista ligada** é uma cadeia de nós, cada um com o valor e o apontador para o seguinte. A lista guarda só a **cabeça** (head); o último nó aponta para `nullptr`. Inserir no início é criar o nó e pendurá-lo à frente ($O(1)$); remover o primeiro é avançar a cabeça e libertar o nó ($O(1)$). Mas chegar à posição $i$ obriga a caminhar $i$ ligações: acesso e pesquisa são $O(n)$.
+
+<Dot
+  source={cadeia}
+  alt="Lista ligada com três nós: a cabeça aponta para o primeiro, cada nó aponta para o seguinte e a cauda aponta para vazio."
+/>
 
 A **lista duplamente ligada** dá a cada nó também o apontador para o anterior. Gasta mais um apontador por nó, mas permite caminhar para trás e remover um nó conhecido em $O(1)$ (na simples, remover exige encontrar o antecessor). Com um apontador para a **cauda** (tail), inserir no fim também é $O(1)$.
 
@@ -36,8 +47,28 @@ Duas pilhas LIFO combinam-se numa fila FIFO. Mantém uma pilha de **entrada** e 
 | pop    | [3]                      | []                     | 2       |
 | pop    | []                       | [3] após despejo       | 3       |
 
+<Typst
+  source={fila}
+  format="svg"
+  alt="Três instantâneos da fila de duas pilhas: após os dois pushes, após o primeiro pop que devolve 1, e no fim com saída 1, 2, 3."
+/>
+
 A saída é $1, 2, 3$: ordem de chegada, portanto FIFO. Cada elemento muda de pilha no máximo uma vez, por isso o custo é $O(1)$ **amortizado**: um `pop` isolado pode custar $O(n)$ no despejo, mas $n$ operações custam $O(n)$ no total. A distinção entre "cada operação" e "a média da sequência" é a ideia de amortização, que vais reencontrar nas tabelas de dispersão e nos vetores que crescem.
+
+<CodePlayground
+  language="cpp"
+  title="Fila com duas pilhas"
+  code={
+    '#include <iostream>\n#include <stack>\n#include <vector>\nusing namespace std;\n\nint main() {\n    vector<int> entrada, saida;\n    auto enqueue = [&](int x) { entrada.push_back(x); };\n    auto dequeue = [&]() {\n        if (saida.empty())\n            while (!entrada.empty()) {\n                saida.push_back(entrada.back());\n                entrada.pop_back();\n            }\n        int x = saida.back();\n        saida.pop_back();\n        return x;\n    };\n    enqueue(1); enqueue(2);\n    cout << dequeue() << " ";\n    enqueue(3);\n    cout << dequeue() << " " << dequeue() << "\\n";\n}'
+  }
+/>
+
+O programa imprime `1 2 3`: segue a tabela linha a linha e confirma que cada `dequeue` devolve por ordem de chegada. Repara que o despejo da entrada para a saída só acontece quando a saída está vazia, que é exatamente o que mantém o custo amortizado.
 
 :::tip[Como escolher na prova]
 Vetor quando o acesso por índice domina e o tamanho é estável; lista quando as inserções e remoções no meio dominam; pilha quando precisas de desfazer; fila quando precisas de atender por ordem. Justifica sempre com o custo da operação dominante, não com preferência.
 :::
+
+## Ver também
+
+O [Visualgo](https://visualgo.net/en/list) simula inserções e remoções em listas, pilhas e filas com os apontadores à vista: corre a mesma sequência da tabela e vê as setas mexerem-se.

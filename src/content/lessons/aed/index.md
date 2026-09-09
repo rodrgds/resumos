@@ -15,7 +15,13 @@ A segunda parte constrói estruturas: [Listas, pilhas e filas](listas-pilhas-fil
 
 ## Como estudar
 
-Lê cada página com o compilador aberto e implementa a estrutura antes de veres a solução: lista ligada, árvore de pesquisa, tabela de dispersão e heap cabem todos em programas curtos. Em AED, perceber o desenho não chega; o hábito que conta pontos é seguir o estado dos dados à mão, com papel, numa entrada pequena, e só depois confirmar com o programa. Resolve a seguir os exercícios de cada ficha e submete no Mooshak, porque o avaliador automático testa entradas que tu não lembraste, incluindo a vazia e a de um só elemento.
+Lê cada página com o compilador aberto e implementa a estrutura antes de veres a solução: lista ligada, árvore de pesquisa, tabela de dispersão e heap cabem todos em programas curtos. Compila sempre com os avisos ligados e o padrão da cadeira:
+
+```sh
+g++ -std=c++17 -O2 -Wall programa.cpp -o programa
+```
+
+Antes de submeteres no Mooshak, corre o programa com os casos limite: entrada vazia, um só elemento, valores repetidos e a entrada máxima. O avaliador responde com um veredito por teste: aceite, resposta errada, tempo esgotado ou erro de execução. Um tempo esgotado nos testes grandes com os pequenos a passar é o sintoma clássico de complexidade a mais, volta à análise da primeira página. Em AED, perceber o desenho não chega; o hábito que conta pontos é seguir o estado dos dados à mão, com papel, numa entrada pequena, e só depois confirmar com o programa. Resolve a seguir os exercícios de cada ficha e submete no Mooshak, porque o avaliador automático testa entradas que tu não lembraste, incluindo a vazia e a de um só elemento.
 
 ## Avaliação
 
@@ -28,3 +34,4 @@ Estas páginas seguem o âmbito da unidade curricular de Algoritmos e Estruturas
 Material oficial da FEUP:
 
 - Ficha da unidade curricular de Algoritmos e Estruturas de Dados, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/UCURR_GERAL.FICHA_UC_VIEW?pv_ocorrencia_id=560096).
+- Página oficial da UC com programa, material e laboratórios de 2025/26: [aulas de AED](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/).
