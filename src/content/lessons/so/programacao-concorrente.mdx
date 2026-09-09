@@ -5,6 +5,10 @@ section: conteudo
 order: 6
 ---
 
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+import impasse from './impasse.dot?raw';
+
 Quando dois fluxos de execução tocam nos mesmos dados ao mesmo tempo, o resultado depende da ordem dos acessos, e a ordem varia. A programação concorrente é a disciplina de tornar esses programas corretos apesar da variação: **threads** para o paralelismo dentro de um processo e primitivas de sincronização para ordenar o que tem de ser ordenado.
 
 ## Threads e a corrida
@@ -39,7 +43,7 @@ Na prática imprime quase sempre menos de 2000. O `contador++` é ler, somar e e
 
 ## Mutexes: uma de cada vez
 
-Um **mutex** garante **exclusão mútua**: só uma thread de cada vez atravessa a secção crítica. Envolve o incremento com `lock` e `unlock` e a corrida desaparece:
+Um **mutex** garante **exclusão mútua**: só uma thread de cada vez atravessa a secção crítica. Envolve o incremento com `lock` e `unlock` e a corrida desaparece. Com o mesmo programa mas com o incremento protegido, a saída é sempre 2000, em todas as execuções:[^pthreads]
 
 ```c
 pthread_mutex_t trinco = PTHREAD_MUTEX_INITIALIZER;
@@ -63,14 +67,81 @@ A regra de ouro é que **todos** os acessos à variável partilhada passam pelo 
 
 Usa mutex para proteger dados, semáforo para contar recursos e variável de condição para esperar por eventos. Misturar os papéis funciona por acidente até deixar de funcionar.
 
+O padrão produtor-consumidor junta as três primitivas. O produtor põe os números 1 a 5 no buffer, o consumidor tira-os pela mesma ordem, e o mutex mais as duas condições garantem que ninguém lê vazio nem escreve cheio:
+
+```c
+#include <pthread.h>
+#include <stdio.h>
+
+#define N 5
+int buf[N], n = 0, prod_i = 0, cons_i = 0;
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t livre = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cheio = PTHREAD_COND_INITIALIZER;
+
+void *produtor(void *arg) {
+    for (int v = 1; v <= 5; v++) {
+        pthread_mutex_lock(&m);
+        while (n == N) pthread_cond_wait(&livre, &m);
+        buf[prod_i] = v;
+        prod_i = (prod_i + 1) % N;
+        n++;
+        pthread_cond_signal(&cheio);
+        pthread_mutex_unlock(&m);
+    }
+    return NULL;
+}
+
+void *consumidor(void *arg) {
+    for (int k = 0; k < 5; k++) {
+        pthread_mutex_lock(&m);
+        while (n == 0) pthread_cond_wait(&cheio, &m);
+        int v = buf[cons_i];
+        cons_i = (cons_i + 1) % N;
+        n--;
+        printf("%d ", v);
+        pthread_cond_signal(&livre);
+        pthread_mutex_unlock(&m);
+    }
+    return NULL;
+}
+
+int main(void) {
+    pthread_t p, c;
+    pthread_create(&p, NULL, produtor, NULL);
+    pthread_create(&c, NULL, consumidor, NULL);
+    pthread_join(p, NULL);
+    pthread_join(c, NULL);
+    printf("\n");
+    return 0;
+}
+```
+
+A saída é sempre `1 2 3 4 5`. Repara nos dois `while` à volta dos `wait`: quando a thread acorda, volta a testar a condição, porque acordar não garante que o lugar continua livre. O `if` aqui seria o próximo bug intermitente.
+
 ## Impasses e a ordem dos locks
 
-Com dois locks nasce o **impasse** (_deadlock_): a thread A tem o lock 1 e quer o 2, a thread B tem o 2 e quer o 1, e nenhuma larga o que tem. Ambas esperam para sempre. A correção mais simples é uma **ordem fixa**: todos os troços de código obtêm os locks sempre pela mesma ordem (primeiro o 1, depois o 2). Se ninguém obtiver o 2 antes do 1, o ciclo de espera nunca se fecha e o impasse é impossível.
+Com dois locks nasce o **impasse** (_deadlock_): a thread A tem o lock 1 e quer o 2, a thread B tem o 2 e quer o 1, e nenhuma larga o que tem. Ambas esperam para sempre.
+
+<Dot
+  source={impasse}
+  alt="Grafo de espera do impasse: a thread A tem o lock 1 e quer o 2, a thread B tem o 2 e quer o 1, fechando um ciclo."
+/>
+
+O grafo fecha um ciclo: cada thread espera por um lock que a outra tem. A correção mais simples é uma **ordem fixa**: todos os troços de código obtêm os locks sempre pela mesma ordem (primeiro o 1, depois o 2). Se ninguém obtiver o 2 antes do 1, o ciclo de espera nunca se fecha e o impasse é impossível.
 
 :::warning[Impasse não avisa]
 Um programa em impasse não avaria nem consome processador: fica parado, silencioso, para sempre. Quando um programa com threads parar sem mensagem de erro, suspeita de locks obtidos por ordens diferentes antes de suspeitar do resto.
 :::
 
+<YouTube id="BFfvDPEQAdk" title="Deadlock in os | Mutual Exclusion, Hold and Wait, No Preemption, Circular Wait" />
+
+## Para saber mais
+
+- A [referência oficial de threads POSIX](https://man7.org/linux/man-pages/man7/pthreads.7.html) documenta mutexes, variáveis de condição e as regras de cada chamada.
+
 ## Para levar para a próxima página
 
 Threads partilham memória por defeito e a sincronização impõe a ordem. Mas que memória é essa que as threads veem, e como é que cada processo acredita que a tem só para si? A resposta é a [memória virtual](memoria-virtual/).
+
+[^pthreads]: A regra de proteger todos os acessos com o mesmo mutex vem da referência oficial: [`pthreads(7)`](https://man7.org/linux/man-pages/man7/pthreads.7.html).

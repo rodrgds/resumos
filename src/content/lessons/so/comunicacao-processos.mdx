@@ -5,6 +5,11 @@ section: conteudo
 order: 5
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+import diagramaPipe from './pipe-pai-filho.typ?raw';
+
 O `fork` dá ao filho uma cópia da memória do pai, por isso as variáveis não atravessam a fronteira entre processos. Quando dois processos precisam de cooperar, usam um mecanismo de **comunicação entre processos** (_IPC_). Cada um tem um compromisso diferente entre simplicidade, volume e alcance.
 
 ## Sinais: interromper para avisar
@@ -13,7 +18,15 @@ Um **sinal** é uma notificação curta que um processo envia a outro: terminar 
 
 ## Pipes: conversa entre parentes
 
-Um **pipe** é um canal unidirecional com uma ponta de escrita e uma de leitura. Cria-se com `pipe`, que devolve dois descritores, e tipicamente usa-se entre pai e filho: o pai cria o pipe antes do `fork`, por isso ambos herdam as duas pontas, e depois cada um fecha a ponta que não usa.
+Um **pipe** é um canal unidirecional com uma ponta de escrita e uma de leitura. Cria-se com `pipe`, que devolve dois descritores, e tipicamente usa-se entre pai e filho: o pai cria o pipe antes do `fork`, por isso ambos herdam as duas pontas, e depois cada um fecha a ponta que não usa.[^pipe]
+
+<Typst
+  source={diagramaPipe}
+  format="svg"
+  alt="Pai e filho ligados por um pipe: o filho fecha a leitura e escreve, o pai fecha a escrita e lê a mensagem."
+/>
+
+O filho fecha a leitura e escreve; o pai fecha a escrita e lê. O programa abaixo corre no teu terminal e imprime `Pai leu: ola pai`:
 
 ```c
 #include <stdio.h>
@@ -41,13 +54,60 @@ int main(void) {
 }
 ```
 
-Segue o protocolo com atenção. O filho fecha a ponta de leitura e escreve na de escrita; o pai fecha a de escrita e lê da de leitura. Fechar as pontas não usadas não é arrumação, é correção: o `read` só devolve fim de ficheiro quando **todas** as pontas de escrita estiverem fechadas, por isso um pai que se esqueça de fechar a sua cópia da escrita fica bloqueado para sempre à espera de dados que nunca chegam. A leitura também bloqueia até haver dados, o que aqui é exatamente o que queremos: o pai espera que o filho escreva.
+Segue o protocolo com atenção. Fechar as pontas não usadas não é arrumação, é correção: o `read` só devolve fim de ficheiro quando **todas** as pontas de escrita estiverem fechadas, por isso um pai que se esqueça de fechar a sua cópia da escrita fica bloqueado para sempre à espera de dados que nunca chegam. A leitura também bloqueia até haver dados, o que aqui é exatamente o que queremos: o pai espera que o filho escreva.
 
 ## FIFOs, sockets e memória partilhada
 
 - Um **FIFO** (_named pipe_) é um pipe com nome no sistema de ficheiros. Qualquer processo com permissões o abre pelo nome, por isso serve para processos sem parentesco. De resto comporta-se como o pipe: unidirecional e com bloqueio na leitura.
 - Um **socket** é um canal bidirecional que tanto liga processos na mesma máquina como máquinas diferentes pela rede. É a base de quase toda a comunicação em rede, mas paga-se em complexidade: endereços, ligações e protocolos.
 - A **memória partilhada** com `mmap` mapeia a mesma zona física no espaço dos dois processos, que passam a ler e escrever nela diretamente. É o mecanismo mais rápido para grandes volumes, porque não copia dados pelo núcleo. O preço é a sincronização: sem [mutexes e semáforos](programacao-concorrente/) para ordenar os acessos, os dois processos pisam-se e o resultado varia de execução para execução.
+
+Experimenta o FIFO em dois terminais. No primeiro crias o canal e escreves; no segundo lês. O bloqueio aparece ao vivo: o primeiro terminal só avança quando o segundo abrir o canal para leitura.
+
+<Tabs id="fifo-terminais" labels={['Terminal 1: escrever', 'Terminal 2: ler']}>
+  <div slot="panel-0">
+
+```sh
+mkfifo /tmp/canal
+cat > /tmp/canal
+```
+
+Escreve uma linha e carrega em Enter. Repara que o `cat` fica à espera: sem leitor do outro lado, a escrita bloqueia.
+
+  </div>
+  <div slot="panel-1">
+
+```sh
+cat /tmp/canal
+```
+
+A linha que escreveste no outro terminal aparece aqui, e o primeiro terminal desbloqueia. Apaga o canal no fim com `rm /tmp/canal`.
+
+  </div>
+</Tabs>
+
+A memória partilhada dispensa o núcleo depois da configuração. Este programa mapeia um inteiro partilhado entre pai e filho: o filho soma 1000, o pai espera e soma 2000, e o resultado é sempre 3000. Sem o `wait`, o pai podia ler antes de o filho escrever. Corre no teu terminal:
+
+```c
+#include <stdio.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(void) {
+    int *p = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE,
+                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    *p = 0;
+    if (fork() == 0) {
+        *p += 1000;
+        return 0;
+    }
+    wait(NULL);
+    *p += 2000;
+    printf("%d\n", *p);
+    return 0;
+}
+```
 
 | Mecanismo          | Sentido       | Entre quem        | Quando usar                        |
 | ------------------ | ------------- | ----------------- | ---------------------------------- |
@@ -57,6 +117,14 @@ Segue o protocolo com atenção. O filho fecha a ponta de leitura e escreve na d
 | Sockets            | bidirecional  | qualquer processo | rede ou protocolo completo         |
 | Memória partilhada | direto        | qualquer processo | grandes volumes, com sincronização |
 
+<YouTube id="dJuYKfR8vec" title="Interprocess Communication" />
+
+## Para saber mais
+
+- O manual oficial da chamada `pipe`, com a semântica de bloqueio e os erros: [`pipe(2)`](https://man7.org/linux/man-pages/man2/pipe.2.html). A [vista geral de pipes e FIFOs](https://man7.org/linux/man-pages/man7/pipe.7.html) completa as regras de leitura e escrita.
+
 ## Para levar para a próxima página
 
 Pipes e FIFOs copiam bytes pelo núcleo e impõem ordem; a memória partilhada é rápida mas deixa os acessos desordenados. Ordenar acessos concorrentes é o trabalho da [programação concorrente](programacao-concorrente/).
+
+[^pipe]: O manual oficial fixa as regras que o exemplo segue, incluindo o bloqueio até ambas as pontas estarem abertas: [`pipe(7)`](https://man7.org/linux/man-pages/man7/pipe.7.html).
