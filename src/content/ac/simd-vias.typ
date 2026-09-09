@@ -1,0 +1,30 @@
+#import "@preview/fletcher:0.5.8": diagram, node, edge
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#diagram(
+  node-stroke: 1pt + rgb("8c2d3b"), node-fill: rgb("f3e9e9"), spacing: (18pt, 22pt),
+  node((0, 0), [`v0[i]`], corner-radius: 4pt),
+  node((1, 0), [`v0[i]`], corner-radius: 4pt),
+  node((2, 0), [`v0[i]`], corner-radius: 4pt),
+  node((3, 0), [`v0[i]`], corner-radius: 4pt),
+  node((0, 1), [`v1[i]`], corner-radius: 4pt),
+  node((1, 1), [`v1[i]`], corner-radius: 4pt),
+  node((2, 1), [`v1[i]`], corner-radius: 4pt),
+  node((3, 1), [`v1[i]`], corner-radius: 4pt),
+  node((0, 2), [+], corner-radius: 10pt),
+  node((1, 2), [+], corner-radius: 10pt),
+  node((2, 2), [+], corner-radius: 10pt),
+  node((3, 2), [+], corner-radius: 10pt),
+  node((0, 3), [soma], corner-radius: 4pt),
+  node((1, 3), [soma], corner-radius: 4pt),
+  node((2, 3), [soma], corner-radius: 4pt),
+  node((3, 3), [soma], corner-radius: 4pt),
+  edge((0, 0), (0, 2), "-|>", bend: 15deg),
+  edge((0, 1), (0, 2), "-|>", bend: -15deg),
+  edge((3, 0), (3, 2), "-|>", bend: 15deg),
+  edge((3, 1), (3, 2), "-|>", bend: -15deg),
+  edge((0, 2), (0, 3), "-|>"),
+  edge((1, 2), (1, 3), "-|>"),
+  edge((2, 2), (2, 3), "-|>"),
+  edge((3, 2), (3, 3), "-|>"),
+)

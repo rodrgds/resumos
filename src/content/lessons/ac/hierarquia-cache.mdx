@@ -5,6 +5,13 @@ section: conteudo
 order: 3
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import endereco from '../../ac/endereco-cache.typ?raw';
+import hierarquia from '../../ac/hierarquia.dot?raw';
+
 A memória que um programa vê é grande, mas a memória grande é lenta. A hierarquia de memória resolve esta contradição com um facto empírico: em cada momento, o programa só precisa de uma pequena fração dos seus dados. A cache guarda essa fração numa memória pequena e rápida junto ao processador, e o programa corre quase à velocidade da memória rápida com a capacidade da memória lenta.
 
 ## Localidade
@@ -12,6 +19,11 @@ A memória que um programa vê é grande, mas a memória grande é lenta. A hier
 Os programas acedem à memória com dois padrões. A **localidade temporal** diz que um endereço acedido agora tem boa probabilidade de ser acedido outra vez em breve (contadores, variáveis de ciclo, o topo da pilha). A **localidade espacial** diz que os vizinhos de um endereço acedido também vão ser precisados (instruções seguidas, elementos seguidos de um vetor).
 
 A cache explora ambas: guarda o dado acedido (temporal) e traz com ele um **bloco** inteiro de vizinhos, tipicamente 32 a 128 bytes (espacial). Quando o processador pede um endereço, a cache responde de imediato se o bloco já lá estiver (**hit**); se não estiver, vai buscar o bloco à memória seguinte (**miss**), paga a **penalidade de falta** e só depois continua.
+
+<Dot
+  source={hierarquia}
+  alt="Hierarquia da memória: o CPU acede às caches L1 de instruções e de dados em cerca de 1 ciclo, à L2 em cerca de 10, à RAM em cerca de 100 e ao disco em milissegundos."
+/>
 
 ## Onde cabe cada bloco
 
@@ -25,6 +37,12 @@ Há três organizações, do mais rígido ao mais livre:
 
 Um exemplo de repartição. Cache de 8 KiB, blocos de 64 bytes, associativa de 4 vias: há $8192 / 64 = 128$ blocos no total, logo $128 / 4 = 32$ conjuntos. Com endereços de 32 bits: offset de 6 bits ($\log_2 64$), índice de 5 bits ($\log_2 32$) e etiqueta de $32 - 5 - 6 = 21$ bits. Vê como cada parâmetro se obtém por divisões e logaritmos, nunca de cor.
 
+<Typst
+  source={endereco}
+  format="svg"
+  alt="Endereço de 32 bits repartido em etiqueta de 21 bits (31 a 11), índice de 5 bits (10 a 6) e offset de 6 bits (5 a 0)."
+/>
+
 ## Os três Cs e o que fazer a cada um
 
 As faltas dividem-se em três causas, os **três Cs**:
@@ -35,11 +53,19 @@ As faltas dividem-se em três causas, os **três Cs**:
 
 O diagnóstico manda na cura: se as faltas forem de conflito, duplicar a cache desperdiça área quando bastava passar de mapeamento direto para 2 vias. Em teste, classifica a falta antes de propor a solução.
 
+Quando um bloco novo precisa de um lugar ocupado, a **política de substituição** escolhe a vítima. As opções habituais são a **aleatória** (escolhe ao acaso, barata e surpreendentemente decente), a **FIFO** (expulsa o bloco há mais tempo na cache) e a **LRU** (_least recently used_, expulsa o bloco há mais tempo sem ser acedido). A LRU pura é cara de implementar, por isso as caches reais usam aproximações com um ou dois bits por bloco. A política só importa nas faltas de conflito e de capacidade: nas compulsórias, qualquer vítima serve porque o bloco pedido nunca esteve lá.
+
 ## Políticas de escrita
 
 Ler da cache é simples; escrever levanta duas decisões. Na escrita (_write hit_), o **write-through** escreve na cache e na memória seguinte ao mesmo tempo: simples, mas cada escrita paga o custo da memória lenta. O **write-back** escreve só na cache e marca o bloco como **sujo** (_dirty_); a escrita na memória fica adiada para a expulsão do bloco. É mais rápido, mas exige o bit de sujo e escritas de blocos inteiros na expulsão.
 
 Na falta de escrita (_write miss_), o **write-allocate** traz o bloco para a cache como numa leitura, e o **no-write-allocate** escreve diretamente na memória sem trazer nada. A combinação habitual é write-back com write-allocate (aproveita a localidade das escritas) ou write-through com no-write-allocate (não polui a cache com dados que não vão ser lidos).
+
+## Porque a memória principal é tão lenta: a DRAM
+
+A penalidade de 100 ciclos do exemplo abaixo não é um número mágico: vem da anatomia da **DRAM**, a tecnologia da memória principal. Cada bit vive num condensador minúsculo que se descarrega sozinho e precisa de ser refrescado milhares de vezes por segundo. Os bits organizam-se em **linhas** (_rows_): para ler, o controlador abre uma linha inteira para uma fila de amplificadores (_row buffer_), lê as colunas pedidas em **rajada** (_burst_) e fecha a linha para a próxima.
+
+Abrir uma linha custa dezenas de ciclos, e se a linha aberta não for a pedida paga-se fechar e abrir de novo. É por isso que acessos seguidos à mesma linha são rápidos e acessos saltados são lentos. Os chips dividem-se ainda em **bancos** independentes, para que uma leitura num banco se sobreponha à abertura de linha noutro. A cache esconde quase tudo isto; os 100 ciclos são o preço dos acessos que escapam.
 
 ## Quanto custa cada acesso: o AMAT
 
@@ -55,10 +81,29 @@ $$
 \text{AMAT} = 1 + 0{,}05 \times 100 = 6\ \text{ciclos}
 $$
 
+Confirma a conta e estende-a a dois níveis, com uma L2 de 10 ciclos de hit e 20% de faltas para a memória de 100 ciclos:
+
+<CodePlayground
+  language="python"
+  title="AMAT em cascata"
+  code={'hit_l1, falta_l1 = 1, 0.05\nhit_l2, falta_l2, mem = 10, 0.2, 100\nprint(1 + falta_l1 * mem)\namat_l2 = hit_l2 + falta_l2 * mem\nprint(amat_l2)\nprint(hit_l1 + falta_l1 * amat_l2)'}
+/>
+
+O programa imprime `6.0`, depois `30.0` (o AMAT da L2) e por fim `2.5`: a L2 corta o custo médio de 6 para 2,5 ciclos.
+
 Repara: apesar de 95% dos acessos acertarem, o tempo médio é 6 vezes o tempo de hit, porque cada falta custa 100 vezes mais. Esta é a aritmética que justifica caches maiores, mais associativas e multinível: tudo o que baixe a taxa ou a penalidade paga-se depressa. Com dois níveis, aplica a fórmula em cascata: a penalidade da L1 é o AMAT da L2.
 
 Para fechar o círculo com a página de [desempenho](desempenho/): cada acesso à memória do programa custa em média AMAT ciclos, por isso o CPI efetivo cresce com a taxa de faltas. Uma otimização que corte as faltas a metade pode valer mais do que duplicar a frequência.
 
+<YouTube
+  id="SAk-6gVkio0"
+  title="Como a memória e as caches do CPU funcionam, Computerphile"
+/>
+
 :::tip[Como resolver um exercício de caches]
 Divide o endereço em etiqueta, índice e offset e confirma que a soma dos bits fecha. Depois pergunta: o bloco está na cache (hit)? Se não, que tipo de falta é (compulsória, capacidade, conflito)? Só então calcula tempos com o AMAT. Etiqueta primeiro, classificação depois, contas no fim.
 :::
+
+## Para saber mais
+
+- [Simulador interativo de cache](https://eecs370.github.io/simulators/cache/): experimenta índice, etiqueta e faltas com os teus próprios acessos.
