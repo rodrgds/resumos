@@ -1,0 +1,54 @@
+---
+title: Sistemas lineares invariantes
+description: Resposta impulsional, convolução e resposta ao escalão, com o filtro RC como exemplo.
+section: conteudo
+order: 7
+---
+
+Um filtro RC recebe um sinal e devolve outro. Em vez de resolveres uma equação diferencial para cada entrada possível, a teoria de sistemas caracteriza a caixa uma vez (a resposta impulsional) e depois calcula qualquer saída por uma integral (a convolução). Funciona para qualquer sistema **linear e invariante no tempo** (SLIT): a saída de uma soma é a soma das saídas, a saída de uma entrada atrasada é a saída atrasada, e nada muda com o passar do tempo.
+
+## Resposta impulsional
+
+O **impulso unitário** $\delta(t)$ é um pulso infinitamente estreito e alto com área unitária. A **resposta impulsional** $h(t)$ é a saída do sistema quando a entrada é $\delta(t)$ (com o sistema inicialmente em repouso). Ela identifica o sistema: dois SLIT com a mesma $h(t)$ são indistinguíveis por fora.
+
+Para o filtro RC passa-baixo (fonte, $R$ e $C$ em série, saída aos terminais do condensador), a equação é $RC\,dy/dt + y = x$, com $x$ a entrada e $y$ a saída. A resposta impulsional é
+
+$$
+h(t) = \frac{1}{\tau}\,e^{-t/\tau}\,u(t), \qquad \tau = RC,
+$$
+
+onde $u(t)$ é o escalão unitário ($0$ para $t < 0$, $1$ para $t \geq 0$), que impõe a causalidade: sem entrada passada não há saída presente. Repara que $h(t)$ tem a forma do transitório dos [circuitos reativos](/cadeiras/f2/circuitos-reativos/), porque é o mesmo circuito a responder ao pulso mais simples possível.
+
+## Convolução
+
+Qualquer entrada $x(t)$ decompõe-se numa sucessão de impulsos de área $x(\lambda)\,d\lambda$ em cada instante $\lambda$. Por linearidade e invariância, cada um contribui com $x(\lambda)h(t - \lambda)\,d\lambda$ para a saída no instante $t$. Somar todos dá a **integral de convolução**:
+
+$$
+y(t) = \int_{-\infty}^{+\infty} x(\lambda)\,h(t - \lambda)\,d\lambda = (x * h)(t).
+$$
+
+Lê-se assim: para saber a saída agora, pesas o passado da entrada pela resposta impulsional. Se $h$ decai depressa (τ pequeno), só o passado recente conta e o sistema é rápido; se decai devagar, o sistema tem memória longa e é lento.
+
+## Exemplo: resposta do RC ao escalão
+
+Aplica um escalão $x(t) = V_0\,u(t)$ ao filtro RC com $R = 1{,}0\ \text{k}\Omega$, $C = 1{,}0\ \mu\text{F}$ ($\tau = 1{,}0\ \text{ms}$) e $V_0 = 5{,}0\ \text{V}$. Para $t \geq 0$:
+
+$$
+y(t) = \int_0^t V_0\,\frac{1}{\tau}e^{-(t-\lambda)/\tau}\,d\lambda.
+$$
+
+Com a mudança $s = t - \lambda$, o integral fica $V_0(1 - e^{-t/\tau})$, ou seja
+
+$$
+y(t) = V_0\left(1 - e^{-t/\tau}\right)u(t).
+$$
+
+É a exponencial de carga que já conheces, agora obtida por convolução em vez de resolver a equação diferencial. Aos $t = 2{,}0\ \text{ms}$ (dois $\tau$): $y = 5{,}0 \times (1 - e^{-2}) = 5{,}0 \times (1 - 0{,}1353) = 5{,}0 \times 0{,}8647 \approx 4{,}32\ \text{V}$. A constante de tempo volta a mandar: a saída atinge $63\%$ em $\tau$, e a convolução mostra porquê, porque $\tau$ é a largura da janela de memória $h(t)$.
+
+:::tip[Escolhe o método pelo problema]
+Uma entrada e condição inicial concretas pedem a equação diferencial direta. Uma família de entradas, ou a pergunta "como depende a saída da memória do sistema", pede a convolução. Nos testes, a convolução aparece quando o enunciado dá $h(t)$ e pergunta a resposta a um pulso ou escalão.
+:::
+
+## Para onde ir
+
+A convolução descreve o sistema no tempo. Aplicada a uma sinusoide, ela reduz-se a multiplicar por um número complexo que depende da frequência: é a [resposta em frequência](/cadeiras/f2/frequencia-amostragem/), que liga os sistemas aos filtros e à amostragem.

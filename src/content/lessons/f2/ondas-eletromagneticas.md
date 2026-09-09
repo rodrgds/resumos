@@ -1,0 +1,64 @@
+---
+title: Ondas eletromagnéticas
+description: Da variação acoplada de E e B à velocidade da luz, ao espectro e ao transporte de energia.
+section: conteudo
+order: 3
+---
+
+A lei de Faraday diz que $\vec{B}$ a variar cria $\vec{E}$, e a corrente de deslocamento diz que $\vec{E}$ a variar cria $\vec{B}$. Junta as duas num vazio sem cargas nem correntes e obténs uma dança auto-sustentada: cada campo a variar gera o outro, e a perturbação propaga-se. É uma onda eletromagnética, e a luz é um caso particular dela.
+
+## A velocidade sai das constantes
+
+No vazio, as equações de Maxwell combinam-se numa equação de onda para $\vec{E}$ (e outra igual para $\vec{B}$):
+
+$$
+\nabla^2 \vec{E} = \mu_0\varepsilon_0\,\frac{\partial^2 \vec{E}}{\partial t^2}.
+$$
+
+Comparando com a equação geral de uma onda que se propaga à velocidade $v$, $\nabla^2 u = (1/v^2)\,\partial^2 u/\partial t^2$, a velocidade de propagação é
+
+$$
+c = \frac{1}{\sqrt{\mu_0\varepsilon_0}}.
+$$
+
+Com $\mu_0 = 4\pi \times 10^{-7}\ \text{N/A}^2$ e $\varepsilon_0 = 8{,}854 \times 10^{-12}\ \text{C}^2/(\text{N}\cdot\text{m}^2)$:
+
+$$
+\mu_0\varepsilon_0 = 1{,}2566 \times 10^{-6} \times 8{,}854 \times 10^{-12} \approx 1{,}1127 \times 10^{-17}\ \text{s}^2/\text{m}^2,
+$$
+
+$$
+c = \frac{1}{\sqrt{1{,}1127 \times 10^{-17}}} = \frac{1}{3{,}3356 \times 10^{-9}} \approx 2{,}998 \times 10^8\ \text{m/s}.
+$$
+
+A velocidade da luz calculada a partir de constantes medidas em experiências de eletrostática e magnetostática. Foi este acordo numérico que convenceu Maxwell de que a luz é uma onda eletromagnética, antes de alguém a conseguir gerar ou detetar.
+
+## Estrutura da onda plana
+
+Numa onda plana que se propaga segundo $x$ com frequência angular $\omega$ e número de onda $k = \omega/c$:
+
+- $\vec{E}$ e $\vec{B}$ são perpendiculares entre si e ambos perpendiculares à direção de propagação (onda transversal).
+- Oscilam em fase: $E_y = E_0\cos(kx - \omega t)$ e $B_z = B_0\cos(kx - \omega t)$.
+- As amplitudes relacionam-se por $E_0 = c\,B_0$.
+
+O comprimento de onda é $\lambda = c/f$. A luz visível ocupa apenas a fatia de cerca de $400$ a $700\ \text{nm}$ de um espectro que vai das ondas de rádio (quilómetros) aos raios gama (picómetros). O Wi-Fi aos $2{,}4\ \text{GHz}$ tem $\lambda = c/f \approx 12{,}5\ \text{cm}$, e é por isso que a posição do router e dos obstáculos à escala do decímetro afeta o sinal.
+
+## Polarização e energia
+
+A **polarização** é a direção de oscilação de $\vec{E}$: se for sempre a mesma reta, a luz é linearmente polarizada; se rodar, é circular ou elíptica. Os óculos de sol polarizados bloqueiam uma das direções e cortam metade da luz refletida, que chega parcialmente polarizada.
+
+A onda transporta energia, descrita pelo vetor de Poynting $\vec{S} = \vec{E} \times \vec{B}/\mu_0$, com a média temporal para uma onda sinusoidal
+
+$$
+I = \langle S \rangle = \frac{1}{2}\,c\,\varepsilon_0 E_0^2.
+$$
+
+Para $E_0 = 600\ \text{V/m}$: $I = 0{,}5 \times 2{,}998 \times 10^8 \times 8{,}854 \times 10^{-12} \times 600^2$. Como $2{,}998 \times 10^8 \times 8{,}854 \times 10^{-12} \approx 2{,}654 \times 10^{-3}$ e $600^2 = 360000$, vem $I \approx 0{,}5 \times 955{,}6 \approx 478\ \text{W/m}^2$. É cerca de metade da irradiância solar à superfície num dia limpo (perto de $1000\ \text{W/m}^2$), uma verificação de plausibilidade: um campo de centenas de $\text{V/m}$ corresponde a intensidades solares, não a uma lâmpada de secretária.
+
+:::tip[Liga sempre amplitude a intensidade]
+Nos exercícios, alterna entre $E_0$, $B_0 = E_0/c$ e $I$ sem hesitar. A relação $E_0 = c\,B_0$ mostra que o campo magnético da luz é minúsculo em teslas ($600\ \text{V/m}$ correspondem a $B_0 = 2{,}0\ \mu\text{T}$), e é por isso que a interação da luz com a matéria passa quase sempre pelo campo elétrico.
+:::
+
+## Para onde ir
+
+Até aqui, campos no espaço livre. Nos [circuitos resistivos](/cadeiras/f2/circuitos-resistivos/) esses campos ficam confinados a fios e componentes, e as equações de Maxwell reduzem-se às leis de Ohm e de Kirchhoff.
