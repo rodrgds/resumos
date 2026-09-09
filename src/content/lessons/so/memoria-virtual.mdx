@@ -5,11 +5,38 @@ section: conteudo
 order: 7
 ---
 
+import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
+import traducao from './traducao-endereco.typ?raw';
+
 Cada processo acredita que tem gigabytes de memória contígua só para si, mesmo quando a máquina tem menos RAM do que a soma do que os processos pedem. A **memória virtual** é a ilusão que o SO e o hardware mantêm juntos: cada processo vê um espaço de endereçamento privado, e o sistema traduz cada endereço virtual para o sítio físico real. Recorda a [hierarquia de memória](/cadeiras/fsc/memorias/) e a ponte das [caches](/cadeiras/ac/hierarquia-cache/): a paginação é o nível seguinte da mesma ideia.
 
 ## O modelo de memória do processo
 
 O espaço virtual de um processo Linux típico organiza-se de baixo para cima: código e dados fixos, a área livre (_heap_) a crescer para cima com o `malloc`, e a pilha (_stack_) a crescer para baixo a cada chamada de função. Entre as duas fica espaço livre para crescerem. Este mapa é igual em todos os processos, o que simplifica o compilador e o carregador. A igualdade é possível porque os endereços são virtuais: dois processos usam o mesmo endereço virtual para coisas físicas completamente diferentes.
+
+Vê o mapa no teu próprio programa. Este programa imprime onde vivem uma variável local, uma global e um bloco de `malloc`, mais o tamanho da página do sistema. Corre no teu terminal:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int global = 1;
+
+int main(void) {
+    int local = 2;
+    int *p = malloc(sizeof(int));
+    printf("pilha:  %p\n", (void *)&local);
+    printf("global: %p\n", (void *)&global);
+    printf("heap:   %p\n", (void *)p);
+    printf("pagina: %d bytes\n", getpagesize());
+    free(p);
+    return 0;
+}
+```
+
+Os valores exatos variam de execução para execução (o núcleo baralha o mapa de propósito), mas a ordem mantém-se: a pilha num extremo, a global e a área livre noutras zonas, cada uma longe das outras. E o tamanho da página confirma os 4096 bytes que as contas abaixo assumem.
 
 ## Paginação
 
@@ -19,11 +46,17 @@ A **paginação** divide o espaço virtual em blocos de tamanho fixo, as **pági
 
 Toma páginas de 4 KiB, ou seja, $2^{12}$ bytes. O deslocamento ocupa os 12 bits baixos do endereço, e o resto é o número da página. Traduz o endereço virtual `0x1A3F5`:
 
+<Typst
+  source={traducao}
+  format="svg"
+  alt="Tradução de 0x1A3F5: a página 0x1A vira a moldura 0x07 pela tabela, o deslocamento 0x3F5 passa intacto e o físico é 0x073F5."
+/>
+
 1. Separa os 12 bits baixos: `0x1A3F5` termina em `3F5`, por isso o deslocamento é `0x3F5` e o número da página é `0x1A`.
 2. Consulta a tabela de páginas na entrada `0x1A`. Supõe que ela diz moldura `0x07`, presente em memória.
 3. Junta a moldura com o deslocamento: endereço físico `0x073F5`.
 
-Três pormenores que os exercícios adoram testar. Primeiro, o deslocamento passa intacto: só a página é traduzida. Segundo, se a entrada disser que a página está no disco, o hardware levanta uma **falta de página**, o SO traz a página do swap para uma moldura livre e repete o acesso. Terceiro, a tradução acontece em cada acesso, por isso o hardware guarda as traduções recentes numa cache própria, o **TLB**; sem ele, cada acesso à memória custaria dois.
+Três pormenores que os exercícios adoram testar. Primeiro, o deslocamento passa intacto: só a página é traduzida. Segundo, se a entrada disser que a página está no disco, o hardware levanta uma **falta de página**, o SO traz a página do swap para uma moldura livre e repete o acesso. Terceiro, a tradução acontece em cada acesso, por isso o hardware guarda as traduções recentes numa cache própria, o **TLB**; sem ele, cada acesso à memória custaria dois.[^tlb]
 
 :::tip[Como fazer estas contas]
 Converte o endereço para hexadecimal e conta os dígitos da direita: com páginas de $2^n$ bytes, os últimos $n/4$ dígitos hexadecimais são o deslocamento. Para 4 KiB ($n = 12$), são os últimos 3 dígitos. O resto é o número da página.
@@ -33,6 +66,10 @@ Converte o endereço para hexadecimal e conta os dígitos da direita: com págin
 
 Antes da paginação dominar, a **segmentação** dividia o espaço em blocos de tamanho variável com significado lógico: código, dados, pilha. Cada acesso verificava limites e permissões do segmento. Os sistemas modernos usam paginação para a tradução e guardam da segmentação a ideia essencial: cada página tem permissões (leitura, escrita, execução) e o hardware recusa acessos ilegais. É por isso que escrever numa zona de código ou dereferenciar um apontador inválido termina o processo com falha de segmentação em vez de corromper outro programa. A proteção entre processos, que o [C avançado](c-avancado/) prometeu, é implementada aqui.
 
+<YouTube id="qcBIvnQt0Bw" title="Virtual Memory: 1 Introduction" />
+
 ## Para levar para a próxima página
 
 A memória virtual dá a cada processo um espaço privado e protegido. Falta persistir dados para além da vida do processo: ficheiros, discos e dispositivos, que vivem nos [ficheiros e na entrada e saída](ficheiros-entrada-saida/).
+
+[^tlb]: O papel do TLB como cache das traduções está documentado na [documentação de gestão de memória do Linux](https://www.kernel.org/doc/html/latest/mm/index.html).
