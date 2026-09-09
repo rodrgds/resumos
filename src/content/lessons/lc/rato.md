@@ -1,0 +1,36 @@
+---
+title: Rato
+description: Pacotes PS/2 de três bytes, deltas com sinal e botões.
+section: conteudo
+order: 6
+---
+
+O **rato** PS/2 envia a cada movimento um pacote de três bytes: botões e sinais no primeiro, deslocamentos nos outros dois. O teu programa sincroniza-se no primeiro byte, junta os três e reconstrói o movimento. É o exercício mais completo de manipulação de bits da cadeira, porque quase toda a informação está partida em campos de poucos bits.
+
+## Anatomia do pacote
+
+Os três bytes têm papéis fixos:
+
+- **Byte 1**: bits de estado. O bit 3 vale sempre 1 e serve de âncora de sincronização. Os bits 0, 1 e 2 dizem se os botões esquerdo, direito e do meio estão premidos. Os bits 4 e 5 dão o sinal dos deslocamentos em X e Y, e os bits 6 e 7 assinalam overflow em X e Y.
+- **Byte 2**: deslocamento em X em complemento para dois.
+- **Byte 3**: deslocamento em Y em complemento para dois, com o eixo Y a crescer para baixo no protocolo (o programa converte para as coordenadas do ecrã).
+
+Antes de mais nada, confirma o bit 3 do primeiro byte: se não estiver a 1, estás dessincronizado e esse byte pertence ao meio de um pacote. Descarta e continua a ler até encontrares um byte com o bit 3 ligado.
+
+## Complemento para dois e overflow
+
+Os deltas são bytes com sinal: `0x05` vale +5, e `0xFB` vale $-(256 - 251) = -5$. O sinal no byte 1 tem de concordar com o valor: se o bit de sinal de X estiver ligado, o byte 2 deve ser negativo quando lido com sinal. Quando o bit de overflow correspondente está ligado, o movimento foi demasiado rápido para caber num byte e o delta não é fiável: o programa deve ignorar esse eixo nesse pacote em vez de aplicar um salto absurdo ao cursor.
+
+## Exemplo: reconstruir um movimento
+
+Chegam três bytes: `0x28`, `0x05`, `0xFB`. A reconstrução:
+
+1. Primeiro byte `0x28`, ou seja `0b00101000`. O bit 3 está a 1: pacote sincronizado. Bits 0 a 2 a 0: nenhum botão premido. Bit 4 a 0: X positivo. Bit 5 a 1: Y negativo. Bits 6 e 7 a 0: sem overflow.
+2. Segundo byte `0x05`: deslocamento em X de +5.
+3. Terceiro byte `0xFB`: em complemento para dois, $-(256 - 251) = -5$ em Y do protocolo (para baixo), ou seja 5 unidades para cima no ecrã.
+
+Resultado: o cursor move-se 5 píxeis para a direita e 5 para cima, sem botões. Três bytes opacos transformados num movimento com direção, módulo e estado de botões, só com máscaras e aritmética de bytes.
+
+:::warning[Ordem de leitura e sincronização]
+Os três bytes têm de ser lidos por ordem e sem misturar pacotes: se o handler guardar os bytes num buffer, o consumidor tem de os retirar três a três a começar sempre por um byte sincronizado. Perder um byte sem dar por isso desloca todos os pacotes seguintes. A verificação do bit 3 em cada primeiro byte é o alarme que deteta a dessincronização.
+:::
