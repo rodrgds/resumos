@@ -5,6 +5,12 @@ section: conteudo
 order: 5
 ---
 
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import WebPlayground from '../../../components/WebPlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import papel from '../../ipc/papel-mago.typ?raw';
+
 Um **protótipo** é uma versão incompleta do sistema, construída para responder a uma pergunta concreta: este fluxo faz sentido, este ecrã comunica, este botão é encontrado. Prototipar é barato; programar a solução errada é caro. A fidelidade do protótipo deve acompanhar a pergunta: quanto mais cedo, mais grosseiro.
 
 ## Baixa fidelidade: papel e esboços
@@ -13,15 +19,66 @@ Protótipos de **baixa fidelidade** são esboços em papel: retângulos por ecr�
 
 A técnica clássica é o **mágico de Oz** (_Wizard of Oz_): uma pessoa simula o sistema. O "utilizador" toca no botão de papel e tu trocas o ecrã pelo seguinte. Testas fluxos inteiros sem uma linha de código.
 
+<Typst
+  source={papel}
+  format="svg"
+  alt="Três folhas de papel em sequência. Tocar em Nova sessão leva aos dois blocos com sala, escolher um bloco leva à confirmação. Tu, o mago, trocas as folhas."
+/>
+
 ## Alta fidelidade: clicável e realista
 
 Protótipos de **alta fidelidade** parecem e comportam-se quase como o produto: ecrãs desenhados em ferramentas como o Figma, com navegação clicável, texto real e dados plausíveis. Servem para testar detalhe (rótulos, hierarquia, microinterações) e para apresentar a decididores. O risco é inverter a ordem: polir cedo demais prende a equipa ao desenho atual e inibe críticas.
 
 Regra prática: baixa fidelidade para divergir (muitas ideias, fluxos alternativos), alta fidelidade para convergir (afinar a solução escolhida). Nunca testes usabilidade geral num protótipo de alta fidelidade sem teres testado o fluxo em papel primeiro.
 
+<Tabs id="papel-figma" labels={['Papel', 'Figma']}>
+  <div slot="panel-0">
+
+Pergunta de teste: o utilizador encontra o caminho entre ecrãs? Custo: minutos e três folhas. Mede-se: hesitações, toques fora das zonas ativas, desistências. Não se mede aspeto.
+
+  </div>
+  <div slot="panel-1">
+
+Pergunta de teste: o utilizador percebe rótulos, hierarquia e estados? Custo: horas de desenho por ecrã. Mede-se: erros de interpretação, tempo por tarefa, satisfação. Só depois de o fluxo passar no papel.
+
+  </div>
+</Tabs>
+
+## Mini guia: protótipo clicável no Figma
+
+Para a app de estudo em grupo, o clicável responde "o fluxo convence antes de programar". Faz assim:
+
+1. Um _frame_ por ecrã: grupo com "Nova sessão", dois blocos com sala, confirmação com resumo. Texto real, dados plausíveis ("Qua 14:00, B207").
+2. Liga os ecrãs: seleciona o botão, arrasta a ligação para o _frame_ seguinte, escolhe "On click" com "Navigate to". Cada zona ativa tem um destino; o resto fica propositadamente morto.
+3. Usa variantes para estados: o botão "Nova sessão" tem versão normal e premida; a confirmação tem versão com e sem notificação enviada. Testas estados sem duplicar ecrãs.
+4. Partilha o _link_ de protótipo com o colega e observa: onde clica primeiro, onde hesita, o que tenta arrastar. Regista como numa sessão de papel, porque é a mesma pergunta com outra fidelidade.
+
+Para ver variantes na prática:
+
+<YouTube
+  id="y29Xwt9dET0"
+  title="Figma Tutorial: Variants"
+/>
+
 ## O que um bom protótipo cobre
 
 Limita o âmbito à pergunta. Para testar "o utilizador encontra a sala livre", bastam três ecrãs: propor horas, ver sugestões, confirmar. Tudo o resto pode ser estático ou inexistente. Define também o que acontece fora do caminho feliz: se o utilizador tocar onde não há nada, o facilitador diz "essa parte ainda não está pronta" e regista o desvio, porque tocar fora do guião é um dado, não uma falha do teste.
+
+## Exemplo: o fluxo que podes clicar
+
+Os três ecrãs em versão clicável. Carrega nos botões e repara no registo: diz sempre em que ecrã estás, como o facilitador diria numa sessão de papel.
+
+<WebPlayground
+  html={
+    '<div id="ecra1"><p>Grupo de estudo</p><button data-go="ecra2">Nova sessão</button></div>\n<div id="ecra2" hidden><p>Qua 14:00, B207</p><p>Qui 10:00, B112</p><button data-go="ecra3">Escolher Qua 14:00</button></div>\n<div id="ecra3" hidden><p>Sessão marcada: Qua 14:00, B207</p></div>\n<p id="registo">Ecrã atual: grupo</p>'
+  }
+  css={
+    'div { border: 1px solid #999; padding: 12px; margin-bottom: 8px; }\nbutton { padding: 8px 16px; cursor: pointer; }\n#registo { font-style: italic; }'
+  }
+  js={
+    'const nomes = { ecra1: "grupo", ecra2: "blocos", ecra3: "confirmação" };\nfor (const botao of document.querySelectorAll("[data-go]")) {\n  botao.onclick = () => {\n    for (const id of ["ecra1", "ecra2", "ecra3"]) document.querySelector("#" + id).hidden = id !== botao.dataset.go;\n    document.querySelector("#registo").textContent = "Ecrã atual: " + nomes[botao.dataset.go];\n  };\n};'
+  }
+/>
 
 ## Exemplo: fluxo de três ecrãs em papel
 
@@ -32,6 +89,10 @@ Pede a um colega que combine uma sessão para quarta sem lhe explicares nada. Tu
 :::tip[O que registar em cada sessão]
 Para cada tarefa anota: concluiu sem ajuda, com ajuda ou desistiu; tempo aproximado; número e tipo de erros; citações literais de confusão ("pensei que isto apagava"). Estes são os dados brutos que vais transformar em correções na [avaliação de usabilidade](avaliacao-usabilidade/).
 :::
+
+## Para saber mais
+
+- Figma, [Guide to prototyping in Figma](https://help.figma.com/hc/en-us/articles/360040314193-Guide-to-prototyping-in-Figma): o guia oficial, com ligações, interações e partilha.
 
 ## Para levar para a próxima página
 
