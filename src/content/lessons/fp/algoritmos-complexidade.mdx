@@ -5,6 +5,12 @@ section: conteudo
 order: 10
 ---
 
+import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import curvas from '../../fp/curvas-complexidade.typ?raw';
+
 Dois programas corretos podem ter velocidades muito diferentes. Esta página mostra como comparar algoritmos sem cronometrar: conta-se como o trabalho cresce com o tamanho da entrada. A recompensa é saberes prever, antes de correres, se o teu programa aguenta entradas grandes.
 
 ## Pesquisa linear e pesquisa binária
@@ -45,6 +51,15 @@ print(pesquisa_binaria([2, 5, 8, 11, 14, 17, 20], 9))
 
 Isto escreve `4` e `-1`. Segue a procura de `14` na lista de sete elementos: o meio inicial é a posição `3` (valor `11`); como $14 > 11$, a metade esquerda sai e o intervalo passa a `[4, 6]`. O novo meio é a posição `5` (valor `17`); como $14 < 17$, o intervalo passa a `[4, 4]`. O meio é a posição `4` (valor `14`): encontrado em três comparações. A condição `inicio <= fim` garante que o ciclo termina também quando o alvo não existe: o intervalo encolhe até ficar vazio.
 
+A árvore mostra as comparações da procura de `14`: cada nível exclui metade dos candidatos.
+
+<Dot
+  source={
+    'digraph { rankdir=TB; n11 [label="pos 3: 11"]; n17 [label="pos 5: 17"]; n14 [label="pos 4: 14"]; n5 [label="pos 1: 5"]; n2 [label="pos 0: 2"]; n8 [label="pos 2: 8"]; n11 -> n5 [label="14 > 11"]; n11 -> n17; n17 -> n14 [label="14 < 17"]; n5 -> n2 [label="14 > 5"]; n5 -> n8; }'
+  }
+  alt="Árvore de decisão da pesquisa binária do 14 na lista de sete elementos, com três comparações até encontrar."
+/>
+
 ## Ordens de crescimento e Big-O
 
 Para comparar algoritmos, mede-se o **tempo de execução** $T(n)$: o número de passos em função do tamanho $n$ da entrada. Mas os detalhes (quantos passos exatos, que computador) interessam menos do que a forma como o tempo cresce. Uma **ordem de crescimento** é um conjunto de funções com comportamento equivalente: $2n$, $100n$ e $n + 1$ são todas lineares, porque para entradas grandes o que conta é crescer proporcionalmente a $n$.
@@ -60,6 +75,18 @@ A **notação Big-O** exprime esse crescimento como um limite superior: dizer qu
 | $O(n^2)$      | Quadrática   | Dois ciclos aninhados sobre a mesma lista |
 
 A diferença entre $O(n)$ e $O(\log n)$ é dramática em entradas grandes. Com $n = 1\,000\,000$, a pesquisa linear faz até um milhão de comparações; a binária faz cerca de $\log_2(1\,000\,000) \approx 20$. Por isso a pergunta "a lista está ordenada?" muda completamente o algoritmo a escolher. O preço da binária é a pré-condição: exige a lista ordenada, e ordenar custa $O(n \log n)$.
+
+O gráfico compara as cinco ordens para $n$ de 1 a 10: a quadrática dispara enquanto a logarítmica quase não mexe.
+
+<Typst
+  source={curvas}
+  format="svg"
+  alt="Gráfico das ordens de crescimento de 1 a 10: constante, logarítmica, linear, quase-linear e quadrática, com a quadrática a terminar em 100."
+/>
+
+<YouTube id="__vX2sjlpXU" title="Big-O notation in 5 minutes" />
+
+<YouTube id="Ee0HzlnIYWQ" title="Big O: How Code Slows as Data Grows" />
 
 ## Custo das operações mais usadas
 
@@ -110,6 +137,21 @@ print(conta_binaria(1000))
 ```
 
 Isto escreve `1000` e `10`. A linear percorre as mil posições; a binária encontra o último elemento em dez comparações, porque cada passo reduz o intervalo para cerca de metade ($2^{10} = 1024 \geq 1000$). Generalizando: duplicar o tamanho da entrada duplica o trabalho da linear, mas acrescenta apenas uma comparação à binária.
+
+Corre a contagem e confirma os dois números.
+
+<CodePlayground
+  language="python"
+  title="Contar comparações"
+  code={
+    'def conta_linear(n):\n    comparacoes = 0\n    for i in range(n):\n        comparacoes += 1\n        if i == n - 1:\n            break\n    return comparacoes\n\ndef conta_binaria(n):\n    comparacoes = 0\n    inicio, fim = 0, n - 1\n    while inicio <= fim:\n        comparacoes += 1\n        meio = (inicio + fim) // 2\n        if meio == n - 1:\n            break\n        elif meio < n - 1:\n            inicio = meio + 1\n        else:\n            fim = meio - 1\n    return comparacoes\n\nprint(conta_linear(1000))\nprint(conta_binaria(1000))'
+  }
+/>
+
+## Para saber mais
+
+- [Big-O Cheat Sheet](https://www.bigocheatsheet.com/): tabela de complexidades das estruturas e dos algoritmos para consulta.
+- [VisuAlgo](https://visualgo.net/en/): animações de estruturas e algoritmos, incluindo a pesquisa binária.
 
 :::tip[Como analisar o teu código]
 Identifica o que é $n$ (normalmente o comprimento da lista ou da string) e conta as operações dominantes: um ciclo simples sobre a entrada é $O(n)$; dois ciclos aninhados sobre a mesma entrada são $O(n^2)$; um ciclo que reduz o problema para metade a cada volta é $O(\log n)$. Ignora constantes e termos mais pequenos: num algoritmo com um ciclo $O(n)$ seguido de uma ordenação $O(n \log n)$, a ordenação domina.

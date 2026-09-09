@@ -5,6 +5,10 @@ section: conteudo
 order: 8
 ---
 
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+
 Há várias formas de organizar um programa, chamadas **paradigmas**. Os programas **procedimentais** são listas de instruções que dizem ao computador o que fazer, passo a passo (C e Pascal são exemplos). As linguagens **declarativas** descrevem o problema e deixam a linguagem descobrir como calcular (SQL é o exemplo típico). As linguagens **orientadas por objetos** organizam o programa em objetos com estado interno e métodos (Java e Smalltalk). Python suporta vários paradigmas sem obrigar a nenhum, o que permite escolher o mais legível para cada problema.
 
 O paradigma **funcional** decompõe problemas em funções que recebem entradas e produzem saídas, idealmente como funções matemáticas: o mesmo input dá sempre o mesmo output, sem **efeitos secundários** (sem alterar variáveis globais, sem ler nem escrever a meio da computação). Uma função assim chama-se **pura** e é mais fácil de testar e de depurar, porque o seu comportamento depende apenas dos argumentos.
@@ -76,6 +80,49 @@ print(media_aprovados([5, 7]))
 ```
 
 Isto escreve `12.333333333333334` e `0`. Segue o primeiro caso: `filter` guarda `[12, 15, 10]`; o `reduce` soma para `37`; `37 / 3` dá a média. O teste `if not aprovadas` protege a divisão por zero quando ninguém passa: sem ele, `len(aprovadas)` seria `0` e o programa morreria com erro de execução. Este teste de entrada vazia é o pormenor que distingue uma solução completa de uma incompleta.
+
+O grafo mostra o pipeline: a lista entra, o filtro guarda as aprovações e a redução agrega.
+
+<Dot
+  source={
+    'digraph { rankdir=LR; notas [shape=box]; filtrar [label="filter (>= 10)"]; agregar [label="reduce (+)"]; media [shape=box]; notas -> filtrar -> agregar -> media; }'
+  }
+  alt="Pipeline funcional: as notas passam pelo filtro das aprovações e depois pela agregação da soma."
+/>
+
+Corre os dois casos, incluindo a lista sem aprovações.
+
+<CodePlayground
+  language="python"
+  title="Média das aprovações"
+  code={
+    'from functools import reduce\n\ndef media_aprovados(notas):\n    aprovadas = list(filter(lambda n: n >= 10, notas))\n    if not aprovadas:\n        return 0\n    total = reduce(lambda a, b: a + b, aprovadas)\n    return total / len(aprovadas)\n\nprint(media_aprovados([8, 12, 15, 7, 10]))\nprint(media_aprovados([5, 7]))'
+  }
+/>
+
+A mesma média em dois estilos, para comparares a legibilidade:
+
+<Tabs id="media-estilos" labels={['Funcional', 'Compreensão']}>
+  <div slot="panel-0">
+
+```python
+from functools import reduce
+
+aprovadas = list(filter(lambda n: n >= 10, notas))
+total = reduce(lambda a, b: a + b, aprovadas)
+media = total / len(aprovadas)
+```
+
+  </div>
+  <div slot="panel-1">
+
+```python
+aprovadas = [n for n in notas if n >= 10]
+media = sum(aprovadas) / len(aprovadas)
+```
+
+  </div>
+</Tabs>
 
 :::tip[Quando usar este estilo]
 Usa `map` e `filter` quando a operação se exprime numa linha e a função aplicada já existe ou é um `lambda` simples. Se o `lambda` crescer para lá de uma expressão curta, ou se precisares de acumuladores com lógica condicional, um ciclo explícito ou uma compreensão (próxima página) fica mais legível. Legibilidade decide, não brevidade.
