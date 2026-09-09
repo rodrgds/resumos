@@ -1,0 +1,55 @@
+---
+title: Princípios de usabilidade
+description: Affordances, visibilidade, feedback e consistência, com as dez heurísticas de Nielsen.
+section: conteudo
+order: 3
+---
+
+Os princípios de usabilidade são regras curtas que resumem décadas de erros alheios. Não substituem testar com pessoas, mas apanham a maioria dos problemas antes de gastares tempo com protótipos. Aprende-os como checklist: perante um ecrã, percorres a lista e anotas violações.
+
+## Quatro ideias que sustentam tudo
+
+Uma **affordance** é uma pista de como usar uma coisa: um botão parece carregável porque tem relevo e sombra; um campo de texto parece editável porque tem uma caixa vazia. Quando um título com aspeto de botão não faz nada ao clique, a affordance mente.
+
+A **visibilidade do estado** diz que o sistema deve mostrar sempre o que está a acontecer: que passo é este de quantos, o ficheiro está a guardar, o pedido foi enviado. Lembra-te da máquina de bilhetes que recomeçava sem avisar: falhava exatamente aqui.
+
+O **feedback** é a resposta a cada ação, na medida certa: o botão muda ao toque, a mensagem confirma "mensagem enviada", a barra mostra o progresso de uma operação longa. Sem feedback, o utilizador repete a ação e cria duplicados.
+
+A **consistência** pede o mesmo aspeto e comportamento para a mesma função em todo o sistema: o botão de confirmar no mesmo sítio, o mesmo ícone para pesquisar, o mesmo formato de data. Consistência poupa aprendizagem; cada exceção cobra atenção.
+
+## As dez heurísticas de Nielsen
+
+Jakob Nielsen resumiu a avaliação de interfaces em dez pontos. Usa-os como perguntas:
+
+1. **Visibilidade do estado do sistema.** O utilizador sabe onde está e o que se passa?
+2. **Correspondência com o mundo real.** A linguagem e a ordem seguem a lógica do utilizador, não a do código?
+3. **Controlo e liberdade.** Há saída clara de estados indesejados, como desfazer e cancelar?
+4. **Consistência e padrões.** As mesmas palavras e ações significam sempre o mesmo?
+5. **Prevenção de erros.** O desenho torna os erros difíceis em vez de só os assinalar?
+6. **Reconhecimento em vez de recordação.** As opções e instruções estão visíveis?
+7. **Flexibilidade e eficiência.** Há atalhos para experientes sem confundir novatos?
+8. **Estética minimalista.** Cada elemento extra compete com o essencial?
+9. **Ajudar a reconhecer e recuperar de erros.** As mensagens dizem o que aconteceu e como resolver, sem códigos?
+10. **Ajuda e documentação.** Existe ajuda pesquisável para quando tudo o resto falha?
+
+## Exemplo: dois ecrãs da app de cantina
+
+Avalia o ecrã de carregamento do cartão e o ecrã de consulta de saldo ementa da semana:
+
+| # | Carregar cartão | Consultar ementa |
+| - | --------------- | ---------------- |
+| 1 | Sem indicador de progresso; o utilizador não sabe se o pagamento foi processado. Gravidade alta. | OK, mostra "ementa desta semana" com datas. |
+| 3 | Sem botão de cancelar a meio do pagamento. Gravidade média. | OK, voltar atrás é trivial. |
+| 5 | Aceita valores negativos no montante e só reclama no fim. Gravidade alta. | Não aplicável. |
+| 6 | Pede o número do cartão, impresso no verso do cartão físico que está na carteira. Gravidade média. | OK, nada a decorar. |
+| 9 | Erro "transação 0x41 recusada", sem dizer se foi o banco ou o saldo. Gravidade alta. | OK. |
+
+Repara no método: heurística a heurística, ecrã a ecrã, cada violação com descrição concreta e gravidade. "Gravidade" combina frequência, impacto e persistência: um erro raro mas destrutivo (pagar duas vezes) supera um incómodo diário pequeno. Esta tabela é o formato esperado numa [avaliação heurística](avaliacao-usabilidade/); guarda-o.
+
+:::tip[Como priorizar]
+Ordena as violações por gravidade antes de propor soluções. Corrigir primeiro o que faz perder dinheiro ou dados, depois o que faz perder tempo, por fim o polimento. Um relatório com vinte sugestões sem prioridades raramente muda alguma coisa.
+:::
+
+## Para levar para a próxima página
+
+Princípios e heurísticas dizem-te o que está mal nos ecrãs. Mas um bom produto começa antes do primeiro ecrã: perceber quem usa, para quê e em que contexto. Esse é o processo de [design centrado no utilizador](design-centrado-utilizador/).
