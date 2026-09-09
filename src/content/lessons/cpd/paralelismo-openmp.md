@@ -1,0 +1,46 @@
+---
+title: Tipos de paralelismo e OpenMP
+description: Paralelismo funcional, de dados e em streams, com um ciclo paralelizado em OpenMP e medição.
+section: conteudo
+order: 4
+---
+
+Há três formas de dividir trabalho, e cada uma pede uma ferramenta diferente. Esta página distingue-as e mete-te a paralelizar um ciclo real com OpenMP, o modelo de memória partilhada da primeira metade da cadeira.
+
+## Os três tipos
+
+No paralelismo **funcional**, tarefas diferentes correm ao mesmo tempo. Um núcleo comprime imagens enquanto outro trata do áudio. No paralelismo **de dados**, a mesma operação aplica-se a fatias diferentes dos dados. Cada núcleo soma uma parte do vetor. No paralelismo **em streams** (_pipeline_), os dados atravessam fases encadeadas. Enquanto a fase 3 trata a imagem 1, a fase 2 trata a imagem 2 e a fase 1 recebe a imagem 3.
+
+O paralelismo de dados é o mais comum em computação numérica e é o que o OpenMP serve melhor, porque um ciclo com iterações independentes é exatamente uma operação repetida sobre fatias de dados.
+
+## OpenMP em dez linhas
+
+O OpenMP paraleliza com diretivas de compilador. Este programa soma um vetor de $10^8$ doubles:
+
+```c
+#include <omp.h>
+#include <stdio.h>
+#define N 100000000
+
+int main(void) {
+    static double v[N];
+    double soma = 0.0;
+    for (long i = 0; i < N; i++) v[i] = 1.0;
+    double t0 = omp_get_wtime();
+    #pragma omp parallel for reduction(+:soma)
+    for (long i = 0; i < N; i++) soma += v[i];
+    double t1 = omp_get_wtime();
+    printf("soma = %.0f tempo = %.2f s\n", soma, t1 - t0);
+    return 0;
+}
+```
+
+Compila com `gcc -O2 -fopenmp soma.c -o soma` e corre com `./soma`. A cláusula `reduction(+:soma)` dá a cada thread um acumulador privado e soma-os no fim, por isso o resultado é exato sem proteção manual. Numa medição típica com 4 núcleos, o tempo cai de cerca de 0,32 s para cerca de 0,09 s, um speedup de 3,5 com eficiência de 88 por cento.
+
+## Quando não compensa
+
+Repete com $N = 1000$ e o programa paralelo fica mais lento que o sequencial. Criar a equipa de threads e juntar os acumuladores custa dezenas de microsegundos, e para mil iterações esse custo fixo supera o ganho. A regra prática: paraleliza ciclos longos com iterações independentes e mede sempre. Iterações com dependências entre si, como uma recorrência em que cada passo usa o anterior, não se paralelizam com `parallel for`.
+
+:::details[Ver a saída esperada]
+Com o vetor cheio de uns, a soma tem de dar exatamente 100000000. Se der outro valor, a redução está mal escrita ou falta a cláusula, e tens uma condição de corrida, o tema da próxima página. O tempo varia com a máquina, mas a relação deve manter-se, paralelo claramente mais rápido para $N$ grande e mais lento para $N$ pequeno.
+:::
