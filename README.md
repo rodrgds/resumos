@@ -67,7 +67,7 @@ O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](ht
 
 Os dados curriculares vêm do [plano oficial de 2026/27](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2026&pv_origem=CUR&pv_plano_id=31224&pv_tipo_cur_sigla=), consultado a 9 de setembro de 2026. CT I, II e III são grupos de opções. Projeto UP substitui o nome antigo Projeto FEUP.
 
-O arquivo [MIEIC](/mieic/) inclui as cadeiras obrigatórias e todas as optativas com nome no [plano SIGARRA de 2020/21](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2020&pv_origem=CUR&pv_plano_id=2496&pv_tipo_cur_sigla=MI). A distribuição mostrada põe a Preparação da Dissertação no 1.º semestre e a Dissertação no 2.º; o plano também permite a alternativa inversa.
+O arquivo [MIEIC](https://resumos-feup.pages.dev/mieic/) inclui as cadeiras obrigatórias e todas as optativas com nome no [plano SIGARRA de 2020/21](https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_ano_lectivo=2020&pv_origem=CUR&pv_plano_id=2496&pv_tipo_cur_sigla=MI). A distribuição mostrada põe a Preparação da Dissertação no 1.º semestre e a Dissertação no 2.º; o plano também permite a alternativa inversa.
 
 ## Publicar
 
