@@ -1,0 +1,134 @@
+---
+title: Criação de tabelas em SQL
+description: DDL em SQLite, tipos, chaves, restrições e os ficheiros criar e povoar.
+section: conteudo
+order: 4
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+
+O SQL divide-se em duas metades: a **DDL** (_data definition language_), que cria a estrutura, e a DML, que mexe nos dados e nas perguntas. Criar a base de dados da loja é escrever a DDL do esquema relacional mais os `INSERT` que a enchem, nos ficheiros `criar.sql` e `povoar.sql` que o projeto da cadeira pede.
+
+## Abrir o SQLite
+
+Antes dos ficheiros, confirma que tens o SQLite a correr. Escolhe o teu sistema:
+
+<Tabs id="sqlite-sistemas" labels={['Linux', 'macOS', 'Windows']}>
+  <div slot="panel-0">
+
+No Debian e derivados, instala e abre uma base de dados em memória para experimentar:
+
+```bash
+sudo apt install sqlite3
+sqlite3 :memory:
+```
+
+O convite `sqlite>` confirma que estás dentro. Sai com `.quit`.
+
+  </div>
+  <div slot="panel-1">
+
+Com o Homebrew instalado, o comando é um só e a sessão abre da mesma forma:
+
+```bash
+brew install sqlite3
+sqlite3 :memory:
+```
+
+  </div>
+  <div slot="panel-2">
+
+Descarrega o pacote `sqlite-tools` em [sqlite.org/download.html](https://sqlite.org/download.html), descompacta e corre `sqlite3.exe` na pasta. Os comandos da sessão são iguais aos das outras plataformas.
+
+  </div>
+</Tabs>
+
+## CREATE TABLE e restrições
+
+Cada tabela declara colunas com tipo e **restrições de integridade**, as regras que o SGBD impõe a cada escrita:
+
+```sql
+CREATE TABLE Cliente (
+  id    INTEGER PRIMARY KEY,
+  nome  TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE Produto (
+  id    INTEGER PRIMARY KEY,
+  nome  TEXT NOT NULL,
+  preco REAL NOT NULL CHECK (preco > 0),
+  stock INTEGER NOT NULL CHECK (stock >= 0)
+);
+```
+
+`PRIMARY KEY` identifica e proíbe nulos e repetidos. `NOT NULL` proíbe omissões, `UNIQUE` proíbe repetidos sem identificar, `CHECK` impõe uma condição. Os tipos do SQLite são poucos (`INTEGER`, `TEXT`, `REAL`); a robustez vem das restrições, não dos tipos.
+
+As estrangeiras ligam as tabelas e o SQLite só as fiscaliza se o pedires em cada sessão:[^pragma-fk]
+
+```sql
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE Encomenda (
+  id        INTEGER PRIMARY KEY,
+  data      TEXT NOT NULL,
+  idCliente INTEGER NOT NULL REFERENCES Cliente(id)
+);
+
+CREATE TABLE Item (
+  idEncomenda INTEGER REFERENCES Encomenda(id),
+  idProduto   INTEGER REFERENCES Produto(id),
+  qtd         INTEGER NOT NULL CHECK (qtd > 0),
+  PRIMARY KEY (idEncomenda, idProduto)
+);
+```
+
+A chave primária composta do par impede linhas duplicadas para o mesmo par, como exige o mapeamento. Corre o esquema completo e confirma as quatro tabelas criadas:
+
+<CodePlayground
+  language="sql"
+  title="Criar o esquema e listar as tabelas"
+  code={'PRAGMA foreign_keys = ON;\nCREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL);\nCREATE TABLE Produto(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, preco REAL NOT NULL CHECK (preco > 0), stock INTEGER NOT NULL CHECK (stock >= 0));\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, data TEXT NOT NULL, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nCREATE TABLE Item(idEncomenda INTEGER REFERENCES Encomenda(id), idProduto INTEGER REFERENCES Produto(id), qtd INTEGER NOT NULL CHECK (qtd > 0), PRIMARY KEY (idEncomenda, idProduto));\nSELECT name FROM sqlite_master WHERE type = \u0027table\u0027 ORDER BY name;'}
+/>
+
+O resultado lista `Cliente`, `Encomenda`, `Item` e `Produto` por ordem alfabética: o esquema existe e está vazio, pronto a povoar.
+
+## Povoar e falhar com dignidade
+
+O `povoar.sql` enche as tabelas por ordem de dependência, pais antes de filhos, com os dados do cenário da [apresentação](index/):
+
+```sql
+INSERT INTO Cliente VALUES
+  (1, 'Ana', 'ana@mail'), (2, 'Rui', 'rui@mail'), (3, 'Mia', 'mia@mail');
+INSERT INTO Produto VALUES
+  (10, 'Teclado', 45.0, 20), (11, 'Rato', 25.0, 50), (12, 'Monitor', 180.0, 5);
+INSERT INTO Encomenda VALUES
+  (100, '2026-01-05', 1), (101, '2026-01-12', 1), (102, '2026-01-08', 2);
+INSERT INTO Item VALUES
+  (100, 10, 2), (100, 11, 1), (101, 12, 1), (102, 11, 3);
+```
+
+E as restrições mordem quando tentas violar o modelo. Inserir uma encomenda do cliente 99, que não existe, devolve `FOREIGN KEY constraint failed`; inserir um produto com preço negativo devolve `CHECK constraint failed`. Estes erros não são chatices do SQLite: são o esquema a proteger a loja de dados impossíveis. Quando um `INSERT` falhar no projeto, lê a restrição citada em vez de a remover.
+
+## Escrever depois de povoar
+
+Povoar é só o primeiro `INSERT`. A DML de escrita tem mais dois verbos, ambos com `WHERE` obrigatório na prática:
+
+```sql
+UPDATE Produto SET preco = 22.0 WHERE nome = 'Rato';
+DELETE FROM Cliente WHERE id = 3;
+```
+
+O `UPDATE` baixa o preço do Rato de 25 para 22; sem o `WHERE`, baixava o preço de _todos_ os produtos. O `DELETE` remove a Mia, que não tem encomendas. Tentar `DELETE FROM Cliente WHERE id = 1` falha com `FOREIGN KEY constraint failed`, porque as encomendas 100 e 101 apontam para a Ana: primeiro apagam-se os filhos (`Item`, depois `Encomenda`), só depois o pai. Essa ordem inversa à do povoamento é a regra de ouro das eliminações.
+
+:::warning[O erro mais comum]
+Criar as tabelas sem `PRAGMA foreign_keys = ON` e descobrir tarde que as estrangeiras eram decorativas. O SQLite aceita a sintaxe `REFERENCES` sempre, mas só rejeita violações com o pragma ligado. Corre-o no início de cada sessão e de cada script.
+:::
+
+## Para saber mais
+
+- Sintaxe oficial do `CREATE TABLE` e das restrições de coluna e tabela: [sqlite.org/lang_createtable.html](https://sqlite.org/lang_createtable.html).
+- Chaves estrangeiras e porquê do `PRAGMA foreign_keys = ON`: [sqlite.org/foreignkeys.html](https://sqlite.org/foreignkeys.html).
+
+[^pragma-fk]: O SQLite interpreta a cláusula `REFERENCES` sempre, mas só impõe chaves estrangeiras com `PRAGMA foreign_keys = ON` em cada sessão. Ver [sqlite.org/foreignkeys.html](https://sqlite.org/foreignkeys.html).

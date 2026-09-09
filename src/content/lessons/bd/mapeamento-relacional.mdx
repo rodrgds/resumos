@@ -5,6 +5,11 @@ section: conteudo
 order: 2
 ---
 
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import esquema from '../../bd/esquema-relacional.typ?raw';
+
 O **esquema relacional** é a tradução do diagrama UML para tabelas: cada tabela tem colunas, cada linha é uma instância e as ligações entre tabelas fazem-se com chaves. Há uma regra de tradução para cada construção do diagrama, e aplicá-las mecanicamente dá o esquema certo.
 
 ## A regra base e as chaves
@@ -41,6 +46,26 @@ A chave primária é o par: a mesma encomenda pode ter vários produtos e o mesm
 
 Associações um para um traduzem-se com uma estrangeira de um dos lados marcada como única, ou fundindo as duas tabelas numa só quando a participação é obrigatória dos dois lados.
 
+As três regras lado a lado, cada uma com o exemplo da loja:
+
+<Tabs id="mapeamento-regras" labels={['Um para muitos', 'Muitos para muitos', 'Um para um']}>
+  <div slot="panel-0">
+
+Um cliente faz muitas encomendas: a FK `idCliente` vive em `Encomenda` e aponta para `Cliente(id)`. O lado um nunca ganha colunas novas.
+
+  </div>
+  <div slot="panel-1">
+
+Encomenda contém produtos com quantidade: nasce a tabela `Item(idEncomenda, idProduto, qtd)` com PK no par e duas FKs. A quantidade mora no par.
+
+  </div>
+  <div slot="panel-2">
+
+Um cliente tem no máximo um cartão de fidelidade e vice-versa: FK única de um dos lados, ou uma tabela só com as colunas dos dois quando a participação é obrigatória. A loja não usa este caso.
+
+  </div>
+</Tabs>
+
 ## Conversão completa da loja
 
 Aplicando as três regras ao diagrama da página anterior:
@@ -52,7 +77,27 @@ Encomenda(id, data, idCliente -> Cliente)
 Item(idEncomenda -> Encomenda, idProduto -> Produto, qtd)
 ```
 
+Em figura, com as primárias sublinhadas e as setas das estrangeiras:
+
+<Typst
+  source={esquema}
+  format="svg"
+  alt="Esquema relacional da loja: quatro tabelas com chaves primárias sublinhadas; Encomenda aponta para Cliente e Item aponta para Encomenda e Produto através de chaves estrangeiras."
+/>
+
 Confere com os dados da apresentação: a encomenda 100 tem `idCliente = 1` (a Ana), e a linha `(100, 10, 2)` diz que ela leva 2 Teclados. Repara que nada se repete: o nome da Ana está só em `Cliente`, o preço do Teclado só em `Produto`. Essa ausência de repetição é o que a [normalização](normalizacao/) vai formalizar e verificar.
+
+## A estrangeira a morder
+
+Cria o esquema mínimo e tenta registar uma encomenda do cliente 99, que não existe. Executa e vê o erro:
+
+<CodePlayground
+  language="sql"
+  title="Estrangeira rejeita o cliente inexistente"
+  code={'PRAGMA foreign_keys = ON;\nCREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL);\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nINSERT INTO Cliente VALUES (1, \u0027Ana\u0027);\nINSERT INTO Encomenda VALUES (100, 99);\nSELECT * FROM Encomenda;'}
+/>
+
+O SQLite recusa a segunda inserção com `FOREIGN KEY constraint failed` e a tabela `Encomenda` continua vazia: a linha impossível nunca entra. Sem o pragma ligado no início, a mesma inserção passava sem queixa e a base de dados ficava incoerente.
 
 :::warning[O erro mais comum]
 Criar a tabela da associação muitos para muitos com uma PK artificial e sem unicidade no par. Se `Item` tivesse `id` próprio sem restrição única em `(idEncomenda, idProduto)`, nada impediria duas linhas iguais para o mesmo par e a quantidade deixava de fazer sentido.
