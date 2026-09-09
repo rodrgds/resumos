@@ -5,11 +5,18 @@ section: conteudo
 order: 5
 ---
 
+import Dot from '../../../components/Dot.astro';
+import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import pilhaPassos from './pilha-passos.typ?raw';
+
 Um **autómato de pilha** (PDA, de _pushdown automaton_) é um NFA com uma pilha: a cada passo, além de ler (ou não) um símbolo, pode empilhar ou desempilhar símbolos. A pilha é memória ilimitada mas só com acesso ao topo, e é exatamente o que faltava para reconhecer $\{0^n 1^n\}$. Esta página constrói esse autómato e enuncia a equivalência com gramáticas livres de contexto.
 
 ## O modelo
 
 Um PDA tem estados finitos, alfabeto de entrada $\Sigma$ e alfabeto de pilha $\Gamma$ (que pode incluir um marcador de fundo como $\$$). Cada transição indica: estado atual, símbolo a ler ($\varepsilon$ se não lê), símbolo no topo da pilha, estado destino e o que empilhar (ou desempilhar). Aceita por **estado final** (terminar num estado de aceitação após ler tudo, com qualquer conteúdo na pilha) ou por **pilha vazia**; os dois critérios são equivalentes.
+
+Em notação compacta (à Sipser), a transição que troca de fase escreve-se $\delta(q_0, 1, 0) = \{(q_1, \varepsilon)\}$: lê-se "no estado $q_0$, ao ler $1$ com $0$ no topo, vai para $q_1$ e empilha $\varepsilon$", ou seja, desempilha sem pôr nada no lugar. O triplo antes da seta é a condição, o par depois é o efeito.
 
 A intuição: a parte finita (estados) trata o que os DFA já tratavam, e a pilha guarda contagens e chamadas por fechar. É o mesmo salto dos parênteses bem formados: empilha ao abrir, desempilha ao fechar.
 
@@ -35,6 +42,49 @@ Aceitação (cont.):
 ```
 
 Corre $w = 0011$: empilha $\$$, empilha $0$, empilha $0$ (pilha: $0,0,\$$ do topo para o fundo). Lê $1$: desempilha um $0$, vai para $q_1$. Lê $1$: desempilha o outro $0$ (pilha: $\$$). Fim da palavra em $q_1$ com topo $\$$: transição $\varepsilon$ para $q_f$. Aceite.
+
+<Dot
+  source={`digraph PDA {
+  rankdir=LR;
+  node [shape=circle];
+  start [shape=none, label=""];
+  start -> q0;
+  q0 -> q0 [label="0, qualquer: empilha 0"];
+  q0 -> q1 [label="1, 0: desempilha"];
+  q0 -> qf [label="e, $: desempilha"];
+  q1 -> q1 [label="1, 0: desempilha"];
+  q1 -> qf [label="e, $: desempilha"];
+  qf [shape=doublecircle];
+}`}
+  alt="PDA com três estados. O estado q0 tem um ciclo que empilha 0, vai para q1 ao ler 1 com 0 no topo e vai para qf sem ler com o marcador no topo. O estado q1 tem um ciclo que desempilha com 1 e vai para qf sem ler com o marcador no topo. O estado qf, de aceitação, não tem saídas."
+/>
+
+Os rótulos dizem "símbolo lido, topo exigido: efeito na pilha", com `e` no lugar do $\varepsilon$ para o Graphviz desenhar. O traço completo para $0011$, com a pilha do topo para o fundo:
+
+| Estado | Por ler | Pilha     |
+| ------ | ------- | --------- |
+| $q_0$  | `0011`  | `$`       |
+| $q_0$  | `011`   | `0, $`    |
+| $q_0$  | `11`    | `0, 0, $` |
+| $q_1$  | `1`     | `0, $`    |
+| $q_1$  | (vazia) | `$`       |
+| $q_f$  | (vazia) | (vazia)   |
+
+<Typst
+  source={pilhaPassos}
+  format="svg"
+  alt="Quatro instantâneos da pilha ao correr 0011: só o marcador, depois com dois zeros por cima, depois com um zero após o primeiro um, e por fim só o marcador após o segundo um."
+/>
+
+A mesma receita em código, com a pilha trocada por uma contagem (a altura da pilha é o número de zeros por emparelhar):
+
+<CodePlayground
+  language="python"
+  title="Contar com a pilha"
+  code={
+    'def pda(w):\n    if w == "":\n        return True\n    zeros = 0\n    while zeros < len(w) and w[zeros] == "0":\n        zeros += 1\n    uns = w[zeros:]\n    return zeros > 0 and len(uns) == zeros and all(s == "1" for s in uns)\n\nfor w in ["0011", "010", ""]:\n    print(w or "epsilon", "aceite" if pda(w) else "rejeitada")'
+  }
+/>
 
 E porque é que $010$ é rejeitada? Lê $0$ (empilha), lê $1$ (desempilha, vai para $q_1$ com pilha $\$$), lê $0$: não há transição de $q_1$ a ler $0$. O caminho morre, e não há outro. Rejeitada, como devia.
 
