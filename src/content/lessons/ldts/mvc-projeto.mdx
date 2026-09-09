@@ -1,0 +1,99 @@
+---
+title: MVC e projeto integrador
+description: Model-View-Controller em aplicações event driven e a organização do projeto em equipa.
+section: conteudo
+order: 8
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import Typst from '../../../components/Typst.astro';
+import mvc from '../../ldts/mvc.typ?raw';
+
+**MVC** separa a aplicação em três papéis. O **Model** guarda o estado e as regras: posições, vidas, pontuação. A **View** desenha o estado no ecrã e não decide nada. O **Controller** recebe os eventos (teclas, cliques), atualiza o Model e pede à View para redesenhar. Em aplicações **event driven** como o jogo, nada corre em sequência fixa: o programa espera eventos e reage.
+
+<Typst
+  source={mvc}
+  format="svg"
+  alt="Triângulo com Model, View e Controller. O Controller atualiza o Model e pede o redesenho à View, que lê o Model."
+/>
+
+## Porque separar
+
+Sem MVC, a classe do jogo lê teclas, mexe em posições e desenha tudo misturado, e cada mudança toca em tudo. Com MVC, cada pergunta tem um dono: "onde está o herói" é o Model, "como se desenha" é a View, "o que acontece ao premir cima" é o Controller. Os testes agradecem: o Model testa-se sem ecrã nem teclado, como fizeste nos [testes unitários](testes-unitarios/).
+
+## Mapear o Hero
+
+No jogo do projeto, o mapeamento típico é este:
+
+- **Model**: `Arena` com o herói, os monstros, as paredes e a pontuação, mais as regras de movimento e colisão. Não importa nenhum pacote de desenho.
+- **View**: a classe que pega na `Arena` e desenha cada elemento no terminal com a biblioteca do projeto (Lanterna, no caso do jogo Hero). Só lê o Model, nunca o altera.
+- **Controller**: o `ControladorArena` com o mapa de `Comando` por tecla. Recebe o evento, atualiza o Model e chama a View.
+
+O ciclo de um evento fica assim: tecla premida, Controller atualiza a posição no Model, View redesenha a arena. Se um dia trocares Lanterna por outra biblioteca, só a View muda. O [repositório oficial da Lanterna](https://github.com/mabe02/lanterna/) documenta a biblioteca de terminal usada no jogo.
+
+Na Lanterna, o esqueleto do ciclo é ler a tecla, atualizar e redesenhar:
+
+```java
+Screen screen = new DefaultTerminalFactory().createScreen();
+screen.startScreen();
+KeyStroke tecla = screen.readInput(); // bloqueia até haver tecla
+arena.atualizar(tecla);
+desenharArena(screen, arena);
+screen.refresh();
+screen.stopScreen();
+```
+
+O `readInput` bloqueia à espera do utilizador: é o "event driven" na prática. O resto do programa é o Model puro que já testaste. Como a Lanterna precisa de um terminal a sério, o bloco executável abaixo usa só Java puro com teclas programadas: a entrada já contém a sequência e o programa imprime o estado a cada passo.
+
+<CodePlayground
+  language="java"
+  title="Ciclo tecla, estado, pontos"
+  input={'direita\ndireita\nitem\nsair'}
+  code={
+    'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        int x = 5;\n        int pontos = 0;\n        Scanner teclado = new Scanner(System.in);\n        while (teclado.hasNextLine()) {\n            String tecla = teclado.nextLine().trim();\n            if (tecla.equals("sair")) {\n                break;\n            }\n            if (tecla.equals("direita")) {\n                x = x + 1;\n            }\n            if (tecla.equals("item")) {\n                pontos = pontos + 50;\n            }\n            System.out.println("heroi em " + x + ", pontos " + pontos);\n        }\n        teclado.close();\n    }\n}'
+  }
+/>
+
+A saída mostra o herói a andar para a direita e os pontos a saltar para 50 quando apanha o item. Cada linha impressa é um "redesenho": o estado muda, o observador vê.
+
+## Organizar o projeto em equipa
+
+Três pessoas, seis semanas, um repositório. O que funciona:
+
+- Divide por camadas MVC, uma pessoa por camada, com as interfaces (`Ecra`, `Comportamento`, `Comando`) acordadas na primeira semana.
+- Cada funcionalidade num branch com revisão antes do merge, como no [controlo de versões](controlo-versoes/).
+- Testes escritos junto com o código: o Model com testes unitários puros, o Controller com mocks da View, e a cobertura e o Pitest no build para apanhar testes fracos.
+- Refactoring contínuo: quando um smell aparece, trata-o nessa semana. Na última semana já não há tempo para reestruturar.
+
+:::warning[Os relatórios contam]
+O projeto avalia produto e relatórios. Guarda decisões à medida que as tomas: que padrões aplicaste e porquê, que smells encontraste, o que os testes apanharam. Reconstruir isto na véspera da entrega produz relatórios vagos e notas que o produto não salva.
+:::
+
+## Exemplo: planear os testes do projeto
+
+Antes de escrever código novo, lista o que vais testar. Para a funcionalidade "herói apanha item e ganha pontos":
+
+<Tabs id="testes-camadas" labels={['Model', 'Controller', 'Observer']}>
+  <div slot="panel-0">
+
+Testa a regra pura, sem ecrã nem teclado. Cria a arena, apanha o item, verifica os 50 pontos e que o item desapareceu. É o teste mais barato e o mais importante: se a regra está errada aqui, está errada em todo o lado.
+
+  </div>
+  <div slot="panel-1">
+
+Testa a reação à tecla com a View em mock. Prende a entrada na tecla certa, corre o passo e verifica com `verify` que a View recebeu o redesenho esperado. Não testa a regra (isso é do Model), testa a ligação tecla, ação, desenho.
+
+  </div>
+  <div slot="panel-2">
+
+Testa a notificação com um observador espião. Apanha o item e confirma que a pontuação foi notificada com o valor certo. Se um segundo observador for registado a meio, também ele recebe: é o desacoplamento do Observer à prova.
+
+  </div>
+</Tabs>
+
+1. Model: apanhar o item soma 50 à pontuação e remove o item da arena (teste puro, sem ecrã).
+2. Controller: a tecla move o herói para a casa do item (mock da View verifica o redesenho).
+3. Observer: a pontuação é notificada quando o item desaparece (verifica com mock de observador).
+
+Três testes, três camadas, cada um a proteger a sua responsabilidade. Quando o projeto crescer, esta lista vira a bateria que te deixa refatorar sem medo.

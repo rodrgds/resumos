@@ -1,0 +1,101 @@
+---
+title: Code smells e refactoring
+description: Cheiros típicos de código doente e as refatorações que os resolvem sem mudar comportamento.
+section: conteudo
+order: 6
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Tabs from '../../../components/Tabs.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Um **code smell** é um sintoma de mau desenho: o código funciona, mas cheira a problema futuro. **Refactoring** é a cura: reestruturar o código sem mudar o comportamento observável. A rede de segurança são os testes da página anterior. A regra de ouro: nunca refatores sem testes verdes, e corre-os a cada passo pequeno. O catálogo clássico destes cheiros e curas está documentado no refactoring.guru.[^catalogo]
+
+[^catalogo]: Refactoring.guru, catálogo de code smells e refatorações com exemplos (https://refactoring.guru/).
+
+## Os cheiros mais comuns
+
+**Método longo**: um método com cinquenta linhas faz várias coisas. Resolve-se com **extrair método**, dando um nome a cada bloco.
+
+**Classe grande**: a `Jogo` que sabe de input, física, desenho e pontuação. Resolve-se com **extrair classe**, como fizeste no SOLID.
+
+**Código duplicado**: o mesmo bloco em três sítios. Cada correção futura tem de ser feita três vezes, e uma vai ser esquecida. Resolve-se com **extrair método** e chamar o método nos três sítios.
+
+**Feature Envy**: um método que usa mais os dados de outra classe que os seus. O método tem inveja da outra classe e devia mudar-se para lá com **mover método**.
+
+**Data class**: uma classe só com getters e setters, sem comportamento. O comportamento vive espalhado por quem usa a classe. Resolve-se a mover os métodos para dentro dela.
+
+**Switch extenso**: um `switch` sobre o tipo que cresce a cada funcionalidade nova. Resolve-se com polimorfismo: cada caso vira uma classe, como os `Comando` do SOLID.
+
+**Data Clumps**: os mesmos três parâmetros (`x`, `y`, `cor`) a viajarem juntos em cinco assinaturas. Resolve-se com **extrair classe**, agrupando-os num objeto como `Posicao`.
+
+**Long Parameter List**: um método com seis ou sete parâmetros que ninguém consegue chamar sem consultar a assinatura. Resolve-se a agrupar parâmetros relacionados num objeto ou a dividir o método.
+
+**Primitive Obsession**: usar `String` para telefones, `int` para dinheiro, `double` para posições. Resolve-se com **substituir primitiva por objeto**, criando pequenos tipos com validação própria.
+
+<Tabs id="cheiro-cura" labels={['Método longo', 'Feature Envy', 'Switch extenso']}>
+  <div slot="panel-0">
+
+Método longo esconde várias intenções num bloco só. A cura é **extrair método**: cada bloco ganha um nome que diz o que faz, e o método original passa a ler-se como uma lista de passos. No exemplo abaixo, `atualizar` passou de onze linhas para duas chamadas com nome.
+
+  </div>
+  <div slot="panel-1">
+
+Feature Envy é um método que vive nos dados de outra classe. A cura é **mover método**: o cálculo muda-se para a classe cujos dados consulta, e o método original delega. O `moverMonstro` foi morar na `Arena` porque é lá que vivem limites, ocupação, vento e gravidade.
+
+  </div>
+  <div slot="panel-2">
+
+Switch extenso sobre o tipo cresce a cada caso novo. A cura é **substituir condicional por polimorfismo**: cada caso vira uma classe com o mesmo método, e a escolha passa a ser que objeto construir. Os `Comando` do SOLID são este padrão aplicado às teclas.
+
+  </div>
+</Tabs>
+
+## Como refatorar em segurança
+
+Refactoring faz-se em passos minúsculos, cada um com os testes verdes no fim:
+
+1. Garante que há um teste a cobrir o código que vais mexer.
+2. Faz uma mudança pequena: extrai um método, muda um nome, move uma linha.
+3. Corre os testes. Se falharem, desfaz e tenta de outra forma.
+4. Só quando está verde é que dás o passo seguinte.
+
+:::warning[Refactoring não é reescrever]
+Se mudas comportamento e estrutura ao mesmo tempo, e algo parte, não sabes qual das duas mudanças causou. Primeiro refatora com testes verdes, depois muda comportamento, depois refatora outra vez.
+:::
+
+## Exemplo: método longo com Feature Envy
+
+Este método atualiza um monstro e cheira mal duas vezes: é longo e passa a vida nos dados da arena:
+
+```java
+void atualizar(Monstro m, Arena arena) {
+    Posicao p = m.getPosicao();
+    int nx = p.getX() + arena.getVentoX();
+    int ny = p.getY() + arena.getGravidade();
+    if (arena.dentroLimites(nx, ny) && !arena.ocupado(nx, ny)) {
+        m.setPosicao(new Posicao(nx, ny));
+    }
+    arena.contarPasso();
+    if (arena.getPassos() % 10 == 0) {
+        arena.surgirItem();
+    }
+}
+```
+
+O método usa `arena` cinco vezes e `m` duas: tem inveja da arena. A versão refatorada move o cálculo para onde os dados vivem e extrai métodos com nome. Corre e confirma que o monstro anda uma casa e o relógio avança:
+
+<CodePlayground
+  language="java"
+  title="Depois da refatoração"
+  code={
+    'import java.util.ArrayList;\nimport java.util.List;\n\nclass Posicao {\n    private final int x;\n    private final int y;\n\n    Posicao(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    int getX() { return x; }\n    int getY() { return y; }\n}\n\nclass Monstro {\n    private Posicao posicao;\n\n    Monstro(Posicao posicao) {\n        this.posicao = posicao;\n    }\n\n    Posicao getPosicao() { return posicao; }\n    void setPosicao(Posicao posicao) { this.posicao = posicao; }\n}\n\nclass Arena {\n    private final List<Monstro> monstros = new ArrayList<>();\n    private int passos = 0;\n\n    void adicionar(Monstro monstro) {\n        monstros.add(monstro);\n    }\n\n    void moverMonstro(Monstro monstro) {\n        Posicao atual = monstro.getPosicao();\n        monstro.setPosicao(new Posicao(atual.getX() + 1, atual.getY()));\n    }\n\n    void avancarRelogio() {\n        passos++;\n    }\n\n    void atualizar(Monstro monstro) {\n        moverMonstro(monstro);\n        avancarRelogio();\n    }\n\n    int getPassos() { return passos; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Arena arena = new Arena();\n        Monstro monstro = new Monstro(new Posicao(2, 3));\n        arena.adicionar(monstro);\n        arena.atualizar(monstro);\n        arena.atualizar(monstro);\n        Posicao fim = monstro.getPosicao();\n        System.out.println("posicao: (" + fim.getX() + "," + fim.getY() + ")");\n        System.out.println("passos: " + arena.getPassos());\n    }\n}'
+  }
+/>
+
+A saída mostra `posicao: (4,3)` e `passos: 2`. O `moverMonstro` fica na `Arena`, junto dos dados que consulta. O `avancarRelogio` esconde a contagem. O método original passou de onze linhas para duas chamadas com nome, e os testes continuam verdes porque nada observável mudou.
+
+<YouTube
+  id="PJjHfa5yxlU"
+  title="Get a Whiff of This, Sandi Metz na RailsConf 2016"
+/>
