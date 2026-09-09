@@ -1,0 +1,59 @@
+---
+title: Limites das linguagens regulares
+description: Lema da repetição com prova completa, fecho e decidibilidade das regulares.
+section: conteudo
+order: 3
+---
+
+Os autómatos finitos têm memória finita: $k$ estados guardam $\log k$ bits, e nada mais. Por isso há linguagens que eles nunca reconhecem, como $\{0^n 1^n\}$ (zeros seguidos de igual número de uns), que exigiria contar sem limite. Esta página dá a ferramenta para o provar, o **lema da repetição** (pumping lemma), mais as propriedades de fecho e os problemas decidíveis das linguagens regulares.
+
+## O lema da repetição
+
+**Lema.** Se $L$ é regular, existe $p \ge 1$ (o **comprimento de repetição**) tal que toda a palavra $s \in L$ com $|s| \ge p$ se parte em $s = xyz$ com:
+
+1. $|y| > 0$ (o pedaço do meio não é vazio);
+2. $|xy| \le p$ (o pedaço repetível está nos primeiros $p$ símbolos);
+3. $xy^iz \in L$ para todo o $i \ge 0$ (repetir ou apagar $y$ mantém a palavra na linguagem).
+
+Porquê isto vale? Toma um DFA com $p$ estados que reconheça $L$ e corre $s$ com $|s| \ge p$. O caminho visita $|s|+1 \ge p+1$ estados, por isso algum estado repete (princípio da casa dos pombos). Seja $y$ o pedaço lido entre as duas visitas ao estado repetido: $|y| > 0$ porque o caminho andou. Escolhendo a **primeira** repetição, ela acontece dentro dos primeiros $p$ símbolos, logo $|xy| \le p$. E como $y$ é um ciclo (sai e volta ao mesmo estado), percorrê-lo $i$ vezes continua a terminar no mesmo estado final. Isto prova as três condições.
+
+:::warning[O lema serve para provar que não é regular]
+O lema diz "se regular, então repetível". Usa-se o contrapositivo: "se não repetível, então não regular". Nunca proves que uma linguagem **é** regular com o lema: há linguagens não regulares que satisfazem as três condições. Para mostrar que é regular, constrói um DFA, um NFA ou uma expressão regular.
+:::
+
+## Prova completa: $\{0^n 1^n\}$ não é regular
+
+Seja $L = \{0^n 1^n \mid n \ge 0\}$. Prova por contradição.
+
+1. **Supõe** que $L$ é regular. Então o lema dá um comprimento de repetição $p \ge 1$.
+2. **Escolhe a palavra.** Toma $s = 0^p 1^p$. Vale $s \in L$ (com $n = p$) e $|s| = 2p \ge p$, por isso o lema aplica-se a $s$. Esta escolha é boa porque os primeiros $p$ símbolos são todos $0$, o que força o pedaço repetível a cair dentro dos zeros.
+3. **Considera uma partição arbitrária** $s = xyz$ com $|y| > 0$ e $|xy| \le p$. Como os primeiros $p$ símbolos de $s$ são todos zeros e $|xy| \le p$, os blocos $x$ e $y$ ficam inteiramente dentro da zona dos zeros. Logo $x = 0^a$ e $y = 0^k$ com $a \ge 0$, $k \ge 1$ (porque $|y| > 0$) e $a + k \le p$. O resto é $z = 0^{p-a-k}1^p$.
+4. **Repete e conta.** O lema garante $xy^2z \in L$. Mas $xy^2z = 0^a 0^{2k} 0^{p-a-k} 1^p = 0^{p+k}1^p$. Como $k \ge 1$, há $p + k > p$ zeros e só $p$ uns: a palavra tem números diferentes de zeros e uns, logo $xy^2z \notin L$. Contradição.
+5. **Conclui.** A suposição é falsa: $L$ não é regular.
+
+Repara na estrutura, que deves reutilizar em qualquer aplicação do lema: supõe e fixa $p$; escolhe $s$ em função de $p$ (quase sempre com um bloco de comprimento $p$); toma partição arbitrária e usa $|xy| \le p$ para localizar $y$; escolhe um $i$ (aqui $i = 2$; $i = 0$ também servia) que parte a propriedade definidora; conclui por contradição.
+
+:::details[Porque é que $i = 0$ também servia aqui]
+Apagar dá $xy^0z = xz = 0^{p-k}1^p$, com $p - k < p$ zeros contra $p$ uns. Também sai de $L$. Em geral, experimenta $i = 0$ quando a linguagem exige "pelo menos tantos" e $i = 2$ quando exige "no máximo tantos" ou igualdade.
+:::
+
+## Propriedades de fecho
+
+As linguagens regulares são **fechadas** para: união, concatenação, estrela, interseção, complemento e diferença. Isto significa que aplicar estas operações a linguagens regulares produz linguagens regulares. As provas são construções: união por NFA com novo inicial e transições $\varepsilon$ para os dois NFA; interseção pelo produto da página anterior; complemento trocando finais com não finais num DFA (atenção: isto exige um DFA completo, num NFA não funciona); diferença via $A \setminus B = A \cap \overline{B}$.
+
+O fecho dá uma segunda técnica para provar não regularidade: se $L$ fosse regular, então $L \cap R$ seria regular para qualquer regular $R$. Escolhendo $R$ que isole a parte "difícil" de $L$ e caindo num caso conhecido como $\{0^n 1^n\}$, concluis por contradição. Exemplo: $\{w \mid w \text{ tem igual número de } 0 \text{ e } 1\}$ intersetada com a regular $0^*1^*$ dá $\{0^n 1^n\}$, logo não é regular.
+
+## Problemas decidíveis
+
+Para DFA, estas perguntas têm sempre resposta algorítmica:
+
+- **Pertença:** $w \in L(M)$? Simula $M$ em $w$ e vê onde termina.
+- **Vazio:** $L(M) = \emptyset$? Vê se algum estado final é alcançável do inicial (procura em grafo).
+- **Equivalência:** $L(M_1) = L(M_2)$? O teste do produto da página anterior.
+- **Inclusão:** $L(M_1) \subseteq L(M_2)$? Testa se $L(M_1) \cap \overline{L(M_2)} = \emptyset$.
+
+"Decidível" aqui quer dizer que existe um algoritmo que responde sempre sim ou não em tempo finito. Guarda esta palavra: em [máquinas de Turing e decidibilidade](turing-decidibilidade/) vais ver problemas onde isto deixa de ser possível.
+
+## Para levar para a próxima página
+
+A fronteira das linguagens regulares está traçada: contar sem limite fica de fora. Mas $\{0^n 1^n\}$ é fácil de gerar com regras de substituição, e essas regras são as [gramáticas livres de contexto](gramaticas-livres/).
