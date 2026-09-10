@@ -2,8 +2,23 @@ import { expect, test, type Page, type Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { writeFile } from 'node:fs/promises';
 
+test.use({
+  launchOptions: {
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+    args: [
+      '--use-fake-device-for-media-stream',
+      '--use-fake-ui-for-media-stream',
+    ],
+  },
+});
+
 type VoiceTestWindow = Window & {
-  brainrotTest: { texts: string[]; models: string[]; terminated: number };
+  brainrotTest: {
+    texts: string[];
+    models: string[];
+    terminated: number;
+    references: number[];
+  };
 };
 
 async function mockVoice(page: Page, fail = false, seconds = 2) {
@@ -14,25 +29,29 @@ async function mockVoice(page: Page, fail = false, seconds = 2) {
         texts: [] as string[],
         models: [] as string[],
         terminated: 0,
+        references: [] as number[],
       };
       Object.assign(window, { brainrotTest: state });
       window.Worker = class extends EventTarget {
         constructor(url: string | URL, options?: WorkerOptions) {
           super();
-          if (!String(url).includes('brainrot-voice'))
+          if (!/brainrot-(voice|sopro)/.test(String(url)))
             return new NativeWorker(url, options);
         }
         postMessage({
           id,
           text,
           model,
+          reference,
         }: {
           id: number;
           text: string;
           model: string;
+          reference?: Float32Array;
         }) {
           state.texts.push(text);
           state.models.push(model);
+          if (reference) state.references.push(reference.length);
           const rate = 8000;
           const samples = rate * seconds;
           const buffer = new ArrayBuffer(44 + samples * 2);
@@ -54,8 +73,9 @@ async function mockVoice(page: Page, fail = false, seconds = 2) {
           view.setUint16(34, 16, true);
           word(36, 'data');
           view.setUint32(40, samples * 2, true);
+          const amplitude = model === 'miro' ? 800 : 8000;
           for (let i = 0; i < samples; i++)
-            view.setInt16(44 + i * 2, Math.sin(i * 0.15) * 500, true);
+            view.setInt16(44 + i * 2, Math.sin(i * 0.15) * amplitude, true);
           setTimeout(
             () =>
               this.dispatchEvent(
@@ -66,6 +86,7 @@ async function mockVoice(page: Page, fail = false, seconds = 2) {
                         type: 'audio',
                         id,
                         wav: new Blob([buffer], { type: 'audio/wav' }),
+                        generationMs: model === 'miro' ? 500 : 800,
                       },
                 }),
               ),
@@ -88,6 +109,61 @@ async function openReader(page: Page) {
   await expect(dialog).toBeVisible();
   return dialog;
 }
+
+test('switching between quiet and loud voices keeps playback volume consistent', async ({
+  page,
+}) => {
+  await mockVoice(page);
+  await page.addInitScript(() => {
+    const createURL = URL.createObjectURL;
+    URL.createObjectURL = (blob) => {
+      if (blob instanceof Blob && /wav/.test(blob.type))
+        Object.assign(window, { lastVoiceAudio: blob });
+      return createURL(blob);
+    };
+  });
+  const dialog = await openReader(page);
+  const levels = [];
+  for (const model of ['piper', 'miro', 'dii']) {
+    await dialog
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await page.getByLabel('Voz', { exact: true }).selectOption(model);
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await page.evaluate(() => Object.assign(window, { lastVoiceAudio: null }));
+    await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+    await page.waitForFunction(
+      () => !!(window as unknown as { lastVoiceAudio: Blob }).lastVoiceAudio,
+    );
+    await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+    levels.push(
+      await page.evaluate(async () => {
+        const blob = (window as unknown as { lastVoiceAudio: Blob })
+          .lastVoiceAudio;
+        const context = new AudioContext();
+        const decoded = await context.decodeAudioData(await blob.arrayBuffer());
+        const samples = decoded.getChannelData(0);
+        const rms = Math.sqrt(
+          samples.reduce((sum, sample) => sum + sample * sample, 0) /
+            samples.length,
+        );
+        const peak = samples.reduce(
+          (max, sample) => Math.max(max, Math.abs(sample)),
+          0,
+        );
+        await context.close();
+        return { db: 20 * Math.log10(rms), peak };
+      }),
+    );
+  }
+  expect(
+    Math.max(...levels.map((level) => level.db)) -
+      Math.min(...levels.map((level) => level.db)),
+  ).toBeLessThan(1);
+  expect(levels.every((level) => level.peak < 0.95 && level.db > -24)).toBe(
+    true,
+  );
+});
 
 test('Portuguese models are available on every device and switching voice replaces the audio', async ({
   page,
@@ -118,9 +194,17 @@ test('Portuguese models are available on every device and switching voice replac
   await settings.click();
   const voices = page.getByLabel('Voz', { exact: true });
   await expect(voices.locator('option')).toHaveText([
-    'Tugão · Português de Portugal',
-    'Miro · Português de Portugal',
-    'Dii · Português de Portugal',
+    'Tugão',
+    'Dii',
+    'Miro',
+    'Eduardo Rêgo',
+    'Fernando Mendes',
+    'José Mourinho',
+    'Ricardo Araújo Pereira',
+    'Herman José',
+    'Toy',
+    'Tugão',
+    'Nuno Markl',
     'Só legendas',
   ]);
   for (const model of ['miro', 'dii', 'piper']) {
@@ -880,6 +964,8 @@ for (const [model, modelFile] of [
   ['piper', 'pt_PT-tug%C3%A3o-medium.onnx'],
   ['miro', 'miro_pt-PT.onnx'],
   ['dii', 'dii_pt-PT.onnx'],
+  ['sopro', 'manifest.json'],
+  ['markl', 'manifest.json'],
 ]) {
   test(`the real ${model} model speaks locally without uploading lesson text`, async ({
     page,
@@ -965,3 +1051,271 @@ for (const [model, modelFile] of [
     ).toBe(false);
   });
 }
+
+test.describe('personal voice recording', () => {
+  test('a recording stays local, is used by Sopro, survives navigation and can be deleted', async ({
+    page,
+  }) => {
+    await mockVoice(page, false, 5);
+    const uploads: string[] = [];
+    page.on('request', (request) => {
+      if (!['GET', 'HEAD'].includes(request.method()) || request.postData())
+        uploads.push(request.url());
+    });
+    await page.addInitScript(() => {
+      const getUserMedia = navigator.mediaDevices.getUserMedia.bind(
+        navigator.mediaDevices,
+      );
+      const streams: MediaStream[] = [];
+      Object.assign(window, { recordedStreams: streams });
+      navigator.mediaDevices.getUserMedia = async (constraints) => {
+        const stream = await getUserMedia(constraints);
+        streams.push(stream);
+        return stream;
+      };
+    });
+    const dialog = await openReader(page);
+    await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+    await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+    await dialog
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { recordedStreams: MediaStream[] })
+            .recordedStreams.length,
+      ),
+    ).toBe(0);
+    await page
+      .getByRole('button', { name: 'Gravar a minha voz', exact: true })
+      .click();
+    await expect(dialog.locator('[data-br-play]')).toHaveAttribute(
+      'aria-label',
+      'Iniciar leitura',
+    );
+    await page.getByRole('button', { name: 'Começar gravação' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Terminar gravação' }),
+    ).toBeVisible();
+    await expect(page.locator('[data-br-record-time]')).toHaveText('6 / 20 s', {
+      timeout: 10_000,
+    });
+    await page.getByRole('button', { name: 'Terminar gravação' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Usar esta voz' }),
+    ).toBeVisible();
+    await expect(page.locator('[data-br-record-preview]')).toBeVisible();
+    expect(
+      await page.evaluate(() =>
+        (
+          window as unknown as { recordedStreams: MediaStream[] }
+        ).recordedStreams.every((stream) =>
+          stream.getTracks().every((track) => track.readyState === 'ended'),
+        ),
+      ),
+    ).toBe(true);
+    await page.getByRole('button', { name: 'Usar esta voz' }).click();
+    await expect(page.getByLabel('Voz', { exact: true })).toHaveValue(
+      'personal',
+    );
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          (window as unknown as VoiceTestWindow).brainrotTest.models.at(-1),
+        ),
+      )
+      .toBe('personal');
+    const reference = await page.evaluate(() =>
+      (window as unknown as VoiceTestWindow).brainrotTest.references.at(-1),
+    );
+    expect(reference).toBeGreaterThan(5 * 24_000);
+    expect(reference).toBeLessThanOrEqual(20 * 24_000);
+    await page.goto('/cadeiras/am2/');
+    await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    const voices = page.getByLabel('Voz', { exact: true });
+    await expect(voices.locator('option[value="personal"]')).toBeAttached();
+    await voices.selectOption('personal');
+    await page.getByRole('button', { name: 'Apagar a minha voz' }).click();
+    await expect(voices).toHaveValue('piper');
+    await expect(voices.locator('option[value="personal"]')).toHaveCount(0);
+    await page.reload();
+    await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await expect(
+      page.getByRole('button', { name: 'Gravar a minha voz', exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Apagar a minha voz' }),
+    ).toBeHidden();
+    expect(uploads).toEqual([]);
+  });
+
+  test('the microphone stops automatically and closing settings discards the unsaved recording', async ({
+    page,
+  }) => {
+    test.setTimeout(40_000);
+    await mockVoice(page);
+    await openReader(page);
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await page
+      .getByRole('button', { name: 'Gravar a minha voz', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Começar gravação' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Usar esta voz' }),
+    ).toBeVisible({ timeout: 25_000 });
+    await expect(page.locator('[data-br-record-time]')).toHaveText('20 / 20 s');
+    const preview = page.locator('[data-br-record-preview]');
+    await expect
+      .poll(() => preview.evaluate((audio: HTMLAudioElement) => audio.duration))
+      .toBeGreaterThan(19);
+    expect(
+      await preview.evaluate((audio: HTMLAudioElement) => audio.duration),
+    ).toBeLessThanOrEqual(20);
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await expect(
+      page
+        .getByLabel('Voz', { exact: true })
+        .locator('option[value="personal"]'),
+    ).toHaveCount(0);
+    await expect(preview).not.toHaveAttribute('src');
+  });
+
+  test('a short recording can be retried and closing an active recording releases every track', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const original = navigator.mediaDevices.getUserMedia.bind(
+        navigator.mediaDevices,
+      );
+      const streams: MediaStream[] = [];
+      Object.assign(window, { activeRecordings: streams });
+      navigator.mediaDevices.getUserMedia = async (constraints) => {
+        const stream = await original(constraints);
+        streams.push(stream);
+        return stream;
+      };
+    });
+    await openReader(page);
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await page
+      .getByRole('button', { name: 'Gravar a minha voz', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Começar gravação' }).click();
+    await expect(page.locator('[data-br-record-time]')).toHaveText('1 / 20 s');
+    await page.getByRole('button', { name: 'Terminar gravação' }).click();
+    await expect(page.locator('[data-br-record-status]')).toContainText(
+      'pelo menos 5 segundos',
+    );
+    await expect(
+      page.getByRole('button', { name: 'Usar esta voz' }),
+    ).toBeHidden();
+    await page.getByRole('button', { name: 'Começar gravação' }).click();
+    await expect(
+      page.getByRole('button', { name: 'Terminar gravação' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          (
+            window as unknown as { activeRecordings: MediaStream[] }
+          ).activeRecordings.every((stream) =>
+            stream.getTracks().every((track) => track.readyState === 'ended'),
+          ),
+        ),
+      )
+      .toBe(true);
+  });
+
+  test('denied microphone access explains how to retry without changing the voice', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      navigator.mediaDevices.getUserMedia = async () => {
+        throw new DOMException('Denied', 'NotAllowedError');
+      };
+    });
+    await openReader(page);
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await page
+      .getByRole('button', { name: 'Gravar a minha voz', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Começar gravação' }).click();
+    await expect(page.locator('[data-br-record-status]')).toContainText(
+      'Permite o acesso ao microfone',
+    );
+    await expect(
+      page.getByRole('button', { name: 'Começar gravação' }),
+    ).toBeEnabled();
+    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+    await expect(page.getByLabel('Voz', { exact: true })).toHaveValue('piper');
+  });
+
+  test('cancelling a pending permission request releases a microphone granted later', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      navigator.mediaDevices.getUserMedia = () =>
+        new Promise((resolve) => {
+          Object.assign(window, {
+            grantMicrophone: () => {
+              const context = new AudioContext();
+              const stream = context.createMediaStreamDestination().stream;
+              Object.assign(window, { lateStream: stream });
+              resolve(stream);
+            },
+          });
+        });
+    });
+    await openReader(page);
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await page
+      .getByRole('button', { name: 'Gravar a minha voz', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Começar gravação' }).click();
+    await expect(page.locator('[data-br-record-status]')).toContainText(
+      'A pedir acesso',
+    );
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await page.evaluate(() =>
+      (window as unknown as { grantMicrophone: () => void }).grantMicrophone(),
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          (window as unknown as { lateStream: MediaStream }).lateStream
+            .getTracks()
+            .every((track) => track.readyState === 'ended'),
+        ),
+      )
+      .toBe(true);
+    await page
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await expect(
+      page
+        .getByLabel('Voz', { exact: true })
+        .locator('option[value="personal"]'),
+    ).toHaveCount(0);
+  });
+});

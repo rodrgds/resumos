@@ -35,6 +35,12 @@
 
 - Runnable and web editors share CodeMirror setup and token colours in `src/lib/editor-setup.ts`. Use language parsers for highlighting; keep web previews in their opaque, network-blocked iframe. The WhatsApp action copies only the public page URL and a message starter.
 
-- Brain rot narrates published lesson content locally through its disposable Piper Worker. Keep text, generated audio, notes and user videos on-device. Match ONNX JS and WASM versions. Clip scrolling must preserve narration and bound loaded videos; sources and reuse terms belong in `public/brainrot/CREDITOS.txt`.
+- Brain rot narrates published lesson content locally through disposable Piper and Sopro Workers. Keep text, generated audio, notes and user videos on-device. Match ONNX JS and WASM versions. Clip scrolling must preserve narration and bound loaded videos; sources and reuse terms belong in `public/brainrot/CREDITOS.txt`.
 - Brain rot audio boundaries follow complete sentences, never caption width. Keep word timing and ungenerated duration explicitly approximate. Share only the canonical page URL; opening media must remain an explicit action. Preserve published syntax tokens and original playground source in visual cards. Scope each visual to its own cue; inline maths belongs in captions as an atomic notation token with its spoken text. Never carry a previous card into unrelated narration.
 - Brain rot voices come from the pinned pt-PT model catalogue in `src/data/brainrot-voices.ts`, never Web Speech or installed voices. Changing models requires a new Worker and invalidates prepared audio and durations. Keep Miro/Dii models unmodified and preserve their non-commercial attribution terms.
+
+- Mark Sopro options as Pesado; benchmark timings belong in `docs/vozes-locais.md`, not the voice selector. Normalize playback in `brainrot-audio.ts`; keep model weights unchanged. Sopro shares one pinned model across reference voices and uses its own ONNX runtime version. Keep reference sources and terms distinct from model licenses.
+- Personal voice samples stay in IndexedDB through `brainrot-personal-voice.ts`, never uploads or public assets. Record at most 20 seconds and save only after explicit use. Cancel, close, hidden documents and late microphone permissions must release all tracks. Changing or deleting the active reference invalidates prepared narration.
+- Appearance controls are directly visible radio groups and sliders. Preserve `resumos-preferences`, CSS snippet recovery and reset behavior when changing the sidebar.
+
+- CSS preset fixes must also handle saved defaults before paint. Upgrade only exact known preset CSS; preserve user edits, names, toggles and deletions. Offer missing presets explicitly, disabled.

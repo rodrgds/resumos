@@ -11,7 +11,11 @@ self.addEventListener(
     queue = queue.then(async () => {
       try {
         const model = brainrotVoices.find((voice) => voice.id === data.model);
-        if (!model || (activeModel && activeModel !== model.id))
+        if (
+          !model ||
+          model.engine !== 'piper' ||
+          (activeModel && activeModel !== model.id)
+        )
           throw new Error('Mudar de voz exige um novo Worker.');
         activeModel = model.id;
         session ??= TtsSession.create({
@@ -31,7 +35,11 @@ self.addEventListener(
         });
         const voice = await session;
         const wav = await voice.predict(data.text);
-        self.postMessage({ type: 'audio', id: data.id, wav });
+        self.postMessage({
+          type: 'audio',
+          id: data.id,
+          wav,
+        });
       } catch {
         session = undefined;
         self.postMessage({ type: 'error', id: data.id });
