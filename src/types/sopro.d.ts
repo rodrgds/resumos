@@ -25,5 +25,10 @@ declare module '@soprotts/onnx-web' {
       reference: object,
       options: GenerationOptions,
     ): AsyncGenerator<Float32Array<ArrayBuffer>>;
+    synthesize(
+      text: string,
+      reference: object,
+      options: GenerationOptions,
+    ): Promise<Float32Array<ArrayBuffer>>;
   }
 }

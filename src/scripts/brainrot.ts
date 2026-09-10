@@ -98,7 +98,8 @@ export async function setupBrainrot() {
   let elapsed = 0;
   let lastTick = 0;
   let activeVisual: Element | undefined;
-  let prepared: { index: number; promise: Promise<SpeechSource> } | undefined;
+  const prepared = new Map<number, Promise<SpeechSource>>();
+  let speechBufferPrimed = false;
   let customURLs: string[] = [];
   let savedOverflow = '';
   let scrubbing = false;
@@ -138,9 +139,13 @@ export async function setupBrainrot() {
         : audio.duration;
     const spokenElapsed =
       voiceMode.value === 'silent' ? elapsed : audio.currentTime;
+    const captionLead =
+      playing && !preparing && !audio.waiting
+        ? settings.captionLeadSeconds * Number(rate.value)
+        : 0;
     const fraction =
       Number.isFinite(spokenDuration) && spokenDuration > 0
-        ? Math.min(0.9999, spokenElapsed / spokenDuration)
+        ? Math.min(0.9999, (spokenElapsed + captionLead) / spokenDuration)
         : 0;
     const weights = tokens.map((token) =>
       token.text
@@ -251,11 +256,14 @@ export async function setupBrainrot() {
   }
 
   function prepare(nextIndex: number) {
-    if (prepared?.index === nextIndex) return prepared.promise;
-    const promise = voice.synthesize(cues[nextIndex].text, voiceMode.value);
+    const existing = prepared.get(nextIndex);
+    if (existing) return existing;
+    const promise = voice.synthesize(cues[nextIndex].text, voiceMode.value, {
+      delivery: settings.delivery,
+    });
     // A prefetched failure is handled when playback reaches this cue.
     void promise.catch(() => {});
-    prepared = { index: nextIndex, promise };
+    prepared.set(nextIndex, promise);
     return promise;
   }
 
@@ -284,7 +292,7 @@ export async function setupBrainrot() {
           elapsed >= Math.max(cue.minimumSeconds, audio.duration || 0);
     if (complete) {
       if (index + 1 < cues.length) {
-        changeCue(index + 1);
+        changeCue(index + 1, { transition: 'advance' });
       } else {
         pause();
         finished = true;
@@ -303,16 +311,17 @@ export async function setupBrainrot() {
       elapsed = 0;
       finished = false;
       clearAudio();
+      prepared.clear();
+      speechBufferPrimed = false;
     }
     playing = true;
     const token = ++generation;
-    if (
+    const usesSopro =
       voiceMode.value === 'personal' ||
       brainrotVoices.some(
         (voice) => voice.id === voiceMode.value && voice.engine === 'sopro',
-      )
-    )
-      audio.unlock();
+      );
+    if (usesSopro) audio.unlock();
     feed.setPlaying(true);
     try {
       if (voiceMode.value !== 'silent') {
@@ -322,10 +331,28 @@ export async function setupBrainrot() {
           render();
           const source = await prepare(index);
           if (token !== generation || !playing || !dialog.open) return;
+          if (
+            usesSopro &&
+            settings.delivery === 'complete' &&
+            !speechBufferPrimed
+          ) {
+            if (index + 1 < cues.length) {
+              setStatus('A preparar as próximas frases…');
+              await prepare(index + 1);
+              if (token !== generation || !playing || !dialog.open) return;
+            }
+            speechBufferPrimed = true;
+          }
           clearAudio();
           audio.load(source);
           audio.playbackRate = Number(rate.value);
-          if (index + 1 < cues.length) prepare(index + 1);
+          const ahead = usesSopro && settings.delivery === 'complete' ? 2 : 1;
+          for (
+            let next = index + 1;
+            next <= index + ahead && next < cues.length;
+            next++
+          )
+            prepare(next);
         }
         preparing = false;
         if (!audio.ended || elapsed < audio.duration) {
@@ -352,24 +379,31 @@ export async function setupBrainrot() {
       pause();
       clearAudio();
       voice.dispose();
-      prepared = undefined;
+      prepared.clear();
+      speechBufferPrimed = false;
       setStatus(
         'Não foi possível reproduzir a voz local. Toca para tentar de novo ou escolhe Só legendas nas opções de leitura.',
       );
     }
   }
 
-  function changeCue(next: number, options: { offset?: number } = {}) {
+  function changeCue(
+    next: number,
+    options: { offset?: number; transition?: 'advance' | 'seek' } = {},
+  ) {
     const resume = playing;
     generation++;
     cancelAnimationFrame(frame);
-    if (preparing) {
+    if (options.transition !== 'advance') {
       voice.cancelPending();
-      prepared = undefined;
+      prepared.clear();
+      speechBufferPrimed = false;
     }
     preparing = false;
     clearAudio();
     index = Math.max(0, Math.min(cues.length - 1, next));
+    for (const previous of prepared.keys())
+      if (previous < index) prepared.delete(previous);
     elapsed = options.offset ?? 0;
     finished = false;
     render();
@@ -525,7 +559,8 @@ export async function setupBrainrot() {
     pause();
     clearAudio();
     voice.dispose();
-    prepared = undefined;
+    prepared.clear();
+    speechBufferPrimed = false;
     elapsed = 0;
     status.hidden = true;
     timeline.setMode(voiceMode.value === 'silent' ? 'silent' : 'voice');
@@ -583,7 +618,8 @@ export async function setupBrainrot() {
     dialog.dataset.scrubbing = 'false';
     pause();
     voice.dispose();
-    prepared = undefined;
+    prepared.clear();
+    speechBufferPrimed = false;
     clearAudio();
     audio.dispose();
     elapsed = 0;

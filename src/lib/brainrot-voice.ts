@@ -1,7 +1,11 @@
 import { normalizeSpeech } from './brainrot-audio';
 import { brainrotVoices } from '../data/brainrot-voices';
 import { readPersonalVoice, referenceSamples } from './brainrot-personal-voice';
-import { SpeechStream, type SpeechSource } from './brainrot-speech-stream';
+import {
+  SpeechStream,
+  type SpeechSource,
+  type SoproDelivery,
+} from './brainrot-speech-stream';
 
 type PendingAudio = {
   resolve: (source: SpeechSource) => void;
@@ -9,6 +13,7 @@ type PendingAudio = {
   timeout: ReturnType<typeof setTimeout>;
   stream?: SpeechStream;
   text: string;
+  delivery: SoproDelivery;
 };
 
 export class LocalVoice {
@@ -27,7 +32,11 @@ export class LocalVoice {
     this.#phase = callbacks.phase;
   }
 
-  synthesize(text: string, model: string): Promise<SpeechSource> {
+  synthesize(
+    text: string,
+    model: string,
+    options: { delivery?: SoproDelivery } = {},
+  ): Promise<SpeechSource> {
     const selected = brainrotVoices.find((voice) => voice.id === model);
     const sopro = selected?.engine === 'sopro' || model === 'personal';
     if (!this.#worker) {
@@ -51,7 +60,9 @@ export class LocalVoice {
         if (!pending) return;
         if (data.type === 'chunk') {
           if (!pending.stream) {
-            const stream = new SpeechStream(pending.text);
+            const stream = new SpeechStream(pending.text, {
+              delivery: pending.delivery,
+            });
             pending.stream = stream;
             void stream.ready.then(
               () => pending.resolve(stream),
@@ -83,6 +94,7 @@ export class LocalVoice {
         reject,
         timeout,
         text,
+        delivery: options.delivery ?? 'complete',
       });
       const worker = this.#worker;
       if (!sopro) {
@@ -109,6 +121,7 @@ export class LocalVoice {
               id,
               text,
               model,
+              delivery: options.delivery ?? 'complete',
               reference: first ? reference : undefined,
             });
         })

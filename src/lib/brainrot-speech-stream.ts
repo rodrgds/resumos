@@ -1,4 +1,5 @@
 const START_BUFFER_SECONDS = 1.2;
+export type SoproDelivery = 'complete' | 'stream';
 
 export class SpeechStream extends EventTarget {
   readonly sampleRate = 24_000;
@@ -10,9 +11,11 @@ export class SpeechStream extends EventTarget {
   #samples = 0;
   #finished = false;
   #error?: Error;
+  #delivery: SoproDelivery;
 
-  constructor(text: string) {
+  constructor(text: string, options: { delivery?: SoproDelivery } = {}) {
     super();
+    this.#delivery = options.delivery ?? 'complete';
     this.estimatedDuration = Math.max(2, text.split(/\s+/).length / 2.7);
     this.ready = new Promise((resolve, reject) => {
       this.#resolve = resolve;
@@ -38,7 +41,11 @@ export class SpeechStream extends EventTarget {
     if (this.finished || this.error || !samples.length) return;
     this.#chunks.push(samples);
     this.#samples += samples.length;
-    if (this.bufferedDuration >= START_BUFFER_SECONDS) this.#resolve();
+    if (
+      this.#delivery === 'stream' &&
+      this.bufferedDuration >= START_BUFFER_SECONDS
+    )
+      this.#resolve();
     this.dispatchEvent(new Event('change'));
   }
 

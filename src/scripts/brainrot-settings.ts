@@ -1,4 +1,5 @@
 import { readingFonts } from '../data/reading-fonts';
+import { brainrotVoices } from '../data/brainrot-voices';
 import {
   readBrainrotPreferences,
   saveBrainrotPreferences,
@@ -17,6 +18,8 @@ export function setupBrainrotSettings(
     dialog.querySelector<T>(selector)!;
   const preferences = readBrainrotPreferences();
   const voice = get<HTMLSelectElement>('[data-br-voice]');
+  const delivery = get<HTMLSelectElement>('[data-br-delivery]');
+  const highlightColor = get<HTMLInputElement>('[data-br-highlight-color]');
   const rate = get<HTMLSelectElement>('[data-br-rate]');
   const font = get<HTMLSelectElement>('[data-br-font]');
   const size = get<HTMLInputElement>('[data-br-size]');
@@ -32,10 +35,20 @@ export function setupBrainrotSettings(
   )
     preferences.lastVoice = 'piper';
   voice.value = preferences.voice;
+  delivery.value = preferences.delivery;
+  highlightColor.value = preferences.highlightColor;
   rate.value = String(preferences.rate);
   font.value = preferences.font;
   size.value = String(preferences.size);
   const save = () => saveBrainrotPreferences(preferences);
+  const motionEnabled = () => preferences.wordByWord || preferences.motion;
+  function updateVoiceOptions() {
+    get('[data-br-sopro-options]').hidden =
+      voice.value !== 'personal' &&
+      !brainrotVoices.some(
+        (entry) => entry.id === voice.value && entry.engine === 'sopro',
+      );
+  }
 
   function applyVolume() {
     const silent =
@@ -53,9 +66,15 @@ export function setupBrainrotSettings(
     if (voice.value !== 'silent') preferences.lastVoice = voice.value;
     save();
     applyVolume();
+    updateVoiceOptions();
     callbacks.voiceChanged();
   }
   voice.addEventListener('change', updateVoice);
+  delivery.addEventListener('change', () => {
+    preferences.delivery = delivery.value === 'stream' ? 'stream' : 'complete';
+    save();
+    callbacks.voiceChanged();
+  });
   rate.addEventListener('change', () => {
     preferences.rate = Number(rate.value);
     save();
@@ -72,6 +91,12 @@ export function setupBrainrotSettings(
   } as const;
   function applyText() {
     dialog.style.setProperty(
+      '--br-highlight-color',
+      preferences.highlightColor,
+    );
+    get('[data-br-motion-option]').hidden = preferences.wordByWord;
+    get('[data-br-color-option]').hidden = !preferences.highlight;
+    dialog.style.setProperty(
       '--br-caption-font',
       readingFonts.find((entry) => entry.id === preferences.font)!.family,
     );
@@ -82,7 +107,7 @@ export function setupBrainrotSettings(
     get('[data-br-size-value]').textContent = `${preferences.size}%`;
     for (const item of ['channel', 'likes', 'comments', 'bookmarks'] as const)
       get(`[data-br-decoration="${item}"]`).hidden = !preferences[item];
-    if (!preferences.motion)
+    if (!motionEnabled())
       for (const element of dialog.querySelectorAll(
         '.brainrot-caption, .brainrot-visual',
       ))
@@ -106,6 +131,11 @@ export function setupBrainrotSettings(
   });
   size.addEventListener('input', () => {
     preferences.size = Number(size.value);
+    save();
+    applyText();
+  });
+  highlightColor.addEventListener('input', () => {
+    preferences.highlightColor = highlightColor.value;
     save();
     applyText();
   });
@@ -134,22 +164,28 @@ export function setupBrainrotSettings(
   });
   applyText();
   applyVolume();
+  updateVoiceOptions();
   callbacks.rateChanged(preferences.rate);
   return {
     updateVoice,
+    get delivery() {
+      return preferences.delivery;
+    },
+    get captionLeadSeconds() {
+      return motionEnabled() ? 0.1 : 0;
+    },
     get wordsPerCaption() {
       return preferences.wordByWord ? 1 : 6;
     },
     pop(element: HTMLElement) {
-      if (!preferences.motion || reducedMotion.matches || element.hidden)
-        return;
+      if (!motionEnabled() || reducedMotion.matches || element.hidden) return;
       element.getAnimations().forEach((animation) => animation.cancel());
       element.animate(
         [
-          { transform: 'scale(0.96)', opacity: 0.65 },
+          { transform: 'scale(0.97)', opacity: 0.9 },
           { transform: 'scale(1)', opacity: 1 },
         ],
-        { duration: 120, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+        { duration: 100, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
       );
     },
   };

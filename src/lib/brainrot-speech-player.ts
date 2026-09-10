@@ -1,7 +1,6 @@
 import { SpeechStream, type SpeechSource } from './brainrot-speech-stream';
 
 const SCHEDULE_LEAD_SECONDS = 0.025;
-const REBUFFER_SECONDS = 1.2;
 
 type ScheduledChunk = {
   node: AudioBufferSourceNode;
@@ -24,6 +23,7 @@ export class SpeechPlayer extends EventTarget {
   #rate = 1;
   #loaded = false;
   #generation = 0;
+  #waitForCompletion = false;
   #changed = () => {
     if (this.#stream?.error) {
       this.pause();
@@ -160,6 +160,7 @@ export class SpeechPlayer extends EventTarget {
 
   pause() {
     this.#generation++;
+    if (this.#nodes.length && this.waiting) this.#waitForCompletion = true;
     this.#position = this.currentTime;
     this.#playing = false;
     for (const { node } of this.#nodes) {
@@ -180,12 +181,8 @@ export class SpeechPlayer extends EventTarget {
       : this.#position;
     const end = previous ? previous.at + previous.duration / previous.rate : 0;
     const starved = end <= context.currentTime;
-    if (
-      starved &&
-      !stream.finished &&
-      stream.bufferedDuration - scheduled < REBUFFER_SECONDS * this.#rate
-    )
-      return;
+    if (starved && previous && !stream.finished) this.#waitForCompletion = true;
+    if (this.#waitForCompletion && !stream.finished) return;
     let at = Math.max(context.currentTime + SCHEDULE_LEAD_SECONDS, end);
     let offset = 0;
     for (const samples of stream.chunks) {
@@ -220,6 +217,7 @@ export class SpeechPlayer extends EventTarget {
     this.pause();
     this.#stream?.removeEventListener('change', this.#changed);
     this.#stream = undefined;
+    this.#waitForCompletion = false;
     this.#position = 0;
     this.#loaded = false;
     this.#audio.removeAttribute('src');
