@@ -871,6 +871,33 @@ test.describe('touch feed', () => {
     hasTouch: true,
   });
 
+  test('holding a swipe does not recycle the clip before the finger is lifted', async ({
+    page,
+  }) => {
+    const dialog = await openReader(page);
+    const name = dialog.locator('[data-br-clip-name]');
+    const previous = await name.textContent();
+    const input = await page.context().newCDPSession(page);
+    await input.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: 110, y: 630 }],
+    });
+    for (let y = 590; y >= 150; y -= 40) {
+      await input.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: 110, y }],
+      });
+      await page.waitForTimeout(16);
+    }
+    await page.waitForTimeout(350);
+    expect(await name.textContent()).toBe(previous);
+    await input.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+    await expect(name).not.toHaveText(previous!);
+  });
+
   test('tapping pauses and swiping changes games without restarting the reading', async ({
     page,
   }) => {

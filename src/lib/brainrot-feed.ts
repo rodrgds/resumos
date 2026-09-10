@@ -10,6 +10,7 @@ export class ClipFeed {
   #timer?: ReturnType<typeof setTimeout>;
   #playing = false;
   #resetting = false;
+  #touching = false;
   #resize: ResizeObserver;
   #motion = matchMedia('(prefers-reduced-motion: reduce)');
   #wheelTime = 0;
@@ -90,6 +91,20 @@ export class ClipFeed {
     gestureSurface.addEventListener('pointercancel', () => {
       touch = undefined;
     });
+    gestureSurface.addEventListener(
+      'touchstart',
+      () => {
+        this.#touching = true;
+        clearTimeout(this.#timer);
+      },
+      { passive: true },
+    );
+    const endTouch = (event: TouchEvent) => {
+      this.#touching = event.touches.length > 0;
+      if (!this.#touching) this.#timer = setTimeout(() => this.#settle(), 140);
+    };
+    gestureSurface.addEventListener('touchend', endTouch, { passive: true });
+    gestureSurface.addEventListener('touchcancel', endTouch, { passive: true });
     element.addEventListener('scroll', () => {
       if (this.#resetting) return;
       clearTimeout(this.#timer);
@@ -158,7 +173,12 @@ export class ClipFeed {
   }
 
   #settle() {
-    if (!this.#element.clientHeight || this.#slots.length !== 3) return;
+    if (
+      this.#touching ||
+      !this.#element.clientHeight ||
+      this.#slots.length !== 3
+    )
+      return;
     const position = Math.round(
       this.#element.scrollTop / this.#element.clientHeight,
     );
@@ -227,6 +247,7 @@ export class ClipFeed {
 
   close() {
     clearTimeout(this.#timer);
+    this.#touching = false;
     for (const { video } of this.#slots) this.#release(video);
     this.#slots = [];
     this.#element.replaceChildren();
