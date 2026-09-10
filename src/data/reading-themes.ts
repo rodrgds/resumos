@@ -1,4 +1,4 @@
-// Palette references and adaptations are recorded in README.md.
+// Palette references and adaptations are recorded in docs/leitura.md.
 const tokens = [
   'page',
   'surface',

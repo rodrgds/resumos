@@ -163,3 +163,7 @@ Para Dart/Flutter e para explorar um processador RISC-V passo a passo, usa `<Too
 A largura da página e a largura do texto são independentes. Os temas mudam as cores de leitura; os cartões das cadeiras mantêm as suas cores. Nos diagramas Typst e DOT, preto, branco e as cores base do projeto acompanham o tema. Outras cores escolhidas pelo autor são preservadas. Não uses apenas a cor para distinguir dados.
 
 O build gera uma versão `.md` de cada página pública e um índice `/llms.txt`. Usa o endereço sem a barra final, por exemplo `/exemplo/diagramas.md`. O Markdown vem do HTML publicado, incluindo fórmulas, código e links para SVG com descrição. Não inclui rascunhos nem notas locais. Não edites esses ficheiros gerados.
+
+## Referência técnica
+
+Consulta os guias de [formatos e compilação](docs/conteudo.md), [execução e isolamento](docs/execucao.md) e [desenvolvimento e publicação](docs/desenvolvimento.md). O [guia de escrita](.agents/skills/resumos-writing/SKILL.md) define a voz dos apontamentos.
