@@ -1,7 +1,5 @@
 import { EditorView } from '@codemirror/view';
 import { editorSetup } from '../lib/editor-setup';
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
-import { tags } from '@lezer/highlight';
 import { keymap } from '@codemirror/view';
 import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
@@ -11,6 +9,8 @@ import { StreamLanguage } from '@codemirror/language';
 import { haskell } from '@codemirror/legacy-modes/mode/haskell';
 import { php } from '@codemirror/lang-php';
 import { java } from '@codemirror/lang-java';
+import { prolog } from 'codemirror-lang-prolog';
+import { assembly } from '@codincod/codemirror-lang-assembly';
 import {
   OUTPUT_LIMIT,
   type Language,
@@ -26,8 +26,8 @@ const languages = {
   java,
   c: cpp,
   haskell: () => StreamLanguage.define(haskell),
-  prolog: () => [],
-  riscv: () => [],
+  prolog,
+  riscv: assembly,
   php,
 };
 const MAX_RUN_MS = 120_000;
@@ -120,31 +120,6 @@ export function setupPlaygrounds() {
           editorSetup(root),
           languages[language](),
           EditorView.lineWrapping,
-          syntaxHighlighting(
-            HighlightStyle.define([
-              {
-                tag: [tags.keyword, tags.operator],
-                color: 'var(--code-token-keyword)',
-              },
-              {
-                tag: tags.string,
-                color: 'var(--code-token-string)',
-              },
-              {
-                tag: [tags.number, tags.bool, tags.null],
-                color: 'var(--code-token-constant)',
-              },
-              {
-                tag: [tags.function(tags.variableName), tags.typeName],
-                color: 'var(--code-token-function)',
-              },
-              {
-                tag: tags.comment,
-                color: 'var(--code-token-comment)',
-                fontStyle: 'italic',
-              },
-            ]),
-          ),
           EditorView.contentAttributes.of({
             'aria-label': `Código ${language}`,
             spellcheck: 'false',

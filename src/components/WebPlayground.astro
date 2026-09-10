@@ -27,22 +27,46 @@ const { html, css = '', js = '' } = Astro.props;
     </div>
   </div>
   <div class="web-editors">
-    <label>
-      HTML<textarea data-html rows="4" spellcheck="false">{html}</textarea>
-    </label>
+    <div>
+      <span>HTML</span>
+      <textarea
+        data-html
+        aria-label="HTML"
+        rows="4"
+        spellcheck="false"
+      >{html}</textarea>
+    </div>
     <details>
       <summary class="icon-disclosure">
         CSS e JavaScript
         <Icon name="chevron-down" size={16} />
       </summary>
-      <label>
-        CSS<textarea data-css rows="4" spellcheck="false">{css}</textarea>
-      </label>
-      <label>
-        JavaScript<textarea data-js rows="4" spellcheck="false">{js}</textarea>
-      </label>
+      <div>
+        <span>CSS</span>
+        <textarea
+          data-css
+          aria-label="CSS"
+          rows="4"
+          spellcheck="false"
+        >{css}</textarea>
+      </div>
+      <div>
+        <span>JavaScript</span>
+        <textarea
+          data-js
+          aria-label="JavaScript"
+          rows="4"
+          spellcheck="false"
+        >{js}</textarea>
+      </div>
     </details>
   </div>
+  <template data-fold-open>
+    <Icon name="chevron-down" size={14} />
+  </template>
+  <template data-fold-closed>
+    <Icon name="chevron-right" size={14} />
+  </template>
   <iframe
     title="Pré-visualização do exemplo web"
     sandbox="allow-scripts"
@@ -50,6 +74,12 @@ const { html, css = '', js = '' } = Astro.props;
   ></iframe>
 </section>
 <script>
+  import { EditorView } from '@codemirror/view';
+  import { html as htmlLanguage } from '@codemirror/lang-html';
+  import { css as cssLanguage } from '@codemirror/lang-css';
+  import { javascript } from '@codemirror/lang-javascript';
+  import { editorSetup } from '../lib/editor-setup';
+
   document
     .querySelectorAll<HTMLElement>('[data-web-playground]')
     .forEach((root) => {
@@ -58,14 +88,43 @@ const { html, css = '', js = '' } = Astro.props;
       const js = root.querySelector<HTMLTextAreaElement>('[data-js]')!;
       const frame = root.querySelector('iframe')!;
       const original = [html.value, css.value, js.value];
+      const languages = [htmlLanguage(), cssLanguage(), javascript()];
+      const editors = [html, css, js].map((source, index) => {
+        const editor = new EditorView({
+          doc: original[index],
+          parent: source.parentElement!,
+          extensions: [
+            editorSetup(root),
+            languages[index],
+            EditorView.lineWrapping,
+            EditorView.contentAttributes.of({
+              'aria-label': source.getAttribute('aria-label')!,
+              spellcheck: 'false',
+            }),
+          ],
+        });
+        source.remove();
+        return editor;
+      });
       const render = () => {
+        const [htmlCode, cssCode, jsCode] = editors.map((editor) =>
+          editor.state.doc.toString(),
+        );
         // Opaque origin, no parent/storage access, no network or form submissions.
-        frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{font-family:system-ui;padding:16px}${css.value}</style></head><body>${html.value}<script>${js.value}<\/script></body></html>`;
+        frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{font-family:system-ui;padding:16px}${cssCode}</style></head><body>${htmlCode}<script>${jsCode}<\/script></body></html>`;
       };
       root.querySelector<HTMLButtonElement>('[data-web-run]')!.onclick = render;
       root.querySelector<HTMLButtonElement>('[data-web-reset]')!.onclick =
         () => {
-          [html.value, css.value, js.value] = original;
+          editors.forEach((editor, index) =>
+            editor.dispatch({
+              changes: {
+                from: 0,
+                to: editor.state.doc.length,
+                insert: original[index],
+              },
+            }),
+          );
           render();
         };
       root.addEventListener('keydown', (event) => {
@@ -74,6 +133,11 @@ const { html, css = '', js = '' } = Astro.props;
           render();
         }
       });
+      window.addEventListener(
+        'pagehide',
+        () => editors.forEach((editor) => editor.destroy()),
+        { once: true },
+      );
       render();
     });
 </script>

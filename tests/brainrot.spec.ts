@@ -1,0 +1,967 @@
+import { expect, test, type Page, type Locator } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import { writeFile } from 'node:fs/promises';
+
+type VoiceTestWindow = Window & {
+  brainrotTest: { texts: string[]; models: string[]; terminated: number };
+};
+
+async function mockVoice(page: Page, fail = false, seconds = 2) {
+  await page.addInitScript(
+    ({ fail, seconds }) => {
+      const NativeWorker = window.Worker;
+      const state = {
+        texts: [] as string[],
+        models: [] as string[],
+        terminated: 0,
+      };
+      Object.assign(window, { brainrotTest: state });
+      window.Worker = class extends EventTarget {
+        constructor(url: string | URL, options?: WorkerOptions) {
+          super();
+          if (!String(url).includes('brainrot-voice'))
+            return new NativeWorker(url, options);
+        }
+        postMessage({
+          id,
+          text,
+          model,
+        }: {
+          id: number;
+          text: string;
+          model: string;
+        }) {
+          state.texts.push(text);
+          state.models.push(model);
+          const rate = 8000;
+          const samples = rate * seconds;
+          const buffer = new ArrayBuffer(44 + samples * 2);
+          const view = new DataView(buffer);
+          const word = (offset: number, text: string) =>
+            [...text].forEach((letter, i) =>
+              view.setUint8(offset + i, letter.charCodeAt(0)),
+            );
+          word(0, 'RIFF');
+          view.setUint32(4, buffer.byteLength - 8, true);
+          word(8, 'WAVE');
+          word(12, 'fmt ');
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true);
+          view.setUint16(22, 1, true);
+          view.setUint32(24, rate, true);
+          view.setUint32(28, rate * 2, true);
+          view.setUint16(32, 2, true);
+          view.setUint16(34, 16, true);
+          word(36, 'data');
+          view.setUint32(40, samples * 2, true);
+          for (let i = 0; i < samples; i++)
+            view.setInt16(44 + i * 2, Math.sin(i * 0.15) * 500, true);
+          setTimeout(
+            () =>
+              this.dispatchEvent(
+                new MessageEvent('message', {
+                  data: fail
+                    ? { type: 'error', id }
+                    : {
+                        type: 'audio',
+                        id,
+                        wav: new Blob([buffer], { type: 'audio/wav' }),
+                      },
+                }),
+              ),
+            30,
+          );
+        }
+        terminate() {
+          state.terminated++;
+        }
+      } as unknown as typeof Worker;
+    },
+    { fail, seconds },
+  );
+}
+
+async function openReader(page: Page) {
+  await page.goto('/exemplo/apontamentos/');
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+test('Portuguese models are available on every device and switching voice replaces the audio', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 4);
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: {
+        getVoices: () => [
+          {
+            name: 'Joana',
+            voiceURI: 'joana',
+            lang: 'pt-PT',
+            localService: true,
+          },
+        ],
+        addEventListener() {},
+        speak() {
+          throw new Error('The reader must use its Portuguese model');
+        },
+      },
+    });
+  });
+  const dialog = await openReader(page);
+  const settings = dialog.getByRole('button', {
+    name: 'Definições de voz e velocidade',
+  });
+  await settings.click();
+  const voices = page.getByLabel('Voz', { exact: true });
+  await expect(voices.locator('option')).toHaveText([
+    'Tugão · Português de Portugal',
+    'Miro · Português de Portugal',
+    'Dii · Português de Portugal',
+    'Só legendas',
+  ]);
+  for (const model of ['miro', 'dii', 'piper']) {
+    await voices.selectOption(model);
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+    await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          (window as unknown as VoiceTestWindow).brainrotTest.models.at(-1),
+        ),
+      )
+      .toBe(model);
+    await settings.click();
+  }
+  await voices.selectOption('silent');
+  expect(
+    await page.evaluate(
+      () => (window as unknown as VoiceTestWindow).brainrotTest.terminated,
+    ),
+  ).toBe(3);
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  await expect(dialog.locator('.brainrot-sound-off')).toBeVisible();
+  const before = await page.evaluate(
+    () => (window as unknown as VoiceTestWindow).brainrotTest.models.length,
+  );
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await page.waitForTimeout(200);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as VoiceTestWindow).brainrotTest.models.length,
+    ),
+  ).toBe(before);
+});
+
+async function nextCue(dialog: Locator) {
+  await dialog.locator('.brainrot-options summary').click();
+  await dialog.getByRole('button', { name: 'Trecho seguinte' }).click();
+  await dialog.locator('.brainrot-options summary').click();
+}
+
+test('desktop opening and closing animate the phone and restore focus, with a reduced-motion path', async ({
+  page,
+}) => {
+  const dialog = await openReader(page);
+  const shell = dialog.locator('.brainrot-shell');
+  const entranceTop = await shell.evaluate((element) => {
+    const animation = element.getAnimations()[0];
+    animation.pause();
+    animation.currentTime = 100;
+    return element.getBoundingClientRect().top;
+  });
+  expect(entranceTop).toBeGreaterThan(100);
+  await shell.evaluate((element) =>
+    element.getAnimations().forEach((animation) => animation.finish()),
+  );
+  const stage = await dialog.locator('.brainrot-stage').boundingBox();
+  const controls = await dialog
+    .locator('.brainrot-clip-controls')
+    .boundingBox();
+  expect(controls!.x).toBeGreaterThan(stage!.x + stage!.width);
+  await dialog.getByRole('button', { name: 'Voltar à página' }).click();
+  await expect(dialog).not.toBeVisible();
+  const opener = page.getByRole('button', { name: 'Brain rot', exact: true });
+  await expect(opener).toBeFocused();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await opener.click();
+  expect(
+    await shell.evaluate((element) => element.getAnimations().length),
+  ).toBe(0);
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(opener).toBeFocused();
+});
+
+test('Escape closes the reading options before closing the reader', async ({
+  page,
+}) => {
+  const dialog = await openReader(page);
+  const options = dialog.locator('.brainrot-options');
+  await options.locator('summary').click();
+  await page.keyboard.press('Escape');
+  await expect(options).not.toHaveAttribute('open');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).not.toHaveAttribute('data-closing', 'true');
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+});
+
+test('cards accept pause taps, suppress duplicate captions and stay centred on the video', async ({
+  page,
+}) => {
+  await mockVoice(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body) => {
+    body.innerHTML =
+      '<pre><code>print("Um exemplo")</code></pre><h2>Depois do código</h2>';
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await nextCue(dialog);
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+  const card = dialog.getByRole('region', {
+    name: 'Imagem, fórmula ou exemplo da página',
+  });
+  await card.click({ position: { x: 12, y: 12 } });
+  await expect
+    .soft(dialog.getByRole('button', { name: 'Iniciar leitura' }))
+    .toBeVisible();
+  await expect.soft(dialog.locator('.brainrot-caption')).not.toBeVisible();
+  const box = await card.boundingBox();
+  const stage = await dialog.locator('.brainrot-stage').boundingBox();
+  expect
+    .soft(Math.abs(box!.x + box!.width / 2 - (stage!.x + stage!.width / 2)))
+    .toBeLessThan(1);
+  const rail = await dialog.locator('.brainrot-social').boundingBox();
+  expect(box!.x + box!.width).toBeLessThan(rail!.x);
+  const playBox = await dialog.locator('[data-br-play]').boundingBox();
+  expect(
+    Math.abs(playBox!.y + playBox!.height / 2 - (stage!.y + stage!.height / 2)),
+  ).toBeLessThan(1);
+  expect(
+    Math.abs(playBox!.x + playBox!.width / 2 - (stage!.x + stage!.width / 2)),
+  ).toBeLessThan(1);
+  await expect(card.locator('[data-current-line]')).toHaveCount(0);
+});
+
+test('caption wrapping never splits a spoken sentence and highlighting is optional', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 4);
+  const sentence =
+    'Esta frase tem palavras suficientes para ocupar várias legendas e deve continuar sem cortes artificiais na voz.';
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body, text) => {
+    body.innerHTML = `<p>${text}</p><p>A frase seguinte.</p>`;
+  }, sentence);
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await nextCue(dialog);
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(
+    'Esta frase tem palavras suficientes para',
+  );
+  await expect(dialog.locator('[data-current-word]')).toHaveCount(1);
+  await dialog
+    .getByRole('button', { name: 'Definições de voz e velocidade' })
+    .click();
+  await expect(
+    page.getByRole('checkbox', { name: 'Realçar leitura' }),
+  ).toBeChecked();
+  await page.getByRole('checkbox', { name: 'Realçar leitura' }).uncheck();
+  await expect(dialog.locator('[data-current-word]')).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Realçar leitura' }).check();
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(
+    dialog.locator('.brainrot-caption [data-current-word]'),
+  ).toBeVisible();
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(
+    'ocupar várias legendas e deve continuar',
+    { timeout: 3000 },
+  );
+  const spoken = await page.evaluate(
+    () =>
+      (window as unknown as { brainrotTest: { texts: string[] } }).brainrotTest
+        .texts,
+  );
+  expect(spoken).toEqual([sentence, 'A frase seguinte.']);
+});
+
+test('the time scrubber follows the reading in seconds and previews its position while dragging', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body) => {
+    body.innerHTML = '<p>Olá mundo.</p>';
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await dialog
+    .getByRole('button', { name: 'Definições de voz e velocidade' })
+    .click();
+  await page.getByLabel('Voz', { exact: true }).selectOption('silent');
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  const seek = dialog.getByRole('slider', { name: 'Posição na leitura' });
+  await expect(dialog.locator('[data-br-time]')).toHaveText('00:00 / 00:04');
+  await expect(dialog.locator('[data-br-time]')).not.toBeVisible();
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect
+    .poll(async () => Number(await seek.inputValue()))
+    .toBeGreaterThan(0.5);
+  const box = (await seek.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.75, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(dialog.locator('[data-br-time]')).toBeVisible();
+  await expect(dialog.locator('[data-br-time]')).toHaveText(
+    /00:0[23] \/ 00:04/,
+  );
+  await page.screenshot({ path: testInfo.outputPath('scrubbing.png') });
+  await page.mouse.up();
+  await expect(dialog.locator('.brainrot-caption')).toHaveText('Olá mundo.');
+  await expect(
+    dialog.getByRole('button', { name: 'Pausar leitura' }),
+  ).toBeVisible();
+});
+
+test('share copies only the canonical URL and the sound button opens voice settings', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.assign(window, { copiedLinks: [] as string[] });
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        writeText: async (value: string) =>
+          (window as unknown as { copiedLinks: string[] }).copiedLinks.push(
+            value,
+          ),
+      },
+    });
+  });
+  const dialog = await openReader(page);
+  await dialog.getByRole('button', { name: 'Partilhar', exact: true }).click();
+  const panel = page.getByRole('dialog', {
+    name: 'Partilhar página',
+    exact: true,
+  });
+  await expect(panel.getByLabel('Ligação da página')).toHaveValue(
+    'https://resumos.rgo.pt/exemplo/apontamentos/',
+  );
+  await panel.getByRole('button', { name: 'Copiar ligação' }).click();
+  await expect(panel.getByRole('status')).toHaveText('Ligação copiada.');
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { copiedLinks: string[] }).copiedLinks,
+    ),
+  ).toEqual(['https://resumos.rgo.pt/exemplo/apontamentos/']);
+  await page.keyboard.press('Escape');
+  await expect(
+    dialog.getByRole('button', { name: 'Partilhar', exact: true }),
+  ).toBeFocused();
+  await dialog
+    .getByRole('button', { name: 'Definições de voz e velocidade' })
+    .click();
+  await page.getByLabel('Velocidade da leitura').selectOption('1.5');
+  await expect(
+    page.getByRole('checkbox', { name: 'Silenciar voz' }),
+  ).toHaveCount(0);
+  await page.getByLabel('Voz', { exact: true }).selectOption('silent');
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .include('#brainrot-voice-settings')
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  await dialog
+    .getByRole('button', { name: 'Definições de voz e velocidade' })
+    .click();
+  await expect(page.getByLabel('Velocidade da leitura')).toHaveValue('1.5');
+  await expect(page.getByLabel('Voz', { exact: true })).toHaveValue('silent');
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  await expect(dialog.locator('.brainrot-sound-off')).toBeVisible();
+  await expect(dialog.locator('.brainrot-sound-on')).not.toBeVisible();
+  await dialog
+    .getByRole('button', { name: 'Definições de voz e velocidade' })
+    .click();
+  await page.getByLabel('Voz', { exact: true }).selectOption('piper');
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  await expect(dialog.locator('.brainrot-sound-on')).toBeVisible();
+  await expect(dialog.locator('.brainrot-sound-off')).not.toBeVisible();
+});
+
+test('code keeps legible syntax colours and YouTube appears as a clickable preview without captions', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body) => {
+    body.innerHTML =
+      '<section data-playground data-language="c"><pre data-source hidden><code class="language-c">#include &lt;stdio.h&gt;\nint main() { printf("Olá"); return 0; }</code></pre></section><div data-video="dQw4w9WgXcQ" data-title="Um vídeo de exemplo"></div>';
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await nextCue(dialog);
+  const visual = dialog.locator('.brainrot-visual');
+  await expect(visual.locator('.tok-keyword').first()).toBeVisible();
+  await expect(visual.locator('.tok-string').first()).toBeVisible();
+  const colors = await visual
+    .locator('pre span')
+    .evaluateAll((nodes) => [
+      ...new Set(nodes.map((node) => getComputedStyle(node).color)),
+    ]);
+  expect(colors.length).toBeGreaterThanOrEqual(3);
+  expect(colors).not.toContain('rgb(238, 237, 240)');
+  await expect(dialog.locator('.brainrot-caption')).not.toBeVisible();
+  await nextCue(dialog);
+  const preview = dialog.getByRole('link', {
+    name: /Clica para ver este vídeo agora/,
+  });
+  await expect(preview).toHaveAttribute(
+    'href',
+    'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  );
+  await preview
+    .getByText('Clica para ver este vídeo agora')
+    .click({ trial: true, timeout: 2000 });
+  await preview.click({ trial: true, timeout: 2000 });
+  await expect(preview.getByRole('img')).toHaveAttribute(
+    'src',
+    'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+  );
+  await expect(dialog.locator('.brainrot-caption')).not.toBeVisible();
+});
+
+test('voice and clips stay lazy; captions follow audio and pause with the reader', async ({
+  page,
+}) => {
+  await mockVoice(page);
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await page.goto('/exemplo/apontamentos/');
+  expect(
+    requests.filter((url) =>
+      /brainrot\/.*mp4|huggingface|piper|onnx/.test(url),
+    ),
+  ).toEqual([]);
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(
+    'Texto e fórmulas',
+  );
+  await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(
+    'Uma ideia de cada vez',
+    { timeout: 6000 },
+  );
+  await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+  const paused = await dialog.locator('.brainrot-caption').textContent();
+  await page.waitForTimeout(2300);
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(paused!);
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Brain rot', exact: true }),
+  ).toBeFocused();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { brainrotTest: { terminated: number } })
+          .brainrotTest.terminated,
+    ),
+  ).toBeGreaterThan(0);
+  expect(requests.filter((url) => /huggingface|piper|onnx/.test(url))).toEqual(
+    [],
+  );
+});
+
+test('the infinite feed alternates games without changing the lesson position or retaining off-screen videos', async ({
+  page,
+}) => {
+  const dialog = await openReader(page);
+  const caption = await dialog.locator('.brainrot-caption').textContent();
+  const first = await dialog.locator('[data-br-clip-name]').textContent();
+  const visited = [first];
+  let previous = first;
+  for (let step = 0; step < 7; step++) {
+    await dialog
+      .getByRole('button', { name: 'Vídeo seguinte', exact: true })
+      .click();
+    await expect(dialog.locator('[data-br-clip-name]')).not.toHaveText(
+      previous!,
+    );
+    previous = await dialog.locator('[data-br-clip-name]').textContent();
+    visited.push(previous);
+    await expect(dialog.locator('.brainrot-caption')).toHaveText(caption!);
+    await expect(dialog.locator('video')).toHaveCount(3);
+    await expect(dialog.locator('video[src]')).toHaveCount(2);
+  }
+  await dialog
+    .getByRole('button', { name: 'Vídeo anterior', exact: true })
+    .click();
+  await expect(dialog.locator('[data-br-clip-name]')).toHaveText(
+    visited.at(-2)!,
+  );
+});
+
+test('the reader preserves mixed text, nested lists, images and maths while excluding private controls', async ({
+  page,
+}) => {
+  await mockVoice(page);
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body) => {
+    body.innerHTML =
+      '<p>Antes <img src="/examples/pontos.svg" alt="Pontos da soma"> depois.</p><ul><li>Pai<ul><li>Filho</li></ul></li></ul><p data-annotation-ignore>NOTA PRIVADA</p><p data-pagefind-ignore>CONTROLO PRIVADO</p><p>Fim.</p>';
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  const captions: string[] = [];
+  while (true) {
+    captions.push((await dialog.locator('.brainrot-caption').textContent())!);
+    if (await dialog.locator('[data-br-next]').isDisabled()) break;
+    await nextCue(dialog);
+  }
+  expect(captions).toEqual([
+    'Texto e fórmulas',
+    'Antes',
+    'Pontos da soma',
+    'depois.',
+    'Pai',
+    'Filho',
+    'Fim.',
+  ]);
+  await expect(
+    dialog.getByRole('img', { name: 'Pontos da soma' }),
+  ).not.toBeVisible();
+  await expect(dialog.locator('.brainrot-caption')).toBeVisible();
+});
+
+test('inline maths stays in highlighted captions and visual cards end with their own cue', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 4);
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body) => {
+    const math = [...body.querySelectorAll('.katex')].find(
+      (node) => !node.closest('.katex-display'),
+    )!.outerHTML;
+    body.innerHTML = `<p>A soma ${math} dá cinco.</p><img src="/examples/pontos.svg" alt="Pontos da soma"><p>Agora seguimos em frente.</p><h2>O caso ${math}</h2><div>Este caso ${math} continua.</div>`;
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await nextCue(dialog);
+  await expect(dialog.locator('.brainrot-visual')).not.toBeVisible();
+  await expect(dialog.locator('.brainrot-caption .katex')).toBeVisible();
+  await expect(
+    dialog.locator('.brainrot-caption [data-current-word]'),
+  ).toHaveText('A');
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(
+    dialog.locator('.brainrot-caption [data-current-word] .katex'),
+  ).toBeVisible();
+  await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+  await nextCue(dialog);
+  await expect(
+    dialog.getByRole('img', { name: 'Pontos da soma' }),
+  ).toBeVisible();
+  await expect(dialog.locator('.brainrot-caption')).not.toBeVisible();
+  await nextCue(dialog);
+  await expect(dialog.locator('.brainrot-visual')).not.toBeVisible();
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(
+    'Agora seguimos em frente.',
+  );
+  await expect(dialog.locator('.brainrot-caption')).toBeVisible();
+  await nextCue(dialog);
+  await expect(dialog.locator('.brainrot-caption .katex')).toBeVisible();
+  await nextCue(dialog);
+  await expect(dialog.locator('.brainrot-caption .katex')).toBeVisible();
+});
+
+test('scrolling over a code card changes the background without changing the reading', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body) => {
+    body.innerHTML = '<pre><code>print("Exemplo")</code></pre>';
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await nextCue(dialog);
+  const label = dialog.locator('[data-br-clip-name]');
+  const initial = await label.textContent();
+  const position = await dialog.locator('[data-br-position]').textContent();
+  const card = await dialog.locator('.brainrot-visual').boundingBox();
+  await page.mouse.move(card!.x + 12, card!.y + 12);
+  await page.mouse.wheel(0, 550);
+  await expect(label).not.toHaveText(initial!);
+  await expect(dialog.locator('[data-br-position]')).toHaveText(position!);
+});
+
+test('formulas remain readable and use mathematical speech rather than duplicated KaTeX text', async ({
+  page,
+}) => {
+  await mockVoice(page);
+  const dialog = await openReader(page);
+  for (let step = 0; step < 20; step++) {
+    if (
+      (await dialog.locator('.brainrot-caption').textContent())?.includes(
+        'somatório',
+      )
+    )
+      break;
+    await nextCue(dialog);
+  }
+  await expect(dialog.locator('.brainrot-visual .katex-display')).toBeVisible();
+  await expect(dialog.locator('.brainrot-caption')).toContainText('somatório');
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+  expect(
+    await page.evaluate(() =>
+      (
+        window as unknown as { brainrotTest: { texts: string[] } }
+      ).brainrotTest.texts.join(' '),
+    ),
+  ).toContain('somatório');
+});
+
+test('web examples show their published source rather than the visitor edit', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('[data-annotatable]').evaluate((body) => {
+    body.innerHTML =
+      '<section data-web-playground data-annotation-ignore><textarea data-html>&lt;p&gt;Exemplo publicado&lt;/p&gt;</textarea><textarea data-css>p { color: red; }</textarea><textarea data-js></textarea></section>';
+    body.querySelector('textarea')!.value = '<p>EDIÇÃO PRIVADA</p>';
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await nextCue(dialog);
+  await expect(dialog.locator('.brainrot-visual')).toContainText(
+    '<p>Exemplo publicado</p>',
+  );
+  await expect(dialog.locator('.brainrot-visual')).not.toContainText(
+    'EDIÇÃO PRIVADA',
+  );
+});
+
+test('voice errors offer retry and an explicit caption-only mode', async ({
+  page,
+}) => {
+  await mockVoice(page, true);
+  const dialog = await openReader(page);
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.getByRole('status')).toContainText('Não foi possível');
+  await expect(
+    dialog.getByRole('button', { name: 'Iniciar leitura' }),
+  ).toBeEnabled();
+  await dialog
+    .getByRole('button', { name: 'Definições de voz e velocidade' })
+    .click();
+  await page
+    .getByRole('dialog', { name: 'Voz e velocidade', exact: true })
+    .getByLabel('Voz', { exact: true })
+    .selectOption('silent');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(
+    'Uma ideia de cada vez',
+    { timeout: 6000 },
+  );
+});
+
+test('leaving the page closes the reader before a back-forward cache restore', async ({
+  page,
+}) => {
+  const dialog = await openReader(page);
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new PageTransitionEvent('pagehide', { persisted: true }),
+    ),
+  );
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new PageTransitionEvent('pageshow', { persisted: true }),
+    ),
+  );
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  await expect(dialog.locator('video[src]')).toHaveCount(2);
+  await page.goto('/exemplo/diagramas/');
+  await page.goBack();
+  await expect(
+    page.getByRole('dialog', { name: 'Brain rot', exact: true }),
+  ).not.toBeVisible();
+});
+
+test('the player fits narrow screens and exposes labelled keyboard controls', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const dialog = await openReader(page);
+  await expect(
+    dialog.getByRole('button', { name: 'Voltar à página' }),
+  ).toBeFocused();
+  await expect(dialog.locator('.brainrot-settings')).not.toBeVisible();
+  await expect(
+    dialog.getByRole('button', { name: 'Início', exact: true }),
+  ).toBeEnabled();
+  for (const name of [
+    'Descobrir, indisponível',
+    'Criar, indisponível',
+    'Caixa de entrada, indisponível',
+    'Perfil, indisponível',
+  ])
+    await expect(
+      dialog.getByRole('button', { name, exact: true }),
+    ).toBeDisabled();
+  expect(
+    await dialog.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+  const accessibility = await new AxeBuilder({ page })
+    .include('#brainrot')
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+});
+
+test.describe('touch feed', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+
+  test('tapping pauses and swiping changes games without restarting the reading', async ({
+    page,
+  }) => {
+    await mockVoice(page);
+    const dialog = await openReader(page);
+    const input = await page.context().newCDPSession(page);
+    await page.touchscreen.tap(110, 180);
+    await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+    await dialog
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .tap();
+    await page.getByRole('button', { name: 'Fechar definições' }).tap();
+    await page.touchscreen.tap(110, 180);
+    await expect(
+      dialog.getByRole('button', { name: 'Iniciar leitura' }),
+    ).toBeVisible();
+    const caption = await dialog.locator('.brainrot-caption').textContent();
+    for (let step = 0; step < 3; step++) {
+      const previous = await dialog
+        .locator('[data-br-clip-name]')
+        .textContent();
+      await input.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x: 110, y: 630 }],
+      });
+      for (let y = 590; y >= 190; y -= 40) {
+        await input.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x: 110, y }],
+        });
+        await page.waitForTimeout(16);
+      }
+      await input.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      });
+      await expect(dialog.locator('[data-br-clip-name]')).not.toHaveText(
+        previous!,
+      );
+      await expect(dialog.locator('.brainrot-caption')).toHaveText(caption!);
+      await expect(
+        dialog.getByRole('button', { name: 'Iniciar leitura' }),
+      ).toBeVisible();
+      await expect(dialog.locator('video[src]')).toHaveCount(2);
+    }
+  });
+  test('swiping a media card changes game without opening its link or starting playback', async ({
+    page,
+  }) => {
+    await page.goto('/exemplo/apontamentos/');
+    await page.locator('[data-annotatable]').evaluate((body) => {
+      body.innerHTML =
+        '<div data-video="dQw4w9WgXcQ" data-title="Um vídeo"></div>';
+    });
+    await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+    await nextCue(dialog);
+    const box = (await dialog
+      .locator('.brainrot-video-preview')
+      .boundingBox())!;
+    const previous = await dialog.locator('[data-br-clip-name]').textContent();
+    const input = await page.context().newCDPSession(page);
+    const x = box.x + 20;
+    const y = box.y + box.height - 20;
+    await input.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x, y }],
+    });
+    for (let delta = 20; delta <= 120; delta += 20) {
+      await input.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x, y: y - delta }],
+      });
+      await page.waitForTimeout(16);
+    }
+    await input.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+    await expect(dialog.locator('[data-br-clip-name]')).not.toHaveText(
+      previous!,
+    );
+    await expect(
+      dialog.getByRole('button', { name: 'Iniciar leitura' }),
+    ).toBeVisible();
+    expect(page.context().pages()).toHaveLength(1);
+  });
+});
+
+test('landscape keeps the top controls apart and the formula readable', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  const dialog = await openReader(page);
+  await dialog.locator('.brainrot-shell').evaluate(async (element) => {
+    await Promise.all(
+      element.getAnimations().map((animation) => animation.finished),
+    );
+  });
+  const back = await dialog
+    .getByRole('button', { name: 'Voltar à página' })
+    .boundingBox();
+  const tabs = await dialog.locator('.brainrot-tabs').boundingBox();
+  const menu = await dialog.locator('summary').boundingBox();
+  expect(tabs!.x).toBeGreaterThan(back!.x + back!.width);
+  expect(tabs!.x + tabs!.width).toBeLessThan(menu!.x);
+  for (let step = 0; step < 20; step++) {
+    if (
+      (await dialog.locator('.brainrot-caption').textContent())?.includes(
+        'somatório',
+      )
+    )
+      break;
+    await nextCue(dialog);
+  }
+  const formula = await dialog.locator('.brainrot-visual').boundingBox();
+  await expect(dialog.locator('.brainrot-caption')).not.toBeVisible();
+  const stage = await dialog.locator('.brainrot-stage').boundingBox();
+  const topic = await dialog.locator('.brainrot-topic').boundingBox();
+  const play = await dialog
+    .getByRole('button', { name: 'Iniciar leitura' })
+    .boundingBox();
+  expect(formula!.y).toBeGreaterThan(back!.y + back!.height);
+  expect(formula!.y + formula!.height).toBeLessThan(topic!.y);
+  expect(
+    Math.abs(formula!.x + formula!.width / 2 - (stage!.x + stage!.width / 2)),
+  ).toBeLessThan(1);
+  expect(
+    Math.abs(play!.x + play!.width / 2 - (stage!.x + stage!.width / 2)),
+  ).toBeLessThan(1);
+  expect(
+    Math.abs(play!.y + play!.height / 2 - (stage!.y + stage!.height / 2)),
+  ).toBeLessThan(1);
+});
+
+for (const [model, modelFile] of [
+  ['piper', 'pt_PT-tug%C3%A3o-medium.onnx'],
+  ['miro', 'miro_pt-PT.onnx'],
+  ['dii', 'dii_pt-PT.onnx'],
+]) {
+  test(`the real ${model} model speaks locally without uploading lesson text`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      process.env.RESUMOS_REAL_TTS !== '1',
+      'Opt-in model and WASM downloads.',
+    );
+    test.setTimeout(240_000);
+    const requests: { url: string; method: string; body: string | null }[] = [];
+    page.on('request', (request) =>
+      requests.push({
+        url: request.url(),
+        method: request.method(),
+        body: request.postData(),
+      }),
+    );
+    await page.addInitScript(() => {
+      const createURL = URL.createObjectURL;
+      URL.createObjectURL = (blob) => {
+        if (blob instanceof Blob && /wav/.test(blob.type))
+          Object.assign(window, { voiceSample: blob });
+        return createURL(blob);
+      };
+    });
+    const sentence =
+      'Hoje vamos estudar os apontamentos de programação e perceber como a função recebe três números e devolve a sua soma.';
+    await page.goto('/exemplo/apontamentos/');
+    await page.locator('.lesson-heading h1').evaluate((heading, text) => {
+      heading.textContent = text;
+    }, sentence);
+    await page.locator('[data-annotatable]').evaluate((body) => {
+      body.replaceChildren();
+    });
+    await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+    await dialog
+      .getByRole('button', { name: 'Definições de voz e velocidade' })
+      .click();
+    await page.getByLabel('Voz', { exact: true }).selectOption(model);
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+    await expect(dialog.locator('[data-br-status]')).toHaveText(
+      'Voz local · Português de Portugal',
+      { timeout: 180_000 },
+    );
+    await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+    const sample = await page.evaluate(async () => {
+      const wav = (window as unknown as { voiceSample: Blob }).voiceSample;
+      const bytes = await wav.arrayBuffer();
+      const context = new AudioContext();
+      const decoded = await context.decodeAudioData(bytes.slice(0));
+      const result = {
+        bytes: Array.from(new Uint8Array(bytes)),
+        duration: decoded.duration,
+        peak: decoded
+          .getChannelData(0)
+          .reduce((max, value) => Math.max(max, Math.abs(value)), 0),
+      };
+      await context.close();
+      return result;
+    });
+    expect(sample.duration).toBeGreaterThan(3);
+    expect(sample.peak).toBeGreaterThan(0.01);
+    const samplePath = testInfo.outputPath(`${model}.wav`);
+    await writeFile(samplePath, Buffer.from(sample.bytes));
+    await testInfo.attach(`${model}.wav`, {
+      path: samplePath,
+      contentType: 'audio/wav',
+    });
+    expect(requests.some(({ url }) => url.endsWith(modelFile))).toBe(true);
+    expect(
+      requests.every(
+        ({ method, body }) => ['GET', 'HEAD'].includes(method) && body === null,
+      ),
+    ).toBe(true);
+    expect(
+      requests.some(({ url }) =>
+        decodeURIComponent(url)
+          .replace(/\+/g, ' ')
+          .includes('Hoje vamos estudar'),
+      ),
+    ).toBe(false);
+  });
+}
