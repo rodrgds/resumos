@@ -1,0 +1,168 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import projects from '../data/student-projects.json';
+import { courses as leic } from '../data/courses';
+import { courses as meic } from '../data/meic';
+import '../styles/projects.css';
+
+const courseNames = new Map(
+  [...leic, ...meic].map((course) => [course.acronym, course.name]),
+);
+for (const [historical, current] of [
+  ['COMP', 'C'],
+  ['LCOM', 'LC'],
+  ['ESOF', 'ES'],
+]) {
+  const name = courseNames.get(current);
+  if (name) courseNames.set(historical, name);
+}
+const courses = [...new Set(projects.map((project) => project.course))].sort(
+  (a, b) => a.localeCompare(b, 'pt'),
+);
+const languages = [
+  ...new Set(projects.map((project) => project.language)),
+].sort();
+const sorted = [...projects].sort((a, b) => {
+  const year = (project: typeof a) =>
+    project.academicYear
+      ? Number(project.academicYear.slice(0, 4)) + 1
+      : Number(project.createdAt.slice(0, 4));
+  return (
+    year(b) - year(a) ||
+    b.createdAt.localeCompare(a.createdAt) ||
+    a.title.localeCompare(b.title, 'pt')
+  );
+});
+---
+
+<Layout
+  title="Projetos de estudantes · Resumos LEIC FEUP"
+  description="Explora projetos públicos de estudantes e equipas da FEUP, com código, relatórios e filtros por cadeira e linguagem."
+>
+  <main id="conteudo" class="projects-page container" data-pagefind-body>
+    <header class="projects-heading">
+      <h1>Projetos de estudantes</h1>
+      <p>
+        Jogos, aplicações, algoritmos e investigação feitos na FEUP. Encontra
+        uma implementação, lê o relatório e explora o código.
+      </p>
+    </header>
+    <form
+      class="project-filters"
+      data-project-filters
+      role="search"
+      aria-label="Filtrar projetos"
+      data-pagefind-ignore
+      hidden
+    >
+      <label class="project-search">
+        Pesquisar projetos
+        <span>
+          <Icon name="magnifying-glass" size={19} />
+          <input
+            type="search"
+            name="q"
+            placeholder="Nome, tema ou autor…"
+            autocomplete="off"
+          />
+        </span>
+      </label>
+      <div class="project-filter">
+        <label for="project-course">Cadeira ou área</label>
+        <select id="project-course" name="course">
+          <option value="">Todas</option>
+          {courses.map((course) => (
+            <option value={course}>
+              {courseNames.get(course)
+                ? `${course} · ${courseNames.get(course)}`
+                : course}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div class="project-filter">
+        <label for="project-language">Linguagem</label>
+        <select id="project-language" name="language">
+          <option value="">Todas</option>
+          {languages.map((language) => (
+            <option>{language}</option>
+          ))}
+        </select>
+      </div>
+    </form>
+    <div class="project-results" data-pagefind-ignore>
+      <p role="status" data-project-count>
+        {projects.length} projetos · {courses.length} cadeiras e áreas
+      </p>
+      <button type="button" data-project-reset hidden>
+        Limpar filtros
+      </button>
+    </div>
+    <ul class="project-list" aria-label="Projetos">
+      {sorted.map((project) => (
+        <li
+          data-project
+          data-course={project.course}
+          data-language={project.language}
+        >
+          <article>
+            <div class="project-description">
+              <h2>
+                <a
+                  href={`https://github.com/${project.repo}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {project.title}
+                  <Icon name="arrow-up-right" size={18} />
+                </a>
+              </h2>
+              <p>{project.description}</p>
+              <span class="project-owner">{project.repo}</span>
+            </div>
+            <dl class="project-meta">
+              <div>
+                <dt>Cadeira ou área</dt>
+                <dd title={courseNames.get(project.course)}>
+                  {project.course}
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  {project.academicYear ? 'Ano letivo' : 'Repositório criado'}
+                </dt>
+                <dd>{project.academicYear ?? project.createdAt.slice(0, 4)}</dd>
+              </div>
+              <div>
+                <dt>Linguagem</dt>
+                <dd>{project.language}</dd>
+              </div>
+            </dl>
+          </article>
+        </li>
+      ))}
+    </ul>
+    <p class="project-empty" data-project-empty hidden>
+      Nenhum projeto corresponde a estes filtros. Experimenta outro termo ou
+      limpa os filtros.
+    </p>
+    <footer class="project-sources">
+      <p>
+        Seleção consultada em{' '}
+        <time datetime="2026-09-10">10 de setembro de 2026</time>. A cadeira e a
+        descrição seguem os READMEs dos autores. Quando o ano letivo não está
+        indicado, mostramos a data de criação do repositório.
+      </p>
+      <a
+        href="https://github.com/rodrgds/resumos/edit/main/src/data/student-projects.json"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Sugerir um projeto ou corrigir informação{' '}
+        <Icon name="arrow-up-right" size={16} />
+      </a>
+    </footer>
+  </main>
+</Layout>
+<script src="../scripts/projects.ts"></script>
