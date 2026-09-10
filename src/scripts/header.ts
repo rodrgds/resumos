@@ -22,7 +22,7 @@ if (header) {
     previous = scrollY;
     if (
       scrollY < 100 ||
-      header!.matches(':focus-within') ||
+      header!.querySelector(':focus-visible') ||
       menu?.open ||
       document.querySelector('dialog[open], #scratchpad:not([hidden])')
     ) {

@@ -313,3 +313,18 @@ test('desktop course sidebar uses the viewport down to its bottom gutter', async
   await page.mouse.wheel(0, 1800);
   await expect(page.locator('.course-contribute')).toBeInViewport();
 });
+
+test('mobile header hides after closing appearance with a pointer', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/cadeiras/fsi/controlo-acessos/');
+  const trigger = page.getByRole('button', { name: 'Personalizar aparência' });
+  await trigger.click();
+  await page.getByRole('button', { name: 'Fechar personalização' }).click();
+  await expect(trigger).toBeFocused();
+  await page.mouse.wheel(0, 650);
+  await expect(page.locator('.site-header')).toHaveClass(/header-hidden/);
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.site-header')).not.toHaveClass(/header-hidden/);
+});
