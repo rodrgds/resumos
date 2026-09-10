@@ -149,7 +149,7 @@ for (const width of [1440, 390, 320]) {
             nodes: item.nodes.map((node) => node.target),
           })),
         ).toEqual([]);
-        await page.locator('footer').scrollIntoViewIfNeeded();
+        await page.getByRole('contentinfo').scrollIntoViewIfNeeded();
         await expect
           .poll(() =>
             page

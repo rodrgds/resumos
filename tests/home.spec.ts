@@ -92,10 +92,12 @@ test('appearance persists, follows system, and resets', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
   await page.getByRole('radio', { name: 'Escuro', exact: true }).check();
-  await page.getByText('Ajustar cores e largura', { exact: true }).click();
   await page.getByRole('radio', { name: 'Azul', exact: true }).check();
   await page.getByLabel('Largura da página').fill('1840');
-  await page.getByLabel('Fonte de leitura').selectOption('serif');
+  await page
+    .getByRole('group', { name: 'Fonte de leitura', exact: true })
+    .getByRole('radio', { name: 'Source Serif 4', exact: true })
+    .check();
   await page.getByRole('slider', { name: 'Tamanho do texto' }).fill('120');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -105,7 +107,11 @@ test('appearance persists, follows system, and resets', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-size', '120');
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
   await page.getByRole('button', { name: 'Repor preferências' }).click();
-  await expect(page.getByRole('radio', { name: 'Sistema' })).toBeChecked();
+  await expect(
+    page
+      .getByRole('group', { name: 'Modo de cor' })
+      .getByRole('radio', { name: 'Sistema', exact: true }),
+  ).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

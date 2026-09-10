@@ -37,7 +37,6 @@ test('snippets can be saved, toggled, restored and recovered', async ({
 }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
-  await page.getByText('CSS personalizado', { exact: true }).click();
   await page.getByLabel('Simplificar cabeçalho', { exact: true }).check();
   await page.keyboard.press('Escape');
   await expect(
@@ -74,14 +73,12 @@ test('snippets can be saved, toggled, restored and recovered', async ({
     '7px',
   );
   await page.getByRole('button', { name: 'Aparência', exact: true }).click();
-  await page.getByText('CSS personalizado', { exact: true }).click();
   await page
     .getByRole('button', { name: 'Editar Meu CSS', exact: true })
     .click();
   await page.getByRole('button', { name: 'Eliminar', exact: true }).click();
   await page.reload();
   await page.getByRole('button', { name: 'Aparência', exact: true }).click();
-  await page.getByText('CSS personalizado', { exact: true }).click();
   await expect(page.getByLabel('Meu CSS', { exact: true })).toHaveCount(0);
 });
 
@@ -194,11 +191,12 @@ test('code appearance responds to settings and survives reload', async ({
 }) => {
   await page.goto('/exemplo/codigo/');
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
-  await page.getByLabel('Tema', { exact: true }).selectOption('flexoki');
+  await page.getByRole('radio', { name: 'Flexoki', exact: true }).check();
   await page.getByRole('radio', { name: 'Escuro', exact: true }).check();
   await page
-    .getByLabel('Fonte do código', { exact: true })
-    .selectOption('jetbrains');
+    .getByRole('group', { name: 'Fonte do código', exact: true })
+    .getByRole('radio', { name: 'JetBrains Mono', exact: true })
+    .check();
   await page.keyboard.press('Escape');
   const editor = page.locator('.cm-editor').first();
   await expect(editor).toHaveCSS('font-family', /JetBrains Mono/);

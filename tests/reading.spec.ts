@@ -139,7 +139,10 @@ test('all eight reading fonts load locally and survive navigation', async ({
 }) => {
   await page.goto('/exemplo/apontamentos/');
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
-  const select = page.getByLabel('Fonte de leitura');
+  const fonts = page.getByRole('group', {
+    name: 'Fonte de leitura',
+    exact: true,
+  });
   const families = [
     ['sans', 'Manrope Variable'],
     ['inter', 'Inter Variable'],
@@ -150,9 +153,9 @@ test('all eight reading fonts load locally and survive navigation', async ({
     ['literata', 'Literata Variable'],
     ['mono', 'IBM Plex Mono'],
   ];
-  await expect(select.locator('option')).toHaveCount(8);
+  await expect(fonts.getByRole('radio')).toHaveCount(8);
   for (const [id, family] of families) {
-    await select.selectOption(id);
+    await fonts.locator(`input[value="${id}"]`).check();
     await expect(page.locator('.prose')).toHaveCSS(
       'font-family',
       new RegExp(family),
