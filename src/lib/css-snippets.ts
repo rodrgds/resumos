@@ -7,6 +7,9 @@ export interface CssSnippet {
   enabled: boolean;
 }
 export const SNIPPETS_KEY = 'resumos-css-snippets';
+const legacyHideAiCss =
+  '[data-open-ai], #ai-menu, #copy-prompt { display: none; }';
+
 export const defaultSnippets: readonly CssSnippet[] = [
   {
     id: 'simple-header',
@@ -24,7 +27,37 @@ export const defaultSnippets: readonly CssSnippet[] = [
     id: 'hide-ai',
     name: 'Ocultar ações de IA e copiar',
     enabled: false,
-    css: '[data-open-ai], #ai-menu, #copy-prompt { display: none; }',
+    css: '[data-open-ai], #ai-menu, #copy-prompt { display: none !important; }',
+  },
+  {
+    id: 'hide-brainrot',
+    name: 'Ocultar Brain rot',
+    enabled: false,
+    css: '[data-open-brainrot] { display: none !important; }',
+  },
+  {
+    id: 'static-header',
+    name: 'Cabeçalho sem seguir o scroll',
+    enabled: false,
+    css: '.site-header { position: static; }',
+  },
+  {
+    id: 'underline-links',
+    name: 'Sublinhar links dos apontamentos',
+    enabled: false,
+    css: '.prose a { text-decoration: underline; text-underline-offset: 0.2em; }',
+  },
+  {
+    id: 'wrap-code',
+    name: 'Quebrar linhas de código estático',
+    enabled: false,
+    css: '.prose pre.astro-code, .prose pre.astro-code code { white-space: pre-wrap; overflow-wrap: anywhere; }',
+  },
+  {
+    id: 'striped-tables',
+    name: 'Alternar o fundo das linhas de tabelas',
+    enabled: false,
+    css: '.prose tbody tr:nth-child(even) { background: var(--soft); }',
   },
 ];
 
@@ -33,7 +66,7 @@ export function readSnippets(): CssSnippet[] {
     const saved: unknown = JSON.parse(readLocal(SNIPPETS_KEY) || 'null');
     if (Array.isArray(saved)) {
       const seen = new Set<string>();
-      return saved.filter((item): item is CssSnippet => {
+      const snippets = saved.filter((item): item is CssSnippet => {
         if (
           !item ||
           typeof item.id !== 'string' ||
@@ -47,6 +80,15 @@ export function readSnippets(): CssSnippet[] {
         seen.add(item.id);
         return true;
       });
+      // Upgrade only untouched preset CSS, preserving edits, names and toggles.
+      return snippets.map((snippet) =>
+        snippet.id === 'hide-ai' && snippet.css === legacyHideAiCss
+          ? {
+              ...snippet,
+              css: defaultSnippets.find((item) => item.id === 'hide-ai')!.css,
+            }
+          : snippet,
+      );
     }
   } catch {
     /* Invalid storage falls back to the disabled presets. */

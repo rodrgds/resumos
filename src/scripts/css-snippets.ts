@@ -1,5 +1,6 @@
 import {
   applySnippets,
+  defaultSnippets,
   readSnippets,
   saveSnippets,
   SNIPPETS_KEY,
@@ -11,10 +12,18 @@ const template =
   document.querySelector<HTMLTemplateElement>('#snippet-template')!;
 const status = document.querySelector<HTMLElement>('[data-snippet-status]')!;
 let snippets = readSnippets();
+const addPresets =
+  document.querySelector<HTMLButtonElement>('[data-add-presets]')!;
+function syncPresets() {
+  addPresets.hidden = defaultSnippets.every((preset) =>
+    snippets.some((snippet) => snippet.id === preset.id),
+  );
+}
 
 function save() {
   const persisted = saveSnippets(snippets);
   applySnippets(snippets);
+  syncPresets();
   status.textContent = persisted
     ? 'Guardado.'
     : 'Não foi possível guardar. Estas alterações duram só esta visita.';
@@ -114,7 +123,18 @@ function row(snippet: CssSnippet, isNew = false) {
 function render() {
   list.replaceChildren();
   snippets.forEach((snippet) => row(snippet));
+  syncPresets();
 }
+addPresets.onclick = () => {
+  snippets.push(
+    ...defaultSnippets
+      .filter((preset) => !snippets.some((snippet) => snippet.id === preset.id))
+      .map((preset) => ({ ...preset })),
+  );
+  save();
+  render();
+  document.querySelector<HTMLButtonElement>('[data-add-snippet]')!.focus();
+};
 document.querySelector<HTMLButtonElement>('[data-add-snippet]')!.onclick = () =>
   row({ id: crypto.randomUUID(), name: '', css: '', enabled: false }, true);
 window.addEventListener('storage', (event) => {
@@ -127,6 +147,6 @@ render();
 if (new URLSearchParams(location.search).has('sem-css')) {
   status.textContent =
     'O CSS personalizado está suspenso nesta página. Podes editar ou desativar os snippets.';
-  document.querySelector<HTMLDetailsElement>('.css-snippets')!.open = true;
   document.querySelector<HTMLDialogElement>('#appearance')!.showModal();
+  document.querySelector('.css-snippets')!.scrollIntoView();
 }
