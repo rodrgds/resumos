@@ -162,7 +162,7 @@ Usa `--page`, `--surface`, `--text`, `--muted`, `--line`, `--accent` e `--accent
 
 ## Leitura e anotações
 
-As páginas de leitura têm uma coluna centrada de 680px por defeito. O cabeçalho e a navegação da cadeira estendem-se às margens do ecrã. A largura geral começa nos 1280px; as escolhas guardadas mantêm-se. **Conteúdos** abre os capítulos e as secções da página atual sem deslocar o texto. **Perguntar ao Chat** e **Brain rot** ficam diretamente visíveis. A barra dividida em secções acompanha a leitura e permite saltar para cada título. No telemóvel, o cabeçalho recolhe ao descer e reaparece ao subir ou receber foco pelo teclado. A fonte inicial é Source Serif 4; as escolhas guardadas continuam a ser respeitadas.
+As páginas de leitura têm texto com 640px por defeito e uma largura geral de 1200px. Em ecrãs a partir de 1200px, a navegação da cadeira fica à esquerda e as secções da página à direita. Nos restantes, **Conteúdos** abre por cima da página. A barra da cadeira mostra a posição entre os resumos; **Nesta página** acompanha as secções do resumo atual. A posição não significa que os resumos anteriores foram estudados. **Perguntar ao Chat** e **Brain rot** ficam diretamente visíveis. O cabeçalho recolhe ao descer e reaparece ao subir ou receber foco pelo teclado, em todos os ecrãs. A fonte inicial é Source Serif 4. As escolhas guardadas mantêm-se.
 
 Seleciona texto e escolhe **Destacar** ou **Comentar**. Os destaques usam Rough Notation. O marcador na margem abre a nota junto ao trecho; no telemóvel, abre um painel inferior. O caderno completo abre por cima da página. As notas continuam só neste navegador, com exportação em Markdown.
 

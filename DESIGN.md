@@ -72,11 +72,11 @@ Manrope serves navigation and interface controls. Reading titles and prose use S
 
 ## Layout
 
-A quiet header, short introduction with the FEUP logo, contribution notice and course grid. Page width defaults to 1280px and adjusts from 1040px to 1920px in 80px steps.
+A quiet header, short introduction with the FEUP logo, contribution notice and course grid. Page width defaults to 1200px and adjusts from 1040px to 1920px in 80px steps.
 
-Course pages use one centred reading column. Text width defaults to 680px and adjusts independently from 560px to 1000px in 40px steps. The article adds 24px padding on each side. The header spans the viewport; the course navigation aligns to its outer margins, independently of article width. At 700px and below, permanent 36px gutters leave room for annotation markers without covering the text.
+Course pages use one centred reading column. Text width defaults to 640px and adjusts independently from 560px to 1000px in 40px steps. The article adds 24px padding on each side. The header spans the viewport. At 1200px and above, a 200px course sidebar sits left of the article and a 170px page index sits right, separated by 32px gaps. Both sidebars stay available while reading. Below this breakpoint, course navigation uses a compact row aligned with the header margins. At 700px and below, permanent 36px gutters leave room for annotation markers without covering the text.
 
-A sticky row holds the course link and a closed “Conteúdos” disclosure. Its chapter menu overlays the page and scrolls within the viewport. The current page’s heading links appear inside that menu. Course overview pages show published lessons as numbered rows with thin dividers and a shared rounded border.
+Below 1200px, a sticky row holds the course link and a closed “Conteúdos” disclosure. Its chapter menu overlays the page and scrolls within the viewport. The current page’s heading links appear inside that menu. Course overview pages show published lessons as numbered rows with thin dividers and a shared rounded border.
 
 LEIC and MEIC are plain links above the course grid. LEIC years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. MEIC required courses use coloured cards; named options appear as compact rows inside initially collapsed semester disclosures. Option rows use two columns on desktop and one at 700px and below. The nucleus directory uses three columns above 1100px, two on tablets and one on mobile.
 
@@ -102,7 +102,7 @@ Callouts and content images use 8px corners. Linked footnotes use a 4px rounded 
 
 ## Components
 
-The same header appears on the homepage and reading pages. It keeps search, the notebook’s book icon and appearance directly available. On mobile, “Núcleos” and “Contribuir” move into a navigation menu. The mobile header hides while scrolling down and returns when scrolling up or receiving keyboard focus. It stays visible near the top and while its menu, a dialog or the notebook is open. Reduced motion removes the transition. Search finds courses, lessons and nuclei. Native dialogs close with Escape and restore focus to the opener. Preferences apply before the first paint.
+The same header appears on the homepage and reading pages. It keeps search, the notebook’s book icon and appearance directly available. On mobile, “Núcleos” and “Contribuir” move into a navigation menu. The header hides on every screen size while scrolling down and returns when scrolling up or receiving keyboard focus. It stays visible near the top and while its menu, a dialog or the notebook is open. Reduced motion removes the transition. Search finds courses, lessons and nuclei. Native dialogs close with Escape and restore focus to the opener. Preferences apply before the first paint.
 
 Lesson pages show “Perguntar ao Chat” and “Brain rot” as direct actions with 12px side padding. The AI action opens a native popover with provider icons. Floating UI anchors it below the trigger with a 6px offset, flips it when needed and keeps it within 12px of the viewport edges. Available height limits the menu so its contents can scroll. The button reads “Perguntar ao Chat”. Its links ask the provider to read the public Markdown and page URLs. Gemini uses a copy-prompt fallback. The homepage has no page actions.
 
@@ -124,7 +124,9 @@ Keyboard settings support remapping, disabling single-key shortcuts and optional
 
 Course navigation groups and numbers published lessons, marking the current page with accent text. Its second- and third-level heading links sit beneath the current page. Escape closes the chapter overlay and returns focus to its trigger; selecting a heading closes it and focuses the destination. Previous and next links continue the reading sequence below the article.
 
-When a page has second-level headings, a thin segmented progress strip sits beneath the course navigation. One segment links to the introduction and each following segment links to a section. Accent fill tracks reading progress within each segment; the current location is exposed to assistive technology. Links work by keyboard and focus their destinations. Pages without sections omit the strip.
+Course progress has one linked segment per lesson and shows the current position in the course, not proof that earlier lessons were studied. The current segment fills while reading. It sits in the left sidebar on desktop and under the course row on smaller screens.
+
+When a page has second-level headings, a smaller “Nesta página” strip appears in the right sidebar on desktop and below the introduction on smaller screens. One segment links to the introduction and each following segment links to a section. Accent fill tracks reading progress within each segment; the current location is exposed to assistive technology. Links work by keyboard and focus their destinations. Pages without sections omit the strip.
 
 Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links. Collapsible explanations use a 20px Heroicons chevron with a 12px gap; it points right when closed and down when open. The Chat and chapter chevrons point up while open.
 

@@ -4,7 +4,6 @@ const header = document.querySelector<HTMLElement>('.site-header');
 const menu = document.querySelector<HTMLDetailsElement>('.header-menu');
 if (menu) setupDisclosure(menu);
 if (header) {
-  const mobile = matchMedia('(max-width: 700px)');
   let previous = scrollY;
   let distance = 0;
   let frame = 0;
@@ -22,7 +21,6 @@ if (header) {
     const delta = scrollY - previous;
     previous = scrollY;
     if (
-      !mobile.matches ||
       scrollY < 100 ||
       header!.matches(':focus-within') ||
       menu?.open ||
@@ -45,8 +43,4 @@ if (header) {
   );
   header.addEventListener('focusin', () => show(false));
   new ResizeObserver(() => show(false)).observe(header);
-  mobile.addEventListener('change', () => {
-    previous = scrollY;
-    show(false);
-  });
 }

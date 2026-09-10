@@ -1,0 +1,51 @@
+---
+import { lessonPath, type CourseGuide } from '../lib/course-content';
+interface Props {
+  course: CourseGuide;
+}
+const { course } = Astro.props;
+const current = course.lessons.findIndex(
+  (lesson) => lessonPath(course, lesson) === Astro.url.pathname,
+);
+---
+
+{course.lessons.length > 0 && (
+  <nav class="course-progress" aria-label="Percurso da cadeira">
+    {course.lessons.map((lesson, index) => (
+      <a
+        href={lessonPath(course, lesson)}
+        title={`${index + 1} de ${course.lessons.length}: ${lesson.data.title}`}
+        aria-label={`${index + 1} de ${course.lessons.length}: ${lesson.data.title}`}
+        aria-current={index === current ? 'page' : undefined}
+        style={`--section-progress: ${index < current ? 1 : 0}`}
+      ></a>
+    ))}
+  </nav>
+)}
+<script>
+  const current = document.querySelector<HTMLElement>(
+    '.course-progress [aria-current="page"]',
+  );
+  const content = document.querySelector<HTMLElement>('.lesson-body');
+  if (current && content) {
+    let frame = 0;
+    function update() {
+      frame = 0;
+      const rect = content!.getBoundingClientRect();
+      const extent = Math.max(1, rect.height - innerHeight * 0.65);
+      const fraction =
+        rect.bottom <= innerHeight
+          ? 1
+          : Math.max(0, Math.min(1, -rect.top / extent));
+      current!.style.setProperty('--section-progress', String(fraction));
+    }
+    function schedule() {
+      if (!frame) frame = requestAnimationFrame(update);
+    }
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    new ResizeObserver(schedule).observe(content);
+    document.fonts.ready.then(schedule);
+    schedule();
+  }
+</script>
