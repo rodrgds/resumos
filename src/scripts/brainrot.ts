@@ -3,6 +3,8 @@ import { brainrotVoices } from '../data/brainrot-voices';
 import { extractReadingCues, readingVisual } from '../lib/brainrot-content';
 import { ClipFeed } from '../lib/brainrot-feed';
 import { LocalVoice } from '../lib/brainrot-voice';
+import { SpeechPlayer } from '../lib/brainrot-speech-player';
+import type { SpeechSource } from '../lib/brainrot-speech-stream';
 import { ReadingTimeline, readingTime } from '../lib/brainrot-timeline';
 import { setupVoiceRecording } from './brainrot-recording';
 
@@ -32,9 +34,13 @@ export function setupBrainrot() {
   const sharePanel = get<HTMLDialogElement>('#brainrot-share');
   const panels = [voicePanel, sharePanel];
   const highlight = get<HTMLInputElement>('[data-br-highlight]');
-  const audio = new Audio();
-  audio.preload = 'auto';
+  const audio = new SpeechPlayer();
   function setStatus(message: string, options: { hidden?: boolean } = {}) {
+    if (
+      status.textContent === message &&
+      status.hidden === (options.hidden ?? false)
+    )
+      return;
     status.textContent = message;
     status.hidden = options.hidden ?? false;
   }
@@ -49,17 +55,26 @@ export function setupBrainrot() {
     get('[data-br-voice-weight]').hidden = !sopro;
     cost.textContent =
       'O Sopro usa mais memória e pode demorar a preparar a leitura.';
-    if (selected?.engine === 'sopro' && selected.id !== 'sopro')
+    if (selected?.engine === 'sopro')
       cost.textContent += ` Voz sintética baseada numa amostra de ${selected.name}.`;
   }
   const voice = new LocalVoice({
-    progress: (loaded, total) => {
-      if (!dialog.open || !playing) return;
+    progress: (loaded) => {
+      if (!dialog.open || !playing || !preparing) return;
       setStatus(
-        total > 0
-          ? `A descarregar a voz… ${Math.min(100, Math.round((loaded / total) * 100))}%`
-          : 'A descarregar a voz…',
+        `A carregar os ficheiros da voz… ${Math.round(loaded / 1_048_576)} MB`,
       );
+    },
+    phase: (phase) => {
+      if (!dialog.open || !playing || !preparing) return;
+      const messages: Record<string, string> = {
+        loading: 'A carregar o modelo…',
+        reference: 'A preparar a referência de voz…',
+        warming: 'A iniciar o Sopro neste dispositivo…',
+        initializing: 'A iniciar a voz neste dispositivo…',
+        generating: 'A preparar o áudio…',
+      };
+      setStatus(messages[phase] ?? 'A preparar o áudio…');
     },
   });
   const feed = new ClipFeed(
@@ -82,15 +97,16 @@ export function setupBrainrot() {
   let frame = 0;
   let elapsed = 0;
   let lastTick = 0;
-  let audioURL: string | undefined;
   let activeVisual: Element | undefined;
-  let prepared: { index: number; promise: Promise<Blob> } | undefined;
+  let prepared: { index: number; promise: Promise<SpeechSource> } | undefined;
   let customURLs: string[] = [];
   let savedOverflow = '';
   let scrubbing = false;
   let resumeAfterSeek = false;
   let renderedCaption = '';
   let currentMark: Element | undefined;
+  let previousReading = { index: -1, elapsed: 0, word: 0 };
+  let buffering = false;
 
   get('[data-br-title]').textContent = title;
   function renderProgress(position = timeline.position(index, elapsed)) {
@@ -138,6 +154,12 @@ export function setupBrainrot() {
       position + weights[wordIndex] <= target
     )
       position += weights[wordIndex++];
+    if (
+      index === previousReading.index &&
+      spokenElapsed >= previousReading.elapsed
+    )
+      wordIndex = Math.max(wordIndex, previousReading.word);
+    previousReading = { index, elapsed: spokenElapsed, word: wordIndex };
     const start = Math.floor(wordIndex / 6) * 6;
     const visibleWords = tokens.slice(start, start + 6);
     const key = `${index}:${start}`;
@@ -154,14 +176,17 @@ export function setupBrainrot() {
         }),
       );
     }
-    currentMark?.removeAttribute('data-current-word');
-    currentMark = undefined;
-    if (!highlight.checked) return;
-    currentMark = cue.visual
-      ? (visual.querySelector('.katex-display, math[display="block"]') ??
-        undefined)
-      : caption.children[wordIndex - start];
-    currentMark?.setAttribute('data-current-word', '');
+    const mark = !highlight.checked
+      ? undefined
+      : cue.visual
+        ? (visual.querySelector('.katex-display, math[display="block"]') ??
+          undefined)
+        : caption.children[wordIndex - start];
+    if (mark !== currentMark) {
+      currentMark?.removeAttribute('data-current-word');
+      currentMark = mark;
+      currentMark?.setAttribute('data-current-word', '');
+    }
   }
 
   function render() {
@@ -204,14 +229,11 @@ export function setupBrainrot() {
   }
 
   function clearAudio() {
-    audio.pause();
-    audio.removeAttribute('src');
-    audio.load();
-    if (audioURL) URL.revokeObjectURL(audioURL);
-    audioURL = undefined;
+    audio.clear();
   }
 
   function pause() {
+    buffering = false;
     playing = false;
     generation++;
     cancelAnimationFrame(frame);
@@ -219,8 +241,6 @@ export function setupBrainrot() {
     feed.setPlaying(false);
     status.hidden = true;
     if (preparing) {
-      voice.dispose();
-      prepared = undefined;
       preparing = false;
     }
     render();
@@ -237,7 +257,17 @@ export function setupBrainrot() {
 
   function tick(now: number) {
     if (!playing || preparing) return;
-    elapsed += ((now - lastTick) / 1000) * Number(rate.value);
+    if (audio.waiting !== buffering) {
+      buffering = audio.waiting;
+      setStatus(
+        buffering
+          ? 'A preparar mais áudio…'
+          : 'Voz local · Português de Portugal',
+        { hidden: !buffering },
+      );
+    }
+    if (!audio.waiting)
+      elapsed += ((now - lastTick) / 1000) * Number(rate.value);
     lastTick = now;
     renderReading();
     if (!scrubbing) renderProgress();
@@ -246,7 +276,7 @@ export function setupBrainrot() {
     const complete =
       voiceMode.value === 'silent'
         ? elapsed >= Math.max(cue.minimumSeconds, silentDuration)
-        : (audio.ended || audio.currentTime >= audio.duration) &&
+        : audio.ended &&
           elapsed >= Math.max(cue.minimumSeconds, audio.duration || 0);
     if (complete) {
       if (index + 1 < cues.length) {
@@ -272,26 +302,24 @@ export function setupBrainrot() {
     }
     playing = true;
     const token = ++generation;
+    if (
+      voiceMode.value === 'personal' ||
+      brainrotVoices.some(
+        (voice) => voice.id === voiceMode.value && voice.engine === 'sopro',
+      )
+    )
+      audio.unlock();
     feed.setPlaying(true);
     try {
       if (voiceMode.value !== 'silent') {
-        if (!audioURL) {
+        if (!audio.loaded) {
           preparing = true;
-          const loading = window.setTimeout(() => {
-            if (token === generation && preparing)
-              setStatus('A preparar a voz neste dispositivo…');
-          }, 500);
+          setStatus('A preparar o áudio…');
           render();
-          let wav: Blob;
-          try {
-            wav = await prepare(index);
-          } finally {
-            clearTimeout(loading);
-          }
+          const source = await prepare(index);
           if (token !== generation || !playing || !dialog.open) return;
           clearAudio();
-          audioURL = URL.createObjectURL(wav);
-          audio.src = audioURL;
+          audio.load(source);
           audio.playbackRate = Number(rate.value);
           if (index + 1 < cues.length) prepare(index + 1);
         }
@@ -332,7 +360,7 @@ export function setupBrainrot() {
     generation++;
     cancelAnimationFrame(frame);
     if (preparing) {
-      voice.dispose();
+      voice.cancelPending();
       prepared = undefined;
     }
     preparing = false;
@@ -487,6 +515,7 @@ export function setupBrainrot() {
     if (resumeAfterSeek) void start();
   });
   audio.addEventListener('loadedmetadata', () => {
+    if (!audio.complete) return;
     timeline.setSpeechDuration(index, audio.duration);
     if (!scrubbing) renderProgress();
   });
@@ -555,6 +584,7 @@ export function setupBrainrot() {
     voice.dispose();
     prepared = undefined;
     clearAudio();
+    audio.dispose();
     elapsed = 0;
     feed.close();
     for (const url of customURLs) URL.revokeObjectURL(url);
@@ -571,7 +601,7 @@ export function setupBrainrot() {
     close();
   });
   audio.addEventListener('error', () => {
-    if (!playing || !audioURL) return;
+    if (!playing || !audio.loaded) return;
     pause();
     clearAudio();
     setStatus('O áudio não abriu. Toca para tentar de novo.');

@@ -33,11 +33,8 @@ export function speechWav(samples: Float32Array, sampleRate: number): Blob {
   return new Blob([bytes], { type: 'audio/wav' });
 }
 
-export async function normalizeSpeech(wav: Blob): Promise<Blob> {
-  const decoder = new OfflineAudioContext(1, 1, SAMPLE_RATE);
-  const audio = await decoder.decodeAudioData(await wav.arrayBuffer());
-  const samples = audio.getChannelData(0);
-  const windowSize = Math.round(audio.sampleRate * WINDOW_SECONDS);
+export function speechGain(samples: Float32Array, sampleRate: number): number {
+  const windowSize = Math.round(sampleRate * WINDOW_SECONDS);
   const windows: { energy: number; length: number }[] = [];
   let peak = 0;
   let loudest = 0;
@@ -52,7 +49,7 @@ export async function normalizeSpeech(wav: Blob): Promise<Blob> {
     loudest = Math.max(loudest, energy / (end - start));
   }
   // Ignore pauses when measuring speech, and leave silence or noise untouched.
-  if (peak < 0.0001) return wav;
+  if (peak < 0.0001) return 1;
   const active = windows.filter(
     ({ energy, length }) => energy / length >= loudest * 0.01,
   );
@@ -60,7 +57,22 @@ export async function normalizeSpeech(wav: Blob): Promise<Blob> {
     active.reduce((sum, window) => sum + window.energy, 0) /
       active.reduce((sum, window) => sum + window.length, 0),
   );
-  const gain = Math.min(SPEECH_RMS / rms, PEAK_LIMIT / peak, MAX_GAIN);
+  return Math.min(SPEECH_RMS / rms, PEAK_LIMIT / peak, MAX_GAIN);
+}
+
+export function scaleSpeech(samples: Float32Array, gain: number) {
+  for (let index = 0; index < samples.length; index++)
+    samples[index] = Math.max(
+      -PEAK_LIMIT,
+      Math.min(PEAK_LIMIT, samples[index] * gain),
+    );
+}
+
+export async function normalizeSpeech(wav: Blob): Promise<Blob> {
+  const decoder = new OfflineAudioContext(1, 1, SAMPLE_RATE);
+  const audio = await decoder.decodeAudioData(await wav.arrayBuffer());
+  const samples = audio.getChannelData(0);
+  const gain = speechGain(samples, audio.sampleRate);
   for (let index = 0; index < samples.length; index++) samples[index] *= gain;
   return speechWav(samples, audio.sampleRate);
 }

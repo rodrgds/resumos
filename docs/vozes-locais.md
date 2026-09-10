@@ -2,7 +2,9 @@
 
 Comparação feita em 10 de setembro de 2026, num Mac com Apple M4, usando Google Chrome. Os números medem geração, não a velocidade da leitura. São medições de referência; outros dispositivos podem ter resultados diferentes.
 
-## Comparação
+## Comparação inicial
+
+Esta tabela descreve a integração que gerava cada frase por inteiro, antes da reprodução por partes.
 
 | Modelo         | Geração de uma frase, mediana     | Estimativa para 20 palavras | Execução       |
 | -------------- | --------------------------------- | --------------------------- | -------------- |
@@ -19,7 +21,7 @@ Para o Piper, gerámos as mesmas três frases em cada Worker, sem outras geraç�
 - Um autómato de pilha guarda informação que permite reconhecer linguagens mais complexas do que um autómato finito.
 - Se a condição for verdadeira, o programa executa a instrução seguinte. Caso contrário, termina a função.
 
-O teste comparativo inicial do Sopro usou as duas primeiras frases e uma referência gerada pelo Tugão. O tempo indicado é o segundo pedido, com 6,67 segundos de áudio. O primeiro pedido ainda carregava os grafos necessários. A integração final usa a gravação pública original do Tugão, disponibilizada pela [Nabu Casa sob CC0](https://github.com/NabuCasa/voice-datasets). Foi também validada através da interface real do leitor, incluindo geração de áudio e ausência de pedidos que enviem o texto.
+O teste comparativo inicial do Sopro usou as duas primeiras frases e uma referência gerada pelo Tugão. O tempo indicado é o segundo pedido, com 6,67 segundos de áudio. O primeiro pedido ainda carregava os grafos necessários. A integração inicial usava a gravação pública original do Tugão, disponibilizada pela [Nabu Casa sob CC0](https://github.com/NabuCasa/voice-datasets). Foi também validada através da interface real do leitor, incluindo geração de áudio e ausência de pedidos que enviem o texto.
 
 O seletor mostra apenas Pesado junto das opções Sopro. Não apresenta tempos de um Mac como se fossem uma previsão para o dispositivo do leitor.
 
@@ -37,9 +39,11 @@ O áudio original das três vozes tinha níveis muito diferentes. Na mesma frase
 
 `src/lib/brainrot-audio.ts` mede a energia em janelas de 40 ms, exclui pausas relativamente silenciosas e ajusta o ganho para um RMS de fala de −20 dBFS. Limita os picos a cerca de −1 dBFS e o ganho a 20 dB. Não comprime a entoação nem altera os modelos. Numa nova geração da mesma frase, o áudio reproduzido ficou entre −21,5 e −20,3 dBFS nas três vozes, sem saturação.
 
-O teste de reprodução usa vozes com uma diferença de entrada de 20 dB e verifica que o áudio final fica dentro de 1 dB. Os testes com os quatro modelos reais estão disponíveis com `RESUMOS_REAL_TTS=1 npm test -- tests/brainrot.spec.ts`; guardam amostras WAV e verificam que o texto não sai do navegador.
+O teste de reprodução usa vozes com uma diferença de entrada de 20 dB e verifica que o áudio final fica dentro de 1 dB. Os testes com as vozes reais estão disponíveis com `RESUMOS_REAL_TTS=1 npm test -- tests/brainrot.spec.ts`; guardam amostras WAV e verificam que o texto não sai do navegador.
 
 ## Amostras de voz
+
+O Tugão continua disponível no Piper. A sua opção duplicada no Sopro foi retirada do seletor.
 
 O Sopro usa o mesmo modelo para todas as referências. Cada amostra muda o timbre, sem treino adicional. Mudar de voz termina o Worker e invalida o áudio preparado; os ficheiros do modelo mantêm a mesma revisão e cache.
 
@@ -67,3 +71,28 @@ As sete amostras incluídas usam MP3 a 96 kb/s, mono a 24 kHz, filtro passa-alto
 As fontes fornecidas pelo utilizador não indicam uma licença aberta. Os direitos das gravações são distintos de Apache 2.0 do Sopro e CC0 do Tugão. O seletor identifica estas vozes como sintéticas; não representam gravações das pessoas a ler os apontamentos nem uma colaboração com o site. Ver [créditos](../public/brainrot/CREDITOS.txt).
 
 A gravação pessoal usa MediaRecorder e um texto de leitura de 20 segundos. `brainrot-recorder.ts` controla o microfone e liberta os tracks mesmo quando uma permissão só chega depois de cancelar. `brainrot-personal-voice.ts` descodifica e limita a amostra a 20 segundos, mistura os canais para mono e guarda um WAV a 24 kHz em IndexedDB. Não existe upload. Só Usar esta voz persiste a amostra; cancelar ou fechar descarta a gravação em curso. O seletor disponibiliza a voz guardada noutras páginas do mesmo site, com uma ação para a apagar.
+
+## Carregamento e reprodução no telemóvel
+
+O leitor já usava Sopro V2 Turbo. A integração anterior esperava por `synthesize`, que devolve a frase completa. Agora prepara o caminho de streaming uma vez por Worker e usa `stream`, com uma reserva inicial de cerca de 1,2 segundos. O modelo conserva as escolhas automáticas do adaptador oficial, incluindo WASM quantizado e o modo de pouca memória no telemóvel. Mantivemos os dez segundos de referência definidos pelo modelo e os limites próprios de geração móvel.
+
+O ganho é medido no primeiro bloco de fala, com pelo menos 1,2 segundos quando a frase o permite, e mantido durante a frase. Os blocos seguintes conservam esse ganho com o mesmo limite de pico. A reprodução agenda blocos consecutivos no Web Audio. Se faltarem dados, espera por mais áudio e suspende o avanço do relógio e das legendas. A duração continua estimada até terminar a geração.
+
+A percentagem anterior correspondia a cada ficheiro que o adaptador carregava. Um teste real com o perfil móvel registou oito recuos antes do primeiro áudio. Agora mostramos os bytes acumulados por URL, sem somar novamente um ficheiro recarregado, e separamos a descarga, preparação da referência, inicialização e geração. Pausar e retomar usa a preparação existente; mudar a voz ou fechar continua a libertar o modelo.
+
+A reprodução em streaming reduz a espera pela frase completa. Não consegue tornar um dispositivo mais rápido do que o modelo: se a geração continuar abaixo da velocidade da leitura, haverá espera. O Piper mantém-se como alternativa leve. Não ativámos isolamento global para obter mais threads WASM, porque isso afetaria conteúdos externos das páginas. O adaptador usa as capacidades disponíveis no navegador.
+
+Os testes com um user agent móvel no Mac exercitam o perfil WASM do modelo, mas não reproduzem a CPU, a memória nem as limitações térmicas de um telemóvel real. Não foram usados para prometer um tempo de resposta no telemóvel.
+
+### Medição do caminho de geração
+
+Ensaio em Chrome num Mac M4, com o perfil WASM quantizado, uma thread e `memory: 'low'`. A frase tem as mesmas 20 palavras usadas acima, referência Markl de dez segundos, português e `seed: 42`. A tabela usa a segunda geração, depois dos downloads e da preparação, com apenas um Worker ativo.
+
+| Caminho                  | Primeiro áudio emitido pelo modelo | Geração completa | Áudio produzido |
+| ------------------------ | ---------------------------------- | ---------------- | --------------- |
+| Frase completa, anterior | 13,01 s                            | 13,01 s          | 7,17 s          |
+| Streaming                | 1,25 s                             | 6,15 s           | 7,17 s          |
+
+O leitor espera por uma reserva de cerca de 1,2 segundos de áudio antes de reproduzir, pelo que o primeiro bloco do modelo não equivale ao primeiro som no leitor. O ensaio mostra cerca de metade do tempo total de geração, sem prometer o mesmo ganho noutros dispositivos.
+
+Na verificação completa da interface, os perfis Android e iPhone executaram os respetivos runtimes no Chrome do Mac, com dez blocos de áudio e zero recuos no contador. Carregaram 336 392 786 bytes de assets, cerca de 321 MiB, incluindo dados eventualmente servidos pela cache HTTP. A primeira utilização continuou a levar dezenas de segundos. Isto valida os caminhos de código e os ficheiros de cada runtime, não o desempenho nem a estabilidade em hardware iPhone ou Android real.

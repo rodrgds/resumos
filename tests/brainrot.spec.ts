@@ -1,6 +1,8 @@
 import { expect, test, type Page, type Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { writeFile } from 'node:fs/promises';
+import { speechWav } from '../src/lib/brainrot-audio';
+import { DownloadProgress } from '../src/lib/brainrot-download-progress';
 
 test.use({
   launchOptions: {
@@ -21,9 +23,22 @@ type VoiceTestWindow = Window & {
   };
 };
 
-async function mockVoice(page: Page, fail = false, seconds = 2) {
+test('download progress counts interleaved assets once without going backwards', () => {
+  const progress = new DownloadProgress();
+  const loaded = [
+    { url: 'model.onnx', loaded: 2 },
+    { url: 'weights.data', loaded: 5 },
+    { url: 'model.onnx', loaded: 5 },
+    { url: 'weights.data', loaded: 0 },
+    { url: 'weights.data', loaded: 5 },
+    { url: 'model.onnx', loaded: 8 },
+  ].map((event) => progress.update(event));
+  expect(loaded).toEqual([2, 7, 10, 10, 10, 13]);
+});
+
+async function mockVoice(page: Page, fail = false, seconds = 2, delayMs = 30) {
   await page.addInitScript(
-    ({ fail, seconds }) => {
+    ({ fail, seconds, delayMs }) => {
       const NativeWorker = window.Worker;
       const state = {
         texts: [] as string[],
@@ -43,12 +58,15 @@ async function mockVoice(page: Page, fail = false, seconds = 2) {
           text,
           model,
           reference,
+          cancel,
         }: {
           id: number;
           text: string;
           model: string;
           reference?: Float32Array;
+          cancel?: number[];
         }) {
+          if (cancel) return;
           state.texts.push(text);
           state.models.push(model);
           if (reference) state.references.push(reference.length);
@@ -90,7 +108,7 @@ async function mockVoice(page: Page, fail = false, seconds = 2) {
                       },
                 }),
               ),
-            30,
+            delayMs,
           );
         }
         terminate() {
@@ -98,7 +116,7 @@ async function mockVoice(page: Page, fail = false, seconds = 2) {
         }
       } as unknown as typeof Worker;
     },
-    { fail, seconds },
+    { fail, seconds, delayMs },
   );
 }
 
@@ -109,6 +127,33 @@ async function openReader(page: Page) {
   await expect(dialog).toBeVisible();
   return dialog;
 }
+
+test('pausing while the voice loads resumes the same preparation', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 5, 1500);
+  const dialog = await openReader(page);
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as VoiceTestWindow).brainrotTest.texts.length,
+      ),
+    )
+    .toBe(1);
+  await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+  expect(
+    await page.evaluate(
+      () => (window as unknown as VoiceTestWindow).brainrotTest.terminated,
+    ),
+  ).toBe(0);
+  const texts = await page.evaluate(
+    () => (window as unknown as VoiceTestWindow).brainrotTest.texts,
+  );
+  expect(texts.filter((text) => text === texts[0])).toHaveLength(1);
+});
 
 test('switching between quiet and loud voices keeps playback volume consistent', async ({
   page,
@@ -203,7 +248,6 @@ test('Portuguese models are available on every device and switching voice replac
     'Ricardo Araújo Pereira',
     'Herman José',
     'Toy',
-    'Tugão',
     'Nuno Markl',
     'Só legendas',
   ]);
@@ -966,7 +1010,7 @@ for (const [model, modelFile] of [
   ['piper', 'pt_PT-tug%C3%A3o-medium.onnx'],
   ['miro', 'miro_pt-PT.onnx'],
   ['dii', 'dii_pt-PT.onnx'],
-  ['sopro', 'manifest.json'],
+  ['rego', 'manifest.json'],
   ['markl', 'manifest.json'],
 ]) {
   test(`the real ${model} model speaks locally without uploading lesson text`, async ({
@@ -986,6 +1030,26 @@ for (const [model, modelFile] of [
       }),
     );
     await page.addInitScript(() => {
+      const chunks: number[][] = [];
+      Object.assign(window, {
+        streamedVoiceChunks: chunks,
+        streamedVoiceFinished: false,
+      });
+      const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function (...args) {
+        if (this.buffer) chunks.push(Array.from(this.buffer.getChannelData(0)));
+        return start.apply(this, args);
+      };
+      const NativeWorker = Worker;
+      window.Worker = class extends NativeWorker {
+        constructor(url: string | URL, options?: WorkerOptions) {
+          super(url, options);
+          this.addEventListener('message', ({ data }) => {
+            if (data.type === 'end')
+              Object.assign(window, { streamedVoiceFinished: true });
+          });
+        }
+      };
       const createURL = URL.createObjectURL;
       URL.createObjectURL = (blob) => {
         if (blob instanceof Blob && /wav/.test(blob.type))
@@ -1014,13 +1078,36 @@ for (const [model, modelFile] of [
       'Voz local · Português de Portugal',
       { timeout: 180_000 },
     );
+    if (modelFile === 'manifest.json')
+      await page.waitForFunction(
+        () =>
+          (window as unknown as { streamedVoiceFinished: boolean })
+            .streamedVoiceFinished,
+        null,
+        { timeout: 180_000 },
+      );
     await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
     const sample = await page.evaluate(async () => {
+      const chunks = (window as unknown as { streamedVoiceChunks: number[][] })
+        .streamedVoiceChunks;
+      if (chunks.length) {
+        const samples = chunks.flat();
+        return {
+          samples,
+          bytes: [] as number[],
+          duration: samples.length / 24_000,
+          peak: samples.reduce(
+            (max, value) => Math.max(max, Math.abs(value)),
+            0,
+          ),
+        };
+      }
       const wav = (window as unknown as { voiceSample: Blob }).voiceSample;
       const bytes = await wav.arrayBuffer();
       const context = new AudioContext();
       const decoded = await context.decodeAudioData(bytes.slice(0));
       const result = {
+        samples: undefined as number[] | undefined,
         bytes: Array.from(new Uint8Array(bytes)),
         duration: decoded.duration,
         peak: decoded
@@ -1033,7 +1120,17 @@ for (const [model, modelFile] of [
     expect(sample.duration).toBeGreaterThan(3);
     expect(sample.peak).toBeGreaterThan(0.01);
     const samplePath = testInfo.outputPath(`${model}.wav`);
-    await writeFile(samplePath, Buffer.from(sample.bytes));
+    await writeFile(
+      samplePath,
+      sample.samples
+        ? Buffer.from(
+            await speechWav(
+              Float32Array.from(sample.samples),
+              24_000,
+            ).arrayBuffer(),
+          )
+        : Buffer.from(sample.bytes),
+    );
     await testInfo.attach(`${model}.wav`, {
       path: samplePath,
       contentType: 'audio/wav',
@@ -1320,4 +1417,98 @@ test.describe('personal voice recording', () => {
         .locator('option[value="personal"]'),
     ).toHaveCount(0);
   });
+});
+
+test('streamed speech starts before generation ends and pauses the clock while waiting for audio', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const NativeWorker = Worker;
+    const state = { started: 0, send: (_finish = false) => {} };
+    Object.assign(window, { streamTest: state });
+    const start = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      state.started++;
+      return start.apply(this, args);
+    };
+    window.Worker = class extends EventTarget {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super();
+        if (!/brainrot-sopro/.test(String(url)))
+          return new NativeWorker(url, options);
+      }
+      postMessage({ id, cancel }: { id: number; cancel?: number[] }) {
+        if (cancel) return;
+        state.send = (finish = false) => {
+          const samples = Float32Array.from(
+            { length: 36_000 },
+            (_, i) => 0.12 * Math.sin(i * 0.1),
+          );
+          this.dispatchEvent(
+            new MessageEvent('message', {
+              data: { type: 'chunk', id, samples },
+            }),
+          );
+          if (finish)
+            this.dispatchEvent(
+              new MessageEvent('message', { data: { type: 'end', id } }),
+            );
+        };
+        state.send();
+      }
+      terminate() {}
+    } as unknown as typeof Worker;
+  });
+  await page.goto('/exemplo/apontamentos/');
+  await page
+    .locator('.lesson-heading h1')
+    .evaluate(
+      (h) =>
+        (h.textContent =
+          'Hoje vamos estudar limites e continuidade para compreender melhor as funções.'),
+    );
+  await page.locator('[data-annotatable]').evaluate((b) => b.replaceChildren());
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await dialog
+    .getByRole('button', { name: 'Definições de voz e velocidade' })
+    .click();
+  await page.getByLabel('Voz', { exact: true }).selectOption('markl');
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as { streamTest: { started: number } }).streamTest
+            .started,
+      ),
+    )
+    .toBe(1);
+  await expect(dialog.locator('[data-br-status]')).toHaveText(
+    'Voz local · Português de Portugal',
+  );
+  await expect
+    .poll(() => dialog.locator('[data-br-seek]').inputValue())
+    .not.toBe('0');
+  await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+  const paused = await dialog.locator('[data-br-seek]').inputValue();
+  await page.waitForTimeout(200);
+  expect(await dialog.locator('[data-br-seek]').inputValue()).toBe(paused);
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await page.waitForTimeout(1800);
+  const waiting = Number(await dialog.locator('[data-br-seek]').inputValue());
+  expect(waiting).toBeLessThan(1.7);
+  await page.waitForTimeout(200);
+  expect(
+    Number(await dialog.locator('[data-br-seek]').inputValue()) - waiting,
+  ).toBeLessThan(0.05);
+  await page.evaluate(() =>
+    (
+      window as unknown as { streamTest: { send: (finish: boolean) => void } }
+    ).streamTest.send(true),
+  );
+  await expect(
+    dialog.getByRole('button', { name: 'Repetir leitura' }),
+  ).toBeVisible({ timeout: 5000 });
 });
