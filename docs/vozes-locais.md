@@ -114,7 +114,7 @@ Medimos a emissão dos blocos pelo Worker e os instantes de início/duração do
 
 ### Áudio guardado entre visitas
 
-O runtime oficial já guarda ficheiros de modelos e referências preparadas. No telemóvel, os modelos dependem da cache HTTP; no desktop, o Sopro também usa CacheStorage. Isto não guarda sessões ONNX compiladas nem elimina a síntese de uma frase nova. O leitor passou a guardar o áudio normalizado em IndexedDB, separado da gravação original, com chave por texto, voz, versão e modo. As entradas menos recentes saem quando se excedem 256 MiB ou 1000 trechos; entradas com mais de 30 dias deixam de ser usadas. Falhas de armazenamento regressam à síntese normal.
+O runtime oficial já guarda ficheiros de modelos e referências preparadas. No telemóvel, os modelos dependem da cache HTTP; no desktop, o Sopro também usa CacheStorage. Isto não guarda sessões ONNX compiladas nem elimina a síntese de uma frase nova. O leitor passou a guardar o áudio normalizado em IndexedDB, separado da gravação original, com chave por texto, voz, versão e modo. As entradas menos recentes saem quando se excedem 256 MiB ou 1000 trechos; entradas sem uso há mais de 30 dias deixam de ser usadas. Falhas de armazenamento regressam à síntese normal.
 
 Ensaio no mesmo Chrome/Mac, com o vídeo ativo, uma visita inicial e uma segunda navegação no mesmo contexto do navegador. Texto: "A Joana perguntou se a função era contínua. Vamos verificar o limite à esquerda e comparar os dois resultados." Medimos desde o início da ação Ouvir até ao primeiro início de reprodução do áudio.
 

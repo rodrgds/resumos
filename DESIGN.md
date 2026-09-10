@@ -140,6 +140,12 @@ Use simple Portuguese, distinct course colours and the real FEUP logo. Keep unpu
 
 Do not add a course-only search, year filters, extra catalogue heading, hero CTA or invented logo. Do not copy lesson text or private notes into AI prompts.
 
-Semester pushpins add compact horizontal course cards at the top of the homepage, keeping the original grid in place. Returning readers skip the introduction before first paint; clearing history restores it.
+Semester pushpins add compact horizontal course cards at the top of the homepage, keeping the original grid in place. Returning readers skip the introduction before first paint; clearing history restores it only when no valid semester pin remains. A valid pin also hides the introduction before first paint.
 
 CSS snippets sit in a disclosure below the appearance controls. Suggestions start disabled; editing uses explicit Save and Cancel actions. The footer keeps an appearance action available when the simplified header preset hides its controls.
+
+The projects catalogue inherits the reading palette, typography and header. A compact search form filters a plain list by course and language. Each row links to the author repository, explains the project and distinguishes academic year from repository creation. Metadata stacks beneath the description on mobile. Empty results offer a reset that returns focus to search.
+
+The AI menu shows provider options and WhatsApp without a help footer or disclosure. Copy feedback appears only after an action; clipboard failure reveals a selected text field for manual copying.
+
+Reader loading messages describe the awaited cue, including disk lookup, model files, reference preparation, speech generation and saving. Cached cues skip synthesis; Sopro in complete-sentence mode still prepares the following cue before playback. The personal recording prompt allows up to 30 seconds at a natural pace.
