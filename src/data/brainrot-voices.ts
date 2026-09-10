@@ -60,12 +60,6 @@ export const brainrotVoices = [
     reference: '/brainrot/voz-toy.mp3',
   },
   {
-    id: 'sopro',
-    name: 'Tugão',
-    engine: 'sopro',
-    reference: '/brainrot/voz-tugao-cc0.mp3',
-  },
-  {
     id: 'markl',
     name: 'Nuno Markl',
     engine: 'sopro',

@@ -110,7 +110,7 @@ The progress scrubber uses TikTok red and a translucent remaining track. While d
 
 The appearance sidebar exposes its theme swatches, font choices, sliders and CSS suggestions directly. Group controls under Appearance, Reading, Code and Custom CSS, with scrolling inside a fixed header and reset footer. On mobile it fills the viewport. Preserve native radio-group keyboard behavior and show selection with colour and a checkmark.
 
-Brain rot voice options show the estimated time to generate 20 words, ordered by generation time. Replace reference estimates with local measurements as voices are used; retain the selected voice while reordering. Keep this distinct from the reading-speed setting. Sopro remains an explicit, heavier alternative to the default Piper voice.
+Brain rot groups Piper voices and Sopro V2 Turbo references. Mark Sopro as Pesado and keep benchmark times in developer documentation. Loading distinguishes downloaded data, reference preparation, model initialization and audio generation. The streamed player buffers audio and pauses reading progress while waiting for more. Keep the reading-speed control separate from model performance.
 
 Selecting lesson text offers “Destacar” and “Comentar”. Highlighting saves without opening the notebook. Commenting opens it and saves while typing. Readers can browse this page or all notes, return to a passage, undo deletion and export Markdown. Notes stay in this browser. Previous scratchpad notes remain editable under “Notas anteriores” and are included in exports. Missing or ambiguous passages keep their notes without highlighting unrelated text.
 

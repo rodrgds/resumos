@@ -1,24 +1,29 @@
 declare module '@soprotts/onnx-web' {
+  type GenerationOptions = { language: string; seed: number };
   export class SoproTTS {
     sampleRate: number;
     static create(options: {
       model: string;
       revision: string;
       wasmPaths: string;
-      onProgress: (progress: { loaded: number; total: number }) => void;
+      onProgress: (progress: {
+        url: string;
+        loaded: number;
+        total: number;
+      }) => void;
     }): Promise<SoproTTS>;
     prepareReference(
       samples: Float32Array,
-      options: { sampleRate: number },
+      options: { sampleRate: number; seconds?: number },
     ): Promise<object>;
-    synthesize(
+    prepareStreaming(
+      reference: object,
+      options: GenerationOptions,
+    ): Promise<void>;
+    stream(
       text: string,
       reference: object,
-      options: {
-        language: string;
-        maxSeconds: number;
-        seed: number;
-      },
-    ): Promise<Float32Array>;
+      options: GenerationOptions,
+    ): AsyncGenerator<Float32Array<ArrayBuffer>>;
   }
 }
