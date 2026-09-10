@@ -2,7 +2,7 @@
 
 Apontamentos de LEIC da FEUP, feitos em Astro. [Abrir o site](https://resumos.rgo.pt).
 
-A página inicial reúne as cadeiras de 2026/27 por ano e semestre. Ainda não há resumos das cadeiras reais. A [cadeira fictícia de exemplo](https://resumos.rgo.pt/exemplo/) mostra os formatos de conteúdo. A página de Núcleos liga ao NIAEFEUP, JuniFEUP, ACM FEUP, IEEE FEUP e NCGM.
+A página inicial reúne as cadeiras de 2026/27 por ano e semestre. Ainda não há resumos das cadeiras reais. A [cadeira fictícia de exemplo](https://resumos.rgo.pt/exemplo/) mostra os formatos de conteúdo. A página de Núcleos reúne grupos de estudantes, equipas de competição e projetos ligados à FEUP, com descrições e ligações oficiais.
 
 Os links úteis incluem o TTS, a app Uni para Android e os Resumos SofiaViP.
 

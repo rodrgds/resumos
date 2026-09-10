@@ -180,7 +180,6 @@ test('homepage stays simple and the nuclei include NIAEFEUP with white logo back
   await page.goto('/');
   await expect(page.locator('.page-actions')).toHaveCount(0);
   await page.goto('/nucleos/');
-  await expect(page.locator('.group-card')).toHaveCount(5);
   await expect(
     page.locator('.group-card').filter({
       has: page.getByRole('heading', { name: 'NIAEFEUP', exact: true }),
