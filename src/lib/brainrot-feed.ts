@@ -99,9 +99,12 @@ export class ClipFeed {
       },
       { passive: true },
     );
+    const hasScrollEnd = 'onscrollend' in element;
     const endTouch = (event: TouchEvent) => {
       this.#touching = event.touches.length > 0;
-      if (!this.#touching) this.#timer = setTimeout(() => this.#settle(), 140);
+      clearTimeout(this.#timer);
+      if (!this.#touching && !hasScrollEnd)
+        this.#timer = setTimeout(() => this.#settle(), 140);
     };
     gestureSurface.addEventListener('touchend', endTouch, { passive: true });
     gestureSurface.addEventListener('touchcancel', endTouch, { passive: true });
@@ -110,8 +113,9 @@ export class ClipFeed {
       clearTimeout(this.#timer);
       const target = Math.round(element.scrollTop / element.clientHeight);
       if (target !== 1) this.#load(this.#slots[target]);
-      this.#timer = setTimeout(() => this.#settle(), 140);
+      if (!hasScrollEnd) this.#timer = setTimeout(() => this.#settle(), 140);
     });
+    element.addEventListener('scrollend', () => this.#settle());
     element.addEventListener('keydown', (event) => {
       if (!['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(event.key))
         return;
