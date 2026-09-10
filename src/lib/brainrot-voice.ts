@@ -1,3 +1,7 @@
+import { normalizeSpeech } from './brainrot-audio';
+import { brainrotVoices } from '../data/brainrot-voices';
+import { readPersonalVoice, referenceSamples } from './brainrot-personal-voice';
+
 type PendingAudio = {
   resolve: (wav: Blob) => void;
   reject: (error: Error) => void;
@@ -9,17 +13,25 @@ export class LocalVoice {
   #nextId = 0;
   #pending = new Map<number, PendingAudio>();
   #progress: (loaded: number, total: number) => void;
+  #reference?: Promise<Float32Array>;
 
-  constructor(progress: (loaded: number, total: number) => void) {
-    this.#progress = progress;
+  constructor(callbacks: {
+    progress: (loaded: number, total: number) => void;
+  }) {
+    this.#progress = callbacks.progress;
   }
 
   synthesize(text: string, model: string): Promise<Blob> {
+    const selected = brainrotVoices.find((voice) => voice.id === model);
+    const sopro = selected?.engine === 'sopro' || model === 'personal';
     if (!this.#worker) {
-      this.#worker = new Worker(
-        new URL('./brainrot-voice.worker.ts', import.meta.url),
-        { type: 'module' },
-      );
+      this.#worker = sopro
+        ? new Worker(new URL('./brainrot-sopro.worker.ts', import.meta.url), {
+            type: 'module',
+          })
+        : new Worker(new URL('./brainrot-voice.worker.ts', import.meta.url), {
+            type: 'module',
+          });
       this.#worker.addEventListener('message', ({ data }) => {
         if (data.type === 'progress') {
           this.#progress(data.loaded, data.total);
@@ -29,8 +41,9 @@ export class LocalVoice {
         if (!pending) return;
         clearTimeout(pending.timeout);
         this.#pending.delete(data.id);
-        if (data.type === 'audio') pending.resolve(data.wav);
-        else {
+        if (data.type === 'audio') {
+          normalizeSpeech(data.wav).then(pending.resolve, pending.reject);
+        } else {
           pending.reject(new Error('Não foi possível preparar a voz.'));
           this.dispose();
         }
@@ -40,14 +53,49 @@ export class LocalVoice {
     const id = ++this.#nextId;
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => this.dispose(), 180_000);
-      this.#pending.set(id, { resolve, reject, timeout });
-      this.#worker!.postMessage({ id, text, model });
+      this.#pending.set(id, {
+        resolve,
+        reject,
+        timeout,
+      });
+      const worker = this.#worker;
+      if (!sopro) {
+        worker!.postMessage({ id, text, model });
+        return;
+      }
+      const first = !this.#reference;
+      this.#reference ??= (async () => {
+        if (model === 'personal') {
+          const recording = await readPersonalVoice();
+          if (!recording) throw new Error('Grava primeiro a tua voz.');
+          return referenceSamples(recording);
+        }
+        if (selected?.engine !== 'sopro') throw new Error('Voz desconhecida.');
+        const response = await fetch(selected.reference);
+        if (!response.ok)
+          throw new Error('Não foi possível carregar a referência de voz.');
+        return referenceSamples(await response.blob());
+      })();
+      this.#reference
+        .then((reference) => {
+          if (this.#worker === worker)
+            worker!.postMessage({
+              id,
+              text,
+              model,
+              reference: first ? reference : undefined,
+            });
+        })
+        .catch(() => {
+          if (this.#worker === worker) this.dispose();
+        });
     });
   }
 
   dispose() {
     this.#worker?.terminate();
     this.#worker = undefined;
+    this.#reference = undefined;
     for (const pending of this.#pending.values()) {
       clearTimeout(pending.timeout);
       pending.reject(new Error('A voz local foi interrompida.'));

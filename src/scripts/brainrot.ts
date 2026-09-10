@@ -1,8 +1,10 @@
 import { brainrotClips } from '../data/brainrot-clips';
+import { brainrotVoices } from '../data/brainrot-voices';
 import { extractReadingCues, readingVisual } from '../lib/brainrot-content';
 import { ClipFeed } from '../lib/brainrot-feed';
 import { LocalVoice } from '../lib/brainrot-voice';
 import { ReadingTimeline, readingTime } from '../lib/brainrot-timeline';
+import { setupVoiceRecording } from './brainrot-recording';
 
 export function setupBrainrot() {
   const dialog = document.querySelector<HTMLDialogElement>('#brainrot')!;
@@ -36,13 +38,29 @@ export function setupBrainrot() {
     status.textContent = message;
     status.hidden = options.hidden ?? false;
   }
-  const voice = new LocalVoice((loaded, total) => {
-    if (!dialog.open || !playing) return;
-    setStatus(
-      total > 0
-        ? `A descarregar a voz… ${Math.min(100, Math.round((loaded / total) * 100))}%`
-        : 'A descarregar a voz…',
+  function showVoiceCost() {
+    const selected = brainrotVoices.find(
+      (voice) => voice.id === voiceMode.value,
     );
+    const cost = get('[data-br-voice-cost]');
+    const sopro =
+      selected?.engine === 'sopro' || voiceMode.value === 'personal';
+    cost.hidden = !sopro;
+    get('[data-br-voice-weight]').hidden = !sopro;
+    cost.textContent =
+      'O Sopro usa mais memória e pode demorar a preparar a leitura.';
+    if (selected?.engine === 'sopro' && selected.id !== 'sopro')
+      cost.textContent += ` Voz sintética baseada numa amostra de ${selected.name}.`;
+  }
+  const voice = new LocalVoice({
+    progress: (loaded, total) => {
+      if (!dialog.open || !playing) return;
+      setStatus(
+        total > 0
+          ? `A descarregar a voz… ${Math.min(100, Math.round((loaded / total) * 100))}%`
+          : 'A descarregar a voz…',
+      );
+    },
   });
   const feed = new ClipFeed(
     feedElement,
@@ -475,6 +493,7 @@ export function setupBrainrot() {
     audio.playbackRate = Number(rate.value);
   });
   function changeVoice() {
+    showVoiceCost();
     pause();
     clearAudio();
     voice.dispose();
@@ -486,6 +505,7 @@ export function setupBrainrot() {
     render();
   }
   voiceMode.addEventListener('change', changeVoice);
+  setupVoiceRecording(voicePanel, { pause, changed: changeVoice });
   files.addEventListener('change', () => {
     const selected = Array.from(files.files || []).filter((file) =>
       file.type.startsWith('video/'),
