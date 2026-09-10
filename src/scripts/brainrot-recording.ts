@@ -109,6 +109,12 @@ export function setupVoiceRecording(
 
   start.addEventListener('click', async () => {
     const current = ++generation;
+    let began = 0;
+    const showTime = (elapsed: number) => {
+      const seconds = Math.min(RECORDING_SECONDS, elapsed);
+      meter.value = seconds;
+      time.textContent = `${seconds} / ${RECORDING_SECONDS} s`;
+    };
     clearPreview();
     draft = undefined;
     start.disabled = true;
@@ -118,6 +124,7 @@ export function setupVoiceRecording(
       await recorder.start({
         recorded: async (recording) => {
           clearInterval(timer);
+          showTime(Math.round((performance.now() - began) / 1000));
           stop.hidden = true;
           status.textContent = 'A preparar a gravação…';
           try {
@@ -150,15 +157,9 @@ export function setupVoiceRecording(
       stop.hidden = false;
       progress.hidden = false;
       status.textContent = 'A gravar. Lê o texto acima.';
-      const began = performance.now();
-      const tick = () => {
-        const seconds = Math.min(
-          RECORDING_SECONDS,
-          Math.floor((performance.now() - began) / 1000),
-        );
-        meter.value = seconds;
-        time.textContent = `${seconds} / ${RECORDING_SECONDS} s`;
-      };
+      began = performance.now();
+      const tick = () =>
+        showTime(Math.floor((performance.now() - began) / 1000));
       tick();
       timer = setInterval(tick, 250);
       stop.focus();

@@ -69,6 +69,7 @@ export function setupBrainrot() {
       get('[data-br-clip-name]').textContent = label;
     },
     () => {
+      if (!status.hidden) return;
       setStatus('Este vídeo não abriu. Desliza para mudar de vídeo.');
     },
     stage,

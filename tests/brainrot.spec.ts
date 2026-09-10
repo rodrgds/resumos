@@ -743,6 +743,8 @@ test('voice errors offer retry and an explicit caption-only mode', async ({
   const dialog = await openReader(page);
   await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
   await expect(dialog.getByRole('status')).toContainText('Não foi possível');
+  await dialog.locator('.brainrot-feed video').nth(1).dispatchEvent('error');
+  await expect(dialog.getByRole('status')).toContainText('Não foi possível');
   await expect(
     dialog.getByRole('button', { name: 'Iniciar leitura' }),
   ).toBeEnabled();
