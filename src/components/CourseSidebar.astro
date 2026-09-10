@@ -1,15 +1,18 @@
 ---
 import Icon from './Icon.astro';
+import TableOfContents from './TableOfContents.astro';
+import type { MarkdownHeading } from 'astro';
 import { sections, lessonPath, type CourseGuide } from '../lib/course-content';
 interface Props {
   course: CourseGuide;
+  headings?: MarkdownHeading[];
 }
-const { course } = Astro.props;
+const { course, headings = [] } = Astro.props;
 ---
 
-<details class="course-sidebar" open data-pagefind-ignore>
+<details class="course-sidebar" data-pagefind-ignore>
   <summary>
-    <Icon name="book-open" size={18} /> Conteúdos da cadeira{' '}
+    <Icon name="book-open" size={18} /> Conteúdos{' '}
     <Icon name="chevron-down" size={17} />
   </summary>
   <nav aria-label="Conteúdos da cadeira">
@@ -27,6 +30,9 @@ const { course } = Astro.props;
     >
       Apresentação
     </a>
+    {Astro.url.pathname === course.path && headings.length > 0 && (
+      <TableOfContents headings={headings} />
+    )}
     {Object.entries(sections).map(([key, name]) => {
       const lessons = course.lessons.filter(
         (lesson) => lesson.data.section === key,
@@ -46,8 +52,18 @@ const { course } = Astro.props;
                         : undefined
                     }
                   >
-                    {lesson.data.title}
+                    <span class="chapter-number" aria-hidden="true">
+                      {String(course.lessons.indexOf(lesson) + 1).padStart(
+                        2,
+                        '0',
+                      )}
+                    </span>
+                    <span>{lesson.data.title}</span>
                   </a>
+                  {Astro.url.pathname === lessonPath(course, lesson) &&
+                    headings.length > 0 && (
+                      <TableOfContents headings={headings} />
+                    )}
                 </li>
               ))}
             </ul>
@@ -64,11 +80,7 @@ const { course } = Astro.props;
   </nav>
 </details>
 <script>
+  import { setupDisclosure } from '../lib/disclosure';
   const sidebar = document.querySelector<HTMLDetailsElement>('.course-sidebar');
-  const mobile = matchMedia('(max-width: 1100px)');
-  function adapt() {
-    if (sidebar) sidebar.open = !mobile.matches;
-  }
-  adapt();
-  mobile.addEventListener('change', adapt);
+  if (sidebar) setupDisclosure(sidebar);
 </script>

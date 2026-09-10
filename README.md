@@ -47,7 +47,7 @@ Os imports internos do Typst partem da raiz do projeto, por exemplo `/src/conten
 
 Os testes em `tests/fixtures/` usam `RESUMOS_TEST_CONTENT=1`. Essa variável nunca deve estar definida em produção.
 
-A sidebar segue as secções do frontmatter, como nos [Resumos LEIC](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/src/components/Sidebar.js). O primeiro resumo publicado ativa o cartão da cadeira. Markdown e MDX suportam notas de rodapé e containers através de `remark-directive`; `src/lib/remark-containers.mjs` transforma-os em HTML sem JavaScript.
+O menu de conteúdos abre sobre a página e segue as secções do frontmatter, como nos [Resumos LEIC](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/src/components/Sidebar.js). O primeiro resumo publicado ativa o cartão da cadeira. Markdown e MDX suportam notas de rodapé e containers através de `remark-directive`; `src/lib/remark-containers.mjs` transforma-os em HTML sem JavaScript.
 
 ## Pesquisa e ferramentas
 
@@ -159,3 +159,13 @@ Usa `--page`, `--surface`, `--text`, `--muted`, `--line`, `--accent` e `--accent
 ## Projetos de estudantes
 
 `/projetos/` reúne 60 repositórios públicos, selecionados a partir de READMEs e metadados consultados em 10 de setembro de 2026. `src/data/student-projects.json` guarda os links, descrições, cadeira ou área, linguagem e datas. O ano letivo só aparece quando existe evidência na fonte; caso contrário, a página identifica a criação do repositório. A pesquisa e os filtros correm no navegador e ficam no URL. Sem JavaScript, todos os links continuam disponíveis. As fontes permanecem nos repositórios dos autores.
+
+## Leitura e anotações
+
+As páginas de leitura têm uma coluna centrada de 680px por defeito. O cabeçalho e a navegação da cadeira estendem-se às margens do ecrã. A largura geral começa nos 1280px; as escolhas guardadas mantêm-se. **Conteúdos** abre os capítulos e as secções da página atual sem deslocar o texto. **Perguntar ao Chat** e **Brain rot** ficam diretamente visíveis. A barra dividida em secções acompanha a leitura e permite saltar para cada título. No telemóvel, o cabeçalho recolhe ao descer e reaparece ao subir ou receber foco pelo teclado. A fonte inicial é Source Serif 4; as escolhas guardadas continuam a ser respeitadas.
+
+Seleciona texto e escolhe **Destacar** ou **Comentar**. Os destaques usam Rough Notation. O marcador na margem abre a nota junto ao trecho; no telemóvel, abre um painel inferior. O caderno completo abre por cima da página. As notas continuam só neste navegador, com exportação em Markdown.
+
+Para uma explicação curta escrita pelo autor, usa `Bracket.astro` em MDX. A [página de formatação](src/content/lessons/exemplo/formatacao.mdx) contém um exemplo. O conteúdo mantém-se legível sem JavaScript. O desenho não altera os links, as fórmulas ou o texto usado para localizar notas.
+
+A página de projetos mantém o endereço `/projetos/`, mas está oculta na navegação, nos links da página inicial e na pesquisa.

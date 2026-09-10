@@ -13,6 +13,8 @@ colors:
   dark-text: '#eeedf0'
   dark-primary: '#eda1ae'
   notebook-highlight: '#f6df8c'
+  annotation-ink: '#e8c54c55'
+  dark-annotation-ink: '#e8c54c44'
   notebook-highlight-text: '#302914'
   notebook-highlight-active: '#ebc55e'
   dark-notebook-highlight: '#665527'
@@ -60,27 +62,29 @@ FEUP uses warm off-white and charcoal themes with a burgundy accent, plus blue a
 
 Nucleus cards use their own brand colours. ACM FEUP and IEEE FEUP have white logo areas with original blue artwork and blue lower panels with white text in both themes. Keep logo artwork and proportions unchanged.
 
-Notebook highlights use muted gold in both themes, independent of the reading accent. Comments keep their passage highlighted. The active passage has a stronger fill and an underline.
+Notebook passages use translucent gold Rough Notation highlights, independent of the reading accent. The active passage keeps an underline, and its margin marker gains an accent background. Native highlights remain the fallback; mathematical notation retains its solid highlight. Highlight strokes follow continuous visual lines across inline formatting and syntax tokens, avoiding darker overlaps between adjacent fragments.
 
 Reading callouts use blue for information and notes, green for tips, amber for warnings and red for danger. Each has a matching pale background in light mode and a darker background in dark mode.
 
 ## Typography
 
-Manrope serves navigation and headings. Prose offers eight locally hosted fonts: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata and IBM Plex Mono. Reading options group them by sans serif, serif and monospace, with a live preview. Prose has adjustable size and a line height of 1.8. Lesson titles use 36px type, reduced to 30px at 700px and below. Code uses a high-contrast theme and scrolls horizontally.
+Manrope serves navigation and interface controls. Reading titles and prose use Source Serif 4 by default and respect saved font choices. Eight locally hosted reading fonts remain available: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata and IBM Plex Mono. Options group them by sans serif, serif and monospace, with a live preview. Lesson prose defaults to 18px with adjustable size and a line height of 1.8. Titles scale from 30px to 44px with a weight of 550 and a line height of 1.18. Code uses a high-contrast theme and scrolls horizontally.
 
 ## Layout
 
-A quiet header, short introduction with the FEUP logo, contribution notice and course grid. Page width defaults to 1360px and adjusts from 1040px to 1920px in 80px steps.
+A quiet header, short introduction with the FEUP logo, contribution notice and course grid. Page width defaults to 1280px and adjusts from 1040px to 1920px in 80px steps.
 
-Course pages use 32px horizontal padding and 40px gaps. The columns hold a 200px course sidebar, the article and a 170px page index. Text width defaults to 720px and adjusts independently from 560px to 1000px in 40px steps, within the available space. Both navigation columns stay sticky and scroll when needed.
+Course pages use one centred reading column. Text width defaults to 680px and adjusts independently from 560px to 1000px in 40px steps. The article adds 24px padding on each side. The header spans the viewport; the course navigation aligns to its outer margins, independently of article width. At 700px and below, permanent 36px gutters leave room for annotation markers without covering the text.
 
-At 1280px and below, the page index becomes a disclosure above the article; the grid uses a 210px sidebar and a flexible article within 1120px. At 1100px and below, course navigation also becomes a collapsed disclosure and the page uses one column within 840px. Horizontal padding falls to 24px, then 20px at 700px and below.
+A sticky row holds the course link and a closed “Conteúdos” disclosure. Its chapter menu overlays the page and scrolls within the viewport. The current page’s heading links appear inside that menu. Course overview pages show published lessons as numbered rows with thin dividers and a shared rounded border.
 
 LEIC and MEIC are plain links above the course grid. LEIC years stay in order, with two semester columns on desktop and stacked semesters below 700px. Each semester keeps two card columns. MEIC required courses use coloured cards; named options appear as compact rows inside initially collapsed semester disclosures. Option rows use two columns on desktop and one at 700px and below. The nucleus directory uses three columns above 1100px, two on tablets and one on mobile.
 
-The notebook sits beside the page in a 380px sidebar above 1000px. At 1000px and below, it becomes a bottom panel capped at 62dvh and adjusts to the on-screen keyboard.
+Opening notes never moves or resizes the article. A contextual note uses a compact 300px floating panel beside its passage when space permits, constrained to the viewport. At 700px and below, it becomes a bottom sheet capped at 62dvh and adjusts to the on-screen keyboard.
 
-With the notebook open above 1100px, the course grid uses a 180px sidebar, a flexible article, 28px gaps and 24px horizontal padding. The page index becomes an inline disclosure. At 1100px and below, the course page keeps its single-column layout.
+The full notebook opens as a 380px overlay on the right. At 1000px and below, it becomes a bottom panel capped at 62dvh. Returning from a contextual note opens this complete notebook view.
+
+The footer keeps the independence statement and smaller inspiration link in two text blocks, alongside appearance, GitHub, shortcuts and the mobile FEUP logo. Text wraps naturally on narrow screens.
 
 ## Elevation & Depth
 
@@ -92,15 +96,15 @@ The selection toolbar uses a 0 6px 28px #0003 shadow. Save and undo feedback use
 
 Controls have gently rounded corners. Cards and the AI popover use larger corners, followed by search and shortcut dialogs, then appearance and course dialogs. Interface controls use Heroicons SVGs through `Icon.astro`. Course artwork uses `CourseIcon.astro`: choose distinct subject-specific Tabler or custom SVGs, such as integrals, logic gates and automata. Course cards use 56px icons; MEIC option rows use 28px icons. Keep official brand logos separate; do not use Unicode characters as icons.
 
-Notebook panels use 12px corners. Selection toolbars and feedback use 10px corners, with 6px action corners. Quotes and comment fields use 8px corners. Notebook actions have a minimum height of 44px.
+Notebook panels use 12px corners. Selection toolbars and feedback use 10px corners, with 6px action corners. Quotes and comment fields use 8px corners. Full notebook and selection actions have a minimum height of 44px; contextual note controls use 32px. Margin markers use compact Heroicons buttons with 6px corners.
 
 Callouts and content images use 8px corners. Linked footnotes use a 4px rounded accent background on the targeted note.
 
 ## Components
 
-The header opens global search, the notebook and appearance. Search finds courses, lessons and nuclei. Native dialogs close with Escape and restore focus to the opener. Preferences apply before the first paint. Real course cards explain their unpublished state.
+The same header appears on the homepage and reading pages. It keeps search, the notebook’s book icon and appearance directly available. On mobile, “Núcleos” and “Contribuir” move into a navigation menu. The mobile header hides while scrolling down and returns when scrolling up or receiving keyboard focus. It stays visible near the top and while its menu, a dialog or the notebook is open. Reduced motion removes the transition. Search finds courses, lessons and nuclei. Native dialogs close with Escape and restore focus to the opener. Preferences apply before the first paint.
 
-Lesson pages offer a native AI popover with provider icons. Floating UI anchors it below the trigger with a 6px offset, flips it when needed and keeps it within 12px of the viewport edges. Available height limits the menu so its contents can scroll. The button reads “Perguntar ao Chat”. Its links ask the provider to read the public Markdown and page URLs. Gemini uses a copy-prompt fallback. The homepage has no page actions.
+Lesson pages show “Perguntar ao Chat” and “Brain rot” as direct actions with 12px side padding. The AI action opens a native popover with provider icons. Floating UI anchors it below the trigger with a 6px offset, flips it when needed and keeps it within 12px of the viewport edges. Available height limits the menu so its contents can scroll. The button reads “Perguntar ao Chat”. Its links ask the provider to read the public Markdown and page URLs. Gemini uses a copy-prompt fallback. The homepage has no page actions.
 
 Brain rot opens a full-screen black lesson reader based on the supplied TikTok reference, colegottdank.com. Centre a portrait video on desktop and fill the width below 600px. Keep “A seguir / Para ti” above the video, a fictional channel and social counts over it, social icons on the right, and a black navigation bar below. Only “Início” works; the other bottom items are disabled. Captions use bold white Manrope with a dark outline. Images, formulas and code appear in a scrollable white panel.
 
@@ -112,15 +116,19 @@ The appearance sidebar exposes its theme swatches, font choices, sliders and CSS
 
 Brain rot groups Piper voices and Sopro V2 Turbo references. Mark Sopro as Pesado and keep benchmark times in developer documentation. Loading distinguishes downloaded data, reference preparation, model initialization and audio generation. Complete-sentence synthesis is the default. Prepare the current and following cue before playback and retain at most two future cues. Offer streaming separately under Sopro reproduction, explicitly using the same Turbo model. If streaming runs out of audio, pause reading progress until the rest of that sentence is ready. Keep the reading-speed control separate from model performance.
 
-Selecting lesson text offers “Destacar” and “Comentar”. Highlighting saves without opening the notebook. Commenting opens it and saves while typing. Readers can browse this page or all notes, return to a passage, undo deletion and export Markdown. Notes stay in this browser. Previous scratchpad notes remain editable under “Notas anteriores” and are included in exports. Missing or ambiguous passages keep their notes without highlighting unrelated text.
+Selecting lesson text offers “Destacar” and “Comentar”. Highlighting saves without opening a panel. Commenting opens a contextual note and saves while typing. Margin markers reopen saved passages by pointer or keyboard. Readers can browse this page or all notes, return to a passage, undo deletion and export Markdown. Notes stay in this browser. Previous scratchpad notes remain editable under “Notas anteriores” and are included in exports. Missing or ambiguous passages keep their notes without highlighting unrelated text.
 
 Returning readers see “Continuar a ler” and up to four recently opened pages on the homepage. The main card resumes their position or offers the next published topic after they reach the end. First visits show neither section. History stays in this browser and can be cleared.
 
 Keyboard settings support remapping, disabling single-key shortcuts and optional spatial hjkl card navigation. Shortcuts leave text entry alone.
 
-Course navigation groups published lessons by section and marks the current page with an accent fill. The page index links to second- and third-level headings. Previous and next links continue the reading sequence below the article.
+Course navigation groups and numbers published lessons, marking the current page with accent text. Its second- and third-level heading links sit beneath the current page. Escape closes the chapter overlay and returns focus to its trigger; selecting a heading closes it and focuses the destination. Previous and next links continue the reading sequence below the article.
 
-Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links. Collapsible explanations use a 20px Heroicons chevron with a 12px gap; it points right when closed and down when open. The Chat and mobile page-index chevrons point up while open.
+When a page has second-level headings, a thin segmented progress strip sits beneath the course navigation. One segment links to the introduction and each following segment links to a section. Accent fill tracks reading progress within each segment; the current location is exposed to assistive technology. Links work by keyboard and focus their destinations. Pages without sections omit the strip.
+
+Markdown and MDX share LaTeX rendering. Typst text is selectable HTML with MathML; charts and DOT graphs render as SVG. Callouts have a coloured title, tinted background and thin border; collapsible explanations use a surface background. Footnotes sit below a divider and include return links. Collapsible explanations use a 20px Heroicons chevron with a 12px gap; it points right when closed and down when open. The Chat and chapter chevrons point up while open.
+
+Authors can use `Bracket.astro` for explicit emphasis: a short label and an accent bracket along the left edge. It has a plain border fallback without JavaScript. Keep these marks separate from personal annotations and preserve conventional link underlines.
 
 Figures require descriptive alt text and offer an original-image link beside the caption. Authors can preserve, dim or invert images in dark mode; print keeps the original image. Tabs use an accent underline for the selected option, scroll horizontally when needed and support arrow, Home and End keys.
 
@@ -144,7 +152,7 @@ Semester pushpins add compact horizontal course cards at the top of the homepage
 
 CSS snippets sit in a disclosure below the appearance controls. Suggestions start disabled; editing uses explicit Save and Cancel actions. The footer keeps an appearance action available when the simplified header preset hides its controls.
 
-The projects catalogue inherits the reading palette, typography and header. A compact search form filters a plain list by course and language. Each row links to the author repository, explains the project and distinguishes academic year from repository creation. Metadata stacks beneath the description on mobile. Empty results offer a reset that returns focus to search.
+Projects remain available at `/projetos/`, but stay out of navigation, homepage links and search while hidden. The projects catalogue inherits the reading palette, typography and header. A compact search form filters a plain list by course and language. Each row links to the author repository, explains the project and distinguishes academic year from repository creation. Metadata stacks beneath the description on mobile. Empty results offer a reset that returns focus to search.
 
 The AI menu shows provider options and WhatsApp without a help footer or disclosure. Copy feedback appears only after an action; clipboard failure reveals a selected text field for manual copying.
 

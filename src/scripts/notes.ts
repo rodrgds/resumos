@@ -1,3 +1,11 @@
+import {
+  computePosition,
+  autoUpdate,
+  offset,
+  flip,
+  shift,
+} from '@floating-ui/dom';
+import { annotationMarks } from '../lib/annotation-marks';
 import { readLocal, writeLocal } from '../lib/storage';
 import {
   isAnnotationKey,
@@ -26,6 +34,8 @@ export function setupNotes() {
   const ranges = new Map<string, Range[]>();
   const canHighlight = typeof Highlight !== 'undefined' && 'highlights' in CSS;
   let active: string | null = null;
+  let stopPositioning: (() => void) | undefined;
+  const marks = root ? annotationMarks(root, edit) : null;
   let filter: 'page' | 'all' = root ? 'page' : 'all';
   let opener: HTMLElement | null = null;
   let undo: (() => void) | null = null;
@@ -76,6 +86,7 @@ export function setupNotes() {
             id === active ? 'active' : 'saved',
           );
       }
+    marks?.(ranges, active);
     if (!canHighlight) return;
     const all = [...ranges.values()]
       .flat()
@@ -146,7 +157,51 @@ export function setupNotes() {
     document.body.classList.add('notes-open');
     setExpanded(true);
   }
+  function resetPosition() {
+    stopPositioning?.();
+    stopPositioning = undefined;
+    panel.classList.remove('notebook-context');
+    panel.style.removeProperty('left');
+    panel.style.removeProperty('top');
+    element('notes-title').textContent = 'O teu caderno';
+  }
+  function positionNote(id: string) {
+    resetPosition();
+    const range = ranges.get(id)?.[0];
+    if (!root || !range) return;
+    panel.classList.add('notebook-context');
+    element('notes-title').textContent = 'A tua nota';
+    const anchor = {
+      getBoundingClientRect: () => {
+        const text = range.getBoundingClientRect();
+        const article = root.getBoundingClientRect();
+        return new DOMRect(article.left, text.top, article.width, text.height);
+      },
+      contextElement: root,
+    };
+    const update = async () => {
+      if (matchMedia('(max-width: 700px)').matches) {
+        panel.style.removeProperty('left');
+        panel.style.removeProperty('top');
+        return;
+      }
+      const { x, y } = await computePosition(anchor, panel, {
+        strategy: 'fixed',
+        placement: 'right-start',
+        middleware: [
+          offset(44),
+          flip({ crossAxis: false }),
+          shift({ padding: 12, crossAxis: true }),
+        ],
+      });
+      if (active !== id || panel.hidden) return;
+      panel.style.left = `${x}px`;
+      panel.style.top = `${y}px`;
+    };
+    stopPositioning = autoUpdate(anchor, panel, update);
+  }
   function showList() {
+    resetPosition();
     active = null;
     editor.hidden = true;
     browse.hidden = false;
@@ -154,12 +209,27 @@ export function setupNotes() {
     renderList();
   }
   function close() {
+    resetPosition();
     panel.hidden = true;
     document.body.classList.remove('notes-open');
     setExpanded(false);
     active = null;
     paint();
-    if (opener?.checkVisibility()) opener.focus({ preventScroll: true });
+    if (opener?.matches('.annotation-pin')) {
+      const noteId = opener.dataset.noteId;
+      requestAnimationFrame(() => {
+        const focused = document.activeElement;
+        if (
+          focused !== document.body &&
+          focused !== root &&
+          !panel.contains(focused)
+        )
+          return;
+        [...document.querySelectorAll<HTMLButtonElement>('.annotation-pin')]
+          .find((pin) => pin.dataset.noteId === noteId)
+          ?.focus({ preventScroll: true });
+      });
+    } else if (opener?.checkVisibility()) opener.focus({ preventScroll: true });
     else if (root) {
       root.tabIndex = -1;
       root.focus({ preventScroll: true });
@@ -179,6 +249,7 @@ export function setupNotes() {
     const missing = note.path === location.pathname && !ranges.get(id)?.length;
     element('annotation-missing').hidden = !missing;
     element('locate-annotation').hidden = missing;
+    positionNote(id);
     input.focus({ preventScroll: true });
     input.scrollIntoView({ block: 'nearest' });
   }
