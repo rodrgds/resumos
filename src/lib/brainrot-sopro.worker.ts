@@ -2,11 +2,13 @@ import { SoproTTS } from '@soprotts/onnx-web';
 import { soproModel } from '../data/brainrot-voices';
 import { scaleSpeech, speechGain } from './brainrot-audio';
 import { DownloadProgress } from './brainrot-download-progress';
+import type { SoproDelivery } from './brainrot-speech-stream';
 
 const GAIN_SAMPLE_SECONDS = 1.2;
 const generationOptions = { language: 'pt', seed: 42 };
 let session: Promise<SoproTTS> | undefined;
 let reference: object | undefined;
+let streamingReady = false;
 let queue = Promise.resolve();
 const transferred = new DownloadProgress();
 const cancelled = new Set<number>();
@@ -20,6 +22,7 @@ self.addEventListener(
     text: string;
     reference?: Float32Array;
     cancel?: number[];
+    delivery?: SoproDelivery;
   }>) => {
     if (data.cancel) {
       for (const id of data.cancel) cancelled.add(id);
@@ -52,8 +55,28 @@ self.addEventListener(
           reference = await voice.prepareReference(data.reference, {
             sampleRate: 24_000,
           });
+        }
+        if (cancelled.has(data.id)) return;
+        if (data.delivery !== 'stream') {
+          phase('generating');
+          const samples = await voice.synthesize(
+            data.text,
+            reference,
+            generationOptions,
+          );
+          if (cancelled.has(data.id)) return;
+          scaleSpeech(samples, speechGain(samples, voice.sampleRate));
+          self.postMessage(
+            { type: 'chunk', id: data.id, samples },
+            { transfer: [samples.buffer] },
+          );
+          self.postMessage({ type: 'end', id: data.id });
+          return;
+        }
+        if (!streamingReady) {
           phase('warming');
           await voice.prepareStreaming(reference, generationOptions);
+          streamingReady = true;
         }
         if (cancelled.has(data.id)) return;
         phase('generating');

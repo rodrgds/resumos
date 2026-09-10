@@ -74,9 +74,9 @@ A gravação pessoal usa MediaRecorder e um texto de leitura de 20 segundos. `br
 
 ## Carregamento e reprodução no telemóvel
 
-O leitor já usava Sopro V2 Turbo. A integração anterior esperava por `synthesize`, que devolve a frase completa. Agora prepara o caminho de streaming uma vez por Worker e usa `stream`, com uma reserva inicial de cerca de 1,2 segundos. O modelo conserva as escolhas automáticas do adaptador oficial, incluindo WASM quantizado e o modo de pouca memória no telemóvel. Mantivemos os dez segundos de referência definidos pelo modelo e os limites próprios de geração móvel.
+O leitor usa Sopro V2 Turbo. Frases completas é o modo predefinido e usa `synthesize`. Antes do arranque, prepara o trecho atual e o seguinte; durante a leitura, mantém até dois trechos futuros. Streaming continua disponível como opção, prepara o seu caminho uma vez por Worker e começa com uma reserva de cerca de 1,2 segundos. O modelo conserva as escolhas automáticas do adaptador oficial, incluindo WASM quantizado e o modo de pouca memória no telemóvel. Mantivemos os dez segundos de referência definidos pelo modelo e os limites próprios de geração móvel.
 
-O ganho é medido no primeiro bloco de fala, com pelo menos 1,2 segundos quando a frase o permite, e mantido durante a frase. Os blocos seguintes conservam esse ganho com o mesmo limite de pico. A reprodução agenda blocos consecutivos no Web Audio. Se faltarem dados, espera por mais áudio e suspende o avanço do relógio e das legendas. A duração continua estimada até terminar a geração.
+No modo completo, o ganho é medido na frase inteira. No streaming, é medido no primeiro bloco de fala, com pelo menos 1,2 segundos quando a frase o permite, e mantido durante a frase. Os blocos seguintes conservam esse ganho com o mesmo limite de pico. A reprodução agenda blocos consecutivos no Web Audio. Se o streaming ficar sem dados, espera até terminar a geração da frase e suspende o avanço do relógio e das legendas. Assim evita retomar repetidamente por pequenos blocos. A duração continua estimada até terminar a geração.
 
 A percentagem anterior correspondia a cada ficheiro que o adaptador carregava. Um teste real com o perfil móvel registou oito recuos antes do primeiro áudio. Agora mostramos os bytes acumulados por URL, sem somar novamente um ficheiro recarregado, e separamos a descarga, preparação da referência, inicialização e geração. Pausar e retomar usa a preparação existente; mudar a voz ou fechar continua a libertar o modelo.
 
@@ -84,7 +84,7 @@ A reprodução em streaming reduz a espera pela frase completa. Não consegue to
 
 Os testes com um user agent móvel no Mac exercitam o perfil WASM do modelo, mas não reproduzem a CPU, a memória nem as limitações térmicas de um telemóvel real. Não foram usados para prometer um tempo de resposta no telemóvel.
 
-### Medição do caminho de geração
+### Ensaio inicial do caminho de geração
 
 Ensaio em Chrome num Mac M4, com o perfil WASM quantizado, uma thread e `memory: 'low'`. A frase tem as mesmas 20 palavras usadas acima, referência Markl de dez segundos, português e `seed: 42`. A tabela usa a segunda geração, depois dos downloads e da preparação, com apenas um Worker ativo.
 
@@ -93,6 +93,21 @@ Ensaio em Chrome num Mac M4, com o perfil WASM quantizado, uma thread e `memory:
 | Frase completa, anterior | 13,01 s                            | 13,01 s          | 7,17 s          |
 | Streaming                | 1,25 s                             | 6,15 s           | 7,17 s          |
 
-O leitor espera por uma reserva de cerca de 1,2 segundos de áudio antes de reproduzir, pelo que o primeiro bloco do modelo não equivale ao primeiro som no leitor. O ensaio mostra cerca de metade do tempo total de geração, sem prometer o mesmo ganho noutros dispositivos.
+Este ensaio isolado de WASM motivou a experiência inicial com streaming. Não mede a continuidade da leitura nem o desempenho de WebGPU. A utilização posterior revelou pausas em computadores onde a geração por frases completas era mais rápida. Por isso, os números desta tabela não justificam escolher streaming por defeito. O primeiro bloco do modelo também não equivale ao primeiro som no leitor.
 
 Na verificação completa da interface, os perfis Android e iPhone executaram os respetivos runtimes no Chrome do Mac, com dez blocos de áudio e zero recuos no contador. Carregaram 336 392 786 bytes de assets, cerca de 321 MiB, incluindo dados eventualmente servidos pela cache HTTP. A primeira utilização continuou a levar dezenas de segundos. Isto valida os caminhos de código e os ficheiros de cada runtime, não o desempenho nem a estabilidade em hardware iPhone ou Android real.
+
+### Modelo normal e Turbo
+
+Na consulta de 10 de setembro de 2026, o catálogo oficial contém `sopro-v2-turbo`, a sua exportação `sopro-v2-turbo-onnx` e o [Sopro antigo, treinado para inglês](https://huggingface.co/samuel-vitorino/sopro). Não contém uma versão V2 normal para português. O manifesto ONNX fixado usa dois passos e o runtime rejeita outro valor de `steps`. Frases completas e Streaming escolhem APIs de geração diferentes do mesmo modelo Turbo; não são dois modelos nem um seletor de passos.
+
+### Continuidade no leitor em desktop
+
+Comparámos cinco trechos com a referência Markl e `seed: 42`, no Chrome 153 de um Mac M4, com o vídeo de fundo ativo. O título era “Vamos estudar limites e continuidade.” e os dois parágrafos explicavam continuidade, limites laterais e a comparação com o valor da função. Excluímos a primeira geração, que ainda descarregava e preparava os grafos. O ensaio seguinte usou as mesmas frases e a geração completa, durante verificações leves da interface noutros separadores; não é um benchmark isolado do processador.
+
+| Caminho no leitor                | Mediana das quatro gerações seguintes | Intervalos entre áudio agendado                       |
+| -------------------------------- | ------------------------------------- | ----------------------------------------------------- |
+| Streaming anterior               | 6,38 s                                | Três intervalos superiores a 150 ms, máximo de 2,12 s |
+| Frases completas com antecipação | 2,46 s                                | Máximo de 33 ms, sem interrupções dentro das frases   |
+
+Medimos a emissão dos blocos pelo Worker e os instantes de início/duração dos nós Web Audio. Estes intervalos excluem as pausas que o modelo já inclui dentro do áudio. Não comparam downloads nem prometem o mesmo resultado noutros computadores. A regressão de reprodução verifica também que, após uma falta de áudio seguida de pausa e retoma, blocos incompletos não voltam a iniciar a fala.

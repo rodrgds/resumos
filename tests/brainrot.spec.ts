@@ -1593,114 +1593,240 @@ test.describe('personal voice recording', () => {
   });
 });
 
-test('streamed speech starts before generation ends and pauses the clock while waiting for audio', async ({
+for (const delivery of ['complete', 'stream'] as const) {
+  test(`Sopro ${delivery} playback buffers speech and preserves pause and volume`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const NativeWorker = Worker;
+      const state = {
+        started: 0,
+        sent: 0,
+        send: (_finish = false) => {},
+        outputVolume: () => 1,
+      };
+      Object.assign(window, { streamTest: state });
+      const createGain = AudioContext.prototype.createGain;
+      AudioContext.prototype.createGain = function () {
+        const gain = createGain.call(this);
+        state.outputVolume = () => gain.gain.value;
+        return gain;
+      };
+      const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function (...args) {
+        state.started++;
+        return start.apply(this, args);
+      };
+      window.Worker = class extends EventTarget {
+        constructor(url: string | URL, options?: WorkerOptions) {
+          super();
+          if (!/brainrot-sopro/.test(String(url)))
+            return new NativeWorker(url, options);
+        }
+        postMessage({ id, cancel }: { id: number; cancel?: number[] }) {
+          if (cancel) return;
+          state.send = (finish = false) => {
+            state.sent++;
+            const samples = Float32Array.from(
+              { length: 36_000 },
+              (_, i) => 0.12 * Math.sin(i * 0.1),
+            );
+            this.dispatchEvent(
+              new MessageEvent('message', {
+                data: { type: 'chunk', id, samples },
+              }),
+            );
+            if (finish)
+              this.dispatchEvent(
+                new MessageEvent('message', { data: { type: 'end', id } }),
+              );
+          };
+          state.send();
+        }
+        terminate() {}
+      } as unknown as typeof Worker;
+    });
+    await page.goto('/exemplo/apontamentos/');
+    await page
+      .locator('.lesson-heading h1')
+      .evaluate(
+        (h) =>
+          (h.textContent =
+            'Hoje vamos estudar limites e continuidade para compreender melhor as funções.'),
+      );
+    await page
+      .locator('[data-annotatable]')
+      .evaluate((b) => b.replaceChildren());
+    await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+    await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
+    await page.getByLabel('Voz', { exact: true }).selectOption('markl');
+    if (delivery === 'stream')
+      await page.getByLabel('Reprodução do Sopro').selectOption('stream');
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+    if (delivery === 'complete') {
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              (window as unknown as { streamTest: { sent: number } }).streamTest
+                .sent,
+          ),
+        )
+        .toBe(1);
+      await page.waitForTimeout(200);
+      expect(
+        await page.evaluate(
+          () =>
+            (window as unknown as { streamTest: { started: number } })
+              .streamTest.started,
+        ),
+      ).toBe(0);
+      await page.evaluate(() =>
+        (
+          window as unknown as {
+            streamTest: { send: (finish: boolean) => void };
+          }
+        ).streamTest.send(true),
+      );
+    }
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as { streamTest: { started: number } })
+              .streamTest.started,
+        ),
+      )
+      .toBeGreaterThan(0);
+    await expect(dialog.locator('[data-br-status]')).toHaveText(
+      'Voz local · Português de Portugal',
+    );
+    const outputVolume = () =>
+      page.evaluate(() =>
+        (
+          window as unknown as { streamTest: { outputVolume: () => number } }
+        ).streamTest.outputVolume(),
+      );
+    await dialog.getByRole('button', { name: 'Silenciar som' }).click();
+    await expect.poll(outputVolume).toBeLessThan(0.01);
+    await dialog.getByRole('button', { name: 'Ativar som' }).click();
+    await expect.poll(outputVolume).toBeGreaterThan(0.99);
+    await expect
+      .poll(() => dialog.locator('[data-br-seek]').inputValue())
+      .not.toBe('0');
+    await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+    const paused = await dialog.locator('[data-br-seek]').inputValue();
+    await page.waitForTimeout(200);
+    expect(await dialog.locator('[data-br-seek]').inputValue()).toBe(paused);
+    await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+    await page.waitForTimeout(1800);
+    if (delivery === 'stream') {
+      const waiting = Number(
+        await dialog.locator('[data-br-seek]').inputValue(),
+      );
+      expect(waiting).toBeLessThan(1.7);
+      await page.waitForTimeout(200);
+      expect(
+        Number(await dialog.locator('[data-br-seek]').inputValue()) - waiting,
+      ).toBeLessThan(0.05);
+      await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+      await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+      const started = await page.evaluate(
+        () =>
+          (window as unknown as { streamTest: { started: number } }).streamTest
+            .started,
+      );
+      await page.evaluate(() =>
+        (
+          window as unknown as {
+            streamTest: { send: (finish: boolean) => void };
+          }
+        ).streamTest.send(false),
+      );
+      await page.waitForTimeout(200);
+      expect(
+        await page.evaluate(
+          () =>
+            (window as unknown as { streamTest: { started: number } })
+              .streamTest.started,
+        ),
+      ).toBe(started);
+      await page.evaluate(() =>
+        (
+          window as unknown as {
+            streamTest: { send: (finish: boolean) => void };
+          }
+        ).streamTest.send(true),
+      );
+    }
+    await expect(
+      dialog.getByRole('button', { name: 'Repetir leitura' }),
+    ).toBeVisible({ timeout: 5000 });
+    await page.reload();
+    await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
+    await expect(page.getByLabel('Reprodução do Sopro')).toHaveValue(delivery);
+  });
+}
+
+test('single words lead the voice by 100 ms and keep their appearance settings', async ({
   page,
 }) => {
+  await mockVoice(page, false, 10);
   await page.addInitScript(() => {
-    const NativeWorker = Worker;
-    const state = {
-      started: 0,
-      send: (_finish = false) => {},
-      outputVolume: () => 1,
-    };
-    Object.assign(window, { streamTest: state });
-    const createGain = AudioContext.prototype.createGain;
-    AudioContext.prototype.createGain = function () {
-      const gain = createGain.call(this);
-      state.outputVolume = () => gain.gain.value;
-      return gain;
-    };
-    const start = AudioBufferSourceNode.prototype.start;
-    AudioBufferSourceNode.prototype.start = function (...args) {
-      state.started++;
-      return start.apply(this, args);
-    };
-    window.Worker = class extends EventTarget {
-      constructor(url: string | URL, options?: WorkerOptions) {
-        super();
-        if (!/brainrot-sopro/.test(String(url)))
-          return new NativeWorker(url, options);
+    const NativeAudio = Audio;
+    const state = { seconds: 0 };
+    Object.assign(window, { captionAudio: state });
+    window.Audio = class extends NativeAudio {
+      constructor(src?: string) {
+        super(src);
+        Object.defineProperty(this, 'currentTime', {
+          get: () => state.seconds,
+        });
       }
-      postMessage({ id, cancel }: { id: number; cancel?: number[] }) {
-        if (cancel) return;
-        state.send = (finish = false) => {
-          const samples = Float32Array.from(
-            { length: 36_000 },
-            (_, i) => 0.12 * Math.sin(i * 0.1),
-          );
-          this.dispatchEvent(
-            new MessageEvent('message', {
-              data: { type: 'chunk', id, samples },
-            }),
-          );
-          if (finish)
-            this.dispatchEvent(
-              new MessageEvent('message', { data: { type: 'end', id } }),
-            );
-        };
-        state.send();
-      }
-      terminate() {}
-    } as unknown as typeof Worker;
+    };
   });
   await page.goto('/exemplo/apontamentos/');
   await page
     .locator('.lesson-heading h1')
     .evaluate(
-      (h) =>
-        (h.textContent =
-          'Hoje vamos estudar limites e continuidade para compreender melhor as funções.'),
+      (h) => (h.textContent = 'sol mar céu luz cor som paz voz fim ver'),
     );
   await page.locator('[data-annotatable]').evaluate((b) => b.replaceChildren());
   await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
   await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
-  await page.getByLabel('Voz', { exact: true }).selectOption('markl');
+  await page.getByLabel('Uma palavra de cada vez').check();
   await page.getByRole('button', { name: 'Fechar definições' }).click();
   await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          (window as unknown as { streamTest: { started: number } }).streamTest
-            .started,
-      ),
-    )
-    .toBe(1);
-  await expect(dialog.locator('[data-br-status]')).toHaveText(
-    'Voz local · Português de Portugal',
+  await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
+  await page.evaluate(
+    () =>
+      ((
+        window as unknown as { captionAudio: { seconds: number } }
+      ).captionAudio.seconds = 0.89),
   );
-  const outputVolume = () =>
-    page.evaluate(() =>
-      (
-        window as unknown as { streamTest: { outputVolume: () => number } }
-      ).streamTest.outputVolume(),
-    );
-  await dialog.getByRole('button', { name: 'Silenciar som' }).click();
-  await expect.poll(outputVolume).toBeLessThan(0.01);
-  await dialog.getByRole('button', { name: 'Ativar som' }).click();
-  await expect.poll(outputVolume).toBeGreaterThan(0.99);
-  await expect
-    .poll(() => dialog.locator('[data-br-seek]').inputValue())
-    .not.toBe('0');
-  await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
-  const paused = await dialog.locator('[data-br-seek]').inputValue();
-  await page.waitForTimeout(200);
-  expect(await dialog.locator('[data-br-seek]').inputValue()).toBe(paused);
-  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
-  await page.waitForTimeout(1800);
-  const waiting = Number(await dialog.locator('[data-br-seek]').inputValue());
-  expect(waiting).toBeLessThan(1.7);
-  await page.waitForTimeout(200);
-  expect(
-    Number(await dialog.locator('[data-br-seek]').inputValue()) - waiting,
-  ).toBeLessThan(0.05);
-  await page.evaluate(() =>
-    (
-      window as unknown as { streamTest: { send: (finish: boolean) => void } }
-    ).streamTest.send(true),
+  await expect(dialog.locator('.brainrot-caption')).toHaveText('sol');
+  await page.evaluate(
+    () =>
+      ((
+        window as unknown as { captionAudio: { seconds: number } }
+      ).captionAudio.seconds = 0.91),
   );
-  await expect(
-    dialog.getByRole('button', { name: 'Repetir leitura' }),
-  ).toBeVisible({ timeout: 5000 });
+  await expect(dialog.locator('.brainrot-caption')).toHaveText('mar');
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
+  await expect(page.getByLabel('Animar texto')).not.toBeVisible();
+  await page.getByLabel('Cor do realce').fill('#77eebb');
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  await expect(dialog.locator('[data-current-word]')).toHaveCSS(
+    'color',
+    'rgb(119, 238, 187)',
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
+  await expect(page.getByLabel('Cor do realce')).toHaveValue('#77eebb');
+  await expect(page.getByLabel('Animar texto')).not.toBeVisible();
 });
