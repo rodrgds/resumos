@@ -85,14 +85,14 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
   );
   await page.getByRole('button', { name: 'Copiar pergunta' }).click();
   await expect(
-    page.getByRole('textbox', { name: 'Pergunta para a IA' }),
+    page.getByRole('textbox', { name: 'Mensagem para copiar' }),
   ).toBeFocused();
   await expect(page.locator('#ai-prompt')).toHaveValue(
     /https:\/\/resumos.rgo.pt\/exemplo\/diagramas\//,
   );
   await expect(page.locator('#ai-prompt')).not.toHaveValue(/Fletcher/);
   await expect(page.locator('#ai-status')).toContainText(
-    'Copia a pergunta abaixo',
+    'Copia a mensagem abaixo',
   );
 });
 
