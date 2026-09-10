@@ -14,7 +14,7 @@ import {
   foldGutter,
   indentOnInput,
   syntaxHighlighting,
-  defaultHighlightStyle,
+  HighlightStyle,
   bracketMatching,
   foldKeymap,
 } from '@codemirror/language';
@@ -27,6 +27,48 @@ import {
   completionKeymap,
 } from '@codemirror/autocomplete';
 import { lintKeymap } from '@codemirror/lint';
+import { tags } from '@lezer/highlight';
+
+const codeHighlightStyle = HighlightStyle.define([
+  {
+    tag: [tags.keyword, tags.operator, tags.modifier, tags.meta],
+    color: 'var(--code-token-keyword)',
+  },
+  {
+    tag: [tags.string, tags.attributeValue],
+    color: 'var(--code-token-string)',
+  },
+  {
+    tag: [
+      tags.number,
+      tags.bool,
+      tags.null,
+      tags.constant(tags.name),
+      tags.color,
+    ],
+    color: 'var(--code-token-constant)',
+  },
+  {
+    tag: [
+      tags.function(tags.variableName),
+      tags.function(tags.propertyName),
+      tags.typeName,
+      tags.tagName,
+      tags.labelName,
+    ],
+    color: 'var(--code-token-function)',
+  },
+  {
+    tag: [tags.propertyName, tags.attributeName],
+    color: 'var(--code-token-parameter)',
+  },
+  { tag: tags.punctuation, color: 'var(--code-token-punctuation)' },
+  {
+    tag: tags.comment,
+    color: 'var(--code-token-comment)',
+    fontStyle: 'italic',
+  },
+]);
 
 export function editorSetup(root: HTMLElement) {
   return [
@@ -48,7 +90,7 @@ export function editorSetup(root: HTMLElement) {
     dropCursor(),
     EditorState.allowMultipleSelections.of(true),
     indentOnInput(),
-    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    syntaxHighlighting(codeHighlightStyle),
     bracketMatching(),
     closeBrackets(),
     autocompletion(),
