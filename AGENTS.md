@@ -31,7 +31,7 @@
 
 - CSS snippets are local-only. Preserve the customization selectors documented in README and the `?sem-css=1` recovery path. Apply snippets after generated styles but before visible content; insert CSS as text, never HTML.
 - Static and runnable code share `--code-*` tokens and `--code-font`. Keep the shared Shiki configuration in `markdown.shikiConfig` so Markdown and MDX follow the selected palette.
-- Homepage introduction visibility follows valid reading history, applied before paint and refreshed when history is cleared. Pinned semesters duplicate course cards at the top; original fragment IDs belong only to the catalogue.
+- Hide the homepage introduction when there is valid reading history or a valid semester pin, including before first paint. Clearing history must respect pins. Pinned semesters duplicate course cards at the top; original fragment IDs belong only to the catalogue.
 
 - Runnable and web editors share CodeMirror setup and token colours in `src/lib/editor-setup.ts`. Use language parsers for highlighting; keep web previews in their opaque, network-blocked iframe. The WhatsApp action copies only the public page URL and a message starter.
 
@@ -41,9 +41,12 @@
 
 - Mark Sopro options as Pesado; benchmark timings belong in `docs/vozes-locais.md`, not the voice selector. Normalize playback in `brainrot-audio.ts`; keep model weights unchanged. Sopro shares one pinned model across reference voices and uses its own ONNX runtime version. Keep reference sources and terms distinct from model licenses.
 - Sopro V2 Turbo defaults to complete-cue synthesis. Prime the current and following cue before playback, prefetch at most two future cues, and invalidate the queue on seeks or voice/delivery changes. Optional streaming uses `brainrot-speech-stream.ts` and `brainrot-speech-player.ts`; after underflow, wait for the complete cue instead of repeatedly restarting short blocks. Freeze its clock during underflow and retain preparation on pause. Closing or changing voice releases the Worker. Aggregate downloaded bytes by asset; a file reaching 100% does not mean the voice is ready. Benchmark the mobile WASM profile separately from desktop WebGPU and never present emulation as phone measurements.
-- Personal voice samples stay in IndexedDB through `brainrot-personal-voice.ts`, never uploads or public assets. Record at most 20 seconds and save only after explicit use. Cancel, close, hidden documents and late microphone permissions must release all tracks. Changing or deleting the active reference invalidates prepared narration.
+- Personal voice samples stay in IndexedDB through `brainrot-personal-voice.ts`, never uploads or public assets. Record at most 30 seconds and save only after explicit use. Cancel, close, hidden documents and late microphone permissions must release all tracks. Changing or deleting the active reference invalidates prepared narration and its saved audio.
 - Appearance controls are directly visible radio groups and sliders. Preserve `resumos-preferences`, CSS snippet recovery and reset behavior when changing the sidebar.
 
 - CSS preset fixes must also handle saved defaults before paint. Upgrade only exact known preset CSS; preserve user edits, names, toggles and deletions. Offer missing presets explicitly, disabled.
 
 - Brain rot display and volume preferences belong in `brainrot-preferences.ts`, with controls in `brainrot-settings.ts`. Persist only settings in localStorage, never lesson text or recordings. Volume changes use the speech player without regenerating speech; caption modes never split TTS sentences. Keep the desktop volume hover path connected, touch mute direct, and caption motion optional with reduced-motion support.
+
+- `brainrot-speech-cache.ts` owns disposable generated audio in IndexedDB, bounded to 256 MiB and 1000 cues. Cues expire after 30 days without use; cache reads and writes remove expired entries. Keys include text, voice, model revision, delivery mode and personal recording hash. Bump its revision when reference assets, synthesis parameters or normalization change. Storage failure must not block narration. Progress belongs to the awaited cue; background preparation must not overwrite it.
+- `student-projects.json` contains manually reviewed public project links and metadata. Verify FEUP affiliation and project content in the author README. Distinguish academic year from repository creation date; do not republish student numbers, emails or demo credentials. `/projetos/` filters locally and works as a plain list without JavaScript.
