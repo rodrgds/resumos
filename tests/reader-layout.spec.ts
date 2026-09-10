@@ -124,33 +124,17 @@ test('shared header and direct lesson actions stay consistent', async ({
   ).toBe(chat);
 });
 
-test('section progress follows reading and links to sections', async ({
+test('mobile reading keeps course progress without a page section strip', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 878, height: 900 });
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/cadeiras/fsi/principios-seguranca/');
-  const progress = page.getByRole('navigation', {
-    name: 'Progresso por secção',
-  });
-  await expect(progress).toBeVisible();
-  const link = progress.getByRole('link').nth(2);
-  await link.click();
-  await expect(link).toHaveAttribute('aria-current', 'location');
-  expect(new URL(page.url()).hash).toBe(
-    encodeURI((await link.getAttribute('href'))!),
-  );
-  await page.locator('.lesson-pagination').scrollIntoViewIfNeeded();
-  await expect
-    .poll(() =>
-      progress
-        .getByRole('link')
-        .evaluateAll((links) =>
-          links.every(
-            (link) => link.style.getPropertyValue('--section-progress') === '1',
-          ),
-        ),
-    )
-    .toBe(true);
+  await expect(
+    page.getByRole('navigation', { name: 'Progresso por secção' }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('navigation', { name: 'Percurso da cadeira' }),
+  ).toBeVisible();
 });
 
 test('mobile header hides downwards, returns upwards and reveals keyboard focus', async ({
