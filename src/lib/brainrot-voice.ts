@@ -1,5 +1,11 @@
-import { normalizeSpeech } from './brainrot-audio';
-import { brainrotVoices } from '../data/brainrot-voices';
+import { normalizeSpeech, speechWav } from './brainrot-audio';
+import { brainrotVoices, soproModel } from '../data/brainrot-voices';
+import {
+  cachedSpeech,
+  cacheSpeech,
+  speechHash,
+  SPEECH_CACHE_REVISION,
+} from './brainrot-speech-cache';
 import { readPersonalVoice, referenceSamples } from './brainrot-personal-voice';
 import {
   SpeechStream,
@@ -14,32 +20,65 @@ type PendingAudio = {
   stream?: SpeechStream;
   text: string;
   delivery: SoproDelivery;
+  cacheKey?: string;
+  model: string;
+  status?: (status: VoiceStatus) => void;
 };
+
+export type VoiceStatus = { phase: string; loaded?: number };
 
 export class LocalVoice {
   #worker?: Worker;
   #nextId = 0;
   #pending = new Map<number, PendingAudio>();
-  #progress: (loaded: number, total: number) => void;
   #reference?: Promise<Float32Array>;
-  #phase: (phase: string) => void;
+  #generation = 0;
 
-  constructor(callbacks: {
-    progress: (loaded: number, total: number) => void;
-    phase: (phase: string) => void;
-  }) {
-    this.#progress = callbacks.progress;
-    this.#phase = callbacks.phase;
-  }
-
-  synthesize(
+  async synthesize(
     text: string,
     model: string,
-    options: { delivery?: SoproDelivery } = {},
+    options: {
+      delivery?: SoproDelivery;
+      status?: (status: VoiceStatus) => void;
+    } = {},
   ): Promise<SpeechSource> {
+    options.status?.({ phase: 'cache' });
     const selected = brainrotVoices.find((voice) => voice.id === model);
     const sopro = selected?.engine === 'sopro' || model === 'personal';
+    const generation = this.#generation;
+    let recording: Blob | undefined;
+    if (model === 'personal') {
+      recording = await readPersonalVoice();
+      if (!recording) throw new Error('Grava primeiro a tua voz.');
+    }
+    const cacheKey = await (async () => {
+      const identity = recording
+        ? await speechHash(recording)
+        : selected?.engine === 'sopro'
+          ? selected.reference
+          : selected?.file;
+      return speechHash(
+        JSON.stringify([
+          SPEECH_CACHE_REVISION,
+          model,
+          selected?.engine === 'piper'
+            ? selected.revision
+            : soproModel.revision,
+          identity,
+          sopro ? (options.delivery ?? 'complete') : '',
+          text,
+        ]),
+      );
+    })().catch(() => undefined);
+    const cached = cacheKey ? await cachedSpeech(cacheKey) : undefined;
+    if (generation !== this.#generation)
+      throw new Error('A voz local foi interrompida.');
+    if (cached) {
+      options.status?.({ phase: 'cached' });
+      return cached;
+    }
     if (!this.#worker) {
+      options.status?.({ phase: 'opening' });
       this.#worker = sopro
         ? new Worker(new URL('./brainrot-sopro.worker.ts', import.meta.url), {
             type: 'module',
@@ -48,16 +87,16 @@ export class LocalVoice {
             type: 'module',
           });
       this.#worker.addEventListener('message', ({ data }) => {
+        const pending = this.#pending.get(data.id);
+        if (!pending) return;
         if (data.type === 'phase') {
-          this.#phase(data.phase);
+          pending.status?.({ phase: data.phase });
           return;
         }
         if (data.type === 'progress') {
-          this.#progress(data.loaded, data.total);
+          pending.status?.({ phase: 'download', loaded: data.loaded });
           return;
         }
-        const pending = this.#pending.get(data.id);
-        if (!pending) return;
         if (data.type === 'chunk') {
           if (!pending.stream) {
             const stream = new SpeechStream(pending.text, {
@@ -72,12 +111,34 @@ export class LocalVoice {
           pending.stream.append(data.samples);
           return;
         }
-        clearTimeout(pending.timeout);
-        this.#pending.delete(data.id);
+        const complete = async (audio: Blob, source: SpeechSource) => {
+          pending.status?.({ phase: 'saving' });
+          if (pending.cacheKey)
+            await cacheSpeech(pending.cacheKey, pending.model, audio);
+          if (!this.#pending.delete(data.id)) return;
+          clearTimeout(pending.timeout);
+          if (source instanceof SpeechStream) source.finish();
+          else pending.resolve(source);
+        };
         if (data.type === 'end' && pending.stream) {
-          pending.stream.finish();
+          const chunks = pending.stream.chunks;
+          const samples = new Float32Array(
+            chunks.reduce((sum, chunk) => sum + chunk.length, 0),
+          );
+          let offset = 0;
+          for (const chunk of chunks) {
+            samples.set(chunk, offset);
+            offset += chunk.length;
+          }
+          void complete(
+            speechWav(samples, pending.stream.sampleRate),
+            pending.stream,
+          );
         } else if (data.type === 'audio') {
-          normalizeSpeech(data.wav).then(pending.resolve, pending.reject);
+          void normalizeSpeech(data.wav).then(
+            (audio) => complete(audio, audio),
+            () => this.dispose(),
+          );
         } else {
           pending.stream?.fail(new Error('Não foi possível preparar a voz.'));
           pending.reject(new Error('Não foi possível preparar a voz.'));
@@ -95,6 +156,9 @@ export class LocalVoice {
         timeout,
         text,
         delivery: options.delivery ?? 'complete',
+        cacheKey,
+        model,
+        status: options.status,
       });
       const worker = this.#worker;
       if (!sopro) {
@@ -104,9 +168,7 @@ export class LocalVoice {
       const first = !this.#reference;
       this.#reference ??= (async () => {
         if (model === 'personal') {
-          const recording = await readPersonalVoice();
-          if (!recording) throw new Error('Grava primeiro a tua voz.');
-          return referenceSamples(recording);
+          return referenceSamples(recording!);
         }
         if (selected?.engine !== 'sopro') throw new Error('Voz desconhecida.');
         const response = await fetch(selected.reference);
@@ -132,6 +194,7 @@ export class LocalVoice {
   }
 
   cancelPending() {
+    this.#generation++;
     this.#reference = undefined;
     this.#worker?.postMessage({ cancel: [...this.#pending.keys()] });
     for (const pending of this.#pending.values()) {

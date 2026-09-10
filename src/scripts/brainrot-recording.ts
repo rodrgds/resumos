@@ -181,6 +181,7 @@ export function setupVoiceRecording(
     if (!draft) return;
     save.disabled = true;
     preview.pause();
+    callbacks.changed();
     try {
       await savePersonalVoice(draft);
       showSavedVoice(true);
@@ -198,6 +199,7 @@ export function setupVoiceRecording(
   remove.addEventListener('click', async () => {
     remove.disabled = true;
     callbacks.pause();
+    callbacks.changed();
     try {
       await deletePersonalVoice();
       if (select.value === 'personal') {

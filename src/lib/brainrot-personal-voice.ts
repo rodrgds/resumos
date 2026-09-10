@@ -1,6 +1,7 @@
 import { speechWav } from './brainrot-audio';
+import { clearPersonalSpeech } from './brainrot-speech-cache';
 
-export const RECORDING_SECONDS = 20;
+export const RECORDING_SECONDS = 30;
 const MIN_SECONDS = 5;
 const SAMPLE_RATE = 24_000;
 const DATABASE = 'resumos-personal-voice';
@@ -34,11 +35,16 @@ function recordingStore<T>(
 export const readPersonalVoice = () =>
   recordingStore<Blob | undefined>('readonly', (store) => store.get(KEY));
 
-export const savePersonalVoice = (audio: Blob) =>
-  recordingStore('readwrite', (store) => store.put(audio, KEY));
+export const savePersonalVoice = async (audio: Blob) => {
+  await recordingStore('readwrite', (store) => store.put(audio, KEY));
+  await clearPersonalSpeech().catch(() => {});
+  void navigator.storage?.persist?.().catch(() => {});
+};
 
-export const deletePersonalVoice = () =>
-  recordingStore('readwrite', (store) => store.delete(KEY));
+export const deletePersonalVoice = async () => {
+  await recordingStore('readwrite', (store) => store.delete(KEY));
+  await clearPersonalSpeech();
+};
 
 export async function referenceSamples(recording: Blob): Promise<Float32Array> {
   const decoder = new OfflineAudioContext(1, 1, SAMPLE_RATE);

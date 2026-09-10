@@ -10,6 +10,8 @@ let session: Promise<SoproTTS> | undefined;
 let reference: object | undefined;
 let streamingReady = false;
 let queue = Promise.resolve();
+let activeId = 0;
+let activePhase = 'loading';
 const transferred = new DownloadProgress();
 const cancelled = new Set<number>();
 
@@ -30,10 +32,13 @@ self.addEventListener(
     }
     queue = queue.then(async () => {
       if (cancelled.delete(data.id)) return;
-      const phase = (phase: string) =>
+      activeId = data.id;
+      const phase = (phase: string) => {
+        activePhase = phase;
         self.postMessage({ type: 'phase', id: data.id, phase });
+      };
       try {
-        phase('loading');
+        if (!session) phase('loading');
         session ??= SoproTTS.create({
           model: soproModel.repository,
           revision: soproModel.revision,
@@ -42,10 +47,16 @@ self.addEventListener(
           onProgress: (progress) => {
             self.postMessage({
               type: 'progress',
-              id: data.id,
+              id: activeId,
               loaded: transferred.update(progress),
               total: 0,
             });
+            if (progress.total > 0 && progress.loaded >= progress.total)
+              self.postMessage({
+                type: 'phase',
+                id: activeId,
+                phase: activePhase,
+              });
           },
         });
         const voice = await session;
