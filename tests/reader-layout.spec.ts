@@ -127,6 +127,7 @@ test('shared header and direct lesson actions stay consistent', async ({
 test('section progress follows reading and links to sections', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 878, height: 900 });
   await page.goto('/cadeiras/fsi/principios-seguranca/');
   const progress = page.getByRole('navigation', {
     name: 'Progresso por secção',
@@ -268,4 +269,29 @@ test('desktop header returns on upward scroll and keyboard focus', async ({
   await expect(page.locator('.site-header')).toHaveClass(/header-hidden/);
   await page.getByRole('button', { name: 'Pesquisar', exact: true }).focus();
   await expect(page.locator('.site-header')).not.toHaveClass(/header-hidden/);
+});
+
+test('desktop section list underlines the current section and crosses passed sections', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/cadeiras/fsi/principios-seguranca/');
+  const sidebar = page.getByRole('complementary', {
+    name: 'Secções desta página',
+  });
+  await expect(sidebar.locator('.section-progress')).toHaveCount(0);
+  const links = sidebar.locator('.toc-links a');
+  await links.nth(1).click();
+  await expect(links.nth(1)).toHaveAttribute('aria-current', 'location');
+  await expect(links.first()).toHaveAttribute('data-completed', '');
+  await expect(links.first()).toHaveAttribute('data-drawn', '');
+  await expect(links.nth(1)).toHaveCSS('text-decoration-line', 'underline');
+  await page.screenshot({
+    path: '.impeccable/review/section-list-progress.png',
+  });
+  await links.first().click();
+  await expect(links.first()).toHaveAttribute('aria-current', 'location');
+  await expect(links.first()).not.toHaveAttribute('data-completed', '');
+  await page.locator('.lesson-pagination').scrollIntoViewIfNeeded();
+  await expect(links.last()).toHaveAttribute('data-completed', '');
 });
