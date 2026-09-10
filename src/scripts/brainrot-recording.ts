@@ -73,7 +73,7 @@ export function setupVoiceRecording(
       : 'Gravar a minha voz';
   }
 
-  void readPersonalVoice()
+  const ready = readPersonalVoice()
     .then((saved) => showSavedVoice(!!saved))
     .catch(() => {
       personalStatus.textContent =
@@ -215,4 +215,5 @@ export function setupVoiceRecording(
       remove.disabled = false;
     }
   });
+  return ready;
 }

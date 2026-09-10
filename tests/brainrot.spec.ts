@@ -20,6 +20,7 @@ type VoiceTestWindow = Window & {
     models: string[];
     terminated: number;
     references: number[];
+    release?: () => void;
   };
 };
 
@@ -36,15 +37,22 @@ test('download progress counts interleaved assets once without going backwards',
   expect(loaded).toEqual([2, 7, 10, 10, 10, 13]);
 });
 
-async function mockVoice(page: Page, fail = false, seconds = 2, delayMs = 30) {
+async function mockVoice(
+  page: Page,
+  fail = false,
+  seconds = 2,
+  delayMs = 30,
+  options: { hold?: boolean } = {},
+) {
   await page.addInitScript(
-    ({ fail, seconds, delayMs }) => {
+    ({ fail, seconds, delayMs, hold }) => {
       const NativeWorker = window.Worker;
       const state = {
         texts: [] as string[],
         models: [] as string[],
         terminated: 0,
         references: [] as number[],
+        release: () => {},
       };
       Object.assign(window, { brainrotTest: state });
       window.Worker = class extends EventTarget {
@@ -94,29 +102,28 @@ async function mockVoice(page: Page, fail = false, seconds = 2, delayMs = 30) {
           const amplitude = model === 'miro' ? 800 : 8000;
           for (let i = 0; i < samples; i++)
             view.setInt16(44 + i * 2, Math.sin(i * 0.15) * amplitude, true);
-          setTimeout(
-            () =>
-              this.dispatchEvent(
-                new MessageEvent('message', {
-                  data: fail
-                    ? { type: 'error', id }
-                    : {
-                        type: 'audio',
-                        id,
-                        wav: new Blob([buffer], { type: 'audio/wav' }),
-                        generationMs: model === 'miro' ? 500 : 800,
-                      },
-                }),
-              ),
-            delayMs,
-          );
+          const respond = () =>
+            this.dispatchEvent(
+              new MessageEvent('message', {
+                data: fail
+                  ? { type: 'error', id }
+                  : {
+                      type: 'audio',
+                      id,
+                      wav: new Blob([buffer], { type: 'audio/wav' }),
+                      generationMs: model === 'miro' ? 500 : 800,
+                    },
+              }),
+            );
+          if (hold) state.release = respond;
+          else setTimeout(respond, delayMs);
         }
         terminate() {
           state.terminated++;
         }
       } as unknown as typeof Worker;
     },
-    { fail, seconds, delayMs },
+    { fail, seconds, delayMs, hold: options.hold },
   );
 }
 
@@ -131,7 +138,7 @@ async function openReader(page: Page) {
 test('pausing while the voice loads resumes the same preparation', async ({
   page,
 }) => {
-  await mockVoice(page, false, 5, 1500);
+  await mockVoice(page, false, 5, 30, { hold: true });
   const dialog = await openReader(page);
   await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
   await expect
@@ -143,6 +150,9 @@ test('pausing while the voice loads resumes the same preparation', async ({
     .toBe(1);
   await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
   await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await page.evaluate(() =>
+    (window as unknown as VoiceTestWindow).brainrotTest.release!(),
+  );
   await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
   expect(
     await page.evaluate(
@@ -170,9 +180,7 @@ test('switching between quiet and loud voices keeps playback volume consistent',
   const dialog = await openReader(page);
   const levels = [];
   for (const model of ['piper', 'miro', 'dii']) {
-    await dialog
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
     await page.getByLabel('Voz', { exact: true }).selectOption(model);
     await page.getByRole('button', { name: 'Fechar definições' }).click();
     await page.evaluate(() => Object.assign(window, { lastVoiceAudio: null }));
@@ -234,7 +242,7 @@ test('Portuguese models are available on every device and switching voice replac
   });
   const dialog = await openReader(page);
   const settings = dialog.getByRole('button', {
-    name: 'Definições de voz e velocidade',
+    name: 'Definições do leitor',
   });
   await settings.click();
   const voices = page.getByLabel('Voz', { exact: true });
@@ -286,10 +294,108 @@ test('Portuguese models are available on every device and switching voice replac
 });
 
 async function nextCue(dialog: Locator) {
-  await dialog.locator('.brainrot-options summary').click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await dialog.getByRole('button', { name: 'Trecho seguinte' }).click();
-  await dialog.locator('.brainrot-options summary').click();
+  await dialog.getByRole('button', { name: 'Fechar definições' }).click();
 }
+
+test('desktop volume remains reachable above the button and mute restores its level', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const NativeAudio = Audio;
+    window.Audio = class extends NativeAudio {
+      constructor(src?: string) {
+        super(src);
+        Object.assign(window, { readerAudio: this });
+      }
+    };
+  });
+  const dialog = await openReader(page);
+  const mute = dialog.locator('[data-br-mute]');
+  const volume = dialog.getByRole('slider', { name: 'Volume', exact: true });
+  await mute.hover();
+  await expect(volume).toBeVisible();
+  await volume.hover();
+  await expect(volume).toBeVisible();
+  await volume.fill('35');
+  const actualVolume = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { readerAudio: HTMLAudioElement }).readerAudio
+          .volume,
+    );
+  await expect.poll(actualVolume).toBeCloseTo(0.35);
+  await mute.click();
+  await expect(mute).toHaveAccessibleName('Ativar som');
+  await expect.poll(actualVolume).toBe(0);
+  await mute.click();
+  await expect.poll(actualVolume).toBeCloseTo(0.35);
+  await expect(dialog.locator('#brainrot-voice-settings')).not.toBeVisible();
+  await page.mouse.move(0, 0);
+  await dialog.locator('.brainrot-feed').focus();
+  await expect(volume).not.toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await expect.poll(actualVolume).toBeCloseTo(0.35);
+});
+
+test('caption and social preferences survive navigation without starting a voice', async ({
+  page,
+}) => {
+  await mockVoice(page);
+  let dialog = await openReader(page);
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
+  await page.getByLabel('Voz', { exact: true }).selectOption('silent');
+  await page.getByLabel('Velocidade da leitura').selectOption('1.25');
+  await page.getByLabel('Tipo de letra das legendas').selectOption('lexend');
+  await page.getByLabel('Tamanho das legendas').fill('120');
+  await page.getByLabel('Uma palavra de cada vez').check();
+  await page.getByLabel('Realçar leitura').uncheck();
+  for (const label of ['Avatar do canal', 'Gostos', 'Comentários', 'Favoritos'])
+    await page.getByLabel(label, { exact: true }).uncheck();
+  await page.getByRole('button', { name: 'Fechar definições' }).click();
+  const caption = dialog.locator('.brainrot-caption');
+  await expect(caption.locator(':scope > span')).toHaveCount(1);
+  await expect(caption).toHaveCSS(
+    'font-family',
+    '"Lexend Variable", sans-serif',
+  );
+  expect(
+    parseFloat(await caption.evaluate((e) => getComputedStyle(e).fontSize)),
+  ).toBeGreaterThan(26);
+  for (const item of ['channel', 'likes', 'comments', 'bookmarks'])
+    await expect(
+      dialog.locator(`[data-br-decoration="${item}"]`),
+    ).not.toBeVisible();
+  await expect(
+    dialog.getByRole('button', { name: 'Partilhar', exact: true }),
+  ).toBeVisible();
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  const first = await caption.textContent();
+  await expect(caption).not.toHaveText(first!);
+  await expect(caption.locator(':scope > span')).toHaveCount(1);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as VoiceTestWindow).brainrotTest.texts,
+    ),
+  ).toEqual([]);
+  await page.reload();
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
+  await expect(page.getByLabel('Voz', { exact: true })).toHaveValue('silent');
+  await expect(page.getByLabel('Velocidade da leitura')).toHaveValue('1.25');
+  await expect(page.getByLabel('Uma palavra de cada vez')).toBeChecked();
+  await expect(page.getByLabel('Realçar leitura')).not.toBeChecked();
+  await expect(page.getByLabel('Tipo de letra das legendas')).toHaveValue(
+    'lexend',
+  );
+  await expect(page.getByLabel('Tamanho das legendas')).toHaveValue('120');
+  for (const label of ['Avatar do canal', 'Gostos', 'Comentários', 'Favoritos'])
+    await expect(page.getByLabel(label, { exact: true })).not.toBeChecked();
+});
 
 test('desktop opening and closing animate the phone and restore focus, with a reduced-motion path', async ({
   page,
@@ -303,6 +409,10 @@ test('desktop opening and closing animate the phone and restore focus, with a re
     return element.getBoundingClientRect().top;
   });
   expect(entranceTop).toBeGreaterThan(100);
+  await expect(dialog.locator('.brainrot-clip-controls')).toHaveCSS(
+    'opacity',
+    '0',
+  );
   await shell.evaluate((element) =>
     element.getAnimations().forEach((animation) => animation.finish()),
   );
@@ -329,8 +439,8 @@ test('Escape closes the reading options before closing the reader', async ({
   page,
 }) => {
   const dialog = await openReader(page);
-  const options = dialog.locator('.brainrot-options');
-  await options.locator('summary').click();
+  const options = dialog.locator('#brainrot-voice-settings');
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await page.keyboard.press('Escape');
   await expect(options).not.toHaveAttribute('open');
   await expect(dialog).toBeVisible();
@@ -396,9 +506,7 @@ test('caption wrapping never splits a spoken sentence and highlighting is option
     'Esta frase tem palavras suficientes para',
   );
   await expect(dialog.locator('[data-current-word]')).toHaveCount(1);
-  await dialog
-    .getByRole('button', { name: 'Definições de voz e velocidade' })
-    .click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await expect(
     page.getByRole('checkbox', { name: 'Realçar leitura' }),
   ).toBeChecked();
@@ -432,9 +540,7 @@ test('the time scrubber follows the reading in seconds and previews its position
   });
   await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
-  await dialog
-    .getByRole('button', { name: 'Definições de voz e velocidade' })
-    .click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await page.getByLabel('Voz', { exact: true }).selectOption('silent');
   await page.getByRole('button', { name: 'Fechar definições' }).click();
   const seek = dialog.getByRole('slider', { name: 'Posição na leitura' });
@@ -459,7 +565,7 @@ test('the time scrubber follows the reading in seconds and previews its position
   ).toBeVisible();
 });
 
-test('share copies only the canonical URL and the sound button opens voice settings', async ({
+test('share copies only the canonical URL and the settings cog opens voice controls', async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -493,9 +599,7 @@ test('share copies only the canonical URL and the sound button opens voice setti
   await expect(
     dialog.getByRole('button', { name: 'Partilhar', exact: true }),
   ).toBeFocused();
-  await dialog
-    .getByRole('button', { name: 'Definições de voz e velocidade' })
-    .click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await page.getByLabel('Velocidade da leitura').selectOption('1.5');
   await expect(
     page.getByRole('checkbox', { name: 'Silenciar voz' }),
@@ -509,17 +613,13 @@ test('share copies only the canonical URL and the sound button opens voice setti
     ).violations,
   ).toEqual([]);
   await page.getByRole('button', { name: 'Fechar definições' }).click();
-  await dialog
-    .getByRole('button', { name: 'Definições de voz e velocidade' })
-    .click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await expect(page.getByLabel('Velocidade da leitura')).toHaveValue('1.5');
   await expect(page.getByLabel('Voz', { exact: true })).toHaveValue('silent');
   await page.getByRole('button', { name: 'Fechar definições' }).click();
   await expect(dialog.locator('.brainrot-sound-off')).toBeVisible();
   await expect(dialog.locator('.brainrot-sound-on')).not.toBeVisible();
-  await dialog
-    .getByRole('button', { name: 'Definições de voz e velocidade' })
-    .click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await page.getByLabel('Voz', { exact: true }).selectOption('piper');
   await page.getByRole('button', { name: 'Fechar definições' }).click();
   await expect(dialog.locator('.brainrot-sound-on')).toBeVisible();
@@ -792,11 +892,9 @@ test('voice errors offer retry and an explicit caption-only mode', async ({
   await expect(
     dialog.getByRole('button', { name: 'Iniciar leitura' }),
   ).toBeEnabled();
-  await dialog
-    .getByRole('button', { name: 'Definições de voz e velocidade' })
-    .click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await page
-    .getByRole('dialog', { name: 'Voz e velocidade', exact: true })
+    .getByRole('dialog', { name: 'Definições', exact: true })
     .getByLabel('Voz', { exact: true })
     .selectOption('silent');
   await page.keyboard.press('Escape');
@@ -840,7 +938,7 @@ test('the player fits narrow screens and exposes labelled keyboard controls', as
   await expect(
     dialog.getByRole('button', { name: 'Voltar à página' }),
   ).toBeFocused();
-  await expect(dialog.locator('.brainrot-settings')).not.toBeVisible();
+  await expect(dialog.locator('#brainrot-voice-settings')).not.toBeVisible();
   await expect(
     dialog.getByRole('button', { name: 'Início', exact: true }),
   ).toBeEnabled();
@@ -869,6 +967,51 @@ test.describe('touch feed', () => {
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
+  });
+
+  test('the volume button toggles sound on touch without opening a slider or settings', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const NativeAudio = Audio;
+      window.Audio = class extends NativeAudio {
+        constructor(src?: string) {
+          super(src);
+          Object.assign(window, { readerAudio: this });
+        }
+      };
+      // Touch browsers may leave the playback level under hardware control.
+      Object.defineProperty(HTMLMediaElement.prototype, 'volume', {
+        get: () => 1,
+        set: () => {},
+      });
+    });
+    const dialog = await openReader(page);
+    const mute = dialog.getByRole('button', { name: 'Silenciar som' });
+    await mute.tap();
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { readerAudio: HTMLAudioElement }).readerAudio
+            .muted,
+      ),
+    ).toBe(true);
+    await expect(
+      dialog.getByRole('button', { name: 'Ativar som' }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole('slider', { name: 'Volume', exact: true }),
+    ).not.toBeVisible();
+    await expect(dialog.locator('#brainrot-voice-settings')).not.toBeVisible();
+    await dialog.getByRole('button', { name: 'Ativar som' }).tap();
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { readerAudio: HTMLAudioElement }).readerAudio
+            .muted,
+      ),
+    ).toBe(false);
+    await expect(mute).toBeVisible();
   });
 
   test('holding a swipe does not recycle the clip before the finger is lifted', async ({
@@ -906,9 +1049,7 @@ test.describe('touch feed', () => {
     const input = await page.context().newCDPSession(page);
     await page.touchscreen.tap(110, 180);
     await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
-    await dialog
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .tap();
+    await dialog.getByRole('button', { name: 'Definições do leitor' }).tap();
     await page.getByRole('button', { name: 'Fechar definições' }).tap();
     await page.touchscreen.tap(110, 180);
     await expect(
@@ -1001,7 +1142,9 @@ test('landscape keeps the top controls apart and the formula readable', async ({
     .getByRole('button', { name: 'Voltar à página' })
     .boundingBox();
   const tabs = await dialog.locator('.brainrot-tabs').boundingBox();
-  const menu = await dialog.locator('summary').boundingBox();
+  const menu = await dialog
+    .getByRole('button', { name: 'Definições do leitor' })
+    .boundingBox();
   expect(tabs!.x).toBeGreaterThan(back!.x + back!.width);
   expect(tabs!.x + tabs!.width).toBeLessThan(menu!.x);
   for (let step = 0; step < 20; step++) {
@@ -1095,9 +1238,7 @@ for (const [model, modelFile] of [
     });
     await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
-    await dialog
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
     await page.getByLabel('Voz', { exact: true }).selectOption(model);
     await page.getByRole('button', { name: 'Fechar definições' }).click();
     await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
@@ -1203,9 +1344,7 @@ test.describe('personal voice recording', () => {
     const dialog = await openReader(page);
     await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
     await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
-    await dialog
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
     expect(
       await page.evaluate(
         () =>
@@ -1261,9 +1400,7 @@ test.describe('personal voice recording', () => {
     expect(reference).toBeLessThanOrEqual(20 * 24_000);
     await page.goto('/cadeiras/am2/');
     await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     const voices = page.getByLabel('Voz', { exact: true });
     await expect(voices.locator('option[value="personal"]')).toBeAttached();
     await voices.selectOption('personal');
@@ -1272,9 +1409,7 @@ test.describe('personal voice recording', () => {
     await expect(voices.locator('option[value="personal"]')).toHaveCount(0);
     await page.reload();
     await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await expect(
       page.getByRole('button', { name: 'Gravar a minha voz', exact: true }),
     ).toBeVisible();
@@ -1290,9 +1425,7 @@ test.describe('personal voice recording', () => {
     test.setTimeout(40_000);
     await mockVoice(page);
     await openReader(page);
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await page
       .getByRole('button', { name: 'Gravar a minha voz', exact: true })
       .click();
@@ -1309,9 +1442,7 @@ test.describe('personal voice recording', () => {
       await preview.evaluate((audio: HTMLAudioElement) => audio.duration),
     ).toBeLessThanOrEqual(20);
     await page.getByRole('button', { name: 'Fechar definições' }).click();
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await expect(
       page
         .getByLabel('Voz', { exact: true })
@@ -1336,9 +1467,7 @@ test.describe('personal voice recording', () => {
       };
     });
     await openReader(page);
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await page
       .getByRole('button', { name: 'Gravar a minha voz', exact: true })
       .click();
@@ -1378,9 +1507,7 @@ test.describe('personal voice recording', () => {
       };
     });
     await openReader(page);
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await page
       .getByRole('button', { name: 'Gravar a minha voz', exact: true })
       .click();
@@ -1412,9 +1539,7 @@ test.describe('personal voice recording', () => {
         });
     });
     await openReader(page);
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await page
       .getByRole('button', { name: 'Gravar a minha voz', exact: true })
       .click();
@@ -1435,9 +1560,7 @@ test.describe('personal voice recording', () => {
         ),
       )
       .toBe(true);
-    await page
-      .getByRole('button', { name: 'Definições de voz e velocidade' })
-      .click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await expect(
       page
         .getByLabel('Voz', { exact: true })
@@ -1451,8 +1574,18 @@ test('streamed speech starts before generation ends and pauses the clock while w
 }) => {
   await page.addInitScript(() => {
     const NativeWorker = Worker;
-    const state = { started: 0, send: (_finish = false) => {} };
+    const state = {
+      started: 0,
+      send: (_finish = false) => {},
+      outputVolume: () => 1,
+    };
     Object.assign(window, { streamTest: state });
+    const createGain = AudioContext.prototype.createGain;
+    AudioContext.prototype.createGain = function () {
+      const gain = createGain.call(this);
+      state.outputVolume = () => gain.gain.value;
+      return gain;
+    };
     const start = AudioBufferSourceNode.prototype.start;
     AudioBufferSourceNode.prototype.start = function (...args) {
       state.started++;
@@ -1497,9 +1630,7 @@ test('streamed speech starts before generation ends and pauses the clock while w
   await page.locator('[data-annotatable]').evaluate((b) => b.replaceChildren());
   await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
-  await dialog
-    .getByRole('button', { name: 'Definições de voz e velocidade' })
-    .click();
+  await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await page.getByLabel('Voz', { exact: true }).selectOption('markl');
   await page.getByRole('button', { name: 'Fechar definições' }).click();
   await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
@@ -1515,6 +1646,16 @@ test('streamed speech starts before generation ends and pauses the clock while w
   await expect(dialog.locator('[data-br-status]')).toHaveText(
     'Voz local · Português de Portugal',
   );
+  const outputVolume = () =>
+    page.evaluate(() =>
+      (
+        window as unknown as { streamTest: { outputVolume: () => number } }
+      ).streamTest.outputVolume(),
+    );
+  await dialog.getByRole('button', { name: 'Silenciar som' }).click();
+  await expect.poll(outputVolume).toBeLessThan(0.01);
+  await dialog.getByRole('button', { name: 'Ativar som' }).click();
+  await expect.poll(outputVolume).toBeGreaterThan(0.99);
   await expect
     .poll(() => dialog.locator('[data-br-seek]').inputValue())
     .not.toBe('0');

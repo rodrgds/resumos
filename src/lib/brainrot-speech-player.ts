@@ -16,6 +16,8 @@ export class SpeechPlayer extends EventTarget {
   #url?: string;
   #stream?: SpeechStream;
   #context?: AudioContext;
+  #gain?: GainNode;
+  #volume = 1;
   #nodes: ScheduledChunk[] = [];
   #position = 0;
   #playing = false;
@@ -108,9 +110,26 @@ export class SpeechPlayer extends EventTarget {
     }
   }
 
+  set volume(value: number) {
+    this.#volume = Math.max(0, Math.min(1, value));
+    this.#audio.muted = this.#volume === 0;
+    this.#audio.volume = this.#volume;
+    if (this.#gain && this.#context)
+      this.#gain.gain.setTargetAtTime(
+        this.#volume,
+        this.#context.currentTime,
+        0.015,
+      );
+  }
+
   // Resume the context in the original tap, before awaiting model downloads.
   unlock() {
-    this.#context ??= new AudioContext();
+    if (!this.#context) {
+      this.#context = new AudioContext();
+      this.#gain = this.#context.createGain();
+      this.#gain.gain.value = this.#volume;
+      this.#gain.connect(this.#context.destination);
+    }
     void this.#context.resume().catch(() => {});
   }
 
@@ -182,7 +201,7 @@ export class SpeechPlayer extends EventTarget {
         const node = context.createBufferSource();
         node.buffer = buffer;
         node.playbackRate.value = this.#rate;
-        node.connect(context.destination);
+        node.connect(this.#gain!);
         node.start(at, skip);
         this.#nodes.push({
           node,
@@ -213,5 +232,6 @@ export class SpeechPlayer extends EventTarget {
     this.clear();
     void this.#context?.close().catch(() => {});
     this.#context = undefined;
+    this.#gain = undefined;
   }
 }
