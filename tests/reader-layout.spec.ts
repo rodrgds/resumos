@@ -281,11 +281,26 @@ test('desktop section list underlines the current section and crosses passed sec
   });
   await expect(sidebar.locator('.section-progress')).toHaveCount(0);
   const links = sidebar.locator('.toc-links a');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await links.nth(1).click();
   await expect(links.nth(1)).toHaveAttribute('aria-current', 'location');
   await expect(links.first()).toHaveAttribute('data-completed', '');
-  await expect(links.first()).toHaveAttribute('data-drawn', '');
-  await expect(links.nth(1)).toHaveCSS('text-decoration-line', 'underline');
+  await expect(links.first()).toHaveAttribute('data-drawn', 'strike-through');
+  await expect(links.nth(1)).toHaveAttribute('data-drawn', 'underline');
+  await expect(links.nth(1).locator('svg')).toBeAttached();
+  const path = links.first().locator('svg path').first();
+  await expect(path).toHaveCSS(
+    'stroke',
+    await page
+      .locator('.course-sidebar a[aria-current="page"]')
+      .evaluate((el) => getComputedStyle(el).color),
+  );
+  await expect(path).toHaveCSS('animation-name', 'rough-notation-dash');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(links.first().locator('svg path').first()).toHaveCSS(
+    'animation-name',
+    'none',
+  );
   await page.screenshot({
     path: '.impeccable/review/section-list-progress.png',
   });
@@ -294,4 +309,23 @@ test('desktop section list underlines the current section and crosses passed sec
   await expect(links.first()).not.toHaveAttribute('data-completed', '');
   await page.locator('.lesson-pagination').scrollIntoViewIfNeeded();
   await expect(links.last()).toHaveAttribute('data-completed', '');
+});
+
+test('desktop course sidebar uses the viewport down to its bottom gutter', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 640 });
+  await page.goto('/cadeiras/am2/taylor-extremos/');
+  await page.mouse.wheel(0, 600);
+  await expect(page.locator('.site-header')).toHaveClass(/header-hidden/);
+  const sidebar = page.locator('.reader-navigation');
+  await expect
+    .poll(async () => {
+      const box = await sidebar.boundingBox();
+      return Math.round(box!.y + box!.height);
+    })
+    .toBe(616);
+  await sidebar.hover();
+  await page.mouse.wheel(0, 1800);
+  await expect(page.locator('.course-contribute')).toBeInViewport();
 });
