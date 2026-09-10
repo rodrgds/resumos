@@ -10,17 +10,36 @@ const menu = document.querySelector<HTMLElement>('#ai-menu')!;
 const promptField = document.querySelector<HTMLTextAreaElement>('#ai-prompt')!;
 const aiStatus = document.querySelector('#ai-status')!;
 
-async function copyPrompt() {
+const aiPrompt = promptField.value;
+
+async function copyMessage(message: string, confirmation: string) {
   try {
-    await navigator.clipboard.writeText(promptField.value);
-    aiStatus.textContent = 'Pergunta copiada. Cola-a na conversa.';
+    await navigator.clipboard.writeText(message);
+    aiStatus.textContent = confirmation;
   } catch {
+    promptField.value = message;
     menu.querySelector('details')!.open = true;
     promptField.focus();
     promptField.select();
-    aiStatus.textContent = 'Copia a pergunta abaixo com Ctrl ou Cmd C.';
+    aiStatus.textContent = 'Copia a mensagem abaixo com Ctrl ou Cmd C.';
   }
 }
+
+function copyPrompt() {
+  promptField.value = aiPrompt;
+  return copyMessage(aiPrompt, 'Pergunta copiada. Cola-a na conversa.');
+}
+
+menu
+  .querySelector<HTMLButtonElement>('[data-whatsapp]')!
+  .addEventListener('click', (event) => {
+    const message = (event.currentTarget as HTMLButtonElement).dataset.message!;
+    promptField.value = message;
+    void copyMessage(
+      message,
+      'Mensagem copiada. Cola-a no WhatsApp e completa a pergunta.',
+    );
+  });
 
 document.querySelector('#copy-prompt')!.addEventListener('click', copyPrompt);
 menu
