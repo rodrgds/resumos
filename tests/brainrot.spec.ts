@@ -1059,6 +1059,20 @@ test.describe('touch feed', () => {
       dialog.getByRole('button', { name: 'Iniciar leitura' }),
     ).toBeVisible();
     const caption = await dialog.locator('.brainrot-caption').textContent();
+    await dialog.evaluate((element) => {
+      const feed = element.querySelector('.brainrot-feed')!;
+      let scrolling = false;
+      Object.assign(window, { clipChangedDuringScroll: false });
+      feed.addEventListener('scroll', () => (scrolling = true));
+      feed.addEventListener('scrollend', () => (scrolling = false), {
+        capture: true,
+      });
+      new MutationObserver(() => {
+        if (scrolling) Object.assign(window, { clipChangedDuringScroll: true });
+      }).observe(element.querySelector('[data-br-clip-name]')!, {
+        childList: true,
+      });
+    });
     for (let step = 0; step < 3; step++) {
       const previous = await dialog
         .locator('[data-br-clip-name]')
@@ -1087,6 +1101,13 @@ test.describe('touch feed', () => {
       ).toBeVisible();
       await expect(dialog.locator('video[src]')).toHaveCount(2);
     }
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { clipChangedDuringScroll: boolean })
+            .clipChangedDuringScroll,
+      ),
+    ).toBe(false);
   });
   test('swiping a media card changes game without opening its link or starting playback', async ({
     page,
