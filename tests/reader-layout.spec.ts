@@ -25,6 +25,7 @@ test('projects are absent from discovery links', async ({ page }) => {
 test('chapter overlay supports section jumps and Escape without reflow', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 878, height: 900 });
   await page.goto('/exemplo/apontamentos/');
   const article = page.locator('.lesson-body');
   const before = await article.boundingBox();
@@ -52,7 +53,7 @@ for (const width of [1440, 390]) {
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.goto('/cadeiras/fsi/principios-seguranca/');
     await page.screenshot({ path: `.impeccable/review/reader-${width}.png` });
-    await page.locator('.course-sidebar > summary').click();
+    if (width < 1200) await page.locator('.course-sidebar > summary').click();
     const chapters = await page.locator('.course-sidebar nav').boundingBox();
     expect(chapters!.x).toBeGreaterThanOrEqual(16);
     expect(chapters!.x + chapters!.width).toBeLessThanOrEqual(width - 16);
@@ -186,12 +187,15 @@ test('wide navigation frames a narrower article and padded actions', async ({
   const brand = await page.locator('.brand').boundingBox();
   const course = await page.locator('.reader-course').boundingBox();
   expect(brand!.x).toBe(48);
-  expect(course!.x).toBe(brand!.x);
+  const article = await page.locator('.course-article').boundingBox();
+  const sections = await page.locator('.page-sections').boundingBox();
+  expect(course!.x).toBeLessThan(article!.x);
+  expect(sections!.x).toBeGreaterThanOrEqual(article!.x + article!.width);
   expect(
     await page
       .locator('.lesson-body')
       .evaluate((el) => el.getBoundingClientRect().width),
-  ).toBe(680);
+  ).toBe(640);
   for (const button of await page.locator('.page-actions > button').all()) {
     expect(
       await button.evaluate((el) =>
@@ -204,4 +208,64 @@ test('wide navigation frames a narrower article and padded actions', async ({
       ),
     ).toBeGreaterThanOrEqual(12);
   }
+});
+
+for (const width of [390, 320]) {
+  test(`opening the mobile notebook preserves header spacing at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/exemplo/apontamentos/');
+    const bounds = () =>
+      page.locator('.header-inner').evaluate((el) => {
+        const brand = el.querySelector('.brand')!.getBoundingClientRect();
+        const nav = el.querySelector('nav')!.getBoundingClientRect();
+        return { brandLeft: brand.left, navRight: nav.right };
+      });
+    const before = await bounds();
+    await page
+      .getByRole('button', { name: 'Abrir caderno', exact: true })
+      .click();
+    expect(await bounds()).toEqual(before);
+    await page.setViewportSize({ width, height: 430 });
+    expect(await bounds()).toEqual(before);
+  });
+}
+
+test('course progress spans lessons and preserves desktop sidebars', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/cadeiras/fsi/principios-seguranca/');
+  const course = page.getByRole('navigation', { name: 'Percurso da cadeira' });
+  const links = course.getByRole('link');
+  expect(await links.count()).toBeGreaterThan(1);
+  await links.nth(1).click();
+  await expect(links.nth(1)).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('.course-sidebar nav')).toBeVisible();
+  await expect(page.locator('.page-sections')).toBeVisible();
+  await page.locator('.lesson-pagination').scrollIntoViewIfNeeded();
+  await expect
+    .poll(() =>
+      links
+        .nth(1)
+        .evaluate((el) => el.style.getPropertyValue('--section-progress')),
+    )
+    .toBe('1');
+  await expect(page.locator('.course-sidebar nav')).toBeVisible();
+});
+
+test('desktop header returns on upward scroll and keyboard focus', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/cadeiras/fsi/principios-seguranca/');
+  await page.mouse.wheel(0, 650);
+  await expect(page.locator('.site-header')).toHaveClass(/header-hidden/);
+  await page.mouse.wheel(0, -120);
+  await expect(page.locator('.site-header')).not.toHaveClass(/header-hidden/);
+  await page.mouse.wheel(0, 200);
+  await expect(page.locator('.site-header')).toHaveClass(/header-hidden/);
+  await page.getByRole('button', { name: 'Pesquisar', exact: true }).focus();
+  await expect(page.locator('.site-header')).not.toHaveClass(/header-hidden/);
 });

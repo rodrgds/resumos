@@ -30,9 +30,11 @@ test('course navigation comes from content and keeps drafts private', async ({
   const sidebar = page.getByRole('navigation', {
     name: 'Conteúdos da cadeira',
   });
-  await page.locator('.course-sidebar > summary').click();
+  if (await page.locator('.course-sidebar > summary').isVisible())
+    await page.locator('.course-sidebar > summary').click();
   await sidebar.getByRole('link', { name: 'Primeiro resumo de teste' }).click();
-  await page.locator('.course-sidebar > summary').click();
+  if (await page.locator('.course-sidebar > summary').isVisible())
+    await page.locator('.course-sidebar > summary').click();
   await expect(
     sidebar.getByRole('link', { name: 'Primeiro resumo de teste' }),
   ).toHaveAttribute('aria-current', 'page');
@@ -43,7 +45,8 @@ test('course navigation comes from content and keeps drafts private', async ({
   await expect(
     page.getByRole('heading', { name: 'Segundo resumo de teste', exact: true }),
   ).toBeVisible();
-  await page.locator('.course-sidebar > summary').click();
+  if (await page.locator('.course-sidebar > summary').isVisible())
+    await page.locator('.course-sidebar > summary').click();
   await expect(sidebar).not.toContainText('Segredo do rascunho');
   expect((await page.request.get('/cadeiras/fp/rascunho/')).status()).toBe(404);
   expect((await page.request.get('/cadeiras/fp/rascunho.md')).status()).toBe(
@@ -211,7 +214,8 @@ for (const width of [390, 320]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/exemplo/');
-    await page.locator('.course-sidebar > summary').click();
+    if (await page.locator('.course-sidebar > summary').isVisible())
+      await page.locator('.course-sidebar > summary').click();
     await page
       .getByRole('navigation', { name: 'Conteúdos da cadeira' })
       .getByRole('link', { name: 'Caixas e imagens', exact: true })

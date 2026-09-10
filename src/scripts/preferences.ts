@@ -36,8 +36,8 @@ const media = matchMedia('(prefers-color-scheme: dark)');
 const defaults = Object.fromEntries(
   Object.entries(allowed).map(([key, values]) => [key, values[0]]),
 );
-defaults.width = '1280';
-defaults.measure = '680';
+defaults.width = '1200';
+defaults.measure = '640';
 defaults.font = 'serif';
 let preferences: Record<string, string> = { ...defaults };
 try {
