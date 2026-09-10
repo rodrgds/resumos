@@ -346,6 +346,10 @@ test('caption and social preferences survive navigation without starting a voice
 }) => {
   await mockVoice(page);
   let dialog = await openReader(page);
+  const caption = dialog.locator('.brainrot-caption');
+  const originalFontSize = parseFloat(
+    await caption.evaluate((e) => getComputedStyle(e).fontSize),
+  );
   await dialog.getByRole('button', { name: 'Definições do leitor' }).click();
   await page.getByLabel('Voz', { exact: true }).selectOption('silent');
   await page.getByLabel('Velocidade da leitura').selectOption('1.25');
@@ -356,7 +360,6 @@ test('caption and social preferences survive navigation without starting a voice
   for (const label of ['Avatar do canal', 'Gostos', 'Comentários', 'Favoritos'])
     await page.getByLabel(label, { exact: true }).uncheck();
   await page.getByRole('button', { name: 'Fechar definições' }).click();
-  const caption = dialog.locator('.brainrot-caption');
   await expect(caption.locator(':scope > span')).toHaveCount(1);
   await expect(caption).toHaveCSS(
     'font-family',
@@ -364,7 +367,7 @@ test('caption and social preferences survive navigation without starting a voice
   );
   expect(
     parseFloat(await caption.evaluate((e) => getComputedStyle(e).fontSize)),
-  ).toBeGreaterThan(26);
+  ).toBeCloseTo(originalFontSize * 1.2);
   for (const item of ['channel', 'likes', 'comments', 'bookmarks'])
     await expect(
       dialog.locator(`[data-br-decoration="${item}"]`),
