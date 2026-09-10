@@ -62,12 +62,14 @@ for (const width of [1440, 390]) {
       .getByRole('navigation', { name: 'Conteúdos da cadeira' })
       .getByRole('link', { name: 'Apresentação', exact: true })
       .click();
+    await expect(page.locator('main .course-contents')).toHaveCount(0);
+    if (width < 1200) await page.locator('.course-sidebar > summary').click();
     await expect(
       page
-        .getByRole('navigation', { name: 'Resumos da cadeira' })
-        .getByRole('link')
-        .first(),
+        .getByRole('navigation', { name: 'Conteúdos da cadeira' })
+        .getByRole('link', { name: /Princípios de segurança/ }),
     ).toBeVisible();
+    if (width < 1200) await page.keyboard.press('Escape');
     await page.screenshot({ path: `.impeccable/review/course-${width}.png` });
     await page.goto('/exemplo/formatacao/');
     const bracket = page.getByRole('complementary', { name: 'Ideia-chave' });
@@ -96,8 +98,11 @@ test('chapter links and author emphasis remain usable without JavaScript', async
     .getByRole('navigation', { name: 'Conteúdos da cadeira' })
     .getByRole('link', { name: 'Apresentação', exact: true })
     .click();
+  await page.locator('.course-sidebar > summary').click();
   await expect(
-    page.getByRole('navigation', { name: 'Resumos da cadeira' }),
+    page
+      .getByRole('navigation', { name: 'Conteúdos da cadeira' })
+      .getByRole('link', { name: /Texto e fórmulas/ }),
   ).toBeVisible();
   await context.close();
 });
