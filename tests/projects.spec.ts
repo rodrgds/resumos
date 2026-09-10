@@ -17,11 +17,7 @@ test('project links remain available without JavaScript', async ({
 test('project search combines course and text, restores its URL and clears empty results', async ({
   page,
 }) => {
-  await page.goto('/');
-  await page
-    .getByRole('navigation', { name: 'Navegação principal' })
-    .getByRole('link', { name: 'Projetos' })
-    .click();
+  await page.goto('/projetos/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     'Projetos de estudantes',
   );

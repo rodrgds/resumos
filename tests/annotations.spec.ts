@@ -299,3 +299,115 @@ test('touch selection actions stay in the viewport and open a comment', async ({
   await expect.poll(() => highlightedText(page)).toBe(passage);
   await context.close();
 });
+
+for (const width of [1440, 390]) {
+  test(`rough highlights and margin notes follow the passage at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.goto('/exemplo/apontamentos/');
+    await selectText(page, passage);
+    const before = await page.locator('.lesson-body').boundingBox();
+    await page.getByRole('button', { name: 'Comentar', exact: true }).click();
+    await page
+      .getByLabel('O teu comentário')
+      .fill('Rever a diferença entre definição e exemplo.');
+    expect(await page.locator('.lesson-body').boundingBox()).toEqual(before);
+    await expect(page.locator('.annotation-marks svg').first()).toBeVisible();
+    const panel = page.locator('#scratchpad');
+    const box = (await panel.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+    if (width === 1440)
+      expect(box.x).toBeGreaterThanOrEqual(before!.x + before!.width);
+    await page.screenshot({ path: `.impeccable/review/notes-${width}.png` });
+    await page.keyboard.press('Escape');
+    const pin = page.getByRole('button', { name: /^Abrir nota:/ });
+    await pin.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByLabel('O teu comentário')).toHaveValue(
+      'Rever a diferença entre definição e exemplo.',
+    );
+    await page.keyboard.press('Escape');
+    await page.reload();
+    await expect(
+      page.getByRole('button', { name: /^Abrir nota:/ }),
+    ).toBeVisible();
+    await expect.poll(() => highlightedText(page)).toBe(passage);
+    await page.setViewportSize({
+      width: width === 1440 ? 700 : 320,
+      height: 900,
+    });
+    await expect(
+      page.getByRole('button', { name: /^Abrir nota:/ }),
+    ).toBeInViewport();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+}
+
+test('margin markers never cover lesson text on narrow screens', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto('/exemplo/apontamentos/');
+  await selectText(page, passage);
+  await page.getByRole('button', { name: 'Destacar', exact: true }).click();
+  const pin = page.getByRole('button', { name: /^Abrir nota:/ });
+  await expect(pin).toBeVisible();
+  const marker = (await pin.boundingBox())!;
+  const text = (await page.locator('.lesson-body').boundingBox())!;
+  expect(marker.x).toBeGreaterThanOrEqual(text.x + text.width + 4);
+});
+
+test('margin pin keeps keyboard focus through resize and editing', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/exemplo/apontamentos/');
+  await selectText(page, passage);
+  await page.getByRole('button', { name: 'Destacar', exact: true }).click();
+  const pin = page.getByRole('button', { name: /^Abrir nota:/ });
+  await pin.focus();
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await expect(pin).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('O teu comentário')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(pin).toBeFocused();
+});
+
+test('contextual notes fit intermediate desktop widths', async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await page.goto('/exemplo/apontamentos/');
+  await selectText(page, passage);
+  await page.getByRole('button', { name: 'Comentar', exact: true }).click();
+  await page.getByLabel('O teu comentário').fill('Uma nota.');
+  const box = (await page.locator('#scratchpad').boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(1000);
+});
+
+test('syntax coloured code highlights form a continuous stroke per line', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/formatacao/');
+  const code = page.locator('#soma-linguagens-panel-0 pre .line').last();
+  await code.scrollIntoViewIfNeeded();
+  await code.evaluate((line) => {
+    const range = new Range();
+    range.selectNodeContents(line);
+    getSelection()!.removeAllRanges();
+    getSelection()!.addRange(range);
+  });
+  await expect(
+    page.getByRole('group', { name: 'Anotar seleção' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Destacar', exact: true }).click();
+  await expect(page.locator('.annotation-stroke')).toHaveCount(1);
+  await page.screenshot({ path: '.impeccable/review/code-highlight.png' });
+});
