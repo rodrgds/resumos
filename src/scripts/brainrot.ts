@@ -2,7 +2,7 @@ import { brainrotClips } from '../data/brainrot-clips';
 import { brainrotVoices } from '../data/brainrot-voices';
 import { extractReadingCues, readingVisual } from '../lib/brainrot-content';
 import { ClipFeed } from '../lib/brainrot-feed';
-import { LocalVoice } from '../lib/brainrot-voice';
+import { LocalVoice, type VoiceStatus } from '../lib/brainrot-voice';
 import { SpeechPlayer } from '../lib/brainrot-speech-player';
 import type { SpeechSource } from '../lib/brainrot-speech-stream';
 import { ReadingTimeline, readingTime } from '../lib/brainrot-timeline';
@@ -58,25 +58,7 @@ export async function setupBrainrot() {
     if (selected?.engine === 'sopro')
       cost.textContent += ` Voz sintética baseada numa amostra de ${selected.name}.`;
   }
-  const voice = new LocalVoice({
-    progress: (loaded) => {
-      if (!dialog.open || !playing || !preparing) return;
-      setStatus(
-        `A carregar os ficheiros da voz… ${Math.round(loaded / 1_048_576)} MB`,
-      );
-    },
-    phase: (phase) => {
-      if (!dialog.open || !playing || !preparing) return;
-      const messages: Record<string, string> = {
-        loading: 'A carregar o modelo…',
-        reference: 'A preparar a referência de voz…',
-        warming: 'A iniciar o Sopro neste dispositivo…',
-        initializing: 'A iniciar a voz neste dispositivo…',
-        generating: 'A preparar o áudio…',
-      };
-      setStatus(messages[phase] ?? 'A preparar o áudio…');
-    },
-  });
+  const voice = new LocalVoice();
   const feed = new ClipFeed(
     feedElement,
     brainrotClips,
@@ -98,7 +80,11 @@ export async function setupBrainrot() {
   let elapsed = 0;
   let lastTick = 0;
   let activeVisual: Element | undefined;
-  const prepared = new Map<number, Promise<SpeechSource>>();
+  const prepared = new Map<
+    number,
+    { source: Promise<SpeechSource>; status: VoiceStatus }
+  >();
+  let awaitingCue = 0;
   let speechBufferPrimed = false;
   let customURLs: string[] = [];
   let savedOverflow = '';
@@ -257,14 +243,42 @@ export async function setupBrainrot() {
 
   function prepare(nextIndex: number) {
     const existing = prepared.get(nextIndex);
-    if (existing) return existing;
-    const promise = voice.synthesize(cues[nextIndex].text, voiceMode.value, {
+    if (existing) {
+      showVoiceProgress(existing.status, nextIndex);
+      return existing.source;
+    }
+    const status: VoiceStatus = { phase: 'cache' };
+    const source = voice.synthesize(cues[nextIndex].text, voiceMode.value, {
       delivery: settings.delivery,
+      status: (update) => {
+        Object.assign(status, update);
+        showVoiceProgress(status, nextIndex);
+      },
     });
     // A prefetched failure is handled when playback reaches this cue.
-    void promise.catch(() => {});
-    prepared.set(nextIndex, promise);
-    return promise;
+    void source.catch(() => {});
+    prepared.set(nextIndex, { source, status });
+    return source;
+  }
+
+  function showVoiceProgress(progress: VoiceStatus, cueIndex: number) {
+    if (!dialog.open || !playing || !preparing || awaitingCue !== cueIndex)
+      return;
+    const messages: Record<string, string> = {
+      cache: 'A procurar áudio guardado neste dispositivo…',
+      cached: 'A abrir o áudio guardado…',
+      opening: 'A abrir o motor de voz…',
+      loading: 'A carregar a configuração do modelo…',
+      reference: 'A preparar o timbre a partir da amostra de voz…',
+      warming: 'A preparar a reprodução em streaming…',
+      initializing: 'Ficheiros carregados. A iniciar o modelo…',
+      generating: 'A gerar fala neste dispositivo…',
+      saving: 'A guardar o áudio para a próxima vez…',
+      download: `A descarregar os ficheiros da voz… ${Math.round((progress.loaded ?? 0) / 1_048_576)} MB recebidos`,
+    };
+    setStatus(
+      `${messages[progress.phase] ?? 'A preparar o áudio…'} · trecho ${cueIndex + 1} de ${cues.length}`,
+    );
   }
 
   function tick(now: number) {
@@ -273,7 +287,7 @@ export async function setupBrainrot() {
       buffering = audio.waiting;
       setStatus(
         buffering
-          ? 'A preparar mais áudio…'
+          ? 'A voz ainda está a gerar o resto deste trecho…'
           : 'Voz local · Português de Portugal',
         { hidden: !buffering },
       );
@@ -327,7 +341,7 @@ export async function setupBrainrot() {
       if (voiceMode.value !== 'silent') {
         if (!audio.loaded) {
           preparing = true;
-          setStatus('A preparar o áudio…');
+          awaitingCue = index;
           render();
           const source = await prepare(index);
           if (token !== generation || !playing || !dialog.open) return;
@@ -337,7 +351,7 @@ export async function setupBrainrot() {
             !speechBufferPrimed
           ) {
             if (index + 1 < cues.length) {
-              setStatus('A preparar as próximas frases…');
+              awaitingCue = index + 1;
               await prepare(index + 1);
               if (token !== generation || !playing || !dialog.open) return;
             }

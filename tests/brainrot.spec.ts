@@ -21,6 +21,7 @@ type VoiceTestWindow = Window & {
     terminated: number;
     references: number[];
     release?: () => void;
+    report?: (phase: string, loaded?: number) => void;
   };
 };
 
@@ -53,6 +54,7 @@ async function mockVoice(
         terminated: 0,
         references: [] as number[],
         release: () => {},
+        report: (_phase: string, _loaded?: number) => {},
       };
       Object.assign(window, { brainrotTest: state });
       window.Worker = class extends EventTarget {
@@ -77,6 +79,15 @@ async function mockVoice(
           if (cancel) return;
           state.texts.push(text);
           state.models.push(model);
+          state.report = (phase, loaded) =>
+            this.dispatchEvent(
+              new MessageEvent('message', {
+                data:
+                  loaded === undefined
+                    ? { type: 'phase', id, phase }
+                    : { type: 'progress', id, loaded },
+              }),
+            );
           if (reference) state.references.push(reference.length);
           const rate = 8000;
           const samples = rate * seconds;
@@ -134,6 +145,133 @@ async function openReader(page: Page) {
   await expect(dialog).toBeVisible();
   return dialog;
 }
+
+test('voice progress distinguishes download, reference preparation and speech generation', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 5, 30, { hold: true });
+  const dialog = await openReader(page);
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as VoiceTestWindow).brainrotTest.texts.length,
+      ),
+    )
+    .toBe(1);
+  const status = dialog.locator('[data-br-status]');
+  await page.evaluate(() =>
+    (window as unknown as VoiceTestWindow).brainrotTest.report!(
+      'download',
+      64 * 1_048_576,
+    ),
+  );
+  await expect(status).toContainText('64 MB recebidos');
+  await page.evaluate(() =>
+    (window as unknown as VoiceTestWindow).brainrotTest.report!('reference'),
+  );
+  await expect(status).toContainText('amostra de voz');
+  await page.evaluate(() =>
+    (window as unknown as VoiceTestWindow).brainrotTest.report!('generating'),
+  );
+  await expect(status).toContainText('A gerar fala');
+  await expect(status).toContainText('trecho 1 de');
+  await page.evaluate(() =>
+    (window as unknown as VoiceTestWindow).brainrotTest.release!(),
+  );
+  await expect(status).toHaveText('Voz local · Português de Portugal');
+  await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+});
+
+for (const model of ['piper', 'markl']) {
+  test(`${model} reuses the spoken page from disk after reload`, async ({
+    page,
+  }) => {
+    await mockVoice(page, false, 5);
+    for (let visit = 0; visit < 2; visit++) {
+      await page.goto('/exemplo/apontamentos/');
+      await page
+        .locator('.lesson-heading h1')
+        .evaluate(
+          (el) => (el.textContent = 'Vamos estudar uma função contínua.'),
+        );
+      await page
+        .locator('[data-annotatable]')
+        .evaluate((el) => el.replaceChildren());
+      await page
+        .getByRole('button', { name: 'Brain rot', exact: true })
+        .click();
+      await page.getByRole('button', { name: 'Definições do leitor' }).click();
+      await page.getByLabel('Voz', { exact: true }).selectOption(model);
+      await page.getByRole('button', { name: 'Fechar definições' }).click();
+      await page.getByRole('button', { name: 'Iniciar leitura' }).click();
+      await expect(page.locator('[data-br-status]')).toHaveText(
+        'Voz local · Português de Portugal',
+      );
+      await page.getByRole('button', { name: 'Pausar leitura' }).click();
+      expect(
+        await page.evaluate(
+          () =>
+            (window as unknown as VoiceTestWindow).brainrotTest.texts.length,
+        ),
+      ).toBe(visit === 0 ? 1 : 0);
+    }
+  });
+}
+
+test('speech still starts when disk caching is unavailable', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 5);
+  await page.addInitScript(() => {
+    const open = indexedDB.open.bind(indexedDB);
+    indexedDB.open = (name, version) => {
+      if (name === 'resumos-speech-cache')
+        throw new DOMException('Storage denied', 'SecurityError');
+      return open(name, version);
+    };
+  });
+  const dialog = await openReader(page);
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.locator('[data-br-status]')).toHaveText(
+    'Voz local · Português de Portugal',
+  );
+  await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
+});
+
+test('saved speech never substitutes a different text or voice', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 5);
+  for (const [model, text] of [
+    ['piper', 'Esta função é contínua.'],
+    ['piper', 'Esta função é descontínua.'],
+    ['dii', 'Esta função é contínua.'],
+  ]) {
+    await page.goto('/exemplo/apontamentos/');
+    await page
+      .locator('.lesson-heading h1')
+      .evaluate((el, value) => (el.textContent = value), text);
+    await page
+      .locator('[data-annotatable]')
+      .evaluate((el) => el.replaceChildren());
+    await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+    await page.getByRole('button', { name: 'Definições do leitor' }).click();
+    await page.getByLabel('Voz', { exact: true }).selectOption(model);
+    await page.getByRole('button', { name: 'Fechar definições' }).click();
+    await page.getByRole('button', { name: 'Iniciar leitura' }).click();
+    await expect(page.locator('[data-br-status]')).toHaveText(
+      'Voz local · Português de Portugal',
+    );
+    await page.getByRole('button', { name: 'Pausar leitura' }).click();
+    expect(
+      await page.evaluate(() => {
+        const state = (window as unknown as VoiceTestWindow).brainrotTest;
+        return [state.models[0], state.texts[0]];
+      }),
+    ).toEqual([model, text]);
+  }
+});
 
 test('pausing while the voice loads resumes the same preparation', async ({
   page,
@@ -1347,6 +1485,26 @@ test.describe('personal voice recording', () => {
   test('a recording stays local, is used by Sopro, survives navigation and can be deleted', async ({
     page,
   }) => {
+    const personalAudioCount = () =>
+      page.evaluate(
+        () =>
+          new Promise<number>((resolve, reject) => {
+            const request = indexedDB.open('resumos-speech-cache');
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+              const db = request.result;
+              const tx = db.transaction('audio');
+              const count = tx
+                .objectStore('audio')
+                .index('voice')
+                .count('personal');
+              tx.oncomplete = () => {
+                db.close();
+                resolve(count.result);
+              };
+            };
+          }),
+      );
     await mockVoice(page, false, 5);
     const uploads: string[] = [];
     page.on('request', (request) => {
@@ -1387,7 +1545,7 @@ test.describe('personal voice recording', () => {
     await expect(
       page.getByRole('button', { name: 'Terminar gravação' }),
     ).toBeVisible();
-    await expect(page.locator('[data-br-record-time]')).toHaveText('6 / 20 s', {
+    await expect(page.locator('[data-br-record-time]')).toHaveText('6 / 30 s', {
       timeout: 10_000,
     });
     await page.getByRole('button', { name: 'Terminar gravação' }).click();
@@ -1421,7 +1579,8 @@ test.describe('personal voice recording', () => {
       (window as unknown as VoiceTestWindow).brainrotTest.references.at(-1),
     );
     expect(reference).toBeGreaterThan(5 * 24_000);
-    expect(reference).toBeLessThanOrEqual(20 * 24_000);
+    expect(reference).toBeLessThanOrEqual(30 * 24_000);
+    await expect.poll(personalAudioCount).toBeGreaterThan(0);
     await page.goto('/cadeiras/am2/');
     await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
     await page.getByRole('button', { name: 'Definições do leitor' }).click();
@@ -1431,6 +1590,7 @@ test.describe('personal voice recording', () => {
     await page.getByRole('button', { name: 'Apagar a minha voz' }).click();
     await expect(voices).toHaveValue('piper');
     await expect(voices.locator('option[value="personal"]')).toHaveCount(0);
+    expect(await personalAudioCount()).toBe(0);
     await page.reload();
     await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
     await page.getByRole('button', { name: 'Definições do leitor' }).click();
@@ -1456,15 +1616,15 @@ test.describe('personal voice recording', () => {
     await page.getByRole('button', { name: 'Começar gravação' }).click();
     await expect(
       page.getByRole('button', { name: 'Usar esta voz' }),
-    ).toBeVisible({ timeout: 25_000 });
-    await expect(page.locator('[data-br-record-time]')).toHaveText('20 / 20 s');
+    ).toBeVisible({ timeout: 35_000 });
+    await expect(page.locator('[data-br-record-time]')).toHaveText('30 / 30 s');
     const preview = page.locator('[data-br-record-preview]');
     await expect
       .poll(() => preview.evaluate((audio: HTMLAudioElement) => audio.duration))
-      .toBeGreaterThan(19);
+      .toBeGreaterThan(29);
     expect(
       await preview.evaluate((audio: HTMLAudioElement) => audio.duration),
-    ).toBeLessThanOrEqual(20);
+    ).toBeLessThanOrEqual(30);
     await page.getByRole('button', { name: 'Fechar definições' }).click();
     await page.getByRole('button', { name: 'Definições do leitor' }).click();
     await expect(
@@ -1496,7 +1656,7 @@ test.describe('personal voice recording', () => {
       .getByRole('button', { name: 'Gravar a minha voz', exact: true })
       .click();
     await page.getByRole('button', { name: 'Começar gravação' }).click();
-    await expect(page.locator('[data-br-record-time]')).toHaveText('1 / 20 s');
+    await expect(page.locator('[data-br-record-time]')).toHaveText('1 / 30 s');
     await page.getByRole('button', { name: 'Terminar gravação' }).click();
     await expect(page.locator('[data-br-record-status]')).toContainText(
       'pelo menos 5 segundos',

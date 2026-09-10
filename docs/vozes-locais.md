@@ -70,7 +70,7 @@ As sete amostras incluídas usam MP3 a 96 kb/s, mono a 24 kHz, filtro passa-alto
 
 As fontes fornecidas pelo utilizador não indicam uma licença aberta. Os direitos das gravações são distintos de Apache 2.0 do Sopro e CC0 do Tugão. O seletor identifica estas vozes como sintéticas; não representam gravações das pessoas a ler os apontamentos nem uma colaboração com o site. Ver [créditos](../public/brainrot/CREDITOS.txt).
 
-A gravação pessoal usa MediaRecorder e um texto de leitura de 20 segundos. `brainrot-recorder.ts` controla o microfone e liberta os tracks mesmo quando uma permissão só chega depois de cancelar. `brainrot-personal-voice.ts` descodifica e limita a amostra a 20 segundos, mistura os canais para mono e guarda um WAV a 24 kHz em IndexedDB. Não existe upload. Só Usar esta voz persiste a amostra; cancelar ou fechar descarta a gravação em curso. O seletor disponibiliza a voz guardada noutras páginas do mesmo site, com uma ação para a apagar.
+A gravação pessoal usa MediaRecorder e permite ler durante até 30 segundos. `brainrot-recorder.ts` controla o microfone e liberta os tracks mesmo quando uma permissão só chega depois de cancelar. `brainrot-personal-voice.ts` descodifica e limita a amostra a 30 segundos, mistura os canais para mono e guarda um WAV a 24 kHz em IndexedDB. Não existe upload. Só Usar esta voz persiste a amostra; cancelar ou fechar descarta a gravação em curso. O seletor disponibiliza a voz guardada noutras páginas do mesmo site, com uma ação para a apagar.
 
 ## Carregamento e reprodução no telemóvel
 
@@ -111,3 +111,20 @@ Comparámos cinco trechos com a referência Markl e `seed: 42`, no Chrome 153 de
 | Frases completas com antecipação | 2,46 s                                | Máximo de 33 ms, sem interrupções dentro das frases   |
 
 Medimos a emissão dos blocos pelo Worker e os instantes de início/duração dos nós Web Audio. Estes intervalos excluem as pausas que o modelo já inclui dentro do áudio. Não comparam downloads nem prometem o mesmo resultado noutros computadores. A regressão de reprodução verifica também que, após uma falta de áudio seguida de pausa e retoma, blocos incompletos não voltam a iniciar a fala.
+
+### Áudio guardado entre visitas
+
+O runtime oficial já guarda ficheiros de modelos e referências preparadas. No telemóvel, os modelos dependem da cache HTTP; no desktop, o Sopro também usa CacheStorage. Isto não guarda sessões ONNX compiladas nem elimina a síntese de uma frase nova. O leitor passou a guardar o áudio normalizado em IndexedDB, separado da gravação original, com chave por texto, voz, versão e modo. As entradas menos recentes saem quando se excedem 256 MiB ou 1000 trechos; entradas com mais de 30 dias deixam de ser usadas. Falhas de armazenamento regressam à síntese normal.
+
+Ensaio no mesmo Chrome/Mac, com o vídeo ativo, uma visita inicial e uma segunda navegação no mesmo contexto do navegador. Texto: "A Joana perguntou se a função era contínua. Vamos verificar o limite à esquerda e comparar os dois resultados." Medimos desde o início da ação Ouvir até ao primeiro início de reprodução do áudio.
+
+| Voz          | Segunda visita, antes | Segunda visita, com áudio guardado |
+| ------------ | --------------------- | ---------------------------------- |
+| Tugão        | 1,683 s               | 0,047 s                            |
+| Markl, Sopro | 4,983 s               | 0,049 s                            |
+
+O Markl não criou nenhum Worker de voz na segunda visita. O Tugão ainda preparou em paralelo um trecho futuro que não tinha terminado antes da primeira navegação. As visitas iniciais demoraram 4,3–4,9 s no Tugão e 22,6–23,4 s no Markl. São ensaios pontuais, com pequenas verificações da interface em paralelo, não medianas nem medições num telemóvel. A melhoria aplica-se ao áudio já ouvido ou preparado; não representa uma aceleração do modelo em texto novo.
+
+### Texto da gravação pessoal
+
+O texto reúne afirmações e perguntas, palavras com sons nasais, sibilantes, palatais e grupos consonânticos, seguidas de vocabulário de estudo. A pessoa tem até 30 segundos e pode terminar antes. Não é um conjunto de treino nem foi validado como o melhor texto numa comparação auditiva. O [Sopro V2 Turbo](https://huggingface.co/samuel-vitorino/sopro-v2-turbo) usa uma referência curta para síntese sem treino adicional. O adaptador mantém o recorte de dez segundos configurado pelo modelo. A clareza da gravação e uma fala natural são mais importantes do que forçar palavras difíceis.
