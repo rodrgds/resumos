@@ -1,6 +1,6 @@
 # Resumos FEUP
 
-- Use `devenv shell` for project commands. `README.md` covers authoring and checks.
+- Use `devenv shell` for project commands. [CONTRIBUTING.md](CONTRIBUTING.md) covers authoring; [docs/desenvolvimento.md](docs/desenvolvimento.md) covers checks and publishing.
 - When writing or reviewing course summaries, worked exercises, or student guides, read [resumos-writing](.agents/skills/resumos-writing/SKILL.md) for the teaching voice and explanation style.
 - `src/data/courses.ts` owns the LEIC curriculum; `src/data/meic.ts` owns the 2026/27 MEIC plan. Verify changes against its SIGARRA source, including the academic year. LEIC Competências Transversais are elective groups; MEIC lists the named options.
 - Keep the fictional example course separate from the FEUP curriculum. Author lessons in `src/content/lessons/<course-id>/` with the schema in `src/content.config.ts`. `course-content.ts` owns navigation and published course links; drafts never generate routes or search entries. `Lesson.astro` and `Prose.astro` own the reading layout.
@@ -18,7 +18,7 @@
 
 - Annotations are local-only and restricted to `[data-annotatable]` lesson content. Keep storage in `src/lib/annotations.ts` and passage anchoring in `src/lib/text-anchors.ts`. Preserve legacy `resumos-notes` data. Missing or ambiguous passages retain their notes without highlighting unrelated text.
 
-- Executable examples use `CodePlayground` and disposable Workers. Java, Haskell, Prolog and PHP use the separate `resumos-code.pages.dev` origin; build it with `npm run build:runners`. Never host reading pages or notes there; see README before changing execution or isolation.
+- Executable examples use `CodePlayground` and disposable Workers. Java, Haskell, Prolog and PHP use the separate `resumos-code.pages.dev` origin; build it with `npm run build:runners`. Never host reading pages or notes there; see [docs/execucao.md](docs/execucao.md) before changing execution or isolation.
 - `markdown-export.mjs` generates public Markdown from built pages, never raw content directories or browser storage. Keep drafts and local notes private.
 - Add tests only for meaningful user-visible regressions or execution/privacy boundaries. Avoid assertions that freeze incidental copy, count markup, or mirror implementation.
 
@@ -29,7 +29,7 @@
 - RISC-V uses one RARS instance per disposable Worker. Keep `new Worker(new URL(..., import.meta.url))` static so Vite bundles each runtime. Markdown disclosure icons come from the same Heroicons package through `rehype-disclosures.mjs`.
 - Give each parallel content lane its own branch and Worktrunk-managed worktree. After `wt switch --create`, verify each worktree's HEAD with `git -C <path> rev-parse --abbrev-ref HEAD` before spawning agents. One branch per checkout, never shared. Lane agents assert HEAD and a clean tree at start (prefixing git commands with `git -C <worktree>`) and stop and report on mismatch instead of repairing refs.
 
-- CSS snippets are local-only. Preserve the customization selectors documented in README and the `?sem-css=1` recovery path. Apply snippets after generated styles but before visible content; insert CSS as text, never HTML.
+- CSS snippets are local-only. Preserve the customization selectors documented in [docs/leitura.md](docs/leitura.md#personalização-local) and the `?sem-css=1` recovery path. Apply snippets after generated styles but before visible content; insert CSS as text, never HTML.
 - Static and runnable code share `--code-*` tokens and `--code-font`. Keep the shared Shiki configuration in `markdown.shikiConfig` so Markdown and MDX follow the selected palette.
 - Hide the homepage introduction when there is valid reading history or a valid semester pin, including before first paint. Clearing history must respect pins. Pinned semesters duplicate course cards at the top; original fragment IDs belong only to the catalogue.
 
