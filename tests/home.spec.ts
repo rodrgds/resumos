@@ -60,6 +60,7 @@ test('semester pins add horizontal cards at the top and survive reload', async (
   await pin.click();
   const pinned = page.locator('[data-pinned-semesters]');
   await expect(pinned).toBeVisible();
+  await expect(page.locator('#page-hero')).toBeHidden();
   await expect(original).toBeVisible();
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => scrollY)).toBe(0);
@@ -68,6 +69,7 @@ test('semester pins add horizontal cards at the top and survive reload', async (
   expect(bounds.width).toBeGreaterThan(bounds.height);
   await page.reload();
   await expect(pinned).toBeVisible();
+  await expect(page.locator('#page-hero')).toBeHidden();
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
   await pinned.locator('[data-acronym="PUP"]').click();
   await expect(page.locator('#course-detail')).toBeVisible();
@@ -75,6 +77,7 @@ test('semester pins add horizontal cards at the top and survive reload', async (
   await expect(pinned.locator('[data-acronym="PUP"]')).toBeFocused();
   await pinned.locator('.semester-pin').click();
   await expect(pinned).toBeHidden();
+  await expect(page.locator('#page-hero')).toBeVisible();
   await expect(pin).toHaveAttribute('aria-pressed', 'false');
   await page.reload();
   await expect(pinned).toBeHidden();

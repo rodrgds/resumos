@@ -1,5 +1,30 @@
 import { expect, test } from '@playwright/test';
 
+test('pins hide the introduction before page scripts and survive clearing history', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.locator('#cadeiras .semester-pin').first().click();
+  await page.goto('/exemplo/apontamentos/');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Limpar histórico' }).click();
+  await expect(page.locator('#page-hero')).toBeHidden();
+  await expect(
+    page.locator('[data-pinned-semesters] .semester-pin'),
+  ).toBeFocused();
+  await page.route('**/*.js', (route) => route.abort());
+  await page.reload();
+  await expect(page.locator('#page-hero')).toBeHidden();
+});
+
+test('unknown saved pins do not hide the introduction', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('resumos-pinned-semesters', '["99-9",42]'),
+  );
+  await page.goto('/');
+  await expect(page.locator('#page-hero')).toBeVisible();
+});
+
 test('clearing reading history restores the introduction', async ({ page }) => {
   await page.goto('/');
   await page.goto('/exemplo/apontamentos/');

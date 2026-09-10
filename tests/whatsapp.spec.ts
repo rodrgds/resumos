@@ -32,8 +32,6 @@ test('WhatsApp offers manual copying when clipboard access fails and preserves t
   await expect(field).toBeVisible();
   await expect(field).toHaveValue(message);
   await expect(field).toBeFocused();
-  await page
-    .getByRole('button', { name: 'Copiar pergunta', exact: true })
-    .click();
+  await page.getByRole('link', { name: /Gemini/ }).click();
   await expect(field).toHaveValue(/Lê primeiro a versão Markdown:/);
 });
