@@ -1,6 +1,7 @@
 import { readingThemes } from '../data/reading-themes';
 import { readingFonts } from '../data/reading-fonts';
 import { readingHistory } from '../lib/reading-history';
+import { readSemesterPins } from '../lib/pinned-semesters';
 import { codeFonts } from '../data/code-fonts';
 const allowed = {
   theme: ['system', 'light', 'dark'],
@@ -15,6 +16,11 @@ const allowed = {
 type Key = keyof typeof allowed;
 const storageKey = 'resumos-preferences';
 const root = document.documentElement;
+const semesters = document.querySelector('#pinnable-semesters');
+if (semesters)
+  root.dataset.hasPins = String(
+    readSemesterPins(JSON.parse(semesters.textContent!)).size > 0,
+  );
 const readingPages = document.querySelector('#reading-pages');
 if (readingPages) {
   const paths = new Set(

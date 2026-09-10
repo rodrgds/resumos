@@ -83,7 +83,9 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
     'href',
     'https://gemini.google.com/app',
   );
-  await page.getByRole('button', { name: 'Copiar pergunta' }).click();
+  await expect(page.locator('#ai-menu details, #copy-prompt')).toHaveCount(0);
+  await expect(page.locator('#ai-status')).toBeHidden();
+  await page.getByRole('link', { name: /Gemini/ }).click();
   await expect(
     page.getByRole('textbox', { name: 'Mensagem para copiar' }),
   ).toBeFocused();

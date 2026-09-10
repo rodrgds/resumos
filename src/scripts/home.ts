@@ -1,3 +1,5 @@
+import { readSemesterPins, SEMESTER_PIN_KEY } from '../lib/pinned-semesters';
+
 const detail = document.querySelector<HTMLDialogElement>('#course-detail')!;
 const cards = document.querySelectorAll<HTMLButtonElement>(
   'button[data-course]',
@@ -33,21 +35,11 @@ function focusCourse() {
 window.addEventListener('hashchange', focusCourse);
 focusCourse();
 
-const PIN_KEY = 'resumos-pinned-semesters';
-function readPins(): string[] {
-  try {
-    const saved = JSON.parse(localStorage.getItem(PIN_KEY) || '[]');
-    return Array.isArray(saved)
-      ? saved.filter((id): id is string => typeof id === 'string')
-      : [];
-  } catch {
-    return [];
-  }
-}
-const pins = new Set(readPins());
 const originals = [
   ...document.querySelectorAll<HTMLElement>('.semester[data-semester]'),
 ];
+const semesterIds = originals.map((section) => section.dataset.semester!);
+const pins = readSemesterPins(semesterIds);
 const pinnedRoot = document.querySelector<HTMLElement>(
   '[data-pinned-semesters]',
 );
@@ -90,6 +82,7 @@ function renderPins() {
     pinnedRoot.append(copy);
   }
   pinnedRoot.hidden = !pinnedRoot.childElementCount;
+  document.documentElement.dataset.hasPins = String(!pinnedRoot.hidden);
 }
 
 document.addEventListener('click', (event) => {
@@ -103,7 +96,7 @@ document.addEventListener('click', (event) => {
   if (wasPinned) pins.delete(id);
   else pins.add(id);
   try {
-    localStorage.setItem(PIN_KEY, JSON.stringify([...pins]));
+    localStorage.setItem(SEMESTER_PIN_KEY, JSON.stringify([...pins]));
   } catch {
     /* Pins still work during this visit. */
   }
@@ -122,9 +115,9 @@ document.addEventListener('click', (event) => {
   }
 });
 window.addEventListener('storage', (event) => {
-  if (event.key !== PIN_KEY && event.key !== null) return;
+  if (event.key !== SEMESTER_PIN_KEY && event.key !== null) return;
   pins.clear();
-  readPins().forEach((id) => pins.add(id));
+  readSemesterPins(semesterIds).forEach((id) => pins.add(id));
   renderPins();
 });
 renderPins();

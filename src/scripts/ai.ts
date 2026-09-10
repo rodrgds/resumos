@@ -8,17 +8,19 @@ import {
 } from '@floating-ui/dom';
 const menu = document.querySelector<HTMLElement>('#ai-menu')!;
 const promptField = document.querySelector<HTMLTextAreaElement>('#ai-prompt')!;
-const aiStatus = document.querySelector('#ai-status')!;
+const aiStatus = document.querySelector<HTMLElement>('#ai-status')!;
 
 const aiPrompt = promptField.value;
 
 async function copyMessage(message: string, confirmation: string) {
+  aiStatus.hidden = false;
+  promptField.hidden = true;
   try {
     await navigator.clipboard.writeText(message);
     aiStatus.textContent = confirmation;
   } catch {
     promptField.value = message;
-    menu.querySelector('details')!.open = true;
+    promptField.hidden = false;
     promptField.focus();
     promptField.select();
     aiStatus.textContent = 'Copia a mensagem abaixo com Ctrl ou Cmd C.';
@@ -41,7 +43,6 @@ menu
     );
   });
 
-document.querySelector('#copy-prompt')!.addEventListener('click', copyPrompt);
 menu
   .querySelector('[data-provider="gemini"]')!
   .addEventListener('click', copyPrompt);
@@ -56,6 +57,8 @@ menu.addEventListener('toggle', (event) => {
   cleanup?.();
   if ((event as ToggleEvent).newState !== 'open') {
     delete menu.dataset.positioned;
+    aiStatus.hidden = true;
+    promptField.hidden = true;
     return;
   }
   cleanup = autoUpdate(trigger, menu, () => {
