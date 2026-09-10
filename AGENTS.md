@@ -45,3 +45,5 @@
 - Appearance controls are directly visible radio groups and sliders. Preserve `resumos-preferences`, CSS snippet recovery and reset behavior when changing the sidebar.
 
 - CSS preset fixes must also handle saved defaults before paint. Upgrade only exact known preset CSS; preserve user edits, names, toggles and deletions. Offer missing presets explicitly, disabled.
+
+- Brain rot display and volume preferences belong in `brainrot-preferences.ts`, with controls in `brainrot-settings.ts`. Persist only settings in localStorage, never lesson text or recordings. Volume changes use the speech player without regenerating speech; caption modes never split TTS sentences. Keep the desktop volume hover path connected, touch mute direct, and caption motion optional with reduced-motion support.

@@ -7,8 +7,9 @@ import { SpeechPlayer } from '../lib/brainrot-speech-player';
 import type { SpeechSource } from '../lib/brainrot-speech-stream';
 import { ReadingTimeline, readingTime } from '../lib/brainrot-timeline';
 import { setupVoiceRecording } from './brainrot-recording';
+import { setupBrainrotSettings } from './brainrot-settings';
 
-export function setupBrainrot() {
+export async function setupBrainrot() {
   const dialog = document.querySelector<HTMLDialogElement>('#brainrot')!;
   const body = document.querySelector('[data-annotatable]')!;
   const title =
@@ -26,10 +27,9 @@ export function setupBrainrot() {
   const rate = get<HTMLSelectElement>('[data-br-rate]');
   const voiceMode = get<HTMLSelectElement>('[data-br-voice]');
   const files = get<HTMLInputElement>('[data-br-files]');
-  const options = get<HTMLDetailsElement>('.brainrot-options');
   const feedElement = get('.brainrot-feed');
   const stage = get('.brainrot-stage');
-  const voiceButton = get<HTMLButtonElement>('[data-br-voice-open]');
+  const settingsButton = get<HTMLButtonElement>('[data-br-settings-open]');
   const voicePanel = get<HTMLDialogElement>('#brainrot-voice-settings');
   const sharePanel = get<HTMLDialogElement>('#brainrot-share');
   const panels = [voicePanel, sharePanel];
@@ -107,6 +107,7 @@ export function setupBrainrot() {
   let currentMark: Element | undefined;
   let previousReading = { index: -1, elapsed: 0, word: 0 };
   let buffering = false;
+  let settings: ReturnType<typeof setupBrainrotSettings>;
 
   get('[data-br-title]').textContent = title;
   function renderProgress(position = timeline.position(index, elapsed)) {
@@ -160,9 +161,10 @@ export function setupBrainrot() {
     )
       wordIndex = Math.max(wordIndex, previousReading.word);
     previousReading = { index, elapsed: spokenElapsed, word: wordIndex };
-    const start = Math.floor(wordIndex / 6) * 6;
-    const visibleWords = tokens.slice(start, start + 6);
-    const key = `${index}:${start}`;
+    const count = settings.wordsPerCaption;
+    const start = Math.floor(wordIndex / count) * count;
+    const visibleWords = tokens.slice(start, start + count);
+    const key = `${index}:${start}:${count}`;
     if (key !== renderedCaption) {
       renderedCaption = key;
       caption.replaceChildren(
@@ -175,6 +177,7 @@ export function setupBrainrot() {
             : [span];
         }),
       );
+      settings.pop(caption);
     }
     const mark = !highlight.checked
       ? undefined
@@ -205,6 +208,7 @@ export function setupBrainrot() {
       );
       visual.hidden = !cue.visual;
       visual.scrollTop = 0;
+      settings.pop(visual);
     }
     renderReading();
     play.querySelector('span')!.textContent = preparing
@@ -389,7 +393,7 @@ export function setupBrainrot() {
     tapCancelled = true;
   });
   stage.addEventListener('click', (event) => {
-    if (options.open || !isPlaybackSurface(event.target)) return;
+    if (!isPlaybackSurface(event.target)) return;
     const moved = Math.hypot(
       event.clientX - pointerStart.x,
       event.clientY - pointerStart.y,
@@ -397,8 +401,15 @@ export function setupBrainrot() {
     if (moved > 10 || tapCancelled) return;
     playing ? pause() : void start();
   });
-  voiceButton.addEventListener('click', () => voicePanel.showModal());
-  highlight.addEventListener('change', renderReading);
+  settingsButton.addEventListener('click', () => voicePanel.showModal());
+  get('.brainrot-shell').addEventListener('animationend', (event) => {
+    if (
+      (event as AnimationEvent).animationName === 'brainrot-phone-in' &&
+      dialog.open &&
+      !dialog.dataset.closing
+    )
+      dialog.dataset.entered = 'true';
+  });
   stage.addEventListener('click', (event) => {
     if ((event.target as Element).closest('.brainrot-video-preview')) pause();
   });
@@ -451,12 +462,7 @@ export function setupBrainrot() {
     });
   }
   get('.brainrot-tabbar [aria-current]').addEventListener('click', () => {
-    options.open = false;
     feedElement.focus();
-  });
-  dialog.addEventListener('click', (event) => {
-    if (!(event.target as Element).closest('.brainrot-options'))
-      options.open = false;
   });
   async function requestClose() {
     if (!dialog.open || dialog.dataset.closing === 'true') return;
@@ -473,11 +479,6 @@ export function setupBrainrot() {
   dialog.addEventListener('cancel', (event) => {
     if (event.target !== dialog || event.defaultPrevented) return;
     event.preventDefault();
-    if (options.open) {
-      options.open = false;
-      options.querySelector('summary')?.focus();
-      return;
-    }
     void requestClose();
   });
   get('[data-br-prev]').addEventListener('click', () => changeCue(index - 1));
@@ -519,9 +520,6 @@ export function setupBrainrot() {
     timeline.setSpeechDuration(index, audio.duration);
     if (!scrubbing) renderProgress();
   });
-  rate.addEventListener('change', () => {
-    audio.playbackRate = Number(rate.value);
-  });
   function changeVoice() {
     showVoiceCost();
     pause();
@@ -531,11 +529,12 @@ export function setupBrainrot() {
     elapsed = 0;
     status.hidden = true;
     timeline.setMode(voiceMode.value === 'silent' ? 'silent' : 'voice');
-    voiceButton.dataset.silent = String(voiceMode.value === 'silent');
     render();
   }
-  voiceMode.addEventListener('change', changeVoice);
-  setupVoiceRecording(voicePanel, { pause, changed: changeVoice });
+  const recordingReady = setupVoiceRecording(voicePanel, {
+    pause,
+    changed: () => settings.updateVoice(),
+  });
   files.addEventListener('change', () => {
     const selected = Array.from(files.files || []).filter((file) =>
       file.type.startsWith('video/'),
@@ -552,7 +551,7 @@ export function setupBrainrot() {
       })),
     );
     feed.open();
-    options.open = false;
+    voicePanel.close();
   });
   dialog.addEventListener('keydown', (event) => {
     if (
@@ -569,6 +568,7 @@ export function setupBrainrot() {
   });
   document.addEventListener('brainrot:open', () => {
     delete dialog.dataset.closing;
+    delete dialog.dataset.entered;
     savedOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     feed.open();
@@ -577,6 +577,7 @@ export function setupBrainrot() {
   });
   function close() {
     delete dialog.dataset.closing;
+    delete dialog.dataset.entered;
     for (const panel of panels) if (panel.open) panel.close();
     scrubbing = false;
     dialog.dataset.scrubbing = 'false';
@@ -590,7 +591,6 @@ export function setupBrainrot() {
     for (const url of customURLs) URL.revokeObjectURL(url);
     customURLs = [];
     files.value = '';
-    options.open = false;
     feed.setClips(brainrotClips);
     document.body.style.overflow = savedOverflow;
   }
@@ -606,4 +606,17 @@ export function setupBrainrot() {
     clearAudio();
     setStatus('O áudio não abriu. Toca para tentar de novo.');
   });
+  await recordingReady;
+  settings = setupBrainrotSettings(dialog, {
+    voiceChanged: changeVoice,
+    rateChanged: (value) => {
+      audio.playbackRate = value;
+    },
+    readingChanged: renderReading,
+    volumeChanged: (value) => {
+      audio.volume = value;
+    },
+  });
+  timeline.setMode(voiceMode.value === 'silent' ? 'silent' : 'voice');
+  showVoiceCost();
 }
