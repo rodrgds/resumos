@@ -362,6 +362,9 @@ test('margin markers never cover lesson text on narrow screens', async ({
   const marker = (await pin.boundingBox())!;
   const text = (await page.locator('.lesson-body').boundingBox())!;
   expect(marker.x).toBeGreaterThanOrEqual(text.x + text.width + 4);
+  expect(marker.x + marker.width).toBeLessThanOrEqual(390);
+  await pin.click();
+  await expect(page.getByLabel('O teu comentário')).toBeFocused();
 });
 
 test('margin pin keeps keyboard focus through resize and editing', async ({
