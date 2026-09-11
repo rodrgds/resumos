@@ -1,0 +1,155 @@
+---
+import { getManimAnimation } from '../lib/manim-assets.mjs';
+import Icon from './Icon.astro';
+
+interface Props {
+  animation: string;
+  title: string;
+  description: string;
+}
+const { animation, title, description } = Astro.props;
+if (!title?.trim() || !description?.trim())
+  throw new Error('Manim requires a title and a description of the animation.');
+const { base, width, height } = getManimAnimation(animation);
+const id = `manim-${crypto.randomUUID()}`;
+---
+
+<figure class="manim-figure" data-manim data-base={base} data-title={title}>
+  <div class="manim-media" data-pagefind-ignore data-annotation-ignore>
+    <div class="manim-stage">
+      <video
+        muted
+        loop
+        playsinline
+        preload="none"
+        width={width}
+        height={height}
+        poster={`${base}/feup-light-red.webp`}
+        aria-label={title}
+        aria-describedby={id}
+      >
+        <source
+          src={`${base}/feup-dark-red.mp4`}
+          type="video/mp4"
+          media="(prefers-color-scheme: dark)"
+        />
+        <source src={`${base}/feup-light-red.mp4`} type="video/mp4" />O
+        navegador não suporta este vídeo. A descrição está abaixo.
+      </video>
+      <button
+        type="button"
+        class="manim-toggle"
+        aria-label={`Pausar: ${title}`}
+        aria-describedby={id}
+        hidden
+      >
+        <span class="manim-paused" hidden>
+          <Icon name="play-solid" size={26} />
+        </span>
+      </button>
+    </div>
+    <script is:inline>
+      // Choose the saved palette before the video paints. No movie is preloaded.
+      {
+        const figure = document.currentScript.closest('[data-manim]');
+        const root = document.documentElement.dataset;
+        const palette = root.palette || 'feup';
+        const theme =
+          root.theme ||
+          (matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light');
+        const variant = `${palette}-${theme}${palette === 'feup' ? `-${root.accent || 'red'}` : ''}`;
+        const video = figure.querySelector('video');
+        video.poster = `${figure.dataset.base}/${variant}.webp`;
+        video.src = `${figure.dataset.base}/${variant}.mp4`;
+        figure.dataset.variant = variant;
+      }
+    </script>
+    <noscript>
+      <p class="manim-fallback">
+        <a href={`${base}/feup-light-red.mp4`}>Abre o vídeo: {title}</a>
+      </p>
+    </noscript>
+    <p class="manim-error" role="status" hidden>
+      Não foi possível carregar a animação.{' '}
+      <a href={`${base}/feup-light-red.mp4`}>Abre o vídeo</a> ou acompanha a
+      descrição abaixo.
+    </p>
+  </div>
+  <figcaption id={id}>
+    <strong>{title}.</strong> {description}
+  </figcaption>
+</figure>
+
+<script>
+  import '../scripts/manim';
+</script>
+
+<style>
+  .manim-figure {
+    margin: 1.5em 0;
+  }
+  .manim-media {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .manim-stage {
+    position: relative;
+  }
+  video {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+    background: var(--surface);
+    color-scheme: inherit;
+  }
+  .manim-toggle {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .manim-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -4px;
+  }
+  .manim-paused {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+  }
+  .manim-paused :global(svg) {
+    translate: 1px 0;
+  }
+  [hidden] {
+    display: none;
+  }
+  figcaption {
+    margin-top: 0.65em;
+    color: var(--text);
+    font-size: 0.9em;
+    line-height: 1.65;
+  }
+  .manim-error,
+  .manim-fallback {
+    padding: 0.75em 1em;
+    font-size: 0.9em;
+  }
+</style>

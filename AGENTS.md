@@ -11,6 +11,7 @@
 - Leave root `/data/` and `/_data/` as ignored local reference material. Never publish them. Keep ignore rules rooted so `src/data/` remains tracked.
 - Pagefind indexes built public content only. Keep study tools and local notes outside `data-pagefind-body`; use `data-pagefind-ignore` for controls. Rebuild to refresh development search.
 - DOT renders through `src/lib/dot.ts` at build time. Do not ship Typst or DOT compilers to visitors.
+- Manim scenes are trusted Python, rendered locally with `devenv --profile manim shell -- npm run render:manim`. Register scenes and local dependencies in `src/data/manim-scenes.json`; commit the generated manifests and media. `Manim.astro` validates render freshness during the site build. Use semantic colours from `scripts/manim/resumos_manim.py`, keep descriptions outside the ignored player, and keep the custom player looping only while visible. Preserve reader pauses and position across built-in theme changes; reduced motion starts paused. Keep the frame at the video’s intrinsic aspect ratio. Cloudflare and readers never run Python.
 - Cloudflare Pages builds pushes to `main` with `scripts/cloudflare-build.sh`. Keep its pinned Typst release in sync with CI and the documented environment.
 
 - AI actions belong on lessons, not the homepage. Send only the public page URL and a reading prompt; never send page text or private notes.

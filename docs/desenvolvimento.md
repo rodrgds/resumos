@@ -23,6 +23,8 @@ npm run preview
 
 O build fica em `dist/`. Os testes compilam o site em `.test-dist/` e verificam-no com Chromium. Para usar um navegador existente, define `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`. Em CI, o workflow instala o Chromium.
 
+As animações Manim usam o perfil opcional `devenv --profile manim shell`. `npm run render:manim` gera as cenas registadas em `src/data/manim-scenes.json` e ignora as que já estão atualizadas. Inclui os vídeos, posters e manifests gerados no Git. O build valida a correspondência com as fontes sem precisar de Manim ou FFmpeg. Consulta [o guia de contribuição](../CONTRIBUTING.md#animações-com-manim) para preparar uma cena.
+
 ## Organização e dados
 
 A página inicial reúne as cadeiras de 2026/27 por ano e semestre. As cadeiras com conteúdo publicado dão acesso aos apontamentos. A [cadeira fictícia de exemplo](https://resumos.rgo.pt/exemplo/) mostra os formatos de conteúdo.
