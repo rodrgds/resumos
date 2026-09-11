@@ -106,7 +106,8 @@ export function annotationMarks(root: HTMLElement, edit: (id: string) => void) {
       const top = Math.max(rect!.top + scrollY, lastPin + 34);
       lastPin = top;
       pin.style.top = `${top}px`;
-      pin.style.left = `${Math.min(page.right + scrollX + 8, innerWidth + scrollX - 32)}px`;
+      pin.style.left = `${page.right + scrollX + 4}px`;
+      pin.style.maxWidth = `${Math.max(0, innerWidth - page.right - 4)}px`;
       pin.addEventListener('click', () => edit(id));
       layer.append(pin);
     }
