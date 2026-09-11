@@ -40,8 +40,6 @@ const symbols: Record<string, string> = {
   '⇒': 'implica',
   '∀': 'para todo',
   '∃': 'existe',
-  '(': 'abre parênteses',
-  ')': 'fecha parênteses',
   ℝ: 'reais',
   ℕ: 'naturais',
 };
@@ -77,6 +75,7 @@ function mathSpeech(node: Element): string {
   }
   if (parts.length) return parts.join(' ');
   const value = node.textContent?.trim() || '';
+  if (value === '(' || value === ')') return '';
   return symbols[value] || value;
 }
 

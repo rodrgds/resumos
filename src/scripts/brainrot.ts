@@ -9,6 +9,8 @@ import { ReadingTimeline, readingTime } from '../lib/brainrot-timeline';
 import { setupVoiceRecording } from './brainrot-recording';
 import { setupBrainrotSettings } from './brainrot-settings';
 
+const LOADING_STATUS_DELAY_MS = 1_000;
+
 export async function setupBrainrot() {
   const dialog = document.querySelector<HTMLDialogElement>('#brainrot')!;
   const body = document.querySelector('[data-annotatable]')!;
@@ -35,14 +37,37 @@ export async function setupBrainrot() {
   const panels = [voicePanel, sharePanel];
   const highlight = get<HTMLInputElement>('[data-br-highlight]');
   const audio = new SpeechPlayer();
-  function setStatus(message: string, options: { hidden?: boolean } = {}) {
-    if (
-      status.textContent === message &&
-      status.hidden === (options.hidden ?? false)
-    )
-      return;
+  let loadingStatusTimer: number | undefined;
+  let loadingStatusMessage = '';
+  let loadingStatusVisible = false;
+  function renderStatus(message: string, hidden = false) {
+    if (status.textContent === message && status.hidden === hidden) return;
     status.textContent = message;
-    status.hidden = options.hidden ?? false;
+    status.hidden = hidden;
+  }
+  function clearLoadingStatus() {
+    if (loadingStatusTimer !== undefined)
+      window.clearTimeout(loadingStatusTimer);
+    loadingStatusTimer = undefined;
+    loadingStatusMessage = '';
+    loadingStatusVisible = false;
+  }
+  function setStatus(message: string, options: { hidden?: boolean } = {}) {
+    clearLoadingStatus();
+    renderStatus(message, options.hidden ?? false);
+  }
+  function setLoadingStatus(message: string) {
+    loadingStatusMessage = message;
+    if (loadingStatusVisible) {
+      renderStatus(message);
+      return;
+    }
+    if (loadingStatusTimer !== undefined) return;
+    loadingStatusTimer = window.setTimeout(() => {
+      loadingStatusTimer = undefined;
+      loadingStatusVisible = true;
+      renderStatus(loadingStatusMessage);
+    }, LOADING_STATUS_DELAY_MS);
   }
   function showVoiceCost() {
     const selected = brainrotVoices.find(
@@ -234,6 +259,7 @@ export async function setupBrainrot() {
     cancelAnimationFrame(frame);
     audio.pause();
     feed.setPlaying(false);
+    clearLoadingStatus();
     status.hidden = true;
     if (preparing) {
       preparing = false;
@@ -276,7 +302,7 @@ export async function setupBrainrot() {
       saving: 'A guardar o áudio para a próxima vez…',
       download: `A descarregar os ficheiros da voz… ${Math.round((progress.loaded ?? 0) / 1_048_576)} MB recebidos`,
     };
-    setStatus(
+    setLoadingStatus(
       `${messages[progress.phase] ?? 'A preparar o áudio…'} · trecho ${cueIndex + 1} de ${cues.length}`,
     );
   }
@@ -285,12 +311,9 @@ export async function setupBrainrot() {
     if (!playing || preparing) return;
     if (audio.waiting !== buffering) {
       buffering = audio.waiting;
-      setStatus(
-        buffering
-          ? 'A voz ainda está a gerar o resto deste trecho…'
-          : 'Voz local · Português de Portugal',
-        { hidden: !buffering },
-      );
+      if (buffering)
+        setLoadingStatus('A voz ainda está a gerar o resto deste trecho…');
+      else setStatus('Voz local · Português de Portugal', { hidden: true });
     }
     if (!audio.waiting)
       elapsed += ((now - lastTick) / 1000) * Number(rate.value);
