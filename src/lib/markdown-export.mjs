@@ -115,6 +115,11 @@ export default function markdownExport() {
             replacement: (_content, node) =>
               `\n\n[Vídeo: ${node.getAttribute('data-title')}](https://www.youtube.com/watch?v=${node.getAttribute('data-video')})\n\n`,
           });
+          converter.addRule('manim', {
+            filter: (node) => node.hasAttribute('data-manim'),
+            replacement: (content, node) =>
+              `\n\n[Animação: ${node.getAttribute('data-title')}](${new URL(`${node.getAttribute('data-base')}/feup-light-red.mp4`, pageURL).href})\n\n${content.trim()}\n\n`,
+          });
           converter.addRule('links', {
             filter: 'a',
             replacement: (content, node) => {

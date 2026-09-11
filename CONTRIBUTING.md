@@ -116,6 +116,40 @@ As páginas de exemplo usam CeTZ 0.5.2, CeTZ-Plot 0.1.4 e Fletcher 0.5.8. Fixa s
 
 O vídeo mostra uma miniatura do YouTube. O leitor só carrega o player quando clica.
 
+### Animações com Manim
+
+Usa [Manim Community](https://docs.manim.community/en/stable/) quando o movimento ajudar a explicar uma mudança. Vê [os dois exemplos](/exemplo/animacoes/) e os seus ficheiros `src/content/exemplo/vetores.py` e `derivada.py`.
+
+1. Guarda a cena Python em `src/content/<cadeira>/`. Importa `palette` de `resumos_manim` e usa `palette['text']`, `palette['accent']` e `palette['diagram-secondary']` nos objetos. O adaptador define o fundo com `palette['surface']`. Usa rótulos ou traços diferentes para que a cor não seja a única distinção.
+2. Regista um identificador em `src/data/manim-scenes.json`. Indica `source`, o nome da classe em `scene`, um instante representativo em segundos em `posterTime` e os ficheiros locais importados ou lidos em `dependencies`. Guarda esses ficheiros no repositório. O instante do poster deve ficar dentro da duração da cena.
+3. Na raiz do projeto, gera os ficheiros com o perfil opcional de Devenv:
+
+   ```sh
+   devenv --profile manim shell -- npm run render:manim -- soma-vetores
+   ```
+
+   Substitui `soma-vetores` pelo identificador registado. Sem identificadores, o comando atualiza todas as cenas. O perfil fornece Manim 0.21.0, FFmpeg e a fonte DejaVu Sans, fixados pelo `devenv.lock`. O ambiente normal de escrita não precisa destes programas.
+
+4. Usa o componente na página MDX:
+
+   ```mdx
+   import Manim from '../../../components/Manim.astro';
+
+   <Manim
+     animation="soma-vetores"
+     title="Somar dois deslocamentos"
+     description="O vetor v desloca-se até começar na ponta de u. A soma liga o ponto de partida ao ponto final e tem coordenadas (4, 3)."
+   />
+   ```
+
+5. Inclui a cena, as dependências, `src/generated/manim/<identificador>.json` e `public/manim/<identificador>/` no pull request. Corre os checks habituais e revê a página num ecrã pequeno, em claro e escuro.
+
+Os vídeos têm 720p e 30 fotogramas por segundo. O comando gera MP4s e posters para todas as paletas do site, incluindo os três acentos FEUP. Só a versão escolhida é carregada. O player repete a animação enquanto está visível e pausa fora do ecrã ou num separador oculto. Clicar, tocar, premir Espaço ou Enter alterna entre pausa e reprodução. Só aparece um pequeno indicador quando está parado. A preferência de movimento reduzido faz a animação começar parada, sem carregar o vídeo. A descrição deve explicar a mudança e o resultado sem depender do movimento.
+
+Mudar o tema mantém a posição e o estado de reprodução. As cores dentro do vídeo acompanham as paletas integradas; snippets CSS e a fonte de leitura não alteram os píxeis já gerados. A legenda e a moldura continuam a usar os estilos da página. Escolhe texto grande na cena e conserva as fórmulas importantes na página, onde podem aumentar com as preferências do leitor.
+
+O build verifica se os ficheiros gerados correspondem à cena, às dependências declaradas, às paletas e ao renderizador. Se pedir para voltar a gerar uma cena, corre o comando indicado e inclui os novos ficheiros. O build normal e o Cloudflare usam os vídeos guardados, sem executar Python. Revê o código das cenas como qualquer outro programa do repositório; o renderizador executa Python com acesso ao computador do autor.
+
 ## Antes de enviar
 
 - Escreve em português simples, com as tuas palavras. Indica as fontes.
