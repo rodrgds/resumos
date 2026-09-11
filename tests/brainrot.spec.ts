@@ -146,6 +146,59 @@ async function openReader(page: Page) {
   return dialog;
 }
 
+test('voice preparation status appears only after one second', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockVoice(page, false, 5, 30, { hold: true });
+  const dialog = await openReader(page);
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as VoiceTestWindow).brainrotTest.texts.length,
+      ),
+    )
+    .toBe(1);
+  const status = dialog.locator('[data-br-status]');
+  await expect(status).toBeHidden();
+  await page.waitForTimeout(1_050);
+  await expect(status).toBeVisible();
+  await expect(status).toContainText('trecho 1 de');
+});
+
+test('short voice preparation never flashes a loading status', async ({
+  page,
+}) => {
+  await mockVoice(page);
+  const dialog = await openReader(page);
+  await dialog.locator('[data-br-status]').evaluate((status) => {
+    const visibleStatuses: string[] = [];
+    Object.assign(window, { brainrotVisibleStatuses: visibleStatuses });
+    new MutationObserver(() => {
+      if (!(status as HTMLElement).hidden)
+        visibleStatuses.push(status.textContent || '');
+    }).observe(status, {
+      attributes: true,
+      attributeFilter: ['hidden'],
+      childList: true,
+      subtree: true,
+    });
+  });
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  await expect(dialog.locator('[data-br-status]')).toHaveText(
+    'Voz local · Português de Portugal',
+  );
+  await page.waitForTimeout(100);
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { brainrotVisibleStatuses: string[] })
+          .brainrotVisibleStatuses,
+    ),
+  ).toEqual([]);
+});
+
 test('voice progress distinguishes download, reference preparation and speech generation', async ({
   page,
 }) => {
@@ -992,13 +1045,13 @@ test('formulas remain readable and use mathematical speech rather than duplicate
   await expect(dialog.locator('.brainrot-caption')).toContainText('somatório');
   await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
   await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
-  expect(
-    await page.evaluate(() =>
-      (
-        window as unknown as { brainrotTest: { texts: string[] } }
-      ).brainrotTest.texts.join(' '),
-    ),
-  ).toContain('somatório');
+  const spoken = await page.evaluate(() =>
+    (
+      window as unknown as { brainrotTest: { texts: string[] } }
+    ).brainrotTest.texts.join(' '),
+  );
+  expect(spoken).toContain('somatório');
+  expect(spoken).not.toMatch(/abre parênteses|fecha parênteses/);
 });
 
 test('web examples show their published source rather than the visitor edit', async ({
