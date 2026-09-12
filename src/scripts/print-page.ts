@@ -23,8 +23,18 @@ function preparePrint() {
     document.body.append(template.content.cloneNode(true));
   updatePrintOptions();
 }
-function printPage() {
+async function printPage() {
   preparePrint();
+  await Promise.race([
+    Promise.all(
+      [
+        ...document.querySelectorAll<HTMLImageElement>(
+          '[data-print-page] .video-thumbnail, [data-print-page] .manim-print-poster',
+        ),
+      ].map((image) => image.decode().catch(() => {})),
+    ),
+    new Promise((resolve) => setTimeout(resolve, 5000)),
+  ]);
   window.print();
 }
 if (button) {

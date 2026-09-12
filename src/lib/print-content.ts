@@ -82,6 +82,76 @@ export function preparePrintContent(html: string) {
         if (has(child, 'data-help')) continue;
         if (attr(child, 'class')?.split(' ').includes('exercise-explanation'))
           continue;
+        if (has(child, 'data-manim')) {
+          const video = find(child, (element) => element.tagName === 'video');
+          const caption = child.childNodes.find(
+            (element) => isElement(element) && element.tagName === 'figcaption',
+          );
+          if (video && caption) {
+            const poster = parseFragment(
+              '<img class="manim-print-poster">',
+            ).childNodes.find(isElement)!;
+            poster.attrs.push(
+              { name: 'src', value: attr(video, 'poster')! },
+              { name: 'alt', value: attr(child, 'data-title')! },
+              { name: 'loading', value: 'eager' },
+            );
+            child.childNodes = [poster, caption];
+          }
+        }
+        if (has(child, 'data-tabs')) {
+          const tablist = child.childNodes.find(
+            (element) =>
+              isElement(element) && attr(element, 'role') === 'tablist',
+          );
+          const panels = child.childNodes
+            .filter(isElement)
+            .filter((element) => attr(element, 'role') === 'tabpanel');
+          for (const panel of panels) {
+            const label =
+              tablist &&
+              find(
+                tablist,
+                (element) =>
+                  attr(element, 'id') === attr(panel, 'aria-labelledby'),
+              );
+            if (label) {
+              const heading = parseFragment(
+                `<h3>${serialize(label)}</h3>`,
+              ).childNodes.find(isElement)!;
+              panel.childNodes.unshift(heading);
+            }
+            panel.attrs = panel.attrs.filter(
+              (item) =>
+                !['hidden', 'role', 'aria-labelledby', 'tabindex'].includes(
+                  item.name,
+                ),
+            );
+          }
+          child.childNodes = panels;
+        }
+        if (has(child, 'data-video')) {
+          const thumbnail = find(
+            child,
+            (element) =>
+              element.tagName === 'img' &&
+              attr(element, 'class')?.split(' ').includes('video-thumbnail') ===
+                true,
+          );
+          if (thumbnail) {
+            thumbnail.attrs = thumbnail.attrs.filter(
+              (item) => !['alt', 'loading', 'decoding'].includes(item.name),
+            );
+            thumbnail.attrs.push(
+              {
+                name: 'alt',
+                value: attr(child, 'data-title') || 'Vídeo do YouTube',
+              },
+              { name: 'loading', value: 'eager' },
+            );
+            child.childNodes = [thumbnail];
+          }
+        }
         if (has(child, 'data-playground')) {
           const source = find(child, (element) => has(element, 'data-source'));
           if (source) {
