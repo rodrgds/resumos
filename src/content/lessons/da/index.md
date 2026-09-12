@@ -3,6 +3,14 @@ title: Desenho de Algoritmos
 description: Técnicas de desenho de algoritmos, de força bruta a programação linear, com análise de custo e projetos em C++.
 section: conteudo
 order: 0
+editorial:
+  basedOn: 2025/26
+  coverage: Apontamentos sobre as técnicas e os problemas listados no percurso. Faltam guiões dos projetos e exercícios de avaliação resolvidos.
+  sources:
+    - title: Programa de DA, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560101
+  gaps:
+    - Correspondência com o programa e a avaliação de 2026/27 por verificar.
 ---
 
 Desenho de Algoritmos é a cadeira onde aprendes a atacar um problema novo com método: reconhecer a sua forma, escolher uma técnica de desenho, analisar o custo e implementar a solução em C++. Vens de AED com estruturas de dados na bagagem; aqui a pergunta muda de "que estrutura uso?" para "que estratégia resolve isto dentro do limite de tempo?".

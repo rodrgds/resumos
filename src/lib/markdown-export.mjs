@@ -36,7 +36,11 @@ export default function markdownExport() {
           '',
         ];
         for (const page of pages) {
-          if (page.pathname.startsWith('_')) continue;
+          if (
+            page.pathname.startsWith('_') ||
+            /\/imprimir\/?$/.test(page.pathname)
+          )
+            continue;
           const path = page.pathname.replace(/^\/|\/$/g, '');
           const document = parse(
             await readFile(join(root, path, 'index.html'), 'utf8'),

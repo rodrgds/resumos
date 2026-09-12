@@ -1,6 +1,8 @@
 ---
 title: Contribuir
 description: Corrige um erro, partilha apontamentos ou experimenta os formatos do site.
+editorial:
+  coverage: Exemplos de escrita, fórmulas, diagramas, código e oito exercícios sobre somas. Esta cadeira é fictícia.
 ---
 
 Não precisas de escrever uma cadeira inteira. Uma correção, um exercício resolvido ou uma página de apontamentos já ajuda.
@@ -19,5 +21,7 @@ Esta cadeira é fictícia. Escolhe uma página para veres o formato esperado e e
 - [Animações com Manim](/exemplo/animacoes/): soma de vetores e aproximação de uma tangente.
 - [Código que podes executar](/exemplo/codigo/): Python, C++, Java, JavaScript, SQL e uma pré-visualização web.
 - [Caixas e imagens](/exemplo/formatacao/): avisos, soluções, separadores e imagens nos dois temas.
+- [Praticar somas e ciclos](/exemplo/praticar-somas/): oito exercícios com pistas, soluções e testes de código.
+- [Folha de consulta](/exemplo/folha-consulta/): referência compacta, fora do percurso de leitura.
 
 Cada exemplo liga ao respetivo ficheiro no GitHub. Seleciona texto para o destacar ou comentar e usa o menu de aparência para testar fontes, tamanhos e cores.
