@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de FP
+title: Cheat sheet de FP
 description: Decisões rápidas sobre Python, coleções, funções, algoritmos e erros, a partir do caderno SofiaViP.
 section: recursos
 studyKind: revision

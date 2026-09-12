@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de F1
+title: Cheat sheet de F1
 description: Relações e passos de cálculo para cinemática, dinâmica, energia, corpos rígidos e sistemas dinâmicos.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que o caderno corresponde não foram confirmadas.
 ---
 
-Esta folha acompanha o [caderno de Física de SofiaViP](https://drive.google.com/file/d/1bnR2QVhahe__spL63pZS_qty_LERPsnI/view). Antes de substituir números, fixa **corpo ou sistema, referencial, sentidos positivos e hipóteses**.
+Antes de substituir números, fixa **corpo ou sistema, referencial, sentidos positivos e hipóteses**.
 
 ## Cinemática e referenciais
 

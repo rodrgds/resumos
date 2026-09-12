@@ -7,7 +7,6 @@ import {
   type Lesson,
 } from '../lib/course-content';
 import LessonLayout from '../layouts/Lesson.astro';
-import PrintPack from '../layouts/PrintPack.astro';
 
 export async function getStaticPaths() {
   const courses = await getCourseGuides();
@@ -20,34 +19,33 @@ export async function getStaticPaths() {
       params: { path: lessonPath(course, entry).slice(1, -1) },
       props: { course, entry },
     })),
-    ...(course.revisions.length || course.exercises.length
-      ? [
-          {
-            params: { path: `${course.path.slice(1)}imprimir` },
-            props: { course, pack: true },
-          },
-        ]
-      : []),
   ]);
 }
 interface Props {
   course: CourseGuide;
   entry?: Lesson;
-  pack?: boolean;
 }
-const { course, entry, pack } = Astro.props;
+const { course, entry } = Astro.props;
 const rendered = entry ? await render(entry) : null;
 const Content = rendered?.Content;
+const practices = await Promise.all(
+  course.exercises
+    .filter((exercise) => entry?.data.practices.includes(exercise.id))
+    .map(render),
+);
+const headings = [
+  ...(rendered?.headings || []),
+  ...(practices.length
+    ? [{ depth: 2, slug: 'exercicios', text: 'Exercícios' }]
+    : []),
+];
 ---
 
-{pack ? (
-  <PrintPack course={course} />
-) : (
-  <LessonLayout
-    course={course}
-    entry={entry}
-    headings={rendered?.headings || []}
-  >
-    {Content ? <Content /> : <p>Escolhe um resumo no menu da cadeira.</p>}
-  </LessonLayout>
-)}
+<LessonLayout course={course} entry={entry} headings={headings}>
+  {Content ? <Content /> : <p>Escolhe um resumo no menu da cadeira.</p>}
+  <Fragment slot="practices">
+    {practices.map(({ Content }) => (
+      <Content />
+    ))}
+  </Fragment>
+</LessonLayout>

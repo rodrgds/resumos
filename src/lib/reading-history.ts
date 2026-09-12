@@ -7,6 +7,7 @@ export interface ReadingVisit {
   visitedAt: number;
   position: number;
   reachedEnd: boolean;
+  exercise?: string;
 }
 
 export function readingHistory(): ReadingVisit[] {
@@ -23,7 +24,10 @@ export function readingHistory(): ReadingVisit[] {
           Number.isFinite(value.position) &&
           value.position >= 0 &&
           value.position <= 1 &&
-          typeof value.reachedEnd === 'boolean',
+          typeof value.reachedEnd === 'boolean' &&
+          (value.exercise === undefined ||
+            (typeof value.exercise === 'string' &&
+              /^[a-z0-9][a-z0-9-]*$/.test(value.exercise))),
       )
       .slice(0, MAX_VISITS);
   } catch {

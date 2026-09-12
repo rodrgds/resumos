@@ -24,17 +24,14 @@ test('AI menu stays next to its trigger and ChatGPT enables web search', async (
 test('course navigation comes from content and keeps drafts private', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await page.locator('#cadeira-fp').click();
   await expect(page).toHaveURL('/cadeiras/fp/');
   const sidebar = page.getByRole('navigation', {
     name: 'Conteúdos da cadeira',
   });
-  if (await page.locator('.course-sidebar > summary').isVisible())
-    await page.locator('.course-sidebar > summary').click();
   await sidebar.getByRole('link', { name: 'Primeiro resumo de teste' }).click();
-  if (await page.locator('.course-sidebar > summary').isVisible())
-    await page.locator('.course-sidebar > summary').click();
   await expect(
     sidebar.getByRole('link', { name: 'Primeiro resumo de teste' }),
   ).toHaveAttribute('aria-current', 'page');
@@ -45,8 +42,6 @@ test('course navigation comes from content and keeps drafts private', async ({
   await expect(
     page.getByRole('heading', { name: 'Segundo resumo de teste', exact: true }),
   ).toBeVisible();
-  if (await page.locator('.course-sidebar > summary').isVisible())
-    await page.locator('.course-sidebar > summary').click();
   await expect(sidebar).not.toContainText('Segredo do rascunho');
   expect((await page.request.get('/cadeiras/fp/rascunho/')).status()).toBe(404);
   expect((await page.request.get('/cadeiras/fp/rascunho.md')).status()).toBe(
@@ -159,7 +154,7 @@ test('reading fonts load locally and survive navigation', async ({ page }) => {
   ];
   for (const [id, family] of families) {
     await fonts.locator(`input[value="${id}"]`).check();
-    await expect(page.locator('.prose')).toHaveCSS(
+    await expect(page.locator('.lesson-body .prose')).toHaveCSS(
       'font-family',
       new RegExp(family),
     );
@@ -173,7 +168,7 @@ test('reading fonts load locally and survive navigation', async ({ page }) => {
   }
   await page.goto('/exemplo/diagramas/');
   await expect(page.locator('html')).toHaveAttribute('data-font', 'mono');
-  await expect(page.locator('.prose')).toHaveCSS(
+  await expect(page.locator('.lesson-body .prose')).toHaveCSS(
     'font-family',
     /IBM Plex Mono/,
   );

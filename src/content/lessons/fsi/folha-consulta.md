@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de FSI
+title: Cheat sheet de FSI
 description: Cifras, autenticação, chaves, PKI, protocolos e defesa de redes numa folha de consulta.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - Esta folha omite provas criptográficas, parâmetros de implementação e ataques web detalhados; os apontamentos cobrem esses ataques apenas de passagem.
 ---
 
-Esta folha segue os [Resumos de FSI de SofiaViP](https://drive.google.com/file/d/1rrrCTHn8zKaMrw4q8ufLksAjSgwQuXcU/view). Os exemplos de César, substituição, ECB, MD5, SHA-1, SSL e versões antigas de TLS servem para reconhecer propriedades e falhas, não para escolher algoritmos novos.
+Os exemplos de César, substituição, ECB, MD5, SHA-1, SSL e versões antigas de TLS servem para reconhecer propriedades e falhas, não para escolher algoritmos novos.
 
 ## O objetivo antes do algoritmo
 

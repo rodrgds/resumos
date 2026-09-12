@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de FSC
+title: Cheat sheet de FSC
 description: Testes rápidos para representação de dados, lógica digital, memória, LEGv8 e controlo monociclo.
 section: recursos
 studyKind: revision
@@ -15,7 +15,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que estes apontamentos correspondem não foram confirmadas.
 ---
 
-Esta folha condensa os apontamentos [FSC1](https://drive.google.com/file/d/1VRsdZe76UTF0dHCAMq_A94Pxiy8feV0q/view) e [FSC2](https://drive.google.com/file/d/1JblCT2rthgQyHKmeIqjm55ul36fjABFr/view) de SofiaViP. Distingue sempre **valor, representação e largura em bits** antes de fazer contas.
+Distingue sempre **valor, representação e largura em bits** antes de fazer contas.
 
 ## Bases, inteiros e vírgula flutuante
 

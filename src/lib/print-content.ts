@@ -63,20 +63,16 @@ export function preparePrintContent(html: string) {
           }
           continue;
         }
-        if (
-          has(child, 'data-pagefind-ignore') &&
-          !attr(child, 'class')?.split(' ').includes('editorial-note')
-        )
-          continue;
+        if (has(child, 'data-pagefind-ignore')) continue;
         if (has(child, 'data-exercise')) {
-          const title = find(child, (element) => element.tagName === 'h3');
+          const title = find(child, (element) => element.tagName === 'summary');
           const solution = find(child, (element) =>
             has(element, 'data-solution'),
           );
           if (title && solution) {
             // Copy the authored solution before removing its disclosure from the questions.
             const block = parseFragment(
-              `<section class="print-solution">${serializeOuter(title)}${serialize(solution)}</section>`,
+              `<section class="print-solution"><h3>${serialize(title)}</h3>${serialize(solution)}</section>`,
             );
             const wrapper = block.childNodes.find(isElement)!;
             clean(wrapper, `${prefix}solution-`);
@@ -84,6 +80,8 @@ export function preparePrintContent(html: string) {
           }
         }
         if (has(child, 'data-help')) continue;
+        if (attr(child, 'class')?.split(' ').includes('exercise-explanation'))
+          continue;
         if (has(child, 'data-playground')) {
           const source = find(child, (element) => has(element, 'data-source'));
           if (source) {
@@ -115,8 +113,15 @@ export function preparePrintContent(html: string) {
               'data-annotatable',
             ].includes(item.name),
         );
-        if (child.tagName === 'details')
-          child.attrs.push({ name: 'open', value: '' });
+        if (child.tagName === 'summary') {
+          child.tagName = 'h3';
+          child.nodeName = 'h3';
+        }
+        if (child.tagName === 'details') {
+          child.tagName = 'div';
+          child.nodeName = 'div';
+          child.attrs = child.attrs.filter((item) => item.name !== 'open');
+        }
         clean(child, namespace);
         children.push(child);
       }
@@ -130,12 +135,7 @@ export function preparePrintContent(html: string) {
       section.attrs.find(
         (item) => item.name === 'data-print-solutions',
       )!.value = key;
-      const heading = entry.childNodes.find(
-        (node) => isElement(node) && node.tagName === 'h2',
-      );
-      section.childNodes = parseFragment(
-        `${heading ? serializeOuter(heading).replace(/ id="[^"]*"/, '') : ''}${entrySolutions.join('')}`,
-      ).childNodes;
+      section.childNodes = parseFragment(entrySolutions.join('')).childNodes;
       solutions.push(serializeOuter(section));
     }
   }

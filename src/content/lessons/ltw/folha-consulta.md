@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de LTW
+title: Cheat sheet de LTW
 description: Referência curta para HTML, CSS, PHP, JavaScript e DOM, conforme os apontamentos de SofiaViP.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que os apontamentos correspondem não foram confirmadas.
 ---
 
-Esta folha segue os [apontamentos LTW de SofiaViP](https://drive.google.com/file/d/1oPo24z5B_E4aHgSTvD3wTMgtYtXftv6e/view), cujo foco acaba no DOM com uma pequena nota final sobre Ajax. Para cada página, separa **estrutura, apresentação, comportamento e resposta do servidor**.
+Para cada página, separa **estrutura, apresentação, comportamento e resposta do servidor**.
 
 ## HTML e formulários
 

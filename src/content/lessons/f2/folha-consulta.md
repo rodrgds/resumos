@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de F2
+title: Cheat sheet de F2
 description: Relações e condições de uso para campos, potencial, circuitos DC e indução.
 section: recursos
 studyKind: revision

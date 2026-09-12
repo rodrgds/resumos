@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de P
+title: Cheat sheet de P
 description: Regras e armadilhas de C++ para rever tipos, funções, memória, templates, classes e ficheiros.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - Esta folha omite programas completos, testes e demonstrações; segue os links para as explicações.
 ---
 
-Esta folha condensa os [Resumos de Programação de SofiaViP](https://drive.google.com/file/d/1tGxsf5qYJZxWgZgGnUcAc2juFPSrEPUo/view). A fonte usa bastante `new`, `delete` e arrays C. Mantém essas regras para ler código antigo, mas prefere objetos que gerem a própria memória quando escreves código novo.
+Para ler código com `new`, `delete` e arrays C, confere a duração dos objetos e quem liberta a memória. Ao escrever código novo, prefere objetos que gerem a própria memória.
 
 ## Tipos, expressões e controlo
 

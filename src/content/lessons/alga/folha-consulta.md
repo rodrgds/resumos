@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de ALGA
+title: Cheat sheet de ALGA
 description: Fórmulas, testes e passos de cálculo para matrizes, sistemas, espaços vetoriais, aplicações lineares e valores próprios.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que estes apontamentos correspondem não foram confirmadas.
 ---
 
-Esta folha segue os temas dos [apontamentos de SofiaViP](https://drive.google.com/file/d/1ZBprkJ8SuJvpFFTPqFwNNsCzJyhdJoeA/view). Usa-a para escolher um método e confirmar condições; os links levam aos passos explicados. Todas as matrizes e todos os espaços desta folha são **reais**.
+Todas as matrizes e todos os espaços desta folha são **reais**.
 
 ## Matrizes e determinantes
 

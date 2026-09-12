@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de LDTS
+title: Cheat sheet de LDTS
 description: Decisões rápidas para Git, Java, testes, padrões, desenho OO, refatoração e UML.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que os apontamentos correspondem não foram confirmadas.
 ---
 
-Esta folha condensa os [apontamentos LDTS de SofiaViP](https://drive.google.com/file/d/1hcOt8gAPt-hdaZIsVSoaxifYwK7Lmnq4/view). Usa-a para escolher um passo ou uma estrutura, não como lista de nomes para decorar.
+Usa-a para escolher um passo ou uma estrutura, não como lista de nomes para decorar.
 
 ## Git e trabalho em equipa
 

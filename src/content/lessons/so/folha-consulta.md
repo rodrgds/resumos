@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de SO
+title: Cheat sheet de SO
 description: Processos, sincronização, memória, armazenamento, ficheiros e E/S em regras de consulta rápida.
 section: recursos
 studyKind: revision
@@ -15,7 +15,7 @@ editorial:
     - Esta folha omite diagramas, demonstrações, APIs completas e detalhes de dispositivos atuais; os exemplos de discos mecânicos e de Unix descrevem os modelos da fonte.
 ---
 
-Esta folha condensa [SO 1](https://drive.google.com/file/d/1ZWuTWkwi6xWG8He0z_TQ3BUkK3N81YO9/view) e [SO 2](https://drive.google.com/file/d/1pLlaDVIVa0bhDy7qLG1M_CtejRLmZlmI/view) de SofiaViP. Os dois volumes usam exemplos de discos mecânicos, Unix e arquiteturas específicas. Aplica as regras gerais, mas confirma os valores e as chamadas na plataforma do exercício.
+Os exemplos usam discos mecânicos e Unix. Confirma os valores e as chamadas na plataforma do exercício.
 
 ## Sistema, processos e CPU
 

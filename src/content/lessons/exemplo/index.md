@@ -21,7 +21,7 @@ Esta cadeira é fictícia. Escolhe uma página para veres o formato esperado e e
 - [Animações com Manim](/exemplo/animacoes/): soma de vetores e aproximação de uma tangente.
 - [Código que podes executar](/exemplo/codigo/): Python, C++, Java, JavaScript, SQL e uma pré-visualização web.
 - [Caixas e imagens](/exemplo/formatacao/): avisos, soluções, separadores e imagens nos dois temas.
-- [Praticar somas e ciclos](/exemplo/praticar-somas/): oito exercícios com pistas, soluções e testes de código.
-- [Folha de consulta](/exemplo/folha-consulta/): referência compacta, fora do percurso de leitura.
+- [Exercícios](/exemplo/apontamentos/#exercicios): oito exercícios com pistas, soluções e testes de código.
+- [Cheat sheet](/exemplo/folha-consulta/): referência compacta, fora do percurso de leitura.
 
-Cada exemplo liga ao respetivo ficheiro no GitHub. Seleciona texto para o destacar ou comentar e usa o menu de aparência para testar fontes, tamanhos e cores.
+Seleciona texto para o destacar ou comentar e usa o menu de aparência para testar fontes, tamanhos e cores.

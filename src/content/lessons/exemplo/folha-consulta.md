@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de somas
+title: Cheat sheet de somas
 description: Fórmula, limites do ciclo e verificações rápidas do exemplo.
 section: recursos
 studyKind: revision
@@ -13,7 +13,11 @@ editorial:
 
 Para $n\in\mathbb{N}_0$:
 
-$$S_n = \frac{n(n+1)}2,\qquad S_0 = 0,\qquad S_n=S_{n-1}+n.$$
+$$
+S_n = \sum_{k=1}^{n} k = \frac{n(n+1)}{2}.
+$$
+
+Caso vazio: $S_0=0$. Para $n\ge 1$, $S_n=S_{n-1}+n$.
 
 | Consulta                    | Resultado                                               |
 | --------------------------- | ------------------------------------------------------- |
@@ -25,4 +29,4 @@ $$S_n = \frac{n(n+1)}2,\qquad S_0 = 0,\qquad S_n=S_{n-1}+n.$$
 
 Verifica $n=0$, $n=1$ e $n=4$: deves obter 0, 1 e 10. O limite de `range` é exclusivo. Inteiros de precisão arbitrária exigem uma análise do custo em bits se os valores crescerem sem limite.
 
-[Rever a justificação e o código](/exemplo/apontamentos/#uma-ideia-de-cada-vez) · [Praticar](/exemplo/praticar-somas/)
+[Rever a justificação e o código](/exemplo/apontamentos/#uma-ideia-de-cada-vez) · [Praticar](/exemplo/apontamentos/#exercicios)

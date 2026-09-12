@@ -31,13 +31,13 @@ Mantém `draft: true` enquanto escreves. O rascunho não tem página pública, n
 
 O primeiro resumo publicado liga automaticamente o cartão da cadeira a `/cadeiras/<cadeira>/`. A sidebar, o índice da página e os links anterior/seguinte são gerados pelo conteúdo. Não precisas de editar rotas ou layouts. Um `index.md` opcional escreve a apresentação da cadeira. A pasta `exemplo` é reservada à cadeira fictícia, em `/exemplo/`.
 
-## Folhas de consulta e âmbito
+## Cheat sheets e âmbito
 
 Uma folha de consulta serve quem já estudou o tema. Escreve-a de propósito: junta fórmulas, condições, critérios de escolha, procedimentos e erros frequentes. Liga à secção que explica cada ideia. Evita converter o resumo inteiro numa lista de parágrafos curtos.
 
-Usa `studyKind: revision` numa página com `section: recursos`, como `me/folha-consulta.md`. A folha tem página própria e aparece em “Folhas de consulta”, fora da numeração, do progresso e dos links anterior/seguinte. Os exercícios com `section: exercicios` também têm um grupo próprio fora dessa sequência.
+Usa `studyKind: revision` numa página com `section: recursos`, como `me/folha-consulta.md`. A página aparece no menu como “Cheat sheet”, fora da numeração, do progresso e dos links anterior/seguinte. A navegação das restantes páginas é uma lista única, sem separar conteúdo de guias.
 
-As cadeiras com folhas ou exercícios têm um caderno em `imprimir/`. O leitor escolhe as páginas e se quer soluções no fim, depois imprime ou guarda PDF pelo navegador. O caderno usa apenas conteúdo público renderizado no build. Não inclui respostas escritas, notas nem registos de tentativas. Sem JavaScript, inclui todas as páginas e soluções. Revê a impressão A4, sobretudo tabelas e fórmulas largas.
+“Imprimir” fica junto de Chat e Brain rot. Imprime a página atual; quando há exercícios associados, permite incluí-los e acrescentar soluções no fim. Um cheat sheet imprime diretamente. A impressão usa conteúdo público preparado no build, num template inerte que só entra no documento ao imprimir. Não inclui respostas, notas nem registos de tentativas. Sem JavaScript, a impressão do navegador inclui o texto da página. Revê a impressão A4, sobretudo tabelas e fórmulas largas.
 
 O frontmatter aceita metadados editoriais opcionais:
 
@@ -54,20 +54,20 @@ editorial:
 
 `basedOn` identifica o programa usado como base. Quando alguém fizer uma revisão, acrescenta `review` com `edition`, `reviewer` e `date` em `AAAA-MM-DD`. Preenche estes valores apenas depois de comparar o conteúdo com as fontes da edição indicada. O nome identifica quem fez essa revisão, não o autor da fonte. Não uses a data de um commit, de download ou de formatação como data de revisão.
 
-Os metadados de uma página não são herdados pelas restantes. Em `index.md`, `coverage` descreve a cobertura da cadeira; noutras páginas, descreve só essa página. Mantém uma frase concreta sobre o que existe e o que falta, sem percentagens. A edição do catálogo e a revisão dos apontamentos são factos distintos. Sem revisão registada, a interface diz que a edição está por verificar.
+Os metadados de uma página não são herdados pelas restantes. Em `index.md`, `coverage` descreve a cobertura da cadeira; noutras páginas, descreve só essa página. Mantém uma frase concreta sobre o que existe e o que falta, sem percentagens. A edição do catálogo e a revisão dos apontamentos são factos distintos. Os metadados ficam no ficheiro de autoria; não acrescentam blocos de estado à leitura.
 
-Indica as fontes consultadas e as lacunas reais. Nas folhas inspiradas na SofiaViP, mantém o crédito e a ligação ao original. O arquivo local em `_data/` continua privado e não faz parte do build. Escreve as explicações com palavras próprias e conserva as condições matemáticas; não copies materiais sem direito de reprodução.
+Indica as fontes consultadas e as lacunas reais. Nas folhas inspiradas na SofiaViP, mantém o crédito e a ligação ao original em `editorial.sources`. O arquivo local em `_data/` continua privado e não faz parte do build. Escreve as explicações com palavras próprias e conserva as condições matemáticas; não copies materiais sem direito de reprodução.
 
 ## Exercícios ligados ao tema
 
-Cria uma página MDX com `section: exercicios`. Na página que ensina o tema, indica os identificadores completos das páginas de prática:
+Cria um ficheiro MDX com `section: exercicios`, apenas com os componentes das questões. Na lição que ensina o tema, indica os identificadores completos desses conjuntos:
 
 ```yaml
 practices:
   - exemplo/praticar-somas
 ```
 
-O link “Praticar este tema” aparece no fim da lição. Os destinos têm de ser exercícios publicados da mesma cadeira; referências inválidas ou para rascunhos interrompem o build. Escolhe poucas questões que peçam decisões diferentes. [Praticar somas e ciclos](/exemplo/praticar-somas/) reúne oito exemplos.
+Cada questão aparece fechada, numa pequena lista “Exercícios” no fim da lição. O leitor abre apenas a que quer resolver. Não há categoria de exercícios no menu nem percurso separado. Cada conjunto tem de estar associado a uma lição publicada da mesma cadeira; referências inválidas, rascunhos e conjuntos sem lição interrompem o build. Escolhe poucas questões que peçam decisões diferentes. [Texto e fórmulas](/exemplo/apontamentos/#exercicios) reúne oito exemplos.
 
 Usa `Exercise` para resposta numérica, escolha múltipla ou autoavaliação. Cada questão precisa de um `id` estável, título, ligação à explicação exata, duas pistas, solução e erros frequentes:
 

@@ -10,7 +10,6 @@ export const sections = {
   recursos: 'Recursos',
 };
 export type Lesson = CollectionEntry<'lessons'>;
-export const CURRENT_EDITION = '2026/27';
 export interface CourseGuide {
   id: string;
   name: string;
@@ -53,11 +52,12 @@ export async function getCourseGuides(): Promise<CourseGuide[]> {
           a.data.title.localeCompare(b.data.title, 'pt'),
       );
     for (const page of pages) {
-      if (page.id === `${id}/imprimir`)
-        throw new Error(
-          `${page.id}: imprimir is reserved for the course print pack.`,
-        );
       for (const target of page.data.practices) {
+        if (
+          page.data.section === 'exercicios' ||
+          page.data.studyKind === 'revision'
+        )
+          throw new Error(`${page.id}: attach exercises to a lesson.`);
         const linked = pages.find((candidate) => candidate.id === target);
         if (!linked || linked.data.section !== 'exercicios') {
           throw new Error(
@@ -65,6 +65,13 @@ export async function getCourseGuides(): Promise<CourseGuide[]> {
           );
         }
       }
+      if (
+        page.data.section === 'exercicios' &&
+        !pages.some((lesson) => lesson.data.practices.includes(page.id))
+      )
+        throw new Error(
+          `${page.id}: attach this exercise set to a lesson through practices.`,
+        );
     }
     return {
       id,
@@ -72,7 +79,7 @@ export async function getCourseGuides(): Promise<CourseGuide[]> {
       path: id === 'exemplo' ? '/exemplo/' : `/cadeiras/${id}/`,
       example: id === 'exemplo',
       introduction: pages.find((page) => page.id === `${id}/index`),
-      pages: ordered,
+      pages: ordered.filter((page) => page.data.section !== 'exercicios'),
       lessons: ordered.filter(
         (page) =>
           page.data.studyKind !== 'revision' &&

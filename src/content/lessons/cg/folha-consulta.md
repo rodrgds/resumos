@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de CG
+title: Cheat sheet de CG
 description: Fórmulas e decisões rápidas para transformações, iluminação, visibilidade, malhas, curvas e rasterização.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que os apontamentos correspondem não foram confirmadas.
 ---
 
-Esta folha segue os [apontamentos CG de SofiaViP](https://drive.google.com/file/d/1VcTxk6X36ipf_SynqzerkUKZYYmGyqST/view). Antes de calcular, fixa **espaço de coordenadas, convenção de vetores e sentido da luz/câmara**.
+Antes de calcular, fixa **espaço de coordenadas, convenção de vetores e sentido da luz/câmara**.
 
 ## Transformar pontos, vetores e normais
 

@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de AC
+title: Cheat sheet de AC
 description: Fórmulas e condições para rever ISA, desempenho, pipeline, memória e entrada e saída.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - Esta folha omite codificações de instruções, programas completos, diagramas temporais e exemplos longos; segue os links para as explicações.
 ---
 
-Esta folha condensa os [Resumos AC de SofiaViP](https://drive.google.com/file/d/1w3hVKtinpSiDUPF_TP7Wrm9CirnsU2nN/view). **A fonte usa AArch64 e LEGv8, com NEON para SIMD.** As páginas de assembly deste site usam RISC-V. Compara as ideias de ISA, pilha e memória, mas não transportes nomes de registos, instruções ou convenções de chamada entre arquiteturas.
+**Arquiteturas: AArch64 e LEGv8, com NEON para SIMD.** As páginas de assembly deste site usam RISC-V. Compara as ideias de ISA, pilha e memória, mas não transportes nomes de registos, instruções ou convenções de chamada entre arquiteturas.
 
 ## ISA, registos e memória
 
