@@ -1234,7 +1234,7 @@ test.describe('touch feed', () => {
     await expect(name).not.toHaveText(previous!);
   });
 
-  test('a swipe settles after release when scrolling ended under the finger', async ({
+  test('a swipe settles after release despite an early scrollend and a late scroll', async ({
     page,
   }) => {
     const dialog = await openReader(page);
@@ -1260,6 +1260,7 @@ test.describe('touch feed', () => {
       type: 'touchEnd',
       touchPoints: [],
     });
+    await feed.dispatchEvent('scroll');
     await expect(name).not.toHaveText(previous!);
   });
 

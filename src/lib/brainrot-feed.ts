@@ -1,5 +1,7 @@
 import type { BrainrotClip } from '../data/brainrot-clips';
 
+const SETTLE_DELAY_MS = 140;
+
 export class ClipFeed {
   #element: HTMLElement;
   #clips: BrainrotClip[];
@@ -99,12 +101,12 @@ export class ClipFeed {
       },
       { passive: true },
     );
-    const hasScrollEnd = 'onscrollend' in element;
     const endTouch = (event: TouchEvent) => {
       this.#touching = event.touches.length > 0;
       clearTimeout(this.#timer);
       // scrollend can arrive while a finger is still down and defer settling.
-      if (!this.#touching) this.#timer = setTimeout(() => this.#settle(), 140);
+      if (!this.#touching)
+        this.#timer = setTimeout(() => this.#settle(), SETTLE_DELAY_MS);
     };
     gestureSurface.addEventListener('touchend', endTouch, { passive: true });
     gestureSurface.addEventListener('touchcancel', endTouch, { passive: true });
@@ -113,7 +115,8 @@ export class ClipFeed {
       clearTimeout(this.#timer);
       const target = Math.round(element.scrollTop / element.clientHeight);
       if (target !== 1) this.#load(this.#slots[target]);
-      if (!hasScrollEnd) this.#timer = setTimeout(() => this.#settle(), 140);
+      if (!this.#touching)
+        this.#timer = setTimeout(() => this.#settle(), SETTLE_DELAY_MS);
     });
     element.addEventListener('scrollend', () => this.#settle());
     element.addEventListener('keydown', (event) => {
