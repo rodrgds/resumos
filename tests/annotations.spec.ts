@@ -39,6 +39,65 @@ async function highlightedText(page: Page) {
 const passage =
   'Um apontamento pode ter definições, exemplos e pequenos exercícios.';
 
+for (const width of [1440, 390]) {
+  test(`contextual note focus and article dismissal work at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/exemplo/apontamentos/');
+    await selectText(page, passage);
+    await page.getByRole('button', { name: 'Comentar', exact: true }).click();
+    const input = page.getByRole('textbox', { name: 'O teu comentário' });
+    await expect(input).toBeFocused();
+    const spacing = await input.evaluate((node) => {
+      const viewport = node
+        .closest('.notebook-content')!
+        .getBoundingClientRect();
+      const field = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      const ring =
+        parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
+      return {
+        left: field.left - viewport.left,
+        right: viewport.right - field.right,
+        ring,
+      };
+    });
+    expect(spacing.ring).toBeGreaterThan(0);
+    expect(spacing.left).toBeGreaterThanOrEqual(spacing.ring);
+    expect(spacing.right).toBeGreaterThanOrEqual(spacing.ring);
+    await expect(page.locator('#annotation-quote')).toBeHidden();
+    await expect(page.locator('#notes-status')).toBeHidden();
+    await page.locator('h1').first().click();
+    await expect(page.locator('#scratchpad')).toBeHidden();
+    await expect.poll(() => highlightedText(page)).toBe(passage);
+  });
+}
+
+test('a saved passage uses one visible highlight treatment', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/apontamentos/');
+  await selectText(page, passage);
+  await page.getByRole('button', { name: 'Comentar', exact: true }).click();
+  await expect(page.locator('.annotation-stroke')).toHaveCount(1);
+  const cssHighlight = await page
+    .locator('.prose p')
+    .first()
+    .evaluate((node) => {
+      const saved = getComputedStyle(node, '::highlight(notebook)');
+      const active = getComputedStyle(node, '::highlight(notebook-active)');
+      return {
+        saved: saved.backgroundColor,
+        active: active.backgroundColor,
+        decoration: active.textDecorationLine,
+      };
+    });
+  expect(cssHighlight.saved).toBe('rgba(0, 0, 0, 0)');
+  expect(cssHighlight.active).toBe('rgba(0, 0, 0, 0)');
+  expect(cssHighlight.decoration).toBe('none');
+});
+
 test('selection highlights across inline formatting, comments persist and deletion has undo', async ({
   page,
 }) => {
@@ -65,6 +124,7 @@ test('selection highlights across inline formatting, comments persist and deleti
   await expect.poll(() => highlightedText(page)).toBe('');
   await page.getByRole('button', { name: 'Desfazer', exact: true }).click();
   await expect.poll(() => highlightedText(page)).toBe(passage);
+  await page.keyboard.press('n');
   await page.locator('.annotation-card').click();
   await expect(comment).toHaveValue('Rever isto antes do teste. / n ? a/n?a');
 });
