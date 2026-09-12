@@ -31,6 +31,71 @@ Mantém `draft: true` enquanto escreves. O rascunho não tem página pública, n
 
 O primeiro resumo publicado liga automaticamente o cartão da cadeira a `/cadeiras/<cadeira>/`. A sidebar, o índice da página e os links anterior/seguinte são gerados pelo conteúdo. Não precisas de editar rotas ou layouts. Um `index.md` opcional escreve a apresentação da cadeira. A pasta `exemplo` é reservada à cadeira fictícia, em `/exemplo/`.
 
+## Folhas de consulta e âmbito
+
+Uma folha de consulta serve quem já estudou o tema. Escreve-a de propósito: junta fórmulas, condições, critérios de escolha, procedimentos e erros frequentes. Liga à secção que explica cada ideia. Evita converter o resumo inteiro numa lista de parágrafos curtos.
+
+Usa `studyKind: revision` numa página com `section: recursos`, como `me/folha-consulta.md`. A folha tem página própria e aparece em “Folhas de consulta”, fora da numeração, do progresso e dos links anterior/seguinte. Os exercícios com `section: exercicios` também têm um grupo próprio fora dessa sequência.
+
+As cadeiras com folhas ou exercícios têm um caderno em `imprimir/`. O leitor escolhe as páginas e se quer soluções no fim, depois imprime ou guarda PDF pelo navegador. O caderno usa apenas conteúdo público renderizado no build. Não inclui respostas escritas, notas nem registos de tentativas. Sem JavaScript, inclui todas as páginas e soluções. Revê a impressão A4, sobretudo tabelas e fórmulas largas.
+
+O frontmatter aceita metadados editoriais opcionais:
+
+```yaml
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Programa de DA, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560101
+  coverage: Técnicas listadas no percurso. Faltam guiões dos projetos.
+  gaps:
+    - Correspondência com a edição de 2026/27 por verificar.
+```
+
+`basedOn` identifica o programa usado como base. Quando alguém fizer uma revisão, acrescenta `review` com `edition`, `reviewer` e `date` em `AAAA-MM-DD`. Preenche estes valores apenas depois de comparar o conteúdo com as fontes da edição indicada. O nome identifica quem fez essa revisão, não o autor da fonte. Não uses a data de um commit, de download ou de formatação como data de revisão.
+
+Os metadados de uma página não são herdados pelas restantes. Em `index.md`, `coverage` descreve a cobertura da cadeira; noutras páginas, descreve só essa página. Mantém uma frase concreta sobre o que existe e o que falta, sem percentagens. A edição do catálogo e a revisão dos apontamentos são factos distintos. Sem revisão registada, a interface diz que a edição está por verificar.
+
+Indica as fontes consultadas e as lacunas reais. Nas folhas inspiradas na SofiaViP, mantém o crédito e a ligação ao original. O arquivo local em `_data/` continua privado e não faz parte do build. Escreve as explicações com palavras próprias e conserva as condições matemáticas; não copies materiais sem direito de reprodução.
+
+## Exercícios ligados ao tema
+
+Cria uma página MDX com `section: exercicios`. Na página que ensina o tema, indica os identificadores completos das páginas de prática:
+
+```yaml
+practices:
+  - exemplo/praticar-somas
+```
+
+O link “Praticar este tema” aparece no fim da lição. Os destinos têm de ser exercícios publicados da mesma cadeira; referências inválidas ou para rascunhos interrompem o build. Escolhe poucas questões que peçam decisões diferentes. [Praticar somas e ciclos](/exemplo/praticar-somas/) reúne oito exemplos.
+
+Usa `Exercise` para resposta numérica, escolha múltipla ou autoavaliação. Cada questão precisa de um `id` estável, título, ligação à explicação exata, duas pistas, solução e erros frequentes:
+
+```mdx
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="soma-20"
+  title="Calcular uma soma"
+  explanation="/exemplo/apontamentos/#uma-ideia-de-cada-vez"
+  answer={{ kind: 'number', value: 210, tolerance: 0 }}
+>
+  <p>Quanto vale a soma de 1 até 20, incluindo os extremos?</p>
+  <div slot="hint">Usa a fórmula da soma.</div>
+  <div slot="hint-more">Calcula 20 × 21 / 2.</div>
+  <div slot="solution">O resultado é 210.</div>
+  <div slot="mistakes">Não esqueças a divisão por 2.</div>
+</Exercise>
+```
+
+- `number` aceita um valor finito, tolerância absoluta não negativa e `unit` opcional. O leitor pode usar vírgula ou ponto decimal. Explicita no enunciado o arredondamento e as unidades.
+- `choice` recebe `options`, cada uma com `text`, `correct` e `explanation`. Deve haver uma única resposta correta. Explica também por que cada distrator falha.
+- `self` recebe `checklist`, uma lista de critérios observáveis. Usa-o em provas curtas, previsões de estado ou código que exige justificação. Registar uma tentativa não a classifica como correta.
+
+Para tarefas de programação, coloca um `CodePlayground` no slot `work`, com testes e resultados esperados visíveis. Usa os mesmos Workers descartáveis dos exemplos normais. A execução dos testes ajuda a conferir o resultado; a autoavaliação não pretende ser um juiz automático de código.
+
+Os identificadores devem ser únicos na cadeira. Aumenta `revision` quando mudares o enunciado, a resposta ou a interpretação dos resultados, para separar as novas tentativas das antigas. O navegador guarda apenas resultado e nível de ajuda, até 300 registos. Não guarda respostas nem código. Abrir uma pista ou solução fica registado mesmo depois de fechar a caixa, limpar a resposta ou recarregar. Consultar ajuda depois não apaga o resultado anterior; uma nova resposta regista a ajuda já vista. A lista de autoavaliação nunca se transforma numa classificação automática. Sem JavaScript, enunciados, pistas e soluções continuam legíveis.
+
 ## Escolher um formato
 
 - **Markdown** para texto, imagens, tabelas, código e fórmulas LaTeX. Vê `src/content/lessons/exemplo/apontamentos.md`.

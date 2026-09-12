@@ -1,0 +1,96 @@
+---
+import { type CourseGuide } from '../lib/course-content';
+import { preparePrintContent } from '../lib/print-content';
+import '../styles/study-print.css';
+interface Props {
+  course: CourseGuide;
+}
+const { course } = Astro.props;
+const entries = [...course.revisions, ...course.exercises];
+const prepared = preparePrintContent(await Astro.slots.render('default'));
+---
+
+<div class="print-choices" data-pagefind-ignore>
+  <p>
+    Escolhe as folhas e os exercícios. As soluções podem seguir no fim do
+    caderno.
+  </p>
+  <fieldset>
+    <legend>Incluir no caderno</legend>
+    {entries.map((entry) => (
+      <label>
+        <input type="checkbox" data-print-choice value={entry.id} checked />
+        {entry.data.title}
+      </label>
+    ))}
+  </fieldset>
+  {!!course.exercises.length && (
+    <label>
+      <input type="checkbox" data-include-solutions />
+      Incluir soluções no fim
+    </label>
+  )}
+  <button type="button" data-print-button hidden>
+    Imprimir ou guardar PDF
+  </button>
+  <p role="status" data-print-status></p>
+  <noscript>
+    Sem JavaScript, o caderno inclui todas as páginas e as soluções no fim. Usa
+    a opção de impressão do navegador.
+  </noscript>
+  <a href={course.path}>Voltar à cadeira</a>
+</div>
+<div class="print-pages revision-sheet">
+  <div set:html={prepared.content} />
+  {prepared.solutions && (
+    <section class="print-appendix">
+      <h2>Soluções</h2>
+      <div set:html={prepared.solutions} />
+    </section>
+  )}
+</div>
+<script>
+  const choices = [
+    ...document.querySelectorAll<HTMLInputElement>('[data-print-choice]'),
+  ];
+  const solutions = document.querySelector<HTMLInputElement>(
+    '[data-include-solutions]',
+  );
+  const button = document.querySelector<HTMLButtonElement>(
+    '[data-print-button]',
+  );
+  const status = document.querySelector<HTMLElement>('[data-print-status]');
+  function update() {
+    const selected = new Set(
+      choices.filter((choice) => choice.checked).map((choice) => choice.value),
+    );
+    document
+      .querySelectorAll<HTMLElement>('[data-print-entry]')
+      .forEach((entry) => {
+        entry.hidden = !selected.has(entry.dataset.printEntry!);
+      });
+    document
+      .querySelectorAll<HTMLElement>('[data-print-solutions]')
+      .forEach((entry) => {
+        entry.hidden = !selected.has(entry.dataset.printSolutions!);
+      });
+    const appendix = document.querySelector<HTMLElement>('.print-appendix');
+    if (appendix)
+      appendix.hidden =
+        !solutions?.checked ||
+        !document.querySelector('[data-print-solutions]:not([hidden])');
+    if (button) button.disabled = selected.size === 0;
+    if (status)
+      status.textContent =
+        selected.size === 0
+          ? 'Escolhe pelo menos uma página para imprimir.'
+          : '';
+  }
+  choices.forEach((choice) => choice.addEventListener('change', update));
+  solutions?.addEventListener('change', update);
+  if (button) {
+    button.hidden = false;
+    button.addEventListener('click', () => window.print());
+  }
+  update();
+</script>

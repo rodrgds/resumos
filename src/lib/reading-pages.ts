@@ -4,15 +4,20 @@ export async function getReadingPages() {
   return (await getCourseGuides()).flatMap((course) => {
     const entries = [
       ...(course.introduction ? [course.introduction] : []),
-      ...course.lessons,
+      ...course.pages,
     ];
-    return entries.map((entry, index) => ({
+    return entries.map((entry) => ({
       path: lessonPath(course, entry),
       title: entry.data.title,
       course: course.name,
-      next: entries[index + 1]
-        ? lessonPath(course, entries[index + 1])
-        : undefined,
+      next:
+        (course.lessons.includes(entry) || entry === course.introduction) &&
+        course.lessons[course.lessons.indexOf(entry) + 1]
+          ? lessonPath(
+              course,
+              course.lessons[course.lessons.indexOf(entry) + 1],
+            )
+          : undefined,
     }));
   });
 }

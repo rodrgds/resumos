@@ -24,6 +24,8 @@
 - `markdown-export.mjs` generates public Markdown from built pages, never raw content directories or browser storage. Keep drafts and local notes private.
 - Add tests only for meaningful user-visible regressions or execution/privacy boundaries. Avoid assertions that freeze incidental copy, count markup, or mirror implementation.
 
+- Study content follows [CONTRIBUTING.md](CONTRIBUTING.md#folhas-de-consulta-e-âmbito): `studyKind: revision` sheets and `section: exercicios` pages stay outside the numbered reading sequence. `practices` links published exercises in the same course. Editorial review records are explicit evidence, never inferred from commits or inherited across pages. Printed packs use build-rendered public content only. Exercise answers stay transient; stored results retain hint/solution attribution. Bump an exercise's `revision` when its answer or meaning changes.
+
 - Use Heroicons through `Icon.astro` for interface controls. Courses use subject-specific SVGs through `CourseIcon.astro`, with Tabler artwork and custom drawings in `course-icons.ts`; choose each course icon in its curriculum data. Preserve official brand logos. Do not use Unicode glyphs as icons or add footers to executable code blocks.
 
 - Reading history stays in browser storage through `reading-history.ts`. Resolve it against published course navigation; never export or index it. Only explicit resume links restore scroll position.

@@ -3,6 +3,8 @@ title: Texto e fórmulas
 description: Um exemplo simples, escrito em Markdown.
 section: conteudo
 order: 1
+practices:
+  - exemplo/praticar-somas
 ---
 
 ## Uma ideia de cada vez
@@ -34,6 +36,16 @@ print(soma_naturais(4))  # 10
 | 2   | 3    |
 | 3   | 6    |
 | 4   | 10   |
+
+## Limites de um ciclo
+
+Em Python, `range(1, n + 1)` percorre os inteiros de 1 até n. O limite superior fica excluído. Começa com `total = 0` e, para cada `k`, soma `k` ao total. Antes dessa atualização, `total` contém a soma de 1 até `k - 1`; depois, contém a soma de 1 até `k`.
+
+Se n for zero, `range(1, 1)` está vazio. O total continua a zero, que é o valor da soma vazia.
+
+## Contar as operações
+
+O ciclo faz n atualizações. A fórmula faz um número fixo de operações aritméticas. Se cada operação tiver custo constante, os custos são Θ(n) e Θ(1), respetivamente. Com inteiros de precisão arbitrária, como os de Python, o custo também depende do número de bits dos valores.
 
 ## Uma imagem
 

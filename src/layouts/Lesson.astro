@@ -7,6 +7,8 @@ import CourseSidebar from '../components/CourseSidebar.astro';
 import Icon from '../components/Icon.astro';
 import CourseProgress from '../components/CourseProgress.astro';
 import TableOfContents from '../components/TableOfContents.astro';
+import EditorialNote from '../components/EditorialNote.astro';
+import StudyLinks from '../components/StudyLinks.astro';
 import katexAmsFont from 'katex/dist/fonts/KaTeX_AMS-Regular.woff2?url';
 import katexMainFont from 'katex/dist/fonts/KaTeX_Main-Regular.woff2?url';
 import katexMathFont from 'katex/dist/fonts/KaTeX_Math-Italic.woff2?url';
@@ -17,6 +19,7 @@ import {
   type Lesson,
 } from '../lib/course-content';
 import '../styles/reading.css';
+import '../styles/study.css';
 interface Props {
   course: CourseGuide;
   entry?: Lesson;
@@ -28,7 +31,13 @@ const description =
   entry?.data.description || `Apontamentos de ${course.name}.`;
 const index = course.lessons.findIndex((page) => page.id === entry?.id);
 const previous = index > 0 ? course.lessons[index - 1] : undefined;
-const next = course.lessons[index + 1];
+const overview = !entry || entry.id === course.introduction?.id;
+const next =
+  index >= 0
+    ? course.lessons[index + 1]
+    : overview
+      ? course.lessons[0]
+      : undefined;
 ---
 
 <Layout
@@ -76,20 +85,38 @@ const next = course.lessons[index + 1];
     </div>
     <main
       id="conteudo"
-      class="course-article"
+      class:list={[
+        'course-article',
+        { 'revision-sheet': entry?.data.studyKind === 'revision' },
+      ]}
       data-pagefind-body
       data-reading-page
     >
       <header class="lesson-heading">
         <h1>{title}</h1>
         <p>{description}</p>
+        <EditorialNote
+          editorial={entry?.data.editorial}
+          example={course.example}
+        />
       </header>
       <PageActions />
+      {overview && <StudyLinks course={course} entry={entry} />}
+      {entry?.data.studyKind === 'revision' && (
+        <a
+          class="sheet-print-link"
+          href={`${course.path}imprimir/`}
+          data-pagefind-ignore
+        >
+          Imprimir esta folha ou preparar um caderno
+        </a>
+      )}
       <div class="lesson-body" data-annotatable>
         <Prose>
           <slot />
         </Prose>
       </div>
+      {!overview && <StudyLinks course={course} entry={entry} />}
       {entry && (
         <a
           class="text-link lesson-source"
