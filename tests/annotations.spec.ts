@@ -321,7 +321,6 @@ for (const width of [1440, 390]) {
     expect(box.x + box.width).toBeLessThanOrEqual(width);
     if (width === 1440)
       expect(box.x).toBeGreaterThanOrEqual(before!.x + before!.width);
-    await page.screenshot({ path: `.impeccable/review/notes-${width}.png` });
     await page.keyboard.press('Escape');
     const pin = page.getByRole('button', { name: /^Abrir nota:/ });
     await pin.focus();
@@ -412,5 +411,27 @@ test('syntax coloured code highlights form a continuous stroke per line', async 
   ).toBeVisible();
   await page.getByRole('button', { name: 'Destacar', exact: true }).click();
   await expect(page.locator('.annotation-stroke')).toHaveCount(1);
-  await page.screenshot({ path: '.impeccable/review/code-highlight.png' });
+});
+
+test('a note opened on mobile follows its passage after widening the viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto('/exemplo/apontamentos/');
+  await selectText(page, passage);
+  await page.getByRole('button', { name: 'Comentar', exact: true }).click();
+  await page.getByLabel('O teu comentário').fill('Nota durante a leitura');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect
+    .poll(async () => {
+      const panel = (await page.locator('#scratchpad').boundingBox())!;
+      const article = (await page.locator('.lesson-body').boundingBox())!;
+      return (
+        panel.x >= article.x + article.width &&
+        panel.x + panel.width <= 1440 &&
+        panel.y >= 0 &&
+        panel.y + panel.height <= 900
+      );
+    })
+    .toBe(true);
 });

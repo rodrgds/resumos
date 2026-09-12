@@ -23,6 +23,8 @@ npm run preview
 
 O build fica em `dist/`. Os testes compilam o site em `.test-dist/` e verificam-no com Chromium. Para usar um navegador existente, define `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`. Em CI, o workflow instala o Chromium.
 
+Em produção, `public/sw.js` regista um service worker depois do primeiro carregamento. Guarda as páginas visitadas e os recursos estáticos pequenos para leitura sem ligação, mas não guarda vídeos, áudios ou WebAssembly do Brain rot. A navegação tenta primeiro a rede para receber conteúdo novo; a cópia local só é usada quando a rede falha.
+
 As animações Manim usam o perfil opcional `devenv --profile manim shell`. `npm run render:manim` gera as cenas registadas em `src/data/manim-scenes.json` e ignora as que já estão atualizadas. Inclui os vídeos, posters e manifests gerados no Git. O build valida a correspondência com as fontes sem precisar de Manim ou FFmpeg. Consulta [o guia de contribuição](../CONTRIBUTING.md#animações-com-manim) para preparar uma cena.
 
 ## Organização e dados

@@ -1,10 +1,4 @@
-import {
-  computePosition,
-  autoUpdate,
-  offset,
-  flip,
-  shift,
-} from '@floating-ui/dom';
+import notebookStylesUrl from '../styles/notebook.css?url';
 import { annotationMarks } from '../lib/annotation-marks';
 import { readLocal, writeLocal } from '../lib/storage';
 import {
@@ -19,6 +13,10 @@ import { resolveAnchor, textIndex, mathElement } from '../lib/text-anchors';
 import { setupSelection } from './selection-tools';
 
 export function setupNotes() {
+  const styles = document.createElement('link');
+  styles.rel = 'stylesheet';
+  styles.href = notebookStylesUrl;
+  document.head.append(styles);
   const element = <T extends HTMLElement = HTMLElement>(id: string) =>
     document.querySelector<T>(`#${id}`)!;
   const panel = element('scratchpad');
@@ -165,12 +163,15 @@ export function setupNotes() {
     panel.style.removeProperty('top');
     element('notes-title').textContent = 'O teu caderno';
   }
-  function positionNote(id: string) {
+  async function positionNote(id: string) {
     resetPosition();
     const range = ranges.get(id)?.[0];
     if (!root || !range) return;
     panel.classList.add('notebook-context');
     element('notes-title').textContent = 'A tua nota';
+    const { computePosition, autoUpdate, offset, flip, shift } =
+      await import('@floating-ui/dom');
+    if (active !== id || panel.hidden) return;
     const anchor = {
       getBoundingClientRect: () => {
         const text = range.getBoundingClientRect();
@@ -249,7 +250,7 @@ export function setupNotes() {
     const missing = note.path === location.pathname && !ranges.get(id)?.length;
     element('annotation-missing').hidden = !missing;
     element('locate-annotation').hidden = missing;
-    positionNote(id);
+    void positionNote(id);
     input.focus({ preventScroll: true });
     input.scrollIntoView({ block: 'nearest' });
   }

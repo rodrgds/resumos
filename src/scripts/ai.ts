@@ -1,11 +1,3 @@
-import {
-  autoUpdate,
-  computePosition,
-  offset,
-  flip,
-  shift,
-  size,
-} from '@floating-ui/dom';
 const menu = document.querySelector<HTMLElement>('#ai-menu')!;
 const promptField = document.querySelector<HTMLTextAreaElement>('#ai-prompt')!;
 const aiStatus = document.querySelector<HTMLElement>('#ai-status')!;
@@ -49,7 +41,9 @@ menu
 
 const trigger = document.querySelector<HTMLElement>('[data-open-ai]')!;
 let cleanup: (() => void) | undefined;
+let toggleGeneration = 0;
 menu.addEventListener('toggle', (event) => {
+  const generation = ++toggleGeneration;
   trigger.setAttribute(
     'aria-expanded',
     String((event as ToggleEvent).newState === 'open'),
@@ -61,24 +55,32 @@ menu.addEventListener('toggle', (event) => {
     promptField.hidden = true;
     return;
   }
-  cleanup = autoUpdate(trigger, menu, () => {
-    void computePosition(trigger, menu, {
-      placement: 'bottom-start',
-      strategy: 'fixed',
-      middleware: [
-        offset(6),
-        flip(),
-        shift({ padding: 12 }),
-        size({
-          padding: 12,
-          apply({ availableHeight, elements }) {
-            elements.floating.style.maxHeight = `${Math.max(0, availableHeight)}px`;
-          },
-        }),
-      ],
-    }).then(({ x, y }) => {
-      Object.assign(menu.style, { left: `${x}px`, top: `${y}px` });
-      menu.dataset.positioned = '';
-    });
-  });
+  void import('@floating-ui/dom').then(
+    ({ autoUpdate, computePosition, offset, flip, shift, size }) => {
+      if (generation !== toggleGeneration || !menu.matches(':popover-open'))
+        return;
+      cleanup = autoUpdate(trigger, menu, () => {
+        void computePosition(trigger, menu, {
+          placement: 'bottom-start',
+          strategy: 'fixed',
+          middleware: [
+            offset(6),
+            flip(),
+            shift({ padding: 12 }),
+            size({
+              padding: 12,
+              apply({ availableHeight, elements }) {
+                elements.floating.style.maxHeight = `${Math.max(0, availableHeight)}px`;
+              },
+            }),
+          ],
+        }).then(({ x, y }) => {
+          if (generation !== toggleGeneration || !menu.matches(':popover-open'))
+            return;
+          Object.assign(menu.style, { left: `${x}px`, top: `${y}px` });
+          menu.dataset.positioned = '';
+        });
+      });
+    },
+  );
 });

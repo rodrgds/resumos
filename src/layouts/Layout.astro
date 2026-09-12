@@ -1,9 +1,10 @@
 ---
 import '@fontsource-variable/manrope';
 import '@fontsource-variable/source-serif-4';
+import manropeFont from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
+import sourceSerifFont from '@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2?url';
 import '../styles/global.css';
 import '../styles/tools.css';
-import '../styles/notebook.css';
 import '../styles/fonts.css';
 import '../styles/code.css';
 import Header from '../components/Header.astro';
@@ -17,11 +18,15 @@ import { courses } from '../data/courses';
 interface Props {
   title?: string;
   description?: string;
+  preloadReadingFonts?: boolean;
 }
 const {
   title = 'Resumos LEIC · FEUP',
   description = 'Um lugar para os apontamentos de LEIC da FEUP. Encontra as cadeiras por ano e semestre e ajuda a construir os primeiros resumos.',
+  preloadReadingFonts = false,
 } = Astro.props;
+const enableOffline =
+  import.meta.env.PROD && process.env.RESUMOS_TEST_CONTENT !== '1';
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
 const readingPages =
   Astro.url.pathname === '/' ? await getReadingPages() : undefined;
@@ -62,6 +67,25 @@ const snippets = await build({
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl.href} />
     <link rel="canonical" href={canonicalUrl.href} />
+    <link rel="icon" type="image/webp" href="/logos/feup-color-favicon.webp" />
+    {preloadReadingFonts && (
+      <>
+        <link
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href={manropeFont}
+          crossorigin
+        />
+        <link
+          rel="preload"
+          as="font"
+          type="font/woff2"
+          href={sourceSerifFont}
+          crossorigin
+        />
+      </>
+    )}
     <link
       rel="alternate"
       type="text/markdown"
@@ -76,6 +100,7 @@ const snippets = await build({
       }
     />
     <title>{title}</title>
+    <slot name="head" />
     {readingPages && (
       <>
         <script
@@ -101,6 +126,18 @@ const snippets = await build({
   <body>
     <!-- After Astro's head styles, before any visible content. -->
     <script is:inline set:html={snippets.outputFiles[0].text}></script>
+    {enableOffline && <script is:inline>
+      window.addEventListener(
+        'load',
+        () => {
+          if ('serviceWorker' in navigator)
+            navigator.serviceWorker
+              .register('/sw.js', { scope: '/' })
+              .catch(() => {});
+        },
+        { once: true },
+      );
+    </script>}
     <a class="skip-link" href="#conteudo">
       Saltar para o conteúdo
     </a>
