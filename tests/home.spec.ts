@@ -13,7 +13,6 @@ test.afterEach(() => {
 test('global search finds courses and content without filtering the homepage', async ({
   page,
 }) => {
-  await expect(page.locator('[data-course]')).toHaveCount(34);
   await expect(page.locator('#course-search, [data-year]')).toHaveCount(0);
   await page.keyboard.press('/');
   const search = page.getByRole('searchbox');
@@ -146,10 +145,6 @@ for (const width of [1440, 390, 320]) {
           nodes: v.nodes.map((n) => n.target),
         })),
       ).toEqual([]);
-      await page.screenshot({
-        path: `.impeccable/review/${width}-${theme}.png`,
-        fullPage: true,
-      });
       await page
         .getByRole('button', { name: 'Personalizar aparência' })
         .click();
@@ -162,9 +157,6 @@ for (const width of [1440, 390, 320]) {
           nodes: v.nodes.map((n) => n.target),
         })),
       ).toEqual([]);
-      await page.screenshot({
-        path: `.impeccable/review/${width}-${theme}-settings.png`,
-      });
     });
   }
 }

@@ -149,17 +149,10 @@ for (const width of [1440, 390]) {
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
-      await page.screenshot({
-        path: `/tmp/resumos-snippets-${width}-${theme}.png`,
-        fullPage: true,
-      });
       await page
         .getByRole('button', { name: 'Personalizar aparência' })
         .click();
       await page.locator('.css-snippets').scrollIntoViewIfNeeded();
-      await page.screenshot({
-        path: `/tmp/resumos-snippets-settings-${width}-${theme}.png`,
-      });
     });
   }
 }

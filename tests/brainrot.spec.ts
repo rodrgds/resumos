@@ -726,7 +726,7 @@ test('caption wrapping never splits a spoken sentence and highlighting is option
 
 test('the time scrubber follows the reading in seconds and previews its position while dragging', async ({
   page,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/exemplo/apontamentos/');
   await page.locator('[data-annotatable]').evaluate((body) => {
@@ -751,7 +751,6 @@ test('the time scrubber follows the reading in seconds and previews its position
   await expect(dialog.locator('[data-br-time]')).toHaveText(
     /00:0[23] \/ 00:04/,
   );
-  await page.screenshot({ path: testInfo.outputPath('scrubbing.png') });
   await page.mouse.up();
   await expect(dialog.locator('.brainrot-caption')).toHaveText('Olá mundo.');
   await expect(
