@@ -358,6 +358,7 @@ export async function setupBrainrot() {
       brainrotVoices.some(
         (voice) => voice.id === voiceMode.value && voice.engine === 'sopro',
       );
+    const primeNextCue = !usesSopro || settings.delivery === 'complete';
     if (usesSopro) audio.unlock();
     feed.setPlaying(true);
     try {
@@ -368,11 +369,7 @@ export async function setupBrainrot() {
           render();
           const source = await prepare(index);
           if (token !== generation || !playing || !dialog.open) return;
-          if (
-            usesSopro &&
-            settings.delivery === 'complete' &&
-            !speechBufferPrimed
-          ) {
+          if (primeNextCue && !speechBufferPrimed) {
             if (index + 1 < cues.length) {
               awaitingCue = index + 1;
               await prepare(index + 1);
@@ -383,7 +380,7 @@ export async function setupBrainrot() {
           clearAudio();
           audio.load(source);
           audio.playbackRate = Number(rate.value);
-          const ahead = usesSopro && settings.delivery === 'complete' ? 2 : 1;
+          const ahead = primeNextCue ? 2 : 1;
           for (
             let next = index + 1;
             next <= index + ahead && next < cues.length;

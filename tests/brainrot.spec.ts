@@ -20,7 +20,7 @@ type VoiceTestWindow = Window & {
     models: string[];
     terminated: number;
     references: number[];
-    release?: () => void;
+    releaseNext?: () => void;
     report?: (phase: string, loaded?: number) => void;
   };
 };
@@ -53,7 +53,10 @@ async function mockVoice(
         models: [] as string[],
         terminated: 0,
         references: [] as number[],
-        release: () => {},
+        pending: [] as (() => void)[],
+        releaseNext: () => {
+          state.pending.shift()?.();
+        },
         report: (_phase: string, _loaded?: number) => {},
       };
       Object.assign(window, { brainrotTest: state });
@@ -126,8 +129,9 @@ async function mockVoice(
                     },
               }),
             );
-          if (hold) state.release = respond;
-          else setTimeout(respond, delayMs);
+          if (hold) {
+            state.pending.push(respond);
+          } else setTimeout(respond, delayMs);
         }
         terminate() {
           state.terminated++;
@@ -145,6 +149,59 @@ async function openReader(page: Page) {
   await expect(dialog).toBeVisible();
   return dialog;
 }
+
+test('Piper buffers the next sentence before playback starts', async ({
+  page,
+}) => {
+  await mockVoice(page, false, 2, 30, { hold: true });
+  await page.addInitScript(() => {
+    const play = HTMLMediaElement.prototype.play;
+    Object.assign(window, { voiceAudioStarts: 0 });
+    HTMLMediaElement.prototype.play = function (...args) {
+      if (this instanceof HTMLAudioElement)
+        (window as typeof window & { voiceAudioStarts: number })
+          .voiceAudioStarts++;
+      return play.apply(this, args);
+    };
+  });
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('.lesson-heading h1').evaluate((element) => {
+    element.textContent = 'Vamos começar a leitura desta página.';
+  });
+  await page.locator('[data-annotatable]').evaluate((element) => {
+    const paragraph = document.createElement('p');
+    paragraph.textContent =
+      'A frase seguinte deve estar pronta quando esta acabar. A terceira frase também pode ser preparada cedo.';
+    element.replaceChildren(paragraph);
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
+  const voiceRequests = () =>
+    page.evaluate(
+      () => (window as unknown as VoiceTestWindow).brainrotTest.texts.length,
+    );
+  const releaseNext = () =>
+    page.evaluate(() =>
+      (window as unknown as VoiceTestWindow).brainrotTest.releaseNext!(),
+    );
+  const audioStarts = () =>
+    page.evaluate(
+      () =>
+        (window as typeof window & { voiceAudioStarts: number })
+          .voiceAudioStarts,
+    );
+  await expect.poll(voiceRequests).toBe(1);
+  await releaseNext();
+  await expect.poll(voiceRequests).toBe(2);
+  await expect(dialog.locator('[data-br-status]')).toContainText(
+    'trecho 2 de 3',
+  );
+  expect(await audioStarts()).toBe(0);
+  await releaseNext();
+  await expect.poll(audioStarts).toBe(1);
+  await expect.poll(voiceRequests).toBe(3);
+});
 
 test('voice preparation status appears only after one second', async ({
   page,
@@ -230,7 +287,17 @@ test('voice progress distinguishes download, reference preparation and speech ge
   await expect(status).toContainText('A gerar fala');
   await expect(status).toContainText('trecho 1 de');
   await page.evaluate(() =>
-    (window as unknown as VoiceTestWindow).brainrotTest.release!(),
+    (window as unknown as VoiceTestWindow).brainrotTest.releaseNext!(),
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as VoiceTestWindow).brainrotTest.texts.length,
+      ),
+    )
+    .toBe(2);
+  await page.evaluate(() =>
+    (window as unknown as VoiceTestWindow).brainrotTest.releaseNext!(),
   );
   await expect(status).toHaveText('Voz local · Português de Portugal');
   await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
@@ -342,7 +409,17 @@ test('pausing while the voice loads resumes the same preparation', async ({
   await dialog.getByRole('button', { name: 'Pausar leitura' }).click();
   await dialog.getByRole('button', { name: 'Iniciar leitura' }).click();
   await page.evaluate(() =>
-    (window as unknown as VoiceTestWindow).brainrotTest.release!(),
+    (window as unknown as VoiceTestWindow).brainrotTest.releaseNext!(),
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as VoiceTestWindow).brainrotTest.texts.length,
+      ),
+    )
+    .toBe(2);
+  await page.evaluate(() =>
+    (window as unknown as VoiceTestWindow).brainrotTest.releaseNext!(),
   );
   await expect(dialog.locator('[data-br-status]')).toContainText('Voz local');
   expect(
