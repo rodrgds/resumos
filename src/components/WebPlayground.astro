@@ -71,7 +71,17 @@ const { html, css = '', js = '' } = Astro.props;
     title="Pré-visualização do exemplo web"
     sandbox="allow-scripts"
     referrerpolicy="no-referrer"
+    aria-busy="true"
+    hidden
   ></iframe>
+  <p
+    data-web-status
+    class="web-preview-status"
+    role="status"
+    aria-live="polite"
+  >
+    A preparar a pré-visualização…
+  </p>
 </section>
 <script>
   import { EditorView } from '@codemirror/view';
@@ -86,7 +96,12 @@ const { html, css = '', js = '' } = Astro.props;
       const html = root.querySelector<HTMLTextAreaElement>('[data-html]')!;
       const css = root.querySelector<HTMLTextAreaElement>('[data-css]')!;
       const js = root.querySelector<HTMLTextAreaElement>('[data-js]')!;
-      const frame = root.querySelector('iframe')!;
+      let frame = root.querySelector('iframe')!;
+      const status = root.querySelector<HTMLElement>('[data-web-status]')!;
+      const controls = [
+        root.querySelector<HTMLButtonElement>('[data-web-run]')!,
+        root.querySelector<HTMLButtonElement>('[data-web-reset]')!,
+      ];
       const original = [html.value, css.value, js.value];
       const languages = [htmlLanguage(), cssLanguage(), javascript()];
       const editors = [html, css, js].map((source, index) => {
@@ -107,26 +122,55 @@ const { html, css = '', js = '' } = Astro.props;
         return editor;
       });
       const render = () => {
+        controls[0].disabled = true;
+        const nextFrame = document.createElement('iframe');
+        nextFrame.title = frame.title;
+        nextFrame.setAttribute(
+          'sandbox',
+          frame.getAttribute('sandbox') ?? 'allow-scripts',
+        );
+        nextFrame.setAttribute(
+          'referrerpolicy',
+          frame.getAttribute('referrerpolicy') ?? 'no-referrer',
+        );
+        nextFrame.hidden = true;
+        nextFrame.setAttribute('aria-busy', 'true');
+        // Completion must not depend on editable HTML executing a sentinel script.
+        nextFrame.addEventListener(
+          'load',
+          () => {
+            if (frame !== nextFrame) return;
+            frame.hidden = false;
+            frame.removeAttribute('aria-busy');
+            frame.dataset.webReady = 'true';
+            status.hidden = true;
+            controls[0].disabled = false;
+          },
+          { once: true },
+        );
+        status.hidden = false;
+        status.textContent = 'A atualizar a pré-visualização…';
         const [htmlCode, cssCode, jsCode] = editors.map((editor) =>
           editor.state.doc.toString(),
         );
         // Opaque origin, no parent/storage access, no network or form submissions.
-        frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{font-family:system-ui;padding:16px}${cssCode}</style></head><body>${htmlCode}<script>${jsCode}<\/script></body></html>`;
+        nextFrame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{font-family:system-ui;padding:16px}${cssCode}</style></head><body>${htmlCode}<script>${jsCode}<\/script></body></html>`;
+        frame.replaceWith(nextFrame);
+        frame = nextFrame;
       };
-      root.querySelector<HTMLButtonElement>('[data-web-run]')!.onclick = render;
-      root.querySelector<HTMLButtonElement>('[data-web-reset]')!.onclick =
-        () => {
-          editors.forEach((editor, index) =>
-            editor.dispatch({
-              changes: {
-                from: 0,
-                to: editor.state.doc.length,
-                insert: original[index],
-              },
-            }),
-          );
-          render();
-        };
+      controls[0].onclick = render;
+      controls[1].onclick = () => {
+        editors.forEach((editor, index) =>
+          editor.dispatch({
+            changes: {
+              from: 0,
+              to: editor.state.doc.length,
+              insert: original[index],
+            },
+          }),
+        );
+        render();
+      };
       root.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
           event.preventDefault();

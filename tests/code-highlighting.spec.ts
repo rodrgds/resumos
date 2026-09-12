@@ -85,8 +85,43 @@ test('web editors preview edits, keep the frame isolated and reset all languages
     .getByRole('textbox', { name: 'JavaScript', exact: true })
     .press('Control+Enter');
   await expect(frame.locator('#result')).toHaveText('Blocked');
+  await expect(
+    playground.getByRole('button', { name: 'Repor exemplo web' }),
+  ).toBeEnabled();
   await playground.getByRole('button', { name: 'Repor exemplo web' }).click();
-  await frame.getByRole('button', { name: 'Mudar mensagem' }).click();
-  await expect(frame.locator('#mensagem')).toHaveText('Funcionou!');
-  await expect(frame.locator('body')).toHaveCSS('color', 'rgb(140, 45, 59)');
+  const resetIframe = playground.locator('iframe');
+  await expect(resetIframe).toBeVisible();
+  await expect(resetIframe).toHaveAttribute('data-web-ready', 'true');
+  const resetFrame = resetIframe.contentFrame();
+  const resetButton = resetFrame.getByRole('button', {
+    name: 'Mudar mensagem',
+  });
+  await resetButton.press('Enter');
+  await expect(resetFrame.locator('#mensagem')).toHaveText('Funcionou!');
+  await expect(resetFrame.locator('body')).toHaveCSS(
+    'color',
+    'rgb(140, 45, 59)',
+  );
+});
+
+test('an unfinished HTML tag still lets the reader reset the web example', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/codigo/');
+  const playground = page.locator('[data-web-playground]');
+  const reset = playground.getByRole('button', { name: 'Repor exemplo web' });
+  await expect(reset).toBeEnabled();
+  await playground
+    .getByRole('textbox', { name: 'HTML', exact: true })
+    .fill('<textarea>unfinished');
+  await playground
+    .getByRole('button', { name: 'Pré-visualizar', exact: true })
+    .click();
+  await expect(reset).toBeEnabled();
+  await reset.click();
+  await expect(
+    playground
+      .frameLocator('iframe')
+      .getByRole('button', { name: 'Mudar mensagem' }),
+  ).toBeVisible();
 });
