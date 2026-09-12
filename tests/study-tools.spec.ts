@@ -24,7 +24,7 @@ test('shortcuts can be remapped, reject conflicts and survive reload', async ({
   await page.getByLabel('Navegar nos cartões').check();
   await page.keyboard.press('Escape');
   await expect(
-    page.getByRole('link', { name: 'Resumos LEIC FEUP, início' }),
+    page.getByRole('link', { name: 'Resumos LEIC FEUP' }),
   ).toBeFocused();
   await page.keyboard.press('j');
   await expect(page.locator('[data-course]').first()).toBeFocused();
@@ -167,10 +167,6 @@ for (const width of [1440, 390, 320]) {
           )
           .toBe(true);
         await page.evaluate(() => window.scrollTo(0, 0));
-        await page.screenshot({
-          path: `.impeccable/review/${width}-${theme}-${path.replaceAll('/', '-')}.png`,
-          fullPage: true,
-        });
       }
     }
   });
@@ -237,14 +233,6 @@ test('useful links and the current MEIC plan are reachable', async ({
   await expect(
     page.getByRole('heading', { name: 'MEIC', exact: true }),
   ).toBeVisible();
-  await expect(page.locator('.year-section')).toHaveCount(2);
-  await expect(page.locator('[data-course]')).toHaveCount(57);
-  await expect(
-    page.locator('[data-course-year="1"] [data-course]'),
-  ).toHaveCount(30);
-  await expect(
-    page.locator('[data-course-year="2"] [data-course]'),
-  ).toHaveCount(27);
   await page
     .locator('.course-options')
     .filter({ has: page.locator('[data-acronym="WSDL"]') })

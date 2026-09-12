@@ -52,12 +52,10 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.goto('/cadeiras/fsi/principios-seguranca/');
-    await page.screenshot({ path: `.impeccable/review/reader-${width}.png` });
     if (width < 1200) await page.locator('.course-sidebar > summary').click();
     const chapters = await page.locator('.course-sidebar nav').boundingBox();
     expect(chapters!.x).toBeGreaterThanOrEqual(16);
     expect(chapters!.x + chapters!.width).toBeLessThanOrEqual(width - 16);
-    await page.screenshot({ path: `.impeccable/review/chapters-${width}.png` });
     await page
       .getByRole('navigation', { name: 'Conteúdos da cadeira' })
       .getByRole('link', { name: 'Apresentação', exact: true })
@@ -70,13 +68,11 @@ for (const width of [1440, 390]) {
         .getByRole('link', { name: /Princípios de segurança/ }),
     ).toBeVisible();
     if (width < 1200) await page.keyboard.press('Escape');
-    await page.screenshot({ path: `.impeccable/review/course-${width}.png` });
     await page.goto('/exemplo/formatacao/');
     const bracket = page.getByRole('complementary', { name: 'Ideia-chave' });
     await bracket.scrollIntoViewIfNeeded();
     await expect(bracket).toContainText('Destaca a condição');
     await expect(bracket).toHaveAttribute('data-drawn', '');
-    await page.screenshot({ path: `.impeccable/review/bracket-${width}.png` });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -290,9 +286,6 @@ test('desktop section list underlines the current section and crosses passed sec
     'animation-name',
     'none',
   );
-  await page.screenshot({
-    path: '.impeccable/review/section-list-progress.png',
-  });
   await links.first().click();
   await expect(links.first()).toHaveAttribute('aria-current', 'location');
   await expect(links.first()).not.toHaveAttribute('data-completed', '');

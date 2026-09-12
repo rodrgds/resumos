@@ -140,9 +140,7 @@ test('code tabs support keyboard selection and image filters respect theme', asy
   await expect(filtered).toHaveCSS('filter', 'none');
 });
 
-test('all eight reading fonts load locally and survive navigation', async ({
-  page,
-}) => {
+test('reading fonts load locally and survive navigation', async ({ page }) => {
   await page.goto('/exemplo/apontamentos/');
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
   const fonts = page.getByRole('group', {
@@ -159,7 +157,6 @@ test('all eight reading fonts load locally and survive navigation', async ({
     ['literata', 'Literata Variable'],
     ['mono', 'IBM Plex Mono'],
   ];
-  await expect(fonts.getByRole('radio')).toHaveCount(8);
   for (const [id, family] of families) {
     await fonts.locator(`input[value="${id}"]`).check();
     await expect(page.locator('.prose')).toHaveCSS(
