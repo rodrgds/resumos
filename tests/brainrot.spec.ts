@@ -671,7 +671,14 @@ test('caption and social preferences survive navigation without starting a voice
 test('desktop opening and closing animate the phone and restore focus, with a reduced-motion path', async ({
   page,
 }) => {
-  const dialog = await openReader(page);
+  await page.goto('/exemplo/apontamentos/');
+  await page.addStyleTag({
+    content:
+      '.brainrot[open]:not([data-closing="true"]) .brainrot-shell { animation-duration: 10s !important; }',
+  });
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  await expect(dialog).toBeVisible();
   const shell = dialog.locator('.brainrot-shell');
   const entranceTop = await shell.evaluate((element) => {
     const animation = element.getAnimations()[0];
