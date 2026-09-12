@@ -1,4 +1,23 @@
 import { readSemesterPins, SEMESTER_PIN_KEY } from '../lib/pinned-semesters';
+import { readingHistory } from '../lib/reading-history';
+
+const readingPages = document.querySelector('#reading-pages');
+if (readingPages) {
+  const publishedPaths = new Set(
+    (JSON.parse(readingPages.textContent!) as { path: string }[]).map(
+      (page) => page.path,
+    ),
+  );
+  for (const card of document.querySelectorAll<HTMLAnchorElement>(
+    'a[data-course][data-course-root]',
+  )) {
+    const root = card.dataset.courseRoot!;
+    const latest = readingHistory().find(
+      (visit) => publishedPaths.has(visit.path) && visit.path.startsWith(root),
+    );
+    if (latest) card.href = `${latest.path}?continuar=1`;
+  }
+}
 
 const detail = document.querySelector<HTMLDialogElement>('#course-detail')!;
 const cards = document.querySelectorAll<HTMLButtonElement>(

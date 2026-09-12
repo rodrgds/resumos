@@ -213,6 +213,19 @@ test('mobile course progress fills the navigation track', async ({ page }) => {
   expect(bounds.lastWidth).toBeGreaterThan(24);
 });
 
+test('desktop course progress fits its sidebar without horizontal scrolling', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/cadeiras/fsi/principios-seguranca/');
+  const bounds = await page.locator('.course-progress').evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+
+  expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.clientWidth);
+});
+
 test('mobile header hides downwards, returns upwards and reveals keyboard focus', async ({
   page,
 }) => {
