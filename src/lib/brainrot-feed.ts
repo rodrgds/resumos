@@ -5,6 +5,7 @@ const SETTLE_DELAY_MS = 140;
 export class ClipFeed {
   #element: HTMLElement;
   #clips: BrainrotClip[];
+  #sequences = new Map<string, BrainrotClip[]>();
   #slots: { clip: BrainrotClip; video: HTMLVideoElement; item: HTMLElement }[] =
     [];
   #onChange: (label: string) => void;
@@ -27,7 +28,8 @@ export class ClipFeed {
     gestureSurface: HTMLElement = element,
   ) {
     this.#element = element;
-    this.#clips = clips;
+    this.#clips = [];
+    this.setClips(clips);
     this.#onChange = onChange;
     this.#onError = onError;
     gestureSurface.addEventListener(
@@ -39,6 +41,7 @@ export class ClipFeed {
           Math.abs(event.deltaX) > Math.abs(event.deltaY)
         )
           return;
+        if (this.#scrollableVisual(event.target)) return;
         event.preventDefault();
         if (event.timeStamp - this.#wheelTime > 180) {
           this.#wheelDistance = 0;
@@ -68,6 +71,7 @@ export class ClipFeed {
         !(event.target as Element).closest('.brainrot-visual, .brainrot-play')
       )
         return;
+      if (this.#scrollableVisual(event.target)) return;
       touch = { id: event.pointerId, x: event.clientX, y: event.clientY };
     });
     gestureSurface.addEventListener('pointerup', (event) => {
@@ -129,12 +133,18 @@ export class ClipFeed {
     this.#resize.observe(element);
   }
 
-  #pick(previous?: BrainrotClip): BrainrotClip {
-    const alternatives = this.#clips.filter(
-      (clip) => clip.kind !== previous?.kind,
-    );
-    const choices = alternatives.length ? alternatives : this.#clips;
-    return choices[Math.floor(Math.random() * choices.length)];
+  #scrollableVisual(target: EventTarget | null): boolean {
+    if (target instanceof Element && target.closest('.brainrot-video-preview'))
+      return false;
+    const visual =
+      target instanceof Element && target.closest('.brainrot-visual');
+    return Boolean(visual && visual.scrollHeight > visual.clientHeight + 1);
+  }
+
+  #adjacent(clip: BrainrotClip, direction: number): BrainrotClip {
+    const sequence = this.#sequences.get(clip.series)!;
+    const position = sequence.indexOf(clip);
+    return sequence[(position + direction + sequence.length) % sequence.length];
   }
 
   #slot(clip: BrainrotClip) {
@@ -142,13 +152,13 @@ export class ClipFeed {
     item.className = 'brainrot-clip';
     const video = document.createElement('video');
     video.muted = true;
-    video.loop = true;
     video.playsInline = true;
     video.preload = 'none';
     video.setAttribute('aria-hidden', 'true');
-    video.addEventListener('loadedmetadata', () => {
-      if (Number.isFinite(video.duration))
-        video.currentTime = Math.random() * Math.max(0, video.duration - 5);
+    video.addEventListener('ended', () => {
+      if (this.#slots[1]?.video !== video) return;
+      this.#element.scrollTop = this.#element.clientHeight * 2;
+      this.#settle();
     });
     video.addEventListener('error', () => {
       if (this.#slots[1]?.video === video) this.#onError();
@@ -194,14 +204,14 @@ export class ClipFeed {
       const old = this.#slots.shift()!;
       this.#release(old.video);
       old.item.remove();
-      const next = this.#slot(this.#pick(this.#slots[1].clip));
+      const next = this.#slot(this.#adjacent(this.#slots[1].clip, 1));
       this.#slots.push(next);
       this.#element.append(next.item);
     } else {
       const old = this.#slots.pop()!;
       this.#release(old.video);
       old.item.remove();
-      const previous = this.#slot(this.#pick(this.#slots[0].clip));
+      const previous = this.#slot(this.#adjacent(this.#slots[0].clip, -1));
       this.#slots.unshift(previous);
       this.#element.prepend(previous.item);
     }
@@ -225,10 +235,13 @@ export class ClipFeed {
   open() {
     this.close();
     if (!this.#clips.length) return;
-    const current = this.#pick();
-    this.#slots = [this.#pick(current), current, this.#pick(current)].map(
-      (clip) => this.#slot(clip),
-    );
+    const sequences = [...this.#sequences.values()];
+    const current = sequences[Math.floor(Math.random() * sequences.length)][0];
+    this.#slots = [
+      this.#adjacent(current, -1),
+      current,
+      this.#adjacent(current, 1),
+    ].map((clip) => this.#slot(clip));
     this.#element.replaceChildren(...this.#slots.map((slot) => slot.item));
     this.#centre();
     this.#activate();
@@ -236,6 +249,14 @@ export class ClipFeed {
 
   setClips(clips: BrainrotClip[]) {
     this.#clips = clips;
+    this.#sequences.clear();
+    for (const clip of clips) {
+      const sequence = this.#sequences.get(clip.series) || [];
+      sequence.push(clip);
+      this.#sequences.set(clip.series, sequence);
+    }
+    for (const sequence of this.#sequences.values())
+      sequence.sort((a, b) => a.part - b.part);
   }
 
   move(direction: number) {

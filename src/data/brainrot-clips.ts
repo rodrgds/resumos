@@ -1,53 +1,48 @@
 export interface BrainrotClip {
   src: string;
   label: string;
-  kind: string;
+  series: string;
+  part: number;
 }
 
-const longVideoStarts = [90, 480, 1050, 1680, 2340, 3000];
 const sources = [
   {
     prefix: 'minecraft',
-    kind: 'minecraft',
     label: 'Minecraft',
-    starts: longVideoStarts,
+    parts: 65,
   },
   {
     prefix: 'minecraft-a66B9nwGmT4',
-    kind: 'minecraft',
     label: 'Minecraft',
-    starts: longVideoStarts,
+    parts: 71,
   },
   {
     prefix: 'subway-hJcv2nZ8x84',
-    kind: 'subway',
     label: 'Subway Surfers',
-    starts: longVideoStarts,
+    parts: 77,
   },
   {
     prefix: 'subway-wOPAA823UWI',
-    kind: 'subway',
     label: 'Subway Surfers',
-    starts: longVideoStarts,
+    parts: 64,
   },
   {
     prefix: 'gta-8VmCwcGw6SI',
-    kind: 'gta',
     label: 'GTA V · Mega ramp',
-    starts: [30, 120, 210, 300, 390, 480],
+    parts: 10,
   },
   {
     prefix: 'roblox-wQ7WgNBpufo',
-    kind: 'roblox',
     label: 'Roblox · Parkour',
-    starts: longVideoStarts,
+    parts: 67,
   },
 ];
 
 export const brainrotClips: BrainrotClip[] = sources.flatMap((source) =>
-  source.starts.map((start) => ({
-    src: `/brainrot/${source.prefix}-${start}.mp4`,
+  Array.from({ length: source.parts }, (_, part) => ({
+    src: `/brainrot/${source.prefix}-${String(part).padStart(3, '0')}.mp4`,
     label: source.label,
-    kind: source.kind,
+    series: source.prefix,
+    part,
   })),
 );

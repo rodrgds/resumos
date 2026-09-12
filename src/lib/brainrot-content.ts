@@ -95,6 +95,12 @@ export function readingVisual(source: Element): Element {
   const clone = source.cloneNode(true) as Element;
   clone.removeAttribute('hidden');
   clone.querySelectorAll(ignored).forEach((element) => element.remove());
+  for (const table of clone.matches('table')
+    ? [clone as HTMLTableElement]
+    : clone.querySelectorAll('table')) {
+    if ([...table.rows].every((row) => row.cells.length === 2))
+      table.classList.add('brainrot-table-pairs');
+  }
   const ids = new Map<string, string>();
   const elements = [clone, ...clone.querySelectorAll('*')];
   for (const element of elements) {
