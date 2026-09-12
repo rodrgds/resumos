@@ -129,6 +129,60 @@ test('practice opens in the lesson and the cheat sheet stays outside its sequenc
   ).toHaveCount(0);
 });
 
+test('the cheat sheet icon is optically centred with its label', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 426, height: 800 });
+  await page.goto('/exemplo/apontamentos/');
+  await page.locator('.course-sidebar > summary').click();
+  const link = page
+    .getByRole('navigation', { name: 'Conteúdos da cadeira' })
+    .getByRole('link', { name: 'Cheat sheet', exact: true });
+  const offset = await link.evaluate((element) => {
+    const icon = element.querySelector('svg')!;
+    const label = [...element.childNodes].find(
+      (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+    )!;
+    const labelRange = document.createRange();
+    labelRange.selectNodeContents(label);
+    const iconBounds = icon.getBoundingClientRect();
+    const labelBounds = labelRange.getBoundingClientRect();
+    return Math.abs(
+      iconBounds.y +
+        iconBounds.height / 2 -
+        (labelBounds.y + labelBounds.height / 2),
+    );
+  });
+  expect(offset).toBeLessThanOrEqual(1);
+});
+
+test('a course card resumes the most recently visited published page', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem(
+      'resumos-reading-history',
+      JSON.stringify([
+        {
+          path: '/cadeiras/fsc/folha-consulta/',
+          visitedAt: Date.now(),
+          position: 0,
+          reachedEnd: false,
+        },
+      ]),
+    );
+  });
+  await page.reload();
+  const card = page.locator('#cadeira-fsc');
+  await expect(card).toHaveAttribute(
+    'href',
+    '/cadeiras/fsc/folha-consulta/?continuar=1',
+  );
+  await card.click();
+  await expect(page).toHaveURL(/\/cadeiras\/fsc\/folha-consulta\/$/);
+});
+
 test('numeric answers enforce tolerance and retain help attribution across clearing and reload', async ({
   page,
 }) => {
