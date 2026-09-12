@@ -26,7 +26,7 @@ O catálogo em `src/data/brainrot-voices.ts` fixa os ficheiros e as revisões do
 
 ## Vídeos de fundo
 
-Os 36 excertos em `public/brainrot/` têm 30 segundos. Os novos vídeos usam 720 × 1280 a 30 fps e um limite de 2,5 Mbit/s; os seis excertos do Minecraft original mantêm 432 × 768 a 24 fps. Foram extraídos de seis fontes indicadas pelo Rodrigo; [créditos e condições](../public/brainrot/CREDITOS.txt). O leitor carrega o vídeo atual e o seguinte, e recicla três posições de scroll. Nunca descarrega os vídeos completos de uma hora. Para acrescentar fundos, coloca novos excertos curtos nesta pasta e acrescenta-os a `src/data/brainrot-clips.ts`. `kind` identifica o jogo e evita repetir o mesmo jogo em swipes consecutivos. Os vídeos escolhidos em **Usar os meus vídeos** ficam em memória até fechar o leitor.
+Os 354 segmentos em `public/brainrot/` cobrem seis gravações completas, cinco de cerca de uma hora e uma de dez minutos. Cada segmento dura cerca de um minuto e conserva os fotogramas H.264 da fonte, sem som. As fontes, os créditos e as condições estão em [CREDITOS.txt](../public/brainrot/CREDITOS.txt). O leitor escolhe uma gravação ao abrir, carrega apenas o segmento atual e o seguinte, avança automaticamente quando um termina e só volta ao início no fim da gravação. A navegação manual percorre os mesmos segmentos. `src/data/brainrot-clips.ts` regista a ordem e a quantidade exata de segmentos de cada gravação. Os vídeos escolhidos em **Usar os meus vídeos** são reproduzidos pela ordem de seleção e ficam em memória até fechar o leitor.
 
 ## Extração e legendas
 

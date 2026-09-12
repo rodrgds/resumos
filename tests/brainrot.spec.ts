@@ -754,9 +754,7 @@ test('cards accept pause taps, suppress duplicate captions and stay centred on t
   expect(
     Math.abs(playBox!.y + playBox!.height / 2 - (stage!.y + stage!.height / 2)),
   ).toBeLessThan(1);
-  expect(
-    Math.abs(playBox!.x + playBox!.width / 2 - (stage!.x + stage!.width / 2)),
-  ).toBeLessThan(1);
+  expect(playBox!.x + playBox!.width).toBeLessThan(box!.x);
   await expect(card.locator('[data-current-line]')).toHaveCount(0);
 });
 
@@ -981,22 +979,21 @@ test('voice and clips stay lazy; captions follow audio and pause with the reader
   );
 });
 
-test('the infinite feed alternates games without changing the lesson position or retaining off-screen videos', async ({
+test('the feed advances adjacent clips without changing the lesson position or retaining off-screen videos', async ({
   page,
 }) => {
   const dialog = await openReader(page);
   const caption = await dialog.locator('.brainrot-caption').textContent();
-  const first = await dialog.locator('[data-br-clip-name]').textContent();
+  const current = dialog.locator('.brainrot-clip:nth-child(2) video');
+  const first = await current.getAttribute('src');
   const visited = [first];
   let previous = first;
   for (let step = 0; step < 7; step++) {
     await dialog
       .getByRole('button', { name: 'Vídeo seguinte', exact: true })
       .click();
-    await expect(dialog.locator('[data-br-clip-name]')).not.toHaveText(
-      previous!,
-    );
-    previous = await dialog.locator('[data-br-clip-name]').textContent();
+    await expect(current).not.toHaveAttribute('src', previous!);
+    previous = await current.getAttribute('src');
     visited.push(previous);
     await expect(dialog.locator('.brainrot-caption')).toHaveText(caption!);
     await expect(dialog.locator('video')).toHaveCount(3);
@@ -1005,9 +1002,7 @@ test('the infinite feed alternates games without changing the lesson position or
   await dialog
     .getByRole('button', { name: 'Vídeo anterior', exact: true })
     .click();
-  await expect(dialog.locator('[data-br-clip-name]')).toHaveText(
-    visited.at(-2)!,
-  );
+  await expect(current).toHaveAttribute('src', visited.at(-2)!);
 });
 
 test('the reader preserves mixed text, nested lists, images and maths while excluding private controls', async ({
@@ -1093,13 +1088,13 @@ test('scrolling over a code card changes the background without changing the rea
   await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
   await nextCue(dialog);
-  const label = dialog.locator('[data-br-clip-name]');
-  const initial = await label.textContent();
+  const video = dialog.locator('.brainrot-clip:nth-child(2) video');
+  const initial = await video.getAttribute('src');
   const position = await dialog.locator('[data-br-position]').textContent();
   const card = await dialog.locator('.brainrot-visual').boundingBox();
   await page.mouse.move(card!.x + 12, card!.y + 12);
   await page.mouse.wheel(0, 550);
-  await expect(label).not.toHaveText(initial!);
+  await expect(video).not.toHaveAttribute('src', initial!);
   await expect(dialog.locator('[data-br-position]')).toHaveText(position!);
 });
 
@@ -1288,8 +1283,8 @@ test.describe('touch feed', () => {
     page,
   }) => {
     const dialog = await openReader(page);
-    const name = dialog.locator('[data-br-clip-name]');
-    const previous = await name.textContent();
+    const video = dialog.locator('.brainrot-clip:nth-child(2) video');
+    const previous = await video.getAttribute('src');
     const input = await page.context().newCDPSession(page);
     await input.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
@@ -1303,20 +1298,20 @@ test.describe('touch feed', () => {
       await page.waitForTimeout(16);
     }
     await page.waitForTimeout(350);
-    expect(await name.textContent()).toBe(previous);
+    expect(await video.getAttribute('src')).toBe(previous);
     await input.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],
     });
-    await expect(name).not.toHaveText(previous!);
+    await expect(video).not.toHaveAttribute('src', previous!);
   });
 
   test('a swipe settles after release despite an early scrollend and a late scroll', async ({
     page,
   }) => {
     const dialog = await openReader(page);
-    const name = dialog.locator('[data-br-clip-name]');
-    const previous = await name.textContent();
+    const video = dialog.locator('.brainrot-clip:nth-child(2) video');
+    const previous = await video.getAttribute('src');
     const input = await page.context().newCDPSession(page);
     await input.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
@@ -1332,16 +1327,16 @@ test.describe('touch feed', () => {
         });
       });
     });
-    await expect(name).toHaveText(previous!);
+    await expect(video).toHaveAttribute('src', previous!);
     await input.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],
     });
     await feed.dispatchEvent('scroll');
-    await expect(name).not.toHaveText(previous!);
+    await expect(video).not.toHaveAttribute('src', previous!);
   });
 
-  test('tapping pauses and swiping changes games without restarting the reading', async ({
+  test('tapping pauses and swiping advances video without restarting the reading', async ({
     page,
   }) => {
     await mockVoice(page);
@@ -1371,9 +1366,8 @@ test.describe('touch feed', () => {
       });
     });
     for (let step = 0; step < 3; step++) {
-      const previous = await dialog
-        .locator('[data-br-clip-name]')
-        .textContent();
+      const video = dialog.locator('.brainrot-clip:nth-child(2) video');
+      const previous = await video.getAttribute('src');
       await input.send('Input.dispatchTouchEvent', {
         type: 'touchStart',
         touchPoints: [{ x: 110, y: 630 }],
@@ -1389,9 +1383,7 @@ test.describe('touch feed', () => {
         type: 'touchEnd',
         touchPoints: [],
       });
-      await expect(dialog.locator('[data-br-clip-name]')).not.toHaveText(
-        previous!,
-      );
+      await expect(video).not.toHaveAttribute('src', previous!);
       await expect(dialog.locator('.brainrot-caption')).toHaveText(caption!);
       await expect(
         dialog.getByRole('button', { name: 'Iniciar leitura' }),
@@ -1406,7 +1398,7 @@ test.describe('touch feed', () => {
       ),
     ).toBe(false);
   });
-  test('swiping a media card changes game without opening its link or starting playback', async ({
+  test('swiping a media card advances video without opening its link or starting playback', async ({
     page,
   }) => {
     await page.goto('/exemplo/apontamentos/');
@@ -1420,7 +1412,8 @@ test.describe('touch feed', () => {
     const box = (await dialog
       .locator('.brainrot-video-preview')
       .boundingBox())!;
-    const previous = await dialog.locator('[data-br-clip-name]').textContent();
+    const video = dialog.locator('.brainrot-clip:nth-child(2) video');
+    const previous = await video.getAttribute('src');
     const input = await page.context().newCDPSession(page);
     const x = box.x + 20;
     const y = box.y + box.height - 20;
@@ -1439,9 +1432,7 @@ test.describe('touch feed', () => {
       type: 'touchEnd',
       touchPoints: [],
     });
-    await expect(dialog.locator('[data-br-clip-name]')).not.toHaveText(
-      previous!,
-    );
+    await expect(video).not.toHaveAttribute('src', previous!);
     await expect(
       dialog.getByRole('button', { name: 'Iniciar leitura' }),
     ).toBeVisible();
@@ -1489,9 +1480,7 @@ test('landscape keeps the top controls apart and the formula readable', async ({
   expect(
     Math.abs(formula!.x + formula!.width / 2 - (stage!.x + stage!.width / 2)),
   ).toBeLessThan(1);
-  expect(
-    Math.abs(play!.x + play!.width / 2 - (stage!.x + stage!.width / 2)),
-  ).toBeLessThan(1);
+  expect(play!.x + play!.width).toBeLessThan(formula!.x);
   expect(
     Math.abs(play!.y + play!.height / 2 - (stage!.y + stage!.height / 2)),
   ).toBeLessThan(1);

@@ -447,11 +447,17 @@ export async function setupBrainrot() {
   play.addEventListener('click', () => (playing ? pause() : void start()));
   let pointerStart = { x: 0, y: 0 };
   let tapCancelled = false;
-  const isPlaybackSurface = (target: EventTarget | null) =>
-    target instanceof Element &&
-    !target.closest(
-      'a[href], button, input, select, summary, .brainrot-social, .brainrot-progress',
-    );
+  const isPlaybackSurface = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return false;
+    if (
+      target.closest(
+        'a[href], button, input, select, summary, .brainrot-social, .brainrot-progress',
+      )
+    )
+      return false;
+    const visual = target.closest('.brainrot-visual');
+    return !visual || visual.scrollHeight <= visual.clientHeight + 1;
+  };
   stage.addEventListener('pointerdown', (event) => {
     if (!isPlaybackSurface(event.target)) return;
     pointerStart = { x: event.clientX, y: event.clientY };
@@ -616,7 +622,8 @@ export async function setupBrainrot() {
       selected.map((file, i) => ({
         src: customURLs[i],
         label: file.name,
-        kind: file.name,
+        series: 'custom',
+        part: i,
       })),
     );
     feed.open();
