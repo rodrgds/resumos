@@ -103,8 +103,8 @@ export class ClipFeed {
     const endTouch = (event: TouchEvent) => {
       this.#touching = event.touches.length > 0;
       clearTimeout(this.#timer);
-      if (!this.#touching && !hasScrollEnd)
-        this.#timer = setTimeout(() => this.#settle(), 140);
+      // scrollend can arrive while a finger is still down and defer settling.
+      if (!this.#touching) this.#timer = setTimeout(() => this.#settle(), 140);
     };
     gestureSurface.addEventListener('touchend', endTouch, { passive: true });
     gestureSurface.addEventListener('touchcancel', endTouch, { passive: true });
