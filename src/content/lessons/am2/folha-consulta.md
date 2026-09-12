@@ -97,7 +97,7 @@ $$
 \oint_C P\,dx+Q\,dy
 =\iint_D(Q_x-P_y)\,dA,
 \qquad
-\operatorname{área}(D)=\frac12\oint_C(-y\,dx+x\,dy).
+\text{área}(D)=\frac12\oint_C(-y\,dx+x\,dy).
 $$
 
 Se a orientação for horária, muda o sinal. Vê [o teorema de Green](/cadeiras/am2/integrais-linha/#teorema-de-green).

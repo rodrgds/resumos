@@ -64,7 +64,11 @@ Em todos estes casos, $H_1$ determina se a região crítica é bilateral ou unil
 
 **Agresti–Coull para amostra pequena.** No intervalo bilateral aproximado, usa $\tilde n=n+z_{1-\alpha/2}^2$, $\tilde p=(x+z_{1-\alpha/2}^2/2)/\tilde n$ e $\tilde p\pm z_{1-\alpha/2}\sqrt{\tilde p(1-\tilde p)/\tilde n}$. A 95%, a regra prática é $\tilde p\approx(x+2)/(n+4)$. Não uses a regra $+2,+4$ como se fosse exata para qualquer confiança.
 
-**Duas proporções independentes.** Para $p_1-p_2$, o intervalo Wald usa $d=\hat p_1-\hat p_2$ e $SE=\sqrt{\hat p_1(1-\hat p_1)/n_1+\hat p_2(1-\hat p_2)/n_2}$, logo $d\pm z_{1-\alpha/2}SE$. A versão **Agresti–Caffo** acrescenta um sucesso e um insucesso a **cada** amostra: $p_i^*=(x_i+1)/(n_i+2)$. Usa $d^*=p_1^*-p_2^*$ e $SE^*=\sqrt{p_1^*(1-p_1^*)/(n_1+2)+p_2^*(1-p_2^*)/(n_2+2)}$ no intervalo $d^*\pm z_{1-\alpha/2}SE^*$. Ambos são aproximados; perto dos extremos, prefere o ajustado. [Proporções](/cadeiras/me/testes-hipoteses/#dois-grupos-e-proporções).
+**Duas proporções independentes.** Para $p_1-p_2$, o intervalo Wald usa $d=\hat p_1-\hat p_2$ e $SE=\sqrt{\hat p_1(1-\hat p_1)/n_1+\hat p_2(1-\hat p_2)/n_2}$, logo $d\pm z_{1-\alpha/2}SE$. A versão **Agresti–Caffo** acrescenta um sucesso e um insucesso a **cada** amostra: $p_i^*=(x_i+1)/(n_i+2)$. Usa $d^*=p_1^*-p_2^*$ no intervalo $d^*\pm z_{1-\alpha/2}SE^*$, com
+
+$$SE^*=\sqrt{\frac{p_1^*(1-p_1^*)}{n_1+2}+\frac{p_2^*(1-p_2^*)}{n_2+2}}.$$
+
+Ambos são aproximados; perto dos extremos, prefere o ajustado. [Proporções](/cadeiras/me/testes-hipoteses/#dois-grupos-e-proporções).
 
 Para planear uma margem bilateral $E$ na média com $\sigma$ conhecido, usa $n\ge(z_{1-\alpha/2}\sigma/E)^2$. Para uma proporção sem estimativa prévia de $p$, usa $n\ge z_{1-\alpha/2}^2/(4E^2)$, pois $p(1-p)\le1/4$. Arredonda **para cima**. São fórmulas de planeamento aproximadas, não garantias contra viés ou dados dependentes. [Dimensionar a amostra](/cadeiras/me/intervalos-confianca/#dimensionar-a-amostra).
 
