@@ -17,13 +17,13 @@ Antes de escolher uma fórmula, identifica **geometria**, **simetria**, **meio**
 
 ## Carga, campo e potencial
 
-| Pergunta                             | Relação e condição                                                                                                                                       |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Força entre cargas pontuais          | $                                                                                                                                                        | \vec F | =k  | q_1q_2 | /r^2$, com $k=1/(4\pi\varepsilon)$ no meio escolhido. O sentido é o da reta entre as cargas: iguais repelem, opostas atraem. |
-| Campo de várias cargas               | $\vec E=\vec F/q_{\mathrm{teste}}$; soma **vetorialmente** os campos de cada fonte. Uma carga de prova positiva fixa o sentido convencional de $\vec E$. |
-| Potencial e trabalho                 | $V_B-V_A=-\int_A^B\vec E\cdot d\vec\ell$ no regime eletrostático; $\Delta U=q\,\Delta V$. O potencial é escalar e soma-se algebricamente.                |
-| Condutor em equilíbrio eletrostático | $\vec E=0$ no interior do material, a superfície é equipotencial e o campo exterior imediato é perpendicular a ela. A carga livre pode redistribuir-se.  |
-| Capacidade                           | $C=Q/\Delta V$; para uma geometria e um meio fixos, $C$ não depende da carga armazenada. Confere o dielétrico e a tensão máxima antes de aumentar $Q$.   |
+| Pergunta                             | Relação e condição                                                                                                                                                   |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Força entre cargas pontuais          | $\lVert\vec F\rVert=k\lvert q_1q_2\rvert/r^2$, com $k=1/(4\pi\varepsilon)$ no meio escolhido. O sentido é o da reta entre as cargas: iguais repelem, opostas atraem. |
+| Campo de várias cargas               | $\vec E=\vec F/q_{\mathrm{teste}}$; soma **vetorialmente** os campos de cada fonte. Uma carga de prova positiva fixa o sentido convencional de $\vec E$.             |
+| Potencial e trabalho                 | $V_B-V_A=-\int_A^B\vec E\cdot d\vec\ell$ no regime eletrostático; $\Delta U=q\,\Delta V$. O potencial é escalar e soma-se algebricamente.                            |
+| Condutor em equilíbrio eletrostático | $\vec E=0$ no interior do material, a superfície é equipotencial e o campo exterior imediato é perpendicular a ela. A carga livre pode redistribuir-se.              |
+| Capacidade                           | $C=Q/\Delta V$; para uma geometria e um meio fixos, $C$ não depende da carga armazenada. Confere o dielétrico e a tensão máxima antes de aumentar $Q$.               |
 
 Uma superfície equipotencial tem $\Delta V=0$ ao longo dela, embora o campo possa ser não nulo na direção normal. O potencial de uma carga pontual, com $V(\infty)=0$, é $V=kq/r$; não confundas sinal de $V$ com módulo de $\vec E$. Vê [lei de Coulomb e sobreposição](/cadeiras/f2/carga-campo/#sobreposição) e [fluxo e lei de Gauss](/cadeiras/f2/equacoes-maxwell/#lei-de-gauss).
 
