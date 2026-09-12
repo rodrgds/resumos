@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de AM II
+title: Cheat sheet de AM II
 description: Fórmulas e condições para curvas, derivadas, extremos, integrais múltiplos e integrais de linha.
 section: recursos
 studyKind: revision
@@ -15,7 +15,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que estes apontamentos correspondem não foram confirmadas.
 ---
 
-Esta folha condensa os [apontamentos de AM II de SofiaViP](https://drive.google.com/file/d/1Iif82mUI9EfH6StwtnImpK0W793EoUYY/view). Os links internos dão a explicação e exemplos. **Desenha primeiro o domínio ou a curva; só depois escolhe os limites e a fórmula.**
+**Desenha primeiro o domínio ou a curva; só depois escolhe os limites e a fórmula.**
 
 ## Curvas paramétricas
 

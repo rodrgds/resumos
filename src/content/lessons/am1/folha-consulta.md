@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de AM I
+title: Cheat sheet de AM I
 description: Identidades, derivadas, primitivas, integrais impróprios e métodos de EDOs dos apontamentos SofiaViP.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - A edição da unidade curricular correspondente a estes apontamentos não foi verificada.
 ---
 
-Esta folha resume **apenas** os quatro temas do [PDF de SofiaViP](https://drive.google.com/file/d/15hBdUfPVPdZ8exFLuA_LYStff61YH2td/view). Identifica primeiro o padrão, verifica o domínio e, no fim, deriva a primitiva ou substitui a solução na equação. Nas fórmulas, $u=u(x)$, $u'=du/dx$ e $C$ é uma constante.
+Identifica primeiro o padrão, verifica o domínio e, no fim, deriva a primitiva ou substitui a solução na equação. Nas fórmulas, $u=u(x)$, $u'=du/dx$ e $C$ é uma constante.
 
 ## Trigonometria e derivação
 

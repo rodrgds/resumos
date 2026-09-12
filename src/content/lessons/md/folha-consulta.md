@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de MD
+title: Cheat sheet de MD
 description: Regras de decisão para lógica, provas, inteiros, indução, conjuntos, relações e ordens.
 section: recursos
 studyKind: revision
@@ -17,7 +17,7 @@ editorial:
     - A correspondência destes apontamentos a uma edição atual da unidade curricular não foi verificada.
 ---
 
-Identifica primeiro o **tipo de objeto** e o que tens de provar: valor de verdade, consequência, existência, divisibilidade ou propriedade de uma relação. As regras abaixo condensam os três cadernos, que usam a notação de lógica de primeira ordem (LPO).
+Identifica primeiro o **tipo de objeto** e o que tens de provar: valor de verdade, consequência, existência, divisibilidade ou propriedade de uma relação. Notação de lógica de primeira ordem (LPO).
 
 ## Lógica e provas
 

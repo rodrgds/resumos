@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de BD
+title: Cheat sheet de BD
 description: Decisões rápidas de modelação, mapeamento relacional, normalização, SQLite e álgebra relacional.
 section: recursos
 studyKind: revision
@@ -14,7 +14,7 @@ editorial:
     - A correspondência destes apontamentos a uma edição atual da unidade curricular não foi verificada.
 ---
 
-Parte da regra do domínio que precisa de ficar verdadeira. Representa-a no modelo conceptual, escolhe onde vive a chave no esquema relacional e só depois escreve operações. A fonte usa **UML** para modelar e **SQLite** nos exemplos de implementação.
+Parte da regra do domínio que precisa de ficar verdadeira. Representa-a no modelo conceptual, escolhe onde vive a chave no esquema relacional e só depois escreve operações. Modelação em **UML**; exemplos em **SQLite**.
 
 ## Modelo conceptual para relações
 

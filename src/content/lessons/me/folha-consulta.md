@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de ME
+title: Cheat sheet de ME
 description: Escolha rápida de distribuições, intervalos de confiança e testes de hipóteses em Métodos Estatísticos.
 section: recursos
 studyKind: revision

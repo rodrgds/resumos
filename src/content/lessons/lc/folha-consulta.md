@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de LC
+title: Cheat sheet de LC
 description: Portas, timer, interrupções, teclado, rato e vídeo dos laboratórios de LCom em consulta breve.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - Os apontamentos não cobrem RTC, porta série nem uma especificação completa do projeto; esta folha não acrescenta esses tópicos como se viessem da fonte.
 ---
 
-Esta folha condensa os [Apontamentos de LCom de SofiaViP](https://drive.google.com/file/d/18RQnr_bxQAURJRqwh5Pj13q6DUmQY9AX/view). Os nomes das rotinas e os endereços abaixo pertencem ao ambiente Minix/PC dos laboratórios descritos na fonte. Confirma-os no teu enunciado e nos cabeçalhos instalados.
+Os nomes das rotinas e os endereços abaixo pertencem ao ambiente Minix/PC dos laboratórios. Confirma-os no teu enunciado e nos cabeçalhos instalados.
 
 ## Falar com dispositivos
 

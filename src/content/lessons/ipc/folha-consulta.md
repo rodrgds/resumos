@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de IPC
+title: Cheat sheet de IPC
 description: Passos e critérios para investigação de utilizadores, protótipos, avaliação e análise de resultados.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - A edição do programa e as regras de avaliação a que os apontamentos correspondem não foram confirmadas.
 ---
 
-Esta folha condensa os [apontamentos IPC de SofiaViP](https://drive.google.com/file/d/1RwYcHiNaedxD4kQTBamtawufEq0H1Daa/view). Em qualquer proposta, explicita **quem faz que tarefa, em que contexto e como saberás se melhorou**.
+Em qualquer proposta, explicita **quem faz que tarefa, em que contexto e como saberás se melhorou**.
 
 ## Investigar antes de desenhar
 

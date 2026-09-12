@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de AED
+title: Cheat sheet de AED
 description: Operações, custos e condições para rever estruturas de dados, pesquisa, ordenação e grafos.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - Esta folha omite demonstrações, código completo e exemplos longos; segue os links para as explicações.
 ---
 
-Esta folha condensa os [Resumos AED de SofiaViP](https://drive.google.com/file/d/1oFfndRpq_F8MQeffoU4_rRBn-04pZiCY/view) para consulta rápida. Em cada custo, $n$ é o número de elementos; nos grafos, $V$ e $E$ são os conjuntos de vértices e arestas. Confirma a representação e o caso analisado antes de usar uma fórmula.
+Em cada custo, $n$ é o número de elementos; nos grafos, $V$ e $E$ são os conjuntos de vértices e arestas. Confirma a representação e o caso analisado antes de usar uma fórmula.
 
 ## Correção e custo
 

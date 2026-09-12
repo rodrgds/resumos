@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de PFL
+title: Cheat sheet de PFL
 description: Padrões de decisão em Prolog e Haskell, do controlo da procura aos tipos e folds.
 section: recursos
 studyKind: revision

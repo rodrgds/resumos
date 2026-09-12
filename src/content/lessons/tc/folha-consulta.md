@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de TC
+title: Cheat sheet de TC
 description: Definições, construções e limites de autómatos, gramáticas e máquinas de Turing para consulta rápida.
 section: recursos
 studyKind: revision
@@ -13,7 +13,7 @@ editorial:
     - Esta folha omite provas completas, construções desenhadas e a análise detalhada de NP-completude; segue os links para as explicações.
 ---
 
-Esta folha segue os [Resumos de TC de SofiaViP](https://drive.google.com/file/d/1ZaJpvDv-iZNH-sjGor4iKEaCj9OZ5Wa6/view). Usa-a para escolher uma construção ou verificar as hipóteses de um teorema.
+Usa-a para escolher uma construção ou verificar as hipóteses de um teorema.
 
 ## Palavras, linguagens e expressões
 

@@ -7,6 +7,9 @@ test('pins hide the introduction before page scripts and survive clearing histor
   await page.locator('#cadeiras .semester-pin').first().click();
   await page.goto('/exemplo/apontamentos/');
   await page.goto('/');
+  const history = await page.locator('[data-reading-history]').boundingBox();
+  const pinned = await page.locator('[data-pinned-semesters]').boundingBox();
+  expect(history!.y + history!.height).toBeLessThanOrEqual(pinned!.y);
   await page.getByRole('button', { name: 'Limpar histórico' }).click();
   await expect(page.locator('#page-hero')).toBeHidden();
   await expect(
@@ -49,7 +52,7 @@ test('DOT default text inherits theme foreground', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/cadeiras/alga/espacos-vetoriais/');
   const foreground = await page
-    .locator('.prose')
+    .locator('.lesson-body .prose')
     .evaluate((el) => getComputedStyle(el).color);
   await expect(page.locator('.diagram-figure text').first()).toHaveCSS(
     'fill',
@@ -163,7 +166,7 @@ for (const palette of [
         };
       });
       const prose = await page
-        .locator('.prose')
+        .locator('.lesson-body .prose')
         .evaluate((el) => getComputedStyle(el).color);
       expect(style.color).toBe(prose);
       expect(style.font).toContain('JetBrains Mono');

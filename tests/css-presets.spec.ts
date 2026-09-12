@@ -129,7 +129,7 @@ for (const width of [1440, 390]) {
         'pre-wrap',
       );
       const soft = await page
-        .locator('.prose')
+        .locator('.lesson-body .prose')
         .evaluate((el) =>
           getComputedStyle(el).getPropertyValue('--soft').trim(),
         );

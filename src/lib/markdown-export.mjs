@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse, serialize, serializeOuter } from 'parse5';
+import { parse, parseFragment, serialize, serializeOuter } from 'parse5';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
 
@@ -36,19 +36,21 @@ export default function markdownExport() {
           '',
         ];
         for (const page of pages) {
-          if (
-            page.pathname.startsWith('_') ||
-            /\/imprimir\/?$/.test(page.pathname)
-          )
-            continue;
+          if (page.pathname.startsWith('_')) continue;
           const path = page.pathname.replace(/^\/|\/$/g, '');
           const document = parse(
             await readFile(join(root, path, 'index.html'), 'utf8'),
           );
           const main = find(document, (node) => node.tagName === 'main');
           if (!main) continue;
+          const lesson = find(main, (node) => hasClass(node, 'lesson-body'));
+          const practice = find(main, (node) =>
+            hasClass(node, 'lesson-practice'),
+          );
           const body =
-            find(main, (node) => hasClass(node, 'lesson-body')) || main;
+            lesson && practice
+              ? parseFragment(serializeOuter(lesson) + serializeOuter(practice))
+              : lesson || main;
           const heading = find(main, (node) => node.tagName === 'h1');
           const title = heading ? text(heading).trim() : 'Resumos FEUP';
           const canonical = find(

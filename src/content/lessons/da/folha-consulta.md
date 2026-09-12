@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de DA
+title: Cheat sheet de DA
 description: Condições, recorrências e custos para rever as técnicas de Desenho de Algoritmos.
 section: recursos
 studyKind: revision

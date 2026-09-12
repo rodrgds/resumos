@@ -1,5 +1,5 @@
 ---
-title: Folha de consulta de ES
+title: Cheat sheet de ES
 description: Escolhas e entregáveis de processos, requisitos, gestão, arquitetura, construção e testes.
 section: recursos
 studyKind: revision
@@ -14,7 +14,7 @@ editorial:
     - A correspondência destes apontamentos a uma edição atual da unidade curricular não foi verificada.
 ---
 
-Em ES, a pergunta prática é **que incerteza queres reduzir e que evidência prova que a reduziste?** Liga cada decisão a um artefacto verificável: requisito, modelo, incremento, teste ou registo de defeito. A fonte usa frequentemente termos ingleses; aqui surgem em português quando o significado se mantém.
+Em ES, a pergunta prática é **que incerteza queres reduzir e que evidência prova que a reduziste?** Liga cada decisão a um artefacto verificável: requisito, modelo, incremento, teste ou registo de defeito.
 
 ## Processo e gestão
 
