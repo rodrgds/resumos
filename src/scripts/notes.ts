@@ -42,7 +42,14 @@ export function setupNotes() {
   let legacyUnsaved = false;
   const storageError =
     'Não foi possível guardar. Descarrega as notas antes de sair.';
-  if (!loaded.available) status.textContent = storageError;
+  function setStatus(message: string) {
+    status.textContent = message;
+    status.classList.toggle(
+      'notebook-status-error',
+      message !== 'Guardado neste navegador',
+    );
+  }
+  if (!loaded.available) setStatus(storageError);
 
   function notify(
     message: string,
@@ -60,8 +67,9 @@ export function setupNotes() {
     const saved = saveAnnotation(note);
     if (saved) unsaved.delete(note.id);
     else unsaved.add(note.id);
-    status.textContent =
-      unsaved.size || legacyUnsaved ? storageError : 'Guardado neste navegador';
+    setStatus(
+      unsaved.size || legacyUnsaved ? storageError : 'Guardado neste navegador',
+    );
     return saved;
   }
   function paint() {
@@ -281,7 +289,7 @@ export function setupNotes() {
     const note = notes.get(id);
     if (!note) return;
     if (!removeAnnotation(id)) {
-      status.textContent = storageError;
+      setStatus(storageError);
       return;
     }
     notes.delete(id);
@@ -324,6 +332,9 @@ export function setupNotes() {
     if (note) persist({ ...note, comment: input.value });
   });
   element('close-notes').addEventListener('click', close);
+  document.addEventListener('pointerdown', (event) => {
+    if (!panel.hidden && !panel.contains(event.target as Node)) close();
+  });
   element('notes-back').addEventListener('click', () => {
     const previous = active;
     showList();
@@ -362,8 +373,9 @@ export function setupNotes() {
   legacyInput.addEventListener('input', () => {
     legacy = legacyInput.value;
     legacyUnsaved = !writeLocal(LEGACY_NOTES_KEY, legacy);
-    status.textContent =
-      legacyUnsaved || unsaved.size ? storageError : 'Guardado neste navegador';
+    setStatus(
+      legacyUnsaved || unsaved.size ? storageError : 'Guardado neste navegador',
+    );
   });
   element('download-notes').addEventListener('click', () => {
     const text = [
@@ -458,8 +470,9 @@ export function setupNotes() {
   paint();
   renderList();
   if (!canHighlight && root)
-    status.textContent =
-      'Podes guardar notas. Este navegador não mostra os destaques no texto.';
+    setStatus(
+      'Podes guardar notas. Este navegador não mostra os destaques no texto.',
+    );
   window.addEventListener('hashchange', openLinkedNote);
   openLinkedNote();
   return () => {
