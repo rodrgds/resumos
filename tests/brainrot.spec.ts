@@ -1234,6 +1234,35 @@ test.describe('touch feed', () => {
     await expect(name).not.toHaveText(previous!);
   });
 
+  test('a swipe settles after release when scrolling ended under the finger', async ({
+    page,
+  }) => {
+    const dialog = await openReader(page);
+    const name = dialog.locator('[data-br-clip-name]');
+    const previous = await name.textContent();
+    const input = await page.context().newCDPSession(page);
+    await input.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: 110, y: 630 }],
+    });
+    const feed = dialog.locator('.brainrot-feed');
+    await feed.evaluate(async (element) => {
+      await new Promise<void>((resolve) => {
+        element.addEventListener('scrollend', () => resolve(), { once: true });
+        element.scrollTo({
+          top: element.clientHeight * 2,
+          behavior: 'instant',
+        });
+      });
+    });
+    await expect(name).toHaveText(previous!);
+    await input.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+    await expect(name).not.toHaveText(previous!);
+  });
+
   test('tapping pauses and swiping changes games without restarting the reading', async ({
     page,
   }) => {
