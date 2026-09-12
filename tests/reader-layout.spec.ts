@@ -138,6 +138,51 @@ test('mobile reading keeps course progress without a page section strip', async 
   ).toBeVisible();
 });
 
+test('mobile page actions stay on one horizontally scrollable row', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/cadeiras/fsi/principios-seguranca/');
+  const actions = page.locator('.page-actions');
+
+  await expect(actions).toBeVisible();
+  await expect(actions.locator(':scope > button')).toHaveCount(3);
+  await expect
+    .poll(() => actions.evaluate((element) => element.scrollWidth))
+    .toBeGreaterThan(await actions.evaluate((element) => element.clientWidth));
+  expect(
+    await actions.evaluate((element) => element.clientHeight),
+  ).toBeLessThan(90);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+
+  await actions.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth;
+  });
+  expect(
+    await actions.evaluate((element) => element.scrollLeft),
+  ).toBeGreaterThan(0);
+});
+
+test('mobile reader bars sit directly below the site header', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/cadeiras/fsi/principios-seguranca/');
+  const bounds = await page.evaluate(() => {
+    const header = document
+      .querySelector('.site-header')!
+      .getBoundingClientRect();
+    const navigation = document
+      .querySelector('.reader-navigation')!
+      .getBoundingClientRect();
+    return { headerBottom: header.bottom, navigationTop: navigation.top };
+  });
+
+  expect(bounds.navigationTop).toBe(bounds.headerBottom);
+});
+
 test('mobile header hides downwards, returns upwards and reveals keyboard focus', async ({
   page,
 }) => {
