@@ -174,13 +174,43 @@ test('mobile reader bars sit directly below the site header', async ({
     const header = document
       .querySelector('.site-header')!
       .getBoundingClientRect();
+    const headerStyle = getComputedStyle(
+      document.querySelector('.site-header')!,
+    );
     const navigation = document
       .querySelector('.reader-navigation')!
       .getBoundingClientRect();
-    return { headerBottom: header.bottom, navigationTop: navigation.top };
+    return {
+      headerBottom: header.bottom,
+      navigationTop: navigation.top,
+      headerBorderBottom: headerStyle.borderBottomWidth,
+    };
   });
 
   expect(bounds.navigationTop).toBe(bounds.headerBottom);
+  expect(bounds.headerBorderBottom).toBe('0px');
+});
+
+test('mobile course progress fills the navigation track', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/cadeiras/lbaw/');
+  const progress = page.locator('.course-progress');
+  const bounds = await progress.evaluate((element) => {
+    const track = element.getBoundingClientRect();
+    const links = [...element.querySelectorAll('a')];
+    const first = links[0].getBoundingClientRect();
+    const last = links.at(-1)!.getBoundingClientRect();
+    return {
+      trackRight: track.right,
+      firstLeft: first.left,
+      lastRight: last.right,
+      lastWidth: last.width,
+    };
+  });
+
+  expect(bounds.firstLeft).toBeCloseTo(12, 0);
+  expect(bounds.lastRight).toBeCloseTo(bounds.trackRight, 0);
+  expect(bounds.lastWidth).toBeGreaterThan(24);
 });
 
 test('mobile header hides downwards, returns upwards and reveals keyboard focus', async ({
