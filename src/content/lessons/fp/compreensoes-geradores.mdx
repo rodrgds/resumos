@@ -1,133 +1,70 @@
 ---
 title: Compreensões e geradores
-description: Iteráveis e iteradores, compreensões de listas, conjuntos e dicionários, expressões geradoras e yield.
+description: Transformações e filtros em compreensões, percursos aninhados e consumo de iteradores.
 section: conteudo
 order: 9
+practices:
+  - fp/praticar-compreensoes-geradores
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import consumo from '../../fp/gerador-consumo.typ?raw';
 
-Um **iterável** é um objeto que representa uma sequência de dados e que pode ser percorrido, como uma lista ou uma string. Um **iterador** é o mecanismo que produz esses dados um de cada vez, andando só para a frente. Esta distinção permite escrever transformações de sequências de forma compacta (compreensões) e produzir sequências sem as guardar todas em memória (geradores).
+Para obter os quadrados dos números positivos, precisamos de percorrer uma coleção, selecionar valores e transformar cada selecionado. Uma compreensão junta essas decisões numa expressão, sem mudar a coleção de entrada.
 
 ## Compreensões de listas
 
-Uma **compreensão de lista** combina, numa só expressão, o ciclo e a condição que de outra forma escreverias em várias linhas: `[expressão for elemento in iterável if condição]`. O `if` é opcional.
-
-```python
-quadrados = [x * x for x in range(6)]
-pares = [x for x in range(10) if x % 2 == 0]
-print(quadrados)
-print(pares)
-```
-
-Isto escreve `[0, 1, 4, 9, 16, 25]` e `[0, 2, 4, 6, 8]`. A primeira lê-se "o quadrado de cada `x` de `0` a `5`"; a segunda, "cada `x` de `0` a `9` que seja par". A vantagem sobre `map` e `filter` é que a compreensão mostra a expressão e a condição no mesmo sítio, sem `lambda`.
-
-A mesma sintaxe existe para **conjuntos** (`{...}`) e **dicionários** (`{chave: valor ...}`):
-
-```python
-unicos = {len(p) for p in ['o', 'rato', 'roeu', 'a', 'rolha']}
-quadrados_d = {x: x * x for x in range(4)}
-print(unicos)
-print(quadrados_d)
-```
-
-Isto escreve `{1, 4, 5}` (os comprimentos distintos: $1, 4, 4, 1, 5$) e `{0: 0, 1: 1, 2: 4, 3: 9}`. A compreensão de conjunto elimina repetidos automaticamente; a de dicionário constrói pares chave-valor.
-
-## Geradores e yield
-
-Uma compreensão de lista constrói a lista inteira em memória. Para sequências grandes ou infinitas, isso é impossível. Uma **expressão geradora** tem a sintaxe da compreensão mas com parênteses, e produz os valores um de cada vez, só quando pedidos:
-
-```python
-soma = sum(x * x for x in range(1000))
-print(soma)
-```
-
-Isto escreve `332833500` (a soma dos quadrados de $0$ a $999$), sem nunca guardar os mil quadrados numa lista. A expressão entre parênteses é o gerador; o `sum` consome-o valor a valor.
-
-O esquema mostra o consumo único: a primeira travessia entrega valores, a segunda já vem vazia.
-
-<Typst
-  source={consumo}
-  format="svg"
-  alt="Diagrama do consumo único de um gerador: a primeira travessia entrega os valores, a segunda vem vazia."
-/>
-
-Uma função com `yield` define um gerador próprio: em vez de devolver um valor e terminar, **produz** um valor de cada vez que é pedida, retomando onde parou na vez seguinte.
-
-```python
-def fibonacci():
-    a, b = 0, 1
-    while True:
-        yield a
-        a, b = b, a + b
-
-def primeiros_n(gen, n):
-    resultado = []
-    for i, valor in enumerate(gen):
-        if i >= n:
-            break
-        resultado.append(valor)
-    return resultado
-
-print(primeiros_n(fibonacci(), 8))
-```
-
-Isto escreve `[0, 1, 1, 2, 3, 5, 8, 13]`. A função `fibonacci` tem um `while True` que seria infinito num programa normal, mas como usa `yield`, cada chamada produz apenas o próximo número de Fibonacci: $0, 1, 1, 2, 3, 5, 8, 13$. A função auxiliar consome oito valores e pára. Gerar uma sequência infinita sem gastar memória infinita é exatamente o poder dos geradores.
-
-## Exemplo completo: quicksort
-
-O **quicksort** ordena uma lista escolhendo um **pivô**, dividindo os restantes em menores-ou-iguais e maiores, ordenando cada parte recursivamente e concatenando. Compreensões exprimem a divisão em duas linhas, e a recursão trata do resto. O caso base é a lista com zero ou um elementos, que já está ordenada.
-
-```python
-def quicksort(valores):
-    if len(valores) <= 1:
-        return valores
-    pivo = valores[0]
-    menores = [x for x in valores[1:] if x <= pivo]
-    maiores = [x for x in valores[1:] if x > pivo]
-    return quicksort(menores) + [pivo] + quicksort(maiores)
-
-print(quicksort([3, 6, 1, 5, 2, 4]))
-```
-
-Isto escreve `[1, 2, 3, 4, 5, 6]`. Segue o primeiro nível: o pivô é `3`; `menores` é `[1, 2]`; `maiores` é `[6, 5, 4]`; o resultado é a ordenação de `[1, 2]`, seguida de `[3]`, seguida da ordenação de `[6, 5, 4]`. Cada chamada recursiva repete o processo com uma lista mais curta, por isso a recursão termina. Nota o custo: cada nível constrói listas novas, por isso esta versão elegante usa mais memória do que uma implementação que ordene no sítio.
-
-Corre com a lista do exemplo e confirma a ordenação.
+A forma `[expressao for x in xs if condicao]` percorre `xs`, verifica a condição e acrescenta o valor da expressão apenas nos casos aceites.
 
 <CodePlayground
   language="python"
-  title="Quicksort com compreensões"
+  title="Compreender o filtro e a transformação"
+  input=""
   code={
-    'def quicksort(valores):\n    if len(valores) <= 1:\n        return valores\n    pivo = valores[0]\n    menores = [x for x in valores[1:] if x <= pivo]\n    maiores = [x for x in valores[1:] if x > pivo]\n    return quicksort(menores) + [pivo] + quicksort(maiores)\n\nprint(quicksort([3, 6, 1, 5, 2, 4]))'
+    'valores = [-2, 0, 3, 4]\nquadrados = [x * x for x in valores if x > 0]\nprint(quadrados)\nprint(valores)\nprint(["par" if x % 2 == 0 else "ímpar" for x in range(4)])'
   }
 />
 
-A mesma ideia com lista materializada e com gerador, para veres a diferença de memória:
+O filtro retira -2 e 0; a transformação calcula 9 e 16. No último `print`, o `if ... else` faz parte da expressão e escolhe o valor de cada elemento. Não filtra entradas. Por isso o resultado conserva quatro posições.
 
-<Tabs id="quicksort-memoria" labels={['Lista', 'Gerador']}>
-  <div slot="panel-0">
+A compreensão equivale a começar uma lista vazia, percorrer a entrada e acrescentar os resultados aceites. A expressão compacta deve continuar legível. Se há vários estados, validações ou efeitos, um ciclo com nome para cada passo pode explicar melhor o algoritmo.
 
-```python
-menores = [x for x in valores[1:] if x <= pivo]
-```
+## Percursos aninhados
 
-Guarda todos os menores de uma vez.
-
-  </div>
-  <div slot="panel-1">
+As cláusulas `for` seguem a mesma ordem dos ciclos correspondentes. Em `[(i, j) for i in range(2) for j in range(3)]`, o `i` fica fixo enquanto `j` percorre 0, 1 e 2. O resultado tem seis pares.
 
 ```python
-menores = (x for x in valores[1:] if x <= pivo)
+matriz = [[1, 2], [3, 4]]
+plana = [valor for linha in matriz for valor in linha]
+print(plana)
 ```
 
-Produz um de cada vez, sem guardar a lista.
+A saída é `[1, 2, 3, 4]`. Este código remove um nível de listas, não qualquer profundidade. Para estruturas com profundidade variável, usa a decomposição recursiva da lição anterior.
 
-  </div>
-</Tabs>
+Também podes criar conjuntos com `{x * x for x in valores}` e dicionários com `{nome: len(nome) for nome in nomes}`. Um conjunto elimina resultados repetidos. Num dicionário, uma chave repetida fica com o último valor produzido.
 
-:::warning[Os erros mais comuns aqui]
-Confundir `[x for x in ...]` (lista, guarda tudo) com `(x for x in ...)` (gerador, produz sob pedido); tentar percorrer duas vezes o mesmo gerador (ele gasta-se, à segunda já está vazio); e esquecer o caso base nas funções recursivas com compreensões. Quando um gerador "vem vazio", verifica se já foi consumido antes.
-:::
+## Iteráveis e iteradores
+
+Um **iterável** permite obter um percurso; listas e strings são exemplos. Um **iterador** conserva a posição de um percurso e produz o próximo valor com `next`. `iter(xs)` cria um iterador e `next(it)` avança-o. Quando esgota, lança `StopIteration`, que `for` trata para terminar.
+
+Uma lista permite começar um novo percurso. Um iterador esgotado não volta ao início. Esta diferença explica o comportamento de `map`, `filter` e dos geradores.
+
+## Geradores e yield
+
+Uma expressão `(x * x for x in range(4))` cria um **gerador**. Produz valores quando são pedidos em vez de guardar logo uma lista. É um aprofundamento do modelo de iteração usado pelas compreensões.
+
+<CodePlayground
+  language="python"
+  title="Consumir um gerador"
+  input=""
+  code={
+    'quadrados = (x * x for x in range(4))\nprint(next(quadrados))\nprint(list(quadrados))\nprint(list(quadrados))\n\ndef contagem(n):\n    while n > 0:\n        yield n\n        n -= 1\n\nprint(list(contagem(3)))'
+  }
+/>
+
+`next` retira o zero. A primeira conversão em lista consome 1, 4 e 9; a segunda recebe uma sequência já esgotada. Na função `contagem`, `yield` entrega um valor e suspende a execução. O próximo pedido retoma depois dessa instrução. `return` termina o gerador, sem produzir mais valores.
+
+## Escolher entre lista e gerador
+
+Usa uma lista quando precisas de índices, de vários percursos ou de guardar os resultados. Um gerador permite consumir um valor de cada vez, o que pode reduzir memória. Não reduz necessariamente o trabalho total se acabares por consumir tudo.
+
+`sum(x * x for x in range(100))` consome os valores sem precisar de uma lista intermédia. Se guardares o gerador e tentares somá-lo duas vezes, a segunda soma vale zero. Criar um novo gerador inicia um novo percurso. O custo da expressão que calcula cada valor continua a existir, mesmo quando a produção é adiada.

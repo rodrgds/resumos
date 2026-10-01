@@ -1,74 +1,106 @@
 ---
 title: Cheat sheet de FP
-description: Decisões rápidas sobre Python, coleções, funções, algoritmos e erros, a partir do caderno SofiaViP.
+description: Tipos, controlo, funções, coleções, recursão, estilo livre de efeitos, ficheiros e falhas.
 section: recursos
 studyKind: revision
 editorial:
   sources:
     - title: Caderno FP SofiaViP
       url: https://drive.google.com/file/d/1-2tiPzWQX8LHHWILl3z-4pShVDhP0C1m/view
-  coverage: Síntese das páginas 3 a 28 do caderno, de tipos e controlo a funções, coleções, recursão, programação funcional, pesquisa, custos, ficheiros e exceções.
-  gaps:
-    - Os exemplos de física, turtle e acesso à Web não entram nesta folha.
-    - Os pesos de avaliação históricos do caderno não foram transportados para uma edição atual.
-    - A correspondência destes apontamentos a uma edição atual da unidade curricular não foi verificada.
+    - title: Programa de FP, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087
 ---
 
-Esta folha serve para escolher uma operação ou um padrão durante a resolução de problemas. O caderno começa por **decompor** o problema, reconhecer padrões, abstrair os dados relevantes e escrever um algoritmo antes do programa. Se o resultado estiver errado, distingue [erro de sintaxe, erro de execução e erro de lógica](/cadeiras/fp/primeiros-programas/#python-e-os-três-tipos-de-erros).
+Usa esta folha para escolher uma operação e conferir as suas condições. As ligações levam à explicação e à prática.
 
-## Valores e controlo
+## Valores e expressões
 
-| Decisão               | Regra curta                                                                                                                                                                            |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Guardar ou comparar   | `x = valor` associa um nome a um objeto; `x == y` compara valores. `is` testa identidade, não substitui `==`.                                                                          |
-| Dividir inteiros      | `a / b` dá quociente real; `a // b` arredonda para baixo; `a % b` é o resto, com `a == (a // b) * b + a % b`, para `b != 0`.                                                           |
-| Escolher um ramo      | `if` / `elif` / `else`; combina condições com `and`, `or` e `not`. Confere a precedência ou usa parênteses.                                                                            |
-| Repetir               | `for` quando percorres uma sequência ou `range(início, fim, passo)`, cujo `fim` fica excluído; `while` quando a condição determina o fim. Garante que o estado muda e o ciclo termina. |
-| Interromper ou saltar | `break` sai do ciclo mais interno; `continue` inicia a iteração seguinte.                                                                                                              |
+| Decisão                 | Regra                                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Atribuir ou comparar    | `x = valor` associa um nome; `x == y` compara conteúdo; `x is y` testa identidade.                                                 |
+| Converter entrada       | `input()` devolve `str`; `int` e `float` podem levantar `ValueError`. Decimais no código usam ponto.                               |
+| Dividir                 | `/` calcula divisão; `//` arredonda o quociente para baixo; `%` dá o resto. Para inteiros e `b != 0`, `a == (a // b) * b + a % b`. |
+| Interpretar precedência | `-2 ** 2` vale `-4`; `(-2) ** 2` vale `4`; a potência associa à direita. Usa parênteses.                                           |
+| Comparar aproximações   | Define tolerância, como em `math.isclose`, ou o arredondamento pedido. `float` não representa todos os decimais exatamente.        |
 
-Antes de usar uma expressão, verifica [tipos e precedência](/cadeiras/fp/primeiros-programas/#operadores-e-precedência) e, em ciclos, o [limite excluído de `range`](/cadeiras/fp/condicoes-ciclos/#ciclos-for-e-a-função-range). `int`, `float`, `str` e `bool` são tipos diferentes; conversões têm de ser explícitas quando a operação as exige.
+[Expressões e precedência](/cadeiras/fp/primeiros-programas/#operadores-e-precedência). [Entrada e saída](/cadeiras/fp/primeiros-programas/#entrada-e-saída).
 
-## Funções e estado
+## Controlo e ciclos
 
-`def f(parametro): ...` **define** uma função; `f(argumento)` **chama-a**. `return` entrega um valor e termina a chamada. Sem `return`, o resultado é `None`, mesmo que a função escreva no ecrã. Os nomes locais de uma chamada não passam a existir fora dela. Usa [funções, retorno e âmbito](/cadeiras/fp/funcoes/#definir-e-chamar) para separar cálculo de apresentação.
+| Padrão                   | Condição ou erro a conferir                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `if` / `elif` / `else`   | Escolhe o primeiro ramo verdadeiro. Dois `if` independentes podem executar ambos.                                |
+| `and`, `or`, `not`       | `and` e `or` usam curto-circuito e devolvem operandos. Coloca a guarda antes da operação que pode falhar.        |
+| `range(a, b, p)`         | `b` fica excluído; `p` não pode ser zero. Confere a direção do passo.                                            |
+| Acumular soma ou produto | Inicializa soma com `0`, produto com `1`. Escreve o que já foi acumulado após cada iteração.                     |
+| `while`                  | Confirma uma atualização que aproxima o estado do fim. Pode executar zero vezes.                                 |
+| `break` / `continue`     | `break` sai do ciclo mais interno; `continue` salta o resto da iteração. Não saltes a atualização de um `while`. |
+| `else` do ciclo          | Corre quando o percurso acaba normalmente, sem `break`, incluindo um percurso vazio.                             |
 
-Prefere uma função sem efeitos laterais quando queres reutilizar e testar um cálculo. Se mutares uma lista recebida, a alteração é visível para quem a passou. `assert condição` exprime uma suposição interna que deve ser verdadeira; não trata erros esperados de entrada. Usa docstrings para explicar o contrato e testes para comparar resultados esperados com os obtidos.
+[Condições e curto-circuito](/cadeiras/fp/condicoes-ciclos/#comparar-e-combinar-condições). [Limites de range](/cadeiras/fp/condicoes-ciclos/#ciclos-for-e-a-função-range). [Terminação](/cadeiras/fp/condicoes-ciclos/#ciclos-while-e-terminação).
 
-## Coleções: escolher antes de operar
+## Funções, âmbito e efeitos
 
-| Necessidade           | Estrutura e armadilha                                                                                                                                                      |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Texto ordenado        | `str` é imutável; `s[i]` acede a um carácter, `s[a:b]` cria uma fatia e `s.find(x)` devolve `-1` se não encontrar.                                                         |
-| Registo pequeno, fixo | `tuple` é imutável; um tuplo de um elemento precisa de vírgula: `(x,)`.                                                                                                    |
-| Sequência alterável   | `list` é mutável; `append(x)` acrescenta **um** elemento, `extend(xs)` acrescenta os elementos de `xs`. `sort()` altera a lista e devolve `None`; `sorted(xs)` cria outra. |
-| Acesso por chave      | `dict` associa chaves únicas a valores; `d[k]` lança `KeyError` se a chave faltar, `d.get(k, padrão)` permite um valor alternativo. Iterar `for k in d` percorre chaves.   |
-| Unicidade ou pertença | `set` remove duplicados e não tem posição; `set.union`, `set.intersection` e `set.difference` calculam união, interseção e diferença. `frozenset` é imutável.              |
+`def` define; `f(argumento)` chama; `f` passa a função como valor. `return` termina a chamada e entrega o resultado. `print` escreve e devolve `None`; uma função sem retorno explícito também devolve `None`.
 
-Em sequências, `a == b` compara conteúdo; `a is b` pergunta se são o mesmo objeto. `b = a` cria um **alias**, não uma cópia; para uma lista, `b = a.copy()` faz uma cópia superficial. Isto importa quando os elementos também são mutáveis. Vê [fatias de strings](/cadeiras/fp/strings/#fatias), [alias e cópia de listas](/cadeiras/fp/tuplos-listas/#alias-contra-cópia-igualdade-contra-identidade) e [dicionários e conjuntos](/cadeiras/fp/dicionarios-conjuntos/#dicionários-chaves-e-valores).
+Passar um objeto não o copia. Reatribuir o parâmetro muda o nome local; alterar uma lista recebida muda o objeto partilhado. Define o domínio, o resultado, os casos limite e os efeitos no contrato. Os valores por defeito são avaliados quando `def` executa. Para uma lista nova por chamada, usa `None` e cria-a no corpo.
 
-## Transformar dados
+Uma função pura depende dos valores recebidos e não produz efeitos observáveis fora do cálculo. Um acumulador local não implica, por si só, um efeito no chamador; um enunciado que exige ausência de atribuições pode impor uma restrição adicional.
 
-Uma compreensão `[f(x) for x in xs if p(x)]` **constrói uma lista**. `(f(x) for x in xs if p(x))` cria um gerador, que produz valores à medida que é percorrido e pode esgotar-se. `yield` permite escrever esse produtor como função. Escolhe [compreensão ou gerador](/cadeiras/fp/compreensoes-geradores/#geradores-e-yield) conforme precises de guardar todos os resultados.
+[Retorno e saída](/cadeiras/fp/funcoes/#return-e-print). [Passagem de argumentos](/cadeiras/fp/funcoes/#passagem-de-argumentos-e-efeitos). [Valores por defeito](/cadeiras/fp/funcoes/#argumentos-por-nome-e-valores-por-defeito). [Pureza](/cadeiras/fp/programacao-funcional/#funções-livres-de-efeitos).
 
-`map(f, xs)` transforma; `filter(p, xs)` seleciona; `reduce(f, xs, inicial)`, de `functools`, acumula. Uma função de ordem superior recebe ou devolve funções. `lambda` escreve uma função curta; uma _closure_ conserva nomes do contexto em que foi criada. Usa `key=` em `sorted` para escolher a chave de ordenação. Consulta [map, filter e reduce](/cadeiras/fp/programacao-funcional/#map-filter-e-reduce).
+## Escolher uma coleção
 
-Na recursão, identifica um **caso base** e mostra que cada chamada reduz o problema até lá. A pilha guarda as chamadas pendentes; para uma travessia simples, um ciclo costuma evitar esse custo. Confere o [modelo da recursão](/cadeiras/fp/recursao/#o-modelo-mental).
+| Tipo    | Conserva                            | Armadilha                                                                                                    |
+| ------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `str`   | Texto ordenado, imutável            | Índice inválido falha; fatia ajusta limites. Métodos devolvem texto novo.                                    |
+| `tuple` | Sequência imutável                  | `(x,)` tem um elemento; um elemento mutável interior pode mudar.                                             |
+| `list`  | Ordem, repetições, alterações       | `append` acrescenta um objeto; `extend` percorre outro iterável. Métodos mutadores costumam devolver `None`. |
+| `dict`  | Chave para valor, ordem de inserção | Chaves são hashable. `in` testa chaves. `get` não cria a chave.                                              |
+| `set`   | Elementos únicos, sem posição       | `set()` é vazio; `{}` é dicionário. Não uses ordem do conjunto como saída.                                   |
 
-## Pesquisa e custo
+`b = a` cria um alias. `a.copy()` copia só o recipiente. Numa matriz, as linhas podem continuar partilhadas. `[[0] * c] * r` repete a mesma linha; `[[0] * c for _ in range(r)]` cria linhas independentes. `sorted(xs)` devolve outra lista; `xs.sort()` altera a existente.
 
-| Tarefa                                                 | Condição                                                                        | Custo no pior caso                                |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Pesquisa linear                                        | Qualquer sequência                                                              | $O(n)$                                            |
-| Pesquisa binária                                       | Sequência **ordenada**, com intervalo de procura reduzido a metade a cada passo | $O(\log n)$                                       |
-| Indexar lista                                          | Índice conhecido                                                                | $O(1)$                                            |
-| Procurar numa lista                                    | Sem índice ou outra estrutura                                                   | $O(n)$                                            |
-| Procurar chave num dicionário ou elemento num conjunto | Tabela hash, custo **médio**                                                    | $O(1)$ em média, não garantia para todos os casos |
-| Ordenar com `sorted`                                   | Elementos comparáveis ou `key`                                                  | $O(n\log n)$                                      |
+`A | B` é união; `A & B`, interseção; `A - B`, diferença com direção; `A ^ B`, diferença simétrica. `A <= B` testa subconjunto. `zip` termina no iterável mais curto por defeito.
 
-Dois ciclos aninhados sobre $n$ elementos podem dar $O(n^2)$. A notação $O$ exprime um limite de crescimento, não um tempo em segundos nem, por si só, o melhor caso. Ordenar antes de uma única pesquisa custa mais do que percorrer uma vez; para muitas pesquisas na mesma coleção, essa preparação pode compensar. Vê [pesquisa binária](/cadeiras/fp/algoritmos-complexidade/#pesquisa-linear-e-pesquisa-binária) e [custos das operações](/cadeiras/fp/algoritmos-complexidade/#custo-das-operações-mais-usadas).
+[Fatias](/cadeiras/fp/strings/#fatias). [Alias e cópia](/cadeiras/fp/tuplos-listas/#alias-contra-cópia-igualdade-contra-identidade). [Cópia superficial](/cadeiras/fp/tuplos-listas/#listas-de-listas-e-cópia-superficial). [Conjuntos](/cadeiras/fp/dicionarios-conjuntos/#conjuntos-e-pertença).
 
-## Módulos, ficheiros e falhas
+## Transformar e reduzir
 
-`import modulo` mantém o nome qualificado (`modulo.funcao`); `from modulo import funcao` introduz o nome no espaço atual. Para ficheiros, `with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair do bloco; `"w"` cria ou **substitui** o conteúdo. Decide se queres ler tudo (`read`), percorrer linhas ou escrever (`write`), e considera o tamanho do ficheiro.
+| Operação            | Forma e contrato                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Transformar         | `map(f, xs)` devolve um iterador com `f(x)` para cada entrada.                                                                       |
+| Selecionar          | `filter(p, xs)` conserva as entradas onde `p(x)` é verdadeiro.                                                                       |
+| Acumular            | `reduce(f, xs, z)` faz um fold à esquerda a partir de `z`. Com `xs` vazio devolve `z`; sem inicial, o vazio falha.                   |
+| Compreensão         | `[f(x) for x in xs if p(x)]` filtra e constrói uma lista. Um `if ... else` dentro da expressão escolhe valores, não retira posições. |
+| Chave de ordenação  | `sorted(registos, key=lambda r: (-r[1], r[0]))` ordena pelo segundo campo decrescente e pelo primeiro crescente.                     |
+| Devolver uma função | Uma closure conserva acesso ao âmbito envolvente. O contexto não é automaticamente uma cópia de cada valor.                          |
 
-`try` envolve a operação que pode falhar; `except ErroEspecifico` trata a falha esperada; `else` só corre sem exceção; `finally` corre na saída do bloco. Capturar erros demasiado amplos pode esconder defeitos. Vê [ficheiros](/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros), [exceções](/cadeiras/fp/ficheiros-excecoes/#exceções-try-except-else-e-finally) e [asserções e testes](/cadeiras/fp/ficheiros-excecoes/#asserções-e-testes).
+Um iterador consumido não recomeça. `(f(x) for x in xs)` é gerador; `yield` entrega um valor e suspende; `return` termina. Usa lista para índices e vários percursos, gerador para consumo progressivo. Verifica a ordem entre filtrar e transformar.
+
+[Map, filter e reduce](/cadeiras/fp/programacao-funcional/#map-filter-e-reduce). [Closures](/cadeiras/fp/programacao-funcional/#devolver-funções-e-âmbito-léxico). [Compreensões](/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas). [Geradores](/cadeiras/fp/compreensoes-geradores/#geradores-e-yield).
+
+## Recursão e pesquisa
+
+Na recursão, escreve o caso base e uma medida que diminui até ele. Devolve o resultado da chamada recursiva. Considera profundidade, chamadas repetidas e cópias de fatias. Python não elimina chamadas em posição terminal.
+
+| Técnica                   | Pré-condição                  | Custo típico no pior caso |
+| ------------------------- | ----------------------------- | ------------------------- |
+| Pesquisa linear           | Nenhuma ordenação exigida     | $O(n)$ comparações        |
+| Pesquisa binária          | Lista ordenada                | $O(\log n)$ iterações     |
+| Dois percursos sucessivos | Cada um visita $n$ entradas   | $O(n)$                    |
+| Todos os pares            | Há $n(n-1)/2$ pares distintos | $O(n^2)$                  |
+
+Escolhe uma convenção para ausência, como `None`, e não a uses como índice. Uma função binária que encontra uma ocorrência não garante a primeira. Pertença em dicionários e conjuntos tem custo médio esperado constante, não uma garantia de pior caso constante. Define `n` e o trabalho contado antes de usar Big-O.
+
+[Recursão](/cadeiras/fp/recursao/#o-modelo-da-recursão). [Pesquisas](/cadeiras/fp/algoritmos-complexidade/#pesquisa-linear-e-pesquisa-binária). [Custo](/cadeiras/fp/algoritmos-complexidade/#contar-operações).
+
+## Ficheiros, falhas e verificação
+
+`with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair. `"w"` substitui o conteúdo; `"a"` acrescenta; `"x"` exige um ficheiro novo. Caminhos relativos partem da pasta de trabalho. `readline()` devolve `""` no fim; uma linha em branco é normalmente `"\n"`. Para CSV, usa `csv` e `newline=""`.
+
+`except Tipo` trata a falha esperada; `else` corre sem exceção no `try`; `finally` corre na saída. `raise` comunica a falha ao chamador. Não escondas qualquer defeito com um tratador indiscriminado. `assert` verifica hipóteses internas e pode ser desativado. Entradas inválidas precisam de validação explícita.
+
+Calcula o resultado esperado antes de executar. Testa limites, vazio, repetições e entradas inválidas conforme o contrato. Para uma falha, reduz a entrada e encontra a primeira instrução cujo estado diverge do esperado.
+
+[Ficheiros](/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros). [Exceções](/cadeiras/fp/ficheiros-excecoes/#exceções-try-except-else-e-finally). [Testes](/cadeiras/fp/ficheiros-excecoes/#asserções-e-testes).
