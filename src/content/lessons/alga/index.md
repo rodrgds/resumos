@@ -1,43 +1,52 @@
 ---
 title: Álgebra Linear e Geometria Analítica
-description: Matrizes, sistemas lineares, espaços vetoriais, aplicações lineares, valores próprios e geometria no plano e no espaço.
+description: Um percurso de cálculo, geometria e justificação para matrizes, espaços vetoriais, aplicações lineares e diagonalização.
+editorial:
+  basedOn: 2026/27
+  gaps:
+    - O Moodle 2024/25 indicado na ficha atual está indisponível para esta conta. As fichas e provas locais são históricas.
 ---
 
-ALGA é a cadeira onde aprendes a calcular com matrizes e vetores e a usar esses cálculos para resolver sistemas de equações e descrever retas e planos. É uma ferramenta para o resto do curso: gráficos, física, estatística e aprendizagem automática usam todos estas ideias.
+ALGA pede duas coisas em conjunto: fazer a conta e justificar por que resolve o problema. Uma base não é apenas uma lista de vetores, e uma matriz diagonal não confirma uma diagonalização sem a matriz de passagem certa. Em cada tema, acompanha o exemplo e resolve os exercícios no fim da página.
 
-## Como está organizado
+## Percurso
 
-Começa por [Matrizes](matrizes/), que fixa a linguagem de toda a cadeira. Depois, [Sistemas de equações lineares](sistemas-lineares/) mostra o método de Gauss, o cálculo que mais vais repetir. [Determinantes](determinantes/) dá-te um número que decide se uma matriz quadrada é invertível e mede áreas e volumes.
+| Etapa                                       | O que deves conseguir fazer                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------ |
+| [Matrizes](matrizes/)                       | Verificar dimensões, operar, inverter e resolver equações matriciais           |
+| [Sistemas lineares](sistemas-lineares/)     | Eliminar, discutir parâmetros e escrever todas as soluções                     |
+| [Determinantes](determinantes/)             | Usar Laplace, propriedades, adjunta e Cramer com as condições certas           |
+| [Espaços vetoriais](espacos-vetoriais/)     | Provar que um conjunto é subespaço, obter bases e calcular soma e interseção   |
+| [Produtos de vetores](produtos-vetoriais/)  | Calcular comprimentos, ângulos, normais, áreas e volumes                       |
+| [Ortogonalidade](ortogonalidade/)           | Aplicar Gram-Schmidt, normalizar e projetar num subespaço                      |
+| [Retas e planos](retas-planos/)             | Construir equações, decidir posições relativas e calcular distâncias           |
+| [Aplicações lineares](aplicacoes-lineares/) | Encontrar lei, matriz, núcleo, imagem e composição                             |
+| [Mudanças de base](mudanca-de-base/)        | Distinguir coordenadas e usar bases diferentes nos dois lados de uma aplicação |
+| [Valores próprios](valores-proprios/)       | Calcular espaços próprios, decidir diagonalização e usar potências             |
+| [Formas quadráticas](conicas-quadricas/)    | Retirar termos cruzados e reconhecer cónicas e quádricas                       |
 
-A segunda metade muda de ponto de vista: [Espaços vetoriais](espacos-vetoriais/) explica independência linear, bases e dimensão; [Produtos escalar, vetorial e misto](produtos-vetoriais/) trata dos três produtos em $\mathbb{R}^2$ e $\mathbb{R}^3$; [Retas e planos](retas-planos/) usa-os para fazer geometria analítica. Por fim, [Aplicações lineares](aplicacoes-lineares/) liga funções a matrizes, [Mudanças de base](mudanca-de-base/) mostra como trocar de referencial e [Valores e vetores próprios](valores-proprios/) explica a diagonalização, incluindo o caso das matrizes simétricas.
+A ficha atual marca o teorema espectral e a aplicação a cónicas e quádricas como opcionais, caso haja tempo. A ortogonalização desenvolve o produto escalar e permite resolver os problemas de bases ortogonais das provas históricas. Confirma com a equipa docente o âmbito da tua avaliação.
 
-## Como estudar
+## Estudar com papel ao lado
 
-Lê cada página com papel ao lado e refaz o exemplo principal sem espreitar. Em ALGA, perceber a definição não chega: tens de treinar o cálculo (Gauss, determinantes $3 \times 3$, produtos vetoriais) até sair sem hesitações, porque cada tema usa os cálculos dos anteriores. Quando errares, volta atrás e identifica o passo exato onde o sinal ou a conta falhou.
+Primeiro, refaz um exemplo completo sem olhar para a solução. Depois resolve um exercício em que muda uma condição, como um parâmetro que anula um pivô ou um valor próprio repetido. Escreve a justificação da decisão antes das contas.
 
-## Avaliação
+No fim, confirma o resultado na expressão original: substitui a solução no sistema, multiplica a inversa, reconstrói o vetor a partir das coordenadas ou verifica $AP=PD$. O programa ajuda a conferir a conta, mas a resolução deve continuar legível sem o executar.
 
-A forma de avaliação muda de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes o número de testes, as datas e as regras do exame de recurso.
+A [cheat sheet](folha-consulta/) reúne fórmulas e condições para consulta rápida. As demonstrações e os exemplos ficam nas lições.
+
+## Avaliação em 2026/27
+
+A [ficha oficial](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586980), verificada em 1 de outubro de 2026, prevê dois testes de 10 valores. A nota final é a soma. No recurso existem duas partes independentes. Para aprovação, podes realizar uma parte e conservar a nota da outra; para melhoria, realizas ambas. Não existe condição de frequência. Confirma datas e indicações operacionais na tua edição.
 
 ## Fontes e âmbito
 
-Estas páginas seguem o programa oficial da unidade curricular L.EIC001, Álgebra Linear e Geometria Analítica, no ano letivo de 2025/26: matrizes e determinante; sistemas de equações lineares reais com método de Gauss e regra de Cramer; espaço euclidiano $\mathbb{R}^n$ com independência linear, bases, dimensão e coordenadas; produtos vetorial e misto em $\mathbb{R}^3$ com aplicações a sistemas, retas e planos; interpretação geométrica do determinante; aplicações lineares em $\mathbb{R}^n$; matrizes de mudança de base; valores e vetores próprios, diagonalização e matrizes simétricas, com o teorema espectral e as cónicas e quádricas como tópico opcional.
+A ficha de L.EIC001 acima é a referência atual para o programa e a avaliação. O [Moodle indicado nessa ficha](https://moodle2425.up.pt/course/view.php?id=4115) estava indisponível para esta conta na recolha de 1 de outubro de 2026. Não tratamos essa ausência como acesso aos materiais atuais.
 
-Material oficial da FEUP:
+A bibliografia obrigatória mantém _Elementary Linear Algebra_, de Howard Anton; _Álgebra Linear como Introdução à Matemática Aplicada_, de Luís T. Magalhães; e _Álgebra Linear e Geometria Analítica_, de António Monteiro. O catálogo da biblioteca está ligado na ficha oficial. Não foi identificado um PDF integral destas edições no arquivo local.
 
-- Ficha da unidade curricular L.EIC001, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560085).
-- Página da disciplina no Moodle, indicada na ficha oficial: [Moodle UP](https://moodle2425.up.pt/course/view.php?id=4115) (o acesso aos materiais requer inscrição).
-- Catálogo de manuais da FEUP, que inclui os textos _Noções sobre Álgebra Linear_ e _Noções sobre Matrizes e Sistemas de Equações Lineares_: [FEUP Edições](https://books.fe.up.pt/index.php/feuped/catalog/series/manuais).
+Para desenvolver as explicações, consultámos a sebenta FEUP _Álgebra_, de Ana Maria Mendonça e Maria Cristina Ribeiro, 2007/08; acetatos e fichas por tema de 2015/16 a 2020/21; provas e resoluções de 2006 a 2021; e os apontamentos de estudante _Resumos ALGA SofiaViP_. Estes materiais são históricos. Os exemplos e exercícios publicados aqui são próprios, não cópias dos enunciados.
 
-A bibliografia obrigatória indicada na ficha oficial é _Elementary Linear Algebra_ de Howard Anton, _Álgebra Linear como Introdução a Matemática Aplicada_ de Luís T. Magalhães e _Álgebra Linear e Geometria Analítica_ de António Monteiro.
+Como apoio aberto, o livro [Linear Algebra, 4.ª edição](https://hefferon.net/linearalgebra/), de Jim Hefferon, inclui respostas, laboratório e slides, guardados no arquivo local. Não consta da bibliografia adotada pela FEUP. Para uma segunda explicação, há [Interactive Linear Algebra](https://textbooks.math.gatech.edu/ila/index.html) e as [aulas 18.06 do MIT](https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/video_galleries/video-lectures/).
 
-Material histórico da FEUP, usado para confirmar a estrutura dos temas (os enunciados e a avaliação atuais estão na página da disciplina):
-
-- Sebenta _Álgebra_ para o Mestrado Integrado em Engenharia Informática e Computação, de Ana Maria Mendonça e Maria Cristina Ribeiro, FEUP, 2007/08, que cobre matrizes, determinantes, sistemas, espaços vetoriais, transformações lineares, diagonalização e geometria analítica.
-- Coleção de acetatos e fichas de exercícios por tema (matrizes, subespaços, produtos vetorial e misto, geometria analítica, transformações lineares, mudanças de base, valores e vetores próprios) e enunciados de testes de 2006 a 2021, preservados em repositório público de estudante e consultados como referência local.
-
-Notas de estudantes, úteis como apoio mas sem valor oficial:
-
-- _Resumos ALGA SofiaViP_, apontamentos de estudante em circulação pública (ficheiro PDF descarregado da pasta pública em setembro de 2026).
-
-Os exemplos e exercícios destas páginas são originais, escritos para este site. Não reproduzem os enunciados das fichas nem dos testes.
+Os vídeos de 3Blue1Brown aparecem junto dos conceitos que ajudam a visualizar: [combinações e bases](https://www.3blue1brown.com/lessons/span/), [transformações](https://www.3blue1brown.com/lessons/linear-transformations/) e [valores próprios](https://www.3blue1brown.com/lessons/eigenvalues/). Para conferir contas, podes usar a [calculadora de matrizes Desmos](https://www.desmos.com/matrix?lang=en). A conta escrita deve mostrar o método e as condições.

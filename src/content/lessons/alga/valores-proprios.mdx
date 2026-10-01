@@ -2,16 +2,19 @@
 title: Valores e vetores próprios e diagonalização
 description: Polinómio característico, cálculo de valores e vetores próprios, diagonalização e matrizes simétricas.
 section: conteudo
-order: 9
+order: 10
+practices:
+  - alga/praticar-proprios
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
+import exampleCode from '../../alga/valores-proprios.py?raw';
 import Tabs from '../../../components/Tabs.astro';
 import YouTube from '../../../components/YouTube.astro';
 import eixos from '../../alga/proprios-eixos.typ?raw';
 
-Há vetores que uma matriz não roda nem deforma, apenas estica ou encolhe: entram numa direção e saem na mesma direção. São os **vetores próprios**, e o fator de escala é o **valor próprio**. Encontrá-los é descobrir os eixos naturais da transformação, e quando há uma base deles, a matriz torna-se diagonal: a forma mais simples possível.
+Alguns vetores não nulos são enviados para um múltiplo de si próprios. São os **vetores próprios**, e o fator é o **valor próprio**. Um fator negativo inverte o sentido e um fator zero envia o vetor para a origem. Se houver uma base destes vetores, a matriz da transformação nessa base é diagonal.
 
 ## Definição
 
@@ -29,7 +32,9 @@ $$
 \det(A - \lambda I) = 0.
 $$
 
-O primeiro membro é um polinómio de grau $n$ em $\lambda$, o **polinómio característico**. As suas raízes são os valores próprios. Depois, para cada valor próprio, resolve-se o sistema $(A - \lambda I)v = 0$ para obter os vetores próprios (que formam o **espaço próprio** associado, sempre um subespaço).
+O primeiro membro é um polinómio de grau $n$ em $\lambda$, o **polinómio característico**. Aqui usamos a convenção $p_A(\lambda)=\det(A-\lambda I)$. Também é comum usar $\det(\lambda I-A)$; os polinómios diferem pelo fator $(-1)^n$ e têm as mesmas raízes.
+
+Para cada valor próprio, resolvemos $(A-\lambda I)v=0$. O **espaço próprio** é $E_\lambda=\ker(A-\lambda I)$ e inclui o vetor zero. Os vetores próprios são os elementos **não nulos** desse espaço.
 
 ## Exemplo completo
 
@@ -90,6 +95,47 @@ Isto nem sempre é possível. Há duas causas de falha: o polinómio caracterís
 
 A diagonalização simplifica potências: $A^k = PD^kP^{-1}$, e $D^k$ calcula-se elevando cada entrada da diagonal. É assim que se estudam evoluções iteradas (potências de matrizes de transição, recorrências) sem multiplicar matrizes dezenas de vezes.
 
+## Multiplicidades e falhas de diagonalização
+
+A **multiplicidade algébrica** de $\lambda$ é o número de vezes que aparece como raiz de $p_A$. A **multiplicidade geométrica** é $\dim E_\lambda$. Para um valor próprio,
+
+$$
+1\leq m_g(\lambda)\leq m_a(\lambda).
+$$
+
+A matriz é diagonalizável sobre $\mathbb R$ se o polinómio tiver todas as raízes reais, contando multiplicidades, e $m_g(\lambda)=m_a(\lambda)$ para cada uma. Equivalentemente, a soma das dimensões dos espaços próprios distintos tem de ser $n$.
+
+Com $J=\begin{bmatrix}2&1\\0&2\end{bmatrix}$, o polinómio é $(2-\lambda)^2$. Mas
+
+$$
+J-2I=\begin{bmatrix}0&1\\0&0\end{bmatrix}
+\quad\Longrightarrow\quad E_2=\{(x,0):x\in\mathbb R\}.
+$$
+
+Temos $m_a(2)=2$ e $m_g(2)=1$. Só há uma direção própria, por isso $J$ não diagonaliza. Já $2I$ tem o mesmo polinómio e $E_2=\mathbb R^2$, logo diagonaliza. Valores próprios repetidos não decidem a questão sem estudar os espaços próprios.
+
+Numa matriz triangular, os valores próprios são as entradas da diagonal, mas a matriz **não é necessariamente diagonalizável**. Para $A_t=\begin{bmatrix}2&t&0\\0&2&0\\0&0&3\end{bmatrix}$, o espaço $E_2$ tem dimensão 2 quando $t=0$ e dimensão 1 quando $t\ne0$. A diagonalização só é possível no primeiro caso.
+
+## Confirmar o polinómio e as potências
+
+Para a convenção $p_A(\lambda)=\det(A-\lambda I)$, o coeficiente de $\lambda^n$ é $(-1)^n$ e o termo constante é **$\det A$**. A soma dos valores próprios, contando multiplicidades, é $\operatorname{tr}A$ e o produto é $\det A$.
+
+No exemplo principal, $5+2=7$ coincide com o traço e $5\cdot2=10$ coincide com o determinante. Estas verificações ajudam a detetar erros de sinal, mas não substituem o cálculo dos espaços próprios.
+
+Com a matriz $P$ do exemplo,
+
+$$
+P^{-1}=\frac13\begin{bmatrix}2&1\\1&-1\end{bmatrix},
+\qquad
+A^k=\frac13
+\begin{bmatrix}
+2\cdot5^k+2^k&5^k-2^k\\
+2\cdot5^k-2\cdot2^k&5^k+2\cdot2^k
+\end{bmatrix}.
+$$
+
+Para $k=0$ obtemos $I$ e para $k=1$ obtemos $A$. Para expoentes negativos, esta expressão exige que todos os valores próprios sejam não nulos.
+
 ## Matrizes simétricas e o teorema espectral
 
 Uma matriz real simétrica ($A^T = A$) é sempre diagonalizável, com valores próprios reais e vetores próprios de valores distintos automaticamente ortogonais. É o **teorema espectral**: existe uma base ortonormada de vetores próprios, e a matriz de passagem pode ser escolhida ortogonal ($P^{-1} = P^T$).
@@ -103,9 +149,7 @@ O programa seguinte calcula os valores próprios da matriz $A$ pela fórmula res
 <CodePlayground
   language="python"
   title="Valores próprios 2x2"
-  code={
-    'a, b, c, d = 4, 1, 2, 3\nt = a + d\ndet = a * d - b * c\ndisc = t * t - 4 * det\nr = disc ** 0.5\nprint((t - r) / 2, (t + r) / 2)'
-  }
+  code={exampleCode}
 />
 
 ## Ver com outros olhos
@@ -117,18 +161,12 @@ Este vídeo mostra vetores próprios como os eixos que a matriz só estica.
   title="Eigenvectors and eigenvalues, Chapter 14, Essence of linear algebra"
 />
 
-## Para saber mais
-
-- [Vetores e valores próprios](https://www.3blue1brown.com/lessons/eigenvalues/), a versão animada dos eixos desta página.
-
-:::note[Cónicas e quádricas (tópico opcional)]
-O programa indica, caso haja tempo, a aplicação do teorema espectral à identificação de cónicas e quádricas. A ideia: uma equação do segundo grau como $2x^2 + 2xy + 2y^2 = 3$ escreve-se com a matriz simétrica $S$ acima, e rodando para a base própria as variáveis cruzadas desaparecem. Com $u, v$ nas direções de $(1,1)$ e $(1,-1)$, a equação fica $3u^2 + v^2 = 3$, ou seja, $u^2 + v^2/3 = 1$: uma elipse de semieixos $1$ e $\sqrt{3}$. O sinal e o número de valores próprios positivos, negativos e nulos classificam a curva ou superfície.
-:::
+A aplicação desta mudança ortonormada a equações de segundo grau está em [Formas quadráticas](../conicas-quadricas/).
 
 ## O que costuma correr mal
 
 - Aceitar o vetor nulo como vetor próprio, ou apresentar "vetores próprios" sem verificar $Av = \lambda v$ no fim.
-- Resolver $\det(A - \lambda I) = 0$ com erros de sinal no polinómio característico, sobretudo no termo independente (que vale $(-1)^n \det A$ e serve de verificação).
+- Resolver $\det(A-\lambda I)=0$ com erros de sinal. Nesta convenção, o termo constante é $\det A$ e o coeficiente dominante é $(-1)^n$.
 - Assumir que qualquer matriz diagonaliza. Testa sempre se tens $n$ vetores próprios independentes antes de escrever $P^{-1}AP = D$.
 - Montar $P$ com os vetores por ordem e $D$ com os valores por outra ordem. A coluna $j$ de $P$ tem de corresponder à posição $j$ da diagonal de $D$.
 - Em matrizes simétricas, esquecer que a ortogonalidade entre espaços próprios distintos é garantida, mas vetores dentro do mesmo espaço próprio ainda precisam de ser ortogonalizados se quiseres uma base ortonormada.
