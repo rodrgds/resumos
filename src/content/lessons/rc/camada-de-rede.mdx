@@ -1,107 +1,126 @@
 ---
 title: Camada de rede e encaminhamento
-description: Endereçamento IP, sub-redes com máscaras e algoritmos de encaminhamento.
+description: IPv4, subnetting, VLSM, escolha de rotas, ARP, fragmentação, NAT e IPv6.
 section: conteudo
-order: 7
+order: 8
+practices:
+  - rc/praticar-ip
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: RFC4632, CIDR
+      url: https://www.rfc-editor.org/rfc/rfc4632.html
+    - title: RFC3021, prefixos31
+      url: https://www.rfc-editor.org/rfc/rfc3021.html
+    - title: RFC791, IPv4
+      url: https://www.rfc-editor.org/rfc/rfc791.html
+    - title: RFC8200, IPv6
+      url: https://www.rfc-editor.org/rfc/rfc8200.html
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import sequencia from '../../rc/dhcp.typ?raw';
-import melhor from '../../rc/prefixo.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import topologia from '../../rc/vlsm.dot?raw';
 
-A camada de rede responde à pergunta grande: como levar um pacote de qualquer origem a qualquer destino, atravessando redes que ninguém desenhou em conjunto. As respostas são o endereçamento IP, a divisão em sub-redes e os algoritmos que preenchem as tabelas dos routers.
+IP entrega datagramas entre interfaces através de redes distintas. Não garante fiabilidade. O **encaminhamento por pacote** escolhe a saída usando uma tabela; os algoritmos e protocolos de routing constroem e atualizam essa tabela.
 
-## Endereços IP e máscaras
+## IPv4 e prefixos
 
-Um endereço IPv4 tem 32 bits, escritos como quatro números decimais, por exemplo `192.168.1.20`. A **máscara** diz que parte identifica a rede e que parte identifica a máquina dentro dela: em `192.168.1.0/24`, os primeiros 24 bits são a rede e os últimos 8 bits são as máquinas. O `/24` é o comprimento do prefixo, e a máscara em decimal é `255.255.255.0`.
+Um endereço IPv4 tem 32 bits. O prefixo `/p` indica quantos bits identificam a rede; os restantes $32-p$ identificam posições dentro dela. A máscara tem $p$ uns seguidos de zeros. Aplica AND entre endereço e máscara para obter a rede.
 
-Cada sub-rede reserva dois endereços: o primeiro identifica a própria rede e o último é o **endereço de difusão** (broadcast), que fala com todas as máquinas da sub-rede. Numa `/24` há $2^8 = 256$ endereços menos estes dois, ou seja 254 máquinas utilizáveis.
+**Exemplo.** `192.0.2.77/26` tem máscara `255.255.255.192`. Os blocos do último octeto começam em 0, 64, 128 e 192. O endereço pertence a `192.0.2.64/26`, com broadcast `.127` e intervalos usuais de hosts `.65` a `.126`, total de 62.
 
-## Dividir uma rede em sub-redes
-
-Pegar na rede `192.168.1.0/24` e parti-la em 4 sub-redes iguais pede 2 bits emprestados à parte das máquinas: o prefixo passa a `/26` e a máscara a `255.255.255.192`. Cada sub-rede fica com $2^6 = 64$ endereços, 62 utilizáveis. A tabela fica assim:
-
-| Sub-rede | Rede               | Utilizáveis                       | Difusão         |
-| -------- | ------------------ | --------------------------------- | --------------- |
-| 1        | `192.168.1.0/26`   | `192.168.1.1` a `192.168.1.62`    | `192.168.1.63`  |
-| 2        | `192.168.1.64/26`  | `192.168.1.65` a `192.168.1.126`  | `192.168.1.127` |
-| 3        | `192.168.1.128/26` | `192.168.1.129` a `192.168.1.190` | `192.168.1.191` |
-| 4        | `192.168.1.192/26` | `192.168.1.193` a `192.168.1.254` | `192.168.1.255` |
-
-Confere a segunda: começa em 64 porque cada bloco tem 64 endereços ($0$, $64$, $128$, $192$); o último utilizável é $64 + 62 = 126$ e a difusão é $127$. O método geral é sempre este: $n$ bits emprestados dão $2^n$ sub-redes, e cada bloco começa em múltiplo do seu tamanho.
-
-Gera a tabela acima com o programa. Ele imprime rede, intervalo utilizável e difusão das 4 sub-redes:
+A fórmula $2^{32-p}-2$ aplica-se às sub-redes IPv4 usuais que reservam rede e broadcast. **Não é universal:** `/31` pode usar os dois endereços numa ligação ponto a ponto; `/32` representa um único endereço. As antigas classes A, B e C não substituem o prefixo CIDR indicado no problema.
 
 <CodePlayground
   language="python"
-  title="As 4 sub-redes de 192.168.1.0/24"
-  code={
-    'for n in range(4):\n    rede = n * 64\n    print(f"{n + 1}: 192.168.1.{rede}/26  utilizaveis .{rede + 1} a .{rede + 62}  difusao .{rede + 63}")'
-  }
+  title="Conferir rede, máscara e extremos"
+  code={`from ipaddress import ip_interface
+interface = ip_interface("192.0.2.77/26")
+rede = interface.network
+hosts = list(rede.hosts())
+print("Rede:", rede, "Máscara:", rede.netmask)
+print("Broadcast:", rede.broadcast_address)
+print("Hosts:", hosts[0], "até", hosts[-1], "total", len(hosts))`}
 />
 
-<Tabs id="partir-subredes" labels={['Em 4 sub-redes', 'Em 8 sub-redes']}>
-  <div slot="panel-0">
+## VLSM e agregação
 
-Empresta 2 bits: prefixo `/26`, máscara `255.255.255.192`, blocos de 64 com 62 máquinas cada. É a tabela do programa acima.
+Para dividir `198.51.100.0/24` em grupos que precisem de 100, 50 e 20 hosts, começa pelos maiores:
 
-  </div>
-  <div slot="panel-1">
+| Necessidade | Prefixo | Bloco              | Hosts usuais |
+| ----------- | ------- | ------------------ | ------------ |
+| 100         | /25     | 198.51.100.0–127   | .1–.126      |
+| 50          | /26     | 198.51.100.128–191 | .129–.190    |
+| 20          | /27     | 198.51.100.192–223 | .193–.222    |
 
-Empresta 3 bits: prefixo `/27`, máscara `255.255.255.224`, blocos de 32 com 30 máquinas cada, de `192.168.1.0/27` a `192.168.1.224/27`.
+O bloco `.224/27` sobra. Cada bloco tem tamanho potência de dois e início alinhado. Não podes começar um `/26` em `.130` só porque há espaço disponível.
 
-  </div>
-</Tabs>
+Na **agregação**, vários prefixos contíguos e alinhados podem ser anunciados por um prefixo mais curto. `192.0.2.0/25` e `192.0.2.128/25` agregam em `192.0.2.0/24`. Agregar blocos não contíguos pode anunciar destinos que não eram pretendidos.
 
-<YouTube
-  id="BWZ-MHIhqjM"
-  title="What is Subnetting? - Subnetting Mastery - Part 1 of 7"
+## Longest prefix match
+
+O router escolhe, entre as rotas que correspondem ao destino, a de **prefixo mais longo**. A rota por omissão `/0` corresponde a tudo, mas perde para qualquer correspondência mais específica.
+
+Com `/0` por G0, `10.0.0.0/8` por G1 e `10.2.0.0/16` por G2, o destino `10.2.3.4` sai por G2. O destino `10.9.1.1` sai por G1. Isto não significa escolher a rota com menos saltos entre prefixos de comprimentos diferentes.
+
+A tabela indica saída e próximo salto. Se o destino for local, o próximo salto é o próprio destino. Se for remoto, é um router diretamente alcançável. IP do destino final e IP do próximo salto são campos com funções diferentes.
+
+## Passar de uma topologia a tabelas de rotas
+
+Divide `172.20.8.0/24` para a topologia seguinte. A LAN A precisa de 80 endereços de hosts e a LAN B de 30, já incluindo as interfaces dos routers. A ligação entre routers usa um `/30` por decisão deste exemplo. Não há NAT nem ligação a outras redes.
+
+<Dot
+  source={topologia}
+  alt="LAN A ligada a R1, ligação ponto a ponto entre R1 e R2, e LAN B ligada a R2. A rede disponível é 172.20.8.0/24."
 />
 
-Na prática, quase ninguém configura isto à mão em cada máquina: o **DHCP** entrega endereço, máscara, gateway e DNS automaticamente quando te ligas, e o **ICMP** leva as mensagens de erro e de diagnóstico (o `ping` e o `traceroute` falam ICMP).
+Começa pela maior necessidade, reserva rede e broadcast nas LANs, e alinha cada bloco. 80 não cabem num `/26`, que só dá 62 hosts; 30 cabem exatamente num `/27`.
 
-O DHCP em quatro mensagens, pela ordem com que viajam na rede:
+| Segmento | Rede              | Máscara           | Hosts disponíveis | Broadcast |
+| -------- | ----------------- | ----------------- | ----------------- | --------- |
+| LAN A    | `172.20.8.0/25`   | `255.255.255.128` | `.1` a `.126`     | `.127`    |
+| LAN B    | `172.20.8.128/27` | `255.255.255.224` | `.129` a `.158`   | `.159`    |
+| R1–R2    | `172.20.8.160/30` | `255.255.255.252` | `.161` e `.162`   | `.163`    |
 
-<Typst
-  source={sequencia}
-  format="svg"
-  alt="Diagrama de sequência DORA: o cliente envia Discover e Request, o servidor responde Offer e Ack."
-/>
+Atribui `.1/25` à interface LAN de R1 e `.129/27` à de R2. Na ligação entre ambos, R1 usa `.161/30` e R2 `.162/30`. Cada interface tem o seu endereço e prefixo. Um router não tem um único endereço que se possa usar em qualquer segmento.
 
-Lê a sequência como uma conversa: o cliente anuncia-se em difusão (`Discover`), o servidor oferece um endereço (`Offer`), o cliente pede-o formalmente (`Request`) e o servidor confirma (`Ack`). Só a partir do `Ack` é que o endereço é teu.
+A tabela de R1, sem rota por defeito, precisa de conhecer as três redes:
 
-## Como os routers escolhem
+| Destino           | Próximo salto      | Interface de saída |
+| ----------------- | ------------------ | ------------------ |
+| `172.20.8.0/25`   | Diretamente ligado | LAN A              |
+| `172.20.8.160/30` | Diretamente ligado | Ligação R1–R2      |
+| `172.20.8.128/27` | `172.20.8.162`     | Ligação R1–R2      |
 
-Cada router tem uma **tabela de encaminhamento** com entradas do tipo "para este prefixo, envia pela interface X ao vizinho Y". Perante um pacote, escolhe a entrada com o **prefixo mais longo** que contenha o destino: entre `192.168.0.0/16` e `192.168.1.128/26`, um pacote para `192.168.1.130` segue a segunda, porque é a mais específica.
+R2 tem as duas primeiras redes locais correspondentes, LAN B e ligação. Para chegar a `172.20.8.0/25`, usa o próximo salto `172.20.8.161`. As rotas diretamente ligadas são normalmente instaladas a partir da configuração das interfaces; a rota remota precisa de configuração estática ou aprendizagem por routing.
 
-<Typst
-  source={melhor}
-  format="svg"
-  alt="Duas entradas de tabela e o destino 192.168.1.130: a seta escolhe 192.168.1.128/26 por ser o prefixo mais longo."
-/>
+Um host `172.20.8.20/25` envia para `172.20.8.130` através do gateway `.1`. Na LAN A, resolve por ARP o MAC de `.1`. R1 encaminha por `.162`; R2 entrega na LAN B, resolvendo o MAC de `.130`. Sem NAT, os IP de origem e destino mantêm-se, o TTL diminui em cada router e os endereços de ligação mudam por salto.
 
-As tabelas podem ser escritas à mão (encaminhamento estático, bom para redes pequenas) ou aprendidas por protocolos: **vetor de distâncias**, onde cada router conta aos vizinhos o que sabe e todos convergem por aproximações sucessivas, e **estado de ligação**, onde cada router inunda o mapa da rede e todos calculam os caminhos mais curtos localmente. O primeiro é simples e por vezes lento a reagir a falhas; o segundo é rápido e gasta mais memória e processamento. A Internet usa as duas ideias em escalas diferentes.
+Para reduzir uma tabela por agregação, verifica alinhamento e próximo salto comum. Dois `/27`, `.128/27` e `.160/27`, podem formar `.128/26` se todos esses destinos tiverem a mesma saída pretendida. `.0/27` e `.64/27` não são dois blocos adjacentes; resumir ambos com `/25` inclui outras redes. Menos linhas não justifica anunciar destinos incorretos.
 
-Segue o vetor de distâncias em três routers em linha, A, B e C, com custo 1 por salto. Cada router começa por só se conhecer a si próprio com custo 0. Na primeira ronda de trocas, cada um aprende os vizinhos diretos: A fica com (A: 0, B: 1), B com (B: 0, A: 1, C: 1) e C com (C: 0, B: 1). Na segunda ronda, B conta a A que chega a C com custo 1, por isso A regista C com custo 2; o simétrico acontece em C, que regista A com custo 2. Ninguém muda mais nada na ronda seguinte: convergiu, e cada router sabe o caminho mais curto para todos.
+## ARP, DHCP e ICMP
 
-## Sair para a Internet: NAT
+**ARP** resolve um IPv4 do salto local para o endereço de ligação. O pedido é difundido na LAN; o dono do IP responde com o seu MAC e o resultado pode ser guardado em cache. Para falar com uma rede remota, resolve-se o MAC do gateway, não o MAC do terminal remoto.
 
-Dentro de casa os endereços são privados (`192.168.x.x`) e repetem-se em todas as casas do mundo; na Internet cada pacote precisa de um endereço público único. O **NAT** no router de acesso traduz uns nos outros e regista a tradução numa tabela, para saber a quem entregar as respostas. Com o endereço público `203.0.113.7`:
+**DHCP** pode atribuir endereço, máscara, gateway, DNS e tempo de concessão. A sequência inicial habitual é Discover, Offer, Request, ACK, com UDP, portas 68 do cliente e 67 do servidor. Renovar uma concessão não exige repetir sempre a sequência broadcast inicial.
 
-| Dentro de casa      | Para a Internet     | Regresso                                             |
-| ------------------- | ------------------- | ---------------------------------------------------- |
-| `192.168.1.20:5000` | `203.0.113.7:60001` | a resposta a `:60001` volta para `192.168.1.20:5000` |
-| `192.168.1.21:5000` | `203.0.113.7:60002` | a resposta a `:60002` volta para `192.168.1.21:5000` |
+**ICMP** comunica controlo e erros IP. Echo request/reply suporta `ping`; time exceeded permite observar saltos com TTL crescente, como em `traceroute`. ICMP não torna IP fiável. Um pacote sem resposta ao ping pode estar bloqueado ou sem caminho de retorno, não apenas desligado.
 
-As duas máquinas usam a mesma porta privada `5000`, e é a porta pública traduzida que as distingue. Sem entrada na tabela, um pacote vindo de fora não entra: é por isso que servidores em casa precisam de reencaminhamento de portas configurado à mão.
+## Cabeçalho e fragmentação IPv4
 
-## IPv6 em poucas linhas
+O cabeçalho inclui origem, destino, comprimento, protocolo superior, TTL e campos de fragmentação. O TTL diminui nos routers e impede circulação indefinida. A checksum IPv4 protege o cabeçalho, não toda a carga útil.
 
-O IPv4 tem 32 bits e os endereços esgotaram-se; o **IPv6** usa 128 bits escritos em 8 grupos hexadecimais, como `2001:db8::1`, com prefixos do tipo `/64` para cada rede. O espaço é tão grande que cada rede recebe milhões de endereços sem partilhas nem NAT. As duas versões coexistem: a transição faz-se com pilha dupla (máquinas que falam as duas) e túneis, e a tua ligação provavelmente já negoceia as duas sem dares por isso.
+Se um datagrama exceder a MTU e a fragmentação for permitida, cada fragmento recebe cabeçalho. O offset conta blocos de **8 bytes** da carga útil original; exceto o último, a carga útil tem tamanho múltiplo de oito. O destino reconstitui usando a identificação e os campos de fragmentação.
 
-:::details[Ver a regra de ouro da divisão]
-Para partir uma rede em $k$ sub-redes, escolhe o menor $n$ com $2^n \geq k$ e empresta $n$ bits. Cada sub-rede tem $2^{32 - \text{prefixo}}$ endereços e blocos alinhados a múltiplos desse tamanho. O erro típico é esquecer os dois endereços reservados por sub-rede e contar $64$ máquinas onde só cabem $62$.
-:::
+**Exemplo.** Datagrama de 4000 bytes, incluindo cabeçalho de 20, MTU 1500, sem opções e DF=0. Há 3980 bytes de dados. Cada fragmento completo leva 1480 bytes de dados. Resultam comprimentos 1500, 1500 e 1040; offsets 0, 185 e 370; MF 1, 1 e 0. Não dividas o comprimento total original por oito: o offset refere-se aos dados e cada fragmento tem cabeçalho novo.
+
+## NAT e IPv6
+
+NAT altera endereços; NAPT/PAT pode alterar também portas e manter uma tabela de associações. Vários clientes privados usam um endereço externo com portas distintas. Ligações iniciadas do exterior podem exigir uma associação estática, encaminhamento de portas ou outro mecanismo. NAT não substitui uma política de firewall.
+
+IPv6 usa 128 bits, notação hexadecimal e compressão de um único trecho de zeros com `::`. O cabeçalho base tem 40 bytes, não inclui checksum, e usa Hop Limit. Routers IPv6 não fragmentam; a origem pode usar um cabeçalho de fragmentação. Neighbor Discovery, baseado em ICMPv6, substitui funções do ARP. IPv6 usa multicast em funções em que IPv4 usava broadcast.
+
+Quando comparares IPv4 e IPv6, identifica os mecanismos, em vez de assumir que mudar a dimensão do endereço garante segurança ou elimina toda a configuração.

@@ -1,0 +1,105 @@
+---
+title: Algoritmos de encaminhamento
+description: Dijkstra, distance vector, ciclos, convergência, RIP, OSPF e BGP.
+section: conteudo
+order: 9
+practices:
+  - rc/praticar-encaminhamento
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: RFC2453, RIP
+      url: https://www.rfc-editor.org/rfc/rfc2453.html
+    - title: RFC2328, OSPF
+      url: https://www.rfc-editor.org/rfc/rfc2328.html
+    - title: RFC4271, BGP
+      url: https://www.rfc-editor.org/rfc/rfc4271.html
+---
+
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Uma tabela de encaminhamento precisa de refletir uma topologia que muda. O algoritmo procura caminhos segundo um **custo definido**. Esse custo não é automaticamente a latência nem o inverso do débito: lê a regra do problema.
+
+## Link state e Dijkstra
+
+Num algoritmo **link state**, cada router conhece o custo das suas ligações, divulga essa informação e constrói uma representação da topologia. Sobre o grafo, calcula os caminhos de menor custo a partir de si.
+
+Dijkstra mantém distâncias provisórias e um conjunto de nós já fixados. Começa com origem a zero e restantes a infinito. Escolhe o nó não fixado de menor distância, fixa-o e tenta melhorar cada vizinho usando `distância atual + custo da ligação`. Custos devem ser não negativos.
+
+<Dot
+  source={`graph { rankdir=LR; node [shape=circle]; A -- B [label="2"]; A -- C [label="5"]; B -- C [label="1"]; B -- D [label="4"]; C -- D [label="1"]; }`}
+  alt="Grafo: AB custa2, AC5, BC1, BD4 e CD1. O caminho A-B-C-D custa4."
+/>
+
+**Resolução a partir de A.** Depois de fixar A, B tem 2 e C tem 5. Fixa B: C melhora para 3 e D fica em 6. Fixa C: D melhora para 4. Fixa D. Os predecessores dão A-B-C-D. Para chegar a D, o próximo salto a partir de A é **B**, não C nem D.
+
+<CodePlayground
+  language="python"
+  title="Caminhos mínimos e predecessores"
+  code={`from heapq import heappop, heappush
+rede = {"A":{"B":2,"C":5}, "B":{"A":2,"C":1,"D":4},
+        "C":{"A":5,"B":1,"D":1}, "D":{"B":4,"C":1}}
+dist = {no: float("inf") for no in rede}
+anterior = {}
+dist["A"] = 0
+fila = [(0, "A")]
+while fila:
+    custo, no = heappop(fila)
+    if custo != dist[no]:
+        continue
+    for vizinho, peso in rede[no].items():
+        candidato = custo + peso
+        if candidato < dist[vizinho]:
+            dist[vizinho] = candidato
+            anterior[vizinho] = no
+            heappush(fila, (candidato, vizinho))
+print("Distâncias:", dist)
+caminho, no = [], "D"
+while no != "A":
+    caminho.append(no)
+    no = anterior[no]
+print("Caminho:", list(reversed(caminho + ["A"])))`}
+/>
+
+Em igualdade de custos pode haver vários caminhos mínimos. Usa o critério de desempate do enunciado, se existir. Uma resposta com custo correto pode ter um caminho diferente e igualmente válido.
+
+## Distance vector e Bellman-Ford
+
+Em **distance vector**, o router troca distâncias com vizinhos e não precisa de conhecer o grafo completo. Para destino $y$:
+
+$$D_x(y)=\min_{v\in vizinhos(x)}\{c(x,v)+D_v(y)\}.$$
+
+$x$ conhece os custos locais. Cada candidato soma custo até ao vizinho e a distância que esse vizinho anunciou para o destino. Guarda também o vizinho que produziu o mínimo.
+
+**Exemplo.** X liga a A com custo 2 e a B com custo 5. Para Z, A anuncia 7 e B anuncia 1. Via A custa 9; via B custa 6. X anuncia distância 6 e usa B. Não escolhe A só por a primeira ligação ser mais barata.
+
+Num traço por **rondas síncronas**, todos calculam com os vetores da ronda anterior. Atualizar imediatamente um router e usar esse resultado no seguinte modela uma execução diferente. Regista a inicialização: frequentemente distância zero a si, custos conhecidos aos vizinhos e infinito aos restantes.
+
+## Falhas, ciclos e count to infinity
+
+Se A usava B para chegar a Z, e B usava A sem saber que a rota deixou de existir, podem formar um ciclo. A notícia de uma falha pode propagar-se lentamente enquanto o custo aumenta a cada atualização.
+
+**Split horizon** evita anunciar numa interface uma rota aprendida nessa interface. **Poison reverse** anuncia-a com distância infinita. **Triggered updates** divulgam alterações sem esperar pelo intervalo periódico. Estas técnicas ajudam, mas poison reverse não elimina todos os ciclos com três ou mais routers.
+
+Encaminhar um pacote num ciclo não significa que o algoritmo tenha terminado: as tabelas podem estar num estado transitório. O TTL/Hop Limit limita a vida do pacote; não resolve a convergência das tabelas.
+
+## Protocolos e âmbito
+
+| Protocolo | Ideia                                 | Âmbito habitual                                              |
+| --------- | ------------------------------------- | ------------------------------------------------------------ |
+| RIP       | Vetor de distâncias, custo em saltos  | Interior de um sistema autónomo                              |
+| OSPF      | Estado de ligações e caminhos mínimos | Interior de um sistema autónomo, com áreas                   |
+| BGP       | Vetor de caminhos e políticas         | Entre sistemas autónomos e distribuição interna dessas rotas |
+
+No RIP, 16 representa infinito e limita a dimensão dos caminhos. OSPF divulga estado das ligações e calcula rotas sobre a base de dados. BGP inclui o percurso de sistemas autónomos e aplica políticas; «menor número de routers» não explica a sua seleção.
+
+Um **sistema autónomo** reúne redes sob uma administração e política de encaminhamento. Há rotas estáticas, introduzidas por configuração, e dinâmicas, aprendidas por protocolo. Uma rota por omissão pode evitar conhecer individualmente todos os destinos externos.
+
+## Custo e débito não são a mesma conta
+
+Supondo custo $1/R$, o caminho com ligações de 4 e 4 Mbit/s custa $1/4+1/4=0{,}5$. Um caminho direto de 3 Mbit/s custa $1/3\approx0{,}333$, logo é escolhido, embora o primeiro tenha bottleneck de 4 Mbit/s. **Minimizar a soma dos inversos não equivale a maximizar o menor débito.**
+
+Para um exercício, entrega a tabela por iteração, o custo final, o caminho e o próximo salto. Se pedirem o débito, faz depois a conta independente sobre as capacidades do caminho escolhido.

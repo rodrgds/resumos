@@ -1,59 +1,108 @@
 ---
 title: Acesso ao meio
-description: Partilha do canal com ALOHA, CSMA/CD e CSMA/CA, com contenção e recuo exponencial.
+description: ALOHA, variantes de CSMA, colisões, backoff e acesso sem fios.
 section: conteudo
-order: 5
+order: 6
+practices:
+  - rc/praticar-acesso
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
 ---
 
 import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
 import janela from '../../rc/vulneravel.typ?raw';
 import paragem from '../../rc/contencao.dot?raw';
 
-Quando várias estações partilham o mesmo canal, como no Wi-Fi ou no cabo coaxial antigo, é preciso decidir quem fala e quando. Sem regras, todos falam por cima de todos. Esta página apresenta as regras, do ingénuo ao usado na prática.
+Num meio partilhado, duas transmissões sobrepostas podem impedir a receção. O protocolo de acesso decide quando transmitir, como reagir a uma falha e como repartir a capacidade. Escutar antes de transmitir ajuda, mas a propagação e estações escondidas impedem garantir ausência de colisões.
 
-## ALOHA: falar quando apetece
+## ALOHA puro e com ranhuras
 
-No **ALOHA puro**, cada estação transmite quando tem dados. Se dois pacotes se sobrepuserem, há colisão e ambos são retransmitidos depois de um tempo aleatório. O período vulnerável dura dois tempos de trama: um pacote que demore $T$ a transmitir colide com qualquer outro que comece entre $T$ antes e $T$ depois.
-
-O **ALOHA com ranhuras** (slotted) disciplina isto: o tempo é dividido em ranhuras do tamanho de uma trama e só se pode começar no início de cada ranhura. O período vulnerável cai para metade e o débito máximo duplica, para cerca de 37 por cento da capacidade (o ALOHA puro fica-se pelos 18 por cento).[^aloha] Continua a ser pouco, mas a ideia das ranhuras e da retransmissão aleatória sobrevive em quase tudo o que vem a seguir.
-
-[^aloha]: Os máximos teóricos são $1/(2e) \approx 18{,}4$ por cento para o ALOHA puro e $1/e \approx 36{,}8$ por cento com ranhuras. Ver Tanenbaum e Wetherall, Computer Networks, capítulo de acesso ao meio.
-
-A diferença visual: no ALOHA puro qualquer pacote que arranque dentro de uma janela de $2T$ colide; com ranhuras a janela cai para $T$:
+No **ALOHA puro**, transmite-se assim que há dados. Uma trama de duração $T$ é vulnerável a outra que comece entre $T$ antes e $T$ depois do seu início: intervalo de $2T$. No **ALOHA com ranhuras**, só se inicia uma transmissão na fronteira de uma ranhura de duração $T$; a vulnerabilidade reduz-se a uma ranhura.
 
 <Typst
   source={janela}
   format="svg"
-  alt="Em cima, um pacote de duração T com uma zona vulnerável tracejada de largura 2T. Em baixo, ranhuras de largura T com a zona vulnerável reduzida a uma ranhura."
+  alt="ALOHA puro tem intervalo vulnerável de dois tempos de trama; ALOHA com ranhuras restringe o início às fronteiras e reduz esse intervalo a um tempo de trama."
 />
 
-## CSMA: escutar antes de falar
+O modelo seguinte usa tramas iguais, tentativas agregadas Poisson e colisões que destroem todas as tramas sobrepostas, sem captura de uma delas pelo recetor. Com ranhuras, as chegadas ao recetor têm de respeitar a mesma sincronização. $G$ é a carga oferecida em tentativas por tempo de trama, incluindo retransmissões. O débito normalizado é:
 
-O **CSMA** acrescenta a escuta: a estação verifica se o canal está livre antes de transmitir. Isto evita as colisões óbvias, mas não todas: duas estações podem escutar um canal livre ao mesmo tempo e transmitir juntas, porque o sinal demora a viajar de uma à outra. O período vulnerável passa a ser o tempo de propagação, muito menor que o tempo de trama, e o débito sobe bastante.
+$$S_{puro}=Ge^{-2G},\qquad S_{ranhuras}=Ge^{-G}.$$
 
-Nas redes com fios, a estação consegue ouvir a sua própria transmissão enquanto fala, por isso deteta a colisão a meio (**deteção de colisão**, CD) e aborta logo, sem desperdiçar a trama inteira. Depois de colidir, cada estação espera um número aleatório de ranhuras antes de tentar de novo, e esse intervalo duplica a cada colisão seguida (**recuo exponencial**): com poucas estações resolve-se depressa, com muitas o intervalo cresce até caber toda a gente.
+Derivar em ordem a $G$ dá máximos em $G=1/2$ e $G=1$, respetivamente. Os máximos são $1/(2e)\approx0{,}184$ e $1/e\approx0{,}368$. Estes números dependem do modelo. Não são limites de todo o acesso aleatório, nem valores de utilização do Wi-Fi.
 
-## CSMA/CA no sem fios
+As tentativas Poisson são uma hipótese ou aproximação, não uma consequência automática de repetir após colisões. O máximo da curva também não prova estabilidade: um número crescente de tramas pendentes pode aumentar as tentativas e reduzir o sucesso. As [aulas de Eytan Modiano no MIT](https://web.mit.edu/modiano/www/6.263/lec10.pdf) separam estas hipóteses da análise de estabilidade.
 
-No rádio, a estação não consegue escutar enquanto transmite, por isso o Wi-Fi evita colisões em vez de as detetar (**evitar colisões**, CA). O mecanismo: espera um intervalo fixo de silêncio, conta uma espera aleatória em ranhuras, e só transmite se o canal continuar livre; quem ouve tráfego congela a contagem e retoma depois.
+**Exemplo.** Para $G=0{,}5$, ALOHA puro entrega $0{,}5e^{-1}\approx0{,}184$ tramas por tempo de trama. Com ranhuras, entrega $0{,}5e^{-0{,}5}\approx0{,}303$. Aumentar muito as tentativas faz diminuir o sucesso, porque aumenta as colisões.
 
-Segue duas estações, A e B, que acordam com o canal livre. A sorteia espera 2, B sorteia espera 5. Passam duas ranhuras em silêncio e a contagem de A chega a zero: A transmite e B congela a sua contagem em 3. Quando A termina e o canal volta a calar-se, B retoma do 3 e transmite três ranhuras depois, sem colidir. Se tivessem sorteado o mesmo número, colidiriam na mesma, e aí cada uma duplicaria o intervalo de sorteio antes de tentar outra vez.
+<CodePlayground
+  language="python"
+  title="Curvas de débito de ALOHA"
+  code={`import numpy as np
+import matplotlib.pyplot as plt
+G = np.linspace(0, 3, 121)
+plt.plot(G, G*np.exp(-2*G), label="Puro")
+plt.plot(G, G*np.exp(-G), label="Com ranhuras")
+plt.xlabel("Tentativas por tempo de trama, G")
+plt.ylabel("Tramas entregues por tempo de trama, S")
+plt.title("ALOHA: modelo Poisson, tramas iguais")
+plt.legend()
+plt.grid(alpha=0.3)
+plt.show()`}
+/>
 
-O essencial do exemplo num grafo: B congela enquanto A ocupa o canal e retoma depois.
+## CSMA e persistência
+
+**Carrier Sense Multiple Access** escuta o meio antes de enviar. Ainda pode haver colisão: A começa e B, antes de lhe chegar o sinal, também observa silêncio. Quanto menor a propagação face à duração da trama, mais útil é a escuta.
+
+- **1-persistente:** se livre, transmite; se ocupado, continua a escutar e transmite assim que liberta. Várias estações à espera podem arrancar juntas.
+- **Não persistente:** se ocupado, espera um tempo aleatório antes de escutar novamente. Reduz arranques simultâneos, mas pode deixar o canal livre durante a espera.
+- **p-persistente:** num canal com ranhuras e livre, transmite com probabilidade $p$; com $1-p$, adia uma ranhura e repete a decisão.
+
+Não transportes as fórmulas de ALOHA diretamente para CSMA. O comportamento depende também da propagação e da regra de persistência.
+
+## CSMA/CD e tamanho mínimo
+
+Na Ethernet partilhada **half-duplex**, o emissor deteta uma colisão, envia o sinal de colisão e interrompe a transmissão. Depois tenta novamente com espera aleatória. Não precisa de desperdiçar toda uma trama longa.
+
+Para detetar a colisão mais distante enquanto ainda transmite, o tempo de transmissão mínimo deve ser pelo menos a propagação de ida e volta:
+
+$$L_{min}/R\ge2t_p.$$
+
+A 10 Mbit/s com $t_p=20$ microsegundos, o modelo exige pelo menos 400 bits, ou 50 bytes. A Ethernet define outros parâmetros e um mínimo de trama de 64 bytes, do endereço de destino ao FCS, sem contar preâmbulo. Aplica os valores do enunciado, em vez de misturar um cálculo ideal com parâmetros de outra variante.
+
+No **binary exponential backoff**, após a colisão de número $k$, sorteia-se um inteiro num intervalo de tamanho aproximadamente $2^k$, até ao limite do protocolo, e espera-se esse número de slot times. No algoritmo Ethernet clássico, o expoente é limitado a 10 e a transmissão é abandonada depois de 16 tentativas. A escolha aleatória reduz a probabilidade de repetir a mesma colisão; não garante ausência dela.
+
+**Ethernet comutada full-duplex não usa CSMA/CD:** cada ligação ponto a ponto pode transportar simultaneamente nos dois sentidos, sem um meio de colisão partilhado. «Cabo usa CD» é uma regra errada para a Ethernet atual.
+
+## CSMA/CA, ACK e estações escondidas
+
+No Wi-Fi, uma estação não consegue normalmente detetar uma colisão no recetor enquanto transmite. A ausência de ACK indica falha de entrega, mas também pode resultar de erro de canal ou ACK perdido.
+
+No mecanismo básico de contenção, espera-se o intervalo apropriado de canal livre e conta-se um **backoff** em ranhuras. O contador congela quando o meio fica ocupado e retoma após o intervalo exigido. Quem tem o contador a zero transmite. O ACK segue após um intervalo mais curto, SIFS, dando prioridade à confirmação sobre novos concorrentes.
+
+**Exemplo.** A sorteia 2 e B sorteia 5. Ao fim de duas ranhuras, A transmite e B congela em 3. B espera pela trama, ACK e novo intervalo de canal livre antes de retomar as três ranhuras. Se ambos chegarem a zero juntos, podem colidir.
 
 <Dot
   source={paragem}
-  alt="Grafo da contenção: A e B contam, A transmite ao chegar a zero, B congela em 3 e transmite quando o canal liberta."
+  alt="A e B iniciam o backoff; A chega a zero primeiro, B congela e retoma quando a troca e a espera de canal livre terminam."
 />
 
-:::details[Ver a contenção animada]
-A [animação do CSMA da TU Berlim](https://www.tkn.tu-berlin.de/teaching/rn/animations/csma/) mostra estações a escutar, congelar contagens e colidir. Corre-a com duas estações e compara com os números do exemplo acima.
-:::
+Duas estações são **escondidas** quando ambas alcançam o ponto de acesso, mas não se ouvem entre si. Escutar não resolve esta situação. RTS/CTS pode reservar o meio com mensagens curtas; o NAV avisa durante quanto tempo a troca ocupa o canal. Acrescenta sobrecarga e não elimina todas as colisões. Uma estação **exposta** pode adiar uma transmissão que seria compatível com outra, porque observa tráfego que não interfere com o seu recetor.
 
-:::warning[CD contra CA]
-Nas redes com fios deteta-se a colisão (CD) porque dá para ouvir enquanto se fala; no sem fios evita-se (CA) porque não dá. Trocar os dois é o erro clássico. Lembra-te: cabo escuta-se, rádio adivinha-se.
-:::
+Para comparar protocolos, escreve o que cada um sabe: canal livre localmente, colisão detetada, ACK recebido ou reserva anunciada. Uma observação local não implica que o recetor esteja disponível.
 
-<YouTube id="iKn0GzF5-IU" title="CSMA/CD and CSMA/CA Explained" />
+Revê o mecanismo de contenção na [aula oficial do capítulo 6 de Kurose](https://gaia.cs.umass.edu/kurose_ross/videos/6/) e a distinção entre [redes sem fios e móveis, capítulo 7](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm).
+
+Observa na aula seguinte como a carga e a propagação condicionam o acesso. Os modelos ALOHA não se aplicam diretamente a Ethernet full-duplex.
+
+<YouTube
+  id="X2cLpzFRMT4"
+  title="Jim Kurose: Multiple Access Links and Protocols, aula 6.3"
+/>

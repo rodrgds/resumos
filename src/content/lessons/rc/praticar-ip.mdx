@@ -1,0 +1,225 @@
+---
+title: Praticar subnetting e fragmentação
+description: Exercícios próprios com contas, traços, pistas e soluções.
+section: exercicios
+editorial:
+  basedOn: 2026/27
+  coverage: Exercícios próprios sobre os tópicos da lição associada.
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="rc-vlsm-topologia"
+  title="Configurar interfaces e rotas de duas LANs"
+  explanation="/cadeiras/rc/camada-de-rede/#passar-de-uma-topologia-a-tabelas-de-rotas"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Escolho o menor bloco que satisfaz cada LAN, incluindo o router.',
+      'Alinho os blocos e evito sobreposições.',
+      'Atribuo um endereço e uma máscara a cada interface.',
+      'Distingo rotas locais de rotas com próximo salto.',
+      'Escolho um próximo salto diretamente alcançável.',
+    ],
+  }}
+>
+  <p>
+    Usa 172.20.8.0/24 para duas LANs com 80 e 30 hosts, já contando os routers.
+    R1 liga a LAN A a R2, que liga à LAN B. A ligação R1–R2 usa /30. Distribui
+    blocos do maior para o menor, atribui interfaces e escreve a tabela de R1
+    para as três redes, sem rota por defeito. Indica a rota de retorno de R2.
+  </p>
+  <p slot="hint">
+    80 hosts exigem /25 e 30 exigem /27. Reserva a ligação /30 no primeiro bloco
+    alinhado que sobra.
+  </p>
+  <p slot="hint-more">
+    A LAN B pode começar em .128 e a ligação em .160. O próximo salto remoto de
+    R1 é uma interface de R2 nessa ligação.
+  </p>
+  <div slot="solution">
+    <p>
+      LAN A: 172.20.8.0/25, hosts .1–.126, broadcast .127. LAN B:
+      172.20.8.128/27, hosts .129–.158, broadcast .159. Ligação:
+      172.20.8.160/30, hosts .161 e .162, broadcast .163.
+    </p>
+    <p>
+      Uma atribuição válida é R1 LAN .1/25, R2 LAN .129/27, R1 ligação .161/30 e
+      R2 ligação .162/30. R1 tem .0/25 diretamente na LAN, .160/30 diretamente
+      na ligação e .128/27 por .162 nessa ligação. R2 alcança .0/25 por .161,
+      além das duas redes locais.
+    </p>
+  </div>
+  <p slot="mistakes">
+    Usar o broadcast numa interface, começar um bloco sem alinhamento ou
+    escolher como próximo salto um endereço da LAN remota que R1 não alcança
+    diretamente.
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-agregar-rotas"
+  title="Resumir sem mudar os destinos"
+  explanation="/cadeiras/rc/camada-de-rede/#passar-de-uma-topologia-a-tabelas-de-rotas"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: '192.0.2.128/26',
+        correct: true,
+        explanation:
+          'Cobre exatamente .128 a .191: dois /27 alinhados e adjacentes.',
+      },
+      {
+        text: '192.0.2.128/25',
+        correct: false,
+        explanation: 'Inclui também .192 a .255, fora das duas redes dadas.',
+      },
+      {
+        text: '192.0.2.128/27',
+        correct: false,
+        explanation: 'Só cobre a primeira rede, .128 a .159.',
+      },
+    ],
+  }}
+>
+  <p>
+    192.0.2.128/27 e 192.0.2.160/27 têm o mesmo próximo salto. Qual o prefixo
+    único que cobre exatamente as duas redes?
+  </p>
+  <p slot="hint">Dois blocos de 32 endereços formam 64 endereços.</p>
+  <p slot="hint-more">
+    64 endereços exigem seis bits de host. O início .128 está alinhado a esse
+    tamanho.
+  </p>
+  <p slot="solution">
+    192.0.2.128/26. A máscara é 255.255.255.192 e o intervalo termina em .191. O
+    mesmo próximo salto é necessário para manter o encaminhamento pretendido.
+  </p>
+  <p slot="mistakes">
+    Escolher apenas um prefixo mais curto sem conferir o intervalo e a saída das
+    rotas agregadas.
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-hosts26"
+  title={'Contar hosts'}
+  explanation="/cadeiras/rc/camada-de-rede/#ipv4-e-prefixos"
+  answer={{ kind: 'number', value: 62, tolerance: 0 }}
+>
+  <p>
+    {
+      'Numa sub-rede IP v4 usual/26, reservando rede e broadcast, quantos hosts são utilizáveis?'
+    }
+  </p>
+  <p slot="hint">{'Sobram 6 bits.'}</p>
+  <p slot="hint-more">{'2^6−2.'}</p>
+  <p slot="solution">
+    {
+      '64 endereços menos rede e broadcast dão 62. Isto não é regra universal para/31 ou/32.'
+    }
+  </p>
+  <p slot="mistakes">
+    {'Responder 26 ou aplicar a mesma regra a todos os prefixos.'}
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-rede77"
+  title={'Encontrar o início do bloco'}
+  explanation="/cadeiras/rc/camada-de-rede/#ipv4-e-prefixos"
+  answer={{ kind: 'number', value: 64, tolerance: 0 }}
+>
+  <p>{'192.0.2.77/26: qual o último octeto do endereço de rede?'}</p>
+  <p slot="hint">{'Blocos de 64 endereços.'}</p>
+  <p slot="hint-more">{'77 está entre 64 e 127.'}</p>
+  <p slot="solution">
+    {'A rede é 192.0.2.64/26. ANDdo último octeto 77 com 192 dá 64.'}
+  </p>
+  <p slot="mistakes">{'Arredondar para o bloco seguinte.'}</p>
+</Exercise>
+
+<Exercise
+  id="rc-rota-especifica"
+  title={'Escolher uma rota'}
+  explanation="/cadeiras/rc/camada-de-rede/#longest-prefix-match"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'C.',
+        correct: true,
+        explanation: '/16 éa correspondência mais longa.',
+      },
+      {
+        text: 'B.',
+        correct: false,
+        explanation: 'Corresponde, mas émenos específica.',
+      },
+      {
+        text: 'A.',
+        correct: false,
+        explanation:
+          'A rota por omissão perde para as outras correspondências.',
+      },
+    ],
+  }}
+>
+  <p>
+    {
+      'Destino 10.2.3.4; rotas/0 por A,10.0.0.0/8 por B,10.2.0.0/16 por C. Qual a saída?'
+    }
+  </p>
+  <p slot="hint">
+    {
+      'Não compares métricas entre prefixos diferentes antes de escolher a correspondência.'
+    }
+  </p>
+  <p slot="hint-more">{'O destino pertence a 10.2.0.0/16.'}</p>
+  <p slot="solution">{'Sai por C, longest prefix match.'}</p>
+  <p slot="mistakes">
+    {'Escolher a primeira rota da tabela ou a de menor prefixo.'}
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-fragmentos"
+  title={'Contar fragmentos'}
+  explanation="/cadeiras/rc/camada-de-rede/#cabeçalho-e-fragmentação-ipv4"
+  answer={{ kind: 'number', value: 3, tolerance: 0 }}
+>
+  <p>
+    {
+      'Datagrama IP v4 de 4000 bytes incluindo 20 de cabeçalho, MTU1500, sem opções, DF=0. Quantos fragmentos são necessários?'
+    }
+  </p>
+  <p slot="hint">
+    {'Os3980 bytes de dados são repartidos; cada fragmento leva cabeçalho.'}
+  </p>
+  <p slot="hint-more">{'Cada fragmento completo leva 1480 bytes de dados.'}</p>
+  <p slot="solution">
+    {'1480+1480+1020=3980: três fragmentos, comprimentos 1500,1500,1040.'}
+  </p>
+  <p slot="mistakes">
+    {'Dividir os 4000 bytes sem descontar e repor os cabeçalhos.'}
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-offset"
+  title={'Calcular offset'}
+  explanation="/cadeiras/rc/camada-de-rede/#cabeçalho-e-fragmentação-ipv4"
+  answer={{ kind: 'number', value: 370, tolerance: 0 }}
+>
+  <p>{'No cenário anterior, qual o offset do terceiro fragmento?'}</p>
+  <p slot="hint">{'O offset mede dados anteriores, em blocos de 8 bytes.'}</p>
+  <p slot="hint-more">{'Antes do terceiro estão 2960 bytes de dados.'}</p>
+  <p slot="solution">
+    {
+      '2960/8=370. Os cabeçalhos dos outros fragmentos não contam para este offset.'
+    }
+  </p>
+  <p slot="mistakes">{'Usar 3000/8 ou o comprimento do terceiro fragmento.'}</p>
+</Exercise>

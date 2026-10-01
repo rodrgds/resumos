@@ -6,8 +6,10 @@
   draw.content((-0.6, 2), anchor: "east", [puro])
   draw.rect((3, 1.7), (5, 2.3), fill: rgb("8c2d3b"), stroke: none)
   draw.content((4, 2.6), [pacote T])
-  draw.line((2, 1.2), (6, 1.2), stroke: (dash: "dashed"))
-  draw.content((4, 0.8), [vulnerável: 2T])
+  draw.line((1, 1.2), (5, 1.2), stroke: (dash: "dashed"))
+  draw.content((3, 0.8), [vulnerável: 2T])
+  draw.line((3, 1.3), (3, 2.4), stroke: (dash: "dotted"))
+  draw.content((3, 3.1), [início])
   draw.line((0, -0.6), (10, -0.6))
   draw.content((-0.6, -0.6), anchor: "east", [ranhuras])
   for i in range(6) {

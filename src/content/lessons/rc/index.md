@@ -1,32 +1,47 @@
 ---
 title: Redes de Computadores
-description: Camadas, protocolos e desempenho, da transmissão física às aplicações, com laboratório de redes.
+description: Explicações, contas e prática desde o canal físico às aplicações, alinhadas com o plano de 2026/27.
 section: conteudo
 order: 0
+editorial:
+  basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-01'
+  sources:
+    - title: Programa e avaliação RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: Plano teórico Moodle, atualizado 29/09/2026
+      url: https://moodle2627.up.pt/mod/page/view.php?id=33673
+    - title: Materiais da cadeira no Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4941
+  coverage: Onze lições de teoria, contas resolvidas, exemplos executáveis e prática para os tópicos do plano teórico atual.
+  gaps:
+    - Só os slides de introdução, físico e ligação de dados estavam disponíveis na recolha atual. Rever os restantes quando publicados.
+    - Confirmar formato, duração e consulta permitida do exame 2026/27. As provas antigas não confirmam estas regras.
 ---
 
-Redes de Computadores é a cadeira onde a Internet deixa de ser magia. Vais perceber o que acontece quando carregas em enviar: como os bits viajam no cabo, como as tramas sobrevivem aos erros, como os routers escolhem caminhos, como o TCP mantém a ordem e como uma aplicação cliente fala com um servidor. A matéria organiza-se em camadas, e cada lição destas páginas corresponde a uma ou duas dessas camadas.
+RC explica como os bits atravessam um canal, como os protocolos recuperam perdas e como uma aplicação comunica através da Internet. A teoria combina mecanismos com contas. Para estudar, descreve primeiro o que acontece e só depois escolhe a fórmula que representa esse cenário.
 
-## Como está organizado
+## Percurso de estudo
 
-Começa por [Redes e a Internet](redes-e-internet/), que apresenta a comutação de pacotes, a arquitetura da Internet e a pilha TCP/IP. Depois desce ao físico em [Transmissão de dados](transmissao-de-dados/): meios, sinais, modulação e capacidade do canal. A [Ligação de dados](ligacao-de-dados/) trata das tramas, da deteção de erros com CRC e da retransmissão com ARQ.
+Começa por [Redes e a Internet](/cadeiras/rc/redes-e-internet/) para distinguir camadas, circuitos e pacotes. Em [Transmissão de dados](/cadeiras/rc/transmissao-de-dados/), calcula símbolos, capacidade, potência e erros. Em [Ligação de dados](/cadeiras/rc/ligacao-de-dados/), segue CRC, números de sequência e retransmissões.
 
-A segunda parte sobe de nível: [Desempenho e filas de espera](desempenho-e-filas/) decompõe o atraso em parcelas e calcula-o num trajeto, [Acesso ao meio](acesso-ao-meio/) explica como as estações partilham o canal com ALOHA e CSMA, e [Redes locais](redes-locais/) mostra a Ethernet comutada e o Wi-Fi 802.11. Fecha com [Camada de rede e encaminhamento](camada-de-rede/), sobre IP, sub-redes e rotas, e [Transporte e aplicações](transporte-e-aplicacoes/), sobre UDP, TCP e sockets.
+[Desempenho e filas](/cadeiras/rc/desempenho-e-filas/) separa atrasos e usa Little e M/M/1. Continua com [Filas finitas e Jackson](/cadeiras/rc/modelos-filas/) para perdas por bloqueio, serviço geral e redes de filas. Depois compara [Acesso ao meio](/cadeiras/rc/acesso-ao-meio/) e [Redes locais](/cadeiras/rc/redes-locais/).
 
-## Como estudar
+Fecha com [IP e sub-redes](/cadeiras/rc/camada-de-rede/), [Algoritmos de encaminhamento](/cadeiras/rc/algoritmos-encaminhamento/), [TCP e congestionamento](/cadeiras/rc/transporte-e-aplicacoes/) e [Aplicações](/cadeiras/rc/aplicacoes/). Cada lição termina com exercícios próprios, pistas e soluções. A [Cheat sheet](/cadeiras/rc/folha-consulta/) serve para consulta rápida depois de compreenderes as explicações.
 
-Lê cada página com papel ao lado e refaz o exemplo antes de ver a resolução. Em Redes, quase tudo se aprende a calcular: atrasos, CRC, máscaras de sub-rede e números de sequência do TCP. Se o resultado não bater, o erro está quase sempre numa parcela esquecida ou numa máscara mal aplicada, e encontrá-lo é metade do estudo. Depois resolve os exercícios das fichas e compara cada protocolo com o vizinho: CSMA/CD contra CSMA/CA, TCP contra UDP, comutador contra router.
+## Preparar uma prova
 
-## Avaliação
+Refaz as contas e os traços sem consultar a resolução. Para uma resposta numérica, escreve as hipóteses, converte unidades, aplica a expressão e verifica a ordem de grandeza. Para protocolos, regista o estado depois de cada mensagem: o que foi enviado, confirmado, guardado e entregue.
 
-A avaliação é distribuída com exame final: o exame vale 60 por cento e o trabalho laboratorial 40 por cento. A frequência exige realizar, apresentar e entregar o relatório dos dois trabalhos laboratoriais, e há mínimos de 8,0 na avaliação distribuída e no exame.[^avaliacao] Como as regras e as fórmulas mudam de ano para ano, confirma sempre a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle.
+Alterna questões dos diferentes temas, incluindo escolhas múltiplas. Uma afirmação pode ser verdadeira para Ethernet partilhada e falsa para Ethernet comutada full-duplex. Uma fórmula pode ser válida para M/M/1 e errada para uma fila finita. As condições fazem parte da resposta.
 
-## Fontes e âmbito
+Os exemplos de exames disponibilizados no Moodle ajudam a treinar os tipos de perguntas. Identifica o ano de cada prova e confirma no Moodle as regras do exame atual. Os exercícios destas páginas são próprios, não reproduções de provas oficiais.
 
-Estas páginas seguem o âmbito da unidade curricular de Redes de Computadores (L.EIC025) do 3.º ano, 1.º semestre da LEIC, ocorrência de 2026/27: transmissão de dados, ligação de dados, desempenho, acesso ao meio, LANs, Internet, encaminhamento, congestionamento e aplicações, com projetos de um protocolo de ligação de dados e de uma aplicação cliente. A bibliografia de referência é Computer Networks de Tanenbaum e Wetherall, cujo [material suplementar](https://www.cs.vu.nl/~ast/books/book_software.html) inclui software e exercícios.
+## Avaliação de 2026/27
 
-Material oficial da FEUP:
+A ficha atual define `AD=0,4L1+0,4L2+0,2H`, com trabalhos laboratoriais L1 e L2 e trabalhos de casa H. O exame E e AD exigem ambos pelo menos 8 valores. Define-se `ADA=min(AD,E+5)` e a classificação final é `0,4ADA+0,6E`, satisfeitos os mínimos. A frequência exige realizar, apresentar e entregar os dois trabalhos laboratoriais. [Fonte: SIGARRA 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003).
 
-- Ficha da unidade curricular de Redes de Computadores, ocorrência de 2026/27, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003).
-
-[^avaliacao]: Pesos, mínimos e regras de 2026/27 segundo a ficha da unidade curricular no SIGARRA, ligada acima.
+O percurso aqui é de teoria e preparação para provas. Os guiões oficiais do Moodle continuam a definir os requisitos dos projetos. Para a bibliografia, começa por _Computer Networks_, de Tanenbaum e Wetherall, 5.ª edição, e usa as [aulas, problemas e laboratórios de Kurose e Ross](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm) como complemento junto dos temas relevantes.

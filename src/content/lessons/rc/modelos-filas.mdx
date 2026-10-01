@@ -1,0 +1,104 @@
+---
+title: Filas finitas e redes de Jackson
+description: Poisson, capacidade limitada, bloqueio, M/G/1 e taxas numa rede de filas.
+section: conteudo
+order: 5
+practices:
+  - rc/praticar-modelos-filas
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+[As filas básicas](../desempenho-e-filas/) assumem que qualquer chegada consegue esperar. Uma interface real tem memória limitada. Quando o sistema está cheio, uma nova chegada pode ser descartada. Agora distinguimos taxa **oferecida** de taxa **admitida**.
+
+## Poisson e serviço
+
+Num processo Poisson de taxa $\lambda$, o número de chegadas num intervalo $t$ tem distribuição:
+
+$$P(A(t)=k)=e^{-\lambda t}\frac{(\lambda t)^k}{k!}.$$
+
+Intervalos sem sobreposição têm contagens independentes, e o tempo entre chegadas é exponencial com média $1/\lambda$. Não significa que os pacotes cheguem exatamente espaçados por essa média.
+
+Para $\lambda=20$ pacotes/s e intervalo de 0,1 s, o número médio é 2. A probabilidade de zero chegadas é $e^{-2}\approx0{,}1353$. A de pelo menos uma é $1-e^{-2}\approx0{,}8647$.
+
+A notação de Kendall M/M/1 representa chegadas sem memória, serviço sem memória e um servidor. Em M/D/1, o serviço é constante; em M/G/1, tem distribuição geral. As hipóteses sobre **tempo de serviço** são distintas das hipóteses sobre chegada.
+
+## M/M/1/B: define a capacidade
+
+Nesta página, **B é a capacidade total do sistema**, incluindo o pacote em serviço. Alguns enunciados usam B apenas para lugares de espera; nesse caso, substitui a capacidade total por B+1. Não uses uma fórmula antes de confirmar esta convenção.
+
+Com $\rho=\lambda/\mu$, existem estados 0 até B. Para $\rho\ne1$:
+
+$$p_n=\frac{(1-\rho)\rho^n}{1-\rho^{B+1}}.$$
+
+Para $\rho=1$, todos os estados têm probabilidade $1/(B+1)$. A probabilidade de bloqueio é $p_B$, porque uma chegada Poisson observa as probabilidades estacionárias do sistema.
+
+A taxa admitida é $\lambda_e=\lambda(1-p_B)$. Calcula o número médio como $N=\sum_{n=0}^B n p_n$ e aplica Little aos pacotes admitidos: $T=N/\lambda_e$. Se pedirem só fila, subtrai do número médio a probabilidade de o servidor estar ocupado, $1-p_0$, e do tempo médio o serviço $1/\mu$.
+
+**Exemplo.** $\lambda=\mu=10$ pacotes/s e B=2. Os três estados têm probabilidade 1/3. Bloqueio 1/3, taxa admitida $20/3$, N=1. Então $T=1/(20/3)=0{,}15$ s. O serviço médio é 0,1 s; a espera média é 0,05 s. Usar $N/\lambda$ daria 0,1 s e ignoraria que um terço das entradas foi rejeitado.
+
+<CodePlayground
+  language="python"
+  title="Calcular bloqueio e tempo dos pacotes admitidos"
+  code={`lam, mu, B = 10.0, 10.0, 2
+rho = lam / mu
+pesos = [rho**n for n in range(B+1)]
+p = [peso/sum(pesos) for peso in pesos]
+lam_efetiva = lam*(1-p[B])
+N = sum(n*p[n] for n in range(B+1))
+print("Probabilidades:", [round(x,4) for x in p])
+print(f"Bloqueio: {p[B]:.4f}")
+print(f"Taxa admitida: {lam_efetiva:.4f} pacotes/s")
+print(f"Tempo no sistema: {N/lam_efetiva:.4f} s")`}
+/>
+
+Ao contrário de M/M/1 com capacidade infinita, a fila finita admite uma distribuição estacionária mesmo com $\lambda\ge\mu$. O excesso de procura aparece como bloqueio. Isso não torna a taxa oferecida integralmente atendida.
+
+## Inferir a ligação a partir do tempo ocioso
+
+Numa M/M/1 estável, $P(N=0)=1-\rho$. Se o servidor está ocioso 20% do tempo e chegam 360 pacotes/s, $\rho=0{,}8$ e $\mu=\lambda/\rho=450$ pacotes/s. Com comprimento médio de 800 bytes, a capacidade é $C=450\times800\times8=2{,}88$ Mbit/s.
+
+O número de pacotes no **sistema**, incluindo o que está em serviço, tem cauda geométrica:
+
+$$P(N\ge k)=\sum_{n=k}^{\infty}(1-\rho)\rho^n=\rho^k.$$
+
+Nos mesmos dados, $P(N\ge3)=0{,}8^3=0{,}512$. Se a pergunta disser «três em espera», há também o pacote em serviço: $P(N_q\ge3)=P(N\ge4)=0{,}4096$. Escrever a fronteira evita deslocar o expoente uma posição.
+
+M/M/1 dá $T=1/(450-360)=11{,}111$ ms e $T_q=8{,}889$ ms. Se apenas o serviço passar a constante, mantendo chegadas Poisson, FIFO e capacidade ilimitada, M/D/1 dá $T_q=4{,}444$ ms e $T=6{,}667$ ms. A capacidade e a carga mantêm-se; a variabilidade muda.
+
+## Espera limitada com serviço constante
+
+Imagina agora serviço constante $s=1/450$ s e capacidade total de quatro pacotes, **incluindo o que está em serviço**, FIFO e sem interrupções. Um pacote admitido encontra no máximo três à frente: um em serviço e dois em espera. O tempo em fila fica limitado por $3s=6{,}667$ ms, contando o serviço residual e os dois serviços completos. É um limite superior que pode ser aproximado se a chegada ocorrer logo após o início do serviço; não é a espera média.
+
+Se os quatro lugares forem apenas de espera, a capacidade total é cinco e o limite muda. A distribuição estacionária de M/M/1/B não se aplica automaticamente à fila M/D/1/B: mudar o serviço muda o modelo.
+
+## M/G/1 e variância do serviço
+
+Com chegadas Poisson, serviços independentes e identicamente distribuídos, independentes das chegadas, de média $E[S]$ e segundo momento finito $E[S^2]$, um servidor, fila FIFO ilimitada sem interromper o serviço e $\rho=\lambda E[S]<1$:
+
+$$T_q=\frac{\lambda E[S^2]}{2(1-\rho)},\qquad T=T_q+E[S].$$
+
+Como $E[S^2]=Var(S)+E[S]^2$, maior variância pode aumentar a espera mesmo mantendo serviço médio e carga. Para serviço constante, $Var(S)=0$; para exponencial, $E[S^2]=2E[S]^2$. Estas substituições recuperam M/D/1 e M/M/1.
+
+**Exemplo.** $E[S]=0{,}01$ s, variância $0{,}0001$ s² e $\lambda=50$. Então $\rho=0{,}5$, $E[S^2]=0{,}0002$ s² e $T_q=0{,}01$ s. O tempo total é 0,02 s. Quadrados de tempos usam s²; somar uma variância a uma média sem elevar esta ao quadrado não faz sentido.
+
+## Redes abertas de Jackson
+
+Uma rede aberta tem chegadas externas, várias filas e saídas. Nos modelos de Jackson usados aqui, as chegadas externas são Poisson, o serviço nos nós é exponencial, o encaminhamento tem probabilidades fixas e as filas têm capacidade infinita. Todos os nós precisam de carga inferior a um.
+
+Se $\gamma_i$ for a taxa externa do nó i e $p_{ji}$ a probabilidade de um pacote que sai de j seguir para i, as taxas totais satisfazem:
+
+$$\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}.$$
+
+Resolve estas equações **antes** de usar as fórmulas das filas. A taxa interna pode exceder a taxa externa porque os pacotes visitam mais de um nó ou regressam ao mesmo.
+
+**Exemplo com retorno.** Entram 40 pacotes/s em A. Metade vai depois para B; um quarto das saídas de B regressa a A, o resto sai. Assim $\lambda_A=40+0{,}25\lambda_B$ e $\lambda_B=0{,}5\lambda_A$. Logo $\lambda_A=40/0{,}875\approx45{,}714$ e $\lambda_B\approx22{,}857$.
+
+Se $\mu_A=100$ e $\mu_B=80$, os tempos por visita são $T_A=1/(100-\lambda_A)\approx0{,}01842$ s e $T_B\approx0{,}0175$ s. O número médio de pacotes em toda a rede é $N=\lambda_AT_A+\lambda_BT_B\approx1{,}2421$. Por Little na fronteira externa, o tempo médio por pacote externo é $N/40\approx0{,}03105$ s. Somar simplesmente $T_A+T_B$ seria errado, porque nem todos visitam B e alguns regressam.
+
+Num percurso fixo sem retornos, o atraso soma os tempos das filas visitadas e as propagações. A forma produto de Jackson permite calcular médias por nó, mas não autoriza tratar qualquer tráfego real como Poisson. Filas finitas, prioridades ou serviços correlacionados pedem outro modelo.

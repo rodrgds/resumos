@@ -1,69 +1,191 @@
 ---
 title: Ligação de dados
-description: Tramas, deteção de erros com CRC, retransmissão com ARQ e controlo de fluxo.
+description: Delimitação, CRC, controlo de fluxo e retransmissão com Stop-and-Wait, Go-Back-N e Selective Repeat.
 section: conteudo
 order: 3
+practices:
+  - rc/praticar-ligacao
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: RFC1662, delimitação e transparência de PPP
+      url: https://www.rfc-editor.org/rfc/rfc1662.html
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
-import trama from '../../rc/trama.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import WebPlayground from '../../../components/WebPlayground.astro';
 
-A camada física entrega bits; a camada de ligação de dados entrega **tramas** entre vizinhos diretos, com princípio, fim e garantia de que o conteúdo chegou intacto ou então volta a pedir-se. É o contrato "do próximo salto", usado em cada cabo e em cada troço de rádio da rede.
+A camada de ligação entrega **tramas** entre vizinhos. Precisa de delimitar cada trama e verificar erros. Alguns protocolos acrescentam confirmações, retransmissões e controlo de fluxo. Ethernet, por exemplo, deteta erros, mas não oferece retransmissão fiável de tramas como o ARQ estudado aqui.
 
-## Delimitar e proteger a trama
+## Delimitar sem confundir dados com controlo
 
-O recetor precisa de saber onde começa e acaba cada trama. A técnica comum é reservar sequências especiais como delimitadores e fugir dessas sequências quando aparecem nos dados (**bit stuffing**): depois de cinco uns seguidos, o emissor insere um zero extra, e o recetor remove-o. Assim o delimitador nunca aparece por acidente dentro dos dados.
+Uma trama pode conter comprimento, delimitadores especiais ou uma codificação física que assinala os limites. Num protocolo com uma flag de início e fim, os dados não podem ser interpretados como flags.
 
-Uma trama típica junta os delimitadores ao cabeçalho, aos dados e ao CRC calculado no exemplo abaixo:
+No **byte stuffing**, os bytes especiais são precedidos por um escape e transformados segundo a regra do protocolo. No **bit stuffing** de HDLC, o emissor introduz um zero depois de cinco uns consecutivos nos dados; o recetor remove esse zero. A flag `01111110` fica distinguível. O stuffing ocorre depois de formar o conteúdo protegido e é retirado antes da verificação desse conteúdo.
 
-<Typst
-  source={trama}
-  format="svg"
-  alt="Estrutura da trama do exemplo: delimitador, cabeçalho, dados 1010, CRC 011, delimitador."
+Não uses diretamente a dimensão do ficheiro para calcular o tempo de transmissão: inclui cabeçalhos, controlo de erros e escapes. Num byte stuffing, a sobrecarga depende dos bytes efetivamente presentes, não de uma percentagem universal.
+
+## Paridade, checksum e CRC
+
+A paridade simples deteta qualquer número ímpar de bits alterados, mas pode falhar com dois. Uma checksum soma unidades de dados segundo um algoritmo. Um **CRC** interpreta os bits como coeficientes de um polinómio binário e usa divisão módulo 2: somar e subtrair são XOR, sem transportes.
+
+Para gerador $G$ de grau $r$, acrescenta $r$ zeros à mensagem $D$, divide $D\,2^r$ por $G$ e coloca o resto de $r$ bits no fim. A palavra transmitida fica divisível por $G$.
+
+**Exemplo próprio.** Mensagem `1101`, gerador `1011` de grau 3. Divide `1101000` por `1011`; o resto é `001`. Transmite `1101001`. O código permite acompanhar o cálculo e alterar um bit:
+
+<CodePlayground language="python" title="Gerar e verificar um CRC" code={`def resto(bits, gerador):
+    valor = int(bits, 2)
+    g = int(gerador, 2)
+    while valor.bit_length() >= g.bit_length():
+        valor ^= g << (valor.bit_length() - g.bit_length())
+    return valor
+
+dados, gerador = "1101", "1011"
+r = len(gerador) - 1
+crc = format(resto(dados + "0" \* r, gerador), f"0{r}b")
+trama = dados + crc
+print("CRC:", crc, "Trama:", trama)
+print("Resto recebido:", resto(trama, gerador))
+corrompida = format(int(trama, 2) ^ 4, f"0{len(trama)}b")
+print("Com um erro:", resto(corrompida, gerador))`} />
+
+**Resto zero não prova ausência de erro.** Um erro cujo polinómio seja múltiplo do gerador passa despercebido. Um CRC de grau $r$ com termo constante 1 deteta todas as rajadas de comprimento até $r$; outras garantias dependem do polinómio e do comprimento da mensagem. A aproximação $2^{-r}$ para erro não detetado exige um modelo de erros adequado.
+
+A **distância mínima** de um código é a menor distância de Hamming entre duas palavras válidas, ou seja, o menor número de bits diferentes. Um código de distância d deteta até d−1 alterações e, com descodificação apropriada, pode corrigir até $\lfloor(d-1)/2\rfloor$ alterações. Isto não significa que qualquer verificador CRC faça essa correção.
+
+Na paridade bidimensional, há verificações por linha e coluna. Um erro isolado pode ser localizado na interseção das verificações que falham. Quatro erros nos cantos de um retângulo mantêm as paridades e podem passar despercebidos. O exemplo mostra por que adicionar verificações não garante detetar todos os padrões.
+
+A deteção não corrige a trama. O recetor descarta-a ou pede uma retransmissão conforme o protocolo.
+
+## Stop-and-Wait e o bit alternado
+
+O emissor envia uma trama e espera confirmação. Se o temporizador expirar, retransmite. A ausência de ACK não distingue uma trama perdida de um ACK perdido.
+
+Números de sequência alternados 0 e 1 impedem entregar duas vezes uma trama retransmitida. Se o recetor já entregou a trama 0, volta a confirmá-la, mas não a entrega novamente. Depois espera 1. O temporizador pertence ao emissor; o recetor não deve bloquear indefinidamente à espera de um duplicado.
+
+Define a convenção antes de seguir um traço. Aqui **RR(n)** significa «estou pronto para receber a trama n». Depois de receber 0 corretamente, o recetor envia RR(1). Outros enunciados podem confirmar explicitamente a última trama recebida, mudando a numeração do ACK.
+
+<Dot
+  source={`digraph { rankdir=LR; node [shape=box]; enviar [label="Enviar I(0)"]; esperar [label="Esperar RR(1)"]; seguinte [label="Enviar I(1)"]; enviar -> esperar; esperar -> enviar [label="timeout"]; esperar -> seguinte [label="RR(1)"]; }`}
+  alt="Stop-and-Wait: depois de enviar I(0), o emissor retransmite num timeout ou avança ao receber RR(1)."
 />
 
-Proteger significa detetar erros. O mecanismo de trabalho é o **CRC** (verificação de redundância cíclica): o emissor divide os dados por um gerador acordado e cola o resto à trama; o recetor repete a divisão e só aceita a trama se o resto der zero. Todo o cálculo é feito bit a bit com ou-exclusivo, sem empréstimos nem transportes.
+## Eficiência sem perdas
 
-Segue um exemplo completo. Dados `1010`, gerador `1011` (grau 3, por isso três bits de CRC). Acrescenta três zeros aos dados: `1010000`. Divide por `1011`:
+Se a trama leva $t_f=L/R$ a transmitir, a propagação num sentido é $t_p$, e o ACK leva $t_a$, o ciclo sem processamento é $t_f+2t_p+t_a$. A utilização para Stop-and-Wait é:
 
-- Primeiros quatro bits `1010`; começa por 1, faz ou-exclusivo com `1011` e dá `0001`; desce o zero seguinte e fica `0010`.
-- Começa por 0, não faz nada; desce o zero seguinte e fica `0100`.
-- Começa por 0, não faz nada; desce o último zero e fica `1000`.
-- Começa por 1, faz ou-exclusivo com `1011` e dá `0011`. Acabaram os bits: o CRC é `011`.
+$$U=\frac{t_f}{t_f+2t_p+t_a}.$$
 
-A trama transmitida é `1010011`. Confirma: dividir `1010011` por `1011` dá resto zero, por isso o recetor aceita. Se um bit se corromper pelo caminho, o resto deixa de dar zero e a trama é descartada. O CRC não corrige, só acusa, e fá-lo muito bem: com um gerador decente, erros de rajada curtos são sempre apanhados.[^rajada]
+Com $L=8000$ bits, $R=1$ Mbit/s, $t_p=20$ ms e ACK desprezável, $t_f=8$ ms e $U=8/48=1/6$. Se só 7600 bits forem dados úteis, o débito útil é $7600/0{,}048\approx158333$ bit/s.
 
-[^rajada]: A garantia exata depende do gerador: um CRC de grau $r$ apanha todas as rajadas de comprimento até $r$ e quase todas as mais longas. Ver Tanenbaum e Wetherall, Computer Networks, capítulo da camada de ligação de dados.
+Uma janela de $W$ tramas permite várias em trânsito. Sob estas mesmas hipóteses, utilização ideal $U=\min(1,Wt_f/(t_f+2t_p+t_a))$. Com $W=6$, a ligação pode ficar ocupada continuamente. Com perdas, retransmissões e temporizadores reais, esta expressão já não basta.
 
-Refaz a divisão do exemplo com o programa. Ele percorre os bits da esquerda para a direita, faz ou-exclusivo com o gerador sempre que o bit atual é 1, e imprime `CRC: 011`:
+## Go-Back-N e Selective Repeat
 
-<CodePlayground
-  language="python"
-  title="CRC dos dados 1010 com gerador 1011"
-  code={
-    'dados = [1, 0, 1, 0]\ngerador = [1, 0, 1, 1]\nresto = dados + [0] * 3\nfor i in range(len(resto) - len(gerador) + 1):\n    if resto[i] == 1:\n        for j in range(len(gerador)):\n            resto[i + j] ^= gerador[j]\nprint("CRC:", "".join(str(b) for b in resto[-3:]))'
+| Propriedade               | Go-Back-N                              | Selective Repeat                  |
+| ------------------------- | -------------------------------------- | --------------------------------- |
+| Trama fora de ordem       | Habitualmente descartada               | Guardada dentro da janela         |
+| Confirmações              | Cumulativas                            | Individuais ou seletivas          |
+| Retransmissão             | Trama em falta e posteriores pendentes | Só tramas em falta                |
+| Memória no recetor        | Menor                                  | Maior, reordena antes de entregar |
+| Limite usual com $m$ bits | $W\le2^m-1$                            | $W\le2^{m-1}$ para janelas iguais |
+
+**Traço.** O emissor envia 0, 1, 2 e 3. A trama 1 perde-se. Em Go-Back-N, o recetor entrega 0 e descarta 2 e 3. O emissor retransmite 1, 2 e 3 quando o protocolo o determinar. Em Selective Repeat, o recetor guarda 2 e 3 e, ao chegar 1, pode entregar 1, 2 e 3 por ordem.
+
+Os limites de janela evitam confundir uma trama antiga com uma nova após a volta da numeração. Com dois bits, a numeração tem quatro valores; uma janela Selective Repeat igual nas duas pontas não deve exceder dois. É uma restrição do protocolo e da ambiguidade de duplicados, não do tamanho de memória disponível.
+
+## Resolver traços
+
+Regista, após cada evento: base da janela emissora, próximo número a enviar, tramas pendentes, próxima trama esperada e dados já entregues. Distingue **chegar**, **ser confirmado** e **ser entregue**. Um duplicado pode chegar e ser confirmado sem ser entregue.
+
+Calcula o tempo de timeout a partir da transmissão e do caminho do ACK, com a margem definida no enunciado. Um temporizador demasiado curto cria retransmissões inúteis; um demasiado longo atrasa a recuperação. Quando o enunciado inclui perdas probabilísticas, usa as hipóteses dadas, em vez de multiplicar uma eficiência sem perdas por um fator arbitrário.
+
+## A variante dos slides: RR, REJ e SREJ
+
+No Go-Back-N apresentado nos slides atuais, a primeira trama fora de sequência desencadeia **REJ(n)**, que pede a trama esperada n e a repetição das posteriores pendentes. As seguintes fora de ordem são descartadas sem repetir o mesmo REJ. Um timeout pode desencadear um pedido de RR para obter o estado do recetor. Não substituas esta máquina de estados por outra variante de Go-Back-N num traço dado pelo docente.
+
+Em Selective Repeat, **SREJ(n)** pede apenas a trama n; **RR(n)** confirma o bloco contínuo até n−1. Isto permite confirmações cumulativas juntamente com rejeições seletivas. A tabela anterior descreve a família de protocolos; os slides fixam esta variante concreta. **Piggybacking** inclui a confirmação em tramas de dados da direção contrária, reduzindo mensagens de controlo, mas exigindo gerir quando enviar uma confirmação sem dados para aproveitar.
+
+## Eficiência com erros
+
+Define $a=t_p/t_f$, erro de trama independente com probabilidade $p_e$, ACK de duração desprezável, e utiliza o modelo simplificado dos slides. Uma tentativa de sucesso tem probabilidade $1-p_e$. O número de tentativas A tem distribuição geométrica, $P(A=k)=p_e^{k-1}(1-p_e)$ e $E[A]=1/(1-p_e)$.
+
+No Stop-and-Wait em que cada tentativa ocupa o mesmo ciclo:
+
+$$U_{SW}=\frac{1-p_e}{1+2a}.$$
+
+Em Selective Repeat, a expressão simplificada é $U_{SR}=(1-p_e)\min(1,W/(1+2a))$. Para Go-Back-N, a repetição de tramas posteriores aumenta o desperdício:
+
+$$
+U_{GBN}=\begin{cases}
+\frac{1-p_e}{1+2ap_e},&W\ge1+2a,\\
+\frac{W(1-p_e)}{(1+2a)(1-p_e+Wp_e)},&W<1+2a.
+\end{cases}
+$$
+
+**Exemplo.** a=2, W=5 e $p_e=0{,}1$. Stop-and-Wait: 0,9/5=0,18. Selective Repeat: 0,9. Go-Back-N: $0{,}9/(1+4\times0{,}1)\approx0{,}6429$. Para obter débito de dados, multiplica ainda por R e pela fração útil da trama. Estes modelos não incluem todos os pormenores de timeout, perda de ACK ou correlação de erros.
+
+## Recuperação por salto e de extremo a extremo
+
+ARQ **por salto** repete só a ligação onde ocorreu a perda, exigindo memória e controlo nos equipamentos dessa ligação. ARQ **de extremo a extremo** recupera nas pontas, podendo repetir trabalho dos saltos anteriores. Os mecanismos podem coexistir, como numa ligação Wi-Fi com TCP.
+
+Num modelo ideal com K ligações iguais de capacidade C, perdas independentes p por ligação e retransmissão sem outras limitações, a comparação usada nos slides é $C_{salto}=C(1-p)$ e $C_{extremos}=C(1-p)^K$. Para K=5 e p=0,1, dão 0,9C e 0,59049C. A diferença cresce com o número de saltos e as perdas. Não aplica estes valores automaticamente a TCP real, que também depende de janela, RTT, congestionamento e temporizadores.
+
+Para seguir janelas e retransmissões, observa a aula de Jim Kurose sobre [transferência fiável, parte 2](https://youtu.be/vxgH6r-II2Q). Para rever a divisão e o significado do CRC, usa [deteção e correção de erros](https://youtu.be/x-rQ3RiI7I0). Depois refaz o traço com a convenção RR(n) desta cadeira.
+
+## Combinar BER, janela e redundância
+
+Um problema pode pedir várias decisões sobre a mesma ligação. Resolve primeiro o tempo e a janela, depois o erro de trama, e só no fim o débito útil. O exemplo seguinte é próprio e usa o modelo ideal de Selective Repeat dos slides, com ACK desprezável e erros independentes.
+
+Dados: $R=4$ Mbit/s, $L=4000$ bits de dados por trama, propagação num sentido de 50 ms, BER $p_b=5\times10^{-5}$ e seis bits de sequência. A janela máxima usual é $W=2^{6-1}=32$.
+
+1. **Tempo de transmissão:** $t_f=L/R=1$ ms. A razão $a=t_p/t_f=50$.
+2. **Sem erros:** $U_0=\min(1,32/(1+2\times50))=32/101\approx0{,}316832$. O débito é 1,267327 Mbit/s, porque toda a trama contém dados neste exemplo.
+3. **Erro de trama:** $p_e=1-(1-p_b)^{4000}\approx0{,}181273$. BER não é FER: basta um dos 4000 bits falhar.
+4. **Com erros:** $U=(1-p_e)U_0\approx0{,}259399$, logo o débito útil é $RU\approx1{,}037594$ Mbit/s.
+5. **Janela para ocupar a ligação sem erros:** $W\ge1+2a=101$. Selective Repeat precisa de pelo menos oito bits, pois sete só permitem janela 64 e oito permitem 128. Aumentar a janela não elimina a perda de capacidade causada pelos erros.
+
+Agora compara duas codificações corretoras. Uma acrescenta 10% de bits e deixa FER 0,08. Outra acrescenta 30% e deixa FER 0,03. Estas FER são dados do problema depois da correção, não se deduzem apenas da BER original. Mantém a janela 32 e os 4000 bits de dados úteis por trama.
+
+| Codificação     | Bits transmitidos | $t_f$  | Utilização $U$ | Fração útil | Débito útil     |
+| --------------- | ----------------- | ------ | -------------- | ----------- | --------------- |
+| Sem redundância | 4000              | 1 ms   | 0,259399       | 1           | 1,037594 Mbit/s |
+| Mais 10%        | 4400              | 1,1 ms | 0,320317       | $4000/4400$ | 1,164787 Mbit/s |
+| Mais 30%        | 5200              | 1,3 ms | 0,398342       | $4000/5200$ | 1,225666 Mbit/s |
+
+Em cada linha, recalcula $a$ com o novo tempo de transmissão e usa $D_{\text{útil}}=RU\times L_{dados}/L_{transmitido}$. Não compares só a utilização: a redundância ocupa a ligação e aumenta a duração de cada trama. A segunda codificação dá maior débito útil nestes dados; não é uma regra universal sobre acrescentar mais bits.
+
+Se uma trama tem FER $p_e$ e são permitidas no máximo duas tentativas independentes, a probabilidade de entrega é $1-p_e^2$. Isto mede sucesso até ao limite, não utilização nem débito. «Uma retransmissão» permite duas tentativas, a original e a repetição.
+
+## Simular uma perda na janela
+
+Escolhe onde se perde uma das cinco tramas e compara a recuperação. Este modelo usa janela de cinco e quatro bits de sequência, uma única perda de dados e ACK sem perdas. As cinco tramas iniciais já foram enviadas quando começa a recuperação. Ignora o tempo de propagação e os temporizadores. Mostra o estado do recetor e as retransmissões necessárias, não a duração de uma transferência real.
+
+<WebPlayground
+  html={
+    '<label for="protocolo">Protocolo</label><select id="protocolo"><option value="gbn">Go-Back-N</option><option value="sr">Selective Repeat</option></select><label for="perda">Trama perdida</label><select id="perda"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select><ol id="eventos"></ol><p id="total" aria-live="polite"></p>'
   }
+  css={
+    'body{max-width:36rem;background:#fff;color:#18232a}label{display:block;margin-top:12px;font-weight:600}select{font:inherit;padding:8px;width:100%}li{margin:10px 0}#total{font-weight:600}'
+  }
+  js={`const protocolo=document.getElementById('protocolo'), perda=document.getElementById('perda');
+function update(){
+ const lost=Number(perda.value), sr=protocolo.value==='sr', rows=[];
+ for(let n=0;n<5;n++){
+  let estado=n===lost?'perdida no canal':n<lost?'entregue por ordem':sr?'guardada fora de ordem':'descartada fora de ordem';
+  rows.push('I('+n+'): '+estado+'.');
+ }
+ const repeat=sr?[lost]:Array.from({length:5-lost},(_,i)=>lost+i);
+ rows.push('Recuperação: repetir '+repeat.map(n=>'I('+n+')').join(', ')+'.');
+ rows.push('Após a recuperação: entregar os dados ainda em falta, pela ordem '+Array.from({length:5-lost},(_,i)=>lost+i).join(', ')+'.');
+ const list=document.getElementById('eventos'); list.replaceChildren();
+ for(const row of rows){const item=document.createElement('li'); item.textContent=row;list.append(item);}
+ document.getElementById('total').textContent='Total: '+(5+repeat.length)+' transmissões de tramas de dados para entregar as cinco originais.';
+}
+protocolo.addEventListener('change',update);perda.addEventListener('change',update);update();`}
 />
 
-<YouTube id="izG7qT0EpBw" title="How do CRCs work?" />
-
-## ARQ: pedir outra vez
-
-Descartar não chega; alguém tem de voltar a pedir. Os protocolos **ARQ** numeram as tramas e usam confirmações (**ACK**): o recetor confirma o que chegou bem, e o emissor retransmite o que não foi confirmado dentro de um temporizador. O **stop-and-wait** envia uma trama e para à espera do ACK; o **go-back-N** e a **retransmissão seletiva** mantêm várias tramas em voo e só repetem as que falharam.
-
-O stop-and-wait mostra o custo da espera. Uma trama de 1000 bits a 1 Mbps demora 1 ms a transmitir; se a ida e volta (**RTT**) for 20 ms, a ligação passa 1 ms a trabalhar e 20 ms à espera. A utilização é $1 / (1 + 20)$, menos de 5 por cento. Em ligações longas ou rápidas, parar à espera é um luxo, e é por isso que os protocolos reais usam janelas de várias tramas.
-
-## Controlo de fluxo
-
-O emissor também não pode afogar o recetor. O **controlo de fluxo** limita quantas tramas podem estar em voo sem confirmação: a **janela deslizante** do emissor avança à medida que chegam ACKs, e o tamanho da janela é negociado com a capacidade do recetor. É uma ideia simples com uma consequência importante: a janela limita o débito máximo a $\text{janela} / RTT$, por muito rápida que seja a ligação. Vais reencontrar esta fração no [controlo de congestionamento](transporte-e-aplicacoes/), onde o limite passa a ser a rede em vez do recetor.
-
-## Lista de verificação do projeto da camada 2
-
-O trabalho laboratorial pede um protocolo de ligação de dados a funcionar. Antes de entregar, confirma:
-
-1. As tramas têm delimitadores e o recetor rejeita tramas partidas.
-2. O CRC é calculado e verificado nos dois lados, com um caso de teste que corrompe um bit de propósito.
-3. Há retransmissão com temporizador e números de sequência, sem duplicar entregas.
-4. O relatório mostra uma medição de utilização (como a do stop-and-wait acima) e explica o que limita o débito.
+Com perda de I(2), Go-Back-N precisa de oito transmissões de dados no modelo: as cinco iniciais e as repetições 2, 3 e 4. Selective Repeat precisa de seis: repete apenas 2, aproveitando 3 e 4 guardadas. Se a perda for a última trama, ambos repetem apenas essa trama; a vantagem depende de onde ocorre a perda e de quanto já foi enviado.

@@ -1,74 +1,118 @@
 ---
 title: Transmissão de dados
-description: Meios físicos, sinais, modulação, multiplexagem e os limites de Nyquist e Shannon.
+description: Sinais, codificação, multiplexagem, potência, Nyquist, Shannon e probabilidade de erro.
 section: conteudo
 order: 2
+practices:
+  - rc/praticar-transmissao
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 import ondas from '../../rc/modulacoes.typ?raw';
 
-Antes dos pacotes e dos protocolos, há física: alguém tem de representar bits com alguma coisa real, tensões num cabo ou ondas no ar, e essa representação tem limites. Esta página mostra como os bits viajam e até onde se pode ir.
+Transmitir exige representar informação num sinal. O recetor observa esse sinal depois de atenuação, distorção, interferência e ruído. Mais níveis permitem representar mais bits por símbolo, mas exigem distinguir valores mais próximos.
 
-## Meios e sinais
+## Grandezas que não são iguais
 
-Os meios guiados conduzem o sinal: o **par de cobre entrançado** das redes domésticas, o **cabo coaxial** e a **fibra ótica**, que leva pulsos de luz por quilómetros com pouca atenuação. Os meios não guiados espalham o sinal pelo espaço: rádio, micro-ondas e satélite, onde a partilha do espectro obriga a licenças e a gerir interferências.
+A **largura de banda** $B$, em Hz, mede o intervalo de frequências disponível. O **débito binário** $R$, em bit/s, mede bits transmitidos por segundo. O **ritmo de símbolos** $R_s$, em baud, mede símbolos por segundo. Se cada símbolo representar $\log_2 M$ bits:
 
-Um **sinal analógico** varia de forma contínua (a voz no microfone); um **sinal digital** toma valores discretos (os níveis de tensão que representam 0 e 1). Na prática, os bits viajam quase sempre sobre sinais analógicos bem comportados: o emissor molda uma portadora e o recetor interpreta o que chega.
+$$R=R_s\log_2 M.$$
 
-## Modulação e multiplexagem
+A 2400 baud com 16 símbolos, obténs $2400\times4=9600$ bit/s. Não são 16 bits por símbolo. Uma transmissão real pode reservar bits para codificação e controlo, reduzindo o débito útil.
 
-**Modular** é inscrever bits numa onda: variando a amplitude (ASK), a frequência (FSK) ou a fase (PSK). Com $M$ símbolos diferentes, cada símbolo carrega $\log_2 M$ bits: 8 fases distintas (8-PSK) transportam 3 bits por símbolo. Mais símbolos por unidade de tempo significa mais débito, mas símbolos parecidos confundem-se mais facilmente com ruído.
+O período de um sinal de frequência $f$ é $1/f$. A velocidade de propagação do sinal não é o débito: aumentar bit/s reduz o tempo de colocar um pacote no cabo, sem obrigatoriamente reduzir o tempo de esse sinal percorrer o cabo.
 
-As três modulações aplicadas ao mesmo padrão de bits, `1 0 1 1`. Repara como a informação vive na amplitude, na frequência ou na fase:
+## Meios e representação
+
+O par entrançado reduz interferência por acoplamento, o coaxial usa blindagem, e a fibra transporta luz com baixa atenuação e imunidade à interferência eletromagnética. Rádio e micro-ondas usam o espaço livre e partilham espectro; satélites podem introduzir propagação relevante conforme a órbita.
+
+Em **banda base**, codifica-se diretamente a sequência de bits em níveis ou transições. NRZ usa níveis; Manchester introduz uma transição em cada bit para facilitar a sincronização, à custa de mais transições. Em **modulação**, altera-se uma portadora: amplitude em ASK, frequência em FSK, fase em PSK. QAM combina amplitude e fase.
 
 <Typst
   source={ondas}
   format="svg"
-  alt="Três gráficos do padrão de bits 1 0 1 1: em ASK a amplitude cai a zero no bit 0; em FSK a frequência é mais baixa no bit 0; em PSK a fase inverte no bit 0."
+  alt="ASK altera a amplitude, FSK a frequência e PSK a fase para representar a sequência 1, 0, 1, 1."
 />
 
-Quando uma ligação tem de servir vários fluxos, há duas saídas clássicas. A **multiplexagem por divisão de frequência** (FDM) parte o espectro em fatias, uma por fluxo, como as estações de rádio. A **multiplexagem por divisão de tempo** (TDM) parte o tempo em ranhuras que rodam pelos fluxos, como uma conversa à vez. A Internet usa uma terceira ideia, a multiplexagem estatística: ninguém tem fatia reservada, cada um usa quando precisa, e as filas absorvem os picos.
+**Simplex** permite uma direção; **half-duplex** permite ambas, à vez; **full-duplex** permite ambas simultaneamente. Esta distinção explica por que uma Ethernet comutada full-duplex não usa deteção de colisões.
 
-## Os dois limites: Nyquist e Shannon
+## Canal e sincronização
 
-Um canal sem ruído com largura de banda $B$ se usares $M$ níveis de sinal:
+Um canal linear tem resposta ao impulso $h(t)$. Sem ruído aditivo, a saída é a convolução $r(t)=s(t)*h(t)$; em frequência, $R(f)=S(f)H(f)$. Se o canal atenuar componentes de alta frequência, os pulsos deixam de ter transições tão nítidas. Ruído acrescenta outra componente à observação do recetor.
 
-$$C = 2B\log_2 M$$
+O teorema da amostragem permite reconstruir um sinal ideal limitado a B Hz com taxa de amostragem suficiente, habitualmente expressa como pelo menos 2B amostras/s sob as condições ideais de banda. Não confundas esse resultado com garantir comunicação sem erros através de qualquer canal real.
 
-Isto é o limite de **Nyquist**: duplicar a largura de banda ou os níveis aumenta o débito, mas só até o ruído entrar em cena. Com ruído, manda o limite de **Shannon**, que depende da relação sinal-ruído $SNR$:
+NRZ-L associa bits a níveis. NRZ-I associa um dos bits a uma transição, segundo a convenção. Manchester introduz uma transição no meio de cada bit e facilita recuperar o relógio; a convenção de sentido da transição deve ser indicada. Uma sequência longa sem transições dificulta a sincronização em certas codificações.
 
-$$C = B\log_2(1 + SNR)$$
+Em **4B/5B**, cada grupo de quatro bits vira cinco bits de código escolhidos para favorecer transições. Para transportar 80 Mbit/s de dados, o código exige 100 Mbit/s antes de outras sobrecargas. Codificação de linha e modulação não são sinónimos: a primeira representa os bits; a segunda altera parâmetros de uma portadora.
 
-Repara que aqui $M$ desapareceu: acima de certo ponto, inventar mais níveis não adianta porque o ruído os baralha. Shannon dá o teto absoluto; Nyquist diz o que conseguirias sem ruído.
+## Multiplexagem
 
-Um exemplo com a linha telefónica clássica: $B = 3{,}1$ kHz e $SNR = 30$ dB, ou seja $SNR = 1000$ em linear. Por Shannon, $C = 3100 \times \log_2(1001)$. Como $2^{10} = 1024$, $\log_2(1001)$ vale cerca de 9,97, por isso $C \approx 3100 \times 9{,}97 \approx 30900$ bits por segundo, uns 31 kbps. Os modems de 56 kbps daquela época já roçavam este teto, e é por isso que a solução foi trocar o meio (ADSL, cabo, fibra) em vez de inventar modulação nova para o mesmo fio de cobre.
+FDM separa fluxos por frequência, TDM por intervalos temporais e WDM por comprimentos de onda na fibra. Na TDM síncrona, um intervalo reservado pode ficar vazio. Na multiplexagem estatística, atribui-se serviço a quem tem dados, exigindo identificação dos fluxos e gestão de filas.
 
-:::warning[Decibéis e linear não se misturam]
-$30$ dB significa uma razão de potências de $10^{30/10} = 1000$. A fórmula de Shannon quer a razão linear ($1000$), não os $30$ dB. Esquecer esta conversão é o erro mais comum nestas contas.
-:::
+Com quatro fontes de 64 kbit/s numa TDM sem sobrecarga, o agregado precisa de 256 kbit/s. Se cada trama transportar um byte de cada fonte, há 8000 tramas/s e quatro bytes por trama. Qualquer byte adicional de sincronização aumenta o débito necessário em 64 kbit/s.
 
-Confirma a conta do exemplo correndo o cálculo. O programa imprime `Capacidade: 30,9 kbps`:
+## Potência e decibéis
+
+Para uma razão de potências:
+
+$$G_{dB}=10\log_{10}(P_2/P_1),\qquad P_2/P_1=10^{G_{dB}/10}.$$
+
+Uma perda de 3 dB reduz aproximadamente a potência a metade. Ganhos e perdas em dB somam-se ao longo do percurso. Para tensões, a expressão $20\log_{10}(V_2/V_1)$ exige impedâncias iguais.
+
+A relação sinal-ruído **SNR** é uma razão linear de potências. Se estiver em dB, converte-a antes de usar Shannon. 20 dB corresponde a 100; 30 dB corresponde a 1000.
+
+## Nyquist e Shannon
+
+Para um canal ideal sem ruído, limitado em banda e com $M$ níveis distinguíveis, a expressão usada na cadeira é:
+
+$$R_{Nyquist}=2B\log_2 M.$$
+
+Para um canal com ruído gaussiano, o limite de Shannon é:
+
+$$C=B\log_2(1+SNR).$$
+
+São limites sob modelos definidos. Não garantem que uma modulação prática atinja o valor. Quando o problema impõe ambos os limites, usa o menor; aumentar $M$ não ultrapassa a capacidade imposta pelo ruído.
+
+**Exemplo.** $B=4000$ Hz, $M=16$, SNR de 20 dB. Nyquist dá $2\times4000\times4=32000$ bit/s. Shannon dá $4000\log_2(101)\approx26633$ bit/s. O menor limite é cerca de 26,6 kbit/s.
 
 <CodePlayground
   language="python"
-  title="Capacidade de Shannon da linha telefónica"
-  code={
-    'import math\n\nB = 3100\nsnr_linear = 1000\ncapacidade = B * math.log2(1 + snr_linear)\nprint(f"Capacidade: {capacidade / 1000:.1f} kbps")'
-  }
+  title="Comparar os limites do canal"
+  code={`from math import log2
+B, M, snr_db = 4000, 16, 20
+snr = 10 ** (snr_db / 10)
+nyquist = 2 * B * log2(M)
+shannon = B * log2(1 + snr)
+print(f"Nyquist: {nyquist:.0f} bit/s")
+print(f"Shannon: {shannon:.0f} bit/s")
+print(f"Menor: {min(nyquist, shannon):.0f} bit/s")`}
 />
 
-<Tabs id="shannon-db-linear" labels={['Parte de 30 dB', 'Parte de 1000 linear']}>
-  <div slot="panel-0">
+Não compares tecnologias com hipóteses diferentes usando apenas estes números. Uma previsão de 31 kbit/s para um canal particular não explica, por si só, um modem de 56 kbit/s: este usa outra configuração do canal.
 
-Converte primeiro: $SNR = 10^{30/10} = 1000$. Depois aplica Shannon com $B = 3100$ Hz e obténs os mesmos $30{,}9$ kbps do programa.
+## De erros de bit a erros de trama
 
-  </div>
-  <div slot="panel-1">
+Se cada bit tiver probabilidade independente $p$ de erro e a trama tiver $L$ bits, a probabilidade de pelo menos um erro é:
 
-Se o enunciado já der a razão linear ($1000$), entra direta na fórmula, sem conversão. O resultado é o mesmo: cerca de $30{,}9$ kbps.
+$$F=1-(1-p)^L.$$
 
-  </div>
-</Tabs>
+Para $Lp\ll1$, $F\approx Lp$. A aproximação perde precisão quando a trama é longa ou os erros frequentes. Se os erros chegarem em rajadas, a hipótese de independência não é adequada.
+
+Com $p=10^{-5}$ e $L=10000$, $F\approx0{,}09516$. Se tentativas independentes repetirem a mesma trama $k$ vezes, a probabilidade de pelo menos uma chegada correta é $1-F^k$, e não $(1-F)^k$, que exige que todas sejam corretas.
+
+Aumentar a potência do sinal mantendo o ruído fixo aumenta SNR. Aumentar a banda mantendo potência e densidade espectral de ruído fixas aumenta também a potência de ruído. Antes de comparar capacidades, verifica quais as grandezas mantidas constantes.
+
+## Potência absoluta e propagação rádio
+
+**dBW** mede potência face a 1 W; **dBm**, face a 1 mW. Assim $P_{dBm}=10\log_{10}(P/0{,}001)$ com P em W, e $P_{dBm}=P_{dBW}+30$. 100 mW equivalem a 20 dBm e a −10 dBW. dB sozinho exprime uma razão, não uma potência absoluta.
+
+Para antenas isotrópicas ideais, campo distante e espaço livre, a relação de Friis é $P_r/P_t=(\lambda/(4\pi d))^2$, com comprimento de onda $\lambda=v/f$. A perda em dB é $20\log_{10}(4\pi d/\lambda)$. Antenas reais acrescentam os ganhos e outras perdas ao orçamento.
+
+Mantendo frequência e antenas, duplicar a distância aumenta a perda em cerca de 6,02 dB. Mantendo distância e ganhos, duplicar a frequência tem o mesmo efeito. Reflexões, obstáculos e multipercurso podem tornar este modelo inadequado num edifício; não é uma previsão universal do sinal Wi-Fi.

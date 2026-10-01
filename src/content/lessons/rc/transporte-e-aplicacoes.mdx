@@ -1,8 +1,21 @@
 ---
-title: Transporte e aplicações
-description: UDP e TCP, fiabilidade, congestionamento, sockets e as aplicações da Internet.
+title: Transporte, TCP e congestionamento
+description: Portas, UDP, sequência TCP, ACK, temporizadores, janelas e controlo de congestionamento.
 section: conteudo
-order: 8
+order: 10
+practices:
+  - rc/praticar-transporte
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: RFC9293, TCP
+      url: https://www.rfc-editor.org/rfc/rfc9293.html
+    - title: RFC5681, controlo de congestionamento
+      url: https://www.rfc-editor.org/rfc/rfc5681.html
+    - title: RFC6298, temporizador TCP
+      url: https://www.rfc-editor.org/rfc/rfc6298.html
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -10,101 +23,76 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import aperto from '../../rc/handshake.typ?raw';
 
-A camada de rede entrega pacotes entre máquinas; a camada de transporte entrega entre **processos**, com a fiabilidade que cada aplicação precisa. Esta página mostra os dois transportes da Internet, como o TCP abre e fecha ligações, e como um programa cliente usa tudo isto.
+O transporte entrega dados entre **processos**. Portas distinguem serviços e conversas num terminal. Uma ligação TCP é identificada pelos endereços IP e portas das duas pontas. Um servidor na porta 80 pode manter muitas ligações distintas porque os pares remotos são diferentes.
 
-## UDP: simples e rápido
+## UDP e TCP
 
-O **UDP** cola um cabeçalho pequeno (portas de origem e destino, comprimento e soma de verificação) e envia. Não estabelece ligação, não confirma, não retransmite, não ordena. Parece pouco, mas é exatamente o que precisam o DNS (uma pergunta, uma resposta), o streaming (mais vale perder um pedaço que parar tudo) e os jogos (o estado novo substitui o velho). Quando a aplicação trata da fiabilidade ou não precisa dela, o UDP não atrapalha.
+UDP acrescenta um cabeçalho de 8 bytes com portas, comprimento e checksum. Não estabelece ligação, não garante entrega ou ordem, e preserva limites dos datagramas. A aplicação pode acrescentar os mecanismos de que precise.
 
-## TCP: fiabilidade de ponta a ponta
+TCP oferece um **fluxo de bytes fiável e ordenado**. Não preserva as fronteiras de chamadas `send`: dois envios podem chegar numa leitura, e um envio pode exigir várias leituras. A aplicação precisa de delimitar as suas mensagens, por comprimento, delimitador ou outra regra.
 
-O **TCP** dá à aplicação a ilusão de um tubo fiável e ordenado de bytes. Por baixo, continua a haver pacotes IP que se perdem e baralham; o TCP numera cada byte, confirma a receção (**ACK cumulativo**: "recebi tudo até aqui") e retransmite o que falta, como um ARQ da [ligação de dados](ligacao-de-dados/) mas de ponta a ponta. A janela deslizante regressa aqui, agora limitada por dois lados: o que o recetor aguenta (controlo de fluxo) e o que a rede aguenta (controlo de congestionamento).
+Escolher UDP não garante baixa latência, tal como usar TCP não garante um débito fixo. DNS pode usar UDP ou TCP; HTTP/3 usa QUIC sobre UDP. A escolha deve considerar o protocolo concreto, os mecanismos acima do transporte e o modelo do exercício.
 
-Abrir uma ligação é o aperto de mão triplo. O cliente escolhe um número inicial, por exemplo 100, e envia SYN com seq 100. O servidor escolhe o seu, por exemplo 500, e responde SYN-ACK com seq 500 e ack 101 ("recebi o teu 100, espero o 101"). O cliente confirma com ACK de seq 101 e ack 501. A partir daqui, cada lado sabe que o outro está vivo e por onde começar a contar. Fechar é parecido mas com FINs em cada direção, porque cada lado pode ter ainda dados para enviar quando o outro já acabou.
+## Sequência, ACK e abertura
+
+TCP numera **bytes**, não segmentos. Se um segmento começa em 1000 e transporta 300 bytes, o seguinte começa em 1300. Um ACK 1300 confirma cumulativamente todos os bytes anteriores e indica o próximo esperado. Um ACK simples não consome um número; SYN e FIN consomem um cada.
+
+A abertura normal tem SYN, SYN-ACK e ACK:
 
 <Typst
   source={aperto}
   format="svg"
-  alt="Diagrama de sequência do aperto de mão: SYN com seq 100, SYN-ACK com seq 500 e ack 101, ACK com seq 101 e ack 501."
+  alt="Cliente envia SYN sequência100; servidor responde SYN-ACK sequência500 confirmação101; cliente confirma com sequência101 e confirmação501."
 />
 
-<YouTube id="cIHiSR4j3g4" title="3 7 TCP Congestion Control" />
+Depois deste exemplo, o primeiro byte do cliente tem número 101. Se enviar 200 bytes e depois 100, os segmentos começam em 101 e 301; após ambos, o servidor confirma 401. A numeração do servidor é independente.
 
-O **controlo de congestionamento** é o TCP a sondar a rede: começa devagar, acelera enquanto chegam ACKs e trava quando deteta perdas, porque perda significa fila cheia algures. É um algoritmo distribuído sem dono: milhões de emissores a acelerar e travar produzem, em média, uma partilha justa das ligações. Falha em casos conhecidos (ligações sem fios com perdas que não são congestionamento), mas é o que mantém a Internet de pé desde os anos 80.[^sempre]
+**Perda.** Chegam bytes 1000–1299 e 1600–1899, mas faltam 1300–1599. O ACK cumulativo continua em 1300. Quando chegam os bytes em falta, pode avançar para 1900. SACK, se negociado, permite indicar blocos recebidos fora de ordem sem alterar o significado do ACK cumulativo.
 
-:::warning[Fluxo contra congestionamento]
-O controlo de fluxo protege o recetor (a aplicação lenta); o controlo de congestionamento protege a rede (as filas cheias). Ambos limitam a janela, e vale o menor dos dois. Perante "por que está lento?", a primeira pergunta é qual dos dois está a mandar.
-:::
+O fecho usa FIN em cada direção e respetivas confirmações. Um lado pode terminar os seus envios sem que o outro já tenha terminado. TIME-WAIT ajuda a lidar com segmentos atrasados e com a confirmação final; não é uma retransmissão de dados em curso.
 
-## Sockets: a aplicação a pedir rede
+## Timeout e estimativa de RTT
 
-Um **socket** é o ponto onde o programa toca na rede: abre-se, liga-se a um endereço e porta, e depois lê-se e escreve-se como num ficheiro. O excerto abaixo é um cliente TCP mínimo em Python que pede uma página a um servidor e mostra a resposta. Lê-o como ilustração da sequência abrir, ligar, enviar, receber, fechar, que é igual em qualquer linguagem.
+O tempo de ida e volta varia. Um temporizador muito curto retransmite dados ainda em trânsito; um muito longo demora a recuperar perdas. Uma estimativa suavizada usa amostras de RTT e uma medida de variação. A regra básica estudada é da forma $RTO=SRTT+4RTTVAR$, sujeita aos limites do algoritmo.
 
-```python
-import socket
+Não uses indiscriminadamente uma amostra de uma transmissão repetida: pode ser impossível distinguir a que envio corresponde o ACK, problema tratado pelo algoritmo de Karn. Expirar o timeout aumenta a espera antes de tentar de novo. ACKs duplicados podem desencadear retransmissão rápida sem esperar pelo timeout, conforme a variante.
 
-cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-cliente.connect(("exemplo.local", 8000))
-cliente.sendall(b"GET /dados HTTP/1.0\r\n\r\n")
-resposta = cliente.recv(4096)
-print(resposta.decode())
-cliente.close()
-```
+## Fluxo e congestionamento
 
-A chamada `connect` dispara o aperto de mão triplo; `sendall` entrega os bytes ao TCP, que trata de numerar, confirmar e retransmitir; `recv` devolve o que chegou por ordem; `close` inicia o encerramento com FIN. Por cima disto vivem as aplicações que usas todos os dias: o HTTP do navegador, o DNS que traduz nomes em endereços, o correio eletrónico e a transferência de ficheiros. Cada uma escolhe o transporte à sua medida, UDP para o rápido e simples, TCP para o fiável, e a pilha trata do resto.
+O **controlo de fluxo** evita exceder a capacidade do recetor. A janela anunciada, `rwnd`, indica quanto pode receber. O **controlo de congestionamento** evita sobrecarregar a rede e usa `cwnd` no emissor. De forma simplificada, os dados em trânsito, **FlightSize**, não devem exceder $\min(rwnd,cwnd)$. A quantidade de bytes novos permitida é $\max(0,\min(rwnd,cwnd)-FlightSize)$.
 
-## Uma conversa HTTP de verdade
+Com $W$ **bytes** de janela efetiva e RTT de $T$ segundos, o limite ideal por janela é $8W/T$ bit/s. O débito também não excede o bottleneck do caminho. Para W=64000 bytes e RTT=0,08 s, obténs 6,4 Mbit/s. Se a ligação limitar a 5 Mbit/s, o menor limite passa a 5 Mbit/s.
 
-O HTTP por cima do TCP é texto com regras. Um pedido mínimo tem uma linha de pedido, cabeçalhos e uma linha vazia a fechar:
+## Slow start, AIMD e perdas
 
-```http
-GET /dados HTTP/1.0
-Host: exemplo.local
+No TCP clássico, **slow start** aumenta a janela por ACK, aproximadamente duplicando-a por RTT quando cada segmento é confirmado e há dados suficientes. Ao atingir `ssthresh`, **congestion avoidance** aumenta aproximadamente um MSS por RTT, crescimento aditivo.
 
-```
+Na variante Reno usada em muitos exercícios, três ACKs duplicados desencadeiam fast retransmit e fast recovery: reduz-se o limiar aproximadamente para metade dos dados em voo, com o mínimo do algoritmo, e ajusta-se a janela durante a recuperação. Um timeout volta a uma janela de perda pequena e reinicia slow start. Não reduzas a janela para o mesmo valor em qualquer tipo de perda.
 
-E uma resposta mínima devolve uma linha de estado, cabeçalhos, linha vazia e corpo:
+**Traço simplificado.** Janela inicial 1 MSS, limiar 8 MSS, ACK por segmento, sem perdas: por rondas, 1, 2, 4, 8, 9, 10. Se o exercício definir outra janela inicial, delayed ACKs ou outra variante, usa essas condições. TCP atual não usa necessariamente este traço nem uma janela inicial de um segmento.
 
-```http
-HTTP/1.0 200 OK
-Content-Type: text/plain
-
-42
-```
-
-Lê a resposta com o programa: ele separa cabeçalhos de corpo na linha vazia e imprime `Estado: HTTP/1.0 200 OK` e `Corpo: 42`.
+A combinação de aumento aditivo e redução multiplicativa é **AIMD**. Perdas podem resultar de congestionamento ou de erros do canal. A resposta à perda não identifica sempre a causa real; ECN permite sinalizar congestionamento sem depender só de descartar pacotes.
 
 <CodePlayground
   language="python"
-  title="Pedir e ler uma resposta HTTP"
-  code={
-    'pedido = "GET /dados HTTP/1.0\\r\\nHost: exemplo.local\\r\\n\\r\\n"\nprint(pedido)\nresposta = "HTTP/1.0 200 OK\\r\\nContent-Type: text/plain\\r\\n\\r\\n42"\ncabeca, corpo = resposta.split("\\r\\n\\r\\n")\nprint("Estado:", cabeca.split("\\r\\n")[0])\nprint("Corpo:", corpo)'
-  }
+  title="Comparar limites de débito por janela e ligação"
+  code={`janela_bytes = 64_000
+rtt = 0.08
+ligacao_bits_s = 5_000_000
+limite_janela = 8*janela_bytes/rtt
+print(f"Janela: {limite_janela/1e6:.1f} Mbit/s")
+print(f"Limite conjunto: {min(limite_janela, ligacao_bits_s)/1e6:.1f} Mbit/s")`}
 />
+
+Vê a aula de Jim Kurose para seguir as fases da janela. Associa cada quebra no gráfico ao evento que a provocou, em vez de decorar apenas a forma.
 
 <YouTube
-  id="MwxMsaFFycg"
-  title="IP addresses and DNS | Internet 101 | Computer Science | Khan Academy"
+  id="cIHiSR4j3g4"
+  title="Jim Kurose: TCP Congestion Control, aula 3.7"
 />
 
-## Ver com o Wireshark
+## Ler uma captura
 
-No laboratório, a teoria confirma-se a capturar tráfego. Instala o [Wireshark](https://www.wireshark.org/download.html), começa uma captura na tua interface e filtra: `tcp` mostra os apertos de mão e os ACKs desta página, `dns` mostra as perguntas e respostas de nomes. Compara os números de sequência que vires com os do exemplo do aperto de mão acima.
+No Wireshark, segue um fluxo TCP e regista sequência, ACK, comprimento dos dados, flags e janela. A apresentação pode usar números relativos, distintos dos valores brutos. Se dois segmentos se perderem, desenha os bytes em falta antes de prever confirmações. A aplicação só recebe uma sequência contínua, mesmo que a captura já mostre segmentos posteriores.
 
-## Lista de verificação do projeto cliente
-
-O trabalho laboratorial pede uma aplicação cliente a falar com um servidor. Antes de entregar, confirma:
-
-1. O cliente abre, usa e fecha a ligação sem deixar sockets pendurados.
-2. O protocolo da aplicação está documentado: formato dos pedidos, das respostas e dos erros.
-3. Há um caso de teste com o servidor desligado e outro com resposta malformada.
-4. O relatório inclui uma captura do Wireshark anotada com o essencial da conversa.
-
-## Para saber mais
-
-- [Laboratórios Wireshark de Kurose e Ross](https://gaia.cs.umass.edu/kurose_ross/wireshark.php): guiões de HTTP, DNS, TCP e IP com traços prontos.
-- [Programação com sockets em Python](https://www-net.cs.umass.edu/kurose_ross/programming.php): enunciados de cliente, servidor e servidor web.
-- [Guia HTTP do MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview): referência dos métodos, estados e cabeçalhos.
-- [Como funciona o DNS](https://www.cloudflare.com/learning/dns/what-is-dns/): explicação visual do recursivo e do autoritativo.
-
-[^sempre]: O controlo de congestionamento nasceu com o algoritmo de Jacobson em 1988, depois do primeiro colapso documentado da Internet em 1986. Ver Kurose e Ross, Computer Networking, capítulo da camada de transporte.
+Para praticar, os [laboratórios oficiais de Kurose e Ross](https://gaia.cs.umass.edu/kurose_ross/wireshark.php) incluem traços de TCP. Usa os ficheiros disponibilizados ou uma captura tua autorizada e compara com o [percurso das aplicações](../aplicacoes/).

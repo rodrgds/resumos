@@ -1,0 +1,222 @@
+---
+title: Praticar CRC e ARQ
+description: Exercícios próprios com contas, traços, pistas e soluções.
+section: exercicios
+editorial:
+  basedOn: 2026/27
+  coverage: Exercícios próprios sobre os tópicos da lição associada.
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="rc-crc-residuo"
+  title={'Dividir por XOR'}
+  explanation="/cadeiras/rc/ligacao-de-dados/#paridade-checksum-e-crc"
+  answer={{ kind: 'number', value: 1, tolerance: 0 }}
+>
+  <p>
+    {
+      'Mensagem 1101 e gerador 1011. Qual o resto do CRC, interpretado como número decimal?'
+    }
+  </p>
+  <p slot="hint">{'Acrescenta três zeros antes da divisão.'}</p>
+  <p slot="hint-more">{'Divide 1101000 por 1011 usando XOR.'}</p>
+  <p slot="solution">
+    {
+      'O resto é 001, que vale 1. Transmite 1101001. A divisão da palavra completa produz resto zero.'
+    }
+  </p>
+  <p slot="mistakes">{'Dividir apenas 1101 sem acrescentar os zeros.'}</p>
+</Exercise>
+
+<Exercise
+  id="rc-crc-zero"
+  title={'Interpretar uma verificação'}
+  explanation="/cadeiras/rc/ligacao-de-dados/#paridade-checksum-e-crc"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Não foi detetado erro pelo CRC.',
+        correct: true,
+        explanation: 'Certos padrões de erro são múltiplos do gerador.',
+      },
+      {
+        text: 'A trama não contém nenhum erro.',
+        correct: false,
+        explanation: 'Resto zero não prova integridade absoluta.',
+      },
+      {
+        text: 'O CRC corrigiu todos os bits errados.',
+        correct: false,
+        explanation: 'Este mecanismo deteta, não corrige automaticamente.',
+      },
+    ],
+  }}
+>
+  <p>{'O recetor obtém resto CRC zero. Que conclusão é válida?'}</p>
+  <p slot="hint">{'Distingue deteção de prova de ausência de erro.'}</p>
+  <p slot="hint-more">
+    {'Um erro múltiplo do gerador mantém a divisibilidade.'}
+  </p>
+  <p slot="solution">
+    {'A verificação aceita a trama, mas existem padrões de erro não detetados.'}
+  </p>
+  <p slot="mistakes">
+    {'Interpretar deteção probabilística como garantia absoluta.'}
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-saw-eficiencia"
+  title={'Calcular utilização Stop-and-Wait'}
+  explanation="/cadeiras/rc/ligacao-de-dados/#eficiência-sem-perdas"
+  answer={{ kind: 'number', value: 0.1, tolerance: 1e-6 }}
+>
+  <p>
+    {
+      'Trama demora 2 ms a transmitir; propagação por sentido 9 ms; ACK e processamento desprezáveis. Qual a utilização?'
+    }
+  </p>
+  <p slot="hint">{'O ciclo inclui a viagem de ida e volta.'}</p>
+  <p slot="hint-more">{'2/(2+2 ×9).'}</p>
+  <p slot="solution">
+    {'2/20=0,1. A ligação transmite dados 10% do tempo sob estas hipóteses.'}
+  </p>
+  <p slot="mistakes">
+    {'Contar apenas uma propagação ou confundir utilização com bit/s.'}
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-arq-cadeia"
+  title="Projetar a janela e comparar correção de erros"
+  explanation="/cadeiras/rc/ligacao-de-dados/#combinar-ber-janela-e-redundância"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Converto o comprimento e a capacidade para obter o tempo de transmissão.',
+      'Uso metade do espaço de sequência para limitar Selective Repeat.',
+      'Calculo FER a partir da BER e do comprimento completo.',
+      'Recalculo o tempo da trama e a fração útil em cada codificação.',
+      'Distingo a janela crítica sem erros do débito sob erros.',
+    ],
+  }}
+>
+  <p>
+    Uma ligação usa 4 Mbit/s, propagação de 50 ms por sentido, tramas com 4000
+    bits de dados, BER 0,00005 e Selective Repeat com seis bits de sequência.
+    ACK desprezável, erros independentes e nenhum cabeçalho adicional. Calcula
+    janela máxima, FER, utilização e débito útil. Quantos bits de sequência
+    permitem ocupar continuamente a ligação sem erros?
+  </p>
+  <p>
+    Compara ainda FEC com 10% de redundância e FER residual 0,08, e FEC com 30%
+    e FER residual 0,03. Mantém os 4000 bits de dados e a janela original. Qual
+    dá maior débito útil?
+  </p>
+  <p slot="hint">
+    Separa três grandezas: comprimento transmitido, probabilidade de falha e
+    fração de dados úteis.
+  </p>
+  <p slot="hint-more">
+    O tempo original é 1 ms, a=50 e W=32. Para FEC, o tempo passa a 1,1 ou 1,3
+    ms; o payload continua igual.
+  </p>
+  <div slot="solution">
+    <p>
+      W=32. FER=1−(1−0,00005)^4000≈0,181273. Sem erros, U=32/101≈0,316832. Com
+      erros, U≈0,259399 e débito útil 1,037594 Mbit/s.
+    </p>
+    <p>
+      Para ocupar a ligação sem erros, W≥101. Sete bits permitem apenas W=64;
+      oito permitem W=128. São precisos pelo menos oito bits.
+    </p>
+    <p>
+      FEC 10%: U≈0,320317 e débito útil 4×U/1,1≈1,164787 Mbit/s. FEC 30%:
+      U≈0,398342 e débito útil 4×U/1,3≈1,225666 Mbit/s. A segunda é melhor
+      nestes dados. A FER residual foi fornecida, não calculada da BER original.
+    </p>
+  </div>
+  <p slot="mistakes">
+    Usar BER como FER, manter o tempo de trama após acrescentar redundância,
+    comparar utilização sem descontar os bits de FEC, ou usar o limite de janela
+    Go-Back-N.
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-duas-tentativas"
+  title="Interpretar uma retransmissão permitida"
+  explanation="/cadeiras/rc/ligacao-de-dados/#combinar-ber-janela-e-redundância"
+  answer={{ kind: 'number', value: 0.91, tolerance: 0.000001 }}
+>
+  <p>
+    Cada tentativa falha com probabilidade 0,3, independentemente das restantes.
+    Permite-se no máximo uma retransmissão. Qual a probabilidade de entregar a
+    trama, em valor entre 0 e 1?
+  </p>
+  <p slot="hint">Contam a tentativa original e uma repetição.</p>
+  <p slot="hint-more">A única forma de não entregar é falhar nas duas.</p>
+  <p slot="solution">
+    1−0,3²=0,91. A entrega pode ocorrer logo na primeira ou depois da falha
+    inicial. Esta probabilidade não é um débito nem inclui o custo temporal das
+    duas tentativas.
+  </p>
+  <p slot="mistakes">
+    Contar apenas uma tentativa, somar 0,7+0,7, ou interpretar o resultado como
+    utilização da ligação.
+  </p>
+</Exercise>
+
+<Exercise
+  id="rc-sr-janela"
+  title={'Limitar a janela'}
+  explanation="/cadeiras/rc/ligacao-de-dados/#go-back-n-e-selective-repeat"
+  answer={{ kind: 'number', value: 4, tolerance: 0 }}
+>
+  <p>
+    {
+      'Selective Repeat com 3 bits de sequência e janelas iguais nas duas pontas. Qual o máximo usual de tramas por janela?'
+    }
+  </p>
+  <p slot="hint">{'A numeração tem 8 valores.'}</p>
+  <p slot="hint-more">
+    {'A janela não deve exceder metade do espaço para impedir ambiguidade.'}
+  </p>
+  <p slot="solution">{'2^(3−1)=4 tramas. Go-Back-N teria outro limite, 7.'}</p>
+  <p slot="mistakes">{'Usar 2^3−1 para Selective Repeat.'}</p>
+</Exercise>
+
+<Exercise
+  id="rc-gbn-traco"
+  title={'Recuperar uma perda'}
+  explanation="/cadeiras/rc/ligacao-de-dados/#go-back-n-e-selective-repeat"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Go-Back-N descarta 2 e 3 e retransmite desde 1 conforme o protocolo.',
+      'Selective Repeat guarda 2 e 3 e repete 1.',
+      'A aplicação recebe os dados por ordem uma única vez.',
+    ],
+  }}
+>
+  <p>
+    {
+      'Emissor envia 0,1,2,3; perde-se 1. Descreve receção e recuperação em Go-Back-N e Selective Repeat.'
+    }
+  </p>
+  <p slot="hint">{'Separa chegada e entrega.'}</p>
+  <p slot="hint-more">
+    {'O recetor Selective Repeat tem memória para tramas fora de ordem.'}
+  </p>
+  <p slot="solution">
+    {
+      'Go-Back-N entrega 0 e descarta 2 e 3; a recuperação retransmite 1 e posteriores pendentes. Selective Repeat guarda 2 e 3 e, depois de 1, entrega 1,2,3.'
+    }
+  </p>
+  <p slot="mistakes">
+    {'Dizer que Go-Back-N retransmite apenas a trama perdida.'}
+  </p>
+</Exercise>
