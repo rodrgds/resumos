@@ -21,5 +21,3 @@ main :-
     keysort(Pares, Ordenados),
     writeln(Ordenados),
     imprimir_tarefas(mostrar_rotulo).
-
-:- initialization(main).

@@ -1,5 +1,49 @@
 import { expect, test } from '@playwright/test';
 
+test('PHP evaluates the authored scope example', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto('/cadeiras/lbaw/aplicacao-laravel/');
+  const playground = page.getByRole('region', {
+    name: 'Âmbito local, global e captura por valor',
+    exact: true,
+  });
+  await playground.scrollIntoViewIfNeeded();
+  await expect(
+    playground.getByRole('textbox', { name: 'Código php', exact: true }),
+  ).toBeVisible();
+  await playground
+    .getByRole('button', { name: 'Executar', exact: true })
+    .click();
+  await expect(playground.getByRole('status')).toHaveText('Concluído', {
+    timeout: 45_000,
+  });
+  await expect(playground.getByLabel('Resultado', { exact: true })).toHaveText(
+    '11\n4\n5\n15\n',
+  );
+});
+
+test('Prolog executes the authored program once', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto('/cadeiras/pfl/solucoes-estruturas-prolog/');
+  const playground = page.getByRole('region', {
+    name: 'Termos, recolha ordenada e impressão por retrocesso',
+    exact: true,
+  });
+  await playground.scrollIntoViewIfNeeded();
+  await expect(
+    playground.getByRole('textbox', { name: 'Código prolog', exact: true }),
+  ).toBeVisible();
+  await playground
+    .getByRole('button', { name: 'Executar', exact: true })
+    .click();
+  await expect(playground.getByRole('status')).toHaveText('Concluído', {
+    timeout: 45_000,
+  });
+  await expect(playground.getByLabel('Resultado', { exact: true })).toHaveText(
+    'liga(a,liga(b,c))\ntarefa(treino,1)\n[1-treino,2-leitura,2-revisao]\ntarefa:leitura\ntarefa:treino\ntarefa:revisao\n',
+  );
+});
+
 test('Python cannot read the lesson origin database and can be stopped', async ({
   page,
 }) => {
