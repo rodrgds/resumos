@@ -21,3 +21,5 @@
 - [Produto](../PRODUCT.md) e [design](../DESIGN.md).
 - [Instruções para agentes](../AGENTS.md).
 - [Guia de escrita dos apontamentos](../.agents/skills/resumos-writing/SKILL.md).
+- [Fontes públicas de LEIC/MIEIC no GitHub](fontes-github.md): inventário verificado de apontamentos, exercícios, exames e documentação de projetos.
+- [Bibliografia pública de LEIC/MIEIC](fontes-bibliografia.md): manuais adotados, evidência da FEUP, acesso legal e alternativas abertas.
