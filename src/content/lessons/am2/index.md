@@ -1,40 +1,61 @@
 ---
 title: Análise Matemática II
-description: Cálculo diferencial e integral de funções de várias variáveis, integrais de linha e superfície e teoremas de Green, divergência e Stokes.
+description: Curvas, cálculo em várias variáveis, integração, campos vetoriais e uma introdução às equações diferenciais parciais.
+editorial:
+  basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-01'
+  sources:
+    - title: Ficha de AM II, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587961
+    - title: Materiais de AM II, SIGARRA 2024/25
+      url: https://sigarra.up.pt/feup/pt/conteudos_geral.ver?pct_pag_id=249640&pct_parametros=pv_ocorrencia_id=541872
+    - title: Calculus Volume 3, OpenStax
+      url: https://openstax.org/details/books/calculus-volume-3
+  coverage: Percurso do programa atual, com exemplos próprios, prática por tema e introdução a EDP lineares.
+  gaps:
+    - O Moodle de AM II de 2024/25 está indisponível para estudantes.
+    - As aulas locais não desenvolvem EDP, apenas anunciam as aulas 12 e 13. A profundidade e os métodos dessas aulas não foram confirmados.
+    - Não foi possível comparar os materiais de ensino de 2026/27 com os apontamentos.
 ---
 
-AM2 generaliza o cálculo de AM1 para funções de várias variáveis: curvas no espaço, derivadas parciais e otimização, integrais duplos e triplos, e os integrais de linha e de superfície que culminam nos teoremas de Green, da divergência e de Stokes. Estas ferramentas reaparecem em física, métodos estatísticos e computação gráfica.
+Em AM1, integravas e derivavas funções de uma variável. Em AM2, uma posição pode depender de um parâmetro, uma temperatura de três coordenadas e uma superfície de dois parâmetros. A primeira decisão passa a ser geométrica: qual é o domínio, que direção interessa e sobre que região estamos a somar?
 
-## Como está organizado
+Precisamos das derivadas e primitivas de AM1 e dos vetores, produtos escalar e vetorial de ALGA. Quando uma conta bloquear, separa a escolha do método da execução: desenha, escreve a fórmula com os limites e só depois calcula.
 
-O primeiro bloco é o cálculo diferencial. Começa por [Curvas paramétricas e funções vetoriais](curvas-parametricas/), que fixa tangente, normal, comprimento de arco e curvatura. Depois, [Limites e continuidade em várias variáveis](limites-continuidade/) trata domínios, curvas de nível e o teste dos caminhos, e [Derivadas parciais, gradiente e jacobiana](derivadas-gradiente/) apresenta a derivação direcional, o plano tangente e a aproximação linear. A [Regra da cadeia e funções implícitas](regra-cadeia-implicitas/) deriva encadeamentos e equações sem isolar variáveis, e [Taylor e extremos](taylor-extremos/) aproxima por polinómios de segunda ordem e otimiza com a hessiana e os multiplicadores de Lagrange.
+## Percurso de estudo
 
-O segundo bloco é a integração. Os [Integrais de linha e teorema de Green](integrais-linha/) distinguem o integral escalar do trabalho de um campo, com campos gradiente e independência do caminho. Os [Integrais duplos](integrais-duplos/) cobrem Fubini, troca de ordem e coordenadas polares, e os [Integrais triplos](integrais-triplos/) acrescentam as coordenadas cilíndricas e esféricas. Por fim, [Superfícies, fluxo e os teoremas da divergência e de Stokes](superficies-fluxo/) parametriza superfícies e fecha a cadeira com os dois grandes teoremas.
+| Tema                                                              | O que deves conseguir fazer                                                                               |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [Curvas paramétricas](curvas-parametricas/)                       | Encontrar velocidade, triedro, planos, comprimento, curvatura e centro de curvatura.                      |
+| [Limites e continuidade](limites-continuidade/)                   | Descrever domínios e níveis, reconhecer quádricas e provar ou refutar um limite.                          |
+| [Derivadas e gradiente](derivadas-gradiente/)                     | Distinguir parciais, derivadas direcionais e diferenciabilidade; usar jacobianas e diferenciais.          |
+| [Cadeia e funções implícitas](regra-cadeia-implicitas/)           | Derivar composições e equações sem isolar a variável dependente.                                          |
+| [Taylor e extremos](taylor-extremos/)                             | Construir aproximações, classificar candidatos e comparar extremos livres e condicionados.                |
+| [Integrais de linha e Green](integrais-linha/)                    | Distinguir comprimento de deslocamento, encontrar potenciais e conferir orientação.                       |
+| [Integrais duplos](integrais-duplos/)                             | Descrever uma região nas duas ordens, usar polares e uma mudança de variáveis.                            |
+| [Integrais triplos](integrais-triplos/)                           | Projetar sólidos e escolher cartesianas, cilíndricas ou esféricas.                                        |
+| [Superfícies e fluxo](superficies-fluxo/)                         | Calcular áreas e fluxos e escolher entre cálculo direto, divergência e Stokes.                            |
+| [Equações diferenciais parciais](equacoes-diferenciais-parciais/) | Reconhecer uma EDP linear, verificar soluções e impor dados iniciais ou de fronteira em exemplos básicos. |
 
-## Como estudar
+Cada capítulo termina com exercícios próprios. Tenta primeiro sem ajuda, abre a primeira pista quando não souberes como começar e usa a segunda para desbloquear a conta. A solução mostra também as condições do método. A [cheat sheet](folha-consulta/) serve para rever depois de compreenderes as páginas.
 
-Lê cada página com papel ao lado e refaz o exemplo principal sem espreitar, porque AM2 avalia cálculo encadeado: um domínio mal lido ou um jacobiano esquecido propaga-se por todo o exercício. Desenha sempre a região ou o sólido antes de escrever limites, e confirma cada resultado com um caso conhecido (metade da bola, circulação nula num gradiente). Nos testes não é permitido usar tabelas, formulários nem calculadoras, por isso decora as parametrizações standard (reta, circunferência, esfera), os jacobianos ($r$, $r$, $\rho^2\sin\varphi$) e as condições de cada teorema. Quando houver várias vias (direta, Green, divergência), escolhe a que te sai com menos erros e verifica a orientação antes de integrar.
+## Avaliação de 2026/27
 
-## Avaliação
+A ficha do SIGARRA, consultada em 1 de outubro de 2026, indica avaliação distribuída sem exame final: dois testes de desenvolvimento, cada um com peso de 50%, e a média arredondada às unidades. O recurso é uma prova global sobre os conteúdos do semestre. A frequência exige presença em 75% das aulas práticas; a assiduidade obtida vale também no ano imediatamente seguinte. A melhoria faz-se no recurso.
 
-A forma de avaliação muda de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes o número de testes, as datas e as regras de frequência e de recurso.
+A ficha proíbe dispositivos eletrónicos, salvo os autorizados pela equipa docente ou previstos por estatuto. Datas, duração e materiais permitidos devem ser confirmados nos avisos da tua turma. Os enunciados de 2024/25 eram sem consulta e sem calculadora, mas isso não substitui as instruções da prova atual. Não transportes para este ano o mínimo de 7 por teste que aparece na ficha de 2023/24.
 
 ## Fontes e âmbito
 
-Estas páginas seguem o programa da unidade curricular L.EIC007, Análise Matemática II, documentado nos materiais oficiais de 2024/25: funções vetoriais e curvas paramétricas (vetor tangente e normal, comprimento de arco, curvatura); funções de $\mathbb{R}^n$ em $\mathbb{R}^m$ (limites, continuidade, derivadas parciais e direcionais, gradiente, jacobiana, cadeia, funções implícitas, Taylor, máximos e mínimos livres e condicionados); integração (integrais de linha, duplos em cartesianas e polares, triplos em cartesianas, cilíndricas e esféricas); e tópicos adicionais (campos gradiente, Green, superfícies, área, integrais de superfície, fluxo, divergência, rotacional e os teoremas da divergência e de Stokes).
+O programa usado é o de [L.EIC007, 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587961). Inclui funções vetoriais; funções de várias variáveis, limites, derivadas e diferenciabilidade; cadeia, funções implícitas, Taylor e extremos; integrais de linha, duplos e triplos; Green, superfícies, divergência e Stokes; e introdução a EDP.
 
-Material oficial da FEUP:
+A base de ensino disponível é a [coleção oficial da ocorrência de 2024/25](https://sigarra.up.pt/feup/pt/conteudos_geral.ver?pct_pag_id=249640&pct_parametros=pv_ocorrencia_id=541872): aulas 1 a 11, cinco fichas práticas e testes. Os testes identificam expressamente 2024/25 nos próprios documentos. As aulas não indicam internamente o ano; a atribuição vem da ocorrência onde foram publicadas. O Moodle desse ano está indisponível para estudantes. A última apresentação só anuncia EDP nas aulas 12 e 13, que faltam à coleção. O capítulo de EDP é, por isso, uma introdução própria, sem afirmar quais os métodos ou a profundidade exigidos nessas aulas.
 
-- Página de conteúdos de Análise Matemática II (L.EIC007), ocorrência de 2024/25, com 11 aulas teóricas, 5 fichas de problemas práticos e enunciados de testes (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/conteudos_geral.ver?pct_pag_id=249640&pct_parametros=pv_ocorrencia_id=541872).
-- Plano de estudos da LEIC, que confirma a colocação da unidade curricular no primeiro ano, segundo semestre: [LEIC](https://www.up.pt/feup/documents/30/LEIC.pdf).
-- Bibliografia indicada nas aulas: _Calculus, One and Several Variables_ de Salas, Hille e Etgen; _Calculus: Early Transcendental Functions_ de Larson e Edwards; _Apontamentos de Análise Matemática II_ de C. C. António, AEFEUP, 2017; e _Noções sobre Análise Matemática_ de José Augusto Trigo Barbosa, 2020.
+A bibliografia obrigatória atual é _Matemática para engenharia em Rn: diferenciação, integração e tópicos adicionais_, de José António Fonseca de Oliveira Correia, ISBN 9789899177956. A complementar inclui os apontamentos de Carlos Conceição António, _Noções sobre Geometria Analítica e Análise Matemática_, de José Augusto Trigo Barbosa, _Calculus: One and Several Variables_ de Salas, Hille e Etgen, _Problemas de integrais de linha e superfície e de séries de Fourier_ de Maria Luísa Romariz Madureira e _Advanced Engineering Mathematics_ de Erwin Kreyszig. A consulta local não inclui o livro obrigatório atual.
 
-Material histórico da FEUP, usado para confirmar a estrutura dos temas (os enunciados e a avaliação atuais estão na página da disciplina):
+Para completar explicações, foi usado [_Calculus Volume 3_, OpenStax](https://openstax.org/details/books/calculus-volume-3), sobretudo os capítulos 3 a 6. É um manual aberto, não a bibliografia adotada pela FEUP. O [curso 18.303 do MIT](https://ocw.mit.edu/courses/18-303-linear-partial-differential-equations-analysis-and-numerics-fall-2014/) é apoio para as ideias básicas de EDP. Os exemplos e exercícios destas páginas são originais.
 
-- Acetatos por capítulos (funções vetoriais e escalares, integrais duplos, triplos, de linha e de superfície com fluxo), fichas de exercícios e provas de avaliação de 2012 a 2018 da unidade de Complementos de Matemática do MIEIC, preservados no repositório público [xico2001pt/feup-cmat](https://github.com/xico2001pt/feup-cmat) e consultados como referência local.
-
-Notas de estudantes, úteis como apoio mas sem valor oficial:
-
-- _Resumos AM II SofiaViP_, apontamentos de estudante em circulação pública (ficheiro PDF descarregado da pasta pública em setembro de 2026).
-
-Limite do âmbito: o programa oficial prevê ainda uma introdução às equações diferenciais parciais nas últimas aulas, mas o material local disponível não a cobre de forma substantiva (as aulas correspondentes não constam da coleção e os testes de 2024/25 não a avaliam), por isso esse tópico não é aqui desenvolvido. Os exemplos e exercícios destas páginas são originais, escritos para este site. Não reproduzem os enunciados das fichas nem dos testes.
+Materiais históricos de Complementos de Matemática estão preservados em [xico2001pt/feup-cmat](https://github.com/xico2001pt/feup-cmat). Os [Resumos AM II SofiaViP](https://drive.google.com/file/d/1Iif82mUI9EfH6StwtnImpK0W793EoUYY/view) foram apoio à organização da folha de consulta anterior. Nenhuma destas fontes confirma as regras de avaliação atuais.

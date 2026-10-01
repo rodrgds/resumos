@@ -1,107 +1,113 @@
 ---
 title: Cheat sheet de AM II
-description: Fórmulas e condições para curvas, derivadas, extremos, integrais múltiplos e integrais de linha.
+description: Fórmulas, condições e decisões para rever todo o percurso de AM II.
 section: recursos
 studyKind: revision
 editorial:
   sources:
-    - title: Resumos AM II SofiaViP
+    - title: Resumos AM II SofiaViP, apoio à organização da folha anterior
       url: https://drive.google.com/file/d/1Iif82mUI9EfH6StwtnImpK0W793EoUYY/view
-    - title: Máxima Cheat Sheet SofiaViP
-      url: https://drive.google.com/file/d/1JWC2WYXp37BixuG1HbfbnNGFJgvj7Pnm/view
-  coverage: O PDF tem capa e dez páginas de curvas paramétricas, derivadas e extremos de funções de várias variáveis, integrais duplos e triplos, integrais de linha e teorema de Green. A imagem complementar reúne comandos básicos do Máxima.
-  gaps:
-    - O PDF não desenvolve Taylor, multiplicadores de Lagrange, integrais de superfície, fluxo, teorema da divergência ou teorema de Stokes.
-    - A edição do programa e as regras de avaliação a que estes apontamentos correspondem não foram confirmadas.
 ---
 
-**Desenha primeiro o domínio ou a curva; só depois escolhe os limites e a fórmula.**
+Desenha o domínio. Confere regularidade, orientação e jacobiano antes de calcular.
 
-## Curvas paramétricas
+## Curvas
 
-Para $\mathbf r(t)=(x(t),y(t),z(t))$, $a\le t\le b$, derivação e integração fazem-se componente a componente. Uma curva é regular onde $\mathbf r'(t)\ne0$; aí, a velocidade é $\|\mathbf r'(t)\|$ e o versor tangente é $\mathbf T=\mathbf r'/\|\mathbf r'\|$. O comprimento é $L=\int_a^b\|\mathbf r'(t)\|\,dt$. Em particular, $\bigl\|\int_a^b\mathbf r'(t)\,dt\bigr\|\le L$: a distância entre extremos não excede o percurso. Revê [a tangente](/cadeiras/am2/curvas-parametricas/#velocidade-e-vetor-tangente-unitário) e [o comprimento](/cadeiras/am2/curvas-parametricas/#comprimento-de-arco).
-
-Se $\mathbf T'(t)\ne0$, o normal principal é $\mathbf N=\mathbf T'/\|\mathbf T'\|$ e, em $\mathbb R^3$, o binormal é $\mathbf B=\mathbf T\times\mathbf N$. A curvatura é
+Para uma curva regular $\mathbf r(t)$, $v=\|\mathbf r'\|$, $\mathbf T=\mathbf r'/v$, $L=\int_a^bv\,dt$. Se $\mathbf T'\ne0$, $\mathbf N=\mathbf T'/\|\mathbf T'\|$ e $\mathbf B=\mathbf T\times\mathbf N$.
 
 $$
-\kappa=\frac{\|\mathbf T'\|}{\|\mathbf r'\|}
-=\frac{\|\mathbf r'\times\mathbf r''\|}{\|\mathbf r'\|^3},
-\qquad \rho=\frac1\kappa\quad(\kappa>0).
+\kappa=\frac{\|\mathbf T'\|}{v}
+=\frac{\|\mathbf r'\times\mathbf r''\|}{v^3},\qquad
+\rho=1/\kappa,\qquad C=P+\rho\mathbf N\quad(\kappa>0).
 $$
 
-No plano, se $\mathbf r=(x,y)$, usa $\kappa=|x'y''-y'x''|/(x'^2+y'^2)^{3/2}$. Para o gráfico $y=f(x)$, fica $\kappa=|f''|/(1+f'^2)^{3/2}$. Todas estas expressões exigem $\mathbf r'\ne0$. Se $\kappa=0$, o raio de curvatura $1/\kappa$ não é finito. Vê [o triedro](/cadeiras/am2/curvas-parametricas/#normal-principal-e-binormal) e [a curvatura](/cadeiras/am2/curvas-parametricas/#curvatura).
+No plano, $\kappa=|x'y''-y'x''|/(x'^2+y'^2)^{3/2}$. Num gráfico, $\kappa=|f''|/(1+f'^2)^{3/2}$. Os planos normal, osculador e retificador têm normais $\mathbf T$, $\mathbf B$ e $\mathbf N$, respetivamente. [Curvatura e planos](../curvas-parametricas/#curvatura).
 
-Num ponto regular $P=\mathbf r(t_0)$, o plano normal tem equação $(X-P)\cdot\mathbf T(t_0)=0$. Quando $\mathbf N$ existe, o plano osculador tem normal $\mathbf B$, e o retificador tem normal $\mathbf N$. O ângulo entre duas curvas que se cruzam calcula-se com as respetivas tangentes não nulas no ponto: $\cos\theta=|u\cdot v|/(\|u\|\|v\|)$ para o menor ângulo entre as retas tangentes.
+## Limites e diferenciabilidade
 
-## Derivadas de várias variáveis
+Dois caminhos com limites diferentes refutam um limite. Concordarem em retas não prova existência. Procura uma estimativa $|f-L|\le C\|x-a\|^\alpha$, com $\alpha>0$, válida em todas as direções. Em polares, controla o ângulo uniformemente. Continuidade exige limite igual ao valor definido. [Limites](../limites-continuidade/#provar-um-limite-com-uma-estimativa).
 
-Num limite $\lim_{(x,y)\to(a,b)}f(x,y)$, dois caminhos com resultados diferentes provam que o limite **não existe**. Resultados iguais em alguns caminhos não provam que existe; para isso, usa uma estimativa válida em todas as direções, continuidade ou, quando servir, coordenadas polares. Vê [limites e continuidade](/cadeiras/am2/limites-continuidade/#limites-chegar-ao-ponto-por-todo-o-lado).
+Se $f$ é diferenciável, $df=\nabla f\cdot h$ e $f(a+h)=f(a)+df+o(\|h\|)$. Parciais contínuas perto do ponto são uma condição suficiente; parciais existentes só no ponto não bastam.
 
-Para $f:\mathbb R^n\to\mathbb R$ diferenciável em $p$, $\nabla f(p)=(f_{x_1}(p),\ldots,f_{x_n}(p))$. Na direção de um **versor** $u$, $D_u f(p)=\nabla f(p)\cdot u$. Se $\nabla f(p)\ne0$, o maior aumento por unidade de comprimento é $\|\nabla f(p)\|$ na direção do gradiente. Numa superfície de nível $f=c$, $\nabla f(p)$ é normal quando não se anula. Vê [gradiente](/cadeiras/am2/derivadas-gradiente/#o-gradiente) e [derivada direcional](/cadeiras/am2/derivadas-gradiente/#derivada-direcional).
+Para $\|u\|=1$, $D_uf=\nabla f\cdot u$. A maior taxa de aumento é $\|\nabla f\|$, na direção do gradiente não nulo. Para $F:\mathbb R^n\to\mathbb R^m$, $J_F$ tem $m\times n$ entradas e $D_uF=J_Fu$. [Gradiente](../derivadas-gradiente/#o-gradiente).
 
-Se $u(s,t)=f(x(s,t),y(s,t))$, aplica a cadeia a **cada caminho** da composição:
+O plano tangente a $z=f(x,y)$ é $z=f(a,b)+f_x(a,b)(x-a)+f_y(a,b)(y-b)$. Num nível regular $F=c$, a normal é $\nabla F\ne0$.
 
-$$
-u_s=f_x\,x_s+f_y\,y_s,\qquad u_t=f_x\,x_t+f_y\,y_t.
-$$
-
-Se $F(x,y(x))=0$ e $F_y\ne0$ no ponto, então $y'=-F_x/F_y$. A igualdade $f_{xy}=f_{yx}$ exige hipóteses, por exemplo, continuidade das derivadas mistas numa vizinhança. Revê [a cadeia](/cadeiras/am2/regra-cadeia-implicitas/#a-cadeia-geral) e [a derivação implícita](/cadeiras/am2/regra-cadeia-implicitas/#derivar-sem-isolar-uma-equação).
-
-## Extremos livres em duas variáveis
-
-Num ponto **interior e diferenciável** de extremo local, $\nabla f=0$. Procura também pontos onde a derivada falha e a fronteira do domínio: um extremo pode estar aí. Num ponto estacionário com segundas derivadas contínuas, calcula $D=f_{xx}f_{yy}-f_{xy}^2$:
-
-| Condição          | Conclusão local    |
-| ----------------- | ------------------ |
-| $D>0$, $f_{xx}>0$ | Mínimo             |
-| $D>0$, $f_{xx}<0$ | Máximo             |
-| $D<0$             | Sela               |
-| $D=0$             | Teste inconclusivo |
-
-O teste não classifica pontos de fronteira nem pontos onde a hessiana não existe. Para um extremo **absoluto**, compara valores de todos os candidatos admissíveis e confirma que o máximo ou mínimo existe no domínio considerado. Vê [extremos e hessiana](/cadeiras/am2/taylor-extremos/#extremos-livres-e-a-hessiana).
-
-## Integrais duplos e triplos
-
-Para uma região $D$ descrita por $a\le x\le b$ e $g_1(x)\le y\le g_2(x)$, integra primeiro em $y$:
+## Cadeia e implícitas
 
 $$
-\iint_D f\,dA=\int_a^b\int_{g_1(x)}^{g_2(x)}f(x,y)\,dy\,dx.
+\frac d{dt}f(x(t),y(t))=f_xx'+f_yy',\qquad
+J_{F\circ g}(a)=J_F(g(a))J_g(a).
 $$
 
-Ao trocar a ordem, **redesenha a região e reescreve os limites**. Em polares, $x=r\cos\theta$, $y=r\sin\theta$ e $dA=r\,dr\,d\theta$. Uma função ímpar numa variável integra a zero apenas se a região for simétrica nessa variável; para uma função par, podes duplicar a metade correspondente. O volume sob $z=f(x,y)$ acima de $D$ é $\iint_D f\,dA$ quando $f\ge0$. Revê [Fubini](/cadeiras/am2/integrais-duplos/#integrais-iterados-e-fubini) e [polares](/cadeiras/am2/integrais-duplos/#coordenadas-polares).
+Se $F(x,y)=0$ e $F_y\ne0$, $y'=-F_x/F_y$. Se $F(x,y,z(x,y))=0$ e $F_z\ne0$, $z_x=-F_x/F_z$, $z_y=-F_y/F_z$. As hipóteses locais de classe $C^1$ e derivada não nula justificam a função implícita. [Cadeia](../regra-cadeia-implicitas/#a-cadeia-geral).
 
-Num integral triplo, projeta o sólido no plano que deixa **uma coordenada entre duas superfícies**. Cilíndricas usam $(x,y,z)=(r\cos\theta,r\sin\theta,z)$ e $dV=r\,dr\,d\theta\,dz$. Esféricas usam
+## Taylor e extremos
 
-$$
-(x,y,z)=(\rho\sin\varphi\cos\theta,\rho\sin\varphi\sin\theta,\rho\cos\varphi),
-\qquad dV=\rho^2\sin\varphi\,d\rho\,d\varphi\,d\theta.
-$$
-
-Aqui $\varphi$ mede o ângulo desde o eixo $z$ positivo, com $0\le\varphi\le\pi$. Em qualquer mudança de variáveis, transforma também o **domínio** e inclui o módulo do jacobiano. Vê [cilíndricas](/cadeiras/am2/integrais-triplos/#coordenadas-cilíndricas) e [esféricas](/cadeiras/am2/integrais-triplos/#coordenadas-esféricas).
-
-## Integrais de linha e Green
-
-Para $C$ parametrizada por $\mathbf r:[a,b]\to\mathbb R^n$, distingue o elemento de **comprimento** do de **deslocamento**:
+Com $h=x-a$ e $k=y-b$, derivadas no centro:
 
 $$
-\int_C f\,ds=\int_a^b f(\mathbf r(t))\|\mathbf r'(t)\|\,dt,
-\qquad
-\int_C\mathbf F\cdot d\mathbf r=\int_a^b\mathbf F(\mathbf r(t))\cdot\mathbf r'(t)\,dt.
+P_2=f+f_xh+f_yk+\tfrac12(f_{xx}h^2+2f_{xy}hk+f_{yy}k^2).
 $$
 
-Inverter o percurso conserva o primeiro integral e troca o sinal do segundo. Se $\mathbf F=\nabla\phi$ num domínio apropriado, $\int_C\mathbf F\cdot d\mathbf r=\phi(B)-\phi(A)$; numa curva fechada dá zero. Em duas variáveis, $P_y=Q_x$ é um teste **necessário** para $\mathbf F=(P,Q)$ conservativo e torna-se suficiente, por exemplo, num domínio aberto simplesmente conexo com derivadas contínuas. Vê [trabalho e potencial](/cadeiras/am2/integrais-linha/#campos-gradiente-e-independência-do-caminho).
+Para $f\in C^2$, o resto é $o(h^2+k^2)$. Num candidato interior diferenciável, $\nabla f=0$. Para classificar em duas variáveis, $D=f_{xx}f_{yy}-f_{xy}^2$:
 
-Para $C=\partial D$ simples, fechada, suave por troços e orientada positivamente (região à esquerda), com $P,Q$ de classe $C^1$ numa vizinhança de $D$:
+| Condição          | Resultado local |
+| ----------------- | --------------- |
+| $D>0$, $f_{xx}>0$ | Mínimo estrito  |
+| $D>0$, $f_{xx}<0$ | Máximo estrito  |
+| $D<0$             | Sela            |
+| $D=0$             | Inconclusivo    |
+
+Para extremos absolutos, inclui fronteira e pontos não diferenciáveis. Continuidade num compacto garante existência. Sobre $g=0$ regular, resolve $\nabla f=\lambda\nabla g$ e a restrição; verifica separadamente pontos com $\nabla g=0$. Compara todos os valores. [Extremos](../taylor-extremos/#extremos-absolutos-e-fronteira).
+
+## Integrais múltiplos
+
+Uma faixa vertical em $D$ dá $\int_a^b\int_{g_1(x)}^{g_2(x)}f\,dy\,dx$. Trocar a ordem exige descrever de novo a região. Em três variáveis, projeta o sólido e põe a terceira coordenada entre superfícies. [Duplos](../integrais-duplos/#trocar-a-ordem-quando-a-primitiva-bloqueia).
+
+| Coordenadas | Transformação                                                                     | Elemento                                         |
+| ----------- | --------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Polares     | $x=r\cos\theta$, $y=r\sin\theta$                                                  | $dA=r\,dr\,d\theta$                              |
+| Cilíndricas | As mesmas, com $z$                                                                | $dV=r\,dr\,d\theta\,dz$                          |
+| Esféricas   | $x=\rho\sin\varphi\cos\theta$, $y=\rho\sin\varphi\sin\theta$, $z=\rho\cos\varphi$ | $dV=\rho^2\sin\varphi\,d\rho\,d\varphi\,d\theta$ |
+
+Aqui $\varphi$ mede o ângulo desde o eixo $z$ positivo. Na mudança geral $x=T(u)$, usa $|\det J_T|$, transforma também a região e evita cobertura múltipla. [Esféricas](../integrais-triplos/#coordenadas-esféricas).
+
+Massa é integral da densidade; cada coordenada do centro de massa é o integral da coordenada vezes a densidade, dividido pela massa positiva. Simetria exige compatibilidade do domínio e do integrando completo.
+
+## Linha e Green
 
 $$
-\oint_C P\,dx+Q\,dy
-=\iint_D(Q_x-P_y)\,dA,
-\qquad
-\text{área}(D)=\frac12\oint_C(-y\,dx+x\,dy).
+\int_C f\,ds=\int_a^bf(r(t))\|r'(t)\|\,dt,\qquad
+\int_C F\cdot dr=\int_a^bF(r(t))\cdot r'(t)\,dt.
 $$
 
-Se a orientação for horária, muda o sinal. Vê [o teorema de Green](/cadeiras/am2/integrais-linha/#teorema-de-green).
+Inverter sentido conserva o primeiro e troca o sinal do segundo. Para $F=\nabla\phi$, o trabalho é $\phi(B)-\phi(A)$. Rotacional nulo torna-se suficiente para potencial, por exemplo, num aberto simplesmente conexo com campo $C^1$.
 
-Na [folha auxiliar de Máxima](https://drive.google.com/file/d/1JWC2WYXp37BixuG1HbfbnNGFJgvj7Pnm/view), `diff(f(x), x)` e `integrate(f(x), x)` servem para conferir contas numa variável. O resultado da ferramenta não escolhe o domínio, os limites ou a orientação.
+Para fronteira positiva, região à esquerda, e campo $C^1$ numa vizinhança da região:
 
-Estes apontamentos não cobrem [Taylor e Lagrange](/cadeiras/am2/taylor-extremos/) nem [fluxo, divergência e Stokes](/cadeiras/am2/superficies-fluxo/); essas páginas completam a consulta da cadeira.
+$$
+\oint_{\partial D}P\,dx+Q\,dy=\iint_D(Q_x-P_y)\,dA,
+\qquad A=\tfrac12\oint(x\,dy-y\,dx).
+$$
+
+Fluxo plano exterior é $\oint P\,dy-Q\,dx=\iint(P_x+Q_y)\,dA$. Fronteira interior de um buraco usa sentido horário. [Green](../integrais-linha/#teorema-de-green).
+
+## Superfície, divergência e Stokes
+
+Para parametrização regular, $N=r_u\times r_v$, $dS=\|N\|\,du\,dv$. Área ou integral escalar usam a norma; fluxo orientado usa $F(r)\cdot N$, com N para o lado pedido. No gráfico $z=f(x,y)$, a normal para cima é $(-f_x,-f_y,1)$.
+
+$$
+\operatorname{div}F=P_x+Q_y+R_z,\qquad
+\operatorname{rot}F=(R_y-Q_z,P_z-R_x,Q_x-P_y).
+$$
+
+Divergência: $\iint_{\partial V}F\cdot n\,dS=\iiint_V\operatorname{div}F\,dV$, fronteira fechada, normal exterior, campo $C^1$ numa vizinhança do sólido. Superfície aberta: fecha, calcula e subtrai as tampas orientadas.
+
+Stokes: $\oint_{\partial S}F\cdot dr=\iint_S\operatorname{rot}F\cdot n\,dS$, superfície orientável, campo $C^1$ perto dela e bordo compatível pela mão direita. Escolhe a superfície mais simples com o mesmo bordo. [Fluxo e teoremas](../superficies-fluxo/#escolher-o-método).
+
+## EDP básicas
+
+Uma EDP linear tem u e derivadas à primeira potência, sem produtos entre elas; os coeficientes dependem das variáveis independentes. Integrar $u_x=f(x,y)$ introduz uma função arbitrária de y, não apenas uma constante.
+
+Transporte $u_t+cu_x=0$, com $u(x,0)=g(x)$, dá $u(x,t)=g(x-ct)$. Calor $u_t=u_{xx}$ em $(0,\pi)$ com fronteiras nulas admite modos $e^{-n^2t}\sin(nx)$. Onda $u_{tt}=c^2u_{xx}$ precisa de deslocamento e velocidade iniciais. Verifica equação, dados e domínio separadamente. [EDP](../equacoes-diferenciais-parciais/#verificar-uma-solução).
