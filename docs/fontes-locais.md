@@ -1,80 +1,78 @@
 # Fontes locais de estudo
 
-Inventário de 1 de outubro de 2026. A versão pública contém apenas totais e referências de origem: [`fontes-locais.json`](fontes-locais.json). O inventário com caminhos individuais e aliases fica em `/_data/references/inventory.json`, ignorado pelo Git.
+Inventário de 1 de outubro de 2026. [A versão pública](fontes-locais.json) contém totais e origens. Caminhos individuais, SHA-256 e aliases ficam em `/_data/references/inventory.json`, ignorado pelo Git.
 
 ## Conteúdo
 
 | Coleção                                          | Quantidade |
 | ------------------------------------------------ | ---------: |
-| Ficheiros locais                                 |      4 326 |
-| PDFs locais com cabeçalho válido                 |        690 |
-| Contentores ZIP/tar, incluindo Office, ODF e JAR |        128 |
-| Membros de contentores com SHA-256               |     26 494 |
-| PDFs dentro de contentores                       |      1 910 |
-| Objetos distintos por SHA-256                    |     22 660 |
-| Localizações de conteúdo repetido                |      8 160 |
+| Ficheiros locais                                 |      6 790 |
+| PDFs locais com cabeçalho válido                 |      1 191 |
+| Contentores ZIP/tar, incluindo Office, ODF e JAR |        196 |
+| Membros de contentores com SHA-256               |     31 941 |
+| PDFs dentro de contentores                       |      2 086 |
+| Objetos distintos por SHA-256                    |     25 541 |
+| Localizações de conteúdo repetido                |     13 190 |
 
-Os totais incluem os materiais FEUP já existentes em `/data/leic-archive-records/` e `/_data/<cadeira>/`, 94 ficheiros de livros e suplementos e 74 arquivos do GitHub. Os PDFs dentro de arquivos são membros adicionais, não PDFs soltos. O cabeçalho válido não prova que todas as páginas ou soluções foram revistas.
+O arquivo reúne os materiais FEUP anteriores, as recolhas dos três Moodles, 94 ficheiros de livros e suplementos e 74 arquivos do GitHub. Inclui snapshots e metadados de origem; as contagens de ficheiros docentes, estados de acesso e limites de cada ano estão em [fontes-moodle.md](fontes-moodle.md). PDFs dentro de arquivos são membros adicionais, não PDFs soltos.
 
 ## Organização e deduplicação
 
-- `/_data/<cadeira>/`: materiais que já existiam, nos caminhos atuais.
+- `/_data/<cadeira>/`: materiais anteriores e pastas `moodle-2024-25`, `moodle-2025-26` ou `moodle-2026-27`.
 - `/_data/books/`: livros, capítulos e suplementos dos autores.
 - `/_data/github/`: arquivos fixados ao commit completo.
-- `/_data/references/inventory.json`: tamanhos, SHA-256, membros e objetos canónicos com aliases.
-- `/_data/references/downloads-books.json` e `downloads-github.json`: resultados de cada aquisição.
+- `/_data/references/inventory.json`: tamanhos, hashes, membros e objetos canónicos com aliases.
+- `/_data/references/`: resultados das aquisições e evidência editorial privada.
 
-Um alias associa locais com os mesmos bytes e SHA-256. A deduplicação é lógica: conserva todos os originais, escolhe um local canónico e evita tratar cópias como fontes independentes. Os arquivos foram lidos sem extrair nem executar código; arquivos dentro de arquivos ficam intactos.
+Um alias associa locais com os mesmos bytes e SHA-256. A deduplicação conserva os originais e evita tratar cópias como fontes independentes. Os membros dos arquivos foram lidos sem executar código; arquivos aninhados ficam intactos. As ferramentas de recolha, credenciais, caches e ficheiros de trabalho editorial não entram nestes totais.
 
-Os antigos manifests de `leic-archive-records` usam caminhos como `leic-year1/` que já não correspondem à organização atual. São evidência histórica; o inventário atual usa `/_data/<cadeira>/`.
+Os manifests antigos de `leic-archive-records` conservam caminhos históricos. O inventário atual usa `/_data/<cadeira>/`.
 
-## Materiais já existentes por cadeira
+## Materiais por cadeira
 
-| Cadeira | Ficheiros | PDFs soltos | Contentores | PDFs nos contentores |
-| ------- | --------: | ----------: | ----------: | -------------------: |
-| ALGA    |        53 |          52 |           0 |                    0 |
-| AM I    |        76 |          75 |           0 |                    0 |
-| FP      |       165 |          12 |           2 |                    0 |
-| FSC     |         3 |           3 |           0 |                    0 |
-| MD      |        44 |          39 |           1 |                    0 |
-| AM II   |       102 |         100 |           0 |                    0 |
-| AC      |        15 |          12 |           0 |                    0 |
-| F I     |        19 |          18 |           0 |                    0 |
-| P       |       478 |           1 |           0 |                    0 |
-| TC      |        90 |          88 |           0 |                    0 |
-| AED     |        86 |           1 |           0 |                    0 |
-| BD      |       256 |           8 |           2 |                    0 |
-| F II    |        25 |          23 |           0 |                    0 |
-| LDTS    |       833 |           1 |           2 |                    0 |
-| SO      |       227 |           6 |           0 |                    0 |
-| DA      |       286 |           4 |           0 |                    0 |
-| ES      |        75 |           1 |           0 |                    0 |
-| LC      |       138 |           1 |           1 |                    0 |
-| LTW     |       806 |           3 |          27 |                    0 |
-| ME      |       146 |          96 |           2 |                    0 |
-| FSI     |         3 |           1 |           1 |                    0 |
-| IPC     |         3 |           1 |           1 |                    6 |
-| LBAW    |        51 |           1 |           1 |                    6 |
-| PFL     |        52 |          33 |           2 |                    4 |
-| RC      |         3 |           0 |           2 |                    3 |
-| COMP    |         2 |           0 |           1 |                    0 |
-| CG      |         3 |           1 |           1 |                    0 |
-| CPD     |        24 |          11 |           0 |                    0 |
-| IA      |         2 |           0 |           1 |                    4 |
-| PI      |         1 |           0 |           1 |                    2 |
+| Cadeira         | Ficheiros | PDFs soltos | Contentores | PDFs nos contentores |
+| --------------- | --------: | ----------: | ----------: | -------------------: |
+| ALGA            |        54 |          52 |           0 |                    0 |
+| AM I            |        76 |          75 |           0 |                    0 |
+| FP              |       169 |          12 |           2 |                    0 |
+| FSC             |        64 |          30 |           0 |                    0 |
+| MD              |       182 |         105 |           1 |                    0 |
+| PUP             |       217 |          21 |           2 |                    0 |
+| AM II           |       102 |         100 |           0 |                    0 |
+| AC              |       103 |          32 |           2 |                   20 |
+| F I             |        27 |          19 |           0 |                    0 |
+| P               |       483 |           1 |           0 |                    0 |
+| TC              |       151 |         112 |           0 |                    0 |
+| AED             |        86 |           1 |           0 |                    0 |
+| BD              |       613 |          50 |           2 |                    0 |
+| F II            |       231 |          56 |           0 |                    0 |
+| LDTS            |       845 |           1 |           2 |                    0 |
+| SO              |       384 |          35 |           1 |                   29 |
+| DA              |       598 |          50 |          13 |                   45 |
+| ES              |       264 |          25 |           2 |                   23 |
+| LC              |       250 |          23 |           1 |                    0 |
+| LTW             |       889 |           3 |          27 |                    0 |
+| ME              |       320 |         141 |           4 |                   47 |
+| FSI             |        12 |           5 |           1 |                    0 |
+| IPC             |        13 |           8 |           1 |                    6 |
+| LBAW            |        70 |           5 |           1 |                    6 |
+| PFL             |        65 |          43 |           3 |                   14 |
+| RC              |        35 |          14 |           3 |                    3 |
+| CT, Python      |       199 |          68 |          45 |                    2 |
+| CT, Comunicação |         6 |           0 |           0 |                    0 |
+| COMP            |         2 |           0 |           1 |                    0 |
+| CG              |         3 |           1 |           1 |                    0 |
+| CPD             |        24 |          11 |           0 |                    0 |
+| IA              |         2 |           0 |           1 |                    4 |
+| PI              |         1 |           0 |           1 |                    2 |
+| CT II           |         1 |           1 |           0 |                    0 |
 
-A tabela anterior conserva o retrato dos materiais já existentes, sem incluir a nova recolha Moodle, o material do Técnico e caches de compilação. As fontes novas de livros e GitHub estão nos seus próprios grupos e não inflacionam os totais antigos de cada cadeira.
-
-## Suplemento Moodle 2026/2027
-
-A recolha atual dos seis cursos está em [fontes-moodle.md](fontes-moodle.md) e [fontes-moodle.json](fontes-moodle.json). Acrescenta 236 ficheiros, 107 PDFs soltos e 47 ZIPs. O suplemento identifica 291 objetos distintos, dos quais 3 já constavam do inventário anterior. A união das duas coleções tem 22948 objetos distintos; esta conta evita somar fontes repetidas.
-
-O inventário privado `/_data/references/moodle-2026-27.json` guarda os caminhos, hashes e estados por recurso. Os originais estão em `/_data/<cadeira>/moodle-2026-27/`; ficheiros com os mesmos bytes mantêm os seus caminhos como aliases. Recursos fechados, bloqueados ou ainda por descarregar conservam o estado explícito. Os totais de aquisição não afirmam revisão integral nem cobertura de exames atuais.
+Livros e arquivos gerais do GitHub ficam em grupos próprios. A contagem conjunta usa hashes para não somar cópias como objetos distintos.
 
 ## Limites da coleção
 
-As 75 obras da lista fornecida estão identificadas na bibliografia, mas 97 das 109 entradas adotadas ainda não têm uma cópia local identificada. Algumas obras repetem-se entre cadeiras. Há quatro entradas adotadas com PDF completo local, duas com capítulos OSTEP, quatro com suplementos, uma com ligação indisponível e uma cujo livro exige um pedido aos autores. As alternativas abertas são contadas à parte.
+As 75 obras fornecidas estão identificadas na [bibliografia](fontes-bibliografia.json). Das 109 entradas adotadas, 97 ainda não têm uma cópia local identificada. Algumas obras repetem-se entre cadeiras. Há quatro entradas adotadas com PDF completo local, duas com capítulos OSTEP, quatro com suplementos, uma com ligação indisponível e uma cujo livro exige um pedido aos autores. As alternativas abertas são contadas à parte.
 
-A ligação oficial de Building Skills in Python devolve 404 no Brave. University Physics, Volume 1, foi guardado pelo botão atual do OpenStax: 959 páginas e licença CC BY-NC-SA 4.0 no PDF de 2026. As outras obras sem ficheiro local mantêm o seu estado explícito em [`fontes-bibliografia.json`](fontes-bibliografia.json). Um arquivo descarregado não prova que um exame tem solução, que a solução está certa ou que o material corresponde ao programa atual.
+A ligação oficial de Building Skills in Python devolve 404. University Physics, Volume 1, foi guardado pelo botão atual do OpenStax: 959 páginas e licença CC BY-NC-SA 4.0 no PDF de 2026. As obras sem ficheiro local mantêm o seu estado explícito. As lacunas de acesso aos Moodles também continuam identificadas.
 
-Os ficheiros brutos permanecem privados. A publicação de resumos deve usar explicações e exercícios próprios, com atribuição e verificação das fontes.
+Integridade do ficheiro não prova que uma solução está certa ou que corresponde ao exame atual. Os originais permanecem privados; o site publica explicações e exercícios próprios. Downloads e registos locais não são enviados para o GitHub.
