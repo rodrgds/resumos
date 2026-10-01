@@ -58,17 +58,19 @@ editorial:
 
 ## Índices e pesquisa
 
-| Escolha           | Condição                                                                               |
-| ----------------- | -------------------------------------------------------------------------------------- |
-| B-tree composto   | Igualdades iniciais e intervalo seguinte limitam a região. Ordem das colunas importa.  |
-| Parcial           | A consulta tem de permitir demonstrar o predicado do índice.                           |
-| Por expressão     | Adequado a consultas com a expressão correspondente.                                   |
-| PK / UNIQUE       | Criam índice; FK no lado que referencia não cria índice automaticamente.               |
-| EXPLAIN           | Estimativas; cost não são milissegundos.                                               |
-| EXPLAIN ANALYZE   | Executa; observa tempos, rows e loops. Pode alterar dados.                             |
-| Seq Scan          | Pode ser mais barato mesmo com índice.                                                 |
-| Texto             | tsvector @@ tsquery; GIN pode apoiar correspondência; rank ordena.                     |
-| Precisão / recall | Relevantes devolvidos / todos devolvidos; relevantes devolvidos / todos os relevantes. |
+| Escolha           | Condição                                                                                     |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| B-tree composto   | Igualdades iniciais e intervalo seguinte limitam a região. Ordem das colunas importa.        |
+| Hash, PostgreSQL  | Igualdade simples; não serve para intervalo ou ordem e não impõe UNIQUE.                     |
+| Parcial           | A consulta tem de permitir demonstrar o predicado do índice.                                 |
+| Por expressão     | Adequado a consultas com a expressão correspondente.                                         |
+| PK / UNIQUE       | Criam índice; FK no lado que referencia não cria índice automaticamente.                     |
+| EXPLAIN           | Estimativas; cost não são milissegundos.                                                     |
+| EXPLAIN ANALYZE   | Executa; observa tempos, rows e loops. Pode alterar dados.                                   |
+| Seq Scan          | Pode ser mais barato mesmo com índice.                                                       |
+| Texto             | tsvector @@ tsquery; GIN pode apoiar correspondência; rank ordena.                           |
+| Precisão / recall | Relevantes devolvidos / todos devolvidos; relevantes devolvidos / todos os relevantes.       |
+| Ranking           | Correspondência depende da consulta; qualidade estática pode ser pré-calculada e atualizada. |
 
 [Índices](../sql-indices/).
 
@@ -84,6 +86,7 @@ editorial:
 - BEFORE por linha pode alterar NEW ou ignorar a linha devolvendo NULL. AFTER continua dentro da transação; não significa depois de COMMIT.
 - Trigger por instrução corre mesmo com zero linhas afetadas. OLD/NEW dependem da operação.
 - Pagamento externo não é anulado pelo ROLLBACK da base de dados.
+- PostgreSQL: função participa em expressões; procedure usa CALL. Controlo transacional interno tem condições; não generalizar para outro SGBD.
 
 [Concorrência](../triggers-transacoes/).
 
@@ -104,6 +107,7 @@ editorial:
 | auth / policy / validate | Identidade / permissão sobre operação e objeto / domínio dos dados.                                          |
 | fillable                 | Atribuição em massa, não autorização.                                                                        |
 | N+1                      | Uma consulta inicial e uma por objeto; considerar eager loading.                                             |
+| PHP                      | Variável de função é local; global é explícito. fn captura variáveis exteriores por valor.                   |
 | SQL injection            | Parâmetros para valores; lista autorizada para identificadores.                                              |
 | XSS                      | Codificação por contexto ou sanitização de HTML permitido.                                                   |
 | CSRF                     | Token verificado no servidor e defesas complementares. POST sozinho não chega.                               |
@@ -113,10 +117,14 @@ editorial:
 
 ## Informação, cliente e NoSQL
 
-- Arquitetura de informação: organização, rótulos, navegação e pesquisa. Sitemap descreve estrutura; wireframe a página; protótipo as interações.
+- Arquitetura de informação: organização, rótulos, navegação e pesquisa. Sitemap descreve estrutura; wireframe a página; wireflow liga esboços pelos controlos que iniciam transições; protótipo permite experimentar.
 - Navegação global, local e contextual. Personalização usa um modelo; customização dá controlo explícito.
 - Tab percorre focáveis, não todos os títulos. Rótulos, erros e foco têm de ser reconhecíveis.
+- Leitor de ecrã apresenta voz ou braille e navega pela estrutura semântica. nav, títulos e cabeçalhos de tabela transmitem papéis.
+- CSS: li.destaque é o próprio li com a classe; li .destaque é um descendente. Espaço, > e + significam descendente, filho e irmão seguinte.
+- JavaScript: var tem âmbito de função, let/const de bloco. Modo estrito recusa atribuir a nomes não declarados. const não congela objetos.
 - fetch pode resolver com erro HTTP; verificar ok/status. Respostas podem chegar fora de ordem.
+- AJAX atualiza partes da página sem recarga completa; HTML, JSON e XML são contratos possíveis. Escolher text()/json() pelo corpo.
 - Medir percurso completo. Latência e throughput diferem; média e percentis também.
 - NoSQL inclui modelos diferentes. Documentos embebidos aproximam leituras; referências evitam certas duplicações.
 - Atomicidade de um documento não implica atomicidade de vários. Verificar sistema e versão.

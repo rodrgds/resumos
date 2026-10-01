@@ -13,7 +13,7 @@ editorial:
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
     - title: Plano do semestre LBAW 2026/27
       url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
-  coverage: Ciclo HTTP, MVC, middleware, validação, policies, ORM, preenchimento em massa e N+1.
+  coverage: Papéis de cliente e servidor, ciclo HTTP, MVC, middleware, validação, policies, ORM, N+1 e âmbito das variáveis em PHP.
   gaps:
     - As aulas atuais de arquitetura web e segurança ainda não estavam publicadas em 1 de outubro. O desenvolvimento destes tópicos usa documentação primária.
 ---
@@ -21,10 +21,22 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import Tabs from '../../../components/Tabs.astro';
+import ambito from '../../lbaw/ambito.php?raw';
 
 Com a base de dados a guardar e a proteger os dados, falta a aplicação que os mostra e os altera. O Laravel organiza essa aplicação em peças com papéis fixos: a **rota** recebe o pedido HTTP, o **controlador** executa a lógica, o **modelo** fala com a tabela e a **vista** gera o HTML. Middleware, autorização e outros serviços podem participar no percurso. Nem todas as respostas usam uma vista HTML.
 
 ## O recurso Sessões de ponta a ponta
+
+No percurso de um pedido, distingue o software pelo papel:
+
+| Peça          | Papel                                                      | Exemplos                               |
+| ------------- | ---------------------------------------------------------- | -------------------------------------- |
+| Navegador     | Pede recursos e apresenta a página                         | Firefox, Brave                         |
+| Servidor HTTP | Recebe pedidos e devolve recursos ou encaminha a aplicação | Apache HTTP Server, Nginx              |
+| Aplicação     | Executa regras e produz a resposta dinâmica                | Uma aplicação Laravel executada em PHP |
+| Base de dados | Guarda e consulta dados                                    | PostgreSQL                             |
+
+O servidor pode devolver um ficheiro estático ou obter uma resposta da aplicação. O navegador é o cliente deste percurso. O motor que interpreta e apresenta HTML no navegador não substitui o servidor HTTP. [O percurso cliente-servidor está descrito na MDN](https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_web_server).
 
 Um **recurso** é uma coisa com endereço próprio que se cria, lê, atualiza e apaga. As sessões da loja são um recurso, e as rotas seguem a convenção REST, com o verbo HTTP a dizer a operação:
 
@@ -233,6 +245,20 @@ Reconstruir isto na véspera produz relatórios vagos. Uma frase por decisão, e
 :::details[Onde ver cada erro]
 Erro de validação: volta ao formulário com mensagens por campo, sem tocar na base de dados. Erro de chave estrangeira ou de trigger: exceção da base de dados que o controlador deve apanhar e transformar em mensagem. Erro 500 indica uma falha interna que pode ter várias causas. Lê a mensagem de cima para baixo até à primeira linha do teu código.
 :::
+
+## Ler o âmbito de uma variável em PHP
+
+Uma variável global não fica automaticamente disponível numa função nomeada. Os parâmetros e variáveis locais pertencem à chamada. No programa abaixo, a `$taxa` local de `calcular` vale 1; a global continua a valer 4.
+
+<CodePlayground
+  language="php"
+  code={ambito}
+  title="Âmbito local, global e captura por valor"
+/>
+
+A saída é `11`, `4`, `5`, `15`. `global $taxa` em `aumentarTaxa` liga o nome local à variável global e permite alterá-la. A função arrow captura o valor 5 ao ser criada; mudar depois a global para 9 não muda essa captura. Uma closure escrita com `function` precisa de `use ($taxa)` para essa captura por valor, ou `use (&$taxa)` para uma referência.
+
+Ler uma variável local não definida gera um aviso no PHP atual; não soma silenciosamente a global do mesmo nome. Ao prever uma saída, começa por identificar onde cada nome foi definido. Para aplicações, passar dados explicitamente torna as dependências da função mais fáceis de seguir. Os manuais de [âmbito de variáveis](https://www.php.net/manual/en/language.variables.scope.php) e de [arrow functions](https://www.php.net/manual/en/functions.arrow.php) descrevem estes casos.
 
 ## Separar responsabilidades no pedido
 

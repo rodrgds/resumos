@@ -13,7 +13,7 @@ editorial:
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
     - title: Plano do semestre LBAW 2026/27
       url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
-  coverage: ACID, triggers, snapshots, níveis de isolamento, UPDATE condicionado, bloqueios, deadlocks e tentativas repetidas.
+  coverage: Triggers, atomicidade, isolamento, corrida por capacidade, bloqueios, deadlock, rollback e distinção entre funções e procedures PostgreSQL.
 ---
 
 import Dot from '../../../components/Dot.astro';
@@ -134,6 +134,26 @@ FOR EACH ROW EXECUTE FUNCTION auditar_preco();
 Uma transação da base de dados não anula um pagamento que já aconteceu num serviço externo. Pagamentos, emails e chamadas remotas precisam de um protocolo próprio, como registar uma operação pendente e processá-la com identificação que impeça duplicados. Não mantenhas um bloqueio de linha enquanto esperas pela pessoa preencher um formulário.
 
 Consulta [isolamento](https://www.postgresql.org/docs/current/transaction-iso.html), [bloqueios explícitos](https://www.postgresql.org/docs/current/explicit-locking.html) e [triggers](https://www.postgresql.org/docs/16/trigger-definition.html) na documentação de PostgreSQL.
+
+## Função, procedure e trigger
+
+Uma rotina guardada na base de dados concentra código junto dos dados. Em PostgreSQL, uma **função** é usada numa expressão, enquanto uma **procedure** é chamada com `CALL`. Um trigger é ativado por um evento e executa uma função de trigger.
+
+```sql
+CREATE FUNCTION preco_com_taxa(p numeric) RETURNS numeric
+LANGUAGE SQL IMMUTABLE AS $$ SELECT p * 1.23 $$;
+SELECT preco_com_taxa(10);
+
+CREATE TABLE mensagens_exemplo (texto text);
+CREATE PROCEDURE registar_mensagem(p_texto text)
+LANGUAGE SQL AS $$ INSERT INTO mensagens_exemplo VALUES (p_texto) $$;
+CALL registar_mensagem('confirmado');
+SELECT texto FROM mensagens_exemplo;
+```
+
+O exemplo PostgreSQL dá `12.30` e uma linha `confirmado`. `CALL` não é uma forma alternativa de invocar qualquer função. Uma procedure pode ter parâmetros de saída; uma função pode produzir efeitos, por isso «função calcula, procedure altera» não é uma definição segura.
+
+Uma rotina pode reduzir viagens entre aplicação e base de dados e centralizar uma operação. Tem custos de testes, manutenção e dependência do dialeto ou linguagem, como PL/pgSQL. Não concluas que será sempre mais rápida nem que o código será reutilizável noutro SGBD. Procedures podem controlar transações apenas nas condições admitidas pelo PostgreSQL; colocar `COMMIT` numa função não o torna válido. Consulta [procedures](https://www.postgresql.org/docs/current/xproc.html).
 
 ## Acompanhar uma aula
 
