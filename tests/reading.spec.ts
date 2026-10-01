@@ -1,6 +1,21 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('neutral diagram labels follow the effective text color', async ({
+  page,
+}) => {
+  await page.goto('/cadeiras/fsi/sistemas-seguros/');
+  const diagram = page.locator('.lesson-body .diagram-figure').first();
+  await page.addStyleTag({
+    content:
+      '.diagram-figure { --text: #222; color: #fafafa !important; background: #141414 !important; }',
+  });
+  await expect(diagram.locator('svg text').first()).toHaveCSS(
+    'fill',
+    'rgb(250, 250, 250)',
+  );
+});
+
 test('AI menu stays next to its trigger and ChatGPT enables web search', async ({
   page,
 }) => {

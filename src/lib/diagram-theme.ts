@@ -2,11 +2,11 @@ import { parseFragment, serialize } from 'parse5';
 
 // Preserve data-series colours; adapt the neutral and shared example palette.
 const colors: Record<string, string> = {
-  '#000': 'var(--text)',
-  '#000000': 'var(--text)',
-  black: 'var(--text)',
-  '#222': 'var(--text)',
-  '#292a30': 'var(--text)',
+  '#000': 'currentColor',
+  '#000000': 'currentColor',
+  black: 'currentColor',
+  '#222': 'currentColor',
+  '#292a30': 'currentColor',
   '#fff': 'var(--surface)',
   '#ffffff': 'var(--surface)',
   white: 'var(--surface)',
@@ -23,7 +23,7 @@ export function themeDiagram(svg: string) {
       node.tagName === 'svg' &&
       !node.attrs.some((attr) => attr.name === 'fill')
     )
-      node.attrs.push({ name: 'fill', value: 'var(--text)' });
+      node.attrs.push({ name: 'fill', value: 'currentColor' });
     if ('attrs' in node)
       for (const attribute of node.attrs) {
         if (attribute.name !== 'fill' && attribute.name !== 'stroke') continue;
