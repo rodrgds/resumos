@@ -11,7 +11,7 @@ editorial:
       url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
     - title: Ficha LBAW 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
-  coverage: Todo o âmbito temático do plano atual, com desenvolvimento do teste individual e questões próprias.
+  coverage: Tópicos do plano atual, com teoria para o teste individual, questões próprias e comparação delimitada com provas históricas.
   gaps:
     - Em 1 de outubro, estavam disponíveis quatro conjuntos de slides, até especificação da base de dados. Os slides posteriores e as provas de 2026/27 ainda não estavam publicados.
     - O plano confirma os tópicos futuros, mas o detalhe e as convenções de cada aula devem ser comparados quando os materiais forem publicados.

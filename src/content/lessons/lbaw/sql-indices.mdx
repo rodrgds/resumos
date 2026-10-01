@@ -13,7 +13,7 @@ editorial:
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
     - title: Plano do semestre LBAW 2026/27
       url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
-  coverage: Índices B-tree, compostos, parciais e por expressão, estatísticas, EXPLAIN e pesquisa em texto.
+  coverage: Índices compostos, parciais e por expressão, B-tree versus hash e GIN, planos, pesquisa textual, precisão, recall e sinais de ranking.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -47,6 +47,26 @@ Uma consulta só por data_hora pode usar um índice composto, mas a eficiência 
 />
 
 O desenho representa candidatos encontrados pelo índice. O motor ainda pode ter de ler as linhas da tabela para confirmar visibilidade e obter outras colunas. Não é uma promessa de que só esses acessos acontecem em qualquer plano.
+
+## Hash, B-tree e índice invertido
+
+Para procurar um username exato, um **Hash** usa uma função de dispersão para localizar candidatos. Em PostgreSQL, este tipo apoia comparações `=`; não fornece um percurso por ordem para um intervalo ou um `ORDER BY`. Uma colisão de hash não prova igualdade entre os valores, por isso há verificação dos candidatos.
+
+| Operação                        | Estrutura a considerar      | Condição                                            |
+| ------------------------------- | --------------------------- | --------------------------------------------------- |
+| `username='ana'`                | Hash ou B-tree.             | Igualdade seletiva; comparar os planos.             |
+| `data >= inicio AND data < fim` | B-tree.                     | Há uma ordem para percorrer o intervalo.            |
+| `ORDER BY data`                 | B-tree.                     | A ordem do índice tem de satisfazer a consulta.     |
+| Lexemas de um documento         | Índice invertido, como GIN. | Precisa de representar vários termos por documento. |
+
+```sql
+CREATE TABLE contas_exemplo (id integer PRIMARY KEY, username text);
+CREATE INDEX contas_username_hash ON contas_exemplo USING hash(username);
+INSERT INTO contas_exemplo VALUES (1,'ana'),(2,'ana'),(3,'bruno');
+SELECT id FROM contas_exemplo WHERE username = 'ana';
+```
+
+Este excerto é **PostgreSQL**, não SQLite. Devolve os identificadores 1 e 2, sem prometer uma ordem. O índice Hash não exige unicidade do username. Hash não implica superioridade sobre B-tree numa igualdade. Índices ocupam espaço e são mantidos nas escritas; mede com a carga real. A documentação de [tipos de índice](https://www.postgresql.org/docs/16/indexes-types.html) distingue os operadores suportados.
 
 ## Ler EXPLAIN sem confundir custo com tempo
 
@@ -122,5 +142,15 @@ A configuração deve corresponder à língua. `plainto_tsquery` trata a entrada
 **Precisão** é a fração dos resultados devolvidos que são relevantes; **cobertura**, ou recall, é a fração dos resultados relevantes que foram devolvidos. Encontrar 6 documentos relevantes entre 10 resultados dá precisão 0,6. Se existiam 12 relevantes no corpus, o recall é 0,5. Um filtro muito restrito pode aumentar a primeira e diminuir a segunda.
 
 As **facetas**, como categoria e cidade, permitem refinar resultados por valores conhecidos. São filtros de navegação, não substituem o índice de texto nem a verificação de permissões. Nunca mostres nos resultados documentos que o utilizador não pode consultar.
+
+## Sinais de relevância e momento do cálculo
+
+Um sinal **dependente da consulta** relaciona o documento com as palavras procuradas, como a correspondência de lexemas ou a proximidade entre termos. Um sinal **independente da consulta** descreve o documento sem usar essa expressão, como uma medida de qualidade editorial ou popularidade.
+
+Um sinal independente pode ser calculado na indexação ou atualizado em segundo plano. Não tem de ser imutável nem definido apenas ao instalar o motor. A consulta pode combinar o valor pré-calculado com a correspondência textual.
+
+Num exemplo próprio, somamos dois sinais normalizados entre zero e um. A tem correspondência textual 0,8 e qualidade 0,2, dando 1,0. B tem correspondência 0,6 e qualidade 0,8, dando 1,4. B fica primeiro nesta regra, apesar de ter menor correspondência textual. Mudar o peso muda a decisão; estes valores não são a fórmula interna de `ts_rank`.
+
+A distinção aparece em [Static quality scores and ordering](https://nlp.stanford.edu/IR-book/html/htmledition/static-quality-scores-and-ordering-1.html), do livro dos autores Manning, Raghavan e Schütze. Antes de calcular posições, o conjunto de candidatos deve respeitar as permissões.
 
 As páginas de referência são [índices compostos](https://www.postgresql.org/docs/16/indexes-multicolumn.html), [Using EXPLAIN](https://www.postgresql.org/docs/current/using-explain.html) e [pesquisa em texto](https://www.postgresql.org/docs/current/textsearch.html). O comportamento do planeador pode mudar entre versões.

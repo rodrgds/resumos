@@ -11,13 +11,14 @@ editorial:
       url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
     - title: Moodle LBAW 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=4222
-  coverage: Tecnologias do cliente, DOM, eventos, fetch, erros, caminho de renderização, cache e desempenho.
+  coverage: HTML semântico, seletores CSS, âmbito e modo estrito JavaScript, AJAX, fetch, estados assíncronos, latência, percentis e desempenho.
   gaps:
     - O plano confirma o tópico, mas os slides desta aula ainda não estavam publicados em 1 de outubro. A explicação usa documentação primária.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import percentil from '../../lbaw/percentil.js?raw';
+import ambito from '../../lbaw/ambito.js?raw';
 
 O servidor pode produzir HTML pronto a ler. O navegador constrói o DOM, aplica CSS e corre JavaScript. Separar estes trabalhos permite localizar a causa de uma página lenta: pode estar na consulta SQL, no transporte ou num script que impede responder ao teclado.
 
@@ -29,7 +30,48 @@ Um seletor CSS escolhe elementos; a cascata combina origem, importância, especi
 
 O **DOM** é a representação do documento como uma árvore de nós. `addEventListener` associa um comportamento a um evento. O comportamento deve ler o estado atual, atualizar o necessário e preservar foco e mensagens. Inserir texto com `textContent` mantém-no como texto; inserir HTML muda o contexto e pode criar [XSS](/cadeiras/lbaw/seguranca-web/#xss-o-contexto-decide-a-codificação).
 
+## HTML semântico e seletores CSS
+
+Um menu de ligações pode ser uma lista dentro de `nav`. O sentido vem do HTML; CSS escolhe a disposição horizontal ou vertical:
+
+```html
+<nav aria-label="Área pessoal">
+  <ul>
+    <li class="destaque"><a href="/bilhetes">Bilhetes</a></li>
+    <li><a href="/perfil">Perfil</a></li>
+  </ul>
+</nav>
+```
+
+| Seletor       | Elementos escolhidos no exemplo                                         |
+| ------------- | ----------------------------------------------------------------------- |
+| `.destaque`   | O primeiro `li`, que tem essa classe.                                   |
+| `.destaque a` | O link descendente desse `li`.                                          |
+| `li.destaque` | Elementos `li` com essa classe.                                         |
+| `nav > ul`    | A lista filha direta de `nav`.                                          |
+| `nav + ul`    | Uma lista imediatamente depois de `nav`, com o mesmo pai; nenhuma aqui. |
+
+Espaço significa descendência, `>` exige filho direto e `+` exige irmão seguinte. `li.destaque` não é o mesmo que `li .destaque`: o segundo procura um descendente com a classe. A [referência de seletores](https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Selectors/Selectors_and_combinators) permite conferir essa leitura.
+
+Numa tabela de dados, `th` marca uma célula de cabeçalho; `td` marca dados. Num caso simples, usa `<th scope="col">Preço</th>` para ligar um cabeçalho à coluna. `caption` identifica a tabela. Estes elementos não significam o cabeçalho geral da página. A WAI mostra [tabelas com cabeçalhos](https://www.w3.org/WAI/tutorials/tables/one-header/).
+
+## Âmbito de var, let e const
+
+Dentro de uma função, `var` tem âmbito da função; `let` e `const` têm âmbito do bloco. Uma declaração `var` é conhecida antes da linha que a inicializa, com valor `undefined`. `let` e `const` não podem ser usados antes da sua inicialização. `const` impede reatribuir a ligação, mas não congela um objeto.
+
+<CodePlayground
+  language="javascript"
+  code={ambito}
+  title="Ler os limites dos blocos e do modo estrito"
+/>
+
+A saída é `undefined`, `3`, `8`, `undefined`, `ReferenceError`. `total` é local à função, mas pode ser usado depois do `if`. `parcial` só existe dentro do bloco. Fora dele, `typeof` de um nome sem ligação dá a string `"undefined"`; tentar ler esse nome diretamente daria um erro.
+
+Em scripts antigos não estritos, atribuir a um nome sem declaração pode criar uma propriedade global. Neste programa, `"use strict"` impede a atribuição a `pendente` e gera `ReferenceError`. Módulos JavaScript já são estritos. Uma resposta sobre código antigo precisa de identificar se é um script clássico ou um módulo. Consulta [`var`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var) e [modo estrito](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode).
+
 ## Pedidos assíncronos e estados da interface
+
+**AJAX** designa técnicas que pedem dados e atualizam partes de uma página sem uma navegação completa. Apesar do nome histórico Asynchronous JavaScript and XML, a resposta pode conter JSON, HTML, XML ou outro formato definido pela API. Não é um processo de background do servidor. Com `fetch`, escolhe `json()` ou `text()` conforme o corpo e o contrato do recurso.
 
 Este fragmento pressupõe uma página que tem um elemento `#resultado` e uma API no mesmo site:
 
