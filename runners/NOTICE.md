@@ -27,3 +27,12 @@ PHP uses the WordPress Playground packages `@php-wasm/universal` and `@php-wasm/
 - The site's adapter and bundling recipe are in `runners/php.worker.js` and `scripts/build-runners.mjs` at https://github.com/rodrgds/resumos.
 
 DartPad and Ripes are loaded as external tools, only after the reader chooses to open them. Their code is not redistributed by this site.
+
+## Python
+
+Python uses Pyodide 314.0.7 from the official Pyodide distribution on jsDelivr, including its pinned scientific package catalogue. The module Worker loads packages identified in the example's imports. Code and input remain in that Worker; the site receives only output and PNG figures. Each run starts with a fresh in-memory filesystem.
+
+- Distribution: https://cdn.jsdelivr.net/pyodide/v314.0.7/full/
+- Source, release and package recipes: https://github.com/pyodide/pyodide/tree/314.0.7
+- Pyodide licence: Mozilla Public License 2.0, https://github.com/pyodide/pyodide/blob/314.0.7/LICENSE
+- Runtime and package licences: https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json

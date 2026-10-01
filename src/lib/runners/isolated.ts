@@ -5,7 +5,7 @@ export function runIsolated(
   receive: (message: RunMessage) => void,
   parent: HTMLElement,
 ): () => void {
-  // CheerpJ needs browser storage. A different site keeps it away from private notes.
+  // JavaScript bridges and browser storage must stay away from private notes.
   const local = ['localhost', '127.0.0.1'].includes(location.hostname);
   const url = new URL(
     request.language === 'java' ? '/java.html' : '/worker.html',
