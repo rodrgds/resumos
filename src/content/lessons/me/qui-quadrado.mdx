@@ -1,108 +1,101 @@
 ---
-title: Qui-quadrado e testes não paramétricos
-description: Testes de ajustamento, homogeneidade e independência pelo qui-quadrado, com uma tabela de contingência resolvida.
+title: Testes do qui-quadrado
+description: Ajustamento, independência e homogeneidade a partir de frequências observadas e esperadas.
 section: conteudo
-order: 8
+order: 15
+practices:
+  - me/praticar-qui-quadrado
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import barras from '../../me/qui-barras.typ?raw';
+import codigo from '../../me/qui_quadrado.py?raw';
 
-Os testes $t$ comparam médias de dados numéricos. Mas e perguntas como "o dispositivo influencia a conversão?" ou "estes dados seguem uma binomial?". Quando os dados são **qualitativos** (contagens em categorias), a estatística de trabalho é o **qui-quadrado**, que compara frequências observadas com frequências esperadas sob a hipótese.
+Os testes do qui-quadrado comparam **contagens observadas** com contagens esperadas sob uma hipótese. A estatística soma discrepâncias quadráticas ponderadas:
 
-## A estatística qui-quadrado
+$$Q=\sum\frac{(O-E)^2}{E}.$$
 
-Para categorias $i = 1, \dots, k$ com contagens observadas $O_i$ e contadas esperadas $E_i$ sob $H_0$:
+Cada termo é não negativo. Uma discrepância de dez unidades pesa mais quando se esperavam cinco do que quando se esperavam mil. Valores grandes de Q dão evidência contra a nula, pelo que a região crítica fica à direita.
 
-$$
-\chi^2 = \sum_{i=1}^{k} \frac{(O_i - E_i)^2}{E_i}.
-$$
+## Ajustamento a um modelo
 
-Cada parcela é o desvio ao quadrado relativizado pelo tamanho esperado: um desvio de 12 pesa mais quando esperavas 38 do que quando esperavas 57. Sob $H_0$ esta estatística segue aproximadamente uma distribuição $\chi^2$ com os graus de liberdade próprios de cada teste. A região crítica é sempre unilateral à direita (valores grandes significam mau ajuste), e a aproximação exige frequências esperadas de pelo menos 5 em (quase) todas as células.
+Com uma variável categórica em k categorias, $H_0$ especifica probabilidades $p_1,\ldots,p_k$ que somam 1. Para uma amostra de n unidades, $E_i=np_i$ e
 
-## Três testes, uma fórmula
+$$Q=\sum_{i=1}^k\frac{(O_i-np_i)^2}{np_i}\ \approx\chi^2_{k-1}.$$
 
-- **Ajustamento** (_goodness of fit_): os dados seguem uma distribuição proposta? $H_0$ fixa as probabilidades de cada categoria ($E_i = n\,p_i$), com $k - 1$ graus de liberdade (menos os parâmetros que tiveres de estimar).
-- **Independência**: duas variáveis qualitativas são independentes? Numa tabela $r \times c$, $H_0$ dá $E_{ij} = (\text{total da linha } i \times \text{total da coluna } j)/n$, com $(r-1)(c-1)$ graus de liberdade.
-- **Homogeneidade**: várias populações têm a mesma distribuição da variável? Mesma conta da independência, mas o desenho amostral difere (amostras separadas por população em vez de uma amostra classificada em duas variáveis).
+A alternativa diz que pelo menos uma probabilidade difere do modelo. Os graus de liberdade são $k-1$ porque a soma das contagens está fixada. Se forem estimados r parâmetros do modelo a partir dos mesmos dados, em situações regulares descontam-se também esses parâmetros: $k-1-r$. Nos exemplos com probabilidades fixas não há esse desconto adicional.
 
-:::tip[Independência contra homogeneidade no enunciado]
-A conta é igual, a pergunta muda. Se sortearam 200 utilizadores e classificaram cada um por dispositivo e conversão, é **independência** (uma amostra, duas variáveis). Se sortearam 120 utilizadores de telemóvel e 80 de computador e mediram a conversão em cada grupo, é **homogeneidade** (duas amostras, uma variável). Identifica o desenho antes de escrever $H_0$.
-:::
+### Exemplo completo: três categorias
 
-## Exemplo: o dispositivo influencia a conversão?
-
-Duzentos utilizadores classificados por dispositivo e conversão:
-
-|            | Converteu | Não converteu | Total |
-| ---------- | --------: | ------------: | ----: |
-| Telemóvel  |        45 |            75 |   120 |
-| Computador |        50 |            30 |    80 |
-| Total      |        95 |           105 |   200 |
-
-$H_0$: dispositivo e conversão são independentes. As esperadas sob $H_0$: telemóvel e converteu, $120 \times 95/200 = 57$; telemóvel e não, $120 \times 105/200 = 63$; computador e converteu, $80 \times 95/200 = 38$; computador e não, $80 \times 105/200 = 42$. Todas acima de 5, por isso a aproximação vale.
+Um modelo prevê probabilidades $0,5;0,3;0,2$. Em 100 unidades observam-se $60,25,15$. As esperadas são $50,30,20$, todas pelo menos 5:
 
 $$
-\chi^2 = \frac{(45-57)^2}{57} + \frac{(75-63)^2}{63} + \frac{(50-38)^2}{38} + \frac{(30-42)^2}{42} \approx 2{,}53 + 2{,}29 + 3{,}79 + 3{,}43 = 12{,}03.
+Q=\frac{(60-50)^2}{50}+\frac{(25-30)^2}{30}+\frac{(15-20)^2}{20}
+=2+0,8333+1,25\approx4,0833.
 $$
 
-Com $(2-1)(2-1) = 1$ grau de liberdade, o valor crítico a 5 por cento é 3,84. Como $12{,}03 > 3{,}84$, **rejeita-se a independência**: os dados dão evidência de que a taxa de conversão depende do dispositivo (no computador, 50 em 80; no telemóvel, 45 em 120). Repara que o teste diz que há associação, não porquê: explicar a causa já é trabalho de produto, não de estatística.
+Temos dois graus de liberdade. A 5%, o quantil crítico é $\chi^2_{0,05;2}\approx5,9915$. Q fica abaixo e o valor-p é aproximadamente 0,1298. Não rejeitamos o modelo. Isso não demonstra que as probabilidades sejam exatamente as propostas; a amostra pode ter pouca capacidade para detetar certas diferenças.
 
-Vê onde mora a diferença: as barras observadas contra as esperadas sob independência.
+## Independência e homogeneidade
 
-<Typst
-  source={barras}
-  format="svg"
-  alt="Barras lado a lado por célula: observadas contra esperadas. No telemóvel que converteu, observadas 45 contra esperadas 57; no computador que converteu, observadas 50 contra esperadas 38."
-/>
+O cálculo é igual, mas a pergunta e a recolha diferem:
 
-As duas maiores folgas estão nas células de conversão: o telemóvel converte menos do que a independência previa e o computador mais. É essa assimetria que os 12,03 medem.
+- **Independência:** uma amostra de uma população, duas variáveis categóricas por unidade. $H_0$ diz que as variáveis são independentes.
+- **Homogeneidade:** amostras de populações ou grupos distintos, uma variável categórica. $H_0$ diz que a distribuição dessa variável é igual nos grupos.
 
-Confere a conta correndo-a:
+Numa tabela com r linhas e c colunas, sob a nula,
+
+$$
+E_{ij}=\frac{O_{i\cdot}O_{\cdot j}}n,\qquad
+Q=\sum_{i,j}\frac{(O_{ij}-E_{ij})^2}{E_{ij}},\qquad \nu=(r-1)(c-1).
+$$
+
+$O_{i\cdot}$ é o total da linha i e $O_{\cdot j}$ o total da coluna j. As esperadas conservam os totais observados das linhas e colunas. Não se obtêm dividindo n igualmente por todas as células, exceto se os totais produzirem isso.
+
+### Exemplo completo: dois grupos
+
+Dois grupos independentes têm os resultados seguintes:
+
+| Grupo | Sucesso | Insucesso | Total |
+| ----- | ------: | --------: | ----: |
+| A     |      40 |        10 |    50 |
+| B     |      20 |        20 |    40 |
+| Total |      60 |        30 |    90 |
+
+A pergunta é se a proporção de sucesso é igual nos grupos, um teste de homogeneidade. Sob a nula, as esperadas são
+
+| Grupo |             Sucesso |           Insucesso |
+| ----- | ------------------: | ------------------: |
+| A     | $50(60)/90=33,3333$ | $50(30)/90=16,6667$ |
+| B     | $40(60)/90=26,6667$ | $40(30)/90=13,3333$ |
+
+Todas excedem 5. Somando as quatro contribuições, $Q=9$. Os graus são $(2-1)(2-1)=1$, com valor crítico 3,8415 a 5%. O valor-p é aproximadamente 0,00270 e rejeitamos a igualdade. As proporções observadas são 0,8 e 0,5; indica a direção e a dimensão da diferença juntamente com a rejeição.
+
+Se as mesmas contagens fossem recolhidas numa única amostra classificando cada unidade por grupo e resultado, a formulação seria de independência. A estatística não distingue os desenhos; essa informação vem da recolha.
+
+## Condições e limites
+
+As unidades devem ser independentes, cada uma contada uma única vez, em categorias mutuamente exclusivas e exaustivas. Usa **frequências absolutas**, não percentagens na fórmula de Q. Verifica frequências **esperadas**, não apenas observadas. O critério prático usado aqui é $E\ge5$ em todas as células.
+
+Se houver categorias demasiado raras, pode ser necessário agrupá-las de forma justificada e recalcular os graus de liberdade, ou escolher outro método. Não juntes categorias apenas para conseguir um valor-p favorável. Numa tabela pequena 2 por 2, um teste exato pode ser mais adequado.
+
+A rejeição em vários grupos diz que as distribuições não são todas iguais, não que todos os pares diferem. Contribuições grandes identificam células responsáveis pela discrepância; comparações posteriores exigem métodos e controlo de multiplicidade próprios. Não rejeitar independência também não prova independência.
+
+## Relação com testes de proporções
+
+Com duas categorias e probabilidade nula $p_0$, o qui-quadrado de ajustamento é $Z_0^2$ do teste de uma proporção. Na tabela 2 por 2, Q é o quadrado do z que usa a proporção comum, sem correções de continuidade. São correspondências **bilaterais**.
+
+Q não conserva o sinal. Para uma alternativa direcional, usa o teste z com o sinal correto e a cauda previamente escolhida. Não divides automaticamente por dois o valor-p do qui-quadrado para qualquer pergunta.
+
+## Dimensão da amostra e significado
+
+Se 51% de n unidades têm uma característica e a nula é p igual a 0,5,
+
+$$Q=\frac{(0,51n-0,5n)^2}{0,5n}+\frac{(0,49n-0,5n)^2}{0,5n}=0,0004n.$$
+
+Para n igual a 1 000, Q é 0,4 e não rejeitamos a 5%. Para n igual a 10 000, Q é 4 e rejeitamos. A diferença observada continua a ser um ponto percentual. A evidência cresce com a informação, mas a relevância prática da diferença não muda automaticamente.
 
 <CodePlayground
   language="python"
-  title="Qui-quadrado da tabela 2 por 2"
-  code={
-    'obs = [45, 75, 50, 30]\nesp = [57, 63, 38, 42]\nqui = sum((o - e) ** 2 / e for o, e in zip(obs, esp))\nprint("qui-quadrado:", round(qui, 2))'
-  }
-/>
-
-A mesma conta responde a outra pergunta se o desenho amostral mudar:
-
-<Tabs id="independencia-ou-homogeneidade" labels={['Independência', 'Homogeneidade']}>
-  <div slot="panel-0">
-
-Sortearam-se 200 utilizadores e classificou-se cada um por dispositivo e conversão: uma amostra, duas variáveis. $H_0$ diz que são independentes, e os 12,03 com 1 grau de liberdade rejeitam.
-
-  </div>
-  <div slot="panel-1">
-
-Sortearam-se 120 utilizadores de telemóvel e 80 de computador e mediu-se a conversão em cada grupo: duas amostras, uma variável. $H_0$ diz que as distribuições coincidem, e a conta dá os mesmos 12,03 com 1 grau de liberdade: rejeita-se a homogeneidade.
-
-  </div>
-</Tabs>
-
-## Exemplo: o dado é equilibrado?
-
-Sessenta lançamentos de um dado dão contagens 8, 12, 9, 11, 7 e 13 para as faces 1 a 6. $H_0$: o dado é equilibrado, logo cada face tem probabilidade $1/6$ e esperadas $E_i = 60 \times 1/6 = 10$.
-
-$$\chi^2 = \frac{(8-10)^2}{10} + \frac{(12-10)^2}{10} + \frac{(9-10)^2}{10} + \frac{(11-10)^2}{10} + \frac{(7-10)^2}{10} + \frac{(13-10)^2}{10} = \frac{4+4+1+1+9+9}{10} = 2{,}8.$$
-
-Com $6 - 1 = 5$ graus de liberdade, o crítico a 5 por cento é 11,07. Como $2{,}8 < 11{,}07$, **não se rejeita** o equilíbrio: estes desvios cabem no acaso de 60 lançamentos. Repara na diferença para a independência: aqui as esperadas vêm de probabilidades propostas ($E_i = n\,p_i$), não de totais de linhas e colunas.
-
-## A ideia dos testes não paramétricos
-
-Os testes $t$ assumem populações normais (ou amostras grandes pelo Teorema do Limite Central). Quando a amostra é pequena e a normalidade é indefensável, os **testes não paramétricos** dispensam a distribuição: trabalham com ordens (_ranks_) ou sinais em vez dos valores. O teste dos sinais, por exemplo, decide sobre a mediana contando quantas observações ficam acima do valor de referência e comparando com uma binomial de $p = 0{,}5$. Pagam a robustez com menos potência: se a normalidade valer, o $t$ deteta mais. A regra de bolso fecha a cadeira: dados numéricos e condições verificadas, testes paramétricos; o resto, qui-quadrado para categorias e não paramétricos para o resto.
-
-Exemplo do teste dos sinais: 12 diferenças de latência antes e depois de uma mudança, 9 positivas. $H_0$: a mediana das diferenças é zero (a mudança não fez nada), logo cada diferença tem hipótese 1/2 de ser positiva. Sob $H_0$, o número de sinais positivos é $Bin(12;\, 0{,}5)$, e o valor p unilateral é $P(X \ge 9) = (\binom{12}{9} + \binom{12}{10} + \binom{12}{11} + \binom{12}{12})/2^{12} = (220 + 66 + 12 + 1)/4096 = 299/4096 \approx 0{,}073$. Acima de 0,05: **não se rejeita** a mediana nula. Nove em doze parece muito, mas com 12 observações o acaso chega lá 7 por cento das vezes.
-
-## Ver
-
-<YouTube
-  id="zOvUQWOzTlc"
-  title="Teste do qui-quadrado para associação (independência), Khan Academy"
+  code={codigo}
+  title="Esperadas, estatística e valor-p"
 />

@@ -1,100 +1,123 @@
 ---
-title: Distribuições binomial, normal e t
-description: Quando usar cada distribuição, parâmetros, aproximação normal e leitura da tabela da normal padrão.
+title: Distribuições e tabelas
+description: Reconhecer binomial e normal, ler probabilidades acumuladas e quantis críticos e avaliar normalidade.
 section: conteudo
-order: 4
+order: 7
+practices:
+  - me/praticar-distribuicoes
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 import normal from '../../me/normal.typ?raw';
+import codigo from '../../me/distribuicoes.py?raw';
 
-Três distribuições cobrem quase todos os exercícios da cadeira: a binomial conta sucessos em tentativas repetidas, a normal modela somas de muitos efeitos pequenos e a $t$ corrige a normal quando a amostra é pequena e o desvio é estimado. Esta página diz quando chamar cada uma e como ler os valores nas tabelas.
+Escolhe a distribuição a partir do mecanismo que produz a variável. Uma contagem num número fixo de tentativas e um tempo de espera são perguntas diferentes.
 
-## Binomial: contar sucessos
+## Bernoulli e binomial
 
-Repete $n$ vezes uma experiência com probabilidade de sucesso $p$, sempre nas mesmas condições e de forma independente. O número de sucessos $X$ segue a **binomial** $Bin(n, p)$:
+Uma Bernoulli de parâmetro p vale 1 com probabilidade p e 0 com probabilidade $1-p$. A sua média é p e a variância é $p(1-p)$.
+
+A soma de n Bernoulli **independentes com o mesmo p** é binomial. Escrevemos $X\sim B(n,p)$ e
+
+$$P(X=k)=\binom nkp^k(1-p)^{n-k},\quad k=0,\ldots,n,$$
+
+$$E(X)=np,\qquad \operatorname{Var}(X)=np(1-p).$$
+
+Verifica quatro condições: número fixo de tentativas, dois resultados por tentativa, independência e probabilidade constante. «Sucesso» é o resultado que estás a contar, mesmo que seja uma falha.
+
+### Exemplo: pelo menos duas falhas
+
+Inspecionam-se 12 peças independentes com probabilidade de falha 0,2. Para X, número de falhas, $X\sim B(12;0,2)$. «Pelo menos duas» significa $X\ge2$:
 
 $$
-P(X = k) = \binom{n}{k} p^k (1 - p)^{n - k}, \quad E[X] = np, \quad Var(X) = np(1-p).
+P(X\ge2)=1-P(X=0)-P(X=1)
+=1-0,8^{12}-12(0,2)0,8^{11}\approx0,7251.
 $$
 
-O teste de reconhecimento é a frase "em $n$ tentativas independentes, quantas dão certo". Se as tentativas influenciam umas às outras (tirar sem reposição de uma urna pequena) ou $p$ muda, a binomial não se aplica.
+O valor esperado é 2,4 falhas; não é uma previsão de que aparecerão exatamente 2,4. Para «mais de duas», teríamos de subtrair também $P(X=2)$.
 
-## Normal: a curva simétrica
+### Ler uma tabela acumulada
 
-A **normal** $N(\mu, \sigma^2)$ tem densidade em forma de sino centrada em $\mu$ com largura dada por $\sigma$:
+Se a tabela dá $F(k)=P(X\le k)$,
 
-$$
-f(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}.
-$$
+$$P(X=k)=F(k)-F(k-1),\quad P(X\ge k)=1-F(k-1),$$
 
-Nunca precisas de integrar isto à mão: padronizas $Z = (X - \mu)/\sigma$, que segue a normal padrão $N(0, 1)$, e lês probabilidades na tabela de $\Phi(z) = P(Z \le z)$. Decora três marcos: $P(|Z| < 1) \approx 0{,}68$, $P(|Z| < 2) \approx 0{,}95$ e $P(|Z| < 3) \approx 0{,}997$. E lembra a simetria $\Phi(-z) = 1 - \Phi(z)$, porque a tabela só traz $z$ positivos.
+$$P(a\le X\le b)=F(b)-F(a-1)$$
+
+para limites inteiros. Para probabilidades p acima das colunas disponíveis, usa o número de insucessos: $n-X\sim B(n,1-p)$. Por exemplo, $X\ge9$ em 12 tentativas equivale a $12-X\le3$.
+
+## Normal
+
+$X\sim N(\mu,\sigma^2)$ tem densidade
+
+$$f_X(x)=\frac{1}{\sigma\sqrt{2\pi}}\exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right),\qquad \sigma>0.$$
+
+O segundo parâmetro é a **variância**. A curva é simétrica em torno de $\mu$, que também é mediana e moda. Padronizar remove centro e escala:
+
+$$Z=\frac{X-\mu}{\sigma}\sim N(0,1).$$
+
+A tabela acumulada da normal dá $\Phi(z)=P(Z\le z)$. Usa $\Phi(-z)=1-\Phi(z)$ e calcula intervalos por diferença de acumuladas.
+
+**Exemplo.** Se $X\sim N(100,16)$, então $\sigma=4$:
+
+$$P(X>106)=1-\Phi(1,5)\approx0,0668,$$
+
+$$P(96<X<108)=\Phi(2)-\Phi(-1)\approx0,8186.$$
+
+### Probabilidade conhecida, limite desconhecido
+
+O percentil 95 a satisfaz $P(X\le a)=0,95$. Procuramos $\Phi(z)=0,95$, obtendo $z\approx1,6449$:
+
+$$a=100+4(1,6449)\approx106,5794.$$
+
+Neste curso, o quantil crítico $z_\alpha$ é definido pela **cauda direita**: $P(Z>z_\alpha)=\alpha$. Assim, $z_{0,05}\approx1,6449$ e $z_{0,025}\approx1,9600$. Não confundas a área à direita com a probabilidade acumulada à esquerda.
 
 <Typst
   source={normal}
   format="svg"
-  alt="Curva da normal padrão com a área central sombreada. Entre menos 1 e 1 estão 68 por cento, entre menos 2 e 2 estão 95 por cento, entre menos 3 e 3 estão 99,7 por cento."
+  alt="Curva normal padrão centrada em zero, com intervalos de um, dois e três desvios padrão contendo cerca de 68%, 95% e 99,7%."
 />
 
-Lê o gráfico de dentro para fora: a faixa central estreita já leva 68 por cento da área, alargar para $\pm 2$ apanha quase tudo, e para lá de $\pm 3$ quase não há área. É por isto que "a dois desvios" é o atalho mental para 95 por cento.
+Os intervalos $\mu\pm\sigma$, $\mu\pm2\sigma$ e $\mu\pm3\sigma$ contêm aproximadamente 68,27%, 95,45% e 99,73% da **população normal**. Não são intervalos de confiança para a média.
 
-## Aproximação da binomial pela normal
+Combinações lineares de normais independentes continuam normais. Se $X_1,X_2\sim N(100,16)$ são independentes, $X_1+X_2\sim N(200,32)$ e $X_1-X_2\sim N(0,32)$. Calcula a variância e só depois tira a raiz para obter o desvio.
 
-Quando $n$ é grande, a binomial fica com forma de sino e a normal aproxima-a bem. Condição prática: $np \ge 5$ e $n(1-p) \ge 5$. Usa-se $\mu = np$, $\sigma^2 = np(1-p)$ e a **correção de continuidade** de 0,5, porque aproximas uma escada discreta por uma curva contínua: $P(X \ge k)$ vira $P(X_{normal} > k - 0{,}5)$.
+## t, qui-quadrado e F
 
-Exemplo: 200 pedidos a um servidor, cada um com probabilidade 0,05 de erro, independentes. $X \sim Bin(200; 0{,}05)$, e queremos $P(X \ge 15)$. Primeiro as condições: $np = 10 \ge 5$ e $n(1-p) = 190 \ge 5$, por isso a aproximação vale. Com $\mu = 10$ e $\sigma = \sqrt{9{,}5} \approx 3{,}08$:
+Se $Z\sim N(0,1)$ e $U\sim\chi^2_\nu$ são independentes,
 
-$$
-P(X \ge 15) \approx P\left(Z > \frac{14{,}5 - 10}{3{,}08}\right) = P(Z > 1{,}46) = 1 - \Phi(1{,}46) \approx 1 - 0{,}9279 = 0{,}072.
-$$
+$$T=\frac Z{\sqrt{U/\nu}}\sim t_\nu.$$
 
-Cerca de 7,2 por cento. Sem a correção de continuidade teríamos padronizado o 15 em vez do 14,5 e o resultado sairia enviesado para baixo. A expressão binomial exata, $\sum_{k=15}^{200} \binom{200}{k} 0{,}05^k 0{,}95^{200-k}$, existe mas ninguém a calcula à mão: é exatamente para isto que serve a aproximação.
+A t é simétrica, com caudas mais pesadas do que a normal; aproxima-se dela quando os graus de liberdade $\nu$ crescem. Para a média de uma amostra normal com desvio desconhecido, aparece $\nu=n-1$. O quantil $t_{\alpha,\nu}$ satisfaz $P(T>t_{\alpha,\nu})=\alpha$. A 95% bilateral e com $n=6$, usa-se $t_{0,025;5}\approx2,5706$, maior do que 1,96.
 
-Compara os dois valores correndo as contas:
+A soma dos quadrados de $\nu$ normais padrão independentes tem distribuição $\chi^2_\nu$. Só toma valores não negativos, tem média $\nu$ e variância $2\nu$. O quantil $\chi^2_{\alpha,\nu}$ deixa área $\alpha$ à direita. Com dois graus de liberdade, $\chi^2_{0,05;2}\approx5,9915$.
+
+Se $U\sim\chi^2_{\nu_1}$ e $V\sim\chi^2_{\nu_2}$ são independentes, $(U/\nu_1)/(V/\nu_2)\sim F_{\nu_1,\nu_2}$. Esta distribuição positiva depende de **dois** graus de liberdade. Não é simétrica; trocar numerador e denominador troca os graus de liberdade e dá o inverso da variável. Por exemplo, $U=12$, $V=18$, $\nu_1=6$, $\nu_2=9$ produz F observado igual a 1. Para reconhecer estes modelos, conserva a origem e os graus de liberdade, não apenas o nome da tabela.
+
+## Outros mecanismos
+
+| Modelo            | O que conta ou mede                                                                              | Parâmetros e momentos                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Hipergeométrica   | Sucessos em n escolhas sem reposição de N unidades, K sucessos                                   | $P(X=k)=\binom Kk\binom{N-K}{n-k}/\binom Nn$; $E(X)=nK/N$; variância $np(1-p)(N-n)/(N-1)$, com $p=K/N$ e $N>1$ |
+| Poisson           | Número de ocorrências num intervalo, sob um modelo de taxa constante e ocorrências independentes | $P(X=k)=e^{-\lambda}\lambda^k/k!$; média e variância $\lambda$                                                 |
+| Geométrica        | Número de tentativas até ao primeiro sucesso, incluindo-o                                        | $P(X=k)=(1-p)^{k-1}p$; média $1/p$, variância $(1-p)/p^2$                                                      |
+| Binomial negativa | Tentativas até ao r-ésimo sucesso, incluindo-o                                                   | $P(X=k)=\binom{k-1}{r-1}p^r(1-p)^{k-r}$; média $r/p$, variância $r(1-p)/p^2$                                   |
+| Uniforme contínua | Valor com densidade constante em $[a,b]$                                                         | $f=1/(b-a)$; média $(a+b)/2$, variância $(b-a)^2/12$                                                           |
+| Exponencial       | Espera até à próxima ocorrência num processo de Poisson                                          | $P(X>t)=e^{-\lambda t}$ para $t\ge0$; média $1/\lambda$, variância $1/\lambda^2$                               |
+
+Reconhece a unidade de $\lambda$: contagem esperada na Poisson, taxa por unidade de tempo na exponencial. Com média de três pedidos por minuto, a Poisson dá $P(X=0)=e^{-3}\approx0,0498$. Com espera média de dez minutos, a exponencial tem taxa 0,1 por minuto e $P(X>20)=e^{-2}\approx0,1353$.
+
+Com sucesso de probabilidade 0,25, a geométrica dá $P(X=3)=0,75^2(0,25)=0,140625$. Para o segundo sucesso ocorrer na terceira tentativa, a binomial negativa dá $\binom21(0,25)^2(0,75)=0,09375$. Uma uniforme entre 2 e 6 dá $P(3<X<5)=2/4=0,5$. A escolha de duas aprovadas em três peças de um lote finito é a hipergeométrica do [exemplo de contagem](../probabilidades/#contar-resultados-equiprováveis).
+
+## Avaliar normalidade
+
+Um histograma aproximadamente simétrico e uma caixa sem forte assimetria são indícios, não provas. Num gráfico QQ normal, o eixo horizontal contém quantis normais teóricos e o vertical contém dados ordenados. Uma relação aproximadamente reta apoia a plausibilidade da normalidade. Curvatura sistemática ou pontos extremos afastados da reta levantam dúvidas.
+
+Pequenas amostras podem produzir irregularidades mesmo sendo normais. Uma transformação logarítmica pode reduzir assimetria à direita em dados positivos, mas a média dos logaritmos não é o logaritmo da média. O programa mostra uma amostra normal e uma assimétrica; compara histogramas e QQ em conjunto.
 
 <CodePlayground
   language="python"
-  title="Exata contra aproximação normal"
-  code={
-    'import math\nn, p, k = 200, 0.05, 15\nexata = sum(math.comb(n, i) * p ** i * (1 - p) ** (n - i) for i in range(k, n + 1))\nmu, sd = n * p, math.sqrt(n * p * (1 - p))\nPhi = lambda z: 0.5 * (1 + math.erf(z / math.sqrt(2)))\naprox = 1 - Phi((k - 0.5 - mu) / sd)\nprint("exata:", round(exata, 4))\nprint("aprox normal:", round(aprox, 4))'
-  }
+  code={codigo}
+  title="Probabilidades e gráficos QQ"
 />
-
-A saída dá exata 0,0781 e aproximação 0,0721: erro de seis milésimas, aceitável para uma conta de exame. Vê o efeito da correção comparando as duas padronizações:
-
-<Tabs id="correcao-continuidade" labels={['Com correção', 'Sem correção']}>
-  <div slot="panel-0">
-
-$P(X \ge 15) \approx P(Z > (14{,}5 - 10)/3{,}08) = P(Z > 1{,}46) \approx 0{,}072$. O 14,5 é a fronteira entre as barras do 14 e do 15 no histograma da binomial: é aí que começa a área que queres.
-
-  </div>
-  <div slot="panel-1">
-
-$P(X \ge 15) \approx P(Z > (15 - 10)/3{,}08) = P(Z > 1{,}62) \approx 0{,}053$. Perdes dois pontos percentuais por ignorar meio inteiro. Com $n$ grande a diferença encolhe, mas em exame a correção é esperada.
-
-  </div>
-</Tabs>
-
-## A t de Student: normal com desvio estimado
-
-A normal exige $\sigma$ conhecido. Na prática estimas o desvio pela amostra, e essa estimativa acrescenta incerteza, sobretudo com poucos dados. A distribuição **$t$ de Student** com $\nu = n - 1$ graus de liberdade é a normal com caudas mais pesadas para compensar. Com $n$ grande (regra prática: $n \ge 30$), $t$ e $z$ quase coincidem e podes usar a normal.
-
-:::warning[Escolher entre z e t]
-A decisão tem duas perguntas, por esta ordem. O desvio populacional $\sigma$ é conhecido? Se sim, usa $z$ sempre. Se não, usa $t$ com $n - 1$ graus de liberdade (e só aproxima por $z$ se $n \ge 30$). Trocar $t$ por $z$ com amostras pequenas e desvio estimado é o erro mais comum dos intervalos de confiança, e subestima sempre a margem de erro.
-:::
-
-## Ler a tabela t passo a passo
-
-A tabela $t$ cruza graus de liberdade (linhas) com probabilidade acumulada (colunas). Para o exemplo dos intervalos, com $n = 16$ e 95 por cento de confiança bilateral, sobram $2{,}5$ por cento em cada cauda, por isso precisas do quantil $0{,}975$ com $15$ graus de liberdade:
-
-1. Desce pela coluna dos graus até à linha do 15.
-2. Anda pela linha até à coluna do 0,975.
-3. Lê o cruzamento: $t_{15;\,0{,}975} = 2{,}131$.
-
-Três verificações antes de copiar: graus $= n - 1$ (aqui 15, não 16); coluna $1 - \alpha/2$ para bilateral (aqui 0,975, não 0,95); e o valor tem de sair maior que o $z$ equivalente (2,131 contra 1,96, como esperado). Se a tua tabela só traz caudas superiores, a coluna a usar é a do $\alpha/2 = 0{,}025$, que dá o mesmo número.
-
-## Para saber mais
-
-- [Calculadora de valores críticos](https://www.omnicalculator.com/pt/estatistica/valor-critico/): confirma valores $z$, $t$ e qui-quadrado quando a tabela impressa não chega ao número que precisas.

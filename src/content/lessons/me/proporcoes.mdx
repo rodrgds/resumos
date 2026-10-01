@@ -1,0 +1,119 @@
+---
+title: Inferência para proporções
+description: Wald, Agresti–Coull, dimensão da amostra e testes para uma ou duas proporções.
+section: conteudo
+order: 14
+practices:
+  - me/praticar-proporcoes
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import codigo from '../../me/proporcoes.py?raw';
+
+Uma proporção descreve a probabilidade p de um resultado binário numa população. Em n observações independentes com o mesmo p, o número de sucessos X é binomial e a estimativa natural é $\hat p=x/n$.
+
+## Intervalo de Wald
+
+O erro padrão estimado é $\sqrt{\hat p(1-\hat p)/n}$. O intervalo aproximado de Wald é
+
+$$\hat p\pm z_{\alpha/2}\sqrt{\frac{\hat p(1-\hat p)}n}.$$
+
+Requer uma aproximação normal adequada, com contagens de sucessos e insucessos suficientemente grandes. É frágil perto de 0 ou 1 e em amostras pequenas. Se x for zero, produz erroneamente largura zero; isso não demonstra que p seja zero.
+
+## Agresti–Coull a 95%: mais quatro
+
+Uma alternativa ajusta as contagens adicionando dois sucessos e dois insucessos:
+
+$$\tilde n=n+4,\qquad \tilde p=\frac{x+2}{n+4},$$
+
+$$IC_{95\%}\approx\tilde p\pm1,96\sqrt{\frac{\tilde p(1-\tilde p)}{n+4}}.$$
+
+Este é o ajustamento **mais quatro** de Agresti–Coull, usado aqui como método de referência a 95%. As observações adicionadas são um recurso de cálculo; não foram recolhidas. O centro é a proporção ajustada, não necessariamente $\hat p$.
+
+### Exemplo completo
+
+Em 30 unidades, cinco apresentam a característica. $\hat p=5/30\approx0,1667$. Para o ajustamento,
+
+$$\tilde p=7/34\approx0,2059,\qquad \widehat{SE}\approx0,06935.$$
+
+A margem é aproximadamente 0,13591 e o intervalo é $[0,06997;0,34180]$, ou cerca de 7,0% a 34,2%. Wald daria aproximadamente $[0,03331;0,30003]$. Identifica o método; não mistures o centro de um com o erro padrão do outro.
+
+Se um limite calculado sai de $[0,1]$, restringe o intervalo a esse domínio e conserva os extremos possíveis 0 ou 1. Cortar os limites não transforma o método num procedimento exato.
+
+### Outras confianças e Wilson
+
+Mais quatro é uma aproximação particular para 95%. No ajustamento geral de Agresti–Coull, substitui-se 4 por $z_{\alpha/2}^2$ e 2 por $z_{\alpha/2}^2/2$:
+
+$$
+\tilde n=n+z_{\alpha/2}^2,\qquad
+\tilde p=\frac{x+z_{\alpha/2}^2/2}{\tilde n},\qquad
+IC\approx\tilde p\pm z_{\alpha/2}\sqrt{\frac{\tilde p(1-\tilde p)}{\tilde n}}.
+$$
+
+A 99%, o acréscimo total é aproximadamente 6,635, não 4. Se o enunciado fixa um ajustamento particular, usa-o e declara-o. O intervalo de **Wilson score** é outro método, obtido invertendo o teste de score; não é exatamente esta fórmula. O nome do centro ajustado não torna os dois intervalos iguais.
+
+## Dimensionar a amostra
+
+Para Wald, com proporção de planeamento $p_*$ e margem $\varepsilon$,
+
+$$n\ge\frac{z_{\alpha/2}^2p_*(1-p_*)}{\varepsilon^2}.$$
+
+Sem uma estimativa prévia, usa $p_*=0,5$, pois $p(1-p)\le1/4$. Com 95% e margem 0,05, a conta com 1,96 dá $n\ge384,16$, logo 385.
+
+Para mais quatro a 95%, usando o mesmo raciocínio,
+
+$$n\ge\frac{1,96^2p_*(1-p_*)}{\varepsilon^2}-4.$$
+
+Sem estimativa prévia, bastam 381 pelo critério de margem desse intervalo aproximado. Não é uma garantia de cobertura exata. Para reduzir a margem a metade, mantendo p de planeamento e confiança, quadruplica-se **n+4**: partir de n igual a 200 aponta para n igual a 812, antes de outros arredondamentos. Usar limites de um intervalo já arredondado pode alterar o resultado de planeamento.
+
+## Testar uma proporção
+
+Para $H_0:p=p_0$, sob condições $np_0\ge10$ e $n(1-p_0)\ge10$, usa
+
+$$Z_0=\frac{\hat p-p_0}{\sqrt{p_0(1-p_0)/n}}\ \approx N(0,1).$$
+
+O erro padrão usa **$p_0$**, porque a distribuição de referência é calculada sob a nula. Não usa $\tilde p$ nem $\hat p$ no denominador. Escolhe a cauda segundo $H_1$.
+
+**Exemplo.** Em 200 unidades, 30 falham. Queremos saber se a proporção é inferior a 20%: $H_0:p=0,20$, $H_1:p<0,20$. As contagens esperadas sob a nula são 40 e 160, satisfazendo as condições.
+
+$$z=\frac{0,15-0,20}{\sqrt{0,20(0,80)/200}}\approx-1,7678.$$
+
+O valor-p à esquerda é $\Phi(-1,7678)\approx0,03855$. A 5%, há evidência de uma proporção inferior a 20%. Para a pergunta bilateral, o valor-p seria aproximadamente 0,07710 e não rejeitaríamos. Quando a aproximação falha, um teste binomial exato pode ser apropriado; não uses a normal por hábito.
+
+## Diferença entre duas proporções
+
+Para grupos independentes, o alvo é $p_1-p_2$. Wald usa centro $\hat p_1-\hat p_2$ e erro padrão
+
+$$\sqrt{\frac{\hat p_1(1-\hat p_1)}{n_1}+\frac{\hat p_2(1-\hat p_2)}{n_2}}.$$
+
+No ajustamento a 95% **mais dois por grupo**, usa-se
+
+$$
+\tilde p_i=\frac{x_i+1}{n_i+2},\quad
+IC\approx(\tilde p_1-\tilde p_2)\pm1,96\sqrt{\frac{\tilde p_1(1-\tilde p_1)}{n_1+2}+\frac{\tilde p_2(1-\tilde p_2)}{n_2+2}}.
+$$
+
+Adicionamos um sucesso e um insucesso a cada grupo, não dois de cada a cada grupo. Restringe limites ao domínio $[-1,1]$ se necessário.
+
+**Exemplo.** Os grupos têm 40 sucessos em 50 e 20 em 40. As proporções ajustadas são $41/52\approx0,7885$ e $21/42=0,5$. O centro é 0,2885 e o erro padrão aproximadamente 0,09571. O intervalo a 95% é aproximadamente $[0,1009;0,4760]$: os dados apoiam uma maior proporção no primeiro grupo, sob as condições do estudo.
+
+## Testar igualdade de duas proporções
+
+Sob $H_0:p_1=p_2$, estima-se a proporção **comum** por
+
+$$
+\bar p=\frac{x_1+x_2}{n_1+n_2},\qquad
+Z_0=\frac{\hat p_1-\hat p_2}{\sqrt{\bar p(1-\bar p)(1/n_1+1/n_2)}}.
+$$
+
+Verifica que as contagens esperadas de sucessos e insucessos em **cada grupo** são suficientemente grandes. Esta fórmula com proporção comum testa igualdade. Não se aplica diretamente a $H_0:p_1-p_2=\delta_0$ com $\delta_0\ne0$.
+
+No exemplo, $\bar p=60/90=2/3$, o erro padrão sob a nula é 0,1 e $z=3$. O valor-p bilateral é aproximadamente 0,00270. Sem correção de continuidade, o quadrado de z coincide com o qui-quadrado da tabela 2 por 2.
+
+As fórmulas desta página pressupõem grupos independentes. Respostas binárias antes e depois nas mesmas pessoas requerem um método para dados emparelhados, não estas duas proporções independentes.
+
+<CodePlayground
+  language="python"
+  code={codigo}
+  title="Ajustamentos e testes de proporções"
+/>

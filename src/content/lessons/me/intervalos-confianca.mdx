@@ -1,102 +1,107 @@
 ---
-title: Intervalos de confiança
-description: Intervalos para a média e para proporções, escolha entre z e t e dimensionamento do tamanho da amostra.
+title: Intervalos de confiança para uma média
+description: Interpretação frequentista, escolha entre z e t, margens de erro e dimensão da amostra.
 section: conteudo
-order: 6
+order: 9
+practices:
+  - me/praticar-intervalos
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
 import intervalos from '../../me/intervalos.typ?raw';
+import codigo from '../../me/intervalos.py?raw';
 
-Uma estimativa pontual ("a média é 49,2") esconde a incerteza. O **intervalo de confiança** junta-lhe a margem: "a média está entre 46,2 e 52,2 com 95 por cento de confiança". Esta página constrói esses intervalos para médias e proporções e mostra como escolher o tamanho da amostra para uma margem pedida.
+Uma estimativa pontual dá um valor para o parâmetro. Um intervalo acrescenta a incerteza decorrente da amostragem, usando a distribuição do estimador e condições sobre a população.
 
-## A estrutura de todos os intervalos
+## O que significa confiança
 
-Todos os intervalos desta cadeira têm a mesma forma:
+Um procedimento de confiança de 95% produz intervalos que contêm o parâmetro em cerca de 95% das repetições do estudo, sob as condições do modelo. O parâmetro é fixo; os extremos do intervalo variam de amostra para amostra.
 
-$$
-\text{estimativa} \pm \text{valor cr\'itico} \times \text{erro padr\~ao}.
-$$
-
-A estimativa é a estatística da amostra ($\bar{x}$ ou $\hat{p}$). O valor crítico vem da tabela ($z$ ou $t$) e cresce com a confiança pedida: 1,96 para 95 por cento com $z$. O erro padrão mede a variabilidade da estimativa. Decorar esta estrutura vale mais do que decorar cada fórmula, porque cada caso é só uma substituição.
-
-Para a média com **desvio conhecido** $\sigma$: $\bar{x} \pm z_{1-\alpha/2}\,\sigma/\sqrt{n}$. Para a média com **desvio desconhecido** (o caso usual): $\bar{x} \pm t_{n-1;\,1-\alpha/2}\,s/\sqrt{n}$, com a [$t$ de Student](distribuicoes/) a alargar o intervalo quando $n$ é pequeno. Para uma **proporção** com $n$ grande: $\hat{p} \pm z_{1-\alpha/2}\sqrt{\hat{p}(1-\hat{p})/n}$.
-
-## Exemplo: intervalo a 95 por cento para a média
-
-Dezasseis medições de latência dão $\bar{x} = 49{,}2$ ms e $s = 5{,}6$ ms, com o desvio populacional desconhecido. O intervalo a 95 por cento para a média $\mu$ usa $t$ com $15$ graus de liberdade: $t_{15;\,0{,}975} = 2{,}131$. A margem é $2{,}131 \times 5{,}6/\sqrt{16} = 2{,}131 \times 1{,}4 \approx 2{,}98$, logo:
-
-$$
-IC_{95\%}(\mu) = (49{,}2 - 2{,}98;\; 49{,}2 + 2{,}98) = (46{,}22;\; 52{,}18).
-$$
-
-Com $z$ (1,96 em vez de 2,131) a margem sairia 2,74, mais estreita e injustificada: com 16 observações e desvio estimado, a incerteza extra paga-se em largura. É a regra de escolha entre [$z$ e $t$](distribuicoes/) em ação.
-
-Confere o intervalo correndo as contas:
-
-<CodePlayground
-  language="python"
-  title="Intervalo t do exemplo"
-  code={
-    'import math\nxbar, s, n, t = 49.2, 5.6, 16, 2.131\nmargem = t * s / math.sqrt(n)\nprint("IC95%:", (round(xbar - margem, 2), round(xbar + margem, 2)))'
-  }
-/>
-
-Compara o mesmo exemplo com as duas distribuições:
-
-<Tabs id="intervalo-z-ou-t" labels={['Com t (correto)', 'Com z (errado aqui']}>
-  <div slot="panel-0">
-
-Margem $2{,}131 \times 5{,}6/4 = 2{,}98$, intervalo $(46{,}22;\; 52{,}18)$. O $t_{15}$ alarga a margem para compensar o desvio estimado com 16 observações.
-
-  </div>
-  <div slot="panel-1">
-
-Margem $1{,}96 \times 5{,}6/4 = 2{,}74$, intervalo $(46{,}46;\; 51{,}94)$. Mais estreito e mais bonito, mas injustificado: finge que o 5,6 é o desvio populacional conhecido.
-
-  </div>
-</Tabs>
-
-## Exemplo: intervalo para uma proporção
-
-Trezentos e quarenta em 500 utilizadores convertem: $\hat{p} = 340/500 = 0{,}68$. Com $n$ grande, o intervalo a 95 por cento usa $z$:
-
-$$
-0{,}68 \pm 1{,}96\sqrt{\frac{0{,}68 \times 0{,}32}{500}} = 0{,}68 \pm 1{,}96 \times 0{,}0209 \approx 0{,}68 \pm 0{,}041 = (0{,}639;\; 0{,}721).
-$$
-
-A taxa de conversão está entre 63,9 e 72,1 por cento com 95 por cento de confiança. Repara na diferença para a média: aqui o erro padrão usa o próprio $\hat{p}$ (não há desvio separado a estimar), e nunca se usa $t$ para proporções.
-
-## O que "95 por cento de confiança" significa
-
-Significa isto e só isto: se repetisses a amostragem muitas vezes e construisses o intervalo em cada uma, cerca de 95 por cento dos intervalos conteriam o verdadeiro $\mu$. Não significa que este intervalo específico tem 95 por cento de hipótese de conter $\mu$ (ele contém ou não contém; $\mu$ não é aleatório). E não significa que 95 por cento dos dados estão dentro do intervalo (isso seria um intervalo de predição, outra coisa). Quando o enunciado pedir interpretação, escreve a versão das repetições: é a que os corretores esperam.
-
-Vinte intervalos repetidos para a mesma média: dezanove cobrem o verdadeiro valor, um falha. É isto que "95 por cento" promete, nem mais nem menos.
+Depois de observar um intervalo, não atribuímos uma probabilidade de 95% ao parâmetro estar entre aqueles extremos na interpretação frequentista. Também não dizemos que 95% dos dados individuais estão ali. O alvo é a **média populacional**, não a dispersão das observações.
 
 <Typst
   source={intervalos}
   format="svg"
-  alt="Vinte intervalos de confiança horizontais em torno da média verdadeira 48. Dezanove cruzam a linha vertical do 48; um, deslocado para a direita, falha."
+  alt="Vinte intervalos ilustrativos em torno de médias diferentes. Dezanove cruzam a linha da média populacional 48 e um não a cruza; a proporção é apenas uma ilustração do procedimento."
 />
 
-O intervalo que falha não está errado: com 95 por cento de confiança, esperas falhar cerca de 1 em cada 20. O erro seria julgar um intervalo isolado pela sorte que teve.
+A figura ilustra o significado da cobertura; uma série real de vinte intervalos não tem obrigatoriamente dezanove acertos.
 
-## Ver
+## Normal com desvio conhecido
 
-<YouTube
-  id="bGALoCckICI"
-  title="Simulação de intervalos de confiança, Khan Academy"
+Para uma amostra i.i.d. normal com desvio populacional $\sigma$ conhecido,
+
+$$\frac{\bar X-\mu}{\sigma/\sqrt n}\sim N(0,1).$$
+
+Escolhemos $z_{\alpha/2}$ com área $\alpha/2$ à direita e isolamos $\mu$ na desigualdade $|\bar X-\mu|\le z_{\alpha/2}\sigma/\sqrt n$. Obtemos
+
+$$IC_{1-\alpha}(\mu)=\left[\bar x-z_{\alpha/2}\frac\sigma{\sqrt n},\ \bar x+z_{\alpha/2}\frac\sigma{\sqrt n}\right].$$
+
+A margem de erro é $\varepsilon=z_{\alpha/2}\sigma/\sqrt n$. Maior confiança exige maior quantil e alarga o intervalo.
+
+**Exemplo.** Numa população normal, $\sigma=8$. Uma amostra de 64 unidades dá $\bar x=102$. Para 95%, o erro padrão é 1 e a margem é 1,96:
+
+$$IC=[100,04;103,96].$$
+
+Para 99%, o quantil é aproximadamente 2,5758 e o intervalo passa a $[99,4242;104,5758]$. Os dados são os mesmos; mudou a confiança do procedimento.
+
+## Normal com desvio desconhecido
+
+Substituir $\sigma$ pelo desvio amostral S introduz incerteza adicional. Na população normal,
+
+$$T=\frac{\bar X-\mu}{S/\sqrt n}\sim t_{n-1}.$$
+
+O intervalo exato, sob essas condições, é
+
+$$\bar x\pm t_{\alpha/2,n-1}\frac{s}{\sqrt n}.$$
+
+Isto continua a ser verdade com n grande: se a população é normal e $\sigma$ é desconhecido, a t é a distribuição correta. A normal torna-se uma aproximação próxima quando os graus de liberdade crescem.
+
+### Exemplo completo com os dados brutos
+
+Cinco medições, em mm, são $10,1;10,3;10,2;10,4;10,0$. Admitimos unidades independentes e população normal. A média é 10,2 e os desvios quadrados somam $0,01+0,01+0+0,04+0,04=0,10$.
+
+$$s^2=\frac{0,10}{4}=0,025,\quad s\approx0,1581,\quad \frac{s}{\sqrt5}\approx0,07071.$$
+
+A 95%, $t_{0,025;4}\approx2,7764$. A margem é aproximadamente 0,19632 e o intervalo é
+
+$$[10,00368;10,39632]\ \text{mm}.$$
+
+Se forem pedidos limites com duas casas decimais **por excesso**, escreve $[10,00;10,40]$: baixa o limite inferior e sobe o superior para não estreitar o intervalo calculado. Não arredondes s ou o erro padrão antes da multiplicação.
+
+## População não normal
+
+Com uma amostra grande e condições razoáveis para o limite central, usa-se aproximadamente
+
+$$\bar x\pm z_{\alpha/2}\frac{s}{\sqrt n}$$
+
+se o desvio é desconhecido, ou $\sigma/\sqrt n$ se é conhecido. Identifica a aproximação e examina assimetria e extremos. Uma população não normal com cinco observações não fica coberta por esta regra.
+
+Um desvio fornecido a partir de «experiência anterior» pode ser apenas uma estimativa. O uso como $\sigma$ conhecido é uma condição do modelo que tem de estar explícita; a presença de um número no enunciado não chega para decidir.
+
+## Dimensionar uma amostra
+
+Para margem não superior a $\varepsilon$, confiança $1-\alpha$ e desvio conhecido,
+
+$$n\ge\left(\frac{z_{\alpha/2}\sigma}{\varepsilon}\right)^2.$$
+
+Arredonda para o menor inteiro que satisfaz a desigualdade. Com 95%, $\sigma=8$ e margem 1,5, temos $n\ge109,2722$, logo **110** unidades. A média amostral não entra no planeamento desta margem.
+
+Se se pede **erro padrão** não superior a 1,5, a conta é outra: $8/\sqrt n\le1,5$ exige 29 unidades. Erro padrão e margem de confiança não são sinónimos.
+
+Com desvio desconhecido, um estudo piloto pode fornecer uma estimativa para planeamento. O quantil t depende de n, pelo que o cálculo pode exigir iteração e não garante a margem final se o desvio observado mudar.
+
+Mantendo confiança e dispersão, reduzir a margem para metade exige aproximadamente quatro vezes a amostra. Com os mesmos dados, obter um intervalo mais estreito reduzindo a confiança troca precisão por cobertura; não aumenta a informação recolhida.
+
+## Intervalos unilaterais
+
+Para um limite inferior de confiança $1-\alpha$, usa-se $[\bar x-z_\alpha\sigma/\sqrt n;+\infty[$. Para um limite superior, usa-se $]-\infty;\bar x+z_\alpha\sigma/\sqrt n]$. Com desvio desconhecido e população normal, substitui z por $t_{\alpha,n-1}$ e $\sigma$ por s.
+
+Só há uma cauda, logo o quantil usa $\alpha$, não $\alpha/2$. Escolhe o sentido a partir da pergunta, antes de examinar o resultado.
+
+<CodePlayground
+  language="python"
+  code={codigo}
+  title="Conferir intervalos e dimensionamento"
 />
-
-## Dimensionar a amostra
-
-Para garantir uma margem de erro $E$ com confiança $1 - \alpha$ na média com desvio conhecido (ou estimado por um valor provisório):
-
-$$
-n = \left(\frac{z_{1-\alpha/2}\,\sigma}{E}\right)^2,
-$$
-
-arredondando sempre **para cima**. Exemplo: margem de 1 ms a 95 por cento com $\sigma \approx 6$ ms dá $n = (1{,}96 \times 6/1)^2 = 11{,}76^2 \approx 138{,}3$, logo $n = 139$ observações. Repara na escala: cortar a margem para metade exige quatro vezes mais dados, porque $n$ entra com raiz quadrada na margem.
