@@ -58,7 +58,13 @@ _plt.show = _show
     }
     globals = pyodide.toPy({ __name__: '__main__' });
     send({ type: 'status', text: 'A executar…' });
-    await pyodide.runPythonAsync(code, { globals });
+    try {
+      await pyodide.runPythonAsync(code, { globals });
+    } catch (error) {
+      send({ type: 'output', text: (error.message || String(error)) + '\n' });
+      send({ type: 'done', exitCode: 1 });
+      return;
+    }
     send({ type: 'done', exitCode: 0 });
   } catch (error) {
     send({ type: 'error', text: error.message || String(error) });
