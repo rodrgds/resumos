@@ -1661,6 +1661,8 @@ test.describe('personal voice recording', () => {
           }),
       );
     await mockVoice(page, false, 5);
+    // Keep page-view analytics separate from the microphone upload check.
+    await page.route('https://cool.rgo.pt/script.js', (route) => route.abort());
     const uploads: string[] = [];
     page.on('request', (request) => {
       if (!['GET', 'HEAD'].includes(request.method()) || request.postData())
