@@ -1,0 +1,193 @@
+---
+title: Praticar transações
+description: Questões próprias com casos limite, pistas e resoluções justificadas.
+section: exercicios
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Moodle LBAW 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+  coverage: Questões próprias ligadas aos conceitos da lição.
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="corrida"
+  title="Reproduzir a venda excessiva"
+  explanation="/cadeiras/lbaw/triggers-transacoes/#um-count-dentro-de-um-trigger-pode-falhar"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Mostro as duas contagens antes de confirmação.',
+      'Identifico que não veem a escrita não confirmada da outra.',
+      'Explico a falta de coordenação da capacidade.',
+    ],
+  }}
+>
+  <p>
+    Por que duas transações que contam bilhetes num trigger podem exceder a
+    lotação?
+  </p>
+  <div slot="hint">
+    <p>Constrói um caso com um lugar e zero bilhetes.</p>
+  </div>
+  <div slot="hint-more">
+    <p>Cada transação pode observar zero.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      As duas observam zero, inserem e confirmam. Um trigger não cria
+      automaticamente um bloqueio que serialize essa regra.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>«Corre numa transação» não demonstra que a invariante está protegida.</p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="snapshot"
+  title="Read Committed"
+  explanation="/cadeiras/lbaw/triggers-transacoes/#snapshots-e-níveis-de-isolamento"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Não. Cada instrução obtém o seu snapshot.',
+        correct: true,
+        explanation:
+          'Uma confirmação alheia entre as leituras pode tornar-se visível.',
+      },
+      {
+        text: 'Sim, até ao COMMIT o snapshot é sempre o inicial.',
+        correct: false,
+        explanation: 'Isso aproxima-se do contrato de Repeatable Read.',
+      },
+      {
+        text: 'Não, porque permite dirty reads.',
+        correct: false,
+        explanation: 'PostgreSQL não permite dirty reads neste nível.',
+      },
+    ],
+  }}
+>
+  <p>
+    Em PostgreSQL Read Committed, duas SELECT na mesma transação têm
+    obrigatoriamente o mesmo snapshot?
+  </p>
+  <div slot="hint">
+    <p>Observa quando começa cada instrução.</p>
+  </div>
+  <div slot="hint-more">
+    <p>Outra transação pode confirmar no intervalo.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      Não. Pode haver uma leitura não repetível, mesmo sem ler dados não
+      confirmados.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Não confundas snapshot por instrução com leitura de alterações por
+      confirmar.
+    </p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="after"
+  title="Momento do trigger AFTER"
+  explanation="/cadeiras/lbaw/triggers-transacoes/#triggers-momento-unidade-e-retorno"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Não. Continua dentro da transação.',
+        correct: true,
+        explanation:
+          'Um ROLLBACK também anula os seus efeitos na base de dados.',
+      },
+      {
+        text: 'Sim, AFTER significa depois da confirmação.',
+        correct: false,
+        explanation: 'Refere-se ao momento da operação ou instrução.',
+      },
+      {
+        text: 'Só em triggers por linha.',
+        correct: false,
+        explanation: 'A distinção linha/instrução não muda isto.',
+      },
+    ],
+  }}
+>
+  <p>Um trigger AFTER só corre depois de COMMIT?</p>
+  <div slot="hint">
+    <p>Pergunta se uma alteração no histórico deve desaparecer num ROLLBACK.</p>
+  </div>
+  <div slot="hint-more">
+    <p>Os efeitos do trigger pertencem à mesma transação.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      Não. AFTER ocorre após a alteração correspondente e antes de a transação
+      confirmar. O retorno de AFTER por linha é ignorado.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Não envies uma ação externa irreversível supondo que AFTER prova
+      confirmação.
+    </p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="savepoint"
+  title="Recuperar só uma parte"
+  explanation="/cadeiras/lbaw/triggers-transacoes/#acid-e-o-que-cada-letra-promete"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Não. Foi anterior ao savepoint.',
+        correct: true,
+        explanation: 'Só o trabalho posterior ao ponto é revertido.',
+      },
+      {
+        text: 'Sim, sempre anula a transação completa.',
+        correct: false,
+        explanation: 'ROLLBACK TO conserva o trabalho anterior.',
+      },
+      {
+        text: 'Não, porque UPDATE nunca é reversível.',
+        correct: false,
+        explanation: 'Um ROLLBACK completo anularia essa atualização.',
+      },
+    ],
+  }}
+>
+  <p>
+    Decrementas o contador, crias SAVEPOINT, inseres bilhete e fazes ROLLBACK
+    TO. O decremento é anulado?
+  </p>
+  <div slot="hint">
+    <p>Coloca os passos numa linha temporal.</p>
+  </div>
+  <div slot="hint-more">
+    <p>O ponto está depois do decremento.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      O decremento permanece e a inserção desaparece. Se depois confirmas, podes
+      quebrar a regra; o savepoint tem de corresponder à unidade lógica certa.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Não confies no nome «transação» sem observar quais operações são
+      agrupadas.
+    </p>
+  </div>
+</Exercise>

@@ -1,36 +1,44 @@
 ---
 title: Laboratório de Bases de Dados e Aplicações Web
-description: Do levantamento de requisitos à aplicação web com base de dados, seguindo as fases do projeto.
-section: conteudo
+description: Preparação do teste individual, dos requisitos e da modelação aos dados, à aplicação web e às suas garantias.
 order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Moodle LBAW 2026/27, apresentação e materiais das primeiras três semanas
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+  coverage: Todo o âmbito temático do plano atual, com desenvolvimento do teste individual e questões próprias.
+  gaps:
+    - Em 1 de outubro, estavam disponíveis quatro conjuntos de slides, até especificação da base de dados. Os slides posteriores e as provas de 2026/27 ainda não estavam publicados.
+    - O plano confirma os tópicos futuros, mas o detalhe e as convenções de cada aula devem ser comparados quando os materiais forem publicados.
 ---
 
-Nesta cadeira constróis uma aplicação web completa apoiada numa base de dados relacional: levantas requisitos, desenhas o modelo, crias o esquema, escreves o SQL, garantes as regras de negócio e implementas a aplicação e as interfaces. O trabalho é de projeto, em grupo, e cada página deste resumo segue uma fase desse projeto com o mesmo exemplo do princípio ao fim.
+LBAW junta requisitos, dados e aplicação web. Para o teste individual, precisas de explicar as decisões, executar consultas e reconhecer as garantias que cada mecanismo dá. O exemplo das páginas é uma Loja de Bilhetes, com compradores, eventos, sessões e bilhetes. As questões são próprias, não reproduções de provas oficiais.
 
-## Como está organizado
+## Percurso de estudo
 
-O exemplo que nos acompanha é uma **Loja de Bilhetes**: uma aplicação onde utilizadores compram bilhetes para sessões de eventos. Vais construir os requisitos, o esquema e as páginas desta loja ao longo das páginas.
+1. [Requisitos](/cadeiras/lbaw/requisitos/) distingue atores, histórias, regras e critérios de aceitação. [Modelo conceptual](/cadeiras/lbaw/modelo-conceptual/) e [esquema relacional](/cadeiras/lbaw/esquema-relacional/) convertem essas regras em estrutura e restrições.
+2. [Normalização](/cadeiras/lbaw/normalizacao/) encontra chaves e justifica decomposições. [Consultas SQL](/cadeiras/lbaw/consultas-relacionais/) trata junções, NULL, agregação e quantificação.
+3. [Índices e pesquisa](/cadeiras/lbaw/sql-indices/) relaciona consultas, planos e relevância. [Triggers e transações](/cadeiras/lbaw/triggers-transacoes/) explica atomicidade e concorrência, incluindo o caso do último lugar.
+4. [HTTP](/cadeiras/lbaw/http-estado/), [arquitetura com Laravel](/cadeiras/lbaw/aplicacao-laravel/) e [segurança](/cadeiras/lbaw/seguranca-web/) distinguem protocolo, responsabilidades e permissões.
+5. [Arquitetura de informação e acessibilidade](/cadeiras/lbaw/interfaces-acessiveis/), [cliente e desempenho](/cadeiras/lbaw/cliente-desempenho/) e [NoSQL](/cadeiras/lbaw/nosql/) completam os tópicos do plano atual.
 
-Começa por [Levantamento de requisitos](/cadeiras/lbaw/requisitos/), que transforma um enunciado em atores, casos de uso e histórias de utilizador. Depois, [Modelo conceptual em UML](/cadeiras/lbaw/modelo-conceptual/) desenha as classes e associações, e [Do modelo ao esquema relacional](/cadeiras/lbaw/esquema-relacional/) converte esse desenho em tabelas com chaves primárias e estrangeiras.
+Cada capítulo termina com questões e resoluções justificadas. A [cheat sheet](/cadeiras/lbaw/folha-consulta/) conserva definições, condições e armadilhas para consulta depois de estudar.
 
-A segunda parte vive dentro da base de dados: [SQL e índices em PostgreSQL](/cadeiras/lbaw/sql-indices/) escreve as interrogações e acelera as pesquisas frequentes, e [Regras de negócio, triggers e transações](/cadeiras/lbaw/triggers-transacoes/) garante a integridade com restrições, transações e triggers.
+## Preparar o teste
 
-A terceira parte é a aplicação: [Aplicação web com Laravel](/cadeiras/lbaw/aplicacao-laravel/) organiza rotas, controladores, modelos e vistas, e [Interfaces, usabilidade e acessibilidade](/cadeiras/lbaw/interfaces-acessiveis/) desenha páginas que qualquer pessoa consegue usar.
+Resolve uma questão de modelação, uma de normalização e uma consulta sem abrir as pistas. Depois analisa um cenário concorrente e identifica as defesas de um pedido web. Justifica sempre a condição: não chega dizer «tem trigger», «usa ORM» ou «está autenticado».
 
-## Como estudar
+Para SQL, cria dados com zero, uma e várias correspondências, e com NULL quando é permitido. Para uma regra concorrente, escreve uma sequência possível de duas transações. Para uma falha web, identifica quem controla a entrada, onde ela é interpretada e que permissão devia ser verificada.
 
-Lê cada página a construir o exemplo na tua máquina: escreve o requisito, desenha a classe, cria a tabela, corre a interrogação. Em LBAW, perceber o exemplo com os olhos não chega, porque o projeto avalia peças que têm de funcionar juntas. Quando algo falhar, lê a mensagem de erro com calma: o PostgreSQL e o Laravel dizem quase sempre qual é a tabela, a coluna ou a regra que foi violada.
+Os blocos SQL no navegador usam SQLite. Os exemplos específicos de PostgreSQL, como PL/pgSQL, índices GIN e níveis de isolamento, estão identificados e exigem PostgreSQL. Os fragmentos Laravel pressupõem a aplicação e as dependências do projeto; os blocos PHP executáveis isolam uma operação da linguagem.
 
-Trabalha com o Git desde o primeiro dia e com a base de dados em Docker, como no projeto. Testa cada fase antes de passar à seguinte: um requisito vago hoje é uma tabela errada amanhã, e uma tabela errada amanhã é uma reescrita da aplicação na véspera da entrega.
+## Avaliação atual
 
-## Avaliação
+A apresentação e a FAQ de 2026/27 indicam 80% de projeto e 20% de teste individual, com mínimo de 8/20 no teste, sem arredondamento para atingir esse mínimo. Cada componente do projeto exige 10/20. A classificação final não pode exceder a nota do teste acrescida de cinco valores. Por exemplo, projeto 18 e teste 10 dão 16,4 pela média ponderada, mas o limite baixa esse resultado para 15.
 
-A forma de avaliação varia de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes os pesos do trabalho laboratorial e do teste, os mínimos por componente e as regras de participação individual no grupo.
-
-## Fontes e âmbito
-
-Estas páginas seguem o âmbito da unidade curricular de Laboratório de Bases de Dados e Aplicações Web (L.EIC023) do 3.º ano, 1.º semestre da LEIC, ocorrência de 2025/26: desenvolvimento de uma aplicação web com base de dados, do levantamento de requisitos à implementação e documentação, com modelação UML, SQL, índices, transações, triggers, frameworks web centradas no servidor e desenho de interação. As ferramentas de trabalho são Laravel, Git, PostgreSQL, Docker e PHP.
-
-Material oficial da FEUP:
-
-- Ficha da unidade curricular de Laboratório de Bases de Dados e Aplicações Web, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560108).
+O foco destas páginas é o teste. Regras de frequência, entregas, apresentação e avaliação individual do projeto continuam nos [materiais atuais do Moodle](https://moodle2627.up.pt/course/view.php?id=4222). A ficha pública atual identifica a ocorrência, mas ainda não apresentava o programa detalhado quando foi consultada. O âmbito temático foi confirmado no plano do semestre e nos slides já publicados.

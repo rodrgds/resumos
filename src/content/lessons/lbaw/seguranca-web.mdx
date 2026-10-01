@@ -1,0 +1,113 @@
+---
+title: Segurança da aplicação web
+description: SQL injection, XSS, CSRF, autorização e palavras-passe, com exemplos de defesa por contexto.
+order: 10
+practices:
+  - lbaw/praticar-seguranca
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: Injeção SQL, XSS, CSRF, controlo de acesso, gestão de sessão, hashes de palavras-passe e defesa por camadas.
+  gaps:
+    - As aulas atuais de arquitetura web e segurança ainda não estavam publicadas em 1 de outubro. O desenvolvimento destes tópicos usa documentação primária.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import seguranca from '../../lbaw/seguranca.php?raw';
+
+Para cada pedido que altera dados, verifica identidade, autorização, validade da operação e integridade da base de dados. A validação do formulário no navegador pode ser contornada. A defesa tem de existir no servidor e no lugar em que os dados são interpretados.
+
+## SQL injection: separar código de valores
+
+Construir SQL por concatenação permite que um valor passe a ser sintaxe:
+
+```php
+// Vulnerável: a entrada faz parte do texto da instrução.
+$sql = "SELECT id FROM utilizadores WHERE email = '" . $email . "'";
+```
+
+Usa parâmetros preparados:
+
+```php
+$stmt = $pdo->prepare('SELECT id FROM utilizadores WHERE email = :email');
+$stmt->execute(['email' => $email]);
+```
+
+O valor é tratado como dado. Um apóstrofo deixa de fechar uma string do SQL. Parametrizar um valor não parametriza identificadores como nomes de colunas ou palavras-chave. Se a pessoa escolher a ordenação, mapeia a opção para uma lista de colunas autorizadas, sem concatenar o texto recebido.
+
+O ORM ajuda quando usa parâmetros corretamente. Uma expressão raw construída com entrada continua vulnerável. Limita também os privilégios da conta da aplicação: uma leitura não precisa de permissões para alterar o esquema.
+
+## XSS: o contexto decide a codificação
+
+**Cross-site scripting** faz o navegador interpretar dados controlados pelo atacante como código da página. Pode ser refletido na resposta, guardado e mostrado mais tarde, ou criado no cliente ao inserir dados de forma insegura no DOM.
+
+Para texto dentro de HTML, em PHP:
+
+```php
+echo htmlspecialchars($comentario, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+```
+
+No Blade, `{{ $comentario }}` escapa HTML; `{!! $comentario !!}` imprime sem essa proteção. No DOM, prefere `textContent` para texto. `innerHTML` interpreta HTML e só deve receber conteúdo tratado para esse propósito.
+
+A codificação depende do destino. Escapar texto HTML não torna segura uma interpolação dentro de JavaScript, CSS ou um URL. Num URL também tens de verificar o esquema, para não aceitar `javascript:`. Quando a funcionalidade permite HTML formatado, usa uma biblioteca de sanitização mantida com uma lista restrita de elementos e atributos, em vez de remover apenas `<script>`.
+
+Uma política CSP pode reduzir certos ataques, mas não substitui codificação por contexto e sanitização. `HttpOnly` protege a leitura direta do cookie; um script injetado pode ainda agir com a sessão da vítima.
+
+## CSRF: a sessão é enviada automaticamente
+
+Em **cross-site request forgery**, uma página de outra pessoa induz um pedido ao sistema usando credenciais que o navegador envia, como cookies. O atacante não precisa de conhecer o identificador da sessão nem de ler a resposta para causar uma alteração.
+
+Uma compra baseada em sessão deve usar um token imprevisível associado ao contexto autorizado e validado pelo servidor. No Laravel, formulários protegidos pelo middleware adequado incluem `@csrf`. O token só é útil se for verificado; não deve ser colocado num URL que aparece em históricos e registos.
+
+`SameSite` e verificação de origem são defesas complementares. Um método POST sozinho não protege, e CORS não impede todos os envios de formulários. XSS pode contornar muitas defesas CSRF porque executa código na origem legítima.
+
+## Autenticado não significa autorizado
+
+O comprador 7 pode estar autenticado e pedir `GET /bilhetes/900`, pertencente ao comprador 8. A aplicação tem de testar a relação entre a identidade e o recurso. Esconder o link ou usar um identificador difícil de adivinhar não cria essa permissão.
+
+```php
+// Laravel: carregar o recurso e verificar a policy antes de o mostrar.
+$bilhete = Bilhete::findOrFail($id);
+$this->authorize('view', $bilhete);
+```
+
+Aplica o controlo em todos os caminhos, incluindo API, downloads e operações em lote. Autoriza por defeito a recusa e concede apenas as permissões necessárias. O papel «comprador» pode dar acesso à funcionalidade, mas a pertença do bilhete decide que objeto pode consultar.
+
+Receber `utilizador_id=8` no formulário não autoriza criar uma compra para 8. Usa a identidade autenticada quando a operação é «comprar para mim». `$fillable` controla preenchimento em massa de atributos, não verifica quem pode operar sobre cada objeto.
+
+## Palavras-passe e fixação de sessão
+
+Guarda palavras-passe com um algoritmo de hash próprio para palavras-passe, como Argon2id ou bcrypt, através de uma API mantida. SHA-256 simples é demasiado rápido para este objetivo. **Hash** não tem uma chave de desencriptação; **cifragem** permite recuperar o original com uma chave. Uma palavra-passe não precisa de ser recuperada para verificar o login.
+
+Em PHP, `password_hash` gera o hash com os parâmetros e salt necessários; `password_verify` verifica-o. O hash guardado já contém a informação que a API precisa. Não compares um novo hash gerado ao texto do anterior, porque os salts podem diferir.
+
+Após autenticar, regenera o identificador da sessão para impedir **session fixation**. Uma mensagem de login genérica evita revelar qual parte das credenciais existe. Limitação de tentativas, recuperação com tokens de uso único e expiração completam a proteção.
+
+<CodePlayground
+  language="php"
+  title="Texto HTML e verificação de uma palavra-passe"
+  code={seguranca}
+/>
+
+O primeiro resultado contém `&lt;img ...&gt;`, texto codificado que deixa de ser uma tag. Os resultados seguintes são `certa` e `recusada`. O bloco isola duas APIs, não implementa login, CSRF ou políticas de acesso. Não introduzas palavras-passe pessoais nestes exemplos.
+
+## Identificar a defesa numa pergunta
+
+| Situação                                                 | Defesa principal                                                             |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Valor torna-se parte da sintaxe SQL.                     | Consulta parametrizada.                                                      |
+| Comentário torna-se HTML ativo.                          | Codificação ou sanitização apropriada ao contexto.                           |
+| Cookie da vítima acompanha uma operação induzida.        | Proteção CSRF validada no servidor.                                          |
+| Pessoa consulta o bilhete de outra.                      | Autorização sobre o recurso.                                                 |
+| Identificador de sessão anterior ao login é reutilizado. | Regeneração da sessão.                                                       |
+| Base de dados de palavras-passe é exposta.               | Hash resistente com parâmetros adequados, além de proteção do armazenamento. |
+
+São mecanismos diferentes. Uma consulta parametrizada não impede alguém de consultar um objeto para o qual não tem autorização, e um token CSRF não impede XSS.
+
+As referências são as folhas OWASP de [SQL injection](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html), [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html), [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) e [armazenamento de palavras-passe](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).

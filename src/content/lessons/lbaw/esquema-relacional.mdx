@@ -1,15 +1,26 @@
 ---
 title: Do modelo ao esquema relacional
 description: Conversão de UML em tabelas, chaves primárias e estrangeiras, e validação do esquema da Loja de Bilhetes.
-section: conteudo
 order: 3
+practices:
+  - lbaw/praticar-esquema
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: Chaves, domínios, restrições, integridade referencial, regras de mapeamento e limites da conversão.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import Tabs from '../../../components/Tabs.astro';
 
-O [modelo conceptual](modelo-conceptual/) desenha o problema. O esquema relacional traduz esse desenho para tabelas que o PostgreSQL consegue guardar. A conversão segue regras fixas: cada regra do UML tem um destino certo nas tabelas, e aplica-las bem evita os erros que depois custam migrações.
+O [modelo conceptual](/cadeiras/lbaw/modelo-conceptual/) desenha o problema. O esquema relacional traduz esse desenho para tabelas que o PostgreSQL consegue guardar. A conversão segue regras fixas: cada regra do UML tem um destino certo nas tabelas, e aplica-las bem evita os erros que depois custam migrações.
 
 ## As regras de conversão
 
@@ -34,7 +45,7 @@ sessoes (..., evento_id INTEGER NOT NULL REFERENCES eventos (id))
   </div>
   <div slot="panel-1">
 
-Utilizador N a Sessão N, resolvida pela classe Bilhete: a tabela `bilhetes` guarda as duas estrangeiras, `utilizador_id` e `sessao_id`. A classe de associação vira sempre tabela própria.
+Utilizador N a Sessão N, resolvida pela classe Bilhete: a tabela `bilhetes` guarda as duas estrangeiras, `utilizador_id` e `sessao_id`. A entidade Bilhete mantém identidade própria.
 
 ```sql
 bilhetes (..., utilizador_id INTEGER NOT NULL REFERENCES utilizadores (id),
@@ -63,7 +74,7 @@ CREATE TABLE utilizadores (
     id SERIAL PRIMARY KEY,
     nome TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    palavra_passe TEXT NOT NULL
+    palavra_passe_hash TEXT NOT NULL
 );
 
 CREATE TABLE eventos (
@@ -126,8 +137,38 @@ O esquema completo, os dados de exemplo e a pergunta final cabem num programa s�
   language="sql"
   title="Esquema e compra de exemplo"
   code={
-    "PRAGMA foreign_keys = ON;\nCREATE TABLE utilizadores (\n    id INTEGER PRIMARY KEY,\n    nome TEXT NOT NULL,\n    email TEXT NOT NULL UNIQUE,\n    palavra_passe TEXT NOT NULL\n);\nCREATE TABLE eventos (\n    id INTEGER PRIMARY KEY,\n    titulo TEXT NOT NULL,\n    descricao TEXT,\n    categoria TEXT\n);\nCREATE TABLE sessoes (\n    id INTEGER PRIMARY KEY,\n    evento_id INTEGER NOT NULL REFERENCES eventos (id),\n    data_hora TEXT NOT NULL,\n    preco NUMERIC(8, 2) NOT NULL,\n    lotacao INTEGER NOT NULL CHECK (lotacao > 0)\n);\nCREATE TABLE bilhetes (\n    id INTEGER PRIMARY KEY,\n    utilizador_id INTEGER NOT NULL REFERENCES utilizadores (id),\n    sessao_id INTEGER NOT NULL REFERENCES sessoes (id),\n    codigo TEXT NOT NULL UNIQUE,\n    estado TEXT NOT NULL CHECK (estado IN ('reservado', 'pago', 'cancelado'))\n);\nINSERT INTO eventos (titulo, descricao, categoria)\nVALUES ('Noite de Fado', 'Fado na sala principal', 'musica');\nINSERT INTO sessoes (evento_id, data_hora, preco, lotacao)\nVALUES (1, '2026-12-14 21:30', 12.50, 100);\nINSERT INTO utilizadores (nome, email, palavra_passe)\nVALUES ('Ana', 'ana@example.com', 'segredo');\nINSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)\nVALUES (1, 1, 'B-0001', 'reservado');\nSELECT e.titulo, s.data_hora, b.codigo, b.estado\nFROM bilhetes AS b\nJOIN sessoes AS s ON s.id = b.sessao_id\nJOIN eventos AS e ON e.id = s.evento_id;"
+    "PRAGMA foreign_keys = ON;\nCREATE TABLE utilizadores (\n    id INTEGER PRIMARY KEY,\n    nome TEXT NOT NULL,\n    email TEXT NOT NULL UNIQUE,\n    palavra_passe_hash TEXT NOT NULL\n);\nCREATE TABLE eventos (\n    id INTEGER PRIMARY KEY,\n    titulo TEXT NOT NULL,\n    descricao TEXT,\n    categoria TEXT\n);\nCREATE TABLE sessoes (\n    id INTEGER PRIMARY KEY,\n    evento_id INTEGER NOT NULL REFERENCES eventos (id),\n    data_hora TEXT NOT NULL,\n    preco NUMERIC(8, 2) NOT NULL,\n    lotacao INTEGER NOT NULL CHECK (lotacao > 0)\n);\nCREATE TABLE bilhetes (\n    id INTEGER PRIMARY KEY,\n    utilizador_id INTEGER NOT NULL REFERENCES utilizadores (id),\n    sessao_id INTEGER NOT NULL REFERENCES sessoes (id),\n    codigo TEXT NOT NULL UNIQUE,\n    estado TEXT NOT NULL CHECK (estado IN ('reservado', 'pago', 'cancelado'))\n);\nINSERT INTO eventos (titulo, descricao, categoria)\nVALUES ('Noite de Fado', 'Fado na sala principal', 'musica');\nINSERT INTO sessoes (evento_id, data_hora, preco, lotacao)\nVALUES (1, '2026-12-14 21:30', 12.50, 100);\nINSERT INTO utilizadores (nome, email, palavra_passe_hash)\nVALUES ('Ana', 'ana@example.com', 'hash_apenas_para_demonstracao');\nINSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)\nVALUES (1, 1, 'B-0001', 'reservado');\nSELECT e.titulo, s.data_hora, b.codigo, b.estado\nFROM bilhetes AS b\nJOIN sessoes AS s ON s.id = b.sessao_id\nJOIN eventos AS e ON e.id = s.evento_id;"
   }
 />
 
-A última linha imprime `Noite de Fado|2026-12-14 21:30|B-0001|reservado`. Repara nas adaptações ao motor desta página: `INTEGER PRIMARY KEY` em vez de `SERIAL` e datas como texto, porque aqui corre SQLite e não PostgreSQL. As chaves e as restrições são as mesmas do esquema.
+A última linha imprime `Noite de Fado|2026-12-14 21:30|B-0001|reservado`. Repara nas adaptações ao motor desta página: `INTEGER PRIMARY KEY` em vez de `SERIAL` e datas como texto, porque aqui corre SQLite e não PostgreSQL. As chaves estrangeiras estão ativadas por PRAGMA. A afinidade de tipos SQLite e NUMERIC não reproduz todas as garantias de tipos e precisão de PostgreSQL. O hash mostrado é apenas um marcador de dados de teste, não serve para autenticar.
+
+## Chaves, domínios e NULL
+
+Uma **chave primária** é única e não nula. Uma **chave candidata** resulta das regras do domínio e é mínima; só uma é escolhida como primária, mas as outras continuam a exigir a unicidade apropriada. Uma chave artificial não substitui `UNIQUE(email)` quando o email deve ser único.
+
+Em PostgreSQL, `CHECK(preco >= 0)` aceita a linha se a expressão der verdadeiro **ou desconhecido**. Para impedir um preço nulo, acrescenta `NOT NULL`. O `DEFAULT` fornece um valor quando ele é omitido; não impede a pessoa de enviar outro nem substitui uma restrição.
+
+Por defeito, `UNIQUE` permite vários NULL em PostgreSQL, porque não os trata como valores iguais. Quando a regra precisa de outra semântica, considera `NULLS NOT DISTINCT` nas versões que o suportam, ou um desenho alternativo. Uma restrição de email único pode ainda exigir uma política para maiúsculas.
+
+## Apagar e referenciar
+
+| Ação da chave estrangeira | Consequência                                                                                  |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| NO ACTION                 | Recusa uma violação quando a restrição é verificada; pode ser adiada se declarada deferrable. |
+| RESTRICT                  | Impede a operação de imediato, sem a possibilidade equivalente de adiamento.                  |
+| CASCADE                   | Propaga a eliminação ou alteração às linhas que referenciam.                                  |
+| SET NULL                  | Remove a referência; exige que as colunas e outras restrições permitam NULL.                  |
+| SET DEFAULT               | Aplica o default, que também tem de respeitar a chave estrangeira.                            |
+
+Não escolhas CASCADE para tudo. Eliminar uma categoria pode justificar outra ação que eliminar um documento fiscal. O sentido da FK também importa: eliminar um bilhete não apaga a sessão que ele refere.
+
+## Mapear subtipos e relações opcionais
+
+Uma solução para especialização é uma tabela de supertipo e uma por subtipo, com a chave de cada subtipo também a ser FK para o supertipo. Partilha atributos sem os duplicar, mas a regra «todo o supertipo tem exatamente um destes subtipos» não aparece automaticamente só com essas FKs.
+
+Outra é uma tabela única com um discriminador e colunas específicas. Precisa de CHECKs que liguem o discriminador aos atributos exigidos; pode produzir muitos NULL. A escolha depende de consultas, restrições e da forma de especialização. Explica como garantes totalidade e disjunção quando são obrigatórias.
+
+Numa relação N:N simples, uma tabela com PK composta `(utilizador_id,sessao_id)` permite no máximo uma ligação por par. **Bilhete** tem identidade própria: a mesma pessoa pode comprar vários para a mesma sessão, logo o par não é único neste exemplo. Não apliques automaticamente a PK composta de uma associação simples a uma entidade associativa com várias ocorrências por par.
+
+As regras oficiais de [restrições em PostgreSQL](https://www.postgresql.org/docs/current/ddl-constraints.html) esclarecem os casos NULL e integridade referencial. A validação do esquema continua com [dependências funcionais e normalização](/cadeiras/lbaw/normalizacao/).
