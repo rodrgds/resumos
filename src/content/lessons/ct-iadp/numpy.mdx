@@ -10,8 +10,16 @@ editorial:
   sources:
     - title: Programa e materiais da turma, Moodle 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: Módulo Moodle 42030, slides observados
+      url: https://moodle2627.up.pt/mod/lesson/view.php?id=42030
     - title: NumPy, conceitos básicos
       url: https://numpy.org/doc/stable/user/absolute_beginners.html
+    - title: NumPy, gerador aleatório
+      url: https://numpy.org/doc/stable/reference/random/generator.html
+    - title: NumPy, leitura de dados
+      url: https://numpy.org/doc/stable/reference/generated/numpy.genfromtxt.html
+  gaps:
+    - Inclui tipos, memória, leitura numérica, estatísticas, acumulados e geração aleatória de PD01. Comparação parcial com imagens publicadas; os PDFs completos e todos os exercícios ainda exigem conferência.
   coverage: Arrays 1D e 2D, shape, dtype, eixos, broadcasting, cópias e vistas.
 ---
 
@@ -35,6 +43,30 @@ precos = np.array([1.5, 1.2, 2.0])
 Um array de inteiros não passa automaticamente a reais quando lhe atribuis 2.5. Escolhe `dtype=float` quando o cálculo exige frações. A mistura com strings pode converter todos os elementos para texto e impedir a aritmética esperada.
 
 `np.zeros((2, 3))` cria duas linhas e três colunas preenchidas com zero. `np.ones` preenche com um. `np.arange(1, 6, 2)` produz 1, 3 e 5. `np.linspace(0, 1, 5)` produz cinco pontos igualmente espaçados, incluindo normalmente ambos os extremos. `np.empty` reserva espaço sem inicializar valores úteis; preenche-o antes de ler.
+
+## Tipo e memória
+
+O número no nome `int8`, `uint8`, `float32` ou `float64` indica bits por elemento. `int8` guarda inteiros de −128 a 127; `uint8`, sem sinal, guarda 0 a 255. `float32` ocupa quatro bytes e `float64` oito. `complex64` ocupa oito bytes no total, com duas componentes reais de quatro bytes.
+
+`a.itemsize` dá bytes por elemento e `a.nbytes` o total de bytes dos dados. Um array `(2, 3)` de `float64` tem seis elementos e ocupa 48 bytes de dados. Isto não inclui todo o custo do objeto Python. `.data` expõe o buffer; usa índices para aceder aos valores.
+
+`a.astype(float)` devolve normalmente outro array convertido. Escolhe um tipo que represente os valores e a precisão necessários: inteiros de tamanho fixo podem transbordar e converter reais para inteiros elimina a parte fracionária. `np.iinfo(np.int8)` mostra limites de um tipo inteiro. O tipo de `np.array` é inferido dos dados quando omites `dtype`; não é sempre `float64`.
+
+## Identidade e leitura de dados numéricos
+
+`np.eye(3)` cria uma matriz identidade 3 × 3, com uns na diagonal e zeros fora dela. Para dados tabulares numéricos, `genfromtxt` lê um ficheiro ou objeto semelhante a ficheiro, permitindo indicar separador e linhas de cabeçalho.
+
+```python
+from io import StringIO
+import numpy as np
+
+texto = StringIO("a;b\n2;3\n4;5\n")
+a = np.genfromtxt(texto, delimiter=";", skip_header=1)
+print(a.shape)       # (2, 2)
+print(a.sum(axis=0)) # [6. 8.]
+```
+
+Aqui as colunas são numéricas. Para colunas de tipos diferentes, datas ou categorias, um DataFrame pandas costuma conservar melhor o significado da tabela. Confere a forma e os valores em falta após ler dados externos.
 
 ## Operar elemento a elemento
 
@@ -79,3 +111,36 @@ Ao multiplicar a matriz `(2, 3)` por preços com forma `(3,)`, NumPy usa o mesmo
 Um slice básico pode ser uma **vista**, que partilha os dados com o array original. Alterar `parte = dados[:2]` pode alterar `dados`. `dados[:2].copy()` cria dados independentes. Seleção por máscara booleana e índices avançados produz uma cópia; não uses essa distinção como substituto para tornar a alteração explícita.
 
 Quando queres alterar o original, escreve `dados[mascara] = novo_valor`. Quando queres trabalhar à parte, usa `.copy()`.
+
+## Estatísticas e acumulados de arrays
+
+`sum`, `mean`, `min`, `max`, `std` e `var` reduzem valores. NumPy usa `ddof=0` por defeito em `std` e `var`; indica `ddof=1` para a convenção amostral. `argmin` e `argmax` devolvem posições, enquanto `min` e `max` devolvem valores. Sem eixo, a posição refere-se ao array achatado.
+
+`np.cumsum([2, 3, 1])` devolve 2, 5 e 6; `np.cumprod` devolve 2, 6 e 6. Num array 2D, indica `axis` para conservar a organização pretendida. Sem eixo, os acumulados usam uma sequência achatada. A presença de NaN pode propagar ausência; funções como `np.nansum` exprimem a decisão de ignorar NaN.
+
+## Gerar dados aleatórios reproduzíveis
+
+Cria um gerador com `rng = np.random.default_rng(12)`. A semente fixa o estado inicial. Na mesma versão e com a mesma sequência de chamadas, podes repetir a experiência; mudar a ordem das chamadas muda os valores seguintes.
+
+| Método do gerador               | Resultado                                                   |
+| ------------------------------- | ----------------------------------------------------------- |
+| `rng.random(4)`                 | Quatro reais uniformes em `[0, 1)`                          |
+| `rng.integers(1, 7, size=4)`    | Quatro inteiros de 1 a 6, extremo superior excluído         |
+| `rng.standard_normal(4)`        | Quatro observações normais, média 0 e desvio padrão 1       |
+| `rng.normal(10, 2, size=4)`     | Normal com média 10 e desvio padrão 2                       |
+| `rng.uniform(2, 5, size=4)`     | Uniforme entre 2 e 5                                        |
+| `rng.binomial(8, 0.25, size=4)` | Número de sucessos em oito ensaios, probabilidade 0,25      |
+| `rng.permutation(valores)`      | Nova sequência com os elementos baralhados                  |
+| `rng.shuffle(valores)`          | Baralha o objeto fornecido, sem devolver uma nova sequência |
+
+Slides e programas antigos usam `np.random.seed`, `rand`, `randint` e `randn`. Correspondem à interface anterior: `rand` gera uniformes, `randint` inteiros e `randn` normais padrão. Para código novo, o gerador explícito evita partilhar estado aleatório global entre exemplos.
+
+<CodePlayground
+  language="python"
+  title={'Repetir uma simulação de dados'}
+  code={
+    'import numpy as np\n\ndef lancamentos(semente):\n    rng = np.random.default_rng(semente)\n    return rng.integers(1, 7, size=12)\n\na = lancamentos(12)\nb = lancamentos(12)\nprint("repetiu:", np.array_equal(a, b))\nprint("entre 1 e 6:", bool(((a >= 1) & (a <= 6)).all()))\nprint("contagens:", np.bincount(a, minlength=7)[1:].tolist())'
+  }
+/>
+
+As contagens somam 12. Não devem ser iguais por face numa amostra pequena. Um gerador reproduz uma simulação; não transforma resultados aleatórios numa garantia de frequências exatas.
