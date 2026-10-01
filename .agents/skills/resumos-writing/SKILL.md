@@ -46,7 +46,7 @@ Ser conciso é retirar repetição. Mantém as frases que permitem reconstruir o
 
 ## Rever uma cadeira inteira
 
-Quando preparares uma cadeira para exames, relaciona cada tópico do programa e dos materiais do ano com a lição que o explica, um exemplo resolvido e uma oportunidade de prática. Regista a cobertura e as lacunas na documentação editorial; a introdução da cadeira deve dar ao aluno um percurso de estudo.
+Quando preparares uma cadeira para exames, relaciona cada tópico dos materiais do Moodle do aluno com a explicação, um exemplo resolvido e uma oportunidade de prática. Usa esses materiais como base, confirmando o ano nos ficheiros; livros e outras fontes completam a explicação. A apresentação da cadeira reúne o percurso de estudo, a bibliografia e as ligações às fontes. As lições ensinam a matéria, sem notas sobre a recolha ou citações bibliográficas no corpo. Metadados editoriais no frontmatter são opcionais. Guarda downloads, inventários e notas de revisão apenas no arquivo local ignorado; não cries relatórios de cobertura nem testes que repitam o conteúdo.
 
 Confirma o ano nos próprios ficheiros, além do endereço do Moodle. Se uma apresentação antiga contradisser a ficha atual, conserva a origem e a dúvida no registo editorial. Uma fonte indisponível continua a ser uma lacuna, mesmo quando um livro cobre o mesmo tema. Distingue exercícios próprios, adaptações e provas antigas; uma prova anterior ajuda a escolher tipos de problemas, mas não confirma as regras do exame atual.
 
