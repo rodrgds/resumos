@@ -10,10 +10,20 @@ editorial:
   sources:
     - title: Programa e materiais da turma, Moodle 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: Módulo Moodle 42035, slides observados
+      url: https://moodle2627.up.pt/mod/lesson/view.php?id=42035
     - title: pandas, operações básicas
       url: https://pandas.pydata.org/docs/user_guide/basics.html
     - title: pandas, tutoriais introdutórios
       url: https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html
+    - title: pandas, erro padrão da média
+      url: https://pandas.pydata.org/docs/reference/api/pandas.Series.sem.html
+    - title: pandas, curtose
+      url: https://pandas.pydata.org/docs/reference/api/pandas.Series.kurt.html
+    - title: pandas 2.0, operações removidas
+      url: https://pandas.pydata.org/docs/whatsnew/v2.0.0.html
+  gaps:
+    - Inclui moda, desvio absoluto médio, erro padrão, assimetria, curtose e acumulados observados nos slides de PD04. Comparação parcial com imagens publicadas; os PDFs completos e todos os exercícios ainda exigem conferência.
   coverage: Contagens, média, mediana, quantis, dispersão, ordenação e unidades de análise.
 ---
 
@@ -44,6 +54,40 @@ Em pandas, `var()` e `std()` usam `ddof=1` por defeito. NumPy usa geralmente `dd
 `quantile(0.25)` calcula o primeiro quartil, `quantile(0.5)` a mediana e `quantile(0.75)` o terceiro quartil. O método de interpolação afeta quantis com poucas observações. Para os quatro valores, pandas com a interpolação linear habitual dá 2,75 e 4,25 nos quartis.
 
 `describe()` de uma coluna numérica mostra contagem, média, desvio padrão, mínimo, quartis e máximo. Usa `describe(include="all")` para incluir tipos não numéricos, mas interpreta as estatísticas conforme a coluna. Uma contagem de linhas não explica por si só o que foi medido.
+
+## Moda, desvios e forma da distribuição
+
+`mode()` devolve uma Series com todas as modas. Para 2, 2, 5 e 5, devolve 2 e 5; não escolhe um único vencedor. `abs()` calcula o valor absoluto de cada elemento e conserva o índice.
+
+O **desvio absoluto médio** é a média das distâncias à média, sem elevar ao quadrado. Para 2, 3, 5 e 4, os desvios absolutos são 1,5, 0,5, 1,5 e 0,5; a sua média é 1. Slides antigos usam `mad()`, removido no pandas 2.0. Usa `(s - s.mean()).abs().mean()`. Não confundas este cálculo com a mediana dos desvios absolutos à mediana, também abreviada MAD.
+
+O **erro padrão da média**, `sem()`, é `std() / sqrt(count())` com a mesma convenção de graus de liberdade. Nos quatro valores, dá aproximadamente 0,6455. O desvio padrão descreve a dispersão das observações; o erro padrão estima a variabilidade da média em amostras. Essa interpretação exige um modelo de amostragem adequado, por exemplo observações independentes.
+
+`skew()` mede assimetria: valores positivos indicam uma cauda mais longa à direita, negativos à esquerda. `kurt()` usa o excesso de curtose de Fisher, cuja referência normal é zero. Estes métodos incluem correções amostrais; poucos dados, valores constantes ou insuficientes podem dar resultados pouco informativos ou em falta. O sinal da curtose, por si só, não identifica uma distribuição.
+
+```python
+s = pd.Series([2, 3, 5, 4])
+print((s - s.mean()).abs().mean())  # 1.0
+print(round(s.sem(), 4))           # 0.6455
+print(round(s.skew(), 4))          # 0.0
+print(round(s.kurt(), 4))          # -1.2
+```
+
+Estas operações aplicadas a um DataFrame resumem normalmente cada coluna. Seleciona as colunas quantitativas ou usa `numeric_only=True` quando a tabela mistura números e texto.
+
+## Produto e operações acumuladas
+
+`prod()` reduz todos os valores a um produto. `cumsum()`, `cumprod()`, `cummax()` e `cummin()` devolvem um valor por posição, usando apenas o prefixo até essa posição. A ordem das linhas faz parte do cálculo.
+
+| Valores: 2, 3, 1   | Resultado |
+| ------------------ | --------- |
+| `sum()` / `prod()` | 6 / 6     |
+| `cumsum()`         | 2, 5, 6   |
+| `cumprod()`        | 2, 6, 6   |
+| `cummax()`         | 2, 3, 3   |
+| `cummin()`         | 2, 2, 1   |
+
+Com `skipna=True`, uma posição ausente continua ausente, mas o acumulado seguinte pode continuar com os valores conhecidos. `skipna=False` propaga a ausência a partir desse ponto. Confere a política antes de apresentar um acumulado como total completo.
 
 ## Contar linhas, valores e categorias
 
