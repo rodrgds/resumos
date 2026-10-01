@@ -1,0 +1,114 @@
+---
+title: Praticar SIMD
+description: Problemas próprios com condições, pistas e resoluções completas.
+section: exercicios
+editorial:
+  basedOn: 2024/25
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="ac-simd-carry"
+  title="Impedir carry entre vias"
+  explanation="/cadeiras/ac/simd/#soma-subtração-e-overflow"
+  answer={{ kind: 'number', value: 22, tolerance: 0 }}
+>
+  <p>
+    ADD8 soma vias baixas [250,2,3,4] e [10,20,30,40]. Qual é B1 do resultado?
+  </p>
+  <div slot="hint">Cada byte é uma soma independente.</div>
+  <div slot="hint-more">B1 usa 2+20, não o carry da B0.</div>
+  <div slot="solution">
+    B1=22; B0=260 mod 256=4. Uma soma escalar produziria B1=23.
+  </div>
+  <div slot="mistakes">Propagar o carry para a via seguinte.</div>
+</Exercise>
+
+<Exercise
+  id="ac-simd-signed"
+  title="Escolher uma comparação"
+  explanation="/cadeiras/ac/simd/#comparações-e-deslocamentos"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'SCMPLT8 produz 0xFF; UCMPLT8 produz 0',
+        correct: true,
+        explanation: '0xF0 é −16 com sinal e 240 sem sinal.',
+      },
+      {
+        text: 'Ambas produzem 0xFF',
+        correct: false,
+        explanation: '240 não é menor que 10 sem sinal.',
+      },
+      {
+        text: 'Ambas produzem 1',
+        correct: false,
+        explanation: 'A máscara verdadeira tem todos os bits 1 da via.',
+      },
+    ],
+  }}
+>
+  <p>Compara o byte 0xF0 com 10. Quais são as máscaras assinada e sem sinal?</p>
+  <div slot="hint">O padrão de bits tem duas interpretações.</div>
+  <div slot="hint-more">−16&lt; 10, mas 240&gt; 10.</div>
+  <div slot="solution">
+    SCMPLT8 dá 0xFF; UCMPLT8 dá 0x00. Máscara não é o inteiro 1.
+  </div>
+  <div slot="mistakes">
+    Ignorar signedness ou reduzir a máscara antes de uma operação que precisa de
+    todos os bits.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-simd-pack"
+  title="Empacotar meias palavras"
+  explanation="/cadeiras/ac/simd/#empacotar-trocar-e-estender"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei H0 e H1 dos dois operandos.',
+      'Coloquei a.H0 na metade alta.',
+      'Coloquei b.H1 na metade baixa.',
+    ],
+  }}
+>
+  <p>a=0x12345678, b=0xABCDEF01. Calcula PKBT16(a, b).</p>
+  <div slot="hint">PKBT16 forma (H1, H0)=(a.H0, b.H1).</div>
+  <div slot="hint-more">a.H0=0x5678; b.H1=0xABCD.</div>
+  <div slot="solution">
+    Resultado 0x5678ABCD. A primeira parcela da concatenação ocupa a metade
+    alta.
+  </div>
+  <div slot="mistakes">
+    Tomar a primeira parcela como H0 ou trocar PKBT com PKTB.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-simd-mul"
+  title="Produtos diretos e cruzados"
+  explanation="/cadeiras/ac/simd/#multiplicação-e-pares-de-registos"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Obtive os dois produtos 32 bits diretos −8 e 15.',
+      'Obtive os cruzados −10 e 12.',
+      'Expliquei por que são necessários dois registos.',
+    ],
+  }}
+>
+  <p>Vias H0, H1: a=[−2,3], b=[4,5]. Indica resultados de SMUL16 e SMULX16.</p>
+  <div slot="hint">Produtos de 16 bits geram resultados de 32 bits.</div>
+  <div slot="hint-more">Direto: H0×H0 e H1×H1; cruzado: H0×H1 e H1×H0.</div>
+  <div slot="solution">
+    SMUL16:(baixo −8, alto 15); SMULX16:(baixo −10, alto 12). Cada par guarda
+    dois produtos completos, não dois produtos de 16 bits em um registo.
+  </div>
+  <div slot="mistakes">
+    Truncar antes da operação seguinte sem justificar limites ou confundir ordem
+    do par.
+  </div>
+</Exercise>

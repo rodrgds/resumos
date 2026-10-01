@@ -1,79 +1,72 @@
 ---
-title: Superescalares
-description: Emissão múltipla, dependências que limitam, execução fora de ordem e commit em ordem.
+title: Paralelismo ao nível de instruções
+description: Dependências, múltiplas unidades funcionais, intervalos de início e emissão múltipla.
 section: conteudo
-order: 7
+order: 8
+practices:
+  - ac/praticar-superescalar
+editorial:
+  basedOn: 2024/25
 ---
 
-import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
-import janela from '../../ac/superescalar-janela.typ?raw';
 import dependencias from '../../ac/dependencias.dot?raw';
 
-O pipeline escalar completa no máximo uma instrução por ciclo. O processador **superescalar** replica hardware para buscar, descodificar e executar **várias instruções por ciclo**: CPI abaixo de 1, ou, na linguagem do mercado, IPC (_instructions per cycle_) acima de 1. O preço é decidir em hardware, a cada ciclo, que instruções podem avançar juntas sem violar o programa.
+Uma unidade funcional pode calcular enquanto outra executa uma operação independente. Este paralelismo ao nível de instruções, ILP, encontra limites nas dependências, nos recursos e na possibilidade de escolher o trabalho pronto.
 
-## Emissão múltipla
+## RAW, WAR e WAW
 
-Um superescalar de 2 vias busca 2 instruções por ciclo e tem (pelo menos) 2 unidades funcionais para as executar. Se o programa fosse uma fila de instruções independentes, o débito duplicava. Mas as instruções dependem umas das outras, e as dependências mandam:
+| Dependência          | Ordem a preservar                               | Exemplo                        |
+| -------------------- | ----------------------------------------------- | ------------------------------ |
+| RAW, verdadeira      | Ler depois da escrita que produz o valor        | `add t0,t1,t2`; `sub t3,t0,t4` |
+| WAR, antidependência | Não destruir um valor antes da leitura anterior | `sub t3,t0,t4`; `add t0,t5,t6` |
+| WAW, de saída        | A última escrita do programa deve prevalecer    | `add t0,t1,t2`; `sub t0,t3,t4` |
 
-```riscv
-add  t0, t1, t2
-sub  t3, t0, t4
-```
-
-O `sub` precisa de `t0`, que o `add` ainda está a calcular. Não há paralelismo aqui: o `sub` espera, e a segunda via fica vazia nesse ciclo. O débito real fica ditado pelo paralelismo do programa, não pela largura da máquina. Duplicar as vias sem instruções independentes para as encher é hardware parado.
-
-## O que limita: três dependências
-
-Entre duas instruções há três relações possíveis, comparando o que cada uma lê e escreve:
-
-- **RAW** (_read after write_): a segunda lê o que a primeira escreve. É dependência a sério: o valor tem de fluir da primeira para a segunda, por forwarding ou espera.
-- **WAR** (_write after read_): a segunda escreve num registo que a primeira lê. Não há fluxo de valor nenhum; o problema é só o nome do registo estar reutilizado. Se a escrita adiantada corromper a leitura atrasada, o programa parte, mas nada impede a ordem certa com registos diferentes.
-- **WAW** (_write after write_): ambas escrevem no mesmo registo. Outra vez só o nome colide: a ordem das escritas é que tem de ser preservada.
-
-RAW limita de verdade; WAR e WAW são **dependências falsas**, artefactos da reutilização de nomes. E é aqui que entra a técnica central desta página.
+RAR, duas leituras, não obriga a ordenar resultados. RAW transporta um valor calculado; WAR/WAW podem desaparecer por **renomeação**, atribuindo destinos físicos ou etiquetas diferentes às escritas.
 
 <Dot
   source={dependencias}
-  alt="Quatro instruções com as três dependências: RAW a cheio de 1 para 2 e de 3 para 4 em t0, WAR a tracejado de 2 para 3 em t3 e WAW a tracejado de 1 para 4 em t0."
+  alt="Quatro instruções RV32:1 produz t0 para 2 RAW; 2 lê t0 antes de 3 o sobrescrever WAR; 1 e 3 escrevem t0 WAW; 2 e 4 escrevem t3 WAW."
 />
 
-## Execução fora de ordem
+O facto de duas instruções usarem memória exige também considerar endereços: um load pode depender de um store anterior no mesmo endereço. Se não se conhece o endereço, não se pode assumir independência.
 
-O processador **fora de ordem** não espera pela instrução bloqueada: olha para a frente (a **janela de instruções**), encontra trabalho independente mais à frente e executa-o já. Toma esta sequência:
+## Latência e intervalo de início
+
+Uma multiplicação pode ter 6 fases de execução e aceitar uma nova operação em cada ciclo. Outra unidade pode demorar 6 ciclos e aceitar outra só depois de terminar. A latência é igual; o **intervalo de início** é diferente.
+
+Para $n$ operações independentes, duração $L$ e intervalo de início $I$, o tempo da primeira entrada à última saída é:
+
+$$C=L+(n-1)I.$$
+
+Quatro operações com $L=6,I=1$ terminam em 9 ciclos. Com $I=6$, levam 24. Se o enunciado define latência como ciclos **adicionais** ao ciclo inicial, uma latência 5 corresponde a 6 ciclos ocupados; converte a notação antes de desenhar.
+
+## Múltiplas unidades com emissão em ordem
+
+Considere uma ALU de 1 ciclo e um multiplicador de 3 fases, intervalo 1, com atalhos. A emissão continua de uma instrução por ciclo e uma instrução bloqueada em ID bloqueia as seguintes.
 
 ```riscv
-lw   t0, 0(t1)     # 1: falta a cache, demora
-add  t3, t0, t4    # 2: depende de 1, bloqueia
-sub  t5, t6, t7    # 3: independente, pode avancar
+mul t0,t1,t2
+add t3,t0,t4
+sub t5,t6,a0
 ```
 
-Um pipeline em ordem parava na 2 e a 3 esperava também. O fora de ordem executa a 3 enquanto a 1 espera pela memória, e faz a 2 quando `t0` chegar. O programa observa exatamente a mesma sequência de resultados, mas o hardware preenche os vazios com trabalho útil.
+A multiplicação pode ocupar execução nos ciclos 3,4,5. O `add` precisa do produto no seu EX, logo só entra em EX 6. A `sub`, embora independente, não ultrapassa o `add` neste modelo em ordem. Reordenar para `mul;sub;add` aproveita parte dessa espera, se preservar o significado.
 
-<Typst
-  source={janela}
-  format="svg"
-  alt="Emissão em duas vias: a instrução 2 bloqueada ocupa a via B enquanto a instrução 3, independente, passa à frente pela via livre."
-/>
+Unidades de durações distintas podem concluir no mesmo ciclo. Verifica portos de escrita, estágio MEM comum e regras de arbitragem. Em emissão e conclusão estritamente em ordem, WAR/WAW podem não causar conflitos; com conclusão fora de ordem passam a exigir tratamento.
 
-Para isto funcionar, o processador resolve as dependências falsas com **renomeação de registos**: dá a cada escrita um registo físico novo e separado, por isso WAR e WAW desaparecem (nomes diferentes nunca colidem) e só as RAW verdadeiras impõem ordem. O registo arquitetural `t0` do programa passa a ser uma etiqueta; por baixo há um ficheiro de registos físicos maior que o programador nunca vê.
+## Emissão múltipla
 
-Segue três escritas em `t0` a receberem físicos distintos, com `p` para os registos físicos:
+Um processador **superescalar** pode emitir mais de uma instrução por ciclo. Isso não significa que qualquer par seja permitido. Pode haver limites por classe, como uma ALU e um acesso a memória, ou por número de portos e unidades.
 
-| Instrução        | Lê físicos   | Escreve físico novo |
-| ---------------- | ------------ | ------------------- |
-| `add t0, t1, t2` | `t1`, `t2`   | `p40` para `t0`     |
-| `sub t3, t0, t4` | `p40` (`t0`) | `p42` para `t3`     |
-| `add t0, t5, t6` | `t5`, `t6`   | `p41` para `t0`     |
+Se duas instruções dependem por RAW e precisam do valor no mesmo ciclo, não se emitem juntas sem um caminho que satisfaça esse uso. Um salto pode limitar a janela útil de instruções, mesmo com unidades livres.
 
-A segunda escrita em `t0` recebe `p41` em vez de reutilizar `p40`: a WAW entre a primeira e a terceira instrução desaparece, e um leitor atrasado de `p40` continua a ver o valor certo. É assim que nomes diferentes eliminam as dependências falsas sem mudar o programa.
+Para 100 instruções em 60 ciclos: IPC=$100/60=1,667$ e CPI=$60/100=0,6$. CPI inferior a 1 é possível em emissão múltipla. O pico de duas instruções por ciclo não garante IPC 2 em um programa real.
 
-## Commit em ordem
+## Sequenciamento dinâmico
 
-Executar fora de ordem não significa terminar fora de ordem para o mundo exterior. As instruções **reformam-se** (_commit_) pela ordem original do programa: só quando todas as anteriores terminaram sem exceção é que o resultado se torna visível (escrita no registo, loja na memória). Se uma instrução levantar uma exceção, o processador descarta tudo o que veio depois dela como se nunca tivesse corrido, e o sistema operativo vê o estado exato da instrução que falhou. A execução é especulativa e desordenada por dentro; o comportamento observável é sequencial e preciso.
+O hardware pode manter uma janela de instruções e selecionar as que têm operandos e recursos disponíveis. Assim, uma operação independente pode ultrapassar outra à espera de um dado. Continua a ser necessário preservar o significado do programa.
 
-## O limite do paralelismo implícito
+O [algoritmo de Tomasulo](/cadeiras/ac/tomasulo/) faz esse controlo com estações de reserva, etiquetas e difusão de resultados. Em processadores especulativos, um reorder buffer permite confirmar resultados por ordem, preservar exceções precisas e descartar o caminho errado de um salto. **Executar, difundir um resultado e confirmar uma instrução são eventos diferentes.**
 
-Junta as peças e vês o teto: a largura de emissão, o tamanho da janela, a precisão da [predição de saltos](predicao-saltos/) (cada erro deita fora a janela inteira) e, acima de tudo, o paralelismo real do programa. Como regra prática, passar de 2 para 4 vias duplica o hardware de emissão e de forwarding, mas o IPC típico sobe muito menos, porque os programas comuns têm paralelismo limitado.[^vias] É este rendimento decrescente, somado ao muro da energia, que empurrou a indústria para vários núcleos em vez de núcleos cada vez mais largos. E isso é a próxima página.
-
-[^vias]: A quantificação exata depende do programa e da microarquitetura; o _Computer Organization and Design_ de Patterson e Hennessy, livro de referência da cadeira, mede estes rendimentos com benchmarks SPEC.
+Desenrolar ciclos aumenta instruções independentes, mas aumenta o código e pode exigir mais registos. Uma otimização tem de respeitar o custo de memória, a pressão sobre caches e a semântica dos resultados, sobretudo em vírgula flutuante.

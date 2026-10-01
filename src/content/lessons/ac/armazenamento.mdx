@@ -1,0 +1,75 @@
+---
+title: Armazenamento e limites de entrada e saída
+description: Discos, flash, gargalos de taxa e sobreposição finita de transferências e cálculo.
+section: conteudo
+order: 15
+practices:
+  - ac/praticar-armazenamento
+editorial:
+  basedOn: 2024/25
+---
+
+import Typst from '../../../components/Typst.astro';
+import dma from '../../ac/dma-tempos.typ?raw';
+
+Uma operação de entrada e saída pode ter pequena carga de CPU e ainda dominar o tempo total. Distingue latência de um pedido, taxa sustentada de bytes e número de operações por segundo.
+
+## Disco magnético
+
+O prato gira; a cabeça posiciona-se na pista. Pistas à mesma distância do centro, em superfícies distintas, formam um cilindro. Cada pista contém setores.
+
+$$t_{\rm pedido}=t_{\rm fila}+t_{\rm procura}+t_{\text{rotação}}+t_{\text{transferência}}+t_{\rm controlador}.$$
+
+Para RPM rotações/minuto, uma volta demora 60/RPM segundos. Com posição angular aleatória, a espera média é meia volta:30/RPM. A 7200 RPM são 4,167 ms em média.
+
+Uma leitura de 8 KiB a 160 MB/s leva $8192/(160\times10^6)=51,2$ μs. Com procura 4 ms, rotação 4,167 ms e controlador 0,2 ms, sem fila, total 8,418 ms. Taxa de pedidos aproximadamente 118,8/s; taxa útil cerca 0,973 MB/s. Não é 160 MB/s: latência de pequenos pedidos aleatórios domina.
+
+Leituras sequenciais amortizam posicionamento em muitos bytes. Se o problema já fornece o tempo médio incluindo rotação/controlador, não acrescentes essas parcelas outra vez.
+
+## Flash e SSD
+
+Flash conserva dados sem alimentação. NOR permite leitura aleatória fina e é adequada a certos usos de código. NAND organiza leitura/escrita em páginas e apagamento em blocos maiores.
+
+Uma página não se reescreve como RAM arbitrária: o controlador pode escrever uma página nova, atualizar mapeamento e recuperar blocos. Wear leveling distribui desgaste; garbage collection junta espaço e pode aumentar latência. SSD elimina procura mecânica e rotação, mas mantém custos de controlador, transferência e gestão interna.
+
+Dados decimais e binários devem manter-se distintos:1 MB=10⁶ bytes, 1 MiB=2²⁰ bytes, 1 KiB=1024 bytes. Uma taxa em MB/s pode transferir blocos em KiB; converte ambos para bytes antes de dividir.
+
+## O recurso que limita a taxa
+
+A taxa sustentada não excede nenhum recurso necessário. Para blocos iguais, calcula limites em **blocos por segundo** e toma o menor.
+
+Exemplo: CPU 2 GHz precisa de 40000 ciclos por pedido; barramento 640 MB/s; quatro discos, cada um com 1000 pedidos/s; blocos 64 KiB.
+
+| Recurso    | Limite                                   |
+| ---------- | ---------------------------------------- |
+| CPU        | $2\times10^9/40000=50000$ pedidos/s      |
+| Barramento | $640\times10^6/65536=9765,625$ pedidos/s |
+| Discos     | $4\times1000=4000$ pedidos/s             |
+
+Os discos limitam 4000 pedidos/s. A taxa útil é $4000\times65536=262144000$ bytes/s, ou 262,144 MB/s. Para atingir o barramento, precisaria de pelo menos 10 discos desse modelo; depois verifica controladores e outros limites.
+
+Se um controlador suporta 2000 pedidos/s e todos os discos passam por ele, esse limite entra no mínimo. Se existem dois controladores independentes, só soma as capacidades quando a divisão de carga e o caminho partilhado o permitem.
+
+## Sobreposição com dois buffers
+
+Com dois buffers, o dispositivo preenche um enquanto o CPU processa o outro. A taxa em regime depende do estágio mais lento, mas um trabalho finito inclui primeira transferência e último processamento.
+
+<Typst
+  source={dma}
+  format="svg"
+  alt="Três blocos: transferências nos intervalos 0 a 4, 4 a 8, 8 a 12; processamento nos intervalos 4 a 7, 8 a 11, 12 a 15. O enchimento inicial e o processamento final fazem tempo total 15."
+/>
+
+Com transferências de 4 ms e CPU de 3 ms por bloco, 3 blocos demoram 15 ms com sobreposição: primeira transferência 4, duas rondas de 4 e último cálculo 3. Sem sobreposição seriam 21 ms.
+
+Para n blocos, durações constantes $t_D,t_C$, recursos independentes e preparação já incluída:
+
+$$T_n=t_D+t_C+(n-1)\max(t_D,t_C).$$
+
+Se CPU for mais lento, DMA pode esperar por um buffer livre. Mais buffers não ultrapassam o limite de taxa dos recursos. Se DMA e CPU disputam a mesma memória, a fórmula ideal pode deixar de aplicar-se.
+
+## Amdahl com entrada e saída
+
+Um programa gasta 40% do tempo em CPU e 60% em I/O. Acelerar CPU 4 vezes deixa tempo relativo $0,4/4+0,6=0,7$, ganho 1,429. Acelerar também I/O 2 vezes dá $0,1+0,3=0,4$, ganho 2,5, para partes sequenciais e independentes.
+
+Se as duas atividades se sobrepõem, mede o caminho crítico e os limites da sobreposição. Não somes tempos que já decorrem simultaneamente, nem substituas toda a execução por um máximo ignorando enchimento, esvaziamento e sincronização.

@@ -1,0 +1,103 @@
+---
+title: Praticar RV32
+description: Problemas próprios com condições, pistas e resoluções completas.
+section: exercicios
+editorial:
+  basedOn: 2024/25
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="ac-byte-sinal"
+  title="Ler o mesmo byte com e sem sinal"
+  explanation="/cadeiras/ac/riscv-assembly/#contas-imediatos-e-memória"
+  answer={{ kind: 'number', value: -16, tolerance: 0 }}
+>
+  <p>
+    Um byte de memória contém 0xF0. Que inteiro com sinal se obtém com lb em
+    RV32?
+  </p>
+  <div slot="hint">O bit 7 é o sinal.</div>
+  <div slot="hint-more">0xF0 vale 240 sem sinal; subtrai 256.</div>
+  <div slot="solution">
+    lb estende o sinal: 240−256=−16, padrão 0xFFFFFFF0. lbu produziria 240.
+  </div>
+  <div slot="mistakes">
+    Interpretar lb como lbu ou preencher os bits altos com zeros.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-imediato-alto"
+  title="Construir uma constante de 32 bits"
+  explanation="/cadeiras/ac/riscv-assembly/#saltos-e-decisões"
+  answer={{ kind: 'number', value: 144471, tolerance: 0 }}
+>
+  <p>
+    Queremos 0x23456FED por lui e addi. Qual é o imediato de lui, em decimal?
+  </p>
+  <div slot="hint">O imediato baixo tem 12 bits com sinal.</div>
+  <div slot="hint-more">0xFED significa −19, não 4077.</div>
+  <div slot="solution">
+    A parte alta deve ser 0x23457=144471. (0x23457&lt;&lt; 12)−19=0x23456FED.
+  </div>
+  <div slot="mistakes">
+    Usar 0x23456 na parte alta e ignorar a extensão de sinal.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-codificar-lw"
+  title="Montar os campos de um load"
+  explanation="/cadeiras/ac/riscv-assembly/#codificar-uma-instrução"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei rd=x6 e rs1=x10.',
+      'Separei opcode, funct3, registos e imediato 12 bits.',
+      'Conferi a extensão de sinal de −8.',
+    ],
+  }}
+>
+  <p>Codifica lw t1,−8(a0), indicando campos e palavra hexadecimal.</p>
+  <div slot="hint">t1 é x6; a0 é x10.</div>
+  <div slot="hint-more">−8 em 12 bits é 0xFF8; funct3=2 e opcode=3.</div>
+  <div slot="solution">
+    imm=0xFF8, rs1=10, funct3=2, rd=6, opcode=3. A palavra é 0xFF852303.
+    Descodificar os campos repõe lw x6,−8(x10).
+  </div>
+  <div slot="mistakes">
+    Colocar rs2 em um formato I, usar uma constante positiva ou trocar rd e rs1.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-frame-rv32"
+  title="Preservar uma chamada aninhada"
+  explanation="/cadeiras/ac/riscv-assembly/#chamadas-e-a-pilha"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Guardei ra antes da chamada interior.',
+      'Guardei e repus o s0 alterado.',
+      'Mantive sp alinhado 16 e repus o valor original.',
+    ],
+  }}
+>
+  <p>
+    Uma rotina usa s0 e chama outra. Descreve um frame RV32 mínimo alinhado 16 e
+    o retorno.
+  </p>
+  <div slot="hint">A chamada interior substitui ra.</div>
+  <div slot="hint-more">Reserva 16 bytes; palavras têm 4 bytes.</div>
+  <div slot="solution">
+    addi sp, sp,−16; sw ra, 12(sp); sw s0, 0(sp). Depois da chamada: lw s0,
+    0(sp); lw ra, 12(sp); addi sp, sp, 16; ret. O espaço restante não precisa de
+    ser usado.
+  </div>
+  <div slot="mistakes">
+    Usar sd/ld em RV32, guardar ra depois da chamada ou retornar antes de repor
+    sp.
+  </div>
+</Exercise>

@@ -1,0 +1,78 @@
+---
+title: Percurso de dados e controlo
+description: Do ciclo único à máquina multiciclo e aos registos de pipeline.
+section: conteudo
+order: 5
+practices:
+  - ac/praticar-percurso-dados
+editorial:
+  basedOn: 2024/25
+---
+
+import Dot from '../../../components/Dot.astro';
+import datapath from '../../ac/datapath.dot?raw';
+
+Uma instrução descreve o resultado pretendido. O **percurso de dados** contém os componentes que o calculam; a **unidade de controlo** seleciona entradas e autoriza escritas. Um multiplexador escolhe uma origem para um sinal; não se juntam saídas de componentes diretamente.
+
+## Executar uma instrução em um ciclo
+
+Modelo reduzido: `add/sub/and/or`, `lw`, `sw`, `beq`; memórias de instruções e dados separadas, banco de registos com duas leituras e uma escrita, ALU e gerador de imediatos.
+
+<Dot
+  source={datapath}
+  alt="Percurso de dados reduzido: PC e instrução comandam controlo, registos e imediato alimentam ALU; memória ou ALU alimenta escrita; a comparação escolhe próximo PC."
+/>
+
+Em `lw t0,12(a0)`: obter instrução; ler `a0`; estender o imediato; ALU calcula `a0+12`; ler quatro bytes; selecionar dado da memória para escrever em `t0`. Se `a0=200`, o endereço é 212. O imediato não é o dado carregado.
+
+## Sinais de controlo
+
+`RegWrite` autoriza escrita no banco; `ALUSrc` escolhe registo ou imediato como segundo operando da ALU. `MemRead/MemWrite` controlam a memória de dados. `MemtoReg` escolhe a memória em vez da ALU para retorno ao banco. `Branch` autoriza a seleção do destino se a condição for verdadeira.
+
+| Classe | ALUSrc | MemtoReg | RegWrite | MemRead | MemWrite | Branch | ALUOp |
+| ------ | ------ | -------- | -------- | ------- | -------- | ------ | ----- |
+| R      | 0      | 0        | 1        | 0       | 0        | 0      | 10    |
+| `lw`   | 1      | 1        | 1        | 1       | 0        | 0      | 00    |
+| `sw`   | 1      | X        | 0        | 0       | 1        | 0      | 00    |
+| `beq`  | 0      | X        | 0        | 0       | 0        | 1      | 01    |
+
+X significa indiferente **nesse uso**: como `sw` não escreve registo, MemtoReg não afeta um estado visível. Não significa que todos os sinais sejam dispensáveis.
+
+Neste modelo, ALUOp 00 pede soma de endereço; 01 pede subtração para igualdade; 10 pede descodificação de `funct3/funct7`. A saída Zero de `rs1−rs2` vale 1 quando são iguais. O PC seguinte é o alvo se `Branch AND Zero`, caso contrário `PC+4`. O alvo usa o PC da instrução e o deslocamento B reconstruído, não `PC+4`.
+
+## Período de ciclo único
+
+O período tem de acomodar a instrução mais lenta. Se obtenção leva 200 ps, leitura de registos 100 ps, ALU 150 ps, memória de dados 250 ps e escrita 100 ps, um load precisa de 800 ps no modelo de soma desses atrasos. Uma instrução ALU mais curta também ocupa esse ciclo de 800 ps.
+
+Não somes dois componentes que funcionam em paralelo. Primeiro segue o caminho combinacional mais longo entre elementos de estado.
+
+## Uma máquina multiciclo
+
+Reutiliza memória e ALU em ciclos distintos. Registos temporários guardam a instrução (IR), dado carregado (MDR), operandos (A/B) e resultado (ALUOut). Assim, a instrução não se perde quando a memória recebe outro endereço.
+
+| Passo        | Ações principais                               |
+| ------------ | ---------------------------------------------- |
+| Obter        | `IR←Mem[PC]`; avançar PC                       |
+| Descodificar | Ler A/B; preparar alvo de branch               |
+| Executar     | ALU faz operação ou endereço, ou decide branch |
+| Memória      | Ler para MDR ou escrever dado B                |
+| Retorno      | Escrever resultado ALU ou MDR no destino       |
+
+R usa 4 ciclos, load 5, store 4 e branch 3, nesta organização. A unidade de controlo é uma máquina de estados: os dois primeiros estados são comuns, depois o opcode escolhe a sequência. O passo de retorno de um store não é necessário.
+
+Se as frações são 40% R, 30% load, 20% store e 10% branch, o CPI é $0,4\times4+0,3\times5+0,2\times4+0,1\times3=4,2$. Com ciclo 250 ps, o tempo por instrução é 1050 ps. Apesar do relógio mais rápido, este exemplo é mais lento do que ciclo único 800 ps; calcula o produto CPI×período.
+
+## O que atravessa uma pipeline
+
+Na pipeline, os registos IF/ID, ID/EX, EX/MEM e MEM/WB separam instruções distintas. Cada instrução leva consigo os dados e sinais de que ainda precisa.
+
+| Registo | Conteúdo necessário no modelo básico                                |
+| ------- | ------------------------------------------------------------------- |
+| IF/ID   | Instrução e PC                                                      |
+| ID/EX   | PC, operandos, imediato, rs1/rs2/rd e controlos EX/M/WB             |
+| EX/MEM  | Resultado ALU, dado a guardar, rd e controlos M/WB; dados do branch |
+| MEM/WB  | Dado lido, resultado ALU, rd e controlos WB                         |
+
+O destino de um load deve atravessar **todos** esses registos até WB. Usar o `rd` da instrução atualmente em ID escreveria no destino de outra instrução. O mesmo vale para `RegWrite` e para a seleção memória/ALU.
+
+Uma bolha desativa os sinais que alteram estado, como RegWrite e MemWrite. Os bits de dados antigos podem continuar nos registos; deixam de causar efeitos porque os sinais de controlo estão inativos.

@@ -1,82 +1,72 @@
 ---
 title: Entrada e saída
-description: Polling, interrupções e DMA, armazenamento secundário e desempenho com E/S significativa.
+description: Controladores, varrimento, interrupções, DMA e custo de CPU por transferência.
 section: conteudo
-order: 9
+order: 14
+practices:
+  - ac/praticar-entrada-saida
+editorial:
+  basedOn: 2024/25
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import dma from '../../ac/dma-tempos.typ?raw';
+import YouTube from '../../../components/YouTube.astro';
 
-Um computador sem periféricos é uma calculadora isolada: o trabalho útil entra por dispositivos de entrada, sai por dispositivos de saída e espera em armazenamento secundário. A arquitetura da entrada e saída decide quanto do processador se gasta a mover dados em vez de os transformar. Há três formas de gerir essa conversa, por ordem crescente de autonomia do hardware.
+Um periférico produz, recebe ou guarda informação. O controlador faz a ponte entre o dispositivo e o sistema: expõe comandos, estado e dados, adapta protocolos e pode agrupar transferências.
 
-## Polling: perguntar sem parar
+## Interface com o controlador
 
-No **polling** (_programmed I/O_, varrimento), o processador interroga o dispositivo em ciclo: "tens dados? tens dados?". Quando o dispositivo responde que sim, o processador transfere o dado com instruções normais de leitura e escrita.
+Registos de **comando** iniciam ações; de **estado** indicam pronto, ocupado ou erro; de **dados** transportam informação. Em memory-mapped I/O, ocupam endereços no espaço de memória; em I/O isolado, usam instruções ou um espaço de portas próprio.
 
-É o mecanismo mais simples e não precisa de hardware extra, mas desperdiça o processador: enquanto o disco procura o setor ou o teclado espera pelo dedo, o CPU queima ciclos a perguntar. Serve para dispositivos rápidos e previsíveis, ou quando não há mais nada para fazer entretanto. Como estratégia geral, é péssima: ata o recurso mais caro do sistema ao ritmo do mais lento.
+Uma leitura de registo pode ter efeito, como remover um item de uma fila. Acesso a I/O não se deve tratar automaticamente como uma leitura comum que o compilador ou a cache pode eliminar/reordenar. A plataforma define permissões, ordenação e zonas não cacheáveis.
 
-## Interrupções: ser chamado
+Um barramento partilhado dá acesso alternado aos participantes. Ligações ponto a ponto e pontes podem permitir tráfegos simultâneos, mas cada caminho tem largura e limites. A taxa do periférico não implica que todo o percurso suporte essa taxa.
 
-Com **interrupções**, o dispositivo avisa o processador quando precisa de atenção: o CPU trabalha noutra coisa até chegar o sinal. Nesse momento, o hardware guarda o PC e os registos essenciais, salta para a **rotina de atendimento** (_interrupt handler_), que transfere os dados e resolve o pedido, e depois retoma o programa interrompido exatamente onde parou.
+## Varrimento periódico
 
-O custo passa a ser por evento em vez de por espera: cada interrupção paga a troca de contexto e a rotina, mas entre eventos o processador é livre. O problema aparece com dispositivos muito ativos: milhares de interrupções por segundo afogam o CPU em trocas de contexto (_interrupt livelock_ no extremo). As interrupções resolvem a espera, não o volume.
+Em polling, o CPU consulta o estado e, quando necessário, transfere dados. Um ciclo de espera ativa consulta repetidamente; um varrimento periódico executa consultas a intervalos definidos. Não são o mesmo custo.
 
-## DMA: delegar a transferência
+Se o periférico pode receber R bytes/s e armazena blocos de B bytes, são no máximo $q=R/B$ blocos/s. Com um só bloco de armazenamento, o intervalo de consulta não pode exceder $B/R$ no modelo ideal; atraso do serviço também deve caber na margem disponível.
 
-O **DMA** (_direct memory access_) entrega a transferência a um controlador dedicado: o processador programa o controlador (origem, destino, tamanho) e segue a sua vida; o controlador move o bloco inteiro entre o dispositivo e a memória sem passar pelo CPU; no fim, uma única interrupção anuncia que está pronto.
+Para 16000 bits/s e blocos 400 bits:40 blocos/s e intervalo 25 ms. Se cada consulta custa 300 ciclos em um CPU a 2 GHz, ocupação por consultas é $40\times300/(2\times10^9)=0,000006$, isto é 0,0006%. Conta separadamente a transferência se esse custo ainda não a inclui.
 
-Compara o custo de mover 1 MiB: por polling ou interrupções, o processador toca em cada palavra; por DMA, toca em meia dúzia de registos de configuração mais uma interrupção. Para blocos grandes, a diferença é de ordens de grandeza em ciclos de CPU libertados. É por isso que discos, placas de rede e GPUs usam DMA: o processador manda, o controlador transporta, a interrupção confirma.
+<YouTube id="4nxblx4ADQ8" title="Gestão de Periféricos: Varrimento" />
 
-| Mecanismo    | Quem transfere | Custo no CPU                    | Quando usar                             |
-| ------------ | -------------- | ------------------------------- | --------------------------------------- |
-| Polling      | o processador  | um ciclo de espera por pergunta | dispositivos simples, sem mais trabalho |
-| Interrupções | o processador  | uma rotina por evento           | eventos esporádicos                     |
-| DMA          | o controlador  | configuração + 1 interrupção    | blocos grandes e frequentes             |
+## Interrupções
 
-A escolha depende do tamanho do que há para mover:
+O dispositivo notifica o CPU quando precisa de serviço. O CPU conserva o estado necessário, identifica a origem, executa uma rotina e retoma a tarefa interrompida. Prioridades, máscara e possibilidade de interrupções aninhadas definem quem espera e quem pode interromper quem.
 
-<Tabs id="quando-dma" labels={['Bloco de 4 KiB', 'Ficheiro de 100 MiB']}>
-  <div slot="panel-0">
+Com atividade média de 10% no exemplo anterior, chegam 4 blocos/s. Há 4 interrupções/s, embora o polling exigisse 40 consultas/s para suportar o máximo. Contudo, uma rotina de interrupção pode custar mais do que uma consulta.
 
-Ler 4 KiB de um sensor com polling custa milhares de ciclos de espera, mas programar o DMA e atender a interrupção final custaria quase o mesmo. Para transferências pequenas e raras, a simplicidade do polling ganha.
+<YouTube id="DBVVpybCXcU" title="Gestão de Periféricos: Interrupções" />
 
-  </div>
-  <div slot="panel-1">
+Se polling custa $q_pc_p$ ciclos/s e interrupções custam $u q_{max}c_i$, o ponto de igualdade é:
 
-Mover 100 MiB por polling ou por interrupção por palavra amarra o processador à transferência inteira. Com DMA, o CPU programa o controlador uma vez e processa o bloco anterior enquanto o próximo viaja: é aqui que a delegação paga ordens de grandeza.
+$$u=\frac{q_pc_p}{q_{\max}c_i}.$$
 
-  </div>
-</Tabs>
+Com $q_p=q_{\max}$, consulta 400 ciclos e interrupção 600, interrupções gastam menos abaixo de $u=2/3$. Isso compara custo de CPU, não prova que a latência ou capacidade sejam suficientes.
 
-## Armazenamento secundário
+## DMA
 
-A hierarquia não acaba na RAM. O **HDD** (disco magnético) guarda bits em pratos a rodar: cada acesso paga procura da cabeça (_seek_) mais espera pela rotação mais a transferência. Milissegundos, uma eternidade face aos nanossegundos da RAM. O **SSD** (flash) não tem partes móveis: paga só eletrónica e é dezenas a centenas de vezes mais rápido no acesso aleatório, embora cada célula se desgaste com escritas e o controlador faça gestão de desgaste e recolha de lixo por baixo.
+O CPU configura origem/destino, tamanho e direção; o controlador transfere diretamente entre dispositivo e memória; uma interrupção ou outro mecanismo assinala o fim. O CPU paga preparação/finalização, mas não uma operação por palavra.
 
-Para o desempenho, a lição é uma só: o nível onde os dados vivem domina o tempo. Um programa que lê do disco em cada iteração é limitado pelo disco por mais cache e pipeline que tenha, tal como a [lei de Amdahl](desempenho/) prevê para qualquer fração não acelerada.
+Para taxa R bytes/s, blocos B bytes, custo c ciclos por transferência e frequência f:
 
-## Estimar desempenho com E/S
+$$u_{\rm CPU}=\frac{R}{B}\frac{c}{f}.$$
 
-A estimação com E/S significativa soma o tempo de computação ao tempo de transferência. Um exemplo: processar um ficheiro de 100 MiB com um SSD que transfere a 500 MiB/s e um núcleo que processa a 200 MiB/s. A leitura demora $100/500 = 0{,}2$ s, o processamento $100/200 = 0{,}5$ s. Em sequência, $0{,}7$ s; com DMA e sobreposição (o controlador traz o próximo bloco enquanto o CPU processa o atual), o total aproxima-se do máximo das parcelas, $0{,}5$ s. O DMA não é só poupança de ciclos: permite esconder a latência da E/S atrás da computação.
+Dois discos de 100 MB/s cada, com 1800 ciclos de preparação e 200 de conclusão, CPU 2 GHz e limite 1%: $R=200\times10^6,c=2000$. Logo
 
-<CodePlayground
-  language="python"
-  title="E/S sequencial e sobreposta"
-  code={
-    'leitura = 100 / 500\nproc = 100 / 200\nprint(leitura, proc)\nprint(leitura + proc)\nprint(max(leitura, proc))'
-  }
-/>
+$$B\ge\frac{200\times10^6\times2000}{0,01\times2\times10^9}=20000\ \text{bytes}=20\ \text{kB}.$$
 
-O programa imprime `0.2 0.5`, o total sequencial `0.7` e o total sobreposto `0.5`.
+São unidades decimais. Mais dispositivos ativos aumentam o custo agregado; reduzir o tamanho do bloco aumenta o número de transferências.
 
-<Typst
-  source={dma}
-  format="svg"
-  alt="Duas linhas do tempo: sem sobreposição o bloco viaja no DMA e só depois é processado no CPU; com sobreposição o bloco seguinte viaja enquanto o atual é processado."
-/>
+## DMA e dados em cache
 
-:::details[Ver o raciocínio da sobreposição]
-Desenha duas linhas do tempo, uma para o DMA e outra para o CPU, divididas em blocos. Sem sobreposição, cada bloco ocupa primeiro a linha do DMA e depois a do CPU. Com sobreposição (_double buffering_), o bloco N+1 viaja no DMA enquanto o bloco N é processado no CPU: o tempo total tende para o maior dos dois ritmos, e a E/S "desaparece" da fatura desde que o processamento mande.
-:::
+DMA de entrada pode escrever na RAM enquanto o CPU conserva uma cópia antiga em cache. DMA de saída pode ler RAM antiga enquanto uma linha WB dirty contém dados novos.
+
+Antes de DMA de saída, descarrega as linhas dirty relevantes e respeita a ordenação exigida. Para entrada, assegura que nenhuma linha dirty velha volta a sobrescrever os dados recebidos e invalida as cópias antigas no momento definido pela plataforma. Em hardware coerente, o protocolo pode realizar parte desse trabalho. Não uses um simples invalidate como substituto de um clean necessário.
+
+O sistema operativo costuma gerir essas condições, o mapeamento e a vida dos buffers. O programa deve respeitar quem possui o buffer durante a transferência; alterar dados enquanto o dispositivo os usa pode produzir resultados inconsistentes.
+
+## Custo, latência e limite de taxa
+
+DMA liberta tempo de CPU, mas usa interligador e memória. Preparação pode dominar blocos pequenos; interrupções muito frequentes podem saturar o CPU. Calcula separadamente taxa de bytes, taxa de transferências, ciclos por transferência e latência de um pedido. São medidas de aspetos diferentes.

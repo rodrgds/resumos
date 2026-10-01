@@ -1,72 +1,89 @@
 ---
 title: Cheat sheet de AC
-description: Fórmulas e condições para rever ISA, desempenho, pipeline, memória e entrada e saída.
+description: Fórmulas, notação RV32 e condições dos modelos, para consulta breve.
 section: recursos
 studyKind: revision
 editorial:
+  basedOn: 2024/25
   sources:
     - title: Resumos AC, SofiaViP
       url: https://drive.google.com/file/d/1w3hVKtinpSiDUPF_TP7Wrm9CirnsU2nN/view
-  coverage: Consulta breve das páginas 2 a 15 dos Resumos AC de SofiaViP, mantendo explícito o contexto AArch64, LEGv8 e NEON do documento.
-  gaps:
-    - O documento não identifica uma edição atual da cadeira; confirma a ISA, o programa e a avaliação da tua ocorrência.
-    - Esta folha omite codificações de instruções, programas completos, diagramas temporais e exemplos longos; segue os links para as explicações.
+    - title: Moodle AC 2024/25
+      url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
-**Arquiteturas: AArch64 e LEGv8, com NEON para SIMD.** As páginas de assembly deste site usam RISC-V. Compara as ideias de ISA, pilha e memória, mas não transportes nomes de registos, instruções ou convenções de chamada entre arquiteturas.
+## RV32
 
-## ISA, registos e memória
+- 32 registos inteiros de 32 bits; `zero` é sempre 0. `t0…t6` e `a0…a7` podem mudar numa chamada; o chamado repõe `s0…s11`. `ra` guarda retorno; `sp` é reposto e mantém alinhamento 16 bytes.
+- Palavra 4 B: `lw/sw`. Bytes: `lb/lbu/sb`; meias palavras: `lh/lhu/sh`. Loads sem `u` estendem o sinal. Endereço de `lw rd,k(rs1)` = `rs1+k`, em bytes. Little endian guarda byte baixo no menor endereço.
+- Imediato I/S: 12 bits com sinal. `lui` forma parte alta; `addi` baixo negativo exige compensação na alta. `mv rd,rs` = `addi rd,rs,0`; pseudoinstruções podem expandir-se.
+- `jal` guarda PC+4; `jalr` salta para `(base+imm)&~1`. Branch usa PC da própria instrução + deslocamento com sinal em bytes. `blt/bge` com sinal; `bltu/bgeu` sem sinal.
+- R: `funct7 rs2 rs1 funct3 rd opcode`; larguras 7,5,5,3,5,7. I: `imm12 rs1 funct3 rd opcode`. S divide imediato em bits 11:5 e 4:0; B reordena imediato e omite bit 0.
 
-- Uma **ISA** define a interface visível ao programa: instruções, registos, endereçamento e comportamento. A mesma ISA pode ter processadores com CPI, caches e custo diferentes. [Ver a ISA usada nas lições](/cadeiras/ac/riscv-assembly/#os-registos-que-interessam).
-- Na parte **AArch64** da fonte, endereços e registos gerais têm 64 bits e as instruções têm 32 bits. `Xn` nomeia o registo de 64 bits; `Wn`, os seus 32 bits baixos. `XZR/WZR` lê como zero e descarta escritas. `SP` é o apontador da pilha; `X30` costuma guardar o endereço de retorno e `X29` pode servir de apontador de frame. O resumo também usa **LEGv8**, uma ISA didática: confirma a notação de cada exercício antes de escrever código.
-- `N`, `Z`, `C` e `V` indicam, respetivamente, resultado negativo, zero, carry e overflow assinado quando a instrução atualiza as flags. **Carry sem sinal não é overflow com sinal.** Um salto condicional deve testar as flags produzidas pela comparação certa.
-- A memória é endereçada por **byte**. Um acesso pode usar base, base mais deslocamento, índice escalado ou atualização da base antes/depois do acesso, conforme a instrução. O deslocamento é em bytes; indexar um vetor de palavras exige multiplicar o índice pelo tamanho de cada palavra. [Rever endereços e acessos](/cadeiras/ac/riscv-assembly/#contas-imediatos-e-memória).
-- Na convenção AArch64 descrita, argumentos inteiros iniciais passam por `X0` a `X7`; valores de retorno usam `X0` e, quando necessário, `X1`. Registos que a convenção manda preservar devem ser repostos antes de voltar. A pilha cresce para endereços menores. Em RISC-V, consulta a [convenção própria](/cadeiras/ac/riscv-assembly/#chamadas-e-a-pilha).
+## Desempenho
 
-## SIMD e vírgula flutuante
+$$\begin{aligned}T&=N\,CPI/f\\CPI&=\sum_i p_iCPI_i\\S&=T_{\rm antes}/T_{\rm depois}\end{aligned}$$
 
-Os registos vetoriais **NEON** da fonte têm 128 bits e podem ser divididos em várias _lanes_ de 8, 16, 32 ou 64 bits. Uma instrução SIMD aplica a mesma operação a várias lanes; o número de lanes úteis depende do tipo e da largura dos dados. Operações saturadas param no mínimo ou máximo representável, ao contrário de operações que descartam bits excedentes. Comparações vetoriais produzem máscaras, não as flags escalares `NZCV`. [Ver quando SIMD rende](/cadeiras/ac/simd/#quando-rende-e-quando-não-rende).
+$1\ \mathrm{GHz}\leftrightarrow1\ \mathrm{ns}$. Frações $p_i$ contam instruções; frações de Amdahl contam **tempo original**.
 
-Valores de vírgula flutuante podem usar 16, 32 ou 64 bits; a precisão e o intervalo variam. Os registos de vírgula flutuante e vetoriais partilham o banco físico referido na fonte. A convenção para passar argumentos flutuantes é distinta da dos inteiros, por isso não deduzas o registo só pela posição do argumento.
+$$S=\frac1{(1-p)+p/s}.$$
 
-## Medir desempenho
+Ganho de rapidez: $S-1$; redução do tempo: $1-1/S$. MIPS ou frequência isolados não comparam a mesma tarefa.
 
-$$
-T_{\mathrm{CPU}}=\mathrm{IC}\times\mathrm{CPI}\times T_{\mathrm{ciclo}}
-=\frac{\mathrm{IC}\times\mathrm{CPI}}{f_{\mathrm{clk}}}
-$$
+## Cache
 
-Aqui, $\mathrm{IC}$ é o número de instruções executadas, $\mathrm{CPI}$ os ciclos médios por instrução, $T_{\mathrm{ciclo}}$ a duração de um ciclo e $f_{\mathrm{clk}}$ a frequência do relógio. Para misturas de instruções, $\mathrm{CPI}_{\mathrm{med}}=\sum_i p_i\mathrm{CPI}_i$, com $p_i$ a fração de instruções da classe $i$. **MIPS ou frequência isolados não medem o tempo da mesma tarefa.** Speedup é $T_{\mathrm{antes}}/T_{\mathrm{depois}}$. [Ver a equação e o CPI](/cadeiras/ac/desempenho/#a-equação-do-processador).
+$C$ bytes de dados, $B$ bytes/linha, $A$ vias, $S=C/(BA)$ conjuntos. Offset $b=\log_2B$; índice $s=\log_2S$; tag $t=n-b-s$.
 
-Se a fração $f$ do tempo original **não** pode ser acelerada e o resto acelera por fator $p$, a lei de Amdahl dá $S\le 1/(f+(1-f)/p)$. Quando $p\to\infty$, o limite é $1/f$. A fração tem de ser medida no **tempo original**, não na contagem de linhas de código. [Ver Amdahl](/cadeiras/ac/desempenho/#a-lei-de-amdahl).
+$$\begin{aligned}\text{bloco}&=\lfloor \text{endereço}/B\rfloor\\\text{índice}&=\text{bloco}\bmod S\\\text{tag}&=\lfloor \text{bloco}/S\rfloor\end{aligned}$$
 
-## Pipeline e paralelismo
+Bits físicos: linhas × (8×B + tag + validade + dirty se WB), mais política se pedida. Acerto exige validade e etiqueta iguais. LRU atualiza recência nos acertos; FIFO conserva chegada.
 
-Uma pipeline didática de cinco fases usa **IF, ID, EX, MEM, WB**. Depois de cheia, pode concluir uma instrução por ciclo, embora a **latência** de cada instrução atravesse várias fases. O objetivo é aumentar a taxa de conclusão; o CPI efetivo sobe com paragens. [Ver as fases](/cadeiras/ac/pipeline/#as-cinco-fases).
+| Caso       | WT/no-allocate              | WB/allocate                                        |
+| ---------- | --------------------------- | -------------------------------------------------- |
+| Read miss  | Carregar linha              | Descarregar vítima V 1, D 1; carregar; D 0         |
+| Write hit  | Cache + nível seguinte      | Cache; D 1                                         |
+| Write miss | Nível seguinte; cache igual | Descarregar vítima V 1, D 1; instalar/alterar; D 1 |
 
-| Hazard     | Causa e resposta                                                                                                                                    |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Estrutural | Duas instruções precisam do mesmo recurso; duplica o recurso ou espera.                                                                             |
-| Dados      | Uma instrução lê um resultado ainda não disponível; _forwarding_ resolve alguns casos, mas um `load` seguido de uso imediato pode exigir uma bolha. |
-| Controlo   | O salto muda o próximo PC; previsão e resolução mais cedo reduzem a penalização, mas uma previsão errada descarta trabalho.                         |
+Escrita parcial normalmente exige carregar bytes restantes; escrita de **linha inteira** pode dispensar leitura. Vítima usa etiqueta **antiga**. Dirty não significa inválido.
 
-Uma pipeline mais profunda pode elevar a frequência, mas aumenta o custo de alguns hazards. A emissão **superescalar** tenta iniciar várias instruções por ciclo; dependências verdadeiras de dados, limites de recursos e saltos restringem o paralelismo. Execução fora de ordem pode avançar instruções independentes, mantendo a confirmação arquitetural em ordem. [Ver hazards](/cadeiras/ac/pipeline/#hazards-de-dados) e [emissão múltipla](/cadeiras/ac/superescalar/#emissão-múltipla).
+$$\begin{aligned}TMAM&=t_h+mp\\CPI&=CPI_b+m_Ip_I+r\,m_Dp_D\end{aligned}$$
 
-## Cache e memória virtual
+$r$: acessos a dados/instrução. Unificada: acessos/instrução = $1+r$. L2 local mede falhas entre consultas a L2; global = $m_1m_{2,l}$.
 
-- A hierarquia explora **localidade temporal** (voltar a usar um dado) e **espacial** (usar endereços próximos). Um bloco é a unidade transferida entre níveis; um _hit_ encontra-o na cache, um _miss_ procura-o no nível seguinte. [Ver localidade](/cadeiras/ac/hierarquia-cache/#localidade).
-- Mapeamento **direto** dá um único lugar a cada bloco. Associação total permite qualquer entrada; associação por conjuntos restringe o bloco a um conjunto, com várias vias possíveis. Mais vias reduzem misses por **conflito**, mas não os **compulsórios** nem os de **capacidade**. A política de substituição e o tempo de procura também contam. [Ver o mapeamento](/cadeiras/ac/hierarquia-cache/#onde-cabe-cada-bloco).
-- $\mathrm{AMAT}=t_{\mathrm{hit}}+r_{\mathrm{miss}}\,t_{\mathrm{miss}}$, onde $t_{\mathrm{miss}}$ é a penalização por falta. Em dois níveis, a penalização de L1 inclui o acesso a L2 e, se L2 falhar, a memória principal. Para estimar CPI, multiplica a taxa de misses pelo número de acessos por instrução e pela penalização em ciclos; não somes duas vezes a mesma espera. [Ver AMAT](/cadeiras/ac/hierarquia-cache/#quanto-custa-cada-acesso-o-amat).
-- A **memória virtual** traduz páginas virtuais para _frames_ físicos por tabelas de páginas; um _page fault_ pode exigir trazer uma página do armazenamento secundário. Uma falha de cache e um _page fault_ são eventos de níveis e custos diferentes.
+$$TMAM=t_1+m_1(t_2+m_{2,l}p_R).$$
 
-## Vários núcleos e entrada e saída
+## Pipeline e ILP
 
-Em multiprocessadores, speedup $S(p)=T(1)/T(p)$ inclui comunicação e sincronização. **Paralelismo** é execução simultânea; **concorrência** é organizar tarefas que podem progredir sem ordem fixa, mesmo num núcleo. Se vários núcleos têm caches privadas, **coerência** trata o valor que uma leitura pode obter perante escritas noutros núcleos; não substitui sincronização para ordenar operações do programa. [Ver o SMP](/cadeiras/ac/multicore-energia/#o-multiprocessador-simétrico).
+IF→ID→EX→MEM→WB. Período = máximo atraso de fase + registo, se fornecido. $N$ instruções, $k$ fases: ciclos $N+k-1+B$.
 
-| Método de E/S | Quando faz sentido                                                                                   |
-| ------------- | ---------------------------------------------------------------------------------------------------- |
-| Polling       | O processador consulta repetidamente o estado; simples, mas gasta ciclos enquanto espera.            |
-| Interrupção   | O periférico avisa quando há trabalho ou erro; há custo de tratar cada interrupção.                  |
-| DMA           | Um controlador transfere blocos sem instrução do CPU por byte; é preciso coordenar buffers e caches. |
+- ALU→ALU imediato: atalho EX/MEM→EX. Load→ALU imediato: 1 paragem com atalhos completos; sem atalhos, 2 se WB-primeiro/ID-depois.
+- Store usa base em EX e dado em MEM; caminho de forwarding determina a paragem. Resultado mais recente tem prioridade; destino zero nunca produz dependência útil.
+- Branch MEM: erro 3 ciclos; ID: erro 1, com possíveis paragens de operandos em ID. $CPI=CPI_b+bep$, erro $e=1-\text{acerto}$.
+- 1 bit prevê último resultado. Histerese 2 bits: 01+T→11,10+N→00. Saturante: 01+T→10,10+N→01. Ambos preveem N em 00/01, T em 10/11. Segue a máquina fornecida.
+- RAW: produzir antes de ler; WAR: ler antes de nova escrita; WAW: preservar última escrita. RAR não restringe. Memória exige considerar endereços.
+- Unidade: duração $L$, intervalo de início $I$; $n$ operações independentes ocupam $L+(n-1)I$ ciclos. IPC=instruções/ciclos; CPI=1/IPC.
+- Tomasulo: capturar origens V/Q, **depois** renomear destino Qi. Executar com Qj=Qk=0 e unidade livre. CDB entrega tag/valor; atualizar registo só se Qi=tag. Estação ocupa-se até difundir; confirmar em ordem exige mecanismo adicional.
 
-Num disco rotativo, estima um acesso por **busca + latência de rotação + transferência + controlo**. Não apliques esta decomposição mecânica a SSDs. [Ver E/S](/cadeiras/ac/entrada-saida/#estimar-desempenho-com-es).
+## SIMD empacotado
+
+RV32: B0=bits 7:0, B3=31:24; H0=15:0, H1=31:16. ADD8/16 e SUB8/16 reduzem por via, sem carry entre vias. Comparação verdadeira=0xFF/0xFFFF; escolher signed/unsigned.
+
+SMUL16: dois produtos 32 bits em par físico par/seguinte; SMULX16 cruza vias. PKBT16=(a.H0, b.H1), primeira parcela na metade alta. Replicar byte: mascarar antes de shifts. Contadores 8 bits dão wrap a 256; `abs(−32768)` não cabe em 16 bits com sinal. KMDA satura no caso `0x80008000 × 0x80008000`. Verificar zero, resto, alinhamento e largura de acumulação.
+
+## Multicore e coerência
+
+$$\begin{aligned}E&=P\Delta t\\T_j&=T_a+P R_\theta\\P_{\rm din}&\propto\alpha C V^2f\end{aligned}$$
+
+Com $V\propto f$, $P\propto f^3$; com V fixa, $P\propto f$. Paralelo ideal: $S_n=1/(s+(1-s)/n)$. Tempo de partições iguais em rapidez depende de $\max w_i$. Redução com n participantes, sendo n uma potência de 2: $\log_2n$ rondas, além das somas locais/barreiras.
+
+Write-invalidate invalida a **linha inteira**. Leitura de outro dado na linha pode causar falsa partilha. Coerência por endereço não substitui ordenação/sincronização entre endereços.
+
+## Entrada, saída e armazenamento
+
+- Polling: consultas/s × ciclos/consulta / frequência = fração CPU. Intervalo máximo ideal de um buffer $B/R$, sem margem de serviço.
+- Interrupções: eventos/s × ciclos/evento / frequência. DMA: $u=(R/B)c/f$; usar taxa agregada e custo setup+fim. Saída exige clean de dirty se não há coerência; entrada precisa evitar cópias antigas e write-back posterior.
+- HDD: fila + procura + rotação + transferência + controlador. Rotação média $30/RPM$ segundos. Transferência $B/R$.
+- Taxa máxima = mínimo dos limites CPU, bus, controladores, discos, na mesma unidade. MB=10⁶B; MiB=2²⁰B; KiB=1024 B.
+- Dois buffers e estágios independentes, incluindo enchimento e esvaziamento:
+
+$$T_n=t_D+t_C+(n-1)\max(t_D,t_C).$$

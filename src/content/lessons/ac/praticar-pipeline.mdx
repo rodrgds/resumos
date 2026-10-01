@@ -1,0 +1,127 @@
+---
+title: Praticar pipeline
+description: Problemas próprios com condições, pistas e resoluções completas.
+section: exercicios
+editorial:
+  basedOn: 2024/25
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="ac-pipe-load-use"
+  title="Localizar a paragem"
+  explanation="/cadeiras/ac/pipeline/#load-use-com-uma-bolha"
+  answer={{ kind: 'number', value: 7, tolerance: 0 }}
+>
+  <p>
+    lw t0, 0(a0); add t1, t0, t2. Pipeline 5 fases, forwarding completo para EX,
+    WB-primeiro/ID-depois. Quantos ciclos até WB do add?
+  </p>
+  <div slot="hint">Duas instruções sem conflito levariam 6 ciclos.</div>
+  <div slot="hint-more">Acrescenta uma paragem load-use.</div>
+  <div slot="solution">
+    7 ciclos. lw: IF 1, ID 2, EX 3, MEM 4, WB 5; add: IF 2, ID 3, ID 4, EX 5,
+    MEM 6, WB 7.
+  </div>
+  <div slot="mistakes">
+    Encaminhar de EX/MEM o endereço do load como se fosse o dado.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-pipe-no-forward"
+  title="Esperar pelo banco"
+  explanation="/cadeiras/ac/pipeline/#load-use-com-uma-bolha"
+  answer={{ kind: 'number', value: 8, tolerance: 0 }}
+>
+  <p>
+    Mesmo código anterior, sem atalhos; WB na primeira metade e ID na segunda.
+    Quantos ciclos até WB do add?
+  </p>
+  <div slot="hint">O add pode ler o valor no ciclo WB do load.</div>
+  <div slot="hint-more">ID 3, ID 4, ID 5; EX 6.</div>
+  <div slot="solution">
+    8 ciclos. Duas paragens levam o add até WB 8. A leitura no mesmo ciclo WB 5
+    evita uma terceira paragem.
+  </div>
+  <div slot="mistakes">
+    Presumir uma terceira paragem sem alterar o contrato temporal do banco.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-pipe-store"
+  title="Distinguir dado e endereço"
+  explanation="/cadeiras/ac/pipeline/#o-operando-de-um-store"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei t0 como dado usado em MEM.',
+      'Indiquei o atalho de MEM/WB para MEM.',
+      'Não confundi esse caso com t0 usado como base em EX.',
+    ],
+  }}
+>
+  <p>Explica quando lw t0, 0(a0); sw t0, 0(a1) pode executar sem paragem.</p>
+  <div slot="hint">O store só precisa de guardar o dado em MEM.</div>
+  <div slot="hint-more">Load MEM 4; store MEM 5.</div>
+  <div slot="solution">
+    Com atalho que leva o dado carregado de MEM/WB para a entrada de escrita em
+    MEM 5, não há paragem. Se t0 fosse base do endereço do store, seria
+    necessário em EX 4, mais cedo; se o atalho de store não existe, segue as
+    regras do modelo.
+  </div>
+  <div slot="mistakes">
+    Aplicar uma regra universal para load seguido de store sem conferir o
+    caminho de hardware.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-pipe-clock"
+  title="Menos ciclos não basta"
+  explanation="/cadeiras/ac/pipeline/#saltos-e-período-de-relógio"
+  answer={{ kind: 'number', value: 0.9642857, tolerance: 1e-6 }}
+>
+  <p>
+    Antes: 9 ciclos a 300 ps. Depois: 7 ciclos a 400 ps. Calcula rapidez
+    relativa antes/depois.
+  </p>
+  <div slot="hint">Compara tempos, não ciclos.</div>
+  <div slot="hint-more">2700/2800.</div>
+  <div slot="solution">S=0,964286; a nova organização é mais lenta.</div>
+  <div slot="mistakes">Responder 9/7 sem considerar o aumento do período.</div>
+</Exercise>
+
+<Exercise
+  id="ac-pipe-schedule"
+  title="Reordenar preservando o resultado"
+  explanation="/cadeiras/ac/pipeline/#contar-e-reduzir-paragens"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Intercalei uma instrução independente.',
+      'Conservei dependências de registos e memória.',
+      'Expliquei qual valor fica pronto no EX do consumidor.',
+    ],
+  }}
+>
+  <p>
+    Propõe uma ordem sem paragem load-use para lw t0, 0(a0); add t1, t0, t2;
+    addi a1, a1, 4. a1 não participa nos restantes operandos.
+  </p>
+  <div slot="hint">A atualização de a1 é independente do load/add.</div>
+  <div slot="hint-more">
+    Coloca a atualização entre a leitura e o consumidor.
+  </div>
+  <div slot="solution">
+    lw t0, 0(a0); addi a1, a1, 4; add t1, t0, t2. O add chega a EX quando o dado
+    do load já pode ser encaminhado. A mudança é válida nas condições dadas
+    porque a1 não interfere com os acessos ou resultados.
+  </div>
+  <div slot="mistakes">
+    Intercalar uma operação que altera a0 antes do load ou que muda um operando
+    do add.
+  </div>
+</Exercise>

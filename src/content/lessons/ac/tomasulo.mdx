@@ -1,0 +1,90 @@
+---
+title: Algoritmo de Tomasulo
+description: Estações de reserva, etiquetas de operandos, CDB e evolução por ciclo.
+section: conteudo
+order: 9
+practices:
+  - ac/praticar-tomasulo
+editorial:
+  basedOn: 2024/25
+---
+
+import Dot from '../../../components/Dot.astro';
+import tomasulo from '../../ac/tomasulo.dot?raw';
+
+Tomasulo permite emitir instruções em ordem e executar as que já têm os operandos, mesmo quando uma anterior espera. A renomeação distingue resultados produzidos por escritas diferentes do mesmo registo.
+
+## O estado de uma estação
+
+<Dot
+  source={tomasulo}
+  alt="Emissão coloca operações nas estações de reserva; unidades calculam quando operandos estão prontos; CDB difunde etiqueta e valor a registos e estações à espera."
+/>
+
+| Campo          | Significado                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Busy           | A estação está ocupada                                                                          |
+| Op             | Operação a executar                                                                             |
+| Vj, Vk         | Valores dos operandos que já estão disponíveis                                                  |
+| Qj, Qk         | Etiquetas das estações que ainda produzirão operandos; zero significa disponível                |
+| Qi, no registo | Etiqueta da última operação emitida que deverá atualizar esse registo; zero se nenhuma pendente |
+
+V e Q descrevem alternativas para cada operando: se Qj não é zero, Vj ainda não contém o operando correto. O valor antigo visível no registo não deve ser usado.
+
+## Emitir, executar e difundir
+
+1. **Emitir:** escolher uma estação livre da classe certa. Capturar cada origem: valor se Qi=0, etiqueta se Qi≠0. Só depois atribuir a etiqueta da estação ao Qi do destino.
+2. **Executar:** iniciar quando ambos os Q são zero e a unidade admite uma nova operação. A duração e o intervalo de início seguem o enunciado.
+3. **CDB:** difundir `(etiqueta,valor)`. Estações que esperam essa etiqueta capturam o valor e zeram Q. Um registo só recebe o resultado se o seu Qi ainda for essa etiqueta. Libertar a estação após a difusão.
+
+Se a instrução lê e escreve o mesmo registo, capturar a origem **antes** de renomear o destino evita que espere pelo seu próprio resultado.
+
+## Um exemplo completo
+
+Estado inicial: `f2=2`, `f4=3`, `f6=4`, `f8=5`.
+
+```text
+I1: f0 = f2 * f4
+I2: f2 = f6 + f8
+I3: f0 = f0 - f2
+```
+
+Uma estação M1 para multiplicação, duas A1/A2 para adição/subtração. Unidades sem pipeline: multiplicação 3 ciclos, adição/subtração 2. Uma emissão por ciclo; execução começa no ciclo seguinte à emissão ou à receção do último operando. Um CDB, com prioridade à instrução mais antiga; difusão no ciclo seguinte ao fim da execução.
+
+| Ciclo | Emissão                           | Execução       | CDB e alterações                                |
+| ----- | --------------------------------- | -------------- | ----------------------------------------------- |
+| 1     | I1 em M1; Qi(f0)=M1               | Sem ação       | Sem ação                                        |
+| 2     | I2 em A1; Qi(f2)=A1               | I1:1/3         | I1 já capturou f2=2                             |
+| 3     | I3 em A2; Qj=M1, Qk=A1; Qi(f0)=A2 | I1:2/3; I2:1/2 | Sem ação                                        |
+| 4     | Sem ação                          | I1:3/3; I2:2/2 | Dois resultados ficam prontos                   |
+| 5     | Sem ação                          | Sem ação       | M1→6; A2 recebe Vj=6, Qj=0; f0 não é atualizado |
+| 6     | Sem ação                          | Sem ação       | A1→9; f2=9, Qi=0; A2 recebe Vk=9, Qk=0          |
+| 7     | Sem ação                          | I3:1/2         | Sem ação                                        |
+| 8     | Sem ação                          | I3:2/2         | Sem ação                                        |
+| 9     | Sem ação                          | Sem ação       | A2→−3; f0=−3, Qi=0                              |
+
+A primeira multiplicação não sobrescreve f0 no ciclo 5 porque Qi(f0)=A2, a escrita mais recente. O seu resultado não se perde: a estação A2 recebe-o. I1 também conserva o f2 inicial, apesar de I2 produzir f2=9; a WAR não força I1 a esperar pela nova escrita.
+
+## Tabela de operandos após emitir I3
+
+| ER  | Busy | Op  | Qj  | Qk  | Vj       | Vk       |
+| --- | ---- | --- | --- | --- | -------- | -------- |
+| M1  | 1    | mul | 0   | 0   | 2        | 3        |
+| A1  | 1    | add | 0   | 0   | 4        | 5        |
+| A2  | 1    | sub | M1  | A1  | Sem ação | Sem ação |
+
+E no banco: Qi(f0)=A2, Qi(f2)=A1. A estação identifica a versão de um valor; não é um número de registo arquitetural.
+
+## Bloqueios e arbitragem
+
+Se não existe estação livre da classe pedida, a emissão protela. Uma estação à espera de operandos continua ocupada. Uma unidade sem pipeline pode estar ocupada mesmo que exista uma estação livre; nesse caso a operação pode ser emitida e esperar, se o modelo separar esses recursos.
+
+Com um CDB, resultados simultâneos não podem ambos avançar. Um resultado atrasado mantém a estação ocupada. Fixa se uma estação libertada no ciclo permite emissão nesse mesmo ciclo ou apenas no seguinte; usa uma ordem de eventos coerente na tabela inteira.
+
+O CPI efetivo de um fragmento é ciclos totais/instruções, incluindo o início e a conclusão final. Neste exemplo é 9/3=3, apesar de haver trabalho sobreposto.
+
+## Limites do algoritmo básico
+
+Renomeação resolve WAR/WAW de registos, mas RAW continua a esperar pelo valor. Acessos à memória exigem ordenar endereços e stores relevantes. O CDB é um recurso partilhado.
+
+A versão básica não inclui, por si só, confirmação em ordem nem recuperação de especulação. Para essas propriedades acrescenta-se um reorder buffer. Um resultado pronto pode então esperar pelo commit, e um resultado especulativo não deve tornar-se uma alteração irreversível de memória antes da confirmação.

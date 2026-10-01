@@ -1,142 +1,92 @@
 ---
 title: Pipeline
-description: As cinco fases, débito ideal, hazards de dados com forwarding e bolhas, e hazards estruturais.
+description: Fases, conflitos, atalhos, bolhas e cálculo de ciclos com condições explícitas.
 section: conteudo
-order: 4
+order: 6
+practices:
+  - ac/praticar-pipeline
+editorial:
+  basedOn: 2024/25
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
 import bolha from '../../ac/pipeline-bolha.typ?raw';
 
-No datapath monociclo de FSC, cada instrução atravessa tudo antes de a seguinte começar, e o relógio espera pela mais lenta. O pipeline parte esse caminho em **fases** separadas por registos e põe uma instrução diferente em cada fase ao mesmo tempo, como uma linha de montagem. O relógio passa a esperar só pela fase mais lenta, e o processador completa idealmente uma instrução por ciclo.
+Uma pipeline sobrepõe fases de instruções diferentes. Aumenta a taxa de conclusão; uma instrução continua a atravessar vários ciclos. O modelo seguinte emite no máximo uma instrução por ciclo e usa memórias I/D separadas.
 
 ## As cinco fases
 
-O pipeline clássico do RISC-V tem cinco fases:
+| Fase | Trabalho                                                   |
+| ---- | ---------------------------------------------------------- |
+| IF   | Obter a instrução pelo PC                                  |
+| ID   | Descodificar e ler os operandos                            |
+| EX   | Calcular resultado, endereço ou condição de salto          |
+| MEM  | Ler/escrever dados; no modelo básico, redirecionar o salto |
+| WB   | Escrever resultado no registo, se a instrução o fizer      |
 
-1. **IF** (_fetch_): lê a instrução da memória a partir do PC e avança o PC.
-2. **ID** (_decode_): descodifica e lê os dois registos fonte.
-3. **EX** (_execute_): a ALU opera; calcula também o endereço e a decisão dos saltos.
-4. **MEM**: lê ou escreve a memória de dados (só nas instruções de acesso).
-5. **WB** (_write-back_): escreve o resultado no registo destino.
+As fases sem trabalho útil ainda ocupam a posição temporal do modelo. Um `sw` não escreve um registo em WB; não acrescentes uma escrita fictícia.
 
-Num instante qualquer há cinco instruções em voo, cada uma na sua fase. Se cada fase demorar um ciclo, sai uma instrução por ciclo em regime permanente: o **débito** (_throughput_) ideal é 1 instrução por ciclo (CPI = 1), e a **latência** de cada instrução continua a ser 5 ciclos. Confundir débito com latência é o erro clássico: o pipeline não acelera nenhuma instrução individual, faz mais delas ao mesmo tempo.
+Com atrasos 200,100,150,250,100 ps, período de pipeline 250 ps e sem custo adicional de registos, cada instrução percorre 1250 ps. Em ciclo único, o caminho load leva 800 ps. Para 20 instruções sem paragens: pipeline 24×250=6000 ps; ciclo único 20×800=16000 ps. A rapidez relativa é 2,667, não 5.
 
-O ganho máximo aproxima-se do número de fases, mas só se o trabalho se dividir por igual: a fase mais lenta dita o período do relógio, e qualquer desequilíbrio desperdiça-se nas outras fases.
+## Conflitos estruturais e de dados
 
-## Hazards de dados
+Um **conflito estrutural** existe quando operações simultâneas requerem um recurso que não as suporta. Uma única memória com um porto não pode servir IF e um load em MEM no mesmo ciclo. Para resolver isso, bloqueia IF ou disponibiliza recursos separados. Inserir um NOP também requer obter uma instrução, não cria um segundo porto.
 
-O problema: uma instrução precisa de um valor que a anterior ainda não escreveu. Toma este par:
+Uma dependência RAW existe quando uma instrução precisa do valor escrito por uma anterior. Torna-se conflito se esse valor não estiver disponível na fase que o usa. Não basta procurar registos repetidos: identifica leituras, escritas e o instante de uso.
 
-```riscv
-add  t0, t1, t2
-sub  t3, t0, t4
-```
-
-O `sub` lê `t0` na fase ID quando o `add` ainda só vai na fase EX: o valor novo ainda não existe. Há três sabores de dependência, pelos acessos envolvidos: **RAW** (_read after write_, o caso acima, o único que limita de verdade a ordem), **WAR** e **WAW** (só importam com emissão fora de ordem, como vais ver em [superescalares](superescalar/)).
-
-A primeira cura é o **forwarding** (ou _bypass_): atalhos que levam o resultado da saída da ALU (ou da memória) diretamente para a entrada da ALU, sem esperar pela escrita no registo. Com forwarding, o `sub` recebe `t0` acabado de calcular e só perde ciclos no caso em que o valor ainda nem foi calculado.
-
-Esse caso é o par carga-uso (_load-use_):
+## Atalhos para a ALU
 
 ```riscv
-lw   t0, 0(t1)
-add  t3, t0, t4
+add t0,t1,t2
+sub t3,t0,t4
+and t5,t0,t6
 ```
 
-O `lw` só tem o dado no fim da fase MEM, mas o `add` precisava dele no início da fase EX do ciclo anterior. Nenhum atalho fabrica o valor antes de ele existir: o hardware deteta o caso, **congela** o pipeline um ciclo e injeta uma **bolha** (_bubble_, uma operação vazia que avança sem fazer nada). Custa 1 ciclo por cada par destes. O compilador ajuda evitando pôr uma instrução que use o valor logo a seguir ao load, preenchendo o intervalo com trabalho independente.
+O resultado do `add` está pronto no fim de EX. A `sub` pode recebê-lo de EX/MEM no seu EX; a `and`, de MEM/WB. Não precisam de esperar que o banco seja escrito.
 
-A linha do tempo mostra o congelamento: o `add` repete IF e ID enquanto a bolha atravessa EX, e só avança quando o dado sai da MEM com forwarding.
+O comparador de forwarding verifica RegWrite, destino diferente de zero e igualdade com a origem. Se EX/MEM e MEM/WB oferecem o mesmo registo, escolhe **EX/MEM**, o resultado mais recente. Não encaminhes de EX/MEM o resultado de um load como se fosse o dado carregado: nesse momento é apenas o endereço.
+
+## Load-use com uma bolha
+
+```riscv
+lw t0,0(a0)
+add t1,t0,t2
+```
+
+O load só obtém o dado no fim de MEM. O EX do `add` no mesmo ciclo precisaria dele antes de existir. Com atalhos completos para EX, há uma paragem:
 
 <Typst
   source={bolha}
   format="svg"
-  alt="Linha do tempo de 7 ciclos: o lw ocupa IF a WB nos ciclos 1 a 5; o add faz IF e ID nos ciclos 2 e 3, uma bolha em EX no ciclo 4 e EX a WB nos ciclos 5 a 7, com forwarding da MEM do lw para a EX do add."
+  alt="Load em IF 1, ID 2, EX 3, MEM 4, WB 5; add em IF 2, ID 3, ID 4, EX 5, MEM 6, WB 7. Uma bolha atravessa EX 4 e o dado segue MEM/WB para EX 5."
 />
 
-O mesmo raciocínio em C: a primeira versão usa cada valor carregado logo a seguir, a segunda dá ao pipeline dois acumuladores independentes para sobrepor. Ambas imprimem `24`.
+O `add` fica em ID nos ciclos 3 e 4; a instrução seguinte fica em IF. No ciclo 4, EX recebe uma bolha. Congelar PC e IF/ID evita perder ou repetir instruções; zerar o controlo de ID/EX evita executar o `add` com dado antigo.
 
-<Tabs id="carga-uso" labels={['Dependente', 'Reordenado']}>
-  <div slot="panel-0">
+Sem forwarding, e com escrita WB na primeira metade e leitura ID na segunda metade, o consumidor pode ler em ID no ciclo 5: duas paragens, não três. Se o banco tiver outra regra temporal, adapta a conta.
 
-```c
-#include <stdio.h>
-int main(void) {
-    int a[4] = {1, 2, 3, 4};
-    int soma = 0;
-    for (int i = 0; i < 4; i++)
-        soma += a[i] * 2 + 1;
-    printf("%d\n", soma);
-    return 0;
-}
+## O operando de um store
+
+`sw t0,0(a0)` usa `a0` para endereço em EX e `t0` como dado em MEM. São usos diferentes. Um load seguido de store do seu resultado pode dispensar paragem **se houver atalho do dado para MEM**. Se só existem atalhos ALU–ALU, o store pode precisar de esperar em ID ou usar outro caminho. Não transfiras automaticamente a regra load-use da ALU para este caso.
+
+## Contar e reduzir paragens
+
+Para $N$ instruções em 5 fases: $C=N+4+B$. Dois loads imediatamente seguidos de consumidores ALU, sem outras dependências, dão $B=2$. Para 10 instruções, são 16 ciclos.
+
+Mover uma instrução independente entre load e consumidor pode ocultar essa paragem:
+
+```riscv
+lw t0,0(a0)
+addi a1,a1,4
+add t1,t0,t2
 ```
 
-Cada volta espera pelo `a[i]` antes de multiplicar: é o par carga-uso em software.
+É válido se a atualização de `a1` não alterar o significado nem o endereço de outros acessos e puder ocorrer antes do `add`. Reordenar exige conservar dependências de registos e memória, não só reduzir bolhas.
 
-  </div>
-  <div slot="panel-1">
+Para um ciclo repetido muitas vezes, $CPI\approx(n+B_{\rm iter})/n$, incluindo dependências **entre iterações**. Uma carga na última instrução pode alimentar a primeira da iteração seguinte.
 
-```c
-#include <stdio.h>
-int main(void) {
-    int a[4] = {1, 2, 3, 4};
-    int par = 0, impar = 0;
-    for (int i = 0; i < 4; i += 2) {
-        par += a[i] * 2 + 1;
-        impar += a[i + 1] * 2 + 1;
-    }
-    printf("%d\n", par + impar);
-    return 0;
-}
-```
+## Saltos e período de relógio
 
-Com dois acumuladores, cada volta tem dois loads independentes para o hardware sobrepor.
+Um salto introduz incerteza no PC. Neste modelo básico, a comparação começa em EX e o PC é redirecionado em MEM. Há até três instruções mais novas no caminho errado. Os casos de predição e decisão antecipada estão em [Predição de saltos](/cadeiras/ac/predicao-saltos/).
 
-  </div>
-</Tabs>
-
-<CodePlayground
-  language="c"
-  title="Carga-uso em C"
-  code={
-    '#include <stdio.h>\nint main(void) {\n    int a[4] = {1, 2, 3, 4};\n    int soma = 0;\n    for (int i = 0; i < 4; i++)\n        soma += a[i] * 2 + 1;\n    printf("%d\\n", soma);\n    return 0;\n}'
-  }
-/>
-
-## Hazards estruturais e de controlo
-
-O **hazard estrutural** acontece quando duas fases precisam do mesmo recurso ao mesmo tempo. O exemplo clássico: com uma só memória para instruções e dados, a fase IF de uma instrução e a fase MEM de outra colidem. A solução é mesmo estrutural: memórias separadas para instruções e dados (organização de Harvard ao nível da cache), por isso é que há caches L1 de instruções e de dados distintas.
-
-O **hazard de controlo** nasce dos saltos: quando um salto chega à fase EX e se confirma, as instruções que entraram entretanto no pipeline vão pelo caminho errado e têm de ser descartadas (_flush_). A penalidade é o número de fases entre a leitura e a decisão. A cura mais simples é decidir mais cedo (comparar e calcular o destino logo na ID) e assumir sempre o mesmo resultado, por exemplo salto não tomado, pagando a penalidade só quando a aposta falha. A cura a sério é prever cada salto individualmente, e isso é a página seguinte.
-
-## Quanto custa cada hazard
-
-Em regime permanente, o CPI real é o ideal mais os stalls por instrução:
-
-$$
-\text{CPI} = 1 + \text{stalls de dados} + \text{stalls de controlo} + \text{stalls estruturais}
-$$
-
-Um exemplo. Programa com 20% de loads, dos quais um quarto é seguido de uso imediato (bolha de 1 ciclo), e 15% de saltos com penalidade média de 1 ciclo por salto:
-
-$$
-\text{CPI} = 1 + 0{,}20 \times 0{,}25 \times 1 + 0{,}15 \times 1 = 1 + 0{,}05 + 0{,}15 = 1{,}20
-$$
-
-Vê a estrutura da conta: frequência do evento vezes custo do evento, somada ao ideal. É a mesma ponderação do CPI médio da página de [desempenho](desempenho/), com os stalls no papel dos custos.
-
-<YouTube
-  id="jwnFQ58HU1Y"
-  title="Pipeline com e sem sobreposição, exemplo passo a passo"
-/>
-
-:::details[Ver a linha do tempo do par carga-uso]
-Escreve os ciclos em coluna e marca cada fase. O `lw` ocupa IF–ID–EX–MEM–WB nos ciclos 1–5. O `add` entraria em IF no ciclo 2, mas o hardware congela-o: repete IF e ID no ciclo 4 (a bolha passa por EX nesse ciclo) e só avança para EX no ciclo 5, quando o dado já saiu da MEM do `lw` e o forwarding o entrega. Desenha esta tabela uma vez na vida e o mecanismo deixa de ser abstrato.
-:::
-
-## Para levar para a próxima página
-
-O pipeline lida bem com tudo menos com a pergunta "para onde salta?". Cada salto mal apostado deita fora o trabalho das fases seguintes, e os programas estão cheios de saltos. A [predição de saltos](predicao-saltos/) mostra como adivinhar cada desvio com base no passado.
+Forwarding também tem custo de hardware. Se uma versão precisa de 9 ciclos a 300 ps e outra de 7 ciclos a 400 ps, os tempos são 2700 e 2800 ps. A segunda tem menos ciclos, mas rapidez relativa 0,964; é mais lenta.
