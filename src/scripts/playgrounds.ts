@@ -44,6 +44,8 @@ export function setupPlaygrounds() {
       const source = root.querySelector<HTMLElement>('[data-source]')!;
       const original = source.textContent || '';
       const runButton = root.querySelector<HTMLButtonElement>('[data-run]')!;
+      const resetButton =
+        root.querySelector<HTMLButtonElement>('[data-reset]')!;
       const stopButton = root.querySelector<HTMLButtonElement>('[data-stop]')!;
       const result = root.querySelector<HTMLElement>('.playground-result')!;
       const status = root.querySelector<HTMLElement>('[role=status]')!;
@@ -162,7 +164,7 @@ export function setupPlaygrounds() {
       source.hidden = true;
       runButton.onclick = run;
       stopButton.onclick = () => finish('Execução interrompida.');
-      root.querySelector<HTMLButtonElement>('[data-reset]')!.onclick = () => {
+      resetButton.onclick = () => {
         finish('');
         result.hidden = true;
         output.textContent = '';
@@ -172,6 +174,8 @@ export function setupPlaygrounds() {
         });
         editor.focus();
       };
+      runButton.disabled = false;
+      resetButton.disabled = false;
       window.addEventListener(
         'pagehide',
         () => {
