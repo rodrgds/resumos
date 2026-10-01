@@ -266,3 +266,9 @@ O build gera uma versão `.md` de cada página pública e um índice `/llms.txt`
 ## Referência técnica
 
 Consulta os guias de [formatos e compilação](docs/conteudo.md), [execução e isolamento](docs/execucao.md) e [desenvolvimento e publicação](docs/desenvolvimento.md). O [guia de escrita](.agents/skills/resumos-writing/SKILL.md) define a voz dos apontamentos.
+
+### Demos interativas
+
+Usa `InteractiveDemo.astro` para experimentar a matéria com controlos e um visual. O componente da cadeira fica em `src/content/<cadeira>/` e recebe um `label` descritivo. Explica as hipóteses e o que observar na lição. O bloco não acrescenta cabeçalho, editor nem ações: mostra apenas o que ajuda a aprender. Usa SVG para desenhos simples; escolhe uma biblioteca de gráficos quando for necessária. Animações respeitam movimento reduzido.
+
+Reserva `WebPlayground` para ensinar HTML, CSS e JavaScript. Nas outras cadeiras, usa blocos de código quando correr ou alterar esse código ajuda a entender a técnica. Não exponhas a implementação web de uma demo matemática ou física.
