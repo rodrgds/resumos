@@ -1,38 +1,50 @@
 ---
-title: Fundamentos de Segurança Informática
-description: Modelação de ameaças, criptografia, acessos, programação defensiva e segurança Web, com método de atacante.
+title: 'Fundamentos de Segurança Informática'
+description: 'Como estudar a teoria, relacionar ataques com defesas e preparar os dois testes.'
 section: conteudo
 order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha oficial de FSI, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999
+    - title: Moodle FSI, materiais iniciais atualmente publicados
+      url: https://moodle2627.up.pt/course/view.php?id=4735
+  coverage: 'Como estudar a teoria, relacionar ataques com defesas e preparar os dois testes.'
+  gaps:
+    - A apresentação Moodle tem capa de 2025/26 e mínimo 6/20, divergindo do mínimo 8/20 da ficha 2026/27.
+    - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
-Fundamentos de Segurança Informática é a cadeira onde deixas de perguntar "funciona?" e passas a perguntar "como é que isto parte?". Vais aprender a pensar como atacante para depois construíres defesas: modelar ameaças, cifrar e assinar dados, controlar acessos, escrever código que resista a entradas maliciosas e proteger redes e aplicações Web. O trabalho prático corre em máquinas virtuais, com tutoriais e desafios de segurança.
+Um sistema pode cifrar todos os dados e continuar vulnerável se entregar esses dados à pessoa errada. Em FSI vamos ligar cada propriedade de segurança às hipóteses, ao mecanismo que a protege e ao ataque que quebra essas hipóteses.
 
-Imagina uma loja em linha, a mesma que vais reencontrar na última página. Três incidentes diferentes mostram as três propriedades que a segurança protege. Se alguém copia a lista de clientes com números de cartão, falha a **confidencialidade**. Se alguém altera os preços ou o stock, falha a **integridade**. Se o site cai na véspera da Black Friday, falha a **disponibilidade**. Cada pilar parte-se de forma diferente e defende-se de forma diferente, e esta distinção organiza a cadeira inteira.
+## O que deves conseguir resolver
 
-## Como está organizado
+Perante um cenário, identifica o ativo, a ameaça, a vulnerabilidade e a propriedade afetada. Depois explica como o ataque funciona, propõe uma defesa e diz o que essa defesa ainda deixa por resolver. Nos problemas com código, segue os dados controlados pelo atacante até à operação perigosa. Nos problemas de criptografia e permissões, escreve a regra antes de fazer a conta.
 
-Começa por [Princípios de segurança e gestão de risco](principios-seguranca/), com a tríade confidencialidade, integridade e disponibilidade, e uma matriz de risco resolvida para dois cenários. Depois, [Princípios de construção de sistemas seguros](sistemas-seguros/) redesenha um serviço com permissões a mais, aplicando privilégio mínimo, isolamento e defesa em profundidade.
+A sequência de leitura acompanha os temas do programa oficial:
 
-A seguir vêm os mecanismos. [Criptografia simétrica, assimétrica e PKI](criptografia/) cifra, assina e verifica uma cadeia de certificados até à raiz, com um exemplo RSA em números pequenos que podes confirmar à mão. [Controlo de acessos e fluxos](controlo-acessos/) resolve uma tabela de permissões Unix, incluindo um caso que nega acesso por defeito.
+1. [Princípios de segurança](/cadeiras/fsi/principios-seguranca/), risco e propriedades.
+2. [Sistemas seguros](/cadeiras/fsi/sistemas-seguros/), isolamento e princípios de construção.
+3. [Criptografia](/cadeiras/fsi/criptografia/) e [modos e protocolos](/cadeiras/fsi/modos-protocolos/), confidencialidade, autenticidade, chaves e PKI.
+4. [Controlo de acessos](/cadeiras/fsi/controlo-acessos/), políticas, fluxos e Unix.
+5. [Programação defensiva](/cadeiras/fsi/programacao-defensiva/), memória, entradas e concorrência.
+6. [Segurança de redes](/cadeiras/fsi/seguranca-redes/), canais, filtragem, deteção e DoS.
+7. [Segurança Web](/cadeiras/fsi/seguranca-web/), sessões, autorização e injeções.
+8. [Modelar ameaças](/cadeiras/fsi/pensar-como-atacante/), aplicação conjunta destes conceitos.
 
-A segunda metade é ataque e defesa na prática. [Programação defensiva e overflows](programacao-defensiva/) explora um `strcpy` vulnerável em C e corrige-o com validação e limites. [Segurança de redes e negação de serviço](seguranca-redes/) lê um registo de acessos que revela um DoS simples e justifica a contramedida. [Segurança Web: sessões e autenticação](seguranca-web/) mostra um XSS refletido e uma injeção SQL mínima, cada um com a sua correção. Fecha com [Pensar como atacante: método e projeto](pensar-como-atacante/), que junta tudo num modelo de ameaças completo e reutilizável.
+## Avaliação em 2026/27
 
-## Como estudar
+A [ficha oficial](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999) define dois testes de teoria e trabalho laboratorial. Se $T_1$ e $T_2$ são as notas dos testes e $TL$ a nota laboratorial, todas de 0 a 20:
 
-Estuda com mentalidade de atacante: perante cada mecanismo, pergunta primeiro como o contornarias e só depois como o reforçarias. Refaz cada ataque destas páginas na tua máquina virtual, nunca em sistemas alheios. Atacar sem autorização é crime, mesmo com boas intenções, e os tutoriais da cadeira existem exatamente para teres alvos legítimos.
+$$T=0{,}5T_1+0{,}5T_2,\qquad CF=0{,}6T+0{,}4TL.$$
 
-Mantém um diário de bordo (_logbook_): para cada experiência, regista o comando, a saída e a conclusão. "Corri X, observei Y, por isso Z" é o formato que os tutoriais avaliados pedem e é também a forma mais rápida de perceberes onde o teu raciocínio falhou. Quando um ataque não funcionar, lê a saída com calma antes de tentar outra coisa: a mensagem de erro indica quase sempre o passo errado.
+Cada teste exige pelo menos **8/20**. Em recurso, cada metade conserva o máximo entre a nota do teste correspondente e a dessa metade do recurso. O corte da matéria entre os testes será indicado no Moodle. A frequência prática também é condição de aprovação.
 
-## Avaliação
+A apresentação disponibilizada no Moodle ainda tem uma capa de 2025/26 e indica 6/20 por teste, divergindo da ficha de 2026/27. A fórmula e mínimos acima são os da ficha atual. Confirma os avisos de avaliação da equipa docente antes de planear a preparação.
 
-Segundo a ficha de 2025/26, a avaliação é distribuída e sem exame final: um Teste conta 60 por cento e o Trabalho laboratorial 40 por cento, com a classificação final $CF = 0{,}6 \times T + 0{,}4 \times TL$.[^avaliacao] Na época normal, $T = 0{,}5 \times T1 + 0{,}5 \times T2$, há mínimo de 6 valores em cada teste, e o trabalho laboratorial faz-se em grupo nas aulas práticas, de frequência obrigatória. As regras mudam de ano para ano, por isso confirma sempre a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle.
+## Treinar sem consultar a solução
 
-[^avaliacao]: Pesos, mínimos e fórmula da nota final segundo a ficha da unidade curricular de Fundamentos de Segurança Informática, ocorrência de 2025/26, consultada em setembro de 2026 e ligada na secção de fontes.
+Lê um exemplo, fecha-o e refaz o raciocínio. Resolve os exercícios no fim de cada página antes de abrir as pistas. Confere a explicação, incluindo as hipóteses e os limites da defesa, mesmo quando o valor numérico está certo. Usa a [cheat sheet](/cadeiras/fsi/folha-consulta/) para recordar regras já compreendidas.
 
-## Fontes e âmbito
-
-Estas páginas seguem o âmbito da unidade curricular de Fundamentos de Segurança Informática (L.EIC021) do 3.º ano, 1.º semestre da LEIC, ocorrência de 2025/26: princípios de segurança e risco, construção de sistemas seguros, criptografia, controlo de acessos, programação defensiva, segurança de redes e segurança Web. O software de trabalho é o VirtualBox, para correr os ambientes laboratoriais isolados.
-
-Material oficial da FEUP:
-
-- Ficha da unidade curricular de Fundamentos de Segurança Informática, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560106).
+Os exercícios aqui são originais e não reproduzem provas da cadeira. Os exemplos e os resumos cobrem o programa público; a lista exata de matéria e o formato dos testes dependem dos materiais e avisos da edição atual.

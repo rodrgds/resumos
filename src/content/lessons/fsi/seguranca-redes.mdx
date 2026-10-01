@@ -1,84 +1,88 @@
 ---
-title: Segurança de redes e negação de serviço
-description: Ataques ao nível da rede, SYN flood e a leitura de um registo que revela um DoS simples.
+title: 'Segurança de redes'
+description: 'Escuta, falsificação, TLS, firewalls, IDS e contas de negação de serviço.'
 section: conteudo
-order: 6
+order: 7
+practices:
+  - fsi/praticar-seguranca-redes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha oficial de FSI, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999
+    - title: 'RFC 8446, TLS 1.3'
+      url: https://datatracker.ietf.org/doc/html/rfc8446
+    - title: 'RFC 4987, SYN flooding'
+      url: https://datatracker.ietf.org/doc/html/rfc4987
+    - title: 'RFC 4301, IPsec'
+      url: https://datatracker.ietf.org/doc/html/rfc4301
+  coverage: 'Escuta, falsificação, TLS, firewalls, IDS e contas de negação de serviço.'
+  gaps:
+    - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import synflood from '../../fsi/synflood.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import rede from '../../fsi/rede-segura.dot?raw';
 
-A rede é o único componente do sistema que o atacante pode tocar sem conta nem convite. Esta página passa pelos ataques ao nível da rede, explica a negação de serviço mais instrutiva e termina a ler um registo que denuncia um ataque em curso.
+Uma rede transporta mensagens entre entidades que podem não confiar umas nas outras. Um atacante pode observar tráfego, modificar o caminho ou esgotar recursos, conforme a sua posição e as fraquezas dos protocolos.
 
-## O que a rede expõe
+## Observação e falsificação
 
-Quem partilha o caminho dos pacotes pode **escutar** (_sniffing_): numa rede sem fios aberta ou num segmento comprometido, o tráfego não cifrado lê-se como um postal. A resposta é cifrar o transporte, com TLS na Web e redes privadas virtuais onde for preciso, porque a escuta passiva não deixa marcas.
+A **escuta** procura ler tráfego. A **falsificação**, ou spoofing, apresenta uma identidade ou endereço falso. Num ataque ativo de intermediário, o atacante interceta e pode alterar a comunicação entre os extremos.
 
-Pode também **falsificar** (_spoofing_): mentir sobre a origem dos pacotes ou sobre quem responde a cada endereço. O exemplo clássico é o envenenamento ARP, em que o atacante diz à rede local "eu sou o router" e recebe o tráfego alheio para escutar ou alterar. A defesa combina segmentação da rede, deteção destas mentiras e, outra vez, cifragem com autenticação: mesmo recebendo os pacotes, o atacante não os lê nem os forja sem as chaves.
+| Mecanismo atacado   | Fraqueza explorada                       | Defesa e limite                                                                                |
+| ------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| ARP numa rede local | Aceitar associações IP/MAC maliciosas    | Controlos na rede local; um canal autenticado protege dados mesmo com caminho hostil           |
+| DNS                 | Resposta ou resolução adulterada         | Validação DNSSEC onde aplicável; não cifra consultas nem garante que o serviço final é honesto |
+| TCP                 | Manipulação de estado ou segmentos       | Validações do protocolo e transporte autenticado; um endereço IP não é prova de identidade     |
+| Aplicação sem TLS   | Conteúdo legível ou alterável no caminho | TLS corretamente validado; os extremos continuam a ver o conteúdo                              |
 
-Segue o envenenamento em três pacotes, com a vítima em `192.168.1.20` e o router em `192.168.1.1`:
+Nem todo atacante pode ver todos os pacotes. Numa resposta, distingue um atacante no caminho, na rede local ou apenas remoto, e justifica que mensagens controla.
 
-1. O atacante envia à vítima uma resposta ARP que ninguém pediu: "`192.168.1.1` está no meu endereço MAC". A vítima atualiza a sua tabela e passa a mandar o tráfego do router para o atacante.
-2. O atacante envia ao router a mentira simétrica: "`192.168.1.20` está no meu endereço MAC". O router passa a mandar as respostas à vítima para o atacante.
-3. O atacante reencaminha tudo em silêncio, lendo pelo caminho. Nem a vítima nem o router notam, porque os pacotes continuam a chegar.
+## TLS, SSH e IPsec
 
-A **negação de serviço** (DoS, _denial of service_) ataca o terceiro pilar da tríade, a disponibilidade: em vez de roubar ou alterar, esgota um recurso até o serviço deixar de responder. A variante **distribuída** (DDoS) usa milhares de origens em simultâneo, muitas vezes aparelhos infetados, o que torna inútil bloquear um endereço.
+TLS protege o canal entre os extremos que terminam TLS. Num handshake autenticado, os participantes negoceiam parâmetros, estabelecem chaves e verificam a autenticação e o contexto da troca. Depois protegem registos com cifragem autenticada. O [TLS 1.3](https://datatracker.ietf.org/doc/html/rfc8446) tem diferenças relevantes face ao TLS antigo, incluindo a seleção de mecanismos criptográficos.
 
-## O SYN flood, passo a passo
+HTTPS é HTTP transportado por TLS. Protege o conteúdo HTTP, incluindo caminho, cabeçalhos e corpo, durante o transporte. Um observador ainda pode conhecer endereços IP, tamanhos e tempos; o nome do servidor pode ficar visível por DNS ou por mecanismos do handshake, conforme a configuração. HTTPS não esconde dados do servidor nem corrige XSS ou uma autorização em falta.
 
-O aperto de mão do TCP tem três passos: o cliente envia SYN, o servidor reserva recursos e responde SYN-ACK, o cliente confirma com ACK. No **SYN flood**, o atacante envia vagas de SYN com endereços de origem falsos e nunca responde ao SYN-ACK. Cada meio-aberto ocupa um lugar na fila do servidor durante dezenas de segundos, e a fila enche-se de fantasmas. Os clientes legítimos passam a receber recusas: o servidor está ocupado com ligações que nunca vão existir.
-
-<Typst
-  source={synflood}
-  format="svg"
-  alt="Diagrama do SYN flood: o atacante envia três SYN ao servidor sem responder, e a fila do servidor enche-se de ligações fantasma."
+<Dot
+  source={rede}
+  alt="O navegador fala por TLS com um proxy. O proxy termina esse canal e pode ler o HTTP. Um segundo canal TLS protege o caminho do proxy ao servidor, com outra fronteira de confiança."
 />
 
-Repara por que funciona: explora um comportamento legítimo do protocolo, não um erro de código, e custa pouco a cada pacote falso. As contramedidas atuam em camadas: aumentar e gerir a fila, responder com _cookies_ SYN sem reservar recursos, filtrar origens impossíveis na firewall e absorver o volume a montante, no fornecedor ou numa rede de distribuição de conteúdo.
+SSH oferece um canal autenticado para acesso remoto e outros serviços. A validação da chave do servidor é necessária para evitar um intermediário. IPsec protege tráfego ao nível IP; em modo transporte protege a comunicação dos extremos, e em modo túnel encapsula um pacote IP num novo pacote. Uma VPN não torna uma aplicação interna automaticamente autorizada para todos os clientes.
 
-A mesma inundação aparece em duas formas, e cada uma pede uma resposta diferente:
+## Firewalls e deteção
 
-<Tabs id="dos-ddos" labels={['DoS de origem única', 'DDoS distribuído']}>
-  <div slot="panel-0">
+Uma firewall aplica uma política sobre tráfego. Um filtro sem estado decide com campos do pacote; um filtro com estado acompanha conexões; um proxy pode aplicar regras da aplicação. Aceitar qualquer pacote com o bit ACK não prova que pertence a uma conexão permitida.
 
-Um endereço a martelar um alvo caro, como o registo do exemplo no fim da página. O diagnóstico é direto: conta os pedidos por origem e encontra o fora da curva. A contramedida também: limitar o débito desse endereço na firewall ou bloqueá-lo temporariamente, e o serviço recupera.
+Uma regra deve dizer direção, origem, destino, protocolo, porta e, quando existe, estado. Depois verifica a ordem das regras e a decisão por defeito. Permitir HTTPS para um servidor não impede ataques que chegam por pedidos HTTPS válidos.
 
-  </div>
-  <div slot="panel-1">
+Um IDS deteta eventos suspeitos; um IPS pode bloquear. Deteção por assinatura reconhece padrões conhecidos; deteção por anomalia compara comportamento com um modelo. Uma mudança legítima pode produzir um falso positivo. Um ataque semelhante ao normal pode produzir um falso negativo.
 
-Milhares de origens, cada uma com débito modesto, muitas vezes aparelhos infetados que os donos nem sabem comprometidos. Nenhum endereço isolado parece anómalo, por isso o bloqueio pontual não chega. A resposta sobe de nível: _cookies_ SYN para não reservar recursos, filtragem a montante no fornecedor e absorção do volume numa rede de distribuição de conteúdo.
+## DoS, SYN flood e amplificação
 
-  </div>
-</Tabs>
+DoS afeta a disponibilidade. DDoS usa origens distribuídas, que podem incluir máquinas comprometidas ou refletores. Um SYN flood procura ocupar recursos de conexões TCP incompletas. SYN cookies reduzem o estado guardado antes de o cliente completar o handshake; não resolvem todos os limites de capacidade nem os ataques à aplicação.
 
-<YouTube
-  id="BcDZS7iYNsA"
-  title="O ataque que podia perturbar a Internet, Computerphile"
+Em reflexão, um atacante falsifica o endereço da vítima em pedidos a terceiros. Os terceiros respondem à vítima. Se a resposta é maior que o pedido, há amplificação.
+
+Suponhamos pedidos de 60 bytes e respostas de 3 000 bytes, contando apenas o conteúdo indicado. O fator é $3\,000/60=50$. Com 2 Mbit/s de pedidos, a vítima pode receber 100 Mbit/s de respostas, se os refletores conseguirem gerar esse tráfego. Cabeçalhos, perdas e limitações reais alteram a conta; o enunciado tem de dizer o que está incluído.
+
+## O problema da taxa base
+
+Um IDS analisa 10 000 eventos. Há 10 ataques. Deteta 90% dos ataques e alerta em 1% dos eventos legítimos. Esperamos 9 verdadeiros positivos e $0{,}01\times9\,990=99{,}9$ falsos positivos. A precisão esperada dos alertas é:
+
+$$\frac{9}{9+99{,}9}\approx8{,}26\%.$$
+
+Uma taxa de deteção alta não implica que a maioria dos alertas seja um ataque. A raridade dos ataques afeta a interpretação.
+
+<CodePlayground
+  title="Calcular a precisão de um IDS"
+  language="python"
+  code={
+    'eventos, ataques = 10000, 10\nvp = ataques * 0.90\nfp = (eventos - ataques) * 0.01\nprint("VP esperados:", vp, "FP esperados:", fp)\nprint(f"Precisão: {100 * vp / (vp + fp):.2f}%")'
+  }
 />
 
-Do lado da defesa permanente, a receita é a mesma de sempre: firewall com regras mínimas, segmentação entre serviços, apenas as portas necessárias expostas e registos que permitam perceber o que aconteceu. Sem registos, um ataque é só "o site esteve lento".
-
-## Exemplo: o registo que denuncia um DoS simples
-
-A loja queixa-se de lentidão na pesquisa. O ritmo normal ronda 2 pedidos por segundo, de endereços variados e a páginas diversas. Um excerto do registo de acessos mostra outra história:
-
-```text
-10:31:02  198.51.100.23  GET /pesquisa?q=telemovel
-10:31:02  203.0.113.7    GET /pesquisa?q=a
-10:31:02  203.0.113.7    GET /pesquisa?q=ab
-10:31:02  203.0.113.7    GET /pesquisa?q=abc
-10:31:02  203.0.113.7    GET /pesquisa?q=abcd
-10:31:03  198.51.100.23  GET /contactos
-10:31:03  203.0.113.7    GET /pesquisa?q=abcde
-```
-
-Um só endereço a martelar o endpoint mais pesado, dezenas de vezes por segundo, enquanto o resto do tráfego segue normal. Conta e confirma: `grep -c '203.0.113.7' acessos.log` devolve 1843 linhas num minuto, cerca de 30 por segundo, contra uma média de 2 dos restantes. Uma origem, um alvo caro, volume anómalo: é uma negação de serviço simples, não um pico de clientes.
-
-A contramedida justifica-se pela leitura: como há uma só origem, basta limitar o débito desse endereço na firewall ou bloqueá-lo temporariamente, e o serviço recupera. Se em vez de um endereço fossem milhares, cada um com débito modesto, o bloqueio pontual não chegaria e seria preciso filtrar a montante. O diagnóstico decide a defesa: primeiro lê, depois bloqueia.
-
-## Para saber mais
-
-- [RFC 4987](https://datatracker.ietf.org/doc/html/rfc4987.html): o documento que descreve ataques SYN flood e as mitigações comuns, incluindo os _cookies_ SYN.
-- [SYN flooding na Wikipédia](https://en.wikipedia.org/wiki/SYN_flooding): resumo do ataque com o diagrama do aperto de mão TCP.
+Para escolher uma defesa DoS, identifica o recurso esgotado. Se o acesso à Internet já está saturado, filtrar só no servidor chega tarde. Se a CPU gasta trabalho caro por pedido, limites e filas na aplicação podem ajudar. Bloquear um IP também pode bloquear utilizadores legítimos que partilham esse endereço.
