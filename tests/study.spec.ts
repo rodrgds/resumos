@@ -417,6 +417,9 @@ test('the coding exercise exposes a failing test and accepts the repaired loop',
   await expect(
     playground.getByLabel('Resultado', { exact: true }),
   ).toContainText('n=1: esperado 1, obtido 0', { timeout: 25_000 });
+  await expect(playground.getByRole('status')).toHaveText(
+    'Terminou com erro (1)',
+  );
   const code = (await playground
     .locator('[data-source]')
     .textContent())!.replace('range(1, n):', 'range(1, n + 1):');
@@ -427,6 +430,7 @@ test('the coding exercise exposes a failing test and accepts the repaired loop',
   await expect(
     playground.getByLabel('Resultado', { exact: true }),
   ).toContainText('Os quatro testes passaram.', { timeout: 25_000 });
+  await expect(playground.getByRole('status')).toHaveText('Concluído');
 });
 
 test('blocked storage does not prevent answering or opening a solution', async ({
