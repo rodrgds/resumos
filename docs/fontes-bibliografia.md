@@ -117,7 +117,7 @@ Em Python, a opção `ct-iadp` tem os notebooks e datasets oficiais de [Python f
 - **Presentation Skills for Students**, Joan van Emden, Lucinda Becker. **Papel:** obrigatória. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
 - **The Visual Display of Quantitative Information**, Edward R. Tufte. **Papel:** obrigatória. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
 - **How to Write Dissertations and Project Reports**, Kathleen McMillan, Jonathan Weyers. **Papel:** obrigatória. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
-- **Escrever... com normas**, Julce Mary Cornelsen. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **[Escrever... com normas](https://v1.ucdigitalis.uc.pt/pombalina/item/55466)**, Julce Mary Cornelsen. **Papel:** complementar. **Acesso:** edição de 2012 aberta na Universidade de Coimbra; o download automático falhou por redirecionamentos.
 - **Scientific Writing and Communication**, Angelika H. Hofmann. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
 - **Manual de competências pessoais, interpessoais e instrumentais**, José Gonçalves das Neves, Margarida Garrido, Eduardo Simões. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
 - **Faz o curso na maior**, Nuno Ferreira, Bruno Caldeira. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
