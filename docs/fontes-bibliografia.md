@@ -55,7 +55,7 @@ Em Python, a opção `ct-iadp` tem os notebooks e datasets oficiais de [Python f
 
 ### ALGA — Álgebra Linear e Geometria Analítica
 
-**Evidência da cadeira:** [Latest populated current-LEIC occurrence found: 2025/2026.](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560085).
+**Evidência da cadeira:** [Programa e bibliografia de 2026/2027, verificados em 2026-10-01](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586980). O Moodle de 2024/25 está indisponível para estudantes.
 
 - **Elementary Linear Algebra** — Howard Anton. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
 - **[Álgebra linear como introdução à matemática aplicada](https://books.google.com/books?id=k9t6RAAACAAJ)** — Luís T. Magalhães. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.

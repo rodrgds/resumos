@@ -3,9 +3,12 @@ title: Sistemas de equações lineares e método de Gauss
 description: Escrever sistemas como AX = B, eliminar por Gauss, classificar pela característica e resolver um sistema 3x3.
 section: conteudo
 order: 2
+practices:
+  - alga/praticar-sistemas
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import exampleCode from '../../alga/sistemas-lineares.py?raw';
 
 Um sistema de equações lineares é o problema mais concreto da cadeira: várias equações do primeiro grau nas mesmas incógnitas, para resolver em simultâneo. O método de Gauss resolve qualquer sistema destes de forma mecânica, e a leitura correta do resultado final diz-te se há uma solução, infinitas ou nenhuma.
 
@@ -44,7 +47,7 @@ Resolver o sistema é encontrar todos os $(x, y, z)$ que satisfazem as três equ
 
 ## O método de Gauss
 
-A ideia é transformar a matriz ampliada noutra equivalente (com as mesmas soluções) mas em **escada de linhas**: cada linha não nula começa com um 1 (o **pivô**), cada pivô está à direita do pivô da linha anterior e as linhas nulas ficam em baixo. Só podes usar três **operações elementares**, porque são as únicas que preservam o conjunto das soluções:
+A ideia é transformar a matriz ampliada noutra equivalente, com as mesmas soluções, mas em **escada de linhas**. A primeira entrada não nula de cada linha é o **pivô**. Cada pivô fica à direita do anterior e as linhas nulas ficam em baixo. O pivô não tem de ser 1. Usamos três **operações elementares**, todas reversíveis:
 
 1. trocar duas linhas;
 2. multiplicar uma linha por um escalar não nulo;
@@ -107,18 +110,66 @@ com $k \in \mathbb{R}$. O determinante da matriz dos coeficientes é $1 \cdot 1 
 - Se $k = 1$, as duas equações são $x + y = 1$: a segunda repete a primeira. Sistema possível e indeterminado, com soluções $(1 - t, t)$.
 - Se $k = -1$, as equações são $x - y = 1$ e $-x + y = 1$. Somando-as obténs $0 = 2$: sistema impossível.
 
-A estratégia geral é esta: calcula o determinante em função do parâmetro, resolve os casos duvidosos um a um e só no fim declara cada classificação.
+A estratégia geral é separar os valores para os quais um pivô se anula **antes de dividir por ele**. O determinante ajuda quando a matriz é quadrada. Para matrizes retangulares, usamos Gauss e comparamos características.
+
+No exemplo, $L_2\leftarrow L_2-kL_1$ dá $(1-k^2)y=1-k$. Se $k\ne\pm1$, podemos dividir e obter $y=1/(1+k)$, depois $x=1/(1+k)$. Cancelar $1-k$ sem estudar $k=1$ apagaria precisamente o caso com infinitas soluções.
+
+## Forma reduzida e variáveis livres
+
+No método de **Gauss-Jordan**, normalizamos os pivôs para 1 e eliminamos também acima deles. A forma resultante é a forma em escada reduzida. Por exemplo,
+
+$$
+\left[\begin{array}{ccc|c}
+1&2&-1&3\\
+0&0&1&2\\
+0&0&0&0
+\end{array}\right]
+\ \xrightarrow{L_1\leftarrow L_1+L_2}\
+\left[\begin{array}{ccc|c}
+1&2&0&5\\
+0&0&1&2\\
+0&0&0&0
+\end{array}\right].
+$$
+
+As colunas de $x$ e $z$ têm pivôs; a de $y$ não. Escolhemos $y=t$ e obtemos
+
+$$
+(x,y,z)=(5-2t,t,2)=(5,0,2)+t(-2,1,0),\qquad t\in\mathbb R.
+$$
+
+A linha nula não é uma incógnita livre. São as **colunas sem pivô da matriz dos coeficientes** que identificam as incógnitas livres.
+
+Este exemplo também mostra a estrutura de um sistema não homogéneo. Se $x_0$ é uma solução de $Ax=b$, todas as soluções são $x_0+\ker A$. A diferença entre duas soluções pertence ao núcleo, porque $A(x-x_0)=b-b=0$. Aqui, o núcleo é gerado por $(-2,1,0)$. O conjunto das soluções é uma reta deslocada, não um subespaço.
+
+## Inversa por Gauss-Jordan
+
+Para inverter $A$, colocamos a identidade à direita e aplicamos cada operação aos dois blocos:
+
+$$
+\left[\begin{array}{cc|cc}1&2&1&0\\2&5&0&1\end{array}\right]
+\xrightarrow{L_2\leftarrow L_2-2L_1}
+\left[\begin{array}{cc|cc}1&2&1&0\\0&1&-2&1\end{array}\right]
+\xrightarrow{L_1\leftarrow L_1-2L_2}
+\left[\begin{array}{cc|cc}1&0&5&-2\\0&1&-2&1\end{array}\right].
+$$
+
+Logo $A^{-1}=\begin{bmatrix}5&-2\\-2&1\end{bmatrix}$. A verificação $AA^{-1}=I$ confirma a conta. Se faltar um pivô no bloco esquerdo, não conseguimos transformá-lo em $I$: a matriz é singular e não tem inversa. Um pivô no bloco direito não resolve essa falta.
+
+## Ler a característica
+
+Para uma matriz $m\times n$, $0\leq\operatorname{car}(A)\leq\min(m,n)$. A característica também é a dimensão do espaço gerado pelas colunas e do espaço gerado pelas linhas. Operações elementares preservam esse número.
+
+Por isso, ter mais equações do que incógnitas não torna um sistema automaticamente impossível. Equações podem repetir-se. Ter menos equações do que incógnitas impede uma solução única, mas o sistema ainda pode ser impossível ou ter infinitas soluções.
 
 ## Verificar com um programa
 
-O programa seguinte aplica eliminação de Gauss com pivotagem parcial ao exemplo desta página e imprime a solução. Corre-o e confirma que obténs $(1, 2, 3)$; depois muda os coeficientes para um dos teus exercícios e compara com a tua resolução à mão.
+O programa seguinte resolve sistemas quadrados com solução única por eliminação de Gauss com pivotagem parcial. Corre-o e confirma que obténs $(1, 2, 3)$. Usa-o para verificar contas deste tipo; ele não parametriza sistemas indeterminados. As contas usam números de vírgula flutuante, com um limiar para detetar pivôs próximos de zero.
 
 <CodePlayground
   language="python"
   title="Eliminar por Gauss"
-  code={
-    'def gauss(a, b):\n    n = len(a)\n    m = [row[:] + [val] for row, val in zip(a, b)]\n    for col in range(n):\n        piv = max(range(col, n), key=lambda r: abs(m[r][col]))\n        m[col], m[piv] = m[piv], m[col]\n        assert m[col][col] != 0, "sistema sem solucao unica"\n        for row in range(n):\n            if row != col and m[row][col] != 0:\n                f = m[row][col] / m[col][col]\n                for k in range(col, n + 1):\n                    m[row][k] -= f * m[col][k]\n    return [m[i][n] / m[i][i] for i in range(n)]\n\na = [[1, 1, 1], [2, -1, 1], [1, 2, -1]]\nb = [6, 3, 2]\nprint([round(v, 9) for v in gauss(a, b)])'
-  }
+  code={exampleCode}
 />
 
 ## O que costuma correr mal
