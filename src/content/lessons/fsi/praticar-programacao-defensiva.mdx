@@ -116,3 +116,143 @@ Não confundir mitigação com remoção da vulnerabilidade.
   </div>
 
 </Exercise>
+
+<Exercise
+  id="format-contagem-literal"
+  title="O valor escrito por %n"
+  explanation="/cadeiras/fsi/programacao-defensiva/#format-strings-o-formato-é-uma-instrução"
+  answer={{"kind": "number", "value": 5, "tolerance": 0}}
+>
+
+Assume argumentos válidos. Em `printf("ola: %nfeito\n", &n)`, que valor é guardado em `n`? O espaço depois dos dois pontos pertence ao texto.
+
+  <div slot="hint">
+
+Conta só os caracteres impressos antes de %n.
+
+  </div>
+
+  <div slot="hint-more">
+
+Antes do especificador aparecem três letras, dois pontos e um espaço.
+
+  </div>
+
+  <div slot="solution">
+
+Fica 5. `%n` não acrescenta caracteres à saída; guarda a contagem nesse momento. O texto posterior e a mudança de linha não alteram o valor já escrito.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não contar o texto depois de %n nem tratar n como um inteiro a imprimir.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="retornos-argumento-ultimo"
+  title="Seguir dois retornos"
+  explanation="/cadeiras/fsi/programacao-defensiva/#reutilização-de-código-e-rop"
+  answer={{"kind": "self", "checklist": ["Identifica beta como retorno visto por alfa.", "Identifica terminar como retorno visto por beta e 12 como o argumento.", "Justifica que a conclusão depende da convenção e do ajuste da pilha."]}}
+>
+
+No modelo x86 de 32 bits da explicação, o topo antes do primeiro `ret` contém, em endereços crescentes, `alfa, beta, terminar, 12`. `alfa` não recebe argumentos e retorna sem ajustar a pilha. Indica o retorno visto por `alfa` e o retorno e primeiro argumento vistos por `beta`.
+
+  <div slot="hint">
+
+Cada ret consome uma posição de quatro bytes.
+
+  </div>
+
+  <div slot="hint-more">
+
+Depois de consumir alfa, o topo é beta. Depois de consumir beta, é terminar.
+
+  </div>
+
+  <div slot="solution">
+
+À entrada de alfa, beta é o endereço de retorno. À entrada de beta, terminar é o retorno e a posição seguinte, 12, é o primeiro argumento. A conta não serve para arquiteturas com argumentos em registos ou funções que ajustem a pilha de outra forma. Inserir valores de argumentos entre alfa e beta quebraria este percurso sem ajuste adicional.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não confundir o destino consumido pelo ret com o retorno que a função encontra à entrada.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="canario-copia-binaria"
+  title="Um nulo no caminho"
+  explanation="/cadeiras/fsi/programacao-defensiva/#canários-o-que-está-a-ser-verificado"
+  answer={{"kind": "choice", "options": [{"text": "Uma cópia binária pode transportar o nulo; é preciso analisar a verificação do canário e o resto da escrita.", "correct": true, "explanation": "O comprimento, e não o primeiro nulo, controla esta cópia."}, {"text": "Qualquer byte nulo impede qualquer overflow.", "correct": false, "explanation": "Uma operação binária não tem essa regra de terminação."}, {"text": "Conhecer o canário aleatório nunca importa.", "correct": false, "explanation": "Uma fuga pode reduzir a imprevisibilidade que a proteção exige."}]}}
+>
+
+Um canário terminador inclui um byte nulo. A operação vulnerável é uma cópia binária com comprimento explícito, que aceita bytes nulos. Qual conclusão é correta?
+
+  <div slot="hint">
+
+A condição de paragem depende da API de cópia.
+
+  </div>
+
+  <div slot="hint-more">
+
+Compara copiar uma string até nulo e copiar um número indicado de bytes.
+
+  </div>
+
+  <div slot="solution">
+
+O argumento de que o nulo impede transportar o resto da entrada não se aplica à cópia binária. A proteção ainda pode detetar uma alteração do valor, mas não se pode declarar invulnerabilidade só pelo terminador. Para um canário aleatório, também importa saber se o valor permanece secreto.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não declarar um tipo de canário superior sem fixar operação, informação e disposição.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="taint-caminho-nao-testado"
+  title="A execução não passou por lá"
+  explanation="/cadeiras/fsi/programacao-defensiva/#análise-estática-dinâmica-e-taint"
+  answer={{"kind": "self", "checklist": ["Identifica entrada externa como source e formato como sink.", "Explica que dinâmica só observou os caminhos executados.", "Reconhece análise estática como evidência potencial com limites de modelação."]}}
+>
+
+Um serviço lê `nome` da rede. Só no ramo `modo_debug` chama `printf(nome)`. A análise dinâmica testou apenas o modo normal. Pode concluir que não existe fluxo externo até um formato? Explica como a análise estática pode ajudar.
+
+  <div slot="hint">
+
+Que ramo foi efetivamente observado?
+
+  </div>
+
+  <div slot="hint-more">
+
+Um resultado sobre esta execução não cobre todas as execuções possíveis.
+
+  </div>
+
+  <div slot="solution">
+
+Não. A análise dinâmica não observou o ramo debug. O fluxo potencial liga a leitura da rede ao primeiro argumento de printf. Uma análise estática que modele a origem, a propagação e o sink pode assinalá-lo sem executar esse ramo, mas aproximações e modelos incompletos continuam a limitar a conclusão.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não confundir ausência de um alerta no teste com prova de ausência de uma vulnerabilidade.
+
+  </div>
+
+</Exercise>

@@ -1,6 +1,6 @@
 ---
 title: 'Programação defensiva e memória'
-description: 'Validação sem confundir dados com instruções, limites de memória, TOCTOU e mitigações.'
+description: 'Format strings, memória e ROP, canários, taint, cópia segura, TOCTOU e mitigações.'
 section: conteudo
 order: 6
 practices:
@@ -16,7 +16,19 @@ editorial:
       url: https://cwe.mitre.org/data/definitions/367.html
     - title: Moodle FSI, materiais iniciais atualmente publicados
       url: https://moodle2627.up.pt/course/view.php?id=4735
-  coverage: 'Validação sem confundir dados com instruções, limites de memória, TOCTOU e mitigações.'
+    - title: 'CWE-134, externally-controlled format string'
+      url: https://cwe.mitre.org/data/definitions/134.html
+    - title: 'Linux man-pages, printf'
+      url: https://man7.org/linux/man-pages/man3/printf.3.html
+    - title: 'Shacham, The Geometry of Innocent Flesh on the Bone, 2007'
+      url: https://hovav.net/ucsd/dist/geometry.pdf
+    - title: 'USENIX, estudo de proteções de overflow, 2005'
+      url: https://www.usenix.org/system/files/login/articles/1014-alexander0506.pdf
+    - title: 'CodeQL, análise de fluxo de dados em C/C++'
+      url: https://codeql.github.com/docs/codeql-language-guides/analyzing-data-flow-in-cpp/
+    - title: 'LLVM, DataFlowSanitizer'
+      url: https://clang.llvm.org/docs/DataFlowSanitizer.html
+  coverage: 'Format strings, memória e ROP, canários, taint, cópia segura, TOCTOU e mitigações.'
   gaps:
     - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
@@ -24,6 +36,8 @@ editorial:
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import pilha from '../../fsi/pilha.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import retornos from '../../fsi/retornos.dot?raw';
 
 Uma função que aceita nomes precisa de um contrato: que tipo de dados recebe, que tamanho admite e que faz quando a entrada é inválida. Uma entrada vinda da rede não passa a ser confiável só porque o formulário a validou no navegador.
 
@@ -34,6 +48,31 @@ Valida tipo, tamanho, intervalo e significado no servidor. Uma lista de permiss�
 A validação não substitui a separação entre dados e instruções. Um apelido legítimo pode conter uma aspa. Rejeitar aspas não é a solução geral para SQL: os parâmetros separam os valores da estrutura da consulta. Para HTML, a codificação depende do contexto de saída.
 
 Ao validar caminhos, normalizar e verificar uma pasta permitida pode detetar `../`. Porém, verificar o caminho e abri-lo depois ainda pode permitir uma troca de ligações simbólicas. As operações de abertura e verificação têm de preservar a identidade do objeto, conforme as regras do sistema operativo.
+
+## Format strings: o formato é uma instrução
+
+Em `printf(formato, ...)`, o primeiro argumento descreve como interpretar os seguintes. `printf(entrada)` deixa a entrada escolher essa interpretação. Mesmo sem overflow, uma entrada com especificadores pode pedir leituras ou escritas para argumentos que o programa não forneceu.
+
+| Especificador | Argumento esperado                                   | Efeito                                                      |
+| ------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
+| `%d`          | `int`                                                | Imprime um inteiro decimal                                  |
+| `%s`          | Ponteiro para uma string acessível terminada em nulo | Lê e imprime os caracteres                                  |
+| `%n`          | `int *`, sem modificador de comprimento              | Guarda nesse endereço a contagem de caracteres já impressos |
+| `%%`          | Nenhum                                               | Imprime o caráter `%`                                       |
+
+`%n` não imprime o inteiro apontado. É uma escrita. Argumentos ausentes, tipos incompatíveis ou ponteiros inválidos produzem comportamento indefinido; não permitem prever uma saída portátil. Por exemplo, não executes `%s` com um ponteiro nulo para tentar obter um resultado garantido.
+
+O seguinte programa usa apenas formatos literais e argumentos válidos. O `%` da entrada é dado, não um especificador. No segundo `printf`, `%n` guarda 3 antes de serem impressos `!` e a mudança de linha.
+
+<CodePlayground
+  title="Distinguir texto, formato e contagem"
+  language="c"
+  code={
+    '#include <stdio.h>\n\nint main(void) {\n    const char *entrada = "100% concluido";\n    int escritos = -1;\n    printf("%s\\n", entrada);\n    printf("abc%n!\\n", &escritos);\n    printf("Contagem guardada: %d\\n", escritos);\n    return 0;\n}'
+  }
+/>
+
+A saída termina em `Contagem guardada: 3`. Para mostrar texto externo, usa `printf("%s", entrada)` ou uma API de texto apropriada. Isto não valida tamanho, ponteiro ou contexto HTML: cada problema exige o seu contrato.
 
 ## Buffer overflow
 
@@ -88,6 +127,47 @@ A saída aceita Ana e as sete letras, e rejeita oito. Estamos a contar bytes, n�
 Um **use-after-free** usa uma referência depois de libertar o objeto. Um **double free** liberta-o duas vezes. Um **integer overflow** pode transformar um tamanho grande num tamanho pequeno antes da alocação. Por exemplo, multiplicar `quantidade * sizeof item` sem verificar o limite pode reservar menos bytes do que os que serão escritos.
 
 As proteções têm objetivos distintos. Um canário pode detetar algumas alterações na pilha antes do retorno. NX impede executar certas páginas de dados. ASLR dificulta prever endereços. Nenhuma destas proteções corrige o acesso fora dos limites, e ataques que reutilizam código existente podem evitar a necessidade de executar bytes na pilha.
+
+## Reutilização de código e ROP
+
+NX impede executar páginas marcadas como não executáveis. Não impede executar instruções que já pertencem a páginas de código. **Return-oriented programming**, ou ROP, encadeia pequenos trechos existentes, chamados _gadgets_, usando desvios como `ret`. Reutilizar funções completas é um caso mais simples para seguir a ideia de controlo por endereços de retorno.
+
+Considera só este modelo didático: x86 de 32 bits, argumentos na pilha, funções que não retiram os argumentos ao retornar, sem canário nem rearranjo da pilha. Queremos visitar `etapaA()` e depois `etapaB(7)`. Os nomes são símbolos, não endereços de um programa explorável.
+
+<Dot
+  source={retornos}
+  alt="Quatro posições consecutivas da pilha, em endereços crescentes: etapaA, etapaB, continuação e argumento 7. O primeiro retorno consome etapaA; à entrada de etapaB, a continuação é o retorno e 7 é o primeiro argumento."
+/>
+
+1. O primeiro `ret` consome `etapaA` e deixa o topo em `etapaB`.
+2. A entrada de `etapaA` vê `etapaB` como endereço de retorno.
+3. O retorno de `etapaA` consome esse endereço. `etapaB` vê agora `continuação` como retorno e 7 como argumento.
+4. Quando `etapaB` retorna, a execução segue para `continuação`; o valor 7 ainda exige tratamento conforme a convenção.
+
+Não podemos acrescentar livremente argumentos às etapas anteriores: sem ajuste, esses valores ficariam no caminho dos retornos. Cadeias gerais usam instruções que ajustam a pilha e, noutras arquiteturas, preparam registos. Não extrapoles esta disposição para x86-64 ou para qualquer convenção de chamada.
+
+ASLR dificulta localizar código; uma fuga de endereços pode reduzir essa proteção. Verificação de integridade do fluxo de controlo e mecanismos de retorno protegido procuram restringir os destinos. A correção continua a ser remover a corrupção de memória que permite controlar o fluxo.
+
+## Canários: o que está a ser verificado?
+
+Um canário fica numa posição que certas escritas entre um buffer e o retorno têm de atravessar. Antes de retornar, o programa verifica se o valor mudou. Uma alteração provoca a interrupção, em vez de continuar com o retorno corrompido. Não protege todos os objetos nem escritas que saltem diretamente para outra posição.
+
+Um **canário terminador**, em construções históricas, contém bytes que terminam operações de texto, como nulo e mudança de linha. Uma cópia que para no nulo não consegue transportar esse byte e continuar com o resto da entrada. A justificação depende da função: uma cópia binária com comprimento explícito pode transportar bytes nulos.
+
+Um **canário aleatório** depende de o valor ser imprevisível e não ser exposto. Uma fuga que o revele pode permitir reproduzi-lo numa escrita. Construções históricas XOR também ligam o valor protegido ao endereço de retorno. Nenhum tipo é sempre superior: especifica a primitiva de cópia, a informação disponível e a disposição da pilha. Implementações atuais podem combinar aleatoriedade com bytes terminadores.
+
+## Análise estática, dinâmica e taint
+
+**Taint analysis** acompanha dados de origens não confiáveis (_sources_) até operações sensíveis (_sinks_). Ler uma linha da rede é uma origem; usá-la como formato de `printf` é um sink. Concatenação e atribuição podem propagar a marca. Uma transformação só é uma sanitização se estabelecer a condição exigida por aquele sink.
+
+| Análise  | Como trabalha                                                        | Limite a justificar                                                                |
+| -------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Estática | Analisa código e caminhos possíveis sem executar cada caso           | Aproximações de ponteiros e caminhos podem gerar falsos positivos ou omitir fluxos |
+| Dinâmica | Instrumenta uma execução e acompanha os valores que realmente passam | Um caminho não executado pelos dados de teste não foi observado                    |
+
+Suponhamos `linha = ler_rede(); copia = linha; printf(copia);`. A marca chega ao formato através da cópia, mesmo que a variável tenha outro nome. Mudar para `printf("%s", copia)` remove o controlo do formato: `copia` continua externa, mas passa como dado. Isto não prova que é uma string válida ou que outro uso será seguro.
+
+Um teste dinâmico com apenas `Ana` pode não revelar um problema que depende de `%`. A análise estática pode identificar o fluxo potencial, mas precisa de modelar `ler_rede` e a chamada de impressão. Usa as duas técnicas como evidências complementares, não como provas automáticas de ausência de falhas.
 
 ## TOCTOU
 

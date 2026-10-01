@@ -1,6 +1,6 @@
 ---
 title: 'Criptografia, assinaturas e PKI'
-description: 'Escolher primitivas pela propriedade, calcular RSA de brinquedo e validar certificados.'
+description: 'Primitivas, RSA de brinquedo, gestão e contagem de chaves, KDC, certificados e CRL.'
 section: conteudo
 order: 3
 practices:
@@ -14,7 +14,9 @@ editorial:
       url: https://datatracker.ietf.org/doc/html/rfc8017
     - title: 'RFC 5280, certificados X.509'
       url: https://datatracker.ietf.org/doc/html/rfc5280
-  coverage: 'Escolher primitivas pela propriedade, calcular RSA de brinquedo e validar certificados.'
+    - title: 'RFC 4120, Kerberos e centro de distribuição de chaves'
+      url: https://datatracker.ietf.org/doc/html/rfc4120
+  coverage: 'Primitivas, RSA de brinquedo, gestão e contagem de chaves, KDC, certificados e CRL.'
   gaps:
     - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
@@ -71,6 +73,18 @@ Uma chave precisa de geração adequada, distribuição autenticada, armazenamen
 
 Um sal de palavra-passe não é uma chave secreta. Um nonce também não precisa, em geral, de ser secreto. O requisito de cada valor depende da construção: confundir estes papéis leva a guardar segredos no sítio errado ou a reutilizar valores que têm de ser únicos.
 
+## Quantas chaves simétricas precisamos?
+
+Se $N$ entidades tiverem uma chave diferente para cada par, existem
+
+$$K_{pares}=\binom{N}{2}=\frac{N(N-1)}{2}.$$
+
+Não contamos uma chave de A para B e outra de B para A: neste modelo, é um segredo partilhado pelo par. Para seis entidades, $6\times5/2=15$. Ao acrescentar uma sétima, precisamos de seis novas chaves.
+
+Um **centro de distribuição de chaves**, ou KDC, permite a cada entidade partilhar uma chave duradoura com o centro. No modelo simplificado com seis entidades e um KDC adicional, há seis destas chaves. O centro ajuda a distribuir chaves de sessão entre participantes, protegidas pelas chaves duradouras. Kerberos usa um KDC com tickets e autenticadores; não envia simplesmente segredos em claro.
+
+A conta $N$ refere-se só às ligações duradouras entre as $N$ entidades e o centro. Não conta chaves de sessão, réplicas, chaves internas nem outras entidades de uma instalação real. O preço da centralização é confiança e dependência no KDC: comprometer o centro pode afetar muitos participantes. Não confundas reduzir o número de segredos duradouros com eliminar gestão de chaves.
+
 ## Verificar certificados
 
 Um certificado associa uma identidade a uma chave pública através da assinatura de uma autoridade de certificação. Uma raiz instalada como âncora de confiança permite verificar uma cadeia.
@@ -84,3 +98,15 @@ Um certificado associa uma identidade a uma chave pública através da assinatur
 Para aceitar o servidor, verificamos a cadeia de assinaturas, datas, nome esperado do servidor, restrições e utilizações permitidas, e os requisitos de estado/revogação da política aplicável. Uma cadeia criptograficamente válida para `outra-loja.example` não autoriza `loja.example`. Uma raiz autoassinada só é confiável porque foi instalada por um mecanismo confiável, não porque consegue assinar-se a si própria.
 
 O certificado também não prova que o serviço é honesto, não contém erros ou está autorizado a receber todos os nossos dados. Prova uma associação de chave e identidade dentro de uma política.
+
+## Revogação e CRL
+
+Um certificado pode ter datas válidas e, mesmo assim, estar revogado porque a chave foi comprometida. Uma **CRL**, lista de revogação de certificados, é uma estrutura assinada que identifica certificados revogados no seu âmbito, normalmente por número de série. Não é a lista de todos os certificados válidos ou emitidos.
+
+Antes de usar uma CRL, verifica quem a emitiu, a assinatura, o âmbito e a atualidade, incluindo `thisUpdate` e `nextUpdate` segundo a política. O número de série tem significado com o emissor, não como identificador global isolado.
+
+### Caso: validade ainda não terminou
+
+O certificado de `api.example` expira em dezembro. Uma CRL atual do emissor contém o seu número de série, 42, com revogação aplicável. Estamos em outubro. A assinatura do certificado e as datas podem passar, mas a revogação faz falhar a aceitação sob essa política.
+
+Se a série 42 não aparecer numa CRL antiga, isso não prova que continua aceitável: faltam atualidade, âmbito e as restantes verificações da cadeia e do nome. Uma política que exige informação de estado precisa de definir também o que acontece quando essa informação não pode ser obtida.
