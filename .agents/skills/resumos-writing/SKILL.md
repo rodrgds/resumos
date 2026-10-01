@@ -50,7 +50,7 @@ Quando preparares uma cadeira para exames, relaciona cada tópico dos materiais 
 
 Confirma o ano nos próprios ficheiros, além do endereço do Moodle. Se uma apresentação antiga contradisser a ficha atual, conserva a origem e a dúvida no registo editorial. Uma fonte indisponível continua a ser uma lacuna, mesmo quando um livro cobre o mesmo tema. Distingue exercícios próprios, adaptações e provas antigas; uma prova anterior ajuda a escolher tipos de problemas, mas não confirma as regras do exame atual.
 
-As lições ensinam a matéria e mostram os passos necessários. As cheat sheets concentram fórmulas, condições, distinções e erros frequentes, com links para a explicação. Nos exemplos de código, confirma a versão das bibliotecas e a saída do bloco efetivamente publicado. Numa simulação, explicita as hipóteses do modelo e mostra o efeito de mudar os valores. Recomenda um vídeo junto da dúvida que resolve e indica o que observar.
+As lições ensinam a matéria e mostram os passos necessários. As cheat sheets concentram fórmulas, condições, distinções e erros frequentes, com links para a explicação. Nos exemplos de código, confirma a versão das bibliotecas e a saída do bloco efetivamente publicado. Numa simulação, explicita as hipóteses do modelo e mostra o efeito de mudar os valores. A matéria vem primeiro: usa `InteractiveDemo` com controlos do tema e um visual, sem editores HTML/CSS/JS, cabeçalhos ou ações extra. Mostra código apenas quando corrê-lo ou editá-lo ensina a técnica. Reserva `WebPlayground` para desenvolvimento web. Recomenda um vídeo junto da dúvida que resolve e indica o que observar.
 
 ## Guias práticos
 
