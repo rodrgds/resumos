@@ -1,3 +1,4 @@
+<?php
 $taxa = 4;
 
 function calcular($base) {
