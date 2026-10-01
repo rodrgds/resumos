@@ -45,3 +45,13 @@ Os exemplos de exames disponibilizados no Moodle ajudam a treinar os tipos de pe
 A ficha atual define `AD=0,4L1+0,4L2+0,2H`, com trabalhos laboratoriais L1 e L2 e trabalhos de casa H. O exame E e AD exigem ambos pelo menos 8 valores. Define-se `ADA=min(AD,E+5)` e a classificação final é `0,4ADA+0,6E`, satisfeitos os mínimos. A frequência exige realizar, apresentar e entregar os dois trabalhos laboratoriais. [Fonte: SIGARRA 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003).
 
 O percurso aqui é de teoria e preparação para provas. Os guiões oficiais do Moodle continuam a definir os requisitos dos projetos. Para a bibliografia, começa por _Computer Networks_, de Tanenbaum e Wetherall, 5.ª edição, e usa as [aulas, problemas e laboratórios de Kurose e Ross](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm) como complemento junto dos temas relevantes.
+
+## Referências complementares
+
+Os materiais da edição atual do Moodle definem o percurso da cadeira. Estas referências ajudam a consultar definições, detalhes das ferramentas e aulas sobre os mesmos temas.
+
+- **Redes e a Internet:** [aulas oficiais de Jim Kurose, capítulo 1](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm).
+- **Ligação de dados:** [transferência fiável, parte 2](https://youtu.be/vxgH6r-II2Q), [deteção e correção de erros](https://youtu.be/x-rQ3RiI7I0).
+- **Acesso ao meio:** [aulas de Eytan Modiano no MIT](https://web.mit.edu/modiano/www/6.263/lec10.pdf), [aula oficial do capítulo 6 de Kurose](https://gaia.cs.umass.edu/kurose_ross/videos/6/).
+- **Transporte, TCP e congestionamento:** [laboratórios oficiais de Kurose e Ross](https://gaia.cs.umass.edu/kurose_ross/wireshark.php).
+- **Aplicações da Internet:** [aulas oficiais da camada de aplicação de Kurose](https://gaia.cs.umass.edu/kurose_ross/videos/2/).

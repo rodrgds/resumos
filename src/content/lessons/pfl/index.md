@@ -43,3 +43,15 @@ Os exemplos Haskell e Prolog têm programas completos no editor. O motor Prolog 
 A ficha atual e a apresentação dividem a cadeira em dois módulos de seis semanas. Em época normal, a média dos dois testes tem peso de 90% e a média dos dois trabalhos individuais tem peso de 10%. Em recurso, a componente teórica pode ser substituída pelo exame, conservando a prática. A frequência exige pelo menos 75% das aulas TP, com as exceções previstas na ficha. [Consulta as regras e os prazos atuais](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002).
 
 Este percurso concentra-se nas provas individuais. Os projetos têm requisitos próprios no Moodle. As aulas funcionais e as três primeiras fichas foram comparadas com os materiais de 2026/27; o restante percurso segue o programa atual e referências técnicas, com os guiões Prolog e as provas atuais ainda por confirmar.
+
+## Referências complementares
+
+Os materiais da edição atual do Moodle definem o percurso da cadeira. Estas referências ajudam a consultar definições, detalhes das ferramentas e aulas sobre os mesmos temas. Confirma a versão quando segues documentação de software.
+
+- **Expressões, avaliação e tipos em Haskell:** [Documentação de Haskell](https://www.haskell.org/documentation/), [Learn You a Haskell](https://learnyouahaskell.github.io/), [Hoogle](https://hoogle.haskell.org/).
+- **Lambda, currying e ordem superior:** [Capítulo 7 de Programming in Haskell](https://people.cs.nott.ac.uk/pszgmh/ch7.pdf), [curso oficial de Graham Hutton](https://people.cs.nott.ac.uk/pszgmh/pgp.html).
+- **Entrada e saída e parsers com combinadores:** [Material oficial de Graham Hutton](https://people.cs.nott.ac.uk/pszgmh/pih.html).
+- **Propriedades e testes com QuickCheck:** [documentação do QuickCheck no Hackage](https://hackage.haskell.org/package/QuickCheck).
+- **Lógica, unificação e execução em Prolog:** [SWISH](https://swish.swi-prolog.org/), [Learn Prolog Now, capítulo 2](https://lpn.swi-prolog.org/lpnpage.php?pageid=lpn-htmlch2&pagetype=html), [Unificação no Wikibooks](https://pt.wikibooks.org/wiki/Prolog/Unifica%C3%A7%C3%A3o).
+- **Recursão, corte e procura em Prolog:** [Documentação do SICStus](https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html).
+- **Recolher soluções e compor estruturas em Prolog:** [operadores de SWI](https://www.swi-prolog.org/pldoc/man?predicate=op/3), [`=../2`](https://www.swi-prolog.org/pldoc/man?predicate=%3D../2), [`keysort/2`](https://www.swi-prolog.org/pldoc/man?predicate=keysort/2), [indexação JIT](https://www.swi-prolog.org/pldoc/man?section=jitindex).
