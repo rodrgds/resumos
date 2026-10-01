@@ -1,0 +1,125 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+const px = (x: number) => 40 + 60 * (x + 4);
+const py = (y: number) => 170 - 40 * y;
+const partial = (x: number, n: number) =>
+  Array.from(
+    { length: n },
+    (_, i) => (2 * (-1) ** i * Math.sin((i + 1) * x)) / (i + 1),
+  ).reduce((a, b) => a + b, 0);
+const curve = Array.from({ length: 601 }, (_, i) => {
+  const x = -4 + (8 * i) / 600;
+  return `${i ? 'L' : 'M'}${px(x)},${py(partial(x, 5))}`;
+}).join(' ');
+const reference = `M${px(-4)},${py(2 * Math.PI - 4)} L${px(-Math.PI)},${py(Math.PI)} M${px(-Math.PI)},${py(-Math.PI)} L${px(Math.PI)},${py(Math.PI)} M${px(Math.PI)},${py(-Math.PI)} L${px(4)},${py(4 - 2 * Math.PI)}`;
+---
+
+<InteractiveDemo label="Somas parciais de Fourier do dente de serra">
+  <div data-am1-fourier>
+    <label>
+      Número de harmónicas N
+      <input type="range" min="1" max="60" step="1" value="5" />
+    </label>
+    <output aria-live="polite">N = 5; em x = π a soma é 0.</output>
+    <svg
+      viewBox="0 0 560 350"
+      role="img"
+      aria-label="Cinco harmónicas aproximam um dente de serra, com oscilações junto aos saltos em menos pi e pi"
+    >
+      <path d="M40 170 H530 M280 22 V322" class="axis" />
+      <path d={reference} class="reference" />
+      <path d={curve} class="curve" data-curve />
+      <text x={px(-Math.PI) - 16} y="342">
+        −π
+      </text>
+      <text x={px(Math.PI) - 8} y="342">
+        π
+      </text>
+      <text x="287" y="22">
+        y
+      </text>
+      <text x="527" y="164">
+        x
+      </text>
+    </svg>
+    <p>
+      Tracejado: dente de serra. Linha contínua: soma das primeiras N
+      harmónicas.
+    </p>
+  </div>
+</InteractiveDemo>
+<style>
+  label {
+    display: grid;
+    gap: 8px;
+  }
+  input {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  output {
+    display: block;
+    margin-block: 12px;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    color: var(--text);
+  }
+  path {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+  }
+  .axis {
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.5;
+  }
+  .reference {
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-dasharray: 7 5;
+  }
+  .curve {
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  text {
+    fill: currentColor;
+    font-size: 17px;
+  }
+  p {
+    margin-block: 4px 0;
+    font-size: 13px;
+  }
+</style>
+<script>
+  for (const demo of document.querySelectorAll<HTMLElement>(
+    '[data-am1-fourier]',
+  )) {
+    const input = demo.querySelector('input')!;
+    const output = demo.querySelector('output')!;
+    const curve = demo.querySelector('[data-curve]')!;
+    const graph = demo.querySelector('svg')!;
+    const update = () => {
+      const n = Number(input.value);
+      const path: string[] = [];
+      for (let i = 0; i <= 600; i++) {
+        const x = -4 + (8 * i) / 600;
+        let sum = 0;
+        for (let k = 1; k <= n; k++)
+          sum += (2 * (-1) ** (k + 1) * Math.sin(k * x)) / k;
+        path.push(`${i ? 'L' : 'M'}${40 + 60 * (x + 4)},${170 - 40 * sum}`);
+      }
+      curve.setAttribute('d', path.join(' '));
+      output.textContent = `N = ${n}; em x = π a soma é 0.`;
+      graph.setAttribute(
+        'aria-label',
+        `${n} harmónicas aproximam o dente de serra. Nos saltos em menos pi e pi, a soma é zero.`,
+      );
+    };
+    input.addEventListener('input', update);
+    update();
+  }
+</script>
