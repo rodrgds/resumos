@@ -5,6 +5,23 @@ import 'katex/dist/katex.min.css';
 <div class="prose">
   <slot />
 </div>
+<script>
+  const tables = document.querySelectorAll<HTMLTableElement>('.prose table');
+  const sync = (table: HTMLTableElement) => {
+    if (table.scrollWidth > table.clientWidth) table.tabIndex = 0;
+    else table.removeAttribute('tabindex');
+  };
+  const observer = new ResizeObserver((entries) => {
+    for (const entry of entries) sync(entry.target as HTMLTableElement);
+  });
+  tables.forEach((table) => {
+    sync(table);
+    observer.observe(table);
+  });
+  window.addEventListener('pagehide', (event) => {
+    if (!event.persisted) observer.disconnect();
+  });
+</script>
 <style>
   .prose {
     max-width: var(--reading-width, 720px);
@@ -36,6 +53,10 @@ import 'katex/dist/katex.min.css';
     border-collapse: collapse;
     display: block;
     overflow-x: auto;
+  }
+  .prose :global(table:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
   .prose :global(td),
   .prose :global(th) {

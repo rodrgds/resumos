@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 test('AI menu stays next to its trigger and ChatGPT enables web search', async ({
   page,
@@ -230,3 +231,29 @@ for (const width of [390, 320]) {
     ).toBe(true);
   });
 }
+
+test('mobile reading keeps navigation in a landmark and tables keyboard accessible', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/cadeiras/rc/folha-consulta/');
+  const accessibility = await new AxeBuilder({ page })
+    .withRules(['region', 'scrollable-region-focusable'])
+    .analyze();
+  expect(
+    accessibility.violations.map(({ id, nodes }) => ({
+      id,
+      targets: nodes.map(({ target }) => target),
+    })),
+  ).toEqual([]);
+  const table = page.locator('.prose table').first();
+  await table.scrollIntoViewIfNeeded();
+  expect(
+    await table.evaluate((node) => node.scrollWidth > node.clientWidth),
+  ).toBe(true);
+  await table.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect
+    .poll(() => table.evaluate((node) => node.scrollLeft))
+    .toBeGreaterThan(0);
+});
