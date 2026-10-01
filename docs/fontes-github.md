@@ -16,15 +16,15 @@ Em 1 de outubro de 2026 foram guardados **74 arquivos de repositórios**, num to
 
 Os arquivos ficam em `/_data/github/<autor>--<repositório>/<commit>.tar.gz`, ignorados pelo Git. Os nomes individuais de ficheiros e os aliases de conteúdo ficam apenas em `/_data/references/inventory.json`. Os direitos e a adequação ao programa continuam a ser verificados por documento.
 
-| Fonte oficial acrescentada | Cadeiras | Material local |
-| --- | --- | --- |
-| [wesm/pydata-book](https://github.com/wesm/pydata-book) | CT Python, `ct-iadp` | Notebooks e datasets da 3.ª edição; código MIT, prosa com termos separados. |
-| [SystemsApproach/book](https://github.com/SystemsApproach/book) | RC | Livro aberto, fonte 6.2-dev, CC BY 4.0. É uma edição diferente da adotada. |
-| [OSTEP homework](https://github.com/remzi-arpacidusseau/ostep-homework) | SO, LC | Simuladores com exercícios e respostas calculadas. |
-| [OSTEP code](https://github.com/remzi-arpacidusseau/ostep-code) | SO, LC | Programas associados aos capítulos. |
-| [OSTEP projects](https://github.com/remzi-arpacidusseau/ostep-projects) | SO, LC | Exercícios de sistemas, separados dos projetos da FEUP. |
-| [AIMA Python](https://github.com/aimacode/aima-python) | IA | Código e notebooks ligados pelo site dos autores. |
-| [AIMA exercises](https://github.com/aimacode/aima-exercises) | IA | Fonte dos exercícios online; não inclui o manual comercial. |
+| Fonte oficial acrescentada                                              | Cadeiras             | Material local                                                              |
+| ----------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------- |
+| [wesm/pydata-book](https://github.com/wesm/pydata-book)                 | CT Python, `ct-iadp` | Notebooks e datasets da 3.ª edição; código MIT, prosa com termos separados. |
+| [SystemsApproach/book](https://github.com/SystemsApproach/book)         | RC                   | Livro aberto, fonte 6.2-dev, CC BY 4.0. É uma edição diferente da adotada.  |
+| [OSTEP homework](https://github.com/remzi-arpacidusseau/ostep-homework) | SO, LC               | Simuladores com exercícios e respostas calculadas.                          |
+| [OSTEP code](https://github.com/remzi-arpacidusseau/ostep-code)         | SO, LC               | Programas associados aos capítulos.                                         |
+| [OSTEP projects](https://github.com/remzi-arpacidusseau/ostep-projects) | SO, LC               | Exercícios de sistemas, separados dos projetos da FEUP.                     |
+| [AIMA Python](https://github.com/aimacode/aima-python)                  | IA                   | Código e notebooks ligados pelo site dos autores.                           |
+| [AIMA exercises](https://github.com/aimacode/aima-exercises)            | IA                   | Fonte dos exercícios online; não inclui o manual comercial.                 |
 
 ## Como foi feito o levantamento inicial
 

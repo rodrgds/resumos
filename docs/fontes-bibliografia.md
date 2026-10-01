@@ -27,13 +27,13 @@ Em Python, a opção `ct-iadp` tem os notebooks e datasets oficiais de [Python f
 
 ## Vídeos e exercícios dos autores
 
-| Cadeira | Fonte | Utilidade |
-| --- | --- | --- |
-| ALGA | [Aulas de Jim Hefferon](https://www.youtube.com/playlist?list=PLwF3A0R8OzMoMlE1-SaEh8h9VqUlO-r52) | Acompanham o livro aberto; respostas, laboratório e slides estão guardados. |
-| PFL | [Haskell introdutório](https://www.youtube.com/playlist?list=PLF1Z-APd9zK7usPMx3LGMZEHrECUGodd3), [Haskell avançado](https://www.youtube.com/playlist?list=PLF1Z-APd9zK5uFc8FKr_di9bfsYv8-lbc) | Séries ligadas pela página de Graham Hutton, capítulos 1 a 9 e 12/16. |
-| RC | [Aulas e exercícios interativos de Kurose](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm) | Vídeos por tópico e perguntas de verificação. A série acompanha uma edição posterior à 5.ª listada pela FEUP. |
-| SO, LC | [Simuladores OSTEP](https://pages.cs.wisc.edu/~remzi/OSTEP/Homework/homework.html) | Exercícios com sementes aleatórias e cálculo de respostas. O código está guardado numa revisão fixa. |
-| IA | [Exercícios AIMA](https://aimacode.github.io/aima-exercises/) | Enunciados e respostas submetidas, com fonte local. Não substituem a verificação de uma solução. |
+| Cadeira | Fonte                                                                                                                                                                                          | Utilidade                                                                                                     |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| ALGA    | [Aulas de Jim Hefferon](https://www.youtube.com/playlist?list=PLwF3A0R8OzMoMlE1-SaEh8h9VqUlO-r52)                                                                                              | Acompanham o livro aberto; respostas, laboratório e slides estão guardados.                                   |
+| PFL     | [Haskell introdutório](https://www.youtube.com/playlist?list=PLF1Z-APd9zK7usPMx3LGMZEHrECUGodd3), [Haskell avançado](https://www.youtube.com/playlist?list=PLF1Z-APd9zK5uFc8FKr_di9bfsYv8-lbc) | Séries ligadas pela página de Graham Hutton, capítulos 1 a 9 e 12/16.                                         |
+| RC      | [Aulas e exercícios interativos de Kurose](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm)                                                                                          | Vídeos por tópico e perguntas de verificação. A série acompanha uma edição posterior à 5.ª listada pela FEUP. |
+| SO, LC  | [Simuladores OSTEP](https://pages.cs.wisc.edu/~remzi/OSTEP/Homework/homework.html)                                                                                                             | Exercícios com sementes aleatórias e cálculo de respostas. O código está guardado numa revisão fixa.          |
+| IA      | [Exercícios AIMA](https://aimacode.github.io/aima-exercises/)                                                                                                                                  | Enunciados e respostas submetidas, com fonte local. Não substituem a verificação de uma solução.              |
 
 ## Conclusões que corrigem as hipóteses iniciais
 
