@@ -181,7 +181,10 @@ test('CT reference links remain available without JavaScript', async ({
   const slot = page.locator('#cadeiras [data-ct-slot="ct3"]');
   await expect(
     slot.getByRole('link', { name: 'Introdução à análise de dados em Python' }),
-  ).toHaveAttribute('href', /pv_ocorrencia_id=590452$/);
+  ).toHaveAttribute('href', '/cadeiras/ct-iadp/');
+  await expect(
+    slot.getByRole('link', { name: /Liderança e Gestão de Equipas/ }),
+  ).toHaveAttribute('href', /pv_ocorrencia_id=590478$/);
   await expect(
     slot.getByRole('link', { name: /aquisição automatizada/ }),
   ).toHaveAttribute('href', '/cadeiras/ct-aadl/');

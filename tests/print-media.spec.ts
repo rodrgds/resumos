@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('printed lessons retain video thumbnails and readable code colours', async ({
+test('printed lessons retain video thumbnails after they load', async ({
   page,
 }) => {
   await page.route('https://i.ytimg.com/**', (route) =>
@@ -9,7 +9,7 @@ test('printed lessons retain video thumbnails and readable code colours', async 
       contentType: 'image/svg+xml',
     }),
   );
-  await page.goto('/cadeiras/fsi/programacao-defensiva/');
+  await page.goto('/exemplo/diagramas/');
   await page.evaluate(() => {
     window.print = () => {
       document.documentElement.dataset.printCalled = 'true';
@@ -34,7 +34,7 @@ test('printed lessons retain video thumbnails and readable code colours', async 
   const printed = page.locator('[data-print-page]');
   const thumbnail = printed.locator('.video-embed img');
   await expect(thumbnail).toBeVisible();
-  await expect(thumbnail).toHaveAttribute('alt', /buffer overflow/);
+  await expect(thumbnail).toHaveAttribute('alt', /Vetores/);
   await expect
     .poll(() =>
       thumbnail.evaluate(
@@ -42,19 +42,6 @@ test('printed lessons retain video thumbnails and readable code colours', async 
       ),
     )
     .toBe(true);
-  const code = printed.locator('pre.astro-code').first();
-  const colours = await code.evaluate((pre) => {
-    const token = pre.querySelector<HTMLElement>(
-      'span[style*="--code-token-keyword"]',
-    )!;
-    return {
-      token: getComputedStyle(token).color,
-      plain: getComputedStyle(pre).color,
-      printColor: getComputedStyle(pre).printColorAdjust,
-    };
-  });
-  expect(colours.token).not.toBe(colours.plain);
-  expect(colours.printColor).toBe('exact');
 });
 
 test('printed animations include their local poster images', async ({
@@ -92,10 +79,10 @@ test('printed animations include their local poster images', async ({
   );
 });
 
-test('print expands disclosures and shows every tab option', async ({
+test('print expands disclosures and shows every tab with readable code colours', async ({
   page,
 }) => {
-  await page.goto('/cadeiras/rc/camada-de-rede/');
+  await page.goto('/exemplo/formatacao/');
   await page.evaluate(() => {
     window.print = () => {};
   });
@@ -103,17 +90,28 @@ test('print expands disclosures and shows every tab option', async ({
   await page.emulateMedia({ media: 'print' });
   const printed = page.locator('[data-print-page]');
   const tabs = printed.locator('.content-tabs');
+  await expect(tabs.getByRole('heading', { name: 'Python' })).toBeVisible();
+  await expect(tabs.getByRole('heading', { name: 'C++' })).toBeVisible();
   await expect(
-    tabs.getByRole('heading', { name: 'Em 4 sub-redes' }),
+    tabs.locator('pre').filter({ hasText: 'std::cout' }),
   ).toBeVisible();
   await expect(
-    tabs.getByRole('heading', { name: 'Em 8 sub-redes' }),
-  ).toBeVisible();
-  await expect(tabs.getByText('blocos de 32 com 30 máquinas')).toBeVisible();
-  await expect(
-    printed.getByRole('heading', { name: 'Ver a regra de ouro da divisão' }),
+    printed.getByRole('heading', { name: 'Ver a resolução de um exercício' }),
   ).toBeVisible();
   await expect(
-    printed.getByText('O erro típico é esquecer os dois endereços'),
+    printed.getByText(/O cálculo direto chega ao mesmo resultado/),
   ).toBeVisible();
+  const code = tabs.locator('pre.astro-code').filter({ hasText: 'int n = 4;' });
+  const colours = await code.evaluate((pre) => {
+    const token = pre.querySelector<HTMLElement>(
+      'span[style*="--code-token-keyword"]',
+    )!;
+    return {
+      token: getComputedStyle(token).color,
+      plain: getComputedStyle(pre).color,
+      printColor: getComputedStyle(pre).printColorAdjust,
+    };
+  });
+  expect(colours.token).not.toBe(colours.plain);
+  expect(colours.printColor).toBe('exact');
 });
