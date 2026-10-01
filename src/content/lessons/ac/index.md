@@ -1,35 +1,47 @@
 ---
 title: Arquitetura de Computadores
-description: Desempenho, RISC-V, caches, pipeline, predição de saltos, SIMD, superescalares, multicore e entrada/saída.
+description: RV32, caches, pipeline, Tomasulo, SIMD empacotado, multiprocessadores e entrada e saída.
+editorial:
+  basedOn: 2024/25
+  sources:
+    - title: Moodle AC 2024/25
+      url: https://moodle2425.up.pt/course/view.php?id=4594
+    - title: RISC-V ABI
+      url: https://riscv-non-isa.github.io/riscv-elf-psabi-doc/
+    - title: Proposta histórica de SIMD empacotado RISC-V
+      url: https://github.com/riscv/riscv-p-spec/blob/master/old-doc/P-ext-proposal.adoc
+  gaps:
+    - Os testes e questionários fechados não foram iniciados nem consultados como tentativas.
 ---
 
-AC é a cadeira onde percebes por que é que um programa corre depressa numa máquina e devagar noutra, mesmo quando ambas executam as mesmas instruções. Depois de FSC te mostrar como um processador executa uma instrução de cada vez, aqui aprendes as técnicas que os processadores reais usam para executar mais em menos tempo: hierarquia de memória, pipeline, predição de saltos, paralelismo explícito e vários núcleos.
+AC explica como a organização do processador e da memória determina o tempo de um programa. As lições ligam operações RV32 a endereços de cache, ciclos de pipeline, unidades funcionais e transferências de dados. Os exemplos fixam as condições antes das contas, porque mudar um atalho ou uma política pode mudar a resposta.
 
-## Como está organizado
+## Percurso de estudo
 
-Começa por [Assembly RISC-V](riscv-assembly/), que troca o LEGv8 de FSC pelo conjunto de instruções desta cadeira e te dá a linguagem para ler os exemplos seguintes. Depois, [Desempenho](desempenho/) fixa como medir velocidade: tempo de execução, CPI e lei de Amdahl. Estas duas páginas são a base de tudo o resto.
+Começa por [Assembly RISC-V](/cadeiras/ac/riscv-assembly/) e [Desempenho](/cadeiras/ac/desempenho/). Depois segue [Hierarquia e caches](/cadeiras/ac/hierarquia-cache/) e [Políticas de cache](/cadeiras/ac/politicas-cache/): separa endereços, simula cada acesso e calcula o custo da memória.
 
-A segunda parte trata da memória: [Hierarquia e caches](hierarquia-cache/) mostra como uma memória pequena e rápida esconde a lentidão da memória grande. A terceira parte trata do paralelismo ao nível das instruções: [Pipeline](pipeline/) põe várias instruções em voo ao mesmo tempo, [Predição de saltos](predicao-saltos/) evita deitar trabalho fora a cada desvio e [SIMD](simd/) aplica a mesma operação a vários dados de uma só vez.
+[Percurso de dados](/cadeiras/ac/percurso-dados/), [Pipeline](/cadeiras/ac/pipeline/) e [Predição de saltos](/cadeiras/ac/predicao-saltos/) explicam controlo, atalhos, paragens e escolha do caminho. [Paralelismo ao nível de instruções](/cadeiras/ac/superescalar/) e [Tomasulo](/cadeiras/ac/tomasulo/) passam às unidades múltiplas e ao sequenciamento dinâmico.
 
-A última parte alarga o horizonte: [Superescalares](superescalar/) emitem várias instruções por ciclo e reordenam-nas em hardware, [Multicore e energia](multicore-energia/) explica por que os processadores ganharam núcleos em vez de gigahertz e [Entrada e saída](entrada-saida/) liga o processador a periféricos e ao armazenamento, com polling, interrupções e DMA.
+[SIMD](/cadeiras/ac/simd/) e [Programar com SIMD](/cadeiras/ac/programar-simd/) usam bytes e meias palavras empacotados. [Multicore e energia](/cadeiras/ac/multicore-energia/) e [Coerência](/cadeiras/ac/coerencia/) tratam potência, divisão do trabalho e memória partilhada. [Entrada e saída](/cadeiras/ac/entrada-saida/) e [Armazenamento](/cadeiras/ac/armazenamento/) fecham o percurso com controladores, DMA e limites de taxa.
 
-## Como estudar
+Os exercícios estão no fim de cada tema, com pistas e resolução. Prevê o resultado antes de os abrir: um estado de cache, uma tabela por ciclo ou uma justificação de dependências é parte da resposta. A [cheat sheet](/cadeiras/ac/folha-consulta/) serve para consultar fórmulas e condições depois de compreender o percurso.
 
-Lê cada página com papel ao lado e refaz as contas do exemplo principal. Em AC, quase todas as perguntas de teste são contas: frações de endereços em caches, ciclos de stalls num pipeline, speedups pela lei de Amdahl. O método é sempre o mesmo: identifica os parâmetros (taxa de faltas, penalidade, frequência de saltos), escolhe a fórmula e interpreta o resultado. Treina até cada fórmula sair do enunciado sem hesitação.
+## Fontes e edição
 
-Para o assembly, usa o WebRISC-V ou o qtrvsim e corre cada exemplo. Muda os valores dos registos, prevê o resultado antes de correres e confirma depois.
+A base são os materiais da [disciplina no Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4594): sete apresentações teóricas, seis fichas com soluções, resumos WT/WB, cartão de instruções e soluções ILP em folha de cálculo. A ficha de periféricos identifica 2023/24 e foi reutilizada nessa disciplina. As duas apresentações de FSC sobre RV32 e implementação do CPU datam de novembro e dezembro de 2022.
+
+Estes materiais usam RV32 e operações SIMD empacotadas de uma versão histórica da proposta P. Não se devem misturar com AArch64/NEON de apontamentos de outras edições, nem com RVV, a extensão de registos vetoriais. A proposta P atual também evoluiu: as mnemónicas destas lições seguem o modelo dos materiais, conferido com a [proposta histórica](https://github.com/riscv/riscv-p-spec/blob/master/old-doc/P-ext-proposal.adoc). O preditor de dois bits da apresentação de pipeline usa uma máquina de histerese; a lição distingue-a do contador saturante.
+
+As soluções foram usadas para compreender os modelos, com contas e exemplos próprios conferidos antes da redação. Quando o cartão de instruções e as apresentações divergem, as operações foram conferidas na especificação, incluindo STAS16/STSA16 e saturação de KMDA.
+
+Bibliografia indicada nos materiais: Patterson e Hennessy, _Computer Organization and Design, RISC-V Edition_, 2.ª edição, 2021. A ficha [SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560091) também indica _Memory Systems: Cache, DRAM, Disk_, de Jacob, Ng e Wang. Essa ficha é uma referência de outra edição, não prova das regras de 2024/25 ou do ano atual.
+
+Referências complementares: [ABI RISC-V](https://riscv-non-isa.github.io/riscv-elf-psabi-doc/), para nomes de registos e chamadas; [RARS](https://github.com/TheThirdOne/rars), para executar os exemplos RV32 base. Os blocos de semântica SIMD calculam vias em Python, pois o executável RV32 base não monta essas instruções empacotadas.
+
+O Moodle também recomenda [a otimização SGEMM de Zhao Dongyu](https://medium.com/@zhaodongyu/optimize-sgemm-on-risc-v-platform-b0098630b444), com localidade e blocagem, e [Cooling Chips Still A Top Challenge](https://semiengineering.com/cooling-chips-still-a-top-challenge/), sobre dissipação térmica. O primeiro usa RVV 0.7.1 nas versões vetoriais, um contexto distinto dos exercícios packed SIMD. Os vídeos portugueses [Varrimento](https://www.youtube.com/watch?v=4nxblx4ADQ8) e [Interrupções](https://www.youtube.com/watch?v=DBVVpybCXcU) acompanham a lição de entrada e saída.
 
 ## Avaliação
 
-A forma de avaliação muda de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes o número de testes, as datas e as regras do recurso.
+A apresentação de 2024/25 descreve dois testes em computador, T1 e T2, com escolha múltipla e respostas curtas, e nota final `(T1+T2)/2`. Indica até três faltas às aulas teórico-práticas e regras específicas de frequência. São regras **dessa edição**: confirma no teu Moodle e na ficha SIGARRA a avaliação, datas e condições que te são aplicáveis.
 
-## Fontes e âmbito
-
-Estas páginas seguem o programa oficial da unidade curricular L.EIC006, Arquitetura de Computadores, no ano letivo de 2025/26: plataformas computacionais e desenho para desempenho; organizações de memórias cache e o seu impacto no desempenho; paralelismo ao nível das instruções com pipeline, gestão de dependências de dados e de controlo e predição de saltos; instruções SIMD e vetoriais; arquiteturas superescalares com emissão múltipla e execução fora de ordem; limitações dos processadores de núcleo único em frequência e potência; organização básica de processadores multicore; interface com periféricos por varrimento, interrupções e DMA; subsistemas de armazenamento e estimação de desempenho com atividade de entrada e saída significativa.
-
-Material oficial da FEUP:
-
-- Ficha da unidade curricular L.EIC006, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560091).
-- Página da disciplina no Moodle, indicada na ficha oficial (o acesso aos materiais requer inscrição).
-
-Os livros de referência da cadeira são _Computer Organization and Design, versão RISC-V_, de Patterson e Hennessy, e _Memory Systems: Cache, DRAM, Disk_, de Jacob, Ng e Wang. Os simuladores usados nos trabalhos são o [WebRISC-V](https://webriscv.org/) e o [qtrvsim](https://github.com/cvut/qtrvsim).
+Os testes e questionários fechados não foram iniciados. As lições e exercícios desenvolvem os assuntos e tipos de raciocínio das fichas disponíveis; não permitem afirmar que todas as perguntas de exames fechados foram revistas.

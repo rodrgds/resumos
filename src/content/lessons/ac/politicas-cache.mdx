@@ -1,0 +1,83 @@
+---
+title: Políticas de cache e desempenho
+description: Escritas, vítimas dirty, memória principal e CPI de caches separadas ou multinível.
+section: conteudo
+order: 4
+practices:
+  - ac/praticar-politicas-cache
+editorial:
+  basedOn: 2024/25
+---
+
+Uma leitura e uma escrita podem ter custos diferentes. Antes de seguir acessos, fixa a política de escrita, a política em uma falta, o tamanho da linha e o estado inicial de cada entrada.
+
+## Write-through e write-back
+
+**Write-through (WT):** uma escrita que acerta atualiza a cache e envia a escrita para o nível seguinte. **Write-back (WB):** altera a cache e marca a linha dirty; o nível seguinte pode ficar desatualizado até a linha ser descarregada.
+
+Dirty não significa inválido. `V=1,D=1` contém dados válidos e modificados. `V=0` não é uma linha utilizável, mesmo que o bit D antigo seja 1.
+
+O modelo WT/no-allocate não instala uma linha por uma escrita que falha. WB/allocate instala-a. São combinações frequentes, não uma equivalência lógica: política de escrita e de alocação são decisões distintas.
+
+| Operação           | WT, no-allocate                              | WB, allocate                                                                          |
+| ------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Leitura com acerto | Ler cache                                    | Ler cache                                                                             |
+| Leitura com falta  | Carregar linha; `V=1`                        | Descarregar vítima válida dirty, se houver; carregar linha; `V=1,D=0`                 |
+| Escrita com acerto | Atualizar cache e nível seguinte             | Atualizar cache; `D=1`                                                                |
+| Escrita com falta  | Escrever no nível seguinte; cache fica igual | Descarregar vítima válida dirty; instalar linha, alterar os bytes escritos; `V=1,D=1` |
+
+Em uma escrita parcial de uma linha, a alocação normalmente lê os bytes restantes do nível seguinte. Se a escrita substitui **a linha inteira**, não é necessário lê-la antes. Por exemplo, uma cache com uma palavra por linha pode instalar uma escrita de palavra completa sem uma leitura adicional. Esta condição muda a contagem de acessos.
+
+## Um traço com vítimas modificadas
+
+Cache direta WB, 2 linhas de 4 B, inicialmente inválida; operações de palavra completa. `E` escreve e `L` lê.
+
+| Operação | Índice, etiqueta | Eventos no nível seguinte                   | Estado relevante depois           |
+| -------- | ---------------- | ------------------------------------------- | --------------------------------- |
+| E0=7     | 0,0              | Nenhum; escrita cobre a linha               | Linha 0: tag 0, V 1, D 1, valor 7 |
+| L0       | 0,0              | Nenhum                                      | Devolve 7                         |
+| E8=9     | 0,1              | Escrever vítima no endereço 0               | Linha 0: tag 1, V 1, D 1, valor 9 |
+| L4       | 1,0              | Ler linha que começa em 4                   | Linha 1: tag 0, V 1, D 0          |
+| L0       | 0,0              | Escrever vítima no endereço 8 e ler linha 0 | Linha 0: tag 0, V 1, D 0, valor 7 |
+
+Total: duas leituras e duas escritas de linhas na memória principal. O último acesso devolve 7 porque a primeira vítima já tinha atualizado a memória.
+
+O endereço de uma vítima é reconstruído com **a etiqueta antiga**, o índice da entrada e deslocamento zero. Usar a etiqueta do pedido escreveria os dados da vítima no sítio errado.
+
+Para WT/no-allocate, a primeira E0 escreve só na memória. A L0 seguinte falha e carrega a linha. Contabiliza novamente o traço, sem reutilizar os resultados do modelo WB.
+
+## O que se pode conhecer da memória
+
+Uma linha WB válida e limpa permite conhecer os bytes correspondentes na memória principal, se nenhum agente externo os alterou. Uma linha válida dirty permite conhecer o valor que o processador lê, mas não o valor antigo na memória. Uma etiqueta diferente ou `V=0` não prova nada sobre os dados desse endereço na memória.
+
+Um buffer de escrita pode deixar o CPU continuar enquanto uma escrita WT avança. Se o exercício diz que não existe buffer, cobra a espera por escrita. Se existe, considera a capacidade e as condições de bloqueio fornecidas; não acrescentes sempre a latência inteira ao CPI.
+
+## Tempo médio de acesso
+
+Para um nível, se a penalidade é o tempo **adicional** depois de verificar a falta:
+
+$$TMAM=t_{\rm acerto}+m\,p_{\rm falta}.$$
+
+Com acerto de 1 ns, taxa de falta 5% e penalidade 20 ns, o TMAM é 2 ns. Se os 20 ns já incluíssem a procura inicial, a conta teria de evitar contá-la duas vezes.
+
+## De taxas de falta para CPI
+
+Caches I e D separadas; uma obtenção de instrução por instrução e fração $r$ de instruções com um acesso a dados:
+
+$$CPI=CPI_{\rm base}+m_Ip_I+r\,m_Dp_D.$$
+
+Com base 1,2; $m_I=0,01$; $m_D=0,04$; $r=0,30$ e ambas as penalidades 80 ciclos:
+
+$$CPI=1,2+0,01\times80+0,30\times0,04\times80=2,96.$$
+
+Para uma cache unificada, o número médio de acessos é $1+r$: $CPI_{\rm prot}=(1+r)mp$. Instruções que realizem vários acessos exigem a sua contagem real. Penalidades dirty podem ser uma parcela adicional, ponderada pela frequência dessas vítimas.
+
+## Vários níveis de cache
+
+Uma falta em L1 consulta L2. **Taxa local de L2** é a fração dessas consultas que falha. **Taxa global de L2** é a fração de todos os pedidos originais que chega à memória. Se há um pedido por instrução, $m_{2,g}=m_1m_{2,l}$.
+
+$$TMAM=t_1+m_1(t_2+m_{2,l}p_{\rm RAM}).$$
+
+Exemplo: $t_1=1$ ciclo, $m_1=0,10$, $t_2=8$ ciclos, $m_{2,l}=0,20$, RAM 80 ciclos adicionais. O TMAM é $1+0,10(8+0,20\times80)=3,4$ ciclos. A taxa global que chega à RAM é 2%, não 20%.
+
+Para CPI de CPU a 4 GHz, base 1, faltas L1 de 2% **por instrução**, consulta L2 de 5 ns e faltas RAM globais 0,5% com 100 ns adicionais: $p_2=20,p_R=400$ ciclos. Logo $CPI=1+0,02\times20+0,005\times400=3,4$. Sem L2 seria $1+0,02\times400=9$. A rapidez relativa é $9/3,4=2,647$, se $N$ e a frequência forem iguais.

@@ -1,0 +1,117 @@
+---
+title: Praticar entrada e saída
+description: Problemas próprios com condições, pistas e resoluções completas.
+section: exercicios
+editorial:
+  basedOn: 2024/25
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="ac-poll-period"
+  title="Consultar a tempo"
+  explanation="/cadeiras/ac/entrada-saida/#varrimento-periódico"
+  answer={{ kind: 'number', value: 25, tolerance: 0, unit: 'ms' }}
+>
+  <p>
+    Entrada 16000 bits/s, buffer de 400 bits, um bloco por consulta. Qual
+    intervalo máximo ideal de polling, sem atraso adicional?
+  </p>
+  <div slot="hint">Quantos blocos chegam por segundo?</div>
+  <div slot="hint-more">16000/400=40.</div>
+  <div slot="solution">
+    1/40 s=25 ms. Com custo e jitter do serviço, é necessária margem para não
+    atrasar a remoção.
+  </div>
+  <div slot="mistakes">
+    Dividir bits por bytes ou responder 40 como um intervalo.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-interrupt-break-even"
+  title="Comparar custos de serviço"
+  explanation="/cadeiras/ac/entrada-saida/#interrupções"
+  answer={{ kind: 'number', value: 0.6666666666666666, tolerance: 1e-6 }}
+>
+  <p>
+    Polling 40 consultas/s a 400 ciclos; interrupções 40 u/s a 600 ciclos. Qual
+    ocupação u iguala custos? Responde como fração, entre 0 e 1.
+  </p>
+  <div slot="hint">Iguala ciclos por segundo.</div>
+  <div slot="hint-more">40×400=40 u×600.</div>
+  <div slot="solution">
+    u=400/600=2/3. Abaixo deste valor, interrupções gastam menos ciclos no
+    modelo dado.
+  </div>
+  <div slot="mistakes">
+    Assumir que uma interrupção custa igual a uma consulta.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-dma-block"
+  title="Dimensionar o bloco para dois discos"
+  explanation="/cadeiras/ac/entrada-saida/#dma"
+  answer={{ kind: 'number', value: 20000, tolerance: 0, unit: 'bytes' }}
+>
+  <p>
+    Dois discos 100 MB/s cada; DMA 2000 ciclos por bloco; CPU 2 GHz; limite 1%
+    CPU; MB decimal. Qual tamanho mínimo de bloco de cada transferência?
+  </p>
+  <div slot="hint">Usa a taxa agregada 200 MB/s.</div>
+  <div slot="hint-more">B≥R×c/(0,01×f).</div>
+  <div slot="solution">
+    B≥200×10⁶×2000/(0,01×2×10⁹)=20000 bytes. Com 5000 bytes, a ocupação seria
+    4%, não 1%.
+  </div>
+  <div slot="mistakes">
+    Dividir o bloco por dois quando duplica a taxa ou usar 1 como fração de 1%.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-dma-clean"
+  title="Preparar DMA de saída"
+  explanation="/cadeiras/ac/entrada-saida/#dma-e-dados-em-cache"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Descarregar dados dirty e aplicar a ordenação da plataforma',
+        correct: true,
+        explanation: 'O dispositivo deve ler a versão mais recente na memória.',
+      },
+      {
+        text: 'Invalidar sem descarregar todos os dados dirty',
+        correct: false,
+        explanation: 'Isso pode perder os dados novos antes de DMA os ler.',
+      },
+      {
+        text: 'Não fazer nada porque a cache é válida',
+        correct: false,
+        explanation:
+          'Válida e dirty pode diferir da RAM; faltaria garantia de coerência.',
+      },
+    ],
+  }}
+>
+  <p>
+    DMA de saída lê RAM, sem coerência de hardware. O CPU tem dados novos em
+    linha WB dirty. Qual preparação é necessária?
+  </p>
+  <div slot="hint">A versão nova ainda pode existir só na cache.</div>
+  <div slot="hint-more">
+    DMA deve observar os dados atuais, antes de receber posse do buffer.
+  </div>
+  <div slot="solution">
+    Fazer clean/write-back das linhas relevantes, ordenar antes do arranque e
+    respeitar o protocolo de posse do buffer. Invalidar só descarta a cópia; não
+    é substituto de escrever os dados novos.
+  </div>
+  <div slot="mistakes">
+    Confundir validade com igualdade RAM ou tratar entrada e saída DMA da mesma
+    forma.
+  </div>
+</Exercise>

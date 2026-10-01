@@ -1,0 +1,118 @@
+---
+title: Programar com SIMD
+description: Contagens, produtos internos, vetores e números complexos com condições de largura.
+section: conteudo
+order: 11
+practices:
+  - ac/praticar-programar-simd
+editorial:
+  basedOn: 2024/25
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import exemplo from '../../ac/examples/programar-simd.py?raw';
+
+Começa pela operação escalar, escolhe as vias, escreve o resultado por via e só depois traduz para instruções. Verifica comprimento zero, alinhamento, resto e overflow. Um vetor com número de elementos múltiplo de 4 não é necessariamente não vazio.
+
+## Contar valores que satisfazem uma condição
+
+Pretende-se contar bytes com sinal menores que um limite. Em cada grupo de 4: carregar uma palavra; comparar com o limite replicado; converter a máscara de comparação em contagens; somar horizontalmente; avançar 4 bytes.
+
+Para replicar um limite negativo, conserva primeiro os 8 bits baixos: `andi t0,a2,255`. Depois replica por shifts e OR. Replicar diretamente o valor estendido com sinal pode transportar bits altos para as outras vias.
+
+Uma máscara `[0xFF,0,0xFF,0xFF]` tem três verdadeiros. AND com `0x01010101` produz `[1,0,1,1]`. Extrair cada byte e somá-lo em um acumulador escalar dá 3.
+
+Acumular máscaras com ADD8 durante todo o vetor cria contadores modulares. Ao atingir 256 verdadeiros na mesma via, o contador volta a zero. A alternativa seguinte reduz cada grupo imediatamente e trata o resto sem essa limitação:
+
+<CodePlayground
+  language="python"
+  title="Contagem por grupos e resto"
+  code={exemplo}
+/>
+
+Para contar ocorrências, troca a comparação por igualdade. Para contar ímpares, AND com 1 em cada byte dá diretamente a máscara 0/1. O acumulador escalar também precisa de largura suficiente para o comprimento máximo.
+
+## Traduzir a contagem para registos
+
+Contrato: `a0` aponta para bytes com sinal, com base alinhada a 4; `a1` é um comprimento entre 0 e 2³¹−1; `a2` é um limite entre −128 e 127. O resultado cabe em `a0`. A rotina só altera registos que o chamador deve preservar, caso precise deles depois da chamada.
+
+```riscv
+contar_inferiores:
+    li t2, 0                 # acumulador escalar
+    andi t0, a2, 255
+    slli t3, t0, 8
+    or t0, t0, t3
+    slli t3, t0, 16
+    or t0, t0, t3            # limite replicado em quatro bytes
+    li t1, 0x01010101
+    srli a3, a1, 2           # grupos completos
+    andi a4, a1, 3           # bytes restantes
+    beqz a3, resto
+
+grupo:
+    lw t3, 0(a0)
+    scmplt8 t4, t3, t0
+    and t4, t4, t1           # quatro contagens 0 ou 1
+    srli t5, t4, 16
+    add t4, t4, t5
+    srli t5, t4, 8
+    add t4, t4, t5
+    andi t5, t4, 255         # soma dos quatro bytes, entre 0 e 4
+    add t2, t2, t5
+    addi a0, a0, 4
+    addi a3, a3, -1
+    bnez a3, grupo
+
+resto:
+    beqz a4, fim
+    lb t3, 0(a0)
+    slt t5, t3, a2
+    add t2, t2, t5
+    addi a0, a0, 1
+    addi a4, a4, -1
+    bnez a4, resto
+
+fim:
+    mv a0, t2
+    ret
+```
+
+A redução usa somas escalares sem misturar contagens: após o primeiro shift/soma, o byte baixo contém `b0+b2`; o seguinte, `b1+b3`. A segunda soma reúne os quatro no byte baixo. Cada parcela vale no máximo 1, pelo que não há carry entre bytes nessas somas. Para máscara `[1,0,1,1]`, o resultado baixo passa de 2 para 3. Se os bytes fossem contadores arbitrários, essa justificação já não bastava.
+
+A entrada vazia passa pelas duas verificações e retorna zero sem ler memória. O resto usa `lb`, para estender o sinal, e compara com o limite original. A linha `scmplt8` requer a ISA empacotada; o bloco Python anterior permite conferir a operação em cada via.
+
+## Produto interno de meias palavras
+
+Para $\sum_i x_i y_i$, cada palavra carrega dois elementos de 16 bits. KMDA faz `x0×y0+x1×y1`; soma esse resultado a um acumulador escalar e avança 4 bytes. Para `x=[2,−3,4,1]`, `y=[5,6,−2,7]`, os parciais são −8 e −1; resultado −9.
+
+KMDA satura no caso em que as quatro meias palavras valem −32768. Um acumulador mais largo depois da instrução não recupera o valor já saturado. Para uma soma exata nesse caso, usa os dois produtos completos de SMUL16 e acumula-os com largura suficiente. A soma de muitos parciais também pode exceder 32 bits. A ordem de redução de inteiros sem overflow conserva o resultado; para vírgula flutuante pode mudar arredondamentos.
+
+## Alterar e somar vetores
+
+Para `Y[i]=k×Y[i]`, replica k em duas meias palavras, faz SMUL16 e guarda os 16 bits de cada produto com duas operações `sh`, se o contrato garantir que o resultado cabe. O par de produtos 32 bits é uma saída intermédia, não uma palavra empacotada pronta para `sw`.
+
+Para `Z[i]=X[i]+Y[i]`, ADD16 produz duas somas modulares e `sw` guarda as duas parcelas. Se a intenção é uma soma matemática com sinal, garante $−32768\le X[i]+Y[i]\le32767$ para cada i.
+
+Uma rotina `Y←Y−kX` pode chamar a alteração de vetor e a soma, mas deve preservar `ra` e os argumentos necessários entre chamadas. Também deve deixar claro se pode modificar X. Para conservar X, calcula os produtos em temporários ou guarda em outra área.
+
+## Valor absoluto e ajuste
+
+Para `Y[i]−d×|X[i]|`, SMAX16 entre X e −X funciona exceto no menor inteiro −32768, cujo valor absoluto 32768 não cabe em 16 bits com sinal. Excluir esse valor é uma condição; alargar a representação é outra solução.
+
+Se SMUL16 produz dois produtos 32 bits, SUB16 não pode subtrair diretamente um desses registos como se contivesse ambos os produtos. Primeiro empacota as partes de 16 bits de cada produto, se couberem, ou faz subtrações escalares de 32 bits e guarda os resultados individualmente.
+
+## Coordenadas e números complexos
+
+Uma palavra pode guardar `(H1,H0)=(y,x)`. SWAP16 troca as coordenadas em uma operação; carregar/guardar continua a ter custo.
+
+Para complexos $a=a_r+j a_i$, $b=b_r+j b_i$:
+
+$$\Re(ab)=a_rb_r-a_ib_i,\qquad\Im(ab)=a_rb_i+a_ib_r.$$
+
+Se H0 guarda a parte real e H1 a imaginária, SMUL16 fornece os produtos diretos; SMULX16 fornece os cruzados. Subtrai os dois diretos para a parte real e soma os dois cruzados para a imaginária. Para `a=(2,3),b=(4,−1)`, o resultado é `(11,10)`.
+
+## Quando rende e quando não rende
+
+SIMD reduz instruções aritméticas por elemento, mas os dados têm de chegar aos registos. Replicação de constantes, permutações, alinhamento e restos têm custo. Um vetor curto pode não amortizar a preparação.
+
+O ganho teórico de 4 vias só se aplica à parte que efetivamente executa 4 operações em paralelo. Se essa parte ocupava 60% do tempo e melhora 4 vezes, Amdahl dá $1/(0,4+0,6/4)=1,818$, antes de contar custos novos. Não multipliques automaticamente o desempenho total pelo número de vias.

@@ -1,104 +1,99 @@
 ---
 title: Predição de saltos
-description: Preditores estáticos e dinâmicos, contadores de dois bits, BHT e o custo dos erros no CPI.
+description: Penalidades de controlo, decisão antecipada, BHT e dois modelos de preditor de dois bits.
 section: conteudo
-order: 5
+order: 7
+practices:
+  - ac/praticar-predicao-saltos
+editorial:
+  basedOn: 2024/25
 ---
 
 import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
+import exemplo from '../../ac/examples/predicao-saltos.py?raw';
+import histerese from '../../ac/histerese.dot?raw';
 import contador from '../../ac/contador.dot?raw';
 
-Os saltos condicionais são frequentes, cerca de uma em cada seis instruções nos programas típicos, e cada salto mal apostado no [pipeline](pipeline/) deita fora o trabalho das fases seguintes.[^saltos] A predição de saltos é o mecanismo que adivinha o resultado de cada salto antes de ele ser decidido, para o pipeline nunca parar. Os bons preditores modernos acertam mais de 95% das vezes.
+Um salto condicional escolhe entre `PC+4` e o destino. Enquanto não conhece a decisão, o processador pode esperar ou obter instruções de um caminho previsto. Uma previsão errada exige descartar instruções mais novas desse caminho.
 
-[^saltos]: A frequência de saltos e as taxas de acerto típicas seguem o _Computer Organization and Design, versão RISC-V_, de Patterson e Hennessy, livro de referência da cadeira.
+## Onde se resolve o salto
 
-## O preço de falhar
+Fixa a fase em que o PC pode mudar, não apenas a fase que calcula a condição.
 
-Enquanto o salto não chega à fase de decisão, o processador aposta num caminho e continua a buscar instruções por ele. Se acertar, custo zero: o pipeline nunca parou. Se falhar, descarta as instruções erradas (_flush_) e recomeça no endereço certo, pagando uma **penalidade** igual ao número de fases entre a busca e a decisão.
+A tabela usa cinco fases e conta apenas a penalidade de uma previsão errada, sem conflitos de operandos:
 
-A penalidade média por salto entra no CPI como mais uma parcela ponderada:
+| Modelo             | Redirecionar em | Penalidade |
+| ------------------ | --------------- | ---------- |
+| Decisão básica     | MEM             | 3 ciclos   |
+| Decisão antecipada | ID              | 1 ciclo    |
 
-$$
-\text{stalls de controlo} = \text{frequ\^encia de saltos} \times \text{taxa de erro} \times \text{penalidade}
-$$
+No modelo MEM, um branch em IF 1, ID 2, EX 3, MEM 4 deixa três instruções mais novas em EX, ID, IF no ciclo 4. Se a previsão falha, a primeira instrução correta só é obtida no ciclo 5. Se se espera sempre pelo branch, paga-se essa espera em **todos** os branches; se se prevê, paga-se só nos erros.
 
-Um exemplo: 15% de saltos, preditor com 10% de erros, penalidade de 3 ciclos. Os stalls de controlo valem $0{,}15 \times 0{,}10 \times 3 = 0{,}045$ ciclos por instrução. Baixar a taxa de erro de 10% para 5% poupa quase tanto como eliminar uma bolha de carga-uso inteira. É por isso que este mecanismo, invisível ao programador, recebe tanto hardware dedicado.
+## Calcular o CPI de controlo
 
-## Preditores estáticos
+Com fração de branches $b$, probabilidade de erro $e$ e penalidade $p$:
 
-O **preditor estático** decide sempre da mesma forma, sem aprender com o passado. As opções clássicas:
+$$CPI=CPI_{\rm sem\ erros}+bep.$$
 
-- **Sempre não tomado**: continua em sequência. Custa zero hardware e acerta nos saltos que raramente se confirmam, como os testes de erro.
-- **Sempre tomado**: salta sempre. Paga o cálculo do endereço destino, mas acerta nos ciclos.
-- **Para trás tomado, para a frente não** (_BTFN_): saltos para trás (endereço menor, tipicamente fins de ciclo) apostam em tomado; saltos para a frente (ifs, saídas) apostam em não tomado. Com uma linha de código a mais acerta a grande maioria dos ciclos e dos ifs ocasionais.
+Se 20% das instruções são branches, 60% são tomados e a previsão é sempre não tomado, $e=0,60$. Para base 1 e resolução MEM: $CPI=1+0,20\times0,60\times3=1,36$. Se esperasse sem predição, seria $1+0,20\times3=1,60$.
 
-O BTFN é o exemplo perfeito de heurística barata: explora o facto de os ciclos repetirem muitas vezes e os ifs de saída acontecerem uma vez. Mas os saltos com comportamento irregular, como um `if` que alterna, continuam a falhar sempre.
+Um preditor com 90% de acertos dá $e=0,10$, não 0,90. Os casos devem contar também saltos incondicionais se o modelo lhes atribuir uma penalidade; não mistures as suas frequências com a dos condicionais sem indicação.
 
-## Aprender com o passado: um bit
+## Decisão em ID e dependências
 
-O **preditor dinâmico** guarda o comportamento recente de cada salto e adapta a aposta. A versão mais simples usa um bit por salto: 1 significa "da última vez tomou", 0 significa "da última vez não tomou", e a aposta repete a última vez.
+Antecipar a comparação exige comparar registos e calcular o alvo em ID. Pode reduzir a penalidade de controlo e aumentar paragens de dados.
 
-Segue um salto de fim de ciclo que se confirma 9 vezes e sai à 10.ª, com o bit a começar em 1 (tomado):
+```riscv
+add t0,t1,t2
+beq t0,zero,L
+```
 
-| Iteração         | Realidade  | Aposta     | Resultado |
-| ---------------- | ---------- | ---------- | --------- |
-| 1–9              | tomado     | tomado     | acerto    |
-| 10               | não tomado | tomado     | erro      |
-| 11 (próx. ciclo) | tomado     | não tomado | erro      |
+O `add` calcula em EX 3. O branch está em ID 3 e precisa do valor antes de terminar esse ciclo. Com um atalho de EX/MEM para o comparador ID, espera um ciclo e compara em ID 4. Um atalho apenas para EX não resolve esse uso.
 
-Dois erros por cada saída de ciclo: um na saída e outro na primeira iteração do ciclo seguinte, porque uma única exceção vira o bit. Para um ciclo de 10 iterações são 2 erros em 11 previsões, quase 20% de taxa de erro num caso facílimo. O bit único é demasiado nervoso: reage a outliers como se fossem o novo normal.
+Se a primeira instrução for `lw`, o dado chega no fim de MEM 4. Com o caminho adequado de MEM/WB para ID e a regra WB-primeiro/ID-depois, o branch compara em ID 5: duas paragens. A penalidade de erro de 1 ciclo acrescenta-se à dependência, se ambas ocorrerem.
 
-## Contador de dois bits
+## Um bit de história
 
-A cura é exigir duas evidências antes de mudar de opinião. O **contador saturante de dois bits** tem quatro estados:
+Uma BHT guarda estado associado ao endereço de cada branch, normalmente indexado por bits baixos do PC, excluindo os bits de alinhamento. Endereços diferentes podem partilhar uma entrada e interferir. A BHT prevê a **direção**; obter rapidamente o endereço do alvo pode exigir uma estrutura distinta, como uma BTB.
 
-- 00: não tomado com força (aposta não tomado)
-- 01: não tomado fraco (aposta não tomado)
-- 10: tomado fraco (aposta tomado)
-- 11: tomado com força (aposta tomado)
+O preditor de 1 bit prevê o último resultado: T para tomado, N para não tomado. Depois do branch, substitui o bit pelo resultado real.
 
-Cada salto tomado sobe um degrau (até 11), cada não tomado desce um (até 00). Repete o ciclo de 10 iterações a começar em 11: as 9 confirmações mantêm o contador em 11, a saída desce para 10 (a aposta continua tomado, acerta tudo até aqui) e só uma segunda saída seguida mudaria a aposta. Erros: só o da saída, 1 em 10 em vez de 2 em 11. O estado fraco absorve a exceção isolada sem virar a aposta.
+Para dois percursos do mesmo ciclo, resultados `T T T N T T T N`, e estado inicial T: erra na saída do primeiro ciclo, na reentrada do segundo e na segunda saída. São 3 erros em 8 branches. Em regime repetido são 2 erros por percurso; o arranque escolhido pode mudar a primeira contagem.
+
+## Dois bits com histerese
+
+Usa dois estados que preveem T e dois que preveem N. O seguinte modelo resiste a um resultado contrário quando a previsão é forte:
+
+<Dot
+  source={histerese}
+  alt="Preditor de dois bits com histerese:11 prevê T, erro N leva 10; novo N em 10 leva 00.00 prevê N, erro T leva 01; novo T em 01 leva 11. Um acerto em estado fraco volta ao forte da mesma direção."
+/>
+
+| Estado | Prevê | Se N | Se T |
+| ------ | ----- | ---- | ---- |
+| 00     | N     | 00   | 01   |
+| 01     | N     | 00   | 11   |
+| 10     | T     | 00   | 11   |
+| 11     | T     | 10   | 11   |
+
+Para `T T T N T T T N`, partindo de 11, os estados após cada branch são `11 11 11 10 11 11 11 10`. Só as duas saídas são mal previstas: 2 erros em 8.
+
+## O contador saturante é outro modelo
+
+Um contador de 0 a 3 prevê N abaixo de 2 e T a partir de 2; incrementa por T e decrementa por N, sem passar os extremos. Difere da tabela anterior em **01+T→10** e **10+N→01**.
 
 <Dot
   source={contador}
-  alt="Máquina de quatro estados do contador saturante: T avança para a direita até 11 e N recua para a esquerda até 00, com saturação nos extremos."
+  alt="Contador saturante de dois bits:resultado T soma 1 até 3 e resultado N subtrai 1 até 0; estados 00 e 01 preveem N, 10 e 11 preveem T."
 />
 
-Este é o mecanismo que deves saber desenhar de cor: quatro estados, aposta dos dois de cima contra os dois de baixo, saturação nos extremos.
-
-Corre os dois preditores sobre a sequência T, T, T, N, T e compara os acertos:
+Para resultados alternados e alguns estados iniciais, as contagens podem divergir. Nunca substituas uma máquina de estados pela outra só porque ambas têm 2 bits.
 
 <CodePlayground
   language="python"
-  title="Preditores de 1 e 2 bits"
-  code={
-    'def simula(seq, estado, bits):\n    for r in seq:\n        aposta = "T" if (estado == 1 if bits == 1 else estado >= 2) else "N"\n        print(r, "aposta", aposta, "acerto" if aposta == r else "erro")\n        if bits == 1:\n            estado = 1 if r == "T" else 0\n        else:\n            estado = min(3, estado + 1) if r == "T" else max(0, estado - 1)\n\nseq = ["T", "T", "T", "N", "T"]\nprint("1 bit, comeca em 1:")\nsimula(seq, 1, 1)\nprint("2 bits, comeca em 11:")\nsimula(seq, 3, 2)'
-  }
+  title="Comparar transições de dois preditores"
+  code={exemplo}
 />
 
-O de 1 bit acerta 3 em 5; o de 2 bits acerta 4 em 5, falhando só na saída do ciclo.
-
-## Onde vive o preditor: BHT e BTB
-
-O preditor precisa de uma entrada por salto. A **tabela de histórico** (_BHT, branch history table_) indexa contadores de dois bits pelos bits baixos do PC do salto: cada salto tem (quase sempre) o seu contador. Dois saltos que partilham a entrada interferem um com o outro (_aliasing_), mas na prática o ruído é pequeno.
-
-Saber **se** salta não chega: é preciso saber **para onde**. O **buffer de destino** (_BTB_) guarda, por salto recente, o endereço destino previsto. Na busca, o PC consulta o BTB: se lá estiver e o preditor apostar tomado, o pipeline continua logo no destino previsto sem esperar pela descodificação. Sem BTB, mesmo os saltos bem previstos pagariam um ciclo para calcular o destino.
-
-<YouTube
-  id="nczJ58WvtYo"
-  title="Como funciona a predição de saltos nos CPUs, Computerphile"
-/>
-
-:::tip[Como cai isto em teste]
-O enunciado típico dá-te uma sequência de resultados (por exemplo T, T, T, N, T) e um estado inicial, e pede a taxa de acerto do preditor de 1 bit e do de 2 bits. Simula passo a passo numa tabela como a de cima: estado, aposta, resultado, estado seguinte. Não tentes fazer de cabeça, a tabela é o método.
-:::
-
-## Para saber mais
-
-- [Medições reais de predição de saltos](https://danluu.com/branch-prediction/): dados de desempenho em CPUs modernas, para veres os 95% a acontecer.
-
-## Para levar para a próxima página
-
-A predição esconde a latência dos saltos, mas o paralelismo até aqui continua a ser de uma instrução por ciclo. A página sobre [SIMD](simd/) mostra a outra direção: em vez de adivinhar o futuro, executar a mesma operação sobre vários dados ao mesmo tempo.
+Ao resolver um traço, escreve estado anterior, previsão, resultado, erro e estado seguinte em colunas. Só depois calcula a taxa de erro e o CPI; isso evita atualizar o estado antes de prever.

@@ -1,220 +1,101 @@
 ---
 title: Assembly RISC-V
-description: Registos, instruções base, acessos à memória, saltos e a convenção de chamada com a pilha.
+description: RV32, endereços, formatos de instrução, saltos e chamadas com a pilha.
 section: conteudo
 order: 1
+practices:
+  - ac/praticar-riscv-assembly
+editorial:
+  basedOn: 2024/25
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
+import exemplo from '../../ac/examples/riscv-assembly.s?raw';
 import pilha from '../../ac/pilha.typ?raw';
 
-Em FSC programaste em LEGv8, um conjunto de instruções inventado para ensinar. Em AC programas em RISC-V, um conjunto real e aberto que equipa desde microcontroladores até supercomputadores. A boa notícia: as ideias são as mesmas, registos, memória endereçável ao byte, saltos e pilha, e só os nomes e os detalhes mudam. Esta página faz essa ponte.
-
-<YouTube
-  id="7tM4XkqoFro"
-  title="Introdução à arquitetura RISC-V, DDCA capítulo 6 parte 1"
-/>
+Uma ISA define as instruções e os registos que um programa pode usar. O processador implementa essa interface; a organização interna pode mudar sem alterar o programa. Vamos usar **RV32**, com registos inteiros de 32 bits, memória endereçada por byte e instruções base de 32 bits. A extensão M acrescenta multiplicação e divisão; as instruções SIMD empacotadas têm um modelo próprio.
 
 ## Os registos que interessam
 
-O RISC-V tem 32 registos inteiros, `x0` a `x31`. Cada um tem um nome de função que deves usar no código:
+| Nome         | Registos                   | Uso e preservação                                   |
+| ------------ | -------------------------- | --------------------------------------------------- |
+| `zero`       | `x0`                       | Sempre zero; escritas são ignoradas                 |
+| `ra`         | `x1`                       | Endereço de retorno; uma chamada pode alterá-lo     |
+| `sp`         | `x2`                       | Apontador da pilha; repor antes de retornar         |
+| `gp`, `tp`   | `x3`, `x4`                 | Reservados pela convenção de execução               |
+| `t0` a `t6`  | `x5` a `x7`, `x28` a `x31` | Temporários, não preservados pelo chamado           |
+| `a0` a `a7`  | `x10` a `x17`              | Argumentos; `a0` e `a1` também transportam retornos |
+| `s0` a `s11` | `x8`, `x9`, `x18` a `x27`  | O chamado preserva os que utilizar                  |
 
-| Nome       | Registos                | Para que serve                                   |
-| ---------- | ----------------------- | ------------------------------------------------ |
-| `zero`     | `x0`                    | Vale sempre 0; escritas são ignoradas            |
-| `ra`       | `x1`                    | Endereço de regresso das chamadas                |
-| `sp`       | `x2`                    | Apontador da pilha                               |
-| `a0`–`a7`  | `x10`–`x17`             | Argumentos das funções e valor de retorno (`a0`) |
-| `t0`–`t6`  | `x5`–`x7`, `x28`–`x31`  | Temporários (o chamado pode estragá-los)         |
-| `s0`–`s11` | `x8`, `x9`, `x18`–`x27` | Guardados (o chamado tem de os preservar)        |
-
-Há duas diferenças grandes em relação ao LEGv8. A primeira: não há um registo de zero inventado, há o `zero` (`x0`), que vale sempre 0 e serve para inicializar registos e sintetizar instruções. A segunda: em vez de `X30` como registo de ligação, há o `ra`, e em vez de pares dedicados há uma convenção explícita sobre que registos cada função pode estragar.
-
-Os temporários `t0`–`t6` e os argumentos `a0`–`a7` são do chamador: se precisares do valor depois de uma chamada, guarda-o antes. Os guardados `s0`–`s11` são do chamado: uma função que os use tem de gravar o valor antigo na pilha e repô-lo antes de regressar. O `s0` também faz de `fp` (_frame pointer_) quando a função precisa de uma referência estável à sua zona da pilha.
+Não existe `t7`. O banco de vírgula flutuante, quando disponível, usa `f0` a `f31`; não é o mesmo banco dos `x`.
 
 ## Contas, imediatos e memória
 
-As operações entre registos têm o formato familiar de três operandos:
+`add rd,rs1,rs2` soma dois registos; `addi rd,rs1,imm` soma um imediato com sinal de 12 bits, entre −2048 e 2047. `sub`, `and`, `or`, `xor`, `slt` seguem o formato de três registos. `slt` compara com sinal; `sltu` compara sem sinal. Não há flags de comparação globais.
 
-```riscv
-add  t0, t1, t2    # t0 = t1 + t2
-sub  t0, t1, t2    # t0 = t1 - t2
-and  t0, t1, t2    # e bit a bit
-or   t0, t1, t2    # ou bit a bit
-xor  t0, t1, t2    # ou exclusivo
-slt  t0, t1, t2    # t0 = 1 se t1 < t2 (com sinal), senão 0
-```
+Uma soma inteira mantém os 32 bits baixos. O mesmo padrão `0xFFFFFFFF` representa 4294967295 sem sinal ou −1 com sinal. A instrução de comparação escolhida determina a interpretação.
 
-Com constantes usa-se a versão imediata, com um `i` no fim do nome:
+| Instrução        | Tamanho       | Efeito                                        |
+| ---------------- | ------------- | --------------------------------------------- |
+| `lb`, `lh`, `lw` | 1, 2, 4 bytes | Ler; `lb/lh` estendem o sinal                 |
+| `lbu`, `lhu`     | 1, 2 bytes    | Ler; preencher os bits altos com zeros        |
+| `sb`, `sh`, `sw` | 1, 2, 4 bytes | Guardar apenas os bits baixos correspondentes |
 
-```riscv
-addi t0, t1, 20    # t0 = t1 + 20
-andi t0, t1, 0xFF  # t0 = t1 & 0xFF (só o byte baixo)
-slli t0, t1, 2     # t0 = t1 << 2 (multiplica por 4)
-```
+Em `lw t0,12(a0)`, o endereço é `a0 + 12`, em **bytes**. Para ler `vetor[i]` de palavras, calcula `base + 4i`. `ld/sd` pertencem ao modelo inteiro RV64, não a este RV32.
 
-Repara que não há um `subi`: para subtrair uma constante, somas o seu simétrico com `addi`. E ao contrário do LEGv8, os deslocamentos (`slli`, `srli`, `srai`) são instruções próprias, não um campo das instruções de soma.
+Em little endian, a palavra `0x12345678` ocupa os bytes `78 56 34 12`, do endereço menor para o maior. Um `lb` sobre o byte `0xFE` produz −2; `lbu` produz 254. O alinhamento natural de uma palavra exige endereço múltiplo de 4.
 
-Os acessos à memória usam `lw` e `sw` para palavras de 32 bits e `ld` e `sd` para _doublewords_ de 64 bits:
+`slli` desloca à esquerda e introduz zeros. `srli` introduz zeros à direita; `srai` replica o bit de sinal. Os deslocamentos imediatos de RV32 vão de 0 a 31. Dividir um negativo por uma potência de dois com `srai` arredonda para baixo; `div` arredonda para zero, pelo que não são sempre equivalentes.
 
-```riscv
-lw   t0, 8(t1)     # t0 = memória[t1 + 8], palavra de 32 bits
-sw   t0, 8(t1)     # memória[t1 + 8] = t0
-ld   t0, 0(sp)     # t0 = memória[sp], 64 bits
-```
+## Codificar uma instrução
 
-Para bytes há `lb` e `sb`, com a variante `lbu` para bytes sem sinal:
+Os campos conservam posições quando possível:
 
-```riscv
-lb   t0, 0(t1)     # t0 = byte com sinal em memória[t1], estendido a 32 bits
-lbu  t0, 0(t1)     # t0 = byte sem sinal (0 a 255)
-sb   t0, 1(t1)     # guarda só o byte baixo de t0 em memória[t1 + 1]
-```
+| Formato | Campos, do bit 31 para o 0                       | Exemplos             |
+| ------- | ------------------------------------------------ | -------------------- |
+| R       | `funct7 rs2 rs1 funct3 rd opcode`                | `add`, `sub`         |
+| I       | `imm[11:0] rs1 funct3 rd opcode`                 | `addi`, `lw`, `jalr` |
+| S       | `imm[11:5] rs2 rs1 funct3 imm[4:0] opcode`       | `sw`                 |
+| B       | `imm[12,10:5] rs2 rs1 funct3 imm[4:1,11] opcode` | `beq`                |
+| U       | `imm[31:12] rd opcode`                           | `lui`, `auipc`       |
+| J       | `imm[20,10:1,11,19:12] rd opcode`                | `jal`                |
 
-Usa `lb` quando o byte representa um número com sinal (por exemplo um `char` em C) e `lbu` quando representa um valor de 0 a 255. O `sb` escreve um único byte sem mexer nos vizinhos, o que é essencial para cadeias de caracteres e estruturas compactas.
+Os tamanhos de `opcode`, `rd`, `funct3`, `rs1`, `rs2` são 7, 5, 3, 5 e 5 bits. Em `lw t2,40(t6)`, `rd=7`, `rs1=31`, `funct3=2`, `opcode=3` e `imm=40`:
 
-Tal como no LEGv8, só as instruções de acesso tocam na memória; todo o resto trabalha entre registos. É a filosofia _load-store_ dos RISC.
+$$
+(40\ll20)\;|\;(31\ll15)\;|\;(2\ll12)\;|\;(7\ll7)\;|\;3
+=\mathtt{0x028FA383}.
+$$
+
+Em B e J, o bit zero do deslocamento é implícito. Reconstrói o deslocamento com sinal **em bytes**, antes de o somar ao PC da própria instrução. Para um salto de `0x100` para `0x0F0`, o deslocamento é −16, não −20.
 
 ## Saltos e decisões
 
-Os saltos condicionais comparam dois registos e saltam se a condição se verificar:
+`beq/bne` comparam igualdade. `blt/bge` comparam com sinal; `bltu/bgeu`, sem sinal. Se não houver salto, o PC avança 4 bytes neste modelo sem instruções comprimidas.
 
-```riscv
-beq  t0, zero, fim  # salta se t0 == 0
-bne  t0, t1, ciclo  # salta se t0 != t1
-blt  t0, t1, menor  # salta se t0 < t1 (com sinal)
-bge  t0, t1, maior  # salta se t0 >= t1
-```
+`jal ra,funcao` guarda `PC+4` em `ra`. `jalr rd,imm(rs1)` guarda também `PC+4` e salta para `(rs1+imm) & ~1`. `ret` é a pseudoinstrução `jalr zero,0(ra)`.
 
-Não há instrução de comparação separada nem flags: a comparação vive dentro do salto. Para condições compostas, combina com `slt`: calcula o resultado para um temporário e testa-o com `beq` ou `bne` contra `zero`.
+Uma pseudoinstrução pode expandir-se em várias instruções reais. `mv t0,t1` equivale a `addi t0,t1,0`; `j L`, a `jal zero,L`. `li`, `la` e `call` dependem da constante ou distância. **Conta as instruções expandidas** se o problema pedir ciclos ou códigos máquina.
 
-Os saltos para procedimentos usam `jal` (_jump and link_) e `jalr`:
-
-```riscv
-jal  ra, soma       # ra = PC + 4; PC = endereço de soma
-jalr zero, 0(ra)    # PC = ra; regresso (equivale a ret)
-```
-
-`jal ra, soma` guarda em `ra` o endereço da instrução seguinte e salta. No fim da função, `jalr zero, 0(ra)` salta para esse endereço guardado. O `ret` que vês nos exemplos é só um nome simpático para esta segunda instrução.
-
-## Um exemplo completo: somar um vetor
-
-Soma os 100 inteiros de 32 bits guardados a partir do endereço em `a0` e devolve o total em `a0`:
-
-```riscv
-soma_vetor:
-    li    t0, 0        # t0 = soma acumulada
-    li    t1, 0        # t1 = índice i
-ciclo:
-    bge   t1, a1, fim  # se i >= n (em a1), termina
-    slli  t2, t1, 2    # t2 = i * 4 (cada inteiro ocupa 4 bytes)
-    add   t2, a0, t2   # t2 = endereço de vetor[i]
-    lw    t3, 0(t2)    # t3 = vetor[i]
-    add   t0, t0, t3   # soma += vetor[i]
-    addi  t1, t1, 1    # i++
-    jal   zero, ciclo  # repete
-fim:
-    mv    a0, t0       # devolve a soma em a0
-    jalr  zero, 0(ra)
-```
-
-Segue com valores pequenos para verificar: vetor `[5, 7]` em algum endereço base `B`, com `n = 2`. Na primeira volta, `t2 = 0`, lê-se `memória[B] = 5`, a soma fica 5. Na segunda, `t2 = 4`, lê-se `memória[B+4] = 7`, a soma fica 12. Na terceira, `t1 = 2`, o `bge` confirma e sai do ciclo com `a0 = 12`.
-
-Corre a mesma soma com o vetor `[5, 7]` definido na secção de dados. O programa imprime `12` com uma chamada de sistema e termina:
-
-<CodePlayground
-  language="riscv"
-  title="Soma de um vetor curto"
-  code={`.text
-.globl main
-main:
-    la a0, vetor
-    li a1, 2
-    jal ra, soma_vetor
-    li a7, 1
-    ecall
-    li a7, 10
-    ecall
-soma_vetor:
-    li t0, 0
-    li t1, 0
-ciclo:
-    bge t1, a1, fim
-    slli t2, t1, 2
-    add t2, a0, t2
-    lw t3, 0(t2)
-    add t0, t0, t3
-    addi t1, t1, 1
-    jal zero, ciclo
-fim:
-    mv a0, t0
-    jalr zero, 0(ra)
-.data
-vetor: .word 5, 7`}
-/>
-
-O editor corre RISC-V de 32 bits com as chamadas de sistema do RARS: `ecall` com `a7 = 1` imprime o inteiro em `a0` e com `a7 = 10` termina o programa. No qtrvsim, as chamadas de sistema seguem a mesma convenção do SPIM para estes dois casos: `1` imprime inteiro, `10` termina.
-
-Duas instruções novas merecem atenção. `li` (_load immediate_) carrega uma constante qualquer num registo, o assembler trata de a decompor se ela não couber no imediato. `mv a0, t0` copia um registo para outro e é na verdade `addi a0, t0, 0`. Vais ver muitas destas pseudo-instruções nos exemplos: são abreviaturas que o assembler traduz para instruções reais.
-
-:::tip[Como ler um salto]
-Quando vires `bge t1, a1, fim`, lê em voz alta: "se t1 for maior ou igual a a1, vai para fim". Confirma sempre qual é o caso de saída e qual é o caso de continuar, porque trocar os dois é o erro mais comum nestes ciclos.
-:::
-
-## Correr nos simuladores
-
-O playground acima chega para exemplos curtos. Para os trabalhos, usa um simulador completo, que mostra registos e memória a cada instrução:
-
-<Tabs id="simuladores-riscv" labels={['qtrvsim', 'RARS']}>
-  <div slot="panel-0">
-
-Guarda o programa num ficheiro `.s`, abre-o no qtrvsim e corre instrução a instrução. Observa `ra` antes e depois de cada `jal` e confirma que `sp` só mexe dentro das funções que reservam pilha.
-
-  </div>
-  <div slot="panel-1">
-
-Abre o RARS, monta o mesmo ficheiro e corre instrução a instrução. As chamadas de sistema `1` e `10` comportam-se como no exemplo acima, por isso o que imprimires num lado imprime no outro.
-
-  </div>
-</Tabs>
+Para formar `0x12345ABC` com `lui/addi`, a parte baixa `0xABC` é negativa como imediato de 12 bits: −1348. Usa `lui t0,0x12346` seguido de `addi t0,t0,-1348`. O incremento da parte alta compensa essa extensão de sinal.
 
 ## Chamadas e a pilha
 
-Uma função que chama outra função tem um problema: a chamada interior escreve o seu próprio endereço de regresso em `ra` e apaga o da função atual. A solução é a pilha, que cresce para endereços mais baixos e se gere com `sp`:
-
-```riscv
-maximo_3:
-    addi  sp, sp, -16  # reserva 16 bytes (a pilha mantém-se alinhada a 16)
-    sd    ra, 8(sp)    # guarda o endereço de regresso
-    sd    s0, 0(sp)    # guarda s0, que vamos usar
-    # ... corpo: chama maximo_2, usa s0 à vontade ...
-    ld    s0, 0(sp)    # repõe s0
-    ld    ra, 8(sp)    # repõe o regresso
-    addi  sp, sp, 16   # liberta a zona
-    jalr  zero, 0(ra)
-```
-
-A disciplina é rígida: reserva no início, guarda `ra` e todos os `s` que usares, repõe pela ordem inversa no fim. Uma função que não chama ninguém (_leaf_) e só usa temporários pode saltar a pilha toda. E lembra-te de que os argumentos vão em `a0`–`a7` e o resultado volta em `a0`: é assim que o chamador e o chamado combinam sem partilhar mais nada.
-
-O diagrama mostra a pilha antes e depois da reserva: `sp` desce 16 bytes e a zona nova guarda `ra` e `s0`.
+O chamador guarda temporários de que precisa depois de uma chamada. O chamado guarda e repõe os `s` que altera. Uma função que chama outra deve proteger o seu `ra`. A pilha cresce para endereços menores e mantém alinhamento de 16 bytes na convenção usada aqui.
 
 <Typst
   source={pilha}
   format="svg"
-  alt="Pilha antes e depois de reservar 16 bytes: sp desce e a zona nova guarda ra em 8(sp) e s0 em 0(sp)."
+  alt="Frame RV32 de 16 bytes: s0 em 0(sp), ra em 12(sp), espaço intermédio livre e sp restaurado no retorno."
 />
 
-Corre este padrão no qtrvsim ou no RARS com uma função que chama outra e observa `ra` e `sp` a cada passo. Ver o endereço de regresso a ser guardado e reposto tira a magia toda ao mecanismo.
+O programa seguinte calcula `dobro(7)+5 = 19`. `s0` conserva o 5 durante a chamada; o `ra` exterior fica no frame. As funções não usam variáveis globais para guardar retornos, permitindo chamadas aninhadas.
 
-## Para saber mais
+<CodePlayground
+  language="riscv"
+  title="Chamada RV32 com frame de pilha"
+  code={exemplo}
+/>
 
-- [qtrvsim](https://github.com/cvut/qtrvsim): o simulador usado nos trabalhos, com código fonte e manuais.
-- [RARS](https://github.com/TheThirdOne/rars): simulador em Java para montar e correr RISC-V com chamadas de sistema.
-- [Especificações oficiais do RISC-V](https://riscv.org/technical/specifications/): os volumes ratificados, incluindo o conjunto base não privilegiado.
-
-## Para levar para a próxima página
-
-Com o assembly assente, a pergunta passa a ser quanto tempo cada programa demora. A página sobre [desempenho](desempenho/) define o tempo de execução, o CPI e a lei de Amdahl, as três ferramentas com que vais comparar todas as técnicas desta cadeira.
+As chamadas `ecall` deste bloco usam os serviços do simulador: imprimir inteiro com `a7=1` e terminar com `a7=10`. São a interface de execução do exemplo, não instruções de entrada e saída universais de RV32.

@@ -1,17 +1,14 @@
-#import "@preview/fletcher:0.5.8": diagram, node, edge
 #set page(width: auto, height: auto, margin: 8pt)
 #set text(size: 10pt)
-#diagram(
-  node-stroke: 1pt + rgb("8c2d3b"), node-fill: rgb("f3e9e9"), spacing: (28pt, 22pt),
-  node((0, 0), [zona livre], corner-radius: 4pt),
-  node((1, 0), [`sp` aponta aqui antes], corner-radius: 10pt),
-  edge((0, 0), (1, 0)),
-  node((0, 1), [`ra` guardado em `8(sp)`], corner-radius: 4pt),
-  node((0, 2), [`s0` guardado em `0(sp)`], corner-radius: 4pt),
-  node((1, 2), [`sp` aponta aqui depois ($-16$)], corner-radius: 10pt),
-  edge((0, 2), (1, 2)),
-  node((0, 3), [resto da pilha], corner-radius: 4pt),
-  edge((0, 0), (0, 1), "-|>"),
-  edge((0, 1), (0, 2), "-|>"),
-  edge((0, 2), (0, 3), "-|>"),
+#table(
+  columns: (auto, auto, auto),
+  inset: 8pt,
+  stroke: .6pt + rgb("8c2d3b"),
+  table.header([Endereço], [Conteúdo RV32], [Posição no frame]),
+  [sp antigo], [Fora do frame], [sp novo + 16],
+  [sp novo + 12], [ra guardado · 4 bytes], [12(sp)],
+  [sp novo + 4 a 11], [Espaço livre · 8 bytes], [],
+  [sp novo], [s0 guardado · 4 bytes], [0(sp)],
 )
+#v(6pt)
+Reserva: `sp ← sp − 16`. Retorno: repor s0 e ra; `sp ← sp + 16`.

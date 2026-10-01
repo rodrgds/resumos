@@ -1,30 +1,19 @@
-#import "@preview/fletcher:0.5.8": diagram, node, edge
 #set page(width: auto, height: auto, margin: 8pt)
 #set text(size: 10pt)
-#diagram(
-  node-stroke: 1pt + rgb("8c2d3b"), node-fill: rgb("f3e9e9"), spacing: (18pt, 22pt),
-  node((0, 0), [`v0[i]`], corner-radius: 4pt),
-  node((1, 0), [`v0[i]`], corner-radius: 4pt),
-  node((2, 0), [`v0[i]`], corner-radius: 4pt),
-  node((3, 0), [`v0[i]`], corner-radius: 4pt),
-  node((0, 1), [`v1[i]`], corner-radius: 4pt),
-  node((1, 1), [`v1[i]`], corner-radius: 4pt),
-  node((2, 1), [`v1[i]`], corner-radius: 4pt),
-  node((3, 1), [`v1[i]`], corner-radius: 4pt),
-  node((0, 2), [+], corner-radius: 10pt),
-  node((1, 2), [+], corner-radius: 10pt),
-  node((2, 2), [+], corner-radius: 10pt),
-  node((3, 2), [+], corner-radius: 10pt),
-  node((0, 3), [soma], corner-radius: 4pt),
-  node((1, 3), [soma], corner-radius: 4pt),
-  node((2, 3), [soma], corner-radius: 4pt),
-  node((3, 3), [soma], corner-radius: 4pt),
-  edge((0, 0), (0, 2), "-|>", bend: 15deg),
-  edge((0, 1), (0, 2), "-|>", bend: -15deg),
-  edge((3, 0), (3, 2), "-|>", bend: 15deg),
-  edge((3, 1), (3, 2), "-|>", bend: -15deg),
-  edge((0, 2), (0, 3), "-|>"),
-  edge((1, 2), (1, 3), "-|>"),
-  edge((2, 2), (2, 3), "-|>"),
-  edge((3, 2), (3, 3), "-|>"),
+#table(
+  columns: (auto, auto, auto, auto, auto),
+  inset: 8pt,
+  stroke: .6pt + rgb("8c2d3b"),
+  table.header(
+    [Via],
+    [B3 · bits 31–24],
+    [B2 · bits 23–16],
+    [B1 · bits 15–8],
+    [B0 · bits 7–0],
+  ),
+  [a], [4], [3], [2], [250],
+  [b], [40], [30], [20], [10],
+  [ADD8(a,b)], [44], [33], [22], [4],
 )
+#v(6pt)
+Cada soma é reduzida módulo 256. O carry de B0 não passa para B1.
