@@ -11,13 +11,14 @@ editorial:
       url: https://moodle2627.up.pt/course/view.php?id=4363
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
-  coverage: Listas, compreensões, recursão, inserção, merge sort, grupos, divisores e representação binária.
+  coverage: Compreensões, recursão, ordenação, intercalação, inserções e permutações, conversão binária total e análise dos casos limite.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
 import programa from '../../pfl/listas.hs?raw';
+import construir from '../../pfl/construir-listas.hs?raw';
 import divisao from '../../pfl/mergesort.dot?raw';
 
 Uma lista tem duas formas: `[]` ou `x:xs`. Esta definição dá-nos os casos que uma função precisa de tratar. Para somar, a lista vazia contribui com zero; para uma lista não vazia, somamos a cabeça ao resultado da cauda. Para construir outra lista, usamos `:` para colocar um elemento antes do resultado recursivo.
@@ -119,6 +120,64 @@ A saída é `[1,1,3,4]` duas vezes, `"abc"`, `["AA","BBB","AA"]` e `11`. O dupli
 Ler um bit depois do prefixo equivale a multiplicar o valor anterior por dois e somar o bit. Para `[1,0,1,1]`, os acumuladores são `0`, `1`, `2`, `5`, `11`. Isto dá `foldl (\n b -> 2*n+b) 0`.
 
 A função pressupõe que cada elemento é `0` ou `1`. O tipo `[Integer]` não impõe essa regra; verifica `all (\b -> b==0 || b==1) bits` se a entrada não for controlada. Para converter no sentido inverso, divide por dois, recolhe os restos e inverte a lista. Define ainda que representação queres para zero, normalmente `[0]`, e exclui números negativos ou especifica outra codificação.
+
+## Intercalar sem acrescentar nas pontas
+
+Queremos pôr um separador **entre** elementos. Para `intercalar '-' "rt"`, o resultado é `"r-t"`. A lista vazia continua vazia; um elemento fica sozinho. Estes dois casos impedem um separador no fim:
+
+```haskell
+intercalar :: a -> [a] -> [a]
+intercalar _ [] = []
+intercalar _ [x] = [x]
+intercalar s (x:xs) = x:s:intercalar s xs
+```
+
+A última equação só é usada quando há pelo menos dois elementos, porque os casos anteriores já trataram zero e um. Conservamos a cabeça e pomos o separador antes do resto. Em `"rto"`, a primeira chamada produz `r`, `-` e pede a intercalação de `"to"`; o resultado completo é `"r-t-o"`. Cada chamada trabalha sobre uma cauda menor.
+
+## Inserir em todas as posições e permutar
+
+Inserir `x` em todas as posições de `"ab"` dá `["xab","axb","abx"]`. Há uma possibilidade antes da cabeça; nas restantes, conservamos a cabeça e inserimos mais adiante:
+
+```haskell
+posicoes :: a -> [a] -> [[a]]
+posicoes x [] = [[x]]
+posicoes x (y:ys) = (x:y:ys) : map (y:) (posicoes x ys)
+
+permutar :: [a] -> [[a]]
+permutar [] = [[]]
+permutar (x:xs) = concatMap (posicoes x) (permutar xs)
+```
+
+`posicoes x []` dá uma **lista com uma possibilidade**, `[[x]]`. Já `permutar []` dá `[[]]`, porque existe uma ordenação da lista vazia. Se devolvesse `[]`, não haveria uma possibilidade onde inserir o elemento na chamada anterior.
+
+Para permutar `"ab"`, começamos pela cauda `"b"`, cuja única permutação é `"b"`. Inserir `a` nas duas posições produz `"ab"` e `"ba"`. Para `"abc"`, a cauda tem duas permutações; cada uma dá três posições para `a`, portanto seis resultados.
+
+O tipo não exige `Eq`: trata ocorrências, mesmo quando os valores são iguais. `permutar "aa"` produz `"aa"` duas vezes. Com `n` elementos há `n!` resultados nesta enumeração; visitar ou imprimir os `n` elementos de cada resultado já exige ordem `n*n!` operações. Não uses este método como procura eficiente para entradas grandes. A construção termina para listas finitas, mas o número de possibilidades cresce depressa.
+
+## Converter inteiro para bits
+
+O primeiro resto de dividir por dois é o bit menos significativo. Para `10`, as divisões sucessivas são `10/2`, `5/2` e `2/2`, seguidas de `1/2`. Os restos surgem como `[0,1,0,1]`; inverter dá `[1,0,1,0]`.
+
+```haskell
+toBits :: Integer -> Maybe [Integer]
+toBits n
+  | n < 0 = Nothing
+  | n == 0 = Just [0]
+  | otherwise = Just (reverse (restos n))
+  where
+    restos 0 = []
+    restos k = k `mod` 2 : restos (k `div` 2)
+```
+
+O contrato deste exemplo é binário sem sinal: um argumento negativo dá `Nothing`, e zero tem representação `[0]`. Para um positivo, o quociente é estritamente menor, por isso acaba em zero. Não uses a mesma recursão para um negativo: em Haskell, `(-1) div 2` continua a dar `-1`.
+
+<CodePlayground
+  language="haskell"
+  code={construir}
+  title="Intercalação, posições, permutações e bits"
+/>
+
+O programa imprime `"r-t"`, `""`, `"r"`, `["xab","axb","abx"]`, `["ab","ba"]`, `["aa","aa"]`, `6` e `[Nothing,Just [0],Just [1,0,1,0]]`. Refaz os resultados antes de correr. As escolhas para zero e negativos são parte do contrato, não consequências impostas pelo tipo `Integer`.
 
 ## Rever a construção da recursão
 
