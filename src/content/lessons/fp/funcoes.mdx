@@ -1,19 +1,19 @@
 ---
 title: Funções
-description: Definir funções, parâmetros e argumentos, return, âmbito de variáveis e docstrings.
+description: Contratos, retorno, argumentos, âmbito léxico, efeitos e decomposição de problemas.
 section: conteudo
 order: 3
+practices:
+  - fp/praticar-funcoes
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import pilha from '../../fp/pilha-quadrado.typ?raw';
 
-Quando um programa cresce, repetir o mesmo código em vários sítios torna-se insustentável: qualquer correção tem de ser feita em cada cópia. A solução é dar um nome a um bloco de código e chamá-lo quando precisares. Esse bloco é uma **função**: recebe valores de entrada (argumentos), executa instruções e, em geral, devolve um resultado.
+Queremos decidir se um número é perfeito. Em vez de misturar leitura, procura de divisores e apresentação, separamos o cálculo numa função que recebe um inteiro e devolve um booleano. Assim podemos testar o mesmo cálculo sem pedir dados ao utilizador.
 
 ## Definir e chamar
 
-Uma função define-se com `def`, seguida do nome, dos **parâmetros** entre parênteses e de dois pontos. O corpo vem indentado. Para a usar, **chamas** o nome com os valores concretos, os **argumentos**:
+`def` define uma função. Os nomes na definição são **parâmetros**; os valores de uma chamada são **argumentos**. Em `quadrado(5)`, o parâmetro `x` recebe o objeto inteiro 5 e `return x * x` devolve 25.
 
 ```python
 def quadrado(x):
@@ -23,110 +23,84 @@ print(quadrado(5))
 print(quadrado(2) + quadrado(3))
 ```
 
-Isto escreve `25` e `13`. Na primeira chamada, o parâmetro `x` recebe `5` e a função devolve `25`. Os parâmetros são as caixas vazias na definição; os argumentos são os valores que lá colocas em cada chamada.
+A saída é `25` e `13`. Definir a função não executa o seu corpo. Cada chamada tem os seus nomes locais. O resultado de uma chamada pode participar noutra expressão.
 
-A pilha seguinte mostra a chamada `quadrado(5)` passo a passo: o argumento entra, o corpo calcula e o resultado sai.
+## Return e print
 
-<Typst
-  source={pilha}
-  format="svg"
-  alt="Pilha da chamada quadrado de 5: o argumento entra, x vale 5, o corpo calcula 5 vezes 5 e a função devolve 25."
-/>
-
-A instrução `return` termina a função e entrega o resultado a quem chamou. O código escrito depois de um `return` no mesmo bloco nunca executa; chama-se **código morto** e é quase sempre um engano.
-
-## Funções que devolvem e procedimentos que não devolvem
-
-Há funções que calculam um resultado, como `quadrado`, e há blocos que apenas produzem um efeito, como escrever no ecrã. Estes últimos chamam-se **procedimentos**: não têm `return` com valor, ou não têm `return` nenhum.
+`return` termina a chamada e entrega um valor ao chamador. `print` escreve na saída e devolve `None`. Uma função que chega ao fim sem `return`, ou executa `return` sem expressão, também devolve `None`.
 
 ```python
 def saudar(nome):
-    print('Olá,', nome)
+    print("Olá,", nome)
 
-resposta = saudar('Ana')
+resposta = saudar("Ana")
 print(resposta)
 ```
 
-Isto escreve `Olá, Ana` e depois `None`. A chamada executa o `print` interior (o efeito), mas como a função não devolve nada, Python atribui-lhe o resultado especial `None`. A lição: uma função sem `return` útil não serve para usar dentro de expressões; serve para fazer coisas. Misturar os dois papéis, uma função que ora devolve ora escreve no ecrã, é uma fonte comum de confusão nos exercícios.
+A saída é `Olá, Ana` e depois `None`. A saudação é um efeito da chamada, não o seu resultado. Se pretendes reutilizar o texto, escreve `return "Olá, " + nome` e imprime apenas fora da função. Num exercício que pede uma função, confirma se deve devolver ou imprimir.
 
-## Âmbito das variáveis
+## Contrato e decomposição
 
-Uma variável criada **dentro** de uma função é **local**: só existe durante a execução dessa função e desaparece a seguir. Isto é uma proteção, não uma limitação: podes reutilizar o mesmo nome noutra função sem interferências.
-
-```python
-def dobrar(x):
-    resultado = 2 * x
-    return resultado
-
-print(dobrar(4))
-```
-
-Depois da chamada, o nome `resultado` já não existe fora da função; tentar usá-lo dá erro. O tempo de vida de uma variável local é exatamente a duração da chamada.
-
-O problema simétrico também existe: se dentro da função atribuíres a um nome que também existe fora, estás a criar uma variável local nova, e a de fora fica intocada.
-
-```python
-total = 10
-
-def juntar(n):
-    total = total + n
-    return total
-```
-
-Chamar `juntar(5)` dá erro de execução (`UnboundLocalError`[^unbound]), porque dentro da função `total` é tratado como variável local, mas é lido antes de receber valor. A regra de ouro para esta fase da cadeira: passa tudo o que a função precisa como argumentos e recebe o resultado com `return`. Evita variáveis globais e a instrução `nonlocal`, que só aparecem nos temas avançados.
-
-## Docstrings e ajuda
-
-A primeira linha do corpo pode ser uma string que descreve o que a função faz. Chama-se **docstring** e aparece quando pedes ajuda sobre a função:
-
-```python
-def media(a, b):
-    """Devolve a média aritmética de a e b."""
-    return (a + b) / 2
-
-help(media)
-```
-
-Escrever uma docstring curta em cada função é um hábito barato e útil: obriga-te a dizer o que a função recebe e devolve antes de a escreveres, e muitas vezes é aí que descobres que ainda não sabes.
-
-Podes ver a execução passo a passo, com a pilha e as variáveis, no [Python Tutor](https://pythontutor.com/): cola lá a função `quadrado` e segue a chamada.
-
-## Exemplo completo: números perfeitos
-
-Um número inteiro positivo é **perfeito** quando é igual à soma dos seus divisores próprios (os divisores excluindo ele próprio). Por exemplo, $6 = 1 + 2 + 3$ é perfeito, mas $12 \neq 1 + 2 + 3 + 4 + 6 = 16$ não é. Vamos organizar a solução em duas funções: uma que soma os divisores e outra que usa essa soma para decidir.
-
-```python
-def soma_divisores(n):
-    """Devolve a soma dos divisores próprios de n."""
-    soma = 0
-    for d in range(1, n):
-        if n % d == 0:
-            soma += d
-    return soma
-
-def e_perfeito(n):
-    """Devolve True se n for um número perfeito."""
-    return n > 0 and soma_divisores(n) == n
-
-print(e_perfeito(6))
-print(e_perfeito(12))
-print(e_perfeito(28))
-```
-
-Isto escreve `True`, `False` e `True`. Confere o `28`: os divisores próprios são $1, 2, 4, 7, 14$ e a soma é $1 + 2 + 4 + 7 + 14 = 28$. Repara na organização: `soma_divisores` resolve um subproblema bem definido e `e_perfeito` reutiliza-o sem saber como o ciclo interior funciona. Isto é **abstração procedimental**: cada função esconde os seus detalhes e expõe apenas o que recebe e o que devolve. Quando dividires um exercício em funções desta forma, testar cada uma em separado fica muito mais fácil.
-
-Corre os três testes e confirma as respostas.
+O **contrato** indica o que a função recebe, as condições exigidas e o resultado. Uma docstring descreve esse contrato; não muda a execução.
 
 <CodePlayground
   language="python"
-  title="Testar números perfeitos"
+  title="Reconhecer números perfeitos"
+  input=""
   code={
-    'def soma_divisores(n):\n    soma = 0\n    for d in range(1, n):\n        if n % d == 0:\n            soma += d\n    return soma\n\ndef e_perfeito(n):\n    return n > 0 and soma_divisores(n) == n\n\nprint(e_perfeito(6))\nprint(e_perfeito(12))\nprint(e_perfeito(28))'
+    'def soma_divisores(n):\n    """Soma os divisores próprios do inteiro positivo n."""\n    soma = 0\n    for d in range(1, n):\n        if n % d == 0:\n            soma += d\n    return soma\n\ndef e_perfeito(n):\n    return n > 0 and soma_divisores(n) == n\n\nprint(e_perfeito(6), e_perfeito(12), e_perfeito(28))\nprint(e_perfeito(1), e_perfeito(0))'
   }
 />
 
-:::tip[Como decompor com funções]
-Se o enunciado pedir um programa com vários passos, escreve primeiro uma função para cada passo com um nome claro, mesmo antes de saberes implementá-las. Depois implementa uma de cada vez e testa-a com valores conhecidos. Reorganizar código desta forma, extrair blocos para funções com nomes honestos, é metade do trabalho de programar bem.
-:::
+Os divisores próprios de 6 são 1, 2 e 3, cuja soma é 6. Os de 12 somam 16, por isso 12 não é perfeito. Para 28, $1+2+4+7+14=28$. O 1 tem soma vazia de divisores próprios, igual a zero, por isso não é perfeito.
 
-[^unbound]: Documentação oficial do Python, [`UnboundLocalError`](https://docs.python.org/3/library/exceptions.html#UnboundLocalError).
+A função exterior decide; a interior resolve a soma. `n > 0 and ...` evita chamar a função interior fora da sua condição de entrada. Testamos um caso positivo, um negativo na decisão, a fronteira 1 e a entrada zero.
+
+## Âmbito das variáveis
+
+O **âmbito** diz onde um nome pode ser usado. Um nome atribuído dentro de uma função é normalmente local a essa função. A função procura nomes no âmbito local, nos âmbitos envolventes, no módulo e nos nomes predefinidos. Esta procura segue a estrutura do código, o **âmbito léxico**, não as variáveis locais de quem chamou.
+
+```python
+valor = 10
+
+def dobrar(valor):
+    return 2 * valor
+
+print(dobrar(4), valor)
+```
+
+A saída é `8 10`. O parâmetro local não altera a associação global. Se atribuíres a `valor` no corpo, Python trata-o como local nesse corpo. Ler esse local antes de o definir causa `UnboundLocalError`. `global` permite reatribuir um nome do módulo, mas cria uma dependência adicional; prefere parâmetros e retorno para um cálculo.
+
+Uma função pode conservar acesso a nomes de uma função envolvente mesmo depois de essa chamada acabar. Veremos esse comportamento, uma closure, em [programação funcional](/cadeiras/fp/programacao-funcional/#devolver-funções-e-âmbito-léxico). Por isso, não confundas âmbito com a afirmação de que todos os objetos locais são destruídos no fim da chamada.
+
+## Passagem de argumentos e efeitos
+
+Python associa o parâmetro ao objeto passado. Reatribuir o parâmetro muda só o nome local; alterar um objeto mutável pode afetar o chamador.
+
+<CodePlayground
+  language="python"
+  title="Reatribuir e alterar são operações diferentes"
+  input=""
+  code={
+    'def reatribuir(valores):\n    valores = [99]\n\ndef acrescentar(valores):\n    valores.append(99)\n\nnumeros = [1, 2]\nreatribuir(numeros)\nprint(numeros)\nacrescentar(numeros)\nprint(numeros)'
+  }
+/>
+
+A primeira função cria outra lista para o seu parâmetro. A segunda altera a lista partilhada. A saída torna essa diferença visível. Para escrever uma função livre deste efeito, devolve uma nova lista, por exemplo `return valores + [99]`, sem alterar `valores`.
+
+## Argumentos por nome e valores por defeito
+
+Em `def potencia(base, expoente=2):`, podes chamar `potencia(3)` ou `potencia(base=3, expoente=4)`. Um argumento por nome identifica o parâmetro. Os parâmetros obrigatórios anteriores não deixam de ser necessários.
+
+Os valores por defeito são calculados quando `def` executa, não em cada chamada. Uma lista usada como valor por defeito fica partilhada entre chamadas. Para criar uma lista nova quando não é passada nenhuma, usa `None` como sinal e cria-a no corpo.
+
+```python
+def juntar(valor, valores=None):
+    if valores is None:
+        valores = []
+    return valores + [valor]
+
+print(juntar(1), juntar(2))
+```
+
+A saída é `[1] [2]`. O `is None` testa o objeto especial `None`, que é o uso apropriado de identidade neste caso. O contrato desta função também conserva qualquer lista recebida.

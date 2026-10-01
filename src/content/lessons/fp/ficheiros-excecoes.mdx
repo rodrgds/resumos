@@ -1,178 +1,112 @@
 ---
-title: Ficheiros e exceções
-description: Módulos e imports, leitura e escrita de ficheiros, try e except, raise e asserções.
+title: Ficheiros, exceções e testes
+description: Módulos, persistência em texto, CSV, tratamento de falhas, asserções e depuração.
 section: conteudo
 order: 11
+practices:
+  - fp/praticar-ficheiros-excecoes
 ---
 
-import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Até aqui, os dados viviam apenas durante a execução: quando o programa terminava, tudo desaparecia. A **persistência** resolve isto guardando dados em **ficheiros** que sobrevivem ao programa. E como ficheiros podem faltar, entradas podem vir malformadas e contas podem falhar, a segunda metade da página trata os erros em execução sem deixar o programa morrer: **exceções**.
+O resultado de um programa pode precisar de sobreviver ao fim da execução. Um ficheiro guarda dados, mas também cria situações de falha: o caminho pode faltar, a codificação pode ser diferente ou o texto pode não representar o número esperado.
 
-## Módulos e imports
+## Módulos e organização
 
-Um **módulo** é um ficheiro com definições de Python destinadas a serem usadas noutros programas. Importá-lo dá acesso às suas funções. A biblioteca padrão traz módulos para matemática, aleatoriedade, ficheiros e muito mais.
+Um módulo é normalmente um ficheiro `.py` com definições e instruções. `import math` permite usar `math.sqrt`; `from math import sqrt` introduz `sqrt` no âmbito atual. Evita `import *`, porque torna a origem dos nomes menos clara.
 
 ```python
 import math
-print(math.sqrt(2))
-print(math.pi)
+
+print(math.isclose(math.sqrt(2) ** 2, 2.0))
 ```
 
-Isto escreve `1.4142135623730951` e `3.141592653589793`. Há três formas de importar: `import math` (usa-se `math.sqrt`); `from math import sqrt, pi` (usa-se `sqrt` diretamente); e `import math as m` (abreviatura). Cada módulo tem o seu próprio **espaço de nomes**: a coleção de identificadores que ele define. É por isso que dois módulos podem definir funções com o mesmo nome sem conflito; o prefixo diz qual estás a chamar.
-
-Também podes criar os teus módulos: qualquer ficheiro `.py` na mesma pasta pode ser importado pelo nome (sem a extensão). Agrupar funções relacionadas num módulo e importá-lo onde precisas é o primeiro passo para programas maiores.
-
-Por exemplo, um ficheiro `soma.py` com `def soma(a, b): return a + b` usa-se assim noutro ficheiro da mesma pasta:
-
-```python
-import soma
-print(soma.soma(2, 3))
-```
-
-Isto escreve `5`. O nome do ficheiro vira o nome do módulo; o prefixo `soma.` diz de onde vem a função.
+A saída é `True`. A comparação aceita uma pequena diferença numérica. Para separar um módulo reutilizável da execução direta, usa `if __name__ == "__main__":` junto do código de entrada e saída. Ao importar, as instruções no nível do módulo executam; esse guarda evita correr a interface de entrada como efeito da importação.
 
 ## Ler e escrever ficheiros
 
-O padrão para trabalhar com ficheiros usa `open` dentro de um bloco `with`, que fecha o ficheiro automaticamente no fim, mesmo que algo corra mal:
+`open(caminho, modo, encoding="utf-8")` abre um ficheiro de texto. Um caminho relativo é interpretado a partir da pasta de trabalho do processo, não automaticamente da pasta onde está o programa.
 
-```python
-with open('notas.txt', 'w') as f:
-    f.write('Ana 17\nBruno 12\n')
+| Modo  | Comportamento                                 |
+| ----- | --------------------------------------------- |
+| `"r"` | Ler; falha se o ficheiro não existir          |
+| `"w"` | Criar ou substituir todo o conteúdo existente |
+| `"a"` | Acrescentar no fim, criando se faltar         |
+| `"x"` | Criar e falhar se o ficheiro já existir       |
 
-with open('notas.txt', 'r') as f:
-    conteudo = f.read()
-print(conteudo)
-```
-
-Isto escreve as duas linhas no ecrã. O modo `'w'` cria o ficheiro se não existir e **apaga** o conteúdo se existir; o modo `'r'` lê; o modo `'a'` acrescenta no fim sem apagar. O `\n` marca o fim de cada linha na escrita. Para processar linha a linha, itera diretamente sobre o ficheiro ou usa `readlines()`, que devolve a lista das linhas:
-
-```python
-with open('notas.txt', 'r') as f:
-    for linha in f:
-        nome, nota = linha.split()
-        print(nome, int(nota))
-```
-
-Isto escreve `Ana 17` e `Bruno 12`. Cada `linha` inclui o `\n` final, mas o `split()` corta nos espaços e ignora-o. A conversão `int(nota)` é necessária porque tudo o que vem de um ficheiro de texto é texto.
-
-:::warning[O modo 'w' apaga sem perguntar]
-Abrir um ficheiro existente em modo `'w'` destrói o conteúdo anterior imediatamente. Se queres acrescentar, usa `'a'`; se queres ler sem alterar, usa `'r'`. Antes de correres um programa que escreve ficheiros, confirma o modo e o nome do ficheiro.
-:::
-
-## Exceções: try, except, else e finally
-
-Quando ocorre um erro em execução, Python levanta uma **exceção** e o programa termina, a menos que a captures. O bloco `try` tenta executar código; se uma exceção ocorrer, o bloco `except` correspondente trata-a; o `else` opcional corre quando não houve erro; o `finally` opcional corre sempre, com ou sem erro.
-
-```python
-def ler_inteiro(texto):
-    try:
-        valor = int(texto)
-    except ValueError:
-        print('Não é um inteiro válido')
-        return None
-    else:
-        print('Conversão conseguida')
-        return valor
-    finally:
-        print('Fim da tentativa')
-
-print(ler_inteiro('42'))
-print(ler_inteiro('abc'))
-```
-
-Isto escreve, para `'42'`: `Conversão conseguida`, `Fim da tentativa` e `42`. Para `'abc'`: `Não é um inteiro válido`, `Fim da tentativa` e `None`. Repara que o `except` captura apenas `ValueError`: capturar o tipo específico evita esconder outros erros (um `KeyboardInterrupt` ou um erro de programação não devem ser silenciados pelo mesmo ramo).
-
-O fluxo mostra os quatro ramos: tenta, trata o erro, corre o `else` sem erro e passa sempre pelo `finally`.
-
-<Dot
-  source={
-    'digraph { rankdir=TB; try [shape=box, label="try"]; except [label="except ValueError"]; els [label=else]; fin [label=finally]; fim [shape=box]; try -> except [label="erro"]; try -> els [label="sem erro"]; except -> fin; els -> fin; fin -> fim; }'
-  }
-  alt="Fluxo do tratamento de exceções: o try leva ao except em caso de erro ou ao else sem erro, e ambos passam pelo finally."
-/>
-
-Corre os dois casos e segue que ramo executa em cada um.
+`with` fecha o recurso ao sair do bloco, incluindo quando há uma exceção. `read()` lê tudo; percorrer `for linha in ficheiro` lê linha a linha; `readline()` lê a próxima linha e devolve `""` ao chegar ao fim. Uma linha em branco costuma ser `"\n"`, portanto difere do fim do ficheiro.
 
 <CodePlayground
   language="python"
-  title="Ler um inteiro com tratamento"
+  title="Guardar e ler linhas"
+  input=""
   code={
-    "def ler_inteiro(texto):\n    try:\n        valor = int(texto)\n    except ValueError:\n        print('Não é um inteiro válido')\n        return None\n    else:\n        print('Conversão conseguida')\n        return valor\n    finally:\n        print('Fim da tentativa')\n\nprint(ler_inteiro('42'))\nprint(ler_inteiro('abc'))"
+    'with open("notas.txt", "w", encoding="utf-8") as ficheiro:\n    ficheiro.write("12\\n16\\n")\n\nwith open("notas.txt", "r", encoding="utf-8") as ficheiro:\n    notas = [int(linha.strip()) for linha in ficheiro]\n\nprint(notas)\nprint(sum(notas) / len(notas))'
   }
 />
 
-Podes levantar as tuas próprias exceções com `raise`, para assinalar que os argumentos violam o contrato da função:
+A saída é `[12, 16]` e `14.0`. O programa cria o ficheiro antes de o ler, por isso o exemplo não depende de um ficheiro externo. Aqui as linhas são não vazias e contêm inteiros; se o formato permitir outros casos, trata-os explicitamente.
 
-```python
-def raiz_quadrada(x):
-    if x < 0:
-        raise ValueError('x deve ser não negativo')
-    return x ** 0.5
+No editor, o ficheiro existe apenas durante esta execução. Num programa local, fica no disco. `write` recebe texto, não acrescenta uma mudança de linha por si só e devolve o número de caracteres escritos.
 
-print(raiz_quadrada(16))
-```
+## CSV sem dividir à mão
 
-Isto escreve `4.0`. Chamar `raiz_quadrada(-1)` levantaria `ValueError` com a tua mensagem. A regra: a função deteta o problema com `raise`, e quem chama decide com `try` se trata o erro ali ou o deixa subir.
+Um ficheiro CSV representa linhas de campos. Os campos podem conter separadores e aspas, por isso `split(",")` não é um leitor CSV completo. Usa o módulo `csv`, que conhece essas regras.
+
+<CodePlayground
+  language="python"
+  title="Ler e escrever CSV"
+  input=""
+  code={
+    'import csv\n\nwith open("alunos.csv", "w", encoding="utf-8", newline="") as ficheiro:\n    escritor = csv.writer(ficheiro)\n    escritor.writerow(["nome", "nota"])\n    escritor.writerow(["Ana, Silva", 15])\n\nwith open("alunos.csv", encoding="utf-8", newline="") as ficheiro:\n    leitor = csv.DictReader(ficheiro)\n    for linha in leitor:\n        print(linha["nome"], int(linha["nota"]))'
+  }
+/>
+
+`DictReader` usa a primeira linha como nomes das colunas. O nome conserva a vírgula porque o escritor delimitou o campo. Os valores lidos são strings, por isso convertemos a nota. `newline=""` deixa o módulo tratar as mudanças de linha do formato.
+
+## Exceções, try, except, else e finally
+
+Uma exceção interrompe o percurso normal e procura um tratador compatível nas chamadas ativas. `try` envolve a operação que pode falhar. `except Tipo` trata esse tipo de falha. `else` corre se o corpo de `try` acabar sem exceção; `finally` corre na saída, haja ou não exceção tratada.
+
+<CodePlayground
+  language="python"
+  title="Tratar entrada inválida"
+  input="abc"
+  code={
+    'texto = input()\ntry:\n    numero = int(texto)\nexcept ValueError:\n    print("não é inteiro")\nelse:\n    print(numero * 2)\nfinally:\n    print("fim")'
+  }
+/>
+
+Com `abc`, a conversão falha e a saída é `não é inteiro` seguida de `fim`. Com `12`, a saída é `24` seguida de `fim`. Um `except ValueError` não trata `ZeroDivisionError`. Escolhe o erro esperado em vez de esconder qualquer falha com `except:`.
+
+Alguns erros comuns são `ValueError` para um valor inadequado, `TypeError` para tipos incompatíveis, `IndexError` para índices inválidos, `KeyError` para chaves em falta e `FileNotFoundError` para um ficheiro inexistente. `raise ValueError("mensagem")` comunica uma violação do contrato. Depois de uma falha, define se a operação deve pedir novos dados, ignorar a linha, devolver um sinal ou terminar; não inventes um resultado válido.
 
 ## Asserções e testes
 
-Uma **asserção** verifica se o estado interno do programa é o que o programador esperava. Se a condição for falsa, levanta `AssertionError` e o programa pára.
+`assert condicao` exprime uma hipótese interna e lança `AssertionError` se for falsa. Pode ser desativado ao correr Python com otimizações, por isso não o uses como única validação de entradas do utilizador.
+
+Um teste compara o resultado real com um esperado calculado independentemente. Escolhe um caso normal, os limites e as entradas inválidas previstas pelo contrato.
 
 ```python
-def fatorial(n):
-    assert n >= 0, 'n deve ser não negativo'
-    resultado = 1
-    for i in range(2, n + 1):
-        resultado *= i
-    return resultado
+def media(valores):
+    if not valores:
+        raise ValueError("sequência vazia")
+    return sum(valores) / len(valores)
 
-print(fatorial(5))
+assert media([10, 14]) == 12
+assert media([7]) == 7
+try:
+    media([])
+except ValueError:
+    print("entrada vazia rejeitada")
+else:
+    raise AssertionError("devia rejeitar a entrada vazia")
 ```
 
-Isto escreve `120`. Chamar `fatorial(-1)` falharia imediatamente na asserção, em vez de devolver silenciosamente `1` (o resultado errado que o ciclo produziria). Asserções documentam e verificam as tuas suposições; não servem para validar entrada do utilizador, porque podem ser desligadas.
+A saída é `entrada vazia rejeitada`. O resultado 12 vem de $(10+14)/2$, não de copiar o cálculo interno para o teste. A entrada de um elemento e a entrada vazia testam decisões diferentes.
 
-Para verificar automaticamente que o código funciona agora e continua a funcionar depois de futuras alterações, escreve **testes unitários**: um conjunto de testes que corre sozinho e compara resultados com valores conhecidos.
+## Depurar um resultado errado
 
-```python
-def e_palindromo(s):
-    return s == s[::-1]
+Reproduz a falha com a menor entrada útil. Segue os valores antes e depois da instrução suspeita, usando um depurador, uma tabela de execução ou `print` temporários. Confirma o primeiro ponto onde o estado diverge do esperado. Um teste que passa num exemplo não demonstra todos os casos, mas uma falha concreta pode mostrar uma hipótese errada.
 
-assert e_palindromo('radar') is True
-assert e_palindromo('python') is False
-assert e_palindromo('') is True
-print('Todos os testes passaram')
-```
-
-Isto escreve `Todos os testes passaram`. Cada `assert` é um teste: se algum falhar, sabes imediatamente qual a propriedade que partiu. Hábito recomendado: sempre que corrigires um erro, acrescenta primeiro um teste que o reproduza e só depois corrige o código.
-
-## Para saber mais
-
-- Tutorial oficial do Python sobre [erros e exceções](https://docs.python.org/3/tutorial/errors.html): `try`, `except`, `raise` e exceções próprias.
-
-## Exemplo completo: contar palavras num ficheiro
-
-O programa seguinte lê um ficheiro de texto e conta as linhas, as palavras e os carateres, como o utilitário `wc`. Trata dois erros realistas: o ficheiro não existir e o conteúdo não ser texto legível.
-
-```python
-def contar_ficheiro(caminho):
-    try:
-        with open(caminho, 'r', encoding='utf-8') as f:
-            texto = f.read()
-    except FileNotFoundError:
-        print('Ficheiro não encontrado:', caminho)
-        return None
-    linhas = texto.splitlines()
-    palavras = texto.split()
-    return len(linhas), len(palavras), len(texto)
-
-print(contar_ficheiro('notas.txt'))
-print(contar_ficheiro('inexistente.txt'))
-```
-
-Com o ficheiro `notas.txt` criado acima (`'Ana 17\nBruno 12\n'`), a primeira chamada escreve `(2, 4, 16)`: duas linhas, quatro palavras (`Ana`, `17`, `Bruno`, `12`) e dezasseis carateres ($7$ da primeira linha com a mudança de linha, mais $9$ da segunda). A segunda escreve a mensagem de erro seguida de `None`. O ponto importante é o padrão: `try` à volta da leitura, `except` específico para o ficheiro em falta, e processamento só depois de a leitura ter conseguido.
-
-:::tip[Como depurar nesta fase]
-Lê a última linha da mensagem de erro (diz o tipo e a causa) e a primeira linha do teu código no registo de chamadas (o traceback) diz onde começou o problema. Adiciona `print` temporários para ver valores, ou melhor, escreve um teste pequeno que reproduza o caso. Código extra para facilitar a depuração chama-se andaime (scaffolding); remove-o ou converte-o em testes quando o problema estiver resolvido.
-:::
+Para problemas numéricos, verifica unidades, domínio e precisão. Para coleções, verifica ordem, repetições e mutação. Para ficheiros, verifica pasta de trabalho, modo e formato antes de alterar o algoritmo de cálculo.

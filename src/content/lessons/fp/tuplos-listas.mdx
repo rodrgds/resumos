@@ -1,193 +1,93 @@
 ---
 title: Tuplos e listas
-description: Sequências imutáveis e mutáveis, métodos de listas, alias contra cópia e igualdade contra identidade.
+description: Sequências, desempacotamento, operações, mutação, alias e cópia superficial.
 section: conteudo
 order: 5
+practices:
+  - fp/praticar-tuplos-listas
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import alias from '../../fp/alias-copia.typ?raw';
+import AliasDiagram from '../../fp/AliasDiagram.astro';
 
-Quando um exercício envolve vários valores relacionados, guardá-los em variáveis separadas não escala. Precisas de **estruturas de dados** que agrupem valores. Python oferece duas sequências fundamentais: o **tuplo**, imutável e próprio para agrupar dados heterogéneos, e a **lista**, mutável e própria para coleções que crescem e mudam.
+Uma lista e um tuplo conservam uma sequência de objetos. A diferença principal é se podemos substituir, inserir ou retirar elementos na própria sequência. Essa escolha afeta o estado do programa e o que uma função pode alterar.
 
-## Tuplos: agrupar valores
+## Sequências e tuplos
 
-Um tuplo escreve-se com parênteses e pode misturar tipos. Serve para tratar vários valores como uma coisa só, por exemplo as coordenadas de um ponto ou o nome e a nota de um aluno.
+Strings, listas e tuplos suportam `len`, índices, fatias e pertença com `in`. Uma lista escreve-se `[12, 15]`; um tuplo pode escrever-se `(12, 15)`. A vírgula é que cria o tuplo: `(12,)` tem um elemento, mas `(12)` é apenas o inteiro 12 entre parênteses.
 
-```python
-ponto = (3, 4)
-nome, nota = ('Ana', 17)
-print(ponto[0])
-print(nome, nota)
-```
+O **desempacotamento** associa elementos a nomes: `x, y = (3, 4)`. Nesta forma, o número de nomes tem de coincidir com o número de elementos. `a, b = b, a` troca os valores porque o lado direito é calculado antes das atribuições.
 
-Isto escreve `3` e `Ana 17`. A segunda linha é **desempacotamento**: cada nome recebe o elemento correspondente. Tal como as strings, os tuplos suportam indexação, fatias e concatenação, e são **imutáveis**: depois de criado, nenhum elemento muda.
+Um tuplo é imutável, mas pode conter objetos mutáveis. Em `registo = ("Ana", [12, 15])`, não podes substituir `registo[0]`, mas podes alterar a lista `registo[1]`. Imutabilidade do recipiente não significa imutabilidade de todos os objetos alcançáveis a partir dele.
 
-Dois casos especiais merecem atenção. O tuplo vazio escreve-se `()`. O tuplo de um só elemento exige uma vírgula: `(42,)` é um tuplo, enquanto `(42)` é apenas o número `42` entre parênteses. Este pormenor aparece em exames com frequência.
+## Alterar uma lista
 
-## Listas: coleções mutáveis
+| Operação          | Efeito                                               |
+| ----------------- | ---------------------------------------------------- |
+| `xs.append(x)`    | Acrescenta um elemento, mesmo que `x` seja uma lista |
+| `xs.extend(ys)`   | Acrescenta cada elemento de `ys`                     |
+| `xs.insert(i, x)` | Insere antes da posição `i`                          |
+| `xs.pop(i)`       | Retira e devolve o elemento dessa posição            |
+| `xs.remove(x)`    | Retira a primeira ocorrência de `x`; falha se faltar |
+| `del xs[i]`       | Retira o elemento sem o devolver                     |
+| `xs[a:b] = ys`    | Substitui uma fatia, podendo mudar o comprimento     |
 
-Uma lista escreve-se com parênteses retos e é uma sequência **ordenada e mutável**: podes acrescentar, remover e alterar elementos. Os elementos podem ser de tipos diferentes, embora na prática quase todas as listas que vais usar tenham elementos do mesmo tipo.
-
-```python
-notas = [12, 15, 10]
-notas.append(18)
-notas[0] = 13
-print(notas)
-print(len(notas))
-```
-
-Isto escreve `[13, 15, 10, 18]` e `4`. O `append` acrescenta no fim; a atribuição `notas[0] = 13` substitui o primeiro elemento. A função `len` dá o número de elementos.
-
-Os métodos que mais vais usar são:
-
-| Método          | O que faz                                                             |
-| --------------- | --------------------------------------------------------------------- |
-| `append(x)`     | Acrescenta `x` no fim                                                 |
-| `extend(lista)` | Acrescenta cada elemento de `lista` no fim                            |
-| `pop()`         | Remove e devolve o último elemento (`pop(i)` remove a posição `i`)    |
-| `insert(i, x)`  | Insere `x` na posição `i`                                             |
-| `remove(x)`     | Remove a primeira ocorrência de `x`                                   |
-| `sort()`        | Ordena a lista no sítio (`sorted(l)` devolve uma lista nova ordenada) |
-
-A diferença entre `append` e `extend` é um clássico: `append` junta um elemento, `extend` junta vários.
-
-```python
-a = [1, 4]
-a.append([5, 1, 3])
-print(a)
-b = [1, 4]
-b.extend([5, 1, 3])
-print(b)
-```
-
-Isto escreve `[1, 4, [5, 1, 3]]` e `[1, 4, 5, 1, 3]`. A primeira lista ficou com três elementos, o último dos quais é outra lista; a segunda ficou com cinco números.
-
-Corre as duas versões e repara na estrutura do resultado.
-
-<CodePlayground
-  language="python"
-  title="append contra extend"
-  code={
-    'a = [1, 4]\na.append([5, 1, 3])\nprint(a)\nb = [1, 4]\nb.extend([5, 1, 3])\nprint(b)'
-  }
-/>
+`append`, `extend`, `insert`, `remove`, `sort` e `reverse` devolvem `None`. Não escrevas `xs = xs.append(4)`, porque acabarias com `xs` associado a `None`. `xs + ys` cria outra lista. Não alteres o comprimento da lista que estás a percorrer sem uma estratégia explícita; retirar um elemento pode deslocar o seguinte e fazê-lo escapar ao ciclo.
 
 ## Alias contra cópia, igualdade contra identidade
 
-Aqui está a ideia mais importante da página. Uma lista é um objeto na memória e uma variável é um **nome** que aponta para esse objeto. Atribuir uma lista a outro nome **não** cria uma lista nova: cria um segundo nome para a mesma lista. A isto chama-se **alias**.
+`b = a` não copia a lista. Cria outro nome para o mesmo objeto, um **alias**. `a == b` compara conteúdos; `a is b` testa se os nomes referem o mesmo objeto.
 
-```python
-notas = [12, 15]
-copia = notas
-copia.append(18)
-print(notas)
-```
-
-Isto escreve `[12, 15, 18]`. O `append` alterou a lista partilhada, por isso `notas` também "mudou". Para criar uma lista nova com os mesmos elementos, fatia a lista toda ou usa o método `copy`:
-
-```python
-notas = [12, 15]
-copia = notas[:]
-copia.append(18)
-print(notas)
-print(copia)
-```
-
-Isto escreve `[12, 15]` e `[12, 15, 18]`. Agora são dois objetos independentes. (Esta cópia é **superficial**: se os elementos fossem outras listas, as listas interiores continuariam partilhadas.)
-
-O esquema contrasta os dois casos: no alias, dois nomes apontam para a mesma lista; na cópia, cada nome tem a sua.
-
-<Typst
-  source={alias}
-  format="svg"
-  alt="Diagrama do alias contra a cópia: os nomes notas e copia apontam para a mesma lista; o nome c aponta para uma lista separada com os mesmos elementos."
+<CodePlayground
+  language="python"
+  title="Comparar alias e cópia"
+  input=""
+  code={
+    'notas = [12, 15]\nalias = notas\ncopia = notas.copy()\nalias.append(18)\ncopia[0] = 20\nprint(notas)\nprint(copia)\nprint(alias is notas, copia is notas)\nprint([1, 2] == [1, 2])'
+  }
 />
 
-A mesma diferença em código, lado a lado:
+`append` altera a lista partilhada por `notas` e `alias`. A alteração em `copia` atinge outra lista. Dois objetos distintos podem ter conteúdo igual. A identidade ajuda a seguir partilha, mas um cálculo que só depende dos valores não deve depender dela.
 
-<Tabs id="alias-copia" labels={['Alias', 'Cópia']}>
-  <div slot="panel-0">
+<AliasDiagram />
 
-```python
-notas = [12, 15]
-copia = notas
-copia.append(18)
-print(notas)
-```
+## Listas de listas e cópia superficial
 
-Escreve `[12, 15, 18]`: a lista é partilhada.
+`a.copy()` e `a[:]` criam uma cópia **superficial**. Copiam o recipiente, mantendo referências aos elementos. Se os elementos forem listas, continuam partilhados.
 
-  </div>
-  <div slot="panel-1">
-
-```python
-notas = [12, 15]
-copia = notas[:]
-copia.append(18)
-print(notas)
-print(copia)
-```
-
-Escreve `[12, 15]` e `[12, 15, 18]`: são independentes.
-
-  </div>
-</Tabs>
-
-A mesma distinção aplica-se à comparação. O `==` testa a **igualdade** de valores; o `is` testa a **identidade**, se são o mesmo objeto.
-
-```python
-a = [1, 2]
-b = [1, 2]
-print(a == b)
-print(a is b)
-```
-
-Isto escreve `True` e `False`: duas listas separadas com o mesmo conteúdo são iguais mas não são o mesmo objeto. Em exercícios, compara listas com `==`; o `is` serve para casos especiais como comparar com `None`.
-
-## Percorrer e transformar listas
-
-A travessia de listas segue os mesmos padrões das strings. A função `zip` percorre duas listas em paralelo, produzindo pares; a forma `zip(*pares)` faz o inverso, separando pares em duas sequências.
-
-```python
-nomes = ['Ana', 'Bruno', 'Carla']
-notas = [17, 12, 15]
-for nome, nota in zip(nomes, notas):
-    print(nome, nota)
-```
-
-Isto escreve `Ana 17`, `Bruno 12` e `Carla 15`. Repara que o `zip` pára na lista mais curta; se as listas tiverem comprimentos diferentes, os elementos a mais da lista comprida são ignorados em silêncio, por isso confirma primeiro que têm o mesmo tamanho.
-
-## Exemplo completo: mínimos locais
-
-Um elemento de uma lista de números é um **mínimo local** quando é menor ou igual aos seus dois vizinhos. Por exemplo, em `[5, 2, 4, 4, 1, 3]`, as posições `1` (valor `2`, vizinhos `5` e `4`) e `4` (valor `1`, vizinhos `4` e `3`) são mínimos locais. A posição `3` (valor `4`, vizinhos `4` e `1`) não é, porque `4 > 1`. Os extremos ficam de fora, porque não têm dois vizinhos.
-
-```python
-def minimos_locais(valores):
-    """Devolve as posições que são mínimos locais."""
-    posicoes = []
-    for i in range(1, len(valores) - 1):
-        if valores[i] <= valores[i - 1] and valores[i] <= valores[i + 1]:
-            posicoes.append(i)
-    return posicoes
-
-print(minimos_locais([5, 2, 4, 4, 1, 3]))
-```
-
-Isto escreve `[1, 4]`. O `range(1, len(valores) - 1)` exclui exatamente os extremos: começa em `1` e pára antes da última posição. Confere a posição `2` (valor `4`, vizinhos `2` e `4`): `4 <= 2` é falso, por isso não entra. O padrão é reutilizável: percorrer o interior da lista com um acumulador que guarda as posições onde uma condição se verifica.
-
-<YouTube
-  id="6wvL4jH65Do"
-  title="Listas, tuplos, dicionários e conjuntos no Python"
+<CodePlayground
+  language="python"
+  title="Cópia superficial de uma matriz"
+  input=""
+  code={
+    'matriz = [[1, 2], [3, 4]]\ncopia = matriz.copy()\ncopia[0][0] = 9\nprint(matriz)\nprint(copia)\nindependente = [linha.copy() for linha in matriz]\nindependente[0][0] = 7\nprint(matriz)\nprint(independente)'
+  }
 />
 
-## Para saber mais
+As duas primeiras saídas têm o 9 porque a primeira linha é partilhada. A compreensão final copia cada linha; neste exemplo, como os elementos das linhas são inteiros, a alteração já é independente. Para estruturas mais profundas, copiar um só nível adicional pode não chegar.
 
-- Tutorial oficial do Python sobre [estruturas de dados](https://docs.python.org/3/tutorial/datastructures.html): listas, tuplos, conjuntos, dicionários e compreensões.
+Evita `[[0] * 3] * 2` para criar duas linhas independentes. A repetição exterior repete a referência à mesma linha. Usa `[[0] * 3 for _ in range(2)]` quando precisares de uma linha nova em cada posição.
 
-:::warning[Os erros mais comuns com listas]
-Modificar uma lista enquanto a percorres (os índices baralham-se); esquecer que `sort()` devolve `None` e escrever `nova = lista.sort()`; confundir `append` com `extend`; e assumir que atribuir uma lista a outro nome a copia. Quando uma lista "muda sozinha", procura o alias: algures há dois nomes para o mesmo objeto.
-:::
+## Percorrer e combinar sequências
+
+`enumerate(xs)` produz pares com índice e valor. `zip(xs, ys)` combina elementos na mesma posição e, por defeito, termina na sequência mais curta. Se o contrato exige comprimentos iguais, verifica-o antes de combinar.
+
+O produto interno de dois vetores com o mesmo comprimento é a soma dos produtos correspondentes. Para `[2, 3]` e `[4, 5]`, calculamos $2\times4+3\times5=23$. Para dois vetores vazios, a soma é zero.
+
+```python
+def produto_interno(u, v):
+    if len(u) != len(v):
+        raise ValueError("comprimentos diferentes")
+    soma = 0
+    for a, b in zip(u, v):
+        soma += a * b
+    return soma
+
+print(produto_interno([2, 3], [4, 5]))
+```
+
+O resultado é 23. `raise` comunica uma entrada inválida; veremos como tratar essa exceção no fim do percurso.
+
+## Ordenar sem confundir os resultados
+
+`sorted(xs)` devolve uma lista nova e deixa `xs` intacta. `xs.sort()` ordena a lista existente e devolve `None`. `reverse=True` pede ordem decrescente. Para ordenar registos por um campo, usa `key`; a [lição de programação funcional](/cadeiras/fp/programacao-funcional/#funções-de-ordem-superior-e-lambda) explica como passar essa função.

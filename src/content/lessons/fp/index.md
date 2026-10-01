@@ -1,42 +1,67 @@
 ---
 title: Fundamentos da Programação
-description: Algoritmos e programas em Python, desde variáveis e ciclos até recursão, programação funcional, ficheiros e exceções.
+description: Resolver problemas em Python, compreender o estado de um programa e escrever funções imperativas e livres de efeitos.
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: FP, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087
+    - title: FP, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586981
+    - title: Python 3, André Restivo
+      url: https://arestivo.github.io/slides/?s=python
+    - title: Caderno FP SofiaViP
+      url: https://drive.google.com/file/d/1-2tiPzWQX8LHHWILl3z-4pShVDhP0C1m/view
+  gaps:
+    - A ficha pública de 2026/27 não apresenta programa ou avaliação. A base oficial preenchida é 2025/26.
+    - O Moodle 2024/25 acessível, curso 4883, não disponibiliza ficheiros de ensino nos módulos consultados.
+    - Os slides de Restivo não identificam uma edição de FP. As fichas históricas RE01 a RE13 não confirmam o calendário atual.
 ---
 
-FP é a cadeira onde aprendes a programar: pegar num problema, decompô-lo em passos precisos e escrever esses passos em Python de forma que o computador os execute e outra pessoa os consiga ler. Não é preciso experiência prévia; é preciso prática regular, com muitos programas pequenos escritos por ti.
+Em FP, resolves problemas em Python e explicas como os programas chegam ao resultado. O programa oficial combina programação imperativa, em que seguimos alterações de estado, com programação livre de efeitos, em que uma função calcula um resultado sem alterar os dados de quem a chama.
 
-## Como está organizado
+## Percurso de estudo
 
-Começa por [Primeiros programas](primeiros-programas/), que fixa algoritmos, tipos, variáveis e expressões. Depois, [Condições e ciclos](condicoes-ciclos/) mostra como o programa escolhe caminhos e repete trabalho, e [Funções](funcoes/) ensina a organizar o código em blocos reutilizáveis.
+1. [Primeiros programas](primeiros-programas/) começa pelo algoritmo, tipos, expressões, entrada e saída. Aprende a distinguir uma falha de sintaxe de um resultado errado.
+2. [Condições e ciclos](condicoes-ciclos/) mostra como escolher um ramo, repetir um cálculo e justificar que o ciclo termina.
+3. [Funções](funcoes/) separa subproblemas, retorno, passagem de argumentos e âmbito dos nomes.
+4. [Strings](strings/) trabalha índices, fatias e transformações de texto.
+5. [Tuplos e listas](tuplos-listas/) distingue sequências imutáveis, mutação, alias e cópia.
+6. [Dicionários e conjuntos](dicionarios-conjuntos/) escolhe entre associação por chave e pertença sem duplicados.
+7. [Recursão](recursao/) liga um caso base à redução do problema e segue as chamadas até ao regresso.
+8. [Programação funcional](programacao-funcional/) trata funções como valores e compara soluções com `map`, `filter` e `reduce`.
+9. [Compreensões e geradores](compreensoes-geradores/) transforma coleções com compreensões. A parte de geradores aprofunda a diferença entre construir e consumir uma sequência.
+10. [Algoritmos e complexidade](algoritmos-complexidade/) aplica pesquisa e contagem de operações. É um complemento às estratégias de resolução de problemas, não um tópico autónomo nomeado na ficha de 2025/26.
+11. [Ficheiros, exceções e testes](ficheiros-excecoes/) junta persistência, tratamento de entradas inválidas, módulos e verificação.
 
-A segunda parte trata de dados compostos: [Strings](strings/) para texto, [Tuplos e listas](tuplos-listas/) para sequências e [Dicionários e conjuntos](dicionarios-conjuntos/) para associações e coleções sem repetições. Com estes materiais, [Recursão](recursao/) resolve problemas decompondo-os em versões mais pequenas de si próprios.
+Cada lição tem exemplos resolvidos e exercícios próprios, com duas pistas, resolução e erros frequentes. Tenta resolver antes de abrir a ajuda. Nos exercícios de programação, os testes apresentados ajudam a verificar o contrato, mas não substituem a explicação da solução. A [cheat sheet](folha-consulta/) serve para consulta depois de estudares.
 
-A terceira parte muda o estilo de programar: [Programação funcional](programacao-funcional/) usa `map`, `filter` e `reduce`, e [Compreensões e geradores](compreensoes-geradores/) escreve transformações de sequências de forma compacta. [Algoritmos e complexidade](algoritmos-complexidade/) compara a pesquisa linear com a pesquisa binária e explica a notação Big-O. Por fim, [Ficheiros e exceções](ficheiros-excecoes/) guarda dados para além do fim do programa e trata os erros sem deixar o programa morrer.
+## Como praticar
 
-## Como estudar
+Antes de escrever código, identifica a entrada, o resultado e os casos limite. Segue uma entrada pequena à mão. Depois implementa uma parte de cada vez e compara o resultado com o que calculaste, incluindo sequências vazias, limites de intervalos e valores repetidos quando fazem sentido.
 
-Lê cada página com o computador ao lado e executa todos os exemplos. Em FP, perceber o exemplo com os olhos não chega: tens de o reescrever, mudar os valores e prever o resultado antes de correres. Quando o resultado for diferente do que esperavas, pára nesse ponto e descobre porquê; é aí que está a aprendizagem. Resolve depois os exercícios de cada ficha temática, primeiro os que seguem o exemplo da página e só depois as variações.
+Nos editores desta cadeira, a linguagem é Python 3. O código corre numa execução descartável. Os ficheiros criados pelo exemplo existem só nessa execução. Para praticar no teu computador, guarda o programa num ficheiro `.py` e corre `python3 nome.py` num terminal. Não escrevas o indicador `>>>` da consola dentro do ficheiro.
 
-## Avaliação
+## Edição e avaliação
 
-A forma de avaliação muda de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes os prazos das fichas, o peso do projeto e as regras dos testes e do exame.
+A ficha pública de [2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586981), consultada a 1 de outubro de 2026, identifica a unidade curricular e a docência, mas não apresenta programa, bibliografia ou regras de avaliação. Estes apontamentos usam o programa preenchido de [2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087). Consulta a ficha e o Moodle do teu ano para o calendário e as condições em vigor.
+
+Em 2025/26, a avaliação indicava provas individuais em computador, com questões teóricas e exercícios de programação. A época normal ponderava MT1 e MT2 a 40% cada e MT3 a 20%; o recurso usava ER a 100%. Estas regras descrevem essa edição, não confirmam a avaliação de 2026/27.
 
 ## Fontes e âmbito
 
-Estas páginas seguem o âmbito da unidade curricular de Fundamentos da Programação do 1.º ano, 1.º semestre da LEIC: programação em Python, com algoritmos e decomposição de problemas; tipos simples, variáveis e expressões; execução condicional e iteração; funções e âmbito de variáveis; strings, tuplos, listas, dicionários e conjuntos; recursão; programação funcional com `map`, `filter` e `reduce`, funções de ordem superior e `lambda`; compreensões e geradores; noções de análise de algoritmos com pesquisa linear e binária e ordens de crescimento; módulos, ficheiros, exceções e asserções.
+A base oficial é o programa de FP de 2025/26: pensamento computacional, dados simples e compostos, condicionais, iteração, funções, passagem de parâmetros, recursão, ficheiros, programação livre de efeitos, funções de ordem superior, compreensões, estratégias de resolução, teste e depuração. Os resultados de aprendizagem também incluem exceções e problemas numéricos.
 
-Material oficial da FEUP:
+O [Moodle de 2024/25, curso 4883](https://moodle2425.up.pt/course/view.php?id=4883), estava acessível, mas os módulos consultados não continham ficheiros de ensino. Essa coleção não permite confirmar os slides usados pelo aluno. As fichas históricas RE01 a RE13, preservadas no [repositório público de FPRO](https://github.com/educorreia932/FEUP-FPRO), ajudam a escolher tipos de problemas. Não foram tratadas como enunciados nem regras atuais.
 
-- Ficha da unidade curricular de Fundamentos da Programação, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087).
-- Fichas de exercícios RE01 a RE13 da cadeira (introdução ao ambiente, dados simples, fluxo de programa, condicionais e iteração, funções, strings, tuplos, listas, dicionários, recursão, programação funcional, ficheiros e exceções), preservadas em repositório público de estudante e consultadas como referência local.
+Os [slides de Python 3 de André Restivo](https://arestivo.github.io/slides/?s=python), mantidos no [repositório do autor](https://github.com/arestivo/slides), apoiam a sintaxe, coleções, controlo, funções, módulos e ficheiros. Não identificam uma edição de FP. O apêndice de PostgreSQL fica fora destes apontamentos. O [Caderno FP SofiaViP](https://drive.google.com/file/d/1-2tiPzWQX8LHHWILl3z-4pShVDhP0C1m/view) foi usado como apoio de estudante, sem valor oficial.
 
-Material histórico da FEUP, usado para confirmar a estrutura dos temas (os enunciados e a avaliação atuais estão na página da disciplina):
+Bibliografia da ficha de 2025/26:
 
-- Repositórios públicos de exercícios da cadeira e da sua antecessora FPRO do Mestrado Integrado em Engenharia Informática e Computação (2018/19 e 2022/23), consultados como referência local: exercícios em Python por tema, do ambiente de trabalho à recursão e aos ficheiros.
-- Sebenta de introdução à programação em Python para cursos da FEUP (_Sebenta LI_, 2012/13), cadeira adjacente e histórica, consultada como referência local.
+- Peter Wentworth, Jeffrey Elkner, Allen B. Downey e Chris Meyers, [How to Think Like a Computer Scientist: Learning with Python 3](https://howtothink.readthedocs.io/en/latest/), 3.ª edição, bibliografia obrigatória. Apoia o desenvolvimento passo a passo, funções, coleções e recursão.
+- Allen B. Downey, [Think Python](https://greenteapress.com/wp/think-python-2e/), 2.ª edição, bibliografia complementar. Apoia contratos, depuração e raciocínio sobre mutabilidade.
+- Steven F. Lott, [Building Skills in Python](https://www.itmaybeahack.com/homepage/books/python.html), bibliografia complementar. O PDF antigo indicado pelo autor estava indisponível; não foi usado como texto integral.
+- David Mertz, [Functional Programming in Python](https://www.oreilly.com/library/view/functional-programming-in/9781492048633/), bibliografia complementar. Não foi consultado um texto integral da edição da ficha.
+- [Documentação oficial do Python](https://docs.python.org/3/), para confirmar operações, exceções e comportamento dos iteradores.
 
-Notas de estudantes, úteis como apoio mas sem valor oficial:
-
-- _Caderno FP SofiaViP_, apontamentos de estudante em circulação pública que acompanham as aulas da cadeira, do algoritmo aos ficheiros e exceções (ficheiro PDF descarregado da pasta pública em setembro de 2026).
-
-Os exemplos e exercícios destas páginas são originais, escritos para este site. Não reproduzem os enunciados das fichas.
+Os exemplos, exercícios e resoluções são próprios. Geradores, pesquisa binária e análise de custo são aprofundamentos sinalizados no percurso; não substituem materiais da edição atual que ainda não estão disponíveis.

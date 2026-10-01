@@ -1,129 +1,102 @@
 ---
 title: Programação funcional
-description: Paradigmas, funções puras, map, filter e reduce, lambda e funções de ordem superior.
+description: Funções livres de efeitos, ordem superior, lambda, closures, map, filter e reduce.
 section: conteudo
 order: 8
+practices:
+  - fp/praticar-programacao-funcional
 ---
 
-import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 
-Há várias formas de organizar um programa, chamadas **paradigmas**. Os programas **procedimentais** são listas de instruções que dizem ao computador o que fazer, passo a passo (C e Pascal são exemplos). As linguagens **declarativas** descrevem o problema e deixam a linguagem descobrir como calcular (SQL é o exemplo típico). As linguagens **orientadas por objetos** organizam o programa em objetos com estado interno e métodos (Java e Smalltalk). Python suporta vários paradigmas sem obrigar a nenhum, o que permite escolher o mais legível para cada problema.
+Uma função pode calcular um resultado sem alterar os argumentos, sem escrever no ecrã e sem depender de um contador global. Esta separação permite comparar duas chamadas pelos valores que recebem e devolvem.
 
-O paradigma **funcional** decompõe problemas em funções que recebem entradas e produzem saídas, idealmente como funções matemáticas: o mesmo input dá sempre o mesmo output, sem **efeitos secundários** (sem alterar variáveis globais, sem ler nem escrever a meio da computação). Uma função assim chama-se **pura** e é mais fácil de testar e de depurar, porque o seu comportamento depende apenas dos argumentos.
+## Funções livres de efeitos
 
-## map, filter e reduce
+Uma função **pura** devolve o mesmo resultado para os mesmos argumentos e não tem efeitos observáveis fora do cálculo. Ler a hora, pedir entrada, imprimir, alterar uma lista recebida ou atualizar estado global quebra essa condição.
 
-Três funções capturam os padrões mais comuns de percorrer sequências. A `map` aplica a mesma função a todos os elementos. A `filter` guarda os elementos que satisfazem um predicado (uma função que devolve um lógico). A `reduce`, do módulo `functools`, combina todos os elementos num único valor usando uma função de dois argumentos.
-
-```python
-from functools import reduce
-
-numeros = [1, 2, 3, 4]
-print(list(map(lambda x: x * 2, numeros)))
-print(list(filter(lambda x: x % 2 == 0, numeros)))
-print(reduce(lambda a, b: a + b, numeros))
-```
-
-Isto escreve `[2, 4, 6, 8]`, `[2, 4]` e `10`. A palavra `lambda` cria uma função pequena sem nome: `lambda x: x * 2` é a função que dobra o seu argumento. Repara no `list(...)` à volta de `map` e `filter`: estas funções são **preguiçosas** (lazy), devolvem um iterador que só calcula os valores quando pedidos, e cada valor só pode ser consumido uma vez. Para veres o resultado como lista, converte com `list`.
-
-Casos particulares do `reduce` tão comuns que têm nomes próprios: `sum` soma, `any` pergunta se algum elemento é verdadeiro e `all` pergunta se todos são. Usa-os em vez de escreveres o `reduce` equivalente.
-
-## Funções de ordem superior
-
-Uma função de **ordem superior** trata outras funções como valores: recebe funções como argumentos ou devolve funções como resultado. `map`, `filter` e `reduce` são exemplos do primeiro caso. Python trata funções como objetos de **primeira classe**: podes guardá-las em variáveis, passá-las e devolvê-las como qualquer outro valor.
+`sorted(notas)` cria outra lista, enquanto `notas.sort()` altera a existente. Uma solução livre de efeitos devolve os dados transformados e deixa a apresentação para outra parte do programa.
 
 ```python
-def aplicar_duas_vezes(f, x):
-    return f(f(x))
+def com_bonus(notas, bonus):
+    return [nota + bonus for nota in notas]
 
-def sucessor(n):
-    return n + 1
-
-print(aplicar_duas_vezes(sucessor, 5))
+notas = [10, 14]
+print(com_bonus(notas, 2))
+print(notas)
 ```
 
-Isto escreve `7`: `sucessor` aplicado a `5` dá `6`, e aplicado outra vez dá `7`. A função `aplicar_duas_vezes` não sabe nada sobre sucessores; funciona com qualquer função de um argumento. Esta generalidade é o ponto das funções de ordem superior.
+A saída é `[12, 16]` e `[10, 14]`. A compreensão será estudada na próxima lição. Para já, observa o contrato: cada resultado depende dos argumentos e as notas originais permanecem iguais.
 
-Duas ferramentas do módulo `operator` são úteis nestes contextos. A `itemgetter(n)` devolve uma função que extrai a posição `n`, e a `concat` concatena strings ou listas. Elas evitam escreveres `lambda` triviais quando só precisas de ir buscar um elemento.
+Python permite misturar estilos. Alterar um acumulador local não prova, por si só, um efeito observável no chamador. Se um exercício exige um estilo sem atribuições nem mutação, esse requisito é mais restrito do que apenas preservar os argumentos. Nesse caso, usa operações sobre valores e funções de ordem superior em vez de atualizar uma coleção.
 
-## Ordenar com chave
+## Funções são valores
 
-A função `sorted` aceita um argumento `key`: uma função aplicada a cada elemento para decidir a ordem, sem alterar os elementos devolvidos.
+O nome de uma função pode ser guardado, passado ou devolvido. `quadrado` é o objeto função; `quadrado(3)` é o resultado da chamada. Passar `quadrado(3)` onde se espera uma função passa o número 9 e impede a chamada posterior.
 
 ```python
-palavras = ['programação', 'em', 'python']
-print(sorted(palavras))
-print(sorted(palavras, key=len))
-print(sorted(palavras, key=lambda s: s[-1]))
+def quadrado(x):
+    return x * x
+
+def aplicar_duas_vezes(funcao, x):
+    return funcao(funcao(x))
+
+print(aplicar_duas_vezes(quadrado, 2))
 ```
 
-Isto escreve `['em', 'programação', 'python']`, `['em', 'python', 'programação']` e `['em', 'python', 'programação']`. A primeira ordena por ordem lexicográfica. A segunda ordena pelos comprimentos $2, 6, 11$. A terceira ordena pelo último caráter (`m`, `n`, `o`). Repara que `key=len` passa a função `len` sem a chamar: é o `sorted` que a chama para cada elemento.
+O resultado é 16: primeiro 2 passa a 4, depois 4 passa a 16. Uma função que recebe ou devolve outras funções é uma **função de ordem superior**.
 
-## Exemplo completo: pipeline funcional
+## Funções de ordem superior e lambda
 
-Dada uma lista de notas, queremos a média das notas de aprovação (maiores ou iguais a `10`), calculada como soma a dividir pela contagem. Em estilo funcional, cada passo é uma transformação da sequência: filtrar, depois agregar.
-
-```python
-from functools import reduce
-
-def media_aprovados(notas):
-    aprovadas = list(filter(lambda n: n >= 10, notas))
-    if not aprovadas:
-        return 0
-    total = reduce(lambda a, b: a + b, aprovadas)
-    return total / len(aprovadas)
-
-print(media_aprovados([8, 12, 15, 7, 10]))
-print(media_aprovados([5, 7]))
-```
-
-Isto escreve `12.333333333333334` e `0`. Segue o primeiro caso: `filter` guarda `[12, 15, 10]`; o `reduce` soma para `37`; `37 / 3` dá a média. O teste `if not aprovadas` protege a divisão por zero quando ninguém passa: sem ele, `len(aprovadas)` seria `0` e o programa morreria com erro de execução. Este teste de entrada vazia é o pormenor que distingue uma solução completa de uma incompleta.
-
-O grafo mostra o pipeline: a lista entra, o filtro guarda as aprovações e a redução agrega.
-
-<Dot
-  source={
-    'digraph { rankdir=LR; notas [shape=box]; filtrar [label="filter (>= 10)"]; agregar [label="reduce (+)"]; media [shape=box]; notas -> filtrar -> agregar -> media; }'
-  }
-  alt="Pipeline funcional: as notas passam pelo filtro das aprovações e depois pela agregação da soma."
-/>
-
-Corre os dois casos, incluindo a lista sem aprovações.
+`lambda x: x * x` cria uma função com uma expressão como corpo. Não é uma instrução para executar já. Usa `def` quando precisas de vários passos ou quando dar um nome à operação ajuda a ler.
 
 <CodePlayground
   language="python"
-  title="Média das aprovações"
+  title="Ordenar por um campo"
+  input=""
   code={
-    'from functools import reduce\n\ndef media_aprovados(notas):\n    aprovadas = list(filter(lambda n: n >= 10, notas))\n    if not aprovadas:\n        return 0\n    total = reduce(lambda a, b: a + b, aprovadas)\n    return total / len(aprovadas)\n\nprint(media_aprovados([8, 12, 15, 7, 10]))\nprint(media_aprovados([5, 7]))'
+    'alunos = [("Ana", 15), ("Bruno", 12), ("Carla", 15)]\nordenados = sorted(alunos, key=lambda aluno: (-aluno[1], aluno[0]))\nprint(ordenados)\nprint(alunos)'
   }
 />
 
-A mesma média em dois estilos, para comparares a legibilidade:
+A chave é um tuplo. O negativo da nota põe as notas maiores primeiro; o nome desempata por ordem crescente. A entrada permanece igual. `sorted` é estável: elementos com chaves iguais conservam a ordem relativa que tinham na entrada.
 
-<Tabs id="media-estilos" labels={['Funcional', 'Compreensão']}>
-  <div slot="panel-0">
+## Map, filter e reduce
 
-```python
-from functools import reduce
+`map(f, xs)` aplica `f` a cada elemento. `filter(p, xs)` conserva os elementos para os quais o predicado `p` dá um valor verdadeiro. Em Python 3, ambos devolvem iteradores; `list` materializa os resultados.
 
-aprovadas = list(filter(lambda n: n >= 10, notas))
-total = reduce(lambda a, b: a + b, aprovadas)
-media = total / len(aprovadas)
-```
+`reduce`, de `functools`, combina os elementos da esquerda para a direita com um acumulador. Com valor inicial `z` e elementos `a`, `b`, `c`, calcula `f(f(f(z, a), b), c)`. Esse percurso também se chama fold à esquerda. Sem valor inicial, a primeira entrada torna-se o acumulador e a sequência vazia causa `TypeError`.
 
-  </div>
-  <div slot="panel-1">
+<CodePlayground
+  language="python"
+  title="Selecionar, transformar e acumular"
+  input=""
+  code={
+    'from functools import reduce\n\nvalores = [1, 2, 3, 4, 5]\nimpares = filter(lambda x: x % 2 != 0, valores)\nquadrados = map(lambda x: x * x, impares)\nsoma = reduce(lambda acumulado, x: acumulado + x, quadrados, 0)\nprint(soma)\nprint(valores)\nprint(reduce(lambda a, x: a + x, [], 0))'
+  }
+/>
 
-```python
-aprovadas = [n for n in notas if n >= 10]
-media = sum(aprovadas) / len(aprovadas)
-```
+O filtro conserva 1, 3 e 5. A transformação produz 1, 9 e 25. O fold começa em zero e passa por 1, 10 e 35. O valor inicial também define a resposta para a entrada vazia. Para somar, `sum` é uma alternativa direta; aqui usamos `reduce` para seguir o acumulador.
 
-  </div>
-</Tabs>
+A ordem importa se a operação não for associativa. `reduce(lambda a, x: a - x, [2, 3], 10)` calcula `(10 - 2) - 3`, que vale 5. Não calcula `10 - (2 - 3)`.
 
-:::tip[Quando usar este estilo]
-Usa `map` e `filter` quando a operação se exprime numa linha e a função aplicada já existe ou é um `lambda` simples. Se o `lambda` crescer para lá de uma expressão curta, ou se precisares de acumuladores com lógica condicional, um ciclo explícito ou uma compreensão (próxima página) fica mais legível. Legibilidade decide, não brevidade.
-:::
+## Devolver funções e âmbito léxico
+
+Uma função interior pode conservar acesso ao contexto onde foi criada. Chamamos **closure** a essa combinação de função e contexto.
+
+<CodePlayground
+  language="python"
+  title="Construir funções com um parâmetro fixo"
+  input=""
+  code={
+    'def multiplicador(fator):\n    def multiplicar(x):\n        return fator * x\n    return multiplicar\n\ndobro = multiplicador(2)\ntriplo = multiplicador(3)\nprint(dobro(5), triplo(5))'
+  }
+/>
+
+As duas funções conservam fatores diferentes. `return multiplicar` devolve a função, sem a chamar. Depois de `multiplicador` regressar, o fator de cada contexto continua acessível.
+
+A closure consulta as associações dos nomes conservados, não tira automaticamente uma fotografia do seu valor. Criar várias lambdas sobre um único contador que continua a mudar pode fazê-las observar o mesmo valor final. Se precisares de fixar cada valor, passa-o a uma função criadora como neste exemplo, ou usa um parâmetro por defeito deliberado.
+
+## Compor sem perder o contrato
+
+Transformar, filtrar e acumular são decisões diferentes. A ordem pode mudar o resultado: elevar ao quadrado antes de filtrar os positivos conserva quadrados de valores originalmente negativos. Escreve primeiro a condição sobre os dados de entrada, depois escolhe a sequência de operações. Uma função chamada por `map` ou `filter` também deve respeitar a ausência de efeitos quando esse é o contrato do programa.

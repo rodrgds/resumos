@@ -1,131 +1,73 @@
 ---
 title: Strings
-description: Índices, fatias, travessia, comparação lexicográfica e os métodos mais usados de texto.
+description: Índices, fatias, imutabilidade, métodos de texto e processamento carácter a carácter.
 section: conteudo
 order: 4
+practices:
+  - fp/praticar-strings
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import indices from '../../fp/indices-fatias.typ?raw';
 
-Texto em Python é do tipo `str` e comporta-se como uma sequência de caracteres. Grande parte dos exercícios da cadeira resume-se a percorrer texto, cortar bocados e transformar o resultado. Esta página dá-te as ferramentas para essas três operações e mostra onde os principiantes costumam tropeçar.
+Uma string guarda uma sequência de caracteres. Para retirar uma palavra, contar letras ou separar campos, precisamos de distinguir a posição de um carácter do intervalo de uma fatia.
 
-## Índices e o erro mais caro da página
+## Índices e limites
 
-Cada posição de uma string tem um número, o **índice**, a começar em `0`. Os índices negativos contam a partir do fim: `-1` é o último caráter.
+Em `s = "programar"`, os índices vão de 0 a 8. `s[0]` vale `"p"` e `s[8]` vale `"r"`. Os índices negativos contam a partir do fim: `s[-1]` é o último carácter. Uma string vazia não tem nenhum índice válido.
 
-```python
-palavra = 'banco'
-print(palavra[0])
-print(palavra[4])
-print(palavra[-1])
-```
+| Carácter        | p   | r   | o   | g   | r   | a   | m   | a   | r   |
+| --------------- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Índice          | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   |
+| Índice negativo | -9  | -8  | -7  | -6  | -5  | -4  | -3  | -2  | -1  |
 
-Isto escreve `b`, `o` e `o`. A string `'banco'` tem 5 carateres, com índices de `0` a `4`. Pedir `palavra[5]` dá erro de execução, porque já não há posição `5`. Regra que evita metade dos erros: numa string de comprimento $n$, os índices válidos vão de $0$ a $n - 1$.
-
-As strings são **imutáveis**: não podes alterar um caráter no sítio. Tentar `palavra[0] = 'm'` dá erro. Para obter `'manco'`, constróis uma string nova, por exemplo por concatenação: `'m' + palavra[1:]`. (A notação `palavra[1:]` é explicada já a seguir.) A distinção é importante: uma operação sobre strings nunca modifica a original, devolve sempre uma string nova.
+`len(s)` vale 9. `s[len(s)]` causa `IndexError`, porque o último índice é `len(s) - 1`. Uma iteração `for caractere in s` percorre os caracteres sem exigir contas com índices.
 
 ## Fatias
 
-Uma **fatia** (slice) extrai um intervalo com a notação `s[inicio:fim]`: inclui a posição `inicio` e exclui a posição `fim`. Omitir um dos lados significa ir até ao extremo.
+`s[inicio:fim:passo]` extrai uma sequência, incluindo `inicio` e excluindo `fim`. O passo por defeito é 1. `s[0:4]` vale `"prog"`; `s[4:]` vale `"ramar"`; `s[::2]` vale `"pormr"`. `s[::-1]` inverte a string.
 
-```python
-s = 'programar'
-print(s[0:4])
-print(s[4:])
-print(s[:4])
-print(s[-3:])
-```
+Omitir um limite usa o extremo adequado ao passo. Uma fatia tolera limites fora da sequência: `s[:100]` dá a string inteira. Isto difere da indexação, que exige uma posição existente. Um passo zero causa `ValueError`.
 
-Isto escreve `prog`, `ramar`, `prog` e `mar`. O intervalo `[0:4]` cobre as posições $0, 1, 2, 3$, ou seja, quatro carateres. Um truque para nunca te enganares: o comprimento da fatia `s[a:b]` é exatamente `b - a`.
+## Texto é imutável
 
-O esquema marca cada posição de `'programar'` com o seu índice e a fatia `[0:4]` por cima.
-
-<Typst
-  source={indices}
-  format="svg"
-  alt="Esquema dos índices de programar de 0 a 8, com a fatia de 0 a 4 assinalada por cima."
-/>
-
-## Travessia e o padrão do acumulador
-
-Percorrer cada caráter chama-se **travessia** e faz-se com um `for` diretamente sobre a string. Quando precisares também das posições, a função `enumerate` dá-te pares de índice e caráter.
-
-```python
-texto = 'banana'
-for i, c in enumerate(texto):
-    print(i, c)
-```
-
-Isto escreve `0 b`, `1 a`, `2 n`, `3 a`, `4 n`, `5 a`. Sem `enumerate`, o ciclo `for c in texto` dá-te apenas os carateres.
-
-O padrão do acumulador, que já viste com números, aplica-se a texto: começa com a string vazia e vai juntando.
-
-```python
-texto = 'banana'
-invertido = ''
-for c in texto:
-    invertido = c + invertido
-print(invertido)
-```
-
-Isto escreve `ananab`. Em cada volta, o caráter atual passa para a frente do resultado parcial. Repara que isto constrói uma string nova em cada volta; para textos curtos não há problema, mas é bom saberes que existe este custo.
-
-## Comparar e procurar
-
-As strings comparam-se por **ordem lexicográfica**, parecida com a do dicionário: compara-se o primeiro caráter diferente e esse decide. Atenção a que as maiúsculas vêm antes das minúsculas na tabela de carateres, por isso `'Zebra' < 'abacaxi'` é verdadeiro, o que surpreende quem esperava ordem alfabética.
-
-O operador `in` testa se uma string ocorre dentro de outra, e devolve sempre um lógico:
-
-```python
-print('ama' in 'programar')
-print('xyz' in 'programar')
-```
-
-Isto escreve `True` e `False`. Qualquer string ocorre nela própria, e a string vazia `''` ocorre em todas.
-
-Três métodos resolvem a maior parte das procuras. O `split` parte uma string numa lista de palavras, cortando nos espaços por omissão. O `find` devolve a posição da primeira ocorrência, ou `-1` se não existir. O `index` faz o mesmo mas levanta erro quando não encontra. A diferença entre devolver `-1` e levantar erro é decisiva: usa `find` quando a ausência é normal e `index` quando a ausência indica um problema.
-
-```python
-frase = 'o rato roeu a rolha'
-palavras = frase.split()
-print(palavras)
-print(frase.find('roeu'))
-print(frase.find('queijo'))
-```
-
-Isto escreve `['o', 'rato', 'roeu', 'a', 'rolha']`, `7` e `-1`. Confere a posição: `o(0) espaço(1) r(2)a(3)t(4)o(5) espaço(6) r(7)`, por isso `'roeu'` começa na posição `7`.
-
-## Exemplo completo: palíndromo
-
-Uma palavra é um **palíndromo** quando se lê igual do início para o fim, como `radar` ou `osso`. Há duas formas naturais de testar. A curta usa uma fatia com passo negativo, `s[::-1]`, que percorre a string de trás para a frente. A explícita compara pares de posições simétricas e pára mal encontra uma diferença; esta segunda evita construir a string invertida e mostra o padrão de **saída antecipada** que já usaste nos primos.
-
-```python
-def e_palindromo_curta(s):
-    return s == s[::-1]
-
-def e_palindromo(s):
-    for i in range(len(s) // 2):
-        if s[i] != s[-1 - i]:
-            return False
-    return True
-
-print(e_palindromo('radar'))
-print(e_palindromo('python'))
-print(e_palindromo('osso'))
-```
-
-Isto escreve `True`, `False` e `True`. Segue a versão explícita com `'radar'`: o comprimento é `5`, por isso `i` toma `0` e `1`. Compara `s[0]` com `s[-1]` (`r` com `r`) e `s[1]` com `s[-2]` (`a` com `a`); o caráter do meio nunca precisa de comparação. Com `'python'`, a primeira comparação (`p` com `n`) já falha e a função devolve `False` sem percorrer o resto. Só é preciso testar metade das posições, porque cada comparação cobre um par simétrico.
-
-Experimenta a versão curta com outra palavra e prevê o resultado antes de correres.
+Não podes executar `s[0] = "P"`. Para alterar o primeiro carácter, constrói outra string com `"P" + s[1:]`. Métodos como `upper`, `lower` e `replace` também devolvem novas strings. Se ignoras o resultado de `s.upper()`, o nome `s` continua associado ao texto original.
 
 <CodePlayground
   language="python"
-  title="Inverter com fatia"
-  code={"s = 'programar'\nprint(s[::-1])"}
+  title="Normalizar e separar texto"
+  input=""
+  code={
+    'texto = "  Ana;Bruno;Ana  "\ncampos = texto.strip().split(";")\nprint(campos)\nprint(" / ".join(campos))\nprint(texto)'
+  }
 />
 
-:::warning[Os erros mais comuns com strings]
-Esquecer que os índices começam em `0`; tentar modificar um caráter no sítio em vez de construir uma string nova; confundir `find` (devolve `-1`) com `index` (levanta erro); e comparar texto com maiúsculas e minúsculas misturadas sem normalizar primeiro com `lower()`. Se uma comparação lexicográfica te surpreender, verifica as maiúsculas.
-:::
+`strip()` retira espaço das pontas, sem retirar o que está no meio. `split(";")` separa usando o ponto e vírgula. `join` junta as strings com o separador escolhido. O último `print` conserva os espaços do texto inicial porque nenhuma operação o alterou.
+
+## Procurar e contar
+
+`trecho in texto` testa pertença. `texto.find(trecho)` devolve o índice da primeira ocorrência ou `-1`; `texto.index(trecho)` lança `ValueError` se não houver ocorrência. Não uses o resultado de `find` como condição booleana: índice zero é falso e `-1` é verdadeiro. Compara-o explicitamente ou usa `in`.
+
+`count` conta ocorrências sem sobreposição. `"aaaa".count("aa")` vale 2. `startswith` e `endswith` verificam as pontas. `isalpha` e `isdigit` testam categorias de caracteres, mas aceitam caracteres Unicode além das letras e dígitos ASCII.
+
+## Construir uma transformação
+
+Queremos conservar apenas letras e convertê-las em minúsculas. Primeiro decidimos para cada carácter se pertence ao resultado; depois acrescentamos a sua forma minúscula.
+
+<CodePlayground
+  language="python"
+  title="Conservar letras"
+  input=""
+  code={
+    'def apenas_letras(texto):\n    resultado = ""\n    for caractere in texto:\n        if caractere.isalpha():\n            resultado += caractere.lower()\n    return resultado\n\nprint(apenas_letras("FP 2026: Olá!"))\nprint(apenas_letras("123!?"))'
+  }
+/>
+
+A saída é `fpolá` e uma linha vazia. `á` permanece porque é uma letra. Depois de cada iteração, `resultado` contém as letras já visitadas, na ordem original e em minúsculas. O algoritmo termina depois de percorrer o texto inteiro.
+
+Esta construção é clara para começar. Para textos grandes, podes guardar partes numa lista e usar `"".join(partes)`, evitando criar sucessivas strings com concatenações. Aprende primeiro a condição e a ordem, depois muda a construção.
+
+## Comparar palavras e formatar resultados
+
+Strings comparam-se lexicograficamente, carácter a carácter, segundo os valores Unicode. Não confundas essa ordem com uma ordenação linguística portuguesa. `"Z" < "a"` é verdadeiro, e maiúsculas e minúsculas diferem.
+
+Uma f-string calcula as expressões entre chavetas: `f"{3 / 2:.2f}"` vale `"1.50"`. Para escrever uma chaveta literal, duplica-a. `\n` representa uma mudança de linha; `\t`, uma tabulação; `\\`, uma barra invertida. A string `"a\nb"` contém três caracteres, não quatro.
