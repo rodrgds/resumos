@@ -1,84 +1,71 @@
 ---
-title: Álgebra de Boole e portas lógicas
-description: Operações booleanas, dualidade, expansão de Boole, formas canónicas SOP e POS e as portas lógicas.
+title: 'Álgebra de Boole e portas lógicas'
+description: 'Tabelas de verdade, identidades, formas canónicas e implementação com portas universais.'
 section: conteudo
-order: 4
+order: 7
+practices:
+  - fsc/praticar-algebra-boole-portas
 ---
 
-import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import expansaoBoole from '../../fsc/expansao-boole.dot?raw';
+Uma função booleana descreve uma saída de um bit a partir de entradas de um bit. O primeiro passo para a construir é escrever quando a saída deve ser 1. A expressão, a tabela de verdade e o circuito são três formas de descrever a mesma função.
 
-Um **circuito combinatório** é um circuito cuja saída depende apenas dos valores atuais das entradas. Não há memória nem história: com as mesmas entradas, a saída é sempre a mesma. A matemática que descreve estes circuitos é a **álgebra de Boole**, e os seus blocos físicos são as **portas lógicas**.
+## Operações
 
-## A álgebra
+Escrevemos AND por justaposição ou ponto, OR por $+$ e NOT por uma barra. Aqui $+$ é OR, não a soma dos inteiros. XOR, $A\oplus B$, é 1 quando as entradas diferem; XNOR é 1 quando são iguais.
 
-Para circuitos digitais, trabalha-se com o conjunto $A = \{0, 1\}$, dotado de duas operações binárias, a soma `+` (OR) e o produto justaposto ou com ponto (AND), e de uma operação unária, a negação $\bar{x}$ (NOT). O conjunto tem de ter pelo menos os dois elementos distintos `0` e `1`.
+| $A$ | $B$ | $AB$ | $A+B$ | $A\oplus B$ | $\overline{A\oplus B}$ |
+| --- | --- | ---- | ----- | ----------- | ---------------------- |
+| 0   | 0   | 0    | 0     | 0           | 1                      |
+| 0   | 1   | 0    | 1     | 1           | 0                      |
+| 1   | 0   | 0    | 1     | 1           | 0                      |
+| 1   | 1   | 1    | 1     | 0           | 1                      |
 
-O **princípio da dualidade** diz que a cada igualdade válida corresponde outra, obtida trocando `+` por produto e `0` por `1`. Se provares um teorema, ficas com o dual de oferta. O **teorema da expansão de Boole** (também chamado de Shannon) diz que qualquer função booleana se pode decompor numa variável:
+NAND é $\overline{AB}$ e NOR é $\overline{A+B}$. O círculo numa entrada ou saída de uma porta indica negação. Não confundas uma saída ativa a 0 com uma saída que nunca pode ser 1.
 
-$$
-F(x_1, x_2, \ldots, x_n) = x_1 \cdot F(1, x_2, \ldots, x_n) + \bar{x}_1 \cdot F(0, x_2, \ldots, x_n)
-$$
+## Simplificar sem mudar a função
 
-Isto é, a função vale o que vale com $x_1 = 1$ quando $x_1$ é 1, e o que vale com $x_1 = 0$ quando $x_1$ é 0. Aplicando a expansão a todas as variáveis, qualquer função se escreve com expressões de dois níveis, o que significa que qualquer função booleana tem um circuito com apenas dois níveis de portas.
+As identidades permitem substituir expressões equivalentes:
 
-<Dot
-  source={expansaoBoole}
-  alt="Árvore da expansão de Boole: o nó F com as variáveis x1 a xn divide-se em F com x1 a 1 pela aresta x1 e F com x1 a 0 pela aresta x1 negado."
-/>
+| Regra               | AND              | OR                |
+| ------------------- | ---------------- | ----------------- |
+| Elemento neutro     | $A\cdot1=A$      | $A+0=A$           |
+| Elemento absorvente | $A\cdot0=0$      | $A+1=1$           |
+| Idempotência        | $AA=A$           | $A+A=A$           |
+| Complemento         | $A\overline A=0$ | $A+\overline A=1$ |
+| Absorção            | $A(A+B)=A$       | $A+AB=A$          |
 
-Lê a árvore de cima para baixo: cada nível fixa uma variável e gera os dois casos, até só restarem constantes. É a mesma decomposição da fórmula, desenhada.
+A distributividade vale nas duas direções: $A(B+C)=AB+AC$ e $A+BC=(A+B)(A+C)$. A dualidade troca AND por OR e 0 por 1 numa identidade válida.
+
+Por exemplo,
+
+$$AB+A\overline BC=A(B+\overline BC)=A(B+C).$$
+
+A passagem interior usa $B+\overline BC=(B+\overline B)(B+C)=B+C$. O circuito pode usar uma OR de $B,C$ seguida de uma AND com $A$, em vez de dois produtos separados.
+
+De Morgan diz $\overline{AB}=\overline A+\overline B$ e $\overline{A+B}=\overline A\,\overline B$. Ao negar uma expressão, troca **todas** as operações do nível abrangido e nega os operandos. $\overline{A+BC}=\overline A(\overline B+\overline C)$.
 
 ## Formas canónicas
 
-A **forma canónica disjuntiva**, ou soma de produtos (SOP, do inglês _sum of products_), escreve a função como OR de termos onde aparecem todas as variáveis. Cada termo que vale 1 numa só linha da tabela de verdade chama-se **mintermo** (_minterm_).
+Com $n$ entradas, a tabela tem $2^n$ linhas. Na ordem $A,B,C$, o índice da linha é o inteiro binário `ABC`. Um mintermo contém todas as variáveis e vale 1 numa só linha. O mintermo 5, `101`, é $A\overline BC$.
 
-Toma a função $F(A, B) = A \oplus B$ como exemplo. A tabela de verdade dá 1 nas linhas $(0, 1)$ e $(1, 0)$:
+Suponhamos $F=1$ nos índices 1, 3, 5 e 6. A soma de mintermos é
 
-| A   | B   | F   |
-| --- | --- | --- |
-| 0   | 0   | 0   |
-| 0   | 1   | 1   |
-| 1   | 0   | 1   |
-| 1   | 1   | 0   |
+$$F=\Sigma m(1,3,5,6)=\overline A\overline BC+\overline ABC+A\overline BC+AB\overline C.$$
 
-A linha $(0, 1)$ corresponde ao produto $\bar{A}B$ e a linha $(1, 0)$ corresponde a $A\bar{B}$. A forma canónica disjuntiva é $F = \bar{A}B + A\bar{B}$.
+As linhas onde $F=0$ são 0, 2, 4 e 7. Um maxtermo vale 0 numa só linha: coloca a variável direta se o bit dessa linha for 0, e negada se for 1. Logo
 
-A **forma canónica conjuntiva**, ou produto de somas (POS, do inglês _product of sums_), faz o dual: escreve a função como AND de somas, uma por cada linha onde a função vale 0. Cada soma chama-se **maxtermo** (_maxterm_). Para a mesma função, as linhas de zero são $(0, 0)$ e $(1, 1)$, e a forma conjuntiva é $F = (A + B)(\bar{A} + \bar{B})$.
+$$F=\Pi M(0,2,4,7)=(A+B+C)(A+\overline B+C)(\overline A+B+C)(\overline A+\overline B+\overline C).$$
 
-<Tabs id="sop-pos" labels={['SOP da XOR', 'POS da XOR']}>
-  <div slot="panel-0">
+A soma de produtos simplificada pode omitir variáveis; a forma **canónica** não. Um termo $BC$ reúne duas linhas e não é um mintermo de uma função de três entradas.
 
-Lê as linhas onde $F = 1$: $(0, 1)$ dá $\bar{A}B$ e $(1, 0)$ dá $A\bar{B}$. A disjunção é $F = \bar{A}B + A\bar{B}$. Cada mintermo cobre exatamente uma linha a 1.
+## NAND, NOR e seleção
 
-  </div>
-  <div slot="panel-1">
+Para implementar $F=AB+CD$ só com NAND, calcula $u=\overline{AB}$ e $v=\overline{CD}$, depois $F=\overline{uv}$. De Morgan justifica a última porta. Uma negação isolada é $\overline A=\operatorname{NAND}(A,A)$. Por isso NAND é universal. NOR também permite construir NOT, AND e OR.
 
-Lê as linhas onde $F = 0$: $(0, 0)$ dá $(A + B)$ e $(1, 1)$ dá $(\bar{A} + \bar{B})$. A conjunção é $F = (A + B)(\bar{A} + \bar{B})$. Cada maxtermo exclui exatamente uma linha a 0.
+A expansão de Shannon separa os casos de uma entrada:
 
-  </div>
-</Tabs>
+$$F=\overline A\,F(0,B,C)+A\,F(1,B,C).$$
 
-Nenhuma das duas é, em geral, a expressão mais simples. Circuitos diferentes podem realizar a mesma função lógica, e quanto mais simples a expressão, mais pequeno o circuito. Para converter de POS para SOP, o caminho mais seguro é reconstruir a tabela de verdade e extrair a outra forma a partir dela.
+As duas subfunções são os dados de um multiplexador selecionado por $A$. Para a função acima, $F(0,B,C)=C$ e $F(1,B,C)=B\oplus C$. Assim um MUX 2:1 pode escolher entre $C$ e $B\oplus C$.
 
-## As portas lógicas
-
-Cada operação tem uma porta, com um símbolo próprio. As três básicas são:
-
-- Porta **AND**: a saída é 1 só quando todas as entradas são 1. $F = AB$.
-- Porta **OR**: a saída é 1 quando pelo menos uma entrada é 1. $F = A + B$.
-- Porta **NOT** (inversor): tem uma só entrada e nega-a. $F = \bar{A}$.
-
-Duas portas derivadas aparecem em quase todos os circuitos:
-
-- Porta **XOR** (OU exclusivo): a saída é 1 quando as entradas são diferentes. $F = \bar{A}B + A\bar{B}$, que é exatamente a SOP do exemplo acima.
-- Porta **XNOR** (OU exclusivo negado, a bicondicional): a saída é 1 quando as entradas são iguais. $F = AB + \bar{A}\bar{B}$. É a negação da XOR.
-
-Faltam duas portas que vais encontrar nos exercícios. A porta **NAND** é um AND seguido de NOT: $F = \overline{AB}$, que só dá 0 quando ambas as entradas são 1. A porta **NOR** é um OR seguido de NOT: $F = \overline{A + B}$, que só dá 1 quando ambas as entradas são 0. A NAND é **universal**: qualquer função booleana se constrói só com portas NAND (a NOR também é). Para veres como, faz um NOT ligando as duas entradas de uma NAND à mesma variável, e faz um AND negando a saída de uma NAND com esse NOT.
-
-Todas as portas exceto a NOT podem ter mais de duas entradas. Para confirmares que percebeste, verifica na tabela de verdade que $A \oplus B$ com $A = 1$, $B = 1$ dá 0 (entradas iguais), enquanto a XNOR dá 1.
-
-:::tip[Escolhe a forma pelo que precisas]
-Se a tabela tem poucos uns, a SOP fica curta. Se tem poucos zeros, a POS fica curta. Este truque orienta a primeira escrita; a simplificação posterior pode mudar o resultado.
-:::
+Confirma uma simplificação em todas as linhas, sobretudo nas que ficaram fora dos termos escolhidos. A igualdade em um único exemplo não prova que os circuitos implementam a mesma função.

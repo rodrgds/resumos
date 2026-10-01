@@ -1,0 +1,62 @@
+---
+title: 'Desempenho e lei de Amdahl'
+description: 'Tempo de CPU, CPI ponderado, speedup e limites de otimizações parciais.'
+section: conteudo
+order: 19
+practices:
+  - fsc/praticar-desempenho
+---
+
+Um computador pode executar mais instruções por segundo e ainda demorar mais a resolver um problema. O tempo depende de quantas instruções o programa executa, do custo médio de cada uma e do período do relógio.
+
+## O que estamos a medir
+
+Latência é o tempo para concluir uma tarefa. Throughput é o número de tarefas concluídas por unidade de tempo. Sobrepor tarefas pode aumentar throughput sem reduzir a latência de uma tarefa individual.
+
+Tempo decorrido inclui espera por entrada/saída e outras pausas. Tempo de CPU mede o tempo em que o CPU trabalha para o processo, incluindo a componente de utilizador e a de sistema. Compara a mesma medida, o mesmo trabalho e a mesma entrada.
+
+O desempenho para uma tarefa é proporcional a $1/T$. O speedup de uma mudança é $S=T_{antigo}/T_{novo}$. Se uma tarefa passa de 10 s para 8 s, o speedup é 1,25 e o tempo diminuiu 20%. Não são duas maneiras equivalentes de dizer uma diminuição de 25%.
+
+## Equação de execução
+
+Se N é o número de instruções máquina **executadas**, CPI o número médio de ciclos por instrução e f a frequência:
+
+$$T_{CPU}=N\cdot CPI\cdot T_{clk}=\frac{N\cdot CPI}{f}.$$
+
+Com $N=10^8$, CPI=1,5 e f=2 GHz, o tempo é $0{,}075$ s. GHz é $10^9$ ciclos/s; não insiras 2 na fórmula mantendo N sem conversão de unidades.
+
+Um compilador pode reduzir N e aumentar CPI. Se N passa a 80% e CPI a 115%, com a mesma frequência, o tempo passa a $0{,}8\times1{,}15=0{,}92$: redução de 8%, speedup $1/0{,}92\approx1{,}087$.
+
+## CPI ponderado
+
+Com classes de instruções, $CPI=\sum_i p_iCPI_i$, onde $p_i$ é a fração do **número de instruções** nessa classe. As frações somam 1.
+
+Um programa com 50% R, 30% lw, 10% sw e 10% beq, no CPU multiciclo, tem
+
+$$CPI=0{,}5(4)+0{,}3(5)+0{,}1(4)+0{,}1(3)=4{,}2.$$
+
+Se forem 1000 instruções, são 4200 ciclos. A 500 MHz, demora $8{,}4\ \mu s$. Um uniciclo a 100 MHz, com CPI=1 e o mesmo N, demora $10\ \mu s$: o multiciclo é $10/8{,}4\approx1{,}19$ vezes mais rápido neste caso.
+
+Não uses a fração de tempo de uma classe como se fosse a fração de instruções. No exemplo, os loads são 30% das instruções, mas ocupam $0{,}3\times5/4{,}2\approx35{,}7\%$ dos ciclos.
+
+IPC, instruções por ciclo, é $1/CPI$ para os mesmos totais. MIPS é $f/(CPI\times10^6)$. Uma taxa MIPS maior não prova menor tempo se os programas ou ISAs exigirem N diferente. Em benchmarks, explicita os pesos: a soma dos tempos de tarefas representa uma carga de trabalho; a média geométrica de razões é outra forma de agregação, não o tempo total dessa carga.
+
+## Lei de Amdahl
+
+Se uma parte ocupa fração p do **tempo original** e fica s vezes mais rápida, a restante parte não muda. Normalizando o tempo original para 1:
+
+$$T_{novo}=1-p+\frac ps,\qquad S=\frac1{1-p+p/s}.$$
+
+Com p=0,6 e s=3, o tempo novo é $0{,}4+0{,}2=0{,}6$, speedup $5/3\approx1{,}667$. Mesmo acelerar essa parte infinitamente dá no máximo $1/(1-p)=2{,}5$.
+
+Para obter speedup 2 com p=0,8, resolve $1/2=0{,}2+0{,}8/s$, dando $s=8/3$. Se o objetivo exceder $1/(1-p)$, não existe s finito que o alcance só com essa alteração.
+
+Depois da melhoria, a parte otimizada já não ocupa p do tempo. Ocupa $(p/s)/(1-p+p/s)$. No primeiro exemplo, é $0{,}2/0{,}6=1/3$.
+
+## Percentagens aninhadas e mudanças múltiplas
+
+Se 80% do tempo é cálculo numérico e metade desse cálculo é trigonometria, a trigonometria ocupa $0{,}8\times0{,}5=0{,}4$ do total. Acelerar só essa parte quatro vezes dá $T_{novo}=0{,}6+0{,}4/4=0{,}7$, speedup $10/7$.
+
+Para partes **disjuntas**, com frações originais $p_i$ e melhorias $s_i$, usa $T_{novo}=1-\sum p_i+\sum p_i/s_i$. Não somes duas vezes o tempo de partes sobrepostas. Se aplicares melhorias sucessivas usando percentagens da execução intermédia, recalcula os pesos antes da segunda conta.
+
+Uma frequência maior pode exigir CPI maior ou fazer esperar mais ciclos por memória. Substitui os valores finais na equação de execução. A diferença que interessa ao utilizador é o tempo para o trabalho definido.

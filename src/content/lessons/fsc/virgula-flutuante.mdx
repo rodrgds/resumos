@@ -1,113 +1,79 @@
 ---
-title: Vírgula flutuante
-description: Normalização, formato IEEE 754 em precisão simples e dupla e um exemplo completo de codificação.
+title: 'Vírgula flutuante e IEEE 754'
+description: 'Normais, subnormais, arredondamento e operações em binary32, binary64 e bfloat16.'
 section: conteudo
-order: 3
+order: 5
+practices:
+  - fsc/praticar-virgula-flutuante
 ---
 
+A vírgula fixa usa a mesma resolução em todo o intervalo. A vírgula flutuante guarda um significando e um expoente, permitindo representar grandezas muito pequenas e muito grandes. A distância entre números aumenta com o seu módulo.
+
+## Campos e valores
+
+| Formato  | Sinal $s$ | Expoente $E$ | Fração $F$ | Bias |
+| -------- | --------- | ------------ | ---------- | ---- |
+| binary32 | 1         | 8            | 23         | 127  |
+| binary64 | 1         | 11           | 52         | 1023 |
+| bfloat16 | 1         | 8            | 7          | 127  |
+
+Se $0<E<E_{\max}$, o número é normal:
+
+$$x=(-1)^s\left(1+\frac{F}{2^p}\right)2^{E-\mathrm{bias}},$$
+
+onde $p$ é o número de bits da fração. O 1 antes da vírgula é implícito. Assim binary32 tem 24 bits de precisão no significando dos normais.
+
+Se $E=0$, não há esse 1:
+
+$$x=(-1)^s\frac{F}{2^p}2^{1-\mathrm{bias}}.$$
+
+Com $F\ne0$ obtemos um subnormal. Com $F=0$ obtemos $+0$ ou $-0$. Se todos os bits do expoente forem 1, $F=0$ significa infinito e $F\ne0$ significa NaN, _not a number_. NaN não é um número muito grande.
+
+## Codificar um valor
+
+Codifica $-13{,}25$ em binary32. O módulo é $1101{,}01_2=1{,}10101_2\times2^3$. Portanto $s=1$, $E=3+127=130=10000010_2$ e a fração é `10101` seguida de 18 zeros:
+
+```text
+1 | 10000010 | 10101000000000000000000
+```
+
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
-import float32bits from '../../fsc/float-32bits.typ?raw';
-
-Os inteiros não chegam para representar grandezas contínuas como $9{,}6875$ ou distâncias astronómicas. A **vírgula flutuante** resolve o problema com uma ideia emprestada da notação científica: guarda um número significativo e uma potência da base que posiciona a vírgula.
-
-## Normalização
-
-**Normalizar** é escrever o número com exatamente um dígito diferente de zero antes da vírgula. Em base 10:
-
-$$
--3129422312{,}234 = -3{,}129422312234 \times 10^9
-$$
-
-O dígito antes da vírgula passou a ser o `3`, e o expoente $9$ regista quantas casas a vírgula andou. Em base 2, a forma normalizada começa sempre por `1,`:
-
-$$
-0{,}0001011111_2 = 1{,}011111_2 \times 2^{-4}
-$$
-
-Multiplicar por $2^{-4}$ desloca a vírgula quatro casas para a esquerda, desfazendo a normalização. Como em binário o único dígito não nulo é o `1`, o bit à esquerda da vírgula é sempre `1` e nem precisa de ser guardado. Esta é a ideia do **bit implícito**, que poupa um bit em cada número guardado.
-
-## O formato IEEE 754
-
-A norma **IEEE 754** fixa como os três ingredientes, sinal, expoente e mantissa, se arrumam nos bits. Há dois tamanhos:
-
-| Campo    | Precisão simples (_float_, 32 bits) | Precisão dupla (_double_, 64 bits) |
-| -------- | ----------------------------------- | ---------------------------------- |
-| Sinal    | 1 bit                               | 1 bit                              |
-| Expoente | 8 bits                              | 11 bits                            |
-| Mantissa | 23 bits                             | 52 bits                            |
-
-O valor codificado é:
-
-$$
-(-1)^s \times 1{,}m \times 2^{e - 127} \quad \text{(precis\~ao simples)}
-$$
-
-$$
-(-1)^s \times 1{,}m \times 2^{e - 1023} \quad \text{(precis\~ao dupla)}
-$$
-
-Aqui $s$ é o bit de sinal, $m$ é a mantissa (os bits à direita da vírgula, sem o `1` inicial) e $e$ é o expoente guardado. O expoente guardado tem um **viés** (_bias_): soma-se 127 (ou 1023) ao expoente verdadeiro para que o campo guardado seja sempre positivo e a comparação de expoentes funcione como comparação de inteiros sem sinal.
-
-## Exemplo completo
-
-Codifica $-9{,}6875$ em precisão simples. Primeiro separa a parte inteira da fracionária: $9 = 1001_2$. Para $0{,}6875$, multiplica por 2 sucessivamente: $0{,}6875 \times 2 = 1{,}375$ (regista 1), $0{,}375 \times 2 = 0{,}75$ (regista 0), $0{,}75 \times 2 = 1{,}5$ (regista 1), $0{,}5 \times 2 = 1{,}0$ (regista 1). A fração é $0{,}1011_2$, por isso:
-
-$$
--9{,}6875 = -1001{,}1011_2 = -1{,}0011011_2 \times 2^3
-$$
-
-Agora identifica os campos. O sinal é negativo, logo $s = 1$. A mantissa são os bits depois de `1,`: `0011011`, completados com zeros até 23 bits. O expoente verdadeiro é $3$, logo o campo guardado é $e = 3 + 127 = 130 = 10000010_2$.
-
-O resultado final, separado em sinal, expoente e mantissa, é:
-
-```
-1 10000010 00110110000000000000000
-```
+import floatFields from '../../fsc/float-32bits.typ?raw';
 
 <Typst
-  source={float32bits}
+  source={floatFields}
   format="svg"
-  alt="Barra de 32 bits dividida em três campos: 1 bit de sinal com valor 1, 8 bits de expoente com 10000010 e 23 bits de mantissa com 0011011 seguido de zeros."
+  alt="Binary32 de menos 13,25: sinal 1, expoente 10000010 e fração 10101 seguida de dezoito zeros."
 />
 
-Repara nas larguras: o expoente ocupa 8 posições e a mantissa 23, e os valores por baixo são exatamente os bits calculados acima.
+Agrupar em grupos de quatro bits dá `0xC1540000`. Para descodificar, reconstrói $-(1+1/2+1/8+1/32)\times8=-13{,}25$. Não interpretes a palavra completa em complemento para dois.
 
-Para descodificar, faz o caminho inverso: $s = 1$ dá o sinal negativo, $e = 130$ dá o expoente $130 - 127 = 3$, e a mantissa com o bit implícito dá $1{,}0011011_2 \times 2^3 = 1001{,}1011_2 = 9{,}6875$.
+## Limites e espaçamento
 
-Confirma os 32 bits com um programa curto, que empacota o valor em precisão simples e imprime os bits:
+Em binary32, o menor normal positivo é $2^{-126}$ e o menor subnormal positivo é $2^{-149}$. O maior finito é $(2-2^{-23})2^{127}$. Os subnormais mantêm passos de $2^{-149}$ perto de zero, com menos bits significativos à medida que o valor diminui.
 
-<CodePlayground
-  language="python"
-  code={
-    'import struct\nbits = format(struct.unpack(">I", struct.pack(">f", -9.6875))[0], "032b")\nprint(bits)'
-  }
-/>
+Entre $2^e$ e $2^{e+1}$, os normais binary32 têm espaçamento $2^{e-23}$. Entre 1 e 2 é $2^{-23}$; entre 2 e 4 é $2^{-22}$. Em bfloat16, o menor representável maior que 2 é $2+2^{-6}$. O expoente tem a mesma largura de binary32, mas a precisão é muito menor.
 
-A saída é `11000001000110110000000000000000`: o `1` inicial é o sinal, seguem-se os 8 bits do expoente e os 23 da mantissa, iguais ao código calculado à mão.
+## Somar e subtrair
 
-## Valores especiais
+Para somar $5{,}5+1{,}25$, escreve $1{,}011_2\times2^2$ e $1{,}01_2\times2^0$. Alinha os expoentes deslocando o segundo significando: $0{,}0101_2\times2^2$. A soma é $1{,}1011_2\times2^2=6{,}75$.
 
-Nem todas as combinações de expoente e mantissa seguem a fórmula com bit implícito. Os extremos do campo de expoente estão reservados:
+Subtrair usa o mesmo alinhamento. Por exemplo $5{,}5-5{,}25$ dá $(1{,}011-1{,}0101)\times2^2=0{,}0001\times2^2=1\times2^{-2}=0{,}25$. Depois de uma quase anulação, pode ser preciso normalizar deslocando para a esquerda.
 
-| Expoente   | Mantissa          | Valor                                                             |
-| ---------- | ----------------- | ----------------------------------------------------------------- |
-| `00000000` | `000...0`         | Zero, com sinal: `+0` e `-0`                                      |
-| `00000000` | diferente de zero | Desnormalizado: $0{,}m \times 2^{-126}$, sem bit implícito        |
-| `11111111` | `000...0`         | Infinito, com sinal: $+\infty$ e $-\infty$                        |
-| `11111111` | diferente de zero | NaN (_not a number_), resultado de operações inválidas como $0/0$ |
+No formato finito, conserva bits adicionais durante a conta e arredonda no fim. O modo usual é o mais próximo, com empates para o significando cujo último bit conservado é par. Truncar sempre não implementa esta regra.
 
-Os desnormalizados preenchem o intervalo entre zero e o menor normalizado, à custa de perderem precisão: quanto mais zeros à esquerda da mantissa, menos bits significativos restam. O infinito aparece em divisões por zero e em overflows, e o NaN propaga-se por qualquer conta em que entre.
+## Multiplicar e perder precisão
 
-## Limites do formato
+Na multiplicação, faz XOR dos sinais, soma os expoentes reais e multiplica os significandos. $1{,}5\times2{,}5=(1{,}1\times1{,}01)\times2^1=1{,}111\times2^1=3{,}75$. Se o significando atingir 2, divide-o por 2 e aumenta o expoente.
 
-A vírgula flutuante cobre um intervalo enorme, mas nem todos os valores decimais são exatos em binário: $0{,}1$, por exemplo, gera uma dízima binária infinita e é guardado com um pequeno erro de arredondamento[^moeda]. É por isso que somar dinheiro com `float` acumula erros e os programas financeiros usam inteiros de cêntimos ou tipos decimais. Guarda também esta regra prática: compara com que precisão o problema precisa antes de escolheres entre `float` (32 bits) e `double` (64 bits).
+Overflow pode produzir infinito; resultados demasiado pequenos podem tornar-se subnormais ou zero. Converter binary64 para binary32 também pode exigir arredondamento, mesmo que o valor esteja dentro do intervalo.
 
-<YouTube id="PZRI1IfStY0" title="Floating Point Numbers - Computerphile" />
+A adição não é associativa em geral. Em binary32, $2^{24}+1$ arredonda para $2^{24}$, pois o passo é 2 e o empate conserva o último bit par. Assim $(2^{24}+1)-2^{24}=0$, mas $2^{24}+(1-2^{24})=1$.
 
-O vídeo mostra o erro de guardar $0{,}1$ em binário, que é a razão física por trás do aviso sobre dinheiro acima.
+import Binary32 from '../../../components/fsc/Binary32.astro';
 
-> Experimenta: codifica $5{,}25$ em precisão simples. (Resposta: $5{,}25 = 101{,}01_2 = 1{,}0101_2 \times 2^2$, logo $s = 0$, $e = 129 = 10000001_2$, mantissa `0101000...0`, e o código é `0 10000001 01010000000000000000000`.)
+<Binary32 />
 
-[^moeda]: Podes ver os 64 bits exatos de $0{,}1$ no [conversor IEEE 754](https://www.h-schmidt.net/FloatConverter/IEEE754.html): a mantissa não termina em zeros, o que denuncia o arredondamento. A regra prática é esta: dinheiro conta-se em inteiros de cêntimos, nunca em `float`.
+Introduz uma palavra de 32 bits em hexadecimal ou escolhe um caso. A visualização separa sinal, expoente e fração e aplica as regras de binary32, sem efetuar uma nova operação aritmética entre floats. Os bits são exatos; a escrita decimal de valores muito pequenos ou grandes é uma aproximação. Para NaN e infinito, a fórmula dos números finitos não se aplica.
+
+Experimenta `3F800000` e `3F800001`: o segundo tem apenas o último bit da fração a 1 e vale $1+2^{-23}$. Depois compara `00000000` com `80000000`: muda o sinal, mas ambos representam zero.

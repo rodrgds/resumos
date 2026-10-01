@@ -1,87 +1,62 @@
 ---
-title: Memórias
-description: RAM e ROM, SRAM e DRAM, capacidade, descodificação total e parcial e espaço de endereçamento.
+title: 'Memórias, capacidade e descodificação'
+description: 'Organizar RAM e ROM, agregar chips e determinar mapas de endereços e aliases.'
 section: conteudo
-order: 7
+order: 12
+practices:
+  - fsc/praticar-memorias
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import hierarquiaMemoria from '../../fsc/hierarquia-memoria.typ?raw';
+Uma memória associa a cada endereço uma unidade de dados. Antes de calcular capacidade, identifica o que cada endereço seleciona: um byte, uma palavra de 16 bits ou outra unidade. O número de endereços sozinho não determina o número de bytes.
 
-Os registos guardam poucas palavras junto ao processador. Para guardar quantidades maiores de dados usam-se **memórias de acesso direto**, onde qualquer posição se lê ou escreve indicando o seu endereço.
+## Tipos e interface
 
-## Tipos de memória
+RAM permite ler e escrever posições por endereço. ROM é usada para conteúdo fixo ou alterado por um procedimento especial. SRAM mantém bits em circuitos enquanto tem alimentação; DRAM guarda carga em condensadores e requer refresh. Ambas são voláteis. Flash é não volátil, mas a escrita e o apagamento têm regras diferentes de uma RAM.
 
-A **RAM** permite leitura e escrita em qualquer posição. A **ROM** permite apenas leitura, com o conteúdo definido no fabrico. À parte, uma memória pode ser **volátil**, isto é, perde os dados quando se desliga a alimentação, ou não volátil, que os conserva.
+Uma célula SRAM típica usa seis transístores, com armazenamento estável e acesso controlado. Uma célula DRAM típica usa um transístor e um condensador: a carga perde-se com o tempo e a leitura requer reposição, pelo que o controlador faz refresh. Menos elementos por bit permite maior densidade, mas exige esse controlo adicional.
 
-Dentro da RAM há duas tecnologias com compromissos opostos:
+Uma ROM de máscara tem conteúdo definido na fabricação. PROM permite programação; EPROM pode ser apagada com luz ultravioleta; EEPROM pode ser apagada eletricamente. Flash também é apagada eletricamente, habitualmente por blocos. Para firmware atualizável é preciso memória não volátil reprogramável, não uma SRAM que perde conteúdo quando desligada. Estas tecnologias têm limites de escrita; não assumas que a possibilidade de reprogramar é ilimitada.
 
-- **SRAM** (memória estática): cada bit vive num circuito que se mantém sozinho. É rápida, mas cada célula ocupa muito silício, por isso tem menor capacidade.
-- **DRAM** (memória dinâmica): cada bit vive como carga num condensador minúsculo, que se descarrega com o tempo e **precisa de ser refrescada** periodicamente. É mais lenta no acesso, mas muito mais densa.
+Registos, caches, RAM e armazenamento formam uma hierarquia que procura combinar acesso rápido, capacidade e custo. Não confundas persistência com velocidade: sobreviver à falta de alimentação não implica acesso tão rápido como um registo.
 
-Em geral, o tempo de escrita é maior do que o tempo de leitura.
+O acesso aleatório permite selecionar diretamente uma posição. Uma memória de acesso sequencial impõe uma ordem de acesso. Numa memória associativa, CAM, pesquisa-se um conteúdo e obtém-se a posição correspondente.
 
-<Typst
-  source={hierarquiaMemoria}
-  format="svg"
-  alt="Pilha de quatro níveis: registos no topo, depois SRAM, DRAM e ROM na base. Uma seta indica mais rápida para cima e mais densa para baixo."
-/>
-
-Lê a pilha nos dois sentidos: para cima ganhas velocidade e perdes capacidade, para baixo ganhas densidade e pagas em tempo de acesso.
+Num chip, `CS` seleciona, `OE` habilita a saída e `WE` habilita a escrita. Uma barra ou bolha indica controlo ativo a 0. Uma saída desativada pode ficar em alta impedância, Z, para não conduzir o barramento. Z não é um terceiro valor guardado na célula. Nunca atives simultaneamente dois chips que conduzem dados diferentes no mesmo barramento.
 
 ## Capacidade
 
-Com $P$ linhas de endereço há $N = 2^P$ posições endereçáveis. A **capacidade** obtém-se multiplicando o número de posições pelo número de bits por posição, que é igual ao número de bits do porto de dados:
+Um chip $2^a\times w$ tem $a$ linhas de endereço e $w$ linhas de dados. Guarda $2^aw$ bits. Um chip $4\text{K}\times8$ tem $2^{12}$ posições e guarda 4096 bytes, ou 4 KiB. Um chip $4\text{K}\times16$ tem as mesmas 12 entradas de endereço, mas guarda 8 KiB.
 
-$$
-\text{capacidade} = 2^P \times W
-$$
+Uma memória de 24 bits de endereçamento ao byte tem $2^{24}$ bytes, 16 MiB. Se cada posição armazenar 32 bits, a capacidade será quatro vezes maior. Indica sempre a organização usada.
 
-onde $W$ é a largura em bits de cada posição. Uma memória com $2^{12}$ posições de 8 bits guarda $2^{12} \times 8$ bits, ou seja, $2^{12}$ bytes. Como $2^{10}$ bytes valem $1$ KiB e $2^{20}$ bytes valem $1$ MiB:
+## Alargar e aprofundar
 
-$$
-2^{12} \times 8\ \text{bits} = 2^2 \times 2^{10}\ \text{bytes} = 4\ \text{KiB}
-$$
+Queremos $8\text{K}\times16$ a partir de chips $4\text{K}\times8$. Para a largura, colocamos dois chips em paralelo: um guarda os bits 7:0, outro os bits 15:8. Recebem o mesmo endereço e controlo.
 
-Confirma a conta com um programa curto:
+Para duplicar a profundidade, precisamos de dois destes pares. As 12 linhas inferiores vão a todos os chips; $A_{12}$ escolhe o par. São **quatro chips**, organizados em dois bancos de 16 bits. A capacidade é $8192\times16=131072$ bits, ou 16 KiB. Não multipliques o número de linhas de endereço pelo número de chips.
 
-<CodePlayground
-  language="python"
-  code={
-    'bits = 2**12 * 8\nprint(bits)\nprint(bits // 8)\nprint(bits // 8 // 1024)'
-  }
+import Dot from '../../../components/Dot.astro';
+import mem from '../../fsc/memoria-bancos.dot?raw';
+
+<Dot
+  source={mem}
+  alt="A12 seleciona um de dois bancos. Cada banco contém dois chips 4K por 8, um para cada metade do barramento de 16 bits. A0 a A11 vão a todos os chips."
 />
 
-A saída é `32768` bits, `4096` bytes e `4` KiB, exatamente a cadeia de conversões feita à mão.
+## Mapa de endereços
 
-Decora as potências de referência: $2^{10} = 1024$ bytes $= 1$ KiB, $2^{20} = 1048576$ bytes $= 1$ MiB.
+Num sistema com endereços de 16 bits, queremos colocar uma RAM de 4 KiB em `0x8000` a `0x8FFF`. Os 12 bits inferiores escolhem a posição interna. Os quatro superiores têm de ser `1000` para selecionar o chip:
 
-## Descodificação
+$$CS=A_{15}\overline A_{14}\overline A_{13}\overline A_{12}.$$
 
-Ligar as linhas de endereço às posições chama-se **descodificação**, e há dois regimes:
+O primeiro endereço tem todos os bits inferiores a 0; o último tem-nos a 1. São $0x1000=4096$ endereços, contando as duas extremidades. Um bloco de $2^{12}$ bytes deve começar numa fronteira com os 12 bits inferiores a 0 para esta descodificação simples.
 
-- **Descodificação total**: cada endereço corresponde a uma posição. Todos os bits de endereço são usados na seleção.
-- **Descodificação parcial**: vários endereços correspondem à mesma posição. Nem todos os bits de endereço participam na seleção, por isso a mesma célula aparece em vários endereços (diz-se que tem imagem, _alias_).
+Se só descodificarmos $A_{15}=1$, o chip aparece repetido de `0x8000` a `0xFFFF`. `0x8123` e `0x9123` acedem à mesma posição `0x123`. São aliases: a descodificação parcial não criou mais armazenamento. Alterar por um endereço é visível pelo outro.
 
-<Tabs id="descodificacao" labels={['Total', 'Parcial']}>
-  <div slot="panel-0">
+Na intercalação por endereços pares e ímpares, $A_0$ seleciona o banco e os restantes bits selecionam a posição dentro dele. Isto é diferente de usar o bit mais alto para colocar um banco depois do outro no mapa.
 
-Na descodificação total, uma memória com 10 linhas de endereço usa os 10 bits para escolher entre $2^{10} = 1024$ posições. O endereço `0011010011` designa uma e uma só célula, e nenhum endereço se repete.
+## Erros de memória
 
-  </div>
-  <div slot="panel-1">
+Um bit de paridade permite escolher paridade par ou ímpar. Com paridade par, `10110010` já tem quatro bits 1, por isso o bit adicional é 0. Se mudar um bit, a paridade denuncia o erro. Se mudarem dois, pode não o detetar; também não identifica qual bit corrigir.
 
-Na descodificação parcial, alguns bits de endereço são ignorados. Se o processador emite 12 bits mas a memória só usa os 10 mais baixos, os bits $A_{11}A_{10}$ não participam: a célula `0000000000` aparece nos endereços `000000000000`, `010000000000`, `100000000000` e `110000000000`. São 4 imagens por célula, e o espaço de $2^{12}$ endereços cobre só $2^{10}$ posições distintas.
-
-  </div>
-</Tabs>
-
-A descodificação parcial desperdiça espaço de endereçamento, mas poupa descodificadores e é comum quando a memória é mais pequena do que o espaço disponível.
-
-## Espaço de endereçamento
-
-O **espaço de endereçamento** conta tudo o que o processador consegue designar: $2$ elevado ao número total de bits de endereço, somando os bits de endereço de entrada com os bits perdidos (os que a descodificação parcial ignora), caso existam. Se um processador emite 12 bits de endereço mas 2 deles se perdem na descodificação parcial, o espaço total continua a ser $2^{12}$ endereços, embora só $2^{10}$ posições distintas existam.
-
-> Experimenta: uma memória tem 10 linhas de endereço e posições de 16 bits. Qual é a capacidade em bytes? (Resposta: $2^{10} \times 16$ bits $= 1024 \times 2$ bytes $= 2$ KiB.)
+Um código SECDED acrescenta redundância que permite corrigir um erro de um bit e detetar erros de dois bits no modelo desse código. Não generalizes essa garantia a qualquer número de erros. Capacidade útil e capacidade física com bits de verificação podem ser diferentes.

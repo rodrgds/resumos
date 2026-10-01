@@ -1,0 +1,183 @@
+---
+title: 'Praticar: Instruções e formatos'
+description: 'Exercícios originais com pistas e resolução.'
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="fsc-rv32-codigo-r"
+  title="Descodificar os campos"
+  explanation="/cadeiras/fsc/legv8-instrucoes/#codificar-passo-a-passo"
+  answer={{"kind": "self", "checklist": ["sub x5,x6,x7.", "Identifica op=33 e f7=20 para distinguir de add."]}}
+>
+
+Descodifica 0x407302B3 usando o formato R. Identifica os três registos e a operação.
+
+  <div slot="hint">
+
+Separa op, rd, f3, rs1, rs2, f7.
+
+  </div>
+
+  <div slot="hint-more">
+
+É o exemplo de add com f7 alterado.
+
+  </div>
+
+  <div slot="solution">
+
+op=0x33, rd=5, f3=0, rs1=6, rs2=7, f7=0x20. Isto é `sub x5,x6,x7`, ou `sub t0,t1,t2`. f3=0 sozinho não distingue add de sub; f7 é necessário.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não interpretes f7=0x20 como um imediato.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-codigo-s"
+  title="Imediato dividido de um store"
+  explanation="/cadeiras/fsc/legv8-instrucoes/#campos-dos-formatos"
+  answer={{"kind": "self", "checklist": ["Imediato FFC repartido em 1111111 e 11100.", "Código FEA42E23 com rs2=x10 e rs1=x8."]}}
+>
+
+Codifica `sw x10,-4(x8)`. Mostra as duas partes do imediato S e o hexadecimal.
+
+  <div slot="hint">
+
+O imediato de 12 bits para -4 é 0xFFC.
+
+  </div>
+
+  <div slot="hint-more">
+
+imm[11:5]=1111111 e imm[4:0]=11100.
+
+  </div>
+
+  <div slot="solution">
+
+O formato é `1111111 | 01010 | 01000 | 010 | 11100 | 0100011`. O código é `0xFEA42E23`. x10 entra no campo rs2 e x8 no rs1. Não há rd neste formato.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não escrevas o imediato S como um único campo à esquerda de rs1.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-branch-pc"
+  title="Destino relativo ao branch"
+  explanation="/cadeiras/fsc/legv8-instrucoes/#saltos"
+  answer={{"kind": "self", "checklist": ["Deslocamento -16 bytes.", "imm[4:1]=1000, relativo ao PC do branch."]}}
+>
+
+Um beq em 0x00400030 salta para 0x00400020. Qual o deslocamento em bytes e qual o valor do campo imm[4:1]?
+
+  <div slot="hint">
+
+Subtrai o endereço da própria instrução.
+
+  </div>
+
+  <div slot="hint-more">
+
+O deslocamento é -16, representado em 13 bits com bit 0 implícito.
+
+  </div>
+
+  <div slot="solution">
+
+d=-16. Em 13 bits, -16 é `1 1111 1111 0000`, pelo que imm[4:1]=1000. O destino não é calculado relativamente a PC+4. Também não se divide por 4: os campos representam um deslocamento em múltiplos de 2 bytes.
+
+  </div>
+
+  <div slot="mistakes">
+
+Usar PC+4 daria -20 e outro código.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-constante"
+  title="A metade baixa tem sinal"
+  explanation="/cadeiras/fsc/legv8-instrucoes/#constantes-e-pseudo-instruções"
+  answer={{"kind": "self", "checklist": ["lui com 7ABCE e addi com -257.", "Justifica a compensação da extensão de sinal."]}}
+>
+
+Escreve duas instruções reais para obter 0x7ABCDEFF em t0. Justifica o imediato negativo.
+
+  <div slot="hint">
+
+A metade baixa de 12 bits é EFF.
+
+  </div>
+
+  <div slot="hint-more">
+
+EFF como imediato de 12 bits vale -257.
+
+  </div>
+
+  <div slot="solution">
+
+Usa `lui t0,0x7ABCE` e `addi t0,t0,-257`. O primeiro produz 0x7ABCE000; subtrair 0x101 dá 0x7ABCDEFF. O upper foi aumentado para compensar a extensão de sinal da parte baixa.
+
+  </div>
+
+  <div slot="mistakes">
+
+`lui 0x7ABCD` seguido do imediato EFF com sinal produziria uma palavra 0x1000 abaixo do desejado.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-jalr-antigo"
+  title="Fonte e destino iguais"
+  explanation="/cadeiras/fsc/legv8-instrucoes/#saltos"
+  answer={{"kind": "self", "checklist": ["PC=00400080 e ra=00400024.", "Usa a fonte antiga e limpa o bit zero."]}}
+>
+
+Antes de `jalr ra,0(ra)`, ra=0x00400081 e a instrução está em 0x00400020. Quais são PC e ra depois?
+
+  <div slot="hint">
+
+O alvo usa o ra antigo e limpa o bit 0.
+
+  </div>
+
+  <div slot="hint-more">
+
+A escrita de retorno não muda retroativamente a fonte lida.
+
+  </div>
+
+  <div slot="solution">
+
+O alvo é 0x00400080, depois de limpar o bit 0 de 0x00400081. ra passa a 0x00400024, PC da instrução+4. O novo ra não é a base do salto. O alvo está alinhado a 4 neste exemplo.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não calcules o destino com o endereço de retorno recém-escrito.
+
+  </div>
+
+</Exercise>

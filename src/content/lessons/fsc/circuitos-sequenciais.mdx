@@ -1,68 +1,72 @@
 ---
-title: Circuitos sequenciais
-description: Flip-flops D e T, registos, banco de registos, máquinas de estados finitas e o tempo mínimo de relógio.
+title: 'Registos, contadores e temporização'
+description: 'Latches, flip-flops D e T, atualização simultânea e restrições de setup e hold.'
 section: conteudo
-order: 6
+order: 10
+practices:
+  - fsc/praticar-circuitos-sequenciais
 ---
 
+Num circuito sequencial, as entradas e o estado atual determinam o estado seguinte. Um circuito combinatório calcula o que deve ser guardado; os elementos de memória guardam-no no instante permitido.
+
+## Latch e flip-flop
+
+Um latch SR com portas NOR usa $S$ para colocar $Q=1$ e $R$ para colocar $Q=0$. Com $S=R=0$ conserva o estado. $S=R=1$ força as duas saídas a 0 e, ao libertá-las, não garante o estado esperado. Essa combinação é proibida no uso normal. Um latch D evita-a internamente e, quando está habilitado, acompanha o valor de D.
+
+Um flip-flop D disparado na subida do relógio só amostra D nesse flanco. Entre flancos conserva Q. Um flip-flop T conserva se $T=0$ e troca o valor se $T=1$:
+
+$$Q^+_D=D,\qquad Q^+_T=Q\oplus T.$$
+
+O sobrescrito $+$ designa o estado depois do flanco, não uma soma. Um relógio tem período $T_{clk}$ e frequência $f=1/T_{clk}$. Um relógio de 100 MHz tem período 10 ns. O duty cycle indica a fração do período em nível alto; não determina a frequência sozinho.
+
+## Enable e reset
+
+Um registo com enable carrega D se $E=1$ e conserva se $E=0$. Podemos escrever $Q^+=ED+\overline E Q$ bit a bit. Um reset síncrono só atua no flanco; um reset assíncrono atua assim que fica ativo, mesmo entre flancos.
+
+Se o reset tiver prioridade sobre o enable, a regra é: reset ativo dá 0; caso contrário, enable ativo carrega D; nos restantes casos conserva. O símbolo ou o enunciado deve indicar a polaridade e a prioridade. Não suponhas que `reset=1` é ativo se houver uma bolha na entrada.
+
+## Todos leem o estado antigo
+
+Considera dois flip-flops com $D_A=B$ e $D_B=A\oplus x$, inicialmente $AB=00$. Para entradas amostradas $x=1,0,1,1$:
+
+| Flanco | Estado antes $AB$ | $x$ | $D_AD_B$ | Estado depois |
+| ------ | ----------------- | --- | -------- | ------------- |
+| 1      | 00                | 1   | 01       | 01            |
+| 2      | 01                | 0   | 10       | 10            |
+| 3      | 10                | 1   | 00       | 00            |
+| 4      | 00                | 1   | 01       | 01            |
+
+No segundo flanco, $D_B$ usa o **A antigo**, 0. Atualizar A primeiro e usar esse novo A para B daria um circuito diferente. Para desenhar uma forma de onda, marca os flancos, lê as entradas imediatamente antes de cada um e atualiza todas as saídas em conjunto, após o atraso clock-to-Q.
+
 import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
-import flipflopD from '../../fsc/flipflop-d.typ?raw';
-import fsmDetetor from '../../fsc/fsm-detetor.dot?raw';
-
-Há circuitos que um combinatório não consegue realizar: um contador precisa de se lembrar do valor anterior. Num **circuito sequencial**, a saída depende dos valores atuais das entradas **e** de todos os valores anteriores. A memória do passado vive em **variáveis de estado** binárias, guardadas em elementos de memória. Um circuito com $N$ variáveis de estado pode ter até $2^N$ estados.
-
-Duas notas antes dos componentes. O estado atual nem sempre depende do estado anterior (há circuitos que ignoram parte da história). E, como o comportamento depende da sequência, precisamos de conhecer sempre o estado inicial para prever o que o circuito faz.
-
-## Flip-flops
-
-O **flip-flop do tipo D** é o elemento de memória básico. Tem uma entrada de dados $D$, uma entrada de relógio e duas saídas complementares, $Q$ e $\bar{Q}$. Após a transição ativa do relógio (em geral a subida, de 0 para 1), a saída $Q$ passa a valer o que estava em $D$. Entre transições, $Q$ mantém o valor guardado. Pode ter ainda uma entrada de habilitação (EN): com EN desativada, o flip-flop ignora o relógio e conserva o estado.
+import flipflop from '../../fsc/flipflop-d.typ?raw';
 
 <Typst
-  source={flipflopD}
+  source={flipflop}
   format="svg"
-  alt="Bloco do flip-flop D com as entradas D, relógio com triângulo de subida e EN à esquerda e as saídas Q e Q negado à direita."
+  alt="Flip-flop D com enable: o triângulo no relógio indica captura no flanco de subida; Q conserva o valor entre flancos."
 />
 
-O triângulo na entrada de relógio marca a transição ativa: só na subida é que $D$ passa para $Q$. Com EN a 0, nem a subida muda nada.
+O símbolo representa um único elemento de memória. O circuito de dois flip-flops do exemplo liga Q de cada um à lógica que calcula D do outro.
 
-O **flip-flop do tipo T** troca de estado a cada ciclo de relógio: se está em 0 passa a 1, e vice-versa. É o bloco natural para contadores, onde cada bit muda quando o anterior completa uma volta.
+## Registos, deslocamento e banco de registos
 
-O relógio não pode ser arbitrariamente rápido. Entre duas transições ativas, os sinais têm de atravessar a lógica combinatória e estabilizar antes da exigência de **setup** do flip-flop. O período mínimo é:
+Um registo de $w$ bits tem $w$ flip-flops com o mesmo relógio. Num registo de deslocamento de quatro bits, $Q^+=[Q_2,Q_1,Q_0,x]$ desloca para a esquerda e entra x pelo LSB. Partindo de `0000`, as entradas `1,0,1` produzem `0001,0010,0101`.
 
-$$
-T \geq t_{\text{setup}} + t_{\text{pmt}} + t_{\text{pc}}
-$$
+Um banco de $N$ registos de $w$ bits guarda $Nw$ bits. Um descodificador escolhe o registo a escrever e multiplexadores escolhem os registos a ler. Para 32 registos de 32 bits, cada endereço de registo usa 5 bits. Duas portas de leitura permitem ler dois registos ao mesmo tempo, sem duplicar o estado guardado.
 
-onde $t_{\text{pmt}}$ é o atraso máximo de propagação na lógica e $t_{\text{pc}}$ o atraso do próprio elemento de memória. Encurtar o período abaixo disto significa amostrar valores ainda instáveis.
+## Contadores
 
-## Registos
+Num contador binário crescente com enable E, $T_0=E$ e $T_i=E\prod_{j=0}^{i-1}Q_j$. Um bit troca quando todos os menos significativos vão gerar carry. Para um contador módulo 6, os estados são 0 a 5: quando o estado antigo é 5 e E=1, o próximo é 0. A comparação com 6 faria aparecer um estado extra.
 
-Um **registo** é um grupo de $n$ elementos de memória acedidos como uma entidade única: guarda uma palavra de $n$ bits e lê-se ou escreve-se de uma vez. Um **banco de registos** é um conjunto de registos com a mesma capacidade, em que cada registo individual se seleciona pelo seu número de ordem. É esta a estrutura que o processador usa para os operandos rápidos, como vais ver no capítulo do LEGv8.
+Usa $\lceil\log_2N\rceil$ flip-flops para módulo N e define o destino dos códigos não usados. Por exemplo, em módulo 6, os estados 6 e 7 podem recuperar para 0. Essa escolha deve entrar nas equações.
 
-## Máquinas de estados finitas
+## Setup, hold e caminho crítico
 
-Uma **máquina de estados finitas** (FSM, do inglês _finite state machine_) descreve um circuito sequencial como um conjunto de estados e transições entre eles. Para estar completamente especificada, é necessário que, para cada estado, se verifiquem duas condições:
+D deve estar estável durante $t_{setup}$ antes do flanco e $t_{hold}$ depois. Q só muda após $t_{cq}$. Sem skew, o período entre dois registos tem de satisfazer
 
-1. A soma lógica (OR) das expressões de transição seja 1, ou seja, há sempre uma transição definida para qualquer combinação de entradas.
-2. O produto lógico (AND) de cada par de expressões seja 0, ou seja, as transições são mutuamente exclusivas e nunca há ambiguidade sobre o próximo estado.
+$$T_{clk}\ge t_{cq,max}+t_{comb,max}+t_{setup}.$$
 
-Um exemplo mínimo: um detetor que assinala quando vê dois uns seguidos. Tem dois estados, `A` (ainda não vi um 1) e `B` (vi um 1). Em `A`, a entrada 0 mantém o circuito em `A` e a entrada 1 leva a `B`. Em `B`, a entrada 1 assinala a deteção e mantém `B`, e a entrada 0 regressa a `A`. Verifica as condições: em `A`, as expressões são $\bar{x}$ e $x$, cuja soma é 1 e cujo produto é 0. Em `B` passa-se o mesmo. As máquinas de estados permitem guardar pequenas quantidades de dados, como a fase de um protocolo, sem recorrer a uma memória de acesso direto.
+A restrição de hold é diferente: $t_{cq,min}+t_{comb,min}\ge t_{hold}$. Aumentar o período ajuda setup, mas não resolve automaticamente hold.
 
-<Dot
-  source={fsmDetetor}
-  alt="Grafo do detetor de dois uns: o estado A tem um lacete com 0 e uma seta para B com 1; o estado B, marcado como deteção, tem um lacete com 1 e uma seta de regresso a A com 0."
-/>
-
-A tabela de transição resume o mesmo comportamento:
-
-| Estado atual | $x = 0$      | $x = 1$      |
-| ------------ | ------------ | ------------ |
-| `A`          | `A`, saída 0 | `B`, saída 0 |
-| `B`          | `A`, saída 0 | `B`, saída 1 |
-
-Lê cada célula como estado seguinte e saída: só a célula (`B`, $1$) produz saída 1, que é exatamente a deteção do segundo 1 seguido. O estado `B` com círculo duplo no grafo marca onde a deteção acontece.
-
-:::warning[Não confundas os dois mundos]
-Um circuito combinatório com realimentação acidental pode oscilar ou reter valores de forma imprevisível, mas isso não faz dele um sequencial bem projetado. A memória intencional vive nos flip-flops, com o relógio a marcar quando o estado pode mudar.
-:::
+Com $t_{cq,max}=1$ ns, caminho combinatório de 6 ns e setup de 1 ns, o período mínimo é 8 ns, frequência máxima 125 MHz neste modelo. Se o caminho mais curto chegar em 0,3 ns e hold exigir 0,5 ns, é necessário aumentar o atraso desse caminho. Não somes o caminho mais longo e o mais curto na mesma conta.

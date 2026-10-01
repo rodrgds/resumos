@@ -1,0 +1,148 @@
+---
+title: 'Praticar: CPU uniciclo'
+description: 'Exercícios originais com pistas e resolução.'
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="fsc-cpu-sw-signals"
+  title="Controlo de um store"
+  explanation="/cadeiras/fsc/datapath-controlo/#sinais-de-controlo"
+  answer={{"kind": "self", "checklist": ["RegWrite0, ALUSrc1, MemRead0, MemWrite1, Branch0 e ADD.", "O dado vem de x7, o endereço de x8−8."]}}
+>
+
+Para `sw x7,-8(x8)`, dá RegWrite,ALUSrc,MemRead,MemWrite,Branch e a operação da ALU. Explica de onde vem o dado escrito.
+
+  <div slot="hint">
+
+O store calcula endereço e altera só memória.
+
+  </div>
+
+  <div slot="hint-more">
+
+rs2 fornece o dado; o imediato fornece o offset.
+
+  </div>
+
+  <div slot="solution">
+
+RegWrite=0, ALUSrc=1, MemRead=0, MemWrite=1, Branch=0, ALUOp=00 para soma. Endereço=x8−8 e dado=x7 pela segunda leitura do banco. MemtoReg é X porque não há escrita em registo. A ALU calcula o endereço, não o conteúdo a escrever.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não ligues a entrada de dados da memória ao imediato.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-cpu-fault-read"
+  title="Segunda leitura presa em zero"
+  explanation="/cadeiras/fsc/datapath-controlo/#falhas-e-extensões"
+  answer={{"kind": "self", "checklist": ["lw não usa a segunda leitura.", "Dá valores que evidenciem erros em R, sw e beq."]}}
+>
+
+A segunda saída do banco de registos está sempre em zero. Que classes R,lw,sw,beq podem ser afetadas? Escolhe um teste para cada classe que deve falhar.
+
+  <div slot="hint">
+
+Verifica quem usa a segunda leitura.
+
+  </div>
+
+  <div slot="hint-more">
+
+O load usa base e imediato, sem esse valor.
+
+  </div>
+
+  <div slot="solution">
+
+lw continua a usar rs1+imediato. R pode falhar: add com rs2=3 perde esse 3. sw pode falhar: guardar x7=9 escreve 0. beq pode falhar: duas fontes iguais a 5 passam a comparar 5 com 0, deixando de saltar. Casos em que a segunda fonte já era zero podem esconder a falha.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não concluas que toda execução de uma classe falha; depende dos valores do teste.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-cpu-fault-writeback"
+  title="Dado ou endereço"
+  explanation="/cadeiras/fsc/datapath-controlo/#seguir-um-load-completo"
+  answer={{"kind": "self", "checklist": ["O primeiro teste esconde a falha.", "Conteúdo 42 distingue dado e endereço."]}}
+>
+
+MemtoReg fica preso em zero. Executamos lw em endereço 0x10010020 contendo 0x10010020. Esse teste deteta a falha? Propõe um que a detete.
+
+  <div slot="hint">
+
+O resultado correto e o errado podem coincidir.
+
+  </div>
+
+  <div slot="hint-more">
+
+Muda o conteúdo, conservando o endereço válido.
+
+  </div>
+
+  <div slot="solution">
+
+O teste não deteta: a ALU produz o endereço e a memória contém exatamente esse mesmo valor. Escolhe, por exemplo, conteúdo 42 no endereço 0x10010020. O correto é escrever 42; o defeituoso escreve 0x10010020. As habilitações e o acesso têm de ser válidos para isolar a falha.
+
+  </div>
+
+  <div slot="mistakes">
+
+Uma execução sem diferença observável não prova que o MUX funciona.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-cpu-addi-extension"
+  title="Uma instrução e o caminho necessário"
+  explanation="/cadeiras/fsc/datapath-controlo/#falhas-e-extensões"
+  answer={{"kind": "self", "checklist": ["addi reutiliza o datapath com imediato e writeback ALU.", "jalr exige caminhos adicionais para retorno e alvo."]}}
+>
+
+O CPU suporta R,lw,sw,beq. Para acrescentar addi, são necessários novos recursos de datapath? Indica o controlo. Compara com jalr.
+
+  <div slot="hint">
+
+addi combina uma seleção já usada no load com writeback já usado em R.
+
+  </div>
+
+  <div slot="hint-more">
+
+jalr precisa também de escrever PC+4 e escolher outro destino de PC.
+
+  </div>
+
+  <div slot="solution">
+
+addi reutiliza banco, imediato, ALU e MUX: RegWrite=1,ALUSrc=1,ALUOp=00,MemtoReg=0,MemRead=MemWrite=Branch=0. Precisa de nova descodificação, mas não de novo caminho de dados. jalr precisa de caminho de PC+4 para rd e de destino calculado pela ALU com bit 0 limpo. Sem esses caminhos, não se implementa só mudando sinais.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não confunda uma nova instrução com a obrigação de criar sempre uma nova ALU.
+
+  </div>
+
+</Exercise>

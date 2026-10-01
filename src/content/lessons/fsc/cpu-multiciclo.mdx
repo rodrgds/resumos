@@ -1,0 +1,78 @@
+---
+title: 'CPU multiciclo e máquina de controlo'
+description: 'Partilhar recursos, seguir estados e sinais e contar ciclos nas instruções executadas.'
+section: conteudo
+order: 18
+practices:
+  - fsc/praticar-cpu-multiciclo
+---
+
+Um CPU multiciclo divide a instrução em etapas. A mesma ALU pode atualizar o PC num ciclo e calcular um endereço noutro. Registos internos guardam os resultados intermédios para não os perder quando o recurso é reutilizado.
+
+## Recursos e registos internos
+
+Usamos uma memória partilhada para código e dados, uma ALU e os registos IR, MDR, A, B e ALUOut. IR mantém a instrução; MDR mantém o dado lido; A e B mantêm os operandos lidos do banco; ALUOut mantém um resultado anterior da ALU.
+
+Um resultado disponível na saída de uma unidade combinatória não é o mesmo que o valor já guardado num registo. Por exemplo, ao ler memória em um ciclo, o writeback seguinte usa MDR, não uma nova leitura potencialmente diferente.
+
+Para saltos relativos, é necessário conhecer o **PC da instrução**. Se o fetch já avançou PC em 4, somar d ao PC avançado daria um destino 4 bytes à frente do correto. Chamamos PCinst ao endereço que o PC tinha no fetch. Neste modelo, ao preparar um branch no decode, o gerador fornece d−4 para somar ao PC já avançado. Uma organização equivalente pode guardar PCinst num registo e somar-lhe d. A ISA continua a definir o destino por PCinst+d.
+
+## Seleções e habilitações
+
+| Sinal    | Valores                              |
+| -------- | ------------------------------------ |
+| IorD     | 0: endereço PC; 1: endereço ALUOut   |
+| ALUSrcA  | 0: PC; 1: A                          |
+| ALUSrcB  | 00: B; 01: constante 4; 10: imediato |
+| PCSource | 0: saída atual da ALU; 1: ALUOut     |
+| MemtoReg | 0: ALUOut; 1: MDR                    |
+
+O gerador de imediatos fornece o deslocamento usual para lw e sw. No decode de beq, a compensação d−4 permite usar ALUSrcA=0 e ALUSrcB=10 com o PC avançado. Um circuito alternativo que conserve PCinst precisa de o disponibilizar ao somador do destino. Um desenho sem qualquer uma destas opções desloca incorretamente o branch em quatro bytes.
+
+PC atualiza se $PCWrite+(PCWriteCond\cdot Zero)=1$. PCWrite permite escrita incondicional; PCWriteCond permite-a apenas na igualdade. IRWrite só se ativa no fetch, para um load não substituir a instrução pelos dados.
+
+## Estados e caminhos
+
+import Dot from '../../../components/Dot.astro';
+import states from '../../fsc/cpu-estados.dot?raw';
+
+<Dot
+  source={states}
+  alt="FSM multiciclo: todos passam por fetch 0 e decode 1. Load segue 2,3,4; store 2,5; R 6,7; beq 8. Todos os finais regressam a fetch."
+/>
+
+| Estado          | Ação principal                           | Controlo ativo ou seleção necessária                                           |
+| --------------- | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| 0, fetch        | IR←Mem[PC], PC←PC+4                      | MemRead, IRWrite, IorD=0, ALUSrcA=0, ALUSrcB=01, ALUOp=00, PCWrite, PCSource=0 |
+| 1, decode       | A←Reg[rs1], B←Reg[rs2]; preparar destino | ALUSrcA=0, ALUSrcB=10, ALUOp=00; para beq, ALUOut←PC+(d−4)                     |
+| 2, endereço     | ALUOut←A+imediato                        | ALUSrcA=1, ALUSrcB=10, ALUOp=00                                                |
+| 3, ler dados    | MDR←Mem[ALUOut]                          | MemRead, IorD=1                                                                |
+| 4, writeback lw | Reg[rd]←MDR                              | RegWrite, MemtoReg=1                                                           |
+| 5, store        | Mem[ALUOut]←B                            | MemWrite, IorD=1                                                               |
+| 6, executar R   | ALUOut←A op B                            | ALUSrcA=1, ALUSrcB=00, ALUOp=10                                                |
+| 7, writeback R  | Reg[rd]←ALUOut                           | RegWrite, MemtoReg=0                                                           |
+| 8, branch       | Se A=B, PC←ALUOut                        | ALUSrcA=1, ALUSrcB=00, ALUOp=01, PCWriteCond, PCSource=1                       |
+
+As habilitações não indicadas ficam a 0. Os registos internos sem enable podem capturar em todos os ciclos; o controlo tem de garantir que um valor só é usado enquanto ainda está disponível. No estado 8, PCSource=1 usa o **ALUOut antigo**, que contém o destino, enquanto a ALU calcula a comparação atual.
+
+O decode pode calcular um valor que depois não é usado. Em lw, o estado 2 substitui esse valor pelo endereço efetivo. Não interpretes cada atividade interna como uma alteração de estado arquitetural visível ao programa.
+
+## Exemplo de load
+
+Para `lw x5,12(x8)`, com x8=`0x10010000` e memória no destino contendo 42:
+
+1. Estado 0: IR recebe o código; PC avança 4.
+2. Estado 1: A recebe x8. A segunda leitura não será usada pelo load.
+3. Estado 2: ALUOut recebe `0x1001000C`.
+4. Estado 3: MDR recebe 42.
+5. Estado 4: x5 recebe 42. Segue-se o fetch da próxima instrução.
+
+Logo lw demora 5 ciclos, sw 4, R 4 e beq 3. O branch demora 3 mesmo quando não é tomado; só a habilitação condicional do PC muda o resultado do último ciclo.
+
+## Contar instruções e ciclos
+
+Um ciclo com três iterações que executa um lw, um add, um sub de contador e um beq por iteração custa $3(5+4+4+3)=48$ ciclos, se essas forem as únicas instruções consideradas. Acrescenta inicialização, saltos adicionais e testes finais conforme o código concreto.
+
+Quando um branch salta sobre duas instruções, essas instruções não contam nessa execução. Uma pseudo-instrução que expanda em duas instruções máquina conta duas vezes. Para evitar suposições, escreve a sequência de PCs ou uma tabela com o número de execuções de cada instrução.
+
+O multiciclo pode ter período menor, pois cada etapa percorre menos módulos em série. O tempo é número de ciclos vezes período. Uma melhoria do período por um fator 3 com CPI médio 4 pode tornar o programa mais lento que o uniciclo; a conta completa decide.

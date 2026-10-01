@@ -1,119 +1,80 @@
 ---
-title: Circuitos combinatórios
-description: Módulos, multiplexadores, descodificadores, desmultiplexadores e o somador ripple-carry.
+title: 'Módulos combinatórios'
+description: 'MUX, descodificadores, codificadores, comparadores, somadores e caminhos críticos.'
 section: conteudo
-order: 5
+order: 9
+practices:
+  - fsc/praticar-circuitos-combinatorios
 ---
 
-import Typst from '../../../components/Typst.astro';
+Um módulo combinatório pode ser tratado como uma função entre conjuntos de bits. Conhecer a sua tabela e a largura de cada entrada permite compor um circuito maior sem redesenhar todas as portas.
+
+## Multiplexador e descodificador
+
+Um multiplexador 2:1 seleciona $I_0$ quando $S=0$ e $I_1$ quando $S=1$:
+
+$$Y=\overline S I_0+S I_1.$$
+
 import Dot from '../../../components/Dot.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
-import rippleCarry from '../../fsc/ripple-carry.typ?raw';
-import mux21 from '../../fsc/mux21.dot?raw';
-
-Portas isoladas não chegam longe. O passo seguinte é encapsular grupos de portas em **módulos** com uma função clara e combinar módulos e portas para construir circuitos maiores. Um módulo pode repetir-se: um **circuito iterativo** é constituído por repetições de um mesmo módulo, e os barramentos (feixes de fios desenhados como um só traço) simplificam os diagramas.
-
-## Multiplexador
-
-O **multiplexador** (MUX) seleciona uma de várias entradas de dados e copia-a para a saída. Um MUX $2{:}1$ tem duas entradas de dados $I_0$ e $I_1$, uma entrada de seleção $S_0$ e uma saída $Y$:
-
-$$
-Y = \bar{S}_0 I_0 + S_0 I_1
-$$
-
-Quando $S_0 = 0$, sai $I_0$; quando $S_0 = 1$, sai $I_1$. Um MUX $2^N{:}1$ tem $N$ entradas de controlo $S_{N-1}, \ldots, S_1, S_0$ e existem multiplexadores $4{:}1$, $8{:}1$ e por aí fora. Há um resultado que deves reter: todas as expressões lógicas se podem implementar com multiplexadores $2{:}1$, bastando ligar as entradas de dados a constantes ou a variáveis e usar as variáveis como seleção.
+import mux from '../../fsc/mux21.dot?raw';
 
 <Dot
-  source={mux21}
-  alt="Grafo do multiplexador 2 para 1: as entradas I0, I1 e a seleção S0 apontam para a saída Y, que mostra a equação Y igual a S0 negado vezes I0 mais S0 vezes I1."
+  source={mux}
+  alt="MUX 2:1: S negado e I0 entram numa AND; S e I1 noutra; uma OR combina as saídas."
 />
 
-O grafo mostra as três setas que entram na saída: dois dados e a seleção que escolhe entre eles.
+Um MUX com $2^k$ entradas precisa de $k$ bits de seleção. Se os dados forem palavras de 32 bits, há 32 seleções paralelas com os mesmos bits de seleção. Um MUX 8:1 de palavras não precisa de 32 bits de seleção, precisa de 3.
 
-## Descodificador binário
+Um descodificador de $k$ entradas ativa uma entre $2^k$ saídas. Num 2:4 ativo a 1, $D_0=\overline A\overline B$, $D_1=\overline AB$, $D_2=A\overline B$ e $D_3=AB$. Um enable $E$ multiplica estas expressões. Se as saídas forem ativas a 0, a linha selecionada fica 0 e as restantes 1.
 
-O **descodificador binário** faz o trabalho inverso: transforma um código com poucos bits em sinais individuais. Um descodificador $N{:}2^N$ tem $N$ entradas e $2^N$ saídas, e ativa exatamente a saída cujo índice corresponde ao código de entrada. Um descodificador $2{:}4$ com entrada `10` ativa a saída $Y_2$ e desativa as restantes.
+Um demultiplexador encaminha um dado para a saída selecionada; pode ser construído aplicando o dado ao enable de um descodificador. Um codificador faz a operação de indicar o índice de uma entrada ativa. Se várias entradas puderem estar ativas, define prioridade e um sinal `valid`: o código `00` sozinho não distingue a entrada 0 ativa de nenhuma entrada ativa.
 
-O descodificador tem ainda uma entrada de habilitação (**enable**, EN): com EN desativada, nenhuma saída ativa. Um facto útil: um descodificador binário $N{:}2^N$ seguido de uma porta OR permite realizar todas as funções de $N$ variáveis, porque cada saída é um mintermo e a OR soma os mintermos pretendidos.
+## Implementar uma função por seleção
 
-## Desmultiplexador
+Para $F=\Sigma m(1,3,5,6,7)$, usa um MUX 4:1 com seleção $AB$. Nas quatro combinações de $AB$, a saída em função de $C$ é:
 
-O **desmultiplexador** (DEMUX) $1{:}2^N$ tem uma entrada de dados, $N$ entradas de controlo e $2^N$ saídas. A entrada é copiada para a saída selecionada; as restantes ficam a zero. Podes vê-lo como um descodificador binário com uma entrada adicional de dados: em vez de ativar a saída selecionada com valor fixo, copia para ela o valor da entrada.
+| $AB$ | $F$ se $C=0$ | $F$ se $C=1$ | Entrada do MUX |
+| ---- | ------------ | ------------ | -------------- |
+| 00   | 0            | 1            | $C$            |
+| 01   | 0            | 1            | $C$            |
+| 10   | 0            | 1            | $C$            |
+| 11   | 1            | 1            | 1              |
 
-Um DEMUX $1{:}4$ com entrada $D$ e seleção $S_1 S_0$ comporta-se assim:
+Logo liga $I_0=I_1=I_2=C$, $I_3=1$. A escolha das variáveis de seleção altera as subfunções necessárias, mas não a função final.
 
-| $S_1$ | $S_0$ | $Y_0$ | $Y_1$ | $Y_2$ | $Y_3$ |
-| ----- | ----- | ----- | ----- | ----- | ----- |
-| 0     | 0     | $D$   | 0     | 0     | 0     |
-| 0     | 1     | 0     | $D$   | 0     | 0     |
-| 1     | 0     | 0     | 0     | $D$   | 0     |
-| 1     | 1     | 0     | 0     | 0     | $D$   |
+## Comparadores
 
-Com $D = 1$ e seleção `10`, só $Y_2$ fica a 1. É a tabela do descodificador $2{:}4$ com o valor de $D$ no lugar do 1 fixo.
+A igualdade entre palavras é o AND das igualdades bit a bit: $Eq=\prod_i\overline{A_i\oplus B_i}$. Para a ordem sem sinal, o primeiro bit diferente a partir do MSB decide.
 
-## O somador ripple-carry
+Em duas partes, alta $H$ e baixa $L$, temos
 
-O **full adder** (FA) soma três bits, dois operandos e um transporte de entrada, e produz a soma e o transporte de saída. A tabela de verdade tem 8 linhas:
+$$A>B=(A_H>B_H)+Eq_H(A_L>B_L).$$
 
-| $A$ | $B$ | $C_{in}$ | $S$ | $C_{out}$ |
-| --- | --- | -------- | --- | --------- |
-| 0   | 0   | 0        | 0   | 0         |
-| 0   | 0   | 1        | 1   | 0         |
-| 0   | 1   | 0        | 1   | 0         |
-| 0   | 1   | 1        | 0   | 1         |
-| 1   | 0   | 0        | 1   | 0         |
-| 1   | 0   | 1        | 0   | 1         |
-| 1   | 1   | 0        | 0   | 1         |
-| 1   | 1   | 1        | 1   | 1         |
+Por exemplo, `1010` é maior que `1001`: as partes altas `10` são iguais, então comparamos `10` com `01`. Num comparador com sinal, começa por distinguir os sinais; dois códigos com sinais diferentes não seguem a ordem sem sinal.
 
-A soma $S$ vale 1 quando há um número ímpar de uns à entrada: $S = A \oplus B \oplus C_{in}$. O transporte $C_{out}$ vale 1 quando há pelo menos dois uns: $C_{out} = AB + AC_{in} + BC_{in}$. Confirma duas linhas: com $011$, um só 1 dá $S = 1$ e $C_{out} = 0$; com $110$, dois uns dão $S = 0$ e $C_{out} = 1$.
+## Somador completo
 
-Encadeando um FA por cada posição, com o transporte a passar de um módulo para o seguinte, obtém-se o **somador ripple-carry**, que soma duas palavras de $n$ bits. É o exemplo canónico de circuito iterativo.
+Um meio somador calcula $S=A\oplus B$ e $C=AB$. Um somador completo recebe ainda o carry $C_i$:
 
-<Typst
-  source={rippleCarry}
-  format="svg"
-  alt="Quatro blocos full adder em fila, da posição 3 à 0, com o transporte a passar de cada bloco para o seguinte, da direita para a esquerda."
-/>
+$$S=A\oplus B\oplus C_i,\qquad C_{i+1}=AB+AC_i+BC_i.$$
 
-Cada bloco recebe os bits $A$ e $B$ da sua posição e devolve a soma $S$. O transporte entra a 0 na posição 0 e sai de cada bloco para o seguinte.
+| $ABC_i$ | $S$ | $C_{i+1}$ |
+| ------- | --- | --------- |
+| 000     | 0   | 0         |
+| 001     | 1   | 0         |
+| 010     | 1   | 0         |
+| 011     | 0   | 1         |
+| 100     | 1   | 0         |
+| 101     | 0   | 1         |
+| 110     | 0   | 1         |
+| 111     | 1   | 1         |
 
-Soma $1011$ ($11$) com $0111$ ($7$) com um somador de 4 bits, seguindo o transporte da direita para a esquerda:
+Ligando o carry de cada posição à seguinte construímos um somador ripple-carry. Para $1011+0110$, do LSB para o MSB, os pares $(S,C_{out})$ são $(1,0),(0,1),(0,1),(0,1)$. O resultado completo é `10001`.
 
-```
-  Posição:     3 2 1 0
-  A:           1 0 1 1
-  B:           0 1 1 1
-  Transporte:  1 1 1 0 1 (entra 0 na posição 0)
-  Soma:        0 0 1 0
-```
+## Somar, subtrair e acelerar
 
-Posição 0: $1 + 1 + 0 = 10$, escreve 0 e transporta 1. Posição 1: $1 + 1 + 1 = 11$, escreve 1 e transporta 1. Posição 2: $0 + 1 + 1 = 10$, escreve 0 e transporta 1. Posição 3: $1 + 0 + 1 = 10$, escreve 0 e transporta 1. O resultado é `0010` com transporte final 1, ou seja, $10010_2 = 18$. Confirma: $11 + 7 = 18$.
+Um controlo $M$ permite usar o mesmo somador: aplica $B_i\oplus M$ a cada entrada e usa $C_0=M$. Com $M=0$, calcula $A+B$; com $M=1$, calcula $A+\overline B+1=A-B$.
 
-Segue o mesmo algoritmo em código, que imprime a soma e o transporte de cada posição:
+No ripple-carry, o caminho crítico pode atravessar todos os carries. Definindo $G_i=A_iB_i$ e $P_i=A_i\oplus B_i$, temos $C_{i+1}=G_i+P_iC_i$. Expandir estas equações permite calcular carries em paralelo, com mais lógica. O ganho depende do circuito e dos atrasos, não apenas do número de portas.
 
-<CodePlayground
-  language="python"
-  code={
-    'a, b = 11, 7\ntransporte = 0\nresultado = 0\nfor i in range(5):\n    ai = (a >> i) & 1\n    bi = (b >> i) & 1\n    s = ai ^ bi ^ transporte\n    print(f"posicao {i}: {ai} + {bi} + {transporte} = {s}")\n    resultado |= s << i\n    transporte = (ai & bi) | (ai & transporte) | (bi & transporte)\nprint(bin(resultado))'
-  }
-/>
-
-A saída mostra `0b10010`, os mesmos 5 bits da conta à mão, com o transporte final na posição 4.
-
-<YouTube
-  id="wvJc9CZcvBc"
-  title="Learn how computers add numbers and build a 4 bit adder circuit"
-/>
-
-O vídeo monta o somador com portas XOR para a soma e AND para o transporte, que é a base do ripple-carry desenhado acima.
-
-O nome conta a fraqueza: o transporte propaga-se (_ripple_) posição a posição, por isso somar palavras largas demora. Somadores rápidos calculam os transportes em paralelo, mas pagam com mais portas.
-
-## Para saber mais
-
-- [Projeto da ALU de 8 bits](https://eater.net/8bit/alu): esquemas de um somador real com o circuito integrado 74LS283, portas XOR e transceivers.
-- [Multiplexadores e descodificadores](https://kindatechnical.com/low-level-computing/combinational-circuits-multiplexers-decoders-encoders.html): artigo que mostra o MUX e o descodificador como blocos de datapath e de endereçamento.
-
-> Experimenta: soma `1100` ($12$) com `1010` ($10$) pelo mesmo método e confirma que obténs `10110_2 = 22$.
+Se cada etapa de carry atrasar 2 ns e a soma final atrasar mais 3 ns, um caminho que atravesse quatro etapas exige 11 ns neste modelo. Os caminhos em paralelo não se somam: escolhe o maior atraso entre uma entrada e uma saída. Um multiplicador, por sua vez, forma produtos parciais e soma-os com o alinhamento dos respetivos pesos.

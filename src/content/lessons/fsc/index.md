@@ -1,38 +1,36 @@
 ---
 title: Fundamentos de Sistemas Computacionais
-description: Bits e representação de dados, circuitos lógicos combinatórios e sequenciais, memórias e os primeiros passos no processador LEGv8.
+description: Representação digital, lógica, memórias, programação RISC-V e construção de um CPU.
 ---
 
-FSC mostra o que acontece entre o programa que escreves e o silício que o executa. Começas nos bits que representam números e texto, sobes até às portas lógicas e aos circuitos que calculam e guardam valores, e chegas ao processador LEGv8, onde vês como uma instrução sai da memória, atravessa a unidade de controlo e produz um resultado.
+FSC liga os bits de um número às instruções que um processador executa. Primeiro escolhemos representações e construímos circuitos para calcular e guardar dados. Depois programamos em RISC-V e seguimos uma instrução através do CPU.
 
-## Como está organizado
+## Percurso de estudo
 
-A primeira parte é sobre **representar dados**. [Representação de dados](representacao-dados/) fixa bits, bytes, MSB e LSB e as conversões entre decimal, binário, octal e hexadecimal. Depois, [Inteiros em complemento para dois](inteiros-complemento-dois/) explica como representar negativos, estender o sinal e detetar overflow, e [Vírgula flutuante](virgula-flutuante/) mostra a normalização e o formato IEEE 754 com um exemplo completo.
+A sequência começa em [sistemas digitais](sistemas-digitais/) e [bases de numeração](representacao-dados/). Seguem-se [inteiros](inteiros-complemento-dois/), [vírgula fixa](virgula-fixa/), [vírgula flutuante](virgula-flutuante/) e [texto e imagens](texto-imagens/).
 
-A segunda parte é sobre **circuitos digitais**. [Álgebra de Boole e portas lógicas](algebra-boole-portas/) apresenta as operações, a dualidade, as formas canónicas e as portas AND, OR, NOT, XOR e XNOR. [Circuitos combinatórios](circuitos-combinatorios/) constrói multiplexadores, descodificadores e somadores a partir dessas portas. [Circuitos sequenciais](circuitos-sequenciais/) introduz o relógio, os flip-flops, os registos e as máquinas de estados finitas. [Memórias](memorias/) fecha o tema com RAM e ROM, SRAM e DRAM, capacidade e descodificação de endereços.
+Nos circuitos, passa de [expressões booleanas](algebra-boole-portas/) para [Karnaugh](karnaugh/), [módulos combinatórios](circuitos-combinatorios/), [registos e temporização](circuitos-sequenciais/), [máquinas de estados](maquinas-estados/) e [memórias](memorias/). Uma tabela de verdade descreve o resultado; um diagrama temporal explica quando esse resultado pode ser usado.
 
-A terceira parte é sobre o **processador**. [LEGv8: registos e memória](legv8-registos-memoria/) apresenta os 32 registos, o endereçamento ao byte e a pilha. [LEGv8: instruções](legv8-instrucoes/) explica os formatos R, D, CB e B e como se escrevem acessos à memória, saltos e procedimentos. Por fim, [Datapath e controlo](datapath-controlo/) abre o capot do monociclo: sinais de controlo, ALU e o custo de fazer tudo num só ciclo de relógio.
+A parte do computador cobre [organização e memória RISC-V](legv8-registos-memoria/), [instruções e codificação](legv8-instrucoes/), [programação](programacao-riscv/), [procedimentos e pilha](procedimentos-pilha/), [CPU uniciclo](datapath-controlo/), [CPU multiciclo](cpu-multiciclo/) e [desempenho](desempenho/). A [cheat sheet](folha-consulta/) reúne as fórmulas e condições para revisão.
 
-## Como estudar
+Cada capítulo termina com exercícios originais. Faz primeiro a tentativa, consulta uma pista quando faltar um passo e compara depois o raciocínio com a resolução. Nos programas, altera os dados e prevê a saída antes de executar.
 
-Em FSC, cada conceito tem uma conta ou um circuito que o concretiza. Refaz os exemplos com papel e lápis: converte as bases à mão, nega um número em complemento para dois, monta a tabela de verdade de uma função pequena e codifica uma instrução LEGv8 campo a campo. Nos capítulos de circuitos, desenha os esquemas em vez de só os leres; nos capítulos do processador, segue cada instrução desde o PC até à escrita do resultado.
+## Edição e avaliação
 
-## Avaliação
+A base pedagógica é o material dos docentes disponibilizado ao aluno no Moodle de **2024/25**. Essa edição usa **RV32**, com palavras e registos de 32 bits. Dois endereços antigos contêm `legv8` no nome por compatibilidade com ligações publicadas; o seu conteúdo ensina RISC-V.
 
-A forma de avaliação muda de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes o peso dos testes, do exame e de eventuais trabalhos.
+As provas consultadas incluem o primeiro teste de 15 de novembro de 2024 e o segundo de 24 de janeiro de 2025. Ambos indicam 90 minutos e penalização de 15% da cotação da pergunta nas escolhas erradas. Os exemplos de avaliação incluem conversões, circuitos, formas de onda, memória, assembly, codificação, controlo do CPU e contas de desempenho. Estas regras descrevem aquelas provas, não confirmam a avaliação de outra edição. Consulta a tua página da cadeira para as regras em vigor.
 
-## Fontes e âmbito
+## Fontes e bibliografia
 
-Estas páginas seguem o âmbito da unidade curricular de Fundamentos de Sistemas Computacionais do 1.º ano, 1.º semestre da LEIC: representação de dados em código binário; sistemas de numeração e conversões; inteiros sem sinal e em complemento para dois, extensão de sinal e overflow; números em vírgula flutuante e IEEE 754; álgebra de Boole, formas canónicas e portas lógicas; módulos combinatórios, multiplexadores, descodificadores e somadores iterativos; circuitos sequenciais, flip-flops, registos e máquinas de estados finitas; sistemas de memória, capacidade e descodificação; registos, endereçamento e pilha no LEGv8; formatos de instrução e procedimentos; datapath monociclo e sinais de controlo.
+A [ficha de FSC de 2024/25](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=541868) enquadra o programa e a bibliografia. Os recursos do [Moodle FSC 2024/25](https://moodle2425.up.pt/course/view.php?id=5166) podem exigir inscrição. Foram usados os diapositivos e os dois volumes de exercícios de João Canas Ferreira, António José Araújo e Pedro C. Diniz, além das folhas de consulta, listas de matéria e provas disponibilizadas nessa edição:
 
-Material oficial da FEUP:
+- [Introdução](https://moodle2425.up.pt/mod/resource/view.php?id=61767), [representação e aritmética](https://moodle2425.up.pt/mod/resource/view.php?id=61768), [circuitos combinatórios](https://moodle2425.up.pt/mod/resource/view.php?id=61769), [circuitos sequenciais](https://moodle2425.up.pt/mod/resource/view.php?id=61771) e [memórias](https://moodle2425.up.pt/mod/resource/view.php?id=61770).
+- [Exercícios, volume 1](https://moodle2425.up.pt/mod/resource/view.php?id=71216), revisão de 24 de novembro de 2024, e [volume 2](https://moodle2425.up.pt/mod/resource/view.php?id=102794), revisão de 5 de janeiro de 2025.
+- [Conjunto de instruções RISC-V](https://moodle2425.up.pt/mod/resource/view.php?id=102792), [organização do CPU](https://moodle2425.up.pt/mod/resource/view.php?id=109231) e [desempenho](https://moodle2425.up.pt/mod/resource/view.php?id=113934).
+- [Folha de instruções](https://moodle2425.up.pt/mod/resource/view.php?id=61680), [folha do CPU](https://moodle2425.up.pt/mod/resource/view.php?id=61681), [matéria do teste 1](https://moodle2425.up.pt/mod/resource/view.php?id=96768) e [matéria do teste 2](https://moodle2425.up.pt/mod/resource/view.php?id=117487).
+- [Teste 1 de 2024/25](https://moodle2425.up.pt/mod/resource/view.php?id=61708), [teste 2 de 2024/25](https://moodle2425.up.pt/mod/resource/view.php?id=129190), exemplos do primeiro teste ([1](https://moodle2425.up.pt/mod/resource/view.php?id=61707), [2](https://moodle2425.up.pt/mod/resource/view.php?id=101191)), segundos testes de [2022](https://moodle2425.up.pt/mod/resource/view.php?id=117490) e [2023](https://moodle2425.up.pt/mod/resource/view.php?id=117489), e recursos globais de [2022](https://moodle2425.up.pt/mod/resource/view.php?id=131748) e [2023](https://moodle2425.up.pt/mod/resource/view.php?id=131749).
 
-- Ficha da unidade curricular de Fundamentos de Sistemas Computacionais, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560088).
-- Página informativa da disciplina no Moodle da Universidade do Porto, edição de 2025/26, cujo conteúdo exige inscrição (consultada em setembro de 2026): [Moodle](https://moodle2526.up.pt/course/info.php?id=4962).
+O livro de apoio é David A. Patterson e John L. Hennessy, _Computer Organization and Design RISC-V Edition_, 2.ª edição, 2020, ISBN 9780128203316. A [página da editora](https://shop.elsevier.com/books/computer-organization-and-design-risc-v-edition/patterson/978-0-12-820331-6) identifica a edição; não foi usada uma cópia integral local correspondente.
 
-Notas de estudantes, úteis como apoio mas sem valor oficial:
-
-- _Resumos FSC1 SofiaViP_, apontamentos manuscritos de estudante em circulação pública que acompanham a parte de representação de dados, circuitos e memórias (ficheiro PDF descarregado da pasta pública do 1.º ano, 1.º semestre em setembro de 2026).
-- _Resumos FSC2 SofiaViP_, apontamentos de estudante em circulação pública que acompanham a parte de registos, instruções LEGv8, datapath e controlo (ficheiro PDF descarregado da mesma pasta pública em setembro de 2026).
-
-Os exemplos, contas e exercícios destas páginas são originais, escritos para este site. Não reproduzem os apontamentos acima.
+Para confirmar pormenores da arquitetura e da execução: [especificação RISC-V](https://docs.riscv.org/reference/isa/unpriv/rv32.html), [convenção de chamadas RISC-V](https://riscv-non-isa.github.io/riscv-elf-psabi-doc/) e [serviços do RARS](https://github.com/TheThirdOne/rars/wiki/Environment-Calls). Os programas desta cadeira usam o ambiente RARS em RV32. As contas, esquemas e exercícios apresentados são originais.
