@@ -1,49 +1,92 @@
 ---
 title: Cheat sheet de PFL
-description: Padrões de decisão em Prolog e Haskell, do controlo da procura aos tipos e folds.
+description: Tipos, listas, folds, parsers e decisões de execução em Prolog, com as condições que mudam a resposta.
 section: recursos
 studyKind: revision
 editorial:
+  basedOn: 2026/27
   sources:
-    - title: Resumos PFL SofiaViP
+    - title: Programa PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: PFL, material funcional de 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+    - title: Resumos PFL SofiaViP, referência anterior
       url: https://drive.google.com/file/d/1JoKqViYH6VsvxQe6cHU-fORK0yYA6E-f/view
-  coverage: Síntese das páginas 2 a 11 do resumo, com Prolog, unificação, procura, cortes e recolha de soluções, e Haskell, tipos, listas, recursão, avaliação preguiçosa e folds.
+  coverage: Consulta compacta dos conceitos e condições do percurso, com exemplos próprios.
   gaps:
-    - A página 1 é capa; a fonte não desenvolve classes de tipos, QuickCheck, parsers ou I/O em Haskell.
-    - Os exemplos de Prolog dependem da implementação; a compatibilidade atual entre SICStus e SWI não foi verificada nesta fonte.
-    - A correspondência destes apontamentos a uma edição atual da unidade curricular não foi verificada.
+    - Fichas Prolog e provas completas de 2026/27 ainda não recolhidas.
 ---
 
-Escolhe primeiro o paradigma. Em **Prolog**, descreves relações e exploras soluções por unificação e procura. Em **Haskell**, compões funções com tipos e avalias expressões quando o resultado é necessário. O mesmo problema pode pedir estratégias muito diferentes.
+## Tipos e expressões
 
-## Prolog: relações e procura
+| Forma                           | Lembra                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `f x y`                         | É `(f x) y`; a aplicação tem prioridade sobre operadores.               |
+| `a -> b -> c`                   | É `a -> (b -> c)`; permite aplicação parcial.                           |
+| `[a]`, `(a,b)`                  | Lista homogénea; par com tipos possivelmente diferentes.                |
+| `Eq`, `Ord`                     | Igualdade; comparação ordenada, que exige `Eq`.                         |
+| `Num`, `Fractional`, `Integral` | `+,-,*`; `/`; `div,mod,quot,rem`. `Num` atual não implica `Eq`.         |
+| `fromIntegral n`                | Converte um valor integral; não é uma conversão automática.             |
+| `if c then a else b`            | `c :: Bool`; os dois resultados têm o mesmo tipo.                       |
+| Padrões e guardas               | Tentados pela ordem escrita; cobre todas as formas e declara o domínio. |
 
-| Se queres…            | Usa e verifica…                                                                                                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Declarar conhecimento | Factos e regras `cabeca :- objetivo1, objetivo2.`; a vírgula é conjunção, o ponto e vírgula é alternativa. Nomes iniciados por minúscula são átomos; por maiúscula ou `_`, variáveis.                                    |
-| Consultar             | Uma query procura substituições que tornem os objetivos demonstráveis. Prolog tenta cláusulas pela ordem escrita e objetivos da esquerda para a direita, com retrocesso.                                                 |
-| Combinar termos       | `=` **unifica**, podendo ligar variáveis; `==` testa identidade dos termos sem criar ligações. `is` avalia a expressão à direita e unifica o resultado com a esquerda; `=:=` avalia e compara números.                   |
-| Percorrer lista       | Base para `[]`; passo para cabeça e cauda. Reduz a lista em cada chamada e coloca o caso base antes do caso recursivo que o pode cobrir.                                                                                 |
-| Recolher respostas    | `findall(T, G, L)` junta todas as instâncias de `T` que satisfazem `G`, incluindo repetições; se não houver, dá `[]`. `bagof` agrupa segundo variáveis livres e falha sem respostas; `setof` ordena e retira duplicados. |
+[Dedução de tipos](../polimorfismo-classes/) e [expressões](../haskell-expressoes-tipos/).
 
-O padrão `[H|T]` separa a cabeça da cauda de uma lista não vazia. Uma query que responde `false` ou `no` indica que o programa **não conseguiu provar** a afirmação segundo a sua base de conhecimento e estratégia de procura. Não é automaticamente prova da negação no mundo real. A ordem das cláusulas pode mudar terminação e resultados observados quando há efeitos ou cortes. Consulta [factos, regras e queries](/cadeiras/pfl/logica-unificacao-prolog/#factos-regras-e-queries), [unificação](/cadeiras/pfl/logica-unificacao-prolog/#unificação) e [listas e aritmética](/cadeiras/pfl/prolog-recursao-procura/#listas-e-aritmética).
+## Listas e folds
 
-### Quando controlar a procura
+```haskell
+map f (x:xs)    = f x : map f xs
+filter p (x:xs) = if p x then x:filter p xs else filter p xs
+foldr f z (x:xs) = f x (foldr f z xs)
+foldl f z (x:xs) = foldl f (f z x) xs
+```
 
-O corte `!` compromete as escolhas feitas desde a entrada na cláusula: impede alternativas anteriores à posição do corte, mas não desfaz objetivos já executados. Um **corte verde** elimina procura redundante sem mudar as respostas lógicas; um **corte vermelho** altera as respostas e exige justificação pelo contrato. Testa a consulta em vários modos de uso, não apenas com todos os argumentos instanciados. `findall`, `bagof` e `setof` não são intercambiáveis. Vê [corte e recolha](/cadeiras/pfl/prolog-recursao-procura/#corte-e-findall) e [resolução e retrocesso](/cadeiras/pfl/logica-unificacao-prolog/#resolução-sld-passo-a-passo).
+| Pedido             | Padrão e condição                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| Juntar listas      | `foldr (:) ys xs`; `xs ++ ys` percorre `xs`.                                         |
+| Achatar            | `foldr (++) []`.                                                                     |
+| Inverter           | `foldl (flip (:)) []`; lista finita.                                                 |
+| Bits para inteiro  | `foldl (\n b -> 2*n+b) 0`; bits em ordem e cada bit 0 ou 1.                          |
+| Prefixo            | `takeWhile p`, `dropWhile p`; param no primeiro que falha.                           |
+| Seleção            | `filter p`; pode precisar da lista inteira.                                          |
+| Todos / algum      | `all p [] = True`; `any p [] = False`.                                               |
+| Redução            | `foldr` pode terminar em lista infinita se `f` ignorar a cauda; `foldl` exige o fim. |
+| Acumulação estrita | `foldl'`; força o acumulador até à forma normal fraca.                               |
 
-## Haskell: tipos e definição
+`foldr (-) 0 [1,2,3] = 2`; `foldl (-) 0 [1,2,3] = -6`. Associar não é avaliar tudo primeiro. [Listas](../listas-recursao/) e [ordem superior](../funcoes-ordem-superior/).
 
-| Forma                           | O que confirma                                                                                                                                 |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `f :: a -> b`                   | Tipo da função; a aplicação `f x` associa à esquerda e pode devolver outra função. Uma função de dois argumentos é currificada: `a -> b -> c`. |
-| `f [] = ...` e `f (x:xs) = ...` | Padrões distintos para lista vazia e não vazia. Cobrir os construtores evita padrões incompletos.                                              |
-| Guardas                         | São testadas por ordem; `otherwise` é `True`. Se nenhuma guarda casar, a definição fica parcial.                                               |
-| `type Nome = ...`               | Sinónimo de tipo existente; `data Nome = Construtor ...` cria tipo novo, que pode ser recursivo.                                               |
-| Compreensão de lista            | Transforma os elementos que satisfazem um predicado; a ordem dos geradores determina a ordem dos resultados.                                   |
+## Árvores, I/O, parsers e propriedades
 
-Uma guarda pode escrever-se `f x | cond = resultado`, e uma compreensão `[f x | x <- xs, p x]`. `(x)` é apenas `x` entre parênteses; o tuplo vazio `()` é o valor do tipo unitário. Uma lista tem elementos do mesmo tipo; um tuplo pode combinar tipos diferentes. Uma definição recursiva precisa de caso base e progresso, mas uma estrutura infinita pode ser útil se o consumidor pedir só um prefixo. A avaliação **preguiçosa** permite esse consumo, sem garantir que qualquer programa com lista infinita termina. Vê [expressões e padrões](/cadeiras/pfl/haskell-expressoes-tipos/#funções-por-equações) e [tipos algébricos](/cadeiras/pfl/tipos-algebricos-recursao/#data-e-padrões).
+| Tema            | Decisão                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| `data`          | Um caso por construtor; recursão pelos componentes menores.                                           |
+| BST             | Invariância dos valores; procura custa ordem da altura, não sempre `log n`.                           |
+| Ausência        | `Maybe a`; `Nothing` ou `Just a`.                                                                     |
+| `IO a`          | Ação que produz `a`; `x <- acao`, mas `let x = calculoPuro`.                                          |
+| `return`        | Cria uma ação; não termina o bloco `do`.                                                              |
+| Parser completo | Confere o resto, não só o valor.                                                                      |
+| `many p`        | `p` precisa de consumir entrada em cada sucesso.                                                      |
+| Gramática       | Prioridade e associatividade são escolhas separadas; evita recursão à esquerda no parser descendente. |
+| Propriedade     | Pré-condições, conservação e resultado; testes não são uma prova universal.                           |
+| Shrinking       | Contraexemplo reduzido, sem garantia de mínimo global.                                                |
 
-## Transformar e reduzir listas
+[Árvores](../tipos-algebricos-recursao/), [parsers](../entrada-saida-parsers/) e [propriedades](../testes-quickcheck/).
 
-`map f xs` aplica `f` a cada elemento; `filter p xs` conserva os que satisfazem `p`; `take n xs` pede um prefixo. `foldr f z (x:xs) = f x (foldr f z xs)` associa a redução pela direita; `foldl f z (x:xs) = foldl f (f z x) xs` acumula pela esquerda. Se `f` é associativa e `z` é neutro, as duas dão o mesmo valor numa lista finita, mas a avaliação, memória e comportamento em listas infinitas podem diferir. Para acumulação estrita em listas grandes, considera `foldl'` de `Data.List`; para produção preguiçosa e possível consumo de prefixos, `foldr` pode ser a escolha. Vê [map, filter e foldr](/cadeiras/pfl/funcoes-ordem-superior/#map-filter-e-foldr) e [foldr contra foldl](/cadeiras/pfl/funcoes-ordem-superior/#foldr-contra-foldl).
+## Prolog
+
+| Operação         | Contrato                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `X = Termo`      | Unifica e pode ligar variáveis.                                                                                        |
+| `X == Y`         | Testa identidade sem criar ligações.                                                                                   |
+| `X is E`         | Avalia `E`; variáveis de `E` têm de estar instanciadas.                                                                |
+| `A =:= B`        | Avalia e compara números; não unifica expressões.                                                                      |
+| `A \= B`         | Testa que não unificam agora; não adia uma restrição.                                                                  |
+| `\+ G`           | Sucede se `G` falhar finitamente; não enumera o complemento.                                                           |
+| `!`              | Elimina escolhas desde a entrada até ao corte e cláusulas alternativas desse predicado; escolhas à direita permanecem. |
+| Corte verde      | Retirar o corte não muda as respostas no contrato indicado.                                                            |
+| `findall(T,G,L)` | Conserva repetições; sem respostas dá `[]`.                                                                            |
+| `bagof`, `setof` | Agrupam por variáveis livres; `^` retira um agrupamento; falham sem respostas. `setof` ordena e elimina repetições.    |
+
+Na árvore SLD: renomeia variáveis da cláusula, unifica a cabeça, propaga a substituição e resolve o objetivo mais à esquerda. Marca alternativas para retrocesso. Para termos finitos, rejeita `X=f(X)` pelo occurs check; algumas implementações de `=` aceitam ciclos.
+
+DFS não garante o caminho mais curto. BFS garante menor número de arestas com custos iguais e expansão finita. Minimax escolhe máximo ou mínimo conforme o jogador; não tira o máximo de todas as folhas. [Unificação](../logica-unificacao-prolog/), [controlo](../prolog-recursao-procura/), [soluções](../solucoes-estruturas-prolog/) e [procura](../procura-jogos-simbolos/).

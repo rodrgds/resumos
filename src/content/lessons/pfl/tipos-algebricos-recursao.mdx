@@ -2,7 +2,17 @@
 title: Tipos algébricos e recursão
 description: Definir tipos com data, encaixe de padrões e recursão sobre listas e árvores.
 section: conteudo
-order: 4
+order: 5
+practices:
+  - pfl/praticar-arvores
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa de PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Moodle PFL 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+  coverage: Construtores, padrões, Maybe, recursão estrutural, altura, travessias e pesquisa em árvores.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -58,7 +68,7 @@ Constrói a árvore inserindo `3, 1, 4, 1, 5` por ordem em `Vazia`. O `3` abre a
 
 A travessia em ordem devolve `[1,1,3,4,5]`: a invariância garante que a travessia sai ordenada, incluindo o duplicado.
 
-Agora `procura 4`: compara com `3`, desce à direita, compara com `4`, encontra, `True`. E `procura 2`: compara com `3`, desce à esquerda, compara com `1`, cai no `otherwise`, desce à direita do `1`, encontra `Vazia`, `False`. Cada comparação elimina metade da árvore[^metade], e é essa a promessa da estrutura.
+Agora `procura 4`: compara com `3`, desce à direita, compara com `4`, encontra, `True`. E `procura 2`: compara com `3`, desce à esquerda, compara com `1`, cai no `otherwise`, desce à direita do `1`, encontra `Vazia`, `False`. Cada comparação escolhe uma subárvore. O número de comparações depende da altura da árvore[^metade].
 
 Monta a árvore do exemplo no navegador e confirma a travessia e as duas procuras:
 
@@ -89,3 +99,33 @@ mediaSegura xs = Just (sum xs / fromIntegral (length xs))
 :::tip[Desenha antes de codificar]
 Perante um tipo novo, escreve primeiro um valor concreto à mão, como o `No 3 ...` acima, e só depois as equações. Se consegues desenhar o valor, os padrões saem sozinhos; se os padrões te confundem, é o valor que ainda não está claro.
 :::
+
+## Construtores, sinónimos e recursão estrutural
+
+`type Ponto = (Double,Double)` dá outro nome a um tipo existente. `data Forma = Circulo Double | Retangulo Double Double` cria um tipo novo com duas alternativas. Uma função `area :: Forma -> Double` precisa de considerar cada construtor: `area (Circulo r) = pi*r*r` e `area (Retangulo a b) = a*b`. A validade de dimensões positivas continua a ser uma condição separada.
+
+O nome do tipo aparece nas assinaturas; o nome do construtor aparece nos valores e padrões. Em `data Arvore a = Vazia | No a (Arvore a) (Arvore a)`, `No` tem tipo `a -> Arvore a -> Arvore a -> Arvore a`. A função construtora também pode ser parcialmente aplicada.
+
+O esquema de recursão segue os componentes recursivos. Para contar nós, o caso vazio dá zero e o nó dá `1 + tamanho esq + tamanho dir`. Para altura, com vazio de altura zero, o nó dá `1 + max (altura esq) (altura dir)`. Numa folha, as duas subárvores vazias têm altura zero, dando altura um. Indica a convenção: outra definição pode dar altura menos um à árvore vazia.
+
+## Uma árvore de expressões
+
+```haskell
+data Expr = Valor Integer | Soma Expr Expr | Produto Expr Expr
+  deriving (Eq, Show)
+
+avaliar :: Expr -> Integer
+avaliar (Valor n) = n
+avaliar (Soma a b) = avaliar a + avaliar b
+avaliar (Produto a b) = avaliar a * avaliar b
+```
+
+`Soma (Valor 2) (Produto (Valor 3) (Valor 4))` representa `2+3*4`. Avaliamos as folhas para `2`, `3`, `4`, o produto para `12` e a soma para `14`. A precedência já está na estrutura; `avaliar` não decide que operador tem prioridade.
+
+`deriving (Eq,Show)` pede ao compilador implementações baseadas nos construtores e campos. Num tipo parametrizado, comparar duas `Arvore a` requer também `Eq a`. `Maybe` e `Either` são outros tipos algébricos: o primeiro distingue ausência de valor; `Either erro valor` permite ainda explicar por que o cálculo falhou.
+
+## Justificar uma lei por indução
+
+Para provar `length (map f xs) = length xs` em listas finitas, começa no caso `[]`: os dois comprimentos são zero. No passo `x:xs`, `map` produz `f x : map f xs`, cujo comprimento é `1 + length (map f xs)`. Pela hipótese de indução sobre a cauda, isso é `1 + length xs`, igual ao comprimento original. A hipótese aplica-se à estrutura menor, não à expressão que queremos provar.
+
+Uma propriedade testada em exemplos reforça a confiança, mas não substitui esta prova para todas as listas finitas. A afirmação sobre `length` não pode ser avaliada numa lista infinita.

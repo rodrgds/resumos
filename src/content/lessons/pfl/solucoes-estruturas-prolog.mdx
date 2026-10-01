@@ -1,0 +1,83 @@
+---
+title: Recolher soluções e compor estruturas em Prolog
+description: findall, bagof, setof, variáveis livres, diferenças de listas, DCG e predicados de ordem superior.
+order: 10
+practices:
+  - pfl/praticar-solucoes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: SWI-Prolog, recolha de soluções
+      url: https://www.swi-prolog.org/pldoc/man?section=allsolutions
+    - title: SICStus Prolog, manual
+      url: https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html
+  coverage: Recolha de soluções, agrupamento por variáveis livres, listas abertas, DCG e modos de uso.
+  gaps:
+    - Guiões Prolog de 2026/27 ainda não recolhidos; DCG e diferenças de listas são aprofundamentos a confirmar nas aulas.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import programa from '../../pfl/solucoes.pl?raw';
+
+Uma consulta pode ter várias provas. O motor devolve uma resposta de cada vez; os predicados de recolha exploram as provas e constroem uma lista. Primeiro decide se queres conservar repetições, se precisas de agrupar e o que deve acontecer quando não há respostas.
+
+## Escolher a recolha
+
+| Predicado        | Repetições                            | Variáveis livres no objetivo               | Sem respostas      |
+| ---------------- | ------------------------------------- | ------------------------------------------ | ------------------ |
+| `findall(T,G,L)` | Conserva.                             | Não criam grupos.                          | Sucede com `L=[]`. |
+| `bagof(T,G,L)`   | Conserva.                             | Criam uma lista por combinação de valores. | Falha.             |
+| `setof(T,G,L)`   | Remove e ordena pela ordem de termos. | Criam grupos como `bagof`.                 | Falha.             |
+
+O template `T` é o que guardamos de cada prova de `G`. Uma variável que aparece em `G` mas não em `T` é livre para efeitos de agrupamento, salvo quando a quantificamos com `^`. As ligações usadas dentro de `findall` não ficam como uma solução exterior para essas variáveis.
+
+Com `inscrito(ana,pfl).`, `inscrito(ana,lbaw).`, `inscrito(bruno,pfl).` e uma segunda ocorrência de `inscrito(ana,pfl).`, `findall(C,inscrito(ana,C),L)` dá `[pfl,lbaw,pfl]`. As duas provas para `pfl` continuam presentes. `setof` dá `[lbaw,pfl]`, ordenado e sem repetidos.
+
+## Quando aparece um grupo por pessoa
+
+Em `bagof(C,inscrito(A,C),Cs)`, o template guarda `C`, mas `A` aparece apenas no objetivo. Obtemos `A=ana, Cs=[pfl,lbaw,pfl]` e depois `A=bruno, Cs=[pfl]`. Pedir mais respostas percorre grupos, não elementos de uma só lista.
+
+Para juntar cadeiras de todas as pessoas sem esse agrupamento, escreve `bagof(C,A^inscrito(A,C),Cs)`. O `A^` torna `A` existencial naquele objetivo e o resultado é `[pfl,lbaw,pfl,pfl]`. O duplicado pode vir da mesma pessoa ou de pessoas distintas; só o template decide o que guardamos.
+
+<CodePlayground
+  language="prolog"
+  code={programa}
+  title="Comparar listas e grupos de soluções"
+/>
+
+O programa imprime `[pfl,lbaw,pfl]`, `[lbaw,pfl]`, `[ana-[pfl,lbaw,pfl],bruno-[pfl]]`, `[pfl,lbaw,pfl,pfl]` e `recusado`. A última linha verifica o contrato do máximo explicado na página anterior.
+
+`findall(X,fail,L)` dá `L=[]`; `bagof(X,fail,L)` falha. Um `bagof` também pode falhar dentro de uma regra e impedir os objetivos seguintes. Se o enunciado exige uma lista vazia quando não há candidatos, escolhe esse comportamento explicitamente.
+
+## Listas abertas e diferenças de listas
+
+`[a,b|T]` é uma lista aberta quando `T` ainda não tem valor. Não é uma lista finita terminada em `[]`; preencher `T` acrescenta a continuação sem copiar o prefixo. Uma diferença de listas representa o par entre a lista completa e a sua cauda ainda por preencher, por exemplo `[a,b|T]-T`.
+
+```prolog
+juntar_dl(A-B, B-C, A-C).
+```
+
+Para juntar `[a,b|T]-T` e `[c|U]-U`, unificamos `T` com `[c|U]`. O resultado é `[a,b,c|U]-U`. Para fechar a lista, unificamos `U=[]`. O exemplo supõe caudas abertas frescas e listas construídas segundo este contrato. Reutilizar uma cauda com a própria estrutura pode criar um ciclo.
+
+A concatenação habitual percorre a primeira lista. Esta representação consegue ligar uma cauda aberta em tempo constante, sem percorrer o prefixo. A vantagem desaparece se tiveres de converter ou copiar a lista a cada operação.
+
+## Gramáticas com DCG
+
+Uma DCG descreve uma sequência de tokens. `-->` é traduzido em predicados que passam a entrada e a entrada restante, aproveitando o mesmo princípio das diferenças de listas:
+
+```prolog
+sequencia --> [a], sequencia, [b].
+sequencia --> [].
+```
+
+`phrase(sequencia,[a,a,b,b])` sucede: consumimos dois `a`, escolhemos a alternativa vazia e consumimos dois `b` no regresso. `phrase(sequencia,[a,b,a,b])` falha; esta gramática reconhece todos os `a` antes de todos os `b`, em igual quantidade. `phrase/2` exige o consumo completo; `phrase/3` permite observar o resto.
+
+Recursão à esquerda pode entrar num ciclo antes de consumir um token. A ordem das alternativas e o modo de chamada continuam a afetar a procura. O facto de a escrita parecer uma gramática não elimina as regras de execução de Prolog.
+
+## Passar um predicado
+
+`call(P,X)` aplica o objetivo representado por `P` a um argumento adicional. `maplist(P,List)` pede que o predicado se prove para todos os elementos; não devolve automaticamente uma lista transformada. A forma com duas listas, `maplist(P,Entrada,Saida)`, usa um predicado de dois argumentos para relacionar os elementos correspondentes.
+
+Ao usar predicados meta, verifica aridade, argumentos conhecidos e o comportamento quando um objetivo tem várias soluções. A ordem de procura e a necessidade de terminar não deixam de existir por serem escondidas numa biblioteca.
