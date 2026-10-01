@@ -11,6 +11,15 @@ permutar :: [a] -> [[a]]
 permutar [] = [[]]
 permutar (x:xs) = concatMap (posicoes x) (permutar xs)
 
+toBitsFicha :: Int -> [Int]
+toBitsFicha n
+  | n < 0 = error "Esperado um inteiro nao negativo"
+  | n == 0 = [0]
+  | otherwise = reverse (restos n)
+  where
+    restos 0 = []
+    restos k = k `mod` 2 : restos (k `div` 2)
+
 toBits :: Integer -> Maybe [Integer]
 toBits n
   | n < 0 = Nothing
@@ -30,3 +39,4 @@ main = do
   print (permutar "aa")
   print (length (permutar "abc"))
   print (map toBits [-1,0,10])
+  print (map toBitsFicha [0,12])
