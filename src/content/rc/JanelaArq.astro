@@ -1,0 +1,145 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+---
+
+<InteractiveDemo label="Recuperar uma perda na janela">
+  <div data-arq-demo>
+    <div class="choices">
+      <div>
+        <label for="rc-arq-protocol">Protocolo</label>
+        <select id="rc-arq-protocol" data-protocol>
+          <option value="gbn">Go-Back-N</option>
+          <option value="sr">Selective Repeat</option>
+        </select>
+      </div>
+      <div>
+        <label for="rc-arq-loss">Trama perdida</label>
+        <select id="rc-arq-loss" data-loss>
+          <option>0</option>
+          <option>1</option>
+          <option selected>2</option>
+          <option>3</option>
+          <option>4</option>
+        </select>
+      </div>
+    </div>
+    <ol class="frames" aria-label="Estado após as cinco transmissões iniciais">
+      {Array.from({ length: 5 }, (_, n) => (
+        <li data-frame={n}>
+          <strong>I({n})</strong>
+          <span>{n < 2 ? 'Entregue' : n === 2 ? 'Perdida' : 'Descartada'}</span>
+        </li>
+      ))}
+    </ol>
+    <p data-recovery>Repetir I(2), I(3), I(4).</p>
+    <p data-delivery>
+      Após a recuperação, entregar os dados em falta pela ordem 2, 3, 4.
+    </p>
+    <p data-total role="status">
+      8 transmissões de dados para entregar as cinco tramas originais.
+    </p>
+  </div>
+</InteractiveDemo>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-arq-demo]').forEach((root) => {
+    const protocol = root.querySelector<HTMLSelectElement>('[data-protocol]')!;
+    const loss = root.querySelector<HTMLSelectElement>('[data-loss]')!;
+    const update = () => {
+      const lost = Number(loss.value);
+      const selective = protocol.value === 'sr';
+      root.querySelectorAll<HTMLElement>('[data-frame]').forEach((frame, n) => {
+        const state =
+          n === lost
+            ? 'Perdida'
+            : n < lost
+              ? 'Entregue'
+              : selective
+                ? 'Guardada'
+                : 'Descartada';
+        frame.querySelector('span')!.textContent = state;
+        frame.dataset.state = state;
+      });
+      const pending = Array.from({ length: 5 - lost }, (_, n) => lost + n);
+      const repeat = selective ? [lost] : pending;
+      root.querySelector('[data-recovery]')!.textContent =
+        `Repetir ${repeat.map((n) => `I(${n})`).join(', ')}.`;
+      root.querySelector('[data-delivery]')!.textContent =
+        `Após a recuperação, entregar os dados em falta pela ordem ${pending.join(', ')}.`;
+      root.querySelector('[data-total]')!.textContent =
+        `${5 + repeat.length} transmissões de dados para entregar as cinco tramas originais.`;
+    };
+    protocol.addEventListener('change', update);
+    loss.addEventListener('change', update);
+    update();
+  });
+</script>
+
+<style>
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .choices > div {
+    display: grid;
+    flex: 1;
+    gap: 8px;
+    min-width: 150px;
+  }
+  label {
+    font-weight: 600;
+  }
+  select {
+    min-height: 44px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--page);
+    color: var(--text);
+    font: inherit;
+  }
+  .frames {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0;
+  }
+  .frames li {
+    min-width: 0;
+    padding: 10px 4px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    text-align: center;
+  }
+  strong,
+  span {
+    display: block;
+  }
+  span {
+    margin-top: 8px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+  [data-state='Perdida'] {
+    border-style: dashed;
+  }
+  [data-state='Guardada'] {
+    border-color: var(--accent);
+  }
+  p {
+    margin: 16px 0 0;
+  }
+  select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  @media (max-width: 480px) {
+    .frames {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

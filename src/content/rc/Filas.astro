@@ -1,0 +1,122 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+---
+
+<InteractiveDemo label="Comparar o tempo médio em fila">
+  <div data-queue-demo>
+    <label>
+      Carga ρ: <output data-load>60%</output>
+      <input type="range" min="10" max="99" value="60" step="1" />
+    </label>
+    <p data-rates>λ = 60 pacotes/s; serviço médio = 10 ms.</p>
+    <svg
+      viewBox="0 0 440 150"
+      role="img"
+      aria-label="Tempos médios em fila, numa escala de zero a mil milissegundos"
+    >
+      <text x="0" y="20">
+        M/M/1
+      </text>
+      <rect data-mm x="85" y="3" width="4.8" height="25" />
+      <text data-mm-value x="85" y="48">
+        15,0 ms
+      </text>
+      <text x="0" y="81">
+        M/D/1
+      </text>
+      <rect data-md x="85" y="64" width="2.4" height="25" />
+      <text data-md-value x="85" y="109">
+        7,5 ms
+      </text>
+      <line x1="85" y1="125" x2="405" y2="125" />
+      <text x="85" y="145">
+        0
+      </text>
+      <text x="245" y="145" text-anchor="middle">
+        500
+      </text>
+      <text x="405" y="145" text-anchor="end">
+        1000 ms
+      </text>
+    </svg>
+    <p data-result role="status">
+      M/M/1: fila 15,0 ms, sistema 25,0 ms. M/D/1: fila 7,5 ms, sistema 17,5 ms.
+    </p>
+  </div>
+</InteractiveDemo>
+
+<script>
+  document
+    .querySelectorAll<HTMLElement>('[data-queue-demo]')
+    .forEach((root) => {
+      const slider = root.querySelector('input')!;
+      const number = (value: number) =>
+        value.toLocaleString('pt-PT', {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+      const update = () => {
+        const load = Number(slider.value);
+        const rho = load / 100;
+        const service = 10;
+        const mm = (rho / (100 * (1 - rho))) * 1000;
+        const md = mm / 2;
+        root.querySelector('output')!.textContent = `${load}%`;
+        root.querySelector('[data-rates]')!.textContent =
+          `λ = ${load} pacotes/s; serviço médio = ${service} ms.`;
+        root
+          .querySelector('[data-mm]')!
+          .setAttribute('width', String((320 * mm) / 1000));
+        root
+          .querySelector('[data-md]')!
+          .setAttribute('width', String((320 * md) / 1000));
+        root.querySelector('[data-mm-value]')!.textContent = `${number(mm)} ms`;
+        root.querySelector('[data-md-value]')!.textContent = `${number(md)} ms`;
+        root.querySelector('[data-result]')!.textContent =
+          `M/M/1: fila ${number(mm)} ms, sistema ${number(mm + service)} ms. M/D/1: fila ${number(md)} ms, sistema ${number(md + service)} ms.`;
+      };
+      slider.addEventListener('input', update);
+      update();
+    });
+</script>
+
+<style>
+  label {
+    display: block;
+    font-weight: 600;
+  }
+  input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    accent-color: var(--accent);
+  }
+  p {
+    margin: 12px 0 0;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: 16px;
+  }
+  text {
+    fill: var(--text);
+    font:
+      14px 'Manrope Variable',
+      sans-serif;
+  }
+  line {
+    stroke: var(--line);
+  }
+  [data-mm] {
+    fill: var(--accent);
+  }
+  [data-md] {
+    fill: var(--muted);
+  }
+  input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+</style>
