@@ -45,3 +45,7 @@ A apresentação de 2026/27 no Moodle também descreve uma alternativa com micro
 Refaz os casos sem olhar para a análise. Nos exercícios, justifica a relação entre problema, conceito, alteração e evidência. Nas contas, indica unidades e hipóteses. Uma pontuação correta sem interpretação não demonstra que escolheste a medida adequada.
 
 Os exercícios são originais. Usa a [cheat sheet](/cadeiras/ipc/folha-consulta/) para rever conceitos já estudados, e confirma no Moodle o âmbito e o formato dos mini-testes.
+
+## Referências complementares
+
+As [dez heurísticas de usabilidade de Jakob Nielsen](https://www.nngroup.com/articles/ten-usability-heuristics/) ajudam a analisar uma interface e a justificar problemas concretos. Aplica-as às tarefas dos utilizadores, identificando o erro, a consequência e a correção proposta.

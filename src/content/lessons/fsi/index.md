@@ -48,3 +48,9 @@ A apresentação disponibilizada no Moodle ainda tem uma capa de 2025/26 e indic
 Lê um exemplo, fecha-o e refaz o raciocínio. Resolve os exercícios no fim de cada página antes de abrir as pistas. Confere a explicação, incluindo as hipóteses e os limites da defesa, mesmo quando o valor numérico está certo. Usa a [cheat sheet](/cadeiras/fsi/folha-consulta/) para recordar regras já compreendidas.
 
 Os exercícios aqui são originais e não reproduzem provas da cadeira. Os exemplos e os resumos cobrem o programa público; a lista exata de matéria e o formato dos testes dependem dos materiais e avisos da edição atual.
+
+## Referências complementares
+
+- [The Protection of Information in Computer Systems, de Saltzer e Schroeder](https://web.mit.edu/Saltzer/www/publications/protection/), para os princípios de construção de sistemas seguros.
+- [PKCS #1, RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017), para RSA, OAEP e PSS.
+- [TLS 1.3, RFC 8446](https://datatracker.ietf.org/doc/html/rfc8446), para a negociação e proteção do canal.

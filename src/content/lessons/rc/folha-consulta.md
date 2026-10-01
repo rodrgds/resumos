@@ -36,7 +36,7 @@ Stop-and-Wait sem perdas: $U=t_f/(t_f+2t_p+t_a)$. Com ACK desprezável e $a=t_p/
 
 Modelo com erro independente $p_e$: $U_{SW}=(1-p_e)/(1+2a)$, $U_{SR}=(1-p_e)\min(1,W/(1+2a))$.
 
-Go-Back-N com erros, no modelo dos slides: se $W\ge1+2a$, $U=(1-p_e)/(1+2ap_e)$; senão $U=W(1-p_e)/((1+2a)(1-p_e+Wp_e))$.
+Go-Back-N com erros independentes e ACK desprezável: se $W\ge1+2a$, $U=(1-p_e)/(1+2ap_e)$; senão $U=W(1-p_e)/((1+2a)(1-p_e+Wp_e))$.
 
 Não apliques estas expressões fora do modelo. [Contas e traços](/cadeiras/rc/ligacao-de-dados/).
 
