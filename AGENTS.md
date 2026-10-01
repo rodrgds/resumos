@@ -17,6 +17,7 @@
 
 - AI actions belong on lessons, not the homepage. Send only the public page URL and a reading prompt; never send page text or private notes.
 - MEIC named optional courses use `optional`; LEIC elective placeholder groups use `elective`. Keep their explanations distinct. MEIC includes all named options, including courses without an occurrence link in SIGARRA.
+- LEIC named CT options live in `src/data/ct-options.ts`, separate from the required course grid. Verify each group's options against the current SIGARRA plan. `ct-choices.ts` keeps choices local and validates group membership; pinned semesters mirror them. Published CT content uses its named id, such as `ct-iadp`, without adding ECTS to the curriculum.
 
 - Annotations are local-only and restricted to `[data-annotatable]` lesson content. Keep storage in `src/lib/annotations.ts` and passage anchoring in `src/lib/text-anchors.ts`. Preserve legacy `resumos-notes` data. Missing or ambiguous passages retain their notes without highlighting unrelated text.
 

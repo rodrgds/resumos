@@ -1,0 +1,65 @@
+---
+import { ctOptions, ctCatalogue, type CTGroupId } from '../data/ct-options';
+import type { Course } from '../data/courses';
+import CourseCard from './CourseCard.astro';
+import Icon from './Icon.astro';
+interface Props {
+  group: Course;
+  published: Map<string, string>;
+}
+const { group, published } = Astro.props;
+const id = group.id as CTGroupId;
+const options = ctOptions.filter((option) => option.groups.includes(id));
+---
+
+<div class="ct-slot" data-ct-slot={id}>
+  <div data-ct-card>
+    <CourseCard course={group} status="Escolher opção" />
+  </div>
+  <details class="ct-picker" data-pagefind-ignore>
+    <summary>
+      Escolher {group.acronym}
+      <Icon name="chevron-down" size={18} />
+    </summary>
+    <label>
+      <span>Opção de {group.acronym}</span>
+      <select data-ct-choice={id}>
+        <option value="">Sem opção escolhida</option>
+        {options.map((option) => (
+          <option value={option.id}>{option.name}</option>
+        ))}
+      </select>
+    </label>
+    <p>A escolha fica neste navegador. Não faz a inscrição na FEUP.</p>
+    <a
+      class="ct-source"
+      href={ctCatalogue.url}
+      target="_blank"
+      rel="noreferrer"
+    >
+      Opções de {ctCatalogue.year} no SIGARRA
+    </a>
+    <noscript>
+      <p>Ativa JavaScript para guardar a escolha. Podes consultar as opções:</p>
+      <ul>
+        {options.map((option) => (
+          <li>
+            <a href={published.get(option.id) || option.url}>{option.name}</a>
+          </li>
+        ))}
+      </ul>
+    </noscript>
+  </details>
+  <template data-ct-template="">
+    <CourseCard course={group} status="Escolher opção" />
+  </template>
+  {options.map((option) => (
+    <template data-ct-template={option.id}>
+      <CourseCard
+        course={{ ...group, ...option }}
+        href={published.get(option.id)}
+        officialUrl={option.url}
+      />
+    </template>
+  ))}
+</div>

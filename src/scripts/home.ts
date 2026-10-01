@@ -1,40 +1,59 @@
 import { readSemesterPins, SEMESTER_PIN_KEY } from '../lib/pinned-semesters';
 import { readingHistory } from '../lib/reading-history';
+import { CT_CHOICE_KEY, readCTChoices } from '../lib/ct-choices';
+import { ctOptions, type CTGroupId } from '../data/ct-options';
 
 const readingPages = document.querySelector('#reading-pages');
-if (readingPages) {
-  const publishedPaths = new Set(
-    (JSON.parse(readingPages.textContent!) as { path: string }[]).map(
-      (page) => page.path,
-    ),
+const publishedPaths = new Set(
+  readingPages
+    ? (JSON.parse(readingPages.textContent!) as { path: string }[]).map(
+        (page) => page.path,
+      )
+    : [],
+);
+function resumeCourse(card: HTMLAnchorElement) {
+  const root = card.dataset.courseRoot!;
+  const latest = readingHistory().find(
+    (visit) => publishedPaths.has(visit.path) && visit.path.startsWith(root),
   );
-  for (const card of document.querySelectorAll<HTMLAnchorElement>(
-    'a[data-course][data-course-root]',
-  )) {
-    const root = card.dataset.courseRoot!;
-    const latest = readingHistory().find(
-      (visit) => publishedPaths.has(visit.path) && visit.path.startsWith(root),
-    );
-    if (latest) card.href = `${latest.path}?continuar=1`;
-  }
+  if (latest) card.href = `${latest.path}?continuar=1`;
+}
+for (const card of document.querySelectorAll<HTMLAnchorElement>(
+  'a[data-course][data-course-root]',
+)) {
+  resumeCourse(card);
 }
 
 const detail = document.querySelector<HTMLDialogElement>('#course-detail')!;
-const cards = document.querySelectorAll<HTMLButtonElement>(
-  'button[data-course]',
-);
-for (const card of cards)
-  card.addEventListener('click', () => {
-    document.querySelector('#course-title')!.textContent = card.dataset.title!;
-    document.querySelector('#detail-acronym')!.textContent =
-      card.dataset.acronym!;
-    document.querySelector('#course-meta')!.textContent = card.dataset.meta!;
-    document.querySelector('#course-description')!.textContent = card.dataset
-      .elective
+const officialLink = detail.querySelector<HTMLAnchorElement>('.official-link')!;
+const curriculumUrl = officialLink.href;
+document.addEventListener('click', (event) => {
+  const card = (event.target as Element).closest<HTMLButtonElement>(
+    'button[data-course]',
+  );
+  if (!card) return;
+  const slot = card.closest<HTMLElement>('[data-ct-slot]');
+  const choice = slot?.querySelector<HTMLSelectElement>('[data-ct-choice]');
+  if (choice && !choice.value) {
+    slot!.querySelector<HTMLDetailsElement>('details')!.open = true;
+    choice.focus();
+    return;
+  }
+  document.querySelector('#course-title')!.textContent = card.dataset.title!;
+  document.querySelector('#detail-acronym')!.textContent =
+    card.dataset.acronym!;
+  document.querySelector('#course-meta')!.textContent = card.dataset.meta!;
+  document.querySelector('#course-description')!.textContent =
+    card.dataset.elective && !slot
       ? 'Este é um grupo de opções. Consulta as cadeiras disponíveis no plano de estudos.'
       : 'Tens apontamentos desta cadeira? Podes ajudar a começar.';
-    detail.showModal();
-  });
+  officialLink.href = card.dataset.officialUrl || curriculumUrl;
+  officialLink.querySelector('[data-official-label]')!.textContent = card
+    .dataset.officialUrl
+    ? 'Ver a ficha no SIGARRA'
+    : 'Ver o plano no SIGARRA';
+  detail.showModal();
+});
 document
   .querySelector('#course-contribute')!
   .addEventListener('click', () => detail.close());
@@ -52,16 +71,35 @@ function focusCourse() {
   card?.focus({ preventScroll: true });
 }
 window.addEventListener('hashchange', focusCourse);
-focusCourse();
 
 const originals = [
   ...document.querySelectorAll<HTMLElement>('.semester[data-semester]'),
 ];
 const semesterIds = originals.map((section) => section.dataset.semester!);
 const pins = readSemesterPins(semesterIds);
+let ctChoices = readCTChoices();
 const pinnedRoot = document.querySelector<HTMLElement>(
   '[data-pinned-semesters]',
 );
+
+function renderCTChoices() {
+  for (const slot of document.querySelectorAll<HTMLElement>(
+    '#cadeiras [data-ct-slot]',
+  )) {
+    const group = slot.dataset.ctSlot as CTGroupId;
+    const id = ctChoices.get(group) || '';
+    const template = [
+      ...slot.querySelectorAll<HTMLTemplateElement>('[data-ct-template]'),
+    ].find((candidate) => candidate.dataset.ctTemplate === id)!;
+    const content = template.content.cloneNode(true) as DocumentFragment;
+    const card = content.querySelector<HTMLElement>('[data-course]')!;
+    card.id = `cadeira-${group}`;
+    card.querySelector('h4')!.id = `resumo-${group}`;
+    if (card instanceof HTMLAnchorElement) resumeCourse(card);
+    slot.querySelector('[data-ct-card]')!.replaceChildren(content);
+    slot.querySelector<HTMLSelectElement>('[data-ct-choice]')!.value = id;
+  }
+}
 
 function renderPins() {
   if (!pinnedRoot) return;
@@ -87,16 +125,11 @@ function renderPins() {
     copy
       .querySelector('.semester-pin')!
       .setAttribute('aria-label', `Desafixar ${label}`);
-    for (const card of copy.querySelectorAll<HTMLButtonElement>(
-      'button[data-course]',
+    for (const template of copy.querySelectorAll('template')) template.remove();
+    for (const select of copy.querySelectorAll<HTMLSelectElement>(
+      '[data-ct-choice]',
     )) {
-      card.addEventListener('click', () => {
-        const original = section.querySelector<HTMLButtonElement>(
-          `[data-acronym="${card.dataset.acronym}"]`,
-        );
-        // Keep the dialog's native focus return on the card the reader clicked.
-        original?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      });
+      select.value = ctChoices.get(select.dataset.ctChoice as CTGroupId) || '';
     }
     pinnedRoot.append(copy);
   }
@@ -133,10 +166,54 @@ document.addEventListener('click', (event) => {
       ?.focus();
   }
 });
+
+document.addEventListener('change', (event) => {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement) || !select.dataset.ctChoice)
+    return;
+  const group = select.dataset.ctChoice as CTGroupId;
+  const option = ctOptions.find(
+    (candidate) =>
+      candidate.id === select.value && candidate.groups.includes(group),
+  );
+  if (select.value && !option) return;
+  if (option) ctChoices.set(group, option.id);
+  else ctChoices.delete(group);
+  try {
+    localStorage.setItem(
+      CT_CHOICE_KEY,
+      JSON.stringify(Object.fromEntries(ctChoices)),
+    );
+  } catch {
+    /* Choices still work during this visit. */
+  }
+  const fromPinned = !!select.closest('[data-pinned-semesters]');
+  if (fromPinned) {
+    const original = document.querySelector<HTMLDetailsElement>(
+      `#cadeiras [data-ct-slot="${group}"] details`,
+    );
+    if (original) original.open = true;
+  }
+  renderCTChoices();
+  renderPins();
+  if (fromPinned)
+    pinnedRoot
+      ?.querySelector<HTMLSelectElement>(`[data-ct-choice="${group}"]`)
+      ?.focus({ preventScroll: true });
+});
 window.addEventListener('storage', (event) => {
-  if (event.key !== SEMESTER_PIN_KEY && event.key !== null) return;
+  if (
+    event.key !== SEMESTER_PIN_KEY &&
+    event.key !== CT_CHOICE_KEY &&
+    event.key !== null
+  )
+    return;
   pins.clear();
   readSemesterPins(semesterIds).forEach((id) => pins.add(id));
+  ctChoices = readCTChoices();
+  renderCTChoices();
   renderPins();
 });
+renderCTChoices();
 renderPins();
+focusCourse();
