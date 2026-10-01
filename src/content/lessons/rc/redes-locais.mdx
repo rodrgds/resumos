@@ -1,69 +1,86 @@
 ---
 title: Redes locais
-description: Ethernet comutada com aprendizagem da tabela, VLANs e Wireless LAN 802.11.
+description: Aprendizagem de MAC, domínios, VLANs, spanning tree, Ethernet e Wi-Fi.
 section: conteudo
-order: 6
+order: 7
+practices:
+  - rc/praticar-lan
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
 ---
 
 import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
 import vlans from '../../rc/vlan.typ?raw';
 import estrela from '../../rc/comutador.dot?raw';
 
-A rede local é o primeiro salto de quase todos os pacotes: a Ethernet com fios e o Wi-Fi que tens em casa e na faculdade. Esta página mostra como os comutadores encaminham tramas sem configuração e como o sem fios organiza o acesso.
+Um comutador encaminha tramas dentro de uma rede de ligação. Aprende as portas de origem das tramas e procura a porta do endereço de destino. Esta operação não calcula uma rota IP.
 
-## O comutador aprende sozinho
+## Aprendizagem e reenvio
 
-Um **comutador** (switch) liga várias máquinas e reenvia cada trama só pela porta certa, ao contrário do concentrador antigo que repetia tudo para toda a gente. A magia está na **tabela de comutação**, que associa endereços MAC a portas e é construída por aprendizagem: quando chega uma trama, o comutador regista "a origem veio desta porta" e reenvia pela porta do destino, se a conhecer; se não conhecer, inunda por todas as portas menos a de entrada.
+Para cada trama recebida, o comutador:
 
-Segue quatro máquinas, A, B, C e D, nas portas 1, 2, 3 e 4, com a tabela vazia:
+1. Aprende ou atualiza o MAC de **origem**, associado à porta de entrada e à VLAN.
+2. Se conhece o MAC de destino noutra porta, reenvia só por essa porta.
+3. Se conhece o destino na própria porta de entrada, filtra a trama.
+4. Se não conhece o destino, inunda as outras portas da mesma VLAN.
+5. Broadcast é difundido nessa VLAN. O tratamento de multicast pode ser refinado por mecanismos adicionais.
 
-1. A envia para B. O destino é desconhecido, por isso a trama inunda as portas 2, 3 e 4, e a tabela aprende A na porta 1.
-2. B responde para A. O destino é conhecido (porta 1), por isso a trama sai só pela porta 1, e a tabela aprende B na porta 2.
-3. C envia para D. Destino desconhecido: inunda, e aprende C na porta 3.
-4. D responde para C. Destino conhecido: sai só pela porta 3, e aprende D na porta 4.
+A tabela tem envelhecimento. Uma estação que muda de porta pode ser reaprendida; não é preciso aguardar sempre pela expiração. A inundação não altera os endereços da trama.
 
-No fim, a tabela tem as quatro entradas e quase todo o tráfego vai direto à porta certa, sem incomodar as outras máquinas. As entradas expiram com o tempo, por isso máquinas que mudam de porta são reaprendidas sem intervenção.
-
-A topologia final do exemplo: quatro máquinas, um comutador, cada porta com o seu dono.
+**Exemplo.** A, B, C e D estão nas portas 1 a 4. A tabela começa vazia. A→B aprende A:1 e sai em 2, 3, 4. B→A aprende B:2 e sai só em 1. C→A aprende C:3 e sai só em 1. Se A→C entrar pela porta 1, sai só em 3. Aprende sempre a origem, mesmo quando não conhece o destino.
 
 <Dot
   source={estrela}
-  alt="Grafo em estrela: o comutador ao centro ligado às máquinas A, B, C e D pelas portas 1 a 4."
+  alt="Comutador em estrela com as quatro estações nas portas 1 a 4."
 />
 
-## VLANs: separar sem cabos novos
+## Ethernet e domínios
 
-Uma **VLAN** parte um comutador em redes lógicas independentes: as máquinas da VLAN 10 trocam tramas entre si, as da VLAN 20 entre si, e nunca se misturam, embora partilhem o mesmo ferro. A separação é feita marcando as tramas (a etiqueta 802.1Q) nas ligações entre comutadores. É a forma barata de isolar laboratórios, gabinetes e convidados sem puxar um cabo por grupo.
+Uma trama Ethernet inclui MAC de destino e origem, campo de tipo ou comprimento, dados e FCS. O FCS deteta erros na trama; uma trama inválida é descartada. A retransmissão fiável, quando necessária, fica noutro protocolo.
 
-O mesmo comutador, duas redes que não se veem:
+Um **domínio de colisão** partilha um meio half-duplex. Um concentrador liga as estações ao mesmo domínio. Num comutador, cada porta separa esse domínio; em full-duplex não há colisões nesse enlace. Um **domínio de broadcast** é o conjunto alcançado por uma trama broadcast. Um comutador sem separação em VLANs não o divide. Um router separa redes de ligação e não reenvia simplesmente o broadcast Ethernet recebido.
+
+O tempo de transmissão pode incluir mais do que os bytes de dados. Quando pedido, conta preâmbulo, delimitador, trama e intervalo entre tramas. Identifica se o enunciado conta o intervalo como tempo ocupado ou apenas como espera antes da seguinte.
+
+## VLANs e trunks
+
+Uma VLAN define um domínio de ligação lógico. Portas de acesso pertencem habitualmente a uma VLAN e ligam terminais. Uma ligação **trunk** transporta várias VLANs entre equipamentos, identificadas por etiquetas 802.1Q conforme a configuração.
 
 <Typst
   source={vlans}
   format="svg"
-  alt="Diagrama com um bloco VLAN 10 ligado às máquinas A e B e um bloco VLAN 20 ligado às máquinas C e D, sem ligações entre blocos."
+  alt="VLAN 10 agrupa A e B; VLAN 20 agrupa C e D; a separação é lógica no mesmo equipamento."
 />
 
-## Wireless LAN 802.11
+A e B na VLAN 10 podem trocar tramas. A e C em VLANs diferentes precisam de encaminhamento entre redes, mesmo no mesmo aparelho. Um comutador multicamada pode executar esse encaminhamento. A separação depende de configuração correta; não significa que todos os fluxos entre VLANs sejam proibidos por definição.
 
-No Wi-Fi não há portas: há um **ponto de acesso** e estações que partilham o ar com o CSMA/CA da página anterior. Para entrar, a estação associa-se ao ponto de acesso (com autenticação na rede da faculdade, por exemplo); para sair do silêncio das colisões, pode trocar primeiro um pedido e uma autorização curtos (RTS/CTS) que calam os vizinhos durante a transmissão.
+## Ciclos e spanning tree
 
-O sem fios herda os problemas do meio partilhado: débito real muito abaixo do anunciado na caixa, porque metade do tempo vai em esperas, cabeçalhos e confirmações; e estações escondidas umas das outras que colidem no ponto de acesso sem se ouvirem. Por isso a regra prática é pôr pontos de acesso suficientes e aceitar que o Wi-Fi é um recurso partilhado, não uma ligação dedicada.
+Ligações redundantes criam ciclos na topologia física. Uma trama broadcast pode circular e multiplicar-se: Ethernet não tem um TTL que limite essas cópias como IP. A aprendizagem MAC também pode oscilar entre portas.
 
-<Tabs id="rts-cts" labels={['Sem RTS/CTS', 'Com RTS/CTS']}>
-  <div slot="panel-0">
+**Spanning Tree** escolhe uma topologia lógica sem ciclos. Os equipamentos elegem uma raiz e selecionam caminhos para ela, deixando portas redundantes sem encaminhar dados. A topologia pode mudar após uma falha. Não memorizes «desliga o cabo mais caro»: o algoritmo usa identificadores, custos e critérios de desempate.
 
-Sem a troca prévia, duas estações escondidas transmitem ao mesmo tempo e as tramas completas colidem no ponto de acesso. É o comportamento por omissão e chega quando as estações se ouvem bem.
+Num triângulo A-B-C, é possível manter as três ligações físicas e permitir encaminhamento em apenas duas. O caminho ativo pode deixar de ser o caminho fisicamente mais curto para certos pares; a prioridade é impedir ciclos.
 
-  </div>
-  <div slot="panel-1">
+## Wi-Fi: associação e mobilidade
 
-Com RTS/CTS, o pedido curto reserva o canal e cala os vizinhos antes da trama longa. Paga-se a sobrecarga dos dois pacotes curtos e ganha-se proteção contra estações escondidas.
+Num BSS de infraestrutura, estações usam um ponto de acesso. O SSID identifica a rede apresentada, enquanto o BSSID identifica o conjunto de serviço concreto. Canais sobrepostos, interferência, distância e contenção afetam o débito útil.
 
-  </div>
-</Tabs>
+A associação estabelece a relação entre estação e ponto de acesso; autenticação e proteção de dados dependem do mecanismo usado. Não confundas encontrar uma rede com conseguir autenticar-te nela. Um conjunto de pontos de acesso pode formar um ESS e permitir mobilidade entre células.
 
-:::tip[Comutador contra router]
-O comutador decide pela tabela MAC e não toca no IP: entrega dentro da mesma rede. O router decide pelo endereço IP e liga redes diferentes. Na dúvida, pergunta se o destino está na mesma rede: se sim, é trabalho de comutador; se não, é trabalho de router, e a camada de rede da próxima página trata disso.
-:::
+As tramas 802.11 podem conter mais campos de endereço que Ethernet, distinguindo transmissor, recetor e extremos da entrega. O ponto de acesso interliga o meio sem fios ao sistema de distribuição, sem ser necessariamente um router IP.
+
+## Seguir IP e MAC ao longo do caminho
+
+A envia para B numa rede diferente. A constrói um pacote com IP de origem A e destino B, mas a trama tem como destino o **MAC do gateway**, obtido por ARP em IPv4. O router recebe-a e constrói outra trama com o seu MAC de saída e o MAC do próximo salto.
+
+| Local observado  | IP de origem | IP de destino | MAC de origem                | MAC de destino                 |
+| ---------------- | ------------ | ------------- | ---------------------------- | ------------------------------ |
+| Ligação A→router | A            | B             | A                            | Interface de entrada do router |
+| Ligação router→B | A            | B             | Interface de saída do router | B                              |
+
+Assume aqui ausência de NAT, túneis e outros routers. Um comutador entre A e o router encaminha a trama, mas não substitui o MAC de origem pelo seu. Esta distinção é central em questões de escolha múltipla.

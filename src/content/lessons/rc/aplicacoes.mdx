@@ -1,0 +1,106 @@
+---
+title: Aplicações da Internet
+description: DNS, HTTP, FTP, correio, sockets e distribuição cliente-servidor e P2P.
+section: conteudo
+order: 11
+practices:
+  - rc/praticar-aplicacoes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: RFC9112, mensagens HTTP1.1
+      url: https://www.rfc-editor.org/rfc/rfc9112.html
+    - title: RFC1034, conceitos DNS
+      url: https://www.rfc-editor.org/rfc/rfc1034.html
+    - title: RFC959, FTP
+      url: https://www.rfc-editor.org/rfc/rfc959.html
+    - title: RFC5321, SMTP
+      url: https://www.rfc-editor.org/rfc/rfc5321.html
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Uma aplicação define mensagens e ações, usando um transporte. O nome de um servidor, a porta do serviço e o formato da resposta resolvem problemas distintos. Para explicar o que acontece ao abrir uma página, segue a resolução do nome, a ligação ao destino e o pedido da aplicação.
+
+## DNS: nomes e registos
+
+DNS é uma base de dados distribuída e hierárquica. O recursor usado pelo cliente pode consultar servidores de raiz, do domínio de topo e autoritativos, guardando resultados em cache até ao TTL.
+
+Uma pergunta **recursiva** pede a resposta final ao servidor consultado. Numa interação **iterativa**, esse servidor pode indicar outro a consultar. No percurso habitual, o cliente pede recursão ao seu resolver e o resolver segue referências na hierarquia. Uma resposta em cache pode evitar as consultas seguintes.
+
+| Registo | Informação                                     |
+| ------- | ---------------------------------------------- |
+| A       | Endereço IPv4                                  |
+| AAAA    | Endereço IPv6                                  |
+| CNAME   | Nome canónico de um alias                      |
+| MX      | Servidor de correio e preferência              |
+| NS      | Servidor de nomes autoritativo                 |
+| PTR     | Nome associado a um endereço no espaço inverso |
+
+DNS clássico usa a porta 53, com UDP para muitas perguntas e TCP quando necessário, incluindo transferências de zona e respostas que exigem esse transporte. «DNS é sempre UDP» é falso. Novos transportes cifrados não mudam a função dos registos.
+
+## HTTP: pedido e resposta
+
+HTTP define métodos, recursos, cabeçalhos, estados e conteúdo. Em HTTP/1.1, a mensagem usa linha inicial e cabeçalhos terminados por CRLF, seguidos de uma linha vazia. O comprimento do corpo precisa de ser determinado corretamente, por exemplo por `Content-Length` ou por uma codificação definida.
+
+```http
+GET /dados HTTP/1.1
+Host: exemplo.test
+Connection: close
+
+```
+
+Uma resposta pode ser `200 OK`, `301 Moved Permanently`, `404 Not Found` ou `500 Internal Server Error`. `Content-Type` descreve o formato do corpo. GET pede uma representação; POST submete dados para processamento; PUT substitui uma representação; DELETE pede remoção. O significado exato depende do recurso e das regras HTTP.
+
+A ligação **persistente** reutiliza TCP para vários pedidos. Numa conta simplificada com RTT constante, sem DNS ou TLS e com objetos pequenos, uma ligação TCP nova custa aproximadamente um RTT para abrir e outro para pedido/resposta. Reutilizar a ligação evita repetir a abertura. Se houver paralelismo, pipelining ou versões diferentes de HTTP, os tempos mudam.
+
+Cookies permitem associar pedidos a estado da aplicação. HTTP não mantém automaticamente uma sessão de utilizador. Uma cache pode reutilizar conteúdo e validar uma versão com pedidos condicionais, por exemplo `If-Modified-Since` ou `If-None-Match`, recebendo `304 Not Modified` se aplicável.
+
+HTTPS acrescenta proteção através de TLS. HTTP/2 usa enquadramento binário e multiplexagem sobre uma ligação TCP; HTTP/3 usa QUIC. Não descrevas todo o HTTP como texto transmitido sobre TCP: essa descrição é de HTTP/1.x.
+
+O exemplo separa uma resposta simplificada em memória, sem efetuar pedidos de rede. Não é um parser HTTP completo.
+
+<CodePlayground
+  language="python"
+  title="Separar cabeçalhos e corpo HTTP/1.1"
+  code={`resposta = "HTTP/1.1 200 OK\\r\\nContent-Type: text/plain\\r\\nContent-Length: 2\\r\\n\\r\\n42"
+cabecalhos, corpo = resposta.split("\\r\\n\\r\\n", 1)
+print("Estado:", cabecalhos.split("\\r\\n")[0])
+print("Corpo:", corpo)`}
+/>
+
+## FTP e sockets
+
+FTP clássico mantém uma ligação de **controlo** ao servidor na porta TCP21 e abre ligações separadas para dados. No modo ativo, o servidor inicia a ligação de dados para o cliente; no passivo, o cliente liga-se à porta anunciada pelo servidor. A porta20 é associada ao lado servidor em transferências ativas clássicas, não a toda a transferência FTP. FTP não cifra credenciais por si; SFTP é outro protocolo, sobre SSH.
+
+Um cliente TCP usa socket, connect, send e recv. O servidor usa socket, bind, listen e accept; `accept` cria um socket para a conversa, mantendo o socket de escuta para outras. Em UDP, usam-se datagramas e endereços, por exemplo `sendto` e `recvfrom`, sem exigir um handshake TCP.
+
+`recv(4096)` pode devolver menos bytes do que os pedidos e não corresponde necessariamente a uma mensagem inteira. Para dados com comprimento conhecido, lê num ciclo até completar ou detetar fecho. Para envio em Python, `sendall` tenta enviar todos os bytes, mas não garante que a aplicação remota já os processou.
+
+## Correio eletrónico
+
+SMTP transporta correio entre servidores e suporta a submissão por clientes segundo a configuração do serviço. O servidor remetente procura MX do domínio destinatário para saber onde entregar. POP3 e IMAP permitem ao utilizador aceder à sua caixa; IMAP mantém um modelo de pastas e estado no servidor.
+
+MIME descreve tipos de conteúdo, anexos e codificações no corpo. Um endereço de correio não é um endereço IP, e resolver o domínio do destinatário não significa procurar apenas o seu registo A. Portas dependem do serviço e da proteção: SMTP clássico25, submissão587, POP3 110 e IMAP143, com outras portas para TLS implícito.
+
+## Cliente-servidor e P2P
+
+No modelo cliente-servidor, um servidor fornece conteúdo aos clientes. Em P2P, participantes podem também fornecer conteúdo a outros. Um sistema P2P pode continuar a usar servidores auxiliares, como trackers; não exige ausência de qualquer componente central.
+
+Para distribuir um ficheiro de $F$ bits a N clientes, servidor com upload $u_s$ e clientes de download mínimo $d_{min}$, um limite inferior cliente-servidor é:
+
+$$D_{CS}\ge\max(NF/u_s,F/d_{min}).$$
+
+Em P2P, contando uploads $u_i$ dos peers, um limite inferior ideal é:
+
+$$D_{P2P}\ge\max(F/u_s,F/d_{min},NF/(u_s+\sum u_i)).$$
+
+**Exemplo.** F=100 Mbit, N=10, servidor10 Mbit/s, cada peer upload1 Mbit/s e download5 Mbit/s. Cliente-servidor: máximo de 100 s e 20 s, logo pelo menos100 s. P2P: máximo de 10 s, 20 s e 50 s, logo pelo menos50 s. São limites inferiores, não tempos garantidos: fragmentos disponíveis, protocolo e topologia podem acrescentar espera.
+
+## Uma página, do nome ao conteúdo
+
+Se nada estiver em cache, o terminal obtém configuração IP, identifica o próximo salto, resolve o nome por DNS, abre o transporte necessário e envia o pedido HTTP. ARP resolve o MAC local de destino, quando é IPv4 numa LAN Ethernet; não descobre o IP do servidor web. O router encaminha o pacote, não interpreta o HTML. No destino, a porta entrega o pedido ao processo servidor.
+
+Revê este percurso nas [aulas oficiais da camada de aplicação de Kurose](https://gaia.cs.umass.edu/kurose_ross/videos/2/), escolhendo as secções HTTP, DNS e P2P. Depois escreve o percurso sem consultar e identifica o que pode desaparecer quando há cache ou uma ligação persistente.

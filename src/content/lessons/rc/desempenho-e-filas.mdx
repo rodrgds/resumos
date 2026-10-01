@@ -1,63 +1,106 @@
 ---
 title: Desempenho e filas de espera
-description: As quatro parcelas do atraso nodal e o cálculo do atraso total num trajeto.
+description: Atrasos, débito, produto banda-atraso, lei de Little e modelos M/M/1 e M/D/1.
 section: conteudo
 order: 4
+practices:
+  - rc/praticar-desempenho
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: Problemas interativos de Kurose e Ross
+      url: https://gaia.cs.umass.edu/kurose_ross/interactive/
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import barras from '../../rc/parcelas.typ?raw';
+import WebPlayground from '../../../components/WebPlayground.astro';
 
-"A rede está lenta" pode significar quatro coisas diferentes, e cada uma pede um remédio diferente. Esta página decompõe o atraso de um pacote nas suas parcelas e mostra como somá-las num trajeto completo.
+Uma ligação de grande débito pode continuar a responder lentamente. O débito limita a quantidade por segundo; a latência inclui transmissão, propagação, processamento e espera. Começa por separar estas parcelas.
 
-## As quatro parcelas
+## Atraso de um salto
 
-Em cada nó (terminal ou router), um pacote sofre:
+$$d=d_{proc}+d_{fila}+\frac{L}{R}+\frac{D}{v}.$$
 
-- **Processamento** ($d_{proc}$): verificar o cabeçalho e decidir para onde enviar. Microssegundos, normalmente desprezável.
-- **Fila** ($d_{fila}$): esperar que os pacotes à frente sejam transmitidos. Zero com a rede vazia, enorme com a rede cheia; é a parcela imprevisível.
-- **Transmissão** ($d_{trans} = L/R$): empurrar os $L$ bits do pacote para a ligação de débito $R$. Depende do tamanho do pacote e da velocidade da ligação.
-- **Propagação** ($d_{prop} = d/s$): viajar à velocidade $s$ ao longo da distância $d$. Na fibra, $s$ anda perto de $2 \times 10^8$ m/s, por isso cada 200 km custam cerca de 1 ms.
+$L/R$ é o tempo de **transmissão**, até sair o último bit. $D/v$ é o tempo de **propagação**, até um bit atravessar a distância. Usa bits e bit/s na primeira fração, metros e m/s na segunda.
 
-O atraso nodal é a soma das quatro. Num trajeto com vários saltos, somam-se as parcelas de todos os nós e ligações.
+**Exemplo.** Pacote de 1500 bytes, ligação de 10 Mbit/s, distância de 100 km e velocidade $2\times10^8$ m/s. Transmissão $12000/10^7=1{,}2$ ms; propagação $10^5/(2\times10^8)=0{,}5$ ms. Sem fila nem processamento, o último bit chega em 1,7 ms.
 
-## Um trajeto completo
+Com três ligações store-and-forward de 10, 20 e 5 Mbit/s, a transmissão de um pacote soma $1{,}2+0{,}6+2{,}4=4{,}2$ ms. Acrescenta a propagação de **cada** ligação. Para muitos pacotes, existe paralelismo; não multipliques o atraso do primeiro pelo número de pacotes.
 
-Um pacote de 4000 bits vai do Porto a um servidor com dois saltos. Ligação 1: 10 Mbps e 5000 km. Ligação 2: 2 Mbps e 1000 km. No router entre elas há 3 pacotes à frente na fila de saída, e o processamento demora 0,1 ms em cada nó.
+## Débito e bits em trânsito
 
-Calcula por parcelas:
+Sem tráfego concorrente ou outras limitações, o débito sustentado de um fluxo não ultrapassa o menor débito do percurso. Um caminho de menor custo de encaminhamento não é necessariamente o caminho de maior débito: o custo pode representar distância, política ou o inverso da capacidade.
 
-- Ligação 1: transmissão $4000 / 10^7 = 0{,}4$ ms; propagação $5 \times 10^6 / (2 \times 10^8) = 0{,}025$ s, ou seja 25 ms.
-- Router: processamento 0,1 ms; fila de 3 pacotes de 4000 bits a 2 Mbps, $3 \times 4000 / (2 \times 10^6) = 6$ ms.
-- Ligação 2: transmissão $4000 / (2 \times 10^6) = 2$ ms; propagação $10^6 / (2 \times 10^8) = 0{,}005$ s, ou seja 5 ms.
+O produto **banda-atraso** $R\,t_p$ conta bits que cabem numa ligação durante a propagação num sentido. Para dimensionar uma janela de transporte usa-se frequentemente $R\,RTT$, porque a confirmação faz a viagem de ida e volta. Confirma qual destas definições o enunciado pede.
 
-Somando processamento nos dois nós ($0{,}2$ ms), dá cerca de $0{,}4 + 25 + 0{,}1 + 6 + 2 + 5 + 0{,}1 \approx 38{,}6$ ms. Repara na moral: a propagação dos 5000 km (25 ms) esmaga tudo o resto. Contra a distância não há protocolo que chegue, e é por isso que os centros de dados se aproximam dos utilizadores em vez de confiarem em ligações rápidas e longas.
+A 100 Mbit/s com RTT de 40 ms, $R\,RTT=4$ Mbit, ou 500000 bytes. Uma janela de apenas 100000 bytes limita idealmente o débito a $W/RTT=2{,}5$ MB/s, ou 20 Mbit/s, mesmo antes de considerar perdas e cabeçalhos.
 
-As quatro parcelas lado a lado, à escala. A barra da propagação na primeira ligação domina a figura:
+## Lei de Little
 
-<Typst
-  source={barras}
-  format="svg"
-  alt="Barras horizontais das parcelas do exemplo: transmissão 1 com 0,4 ms, propagação 1 com 25 ms, router com 6,1 ms, transmissão 2 e propagação 2 com 7 ms. Total 38,6 ms."
+Num sistema estável, a média de elementos presentes $N$ satisfaz:
+
+$$N=\lambda T.$$
+
+$\lambda$ é a taxa efetiva de entradas, $T$ o tempo médio passado no sistema. É uma relação entre médias de longo prazo, não exige chegadas Poisson. Aplica a mesma fronteira a todas as grandezas: **fila** exclui o elemento em serviço; **sistema** inclui-o.
+
+Se chegam 200 pacotes/s e cada pacote passa em média 30 ms no sistema, $N=200\times0{,}03=6$ pacotes. Se a fila admite perdas, a taxa admitida pode diferir da taxa oferecida.
+
+## M/M/1: hipóteses e fórmulas
+
+O modelo assume chegadas Poisson de taxa $\lambda$, tempos de serviço exponenciais de taxa $\mu$, um servidor, independência e capacidade de espera ilimitada. A carga é $\rho=\lambda/\mu$. As médias estacionárias seguintes exigem $\rho<1$:
+
+$$T=\frac1{\mu-\lambda},\qquad T_q=\frac{\rho}{\mu-\lambda},$$
+$$N=\frac{\rho}{1-\rho},\qquad N_q=\frac{\rho^2}{1-\rho}.$$
+
+$T=T_q+1/\mu$ e $N=N_q+\rho$. O servidor está ocupado uma fração $\rho$ do tempo; $P(N_{sistema}=n)=(1-\rho)\rho^n$.
+
+**Exemplo.** Comprimento médio de 1000 bytes e ligação de 1 Mbit/s dão serviço médio de 8 ms, logo $\mu=125$ pacotes/s. Para $\lambda=100$, $\rho=0{,}8$, $T=40$ ms, $T_q=32$ ms, $N=4$ e $N_q=3{,}2$. O comprimento precisa de variar de forma compatível com o serviço exponencial para este modelo ser literal.
+
+Se multiplicares $\lambda$ e $\mu$ por dez, a carga e $N$ mantêm-se, mas os tempos dividem-se por dez. Se aumentares só $\lambda$ até $\mu$, as médias divergem. Uma fila real finita perde pacotes em vez de guardar uma quantidade infinita.
+
+## M/D/1 não é M/M/1
+
+Com chegadas Poisson, serviço **constante**, um servidor e fila FIFO ilimitada, sem interromper o serviço de um pacote, usa M/D/1. As médias seguintes exigem $\rho<1$:
+
+$$T_q=\frac{\rho}{2\mu(1-\rho)},\qquad T=T_q+\frac1\mu.$$
+
+Nos números anteriores, $T_q=16$ ms e $T=24$ ms. A mesma carga não determina o mesmo atraso: a variabilidade do serviço conta. Para M/G/1 com a mesma disciplina FIFO, serviços independentes e identicamente distribuídos, independentes das chegadas, a fórmula de Pollaczek-Khinchine usa o segundo momento finito do serviço, $T_q=\lambda E[S^2]/(2(1-\rho))$. Não é uma fórmula universal para qualquer disciplina de fila.
+
+## Experimentar a carga
+
+A simulação abaixo calcula **médias teóricas**, não gera tráfego nem prevê uma rede concreta. Assume $\mu=100$ pacotes/s e permite mudar $\lambda$. Observa a diferença entre tempo de serviço e tempo de fila.
+
+<WebPlayground
+  html={
+    '<label for="carga">Carga: <output id="valor"></output></label><input id="carga" type="range" min="10" max="99" value="60"><p id="resultado" aria-live="polite"></p><svg viewBox="0 0 360 100" role="img" aria-label="Comparação do tempo médio em fila nos modelos M/M/1 e M/D/1"><rect id="mm" x="0" y="10" height="25" fill="#147d92"/><rect id="md" x="0" y="50" height="25" fill="#b45616"/></svg><p>Azul: M/M/1. Laranja: M/D/1. Mesma escala, até 1000 ms.</p>'
+  }
+  css={
+    'body{max-width:36rem;color:#18232a;background:#fff}input{display:block;width:100%;margin:1rem 0}svg{width:100%;height:auto}label{font-weight:600}'
+  }
+  js={`const slider=document.getElementById('carga');
+function update(){
+ const rho=Number(slider.value)/100, mu=100;
+ const q=rho/(mu*(1-rho));
+ document.getElementById('valor').textContent=(rho*100).toFixed(0)+'%';
+ document.getElementById('resultado').textContent='M/M/1: fila '+(q*1000).toFixed(1)+' ms; sistema '+((q+1/mu)*1000).toFixed(1)+' ms. M/D/1: fila '+(q*500).toFixed(1)+' ms.';
+ document.getElementById('mm').setAttribute('width',360*q);
+ document.getElementById('md').setAttribute('width',180*q);
+}
+slider.addEventListener('input',update);update();`}
 />
-
-Soma as parcelas com o programa e confirma o total de `38,6 ms`:
 
 <CodePlayground
   language="python"
-  title="Atraso total Porto/servidor"
-  code={
-    'trans1, prop1 = 0.4, 25.0\nproc, fila = 0.2, 6.0\ntrans2, prop2 = 2.0, 5.0\ntotal = trans1 + prop1 + proc + fila + trans2 + prop2\nprint(f"Total: {total:.1f} ms")'
-  }
+  title="Conferir as médias e a lei de Little"
+  code={`lam, mu = 100, 125
+rho = lam / mu
+T = 1 / (mu - lam)
+Tq = T - 1 / mu
+print(f"Carga: {rho:.2f}")
+print(f"Sistema: {T*1000:.1f} ms; fila: {Tq*1000:.1f} ms")
+print(f"N: {lam*T:.1f}; Nq: {lam*Tq:.1f}")`}
 />
 
-## Filas e o joelho da curva
-
-A fila merece atenção especial porque é a única parcela que depende do tráfego. Com pouca carga, os pacotes raramente esperam; à medida que a taxa de chegada se aproxima da capacidade da ligação, a fila média cresce sem limite. A curva tem um joelho: até aos 70 ou 80 por cento de utilização está tudo calmo, depois o atraso dispara.
-
-Isto explica dois comportamentos que vais medir no laboratório. Primeiro, a rede parece sempre "rápida ou entupida", sem meio termo estável perto do limite. Segundo, rajadas curtas de tráfego causam picos de atraso mesmo com utilização média baixa, porque a fila vê a rajada, não a média. Dimensionar redes é, em grande parte, decidir onde pôr o joelho.
-
-:::tip[Como atacar estes exercícios]
-Desenha o trajeto e escreve as quatro parcelas em cada nó antes de pegar na calculadora. A maioria dos erros vem de misturar unidades (km com metros, Mbps com bps) ou de esquecer a fila. Converte tudo para segundos e bits logo no início.
-:::
+Antes de aplicar uma fórmula, escreve o modelo, verifica a estabilidade e identifica se o resultado pedido inclui o serviço. Estes três passos evitam mais erros do que memorizar apenas $1/(\mu-\lambda)$.

@@ -1,73 +1,89 @@
 ---
 title: Redes e a Internet
-description: Comutação de pacotes e de circuitos, a arquitetura da Internet e a pilha TCP/IP.
+description: Circuitos, pacotes, camadas e encapsulamento, com contas de transmissão em série.
 section: conteudo
 order: 1
+practices:
+  - rc/praticar-redes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa RC, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
+    - title: Aulas e problemas dos autores Kurose e Ross
+      url: https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm
 ---
 
 import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
 import caminho from '../../rc/caminho-pacote.typ?raw';
 import grafo from '../../rc/caminho.dot?raw';
 
-Quando envias uma mensagem, ela não viaja inteira por um fio dedicado até ao destino. É partida em pedaços chamados pacotes, e cada pacote atravessa a rede por si, saltando de equipamento em equipamento até chegar. Esta página explica por que a rede funciona assim, que peças a compõem e como se organizam em camadas.
+Uma rede entrega dados entre terminais através de ligações e equipamentos intermédios. Um **protocolo** define o formato das mensagens, a sua ordem e o que fazer ao recebê-las. Um **serviço** descreve o que uma camada oferece à seguinte. IP, por exemplo, oferece entrega de datagramas sem garantir chegada, ordem ou ausência de duplicados.
 
-## Comutação de circuitos e de pacotes
+## Circuitos e pacotes
 
-Na **comutação de circuitos**, como na chamada telefónica clássica, a rede reserva um caminho completo antes de falar: primeiro estabelece a ligação, depois transmite, no fim liberta. Enquanto falas, aquela fatia da rede é tua, mesmo nos silêncios. É simples de perceber e dá atraso constante, mas desperdiça capacidade quando ninguém está a falar.
+Na **comutação de circuitos**, estabelece-se uma ligação e reserva-se capacidade antes de transmitir. FDM reserva bandas de frequência; TDM reserva intervalos de tempo. A reserva facilita um débito previsível, mas continua ocupada quando a origem não envia dados.
 
-Na **comutação de pacotes**, a mensagem é dividida em pacotes com endereço de destino no cabeçalho, e cada pacote segue sozinho. Não há reserva: os pacotes de utilizadores diferentes partilham as mesmas ligações, à vez. Isto aproveita muito melhor a rede, porque os silêncios de uns preenchem os dados dos outros, mas obriga a gerir filas e a aceitar atrasos variáveis.
+Na **comutação de pacotes**, os fluxos partilham capacidade conforme a necessidade. Um router recebe um pacote, escolhe a saída e espera que essa saída fique disponível. Esta **multiplexagem estatística** aproveita intervalos sem tráfego, mas pode criar filas e perdas quando a procura excede o serviço.
 
-Compara os dois com números. Uma mensagem de 3 Mbits numa ligação de 1 Mbps, com dois saltos até ao destino e 0,5 s de estabelecimento de chamada:
+Uma rede de pacotes pode usar **datagramas**, com decisão de encaminhamento por pacote, ou **circuitos virtuais**, com estado de ligação no caminho. IP usa datagramas. Uma ligação TCP entre aplicações não transforma a rede IP numa rede de circuitos virtuais.
 
-- Em comutação de circuitos: 0,5 s de estabelecimento mais 3 Mbits a 1 Mbps, ou seja 3 s de transmissão. Total de 3,5 s.
-- Em comutação de pacotes com 3 pacotes de 1 Mbit: o primeiro pacote chega ao fim de 2 saltos de 1 s cada, ou seja aos 2 s; os outros dois chegam logo atrás, um por segundo. Total de 3 s, sem estabelecimento.
+## Um pacote não atravessa tudo ao mesmo tempo
 
-Os pacotes ganham aqui, e ganham ainda mais quando a rede está partilhada: enquanto um utilizador pensa, os pacotes dos outros ocupam a ligação. O preço é a fila em cada equipamento, que estudas em [Desempenho e filas de espera](desempenho-e-filas/).
+Em **store-and-forward**, um equipamento só começa a enviar um pacote depois de o receber inteiro. Para $N$ pacotes iguais de $L$ bits, através de $H$ ligações iguais de débito $R$, sem propagação, filas ou processamento:
 
-## A arquitetura da Internet
+$$T = (H+N-1)\frac{L}{R}.$$
 
-A Internet é uma rede de redes: redes locais e de operadores ligadas entre si por equipamentos que encaminham pacotes. Três papéis aparecem em todo o lado:
+O primeiro pacote ocupa $H$ tempos de transmissão. Os restantes chegam espaçados de $L/R$, porque as ligações trabalham em paralelo.
 
-- Os **terminais** (o teu portátil, o telemóvel, o servidor) são as pontas, onde nascem e morrem os pacotes.
-- Os **routers** ligam redes entre si e decidem, pacote a pacote, para onde o enviar a seguir.
-- As **ligações** (fibra, cabo, rádio) transportam os bits entre equipamentos, cada uma com o seu débito e o seu atraso.
+**Exemplo.** Uma mensagem de 3 Mbit é dividida em três pacotes de 1 Mbit. Há duas ligações de 1 Mbit/s. O primeiro chega ao destino em 2 s; o segundo em 3 s; o terceiro em **4 s**. Não são 3 s: ainda falta transmitir o último pacote na segunda ligação. Sem divisão, o pacote de 3 Mbit demoraria 6 s. Com cabeçalhos maiores ou pacotes menores, muda a quantidade transmitida.
 
-No bordo da rede estão as redes de acesso (a tua casa, a universidade); no centro, o núcleo de routers e fibras de grande débito que interliga tudo. Os protocolos que todos falam, do terminal ao núcleo, são a pilha TCP/IP.
+<CodePlayground
+  language="python"
+  title="Instantes de chegada numa cadeia"
+  code={`pacotes = 3
+ligacoes = 2
+bits = 1_000_000
+debito = 1_000_000
+for i in range(1, pacotes + 1):
+    print(i, (ligacoes + i - 1) * bits / debito, "s")`}
+/>
 
-Segue o trajeto de um pacote do teu portátil até um servidor: sai pela rede de acesso, atravessa o núcleo e entra na rede do servidor.
+Para um circuito com capacidade de 1 Mbit/s, estabelecimento de 0,5 s e propagação desprezável, a mensagem demoraria $0{,}5+3=3{,}5$ s. O circuito ganha neste exemplo isolado. Isso não prova que aproveite melhor uma rede com muitos utilizadores intermitentes.
+
+Se os débitos forem diferentes, desenha o instante de início e fim de cada transmissão. A expressão acima exige ligações iguais; a fila no salto mais lento altera a separação entre pacotes.
+
+## Camadas, unidades e endereços
+
+| Camada     | Unidade habitual              | Identificação e função                              |
+| ---------- | ----------------------------- | --------------------------------------------------- |
+| Aplicação  | Mensagem                      | Nomes e operações, como um pedido HTTP              |
+| Transporte | Segmento TCP ou datagrama UDP | Portas e entrega entre processos                    |
+| Rede       | Pacote ou datagrama IP        | Endereços IP e encaminhamento entre redes           |
+| Ligação    | Trama                         | Endereços MAC quando usados, entrega no salto local |
+| Física     | Bits e símbolos               | Representação do sinal no meio                      |
+
+O modelo OSI separa ainda sessão e apresentação entre aplicação e transporte. O modelo TCP/IP não exige essa separação em camadas distintas. Não confundas os modelos com protocolos concretos.
+
+No **encapsulamento**, TCP acrescenta o seu cabeçalho aos dados; IP envolve o segmento; Ethernet envolve o pacote e acrescenta uma verificação de erros. O destino desfaz estas etapas. Um router retira a trama recebida, processa IP e constrói uma nova trama para a ligação seguinte. O cabeçalho de ligação muda por salto; os IP de origem e destino normalmente mantêm-se, salvo traduções como NAT.
 
 <Typst
   source={caminho}
   format="svg"
-  alt="Diagrama do trajeto de um pacote: portátil, router de acesso, núcleo, router de acesso, servidor."
+  alt="Um pacote percorre o portátil, o router de acesso, o núcleo, a rede de destino e o servidor."
 />
-
-O mesmo caminho como grafo, com cada salto numerado:
 
 <Dot
   source={grafo}
-  alt="Grafo do caminho do pacote em quatro saltos: portátil, acesso, núcleo, acesso, servidor."
+  alt="Grafo com o percurso de um pacote e as ligações entre os equipamentos."
 />
 
-<YouTube
-  id="AEaKrq3SpW8"
-  title="The Internet: Crash Course Computer Science #29"
-/>
+## Descrever uma rede num exame
 
-## A pilha TCP/IP em cinco camadas
+Identifica os terminais, as ligações e os equipamentos. Um **concentrador** repete sinais; um **comutador** encaminha tramas; um **router** encaminha pacotes IP. Um único aparelho doméstico pode combinar router, comutador e ponto de acesso, sem tornar iguais estas funções.
 
-Cada camada resolve um problema e usa o serviço da camada de baixo:
+Distingue **topologia física**, os cabos e ligações, de **topologia lógica**, o percurso permitido aos dados. Uma VLAN pode separar duas redes lógicas no mesmo comutador. Distingue também **débito da ligação**, em bit/s, de **débito útil**, que conta apenas os dados entregues à aplicação.
 
-1. **Física**: põe bits no meio (tensões no cabo, ondas no ar).
-2. **Ligação de dados**: move tramas entre vizinhos diretos e trata os erros desse salto.
-3. **Rede**: leva pacotes da origem ao destino através de várias redes (é a camada do IP e dos routers).
-4. **Transporte**: entrega entre processos, com ou sem fiabilidade (TCP e UDP).
-5. **Aplicação**: o que os programas veem (HTTP, DNS, correio, FTP).
-
-Cada camada embrulha os dados da camada de cima com o seu cabeçalho, como envelopes dentro de envelopes. Quando um pacote chega, cada camada abre o seu envelope e passa o conteúdo para cima. Esta separação é o que permite trocar o Wi-Fi por cabo sem tocar no navegador: muda a camada física, o resto nem repara.
-
-:::tip[Como ler o resto da cadeira]
-Sempre que um conceito novo aparecer, pergunta em que camada vive e o que pede à camada de baixo. A deteção de erros, por exemplo, existe na ligação de dados (entre vizinhos) e outra vez no transporte (de ponta a ponta): o mesmo problema, resolvido em dois sítios por razões diferentes.
-:::
+Para rever circuitos, pacotes e a organização da Internet, usa as [aulas oficiais de Jim Kurose, capítulo 1](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm). Depois resolve uma conta sem o vídeo: explica onde cada pacote está em cada segundo.
