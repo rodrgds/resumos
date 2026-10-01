@@ -44,6 +44,14 @@ Apresenta a ideia em palavras, dá a definição precisa e usa-a num exemplo. A 
 
 Ser conciso é retirar repetição. Mantém as frases que permitem reconstruir o raciocínio, mesmo quando tornam a página mais longa.
 
+## Rever uma cadeira inteira
+
+Quando preparares uma cadeira para exames, relaciona cada tópico do programa e dos materiais do ano com a lição que o explica, um exemplo resolvido e uma oportunidade de prática. Regista a cobertura e as lacunas na documentação editorial; a introdução da cadeira deve dar ao aluno um percurso de estudo.
+
+Confirma o ano nos próprios ficheiros, além do endereço do Moodle. Se uma apresentação antiga contradisser a ficha atual, conserva a origem e a dúvida no registo editorial. Uma fonte indisponível continua a ser uma lacuna, mesmo quando um livro cobre o mesmo tema. Distingue exercícios próprios, adaptações e provas antigas; uma prova anterior ajuda a escolher tipos de problemas, mas não confirma as regras do exame atual.
+
+As lições ensinam a matéria e mostram os passos necessários. As cheat sheets concentram fórmulas, condições, distinções e erros frequentes, com links para a explicação. Nos exemplos de código, confirma a versão das bibliotecas e a saída do bloco efetivamente publicado. Numa simulação, explicita as hipóteses do modelo e mostra o efeito de mudar os valores. Recomenda um vídeo junto da dúvida que resolve e indica o que observar.
+
 ## Guias práticos
 
 Começa pelo resultado pretendido e pelas condições necessárias. Se houver alternativas por sistema operativo ou ambiente, separa-as antes dos comandos.
