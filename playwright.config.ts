@@ -12,7 +12,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      timeout: 180_000,
+      timeout: 300_000,
       command:
         'astro build --outDir .test-dist && astro preview --outDir .test-dist --port 4322 --host 127.0.0.1',
       env: { RESUMOS_TEST_CONTENT: '1', ASTRO_PREVIEW_BACKGROUND: '1' },

@@ -86,15 +86,32 @@ test('Python executes data analysis and displays its plot', async ({
   ).toBeGreaterThan(100);
 });
 
-test('Python playground highlights the selected theme and executes', async ({
+test('Python playground waits for preparation, highlights the theme and executes', async ({
   page,
 }) => {
-  await page.goto('/cadeiras/f1/centro-massa-momento/');
+  let releaseScripts!: () => void;
+  const scriptsReady = new Promise<void>((resolve) => {
+    releaseScripts = resolve;
+  });
+  await page.route('**/*.js', async (route) => {
+    await scriptsReady;
+    await route.continue();
+  });
+  await page.goto('/cadeiras/f1/centro-massa-momento/', {
+    waitUntil: 'commit',
+  });
   const playground = page.getByRole('region', {
     name: 'Colisão elástica com números',
     exact: true,
   });
-  await playground.scrollIntoViewIfNeeded();
+  try {
+    await playground.scrollIntoViewIfNeeded();
+    await expect(
+      playground.getByRole('button', { name: 'Executar', exact: true }),
+    ).toBeDisabled();
+  } finally {
+    releaseScripts();
+  }
   const editor = playground.getByRole('textbox', {
     name: 'Código python',
     exact: true,
