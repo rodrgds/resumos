@@ -1,8 +1,8 @@
-# Fontes do Moodle 2026/2027
+# Fontes dos Moodles
 
-Recolha autenticada de 1 de outubro de 2026 para os seis cursos atuais. O [inventário público](fontes-moodle.json) regista origens, estados, tamanhos e SHA-256 sem nomes de estudantes, respostas, notas ou submissões. O inventário completo fica em `/_data/references/moodle-2026-27.json`, ignorado pelo Git.
+Recolha autenticada de 1 de outubro de 2026 dos Moodles de 2024/25, 2025/26 e 2026/27, pelo Brave e pelo serviço móvel autorizado localmente. O [inventário público](fontes-moodle.json) regista origens, estados, tamanhos e SHA-256 sem nomes de estudantes, respostas, notas ou submissões. Os inventários completos de cada ano ficam em `/_data/references/`, ignorados pelo Git. Tokens de acesso ficam apenas neste computador.
 
-## Materiais guardados
+## Materiais de 2026/27 guardados
 
 | Curso                                          | PDFs soltos | ZIPs | Imagens de slides | Páginas de ensino |
 | ---------------------------------------------- | ----------: | ---: | ----------------: | ----------------: |
@@ -15,7 +15,7 @@ Recolha autenticada de 1 de outubro de 2026 para os seis cursos atuais. O [inven
 
 Os 236 ficheiros guardados contêm 107 PDFs com cabeçalho válido. Os 47 ZIPs têm 112 membros lidos, incluindo 12 PDFs. Há 291 objetos distintos por SHA-256, 57 localizações duplicadas e 3 objetos já presentes no inventário anterior. Os totais incluem cópias e materiais de apoio; não equivalem ao número de aulas ou fontes independentes.
 
-As páginas locais registam o plano e as ligações visíveis, sem reproduzir fóruns, classificações ou entregas. Os ficheiros foram descarregados, os PDFs verificados pelo cabeçalho e os ZIPs pelo CRC. Esta verificação não significa que todas as páginas, soluções ou notebooks foram revistos.
+As páginas locais registam o plano e as ligações visíveis, sem reproduzir fóruns, classificações ou entregas. Os ficheiros foram descarregados, os PDFs verificados pelo cabeçalho e os ZIPs pelo CRC. O inventário distingue a aquisição dos ficheiros da revisão pedagógica.
 
 ## Introdução à análise de dados em Python
 
@@ -59,15 +59,54 @@ Foram observados 34 módulos: Python 00 a 14, Jupyter PD00, seis bibliotecas de 
 
 [Moodle](https://moodle2627.up.pt/course/view.php?id=4941). Coleção local privada: `/_data/rc/moodle-2026-27/`.
 
-- Ficheiro de dados do laboratório, recurso 33734, bloqueado pelo Brave com `ERR_BLOCKED_BY_CLIENT`; proteção conservada.
+O ficheiro `penguin.gif`, recurso 33734, já está no ZIP oficial do laboratório e foi verificado por tamanho e SHA-256. Não foi necessário repetir o download separado.
+
 - Os exemplos de exame são de 2020 e 2022; não são provas da avaliação de 2026/2027.
 - Slides posteriores aos três primeiros conjuntos ainda não publicados.
 - Questionários não iniciados; formulários de entrega e classificações excluídos.
 
-## Âmbito e limites
+## Materiais de 2024/25 guardados
 
-Só foram recolhidos materiais visíveis na sessão autorizada. Questionários e exames fechados permanecem fechados, sem tentativas; recursos de semestres posteriores ainda não publicados ficam assinalados. Os vídeos docentes foram identificados, sem descarregar gravações.
+| Cadeira                   | Originais Moodle | Estado                                      |
+| ------------------------- | ---------------: | ------------------------------------------- |
+| AC                        |               21 | Reutilizados e verificados                  |
+| Física I                  |                1 | Guardado; ligações de apoio inventariadas   |
+| Programação               |                0 | Página e ligação externa guardadas          |
+| TC                        |               22 | Slides, fichas e resoluções guardados       |
+| FP                        |                0 | Sem ficheiros de ensino acessíveis          |
+| FSC                       |               27 | Slides e material de apoio guardados        |
+| MD                        |               66 | Slides, fichas, soluções e provas guardados |
+| Projeto FE/UP, meta-curso |               12 | Materiais e recursos de apoio guardados     |
 
-A aquisição dos ficheiros é separada da revisão pedagógica. A cobertura de cada resumo deve ser sustentada pelos seus metadados editoriais e exercícios. Nenhuma coleção ou resumo garante uma nota de 20 valores. A revisão completa dos restantes cursos não fez parte desta passagem.
+Há 149 originais de ensino do Moodle, dos quais 22 já estavam locais. Incluindo exportações de apoio, a coleção tem 153 PDFs, 2729 páginas, dois XLSX e 137 pré-visualizações Panopto. Os 332 ficheiros adquiridos correspondem a 331 objetos distintos por tamanho e SHA-256. Pré-visualizações não equivalem a gravações completas.
 
-Os originais ficam privados. A deduplicação conserva cada ficheiro e agrupa bytes idênticos por SHA-256; membros de ZIPs são lidos sem executar código. Consultar também [fontes locais](fontes-locais.md), [bibliografia](fontes-bibliografia.md) e [arquivos públicos](fontes-github.md).
+ALGA, AM I, AM II e a ocorrência oficial de PUP estão indisponíveis para estudantes. O meta-curso Projeto FE/UP é uma página diferente e continua acessível. Algumas das suas ligações remetem hoje para outros anos. Os originais de certas gravações, posters e ligações externas não ficaram disponíveis para download; as páginas e alternativas legíveis ficam identificadas no inventário privado.
+
+Inventário: `/_data/references/moodle-2024-25.json`. Materiais: `/_data/<cadeira>/moodle-2024-25/`.
+
+## Materiais de 2025/26 guardados
+
+| Cadeira                 | Ficheiros de ensino | PDFs | Vídeos locais | Material já existente                       |
+| ----------------------- | ------------------: | ---: | ------------: | ------------------------------------------- |
+| DA                      |                 102 |   46 |            44 | 101 originais reutilizados                  |
+| ES                      |                  24 |   23 |             0 | ZIP da cadeira reutilizado                  |
+| LC                      |                  49 |   22 |            27 | 13 originais reutilizados                   |
+| LTW                     |                   0 |    0 |             0 | 105 ficheiros de André Restivo reutilizados |
+| ME                      |                  45 |   43 |             0 | ZIP da cadeira reutilizado                  |
+| BD                      |                  49 |   42 |             0 | 21 páginas do livro SQL guardadas à parte   |
+| Comunicação e persuasão |                   0 |    0 |             0 | Sem ficheiros de ensino acessíveis          |
+| Física II               |                  35 |   33 |             0 | Páginas de apoio guardadas à parte          |
+| LDTS                    |                   0 |    0 |             0 | Apenas o artigo JAVA_HOME acessível         |
+| SO                      |                  30 |   29 |             0 | ZIP da cadeira reutilizado                  |
+
+Foram guardados 334 ficheiros de ensino, incluindo 238 PDFs e 71 vídeos. Todos os originais Moodle acessíveis foram obtidos e verificados. Exportações Google, páginas externas, índices e textos extraídos são registados à parte. A soma de originais não inclui os 105 ficheiros de André Restivo já existentes, que foram reutilizados sem repetir downloads.
+
+AED não disponibiliza a ocorrência antiga na sessão. Em LDTS, Weeks 1–12, Project, Test e Misc continuam indisponíveis. Algumas soluções de LTW exigem palavra-passe; o guia externo de LC devolve erro; a ligação antiga SQL-99 está indisponível. As ligações e os materiais locais alternativos ficam preservados, sem tratar essas alternativas como cópias do material fechado.
+
+Inventário: `/_data/references/moodle-2025-26-source-ready.json`. Materiais: `/_data/<cadeira>/moodle-2025-26/`.
+
+## Organização
+
+Os PDFs, vídeos, arquivos, código e dados ficam privados em `/_data/`. A deduplicação conserva os originais e associa bytes idênticos por SHA-256 e tamanho. Arquivos são verificados sem executar o seu código. Notas, entregas, fóruns, dados de estudantes e tentativas de avaliação ficam fora da recolha.
+
+Os programas e regras de avaliação devem ser confirmados no ano da cadeira. Provas antigas ajudam a preparar tipos de problemas; não confirmam as regras de um exame futuro. Consultar também [fontes locais](fontes-locais.md), [bibliografia](fontes-bibliografia.md) e [arquivos públicos](fontes-github.md).
