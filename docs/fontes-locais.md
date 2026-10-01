@@ -63,7 +63,13 @@ Os antigos manifests de `leic-archive-records` usam caminhos como `leic-year1/` 
 | IA      |         2 |           0 |           1 |                    4 |
 | PI      |         1 |           0 |           1 |                    2 |
 
-Este retrato exclui a recolha do Moodle 2026/2027, que estava em curso, o material do Técnico e caches de compilação. As fontes novas de livros e GitHub estão nos seus próprios grupos e não inflacionam os totais antigos de cada cadeira.
+A tabela anterior conserva o retrato dos materiais já existentes, sem incluir a nova recolha Moodle, o material do Técnico e caches de compilação. As fontes novas de livros e GitHub estão nos seus próprios grupos e não inflacionam os totais antigos de cada cadeira.
+
+## Suplemento Moodle 2026/2027
+
+A recolha atual dos seis cursos está em [fontes-moodle.md](fontes-moodle.md) e [fontes-moodle.json](fontes-moodle.json). Acrescenta 236 ficheiros, 107 PDFs soltos e 47 ZIPs. O suplemento identifica 291 objetos distintos, dos quais 3 já constavam do inventário anterior. A união das duas coleções tem 22947 objetos distintos; esta conta evita somar fontes repetidas.
+
+O inventário privado `/_data/references/moodle-2026-27.json` guarda os caminhos, hashes e estados por recurso. Os originais estão em `/_data/<cadeira>/moodle-2026-27/`; ficheiros com os mesmos bytes mantêm os seus caminhos como aliases. Recursos fechados, bloqueados ou ainda por descarregar conservam o estado explícito. Os totais de aquisição não afirmam revisão integral nem cobertura de exames atuais.
 
 ## Limites da coleção
 
