@@ -123,6 +123,9 @@ test('Python executes data analysis and displays its plot', async ({
   await expect(
     playground.getByLabel('Resultado', { exact: true }),
   ).toContainText("{'A': 12.0, 'B': 18.0}");
+  await expect(
+    playground.getByLabel('Resultado', { exact: true }),
+  ).not.toContainText('MatplotlibDeprecationWarning');
   const plot = playground.getByRole('img', { name: 'Média por grupo' });
   await expect(plot).toBeVisible();
   expect(
