@@ -16,7 +16,7 @@ editorial:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
-import WebPlayground from '../../../components/WebPlayground.astro';
+import JanelaArq from '../../rc/JanelaArq.astro';
 
 A camada de ligação entrega **tramas** entre vizinhos. Precisa de delimitar cada trama e verificar erros. Alguns protocolos acrescentam confirmações, retransmissões e controlo de fluxo. Ethernet, por exemplo, deteta erros, mas não oferece retransmissão fiável de tramas como o ARQ estudado aqui.
 
@@ -164,28 +164,6 @@ Se uma trama tem FER $p_e$ e são permitidas no máximo duas tentativas independ
 
 Escolhe onde se perde uma das cinco tramas e compara a recuperação. Este modelo usa janela de cinco e quatro bits de sequência, uma única perda de dados e ACK sem perdas. As cinco tramas iniciais já foram enviadas quando começa a recuperação. Ignora o tempo de propagação e os temporizadores. Mostra o estado do recetor e as retransmissões necessárias, não a duração de uma transferência real.
 
-<WebPlayground
-  html={
-    '<label for="protocolo">Protocolo</label><select id="protocolo"><option value="gbn">Go-Back-N</option><option value="sr">Selective Repeat</option></select><label for="perda">Trama perdida</label><select id="perda"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select><ol id="eventos"></ol><p id="total" aria-live="polite"></p>'
-  }
-  css={
-    'body{max-width:36rem;background:#fff;color:#18232a}label{display:block;margin-top:12px;font-weight:600}select{font:inherit;padding:8px;width:100%}li{margin:10px 0}#total{font-weight:600}'
-  }
-  js={`const protocolo=document.getElementById('protocolo'), perda=document.getElementById('perda');
-function update(){
- const lost=Number(perda.value), sr=protocolo.value==='sr', rows=[];
- for(let n=0;n<5;n++){
-  let estado=n===lost?'perdida no canal':n<lost?'entregue por ordem':sr?'guardada fora de ordem':'descartada fora de ordem';
-  rows.push('I('+n+'): '+estado+'.');
- }
- const repeat=sr?[lost]:Array.from({length:5-lost},(_,i)=>lost+i);
- rows.push('Recuperação: repetir '+repeat.map(n=>'I('+n+')').join(', ')+'.');
- rows.push('Após a recuperação: entregar os dados ainda em falta, pela ordem '+Array.from({length:5-lost},(_,i)=>lost+i).join(', ')+'.');
- const list=document.getElementById('eventos'); list.replaceChildren();
- for(const row of rows){const item=document.createElement('li'); item.textContent=row;list.append(item);}
- document.getElementById('total').textContent='Total: '+(5+repeat.length)+' transmissões de tramas de dados para entregar as cinco originais.';
-}
-protocolo.addEventListener('change',update);perda.addEventListener('change',update);update();`}
-/>
+<JanelaArq />
 
 Com perda de I(2), Go-Back-N precisa de oito transmissões de dados no modelo: as cinco iniciais e as repetições 2, 3 e 4. Selective Repeat precisa de seis: repete apenas 2, aproveitando 3 e 4 guardadas. Se a perda for a última trama, ambos repetem apenas essa trama; a vantagem depende de onde ocorre a perda e de quanto já foi enviado.
