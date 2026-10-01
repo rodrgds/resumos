@@ -13,4 +13,4 @@ for v in [(1, 1, 0), (1, 0, 1), (0, 1, 1)]:
         base.append(u)
 for u in base:
     print([str(x) for x in u])
-print([dot(base[i], base[j]) for i in range(3) for j in range(i)])
+print([dot(base[i], base[j]) for i in range(len(base)) for j in range(i)])
