@@ -1,0 +1,142 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+---
+
+<InteractiveDemo label="Limiar de deslizamento de um bloco numa rampa">
+  <div data-f1-ramp>
+    <label>
+      Ângulo da rampa, em graus{' '}
+      <input data-angle type="range" min="0" max="60" step="1" value="30" />
+    </label>
+    <label>
+      Coeficiente de atrito{' '}
+      <input
+        data-friction
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value="0.4"
+      />
+    </label>
+    <output aria-live="polite"></output>
+    <svg
+      viewBox="0 0 360 310"
+      role="img"
+      aria-label="Bloco num plano inclinado com peso vertical, normal perpendicular e atrito para cima da rampa"
+    >
+      <path d="M75 230 H335" class="ground" />
+      <g data-slope>
+        <path d="M75 230 H300" class="ramp" />
+        <rect x="180" y="186" width="66" height="44" rx="3" class="block" />
+        <path d="M213 208 V136 l-6 10 m6-10 l6 10" class="normal" />
+        <text x="224" y="143">
+          N
+        </text>
+        <path d="M213 208 H288 l-10-6 m10 6 l-10 6" class="friction" />
+        <text x="267" y="190">
+          f
+        </text>
+      </g>
+      <g data-weight>
+        <path d="M0 0 V70 l-6-10 m6 10 l6-10" class="weight" />
+        <text x="10" y="66">
+          mg
+        </text>
+      </g>
+    </svg>
+    <p>
+      O peso mantém-se vertical. A normal e o atrito acompanham a rampa. As
+      setas mostram direções, sem escala de intensidade.
+    </p>
+  </div>
+</InteractiveDemo>
+
+<style>
+  label {
+    display: grid;
+    gap: 6px;
+    margin-block: 12px;
+  }
+  input {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  output {
+    display: block;
+    min-height: 4.5em;
+    font-variant-numeric: tabular-nums;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin-inline: auto;
+    height: auto;
+    color: var(--text);
+  }
+  path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+  .ground {
+    opacity: 0.3;
+  }
+  .ramp {
+    stroke-width: 3;
+  }
+  .block {
+    fill: var(--surface);
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+  .normal {
+    stroke: var(--accent);
+  }
+  .friction {
+    stroke-dasharray: 5 3;
+  }
+  text {
+    fill: currentColor;
+    font-size: 18px;
+  }
+  p {
+    font-size: 13px;
+    margin-bottom: 0;
+  }
+</style>
+
+<script>
+  for (const demo of document.querySelectorAll<HTMLElement>('[data-f1-ramp]')) {
+    const angle = demo.querySelector<HTMLInputElement>('[data-angle]')!;
+    const friction = demo.querySelector<HTMLInputElement>('[data-friction]')!;
+    const output = demo.querySelector('output')!;
+    const slope = demo.querySelector<SVGGElement>('[data-slope]')!;
+    const weight = demo.querySelector<SVGGElement>('[data-weight]')!;
+    const number = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 2 });
+    const update = () => {
+      const degrees = Number(angle.value);
+      const theta = (degrees * Math.PI) / 180;
+      const mu = Number(friction.value);
+      const mass = 2;
+      const gravity = 9.81;
+      const normal = mass * gravity * Math.cos(theta);
+      const downhill = mass * gravity * Math.sin(theta);
+      const slides = downhill > mu * normal + 1e-9;
+      const force = slides ? mu * normal : downhill;
+      const acceleration = slides ? (downhill - force) / mass : 0;
+      slope.setAttribute('transform', `rotate(${-degrees} 75 230)`);
+      const dx = 213 - 75;
+      const dy = 208 - 230;
+      const x = 75 + dx * Math.cos(theta) + dy * Math.sin(theta);
+      const y = 230 - dx * Math.sin(theta) + dy * Math.cos(theta);
+      weight.setAttribute('transform', `translate(${x} ${y})`);
+      output.textContent = `${degrees}°; μ = ${number.format(mu)}. ${slides ? 'Desliza para baixo' : 'Pode ficar em repouso'}. N = ${number.format(normal)} N; atrito = ${number.format(force)} N; aceleração = ${number.format(acceleration)} m/s².`;
+    };
+    angle.addEventListener('input', update);
+    friction.addEventListener('input', update);
+    update();
+  }
+</script>

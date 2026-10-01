@@ -1,37 +1,64 @@
 ---
 title: Física I
-description: Mecânica clássica newtoniana, do movimento do ponto material às oscilações.
+description: Mecânica newtoniana, com modelos, exemplos resolvidos e exercícios de cinemática, forças, energia, colisões, rotação e oscilações.
 section: conteudo
 order: 0
+editorial:
+  basedOn: 2025/26
+  review:
+    edition: 2025/26
+    reviewer: Codex
+    date: '2026-10-01'
+  sources:
+    - title: Física I, L.EIC008, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560093
+    - title: Física I, L.EIC008, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586986
+    - title: F. Salzedas, transcrição das transparências, 27 de maio de 2026
+      url: https://pages.up.pt/~up334829/Fisica1_leic/leicFisica1.htm
+    - title: Moodle Física I, L.EIC, 2024/25
+      url: https://moodle2425.up.pt/course/view.php?id=5260
+    - title: University Physics, Volume 1, OpenStax
+      url: https://openstax.org/details/books/university-physics-volume-1
+    - title: Jaime E. Villate, Dinâmica e Sistemas Dinâmicos
+      url: https://villate.org/dinamica/
+  coverage: Programa de mecânica da ficha preenchida e tópicos das transparências de Salzedas, com exemplos próprios, exercícios e análise de oscilações experimentais.
+  gaps:
+    - A ficha de 2026/27 ainda não apresenta programa nem avaliação.
+    - O arquivo Moodle de 2024/25 contém o relatório experimental, mas não o guia experimental nem o programa Python referido nesse relatório.
 ---
 
-Física I é a cadeira onde a matemática de AM1 e AM2 começa a descrever o mundo: posições que variam no tempo, forças que mudam velocidades e energia que se conserva quando ninguém a rouba. O âmbito é a **mecânica clássica newtoniana**, do ponto material ao corpo rígido e aos osciladores. É uma cadeira do 1.º ano, 2.º semestre.
+Física I descreve o movimento através de modelos. Primeiro escolhemos o sistema e as hipóteses. Depois relacionamos posição, forças e energia para obter uma previsão que possa ser comparada com uma medição.
 
-Para acompanhar estas páginas precisas de cálculo vetorial e de cálculo diferencial e integral. Se algum passo de matemática prender, revê as páginas de análise indicadas em cada lição, por exemplo [derivadas](/cadeiras/am1/derivadas/), [primitivas](/cadeiras/am1/primitivas/) e [equações diferenciais](/cadeiras/am1/equacoes-diferenciais/).
+Precisas de vetores, derivadas, integrais e equações diferenciais simples. Usa as páginas de [AM1](/cadeiras/am1/) quando o obstáculo for o cálculo. Aqui explicamos por que cada equação representa a situação física. Os exemplos usam unidades SI e $g=9{,}81\ \mathrm{m/s^2}$, salvo indicação em contrário.
 
-## Organização das páginas
+## Percurso
 
-1. [Cinemática](/cadeiras/f1/cinematica/): descrever o movimento com posição, velocidade e aceleração, incluindo o movimento curvilíneo.
-2. [Leis de Newton](/cadeiras/f1/leis-newton/): as três leis, os tipos de força e os diagramas de corpo livre, com o plano inclinado resolvido.
-3. [Trabalho e energia](/cadeiras/f1/trabalho-energia/): trabalho de forças constantes e variáveis, teorema da energia cinética e conservação da energia mecânica.
-4. [Centro de massa e momento linear](/cadeiras/f1/centro-massa-momento/): sistemas de partículas, conservação do momento e colisões.
-5. [Rotação de corpos rígidos](/cadeiras/f1/rotacao/): torque, momento de inércia, rolamento e momento angular.
-6. [Oscilações](/cadeiras/f1/oscilacoes/): movimento harmónico simples, amortecimento e ressonância.
+1. [Cinemática](/cadeiras/f1/cinematica/): reconstruir movimentos, separar variáveis e distinguir aceleração tangencial de normal.
+2. [Leis de Newton](/cadeiras/f1/leis-newton/): escolher um referencial, desenhar forças e resolver contactos, atrito e movimento circular.
+3. [Trabalho e energia](/cadeiras/f1/trabalho-energia/): comparar estados, calcular trabalho e reconhecer equilíbrio e estabilidade.
+4. [Centro de massa e momento linear](/cadeiras/f1/centro-massa-momento/): delimitar um sistema, calcular impulsos e resolver colisões.
+5. [Rotação](/cadeiras/f1/rotacao/): calcular torques e inércias, impor equilíbrio e resolver rolamento, roldanas e pêndulos físicos.
+6. [Oscilações](/cadeiras/f1/oscilacoes/): determinar fase, energia, amortecimento e resposta a uma força periódica.
+7. [Medir oscilações](/cadeiras/f1/medir-oscilacoes/): interpretar picos, período, decremento logarítmico e limites de um ajuste experimental.
 
-## Como estudar
+Cada tema tem exercícios próprios com duas pistas e uma resolução. Tenta resolver antes de abrir a ajuda. A [cheat sheet](/cadeiras/f1/folha-consulta/) reúne fórmulas e condições depois de estudares as explicações.
 
-Desenha sempre o **diagrama de corpo livre antes de escrever equações**: isola o corpo, marca cada força com origem no corpo e só depois decompõe em componentes. A maioria dos erros nasce de forças em falta ou mal dirigidas, não de contas.
+## Como resolver um problema
 
-Leva as **unidades em cada passo**. Uma velocidade em $\text{m/s}$, uma força em $\text{N}$ e uma energia em $\text{J}$ funcionam como verificação gratuita: se a unidade final está errada, a expressão está errada. Nestas páginas usamos sempre o Sistema Internacional e $g = 9{,}8\ \text{m/s}^2$.
+Escolhe o corpo ou conjunto de corpos e o intervalo de tempo. Desenha eixos e fixa sinais. Num problema de forças, representa apenas as forças que atuam nesse corpo. Num problema de conservação, escreve a condição que permite conservar a grandeza. Por exemplo, momento linear exige impulso externo nulo, enquanto energia mecânica exige um balanço sem trabalho dissipativo.
 
-## Avaliação
+Substitui os números depois de obteres as relações. Confirma unidades, sinais e casos limite. Uma normal negativa significa que o contacto suposto não pode existir. Uma energia cinética negativa significa que o estado não é acessível. Uma velocidade negativa apenas indica movimento contrário ao eixo escolhido.
 
-Os pesos e o formato da avaliação variam entre anos, por isso confirma sempre a informação atual na [ficha da unidade curricular no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560093) e na página da cadeira no Moodle. Estas páginas cobrem a matéria, não as regras de avaliação.
+## Programa e avaliação
 
-## Fontes e âmbito
+A base é a [ficha preenchida de 2025/26, L.EIC008](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560093), comparada com as transparências de F. Salzedas datadas de 27 de maio de 2026. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586986) já existe, mas ainda não apresenta programa nem regras de avaliação. Não se devem transportar automaticamente as regras anteriores para essa edição.
 
-O programa seguido aqui é o da ficha de L.EIC008 Física I, 2025/26, 2.º semestre ([ver no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560093)): cinemática com separação de variáveis, movimento curvilíneo e aceleração centrípeta; leis de Newton, forças e equilíbrio estático; trabalho, energia e conservação; sistemas de partículas e centro de massa; conservação do momento linear e angular; dinâmica de corpos rígidos, torque e momento de inércia; osciladores harmónicos.
+Em **2025/26**, a ficha define $\mathrm{CF}=\min(0{,}4\max(\mathrm{AD},E_1)+0{,}6E_2+\mathrm{AF},20)$. AD é o teste individual, $E_1$ a parte do exame sobre essa matéria e $E_2$ a parte sobre a restante matéria. AF vale no máximo um valor e só se aplica quando há aprovação sem esse acréscimo. A ficha também distingue a assiduidade da primeira inscrição e a dos repetentes. Confirma sempre a edição aplicável e os avisos docentes antes de uma prova.
 
-## Para onde ir
+## Fontes e limites
 
-Começa pela [cinemática](/cadeiras/f1/cinematica/), onde o movimento é descrito antes de se perguntar que forças o causam.
+- **Materiais da cadeira:** [transparências de F. Salzedas](https://pages.up.pt/~up334829/Fisica1_leic/leicFisica1.htm), coleção de problemas e lista das aulas TP de 2024/25. A coleção identifica problemas de _Physics for Scientists and Engineers_, 5.ª edição. Os exemplos e exercícios destas páginas são próprios, não transcrições desses problemas.
+- **Moodle de 2024/25:** o [arquivo da cadeira](https://moodle2425.up.pt/course/view.php?id=5260) disponibiliza o relatório do estudo do oscilador amortecido com o acelerómetro de um smartphone. O relatório confirma esse ano. O guia experimental e o programa de tratamento de dados referido no relatório não constam dos ficheiros disponíveis; a página de medição ensina a análise física, sem substituir as instruções de submissão.
+- **Bibliografia indicada pela FEUP:** Tipler e Mosca, _Physics for Scientists and Engineers_, ISBN 0-7167-4389-2; Young e Freedman, _Sears and Zemansky's University Physics with Modern Physics_, ISBN 0-321-20469-7. Nussenzveig, _Curso de Física Básica_, volume 1, ISBN 85-212-0046-3, é complementar. Os textos integrais dessas edições não foram consultados nesta revisão.
+- **Apoio aberto:** [_University Physics_, volume 1, OpenStax](https://openstax.org/details/books/university-physics-volume-1), sobretudo capítulos 2 a 11 e 15, e [_Dinâmica e Sistemas Dinâmicos_, Jaime E. Villate](https://villate.org/dinamica/). A cópia local de Villate indica fevereiro de 2019 e ISBN 978-972-99396-1-7. A ligação aponta para a versão Web posterior. Este apoio histórico não define o programa nem a avaliação atuais.
