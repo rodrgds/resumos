@@ -44,12 +44,21 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as _plt
 from io import BytesIO as _BytesIO
 from base64 import b64encode as _b64encode
+import warnings as _warnings
 from resumos_display import show as _display
 def _show(*args, **kwargs):
     for number in _plt.get_fignums():
         figure = _plt.figure(number)
         image = _BytesIO()
-        figure.savefig(image, format="png", dpi=110, bbox_inches="tight")
+        # Pyodide's bundled Agg renderer warns about its own pixel coordinates.
+        # Keep warnings from the student's code visible outside this adapter.
+        with _warnings.catch_warnings():
+            _warnings.filterwarnings(
+                "ignore",
+                message=r"The [xy] parameter as float was deprecated in Matplotlib 3\\.10",
+                category=matplotlib.MatplotlibDeprecationWarning,
+            )
+            figure.savefig(image, format="png", dpi=110, bbox_inches="tight")
         title = "; ".join(axis.get_title() for axis in figure.axes if axis.get_title())
         _display(_b64encode(image.getvalue()).decode(), title or "Gráfico gerado pelo código Python")
     _plt.close("all")
