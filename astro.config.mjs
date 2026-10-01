@@ -22,6 +22,7 @@ const content = {
 export default defineConfig({
   site: 'https://resumos.rgo.pt',
   cacheDir: './.astro/cache/',
+  vite: { cacheDir: './.astro/vite/' },
   integrations: [
     mdx(),
     markdownExport(),
