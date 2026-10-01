@@ -16,6 +16,12 @@ editorial:
       url: https://www.itl.nist.gov/div898/handbook/
     - title: 'Moodle IPC, investigação contextual'
       url: https://moodle2627.up.pt/course/view.php?id=5159
+    - title: 'NIST, valor-p e valores críticos'
+      url: https://www.itl.nist.gov/div898/handbook/prc/section1/prc131.htm
+    - title: 'NIST, análise de observações emparelhadas'
+      url: https://www.itl.nist.gov/div898/handbook/prc/section3/prc311.htm
+    - title: 'NIST, intervalos para diferenças de médias'
+      url: https://www.itl.nist.gov/div898/handbook/prc/section3/prc312.htm
   coverage: 'Métodos, desenho experimental, análise qualitativa, estatística descritiva, inferência e SUS.'
   gaps:
     - Não foi possível comparar esta página com mini-testes e critérios de correção de 2026/27.
@@ -110,3 +116,51 @@ Um teste t pode comparar médias sob condições apropriadas; dados emparelhados
 Um valor-p não é a probabilidade de a hipótese nula ser verdadeira. Não rejeitar a hipótese não prova igualdade. Um intervalo de confiança quantifica incerteza sob o método e as suas hipóteses, não garante o valor de uma pessoa individual.
 
 A correlação de Pearson mede associação linear. Um valor próximo de zero não exclui uma relação não linear. Correlação também não demonstra causalidade: experiência prévia pode afetar simultaneamente tempo e satisfação. Nos casos de teste, interpreta a medida na pergunta e aponta explicações alternativas.
+
+## Escolher o teste pelo desenho
+
+Se as mesmas pessoas usam A e B, as medições estão **emparelhadas**. Cada pessoa fornece uma diferença $d_i=A_i-B_i$. Um teste t emparelhado analisa a média dessas diferenças: a pessoa funciona como a sua própria comparação. Se grupos distintos usam cada versão, uma análise para amostras independentes pode ser adequada. Ter duas colunas na folha de cálculo não decide o desenho.
+
+| Pergunta/dados                                          | Família de análise a considerar             | Condição a investigar                                                     |
+| ------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------- |
+| Diferença de médias, mesmas pessoas                     | Teste t emparelhado sobre diferenças        | Pares corretos, independência entre pessoas e distribuição das diferenças |
+| Diferença de médias, grupos distintos                   | Teste para médias independentes, como Welch | Independência, distribuição e protocolo de recrutamento                   |
+| Associação entre categorias, como dispositivo e sucesso | Qui-quadrado de frequências                 | Contagens esperadas e independência adequadas                             |
+
+Se as condições não se cumprem, considera métodos apropriados ao dado e ao desenho, com justificação. Um teste não paramétrico também tem hipóteses: não é uma opção automaticamente válida para qualquer amostra. Não escolher pelo nome da interface ou apenas por $n>30$.
+
+### Caso: diferenças por pessoa
+
+Quatro pessoas usam ambas as versões com ordem contrabalançada. Os tempos de A são 52, 64, 45 e 73 s; os de B são 48, 58, 42 e 68 s, na mesma ordem de pessoas. As diferenças são 4, 6, 3 e 5 s. A média é 4,5 s: B foi mais rápida na amostra, mas ainda falta quantificar a incerteza e avaliar o desenho.
+
+Para um teste t emparelhado de $H_0:\mu_d=0$, usamos
+
+$$t=\frac{\bar d}{s_d/\sqrt n},\qquad \nu=n-1.$$
+
+$s_d$ é o desvio-padrão amostral **das diferenças**. Aqui, $s_d=\sqrt{5/3}\approx1{,}291$ s e o erro-padrão é cerca de 0,645 s, logo $t\approx6{,}97$ com três graus de liberdade. A pequena amostra não confirma, por si, normalidade nem representatividade.
+
+## Valor-p, decisão e tamanho do efeito
+
+O valor-p é calculado sob a hipótese nula e o modelo: é a probabilidade de obter uma estatística tão extrema ou mais extrema que a observada. Não atribui uma probabilidade à hipótese nula.
+
+Num outro estudo, com $\alpha=0{,}05$ previamente fixado e $p=0{,}03$, rejeitamos $H_0$ nesse teste. Não concluímos que há 3% de probabilidade de $H_0$ ser verdadeira, nem que a interface será melhor para todos. Um efeito de 0,1 s pode ser detetável com muitos dados e irrelevante para a tarefa. Relata magnitude, incerteza e consequências práticas. Se $p>\alpha$, não rejeitar não prova ausência de diferença.
+
+## Intervalo de confiança da diferença
+
+Sob as hipóteses do modelo t emparelhado, o intervalo bilateral é
+
+$$\bar d\pm t_{1-\alpha/2,n-1}\frac{s_d}{\sqrt n}.$$
+
+No caso das quatro pessoas, usa o valor crítico dado $t_{0{,}975,3}\approx3{,}182$. A margem é cerca de $3{,}182\times0{,}645=2{,}05$ s; o intervalo é aproximadamente **[2,45; 6,55] s** para a diferença média A menos B.
+
+<CodePlayground
+  title="Respeitar o emparelhamento e calcular o intervalo"
+  language="python"
+  code={
+    'from math import sqrt\nfrom statistics import mean, stdev\n\na = [52, 64, 45, 73]\nb = [48, 58, 42, 68]\ndiferencas = [x - y for x, y in zip(a, b)]\nmedia = mean(diferencas)\nerro_padrao = stdev(diferencas) / sqrt(len(diferencas))\ncritico_dado = 3.182  # t bilateral de 95%, com 3 graus de liberdade\nmargem = critico_dado * erro_padrao\nprint("Diferenças:", diferencas)\nprint(f"Média: {media:.2f} s; t: {media / erro_padrao:.2f}")\nprint(f"IC: [{media - margem:.2f}; {media + margem:.2f}] s")'
+  }
+/>
+
+A interpretação de 95% refere-se à cobertura do procedimento: em repetições do estudo sob as mesmas hipóteses, cerca de 95% dos intervalos construídos assim incluiriam a diferença média da população. Não significa que 95% das pessoas melhoraram dentro desses limites.
+
+Como zero não está neste intervalo, há evidência de diferença no teste bilateral correspondente, com o mesmo modelo e nível. Se zero estivesse incluído, isso não provaria equivalência. Para afirmar equivalência, precisamos de uma margem prática e de uma análise concebida para essa pergunta. Recrutamento enviesado, tarefas diferentes ou efeito de ordem não desaparecem por calcular um intervalo.
