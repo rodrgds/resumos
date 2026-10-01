@@ -1,72 +1,85 @@
 ---
-title: Pensar como atacante
-description: Modelo de ameaças completo de uma aplicação simples, com método reutilizável de tutoriais e CTF.
+title: 'Modelar ameaças'
+description: 'Fronteiras de confiança, árvores de ataque, STRIDE e validação de hipóteses.'
 section: conteudo
-order: 8
+order: 9
+practices:
+  - fsi/praticar-pensar-como-atacante
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha oficial de FSI, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999
+    - title: 'OWASP, threat modeling'
+      url: https://owasp.org/www-community/Threat_Modeling
+    - title: Moodle FSI, materiais iniciais atualmente publicados
+      url: https://moodle2627.up.pt/course/view.php?id=4735
+  coverage: 'Fronteiras de confiança, árvores de ataque, STRIDE e validação de hipóteses.'
+  gaps:
+    - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
 import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import ameacas from '../../fsi/ameacas.dot?raw';
+import arvore from '../../fsi/arvore-ataque.dot?raw';
 
-Todas as páginas anteriores ensinaram peças. Esta junta-as num método: como analisar um sistema desconhecido, ordenar o que atacar ou defender primeiro e registar o trabalho de forma reutilizável. É também o método que os tutoriais avaliados e os desafios CTF esperam ver no teu diário de bordo.
+Modelar ameaças é perguntar como um sistema pode violar os seus objetivos antes de escolher controlos. Usa um modelo pequeno e explícito: componentes, fluxos de dados, ativos, entidades e fronteiras de confiança.
 
-## Modelação de ameaças em cinco passos
+## Seguir um fluxo de dados
 
-A **modelação de ameaças** (_threat modeling_) é uma conversa estruturada sobre um sistema, feita antes ou durante a sua análise. Cinco perguntas chegam longe:
+Numa loja, o navegador envia um pedido ao servidor, que consulta a base de dados e chama um serviço de pagamento. O navegador não é confiável para decidir preços. A base de dados não deve aceitar instruções de qualquer cliente da Internet. O serviço de pagamento tem uma interface e uma autoridade próprias.
 
-1. **O que proteger?** Lista os ativos: dados, serviços, reputação. Sem ativos, não há prioridades.
-2. **Quem ataca?** Lista os atacantes plausíveis com as suas capacidades: o curioso sem meios, o cliente descontente, o criminoso organizado, o ex-funcionário com acessos antigos.
-3. **Por onde entra?** Para cada ativo, enumera os vetores: formulários, anexos, rede exposta, suportes perdidos, pessoas enganadas.
-4. **O que corre mal?** Descreve cenários concretos de falha, um por combinação relevante de atacante e vetor.
-5. **O que fazer?** Propõe contramedidas, ordenadas pelo risco da [primeira página](principios-seguranca/): probabilidade vezes impacto, custo da medida e rapidez de aplicação.
+Para cada fluxo, pergunta quem produz os dados, quem os interpreta, que identidade acompanha o pedido e que operação se pretende autorizar. Um preço escondido num campo HTML continua a ser uma entrada controlada pelo cliente.
+
+## Política, mecanismo e confiança
+
+Uma **política** determina comportamentos permitidos e proibidos. Um **mecanismo** implementa parte dessa política. O **modelo de confiança** diz de que entidades e componentes dependemos, e para fazer o quê. O **modelo de ameaça** diz que adversários e capacidades consideramos.
+
+"Só o titular pode consultar a sua fatura" é uma política. Verificar a relação entre sessão e fatura é um mecanismo. Assumir que o servidor de autenticação não emite sessões falsas é uma hipótese de confiança. A análise precisa de mostrar que os mecanismos cumprem a política se as hipóteses forem verdadeiras.
+
+A **fronteira de confiança** marca uma mudança de autoridade ou de pressupostos. A **superfície de ataque** inclui os pontos onde entidades menos confiáveis interagem com o sistema: entradas HTTP, ficheiros, mensagens internas ou interfaces físicas. "Dentro da rede" não significa automaticamente confiável.
+
+## Fraquezas, vulnerabilidades e evidência
+
+CWE classifica tipos de fraqueza, como cópia sem verificar limites. Um registo CVE identifica uma vulnerabilidade divulgada num produto/contexto concreto. Um exploit demonstra um caminho para a explorar. Nem um identificador CVE nem uma pontuação, por si, dizem que a instalação em análise é explorável: versão, configuração, acesso e mitigação importam.
+
+Num teste de intrusão **black-box**, o avaliador parte de pouco conhecimento interno; num **white-box**, dispõe de conhecimento privilegiado, como código ou arquitetura. Ambos precisam de âmbito e autorização. Encontrar uma falha demonstra uma possibilidade; não encontrar falhas numa campanha limitada não prova ausência de vulnerabilidades.
+
+## Classificar com STRIDE
+
+STRIDE organiza perguntas sobre falsificação de identidade, alteração de dados, repúdio de ações, divulgação de informação, negação de serviço e elevação de privilégios. A sigla ajuda a não esquecer classes de ameaça; não determina sozinha se um ataque é possível.
+
+| Situação                              | Classe                 | Condição a verificar                                               |
+| ------------------------------------- | ---------------------- | ------------------------------------------------------------------ |
+| Usar um cookie roubado                | Spoofing               | O identificador confere a sessão sem prova adicional?              |
+| Mudar o preço enviado pelo navegador  | Tampering              | O servidor confia nesse preço?                                     |
+| Negar uma alteração                   | Repudiation            | Há registos protegidos e identidade suficientemente ligada à ação? |
+| Ler fatura de outra conta             | Information disclosure | Existe autorização sobre aquela fatura?                            |
+| Fazer milhares de operações caras     | Denial of service      | Que recurso se esgota e onde se limita?                            |
+| Tornar a própria conta administradora | Elevation of privilege | Quem pode alterar o papel e como o servidor decide?                |
+
+Uma situação pode pertencer a várias classes. O objetivo é descobrir condições e efeitos, não escolher uma etiqueta única por obrigação.
+
+## Árvore de ataque
+
+O objetivo é consultar faturas de outra pessoa. Pode bastar obter a sessão dela, **OU** explorar uma autorização por objeto em falta. No primeiro ramo do exemplo, obter a sessão **E** utilizá-la antes de expirar são condições necessárias.
 
 <Dot
-  source={ameacas}
-  alt="Modelo de ameaças: o criminoso entra pelo formulário até aos dados de clientes, o ex-funcionário entra pela pasta partilhada até às cópias."
+  source={arvore}
+  alt="Árvore de ataque para ler uma fatura alheia. Uma porta OU permite roubar e usar a sessão, ou explorar uma autorização em falta. O ramo da sessão tem uma porta E: obter identificador e usá-lo enquanto é válido."
 />
 
-O modelo nunca está acabado: cada descoberta nos tutoriais atualiza-o. Um vetor que julgavas fechado e afinal está aberto reordena as prioridades, e registar essa mudança é parte do trabalho.
+Numa porta OU basta um ramo; numa porta E são necessários todos. Não multipliques probabilidades numa porta E sem justificar independência, nem somes ramos OU que podem ocorrer juntos. A árvore lógica pode ser útil mesmo sem probabilidades.
 
-## O método nos tutoriais e nos CTF
+## Exemplo completo
 
-Perante um desafio novo, resiste ao impulso de experimentar comandos ao acaso. Os mesmos cinco gestos servem na loja e num desafio:
+O servidor aceita `GET /faturas/42` e devolve a linha quando existe qualquer sessão válida. O ativo é o conteúdo da fatura. A ameaça é divulgação a outra conta. A fraqueza é verificar autenticação sem verificar o dono do objeto. O atacante precisa de uma sessão própria e de uma referência a uma fatura alheia.
 
-<Tabs id="metodo-alvos" labels={['Na loja', 'Num CTF']}>
-  <div slot="panel-0">
+A defesa verifica no servidor a política de acesso à fatura, considerando o utilizador autenticado e o objeto pedido. Para validar, fazemos dois pedidos com contas e objetos controlados: a própria fatura deve ser legível, e a alheia deve ser negada. Um identificador aleatório dificulta a descoberta, mas não substitui a verificação.
 
-1. **Reconhece.** Mapeia a loja: que formulários existem, que painel de administração responde, que portas estão expostas. Aponta tudo antes de tocar.
-2. **Formula uma hipótese.** "O painel de administração aceita palavras-passe fracas, logo testo credenciais comuns." Uma hipótese diz o que esperas observar.
-3. **Testa em ambiente próprio.** Só na tua máquina virtual com a cópia da loja. Começa pelo acesso legítimo, depois pelo caso hostil mínimo.
-4. **Regista comando, saída e conclusão.** "Tentei X, observei Y, por isso Z." O diário de bordo é a tua memória externa e a prova do trabalho.
-5. **Verifica a correção.** Aplica papéis por função e confirma que a palavra-passe fraca deixa de entrar sem partir o acesso legítimo.
+O risco residual inclui uma conta legítima comprometida, erros noutra rota e fugas em logs ou exportações. A correção de uma rota não demonstra que todo o sistema cumpre a política.
 
-  </div>
-  <div slot="panel-1">
+## Responder a uma pergunta aberta
 
-1. **Reconhece.** Lê o enunciado e explora o ambiente: que sistema é, que serviços respondem, que entradas aceitam. Aponta tudo antes de tocar.
-2. **Formula uma hipótese.** "Este campo ecoa a entrada, logo testo XSS refletido." Uma hipótese diz o que esperas observar, o que distingue um teste de uma tentativa cega.
-3. **Testa em ambiente próprio.** Só no alvo oficial do desafio. Começa pelo caso benigno, depois pelo caso hostil mínimo.
-4. **Regista comando, saída e conclusão.** "Corri X, observei Y, por isso Z." Sem registo, um desafio resolvido não ensina nada reutilizável.
-5. **Verifica a correção.** Depois de explorar, aplica a defesa e confirma que o ataque deixa de funcionar sem partir o uso legítimo. Atacar sem propor defesa é metade do exercício.
+Começa com a condição concreta que permite o ataque. Descreve a sequência de ações e o resultado observável. Explica por que o controlo proposto interrompe essa sequência. Declara os limites e as hipóteses, como a autoridade do atacante e o componente que consideraste confiável.
 
-  </div>
-</Tabs>
-
-## Exemplo: modelo de ameaças da loja em linha
-
-Aplica os cinco passos à loja da [apresentação](index/), que vende em linha e guarda dados de clientes:
-
-| Ativo                       | Atacante plausível                 | Vetor                     | Cenário                                          | Contramedida (página)                                                                                                              |
-| --------------------------- | ---------------------------------- | ------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Dados de clientes e cartões | criminoso organizado               | formulário de registo     | injeção SQL devolve a tabela inteira             | consultas parametrizadas e conta só de leitura ([Segurança Web](seguranca-web/))                                                   |
-| Preços e stock              | concorrente ou cliente malicioso   | painel de administração   | palavra-passe fraca permite alterar preços       | chaves SSH, sem `root` remoto, papéis por função ([Controlo de acessos](controlo-acessos/))                                        |
-| Disponibilidade do site     | extorsionista                      | rede exposta              | SYN flood ou avalanche HTTP na véspera de saldos | fila gerida, limitação de débito, filtragem a montante ([Segurança de redes](seguranca-redes/))                                    |
-| Cópias de segurança         | ex-funcionário com acessos antigos | pasta partilhada          | leitura de arquivos com dados de clientes        | utilizador próprio, arquivos cifrados, acessos revogados ([Criptografia](criptografia/), [Controlo de acessos](controlo-acessos/)) |
-| Código da aplicação         | fornecedor ou erro interno         | dependência desatualizada | biblioteca vulnerável abre execução remota       | atualizações e validação de entradas ([Programação defensiva](programacao-defensiva/))                                             |
-
-Para reutilizares, copia a tabela e preenche-a para o teu alvo: uma linha por ativo, sem linhas decorativas. Se uma célula te obrigar a inventar, marca-a como dúvida e vai verificar ao sistema em vez de a fechar com imaginação. O modelo vale pela honestidade, não pelo tamanho.
-
-:::warning[Só em alvos legítimos]
-Todo este método pressupõe autorização: a tua máquina virtual, os tutoriais da cadeira, as plataformas de CTF. Aplicar reconhecimento, testes ou exploração a sistemas de terceiros sem permissão explícita é crime, por mais educativo que pareça o objetivo. Em caso de dúvida, pergunta ao docente antes de correres o primeiro comando.
-:::
+Pratica apenas em ambientes teus ou expressamente autorizados. Os exemplos desta página são análises de sistemas fictícios, sem pedidos a serviços externos.

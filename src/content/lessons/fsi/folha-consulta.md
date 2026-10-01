@@ -1,47 +1,79 @@
 ---
-title: Cheat sheet de FSI
-description: Cifras, autenticação, chaves, PKI, protocolos e defesa de redes numa folha de consulta.
+title: 'Cheat sheet de FSI'
+description: 'Regras, condições e procedimentos para rever a teoria de FSI.'
 section: recursos
+order: 0
 studyKind: revision
 editorial:
+  basedOn: 2026/27
   sources:
-    - title: Resumos de Fundamentos de Segurança Informática, SofiaViP
-      url: https://drive.google.com/file/d/1rrrCTHn8zKaMrw4q8ufLksAjSgwQuXcU/view
-  coverage: Síntese das páginas 2 a 16 dos Resumos FSI de SofiaViP, com foco em criptografia e segurança de redes.
+    - title: Ficha oficial de FSI, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999
+  coverage: 'Regras, condições e procedimentos para rever a teoria de FSI.'
   gaps:
-    - A fonte não identifica uma edição atual da cadeira; confirma o programa e as versões de protocolos exigidas na tua ocorrência.
-    - Esta folha omite provas criptográficas, parâmetros de implementação e ataques web detalhados; os apontamentos cobrem esses ataques apenas de passagem.
+    - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
-Os exemplos de César, substituição, ECB, MD5, SHA-1, SSL e versões antigas de TLS servem para reconhecer propriedades e falhas, não para escolher algoritmos novos.
+## Analisar um ataque
 
-## O objetivo antes do algoritmo
+Ativo → ameaça → vulnerabilidade → vetor → propriedade afetada → defesa → risco residual. Distingue capacidade do atacante de uma hipótese sem evidência. [Explicação](/cadeiras/fsi/principios-seguranca/).
 
-| Propriedade               | Pergunta que responde                                                 |
-| ------------------------- | --------------------------------------------------------------------- |
-| Confidencialidade         | Quem pode ler a mensagem?                                             |
-| Integridade/autenticidade | Foi alterada? Veio de quem conhece a chave ou possui a chave privada? |
-| Disponibilidade           | O serviço continua utilizável perante falhas e ataques?               |
+- Confidencialidade: quem lê. Integridade: quem altera e segundo que regras. Disponibilidade: quando o serviço responde.
+- Perda esperada, num modelo de um evento: $E=pL$. Não converter categorias qualitativas em probabilidades sem dados.
+- Controlo: reduzir, evitar, partilhar consequências ou aceitar explicitamente o risco residual.
 
-**Cifrar** por si só não autentica o emissor nem deteta necessariamente alterações. Um MAC autentica para quem partilha a chave, mas não fornece confidencialidade nem uma prova pública de autoria. Uma assinatura verifica-se com a chave pública, desde que a associação entre chave e identidade seja fiável. [Ver tríade](/cadeiras/fsi/principios-seguranca/#a-tríade-confidencialidade-integridade-disponibilidade) e [simétrica/assimétrica](/cadeiras/fsi/criptografia/#simétrica-e-assimétrica).
+## Desenho seguro
 
-## Cifras simétricas e autenticação
+Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desenho aberto, separação de privilégios, mínimo mecanismo comum e aceitação psicológica. Isolamento limita autoridade e comunicação. Defesa em profundidade exige falhas diferentes. TCB é aquilo de que a segurança depende. [Explicação](/cadeiras/fsi/sistemas-seguros/).
 
-- Cifra de César e substituição simples têm espaço de chaves ou padrões exploráveis; são exemplos didáticos. A **one-time pad** só dá sigilo perfeito se a chave for aleatória, tão longa como a mensagem, secreta e usada **uma única vez**. Reutilizá-la revela $C_1\oplus C_2=M_1\oplus M_2$. [Ver criptografia simétrica](/cadeiras/fsi/criptografia/#simétrica-e-assimétrica).
-- Uma cifra de bloco como AES transforma blocos sob uma chave. **ECB** cifra blocos iguais de forma igual e revela padrões. **CBC** encadeia blocos com IV e precisa de padding para entrada não múltipla do bloco; um erro de padding observável pode abrir um _padding oracle_. **CTR** cifra blocos contador para produzir um fluxo; não repitas o mesmo par chave/nonce. Nenhum destes modos de confidencialidade isolado garante integridade. [Ver modos de confidencialidade](https://csrc.nist.gov/pubs/sp/800/38/a/final).
-- **GCM** combina cifra e autenticação de dados associados. O nonce deve ser único para cada cifragem sob a mesma chave; valida a etiqueta **antes** de usar o texto descifrado. AAD é autenticado sem ser cifrado. [Ver especificação de GCM](https://csrc.nist.gov/pubs/sp/800/38/d/final).
-- Uma função hash criptográfica deve tornar difíceis pré-imagens, segundas pré-imagens e colisões. **Hash sem chave não autentica**: um atacante pode substituir a mensagem e recalcular o hash. MD5 e SHA-1 surgem nos apontamentos como exemplos históricos com colisões conhecidas; SHA-2 e SHA-3 têm objetivos e saídas próprios, não são cifras. [Ver gestão de chaves e PKI](/cadeiras/fsi/criptografia/#gestão-de-chaves-e-pki).
-- $t=\operatorname{MAC}_K(m)$ usa uma chave secreta para autenticar $m$. Verifica a etiqueta antes de aceitar dados. Em **Encrypt-then-MAC**, autentica o texto cifrado; em **MAC-then-Encrypt**, o MAC entra antes da cifra e o tratamento de erros pode revelar informação. Uma AEAD pronta evita montar esta composição à mão. [Ver modos autenticados](/cadeiras/fsi/criptografia/#simétrica-e-assimétrica).
+## Criptografia
 
-## Chaves públicas, certificados e canais
+| Objetivo         | Regra                                                                            |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Cifrar para B    | Pública de B; B decifra com privada de B                                         |
+| Assinar por A    | Privada de A; verificar com pública de A                                         |
+| MAC              | Chave partilhada; sem prova pública de qual participante criou                   |
+| Hash             | Resumo público; referência tem de ser confiável                                  |
+| RSA de brinquedo | $n=pq$, $\varphi=(p-1)(q-1)$, $ed\equiv1\pmod\varphi$, $c=m^e\bmod n$            |
+| PKI              | Cadeia, âncora confiável, nome, datas, usos/restrições e estado segundo política |
 
-- **Chave de sessão** é temporária; **chave de longo prazo** identifica ou autentica um participante. Cifra assimétrica facilita distribuição de chaves, mas não prova sozinha a quem pertence uma chave pública. Uma assinatura autentica a mensagem assinada, não protege a sua confidencialidade. Para correio seguro, o objetivo pode exigir **assinar e cifrar**, por esta ordem lógica. [Ver gestão de chaves](/cadeiras/fsi/criptografia/#gestão-de-chaves-e-pki).
-- Diffie–Hellman permite acordar material de chave num canal observável, mas uma troca sem autenticação admite um intermediário. Acorda a chave e autentica os participantes no **protocolo completo**. Chaves efémeras, quando usadas corretamente, limitam a exposição de sessões antigas após perda posterior de uma chave de longo prazo. [Ver exemplo de troca](/cadeiras/fsi/criptografia/#exemplo-troca-completa-em-números-pequenos).
-- Um certificado X.509 associa identidade e chave pública mediante a assinatura de uma CA. Na validação, verifica **cadeia até uma âncora confiável**, nome esperado, período de validade, usos/extensões relevantes e estado de revogação quando aplicável. Ter uma assinatura matematicamente válida não basta se a identidade ou a âncora estiver errada. [Ver PKI](/cadeiras/fsi/criptografia/#gestão-de-chaves-e-pki).
-- Em TLS, o _handshake_ negocia parâmetros, autentica o par exigido e estabelece chaves; depois, os registos protegem o tráfego. HTTPS é HTTP sobre TLS, mas não corrige XSS, SQL injection nem um servidor comprometido. [Ver TLS 1.3](https://www.rfc-editor.org/info/rfc8446/) e [segurança web](/cadeiras/fsi/seguranca-web/#o-modelo-mesma-origem-sessões-e-segredos).
+RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/criptografia/).
 
-## Identidade, acesso e perímetro
+- ECB revela repetições. CBC exige IV adequado e preenchimento. CTR exige não repetir contadores sob a mesma chave.
+- Se reutilizas a sequência XOR: $C_1\oplus C_2=P_1\oplus P_2$.
+- AEAD dá confidencialidade e integridade; não dá proteção automática contra repetição.
+- DH: $A=g^a$, $B=g^b$, segredo $B^a=A^b$ no grupo. Sem autenticação permite intermediário ativo.
+- Chaves efémeras podem dar sigilo futuro quando as condições do protocolo se cumprem. [Explicação](/cadeiras/fsi/modos-protocolos/).
 
-- **Autenticação** pergunta quem és; **autorização** decide o que podes fazer. Palavra-passe, cartão e biometria são fatores distintos; possuir um certificado não atribui automaticamente permissões. Dá a cada conta e serviço apenas os direitos necessários, e valida-os em cada operação sensível. [Ver modelos de acesso](/cadeiras/fsi/controlo-acessos/#modelos-matriz-papéis-e-níveis) e [privilégio mínimo](/cadeiras/fsi/sistemas-seguros/#os-quatro-princípios).
-- Uma firewall filtra tráfego segundo política. Um filtro sem estado decide por campos do pacote e não vê dados de aplicação; um proxy de aplicação pode inspecionar pedidos nesse nível. Nenhum dos dois resolve ataques que passam por uma regra permitida. Uma VPN/IPsec protege o tráfego entre extremos configurados; modo **transporte** protege a carga do pacote original, modo **túnel** encapsula o pacote. [Ver exposição da rede](/cadeiras/fsi/seguranca-redes/#o-que-a-rede-expõe).
-- DoS tenta retirar disponibilidade; um _flood_ esgota recursos de ligação, processamento ou largura de banda. Detetar uma assinatura conhecida é diferente de detetar uma **anomalia** face a uma linha de base. Um IDS de rede observa pontos de passagem; um IDS no anfitrião observa eventos locais. Falsos positivos e ataques novos limitam ambos. [Ver SYN flood](/cadeiras/fsi/seguranca-redes/#o-syn-flood-passo-a-passo) e [modelação de ameaças](/cadeiras/fsi/pensar-como-atacante/#modelação-de-ameaças-em-cinco-passos).
+## Acessos
+
+- Autenticação identifica; autorização decide sujeito, objeto e operação.
+- ACL: permissões junto do objeto. Capacidade: referência protegida que confere autoridade.
+- Bell-LaPadula básico, confidencialidade: não ler acima, não escrever abaixo.
+- Biba estrito, integridade: não ler abaixo, não escrever acima.
+- Unix: escolher dono, senão grupo, senão outros. $r=4,w=2,x=1$.
+- Diretório: `x` atravessa, `r` enumera; `w+x` altera entradas, com restrições adicionais como sticky bit. Verificar todas as pastas do caminho. [Explicação](/cadeiras/fsi/controlo-acessos/).
+
+## Código e rede
+
+- Buffer de $N$ bytes: string de até $N-1$ bytes com terminador. Medir antes de copiar; verificar overflow de tamanhos.
+- TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável.
+- Canário deteta algumas corrupções; NX restringe execução; ASLR dificulta prever endereços. Não corrigem a falha de memória. [Explicação](/cadeiras/fsi/programacao-defensiva/).
+- TLS protege transporte entre os seus extremos; não protege de um extremo malicioso.
+- Firewall filtra; IDS alerta; IPS pode bloquear. Precisão $=VP/(VP+FP)$, sensibilidade $=VP/(VP+FN)$.
+- Amplificação $=$ bytes de resposta / bytes de pedido. Defesa DoS depende do recurso esgotado. [Explicação](/cadeiras/fsi/seguranca-redes/).
+
+## Web
+
+Origem = esquema + host + porta. SOP restringe leitura, não todos os pedidos. CORS não autoriza utilizadores.
+
+| Problema              | Defesa que atua no mecanismo                                                       |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| SQL injection         | Parâmetros para valores; lista de opções para estrutura                            |
+| XSS                   | Codificação por contexto ou sanitização de HTML permitido; sinks seguros           |
+| CSRF                  | Não alterar por GET; defesas da framework, token e/ou validação de origem adequada |
+| IDOR                  | Autorização no servidor sobre cada objeto e operação                               |
+| Sessão roubada/fixada | IDs imprevisíveis, renovação, expiração/invalidação e transporte seguro            |
+| Palavra-passe exposta | KDF adequada com sal por entrada; limites de tentativas protegem outro risco       |
+
+Secure restringe transporte; HttpOnly restringe leitura do cookie por JS; SameSite restringe envio conforme o contexto. Nenhum destes atributos torna XSS seguro. [Explicação](/cadeiras/fsi/seguranca-web/).

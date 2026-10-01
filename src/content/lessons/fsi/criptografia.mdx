@@ -1,63 +1,86 @@
 ---
-title: Criptografia simétrica, assimétrica e PKI
-description: Cifrar, assinar e verificar cadeias de certificados, com um exemplo RSA em números pequenos.
+title: 'Criptografia, assinaturas e PKI'
+description: 'Escolher primitivas pela propriedade, calcular RSA de brinquedo e validar certificados.'
 section: conteudo
 order: 3
+practices:
+  - fsi/praticar-criptografia
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha oficial de FSI, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999
+    - title: 'RFC 8017, RSA'
+      url: https://datatracker.ietf.org/doc/html/rfc8017
+    - title: 'RFC 5280, certificados X.509'
+      url: https://datatracker.ietf.org/doc/html/rfc5280
+  coverage: 'Escolher primitivas pela propriedade, calcular RSA de brinquedo e validar certificados.'
+  gaps:
+    - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
 import cadeia from '../../fsi/cadeia.typ?raw';
 
-A criptografia transforma dois problemas difíceis, guardar segredos e provar identidades, em um problema tratável: guardar chaves. Esta página mostra as duas famílias de cifras, como se combinam, como se assina e como se confia numa chave que chegou pela Internet.
+Ana quer enviar uma mensagem ao Bruno sem que outra pessoa a leia. Bruno também quer saber se a mensagem veio da Ana e se mudou durante o caminho. São requisitos distintos: confidencialidade, autenticidade da origem e integridade.
 
-## Simétrica e assimétrica
+## Escolher a primitiva
 
-Na **criptografia simétrica**, a mesma chave cifra e decifra. O AES (_Advanced Encryption Standard_) é o exemplo atual: rápido e seguro com chaves de 128 ou 256 bits, ideal para grandes volumes. O problema é a distribuição: Ana e Bruno precisam de partilhar a chave secreta sem que ninguém a intercete, o que é precisamente o problema que queriam resolver.
+| Mecanismo              | Segredo necessário                    | Propriedade principal                                            | O que não dá sozinho                                       |
+| ---------------------- | ------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
+| Cifra simétrica        | Chave partilhada                      | Confidencialidade                                                | Autenticidade e proteção contra repetição                  |
+| Cifra de chave pública | Privada do destinatário para decifrar | Confidencialidade para esse destinatário                         | Identidade de quem enviou                                  |
+| Hash criptográfico     | Nenhum                                | Resumo para verificar alterações face a uma referência confiável | Autenticidade se o atacante puder trocar mensagem e resumo |
+| MAC                    | Chave partilhada                      | Integridade e autenticidade entre quem conhece a chave           | Confidencialidade ou prova pública do autor                |
+| Assinatura digital     | Privada do signatário                 | Integridade e verificação pública da origem                      | Confidencialidade                                          |
 
-Na **criptografia assimétrica** (ou de chave pública), cada pessoa tem um par: a **chave pública**, que se distribui livremente, e a **chave privada**, que nunca sai do dono. O que uma cifra, só a outra decifra. O RSA é o exemplo clássico. É milhares de vezes mais lento que o AES, por isso na prática usa-se o melhor dos dois mundos: gera-se uma **chave de sessão** aleatória, cifra-se a mensagem grande com AES usando essa chave e cifra-se só a chave pequena com RSA usando a chave pública do destinatário.
+Uma assinatura usa operações próprias `Sign` e `Verify`. Não se deve defini-la como "cifrar com a chave privada": isso não descreve algoritmos como EdDSA e omite a codificação segura do RSA. Se a chave privada foi roubada, verificar a assinatura não distingue o titular do ladrão.
 
-Para **autenticação** de mensagens usa-se um código MAC (_message authentication code_) com chave partilhada, ou uma **assinatura digital** com chave privada: o autor resume a mensagem com uma função de síntese (_hash_, como o SHA-256) e cifra esse resumo com a sua chave privada. Quem recebe repete a síntese e compara com o valor decifrado com a chave pública do autor. Se bater certo, a mensagem não foi alterada e só o dono da chave privada a podia ter assinado: integridade mais autenticidade da origem, que a cifra sozinha não dá.
+Uma função hash tem saída de tamanho fixo. A resistência a pré-imagem dificulta encontrar uma entrada para um resumo dado; a resistência a segunda pré-imagem dificulta encontrar outra entrada com o resumo de uma entrada dada; a resistência a colisões dificulta encontrar quaisquer duas entradas diferentes com o mesmo resumo. São problemas diferentes. Para uma saída ideal de $n$ bits, a pesquisa genérica de colisões custa aproximadamente $2^{n/2}$ tentativas, por causa do paradoxo do aniversário.
 
-## Gestão de chaves e PKI
+## Cifrar e assinar com as chaves certas
 
-Chaves perdem-se, são roubadas e expiram, por isso existe **gestão de chaves**: gerar com aleatoriedade real, distribuir por canais seguros, armazenar protegidas, trocar periodicamente e revogar quando comprometidas. A parte mais delicada é a pergunta inicial: esta chave pública é mesmo do Bruno?
+Para confidencialidade, Ana cifra para a chave pública **do Bruno**, que decifra com a privada do Bruno. Para autenticidade, Ana assina com a privada **da Ana**, e Bruno verifica com a pública da Ana. Trocar estes nomes troca o objetivo.
 
-A resposta é a **PKI** (_public key infrastructure_): uma hierarquia de **certificados digitais**. Um certificado liga uma identidade a uma chave pública e vem assinado por uma **autoridade de certificação** (CA). O certificado do servidor da loja vem assinado por uma CA intermédia, o dessa intermédia por uma CA raiz, e a chave da CA raiz já vem instalada no teu navegador. **Verificar a cadeia** é confirmar cada assinatura até à raiz confiável, mais a validade das datas e a lista de revogações. Confias em centenas de chaves porque confias nas poucas raízes e na matemática das assinaturas entre elas.
+Em sistemas híbridos, uma chave de sessão protege os dados com uma cifra simétrica autenticada. Um mecanismo de acordo ou encapsulamento de chaves estabelece esse segredo. Isto evita usar operações de chave pública para todo o conteúdo. O acordo de chaves também precisa de autenticação, como veremos em [modos e protocolos](/cadeiras/fsi/modos-protocolos/).
+
+## RSA de brinquedo
+
+Vamos calcular apenas RSA sem codificação, para compreender a aritmética. **Este esquema não é seguro para uso real.** Os esquemas reais de cifragem e assinatura acrescentam construções como OAEP e PSS, especificadas no [RFC 8017](https://datatracker.ietf.org/doc/html/rfc8017).
+
+Bruno escolhe os primos $p=3$ e $q=11$. Então $n=pq=33$ e $\varphi(n)=(p-1)(q-1)=20$. Escolhe $e=3$, coprimo com 20, e $d=7$, porque $ed=21\equiv1\pmod{20}$. A chave pública é $(n,e)$ e a privada inclui $d$.
+
+Para $m=5$, com $0\leq m<n$, Ana calcula $c=m^e\bmod n=125\bmod33=26$. Bruno recupera $m=c^d\bmod n=26^7\bmod33=5$.
+
+Para separar as identidades, Ana usa outro par: $p=5$, $q=11$, $n=55$, $\varphi(n)=40$, $e=3$, $d=27$. Neste exemplo aritmético, o representante da mensagem é 5. A operação privada dá $s=5^{27}\bmod55=25$. A operação pública verifica $25^3\bmod55=5$. O valor 25 pertence ao par da Ana, não ao do Bruno.
+
+<CodePlayground
+  title="RSA: cifrar, recuperar e verificar"
+  language="python"
+  code={
+    'mensagem = 5\ncifra = pow(mensagem, 3, 33)\nrecuperada = pow(cifra, 7, 33)\nassinatura_brinquedo = pow(mensagem, 27, 55)\nverificada = pow(assinatura_brinquedo, 3, 55)\nprint("Cifra para Bruno:", cifra, "Mensagem:", recuperada)\nprint("Operação privada da Ana:", assinatura_brinquedo)\nprint("Verificação pública:", verificada)'
+  }
+/>
+
+O resultado é 26, 5, 25 e 5. Os números pequenos permitem fatorizar o módulo imediatamente. Mesmo com números grandes, RSA sem codificação é determinístico e tem relações algébricas exploráveis. Esta conta demonstra o mecanismo, não a segurança de um protocolo.
+
+## Gestão de chaves
+
+Uma chave precisa de geração adequada, distribuição autenticada, armazenamento protegido, controlo de utilização e revogação. A rotação não desfaz a leitura de dados antigos já expostos. Uma chave de cifragem perdida pode tornar os dados irrecuperáveis; uma chave roubada pode expor os dados e permitir falsificação, conforme a sua função.
+
+Um sal de palavra-passe não é uma chave secreta. Um nonce também não precisa, em geral, de ser secreto. O requisito de cada valor depende da construção: confundir estes papéis leva a guardar segredos no sítio errado ou a reutilizar valores que têm de ser únicos.
+
+## Verificar certificados
+
+Um certificado associa uma identidade a uma chave pública através da assinatura de uma autoridade de certificação. Uma raiz instalada como âncora de confiança permite verificar uma cadeia.
 
 <Typst
   source={cadeia}
   format="svg"
-  alt="Cadeia de certificados: o servidor da loja é assinado pela autoridade intermédia, que é assinada pela autoridade raiz instalada no navegador."
+  alt="A raiz assina o certificado da autoridade intermédia; a intermédia assina o do servidor. A raiz é uma âncora instalada, não uma identidade provada pela própria assinatura."
 />
 
-## Exemplo: troca completa em números pequenos
+Para aceitar o servidor, verificamos a cadeia de assinaturas, datas, nome esperado do servidor, restrições e utilizações permitidas, e os requisitos de estado/revogação da política aplicável. Uma cadeia criptograficamente válida para `outra-loja.example` não autoriza `loja.example`. Uma raiz autoassinada só é confiável porque foi instalada por um mecanismo confiável, não porque consegue assinar-se a si própria.
 
-Ana quer enviar ao Bruno a mensagem $m = 5$ (pensa num código de 5 euros de desconto) de forma confidencial e assinada. O par RSA de brinquedo do Bruno usa $n = 33$ com expoente público $e = 3$ e privado $d = 7$. Na realidade as chaves têm 2048 bits ou mais; estes números servem só para veres o mecanismo a funcionar à mão.
-
-**Cifrar.** Ana calcula $c = m^e \bmod n = 5^3 \bmod 33$. Ora $5^3 = 125$ e $125 - 99 = 26$, por isso envia $c = 26$. Só quem tiver $d$ recupera o 5.
-
-**Assinar.** Ana resume a mensagem (neste brinquedo, o resumo é o próprio 5) e cifra com a sua chave privada, obtendo a assinatura $s = 14$. Envia o par $(26, 14)$.
-
-**Verificar e decifrar.** O Bruno decifra com a sua chave privada e obtém 5. Depois verifica a assinatura com a chave pública da Ana: $14^3 \bmod 33$. Ora $14^2 = 196$ e $196 - 165 = 31$; depois $31 \times 14 = 434$ e $434 - 429 = 5$. O resultado bate certo com a mensagem recebida, por isso aceita-a: veio da Ana e ninguém a alterou.
-
-Confirma as duas contas corridas com o Python, que tem aritmética modular direta:
-
-<CodePlayground
-  language="python"
-  code={
-    'print(pow(5, 3, 33))   # cifrar a mensagem 5: dá 26\nprint(pow(14, 3, 33))  # verificar a assinatura 14: dá 5'
-  }
-/>
-
-Numa troca real, estes passos RSA protegem apenas a chave de sessão, a mensagem segue em AES e cada chave pública chega dentro de um certificado cuja cadeia se verifica até à raiz. O esqueleto lógico é exatamente o deste exemplo: cifrar com a pública do destino, assinar com a privada da origem, verificar antes de confiar.
-
-<YouTube
-  id="GSIDS_lvRv4"
-  title="Criptografia de chave pública, Computerphile"
-/>
-
-:::tip[O que a cifra não resolve]
-A criptografia protege dados, não intenções. Não impede que o programa tenha erros, que o utilizador seja enganado nem que a chave privada esteja num ficheiro legível por todos. Quando um sistema "com cifragem" falha, a causa está quase sempre fora da matemática: na gestão das chaves, no código ou nas pessoas. É por isso que a [programação defensiva](programacao-defensiva/) e o [controlo de acessos](controlo-acessos/) vêm a seguir.
-:::
+O certificado também não prova que o serviço é honesto, não contém erros ou está autorizado a receber todos os nossos dados. Prova uma associação de chave e identidade dentro de uma política.

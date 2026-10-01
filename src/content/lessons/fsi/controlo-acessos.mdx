@@ -1,64 +1,77 @@
 ---
-title: Controlo de acessos e fluxos
-description: Matriz de acessos, papéis e permissões Unix resolvidas, incluindo um caso que nega por defeito.
+title: 'Controlo de acessos e fluxos'
+description: 'Matriz, ACL, capacidades, DAC, RBAC, Bell-LaPadula, Biba e permissões Unix.'
 section: conteudo
-order: 4
+order: 5
+practices:
+  - fsi/praticar-controlo-acessos
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha oficial de FSI, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999
+    - title: 'Linux, inode(7)'
+      url: https://man7.org/linux/man-pages/man7/inode.7.html
+    - title: 'Linux, capabilities(7)'
+      url: https://man7.org/linux/man-pages/man7/capabilities.7.html
+  coverage: 'Matriz, ACL, capacidades, DAC, RBAC, Bell-LaPadula, Biba e permissões Unix.'
+  gaps:
+    - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
 import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
 import matriz from '../../fsi/matriz.dot?raw';
 
-A autenticação responde a "quem és?", provando a identidade. O **controlo de acessos** responde à pergunta seguinte: "já sei quem és, e agora, o que podes fazer?". Esta página organiza essa resposta em modelos e termina a decidir acessos concretos numa tabela de permissões Unix.
+Autenticar identifica uma entidade. Autorizar decide se essa entidade pode executar uma operação sobre um objeto concreto. A Ana pode ter sessão iniciada e continuar sem permissão para ler a pauta de outro curso.
 
-## Modelos: matriz, papéis e níveis
+## Matriz de acessos
 
-O modelo mental base é a **matriz de acessos**: linhas de sujeitos (utilizadores, processos), colunas de objetos (ficheiros, tabelas, impressoras) e em cada célula as operações permitidas (ler, escrever, executar). Tudo o resto é uma forma compacta de representar esta matriz.
+As linhas da matriz representam sujeitos, as colunas objetos e cada célula as operações permitidas. Uma ACL guarda permissões junto do objeto, como uma coluna da matriz. Uma capacidade é uma referência protegida contra falsificação que concede operações sobre um objeto. Só a possuir quando é válida pode conferir autoridade; copiá-la e revogá-la exige mecanismos próprios.
 
 <Dot
   source={matriz}
-  alt="Matriz de acessos desenhada como grafo: Ana e Bruno leem precos.csv, o Carlos tem o acesso negado e o script escreve."
+  alt="Ana e Bruno podem ler precos.csv; Carlos não pode aceder; um processo de atualização pode escrever."
 />
 
-Duas representações dominam. As **ACL** (_access control lists_) guardam, junto de cada objeto, quem pode o quê: é a coluna da matriz, e é o que as permissões Unix fazem. As **capacidades** (_capabilities_) guardam, junto de cada sujeito, os bilhetes de acesso que possui: é a linha da matriz, como um descritor de ficheiro aberto que já não volta a perguntar.
+No **DAC**, o dono pode decidir parte dos acessos. No **MAC**, uma política obrigatória limita decisões dos sujeitos, mesmo que sejam donos. No **RBAC**, atribuímos permissões a papéis e papéis a utilizadores. Trocar o papel de uma pessoa não garante que retiramos autorizações concedidas por outros caminhos: temos de considerar a política completa.
 
-Sobre quem decide, há três políticas:
+## Confidencialidade com Bell-LaPadula
 
-<Tabs id="politicas-acesso" labels={['Discricionário (DAC)', 'Obrigatório (MAC)', 'Por papéis (RBAC)']}>
-  <div slot="panel-0">
+Considere níveis ordenados `Público < Confidencial < Secreto`. Na versão básica de Bell-LaPadula, um sujeito não lê acima do seu nível, **no read up**, e não escreve abaixo, **no write down**. Assim, um sujeito Confidencial lê Público ou Confidencial e escreve Confidencial ou Secreto, sujeito às restantes permissões.
 
-No controlo **discricionário**, o dono do objeto decide quem acede, como nas permissões de ficheiros. A loja, dona de `precos.csv`, dá leitura ao grupo `vendas`. É flexível, mas cada dono decide à sua maneira e os erros acumulam-se.
+A proibição de escrita para baixo impede que um processo que conhece um segredo o copie para um objeto público. Não impede corrupção de dados em níveis superiores. O modelo protege confidencialidade, não integridade.
 
-  </div>
-  <div slot="panel-1">
+Desclassificar um resumo exige um procedimento confiável fora desta regra básica. Anonimizar alguns campos não prova automaticamente que um documento deixa de ser confidencial.
 
-No controlo **obrigatório**, o sistema impõe níveis, como "confidencial" contra "público", e nem o dono pode baixar a classificação. Um relatório confidencial nunca sai para um objeto público, mesmo que o dono queira partilhá-lo. É rígido, mas a regra vale para todos sem exceção.
+## Integridade com Biba
 
-  </div>
-  <div slot="panel-2">
+Na política estrita de Biba, os níveis representam **integridade**, não secretismo. Um sujeito não lê dados de integridade inferior, **no read down**, e não escreve em integridade superior, **no write up**. Isto evita que dados menos confiáveis contaminem decisões e objetos mais confiáveis.
 
-No controlo **por papéis**, as permissões vão para papéis e os utilizadores recebem papéis. O papel `vendas` tem duas permissões: ler `precos.csv` e escrever `encomendas.csv`. A Ana e o Bruno recebem o papel `vendas` e herdam as duas. Quando a Ana muda para a contabilidade, troca-se-lhe um papel em vez de dezenas de permissões, e nada fica esquecido para trás.
+Um processo de integridade Alta pode ler Alta e escrever Alta ou Baixa. Um processo Baixa não pode alterar um objeto Alta. O modelo não impede a divulgação de segredos. Antes de aplicar setas, identifica qual propriedade e qual variante da política o enunciado usa.
 
-  </div>
-</Tabs>
+## Permissões Unix
 
-Para fluxos de dados, a regra sensata é simples: a informação só flui para níveis iguais ou superiores de confiança, nunca para baixo sem desinfeção. Um relatório confidencial pode alimentar um resumo público depois de anonimizado; o caminho inverso, dados públicos a contaminar decisões confidenciais sem verificação, é uma fuga ou uma injeção à espera de acontecer.
+Num ficheiro regular, `r` permite ler conteúdo, `w` alterar conteúdo e `x` executar. Num diretório, `r` permite enumerar nomes, `x` procurar/atravessar e `w`, em conjunto com `x`, permite alterar entradas, como criar ou remover nomes, sujeito a restrições adicionais.
 
-## Mecanismos no sistema operativo
+Escolhemos **um** trio: dono se o processo corresponde ao dono; senão grupo se pertence ao grupo; senão outros. Não tentamos as permissões dos outros quando o trio do dono nega uma operação. Esta regra assume os bits tradicionais, sem ACL adicionais, capacidades especiais ou privilégios de root.
 
-No Unix, cada ficheiro tem dono, grupo e três trios de permissões: leitura (r), escrita (w) e execução (x), para dono, grupo e outros. Nas pastas, o x significa atravessar: sem x na pasta, nem chegas aos ficheiros de dentro, sejam quais forem as permissões deles. É a mediação completa em ação.
+Em octal, $r=4$, $w=2$, $x=1$. O modo `640` significa `rw-r-----`, e `750` significa `rwxr-x---`.
 
-O bit **setuid** é a exceção controlada: um programa com setuid corre com as permissões do dono do ficheiro, não de quem o executa. O comando `passwd` precisa de escrever no ficheiro de senhas, por isso corre momentaneamente como `root`. É privilégio mínimo cirúrgico, um programa em vez do utilizador, mas cada programa setuid é uma aposta: um erro nele é um erro com poderes de `root`.
+## Exemplo resolvido
 
-## Exemplo: tabela de permissões resolvida
+Todos os diretórios anteriores são atravessáveis. `/srv/loja` pertence a `loja:vendas` e tem `750`. `precos.csv` pertence ao mesmo dono e grupo e tem `640`.
 
-O ficheiro `/srv/loja/precos.csv` tem dono `loja` com `rw-`, grupo `vendas` com `r--` e outros sem nada. A pasta `/srv/loja` tem `rwx` para `root`, `r-x` para `vendas` e nada para outros. Decide quatro pedidos:
+| Pedido                                       | Decisão   | Regra                                  |
+| -------------------------------------------- | --------- | -------------------------------------- |
+| Ana, grupo vendas, lê o ficheiro             | Permitido | Tem x na pasta e r no ficheiro         |
+| Bruno, grupo vendas, escreve conteúdo        | Negado    | O trio do grupo no ficheiro não tem w  |
+| Carlos, fora de vendas, lê                   | Negado    | O trio dos outros na pasta não tem x   |
+| Processo com identidade efetiva loja escreve | Permitido | Tem x na pasta e w de dono no ficheiro |
 
-| Pedido                                                            | Decisão | Porquê                                                                                                      |
-| ----------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------- |
-| A Ana, do grupo `vendas`, quer ler os preços                      | Sim     | Atravessa a pasta com o x do grupo e lê com o r do grupo                                                    |
-| O Bruno, do grupo `vendas`, quer corrigir um preço                | Não     | O grupo só tem r no ficheiro. O que não foi permitido é proibido: nega por defeito                          |
-| O Carlos, de fora das `vendas`, quer ler os preços                | Não     | A pasta fecha-lhe a passagem antes sequer de olhar para o ficheiro. Cada acesso é verificado, sem atalhos   |
-| O script de atualização, com setuid do dono `loja`, quer escrever | Sim     | Corre com as permissões do dono, que tem w. Só este programa ganha esse poder, não o utilizador que o corre |
+A última linha usa a identidade efetiva do processo. Não assumimos que um script ganha setuid: em sistemas como Linux, o bit setuid de scripts interpretados é ignorado. Um executável setuid pode mudar a identidade efetiva segundo as regras do sistema, e por isso exige revisão cuidada.
 
-Repara no caso do Bruno: é o negar por defeito da página anterior a trabalhar. E repara no Carlos: a proteção da pasta torna irrelevante a permissão do ficheiro, o que mostra por que razão camadas independentes contam. Se um dia o grupo `vendas` precisar de escrever, a resposta certa é um papel novo ou uma permissão explícita e registada, nunca abrir a pasta a toda a gente.
+Agora muda a pasta para `770`. Bruno pode remover o nome do ficheiro, apesar de não poder escrever o seu conteúdo, porque tem `w+x` no diretório. O sticky bit, como em diretórios temporários partilhados, acrescenta restrições à remoção. "Ficheiro só de leitura" não implica "impossível de apagar".
+
+## Revogação e autoridade
+
+Retirar uma permissão não desfaz dados já copiados. Em Unix, alterar as permissões do nome não retira automaticamente todos os direitos de um descritor já aberto. Quando analisamos revogação, precisamos de indicar qual referência se verifica, quando se verifica e que acessos existentes a política pretende terminar.
