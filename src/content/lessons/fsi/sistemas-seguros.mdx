@@ -1,6 +1,6 @@
 ---
 title: 'Construir sistemas seguros'
-description: 'Privilégio mínimo, isolamento, mediação, monitor de referência e falhas de confiança.'
+description: 'Privilégio mínimo, memória e isolamento, Android, containers, seccomp, TPM e mediação.'
 section: conteudo
 order: 2
 practices:
@@ -14,13 +14,26 @@ editorial:
       url: https://web.mit.edu/Saltzer/www/publications/protection/
     - title: Moodle FSI, materiais iniciais atualmente publicados
       url: https://moodle2627.up.pt/course/view.php?id=4735
-  coverage: 'Privilégio mínimo, isolamento, mediação, monitor de referência e falhas de confiança.'
+    - title: 'Linux, conceitos de memória'
+      url: https://docs.kernel.org/admin-guide/mm/concepts.html
+    - title: 'Linux, isolamento de tabelas de páginas x86'
+      url: https://docs.kernel.org/arch/x86/pti.html
+    - title: 'Android, Application Sandbox'
+      url: https://source.android.com/docs/security/app-sandbox
+    - title: 'Linux, seccomp BPF'
+      url: https://docs.kernel.org/userspace-api/seccomp_filter.html
+    - title: 'Docker, segurança do Engine'
+      url: https://docs.docker.com/engine/security/
+    - title: 'Microsoft, Secure Boot, Trusted Boot e Measured Boot'
+      url: https://learn.microsoft.com/en-us/windows/security/operating-system-security/system-security/secure-the-windows-10-boot-process
+  coverage: 'Privilégio mínimo, memória e isolamento, Android, containers, seccomp, TPM e mediação.'
   gaps:
     - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
 import Dot from '../../../components/Dot.astro';
 import camadas from '../../fsi/camadas.dot?raw';
+import isolamento from '../../fsi/isolamento.dot?raw';
 
 Uma aplicação de notas não deve dar à conta que consulta pautas o poder de mudar utilizadores. Se essa conta for roubada, os seus privilégios determinam o que o atacante consegue fazer. Construir um sistema seguro começa por limitar essas consequências.
 
@@ -42,6 +55,45 @@ Os [princípios de Saltzer e Schroeder](https://web.mit.edu/Saltzer/www/publicat
 Por exemplo, exigir aprovação de dois responsáveis para publicar uma pauta separa privilégios. Pedir a mesma palavra-passe duas vezes não cria dois fatores independentes.
 
 **Isolamento** limita a comunicação e os recursos acessíveis entre componentes. Um processo separado, uma sandbox ou uma máquina virtual oferece isolamento com hipóteses diferentes. Se dois processos usam o mesmo ficheiro temporário gravável por todos, essa comunicação pode quebrar a separação pretendida.
+
+## Memória virtual e fronteira do kernel
+
+Cada processo usa um espaço de endereços virtual. As tabelas de páginas traduzem endereços virtuais em páginas físicas e atribuem permissões. O endereço virtual `0x4000` em A não identifica necessariamente a mesma página física que `0x4000` em B. Partilha explícita de memória pode, contudo, mapear a mesma página nos dois processos.
+
+A separação entre modo utilizador e modo kernel impede o código comum de aceder livremente a memória e operações privilegiadas. Uma chamada de sistema faz uma transição controlada. O kernel tem de validar os pedidos, incluindo ponteiros, tamanhos e autoridade. A transição não torna confiável o argumento recebido.
+
+Em modelos históricos de x86, páginas do kernel podiam estar nas tabelas do processo com acesso reservado ao modo supervisor. Estarem mapeadas não as tornava legíveis pelo processo. Sistemas com KPTI usam tabelas distintas para reduzir certas exposições, incluindo riscos de execução especulativa. A disposição depende da arquitetura e da configuração; não assumes que todo kernel atual está mapeado da mesma forma.
+
+### Caso: mesmo endereço, outro objeto
+
+A tem um buffer de 4 KiB em `0x4000`; B usa o mesmo endereço virtual para outra alocação. Uma instrução de A que escreve em `0x4000` segue a tradução de A, não a de B. Só uma partilha configurada, uma operação autorizada ou uma falha numa fronteira de proteção altera essa conclusão. Memória virtual isola traduções e permissões, não a intenção dos programas.
+
+## Android: isolamento por aplicação
+
+O Android atribui normalmente um UID a cada aplicação e usa processos e permissões Linux para separar os seus dados. A fronteira também se aplica a código nativo. SELinux acrescenta controlo obrigatório; filtros seccomp restringem chamadas de sistema.
+
+Permissões pedidas no manifesto e consentimento do utilizador regulam capacidades específicas, mas não são toda a sandbox. Uma aplicação autorizada a usar a câmara não recebe automaticamente acesso aos ficheiros privados de outra. Partilhas explicitamente autorizadas e componentes expostos têm regras próprias. Vulnerabilidades do kernel ou uma configuração privilegiada podem comprometer a fronteira.
+
+## Containers, máquinas virtuais e seccomp
+
+Um container Linux típico partilha o kernel do anfitrião. Namespaces separam vistas de recursos; cgroups contabilizam e limitam recursos; capacidades e políticas de acesso limitam autoridade. Uma máquina virtual tem o seu próprio kernel convidado e comunica com hardware virtual através do hipervisor. Ambas dependem de componentes privilegiados e de configuração correta.
+
+<Dot
+  source={isolamento}
+  alt="Dois containers usam o mesmo kernel do anfitrião. Numa máquina virtual, aplicações usam um kernel convidado, que depende do hipervisor. As duas estruturas têm fronteiras distintas."
+/>
+
+**Seccomp-BPF** permite decidir sobre chamadas de sistema usando o número, arquitetura e argumentos disponíveis ao filtro. Pode devolver erro, terminar o processo ou aplicar outras ações previstas. Não interpreta livremente o conteúdo dos ponteiros fornecidos: uma regra sobre o número da chamada não verifica o texto de um caminho.
+
+Por exemplo, um conversor que não precisa de criar processos pode ter uma política que bloqueia essa chamada. Se uma vulnerabilidade tentar usá-la, o filtro limita esse caminho. Ainda são necessários limites de ficheiros, memória, rede e acesso. Seccomp reduz superfície exposta do kernel; sozinho não é uma sandbox completa. Um container privilegiado, um volume sensível montado ou acesso ao controlo do runtime pode anular a separação pretendida.
+
+## Arranque verificado, medições e TPM
+
+**Secure Boot** verifica assinaturas de componentes de arranque segundo uma política de confiança, podendo recusar um componente não autorizado. **Measured Boot** regista medições criptográficas do que arrancou. Um TPM pode proteger chaves e acumular essas medições em registos PCR. Medir não é automaticamente bloquear.
+
+Num esquema de atestação, um verificador pede um desafio novo e recebe medições autenticadas ligadas ao desafio. Compara-as com a sua política. Uma medição diferente pode levar o verificador a negar acesso; uma medição esperada não prova que o sistema nunca será comprometido depois do arranque. A decisão depende da cadeia medida, da confiança nas chaves e da política de aceitação.
+
+Uma chave selada a determinada política de PCR pode ficar indisponível se o arranque mudar. Uma atualização legítima também pode mudar as medições, pelo que o desenho precisa de atualização e recuperação. TPM não é um antivírus nem uma garantia de que qualquer programa assinado é seguro.
 
 ## Defesa em profundidade
 

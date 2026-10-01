@@ -26,6 +26,10 @@ Ativo → ameaça → vulnerabilidade → vetor → propriedade afetada → defe
 
 Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desenho aberto, separação de privilégios, mínimo mecanismo comum e aceitação psicológica. Isolamento limita autoridade e comunicação. Defesa em profundidade exige falhas diferentes. TCB é aquilo de que a segurança depende. [Explicação](/cadeiras/fsi/sistemas-seguros/).
 
+- Espaços virtuais distintos: mesmo endereço numérico não implica mesma página física. Kernel valida a transição e os argumentos.
+- Container partilha kernel; VM tem kernel convidado. Seccomp limita chamadas, não substitui toda a política de acesso.
+- Secure Boot verifica componentes autorizados; Measured Boot regista; TPM protege chaves/medições. Atestar exige frescura e política. [Explicação](/cadeiras/fsi/sistemas-seguros/).
+
 ## Criptografia
 
 | Objetivo         | Regra                                                                            |
@@ -36,6 +40,9 @@ Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desen
 | Hash             | Resumo público; referência tem de ser confiável                                  |
 | RSA de brinquedo | $n=pq$, $\varphi=(p-1)(q-1)$, $ed\equiv1\pmod\varphi$, $c=m^e\bmod n$            |
 | PKI              | Cadeia, âncora confiável, nome, datas, usos/restrições e estado segundo política |
+
+- Chaves por par: $N(N-1)/2$. Com KDC, $N$ chaves duradouras entidade-centro no modelo simplificado; sessões à parte.
+- CRL identifica revogações no seu âmbito. Verificar emissor, assinatura, atualidade e âmbito; ausência numa lista antiga não prova validade.
 
 RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/criptografia/).
 
@@ -57,11 +64,16 @@ RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/cr
 ## Código e rede
 
 - Buffer de $N$ bytes: string de até $N-1$ bytes com terminador. Medir antes de copiar; verificar overflow de tamanhos.
+- `printf`: formato externo controla interpretação; `%s` lê string, `%n` escreve a contagem em `int *`. Usa formato literal e tipos corretos.
+- ROP reutiliza código; NX não o impede sozinho. Pilha e argumentos dependem da convenção.
+- Canário terminador depende da cópia; aleatório depende de imprevisibilidade. Taint: source → propagação → sink; dinâmica só cobre execuções observadas.
 - TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável.
 - Canário deteta algumas corrupções; NX restringe execução; ASLR dificulta prever endereços. Não corrigem a falha de memória. [Explicação](/cadeiras/fsi/programacao-defensiva/).
 - TLS protege transporte entre os seus extremos; não protege de um extremo malicioso.
 - Firewall filtra; IDS alerta; IPS pode bloquear. Precisão $=VP/(VP+FP)$, sensibilidade $=VP/(VP+FN)$.
 - Amplificação $=$ bytes de resposta / bytes de pedido. Defesa DoS depende do recurso esgotado. [Explicação](/cadeiras/fsi/seguranca-redes/).
+
+- Worm: propagação autónoma. Botnet: coordenação de bots. Assinaturas e comportamento têm limites; inatividade numa sandbox não prova inocuidade.
 
 ## Web
 
@@ -77,3 +89,7 @@ Origem = esquema + host + porta. SOP restringe leitura, não todos os pedidos. C
 | Palavra-passe exposta | KDF adequada com sal por entrada; limites de tentativas protegem outro risco       |
 
 Secure restringe transporte; HttpOnly restringe leitura do cookie por JS; SameSite restringe envio conforme o contexto. Nenhum destes atributos torna XSS seguro. [Explicação](/cadeiras/fsi/seguranca-web/).
+
+- Autenticação de entidade exige prova ligada à interação atual; MAC antigo sozinho não prova presença. Desafio novo, contexto e invalidação.
+- FAR = impostores aceites / tentativas de impostores. FRR = legítimos rejeitados / tentativas legítimas. Declarar protocolo e denominadores.
+- CSP restringe recursos e execução; Report-Only só relata. SRI compara bytes com hash confiável; não torna código benigno nem contorna CSP. [Explicação](/cadeiras/fsi/seguranca-web/).
