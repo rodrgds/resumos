@@ -1,69 +1,122 @@
 ---
 title: Cheat sheet de AM I
-description: Identidades, derivadas, primitivas, integrais impróprios e métodos de EDOs dos apontamentos SofiaViP.
+description: Fórmulas e condições de diferenciação, séries, integração, EDOs, Laplace e Fourier.
 section: recursos
 studyKind: revision
 editorial:
+  basedOn: 2025/26
   sources:
     - title: Resumos AM SofiaViP
       url: https://drive.google.com/file/d/15hBdUfPVPdZ8exFLuA_LYStff61YH2td/view
-  coverage: Identidades trigonométricas, derivadas, primitivas, integrais impróprios e equações diferenciais de primeira e segunda ordem das quatro páginas do PDF.
-  gaps:
-    - Os apontamentos não cobrem Taylor, séries, integral de Riemann, aplicações geométricas, Laplace nem Fourier.
-    - A edição da unidade curricular correspondente a estes apontamentos não foi verificada.
+    - title: Programa de AM I, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560086
+  coverage: Fórmulas e condições dos blocos desenvolvidos nas lições, incluindo Taylor, Laplace e Fourier.
 ---
 
-Identifica primeiro o padrão, verifica o domínio e, no fim, deriva a primitiva ou substitui a solução na equação. Nas fórmulas, $u=u(x)$, $u'=du/dx$ e $C$ é uma constante.
+Confirma o domínio antes da técnica. $C$ é uma constante; $u,v$ são funções deriváveis quando aparecem em regras de cálculo.
 
-## Trigonometria e derivação
-
-As identidades que simplificam as contas são $\sin^2u+\cos^2u=1$, $1+\tan^2u=\sec^2u$, $1+\cot^2u=\csc^2u$, $\sin(2u)=2\sin u\cos u$ e $\cos(2u)=1-2\sin^2u=2\cos^2u-1$. Usa $\sec u=1/\cos u$ e $\csc u=1/\sin u$ só onde os denominadores não se anulam. O PDF chama **cotan** e **cosec** às funções que aqui aparecem como $\cot$ e $\csc$, tal como nas páginas da cadeira.
-
-| Função                                | Derivada, com regra da cadeia                       |
-| ------------------------------------- | --------------------------------------------------- |
-| $u^a$, $a^u$, $\log_a u$              | $a u^{a-1}u'$, $a^u\ln(a)u'$, $u'/(u\ln a)$         |
-| $\tan u$, $\sec u$                    | $u'\sec^2u$, $u'\sec u\tan u$                       |
-| $\arcsin u$, $\arccos u$, $\arctan u$ | $u'/\sqrt{1-u^2}$, $-u'/\sqrt{1-u^2}$, $u'/(1+u^2)$ |
-
-Aqui $a>0$ e $a\ne1$ para logaritmos e exponenciais de base $a$; $\log_a u$ exige $u>0$, e as derivadas de $\arcsin u$ e $\arccos u$ exigem $|u|<1$. Para $u^v$ com expoente variável e $u>0$, a **derivação logarítmica** dá $(u^v)'=u^v(v'\ln u+vu'/u)$. [Regras e cadeia](/cadeiras/am1/derivadas/#regra-da-cadeia).
-
-## Escolher a primitiva
-
-- **Derivada interior presente:** substitui $t=u(x)$. Por exemplo, $\int u'u^a\,dx=u^{a+1}/(a+1)+C$ para $a\ne-1$; se $a=-1$, obténs $\ln|u|+C$. Também $\int u'a^u\,dx=a^u/\ln a+C$.
-- **Padrões inversos:** $\int u'/(1+u^2)\,dx=\arctan u+C$ e $\int u'/\sqrt{1-u^2}\,dx=\arcsin u+C$ para $|u|<1$. Com **sinal mais** sob a raiz, $\int u'/\sqrt{1+u^2}\,dx=\operatorname{arsinh}u+C$, não $\arcsin u$.
-- **Produto que simplifica ao derivar um fator:** escolhe esse fator como $v$ e usa $\int v\,dw=vw-\int w\,dv$. Costuma resultar com polinómio vezes exponencial ou trigonométrica. [Substituição](/cadeiras/am1/primitivas/#primitivação-por-substituição) e [partes](/cadeiras/am1/primitivas/#primitivação-por-partes).
-
-As primitivas imediatas $\int u'\sec^2u\,dx=\tan u+C$ e $\int u'\csc^2u\,dx=-\cot u+C$ permitem reconhecer rapidamente duas funções racionais trigonométricas. Mantém $+C$ no integral indefinido.
-
-## Integral impróprio: onde pôr o limite
-
-Se o intervalo não tem extremo finito, define $\int_a^\infty f(x)\,dx=\lim_{R\to\infty}\int_a^R f(x)\,dx$. Se $f$ é ilimitada em $a$, define $\int_a^b f(x)\,dx=\lim_{\varepsilon\to0^+}\int_{a+\varepsilon}^b f(x)\,dx$. Se há singularidade **dentro** de $[a,b]$, separa o integral nesse ponto e exige limites finitos **dos dois lados**. Um integral que combina causas exige todos os limites necessários em separado.
-
-Para decidir sem achar a primitiva, usa a comparação com funções não negativas perto do ponto problemático. Se $f/g\to c$ com $0<c<\infty$, os respetivos integrais têm a mesma natureza. As referências rápidas são $\int_1^\infty x^{-p}\,dx$, convergente se e só se $p>1$, e $\int_0^1 x^{-p}\,dx$, convergente se e só se $p<1$. Escrever uma primitiva e substituir logo $\infty$ ou um ponto singular não é uma justificação. [Integrais impróprios](/cadeiras/am1/hiperbolicas-improprios/#integrais-impróprios).
-
-## EDOs: classifica antes de integrar
-
-Chama-se **linear** de ordem $m$ a equação $a_m(x)y^{(m)}+\cdots+a_1(x)y'+a_0(x)y=f(x)$, com coeficientes independentes de $y$ e $a_m\ne0$ no intervalo de trabalho. É **linear homogénea** se $f=0$. Uma EDO de primeira ordem dita **homogénea**, $y'=F(y/x)$, usa outra noção de homogeneidade. [Classificação e métodos](/cadeiras/am1/equacoes-diferenciais/#variáveis-separáveis).
-
-| Forma reconhecida  | Redução a fazer                                                        | Condição a não perder                                               |
-| ------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| $y'=f(x)g(y)$      | $\int dy/g(y)=\int f(x)\,dx$                                           | Antes de dividir, testa os zeros de $g$ como soluções constantes.   |
-| $y'=F(y/x)$        | $v=y/x$, logo $y'=v+xv'$; resolve a separável resultante.              | Trabalha num intervalo com $x\ne0$.                                 |
-| $y'+P(x)y=Q(x)$    | $\mu=e^{\int P\,dx}$; $(\mu y)'=\mu Q$; $y=\mu^{-1}(\int\mu Q\,dx+C)$. | $P$ e $Q$ definidos no intervalo.                                   |
-| $y'+P(x)y=Q(x)y^n$ | Para $n\ne0,1$, $v=y^{1-n}$ dá $v'+(1-n)Pv=(1-n)Q$.                    | A substituição divide por potências de $y$; verifica $y=0$ à parte. |
-
-Em segunda ordem com coeficientes constantes, $ay''+by'+cy=f(x)$ com $a\ne0$, resolve primeiro $ar^2+br+c=0$ para obter $y_h$. Depois soma uma particular: $y=y_h+y_p$.
-
-| Raízes características          | Solução homogénea real                        |
-| ------------------------------- | --------------------------------------------- |
-| $r_1\ne r_2$ reais              | $C_1e^{r_1x}+C_2e^{r_2x}$                     |
-| $r$ dupla                       | $(C_1+C_2x)e^{rx}$                            |
-| $\alpha\pm i\beta$, $\beta\ne0$ | $e^{\alpha x}(C_1\cos\beta x+C_2\sin\beta x)$ |
-
-Para o termo $f$, **variação dos parâmetros** funciona quando conheces duas soluções independentes $y_1,y_2$ da homogénea: com $W=y_1y_2'-y_1'y_2\ne0$, uma particular é
+## Diferenciação
 
 $$
-y_p=-y_1\int\frac{y_2f}{aW}\,dx+y_2\int\frac{y_1f}{aW}\,dx.
+\begin{gathered}
+(uv)'=u'v+uv'\\
+(u/v)'=\frac{u'v-uv'}{v^2}\ (v\ne0)\\
+(f\circ u)'=f'(u)u'.
+\end{gathered}
 $$
 
-Usa esta fórmula em intervalos onde $a$, $f$ e $W$ permitam as operações. As constantes dessas duas integrações já estão em $y_h$. Se $f$ for uma combinação simples de polinómios, exponenciais e senos/cossenos, os [coeficientes indeterminados](/cadeiras/am1/equacoes-diferenciais/#segunda-ordem-linear-com-coeficientes-constantes) podem dar uma particular mais depressa.
+$(\ln|u|)'=u'/u$ para $u\ne0$; $(\arctan u)'=u'/(1+u^2)$; $(\arcsin u)'=u'/\sqrt{1-u^2}$ para $|u|<1$. Para $u>0$, $(u^v)'=u^v(v'\ln u+vu'/u)$. [Regras](/cadeiras/am1/derivadas/#regras-básicas).
+
+Rolle exige continuidade em $[a,b]$, derivabilidade interior e $f(a)=f(b)$. Lagrange exige as duas primeiras condições e garante $f'(c)=[f(b)-f(a)]/(b-a)$. L'Hôpital exige $0/0$ ou $\infty/\infty$, derivabilidade perto do ponto, $g'\ne0$ e existência do limite de $f'/g'$. [Hipóteses](/cadeiras/am1/teoremas-valor-medio/#teorema-de-cauchy-e-regra-de-lhôpital).
+
+Extremos interiores deriváveis exigem $f'=0$, mas o recíproco falha. Classifica pelo sinal de $f'$. Inflexão exige mudança de concavidade num ponto do gráfico. Para extremos absolutos em $[a,b]$, compara candidatos e extremos. [Estudo](/cadeiras/am1/estudo-funcoes/#monotonia-e-extremos).
+
+## Taylor e séries
+
+$$
+\begin{gathered}
+P_{n,a}=\sum_{k=0}^n\frac{f^{(k)}(a)}{k!}(x-a)^k\\
+|R_{n,a}|\le\frac{M|x-a|^{n+1}}{(n+1)!},
+\end{gathered}
+$$
+
+com $|f^{(n+1)}|\le M$ no segmento. A série representa $f$ só onde $R_{n,a}\to0$. [Erro](/cadeiras/am1/taylor/#resto-de-lagrange).
+
+| Padrão                                                                          | Resultado ou condição                                           |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| $\sum_{n=m}^{\infty}cr^n$                                                       | $cr^m/(1-r)$ se $\lvert r\rvert<1$                              |
+| $\sum1/n^p$                                                                     | Converge se e só se $p>1$                                       |
+| Razão $\lvert a_{n+1}/a_n\rvert\to L$ ou raiz $\sqrt[n]{\lvert a_n\rvert}\to L$ | $L<1$: absoluta; $L>1$: diverge; $L=1$: não decide              |
+| Alternada $(-1)^nb_n$                                                           | Leibniz: $b_n\ge0$, decrescente e $b_n\to0$; erro $\le b_{N+1}$ |
+
+$a_n\to0$ é necessário, mas insuficiente. Comparação direta ou por limite exige termos não negativos. Uma série de potências converge dentro do raio; estuda cada extremo à parte. [Critérios](/cadeiras/am1/series-numericas/#critérios-de-convergência).
+
+## Integração
+
+$$
+\begin{gathered}
+\int u' u^p dx=\frac{u^{p+1}}{p+1}+C\\
+(p\ne-1)\\
+\int\frac{u'}u dx=\ln|u|+C,
+\end{gathered}
+$$
+
+$$
+\begin{gathered}
+\int u\,dv=uv-\int v\,du\\
+\frac d{dx}\int_{u(x)}^{v(x)}f(t)dt=f(v)v'-f(u)u',
+\end{gathered}
+$$
+
+na última fórmula com $f$ contínua. Muda os limites numa substituição definida ou volta à variável original antes de avaliar. [Técnicas](/cadeiras/am1/primitivas/#primitivação-por-substituição).
+
+Fração racional: divide se necessário e inclui todas as potências dos fatores repetidos. Seno/cosseno com potência ímpar: guarda um fator para substituir; ambos pares: lineariza. $t=\tan(x/2)$ racionaliza funções racionais de seno e cosseno. [Escolha](/cadeiras/am1/primitivas-avancadas/#frações-racionais).
+
+Área: $\int|f-g|$. Volume: $\int A$; arandelas $\pi\int(R^2-r^2)$; cascas $2\pi\int\rho H$ sem sobreposição. Polar: $\frac12\int r^2d\theta$, com percurso único. Raios são distâncias ao eixo. [Geometria](/cadeiras/am1/volumes-polares/#secções-transversais-discos-e-arandelas).
+
+## Impróprios e hiperbólicas
+
+$$
+\begin{gathered}
+\int_1^{\infty}x^{-p}dx\text{ converge}\iff p>1\\
+\int_0^1x^{-p}dx\text{ converge}\iff p<1.
+\end{gathered}
+$$
+
+Separa singularidades interiores e as duas caudas. Todos os limites têm de ser finitos, sem cancelamento simétrico. [Convergência](/cadeiras/am1/hiperbolicas-improprios/#integrais-impróprios).
+
+$\cosh^2x-\sinh^2x=1$; $(\sinh)'=\cosh$, $(\cosh)'=\sinh$; $\int dx/\sqrt{1+x^2}=\operatorname{arsinh}x+C$. O sinal menos dá arco-seno. [Hiperbólicas](/cadeiras/am1/hiperbolicas-improprios/#funções-hiperbólicas).
+
+## Equações diferenciais
+
+| Forma         | Método e condição                                   |
+| ------------- | --------------------------------------------------- |
+| $y'=f(x)g(y)$ | Separa; testa zeros de $g$ antes de dividir         |
+| $y'=F(y/x)$   | $v=y/x$, $y'=v+xv'$; $x\ne0$                        |
+| $y'+Py=Q$     | $\mu=e^{\int P}$; $(\mu y)'=\mu Q$                  |
+| $y'+Py=Qy^n$  | $v=y^{1-n}$; $n\ne0,1$; verifica soluções excluídas |
+
+Para $ay''+by'+cy=f$, $a\ne0$, resolve $ar^2+br+c=0$ e soma uma particular. Raízes distintas dão exponenciais; dupla dá $(C_1+C_2x)e^{rx}$; complexas dão $e^{\alpha x}(C_1\cos\beta x+C_2\sin\beta x)$. Em ressonância, multiplica o candidato por $x^m$, com $m$ igual à multiplicidade. [EDOs](/cadeiras/am1/equacoes-diferenciais/#segunda-ordem-linear-com-coeficientes-constantes).
+
+## Laplace e Fourier
+
+$$
+\begin{gathered}
+\mathcal L\{t^n\}=\frac{n!}{s^{n+1}}\\
+\mathcal L\{f'\}=sF-f(0)\\
+\mathcal L\{f''\}=s^2F-sf(0)-f'(0).
+\end{gathered}
+$$
+
+$\mathcal L\{e^{at}f\}=F(s-a)$; $\mathcal L\{u(t-a)f(t-a)\}=e^{-as}F(s)$; $\mathcal L\{f*g\}=FG$. Não confundas convolução com produto. [Tabela e inversão](/cadeiras/am1/laplace/#tabela-de-consulta).
+
+Para período $2L$,
+
+$$
+\begin{gathered}
+a_n=\frac1L\int_{-L}^Lf(x)\cos\frac{n\pi x}Ldx\\
+b_n=\frac1L\int_{-L}^Lf(x)\sin\frac{n\pi x}Ldx.
+\end{gathered}
+$$
+
+A série usa $a_0/2$, não $a_0$. Par anula senos; ímpar anula cossenos e constante. Com regularidade por partes, soma $[f(x^-)+f(x^+)]/2$, usando limites periódicos nos extremos. Meio intervalo exige escolher extensão. [Fourier](/cadeiras/am1/fourier/#um-período-diferente-de-dois-pi).

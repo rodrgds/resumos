@@ -7,6 +7,6 @@
     x-label: [$x$], y-label: [$y$], legend: "inner-north-west", {
     plot.add(x => x * x, domain: (0, 2.6), label: [$y = x^2$], style: (stroke: rgb("28716c")))
     plot.add(x => 3 * x - 1.25, domain: (0.4, 2.6), label: [secante], style: (stroke: rgb("8c2d3b")))
-    plot.add(x => 3 * x - 3, domain: (1.4, 2.6), label: [tangente paralela], style: (stroke: (dash: "dashed")))
+    plot.add(x => 3 * x - 2.25, domain: (1.4, 2.6), label: [tangente paralela], style: (stroke: (dash: "dashed")))
   })
 })

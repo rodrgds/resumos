@@ -1,0 +1,141 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+const curve = Array.from({ length: 121 }, (_, i) => {
+  const x = (2.4 * i) / 120;
+  return `${i ? 'L' : 'M'}${40 + 200 * x},${300 - 50 * x * x}`;
+}).join(' ');
+---
+
+<InteractiveDemo label="Secante e tangente de x ao quadrado em x igual a um">
+  <div data-am1-secant>
+    <label>
+      Incremento h
+      <input type="range" min="-0.9" max="1" step="0.01" value="0.5" />
+    </label>
+    <output aria-live="polite">
+      h = 0,50; declive da secante = 2,50; tangente = 2.
+    </output>
+    <svg
+      viewBox="0 0 560 330"
+      role="img"
+      aria-label="Parábola x ao quadrado, tangente no ponto um, um e secante com incremento zero vírgula cinco"
+    >
+      <path d="M40 20 V300 H530" class="axis" />
+      <path d={curve} class="curve" />
+      <path d="M140 300 L520 110" class="tangent" />
+      <path d="M160 300 L520 75" class="secant" data-line />
+      <circle cx="240" cy="250" r="5" class="point" />
+      <circle cx="340" cy="187.5" r="5" class="point" data-point />
+      <text x="242" y="320">
+        1
+      </text>
+      <text x="520" y="320">
+        x
+      </text>
+      <text x="22" y="24">
+        y
+      </text>
+      <text x="420" y="34">
+        y = x²
+      </text>
+    </svg>
+    <p>
+      <span class="solid">Linha contínua fina: secante.</span>{' '}
+      <span class="dash">Tracejado: tangente.</span>
+    </p>
+  </div>
+</InteractiveDemo>
+<style>
+  label {
+    display: grid;
+    gap: 8px;
+  }
+  input {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  output {
+    display: block;
+    margin-block: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: hidden;
+    color: var(--text);
+  }
+  path {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+  }
+  .axis {
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.5;
+  }
+  .curve {
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+  .tangent {
+    stroke: currentColor;
+    stroke-dasharray: 7 5;
+    stroke-width: 2;
+  }
+  .secant {
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+  .point {
+    fill: var(--accent);
+  }
+  text {
+    fill: currentColor;
+    font-size: 17px;
+  }
+  p {
+    margin-block: 4px 0;
+    font-size: 13px;
+  }
+</style>
+<script>
+  for (const demo of document.querySelectorAll<HTMLElement>(
+    '[data-am1-secant]',
+  )) {
+    const input = demo.querySelector('input')!;
+    const output = demo.querySelector('output')!;
+    const line = demo.querySelector<SVGPathElement>('[data-line]')!;
+    const point = demo.querySelector<SVGCircleElement>('[data-point]')!;
+    const graph = demo.querySelector('svg')!;
+    const number = new Intl.NumberFormat('pt-PT', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const update = () => {
+      const h = Number(input.value);
+      const slope = 2 + h;
+      const y = (x: number) => 1 + slope * (x - 1);
+      line.setAttribute(
+        'd',
+        `M40 ${300 - 50 * y(0)} L520 ${300 - 50 * y(2.4)}`,
+      );
+      point.setAttribute('cx', String(40 + 200 * (1 + h)));
+      point.setAttribute('cy', String(300 - 50 * (1 + h) ** 2));
+      line.style.display = point.style.display = h === 0 ? 'none' : '';
+      output.textContent =
+        h === 0
+          ? 'h = 0: o quociente não está definido. O limite é 2, o declive da tangente.'
+          : `h = ${number.format(h)}; declive da secante = ${number.format(slope)}; tangente = 2.`;
+      graph.setAttribute(
+        'aria-label',
+        h === 0
+          ? 'Parábola x ao quadrado e tangente em um, um. A secante não está definida quando o incremento é zero.'
+          : `Parábola x ao quadrado e tangente em um, um. Incremento ${number.format(h)}, declive da secante ${number.format(slope)}.`,
+      );
+    };
+    input.addEventListener('input', update);
+    update();
+  }
+</script>
