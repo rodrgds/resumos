@@ -2,7 +2,19 @@
 title: Recursão, corte e procura em Prolog
 description: Listas e aritmética com is, corte verde, findall e um labirinto por procura em profundidade.
 section: conteudo
-order: 8
+order: 9
+practices:
+  - pfl/praticar-prolog
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa de PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Moodle PFL 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+  coverage: Predicados relacionais sobre listas, aritmética, acumuladores, corte e procura em profundidade.
+  gaps:
+    - Correspondência com os futuros guiões Prolog de 2026/27 por verificar.
 ---
 
 import Dot from '../../../components/Dot.astro';
@@ -25,20 +37,20 @@ A query `?- soma([1,2,3], S).` resolve `soma([2,3], R)`, depois `soma([3], R)`, 
 
 ## Corte e findall
 
-Por omissão, o Prolog explora todas as alternativas ao pedir mais soluções. O **corte**, `!`, poda: descarta as alternativas daquela cláusula a partir dali.
+Por omissão, o Prolog explora todas as alternativas ao pedir mais soluções. O **corte**, `!`, poda: descarta escolhas criadas desde a entrada no predicado até ao corte e as cláusulas alternativas desse predicado. Objetivos à direita ainda podem ter várias soluções.
 
 ```prolog
 max(X, Y, X) :- X >= Y, !.
-max(_, Y, Y).
+max(X, Y, Y) :- X < Y.
 ```
 
-Com o corte, `max(3, 5, M)` usa a primeira cláusula, falha no teste, e o corte nunca chega a correr; a segunda dá `M = 5`. Com `max(7, 5, M)`, o teste passa, o corte elimina a segunda cláusula, e `M = 7` sem deixar alternativa pendente. Este é um **corte verde**: só remove soluções redundantes, não muda as respostas. Um corte que mude respostas é vermelho, e é fonte clássica de erros.
+Com o corte, `max(3, 5, M)` usa a primeira cláusula, falha no teste, e o corte nunca chega a correr; a segunda dá `M = 5`. Com `max(7, 5, M)`, o teste passa, o corte elimina a segunda cláusula, e `M = 7` sem deixar alternativa pendente. Para números já instanciados, as guardas `X >= Y` e `X < Y` são exclusivas. Este corte é verde nesse contrato: retirá-lo não acrescenta uma resposta lógica. Um corte que mude respostas é vermelho, e é fonte clássica de erros.
 
 Contrasta com um corte vermelho, que decide antes de testar:
 
 ```prolog
 mau_max(X, Y, X) :- !.
-mau_max(_, Y, Y).
+mau_max(X, Y, Y) :- X < Y.
 ```
 
 A query `?- mau_max(3, 5, M).` responde `M = 3`, que está errado: o corte compromete-se com a primeira cláusula antes de comparar. A diferença entre os dois é a posição do teste em relação ao corte: no verde, o teste guarda a cláusula; no vermelho, o corte dispara primeiro e o teste nunca corre.
@@ -81,7 +93,7 @@ Corre a soma e o máximo verde no navegador:
   language="prolog"
   title="soma e máximo no navegador"
   code={
-    'soma([], 0).\nsoma([H|T], S) :- soma(T, R), S is H + R.\n\nmax(X, Y, X) :- X >= Y, !.\nmax(_, Y, Y).\n\nmain :- soma([1,2,3], S), writeln(S), max(7, 5, M), writeln(M).'
+    'soma([], 0).\nsoma([H|T], S) :- soma(T, R), S is H + R.\n\nmax(X, Y, X) :- X >= Y, !.\nmax(X, Y, Y) :- X < Y.\n\nmain :- soma([1,2,3], S), writeln(S), max(7, 5, M), writeln(M).'
   }
 />
 
@@ -113,3 +125,38 @@ A biblioteca `lists` carrega sozinha quando precisas dela. No [SWISH](https://sw
 ## Para saber mais
 
 - [Documentação do SICStus](https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html): o manual oficial do Prolog usado na cadeira.
+
+## Uma relação pode funcionar em vários sentidos
+
+```prolog
+juntar([], Ys, Ys).
+juntar([X|Xs], Ys, [X|Zs]) :- juntar(Xs, Ys, Zs).
+```
+
+`juntar([a,b],[c],Z)` constrói `[a,b,c]`. `juntar(X,Y,[a,b])` procura divisões: `X=[],Y=[a,b]`; `X=[a],Y=[b]`; `X=[a,b],Y=[]`. A mesma relação serve para construir e decompor. Uma função com `is` pode perder essa reversibilidade, porque o lado direito exige números conhecidos.
+
+Definir membro por `membro(X,[X|_]).` e `membro(X,[_|T]) :- membro(X,T).` produz uma resposta por ocorrência. Com `[a,b,a]`, há duas provas de `membro(a,...)`, mesmo que a substituição seja a mesma. A base de conhecimento não é automaticamente um conjunto de respostas sem repetições.
+
+## Aritmética e identidade
+
+`X = 2+3` liga `X` ao termo `+(2,3)`; `X is 2+3` liga-o a `5`. `5 =:= 2+3` avalia os dois lados e compara números; `5 == 5.0` testa identidade e falha porque os termos têm representações diferentes. `X = Y` pode criar ligações; `X == Y` não as cria.
+
+Uma desigualdade por não unificação, `X \= Y`, falha se os termos puderem ser unificados agora. Com as duas variáveis livres, falha, embora depois pudéssemos dar-lhes valores diferentes. `dif(X,Y)` em SWI-Prolog adia a restrição de diferença. Para escrever código portátil para a cadeira, distingue estes contratos e confirma os predicados disponíveis no SICStus.
+
+## Acumuladores e terminação
+
+A soma recursiva desta página faz primeiro a soma da cauda e depois a adição. Uma versão com acumulador transporta o total parcial:
+
+```prolog
+soma_acc(Xs,S) :- soma_acc(Xs,0,S).
+soma_acc([],A,A).
+soma_acc([X|Xs],A,S) :- B is A+X, soma_acc(Xs,B,S).
+```
+
+Com uma lista finita de números, o comprimento da lista diminui até zero. Com uma lista livre, este programa pode tentar gerar listas e acabar numa expressão aritmética com uma variável desconhecida. Documenta o modo esperado, por exemplo `soma_acc(+ListaDeNumeros,-Total)`.
+
+## Reconhecer um corte vermelho
+
+Se a segunda cláusula de `max` fosse apenas `max(_,Y,Y)`, retirar o corte permitiria também devolver `Y` quando `X` fosse maior. O corte corrigiria a escolha naquele modo, mas alteraria as respostas lógicas: seria vermelho. Há ainda um contraexemplo com resultado já preenchido: `max(7,5,5)` pode saltar a primeira cabeça e ter sucesso na segunda. A versão desta página conserva a guarda `X < Y` e recusa essa resposta errada.
+
+Usa cortes depois de conhecer o conjunto de respostas sem eles. Desenha que escolhas cada corte elimina, verifica objetivos à direita e testa resultados já instanciados. A aparência de determinismo numa só consulta não prova correção nos restantes modos.

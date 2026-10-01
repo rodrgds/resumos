@@ -1,108 +1,105 @@
 ---
-title: Polimorfismo e classes de tipos
-description: Tipos polimórficos, restrições de classe e leitura de assinaturas no GHCi.
-section: conteudo
+title: Polimorfismo, classes e inferência de tipos
+description: Deduzir tipos gerais pelas aplicações, padrões e operações usadas, sem confundir classes com tipos.
 order: 2
+practices:
+  - pfl/praticar-tipos
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: PFL, aula 2 e folha 1, 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+    - title: Prelude, documentação de base
+      url: https://hackage.haskell.org/package/base/docs/Prelude.html
+  coverage: Polimorfismo paramétrico, classes fundamentais, currificação e inferência de tipos por restrições.
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import hierarquia from '../../pfl/p2classes.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import classes from '../../pfl/classes.dot?raw';
 
-Em Python, `len` funciona em listas, strings e tuplos sem prometer nada sobre o conteúdo. Em Haskell, essa generalidade escreve-se no tipo. Há duas formas: o **polimorfismo paramétrico**, que funciona para qualquer tipo sem olhar para os valores, e as **classes de tipos**, que exigem uma capacidade específica, como comparar por igualdade.
+O tipo de uma função diz que valores podemos passar e como se relacionam com o resultado. Em `trocar :: (a,b) -> (b,a)`, `a` e `b` podem ser diferentes. Em `duplicar :: a -> (a,a)`, as duas posições do resultado têm o mesmo tipo. Estas letras são variáveis de tipo, não variáveis do programa.
 
-## Paramétrico: funciona para tudo
-
-```haskell
-primeiro :: [a] -> a
-primeiro (x:xs) = x
-```
-
-A letra `a` minúscula é uma **variável de tipo**: `primeiro` recebe uma lista de qualquer coisa e devolve um elemento desse mesmo tipo. O compilador confirma no GHCi:
-
-```text
-ghci> :t length
-length :: [a] -> Int
-```
-
-`length` conta elementos de qualquer lista sem olhar para eles, por isso o tipo não restringe `a`. A regra de ouro: uma variável de tipo que aparece várias vezes tem de ser instanciada com o mesmo tipo concreto em cada uso. É por isso que `primeiro [1, 'a']` nem compila: a lista teria de ser `[Int]` e `[Char]` ao mesmo tempo.
-
-## Classes: funciona para quem sabe fazer
-
-Comparar por igualdade não dá para todos os tipos (funções, por exemplo, não se comparam). A restrição escreve-se antes de `=>`:
+## Generalidade sem operações específicas
 
 ```haskell
-contem :: Eq a => a -> [a] -> Bool
+trocar (x,y) = (y,x)
+duplicar x = (x,x)
+primeiro (x:_) = x
+```
+
+As funções apenas deslocam ou selecionam valores. Os tipos mais gerais são `(a,b) -> (b,a)`, `a -> (a,a)` e `[a] -> a`. A última função é parcial: a generalidade do tipo não resolve a ausência de uma equação para `[]`. Um tipo pode estar certo mesmo que a função falhe ou não termine para certas entradas.
+
+Uma lista impõe o mesmo tipo aos elementos. Uma lista de funções também segue essa regra: `[reverse,tail]` pode ter tipo `[[a] -> [a]]`. Cada elemento é uma função de lista para lista; a lista exterior não é uma função. Já `(reverse,length)` é um par e pode juntar resultados de tipos diferentes.
+
+## Operações acrescentam restrições
+
+```haskell
 contem x xs = x `elem` xs
+maior x y = if x >= y then x else y
+media x y = (x+y)/2
 ```
 
-Lê-se: para qualquer tipo `a` que pertença à classe `Eq`, `contem` recebe um `a` e uma lista de `a` e devolve `Bool`. No GHCi:
+`elem` compara valores, por isso `contem :: Eq a => a -> [a] -> Bool`. A comparação `>=` pede `Ord a`, dando `maior :: Ord a => a -> a -> a`. A divisão `/` pede `Fractional a`, que já exige `Num a`; por isso `media :: Fractional a => a -> a -> a`. Não é preciso acumular a restrição redundante `Num a` nessa assinatura.
 
-```text
-ghci> :t (==)
-(==) :: Eq a => a -> a -> Bool
+| Classe       | Operações ou capacidade                                             |
+| ------------ | ------------------------------------------------------------------- |
+| `Eq`         | `==`, `/=`; igualdade disponível para esse tipo.                    |
+| `Ord`        | `<`, `<=`, `compare`; também exige `Eq`.                            |
+| `Show`       | `show`; transformar um valor em texto.                              |
+| `Read`       | `read`; interpretar texto, com risco de erro se o texto não servir. |
+| `Num`        | `+`, `-`, `*`, `abs`, literais inteiros.                            |
+| `Integral`   | `div`, `mod`, `quot`, `rem`; inclui `Int` e `Integer`.              |
+| `Fractional` | `/`, `recip`, literais fracionários.                                |
+| `Floating`   | `sqrt`, `sin`, `exp`; exige `Fractional`.                           |
+
+Uma classe agrupa tipos com operações comuns. Não é uma classe de objetos com herança e campos. `Num` nos GHC atuais não tem `Eq` como superclasse. Precisar de aritmética e de igualdade pode portanto exigir `(Num a, Eq a)`. Uma árvore da hierarquia antiga não deve ser usada para retirar essa restrição.
+
+<Dot
+  source={classes}
+  alt="Dependências das classes nos GHC atuais: Ord exige Eq; Real exige Ord e Num; Integral exige Real e Enum; Fractional exige Num; Floating exige Fractional. Show está separada."
+/>
+
+## Deduzir um tipo passo a passo
+
+Considera `duasVezes f x = f (f x)`. Começamos com `x :: a`. A aplicação interior permite `f :: a -> b`. A aplicação exterior usa o mesmo `f` sobre o resultado de tipo `b`, por isso `b` tem de ser `a`. A saída também é `a`. O tipo final é:
+
+```haskell
+duasVezes :: (a -> a) -> a -> a
 ```
 
-O `(==)` entre parênteses é o operador usado como função. `contem 3 [1,2,3]` dá `True`; `contem 'a' "ola"` dá `True`, porque `Char` também pertence a `Eq`. Se tentares `contem length [length]`, o compilador recusa: funções não têm instância de `Eq`.
+Não há operações numéricas nem comparações, por isso não há restrições de classe. Instanciar `a` com `Int` permite passar `(+1)`; instanciar com `Bool` permite passar `not`.
 
-Confirma no navegador, com números e com carateres:
+Agora `selecionar p xs = [x | x <- xs, p x]`. Se `xs :: [a]`, cada `x :: a`. Uma condição de compreensão tem tipo `Bool`, logo `p :: a -> Bool`. O resultado volta a ser `[a]`. Obtemos `(a -> Bool) -> [a] -> [a]`.
+
+Em `f x y = [x,y+1]`, a lista iguala os tipos de `x` e `y`. `+` acrescenta `Num a`, mas não obriga a usar `Int`. O tipo mais geral é `Num a => a -> a -> [a]`. Uma assinatura mais específica pode compilar, mas não responde ao pedido de tipo mais geral.
+
+## Aplicação e setas
+
+`a -> b -> c` significa `a -> (b -> c)`: a função recebe um `a` e devolve uma função de `b` para `c`. A aplicação associa no sentido oposto: `f x y` significa `(f x) y`. O tipo `(a -> b) -> a -> b` recebe uma função no primeiro argumento; retirar esses parênteses muda o tipo.
+
+O operador `.` exige que a saída da segunda função possa entrar na primeira:
+
+```haskell
+(.) :: (b -> c) -> (a -> b) -> a -> c
+```
+
+`length . filter even` recebe uma lista de inteiros e devolve `Int`. A restrição `Integral a` vem de `even`; `length` não inspeciona os elementos. O tipo é `Integral a => [a] -> Int`.
+
+## Números e conversões
+
+O literal `3` pode ser usado em qualquer instância de `Num`; `3.5` exige `Fractional`. A expressão `length xs + 0.5` falha porque `length xs :: Int`, e `Int` não é `Fractional`. Usa `fromIntegral (length xs)` para obter um valor compatível com a divisão ou soma fracionária. A conversão não acontece automaticamente.
+
+`div` e `mod` arredondam o quociente para baixo; `quot` e `rem` truncam-no para zero. Para `-7` e `3`, temos `div=-3`, `mod=2`, `quot=-2`, `rem=-1`. Em ambos os pares vale `a = q*b+r`, com `b` diferente de zero. Escolher um par e depois usar o resto do outro quebra essa relação.
 
 <CodePlayground
   language="haskell"
-  title="contem com Eq"
+  title="Instanciar tipos e comparar divisões"
   code={
-    'contem :: Eq a => a -> [a] -> Bool\ncontem x xs = x `elem` xs\n\nmain :: IO ()\nmain = do\n  print (contem 3 [1,2,3])\n  print (contem \'a\' "ola")'
+    'duasVezes :: (a -> a) -> a -> a\nduasVezes f x = f (f x)\nmain :: IO ()\nmain = do\n  print (duasVezes (+1) (4::Int))\n  print (duasVezes not True)\n  print ((-7) `div` 3, (-7) `mod` 3, (-7) `quot` 3, (-7) `rem` 3)'
   }
 />
 
-Carrega em **Executar**: imprime `True` duas vezes.
+A saída é `6`, `True` e `(-3,2,-2,-1)`.
 
-## As classes que vais encontrar
-
-| Classe       | Capacidade                      | Exemplos de membros                            |
-| ------------ | ------------------------------- | ---------------------------------------------- |
-| `Eq`         | comparar com `==` e `/=`        | `Int`, `Char`, `Bool`, listas deles            |
-| `Ord`        | ordenar com `<`, `>`, `compare` | `Int`, `Double`, `String`                      |
-| `Show`       | converter para string           | quase todos (é o que o GHCi usa para imprimir) |
-| `Num`        | aritmética com `+`, `*`, `-`    | `Int`, `Integer`, `Double`                     |
-| `Integral`   | inteiros com `div` e `mod`      | `Int`, `Integer`                               |
-| `Fractional` | reais com `/`                   | `Double`                                       |
-
-Repara que `Ord` implica `Eq` e `Num` implica `Eq`: para ordenar é preciso comparar igualdade, e a hierarquia reflete isso. O diagrama resume as dependências: cada seta lê-se "exige".
-
-<Typst
-  source={hierarquia}
-  format="svg"
-  alt="Hierarquia de classes: Eq no topo; Ord e Num dependem de Eq; Integral e Fractional dependem de Num."
-/>
-
-Quando vires uma assinatura com várias restrições, como `(Ord a, Show a) => ...`, lê como uma lista de capacidades exigidas.
-
-:::warning[O erro clássico de `Num`]
-Um literal como `3` tem tipo `Num a => a`: pode ser qualquer tipo numérico. Por isso `length [1,2] + 0.5` falha: o `+` exige os dois lados do mesmo tipo, mas `length` devolve `Int` e `0.5` é `Fractional`. A cura é converter explicitamente, como vais ver na página de [ordem superior](funcoes-ordem-superior/) com `fromIntegral`.
-
-<Tabs id="erro-num" labels={['O erro', 'A cura']}>
-  <div slot="panel-0">
-
-```text
-ghci> length [1,2] + 0.5
--- erro: nenhum membro Fractional para Int.
--- O + quer os dois lados do mesmo tipo.
-```
-
-  </div>
-  <div slot="panel-1">
-
-```text
-ghci> fromIntegral (length [1,2]) + 0.5
-2.5
-```
-
-  </div>
-</Tabs>
-
-## Para saber mais
-
-- [Hoogle](https://hoogle.haskell.org/): pesquisa funções de Haskell por nome ou por assinatura de tipo, como `Eq a => a -> [a] -> Bool`.
-  :::
+Para conferir a tua dedução, usa `:t nome` no GHCi. Dependendo da versão, funções como `length` e `elem` podem aparecer generalizadas a `Foldable`, em vez de listas. A instância especializada a `[a]` usada nas aulas continua válida; não interpretes essa diferença como um erro da tua dedução.

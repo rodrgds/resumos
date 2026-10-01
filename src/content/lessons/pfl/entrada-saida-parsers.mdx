@@ -2,7 +2,17 @@
 title: Entrada e saída e parsers com combinadores
 description: Ações em IO com do e um parser de expressões com precedência feito de combinadores.
 section: conteudo
-order: 5
+order: 6
+practices:
+  - pfl/praticar-parsers
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa de PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Moodle PFL 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+  coverage: Ações IO, sequência, parsers determinísticos, alternativas, precedência e consumo completo da entrada.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -110,7 +120,7 @@ Experimenta a base no navegador com o prelúdio completo do parser. O `nat` lê 
   language="haskell"
   title="nat e many1 digit no navegador"
   code={
-    'import Data.Char (isDigit)\n\nnewtype Parser a = P (String -> [(a, String)])\n\nparse :: Parser a -> String -> [(a, String)]\nparse (P p) = p\n\nitem :: Parser Char\nitem = P (\\inp -> case inp of\n                   []     -> []\n                   (c:cs) -> [(c, cs)])\n\ninstance Functor Parser where\n  fmap f p = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> [(f v, out)])\n\ninstance Applicative Parser where\n  pure v = P (\\inp -> [(v, inp)])\n  pf <*> px = P (\\inp -> case parse pf inp of\n                            []        -> []\n                            [(f,out)] -> parse (fmap f px) out)\n\ninstance Monad Parser where\n  p >>= f = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> parse (f v) out)\n  return v = P (\\inp -> [(v, inp)])\n\n(+++) :: Parser a -> Parser a -> Parser a\np +++ q = P (\\inp -> case parse p inp of\n                       []        -> parse q inp\n                       [(v,out)] -> [(v,out)])\n\nsat :: (Char -> Bool) -> Parser Char\nsat pr = do c <- item\n              if pr c then return c else P (const [])\n\ndigit :: Parser Char\ndigit = sat isDigit\n\nmany :: Parser a -> Parser [a]\nmany p = many1 p +++ return []\n\nmany1 :: Parser a -> Parser [a]\nmany1 p = do v  <- p\n               vs <- many p\n               return (v:vs)\n\nnat :: Parser Int\nnat = do xs <- many1 digit\n         return (read xs)\n\nmain :: IO ()\nmain = do\n  print (parse nat "42x")\n  print (parse (many1 digit) "7+8")'
+    'import Data.Char (isDigit)\n\nnewtype Parser a = P (String -> [(a, String)])\n\nparse :: Parser a -> String -> [(a, String)]\nparse (P p) = p\n\nitem :: Parser Char\nitem = P (\\inp -> case inp of\n                   []     -> []\n                   (c:cs) -> [(c, cs)])\n\ninstance Functor Parser where\n  fmap f p = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> [(f v, out)])\n\ninstance Applicative Parser where\n  pure v = P (\\inp -> [(v, inp)])\n  pf <*> px = P (\\inp -> case parse pf inp of\n                            []        -> []\n                            [(f,out)] -> parse (fmap f px) out)\n\ninstance Monad Parser where\n  p >>= f = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> parse (f v) out)\n  return v = P (\\inp -> [(v, inp)])\n\n(+++) :: Parser a -> Parser a -> Parser a\np +++ q = P (\\inp -> case parse p inp of\n                       []        -> parse q inp\n                       [(v,out)] -> [(v,out)])\n\nsat :: (Char -> Bool) -> Parser Char\nsat pr = do\n  c <- item\n  if pr c then return c else P (const [])\n\ndigit :: Parser Char\ndigit = sat isDigit\n\nmany :: Parser a -> Parser [a]\nmany p = many1 p +++ return []\n\nmany1 :: Parser a -> Parser [a]\nmany1 p = do\n  v <- p\n  vs <- many p\n  return (v:vs)\n\nnat :: Parser Int\nnat = do\n  xs <- many1 digit\n  return (read xs)\n\nmain :: IO ()\nmain = do\n  print (parse nat "42x")\n  print (parse (many1 digit) "7+8")'
   }
 />
 
@@ -153,13 +163,28 @@ O grafo de chamadas resume quem chama quem: `expr` e `term` chamam-se a si próp
 
 Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`; dá `[(14, "")]`. E `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro.
 
-:::warning[Escolha comprometida]
-O `+++` só tenta a alternativa se a primeira falhar **sem consumir nada**. Se `symbol '('` tem sucesso e o interior falha, o parser falha em vez de recuar para `token nat`. Em gramáticas pequenas isto resolve-se ordenando as alternativas da mais específica para a mais geral; em gramáticas grandes é o argumento para bibliotecas como Parsec.
+## Alternativa, falha e entrada restante
+
+O `+++` definido nesta página tenta `q` na entrada original quando `p` devolve `[]`. Por isso há retrocesso mesmo que `p` tenha consumido caracteres antes de falhar. Este contrato difere de parsers que guardam explicitamente se a falha aconteceu depois de consumir entrada.
+
+No parser determinístico, o resultado tem zero ou uma solução. Se quiseres um parser não determinístico com várias soluções, os casos `[(v,out)]` deixam de chegar: tens de combinar cada resultado possível. Não mistures os dois contratos.
+
+`parse expr "2+3x"` pode ter sucesso parcial e deixar `"x"`. Uma aplicação que exige uma expressão inteira deve aceitar apenas `[(v,"")]`, depois de consumir espaços. Sucesso do prefixo não valida todo o ficheiro.
+
+`many p` exige que `p` consuma entrada em cada sucesso. Se `p` for `pure 1`, o parser pode repetir para sempre sem avançar. É a condição de progresso correspondente ao caso recursivo de uma lista.
+
+## Precedência e associatividade
+
+A gramática `expr = term '+' expr | term` dá prioridade à multiplicação, mas associa a soma à direita. Como a adição de inteiros é associativa, os resultados não revelam essa escolha. Se trocares `+` por `-`, `8-3-1` passa a `8-(3-1)=6`. A associatividade usual à esquerda daria `(8-3)-1=4`. Uma solução é ler um primeiro termo, ler pares operador-termo e acumular pela esquerda.
+
+Recursão à esquerda, como `expr = expr '+' term | term`, não serve diretamente num parser recursivo descendente: chama `expr` de novo sem consumir nada. Reformula a gramática com um acumulador ou um combinador de cadeias.
+
+## Sequenciar ações sem confundir valores
+
+`getLine :: IO String`, enquanto `length :: [a] -> Int`. Não podes escrever `length getLine`: uma ação não é a string que vai produzir. Em `do`, `linha <- getLine` liga o valor produzido; `let n = length linha` dá nome a um cálculo puro e não usa `<-`. `return n` cria uma ação que devolve `n`; não interrompe as ações seguintes como um `return` imperativo.
+
+Um modelo da sequência é `acao >>= continuacao`, com `continuacao :: a -> IO b` se `acao :: IO a`. O resultado de `IO` fica dentro do programa de efeitos; uma função pura pode receber o valor lido, mas não extrair sozinha um valor de uma ação arbitrária.
 
 ## Para saber mais
 
-<YouTube
-  id="dDtZLm7HIJs"
-  title="Parsing funcional com Graham Hutton (Computerphile)"
-/>
-:::
+- [Material oficial de Graham Hutton](https://people.cs.nott.ac.uk/pszgmh/pih.html), slides e aulas sobre I/O e parsers, identificados por capítulo.

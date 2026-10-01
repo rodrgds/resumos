@@ -1,34 +1,45 @@
 ---
 title: Programação Funcional e em Lógica
-description: Dois paradigmas em Haskell e Prolog, de funções puras e tipos a unificação e procura.
-section: conteudo
+description: Haskell e Prolog com raciocínios completos, exemplos executáveis e exercícios para as provas individuais.
 order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e avaliação PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Apresentação, aulas funcionais 1 a 6 e fichas 1 a 3
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+    - title: Graham Hutton, materiais oficiais
+      url: https://people.cs.nott.ac.uk/pszgmh/pih.html
+    - title: Manual SICStus Prolog
+      url: https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html
+  coverage: Percurso de teoria e prática para tipos, listas, recursão, ordem superior, árvores, I/O, parsers, propriedades, unificação, procura, controlo, jogos e transformação simbólica. Inclui exercícios próprios e cheat sheet.
+  gaps:
+    - As fichas funcionais recolhidas são apenas as folhas 1 a 3; faltam as fichas posteriores.
+    - Os slides Prolog de 2026/27 ainda não constavam do material recolhido.
+    - Não foi recolhido um conjunto completo de provas atuais com critérios de correção.
 ---
 
-Programação Funcional e em Lógica divide-se em dois mundos. Nas primeiras sete semanas escreves **Haskell**: funções puras, tipos que o compilador verifica, ordem superior e testes por propriedades. Nas seis semanas seguintes escreves **Prolog**: factos, regras, unificação e procura automática. Vens de [FP](/cadeiras/fp/), onde viste [funções de ordem superior](/cadeiras/fp/programacao-funcional/) em Python e [recursão](/cadeiras/fp/recursao/); aqui os dois paradigmas levam essas ideias ao extremo, cada um à sua maneira. A [lógica](/cadeiras/md/) de MD volta a aparecer quando chegares às cláusulas de Horn.
+PFL usa Haskell para transformar valores com funções e Prolog para descrever relações e procurar soluções. Nos dois casos, aprender a sintaxe chega apenas ao primeiro exemplo. Uma prova pode pedir que deduzas um tipo, sigas a avaliação, expliques a terminação, encontres um contraexemplo ou escrevas um programa com um contrato preciso.
 
-## Como está organizado
+## O percurso
 
-A parte funcional começa em [Expressões, avaliação e tipos em Haskell](haskell-expressoes-tipos/), onde defines funções por equações e o GHC verifica os tipos. Depois, [Polimorfismo e classes de tipos](polimorfismo-classes/) explica assinaturas como `[a] -> Int` e restrições como `Eq a`. Em [Lambda, currying e ordem superior](funcoes-ordem-superior/) juntas `map`, `filter` e `foldr` em pipelines. [Tipos algébricos e recursão](tipos-algebricos-recursao/) define os teus próprios tipos com `data` e padrões. [Entrada e saída e parsers com combinadores](entrada-saida-parsers/) lida com o mundo exterior em `IO` e constrói um parser de expressões. Por fim, [Propriedades e testes com QuickCheck](testes-quickcheck/) troca testes de exemplo por propriedades testadas em centenas de casos.
+Em Haskell, começa pelas [expressões e padrões](haskell-expressoes-tipos/), depois aprende a [deduzir tipos](polimorfismo-classes/). [Listas e recursão](listas-recursao/) cobre compreensões, ordenação e os algoritmos das fichas iniciais. [Ordem superior](funcoes-ordem-superior/) reúne composição, folds e preguiça. Passa depois às [árvores e tipos algébricos](tipos-algebricos-recursao/), às [ações I/O e parsers](entrada-saida-parsers/) e às [propriedades com QuickCheck](testes-quickcheck/).
 
-A parte lógica começa em [Lógica, unificação e execução em Prolog](logica-unificacao-prolog/), com cláusulas de Horn, resolução SLD e negação por falha. [Recursão, corte e procura em Prolog](prolog-recursao-procura/) fecha com listas, aritmética, corte, `findall` e um labirinto resolvido por procura em profundidade.
+Em Prolog, começa por [termos, unificação e SLD](logica-unificacao-prolog/). Estuda [listas, aritmética e corte](prolog-recursao-procura/) antes de [recolher soluções e compor estruturas](solucoes-estruturas-prolog/). A última página aplica essas ferramentas a [procura, jogos e manipulação simbólica](procura-jogos-simbolos/).
 
-## Dois problemas guia
+Cada lição termina com questões que testam decisões diferentes. Resolve-as sem abrir as pistas; depois compara a justificação, e não apenas a resposta. A [cheat sheet](folha-consulta/) serve para rever condições e padrões depois de estudar as explicações.
 
-Se queres sentir a diferença entre paradigmas antes de ler tudo, experimenta estes dois. Em Haskell, somar os quadrados de uma lista é uma equação sobre a estrutura da lista ([página 1](haskell-expressoes-tipos/)). Em Prolog, dizer quem é avô de quem é declarar dois factos e uma regra, e deixar o motor responder ([página 7](logica-unificacao-prolog/)). O resto das páginas generaliza estes dois gestos: transformar dados com funções e descrever relações para o motor procurar.
+## Como resolver uma questão
 
-## Como estudar
+Num tipo, atribui letras aos valores desconhecidos e impõe as igualdades pedidas pelas aplicações. Numa recursão, escreve um caso pequeno, o caso base e a medida que diminui. Num fold, expande as aplicações antes de fazer contas. Numa consulta Prolog, renomeia as variáveis de cada cláusula, escolhe o objetivo mais à esquerda e assinala os pontos de retrocesso.
 
-Em Haskell, tem o GHCi aberto e confirma cada tipo com `:t` e cada função com um exemplo pequeno. Os erros de tipo parecem paredes de texto, mas a primeira linha diz quase sempre o essencial: que tipo esperava e que tipo recebeu. Em Prolog, desenha a árvore de procura à mão nos primeiros exercícios; quando o programa responder `false` onde esperavas uma resposta, o desenho mostra onde o ramo morreu. Resolve depois os exercícios de cada ficha, primeiro os que seguem o exemplo da página e só depois as variações.
+Testa também entradas vazias, resultados já instanciados e casos que violam uma pré-condição. Um programa que funciona num só exemplo pode continuar parcial, perder repetidos ou entrar num ramo infinito.
 
-## Avaliação
+Os exemplos Haskell e Prolog têm programas completos no editor. O motor Prolog do site é SWI; a ficha da cadeira indica SICStus. As diferenças de bibliotecas e de predicados são identificadas quando afetam o exemplo.
 
-A avaliação é distribuída, sem exame final em época normal: 30 por cento de projeto e 70 por cento de testes, com a teórica dividida em dois mini-testes e a prática em dois trabalhos. Em recurso, a componente teórica vai a exame e a prática mantém-se, exigindo presença em pelo menos 75 por cento das aulas práticas. Confirma prazos, grupos e regras na ficha da unidade curricular no SIGARRA e na página da disciplina no Moodle, porque variam de ano para ano.
+## Avaliação de 2026/27
 
-## Fontes e âmbito
+A ficha atual e a apresentação dividem a cadeira em dois módulos de seis semanas. Em época normal, a média dos dois testes tem peso de 90% e a média dos dois trabalhos individuais tem peso de 10%. Em recurso, a componente teórica pode ser substituída pelo exame, conservando a prática. A frequência exige pelo menos 75% das aulas TP, com as exceções previstas na ficha. [Consulta as regras e os prazos atuais](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002).
 
-Estas páginas seguem o âmbito da unidade curricular de Programação Funcional e em Lógica (L.EIC024) do 3.º ano, 1.º semestre da LEIC, ocorrência de 2025/26: programação funcional em Haskell (expressões, tipos, polimorfismo, ordem superior, tipos algébricos, I/O, parsers com combinadores, QuickCheck) e programação em lógica em Prolog (Horn, unificação, SLD, recursão, aritmética, corte, procura). O software indicado é GHC e SICStus Prolog.
-
-Material oficial da FEUP:
-
-- Ficha da unidade curricular de Programação Funcional e em Lógica, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560109).
+Este percurso concentra-se nas provas individuais. Os projetos têm requisitos próprios no Moodle. As aulas funcionais e as três primeiras fichas foram comparadas com os materiais de 2026/27; o restante percurso segue o programa atual e referências técnicas, com os guiões Prolog e as provas atuais ainda por confirmar.

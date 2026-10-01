@@ -1,0 +1,120 @@
+---
+title: Listas, compreensões e algoritmos recursivos
+description: Construir listas, justificar terminação e resolver ordenação, grupos, divisores e conversões binárias.
+order: 3
+practices:
+  - pfl/praticar-listas
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: PFL 2026/27, aulas 4 a 6 e folhas 2 e 3
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+    - title: Programa de PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+  coverage: Listas, compreensões, recursão, inserção, merge sort, grupos, divisores e representação binária.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import programa from '../../pfl/listas.hs?raw';
+import divisao from '../../pfl/mergesort.dot?raw';
+
+Uma lista tem duas formas: `[]` ou `x:xs`. Esta definição dá-nos os casos que uma função precisa de tratar. Para somar, a lista vazia contribui com zero; para uma lista não vazia, somamos a cabeça ao resultado da cauda. Para construir outra lista, usamos `:` para colocar um elemento antes do resultado recursivo.
+
+## Construir e percorrer
+
+`3:[5,7]` constrói `[3,5,7]`. O lado direito de `:` tem de ser uma lista, por isso `3:5` não tem um tipo válido. `++` junta duas listas: `[3] ++ [5,7]` também dá `[3,5,7]`, mas percorre o operando esquerdo. Construir com `:` custa tempo constante; juntar `xs ++ ys` custa tempo proporcional ao comprimento de `xs`.
+
+| Operação                  | Condição ou resultado                                   |
+| ------------------------- | ------------------------------------------------------- |
+| `head xs`, `tail xs`      | Exigem lista não vazia.                                 |
+| `take n xs`, `drop n xs`  | Aceitam lista vazia; para `n <= 0`, dão `[]` e `xs`.    |
+| `xs !! i`                 | Exige `0 <= i < length xs`; os índices começam em zero. |
+| `zip xs ys`               | Para quando termina a lista mais curta.                 |
+| `length xs`, `reverse xs` | Precisam de percorrer uma lista finita.                 |
+
+Se queres saber se há menos de três elementos, não precisas de contar a lista toda:
+
+```haskell
+curta :: [a] -> Bool
+curta (_:_:_:_) = False
+curta _ = True
+```
+
+O primeiro padrão precisa de três elementos. A variável `_` na cauda pode corresponder a qualquer lista, incluindo uma infinita. Esta função termina depois de observar no máximo três células; `length xs < 3` não termina para uma lista infinita.
+
+## Geradores e condições
+
+Uma compreensão `[expressao | gerador, condicao]` produz valores na ordem dos geradores. Com `[(x,y) | x <- [1,2], y <- [4,5]]`, fixamos primeiro `x=1` e percorremos os dois `y`; depois fazemos o mesmo para `x=2`. O resultado é `[(1,4),(1,5),(2,4),(2,5)]`. Trocar os geradores muda a ordem.
+
+Um problema de divisores pede candidatos inteiros e um teste de divisibilidade:
+
+```haskell
+divisoresProprios :: Integer -> [Integer]
+divisoresProprios n = [d | d <- [1..n-1], n `mod` d == 0]
+
+perfeito :: Integer -> Bool
+perfeito n = n > 0 && sum (divisoresProprios n) == n
+```
+
+Para `n=12`, os candidatos aceites são `[1,2,3,4,6]`, cuja soma é `16`; por isso `perfeito 12` é `False`. A condição `n > 0` evita chamar perfeito a zero, já que a soma da lista vazia também é zero.
+
+Para testar primalidade não precisamos de chegar a `n-1`. Se `n=d*k` e os dois fatores fossem maiores que a raiz quadrada de `n`, o produto seria maior que `n`. Um composto tem portanto um divisor até essa raiz. Podemos evitar erros de arredondamento usando `d*d <= n` com `Integer`:
+
+```haskell
+primo :: Integer -> Bool
+primo n = n > 1 && testar 2
+  where
+    testar d
+      | d*d > n = True
+      | n `mod` d == 0 = False
+      | otherwise = testar (d+1)
+```
+
+`primo 49` chega a `d=7`, testa o divisor e dá `False`. O teste de paragem tem de usar `>`: com `>=`, saltaríamos precisamente o divisor de um quadrado perfeito. O custo deste método é de ordem raiz quadrada de `n`, contando candidatos, não o custo de multiplicar inteiros grandes.
+
+## Recursão que termina
+
+Identifica o caso base e uma medida que diminui. Em funções sobre listas finitas, a medida costuma ser o comprimento da lista restante. Em `replicar n x`, pode ser `max 0 n`:
+
+```haskell
+replicar :: Int -> a -> [a]
+replicar n x
+  | n <= 0 = []
+  | otherwise = x : replicar (n-1) x
+```
+
+Usar apenas o caso `n == 0` faria a função divergir para `n` negativo. O tipo `Int -> a -> [a]` permite argumentos negativos; se queres excluí-los, precisas de o declarar como pré-condição ou de os tratar.
+
+Para eliminar repetidos conservando a primeira ocorrência, guardamos a cabeça e retiramos todas as cópias dela na cauda. Para `"abacaba"`, conservamos `a`, resta `"bcb"`, conservamos `b` e resta `"c"`. O resultado é `"abc"`. É diferente de agrupar iguais consecutivos: `"AABBBAA"` dá `["AA","BBB","AA"]`, sem fundir os dois grupos de `A`.
+
+## Ordenação por inserção
+
+A função `inserir x ys` pressupõe que `ys` já está ordenada. Se `x <= head ys`, põe `x` antes da cabeça; caso contrário, conserva a cabeça e continua na cauda. Para inserir `3` em `[1,2,4]`, conservamos `1`, conservamos `2` e paramos antes de `4`: `[1,2,3,4]`.
+
+Ordenar uma lista não vazia é ordenar a cauda e inserir a cabeça nesse resultado. A correção tem dois passos: o caso vazio está ordenado; se a cauda recursiva está ordenada e tem os mesmos elementos, inserir a cabeça mantém a ordenação e restitui todos os elementos. Num caso desfavorável, cada inserção percorre quase toda a lista anterior. O total cresce como `1+2+...+(n-1)`, ou seja, ordem `n²`.
+
+## Dividir e juntar
+
+Merge sort divide a lista em duas metades, ordena cada metade e junta-as comparando as duas cabeças. Só retiramos a cabeça escolhida: a outra tem de voltar à chamada recursiva. Esquecer essa cabeça perde dados.
+
+<Dot
+  source={divisao}
+  alt="Merge sort divide 4,1,3,1 em 4,1 e 3,1, ordena as metades para 1,4 e 1,3 e junta-as em 1,1,3,4."
+/>
+
+As listas de zero e um elemento são casos base. Numa lista maior, `splitAt (length xs div 2)` produz duas listas estritamente menores. Juntar percorre no máximo `n` elementos por nível e há ordem `log n` níveis, dando ordem `n log n`. Esta versão requer listas finitas.
+
+<CodePlayground
+  language="haskell"
+  code={programa}
+  title="Ordenação, repetidos, grupos e bits"
+/>
+
+A saída é `[1,1,3,4]` duas vezes, `"abc"`, `["AA","BBB","AA"]` e `11`. O duplicado `1` permanece nas duas ordenações.
+
+## Acumular uma representação binária
+
+Ler um bit depois do prefixo equivale a multiplicar o valor anterior por dois e somar o bit. Para `[1,0,1,1]`, os acumuladores são `0`, `1`, `2`, `5`, `11`. Isto dá `foldl (\n b -> 2*n+b) 0`.
+
+A função pressupõe que cada elemento é `0` ou `1`. O tipo `[Integer]` não impõe essa regra; verifica `all (\b -> b==0 || b==1) bits` se a entrada não for controlada. Para converter no sentido inverso, divide por dois, recolhe os restos e inverte a lista. Define ainda que representação queres para zero, normalmente `[0]`, e exclui números negativos ou especifica outra codificação.

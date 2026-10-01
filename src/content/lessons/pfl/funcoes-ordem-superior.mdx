@@ -2,13 +2,24 @@
 title: Lambda, currying e ordem superior
 description: Aplicação parcial, secções de operadores e pipelines com map, filter e foldr.
 section: conteudo
-order: 3
+order: 4
+practices:
+  - pfl/praticar-funcoes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa de PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Moodle PFL 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+  coverage: Currificação, composição, map, filter, folds, listas infinitas e avaliação não estrita.
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Tabs from '../../../components/Tabs.astro';
 import YouTube from '../../../components/YouTube.astro';
+import media from '../../pfl/media.hs?raw';
 import pipeline from '../../pfl/p3pipeline.typ?raw';
 
 Toda a função em Haskell recebe na verdade um só argumento. Uma função "de dois argumentos" é uma função que recebe o primeiro e devolve outra função à espera do segundo. Esta convenção chama-se **currying** e transforma a aplicação parcial, passar só alguns argumentos, na ferramenta mais usada da linguagem.
@@ -41,20 +52,18 @@ foldr  :: (a -> b -> b) -> b -> [a] -> b
 
 ## Exemplo completo: média das aprovações
 
-Dada uma pauta, calcular a média só das notas de aprovação (maior ou igual a 9.5):
+Dada uma pauta, queremos calcular a média das notas de aprovação. As notas podem ter parte decimal, por isso usamos `[Double]`. O resultado é `Maybe Double`, porque uma pauta sem aprovações não tem essa média.
 
 ```haskell
-mediaAprovados :: [Int] -> Double
-mediaAprovados notas = fromIntegral soma / fromIntegral n
-  where
-    ap   = filter (>= 9.5) notas
-    soma = sum ap
-    n    = length ap
+mediaAprovados :: [Double] -> Maybe Double
+mediaAprovados notas = case filter (>= 9.5) notas of
+  [] -> Nothing
+  xs -> Just (sum xs / fromIntegral (length xs))
 ```
 
-Segue com `[8,12,6,15,10]`. O `filter (>= 9.5)` usa uma secção para ficar com `[12,15,10]`. Depois `soma` vale `37` e `n` vale `3`. A divisão `/` exige `Double` dos dois lados, mas `soma` e `n` são `Int`: `fromIntegral` converte cada um, como prometido na página de [classes](polimorfismo-classes/). O resultado é `12.333333333333334`.
+Em `[8,12,6,15,10]`, `filter` conserva `[12,15,10]`. A soma é `37` e o comprimento é `3`, dando `Just 12.333333333333334`. A soma já é `Double`; só precisamos de converter o comprimento, que é `Int`. Com `[2,7]`, o filtro produz `[]` e o resultado é `Nothing`.
 
-O bloco `where` define nomes locais partilhados, avaliados só se usados. É o sítio para os passos intermédios com nome, enquanto o corpo da função fica a frase principal.
+Podes usar `where` para dar nome a etapas intermédias. Nesta versão usamos `case` para tratar as duas formas do resultado do filtro.
 
 O diagrama segue os dados da pauta `[8,12,6,15,10]` por esse pipeline, da esquerda para a direita:
 
@@ -68,21 +77,19 @@ Corre o exemplo no navegador e muda a pauta para confirmar que a média acompanh
 
 <CodePlayground
   language="haskell"
-  title="média das aprovações no navegador"
-  code={
-    'mediaAprovados :: [Int] -> Double\nmediaAprovados notas = fromIntegral soma / fromIntegral n\n  where\n    ap   = filter (>= 9.5) notas\n    soma = sum ap\n    n    = length ap\n\nmain :: IO ()\nmain = print (mediaAprovados [8,12,6,15,10])'
-  }
+  code={media}
+  title="Média segura, folds e prefixos"
 />
 
-Carrega em **Executar**: imprime `12.333333333333334`.
+A primeira linha é `Just 12.333333333333334`; a segunda é `Nothing`. As restantes linhas conferem os folds e o prefixo de quadrados explicados abaixo.
 
-:::warning[Lista vazia dá infinito]
-Com `[]`, `soma` e `n` valem `0` e a divisão dá `Infinity` em vez de falhar. Num programa real, este caso pedia `Maybe Double` com `Nothing` para a lista vazia. Por agora, regista a lição: funções totais tratam todos os casos, e o tipo é o sítio onde isso se declara.
+:::warning[Divisão sem casos de ausência]
+Uma versão que calcula `sum xs / fromIntegral (length xs)` na lista vazia faz `0/0`, que em `Double` dá `NaN`. Não é uma média. Além disso, a assinatura `[Int]` é incompatível com o literal `9.5` no filtro. Um tipo correto e um caso de ausência explícito resolvem problemas diferentes.
 :::
 
 ## foldr contra foldl
 
-O `foldr` combina da direita e o `foldl` da esquerda, e a diferença aparece nos operadores que não comutam. Compara a subtração:
+O `foldr` combina da direita e o `foldl` da esquerda, e a diferença aparece quando a operação não é associativa. Compara a subtração:
 
 ```haskell
 somaD :: [Int] -> Int
@@ -92,7 +99,7 @@ somaE :: [Int] -> Int
 somaE = foldl (+) 0
 ```
 
-`foldr (-) 0 [1,2,3]` calcula `1 - (2 - (3 - 0))`, que dá `2`. Já `foldl (-) 0 [1,2,3]` calcula `((0 - 1) - 2) - 3`, que dá `-6`. Com `(+)` os dois concordam, e é por isso que o exemplo da média não distingue; com `(-)` ou com `(:)`, a direção decide o resultado. A versão com acumulador explícito é o `foldl` escrito à mão:
+`foldr (-) 0 [1,2,3]` calcula `1 - (2 - (3 - 0))`, que dá `2`. Já `foldl (-) 0 [1,2,3]` calcula `((0 - 1) - 2) - 3`, que dá `-6`. Com inteiros sem overflow e `(+)`, os dois concordam, e é por isso que o exemplo da média não distingue; com `(-)` ou com `(:)`, a direção decide o resultado. A versão com acumulador explícito é o `foldl` escrito à mão:
 
 <Tabs id="dobras" labels={['Com foldr', 'Recursão à mão']}>
   <div slot="panel-0">
@@ -139,3 +146,25 @@ ghci> take 3 (repeat "ola")
 <YouTube id="psmu_VAuiag" title="Funções currificadas (Computerphile)" />
 
 - [Capítulo 7 de Programming in Haskell](https://people.cs.nott.ac.uk/pszgmh/ch7.pdf): funções de ordem superior em profundidade, com os mesmos exemplos destas páginas.
+
+## Escolher a função de ordem superior
+
+`takeWhile p` conserva apenas o prefixo que satisfaz `p`; `filter p` examina a lista inteira. Em `[2,4,1,6]`, `takeWhile even` dá `[2,4]`, enquanto `filter even` dá `[2,4,6]`. `dropWhile even` dá `[1,6]`. O `6` já não é testado para terminar o prefixo: a fronteira foi o primeiro `1`.
+
+`all p xs` é verdadeiro se todos os elementos satisfazem `p`; `any p xs` basta-se com um. Na lista vazia, `all` dá `True` e `any` dá `False`. Estas identidades permitem escrever `and = foldr (&&) True` e `or = foldr (||) False`.
+
+Uma composição lê-se da direita para a esquerda. `sum . map (^2) . filter even` seleciona pares, calcula quadrados e soma. Para `[1,2,3,4]`, as etapas são `[2,4]`, `[4,16]`, `20`. Se precisas de ver a entrada de cada etapa, escreve primeiro a versão com argumento e nomes locais; só depois retira o argumento.
+
+## Derivar um fold
+
+Para substituir a recursão de `append xs ys`, queremos trocar cada `(:)` de `xs` por `(:)` e o `[]` final por `ys`. Logo `append xs ys = foldr (:) ys xs`. Para `concat`, cada elemento já é uma lista: `concat = foldr (++) []`.
+
+Inverter com `foldl (flip (:)) []` coloca cada novo elemento na cabeça do acumulador. Os estados para `[1,2,3]` são `[]`, `[1]`, `[2,1]`, `[3,2,1]`. Inverter com `foldr (\x acc -> acc ++ [x]) []` também funciona numa lista finita, mas as concatenações repetidas tornam o tempo quadrático. A primeira versão percorre a lista em tempo linear.
+
+## O que a preguiça permite
+
+Haskell só exige um resultado intermédio quando precisa dele. `take 3 [1..]` pede três células e termina; `sum [1..]` exige o fim de uma lista que não o tem. `False && undefined` é `False`, mas `True && undefined` falha ao pedir o segundo argumento. A ordem dos argumentos importa para este curto-circuito.
+
+`foldr (&&) True (False:repeat True)` termina com `False`, porque `&&` pode ignorar a cauda. `foldl (&&) True` nessa lista precisa de chegar ao fim e não termina. `foldr` não é uma promessa geral de terminação em listas infinitas: `foldr (+) 0 [1..]` também exige a cauda inteira.
+
+`foldl` pode acumular uma cadeia de expressões por avaliar. `foldl'` de `Data.List` força o acumulador a cada passo até à forma normal fraca. É útil para somas grandes, mas não força necessariamente o interior de uma árvore ou de um tuplo. Distingue associatividade da operação, ordem de avaliação e custo em memória.

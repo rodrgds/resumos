@@ -2,7 +2,17 @@
 title: Propriedades e testes com QuickCheck
 description: Propriedades em vez de exemplos, geradores automáticos e leitura de contraexemplos.
 section: conteudo
-order: 6
+order: 7
+practices:
+  - pfl/praticar-propriedades
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa de PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Moodle PFL 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+  coverage: Propriedades, condições, geração, shrinking e diferença entre teste e demonstração.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -30,11 +40,11 @@ ghci> quickCheck prop_revRev
 +++ OK, passed 100 tests.
 ```
 
-A ferramenta gerou 100 listas aleatórias[^cem] (vazias, curtas, longas, com negativos e repetidos) e a igualdade valeu em todas. Repara no que isto compra: um teste de exemplo cobre a lista que escreveste; a propriedade cobre as listas que nunca te lembrarias de escrever, incluindo `[]`, que apanha metade dos erros de recursão.
+A ferramenta gerou 100 listas aleatórias[^cem], que podem incluir listas vazias, comprimentos distintos, negativos e repetidos e a igualdade valeu em todas. Repara no que isto compra: um teste de exemplo cobre a lista que escreveste; a propriedade cobre as listas que nunca te lembrarias de escrever, podendo incluir a lista vazia e casos com repetidos.
 
 ## Quando falha: o contraexemplo
 
-Uma propriedade falsa dá um contraexemplo mínimo. Afirma que ordenar é a identidade:
+Uma propriedade falsa dá um contraexemplo reduzido. Afirma que ordenar é a identidade:
 
 ```haskell
 import Data.List (sort)
@@ -49,12 +59,12 @@ ghci> quickCheck prop_sortId
 [1,0]
 ```
 
-O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`, já **encolhida** (shrinking) de um caso aleatório maior até ao mínimo que ainda falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. O fluxo de trabalho é este: escreve a propriedade, vê-a falhar, lê o contraexemplo, corrige a ideia. O diagrama resume o ciclo, que recomeça a cada correção:
+O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`, já **reduzida** (shrinking) de um caso aleatório maior para um caso mais pequeno que ainda falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. O fluxo de trabalho é este: escreve a propriedade, vê-a falhar, lê o contraexemplo, corrige a ideia. O diagrama resume o ciclo, que recomeça a cada correção:
 
 <Typst
   source={ciclo}
   format="svg"
-  alt="Ciclo do QuickCheck: escrever a propriedade, gerar casos, correr, encolher a falha até ao contraexemplo mínimo e corrigir."
+  alt="Ciclo do QuickCheck: escrever a propriedade, gerar casos, correr, encolher a falha até ao contraexemplo reduzido e corrigir."
 />
 
 Compara as duas sessões lado a lado: a propriedade verdadeira passa calada, a falsa responde com a testemunha mínima.
@@ -94,7 +104,7 @@ ghci> quickCheck prop_sortSort
 Por omissão, o QuickCheck gera valores **arbitrários** do tipo pedido: inteiros pequenos e grandes, listas de vários tamanhos, carateres Unicode. Quando a propriedade só faz sentido sob uma condição, impõe-na com `==>`:
 
 ```haskell
-prop_divMod :: Int -> Int -> Property
+prop_divMod :: Integer -> Integer -> Property
 prop_divMod x y = y /= 0 ==> (x `div` y) * y + (x `mod` y) == x
 ```
 
@@ -124,3 +134,17 @@ Boas fontes: leis algébricas (`x + 0 == x`), idempotência (`sort (sort xs) == 
 <YouTube id="pD7GmxBA_Qw" title="QuickCheck para programadores imperativos" />
 
 [^cem]: Os 100 casos são a omissão da ferramenta; podes pedir mais com argumentos de configuração. Detalhes na [documentação do QuickCheck no Hackage](https://hackage.haskell.org/package/QuickCheck).
+
+## Testar as partes que caracterizam o resultado
+
+A idempotência `sort (sort xs) == sort xs` não caracteriza uma ordenação correta. Uma função que devolve sempre `[]` também satisfaz essa lei. Para conferir um algoritmo de ordenação, testa a ordem, a conservação dos elementos com multiplicidades e, quando tens uma referência independente, a igualdade com o resultado dessa referência.
+
+Uma propriedade de `insert x xs` que pressupõe `xs` ordenada deve gerar listas ordenadas ou formular essa pré-condição. Não escondas uma condição rara atrás de muitas implicações descartadas. Um gerador construtivo, como ordenar a lista antes de testar uma propriedade que só compara a inserção, produz entradas válidas mais vezes.
+
+O shrinking procura um contraexemplo menor segundo as reduções disponíveis. Não promete o mínimo global entre todas as entradas possíveis. A ausência de falhas em 100 casos também não é uma demonstração para todas as listas.
+
+## Um contraexemplo que cabe no papel
+
+A lei `reverse (xs ++ ys) == reverse xs ++ reverse ys` é falsa. Com `xs=[1]` e `ys=[2]`, o lado esquerdo é `[2,1]` e o direito `[1,2]`. A lei correta troca a ordem das partes: `reverse (xs ++ ys) == reverse ys ++ reverse xs`. Este exemplo distingue a ordem de concatenação sem depender de acaso ou de um grande conjunto de dados.
+
+Para justificar uma propriedade, identifica ainda o domínio. A igualdade envolvendo `length` pressupõe listas finitas; leis aritméticas em `Int` podem ser afetadas por overflow. Usar `Integer` numa propriedade de aritmética exata evita confundir uma falha matemática com o limite da representação.

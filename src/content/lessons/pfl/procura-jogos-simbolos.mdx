@@ -1,0 +1,85 @@
+---
+title: Procura, jogos e manipulação simbólica
+description: Comparar DFS e BFS, evitar ciclos, calcular minimax e transformar termos por regras recursivas.
+order: 11
+practices:
+  - pfl/praticar-procura
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Manual SICStus Prolog
+      url: https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html
+  coverage: Procura em grafos, DFS, BFS, minimax em árvores finitas e derivação de expressões simbólicas.
+  gaps:
+    - Exemplos de jogos e manipulação simbólica são próprios; exercícios específicos de 2026/27 por confirmar.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import procura from '../../pfl/procura.pl?raw';
+import simbolico from '../../pfl/simbolico.pl?raw';
+import jogo from '../../pfl/minimax.dot?raw';
+
+Um problema de procura precisa de um estado inicial, uma relação que gera os estados seguintes e uma condição de objetivo. O programa lógico descreve os movimentos; a ordem em que os explora decide qual resposta aparece primeiro e se chega a aparecer.
+
+## Evitar ciclos sem esconder respostas
+
+Na procura em profundidade, começamos por um vizinho e continuamos nesse ramo antes de tentar o vizinho seguinte. Uma lista de visitados do caminho atual impede regressar a um estado do mesmo caminho. Não é a mesma coisa que proibir esse estado em todos os caminhos: um caminho alternativo pode precisar dele.
+
+A relação `caminho(X,Z,V,C)` da página anterior pressupõe `X`, `Z` e as ligações conhecidos. Cada passo escolhe um vizinho que não está em `V` e aumenta os visitados. Num grafo finito, esta condição limita cada caminho ao número de estados. Sem ela, um ciclo pode impedir o motor de chegar a uma solução num ramo posterior.
+
+A primeira solução de DFS não é necessariamente a mais curta. Se `a` liga a `b` e `c`, `b` liga a `d`, `d` liga a `e` e `c` liga a `e`, a ordem dos factos pode produzir primeiro `[a,b,d,e]`, embora `[a,c,e]` use menos arestas.
+
+## Guardar a fronteira numa fila
+
+BFS, procura em largura, guarda os caminhos por explorar numa fila. Retira o mais antigo, verifica se chegou ao objetivo e coloca os novos caminhos no fim. Assim, explora todos os caminhos de uma aresta antes dos de duas, e assim sucessivamente.
+
+O programa guarda cada caminho ao contrário: `[EstadoAtual,...,Inicio]`. Acrescentar um vizinho à cabeça custa tempo constante. Só usamos `reverse` ao encontrar a resposta.
+
+<CodePlayground
+  language="prolog"
+  code={procura}
+  title="DFS e BFS sobre o mesmo grafo"
+/>
+
+DFS imprime `[a,b,d,e]`; BFS imprime `[a,c,e]`. Há também uma ligação de `d` para `a`, que os visitados impedem de repetir no caminho.
+
+BFS encontra um caminho com o menor número de arestas se cada passo tiver o mesmo custo e a geração dos vizinhos terminar. Com pesos diferentes, o menor número de arestas pode custar mais; precisaríamos de ordenar a fronteira pelo custo acumulado. BFS também pode guardar muitas alternativas em memória. Esta implementação evita ciclos em cada caminho, mas pode explorar o mesmo estado por vários caminhos e não pretende ser uma implementação ótima para grafos grandes.
+
+## Um jogo de dois jogadores
+
+Em minimax, MAX escolhe o maior valor e MIN o menor. Uma folha tem um valor medido do ponto de vista de MAX. Para uma árvore finita, calculamos primeiro os filhos e depois aplicamos a escolha do jogador no nó.
+
+<Dot
+  source={jogo}
+  alt="Árvore minimax: a raiz MAX escolhe entre um nó MIN com folhas -1 e 4, que vale -1, e outro MIN com folhas 2 e 3, que vale 2. A raiz vale 2."
+/>
+
+O ramo esquerdo vale `min(-1,4)=-1`; o direito vale `min(2,3)=2`; a raiz vale `max(-1,2)=2`. MAX escolhe o ramo direito porque supõe que MIN responderá com a jogada que piora o resultado de MAX. Escolher a folha `4` do ramo esquerdo ignoraria a decisão do adversário.
+
+Numa árvore de fator de ramificação `b` e profundidade `d`, explorar todos os nós exige ordem `b^d` visitas. Limitar a profundidade pede uma função de avaliação para os estados não terminais. Esses valores são estimativas, não provas de vitória.
+
+Na poda alfa-beta, `alpha` é um limite inferior já garantido a MAX e `beta` é um limite superior já garantido a MIN. Se `alpha >= beta`, explorar mais aquele ramo não melhora a decisão de um antepassado, e pode ser dispensado. A ordem das jogadas muda a quantidade de poda, mas não o valor minimax numa árvore finita com as mesmas folhas e regras.
+
+## Termos que representam expressões
+
+Um termo como `produto(var(x),var(x))` representa a expressão `x*x`. Não é uma multiplicação a executar com `is`; os functors guardam a estrutura para uma transformação simbólica. Uma regra pode desmontar o construtor e construir o resultado:
+
+```prolog
+derivar(soma(A,B), X, soma(DA,DB)) :-
+    derivar(A,X,DA), derivar(B,X,DB).
+```
+
+A regra da soma deriva os dois componentes. A regra do produto constrói `DA*B + A*DB`, conservando também as expressões originais. A derivada de uma variável relativamente a si própria é um; a de outra variável é zero. O programa pressupõe que os nomes das variáveis estão instanciados e que a expressão é uma árvore finita dos construtores apresentados.
+
+<CodePlayground
+  language="prolog"
+  code={simbolico}
+  title="Derivar uma expressão e avaliar minimax"
+/>
+
+O primeiro resultado é `soma(produto(num(1),var(x)),produto(var(x),num(1)))`. Ainda não está simplificado: uma fase posterior poderia retirar multiplicações por um e obter `soma(var(x),var(x))`. O segundo resultado é `2`, o valor do jogo desenhado acima.
+
+Uma transformação simbólica termina quando cada chamada recursiva recebe uma subexpressão menor. Se acrescentares regras de reescrita nas duas direções, como transformar uma soma numa forma e imediatamente regressar à original, podes criar um ciclo. Escolhe uma direção de simplificação e uma medida de progresso.

@@ -2,7 +2,19 @@
 title: Lógica, unificação e execução em Prolog
 description: Cláusulas de Horn, unificação passo a passo, resolução SLD e negação por falha.
 section: conteudo
-order: 7
+order: 8
+practices:
+  - pfl/praticar-unificacao
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa de PFL 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
+    - title: Moodle PFL 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4363
+  coverage: Termos de Herbrand, unificação, renomeação, resolução SLD e negação por falha.
+  gaps:
+    - Slides atuais da parte lógica ainda não estavam publicados no material recolhido.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -12,7 +24,7 @@ import YouTube from '../../../components/YouTube.astro';
 import emparelha from '../../pfl/p7unifica.typ?raw';
 import arvoreSLD from '../../pfl/p7sld.dot?raw';
 
-Em Prolog não escreves como calcular. Declaras **factos** (o que é verdade) e **regras** (o que se conclui), fazes uma **query**, e o motor procura a resposta por ti. O programa é uma base de conhecimento; a execução é procura com retrocesso. A lógica por baixo é a [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD, restrita a **cláusulas de Horn**: no máximo um literal positivo, o que torna a procura tratável.
+Em Prolog não escreves como calcular. Declaras **factos** (o que é verdade) e **regras** (o que se conclui), fazes uma **query**, e o motor procura a resposta por ti. O programa é uma base de conhecimento; a execução é procura com retrocesso. A lógica por baixo é a [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD, restrita a **cláusulas de Horn**: no máximo um literal positivo. Esta forma permite resolução orientada a objetivos, mas não garante terminação.
 
 ## Factos, regras e queries
 
@@ -94,3 +106,25 @@ Não há facto com `rui` como pai, a prova falha finitamente, e a negação suce
 - [SWISH](https://swish.swi-prolog.org/): corre Prolog no navegador, com tutoriais embutidos para experimentar as queries destas páginas.
 - [Learn Prolog Now, capítulo 2](https://lpn.swi-prolog.org/lpnpage.php?pageid=lpn-htmlch2&pagetype=html): unificação passo a passo, com exercícios.
 - [Unificação no Wikibooks](https://pt.wikibooks.org/wiki/Prolog/Unifica%C3%A7%C3%A3o): a mesma matéria explicada em português, com exemplos.
+
+## Termos e variáveis de cada cláusula
+
+Um termo pode ser uma variável, uma constante ou uma estrutura `f(t1,...,tn)`. O nome `f` e o número de argumentos identificam o functor; `pessoa(ana)` não unifica com `pessoa(ana,20)`. Um termo sem variáveis é ground. O universo de Herbrand reúne termos ground que podemos construir com os símbolos do programa; não é uma lista de valores da memória.
+
+Em `p(X) :- q(X,Y).`, o `Y` é local àquela utilização da cláusula. Ao usar a cláusula outra vez, renomeamos todas as suas variáveis para variáveis frescas. Sem esta renomeação, duas chamadas independentes poderiam ficar ligadas por acidente.
+
+Para unificar `par(X,f(X))` com `par(a,Y)`, a primeira posição dá `X=a`; propagamos essa ligação e a segunda dá `Y=f(a)`. Para unificar `par(X,X)` com `par(a,b)`, a primeira posição dá `X=a` e a segunda exige `a=b`; falha. Não podemos escolher uma ligação diferente para cada ocorrência do mesmo `X`.
+
+## Ocorre a variável dentro do termo?
+
+Na unificação de termos finitos, `X=f(X)` deve falhar: substituir `X` pelo termo faria a variável ocorrer dentro de si própria. Esta verificação é o occurs check. O `=/2` de SWI-Prolog aceita em geral estruturas cíclicas, chamadas rational trees. `unify_with_occurs_check(X,f(X))` rejeita a criação desse ciclo. Num exercício teórico que pede a unificação de Herbrand, usa a regra dos termos finitos; não concluas que o resultado do `=` de uma implementação resolve automaticamente esse exercício.
+
+## O que a estratégia de procura decide
+
+SLD resolve um objetivo positivo escolhendo uma cláusula cuja cabeça unifica e substituindo o objetivo pelo corpo dessa cláusula. Prolog costuma escolher o objetivo mais à esquerda e explorar cláusulas de cima para baixo, em profundidade. Uma prova pode existir num ramo posterior e nunca ser encontrada porque um ramo anterior é infinito.
+
+`p :- p.` antes de `p.` mostra o problema: a primeira tentativa volta a chamar `p` indefinidamente. Trocar as cláusulas permite encontrar uma primeira resposta, mas pedir todas volta a entrar no ramo infinito. Não é suficiente haver um caso base algures; a estratégia tem de conseguir chegar a ele.
+
+Uma cláusula de Horn tem no máximo um literal positivo. Uma cláusula definida tem exatamente um, representado pela cabeça. Esta forma facilita a resolução, mas não torna todos os programas decidíveis nem garante que terminam.
+
+A negação por falha também precisa de uma falha finita. Se `g` divergir, `\+ g` não confirma a negação. E `\+ pai(X,leo)` não gera as pessoas que não são pais de Leo: falha logo que encontra algum pai. Primeiro enumera pessoas com um objetivo positivo, depois nega a relação para cada pessoa instanciada.
