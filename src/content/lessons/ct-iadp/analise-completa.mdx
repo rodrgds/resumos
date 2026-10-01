@@ -1,0 +1,73 @@
+---
+title: Uma análise completa de vendas
+description: Importar, validar, relacionar e agregar dados, conservando decisões e verificações.
+section: conteudo
+order: 19
+practices:
+  - ct-iadp/praticar-analise-completa
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, tutoriais introdutórios
+      url: https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html
+    - title: pandas, concatenação e junções
+      url: https://pandas.pydata.org/docs/user_guide/merging.html
+    - title: pandas, agrupamentos
+      url: https://pandas.pydata.org/docs/user_guide/groupby.html
+    - title: pandas, valores em falta
+      url: https://pandas.pydata.org/docs/user_guide/missing_data.html
+  coverage: Importar, validar, relacionar e agregar dados, conservando decisões e verificações.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Vamos responder a duas perguntas: quanto faturou cada cidade e qual foi o preço médio por unidade vendida? Temos um CSV com vendas e outra tabela com preços por produto. Os dados abaixo são fictícios e pequenos para poderes verificar cada passo.
+
+## Definir as observações
+
+Cada linha de vendas identifica uma venda, com código único, cidade, produto e quantidade. O catálogo tem um preço por produto. Quantidade deve ser positiva e o preço deve ser conhecido antes de calcular a faturação.
+
+| Venda | Cidade | Produto | Quantidade |
+| ----- | ------ | ------- | ---------- |
+| 1     | Porto  | A       | 2          |
+| 2     | Porto  | B       | 3          |
+| 3     | Braga  | A       | 5          |
+| 4     | Braga  | C       | 4          |
+
+A custa 1,50 euros, B custa 1,20 e C custa 2,00. À mão, Porto fatura 6,60 e Braga 15,50. O total é 22,10 euros e há 14 unidades.
+
+## Código do princípio ao fim
+
+<CodePlayground
+  language="python"
+  title={'Análise reproduzível'}
+  code={
+    'from io import StringIO\nimport pandas as pd\n\ncsv_vendas = \'venda;cidade;produto;quantidade\\n1;Porto;A;2\\n2;Porto;B;3\\n3;Braga;A;5\\n4;Braga;C;4\\n\'\nvendas = pd.read_csv(StringIO(csv_vendas), sep=";", dtype={"produto": "string"})\nprecos = pd.DataFrame({"produto": ["A", "B", "C"], "preco": [1.5, 1.2, 2.0]})\n\nassert vendas["venda"].is_unique\nassert vendas[["cidade", "produto", "quantidade"]].notna().all().all()\nassert (vendas["quantidade"] > 0).all()\nassert precos["produto"].is_unique\n\ndados = vendas.merge(precos, on="produto", how="left", validate="many_to_one")\nassert len(dados) == len(vendas)\nassert dados["preco"].notna().all()\ndados["total"] = dados["quantidade"] * dados["preco"]\n\nrelatorio = dados.groupby("cidade", as_index=False).agg(\n    unidades=("quantidade", "sum"),\n    faturacao=("total", "sum"),\n    vendas=("venda", "size"),\n)\nrelatorio["preco_medio"] = relatorio["faturacao"] / relatorio["unidades"]\nassert abs(relatorio["faturacao"].sum() - dados["total"].sum()) < 1e-10\nprint(relatorio.round(4).to_string(index=False))\nprint("Faturação total:", round(dados["total"].sum(), 2))\nprint("Unidades:", dados["quantidade"].sum())\nprint("Preço médio global:", round(dados["total"].sum() / dados["quantidade"].sum(), 4))'
+  }
+/>
+
+O preço médio por unidade é 1,32 euros no Porto e aproximadamente 1,7222 em Braga. O global é `22,10 / 14`, aproximadamente 1,5786 euros. Não calculamos a média das médias das cidades, porque venderam quantidades diferentes.
+
+## Por que cada verificação existe
+
+A chave de venda única impede contar o mesmo identificador duas vezes. As colunas essenciais não podem estar ausentes. A quantidade positiva faz parte do contrato deste exemplo; noutro conjunto, quantidades negativas podem representar devoluções e precisam de outra regra.
+
+A chave de produto única evita multiplicar linhas na junção. `how="left"` conserva as vendas, permitindo detetar produtos sem preço. Só calculamos totais depois de confirmar que todos têm correspondência.
+
+A contagem de linhas deve manter-se na junção muitos-para-um. A soma da faturação dos grupos deve coincidir com a soma antes de agrupar. Estas verificações não provam que os preços reais estão corretos, mas detetam perdas e duplicações no processamento.
+
+## Acrescentar uma situação incompleta
+
+Substitui C por D numa das vendas e volta a executar. A verificação dos preços falha antes de produzir o relatório. Para continuar, é preciso consultar o catálogo ou definir uma política para vendas sem preço. Não substituas o preço em falta por zero só para obter uma tabela final.
+
+Duplica a linha de A no catálogo e executa novamente. `validate="many_to_one"` rejeita a junção. Sem essa verificação, as vendas de A seriam duplicadas e a soma ficaria errada.
+
+## Preparar uma resolução de avaliação
+
+Lê o pedido e identifica a unidade de análise. Escreve a chave que identifica cada linha, as colunas de que precisas e o resultado esperado. Depois escolhe seleção, transformação, junção ou agregação conforme a pergunta.
+
+Antes de executar, prevê pelo menos uma célula e o número de linhas do resultado. Depois de executar, confere esse caso e um total que deva conservar-se. Na resposta, inclui o código, o valor obtido e a sua interpretação com unidade. Uma tabela correta sem explicar o que cada linha representa pode não responder à pergunta.

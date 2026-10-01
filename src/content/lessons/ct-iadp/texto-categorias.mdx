@@ -1,0 +1,73 @@
+---
+title: Texto e categorias em pandas
+description: Normalizar strings, extrair campos, filtrar texto e usar categorias ordenadas.
+section: conteudo
+order: 16
+practices:
+  - ct-iadp/praticar-texto-categorias
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, texto
+      url: https://pandas.pydata.org/docs/user_guide/text.html
+    - title: pandas, categorias
+      url: https://pandas.pydata.org/docs/user_guide/categorical.html
+  coverage: Normalizar strings, extrair campos, filtrar texto e usar categorias ordenadas.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Uma coluna de cidade pode conter `"Porto"`, `" porto "` e `"PORTO"`. São três strings diferentes, mas podem identificar a mesma cidade. Normalizar texto exige uma regra sobre o que deve ser tratado como equivalente.
+
+## Métodos de strings numa coluna
+
+<CodePlayground
+  language="python"
+  title={'Normalizar sem inventar dados'}
+  code={
+    'import pandas as pd\ncidades = pd.Series([" Porto ", "BRAGA", None, "porto"], dtype="string")\nlimpas = cidades.str.strip().str.lower()\nprint(limpas.to_list())\nprint(limpas.str.contains("port", regex=False, na=False).to_list())\nprint(limpas.value_counts(dropna=False).to_string())'
+  }
+/>
+
+As strings conhecidas ficam `porto`, `braga` e `porto`; a ausência mantém-se. O filtro é `[True, False, False, True]`. `na=False` define que as linhas sem texto não são selecionadas.
+
+A propriedade `.str` aplica métodos de texto aos elementos da Series. `str.len()` calcula o comprimento, `str.startswith()` e `str.endswith()` testam extremos. `str.split(";", expand=True)` divide campos e devolve colunas separadas.
+
+## Texto literal e expressões regulares
+
+`str.contains` pode interpretar o padrão como uma expressão regular. Um ponto numa expressão regular significa normalmente "qualquer carácter", não um ponto literal. Para procurar texto literal, indica `regex=False`.
+
+`str.replace` também permite escolher o modo. Escreve o argumento quando a distinção é relevante, porque os valores por defeito mudaram em versões anteriores.
+
+```python
+codigos = pd.Series(["PT-001", "PT-014", "sem código"], dtype="string")
+extraidos = codigos.str.extract(r"^PT-(\d{3})$", expand=False)
+```
+
+O padrão exige o prefixo `PT-`, exatamente três algarismos e nenhum texto extra. O resultado conserva os algarismos como texto, incluindo zeros iniciais; a linha sem correspondência fica em falta. Os parênteses definem o grupo capturado. Se não estudaste expressões regulares, começa pela separação com um delimitador e só usa um padrão quando a estrutura do campo o exige.
+
+## Categorias
+
+Uma coluna categórica representa valores de um conjunto de categorias. Pode reduzir repetição e permitir uma ordem explícita. Converter uma string para categoria não corrige erros ortográficos.
+
+<CodePlayground
+  language="python"
+  title={'Dar ordem às categorias'}
+  code={
+    'import pandas as pd\ntipo = pd.CategoricalDtype(categories=["baixo", "médio", "alto"], ordered=True)\nprioridades = pd.Series(["alto", "baixo", "médio", "baixo"], dtype=tipo)\nprint(prioridades.sort_values().to_list())\nprint((prioridades > "médio").to_list())'
+  }
+/>
+
+A ordem é baixo, baixo, médio, alto. Só a primeira observação original é maior que médio. Uma ordenação alfabética não expressaria essa hierarquia.
+
+`serie.cat.categories` lista categorias possíveis. `.cat.codes` mostra códigos internos, mas esses códigos não são medidas numéricas. A diferença entre os códigos de baixo e alto não representa uma distância quantitativa.
+
+## Categorias não observadas e ausências
+
+Uma categoria pode existir no tipo sem aparecer nos dados. Ao agrupar categorias, indica `observed=True` para considerar apenas combinações observadas ou `observed=False` quando queres também categorias definidas sem observações. O valor por defeito depende da versão.
+
+Um valor fora das categorias declaradas pode transformar-se em ausência durante a conversão. Confere as strings antes e o número de nulos depois. Acrescentar uma categoria com `.cat.add_categories` define um valor possível; não cria observações dessa categoria.

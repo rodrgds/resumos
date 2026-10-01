@@ -1,0 +1,80 @@
+---
+title: Datas e tempo
+description: calendar, time, datetime, dateutil, conversão pandas, fusos e agregação temporal.
+section: conteudo
+order: 17
+practices:
+  - ct-iadp/praticar-datas-tempos
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: Python, datetime
+      url: https://docs.python.org/3/library/datetime.html
+    - title: Python, calendar
+      url: https://docs.python.org/3/library/calendar.html
+    - title: Python, time
+      url: https://docs.python.org/3/library/time.html
+    - title: dateutil, relativedelta
+      url: https://dateutil.readthedocs.io/en/stable/relativedelta.html
+    - title: pandas, séries temporais
+      url: https://pandas.pydata.org/docs/user_guide/timeseries.html
+  coverage: calendar, time, datetime, dateutil, conversão pandas, fusos e agregação temporal.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Uma data identifica um dia; uma data e hora pode identificar um instante; uma duração mede um intervalo. Misturar estes três conceitos produz erros, sobretudo ao somar meses ou atravessar mudanças de hora.
+
+## Tipos da biblioteca padrão
+
+`datetime.date` guarda ano, mês e dia. `datetime.datetime` acrescenta a hora. `datetime.timedelta` guarda uma duração em dias, segundos e microssegundos. Subtrair duas datas produz uma duração; somar uma duração a uma data produz outra data.
+
+<CodePlayground
+  language="python"
+  title={'Dias não são meses'}
+  code={
+    'import calendar\nfrom datetime import date, timedelta\nfrom dateutil.relativedelta import relativedelta\n\ninicio = date(2026, 1, 31)\nprint(inicio + timedelta(days=30))\nprint(inicio + relativedelta(months=1))\nprint(calendar.isleap(2028))\nprint(calendar.monthrange(2026, 2))'
+  }
+/>
+
+Trinta dias depois de 31 de janeiro de 2026 é 2 de março. Um mês depois, com `relativedelta`, é 28 de fevereiro. Fevereiro não tem dia 31, pelo que a operação ajusta para o último dia válido.
+
+`calendar.isleap` testa um ano bissexto. `calendar.monthrange` devolve o dia da semana do primeiro dia e o número de dias do mês; segunda-feira é 0. Para fevereiro de 2026, o primeiro dia é domingo, código 6, e há 28 dias. Em versões recentes, o dia pode aparecer como `calendar.SUNDAY`, que tem valor 6.
+
+Em `relativedelta`, `months=1` acrescenta um mês; `month=1` define o mês como janeiro. O plural e o singular exprimem operações diferentes.
+
+## Medir duração de código
+
+`time.time()` dá um tempo baseado no relógio do sistema. Esse relógio pode ser ajustado. Para medir o tempo decorrido de uma operação, usa `time.perf_counter()` e subtrai o valor inicial ao final. O resultado depende da máquina e não é uma propriedade fixa do algoritmo.
+
+`time.sleep(1)` pede uma pausa de um segundo, mas o sistema pode retomar mais tarde. Não o uses para provar que uma operação dura exatamente um segundo.
+
+## Converter datas em pandas
+
+<CodePlayground
+  language="python"
+  title={'Somar vendas por dia'}
+  code={
+    'import pandas as pd\nvendas = pd.DataFrame({\n    "data": ["01/10/2026", "01/10/2026", "03/10/2026", "inválida"],\n    "total": [3.0, 3.6, 7.5, 8.0],\n})\nvendas["data"] = pd.to_datetime(vendas["data"], format="%d/%m/%Y", errors="coerce")\nprint("datas inválidas:", vendas["data"].isna().sum())\nconhecidas = vendas.dropna(subset=["data"]).set_index("data").sort_index()\nprint(conhecidas["total"].resample("D").sum(min_count=1).to_string())'
+  }
+/>
+
+Há uma data inválida, convertida em `NaT`. Os dias conhecidos são 1 e 3 de outubro. O dia 1 soma 6,60 euros, o dia 2 fica sem valor conhecido e o dia 3 soma 7,50. `min_count=1` evita chamar zero a um dia sem observações.
+
+`errors="coerce"` permite inspecionar valores inválidos como ausentes; não os corrige. Com `errors="raise"`, a conversão falha ao encontrá-los. Um formato explícito evita interpretar `03/04/2026` como março em vez de abril.
+
+## Aceder às partes e criar sequências
+
+`serie.dt.year`, `.dt.month`, `.dt.day` e `.dt.dayofweek` extraem componentes. `.dt.strftime("%d/%m/%Y")` formata texto; depois disso, o resultado deixa de ser uma coluna temporal.
+
+`pd.date_range("2026-10-01", periods=3, freq="D")` cria três dias consecutivos. Um índice temporal ordenado permite selecionar intervalos com `loc`. `resample` agrupa por intervalos de tempo; `rolling(3)` calcula uma janela móvel de três observações. Três observações não equivalem a três dias se houver falhas no calendário. `rolling("3D")` usa uma janela temporal quando existe um índice temporal apropriado.
+
+## Fusos horários
+
+Uma hora sem fuso é **naive** e não identifica por si só um instante mundial. `tz_localize("Europe/Lisbon")` interpreta uma hora local nesse fuso. `tz_convert("UTC")` representa o mesmo instante noutro fuso e exige um valor já localizado.
+
+Nas transições de hora, algumas horas locais são ambíguas ou não existem. Decide essa política na importação. Para registos de instantes com offsets conhecidos, `pd.to_datetime(..., utc=True)` normaliza-os para UTC. Conserva a distinção entre o instante e a apresentação na hora local.
