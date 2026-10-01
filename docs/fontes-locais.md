@@ -1,20 +1,20 @@
 # Fontes locais de estudo
 
-Inventário de 1 de outubro de 2026. [A versão pública](fontes-locais.json) contém totais e origens. Caminhos individuais, SHA-256 e aliases ficam em `/_data/references/inventory.json`, ignorado pelo Git.
+Inventário atualizado em 2 de outubro de 2026. [A versão pública](fontes-locais.json) contém totais e origens. Caminhos individuais, SHA-256 e aliases ficam em `/_data/references/inventory.json`, ignorado pelo Git.
 
 ## Conteúdo
 
 | Coleção                                          | Quantidade |
 | ------------------------------------------------ | ---------: |
-| Ficheiros locais                                 |      6 790 |
-| PDFs locais com cabeçalho válido                 |      1 191 |
-| Contentores ZIP/tar, incluindo Office, ODF e JAR |        196 |
-| Membros de contentores com SHA-256               |     31 941 |
+| Ficheiros locais                                 |      7 190 |
+| PDFs locais com cabeçalho válido                 |      1 228 |
+| Contentores ZIP/tar, incluindo Office, ODF e JAR |        198 |
+| Membros de contentores com SHA-256               |     31 963 |
 | PDFs dentro de contentores                       |      2 086 |
-| Objetos distintos por SHA-256                    |     25 541 |
-| Localizações de conteúdo repetido                |     13 190 |
+| Objetos distintos por SHA-256                    |     25 945 |
+| Localizações de conteúdo repetido                |     13 208 |
 
-O arquivo reúne os materiais FEUP anteriores, as recolhas dos três Moodles, 94 ficheiros de livros e suplementos e 74 arquivos do GitHub. Inclui snapshots e metadados de origem; as contagens de ficheiros docentes, estados de acesso e limites de cada ano estão em [fontes-moodle.md](fontes-moodle.md). PDFs dentro de arquivos são membros adicionais, não PDFs soltos.
+O arquivo reúne os materiais FEUP anteriores, as recolhas dos três Moodles, 95 ficheiros de livros e suplementos e 74 arquivos do GitHub. Inclui snapshots e metadados de origem; as contagens de ficheiros docentes, estados de acesso e limites de cada ano estão em [fontes-moodle.md](fontes-moodle.md). PDFs dentro de arquivos são membros adicionais, não PDFs soltos.
 
 ## Organização e deduplicação
 
@@ -43,15 +43,15 @@ Os manifests antigos de `leic-archive-records` conservam caminhos históricos. O
 | F I             |        27 |          19 |           0 |                    0 |
 | P               |       483 |           1 |           0 |                    0 |
 | TC              |       151 |         112 |           0 |                    0 |
-| AED             |        86 |           1 |           0 |                    0 |
+| AED             |       471 |          37 |           2 |                    0 |
 | BD              |       613 |          50 |           2 |                    0 |
-| F II            |       231 |          56 |           0 |                    0 |
-| LDTS            |       845 |           1 |           2 |                    0 |
+| F II            |       234 |          56 |           0 |                    0 |
+| LDTS            |       847 |           1 |           2 |                    0 |
 | SO              |       384 |          35 |           1 |                   29 |
-| DA              |       598 |          50 |          13 |                   45 |
-| ES              |       264 |          25 |           2 |                   23 |
-| LC              |       250 |          23 |           1 |                    0 |
-| LTW             |       889 |           3 |          27 |                    0 |
+| DA              |       600 |          50 |          13 |                   45 |
+| ES              |       266 |          25 |           2 |                   23 |
+| LC              |       252 |          23 |           1 |                    0 |
+| LTW             |       891 |           3 |          27 |                    0 |
 | ME              |       320 |         141 |           4 |                   47 |
 | FSI             |        12 |           5 |           1 |                    0 |
 | IPC             |        13 |           8 |           1 |                    6 |
@@ -69,9 +69,11 @@ Os manifests antigos de `leic-archive-records` conservam caminhos históricos. O
 
 Livros e arquivos gerais do GitHub ficam em grupos próprios. A contagem conjunta usa hashes para não somar cópias como objetos distintos.
 
+O arquivo público de AED acrescentou 36 PDFs dos docentes, com 1 323 páginas, entre 2024/25 e 2026/27. A edição atual tem quatro apresentações publicadas. As restantes apresentações, fichas práticas, código e perguntas de exemplo mantêm o ano de origem. As provas protegidas continuam inacessíveis. O livro de exercícios resolvidos de Villate de 2020 também foi guardado, com 86 páginas e licença CC BY-SA 4.0.
+
 ## Limites da coleção
 
-As 75 obras fornecidas estão identificadas na [bibliografia](fontes-bibliografia.json). Das 109 entradas adotadas, 97 ainda não têm uma cópia local identificada. Algumas obras repetem-se entre cadeiras. Há quatro entradas adotadas com PDF completo local, duas com capítulos OSTEP, quatro com suplementos, uma com ligação indisponível e uma cujo livro exige um pedido aos autores. As alternativas abertas são contadas à parte.
+As 75 obras fornecidas estão identificadas na [bibliografia](fontes-bibliografia.json). Das 125 entradas adotadas, 111 ainda não têm um livro ou suplemento correspondente identificado localmente. Algumas obras repetem-se entre cadeiras. Há cinco entradas adotadas com PDF completo local, duas com capítulos OSTEP, quatro com suplementos, duas com downloads indisponíveis e uma cujo livro exige um pedido aos autores. As alternativas abertas são contadas à parte.
 
 A ligação oficial de Building Skills in Python devolve 404. University Physics, Volume 1, foi guardado pelo botão atual do OpenStax: 959 páginas e licença CC BY-NC-SA 4.0 no PDF de 2026. As obras sem ficheiro local mantêm o seu estado explícito. As lacunas de acesso aos Moodles também continuam identificadas.
 

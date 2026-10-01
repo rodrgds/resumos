@@ -1,12 +1,12 @@
 # Bibliografia pública de LEIC/MIEIC
 
-> Levantamento de 1 de outubro de 2026. O inventário estruturado completo está em [`fontes-bibliografia.json`](fontes-bibliografia.json).
+> Levantamento atualizado em 2 de outubro de 2026. O inventário estruturado completo está em [`fontes-bibliografia.json`](fontes-bibliografia.json).
 
 ## O que foi verificado
 
-Foram verificadas **117 entradas bibliográficas em 31 cadeiras**. Uma obra só aparece como adotada quando existe uma página pública da FEUP/SIGARRA que a inclui. A disponibilidade legal foi verificada à parte, em páginas oficiais de autores, editoras, projetos ou repositórios institucionais.
+Foram verificadas **125 entradas bibliográficas em 31 cadeiras**. Uma obra só aparece como adotada quando existe uma página pública da FEUP/SIGARRA que a inclui. A disponibilidade legal foi verificada à parte, em páginas oficiais de autores, editoras, projetos ou repositórios institucionais.
 
-ALGA, AMII e Projeto UP têm bibliografias 2026/2027 preenchidas e verificadas. Nas restantes cadeiras, o inventário indica a ocorrência preenchida mais recente efetivamente verificada. Uma bibliografia histórica prova uso nesse ano, sem confirmar automaticamente a edição atual.
+ALGA, AMII, Projeto UP, AED, Física II e LDTS têm bibliografias 2026/2027 preenchidas e verificadas. Nas restantes cadeiras, o inventário indica a ocorrência preenchida mais recente efetivamente verificada. Uma bibliografia histórica prova uso nesse ano, sem confirmar automaticamente a edição atual.
 
 PDFs aleatórios no GitHub, espelhos de manuais e cópias sem autorização clara foram excluídos. `Acesso gratuito autorizado` também não significa automaticamente uma licença aberta para redistribuir ou adaptar.
 
@@ -14,7 +14,7 @@ O Moodle de análise de dados em Python inclui How to Think Like a Computer Scie
 
 ## Ficheiros locais
 
-A coleção de 1 de outubro de 2026 tem **94 ficheiros de livros e suplementos**, incluindo **11 PDFs de texto integral** e **68 capítulos públicos do OSTEP**. Há ainda **74 arquivos do GitHub**, guardados numa revisão fixa. [Fontes locais](fontes-locais.md) explica os totais, os caminhos e a deduplicação.
+A coleção de 2 de outubro de 2026 tem **95 ficheiros de livros e suplementos**, incluindo **12 PDFs de texto integral** e **68 capítulos públicos do OSTEP**. Há ainda **74 arquivos do GitHub**, guardados numa revisão fixa. [Fontes locais](fontes-locais.md) explica os totais, os caminhos e a deduplicação.
 
 Cada entrada de [`fontes-bibliografia.json`](fontes-bibliografia.json) tem um `reference_id` e um `local_reference`. Os ficheiros são descritos uma única vez em `local_artifacts`, com edição verificada, data, tamanho, SHA-256 e tipo. Slides, código e capítulos não são marcados como um livro completo. As **75 obras da lista fornecida** têm correspondência bibliográfica; isso não significa que todas tenham um PDF local.
 
@@ -160,7 +160,7 @@ A ficha de AMII repete a entrada de Barbosa; o catálogo conserva uma entrada. A
 
 ### P — Programação
 
-**Evidência da cadeira:** [Latest populated current-LEIC occurrence verified: 2024/2025.](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=541874).
+**Evidência da cadeira:** [Programa e bibliografia de 2025/2026, a ocorrência preenchida mais recente verificada em 2 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560094).
 
 - **[C++ How to Program](https://www.pearson.com/en-us/subject-catalog/p/c-how-to-program/P200000009246/9780134448237)** — Paul J. Deitel, Harvey M. Deitel — 10th edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
 - **C How to Program** — Paul J. Deitel, Harvey M. Deitel. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
@@ -179,7 +179,7 @@ A ficha de AMII repete a entrada de Barbosa; o catálogo conserva uma entrada. A
 
 ### AED — Algoritmos e Estruturas de Dados
 
-**Evidência da cadeira:** [2024/2025](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=541876).
+**Evidência da cadeira:** [Programa e bibliografia de 2026/2027, verificados em 2 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586989).
 
 - **[Data Structures and Algorithm Analysis in C++](https://www.pearson.com/en-us/subject-catalog/p/data-structures-and-algorithm-analysis-in-c/P200000003459/9780133404180)** — Mark Allen Weiss — 2nd edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
 - **[Algorithms in C++: Parts 1–4, Fundamentals, Data Structures, Sorting, Searching](https://www.cs.princeton.edu/~rs/)** — Robert Sedgewick — 3rd edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
@@ -193,16 +193,28 @@ A ficha de AMII repete a entrada de Barbosa; o catálogo conserva uma entrada. A
 
 ### F II — Física II
 
-**Evidência da cadeira:** [2017/2018](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=399887).
+**Evidência da cadeira:** [Programa e bibliografia de 2026/2027, verificados em 2 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991).
 
-- **[Eletricidade, Magnetismo e Circuitos](https://villate.org/publications/Villate_2019_Eletricidade.pdf)** — Jaime E. Villate — 2015 FEUP-listed; official 3rd ed. 2019. **Papel:** obrigatória. **Acesso:** texto integral aberto; licença: CC BY-SA 3.0.
+- **[Eletricidade, Magnetismo e Circuitos](https://villate.org/publications/Villate_2019_Eletricidade.pdf)**, Jaime E. Villate. **Papel:** obrigatória. **Acesso:** texto integral local, CC BY-SA 3.0.
+- **[Exercícios Resolvidos de Eletricidade, Magnetismo e Circuitos](https://villate.org/publications/Villate_2020_Exercicios_Eletricidade.pdf)**, Jaime E. Villate. **Papel:** obrigatória. **Acesso:** texto integral local, CC BY-SA 4.0, verificada no PDF guardado.
+- **[Electromagnetismo](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991)**, Jaime E. Villate. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+- **[Advanced Physics](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991)**, Steve Adams, Jonathan Allday. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+
+As edições atuais de Villate são a terceira edição de 2019, reimpressa em 2022, e os exercícios resolvidos de 2020, com 86 páginas e licença CC BY-SA 4.0. O ISBN da edição antiga permanece na bibliografia histórica no JSON.
 
 ### LDTS — Laboratório de Desenho e Teste de Software
 
-**Evidência da cadeira:** [2021/2022](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=484407).
+**Evidência da cadeira:** [Programa e bibliografia de 2026/2027, verificados em 2 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586992).
 
-- **[Thinking in Java](https://www.pearson.com/en-gb/subject-catalog/p/thinking-in-java/P200000000232/9780131872486)** — Bruce Eckel — 4th edition or later. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
-- **[Learning UML 2.0: A Pragmatic Introduction to UML](https://www.oreilly.com/library/view/learning-uml-2-0/0596009828/)** — Russ Miles, Kim Hamilton — 1st edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
+- **[Thinking in Java](https://www.pearson.com/en-gb/subject-catalog/p/thinking-in-java/P200000000232/9780131872486)**, Bruce Eckel. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+- **[Learning UML 2.0: A Pragmatic Introduction to UML](https://www.oreilly.com/library/view/learning-uml-2-0/0596009828/)**, Russ Miles, Kim Hamilton. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+- **[Test-Driven Development: By Example](https://www.pearson.com/en-us/subject-catalog/p/test-driven-development-by-example/P200000009421/9780321146533)**, Kent Beck. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+- **[Design Patterns: Elements of Reusable Object-Oriented Software](https://martinfowler.com/books/refactoring-bibliography.html)**, Erich Gamma, Richard Helm, Ralph Johnson, John Vlissides. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+- **[Refactoring: Improving the Design of Existing Code](https://martinfowler.com/books/refactoring.html)**, Martin Fowler. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+- **[Agile Software Development: Principles, Patterns and Practices](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586992)**, Robert C. Martin. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+- **[Building Maintainable Software](https://www.oreilly.com/library/view/building-maintainable-software/9781491955987/)**, Joost Visser. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição; texto integral não identificado localmente.
+
+A ficha de LDTS mantém um ISBN antigo para Thinking in Java apesar de pedir a quarta edição ou superior; o inventário não trata esses dados como uma edição confirmada.
 
 ### SO — Sistemas Operativos
 
