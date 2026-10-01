@@ -1,0 +1,121 @@
+---
+title: NFA e transições vazias
+description: Percursos alternativos, fecho-ε, determinização e complemento de uma linguagem reconhecida por NFA.
+order: 3
+practices:
+  - tc/praticar-nfa
+---
+
+import Dot from '../../../components/Dot.astro';
+
+Para reconhecer palavras terminadas em $01$, uma máquina pode escolher qual zero inicia esse sufixo. Uma escolha errada falha; basta existir uma escolha que consuma a palavra toda e termine num estado final. Esta é a ideia de não determinismo.
+
+## Aceitação é existência de um percurso
+
+Um **NFA** tem os mesmos cinco componentes de um DFA, mas
+
+$$
+\delta:Q\times\Sigma\to\mathcal P(Q).
+$$
+
+O destino é um conjunto: pode conter zero, um ou vários estados. $\mathcal P(Q)$ é o conjunto de todos os subconjuntos de $Q$. Um ramo sem transição morre, sem impedir que outro ramo aceite.
+
+Um NFA aceita $w$ se existe pelo menos um percurso de $q_0$ até um estado final que lê exatamente $w$. Não exige que todos os percursos aceitem. Não pode aceitar deixando símbolos por ler.
+
+Para o sufixo $01$, usamos esta tabela:
+
+| Estado      | $0$         | $1$         |
+| ----------- | ----------- | ----------- |
+| $p$ inicial | $\{p,q\}$   | $\{p\}$     |
+| $q$         | $\emptyset$ | $\{r\}$     |
+| $r$ final   | $\emptyset$ | $\emptyset$ |
+
+<Dot
+  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; r [shape=doublecircle]; s->p; p->p [label="0, 1"]; p->q [label="0"]; q->r [label="1"]; }`}
+  alt="NFA para palavras terminadas em 01: p repete 0 e 1, pode escolher ir a q num 0 e chega ao final r num 1."
+/>
+
+O ciclo em $p$ lê o prefixo. A transição $p\xrightarrow{0}q$ escolhe o início do sufixo. Como $r$ não tem saídas, essa escolha só aceita se o $1$ for a última letra.
+
+Para simular sem adivinhar, mantemos o conjunto de estados possíveis. Se $S$ é o conjunto atual, depois de ler $a$ temos $\bigcup_{q\in S}\delta(q,a)$. Para $001$:
+
+$$
+\{p\}\xrightarrow{0}\{p,q\}
+\xrightarrow{0}\{p,q\}
+\xrightarrow{1}\{p,r\}.
+$$
+
+Como o conjunto final contém $r$, a palavra é aceite. Com mais um $0$, chegamos a $\{p,q\}$ e a palavra $0010$ é rejeitada.
+
+## De NFA para DFA: construção de subconjuntos
+
+O DFA equivalente guarda um conjunto inteiro como um único estado. O estado inicial é $\{q_0\}$ e a transição é:
+
+$$
+\delta_D(S,a)=\bigcup_{q\in S}\delta_N(q,a).
+$$
+
+Um subconjunto é final se intersecta $F$. A tabela do exemplo fica:
+
+| Estado do DFA     | $0$ | $1$ | Final? |
+| ----------------- | --- | --- | ------ |
+| $A=\{p\}$ inicial | $B$ | $A$ | Não    |
+| $B=\{p,q\}$       | $B$ | $C$ | Não    |
+| $C=\{p,r\}$       | $B$ | $A$ | Sim    |
+
+Começa no subconjunto inicial, calcula todas as suas saídas e acrescenta os subconjuntos novos à lista de trabalho. Repete até não surgir nenhum. Só precisas dos subconjuntos alcançáveis, não de desenhar todos os $2^{|Q|}$ candidatos.
+
+O conjunto vazio, se aparecer, é um estado poço: a união de destinos a partir dele continua vazia. O limite geral é $2^{|Q|}$ estados, e não $2|Q|$. Neste exemplo só surgem três.
+
+A correção segue por indução no comprimento da entrada: o estado do DFA depois de $x$ é exatamente o conjunto dos estados que o NFA pode alcançar lendo $x$. A igualdade vale no início e a união de destinos preserva-a ao acrescentar uma letra. Logo, ambos aceitam as mesmas palavras.
+
+## Transições ε e fecho-ε
+
+Num **ε-NFA**, permitimos $\delta:Q\times(\Sigma\cup\{\varepsilon\})\to\mathcal P(Q)$. Uma transição $\varepsilon$ muda de estado sem consumir entrada.
+
+O fecho-$\varepsilon$ $E(S)$ contém todos os estados alcançáveis de algum estado de $S$ usando zero ou mais transições vazias. Inclui sempre $S$. Para o calcular, começa com $S$ e segue saídas vazias até não encontrar estados novos. Um ciclo vazio não impede o algoritmo de terminar, porque há finitos estados e cada estado entra uma vez no conjunto.
+
+Considera a máquina para $a^*b^*$:
+
+<Dot
+  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; q [shape=doublecircle]; s->p; p->p [label="a"]; p->q [label="ε"]; q->q [label="b"]; }`}
+  alt="ε-NFA para a estrela seguida de b estrela. p repete a; uma transição vazia leva a q, final, que repete b."
+/>
+
+$E(\{p\})=\{p,q\}$ e $E(\{q\})=\{q\}$. A palavra vazia é aceite porque o fecho do início contém um final. A transição vazia não obriga a mudar para $q$; o ramo em $p$ continua disponível para ler mais $a$.
+
+## Determinizar com fechos
+
+Agora, o estado inicial do DFA é $E(\{q_0\})$, e cada passo é:
+
+$$
+\delta_D(S,a)=E\left(\bigcup_{q\in S}\delta(q,a)\right).
+$$
+
+Os conjuntos guardados já estão fechados. Se começares por um conjunto arbitrário não fechado, aplica o fecho antes de consumir a letra também.
+
+Para a máquina anterior:
+
+| Estado              | $a$ | $b$ | Final? |
+| ------------------- | --- | --- | ------ |
+| $A=\{p,q\}$ inicial | $A$ | $B$ | Sim    |
+| $B=\{q\}$           | $C$ | $B$ | Sim    |
+| $C=\emptyset$       | $C$ | $C$ | Não    |
+
+O $a$ em $B$ leva ao poço porque, depois de começar os $b$, não pode haver outro $a$. Simular $abba$ percorre $A,A,B,B,C$ e rejeita. $aab$ termina em $B$ e aceita.
+
+Para eliminar apenas as transições vazias, mantendo um NFA, podes definir
+
+$$
+\delta'(q,a)=E\left(\bigcup_{p\in E(\{q\})}\delta(p,a)\right)
+$$
+
+e marcar $q$ como final quando $E(\{q\})\cap F\ne\emptyset$. Isto também preserva a aceitação da palavra vazia.
+
+## Complementar depois de determinizar
+
+Trocar finais e não finais num NFA não produz, em geral, o complemento. A aceitação exige **algum** ramo final; a rejeição exige que **nenhum** ramo seja final. Trocar estados não troca esses quantificadores.
+
+O procedimento correto é construir o DFA completo equivalente e trocar os finais nesse DFA. No exemplo $a^*b^*$, apenas $C$ fica final. Assim, $abba$ passa a ser aceite, enquanto $aab$ e $\varepsilon$ passam a ser rejeitadas.
+
+DFA, NFA e ε-NFA reconhecem a mesma classe, as **linguagens regulares**. O não determinismo pode reduzir o tamanho da descrição, mas não aumenta o poder de reconhecimento deste modelo.

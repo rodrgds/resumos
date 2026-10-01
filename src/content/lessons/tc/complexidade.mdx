@@ -1,84 +1,78 @@
 ---
 title: Complexidade
-description: P contra NP, verificadores, reduções polinomiais e NP-completude.
-section: conteudo
-order: 7
+description: Tamanho da entrada, tempo polinomial, certificados, P, NP e direção das reduções.
+order: 10
+practices:
+  - tc/praticar-complexidade
 ---
 
-import Dot from '../../../components/Dot.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
+Uma máquina que termina pode demorar demasiado para entradas grandes. A complexidade estuda o custo em função do tamanho da entrada. Primeiro decide-se se existe um algoritmo; depois pergunta-se quanto tempo ou memória ele precisa.
 
-Entre os problemas decidíveis, alguns têm algoritmos rápidos e outros só têm algoritmos que demoram mais que a idade do universo para entradas modestas. A teoria da complexidade classifica-os. Esta página apresenta **P** e **NP**, a ideia de **redução polinomial** e a **NP-completude**, com o SAT como exemplo canónico.
+## Medir o tamanho da entrada
 
-## P: resolver depressa
+O tamanho $n$ é o comprimento da codificação, não necessariamente o valor numérico descrito. Um inteiro positivo $N$ em binário usa $\lfloor\log_2N\rfloor+1$ bits. Um algoritmo que faz $N$ passos pode ser exponencial nesse número de bits.
 
-**P** é a classe das linguagens decididas por uma TM determinística em **tempo polinomial**: existe $k$ tal que a máquina para em $O(n^k)$ passos para entradas de comprimento $n$. Exemplos: ordenar, testar se um número é primo, pertença em linguagens regulares e livres de contexto. "Polinomial" é o pacto da área para "tratável": $n^3$ com $n = 1000$ corre; $2^n$ com $n = 100$ nunca corre.
+Por exemplo, representar $1024$ em binário precisa de 11 bits. Experimentar todos os inteiros de $1$ a $N$ não passa a ser polinomial no comprimento da entrada só porque faz $O(N)$ passos.
 
-## NP: verificar depressa
+Para um decisor, o tempo no pior caso $T(n)$ é o maior número de passos entre as entradas de comprimento $n$. Numa comparação assintótica, $O(n^k)$, para $k$ fixo, é tempo polinomial. $2^n$ e $n!$ não são polinomiais.
 
-**NP** é a classe das linguagens cuja pertença se **verifica** em tempo polinomial com a ajuda de um **certificado**. Formalmente: $L \in$ NP se existe um verificador $V$ polinomial e um polinómio $p$ tais que $w \in L$ se e só se existe um certificado $c$ com $|c| \le p(|w|)$ e $V$ aceita $\langle w, c\rangle$.
+A classe polinomial mantém-se nas simulações usuais entre modelos razoáveis de computação. Isso não diz que todo algoritmo polinomial é rápido na prática: $n^{100}$ ou uma constante enorme podem torná-lo inutilizável.
 
-Exemplo: "este grafo tem um caminho que visita todos os vértices exatamente uma vez?" (caminho hamiltoniano). Encontrar o caminho parece difícil, mas **verificar** um candidato é fácil: percorre a lista de vértices proposta e confirma que cada aresta existe e nenhum vértice repete. O certificado é a lista; o verificador corre em tempo polinomial. Corre-o e confirma os dois veredictos.
+## P: decidir em tempo polinomial
 
-<CodePlayground
-  language="python"
-  title="Verificar caminho hamiltoniano"
-  code={
-    'def verifica(grafo, caminho):\n    if sorted(caminho) != sorted(grafo):\n        return False\n    return all(caminho[i + 1] in grafo[caminho[i]] for i in range(len(caminho) - 1))\n\ngrafo = {"a": ["b", "c"], "b": ["a", "c"], "c": ["a", "b"]}\nfor caminho in [["a", "b", "c"], ["a", "c", "b", "a"]]:\n    print(caminho, "válido" if verifica(grafo, caminho) else "inválido")'
-  }
-/>
+**P** é a classe das linguagens decidíveis por TM determinística em tempo polinomial. A pertença a uma linguagem regular está em P: um DFA fixo lê a entrada em $O(n)$. Para uma CFG fixa, CYK decide em $O(n^3)$.
 
-O programa imprime `válido` e `inválido`: `["a", "b", "c"]` usa só arestas do triângulo e visita cada vértice uma vez, enquanto `["a", "c", "b", "a"]` repete o `a` e nem sequer tem o mesmo multiconjunto de vértices. Repara que o verificador nunca procura o caminho, só confirma o candidato: é essa a assimetria de NP. Equivalentemente, NP é o que uma TM **não determinística** decide em tempo polinomial (adivinha o certificado e verifica).
+Classes como P e NP são definidas para problemas de decisão, com resposta sim ou não. Um problema de otimização pode ter uma versão de decisão, por exemplo: em vez de pedir o menor percurso, perguntar se existe um percurso de custo no máximo $k$.
 
-Vale sempre P $\subseteq$ NP: se consegues resolver depressa, consegues verificar depressa (ignora o certificado e resolve). A pergunta aberta mais famosa da computação é se P $=$ NP, com um milhão de dólares de prémio[^premio-milhao]. Acredita-se que não, mas ninguém provou.
+## NP: certificados verificáveis
 
-:::tip[Resolver contra verificar]
-Esta assimetria aparece no dia a dia: corrigir um teste é mais rápido que o resolver, rever uma prova é mais rápido que a descobrir. NP formaliza "difícil de encontrar, fácil de confirmar". Quando um enunciado pedir para mostrar que um problema está em NP, descreve o certificado e o verificador, não um algoritmo que resolva.
-:::
+**NP** contém as linguagens para as quais uma resposta sim pode ter um certificado de comprimento polinomial, verificável em tempo polinomial. Formalmente, existe um verificador $V$ e um polinómio $p$ tais que:
+
+$$
+w\in L\iff\exists c,\quad |c|\le p(|w|)
+\ \text{e}\ V(w,c)\text{ aceita}.
+$$
+
+O verificador tem de terminar em tempo polinomial e rejeitar certificados inválidos. Para uma entrada não pertencente à linguagem, **nenhum** certificado pode fazê-lo aceitar.
+
+No problema de caminho hamiltoniano, o certificado é uma lista dos vértices. Verificamos que a lista contém cada vértice uma vez e que cada par consecutivo tem uma aresta. A lista tem tamanho polinomial na representação do grafo, e as verificações também.
+
+Não precisamos de descobrir a lista para provar pertença a NP. Mas não basta dizer que uma resposta sim tem alguma prova: é preciso limitar o comprimento do certificado e o tempo de verificação.
+
+Equivalentemente, NP é o conjunto de linguagens decididas por TM não determinística em tempo polinomial: um ramo escolhe o certificado e verifica-o. O limite temporal aplica-se a todos os ramos. NP significa tempo polinomial não determinístico, não 'não polinomial'.
+
+## Relação entre P e NP
+
+Temos $P\subseteq NP$. Um verificador pode ignorar o certificado e correr o decisor polinomial. Continua por resolver se $P=NP$.
+
+NP contém problemas fáceis, incluindo todos os de P. Dizer que um problema está em NP não prova que não tenha algoritmo polinomial. Dizer que o melhor algoritmo que conhecemos é exponencial também não prova esse limite inferior.
 
 ## Reduções polinomiais
 
-Uma **redução polinomial** de $A$ para $B$ (escreve-se $A \le_p B$) é uma função computável em tempo polinomial que transforma entradas de $A$ em entradas de $B$ preservando a resposta: $w \in A$ se e só se $f(w) \in B$. Consequência: se $B \in$ P então $A \in$ P (transforma e resolve em $B$). Por contrapositivo, se $A$ é difícil e $A \le_p B$, então $B$ é pelo menos tão difícil.
+Escrevemos $A\le_p B$ se existe uma função $f$, computável em tempo polinomial, com
 
-Exemplo de ideia: reduzir caminho hamiltoniano a "o grafo tem um ciclo que passa por todos os vértices?" (ciclo hamiltoniano), acrescentando um vértice ligado ao início e ao fim. A transformação é barata e preserva a resposta, por isso o segundo problema é pelo menos tão difícil como o primeiro.
+$$
+x\in A\iff f(x)\in B.
+$$
 
-## NP-completude e SAT
+A transformação tem de preservar respostas sim e não e produzir uma entrada de tamanho polinomial. Se $B\in P$, então $A\in P$: calcula $f(x)$ e usa o decisor de $B$.
 
-Um problema é **NP-difícil** se todos os problemas de NP se reduzem a ele; é **NP-completo** se além disso pertence a NP. São os problemas mais difíceis de NP: se um deles estiver em P, então P $=$ NP.
+Para mostrar que $B$ é pelo menos tão difícil como $A$, reduz **$A$ a $B$**. Não reduzas o problema novo ao problema difícil e concluas dificuldade; isso só mostra que o difícil pode ajudar a resolver o novo.
 
-O primeiro foi o **SAT** (satisfazibilidade booleana): dada uma fórmula proposicional, existe uma atribuição que a torna verdadeira? Está em NP (o certificado é a atribuição; avaliar é polinomial) e o teorema de Cook-Levin mostra que todo o problema de NP se reduz a ele, codificando a computação do verificador como fórmula. A partir do SAT, prova-se NP-completude de centenas de problemas por reduções em cadeia:
+### Exemplo: satisfazer com pelo menos um verdadeiro
 
-<Dot
-  source={`digraph Reducoes {
-  rankdir=LR;
-  node [shape=box, style=rounded];
-  SAT -> "3-SAT" -> clique -> "cobertura de vértices";
-}`}
-  alt="Cadeia de reduções: SAT para 3-SAT, para clique, para cobertura de vértices."
-/>
+SAT pergunta se uma fórmula booleana tem uma atribuição que a torna verdadeira. Considera a variante que exige também que pelo menos uma variável tenha valor verdadeiro. Para transformar uma fórmula $\varphi$ de SAT, cria uma variável nova $z$ e usa $f(\varphi)=\varphi\land z$.
 
-Cada seta é uma redução polinomial: quem resolver o problema da direita em tempo polinomial resolve também o da esquerda. Se estudaste [lógica proposicional](/cadeiras/md/logica-proposicional/), o SAT é "existe um modelo para esta fórmula?", agora com custo quantificado.
+Se $\varphi$ é satisfazível, prolonga a atribuição com $z$ verdadeiro. Se $\varphi\land z$ é satisfazível, a restrição da atribuição às variáveis antigas satisfaz $\varphi$. A variável nova garante a condição adicional. O tamanho aumenta apenas por uma conjunção e uma variável, logo a transformação é polinomial.
 
-## Porque é que isto importa
+As duas implicações são a prova da redução. Exemplos isolados não substituem essa correspondência.
 
-Quase todos os problemas de otimização que vais encontrar (horários, rotas, escalonamento, carteiras) são NP-difíceis. Perante um deles, a teoria diz: não procures o algoritmo polinomial exato (provavelmente não existe); usa aproximações, heurísticas, restrições de tamanho ou solucionadores SAT. Reconhecer um problema NP-completo é uma competência prática: poupa semanas de procura de um algoritmo perfeito.
+## NP-difícil e NP-completo
 
-:::warning[NP não quer dizer não polinomial]
-NP vem de "não determinístico polinomial". Dizer "este problema é NP" não prova que é difícil: P está contido em NP. Dificuldade a sério é NP-completude (ou NP-dificuldade).
-:::
+Um problema $B$ é **NP-difícil** se todo o problema de NP se reduz a $B$ em tempo polinomial. É **NP-completo** se, além disso, $B\in NP$.
 
-## Para saber mais
+Para provar NP-completude, descreve primeiro certificado, tamanho e verificador. Depois reduz a $B$ um problema já NP-completo, provando a equivalência e o custo. A transitividade das reduções transporta a dificuldade dos restantes problemas de NP.
 
-<YouTube
-  id="6OPsH8PK7xM"
-  title="Sobre o que é realmente P contra NP, Polylog"
-/>
+SAT é NP-completo pelo teorema de Cook-Levin. Uma atribuição booleana é o seu certificado, mas isso só demonstra a parte $SAT\in NP$; a dificuldade exige o outro argumento do teorema.
 
-- A [cadeira Theory of Computation do MIT](https://ocw.mit.edu/courses/18-404j-theory-of-computation-fall-2020/) (Sipser), com calendário e notas abertas.
-
-[^premio-milhao]: O Clay Mathematics Institute oferece um milhão de dólares por cada um dos sete Problemas do Milénio, incluindo P contra NP: [página oficial do problema](https://www.claymath.org/millennium/p-vs-np/).
-
-## Para fechar a cadeira
-
-Volta ao início: autómatos finitos para padrões simples ([expressões regulares e autómatos](automatos-finitos/)), pilha para estrutura aninhada ([gramáticas e PDA](gramaticas-livres/)), Turing para tudo o que é computável ([decidibilidade](turing-decidibilidade/)) e complexidade para o que é tratável (esta página). Se consegues dizer, para cada modelo, o que ele tem a mais que o anterior e que linguagem o separa, dominas a matéria.
+Se algum problema NP-completo estiver em P, então $P=NP$. Se um problema for apenas NP-difícil, não se pode concluir que pertença a NP, nem que seja decidível. A dificuldade e a pertença são afirmações distintas.

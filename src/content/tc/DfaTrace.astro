@@ -1,0 +1,254 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+---
+
+<InteractiveDemo label="Seguir um DFA para o sufixo ab">
+  <div data-tc-dfa>
+    <label>
+      Palavra sobre a e b
+      <input
+        data-word
+        value="baab"
+        maxlength="24"
+        spellcheck="false"
+        autocomplete="off"
+        aria-describedby="tc-dfa-error"
+      />
+    </label>
+    <p id="tc-dfa-error" data-error hidden>
+      Usa apenas a e b. Deixa vazio para testar ε.
+    </p>
+    <svg
+      viewBox="0 0 460 150"
+      role="img"
+      aria-label="Os três estados q0, q1 e q2. O estado atual tem preenchimento e a palavra atual aparece por baixo."
+    >
+      <defs>
+        <marker
+          id="tc-arrow"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+        </marker>
+      </defs>
+      <g
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        marker-end="url(#tc-arrow)"
+      >
+        <path d="M 10 75 H 55" />
+        <path d="M 106 70 Q 160 30 205 70" />
+        <path d="M 253 70 Q 304 30 353 70" />
+        <path d="M 353 90 Q 308 130 253 90" />
+        <path d="M 353 105 Q 220 160 106 100" />
+        <path d="M 70 52 C 28 1 134 1 90 52" />
+        <path d="M 220 52 C 180 1 276 1 237 52" />
+      </g>
+      <g text-anchor="middle" fill="currentColor" font-size="15">
+        <text x="80" y="16">
+          b
+        </text>
+        <text x="230" y="16">
+          a
+        </text>
+        <text x="155" y="45">
+          a
+        </text>
+        <text x="308" y="45">
+          b
+        </text>
+        <text x="308" y="128">
+          a
+        </text>
+        <text x="210" y="147">
+          b
+        </text>
+      </g>
+      <g data-state="0">
+        <circle cx="80" cy="75" r="25" />
+        <text x="80" y="80">
+          q0
+        </text>
+      </g>
+      <g data-state="1">
+        <circle cx="230" cy="75" r="25" />
+        <text x="230" y="80">
+          q1
+        </text>
+      </g>
+      <g data-state="2">
+        <circle cx="380" cy="75" r="25" />
+        <circle cx="380" cy="75" r="20" />
+        <text x="380" y="80">
+          q2
+        </text>
+      </g>
+    </svg>
+    <div class="controls">
+      <button type="button" data-back>
+        Anterior
+      </button>
+      <button type="button" data-next>
+        Ler símbolo
+      </button>
+      <button type="button" data-reset>
+        Recomeçar
+      </button>
+    </div>
+    <p data-status role="status">
+      Prefixo: ε. Por ler: baab. Estado: q0.
+    </p>
+    <p data-trace>q0</p>
+  </div>
+</InteractiveDemo>
+
+<script>
+  function setupDfa() {
+    for (const demo of document.querySelectorAll<HTMLElement>(
+      '[data-tc-dfa]',
+    )) {
+      if (demo.dataset.ready) continue;
+      demo.dataset.ready = 'true';
+      const input = demo.querySelector<HTMLInputElement>('[data-word]')!;
+      const status = demo.querySelector<HTMLElement>('[data-status]')!;
+      const trace = demo.querySelector<HTMLElement>('[data-trace]')!;
+      const next = demo.querySelector<HTMLButtonElement>('[data-next]')!;
+      const back = demo.querySelector<HTMLButtonElement>('[data-back]')!;
+      const error = demo.querySelector<HTMLElement>('[data-error]')!;
+      const transitions = [
+        [1, 0],
+        [1, 2],
+        [1, 0],
+      ];
+      let position = 0;
+      function draw() {
+        const word = input.value;
+        const valid = /^[ab]*$/.test(word);
+        error.hidden = valid;
+        input.setAttribute('aria-invalid', String(!valid));
+        position = Math.min(position, word.length);
+        let state = 0;
+        const path = ['q0'];
+        for (const symbol of word.slice(0, position)) {
+          state = transitions[state]![symbol === 'a' ? 0 : 1]!;
+          path.push(`q${state}`);
+        }
+        for (const node of demo.querySelectorAll<SVGGElement>('[data-state]')) {
+          node.classList.toggle(
+            'active',
+            valid && Number(node.dataset.state) === state,
+          );
+        }
+        next.disabled = !valid || position === word.length;
+        back.disabled = !valid || position === 0;
+        if (!valid) {
+          status.textContent = 'A palavra contém símbolos fora do alfabeto.';
+          trace.textContent = '';
+          return;
+        }
+        const verdict =
+          position === word.length
+            ? state === 2
+              ? ' Palavra aceite.'
+              : ' Palavra rejeitada.'
+            : '';
+        status.textContent = `Prefixo: ${word.slice(0, position) || 'ε'}. Por ler: ${word.slice(position) || 'ε'}. Estado: q${state}.${verdict}`;
+        trace.textContent = path.join(' → ');
+      }
+      input.addEventListener('input', () => {
+        position = 0;
+        draw();
+      });
+      next.addEventListener('click', () => {
+        position++;
+        draw();
+      });
+      back.addEventListener('click', () => {
+        position--;
+        draw();
+      });
+      demo.querySelector('[data-reset]')!.addEventListener('click', () => {
+        position = 0;
+        draw();
+      });
+      draw();
+    }
+  }
+  setupDfa();
+  document.addEventListener('astro:page-load', setupDfa);
+</script>
+
+<style>
+  label {
+    display: grid;
+    gap: 8px;
+  }
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-block: 16px;
+    color: var(--text);
+  }
+  [data-state] circle {
+    fill: var(--surface);
+    stroke: currentColor;
+    stroke-width: 1.6;
+  }
+  [data-state] text {
+    fill: var(--text);
+    text-anchor: middle;
+    font-size: 15px;
+  }
+  [data-state].active circle {
+    fill: var(--accent-soft);
+    stroke-width: 3;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  input:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  [data-trace] {
+    overflow-wrap: anywhere;
+    font-family: var(--code-font);
+  }
+  [data-error] {
+    color: var(--text);
+  }
+</style>

@@ -1,126 +1,130 @@
 ---
 title: Máquinas de Turing e decidibilidade
-description: O modelo de Turing, decidível contra reconhecível e a indedicibilidade da paragem.
-section: conteudo
-order: 6
+description: Transições e configurações, programação da fita, máquinas equivalentes, reconhecimento, decisão e problema da paragem.
+order: 9
+practices:
+  - tc/praticar-turing
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
-import fitaRiscar from '../../tc/fita-riscar.typ?raw';
-
-Uma **máquina de Turing** (TM) é um autómato finito com uma fita infinita onde pode ler, escrever e andar para trás e para a frente. É o modelo geral de computação: tudo o que um computador faz, uma TM faz. E, surpreendentemente, há problemas que nem ela resolve. Esta página apresenta o modelo, distingue decidível de reconhecível e prova que o problema da paragem é indecidível.
+Uma pilha só permite trabalhar no topo. Uma máquina de Turing pode reler e alterar qualquer parte de uma fita, deslocando a cabeça uma célula de cada vez. Esta memória permite comparar vários blocos e simular programas gerais.
 
 ## O modelo: fita, cabeça, estados
 
-Uma TM tem: uma **fita** infinita para a direita (ou ambos os lados), dividida em células com símbolos de um alfabeto de fita; uma **cabeça** sobre uma célula; um **estado** de um conjunto finito; e uma **função de transição** que, dado estado e símbolo lido, devolve novo estado, símbolo a escrever e movimento ($E$ esquerda, $D$ direita). Começa no estado inicial com a entrada na fita e o resto em branco ($\sqcup$). **Para** quando atinge um estado de aceitação ou rejeição; se nunca atingir, corre para sempre.
+Usamos $M=(Q,\Sigma,\Gamma,\delta,q_0,B,F)$, com alfabeto de entrada $\Sigma$, alfabeto de fita $\Gamma\supseteq\Sigma$ e branco $B\in\Gamma\setminus\Sigma$. A fita é ilimitada nos dois sentidos. Inicialmente contém a entrada numa sequência de células, com brancos no resto, e a cabeça está na primeira célula da entrada.
 
-Exemplo: TM que decide $\{0^n 1^n\}$. Estratégia: em cada ronda, risca um $0$ do início e um $1$ do fim, repetindo até não restar nada (aceita) ou encontrar desordem (rejeita). Com $X$ a marcar riscados:
+A transição parcial
 
-```text
-Ronda (começa na extremidade esquerda):
-  varre à direita até ao primeiro 0 não riscado; risca-o (escreve X)
-  continua à direita até ao primeiro 1 não riscado; risca-o
-  volta à esquerda até ao X mais à esquerda
-Aceita quando já não há 0 nem 1 por riscar; rejeita se vir um 1 antes
-de riscar todos os 0 (ordem trocada) ou se sobrar um 0 sem um 1.
-```
+$$
+\delta(q,X)=(p,Y,D),\qquad D\in\{L,R\},
+$$
 
-A diferença para o PDA: a cabeça volta atrás e relê, por isso conta duas vezes sem pilha. A fita é memória ilimitada com acesso arbitrário.
+manda escrever $Y$ no lugar de $X$, mudar para $p$ e mover a cabeça uma célula à esquerda ou à direita. Uma transição não definida termina a computação. Adotamos finais sem saídas: parar num final aceita; parar fora de $F$ rejeita. Outra convenção comum usa estados explícitos de aceitação e rejeição. Ambas permitem descrever os mesmos algoritmos.
 
-## A tabela de transições
+Uma configuração $\alpha q\beta$ coloca $q$ imediatamente antes da célula sob a cabeça. Em $01q_2X1$, a fita representada é $01X1$ e a cabeça lê $X$. Brancos fora da região mostrada ficam implícitos.
 
-A descrição acima vira uma tabela estado/símbolo. Para a TM do exemplo, com estados $q_0$ (procura um $0$ por riscar), $q_1$ (procura um $1$ por riscar) e $q_2$ (volta à esquerda), mais aceitação e rejeição:
+Se $\delta(q,X)=(p,Y,R)$, então $\alpha qX\beta\vdash\alpha Yp\beta$. Se o movimento é à esquerda e $\alpha=\gamma A$, então $\gamma AqX\beta\vdash\gamma pAY\beta$. Acrescenta um branco à representação quando a cabeça sai da parte escrita.
 
-```text
-q0: lê 0 -> escreve X, vai D, fica q1    (risca o 0 mais à esquerda)
-q0: lê X -> mantém X, vai D, fica q0     (salta riscados)
-q0: lê vazio -> aceita                    (já não há nada por riscar)
-q0: lê 1 -> rejeita                       (um 1 onde devia haver 0)
-q1: lê 0 ou X -> mantém, vai D, fica q1  (salta até aos uns)
-q1: lê 1 -> escreve X, vai E, fica q2    (risca o 1 mais à esquerda)
-q1: lê vazio -> rejeita                   (faltou um 1)
-q2: lê 0, 1 ou X -> mantém, vai E, fica q2 (volta atrás)
-q2: lê X após voltar -> mantém, vai D, fica q0 (nova ronda)
-```
+## Uma máquina que decide aⁿbⁿ
 
-Cada linha é total nos casos alcançáveis: de $q_0$ só se chega a símbolos $0$, $X$, $1$ ou vazio, e cada um tem destino. O desenho mostra a primeira riscadela em $0011$: o $0$ inicial vira $X$ e o resto fica igual.
+Vamos marcar um $a$ com $X$ e um $b$ correspondente com $Y$, voltando ao início de cada ronda. Ao não encontrar mais $a$, verificamos que só restam $Y$ e branco.
 
-<Typst
-  source={fitaRiscar}
-  format="svg"
-  alt="Fita com 0011 antes e com X011 depois de riscar o primeiro zero."
-/>
+Os estados são $q_0$ para escolher o próximo $a$, $q_1$ para procurar um $b$, $q_2$ para regressar ao marcador $X$ da ronda, $q_3$ para verificar o fim, e $q_f$ final.
 
-A mesma ronda em código, com a fita trocada por uma lista e a ordem verificada no fim de cada ronda:
+| Estado | $a$         | $b$         | $X$         | $Y$         | $B$     |
+| ------ | ----------- | ----------- | ----------- | ----------- | ------- |
+| $q_0$  | $(q_1,X,R)$ | Rejeita     | Rejeita     | $(q_3,Y,R)$ | Aceita  |
+| $q_1$  | $(q_1,a,R)$ | $(q_2,Y,L)$ | Rejeita     | $(q_1,Y,R)$ | Rejeita |
+| $q_2$  | $(q_2,a,L)$ | Rejeita     | $(q_0,X,R)$ | $(q_2,Y,L)$ | Rejeita |
+| $q_3$  | Rejeita     | Rejeita     | Rejeita     | $(q_3,Y,R)$ | Aceita  |
 
-<CodePlayground
-  language="python"
-  title="Riscar zeros e uns"
-  code={
-    'def decide(w):\n    fita = list(w)\n    while "0" in fita or "1" in fita:\n        if "0" in fita:\n            fita[fita.index("0")] = "X"\n            if "1" in fita:\n                fita[fita.index("1")] = "X"\n            else:\n                return False\n        else:\n            return False\n        resto = [s for s in fita if s in "01"]\n        if resto != sorted(resto):\n            return False\n    return True\n\nfor w in ["0011", "010", ""]:\n    print(w or "epsilon", "aceite" if decide(w) else "rejeitada")'
-  }
-/>
+As células 'Aceita' podem ser implementadas por $(q_f,B,R)$ e as de rejeição por transição não definida. Nas entradas de aceitação da tabela só se lê branco, por isso não se apaga um símbolo da entrada. A máquina aceita também $\varepsilon$.
 
-O programa imprime `aceite`, `rejeitada` e `aceite`: `0011` risca aos pares por ordem, `010` falha na verificação de ordem (o `0` aparece depois do `1`), e a palavra vazia não entra no ciclo.
+Para $aabb$, os passos são:
 
-## Decidível contra reconhecível
+$$
+\begin{aligned}
+q_0aabb&\vdash Xq_1abb\vdash Xaq_1bb\\
+&\vdash Xq_2aYb\vdash q_2XaYb\\
+&\vdash Xq_0aYb\vdash XXq_1Yb\\
+&\vdash XXYq_1b\vdash XXq_2YY\\
+&\vdash Xq_2XYY\vdash XXq_0YY\\
+&\vdash XXYq_3Y\vdash XXYYq_3B\\
+&\vdash XXYYBq_fB.
+\end{aligned}
+$$
 
-- $L$ é **reconhecível** (recursivamente enumerável) se existe uma TM que aceita todas as palavras de $L$ e nunca aceita palavras fora (mas pode correr para sempre nas de fora).
-- $L$ é **decidível** se existe uma TM que **para sempre**, aceitando as palavras de $L$ e rejeitando as de fora. A TM é então um **decisor**.
+Em $aab$, a segunda procura de $b$ chega a branco e rejeita. Em $abab$, a verificação final encontra um $a$ depois de $Y$ e rejeita, apesar de as contagens globais coincidirem.
 
-Toda a linguagem decidível é reconhecível, mas o contrário falha. Intuição: reconhecer é "dizer sim quando sim"; decidir é "responder sempre". Para linguagens regulares e livres de contexto, pertença é decidível (simulação e CYK). O salto da cadeira é que isto nem sempre é possível.
+A cada ronda, os marcadores $X$ ficam no início, e $q_2$ regressa ao $X$ acabado de criar. O número de $a$ ainda não marcados diminui. Cada procura percorre uma região finita, pelo que a máquina termina em todas as entradas. A propriedade de terminar tem de acompanhar a prova de aceitação correta.
 
-<Tabs id="decidivel-reconhecivel" labels={['Decidível: exemplo', 'Reconhecível: exemplo']}>
-  <div slot="panel-0">
+## Comparar extremos e vários blocos
 
-Pertença num DFA é decidível: simula a palavra e responde sempre, como o simulador da página sobre [autómatos finitos](automatos-finitos/). O algoritmo para em no máximo $|w|$ passos, com sim ou não.
+Para palíndromos sobre $\{0,1\}$, guarda no estado a primeira letra não marcada e risca-a. Vai até à última letra não marcada e verifica se é igual. Se for, risca-a também e regressa à esquerda; caso contrário, rejeita. Quando não restam letras, aceita. Se restar uma única letra no centro, aceita sem procurar um par. Para $01110$, as rondas retiram $0$ com $0$, depois $1$ com $1$, ficando o $1$ central. Cada ronda retira uma ou duas letras, provando terminação.
 
-  </div>
-  <div slot="panel-1">
+Para $\{a^nb^na^n\mid n\ge0\}$, verifica primeiro o formato dos três blocos. Em cada ronda, marca um $a$ no primeiro bloco, um $b$ no segundo e um $a$ no terceiro, com marcadores diferentes que conservem a origem. Se um bloco acabar antes de outro, rejeita. Se todos acabarem ao mesmo tempo, aceita. Em $aabbaa$, duas rondas chegam; em $aabba$, a segunda ronda não encontra o último $a$. A fita permite voltar a comparar uma terceira contagem, que uma única pilha não consegue tratar desta forma. Esta linguagem é decidível, mas não livre de contexto.
 
-O problema da paragem é reconhecível mas não decidível: simular $M$ em $w$ e aceitar se parar aceita exatamente os casos sim, mas corre para sempre nos casos não. A prova abaixo mostra que nenhum decisor faz melhor.
+Para reconhecer $\{0^{2^k}\mid k\ge0\}$, trabalha só com zeros ainda ativos. Uma ronda percorre-os alternando um estado par e um ímpar, marca um zero em cada par e deixa o outro ativo. Se havia mais de um zero e a contagem era ímpar, rejeita; se havia exatamente um, aceita. Caso contrário, volta ao início e repete. As contagens ativas de $0000$ são $4,2,1$, enquanto $000000$ dá $6,3$ e rejeita. A entrada vazia é rejeitada. Marcadores são ignorados nas rondas seguintes, e a quantidade ativa diminui, garantindo terminação.
 
-  </div>
-</Tabs>
+Para uma linguagem regular, uma TM pode copiar o DFA para o seu controlo, ler da esquerda para a direita sem alterar a entrada e, no primeiro branco, aceitar exatamente nos estados que eram finais. Usar uma TM não obriga a criar uma estratégia complicada de marcas se a condição já é finita.
 
-## O problema da paragem é indecidível
+## Usar a fita para calcular
 
-O **problema da paragem** ($HALT$): dada uma TM $M$ e uma entrada $w$, será que $M$ para em $w$? Prova por diagonalização de que nenhum decisor resolve isto.
+Uma máquina também pode produzir um resultado. Para incrementar um número binário, percorre a entrada até ao branco à direita, volta uma célula e propaga o transporte:
 
-1. **Supõe** que existe um decisor $H$: $H$ recebe $\langle M, w\rangle$ (uma codificação de $M$ e $w$), para sempre e aceita se $M$ para em $w$, rejeita se $M$ corre para sempre em $w$.
-2. **Constrói a máquina contrária** $D$. $D$ recebe $\langle M\rangle$ (a descrição de uma máquina) e faz: corre $H$ em $\langle M, \langle M\rangle\rangle$, ou seja, pergunta "será que $M$ para quando recebe a sua própria descrição?". Depois faz o contrário: se $H$ aceita, $D$ entra em ciclo infinito; se $H$ rejeita, $D$ para.
-3. **Aplica $D$ a si própria.** Pergunta: $D$ para em $\langle D\rangle$? Há dois casos, e ambos rebentam:
-   - Se $D$ para em $\langle D\rangle$, então $H$ em $\langle D, \langle D\rangle\rangle$ aceita, logo $D$ em $\langle D\rangle$ entra em ciclo, ou seja, não para. Contradição.
-   - Se $D$ não para em $\langle D\rangle$, então $H$ rejeita, logo $D$ para. Contradição.
-4. **Conclui.** Os dois casos possíveis são impossíveis, por isso a suposição é falsa: o decisor $H$ não existe. $HALT$ é indecidível.
+- ao ler $1$, escreve $0$ e continua para a esquerda;
+- ao ler $0$, escreve $1$ e termina;
+- se chegar ao branco à esquerda, escreve $1$ e termina.
 
-Repara que a prova não usa nada sobre como $H$ funciona por dentro, só o seu comportamento observável. É uma diagonalização: $D$ foi construída para diferir de cada máquina na diagonal "máquina aplicada a si própria". Se treinaste [provas com condicionais](/cadeiras/md/provas-proposicionais/), revê a estrutura: é uma prova por contradição com análise de casos, onde cada caso nega a sua própria hipótese.
+Por exemplo, $1011$ torna-se $1100$: os dois uns finais passam a zeros e o zero anterior passa a um. $111$ torna-se $1000$, usando uma célula antes da antiga entrada. A descrição do resultado deve indicar onde ele fica e onde termina a cabeça, não apenas qual linguagem a máquina aceita.
 
-:::details[Reconhecível mas não decidível: o próprio HALT]
-$HALT$ é reconhecível: uma TM que simula $M$ em $w$ e aceita se a simulação parar aceita exatamente os pares onde $M$ para. O que falta é parar nos pares onde $M$ não para, e a prova acima mostra que nenhuma TM consegue isso sempre. Por isso $HALT$ separa as duas classes.
-:::
+Na soma de dois binários separados por $+$, pode-se trabalhar da direita para a esquerda, guardando o transporte no estado. Como as duas parcelas estão em regiões distintas, marca cada bit já usado e desloca-te entre elas para obter o par seguinte. Por exemplo, $011+010$ produz $101$: no bit menos significativo, $1+0=1$; depois $1+1=0$ com transporte $1$; no último, $0+0+1=1$. A fita trata o armazenamento e os estados tratam os casos finitos de soma e transporte.
 
-## Para saber mais
+Para complemento para dois num comprimento fixo, percorre da direita até ao primeiro $1$, conservando os bits vistos, incluindo esse $1$. Inverte todos os bits que ficam à esquerda. Assim, $0100$ passa a $1100$, e $0000$ fica $0000$ ignorando overflow. O exemplo $1000$ também fica $1000$, pois representa o valor mínimo nessa largura. O comprimento fixo e o tratamento de overflow fazem parte da operação.
 
-Duas introduções em vídeo (em inglês) e simuladores para experimentar:
+Técnicas úteis incluem guardar um símbolo no estado, marcar símbolos já tratados e dividir o algoritmo em subrotinas com estados de entrada e saída. Várias pistas na mesma fita podem usar símbolos-tuplo, como $(a,\text{marcado})$. Isso aumenta o alfabeto finito, sem criar outro tipo de memória.
 
-<YouTube
-  id="dNRDvLACg5Q"
-  title="Máquinas de Turing explicadas, Computerphile"
-/>
+## Variantes com o mesmo poder
 
-<YouTube
-  id="macM_MtS_w4"
-  title="Turing e o problema da paragem, Computerphile"
-/>
+Máquinas com várias fitas não reconhecem mais linguagens que máquinas com uma fita. Uma fita pode codificar as várias fitas e marcar a posição de cada cabeça. Para simular um passo, varre a codificação, encontra os símbolos sob as cabeças e atualiza-os. Pode levar mais passos, mas mantém o resultado.
 
-- [Entrada sobre máquinas de Turing](https://plato.stanford.edu/entries/turing-machine/) na Stanford Encyclopedia, com definições e variantes.
-- [Entrada sobre computabilidade](https://plato.stanford.edu/entries/computability/) na Stanford Encyclopedia, com a tese de Church Turing.
-- [turingmachine.io](https://turingmachine.io/), simulador visual de máquinas de Turing no navegador, para correres pequenos programas.
+O não determinismo também não acrescenta linguagens reconhecíveis. Uma máquina determinística explora a árvore de computações por níveis. Assim, não fica presa num ramo infinito antes de chegar a outro ramo que aceita. Para reconhecer, basta encontrar um ramo aceitante.
 
-## Para levar para a próxima página
+Uma fita ilimitada só para a direita pode codificar as duas metades de uma fita bilateral em pistas. Duas pilhas também simulam uma fita: uma guarda a parte à esquerda da cabeça, a outra a célula atual e a parte à direita. Mover a cabeça corresponde a passar um símbolo de uma pilha para a outra.
 
-Há uma fronteira absoluta: problemas que nenhum algoritmo resolve. Mas entre os decidíveis há outra fronteira, prática: problemas decidíveis mas intratáveis. É a [complexidade](complexidade/): P contra NP.
+A tese de Church-Turing identifica os procedimentos efetivos com o que estas máquinas conseguem calcular. É uma tese sobre a noção informal de algoritmo, não um teorema que deduz essa noção de uma definição matemática. Um computador físico tem memória finita; a comparação usa o modelo idealizado com memória extensível.
+
+## Reconhecível e decidível
+
+Uma linguagem é **reconhecível**, ou recursivamente enumerável, se existe uma TM que aceita exatamente as suas palavras. Para entradas fora da linguagem, pode rejeitar ou correr para sempre.
+
+É **decidível**, ou recursiva, se existe uma TM que termina em todas as entradas e responde corretamente. A máquina anterior é um decisor, não apenas um reconhecedor.
+
+Todas as decidíveis são reconhecíveis. Nem todas as reconhecíveis são decidíveis. Dar mais tempo a uma simulação não resolve esta diferença: não conseguir prever se ela vai parar é precisamente parte do problema.
+
+Se $L$ e $\overline L$ forem reconhecíveis, então $L$ é decidível. Simula os dois reconhecedores alternando um passo de cada. Uma das entradas pertence à respetiva linguagem e acabará aceite. Responde sim quando o reconhecedor de $L$ aceitar, ou não quando o do complemento aceitar.
+
+## Máquina universal e codificação
+
+Uma TM tem finitos estados, símbolos e transições, por isso pode ser codificada por uma palavra $\langle M\rangle$. Uma máquina universal recebe $\langle M,w\rangle$ e simula $M$ em $w$. O programa da máquina simulada torna-se parte da entrada.
+
+A linguagem $A_{TM}=\{\langle M,w\rangle\mid M\text{ aceita }w\}$ é reconhecível: simula $M$ e aceita se ela aceitar. Se $M$ não parar, a simulação também pode não parar.
+
+## O problema da paragem
+
+Definimos $HALT=\{\langle M,w\rangle\mid M\text{ para em }w\}$. É reconhecível, pois podemos simular e aceitar quando a simulação parar. É indecidível.
+
+Supõe que existe um decisor $H$ para $HALT$. Constrói $D$ que, ao receber uma codificação $\langle M\rangle$, consulta $H(\langle M,\langle M\rangle\rangle)$. Se $H$ disser que $M$ para, $D$ entra num ciclo infinito. Se disser que não para, $D$ termina.
+
+Agora executa $D$ com a sua própria codificação. Se $H$ disser que $D$ para, a construção faz $D$ não parar. Se disser que não para, faz $D$ parar. Ambas as respostas contradizem a correção de $H$. Logo, esse decisor não existe.
+
+## Reduções de indecidibilidade
+
+Uma redução computável $A\le_m B$ transforma entradas por uma função total computável $f$, preservando a resposta: $x\in A\iff f(x)\in B$. Se $B$ fosse decidível, transformar e decidir $B$ decidiria $A$.
+
+Para provar que $B$ é indecidível, parte de um $A$ já indecidível e reduz **$A$ a $B$**. A direção inversa não prova que $B$ é difícil.
+
+Por exemplo, $HALT\le_m A_{TM}$. Dada $\langle M,w\rangle$, constrói uma máquina $N$ que ignora a sua entrada, simula $M$ em $w$ e aceita se essa simulação parar, quer aceitando quer rejeitando. Temos $\langle M,w\rangle\in HALT$ se e só se $\langle N,\varepsilon\rangle\in A_{TM}$. Portanto, $A_{TM}$ também é indecidível.
+
+Uma pergunta limitada a $t$ passos pode, porém, ser decidível: simula esses passos e termina. Não concluas indecidibilidade só porque o enunciado fala de máquinas de Turing.
+
+Mesmo perguntar se **alguma entrada**, ou se **todas as entradas**, fazem uma TM determinística dar mais de um limite fixo $t$ de passos é decidível. Nos primeiros $t$ movimentos, a cabeça não alcança uma posição de entrada além da posição $t+1$. Basta enumerar palavras de comprimento até $t+1$, incluindo as curtas cujo branco final pode ser encontrado. Uma entrada mais longa tem, nesse tempo, o mesmo comportamento que o seu prefixo de comprimento $t+1$. Simula cada representante por esse limite e combina as respostas conforme o quantificador. Há finitos representantes; o procedimento pode ser caro, mas termina. Este argumento usa o limite fixo e não se estende à pergunta de paragem sem limite.

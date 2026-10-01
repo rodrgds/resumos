@@ -1,183 +1,125 @@
 ---
 title: Autómatos finitos
-description: DFA como quíntuplo, NFA com epsilon, construção de subconjuntos e minimização.
-section: conteudo
+description: Estados com significado, função de transição, construção de DFA e provas de correção.
 order: 2
+practices:
+  - tc/praticar-dfa
 ---
 
 import Dot from '../../../components/Dot.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
+import DfaTrace from '../../tc/DfaTrace.astro';
 
-Um **autómato finito** é uma máquina com memória limitada: um conjunto finito de estados, um estado inicial e uma regra que diz, para cada estado e cada símbolo lido, para onde ir. Não tem pilha nem fita, só o estado atual. Esta página mostra os dois sabores (determinístico e não determinístico) e três construções que tens de saber executar: de NFA para DFA, minimização e teste de equivalência.
+Para saber se uma palavra termina em $ab$, não precisamos de guardar toda a palavra. Precisamos de saber se o prefixo já lido termina em $a$, em $ab$, ou em nenhum desses casos. Um autómato finito guarda essa informação num estado.
 
 ## DFA: definição e leitura
 
-Um **autómato finito determinístico** (DFA) é um quíntuplo $M = (Q, \Sigma, \delta, q_0, F)$ onde:
+Um autómato finito determinístico, **DFA**, é $M=(Q,\Sigma,\delta,q_0,F)$:
 
-- $Q$ é o conjunto finito de estados;
-- $\Sigma$ é o alfabeto;
-- $\delta: Q \times \Sigma \to Q$ é a **função de transição** (para cada estado e símbolo, exatamente um destino);
-- $q_0 \in Q$ é o estado inicial;
-- $F \subseteq Q$ é o conjunto de estados de aceitação.
+- $Q$ é um conjunto finito e não vazio de estados;
+- $\Sigma$ é o alfabeto de entrada;
+- $\delta:Q\times\Sigma\to Q$ é a função de transição;
+- $q_0\in Q$ é o estado inicial;
+- $F\subseteq Q$ é o conjunto de estados finais, ou de aceitação.
 
-$M$ **aceita** a palavra $w$ se, começando em $q_0$ e seguindo $\delta$ símbolo a símbolo, terminar num estado de $F$. A **linguagem reconhecida** $L(M)$ é o conjunto das palavras aceites.
+Nesta definição, $\delta$ é total: existe exatamente um destino para cada par estado/símbolo. Um desenho incompleto abrevia transições para um **estado poço**, do qual nunca se sai. Uma transição ausente não significa que a máquina ignore a letra.
 
-Exemplo: palavras sobre $\{0, 1\}$ que terminam em $1$. Dois estados chegam: $q_0$ ("último símbolo visto não foi $1$", que também é o início) e $q_1$ ("último símbolo foi $1$").
+No diagrama, uma seta sem origem marca o início e um círculo duplo marca um estado final. Entrar num estado final a meio da palavra não termina a leitura. A aceitação depende do estado depois de consumir **toda** a entrada.
 
-```text
-Estados: q0 (inicial), q1 (aceitação)
-Transições:
-  q0 --0--> q0
-  q0 --1--> q1
-  q1 --0--> q0
-  q1 --1--> q1
-```
+## Construir estados com significado
 
-Testa $w = 01$: $q_0 \xrightarrow{0} q_0 \xrightarrow{1} q_1$, que é de aceitação, por isso $01 \in L(M)$. Testa $w = 10$: $q_0 \xrightarrow{1} q_1 \xrightarrow{0} q_0$, rejeitada. E $\varepsilon$: fica em $q_0$, rejeitada, o que está certo porque $\varepsilon$ não termina em $1$.
+Vamos reconhecer $L=\{w\in\{a,b\}^*\mid w\text{ termina em }ab\}$. Escolhemos:
 
-<Dot
-  source={`digraph DFA {
-  rankdir=LR;
-  node [shape=circle];
-  start [shape=none, label=""];
-  start -> q0;
-  q0 -> q0 [label="0"];
-  q0 -> q1 [label="1"];
-  q1 -> q0 [label="0"];
-  q1 -> q1 [label="1"];
-  q1 [shape=doublecircle];
-}`}
-  alt="DFA com dois estados. O estado q0 tem um ciclo com 0 e vai para q1 com 1. O estado q1, de aceitação, volta a q0 com 0 e tem um ciclo com 1."
-/>
+- $q_0$: não há um sufixo útil, incluindo o início;
+- $q_1$: o prefixo lido termina em $a$;
+- $q_2$: o prefixo lido termina em $ab$.
 
-O círculo duplo marca o estado de aceitação. Corre o simulador e confirma os três resultados.
+| Estado        | Lê $a$ | Lê $b$ | Final? |
+| ------------- | ------ | ------ | ------ |
+| $q_0$ inicial | $q_1$  | $q_0$  | Não    |
+| $q_1$         | $q_1$  | $q_2$  | Não    |
+| $q_2$         | $q_1$  | $q_0$  | Sim    |
 
-<CodePlayground
-  language="python"
-  title="Simular o DFA"
-  code={
-    'd = {"q0": {"0": "q0", "1": "q1"}, "q1": {"0": "q0", "1": "q1"}}\naceites = {"q1"}\n\ndef corre(w):\n    e = "q0"\n    for s in w:\n        e = d[e][s]\n    return e\n\nfor w in ["01", "10", ""]:\n    print(w or "epsilon", "aceite" if corre(w) in aceites else "rejeitada")'
-  }
-/>
-
-:::tip[Desenha antes de formalizar]
-Num exercício de construção, desenha primeiro os estados com nomes que digam o que memorizam ("resto 0", "vi um $a$"). Depois escreve a tabela de $\delta$. Só no fim, se pedirem, apresenta o quíntuplo. Nomes com significado evitam transições trocadas.
-:::
-
-## NFA: adivinhar com epsilon
-
-Um **autómato finito não determinístico** (NFA) permite, para o mesmo estado e símbolo, zero, uma ou várias transições, mais transições **epsilon** ($\varepsilon$) que mudam de estado sem consumir símbolo. Formalmente, $\delta: Q \times (\Sigma \cup \{\varepsilon\}) \to \mathcal{P}(Q)$ devolve um conjunto de destinos.
-
-Um NFA aceita $w$ se **existir** pelo menos um caminho etiquetado por $w$ (ignorando os $\varepsilon$) do estado inicial até um estado de aceitação. É um "adivinhar bem": basta um caminho com sorte.
-
-Exemplo: palavras sobre $\{0, 1\}$ que terminam em $01$. O NFA adivinha onde começa o sufixo final:
-
-```text
-Estados: p0 (inicial), p1, p2 (aceitação)
-Transições:
-  p0 --0,1--> p0        (consome qualquer prefixo)
-  p0 --0--> p1          (adivinha: aqui começa o 01 final)
-  p1 --1--> p2
-  p2 --(nada)--> _      (sem saídas: se vier mais símbolo, este caminho morre)
-```
-
-Para $w = 001$: o caminho $p_0 \xrightarrow{0} p_0 \xrightarrow{0} p_1 \xrightarrow{1} p_2$ aceita. Repara que outros caminhos morrem (por exemplo ficar sempre em $p_0$), mas um basta. Os NFA são quase sempre mais pequenos e mais fáceis de inventar que o DFA equivalente.
+Em $q_1$, outro $a$ mantém o sufixo útil $a$. Em $q_2$, um $b$ transforma o sufixo $ab$ em $abb$, que já não termina em $ab$ nem em $a$.
 
 <Dot
-  source={`digraph NFA {
-  rankdir=LR;
-  node [shape=circle];
-  start [shape=none, label=""];
-  start -> p0;
-  p0 -> p0 [label="0,1"];
-  p0 -> p1 [label="0"];
-  p1 -> p2 [label="1"];
-  p2 [shape=doublecircle];
-}`}
-  alt="NFA com três estados. O estado p0 tem um ciclo com 0 e 1 e uma transição com 0 para p1. O estado p1 vai para p2 com 1. O estado p2, de aceitação, não tem saídas."
+  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; q2 [shape=doublecircle]; s->q0; q0->q0 [label="b"]; q0->q1 [label="a"]; q1->q1 [label="a"]; q1->q2 [label="b"]; q2->q1 [label="a"]; q2->q0 [label="b"]; }`}
+  alt="DFA para palavras terminadas em ab. q0 é inicial, q2 é final; um a leva sempre a q1, e um b em q1 leva a q2."
 />
 
-## De NFA para DFA: construção de subconjuntos
+A palavra $baab$ segue $q_0,q_0,q_1,q_1,q_2$, pelo que é aceite. $aba$ passa em $q_2$, mas termina em $q_1$ e é rejeitada. $\varepsilon$ termina no estado inicial, que não é final.
 
-Todo o NFA tem um DFA equivalente. A ideia: o DFA simula **todos** os caminhos do NFA em paralelo, e cada estado do DFA é o conjunto dos estados onde o NFA poderia estar. Os passos:
+O simulador usa exatamente esta tabela. Avança um símbolo de cada vez e compara o estado com o sufixo do prefixo já consumido.
 
-1. O estado inicial do DFA é o **fecho epsilon** do estado inicial do NFA (todos os alcançáveis só com transições $\varepsilon$).
-2. Para cada estado-conjunto $S$ e cada símbolo $a$: o destino é o fecho epsilon de todos os destinos por $a$ a partir de estados de $S$.
-3. Um estado-conjunto é de aceitação se contiver pelo menos um estado de aceitação do NFA.
+<DfaTrace />
 
-Exemplo resolvido. NFA com estados $\{p, q\}$, inicial $p$, aceitação $\{q\}$, transições: $p \xrightarrow{0} \{p, q\}$, $p \xrightarrow{1} \{p\}$, $q$ sem saídas, sem transições $\varepsilon$.
+## Transição estendida
 
-- Inicial do DFA: fecho epsilon de $\{p\} = \{p\}$. Chama-lhe $A = \{p\}$.
-- De $A$ com $0$: destinos $\{p, q\}$, fecho $\{p, q\}$. Novo estado $B = \{p, q\}$.
-- De $A$ com $1$: destinos $\{p\}$, ou seja $A$.
-- De $B$ com $0$: de $p$ sai $\{p, q\}$, de $q$ nada. Resultado $\{p, q\} = B$.
-- De $B$ com $1$: de $p$ sai $\{p\}$. Resultado $\{p\} = A$.
-- Aceitação: $B$ contém $q$, logo $B$ é final; $A$ não.
+$\delta$ lê um símbolo. Para ler uma palavra, definimos $\widehat\delta:Q\times\Sigma^*\to Q$:
 
-```text
-DFA resultante:
-  A = {p}   (inicial)
-  B = {p,q} (aceitação)
-  A --0--> B,  A --1--> A
-  B --0--> B,  B --1--> A
-```
+$$
+\widehat\delta(q,\varepsilon)=q,\qquad
+\widehat\delta(q,xa)=\delta(\widehat\delta(q,x),a).
+$$
 
-Reconheces a linguagem? É "palavras que terminam em $0$": só o estado $B$ é final, e só se chega a $B$ a ler um $0$ (confirma com $01$, que contém um $0$ mas termina em $1$ e é rejeitada). O método funciona sempre, mas pode gerar até $2^n$ estados para um NFA de $n$ estados. Na prática só constróis os alcançáveis a partir do inicial, como acima.
+Assim, $L(M)=\{w\in\Sigma^*\mid\widehat\delta(q_0,w)\in F\}$. Por exemplo,
 
-### Quando há transições epsilon
+$$
+\widehat\delta(q_0,ab)=\delta(\delta(q_0,a),b)=\delta(q_1,b)=q_2.
+$$
 
-O exemplo anterior não tinha transições $\varepsilon$, por isso o fecho nunca fez nada. Vê um onde faz: NFA com estados $\{p, q\}$, inicial $p$, aceitação $\{q\}$, transições $p \xrightarrow{\varepsilon} q$ e $q \xrightarrow{0} q$ (linguagem $0^*$).
+Podemos dividir uma entrada em qualquer posição:
 
-- Inicial do DFA: fecho $\varepsilon$ de $\{p\} = \{p, q\}$. Chama-lhe $A = \{p, q\}$, que já é de aceitação porque contém $q$.
-- De $A$ com $0$: de $p$ nada sai com $0$; de $q$ sai $q$. O fecho $\varepsilon$ de $\{q\}$ é só $\{q\}$, porque a transição $\varepsilon$ vai de $p$ para $q$ e nunca ao contrário. Novo estado $B = \{q\}$, de aceitação.
-- De $A$ com $1$: nada sai. Estado vazio $C = \emptyset$ (morto, não final).
-- De $B$ com $0$: fica em $B$. De $B$ com $1$ e de $C$ com tudo: fica em $C$.
+$$
+\widehat\delta(q,xy)=\widehat\delta(\widehat\delta(q,x),y).
+$$
 
-Repara no ponto onde quase todos erram: o fecho $\varepsilon$ aplica-se sempre, inclusive no estado inicial e depois de cada símbolo. Sem ele, o estado $A$ começaria só com $\{p\}$ e a palavra vazia seria (mal) rejeitada.
+Para provar, faz indução em $|y|$. A base $y=\varepsilon$ dá $\widehat\delta(q,x)$ de ambos os lados. Se vale para $y=z$, então, para $y=za$:
 
-## Minimização por preenchimento de tabela
+$$
+\begin{aligned}
+\widehat\delta(q,xza)
+&=\delta(\widehat\delta(q,xz),a)\\
+&=\delta(\widehat\delta(\widehat\delta(q,x),z),a)\\
+&=\widehat\delta(\widehat\delta(q,x),za).
+\end{aligned}
+$$
 
-O DFA mínimo para uma linguagem é único (a menos de nomes de estados). Para o obter, elimina estados inalcançáveis e depois funde estados **equivalentes** (indistinguíveis por qualquer sufixo). O algoritmo de preenchimento de tabela:
+A segunda linha usa a hipótese de indução. Esta identidade explica por que podemos continuar a leitura de uma palavra a partir do estado deixado pelo seu prefixo.
 
-1. Marca todos os pares (estado final, estado não final): são distinguíveis por $\varepsilon$.
-2. Repete: se para algum símbolo $a$ o par $(\delta(p,a), \delta(q,a))$ já está marcado, marca $(p, q)$.
-3. Os pares nunca marcados fundem-se.
+## Provar que a construção está correta
 
-Exemplo resolvido. DFA com estados $A$ (inicial), $B$, $C$ (final), alfabeto $\{0,1\}$:
+Testar algumas palavras ajuda a encontrar erros, mas não prova o autómato. Precisamos de um **invariante**, uma afirmação sobre o significado do estado após qualquer prefixo.
 
-```text
-  A --0--> B,  A --1--> C
-  B --0--> B,  B --1--> C
-  C --0--> B,  C --1--> C
-```
+No DFA anterior, afirmamos que, após ler $x$, a máquina está em $q_1$ se $x$ termina em $a$, em $q_2$ se termina em $ab$, e em $q_0$ nos restantes casos.
 
-Pares: $(A,B)$, $(A,C)$, $(B,C)$.
+Na base, $x=\varepsilon$ não termina em nenhum desses sufixos, e a máquina está em $q_0$. No passo, acrescentar $a$ leva sempre a $q_1$. Acrescentar $b$ leva a $q_2$ exatamente quando antes havia um $a$ no fim, isto é, quando estávamos em $q_1$. Nos outros casos leva a $q_0$. A tabela preserva o invariante em cada passo.
 
-1. Base: $C$ é final, $A$ e $B$ não. Marca $(A,C)$ e $(B,C)$.
-2. Par $(A,B)$: com $0$, vai para $(B,B)$, par igual (nunca marcado); com $1$, vai para $(C,C)$, igual. Nenhum símbolo leva a par marcado, por isso $(A,B)$ fica por marcar.
-3. Funde $A$ e $B$ num estado $AB$. O DFA mínimo tem dois estados:
+Como só $q_2$ é final, o invariante prova as duas direções: todas as palavras aceites terminam em $ab$, e todas as palavras terminadas em $ab$ são aceites.
 
-```text
-  AB --0--> AB,  AB --1--> C
-  C  --0--> AB,  C  --1--> C
-```
+## Contar por restos
 
-Isto reconhece "palavras que terminam em $1$", e dois estados são o mínimo (é preciso distinguir "termina em $1$" de "não termina em $1$").
+Um DFA não guarda contagens sem limite, mas pode guardar um resto. Para reconhecer palavras binárias cujo valor é múltiplo de $3$, usamos estados $r_0,r_1,r_2$.
 
-## Teste de equivalência
+Se o prefixo representa $v$ e lemos o bit $b$, o novo valor é $2v+b$. Logo:
 
-Dois DFA $M_1$ e $M_2$ são **equivalentes** quando $L(M_1) = L(M_2)$. Para testar, constrói o DFA produto (pares de estados, transição componente a componente) e verifica se algum estado alcançável é "um final e outro não". Se nenhum existir, são equivalentes. Como bónus, o mesmo produto com a condição de aceitação "ambos finais" reconhece a interseção, o que prova que as linguagens regulares são fechadas para interseção. O fecho e os limites destas linguagens são o tema de [limites das linguagens regulares](limites-regulares/).
+$$
+\delta(r_i,b)=r_{(2i+b)\bmod3}.
+$$
 
-## Para saber mais
+| Estado                | $0$   | $1$   |
+| --------------------- | ----- | ----- |
+| $r_0$ inicial e final | $r_0$ | $r_1$ |
+| $r_1$                 | $r_2$ | $r_0$ |
+| $r_2$                 | $r_1$ | $r_2$ |
 
-O [JFLAP](https://www.jflap.org/) é um simulador onde desenhas o autómato e o corres em palavras, incluindo a construção de subconjuntos passo a passo. Para rever a conversão com outro exemplo resolvido:
+$110$ representa $6$ e segue $r_0,r_1,r_0,r_0$, terminando no resto zero. Nesta convenção, zeros iniciais são permitidos e $\varepsilon$ representa zero. Se o enunciado exigir uma representação não vazia que comece em $1$, acrescenta um novo estado inicial não final e um poço para entradas que comecem em $0$. Não mudes a linguagem sem explicitar essa condição.
 
-<YouTube
-  id="fiT1nYM1j0Q"
-  title="Conversão de NFA para DFA por construção de subconjuntos, Deeba Kannan"
-/>
+Se a entrada for lida como um número binário **ao contrário**, a letra seguinte já não duplica o prefixo acumulado. Uma via sistemática é construir o DFA para a interpretação normal, inverter a linguagem com a construção de reverso e determinizar. Outra é guardar o resto acumulado e o peso da próxima posição módulo do divisor; ambos têm finitas possibilidades. Não reutilizes a recorrência $2v+b$ sem conferir qual ponta representa o bit menos significativo.
 
-## Para levar para a próxima página
+## Combinar duas condições
 
-DFA, NFA e expressões regulares descrevem exatamente a mesma família de linguagens. Mas nem todas as linguagens são regulares, e provar que uma linguagem fica de fora exige uma ferramenta nova: o lema da repetição.
+Se queremos guardar a paridade do número de zeros e de uns, o estado é um par $(p_0,p_1)$ de paridades. Há quatro estados. Um $0$ troca só a primeira componente; um $1$ troca só a segunda.
+
+O estado inicial é $(\text{par},\text{par})$. Para aceitar um número par de ambos os símbolos, apenas esse estado é final. Para aceitar um número par de zeros **ou** de uns, são finais todos os pares que tenham pelo menos uma componente par.
+
+É a construção de **produto**: simular dois DFA ao mesmo tempo. Não mistures as transições com o critério de aceitação; o mesmo produto permite interseção, união ou diferença, escolhendo os finais. A [minimização](../limites-regulares/#minimização-por-preenchimento-de-tabela) remove memória redundante depois de a construção estar correta.

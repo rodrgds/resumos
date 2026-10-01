@@ -1,64 +1,88 @@
 ---
 title: Cheat sheet de TC
-description: Definições, construções e limites de autómatos, gramáticas e máquinas de Turing para consulta rápida.
+description: Condições, construções e erros a conferir em linguagens, autómatos, gramáticas e computabilidade.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: Resumos de Teoria da Computação, SofiaViP
-      url: https://drive.google.com/file/d/1ZaJpvDv-iZNH-sjGor4iKEaCj9OZ5Wa6/view
-  coverage: Síntese das páginas 2 a 13 dos Resumos TC de SofiaViP, incluindo o quadro final de métodos e propriedades.
-  gaps:
-    - A fonte não identifica uma edição atual da cadeira; confirma o programa e a notação da tua ocorrência.
-    - Esta folha omite provas completas, construções desenhadas e a análise detalhada de NP-completude; segue os links para as explicações.
 ---
 
-Usa-a para escolher uma construção ou verificar as hipóteses de um teorema.
+## Palavras e expressões
 
-## Palavras, linguagens e expressões
+| Conceito           | Conferir                                                                        |
+| ------------------ | ------------------------------------------------------------------------------- |
+| Palavra vazia      | $                                                                               | \varepsilon | =0$; não é símbolo de entrada. |
+| Linguagem vazia    | $\emptyset\ne\{\varepsilon\}$; $L\emptyset=\emptyset$, $L\{\varepsilon\}=L$.    |
+| Potência e estrela | $L^0=\{\varepsilon\}$; $L^*=\bigcup_{k\ge0}L^k$; $\emptyset^*=\{\varepsilon\}$. |
+| Complemento        | Relativo ao alfabeto: $\overline L=\Sigma^*\setminus L$.                        |
+| Reverso            | $(xy)^R=y^Rx^R$.                                                                |
+| Precedência de RE  | Estrela, concatenação, união. $01^*\ne(01)^*$.                                  |
 
-- $\Sigma$ é um alfabeto finito; $\Sigma^k$ contém as palavras de comprimento $k$ e $\Sigma^*$ inclui todos os comprimentos, incluindo $\varepsilon$. Uma linguagem é um subconjunto de $\Sigma^*$. Não confundas a linguagem vazia $\emptyset$ com $\{\varepsilon\}$: $\emptyset^*=\{\varepsilon\}$. [Ver alfabetos e palavras](/cadeiras/tc/linguagens-expressoes/#alfabetos-e-palavras).
-- Para linguagens $A,B$, a concatenação é $AB=\{xy\mid x\in A,\ y\in B\}$; $A^*=\bigcup_{k\ge0}A^k$. Nas expressões regulares da teoria, as operações básicas são união, concatenação e estrela. Uma implementação de _regex_ com referências a grupos pode descrever mais do que estas expressões. [Ver expressões regulares](/cadeiras/tc/linguagens-expressoes/#expressões-regulares).
+União é comutativa; concatenação não é. $(E+F)^*\not\equiv E^*+F^*$ em geral. [Explicação e contraexemplos](../linguagens-expressoes/).
 
-## Autómatos finitos: construir e comparar
+## Construções regulares
 
-| Tarefa                           | Procedimento curto                                                                                                                                      |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Simular DFA                      | Seguir a única transição por símbolo; aceitar se o estado final está em $F$.                                                                            |
-| Simular NFA ou $\varepsilon$-NFA | Manter o conjunto de estados possíveis; aplicar o fecho-$\varepsilon$ antes e depois de consumir símbolos. Aceita se **algum** percurso termina em $F$. |
-| NFA $\to$ DFA                    | Cada estado novo é um subconjunto de $Q$; começar no fecho-$\varepsilon$ de $\{q_0\}$ e marcar os subconjuntos que intersectam $F$.                     |
-| Expressão $\to$ autómato         | Construir fragmentos para $\emptyset$, $\varepsilon$ e símbolos; combinar por união, concatenação e estrela (Thompson).                                 |
-| Autómato $\to$ expressão         | Eliminar estados ou somar expressões dos caminhos, atualizando os caminhos que passam pelo estado removido.                                             |
+| Tarefa              | Procedimento                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| DFA                 | Define significado dos estados; uma transição por símbolo; aceita só depois de ler tudo.        |
+| NFA                 | Mantém todos os destinos; aceita se algum percurso completo terminar em final.                  |
+| Fecho-$\varepsilon$ | Inclui os estados iniciais do conjunto e segue zero ou mais arestas vazias.                     |
+| NFA para DFA        | Início $E(\{q_0\})$; saída $E(\bigcup_{q\in S}\delta(q,a))$; final se $S\cap F\ne\emptyset$.    |
+| Complemento         | Determiniza e completa antes de trocar finais.                                                  |
+| Thompson            | Fragmentos com entrada/saída; união escolhe, concatenação liga, estrela permite saltar/repetir. |
+| Eliminar $k$        | $R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}$.                                                        |
 
-Num DFA, $\delta:Q\times\Sigma\to Q$ é total; se faltar uma transição, acrescenta um estado poço. Isto é indispensável antes de obter o **complemento** trocando finais e não finais. [Ver DFA e NFA](/cadeiras/tc/automatos-finitos/#dfa-definição-e-leitura) e [construção de subconjuntos](/cadeiras/tc/automatos-finitos/#de-nfa-para-dfa-construção-de-subconjuntos).
+O DFA de um NFA com $n$ estados tem no máximo $2^n$ estados, contando o conjunto vazio quando alcançável. Não precisa de usar todos. [DFA](../automatos-finitos/), [NFA](../automatos-nao-deterministas/), [conversões](../expressoes-automatos/).
 
-Para **minimizar** um DFA, elimina primeiro os estados inacessíveis. Distingue pares final/não final; depois distingue um par se alguma letra o leva a outro par já distinguido. Os pares restantes podem ser fundidos em classes de equivalência. Para testar $L(A)=L(B)$, procura no produto um estado alcançável onde apenas um dos dois componentes é final. [Ver minimização](/cadeiras/tc/automatos-finitos/#minimização-por-preenchimento-de-tabela) e [equivalência](/cadeiras/tc/automatos-finitos/#teste-de-equivalência).
+## Fecho, decisão e minimização
 
-As regulares são fechadas para união, concatenação, estrela, interseção, complemento, diferença e reverso. Para provar que $L$ **não** é regular, também podes escolher uma regular $R$ e mostrar que $L\cap R$ é uma linguagem não regular conhecida. [Ver fecho e decisão](/cadeiras/tc/limites-regulares/#propriedades-de-fecho).
+Regulares são fechadas para união, interseção, complemento, diferença, concatenação, estrela, reverso e quocientes. No produto, as transições são iguais para várias operações; muda o critério dos finais.
 
-**Lema da repetição regular.** Se $L$ é regular, existe $p$ tal que cada $s\in L$, $|s|\ge p$, admite $s=xyz$ com $|y|>0$, $|xy|\le p$ e $xy^iz\in L$ para **todo** $i\ge0$. Numa refutação, fixa $p$, escolhe $s$ em função dele, considera **qualquer** decomposição válida e encontra um $i$ que sai de $L$. O lema não prova regularidade. [Ver lema e prova](/cadeiras/tc/limites-regulares/#o-lema-da-repetição).
+- Vazio: nenhum final alcançável.
+- Infinito: num DFA, um ciclo alcançável do início e capaz de chegar a final.
+- Equivalência: nenhum estado alcançável no produto em que só uma componente seja final.
+- Minimização: remove inacessíveis, marca pares final/não final, propaga marcas pelos destinos e junta pares não distinguíveis.
 
-## Gramáticas e autómatos de pilha
+Para provar que duas classes não podem fundir, dá uma continuação que uma aceita e a outra rejeita. [Procedimentos e exemplo](../limites-regulares/).
 
-Uma CFG é $G=(V,\Sigma,P,S)$: variáveis, terminais, produções e símbolo inicial. Uma palavra pertence à linguagem se $S\Rightarrow^*w$ e $w$ só contém terminais. Derivações mais à esquerda e mais à direita mudam a ordem de expansão; há **ambiguidade** quando uma palavra tem duas árvores sintáticas distintas. [Ver derivações](/cadeiras/tc/gramaticas-livres/#definição-e-derivações) e [ambiguidade](/cadeiras/tc/gramaticas-livres/#árvores-sintáticas-e-ambiguidade).
+**Lema regular:** se $L$ é regular, $\exists p\ge1$, $\forall s\in L$ com $|s|\ge p$, $\exists x,y,z$ tais que
 
-Um PDA acrescenta uma pilha ao controlo finito. A configuração deve registar estado, entrada por ler e conteúdo da pilha; cada passo pode ler um símbolo ou $\varepsilon$, consultar o topo e substituí-lo. Aceitação por estado final e por pilha vazia são convenções distintas, mas equivalentes quanto às linguagens reconhecidas. CFG e PDA descrevem precisamente as linguagens livres de contexto. [Ver modelo](/cadeiras/tc/automatos-pilha/#o-modelo) e [equivalência CFG–PDA](/cadeiras/tc/automatos-pilha/#pda-equivale-a-cfg).
+$$
+s=xyz,\quad |xy|\le p,\quad |y|\ge1,
+\quad \forall i\ge0,\ xy^iz\in L.
+$$
 
-| Para uma CFG            | Condição ou método                                                                                                                                                                                                      |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Forma normal de Chomsky | Produções $A\to BC$ ou $A\to a$; admite-se $S\to\varepsilon$ se $\varepsilon\in L$, com inicial novo quando necessário. Eliminar símbolos inúteis, produções-$\varepsilon$ e unitárias antes de decompor corpos longos. |
-| CYK                     | Para uma palavra não vazia e gramática em FNC, preencher células de substrings curtas para longas; combinar $B,C$ quando existe $A\to BC$. A palavra pertence se $S$ está na célula total.                              |
+Para refutar: supõe regular, recebe $p$, escolhe $s$, considera qualquer corte válido e escolhe um $i$ que sai de $L$. Não uses o lema para provar regularidade.
 
-[Ver forma normal](/cadeiras/tc/gramaticas-livres/#forma-normal-de-chomsky) e [CYK](/cadeiras/tc/gramaticas-livres/#cyk-numa-tabela-pequena).
+## CFG, PDA e CNF
 
-**Lema da repetição livre de contexto.** Se $L$ é livre de contexto, existe $p$ tal que cada $z\in L$, $|z|\ge p$, pode ser escrito $z=uvwxy$, com $|vwx|\le p$, $|vx|>0$ e $uv^iwx^iy\in L$ para todo $i\ge0$. Para refutar, tens de cobrir todas as posições possíveis da janela $vwx$ e mostrar uma escolha de $i$ que falha. Tal como no caso regular, satisfazer o lema não prova pertença à classe.
+CFG: $G=(V,\Sigma,P,S)$; $A\to\alpha$ tem uma variável à esquerda. $L(G)=\{w\in\Sigma^*\mid S\Rightarrow^*w\}$. Prova ambas as inclusões quando descreves a linguagem.
 
-As linguagens livres de contexto são fechadas para união, concatenação, estrela, reverso e interseção com uma **regular**. Não são fechadas em geral para interseção entre si nem para complemento; a substituição e o homomorfismo exigem as definições apropriadas.
+Ambiguidade: uma palavra com duas árvores, ou duas derivações mais à esquerda distintas. Duas ordens de expansão da mesma árvore não bastam. [Gramáticas e ambiguidade](../gramaticas-livres/).
 
-## Turing, decisão e custo
+PDA: $(q,w,\gamma)$ regista estado, entrada restante e pilha, com topo à esquerda. $a,X/\alpha$ lê $a$ e substitui $X$ por $\alpha$.
 
-Uma máquina de Turing tem controlo finito, fita, cabeça de leitura/escrita e transições que podem mudar o símbolo e mover a cabeça. **Reconhecer** $L$ exige aceitar todas as palavras de $L$; para palavras fora de $L$, a máquina pode rejeitar ou nunca parar. **Decidir** exige parar com resposta em todas as entradas. Se $L$ e $\overline L$ são reconhecíveis, $L$ é decidível: corre os dois reconhecedores em alternância até um aceitar. [Ver modelo](/cadeiras/tc/turing-decidibilidade/#o-modelo-fita-cabeça-estados) e [decidível contra reconhecível](/cadeiras/tc/turing-decidibilidade/#decidível-contra-reconhecível).
+- Estado final: entrada vazia e estado em $F$, sem exigir pilha vazia.
+- Pilha vazia: entrada e pilha vazias, incluindo o marcador de fundo.
+- CFG para PDA: expande a variável do topo por $\varepsilon$; lê e retira terminais iguais.
+- PDA para CFG: $[pXq]$ gera o que remove $X$ indo de $p$ a $q$.
 
-$A_{TM}=\{\langle M,w\rangle\mid M\text{ aceita }w\}$ é reconhecível e indecidível. O problema da paragem também é indecidível. Não confundas **indecidível** (sem algoritmo que termine sempre) com **difícil** (algoritmo existe, mas pode exigir muito tempo). [Ver problema da paragem](/cadeiras/tc/turing-decidibilidade/#o-problema-da-paragem-é-indecidível).
+Os dois critérios de PDA são equivalentes mediante conversão de máquinas não determinísticas. A mesma máquina pode ter linguagens diferentes pelos dois critérios. CFG e PDA têm o mesmo poder; DPDA tem menos poder que NPDA. [Construções](../automatos-pilha/).
 
-Em complexidade, $\mathrm P$ reúne problemas de decisão resolúveis em tempo polinomial; $\mathrm{NP}$ reúne os cujas respostas «sim» têm certificados verificáveis em tempo polinomial. Uma redução polinomial $A\le_p B$ transforma instâncias e preserva a resposta; se $A$ é difícil e reduz para $B$, essa dificuldade passa a $B$. Uma prova de NP-completude exige mostrar $B\in\mathrm{NP}$ **e** reduzir para $B$ um problema já NP-completo. [Ver P e NP](/cadeiras/tc/complexidade/#p-resolver-depressa) e [reduções](/cadeiras/tc/complexidade/#reduções-polinomiais).
+Simplificar: vazias, unitárias, não geradores, inacessíveis. Depois substitui terminais em corpos longos e divide corpos com mais de duas variáveis.
+
+CNF: $A\to BC$ ou $A\to a$. Se $\varepsilon\in L$, permite $S_0\to\varepsilon$, com $S_0$ ausente dos corpos. CYK preenche intervalos por comprimento, tentando cada corte; aceita se o início aparece no intervalo total. Tempo $O(n^3)$ para gramática fixa. [Conversão e tabela](../propriedades-livres/).
+
+## Limites das livres de contexto
+
+CFL são fechadas para união, concatenação, estrela, reverso e interseção com regular. Não são fechadas para interseção geral, complemento ou diferença geral.
+
+**Lema CFL:** $s=uvwxy$, $|vwx|\le p$, $|vx|\ge1$ e $uv^iwx^iy\in L$ para todo $i\ge0$. Bombeiam-se duas partes com o mesmo expoente, possivelmente uma vazia. A zona limitada pode estar em qualquer posição. [Prova e quantificadores](../propriedades-livres/#lema-da-repetição-para-cfl).
+
+Pertença e vazio de CFG são decidíveis. Equivalência, universalidade e ambiguidade de CFG são indecidíveis em geral.
+
+## Turing e complexidade
+
+TM: lê, escreve e desloca a cabeça. Em $\alpha q\beta$, a cabeça lê o primeiro símbolo de $\beta$. Máquina reconhecedora pode não parar fora da linguagem; decisor para em todas as entradas. Se $L$ e $\overline L$ são reconhecíveis, $L$ é decidível. $HALT$ e $A_{TM}$ são reconhecíveis e indecidíveis. [Modelo e provas](../turing-decidibilidade/).
+
+Redução $A\le_m B$: função total computável que preserva sim/não. Para provar $B$ indecidível, reduz a ele um $A$ já indecidível. Não confundas simular por um limite finito com decidir paragem sem limite.
+
+P: decidir em tempo polinomial. NP: certificado de tamanho polinomial verificável em tempo polinomial. $P\subseteq NP$; $P=NP$ continua em aberto. NP-completo significa estar em NP e ser NP-difícil. Para provar dificuldade de $B$, reduz $A\le_p B$ com $A$ já NP-completo. O tamanho de um inteiro em binário cresce como $\log N$, não como $N$. [Complexidade](../complexidade/).
