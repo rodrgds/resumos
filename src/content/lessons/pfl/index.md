@@ -13,7 +13,7 @@ editorial:
       url: https://people.cs.nott.ac.uk/pszgmh/pih.html
     - title: Manual SICStus Prolog
       url: https://sicstus.sics.se/sicstus/docs/latest/html/sicstus.html
-  coverage: Percurso de teoria e prática para tipos, listas, recursão, ordem superior, árvores, I/O, parsers, propriedades, unificação, procura, controlo, jogos e transformação simbólica. Inclui exercícios próprios e cheat sheet.
+  coverage: Percurso de teoria e prática para tipos, listas, recursão, ordem superior, árvores, I/O, parsers, propriedades, unificação, procura, controlo, jogos e transformação simbólica. Inclui as construções da folha 3 atual, fundamentos de operadores e termos Prolog, exercícios próprios e cheat sheet.
   gaps:
     - As fichas funcionais recolhidas são apenas as folhas 1 a 3; faltam as fichas posteriores.
     - Os slides Prolog de 2026/27 ainda não constavam do material recolhido.
@@ -24,7 +24,7 @@ PFL usa Haskell para transformar valores com funções e Prolog para descrever r
 
 ## O percurso
 
-Em Haskell, começa pelas [expressões e padrões](/cadeiras/pfl/haskell-expressoes-tipos/), depois aprende a [deduzir tipos](/cadeiras/pfl/polimorfismo-classes/). [Listas e recursão](/cadeiras/pfl/listas-recursao/) cobre compreensões, ordenação e os algoritmos das fichas iniciais. [Ordem superior](/cadeiras/pfl/funcoes-ordem-superior/) reúne composição, folds e preguiça. Passa depois às [árvores e tipos algébricos](/cadeiras/pfl/tipos-algebricos-recursao/), às [ações I/O e parsers](/cadeiras/pfl/entrada-saida-parsers/) e às [propriedades com QuickCheck](/cadeiras/pfl/testes-quickcheck/).
+Em Haskell, começa pelas [expressões e padrões](/cadeiras/pfl/haskell-expressoes-tipos/), depois aprende a [deduzir tipos](/cadeiras/pfl/polimorfismo-classes/). [Listas e recursão](/cadeiras/pfl/listas-recursao/) cobre compreensões, ordenação, intercalação, inserção em posições, permutações e bits das fichas iniciais. [Ordem superior](/cadeiras/pfl/funcoes-ordem-superior/) reúne composição, folds e preguiça. Passa depois às [árvores e tipos algébricos](/cadeiras/pfl/tipos-algebricos-recursao/), às [ações I/O e parsers](/cadeiras/pfl/entrada-saida-parsers/) e às [propriedades com QuickCheck](/cadeiras/pfl/testes-quickcheck/).
 
 Em Prolog, começa por [termos, unificação e SLD](/cadeiras/pfl/logica-unificacao-prolog/). Estuda [listas, aritmética e corte](/cadeiras/pfl/prolog-recursao-procura/) antes de [recolher soluções e compor estruturas](/cadeiras/pfl/solucoes-estruturas-prolog/). A última página aplica essas ferramentas a [procura, jogos e manipulação simbólica](/cadeiras/pfl/procura-jogos-simbolos/).
 
