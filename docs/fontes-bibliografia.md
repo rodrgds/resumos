@@ -4,9 +4,9 @@
 
 ## O que foi verificado
 
-Foram verificadas **109 entradas bibliográficas em 30 cadeiras**. Uma obra só aparece como adotada quando existe uma página pública da FEUP/SIGARRA que a inclui. A disponibilidade legal foi verificada à parte, em páginas oficiais de autores, editoras, projetos ou repositórios institucionais.
+Foram verificadas **117 entradas bibliográficas em 31 cadeiras**. Uma obra só aparece como adotada quando existe uma página pública da FEUP/SIGARRA que a inclui. A disponibilidade legal foi verificada à parte, em páginas oficiais de autores, editoras, projetos ou repositórios institucionais.
 
-As páginas públicas de 2026/2027 ainda não tinham, em geral, a bibliografia preenchida. Por isso, o inventário usa a ocorrência pública preenchida mais recente encontrada em cada cadeira e indica o respetivo ano. Isto prova uso nessa ocorrência; não prova que a lista se mantém em 2026/2027.
+ALGA, AMII e Projeto UP têm bibliografias 2026/2027 preenchidas e verificadas. Nas restantes cadeiras, o inventário indica a ocorrência preenchida mais recente efetivamente verificada. Uma bibliografia histórica prova uso nesse ano, sem confirmar automaticamente a edição atual.
 
 PDFs aleatórios no GitHub, espelhos de manuais e cópias sem autorização clara foram excluídos. `Acesso gratuito autorizado` também não significa automaticamente uma licença aberta para redistribuir ou adaptar.
 
@@ -110,20 +110,33 @@ Em Python, a opção `ct-iadp` tem os notebooks e datasets oficiais de [Python f
 
 - **[Discrete Mathematics: An Open Introduction](https://discrete.openmathbooks.org/dmoi3.html)** — Oscar Levin. Not named by FEUP; legal open alternative covering proofs, combinatorics, sequences, number theory, and graph theory. **Acesso:** texto integral aberto; licença: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
 
-### AM II — Análise Matemática II
+### PUP: Projeto UP
 
-**Evidência da cadeira:** [Most recent populated LEIC occurrence verified: 2023/2024. This is recent LEIC evidence, not legacy MIEIC evidence.](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=520312).
+**Evidência da cadeira:** [2026/2027, verificada em 1 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586984).
 
-- **[Calculus: One and Several Variables](https://www.wiley.com/en-us/calculus-one-and-several-variables-10e-with-student-solutions-manual-set-p-9780470140628)** — Saturnino L. Salas, Einar Hille, Garret J. Etgen. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
-- **Noções sobre Geometria Analítica e Análise Matemática** — José Augusto Trigo Barbosa. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
-- **[Noções sobre Análise Matemática](https://sigarra.up.pt/feup/pt/noticias_geral.ver_noticia?p_nr=13380)** — José Augusto Trigo Barbosa. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
-- **Apontamentos de apoio às aulas teóricas** — José Augusto Trigo Barbosa. **Papel:** apontamentos obrigatórios. **Acesso:** acesso restrito/institucional.
-- **Problemas de integrais de linha e superfície e de séries de Fourier** — Maria Luísa Romariz Madureira. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição.
-- **[Advanced Engineering Mathematics](https://www.wiley.com/en-us/Advanced+Engineering+Mathematics,+10th+Edition-p-9781119455929)** — Erwin Kreyszig. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição.
+- **Presentation Skills for Students**, Joan van Emden, Lucinda Becker. **Papel:** obrigatória. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **The Visual Display of Quantitative Information**, Edward R. Tufte. **Papel:** obrigatória. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **How to Write Dissertations and Project Reports**, Kathleen McMillan, Jonathan Weyers. **Papel:** obrigatória. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Escrever... com normas**, Julce Mary Cornelsen. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Scientific Writing and Communication**, Angelika H. Hofmann. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Manual de competências pessoais, interpessoais e instrumentais**, José Gonçalves das Neves, Margarida Garrido, Eduardo Simões. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Faz o curso na maior**, Nuno Ferreira, Bruno Caldeira. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **The Chicago Manual of Style Online**, University of Chicago. **Papel:** complementar. **Acesso:** subscrição institucional, com VPN fora do campus.
 
-**Alternativas abertas ou gratuitas não tratadas como bibliografia adotada:**
+### AM II: Análise Matemática II
 
-- **[Calculus, Volume 3](https://openstax.org/details/books/calculus-volume-3)** — Gilbert Strang, Edwin Herman. Not named by FEUP; legal open alternative for vectors, multivariable calculus, and vector calculus. **Acesso:** texto integral aberto; licença: CC BY-NC-SA 4.0, verificada no PDF guardado.
+**Evidência da cadeira:** [2026/2027, verificada em 1 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587961).
+
+- **Matemática para engenharia em Rn: diferenciação, integração e tópicos adicionais**, José António Fonseca de Oliveira Correia. **Papel:** obrigatória. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Apontamentos de Análise Matemática II**, Carlos Conceição António. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Noções sobre geometria analítica e análise matemática**, José Augusto Trigo Barbosa. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Problemas de integrais de linha e superfície e de séries de Fourier**, Maria Luísa Romariz Madureira. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Calculus: One and Several Variables**, Saturnino L. Salas. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+- **Advanced Engineering Mathematics**, Erwin Kreyszig. **Papel:** complementar. **Acesso:** texto integral não identificado no arquivo local; consulta a biblioteca.
+
+A ficha de AMII repete a entrada de Barbosa; o catálogo conserva uma entrada. A bibliografia 2023/24 anterior permanece datada no JSON, sem a apresentar como bibliografia atual. O livro obrigatório atual é o de Correia. Os materiais de aula e as alternativas abertas continuam identificados separadamente.
+
+**Alternativa aberta:** [Calculus, Volume 3](https://openstax.org/details/books/calculus-volume-3), de Gilbert Strang e Edwin Herman. Complemento de cálculo de várias variáveis, sem ser bibliografia adotada pela FEUP.
 
 ### AC — Arquitetura de Computadores
 
