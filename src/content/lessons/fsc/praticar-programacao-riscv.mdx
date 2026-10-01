@@ -1,0 +1,183 @@
+---
+title: 'Praticar: Programação RV32'
+description: 'Exercícios originais com pistas e resolução.'
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="fsc-rv32-vetor-max"
+  title="Máximo de negativos"
+  explanation="/cadeiras/fsc/programacao-riscv/#somar-um-vetor"
+  answer={{"kind": "self", "checklist": ["Máximo correto -4.", "Inicializa com o primeiro elemento e define o caso vazio."]}}
+>
+
+Uma rotina inicia max=0 e percorre o vetor [-12,-4,-9]. Explica o erro e corrige a inicialização e o caso vazio.
+
+  <div slot="hint">
+
+O zero pode não ser um elemento do vetor.
+
+  </div>
+
+  <div slot="hint-more">
+
+Para um vetor não vazio, começa pelo primeiro valor.
+
+  </div>
+
+  <div slot="solution">
+
+A rotina devolve 0, mas o máximo é -4. Deve testar primeiro se o comprimento é zero e aplicar um contrato de erro ou ausência de resultado. Se não for vazio, carrega -12 como máximo, depois compara -4 e -9 com sinal. O resultado é -4.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não resolve o erro trocar para comparação unsigned; isso muda a ordem matemática.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-str-digit"
+  title="Converter dígitos ASCII"
+  explanation="/cadeiras/fsc/programacao-riscv/#texto-ascii"
+  answer={{"kind": "self", "checklist": ["Acumulador 2,20,204.", "Valida dígitos e define a política de overflow."]}}
+>
+
+Para uma string ASCII de dígitos terminada em zero, dá a atualização do acumulador decimal em cada carácter. Segue "204" e diz que validação falta se aceitarmos texto arbitrário.
+
+  <div slot="hint">
+
+Ao acrescentar um dígito, deslocas o valor decimal por uma casa.
+
+  </div>
+
+  <div slot="hint-more">
+
+A atualização é 10×valor+(c−48).
+
+  </div>
+
+  <div slot="solution">
+
+Começando em 0: com 2 dá 2, com 0 dá 20, com 4 dá 204. Primeiro valida 48≤c≤57 e termina no byte zero. Para entradas longas é preciso decidir e detetar overflow do acumulador. Ler até zero não prova que todos os bytes anteriores eram dígitos.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não somes códigos ASCII diretamente ao valor numérico.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-carry-igual"
+  title="Carry sem sinal"
+  explanation="/cadeiras/fsc/programacao-riscv/#soma-de-várias-palavras"
+  answer={{"kind": "self", "checklist": ["A igualdade não gera carry neste caso.", "Usa comparação unsigned estrita e confirma o caso FFFFFFFF+1."]}}
+>
+
+Na soma das words baixas A=0xFFFFFFFF e B=0, a soma L é 0xFFFFFFFF. Uma rotina considera carry se L≤A. Está correta? Dá a condição correta e um caso com carry.
+
+  <div slot="hint">
+
+Igualdade pode ocorrer sem ultrapassar 32 bits.
+
+  </div>
+
+  <div slot="hint-more">
+
+Usa comparação estrita unsigned.
+
+  </div>
+
+  <div slot="solution">
+
+Não: L=A e a soma não teve carry. A condição é $L<A$, sem sinal, implementável por `sltu`. Com A=0xFFFFFFFF e B=1, L=0 e $L<A$ é verdadeiro, carry=1. Esse carry acrescenta-se à soma das words altas.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não uses comparação com sinal nem menor ou igual para esta condição.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-nan-mask"
+  title="Classificar sem operações de float"
+  explanation="/cadeiras/fsc/programacao-riscv/#soma-de-várias-palavras"
+  answer={{"kind": "self", "checklist": ["Zero por magnitude, expoente máximo e fração separados.", "Fração zero distingue infinito de NaN."]}}
+>
+
+Uma word binary32 é lida em t0. Descreve testes com máscaras que distinguem zero, infinito e NaN sem calcular em vírgula flutuante.
+
+  <div slot="hint">
+
+Separa magnitude, expoente e fração.
+
+  </div>
+
+  <div slot="hint-more">
+
+Máscaras: 0x7FFFFFFF, 0x7F800000, 0x007FFFFF.
+
+  </div>
+
+  <div slot="solution">
+
+Zero: `(t0 & 0x7FFFFFFF)==0`, aceitando +0 e -0. Expoente máximo: `(t0 & 0x7F800000)==0x7F800000`. Se isso for verdadeiro, fração `(t0 & 0x007FFFFF)==0` indica infinito; fração diferente de zero indica NaN. Para normais/subnormais, examina se o expoente é zero e se a fração é não zero.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não ignores a fração nem testes apenas um bit do expoente. As máscaras grandes exigem `li` e AND por registo, não um imediato andi de 32 bits.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-descritor"
+  title="Dois níveis de endereçamento"
+  explanation="/cadeiras/fsc/programacao-riscv/#somar-um-vetor"
+  answer={{"kind": "self", "checklist": ["Primeiro lê a base em 0(t0), depois 8(base).", "Verifica comprimento pelo menos três."]}}
+>
+
+Um descritor em endereço D guarda o apontador do vetor no offset 0 e o comprimento no offset 4. O vetor contém words. Escreve o caminho para ler o elemento i=2 usando t0=D.
+
+  <div slot="hint">
+
+Primeiro lê o apontador guardado, depois o elemento.
+
+  </div>
+
+  <div slot="hint-more">
+
+O offset do terceiro elemento é 8 bytes.
+
+  </div>
+
+  <div slot="solution">
+
+O excerto é `lw t1,0(t0)` para obter a base e `lw t2,8(t1)` para ler o elemento. `lw t2,8(t0)` leria dados do descritor ou depois dele, não o elemento apontado. Antes do acesso, verifica que o comprimento `lw t3,4(t0)` é pelo menos 3.
+
+  </div>
+
+  <div slot="mistakes">
+
+O endereço do campo não é o apontador que o campo armazena.
+
+  </div>
+
+</Exercise>

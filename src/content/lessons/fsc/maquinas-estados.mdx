@@ -1,0 +1,84 @@
+---
+title: 'Máquinas de estados e controladores'
+description: 'Projetar Moore e Mealy, codificar estados, minimizar e coordenar circuitos.'
+section: conteudo
+order: 11
+practices:
+  - fsc/praticar-maquinas-estados
+---
+
+Uma máquina de estados finita, FSM, guarda apenas a parte do passado necessária para decidir o comportamento seguinte. Para reconhecer se um número binário é múltiplo de 3, não precisamos de guardar todos os bits recebidos: chega guardar o resto da divisão por 3.
+
+## Moore e Mealy
+
+Numa Moore, a saída depende só do estado atual. Numa Mealy, pode depender também das entradas atuais. Em ambos os casos, o próximo estado depende do estado e das entradas.
+
+Num diagrama Moore, escreve a saída dentro do estado e a condição na seta. Num Mealy, escreve condição/saída na seta. Uma saída Mealy pode mudar entre flancos se a entrada mudar; não a trates como um valor sempre registado.
+
+## Resto de uma sequência binária
+
+Se o prefixo lido vale $v$ e chega um bit $b$, o novo valor é $2v+b$. Para o resto $r$ módulo 3:
+
+$$r^+=(2r+b)\bmod3.$$
+
+Usamos estados R0, R1, R2 e saída $z=1$ em R0. O reset põe a máquina em R0. Aqui o prefixo vazio é interpretado como zero; se a especificação exigir pelo menos um bit, é preciso guardar também essa informação.
+
+| Estado | $b=0$ | $b=1$ | $z$ |
+| ------ | ----- | ----- | --- |
+| R0     | R0    | R1    | 1   |
+| R1     | R2    | R0    | 0   |
+| R2     | R1    | R2    | 0   |
+
+import Dot from '../../../components/Dot.astro';
+import fsm from '../../fsc/fsm-resto.dot?raw';
+
+<Dot
+  source={fsm}
+  alt="Moore de divisibilidade por três: R0 tem saída 1; R1 e R2 têm saída 0. Cada seta segue o novo resto de 2r+b."
+/>
+
+Ao ler `110`, passamos R0 → R1 → R0 → R0. O número é 6, múltiplo de 3. Ao ler `101`, passamos R0 → R1 → R2 → R2: 5 deixa resto 2. A saída observada depois de cada flanco corresponde ao prefixo já recebido.
+
+## Síntese com flip-flops D
+
+Codifica R0=`00`, R1=`01`, R2=`10`. São necessários dois flip-flops, porque $\lceil\log_2 3\rceil=2$. Escolhe recuperação de `11` para `00`, com saída 0.
+
+A tabela anterior, expandida para bits $q_1,q_0,b$, dá:
+
+$$D_1=\overline q_1q_0\overline b+q_1\overline q_0b,$$
+
+$$D_0=\overline q_1\overline q_0b+q_1\overline q_0\overline b,$$
+
+$$z=\overline q_1\overline q_0.$$
+
+Cada termo de D vem de uma linha cuja próxima saída do flip-flop é 1. As equações dão `00` para o estado inválido, como escolhido. O circuito tem lógica combinatória para D e dois flip-flops que atualizam juntos.
+
+Em one-hot, usa-se um flip-flop por estado. Apenas um está a 1. Isto pode simplificar a lógica, mas aumenta os flip-flops. O reset deve ativar o estado inicial e desativar os outros; pôr todos a 0 não é uma codificação válida de R0.
+
+## Reconhecer padrões e produzir um impulso
+
+Para detetar `101` com sobreposição, os estados distinguem os prefixos já reconhecidos: nenhum, `1`, `10` e deteção `101`. Depois de detetar, o último `1` já pode iniciar outra ocorrência. Em `10101`, há duas deteções. Voltar incondicionalmente ao estado inicial perderia a segunda.
+
+Para produzir um impulso de um ciclo quando um botão fica 1, usa estados Espera, Impulso e Libertação. Espera entra em Impulso quando x=1; Impulso passa a Libertação se x ainda for 1, ou Espera se já for 0; Libertação conserva enquanto x=1. A saída só é 1 em Impulso. Sem Libertação, uma entrada longa pode provocar vários impulsos.
+
+## Minimização e comunicação
+
+Para minimizar uma Moore, agrupa primeiro estados com a mesma saída. Divide um grupo quando dois dos seus estados, para a mesma entrada, transitam para grupos diferentes. Repete até estabilizar. Só estados que continuam indistinguíveis podem ser fundidos; ter a mesma saída hoje não chega.
+
+Considera esta Moore, com estado inicial A:
+
+| Estado | Saída | Próximo com 0 | Próximo com 1 |
+| ------ | ----- | ------------- | ------------- |
+| A      | 0     | B             | D             |
+| B      | 0     | C             | D             |
+| C      | 0     | C             | C             |
+| D      | 1     | E             | D             |
+| E      | 1     | D             | E             |
+
+Começamos com $\{A,B,C\}$ e $\{D,E\}$. A entrada 1 separa C de A,B, pois C permanece no grupo de saída 0 enquanto A,B vão para saída 1. Ficamos com $\{A,B\},\{C\},\{D,E\}$. A entrada 0 separa agora A de B: A vai para o grupo A,B, mas B para C. A partição final é $\{A\},\{B\},\{C\},\{D,E\}$. D e E continuam juntos porque ambas as suas transições ficam no seu próprio grupo.
+
+A máquina reduzida tem quatro estados: A, B, C e H, que representa D/E. A vai para B/H, B para C/H, C para C/C e H para H/H, respetivamente com 0/1. Conserva as saídas 0,0,0,1. Não conseguimos fundir A e B, apesar da mesma saída inicial: a sequência 01 termina em saída 1 a partir de A e 0 a partir de B.
+
+Duas máquinas podem coordenar-se por handshake de quatro fases: emissor coloca dados estáveis e `valid=1`; recetor aceita e põe `ack=1`; emissor baixa valid; recetor baixa ack. O emissor mantém os dados até à aceitação. Um impulso de um ciclo pode ser perdido se o recetor não o observar.
+
+Entre relógios diferentes, entradas podem violar setup/hold e provocar metastabilidade. O modelo de FSM assume entradas amostradas válidas. A implementação exige sincronização apropriada; sincronizar bits independentes não garante uma palavra de dados coerente.

@@ -1,0 +1,148 @@
+---
+title: 'Praticar: Chamadas e pilha'
+description: 'Exercícios originais com pistas e resolução.'
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="fsc-rv32-nonleaf-ra"
+  title="Por que a rotina não volta?"
+  explanation="/cadeiras/fsc/procedimentos-pilha/#chamar-e-voltar"
+  answer={{"kind": "self", "checklist": ["A chamada interior sobrescreve ra.", "Guarda o retorno exterior antes do jal e restaura-o antes do ret."]}}
+>
+
+Uma rotina executa `jal ra,auxiliar` e depois `ret`, sem guardar o ra recebido. Explica para onde o ret salta e mostra como corrigir.
+
+  <div slot="hint">
+
+O jal interior substitui o retorno exterior.
+
+  </div>
+
+  <div slot="hint-more">
+
+Guarda ra antes do jal e restaura antes do ret.
+
+  </div>
+
+  <div slot="solution">
+
+O jal coloca em ra o endereço da instrução seguinte dentro da própria rotina. Após a auxiliar voltar, o ret usa esse mesmo endereço interior e não regressa ao chamador exterior. Reserva um frame alinhado, guarda ra, chama, restaura ra e liberta o frame antes de ret. Uma leaf que não chama outras rotinas não precisa desta preservação só por ser chamada.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não guardes ra depois da chamada; já perdeu o valor exterior.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-save-registers"
+  title="Valores vivos numa chamada"
+  explanation="/cadeiras/fsc/procedimentos-pilha/#quem-conserva-o-quê"
+  answer={{"kind": "self", "checklist": ["A correção cabe ao chamador.", "Preserva valores vivos ou usa registos s com preservação correta."]}}
+>
+
+Uma rotina guarda um apontador em t0 e um contador em t1, chama uma auxiliar e continua a usá-los. A auxiliar cumpre a ABI mas modifica t0 e t1. Quem tem de corrigir o programa?
+
+  <div slot="hint">
+
+t são caller-saved.
+
+  </div>
+
+  <div slot="hint-more">
+
+O chamador precisa preservar os seus valores vivos.
+
+  </div>
+
+  <div slot="solution">
+
+O chamador tem de guardar t0 e t1, ou colocar os valores em s0 e s1, preservando os antigos s0,s1 no seu próprio frame. A auxiliar pode modificar t0,t1 sem violar a ABI. A convenção não garante preservação só porque o nome sugere uma variável importante.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não imponhas uma restrição extra à auxiliar sem a declarar no contrato.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-frame"
+  title="Espaço e alinhamento"
+  explanation="/cadeiras/fsc/procedimentos-pilha/#frames-e-alinhamento"
+  answer={{"kind": "number", "value": 16, "tolerance": 0, "unit": "bytes"}}
+>
+
+Uma non-leaf precisa de guardar ra,s0,s1, três words. O sp recebido está alinhado a 16. Propõe offsets e tamanho do frame e mostra a libertação.
+
+  <div slot="hint">
+
+12 bytes de dados não obriga a frame de 12 bytes.
+
+  </div>
+
+  <div slot="hint-more">
+
+Arredonda a reserva para manter alinhamento de 16.
+
+  </div>
+
+  <div slot="solution">
+
+Reserva 16 com `addi sp,sp,-16`. Pode guardar ra em 12(sp), s0 em 8(sp), s1 em 4(sp). Restaura nesses mesmos offsets, faz `addi sp,sp,16` e ret. O espaço em 0(sp) pode ficar livre. Com frame de 12, sp ficaria desalinhado na chamada interior.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não escrevas os três valores antes de reservar o frame nem libertes um tamanho diferente.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-rv32-recursion"
+  title="Resultados parciais independentes"
+  explanation="/cadeiras/fsc/procedimentos-pilha/#chamadas-dentro-de-ciclos-e-recursão"
+  answer={{"kind": "self", "checklist": ["Cada frame guarda o estado necessário da sua chamada.", "A0 e ra podem mudar na chamada interior; inclui caso base e restauração."]}}
+>
+
+Uma rotina recursiva precisa do argumento original depois da chamada interior. Pode conservá-lo só em a0? Explica que estado pertence a cada frame.
+
+  <div slot="hint">
+
+a0 passa argumentos e recebe resultados.
+
+  </div>
+
+  <div slot="hint-more">
+
+A chamada interior pode alterar a0 e ra.
+
+  </div>
+
+  <div slot="solution">
+
+Não pode contar com a0 preservado. Cada frame guarda o argumento original ou um resultado parcial necessário, além de ra e de registos s usados. A chamada interior tem o seu próprio frame. Ao voltar, a rotina recupera os seus dados e combina-os com o resultado devolvido. O caso base deve evitar nova chamada e todos os caminhos repõem sp.
+
+  </div>
+
+  <div slot="mistakes">
+
+Uma variável global única não conserva estados distintos de chamadas simultaneamente ativas.
+
+  </div>
+
+</Exercise>

@@ -1,0 +1,67 @@
+---
+title: 'Procedimentos e pilha'
+description: 'Chamadas leaf e non-leaf, registos preservados, frames e passagem de argumentos.'
+section: conteudo
+order: 16
+practices:
+  - fsc/praticar-procedimentos-pilha
+---
+
+Uma rotina deve dizer quais os argumentos, qual o resultado e o que conserva. A convenção de chamadas permite combinar rotinas escritas separadamente: o chamador sabe que valores podem mudar e o chamado sabe quais tem de repor.
+
+## Chamar e voltar
+
+`jal ra,rotina` coloca o endereço da instrução seguinte em ra e muda o PC. `ret` equivale a `jalr zero,0(ra)`, por isso volta sem criar um novo endereço de retorno.
+
+Se a chamada estiver em `0x00400020`, ra recebe `0x00400024`. Uma rotina leaf não chama outras rotinas e pode usar esse ra diretamente para voltar. Uma non-leaf faz outra chamada que **sobrescreve ra**. Tem de preservar o retorno para o seu próprio chamador antes dessa chamada.
+
+## Quem conserva o quê
+
+| Registos             | Regra                                                |
+| -------------------- | ---------------------------------------------------- |
+| a0 a a7, t0 a t6, ra | Caller-saved: podem mudar numa chamada               |
+| s0 a s11, sp         | Callee-saved: o chamado repõe o valor anterior       |
+| gp, tp               | Reservados pela convenção, não usar como temporários |
+
+Os primeiros oito argumentos inteiros seguem em a0 a a7; resultados inteiros usuais em a0 e a1. Mais argumentos podem seguir na pilha, segundo o contrato de chamada.
+
+Se o chamador precisa de t0 depois da chamada, deve guardá-lo ou movê-lo para um registo s que conserva corretamente. Se o chamado usa s0, guarda o **s0 que recebeu**, e restaura-o antes de voltar. Um registo ser callee-saved não significa que já contenha um valor útil para a rotina.
+
+## Frames e alinhamento
+
+A pilha cresce para endereços menores. Reservar 16 bytes faz `addi sp,sp,-16`; libertar faz `addi sp,sp,16`. A ABI normal mantém sp alinhado a 16 bytes. Um frame pode reservar mais espaço do que os valores guardados para cumprir esse alinhamento.
+
+Não escrevas abaixo de sp sem reservar o espaço. Guarda e recupera os valores nos mesmos offsets. Todos os caminhos de retorno têm de libertar o frame e restaurar o que foi preservado.
+
+No exemplo executável, `main` alinha o sp inicial do simulador com `andi sp,sp,-16`. Isso é preparação do programa principal, não uma operação para uma rotina fazer ao sp do chamador. Uma rotina comum assume o alinhamento acordado e deve devolver exatamente o sp recebido.
+
+## Exemplo non-leaf
+
+Queremos $f(x)=2(x+1)$. `dobro` é uma leaf que devolve $2x$. `mais_um_dobro` calcula x+1, chama dobro e devolve o resultado. Guarda ra porque a chamada interior o altera, e guarda s0 porque o usa.
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import callCode from '../../fsc/procedimentos.s?raw';
+
+<CodePlayground
+  language="riscv"
+  code={callCode}
+  title="Chamada non-leaf com preservação"
+/>
+
+Com x=7, a saída é 16 e depois 99, o valor de s0 no main. Ao entrar na non-leaf, o frame fica:
+
+| Offset relativo ao sp reservado | Conteúdo         |
+| ------------------------------- | ---------------- |
+| 12                              | ra recebido      |
+| 8                               | s0 recebido, 99  |
+| 0 a 7                           | Espaço não usado |
+
+A rotina coloca 8 em s0 e passa esse valor em a0. A chamada a dobro modifica ra e produz a0=16. O epílogo restaura s0 e ra sem alterar a0, liberta os 16 bytes e volta. Guardar ra **depois** do jal preservaria o retorno interior, não o retorno correto.
+
+## Chamadas dentro de ciclos e recursão
+
+Numa rotina que percorre uma string e chama `is_alnum` para cada byte, o apontador e o contador têm de sobreviver à chamada. Podem ficar em s0 e s1, desde que a rotina preserve os valores antigos de ambos no seu frame. Guardar o apontador em t0 e assumir que a auxiliar não o altera viola o contrato caller-saved.
+
+Cada chamada recursiva necessita do seu próprio frame para os argumentos ou resultados parciais que ainda vai usar. Não guardes o estado de todas as chamadas numa única variável global. Define primeiro o caso base para que a recursão termine; depois verifica que cada caminho tem um epílogo correto.
+
+Os `ecall` de impressão e saída pertencem ao ambiente RARS: a7=1 imprime o inteiro de a0, a7=11 imprime um carácter e a7=10 termina. Não substituem a convenção de chamadas entre rotinas e não são serviços portáveis para qualquer sistema operativo.

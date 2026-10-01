@@ -1,0 +1,148 @@
+---
+title: 'Praticar: CPU multiciclo'
+description: 'Exercícios originais com pistas e resolução.'
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="fsc-cpu-states-sw"
+  title="Estado guardado entre ciclos"
+  explanation="/cadeiras/fsc/cpu-multiciclo/#estados-e-caminhos"
+  answer={{"kind": "number", "value": 4, "tolerance": 0, "unit": "ciclos"}}
+>
+
+Segue um sw no CPU multiciclo e identifica onde ficam o dado e o endereço antes da escrita. Dá a sequência de estados e ciclos.
+
+  <div slot="hint">
+
+Há fetch,decode,endereço,escrita.
+
+  </div>
+
+  <div slot="hint-more">
+
+B e ALUOut conservam valores para o estado 5.
+
+  </div>
+
+  <div slot="solution">
+
+A sequência é 0,1,2,5, quatro ciclos. No decode B recebe Reg[rs2] e A recebe a base. No estado 2, ALUOut guarda A+imediato. No estado 5, IorD=1 seleciona esse endereço e MemWrite=1 escreve B. Não há writeback ao banco.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não uses a saída atual da ALU no store se o caminho especifica ALUOut.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-cpu-branch-oldpc"
+  title="O fetch já avançou"
+  explanation="/cadeiras/fsc/cpu-multiciclo/#recursos-e-registos-internos"
+  answer={{"kind": "self", "checklist": ["Alvo 00400030.", "Conserva PCinst ou soma -20 ao PC avançado."]}}
+>
+
+O branch estava em 0x00400040 com d=-16, mas PC já vale 0x00400044 no decode. Determina o alvo correto e duas maneiras de o calcular.
+
+  <div slot="hint">
+
+A ISA usa o PC da instrução.
+
+  </div>
+
+  <div slot="hint-more">
+
+Usar PC avançado exige compensar quatro bytes.
+
+  </div>
+
+  <div slot="solution">
+
+O alvo correto é 0x00400030. Pode somar d ao PCinst=0x00400040 conservado no fetch, ou somar d−4=-20 ao PC avançado 0x00400044. Somar -16 ao PC avançado daria 0x00400034 e saltaria para a instrução errada. O caminho e o gerador do imediato têm de implementar a opção escolhida.
+
+  </div>
+
+  <div slot="mistakes">
+
+Uma tabela com PC+imm não é suficiente sem definir qual PC está a usar.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-cpu-dynamic-cycles"
+  title="Salto tomado e instruções não executadas"
+  explanation="/cadeiras/fsc/cpu-multiciclo/#contar-instruções-e-ciclos"
+  answer={{"kind": "number", "value": 20, "tolerance": 0, "unit": "ciclos"}}
+>
+
+A execução passa por duas R, um lw, um beq tomado que salta sobre um sw, e outra R. Quantos ciclos gasta neste modelo?
+
+  <div slot="hint">
+
+Conta apenas a sequência efetivamente executada.
+
+  </div>
+
+  <div slot="hint-more">
+
+R=4,lw=5,beq=3; o sw saltado não conta.
+
+  </div>
+
+  <div slot="solution">
+
+São três R, um lw e um beq: $3\times4+5+3=20$ ciclos. O sw está no programa mas não nesta execução. Todos os fetch/decode já estão incluídos nos custos por instrução.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não somes novamente fetch e decode nem inclua o store saltado.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="fsc-cpu-irwrite"
+  title="Instrução preservada durante load"
+  explanation="/cadeiras/fsc/cpu-multiciclo/#seleções-e-habilitações"
+  answer={{"kind": "self", "checklist": ["IR conserva a instrução até ao writeback.", "O dado lido vai a MDR, não a IR."]}}
+>
+
+Por que IRWrite não pode continuar ativo no estado de leitura dos dados de um lw?
+
+  <div slot="hint">
+
+A memória é partilhada por código e dados.
+
+  </div>
+
+  <div slot="hint-more">
+
+No estado 3 a saída contém o dado, não uma instrução nova.
+
+  </div>
+
+  <div slot="solution">
+
+IR mantém o lw para conservar rd e outros campos até ao writeback. Se IRWrite estiver ativo no estado 3, o conteúdo lido como dado substitui o código da instrução e pode mudar o destino de escrita. O dado deve ir para MDR, enquanto IR conserva a instrução.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não assumes que o mesmo valor lido pode substituir qualquer registo interno sem mudar o efeito.
+
+  </div>
+
+</Exercise>

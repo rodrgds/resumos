@@ -1,82 +1,77 @@
 ---
-title: 'LEGv8: instruções'
-description: Formatos R, D, CB e B, acessos à memória, saltos condicionais e procedimentos.
+title: 'RISC-V: instruções e codificação'
+description: 'Operações RV32, formatos R I S B U J, imediatos e pseudo-instruções.'
 section: conteudo
-order: 9
+order: 14
+practices:
+  - fsc/praticar-legv8-instrucoes
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import addCodificacao from '../../fsc/add-codificacao.typ?raw';
+Uma instrução RV32I tem 32 bits. Os campos dizem qual a operação, que registos usa e, quando existe, qual o imediato. Primeiro determina o efeito pretendido; depois preenche os campos do formato certo.
 
-Cada instrução LEGv8 ocupa 4 bytes, ou seja, 32 bits. O formato, a posição dos campos dentro desses 32 bits, depende da família da instrução. Há quatro famílias nesta cadeira: R, D, CB e B.
+## Aritmética e lógica
 
-## Instruções do tipo R
+A sintaxe `add rd,rs1,rs2` significa $rd\leftarrow rs1+rs2$. `sub`, `and`, `or` e `xor` seguem a mesma ordem. O destino pode coincidir com uma fonte: a operação lê os valores antigos antes de escrever.
 
-As instruções do tipo R fazem contas entre registos: `ADD`, `SUB`, `AND` e `ORR` são os exemplos. O formato divide-se assim, do bit 31 ao bit 0:
+`addi rd,rs1,imm` usa um imediato de 12 bits com sinal, de $-2048$ a 2047. O imediato é estendido com sinal também em `andi`, `ori` e `xori`. Por exemplo, `xori t0,t0,-1` inverte todos os bits; um imediato de `0xFFF` representa -1 neste campo.
 
+`sll` desloca para a esquerda; `srl` desloca para a direita introduzindo zeros; `sra` repete o sinal. Em RV32, as versões por registo usam os 5 bits inferiores da quantidade de deslocamento. `slli`, `srli`, `srai` usam uma quantidade de 0 a 31.
+
+`slt` e `sltu` escrevem 1 se a primeira fonte for menor que a segunda, com ou sem sinal. As somas mantêm os 32 bits inferiores e não lançam uma exceção por overflow inteiro.
+
+A extensão M acrescenta `mul` para a metade baixa do produto, e `mulh`, `mulhu`, `mulhsu` para a metade alta com fontes respetivamente sinal/sinal, sem sinal/sem sinal e sinal/sem sinal. `div` divide com sinal truncando para zero; `rem` dá o resto. `divu` e `remu` usam valores sem sinal. `srai` de -3 por uma posição dá -2, enquanto dividir -3 por 2 dá -1.
+
+## Loads e stores
+
+`lw rd,d(rs1)` lê uma word em $rs1+d$. `sw rs2,d(rs1)` escreve uma word nesse endereço. O deslocamento é em **bytes**, com 12 bits com sinal. `lb` e `lh` estendem o sinal; `lbu` e `lhu` estendem com zeros. `sb` e `sh` escrevem só os 8 ou 16 bits inferiores.
+
+Não há um registo de destino num store. Em `sw a0,12(s0)`, a0 é o dado e s0 é a base. Trocar estes papéis altera tanto o endereço como o valor escrito.
+
+## Saltos
+
+`beq` e `bne` comparam igualdade; `blt` e `bge` comparam com sinal; `bltu` e `bgeu` sem sinal. Se a condição for falsa, o PC segue para PC+4. Se for verdadeira, vai para **PC da instrução + deslocamento**.
+
+O formato B representa um deslocamento par, em bytes, de -4096 a 4094. O bit 0 é implícito. Sem a extensão comprimida, as instruções continuam alinhadas a 4 bytes; um destino que só seja múltiplo de 2 pode ser inválido. Usa etiquetas em código para o assembler calcular o deslocamento.
+
+`jal rd,etiqueta` guarda PC+4 em rd e salta para PC+d. O formato J permite deslocamentos pares de $-2^{20}$ a $2^{20}-2$ bytes. `jalr rd,d(rs1)` guarda PC+4 e salta para $(rs1+d)\mathbin{\&}\sim1$, limpando o bit 0. O valor de rs1 é o antigo, mesmo se rs1=rd.
+
+## Campos dos formatos
+
+Lê esta tabela do bit 31 para o bit 0. `op` tem 7 bits, `rd`, `rs1`, `rs2` têm 5, `f3` tem 3 e `f7` tem 7.
+
+| Formato | Campos do bit 31 ao 0                                   |
+| ------- | ------------------------------------------------------- |
+| R       | f7, rs2, rs1, f3, rd, op                                |
+| I       | imm[11:0], rs1, f3, rd, op                              |
+| S       | imm[11:5], rs2, rs1, f3, imm[4:0], op                   |
+| B       | imm[12], imm[10:5], rs2, rs1, f3, imm[4:1], imm[11], op |
+| U       | imm[31:12], rd, op                                      |
+| J       | imm[20], imm[10:1], imm[11], imm[19:12], rd, op         |
+
+Os índices de imm são os bits do **deslocamento reconstruído**, não posições consecutivas na instrução. S e B não têm rd; U e J não têm rs1 nem rs2.
+
+## Codificar passo a passo
+
+Para `add t0,t1,t2`, os registos são x5, x6, x7. `add` usa op=`0110011`, f3=`000`, f7=`0000000`:
+
+```text
+0000000 | 00111 | 00110 | 000 | 00101 | 0110011
 ```
-31        21 20    16 15    10 9     5 4      0
-| OPCODE    | Rm      | SHAMT   | Rn     | Rd    |
+
+O código é `0x007302B3`. `sub` muda f7 para `0100000`; `and` usa f3=`111` e f7=`0000000`. Uma operação não fica identificada apenas por f3.
+
+Para `lw a0,-12(s0)`, usa x10 e x8, op=`0000011`, f3=`010`. O imediato de 12 bits é $4096-12=4084=\mathrm{FF4}_{16}$:
+
+```text
+111111110100 | 01000 | 010 | 01010 | 0000011
 ```
 
-`Rn` é o primeiro operando, `Rm` o segundo, `Rd` o destino e `SHAMT` a quantidade de deslocamento (quase sempre `000000`, isto é, sem deslocar). O campo `ALUOp` da unidade de controlo vale `10` para este tipo, a dizer à ALU que a operação vem do campo de função da instrução.
+Dá `0xFF442503`. No store `sw a0,12(s0)`, reparte `000000001100` em `0000000` e `01100`; o código é `0x00A42623`.
 
-Um exemplo: `ADD X2, X3, X4` soma `X3` com `X4` e guarda em `X2`. Todos os operandos são registos; não há memória envolvida.
+Para `beq x5,x6` com destino 16 bytes à frente, imm[4:1]=`1000` e os outros bits de imm são 0. Dá `0x00628863`. Não coloques o inteiro 16 diretamente num campo contínuo de 12 bits.
 
-Codifica agora `ADD X0, X1, X2` campo a campo. O opcode do `ADD` é `10001011000` (11 bits), `Rm` é `X2 = 00010`, `SHAMT` é `000000`, `Rn` é `X1 = 00001` e `Rd` é `X0 = 00000`:
+## Constantes e pseudo-instruções
 
-<Typst
-  source={addCodificacao}
-  format="svg"
-  alt="Barra de 32 bits da instrução ADD X0, X1, X2 dividida em cinco campos à escala: opcode com 10001011000, Rm com 00010, SHAMT com 000000, Rn com 00001 e Rd com 00000."
-/>
+`lui rd,u` coloca u nos 20 bits superiores e zeros nos 12 inferiores. `auipc rd,u` soma esse valor ao PC atual. Para construir `0x12345ABC`, a parte baixa `ABC` seria um imediato negativo, -1348. Usa `lui t0,0x12346` e `addi t0,t0,-1348`: a soma dá o valor desejado.
 
-Confere as contas: $11 + 5 + 6 + 5 + 5 = 32$ bits, e cada número de registo ocupa exatamente os 5 bits do seu campo. É este o exercício que cai em prova: do nome da instrução aos 32 bits, sem saltar campos.
-
-## Instruções do tipo D
-
-As instruções do tipo D acedem à memória: `LDUR` (ler) e `STUR` (escrever). O formato é:
-
-```
-31        21 20         12 11 10 9  8 9     5 4      0
-| OPCODE    | OFFSET      | 00    | Rn     | Rt    |
-```
-
-O endereço acedido calcula-se como `Rn + OFFSET`, com o OFFSET em complemento para dois. A ALU, nestas instruções, efetua sempre uma adição (`ALUOp = 00`). `LDUR X0, [X1, #8]` lê a _doubleword_ que está 8 bytes acima do endereço em `X1` e guarda-a em `X0`. `STUR X0, [X1, #8]` faz o inverso.
-
-## Saltos condicionais e incondicionais
-
-As instruções de salto condicional (tipo CB), como `CBZ` (_compare and branch if zero_), testam um registo e saltam se ele for zero:
-
-```
-23        5 4      0
-| ADDRESS   | Rt    |
-```
-
-O novo valor do PC é `PC + ADDRESS × 4`, porque cada instrução ocupa 4 bytes e o campo guarda o deslocamento em unidades de instruções[^unidades]. O `ALUOp` vale `01` e o registo `Rt` é o registo comparado.
-
-Confirma a conta do salto com um programa curto: com `PC = 100` e `ADDRESS = 12`, o destino é `148`:
-
-<CodePlayground
-  language="python"
-  code={'pc = 100\naddress = 12\nprint(pc + address * 4)'}
-/>
-
-O salto incondicional `B` tem só o campo de endereço e faz sempre `PC + ADDRESS × 4`. A instrução `BL` (salto com ligação) faz o mesmo e ainda guarda em X30 (LR) o endereço da instrução seguinte, para o procedimento saber para onde regressar. É por isso que o LR existe.
-
-## Procedimentos
-
-Um procedimento **leaf** não chama mais ninguém e pode viver só nos registos. Um procedimento **non-leaf** invoca outros procedimentos e precisa da pilha: antes de cada chamada, guarda na pilha os registos que o chamado pode estragar (incluindo o LR) e o seu FP; no regresso, repõe tudo pela ordem inversa.
-
-Segue uma chamada com atenção aos endereços. Se `BL func` está no endereço 1000, o LR fica com 1004 e o PC salta para `func`. Dentro de `func`, antes de chamar outra função, o LR atual (1004) vai para a pilha, porque a nova chamada vai escrever o seu próprio endereço de regresso no LR. Sem esta disciplina, o primeiro endereço de regresso perdia-se e o programa não voltava ao ponto certo.
-
-:::warning[Três erros comuns]
-Esquecer que o deslocamento do salto se multiplica por 4; usar um OFFSET que não é múltiplo de 8 num acesso de 64 bits; e guardar registos na pilha sem os repor pela ordem inversa. Qualquer um deles desvia o programa para um endereço errado.
-:::
-
-## Para saber mais
-
-- [Simulador LEGv8](https://github.com/simdeistud/LEGv8-Simulator): simulador de código aberto para testar instruções e procedimentos antes da prova.
-
-[^unidades]: Cada instrução ocupa 4 bytes seguidos, por isso os endereços de instrução andam de 4 em 4. O campo `ADDRESS` conta instruções, não bytes: o hardware multiplica por 4 para converter a contagem em endereço.
+Pseudo-instruções são conveniências do assembler. `mv rd,rs` é `addi rd,rs,0`; `not` usa `xori` com -1; `neg` usa `sub rd,zero,rs`; `j` é `jal zero`; `ret` é `jalr zero,0(ra)`. `li`, `la` e `call` podem expandir em mais de uma instrução. Para contar ciclos ou calcular endereços, conta as instruções máquina emitidas, não só as linhas do ficheiro.

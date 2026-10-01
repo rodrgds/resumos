@@ -1,0 +1,233 @@
+---
+import InteractiveDemo from '../InteractiveDemo.astro';
+const presets = [
+  ['C1540000', '−13,25'],
+  ['00000000', '+0'],
+  ['80000000', '−0'],
+  ['00000001', 'Menor subnormal'],
+  ['7F7FFFFF', 'Maior finito'],
+  ['7F800000', '+Infinito'],
+  ['7FC00000', 'NaN'],
+];
+---
+
+<InteractiveDemo label="Explorar uma palavra binary32">
+  <div class="binary32" data-binary32>
+    <div class="input-row" data-pagefind-ignore data-annotation-ignore>
+      <label for="fsc-binary32-word">
+        Palavra hexadecimal, 8 algarismos
+        <input
+          id="fsc-binary32-word"
+          type="text"
+          value="C1540000"
+          maxlength="10"
+          spellcheck="false"
+          autocapitalize="characters"
+          autocomplete="off"
+          aria-describedby="fsc-binary32-error"
+          data-word
+        />
+      </label>
+      <p id="fsc-binary32-error" role="status" data-error></p>
+      <div class="presets" aria-label="Exemplos">
+        {presets.map(([word, label]) => (
+          <button type="button" data-preset={word}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+    <div class="fields" aria-label="Campos dos 32 bits">
+      <div class="sign">
+        <strong>Sinal</strong>
+        <code data-sign>1</code>
+        <small>1 bit</small>
+      </div>
+      <div class="exponent">
+        <strong>Expoente</strong>
+        <code data-exponent>10000010</code>
+        <small>8 bits</small>
+      </div>
+      <div class="fraction">
+        <strong>Fração</strong>
+        <code data-fraction>10101000000000000000000</code>
+        <small>23 bits</small>
+      </div>
+    </div>
+    <dl aria-live="polite" aria-atomic="true">
+      <div>
+        <dt>Classe</dt>
+        <dd data-kind>Normal</dd>
+      </div>
+      <div>
+        <dt>Expoente armazenado</dt>
+        <dd data-stored>130</dd>
+      </div>
+      <div>
+        <dt>Expoente real</dt>
+        <dd data-real>3</dd>
+      </div>
+      <div>
+        <dt>Significando</dt>
+        <dd data-significand>1,65625</dd>
+      </div>
+      <div>
+        <dt>Valor</dt>
+        <dd data-value>−13,25</dd>
+      </div>
+    </dl>
+  </div>
+</InteractiveDemo>
+
+<style>
+  .input-row label {
+    display: grid;
+    gap: 0.4rem;
+    font-weight: 600;
+  }
+  input {
+    width: 12ch;
+    max-width: 100%;
+    padding: 0.45rem 0.6rem;
+    font: inherit;
+    font-family: var(--code-font);
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.3rem;
+  }
+  input[aria-invalid='true'] {
+    border-color: var(--accent);
+  }
+  [data-error]:empty {
+    display: none;
+  }
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-block: 0.8rem 1.1rem;
+  }
+  button {
+    padding: 0.4rem 0.65rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.3rem;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    min-height: 2.5rem;
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: minmax(3rem, 1fr) minmax(6rem, 3fr) minmax(
+        10rem,
+        6fr
+      );
+    overflow-x: auto;
+    margin-block: 0.6rem;
+  }
+  .fields > div {
+    display: grid;
+    gap: 0.3rem;
+    padding: 0.6rem;
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--accent);
+    text-align: center;
+  }
+  .fields code {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .fields small {
+    color: var(--muted);
+  }
+  .fraction {
+    border-top-style: double !important;
+  }
+  @media (max-width: 480px) {
+    .fields {
+      grid-template-columns: 1fr;
+    }
+  }
+  dl {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0;
+  }
+  dl > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1rem;
+    justify-content: space-between;
+  }
+  dt {
+    font-weight: 600;
+  }
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<script>
+  for (const demo of document.querySelectorAll<HTMLElement>(
+    '[data-binary32]',
+  )) {
+    const input = demo.querySelector<HTMLInputElement>('[data-word]')!;
+    const error = demo.querySelector<HTMLElement>('[data-error]')!;
+    const write = (field: string, value: string) => {
+      demo.querySelector<HTMLElement>(`[data-${field}]`)!.textContent = value;
+    };
+    const decimal = (value: number) => String(value).replace('.', ',');
+    const update = () => {
+      const hex = input.value.trim().replace(/^0x/i, '');
+      if (!/^[0-9a-f]{8}$/i.test(hex)) {
+        input.setAttribute('aria-invalid', 'true');
+        error.textContent =
+          'Escreve exatamente 8 algarismos de 0 a 9 ou A a F.';
+        return;
+      }
+      input.removeAttribute('aria-invalid');
+      error.textContent = '';
+      const word = Number.parseInt(hex, 16);
+      const sign = word >>> 31;
+      const exponent = (word >>> 23) & 255;
+      const fraction = word & 0x7fffff;
+      write('sign', String(sign));
+      write('exponent', exponent.toString(2).padStart(8, '0'));
+      write('fraction', fraction.toString(2).padStart(23, '0'));
+      write('stored', String(exponent));
+      if (exponent === 255) {
+        write('kind', fraction ? 'NaN' : 'Infinito');
+        write('real', 'Não se aplica');
+        write('significand', 'Não se aplica');
+        write('value', fraction ? 'NaN' : sign ? '−∞' : '+∞');
+        return;
+      }
+      const normal = exponent !== 0;
+      const real = normal ? exponent - 127 : -126;
+      const significand = (normal ? 1 : 0) + fraction / 2 ** 23;
+      const value = (sign ? -1 : 1) * significand * 2 ** real;
+      write('kind', normal ? 'Normal' : fraction ? 'Subnormal' : 'Zero');
+      write(
+        'real',
+        !normal && fraction === 0 ? 'Não se aplica ao zero' : String(real),
+      );
+      write('significand', decimal(significand));
+      write('value', value === 0 ? (sign ? '−0' : '+0') : decimal(value));
+    };
+    input.addEventListener('input', update);
+    for (const button of demo.querySelectorAll<HTMLButtonElement>(
+      '[data-preset]',
+    )) {
+      button.addEventListener('click', () => {
+        input.value = button.dataset.preset!;
+        update();
+      });
+    }
+    update();
+  }
+</script>
