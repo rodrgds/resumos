@@ -16,5 +16,6 @@ export interface RunRequest {
 }
 export type RunMessage =
   | { type: 'output' | 'status' | 'error'; text: string }
+  | { type: 'image'; data: string; alt: string }
   | { type: 'done'; exitCode: number };
 export const OUTPUT_LIMIT = 32_000;

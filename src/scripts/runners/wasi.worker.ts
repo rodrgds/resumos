@@ -75,7 +75,6 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
       return result.exitCode;
     };
     send({ type: 'status', text: 'A carregar o motor…' });
-    if (language === 'python') fs = await filesystem('python-3.11.3.tar.gz');
     if (language === 'cpp' || language === 'c')
       fs = await filesystem('clang-fs.tar.gz');
     const date = new Date();
@@ -142,7 +141,6 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
     } else {
       send({ type: 'status', text: 'A executar…' });
       const commands = {
-        python: ['python-3.11.3.wasm', ['python', '/program']],
         javascript: ['wasmedge_quickjs.wasm', ['quickjs', '/program']],
         sql: ['sqlite.wasm', ['sqlite', '-batch', '-cmd', '.read /program']],
       } as const;
