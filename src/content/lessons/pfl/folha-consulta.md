@@ -41,17 +41,19 @@ foldr f z (x:xs) = f x (foldr f z xs)
 foldl f z (x:xs) = foldl f (f z x) xs
 ```
 
-| Pedido             | Padrão e condição                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| Juntar listas      | `foldr (:) ys xs`; `xs ++ ys` percorre `xs`.                                         |
-| Achatar            | `foldr (++) []`.                                                                     |
-| Inverter           | `foldl (flip (:)) []`; lista finita.                                                 |
-| Bits para inteiro  | `foldl (\n b -> 2*n+b) 0`; bits em ordem e cada bit 0 ou 1.                          |
-| Prefixo            | `takeWhile p`, `dropWhile p`; param no primeiro que falha.                           |
-| Seleção            | `filter p`; pode precisar da lista inteira.                                          |
-| Todos / algum      | `all p [] = True`; `any p [] = False`.                                               |
-| Redução            | `foldr` pode terminar em lista infinita se `f` ignorar a cauda; `foldl` exige o fim. |
-| Acumulação estrita | `foldl'`; força o acumulador até à forma normal fraca.                               |
+| Pedido             | Padrão e condição                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| Juntar listas      | `foldr (:) ys xs`; `xs ++ ys` percorre `xs`.                                                |
+| Achatar            | `foldr (++) []`.                                                                            |
+| Inverter           | `foldl (flip (:)) []`; lista finita.                                                        |
+| Bits para inteiro  | `foldl (\n b -> 2*n+b) 0`; bits em ordem e cada bit 0 ou 1.                                 |
+| Prefixo            | `takeWhile p`, `dropWhile p`; param no primeiro que falha.                                  |
+| Seleção            | `filter p`; pode precisar da lista inteira.                                                 |
+| Todos / algum      | `all p [] = True`; `any p [] = False`.                                                      |
+| Redução            | `foldr` pode terminar em lista infinita se `f` ignorar a cauda; `foldl` exige o fim.        |
+| Acumulação estrita | `foldl'`; força o acumulador até à forma normal fraca.                                      |
+| Inteiro para bits  | Divide positivos por dois, recolhe restos e inverte; define zero e negativos.               |
+| Permutações        | Permuta a cauda e insere a cabeça em todas as posições; caso base `[[]]`, `n!` ocorrências. |
 
 `foldr (-) 0 [1,2,3] = 2`; `foldl (-) 0 [1,2,3] = -6`. Associar não é avaliar tudo primeiro. [Listas](../listas-recursao/) e [ordem superior](../funcoes-ordem-superior/).
 
@@ -74,18 +76,22 @@ foldl f z (x:xs) = foldl f (f z x) xs
 
 ## Prolog
 
-| Operação         | Contrato                                                                                                               |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `X = Termo`      | Unifica e pode ligar variáveis.                                                                                        |
-| `X == Y`         | Testa identidade sem criar ligações.                                                                                   |
-| `X is E`         | Avalia `E`; variáveis de `E` têm de estar instanciadas.                                                                |
-| `A =:= B`        | Avalia e compara números; não unifica expressões.                                                                      |
-| `A \= B`         | Testa que não unificam agora; não adia uma restrição.                                                                  |
-| `\+ G`           | Sucede se `G` falhar finitamente; não enumera o complemento.                                                           |
-| `!`              | Elimina escolhas desde a entrada até ao corte e cláusulas alternativas desse predicado; escolhas à direita permanecem. |
-| Corte verde      | Retirar o corte não muda as respostas no contrato indicado.                                                            |
-| `findall(T,G,L)` | Conserva repetições; sem respostas dá `[]`.                                                                            |
-| `bagof`, `setof` | Agrupam por variáveis livres; `^` retira um agrupamento; falham sem respostas. `setof` ordena e elimina repetições.    |
+| Operação           | Contrato                                                                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `X = Termo`        | Unifica e pode ligar variáveis.                                                                                        |
+| `X == Y`           | Testa identidade sem criar ligações.                                                                                   |
+| `X is E`           | Avalia `E`; variáveis de `E` têm de estar instanciadas.                                                                |
+| `A =:= B`          | Avalia e compara números; não unifica expressões.                                                                      |
+| `A \= B`           | Testa que não unificam agora; não adia uma restrição.                                                                  |
+| `\+ G`             | Sucede se `G` falhar finitamente; não enumera o complemento.                                                           |
+| `!`                | Elimina escolhas desde a entrada até ao corte e cláusulas alternativas desse predicado; escolhas à direita permanecem. |
+| Corte verde        | Retirar o corte não muda as respostas no contrato indicado.                                                            |
+| `findall(T,G,L)`   | Conserva repetições; sem respostas dá `[]`.                                                                            |
+| `bagof`, `setof`   | Agrupam por variáveis livres; `^` retira um agrupamento; falham sem respostas. `setof` ordena e elimina repetições.    |
+| `keysort/2`        | Ordena pares pela chave; conserva repetições e a ordem dos empates.                                                    |
+| `=../2`, `call/1`  | Constrói/desmonta um termo; executa um objetivo. São operações distintas.                                              |
+| `op(P,T,Nome)`     | P menor liga mais forte; x exige prioridade menor, y permite igual. xfy à direita, yfx à esquerda.                     |
+| Impressão e `fail` | Retrocesso não apaga efeitos de I/O; enumeração finita e cláusula final para sucesso.                                  |
 
 Na árvore SLD: renomeia variáveis da cláusula, unifica a cabeça, propaga a substituição e resolve o objetivo mais à esquerda. Marca alternativas para retrocesso. Para termos finitos, rejeita `X=f(X)` pelo occurs check; algumas implementações de `=` aceitam ciclos.
 
