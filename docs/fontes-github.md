@@ -8,7 +8,25 @@ Foram verificados **82 registos de artefactos** e consolidados em **64 pares cad
 
 O resultado não é uniforme. P, AED, BD, SO, LTW, ME, COMP, CG, IA, RC e FSI têm material forte. FSC ficou sem uma fonte pública específica convincente; ALGA ficou apenas com uma pista de proveniência mista. Em PI e CPD, o material útil é sobretudo documentação de projetos.
 
-## Como foi feito
+## Coleção local
+
+Em 1 de outubro de 2026 foram guardados **74 arquivos de repositórios**, num total de **3 015 060 227 bytes**: os 67 repositórios distintos do inventário e sete fontes oficiais de autores. Cada arquivo está fixado ao SHA completo do commit obtido de `HEAD`, tem um SHA-256 próprio e teve os membros lidos sem executar o código.
+
+[`fontes-github.json`](fontes-github.json) mantém os 64 pares cadeira-repositório originais. Cada entrada liga a `local_snapshot_id`; `local_snapshots` descreve os 74 arquivos, e `supplementary_resources` identifica as sete fontes acrescentadas. [Fontes locais](fontes-locais.md) reúne os ficheiros já existentes e as novas cópias.
+
+Os arquivos ficam em `/_data/github/<autor>--<repositório>/<commit>.tar.gz`, ignorados pelo Git. Os nomes individuais de ficheiros e os aliases de conteúdo ficam apenas em `/_data/references/inventory.json`. Os direitos e a adequação ao programa continuam a ser verificados por documento.
+
+| Fonte oficial acrescentada | Cadeiras | Material local |
+| --- | --- | --- |
+| [wesm/pydata-book](https://github.com/wesm/pydata-book) | CT Python, `ct-iadp` | Notebooks e datasets da 3.ª edição; código MIT, prosa com termos separados. |
+| [SystemsApproach/book](https://github.com/SystemsApproach/book) | RC | Livro aberto, fonte 6.2-dev, CC BY 4.0. É uma edição diferente da adotada. |
+| [OSTEP homework](https://github.com/remzi-arpacidusseau/ostep-homework) | SO, LC | Simuladores com exercícios e respostas calculadas. |
+| [OSTEP code](https://github.com/remzi-arpacidusseau/ostep-code) | SO, LC | Programas associados aos capítulos. |
+| [OSTEP projects](https://github.com/remzi-arpacidusseau/ostep-projects) | SO, LC | Exercícios de sistemas, separados dos projetos da FEUP. |
+| [AIMA Python](https://github.com/aimacode/aima-python) | IA | Código e notebooks ligados pelo site dos autores. |
+| [AIMA exercises](https://github.com/aimacode/aima-exercises) | IA | Fonte dos exercícios online; não inclui o manual comercial. |
+
+## Como foi feito o levantamento inicial
 
 - Pesquisa pública e limitada por grupos de cerca de cinco cadeiras, incluindo nomes atuais e siglas históricas.
 - Verificação pela metadata, README, árvore e caminhos concretos de cada candidato.

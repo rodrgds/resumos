@@ -2,13 +2,38 @@
 
 > Levantamento de 1 de outubro de 2026. O inventário estruturado completo está em [`fontes-bibliografia.json`](fontes-bibliografia.json).
 
-## O que está — e não está — provado
+## O que foi verificado
 
 Foram verificadas **109 entradas bibliográficas em 30 cadeiras**. Uma obra só aparece como adotada quando existe uma página pública da FEUP/SIGARRA que a inclui. A disponibilidade legal foi verificada à parte, em páginas oficiais de autores, editoras, projetos ou repositórios institucionais.
 
 As páginas públicas de 2026/2027 ainda não tinham, em geral, a bibliografia preenchida. Por isso, o inventário usa a ocorrência pública preenchida mais recente encontrada em cada cadeira e indica o respetivo ano. Isto prova uso nessa ocorrência; não prova que a lista se mantém em 2026/2027.
 
 PDFs aleatórios no GitHub, espelhos de manuais e cópias sem autorização clara foram excluídos. `Acesso gratuito autorizado` também não significa automaticamente uma licença aberta para redistribuir ou adaptar.
+
+## Ficheiros locais
+
+A coleção de 1 de outubro de 2026 tem **93 ficheiros de livros e suplementos**, incluindo **10 PDFs de texto integral** e **68 capítulos públicos do OSTEP**. Há ainda **74 arquivos do GitHub**, guardados numa revisão fixa. [Fontes locais](fontes-locais.md) explica os totais, os caminhos e a deduplicação.
+
+Cada entrada de [`fontes-bibliografia.json`](fontes-bibliografia.json) tem um `reference_id` e um `local_reference`. Os ficheiros são descritos uma única vez em `local_artifacts`, com edição verificada, data, tamanho, SHA-256 e tipo. Slides, código e capítulos não são marcados como um livro completo. As **75 obras da lista fornecida** têm correspondência bibliográfica; isso não significa que todas tenham um PDF local.
+
+- **Tanenbaum e Wetherall, Computer Networks, 5.ª edição:** o PDF fornecido foi guardado localmente. As páginas iniciais confirmam 2011 e ISBN 9780132126953. Tem 962 páginas; `pdfinfo` assinala avisos de dicionário, mas a árvore de páginas e o texto inicial são legíveis. Não foi verificada uma licença aberta.
+- **Programming in Haskell, 2.ª edição:** slides e código oficiais de Graham Hutton, sem o texto integral do livro.
+- **Distributed Systems, 3.ª edição:** slides, código e guia Python. O livro completo exige um formulário dos autores com email e CAPTCHA; o pedido não foi submetido.
+- **Building Skills in Python:** a página do autor aponta para a edição antiga de Python 2.6. O download do PDF devolveu HTTP 403. O mesmo aconteceu com University Physics, Volume 1, da OpenStax.
+- **Computer Networks: A Systems Approach:** fonte aberta oficial na versão 6.2-dev, distinta da 4.ª edição adotada pela FEUP.
+- **OpenStax Calculus, volumes 1 e 3:** os PDFs guardados declaram CC BY-NC-SA 4.0. A 4.ª edição de Discrete Mathematics de Oscar Levin também usa CC BY-NC-SA 4.0; a 3.ª edição usa CC BY-SA 4.0.
+
+Em Python, a opção `ct-iadp` tem os notebooks e datasets oficiais de [Python for Data Analysis, 3.ª edição](https://wesmckinney.com/book/), de Wes McKinney. O código tem licença MIT; a prosa do livro tem termos próprios. O README dos notebooks fixa pandas 2.0.3. As versões atuais da documentação são referências à parte: [tutoriais pandas](https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html) e [bases de NumPy](https://numpy.org/doc/stable/user/absolute_beginners.html).
+
+## Vídeos e exercícios dos autores
+
+| Cadeira | Fonte | Utilidade |
+| --- | --- | --- |
+| ALGA | [Aulas de Jim Hefferon](https://www.youtube.com/playlist?list=PLwF3A0R8OzMoMlE1-SaEh8h9VqUlO-r52) | Acompanham o livro aberto; respostas, laboratório e slides estão guardados. |
+| PFL | [Haskell introdutório](https://www.youtube.com/playlist?list=PLF1Z-APd9zK7usPMx3LGMZEHrECUGodd3), [Haskell avançado](https://www.youtube.com/playlist?list=PLF1Z-APd9zK5uFc8FKr_di9bfsYv8-lbc) | Séries ligadas pela página de Graham Hutton, capítulos 1 a 9 e 12/16. |
+| RC | [Aulas e exercícios interativos de Kurose](https://gaia.cs.umass.edu/kurose_ross/online_lectures.htm) | Vídeos por tópico e perguntas de verificação. A série acompanha uma edição posterior à 5.ª listada pela FEUP. |
+| SO, LC | [Simuladores OSTEP](https://pages.cs.wisc.edu/~remzi/OSTEP/Homework/homework.html) | Exercícios com sementes aleatórias e cálculo de respostas. O código está guardado numa revisão fixa. |
+| IA | [Exercícios AIMA](https://aimacode.github.io/aima-exercises/) | Enunciados e respostas submetidas, com fonte local. Não substituem a verificação de uma solução. |
 
 ## Conclusões que corrigem as hipóteses iniciais
 
@@ -50,14 +75,14 @@ PDFs aleatórios no GitHub, espelhos de manuais e cópias sem autorização clar
 
 **Alternativas abertas ou gratuitas não tratadas como bibliografia adotada:**
 
-- **[Calculus, Volume 1](https://openstax.org/details/books/calculus-volume-1)** — Gilbert Strang, Edwin Herman. Not named by FEUP; legal open alternative for limits, derivatives, integration, and introductory applications. **Acesso:** texto integral aberto; licença: Creative Commons Attribution 4.0 International (CC BY 4.0).
+- **[Calculus, Volume 1](https://openstax.org/details/books/calculus-volume-1)** — Gilbert Strang, Edwin Herman. Not named by FEUP; legal open alternative for limits, derivatives, integration, and introductory applications. **Acesso:** texto integral aberto; licença: CC BY-NC-SA 4.0, verificada no PDF guardado.
 
 ### FP — Fundamentos da Programação
 
 **Evidência da cadeira:** [Latest populated current-LEIC occurrence found: 2025/2026.](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087).
 
 - **[How to Think Like a Computer Scientist: Learning with Python 3](https://howtothink.readthedocs.io/en/latest/)** — Peter Wentworth, Jeffrey Elkner, Allen B. Downey, Chris Meyers — 3rd edition. **Papel:** obrigatória. **Acesso:** texto integral aberto; licença: GNU Free Documentation License 1.3 or later.
-- **Building Skills in Python** — Steven F. Lott. **Papel:** complementar. **Acesso:** não confirmado.
+- **[Building Skills in Python](https://www.itmaybeahack.com/homepage/books/python.html)**, Steven F. Lott. **Papel:** complementar. **Acesso:** PDF gratuito ligado pelo autor, edição Python 2.6; download local bloqueado por HTTP 403.
 - **[Think Python](https://greenteapress.com/wp/think-python-2e/)** — Allen B. Downey — 2nd edition. **Papel:** complementar. **Acesso:** texto integral aberto; licença: Creative Commons Attribution-NonCommercial 3.0 Unported (CC BY-NC 3.0).
 - **[Functional Programming in Python](https://www.oreilly.com/library/view/functional-programming-in/9781492048633/)** — David Mertz. **Papel:** complementar. **Acesso:** comercial, biblioteca ou subscrição.
 
@@ -95,7 +120,7 @@ PDFs aleatórios no GitHub, espelhos de manuais e cópias sem autorização clar
 
 **Alternativas abertas ou gratuitas não tratadas como bibliografia adotada:**
 
-- **[Calculus, Volume 3](https://openstax.org/details/books/calculus-volume-3)** — Gilbert Strang, Edwin Herman. Not named by FEUP; legal open alternative for vectors, multivariable calculus, and vector calculus. **Acesso:** texto integral aberto; licença: Creative Commons Attribution 4.0 International (CC BY 4.0).
+- **[Calculus, Volume 3](https://openstax.org/details/books/calculus-volume-3)** — Gilbert Strang, Edwin Herman. Not named by FEUP; legal open alternative for vectors, multivariable calculus, and vector calculus. **Acesso:** texto integral aberto; licença: CC BY-NC-SA 4.0, verificada no PDF guardado.
 
 ### AC — Arquitetura de Computadores
 
