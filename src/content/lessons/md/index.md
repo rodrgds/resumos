@@ -1,35 +1,53 @@
 ---
 title: Matemática Discreta
-description: Lógica, conjuntos, números inteiros, indução e recorrências, com exemplos resolvidos.
+description: Lógica e provas, inteiros, conjuntos, relações, funções, grafos e indução, com exercícios resolvidos.
+order: 0
 ---
 
-Matemática Discreta (MD) é a cadeira do primeiro semestre onde aprendes a escrever matemática com rigor e a provar que uma afirmação está certa. A matéria divide-se em dois blocos. No primeiro, a lógica proposicional e a lógica de primeira ordem dão-te uma linguagem para representar frases e um método para as provar. No segundo, os conjuntos, as relações, as funções, os inteiros e as recorrências aplicam essas técnicas a objetos que vais usar no resto do curso, da análise de algoritmos à criptografia.
+Em Matemática Discreta (MD) aprendemos a representar afirmações e a provar propriedades de objetos como inteiros, relações e grafos. Uma resposta não termina no resultado: é preciso mostrar que o método se aplica, justificar os passos e conferir os casos que poderiam refutar a afirmação.
 
-## Como estudar por estas páginas
+## Percurso de estudo
 
-Cada página segue o mesmo plano: primeiro a necessidade, depois a definição precisa, depois um exemplo pequeno resolvido até ao fim. Lê pela ordem se for a primeira vez, porque cada tema usa o vocabulário dos anteriores. Se estiveres a rever, salta diretamente para o tema do teste.
+O primeiro bloco trata da linguagem das provas:
 
-- [Lógica proposicional](/cadeiras/md/logica-proposicional/): frases atómicas, conetivas, tabelas de verdade e equivalências.
-- [Provas em lógica proposicional](/cadeiras/md/provas-proposicionais/): regras de inferência, condicionais, completude de conetivas e mapas de Karnaugh.
-- [Quantificadores](/cadeiras/md/quantificadores/): variáveis, tradução com $\forall$ e $\exists$, múltiplos quantificadores e provas.
-- [Conjuntos e relações](/cadeiras/md/conjuntos-relacoes/): operações, produto cartesiano, relações binárias e as suas propriedades.
-- [Ordens parciais e funções](/cadeiras/md/ordens-funcoes/): ordens, diagramas de Hasse, funções, composição, inversas e cardinalidade.
-- [Inteiros e congruências](/cadeiras/md/inteiros-congruencias/): divisão, mdc, primos, aritmética modular e resolução de congruências.
-- [Indução e recorrências](/cadeiras/md/inducao-recorrencia/): indução simples e forte, sequências, relações de recorrência e a equação característica.
+1. [Lógica proposicional](/cadeiras/md/logica-proposicional/): fórmulas, tabelas, consequência, formas normais e completude de conetivas.
+2. [Dedução proposicional](/cadeiras/md/provas-proposicionais/): regras de base, caixas de Fitch, casos e contradições.
+3. [Quantificadores](/cadeiras/md/quantificadores/): termos, traduções, variáveis livres e substituição sem captura.
+4. [Estruturas e formas prenexas](/cadeiras/md/semantica-primeira-ordem/): avaliação, modelos e contraestruturas.
+5. [Dedução de primeira ordem](/cadeiras/md/provas-primeira-ordem/): igualdade, testemunhas e variáveis novas.
 
-## O que deves conseguir fazer no fim
+O segundo aplica as provas a estruturas discretas:
 
-Traduzir frases da língua portuguesa para lógica e avaliar a sua verdade num modelo. Provar uma fórmula com regras de inferência, por casos ou por contradição. Distinguir uma ordem parcial de uma relação de equivalência e ler um diagrama de Hasse. Decidir se uma função é injetiva, sobrejetiva ou bijetiva. Calcular o mdc com o algoritmo de Euclides, resolver uma congruência linear e verificar um dígito de controlo. Provar uma propriedade por indução e resolver uma recorrência linear de primeira ou segunda ordem.
+6. [Inteiros e congruências](/cadeiras/md/inteiros-congruencias/): Euclides, Bézout, inversos e equações modulares.
+7. [Conjuntos e equivalências](/cadeiras/md/conjuntos-relacoes/): operações, produtos, classes e partições.
+8. [Operações de relações](/cadeiras/md/operacoes-relacoes/): matrizes, composição, potências e fechos.
+9. [Ordens](/cadeiras/md/ordens-funcoes/): Hasse, comparabilidade, minimais, ínfimos e supremos.
+10. [Funções e cardinalidade](/cadeiras/md/funcoes-cardinalidade/): domínio, imagem, bijeções e inversas.
+11. [Grafos](/cadeiras/md/grafos/): graus, percursos, componentes, árvores e isomorfismos.
+12. [Euler, Hamilton, planaridade e coloração](/cadeiras/md/euler-hamilton-coloracao/): critérios, construções e obstruções.
+13. [Indução e recorrências](/cadeiras/md/inducao-recorrencia/): bases, hipótese, chamadas menores e soluções de sequências.
+14. [Indução estrutural](/cadeiras/md/inducao-estrutural/): conjuntos recursivos, palavras, listas e provas de programas.
 
-## Fontes e âmbito
+Os exercícios estão no fim da lição que os explica. Tenta resolver antes de abrir as pistas. Numa prova, escreve a hipótese que usas em cada passo. Num contraexemplo, confere todas as premissas e a conclusão. A [cheat sheet](/cadeiras/md/folha-consulta/) reúne as condições dos métodos para revisão.
 
-Estas páginas resumem a cadeira de Matemática Discreta da LEIC na FEUP, primeiro ano, primeiro semestre. O âmbito segue os slides teóricos e as folhas de exercícios da equipa docente do Departamento de Engenharia Informática (material de 2019/2020, cadeira então designada MDIS no MIEIC), cruzados com as notas de estudo públicas SofiaViP para MD. Os livros de referência da cadeira são _Language, Proof and Logic_ de Barker-Plummer, Barwise e Etchemendy (lógica) e _Discrete Mathematics with Graph Theory_ de Goodaire e Parmenter (conjuntos, números, recorrências). Foram ainda consultados repositórios públicos de exercícios de estudantes da FEUP para confirmar os tipos de problemas pedidos.
+## Fontes, anos e âmbito
 
-Em concreto:
+A base são os materiais docentes de **MD 2024/25 no Moodle da FEUP**: as onze apresentações teóricas, as onze fichas principais, problemas adicionais, o formulário e provas com resoluções. As aulas de lógica e inteiros são de João Barbosa; as de conjuntos, relações, funções, grafos e indução são de Hugo Pacheco. As apresentações de grafos e indução disponibilizadas nessa edição mantêm **2023/24 na capa**. As restantes apresentações identificam 2024/25. O percurso inclui todos estes blocos.
 
-- Slides teóricos e folhas de exercícios de MDIS da FEUP (autoria dos docentes, via repositório público [xico2001pt/feup-mdis](https://github.com/xico2001pt/feup-mdis), consultado em setembro de 2026). Definem o programa: lógica proposicional, lógica de primeira ordem, conjuntos, relações, ordens parciais, funções, inteiros, congruências, indução e recorrências.
-- Exercícios resolvidos de MDIS 2018/19 (repositório público [dmfrodrigues/feup-mdis-ex](https://github.com/dmfrodrigues/feup-mdis-ex), consultado em setembro de 2026). Confirmam o estilo dos testes, incluindo o uso das ferramentas LPL (Tarski's World, Fitch, Boole).
-- [Resumos MD 1 e 2, MD 3 e MD 4 da SofiaViP](https://drive.google.com/drive/folders/1PZYhtsUc6mDA96jnVR4wiLWWxNWeovdK) (notas de estudante, sem data de edição visível, consultadas em setembro de 2026). Cobrem os mesmos grandes temas e serviram para confirmar a ênfase dada a cada um.
-- Ficha histórica da unidade curricular no SIGARRA ([ocorrência de 2018/19](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=419984) e [ocorrência de 2019/20](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=436426), via READMEs dos repositórios acima).
+As explicações são escritas com palavras próprias. Os exercícios misturam problemas próprios e adaptações dos tipos pedidos nas fichas e provas, com contas e argumentos conferidos. Recorrências lineares completam o estudo de sequências e recursão. A notação segue as aulas: $0\in\mathbb N$, $\equiv_n$ para congruência e caixas de Fitch com regras de base. Os materiais Moodle exigem acesso à cadeira e não são republicados aqui.
 
-Os exemplos, os valores numéricos e o texto destas páginas são originais e foram verificados de forma independente. Os pormenores de avaliação em vigor (número de testes, pesos, regras de frequência) mudam de ano para ano, por isso confirma-os sempre na página atual da cadeira no SIGARRA e no Moodle. Nada aqui substitui os enunciados oficiais.
+A [ficha de 2025/26 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560089) confirma o programa e indica como bibliografia obrigatória:
+
+- Ralph P. Grimaldi, _Discrete and Combinatorial Mathematics: An Applied Introduction_.
+- Michael Huth e Mark Ryan, _Logic in Computer Science_.
+- Edgar G. Goodaire e Michael M. Parmenter, _Discrete Mathematics with Graph Theory_.
+
+Para aprofundar grafos, indução e sequências há também o livro aberto [Discrete Mathematics: An Open Introduction, de Oscar Levin](https://discrete.openmathbooks.org/dmoi3.html), 3.ª edição. É uma referência adicional, não bibliografia adotada pela FEUP.
+
+## Avaliação e diferença entre edições
+
+Nos materiais de **2024/25**, a classificação vem de dois testes com peso de 50% cada, mínimo de 6 valores em cada teste e média mínima de 9,5. O recurso dessa edição tem partes correspondentes aos testes. [Ficha de 2024/25](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=541869).
+
+Em **2025/26**, a fórmula publicada é $F=0{,}2EX+0{,}4PT+0{,}4ST$: exercícios avaliados nas práticas, primeiro teste e segundo teste. Exige $EX>0$, ambos os testes com pelo menos 6 e $F\ge9{,}5$. A frequência exige respeitar o limite de faltas. O recurso abrange toda a matéria e é feito na totalidade, sem divisão em partes. Para trabalhadores-estudantes, a ficha prevê a opção de cálculo com 50% por teste. [Regras de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560089).
+
+Estas regras foram verificadas em 1 de outubro de 2026. A avaliação de 2026/27 não foi confirmada; consulta a ficha e as indicações do teu ano antes de aplicar pesos ou regras de recurso.

@@ -1,116 +1,181 @@
 ---
 title: Indução e recorrências
-description: Indução simples e forte, sequências, recorrências lineares e equação característica.
-section: conteudo
-order: 7
+description: Indução simples e forte, casos base, definições recursivas e soluções de recorrências.
+order: 13
+practices:
+  - md/praticar-inducao
+  - md/praticar-recorrencias
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import dominos from './dominos.typ?raw';
 
-Como provas uma afirmação sobre _todos_ os naturais se não podes testá-los um a um? A **indução** responde: prova o primeiro caso e prova que cada caso implica o seguinte, como uma fila de dominós onde derrubar o primeiro deita todos abaixo. E quando um problema se define à custa de casos anteriores (fatorial, juros, algoritmos recursivos), uma **relação de recorrência** modela-o e a indução prova a solução.
+Verificar uma propriedade para os primeiros dez naturais não prova que vale para todos. A **indução** liga os casos: verificamos o início e provamos que o resultado passa aos seguintes. A hipótese de indução é uma hipótese local, não a afirmação universal que queremos provar.
 
-<Typst
-  source={dominos}
-  format="svg"
-  alt="Fila de cinco dominós numerados de 1 a k mais 1, com a base no primeiro e o passo a propagar."
-/>
+## Indução simples
 
-## Indução simples: os três passos
+Para provar $P(n)$ para todo o inteiro $n\ge n_0$:
 
-Para provar $P(n)$ para todo o $n \ge n_0$:
+1. Prova $P(n_0)$, o caso base.
+2. Toma um $k\ge n_0$ arbitrário e assume $P(k)$.
+3. Com essa hipótese, prova $P(k+1)$.
 
-1. **Base:** prova $P(n_0)$.
-2. **Hipótese de indução:** assume $P(k)$ para um $k$ genérico.
-3. **Passo indutivo:** prova $P(k+1)$ usando a hipótese.
+O terceiro passo tem de valer para todos os $k$ a partir da base. Provar $P(k+1)\Rightarrow P(k)$ seria propagar no sentido errado.
 
-Exemplo: $2^0 + 2^1 + \dots + 2^{n-1} = 2^n - 1$ para $n \ge 1$.
+A boa ordenação de $\mathbb N$ explica o método. Se houvesse casos falsos, haveria um primeiro caso falso $m$. A base impede $m=n_0$ e o passo a partir de $P(m-1)$ impede o caso seguinte de ser falso. Assim, não há primeiro caso falso.
 
-- Base ($n = 1$): o lado esquerdo é $2^0 = 1$ e o direito é $2^1 - 1 = 1$. Verdadeiro.
-- Hipótese: assume $\sum_{i=0}^{k-1} 2^i = 2^k - 1$.
-- Passo: $\sum_{i=0}^{k} 2^i = (\sum_{i=0}^{k-1} 2^i) + 2^k = (2^k - 1) + 2^k = 2 \cdot 2^k - 1 = 2^{k+1} - 1$. É $P(k+1)$.
+## Exemplo com uma soma
 
-Há uma leitura bonita em binário: o lado esquerdo é o número de $n$ bits todos a 1 ($111\dots1_2$), e $2^n$ é $100\dots0_2$; somar 1 ao primeiro dá o segundo, o que confirma a igualdade.
+Vamos provar, para $n\ge0$:
 
-## O que pode correr mal
+$$
+\sum_{i=1}^{n}i^2=\frac{n(n+1)(2n+1)}6.
+$$
 
-Três falhas típicas, todas elas pedidas em exercícios de "encontra o erro":
+Para $n=0$, a soma vazia vale 0 e a fórmula também. Assume agora a igualdade para $n=k$. Separamos o termo novo e usamos essa hipótese:
 
-- **Base em falta ou falsa.** Sem base, o passo indutivo prova apenas "se um dominó cai, o seguinte cai", com a fila toda de pé. A indução sem base não prova nada.
-- **Usar a hipótese onde ela não chega.** Na passagem de $k$ para $k+1$ tens de invocar $P(k)$ explicitamente. Se a prova de $P(k+1)$ nunca usa a hipótese, desconfia: ou a afirmação é trivial, ou há erro.
-- **Falsa indução.** A "prova" de que todos os cavalos têm a mesma cor assume que dois conjuntos de $k$ cavalos com $k-1$ em comum partilham a cor, o que falha na passagem de 1 para 2 (a interseção é vazia). O passo tem de valer para _todo_ o $k$, incluindo o primeiro.
+$$
+\begin{aligned}
+\sum_{i=1}^{k+1}i^2
+&=\sum_{i=1}^{k}i^2+(k+1)^2\\
+&=\frac{k(k+1)(2k+1)}6+(k+1)^2\\
+&=\frac{(k+1)(2k^2+7k+6)}6\\
+&=\frac{(k+1)(k+2)(2k+3)}6.
+\end{aligned}
+$$
+
+A última expressão é a fórmula para $k+1$, porque $2(k+1)+1=2k+3$. Não assumimos a soma até $k+1$; derivámo-la da soma até $k$.
+
+## Divisibilidade e desigualdades
+
+Para mostrar $4\mid(5^n-1)$ para $n\ge0$, a base é $5^0-1=0$. No passo, assume $5^k-1=4q$. Então:
+
+$$
+5^{k+1}-1=5(5^k-1)+4=4(5q+1).
+$$
+
+A expressão $5q+1$ é inteira, logo a divisibilidade fica provada.
+
+Numa desigualdade, conserva a direção das comparações. Para $2n+1\le2^n$ quando $n\ge3$, a base é $7\le8$. Se $2k+1\le2^k$:
+
+$$
+2^{k+1}\ge2(2k+1)=4k+2\ge2k+3=2(k+1)+1,
+$$
+
+onde a segunda desigualdade usa $k\ge3$, em particular $2k\ge1$. Indica essa condição, não a escondas num salto algébrico.
+
+## Bases que faltam e hipóteses demasiado fortes
+
+Uma prova que usa $P(k-2)$ precisa de garantir que esse caso já está no intervalo conhecido. Não basta verificar a primeira base se o passo só começa três valores depois.
+
+Na falsa prova de que todos os cavalos têm a mesma cor, divide-se um grupo de $k+1$ cavalos em dois grupos de $k$ e usa-se um cavalo comum para comparar as cores. Para $k=1$, os dois grupos não têm cavalo comum. O passo falha de 1 para 2, precisamente onde precisava de funcionar.
+
+Uma prova também pode ser válida sem usar a hipótese de indução: uma demonstração direta de $P(k+1)$ para um $k$ arbitrário chega. Usar a hipótese não é uma obrigação formal; assumir a tese ou omitir o passo é que invalida a prova.
 
 ## Indução forte
 
-Na **indução forte**, a hipótese assume $P(j)$ para _todos_ os $j$ de $n_0$ até $k$, e prova $P(k+1)$. É preciso quando o caso $k+1$ depende de vários anteriores, não só do imediato.
+Na indução forte, para provar $P(k+1)$ assumimos todos os casos $P(n_0),\ldots,P(k)$. Isto permite usar uma decomposição cujo tamanho não é necessariamente $k$.
 
-Exemplo: todo o inteiro $n \ge 2$ é primo ou produto de primos.
+Todo o inteiro $n\ge2$ é produto de primos. A base 2 é primo. Para $k+1$, se for primo, já temos um produto com um fator. Se for composto, $k+1=ab$ com $2\le a,b\le k$. A hipótese forte dá fatorizações de $a$ e $b$, que juntamos. Só conhecer a fatorização de $k$ não forneceria esses dois resultados diretamente.
 
-- Base: $n = 2$ é primo.
-- Hipótese forte: assume que todos os inteiros de $2$ a $k$ fatorizam em primos.
-- Passo: considera $k+1$. Se $k+1$ é primo, está feito. Se é composto, $k+1 = a \cdot b$ com $2 \le a, b \le k$; pela hipótese, $a$ e $b$ fatorizam em primos, e juntando as fatorizações obténs a de $k+1$.
+### Vários casos base
 
-Com indução simples isto emperrava, porque $a$ e $b$ não são necessariamente $k$. Sempre que a decomposição "salta para trás" mais de uma casa, usa a forte.
+Com moedas de 3 e 5 cêntimos podemos formar todos os valores inteiros $n\ge8$. As bases são:
 
-A indução (simples ou forte) equivale ao **princípio da boa ordenação**: todo o conjunto não vazio de naturais tem mínimo. Se $P$ falhasse algures, o conjunto dos contraexemplos teria um mínimo $m$, e o passo indutivo aplicado a $m - 1$ contradiria a minimalidade.[^boa-ordenacao]
+$$
+8=3+5,\qquad9=3+3+3,\qquad10=5+5.
+$$
 
-## Sequências: três formas de definir
+Para $n\ge11$, o valor $n-3\ge8$ já pode formar-se pela hipótese forte. Acrescentamos uma moeda de 3. As três bases cobrem os restos possíveis módulo 3 e permitem que o primeiro passo, de 10 para 11, use 8.
 
-Uma **sequência** é uma função de um conjunto infinito de inteiros (normalmente $\mathbb{N}$) para $\mathbb{R}$. Pode definir-se:
+## Funções recursivas
 
-- **Por lista:** $1, 4, 9, 16, \dots$ (exige adivinhar o padrão).
-- **Recursivamente:** $a_1 = 2$, $a_{k+1} = 2a_k$ (cada termo à custa dos anteriores).
-- **Por fórmula explícita:** $a_n = 2^n$ (cálculo direto).
+Uma definição recursiva precisa de casos base e regras que atinjam entradas já menores. Por exemplo:
 
-As clássicas: a **aritmética** ($a_{k+1} = a_k + d$, termo geral $a_n = a + (n-1)d$, soma $S_n = n(2a + (n-1)d)/2$) e a **geométrica** ($a_{k+1} = r a_k$, termo geral $a_n = a r^{n-1}$, soma $S_n = a(1-r^n)/(1-r)$ para $r \ne 1$). Exemplo: $-7, -4, -1, 2, 5, 8, \dots$ é aritmética de razão $3$; $1, 2, 4, 8, \dots$ é geométrica de razão $2$.
+$$
+f(n)=\begin{cases}
+0,&n=0,\\
+4f(n/2),&n>0\text{ par},\\
+f(n-1)+2n-1,&n\text{ ímpar}.
+\end{cases}
+$$
 
-O problema central: dada a definição recursiva, descobrir a explícita. É o que resolve a teoria das recorrências.
+A função está definida nos naturais e cada chamada diminui o argumento. Vamos provar $f(n)=n^2$ por indução forte. A base $f(0)=0$ serve. Para $n>0$:
 
-## Relações de recorrência de primeira ordem
+- Se é par, $n/2<n$, logo $f(n)=4(n/2)^2=n^2$.
+- Se é ímpar, $n-1<n$, logo $f(n)=(n-1)^2+2n-1=n^2$.
 
-O modelo do empréstimo: capital em dívida $c_n$ no mês $n$, juro mensal $J$, prestação constante $P$, capital inicial $C$. Cada mês o capital rende juros e abate a prestação:
-
-$$c_n = (1+J)c_{n-1} - P, \quad n \ge 1, \quad c_0 = C.$$
-
-Resolve-se em duas partes: a solução da homogénea ($q_n = d(1+J)^n$) mais uma solução particular constante ($p_n = b$ com $b = (1+J)b - P$, logo $b = P/J$). A solução geral é $c_n = d(1+J)^n + P/J$, e $c_0 = C$ dá $d = C - P/J$:
-
-$$c_n = \left(C - \frac{P}{J}\right)(1+J)^n + \frac{P}{J}.$$
-
-Exemplo numérico: $C = 3500$ euros, TAN $26\%$ (logo $J = 0{,}26/12 \approx 0{,}021667$), $N = 12$ meses. Impondo $c_{12} = 0$ obtém-se $P = C \cdot J(1+J)^{12}/((1+J)^{12}-1) \approx 334{,}36$ euros. Podes confirmar a fórmula simulando mês a mês e comparar com a forma fechada nos meses 0, 6 e 12:
+A prova usa a hipótese para um argumento que pode estar muito antes do imediato. O programa permite seguir as duas regras, mas a prova é que cobre todos os naturais.
 
 <CodePlayground
   language="python"
+  title="Uma definição recursiva"
   code={
-    'C, J, N = 3500.0, 0.26 / 12, 12\nP = C * J * (1 + J) ** N / ((1 + J) ** N - 1)\nprint(f"prestacao = {P:.2f}")\nsaldo = C\nfor mes in range(1, N + 1):\n    saldo = (1 + J) * saldo - P\nprint(f"saldo final = {saldo:.6f}")  # proximo de 0\nfechada = lambda n: (C - P / J) * (1 + J) ** n + P / J\nprint([round(fechada(n), 2) for n in (0, 6, 12)])  # [3500.0, 1862.38, 0.0]'
+    'def f(n):\n    if n == 0:\n        return 0\n    if n % 2 == 0:\n        return 4 * f(n // 2)\n    return f(n - 1) + 2*n - 1\n\nfor n in range(9):\n    print(n, f(n), n*n)\n'
   }
 />
 
-## Recorrências lineares de segunda ordem
+As duas últimas colunas são `0, 1, 4, 9, 16, 25, 36, 49, 64`. O domínio é $n\ge0$; uma entrada negativa não é coberta pela definição.
 
-Uma recorrência **linear homogénea de segunda ordem** tem a forma $a_n = A a_{n-1} + B a_{n-2}$. Tenta soluções da forma $a_n = r^n$: substituindo e dividindo por $r^{n-2}$ obténs a **equação característica** $r^2 = Ar + B$. Se ela tem duas raízes distintas $r_1, r_2$, a solução geral é $a_n = c_1 r_1^n + c_2 r_2^n$; as condições iniciais fixam $c_1, c_2$.
+## Sequências e recorrências
 
-Exemplo resolvido: $a_n = 5a_{n-1} - 6a_{n-2}$ com $a_0 = 0$ e $a_1 = 1$.
+Uma sequência associa um valor a cada índice. Uma recorrência define termos por termos anteriores, por exemplo:
 
-1. Equação característica: $r^2 - 5r + 6 = 0$, raízes $r = 2$ e $r = 3$.
-2. Solução geral: $a_n = c_1 2^n + c_2 3^n$.
-3. $a_0 = 0$ dá $c_1 + c_2 = 0$; $a_1 = 1$ dá $2c_1 + 3c_2 = 1$. Resolvendo: $c_1 = -1$, $c_2 = 1$.
-4. Solução: $a_n = 3^n - 2^n$.
+$$
+a_1=1,\quad a_2=4,\quad a_n=2a_{n-1}-a_{n-2}\quad(n\ge3).
+$$
 
-Verifica por indução os primeiros termos: $a_2 = 9 - 4 = 5$ e a recorrência dá $5 \cdot 1 - 6 \cdot 0 = 5$; $a_3 = 27 - 8 = 19$ e $5 \cdot 5 - 6 \cdot 1 = 19$. Confere.
+Os primeiros valores são $1,4,7,10$. Conjeturamos $a_n=3n-2$, mas a lista não prova a fórmula. Verificamos as bases 1 e 2. Para $n\ge3$, usando a hipótese para os dois termos anteriores:
 
-Os casos especiais: raiz dupla $r$ (solução $a_n = (c_1 + c_2 n) r^n$) e termo independente não nulo (procura-se uma particular com a forma do termo independente, como no empréstimo). Exemplo de raiz dupla: $a_n = 4a_{n-1} - 4a_{n-2}$ com $a_0 = 1$ e $a_1 = 6$. A característica $r^2 - 4r + 4 = (r-2)^2$ dá raiz dupla $r = 2$, logo $a_n = (c_1 + c_2 n) 2^n$. De $a_0 = 1$ sai $c_1 = 1$; de $a_1 = 6$ sai $(1 + c_2) \cdot 2 = 6$, logo $c_2 = 2$. Solução: $a_n = (1 + 2n) 2^n$. Confirma dois termos: $a_2 = 5 \cdot 4 = 20$ e $4 \cdot 6 - 4 \cdot 1 = 20$; $a_3 = 7 \cdot 8 = 56$ e $4 \cdot 20 - 4 \cdot 6 = 56$. A sequência de Fibonacci, $F_0 = 0$, $F_1 = 1$, $F_n = F_{n-1} + F_{n-2}$, resolve-se pelo mesmo método, com equação $r^2 = r + 1$. As raízes são $r_1 = (1 + \sqrt{5})/2$ e $r_2 = (1 - \sqrt{5})/2$; com $F_0 = 0$ e $F_1 = 1$ obténs $c_1 = 1/\sqrt{5}$ e $c_2 = -1/\sqrt{5}$, isto é, $F_n = ((1+\sqrt{5})/2)^n - ((1-\sqrt{5})/2)^n$ sobre $\sqrt{5}$.
+$$
+a_n=2(3(n-1)-2)-(3(n-2)-2)=3n-2.
+$$
 
-## Indução prova correção de programas
+É preciso verificar duas bases porque a recorrência usa dois termos anteriores.
 
-A mesma técnica prova que um ciclo faz o que promete, via **invariante**. No cálculo iterativo do fatorial (`fat` acumulador, `i` contador), o invariante é: no fim de cada iteração, $fat = i!$. Vale antes do ciclo ($i = 1$, $fat = 1$) e cada iteração preserva-o ($fat \cdot (i+1) = (i+1)!$). Quando o ciclo termina com $i = n$, tens $fat = n!$. Base e passo, outra vez: invariantes são indução disfarçada, e voltarão em AED e noutras cadeiras.
+## Torres de Hanói
 
-<YouTube id="mZrvnbMBhsU" title="Mathematical induction" />
+Para mover $n$ discos, movemos os $n-1$ menores para o pino auxiliar, movemos o maior e movemos os menores para cima dele. Se $H_n$ é o número de movimentos deste algoritmo:
 
-<YouTube
-  id="mPiPtsD30vg"
-  title="Proving all terms in a recursive sequence are odd"
-/>
+$$
+H_0=0,\qquad H_n=2H_{n-1}+1\quad(n\ge1).
+$$
 
-[^boa-ordenacao]: A equivalência entre indução forte e boa ordenação é padrão nos textos de discreta; os apontamentos de CSE 311 sobre Euclides e inversos modulares seguem o mesmo estilo de prova a partir do menor contraexemplo: [CSE 311 lecture 14](https://courses.cs.washington.edu/courses/cse311/20sp/lectures/lecture14.html).
+Somando 1, $H_n+1=2(H_{n-1}+1)$. Logo, $H_n+1=2^n$ e $H_n=2^n-1$.
+
+A fórmula também é mínima. Antes de mover o maior disco pela primeira vez, é preciso deslocar os $n-1$ menores para o outro pino. Depois do seu último movimento para o destino, é preciso voltar a colocar os menores sobre ele. Qualquer solução usa, portanto, pelo menos $H_{n-1}+1+H_{n-1}$ movimentos, e o algoritmo atinge esse limite.
+
+## Recorrências lineares de primeira ordem
+
+Para $a_n=ra_{n-1}+b$, $n\ge1$, com $a_0$ dado, expandir revela a soma geométrica:
+
+$$
+a_n=r^na_0+b\sum_{j=0}^{n-1}r^j.
+$$
+
+Se $r\ne1$:
+
+$$
+a_n=r^na_0+b\frac{r^n-1}{r-1}.
+$$
+
+Se $r=1$, a soma tem $n$ parcelas iguais a 1 e $a_n=a_0+nb$. Para $a_0=2$ e $a_n=3a_{n-1}+1$, obtemos $a_n=(5\cdot3^n-1)/2$. Substituir $n=0$ e a fórmula na recorrência confere ambas as condições.
+
+## Equação característica
+
+Para uma recorrência homogénea de segunda ordem com coeficientes constantes:
+
+$$
+a_n=\alpha a_{n-1}+\beta a_{n-2},\qquad n\ge2,
+$$
+
+procurar soluções $a_n=r^n$ leva à equação $r^2-\alpha r-\beta=0$. Quando as duas raízes distintas $r_1,r_2$ são não nulas, a solução tem a forma $a_n=Ar_1^n+Br_2^n$. Determinamos $A,B$ pelas duas condições iniciais.
+
+Para $a_0=2,a_1=5$ e $a_n=3a_{n-1}-2a_{n-2}$, a equação é $(r-1)(r-2)=0$. Assim:
+
+$$
+a_n=A+B2^n,\qquad A+B=2,\qquad A+2B=5.
+$$
+
+Daqui $B=3,A=-1$ e $a_n=3\cdot2^n-1$. Os primeiros valores são $2,5,11,23$, coerentes com a recorrência.
+
+Para uma raiz dupla não nula $r$, a forma é $(A+Bn)r^n$. Por exemplo, $a_n=2a_{n-1}-a_{n-2}$ tem raiz dupla 1 e dá uma sequência da forma $A+Bn$. O fator $n$ fornece a segunda solução independente. O método acima não se aplica diretamente a recorrências não homogéneas, nem dispensa tratar casos degenerados com raiz zero.
