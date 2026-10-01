@@ -1,89 +1,111 @@
 ---
 title: Estatística descritiva
-description: Tipos de dados, tabelas de frequências, gráficos e medidas de localização e dispersão com um exemplo completo.
+description: Tipos de dados, frequências, histogramas, quantis tipo 2 e medidas de localização e dispersão.
 section: conteudo
-order: 1
+order: 2
+practices:
+  - me/praticar-descritiva
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import histograma from '../../me/histograma.typ?raw';
+import codigo from '../../me/descritiva.py?raw';
 
-Antes de qualquer probabilidade ou teste, há uma pergunta simples: o que dizem estes dados. A estatística descritiva resume uma amostra em tabelas, gráficos e meia dúzia de números bem escolhidos. O objetivo não é decorar fórmulas, é olhar para 40 medições e conseguir dizer onde está o centro, quanto espalham e se há valores estranhos.
+Descrever uma amostra é mostrar onde estão os valores, como variam e se existem grupos ou observações afastadas. Um único número raramente responde a tudo.
 
-## Tipos de dados e escalas
+## Tipos e escalas
 
-Nem todos os dados aceitam as mesmas contas. Classifica primeiro:
+Dados **categóricos nominais** distinguem categorias sem ordem, como o sistema operativo. Dados **ordinais** têm ordem, como uma gravidade baixa, média ou alta, mas as distâncias entre níveis não são necessariamente iguais. Codificar categorias por números não as torna quantitativas.
 
-- **Qualitativos nominais**: categorias sem ordem, como o sistema operativo do telemóvel. Podes contar, não podes ordenar nem somar.
-- **Qualitativos ordinais**: categorias com ordem, como "mau, razoável, bom". Podes ordenar e tirar a mediana, mas a média não faz sentido (quanto vale "razoável mais bom a dividir por dois"?).
-- **Quantitativos discretos**: contagens, como o número de erros por pedido. Média e o resto funcionam.
-- **Quantitativos contínuos**: medições, como tempos de resposta em milissegundos. Também aceitam tudo, e agrupam-se em classes para tabelas e histogramas.
+Uma variável quantitativa **discreta** conta, por exemplo o número de falhas. Uma variável quantitativa **contínua** mede, por exemplo o tempo. A precisão finita do instrumento não transforma o fenómeno subjacente numa contagem.
 
-:::warning[Média de dados ordinais não existe]
-O erro clássico é calcular a média de uma escala de 1 a 5 de satisfação e tratar 3,7 como medida precisa. Os intervalos entre "2" e "3" e entre "4" e "5" não são iguais, por isso a média engana. Com dados ordinais usa a mediana e as frequências de cada categoria.
-:::
+Numa escala de intervalo, diferenças têm significado mas o zero é convencional, como na temperatura Celsius. Numa escala de razão há zero absoluto, como numa duração; aí faz sentido comparar quocientes. Esta diferença interessa quando usamos medidas relativas de dispersão.
 
-## O exemplo: 40 tempos de resposta
+## Frequências e gráficos
 
-Uma amostra de 40 tempos de resposta de um servidor, em milissegundos:
+A frequência absoluta $n_j$ conta observações na categoria ou classe $j$. A frequência relativa é $f_j=n_j/n$ e as relativas somam 1. Frequências acumuladas só têm significado quando existe uma ordem: não se acumulam sistemas operativos por ordem arbitrária.
 
-42, 38, 51, 47, 44, 55, 39, 48, 52, 46, 43, 57, 41, 49, 50, 45, 53, 40, 56, 47, 44, 52, 48, 39, 61, 46, 50, 43, 54, 49, 45, 58, 41, 47, 52, 44, 49, 55, 46, 51
+Um gráfico de barras separa categorias ou valores discretos. Num histograma, as classes são intervalos adjacentes. A **área** de cada retângulo representa a frequência. Com larguras diferentes, a altura relativa correta é $f_j/h_j$, onde $h_j$ é a largura da classe.
 
-São dados quantitativos contínuos. A tabela de frequências com classes de amplitude 5 resume-os:
-
-| Classe   | Frequência | Frequência relativa |
-| -------- | ---------: | ------------------: |
-| [35, 40[ |          3 |               0,075 |
-| [40, 45[ |          9 |               0,225 |
-| [45, 50[ |         13 |               0,325 |
-| [50, 55[ |          9 |               0,225 |
-| [55, 60[ |          5 |               0,125 |
-| [60, 65[ |          1 |               0,025 |
-
-O **histograma** desenha estas frequências como barras: aqui verias uma forma quase simétrica centrada perto de 47, com uma cauda curta para a direita por causa do 61. O gráfico mostra num segundo o que a tabela mostra num minuto.
+Por exemplo, em 20 durações, as classes $[0,2[$, $[2,4[$ e $[4,8]$ têm contagens 4, 8 e 8. As frequências relativas são 0,2, 0,4 e 0,4. As alturas de densidade são 0,1, 0,2 e 0,1 por unidade de tempo. A última classe tem a mesma contagem da segunda, mas o dobro da largura e metade da altura.
 
 <Typst
   source={histograma}
   format="svg"
-  alt="Histograma dos 40 tempos com 6 classes. As barras sobem até 13 na classe 45–50 e descem para 1 na classe 60–65, onde o valor isolado 61 está marcado. Linhas a tracejado marcam a média 47,9 e a mediana 47,5."
+  alt="Histograma com classes 0 a 2, 2 a 4 e 4 a 8. As alturas são 0,1, 0,2 e 0,1, e as áreas 0,2, 0,4 e 0,4."
 />
 
-Repara no gráfico: a média e a mediana caem quase na mesma barra central, e só a última barra foge do padrão. É assim que se lê um histograma em exame: centro, espalhamento e o que destoa.
+A regra de Sturges sugere $k\approx1+\log_2 n$ classes. É um ponto de partida, não uma obrigação. Mudar limites ou larguras pode revelar ou esconder picos. Escolhe limites legíveis, evita sobreposições e inclui o máximo na última classe.
 
-## Medidas de localização
+## Localização
 
-- **Média** $\bar{x} = \frac{1}{n}\sum x_i$. Aqui a soma dá 1917, logo $\bar{x} = 1917/40 = 47{,}925$, cerca de 47,9 ms.
-- **Mediana**: o valor do meio com os dados ordenados. Com $n = 40$ é a média do 20.º e do 21.º valores ordenados: $(47 + 48)/2 = 47{,}5$ ms. Metade das medições está abaixo, metade acima.
-- **Moda**: o valor mais frequente. Aqui há empate entre 47, 49 e 52 (três ocorrências cada), por isso a moda pouco informa e não a usamos.
-- **Quartis**: $Q_1 = 44$ ms (25 por cento abaixo), $Q_3 = 52$ ms (75 por cento abaixo). O intervalo interquartil $IQR = Q_3 - Q_1 = 8$ ms mede o espalhamento da metade central.
+Para $n$ observações $x_1,\ldots,x_n$, a média é
 
-Repara que média (47,9) e mediana (47,5) estão próximas: sinal de distribuição aproximadamente simétrica, sem valores extremos a puxar a média. Quando diferem muito, desconfia de outliers e prefere a mediana.
+$$\bar x=\frac{1}{n}\sum_{i=1}^n x_i.$$
 
-## Medidas de dispersão
+Numa tabela de frequências de valores exatos, usa $\sum_j n_jx_j/n$. Numa tabela por classes, substituir cada observação pelo centro da classe dá apenas uma aproximação.
 
-- **Amplitude**: máximo menos mínimo, $61 - 38 = 23$ ms. Rápida mas refém dos extremos.
-- **Variância amostral**: $s^2 = \frac{1}{n-1}\sum (x_i - \bar{x})^2$. Com a soma dos quadrados a dar 93113, $s^2 = (93113/40 - 47{,}925^2)\times 40/39 \approx 31{,}8$.
-- **Desvio padrão amostral**: $s = \sqrt{31{,}8} \approx 5{,}6$ ms. É a medida de espalhamento que vais usar em tudo o resto, sempre na mesma unidade dos dados.
+A **mediana** divide a amostra ordenada ao meio e é menos sensível a extremos do que a média. A **moda** é um valor de frequência máxima; pode haver várias. Para dados contínuos agrupados, a classe modal depende da divisão em classes. Com larguras diferentes, o pico do histograma depende da densidade, não apenas da contagem.
 
-Confere as contas do exemplo correndo o cálculo:
+### Quantis tipo 2
+
+Ordena os valores: $x_{(1)}\le\cdots\le x_{(n)}$. Para $0<p<1$, calcula $np$:
+
+$$
+q_p=\begin{cases}
+\dfrac{x_{(np)}+x_{(np+1)}}{2},&np\text{ inteiro},\\
+x_{(\lfloor np\rfloor+1)},&np\text{ não inteiro}.
+\end{cases}
+$$
+
+Os quartis são $Q_1=q_{0,25}$, $Q_2=q_{0,5}$ e $Q_3=q_{0,75}$. O percentil 90 é $q_{0,9}$. Há outras convenções de quantis; um programa com outra definição pode dar um resultado diferente sem ter errado a ordenação.
+
+## Dispersão
+
+A amplitude é $x_{(n)}-x_{(1)}$. A amplitude interquartil, $AIQ=Q_3-Q_1$, descreve a extensão da metade central e resiste melhor a extremos.
+
+A variância e o desvio padrão amostrais são
+
+$$
+s^2=\frac{\sum_i(x_i-\bar x)^2}{n-1}
+=\frac{\sum_i x_i^2-n\bar x^2}{n-1},\qquad s=\sqrt{s^2}.
+$$
+
+O desvio tem a unidade dos dados; a variância tem essa unidade ao quadrado. O divisor $n-1$ corresponde à variância amostral usada para estimar a variância populacional. Não o substituas por $n$ sem identificar outra definição.
+
+O coeficiente de variação $CV=s/\bar x$, frequentemente em percentagem, compara dispersão relativa para variáveis positivas com zero absoluto e média afastada de zero. Não é uma comparação útil para temperaturas Celsius ou médias próximas de zero.
+
+## Caixa, bigodes e extremos
+
+O diagrama de extremos e quartis usa mínimo, $Q_1$, mediana, $Q_3$ e máximo. O diagrama de caixa e bigodes modificado usa as barreiras
+
+$$BI=Q_1-1,5AIQ,\qquad BS=Q_3+1,5AIQ.$$
+
+Os bigodes terminam nas observações mais extremas **dentro** das barreiras, não nas barreiras. Valores fora delas são assinalados separadamente. São candidatos a investigação, não erros que se possam apagar automaticamente.
+
+## Exemplo completo
+
+Considera oito durações, em minutos: $2,3,3,4,5,6,7,18$. Estão ordenadas e somam 48, logo $\bar x=6$. A soma dos quadrados é 472:
+
+$$s^2=\frac{472-8\times6^2}{7}=\frac{184}{7}\approx26,2857,\qquad s\approx5,1270.$$
+
+Como $8\times0,25=2$, $Q_1=(3+3)/2=3$. A mediana é $(4+5)/2=4,5$ e $Q_3=(6+7)/2=6,5$. Assim, $AIQ=3,5$ e as barreiras são $-2,25$ e $11,75$. Os bigodes terminam em 2 e 7; 18 fica assinalado fora deles.
+
+A média é superior à mediana por causa da duração 18. A moda é 3. A amplitude é 16. Estes números descrevem aspetos diferentes da mesma amostra; nenhum prova que a população seja normal.
+
+Se convertermos minutos em segundos, $Y=60X$, a média passa a 360 e o desvio a $60s$. Em geral, para $Y=aX+b$,
+
+$$\bar y=a\bar x+b,\qquad s_Y=|a|s_X,\qquad s_Y^2=a^2s_X^2.$$
+
+Somar uma constante desloca o centro sem alterar a dispersão. Um fator negativo inverte a ordem, mas nunca produz um desvio padrão negativo.
+
+## Conferir a convenção no programa
+
+O programa calcula os quantis pela regra acima e desenha a caixa com esses valores. Altera 18 para 8 e compara média, mediana e desvio.
 
 <CodePlayground
   language="python"
-  title="Descritiva dos 40 tempos"
-  code={
-    'dados = [42, 38, 51, 47, 44, 55, 39, 48, 52, 46, 43, 57, 41, 49, 50, 45, 53, 40, 56, 47, 44, 52, 48, 39, 61, 46, 50, 43, 54, 49, 45, 58, 41, 47, 52, 44, 49, 55, 46, 51]\nn = len(dados)\nmedia = sum(dados) / n\nordem = sorted(dados)\nmediana = (ordem[n // 2 - 1] + ordem[n // 2]) / 2\nq1 = ordem[n // 4]\nq3 = ordem[3 * n // 4]\ns = (sum((x - media) ** 2 for x in dados) / (n - 1)) ** 0.5\nprint("media:", round(media, 2))\nprint("mediana:", mediana)\nprint("Q1:", q1, " Q3:", q3)\nprint("desvio s:", round(s, 2))'
-  }
+  code={codigo}
+  title="Quantis e caixa da amostra"
 />
-
-A saída dá média 47,92, mediana 47,5, quartis 44 e 52 e desvio 5,64: os mesmos números da página. O método dos quartis aqui (posição $n/4$ nos dados ordenados) é o que a cadeira usa nestes exemplos.
-
-:::tip[Populacional contra amostral: o $n - 1$]
-A variância da **população** divide por $n$; a variância **amostral** divide por $n - 1$. O $n - 1$ corrige o viés de estimar o espalhamento a partir da própria média da amostra, que está sempre "demasiado perto" dos dados[^n1]. Nas fórmulas de inferência usa sempre a versão amostral $s$, a não ser que o enunciado diga explicitamente que o desvio populacional $\sigma$ é conhecido.
-:::
-
-[^n1]: Intuição dos graus de liberdade: depois de fixares a média da amostra, só $n - 1$ desvios são livres, porque o último fica determinado pelos outros. É por isso que a correção usa exatamente $n - 1$, e é também por isso que os testes $t$ mais à frente usam $n - 1$ graus de liberdade.
-
-## Leitura final do exemplo
-
-Em duas frases: os tempos centram-se perto de 48 ms, com metade das medições entre 44 e 52 ms e um espalhamento típico de cerca de 6 ms. Há um valor alto isolado (61 ms) que merece investigação, mas não chega para deslocar o centro. Esta é a matéria-prima das páginas seguintes: a média 47,9 e o desvio 5,6 voltam nos [intervalos de confiança](intervalos-confianca/) e nos [testes de hipóteses](testes-hipoteses/).

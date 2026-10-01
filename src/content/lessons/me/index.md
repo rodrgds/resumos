@@ -1,34 +1,38 @@
 ---
 title: Métodos Estatísticos
-description: Estatística descritiva, probabilidades, variáveis aleatórias, intervalos de confiança e testes de hipóteses.
+description: Explorar dados, modelar o acaso e fazer inferência para médias, proporções e tabelas de contagens.
 section: conteudo
 order: 0
 ---
 
-Métodos Estatísticos é a cadeira onde aprendes a tirar conclusões de dados com incerteza quantificada. Não é adivinhar: é dizer "a média está entre estes dois valores com 95 por cento de confiança" e saber exatamente o que essa frase promete e o que não promete. O percurso vai da tabela de dados brutos até ao teste de hipóteses, sempre com contas feitas à mão e tabelas, sem software obrigatório.
+Uma amostra permite descrever o que foi observado e, sob condições explícitas, tirar conclusões sobre uma população. A cadeira liga estas duas tarefas através da probabilidade: primeiro vemos os dados, depois estudamos como variariam se recolhêssemos outra amostra.
 
-## Como está organizado
+## Percurso
 
-Começa por [Estatística descritiva](estatistica-descritiva/), que transforma 40 tempos de resposta numa tabela de frequências, num histograma e em meia dúzia de números (média, mediana, quartis, desvio padrão) que resumem o essencial. Depois, [Probabilidades e Teorema de Bayes](probabilidades/) dá a linguagem da incerteza: espaços amostrais, probabilidade condicional e a inversão de condicionadas que decide se um teste de diagnóstico positivo significa mesmo doença.
+Começa por [estudos e amostragem](estudo-e-amostragem/): quem foi observado, como foi escolhido e que conclusões o desenho permite. Seguem-se [estatística descritiva](estatistica-descritiva/) e [dados bivariados](dados-bivariados/), com frequências, histogramas, quartis, dispersão e associação entre variáveis.
 
-A segunda parte modela o aleatório com funções. [Variáveis aleatórias](variaveis-aleatorias/) define função massa, densidade, valor esperado e variância, e [Distribuições binomial, normal e t](distribuicoes/) apresenta as três distribuições que vais usar em tudo o resto, incluindo a leitura da tabela da normal padrão.
+[Probabilidades](probabilidades/) introduz acontecimentos, condicionamento, independência e Bayes. [Variáveis aleatórias](variaveis-aleatorias/) transforma resultados em números e [distribuições conjuntas](distribuicoes-conjuntas/) trata duas variáveis em simultâneo. Em [distribuições](distribuicoes/) aprendes a reconhecer modelos, calcular probabilidades e ler tabelas.
 
-A terceira parte é inferência: concluir sobre a população a partir da amostra. [Amostragem e Teorema do Limite Central](amostragem-limite-central/) explica porque a média de uma amostra grande é quase normal mesmo quando os dados não são. [Intervalos de confiança](intervalos-confianca/) constrói intervalos para médias e proporções e dimensiona amostras. [Testes de hipóteses](testes-hipoteses/) formaliza a decisão entre duas hipóteses com erros tipo I e II e valor p. Por fim, [Qui-quadrado e testes não paramétricos](qui-quadrado/) trata dados qualitativos em tabelas de contingência.
+[Amostragem e limite central](amostragem-limite-central/) explica a distribuição de uma média ou proporção entre amostras. Usa-a para construir [intervalos de confiança](intervalos-confianca/) e [comparar médias](comparacao-medias/). Depois estuda [testes de hipóteses](testes-hipoteses/), [erros e potência](erros-potencia/) e [testes por aleatorização](aleatorizacao/).
 
-Um fio condutor ajuda: os tempos de resposta aparecem na descritiva como dados, na amostragem como população e nos testes como a amostra que decide. Segue esse exemplo de ponta a ponta e a cadeira fica uma história só.
+O percurso termina com [inferência para proporções](proporcoes/) e [testes do qui-quadrado](qui-quadrado/). A [cheat sheet](folha-consulta/) reúne as fórmulas e condições para consulta rápida.
 
-## Como estudar
+## Como trabalhar
 
-Lê cada página com papel e calculadora ao lado e refaz o exemplo antes de veres o resultado. Em Métodos Estatísticos o erro típico não é a conta, é trocar a fórmula: intervalo com $z$ quando devia ser $t$, teste unilateral quando o enunciado pede bilateral. Para cada método pergunta: que parâmetro estou a estimar, a amostra é grande ou pequena, o desvio é conhecido ou estimado. Resolve depois exercícios variando uma condição de cada vez e confirma se a conclusão muda como esperas.
+Em cada problema, identifica a unidade observada, a variável e o parâmetro pretendido. Escolhe o método antes de substituir números. Escreve as condições, conserva casas decimais nas contas intermédias e fecha com uma frase sobre a população e a pergunta inicial.
 
-## Avaliação
+Os exemplos executáveis em Python permitem conferir contas e experimentar gráficos. Os materiais das aulas também usam R. O software ajuda a explorar dados, mas não escolhe o modelo nem justifica as condições por ti. Nos exercícios usa a tabela ou o arredondamento solicitado no enunciado.
 
-A forma de avaliação varia de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes o número de testes, os pesos, as regras de recurso e de melhoria antes de planeares o estudo.
+## Ano e avaliação
 
-## Fontes e âmbito
+Este percurso foi reconstruído a partir do material de **2025/26**. A ficha dessa ocorrência descreve dois testes, sem nota mínima por teste, e recurso com duas partes correspondentes. A soma necessária para aprovação é 9,5 valores antes do arredondamento; classificações a partir de 17,5 têm uma prova extra com regras próprias. Estas são regras históricas daquela ocorrência. Para **2026/27**, confirma a ficha e os avisos da equipa docente antes de planear a avaliação.
 
-Estas páginas seguem o âmbito da unidade curricular de Métodos Estatísticos (L.EIC020) do 2.º ano, 2.º semestre da LEIC, ocorrência de 2025/26: estatística descritiva, probabilidades e Teorema de Bayes, variáveis aleatórias, distribuições binomial, normal e t de Student, amostragem e Teorema do Limite Central, intervalos de confiança, testes de hipóteses e testes do qui-quadrado. Os cálculos são feitos à mão com tabelas, sem software obrigatório.
+Os ficheiros de questões do tipo T1 e T2 são exemplos de perguntas possíveis, não provas completas de anos anteriores. As práticas destas páginas são exercícios novos sobre os mesmos tipos de decisão.
 
-Material oficial da FEUP:
+## Fontes e bibliografia
 
-- Ficha da unidade curricular de Métodos Estatísticos, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560105).
+A base principal foi a [página de ME no Moodle 2025/26](https://moodle2526.up.pt/course/view.php?id=4420): 14 aulas teóricas, sete folhas de exercícios com soluções e versões em inglês, notas de estatística descritiva, dois conjuntos de questões-modelo, formulários, tabelas e dois ficheiros de dados. Foram consultados os 45 ficheiros originais. O Moodle requer acesso institucional; esses documentos não são republicados aqui.
+
+O programa e a avaliação foram conferidos na [ficha SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560105). A bibliografia obrigatória dessa ficha é _Estatística: Apontamentos de Apoio às Aulas_, de A. Miguel Gomes e José F. Oliveira (2018), e _Estatística_, de Rui Campos Guimarães e José António Sarsfield Cabral, 2.ª edição (2011). A bibliografia complementar inclui _Modern Mathematical Statistics with Applications_, de Jay L. Devore, _Introduction to Statistical Investigations_, de Nathan Tintle e colaboradores (2015), e _Introductory Statistics_, de Thomas H. Wonnacott. Estes manuais não estavam disponíveis em texto integral para esta revisão.
+
+Para os programas, foi consultada a [documentação oficial de SciPy](https://docs.scipy.org/doc/scipy/reference/stats.html). Os capítulos usam quantis amostrais tipo 2, quantis críticos definidos pela cauda direita e os ajustamentos de Agresti–Coull para proporções. Distinguem a fórmula de Welch da fórmula com variância comum e identificam sempre os resultados aproximados.

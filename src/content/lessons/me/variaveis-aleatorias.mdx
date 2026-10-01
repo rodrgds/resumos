@@ -1,80 +1,93 @@
 ---
 title: Variáveis aleatórias
-description: Função massa, densidade e distribuição, valor esperado, variância, covariância e transformações lineares.
+description: Função de probabilidade, densidade, distribuição acumulada, momentos e transformações.
 section: conteudo
-order: 3
+order: 5
+practices:
+  - me/praticar-variaveis
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import uniforme from '../../me/uniforme.typ?raw';
+Uma variável aleatória é uma função $X:\Omega\to\mathbb R$ que atribui um número a cada resultado. Por exemplo, X pode contar quantas peças falham numa inspeção. Resultados diferentes podem dar o mesmo valor de X.
 
-Uma variável aleatória traduz resultados em números: em vez de "caras e coroas", trabalhas com $X = 0$ ou $X = 1$. A partir daqui, toda a incerteza vive em funções: uma que diz quanto vale cada resultado e outra que acumula essas probabilidades. Esta página define essas funções e os dois resumos numéricos que as acompanham sempre, o valor esperado e a variância.
+## Distribuição discreta
 
-## Discretas: função massa e distribuição
+Se os valores possíveis formam um conjunto finito ou contável, a função de probabilidade é $f_X(x)=P(X=x)$. Os valores são não negativos e somam 1. Para calcular a probabilidade de um acontecimento, somam-se as probabilidades dos valores que o satisfazem.
 
-Uma variável **discreta** toma valores isolados $x_1, x_2, \dots$. Descreve-se pela **função massa de probabilidade** $p(x) = P(X = x)$, com $p(x) \ge 0$ e soma 1. A **função de distribuição** acumula: $F(x) = P(X \le x) = \sum_{t \le x} p(t)$.
+**Exemplo.** Uma variável tem valores $-1,0,2$ com probabilidades $0,2,c,0,3$. Como a soma deve ser 1, $c=0,5$. Então $P(X<2)=0,2+0,5=0,7$, mas $P(X\le2)=1$. Neste modelo, $P(X=1)=0$.
 
-Exemplo: dois lançamentos de moeda equilibrada, $X$ o número de caras. Então $p(0) = 1/4$, $p(1) = 1/2$, $p(2) = 1/4$, e $F(1) = P(X \le 1) = 3/4$. A massa responde "quanto vale exatamente aqui"; a distribuição responde "quanto acumula até aqui". Nos testes, metade dos erros nasce de confundir as duas perguntas.
+## Distribuição acumulada
 
-## Contínuas: densidade e integrais
+A função de distribuição é
 
-Uma variável **contínua** toma valores num intervalo, e a probabilidade de um valor exato é zero. Descreve-se pela **função densidade de probabilidade** $f$, com $f(x) \ge 0$ e área total 1. Probabilidades são áreas:
+$$F_X(x)=P(X\le x).$$
 
-$$
-P(a < X < b) = \int_a^b f(x)\,dx, \qquad F(x) = P(X \le x) = \int_{-\infty}^{x} f(t)\,dt.
-$$
-
-Repara que a densidade não é uma probabilidade: pode valer mais de 1, desde que a área total seja 1. O que tem de estar entre 0 e 1 é sempre a área, nunca a altura. Se precisares de rever integrais, volta ao [integral definido](/cadeiras/am1/integral-definido/).
-
-Exemplo: o tempo de espera por um autocarro, em minutos, modelado como uniforme em $[2, 8]$, com densidade $f(x) = 1/6$ nesse intervalo e 0 fora. A probabilidade de esperar entre 3 e 5 minutos é a área do retângulo:
+É não decrescente, contínua à direita e tende para 0 e 1 quando x tende para $-\infty$ e $+\infty$. Na variável anterior,
 
 $$
-P(3 < X < 5) = \int_3^5 \frac{1}{6}\,dx = \frac{5 - 3}{6} = \frac{1}{3} \approx 0{,}333.
+F_X(x)=\begin{cases}
+0,&x<-1,\\
+0,2,&-1\le x<0,\\
+0,7,&0\le x<2,\\
+1,&x\ge2.
+\end{cases}
 $$
 
-A área a sombreado é o retângulo entre 3 e 5 sob a densidade constante:
+O salto em $x=0$ tem tamanho 0,5, igual a $P(X=0)$. Em geral,
 
-<Typst
-  source={uniforme}
-  format="svg"
-  alt="Densidade uniforme entre 2 e 8 com altura 1/6. A faixa entre 3 e 5 está sombreada e vale 1/3 da área total."
-/>
+$$P(a<X\le b)=F_X(b)-F_X(a).$$
 
-A integração numérica confirma a área sem primitiva:
+Para incluir a, subtrai o limite à esquerda: $P(a\le X\le b)=F_X(b)-F_X(a^-)$, onde $F_X(a^-)=P(X<a)$. Num modelo discreto, trocar $<$ por $\le$ pode mudar a resposta.
 
-<CodePlayground
-  language="python"
-  title="Área por soma de Riemann"
-  code={
-    'a, b, n = 3.0, 5.0, 10000\ndx = (b - a) / n\narea = sum((1 / 6) * dx for _ in range(n))\nprint("area:", round(area, 4))'
-  }
-/>
+## Densidade contínua
 
-A saída dá 0,3333, o $1/3$ da conta exata. A soma de Riemann é a definição de integral a trabalhar: fatias finas vezes altura constante.
+Nos modelos contínuos com densidade, $f_X(x)\ge0$ e $\int_{-\infty}^{+\infty}f_X(x)\,dx=1$. As probabilidades são áreas:
+
+$$P(a<X<b)=\int_a^b f_X(x)\,dx,\qquad F_X(x)=\int_{-\infty}^x f_X(u)\,du.$$
+
+Quando a derivada existe, $F_X'(x)=f_X(x)$. Uma altura de densidade pode exceder 1; a área total é que vale 1. Neste modelo, $P(X=x)=0$ para qualquer ponto. Isso não significa que X nunca tome um valor: uma medição cai sempre num ponto, mas cada ponto isolado tem probabilidade nula.
+
+### Exemplo: normalizar, integrar e inverter
+
+Se $f_X(x)=cx$ para $0<x<2$ e zero fora desse intervalo, a condição da área dá
+
+$$1=\int_0^2cx\,dx=2c\quad\Rightarrow\quad c=\frac12.$$
+
+No interior, $F_X(x)=x^2/4$. Fora dele, F é 0 para $x\le0$ e 1 para $x\ge2$. Portanto,
+
+$$P(1<X<1,5)=\frac{1,5^2-1^2}{4}=0,3125.$$
+
+A mediana populacional m satisfaz $F_X(m)=0,5$, logo $m=\sqrt2$. Não é o ponto médio do suporte: a densidade dá mais peso a valores elevados.
 
 ## Valor esperado e variância
 
-O **valor esperado** é a média pesada pelas probabilidades: $E[X] = \sum x\,p(x)$ no caso discreto e $E[X] = \int x\,f(x)\,dx$ no contínuo. No exemplo uniforme, $E[X] = (2 + 8)/2 = 5$ minutos, o centro do intervalo. Interpreta como média de longo prazo: repetindo a experiência muitas vezes, a média das observações aproxima-se deste valor.
+O valor esperado é uma média ponderada pela distribuição, não necessariamente um valor que X possa tomar:
 
-A **variância** mede o espalhamento em torno dessa média:
+$$E(X)=\sum_x x f_X(x)\quad\text{ou}\quad E(X)=\int_{-\infty}^{+\infty}xf_X(x)\,dx.$$
 
-$$
-Var(X) = E[(X - E[X])^2] = E[X^2] - E[X]^2.
-$$
+Estas fórmulas requerem integrabilidade do valor absoluto para uma média finita. Mais geralmente, $E(g(X))$ obtém-se substituindo x por $g(x)$ na soma ou integral. Em geral, $E(g(X))\ne g(E(X))$.
 
-A segunda forma poupa contas. No exemplo, $Var(X) = (8 - 2)^2/12 = 36/12 = 3$, e o desvio padrão é $\sqrt{3} \approx 1{,}73$ minutos. Guarda o padrão: a variância está em unidades ao quadrado; quem se interpreta na unidade original é sempre o desvio padrão.
+A variância é
 
-:::tip[Linearidade do valor esperado]
-$E[aX + b] = a\,E[X] + b$ vale sempre, sem condições. No exemplo, passar de minutos para uma "pontuação" $Y = 2X + 3$ dá $E[Y] = 2 \times 5 + 3 = 13$. Para a variância, $Var(aX + b) = a^2\,Var(X)$: a translação $b$ não espalha nada e a escala sai ao quadrado. Aqui $Var(Y) = 4 \times 3 = 12$.
-:::
+$$\operatorname{Var}(X)=E[(X-\mu)^2]=E(X^2)-[E(X)]^2,$$
 
-## Duas variáveis: covariância e correlação
+com $\mu=E(X)$ e segundo momento finito. O desvio padrão é $\sigma=\sqrt{\operatorname{Var}(X)}$.
 
-Com duas variáveis interessa saber se variam juntas. A **covariância** é $Cov(X, Y) = E[XY] - E[X]E[Y]$: positiva quando valores altos de uma acompanham valores altos da outra, negativa no caso contrário, zero quando não há relação linear.
+Na variável discreta com valores $-1,0,2$,
 
-Exemplo discreto: $X$ e $Y$ valem 0 ou 1, com $P(0,0) = 0{,}4$, $P(0,1) = 0{,}1$, $P(1,0) = 0{,}1$, $P(1,1) = 0{,}4$. Então $E[X] = E[Y] = 0{,}5$ e $E[XY] = 1 \times 1 \times 0{,}4 = 0{,}4$, logo $Cov(X, Y) = 0{,}4 - 0{,}25 = 0{,}15$.
+$$E(X)=(-1)(0,2)+0(0,5)+2(0,3)=0,4,$$
 
-A covariância depende das unidades, por isso normaliza-se pelo produto dos desvios: o **coeficiente de correlação** $\rho = Cov(X, Y)/(\sigma_X \sigma_Y)$ está sempre entre $-1$ e $1$. Aqui $\sigma_X = \sigma_Y = 0{,}5$, logo $\rho = 0{,}15/0{,}25 = 0{,}6$, uma associação positiva moderada. E o aviso que a cadeira repete: correlação zero não significa independência, apenas ausência de relação linear[^corr].
+$$E(X^2)=1(0,2)+0+4(0,3)=1,4,$$
 
-[^corr]: O contraexemplo clássico: $X$ uniforme em $[-1, 1]$ e $Y = X^2$. Então $E[XY] = E[X^3] = 0$ e $E[X] = 0$, logo a covariância é zero, mas $Y$ é função determinística de $X$: dependência total com correlação nula. A correlação só mede relação linear.
+$$\operatorname{Var}(X)=1,4-0,4^2=1,24.$$
+
+No exemplo contínuo, $E(X)=\int_0^2x(x/2)dx=4/3$ e $E(X^2)=\int_0^2x^2(x/2)dx=2$. A variância é $2-16/9=2/9$.
+
+## Transformar uma variável
+
+Para $Y=aX+b$,
+
+$$E(Y)=aE(X)+b,\quad \operatorname{Var}(Y)=a^2\operatorname{Var}(X),\quad \sigma_Y=|a|\sigma_X.$$
+
+Se X é a variável discreta anterior e $Y=3X-2$, os valores de Y são $-5,-2,4$, com as mesmas probabilidades. A média é $-0,8$ e a variância é $9(1,24)=11,16$.
+
+Para uma transformação não linear, volta à definição. Se $Y=X^2$, no mesmo exemplo $E(Y)=1,4$, e não $(0,4)^2$. Transformar os dados pode ajudar a analisar a forma, mas transforma também o parâmetro que estás a estudar.

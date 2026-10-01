@@ -1,0 +1,80 @@
+---
+title: Duas variáveis aleatórias
+description: Distribuições conjuntas, marginais, condicionais, independência e variância de combinações.
+section: conteudo
+order: 6
+practices:
+  - me/praticar-conjuntas
+---
+
+Uma distribuição conjunta descreve duas variáveis na mesma experiência. Saber a distribuição de cada uma separadamente não chega para saber como se relacionam.
+
+## Conjunta, marginais e condicionais
+
+No caso discreto, $f_{X,Y}(x,y)=P(X=x,Y=y)$. As probabilidades da tabela somam 1. As marginais obtêm-se somando linhas ou colunas:
+
+$$f_X(x)=\sum_y f_{X,Y}(x,y),\qquad f_Y(y)=\sum_x f_{X,Y}(x,y).$$
+
+Se $f_Y(y)>0$, a distribuição condicional é
+
+$$P(X=x\mid Y=y)=\frac{f_{X,Y}(x,y)}{f_Y(y)}.$$
+
+Considere-se a tabela seguinte:
+
+| $X\backslash Y$ |   0 |   1 | $f_X(x)$ |
+| --------------- | --: | --: | -------: |
+| 0               | 0,3 | 0,2 |      0,5 |
+| 1               | 0,1 | 0,4 |      0,5 |
+| $f_Y(y)$        | 0,4 | 0,6 |        1 |
+
+Temos $P(X=1)=0,5$, mas $P(X=1\mid Y=1)=0,4/0,6=2/3$. Conhecer Y altera a distribuição de X.
+
+Num modelo contínuo com densidade conjunta, somas dão lugar a integrais. Por exemplo, $f_X(x)=\int f_{X,Y}(x,y)dy$. Uma probabilidade corresponde a integrar a densidade sobre a região pedida, não a avaliar a densidade num ponto.
+
+Por exemplo, se a densidade conjunta vale 2 na região $0<y<x<1$ e zero fora, a área do triângulo é $1/2$, logo a probabilidade total é 1. Para $0<x<1$, $f_X(x)=\int_0^x 2\,dy=2x$. Para $0<y<1$, $f_Y(y)=\int_y^1 2\,dx=2(1-y)$. A probabilidade de $X>1/2$ é $\int_{1/2}^1 2x\,dx=3/4$. Os limites de integração vêm da região, não de um retângulo inventado.
+
+## Independência
+
+X e Y são independentes quando a conjunta é o produto das marginais: $f_{X,Y}(x,y)=f_X(x)f_Y(y)$ para todos os pares, no caso discreto. No caso contínuo, a fatorização da densidade deve valer quase em toda a parte.
+
+Na tabela, $P(X=1,Y=1)=0,4$, mas $P(X=1)P(Y=1)=0,5(0,6)=0,3$. Um único par que falhe já demonstra dependência. Para demonstrar independência não basta verificar um único par.
+
+## Covariância e correlação populacionais
+
+Com segundos momentos finitos,
+
+$$\operatorname{Cov}(X,Y)=E(XY)-E(X)E(Y),$$
+
+$$\rho=\frac{\operatorname{Cov}(X,Y)}{\sigma_X\sigma_Y},$$
+
+quando os dois desvios são positivos. Calcula $E(XY)$ com a conjunta, somando $xyf_{X,Y}(x,y)$. Não uses automaticamente $E(X)E(Y)$: essa igualdade é consequência da independência, não uma regra universal.
+
+No exemplo, $E(X)=0,5$, $E(Y)=0,6$ e $E(XY)=0,4$. Logo, a covariância é $0,4-0,5(0,6)=0,1$. Como X e Y são indicadores,
+
+$$\operatorname{Var}(X)=0,5(0,5)=0,25,\quad \operatorname{Var}(Y)=0,6(0,4)=0,24,$$
+
+$$\rho=\frac{0,1}{\sqrt{0,25(0,24)}}\approx0,4082.$$
+
+Independência implica covariância nula. O inverso não vale em geral. Se X toma $-1,0,1$ com igual probabilidade e $Y=X^2$, então $E(X)=E(XY)=0$ e a covariância é zero. Contudo, $P(Y=0\mid X=0)=1$, enquanto $P(Y=0)=1/3$.
+
+## Somar e subtrair
+
+A linearidade da esperança não exige independência:
+
+$$E(aX+bY+c)=aE(X)+bE(Y)+c.$$
+
+Para a variância,
+
+$$\operatorname{Var}(aX+bY)=a^2\operatorname{Var}(X)+b^2\operatorname{Var}(Y)+2ab\operatorname{Cov}(X,Y).$$
+
+Na tabela, $E(X+Y)=1,1$ e $\operatorname{Var}(X+Y)=0,25+0,24+0,2=0,69$. Para a diferença,
+
+$$\operatorname{Var}(X-Y)=0,25+0,24-0,2=0,29.$$
+
+A covariância positiva aumenta a variância da soma e reduz a da diferença. É a razão por que o emparelhamento pode melhorar uma comparação: as duas medições da mesma unidade tendem a partilhar variação.
+
+Para variáveis independentes, o termo de covariância desaparece. As variâncias somam-se na soma **e** na diferença; os desvios padrão não se somam. Para observações i.i.d. de variância $\sigma^2$,
+
+$$\operatorname{Var}\left(\sum_{i=1}^n a_iX_i\right)=\sigma^2\sum_{i=1}^n a_i^2.$$
+
+Por exemplo, $0,4X_1+0,1X_2-0,3X_3+0,2X_4-0,5$ tem variância $(0,16+0,01+0,09+0,04)\sigma^2=0,30\sigma^2$. A constante muda a média, não a variância.
