@@ -1,0 +1,188 @@
+---
+title: Indução estrutural e provas de programas
+description: Conjuntos recursivos, invariantes de palavras, listas, concatenação, reverse e map.
+order: 14
+practices:
+  - md/praticar-inducao-estrutural
+---
+
+Na indução sobre naturais, o passo constrói $n+1$ a partir de $n$. Na **indução estrutural**, seguimos os construtores do objeto: uma palavra pode nascer de outra palavra, uma lista pode nascer de uma cabeça e uma cauda, uma expressão pode nascer de duas subexpressões.
+
+Uma definição indutiva descreve os objetos obtidos por um número finito de aplicações das regras. Não inclui objetos adicionais só porque não foram explicitamente proibidos.
+
+## Indução num conjunto recursivo
+
+Se $S$ é o menor conjunto com $3\in S$ e $x,y\in S\Rightarrow x+y\in S$, queremos mostrar:
+
+$$
+S=\{3n:n\in\mathbb N^+\}.
+$$
+
+Para $S\subseteq\{3n:n\in\mathbb N^+\}$, fazemos indução estrutural:
+
+- Base: $3=3\cdot1$ é um múltiplo positivo de 3.
+- Construtor: se $x=3a$ e $y=3b$ com $a,b>0$, então $x+y=3(a+b)$, também múltiplo positivo de 3.
+
+Isto prova que as regras nunca produzem outro tipo de valor. Ainda falta a inclusão inversa. Por indução no natural positivo $n$, $3\cdot1\in S$ e, se $3n\in S$, então $3(n+1)=3n+3\in S$.
+
+Mostrar que todos os elementos construídos têm uma propriedade não prova que todos os objetos com essa propriedade podem construir-se. Para uma igualdade de conjuntos, verifica as duas direções.
+
+## Palavras e invariantes
+
+Considera palavras sobre $\{a,b\}$ construídas por estas regras: a palavra vazia $\varepsilon$ pertence a $L$; se $x\in L$, então $axb,bxa\in L$; se $x,y\in L$, então $xy\in L$.
+
+Vamos provar que cada palavra de $L$ tem tantos $a$ como $b$. O caso base tem zero de cada. Se $x$ tem $k$ de cada, $axb$ e $bxa$ têm $k+1$ de cada. Se $x$ tem $k$ de cada e $y$ tem $m$ de cada, a concatenação tem $k+m$ de cada. Tratámos todos os construtores.
+
+Uma propriedade que se conserva em cada construção chama-se **invariante**. Pode servir para mostrar que uma palavra não pertence ao conjunto: `aaabb` não pode pertencer a $L$, porque tem contagens diferentes. Para mostrar que pertence, fornece uma construção a partir das bases.
+
+## Parênteses equilibrados
+
+Se as regras são $()\in E$, $x\in E\Rightarrow(x)\in E$ e $x,y\in E\Rightarrow xy\in E$, todas as expressões têm igual número de aberturas e fechos.
+
+Podemos provar uma propriedade mais forte: em cada prefixo, o número de fechos não excede o de aberturas. Define o saldo como aberturas menos fechos.
+
+- Em `()`, os prefixos têm saldos 0, 1 e 0.
+- Em $(x)$, o primeiro parêntese acrescenta 1 ao saldo de cada prefixo de $x$. O último fecha a abertura exterior.
+- Em $xy$, um prefixo fica em $x$ ou atravessa $x$ e entra em $y$. No segundo caso, o saldo total de $x$ é zero e o saldo restante é o do prefixo de $y$.
+
+Contagens totais iguais não chegam para esta propriedade: `)(` tem uma abertura e um fecho, mas o seu primeiro prefixo já tem saldo negativo.
+
+## Indução sobre listas finitas
+
+Uma lista finita tem dois construtores: `[]`, a lista vazia, e `x:xs`, uma cabeça `x` seguida da cauda `xs`. Para provar uma propriedade de todas as listas finitas:
+
+1. Prova o caso `[]`.
+2. Para uma cabeça arbitrária `x` e uma cauda arbitrária `xs`, assume a propriedade de `xs` e prova-a para `x:xs`.
+
+A hipótese pertence à cauda, não à lista inteira. Não usamos este princípio para listas infinitas de Haskell.
+
+As definições seguintes são equações para listas finitas:
+
+```haskell
+length [] = 0
+length (x:xs) = 1 + length xs
+
+[] ++ ys = ys
+(x:xs) ++ ys = x : (xs ++ ys)
+
+reverse [] = []
+reverse (x:xs) = reverse xs ++ [x]
+```
+
+Na concatenação, a recursão analisa a primeira lista. Por isso, induzir nessa lista costuma permitir aplicar logo a equação recursiva.
+
+## Comprimento de uma concatenação
+
+Queremos `length (xs ++ ys) = length xs + length ys` para quaisquer listas finitas. Fazemos indução em `xs`, mantendo `ys` arbitrária.
+
+Na base:
+
+```text
+length ([] ++ ys)
+= length ys                        definição de ++
+= 0 + length ys                    aritmética
+= length [] + length ys            definição de length
+```
+
+No passo, a hipótese é `length (xs ++ ys) = length xs + length ys`:
+
+```text
+length ((x:xs) ++ ys)
+= length (x : (xs ++ ys))           definição de ++
+= 1 + length (xs ++ ys)             definição de length
+= 1 + length xs + length ys         hipótese de indução
+= length (x:xs) + length ys         definição de length
+```
+
+Nomear a equação usada em cada passagem permite conferir a prova sem executar o programa.
+
+## Associatividade da concatenação
+
+Para `(xs ++ ys) ++ zs = xs ++ (ys ++ zs)`, induzimos em `xs`, com `ys,zs` arbitrárias.
+
+Na base, ambos os lados reduzem a `ys ++ zs`. No passo:
+
+```text
+((x:xs) ++ ys) ++ zs
+= (x : (xs ++ ys)) ++ zs
+= x : ((xs ++ ys) ++ zs)
+= x : (xs ++ (ys ++ zs))            hipótese de indução
+= (x:xs) ++ (ys ++ zs)
+```
+
+Também precisamos da identidade à direita `xs ++ [] = xs`. A base é `[] ++ [] = []`; no passo, `(x:xs) ++ [] = x:(xs ++ []) = x:xs` pela hipótese.
+
+## Reverse de uma concatenação
+
+O lema é:
+
+```text
+reverse (xs ++ ys) = reverse ys ++ reverse xs
+```
+
+Na base `xs=[]`, o lado esquerdo é `reverse ys`; o direito é `reverse ys ++ []`, igual pelo lema da identidade à direita. No passo:
+
+```text
+reverse ((x:xs) ++ ys)
+= reverse (x : (xs ++ ys))
+= reverse (xs ++ ys) ++ [x]
+= (reverse ys ++ reverse xs) ++ [x]   hipótese de indução
+= reverse ys ++ (reverse xs ++ [x])   associatividade de ++
+= reverse ys ++ reverse (x:xs)
+```
+
+É este lema que falta quando tentamos provar que inverter duas vezes recupera a lista:
+
+```text
+reverse (reverse (x:xs))
+= reverse (reverse xs ++ [x])
+= reverse [x] ++ reverse (reverse xs)  lema anterior
+= [x] ++ xs                          hipótese de indução
+= x:xs
+```
+
+A base é `reverse (reverse []) = []`. Os lemas são necessários porque a hipótese de indução só fala de `reverse (reverse xs)`, não de `reverse (reverse xs ++ [x])`.
+
+## Fusão de map
+
+`map f` aplica `f` a cada elemento. A composição `(f . g) x` é `f (g x)`:
+
+```haskell
+map f [] = []
+map f (x:xs) = f x : map f xs
+(f . g) x = f (g x)
+```
+
+Podemos provar `map f (map g xs) = map (f . g) xs` por indução em `xs`. A base dá `[]` dos dois lados. No passo:
+
+```text
+map f (map g (x:xs))
+= map f (g x : map g xs)
+= f (g x) : map f (map g xs)
+= (f . g) x : map (f . g) xs         hipótese e definição de composição
+= map (f . g) (x:xs)
+```
+
+A igualdade permite juntar duas travessias numa. A prova explica por que a transformação conserva os valores para todas as listas finitas, sem depender de exemplos escolhidos.
+
+## Provar que uma ordenação ordena
+
+Considere-se a ordenação por inserção:
+
+```haskell
+insert x [] = [x]
+insert x (y:ys)
+  | x <= y = x:y:ys
+  | otherwise = y : insert x ys
+
+sort [] = []
+sort (x:xs) = insert x (sort xs)
+```
+
+Para provar que `sort xs` está ordenada, primeiro provamos o lema: inserir `x` numa lista ordenada conserva a ordenação.
+
+A lista vazia produz `[x]`, ordenada. Para `y:ys` ordenada, se `x <= y`, o resultado começa em `x,y` e conserva a cauda. Se `x > y`, aplicamos a hipótese à inserção na cauda. Os valores de `ys` são todos pelo menos `y`, e o novo valor `x` também é maior que `y`; logo, a cabeça `y` continua antes de uma cauda ordenada.
+
+Na prova de `sort`, a base é vazia. No passo, a hipótese garante que `sort xs` está ordenada, e o lema garante que `insert x (sort xs)` também está.
+
+Ordenação não é toda a correção: a função que devolve sempre `[]` também devolve uma lista ordenada. Para provar que é uma ordenação do conteúdo original, precisamos ainda de mostrar que conserva os elementos e as suas multiplicidades.

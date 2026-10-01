@@ -1,150 +1,121 @@
 ---
 title: Provas em lógica proposicional
-description: Regras de inferência, prova por casos e por contradição, condicionais e mapas de Karnaugh.
-section: conteudo
+description: Dedução natural, notação de Fitch, subdeduções, contradição e escolha de regras.
 order: 2
+practices:
+  - md/praticar-provas
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import karnaugh from './karnaugh.typ?raw';
+Uma tabela mostra que uma conclusão é consequência das premissas. Uma **dedução** mostra como chegar à conclusão com regras de inferência. Escrevemos $\Gamma\vdash\varphi$ quando existe uma dedução de $\varphi$ a partir das premissas $\Gamma$.
 
-Uma tabela de verdade mostra _que_ uma fórmula é válida, mas não mostra _porquê_. Uma **prova** é uma sequência de passos, cada um justificado por uma regra, que vai das premissas até à conclusão. É este estilo que os testes pedem, com a ferramenta Fitch para construir provas formais e o Boole para tabelas de verdade. Esta página ensina o raciocínio; as ferramentas só registam o que já percebeste no papel.
+Na dedução natural, DN, podemos abrir hipóteses temporárias. Ao fechá-las, a conclusão tem de deixar de depender delas. Esta gestão das hipóteses é tão necessária como escolher a conetiva certa.
 
-## As regras básicas de cada conetiva
+## Regras básicas
 
-Cada conetiva tem uma regra de introdução (como concluir uma fórmula com ela) e uma de eliminação (o que podes extrair dela):
+Cada conetiva tem regras de introdução, para a construir, e de eliminação, para a usar.
 
-- **Eliminação da conjunção:** de $P \land Q$ infere $P$, e infere $Q$.
-- **Introdução da conjunção:** de $P$ e $Q$ já provados, infere $P \land Q$.
-- **Introdução da disjunção:** de $P$ provado, infere $P \lor Q$ para qualquer $Q$.
-- **Dupla negação:** $\lnot\lnot P$ equivale a $P$, nos dois sentidos.
+| Regra     | O que permite                                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| $\land I$ | De $\varphi$ e $\psi$, obter $\varphi\land\psi$.                                                                                |
+| $\land E$ | De $\varphi\land\psi$, obter qualquer um dos membros.                                                                           |
+| $\lor I$  | De $\varphi$, obter $\varphi\lor\psi$ ou $\psi\lor\varphi$.                                                                     |
+| $\lor E$  | De $\varphi\lor\psi$ e duas subdeduções com a mesma conclusão $\theta$, uma assumindo $\varphi$ e outra $\psi$, obter $\theta$. |
+| $\to E$   | De $\varphi\to\psi$ e $\varphi$, obter $\psi$. É modus ponens.                                                                  |
+| $\to I$   | Se assumir $\varphi$ permite deduzir $\psi$, fechar essa hipótese e obter $\varphi\to\psi$.                                     |
+| $F I$     | De $\varphi$ e $\neg\varphi$, obter a contradição $F$.                                                                          |
+| $F E$     | De $F$, obter qualquer fórmula.                                                                                                 |
+| $\neg I$  | Se assumir $\varphi$ permite obter $F$, fechar a hipótese e obter $\neg\varphi$.                                                |
+| $\neg E$  | De $\neg\neg\varphi$, obter $\varphi$.                                                                                          |
+| $R$       | Repetir uma fórmula que está acessível.                                                                                         |
 
-Duas regras merecem destaque porque resolvem famílias inteiras de exercícios:
+A regra $\neg E$ aqui é a eliminação da dupla negação, conforme a notação da cadeira. Não a confundas com $F I$. Usa as regras de base quando o enunciado não autorizar regras derivadas.
 
-**Prova por casos (eliminação da disjunção).** Se já provaste $P \lor Q$, e consegues chegar a $S$ assumindo $P$ e também chegar a $S$ assumindo $Q$, então concluis $S$. Como um dos dois tem de se verificar, $S$ vale em qualquer caso.
+## Notação de Fitch e âmbito
 
-**Prova por contradição (introdução da negação).** Para provar $\lnot S$, assume $S$ e deriva uma contradição (uma fórmula e a sua negação). Se a suposição leva ao absurdo, a suposição é falsa.
+Numeramos as linhas, escrevemos a regra e indicamos as linhas usadas. A indentação e a barra vertical assinalam uma subdedução.
 
-## Exemplo: prova por casos
-
-Prova que $Pequeno(c)$ é consequência de $(Cubo(c) \land Pequeno(c)) \lor (Tet(c) \land Pequeno(c))$.
-
-1. A disjunção é a premissa.
-2. Caso 1: assume $Cubo(c) \land Pequeno(c)$. Por eliminação da conjunção, obténs $Pequeno(c)$.
-3. Caso 2: assume $Tet(c) \land Pequeno(c)$. Por eliminação da conjunção, obténs $Pequeno(c)$.
-4. Nos dois casos chega-se a $Pequeno(c)$, por isso concluis $Pequeno(c)$ por prova por casos.
-
-Repara que nunca foi preciso saber qual dos casos é o verdadeiro. Essa é a força do método: cobre todas as possibilidades sem as decidir.
-
-## Exemplo clássico: existe um racional escondido
-
-Mostra que existem números irracionais $b$ e $c$ tais que $b^c$ é racional. (Assume-se conhecido que $\sqrt{2}$ é irracional.)
-
-Considera o número $\sqrt{2}^{\sqrt{2}}$. Ele é racional ou irracional, pelo terceiro excluído.
-
-- Se for racional, escolhe $b = c = \sqrt{2}$ e está feito.
-- Se for irracional, escolhe $b = \sqrt{2}^{\sqrt{2}}$ e $c = \sqrt{2}$. Então $b^c = (\sqrt{2}^{\sqrt{2}})^{\sqrt{2}} = \sqrt{2}^{(\sqrt{2} \cdot \sqrt{2})} = \sqrt{2}^{2} = 2$, que é racional.
-
-Em qualquer dos casos existem os $b$ e $c$ pedidos. Esta prova é famosa por ser **não construtiva**: prova que os números existem sem dizer quais são, porque não sabemos em que caso estamos. Num teste, quando vires "mostre que existe" sem pista de como construir, pensa em prova por casos.
-
-## Condicionais: tradução e provas
-
-O condicional tem as suas regras. A **prova condicional** diz: para provar $P \to Q$, assume $P$ e prova $Q$ dentro dessa suposição. O **modus ponens** (eliminação do condicional) diz: de $P \to Q$ e $P$, infere $Q$.
-
-Antes de provar é preciso traduzir bem. A tabela de $P \to Q$ é sempre a mesma, mas a língua portuguesa esconde o antecedente de várias formas:
-
-| Expressão                                  | Tradução                     | Exemplo                                                     |
-| ------------------------------------------ | ---------------------------- | ----------------------------------------------------------- |
-| $P$ só se $Q$                              | $P \to Q$ ($Q$ é necessária) | "É aprovado só se assiste às aulas": $Aprovado \to Assiste$ |
-| $P$ se $Q$                                 | $Q \to P$ ($Q$ é suficiente) | "É bom aluno se tem média 15": $Media15 \to BomAluno$       |
-| $Q$ sempre que $P$ / quando $P$ / dado $P$ | $P \to Q$                    | "Chove sempre que vou à praia": $Praia(eu) \to Chove$       |
-| $Q$ a menos que $P$                        | $\lnot P \to Q$              | "Vai à praia a menos que chova": $\lnot Chove \to Praia$    |
-| $P$ só quando $Q$                          | $P \to Q$                    | igual a "só se"                                             |
-
-:::warning[O par que mais chumba: "só se" contra "se"]
-"$P$ só se $Q$" aponta para $P \to Q$, mas "$P$ se $Q$" aponta para $Q \to P$. A palavra "só" inverte a seta. Quando traduzires, pergunta: qual das duas é condição necessária? A condição necessária fica do lado direito da seta. Em "é aprovado só se assiste", assistir é necessário, por isso $Aprovado \to Assiste$.
-:::
-
-## Exemplo: traduzir e provar
-
-Traduz "todos os triângulos equiláteros são equiângulos" no vocabulário com predicados $EqLat(x)$ e $EqAng(x)$, e mostra a forma da prova de que um triângulo equilátero arbitrário é equiângulo a partir dessa frase.
-
-A tradução usa o padrão restritivo, que vais rever nos [quantificadores](/cadeiras/md/quantificadores/): $\forall x\,(EqLat(x) \to EqAng(x))$. Para provar $EqAng(t)$ para um $t$ com $EqLat(t)$:
-
-1. Instancia a universal em $t$: $EqLat(t) \to EqAng(t)$.
-2. Com a premissa $EqLat(t)$, aplica modus ponens e obténs $EqAng(t)$.
-
-Este esqueleto "traduzir o geral, instanciar no caso, aplicar modus ponens" resolve uma grande fatia dos exercícios com condicionais quantificados.
-
-## Que conjuntos de conetivas chegam?
-
-Uma pergunta natural: precisamos mesmo das cinco conetivas? Não. Como toda a tabela de verdade se escreve em **forma normal disjuntiva** (um "ou" de "ês", como $(P \land \lnot Q) \lor (\lnot P \land Q)$), as conetivas $\lnot$, $\land$ e $\lor$ representam qualquer conetiva. E dá para ir mais longe: $\{\lnot, \land\}$ é **completo**, porque $P \lor Q \equiv \lnot(\lnot P \land \lnot Q)$ por De Morgan. O par $\{\lnot, \to\}$ também é completo, porque $P \land Q \equiv \lnot(P \to \lnot Q)$. Confirma esta última: $P \to \lnot Q$ é falso só quando $P$ é V e $\lnot Q$ é F, isto é, $P$ e $Q$ ambos V, logo negá-lo dá exatamente $P \land Q$.
-
-Pelo contrário, $\{\land, \lor\}$ **não** é completo: sem negação nunca produces uma função que valha F quando todas as entradas são V. Este tipo de argumento ("mostra que X se exprime, mostra que Y é impossível") é o que os exercícios sobre conetivas pedem.
-
-## Formas normais e circuitos
-
-A **forma normal disjuntiva** (FND) de uma fórmula é um "ou" de conjunções de literais (variáveis ou as suas negações). Constrói-se a partir da tabela: para cada linha onde a fórmula vale V, escreve a conjunção que só é verdadeira nessa linha, e faz o "ou" de todas. Para a conetiva $*$ definida por $P * Q$ verdadeiro só na linha $(V, F)$, a FND é $P \land \lnot Q$. A forma dual, a **forma normal conjuntiva** (FNC), é um "e" de disjunções: para a mesma conetiva, nega cada linha onde a fórmula vale F e faz o "e". Só a linha $(V, F)$ interessa aqui? Não: a FNC usa as linhas falsas, $(V, V)$, $(F, V)$ e $(F, F)$, dando $(\lnot P \lor \lnot Q) \land (P \lor \lnot Q) \land (P \lor Q)$, que simplifica para a mesma $P \land \lnot Q$. Gera a FND de qualquer tabela de duas variáveis:
-
-<CodePlayground
-  language="python"
-  code={
-    'def fnd(star):\n    termos = []\n    for P in (False, True):\n        for Q in (False, True):\n            if star(P, Q):\n                a = "P" if P else "¬P"\n                b = "Q" if Q else "¬Q"\n                termos.append(f"({a} & {b})")\n    return " | ".join(termos)\n\nprint(fnd(lambda P, Q: P and not Q))  # (P & ¬Q)'
-  }
-/>
-
-Um circuito lógico implementa a fórmula com portas NOT, AND e OR. Simplificar a fórmula antes de desenhar poupa portas, e é aqui que entram os mapas de Karnaugh.
-
-## Mapas de Karnaugh
-
-Um **mapa de Karnaugh** organiza a tabela de verdade num retângulo onde as casas vizinhas (incluindo as bordas opostas, como se o mapa desse a volta) diferem numa só variável. Agrupar os "uns" em blocos retangulares de tamanho potência de 2 revela os termos que se simplificam.
-
-Exemplo próprio: a função "maioria" de três variáveis, $F(A, B, C)$ verdadeira quando pelo menos duas entradas são V. Os "uns" estão nas linhas $011$, $101$, $110$ e $111$. No mapa de três variáveis:
-
-- As casas $011$ e $111$ diferem só em $A$ e agrupam-se em $B \land C$.
-- As casas $101$ e $111$ diferem só em $B$ e agrupam-se em $A \land C$.
-- As casas $110$ e $111$ diferem só em $C$ e agrupam-se em $A \land B$.
-
-Logo $F \equiv (B \land C) \lor (A \land C) \lor (A \land B)$. Verifica a linha $100$: nenhum dos três termos é V, e de facto só uma entrada é V. Verifica $011$: $B \land C$ é V. Cada grupo elimina a variável que muda dentro do grupo, e é essa a regra mecânica: num grupo, ficam só as variáveis constantes.
-
-<Typst
-  source={karnaugh}
-  format="svg"
-  alt="Mapa de Karnaugh de três variáveis da função maioria com três grupos de duas casas assinalados."
-/>
-
-Com quatro variáveis o mapa é 4x4 e os grupos podem usar as bordas opostas: um grupo de quatro casas que atravessa a fronteira esquerda-direita elimina duas variáveis de uma vez. A regra não muda, só o mapa é maior.
-
-:::tip[Como não errar no mapa]
-Só agrupa blocos de 1, 2, 4 ou 8 casas, sempre em retângulo, e as bordas esquerda-direita (e cima-baixo) são vizinhas. Cada "um" tem de ficar em pelo menos um grupo, e grupos maiores eliminam mais variáveis, por isso prefere sempre o maior grupo possível.
-:::
-
-## Provas informais contra provas formais
-
-Nos testes vais alternar entre dois registos. A **prova informal** é o texto em português com os passos lógicos explícitos, como os exemplos desta página. A **prova formal** no Fitch é a mesma prova com cada passo numerado e justificado pela regra usada. A estratégia que funciona: escreve primeiro a informal no rascunho, identifica que regra usaste em cada passo e só depois passa para o Fitch. Quem tenta escrever diretamente no Fitch costuma bloquear na escolha da próxima regra, e a informal já contém essa decisão.[^fitch]
-
-Compara os dois registos para a prova por casos do $Pequeno(c)$:
-
-<Tabs id="prova-casos" labels={['Informal', 'Esqueleto Fitch']}>
-  <div slot="panel-0">
-
-Assume cada caso da disjunção e extrai $Pequeno(c)$ por eliminação da conjunção; como os dois casos dão o mesmo, concluis $Pequeno(c)$ por prova por casos.
-
-  </div>
-  <div slot="panel-1">
+Vamos provar $(p\lor q)\to r\vdash p\to r$. A conclusão é uma implicação. Abrimos a hipótese $p$ e tentamos obter $r$:
 
 ```text
-1. (Cubo(c) e Pequeno(c)) ou (Tet(c) e Pequeno(c))   premissa
-2.   | Cubo(c) e Pequeno(c)                           suposição caso 1
-3.   | Pequeno(c)                                      elim. e, 2
-4.   | Tet(c) e Pequeno(c)                             suposição caso 2
-5.   | Pequeno(c)                                      elim. e, 4
-6. Pequeno(c)                                          elim. ou, 1, 2-3, 4-5
+1  (p ∨ q) → r       premissa
+2  | p              hipótese
+3  | p ∨ q          ∨I, 2
+4  | r              →E, 1, 3
+5  p → r            →I, 2 a 4
 ```
 
-  </div>
-</Tabs>
+A linha 5 usa a subdedução inteira. Não afirma $r$ sem condições, afirma que $p$ permite obter $r$.
 
-[^fitch]: A ferramenta Fitch onde escreves estas provas pertence ao pacote Language, Proof and Logic: [Grade Grinder](https://www.gradegrinder.net/Products/lpl-index.html).
+Depois de fechar a caixa, as linhas 2 a 4 não podem servir como premissas de outro passo exterior. Uma linha exterior pode ser usada dentro de uma caixa, mas uma conclusão de uma caixa fechada só sai através da regra que a fecha. Também não podes usar uma linha de uma caixa irmã.
+
+## Provar por casos
+
+Queremos $(p\land q)\lor(q\land r)\vdash q$. Não sabemos qual dos membros da disjunção é verdadeiro. Provamos que ambos levam a $q$:
+
+```text
+1  (p ∧ q) ∨ (q ∧ r)    premissa
+2  | p ∧ q              hipótese do primeiro caso
+3  | q                  ∧E, 2
+4  | q ∧ r              hipótese do segundo caso
+5  | q                  ∧E, 4
+6  q                    ∨E, 1, 2 a 3, 4 a 5
+```
+
+A linha 4 abre uma nova caixa, não fica dentro da primeira. As duas caixas terminam com a mesma fórmula. Não podemos concluir $p$, porque só o primeiro caso o garante.
+
+Quando um caso já começa com a conclusão pretendida, podemos repeti-la por $R$. Isto permite citar uma subdedução com início e fim explícitos.
+
+## Negação e contradição
+
+Para provar $p\to q,\neg q\vdash\neg p$, assumimos o contrário da negação que queremos introduzir, isto é, $p$:
+
+```text
+1  p → q         premissa
+2  ¬q            premissa
+3  | p           hipótese
+4  | q           →E, 1, 3
+5  | F           FI, 2, 4
+6  ¬p            ¬I, 3 a 5
+```
+
+Esta dedução justifica a regra derivada **modus tollens**, MT. A conclusão é $\neg p$, não $p$. Para provar uma fórmula positiva $p$ por absurdo, assumimos $\neg p$, obtemos $F$, concluímos $\neg\neg p$ por $\neg I$ e depois $p$ por $\neg E$. Estes dois últimos passos podem abreviar-se por RA quando a redução ao absurdo for permitida.
+
+A partir de $F$ podemos concluir qualquer fórmula por $F E$. Isso é útil numa prova por casos: se um dos casos contradiz uma premissa, esse caso também permite obter a conclusão comum.
+
+## Uma prova com caixas encaixadas
+
+Vamos provar $\neg q\to\neg p\vdash p\to q$. Primeiro introduzimos a implicação. Para obter $q$, tentamos uma redução ao absurdo:
+
+```text
+1  ¬q → ¬p       premissa
+2  | p           hipótese
+3  | | ¬q        hipótese
+4  | | ¬p        →E, 1, 3
+5  | | F         FI, 2, 4
+6  | ¬¬q         ¬I, 3 a 5
+7  | q           ¬E, 6
+8  p → q         →I, 2 a 7
+```
+
+Na linha 6 fechamos só a caixa de $\neg q$. A hipótese $p$ continua aberta até à linha 8. Por isso, a linha 7 ainda depende de $p$.
+
+## Escolher o próximo passo
+
+Olha primeiro para a conetiva principal da conclusão:
+
+- Para $\varphi\land\psi$, procura uma prova de cada membro e termina com $\land I$.
+- Para $\varphi\to\psi$, assume $\varphi$ e procura $\psi$.
+- Para $\neg\varphi$, assume $\varphi$ e procura uma contradição.
+- Para $\varphi\lor\psi$, tenta provar um dos membros.
+
+Depois olha para as premissas. Uma conjunção dá informação por $\land E$. Uma implicação pede o seu antecedente. Uma disjunção pode obrigar a uma prova por casos. Estes critérios orientam a procura, não são um algoritmo que dispense raciocínio.
+
+Se a prova parece impossível, procura um contraexemplo semântico. Por exemplo, de $p\to q$ e $q$ não conseguimos obter $p$: $p=F,q=T$ satisfaz as premissas. Nenhuma combinação correta das regras de DN pode provar uma consequência falsa.
+
+## Correção e completude
+
+Um sistema é **correto** se $\Gamma\vdash\varphi$ implica $\Gamma\models\varphi$. As regras não permitem passar de premissas verdadeiras a uma conclusão falsa.
+
+É **completo** se $\Gamma\models\varphi$ implica $\Gamma\vdash\varphi$. Toda a consequência semântica tem uma dedução. A DN clássica usada aqui tem as duas propriedades. Isso não significa que encontrar uma prova seja imediato.
+
+A equivalência dedutiva $\varphi\dashv\vdash\psi$ exige provas nos dois sentidos. Uma só dedução estabelece apenas uma direção. Para provar $\vdash(\varphi\to\psi)\land(\psi\to\varphi)$, abre e fecha uma subdedução para cada implicação, depois junta-as com $\land I$.

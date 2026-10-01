@@ -1,0 +1,137 @@
+---
+title: Provas em lógica de primeira ordem
+description: Igualdade, regras dos quantificadores, testemunhas novas e provas em Fitch.
+order: 5
+practices:
+  - md/praticar-provas-quantificadas
+---
+
+As regras das conetivas continuam a valer. Acrescentamos regras para igualdade e quantificadores. A dificuldade nova é controlar de que objeto depende cada passo. Uma propriedade de um objeto especial não se torna uma propriedade de todos.
+
+## Igualdade
+
+A introdução da igualdade, $=I$, permite escrever $t=t$ para qualquer termo $t$. A eliminação, $=E$, permite substituir iguais por iguais numa fórmula, respeitando as condições de substituição.
+
+Para obter $b=a$ a partir de $a=b$:
+
+```text
+1  a = b       premissa
+2  a = a       =I
+3  b = a       =E, 1, 2
+```
+
+Na linha 3, substituímos a primeira ocorrência de $a$ em $a=a$ por $b$. Não precisamos de uma regra de simetria independente. De $a=b$ e $P(a)$ também obtemos $P(b)$.
+
+Uma função tem de respeitar a igualdade: de $a=b$ obtemos $f(a)=f(b)$. Isso não implica que $f$ seja injetiva. A direção inversa exige uma hipótese sobre $f$.
+
+## Eliminar um universal
+
+De $\forall x\,\varphi$ obtemos $\varphi[x\mapsto t]$ por $\forall E$, desde que $t$ esteja livre para $x$ em $\varphi$.
+
+```text
+1  ∀x(P(x) → Q(x))     premissa
+2  P(f(a))             premissa
+3  P(f(a)) → Q(f(a))   ∀E, 1
+4  Q(f(a))             →E, 3, 2
+```
+
+Temos de instanciar a fórmula inteira. Da linha 1 não obtemos $\forall xP(x)$ nem $\forall xQ(x)$, apenas condicionais para cada objeto.
+
+## Introduzir um universal
+
+Para concluir $\forall x\,P(x)$, provamos $P(u)$ para uma variável **nova e arbitrária** $u$. Ela não pode ocorrer nas premissas nem depender de uma hipótese aberta que a trate como objeto especial. Na notação da cadeira, abrimos uma caixa com essa variável nova.
+
+Vamos provar $\forall x(P(x)\to Q(x)),\forall xP(x)\vdash\forall xQ(x)$:
+
+```text
+1  ∀x(P(x) → Q(x))     premissa
+2  ∀xP(x)              premissa
+3  | u                 variável nova
+4  | P(u) → Q(u)       ∀E, 1
+5  | P(u)              ∀E, 2
+6  | Q(u)              →E, 4, 5
+7  ∀xQ(x)              ∀I, 3 a 6
+```
+
+Não assumimos $P(u)$ sem razão. A linha 5 vem do universal da linha 2. O argumento funciona para qualquer objeto, por isso podemos generalizar.
+
+De uma premissa $P(a)$ não podemos concluir $\forall xP(x)$. A constante $a$ designa um objeto particular. Uma estrutura com dois objetos e $P$ verdadeiro só para $a$ refuta essa tentativa.
+
+## Introduzir um existencial
+
+De $\varphi[x\mapsto t]$ obtemos $\exists x\,\varphi$ por $\exists I$, desde que a substituição seja admissível. O termo $t$ fornece uma testemunha.
+
+De $P(a)\land Q(a)$ obtemos $\exists x(P(x)\land Q(x))$. Mas de $P(a)$ e $Q(b)$ não obtemos a mesma conclusão sem saber que $a=b$. As duas propriedades têm de valer para **o mesmo** objeto.
+
+## Eliminar um existencial
+
+Se sabemos $\exists x\,P(x)$, sabemos que existe uma testemunha, mas não qual é. Abrimos uma caixa com uma variável nova $u$ e a hipótese $P(u)$. Dentro dela provamos uma conclusão $\theta$ que não contenha $u$. Fechamos por $\exists E$.
+
+Por exemplo, $\forall x(P(x)\to Q(x)),\exists xP(x)\vdash\exists xQ(x)$:
+
+```text
+1  ∀x(P(x) → Q(x))      premissa
+2  ∃xP(x)               premissa
+3  | u, P(u)            testemunha nova e hipótese
+4  | P(u) → Q(u)        ∀E, 1
+5  | Q(u)               →E, 4, 3
+6  | ∃xQ(x)             ∃I, 5
+7  ∃xQ(x)               ∃E, 2, 3 a 6
+```
+
+A linha 6 está dentro da caixa. É ela que remove a dependência visível da testemunha antes de fecharmos. Se tentássemos concluir $Q(u)$ na linha 7, a regra seria inválida: $u$ só existe no contexto da caixa.
+
+Também não podemos reutilizar uma variável já presente numa hipótese exterior. Isso poderia identificar a testemunha existencial com um objeto que as premissas não identificam.
+
+## Existencial dentro de uma implicação
+
+Vamos provar:
+
+$$
+\exists x(P(x)\to Q(x))\vdash
+(\forall xP(x))\to\exists xQ(x).
+$$
+
+A testemunha dá uma implicação para um objeto. A hipótese universal garante o antecedente para esse objeto:
+
+```text
+1  ∃x(P(x) → Q(x))      premissa
+2  | ∀xP(x)             hipótese
+3  | | u, P(u) → Q(u)   testemunha nova e hipótese
+4  | | P(u)             ∀E, 2
+5  | | Q(u)             →E, 3, 4
+6  | | ∃xQ(x)           ∃I, 5
+7  | ∃xQ(x)             ∃E, 1, 3 a 6
+8  ∀xP(x) → ∃xQ(x)      →I, 2 a 7
+```
+
+Fechamos a caixa da testemunha antes da caixa da implicação. O universal da linha 2 não vem da premissa existencial; é a hipótese que introduzimos para provar a conclusão condicional.
+
+## Negar um universal
+
+A negação $\neg\forall xP(x)$ equivale a $\exists x\neg P(x)$, mas numa prova com regras de base temos de justificar a passagem. Eis uma das direções, $\exists x\neg P(x)\vdash\neg\forall xP(x)$:
+
+```text
+1  ∃x¬P(x)       premissa
+2  | ∀xP(x)      hipótese
+3  | | u, ¬P(u)  testemunha nova e hipótese
+4  | | P(u)      ∀E, 2
+5  | | F         FI, 3, 4
+6  | F           ∃E, 1, 3 a 5
+7  ¬∀xP(x)       ¬I, 2 a 6
+```
+
+A contradição $F$ não contém $u$, por isso pode sair da caixa existencial. Depois usamos essa contradição para fechar a hipótese universal.
+
+Na direção inversa, podemos assumir $\neg\exists x\neg P(x)$ e mostrar que um objeto arbitrário tem $P$, usando absurdo. Generalizamos para $\forall xP(x)$, contradizemos a premissa e concluímos a existência por redução ao absurdo. Cada generalização continua a exigir a variável nova.
+
+## Rever uma dedução
+
+Confere primeiro a fórmula final e as hipóteses ainda abertas. Depois verifica:
+
+- Cada aplicação de $\forall E$ e $\exists I$ substitui só ocorrências livres e não captura variáveis.
+- Cada $\forall I$ usa uma variável arbitrária, não uma testemunha com propriedades especiais.
+- Cada $\exists E$ cita a existência e uma caixa completa; a testemunha não ocorre na conclusão exterior.
+- Cada linha citada está acessível na caixa atual.
+
+A DN clássica de primeira ordem também é correta e completa: $\Gamma\vdash\varphi$ se e só se $\Gamma\models\varphi$. Uma tabela finita de objetos pode encontrar um contraexemplo, mas não prova por si só uma consequência em todas as estruturas.

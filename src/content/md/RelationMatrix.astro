@@ -1,0 +1,129 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+const vertices = [1, 2, 3];
+---
+
+<InteractiveDemo label="Alterar uma relação em três elementos">
+  <div data-md-relation>
+    <table>
+      <caption>
+        {'Relação em {1, 2, 3}. Cada botão liga ou desliga um par.'}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">De / para</th>
+          {vertices.map((v) => (
+            <th scope="col">{v}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {vertices.map((a) => (
+          <tr>
+            <th scope="row">{a}</th>
+            {vertices.map((b) => (
+              <td>
+                <button
+                  type="button"
+                  data-pair={`${a},${b}`}
+                  aria-label={`Par (${a}, ${b})`}
+                  aria-pressed={
+                    (a === 1 && b === 2) || (a === 2 && b === 3)
+                      ? 'true'
+                      : 'false'
+                  }
+                >
+                  {(a === 1 && b === 2) || (a === 2 && b === 3) ? '1' : '0'}
+                </button>
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p data-properties role="status" aria-live="polite">
+      Reflexiva: não. Simétrica: não. Antissimétrica: sim. Transitiva: não,
+      falta (1, 3).
+    </p>
+  </div>
+</InteractiveDemo>
+
+<style>
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  caption {
+    text-align: left;
+    margin-block-end: 12px;
+  }
+  th,
+  td {
+    text-align: center;
+    padding: 4px;
+  }
+  th:first-child {
+    text-align: left;
+  }
+  button {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+  }
+  button[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--page);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  p {
+    margin-block-end: 0;
+  }
+</style>
+
+<script>
+  for (const demo of document.querySelectorAll<HTMLElement>(
+    '[data-md-relation]',
+  )) {
+    const buttons = [
+      ...demo.querySelectorAll<HTMLButtonElement>('[data-pair]'),
+    ];
+    const status = demo.querySelector<HTMLElement>('[data-properties]');
+    const update = () => {
+      const has = (a: number, b: number) =>
+        buttons
+          .find((button) => button.dataset.pair === `${a},${b}`)
+          ?.getAttribute('aria-pressed') === 'true';
+      const values = [1, 2, 3];
+      const reflexive = values.every((a) => has(a, a));
+      const symmetric = values.every((a) =>
+        values.every((b) => !has(a, b) || has(b, a)),
+      );
+      const antisymmetric = values.every((a) =>
+        values.every((b) => a === b || !has(a, b) || !has(b, a)),
+      );
+      let missing: [number, number] | undefined;
+      for (const a of values)
+        for (const b of values)
+          for (const c of values) {
+            if (!has(a, c) && has(a, b) && has(b, c)) missing ??= [a, c];
+          }
+      if (status)
+        status.textContent = `Reflexiva: ${reflexive ? 'sim' : 'não'}. Simétrica: ${symmetric ? 'sim' : 'não'}. Antissimétrica: ${antisymmetric ? 'sim' : 'não'}. Transitiva: ${missing ? `não, falta (${missing[0]}, ${missing[1]})` : 'sim'}.`;
+    };
+    for (const button of buttons)
+      button.addEventListener('click', () => {
+        const pressed = button.getAttribute('aria-pressed') !== 'true';
+        button.setAttribute('aria-pressed', String(pressed));
+        button.textContent = pressed ? '1' : '0';
+        update();
+      });
+  }
+</script>

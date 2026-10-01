@@ -1,138 +1,197 @@
 ---
 title: Inteiros e congruências
-description: Divisão, mdc e Euclides, primos, aritmética modular e dígitos de controlo.
-section: conteudo
+description: Divisibilidade, primos, Euclides, Bézout, inversos e equações modulares.
 order: 6
+practices:
+  - md/praticar-inteiros
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import relogio from './relogio.typ?raw';
 
-A teoria dos números estuda os inteiros com as operações de sempre, mas com perguntas novas: quem divide quem, que restos são possíveis, como resolver equações só com restos. É a base da criptografia moderna (o RSA vive de aritmética modular) e dos dígitos de verificação do NIF e do NIB. Para acompanhar esta página basta a aritmética do secundário; o resto constrói-se aqui.
+Se $a$ é múltiplo de $b$, existe um inteiro $q$ com $a=bq$. Este testemunho permite transformar uma frase sobre divisibilidade numa igualdade, fazer contas e voltar à divisibilidade. Vamos usar esse método tanto em provas como na resolução de congruências.
 
-## O algoritmo da divisão e a divisibilidade
+## Divisão e divisibilidade
 
-**Teorema da divisão:** dados $a, b \in \mathbb{Z}$ com $b \ne 0$, existem inteiros únicos $q$ (quociente) e $r$ (resto) com $a = qb + r$ e $0 \le r < |b|$.
+Para $a,b\in\mathbb Z$ com $b\ne0$, existem inteiros únicos $q,r$ tais que:
 
-A condição $0 \le r < |b|$ é o que torna o par único. Exemplo: $19 = 4 \cdot 4 + 3$ (resto 3) e $-19 = (-5) \cdot 4 + 1$ (resto 1, não $-3$). Com divisores negativos funciona igual: $19 = (-4) \cdot (-4) + 3$. Se programares, atenção: algumas linguagens devolvem resto negativo para dividendos negativos, o que viola esta convenção matemática.
+$$
+a=bq+r,\qquad 0\le r<|b|.
+$$
 
-<Tabs id="resto-linguagens" labels={['Python', 'C']}>
-  <div slot="panel-0">
+O resto é não negativo, mesmo que o dividendo seja negativo. Por exemplo, $-19=(-5)\cdot4+1$. Com divisor negativo, $19=(-4)\cdot(-4)+3$.
 
-Em Python o operador `%` segue a convenção matemática, com o sinal do divisor:
+A unicidade vem do limite do resto. Se $a=bq+r=bs+t$, então $b(q-s)=t-r$. Como $|t-r|<|b|$, esse múltiplo de $b$ só pode ser zero. Assim, $q=s$ e $r=t$.
 
-```python
-print(-19 % 4)  # 1
-```
+Nesta cadeira, $b\mid a$ usa um divisor $b\ne0$ e significa que $a=bq$ para algum $q\in\mathbb Z$. Não é uma fração. Todo o inteiro não nulo divide zero, pois $0=b\cdot0$. Não usamos zero como divisor.
 
-  </div>
-  <div slot="panel-1">
+Se $d\mid a$ e $d\mid b$, então $d$ divide qualquer **combinação linear inteira** $ua+vb$. De facto, para $a=dk$ e $b=d\ell$:
 
-Em C o resto segue o sinal do dividendo (truncação para zero):
+$$
+ua+vb=d(uk+v\ell),
+$$
 
-```c
-#include <stdio.h>
-int main(void) {
-    printf("%d\n", -19 % 4);  // -3
-    return 0;
-}
-```
-
-  </div>
-</Tabs>
-
-Diz-se que $b$ **divide** $a$, $b \mid a$, quando existe $q$ com $a = qb$, isto é, quando o resto é zero. Exemplos: $3 \mid 12$, $-4 \mid 20$, e $n \mid 0$ para todo o $n \ne 0$. Não confundas $b \mid a$ (relação, verdadeira ou falsa) com $a/b$ (número).
-
-## Representação em bases
-
-Um número escreve-se numa base $b$ como soma de potências: $2159 = 2 \cdot 10^3 + 1 \cdot 10^2 + 5 \cdot 10 + 9$. Para converter por divisões sucessivas, divide-se por $b$ e lêem-se os restos de trás para a frente. Exemplo próprio: $43$ em binário.
-
-$43 = 21 \cdot 2 + 1$; $21 = 10 \cdot 2 + 1$; $10 = 5 \cdot 2 + 0$; $5 = 2 \cdot 2 + 1$; $2 = 1 \cdot 2 + 0$; $1 = 0 \cdot 2 + 1$. Restos de trás para a frente: $101011_2$. Confirma: $32 + 8 + 2 + 1 = 43$. Para hexadecimal, agrupa de quatro em quatro bits: $10_2 = 2$, $1011_2 = 11 = B$, logo $43 = 2B_{16}$. Confirma: $2 \cdot 16 + 11 = 43$. No sentido inverso, de binário para decimal, soma as potências das posições com 1: $101011_2 = 32 + 8 + 2 + 1 = 43$, a mesma confirmação de trás para a frente.
-
-## Máximo divisor comum e Euclides
-
-O **máximo divisor comum** $mdc(a, b)$ é o maior inteiro que divide ambos. O **algoritmo de Euclides** calcula-o com divisões sucessivas: substitui o par pelo (divisor, resto) até o resto ser zero. O último divisor não nulo é o mdc.
-
-Exemplo: $mdc(1071, 462)$.
-
-1. $1071 = 2 \cdot 462 + 147$.
-2. $462 = 3 \cdot 147 + 21$.
-3. $147 = 7 \cdot 21 + 0$.
-
-O mdc é $21$. Confirma: $21 \cdot 51 = 1071$ e $21 \cdot 22 = 462$. E $51$ e $22$ não têm divisores comuns além de 1, por isso não há maior.
-
-Por trás disto está a **identidade de Bézout**: existem inteiros $s, t$ com $sa + tb = mdc(a, b)$. Para o exemplo, desfazendo as divisões: $21 = 462 - 3 \cdot 147 = 462 - 3 \cdot (1071 - 2 \cdot 462) = 7 \cdot 462 - 3 \cdot 1071$. Confirma: $7 \cdot 462 = 3234$, $3 \cdot 1071 = 3213$, diferença $21$. Esta identidade é o que permite inverter números módulo $n$, como vais ver. Experimenta o Euclides estendido, que devolve o mdc e os coeficientes de Bézout:
-
-<CodePlayground
-  language="python"
-  code={
-    'def egcd(a, b):\n    if b == 0:\n        return (a, 1, 0)\n    d, s, t = egcd(b, a % b)\n    return (d, t, s - (a // b) * t)\n\nd, s, t = egcd(1071, 462)\nprint(d, s, t)  # 21 -3 7: -3*1071 + 7*462 = 21'
-  }
-/>
-
-Podes experimentar o algoritmo com outros valores:
-
-<CodePlayground
-  language="python"
-  code={
-    'def mdc(a, b):\n    while b:\n        a, b = b, a % b\n    return a\n\nprint(mdc(1071, 462))  # 21\nprint(mdc(100, 35))    # 5'
-  }
-/>
+com $uk+v\ell\in\mathbb Z$. Os coeficientes podem ser negativos. Exigir coeficientes naturais seria outra condição.
 
 ## Primos e fatorização
 
-Um inteiro $p > 1$ é **primo** quando os seus únicos divisores positivos são $1$ e $p$. Os primeiros são $2, 3, 5, 7, 11, 13$. O **Teorema Fundamental da Aritmética** diz que todo o inteiro maior que 1 se escreve como produto de primos de forma única (a menos da ordem): $60 = 2^2 \cdot 3 \cdot 5$.
+Um inteiro positivo $p>1$ é **primo** se os seus únicos divisores positivos são $1$ e $p$. Um inteiro maior do que 1 que não é primo é composto. O 1 não é primo nem composto.
 
-Duas consequências úteis: $mdc(a, b) = 1$ significa que $a$ e $b$ são **primos entre si** (não partilham fatores), e se um primo $p$ divide um produto $ab$, então $p$ divide $a$ ou $p$ divide $b$ (lema de Euclides). É este lema que faz a fatorização ser única.
+Todo o inteiro positivo maior do que 1 tem uma fatorização em primos, única salvo a ordem dos fatores. Por exemplo:
 
-## Congruências: igualdade a menos do resto
+$$
+180=2^2\cdot3^2\cdot5,\qquad
+168=2^3\cdot3\cdot7.
+$$
 
-**Definição:** fixa $n > 1$. Diz-se que $a$ é **congruente** com $b$ módulo $n$, $a \equiv b \pmod{n}$, quando $n \mid (a - b)$, isto é, quando $a$ e $b$ têm o mesmo resto na divisão por $n$.
+O menor expoente de cada primo dá o mdc; o maior dá o mmc:
 
-Exemplos: $17 \equiv 3 \pmod{7}$ porque $17 - 3 = 14$ é múltiplo de 7; $-2 \equiv 13 \pmod{3}$ porque $-2 - 13 = -15$ é múltiplo de 3. A intuição da "aritmética do relógio": módulo 12, $17$ horas são $5$ horas, e $8 + 6 = 14$ horas são $2$ horas.
+$$
+\gcd(180,168)=2^2\cdot3=12,
+\qquad
+\operatorname{mmc}(180,168)=2^3\cdot3^2\cdot5\cdot7=2520.
+$$
 
-<Typst
-  source={relogio}
-  format="svg"
-  alt="Relógio módulo 12 com o 5 assinalado para as 17 horas e a soma 8 mais 6 a cair no 2."
-/>
+Para $a,b>0$, $\gcd(a,b)\operatorname{mmc}(a,b)=ab$, porque somar o mínimo e o máximo dos dois expoentes dá a sua soma.
 
-A congruência módulo $n$ é uma [relação de equivalência](/cadeiras/md/conjuntos-relacoes/): reflexiva, simétrica e transitiva. As suas classes, as **classes de congruência**, são os $n$ conjuntos dos inteiros com cada resto possível. Módulo 5, a classe de $2$ é $\{\dots, -8, -3, 2, 7, 12, \dots\}$.
+Há infinitos primos. Se houvesse só $p_1,\ldots,p_k$, o número $p_1\cdots p_k+1>1$ teria um divisor primo. Nenhum dos primos da lista o divide, porque deixaria resto 1. Não precisamos de afirmar que esse número é primo, apenas que tem um divisor primo fora da lista.
 
-O essencial para calcular: podes somar, subtrair e multiplicar congruências como igualdades. Se $a \equiv b$ e $c \equiv d \pmod{n}$, então $a + c \equiv b + d$ e $ac \equiv bd \pmod{n}$. Para potências grandes, reduz a base primeiro: $7^{3} \pmod{5}$ calcula-se como $2^3 = 8 \equiv 3 \pmod{5}$, porque $7 \equiv 2 \pmod{5}$.
+## Máximo divisor comum e Euclides
 
-:::warning[Dividir congruências exige cuidado]
-De $ac \equiv bc \pmod{n}$ não podes concluir $a \equiv b$ sem mais. Exemplo: $2 \cdot 4 \equiv 2 \cdot 9 \pmod{10}$ (ambos valem 8), mas $4 \not\equiv 9 \pmod{10}$. O cancelamento só é legítimo quando $c$ e $n$ são primos entre si. É por isto que resolver congruências pede o método da próxima secção, não "passar a dividir".
-:::
+O **máximo divisor comum** é o maior divisor positivo comum. Usamos a notação $\gcd(a,b)$ ou $\operatorname{mdc}(a,b)$. Para um dos valores zero, $\gcd(a,0)=|a|$ se $a\ne0$. Excluímos o par $(0,0)$ da definição como maior divisor, porque todos os inteiros positivos dividem ambos.
+
+Se $a=bq+r$, os divisores comuns de $a,b$ são os mesmos de $b,r$:
+
+- Quem divide $a$ e $b$ divide $r=a-bq$.
+- Quem divide $b$ e $r$ divide $a=bq+r$.
+
+Logo, $\gcd(a,b)=\gcd(b,r)$. O algoritmo de Euclides repete esta transformação até o resto ser zero. Os restos não negativos diminuem estritamente, por isso o processo termina.
+
+Para $\gcd(252,198)$:
+
+$$
+\begin{aligned}
+252&=1\cdot198+54,\\
+198&=3\cdot54+36,\\
+54&=1\cdot36+18,\\
+36&=2\cdot18+0.
+\end{aligned}
+$$
+
+O último resto não nulo é $18$, o mdc. Dois inteiros são **primos entre si** quando o seu mdc é 1.
+
+## Identidade de Bézout
+
+Para inteiros $a,b$ não ambos zero, existem $u,v\in\mathbb Z$ com:
+
+$$
+\gcd(a,b)=ua+vb.
+$$
+
+Podemos encontrá-los retrocedendo nas divisões de Euclides:
+
+$$
+\begin{aligned}
+18&=54-36\\
+&=54-(198-3\cdot54)\\
+&=4\cdot54-198\\
+&=4(252-198)-198\\
+&=4\cdot252-5\cdot198.
+\end{aligned}
+$$
+
+Confere no fim: $1008-990=18$. Um erro de sinal num passo pode conservar o mdc e estragar os coeficientes.
+
+### Provar que dois valores são primos entre si
+
+Considera $3k+2$ e $5k+3$, com $k\in\mathbb Z$. Qualquer divisor comum divide:
+
+$$
+5(3k+2)-3(5k+3)=1.
+$$
+
+Assim, o único divisor positivo comum é 1. Este argumento prova a afirmação para todos os $k$, sem calcular um mdc para cada caso.
+
+O lema de Euclides diz que, se $p$ é primo e $p\mid ab$, então $p\mid a$ ou $p\mid b$. Se $p\nmid a$, temos $\gcd(p,a)=1$. Por Bézout, $1=up+va$; multiplicando por $b$, $b=upb+vab$, que é divisível por $p$. A hipótese "primo" é necessária: $6\mid2\cdot3$, mas $6$ não divide nenhum dos fatores.
+
+## Congruências e operações
+
+Para um módulo $m>0$:
+
+$$
+a\equiv_m b
+\quad\Longleftrightarrow\quad
+m\mid(a-b).
+$$
+
+Também se escreve $a\equiv b\pmod m$. Isto equivale a ter o mesmo resto na divisão por $m$. Por exemplo, $-1\equiv_7 6$.
+
+Podemos somar, subtrair e multiplicar congruências do mesmo módulo. Se $a-b=mk$ e $c-d=m\ell$, então:
+
+$$
+ac-bd=(a-b)c+b(c-d)=m(kc+b\ell).
+$$
+
+Por isso, $a\equiv_m b$ e $c\equiv_m d$ implicam $ac\equiv_m bd$. Reduzir valores intermédios evita números grandes sem mudar o resto final.
+
+$\mathbb Z_m$ pode representar-se por $\{0,1,\ldots,m-1\}$ com as operações seguidas da redução módulo $m$. Igualdade entre representantes e congruência entre inteiros são conceitos diferentes: $8\ne1$, mas $8\equiv_7 1$.
+
+## Cancelar e inverter
+
+Não podemos cancelar um fator qualquer. $2\cdot2\equiv_6 2\cdot5$, mas $2\not\equiv_6 5$.
+
+Se $\gcd(c,m)=1$, Bézout dá $uc+vm=1$, logo $uc\equiv_m1$. O valor $u$ é um **inverso multiplicativo** de $c$. Multiplicar por esse inverso permite cancelar $c$.
+
+Por exemplo, $3\cdot5=15\equiv_7 1$, por isso 5 é o inverso de 3 módulo 7. De $3x\equiv_7 4$ obtemos $x\equiv_7 5\cdot4\equiv_7 6$. Confirmamos $3\cdot6=18\equiv_7 4$.
+
+Um inverso existe se e só se o número e o módulo são primos entre si. Em módulo primo $p$, todos os representantes não nulos têm inverso. O zero continua sem inverso.
 
 ## Resolver congruências lineares
 
-Resolver $ax \equiv b \pmod{n}$ é a operação central. O procedimento:
+Para $ax\equiv_m b$, calcula $d=\gcd(a,m)$. A congruência tem solução **se e só se** $d\mid b$:
 
-1. Calcula $d = mdc(a, n)$. Se $d \nmid b$, não há solução.
-2. Se $d \mid b$, divide tudo por $d$: $a'x \equiv b' \pmod{n'}$, agora com $a'$ e $n'$ primos entre si.
-3. Inverte $a'$ módulo $n'$ com Euclides estendido (Bézout dá $sa' + tn' = 1$, logo $s$ é o inverso). A solução é $x \equiv s b' \pmod{n'}$.
-4. As soluções módulo $n$ original são $d$ valores espaçados de $n'$.
+- Uma solução dá $ax-mq=b$; como $d$ divide $a$ e $m$, tem de dividir $b$.
+- Se $d\mid b$, divide a identidade de Bézout por $d$ e multiplica por $b/d$ para obter uma solução.
 
-Exemplo 1: $3x \equiv 2 \pmod{5}$. $mdc(3, 5) = 1$. O inverso de 3 módulo 5 é 2, porque $3 \cdot 2 = 6 \equiv 1$. Logo $x \equiv 2 \cdot 2 = 4 \pmod{5}$. Confirma: $3 \cdot 4 = 12 \equiv 2 \pmod{5}$.
+Se há solução, dividimos $a,b,m$ por $d$. A congruência reduzida tem coeficiente invertível e uma classe de soluções módulo $m/d$. No módulo original há $d$ classes distintas.
 
-Exemplo 2: $6x \equiv 4 \pmod{10}$. $mdc(6, 10) = 2$, e $2 \mid 4$, por isso há solução. Divide por 2: $3x \equiv 2 \pmod{5}$, que dá $x \equiv 4 \pmod{5}$. As soluções módulo 10 são $x \equiv 4$ e $x \equiv 9$ (soma-se $n' = 5$). Confirma ambas: $6 \cdot 4 = 24 \equiv 4$ e $6 \cdot 9 = 54 \equiv 4 \pmod{10}$.
+Para $6x\equiv_{14}8$, temos $d=2$, que divide 8. Reduzimos:
 
-## Aplicação: dígitos de verificação
+$$
+3x\equiv_7 4\quad\Longrightarrow\quad x\equiv_7 6.
+$$
 
-O NIF português tem 9 dígitos $a_1 \dots a_9$ com pesos $9$ a $1$, e é válido quando $9a_1 + 8a_2 + 7a_3 + 6a_4 + 5a_5 + 4a_6 + 3a_7 + 2a_8 + a_9 \equiv 0 \pmod{11}$. Testa a sequência $1\,2\,3\,4\,5\,6\,7\,8\,9$:
+Em $\mathbb Z_{14}$, as soluções são $6$ e $13$. Conferindo, $36$ e $78$ deixam resto 8 módulo 14. Já $6x\equiv_{14}9$ não tem solução, porque 2 não divide 9.
 
-$9\cdot1 + 8\cdot2 + 7\cdot3 + 6\cdot4 + 5\cdot5 + 4\cdot6 + 3\cdot7 + 2\cdot8 + 9 = 9 + 16 + 21 + 24 + 25 + 24 + 21 + 16 + 9 = 165$.
+Não mantenhas o módulo 14 depois de dividir os dois membros por 2. A redução também divide o módulo.
 
-Como $165 = 15 \cdot 11$, o resto módulo 11 é 0: a sequência passa na verificação. (É só um exemplo aritmético, não um NIF real.) O NIB usa a mesma ideia com módulo 97 sobre 21 dígitos. Estes esquemas detetam erros de digitação porque trocar um dígito muda a soma ponderada de forma que o resto quase sempre deixa de ser o exigido.
+## Pequeno teorema de Fermat
 
-Para rever Euclides e inversos com mais exemplos resolvidos, os apontamentos de CSE 311 da Universidade de Washington cobrem o algoritmo estendido passo a passo: [Euclid's algorithm](https://courses.cs.washington.edu/courses/cse311/20sp/lectures/lecture14.html). Para treinar congruências com exercícios curtos, a wiki da Brilliant tem uma página dedicada: [Modular arithmetic](https://brilliant.org/wiki/modular-arithmetic/). E para experimentar restos antes de provar, há um applet interativo de aritmética modular: [Modular arithmetic](https://www.cut-the-knot.org/Curriculum/Algebra/Modulo.shtml).
+Se $p$ é primo e $p\nmid a$:
 
-<YouTube id="M7kEpw1tn50" title="Encryption and HUGE numbers" />
+$$
+a^{p-1}\equiv_p1.
+$$
 
-## Para levar para a próxima página
+Multiplicar os representantes $1,\ldots,p-1$ por $a$ permuta as classes não nulas, porque $a$ é invertível. O produto dessas classes é, portanto, o mesmo. Cancelando $(p-1)!$, que também é invertível, obtemos o resultado.
 
-O algoritmo de Euclides e a aritmética modular são os teus primeiros algoritmos com prova de correção séria. A técnica para os provar, a [indução](/cadeiras/md/inducao-recorrencia/), é o tema seguinte.
+Para calcular $3^{100}\bmod7$, usamos $3^6\equiv_7 1$ e $100=16\cdot6+4$. Assim:
+
+$$
+3^{100}\equiv_7 3^4=81\equiv_7 4.
+$$
+
+Fermat também dá $a^{-1}\equiv_p a^{p-2}$ quando $a$ não é múltiplo de $p$. Não uses a fórmula num módulo composto sem outra justificação.
+
+## Um cálculo executável
+
+Este programa encontra o mdc e os coeficientes de Bézout. Em cada iteração, os restos continuam a ser combinações lineares dos valores iniciais. O último resto não nulo fornece os três resultados.
+
+<CodePlayground
+  language="python"
+  title="Euclides estendido"
+  code={
+    'def bezout(a, b):\n    r0, r1 = a, b\n    u0, u1 = 1, 0\n    v0, v1 = 0, 1\n    while r1 != 0:\n        q = r0 // r1\n        r0, r1 = r1, r0 - q * r1\n        u0, u1 = u1, u0 - q * u1\n        v0, v1 = v1, v0 - q * v1\n    if r0 < 0:\n        r0, u0, v0 = -r0, -u0, -v0\n    return r0, u0, v0\n\na, b = 252, 198\nd, u, v = bezout(a, b)\nprint(d, u, v)\nprint(u * a + v * b)\nprint([x for x in range(14) if (6*x - 8) % 14 == 0])\nprint(pow(3, 100, 7))\n'
+  }
+/>
+
+A saída é `18 4 -5`, depois `18`, `[6, 13]` e `4`. As primeiras duas linhas conferem Bézout; as seguintes conferem a congruência e a potência. O programa admite um dos valores zero, mas não usamos o resultado para definir o mdc de dois zeros.
