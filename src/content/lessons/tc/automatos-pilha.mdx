@@ -1,108 +1,132 @@
 ---
 title: Autómatos de pilha
-description: PDA com um exemplo completo para 0n1n e a equivalência com gramáticas.
-section: conteudo
-order: 5
+description: Configurações, critérios de aceitação, construções para contagens e palíndromos e equivalência com CFG.
+order: 7
+practices:
+  - tc/praticar-pilha
 ---
 
 import Dot from '../../../components/Dot.astro';
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import pilhaPassos from '../../tc/pilha-passos.typ?raw';
 
-Um **autómato de pilha** (PDA, de _pushdown automaton_) é um NFA com uma pilha: a cada passo, além de ler (ou não) um símbolo, pode empilhar ou desempilhar símbolos. A pilha é memória ilimitada mas só com acesso ao topo, e é exatamente o que faltava para reconhecer $\{0^n 1^n\}$. Esta página constrói esse autómato e enuncia a equivalência com gramáticas livres de contexto.
+Para reconhecer $a^nb^n$, guardamos um marcador por cada $a$ e retiramos um por cada $b$. Os estados controlam a ordem dos blocos; a pilha guarda uma contagem sem limite previamente fixado.
 
 ## O modelo
 
-Um PDA tem estados finitos, alfabeto de entrada $\Sigma$ e alfabeto de pilha $\Gamma$ (que pode incluir um marcador de fundo, escrito como `$` nas transições). Cada transição indica: estado atual, símbolo a ler ($\varepsilon$ se não lê), símbolo no topo da pilha, estado destino e o que empilhar (ou desempilhar). Aceita por **estado final** (terminar num estado de aceitação após ler tudo, com qualquer conteúdo na pilha) ou por **pilha vazia**; os dois critérios são equivalentes.
+Um autómato de pilha, **PDA**, é $P=(Q,\Sigma,\Gamma,\delta,q_0,Z_0,F)$. Além dos componentes finitos habituais, $\Gamma$ é o alfabeto da pilha e $Z_0\in\Gamma$ é o símbolo que está inicialmente nela.
 
-Em notação compacta (à Sipser), a transição que troca de fase escreve-se $\delta(q_0, 1, 0) = \{(q_1, \varepsilon)\}$: lê-se "no estado $q_0$, ao ler $1$ com $0$ no topo, vai para $q_1$ e empilha $\varepsilon$", ou seja, desempilha sem pôr nada no lugar. O triplo antes da seta é a condição, o par depois é o efeito.
+A função de transição recebe estado, letra de entrada ou $\varepsilon$, e símbolo do topo:
 
-A intuição: a parte finita (estados) trata o que os DFA já tratavam, e a pilha guarda contagens e chamadas por fechar. É o mesmo salto dos parênteses bem formados: empilha ao abrir, desempilha ao fechar.
+$$
+\delta:Q\times(\Sigma\cup\{\varepsilon\})\times\Gamma
+\to\mathcal P_{\mathrm{fin}}(Q\times\Gamma^*).
+$$
 
-## Exemplo resolvido: PDA para $\{0^n 1^n\}$
+O resultado é um conjunto finito de escolhas. O par $(p,\gamma)$ significa ir para $p$ e substituir o topo por $\gamma$. Escrevemos a pilha com o **topo à esquerda**. Se o topo $X$ é substituído por $YZ$, fica $Y$ por cima de $Z$. Se $\gamma=\varepsilon$, retiramos o topo; se $\gamma=X$, a pilha não muda.
 
-Linguagem sobre $\{0, 1\}$: $n$ zeros seguidos de $n$ uns, incluindo $\varepsilon$ ($n = 0$). Estratégia: empilha um marcador por cada $0$ lido, depois desempilha um por cada $1$. Aceita se a pilha esvaziar exatamente no fim.
+No diagrama, $a,X/\gamma$ representa essa operação. A letra $a=\varepsilon$ não consome entrada, mas a operação ainda exige que $X$ esteja no topo.
 
-Estados: $q_0$ (inicial, a ler zeros), $q_1$ (a ler uns), $q_f$ (aceitação). Alfabeto de pilha: `{0, $}`, com `$` no fundo.
+## Configurações e aceitação
 
-```text
-Inicialização:
-  q0 --(ε, topo nada: empilha $)--> q0     (põe o marcador de fundo)
-Leitura de zeros (fica em q0):
-  q0 --(0, topo x: empilha 0 por cima)--> q0   para qualquer x
-Transição para os uns:
-  q0 --(1, topo 0: desempilha)--> q1
-Aceitação (inclui a palavra vazia, com n = 0):
-  q0 --(ε, topo $: desempilha)--> qf
-Leitura de uns (fica em q1):
-  q1 --(1, topo 0: desempilha)--> q1
-Aceitação (cont.):
-  q1 --(ε, topo $: desempilha)--> qf
-```
+Uma configuração, ou descrição instantânea, é $(q,w,\gamma)$: estado atual, entrada ainda por ler e pilha atual. Se $(p,\alpha)\in\delta(q,a,X)$, então
 
-Corre $w = 0011$: empilha o marcador de fundo, empilha $0$, empilha $0$ (pilha: `0,0,$` do topo para o fundo). Lê $1$: desempilha um $0$, vai para $q_1$. Lê $1$: desempilha o outro $0$ (pilha: `$`). Fim da palavra em $q_1$ com topo `$`: transição $\varepsilon$ para $q_f$. Aceite.
+$$
+(q,aw,X\beta)\vdash(p,w,\alpha\beta).
+$$
+
+O que está abaixo do topo não interfere na escolha da transição. $\vdash^*$ representa zero ou mais passos.
+
+Na aceitação por **estado final**, exigimos $(q_0,w,Z_0)\vdash^*(f,\varepsilon,\gamma)$ para algum $f\in F$. A pilha pode conservar símbolos. Na aceitação por **pilha vazia**, exigimos $(q_0,w,Z_0)\vdash^*(q,\varepsilon,\varepsilon)$, sem condição sobre $q$.
+
+Em ambos os casos, a entrada tem de estar consumida. Estar num final ou ter a pilha vazia enquanto restam letras não aceita a palavra.
+
+## Exemplo resolvido: PDA para aⁿbⁿ
+
+Reconhecemos $\{a^nb^n\mid n\ge0\}$ por estado final. Usamos $q_0$ para ler $a$, $q_1$ para ler $b$ e $q_f$ como final. A pilha começa em $Z$ e guarda marcadores $A$.
+
+| Origem | Entrada       | Topo | Destino | Substituição  |
+| ------ | ------------- | ---- | ------- | ------------- |
+| $q_0$  | $a$           | $Z$  | $q_0$   | $AZ$          |
+| $q_0$  | $a$           | $A$  | $q_0$   | $AA$          |
+| $q_0$  | $b$           | $A$  | $q_1$   | $\varepsilon$ |
+| $q_1$  | $b$           | $A$  | $q_1$   | $\varepsilon$ |
+| $q_0$  | $\varepsilon$ | $Z$  | $q_f$   | $Z$           |
+| $q_1$  | $\varepsilon$ | $Z$  | $q_f$   | $Z$           |
+
+As restantes transições não existem. $q_f$ não tem saídas. O estado $q_0$ pode aceitar $\varepsilon$, mas a mesma transição feita com entrada restante não aceita.
 
 <Dot
-  source={`digraph PDA {
-  rankdir=LR;
-  node [shape=circle];
-  start [shape=none, label=""];
-  start -> q0;
-  q0 -> q0 [label="0, qualquer: empilha 0"];
-  q0 -> q1 [label="1, 0: desempilha"];
-  q0 -> qf [label="e, $: desempilha"];
-  q1 -> q1 [label="1, 0: desempilha"];
-  q1 -> qf [label="e, $: desempilha"];
-  qf [shape=doublecircle];
-}`}
-  alt="PDA com três estados. O estado q0 tem um ciclo que empilha 0, vai para q1 ao ler 1 com 0 no topo e vai para qf sem ler com o marcador no topo. O estado q1 tem um ciclo que desempilha com 1 e vai para qf sem ler com o marcador no topo. O estado qf, de aceitação, não tem saídas."
+  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; qf [shape=doublecircle]; s->q0; q0->q0 [label="a,Z/AZ\na,A/AA"]; q0->q1 [label="b,A/ε"]; q1->q1 [label="b,A/ε"]; q0->qf [label="ε,Z/Z"]; q1->qf [label="ε,Z/Z"]; }`}
+  alt="PDA para a elevado a n seguido de b elevado a n. q0 empilha A por a; o primeiro b passa a q1; q1 retira A por b. Com Z no topo pode chegar ao final qf."
 />
 
-Os rótulos dizem "símbolo lido, topo exigido: efeito na pilha", com `e` no lugar do $\varepsilon$ para o Graphviz desenhar. O traço completo para $0011$, com a pilha do topo para o fundo:
+A computação que aceita $aabb$ é:
 
-| Estado | Por ler | Pilha     |
-| ------ | ------- | --------- |
-| $q_0$  | `0011`  | `$`       |
-| $q_0$  | `011`   | `0, $`    |
-| $q_0$  | `11`    | `0, 0, $` |
-| $q_1$  | `1`     | `0, $`    |
-| $q_1$  | (vazia) | `$`       |
-| $q_f$  | (vazia) | (vazia)   |
+$$
+\begin{aligned}
+(q_0,aabb,Z)&\vdash(q_0,abb,AZ)\\
+&\vdash(q_0,bb,AAZ)\\
+&\vdash(q_1,b,AZ)\\
+&\vdash(q_1,\varepsilon,Z)\\
+&\vdash(q_f,\varepsilon,Z).
+\end{aligned}
+$$
 
-<Typst
-  source={pilhaPassos}
-  format="svg"
-  alt="Quatro instantâneos da pilha ao correr 0011: só o marcador, depois com dois zeros por cima, depois com um zero após o primeiro um, e por fim só o marcador após o segundo um."
-/>
+Em $aab$, sobra um $A$ quando a entrada acaba, e não há transição para o final. Em $abb$, o segundo $b$ encontra $Z$ e o ramo bloqueia. Em $aba$, o estado $q_1$ não tem transição para $a$, impedindo o regresso ao primeiro bloco.
 
-A mesma receita em código, com a pilha trocada por uma contagem (a altura da pilha é o número de zeros por emparelhar):
+O invariante é: em $q_0$ há um $A$ por cada $a$ lido; em $q_1$ há um $A$ por cada $a$ que ainda não foi emparelhado com um $b$. Só se chega ao final com zero marcadores e entrada consumida.
 
-<CodePlayground
-  language="python"
-  title="Contar com a pilha"
-  code={
-    'def pda(w):\n    if w == "":\n        return True\n    zeros = 0\n    while zeros < len(w) and w[zeros] == "0":\n        zeros += 1\n    uns = w[zeros:]\n    return zeros > 0 and len(uns) == zeros and all(s == "1" for s in uns)\n\nfor w in ["0011", "010", ""]:\n    print(w or "epsilon", "aceite" if pda(w) else "rejeitada")'
-  }
-/>
+## Contagens dentro de um intervalo
 
-E porque é que $010$ é rejeitada? Lê $0$ (empilha), lê $1$ (desempilha, vai para $q_1$ com pilha `$`), lê $0$: não há transição de $q_1$ a ler $0$. O caminho morre, e não há outro. Rejeitada, como devia.
+Para $\{a^nb^m\mid n\le m\le2n\}$, cada $a$ pode corresponder a um ou dois $b$. Um PDA escolhe empilhar um ou dois marcadores por $a$ e depois retira um por cada $b$. Com topo $X$, as escolhas são $a,X/AX$ e $a,X/AAX$. A mudança para a fase dos $b$ impede voltar a ler $a$.
 
-:::tip[Receita para contar com a pilha]
-Para "tantos $a$ como $b$": empilha nos $a$, desempilha nos $b$, com um marcador de fundo para detetar o zero. Para "mais $a$ que $b$": igual, mas aceita com pilha não vazia. Quase todos os exercícios de PDA são variantes desta receita com dois estados de fase.
-:::
+Na palavra $aabbb$, um ramo empilha um marcador pelo primeiro $a$ e dois pelo segundo. A pilha fica $AAAZ$, que os três $b$ esvaziam até ao fundo. Em $aaabb$, todos os ramos têm pelo menos três marcadores, portanto dois $b$ nunca chegam. Em $aabbbbb$, todos têm no máximo quatro, pelo que cinco $b$ não podem ser lidos.
 
-## PDA equivale a CFG
+A CFG correspondente é $S\to aSb\mid aSbb\mid\varepsilon$. Com $n$ passos recursivos, escolhemos $n$ contribuições de um ou dois $b$, dando qualquer total entre $n$ e $2n$. Para $aabbb$, podemos derivar $S\Rightarrow aSb\Rightarrow aaSbbb\Rightarrow aabbb$.
 
-**Teorema.** Uma linguagem é reconhecida por algum PDA se e só se é gerada por alguma CFG. As linguagens desta família chamam-se **livres de contexto**.
+## Escolhas que a pilha não resolve
 
-A prova tem dois sentidos, e cada um é uma construção:
+Para palíndromos pares $\{ww^R\mid w\in\{0,1\}^*\}$, empilha a primeira parte e escolhe, por uma transição vazia, quando começar a comparar. A partir daí, cada letra tem de ser igual ao topo, que é retirado. Aceita ao chegar ao fundo depois de consumir a entrada.
 
-- De CFG para PDA: o autómato simula derivações mais à esquerda, mantendo a forma sentencial na pilha e expandindo variáveis no topo. Se a palavra esvaziar a pilha, aceita.
-- De PDA para CFG: a gramática ganha uma variável $[pAq]$ para cada par de estados $(p, q)$ e símbolo $A$, significando "de $p$ com $A$ no topo até $q$ com $A$ removido". As regras copiam as transições do autómato.
+O meio não está marcado, por isso o PDA usa não determinismo para escolher a divisão. Para $0110$, um ramo empilha $01$, muda de fase e compara $10$. Os ramos que escolhem um meio errado falham. Com um separador, $w\#w^R$, a letra $\#$ indica quando mudar de fase.
 
-Não decores as construções símbolo a símbolo; fixa o que elas implicam: tudo o que provaste para gramáticas (como a árvore sintática) vale para autómatos de pilha, e vice-versa. Em particular, há um lema da repetição para linguagens livres de contexto (com duas partes repetíveis), que exclui linguagens como $\{0^n 1^n 2^n\}$. O padrão é o mesmo da página sobre [limites das linguagens regulares](limites-regulares/): conta finita contra crescimento ilimitado.
+Um PDA determinístico tem no máximo uma escolha por condição e não permite, para o mesmo estado e topo, concorrer uma transição vazia com uma transição que lê entrada. Ao contrário do caso finito, PDA determinísticos e não determinísticos não têm o mesmo poder: as linguagens livres de contexto determinísticas são uma subclasse própria das livres de contexto.
 
-## Para levar para a próxima página
+## Trocar o critério de aceitação
 
-A pilha resolve a contagem, mas há linguagens que nem ela alcança, como $\{0^n 1^n 2^n\}$, e há perguntas que nenhuma máquina responde. O modelo sem restrições é a [máquina de Turing](turing-decidibilidade/).
+Os critérios têm o mesmo poder para PDA não determinísticos, mas mudar o critério de uma máquina existente pode mudar a linguagem. É preciso construir outra máquina.
+
+De pilha vazia para estado final, coloca um fundo novo $\bot$ abaixo da pilha simulada. Um estado inicial novo transforma $\bot$ em $Z_0\bot$. Quando o simulador expõe $\bot$, entra num final novo. Só uma computação que consumiu toda a entrada é aceite.
+
+De estado final para pilha vazia, usa também um fundo novo, para impedir esvaziamento acidental durante a simulação. De cada antigo final, permite passar para um estado que retira todos os símbolos, incluindo o fundo, por transições vazias. Se ainda houver entrada, esse ramo não consegue consumi-la e não aceita.
+
+Esta equivalência não deve ser aplicada sem alterações às convenções determinísticas; as transições vazias acrescentadas podem criar escolhas.
+
+## De CFG para PDA
+
+Um PDA por pilha vazia pode simular derivações mais à esquerda. A pilha começa com $S$ e contém variáveis e terminais:
+
+- para cada produção $A\to\alpha$, permite substituir $A$ no topo por $\alpha$, sem ler entrada;
+- para cada terminal $a$, permite ler $a$ e retirar $a$ do topo.
+
+Para $S\to aSb\mid\varepsilon$, o ramo que aceita $ab$ é:
+
+$$
+(q,ab,S)\vdash(q,ab,aSb)\vdash(q,b,Sb)
+\vdash(q,b,b)\vdash(q,\varepsilon,\varepsilon).
+$$
+
+A expansão mantém na pilha a parte ainda por gerar, com a primeira posição no topo. Numa implementação que empilhe símbolos um a um, tens de os inserir da direita para a esquerda para obter esse mesmo topo.
+
+## De PDA para CFG
+
+Primeiro coloca o PDA no critério de pilha vazia. A variável $[pXq]$ descreve as palavras que levam do estado $p$ ao estado $q$ removendo o marcador $X$, sem tocar no que estava abaixo dele.
+
+Para cada estado $q$, acrescenta $S\to[q_0Z_0q]$. Se uma transição lê $a$, vai de $p$ para $r$ e retira $X$, acrescenta $[pXr]\to a$, podendo $a$ ser $\varepsilon$.
+
+Se a transição substitui $X$ por $YZ$, a remoção futura tem duas partes: remover $Y$ até algum estado intermédio $s$, depois remover $Z$ até $q$. Para todos os estados $s,q$, acrescenta
+
+$$
+[pXq]\to a[rYs][sZq].
+$$
+
+Se empilhar mais símbolos, usa uma variável por símbolo e estados intermédios para ligar as etapas. A gramática gera precisamente as entradas que esvaziam a pilha. Com a conversão inversa, isto prova: **uma linguagem é livre de contexto se e só se algum PDA a reconhece**.

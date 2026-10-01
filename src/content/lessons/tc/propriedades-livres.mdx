@@ -1,0 +1,125 @@
+---
+title: Propriedades das livres de contexto
+description: Simplificação de CFG, forma normal de Chomsky, CYK, fecho e lema da repetição.
+order: 8
+practices:
+  - tc/praticar-cfl
+---
+
+Uma CFG pode ter produções que não contribuem para nenhuma palavra, cadeias de substituições de variáveis e várias maneiras de apagar símbolos. Vamos reorganizá-la numa forma que permite decidir a pertença com uma tabela. Depois vemos os limites desta classe de linguagens.
+
+## Variáveis anuláveis, unitárias e inúteis
+
+Uma variável é **anulável** se deriva $\varepsilon$. Começa nas produções $A\to\varepsilon$ e acrescenta uma variável quando alguma das suas produções contém apenas variáveis já anuláveis. Repete até estabilizar. Um terminal nunca é anulável.
+
+Para eliminar produções vazias, cria todas as combinações de presença e ausência das ocorrências anuláveis em cada lado direito. Em $A\to BCB$, se $B$ for anulável e $C$ não for, surgem $BCB$, $CB$, $BC$ e $C$. As duas ocorrências de $B$ são escolhas independentes. Depois retira produções vazias, tratando separadamente a aceitação de $\varepsilon$.
+
+Uma produção **unitária** tem forma $A\to B$, com duas variáveis. Calcula os pares $(A,B)$ em que $A$ chega a $B$ usando só produções unitárias, incluindo $(A,A)$. Copia para $A$ todas as produções não unitárias de cada $B$ alcançado e retira as unitárias. Não basta apagar $A\to B$, porque perderias as palavras geradas através dela.
+
+Uma variável é **geradora** se deriva alguma palavra terminal. Calcula primeiro as geradoras, a partir de regras só com terminais ou variáveis já geradoras. Retira as não geradoras e as regras que as usam. Depois calcula as variáveis alcançáveis a partir do início na gramática que ficou e retira as restantes.
+
+Por exemplo, em $S\to AB\mid a$, $A\to b$, sem regras para $B$, $B$ não é geradora. Retiramos $S\to AB$ e, só depois, vemos que $A$ ficou inacessível. O resultado é $S\to a$.
+
+Uma ordem segura para a simplificação completa é: eliminar produções vazias, eliminar unitárias e eliminar símbolos inúteis, primeiro não geradores e depois inacessíveis. A eliminação de vazias pode criar unitárias, e as etapas podem tornar símbolos inúteis.
+
+## Forma normal de Chomsky
+
+Na **forma normal de Chomsky**, CNF, as produções têm forma
+
+$$
+A\to BC\quad\text{ou}\quad A\to a.
+$$
+
+Adotamos a extensão que permite $S_0\to\varepsilon$ se a linguagem contém a palavra vazia, desde que o início $S_0$ não apareça em nenhum lado direito. Uma regra $S_0\to S$ é unitária e não fica na CNF final desta convenção.
+
+Depois da simplificação, substitui cada terminal em lados direitos de comprimento pelo menos dois por uma variável nova, como $T_a\to a$. Não alteres $A\to a$, que já está na forma certa.
+
+Divide os lados direitos compridos: $A\to BCD$ torna-se $A\to BX$, $X\to CD$, com $X$ novo. Para quatro ou mais variáveis, continua a cadeia. Cada regra passa a ter duas variáveis ou um terminal.
+
+### Conversão completa
+
+Partimos de $S\to aSb\mid\varepsilon$. Introduzimos $A\to a$, $B\to b$, ficando $S\to ASB\mid\varepsilon$. O início $S$ é anulável e aparece à direita; criamos um início novo $S_0$ para preservar $\varepsilon$.
+
+Eliminando a ocorrência anulável de $S$ no meio, temos $S\to ASB\mid AB$. Copiamos estas regras para $S_0$ para eliminar $S_0\to S$, e conservamos $S_0\to\varepsilon$. Finalmente, dividimos $ASB$ usando $C\to SB$:
+
+$$
+\begin{aligned}
+S_0&\to AC\mid AB\mid\varepsilon,\\
+S&\to AC\mid AB,\\
+C&\to SB,\\
+A&\to a,\qquad B\to b.
+\end{aligned}
+$$
+
+$S_0$ não aparece à direita. Para $aabb$, a derivação é $S_0\Rightarrow AC\Rightarrow aC\Rightarrow aSB\Rightarrow aABB\Rightarrow aaBB\Rightarrow aabB\Rightarrow aabb$. A base $AB$ dá um par, e $AC$ acrescenta outro par à volta.
+
+## CYK: decidir a pertença
+
+O algoritmo **CYK** usa uma CFG em CNF e uma palavra não vazia $w=a_1\cdots a_n$. A célula $T[i,j]$ contém as variáveis que geram a subpalavra $a_i\cdots a_j$.
+
+Na diagonal:
+
+$$
+T[i,i]=\{A\mid A\to a_i\}.
+$$
+
+Para intervalos maiores, tenta todos os cortes $k$ entre $i$ e $j$. Se $A\to BC$, $B\in T[i,k]$ e $C\in T[k+1,j]$, acrescenta $A$ a $T[i,j]$. Preenche por comprimento crescente, porque cada decisão depende de intervalos menores.
+
+Com a CNF anterior e $aabb$, obtemos:
+
+| Comprimento | Subpalavras da esquerda para a direita | Conjuntos                             |
+| ----------- | -------------------------------------- | ------------------------------------- |
+| 1           | $a$, $a$, $b$, $b$                     | $\{A\}$, $\{A\}$, $\{B\}$, $\{B\}$    |
+| 2           | $aa$, $ab$, $bb$                       | $\emptyset$, $\{S_0,S\}$, $\emptyset$ |
+| 3           | $aab$, $abb$                           | $\emptyset$, $\{C\}$                  |
+| 4           | $aabb$                                 | $\{S_0,S\}$                           |
+
+Em $abb$, o corte $ab\mid b$ usa $C\to SB$. Em $aabb$, o corte $a\mid abb$ usa $S_0\to AC$. Como $S_0\in T[1,4]$, a palavra pertence à linguagem.
+
+Não juntamos todos os símbolos de uma linha sem respeitar o intervalo e o corte. $B$ no último $b$ só pode combinar com uma variável que gere a parte imediatamente anterior no mesmo intervalo.
+
+Para gramática fixa, há $O(n^2)$ células e $O(n)$ cortes por célula, dando tempo $O(n^3)$ e espaço $O(n^2)$. Se a gramática variar, o custo inclui também o número de produções. Para $\varepsilon$, não criamos uma tabela vazia: verificamos diretamente se o início pode gerar a palavra vazia.
+
+## Propriedades de fecho
+
+As livres de contexto são fechadas para união, concatenação, estrela e reverso. Para união, usa um início novo $S\to S_1\mid S_2$, após renomear variáveis para os conjuntos serem disjuntos. Para concatenação, usa $S\to S_1S_2$. Para estrela, usa $S\to S_1S\mid\varepsilon$.
+
+São também fechadas para interseção com uma **regular**. O produto entre PDA e DFA guarda ambos os estados, conservando a pilha do PDA. Uma transição vazia do PDA não altera o estado do DFA; uma letra lida atualiza ambos. Aceita quando as duas condições finais se verificam após consumir a entrada.
+
+Não são fechadas para interseção entre duas CFL. Considera:
+
+$$
+L_1=\{a^nb^nc^m\mid n,m\ge0\},\qquad
+L_2=\{a^mb^nc^n\mid n,m\ge0\}.
+$$
+
+Cada uma compara apenas dois blocos, mas a interseção é $\{a^nb^nc^n\mid n\ge0\}$, que não é livre de contexto. Também não há fecho geral para complemento: se houvesse, as leis de De Morgan e o fecho para união dariam fecho para interseção. Diferença geral falha pela mesma razão, pois $\Sigma^*\setminus L$ é um caso de diferença.
+
+## Lema da repetição para CFL
+
+Se $L$ é livre de contexto, existe $p\ge1$ tal que toda a palavra $s\in L$, $|s|\ge p$, admite $s=uvwxy$ com:
+
+$$
+|vwx|\le p,\qquad |vx|\ge1,\qquad
+\forall i\ge0,\ uv^iwx^iy\in L.
+$$
+
+A condição $|vx|\ge1$ permite que uma das partes seja vazia, mas não ambas. Bombeamos $v$ e $x$ com o mesmo expoente. $w$ fica uma única vez. Ao contrário do lema regular, a zona limitada não tem de estar no princípio da palavra.
+
+Uma árvore sintática suficientemente alta repete uma variável num caminho. Podemos retirar a parte entre as duas ocorrências, ou repeti-la. Essa parte acrescenta $v$ de um lado da subárvore interior e $x$ do outro. Uma CNF permite limitar o tamanho da zona que contém a repetição.
+
+### Provar que aⁿbⁿcⁿ não é CFL
+
+Supõe que $L=\{a^nb^nc^n\mid n\ge0\}$ é CFL e seja $p$ o comprimento do lema. Escolhe $s=a^pb^pc^p$. Considera qualquer decomposição válida.
+
+Como $|vwx|\le p$, essa zona não pode conter ao mesmo tempo um $a$ e um $c$: teria de incluir todo o bloco de $p$ letras $b$, além dos dois extremos. Logo, a zona não inclui pelo menos um dos tipos de símbolo extremos.
+
+Com $i=0$, retiramos $v$ e $x$. Pelo menos um símbolo é retirado, pois $|vx|\ge1$, enquanto o tipo que não aparece na zona mantém as suas $p$ ocorrências. As três contagens já não são iguais. Portanto, $uwy\notin L$, contradizendo o lema.
+
+Não escolhemos uma decomposição conveniente. A limitação da zona cobre todas as decomposições. Como no lema regular, satisfazer o lema não é prova de pertença à classe.
+
+## O que se pode decidir sobre CFG
+
+A pertença é decidível por CYK. O vazio é decidível verificando se o início é gerador. Já não há algoritmos gerais que decidam equivalência de duas CFG, universalidade de uma CFG ou ambiguidade de uma CFG.
+
+Isto não impede resolver exemplos particulares com um argumento. Dizer que um problema é indecidível significa que não existe um algoritmo que termine e responda corretamente a **todas** as entradas desse problema.

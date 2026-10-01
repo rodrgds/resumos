@@ -1,103 +1,126 @@
 ---
 title: Gramáticas livres de contexto
-description: Derivações, árvores sintáticas, ambiguidade e forma normal de Chomsky.
-section: conteudo
-order: 4
+description: Construir e provar gramáticas, derivações, árvores sintáticas, ambiguidade e precedência.
+order: 6
+practices:
+  - tc/praticar-gramaticas
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import arvoresAmbiguidade from '../../tc/arvores-ambiguidade.typ?raw';
+import Dot from '../../../components/Dot.astro';
 
-Uma **gramática livre de contexto** (CFG, de _context-free grammar_) gera palavras por substituição: cada regra troca um símbolo não terminal por uma sequência, independentemente do que está à volta (daí "livre de contexto"). São o formalismo por trás da sintaxe das linguagens de programação. Esta página mostra derivações, árvores, ambiguidade e a forma normal de Chomsky.
+A regra $S\to aSb$ permite acrescentar um $a$ no início e um $b$ no fim, repetindo o mesmo problema no meio. Uma gramática consegue assim expressar uma relação entre partes distantes da palavra, sem reservar um estado para cada comprimento possível.
 
 ## Definição e derivações
 
-Uma CFG é um quádruplo $G = (V, \Sigma, R, S)$ onde $V$ são as **variáveis** (não terminais), $\Sigma$ os **terminais** (o alfabeto, disjunto de $V$), $R$ as **regras** $A \to \alpha$ (com $A \in V$ e $\alpha$ uma sequência de variáveis e terminais) e $S \in V$ o **símbolo inicial**.
+Uma **gramática livre de contexto**, CFG, é $G=(V,\Sigma,P,S)$, onde $V$ é um conjunto finito de variáveis, $\Sigma$ é o alfabeto de terminais, $V\cap\Sigma=\emptyset$, $P$ é o conjunto finito de produções e $S\in V$ é a variável inicial.
 
-Uma **derivação** aplica regras até só restarem terminais. Escreve-se $\alpha \Rightarrow \beta$ para um passo e $\Rightarrow^*$ para zero ou mais passos. A linguagem gerada $L(G)$ é o conjunto das cadeias de terminais $w$ com $S \Rightarrow^* w$.
+Cada produção tem forma $A\to\alpha$, com uma única variável $A$ à esquerda e $\alpha\in(V\cup\Sigma)^*$ à direita. A palavra vazia pode aparecer à direita. Chama-se livre de contexto porque podemos substituir $A$ por $\alpha$ independentemente dos símbolos à sua volta.
 
-Exemplo: $G$ com variável $S$ e regras $S \to 0S1 \mid \varepsilon$ (lê $\mid$ como "ou"). Derivação de $0011$:
+Escrevemos $xAy\Rightarrow x\alpha y$ para um passo de derivação e $\Rightarrow^*$ para zero ou mais passos. Uma forma sentencial pode conter variáveis e terminais. A linguagem contém só resultados inteiramente terminais:
 
-$$S \Rightarrow 0S1 \Rightarrow 00S11 \Rightarrow 00\varepsilon11 = 0011.$$
+$$
+L(G)=\{w\in\Sigma^*\mid S\Rightarrow^*w\}.
+$$
 
-Cada aplicação de $S \to 0S1$ acrescenta um $0$ à esquerda e um $1$ à direita, por isso a gramática gera exatamente $\{0^n 1^n \mid n \ge 0\}$, a linguagem que os autómatos finitos não alcançam. Vês a diferença de poder: a variável $S$ no meio da forma sentencial funciona como memória ilimitada.
+Na gramática $S\to aSb\mid\varepsilon$:
+
+$$
+S\Rightarrow aSb\Rightarrow aaSbb\Rightarrow aabb.
+$$
+
+$aaSbb$ ainda não é uma palavra da linguagem, porque contém $S$. Se queremos excluir $\varepsilon$, podemos usar $S\to aSb\mid ab$.
+
+## Construir uma gramática e provar a linguagem
+
+Para $L=\{a^nb^{2n}\mid n\ge0\}$, a produção recursiva deve acrescentar um $a$ e dois $b$:
+
+$$
+S\to aSbb\mid\varepsilon.
+$$
+
+Provar $L(G)=L$ exige duas inclusões.
+
+**A gramática não gera palavras extra.** Faz indução no número de aplicações da produção recursiva. Sem aplicações, produz $\varepsilon=a^0b^0$. Se o meio gera $a^nb^{2n}$, então $aSbb$ gera $a^{n+1}b^{2n+2}$, mantendo a ordem e a proporção.
+
+**A gramática gera todas as palavras pretendidas.** Para qualquer $n\ge0$, aplica $S\to aSbb$ exatamente $n$ vezes, obtendo $a^nSb^{2n}$, e termina com $S\to\varepsilon$.
+
+Uma propriedade preservada pelas regras prova apenas a primeira inclusão. Pode existir uma gramática que produz só algumas palavras com essa propriedade.
+
+### Separar blocos e desigualdades
+
+Para $\{a^nb^m\mid n\ge m\ge0\}$, usamos
+
+$$
+S\to aSb\mid A,\qquad A\to aA\mid\varepsilon.
+$$
+
+As primeiras $m$ aplicações emparelham um $a$ com um $b$. Depois, $A$ acrescenta $n-m$ letras $a$. Assim, $S\Rightarrow^*a^mAb^m\Rightarrow^*a^nb^m$. Para exigir $n>m$, troca a base de $A$ por $a$: $A\to aA\mid a$.
+
+Para palíndromos binários de qualquer comprimento, uma gramática é $S\to0S0\mid1S1\mid0\mid1\mid\varepsilon$. As bases $0,1$ geram o centro de palavras ímpares; $\varepsilon$ gera as pares. Omitir essas bases muda a linguagem.
+
+## Derivação à esquerda e à direita
+
+Na derivação **mais à esquerda**, substituímos sempre a variável mais à esquerda. Na derivação **mais à direita**, escolhemos sempre a mais à direita. Nenhuma regra de produção muda, apenas a ordem de expansão.
+
+Para $S\to AB$, $A\to aA\mid\varepsilon$, $B\to bB\mid\varepsilon$, a palavra $ab$ tem derivação mais à esquerda:
+
+$$
+S\Rightarrow AB\Rightarrow aAB\Rightarrow aB\Rightarrow abB\Rightarrow ab,
+$$
+
+e mais à direita:
+
+$$
+S\Rightarrow AB\Rightarrow AbB\Rightarrow Ab\Rightarrow aAb\Rightarrow ab.
+$$
+
+Estas duas ordens não demonstram ambiguidade. Ambas descrevem a mesma estrutura: $A$ gera $a$ e $B$ gera $b$.
 
 ## Árvores sintáticas e ambiguidade
 
-Uma **árvore sintática** (_parse tree_) mostra a estrutura da derivação: a raiz é $S$, cada nó interior é uma variável com os filhos dados por uma regra, e as folhas da esquerda para a direita formam a palavra.
+Numa árvore sintática, a raiz é $S$. Um nó $A$ com filhos $X_1,\ldots,X_k$ usa a produção $A\to X_1\cdots X_k$. As folhas lidas da esquerda para a direita dão a palavra; uma folha $\varepsilon$ não acrescenta símbolo.
 
-Uma gramática é **ambígua** se alguma palavra tem duas árvores sintáticas distintas (ou, equivalentemente, duas derivações mais à esquerda distintas). Exemplo clássico, expressões aritméticas com $E \to E + E \mid E \times E \mid (E) \mid a$, e a palavra $a + a \times a$:
+Uma gramática é **ambígua** se alguma palavra terminal tem duas árvores sintáticas distintas. Equivalentemente, essa palavra tem duas derivações mais à esquerda distintas, ou duas mais à direita distintas.
 
-- Árvore 1: a raiz soma $(a + a)$ com $a$, ou seja $(a+a) \times a$. Lê o $\times$ no topo.
-- Árvore 2: a raiz multiplica $a$ por $(a \times a)$ no ramo direito, ou seja $a + (a \times a)$. Lê o $+$ no topo.
+A gramática $E\to E+E\mid E*E\mid a$ é ambígua. A palavra $a+a*a$ pode separar-se na raiz pelo $+$ ou pelo $*$:
 
-As duas árvores dão valores diferentes ($2a^2$ contra $a + a^2$ com $a$ numérico), por isso um compilador não pode aceitar esta gramática: a mesma expressão teria dois significados. Vê as duas lado a lado e confirma que as folhas, lidas da esquerda para a direita, dão $a + a \times a$ em ambas.
-
-<Typst
-  source={arvoresAmbiguidade}
-  format="svg"
-  alt="Duas árvores sintáticas para a mais a vezes a. Na árvore 1, a raiz é vezes com o filho esquerdo mais e o filho direito a. Na árvore 2, a raiz é mais com o filho esquerdo a e o filho direito vezes."
+<Dot
+  source={`digraph { node [shape=plaintext]; subgraph cluster_left { label="a + (a * a)"; l0 [label="E"]; l1 [label="E"]; lp [label="+"]; l2 [label="E"]; la [label="a"]; l3 [label="E"]; lm [label="*"]; l4 [label="E"]; lb [label="a"]; lc [label="a"]; l0->{l1 lp l2}; l1->la; l2->{l3 lm l4}; l3->lb; l4->lc; } subgraph cluster_right { label="(a + a) * a"; r0 [label="E"]; r1 [label="E"]; rm [label="*"]; r2 [label="E"]; r3 [label="E"]; rp [label="+"]; r4 [label="E"]; ra [label="a"]; rb [label="a"]; rc [label="a"]; r0->{r1 rm r2}; r1->{r3 rp r4}; r3->ra; r4->rb; r2->rc; } }`}
+  alt="Duas árvores para a mesma palavra a+a*a. À esquerda a raiz usa soma, ficando a multiplicação no ramo direito. À direita a raiz usa multiplicação, ficando a soma no ramo esquerdo."
 />
 
-A cura é estratificar por precedência, com uma variável por nível:
+As duas derivações mais à esquerda começam por regras diferentes:
 
-$$E \to E + T \mid T, \quad T \to T \times F \mid F, \quad F \to (E) \mid a.$$
+$$
+E\Rightarrow E+E\Rightarrow a+E\Rightarrow a+E*E\Rightarrow a+a*E\Rightarrow a+a*a,
+$$
 
-Agora $a + a \times a$ só deriva com o $+$ no topo, porque o $\times$ fica preso dentro de $T$. Em exercícios, "remove a ambiguidade" significa quase sempre isto: introduz níveis para precedência e recursão à esquerda ou à direita para associatividade.
+$$
+E\Rightarrow E*E\Rightarrow E+E*E\Rightarrow a+E*E\Rightarrow a+a*E\Rightarrow a+a*a.
+$$
 
-:::warning[Ambiguidade é propriedade da gramática, não da linguagem]
-Uma linguagem é **inerentemente ambígua** só quando _todas_ as gramáticas para ela são ambíguas (exemplo raro, fora do programa). Perante uma gramática ambígua, a primeira hipótese é reescrevê-la, como acima.
-:::
+Uma testemunha basta para provar ambiguidade. Para provar ausência de ambiguidade, precisamos de um argumento para todas as palavras, não de falhar na procura de uma testemunha.
 
-## Forma normal de Chomsky
+## Precedência e associatividade
 
-Uma CFG está na **forma normal de Chomsky** (CNF) se todas as regras têm uma destas formas: $A \to BC$ (duas variáveis), $A \to a$ (um terminal) ou $S \to \varepsilon$ (só no inicial). Toda a CFG pode ser convertida para CNF (adicionando variáveis para terminais em regras longas e partindo regras com mais de dois símbolos).
+Para dar maior precedência a $*$ e associar os operadores à esquerda, separamos níveis:
 
-Para que serve? Em CNF, cada derivação de uma palavra $w$ de comprimento $n \ge 1$ usa exatamente $2n - 1$ passos: $n - 1$ regras binárias para ramificar em $n$ variáveis e $n$ regras terminais. Este número fixo permite o algoritmo CYK, que testa pertença $w \in L(G)$ por programação dinâmica sobre os comprimentos crescentes. Não precisas de decorar o CYK célula a célula, mas percebe a ideia: a CNF torna o custo da análise sintática previsível, e é por isso que os _parsers_ reais normalizam as gramáticas.
+$$
+E\to E+T\mid T,\qquad
+T\to T*F\mid F,\qquad
+F\to a\mid(E).
+$$
 
-Exemplo de conversão: a regra $S \to 0S1$ viola a CNF (mistura terminais com variável e tem três símbolos). Introduz $A \to 0$, $B \to 1$ e parte em duas regras com variável fresca $C$: $S \to AC$, $C \to SB$, $S \to AB$, $A \to 0$, $B \to 1$, $S \to \varepsilon$.
+$F$ é um fator, um átomo ou uma expressão entre parênteses. $T$ junta fatores por multiplicação. $E$ junta termos por soma. Agora, o $+$ só surge no nível que pode separar somas, enquanto o produto fica dentro de $T$.
 
-Para confirmar que a conversão preserva a linguagem, deriva uma palavra curta na gramática nova e compara com a original: $S \Rightarrow AC \Rightarrow 0C \Rightarrow 0SB \Rightarrow 0ABB \Rightarrow 00BB \Rightarrow 001B \Rightarrow 0011$. Chega a $0011$, como a original, usando só regras em CNF.
+A recursão em $E\to E+T$ fica à esquerda, logo $a+a+a$ agrupa-se como $(a+a)+a$. Com $E\to T+E\mid T$, agrupar-se-ia à direita. Os parênteses em $F$ permitem alterar a precedência.
 
-## CYK numa tabela pequena
+Ambiguidade é uma propriedade da gramática. Uma gramática ambígua pode ter outra gramática não ambígua para a mesma linguagem. Algumas linguagens livres de contexto são inerentemente ambíguas, isto é, todas as suas gramáticas são ambíguas. Não existe um algoritmo geral que decida a ambiguidade de qualquer CFG.
 
-O algoritmo CYK preenche uma tabela por diagonais: primeiro cada símbolo, depois pares, depois trios. Usa a gramática clássica em CNF com regras $S \to AB \mid BA$, $A \to BA \mid a$, $B \to CC \mid b$, $C \to AB \mid a$. Compara o que acontece com `bab` (aceite) e `abb` (rejeitada).
+## De DFA para gramática
 
-<Tabs id="cyk-tabela" labels={['Aceita: bab', 'Rejeita: abb']}>
-  <div slot="panel-0">
+Toda a linguagem regular é livre de contexto. Para ver a construção, cria uma variável $A_q$ por estado de um DFA. Para cada $\delta(q,a)=r$, acrescenta $A_q\to aA_r$. Para cada final $f$, acrescenta $A_f\to\varepsilon$. A variável inicial é a do estado inicial.
 
-Símbolos: a primeira casa tem `{B}`, a segunda `{A,C}` e a terceira `{B}`. Pares: `ba` dá `{S,A}` (regra $S \to BA$ e $A \to BA$) e `ab` dá `{S,C}` (regras $S \to AB$ e $C \to AB$). Trio `bab`: ou partes em `b` mais `ab` (`{B}` com `{S,C}`, sem regra), ou em `ba` mais `b` (`{S,A}` com `{B}`, com $S \to AB$ e $C \to AB$). Resultado `{S,C}`, que contém $S$: aceite.
+Uma derivação acompanha um percurso da máquina, escrevendo a letra de cada transição. Só pode terminar quando chega a um final. Por isso gera exatamente a linguagem do DFA.
 
-  </div>
-  <div slot="panel-1">
-
-Símbolos: `{A,C}`, `{B}`, `{B}`. Pares: `ab` dá `{S,C}` e `bb` dá vazio (nenhuma regra tem $BB$ do lado direito). Trio `abb`: ou `a` mais `bb` (`{A,C}` com vazio), ou `ab` mais `b` (`{S,C}` com `{B}`, sem regra $SB$ nem $CB$). Resultado vazio: rejeitada. Confirma por derivação: tenta gerar `abb` a partir de $S$ e vê que nenhuma escolha de regras produz exatamente essa palavra.
-
-  </div>
-</Tabs>
-
-Corre o algoritmo e confirma os dois veredictos.
-
-<CodePlayground
-  language="python"
-  title="CYK mínimo"
-  code={
-    'binarias = {("A", "B"): {"S", "C"}, ("B", "A"): {"S", "A"}, ("C", "C"): {"B"}}\nterminais = {"a": {"A", "C"}, "b": {"B"}}\n\ndef cyk(w):\n    n = len(w)\n    t = [[set() for _ in range(n)] for _ in range(n)]\n    for i, s in enumerate(w):\n        t[i][i] = set(terminais.get(s, ()))\n    for comp in range(2, n + 1):\n        for i in range(n - comp + 1):\n            j = i + comp - 1\n            for k in range(i, j):\n                for a in t[i][k]:\n                    for b in t[k + 1][j]:\n                        t[i][j] |= binarias.get((a, b), set())\n    return t\n\nfor w in ["bab", "abb"]:\n    t = cyk(w)\n    print(w, "aceite" if "S" in t[0][len(w) - 1] else "rejeitada")'
-  }
-/>
-
-## Para saber mais
-
-O lema da repetição também existe para linguagens livres de contexto, com duas partes repetíveis em vez de uma. Fica fora do programa desta cadeira, mas se quiseres espreitar a ideia:
-
-<YouTube
-  id="IpgZB4elzX4"
-  title="Linguagens não livres de contexto e o lema da repetição"
-/>
-
-## Para levar para a próxima página
-
-Gramáticas geram de cima para baixo (do inicial até à palavra). Os [autómatos de pilha](automatos-pilha/) fazem o caminho inverso, reconhecendo de baixo para cima com a ajuda de uma pilha, e têm exatamente o mesmo poder.
+A inclusão é estrita: $\{a^nb^n\mid n\ge0\}$ tem CFG, mas não tem DFA, pelo [lema da repetição regular](../limites-regulares/#provar-que-não-é-regular). As [formas normais](../propriedades-livres/#forma-normal-de-chomsky) reorganizam CFG para facilitar algoritmos, sem aumentar o seu poder.

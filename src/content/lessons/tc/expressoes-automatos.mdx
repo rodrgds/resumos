@@ -1,0 +1,94 @@
+---
+title: Converter expressões e autómatos
+description: Construção de Thompson, eliminação de estados e equivalência entre descrições regulares.
+order: 4
+practices:
+  - tc/praticar-conversoes
+---
+
+import Dot from '../../../components/Dot.astro';
+
+Uma expressão regular e um autómato finito podem descrever a mesma linguagem. Converter entre as duas formas permite escolher a descrição que facilita cada tarefa: uma expressão mostra blocos de palavras; uma máquina mostra o efeito de cada símbolo.
+
+## Expressão para ε-NFA: Thompson
+
+A construção de **Thompson** associa a cada expressão um fragmento com uma entrada e uma saída. A entrada não tem arestas a chegar de dentro do fragmento e a saída não tem arestas a sair dentro dele. A saída será o único estado final quando o fragmento estiver completo.
+
+Os casos básicos são:
+
+- $a$: dois estados ligados por uma aresta $a$;
+- $\varepsilon$: dois estados ligados por uma aresta vazia;
+- $\emptyset$: dois estados sem ligação, porque não há palavra que deva passar entre eles.
+
+Para $EF$, liga a saída de $E$ à entrada de $F$ por $\varepsilon$. Um percurso completo lê primeiro uma palavra de $L(E)$ e depois uma de $L(F)$.
+
+Para $E+F$, acrescenta entrada e saída novas. Da entrada saem duas arestas vazias para as entradas dos fragmentos. As duas saídas chegam à saída nova por arestas vazias. Um percurso escolhe um dos ramos.
+
+Para $E^*$, acrescenta entrada e saída novas e quatro arestas vazias: da entrada nova para o fragmento e para a saída nova; da saída do fragmento para a sua entrada e para a saída nova. O caminho direto aceita zero repetições. O ciclo permite repetir uma palavra do fragmento.
+
+### Exemplo com união, estrela e concatenação
+
+Para $(a+b)^*a$, primeiro construímos $a+b$, depois aplicamos estrela, depois concatenamos o último $a$. A construção, sem simplificações, fica:
+
+<Dot
+  source={`digraph { rankdir=TB; node [shape=circle]; start [shape=point]; f [shape=doublecircle]; start->s; s->u [label="ε"]; s->t [label="ε"]; u->a0 [label="ε"]; u->b0 [label="ε"]; a0->a1 [label="a"]; b0->b1 [label="b"]; a1->v [label="ε"]; b1->v [label="ε"]; v->u [label="ε"]; v->t [label="ε"]; t->c0 [label="ε"]; c0->f [label="a"]; }`}
+  alt="Construção de Thompson para a ou b, repetidos zero ou mais vezes, seguidos de a. A entrada s pode saltar a repetição; o último a é obrigatório antes de f."
+/>
+
+Para aceitar $ba$, atravessamos o ramo $b$ uma vez, saímos da estrela e lemos o $a$ final. Para aceitar $a$, saltamos a estrela. A palavra vazia é rejeitada porque a última aresta $a$ é obrigatória.
+
+O desenho não precisa de ser o menor autómato. A vantagem é o procedimento sistemático e a prova por indução estrutural: os casos básicos reconhecem as linguagens certas e cada composição preserva a operação pretendida. A [determinização](../automatos-nao-deterministas/#determinizar-com-fechos) pode vir depois.
+
+## Autómato para expressão: eliminação de estados
+
+Permitimos agora que uma aresta tenha uma expressão regular, não apenas uma letra. Chamamos **autómato generalizado** a esta representação. Uma aresta ausente tem rótulo $\emptyset$. Várias arestas paralelas juntam-se por união.
+
+Prepara a máquina acrescentando uma entrada nova $s$ e uma saída nova $f$. Liga $s$ ao antigo início por $\varepsilon$ e cada antigo final a $f$ por $\varepsilon$. Só $f$ fica final. Isto resolve também o caso em que o estado inicial era final.
+
+Quando eliminamos o estado $k$, atualizamos cada ligação entre estados que ficam:
+
+$$
+R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}.
+$$
+
+A primeira parte conserva os caminhos que não passam por $k$. A segunda entra em $k$, repete o ciclo zero ou mais vezes e sai para $j$. Usa os rótulos anteriores à eliminação em toda essa ronda, antes de remover $k$.
+
+### Exemplo com um ciclo
+
+Considera um estado inicial $p$ com ciclo $a$, uma aresta $p\xrightarrow{b}q$ e um estado final $q$ com ciclo $c$:
+
+<Dot
+  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; q [shape=doublecircle]; s->p; p->p [label="a"]; p->q [label="b"]; q->q [label="c"]; }`}
+  alt="Autómato com ciclo a no início p, transição b para o final q e ciclo c em q."
+/>
+
+Depois de acrescentar $s,f$, eliminamos $p$. A nova aresta de $s$ para $q$ tem rótulo
+
+$$
+\emptyset+\varepsilon a^*b\equiv a^*b.
+$$
+
+Eliminamos $q$ e obtemos
+
+$$
+R_{sf}=\emptyset+(a^*b)c^*\varepsilon\equiv a^*bc^*.
+$$
+
+Há exatamente um $b$, antes dele só $a$ e depois só $c$. A ordem de eliminação pode produzir expressões diferentes, mas equivalentes. Eliminar primeiro estados com poucas ligações pode evitar expressões grandes; não altera a linguagem.
+
+## Caminhos com estados intermédios limitados
+
+Uma alternativa calcula $R_{ij}^{(k)}$, a expressão dos caminhos de $i$ para $j$ cujos estados intermédios estão entre os primeiros $k$ estados. A recorrência é:
+
+$$
+R_{ij}^{(k)}=R_{ij}^{(k-1)}+
+R_{ik}^{(k-1)}(R_{kk}^{(k-1)})^*R_{kj}^{(k-1)}.
+$$
+
+Na base $k=0$, juntamos as arestas diretas de $i$ para $j$ e incluímos $\varepsilon$ quando $i=j$, porque existe um caminho com zero passos de um estado para si mesmo. No fim, juntamos $R_{q_0f}^{(n)}$ para todos os finais $f$. O mesmo raciocínio de entrar, repetir e sair justifica a recorrência.
+
+## Equivalência de representações
+
+Uma linguagem é regular se pode ser descrita por uma expressão regular, um DFA, um NFA ou um ε-NFA. As construções anteriores, com a construção de subconjuntos, provam a equivalência.
+
+Para complementar uma expressão $E$, não há uma regra que troque cada operador por outro e resolva todos os casos. Converte $E$ para um autómato, determiniza, completa, troca os finais e converte novamente para expressão. Para provar que duas expressões são equivalentes, podes [comparar os DFA](../limites-regulares/#teste-de-equivalência) em vez de tentar simplificações algébricas à mão.

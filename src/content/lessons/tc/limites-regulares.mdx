@@ -1,84 +1,152 @@
 ---
-title: Limites das linguagens regulares
-description: Lema da repetição com prova completa, fecho e decidibilidade das regulares.
-section: conteudo
-order: 3
+title: Propriedades e limites das regulares
+description: Fecho, algoritmos de decisão, equivalência, minimização e provas pelo lema da repetição.
+order: 5
+practices:
+  - tc/praticar-regulares
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import caminhoBombeamento from '../../tc/caminho-bombeamento.typ?raw';
-
-Os autómatos finitos têm memória finita: $k$ estados guardam $\log k$ bits, e nada mais. Por isso há linguagens que eles nunca reconhecem, como $\{0^n 1^n\}$ (zeros seguidos de igual número de uns), que exigiria contar sem limite. Esta página dá a ferramenta para o provar, o **lema da repetição** (pumping lemma), mais as propriedades de fecho e os problemas decidíveis das linguagens regulares.
-
-## O lema da repetição
-
-**Lema.** Se $L$ é regular, existe $p \ge 1$ (o **comprimento de repetição**) tal que toda a palavra $s \in L$ com $|s| \ge p$ se parte em $s = xyz$ com:
-
-1. $|y| > 0$ (o pedaço do meio não é vazio);
-2. $|xy| \le p$ (o pedaço repetível está nos primeiros $p$ símbolos);
-3. $xy^iz \in L$ para todo o $i \ge 0$ (repetir ou apagar $y$ mantém a palavra na linguagem).
-
-Porquê isto vale? Toma um DFA com $p$ estados que reconheça $L$ e corre $s$ com $|s| \ge p$. O caminho visita $|s|+1 \ge p+1$ estados, por isso algum estado repete (princípio da casa dos pombos). Seja $y$ o pedaço lido entre as duas visitas ao estado repetido: $|y| > 0$ porque o caminho andou. Escolhendo a **primeira** repetição, ela acontece dentro dos primeiros $p$ símbolos, logo $|xy| \le p$. E como $y$ é um ciclo (sai e volta ao mesmo estado), percorrê-lo $i$ vezes continua a terminar no mesmo estado final. Isto prova as três condições.
-
-<Typst
-  source={caminhoBombeamento}
-  format="svg"
-  alt="Caminho de uma palavra num DFA: do estado inicial q0 até um estado qj que se repete, depois até ao estado final. O pedaço x leva de q0 a qj, o ciclo y sai de qj e volta a qj, e o pedaço z leva de qj ao fim."
-/>
-
-O desenho é a prova em imagem: $x$ é o caminho até à primeira repetição, $y$ é o ciclo e $z$ é o resto. Repetir ou apagar o ciclo nunca sai do estado final.
-
-:::warning[O lema serve para provar que não é regular]
-O lema diz "se regular, então repetível"[^lema-sentido]. Usa-se o contrapositivo: "se não repetível, então não regular". Nunca proves que uma linguagem **é** regular com o lema: há linguagens não regulares que satisfazem as três condições. Para mostrar que é regular, constrói um DFA, um NFA ou uma expressão regular.
-:::
-
-## Prova completa: $\{0^n 1^n\}$ não é regular
-
-Seja $L = \{0^n 1^n \mid n \ge 0\}$. Prova por contradição.
-
-1. **Supõe** que $L$ é regular. Então o lema dá um comprimento de repetição $p \ge 1$.
-2. **Escolhe a palavra.** Toma $s = 0^p 1^p$. Vale $s \in L$ (com $n = p$) e $|s| = 2p \ge p$, por isso o lema aplica-se a $s$. Esta escolha é boa porque os primeiros $p$ símbolos são todos $0$, o que força o pedaço repetível a cair dentro dos zeros.
-3. **Considera uma partição arbitrária** $s = xyz$ com $|y| > 0$ e $|xy| \le p$. Como os primeiros $p$ símbolos de $s$ são todos zeros e $|xy| \le p$, os blocos $x$ e $y$ ficam inteiramente dentro da zona dos zeros. Logo $x = 0^a$ e $y = 0^k$ com $a \ge 0$, $k \ge 1$ (porque $|y| > 0$) e $a + k \le p$. O resto é $z = 0^{p-a-k}1^p$.
-4. **Repete e conta.** O lema garante $xy^2z \in L$. Mas $xy^2z = 0^a 0^{2k} 0^{p-a-k} 1^p = 0^{p+k}1^p$. Como $k \ge 1$, há $p + k > p$ zeros e só $p$ uns: a palavra tem números diferentes de zeros e uns, logo $xy^2z \notin L$. Contradição.
-5. **Conclui.** A suposição é falsa: $L$ não é regular.
-
-Repara na estrutura, que deves reutilizar em qualquer aplicação do lema: supõe e fixa $p$; escolhe $s$ em função de $p$ (quase sempre com um bloco de comprimento $p$); toma partição arbitrária e usa $|xy| \le p$ para localizar $y$; escolhe um $i$ que parte a propriedade definidora; conclui por contradição. Os dois $i$ mais usados, para este exemplo:
-
-<Tabs id="lema-i" labels={['Apagar: i = 0', 'Repetir: i = 2']}>
-  <div slot="panel-0">
-
-Apagar dá $xy^0z = xz = 0^{p-k}1^p$, com $p - k \lt p$ zeros contra $p$ uns. Também sai de $L$. Em geral, experimenta $i = 0$ quando a linguagem exige "pelo menos tantos" e $i = 2$ quando exige "no máximo tantos" ou igualdade.
-
-  </div>
-  <div slot="panel-1">
-
-Repetir dá $xy^2z = 0^{p+k}1^p$, com $p + k \gt p$ zeros contra $p$ uns. Também sai de $L$. Qualquer dos dois $i$ chega; no teste escolhe o que tornar a contagem mais curta.
-
-  </div>
-</Tabs>
+Uma máquina finita pode recordar um resto, uma paridade ou um sufixo limitado. Não pode recordar uma contagem arbitrária para a comparar mais tarde. Nesta página, distinguimos construções que preservam regularidade de argumentos que provam que nenhuma máquina finita chega.
 
 ## Propriedades de fecho
 
-As linguagens regulares são **fechadas** para: união, concatenação, estrela, interseção, complemento e diferença. Isto significa que aplicar estas operações a linguagens regulares produz linguagens regulares. As provas são construções: união por NFA com novo inicial e transições $\varepsilon$ para os dois NFA; interseção pelo produto da página anterior; complemento trocando finais com não finais num DFA (atenção: isto exige um DFA completo, num NFA não funciona); diferença via $A \setminus B = A \cap \overline{B}$.
+Uma classe é **fechada** para uma operação quando aplicar essa operação a linguagens da classe dá sempre outra linguagem da mesma classe.
 
-O fecho dá uma segunda técnica para provar não regularidade: se $L$ fosse regular, então $L \cap R$ seria regular para qualquer regular $R$. Escolhendo $R$ que isole a parte "difícil" de $L$ e caindo num caso conhecido como $\{0^n 1^n\}$, concluis por contradição.
+Para DFA completos $A,B$ sobre o mesmo alfabeto, o produto tem estados $(p,q)$, início $(p_0,q_0)$ e
 
-Exemplo resolvido. Seja $L = \{w \mid w \text{ tem igual n\'umero de } 0 \text{ e } 1\}$. Supõe que $L$ é regular. A linguagem $R = 0^*1^*$ é regular (é dada por uma expressão regular). Pelo fecho para interseção, $L \cap R$ seria regular. Mas $L \cap R = \{0^n 1^n \mid n \ge 0\}$: uma palavra com igual número de zeros e uns que tenha a forma $0^*1^*$ tem necessariamente todos os zeros antes dos uns, logo é $0^n1^n$. Ora $\{0^n 1^n\}$ não é regular, pela prova acima. Contradição, por isso $L$ não é regular. Repara no passo delicado: $L \cap R$ não é "mais ou menos" $0^n1^n$, é exatamente; sem essa igualdade a prova cai.
+$$
+\delta((p,q),a)=(\delta_A(p,a),\delta_B(q,a)).
+$$
 
-## Problemas decidíveis
+Após ler $w$, cada componente é o estado que a respetiva máquina atingiria sozinha. A escolha dos finais determina a operação:
 
-Para DFA, estas perguntas têm sempre resposta algorítmica:
+| Linguagem            | Quando $(p,q)$ é final            |
+| -------------------- | --------------------------------- |
+| $L(A)\cap L(B)$      | $p\in F_A$ e $q\in F_B$           |
+| $L(A)\cup L(B)$      | $p\in F_A$ ou $q\in F_B$          |
+| $L(A)\setminus L(B)$ | $p\in F_A$ e $q\notin F_B$        |
+| Diferença simétrica  | Exatamente uma componente é final |
 
-- **Pertença:** $w \in L(M)$? Simula $M$ em $w$ e vê onde termina.
-- **Vazio:** $L(M) = \emptyset$? Vê se algum estado final é alcançável do inicial (procura em grafo).
-- **Equivalência:** $L(M_1) = L(M_2)$? O teste do produto da página anterior.
-- **Inclusão:** $L(M_1) \subseteq L(M_2)$? Testa se $L(M_1) \cap \overline{L(M_2)} = \emptyset$.
+O complemento de uma regular resulta de trocar finais e não finais num **DFA completo**. Para concatenação e estrela, usa as construções por transições vazias ou as operações correspondentes em expressões regulares.
 
-"Decidível" aqui quer dizer que existe um algoritmo que responde sempre sim ou não em tempo finito. Guarda esta palavra: em [máquinas de Turing e decidibilidade](turing-decidibilidade/) vais ver problemas onde isto deixa de ser possível.
+Para o reverso $L^R=\{w^R\mid w\in L\}$, inverte todas as arestas do autómato. O antigo início é o único final. Acrescenta um início novo com transições $\varepsilon$ para todos os antigos finais. Os percursos invertidos leem precisamente as palavras ao contrário.
 
-[^lema-sentido]: O lema é uma condição necessária, não suficiente: cumprir as três condições não prova que a linguagem é regular. É o que a torna uma ferramenta de refutação, não de confirmação.
+### Quociente e derivada
 
-## Para levar para a próxima página
+Para uma letra $a$, o quociente à direita $L/a=\{w\mid wa\in L\}$ é regular. Mantém o DFA de $L$, mas torna final todo o estado $q$ com $\delta(q,a)\in F$. Agora aceita $w$ exatamente quando ainda ler $a$ levaria a um final.
 
-A fronteira das linguagens regulares está traçada: contar sem limite fica de fora. Mas $\{0^n 1^n\}$ é fácil de gerar com regras de substituição, e essas regras são as [gramáticas livres de contexto](gramaticas-livres/).
+A derivada à esquerda $a\backslash L=\{w\mid aw\in L\}$ também é regular. Mantém os finais e muda o início para $\delta(q_0,a)$. Já lemos o primeiro $a$ antes de começar a simular $w$.
+
+### Intercalar palavras
+
+Intercalar $x$ e $y$ conserva a ordem dos símbolos de cada palavra, mas pode alternar a sua origem. Por exemplo, intercalar $a$ e $bc$ dá $\{abc,bac,bca\}$.
+
+Se $L_1,L_2$ são regulares, a linguagem de todas essas intercalações também é regular. Num NFA com estados $(p,q)$, cada letra pode atualizar a primeira componente ou a segunda, mantendo a outra. Cada ramo escolhe a que palavra pertence a letra; os finais exigem que ambas as componentes estejam finais. Isto é diferente do produto para interseção, onde a mesma letra atualiza as duas componentes.
+
+## Perguntas decidíveis
+
+A linguagem pode ser infinita, mas a sua representação tem um grafo finito. Isso permite responder a várias perguntas com algoritmos que terminam.
+
+| Pergunta            | Procedimento                                                                  |
+| ------------------- | ----------------------------------------------------------------------------- |
+| $w\in L$?           | Simula a máquina, mantendo um estado no DFA ou um conjunto no NFA.            |
+| $L=\emptyset$?      | Procura um final alcançável a partir do início.                               |
+| $L=\Sigma^*$?       | Complementa o DFA completo e testa se o resultado é vazio.                    |
+| $L$ é infinita?     | Num DFA, procura um ciclo alcançável do início e do qual se alcance um final. |
+| $L_1\subseteq L_2$? | Testa se $L_1\setminus L_2$ é vazia.                                          |
+
+Um ciclo que nunca consegue chegar a um final não produz palavras aceites. Num ε-NFA, um ciclo composto apenas por arestas vazias não basta para produzir comprimentos ilimitados. Determinizar antes evita essa distinção.
+
+Num DFA com $n$ estados, se uma palavra aceite tem comprimento pelo menos $n$, o seu percurso repete um estado. O ciclo repetido pode ser percorrido mais vezes, produzindo infinitas palavras. Inversamente, uma linguagem infinita tem comprimentos sem limite, porque há apenas finitas palavras de cada comprimento.
+
+## Teste de equivalência
+
+Para comparar $A$ e $B$, procura no produto um estado alcançável em que exatamente uma componente seja final. Se não existir, nenhuma palavra distingue as máquinas, logo $L(A)=L(B)$.
+
+Se existir, guarda o percurso desde o início: os rótulos formam uma palavra testemunha. Uma pesquisa em largura encontra uma das palavras distinguidoras mais curtas.
+
+Por exemplo, o DFA para palavras que contêm $ab$ e o DFA para palavras que terminam em $ab$ não são equivalentes. A palavra $aba$ é aceite pelo primeiro e rejeitada pelo segundo. Comparar um pequeno conjunto de exemplos só prova a diferença quando encontra uma testemunha; não prova equivalência.
+
+## Minimização por preenchimento de tabela
+
+Dois estados $p,q$ são equivalentes se todas as continuações $w$ dão a mesma resposta:
+
+$$
+\forall w\in\Sigma^*,\quad
+\widehat\delta(p,w)\in F\iff\widehat\delta(q,w)\in F.
+$$
+
+Remove primeiro os estados inacessíveis. Depois faz uma tabela dos pares de estados distintos:
+
+1. Marca todo o par final/não final. A palavra $\varepsilon$ distingue esse par.
+2. Marca $(p,q)$ se alguma letra $a$ leva a um par já marcado.
+3. Repete até nenhuma marca nova surgir.
+4. Junta os estados dos pares não marcados em classes. Cada classe torna-se um estado do DFA mínimo.
+
+Se $w$ distingue os destinos de $p,q$ por $a$, então $aw$ distingue $p,q$. É por isso que as marcas propagam para trás. Os pares que continuam sem marca não têm qualquer continuação distinguidora.
+
+### Exemplo completo
+
+Considera este DFA sobre $\{a,b\}$, com início $O$ e finais $C,D$:
+
+| Estado | $a$ | $b$ |
+| ------ | --- | --- |
+| $O$    | $A$ | $O$ |
+| $A$    | $B$ | $C$ |
+| $B$    | $A$ | $D$ |
+| $C$    | $A$ | $O$ |
+| $D$    | $B$ | $O$ |
+
+Todos são alcançáveis, por $\varepsilon,a,aa,ab,aab$. Na base marcamos os seis pares entre $\{O,A,B\}$ e $\{C,D\}$.
+
+O par $(O,A)$ fica marcado porque $b$ leva a $(O,C)$; $(O,B)$ fica marcado porque $b$ leva a $(O,D)$. Restam sem marca apenas $(A,B)$ e $(C,D)$: as suas saídas chegam a estados iguais ou a esses mesmos pares não marcados.
+
+As classes são $[O]$, $[AB]$, $[CD]$, com $[O]$ inicial e $[CD]$ final:
+
+| Classe | $a$    | $b$    |
+| ------ | ------ | ------ |
+| $[O]$  | $[AB]$ | $[O]$  |
+| $[AB]$ | $[AB]$ | $[CD]$ |
+| $[CD]$ | $[AB]$ | $[O]$  |
+
+Reconhecemos o DFA para o sufixo $ab$. Ele é mínimo: $\varepsilon$ distingue o final dos outros dois, e $b$ distingue $[O]$ de $[AB]$. Um DFA mínimo completo é único a menos dos nomes dos estados.
+
+## O lema da repetição
+
+Se $L$ é regular, existe um inteiro $p\ge1$ tal que toda a palavra $s\in L$ com $|s|\ge p$ admite uma decomposição $s=xyz$ com:
+
+$$
+|y|\ge1,\qquad |xy|\le p,\qquad
+\forall i\ge0,\ xy^iz\in L.
+$$
+
+Um DFA com $p$ estados percorre $p+1$ posições, incluindo a inicial, ao ler os primeiros $p$ símbolos. Algum estado repete. $x$ chega a esse estado, $y$ dá uma volta ao ciclo e $z$ segue até à aceitação. Repetir ou retirar o ciclo não muda o destino.
+
+O lema dá uma condição necessária, não um método para provar regularidade. Uma linguagem que satisfaz a condição não fica, só por isso, provada regular.
+
+## Provar que não é regular
+
+Para $L=\{0^n1^n\mid n\ge0\}$:
+
+1. Supõe que $L$ é regular e seja $p$ o valor dado pelo lema.
+2. Escolhe $s=0^p1^p\in L$, com comprimento pelo menos $p$.
+3. Considera **qualquer** decomposição válida $s=xyz$. Como $|xy|\le p$ e $y\ne\varepsilon$, temos $y=0^k$ com $1\le k\le p$.
+4. Escolhe $i=0$. Obtemos $xz=0^{p-k}1^p\notin L$.
+
+Isto contradiz a exigência de permanecer em $L$ para todo $i$. Não escolhemos nós a posição do corte; o argumento cobre todos os cortes permitidos.
+
+### Quando o problema é o comprimento
+
+Para $K=\{a^{n^2}\mid n\ge0\}$, escolhe $s=a^{p^2}$. Em qualquer decomposição, $1\le|y|=k\le p$. Bombeando com $i=2$, o comprimento é $p^2+k$, e
+
+$$
+p^2<p^2+k\le p^2+p<(p+1)^2.
+$$
+
+Não há quadrado perfeito entre quadrados consecutivos. Logo, a palavra bombeada sai de $K$.
+
+### Usar fecho numa prova negativa
+
+Se $H=\{0^i1^j\mid i\ne j\}$ fosse regular, então $0^*1^*\setminus H$ seria regular por diferença. Mas essa diferença é $\{0^n1^n\mid n\ge0\}$, que acabámos de provar não regular. Logo, $H$ não é regular.
+
+Uma expressão regular, uma construção de autómato ou uma propriedade de fecho podem provar regularidade. O lema da repetição, uma redução por fecho ou palavras distinguidoras podem provar impossibilidade. Escolhe o argumento de acordo com a conclusão que queres.
