@@ -1,53 +1,81 @@
 ---
-title: Cheat sheet de SO
-description: Processos, sincronização, memória, armazenamento, ficheiros e E/S em regras de consulta rápida.
+title: Cheat sheet de Sistemas Operativos
+description: Fórmulas, condições, chamadas POSIX e erros a verificar antes de responder.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: Resumos SO 1, SofiaViP
-      url: https://drive.google.com/file/d/1ZWuTWkwi6xWG8He0z_TQ3BUkK3N81YO9/view
-    - title: Resumos SO 2, SofiaViP
-      url: https://drive.google.com/file/d/1pLlaDVIVa0bhDy7qLG1M_CtejRLmZlmI/view
-  coverage: Síntese dos dois volumes SofiaViP, páginas 2 a 10 do primeiro e 2 a 19 do segundo.
-  gaps:
-    - Os volumes não identificam uma edição atual da cadeira; confirma o programa da tua ocorrência.
-    - Esta folha omite diagramas, demonstrações, APIs completas e detalhes de dispositivos atuais; os exemplos de discos mecânicos e de Unix descrevem os modelos da fonte.
+order: 1
 ---
 
-Os exemplos usam discos mecânicos e Unix. Confirma os valores e as chamadas na plataforma do exercício.
+## Processos e chamadas
 
-## Sistema, processos e CPU
+| Operação  | O que faz                             | O que verificar                                   |
+| --------- | ------------------------------------- | ------------------------------------------------- |
+| `fork`    | Cria um filho, continua nos dois      | -1: erro; 0: filho; positivo: PID no pai          |
+| `exec`    | Substitui a imagem no mesmo processo  | Sucesso não retorna; vetores terminam em `NULL`   |
+| `waitpid` | Espera e recolhe um filho             | Repetir em `EINTR`; interpretar estado com macros |
+| `exit`    | Termina e trata limpeza da biblioteca | Pode descarregar buffers copiados por fork        |
+| `_exit`   | Termina sem limpeza stdio             | Adequado ao filho que falha antes de exec         |
 
-- O SO gere CPU, memória, dispositivos e ficheiros, fornece chamadas de sistema e separa aplicações do hardware. Uma chamada entra no **modo kernel**; uma interrupção de hardware ou uma exceção também transfere controlo para o kernel. O _bootloader_ carrega o núcleo antes do arranque dos processos. [Ver funções e arranque](/cadeiras/so/introducao-sistemas-operativos/#o-que-o-sistema-operativo-faz).
-- Um **programa** é código guardado; um **processo** é uma execução com espaço de endereços, recursos e estado. O PCB guarda o contexto necessário ao escalonamento. Estados úteis: pronto, em execução, bloqueado e terminado. Uma troca de contexto guarda e restaura o estado do processo ou da thread; tem custo e, por si só, não faz trabalho da aplicação. [Ver ciclo de vida](/cadeiras/so/processos/#o-ciclo-de-vida).
-- `fork()` cria um processo filho; ambos regressam da chamada com valores diferentes. `exec` substitui a imagem do processo, não cria outro. `exit` termina; `wait` recolhe o estado de um filho e evita que permaneça _zombie_. Sem `wait`, um filho terminado pode continuar como zombie até ser recolhido. [Ver criação](/cadeiras/so/processos/#criar-com-fork) e [recolha](/cadeiras/so/processos/#terminar-e-recolher-exit-e-wait).
-- Threads do mesmo processo partilham memória e outros recursos, mas cada uma tem pilha e contexto de execução próprios. Partilhar endereços facilita comunicação e também cria corridas. [Ver threads](/cadeiras/so/programacao-concorrente/#threads-e-a-corrida).
+Dados privados não passam a partilhados depois de fork. Descritores herdados referem a mesma descrição aberta e podem partilhar posição. Zombie já terminou e aguarda recolha; órfão perdeu o pai enquanto ainda pode estar vivo. $n$ forks sucessivos dão $2^n$ processos apenas se todos chegarem às chamadas e nenhuma falhar. [Explicação](../processos/#fork-devolve-duas-vezes).
 
-| Escalonador | Escolha e custo principal                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------- |
-| FCFS        | Primeiro a chegar; um trabalho longo pode atrasar todos os seguintes.                             |
-| SJF/SRTF    | Menor duração prevista, sem/com preempção; exige estimar a duração e pode adiar trabalhos longos. |
-| Round Robin | Cada pronto recebe uma fatia; fatia curta aumenta trocas de contexto, longa aproxima-se de FCFS.  |
+## Escalonamento
 
-**Espera** é tempo na fila de prontos; **retorno** vai da chegada à conclusão; **resposta** vai da chegada à primeira execução/resposta. Não confundas estes três tempos quando comparas políticas. [Ver métricas](/cadeiras/so/escalonamento/#o-que-se-mede) e [Round Robin](/cadeiras/so/escalonamento/#round-robin-fatias-para-todos).
+Com uma rajada e sem I/O: $T=F-A$, $W=F-A-B$, $R=S-A$. Chegada $A$, duração $B$, primeiro início $S$, fim $F$. Havendo I/O, subtrai também o tempo bloqueado da espera. Desenha a linha do tempo antes das médias.
 
-## Cooperação e sincronização
+| Política   | Escolha                       | Atenção                               |
+| ---------- | ----------------------------- | ------------------------------------- |
+| FCFS       | Ordem da fila                 | Processo longo atrasa curtos          |
+| SJF        | Menor rajada pronta           | Não espera por uma chegada futura     |
+| SRTF       | Menor tempo restante          | Reavaliar nas chegadas                |
+| RR         | Até um quantum e volta ao fim | Espera inclui intervalos entre fatias |
+| Prioridade | Maior prioridade definida     | Pode haver inanição; aging combate-a  |
 
-- Em memória partilhada, uma **corrida** ocorre quando o resultado depende da ordem dos acessos. A secção crítica precisa de exclusão mútua, progresso e espera limitada conforme o modelo do problema. Um mutex protege uma região: adquirir antes de ler/modificar o estado partilhado, libertar em todos os caminhos de saída. [Ver mutexes](/cadeiras/so/programacao-concorrente/#mutexes-uma-de-cada-vez).
-- Um semáforo conta permissões: `wait` decrementa ou bloqueia se indisponível; `signal` liberta uma permissão e pode acordar alguém. **Semáforo binário** e **mutex** não são automaticamente intercambiáveis: o mutex também tem semântica de posse. Uma variável de condição espera por um **predicado**, sempre num ciclo que o volta a testar depois de acordar. [Ver semáforos e condições](/cadeiras/so/programacao-concorrente/#semáforos-e-variáveis-de-condição).
-- _Deadlock_: cada participante espera por recurso retido por outro e nenhum avança. Verifica espera circular e a ordem de aquisição; uma ordem global de locks evita o ciclo. _Starvation_ é espera indefinida de um participante enquanto outros progridem. [Ver impasses](/cadeiras/so/programacao-concorrente/#impasses-e-a-ordem-dos-locks).
-- Um pipe é um canal de bytes com extremidades de leitura e escrita; depois de `fork`, fecha as extremidades que cada processo não usa, senão um leitor pode nunca observar EOF. FIFO dá nome ao canal; sockets identificam extremos de comunicação; memória partilhada exige sincronização separada. [Ver pipes](/cadeiras/so/comunicacao-processos/#pipes-conversa-entre-parentes) e [outras formas de IPC](/cadeiras/so/comunicacao-processos/#fifos-sockets-e-memória-partilhada).
+Previsão de rajada: $\tau_{n+1}=\alpha t_n+(1-\alpha)\tau_n$. Maior peso em CFS faz vruntime crescer mais devagar; nice menor corresponde a maior peso. [Contas](../escalonamento/#hipóteses-e-métricas).
 
-## Memória e tradução de endereços
+Para tarefas independentes e preemptivas numa CPU, com deadline igual ao período: $U=\sum C_i/P_i$. RMS usa menor período e $U\leq n(2^{1/n}-1)$ é suficiente, não necessário. EDF usa menor deadline absoluta e admite $U\leq1$ nesse modelo. [Tempo real](../escalonamento/#tempo-real-rms-e-edf).
 
-- Endereço **lógico/virtual** é o que o processo usa; a MMU traduz para endereço físico, com tabelas criadas pelo SO e proteção por processo. Na segmentação, um segmento tem base e limite; acesso fora do limite falha. Alocação contígua pode ter fragmentação externa; paginação troca-a por páginas e frames de tamanho fixo, com possível fragmentação interna. [Ver modelo](/cadeiras/so/memoria-virtual/#o-modelo-de-memória-do-processo) e [segmentação](/cadeiras/so/memoria-virtual/#segmentação-e-proteção).
-- Com páginas de $2^k$ bytes, separa endereço virtual em número de página e **offset** de $k$ bits. A tabela dá o frame; o físico é $\text{frame}\times2^k+\text{offset}$. A TLB guarda traduções recentes; uma falha de TLB ainda pode encontrar a página em RAM. Bit inválido por ausência de página causa **page fault**; o SO obtém a página ou rejeita o acesso, conforme a causa. [Ver tradução](/cadeiras/so/memoria-virtual/#traduzir-um-endereço-passo-a-passo).
-- Memória virtual permite carregar páginas só quando são necessárias. Se faltar um frame, escolhe-se vítima: FIFO remove a mais antiga, LRU aproxima a menos recentemente usada e a segunda oportunidade usa bits de referência. Uma página modificada pode exigir escrita antes da substituição; acessos excessivos ao disco por falta de frames levam a _thrashing_. Custo médio simplificado: $EAT=(1-p)t_m+p\,t_f$, com $p$ probabilidade de page fault e $t_f$ custo **total** da falta, incluindo acesso e retoma. [Ver paginação](/cadeiras/so/memoria-virtual/#paginação).
+## Memória
 
-## Armazenamento, ficheiros e E/S
+Para página $P=2^n$: $p=\lfloor v/P\rfloor$, $d=v\bmod P$, físico $fP+d$. O deslocamento não muda. Um endereço de $m$ bits usa $m-n$ bits de página. Tabela linear completa: $2^{m-n}\times$ bytes por entrada. Fragmentação final: $\lceil tamanho/P\rceil P-tamanho$.
 
-- Nos **discos mecânicos** da fonte, o acesso combina procura da pista, latência de rotação e transferência. FCFS serve por chegada; SSTF aproxima o pedido mais próximo; SCAN percorre em direção até inverter, C-SCAN regressa ao início lógico. Estas políticas não descrevem da mesma forma SSDs. Formatação física, partições, formatação lógica e bloco de arranque são passos distintos. [Ver percurso de E/S](/cadeiras/so/ficheiros-entrada-saida/#do-pedido-ao-dispositivo).
-- Um ficheiro é uma sequência lógica com metadados; diretórios associam nomes a entradas e podem formar grafos com links. **Hard link** aponta para o mesmo objeto/inode no sistema de ficheiros; **symlink** guarda um caminho e pode ficar pendente. Abrir produz um descritor associado a posição e modo; `read`/`write` avançam essa posição, `seek` muda-a. Permissões controlam acesso, mas não substituem locks de concorrência. [Ver ficheiros](/cadeiras/so/ficheiros-entrada-saida/#ficheiros-e-a-sua-implementação) e [API Unix](/cadeiras/so/ficheiros-entrada-saida/#a-api-unix-em-ação).
-- Alocação **contígua** dá acesso sequencial e aleatório simples, mas dificulta crescimento; **ligada** cresce bem, mas acesso aleatório percorre blocos; **FAT** mantém os próximos blocos numa tabela; **indexada** guarda referências aos blocos num bloco índice/inode. Diretórios, mapa de espaço livre, descritores abertos e blocos de arranque são estruturas diferentes. Um sistema de ficheiros só fica acessível depois de ser montado.
-- Um dispositivo expõe registos/filas de dados, controlo e estado através do controlador; o driver traduz pedidos do SO para o protocolo. _Polling_ consulta repetidamente o estado; interrupções avisam quando há trabalho ou conclusão, após guardar contexto e despachar o handler. Máscaras e prioridades dependem da arquitetura. [Ver pedido ao dispositivo](/cadeiras/so/ficheiros-entrada-saida/#do-pedido-ao-dispositivo).
+| Conceito             | Distingue de                                                  |
+| -------------------- | ------------------------------------------------------------- |
+| Fragmentação externa | Espaço livre total sem contiguidade suficiente                |
+| Fragmentação interna | Espaço atribuído mas não utilizado                            |
+| Miss do TLB          | Tradução ausente na cache, não necessariamente página ausente |
+| Falta de página      | Pode ser recuperável, sem ser sempre I/O de disco             |
+| Copy-on-write        | Páginas inicialmente partilhadas, cópia ao escrever           |
+
+TLB com consulta $t$, RAM $M$, acerto $h$ e tabela de um nível: $EAT=h(t+M)+(1-h)(t+2M)$, sem outras caches nem faltas. [Tradução e TLB](../memoria-virtual/#tlb-e-tempo-efetivo).
+
+Faltas com custo completo $F$ e probabilidade $p$: $EAT=(1-p)M+pF$. Usa as mesmas unidades. FIFO retira por entrada, LRU por último acesso e OPT por uso futuro mais distante. Um acerto atualiza LRU, não a fila FIFO. FIFO pode ter anomalia de Belady. Relógio limpa bits 1 e procura um 0. [Substituição](../paginacao-procura/#fifo-opt-e-lru).
+
+Working set conta páginas distintas numa janela. Thrashing é pouca execução útil e muita paginação; aumentar processos ativos pode piorar. [Localidade](../paginacao-procura/#working-set-e-thrashing).
+
+## Concorrência e comunicação
+
+Mutex protege acessos à mesma invariável. Semáforo conta permissões ou impõe ordem. Condição permite esperar por um predicado sob mutex. `cond_wait` liberta e reobtém o mutex; usa `while`, não `if`. Data race em C tem comportamento indefinido; `volatile` não corrige. [Sincronização](../programacao-concorrente/#esperar-por-uma-condição).
+
+Impasse exige exclusão mútua, retenção com espera, ausência de preempção de recursos e ciclo. Ordem global de locks quebra o ciclo. Inseguro não prova impasse; inanição permite que outros avancem. [Impasses](../impasses/#seguro-não-significa-livre-de-espera).
+
+Pipe: ler em `fd[0]`, escrever em `fd[1]`; fechar pontas não usadas. EOF só com buffer vazio e todas as escritas fechadas. `dup2` prepara stdin/stdout antes de exec. Fluxos não preservam fronteiras de mensagens. Sinais tradicionais podem fundir-se; tratadores não devem chamar arbitrariamente stdio ou malloc. `SIGKILL` e `SIGSTOP` não são capturáveis. [IPC](../comunicacao-processos/#pipe-leitura-e-escrita).
+
+## C, ficheiros e I/O
+
+| Verificação                                      | Erro evitado                                   |
+| ------------------------------------------------ | ---------------------------------------------- |
+| `argc` antes de `argv[i]`                        | Argumento inexistente                          |
+| Conversão validada e máximo com primeiro dado    | Texto inválido e máximos de negativos errados  |
+| `strlen + 1` e capacidade do destino             | Falta de terminador ou escrita fora do buffer  |
+| `malloc` e tempo de vida antes de desreferenciar | NULL, local que já terminou ou bloco libertado |
+| Retornos `ssize_t` antes de conversão            | -1 transformado em quantidade sem sinal        |
+| Ciclo de `write` com restante                    | Perda ou duplicação numa escrita parcial       |
+| `stat` com sucesso e caminho correto             | Campos sem dados ou consulta noutra pasta      |
+
+`open` falha com -1; descritor 0 é válido. `fopen` falha com NULL. `read`: positivo bytes, 0 EOF, -1 erro. `getline` preserva o newline quando existe e precisa de `free`. `FILE *` e `int` são interfaces diferentes. [API de ficheiros](../ficheiros-api/#file-e-descritor).
+
+Inode guarda metadados e localização; diretório associa nome a inode; descrição aberta guarda posição. `dup` partilha posição, nova `open` normalmente não. Hard link é outro nome do mesmo inode; symlink contém um caminho. `unlink` não invalida um descritor aberto. [Implementação](../implementacao-ficheiros/#nome-inode-e-abertura).
+
+Bitmap: volume/bloco dá número de bits; divide por 8 para bytes. Bloco de índice contém bloco/apontador entradas. Contíguo favorece acesso direto; ligado exige seguir cadeia; indexado exige índices. Journaling ajuda consistência, não substitui backup. [Alocação](../implementacao-ficheiros/#métodos-de-alocação).
+
+HDD: posicionamento + rotação + transferência. Rotação média: $30/rpm$ segundos. Polling consulta, interrupção notifica, DMA transfere com hardware. `write` e `fflush` não provam persistência no dispositivo. [I/O](../ficheiros-entrada-saida/#polling-interrupções-e-dma).

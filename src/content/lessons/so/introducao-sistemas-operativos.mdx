@@ -1,72 +1,82 @@
 ---
 title: Introdução aos sistemas operativos
-description: Funções do SO, arranque, shell, abstrações e chamadas de sistema seguidas com strace.
+description: Recursos, abstrações, núcleo, chamadas de sistema, interrupções e arranque.
 section: conteudo
 order: 1
+practices:
+  - so/praticar-fundamentos
 ---
 
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import arranque from './arranque.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import ciclo from './ciclo-processo.dot?raw';
 
-Quando corres um programa, há uma camada entre ele e o hardware que decide quando o processador o executa, que memória pode tocar e como os seus bytes chegam ao disco. Essa camada é o **sistema operativo**: o programa que gere todos os outros. Esta página mostra o que ele faz, como a máquina lá chega e como o vês a trabalhar.
+Um editor quer guardar um ficheiro enquanto outro programa lê dados da rede. Ambos usam CPU, memória e dispositivos. O **sistema operativo** gere esses recursos e fornece operações que os programas conseguem usar sem conhecer todos os pormenores do hardware.
 
-## O que o sistema operativo faz
+## Recursos e abstrações
 
-O SO tem duas funções que parecem contraditórias e andam sempre juntas. Como **gestor de recursos**, reparte o processador, a memória e os dispositivos pelos programas e impede que um estrague o trabalho dos outros. Como **máquina estendida**, esconde o hardware real atrás de **abstrações** cómodas: ficheiros em vez de setores do disco, processos em vez de interrupções do processador, sockets em vez de pacotes da placa de rede.
+O núcleo, ou _kernel_, é a parte privilegiada do sistema que gere CPU, memória e dispositivos. Uma distribuição inclui também bibliotecas, comandos, serviços e interfaces. A shell é um programa de utilizador, não o núcleo.
 
-Sem o SO, cada programa teria de trazer os seus próprios drivers, o seu próprio escalonador e as suas próprias defesas contra os vizinhos. Com o SO, cada programa vive na ilusão simpática de que tem a máquina só para si, e o núcleo trata de arbitrar a realidade partilhada por baixo.
+| Recurso físico       | Abstração usada pelo programa   | Decisão do sistema                            |
+| -------------------- | ------------------------------- | --------------------------------------------- |
+| CPU                  | Processo e thread               | Quem corre e quando                           |
+| RAM                  | Espaço de endereçamento virtual | Que acessos são válidos e onde estão os dados |
+| Disco                | Ficheiro e diretório            | Onde ficam os blocos e quem pode aceder       |
+| Dispositivo ou canal | Descritor                       | Como ler, escrever e esperar                  |
 
-<YouTube
-  id="26QPDBe-NB8"
-  title="Operating Systems: Crash Course Computer Science #18"
+A abstração esconde pormenores sem apagar diferenças. `read` pode ler um ficheiro ou um pipe, mas `lseek` não permite reposicionar um pipe. O dispositivo continua a impor condições às operações.
+
+O sistema procura eficiência, acesso adequado aos recursos e proteção. Estes objetivos podem competir: dar CPU a um processo durante muito tempo reduz trocas de contexto, mas pode atrasar uma aplicação interativa.
+
+## Multiprogramação, concorrência e paralelismo
+
+Um programa alterna rajadas de CPU e operações de I/O. Se bloquear à espera do disco, a CPU pode executar outro programa. Manter vários processos disponíveis para aproveitar esses intervalos chama-se **multiprogramação**.
+
+A **partilha de tempo**, ou _time sharing_, também interrompe processos que ainda poderiam continuar. Cada um recebe uma parte do tempo da CPU, permitindo interação sem esperar pelo fim dos restantes.
+
+Concorrência significa que os períodos de execução de várias tarefas se sobrepõem. Uma CPU pode alternar entre elas. Paralelismo significa execução simultânea, por exemplo em dois núcleos. Uma condição de corrida pode existir com uma única CPU, porque a interrupção entre duas operações já permite entrelaçamentos.
+
+## Modo utilizador e modo núcleo
+
+O hardware distingue modos de execução. Em modo utilizador, uma aplicação não pode reprogramar livremente o temporizador nem escolher uma tabela de páginas para ler memória de outro processo. Essas operações exigem privilégio.
+
+Para pedir uma operação protegida, o programa faz uma **chamada de sistema**. O percurso típico é:
+
+1. O programa chama uma função da biblioteca que prepara o número da operação e os argumentos.
+2. Uma instrução própria transfere o controlo para uma entrada do núcleo.
+3. O núcleo verifica os argumentos e as permissões, executa o pedido ou regista que é preciso esperar.
+4. O resultado chega ao programa, que continua em modo utilizador quando puder correr.
+
+`strlen` calcula um comprimento em memória e não precisa de entrar no núcleo. `open` precisa de consultar o sistema de ficheiros e as permissões. `printf` pode guardar texto num buffer da biblioteca antes de `write` o enviar ao núcleo. Uma chamada de função C e uma chamada de sistema não são a mesma coisa.
+
+Uma mudança de modo também não implica uma **troca de contexto** entre processos. O mesmo processo pode entrar no núcleo e voltar. Numa troca de contexto, o sistema guarda o estado necessário para retomar uma tarefa e carrega o de outra, incluindo registos e informação de escalonamento.
+
+## Interrupções e exceções
+
+Uma **interrupção de hardware** anuncia um evento externo ao fluxo corrente de instruções, como a conclusão de uma leitura ou um tick do temporizador. Uma **exceção** resulta da instrução que está a executar, como acesso a uma página ausente. Uma entrada de chamada de sistema é intencional e síncrona.
+
+O processador guarda estado e desvia a execução para um tratador. O núcleo identifica o evento, trata-o e decide o que pode correr a seguir. Não tem de retomar imediatamente o processo interrompido.
+
+Uma falta de página pode ser recuperável: o endereço é válido, mas os dados ainda não estão na RAM. Escrever numa página sem permissão pode provocar a terminação do processo. Não interpretes toda a exceção como um erro fatal.
+
+## Um pedido que bloqueia
+
+Suponhamos que A faz uma leitura cujos dados ainda não estão disponíveis. A passa de **a correr** para **bloqueado**. O escalonador escolhe B entre os processos **prontos**. Quando os dados de A chegam, a interrupção permite torná-lo pronto. A só volta a correr quando for escolhido.
+
+<Dot
+  source={ciclo}
+  alt="Transições entre pronto, a correr, bloqueado, zombie e processo recolhido."
 />
 
-## Do botão ao primeiro processo
+Pronto significa que só falta obter CPU. Bloqueado significa que falta um evento. Um processo bloqueado não deve receber fatias apenas para repetir a mesma espera.
 
-Carregas no botão e o processador acorda a correr firmware gravado na máquina, que faz testes básicos e localiza o disco de arranque. Aí entra o **carregador** (_bootloader_), que carrega o núcleo (_kernel_) para a memória e lhe passa o controlo. O núcleo inicializa drivers e estruturas internas, monta o sistema de ficheiros raiz e lança o primeiro processo, do qual todos os outros descendem. Só então aparece a janela de login ou a shell: tudo o que vês no ecrã já é um processo a correr por cima do núcleo.
+## Organização do núcleo
 
-<Typst
-  source={arranque}
-  format="svg"
-  alt="Cadeia de arranque: firmware, bootloader, núcleo, primeiro processo e shell, cada camada a servir a seguinte."
-/>
+Num núcleo **monolítico**, vários serviços, como sistemas de ficheiros e drivers, executam no espaço privilegiado do núcleo. Isso permite comunicação por chamadas internas, mas um erro numa dessas partes pode afetar todo o sistema.
 
-Repara que o hardware sozinho não sabe o que é um ficheiro nem um utilizador. Cada camada do diagrama constrói uma abstração que a seguinte usa: firmware encontra setores, bootloader carrega ficheiros, núcleo cria processos, processos servem pessoas.
+Um **micronúcleo** mantém um conjunto menor de funções privilegiadas e coloca outros serviços em processos separados. Estes comunicam por mensagens. A separação pode limitar o efeito de falhas, mas acrescenta comunicação e transições. Tamanho, modularidade e velocidade dependem da implementação, não só do nome da arquitetura. MINIX é um exemplo didático de organização por serviços; Linux usa um núcleo monolítico com módulos.
 
-## A shell e as chamadas de sistema
+## Arranque
 
-A **shell** é o programa que lê os teus comandos e os transforma em pedidos ao núcleo. Quando escreves `ls`, a shell cria um processo, pede ao núcleo para trocar esse processo pelo programa `ls` e espera pelo resultado. Nada disto é magia da shell: são **chamadas de sistema**, a interface de programação que o núcleo oferece aos processos para pedir serviços como criar processos, abrir ficheiros ou enviar bytes para um socket.
+O firmware inicializa o hardware e encontra uma entrada de arranque. O carregador coloca o núcleo em memória e entrega-lhe o controlo. O núcleo prepara memória, dispositivos e estruturas de processos, depois inicia o primeiro processo de utilizador. Esse processo inicia serviços e sessões.
 
-Podes ver as chamadas de sistema acontecer. Escreve um programa que grava uma linha num ficheiro:
-
-```c
-#include <fcntl.h>
-#include <unistd.h>
-
-int main(void) {
-    int fd = open("saida.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    write(fd, "ola\n", 4);
-    close(fd);
-    return 0;
-}
-```
-
-Compila e corre com `strace`, que mostra cada chamada de sistema feita pelo processo. Este exemplo corre no teu terminal Linux, não no playground da página, porque precisa do núcleo a sério por baixo:
-
-```sh
-gcc -Wall -Wextra st.c -o st
-strace -e trace=openat,write,close ./st
-```
-
-Na saída vês algo como `openat(...) = 3`, `write(3, "ola\n", 4) = 4` e `close(3) = 0`. O `openat` devolve o **descritor** `3`, que é o número que identifica o ficheiro aberto dentro do processo (0, 1 e 2 já estão ocupados pela entrada, saída e erro padrão). O `write` confirma que escreveu 4 bytes. O programa em C que escreveste é só um invólucro fino: o trabalho real foi feito pelo núcleo, a pedido, uma chamada de cada vez.[^ficha]
-
-:::tip[Como ler o strace]
-Cada linha mostra o nome da chamada, os argumentos e, depois do `=`, o valor devolvido. Um valor negativo (como `-1 ENOENT`) é um erro, e o nome diz qual. Quando um programa com ficheiros falhar sem mensagem clara, corre-o com `strace` e lê a última chamada antes do erro.
-:::
-
-## Para levar para a próxima página
-
-O SO gere processos, memória, ficheiros e dispositivos através de chamadas de sistema, e a shell é só mais um programa que as usa. Para pedires esses serviços vais precisar de C ao nível do sistema: compilador, bibliotecas e gestão de memória. É isso que revê o [C avançado](c-avancado/).
-
-[^ficha]: Ficha da unidade curricular de Sistemas Operativos (L.EIC015), ocorrência de 2025/26: [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560100).
+A shell aparece perto do fim deste percurso. Não carrega o núcleo. Quando escreves um comando, a shell analisa o texto e normalmente cria um filho para executar o programa pedido. Um comando interno como `cd` precisa de alterar a própria shell: mudar apenas o diretório de um filho não mudaria o da shell que continuas a usar.

@@ -1,75 +1,97 @@
 ---
-title: Memória virtual
-description: Hierarquia, paginação, tabelas de páginas e a tradução de um endereço virtual com páginas de 4 KiB.
+title: Memória virtual e tradução
+description: Relocação, fragmentação, segmentação, páginas, tabelas e TLB.
 section: conteudo
-order: 7
+order: 10
+practices:
+  - so/praticar-memoria
 ---
 
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import traducao from './traducao-endereco.typ?raw';
+import InteractiveDemo from '../../../components/InteractiveDemo.astro';
+import Traducao from '../../so/Traducao.astro';
 
-Cada processo acredita que tem gigabytes de memória contígua só para si, mesmo quando a máquina tem menos RAM do que a soma do que os processos pedem. A **memória virtual** é a ilusão que o SO e o hardware mantêm juntos: cada processo vê um espaço de endereçamento privado, e o sistema traduz cada endereço virtual para o sítio físico real. Recorda a [hierarquia de memória](/cadeiras/fsc/memorias/) e a ponte das [caches](/cadeiras/ac/hierarquia-cache/): a paginação é o nível seguinte da mesma ideia.
+Um programa usa endereços para encontrar instruções e dados. O sistema precisa de os colocar na RAM e impedir acessos aos dados de outros processos. A **MMU**, unidade de gestão de memória, traduz endereços e verifica condições de proteção com informação preparada pelo núcleo.
 
-## O modelo de memória do processo
+## Endereço virtual e físico
 
-O espaço virtual de um processo Linux típico organiza-se de baixo para cima: código e dados fixos, a área livre (_heap_) a crescer para cima com o `malloc`, e a pilha (_stack_) a crescer para baixo a cada chamada de função. Entre as duas fica espaço livre para crescerem. Este mapa é igual em todos os processos, o que simplifica o compilador e o carregador. A igualdade é possível porque os endereços são virtuais: dois processos usam o mesmo endereço virtual para coisas físicas completamente diferentes.
+O endereço virtual é o que o processo usa. O físico identifica a posição na memória física. Dois processos podem usar o virtual `0x1000` e traduzi-lo para molduras diferentes. Também podem mapear uma página partilhada em endereços virtuais distintos.
 
-Vê o mapa no teu próprio programa. Este programa imprime onde vivem uma variável local, uma global e um bloco de `malloc`, mais o tamanho da página do sistema. Corre no teu terminal:
+A associação pode acontecer em compilação, se o destino estiver fixo; no carregamento, se o código for relocável; ou em execução, com tradução por hardware. A tradução em execução permite mudar a colocação física sem mudar os endereços usados pelo programa.
 
-```c
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+O tamanho máximo do espaço virtual não mede RAM atribuída. Páginas podem estar ausentes, regiões podem não ter mapeamento e o hardware pode implementar menos bits de endereço do que a largura dos registos. Um registo de 64 bits não garante $2^{64}$ bytes utilizáveis pelo processo.
 
-int global = 1;
+## Base, limite e alocação contígua
 
-int main(void) {
-    int local = 2;
-    int *p = malloc(sizeof(int));
-    printf("pilha:  %p\n", (void *)&local);
-    printf("global: %p\n", (void *)&global);
-    printf("heap:   %p\n", (void *)p);
-    printf("pagina: %d bytes\n", getpagesize());
-    free(p);
-    return 0;
-}
-```
+Num modelo simples, o virtual $v$ é válido se $0 \leq v < L$, sendo $L$ o limite em bytes. O físico é $b+v$, sendo $b$ a base. Só o núcleo pode mudar estes registos.
 
-Os valores exatos variam de execução para execução (o núcleo baralha o mapa de propósito), mas a ordem mantém-se: a pilha num extremo, a global e a área livre noutras zonas, cada uma longe das outras. E o tamanho da página confirma os 4096 bytes que as contas abaixo assumem.
+Para $b=12000$ e $L=2000$, $v=1500$ traduz para 13500; $v=2000$ é inválido, apesar de a soma 14000 existir. O limite é exclusivo neste modelo.
+
+Na alocação contígua, cada processo ocupa uma região física. Buracos livres podem ficar separados. **First-fit** escolhe o primeiro suficiente, **best-fit** o menor suficiente e **worst-fit** o maior.
+
+Com buracos de 100, 500, 200, 300 e 600 KiB, por esta ordem, uma sequência de pedidos 212, 417 e 112 KiB dá:
+
+| Política  | Colocação de 212       | Colocação de 417       | Colocação de 112      |
+| --------- | ---------------------- | ---------------------- | --------------------- |
+| First-fit | Buraco 500, sobram 288 | Buraco 600, sobram 183 | Resto 288, sobram 176 |
+| Best-fit  | Buraco 300, sobram 88  | Buraco 500, sobram 83  | Buraco 200, sobram 88 |
+| Worst-fit | Buraco 600, sobram 388 | Buraco 500, sobram 83  | Resto 388, sobram 276 |
+
+**Fragmentação externa** significa haver espaço total mas não uma região contígua suficiente. **Fragmentação interna** é espaço dentro de uma unidade atribuída que não é usado. Compactar aproxima regiões ocupadas para reunir buracos, mas exige relocação adequada e cuidado com I/O em curso.
+
+## Segmentação
+
+Um endereço segmentado contém número de segmento e deslocamento. A tabela guarda base, limite e permissões de cada segmento. O segmento pode representar código, dados ou pilha e ter dimensão diferente dos restantes.
+
+Para o segmento 2 com base 8000 e limite 400, o par `(2, 350)` traduz para 8350. `(2, 400)` viola o limite. Segmentos de tamanho variável podem sofrer fragmentação externa. Paginação e segmentação também podem ser combinadas: primeiro identificar a região lógica, depois traduzir as suas páginas.
 
 ## Paginação
 
-A **paginação** divide o espaço virtual em blocos de tamanho fixo, as **páginas** (tipicamente 4 KiB), e a memória física em blocos do mesmo tamanho, as **molduras**. Cada processo tem uma **tabela de páginas** que diz, para cada página virtual, em que moldura física ela está, ou se está no disco (_swap_) ou se ainda não existe. O hardware traduz cada acesso automaticamente: separa o endereço virtual em número de página e deslocamento dentro da página, consulta a tabela e junta a moldura com o deslocamento.
+O espaço virtual divide-se em **páginas** de tamanho $P=2^n$ bytes. A RAM divide-se em **molduras** do mesmo tamanho. Uma tabela de páginas indica que moldura corresponde a cada página virtual e guarda estado e permissões.
 
-## Traduzir um endereço, passo a passo
+Para um endereço virtual $v$:
 
-Toma páginas de 4 KiB, ou seja, $2^{12}$ bytes. O deslocamento ocupa os 12 bits baixos do endereço, e o resto é o número da página. Traduz o endereço virtual `0x1A3F5`:
+$$
+p=\lfloor v/P\rfloor,\quad d=v\bmod P,\quad f=\operatorname{tabela}[p],\quad a=fP+d.
+$$
 
-<Typst
-  source={traducao}
-  format="svg"
-  alt="Tradução de 0x1A3F5: a página 0x1A vira a moldura 0x07 pela tabela, o deslocamento 0x3F5 passa intacto e o físico é 0x073F5."
-/>
+$p$ é a página, $d$ o deslocamento, $f$ a moldura e $a$ o físico. O deslocamento passa sem alteração. Com endereços de $m$ bits, $n$ bits ficam para o deslocamento e $m-n$ para a página.
 
-1. Separa os 12 bits baixos: `0x1A3F5` termina em `3F5`, por isso o deslocamento é `0x3F5` e o número da página é `0x1A`.
-2. Consulta a tabela de páginas na entrada `0x1A`. Supõe que ela diz moldura `0x07`, presente em memória.
-3. Junta a moldura com o deslocamento: endereço físico `0x073F5`.
+Com páginas de 4 KiB, $P=4096=2^{12}$. O virtual `0x1A3F5` divide-se em página `0x1A` e deslocamento `0x3F5`. Se a página está na moldura `0x07`, obtemos `0x073F5`. Em decimal, $7\times4096+1013=29685$.
 
-Três pormenores que os exercícios adoram testar. Primeiro, o deslocamento passa intacto: só a página é traduzida. Segundo, se a entrada disser que a página está no disco, o hardware levanta uma **falta de página**, o SO traz a página do swap para uma moldura livre e repete o acesso. Terceiro, a tradução acontece em cada acesso, por isso o hardware guarda as traduções recentes numa cache própria, o **TLB**; sem ele, cada acesso à memória custaria dois.[^tlb]
+Na demo, o espaço virtual tem 64 bytes e a tabela associa as páginas às molduras 3, 0, 5, 1, 7, 2, 6 e 4. Todas têm permissão de leitura. Muda o tamanho da página e observa que o mesmo endereço passa a ter outra decomposição. Desmarcar presença representa uma página válida que ainda precisa de ser preparada, não um endereço proibido.
 
-:::tip[Como fazer estas contas]
-Converte o endereço para hexadecimal e conta os dígitos da direita: com páginas de $2^n$ bytes, os últimos $n/4$ dígitos hexadecimais são o deslocamento. Para 4 KiB ($n = 12$), são os últimos 3 dígitos. O resto é o número da página.
-:::
+<InteractiveDemo label="Traduzir um endereço virtual por paginação">
+  <Traducao />
+</InteractiveDemo>
 
-## Segmentação e proteção
+Com página de 16 bytes e virtual 45, $p=2$, $d=13$, $f=5$ e físico 93. Este modelo não simula caches nem o custo de uma falta de página.
 
-Antes da paginação dominar, a **segmentação** dividia o espaço em blocos de tamanho variável com significado lógico: código, dados, pilha. Cada acesso verificava limites e permissões do segmento. Os sistemas modernos usam paginação para a tradução e guardam da segmentação a ideia essencial: cada página tem permissões (leitura, escrita, execução) e o hardware recusa acessos ilegais. É por isso que escrever numa zona de código ou dereferenciar um apontador inválido termina o processo com falha de segmentação em vez de corromper outro programa. A proteção entre processos, que o [C avançado](c-avancado/) prometeu, é implementada aqui.
+## Fragmentação e tamanho das tabelas
 
-<YouTube id="qcBIvnQt0Bw" title="Virtual Memory: 1 Introduction" />
+Um objeto de 10000 bytes precisa de $\lceil10000/4096\rceil=3$ páginas. São 12288 bytes de capacidade, com 2288 não usados no fim. A paginação evita exigir contiguidade entre as molduras atribuídas ao processo, mas conserva fragmentação interna.
 
-## Para levar para a próxima página
+Uma tabela linear para 32 bits e páginas de 4 KiB tem $2^{20}$ entradas. Com 4 bytes por entrada, ocupa 4 MiB. Páginas maiores reduzem o número de entradas e podem melhorar o alcance do TLB, mas podem aumentar desperdício interno.
 
-A memória virtual dá a cada processo um espaço privado e protegido. Falta persistir dados para além da vida do processo: ficheiros, discos e dispositivos, que vivem nos [ficheiros e na entrada e saída](ficheiros-entrada-saida/).
+Uma tabela **multinível** divide o índice. Num exemplo de dois níveis, 10 bits escolhem a tabela interior, outros 10 escolhem a entrada e 12 são o deslocamento. Tabelas interiores de regiões não mapeadas não precisam de existir. Um percurso com dois níveis pode precisar de duas leituras de tabela antes da leitura do dado se não houver cache.
 
-[^tlb]: O papel do TLB como cache das traduções está documentado na [documentação de gestão de memória do Linux](https://www.kernel.org/doc/html/latest/mm/index.html).
+Uma tabela **hashed** pesquisa por número de página virtual e identifica a tradução nas colisões. Uma tabela **invertida** guarda uma entrada por moldura física, incluindo a identidade do processo e da página. Poupa espaço para espaços virtuais enormes, mas muda o custo de pesquisa e exige representar partilhas.
+
+## TLB e tempo efetivo
+
+O **TLB** é uma cache de traduções. Um miss obriga a obter a tradução; não significa que o dado esteja fora da RAM. Uma falta de página é outra situação. Identificadores de espaço, como ASID, podem distinguir entradas de processos; sem isso pode ser necessário invalidá-las ao mudar de contexto.
+
+Suponhamos uma tabela de um nível, acesso ao TLB de $t=5$ ns, memória de $M=80$ ns, taxa de acerto $h=0,95$, sem caches adicionais nem faltas de página. Um acerto custa $t+M=85$ ns; um miss custa $t+2M=165$ ns:
+
+$$
+EAT=h(t+M)+(1-h)(t+2M)=89\text{ ns}.
+$$
+
+Não apliques esta fórmula sem verificar o modelo. Se a consulta ao TLB estiver incluída no tempo de acesso, não a somes outra vez. Tabelas multinível ou caches de percursos mudam o custo do miss.
+
+O alcance do TLB é aproximadamente número de entradas vezes tamanho de página. 64 entradas de 4 KiB cobrem 256 KiB de páginas distintas. Ultrapassar esse alcance pode aumentar misses do TLB sem aumentar faltas de página.
+
+## Presença, permissões e partilha
+
+Uma página pode estar mapeada mas ausente da RAM, presente mas só para leitura, ou não pertencer ao espaço válido. As designações `valid` e `present` variam entre modelos; lê a definição do bit no enunciado. Não uses um único bit para concluir que toda a ausência é acesso ilegal.
+
+Código imutável de bibliotecas pode partilhar molduras entre processos com proteção contra escrita. Dados privados depois de `fork` podem partilhar molduras apenas até uma escrita provocar copy-on-write. A próxima página explica o que acontece quando faltam molduras e é preciso [substituir páginas](../paginacao-procura/).

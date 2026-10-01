@@ -1,112 +1,128 @@
 ---
 title: Processos
-description: Ciclo de vida do processo e as chamadas fork, exec, wait e exit num exemplo pai-filho.
+description: Estados, espaço de endereçamento, fork, exec, wait, descritores e saída.
 section: conteudo
-order: 3
+order: 5
+practices:
+  - so/praticar-processos
 ---
 
 import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
 import ciclo from './ciclo-processo.dot?raw';
 
-Um processo nasce, corre, pode criar filhos e morre. O sistema operativo gere esse **ciclo de vida** com quatro chamadas de sistema que formam o vocabulário central da cadeira: `fork` para criar, `exec` para trocar de programa, `exit` para terminar e `wait` para recolher. Esta página mostra as quatro a trabalhar juntas.
+Um processo é uma execução com identidade e estado. Dois processos podem correr o mesmo programa e usar o mesmo valor numérico de endereço virtual sem partilhar a variável que esse endereço designa.
 
-## O ciclo de vida
+## O que o núcleo guarda
 
-Um processo está sempre num estado: **pronto** (quer correr e espera pelo processador), **a correr** (tem o processador agora), **bloqueado** (espera por algo, como leitura do disco ou um filho terminar) ou **terminado** (acabou e espera que o pai recolha o seu estado). O núcleo move os processos entre estes estados à medida que os eventos acontecem.
+O bloco de controlo do processo, ou **PCB**, representa o estado que o sistema precisa de gerir: identificador PID, relação com o pai, registos guardados, estado de execução, mapa de memória, descritores, sinais, limites e dados de escalonamento. Numa implementação real, esta informação pode estar distribuída por várias estruturas.
+
+O espaço de endereçamento contém código e dados do programa. Não o confundas com o PCB, que é informação de gestão no núcleo. O limite teórico de um endereço com $m$ bits é $2^m$ posições; isso não significa que cada processo tenha essa quantidade de RAM atribuída.
 
 <Dot
   source={ciclo}
-  alt="Grafo do ciclo de vida: pronto, a correr, bloqueado, zombie e terminado, com as transições entre eles."
+  alt="Um processo pronto pode correr, bloquear, voltar a pronto e terminar, permanecendo zombie até ser recolhido."
 />
 
-Segue o grafo da esquerda para a direita: o processo espera em pronto, corre quando é escalonado, bloqueia à espera de eventos e termina com `exit`, ficando zombie até o pai o recolher com `wait`. Quando escreves `ls` na shell, ela cria um processo filho, o filho troca-se pelo programa `ls`, e a shell bloqueia à espera que ele termine.
+Terminar liberta a memória de execução e outros recursos. Pode restar um registo com PID e estado de saída para o pai consultar. Esse filho é um **zombie** e já não executa instruções. Um filho vivo cujo pai terminou é **órfão**, outra situação; em Linux pode ser adotado por um subreaper ou pelo processo de inicialização.
 
-## Criar com fork
+## fork devolve duas vezes
 
-O `fork` cria um processo filho como cópia do pai: mesmo código, mesmos dados, mesmos descritores abertos.[^fork] A única diferença inicial é o valor devolvido: o pai recebe o PID do filho e o filho recebe 0. É assim que o programa distingue quem é quem depois da bifurcação:
+`fork()` cria um filho. Retorna `-1` em caso de falha, 0 no filho e o PID do filho no pai. Ambos continuam depois da chamada. A variável que recebe o retorno tem valores diferentes nas duas memórias.
 
 ```c
+int x = 4;
+pid_t pid = fork();
+if (pid == 0) x = 9;
+```
+
+Este é um excerto, assumindo `fork` bem-sucedido. O filho tem `x == 9`; o pai conserva `x == 4`. A cópia costuma ser implementada com _copy-on-write_: as páginas físicas podem ser partilhadas inicialmente e copiadas quando alguém escreve. A semântica dos dados privados continua a ser a de memórias separadas.
+
+Os descritores herdados referem as mesmas descrições abertas. Uma leitura do pai pode avançar a posição que o filho observa. É partilha de estado do núcleo, não partilha automática de todas as variáveis C.
+
+## Contar processos pela árvore
+
+Se todos os processos executam três chamadas sucessivas de `fork`, temos $1 \to 2 \to 4 \to 8$ processos, incluindo o inicial, assumindo sucesso. Foram criados sete filhos no total.
+
+Agora considera um ciclo em que cada filho termina imediatamente:
+
+```c
+for (int i = 0; i < 3; i++) {
+    pid_t pid = fork();
+    if (pid == 0) _exit(0);
+}
+```
+
+Há um pai que faz as três iterações, por isso ficam quatro processos criados ao longo da execução, não oito. O excerto omite tratamento de falhas e recolha; serve só para desenhar a árvore. A fórmula $2^n$ depende de cada descendente chegar às chamadas seguintes.
+
+## exec substitui, não cria
+
+A família `exec` carrega outro programa no processo atual. Mantém o PID, mas substitui a imagem de memória, incluindo código, heap e pilha. Em caso de sucesso não retorna ao código antigo.
+
+`execlp` recebe argumentos individuais e procura o comando no `PATH`. `execvp` recebe um vetor terminado por `NULL`, também com pesquisa no `PATH`. O primeiro argumento do novo programa costuma ser o seu nome. Passar apenas `"ls -l"` como nome não faz parsing de shell: tentaria encontrar um executável com esse nome inteiro.
+
+Os descritores mantêm-se abertos salvo os marcados para fechar em `exec`, por exemplo com `FD_CLOEXEC` ou `O_CLOEXEC`. É isso que permite preparar redirecionamentos antes da substituição do programa.
+
+## Esperar e interpretar o estado
+
+`waitpid(pid, &estado, 0)` espera pelo filho indicado e recolhe o estado. `wait` escolhe um filho que termine. O estado bruto não é diretamente o código de saída: testa `WIFEXITED` antes de `WEXITSTATUS`, e `WIFSIGNALED` antes de `WTERMSIG`.
+
+O programa seguinte executa um comando com os argumentos que receber. Guarda-o em `executar.c` e compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic executar.c -o executar`.
+
+```c
+#define _POSIX_C_SOURCE 200809L
+#include <errno.h>
 #include <stdio.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-int main(void) {
-    pid_t pid = fork();
-    if (pid == 0) {
-        printf("Sou o filho, o meu pai e %d\n", getppid());
-    } else {
-        printf("Sou o pai, criei o filho %d\n", pid);
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "uso: %s comando [argumentos]\n", argv[0]);
+        return 1;
     }
-    return 0;
-}
-```
-
-Corre várias vezes e repara que a ordem das duas linhas varia: pai e filho correm em concorrência e o escalonador decide quem imprime primeiro. Essa variação não é um defeito do exemplo, é a realidade dos processos.
-
-:::warning[O erro que toda a gente comete uma vez]
-O filho herda cópias, não partilha variáveis com o pai. Se o filho fizer `x = 5`, o `x` do pai continua igual. processes separados têm memórias separadas. Quando precisares de partilhar dados, é preciso um mecanismo de [comunicação entre processos](comunicacao-processos/).
-:::
-
-## Trocar de programa com exec
-
-Um filho que é uma cópia do pai serve para pouco até se trocar por outro programa com `exec`. A família `exec` substitui o código do processo atual pelo programa indicado, mantendo o PID e os descritores. O padrão é sempre o mesmo: `fork` cria, `exec` troca, e o terceiro argumento `NULL` fecha a lista:
-
-```c
-#include <unistd.h>
-
-int main(void) {
-    pid_t pid = fork();
-    if (pid == 0) {
-        execlp("ls", "ls", "-l", NULL);
-    }
-    return 0;
-}
-```
-
-Se o `execlp` funcionar, o filho deixa de correr o teu código e passa a correr `ls`. Se falhar (programa inexistente, por exemplo), o filho continua no teu código a seguir à chamada, por isso trata sempre esse caso.
-
-## Terminar e recolher: exit e wait
-
-Um processo termina com `exit` (ou retornando do `main`) e deixa um **estado de saída**, o número que a shell guarda em `$?`. Mas terminar não chega: o pai tem de recolher esse estado com `wait`, que bloqueia o pai até um filho terminar e devolve o seu PID. Um filho terminado à espera de recolha chama-se **zombie**: já não corre nem ocupa memória de trabalho, mas ocupa a sua entrada na tabela de processos. Zombies acumulados são lixo do pai distraído, não do sistema.
-
-Junta as quatro peças, com os dois ramos de erro que um programa a sério não dispensa. O pai cria o filho, o filho troca-se por outro programa, o pai espera e lê o estado. Corre no teu terminal Linux:
-
-```c
-#include <stdio.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
-int main(void) {
-    pid_t pid = fork();
-    if (pid < 0) {
+    pid_t filho = fork();
+    if (filho < 0) {
         perror("fork");
         return 1;
     }
-    if (pid == 0) {
-        execlp("ls", "ls", NULL);
-        perror("execlp");
+    if (filho == 0) {
+        execvp(argv[1], argv + 1);
+        perror("execvp");
         _exit(127);
     }
     int estado;
-    wait(&estado);
-    if (WIFEXITED(estado)) {
-        printf("O filho terminou com estado %d\n", WEXITSTATUS(estado));
+    pid_t r;
+    do {
+        r = waitpid(filho, &estado, 0);
+    } while (r < 0 && errno == EINTR);
+    if (r < 0) {
+        perror("waitpid");
+        return 1;
     }
-    return 0;
+    if (WIFEXITED(estado)) {
+        printf("estado=%d\n", WEXITSTATUS(estado));
+        return WEXITSTATUS(estado);
+    }
+    if (WIFSIGNALED(estado))
+        printf("sinal=%d\n", WTERMSIG(estado));
+    return 1;
 }
 ```
 
-Há três decisões aqui. O `fork` pode falhar (sem memória para outro processo, por exemplo), por isso testa-se o valor negativo. Se o `execlp` falhar, o filho não pode fazer `return`: isso correria o resto do programa duas vezes, uma em cada processo. Usa-se `_exit`, que termina sem correr limpezas do pai. E o pai lê o estado com as macros `WIFEXITED` e `WEXITSTATUS` em vez de interpretar o número bruto, porque a codificação varia. A saída é a listagem do `ls` seguida de `O filho terminou com estado 0`. Sem o `wait`, o pai podia terminar primeiro e o filho ficava **órfão**, adotado pelo processo de arranque. Com o `wait`, a ordem é garantida.
+`./executar printf 'ola\n'` escreve `ola` e depois `estado=0`. O `waitpid` impõe que o pai só imprime depois do fim do filho. Para um nome inexistente, `execvp` falha, o filho termina com 127 e o pai mostra esse estado. O filho não deve continuar o código da shell depois da falha.
 
-<YouTube id="cex9XrZCU14" title="The fork() function in C" />
+`return` de uma função auxiliar só retorna dessa função. `exit` termina o processo, executa funções registadas com `atexit` e trata buffers stdio. `_exit` termina sem essa limpeza da biblioteca. No filho que falhou antes de `exec`, `_exit` evita repetir limpezas e descarregar buffers herdados do pai.
 
-## Para saber mais
+## Buffers e ordem observável
 
-- O núcleo didático [xv6 do MIT](https://pdos.csail.mit.edu/6.1810/2024/xv6.html) implementa `fork`, `exec` e `wait` num sistema real e pequeno; o [livro do xv6](https://pdos.csail.mit.edu/6.1810/2025/xv6/book-riscv-rev5.pdf) explica cada chamada processo a processo.
+Um `printf("antes")` sem descarga antes de `fork` pode deixar bytes num buffer que será copiado. Se pai e filho terminarem com `exit`, ambos podem descarregar a cópia. Usa `fflush` antes de criar o filho quando tens saída pendente, ou prepara o programa para não a duplicar.
 
-## Para levar para a próxima página
+Uma mudança de linha não garante descarga em todas as situações: num terminal, stdout costuma ter buffer por linha; redirecionado para ficheiro, costuma ter buffer por blocos.
 
-Criar, trocar, terminar e recolher chegam para gerir um processo de cada vez. Mas há dezenas de processos prontos e um processador: quem corre a seguir decide-se no [escalonamento](escalonamento/).
+Duas linhas impressas por processos concorrentes não têm ordem garantida só porque aparecem nessa ordem no código de ramos diferentes. Para impor ordem, precisas de uma relação como esperar pelo fim do filho ou receber uma mensagem dele. Um `sleep` só atrasa; não prova sincronização.
 
-[^fork]: O manual oficial documenta o que o filho herda do pai, descritores incluídos: `fork(2)` em [man7.org](https://man7.org/linux/man-pages/man2/fork.2.html).
+## Criar vários trabalhadores
+
+Para lançar várias tarefas em paralelo, o pai cria os filhos primeiro e espera depois. Se esperar logo em cada iteração, serializa as tarefas. Guarda os PIDs criados com sucesso, recolhe todos e verifica os estados antes de avançar para uma etapa dependente, como ligar ficheiros objeto depois de compilá-los.
+
+Uma shell repete ler, analisar, criar, executar e recolher. Comandos internos que alteram o seu estado, como `cd` ou `exit`, ficam na própria shell. Um parser que divide apenas por espaços não suporta automaticamente aspas, expansões ou pipelines.
