@@ -1,130 +1,209 @@
 ---
 title: Comunicação entre processos
-description: Sinais, pipes, FIFOs, sockets e memória partilhada, com um pipe pai-filho explicado.
+description: Pipes, FIFOs, dup2, sockets, sinais e memória partilhada, com ordem e fim de dados.
 section: conteudo
-order: 5
+order: 7
+practices:
+  - so/praticar-ipc
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import diagramaPipe from './pipe-pai-filho.typ?raw';
+Dois processos têm memórias privadas por defeito. Para cooperar, precisam de um canal ou de memória explicitamente partilhada. O mecanismo também define como reconhecem o fim dos dados e que ordem existe entre produzir e consumir.
 
-O `fork` dá ao filho uma cópia da memória do pai, por isso as variáveis não atravessam a fronteira entre processos. Quando dois processos precisam de cooperar, usam um mecanismo de **comunicação entre processos** (_IPC_). Cada um tem um compromisso diferente entre simplicidade, volume e alcance.
+## Escolher um mecanismo
 
-## Sinais: interromper para avisar
+| Mecanismo          | O que transporta                 | Identificação                | Condição a tratar                       |
+| ------------------ | -------------------------------- | ---------------------------- | --------------------------------------- |
+| Pipe               | Fluxo de bytes, um sentido       | Descritores                  | Fechar todas as escritas para obter EOF |
+| FIFO               | Fluxo de bytes, um sentido       | Nome no sistema de ficheiros | Abertura pode esperar pela outra ponta  |
+| Socket             | Fluxo ou datagramas              | Descritor e endereço         | Definir fronteiras das mensagens        |
+| Sinal              | Notificação de evento            | PID e número simbólico       | Tratador restrito e sinais pendentes    |
+| Memória partilhada | Bytes acessíveis pelos processos | Mapeamento                   | Sincronizar acessos e tempo de vida     |
 
-Um **sinal** é uma notificação curta que um processo envia a outro: terminar (`SIGTERM`), interromper do teclado (`SIGINT`, o Ctrl+C), filho terminou (`SIGCHLD`). O processo destino pode ignorar, tratar com uma função própria ou sofrer a ação por defeito. Sinais transportam quase nenhuma informação (só o número do sinal), por isso servem para avisar, não para conversar. O `kill -TERM <pid>` da shell é o exemplo que já usaste sem saber o nome.
+Partilhar memória não torna uma operação composta atómica. Receber um sinal também não entrega automaticamente uma estrutura C com todos os dados do remetente.
 
-## Pipes: conversa entre parentes
+## Pipe: leitura e escrita
 
-Um **pipe** é um canal unidirecional com uma ponta de escrita e uma de leitura. Cria-se com `pipe`, que devolve dois descritores, e tipicamente usa-se entre pai e filho: o pai cria o pipe antes do `fork`, por isso ambos herdam as duas pontas, e depois cada um fecha a ponta que não usa.[^pipe]
+`pipe(fd)` cria `fd[0]` para ler e `fd[1]` para escrever. Depois de `fork`, ambos os processos herdam ambas as pontas. Quem só lê deve fechar a escrita; quem só escreve deve fechar a leitura.
 
-<Typst
-  source={diagramaPipe}
-  format="svg"
-  alt="Pai e filho ligados por um pipe: o filho fecha a leitura e escreve, o pai fecha a escrita e lê a mensagem."
-/>
+Se o buffer estiver vazio e existir uma escrita aberta, `read` bloqueia. Se estiver vazio e **todas** as pontas de escrita tiverem sido fechadas, `read` devolve 0, EOF. Se não houver leitores, uma escrita pode gerar `SIGPIPE` e falhar com `EPIPE` se o sinal não terminar o processo.
 
-O filho fecha a leitura e escreve; o pai fecha a escrita e lê. O programa abaixo corre no teu terminal e imprime `Pai leu: ola pai`:
+O seguinte programa envia uma mensagem do pai ao filho. Guarda-o em `pipe.c`, compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic pipe.c -o pipe` e corre `./pipe`.
 
 ```c
+#define _POSIX_C_SOURCE 200809L
+#include <errno.h>
 #include <stdio.h>
-#include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
-int main(void) {
-    int pontas[2];
-    pipe(pontas);
-    pid_t pid = fork();
-    if (pid == 0) {
-        close(pontas[0]);
-        const char *msg = "ola pai";
-        write(pontas[1], msg, strlen(msg));
-        close(pontas[1]);
-    } else {
-        close(pontas[1]);
-        char buf[32];
-        ssize_t n = read(pontas[0], buf, sizeof(buf) - 1);
-        buf[n] = '\0';
-        printf("Pai leu: %s\n", buf);
-        close(pontas[0]);
+static int escrever_tudo(int fd, const char *buf, size_t n) {
+    size_t feito = 0;
+    while (feito < n) {
+        ssize_t k = write(fd, buf + feito, n - feito);
+        if (k < 0 && errno == EINTR) continue;
+        if (k <= 0) return -1;
+        feito += (size_t)k;
     }
+    return 0;
+}
+
+int main(void) {
+    int fd[2];
+    if (pipe(fd) < 0) { perror("pipe"); return 1; }
+    pid_t filho = fork();
+    if (filho < 0) {
+        perror("fork");
+        close(fd[0]); close(fd[1]);
+        return 1;
+    }
+    if (filho == 0) {
+        close(fd[1]);
+        char buf[32];
+        for (;;) {
+            ssize_t n = read(fd[0], buf, sizeof buf);
+            if (n < 0 && errno == EINTR) continue;
+            if (n < 0) _exit(1);
+            if (n == 0) break;
+            if (escrever_tudo(STDOUT_FILENO, buf, (size_t)n) < 0)
+                _exit(1);
+        }
+        close(fd[0]);
+        _exit(0);
+    }
+    close(fd[0]);
+    const char mensagem[] = "dados do pai\n";
+    int erro = escrever_tudo(fd[1], mensagem, sizeof mensagem - 1) < 0;
+    close(fd[1]);
+    int estado;
+    pid_t r;
+    do { r = waitpid(filho, &estado, 0); } while (r < 0 && errno == EINTR);
+    if (r < 0) { perror("waitpid"); return 1; }
+    return erro || !WIFEXITED(estado) || WEXITSTATUS(estado) != 0;
+}
+```
+
+A saída é `dados do pai`. Não enviamos o terminador zero: o filho escreve a quantidade realmente lida. O ciclo funciona se a mensagem chegar em várias leituras. O pai fecha a escrita **antes** de esperar; o filho precisa desse fecho para sair do ciclo.
+
+Pipes são fluxos, não caixas de mensagens. Uma escrita pode ser entregue em várias leituras. Escritas até `PIPE_BUF` têm uma garantia de não entrelaçamento com outras escritas no pipe, mas isso não obriga `read` a devolver uma mensagem inteira. Dois sentidos independentes precisam de dois pipes ou de um socket bidirecional.
+
+## Redirecionar com dup2
+
+`dup2(origem, destino)` faz `destino` referir a descrição aberta de `origem`, fechando o destino anterior quando necessário. A shell usa esta ideia para preparar stdin e stdout antes de `exec`.
+
+Numa pipeline `produtor | consumidor`, um processo supervisor pode criar o pipe e dois filhos. No produtor:
+
+```c
+close(fd[0]);
+if (dup2(fd[1], STDOUT_FILENO) < 0) _exit(1);
+close(fd[1]);
+execvp(comando1[0], comando1);
+_exit(127);
+```
+
+No consumidor, troca leitura e escrita e duplica `fd[0]` para `STDIN_FILENO`. Estes são excertos com descritores distintos dos canais padrão e vetores de argumentos terminados por `NULL`. O supervisor fecha ambas as pontas e recolhe os dois filhos. Se conservar a escrita, o consumidor pode nunca receber EOF. Se esperar por um produtor de dados grandes antes de lançar o consumidor, o pipe pode encher e bloquear o produtor.
+
+## FIFOs e sockets
+
+`mkfifo` cria uma entrada com nome. Os dados ficam no canal do núcleo, não são armazenados como conteúdo persistente de um ficheiro regular. O nome continua a existir até ser removido, mesmo depois de todos fecharem o canal.
+
+```sh
+mkfifo canal
+cat canal
+```
+
+No segundo terminal, `printf 'ola\n' > canal` permite que a leitura avance. Quando a escrita fecha, `cat` recebe EOF e termina. Remove `canal` quando acabares. Com abertura bloqueante, abrir só para leitura costuma esperar por um escritor e abrir só para escrita espera por um leitor.
+
+`socketpair(AF_UNIX, SOCK_STREAM, 0, fd)` cria dois descritores bidirecionais locais. Cada processo pode ler e escrever na ponta que conserva. `SOCK_STREAM` continua a exigir um protocolo de mensagens: por exemplo linhas, um comprimento prefixado ou uma quantidade fixa de bytes. Não imprimas um buffer com `%s` sem garantir `\0`.
+
+Sockets `AF_UNIX` também podem ser identificados por um endereço local; `AF_INET` permite comunicação por rede. Pai e filho são uma forma simples de distribuir descritores, não uma restrição geral a todos os sockets ou a toda a memória partilhada.
+
+## Sinais sem trabalho inseguro
+
+Um sinal notifica um evento, como pedido de terminação ou alteração de configuração. `kill` envia o sinal, sujeito a permissões. Usa nomes como `SIGINT`, `SIGTERM`, `SIGHUP` e `SIGUSR1`, não números dependentes do sistema. `SIGKILL` e `SIGSTOP` não podem ser capturados nem ignorados.
+
+Um tratador pode interromper código que já está dentro de `printf` ou `malloc`. Voltar a chamar essas funções no tratador não é seguro. Um padrão é guardar uma indicação do tipo `volatile sig_atomic_t` e fazer o trabalho no fluxo normal. Este tipo permite a indicação simples; não torna qualquer estrutura partilhada segura.
+
+O programa seguinte espera por `SIGUSR1` sem a janela entre testar a condição e adormecer. Guarda-o como `sinal.c` e compila no terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic sinal.c -o sinal`.
+
+```c
+#define _POSIX_C_SOURCE 200809L
+#include <signal.h>
+#include <stdio.h>
+#include <unistd.h>
+
+static volatile sig_atomic_t recebido = 0;
+static void tratar(int sinal) {
+    (void)sinal;
+    recebido = 1;
+}
+
+int main(void) {
+    sigset_t bloqueados, anterior;
+    sigemptyset(&bloqueados);
+    sigaddset(&bloqueados, SIGUSR1);
+    if (sigprocmask(SIG_BLOCK, &bloqueados, &anterior) < 0) return 1;
+    struct sigaction acao = {0};
+    acao.sa_handler = tratar;
+    sigemptyset(&acao.sa_mask);
+    if (sigaction(SIGUSR1, &acao, NULL) < 0) return 1;
+    printf("PID=%ld\n", (long)getpid());
+    fflush(stdout);
+    sigset_t espera = anterior;
+    sigdelset(&espera, SIGUSR1);
+    while (!recebido) sigsuspend(&espera);
+    if (sigprocmask(SIG_SETMASK, &anterior, NULL) < 0) return 1;
+    puts("SIGUSR1 recebido");
     return 0;
 }
 ```
 
-Segue o protocolo com atenção. Fechar as pontas não usadas não é arrumação, é correção: o `read` só devolve fim de ficheiro quando **todas** as pontas de escrita estiverem fechadas, por isso um pai que se esqueça de fechar a sua cópia da escrita fica bloqueado para sempre à espera de dados que nunca chegam. A leitura também bloqueia até haver dados, o que aqui é exatamente o que queremos: o pai espera que o filho escreva.
+Corre `./sinal`, copia o PID apresentado e envia `kill -USR1 PID` noutro terminal, substituindo PID. O programa mostra a mensagem e termina. `sigsuspend` muda temporariamente a máscara e espera de forma atómica. No padrão ingénuo `while (!recebido) pause()`, o sinal poderia chegar depois do teste e antes de `pause`, deixando o processo à espera de um segundo sinal.
 
-## FIFOs, sockets e memória partilhada
+Sinais tradicionais repetidos podem fundir-se enquanto estão pendentes. Não os uses como um contador fiável de mensagens. Para atualizar configuração, o tratador assinala o pedido e o ciclo principal lê o ficheiro.
 
-- Um **FIFO** (_named pipe_) é um pipe com nome no sistema de ficheiros. Qualquer processo com permissões o abre pelo nome, por isso serve para processos sem parentesco. De resto comporta-se como o pipe: unidirecional e com bloqueio na leitura.
-- Um **socket** é um canal bidirecional que tanto liga processos na mesma máquina como máquinas diferentes pela rede. É a base de quase toda a comunicação em rede, mas paga-se em complexidade: endereços, ligações e protocolos.
-- A **memória partilhada** com `mmap` mapeia a mesma zona física no espaço dos dois processos, que passam a ler e escrever nela diretamente. É o mecanismo mais rápido para grandes volumes, porque não copia dados pelo núcleo. O preço é a sincronização: sem [mutexes e semáforos](programacao-concorrente/) para ordenar os acessos, os dois processos pisam-se e o resultado varia de execução para execução.
+## Memória partilhada
 
-Experimenta o FIFO em dois terminais. No primeiro crias o canal e escreves; no segundo lês. O bloqueio aparece ao vivo: o primeiro terminal só avança quando o segundo abrir o canal para leitura.
+`mmap` devolve um mapeamento ou `MAP_FAILED`, que não é necessariamente `NULL`. `MAP_SHARED` permite partilhar alterações; `MAP_PRIVATE` dá alterações privadas com copy-on-write. Um mapeamento anónimo partilhado criado antes de `fork` pode ser usado por pai e filho. Processos sem parentesco podem mapear o mesmo objeto partilhado.
 
-<Tabs id="fifo-terminais" labels={['Terminal 1: escrever', 'Terminal 2: ler']}>
-  <div slot="panel-0">
+Se o filho escreve uma mensagem no mapeamento e termina, e o pai só a lê depois de `waitpid`, a ordem de produção e leitura está imposta. Se ambos atualizam continuamente a mesma fila, precisam de sincronização apropriada para processos, não apenas de `MAP_SHARED` nem de `volatile`. `munmap` remove o mapeamento; fechar o descritor usado para o criar não o remove automaticamente.
 
-```sh
-mkfifo /tmp/canal
-cat > /tmp/canal
-```
-
-Escreve uma linha e carrega em Enter. Repara que o `cat` fica à espera: sem leitor do outro lado, a escrita bloqueia.
-
-  </div>
-  <div slot="panel-1">
-
-```sh
-cat /tmp/canal
-```
-
-A linha que escreveste no outro terminal aparece aqui, e o primeiro terminal desbloqueia. Apaga o canal no fim com `rm /tmp/canal`.
-
-  </div>
-</Tabs>
-
-A memória partilhada dispensa o núcleo depois da configuração. Este programa mapeia um inteiro partilhado entre pai e filho: o filho soma 1000, o pai espera e soma 2000, e o resultado é sempre 3000. Sem o `wait`, o pai podia ler antes de o filho escrever. Corre no teu terminal:
+Este exemplo completo usa um mapeamento anónimo de Linux. Guarda-o em `partilha.c` e compila com `cc -std=c17 -Wall -Wextra -Wpedantic partilha.c -o partilha`. Não usa o executor C do navegador.
 
 ```c
+#define _DEFAULT_SOURCE
+#include <errno.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 int main(void) {
-    int *p = mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE,
-                  MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    *p = 0;
-    if (fork() == 0) {
-        *p += 1000;
-        return 0;
+    size_t tamanho = sizeof(int);
+    int *valor = mmap(NULL, tamanho, PROT_READ | PROT_WRITE,
+                     MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (valor == MAP_FAILED) { perror("mmap"); return 1; }
+    *valor = 4;
+    pid_t filho = fork();
+    if (filho < 0) {
+        perror("fork");
+        munmap(valor, tamanho);
+        return 1;
     }
-    wait(NULL);
-    *p += 2000;
-    printf("%d\n", *p);
+    if (filho == 0) {
+        *valor = 9;
+        _exit(0);
+    }
+    int estado;
+    pid_t r;
+    do { r = waitpid(filho, &estado, 0); } while (r < 0 && errno == EINTR);
+    if (r < 0 || !WIFEXITED(estado) || WEXITSTATUS(estado) != 0) {
+        munmap(valor, tamanho);
+        return 1;
+    }
+    printf("partilhado=%d\n", *valor);
+    if (munmap(valor, tamanho) < 0) { perror("munmap"); return 1; }
     return 0;
 }
 ```
 
-| Mecanismo          | Sentido       | Entre quem        | Quando usar                        |
-| ------------------ | ------------- | ----------------- | ---------------------------------- |
-| Sinais             | aviso         | qualquer processo | notificar eventos simples          |
-| Pipes              | unidirecional | pai e filho       | conversa simples entre parentes    |
-| FIFOs              | unidirecional | qualquer processo | pipe sem parentesco                |
-| Sockets            | bidirecional  | qualquer processo | rede ou protocolo completo         |
-| Memória partilhada | direto        | qualquer processo | grandes volumes, com sincronização |
-
-<YouTube id="dJuYKfR8vec" title="Interprocess Communication" />
-
-## Para saber mais
-
-- O manual oficial da chamada `pipe`, com a semântica de bloqueio e os erros: [`pipe(2)`](https://man7.org/linux/man-pages/man2/pipe.2.html). A [vista geral de pipes e FIFOs](https://man7.org/linux/man-pages/man7/pipe.7.html) completa as regras de leitura e escrita.
-
-## Para levar para a próxima página
-
-Pipes e FIFOs copiam bytes pelo núcleo e impõem ordem; a memória partilhada é rápida mas deixa os acessos desordenados. Ordenar acessos concorrentes é o trabalho da [programação concorrente](programacao-concorrente/).
-
-[^pipe]: O manual oficial fixa as regras que o exemplo segue, incluindo o bloqueio até ambas as pontas estarem abertas: [`pipe(7)`](https://man7.org/linux/man-pages/man7/pipe.7.html).
+A saída é `partilhado=9`. Ao contrário da variável privada do exemplo de fork, este objeto pertence ao mapeamento partilhado. O pai espera pela terminação antes de ler; não existem duas atualizações concorrentes a coordenar neste exemplo.

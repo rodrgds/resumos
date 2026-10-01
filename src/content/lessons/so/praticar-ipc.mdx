@@ -1,0 +1,73 @@
+---
+title: EOF, sinais e protocolos
+description: Exercícios próprios com pistas, resolução e erros frequentes.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="so-pipe-eof"
+  title="A ponta que impede o fim"
+  explanation="/cadeiras/so/comunicacao-processos/#pipe-leitura-e-escrita"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei a escrita ainda aberta no pai.',
+      'Fechei todas as escritas quando acabam os dados.',
+      'Expliquei a espera com buffer vazio.',
+    ],
+  }}
+>
+  <p>
+    O filho fecha a sua escrita do pipe e lê em ciclo. O pai envia dados e faz
+    waitpid sem fechar a escrita. Porque podem ficar ambos à espera?
+  </p>
+  <div slot="hint">
+    EOF depende de referências abertas, não da intenção de voltar a escrever.
+  </div>
+  <div slot="hint-more">
+    O filho precisa de sair antes de waitpid poder terminar.
+  </div>
+  <div slot="solution">
+    Depois de consumir os dados, o filho vê o buffer vazio mas há uma escrita
+    aberta no pai, por isso bloqueia. O pai espera pelo fim do filho. Fecha a
+    escrita antes de esperar, e fecha outras cópias que possam existir.
+  </div>
+  <div slot="mistakes">
+    Achar que uma read curta prova EOF ou que só a ponta do filho importa.
+  </div>
+</Exercise>
+
+<Exercise
+  id="so-sinal-janela"
+  title="Um sinal perdido antes de pause"
+  explanation="/cadeiras/so/comunicacao-processos/#sinais-sem-trabalho-inseguro"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Coloquei a chegada entre o teste e pause.',
+      'Expliquei que o tratador já terminou antes de dormir.',
+      'Propus máscara e sigsuspend ou mecanismo equivalente.',
+    ],
+  }}
+>
+  <p>
+    Num programa while (!recebido) pause(), o tratador muda recebido para 1.
+    Mostra uma ordem que deixa o programa bloqueado depois de receber o sinal.
+  </p>
+  <div slot="hint">O teste e a entrada em espera são operações separadas.</div>
+  <div slot="hint-more">
+    O sinal pode chegar depois do teste falso e antes da chamada pause.
+  </div>
+  <div slot="solution">
+    O ciclo testa recebido=0; o sinal chega e o tratador põe 1; o tratador
+    retorna; o programa chama pause e espera outro sinal. Bloquear o sinal
+    durante o teste e usar sigsuspend para desbloquear e dormir atomicamente
+    fecha essa janela.
+  </div>
+  <div slot="mistakes">
+    Pensar que volatile liga atomicamente o teste à espera ou chamar printf num
+    tratador sem verificar segurança.
+  </div>
+</Exercise>

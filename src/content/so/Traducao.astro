@@ -1,0 +1,147 @@
+<so-traducao>
+  <div class="controls">
+    <label>
+      Endereço virtual (0 a 63)
+      <input data-address type="number" min="0" max="63" step="1" value="45" />
+    </label>
+    <label>
+      Tamanho de página
+      <select data-size>
+        <option value="8">8 bytes</option>
+        <option value="16" selected>
+          16 bytes
+        </option>
+        <option value="32">32 bytes</option>
+      </select>
+    </label>
+    <label class="presence">
+      <input data-present type="checkbox" checked /> Página presente
+    </label>
+  </div>
+  <svg
+    viewBox="0 0 320 170"
+    role="img"
+    aria-label="Página e deslocamento do endereço, consulta da moldura e composição do endereço físico"
+  >
+    <g fill="var(--surface)" stroke="var(--line)">
+      <rect x="10" y="8" width="300" height="38" rx="5" />
+      <rect x="10" y="66" width="300" height="38" rx="5" />
+      <rect x="10" y="124" width="300" height="38" rx="5" />
+    </g>
+    <g stroke="var(--accent)" stroke-width="2">
+      <path d="M160 46v20m-5-6 5 6 5-6M160 104v20m-5-6 5 6 5-6" fill="none" />
+    </g>
+    <g fill="currentColor" font-size="14" text-anchor="middle">
+      <text x="160" y="32" data-parts>
+        Página 2 · deslocamento 13
+      </text>
+      <text x="160" y="90" data-frame>
+        Tabela[2] = moldura 5
+      </text>
+      <text x="160" y="148" data-physical>
+        Físico = 5 × 16 + 13 = 93
+      </text>
+    </g>
+  </svg>
+  <output aria-live="polite" data-result>
+    45 = 2 × 16 + 13. A página 2 está na moldura 5.
+  </output>
+</so-traducao>
+
+<script>
+  class Traducao extends HTMLElement {
+    connectedCallback() {
+      this.addEventListener('input', () => this.update());
+      this.update();
+    }
+    update() {
+      const address = this.querySelector<HTMLInputElement>('[data-address]');
+      const size = this.querySelector<HTMLSelectElement>('[data-size]');
+      const present = this.querySelector<HTMLInputElement>('[data-present]');
+      const result = this.querySelector<HTMLOutputElement>('[data-result]');
+      const parts = this.querySelector('[data-parts]');
+      const frameText = this.querySelector('[data-frame]');
+      const physical = this.querySelector('[data-physical]');
+      if (
+        !address ||
+        !size ||
+        !present ||
+        !result ||
+        !parts ||
+        !frameText ||
+        !physical
+      )
+        return;
+      const value = address.valueAsNumber;
+      if (!Number.isInteger(value) || value < 0 || value > 63) {
+        result.textContent = 'Usa um endereço inteiro entre 0 e 63.';
+        parts.textContent = 'Endereço fora do modelo';
+        frameText.textContent = 'Sem consulta';
+        physical.textContent = 'Sem tradução';
+        return;
+      }
+      const pageSize = Number(size.value);
+      const page = Math.floor(value / pageSize);
+      const offset = value % pageSize;
+      const frame = [3, 0, 5, 1, 7, 2, 6, 4][page];
+      parts.textContent = `Página ${page} · deslocamento ${offset}`;
+      frameText.textContent = present.checked
+        ? `Tabela[${page}] = moldura ${frame}`
+        : `Página ${page} ausente`;
+      physical.textContent = present.checked
+        ? `Físico = ${frame} × ${pageSize} + ${offset} = ${frame * pageSize + offset}`
+        : 'Falta de página: preparar e repetir';
+      result.textContent = present.checked
+        ? `${value} = ${page} × ${pageSize} + ${offset}. A página ${page} está na moldura ${frame}.`
+        : 'O endereço é válido, mas a página precisa de ser preparada antes do acesso.';
+    }
+  }
+  if (!customElements.get('so-traducao'))
+    customElements.define('so-traducao', Traducao);
+</script>
+
+<style>
+  so-traducao {
+    display: block;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  label {
+    display: grid;
+    gap: 6px;
+  }
+  input[type='number'],
+  select {
+    min-height: 40px;
+    max-width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+  }
+  .presence {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+  }
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+  }
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    margin: 14px auto;
+  }
+  output {
+    display: block;
+  }
+</style>

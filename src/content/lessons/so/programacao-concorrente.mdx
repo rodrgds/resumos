@@ -1,150 +1,145 @@
 ---
 title: Programação concorrente
-description: Threads, mutexes, semáforos, variáveis de condição e a ordem dos locks contra impasses.
+description: Threads, corridas, secções críticas, atomics, mutexes, semáforos e condições.
 section: conteudo
-order: 6
+order: 8
+practices:
+  - so/praticar-concorrencia
 ---
 
-import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
-import impasse from './impasse.dot?raw';
+Duas threads que partilham um contador precisam de combinar o que significa incrementá-lo. A linha `contador++` parece uma operação, mas uma leitura e uma escrita separadas já permitem perder uma atualização.
 
-Quando dois fluxos de execução tocam nos mesmos dados ao mesmo tempo, o resultado depende da ordem dos acessos, e a ordem varia. A programação concorrente é a disciplina de tornar esses programas corretos apesar da variação: **threads** para o paralelismo dentro de um processo e primitivas de sincronização para ordenar o que tem de ser ordenado.
+## O que uma thread partilha
 
-## Threads e a corrida
+Uma thread tem registos, contador de programa e pilha próprios. As threads do processo partilham o espaço de endereçamento, incluindo globais e heap, e os descritores. Uma variável automática pode ser acedida por outra thread se lhe passarmos um apontador válido; estar numa pilha não garante privacidade.
 
-Uma **thread** é um fluxo de execução dentro de um processo: tem a sua pilha e os seus registos, mas partilha código, dados e ficheiros abertos com as outras threads do processo. Partilhar por defeito é cómodo e perigoso. Este contador partilhado entre duas threads que incrementam mil vezes cada uma devia terminar em 2000:
+`pthread_create` inicia uma função com assinatura `void *f(void *)`. O argumento precisa de continuar vivo enquanto a thread o usa. Passar a todas o endereço da mesma variável de um ciclo não cria uma cópia por thread. `pthread_join` espera pela terminação de uma thread e permite recolher o seu retorno. Não termina as outras threads.
+
+## Uma atualização perdida
+
+Num modelo de ler, calcular e escrever, o contador começa em 5:
+
+| Passo | Thread A, incrementar | Thread B, decrementar | Memória |
+| ----- | --------------------- | --------------------- | ------- |
+| 1     | Lê 5                  |                       | 5       |
+| 2     |                       | Lê 5                  | 5       |
+| 3     | Calcula 6             |                       | 5       |
+| 4     |                       | Calcula 4             | 5       |
+| 5     | Escreve 6             |                       | 6       |
+| 6     |                       | Escreve 4             | 4       |
+
+A execução serial daria 5. Este entrelaçamento dá 4; inverter as duas escritas daria 6. É um exemplo para explicar a corrida. Em C, acessos concorrentes incompatíveis a um objeto não atómico, sem sincronização, constituem **data race** e têm comportamento indefinido. Não podes afirmar que o programa C real só terá os resultados 4, 5 ou 6.
+
+`volatile` não resolve esta corrida. Impede certas otimizações dos acessos, mas não cria uma operação atómica nem uma relação de sincronização entre threads.
+
+## Secção crítica e propriedades
+
+A secção crítica é o trecho que usa os dados cujo acesso precisa de coordenação. Uma solução clássica procura:
+
+- **Exclusão mútua**: no máximo uma tarefa está na secção crítica protegida.
+- **Progresso**: se há tarefas interessadas e ninguém está lá dentro, a escolha de quem entra não pode ser adiada indefinidamente por quem não participa.
+- **Espera limitada**: há um limite ao número de entradas de outras tarefas antes de uma tarefa que pediu acesso poder entrar.
+
+Exclusão mútua não implica as restantes. Um protocolo que nunca deixa ninguém entrar exclui todos e falha o progresso. Um lock sem justiça pode impedir acesso simultâneo sem garantir espera limitada.
+
+## Peterson e operações atómicas
+
+Para duas tarefas, a solução de Peterson usa `interessado[2]` e `vez`. A tarefa $i$ assinala interesse, cede preferência a $j$ e espera enquanto $j$ está interessado e tem a vez. Ao sair, retira o seu interesse.
+
+```text
+interessado[i] = verdadeiro
+vez = j
+enquanto interessado[j] e vez == j: esperar
+secção crítica
+interessado[i] = falso
+```
+
+Se ambos entram no protocolo, a última escrita em `vez` decide quem espera; não podem ter simultaneamente a preferência. Esta prova assume operações atómicas e uma ordem de memória adequada. Traduzir o pseudocódigo para globais C comuns não cumpre essas hipóteses. Para programar, usa primitivas da biblioteca ou atomics com um modelo de memória escolhido conscientemente.
+
+**Test-and-set** lê um valor antigo e escreve o novo numa operação atómica. **Compare-and-swap** só escreve o novo valor se o antigo coincidir com o esperado. Um spinlock pode repetir test-and-set até obter o lock, consumindo CPU enquanto espera. Faz sentido em certos trechos curtos, mas uma espera longa desperdiça CPU. Desativar interrupções numa CPU não impede outra CPU de aceder aos mesmos dados.
+
+## Mutex com Pthreads
+
+O mutex protege o contador no programa completo seguinte. Guarda-o como `contador.c` e compila no terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic contador.c -pthread -o contador`.
 
 ```c
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int contador = 0;
+static int contador = 0;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void *incrementar(void *arg) {
-    for (int i = 0; i < 1000; i++) {
+static void conferir(int erro) {
+    if (erro == 0) return;
+    fprintf(stderr, "pthread: %s\n", strerror(erro));
+    exit(1);
+}
+
+static void *incrementar(void *arg) {
+    (void)arg;
+    for (int i = 0; i < 10000; i++) {
+        conferir(pthread_mutex_lock(&mutex));
         contador++;
+        conferir(pthread_mutex_unlock(&mutex));
     }
     return NULL;
 }
 
 int main(void) {
-    pthread_t t1, t2;
-    pthread_create(&t1, NULL, incrementar, NULL);
-    pthread_create(&t2, NULL, incrementar, NULL);
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
+    pthread_t a, b;
+    conferir(pthread_create(&a, NULL, incrementar, NULL));
+    conferir(pthread_create(&b, NULL, incrementar, NULL));
+    conferir(pthread_join(a, NULL));
+    conferir(pthread_join(b, NULL));
     printf("%d\n", contador);
+    conferir(pthread_mutex_destroy(&mutex));
     return 0;
 }
 ```
 
-Na prática imprime quase sempre menos de 2000. O `contador++` é ler, somar e escrever, três passos. Se uma thread lê 100 e antes de escrever a outra também lê 100, ambas escrevem 101 e um incremento perde-se. A isto chama-se **corrida** (_race condition_): o resultado depende do entrelaçamento, e o entrelaçamento muda sempre. O programa até pode imprimir 2000 numa execução e falhar na seguinte.
+A saída é 20000. Todos os incrementos usam o mesmo mutex. A leitura final acontece depois dos dois joins, quando já não há escritores. Pthreads devolve o código de erro diretamente em muitas funções; não o interpretes como `errno` nem uses `perror` sem o converter.
 
-## Mutexes: uma de cada vez
+Obter o mutex uma vez para todo o ciclo também daria o total correto, mas cada thread faria o seu trabalho inteiro sem a outra entrar. Obter por incremento permite entrelaçamento fino e custa mais operações de sincronização. A granularidade deve seguir o que precisa de ser indivisível, não a regra de pôr sempre o menor número de linhas possível.
 
-Um **mutex** garante **exclusão mútua**: só uma thread de cada vez atravessa a secção crítica. Envolve o incremento com `lock` e `unlock` e a corrida desaparece. Com o mesmo programa mas com o incremento protegido, a saída é sempre 2000, em todas as execuções:[^pthreads]
+## Semáforos
 
-```c
-pthread_mutex_t trinco = PTHREAD_MUTEX_INITIALIZER;
+Um semáforo conta permissões. `wait`, também chamado P, consome uma se houver disponibilidade; caso contrário espera. `post`, ou V, acrescenta uma e pode permitir que alguém avance. As operações são atómicas.
 
-void *incrementar(void *arg) {
-    for (int i = 0; i < 1000; i++) {
-        pthread_mutex_lock(&trinco);
-        contador++;
-        pthread_mutex_unlock(&trinco);
-    }
-    return NULL;
-}
-```
+Um semáforo iniciado em 3 limita a três utilizadores de um recurso. Iniciado em 0, pode impor uma ordem: B faz `wait`, A termina a preparação e faz `post`. Um semáforo binário pode conseguir exclusão mútua, mas não tem necessariamente a noção de dono de um mutex. Não confundas sinalizar disponibilidade com libertar um lock que pertence à thread.
 
-A regra de ouro é que **todos** os acessos à variável partilhada passam pelo mesmo mutex. Um acesso esquecido fora do lock reabre a corrida, e o erro volta a ser intermitente e difícil de caçar. Mantém as secções críticas curtas: trabalho a mais dentro do lock serializa as threads e anula o paralelismo.
+Numa fila limitada a $N$ itens, um protocolo com semáforos começa com `vazios=N`, `cheios=0` e exclusão mútua sobre os índices. O produtor obtém um vazio, obtém o mutex, insere, liberta o mutex e anuncia um cheio. O consumidor obtém um cheio, obtém o mutex, retira, liberta o mutex e anuncia um vazio.
 
-## Semáforos e variáveis de condição
+A ordem importa. Se um produtor obtiver primeiro o mutex e depois esperar por um vazio numa fila cheia, bloqueia mantendo o mutex. O consumidor que poderia criar espaço não consegue obtê-lo. Esperar por disponibilidade antes de entrar na secção crítica evita esse ciclo. Os contadores de permissões não dispensam proteger a atualização dos índices quando há vários produtores ou consumidores.
 
-- Um **semáforo** é um contador com operações atómicas de decrementar (esperar) e incrementar (sinalizar). Com valor inicial 1 comporta-se como um mutex; com valor inicial N limita N acessos simultâneos, como vagas num recurso com várias unidades.
-- Uma **variável de condição** deixa uma thread dormir até outra anunciar que algo mudou, como um lugar livre numa fila. Evita a espera ativa: em vez de testar a condição em ciclo a queimar processador, a thread dorme e acorda só quando vale a pena verificar.
+## Esperar por uma condição
 
-Usa mutex para proteger dados, semáforo para contar recursos e variável de condição para esperar por eventos. Misturar os papéis funciona por acidente até deixar de funcionar.
+Uma variável de condição não guarda a verdade da condição nem acumula todos os sinais. A verdade fica nos dados, protegidos pelo mutex. `pthread_cond_wait(&cond, &mutex)` liberta o mutex e entra em espera atomicamente; quando retorna, voltou a obter o mutex.
 
-O padrão produtor-consumidor junta as três primitivas. O produtor põe os números 1 a 5 no buffer, o consumidor tira-os pela mesma ordem, e o mutex mais as duas condições garantem que ninguém lê vazio nem escreve cheio:
+Este é o padrão para um consumidor, assumindo `quantidade`, `buffer` e índices protegidos por `mutex`:
 
 ```c
-#include <pthread.h>
-#include <stdio.h>
-
-#define N 5
-int buf[N], n = 0, prod_i = 0, cons_i = 0;
-pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t livre = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cheio = PTHREAD_COND_INITIALIZER;
-
-void *produtor(void *arg) {
-    for (int v = 1; v <= 5; v++) {
-        pthread_mutex_lock(&m);
-        while (n == N) pthread_cond_wait(&livre, &m);
-        buf[prod_i] = v;
-        prod_i = (prod_i + 1) % N;
-        n++;
-        pthread_cond_signal(&cheio);
-        pthread_mutex_unlock(&m);
-    }
-    return NULL;
-}
-
-void *consumidor(void *arg) {
-    for (int k = 0; k < 5; k++) {
-        pthread_mutex_lock(&m);
-        while (n == 0) pthread_cond_wait(&cheio, &m);
-        int v = buf[cons_i];
-        cons_i = (cons_i + 1) % N;
-        n--;
-        printf("%d ", v);
-        pthread_cond_signal(&livre);
-        pthread_mutex_unlock(&m);
-    }
-    return NULL;
-}
-
-int main(void) {
-    pthread_t p, c;
-    pthread_create(&p, NULL, produtor, NULL);
-    pthread_create(&c, NULL, consumidor, NULL);
-    pthread_join(p, NULL);
-    pthread_join(c, NULL);
-    printf("\n");
-    return 0;
-}
+pthread_mutex_lock(&mutex);
+while (quantidade == 0)
+    pthread_cond_wait(&nao_vazio, &mutex);
+int valor = buffer[saida];
+saida = (saida + 1) % CAPACIDADE;
+quantidade--;
+pthread_cond_signal(&nao_cheio);
+pthread_mutex_unlock(&mutex);
 ```
 
-A saída é sempre `1 2 3 4 5`. Repara nos dois `while` à volta dos `wait`: quando a thread acorda, volta a testar a condição, porque acordar não garante que o lugar continua livre. O `if` aqui seria o próximo bug intermitente.
+O produtor espera enquanto `quantidade == CAPACIDADE`, insere, aumenta a quantidade e sinaliza `nao_vazio`. A invariável é $0 \leq quantidade \leq CAPACIDADE$; índices avançam módulo capacidade.
 
-## Impasses e a ordem dos locks
+O teste precisa de `while`, porque pode haver despertares espúrios ou outra thread pode consumir o item antes de esta obter o mutex. `signal` não transfere imediatamente a CPU nem entrega o mutex ao consumidor.
 
-Com dois locks nasce o **impasse** (_deadlock_): a thread A tem o lock 1 e quer o 2, a thread B tem o 2 e quer o 1, e nenhuma larga o que tem. Ambas esperam para sempre.
+Para vários consumidores, define também como termina a produção. Uma flag `terminado`, sob o mesmo mutex, permite esperar enquanto a fila está vazia **e** não terminou, e sair quando vazia e terminada. Nesse fim, um `broadcast` acorda os consumidores que precisam de observar a mudança.
 
-<Dot
-  source={impasse}
-  alt="Grafo de espera do impasse: a thread A tem o lock 1 e quer o 2, a thread B tem o 2 e quer o 1, fechando um ciclo."
-/>
+## Porque um sinal pode não bastar
 
-O grafo fecha um ciclo: cada thread espera por um lock que a outra tem. A correção mais simples é uma **ordem fixa**: todos os troços de código obtêm os locks sempre pela mesma ordem (primeiro o 1, depois o 2). Se ninguém obtiver o 2 antes do 1, o ciclo de espera nunca se fecha e o impasse é impossível.
+Se uma fila passa de vazia a um item e depois acumula vários itens, sinalizar apenas na transição pode ser suficiente para um único consumidor que continua a retirar. Com vários consumidores, pode deixar outros adormecidos apesar de haver trabalho. Decide entre sinalizar por inserção e acordar vários segundo o número de consumidores e o protocolo, não só segundo o desejo de fazer menos chamadas.
 
-:::warning[Impasse não avisa]
-Um programa em impasse não avaria nem consome processador: fica parado, silencioso, para sempre. Quando um programa com threads parar sem mensagem de erro, suspeita de locks obtidos por ordens diferentes antes de suspeitar do resto.
-:::
+Um **monitor** reúne dados protegidos e operações que os usam sob exclusão mútua, com condições para esperar. Em C/Pthreads, o programador constrói essa disciplina; outras linguagens oferecem parte dela diretamente.
 
-<YouTube
-  id="BFfvDPEQAdk"
-  title="Deadlock in os | Mutual Exclusion, Hold and Wait, No Preemption, Circular Wait"
-/>
-
-## Para saber mais
-
-- A [referência oficial de threads POSIX](https://man7.org/linux/man-pages/man7/pthreads.7.html) documenta mutexes, variáveis de condição e as regras de cada chamada.
-
-## Para levar para a próxima página
-
-Threads partilham memória por defeito e a sincronização impõe a ordem. Mas que memória é essa que as threads veem, e como é que cada processo acredita que a tem só para si? A resposta é a [memória virtual](memoria-virtual/).
-
-[^pthreads]: A regra de proteger todos os acessos com o mesmo mutex vem da referência oficial: [`pthreads(7)`](https://man7.org/linux/man-pages/man7/pthreads.7.html).
+Mutexes evitam corridas, mas um conjunto de locks ainda pode criar [impasses](../impasses/). Para avaliar correção, procura tanto acessos concorrentes como ordens de obtenção incompatíveis.

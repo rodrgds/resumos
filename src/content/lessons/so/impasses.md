@@ -1,0 +1,48 @@
+---
+title: Impasses e inanição
+description: Condições de impasse, grafos de espera, prevenção e estados seguros.
+section: conteudo
+order: 9
+practices:
+  - so/praticar-impasses
+---
+
+A tem o recurso X e pede Y. B tem Y e pede X. Se só libertam o recurso depois de obter o outro, nenhuma avança. Temos um **impasse**, ou _deadlock_.
+
+## Quatro condições
+
+Num modelo de recursos reutilizáveis, um impasse exige simultaneamente exclusão mútua, retenção de recursos enquanto se espera por outros, impossibilidade de retirar os recursos à força e espera circular.
+
+Quebrar uma destas condições evita o impasse nesse modelo. Uma ordem global dos locks quebra a espera circular: todos obtêm X antes de Y. Se B já tem Y, não pode tentar obter X segundo esse protocolo.
+
+Pedir todos os recursos de uma vez quebra retenção com espera, mas pode reduzir utilização e prolongar espera. Libertar o que se tem se a próxima obtenção falhar exige recomeçar com cuidado. Repetir sem nenhuma thread avançar pode dar **livelock**, em que há atividade mas não progresso útil.
+
+## Grafos de recursos e de espera
+
+Num grafo de atribuição, uma aresta processo→recurso é um pedido; recurso→processo é uma atribuição. Com uma única instância de cada recurso, um ciclo prova impasse. Com múltiplas instâncias, pode haver um ciclo e ainda existir uma instância que permita a alguém acabar e libertar recursos.
+
+Num grafo de espera para locks de uma instância, A→B significa que A espera por um lock que B detém. A→B→A mostra o ciclo. Desenhar apenas que ambos usam dois locks não prova impasse: é preciso identificar quem já tem cada um e quem está bloqueado à espera de quê.
+
+## Seguro não significa livre de espera
+
+Um estado é **seguro** se há uma ordem de conclusão que permite satisfazer as necessidades máximas declaradas de todos. É uma garantia sobre pedidos futuros dentro desses limites, não uma afirmação de que ninguém espera agora.
+
+Com três unidades de um recurso, A tem 1 e pode precisar no máximo de 2; B tem 1 e pode precisar no máximo de 2. Há uma livre. Dá-a a A; A conclui e devolve 2, depois B pode concluir. A ordem A, B prova segurança.
+
+Agora A e B têm 1 cada e ambos podem precisar no máximo de 3. Só há uma livre e cada um ainda pode pedir 2. Não conseguimos garantir uma primeira conclusão pelos máximos declarados, por isso o estado é inseguro. Ainda não prova impasse: podem usar menos do que o máximo ou devolver recursos sem pedir mais.
+
+Para verificar segurança com vários tipos, começa num vetor `Work = Available`. Procura um processo cujo `Need = Max - Allocation` caiba componente a componente em Work. Simula a sua conclusão somando a sua Allocation a Work e repete. Se conseguires incluir todos, obtiveste uma sequência segura. O algoritmo do banqueiro só admite um pedido se respeita os máximos, a disponibilidade e deixa um estado seguro.
+
+## Deteção e recuperação
+
+Prevenção impõe regras que quebram uma condição. Evitação examina pedidos para manter segurança. Deteção permite alguns pedidos e depois procura impasses. Recuperação pode terminar processos ou retirar recursos recuperáveis, preservando a consistência dos dados. Retirar arbitrariamente um mutex não é uma recuperação correta.
+
+Timeouts permitem abandonar uma espera, mas não corrigem por si a ordem dos locks nem desfazem operações parciais. O código precisa de saber o que libertar e que trabalho reverter.
+
+## Distinguir os problemas
+
+- Num impasse, um conjunto de tarefas depende circularmente de recursos que as próprias tarefas não libertam.
+- Na inanição, uma tarefa pode ficar sem serviço enquanto outras continuam a avançar, por exemplo devido a prioridade.
+- No livelock, as tarefas mudam de estado ou repetem tentativas, mas não concluem o trabalho.
+
+Não precisas de consumo alto de CPU para ter impasse. Threads bloqueadas podem consumir quase nada. Uma espera longa também não prova impasse, se o evento esperado ainda puder acontecer.

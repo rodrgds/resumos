@@ -1,109 +1,169 @@
 ---
 title: C avançado para sistemas
-description: Compilador, programas contra processos, bibliotecas e APIs, e gestão de memória em C com um erro corrigido.
+description: Compilação, bibliotecas, apontadores, tempo de vida, strings e argumentos.
 section: conteudo
-order: 2
+order: 3
+practices:
+  - so/praticar-c
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import fasesGcc from './fases-gcc.typ?raw';
+import memoria from '../../so/memoria.c?raw';
 
-Todo o resto da cadeira é C a falar com o núcleo, por isso esta página afina a ferramenta: o que o compilador faz ao teu código, a diferença entre programa e processo, como as bibliotecas encaixam e como a memória se gere sem rede de segurança. É revisão orientada a sistemas, não um curso de C. Se os [apontadores](/cadeiras/p/apontadores-memoria/) ainda tremem, revê-os antes de continuar.
+Em C, um apontador dá acesso a um objeto, mas não diz se esse objeto ainda existe nem quem o deve libertar. Antes de usar a API do sistema, precisamos de acompanhar os valores, os endereços e o tempo de vida dos dados.
 
-## Do fonte ao executável
+## Do ficheiro fonte ao executável
 
-O `gcc` não compila de uma vez: **pré-processa** (expande `#include` e macros), **compila** (traduz C para assembly), **monta** (gera código objeto) e **liga** (junta o teu código objeto com as bibliotecas num executável).
-
-<Typst
-  source={fasesGcc}
-  format="svg"
-  alt="As cinco fases do gcc em cadeia: ficheiro fonte, pré-processador, compilador, montador, ligador e executável."
-/>
-
-Podes ver as fases com `gcc -save-temps`. O erro que o compilador te dá pertence sempre a uma fase: um `#include` errado falha no pré-processamento, um `;` em falta falha na compilação, uma função declarada mas nunca definida falha na ligação com `undefined reference`.
-
-Um **programa** é o ficheiro executável parado no disco. Um **processo** é o programa em execução, com o seu espaço de memória, descritores e estado de execução. O mesmo programa lançado duas vezes dá dois processos independentes, cada um com a sua memória.
-
-<Tabs id="opcoes-gcc" labels={['Avisos', 'Ver as fases', 'Depurar']}>
-  <div slot="panel-0">
+O comando `gcc` coordena várias ferramentas. Pré-processamento expande includes e macros; compilação analisa sintaxe e tipos e gera assembly; montagem produz objetos; ligação resolve referências entre objetos e bibliotecas.
 
 ```sh
-gcc -Wall -Wextra programa.c -o programa
+gcc -E programa.c -o programa.i
+gcc -S programa.c -o programa.s
+gcc -c programa.c -o programa.o
+gcc programa.o -o programa
 ```
 
-Liga os avisos: apanha variáveis por usar, comparações suspeitas e formatos errados no `printf` antes de correres.
+`-c` não liga. Se o programa usa uma função declarada mas sem definição disponível, a compilação do objeto pode passar e a ligação falhar com `undefined reference`. Um cabeçalho descreve a interface; incluir um `.h` não fornece automaticamente a implementação.
 
-  </div>
-  <div slot="panel-1">
+No terminal Linux, um ponto de partida é `gcc -std=c17 -Wall -Wextra -Wpedantic -g programa.c -o programa`. `-g` acrescenta informação para depuração, não corrige o programa. `-Wall` não ativa literalmente todos os avisos. Lê-os e corrige a causa. No debugger, um breakpoint em `main`, `next` e `step` permitem acompanhar linhas e entrar em funções.
 
-```sh
-gcc -save-temps programa.c -o programa
-ls programa.*
+## Programa e processo
+
+O executável é um ficheiro com código e dados iniciais. Um processo é uma execução desse programa, com estado próprio. O mesmo executável pode dar origem a vários processos com valores diferentes nas suas variáveis.
+
+Num modelo típico, `.text` contém código, `.data` dados estáticos inicializados e `.bss` dados estáticos inicialmente a zero. A pilha contém quadros de chamadas e muitos objetos automáticos. O heap fornece blocos com duração controlada pelo programa. Compiladores podem manter variáveis em registos; o modelo ajuda a raciocinar, mas não fixa a posição física de cada variável.
+
+## Apontadores e passagem por valor
+
+`&x` obtém o endereço de `x`; `*p` acede ao objeto apontado por `p`.
+
+```c
+int x = 5, y = 3;
+int *p = &x;
+int *q = p;
+*p = 7;
+p = &y;
+*q = 9;
 ```
 
-Guarda os ficheiros intermédios (`.i` pré-processado, `.s` em assembly, `.o` objeto) para veres cada fase do diagrama.
+No fim, `x == 9` e `y == 3`. Alterar `p` não altera `q`: cada apontador guarda uma cópia do endereço. `q` continua a apontar para `x`.
 
-  </div>
-  <div slot="panel-2">
+C passa todos os argumentos por valor. `swap(int a, int b)` troca cópias. `swap(int *a, int *b)` também recebe cópias, mas essas cópias apontam para os objetos do chamador e permitem alterá-los com `*a` e `*b`.
 
-```sh
-gcc -g programa.c -o programa
-gdb ./programa
-```
+Num array, `p + 1` avança um elemento, não necessariamente um byte. Para um `int *`, o avanço é `sizeof(int)` bytes. `a[i]` equivale a `*(a + i)` quando o índice é válido. Só podes desreferenciar dentro do array; o apontador imediatamente a seguir pode ser usado como limite, mas não para ler um elemento.
 
-Inclui símbolos de depuração para poderes parar em linhas e inspecionar variáveis no `gdb`.
+`sizeof array / sizeof array[0]` conta elementos quando `array` ainda é um array nesse âmbito. Num parâmetro `int array[]`, o tipo ajusta-se para apontador e essa conta deixa de medir o array. Passa também o comprimento.
 
-  </div>
-</Tabs>
+## Tempo de vida e propriedade
 
-## Bibliotecas e APIs
+Não devolvas `&local` de uma função: quando ela retorna, a variável automática deixa de existir. O endereço pode continuar a ter bits aparentemente plausíveis, mas usá-lo tem comportamento indefinido. Não existe uma saída obrigatória, nem sequer a garantia de um segmentation fault.
 
-Quase nenhum programa fala só com o núcleo. As **bibliotecas** oferecem funções prontas que o teu código chama como funções normais: a biblioteca padrão do C dá-te `printf` e `malloc`, e outras bibliotecas dão-te o resto. A **API** é o contrato, o conjunto de funções, tipos e convenções que a biblioteca promete. Ligar estaticamente copia a biblioteca para dentro do executável; ligar dinamicamente deixa-a num ficheiro partilhado (`.so`) que o sistema carrega quando o programa arranca.
-
-A distinção que interessa: chamar `printf` é chamar uma função de biblioteca, que por dentro fará uma chamada de sistema `write`. Chamar `write` diretamente é falar com o núcleo sem intermediários. Na programação de sistema vais usar os dois níveis e convém saber sempre em qual estás.
-
-## Gestão de memória em C
-
-Cada processo vê três zonas principais: o **código** e os dados fixos, a **pilha** (_stack_), que cresce e encolhe com as chamadas de função, e a **área livre** (_heap_), onde o `malloc` reserva blocos do tamanho que pedires e o `free` os devolve. A pilha limpa-se sozinha quando a função retorna; a área livre só se limpa se tu a libertares. Confirma os tamanhos base no teu ambiente:
+Um bloco obtido com `malloc` continua a existir até `free`. A função que devolve esse bloco deve deixar claro quem o liberta. `malloc` não inicializa os bytes; `calloc` põe os bytes a zero. Testa `NULL` antes de escrever.
 
 <CodePlayground
   language="c"
-  title="Tamanhos em C"
-  code={
-    '#include <stdio.h>\n\nint main(void) {\n    printf("int: %zu, ponteiro: %zu\\n", sizeof(int), sizeof(void *));\n    return 0;\n}'
-  }
+  title="Reservar, copiar e libertar"
+  code={memoria}
 />
 
-Isto imprime `int: 4, ponteiro: 8` num Linux de 64 bits. O `sizeof` conta bytes em tempo de compilação: é com ele que se calcula o argumento do `malloc`, como `3 * sizeof(int)` mais abaixo.
+O programa escreve `original=4 copia=9`. O segundo bloco tem uma cópia do valor, não do endereço. Depois de `free`, deixa de ser válido aceder ao bloco. Atribuir `NULL` ao apontador libertado pode ajudar a detetar usos locais, mas não corrige outros apontadores que ainda guardem o endereço.
 
-O erro clássico é escrever fora do bloco reservado. Este programa pede espaço para 3 inteiros e escreve 4:
+Para redimensionar, usa um temporário:
 
 ```c
-#include <stdio.h>
-#include <stdlib.h>
+int *novo = realloc(valores, novo_tamanho * sizeof *valores);
+if (novo == NULL) {
+    /* valores continua válido, se o tamanho pedido não for zero */
+} else {
+    valores = novo;
+}
+```
 
-int main(void) {
-    int *v = malloc(3 * sizeof(int));
-    for (int i = 0; i <= 3; i++) {
-        v[i] = (i + 1) * 10;
-    }
-    for (int i = 0; i < 3; i++) {
-        printf("%d ", v[i]);
-    }
-    printf("\n");
-    free(v);
+Este é um excerto: confirma antes que `novo_tamanho` é positivo e que a multiplicação cabe em `size_t`. Escrever diretamente `valores = realloc(...)` perderia o endereço antigo se a operação falhasse. Quando tiver sucesso, o endereço antigo deixa de ser utilizável, mesmo que os bits não tenham mudado.
+
+## Strings e estruturas
+
+Uma string C termina em `\0`. Para guardar `"ola"`, precisas de quatro bytes. `strlen` conta bytes anteriores ao terminador; não mede a capacidade do buffer. `sizeof` de um apontador mede o apontador, não a string.
+
+`strcmp(a, b)` devolve zero se forem iguais, negativo se `a` vier antes de `b` e positivo no caso contrário. Não exijas exatamente `-1` ou `1`. `strcpy` e `strcat` exigem espaço suficiente no destino. Para concatenar duas strings, a reserva precisa de `strlen(a) + strlen(b) + 1` bytes, depois de verificar overflow.
+
+`strtok` modifica o buffer e mantém estado entre chamadas. Se precisares de conservar o original, faz uma cópia que possas alterar. `strsep` é uma extensão comum de UNIX, não parte de C17. Ao usar `tolower`, converte primeiro para `unsigned char` se o valor vier de um `char` que pode ser negativo.
+
+Uma `struct` reúne campos num objeto. A atribuição de estruturas copia os campos, incluindo apenas os endereços de campos apontador. Duas estruturas que copiem o mesmo apontador ainda podem partilhar o mesmo bloco. Para objetos pequenos, devolver uma estrutura por valor evita uma reserva dinâmica e simplifica a propriedade.
+
+## Argumentos e conversão
+
+Em `int main(int argc, char *argv[])`, `argc` inclui o nome usado para invocar o programa. `argv[argc]` é `NULL`. Os argumentos são strings, mesmo quando escreves `42` na shell. Verifica `argc` antes de ler `argv[1]`.
+
+`atoi` é conveniente para um exercício com entradas garantidamente válidas, mas não permite distinguir bem zero de uma conversão inválida. Para validar um inteiro, usa `strtol`, com `<stdlib.h>`, `<errno.h>` e limites adequados:
+
+```c
+errno = 0;
+char *fim;
+long n = strtol(argv[1], &fim, 10);
+if (errno == ERANGE || fim == argv[1] || *fim != '\0') {
+    /* rejeitar argumento */
+}
+```
+
+`fim == argv[1]` significa que não foi convertido nenhum dígito; `*fim != '\0'` deteta texto que sobrou. Se precisas de `int`, verifica também `INT_MIN <= n <= INT_MAX`. Para um máximo de números que podem ser negativos, inicializa com o primeiro valor validado, não com zero.
+
+## Bibliotecas e APIs
+
+Uma API diz que funções existem, que argumentos aceitam e o que devolvem. Uma implementação cumpre esse contrato. Por exemplo, uma biblioteca de vetores pode devolver `struct vetor` por valor ou devolver `struct vetor *` que exige libertação: são contratos diferentes, mesmo que representem o mesmo vetor.
+
+```sh
+gcc -Wall -Wextra -c vetor.c
+ar rcs libvetor.a vetor.o
+gcc usar.c -L. -lvetor -lm -o usar
+```
+
+A biblioteca estática fornece código ao executável na ligação. `-L.` acrescenta um diretório de pesquisa e `-lvetor` procura uma biblioteca com esse nome. A ordem importa para arquivos estáticos: põe a biblioteca depois dos objetos que usam os seus símbolos. `-lm` fornece a biblioteca matemática em ambientes que a separam.
+
+Para uma biblioteca partilhada em Linux:
+
+```sh
+gcc -Wall -Wextra -fPIC -c vetor.c
+gcc -shared vetor.o -o libvetor.so
+gcc usar.c -L. -lvetor -o usar
+LD_LIBRARY_PATH=. ./usar
+```
+
+Aqui distinguimos pesquisa na ligação de pesquisa durante a execução. `-L.` resolve a primeira; o carregador ainda precisa de encontrar a `.so`. A atribuição de `LD_LIBRARY_PATH` só vale para esse comando. Bibliotecas partilhadas podem permitir partilhar páginas de código e atualizar código sem reconstruir cada aplicação, mas exigem compatibilidade da interface binária.
+
+Um apontador de função, como `int (*f)(int)`, guarda uma função com esse tipo. `f(3)` chama-a. Serve para callbacks e tabelas de operações; antes de indexar uma tabela de funções, valida o índice.
+
+## Objetos compostos e listas
+
+Numa biblioteca de números complexos, `struct complexo { double real, imag; };` pode representar $a+bi$. Somar `(1,2)` e `(3,-1)` dá `(4,1)`; multiplicar dá $(1\times3-2\times(-1),\;1\times(-1)+2\times3)=(5,5)$. Devolver este objeto por valor não cria uma obrigação de `free`. Se a API devolvesse um apontador para um objeto reservado, precisaria de declarar essa obrigação. O mesmo cuidado aplica-se a vetores: distinguir um vetor matemático de dimensão fixa de um array dinâmico evita misturar contratos.
+
+Numa lista ligada, cada nó guarda um valor e o endereço do seguinte. A cabeça é `NULL` na lista vazia. Inserir no início muda o apontador da cabeça, por isso uma função pode receber o seu endereço, `struct no **`. Este excerto requer `<stdlib.h>` e uma cabeça inicialmente nula:
+
+```c
+struct no {
+    int valor;
+    struct no *seguinte;
+};
+
+int inserir(struct no **cabeca, int valor) {
+    struct no *novo = malloc(sizeof *novo);
+    if (novo == NULL) return -1;
+    novo->valor = valor;
+    novo->seguinte = *cabeca;
+    *cabeca = novo;
+    return 0;
+}
+
+int retirar(struct no **cabeca, int *valor) {
+    if (*cabeca == NULL) return -1;
+    struct no *antigo = *cabeca;
+    *valor = antigo->valor;
+    *cabeca = antigo->seguinte;
+    free(antigo);
     return 0;
 }
 ```
 
-O `i <= 3` escreve uma posição a mais, em memória que não é tua. O programa pode imprimir os valores certos e parecer funcionar, ou avariar noutra execução: **comportamento indefinido** significa exatamente isso, que nada está garantido. A correção é `i < 3`. E a segunda parte da disciplina: se o tamanho só se conhece a correr, pede-se de novo com `realloc` e liberta-se sempre com `free`, porque cada bloco não libertado é uma **fuga de memória** que cresce enquanto o processo viver.
+Assumimos argumentos apontador válidos e uso por uma tarefa. Depois de inserir 5 e depois 2, a cadeia é `2 → 5 → NULL`. Retirar devolve 2 e deixa a cabeça no nó de 5. Guardamos `seguinte` antes de libertar: ler `antigo->seguinte` depois de `free` seria usar um objeto que já não existe. Se a reserva falhar, a cabeça conserva o valor anterior.
 
-:::warning[O compilador não te salva aqui]
-O C não verifica limites de arrays nem inicializações. Compila com `gcc -Wall -Wextra` para apanhar o que dá para apanhar, e considera `valgrind` para caçar fugas e escritas fora dos limites. Nenhuma das duas ferramentas substitui contar os índices à mão.
-:::
-
-## Para levar para a próxima página
-
-Já tens o mapa: fonte vira executável, executável a correr é processo, bibliotecas e chamadas de sistema são os dois níveis de API, e a memória ou a geres tu ou ninguém gere. Com isto podes criar processos de verdade: [fork, exec, wait e exit](processos/).
+A lista é dona dos seus nós. Quem a destrói percorre os nós, guarda o próximo e liberta o atual. Se cada nó contivesse uma string reservada, o contrato também precisaria de dizer se a lista é dona dessa string. Copiar apenas a cabeça cria dois apontadores para os mesmos nós, não duas listas independentes. Inserir no fim exige percorrer a lista ou manter uma cauda cuja consistência também tens de preservar.
