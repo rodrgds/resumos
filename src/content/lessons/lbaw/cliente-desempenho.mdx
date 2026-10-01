@@ -1,0 +1,88 @@
+---
+title: Cliente web e desempenho
+description: HTML, CSS, JavaScript e pedidos assíncronos, com medidas e diagnóstico do tempo de resposta.
+order: 12
+practices:
+  - lbaw/praticar-desempenho
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+    - title: Moodle LBAW 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+  coverage: Tecnologias do cliente, DOM, eventos, fetch, erros, caminho de renderização, cache e desempenho.
+  gaps:
+    - O plano confirma o tópico, mas os slides desta aula ainda não estavam publicados em 1 de outubro. A explicação usa documentação primária.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import percentil from '../../lbaw/percentil.js?raw';
+
+O servidor pode produzir HTML pronto a ler. O navegador constrói o DOM, aplica CSS e corre JavaScript. Separar estes trabalhos permite localizar a causa de uma página lenta: pode estar na consulta SQL, no transporte ou num script que impede responder ao teclado.
+
+## Estrutura, apresentação e comportamento
+
+**HTML** descreve estrutura e significado, como títulos, links e formulários. **CSS** define apresentação e disposição. **JavaScript** responde a eventos e altera o documento. Um botão nativo já suporta ativação por teclado; substituir tudo por elementos genéricos exige reconstruir comportamentos e nomes acessíveis.
+
+Um seletor CSS escolhe elementos; a cascata combina origem, importância, especificidade e ordem, entre outras regras. No box model, largura de conteúdo, padding, border e margin não são a mesma coisa. Com `box-sizing: border-box`, a largura declarada inclui padding e border. Um layout responsivo adapta-se ao espaço disponível sem depender de uma lista fechada de modelos de telefone.
+
+O **DOM** é a representação do documento como uma árvore de nós. `addEventListener` associa um comportamento a um evento. O comportamento deve ler o estado atual, atualizar o necessário e preservar foco e mensagens. Inserir texto com `textContent` mantém-no como texto; inserir HTML muda o contexto e pode criar [XSS](/cadeiras/lbaw/seguranca-web/#xss-o-contexto-decide-a-codificação).
+
+## Pedidos assíncronos e estados da interface
+
+Este fragmento pressupõe uma página que tem um elemento `#resultado` e uma API no mesmo site:
+
+```javascript
+async function carregarSessao(id) {
+  const resultado = document.querySelector('#resultado');
+  resultado.textContent = 'A carregar';
+  try {
+    const resposta = await fetch(`/api/sessoes/${encodeURIComponent(id)}`);
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+    const sessao = await resposta.json();
+    resultado.textContent = `${sessao.titulo}: ${sessao.livres} lugares`;
+  } catch {
+    resultado.textContent = 'Não foi possível carregar a sessão.';
+  }
+}
+```
+
+`fetch` pode resolver a promise mesmo quando recebe 404 ou 500. Verifica `ok` ou o código; uma rejeição da promise pode representar uma falha de rede. O formato do corpo também pode estar errado, e `json()` pode falhar. Trata carregamento, sucesso, vazio e falha como estados diferentes.
+
+Se duas pesquisas são lançadas em sequência, a resposta antiga pode chegar depois da nova. Cancela pedidos ultrapassados com `AbortController` ou associa cada resposta a um identificador de pedido e só aplica a mais recente. A ordem em que envias pedidos não garante a ordem de chegada.
+
+Uma interface assíncrona não dispensa autorização no servidor. A pessoa pode enviar a mesma operação por outro cliente. O valor «lugares livres» mostrado pode mudar antes de a compra confirmar; a [transação coordenada](/cadeiras/lbaw/triggers-transacoes/) continua a ser necessária.
+
+## Dividir o tempo observado
+
+Para um modelo simplificado de pedido sem sobreposição, consideremos 20 ms de aplicação, 80 ms de SQL, 50 ms de rede e 30 ms até apresentar o resultado. São 180 ms. Um índice que reduz SQL para 20 ms reduz o total para 120 ms, não para 45 ms. A melhoria local de quatro vezes não se propaga automaticamente a todo o percurso.
+
+Na prática, alguns trabalhos sobrepõem-se e há esperas em filas. Mede tempo até ao primeiro byte, transferência, renderização e resposta à interação. **Latência** é demora por operação; **throughput** é operações por unidade de tempo. Aumentar concorrência pode aumentar throughput até saturar um recurso e, depois, aumentar a latência.
+
+A média pode esconder as pessoas que esperam mais. Um **percentil 95** descreve um valor abaixo do qual se encontram cerca de 95% das observações, segundo o método de cálculo. Este bloco usa nearest-rank, com posição `ceil(0.95*n)` na amostra ordenada:
+
+<CodePlayground
+  language="javascript"
+  title="Média e percentil de uma amostra"
+  code={percentil}
+/>
+
+Imprime `media=95` e `p95=100`. Há dez pedidos de 50 ms, nove de 100 ms e um de 500 ms. A média de 95 ms esconde o último pedido; o máximo é 500 ms. Declara sempre amostra, carga, rede e método quando comparas medidas.
+
+## Melhorar o recurso que limita o percurso
+
+| Causa observada                       | Intervenção a testar                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------ |
+| Muitas consultas por página           | Resolver N+1, agrupar dados e limitar a projeção.                                    |
+| SQL lento e seletivo                  | Analisar plano e um índice adequado.                                                 |
+| Muitos bytes de imagens               | Dimensões adequadas, formatos eficientes e compressão.                               |
+| Recursos que bloqueiam a apresentação | Reduzir o caminho crítico; adiar trabalho que não é necessário ao primeiro conteúdo. |
+| Script longo sem resposta a eventos   | Reduzir trabalho, dividir tarefas ou usar Worker quando o cálculo o permitir.        |
+| Conteúdo público repetido             | Cache com invalidação e política adequadas.                                          |
+
+O navegador transforma HTML e CSS em árvores, calcula estilos e layout, pinta e compõe. Uma alteração de geometria pode exigir novo layout; alternar repetidamente leitura e escrita de geometria pode forçar trabalho síncrono. «Usar JavaScript» não identifica a causa, é preciso observar a operação.
+
+Cachear uma resposta privada como pública pode expor dados. Carregar tudo antecipadamente pode desperdiçar transferência. Lazy loading faz sentido para recursos que não são necessários já; adiar o elemento principal da página pode atrasar a apresentação. Testa o efeito na tarefa, não só o tamanho de um ficheiro.
+
+Consulta [Fetch em MDN](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) e [desempenho web](https://developer.mozilla.org/en-US/docs/Web/Performance). O plano atual inclui tecnologias do cliente e desempenho; os exemplos antecipam esses conceitos sem substituir os slides que ainda serão publicados.

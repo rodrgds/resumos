@@ -1,16 +1,28 @@
 ---
 title: Aplicação web com Laravel
 description: Rotas, controladores, modelos e vistas para recursos REST apoiados na base de dados.
-section: conteudo
-order: 6
+order: 9
+practices:
+  - lbaw/praticar-arquitetura
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: Ciclo HTTP, MVC, middleware, validação, policies, ORM, preenchimento em massa e N+1.
+  gaps:
+    - As aulas atuais de arquitetura web e segurança ainda não estavam publicadas em 1 de outubro. O desenvolvimento destes tópicos usa documentação primária.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
 
-Com a base de dados a guardar e a proteger os dados, falta a aplicação que os mostra e os altera. O Laravel organiza essa aplicação em peças com papéis fixos: a **rota** recebe o pedido HTTP, o **controlador** executa a lógica, o **modelo** fala com a tabela e a **vista** gera o HTML. Cada pedido atravessa estas quatro peças por esta ordem.
+Com a base de dados a guardar e a proteger os dados, falta a aplicação que os mostra e os altera. O Laravel organiza essa aplicação em peças com papéis fixos: a **rota** recebe o pedido HTTP, o **controlador** executa a lógica, o **modelo** fala com a tabela e a **vista** gera o HTML. Middleware, autorização e outros serviços podem participar no percurso. Nem todas as respostas usam uma vista HTML.
 
 ## O recurso Sessões de ponta a ponta
 
@@ -71,11 +83,11 @@ class SessaoController extends Controller
 }
 ```
 
-O método `validate` é o ponto a fixar: se os dados cumprirem as regras, devolve-os limpos; se falharem, interrompe e devolve o utilizador ao formulário com os erros. A regra `exists:eventos,id` repete na aplicação a chave estrangeira da base de dados, para dar erro amigável antes do erro técnico. A regra `after:now` repete a restrição do modelo de que sessões passadas não se vendem.
+O método `validate` é o ponto a fixar: se os dados cumprirem as regras, devolve-os limpos; se falharem, interrompe e devolve o utilizador ao formulário com os erros. A regra `exists:eventos,id` repete na aplicação a chave estrangeira da base de dados, para dar erro amigável antes do erro técnico. A regra `after:now` valida a criação de uma sessão futura. Sessões antigas continuam a existir no histórico.
 
 ## Migração e modelo
 
-A tabela nasce de uma **migração**, código versionado que cria e altera o esquema. É a mesma tabela do [esquema relacional](esquema-relacional/), escrita para o Laravel a aplicar e o grupo a rever:
+A tabela nasce de uma **migração**, código versionado que cria e altera o esquema. É a mesma tabela do [esquema relacional](/cadeiras/lbaw/esquema-relacional/), escrita para o Laravel a aplicar e o grupo a rever:
 
 ```php
 Schema::create('sessoes', function (Blueprint $table) {
@@ -108,7 +120,7 @@ O `belongsTo` espelha a associação do UML: cada sessão pertence a um evento. 
 
 Preenche o formulário de nova sessão com lotação `0` e carrega em guardar. O pedido `POST /sessoes` chega ao `store`, o `validate` rejeita `lotacao` por violar `min:1`, e o utilizador volta ao formulário com a mensagem de erro junto ao campo e os restantes valores preservados. Nenhuma linha tocou na base de dados: a validação correu antes de qualquer escrita.
 
-Se a validação passasse, o `create` inseria a sessão e o redirecionamento mostrava a página da nova sessão. E se dois administradores criassem a sessão 101 ao mesmo tempo, o [trigger da lotação](triggers-transacoes/) continuava a decidir na base de dados. As camadas somam, nenhuma substitui a outra.
+Se a validação passasse, o `create` inseria a sessão e o redirecionamento mostrava a página da nova sessão. Se dois compradores disputarem o último lugar, a validação anterior à compra pode estar desatualizada. O [protocolo de concorrência](/cadeiras/lbaw/triggers-transacoes/) decide qual compra pode confirmar.
 
 A mesma regra `min:1`, isolada do framework para a experimentares. Corre e confirma que imprime o erro da lotação:
 
@@ -137,7 +149,7 @@ A loja tem registo e login nos requisitos, e as compras exigem saber quem compra
 public function entrar(Request $request)
 {
     $dados = $request->validate([
-        'email' => 'required|email|exists:utilizadores,email',
+        'email' => 'required|email',
         'palavra_passe' => 'required',
     ]);
     if (!Auth::attempt([
@@ -148,6 +160,7 @@ public function entrar(Request $request)
             'email' => 'Credenciais inválidas.',
         ]);
     }
+    $request->session()->regenerate();
     return redirect('/sessoes');
 }
 ```
@@ -162,7 +175,7 @@ Route::middleware('auth')->group(function () {
 });
 ```
 
-Quem não entrou é redirecionado para o login em vez de chegar ao controlador. A regra de autorização vive na rota, não escondida dentro do método: lê-se a proteção sem abrir o controlador.
+Quem não entrou é redirecionado para o login em vez de chegar ao controlador. O middleware auth verifica autenticação. A autorização sobre a operação e o recurso precisa de uma policy, gate ou verificação equivalente no servidor.
 
 ## Git, Docker e o arranque do projeto
 
@@ -206,16 +219,11 @@ O projeto avalia-se pelo produto e pela documentação. Guarda decisões à medi
 - Requisitos: a tabela R1 a R4 final e os requisitos rejeitados com o motivo.
 - Modelo: o diagrama UML e as restrições escritas que o desenho não mostra.
 - Esquema: as tabelas e o teste de papel com os casos de uso que as validaram.
-- Integridade: que regras vivem na base de dados e porquê, com o trigger da lotação.
+- Integridade: que regras vivem na base de dados e porquê, com o protocolo de lotação e os triggers necessários.
 - Aplicação: rotas, validação e autenticação, com os erros que cada camada produz.
 - Interfaces: as decisões de usabilidade e a verificação de contraste e teclado.
 
 Reconstruir isto na véspera produz relatórios vagos. Uma frase por decisão, escrita no dia, chega.
-
-<YouTube
-  id="SjeYhB5O45Q"
-  title="How to build a CRUD (Create,Read,Update and Delete) with Laravel 11 and Vuejs 3"
-/>
 
 ## Para saber mais
 
@@ -223,5 +231,37 @@ Reconstruir isto na véspera produz relatórios vagos. Uma frase por decisão, e
 - [Routing](https://laravel.com/docs/11.x/routing), a referência oficial de verbos, controladores e grupos de rotas.
 
 :::details[Onde ver cada erro]
-Erro de validação: volta ao formulário com mensagens por campo, sem tocar na base de dados. Erro de chave estrangeira ou de trigger: exceção da base de dados que o controlador deve apanhar e transformar em mensagem. Erro 500 genérico: quase sempre uma peça em falta, como uma vista com nome errado ou um campo fora do `$fillable`. Lê a mensagem de cima para baixo até à primeira linha do teu código.
+Erro de validação: volta ao formulário com mensagens por campo, sem tocar na base de dados. Erro de chave estrangeira ou de trigger: exceção da base de dados que o controlador deve apanhar e transformar em mensagem. Erro 500 indica uma falha interna que pode ter várias causas. Lê a mensagem de cima para baixo até à primeira linha do teu código.
 :::
+
+## Separar responsabilidades no pedido
+
+Uma rota escolhe a operação. Middleware pode verificar sessão e proteção CSRF antes do controlador. O controlador coordena o caso de uso, a policy decide a autorização, o modelo representa dados e relações, e a vista produz a representação. Nem todos os pedidos usam uma vista HTML: uma API pode devolver JSON, e uma operação pode redirecionar ou devolver 204.
+
+**Validação** pergunta se os dados têm o formato e o domínio esperados. **Autorização** pergunta se esta pessoa pode executar esta operação sobre este objeto. **Autenticação** identifica a pessoa. As três são necessárias em contextos diferentes e nenhuma substitui as restantes.
+
+```php
+public function atualizar(Request $request, Bilhete $bilhete)
+{
+    $this->authorize('update', $bilhete);
+    $dados = $request->validate(['estado' => 'required|in:reservado,pago,cancelado']);
+    // A transição de estado e a capacidade exigem ainda a regra de negócio.
+    return $this->servicoCompras->alterarEstado($bilhete, $dados['estado']);
+}
+```
+
+Este fragmento mostra a separação; pressupõe uma policy e um serviço com o protocolo de compra definido. Autorizar uma alteração não torna válida qualquer transição. Por exemplo, passar de cancelado a pago pode exigir voltar a reservar capacidade.
+
+## ORM e o problema N+1
+
+Se carregares 100 sessões e, num ciclo, acederes a `$sessao->evento`, o carregamento preguiçoso pode fazer uma consulta inicial e mais 100 consultas. É o problema **N+1**. Carregamento antecipado, como `Sessao::with('evento')->get()`, pode carregar as relações em consultas agrupadas. Mede as consultas e os dados transferidos; antecipar todas as relações sem necessidade também custa recursos.
+
+O modelo não é a página. Não coloques decisões de autorização só no template: um pedido direto pode contorná-lo. Não aceites campos privilegiados só porque estão no `$fillable`; esse atributo limita a atribuição em massa, não determina quem pode alterar cada valor.
+
+## Resposta e proteção de dados
+
+Usa parâmetros para valores nas consultas; valida escolhas de coluna e direção de ordenação por uma lista explícita. Escapa dados na vista e usa proteção CSRF nas rotas de alteração que recebem cookies. Quando a base de dados recusar uma regra conhecida, traduz o resultado para uma resposta útil sem expor SQL, credenciais ou stack traces.
+
+Uma atualização feita em vários modelos pode precisar de `DB::transaction(...)`, mas só envolver código nessa função não resolve a corrida do último lugar. Aplica também a coordenação de [transações](/cadeiras/lbaw/triggers-transacoes/).
+
+As APIs concretas variam com a versão do projeto. As referências oficiais de [autorização](https://laravel.com/docs/authorization), [validação](https://laravel.com/docs/validation) e [relações Eloquent](https://laravel.com/docs/eloquent-relationships) distinguem estes mecanismos. Os exemplos explicam o desenho e não constituem uma aplicação Laravel completa.

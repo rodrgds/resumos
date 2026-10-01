@@ -1,0 +1,143 @@
+---
+title: Consultas SQL, NULL e agregação
+description: Junções, quantificação, grupos e consultas analíticas, com resultados calculados sobre dados pequenos.
+order: 5
+practices:
+  - lbaw/praticar-consultas
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: SQL relacional, semântica de NULL, junções, agregações, EXISTS, conjuntos, CTE e funções de janela.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import YouTube from '../../../components/YouTube.astro';
+import consulta from '../../lbaw/consultas.sql?raw';
+
+Uma consulta responde a uma pergunta sobre linhas. Antes de escrever o SQL, fixa o significado de cada linha do resultado e os casos sem correspondência. «Uma linha por sessão, mesmo sem bilhetes» exige uma junção diferente de «uma linha por bilhete vendido».
+
+## Ordem lógica e repetidos
+
+Uma ordem útil para raciocinar é `FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT`. É uma ordem lógica, não a sequência física do plano de execução. `WHERE` filtra linhas antes da agregação; `HAVING` filtra grupos depois dela.
+
+```sql
+SELECT sessao_id, COUNT(*) AS vendidos
+FROM bilhetes
+WHERE estado = 'pago'
+GROUP BY sessao_id
+HAVING COUNT(*) >= 2
+ORDER BY vendidos DESC, sessao_id;
+```
+
+O alias vendidos pode ser usado no `ORDER BY` em PostgreSQL. Não o uses no `WHERE`, onde a projeção ainda não foi definida. Uma coluna selecionada que não é agregada tem de ser compatível com o agrupamento; no exemplo, sessao_id é a chave do grupo.
+
+SQL conserva repetidos por defeito. Uma junção pode repetir a mesma sessão uma vez por bilhete. `DISTINCT` retira linhas iguais da projeção, mas não corrige uma condição de junção em falta. `UNION` elimina repetidos entre resultados; `UNION ALL` conserva-os e evita esse trabalho.
+
+## NULL usa três valores lógicos
+
+`NULL` representa informação ausente, não zero nem texto vazio. Comparações como `preco = NULL` dão **desconhecido**, não verdadeiro. Usa `IS NULL` e `IS NOT NULL`. O `WHERE` mantém apenas condições verdadeiras, por isso descarta falso e desconhecido.
+
+| Expressão      | Resultado    |
+| -------------- | ------------ |
+| TRUE AND NULL  | desconhecido |
+| FALSE AND NULL | falso        |
+| TRUE OR NULL   | verdadeiro   |
+| FALSE OR NULL  | desconhecido |
+| NOT NULL       | desconhecido |
+
+`COUNT(*)` conta linhas; `COUNT(coluna)` conta valores não nulos. `SUM`, `AVG`, `MIN` e `MAX` ignoram valores nulos. `SUM` sem valores dá NULL; usa `COALESCE(SUM(preco),0)` quando a ausência deve significar zero. Não confundas uma soma zero com um valor conhecido que é zero.
+
+## LEFT JOIN e o lugar do filtro
+
+Para mostrar sessões sem bilhetes pagos:
+
+```sql
+SELECT s.id, COUNT(b.id) AS pagos
+FROM sessoes s
+LEFT JOIN bilhetes b
+  ON b.sessao_id = s.id AND b.estado = 'pago'
+GROUP BY s.id
+ORDER BY s.id;
+```
+
+O filtro no `ON` determina que bilhetes correspondem. Uma sessão sem correspondência ganha uma linha com as colunas de b a NULL. `COUNT(b.id)` dá zero nessa linha; `COUNT(*)` daria um. Mover `b.estado = 'pago'` para o `WHERE` elimina essa linha e deixa de conservar as sessões vazias.
+
+Não existe uma regra universal «todo o filtro da direita vai no ON». Depende da pergunta. Se queres excluir sessões sem bilhetes pagos, um `INNER JOIN` exprime esse objetivo diretamente.
+
+## EXISTS, NOT IN e «todos»
+
+`EXISTS` testa se a subconsulta produz alguma linha. Não precisa de devolver uma coluna útil, por isso é habitual escrever `SELECT 1`:
+
+```sql
+SELECT s.id
+FROM sessoes s
+WHERE NOT EXISTS (
+  SELECT 1 FROM bilhetes b
+  WHERE b.sessao_id = s.id AND b.estado = 'pago'
+);
+```
+
+Este SQL procura sessões sem bilhetes pagos. `s.id NOT IN (SELECT sessao_id FROM bilhetes)` tem uma armadilha se a subconsulta puder devolver NULL. Por exemplo, `2 NOT IN (1,NULL)` é desconhecido e o `WHERE` rejeita a linha. `NOT EXISTS` com a correlação adequada evita esse efeito; se sessao_id for `NOT NULL`, esse caso específico deixa de existir.
+
+Para procurar utilizadores que compraram em **todas** as sessões de um evento, lê «não existe uma sessão para a qual não exista uma compra»:
+
+```sql
+SELECT u.id
+FROM utilizadores u
+WHERE NOT EXISTS (
+  SELECT 1 FROM sessoes s
+  WHERE s.evento_id = 3
+    AND NOT EXISTS (
+      SELECT 1 FROM bilhetes b
+      WHERE b.sessao_id = s.id AND b.utilizador_id = u.id
+        AND b.estado = 'pago'
+    )
+);
+```
+
+Se o evento não tiver sessões, todos os utilizadores passam: é a verdade por vacuidade. Se a pergunta exigir pelo menos uma sessão, acrescenta um `EXISTS` que verifique essa condição. A cláusula «todos» não implica «existe».
+
+## Agregar sem esconder o detalhe
+
+Uma função de janela calcula sobre um grupo de linhas e mantém cada linha:
+
+```sql
+SELECT id, sessao_id, preco,
+       SUM(preco) OVER (PARTITION BY sessao_id) AS total_sessao,
+       ROW_NUMBER() OVER (PARTITION BY sessao_id ORDER BY id) AS numero
+FROM vendas;
+```
+
+Uma sessão com dois bilhetes de 10 euros continua a ter duas linhas, ambas com total_sessao=20. Com `GROUP BY sessao_id`, teríamos uma linha por sessão. Uma CTE, `WITH nome AS (...)`, dá nome a um resultado intermédio e ajuda a decompor a pergunta; não é uma promessa de materialização nem de melhor desempenho.
+
+<CodePlayground
+  language="sql"
+  title="Junção, contagem e o caso NULL"
+  code={consulta}
+/>
+
+Este bloco corre em **SQLite**. Imprime três sessões com contagens 1,0,0 e depois `0|1`: zero linhas passam em `2 NOT IN (1,NULL)` e uma passa com `NOT EXISTS`. PostgreSQL partilha estes resultados, mas sintaxe de datas, tipos, planos e concorrência depende do motor. As linhas entre consultas não representam uma transação concorrente.
+
+## Confirmar a resposta antes de otimizar
+
+Constrói dados mínimos com zero, uma e várias correspondências; inclui repetidos e NULL se forem permitidos. Calcula à mão as linhas esperadas. Só depois consulta o [plano e os índices](/cadeiras/lbaw/sql-indices/). Um índice torna mais rápida uma resposta errada sem a tornar certa.
+
+Consulta a documentação primária de [SELECT em PostgreSQL](https://www.postgresql.org/docs/current/sql-select.html) e de [comparações com NULL](https://www.postgresql.org/docs/current/functions-comparison.html).
+
+## Relação com a álgebra relacional
+
+Na álgebra relacional clássica, seleção σ filtra tuplos e projeção π escolhe atributos; junção combina relações por uma condição. União, interseção e diferença exigem esquemas compatíveis. O renomeamento ρ permite distinguir duas utilizações da mesma relação.
+
+`SELECT id FROM sessoes WHERE evento_id=3` corresponde a projetar id depois de selecionar evento_id=3, se abstrairmos NULL e os repetidos de SQL. A projeção clássica é um conjunto e elimina repetidos; SQL precisa de DISTINCT para essa semântica. Um produto cartesiano sem condição cria todas as combinações, que um filtro pode reduzir. No plano físico, o motor pode executar uma junção de outra forma sem alterar o resultado lógico.
+
+## Acompanhar uma aula
+
+A aula Modern SQL percorre agregações, conjuntos e janelas. É complementar às perguntas deste capítulo; o dialeto e o detalhe não são uma prova do âmbito do teste da FEUP. O vídeo foi confirmado no [programa oficial de CMU](https://15445.courses.cs.cmu.edu/fall2024/schedule.html).
+
+<YouTube id="MzigBKf84aY" title="CMU Database Group, Modern SQL, 2024" />

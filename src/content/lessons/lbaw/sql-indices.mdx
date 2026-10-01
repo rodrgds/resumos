@@ -1,150 +1,126 @@
 ---
-title: SQL e índices em PostgreSQL
-description: Interrogações de leitura e escrita sobre o esquema da Loja de Bilhetes e índices para as pesquisas frequentes.
-section: conteudo
-order: 4
+title: Índices, planos e pesquisa em PostgreSQL
+description: Escolher índices a partir de consultas, ler EXPLAIN e distinguir pesquisa exata de pesquisa em texto.
+order: 6
+practices:
+  - lbaw/praticar-indices
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: Índices B-tree, compostos, parciais e por expressão, estatísticas, EXPLAIN e pesquisa em texto.
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
 import sqlIndicesFigura from '../../lbaw/sql-indices.typ?raw';
 
-Com o [esquema criado](esquema-relacional/), a aplicação precisa de ler e escrever dados. Esta página escreve as três interrogações centrais da Loja de Bilhetes e mostra como um índice transforma a pesquisa mais frequente.
+Um índice guarda uma estrutura adicional para encontrar linhas. Cada leitura pode ganhar com essa estrutura, mas as escritas também precisam de a manter. Escolhemos o índice a partir da consulta, dos dados e do plano, não a partir de uma lista de colunas «importantes».
 
-## Três interrogações sobre a loja
+## Igualdade, intervalo e ordem
 
-Sessões futuras de um evento, com lugares ainda por vender. A lotação menos os bilhetes não cancelados dá os lugares livres:
-
-```sql
-SELECT s.id, s.data_hora, s.preco,
-       s.lotacao - COUNT(b.id) AS livres
-FROM sessoes AS s
-LEFT JOIN bilhetes AS b
-  ON b.sessao_id = s.id AND b.estado <> 'cancelado'
-WHERE s.evento_id = 3 AND s.data_hora > NOW()
-GROUP BY s.id;
-```
-
-O `LEFT JOIN` com a condição do estado dentro do `ON` é o ponto delicado: bilhetes cancelados não ocupam lugar, mas a sessão continua a aparecer mesmo sem nenhum bilhete vendido. Se pusesses `b.estado <> 'cancelado'` no `WHERE`, as sessões sem bilhetes desapareciam da lista, porque `NULL <> 'cancelado'` não é verdadeiro.
-
-<Tabs id="sql-onde-estado" labels={['Errada: condição no WHERE', 'Certa: condição no ON']}>
-  <div slot="panel-0">
+A consulta procura sessões de um evento num intervalo de datas e ordena-as por data:
 
 ```sql
--- parece equivalente, mas esconde as sessões vazias
-SELECT s.id, s.lotacao - COUNT(b.id) AS livres
-FROM sessoes AS s
-LEFT JOIN bilhetes AS b ON b.sessao_id = s.id
-WHERE s.evento_id = 1 AND b.estado <> 'cancelado'
-GROUP BY s.id;
+SELECT id, data_hora, preco
+FROM sessoes
+WHERE evento_id = 3
+  AND data_hora >= TIMESTAMP '2026-12-01'
+  AND data_hora < TIMESTAMP '2027-01-01'
+ORDER BY data_hora;
+
+CREATE INDEX sessoes_evento_data ON sessoes(evento_id, data_hora);
 ```
 
-Uma sessão sem bilhetes chega ao `WHERE` com `b.estado` a nulo, e nulo comparado com qualquer coisa não é verdadeiro. A linha é descartada e a sessão com mais lugares livres é precisamente a que desaparece da lista.
+Num B-tree composto, igualdades nas colunas iniciais e uma desigualdade na primeira coluna seguinte permitem limitar uma região do índice. Aqui fixamos evento_id e percorremos o intervalo de data_hora. A ordem das colunas faz diferença: `(data_hora,evento_id)` não limita a mesma região quando a pesquisa fixa primeiro um evento.
 
-  </div>
-  <div slot="panel-1">
-
-```sql
--- a condição no ON filtra antes de juntar
-SELECT s.id, s.lotacao - COUNT(b.id) AS livres
-FROM sessoes AS s
-LEFT JOIN bilhetes AS b
-  ON b.sessao_id = s.id AND b.estado <> 'cancelado'
-WHERE s.evento_id = 1
-GROUP BY s.id;
-```
-
-Os cancelados ficam de fora da contagem e as sessões vazias continuam na lista com os lugares todos livres. Regra geral: condições da tabela opcional vão no `ON`, condições da pesquisa vão no `WHERE`.
-
-  </div>
-</Tabs>
-
-Corre a versão certa sobre dados de exemplo e confirma os lugares livres. A sessão 1 tem lotação 100 com um bilhete pago e um cancelado, por isso imprime 99. A sessão 2 tem lotação 50 sem bilhetes e continua na lista com 50:
-
-<CodePlayground
-  language="sql"
-  title="Lugares livres por sessão"
-  code={
-    "PRAGMA foreign_keys = ON;\nCREATE TABLE sessoes (\n    id INTEGER PRIMARY KEY,\n    evento_id INTEGER NOT NULL,\n    data_hora TEXT NOT NULL,\n    preco NUMERIC(8, 2) NOT NULL,\n    lotacao INTEGER NOT NULL CHECK (lotacao > 0)\n);\nCREATE TABLE bilhetes (\n    id INTEGER PRIMARY KEY,\n    utilizador_id INTEGER NOT NULL,\n    sessao_id INTEGER NOT NULL REFERENCES sessoes (id),\n    codigo TEXT NOT NULL UNIQUE,\n    estado TEXT NOT NULL CHECK (estado IN ('reservado', 'pago', 'cancelado'))\n);\nINSERT INTO sessoes (evento_id, data_hora, preco, lotacao) VALUES\n(1, '2026-12-14 21:30', 12.50, 100),\n(1, '2026-12-15 21:30', 12.50, 50);\nINSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado) VALUES\n(7, 1, 'B-1041', 'pago'),\n(8, 1, 'B-1042', 'cancelado');\nSELECT s.id, s.data_hora, s.preco,\n       s.lotacao - COUNT(b.id) AS livres\nFROM sessoes AS s\nLEFT JOIN bilhetes AS b\n  ON b.sessao_id = s.id AND b.estado <> 'cancelado'\nWHERE s.evento_id = 1 AND s.data_hora > '2026-01-01'\nGROUP BY s.id;"
-  }
-/>
-
-A saída mostra `1|2026-12-14 21:30|12.5|99` e `2|2026-12-15 21:30|12.5|50`. A data de corte está fixa porque o motor desta página não tem o `NOW()` do PostgreSQL. O raciocínio do `ON` contra o `WHERE` é o mesmo nos dois motores.
-
-Registar a compra de um bilhete:
-
-```sql
-INSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)
-VALUES (7, 12, 'B-1042', 'reservado')
-RETURNING id;
-```
-
-O `RETURNING id` devolve o identificador criado sem uma segunda interrogação. Guarda esse valor: é ele que a página de confirmação mostra e que o pagamento usa a seguir.
-
-Histórico de compras de um utilizador, do mais recente para o mais antigo:
-
-```sql
-SELECT e.titulo, s.data_hora, b.codigo, b.estado
-FROM bilhetes AS b
-JOIN sessoes AS s ON s.id = b.sessao_id
-JOIN eventos AS e ON e.id = s.evento_id
-WHERE b.utilizador_id = 7
-ORDER BY s.data_hora DESC;
-```
-
-Três tabelas ligadas pelas chaves estrangeiras do esquema. Cada `JOIN` segue uma associação do modelo, o que confirma que a conversão foi bem feita: se precisasses de uma coluna calculada à mão para ligar duas tabelas, faltava uma chave estrangeira.
-
-## Ler o plano com EXPLAIN
-
-Antes de otimizar, vê como o PostgreSQL executa a pesquisa de eventos por data:
-
-```sql
-EXPLAIN SELECT id, titulo FROM eventos
-WHERE categoria = 'musica';
-```
-
-Sem índice, o plano mostra um varrimento sequencial: o motor lê todas as linhas da tabela e filtra. Numa tabela pequena a saída parece-se com isto:
-
-```
-Seq Scan on eventos  (cost=0.00..35.50 rows=2550 width=36)
-  Filter: (categoria = 'musica'::text)
-```
-
-A linha `Seq Scan` é o diagnóstico: o motor percorre a tabela inteira. Com mil eventos isto é instantâneo, mas é o padrão que progride mal. A pesquisa por data das sessões é a interrogação mais frequente da loja, por isso merece um índice:
-
-```sql
-CREATE INDEX idx_sessoes_data ON sessoes (data_hora);
-```
-
-Repete o `EXPLAIN` numa pesquisa por intervalo de datas e o plano passa a pesquisa por índice: o motor salta diretamente para as linhas do intervalo em vez de varrer a tabela.
-
-```
-Index Scan using idx_sessoes_data on sessoes  (cost=0.29..8.31 rows=1 width=72)
-  Index Cond: ((data_hora > '2026-12-01 00:00:00') AND (data_hora < '2026-12-31 23:59:59'))
-```
-
-Os valores de custo mudam com os dados e as estatísticas da tabela; o que lês no plano é o nome do nó. `Seq Scan` significa varrer tudo, `Index Scan using` seguido do nome do índice significa saltar para as linhas. O ganho aparece quando a tabela cresce e a condição seleciona poucas linhas.
+Uma consulta só por data_hora pode usar um índice composto, mas a eficiência depende da versão, das estatísticas e dos dados. Não concluas que um índice só serve se a consulta usar todas as colunas, nem que serve igualmente bem para qualquer subconjunto.
 
 <Typst
   source={sqlIndicesFigura}
   format="svg"
-  alt="Comparação de duas estratégias sobre cinco linhas. Sem índice, uma seta percorre as cinco linhas e lê todas. Com índice em categoria, uma seta parte da caixa de índice e chega só às três linhas rock."
+  alt="Estratégias de pesquisa numa tabela pequena: percorrer linhas e filtrar, ou consultar uma estrutura de índice para encontrar candidatos."
 />
 
-O desenho mostra a mesma diferença sem números: sem índice lês as cinco linhas para ficar com três, com índice lês só as três.
+O desenho representa candidatos encontrados pelo índice. O motor ainda pode ter de ler as linhas da tabela para confirmar visibilidade e obter outras colunas. Não é uma promessa de que só esses acessos acontecem em qualquer plano.
 
-<YouTube
-  id="YxLl_SAaRhc"
-  title="How to read and understand Explain Query Plan in Postgresql"
-/>
+## Ler EXPLAIN sem confundir custo com tempo
 
-## Para saber mais
+```sql
+EXPLAIN SELECT id, data_hora, preco
+FROM sessoes
+WHERE evento_id = 3 AND data_hora >= TIMESTAMP '2026-12-01';
+```
 
-- [Using EXPLAIN](https://www.postgresql.org/docs/current/using-explain.html), o guia oficial para ler planos com `EXPLAIN` e `EXPLAIN ANALYZE`.
-- [Reading an EXPLAIN ANALYZE query plan](https://thoughtbot.com/blog/reading-an-explain-analyze-query-plan), artigo passo a passo a ler um plano real.
+| Campo ou nó      | Significado                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| cost=a..b        | Custo estimado até à primeira linha e até ao fim, em unidades do modelo do planeador, não milissegundos. |
+| rows             | Número estimado de linhas produzidas pelo nó.                                                            |
+| width            | Tamanho médio estimado das linhas em bytes.                                                              |
+| Seq Scan         | Percorre a tabela e aplica o filtro.                                                                     |
+| Index Scan       | Usa o índice e procura as linhas correspondentes na tabela.                                              |
+| Bitmap Heap Scan | Junta candidatos encontrados por índices e lê páginas da tabela.                                         |
+| Sort             | Ordena um resultado que ainda não satisfaz a ordem pedida.                                               |
 
-:::warning[Índices não são gratuitos]
-Cada índice acelera leituras e atrasa escritas, porque cada `INSERT` e `UPDATE` tem de atualizar todos os índices da tabela. Indexa as colunas das pesquisas frequentes, como datas e chaves estrangeiras usadas em junções, e não as colunas que quase nunca filtras. Um índice por coluna "para o caso de ser preciso" deixa a escrita mais lenta sem leituras que o paguem.
+`EXPLAIN ANALYZE` executa a consulta e acrescenta tempos e contagens reais. Num nó executado várias vezes, `actual rows` e tempo são médias por execução; observa também `loops`. Diferenças grandes entre estimativas e realidade podem indicar estatísticas desatualizadas ou correlação não captada.
+
+Depois de criar um índice, o planeador pode continuar a escolher `Seq Scan`: numa tabela pequena, ou numa consulta que devolve grande parte dela, pode custar menos. Corre `ANALYZE sessoes` após mudanças relevantes nos dados e compara planos com dados representativos. «Criar índice» não implica «Index Scan».
+
+:::warning[ANALYZE executa escritas]
+`EXPLAIN ANALYZE UPDATE ...` altera dados. Para observar uma alteração que deva ser anulada, usa uma transação de teste e termina com `ROLLBACK`. Mesmo assim, algumas ações externas e avanços de sequências podem não ser revertidos. Usa uma base de teste.
 :::
+
+## Que índices já existem
+
+PostgreSQL cria um índice para uma chave primária e para uma restrição `UNIQUE`. Não cria automaticamente um índice nas colunas que **referenciam** uma chave estrangeira. Indexar `bilhetes(sessao_id)` pode ajudar junções e operações sobre a sessão referida; a utilidade depende da carga.
+
+Um **índice parcial** só contém linhas que satisfazem um predicado:
+
+```sql
+CREATE INDEX bilhetes_ativos ON bilhetes(sessao_id)
+WHERE estado IN ('reservado','pago');
+```
+
+Uma consulta tem de permitir ao planeador demonstrar que as suas condições implicam o predicado do índice. Um filtro diferente ou um parâmetro cujo valor ainda é desconhecido pode impedir esse uso. O índice parcial também precisa de ser atualizado quando uma linha entra ou sai desse conjunto.
+
+Um **índice por expressão** pode apoiar uma pesquisa que aplica essa expressão:
+
+```sql
+CREATE INDEX utilizadores_email_minusculo ON utilizadores(lower(email));
+SELECT id FROM utilizadores WHERE lower(email) = lower('ANA@example.com');
+```
+
+Esse índice não garante unicidade. Se o domínio exige emails únicos sem distinguir maiúsculas, decide a política de normalização e aplica uma restrição adequada, por exemplo um índice `UNIQUE` por essa expressão. Os índices não devem definir regras do domínio por acidente.
+
+## Pesquisa exata, substring e texto
+
+Um B-tree em titulo não resolve por si só `ILIKE '%rede%'`. A pesquisa por texto procura palavras, pode normalizar formas e atribuir relevância. Em PostgreSQL, `tsvector` representa um documento normalizado e `tsquery` representa uma consulta:
+
+```sql
+CREATE TABLE artigos (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  titulo text NOT NULL,
+  texto text NOT NULL,
+  pesquisa tsvector GENERATED ALWAYS AS
+    (to_tsvector('portuguese', titulo || ' ' || texto)) STORED
+);
+CREATE INDEX artigos_pesquisa ON artigos USING GIN(pesquisa);
+
+SELECT id, titulo,
+       ts_rank(pesquisa, plainto_tsquery('portuguese','redes seguras')) AS relevancia
+FROM artigos
+WHERE pesquisa @@ plainto_tsquery('portuguese','redes seguras')
+ORDER BY relevancia DESC, id;
+```
+
+A configuração deve corresponder à língua. `plainto_tsquery` trata a entrada como texto, em vez de exigir sintaxe de operadores; para sintaxe semelhante à pesquisa web há `websearch_to_tsquery`. A correspondência é por lexemas normalizados, não por qualquer substring. Pesquisa e ordenação por relevância são decisões diferentes: `@@` filtra e `ts_rank` calcula um valor para ordenar.
+
+**Precisão** é a fração dos resultados devolvidos que são relevantes; **cobertura**, ou recall, é a fração dos resultados relevantes que foram devolvidos. Encontrar 6 documentos relevantes entre 10 resultados dá precisão 0,6. Se existiam 12 relevantes no corpus, o recall é 0,5. Um filtro muito restrito pode aumentar a primeira e diminuir a segunda.
+
+As **facetas**, como categoria e cidade, permitem refinar resultados por valores conhecidos. São filtros de navegação, não substituem o índice de texto nem a verificação de permissões. Nunca mostres nos resultados documentos que o utilizador não pode consultar.
+
+As páginas de referência são [índices compostos](https://www.postgresql.org/docs/16/indexes-multicolumn.html), [Using EXPLAIN](https://www.postgresql.org/docs/current/using-explain.html) e [pesquisa em texto](https://www.postgresql.org/docs/current/textsearch.html). O comportamento do planeador pode mudar entre versões.

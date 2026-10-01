@@ -1,0 +1,108 @@
+---
+title: HTTP, recursos e estado da aplicação
+description: Pedidos e respostas, métodos, sessões, cache, origem e permissões no navegador.
+order: 8
+practices:
+  - lbaw/praticar-http
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: HTTP, segurança e idempotência dos métodos, códigos, cookies, sessões, cache, origem e CORS.
+  gaps:
+    - As aulas atuais de arquitetura web e segurança ainda não estavam publicadas em 1 de outubro. O desenvolvimento destes tópicos usa documentação primária.
+---
+
+import Dot from '../../../components/Dot.astro';
+import ciclo from '../../lbaw/http.dot?raw';
+
+Um pedido HTTP identifica uma operação sobre um recurso. A aplicação interpreta-o, verifica permissões, consulta ou altera dados e devolve uma resposta. Saber onde vivem os dados e as decisões ajuda a explicar tanto a arquitetura como as falhas de segurança.
+
+## Pedido e resposta
+
+Um exemplo textual em HTTP/1.1:
+
+```http
+GET /sessoes/12 HTTP/1.1
+Host: bilhetes.example
+Accept: text/html
+Cookie: sessao=identificador_opaco
+```
+
+A primeira linha contém método, alvo e versão. Os cabeçalhos acrescentam metadados. Após uma linha vazia pode existir um corpo. Uma resposta contém código de estado, cabeçalhos e, quando apropriado, um corpo:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Cache-Control: private, no-store
+
+<!doctype html><title>Sessão 12</title>
+```
+
+`Content-Type` descreve o corpo enviado. `Accept` diz quais as representações aceites pelo cliente. `Authorization` pode transportar credenciais e `Cookie` transporta os cookies que o navegador associou ao pedido. Nunca assumes que um cabeçalho enviado pelo cliente prova um papel ou uma identidade sem validação no servidor.
+
+## Seguro e idempotente são propriedades diferentes
+
+| Método    | Semântica habitual                                   | Seguro? | Idempotente?      |
+| --------- | ---------------------------------------------------- | ------- | ----------------- |
+| GET, HEAD | Ler a representação, ou só metadados.                | Sim     | Sim               |
+| POST      | Pedir processamento ou criar um recurso subordinado. | Não     | Não por definição |
+| PUT       | Criar ou substituir o estado no endereço indicado.   | Não     | Sim               |
+| DELETE    | Remover a associação do recurso ao endereço.         | Não     | Sim               |
+| PATCH     | Aplicar uma alteração parcial.                       | Não     | Não por definição |
+
+**Seguro** significa que a semântica pedida não pretende alterar o estado. Registos de acesso são efeitos laterais possíveis de uma leitura. **Idempotente** significa que repetir o mesmo pedido tem o mesmo efeito pretendido que fazê-lo uma vez. Duas eliminações podem responder 204 e depois 404 e continuar a ser idempotentes.
+
+`GET /apagar-conta` não se torna seguro por usar GET. Viola a semântica do método e pode ser ativado por um link, pré-carregamento ou crawler. Alterações exigem um método adequado, autorização e proteção contra CSRF quando usam credenciais automáticas.
+
+## Códigos que distinguem falhas
+
+| Código    | Significado relevante                                                      |
+| --------- | -------------------------------------------------------------------------- |
+| 200 / 201 | Sucesso; 201 indica criação e pode incluir Location.                       |
+| 204       | Sucesso sem corpo.                                                         |
+| 303       | Consultar outro endereço com GET, útil após um formulário POST.            |
+| 304       | A representação em cache continua válida; não transporta o corpo completo. |
+| 400 / 422 | Pedido inválido; 422 pode identificar conteúdo semanticamente inválido.    |
+| 401       | É necessária autenticação válida, com o desafio adequado.                  |
+| 403       | O servidor compreende o pedido mas recusa a operação.                      |
+| 404       | Recurso não encontrado, ou existência deliberadamente não revelada.        |
+| 409       | Conflito com o estado atual, como uma reserva já confirmada.               |
+| 500       | Falha interna; o detalhe técnico fica nos registos do servidor.            |
+
+O padrão POST, redirecionamento, GET evita reenviar o formulário ao recarregar a página de confirmação. Não resolve duplicados causados por repetição de pedidos na rede. Para uma compra, um identificador único de operação pode permitir reconhecer uma repetição e devolver o resultado já registado.
+
+## HTTP sem estado e sessões com estado
+
+HTTP não pressupõe memória da interação anterior. A aplicação pode acrescentar estado: o servidor guarda uma sessão e envia ao navegador um identificador opaco. Em pedidos seguintes, o cookie permite procurar essa sessão. Autenticação, carrinho e permissões continuam a ser decisões da aplicação.
+
+- `Secure`: o cookie só é enviado em ligações seguras adequadas.
+- `HttpOnly`: impede leitura do cookie pelas APIs de JavaScript. Não impede que um XSS execute ações com a sessão.
+- `SameSite`: limita o envio do cookie em certos contextos entre sites. É uma defesa adicional, não substitui toda a proteção contra CSRF.
+- `Path`, domínio e expiração delimitam o envio e a duração; não servem como autorização sobre recursos.
+
+Renova o identificador da sessão ao autenticar para impedir que um identificador escolhido antes do login seja aproveitado por outra pessoa. No logout, termina a sessão no servidor e invalida as credenciais associadas.
+
+<Dot
+  source={ciclo}
+  alt="O navegador envia método, endereço e cookie. O servidor valida sessão e autorização, consulta a base de dados e devolve código, cabeçalhos e corpo. A sessão reside no servidor e o navegador conserva um identificador."
+/>
+
+## Cache e validação
+
+Uma resposta pública pode ser partilhada por caches se a política o permitir. Uma página pessoal exige uma política adequada para evitar exposição. `Cache-Control: no-store` pede que não seja armazenada; `no-cache` permite armazenamento mas exige validação antes de reutilizar.
+
+`ETag` identifica uma versão de representação. O cliente envia `If-None-Match` e o servidor pode responder 304 se continuar válida. A resposta reduz o corpo transmitido; não elimina o pedido nem a autorização. Um resultado em cache não deve contornar a verificação de permissões.
+
+## Origem, CORS e HTTPS
+
+A origem combina **esquema, host e porta**. `https://loja.example` e `http://loja.example` têm origens diferentes. A política da mesma origem limita certas leituras entre origens no navegador. CORS permite ao servidor autorizar leituras de respostas por código de determinadas origens; alguns pedidos precisam de um preflight OPTIONS.
+
+CORS não é autenticação, não impede pedidos de clientes fora do navegador e não impede por si só CSRF. Um formulário pode enviar um pedido que altera estado mesmo quando o atacante não consegue ler a resposta. HTTPS protege o transporte, mas não corrige SQL injection, autorização em falta ou HTML inseguro.
+
+As referências primárias são [HTTP semantics, RFC 9110](https://www.rfc-editor.org/rfc/rfc9110), [métodos em MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods) e [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS).

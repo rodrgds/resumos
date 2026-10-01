@@ -1,0 +1,70 @@
+---
+title: Modelos NoSQL e decisões de armazenamento
+description: Documentos, chave-valor, colunas e grafos, com os custos de referências, duplicação e consistência.
+order: 13
+practices:
+  - lbaw/praticar-nosql
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+    - title: Moodle LBAW 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+  coverage: Modelos NoSQL, documentos embebidos e referências, consultas, índices, atomicidade e o âmbito do teorema CAP.
+  gaps:
+    - O plano confirma o tópico, mas os slides desta aula ainda não estavam publicados em 1 de outubro. A explicação usa documentação primária.
+---
+
+Um modelo relacional liga tabelas por chaves e permite junções. Outros modelos organizam dados segundo padrões diferentes. **NoSQL** reúne várias famílias de sistemas, não uma garantia de ausência de esquema, ausência de SQL ou maior velocidade.
+
+## Escolher a estrutura pela operação
+
+| Modelo              | Organização                                                   | Operação típica                                |
+| ------------------- | ------------------------------------------------------------- | ---------------------------------------------- |
+| Chave-valor         | Valor encontrado por chave.                                   | Procurar uma sessão por identificador.         |
+| Documentos          | Registos com campos e estruturas aninhadas.                   | Obter uma encomenda com as suas linhas.        |
+| Famílias de colunas | Linhas e colunas organizadas para padrões de acesso próprios. | Ler séries por chave e intervalo.              |
+| Grafos              | Nós e relações com propriedades.                              | Percorrer ligações entre pessoas ou entidades. |
+
+Um grafo é útil quando relações e percursos são centrais. Isso não torna toda a associação N:N um motivo para abandonar tabelas. Uma base chave-valor é adequada a uma procura por chave, mas uma pesquisa arbitrária por campos pode precisar de estruturas adicionais.
+
+## Documento embebido ou referência
+
+Uma encomenda pode guardar as linhas num documento:
+
+```json
+{
+  "id": "E12",
+  "comprador": "U7",
+  "linhas": [{ "produto": "P3", "quantidade": 2, "preco_unitario": 10 }]
+}
+```
+
+As linhas são normalmente lidas com a encomenda e o preço é o da compra. Guardar esse preço é um **snapshot histórico** intencional: não deve mudar quando o produto sobe de preço. Duplicar o email atual do comprador em todas as encomendas tem outro custo, porque uma alteração pode exigir atualizar muitos documentos.
+
+**Embeber** aproxima dados lidos em conjunto e pode permitir uma operação atómica sobre um documento. **Referenciar** evita certas repetições e dá identidade independente, mas pode exigir consultas adicionais ou junções suportadas pelo sistema. Considera tamanho e crescimento: uma lista sem limite de todas as compras de uma pessoa não é uma boa escolha só porque pode ser embebida.
+
+Um esquema flexível continua a precisar de validação de tipos, campos obrigatórios e versões. A aplicação tem de saber como ler documentos antigos. Uma migração deixa de ser necessária para certas alterações físicas, mas não desaparece a evolução do significado dos dados.
+
+## Atomicidade e índices dependem do sistema
+
+Não assumas que a atualização de dois documentos é atómica porque a atualização de um o é. MongoDB suporta transações de várias operações em configurações adequadas, mas isso tem custos e requisitos. Verifica o contrato do sistema e da versão.
+
+Documentos também precisam de índices para consultas seletivas. Guardar JSON não torna a pesquisa gratuita. Uma base relacional pode guardar JSON e uma base de documentos pode validar um esquema; formato e garantias são dimensões diferentes.
+
+Para impedir duas reservas do mesmo lugar, especifica unicidade, coordenação e semântica de repetição. Mudar de tecnologia não retira a necessidade de um [protocolo concorrente](/cadeiras/lbaw/triggers-transacoes/).
+
+## CAP: uma escolha durante uma partição
+
+No teorema CAP, **consistência** refere-se ao contrato de consistência forte usado no modelo, normalmente explicado como linearizabilidade, não à letra C de ACID. **Disponibilidade** exige resposta de cada nó não falhado a cada pedido no modelo. Uma **partição** impede comunicação entre grupos de nós.
+
+Durante essa partição, não se pode garantir simultaneamente a consistência e a disponibilidade assim definidas. Um grupo pode recusar uma operação para não aceitar um estado incompatível, ou responder com informação que ainda não foi coordenada. Não é uma regra genérica «escolhe sempre duas de três», independente de falhas e da operação.
+
+**Consistência eventual** significa que réplicas convergem sob condições como cessarem atualizações e a comunicação recuperar. Não significa que uma leitura imediatamente depois de uma escrita veja sempre essa escrita. Para uma reserva, esse detalhe pode mudar a correção da operação.
+
+## Justificar uma escolha
+
+Uma resposta completa identifica as consultas principais, as invariantes, a unidade de atualização, o volume e crescimento dos dados e as garantias necessárias. Depois compara soluções. «NoSQL é mais escalável» não explica como distribui os dados nem que custo aceita.
+
+As fontes primárias são [modelação em MongoDB](https://www.mongodb.com/docs/manual/data-modeling/), [transações](https://www.mongodb.com/docs/manual/core/transactions/) e o artigo de Gilbert e Lynch, [Perspectives on the CAP Theorem](https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf). O plano de 2026/27 prevê NoSQL em dezembro; o produto concreto e o detalhe da aula ainda estão por confirmar.

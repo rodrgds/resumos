@@ -1,91 +1,145 @@
 ---
-title: Regras de negócio, triggers e transações
-description: Integridade com restrições, transações e um trigger que impede vender acima da lotação.
-section: conteudo
-order: 5
+title: Triggers, transações e concorrência
+description: Atomicidade, isolamento, bloqueios e integridade, com um contraexemplo de venda acima da lotação.
+order: 7
+practices:
+  - lbaw/praticar-transacoes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: ACID, triggers, snapshots, níveis de isolamento, UPDATE condicionado, bloqueios, deadlocks e tentativas repetidas.
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
-import triggersFigura from '../../lbaw/triggers-timeline.typ?raw';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import corrida from '../../lbaw/concorrencia.dot?raw';
+import atomicidade from '../../lbaw/transacao.sql?raw';
 
-Há regras que nenhuma interface consegue garantir sozinha. Dois compradores a clicar ao mesmo tempo no último lugar passam ambos pela validação da página. As regras de negócio críticas vivem por isso na base de dados, onde todas as escritas passam, vindas de qualquer página ou de qualquer programa.
+Uma transação agrupa operações. Um trigger corre em resposta a uma operação. Nenhum dos dois garante, sozinho, que duas transações concorrentes preservam uma regra que compara várias linhas. Para vender o último lugar, precisamos de escolher também como as compras se coordenam.
 
-## Três lugares para cada regra
+## ACID e o que cada letra promete
 
-Cada regra deve viver no sítio certo, e a pergunta para decidir é "o que acontece se esta camada for contornada":
-
-- **Interface**: formato do email, campos obrigatórios, datas no passado. Se for contornada, o utilizador vê uma mensagem feia, mas os dados continuam válidos.
-- **Lógica de negócio**: preço calculado, descontos, disponibilidade apresentada. Se for contornada, a aplicação comporta-se mal, mas a base de dados continua consistente.
-- **Base de dados**: unicidade, chaves estrangeiras, lotação máxima. Se for contornada, os dados ficam corruptos e nenhuma página os conserta.
-
-A lotação da sessão é o exemplo central: vender o lugar 101 numa sala de 100 corrompe os dados, por isso a regra vive na base de dados. A mensagem bonita de "sessão esgotada" vive na interface, mas é a base de dados que decide.
-
-## Transação de compra passo a passo
-
-Uma compra faz várias escritas que têm de acontecer todas ou nenhuma: criar o bilhete, marcar o pagamento e registar o movimento. A **transação** agrupa-as com atomicidade.
+| Propriedade  | Aplicação à compra                                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Atomicidade  | Reservar um lugar e criar um bilhete ficam ambos confirmados ou ambos anulados.                                                 |
+| Consistência | Restrições e protocolo da aplicação mantêm as invariantes declaradas. Não é uma prova automática de todas as regras de negócio. |
+| Isolamento   | Define quais os efeitos de outras transações que podem ser observados e como se coordenam.                                      |
+| Durabilidade | Uma confirmação mantém-se após falhas, segundo as garantias de armazenamento e configuração do sistema.                         |
 
 ```sql
 BEGIN;
-INSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)
-VALUES (7, 12, 'B-1043', 'reservado');
-UPDATE bilhetes SET estado = 'pago' WHERE codigo = 'B-1043';
+UPDATE sessoes SET livres = livres - 1 WHERE id = 12 AND livres > 0;
+-- Verificar que foi alterada exatamente uma linha antes de continuar.
+INSERT INTO bilhetes(utilizador_id,sessao_id,codigo,estado)
+VALUES (7,12,'B-1043','reservado');
 COMMIT;
 ```
 
-Se a segunda instrução falhar, o `ROLLBACK` anula também a primeira e a base de dados fica como estava. Sem transação, uma falha a meio deixava um bilhete reservado sem pagamento, nem vendido nem livre. Testa sempre o caminho da falha: corre a transação até meio, anula-a e confirma que nada mudou.
-
-<Typst
-  source={triggersFigura}
-  format="svg"
-  alt="Linha temporal da compra: BEGIN, INSERT do bilhete, UPDATE do pagamento, COMMIT em sequência. Uma seta lateral marcada se falhar sai do UPDATE para ROLLBACK."
-/>
-
-Corre o caminho feliz e confirma o estado final. A última linha imprime `B-1043|pago`:
+Se o `UPDATE` afetar zero linhas, faz `ROLLBACK` e responde «esgotado». Se o `INSERT` falhar, anula também a redução dos lugares. `SAVEPOINT nome` e `ROLLBACK TO nome` permitem anular uma parte sem terminar a transação inteira. Um erro de instrução em PostgreSQL deixa normalmente a transação em estado de erro até ser anulada ou recuperada com um savepoint apropriado.
 
 <CodePlayground
   language="sql"
-  title="Compra numa transação"
-  code={
-    "CREATE TABLE bilhetes (\n    id INTEGER PRIMARY KEY,\n    utilizador_id INTEGER NOT NULL,\n    sessao_id INTEGER NOT NULL,\n    codigo TEXT NOT NULL UNIQUE,\n    estado TEXT NOT NULL\n);\nBEGIN;\nINSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)\nVALUES (7, 12, 'B-1043', 'reservado');\nUPDATE bilhetes SET estado = 'pago' WHERE codigo = 'B-1043';\nCOMMIT;\nSELECT codigo, estado FROM bilhetes;"
-  }
+  title="Atomicidade e ponto de recuperação em SQLite"
+  code={atomicidade}
 />
 
-Troca o `COMMIT` por `ROLLBACK`, corre outra vez e confirma que a tabela fica vazia. É esse o teste do caminho da falha: a mesma sequência, com o fim trocado, não deixa rasto.
+O programa mostra um contador a regressar de 0 para 1 após `ROLLBACK`. Na segunda transação, a inserção de um bilhete é anulada até ao savepoint, mas a alteração anterior confirma-se. O último resultado é `0|0`: zero lugares e zero bilhetes. Esse estado ilustra que **atomicidade não escolhe a invariante por nós**; o agrupamento das operações tem de corresponder à regra. O motor do bloco é SQLite e não demonstra a concorrência de PostgreSQL.
 
-## Trigger que impede vender acima da lotação
+## Um COUNT dentro de um trigger pode falhar
 
-A restrição `CHECK` não chega aqui, porque compara linhas de duas tabelas: conta os bilhetes de uma sessão e compara com a lotação da sessão. Essa verificação vive num **trigger**, uma função que corre automaticamente antes de cada inserção:
+Imagina uma sessão de lotação 1, sem bilhetes. Um trigger faz `COUNT(*)`, vê zero e permite inserir. Duas transações podem executar:
+
+| Passo | Compra A                      | Compra B                                              |
+| ----- | ----------------------------- | ----------------------------------------------------- |
+| 1     | Conta 0 bilhetes confirmados. |                                                       |
+| 2     |                               | Conta 0; não vê a inserção ainda não confirmada de A. |
+| 3     | Insere um bilhete.            |                                                       |
+| 4     |                               | Insere outro bilhete.                                 |
+| 5     | Confirma.                     | Confirma.                                             |
+
+Ficaram dois bilhetes para um lugar. Cada trigger correu dentro de uma transação, mas as leituras não reservaram a capacidade. Um `CHECK` numa linha também não deve consultar outras linhas para tentar resolver este caso.
+
+<Dot
+  source={corrida}
+  alt="Duas compras observam zero bilhetes, inserem separadamente e confirmam dois bilhetes numa sessão de um lugar. A contagem sem coordenação não protege a lotação."
+/>
+
+## Coordenar a alteração da mesma linha
+
+Em PostgreSQL, no isolamento padrão **Read Committed**, este `UPDATE` é uma forma de disputar um contador único:
 
 ```sql
-CREATE OR REPLACE FUNCTION lotacao_ok() RETURNS TRIGGER AS $$
-BEGIN
-    IF (SELECT COUNT(*) FROM bilhetes
-        WHERE sessao_id = NEW.sessao_id
-          AND estado <> 'cancelado')
-       >= (SELECT lotacao FROM sessoes WHERE id = NEW.sessao_id) THEN
-        RAISE EXCEPTION 'Sessao % esgotada', NEW.sessao_id;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER bilhete_antes_inserir
-BEFORE INSERT ON bilhetes
-FOR EACH ROW EXECUTE FUNCTION lotacao_ok();
+UPDATE sessoes
+SET livres = livres - 1
+WHERE id = 12 AND livres > 0
+RETURNING id, livres;
 ```
 
-Compra agora o lugar 101 de uma sala de 100: o `INSERT` dispara o trigger, a contagem dá 100 bilhetes ativos contra lotação 100, e a inserção é recusada com a exceção. Funciona para dois compradores em simultâneo, porque a verificação corre dentro da transação de cada um, junto aos dados. A aplicação apanha o erro e mostra "sessão esgotada", mas a decisão foi da base de dados.[^trigger]
+A primeira compra bloqueia e altera a linha. A segunda espera. Se a primeira confirmar, o PostgreSQL volta a avaliar a condição sobre a versão atual da linha: livres já é zero, logo a segunda não altera nenhuma linha. Se a primeira anular, a segunda pode reservar esse lugar. O `RETURNING` permite distinguir esses resultados.
 
-<YouTube id="GAe5oB742dw" title="ACID Properties in Databases With Examples" />
+O esquema pode ter `CHECK (livres BETWEEN 0 AND lotacao)`, mas o contador só coincide com os bilhetes se **todas** as compras, cancelamentos e alterações de lotação seguirem o mesmo protocolo. Criar um bilhete por outro caminho sem diminuir livres quebra a regra. A inserção e o contador pertencem à mesma transação; alterações diretas exigem permissões limitadas ou uma operação central na base de dados.
 
-## Para saber mais
+Outra estratégia é bloquear primeiro a sessão com `SELECT ... FOR UPDATE` e só depois contar e inserir. Todos os escritores têm de obter esse mesmo bloqueio. Em Read Committed, a contagem deve ser uma instrução posterior à aquisição do bloqueio, para obter um snapshot atualizado. Um bloqueio num sítio que os outros caminhos ignoram não coordena nada.
 
-- [CREATE TRIGGER](https://www.postgresql.org/docs/current/sql-createtrigger.html), a referência oficial da sintaxe do trigger e das funções que ele executa.
+## Snapshots e níveis de isolamento
 
-[^trigger]: PostgreSQL, [CREATE TRIGGER](https://www.postgresql.org/docs/current/sql-createtrigger.html), a documentação da sintaxe usada nesta página.
+| PostgreSQL       | O que esperar                                                                                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read Uncommitted | Implementado como Read Committed.                                                                                                                                 |
+| Read Committed   | Cada instrução vê um snapshot dos dados confirmados ao começar, além das suas próprias alterações. Pode observar diferenças entre duas leituras.                  |
+| Repeatable Read  | O snapshot é estável desde a primeira instrução relevante. PostgreSQL impede também phantom reads neste nível, mas ainda pode permitir anomalias de serialização. |
+| Serializable     | Só permite efeitos compatíveis com alguma ordem serial das transações confirmadas; pode abortar uma transação para preservar essa garantia.                       |
 
-:::tip[Trigger não substitui desenho]
-O trigger protege a regra, mas não explica os dados. Mantém a lotação como coluna da sessão e o estado em cada bilhete, como no esquema, para conseguires interrogar "quantos lugares livres" sem o trigger. Regras na base de dados e dados bem desenhados andam juntos.
-:::
+Uma **dirty read** lê uma alteração não confirmada. Uma **non-repeatable read** volta a ler uma linha e encontra um valor confirmado diferente. Um **phantom** é uma alteração no conjunto de linhas que satisfaz o mesmo predicado. **Write skew** acontece quando duas transações leem uma condição comum e alteram linhas diferentes, preservando a condição só quando analisadas isoladamente.
+
+No exemplo de dois médicos de serviço, ambos leem que há dois e cada um retira o seu próprio turno. Um snapshot estável não basta para impedir que fiquem zero. Serializable pode detetar o conflito e exigir uma nova tentativa. Ao receber um erro de serialização, repete a transação completa com um novo snapshot, não só a última instrução.
+
+## Deadlock não é uma espera qualquer
+
+A bloqueia a linha 1 e pede a 2; B bloqueia a 2 e pede a 1. Há um ciclo de espera, um **deadlock**. PostgreSQL deteta o ciclo e aborta uma das transações. Adquirir os mesmos recursos numa ordem consistente reduz esse risco. Mantém transações curtas e prepara a aplicação para repetir uma transação abortada quando isso for seguro.
+
+## Triggers: momento, unidade e retorno
+
+- `BEFORE`: pode validar ou alterar NEW antes de guardar. Num trigger por linha, devolver NULL pode cancelar a operação dessa linha.
+- `AFTER`: observa a alteração concluída; continua dentro da transação, antes do `COMMIT`. O retorno de um trigger AFTER por linha é ignorado.
+- `INSTEAD OF`: substitui a operação, por exemplo numa vista suportada por um trigger por linha.
+- `FOR EACH ROW`: dispara uma vez por linha afetada. `FOR EACH STATEMENT`: uma vez por instrução, mesmo quando nenhuma linha é afetada.
+
+`NEW` está disponível na inserção; `OLD` na eliminação; ambos na atualização. Não uses OLD num INSERT. Uma exceção no trigger pode anular a instrução; as alterações do trigger pertencem à mesma transação.
+
+```sql
+CREATE FUNCTION auditar_preco() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.preco IS DISTINCT FROM OLD.preco THEN
+    INSERT INTO historico_preco(sessao_id,preco_anterior,preco_novo)
+    VALUES (NEW.id,OLD.preco,NEW.preco);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER preco_alterado
+AFTER UPDATE OF preco ON sessoes
+FOR EACH ROW EXECUTE FUNCTION auditar_preco();
+```
+
+`UPDATE OF preco` depende das colunas mencionadas pela instrução, não de o valor ter mudado. O teste `IS DISTINCT FROM` distingue a mudança real e trata NULL de forma definida. O histórico também desaparece se a transação for anulada.
+
+Uma transação da base de dados não anula um pagamento que já aconteceu num serviço externo. Pagamentos, emails e chamadas remotas precisam de um protocolo próprio, como registar uma operação pendente e processá-la com identificação que impeça duplicados. Não mantenhas um bloqueio de linha enquanto esperas pela pessoa preencher um formulário.
+
+Consulta [isolamento](https://www.postgresql.org/docs/current/transaction-iso.html), [bloqueios explícitos](https://www.postgresql.org/docs/current/explicit-locking.html) e [triggers](https://www.postgresql.org/docs/16/trigger-definition.html) na documentação de PostgreSQL.
+
+## Acompanhar uma aula
+
+A aula de controlo de concorrência ajuda a distinguir execução serial, isolamento e anomalias. Usa a sequência de duas compras desta página para aplicar as definições. O vídeo foi confirmado no [programa oficial de CMU](https://15445.courses.cs.cmu.edu/fall2024/schedule.html).
+
+<YouTube
+  id="4y656idl8ZU"
+  title="CMU Database Group, Concurrency Control Theory, 2024"
+/>

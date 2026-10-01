@@ -1,22 +1,32 @@
 ---
 title: Modelo conceptual em UML
 description: Classes, associações, multiplicidades e restrições a partir dos requisitos, com o diagrama da Loja de Bilhetes.
-section: conteudo
 order: 2
+practices:
+  - lbaw/praticar-modelo
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+      url: https://moodle2627.up.pt/course/view.php?id=4222
+    - title: Ficha LBAW 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
+    - title: Plano do semestre LBAW 2026/27
+      url: https://docs.google.com/spreadsheets/d/e/2PACX-1vTm1WlNzZqrCttNHAnZe7Kzq_EJUiGZatZVK5QVfoo-GZlnngu6Xq6COshlPym2Jl3iHQkvU1gUpmbZ/pubhtml?gid=979371688&single=true
+  coverage: Classes, associações e multiplicidades, entidades associativas, generalização, composição e restrições.
 ---
 
 import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
 import bilheteFigura from '../../lbaw/modelo-bilhete.typ?raw';
 
-Os [requisitos](requisitos/) dizem o que o sistema faz. O modelo conceptual diz o que o sistema guarda: que entidades existem, que dados tem cada uma e como se relacionam. Desenha-se em UML, antes de pensar em tabelas, para discutir o problema sem o ruído da tecnologia.
+Os [requisitos](/cadeiras/lbaw/requisitos/) dizem o que o sistema faz. O modelo conceptual diz o que o sistema guarda: que entidades existem, que dados tem cada uma e como se relacionam. Desenha-se em UML, antes de pensar em tabelas, para discutir o problema sem o ruído da tecnologia.
 
 ## Classes e atributos
 
 Uma **classe** é um tipo de coisa que o sistema regista, com **atributos** que guardam os seus dados. Na Loja de Bilhetes precisamos de quatro:
 
-- **Utilizador**: nome, email (único) e palavra-passe.
+- **Utilizador**: nome, email (único) e hash da palavra-passe.
 - **Evento**: título, descrição e categoria.
 - **Sessão**: data, hora, preço e lotação. Cada sessão pertence a um evento.
 - **Bilhete**: código e estado (reservado, pago ou cancelado). Cada bilhete liga um utilizador a uma sessão.
@@ -40,11 +50,11 @@ Uma **associação** liga duas classes, e a **multiplicidade** diz quantos objet
 
 Lê o diagrama nos dois sentidos antes de o dares por fechado: cada seta responde "quantos deste lado para cada um do outro".
 
-Repara na leitura inversa: dizer "uma sessão tem muitos bilhetes" não chega, porque também é preciso dizer que "cada bilhete é de uma só sessão". As duas leituras juntas é que fecham a regra, e é dessa regra que nascem as chaves estrangeiras no [esquema relacional](esquema-relacional/).
+Repara na leitura inversa: dizer "uma sessão tem muitos bilhetes" não chega, porque também é preciso dizer que "cada bilhete é de uma só sessão". As duas leituras juntas é que fecham a regra, e é dessa regra que nascem as chaves estrangeiras no [esquema relacional](/cadeiras/lbaw/esquema-relacional/).
 
 ## Resolver o muitos para muitos
 
-Um utilizador compra bilhetes para várias sessões e cada sessão recebe bilhetes de vários utilizadores: entre **Utilizador** e **Sessão** há uma relação de muitos para muitos. Em UML não a desenhas direta quando ela tem dados próprios. O **Bilhete** é a classe de associação que a resolve: guarda o código e o estado da compra e liga cada compra a exatamente um utilizador e uma sessão.
+Um utilizador compra bilhetes para várias sessões e cada sessão recebe bilhetes de vários utilizadores: entre **Utilizador** e **Sessão** há uma relação de muitos para muitos. Em UML não a desenhas direta quando ela tem dados próprios. O **Bilhete** é uma entidade associativa que a representa: guarda o código e o estado da compra e liga cada compra a exatamente um utilizador e uma sessão.
 
 A regra para reconhecer este padrão: quando a ligação entre dois lados precisa de guardar informação (quando foi comprado, em que estado está), essa ligação merece ser uma classe. O bilhete tem código e estado, por isso é classe. Se a ligação não guardasse nada, uma associação simples chegava.
 
@@ -54,7 +64,7 @@ A regra para reconhecer este padrão: quando a ligação entre dois lados precis
   alt="Três caixas em linha: Utilizador, Bilhete com código e estado, Sessão. Uma seta de Utilizador para Bilhete com um, zero a muitos. Uma seta de Bilhete para Sessão com zero a muitos, um."
 />
 
-O Bilhete no meio é a classe de associação: resolve o muitos para muitos entre Utilizador e Sessão e guarda os dados da própria ligação. Em UML, uma classe de associação desenha-se como uma classe normal ligada à associação que qualifica.[^uml]
+O Bilhete tem identidade própria e duas associações. Permite várias compras do mesmo utilizador na mesma sessão. Uma classe de associação UML formal liga-se à associação que qualifica; não é a notação usada neste desenho.[^uml]
 
 ## Restrições que o desenho não mostra
 
@@ -62,10 +72,10 @@ O diagrama mostra estrutura, mas algumas regras precisam de texto. Escreve-as co
 
 - O email do utilizador é único em todo o sistema.
 - Não se vendem mais bilhetes do que a lotação da sessão.
-- A data de uma sessão não pode estar no passado.
+- Ao criar uma sessão, a sua data tem de estar no futuro; o histórico pode conter sessões passadas.
 - Um bilhete cancelado liberta o lugar para nova venda.
 
-Estas frases são o contrato com as fases seguintes: a unicidade do email vira restrição na tabela, a lotação vira [trigger](triggers-transacoes/) e a data mínima vira validação na aplicação. Um modelo sem restrições escritas empurra estas decisões para o código, onde cada programador do grupo inventa a sua versão.
+Estas frases são o contrato com as fases seguintes: a unicidade do email vira restrição na tabela, a lotação exige um [protocolo de concorrência](/cadeiras/lbaw/triggers-transacoes/) e a data mínima vira validação na aplicação. Um modelo sem restrições escritas empurra estas decisões para o código, onde cada programador do grupo inventa a sua versão.
 
 :::warning[O erro mais comum]
 Desenhar o modelo a partir das páginas que imaginaste, em vez de o desenhar a partir dos requisitos. Se uma classe existe só porque "a página precisa", volta aos casos de uso: ou o requisito existe e a classe fica, ou não existe e a classe sai do diagrama e do projeto.
@@ -73,7 +83,21 @@ Desenhar o modelo a partir das páginas que imaginaste, em vez de o desenhar a p
 
 [^uml]: Object Management Group, [UML Specification](https://www.omg.org/spec/UML), a referência da notação de classes, associações e multiplicidades usada nesta página.
 
-<YouTube
-  id="WnMQ8HlmeXc"
-  title="UML Diagrams Full Course (Unified Modeling Language)"
-/>
+## Generalização e restrições dos subtipos
+
+Se utilizador tem os subtipos comprador e administrador, distingue duas perguntas independentes:
+
+- **Disjoint ou overlapping:** uma pessoa pode pertencer a ambos?
+- **Total ou partial:** todos os utilizadores pertencem a pelo menos um subtipo?
+
+Não deduzas uma resposta da outra. Uma especialização total pode ser overlapping; uma especialização disjoint pode ser partial. A tradução para tabelas tem de preservar a escolha ou declarar como a vai verificar.
+
+Uma **composição** representa uma relação todo-parte com pertença forte e restrições de ciclo de vida. Não marques composição apenas porque existe uma chave estrangeira. Um bilhete comprado pode ter de permanecer como registo histórico mesmo após desativar a conta. Nesse domínio, apagar automaticamente o registo pode contrariar o requisito.
+
+Uma associação reflexiva, como utilizador segue utilizador, precisa de nomes de papéis: seguidor e seguido. Sem esses papéis, duas chaves para a mesma tabela ficam ambíguas. Se não se pode seguir a si próprio, essa restrição tem de ser escrita.
+
+## O que o modelo não garante sozinho
+
+A multiplicidade `1..*` de sessões por evento inclui um mínimo de uma sessão. Uma chave estrangeira NOT NULL da sessão para o evento garante que cada sessão tem evento, mas não garante o mínimo na direção inversa. A conversão tem de identificar também o que precisa de operações coordenadas ou outras verificações.
+
+Um diagrama é uma especificação. Não executa as regras. Confirma cada sentido de cada associação com exemplos válidos e inválidos, e só depois escolhe as [restrições do esquema](/cadeiras/lbaw/esquema-relacional/).
