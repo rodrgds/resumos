@@ -24,11 +24,11 @@ PFL usa Haskell para transformar valores com funções e Prolog para descrever r
 
 ## O percurso
 
-Em Haskell, começa pelas [expressões e padrões](haskell-expressoes-tipos/), depois aprende a [deduzir tipos](polimorfismo-classes/). [Listas e recursão](listas-recursao/) cobre compreensões, ordenação e os algoritmos das fichas iniciais. [Ordem superior](funcoes-ordem-superior/) reúne composição, folds e preguiça. Passa depois às [árvores e tipos algébricos](tipos-algebricos-recursao/), às [ações I/O e parsers](entrada-saida-parsers/) e às [propriedades com QuickCheck](testes-quickcheck/).
+Em Haskell, começa pelas [expressões e padrões](/cadeiras/pfl/haskell-expressoes-tipos/), depois aprende a [deduzir tipos](/cadeiras/pfl/polimorfismo-classes/). [Listas e recursão](/cadeiras/pfl/listas-recursao/) cobre compreensões, ordenação e os algoritmos das fichas iniciais. [Ordem superior](/cadeiras/pfl/funcoes-ordem-superior/) reúne composição, folds e preguiça. Passa depois às [árvores e tipos algébricos](/cadeiras/pfl/tipos-algebricos-recursao/), às [ações I/O e parsers](/cadeiras/pfl/entrada-saida-parsers/) e às [propriedades com QuickCheck](/cadeiras/pfl/testes-quickcheck/).
 
-Em Prolog, começa por [termos, unificação e SLD](logica-unificacao-prolog/). Estuda [listas, aritmética e corte](prolog-recursao-procura/) antes de [recolher soluções e compor estruturas](solucoes-estruturas-prolog/). A última página aplica essas ferramentas a [procura, jogos e manipulação simbólica](procura-jogos-simbolos/).
+Em Prolog, começa por [termos, unificação e SLD](/cadeiras/pfl/logica-unificacao-prolog/). Estuda [listas, aritmética e corte](/cadeiras/pfl/prolog-recursao-procura/) antes de [recolher soluções e compor estruturas](/cadeiras/pfl/solucoes-estruturas-prolog/). A última página aplica essas ferramentas a [procura, jogos e manipulação simbólica](/cadeiras/pfl/procura-jogos-simbolos/).
 
-Cada lição termina com questões que testam decisões diferentes. Resolve-as sem abrir as pistas; depois compara a justificação, e não apenas a resposta. A [cheat sheet](folha-consulta/) serve para rever condições e padrões depois de estudar as explicações.
+Cada lição termina com questões que testam decisões diferentes. Resolve-as sem abrir as pistas; depois compara a justificação, e não apenas a resposta. A [cheat sheet](/cadeiras/pfl/folha-consulta/) serve para rever condições e padrões depois de estudar as explicações.
 
 ## Como resolver uma questão
 
