@@ -90,6 +90,104 @@ test('visiting the catalogue alone keeps the introduction visible', async ({
   await expect(page.locator('#page-hero')).toBeVisible();
 });
 
+test('CT choices follow their group, stay local and update pinned semesters', async ({
+  page,
+}) => {
+  const thirdYear = page.locator('#cadeiras [data-semester="3-1"]');
+  await thirdYear.getByText('Escolher CT III', { exact: true }).click();
+  const choice = thirdYear.getByRole('combobox', { name: 'Opção de CT III' });
+  await choice.selectOption('ct-iadp');
+  await expect(thirdYear.locator('[data-ct-card]')).toContainText(
+    'Introdução à análise de dados em Python',
+  );
+  await thirdYear.locator('.semester-pin').click();
+  const pinned = page.locator('[data-pinned-semesters]');
+  await expect(pinned.locator('[data-ct-card]')).toContainText(
+    'Introdução à análise de dados em Python',
+  );
+  await page.reload();
+  await thirdYear.getByText('Escolher CT III', { exact: true }).click();
+  await expect(choice).toHaveValue('ct-iadp');
+  await expect(pinned.locator('[data-ct-card]')).toContainText(
+    'Introdução à análise de dados em Python',
+  );
+  await pinned.getByText('Escolher CT III', { exact: true }).click();
+  await pinned
+    .getByRole('combobox', { name: 'Opção de CT III' })
+    .selectOption('ct-aadl');
+  await expect(
+    pinned.getByRole('combobox', { name: 'Opção de CT III' }),
+  ).toBeFocused();
+  const accessibility = await new AxeBuilder({ page })
+    .include('[data-pinned-semesters]')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+  const published = thirdYear.locator('[data-ct-card] a');
+  await expect(published).toHaveAttribute('href', '/cadeiras/ct-aadl/');
+  await pinned.locator('[data-ct-card] a').click();
+  await expect(page).toHaveURL(/\/cadeiras\/ct-aadl\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    'aquisição automatizada de dados laboratoriais',
+  );
+  await page.goto('/');
+  await thirdYear.getByText('Escolher CT III', { exact: true }).click();
+  await expect(choice).toHaveValue('ct-aadl');
+  await choice.selectOption('');
+  await expect(pinned.locator('[data-ct-card]')).toContainText(
+    'Competências Transversais III',
+  );
+  await page.reload();
+  await thirdYear.getByText('Escolher CT III', { exact: true }).click();
+  await expect(choice).toHaveValue('');
+});
+
+test('saved CT choices reject unknown options and options from another group', async ({
+  page,
+}) => {
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'resumos-ct-choices',
+      JSON.stringify({ ct1: 'ct-cp', ct2: 'ct-iadp', ct3: 'unknown' }),
+    ),
+  );
+  await page.reload();
+  for (const group of ['ct1', 'ct2', 'ct3']) {
+    await expect(
+      page.locator(`#cadeiras [data-ct-choice="${group}"]`),
+    ).toHaveValue('');
+  }
+  await page.getByText('Escolher CT II', { exact: true }).click();
+  const choice = page.getByRole('combobox', { name: 'Opção de CT II' });
+  await choice.selectOption('ct-cp');
+  await expect(page.locator('#cadeiras [data-ct-slot="ct2"]')).toContainText(
+    'Comunicação Profissional',
+  );
+  await page.reload();
+  await page.getByText('Escolher CT II', { exact: true }).click();
+  await expect(choice).toHaveValue('ct-cp');
+});
+
+test('CT reference links remain available without JavaScript', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    baseURL: test.info().project.use.baseURL,
+  });
+  const page = await context.newPage();
+  await page.goto('/');
+  await page.getByText('Escolher CT III', { exact: true }).click();
+  const slot = page.locator('#cadeiras [data-ct-slot="ct3"]');
+  await expect(
+    slot.getByRole('link', { name: 'Introdução à análise de dados em Python' }),
+  ).toHaveAttribute('href', /pv_ocorrencia_id=590452$/);
+  await expect(
+    slot.getByRole('link', { name: /aquisição automatizada/ }),
+  ).toHaveAttribute('href', '/cadeiras/ct-aadl/');
+  await context.close();
+});
+
 test('appearance persists, follows system, and resets', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();

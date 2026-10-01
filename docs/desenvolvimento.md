@@ -32,6 +32,7 @@ As animações Manim usam o perfil opcional `devenv --profile manim shell`. `npm
 A página inicial reúne as cadeiras de 2026/27 por ano e semestre. As cadeiras com conteúdo publicado dão acesso aos apontamentos. A [cadeira fictícia de exemplo](https://resumos.rgo.pt/exemplo/) mostra os formatos de conteúdo.
 
 - `src/data/courses.ts`: plano de estudos, ECTS, cores e ícones.
+- `src/data/ct-options.ts`: opções dos grupos CT I, II e III, com os ids de conteúdo e as fichas oficiais. São escolhas dentro dos grupos, não cadeiras adicionais no plano. Lista de 2026/27 verificada no SIGARRA a 1 de outubro de 2026.
 - `src/pages/index.astro`: página inicial.
 - `src/pages/nucleos.astro`: grupos e ligações oficiais.
 - `src/components/Header.astro`, `Footer.astro`, `StudyTools.astro`: elementos comuns.

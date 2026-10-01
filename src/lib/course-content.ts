@@ -1,6 +1,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { courses as leic } from '../data/courses';
 import { courses as meic } from '../data/meic';
+import { ctOptions } from '../data/ct-options';
 
 export const sections = {
   conteudo: 'Conteúdo',
@@ -37,10 +38,12 @@ export async function getCourseGuides(): Promise<CourseGuide[]> {
     groups.set(id, group);
   }
   return [...groups].map(([id, pages]) => {
-    const curriculum = [...leic, ...meic].find((course) => course.id === id);
+    const curriculum = [...leic, ...meic, ...ctOptions].find(
+      (course) => course.id === id,
+    );
     if (id !== 'exemplo' && !curriculum)
       throw new Error(
-        `Unknown course folder: ${id}. Use an id from courses.ts or meic.ts.`,
+        `Unknown course folder: ${id}. Use an id from courses.ts, meic.ts or ct-options.ts.`,
       );
     const ordered = pages
       .filter((page) => page.id !== `${id}/index`)

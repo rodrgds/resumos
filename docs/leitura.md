@@ -50,6 +50,8 @@ A homepage mostra a última leitura e até quatro páginas recentes depois da pr
 
 Os pins de semestre acrescentam cartões horizontais no topo da homepage e mantêm a grelha original. A introdução aparece enquanto não houver histórico de leitura nem semestres fixados. Limpar o histórico só a repõe se não houver pins.
 
+Nos cartões de CT I, II e III, abre «Escolher CT» e seleciona a tua unidade curricular. A escolha substitui o cartão do grupo e acompanha o semestre fixado. Fica guardada neste navegador e não faz a inscrição na FEUP. «Sem opção escolhida» repõe o grupo. As opções sem resumos mostram «Em breve» e dão acesso à ficha do SIGARRA. Sem JavaScript, a lista mantém os links para os resumos publicados e as fichas oficiais.
+
 A aparência também inclui adaptações de [Flexoki](https://stephango.com/flexoki) e [Solarized](https://ethanschoonover.com/solarized/). Os blocos estáticos e executáveis partilham as variáveis `--code-*` e a fonte escolhida para código: IBM Plex Mono, JetBrains Mono ou a fonte monoespaçada do sistema.
 
 Em **CSS personalizado**, podes ativar as sugestões, editar o seu CSS ou adicionar snippets. Guardar e ativar são ações separadas. Cada snippet pode ser desativado ou eliminado. Os snippets ficam em `resumos-css-snippets`, só neste navegador, e não entram na pesquisa, exportação Markdown ou pedidos de IA.
