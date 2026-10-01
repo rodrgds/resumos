@@ -1,0 +1,69 @@
+---
+title: Estatística e resumos de tabelas
+description: Contagens, média, mediana, quantis, dispersão, ordenação e unidades de análise.
+section: conteudo
+order: 11
+practices:
+  - ct-iadp/praticar-estatistica
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, operações básicas
+      url: https://pandas.pydata.org/docs/user_guide/basics.html
+    - title: pandas, tutoriais introdutórios
+      url: https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html
+  coverage: Contagens, média, mediana, quantis, dispersão, ordenação e unidades de análise.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Uma estatística resume observações. A escolha depende do que cada linha representa e da pergunta. A média de preços por venda não é necessariamente o preço médio por unidade vendida.
+
+## Calcular e interpretar
+
+Para quantidades 2, 3, 5 e 4, a soma é 14 e a média é `14 / 4 = 3,5`. Depois de ordenar, temos 2, 3, 4 e 5; a mediana é `(3 + 4) / 2 = 3,5`. Neste caso coincidem, mas um valor muito elevado afeta mais a média.
+
+<CodePlayground
+  language="python"
+  title={'Resumir quatro observações'}
+  code={
+    'import pandas as pd\nquantidades = pd.Series([2, 3, 5, 4])\nprint("n:", quantidades.count())\nprint("soma:", quantidades.sum())\nprint("média:", quantidades.mean())\nprint("mediana:", quantidades.median())\nprint("mínimo/máximo:", quantidades.min(), quantidades.max())\nprint("variância amostral:", round(quantidades.var(), 4))\nprint("variância populacional:", round(quantidades.var(ddof=0), 4))'
+  }
+/>
+
+A variância amostral é aproximadamente 1,6667; a populacional é 1,25. Somamos os quadrados dos desvios à média: `2,25 + 0,25 + 2,25 + 0,25 = 5`. A versão amostral divide por `n - 1 = 3`; a populacional divide por `n = 4`.
+
+Em pandas, `var()` e `std()` usam `ddof=1` por defeito. NumPy usa geralmente `ddof=0` nestas operações. Indica a convenção quando comparares resultados. O desvio padrão é a raiz da variância e tem a mesma unidade da variável; a variância tem a unidade ao quadrado.
+
+## Quantis e describe
+
+`quantile(0.25)` calcula o primeiro quartil, `quantile(0.5)` a mediana e `quantile(0.75)` o terceiro quartil. O método de interpolação afeta quantis com poucas observações. Para os quatro valores, pandas com a interpolação linear habitual dá 2,75 e 4,25 nos quartis.
+
+`describe()` de uma coluna numérica mostra contagem, média, desvio padrão, mínimo, quartis e máximo. Usa `describe(include="all")` para incluir tipos não numéricos, mas interpreta as estatísticas conforme a coluna. Uma contagem de linhas não explica por si só o que foi medido.
+
+## Contar linhas, valores e categorias
+
+`len(df)` conta linhas. `serie.count()` conta valores não nulos. `serie.nunique()` conta valores distintos, normalmente excluindo valores em falta. `serie.value_counts()` conta ocorrências por valor; `dropna=False` inclui a ausência como categoria na contagem.
+
+```python
+frequencias = df["cidade"].value_counts()
+proporcoes = df["cidade"].value_counts(normalize=True)
+```
+
+`normalize=True` divide cada contagem pelo total de valores considerados. Se excluíres nulos, a soma das proporções é relativa apenas aos valores conhecidos.
+
+## Ordenar e escolher extremos
+
+`sort_values("quantidade")` ordena pelos valores da coluna. `sort_index()` ordena pelos rótulos do índice. Para desempatar, passa mais de uma coluna, como `sort_values(["cidade", "quantidade"])`. `ascending=[True, False]` ordena a cidade por ordem crescente e a quantidade por ordem decrescente.
+
+`idxmax()` devolve o rótulo de uma ocorrência máxima, não o próprio valor. Para devolver todas as vendas empatadas no máximo, usa uma máscara com `df["quantidade"] == df["quantidade"].max()`.
+
+## Uma média ponderada
+
+Vendemos duas unidades a 1,50 euros e três a 1,20 euros. A média simples dos dois preços é 1,35 euros. O preço médio por unidade é `(2 × 1,50 + 3 × 1,20) / (2 + 3) = 1,32 euros`. As quantidades são os pesos.
+
+Confere a unidade do numerador e do denominador. Faturação dividida por unidades dá euros por unidade; faturação dividida por vendas dá euros por venda. Nenhuma das duas substitui a outra.

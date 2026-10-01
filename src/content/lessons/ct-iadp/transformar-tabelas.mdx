@@ -1,0 +1,77 @@
+---
+title: Criar, alterar e limpar tabelas
+description: Colunas calculadas, rename, drop, map, apply e tratamento explícito de valores em falta.
+section: conteudo
+order: 12
+practices:
+  - ct-iadp/praticar-transformar-tabelas
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, operações básicas
+      url: https://pandas.pydata.org/docs/user_guide/basics.html
+    - title: pandas, valores em falta
+      url: https://pandas.pydata.org/docs/user_guide/missing_data.html
+    - title: pandas, indexação e seleção
+      url: https://pandas.pydata.org/docs/user_guide/indexing.html
+  coverage: Colunas calculadas, rename, drop, map, apply e tratamento explícito de valores em falta.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Uma transformação deve dizer que valores muda e que informação conserva. Criar a coluna de total acrescenta um cálculo a cada linha. Apagar uma linha retira uma observação, por isso precisa de uma razão.
+
+## Criar uma coluna calculada
+
+<CodePlayground
+  language="python"
+  title={'Guardar o total de cada venda'}
+  code={
+    'import pandas as pd\nvendas = pd.DataFrame({\n    "produto": ["pão", "leite", "arroz"],\n    "quantidade": [2, 3, 4],\n    "preco": [1.5, 1.2, 2.0],\n})\nvendas["total"] = vendas["quantidade"] * vendas["preco"]\nvendas = vendas.rename(columns={"preco": "preco_unitario"})\nprint(vendas.round(2).to_string(index=False))'
+  }
+/>
+
+Os totais são 3,00, 3,60 e 8,00. A multiplicação é vetorizada, alinhada pelo índice. A atribuição de um escalar a uma coluna preenche todas as linhas; a atribuição de uma Series alinha os seus rótulos com o índice do DataFrame.
+
+`rename` muda os nomes e devolve outra tabela por defeito. `drop(columns=["preco_unitario"])` elimina uma coluna. `drop(index=[rotulo])` elimina uma linha por rótulo. Escolhe `columns` ou `index` para evitar confundir o eixo.
+
+## map e apply
+
+`serie.map(dicionario)` substitui valores através de uma correspondência. Valores sem correspondência ficam em falta, pelo que deves detetar chaves desconhecidas.
+
+```python
+categorias = {"pão": "padaria", "leite": "laticínios"}
+df["categoria"] = df["produto"].map(categorias)
+```
+
+`serie.apply(funcao)` aplica uma função a cada valor. `df.apply(funcao, axis=1)` chama a função para cada linha; com `axis=0`, para cada coluna. Prefere operações vetorizadas simples quando exprimem diretamente o cálculo. Usar `apply` para multiplicar duas colunas esconde uma operação que pandas já suporta.
+
+## Representar ausência
+
+Uma célula em falta não é automaticamente zero. `None`, `NaN`, `pd.NA` e `NaT` podem representar ausência, dependendo do tipo. Usa `isna()` ou `notna()` para a detetar. Não uses `valor == np.nan`, porque NaN não é igual a si mesmo.
+
+<CodePlayground
+  language="python"
+  title={'Ausência muda a interpretação'}
+  code={
+    'import pandas as pd\nquantidades = pd.Series([2, None, 6], dtype="Float64")\nprint("em falta:", quantidades.isna().to_list())\nprint("conhecidos:", quantidades.count())\nprint("média conhecida:", quantidades.mean())\nprint("média se ausente = 0:", quantidades.fillna(0).mean())\nprint("soma toda ausente:", pd.Series([None, None], dtype="Float64").sum(min_count=1))'
+  }
+/>
+
+A média dos valores conhecidos é 4. Preencher com zero dá `8 / 3`, cerca de 2,6667. São respostas a hipóteses diferentes. Na última linha, `min_count=1` exige pelo menos um valor conhecido; sem isso, uma soma só de nulos pode dar zero.
+
+## Escolher uma política
+
+`dropna(subset=["quantidade"])` elimina linhas sem quantidade. `fillna(0)` substitui ausências por zero. Preencher pela média introduz valores estimados e reduz artificialmente a dispersão. Para um relatório, conserva a contagem de dados em falta e explica a hipótese usada.
+
+`ffill()` propaga o valor anterior e `bfill()` o seguinte. Só fazem sentido quando a ordem está definida e a variável permite esse tipo de continuidade. Não propagues um preço entre produtos diferentes.
+
+Um `pd.NA` isolado não pode ser tratado como verdadeiro ou falso. Algumas operações booleanas preservam a incerteza. Antes de filtrar, decide o destino das linhas cuja condição depende de dados ausentes.
+
+## Duplicados e integridade
+
+`duplicated(subset=["id"])` deteta repetições de um identificador. `drop_duplicates` conserva uma ocorrência conforme `keep`. Duas linhas iguais podem ser duas vendas reais; não as elimines apenas porque os valores coincidem. Usa a chave que identifica a observação e confere os totais antes e depois da limpeza.

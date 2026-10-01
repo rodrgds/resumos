@@ -1,0 +1,78 @@
+---
+title: Selecionar e filtrar dados
+description: Distinguir loc de iloc, combinar máscaras e selecionar linhas e colunas sem ambiguidade.
+section: conteudo
+order: 10
+practices:
+  - ct-iadp/praticar-selecao-filtros
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, indexação e seleção
+      url: https://pandas.pydata.org/docs/user_guide/indexing.html
+  coverage: Distinguir loc de iloc, combinar máscaras e selecionar linhas e colunas sem ambiguidade.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Selecionar escolhe linhas ou colunas; filtrar escolhe as linhas que cumprem uma condição. Primeiro identifica se o enunciado fala de rótulos, posições ou valores. Esta decisão determina a operação.
+
+## Rótulos com loc, posições com iloc
+
+Imagina uma tabela com índices 10, 20 e 30. `df.loc[20]` procura o rótulo 20. `df.iloc[1]` procura a segunda posição. Os dois podem coincidir nesta tabela, mas representam pedidos diferentes.
+
+| Pedido                          | Expressão                       |
+| ------------------------------- | ------------------------------- |
+| Linha com rótulo 20             | `df.loc[20]`                    |
+| Segunda linha                   | `df.iloc[1]`                    |
+| Duas primeiras linhas           | `df.iloc[:2]`                   |
+| Rótulos de 10 até 20, incluídos | `df.loc[10:20]`                 |
+| Coluna quantidade               | `df["quantidade"]`              |
+| Colunas produto e quantidade    | `df[["produto", "quantidade"]]` |
+
+O slice de `iloc` exclui o limite final. O slice de rótulos de `loc` inclui normalmente ambos os extremos existentes. Para slices de rótulos ordenados de forma irregular ou repetidos, confere se a seleção é bem definida.
+
+## Construir uma máscara
+
+<CodePlayground
+  language="python"
+  title={'Selecionar uma venda'}
+  code={
+    'import pandas as pd\nvendas = pd.DataFrame({\n    "cidade": ["Porto", "Porto", "Braga", "Braga"],\n    "produto": ["pão", "leite", "pão", "arroz"],\n    "quantidade": [2, 3, 5, 4],\n}, index=[10, 20, 30, 40])\nmascara = (vendas["cidade"] == "Braga") & (vendas["quantidade"] >= 5)\nprint(mascara.to_list())\nprint(vendas.loc[mascara, ["produto", "quantidade"]].to_string())\nprint(vendas.iloc[:2, 1].to_list())'
+  }
+/>
+
+A máscara é `[False, False, True, False]`. Só a linha 30 cumpre ambas as condições, pelo que o resultado contém pão com quantidade 5. A última seleção usa as duas primeiras posições e a coluna de posição 1, dando pão e leite.
+
+Uma máscara deve ter a forma e, quando é uma Series, os rótulos adequados à tabela. Uma máscara construída noutra tabela pode alinhar por rótulos ou dar erro. Constrói-a a partir da tabela que estás a selecionar.
+
+## Combinar condições
+
+Em Series, usa `&` para e, `|` para ou e `~` para negar. Coloca cada comparação entre parênteses. `and` e `or` tentam obter um único valor lógico da Series e dão erro por ambiguidade.
+
+```python
+mascara = (df["quantidade"] >= 2) & (df["quantidade"] <= 5)
+mascara = df["quantidade"].between(2, 5)
+```
+
+As duas expressões incluem os extremos 2 e 5. `df["cidade"].isin(["Porto", "Braga"])` testa pertença a um conjunto de valores. `~df["cidade"].isin(...)` seleciona as restantes cidades, tendo em conta o tratamento dos valores em falta.
+
+## Selecionar sem mudar os dados
+
+`df.loc[mascara, colunas]` devolve uma seleção. Para alterares a tabela original, atribui numa operação:
+
+```python
+df.loc[df["quantidade"] < 0, "quantidade"] = 0
+```
+
+A alteração faz sentido apenas se zero for a correção definida no problema. Evita `df[mascara]["quantidade"] = 0`: são duas seleções e a atribuição pode atingir um objeto intermédio. Em versões com Copy-on-Write, esta atribuição encadeada não atualiza o original.
+
+Quando queres uma tabela independente, usa `filtradas = df.loc[mascara].copy()`. Assim, o destino da alteração fica explícito.
+
+## Selecionar um valor
+
+`df.at[rotulo, coluna]` procura uma célula por rótulos. `df.iat[linha, coluna]` procura-a por posições. São úteis quando esperas um escalar. Não substituem uma máscara para selecionar várias linhas.

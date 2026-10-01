@@ -1,0 +1,136 @@
+---
+title: Gráficos que respondem à pergunta
+description: Escolher barras, linhas, histogramas e dispersão, com eixos, unidades e comparação correta.
+section: conteudo
+order: 18
+practices:
+  - ct-iadp/praticar-graficos
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: LessonPD13_charts_jupyter, notebook da turma
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: Matplotlib, pyplot
+      url: https://matplotlib.org/stable/tutorials/pyplot.html
+    - title: pandas, tutoriais introdutórios
+      url: https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html
+  coverage: Escolher barras, linhas, histogramas e dispersão, com eixos, unidades e comparação correta.
+---
+
+import Typst from '../../../components/Typst.astro';
+import unidadesCidade from '../../ct-iadp/unidades-cidade.typ?raw';
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Um gráfico deve tornar uma comparação mais fácil de ler. Antes de desenhar, identifica a variável do eixo horizontal, a medida do eixo vertical e a operação que produziu os pontos.
+
+## Escolher o gráfico
+
+| Pergunta                               | Gráfico          | O que observar                            |
+| -------------------------------------- | ---------------- | ----------------------------------------- |
+| Que cidade vendeu mais?                | Barras           | Altura por categoria                      |
+| Como evoluiu a faturação diária?       | Linha            | Ordem temporal e intervalos               |
+| Como se distribuem as quantidades?     | Histograma       | Frequência dentro de intervalos           |
+| Quantidade e total estão relacionados? | Dispersão        | Um ponto por observação                   |
+| Como varia a quantidade por cidade?    | Caixa de bigodes | Mediana e dispersão, conforme a convenção |
+
+Num gráfico de barras, cada barra representa uma categoria. Num histograma, cada barra representa um intervalo de valores. Mudar os intervalos pode mudar a impressão da distribuição, por isso indica como os escolheste.
+
+## Figura e eixos
+
+Matplotlib separa a figura, `Figure`, dos eixos, `Axes`. Usa `fig, ax = plt.subplots()` e chama métodos em `ax` para deixar claro em que gráfico estás a trabalhar.
+
+<CodePlayground
+  language="python"
+  title={'Comparar vendas por cidade'}
+  code={
+    'import pandas as pd\nimport matplotlib.pyplot as plt\n\nvendas = pd.DataFrame({"cidade": ["Porto", "Porto", "Braga", "Braga"], "quantidade": [2, 3, 5, 4]})\ntotais = vendas.groupby("cidade")["quantidade"].sum().sort_index()\nprint(totais.to_dict())\nfig, ax = plt.subplots(figsize=(5, 3))\nbarras = ax.bar(totais.index, totais.values)\nax.bar_label(barras)\nax.set_ylabel("Unidades vendidas")\nax.set_xlabel("Cidade")\nax.set_title("Total de unidades por cidade")\nax.set_ylim(0, 10)\nfig.tight_layout()\nplt.show()'
+  }
+/>
+
+A tabela imprime Braga 9 e Porto 5. Braga vendeu quatro unidades a mais. Não são nove vendas: estamos a somar quantidades, não a contar linhas.
+
+<Typst
+  source={unidadesCidade}
+  format="svg"
+  alt="Barras horizontais com origem em zero: Porto vende cinco unidades e Braga nove. A barra de Braga é 1,8 vezes a de Porto."
+/>
+
+O gráfico usa o zero como origem para que as alturas sejam proporcionais às quantidades. Um eixo que começa em 4 exageraria a diferença visual. Os rótulos nas barras permitem conferir o valor sem estimar a altura.
+
+## Linhas e intervalos
+
+Ordena as datas antes de desenhar uma linha. Uma linha liga pontos e sugere uma evolução entre eles; não transformes categorias sem ordem numa curva.
+
+```python
+fig, ax = plt.subplots()
+ax.plot(datas, totais, marker="o")
+ax.set_ylabel("Faturação diária, euros")
+fig.autofmt_xdate()
+```
+
+Se faltam dias, decide se a linha deve interromper-se ou se existe uma regra que permite estimar. Um dia sem observação não é automaticamente um dia com zero vendas.
+
+## Histograma e dispersão
+
+```python
+ax.hist(quantidades, bins=[0, 2, 4, 6, 8])
+ax.set_xlabel("Unidades por venda")
+ax.set_ylabel("Número de vendas")
+```
+
+Os intervalos contam observações. Confere as convenções dos limites: em histogramas NumPy/Matplotlib, os intervalos são normalmente fechados à esquerda e abertos à direita, com o último a incluir também o extremo direito.
+
+`ax.scatter(quantidades, totais)` põe um ponto por venda. Uma associação entre duas variáveis não prova uma causa. Se total é quantidade vezes preço, parte da associação vem da própria definição.
+
+## Vários gráficos e exportação
+
+`fig, axes = plt.subplots(1, 2)` cria dois eixos. Indica os rótulos e conserva escalas comparáveis quando pedes ao leitor que compare alturas. Uma legenda identifica séries, não substitui unidades nos eixos.
+
+`fig.savefig("vendas.png", dpi=150, bbox_inches="tight")` guarda a figura localmente. Usa SVG para gráficos vetoriais quando esse formato é adequado ao destino. Guarda ou mostra a figura depois de definir rótulos e layout; `plt.close(fig)` liberta a figura quando já não é necessária.
+
+## Gráficos de pandas
+
+Uma Series ou DataFrame tem métodos `.plot` que usam normalmente Matplotlib. Para a Series `totais`, `totais.plot.bar()` desenha uma barra por cidade. `df.plot(x="data", y="total")` escolhe as colunas dos dois eixos. O objeto devolvido é um `Axes`, que podes usar para rótulos e unidades.
+
+| Método                                    | Resultado                       | Condição de leitura                            |
+| ----------------------------------------- | ------------------------------- | ---------------------------------------------- |
+| `.plot.bar()`                             | Barras verticais por categoria  | Confere se são valores brutos ou agregados     |
+| `.plot.bar(stacked=True)`                 | Barras empilhadas               | Cada segmento acrescenta ao total da categoria |
+| `.plot.barh()`                            | Barras horizontais              | Útil com nomes compridos                       |
+| `.plot.area()`                            | Áreas, normalmente empilhadas   | Indica se cada série é componente de um total  |
+| `.plot.box()`                             | Caixa de bigodes por coluna     | Compara quartis e dispersão                    |
+| `.plot.hexbin(x="x", y="y", gridsize=25)` | Contagem de pontos por hexágono | A cor precisa de uma escala de contagens       |
+| `.plot.pie()`                             | Frações de um total             | Usa valores não negativos e um total positivo  |
+| `.plot.kde()`                             | Densidade estimada              | Exige SciPy e depende do alisamento            |
+
+Num gráfico empilhado, o topo da última série representa a soma das componentes. Para comparar uma componente entre categorias, a posição sem origem comum pode dificultar a leitura; barras lado a lado podem ser mais adequadas.
+
+Na caixa de bigodes habitual de Matplotlib, a caixa vai do primeiro ao terceiro quartil e a linha interior marca a mediana. Os bigodes alcançam observações dentro de 1,5 vezes a amplitude interquartil para além da caixa. Pontos exteriores são observações fora desses limites, não necessariamente erros. Confere a convenção do exercício.
+
+Uma estimativa KDE desenha uma densidade suave a partir das observações. A altura não é uma contagem e a probabilidade corresponde a uma área sob a curva. A escolha da largura de banda muda o alisamento. Com poucas observações, não interpretes cada pico como um grupo real.
+
+## Acumular e desenhar uma janela móvel
+
+`cumsum()` substitui cada posição pela soma até essa posição. Se os valores forem 2, 3 e 4, o resultado acumulado é 2, 5 e 9. Nos exemplos com valores aleatórios dos notebooks, isto transforma incrementos numa trajetória acumulada. Não são vendas medidas.
+
+Uma semente torna a sequência aleatória reproduzível no mesmo gerador. `rng = np.random.default_rng(123456)` cria um gerador explícito; os seus resultados não precisam de coincidir com os de `np.random.seed`, que usa outra interface. Uma distribuição uniforme de `random` e uma normal de `standard_normal` também representam hipóteses diferentes.
+
+```python
+media_movel = valores.rolling(20).mean()
+desvio_movel = valores.rolling(20).std()
+ax.plot(valores.index, valores)
+ax.plot(media_movel.index, media_movel)
+ax.fill_between(
+    valores.index,
+    media_movel - 2 * desvio_movel,
+    media_movel + 2 * desvio_movel,
+    alpha=0.2,
+)
+```
+
+Com a janela inteira exigida por defeito, os primeiros 19 resultados da média de 20 observações ficam em falta. A banda entre média e dois desvios de cada lado descreve dispersão local; não é automaticamente um intervalo de confiança para a média nem uma previsão garantida.

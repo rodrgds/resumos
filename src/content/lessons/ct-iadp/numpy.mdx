@@ -1,0 +1,81 @@
+---
+title: Arrays e cálculo com NumPy
+description: Arrays 1D e 2D, shape, dtype, eixos, broadcasting, cópias e vistas.
+section: conteudo
+order: 8
+practices:
+  - ct-iadp/praticar-numpy
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: NumPy, conceitos básicos
+      url: https://numpy.org/doc/stable/user/absolute_beginners.html
+  coverage: Arrays 1D e 2D, shape, dtype, eixos, broadcasting, cópias e vistas.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Uma lista pode guardar objetos diferentes. Um array NumPy guarda elementos de um tipo comum e suporta operações sobre todos eles. Para calcular o total de cada venda, podemos multiplicar um array de quantidades por outro de preços.
+
+## Criar e inspecionar
+
+```python
+import numpy as np
+
+quantidades = np.array([2, 3, 4])
+precos = np.array([1.5, 1.2, 2.0])
+```
+
+`quantidades.ndim` é 1, `quantidades.shape` é `(3,)` e `quantidades.size` é 3. `dtype` indica o tipo guardado. Ao criar `np.array([1, 2.5])`, os elementos passam a reais, para partilhar o mesmo tipo.
+
+Um array de inteiros não passa automaticamente a reais quando lhe atribuis 2.5. Escolhe `dtype=float` quando o cálculo exige frações. A mistura com strings pode converter todos os elementos para texto e impedir a aritmética esperada.
+
+`np.zeros((2, 3))` cria duas linhas e três colunas preenchidas com zero. `np.ones` preenche com um. `np.arange(1, 6, 2)` produz 1, 3 e 5. `np.linspace(0, 1, 5)` produz cinco pontos igualmente espaçados, incluindo normalmente ambos os extremos. `np.empty` reserva espaço sem inicializar valores úteis; preenche-o antes de ler.
+
+## Operar elemento a elemento
+
+<CodePlayground
+  language="python"
+  title={'Calcular três vendas'}
+  code={
+    'import numpy as np\nquantidades = np.array([2, 3, 4])\nprecos = np.array([1.5, 1.2, 2.0])\ntotais = quantidades * precos\nprint(totais.round(2))\nprint(round(totais.sum(), 2))\nprint(quantidades[quantidades >= 3])'
+  }
+/>
+
+Os totais são 3,00, 3,60 e 8,00 euros; a soma é 14,60 euros. A comparação cria uma máscara booleana com `False, True, True`. Aplicar a máscara seleciona as quantidades 3 e 4.
+
+Com listas, `[2, 3] * 2` repete a sequência. Com NumPy, `np.array([2, 3]) * 2` multiplica os valores e dá 4 e 6. `*` não calcula um produto matricial; `@` calcula esse produto quando as dimensões são compatíveis.
+
+## Duas dimensões e eixos
+
+Vamos guardar duas lojas em linhas e três produtos em colunas:
+
+<CodePlayground
+  language="python"
+  title={'Ler os eixos'}
+  code={
+    'import numpy as np\nvendas = np.array([[2, 3, 4], [5, 1, 2]])\nprint(vendas.shape)\nprint(vendas[1, 0])\nprint(vendas[:, 1])\nprint(vendas.sum(axis=0))\nprint(vendas.sum(axis=1))'
+  }
+/>
+
+A forma é `(2, 3)`. A célula de linha 1, coluna 0 contém 5. A coluna 1 contém 3 e 1. A soma com `axis=0` elimina o eixo das linhas e dá os totais por coluna: 7, 4 e 6. Com `axis=1`, elimina o eixo das colunas e dá os totais por linha: 9 e 8.
+
+O nome do eixo é o que percorres e reduzes. Para evitar trocar os dois, confere o tamanho do resultado: três produtos exigem três totais, duas lojas exigem dois.
+
+`reshape(3, 2)` reorganiza seis elementos numa forma compatível. Não cria nem elimina elementos. `reshape(-1, 2)` pede ao NumPy que deduza o número de linhas. `.T` troca os eixos de um array 2D.
+
+## Broadcasting
+
+Ao multiplicar a matriz `(2, 3)` por preços com forma `(3,)`, NumPy usa o mesmo vetor de preços em cada linha. Este alargamento chama-se **broadcasting**. Compara as dimensões a partir da direita: devem ser iguais ou uma delas deve ser 1.
+
+`(2, 3)` e `(3,)` são compatíveis. `(2, 3)` e `(2,)` não são. Para aplicar um desconto diferente por loja, usa um array com forma `(2, 1)`.
+
+## Vistas e cópias
+
+Um slice básico pode ser uma **vista**, que partilha os dados com o array original. Alterar `parte = dados[:2]` pode alterar `dados`. `dados[:2].copy()` cria dados independentes. Seleção por máscara booleana e índices avançados produz uma cópia; não uses essa distinção como substituto para tornar a alteração explícita.
+
+Quando queres alterar o original, escreve `dados[mascara] = novo_valor`. Quando queres trabalhar à parte, usa `.copy()`.

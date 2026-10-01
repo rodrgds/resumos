@@ -1,0 +1,86 @@
+---
+title: Ficheiros e dados tabulares
+description: Abrir e fechar ficheiros, modos de escrita, CSV, conversões e leitura reproduzível.
+section: conteudo
+order: 7
+practices:
+  - ct-iadp/praticar-ficheiros
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: Python, entrada e saída
+      url: https://docs.python.org/3/tutorial/inputoutput.html
+  coverage: Abrir e fechar ficheiros, modos de escrita, CSV, conversões e leitura reproduzível.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Um ficheiro mantém dados depois de o programa terminar. Ler transforma esses dados em objetos Python; escrever transforma objetos em bytes ou texto guardados. Confirma o caminho, a codificação e o formato antes de interpretar os valores.
+
+## Abrir com um contexto
+
+```python
+with open("vendas.txt", "r", encoding="utf-8") as ficheiro:
+    texto = ficheiro.read()
+```
+
+`with` fecha o ficheiro quando sais do bloco, incluindo quando ocorre uma exceção. `read()` lê todo o texto. `readline()` lê uma linha e o iterador do ficheiro permite processar uma linha de cada vez.
+
+| Modo   | Efeito                                   |
+| ------ | ---------------------------------------- |
+| `"r"`  | Lê um ficheiro existente                 |
+| `"w"`  | Cria ou substitui o conteúdo do ficheiro |
+| `"a"`  | Acrescenta ao fim                        |
+| `"x"`  | Cria e falha se já existir               |
+| `"rb"` | Lê bytes, sem descodificar texto         |
+
+`"w"` pode apagar conteúdo anterior. Para fazer uma experiência, escolhe um ficheiro de teste. O diretório de trabalho é a base dos caminhos relativos, não necessariamente a pasta onde está o script.
+
+## Linhas e campos
+
+Um ficheiro com duas linhas pode ter este conteúdo:
+
+```text
+produto,quantidade,preco
+pão,2,1.50
+leite,3,1.20
+```
+
+Separar cada linha por vírgulas funciona neste exemplo, mas falha quando um campo contém uma vírgula entre aspas. Usa o módulo `csv`, que conhece essas regras.
+
+<CodePlayground
+  language="python"
+  title={'Ler CSV sem ficheiros externos'}
+  code={
+    'import csv\nfrom io import StringIO\n\ntexto = \'produto,quantidade,preco\\npão,2,1.50\\nleite,3,1.20\\n\'\nficheiro = StringIO(texto)\ntotal = 0\nfor linha in csv.DictReader(ficheiro):\n    quantidade = int(linha["quantidade"])\n    preco = float(linha["preco"])\n    total += quantidade * preco\nprint(f"Faturação: {total:.2f} euros")'
+  }
+/>
+
+`StringIO` trata uma string como um ficheiro de texto em memória. Assim, o exemplo é reproduzível no navegador. O total é `2 × 1,50 + 3 × 1,20 = 6,60 euros`.
+
+`DictReader` usa o cabeçalho para nomear as colunas, mas os campos continuam a ser strings. A conversão numérica faz parte da leitura. Se uma célula estiver vazia ou tiver `"n/a"`, decide como representar a ausência antes de converter.
+
+Num ficheiro real, usa `open(..., newline="", encoding="utf-8")` com `csv`. `newline=""` deixa o módulo tratar as mudanças de linha. Se o separador for ponto e vírgula, passa `delimiter=";"`.
+
+## Escrever resultados
+
+```python
+import csv
+
+with open("totais.csv", "w", newline="", encoding="utf-8") as ficheiro:
+    escritor = csv.writer(ficheiro)
+    escritor.writerow(["produto", "total"])
+    escritor.writerows([["pão", 3.0], ["leite", 3.6]])
+```
+
+A escrita converte os valores para texto. Ao reler, os tipos não reaparecem por magia. Define os tipos esperados e o significado de cada coluna.
+
+## O que conferir antes de calcular
+
+Verifica se há cabeçalho, se cada linha tem o número de campos esperado e se a unidade é constante. Uma coluna pode guardar euros ou cêntimos; as duas contêm números, mas produzem totais diferentes por um fator de cem.
+
+Para dados grandes, percorre as linhas sem as guardar todas. Para análise tabular com filtros, junções e agregações, a próxima parte usa pandas. A regra mantém-se: primeiro compreender a tabela, depois escolher a operação.

@@ -1,0 +1,88 @@
+---
+title: Agrupar e agregar
+description: Separar por chaves, calcular agregações, pivot_table e distinguir agg de transform.
+section: conteudo
+order: 15
+practices:
+  - ct-iadp/praticar-agrupamentos
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, agrupamentos
+      url: https://pandas.pydata.org/docs/user_guide/groupby.html
+    - title: pandas, reestruturação
+      url: https://pandas.pydata.org/docs/user_guide/reshaping.html
+  coverage: Separar por chaves, calcular agregações, pivot_table e distinguir agg de transform.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Queremos o número total de unidades por cidade. Cada venda tem uma quantidade, mas o relatório precisa de uma linha por cidade. Agrupar identifica as vendas da mesma cidade; agregar reduz essas vendas a um resultado.
+
+## Separar, calcular e reunir
+
+<CodePlayground
+  language="python"
+  title={'Um relatório por cidade'}
+  code={
+    'import pandas as pd\nvendas = pd.DataFrame({\n    "cidade": ["Porto", "Porto", "Braga", "Braga"],\n    "produto": ["pão", "leite", "pão", "arroz"],\n    "quantidade": [2, 3, 5, 4],\n    "preco": [1.5, 1.2, 1.5, 2.0],\n})\nvendas["total"] = vendas["quantidade"] * vendas["preco"]\nresumo = vendas.groupby("cidade", as_index=False).agg(\n    unidades=("quantidade", "sum"),\n    faturacao=("total", "sum"),\n    vendas=("produto", "size"),\n)\nprint(resumo.round(2).to_string(index=False))'
+  }
+/>
+
+Porto vende 5 unidades em duas vendas e fatura 6,60 euros. Braga vende 9 unidades em duas vendas e fatura 15,50 euros. A soma da faturação dos grupos é 22,10 euros, igual à da tabela original.
+
+<Dot
+  source={
+    'digraph { rankdir=LR; node [shape=box]; tabela [label="4 vendas"]; porto [label="Porto: 2 e 3 unidades"]; braga [label="Braga: 5 e 4 unidades"]; somaP [label="Porto: soma = 5"]; somaB [label="Braga: soma = 9"]; tabela -> porto; tabela -> braga; porto -> somaP; braga -> somaB; }'
+  }
+  alt={
+    'As quatro vendas separam-se por cidade; a agregação soma dois valores no Porto e dois em Braga, criando dois resultados.'
+  }
+/>
+
+`as_index=False` conserva cidade como uma coluna. Sem esse argumento, cidade torna-se o índice do resultado. A agregação com nomes diz de que coluna vem cada cálculo e como se chama no relatório.
+
+## size, count e múltiplas chaves
+
+`size` conta linhas do grupo. `count` conta valores não nulos de uma coluna. Se uma das vendas não tem produto conhecido, `size` continua a contar a venda e `count` nessa coluna não a conta.
+
+`groupby(["cidade", "produto"])` cria um grupo por par. Cada chave adicional refina os grupos. Por defeito, linhas com chaves em falta podem ser excluídas; usa `dropna=False` quando devem formar um grupo explícito.
+
+`agg(["sum", "mean"])` calcula várias estatísticas. Não agregues a coluna de preço com soma se a pergunta for faturação. Primeiro calcula quantidade vezes preço por venda e só depois soma esses totais.
+
+## transform conserva as linhas
+
+`agg` produz um resultado por grupo. `transform` devolve um valor associado a cada linha original. Para calcular a proporção de unidades de uma venda dentro da cidade:
+
+```python
+total_cidade = vendas.groupby("cidade")["quantidade"].transform("sum")
+vendas["proporcao"] = vendas["quantidade"] / total_cidade
+```
+
+No Porto, as proporções são `2/5` e `3/5`. Em Braga, `5/9` e `4/9`. A soma é um em cada cidade, se o total do grupo for não nulo e todas as vendas forem consideradas.
+
+## Tabela dinâmica com pivot_table
+
+```python
+tabela = vendas.pivot_table(
+    index="cidade",
+    columns="produto",
+    values="quantidade",
+    aggfunc="sum",
+    fill_value=0,
+)
+```
+
+Cada célula soma as quantidades de uma combinação cidade-produto. `pivot_table` admite combinações repetidas porque a agregação decide como as reunir. A função por defeito é média, por isso escreve `aggfunc="sum"` quando o enunciado pede totais.
+
+`fill_value=0` transforma uma combinação sem vendas em zero depois da agregação. Isto exige interpretar a ausência como nenhuma venda, não como uma quantidade desconhecida. `margins=True` acrescenta totais, mas só deves somá-los outra vez se quiseres contar os dados duas vezes.
+
+## Rever a agregação
+
+O vídeo de Corey Schafer mostra agrupamentos e resumos em pandas. Nas chamadas antigas, distingue as ideias que continuam válidas das APIs que mudaram; compara sempre com a documentação da versão usada.
+
+<YouTube id="txMdrV1Ut64" title="Agrupar e agregar com pandas, Corey Schafer" />

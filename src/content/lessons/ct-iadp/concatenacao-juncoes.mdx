@@ -1,0 +1,81 @@
+---
+title: Concatenação e junções
+description: Juntar linhas com concat e relacionar tabelas com merge e join, verificando cardinalidade.
+section: conteudo
+order: 13
+practices:
+  - ct-iadp/praticar-concatenacao-juncoes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, concatenação e junções
+      url: https://pandas.pydata.org/docs/user_guide/merging.html
+  coverage: Juntar linhas com concat e relacionar tabelas com merge e join, verificando cardinalidade.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
+
+Há dois pedidos diferentes. Podemos juntar vendas de janeiro às vendas de fevereiro, conservando as mesmas colunas. Ou podemos acrescentar o preço a cada venda através do código do produto. O primeiro usa concatenação; o segundo usa uma junção.
+
+## Concatenar linhas ou colunas
+
+```python
+vendas = pd.concat([janeiro, fevereiro], ignore_index=True)
+```
+
+Com `axis=0`, pandas acrescenta linhas e alinha as colunas pelo nome. `ignore_index=True` cria um índice consecutivo. Se uma coluna só existe num dos lados, as linhas do outro ficam com valores em falta nessa coluna. `join="inner"` conserva apenas as colunas comuns.
+
+Com `axis=1`, acrescenta colunas e alinha as linhas pelo índice. Não associa automaticamente a primeira linha de uma tabela à primeira da outra. Para uma relação por código de produto, usa `merge`.
+
+Slides antigos podem usar `DataFrame.append`. Esse método foi removido no pandas 2.0. O equivalente para juntar tabelas é `pd.concat`. Para muitas linhas, recolhe-as primeiro e concatena uma vez, em vez de reconstruir a tabela a cada iteração.
+
+## Relacionar por uma chave
+
+<CodePlayground
+  language="python"
+  title={'Acrescentar preços sem perder vendas'}
+  code={
+    'import pandas as pd\nvendas = pd.DataFrame({"codigo": ["A", "B", "A", "C"], "quantidade": [2, 3, 5, 4]})\nprodutos = pd.DataFrame({"codigo": ["A", "B"], "preco": [1.5, 1.2]})\nresultado = vendas.merge(produtos, on="codigo", how="left", validate="many_to_one", indicator=True)\nprint(resultado.to_string(index=False))\nprint("linhas sem preço:", resultado["preco"].isna().sum())'
+  }
+/>
+
+As duas vendas de A recebem 1,50, a venda de B recebe 1,20 e C fica sem preço. A junção à esquerda conserva as quatro vendas. `indicator=True` identifica as linhas com correspondência como `both` e C como `left_only`.
+
+`validate="many_to_one"` exige que o código seja único em `produtos`; pode repetir-se em `vendas`. Esta verificação protege o significado de uma linha por venda.
+
+## O tipo de junção
+
+| `how`   | Chaves conservadas              |
+| ------- | ------------------------------- |
+| `inner` | Presentes nos dois lados        |
+| `left`  | Todas as do lado esquerdo       |
+| `right` | Todas as do lado direito        |
+| `outer` | Presentes em pelo menos um lado |
+| `cross` | Todos os pares, sem chave       |
+
+Uma junção interna excluiria a venda de C. Isso pode diminuir a faturação ou a contagem sem qualquer erro de execução. Uma junção externa incluiria também produtos sem vendas.
+
+Se os nomes das chaves diferem, usa `left_on="produto"` e `right_on="codigo"`. Para colunas com o mesmo nome que não sejam chaves, `suffixes=("_venda", "_catalogo")` distingue as origens.
+
+## Repetições multiplicam linhas
+
+Se A aparece duas vezes à esquerda e três vezes à direita, a junção cria seis pares para A. Não escolhe um dos preços. Uma relação muitos-para-muitos pode ser válida, mas exige que esse produto de correspondências seja o resultado pretendido.
+
+<Dot
+  source={
+    'digraph { rankdir=LR; node [shape=box]; v1 [label="Venda A: 2 unidades"]; v2 [label="Venda A: 5 unidades"]; p [label="Produto A: 1,50 euros"]; r1 [label="A: 2 × 1,50"]; r2 [label="A: 5 × 1,50"]; v1 -> r1; p -> r1; v2 -> r2; p -> r2; }'
+  }
+  alt={
+    'Duas vendas do produto A relacionam-se com uma única linha de preço e mantêm duas linhas no resultado.'
+  }
+/>
+
+`validate` aceita `one_to_one`, `one_to_many` e `many_to_one`. Confere também o número de linhas, chaves sem correspondência e totais antes e depois. pandas pode relacionar chaves nulas entre si, o que difere do comportamento habitual de `NULL` em SQL.
+
+## join usa o índice
+
+`vendas.join(produtos.set_index("codigo"), on="codigo")` procura o código da venda no índice de produtos. `join` é útil quando o índice representa a chave. Define essa relação explicitamente; um índice de posições não é um código de produto.
