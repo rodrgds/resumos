@@ -56,7 +56,7 @@ editorial:
 
 Os metadados de uma página não são herdados pelas restantes. Em `index.md`, `coverage` descreve a cobertura da cadeira; noutras páginas, descreve só essa página. Mantém uma frase concreta sobre o que existe e o que falta, sem percentagens. A edição do catálogo e a revisão dos apontamentos são factos distintos. Os metadados ficam no ficheiro de autoria; não acrescentam blocos de estado à leitura.
 
-Indica as fontes consultadas e as lacunas reais. Nas folhas inspiradas na SofiaViP, mantém o crédito e a ligação ao original em `editorial.sources`. O arquivo local em `_data/` continua privado e não faz parte do build. Escreve as explicações com palavras próprias e conserva as condições matemáticas; não copies materiais sem direito de reprodução.
+Reúne as fontes consultadas na apresentação da cadeira (`index.md` ou `index.mdx`), sem citações bibliográficas ou notas de recolha no corpo das lições. O frontmatter editorial é opcional. Nas folhas inspiradas na SofiaViP, mantém o crédito e a ligação ao original em `editorial.sources`. Usa os materiais do Moodle do aluno como base, confirmando o ano nos próprios ficheiros, e completa-os com livros e outras fontes. Downloads, inventários e notas de revisão ficam no arquivo local ignorado em `_data/`, fora do Git e do build. Não cries relatórios de cobertura nem testes que repitam os apontamentos. Escreve com palavras próprias e conserva as condições matemáticas; não copies materiais sem direito de reprodução.
 
 ## Exercícios ligados ao tema
 
