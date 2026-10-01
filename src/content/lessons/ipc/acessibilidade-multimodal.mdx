@@ -1,109 +1,89 @@
 ---
-title: Acessibilidade e multimodalidade
-description: Contraste, teclado e leitores de ecrã, e novos modos de interação.
+title: 'Acessibilidade e multimodalidade'
+description: 'Princípios WCAG, contraste calculado, teclado, estrutura e combinação de canais.'
 section: conteudo
 order: 8
+practices:
+  - ipc/praticar-acessibilidade-multimodal
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha oficial de IPC, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587000
+    - title: 'W3C, WCAG 2.2'
+      url: https://www.w3.org/TR/WCAG22/
+    - title: 'W3C, contraste mínimo'
+      url: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+    - title: 'W3C, tamanho de alvo mínimo'
+      url: https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
+  coverage: 'Princípios WCAG, contraste calculado, teclado, estrutura e combinação de canais.'
+  gaps:
+    - Não foi possível comparar esta página com mini-testes e critérios de correção de 2026/27.
 ---
 
-import Tabs from '../../../components/Tabs.astro';
 import Typst from '../../../components/Typst.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
 import contraste from '../../ipc/escala-contraste.typ?raw';
 
-A **acessibilidade** garante que pessoas com limitações visuais, auditivas, motoras ou cognitivas conseguem usar o sistema. Não é um extra para minorias: legendas servem a quem está no metro sem phones, texto bem contrastado serve a quem está ao sol, navegação por teclado serve a quem partiu o rato. Desenhar acessível é desenhar robusto.
+Uma tarefa pode ser rápida com rato e impossível com teclado. A acessibilidade procura remover barreiras para pessoas com diferentes capacidades e tecnologias de apoio, considerando também condições temporárias e contextuais.
 
-## Contraste: medir em vez de adivinhar
+## Quatro princípios
 
-O contraste entre texto e fundo mede-se como rácio de luminância, de 1:1 a 21:1. As linhas de orientação WCAG pedem, para o nível AA, pelo menos 4,5:1 em texto normal e 3:1 em texto grande.
+As WCAG organizam requisitos em conteúdo **percetível**, interface **operável**, informação e interação **compreensíveis**, e conteúdo **robusto** para diferentes agentes e tecnologias de apoio. Os níveis A, AA e AAA agrupam critérios; cumprir alguns critérios AA não demonstra conformidade AA de toda a página.
+
+Um verificador automático encontra parte das falhas. Não determina sozinho se a ordem de leitura é útil, se o texto alternativo comunica a figura ou se uma tarefa completa funciona com leitor de ecrã.
+
+## Contraste
+
+Para texto, o critério AA de contraste exige normalmente 4,5:1, ou 3:1 para texto grande. "Grande" tem uma definição no critério, não significa apenas que nos parece grande: pelo menos 18 pt, ou 14 pt em negrito, aproximadamente 24 e 18,67 CSS px. Há exceções, como logótipos e texto incidental.
 
 <Typst
   source={contraste}
   format="svg"
-  alt="Escala do rácio de contraste de 1 para 1 até 21 para 1, com marcas a 3 para 1 para texto grande e 4,5 para 1 para texto normal."
+  alt="Escala de contraste com limiar de 4,5 para texto normal e 3 para texto grande, segundo os critérios e exceções das WCAG."
 />
 
-O erro clássico é o cinzento elegante: texto `#777777` sobre branco dá 4,48:1, ou seja, falha o AA por dois centésimos. Escurece para `#767676` ou carrega no peso da fonte e passa. Moral: nunca aproves cores a olho; usa um verificador de contraste.
+O rácio é $(L_{\max}+0{,}05)/(L_{\min}+0{,}05)$, com luminâncias relativas. Primeiro normalizamos cada canal sRGB para 0 a 1 e convertemos para luz linear: se $c\leq0{,}04045$, usamos $c/12{,}92$; senão $((c+0{,}055)/1{,}055)^{2{,}4}$. A luminância é $L=0{,}2126R+0{,}7152G+0{,}0722B$.
 
-## Teclado: tudo sem rato
+<CodePlayground
+  title="Calcular o contraste sem arredondar o limiar"
+  language="python"
+  code={
+    'def luminancia(hexadecimal):\n    canais = [int(hexadecimal[i:i+2], 16) / 255 for i in (0, 2, 4)]\n    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4\n              for c in canais]\n    return sum(p * c for p, c in zip([0.2126, 0.7152, 0.0722], linear))\nfor cor in ["777777", "767676"]:\n    l = luminancia(cor)\n    contraste = 1.05 / (l + 0.05)\n    print(cor, f"{contraste:.4f}:1", "passa" if contraste >= 4.5 else "falha")'
+  }
+/>
 
-Toda a ação deve ser alcançável e operável por teclado: tabular pela ordem lógica, ativar com Enter ou Espaço, sair de menus com Escape, e um indicador de foco sempre visível. Testa o teu protótipo de olhos no teclado: se ficares preso num calendário ou num menu que só abre com rato, há trabalho a fazer. Atalhos ajudam experientes mas nunca substituem o caminho completo por teclado.
+Sobre branco, `#777777` dá cerca de 4,4781:1 e falha o limiar de texto normal. `#767676` dá cerca de 4,5422:1 e passa. Não arredondamos um valor inferior a 4,5 para o declarar conforme. Aumentar apenas o peso do texto não altera as luminâncias nem o rácio; só muda o limiar se cumprir a definição de texto grande.
 
-## Leitores de ecrã: estrutura que se ouve
+## Operação e estrutura
 
-Um **leitor de ecrã** lê a página em voz alta para quem não vê. Ele navega pela estrutura, não pelo aspeto: títulos hierárquicos (`h1` a `h3` por ordem), imagens com texto alternativo que diga a função ("gráfico de barras das notas por semana", não "imagem"), formulários com etiquetas associadas a cada campo, e botões com nomes ("Confirmar sessão", não "Clique aqui"). Testa com um leitor gratuito durante dez minutos; a experiência muda a forma como escreves HTML.
+Todas as funções que possam ser realizadas por teclado precisam de um percurso sem bloqueios e foco identificável. A ordem do foco deve preservar significado e operação. Num diálogo, o foco entra, permanece num percurso adequado e regressa ao controlo relevante quando o diálogo fecha.
 
-<Tabs id="etiqueta" labels={['Antes', 'Depois']}>
-  <div slot="panel-0">
-
-```html
-<input type="email" id="e" placeholder="Email" /> <button>OK</button>
-```
-
-Sem etiqueta associada, o leitor anuncia só "campo de edição". Sem nome no botão, anuncia só "botão". E sem foco visível, quem navega por teclado não sabe onde está.
-
-  </div>
-  <div slot="panel-1">
+Usa elementos com semântica adequada: um botão para uma ação, um link para navegação, etiquetas associadas aos campos e títulos que organizam secções. Um placeholder não substitui uma etiqueta persistente. Uma imagem decorativa tem texto alternativo vazio; uma figura informativa precisa de descrição adequada, e um gráfico pode precisar dos dados ou de uma explicação adicional.
 
 ```html
 <label for="email">Email da faculdade</label>
-<input type="email" id="email" />
-<button>Confirmar sessão</button>
+<input id="email" type="email" aria-describedby="ajuda-email" />
+<p id="ajuda-email">
+  Usa o endereço que escolheste para receber a confirmação.
+</p>
+<button type="submit">Enviar confirmação</button>
 ```
 
-```css
-button:focus-visible {
-  outline: 3px solid #8c2d3b;
-  outline-offset: 2px;
-}
-```
+Não podemos deduzir que um botão com texto "OK" não tem nome acessível: tem esse texto como nome, mas o significado pode ser demasiado vago. Distingue uma falha técnica de associação de uma falha de clareza.
 
-Agora o leitor anuncia "Email da faculdade, campo de edição" e "Confirmar sessão, botão", e o foco aparece sempre. Três linhas que removem três barreiras.
+## Novos critérios e testes de tarefa
 
-  </div>
-</Tabs>
+Nas WCAG 2.2, o critério AA de tamanho mínimo de alvo prevê 24 por 24 CSS px ou condições alternativas/exceções, incluindo espaçamento, controlos equivalentes e elementos em linha. Não é uma regra sem exceções de que todos os links têm de medir 24 px.
 
-## Interação multimodal
+O critério de foco não oculto exige que o componente focado não fique totalmente escondido por conteúdo criado pelo autor. Aumentar alvos pode facilitar interação, mas o tamanho adequado depende da tarefa e não dispensa espaçamento e alternativas.
 
-**Multimodal** significa combinar vários canais: voz mais toque, gestos mais olhar, caneta mais teclado. Cada canal compensa fraquezas dos outros: a voz é rápida mas má em ambientes ruidosos e expõe privacidade; o toque é preciso mas ocupa as mãos. Ao desenhar multimodal, define que canal manda em cada tarefa e o que acontece quando um falha (o comando de voz não percebido mostra as opções no ecrã em vez de repetir a pergunta).
+Para uma reserva, testa encontrar a sala, selecionar horário, reconhecer erro e concluir com teclado e tecnologia de apoio apropriada. Mede contraste, verifica nomes e estados, e observa a sequência inteira. Uma lista de critérios isolados não prova que o objetivo é alcançável.
 
-<Tabs id="canais" labels={['Voz', 'Toque', 'Teclado']}>
-  <div slot="panel-0">
+## Modalidades e dispositivos
 
-Vantagem: mãos livres e rapidez para comandos simples. Limite: ruído, privacidade e erro de reconhecimento. Fallback: mostrar as opções no ecrã em vez de repetir a pergunta.
+Uma modalidade é um canal ou forma de comunicação, como visual, auditiva, tátil, fala ou gesto. Um dispositivo é o meio técnico, como microfone, ecrã ou teclado. Multimodalidade pode combinar entrada e saída; não significa apenas ter dois dispositivos ligados.
 
-  </div>
-  <div slot="panel-1">
+Voz e toque podem ser alternativas para a mesma ação, redundantes para confirmar o mesmo significado, ou complementares, como dizer "reservar esta" enquanto se aponta a sala. Uma combinação exige resolver sincronização, ambiguidades e contradições. Se a fala diz B101 e o toque seleciona B102, não devemos executar silenciosamente uma decisão.
 
-Vantagem: precisão e descoberta visual. Limite: ocupa as mãos e o olhar, falha com tremor ou ecrã molhado. Fallback: alvos grandes e gestos simples com alternativa por botão.
-
-  </div>
-  <div slot="panel-2">
-
-Vantagem: funciona sem rato nem ecrã tátil, e com leitores de ecrã. Limite: mais lento e exige ordem lógica de tabulação. Fallback: atalhos para o frequente, nunca como único caminho.
-
-  </div>
-</Tabs>
-
-## Exemplo: auditoria de uma página
-
-Audita a página de confirmação de sessão da app com esta checklist:
-
-1. Contraste: o texto secundário em cinzento passa 4,5:1? Mede; se der 4,2:1, escurece um tom.
-2. Teclado: consegues ir de "Nova sessão" a "Confirmar" só com Tab e Enter, com foco sempre visível? Anota onde o foco desaparece.
-3. Leitor de ecrã: os dois blocos de horário são títulos ou texto solto? Cada botão diz o que faz fora de contexto?
-4. Erros: se a sala ficar indisponível, a mensagem explica e sugere alternativa, ou mostra só um código?
-5. Multimodal: faria sentido confirmar por voz? Se sim, o que aparece no ecrã quando o ruído impede o reconhecimento?
-
-Cada "não" vira uma correção concreta com responsável e prioridade, no mesmo formato da avaliação heurística. Uma auditoria destas, feita uma vez por ciclo, evita a acumulação de barreiras que depois exigem redesenho total.
-
-:::details[Onde registar isto no projeto]
-A acessibilidade entra na terceira fase como critério de aceitação: cada ecrã final passa a checklist antes de contar como feito. Escreve os critérios no relatório (nível AA, navegação total por teclado) e junta a tabela da auditoria como evidência. Avaliadores gostam de números: "12 barreiras encontradas, 12 corrigidas" vale mais do que "tivemos cuidado".
-:::
-
-## Para saber mais
-
-- W3C, [Understanding Success Criterion 1.4.3: Contrast (Minimum)](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html): a origem oficial dos 4,5:1 e 3:1.
-- WebAIM, [Contrast Checker](https://webaim.org/resources/contrastchecker/): verificador interativo de contraste para aplicar a auditoria.
-
-## Para fechar a cadeira
-
-Chegaste ao fim do ciclo: fundamentos, cognição, princípios, processo, protótipos, avaliação, estudos e acessibilidade. Volta ao [início](index/) e percorre as páginas na ordem do teu projeto: cada fase tem aqui o seu manual.
+Voz pode ajudar com mãos ocupadas, mas falhar com ruído e revelar informação em público. O toque exige alcançar o alvo. Um sistema multimodal acessível oferece alternativas adequadas: não obriga uma pessoa a falar e apontar ao mesmo tempo para uma operação essencial.

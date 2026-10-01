@@ -1,30 +1,47 @@
 ---
-title: Interação Pessoa Computador
-description: Design centrado no utilizador, prototipagem, avaliação de usabilidade e acessibilidade, com um projeto em três fases.
+title: 'Interação Pessoa Computador'
+description: 'Preparar a teoria de IPC, desde as necessidades dos utilizadores à avaliação das interfaces.'
+section: conteudo
+order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha oficial de IPC, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587000
+    - title: Moodle IPC, aulas 1 a 3 de 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5159
+  coverage: 'Preparar a teoria de IPC, desde as necessidades dos utilizadores à avaliação das interfaces.'
+  gaps:
+    - A apresentação Moodle descreve microtarefas como alternativa ao segundo teste; condições não conciliadas com a ficha.
+    - Não foi possível comparar esta página com mini-testes e critérios de correção de 2026/27.
 ---
 
-Interação Pessoa Computador (IPC) é a cadeira onde aprendes a desenhar tecnologia que pessoas reais conseguem usar. Não basta o programa funcionar; é preciso que o utilizador perceba o que fazer, não se engane pelo caminho e atinja o objetivo sem frustração. Vais aplicar um processo de design em ciclos, construir protótipos em vários níveis de fidelidade e avaliar tudo com pessoas a sério.
+Um utilizador quer reservar uma sala, não aprender a estrutura da nossa base de dados. Em IPC estudamos como compreender essa tarefa, desenhar uma interação adequada e avaliar se as pessoas a conseguem realizar.
 
-## Como está organizado
+## O que deves conseguir explicar
 
-Começa por [Fundamentos de IHC](fundamentos-ihc/), que explica o que é a interação pessoa computador, porque é que as más interfaces custam tempo e dinheiro, e o vocabulário de UI e UX. Depois, [Perceção e cognição](percepcao-cognicao/) mostra como a visão, a atenção e a memória limitam o que podes pedir ao utilizador.
+Perante uma interface, identifica a pessoa, o objetivo e o contexto. Explica a dificuldade com um conceito preciso, propõe uma alteração e escolhe um método que permita verificar se a alteração ajudou. Aprende a distinguir observações, interpretações e hipóteses: "não encontrou o botão" é uma observação; "a etiqueta não corresponde à tarefa" é uma explicação a investigar.
 
-A seguir vêm as ferramentas de desenho: [Princípios de usabilidade](principios-usabilidade/) apresenta affordances, feedback, consistência e as dez heurísticas de Nielsen como lista de verificação, e [Design centrado no utilizador](design-centrado-utilizador/) organiza o processo em necessidades, requisitos, personas, cenários e ideação.
+1. [Fundamentos](/cadeiras/ipc/fundamentos-ihc/), UI, UX, usabilidade e ciclo de ação.
+2. [Perceção e cognição](/cadeiras/ipc/percepcao-cognicao/), atenção, memória e modelos preditivos.
+3. [Princípios de usabilidade](/cadeiras/ipc/principios-usabilidade/), heurísticas e padrões.
+4. [Design centrado no utilizador](/cadeiras/ipc/design-centrado-utilizador/), necessidades, requisitos, personas e cenários.
+5. [Prototipagem](/cadeiras/ipc/prototipagem/), escolher o que representar e o que testar.
+6. [Avaliação](/cadeiras/ipc/avaliacao-usabilidade/), inspeções e testes de tarefas.
+7. [Estudos de utilizadores](/cadeiras/ipc/estudos-utilizadores/), métodos, experiências, análise e SUS.
+8. [Acessibilidade e multimodalidade](/cadeiras/ipc/acessibilidade-multimodal/), barreiras e alternativas de interação.
+9. [Ajuda e documentação](/cadeiras/ipc/ajuda-documentacao/), apoiar aprendizagem e resolução de problemas.
 
-A parte prática é prototipar e avaliar: [Prototipagem](prototipagem/) compara papel e Figma e diz quando usar cada nível de fidelidade, [Avaliação de usabilidade](avaliacao-usabilidade/) ensina avaliação heurística e testes com utilizadores, e [Estudos com utilizadores](estudos-utilizadores/) mostra como planear questionários e entrevistas e analisar os dados, incluindo o SUS. Fecha com [Acessibilidade e multimodalidade](acessibilidade-multimodal/), sobre contraste, teclado, leitores de ecrã e novos modos de interação.
+## Avaliação em 2026/27
 
-## Como estudar
+Segundo a [ficha oficial](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587000), a nota final é $FG=0{,}8PG+0{,}1MT_1+0{,}1MT_2$. O projeto exige pelo menos 10/20, e **cada mini-teste exige pelo menos 8/20**. A nota do projeto é $PG=0{,}3F_1+0{,}3F_2+0{,}3F_3+0{,}1FR$, com três fases e relatório final. A frequência e a participação na defesa também são obrigatórias nos termos da ficha.
 
-Lê cada página com um ecrã real à frente, teu ou de uma app que uses. Quase todos os conceitos pedem para ser aplicados na hora: avalia um formulário que preenchas, redesenha um ecrã que te irrite, testa um fluxo com um colega. O projeto corre em três fases ao longo do semestre, por isso usa as páginas como manual de cada fase: requisitos e personas antes de desenhar, prototipagem durante, avaliação no fim de cada iteração. Guarda tudo o que observares e medires; o relatório final vive desses dados.
+Estas páginas focam a compreensão da teoria e a resolução de casos. Não substituem o trabalho de projeto, os materiais das aulas nem as indicações sobre a matéria de cada mini-teste.
 
-## Avaliação
+A apresentação de 2026/27 no Moodle também descreve uma alternativa com microtarefas teóricas em lugar do segundo teste. Como essa alternativa não está explicitada na fórmula da ficha, confirma no Moodle as condições e a componente que se aplica ao teu caso.
 
-A avaliação é distribuída e não tem exame final. A nota combina o projeto em grupo, desenvolvido em três fases com relatório, com dois mini testes. Há mínimos a respeitar no projeto e em cada mini teste, e a frequência exige assiduidade e participação ativa no grupo. Confirma sempre os pesos, os mínimos e os prazos na ficha da unidade curricular no SIGARRA e na página da disciplina no Moodle, porque variam de ano para ano.
+## Como praticar
 
-## Fontes e âmbito
+Refaz os casos sem olhar para a análise. Nos exercícios, justifica a relação entre problema, conceito, alteração e evidência. Nas contas, indica unidades e hipóteses. Uma pontuação correta sem interpretação não demonstra que escolheste a medida adequada.
 
-Estas páginas seguem o âmbito da unidade curricular de Interação Pessoa Computador (L.EIC022) do 3.º ano, 1.º semestre da LEIC, ocorrência de 2025/26: fundamentos de IHC, perceção e cognição, metodologias e padrões de UI/UX, processo de design centrado no utilizador (necessidades, ideação, prototipagem, avaliação, iteração), ferramentas de UI/UX, interação multimodal e acessibilidade. A bibliografia obrigatória da ficha é Fonseca, Campos e Gonçalves, Introdução ao Design de Interfaces (2012).
-
-Material oficial da FEUP:
-
-- Ficha da unidade curricular de Interação Pessoa Computador, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560107).
+Os exercícios são originais. Usa a [cheat sheet](/cadeiras/ipc/folha-consulta/) para rever conceitos já estudados, e confirma no Moodle o âmbito e o formato dos mini-testes.
