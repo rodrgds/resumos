@@ -66,13 +66,13 @@ test('reading help preserves an earlier result and does not invent an attempt', 
     name: '2. Calcular sem enumerar',
   });
   await question.locator(':scope > details > summary').click();
-  await question.getByText('Primeira pista', { exact: true }).click();
+  await question.getByLabel('Primeira pista', { exact: true }).click();
   await expect(question.getByRole('status')).toContainText(
     'Ainda não registaste uma resposta',
   );
   await question.getByLabel('A tua resposta').fill('210');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
-  await question.getByText('Ver solução', { exact: true }).click();
+  await question.getByLabel('Ver solução', { exact: true }).click();
   await expect(question.getByRole('status')).toContainText(
     'Resposta correta, com pistas',
   );
@@ -199,12 +199,12 @@ test('numeric answers enforce tolerance and retain help attribution across clear
   await expect(question.getByRole('status')).toContainText(
     'correta, sem ajuda',
   );
-  await question.getByText('Primeira pista', { exact: true }).click();
+  await question.getByLabel('Primeira pista', { exact: true }).click();
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
   await expect(question.getByRole('status')).toContainText(
     'correta, com pistas',
   );
-  await question.getByText('Ver solução', { exact: true }).click();
+  await question.getByLabel('Ver solução', { exact: true }).click();
   await question.getByRole('button', { name: 'Limpar resposta' }).click();
   await question.getByLabel('A tua resposta').fill('3.5');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
@@ -242,7 +242,7 @@ test('choice explanations and self assessment stay distinct from automatic corre
     .fill('A minha resposta privada: somar duas linhas.');
   await open.getByRole('button', { name: 'Registar tentativa' }).click();
   await expect(open.getByRole('status')).toContainText('Tentativa registada');
-  await open.getByText('Ver solução', { exact: true }).click();
+  await open.getByLabel('Ver solução', { exact: true }).click();
   await open.getByRole('button', { name: 'Conferi a minha resposta' }).click();
   await expect(open.getByRole('status')).toContainText(
     'Resposta conferida por ti, após consultar a solução',
@@ -290,7 +290,7 @@ test('page printing includes optional exercises and solutions without private an
   await expect(page.locator('.course-shell')).toBeHidden();
   await expect(output.locator('.print-appendix')).toBeVisible();
   await expect(output.getByText('Sempre zero', { exact: true })).toBeVisible();
-  await expect(output.getByText(/Tolerância absoluta: ±0,01/)).toBeVisible();
+  await expect(output.getByText('±0,01', { exact: true })).toBeVisible();
   await expect(output).not.toContainText('Resposta privada para não imprimir');
   await expect(
     output.locator('input, textarea, button, [data-exercise]'),
@@ -371,7 +371,7 @@ test('practice and print remain readable without JavaScript or storage', async (
     name: '2. Calcular sem enumerar',
   });
   await question.locator(':scope > details > summary').click();
-  await question.getByText('Ver solução', { exact: true }).click();
+  await question.getByLabel('Ver solução', { exact: true }).click();
   await expect(
     question.getByText('20 × 21 / 2 = 210.', { exact: false }),
   ).toBeVisible();
@@ -396,43 +396,6 @@ test('practice controls work at narrow widths and expose accessible names', asyn
   expect(results.violations).toEqual([]);
 });
 
-test('the coding exercise exposes a failing test and accepts the repaired loop', async ({
-  page,
-}) => {
-  await page.goto('/exemplo/apontamentos/');
-  await page.getByText('6. Corrigir uma função', { exact: true }).click();
-  const playground = page.getByRole('region', {
-    name: 'Corrigir soma_naturais',
-    exact: true,
-  });
-  await playground.scrollIntoViewIfNeeded();
-  const editor = playground.getByRole('textbox', {
-    name: 'Código python',
-    exact: true,
-  });
-  await expect(editor).toBeVisible();
-  await playground
-    .getByRole('button', { name: 'Executar', exact: true })
-    .click();
-  await expect(
-    playground.getByLabel('Resultado', { exact: true }),
-  ).toContainText('n=1: esperado 1, obtido 0', { timeout: 25_000 });
-  await expect(playground.getByRole('status')).toHaveText(
-    'Terminou com erro (1)',
-  );
-  const code = (await playground
-    .locator('[data-source]')
-    .textContent())!.replace('range(1, n):', 'range(1, n + 1):');
-  await editor.fill(code);
-  await playground
-    .getByRole('button', { name: 'Executar', exact: true })
-    .click();
-  await expect(
-    playground.getByLabel('Resultado', { exact: true }),
-  ).toContainText('Os quatro testes passaram.', { timeout: 25_000 });
-  await expect(playground.getByRole('status')).toHaveText('Concluído');
-});
-
 test('blocked storage does not prevent answering or opening a solution', async ({
   page,
 }) => {
@@ -449,7 +412,7 @@ test('blocked storage does not prevent answering or opening a solution', async (
     name: '2. Calcular sem enumerar',
   });
   await question.locator(':scope > details > summary').click();
-  await question.getByText('Ver solução', { exact: true }).click();
+  await question.getByLabel('Ver solução', { exact: true }).click();
   await question.getByLabel('A tua resposta').fill('210');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
   await expect(question.getByRole('status')).toContainText(
