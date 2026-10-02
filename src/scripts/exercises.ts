@@ -5,9 +5,11 @@ import {
   type Assistance,
   type ExerciseProgress,
 } from '../lib/exercise-progress';
+import { createExerciseFeedback } from '../lib/exercise-feedback';
 
 type Answer =
   | { kind: 'self' }
+  | { kind: 'code' }
   | { kind: 'number'; value: number; tolerance: number }
   | { kind: 'choice'; options: { correct: boolean; explanation: string }[] };
 
@@ -18,6 +20,12 @@ export function setupExercises() {
     const answer: Answer = JSON.parse(root.dataset.answer!);
     const key = root.dataset.progressKey!;
     const feedback = root.querySelector<HTMLElement>('[data-feedback]')!;
+    const effects = createExerciseFeedback(root);
+    root.addEventListener('exercise-code-reset', () => {
+      effects.reset();
+      delete feedback.dataset.result;
+      feedback.textContent = '';
+    });
     const help = [...root.querySelectorAll<HTMLDetailsElement>('[data-help]')];
     let progress = readExerciseProgress(key);
     let assistance: Assistance = progress?.assistance || 'none';
@@ -30,9 +38,11 @@ export function setupExercises() {
     const showProgress = () => {
       if (!progress) return;
       if (!progress.result) {
+        delete feedback.dataset.result;
         feedback.textContent = `${assistance === 'solution' ? 'Solução consultada' : 'Pista consultada'}. Ainda não registaste uma resposta.`;
         return;
       }
+      feedback.dataset.result = progress.result;
       feedback.textContent = `${progress.result === 'correct' ? 'Resposta correta' : progress.result === 'self-checked' ? 'Resposta conferida por ti' : 'Tentativa registada'}, ${assistanceLabel(progress.resultAssistance ?? progress.assistance)}.`;
     };
     const save = (result: NonNullable<ExerciseProgress['result']>) => {
@@ -52,6 +62,38 @@ export function setupExercises() {
       else if (assistance === 'none' && help.some((details) => details.open))
         assistance = 'hint';
     };
+    const showResult = (correct: boolean, explanation = '') => {
+      readHelp();
+      save(correct ? 'correct' : 'attempted');
+      feedback.dataset.result = correct ? 'correct' : 'attempted';
+      feedback.textContent = correct
+        ? `Resposta correta, ${assistanceLabel()}. ${explanation}`.trim()
+        : `Ainda não. ${explanation}`.trim();
+      effects.play({
+        correct,
+        trigger: root.querySelector<HTMLElement>(
+          answer.kind === 'code' ? '[data-code-check]' : '[data-check]',
+        ),
+        response: root.querySelector<HTMLElement>(
+          answer.kind === 'code'
+            ? '[data-code-editor]'
+            : '[data-response], fieldset',
+        ),
+      });
+    };
+    root.addEventListener('exercise-code-result', (event) => {
+      if (answer.kind !== 'code') return;
+      const detail = (
+        event as CustomEvent<{ correct: boolean; message: string }>
+      ).detail;
+      if (
+        !detail ||
+        typeof detail.correct !== 'boolean' ||
+        typeof detail.message !== 'string'
+      )
+        return;
+      showResult(detail.correct, detail.message);
+    });
     help.forEach((details) =>
       details.addEventListener('toggle', () => {
         if (!details.open) return;
@@ -66,6 +108,9 @@ export function setupExercises() {
     });
     showProgress();
     root.querySelector('[data-check]')?.addEventListener('click', () => {
+      if (answer.kind === 'code') return;
+      effects.reset();
+      delete feedback.dataset.result;
       readHelp();
       if (answer.kind === 'self') {
         const response =
@@ -76,7 +121,7 @@ export function setupExercises() {
           return;
         }
         save('attempted');
-        feedback.textContent = `Tentativa registada, ${assistanceLabel()}. Compara depois com a solução e a lista de verificação.`;
+        feedback.textContent = `Tentativa registada, ${assistanceLabel()}.`;
         return;
       }
       let correct = false;
@@ -104,10 +149,7 @@ export function setupExercises() {
         correct = option.correct;
         explanation = option.explanation;
       }
-      save(correct ? 'correct' : 'attempted');
-      feedback.textContent = correct
-        ? `Resposta correta, ${assistanceLabel()}. ${explanation}`
-        : `Ainda não. ${explanation || 'Revê o cálculo ou abre uma pista.'}`;
+      showResult(correct, explanation);
     });
     root.querySelector('[data-self-check]')?.addEventListener('click', () => {
       readHelp();
@@ -115,6 +157,7 @@ export function setupExercises() {
       showProgress();
     });
     root.querySelector('[data-clear]')?.addEventListener('click', () => {
+      effects.reset();
       root
         .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
           '[data-response], input[type="radio"]',
@@ -124,10 +167,11 @@ export function setupExercises() {
             input.checked = false;
           else input.value = '';
         });
+      delete feedback.dataset.result;
       feedback.textContent =
         assistance === 'none'
           ? 'Resposta limpa.'
-          : `Resposta limpa. A consulta de ${assistance === 'hint' ? 'pistas' : 'solução'} continua registada.`;
+          : `Resposta limpa. ${assistance === 'hint' ? 'Pistas consultadas' : 'Solução consultada'}.`;
     });
   });
 }

@@ -1,7 +1,10 @@
 ---
 import Icon from './Icon.astro';
+import CodeExercise from './CodeExercise.astro';
+import type { CodeAnswer } from '../lib/code-exercise';
 import '../styles/exercise.css';
 type Answer =
+  | CodeAnswer
   | { kind: 'self'; checklist: string[] }
   | { kind: 'number'; value: number; tolerance: number; unit?: string }
   | {
@@ -36,6 +39,19 @@ if (
   throw new Error(`${id}: choose exactly one correct option.`);
 if (answer.kind === 'self' && answer.checklist.length === 0)
   throw new Error(`${id}: self assessment needs a checklist.`);
+if (
+  answer.kind === 'code' &&
+  (!['python', 'javascript'].includes(answer.language) ||
+    !answer.starter.trim() ||
+    !answer.tests.length ||
+    answer.tests.length > 12 ||
+    answer.tests.some(
+      (test) => !test.name.trim() || typeof test.output !== 'string',
+    ))
+)
+  throw new Error(
+    `${id}: provide starter code and 1–12 named executable tests.`,
+  );
 for (const slot of ['hint', 'hint-more', 'solution', 'mistakes']) {
   if (!Astro.slots.has(slot)) throw new Error(`${id}: missing ${slot} slot.`);
 }
@@ -62,8 +78,9 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
         <slot />
       </div>
       <slot name="work" />
+      {answer.kind === 'code' && <CodeExercise answer={answer} />}
       <div data-exercise-controls data-pagefind-ignore data-annotation-ignore>
-        {answer.kind === 'choice' ? (
+        {answer.kind === 'code' ? null : answer.kind === 'choice' ? (
           <fieldset data-print-question>
             <legend>A tua resposta</legend>
             {answer.options.map((option, index) => (
@@ -86,10 +103,10 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
                   aria-describedby={`${id}-tolerance`}
                 />
                 <small id={`${id}-tolerance`} data-print-question>
-                  Tolerância absoluta: ±
-                  {answer.tolerance.toLocaleString('pt-PT')}
-                  {answer.unit ? ` ${answer.unit}` : ''}. Aceita vírgula ou
-                  ponto decimal.
+                  {answer.tolerance === 0
+                    ? 'Valor exato'
+                    : `±${answer.tolerance.toLocaleString('pt-PT')}`}
+                  {answer.unit ? ` ${answer.unit}` : ''}
                 </small>
               </>
             ) : (
@@ -97,21 +114,29 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
                 data-response
                 rows="3"
                 autocomplete="off"
-                placeholder="Escreve o teu raciocínio antes de consultar as pistas."
+                placeholder="O teu raciocínio…"
               ></textarea>
             )}
           </label>
         )}
-        <div class="exercise-actions" data-enhanced hidden>
-          <button type="button" data-check>
-            {answer.kind === 'self'
-              ? 'Registar tentativa'
-              : 'Verificar resposta'}
-          </button>
-          <button type="button" data-clear>
-            Limpar resposta
-          </button>
-        </div>
+        {answer.kind !== 'code' && (
+          <div class="exercise-actions" data-enhanced hidden>
+            <button
+              type="button"
+              data-check
+              aria-label={
+                answer.kind === 'self'
+                  ? 'Registar tentativa'
+                  : 'Verificar resposta'
+              }
+            >
+              {answer.kind === 'self' ? 'Registar tentativa' : 'Verificar'}
+            </button>
+            <button type="button" data-clear aria-label="Limpar resposta">
+              Limpar
+            </button>
+          </div>
+        )}
         <p
           class="exercise-feedback"
           role="status"
@@ -121,23 +146,23 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
       </div>
       <div class="exercise-help">
         <details data-help="hint">
-          <summary>
+          <summary aria-label="Primeira pista">
             <Icon name="chevron-right" size={16} />
-            Primeira pista
+            Pista
           </summary>
           <slot name="hint" />
-        </details>
-        <details data-help="hint">
-          <summary>
-            <Icon name="chevron-right" size={16} />
-            Mais uma pista
-          </summary>
-          <slot name="hint-more" />
+          <details data-help="hint">
+            <summary>
+              <Icon name="chevron-right" size={16} />
+              Mais uma pista
+            </summary>
+            <slot name="hint-more" />
+          </details>
         </details>
         <details data-help="solution">
-          <summary>
+          <summary aria-label="Ver solução">
             <Icon name="chevron-right" size={16} />
-            Ver solução
+            Solução
           </summary>
           <div data-solution>
             <slot name="solution" />
