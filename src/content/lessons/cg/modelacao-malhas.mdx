@@ -2,6 +2,8 @@
 title: Malhas poligonais e sólidos
 description: Triângulos, normais, orientação e noções de sólidos para construir cenas 3D.
 section: conteudo
+practices:
+  - cg/praticar-modelacao-malhas
 order: 3
 ---
 
@@ -14,24 +16,24 @@ A maioria dos objetos 3D que vês num jogo é uma **malha poligonal**: uma cole�
 
 ## A estrutura da malha
 
-Uma malha guarda três listas: **vértices** (posições 3D), **arestas** (pares de vértices) e **faces** (normalmente triângulos, trios de vértices). O triângulo é a face preferida porque três pontos definem sempre um plano, enquanto um quadrilátero pode ficar torcido. Mais triângulos significa superfície mais suave e mais memória; menos triângulos significa arestas visíveis e renderização mais rápida. Esse compromisso aparece em todos os projetos.
+Uma malha descreve três tipos de elementos: **vértices** (posições 3D), **arestas** (pares de vértices) e **faces** (normalmente triângulos, trios de vértices). O triângulo é a face preferida porque três pontos não colineares definem um plano, enquanto um quadrilátero pode ficar torcido. Uma lista de vértices e índices das faces evita repetir posições; as arestas podem ser implícitas ou guardadas para consultar vizinhos. Mais triângulos pode melhorar a aproximação de uma superfície curva, com maior custo de memória e processamento.
 
 <Dot
   source={malha}
   alt="Grafo da estrutura da malha: a malha divide-se em vértices com posições 3D, arestas como pares de vértices e faces como trios de vértices."
 />
 
-Cada face tem dois lados: a **face frontal**, que deve ser visível, e a **face traseira**, que normalmente se descarta. O que distingue uma da outra é a **ordem dos vértices** (_winding_): vistos de fora do objeto, os vértices da face frontal aparecem por ordem contrária aos ponteiros do relógio. O hardware usa esta convenção para o _backface culling_, que salta as faces traseiras sem as rasterizar e poupa metade do trabalho em objetos fechados.
+Cada face tem dois lados: a **face frontal**, que pode ser candidata a desenhar, e a **face traseira**, que normalmente se descarta. O que distingue uma da outra é a **ordem dos vértices** (_winding_): na convenção padrão de OpenGL/WebGL, a face é frontal se a projeção dos vértices na janela tiver sentido contrário aos ponteiros do relógio. Pode escolher-se o sentido oposto. O _backface culling_, quando ativado, descarta as faces traseiras antes da rasterização. Não resolve a ocultação entre faces frontais.
 
 ## A normal do triângulo
 
 A **normal** é o vetor perpendicular à face, e é ela que diz à [iluminação](/cadeiras/cg/iluminacao-sombreamento/) quanta luz a face recebe. Para o triângulo de vértices $A$, $B$ e $C$, constrói duas arestas e faz o produto vetorial:
 
 $$
-\mathbf{n} = (B - A) \times (C - A),
+\mathbf{n} = (B - A) \times (C - A).
 $$
 
-seguido da normalização $\hat{\mathbf{n}} = \mathbf{n} / \lVert \mathbf{n} \rVert$. Pela regra da mão direita, esta normal aponta para o lado de onde os vértices $A$, $B$, $C$ se veem por ordem contrária aos ponteiros do relógio, ou seja, para fora se a ordem estiver certa.
+Se os vértices forem colineares ou repetidos, o produto é zero: o triângulo é degenerado e não tem uma normal unitária. Caso contrário, segue-se a normalização $\hat{\mathbf{n}} = \mathbf{n} / \lVert \mathbf{n} \rVert$. Pela regra da mão direita, esta normal aponta para o lado de onde os vértices $A$, $B$, $C$ se veem por ordem contrária aos ponteiros do relógio, ou seja, para fora se a ordem estiver certa.
 
 Toma $A = (0, 0, 0)$, $B = (1, 0, 0)$ e $C = (0, 1, 0)$. As arestas são $B - A = (1, 0, 0)$ e $C - A = (0, 1, 0)$, e o produto vetorial dá:
 
@@ -50,9 +52,19 @@ O desenho mostra esse triângulo visto de cima: os vértices $A$, $B$ e $C$ por 
 />
 
 :::tip[Normais de vértice]
-Na prática, cada vértice guarda a média das normais das faces vizinhas, e a iluminação interpola essas normais pela face. É isso que faz uma esfera de poucos triângulos parecer redonda em vez de facetada. Vais usar esta ideia no sombreamento de Phong.
+Na prática, pode calcular-se a normal de um vértice pela média, eventualmente ponderada por áreas ou ângulos, das normais das faces vizinhas. Normaliza o resultado. A interpolação destas normais faz uma esfera parecer arredondada em vez de facetada. Para uma aresta que deve parecer afiada, conserva normais separadas nas duas faces em vez de as misturar. Vais usar esta ideia no sombreamento de Phong.
 :::
 
 ## Dos triângulos aos sólidos
 
-Triângulos soltos não chegam para operações como furar ou unir objetos: é preciso saber o que é dentro e fora. Um **sólido** válido é fechado (sem buracos na fronteira), com cada aresta partilhada por exatamente duas faces e orientação consistente. Representações como fronteira por faces, geometria sólida construtiva (união, interseção e diferença de primitivas) ou voxels impõem essa validade de formas diferentes. Para o projeto da cadeira basta reter a ideia: uma malha para renderizar pode ter falhas que uma malha para imprimir em 3D não pode ter.
+Triângulos soltos não chegam para operações como furar ou unir objetos: é preciso saber o que é dentro e fora. Para delimitar um **sólido** com uma malha, a fronteira tem de ser fechada, orientável e sem autointerseções. Cada aresta pertence a duas faces e a vizinhança de cada vértice tem de formar uma superfície, sem peças que se toquem só num ponto. As condições sobre as arestas, por si só, não chegam. Representações como fronteira por faces, geometria sólida construtiva (união, interseção e diferença de primitivas) ou voxels impõem essa validade de formas diferentes. Uma malha para renderizar pode ter falhas que uma malha para imprimir em 3D não pode ter.
+
+### Verificar a fronteira
+
+Para um poliedro convexo fechado, $V-E+F=2$, onde $V$ conta vértices, $E$ arestas e $F$ faces. Um cubo tem $8-12+6=2$. Se dividirmos cada face quadrada em dois triângulos, acrescentamos seis diagonais e passamos a $8-18+12=2$. A igualdade é um controlo de topologia, não prova a ausência de autointerseções. Uma fronteira com um túnel tem outra característica de Euler; não uses a fórmula do poliedro convexo em todas as malhas.
+
+### Escolher uma representação
+
+Uma representação pela fronteira, ou B-rep, guarda as faces e a sua conectividade. Na geometria sólida construtiva, ou CSG, uma árvore guarda primitivas e operações booleanas. Para furar um bloco $A$ com um cilindro $B$, usa a diferença $A\setminus B$, não a união.
+
+O varrimento desloca uma forma ao longo de uma trajetória. Uma extrusão reta de um disco cria um cilindro; para obter um sólido fechado, é preciso incluir as tampas. Voxels representam células ocupadas numa grelha 3D. Uma octree subdivide uma célula em oito, permitindo concentrar detalhe na fronteira. Uma árvore BSP divide o espaço por planos que podem ter qualquer orientação. São representações diferentes, não garantias automáticas de validade geométrica.

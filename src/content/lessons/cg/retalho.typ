@@ -12,5 +12,5 @@
   rect((0, 0), (3.3, 3.3), stroke: 1pt + rgb("292a30"))
   line((0, 3.3), (3.3, 3.3), stroke: 2pt + rgb("28716c"))
   line((3.3, 0), (3.3, 3.3), stroke: 2pt + rgb("28716c"))
-  content((1.65, -0.45), [retalho com continuidade $C^0$ na fronteira verde])
+  content((1.65, -0.45), [16 pontos de controlo, fronteiras destacadas])
 })

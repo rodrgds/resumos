@@ -2,6 +2,8 @@
 title: Transformações geométricas 2D e 3D
 description: Translação, escala e rotação em coordenadas homogéneas, composição e câmara.
 section: conteudo
+practices:
+  - cg/praticar-transformacoes-geometricas
 order: 2
 ---
 
@@ -9,11 +11,11 @@ import Manim from '../../../components/Manim.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Tabs from '../../../components/Tabs.astro';
 
-Mover um objeto na cena é multiplicar os seus vértices por uma matriz. Rodar a câmara é multiplicar por outra. As **transformações geométricas** são o vocabulário com que se diz onde está cada coisa e para onde olha a câmara. Se dominares a composição de matrizes, metade dos exercícios da cadeira passam a ser multiplicações que já sabes fazer.
+Mover um objeto na cena é multiplicar os seus vértices por uma matriz. Rodar a câmara é multiplicar por outra. As **transformações geométricas** são o vocabulário com que se diz onde está cada coisa e para onde olha a câmara. A ordem dos produtos determina o movimento final.
 
 ## Coordenadas homogéneas
 
-A translação não é linear: somar $(t_x, t_y)$ a um ponto não se escreve como produto por uma matriz $2 \times 2$. A solução é acrescentar uma coordenada e trabalhar em **coordenadas homogéneas**: o ponto 2D $(x, y)$ passa a $(x, y, 1)$ e o ponto 3D $(x, y, z)$ passa a $(x, y, z, 1)$. Com esta coordenada extra, translação, escala e rotação escrevem-se todas como produtos por matrizes, e compor transformações é multiplicar matrizes. No fim divide-se pela última coordenada para voltar ao espaço original. Revê o [produto de matrizes](/cadeiras/alga/matrizes/) se a multiplicação já não sair automática, porque a ordem vai importar.
+A translação não é linear: somar $(t_x, t_y)$ a um ponto não se escreve como produto por uma matriz $2 \times 2$. A solução é acrescentar uma coordenada e trabalhar em **coordenadas homogéneas**: o ponto 2D $(x, y)$ passa a $(x, y, 1)$ e o ponto 3D $(x, y, z)$ passa a $(x, y, z, 1)$. Com esta coordenada extra, translação, escala e rotação escrevem-se todas como produtos por matrizes, e compor transformações é multiplicar matrizes. Para voltar às coordenadas cartesianas, divide-se pela última coordenada $w$, se $w \ne 0$. Uma direção usa $w=0$, por exemplo $(v_x,v_y,v_z,0)$: a translação não a altera. Revê o [produto de matrizes](/cadeiras/alga/matrizes/) se a multiplicação já não sair automática, porque a ordem vai importar.
 
 As três transformações básicas em 2D, aplicadas a vetores coluna, são:
 
@@ -23,7 +25,15 @@ S(s_x, s_y) = \begin{bmatrix} s_x & 0 & 0 \\ 0 & s_y & 0 \\ 0 & 0 & 1 \end{bmatr
 R(\theta) = \begin{bmatrix} \cos\theta & -\sin\theta & 0 \\ \sin\theta & \cos\theta & 0 \\ 0 & 0 & 1 \end{bmatrix}.
 $$
 
-Em 3D as matrizes são $4 \times 4$ com a mesma estrutura: a translação ocupa a última coluna, a escala a diagonal e a rotação um bloco $3 \times 3$. Rotações em 3D fazem-se eixo a eixo, e cada eixo tem a sua matriz.
+Em 3D as matrizes são $4 \times 4$ com a mesma estrutura: a translação ocupa a última coluna, a escala a diagonal e a rotação um bloco $3 \times 3$. Usamos um referencial de mão direita. Em 2D, $\theta>0$ roda de $+x$ para $+y$, no sentido contrário aos ponteiros do relógio; em 3D segue a regra da mão direita em torno do eixo escolhido. Os blocos de rotação são:
+
+$$
+R_x=\begin{bmatrix}1&0&0\\0&c&-s\\0&s&c\end{bmatrix},\quad
+R_y=\begin{bmatrix}c&0&s\\0&1&0\\-s&0&c\end{bmatrix},\quad
+R_z=\begin{bmatrix}c&-s&0\\s&c&0\\0&0&1\end{bmatrix},
+$$
+
+com $c=\cos\theta$ e $s=\sin\theta$. Acrescenta a linha e coluna homogéneas para os usar em matrizes $4 \times 4$. Nas funções trigonométricas de JavaScript, o ângulo é em radianos, com $\pi$ radianos iguais a $180°$.
 
 ## A ordem muda o resultado
 
@@ -54,7 +64,7 @@ A animação mostra primeiro $TRS$ e depois $SRT$ no plano $xy$, porque $z$ se m
   description="P começa em (1, 0) em ambos os percursos. Primeiro, T·R·S aplica escala para (2, 0), rotação de 90 graus em torno da origem para (0, 2) e translação para (1, 2). Depois, S·R·T aplica translação para (2, 0), a mesma rotação para (0, 2) e escala para (0, 4). Os eixos permanecem fixos em cada percurso e os pontos esbatidos conservam as posições anteriores."
 />
 
-Corre as duas ordens e confirma os destinos. Muda o ângulo para $180$ e prevê o resultado antes de carregares em Executar.
+O programa constrói os dois produtos. Para representar $180°$ em torno de $z$, troca o bloco superior esquerdo de $R$ por $\operatorname{diag}(-1,-1)$. O eixo $z$ mantém-se.
 
 <CodePlayground
   language="javascript"
@@ -76,17 +86,27 @@ Vetor coluna à direita da matriz, como nesta página e no OpenGL clássico. A m
   </div>
   <div slot="panel-1">
 
-Vetor linha à esquerda da matriz, como em alguns motores e no DirectX. Tudo se transpõe: a matriz da esquerda aplica-se primeiro, por isso a mesma sequência escreve-se $M = S \cdot R \cdot T$, e a translação ocupa a última linha. O movimento final é o mesmo se transpuseres matrizes e vetores em conjunto.
+Vetor linha à esquerda da matriz, como em algumas bibliotecas gráficas. Tudo se transpõe: a matriz da esquerda aplica-se primeiro, por isso a mesma sequência escreve-se $M = S \cdot R \cdot T$, e a translação ocupa a última linha. O movimento final é o mesmo se transpuseres matrizes e vetores em conjunto.
 
   </div>
 </Tabs>
+
+## Rodar em torno de outro ponto
+
+As matrizes de rotação anteriores fixam a origem. Para rodar em torno de $c$, leva primeiro $c$ à origem, roda e repõe a posição: $M=T(c)R T(-c)$. Por exemplo, rodar $(3,1)$ por $90°$ em torno de $(1,1)$ dá $(2,0)$ após a primeira translação, $(0,2)$ após a rotação e $(1,3)$ no fim. O centro $(1,1)$ fica fixo.
+
+## Transformar normais
+
+Uma normal tem de continuar perpendicular às arestas da superfície. Com uma escala não uniforme, aplicar-lhe a mesma matriz das direções pode quebrar essa perpendicularidade. Se $L$ é o bloco linear invertível $3\times3$ da transformação, usa $\mathbf{n}'=(L^{-1})^{\mathsf T}\mathbf{n}$ e normaliza o resultado. A translação não entra nesta conta.
+
+Para $L=\operatorname{diag}(2,1,1)$, uma tangente $(1,1,0)$ passa a $(2,1,0)$. A normal perpendicular $(1,-1,0)$ passa, antes de normalizar, a $(1/2,-1,0)$. O produto escalar continua a ser $2\times1/2-1=0$. Usar $L$ diretamente daria $(2,-1,0)$ e produto $4-1=3$, que já não é perpendicular.
 
 ## Instancing e câmara
 
 A composição também serve para reutilizar geometria: defines um modelo uma vez e desenhas várias cópias com matrizes de modelação diferentes. A isto chama-se **instancing**, e é como se enche uma cena de árvores ou cadeiras sem duplicar vértices.
 
-A **transformação de vista** é a mesma ideia ao contrário: em vez de mover a câmara pelo mundo, move-se o mundo para a frente da câmara com a matriz inversa do seu posicionamento. Uma câmara na posição $C$ a olhar para o ponto $A$ constrói-se com uma base ortonormal (direita, cima, frente) que roda o mundo, seguida da translação por $-C$. Rotações, projeções e composição enquanto aplicações lineares estão explicadas nas [aplicações lineares](/cadeiras/alga/aplicacoes-lineares/).
+A **transformação de vista** é a mesma ideia ao contrário: em vez de mover a câmara pelo mundo, move-se o mundo para a frente da câmara com a matriz inversa do seu posicionamento. Uma câmara na posição $C$ a olhar para o ponto $A$ constrói-se com uma base ortonormal, com eixos perpendiculares de comprimento 1. Para vetores coluna, a vista aplica primeiro a translação por $-C$ e depois a rotação para a base da câmara. Se $Q$ é a orientação da câmara no mundo, a vista é $V=Q^{-1}T(-C)$. A ordem tem de concordar com o produto usado. Rotações, projeções e composição enquanto aplicações lineares estão explicadas nas [aplicações lineares](/cadeiras/alga/aplicacoes-lineares/).
 
 :::warning[A convenção antes da conta]
-Antes de multiplicares, confirma três coisas: vetores coluna ou linha (muda o lado da matriz), ângulos em graus ou radianos e se a rotação é sobre o eixo certo. Nove em cada dez exercícios errados falham aqui, não na multiplicação.
+Antes de multiplicares, confirma três coisas: vetores coluna ou linha (muda o lado da matriz), ângulos em graus ou radianos e se a rotação é sobre o eixo certo. Uma matriz correta para outra convenção pode produzir um movimento errado.
 :::

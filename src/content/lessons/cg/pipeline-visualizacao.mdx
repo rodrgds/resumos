@@ -2,6 +2,8 @@
 title: Pipeline de visualização
 description: O caminho do vértice até ao ecrã, fase a fase, com um exemplo numérico completo.
 section: conteudo
+practices:
+  - cg/praticar-pipeline-visualizacao
 order: 1
 ---
 
@@ -10,29 +12,25 @@ import Dot from '../../../components/Dot.astro';
 import pipeline from './pipeline.typ?raw';
 import etapas from './etapas.dot?raw';
 
-Uma imagem 3D nasce de números: vértices, matrizes e luzes. A **pipeline de visualização** é a sequência fixa de etapas que transforma esses números em píxeis. Percebê-la é perceber a cadeira inteira, porque cada página seguinte explica uma destas etapas em detalhe. A ideia é simples: cada vértice viaja por vários sistemas de coordenadas até chegar ao ecrã, e em cada paragem acontece uma operação bem definida.
+Uma imagem 3D nasce de números: vértices, matrizes e luzes. A **pipeline de visualização** é a sequência de etapas que transforma esses números em píxeis. Cada página seguinte desenvolve uma parte deste percurso. Cada vértice viaja por vários sistemas de coordenadas até chegar ao ecrã, e em cada paragem acontece uma operação bem definida.
 
 ## As aplicações primeiro
 
-Computação Gráfica serve para fazer imagens que não existem: videojogos, efeitos visuais, visualização científica e médica, CAD, interfaces. Todas partilham o mesmo problema, que é desenhar depressa cenas descritas por geometria. A pipeline existe para resolver esse problema sempre da mesma maneira, de modo que o hardware gráfico consiga acelerar cada etapa.
+Computação Gráfica gera imagens a partir de modelos: videojogos, efeitos visuais, visualização científica e médica, CAD, interfaces. Todas partilham o mesmo problema, que é desenhar depressa cenas descritas por geometria. A pipeline existe para resolver esse problema sempre da mesma maneira, de modo que o hardware gráfico consiga acelerar cada etapa.
 
 ## As etapas do vértice
 
-Segue um vértice desde o modelo até ao dispositivo:
+Segue um vértice desde o modelo até ao dispositivo. Neste percurso usamos a convenção padrão de OpenGL/WebGL: vetores coluna, recorte em $-w \le x,y,z \le w$ e NDC em $[-1,1]$. Outras APIs podem usar um intervalo diferente para a profundidade.
 
 1. **Espaço do objeto.** O vértice nasce nas coordenadas locais do modelo, tal como foi modelado.
 2. **Transformação de modelação.** Uma matriz coloca o objeto na cena (posição, orientação, escala). O vértice passa ao **espaço do mundo**.
 3. **Transformação de vista.** Outra matriz move o mundo para a frente da câmara. O vértice passa ao **espaço da câmara**, onde a câmara está na origem a olhar para uma direção fixa.
-4. **Projeção.** A matriz de projeção (perspetiva ou ortográfica) deforma o volume visível para um cubo canónico. O resultado está em **coordenadas de recorte** (_clip_), com quatro componentes $(x, y, z, w)$.
-5. **Recorte** (_clipping_). Tudo o que fica fora do cubo $[-w, w]$ em cada eixo é cortado. É aqui que desaparece o que está atrás da câmara ou fora do enquadramento.
+4. **Projeção.** A matriz de projeção, perspética ou ortográfica, prepara as coordenadas para o recorte. O cubo normalizado só se obtém após dividir por $w$. O resultado está em **coordenadas de recorte** (_clip_), com quatro componentes $(x, y, z, w)$.
+5. **Recorte** (_clipping_). Recortam-se as primitivas contra os planos $-w \le x,y,z \le w$. Um segmento ou triângulo que atravesse um plano pode conservar a parte interior, com novos vértices na fronteira. Uma primitiva totalmente fora do mesmo plano é descartada.
 6. **Divisão perspética.** Divide-se por $w$: $(x/w, y/w, z/w)$. O resultado está em **coordenadas normalizadas** (_NDC_), dentro do cubo $[-1, 1]$.
-7. **Transformação de viewport.** Mapeiam-se as NDC para **coordenadas do dispositivo**, os píxeis da janela.
+7. **Transformação de viewport.** Mapeiam-se as NDC para **coordenadas de janela**, que permitem localizar a geometria no viewport.
 
 Depois disto vem a **rasterização**, que converte a geometria projetada em fragmentos e depois em píxeis, e o teste de profundidade, que decide o que fica à frente.
-
-:::tip[Uma frase para decorar]
-Modelação põe o objeto no mundo, vista põe o mundo na câmara, projeção achata para o cubo, recorte corta o que sobra, divisão normaliza e viewport cola no ecrã.
-:::
 
 Lê o diagrama da esquerda para a direita e confirma cada paragem com a lista acima: se souberes dizer em que coordenadas está o vértice em cada caixa, já sabes a pipeline.
 
@@ -42,7 +40,7 @@ Lê o diagrama da esquerda para a direita e confirma cada paragem com a lista ac
   alt="Diagrama linear da pipeline com sete caixas: Objeto, Mundo, Câmara, Recorte, NDC, Janela e Píxel."
 />
 
-O recorte é a única etapa que deita fora geometria em vez de a transformar. O grafo mostra o destino de cada primitiva depois da projeção: o que passa segue para a divisão e a janela, o que falha desaparece aqui.
+O recorte pode reduzir ou descartar a geometria. O grafo mostra o destino de cada primitiva depois da projeção: o que passa segue para a divisão e a janela, o que falha desaparece aqui.
 
 <Dot
   source={etapas}
@@ -68,7 +66,9 @@ x = (0{,}3 \times 0{,}5 + 0{,}5) \times 800 = 520, \qquad
 y = (0{,}15 \times 0{,}5 + 0{,}5) \times 600 = 345.
 $$
 
-O vértice acende perto do píxel $(520,\ 345)$, à direita e um pouco acima do centro. Repara que a terceira coordenada, $-0{,}2$, não se perde: guardada no _buffer_ de profundidade, decide se este fragmento fica à frente ou atrás de outro que caia no mesmo píxel.
+Aqui a origem da janela é o canto inferior esquerdo e $y$ cresce para cima. O vértice fica em $(520,\ 345)$, à direita e acima do centro. São coordenadas contínuas da janela, não a garantia de que um píxel acende: a rasterização da primitiva é que decide a cobertura.
+
+Com o intervalo de profundidade padrão $[0,1]$, a NDC $z=-0{,}2$ passa a $z_{janela}=(z+1)/2=0{,}4$. É a profundidade de janela dos fragmentos que o teste de profundidade compara e que pode guardar no _depth buffer_. Um fragmento é um candidato a contribuir para um píxel; pode ainda falhar esse teste.
 
 ## O que a pipeline esconde
 
