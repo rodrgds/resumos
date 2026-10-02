@@ -1,63 +1,132 @@
 ---
 title: Programação linear
-description: Modelar otimização com variáveis, restrições e objetivo, resolver no gráfico e perceber o salto para inteiros.
+description: Modelação, formas standard e slack, pivôs de Simplex, viabilidade e certificados por dualidade.
 section: conteudo
-order: 6
+order: 14
+practices:
+  - da/praticar-linear
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import regiao from '../../da/regiao-dieta.typ?raw';
+import regiao from '../../da/lp-regiao.typ?raw';
 
-A programação linear trata de otimizar uma função linear sujeita a restrições lineares. A técnica aqui não é um algoritmo que executas à mão em geral, é a **modelação**: traduzir um problema de palavras para variáveis, restrições e função objetivo. Com duas variáveis ainda resolves no gráfico, e esse caso pequeno ensina a geometria toda: o ótimo está sempre num vértice da região admissível.
+A programação linear, **LP**, otimiza uma função linear sujeita a restrições lineares sobre variáveis reais. A primeira tarefa é traduzir o problema: que quantidades decidimos, em que unidades e quais são os limites? O método de solução só é útil se o modelo representar as decisões permitidas.
 
-## Modelar em três passos
+## Modelar um plano de produção
 
-Primeiro, escolhe as **variáveis de decisão** com unidades claras. Depois escreve as **restrições** como desigualdades lineares, uma por cada limite do problema. Por fim, escreve a **função objetivo** a minimizar ou maximizar. Se alguma relação for curva ou envolver produtos de variáveis, o problema já não é linear e esta técnica não se aplica diretamente.
+Uma oficina produz quantidades $x$ e $y$ de dois produtos divisíveis. O lucro por unidade é 3 e 2. A capacidade conjunta é 4 unidades, a capacidade exclusiva do primeiro produto é 2 e a do segundo é 3. O modelo é
 
-## Exemplo: dieta com duas variáveis
+$$\max 3x+2y$$
 
-Queres planear quantidades $x$ e $y$ de dois alimentos, com custos 2 e 3 por unidade, garantindo pelo menos 5 unidades de nutriente P ($x + 2y \ge 5$) e pelo menos 6 de nutriente Q ($3x + y \ge 6$), com $x, y \ge 0$. O modelo é minimizar $2x + 3y$ sujeito a essas restrições.
+sujeito a
 
-No gráfico, cada restrição corta um semiplano e a região admissível é o polígono ilimitado acima das duas retas. Os vértices são as interseções: $(0, 6)$ com custo 18, $(1{,}4;\, 1{,}8)$ com custo $2 \times 1{,}4 + 3 \times 1{,}8 = 8{,}2$, e $(5, 0)$ com custo 10. O ótimo é o vértice do meio: **$x = 1{,}4$, $y = 1{,}8$, custo 8,2**. Repara que a solução usa frações: $1{,}4$ unidades de um alimento só fazem sentido se ele for divisível.
+$$x+y\le4,\qquad x\le2,\qquad y\le3,\qquad x,y\ge0.$$
+
+Se só pudéssemos fabricar produtos inteiros, teríamos de acrescentar integridade, o tema da [programação inteira](/cadeiras/da/programacao-inteira/). Uma restrição $xy\le4$ não é linear; uma multiplicação por uma constante, como $2x$, é.
+
+O conjunto de pontos que respeitam as restrições é a **região admissível**, uma interseção de semiespaços. É convexa: o segmento entre dois pontos admissíveis também é admissível.
 
 <Typst
   source={regiao}
   format="svg"
-  alt="Região admissível da dieta: as retas P e Q delimitam um polígono ilimitado com vértices em 0, 6 com custo 18, em 1,4 e 1,8 com custo 8,2 e em 5, 0 com custo 10."
+  alt="Região admissível do plano de produção com vértices 0,0; 2,0; 2,2; 1,3; 0,3. O máximo de 3x mais 2y é 10 no ponto 2,2."
 />
 
-Como o objetivo é linear, o mínimo cai sempre num vértice: dentro da região consegues sempre deslizar na direção que baixa o custo até bateres numa aresta, e ao longo da aresta até ao vértice. Por isso o programa abaixo só precisa de avaliar os três vértices.
+| Vértice | Objetivo $3x+2y$ |
+| ------- | ---------------- |
+| $(0,0)$ | 0                |
+| $(2,0)$ | 6                |
+| $(2,2)$ | 10               |
+| $(1,3)$ | 9                |
+| $(0,3)$ | 6                |
 
-<CodePlayground
-  language="cpp"
-  title="Avaliar os vértices da dieta"
-  code={
-    '#include <iostream>\n#include <iomanip>\n\nint main() {\n    double vx[3] = {0, 1.4, 5}, vy[3] = {6, 1.8, 0};\n    double melhor = 1e100;\n    for (int i = 0; i < 3; i++) {\n        double c = 2 * vx[i] + 3 * vy[i];\n        std::cout << \"(\" << vx[i] << \", \" << vy[i] << \"): custo \"\n                  << std::fixed << std::setprecision(1) << c\n                  << std::defaultfloat << std::setprecision(6) << \"\\n\";\n        if (c < melhor) melhor = c;\n    }\n    std::cout << \"minimo: \" << melhor << \"\\n\";\n}'
-  }
-/>
+O ótimo é $(2,2)$, lucro 10. Numa região admissível não vazia em forma standard, se o objetivo tem ótimo finito, existe uma solução ótima num vértice. Isso não significa que **todos** os ótimos sejam vértices: uma função paralela a uma face pode ter uma face inteira de ótimos.
 
-## O salto para inteiros
+## Viável, limitado e ótimo são factos diferentes
 
-Exige agora unidades inteiras (pacotes indivisíveis). Arredondar $(1{,}4;\, 1{,}8)$ para $(1, 2)$ falha: $1 + 4 = 5$ cumpre P mas $3 + 2 = 5 < 6$ viola Q, ou seja, o arredondado nem sequer é admissível. Testando vizinhos inteiros admissíveis: $(2, 2)$ custa 10, $(3, 1)$ custa $6 + 3 = 9$, e nada admissível custa 8. O **ótimo inteiro é $(3, 1)$ com custo 9**, pior que os 8,2 fracionários. Esta é a lição da programação linear inteira (ILP): o ótimo inteiro não é o arredondamento do ótimo contínuo, e encontrá-lo é em geral muito mais difícil, o que liga esta página aos problemas exponenciais de [complexidade e aproximação](/cadeiras/da/complexidade-aproximacao/).
+Um LP pode ser inviável, ter ótimo finito ou ter objetivo ilimitado. As restrições $x+y\le1$ e $x+y\ge3$ são incompatíveis, portanto inviáveis.
 
-<Tabs id="dieta-continua-inteira" labels={['Dieta contínua', 'Pacotes inteiros']}>
-  <div slot="panel-0">
+A região $x\ge1$, $y\ge0$ é ilimitada. Mesmo assim, minimizar $x+y$ tem ótimo finito 1 em $(1,0)$. Na mesma região, maximizar $x+y$ é ilimitado. O tamanho geométrico da região não determina sozinho o comportamento do objetivo.
 
-O modelo contínuo aceita frações e resolve-se nos vértices: (0, 6) custa 18, (1,4; 1,8) custa 8,2 e (5, 0) custa 10. O mínimo é **8,2**, e a região diz-te porquê: é o ponto onde as duas restrições apertam ao mesmo tempo.
+Se maximizarmos $x+y$ na região do exemplo, todos os pontos do segmento entre $(2,2)$ e $(1,3)$ atingem 4. Empates não autorizam escolher um ponto fora das restrições.
 
-  </div>
-  <div slot="panel-1">
+## Forma standard
 
-Com pacotes indivisíveis, o ótimo contínuo nem é admissível e o arredondado (1, 2) viola Q. O melhor inteiro é **(3, 1) com custo 9**. A diferença de 0,8 é o preço da indivisibilidade, e é por ela que a versão inteira vive no território exponencial.
+Usamos a convenção
 
-  </div>
-</Tabs>
+$$\max c^Tx\quad\text{sujeito a }Ax\le b,\quad x\ge0.$$
 
-:::tip[Como cai em teste]
-O enunciado dá-te o problema em palavras e pede o modelo, não o algoritmo simplex. Escreve variáveis com unidades, lista as restrições numeradas e identifica a função objetivo. Se pedir a solução gráfica, marca os vértices com os custos ao lado e sublinha o mínimo: a apresentação conta tanto como a conta.
-:::
+$A$ tem $m$ linhas, uma por restrição, e $n$ colunas, uma por variável. $b$ guarda limites e $c$ coeficientes do objetivo. Para o plano,
 
-<YouTube id="E72DWgKP_1Y" title="A arte da programação linear" />
+$$A=\begin{pmatrix}1&1\\1&0\\0&1\end{pmatrix},\quad b=\begin{pmatrix}4\\2\\3\end{pmatrix},\quad c=\begin{pmatrix}3\\2\end{pmatrix}.$$
+
+Podemos converter outras formas:
+
+- Minimizar $c^Tx$ equivale a maximizar $-c^Tx$.
+- Multiplicar uma desigualdade $a^Tx\ge b$ por $-1$ dá $-a^Tx\le-b$.
+- Uma igualdade é o par de desigualdades opostas.
+- Uma variável livre pode ser escrita como $x_j=x_j^+-x_j^-$, com as duas parcelas não negativas.
+
+Mantém o sentido da desigualdade ao multiplicar por negativo. A forma standard não exige $b\ge0$; esse sinal é relevante para a solução inicial de Simplex.
+
+## Forma slack e solução básica
+
+Acrescentamos variáveis de folga não negativas:
+
+$$s_1=4-x-y,\qquad s_2=2-x,\qquad s_3=3-y.$$
+
+Inicialmente, $x,y$ são não básicas e fixadas a zero; as folgas são básicas e ficam $(4,2,3)$. Esta **solução básica** é admissível porque as folgas são não negativas. Os conjuntos de variáveis básicas $B$ e não básicas $N$ mudam em cada pivô; não são propriedades permanentes de uma variável.
+
+Na forma slack, o objetivo é um valor constante mais uma combinação das não básicas. Aumentar uma não básica com coeficiente positivo melhora o objetivo num problema de maximização, até alguma básica chegar a zero.
+
+## Dois pivôs de Simplex
+
+Começamos com $z=3x+2y$. Fazemos $x$ entrar. Para aumentar $x$, as restrições com coeficiente que o limita dão razões $4/1$ para $s_1$ e $2/1$ para $s_2$. A menor é 2, portanto $s_2$ sai.
+
+Isola $x=2-s_2$ e substitui em todas as equações:
+
+$$s_1=2+s_2-y,\qquad s_3=3-y,\qquad z=6-3s_2+2y.$$
+
+Com não básicas $s_2=y=0$, temos $x=2$, $s_1=2$, $s_3=3$, objetivo 6. Agora $y$ tem coeficiente positivo. As razões que limitam o aumento são 2 por $s_1$ e 3 por $s_3$. $s_1$ sai e $y$ entra:
+
+$$y=2+s_2-s_1,\qquad x=2-s_2,$$
+
+$$s_3=1-s_2+s_1,\qquad z=10-s_2-2s_1.$$
+
+Com $s_1=s_2=0$, obtemos $x=y=2$, $s_3=1$ e $z=10$. Todos os coeficientes das não básicas no objetivo são não positivos. Como são variáveis não negativas, não há solução admissível com objetivo superior a 10 neste dicionário.
+
+### Regra da razão e casos especiais
+
+A variável que sai minimiza a razão entre valor atual da básica e o coeficiente positivo que limita a entrada. Ignora coeficientes que não limitam um aumento. Se nenhum limita uma variável que melhora o objetivo, podemos aumentá-la sem fim e o objetivo é ilimitado.
+
+Razões empatadas podem produzir vários pivôs válidos. Uma básica já a zero pode sair sem melhorar o objetivo, um pivô **degenerado**. Isso pode originar ciclos com certas regras. A regra de Bland escolhe a variável elegível de menor índice para entrar e, nos empates da razão, a de menor índice para sair; evita ciclos. Simplex é muito usado, mas tem pior caso exponencial. Existem algoritmos polinomiais para LP, por exemplo métodos de ponto interior, sob o modelo de entrada racional.
+
+## Encontrar uma solução inicial
+
+Se algum termo independente for negativo, fixar as não básicas a zero pode dar uma folga negativa. Isso não prova que o LP é inviável: prova apenas que esta base inicial não serve.
+
+Uma **fase I** introduz variáveis artificiais e otimiza um objetivo auxiliar que mede a violação necessária para obter uma base admissível. Se o melhor ainda exigir uma quantidade artificial positiva, o problema original é inviável. Se a quantidade artificial pode chegar a zero, retira as artificiais, ajusta a base quando necessário e repõe o objetivo original para a fase II.
+
+Por exemplo, $x\ge2$ escreve-se $-x\le-2$. A folga inicial seria $s=x-2=-2$ em $x=0$, mas $x=2$ é admissível. Declarar inviabilidade só pelo termo negativo rejeitaria esta solução válida.
+
+## Dualidade
+
+Ao primal $\max c^Tx$ com $Ax\le b$, $x\ge0$, corresponde o dual
+
+$$\min b^Ty\quad\text{sujeito a }A^Ty\ge c,\quad y\ge0.$$
+
+As variáveis duais podem ser vistas como preços dos recursos. O preço combinado dos recursos necessários a um produto deve cobrir o seu lucro, criando um limite superior para o lucro total.
+
+Para qualquer primal admissível $x$ e dual admissível $y$,
+
+$$c^Tx\le y^TAx\le y^Tb.$$
+
+A primeira desigualdade usa $A^Ty\ge c$ e $x\ge0$; a segunda usa $Ax\le b$ e $y\ge0$. Esta é a **dualidade fraca**. Se encontramos soluções admissíveis com os mesmos objetivos, ambas são ótimas. A dualidade forte garante a igualdade dos ótimos quando há ótimo finito nas condições usuais de LP.
+
+No exemplo, o dual minimiza $4y_1+2y_2+3y_3$, sujeito a $y_1+y_2\ge3$ e $y_1+y_3\ge2$, com $y_i\ge0$. A solução $(2,1,0)$ dá 10. O primal $(x,y)=(2,2)$ também dá 10; isto certifica o ótimo sem depender da sequência de pivôs.
+
+A folga complementar liga restrições e preços: um recurso com folga positiva tem preço dual zero numa solução ótima; uma variável primal positiva exige que a restrição dual correspondente esteja em igualdade. Aqui sobrou uma unidade do terceiro recurso e $y_3=0$.
+
+## Como verificar um modelo
+
+Substitui a solução em **todas** as restrições e calcula o objetivo nas unidades originais. Confirma se frações são admissíveis, se limites são superiores ou inferiores e se faltam decisões, como um produto obrigatório ou um custo de ativação. Um solver resolve o modelo fornecido; não deteta por si só que omitiste uma regra do problema.

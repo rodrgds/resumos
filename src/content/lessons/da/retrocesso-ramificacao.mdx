@@ -1,64 +1,111 @@
 ---
 title: Retrocesso e ramificação
-description: Explorar o espaço de procura com poda por viabilidade e por limite, e provar que nada se perde.
+description: Estados parciais, podas por viabilidade e por limites, em subconjuntos, rainhas, coloração e TSP.
 section: conteudo
-order: 7
+order: 12
+practices:
+  - da/praticar-retrocesso
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
+import Typst from '../../../components/Typst.astro';
 import tabuleiro from '../../da/tabuleiro.typ?raw';
-import procura from '../../da/procura-rainhas.dot?raw';
+import programa from '../../da/subconjuntos.cpp?raw';
 
-Quando não há estrutura para um guloso nem sobreposição para uma tabela, resta explorar o espaço de soluções. O retrocesso (**backtracking**) constrói candidatos passo a passo e desiste de um ramo assim que ele se revela inviável. A ramificação com poda (**branch and bound**) acrescenta um limite otimista que desiste de ramos que já não conseguem bater o melhor valor conhecido. Nos dois casos, a poda só é válida se provares que o ramo cortado não continha nada melhor.
+A enumeração pode construir soluções por decisões sucessivas. Se uma solução parcial já viola uma restrição que nenhuma continuação corrige, não precisamos de completar esse ramo. O **retrocesso**, ou backtracking, explora as extensões válidas e desfaz cada decisão antes de tentar outra.
 
-## Retrocesso: desistir cedo
+A **ramificação e poda**, ou branch and bound, usa ainda um limite para o melhor valor que um ramo poderia atingir. Corta o ramo quando esse limite já não permite melhorar a melhor solução completa conhecida, o **incumbente**.
 
-O retrocesso mantém uma solução parcial e tenta estendê-la. Se a extensão viola uma restrição, volta atrás (**retrocede**) e tenta a próxima alternativa. A ordem das tentativas não afeta a correção, mas afeta a velocidade: tenta primeiro as alternativas mais promissoras para encontrar boas soluções cedo, porque uma boa solução conhecida alimenta a poda.
+## O estado e o regresso
 
-## Exemplo: 4 rainhas passo a passo
+Um estado deve conter as decisões já tomadas e a informação necessária para avaliar extensões. Num subconjunto, são o índice seguinte, a soma atual e as escolhas. Numa colocação de rainhas, são as colunas já preenchidas e as linhas e diagonais ocupadas.
 
-Coloca 4 rainhas num tabuleiro 4 por 4 sem ataques mútuos, uma por coluna. Coluna 1 na linha 1. Coluna 2: as linhas 1 e 2 estão atacadas (linha e diagonal da rainha 1), por isso tenta a linha 3. Coluna 3: a linha 1 está atacada pela coluna 1, a linha 2 pela diagonal da coluna 2, a linha 3 pela linha da coluna 2 e a linha 4 pela diagonal da coluna 2. Beco sem saída: retrocede. A coluna 2 ainda tem a linha 4 livre, mas aí a coluna 3 só admite a linha 2 e a coluna 4 esgota-se (linhas 1 e 2 presas às linhas das colunas 1 e 3, linha 3 na diagonal da coluna 3, linha 4 na linha da coluna 2). Retrocede então até à coluna 1 e move-a para a linha 2. Coluna 2 na linha 4, coluna 3 na linha 1, coluna 4 na linha 3. Solução: **linhas [2, 4, 1, 3]**, que confirmas sem ataques em nenhum par. O algoritmo visitou uma fração minúscula das $4^4 = 256$ colocações, porque cada beco sem saída podou uma subárvore inteira.
+```text
+procura(estado):
+    se o estado é uma solução completa:
+        registar solução
+        regressar
+    para cada decisão possível:
+        se a decisão é admissível:
+            aplicar decisão
+            procura(estado alterado)
+            desfazer decisão
+```
+
+Desfazer é parte da correção. Uma marca de ocupação esquecida elimina escolhas válidas num ramo seguinte. Devolver imediatamente depois da primeira solução serve para encontrar **uma**; contar ou listar todas exige continuar a procura.
+
+## Soma de subconjuntos com duas podas
+
+Assume valores estritamente positivos e alvo $T\ge0$. No estado $(i,s)$, já decidimos os elementos anteriores a $i$ e somamos $s$. Seja $R_i$ a soma de todos os valores ainda disponíveis.
+
+- Se $s>T$, nenhuma adição positiva consegue corrigir o excesso.
+- Se $s+R_i<T$, nem incluir todos os restantes chega ao alvo.
+
+As duas são podas por impossibilidade. Precomputar somas de sufixos permite testar $R_i$ em $O(1)$.
+
+Com valores $[2,3,6,8]$ e $T=10$, depois de incluir 2 e 3 temos $s=5$. Incluir 6 dá 11 e é rejeitado; excluí-lo deixa apenas 8, que também ultrapassa 10 se for incluído. A solução passa por excluir 3 e 6 e incluir 8, dando $2+8=10$.
+
+Se os valores estiverem ordenados e $s<T$ mas $s+a_i>T$, nenhum elemento restante cabe. Como ainda falta valor positivo, o ramo inteiro é impossível. Esta terceira poda precisa da ordenação e da positividade. Com valores negativos, nem a poda por excesso é segura.
+
+<CodePlayground
+  language="cpp"
+  title="Subconjunto com soma exata e poda por soma restante"
+  code={programa}
+  input={'4 10\n2 3 6 8'}
+/>
+
+O programa devolve `subconjunto 2 8`. Lê até 30 valores positivos, cada um até um milhão; o alvo está entre 0 e 30 milhões. Para alvo zero, o conjunto vazio é válido. Se não encontra solução, escreve `sem solucao`.
+
+No pior caso, as podas podem não eliminar quase nada: continuam a existir $O(2^n)$ nós. A memória auxiliar é $O(n)$ para escolhas, sufixos e pilha. Uma boa poda melhora instâncias concretas; não permite concluir automaticamente custo polinomial.
+
+## Rainhas e restrições locais
+
+Coloca uma rainha por coluna num tabuleiro $n\times n$. Ao escolher linha $r$ na coluna $c$, rejeita-a se já houver uma rainha na mesma linha ou numa diagonal. Duas posições $(r_1,c_1)$ e $(r_2,c_2)$ partilham diagonal quando
+
+$$|r_1-r_2|=|c_1-c_2|.$$
+
+Também podemos marcar diagonais pelos identificadores $r-c$ e $r+c$, ajustando o primeiro para índices não negativos. Essas marcas dão teste de admissibilidade constante.
 
 <Typst
   source={tabuleiro}
   format="svg"
-  alt="Dois tabuleiros 4 por 4: à esquerda a parcial com rainhas nas colunas 1 e 2 e todas as casas da coluna 3 atacadas, o beco; à direita a solução com rainhas nas linhas 2, 4, 1 e 3."
+  alt="Dois tabuleiros 4 por 4. À esquerda, as rainhas nas linhas 1 e 3 das duas primeiras colunas bloqueiam a terceira. À direita, as linhas 2, 4, 1 e 3 dão uma solução sem ataques."
 />
 
-A árvore de procura mostra os ramos explorados: dois becos podados por viabilidade antes de descer pelo ramo que contém a solução.
+A colocação $[2,4,1,3]$ é válida. As linhas são distintas, os valores $r-c$ são $1,2,-2,-1$ e os valores $r+c$ são $3,6,4,7$, também distintos. Isto verifica todas as restrições, sem depender de olhar para o desenho.
 
-<Dot
-  source={procura}
-  alt="Árvore de procura das 4 rainhas: da coluna 1, o ramo da linha 1 bifurca em dois becos podados por viabilidade; o ramo da linha 2 desce por 4 e 1 até à solução 2, 4, 1, 3."
-/>
+Escolher só linhas ainda livres dá no máximo $n!$ permutações completas antes das podas diagonais. Testar cada escolha contra todas as anteriores acrescenta trabalho por nó; não anuncies um limite apenas a contar folhas sem explicar essa implementação. Com conjuntos de marcas, o espaço é $O(n)$.
 
-<CodePlayground
-  language="cpp"
-  title="As 4 rainhas com retrocesso"
-  code={
-    '#include <cstdlib>\n#include <iostream>\n#include <vector>\n\nint nos = 0;\nbool ataca(const std::vector<int> &rainha, int col, int lin) {\n    for (int c = 0; c < col; c++)\n        if (rainha[c] == lin || abs(rainha[c] - lin) == col - c) return true;\n    return false;\n}\nbool resolve(std::vector<int> &rainha, int col) {\n    nos++;\n    if (col == 4) return true;\n    for (int lin = 1; lin <= 4; lin++)\n        if (!ataca(rainha, col, lin)) {\n            rainha[col] = lin;\n            if (resolve(rainha, col + 1)) return true;\n        }\n    return false;\n}\nint main() {\n    std::vector<int> rainha(4, 0);\n    resolve(rainha, 0);\n    std::cout << \"solucao:\";\n    for (int r : rainha) std::cout << \" \" << r;\n    std::cout << \"\\nnos visitados: \" << nos << \"\\n\";\n}'
-  }
-/>
+## Coloração e alocação de registos
 
-O programa visita **9 nós** até à solução, contra as 256 colocações da força bruta. Muda a ordem das linhas para descer de 4 até 1 e conta de novo: a solução aparece noutro ramo e a contagem muda, mas continua minúscula.
+Para colorir um grafo com $k$ cores, escolhe um vértice ainda sem cor e experimenta cada cor diferente das dos seus vizinhos já coloridos. Se nenhuma servir, retrocede. A validade de uma coloração completa é local a cada aresta, mas encontrar uma com poucas cores é um problema global.
 
-<YouTube id="Ph95IHmRp5M" title="N-Queens com retrocesso (NeetCode)" />
+A escolha de vértices de maior grau ou com mais cores vizinhas já usadas pode reduzir a procura. Continua a ser uma regra de ordenação da exploração, não uma prova de que o primeiro resultado usa o mínimo de cores.
 
-## Exemplo com cores: coloração de grafos
+Num modelo de alocação de registos, cada variável é um vértice; uma aresta significa que os seus valores precisam de coexistir e não podem usar o mesmo registo. As cores representam registos. Reutilizar um registo para variáveis sem interferência é permitido. A construção correta do grafo depende da análise das variáveis vivas, não apenas de as duas aparecerem na mesma instrução.
 
-Colorir os vértices de um grafo com $k$ cores sem vizinhos iguais é outro retrocesso clássico. Toma o triângulo 1-2-3 com um pendente 4 ligado ao 3, e 3 cores (R, G, B). Vértice 1: escolhe R. Vértice 2: vizinho de 1, por isso R está podado por viabilidade e escolhe G. Vértice 3: vizinho de 1 e de 2, por isso R e G estão podados e só resta B. Vértice 4: vizinho só de 3, por isso volta a R. Coloração: **1-R, 2-G, 3-B, 4-R**, e o triângulo mostra que 2 cores nunca chegariam: cada cor nova foi forçada por um vizinho já pintado, e cada poda tem a restrição violada escrita ao lado.
+Uma análise de vivacidade típica usa, para cada nó de controlo $u$,
 
-## Ramificação com poda: cortar por limite
+$$\operatorname{out}[u]=\bigcup_{v\in\operatorname{succ}(u)}\operatorname{in}[v],$$
 
-No branch and bound para otimização, cada nó tem um **limite**: uma estimativa otimista do melhor valor alcançável dali (para maximização, um teto). Se o teto não supera o melhor valor já conhecido, poda o ramo inteiro. Volta à [mochila da força bruta](/cadeiras/da/forca-bruta/) com capacidade 7, ordenando por razão valor por peso: D (1,6), A (1,5), B (1,33), C (1,25). Na raiz, enche fracionariamente: D inteiro (peso 5), A inteiro (peso 2, mochila cheia), teto $8 + 3 = 11$. Como D e A cabem mesmo, 11 é admissível e passa a melhor valor. No ramo que exclui D, o teto fracionário é A e B inteiros mais meia fração de C: $3 + 4 + 2{,}5 = 9{,}5$, abaixo de 11, por isso poda sem explorar. Resultado: **ótimo 11 provado visitando dois nós**, contra os 16 subconjuntos da enumeração.
+$$\operatorname{in}[u]=\operatorname{use}[u]\cup\big(\operatorname{out}[u]\setminus\operatorname{def}[u]\big).$$
 
-:::warning[Poda sem prova é adivinha]
-"Este ramo parecia mau" não poda nada. A poda por viabilidade exige mostrar a restrição violada; a poda por limite exige mostrar o cálculo do teto e compará-lo com o melhor conhecido. No teste, escreve os dois números lado a lado antes de riscar o ramo.
-:::
+Itera a partir de conjuntos vazios até não haver alterações. O domínio é finito e os conjuntos crescem monotonamente, por isso termina. Um vértice de grau menor que $k$ pode ser removido e recolocado depois de colorir o restante grafo: nessa altura tem menos de $k$ cores proibidas. Quando não há tal vértice, a simplificação não prova impossibilidade; pode ser necessário tentar outras escolhas ou transferir valores para memória, o **spill**.
 
-## Para saber mais
+## Branch and bound: direção do limite
 
-- Apontamentos de retrocesso e branch and bound com árvores de estados (U. Auckland): [Backtrack and branch and bound](https://www.cs.auckland.ac.nz/courses/compsci369s1c/lectures/GG-notes/CS369-Backtrack-BB.pdf).
+Para **maximizar**, o incumbente é um limite inferior $L$, pois já sabemos obter esse valor. Cada nó tem um limite superior $U$ sobre todas as suas continuações. Se $U\le L$, podemos podar quando basta devolver um ótimo. Para **minimizar**, o incumbente é um limite superior e cada nó precisa de um limite inferior; poda-se quando o limite inferior já é pelo menos o incumbente.
+
+O limite deve ser otimista. Para a mochila 0-1, permitir frações alarga as soluções admissíveis e dá um limite superior válido para maximização. Usar o valor de outro guloso 0-1 como limite superior é perigoso: esse valor pode ficar abaixo de uma solução do ramo.
+
+Com capacidade 10 e objetos $A=(6,12)$, $B=(5,9)$, $C=(5,9)$, conhecemos o incumbente $B+C$, valor 18. No ramo que inclui $A$, sobram 4 unidades. A relaxação fracionária permite $4/5$ de $B$, dando limite 19,2. Não podemos podar esse ramo por esse limite, mesmo que a solução inteira real fique em 12. Um limite pode ser seguro e pouco apertado.
+
+## TSP com um limite inferior
+
+Numa procura de circuitos, o estado guarda o último vértice, os ainda não visitados e o custo percorrido. Rejeita arestas inexistentes e, na folha, inclui o custo de regressar à origem. O custo de um caminho aberto não é o custo do circuito.
+
+Num TSP dirigido com pesos não negativos, um limite inferior simples soma ao custo atual a menor saída permitida de cada vértice que ainda precisa de sair: o último atual e os não visitados. Pode permitir destinos repetidos ou ciclos prematuros na conta do limite, porque isso **relaxa** as restrições. Toda a continuação válida tem essas saídas, pelo que não pode custar menos que a soma dos mínimos.
+
+Se já conhecemos um circuito de custo 20 e um ramo tem custo parcial 8 mais saídas mínimas de soma 15, o limite inferior é 23 e o ramo pode ser podado. Se não houver saída possível para algum vértice que precisa dela, o ramo é inviável. Pesos negativos tornam inválida a poda que usa apenas o custo parcial; precisamos de contabilizar o possível custo negativo futuro.
+
+DFS usa pouca memória e pode encontrar cedo um incumbente. Explorar primeiro o melhor limite pode cortar mais ramos, mas exige uma fila de nós. Nenhuma ordem substitui a prova da poda. Para enumerar **todos** os ótimos, não cortes os nós cujo limite apenas empata com o incumbente.

@@ -1,110 +1,93 @@
 ---
 title: Força bruta
-description: Enumerar todas as soluções, medir o custo exponencial e saber quando ele ainda é aceitável.
+description: Enumeração de subconjuntos, intervalos e circuitos, com contagem do trabalho e reconstrução do melhor candidato.
 section: conteudo
-order: 2
+order: 3
+practices:
+  - da/praticar-forca-bruta
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import arvore from '../../da/mochila-arvore.typ?raw';
+import programa from '../../da/subvetor.cpp?raw';
 
-A força bruta é a técnica mais honesta que existe: gera todas as soluções candidatas, avalia cada uma e fica com a melhor. Não há astúcia nenhuma, e é exatamente por isso que ela é o ponto de partida. Dá-te sempre uma solução correta de referência, e o seu custo exponencial diz-te quanto precisas de ser mais esperto.
+A força bruta aplica diretamente a definição do problema. Gera os candidatos, rejeita os inválidos e compara os restantes. Não é necessariamente exponencial: uma procura linear é força bruta e custa $\Theta(n)$; uma enumeração de todos os subconjuntos cresce como $2^n$.
 
-## Quando usar
+É útil quando a entrada é pequena e como referência para verificar uma estratégia mais rápida. Para provar a correção, precisamos de mostrar que todo o candidato válido aparece e que a comparação final escolhe o melhor.
 
-Usa força bruta quando o espaço de soluções é pequeno (dezenas de casos, não milhões), quando precisas de uma solução de referência para testar um algoritmo mais esperto, ou quando o problema é tão irregular que nenhuma estrutura o simplifica. O padrão é sempre o mesmo: um contador ou uma recursão que percorre todas as combinações, um teste de validade e um registo do melhor valor visto.
+## Subvetor de soma máxima
 
-O custo segue da contagem: $n$ decisões binárias (levo ou não levo, ponho ou não ponho) dão $2^n$ candidatos. Cada bit a mais na entrada duplica o tempo. Com $n = 20$ são cerca de um milhão de candidatos, ainda confortável; com $n = 50$ são $10^{15}$, impossível. Esta parede é o motivo de existirem as outras sete páginas da cadeira.
+Dado um vetor $A$ de $n$ inteiros, procuramos um intervalo **contíguo e não vazio** $A[i..j]$ de soma máxima. Não podemos saltar elementos. Esta condição distingue o problema de escolher um subconjunto.
 
-## Exemplo: mochila 0-1 com 4 objetos
+No vetor `[-4, 3, -1, 5, -6, 2]`, o intervalo `[3, -1, 5]` tem soma 7. Somar apenas os positivos daria 10, mas esses elementos não formam um intervalo contíguo.
 
-Tens uma mochila com capacidade 7 e quatro objetos:
+Há $n(n+1)/2$ intervalos. Se recalcularmos cada soma com um terceiro ciclo, o custo é $\Theta(n^3)$. Fixando o início $i$, podemos começar `soma=0` e acrescentar $A[j]$ à medida que avançamos o fim $j$. Cada intervalo passa a ser avaliado com uma adição:
 
-| Objeto | Peso | Valor |
-| ------ | ---- | ----- |
-| A      | 2    | 3     |
-| B      | 3    | 4     |
-| C      | 4    | 5     |
-| D      | 5    | 8     |
+```text
+melhor = A[0]
+para i = 0 até n-1:
+    soma = 0
+    para j = i até n-1:
+        soma += A[j]
+        se soma > melhor:
+            guardar soma, i e j
+```
 
-Há $2^4 = 16$ subconjuntos. A enumeração completa, descartando os que passam da capacidade, dá estes totais (peso, valor): vazio (0, 0); A (2, 3); B (3, 4); C (4, 5); D (5, 8); AB (5, 7); AC (6, 8); AD (7, 11); BC (7, 9); os restantes excedem a capacidade. O melhor é **AD, valor 11 com peso 7**.
+O custo passa a $\Theta(n^2)$ e a memória auxiliar é $\Theta(1)$. Antes de avaliar $j$, `soma` é a soma de $A[i..j]$. Como os dois ciclos visitam todos os pares $i\le j$, nenhum intervalo fica por avaliar.
 
-A árvore de decisões mostra a mesma enumeração como escolhas: em cada nível decides levar ou ignorar um objeto, e os ramos que excedem a capacidade morrem ali.
-
-<Typst
-  source={arvore}
-  format="svg"
-  alt="Árvore de decisões parcial da mochila: da capacidade 7, levar A deixa 5 e ignorar A mantém 7; de levar A, levar B deixa 2 e ignorar B mantém 5; os ramos levar C e levar D excedem a capacidade e são podados, restando a folha AB com peso 5 e valor 7."
-/>
-
-Repara em dois factos. Primeiro, o ótimo não é óbvio à partida: D sozinho vale 8 mas a combinação AD vale 11, e BC enche a mochila com um valor pior. Segundo, o trabalho cresce depressa: com 4 objetos avaliaste 16 candidatos, com 10 seriam 1024, com 30 seriam mil milhões. Guarda este exemplo, porque a [programação dinâmica](/cadeiras/da/programacao-dinamica/) resolve a mesma mochila sem enumerar tudo, e o [retrocesso com poda](/cadeiras/da/retrocesso-ramificacao/) corta ramos inteiros desta mesma árvore de subconjuntos.
-
-:::tip[Como cai em teste]
-"Enumera" não quer dizer "adivinha": escreve os candidatos por ordem sistemática (binário de 0000 a 1111, por exemplo) e risca os inválidos. Uma tabela como a de cima mostra o método e evita que te percas a meio.
-:::
-
-## Enumerar os 16 subconjuntos em C++
-
-O contador binário abaixo percorre as máscaras de 0 a 15 e imprime os 9 subconjuntos que cabem, marcando cada novo melhor. A saída termina em `otimo: 11`, o AD da tabela. Muda a capacidade para 6 e confirma que AD deixa de caber e o ótimo passa a 8, com D sozinho ou AC.
+O programa lê `n` e os elementos, devolvendo soma e extremos com índices a partir de zero. Em empate conserva o primeiro intervalo visitado. Aceita de 1 a 2000 valores, cada um entre menos um milhão e um milhão.
 
 <CodePlayground
   language="cpp"
-  title="Enumeração binária da mochila"
-  code={
-    '#include <iostream>\n\nint main() {\n    int peso[4] = {2, 3, 4, 5}, valor[4] = {3, 4, 5, 8};\n    int melhor = -1;\n    for (int m = 0; m < 16; m++) {\n        int p = 0, v = 0;\n        for (int i = 0; i < 4; i++)\n            if (m & (1 << i)) { p += peso[i]; v += valor[i]; }\n        if (p <= 7) {\n            std::cout << m << \": peso \" << p << \" valor \" << v;\n            if (v > melhor) { melhor = v; std::cout << \" <- melhor\"; }\n            std::cout << \"\\n\";\n        }\n    }\n    std::cout << \"otimo: \" << melhor << \"\\n\";\n}'
-  }
+  title="Enumerar intervalos com soma acumulada"
+  code={programa}
+  input={'6\n-4 3 -1 5 -6 2'}
 />
 
-## Duas formas de gerar tudo
+A saída é `soma 7`, `intervalo 1 3`. Experimenta `3\n-8 -2 -5`: a resposta deve ser $-2$, intervalo $[1,1]$. Inicializar o melhor a zero devolveria um intervalo vazio que o problema não permite. Mais adiante resolveremos o mesmo problema por [divisão e conquista](/cadeiras/da/divisao-conquista/#subvetor-que-atravessa-o-meio) e por [programação dinâmica](/cadeiras/da/programacao-dinamica/#o-subvetor-m%C3%A1ximo-em-tempo-linear).
 
-O contador binário e a recursão gera-testa visitam os mesmos 16 subconjuntos por ordens diferentes. Escolhe a que te sair mais naturalmente no teste; o custo é igual.
+## Subconjuntos e mochila 0-1
 
-<Tabs id="enumerar-subconjuntos" labels={['Contador binário', 'Recursão gera-testa']}>
-  <div slot="panel-0">
+Com $n$ objetos, cada um tem duas decisões: incluir ou excluir. Existem $2^n$ subconjuntos, incluindo o vazio. Na mochila 0-1, um candidato é válido quando a soma dos pesos não excede $W$; o objetivo é maximizar a soma dos valores. Cada objeto pode aparecer uma única vez.
 
-```cpp
-// Cada máscara de 0 a 15 é um subconjunto:
-// o bit i diz se o objeto i entra.
-for (int m = 0; m < 16; m++) {
-    int p = 0, v = 0;
-    for (int i = 0; i < 4; i++)
-        if (m & (1 << i)) { p += peso[i]; v += valor[i]; }
-    if (p <= 7) avalia(p, v);
-}
-```
+Considera capacidade 7 e objetos $A=(2,3)$, $B=(3,4)$, $C=(4,5)$ e $D=(5,8)$, onde cada par é `(peso, valor)`. Alguns candidatos são:
 
-  </div>
-  <div slot="panel-1">
+| Subconjunto | Peso | Valor | Válido?    |
+| ----------- | ---- | ----- | ---------- |
+| vazio       | 0    | 0     | Sim        |
+| $A,B$       | 5    | 7     | Sim        |
+| $B,C$       | 7    | 9     | Sim        |
+| $A,D$       | 7    | 11    | Sim, ótimo |
+| $C,D$       | 9    | 13    | Não        |
+| $A,B,C$     | 9    | 12    | Não        |
 
-```cpp
-// Gera e testa: decide o objeto i e desce.
-// Excerto: avalia regista o melhor admissível.
-void gera(int i, std::vector<int> &esc) {
-    if (i == 4) { avalia(esc); return; }
-    gera(i + 1, esc);            // ignora o objeto i
-    esc.push_back(i);
-    gera(i + 1, esc);            // leva o objeto i
-    esc.pop_back();
-}
-```
+Uma máscara de $n$ bits representa um subconjunto. Percorrer $2^n$ máscaras e somar os $n$ possíveis objetos para cada uma custa $\Theta(n2^n)$. Uma recursão que mantém peso e valor acumulados faz duas extensões de custo constante por nó e visita $2^{n+1}-1$ nós, portanto custa $\Theta(2^n)$ antes de eventuais cópias das soluções. Guardar a melhor seleção pode acrescentar $O(n)$ por cópia; podemos guardar a melhor máscara ou reconstruir a decisão de forma separada.
 
-  </div>
-</Tabs>
+Não uses `1 << n` sem respeitar a largura do tipo. Deslocar por um número de bits igual ou superior à largura do inteiro não é uma enumeração válida em C++.
 
-## Do teste ao projeto
+## Soma de subconjuntos
 
-O trabalho prático corre em C++ com GoogleTest e CLion. O hábito que paga é este: escreve primeiro a força bruta como referência e prende-a com um teste, e só depois otimiza. O teste guarda o ótimo conhecido e apanha regressões quando trocares a técnica.
+Na soma de subconjuntos, o objetivo é decidir se algum subconjunto soma exatamente $T$. Para valores $[2,5,7,9]$ e $T=14$, há as soluções $5+9$ e $2+5+7$. Devolver uma delas satisfaz uma tarefa de existência; enumerar todas é outra tarefa.
 
-```cpp
-#include <gtest/gtest.h>
+Uma recursão `procura(i, soma)` decide incluir ou excluir o elemento $i$. Quando $i=n$, aceita se `soma == T`. Para reconstruir, mantém as escolhas e copia-as quando encontra uma solução. O pior caso visita $\Theta(2^n)$ nós e usa $O(n)$ memória para a pilha e a seleção atual.
 
-int melhorValor();  // a tua enumeração, devolvendo o ótimo
+Se todos os valores forem não negativos, `soma > T` permite parar esse ramo. Com negativos, a poda é inválida: $8+(-3)=5$ pode atingir um alvo de 5 depois de o ultrapassar. A condição matemática deve acompanhar a melhoria, como veremos no [retrocesso](/cadeiras/da/retrocesso-ramificacao/#soma-de-subconjuntos-com-duas-podas).
 
-TEST(Mochila, OtimoAD) {
-    EXPECT_EQ(melhorValor(), 11);
-}
-```
+## Trocos com stock
 
-Compila com a biblioteca de testes ligada, corre o executável e lê o veredicto: verde significa que a referência está certa e podes comparar contra ela a [tabela da programação dinâmica](/cadeiras/da/programacao-dinamica/) e a poda do [retrocesso](/cadeiras/da/retrocesso-ramificacao/).
+Para denominações $c_i$ e stocks $s_i$, cada decisão é uma quantidade $q_i\in\{0,\ldots,s_i\}$. Um candidato paga $T$ quando $\sum q_i c_i=T$; queremos minimizar $\sum q_i$.
+
+Com moedas de 1, 3 e 4, stocks 2, 2 e 1 e alvo 6, podemos pagar com duas moedas de 3 ou com uma de 4 e duas de 1. A solução ótima usa duas moedas. Escolher a maior que cabe produz três, embora encontre uma solução válida.
+
+O número de combinações de quantidades é $\prod_i(s_i+1)$, limitado por $(S+1)^n$ se $S$ é o stock máximo. Recalcular soma e contagem em cada folha acrescenta um fator $n$; manter totais durante a recursão evita esse recálculo. A pilha usa $O(n)$ memória, sem guardar todos os candidatos.
+
+## Caixeiro-viajante
+
+No TSP, procuramos um circuito que visita cada vértice uma vez e regressa ao início com custo mínimo. Fixar a cidade inicial remove rotações da mesma sequência. Restam $(n-1)!$ permutações, cada uma com $n$ arestas para avaliar; o custo direto é $\Theta(n!)$.
+
+Numa instância não dirigida e simétrica, uma rota e a sua inversa têm o mesmo custo. Podemos eliminar essa duplicação com uma regra, por exemplo exigir que a segunda cidade tenha menor identificador que a última. Num grafo dirigido, essa regra pode eliminar a solução ótima, porque inverter a rota muda os custos e pode usar arestas inexistentes.
+
+A existência de um percurso barato entre duas cidades não resolve o TSP: precisamos de uma visita a **todas** e do regresso. Não confundas circuito hamiltoniano, que visita vértices, com circuito euleriano, que visita arestas.
+
+## O que a enumeração prova
+
+Para uma prova, descreve uma correspondência entre soluções e candidatos gerados. Depois justifica o teste de viabilidade e o registo do melhor. Num algoritmo de otimização, atualizar o melhor antes de testar a capacidade pode guardar uma solução impossível. Num algoritmo de existência, devolver falso só é correto depois de esgotar todos os ramos que ainda poderiam produzir uma solução.

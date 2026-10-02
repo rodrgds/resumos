@@ -1,77 +1,84 @@
 ---
 title: Algoritmos gulosos
-description: Escolha local com prova de otimalidade, o contraexemplo que a destrói e a mochila fracionária.
+description: Provas por troca para atividades, mochila fracionária, ordem de serviço e códigos de Huffman.
 section: conteudo
-order: 3
+order: 4
+practices:
+  - da/praticar-gulosos
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import moedas from '../../da/moedas.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import huffman from '../../da/huffman.dot?raw';
 
-Um algoritmo guloso decide passo a passo, escolhendo sempre a opção que parece melhor agora, sem nunca voltar atrás. Quando a escolha local é segura, o algoritmo é simples, rápido e ótimo. Quando não é, ele falha em silêncio e devolve uma resposta errada com ar confiante. A matéria desta página é saber distinguir os dois casos e prová-lo.
+Um algoritmo guloso fixa uma escolha local e resolve o que resta sem reconsiderar essa escolha. A questão é saber se **existe uma solução ótima compatível com a escolha**. Quando conseguimos provar isso e o problema restante conserva a mesma estrutura, repetimos a prova em cada passo.
 
-## A estrutura do argumento
+Uma regra que funciona num exemplo não é uma prova. Para refutar uma regra, chega um contraexemplo que cumpra todas as hipóteses.
 
-Um guloso correto precisa de duas peças. A **escolha gulosa**: existe sempre uma solução ótima que começa com a nossa escolha local. E a **subestrutura ótima**: depois de fixar essa escolha, o resto do problema é uma instância menor do mesmo problema. Se provares as duas por indução, o algoritmo está correto. Se alguma falhar, há um contraexemplo à espera, e encontrá-lo faz parte do trabalho.
+## Seleção de atividades
 
-## Exemplo que funciona: trocos canónicos
+Cada atividade tem início $s_i$ e fim $f_i$, com $s_i<f_i$. Uma pessoa só faz atividades sem sobreposição e queremos maximizar a quantidade. Usamos intervalos $[s_i,f_i)$, pelo que uma atividade pode começar no instante em que a anterior termina.
 
-Com moedas de 1, 2, 5, 10, 20 e 50 cêntimos, para dar 87 cêntimos o guloso escolhe sempre a maior moeda que cabe: 50, depois 20 (restam 17), depois 10 (restam 7), depois 5 (restam 2), depois 2. Total: **5 moedas**. Aqui a escolha é segura porque cada moeda é múltiplo útil das anteriores: nunca compensa trocar uma moeda grande por pequenas. A prova formal usa troca de argumentos, mas a intuição é esta regularidade do sistema.
+Ordena por fim crescente. Escolhe a primeira atividade compatível com a última escolhida. O fim mais cedo deixa pelo menos tanto tempo livre como qualquer alternativa para continuar.
 
-## Exemplo que parte: o contraexemplo
+Para as atividades $A=[0,3)$, $B=[1,2)$, $C=[2,4)$, $D=[3,5)$ e $E=[4,6)$, a ordem por fim é $B,A,C,D,E$. Escolhemos $B$, rejeitamos $A$, escolhemos $C$, rejeitamos $D$ e escolhemos $E$. Obtemos três atividades.
 
-Tira a moeda de 1 e considera o sistema com moedas de 3 e 4 para pagar 6. O guloso escolhe 4 (a maior que cabe) e ficam a faltar 2, que nenhuma moeda completa: ele declara falência. Mas **3 + 3 = 6** resolve com duas moedas. A escolha local destruiu a única solução. Sempre que desconfiares de um guloso, procura o caso pequeno onde a primeira decisão fecha a porta ao ótimo: é esse contraexemplo que deves apresentar no teste em vez de uma justificação vaga.
+### Prova por troca
 
-<Typst
-  source={moedas}
-  format="svg"
-  alt="Comparação para pagar 6 com moedas de 3 e 4: o guloso escolhe 4 e fica com 2 em falta sem solução; o ótimo usa duas moedas de 3."
+Seja $a$ a atividade de fim mais cedo e $O$ uma solução ótima. Ordena as atividades de $O$ temporalmente e chama $b$ à primeira. Como $f_a\le f_b$, substituir $b$ por $a$ mantém a compatibilidade com todas as atividades seguintes. A quantidade não muda. Existe, portanto, uma solução ótima que começa por $a$.
+
+Depois de escolher $a$, o resto é o mesmo problema restrito a atividades que começam a partir de $f_a$. Se o resto escolhido não fosse ótimo, poderíamos substituí-lo por um melhor e melhorar a solução completa. Por indução, as escolhas são ótimas.
+
+A ordenação custa $O(n\log n)$ e a passagem custa $O(n)$. Se a entrada já estiver ordenada por fim, o custo é $O(n)$. Empates no fim podem ser resolvidos por qualquer ordem válida.
+
+Escolher o início mais cedo falha com $[0,10)$, $[1,2)$ e $[2,3)$: escolhe uma atividade em vez de duas. Escolher a duração mais curta também não possui esta prova. Se cada atividade tiver um **valor** diferente e o objetivo for somar valores, já não queremos maximizar a quantidade; pode ser necessária programação dinâmica.
+
+## Mochila fracionária
+
+Aqui cada objeto é divisível. Com peso $w_i>0$, valor $v_i\ge0$ e fração $x_i\in[0,1]$, queremos maximizar $\sum_i v_i x_i$ sujeito a $\sum_i w_i x_i\le W$. A densidade $v_i/w_i$ é o valor por unidade de peso.
+
+Ordena por densidade decrescente. Leva cada objeto inteiro enquanto couber; quando um não cabe, leva a fração que preenche a capacidade restante.
+
+Com $A=(6,12)$, $B=(5,9)$, $C=(5,9)$ e capacidade 10, levamos $A$ inteiro e $4/5$ de $B$. O peso é $6+4=10$ e o valor é $12+7{,}2=19{,}2$.
+
+A prova troca **peso**, não objetos inteiros. Se uma solução leva peso de um objeto menos denso enquanto ainda pode levar mais do mais denso, troca uma quantidade $\varepsilon$ do primeiro para o segundo. A capacidade mantém-se e o valor não diminui. Repetindo, existe uma solução ótima que enche primeiro os objetos mais densos. A ordenação dá $O(n\log n)$ tempo.
+
+Na mochila 0-1, a troca fracionária é proibida. No mesmo exemplo, o guloso leva $A$ e fica com valor 12; levar $B$ e $C$ dá 18. A hipótese de divisibilidade era necessária.
+
+## Trocos e condições do sistema
+
+Escolher a maior moeda que cabe pode falhar mesmo com stock ilimitado e moeda de valor 1. Com denominações 1, 3 e 4 e alvo 6, escolhe $4+1+1$, três moedas; o ótimo é $3+3$, duas.
+
+Um sistema é **canónico** se esse guloso devolve o mínimo de moedas para todo o alvo com stock ilimitado. Não basta as denominações estarem ordenadas. Mesmo um sistema canónico ilimitado pode precisar de outra estratégia quando há stocks finitos. Um algoritmo deve distinguir "não consegui completar com esta regra" de "não existe solução".
+
+## Ordem de serviço
+
+Há $n$ clientes disponíveis desde o início, um servidor e tempos positivos $p_i$. Sem interrupções, queremos minimizar a soma dos tempos de conclusão. É equivalente a minimizar a espera total, porque a soma dos tempos de serviço é fixa.
+
+A regra é servir por duração crescente. Para durações 4, 1 e 3, a ordem inicial tem conclusões 4, 5 e 8, soma 17. A ordem 1, 3, 4 tem conclusões 1, 4 e 8, soma 13.
+
+Para provar, considera dois clientes adjacentes $a$ e $b$, depois de um prefixo de duração $P$. Na ordem $a,b$, a contribuição é $(P+p_a)+(P+p_a+p_b)$. Na ordem $b,a$, é $(P+p_b)+(P+p_b+p_a)$. A primeira menos a segunda é $p_a-p_b$. Se $p_a>p_b$, trocar reduz o total e não muda os clientes posteriores. Eliminar inversões produz a ordem crescente.
+
+A duração total até terminar **todos** é sempre $\sum p_i$. Não é esse total que a regra minimiza. Com tempos de chegada, prioridades ou pesos de espera, o modelo e a prova mudam.
+
+## Huffman e códigos sem prefixos
+
+Um código binário é sem prefixos se o código de nenhum símbolo é prefixo do código de outro. Podemos representá-lo por uma árvore binária com símbolos nas folhas. A profundidade de uma folha é o comprimento do seu código.
+
+Para frequências $f_i$, queremos minimizar $\sum_i f_i\ell_i$, o número total de bits. Huffman retira repetidamente da heap os dois nós de menor frequência, cria um pai com a soma das frequências e volta a inseri-lo.
+
+Com frequências $a:5$, $b:7$, $c:10$, $d:15$, junta 5 e 7 em 12; junta 10 e 12 em 22; junta 15 e 22 em 37.
+
+<Dot
+  source={huffman}
+  alt="Árvore de Huffman: raiz 37, filho d de frequência 15 e filho 22; este liga c de frequência 10 a um nó 12 que liga a de frequência 5 e b de frequência 7. Arestas rotuladas zero e um."
 />
 
-## Exemplo com critério: mochila fracionária
+Um código é $d=0$, $c=10$, $a=110$, $b=111$. O custo é $15\cdot1+10\cdot2+5\cdot3+7\cdot3=71$ bits. Somar os pesos dos nós criados também dá $12+22+37=71$, pois cada fusão acrescenta um bit aos símbolos abaixo dela.
 
-Na mochila fracionária podes levar frações de objetos, e aí o guloso pela **razão valor por peso** é ótimo. Capacidade 5, objetos A (peso 4, valor 6, razão 1,5), B (peso 3, valor 5, razão 1,67) e C (peso 2, valor 4, razão 2,0). Por ordem de razão: leva C inteiro (peso 2, sobram 3), leva B inteiro (peso 3, sobram 0). Valor total: **9**, com a mochila exatamente cheia. Confirma que nada bate isto: qualquer fração de A no lugar de B ou C troca razão 1,67 ou 2,0 por 1,5 e baixa o total. Repara no contraste com a [mochila 0-1 da força bruta](/cadeiras/da/forca-bruta/): sem frações, a razão engana e o ótimo AD não é o que o guloso escolheria primeiro. A fração é a condição que torna o guloso seguro aqui.
+### Por que juntar os dois mínimos
 
-O programa abaixo ordena por razão e enche. A saída mostra a ordem 2, 1 (os objetos C e B) e o total 9. Troca a capacidade para 6 e confirma que o guloso passa a levar uma fração de A e o total sobe para 10,5.
+Numa árvore ótima, escolhe duas folhas irmãs de profundidade máxima. Trocar símbolos para colocar ali os dois menos frequentes não aumenta o custo: se uma frequência menor passa para uma profundidade maior enquanto a maior sobe, a variação é não positiva. Existe, assim, uma árvore ótima em que os dois mínimos são irmãos.
 
-<CodePlayground
-  language="cpp"
-  title="Guloso da mochila fracionária"
-  code={
-    '#include <iostream>\n\nint main() {\n    double peso[3] = {4, 3, 2}, valor[3] = {6, 5, 4};\n    int ordem[3] = {0, 1, 2};\n    for (int i = 0; i < 3; i++)\n        for (int j = i + 1; j < 3; j++)\n            if (valor[ordem[j]] / peso[ordem[j]] > valor[ordem[i]] / peso[ordem[i]]) {\n                int t = ordem[i]; ordem[i] = ordem[j]; ordem[j] = t;\n            }\n    double cap = 5, total = 0;\n    for (int k = 0; k < 3 && cap > 0; k++) {\n        int i = ordem[k];\n        double leva = peso[i] < cap ? peso[i] : cap;\n        std::cout << "objeto " << i << \": leva \" << leva << \"\\n\";\n        total += leva / peso[i] * valor[i];\n        cap -= leva;\n    }\n    std::cout << \"total: \" << total << \"\\n\";\n}'
-  }
-/>
+Contrai os dois numa folha de frequência $f_a+f_b$. O custo da árvore original é o custo da contraída mais $f_a+f_b$. Se a árvore contraída não fosse ótima, substituí-la por uma melhor melhoraria a original. A fusão é uma escolha segura e reduz o problema.
 
-:::warning[O erro clássico]
-Apresentar um guloso sem discutir a escolha. "Escolho o mais barato em cada passo" não é uma prova. Mostra a escolha, mostra por que existe um ótimo que a contém (ou o contraexemplo que prova que não há) e só depois analisa o custo.
-:::
-
-## Quando o sistema ajuda e quando não ajuda
-
-O mesmo algoritmo, dois sistemas de moedas. No canónico, a regularidade paga; no sistema com 3 e 4, a primeira decisão mata a solução.
-
-<Tabs id="sistemas-moedas" labels={['Sistema canónico', 'Sistema 3 e 4']}>
-  <div slot="panel-0">
-
-Para 87 com 1, 2, 5, 10, 20 e 50, o guloso acerta: 50, 20, 10, 5 e 2, cinco moedas. Cada moeda grande vale sempre mais do que qualquer combinação de pequenas que a substitua, por isso nenhuma troca melhora o resultado e a prova por troca de argumentos fecha.
-
-  </div>
-  <div slot="panel-1">
-
-Para 6 com 3 e 4, o guloso escolhe 4, restam 2 e não há continuação. O ótimo é 3 + 3. Aqui uma moeda grande (4) vale menos do que a combinação de pequenas que a substitui (3 + 3 = 6 com duas moedas contra uma escolha morta), por isso a escolha local não é segura e o guloso nem sequer devolve uma solução válida.
-
-  </div>
-</Tabs>
-
-## Exemplo com intervalos: seleção de atividades
-
-Tens quatro atividades com início e fim: A (1, 3), B (2, 4), C (3, 5) e D (4, 6). Queres o maior conjunto sem sobreposições. O guloso ordena pelo **fim mais cedo** e escolhe cada atividade que comece depois do fim da última escolhida: A termina às 3, B começa às 2 e sai; C começa às 3 e entra; D começa às 4, antes do fim de C (5), e sai. Resultado: **{'{'}A, C{'}'}**, duas atividades, e não há conjunto maior (as alternativas de tamanho 2, como B com D, empatam sem bater).
-
-A prova é de avanço: depois de $k$ escolhas, o guloso termina sempre não mais tarde do que a $k$-ésima atividade de qualquer solução ótima, por isso nunca fica com menos escolhas. O critério "fim mais cedo" é a escolha segura; "duração mais curta" ou "começo mais cedo" falham em contraexemplos pequenos que deves saber construir.
-
-## Para saber mais
-
-- Notas sobre o paradigma guloso com prova por troca, de Paulo Feofiloff (IME-USP): [Algoritmos gulosos](https://www.ime.usp.br/~pf/analise_de_algoritmos/aulas/guloso.html).
-- Aula do MIT 6.046 sobre gulosos e árvores de suporte mínimas: [Greedy algorithms](https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/resources/lecture-12-greedy-algorithms-minimum-spanning-tree/).
+A heap dá $O(n\log n)$ tempo e $O(n)$ espaço. Empates podem produzir códigos diferentes com o mesmo custo. Com um único símbolo, a árvore teria profundidade zero; um formato de ficheiro real deve definir como representar repetições desse símbolo, por exemplo com um código de um bit e comprimento explícito. A árvore sozinha não define todo o formato de compressão.

@@ -1,83 +1,126 @@
 ---
 title: Cheat sheet de DA
-description: Condições, recorrências e custos para rever as técnicas de Desenho de Algoritmos.
+description: Condições, invariantes, recorrências e custos para rever os algoritmos da cadeira.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: CheatSheetDA, SofiaViP
-      url: https://drive.google.com/file/d/1h1qIIanoFTq4eqf0IF37Lm2yIUWLiDSW/view
-    - title: Resumos DA, SofiaViP
-      url: https://drive.google.com/file/d/16ud8ahTmnaIdU1P_pU7FZSXrvGkf46nk/view
-  coverage: Consulta breve das técnicas e dos algoritmos presentes nos dois documentos de SofiaViP, com condições de aplicação e custos usuais.
-  gaps:
-    - Os documentos não identificam uma edição atual da cadeira; confirma o programa e a avaliação da tua ocorrência.
-    - Esta folha omite demonstrações, implementações completas e exemplos extensos; segue os links para as explicações.
+order: 1
 ---
 
-Usa esta folha para **escolher uma técnica e verificar as suas hipóteses**. Em cada custo, $n$ é o tamanho da entrada; nos grafos, $V$ e $E$ são os conjuntos de vértices e arestas. Os custos indicados dependem das estruturas de dados referidas.
+Nesta folha, $n=|V|$ e $m=|E|$ para grafos; noutras entradas, $n$ é o número de elementos. Os custos de grafos assumem listas de adjacência, salvo indicação. Consulta a explicação ligada quando precisares de derivar uma fórmula ou reconstruir uma solução.
 
-## Custos, estruturas e percursos
+## Escolher um algoritmo de grafos
 
-- $f(n)=O(g(n))$ dá um limite superior; $f(n)=\Omega(g(n))$, inferior; $f(n)=\Theta(g(n))$, ambos, para $n$ suficientemente grande e constantes positivas. Soma de fases: domina a mais cara. Ciclos aninhados: multiplica os respetivos números de iterações. [Rever a análise](/cadeiras/da/complexidade-estruturas/#a-régua-o-grande).
-- Numa **heap binária**, a altura é $\Theta(\log n)$; subir após inserção e descer após remoção custam $O(\log n)$. Os índices da folha original começam em 1: pai $\lfloor i/2\rfloor$, filhos $2i$ e $2i+1$. Com índices desde 0, estas fórmulas mudam.
-- **DFS** e **BFS** custam $O(V+E)$ com listas de adjacência. A ordenação topológica só existe num grafo dirigido acíclico; o algoritmo de Kahn remove vértices de grau de entrada zero e deteta ciclos se não remover todos. As componentes fortemente conexas de um grafo dirigido também se obtêm em $O(V+E)$ com duas DFS, a segunda no grafo transposto e pela ordem inversa de conclusão da primeira.
+| Problema                          | Método                                                                           | Condição                                           | Tempo                                                    |
+| --------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
+| Menor número de arestas desde $s$ | [BFS](/cadeiras/da/grafos-percursos/#bfs-e-caminhos-sem-pesos)                   | Pesos ignorados ou iguais                          | $O(n+m)$                                                 |
+| Percurso, ciclos dirigidos        | [DFS](/cadeiras/da/grafos-percursos/#dfs-tempos-e-ciclos)                        | Aresta para cinzento deteta ciclo dirigido         | $O(n+m)$                                                 |
+| Ordenar dependências              | [Kahn/DFS](/cadeiras/da/grafos-percursos/#ordena%C3%A7%C3%A3o-topol%C3%B3gica)   | DAG; Kahn deve emitir todos                        | $O(n+m)$                                                 |
+| Componentes fortemente conexas    | [Kosaraju/Tarjan](/cadeiras/da/grafos-percursos/#componentes-fortemente-conexas) | Grafo dirigido                                     | $O(n+m)$                                                 |
+| MST                               | [Kruskal](/cadeiras/da/arvores-abrangentes/#kruskal)                             | Não dirigido; admite pesos negativos               | $O(m\log m+n)$                                           |
+| MST                               | [Prim](/cadeiras/da/arvores-abrangentes/#prim)                                   | Não dirigido; reiniciar para floresta              | $O((n+m)\log n)$ com decreaseKey, ou $O(n^2)$ com matriz |
+| Caminhos de uma origem            | [Dijkstra](/cadeiras/da/caminhos-minimos/#dijkstra)                              | Pesos não negativos                                | $O((n+m)\log n)$ com decreaseKey                         |
+| Caminhos de uma origem            | [Bellman-Ford](/cadeiras/da/caminhos-minimos/#pesos-negativos-e-bellman-ford)    | Admite negativos; deteta ciclo negativo alcançável | $O(nm)$                                                  |
+| Caminhos num DAG                  | [Ordem topológica](/cadeiras/da/caminhos-minimos/#caminhos-num-dag)              | Admite negativos, sem ciclos                       | $O(n+m)$                                                 |
+| Todos os pares                    | [Floyd-Warshall](/cadeiras/da/caminhos-minimos/#floyd-warshall)                  | Diagonal negativa denuncia ciclo negativo          | $\Theta(n^3)$                                            |
+| Todos os pares esparsos           | [Johnson](/cadeiras/da/caminhos-minimos/#johnson)                                | Sem ciclos negativos                               | $O(nm+n(n+m)\log n)$ com decreaseKey                     |
+| Fluxo máximo                      | [Edmonds-Karp](/cadeiras/da/fluxo-maximo/#ford-fulkerson-e-edmonds-karp)         | Capacidade não negativa; BFS residual              | $O(nm^2)$                                                |
 
-## Divisão e conquista
+A heap com entradas duplicadas em Dijkstra pode guardar $O(m)$ pares e custar $O(n+m\log(m+1))$. Não alteres uma chave dentro da heap sem a reorganizar. MST minimiza o custo total das ligações; uma árvore de caminhos mínimos minimiza distâncias desde uma raiz.
 
-Escreve a recorrência como $T(n)=aT(n/b)+f(n)$: $a$ subproblemas de tamanho $n/b$, mais o trabalho de dividir e combinar. Em merge sort, $T(n)=2T(n/2)+\Theta(n)=\Theta(n\log n)$. Nas Torres de Hanói, $T(n)=2T(n-1)+\Theta(1)=\Theta(2^n)$; **não** se aplica o Teorema Mestre a $n-1$. [Ver a combinação e o teorema](/cadeiras/da/divisao-conquista/#a-caixa-do-teorema-mestre).
+## Estados e certificados em grafos
 
-Para $f(n)=\Theta(n^c)$, compara $c$ com $\log_b a$:
+- **BFS:** marcar ao inserir; fila por distância crescente. Pai reconstrói caminho; inalcançável não tem distância zero.
+- **DFS:** branco, cinzento, preto. Num grafo não dirigido, não contar a própria aresta do pai como ciclo.
+- **Kosaraju:** DFS completa em $G$, términos; DFS em $G^T$ por términos decrescentes.
+- **Tarjan:** filho novo atualiza por `low[v]`; vizinho já na pilha atualiza por `index[v]`; vizinho fora da pilha não reduz `low`. Raiz quando `low[u] == index[u]`.
+- **MST:** corte respeitado por $A$ não tem arestas de $A$ a atravessá-lo. A mais leve desse corte é segura se $A$ já pode ser completado para uma MST. Ser acíclica só não basta.
+- **Bellman-Ford:** até $n-1$ passagens; uma passagem adicional com melhoria a partir de origem alcançável denuncia ciclo negativo.
+- **Fluxo:** capacidade direta residual $c-f$, inversa $f$. Aumentar pelo menor residual do caminho. Sem caminho residual, alcançáveis de $s$ dão corte mínimo.
 
-| Condição     | Custo                                                                      |
-| ------------ | -------------------------------------------------------------------------- |
-| $c<\log_b a$ | $\Theta(n^{\log_b a})$                                                     |
-| $c=\log_b a$ | $\Theta(n^c\log n)$                                                        |
-| $c>\log_b a$ | $\Theta(n^c)$, se o termo não recursivo cumprir a condição de regularidade |
+O valor do fluxo é saída líquida de $s$. A capacidade de um corte soma só as arestas de $S$ para $T$. Um fluxo e um corte com o mesmo valor certificam otimalidade.
 
-## Escolhas gulosas e árvores geradoras
+## Caminhos e transformações
 
-Uma escolha local só dá um ótimo global quando consegues justificar a **propriedade da escolha gulosa** e a **subestrutura ótima**. Na mochila **fracionária**, ordena por $v_i/w_i$, enche por essa ordem e fraciona apenas o último objeto; custa $O(n\log n)$ com ordenação. A mesma regra não resolve, em geral, a mochila 0-1. [Ver o critério e o contraexemplo](/cadeiras/da/algoritmos-gulosos/#exemplo-com-critério-mochila-fracionária).
+Relaxação: se $d[u]$ é finito e $d[u]+w(u,v)<d[v]$, atualizar distância e predecessor.
 
-Numa árvore geradora mínima (MST), o grafo é **não dirigido e conexo**. A aresta mais leve que atravessa um corte é segura para **alguma** MST; a mais pesada de um ciclo pode ser excluída de **alguma** MST. Com empates, não afirmes que uma aresta pertence a todas as MST ou a nenhuma. Kruskal ordena arestas e junta componentes diferentes com union-find, $O(E\log E)$. Prim expande a árvore pela aresta mais leve que sai dela, $O(E\log V)$ com heap binária. Num grafo desconexo, ambos podem produzir uma floresta mínima, não uma única MST.
+[Floyd-Warshall](/cadeiras/da/caminhos-minimos/#floyd-warshall):
 
-## Caminhos mínimos
+$$D^{(k)}[i,j]=\min(D^{(k-1)}[i,j],D^{(k-1)}[i,k]+D^{(k-1)}[k,j]).$$
 
-**Relaxar** $(u,v)$ é substituir $d[v]$ por $d[u]+w(u,v)$ quando esse valor é menor; guarda também o predecessor. Os custos abaixo são para uma origem, salvo indicação contrária.
+$k$ é o ciclo exterior. Guarda `next[i][j]` para reconstruir. Se um ciclo negativo é alcançável de $i$ e alcança $j$, esse par não tem mínimo finito.
 
-| Método         | Quando usar                                                                   | Custo                                 |
-| -------------- | ----------------------------------------------------------------------------- | ------------------------------------- |
-| Dijkstra       | Pesos não negativos; heap binária                                             | $O((V+E)\log V)$                      |
-| Bellman-Ford   | Admite pesos negativos; deteta ciclo negativo alcançável após $V-1$ passagens | $O(VE)$                               |
-| Floyd-Warshall | Todos os pares; sem ciclos negativos                                          | $O(V^3)$                              |
-| Johnson        | Todos os pares em grafo esparso com pesos negativos, mas sem ciclos negativos | $O(VE+V(V+E)\log V)$ com heap binária |
+[Johnson](/cadeiras/da/caminhos-minimos/#johnson): acrescentar origem com arestas zero, calcular $h$ por Bellman-Ford, usar $w'=w+h(u)-h(v)$ e recuperar $\delta(s,t)=\delta'(s,t)-h(s)+h(t)$. Somar uma constante a todas as arestas não preserva caminhos mínimos.
 
-Em Floyd-Warshall, $d_{ij}^{(k)}=\min(d_{ij}^{(k-1)},d_{ik}^{(k-1)}+d_{kj}^{(k-1)})$. Johnson acrescenta uma origem artificial, calcula potenciais $h$ com Bellman-Ford e usa $w'(u,v)=w(u,v)+h(u)-h(v)\ge0$ antes de correr Dijkstra a partir de cada vértice. **Pesos negativos isolados não causam ciclos infinitos em Dijkstra**; invalidam a sua garantia de correção.
+[Emparelhamento bipartido](/cadeiras/da/fluxo-maximo/#emparelhamento-bipartido): $s\to L\to R\to t$, capacidades 1. Fluxo inteiro corresponde a arestas escolhidas sem extremos repetidos. Máximo é maior cardinalidade; maximal só significa não poder acrescentar uma aresta diretamente.
 
-## Fluxo e emparelhamento
+## Técnicas e provas
 
-Numa rede, o fluxo respeita capacidades e conservação nos vértices internos. Numa **rede residual**, procura um caminho de $s$ a $t$, aumenta o fluxo pelo menor valor residual do caminho e atualiza também as arestas inversas. Ford-Fulkerson termina com capacidades inteiras em $O(E|f^*|)$, onde $|f^*|$ é o valor do fluxo máximo; com capacidades irracionais, a escolha arbitrária de caminhos pode não terminar. Edmonds-Karp usa BFS na rede residual e custa $O(VE^2)$. Um corte dá um limite superior ao fluxo, e fluxo máximo e capacidade mínima de corte coincidem.
+| Técnica                                                                                               | O que justificar                                                 | Exemplos                                                         |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [Força bruta](/cadeiras/da/forca-bruta/)                                                              | Todos os candidatos aparecem; validade antes de comparar         | Subconjuntos, intervalos, TSP                                    |
+| [Guloso](/cadeiras/da/algoritmos-gulosos/)                                                            | Existe ótimo com a escolha local; subproblema conserva estrutura | Fim mais cedo, densidade fracionária, duração crescente, Huffman |
+| [Divisão e conquista](/cadeiras/da/divisao-conquista/)                                                | Partição dos casos e combinação correta                          | Merge sort, cruzamento no subvetor máximo                        |
+| [Programação dinâmica](/cadeiras/da/programacao-dinamica/)                                            | Estado suficiente, base, alternativas e dependências             | Mochila, trocos, LCS, edição                                     |
+| [Retrocesso](/cadeiras/da/retrocesso-ramificacao/)                                                    | Nenhuma continuação válida no ramo podado                        | Excesso com positivos, restrições de rainhas                     |
+| [Branch and bound](/cadeiras/da/retrocesso-ramificacao/#branch-and-bound-dire%C3%A7%C3%A3o-do-limite) | Limite otimista para todas as continuações                       | Relaxação fracionária ou LP                                      |
 
-Para **emparelhamento bipartido máximo**, liga uma fonte à partição esquerda e a partição direita a um sorvedouro; põe capacidade 1 em todas as arestas. As arestas entre partições com fluxo 1 formam o emparelhamento. A formulação por fluxo não implica por si só o custo $O(VE)$: depende do algoritmo escolhido.
+Para maximizar: incumbente é limite inferior, nó tem limite superior; podar $U\le L$ para um ótimo. Para minimizar: incumbente é limite superior, nó tem limite inferior; podar quando este não melhora o incumbente. Para listar todos os ótimos, conservar empates.
 
-## Programação dinâmica
+## Recorrências de custo
 
-Define primeiro o **estado**, a **recorrência**, os **casos base** e a ordem de preenchimento. A subestrutura ótima permite decompor a solução; subproblemas repetidos justificam guardar resultados. [Ver mochila e LCS](/cadeiras/da/programacao-dinamica/#exemplo-completo-mochila-0-1-com-tabela).
+[Teorema mestre](/cadeiras/da/divisao-conquista/#teorema-mestre), $T(n)=aT(n/b)+f(n)$, $a\ge1$, $b>1$ constantes:
 
-- **Mochila 0-1.** Para os primeiros $i$ objetos e capacidade $w$, $D(i,w)=D(i-1,w)$ se $w_i>w$; caso contrário, $D(i,w)=\max(D(i-1,w),v_i+D(i-1,w-w_i))$. Base $D(0,w)=0$. Custo $O(nW)$ em tempo, **pseudopolinomial** porque $W$ é numérico.
-- **Subsequência comum mais longa.** $L(i,0)=L(0,j)=0$; se $x_i=y_j$, $L(i,j)=L(i-1,j-1)+1$; senão, $L(i,j)=\max(L(i-1,j),L(i,j-1))$. Custo $O(nm)$. Uma subsequência preserva a ordem, mas pode saltar posições.
-- **Troco mínimo.** Com moedas de valores positivos $c_i$, $C(0)=0$ e $C(w)=1+\min_{c_i\le w}C(w-c_i)$; estados impossíveis valem $+\infty$. Custo $O(kW)$ para $k$ denominações e alvo $W$. Confirma se as moedas são reutilizáveis; a variante 0-1 exige outro estado.
+| Trabalho fora das chamadas                                    | Solução                     |
+| ------------------------------------------------------------- | --------------------------- |
+| $O(n^{\log_ba-\varepsilon})$, $\varepsilon>0$                 | $\Theta(n^{\log_ba})$       |
+| $\Theta(n^{\log_ba})$                                         | $\Theta(n^{\log_ba}\log n)$ |
+| $\Omega(n^{\log_ba+\varepsilon})$ e $af(n/b)\le cf(n)$, $c<1$ | $\Theta(f(n))$              |
 
-## Procura, dificuldade e aproximação
+Hanoi: $H(n)=2H(n-1)+1=2^n-1$, fora deste formato. Exponenciação por quadrados: uma chamada de expoente metade, $O(\log(k+1))$ multiplicações. Máscaras com somas recalculadas: $\Theta(n2^n)$; recursão binária com totais incrementais: $\Theta(2^n)$ antes de cópias. TSP dirigido com origem fixa: $(n-1)!$ circuitos, custo direto $\Theta(n!)$.
 
-**Retrocesso** percorre a árvore de decisões e corta estados que já violam restrições. **Branch and bound** corta também um ramo quando o seu limite otimista não consegue superar a melhor solução conhecida. Um limite só serve para poda se for válido para **todos** os descendentes do ramo. O pior caso continua exponencial. [Ver a poda](/cadeiras/da/retrocesso-ramificacao/#ramificação-com-poda-cortar-por-limite).
+## Estados de programação dinâmica
 
-Um problema de **decisão** responde sim/não; em **otimização**, procura-se o melhor valor. Para provar que $B$ é NP-completo, mostra $B\in\mathrm{NP}$ e reduz em tempo polinomial um problema NP-completo conhecido $A$ **a $B$**. A direção $A\le_p B$ é decisiva: uma solução eficiente para $B$ resolveria $A$. NP-hard não implica pertencer a NP. [Ver reduções](/cadeiras/da/complexidade-aproximacao/#reduzir-para-reconhecer).
+| Problema                                                                       | Estado e transição                                                       | Custo           |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | --------------- |
+| Mochila 0-1                                                                    | $F[i,w]=\max(F[i-1,w],v_i+F[i-1,w-p_i])$ se cabe; caso contrário excluir | $O(nW)$         |
+| Trocos ilimitados                                                              | $C[i,t]=\min(C[i-1,t],1+C[i,t-c_i])$                                     | $O(nT)$         |
+| Trocos limitados                                                               | $\min_q(q+C[i-1,t-qc_i])$, $q\le s_i$                                    | $O(nTS)$ direto |
+| Soma de subconjuntos                                                           | Excluir OU incluir a partir da linha anterior                            | $O(nT)$         |
+| Subvetor não vazio                                                             | $E[i]=\max(A[i],E[i-1]+A[i])$; máximo sobre $i$                          | $O(n)$          |
+| [LCS](/cadeiras/da/sequencias-dinamica/#subsequ%C3%AAncia-comum-mais-longa)    | Iguais: diagonal +1; diferentes: máximo de cima e esquerda               | $O(             | X   |           | Y   | )$  |
+| [Edição](/cadeiras/da/sequencias-dinamica/#dist%C3%A2ncia-de-edi%C3%A7%C3%A3o) | Mínimo de remover, inserir, manter/substituir                            | $O(             | X   |           | Y   | )$  |
+| [Matrizes](/cadeiras/da/sequencias-dinamica/#cadeia-de-matrizes)               | $M[i,j]=\min_k(M[i,k]+M[k+1,j]+p_{i-1}p_kp_j)$                           | $O(n^3)$        |
+| [CYK](/cadeiras/da/linguagens-dinamica/#cyk-e-forma-normal-de-chomsky)         | Não-terminais por segmento; todas as divisões e produções binárias       | $O(n^3          | P   | )$ direto |
 
-Para uma solução viável de custo $C$ e ótimo $C^*>0$, uma garantia de aproximação $\rho\ge1$ exige $C/C^*\le\rho$ em minimização, ou $C^*/C\le\rho$ em maximização. A garantia vale para todas as entradas abrangidas pelas hipóteses, não apenas para exemplos. [Ver as garantias](/cadeiras/da/complexidade-aproximacao/#aproximar-com-garantia).
+Bases: mochila zero; trocos alvo zero com zero moedas e alvo positivo sem moedas com infinito; LCS prefixo vazio zero; edição prefixo vazio custa o comprimento do outro. Reconstruir exige pais, decisões ou divisões. Reduzir memória pode eliminar essa informação.
 
-## Programação linear
+$O(nW)$ e $O(nT)$ são pseudopolinomiais quando capacidade/alvo estão codificados em binário. Uma string com vários não-terminais numa célula CYK não prova ambiguidade; é preciso mais de uma árvore a partir do inicial.
 
-Escreve **variáveis**, **função objetivo** e **restrições lineares**. A região viável é convexa; pode ser vazia ou ilimitada. Se um ótimo finito existir num poliedro com vértices, existe um ótimo num vértice, mas pode haver vários ótimos. Trocar maximização por minimização muda o sinal da função objetivo; $a^Tx\ge b$ equivale a $-a^Tx\le-b$. Uma igualdade pode ser escrita como duas desigualdades. [Ver a modelação](/cadeiras/da/programacao-linear/#modelar-em-três-passos).
+[Kleene](/cadeiras/da/linguagens-dinamica/#constru%C3%A7%C3%A3o-de-kleene):
 
-Na forma padrão, acrescenta uma **variável de folga** a uma restrição $a^Tx\le b$ para obter $a^Tx+s=b$, $s\ge0$. O simplex trabalha com variáveis básicas e não básicas; uma solução básica inicial só é utilizável se for viável. Na **programação inteira**, exigir variáveis inteiras muda o problema: o ótimo da relaxação linear pode ser fracionário e dá apenas um limite para a formulação inteira. [Ver a passagem a inteiros](/cadeiras/da/programacao-linear/#o-salto-para-inteiros).
+$$R_{ij}^{(k)}=R_{ij}^{(k-1)}\mid R_{ik}^{(k-1)}(R_{kk}^{(k-1)})^*R_{kj}^{(k-1)}.$$
+
+Inicializar transições diretas e $\varepsilon$ na diagonal; união até aos estados finais. $O(n^3)$ combinações não limita o tamanho do texto expandido.
+
+## Complexidade e aproximação
+
+[Classes e reduções](/cadeiras/da/complexidade-aproximacao/#decis%C3%A3o-certificados-e-classes): P resolve em tempo polinomial; NP verifica certificado polinomial. NP-completo = NP e NP-difícil. $A\le_p B$ transforma A em B, logo um solver de B resolve A. Para provar dificuldade de B, reduzir um problema difícil **para B**.
+
+| Aproximação                                                | Garantia      | Hipótese decisiva                                                    |
+| ---------------------------------------------------------- | ------------- | -------------------------------------------------------------------- |
+| Cobertura: dois extremos de cada aresta escolhida          | $C\le2OPT$    | Arestas escolhidas formam emparelhamento                             |
+| Mochila: melhor entre prefixo por densidade e maior objeto | $C\ge OPT/2$  | Descartar objetos que não cabem; limite fracionário                  |
+| TSP: duplicar MST e atalhar                                | $C\le2OPT$    | Completo, não dirigido, pesos não negativos, desigualdade triangular |
+| Cobertura de conjuntos por maior ganho                     | $C\le H_dOPT$ | Custos unitários e universo coberto pela família                     |
+
+Um PTAS é polinomial na entrada para precisão fixa; um FPTAS também é polinomial em $1/\varepsilon$. Heurística não implica garantia.
+
+## LP e ILP
+
+[LP](/cadeiras/da/programacao-linear/): $\max c^Tx$, $Ax\le b$, $x\ge0$. Forma slack acrescenta folgas. Simplex escolhe entrada que melhora, saída pela menor razão válida, substitui em todas as equações. Sem limite para uma entrada que melhora: objetivo ilimitado. Base inicial com folga negativa exige fase I, não prova inviabilidade. Degenerescência pode dar ciclos; Bland evita-os.
+
+Dual: $\min b^Ty$, $A^Ty\ge c$, $y\ge0$. Admissíveis primal e dual com objetivos iguais certificam o ótimo. Região ilimitada pode ter ótimo finito.
+
+[ILP](/cadeiras/da/programacao-inteira/): relaxação LP dá limite superior em maximização e inferior em minimização. Ramificar variável fracionária $a$ em $x\le\lfloor a\rfloor$ e $x\ge\lceil a\rceil$. Corte deve conservar todos os inteiros. Arredondar coordenadas não garante viabilidade nem otimalidade.
+
+Corte de Gomory, para linha puramente inteira e variáveis não negativas: $x_B+\sum a_jx_j=b$ dá $\sum\{a_j\}x_j\ge\{b\}$, com $\{r\}=r-\lfloor r\rfloor$.

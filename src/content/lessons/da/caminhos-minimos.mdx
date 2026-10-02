@@ -1,0 +1,117 @@
+---
+title: Caminhos mínimos
+description: Relaxação, Dijkstra, Bellman-Ford, DAG, Floyd-Warshall e Johnson, com condições e reconstrução.
+section: conteudo
+order: 6
+practices:
+  - da/praticar-caminhos
+---
+
+import Dot from '../../../components/Dot.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import grafo from '../../da/caminhos.dot?raw';
+import programa from '../../da/dijkstra.cpp?raw';
+
+O custo de um caminho é a soma dos pesos das suas arestas. Queremos minimizar esse custo a partir de uma origem $s$, ou entre todos os pares. A escolha do algoritmo depende de pesos negativos, ciclos e densidade do grafo.
+
+## Relaxação e predecessores
+
+Inicializamos $d[s]=0$ e $d[v]=+\infty$ para os outros vértices. Relaxar a aresta $u\to v$ de peso $w$ significa testar se
+
+$$d[u]+w<d[v].$$
+
+Se melhorar, atribuímos $d[v]=d[u]+w$ e `pai[v]=u`. Só fazemos a soma quando $d[u]$ é finito. Cada valor finito é o custo de algum caminho já encontrado; portanto é um limite superior para a distância mínima verdadeira. A relaxação melhora esse limite, não certifica sozinha que ele já é ótimo.
+
+Para reconstruir $s\to t$, seguimos os pais a partir de $t$ e invertemos a sequência. Um destino inalcançável não tem caminho. A origem tem o caminho de zero arestas. Atualizar apenas em melhoria estrita evita alterações desnecessárias em empates e ajuda a manter a cadeia de pais.
+
+## Dijkstra
+
+Dijkstra exige **pesos não negativos**. Mantém vértices definitivos e escolhe o não definitivo com menor distância provisória. Quando escolhe $u$, a sua distância passa a definitiva; relaxa depois as arestas que saem de $u$.
+
+Por que pode fixá-la? Considera um caminho mínimo para $u$ e o primeiro vértice $y$ desse caminho que ainda não é definitivo. O predecessor de $y$ já foi processado e relaxou a entrada em $y$. O restante caminho até $u$ tem custo não negativo. Como Dijkstra escolheu $u$ antes de $y$, temos $d[u]\le d[y]\le\delta(s,u)$; como $d[u]$ é o custo de um caminho, a desigualdade oposta também vale. Logo $d[u]=\delta(s,u)$.
+
+<Dot
+  source={grafo}
+  alt="Grafo dirigido com s a peso 4, s b peso 1, b a peso 2, b c peso 5, a c peso 1 e c t peso 3."
+/>
+
+| Vértice fixado | $d[a]$ | $d[b]$ | $d[c]$   | $d[t]$   |
+| -------------- | ------ | ------ | -------- | -------- |
+| $s$            | 4      | 1      | $\infty$ | $\infty$ |
+| $b$            | 3      | 1      | 6        | $\infty$ |
+| $a$            | 3      | 1      | 4        | $\infty$ |
+| $c$            | 3      | 1      | 4        | 7        |
+| $t$            | 3      | 1      | 4        | 7        |
+
+O caminho mínimo para $t$ é $s,b,a,c,t$, custo 7. A entrada antiga de $a$ com distância 4 pode continuar na heap; quando sair, devemos ignorá-la.
+
+O programa usa vértices 0 a `n-1`. Lê `n m origem destino`, depois arestas dirigidas `u v peso`. Rejeita pesos negativos, aceita pesos zero e arestas paralelas. Os limites declarados são 2000 vértices, 20000 arestas e pesos até um milhão.
+
+<CodePlayground
+  language="cpp"
+  title="Dijkstra com entradas antigas na heap"
+  code={programa}
+  input={'5 6 0 4\n0 1 4\n0 2 1\n2 1 2\n2 3 5\n1 3 1\n3 4 3'}
+/>
+
+A saída é `distancia 7` e `caminho 0 2 1 3 4`. Com `m=0` e origem diferente do destino, devolve `sem caminho`.
+
+Uma heap com uma entrada por vértice e `decreaseKey` dá $O((n+m)\log n)$. A variante publicada pode criar $O(m)$ entradas e custa $O(n+m\log(m+1))$ tempo e $O(n+m)$ memória, incluindo a heap e o grafo. Para grafos simples é comum expressar o tempo como $O((n+m)\log n)$. Com matriz e escolha linear do mínimo, o custo é $O(n^2)$.
+
+## Pesos negativos e Bellman-Ford
+
+No grafo $s\to a$ de peso 2, $s\to b$ de peso 5 e $b\to a$ de peso $-4$, Dijkstra fixa $a$ com 2 antes de processar $b$. A distância correta é 1. Não há ciclo negativo: uma única aresta negativa já destrói a prova de Dijkstra.
+
+Bellman-Ford aceita pesos negativos. Relaxa todas as arestas repetidamente, no máximo $n-1$ passagens. Depois da passagem $k$, já obteve caminhos tão bons como os melhores caminhos com até $k$ arestas. Se não há ciclos negativos alcançáveis, um caminho mínimo pode ser simples e ter no máximo $n-1$ arestas. Esta é a razão do limite de passagens.
+
+Para o grafo anterior, se a ordem das arestas for $s\to a$, $b\to a$, $s\to b$, a primeira passagem produz $(d[a],d[b])=(2,5)$; a segunda produz $(1,5)$. Uma terceira não muda nada. Se uma passagem não faz alterações, podemos terminar mais cedo.
+
+Faz ainda uma passagem de diagnóstico. Se uma aresta com origem alcançável continua a melhorar, há um ciclo negativo alcançável de $s$. Os vértices desse ciclo e os que ele alcança não têm distância mínima finita: dar mais voltas diminui o custo sem limite. Um ciclo negativo numa componente inalcançável não afeta o problema dessa origem.
+
+O custo é $O(nm)$ tempo e $O(n)$ memória auxiliar. Para assinalar todos os destinos afetados, recolhe os vértices melhoráveis e percorre as suas saídas. Não devolvas uma cadeia de predecessores como caminho mínimo quando ela pode atravessar o ciclo negativo.
+
+## Caminhos num DAG
+
+Num DAG, processa os vértices em ordem topológica e relaxa as saídas de cada um. Quando chega a vez de $v$, todos os possíveis predecessores já foram processados. Por isso $d[v]$ já é final, mesmo com pesos negativos. Não há ciclos que exijam voltar atrás.
+
+Ordenação e relaxações custam $O(n+m)$. Vértices anteriores à origem na ordem podem permanecer inalcançáveis; as suas saídas não devem produzir somas com infinito. O método é também programação dinâmica sobre um DAG.
+
+## Floyd-Warshall
+
+Para todos os pares, define $D^{(k)}[i,j]$ como o menor custo usando apenas vértices $1,\ldots,k$ como **intermédios**. Os extremos $i$ e $j$ não ficam sujeitos a essa restrição. Inicializa $D^{(0)}[i,i]=0$, as arestas diretas com o menor peso paralelo e os restantes pares com infinito.
+
+Um melhor caminho ou não usa $k$, ou divide-se em $i\to k$ e $k\to j$. Assim,
+
+$$D^{(k)}[i,j]=\min\left(D^{(k-1)}[i,j],D^{(k-1)}[i,k]+D^{(k-1)}[k,j]\right).$$
+
+O ciclo de $k$ deve ser o **exterior**, para conservar o significado do estado. Sem ciclos negativos, podemos atualizar a mesma matriz. O custo é $\Theta(n^3)$ tempo e $\Theta(n^2)$ espaço.
+
+Com $a\to b=4$, $b\to c=-2$, $a\to c=5$, $c\to a=3$, começamos com
+
+$$D^{(0)}=\begin{pmatrix}0&4&5\\\infty&0&-2\\3&\infty&0\end{pmatrix}.$$
+
+Permitir $a$ cria $c\to b=7$; permitir $b$ melhora $a\to c$ para 2; permitir $c$ cria $b\to a=1$. A matriz final é
+
+$$D=\begin{pmatrix}0&4&2\\1&0&-2\\3&7&0\end{pmatrix}.$$
+
+Para reconstruir, guarda `next[i][j]`, o primeiro passo de $i$ para $j$. Numa melhoria através de $k$, atribui `next[i][j] = next[i][k]`. Um par infinito continua sem caminho. Se no fim $D[k,k]<0$, há um ciclo negativo. Todo o par com $i\leadsto k$ e $k\leadsto j$ é afetado; as entradas numéricas calculadas para esses pares não representam distâncias mínimas finitas.
+
+Se só queremos alcançabilidade, a mesma estrutura dá o fecho transitivo: troca mínimo por OU e soma por E. Inicializar a diagonal a verdadeiro inclui caminhos de comprimento zero.
+
+## Johnson
+
+Johnson calcula todos os pares num grafo esparso, admitindo arestas negativas mas rejeitando ciclos negativos. Não podemos somar uma constante a cada aresta: caminhos com mais arestas seriam penalizados mais vezes, podendo trocar a ordem dos custos.
+
+Acrescenta uma origem $q$ com arestas de peso zero para todos os vértices. Corre Bellman-Ford e define os potenciais $h(v)=\delta(q,v)$. Se detetar ciclo negativo, termina. Caso contrário, transforma cada peso em
+
+$$w'(u,v)=w(u,v)+h(u)-h(v).$$
+
+Como $h(v)\le h(u)+w(u,v)$, temos $w'(u,v)\ge0$. Num caminho de $s$ a $t$, os potenciais internos cancelam-se, pelo que $w'(P)=w(P)+h(s)-h(t)$. Todos os caminhos com os mesmos extremos recebem a mesma diferença, conservando o caminho mínimo.
+
+Corre Dijkstra a partir de cada origem com $w'$ e recupera
+
+$$\delta(s,t)=\delta'(s,t)-h(s)+h(t).$$
+
+No exemplo $a\to b=-2$, $b\to c=3$, $a\to c=4$, os potenciais são $(0,-2,0)$ e os novos pesos são 0, 1 e 4. A distância transformada $a\to c$ é 1 e a original também é 1. Para $b\to c$, a distância transformada 1 recupera $1-(-2)+0=3$.
+
+Com heap binário e `decreaseKey`, a complexidade é $O(nm+n(n+m)\log n)$, incluindo Bellman-Ford e as $n$ execuções de Dijkstra. A matriz de respostas ocupa $\Theta(n^2)$, mesmo que o grafo seja esparso. Johnson é mais adequado a grafos esparsos; Floyd-Warshall oferece uma implementação direta com custo cúbico.

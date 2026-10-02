@@ -1,0 +1,108 @@
+---
+title: Sequências e cadeias de matrizes
+description: LCS, distância de edição e parentização de matrizes, com tabelas e reconstrução.
+section: conteudo
+order: 10
+practices:
+  - da/praticar-sequencias
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import programa from '../../da/edicao.cpp?raw';
+
+Os estados de programação dinâmica podem ser prefixos de duas sequências ou intervalos de uma cadeia. Em cada caso, precisamos de explicar que informação a célula guarda e qual é a última decisão que divide a solução.
+
+## Subsequência comum mais longa
+
+Uma subsequência conserva a ordem, mas pode omitir elementos. `ACD` é subsequência de `ABCD`; não é um subvetor contíguo. A **LCS** de duas sequências é uma subsequência comum de comprimento máximo.
+
+Define $L[i,j]$ como o comprimento da LCS dos primeiros $i$ símbolos de $X$ e dos primeiros $j$ de $Y$. Os índices $i,j$ são comprimentos, pelo que $X[i-1]$ e $Y[j-1]$ são os últimos símbolos desses prefixos.
+
+$$
+L[i,j]=\begin{cases}
+0,&i=0\text{ ou }j=0,\\
+1+L[i-1,j-1],&X[i-1]=Y[j-1],\\
+\max(L[i-1,j],L[i,j-1]),&X[i-1]\ne Y[j-1].
+\end{cases}
+$$
+
+Quando os últimos símbolos coincidem, existe uma LCS que os emparelha: uma LCS que usasse uma ocorrência anterior pode deslocar esse emparelhamento para os últimos sem perder a ordem. Quando diferem, não podem ser os dois o último símbolo comum; pelo menos um fica de fora. As duas exclusões cobrem as alternativas.
+
+Para $X=\texttt{ABCD}$ e $Y=\texttt{BACD}$:
+
+| $X\backslash Y$ | vazio | B   | A   | C   | D   |
+| --------------- | ----- | --- | --- | --- | --- |
+| vazio           | 0     | 0   | 0   | 0   | 0   |
+| A               | 0     | 0   | 1   | 1   | 1   |
+| B               | 0     | 1   | 1   | 1   | 1   |
+| C               | 0     | 1   | 1   | 2   | 2   |
+| D               | 0     | 1   | 1   | 2   | 3   |
+
+O comprimento é 3. Para reconstruir, começa em $(4,4)$. D e C coincidem, portanto guarda-os e recua na diagonal. Em $(2,2)$ há empate entre cima e esquerda; escolher cima encontra A e dá `ACD`; escolher esquerda encontra B e dá `BCD`. Inverte os símbolos guardados. O empate representa várias soluções ótimas, não um erro.
+
+O tempo e a tabela são $O(|X||Y|)$. Duas linhas chegam para o comprimento, mas deixam de guardar o percurso completo de reconstrução. Uma string vazia tem LCS de comprimento zero com qualquer outra.
+
+## Distância de edição
+
+A distância de Levenshtein é o mínimo número de inserções, remoções e substituições para transformar $X$ em $Y$. Cada operação custa 1; manter um símbolo igual custa 0. Outros custos definem outro problema.
+
+Define $D[i,j]$ para os primeiros $i$ símbolos de $X$ e os primeiros $j$ de $Y$. Temos $D[i,0]=i$, porque removemos todos, e $D[0,j]=j$, porque inserimos todos.
+
+$$
+D[i,j]=\min\begin{cases}
+D[i-1,j]+1&\text{remover }X[i-1],\\
+D[i,j-1]+1&\text{inserir }Y[j-1],\\
+D[i-1,j-1]+[X[i-1]\ne Y[j-1]]&\text{manter ou substituir}.
+\end{cases}
+$$
+
+O símbolo entre parênteses retos vale 1 se a condição é verdadeira e 0 se é falsa. São as possíveis últimas operações da transformação. Não acrescentes automaticamente 1 à diagonal quando os símbolos já são iguais.
+
+Para `canto` e `gato`, a tabela é:
+
+| $X\backslash Y$ | vazio | g   | a   | t   | o   |
+| --------------- | ----- | --- | --- | --- | --- |
+| vazio           | 0     | 1   | 2   | 3   | 4   |
+| c               | 1     | 1   | 2   | 3   | 4   |
+| a               | 2     | 2   | 1   | 2   | 3   |
+| n               | 3     | 3   | 2   | 2   | 3   |
+| t               | 4     | 4   | 3   | 2   | 3   |
+| o               | 5     | 5   | 4   | 3   | 2   |
+
+A distância é 2. Uma transformação ótima substitui `c` por `g` e remove `n`. Guardar a operação escolhida permite reconstruir um alinhamento, incluindo inserções e remoções. O custo é $O(|X||Y|)$ tempo e espaço, ou $O(\min(|X|,|Y|))$ espaço para apenas a distância.
+
+<CodePlayground
+  language="cpp"
+  title="Distância de edição de duas palavras"
+  code={programa}
+  input={'canto\ngato'}
+/>
+
+Devolve `distancia 2`. Lê duas linhas, por isso uma linha vazia representa uma string vazia; mudar a entrada para `\ngato` deve dar 4. O exemplo limita cada linha a 500 bytes e trata bytes como símbolos. Para texto Unicode geral, um carácter pode ocupar vários bytes; seria necessário escolher e implementar uma unidade como pontos de código ou grafemas.
+
+Distância de edição não é LCS com outra designação. Se só inserções e remoções fossem permitidas, o custo mínimo seria $|X|+|Y|-2|LCS|$. Permitir substituição a custo 1 pode baixar esse valor: `a` para `b` custa 1, e não 2.
+
+## Cadeia de matrizes
+
+Queremos calcular $A_1A_2\cdots A_n$ com o menor número de multiplicações escalares. A ordem das matrizes permanece; mudamos apenas os parênteses. A multiplicação é associativa, mas a matriz intermédia e o custo dependem da parentização.
+
+Se $A_i$ tem dimensões $p_{i-1}\times p_i$, multiplicar uma matriz $r\times s$ por outra $s\times t$ custa $rst$ multiplicações escalares no algoritmo usual. Define $M[i,j]$ como o menor custo para a cadeia $A_i\cdots A_j$.
+
+$$M[i,i]=0,$$
+
+$$M[i,j]=\min_{i\le k<j}\left(M[i,k]+M[k+1,j]+p_{i-1}p_kp_j\right).$$
+
+A última multiplicação divide a cadeia depois de algum $k$. Se um dos lados não estivesse parentizado de forma ótima, substituí-lo por um melhor preservaria as dimensões e reduziria o total. Avaliar todos os $k$ encontra a melhor divisão.
+
+Preenche por comprimento crescente do intervalo. Guardar $K[i,j]$, o $k$ vencedor, permite reconstruir recursivamente os parênteses.
+
+Para $A:5\times10$, $B:10\times3$, $C:3\times12$:
+
+- $M[A,B]=5\cdot10\cdot3=150$.
+- $M[B,C]=10\cdot3\cdot12=360$.
+- Dividir $A\mid BC$ dá $0+360+5\cdot10\cdot12=960$.
+- Dividir $AB\mid C$ dá $150+0+5\cdot3\cdot12=330$.
+
+Escolhemos $(AB)C$, custo 330, e não $A(BC)$, custo 960. A resposta da tabela é um plano de cálculo; a tabela não calcula os elementos do produto.
+
+Há $\Theta(n^2)$ intervalos e até $O(n)$ divisões por intervalo, portanto $O(n^3)$ tempo e $O(n^2)$ espaço. Com uma matriz o custo é zero. Dimensões incompatíveis tornam a cadeia inválida antes de procurar uma parentização.

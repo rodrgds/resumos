@@ -1,0 +1,88 @@
+---
+title: Fluxo máximo e emparelhamento
+description: Capacidade, conservação, rede residual, Ford-Fulkerson, Edmonds-Karp e o certificado de corte mínimo.
+section: conteudo
+order: 7
+practices:
+  - da/praticar-fluxo
+---
+
+import InteractiveDemo from '../../../components/InteractiveDemo.astro';
+import FlowDemo from '../../da/FlowDemo.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import programa from '../../da/fluxo.cpp?raw';
+
+Uma rede dirigida transporta uma quantidade de uma origem $s$ até um destino $t$. Cada aresta tem uma capacidade $c(u,v)\ge0$. O fluxo $f(u,v)$ deve satisfazer $0\le f(u,v)\le c(u,v)$; em cada vértice intermédio, a soma que entra é igual à soma que sai.
+
+O valor do fluxo é a saída **líquida** de $s$: saída menos entrada. Pela conservação, é também a entrada líquida em $t$. Maximizar esse valor não é encontrar um caminho de capacidade máxima; vários caminhos podem partilhar arestas e transportar parcelas diferentes.
+
+## A rede residual permite corrigir decisões
+
+Se uma aresta tem capacidade 5 e já transporta 3, podemos acrescentar 2 no mesmo sentido. Também podemos cancelar até 3, representados por uma aresta residual no sentido inverso.
+
+Para cada aresta original $u\to v$, mantemos uma residual direta de capacidade $c-f$ e a sua inversa de capacidade $f$. Percorrer a inversa **reduz** o fluxo original, não envia fluxo negativo nessa aresta. A conservação continua válida quando fazemos esta alteração ao longo de um caminho completo.
+
+Se o grafo original também tem $v\to u$, são arestas originais diferentes. Uma implementação com pares de arestas residuais mantém separadas as inversas de cada uma e suporta arestas paralelas. Um índice para a aresta inversa evita confundi-las.
+
+## Aumentar ao longo de um caminho
+
+Um caminho aumentante liga $s$ a $t$ por arestas residuais com capacidade positiva. O máximo aumento possível é o gargalo
+
+$$\Delta=\min_{e\in P}c_f(e).$$
+
+Para cada aresta residual percorrida, subtrai $\Delta$ à sua capacidade e acrescenta $\Delta$ à capacidade da inversa. Isto conserva a possibilidade de desfazer a operação. O valor do fluxo aumenta exatamente $\Delta$.
+
+Na rede abaixo, os rótulos são `fluxo / capacidade`. Avança os passos. A primeira escolha usa $s,a,b,t$ com 2 unidades. Depois de outros dois aumentos, parece que $a\to t$ ainda tem espaço mas a saída $s\to a$ já está cheia. O último caminho $s,b,a,t$ usa a **inversa de $a\to b$** para cancelar uma unidade e redirecioná-la.
+
+<InteractiveDemo label="Aumentos de fluxo e cancelamento numa aresta residual inversa">
+  <FlowDemo />
+</InteractiveDemo>
+
+Os fluxos finais são $f(s,a)=3$, $f(s,b)=2$, $f(a,b)=1$, $f(a,t)=2$ e $f(b,t)=3$. Em $a$, entram 3 e saem $1+2$; em $b$, entram $2+1$ e saem 3. O valor é 5. Uma implementação que só percorresse as arestas originais ficaria presa no valor 4 desta sequência de escolhas.
+
+## Ford-Fulkerson e Edmonds-Karp
+
+**Ford-Fulkerson** é o método: começa com fluxo zero, encontra um caminho aumentante qualquer e aumenta pelo gargalo até não existir outro. Com capacidades inteiras, cada aumento acrescenta pelo menos uma unidade. Termina em no máximo $|f^*|$ aumentos, onde $|f^*|$ é o valor ótimo, com custo $O(m|f^*|)$ para procura de caminho linear.
+
+Este limite depende do valor numérico das capacidades, não apenas dos seus bits. Com capacidades irracionais e escolhas inadequadas, o método genérico pode não terminar. Não transfiras a garantia dos inteiros para qualquer representação real.
+
+**Edmonds-Karp** escolhe por BFS um caminho com o menor número de arestas residuais. Não escolhe o maior gargalo nem o menor custo ponderado.
+
+As distâncias em arestas a partir de $s$ na rede residual nunca diminuem entre aumentos. Cada aumento satura alguma aresta do caminho. Para a mesma aresta voltar a ser um gargalo no mesmo sentido, foi antes necessário usar a sua inversa, o que força um aumento de pelo menos dois na distância da sua origem. Essa distância é inferior a $n$ num caminho simples; cada aresta pode ser crítica $O(n)$ vezes. Existem $O(m)$ arestas, logo $O(nm)$ aumentos. Com BFS de $O(n+m)$ em cada iteração, obtemos o limite habitual $O(nm^2)$ para a parte relevante da rede. A representação usa $O(n+m)$ espaço.
+
+## Corte mínimo como prova do resultado
+
+Um corte $(S,T)$ tem $s\in S$, $t\in T$ e capacidade
+
+$$c(S,T)=\sum_{u\in S,\,v\in T}c(u,v).$$
+
+Conta só capacidades **de $S$ para $T$**, não as do sentido contrário. O fluxo líquido através do corte coincide com o valor do fluxo; as saídas são limitadas pelas capacidades e as entradas são não negativas. Por isso $|f|\le c(S,T)$ para todo o corte.
+
+Se não há caminho aumentante, toma $S$ como os alcançáveis de $s$ na rede residual. Toda a aresta original de $S$ para $T$ está saturada; toda a original de $T$ para $S$ tem fluxo zero, pois a sua inversa daria uma saída residual. Logo $|f|=c(S,T)$. Encontrámos simultaneamente um fluxo máximo e um corte mínimo.
+
+No exemplo, $S=\{s\}$ dá capacidade $3+2=5$. O fluxo de valor 5 atinge esse limite, certificando o ótimo. Não precisamos de enumerar todos os fluxos possíveis.
+
+## Implementação com inversas explícitas
+
+O programa lê `n m s t`, depois `m` linhas `u v capacidade`. Usa capacidades inteiras, até um milhão, com até 2000 vértices e 20000 arestas. Guarda para cada aresta o índice da inversa e, na BFS, guarda também o **índice da aresta**, não apenas o predecessor. Assim distingue arestas paralelas.
+
+<CodePlayground
+  language="cpp"
+  title="Edmonds-Karp e o lado da origem no corte mínimo"
+  code={programa}
+  input={'4 5 0 3\n0 1 3\n0 2 2\n1 2 2\n1 3 2\n2 3 3'}
+/>
+
+Devolve `fluxo 5` e `lado s: 0`. Se $t$ for inalcançável, devolve fluxo zero e um corte de capacidade zero. Rejeita `s == t`, porque este exemplo exige origem e destino distintos. Capacidades zero não criam caminhos aumentantes.
+
+## Emparelhamento bipartido
+
+Num grafo bipartido $L\cup R$, um emparelhamento escolhe arestas sem repetir extremos. **Máximo** significa maior cardinalidade possível. **Maximal** significa que já não podemos acrescentar uma aresta sem alterar as escolhidas; pode ser menor do que o máximo.
+
+Acrescenta $s$ e $t$. Liga $s$ a cada vértice de $L$, cada aresta original de $L$ para $R$ e cada vértice de $R$ a $t$, tudo com capacidade 1. Um fluxo inteiro usa no máximo uma unidade por vértice de cada lado. As arestas $L\to R$ com fluxo 1 formam um emparelhamento de cardinalidade igual ao valor do fluxo. Reciprocamente, qualquer emparelhamento produz esse fluxo.
+
+Com $L=\{a,b\}$, $R=\{x,y\}$ e arestas $ax,ay,bx$, escolher $ax$ parece ocupar $x$ e deixar $b$ de fora. Um caminho residual $s,b,x,a,y,t$ cancela $ax$ e escolhe $bx$ e $ay$, obtendo cardinalidade 2. É a mesma correção de decisões que vimos na rede de transporte.
+
+A transformação custa $O(n+m)$ e tem $n+2$ vértices e $m+n$ arestas. Não é $O(n)$ em grafos arbitrários: ler as $m$ arestas também conta. A integridade das capacidades garante que os aumentos e o resultado são inteiros.
+
+Para atribuir vários trabalhos a cada pessoa, aumenta a capacidade $s\to\text{pessoa}$ para o seu limite e a capacidade $\text{trabalho}\to t$ para o número de atribuições exigido. Mantém capacidade 1 nas compatibilidades se uma pessoa não puder repetir o mesmo trabalho. Saturar todas as saídas dos trabalhos certifica que todas as necessidades foram satisfeitas.

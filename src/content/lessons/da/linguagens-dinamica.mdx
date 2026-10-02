@@ -1,0 +1,83 @@
+---
+title: Programação dinâmica em linguagens
+description: Reconhecimento CYK e construção de Kleene, com estados por intervalos e por intermediários permitidos.
+section: conteudo
+order: 11
+practices:
+  - da/praticar-linguagens
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import programa from '../../da/cyk.py?raw';
+
+Uma tabela dinâmica não precisa de conter números. Pode guardar conjuntos de não-terminais ou expressões regulares. CYK e a construção de Kleene usam a mesma disciplina: definir o significado de cada estado e combinar apenas estados já calculados.
+
+## CYK e forma normal de Chomsky
+
+CYK decide se uma palavra pertence à linguagem de uma gramática independente de contexto. Usa produções da forma $A\to BC$ ou $A\to a$, com não-terminais $A,B,C$ e terminal $a$. O caso da palavra vazia é tratado separadamente, através da regra do símbolo inicial que a gera, quando existir.
+
+Define $T[i,\ell]$ como o conjunto de não-terminais que geram o segmento da palavra que começa no índice $i$ e tem comprimento $\ell$. Para comprimento 1, inclui $A$ quando há produção $A\to w[i]$.
+
+Para $\ell\ge2$, experimenta cada divisão $k$ entre 1 e $\ell-1$. Inclui $A$ em $T[i,\ell]$ quando existe $A\to BC$ com
+
+$$B\in T[i,k]\quad\text{e}\quad C\in T[i+k,\ell-k].$$
+
+Preenche comprimentos por ordem crescente. O símbolo inicial em $T[0,n]$ significa aceitação. A regra combina os dois filhos da raiz de uma árvore de derivação; por indução no comprimento, os conjuntos representam exatamente os segmentos deriváveis.
+
+### Uma tabela pequena
+
+Considera a gramática
+
+$$S\to AB\mid AC,\qquad A\to a,\qquad B\to BA\mid b,\qquad C\to AA.$$
+
+Para `aba`, a linha de comprimento 1 é $\{A\},\{B\},\{A\}$. Para comprimento 2:
+
+- `ab` contém $S$, porque $S\to AB$.
+- `ba` contém $B$, porque $B\to BA$.
+
+Para comprimento 3, dividir `a | ba` permite $S\to AB$. A divisão `ab | a` não encontra produção com os pares disponíveis $S,A$. O conjunto final é $\{S\}$; a palavra é aceite. Uma derivação é $S\Rightarrow AB\Rightarrow aB\Rightarrow aBA\Rightarrow abA\Rightarrow aba$.
+
+<CodePlayground
+  language="python"
+  title="Conjuntos da tabela CYK"
+  code={programa}
+  input="aba"
+/>
+
+A saída lista as linhas de comprimento 1, 2 e 3 e termina com `aceite`. `abb` é rejeitada. O programa aceita apenas palavras não vazias de `a` e `b`, até 40 símbolos, e usa exatamente esta gramática.
+
+Para uma gramática fixa, há $O(n^2)$ células e $O(n)$ divisões por célula, dando $O(n^3)$ tempo. Se a gramática fizer parte da entrada e percorremos as suas produções binárias, o limite é $O(n^3|P|)$. Os conjuntos usam $O(n^2|N|)$ espaço na representação direta, onde $N$ é o conjunto de não-terminais.
+
+### Reconhecer não é contar derivações
+
+Ter dois não-terminais numa célula não prova ambiguidade. Pode apenas significar que dois símbolos diferentes geram o mesmo segmento. A gramática é ambígua se alguma palavra tiver **duas árvores de derivação distintas a partir do símbolo inicial**.
+
+Por exemplo, $S\to AA$, $A\to AA\mid a$ gera `aaa` com as divisões `a | aa` e `aa | a` na raiz. Para reconstruir uma árvore, guarda uma produção e uma divisão por inclusão. Para investigar ambiguidade desta palavra, guarda todas as alternativas ou conta árvores por estado. Apenas os conjuntos de CYK não mostram quantas alternativas levaram ao mesmo não-terminal.
+
+## Construção de Kleene
+
+Um autómato finito pode ter ciclos, portanto enumerar os seus caminhos não termina. A construção de Kleene descreve os caminhos através de expressões regulares, permitindo progressivamente mais estados intermédios.
+
+Num autómato com estados $1,\ldots,n$, define $R_{ij}^{(k)}$ como a expressão regular das palavras que levam de $i$ a $j$ usando apenas $1,\ldots,k$ como estados **intermédios**. Inicialmente, $R_{ij}^{(0)}$ é a união dos rótulos das transições diretas; inclui $\varepsilon$ se $i=j$. Se não há transição nem caminho vazio, usa $\varnothing$.
+
+$$R_{ij}^{(k)}=R_{ij}^{(k-1)}\mid R_{ik}^{(k-1)}\big(R_{kk}^{(k-1)}\big)^*R_{kj}^{(k-1)}.$$
+
+A primeira alternativa não passa por $k$. A segunda chega a $k$, repete zero ou mais voltas de $k$ para $k$ e sai para $j$. O asterisco é necessário: sem ele, só permitiríamos uma visita a $k$.
+
+A expressão final é a união de $R_{sf}^{(n)}$ para todos os estados finais $f$, onde $s$ é o inicial. Se o inicial também for final, a palavra vazia pertence à linguagem.
+
+### Exemplo com dois estados
+
+Se o estado 1 é inicial, 2 é final, há ciclo $1\xrightarrow{a}1$, transição $1\xrightarrow{b}2$ e ciclo $2\xrightarrow{c}2$, os estados iniciais são
+
+$$R_{11}^{(0)}=\varepsilon\mid a,\quad R_{12}^{(0)}=b,\quad R_{21}^{(0)}=\varnothing,\quad R_{22}^{(0)}=\varepsilon\mid c.$$
+
+Permitir o intermediário 1 dá $R_{12}^{(1)}=b\mid(\varepsilon\mid a)(\varepsilon\mid a)^*b$, equivalente a $a^*b$. Permitir o intermediário 2 acrescenta repetições de $c$, dando uma expressão equivalente a $a^*bc^*$.
+
+A palavra `aaabcc` pertence à linguagem; `aaacc` não, porque falta a transição $b$ que chega ao estado final. $\varnothing$ e $\varepsilon$ são distintos: o primeiro não gera palavra nenhuma, o segundo gera uma palavra de comprimento zero.
+
+## Custo e semelhança com Floyd-Warshall
+
+Há $n$ etapas e $n^2$ pares, logo $O(n^3)$ **combinações** de expressões. Isso não garante que o texto expandido da expressão final tenha tamanho polinomial. Copiar expressões inteiras pode provocar crescimento muito grande; partilhar subexpressões numa representação em grafo evita cópias, mas expandi-las para uma string pode continuar caro.
+
+O índice exterior $k$ tem o mesmo papel que em [Floyd-Warshall](/cadeiras/da/caminhos-minimos/#floyd-warshall). Ali combinamos custo por mínimo e soma; aqui combinamos linguagens por união, concatenação e fecho. Esta semelhança vem do significado dos estados, não de coincidência de código. Para uma implementação direta de Kleene, usa os valores da etapa anterior ou uma atualização cuidadosamente justificada para não misturar níveis.

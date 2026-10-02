@@ -1,0 +1,83 @@
+---
+title: Árvores abrangentes de custo mínimo
+description: Propriedade do corte, algoritmos de Prim e Kruskal, florestas e empates.
+section: conteudo
+order: 5
+practices:
+  - da/praticar-arvores
+---
+
+import Dot from '../../../components/Dot.astro';
+import grafo from '../../da/mst.dot?raw';
+
+Queremos ligar todos os locais de uma rede sem pagar ligações desnecessárias. Num grafo não dirigido, conexo e ponderado, uma **árvore abrangente** contém todos os vértices e não tem ciclos. Tem $n-1$ arestas. Uma árvore abrangente de custo mínimo, **MST**, minimiza a soma dos pesos dessas arestas.
+
+Pesos negativos são permitidos: a ausência de ciclos continua a limitar a solução a $n-1$ arestas. Não estamos a minimizar a distância entre pares de vértices. Uma MST pode dar um caminho longo entre dois locais mesmo quando o grafo tem um atalho.
+
+## A propriedade do corte
+
+Um corte divide os vértices em $S$ e $V\setminus S$. Uma aresta atravessa o corte quando tem um extremo de cada lado. Um conjunto de arestas $A$ **respeita** o corte quando nenhuma das suas arestas o atravessa.
+
+Suponhamos que $A$ está contido em alguma MST. Se $e$ é uma aresta de peso mínimo entre as que atravessam um corte respeitado por $A$, então $A\cup\{e\}$ continua contido em alguma MST. Dizemos que $e$ é segura para $A$.
+
+A prova é uma troca. Escolhe uma MST $T$ que contém $A$. Se já contém $e$, terminámos. Caso contrário, acrescentar $e$ cria um ciclo. Esse ciclo tem outra aresta $f$ que atravessa o corte, porque precisa de voltar ao lado inicial. Como o corte respeita $A$, $f$ não pertence a $A$. Temos $w(e)\le w(f)$. Retirar $f$ deixa uma árvore abrangente de custo não superior que contém $A$ e $e$; por otimalidade de $T$, também é uma MST.
+
+**Não criar um ciclo é necessário, mas não chega para ser seguro.** Uma aresta muito cara entre duas componentes pode ser acíclica e impedir obter o custo mínimo. É a condição do corte que prova a segurança.
+
+## Um exemplo para os dois algoritmos
+
+<Dot
+  source={grafo}
+  alt="Grafo não dirigido com arestas a b de peso 2, a c de peso 3, b c de peso 1, b d de peso 4, c d de peso 2, c e de peso 5 e d e de peso 1."
+/>
+
+Uma MST é $\{bc,de,ab,cd\}$, com custo $1+1+2+2=6$. Os algoritmos seguintes chegam a esse custo de maneiras diferentes.
+
+## Kruskal
+
+Kruskal começa com cada vértice numa componente separada. Ordena todas as arestas por peso e aceita uma aresta se os extremos ainda estiverem em componentes distintas. Une então essas componentes.
+
+| Aresta  | Decisão | Componentes depois da decisão |
+| ------- | ------- | ----------------------------- |
+| $bc$, 1 | Aceitar | $\{a\},\{b,c\},\{d\},\{e\}$   |
+| $de$, 1 | Aceitar | $\{a\},\{b,c\},\{d,e\}$       |
+| $ab$, 2 | Aceitar | $\{a,b,c\},\{d,e\}$           |
+| $cd$, 2 | Aceitar | $\{a,b,c,d,e\}$               |
+
+Podemos parar após $n-1=4$ aceitações. Se continuássemos, as outras arestas fechariam ciclos. O invariante tem duas partes: $A$ é uma floresta e existe uma MST que o contém. Quando uma aresta liga componentes diferentes, é a mais leve disponível a atravessar o corte de uma dessas componentes; a propriedade do corte conserva a segunda parte.
+
+Usa **union-find** para testar representantes e unir componentes. Com compressão de caminhos e união por rank/tamanho, as operações custam $O(\alpha(n))$ amortizado. A ordenação domina o custo: $O(m\log m+n)$ tempo e $O(n)$ memória auxiliar, além da lista de arestas. Num grafo simples conexo, costuma escrever-se $O(m\log n)$ porque $m\le n^2$ e $m\ge n-1$.
+
+## Prim
+
+Prim cresce uma árvore a partir de uma raiz. Seja $S$ o conjunto já incluído. Para cada vértice exterior $v$, mantém `key[v]`, o peso da aresta mais barata de $S$ para $v$, e o extremo interior dessa aresta em `pai[v]`.
+
+A cada passo retira o vértice exterior com menor chave e inclui a sua ligação. Depois atualiza as chaves com as arestas que saem do vértice novo. Esta aresta é a mais leve a atravessar $(S,V\setminus S)$, por isso é segura.
+
+Partindo de $a$ no exemplo:
+
+| Incluído | Atualizações relevantes      | Aresta escolhida |
+| -------- | ---------------------------- | ---------------- |
+| $a$      | Chaves de $b=2$, $c=3$       | Raiz, sem aresta |
+| $b$      | $c$ passa a 1; $d$ passa a 4 | $ab$             |
+| $c$      | $d$ passa a 2; $e$ passa a 5 | $bc$             |
+| $d$      | $e$ passa a 1                | $cd$             |
+| $e$      | Nada                         | $de$             |
+
+A chave é um **peso de aresta**, não uma distância à raiz. Em Dijkstra atualizaríamos com `dist[u] + peso`; em Prim comparamos apenas `peso`. Confundir estas atualizações resolve outro problema.
+
+Com heap binário e `decreaseKey`, Prim custa $O((n+m)\log n)$. Com matriz e procura linear da menor chave, custa $O(n^2)$ e pode ser uma escolha adequada num grafo denso. A variante que coloca arestas numa heap e descarta as que já têm os dois extremos incluídos pode guardar $O(m)$ entradas e custa $O(m\log m+n)$.
+
+## Grafos desconexos e empates
+
+Se o grafo é desconexo, não existe uma árvore abrangente de todos os vértices. Kruskal termina com uma **floresta abrangente de custo mínimo**, uma árvore por componente. Prim a partir de uma única raiz cobre apenas essa componente; para produzir uma floresta, reinicia-o em cada vértice ainda por incluir. Uma componente isolada contribui zero arestas e custo zero.
+
+Uma heap vazia ou uma chave infinita num grafo desconexo não deve tornar-se uma aresta fictícia. Guarda separadamente a condição "não existe ligação".
+
+Pesos iguais podem permitir várias MST. Num triângulo com os três pesos iguais a 1, qualquer par de arestas é uma MST de custo 2. Prim e Kruskal podem devolver árvores diferentes e ambos estar corretos. Uma regra de desempate torna o resultado determinístico, mas não é parte da definição do ótimo. Se todos os pesos de arestas forem distintos, a MST é única, como se demonstra aplicando a troca ao primeiro desacordo entre duas árvores.
+
+## MST e caminhos mínimos são problemas distintos
+
+Num triângulo com $ab=2$, $bc=2$ e $ac=3$, a MST contém $ab$ e $bc$, custo total 4. O caminho de $a$ a $c$ nessa árvore custa 4, embora o caminho mínimo no grafo seja a aresta direta de custo 3.
+
+A MST minimiza a soma de **todas** as suas arestas. Uma árvore de caminhos mínimos a partir de $a$ minimiza cada distância a $a$. A primeira pode usar menos custo total; a segunda pode ter de incluir uma ligação mais cara para encurtar uma distância. Decide qual é o objetivo antes de escolher Prim ou Dijkstra.

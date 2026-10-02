@@ -1,85 +1,117 @@
 ---
 title: Programação dinâmica
-description: Subproblemas sobrepostos com memoização ou tabela, e reconstrução da solução a partir da tabela.
+description: Estados, recorrências, ordem de cálculo e reconstrução na mochila, trocos, subconjuntos e subvetor máximo.
 section: conteudo
-order: 5
+order: 9
+practices:
+  - da/praticar-dinamica
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
+import Typst from '../../../components/Typst.astro';
 import tabela from '../../da/mochila-tabela.typ?raw';
-import fibChamadas from '../../da/fib-chamadas.dot?raw';
+import programa from '../../da/mochila.cpp?raw';
 
-A programação dinâmica aplica-se quando o problema se parte em subproblemas **sobrepostos**: os mesmos cálculos repetem-se vezes sem conta. Em vez de os repetir, guarda cada resultado à primeira vez que o calcula, por memoização (de cima para baixo) ou por tabela (de baixo para cima). As duas formas dão o mesmo resultado; a tabela costuma ser mais rápida e a memoização mais fácil de escrever.
+Uma recursão pode repetir o mesmo subproblema muitas vezes. A programação dinâmica guarda cada resultado e reutiliza-o. O trabalho de desenho é escolher um **estado suficiente**: a informação que determina o que ainda podemos fazer e quanto vale a melhor continuação.
 
-## Exemplo de aquecimento: Fibonacci
+Uma solução ótima deve conter soluções ótimas para os subproblemas definidos por esse estado. Se uma parte não fosse ótima, substituí-la por uma melhor teria de manter as restrições do problema completo. Esta possibilidade de substituição é o princípio de otimalidade. Sem um estado suficiente, a substituição pode ser inválida.
 
-O Fibonacci ingénuo `fib(n) = fib(n-1) + fib(n-2)` recalcula tudo: `fib(5)` dispara **15 chamadas**, porque `fib(3)` é calculado duas vezes, `fib(2)` três vezes, e por aí abaixo. A árvore de recursão é exponencial para um problema com apenas 6 valores distintos. Com memoização, cada valor de `fib(0)` a `fib(5)` calcula-se uma vez:
+## Definir antes de preencher
 
-```cpp
-#include <vector>
+Para derivar uma tabela, escreve o significado exato de uma célula, os casos base e as alternativas que levam até ela. Decide a ordem em que as dependências ficam disponíveis. Por fim, guarda informação para reconstruir uma solução, quando o enunciado pede mais do que o valor.
 
-long long fib(int n, std::vector<long long> &memo) {
-    if (n <= 1) return n;
-    if (memo[n] != -1) return memo[n];
-    return memo[n] = fib(n - 1, memo) + fib(n - 2, memo);
-}
-```
+**Memoização** calcula estados por chamadas e guarda-os na primeira visita. **Tabulação** calcula-os por uma ordem pré-definida, normalmente crescente num índice. A primeira pode evitar estados inalcançáveis; a segunda evita parte do custo das chamadas e torna a ordem explícita. Nenhuma é sempre mais rápida.
 
-Com `memo` inicializado a `-1`, `fib(5, memo)` devolve 5 depois de calcular cada entrada uma só vez: 6 cálculos em vez de 15 chamadas, e a diferença explode com $n$. O preço é a memória da tabela, $O(n)$ aqui. Esta é a troca central da técnica: tempo por memória.
+A complexidade resulta do número de estados multiplicado pelo trabalho por estado, mais inicialização e reconstrução. Esta contagem é mais útil do que afirmar que "usar uma tabela torna o algoritmo polinomial".
 
-O grafo mostra porquê: os 6 valores distintos ligam-se 8 vezes, e sem memória cada aresta vira uma chamada repetida até às 15.
+## Mochila 0-1
 
-<Dot
-  source={fibChamadas}
-  alt="Grafo das dependências de fib de 5: seis nós de fib 0 a fib 5 ligados por oito arestas, mostrando que os mesmos valores são pedidos várias vezes."
-/>
+Define $F[i,w]$ como o valor máximo usando **os primeiros $i$ objetos**, com capacidade disponível $w$. Não exige preencher a mochila. Assumimos pesos inteiros positivos e valores não negativos.
 
-<CodePlayground
-  language="cpp"
-  title="Fibonacci com memoização"
-  code={
-    '#include <iostream>\n#include <vector>\n\nlong long fib(int n, std::vector<long long> &memo) {\n    if (memo[n] == -1) {\n        std::cout << \"calcula fib(\" << n << \")\\n\";\n        memo[n] = (n <= 1) ? n : fib(n - 1, memo) + fib(n - 2, memo);\n    }\n    return memo[n];\n}\n\nint main() {\n    std::vector<long long> memo(6, -1);\n    long long r = fib(5, memo);\n    std::cout << \"fib(5) = \" << r << \"\\n\";\n}'
-  }
-/>
+Se o objeto $i$ tem peso $p_i$ e valor $v_i$, ou o excluímos, ou o incluímos uma vez:
 
-## Exemplo completo: mochila 0-1 com tabela
+$$
+F[i,w]=\begin{cases}
+F[i-1,w],&p_i>w,\\
+\max(F[i-1,w],\ v_i+F[i-1,w-p_i]),&p_i\le w.
+\end{cases}
+$$
 
-Volta à mochila da [força bruta](/cadeiras/da/forca-bruta/): objetos A (2, 3), B (3, 4), C (4, 5), D (5, 8), capacidade 7. A tabela `dp[i][w]` guarda o melhor valor usando os primeiros $i$ objetos com capacidade $w$. Cada célula decide: ignoro o objeto $i$ (fico com `dp[i-1][w]`) ou levo-o (fico com `dp[i-1][w-peso_i] + valor_i`).
+Os casos base são $F[0,w]=0$ e $F[i,0]=0$. A linha anterior impede usar o mesmo objeto outra vez. As duas alternativas cobrem todas as soluções; dentro de cada alternativa, substituir o subconjunto restante por um melhor conserva a capacidade. Isto prova a recorrência.
+
+Usamos os objetos $A=(2,3)$, $B=(3,4)$, $C=(4,5)$, $D=(5,8)$ e $W=7$:
 
 <Typst
   source={tabela}
   format="svg"
-  alt="Tabela da mochila com 5 linhas e 8 colunas de capacidade: a última célula vale 11 e o caminho de reconstrução passa pelas células realçadas até ao conjunto A e D."
+  alt="Tabela da mochila com capacidade de 0 a 7. Linhas sem objetos, A, B, C e D. O valor final é 11 na célula D e capacidade 7."
 />
 
-Preenchendo linha a linha, a última linha (objeto D) termina em `dp[4][7] = 11`. Para reconstruir o conjunto, anda para trás: `dp[4][7] = 11` difere de `dp[3][7] = 8`, por isso D entra e sobra capacidade 2; `dp[3][2] = 3` iguala `dp[2][2] = 3`, por isso C fica de fora; `dp[2][2] = 3` iguala `dp[1][2] = 3`, B fica de fora; `dp[1][2] = 3` difere de `dp[0][2] = 0`, A entra. Conjunto: **{'{'}A, D{'}'}, valor 11**, exatamente o ótimo da enumeração, obtido com $4 \times 8 = 32$ células em vez de $2^4$ subconjuntos avaliados à força bruta. Com $n$ objetos e capacidade $W$, o custo é $O(nW)$: polinomial em $n$, mas atenção que $W$ é um número, não um tamanho, por isso diz-se pseudo-polinomial.
+Na última célula, excluir $D$ dá $F[3,7]=9$; incluí-lo dá $8+F[3,2]=8+3=11$. O valor máximo é 11.
 
-:::warning[Quando a técnica não se aplica]
-Sem sobreposição não há nada para guardar: a [divisão e conquista](/cadeiras/da/divisao-conquista/) na fusão resolve subproblemas disjuntos, e forçar lá uma tabela só gasta memória. E sem subestrutura ótima (o ótimo global não se monta de ótimos parciais), a tabela calcula depressa a resposta errada. Verifica as duas condições antes de desenhar a tabela.
-:::
+### Reconstruir objetos
 
-## Exemplo com texto: subsequência comum mais longa
+Começa em $(i,w)=(4,7)$. Como $F[4,7]\ne F[3,7]$, escolhemos $D$ e passamos para $(3,2)$. As linhas de $C$ e $B$ não melhoraram a capacidade 2, por isso excluímos esses objetos. A linha de $A$ melhora de zero para 3, portanto escolhemos $A$. A solução tem peso 7 e valor 11.
 
-A mesma ideia da tabela serve para comparar textos. A maior subsequência comum (LCS) de `CASA` e `CAMA` mede-se com `dp[i][j]`: o comprimento da LCS dos prefixos com $i$ e $j$ letras. Letras iguais estendem a diagonal (`dp[i-1][j-1] + 1`); letras diferentes herdam o melhor dos vizinhos.
+Se as duas alternativas empatam, excluir o objeto é uma regra válida para devolver um ótimo. Minimizar também o peso ou a quantidade de objetos exige guardar e comparar esse segundo critério, não assumir que qualquer desempate o satisfaz.
 
-|     | --- | C   | A   | M   | A   |
-| --- | --- | --- | --- | --- | --- |
-| --- | 0   | 0   | 0   | 0   | 0   |
-| C   | 0   | 1   | 1   | 1   | 1   |
-| A   | 0   | 1   | 2   | 2   | 2   |
-| S   | 0   | 1   | 2   | 2   | 2   |
-| A   | 0   | 1   | 2   | 2   | 3   |
-
-O canto inferior direito diz 3. A reconstrução anda para trás desde aí: `A` igual a `A` entra, depois `S` contra `M` herda de cima, `A` contra `M` herda da esquerda, `A` igual a `A` entra, `C` igual a `C` entra. Resultado: **CAA**, e repara que há outra com o mesmo comprimento. O custo é o tamanho da tabela, $O(nm)$ para textos de $n$ e $m$ letras.
-
-<YouTube
-  id="ocZMDMZwhCY"
-  title="Programação dinâmica: parentetização, distância de edição e mochila (MIT)"
+<CodePlayground
+  language="cpp"
+  title="Mochila 0-1 com reconstrução"
+  code={programa}
+  input={'4 7\n2 3\n3 4\n4 5\n5 8'}
 />
 
-## Para saber mais
+O programa lê `n W`, seguido de `peso valor`, e devolve `valor 11` e `objetos 1 4`. Os objetos são numerados a partir de 1. Aceita até 100 objetos, capacidade até 2000, pesos positivos até 2000 e valores de 0 a um milhão.
 
-- Recitação do MIT 6.006 só sobre a mochila com DP e tempo pseudo-polinomial: [Dynamic programming: knapsack problem](https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/resources/recitation-21-dynamic-programming-knapsack-problem/).
+Há $(n+1)(W+1)$ estados, com trabalho constante: $\Theta(nW)$ tempo e $\Theta(nW)$ espaço. A reconstrução custa $O(n)$. Se só precisamos do valor, podemos conservar um vetor e percorrer capacidades por ordem **decrescente**. Assim `F[w-p_i]` ainda pertence à iteração anterior. Percorrer por ordem crescente permitiria repetir o objeto e resolveria a mochila ilimitada.
+
+## O que significa pseudopolinomial
+
+$O(nW)$ é polinomial em $n$ e no valor de $W$, mas a entrada representa $W$ com $O(\log W)$ bits. Se $W=2^k$, a tabela tem $2^k$ colunas para uma capacidade representada com cerca de $k$ bits. Chamamos a este custo **pseudopolinomial**.
+
+Não há contradição com a dificuldade NP-completa da versão de decisão da mochila. Para capacidades pequenas, a tabela pode ser prática; para valores enormes, força bruta em poucos objetos ou outro método pode usar menos trabalho.
+
+## Trocos ilimitados e com stock
+
+Para denominações inteiras positivas $c_1,\ldots,c_n$ e quantidade ilimitada, define $C[i,t]$ como o mínimo de moedas para pagar **exatamente** $t$ usando as primeiras $i$ denominações. Temos $C[i,0]=0$ e $C[0,t]=+\infty$ para $t>0$.
+
+$$C[i,t]=\min(C[i-1,t],\ 1+C[i,t-c_i]),$$
+
+ignorando a segunda alternativa se $t<c_i$. A mesma linha $i$ permite reutilizar a denominação. Uma célula infinita significa impossível, não zero moedas. O tempo é $O(nT)$ e o espaço é $O(nT)$, ou $O(T)$ para o valor.
+
+Com moedas 1, 3 e 4, os valores mínimos para alvos de 0 a 6 são $0,1,2,1,1,2,2$. Para 6, a recorrência prefere $3+3$ ao guloso $4+1+1$.
+
+Se o stock de $c_i$ é $s_i$, o estado deve respeitá-lo:
+
+$$C[i,t]=\min_{0\le q\le\min(s_i,\lfloor t/c_i\rfloor)}\big(q+C[i-1,t-qc_i]\big).$$
+
+Aqui a linha anterior é necessária: escolhemos toda a quantidade $q$ dessa denominação uma vez. Guarda o $q$ que ganhou para reconstruir. A formulação direta custa $O(nTS)$ para stock máximo $S$ e $O(nT)$ espaço. Otimizações de mochila limitada existem, mas não alteram o significado deste estado.
+
+## Soma de subconjuntos
+
+Com inteiros não negativos $a_i$, define $B[i,t]$ como "há um subconjunto dos primeiros $i$ elementos com soma $t$". Inicializa $B[0,0]$ a verdadeiro e os outros a falso:
+
+$$B[i,t]=B[i-1,t]\lor\big(t\ge a_i\ \land\ B[i-1,t-a_i]\big).$$
+
+É a mesma decisão incluir/excluir, agora com existência em vez de máximo. O custo é $O(nT)$. Para reconstruir, se a célula da linha anterior já é verdadeira, podemos excluir; caso contrário incluímos $a_i$ e reduzimos $t$. Elementos zero exigem uma regra de desempate, mas não tornam a existência incorreta.
+
+## O subvetor máximo em tempo linear
+
+Define $E[i]$ como a maior soma de um intervalo não vazio que **termina em $i$**. Esse intervalo ou começa em $i$, ou prolonga o melhor terminado em $i-1$:
+
+$$E[0]=A[0],\qquad E[i]=\max(A[i],E[i-1]+A[i]).$$
+
+O resultado global é $\max_i E[i]$. Esta é a forma dinâmica do algoritmo de Kadane. Guarda o início do intervalo atual: reinicia em $i$ quando escolher $A[i]$ sozinho; atualiza os extremos globais quando melhora o máximo.
+
+Para `[-4,3,-1,5,-6,2]`, os valores $E$ são $-4,3,2,7,1,3$. O máximo é 7 e termina no índice 3, com início 1. Se todos os valores forem negativos, conserva o maior deles. A recorrência tem $n$ estados e trabalho constante, portanto $O(n)$ tempo e $O(1)$ memória auxiliar para valor e extremos.
+
+## Caminhos por etapas e combinações
+
+Num DAG com destino $t$, define $D[t]=0$ e
+
+$$D[u]=\min_{u\to v}\big(w(u,v)+D[v]\big).$$
+
+Processa em ordem topológica inversa; um vértice sem caminho até $t$ mantém infinito. Os subcaminhos repetidos ficam guardados e o custo é $O(n+m)$. Um estado que omitisse o vértice atual não distinguiria continuações diferentes.
+
+Para combinações, $\binom nk=\binom{n-1}{k-1}+\binom{n-1}k$, com $\binom n0=\binom nn=1$. As parcelas representam incluir ou excluir um elemento fixo. Uma tabela até $(n,k)$ usa $O(nk)$ operações; os valores podem exigir inteiros grandes. Ao reduzir a memória a uma linha, percorre $k$ por ordem decrescente para não misturar linhas.

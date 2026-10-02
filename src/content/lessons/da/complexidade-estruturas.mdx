@@ -1,54 +1,80 @@
 ---
 title: Complexidade e estruturas
-description: Notação assimptótica revista, regras de soma e produto, e a escolha da estrutura certa antes de desenhar.
+description: Limites assimptóticos, tamanho da entrada e o custo das estruturas que suportam os algoritmos.
 section: conteudo
 order: 1
+practices:
+  - da/praticar-complexidade
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import crescimento from '../../da/crescimento-ordens.typ?raw';
+Um algoritmo pode fazer uma boa escolha matemática e implementá-la com uma estrutura demasiado lenta. Para analisar DA, precisamos de contar operações e de dizer quanto custam. Esta página revê ferramentas de AED, usadas depois nas provas dos algoritmos.
 
-Antes de desenhares um algoritmo, precisas de duas coisas: uma régua para medir o custo e uma caixa de ferramentas com as estruturas que fazem cada operação depressa. Esta página revê a notação assimptótica e mostra como a estrutura escolhida decide o custo antes de escreveres a primeira linha do algoritmo.
+## O que é o tamanho da entrada
 
-## A régua: O grande
+Num vetor, $n$ pode ser o número de elementos. Num grafo, usamos $n=|V|$ vértices e $m=|E|$ arestas. Uma lista de adjacência ocupa $\Theta(n+m)$ espaço; dizer apenas que o algoritmo é linear sem identificar a representação esconde parte do custo.
 
-Dizemos que $f(n)$ é $O(g(n))$ quando $f$ cresce no máximo tão depressa como $g$, a menos de constantes e para entradas grandes. Na prática, lês $O(n^2)$ como "duplica a entrada e o tempo quadruplica, mais coisa menos coisa". O que conta é o termo dominante: $3n^2 + 10n + 5$ é $O(n^2)$, porque para $n$ grande o $n^2$ esmaga o resto.
+Numa mochila, $W$ é uma capacidade numérica, não o número de bits da entrada. O inteiro $W$ precisa de $\Theta(\log(W+1))$ bits. Uma tabela com $W+1$ colunas pode ser enorme mesmo quando escrever $W$ ocupa poucos caracteres. Esta diferença explica a complexidade pseudopolinomial da [programação dinâmica](/cadeiras/da/programacao-dinamica/#o-que-significa-pseudopolinomial).
 
-Duas regras chegam para quase tudo. Na **sequência**, somas e ficas com o pior: um passo $O(n)$ seguido de um passo $O(n^2)$ dá $O(n^2)$. Nos **ciclos aninhados**, multiplicas: dois ciclos de $n$ iterações com trabalho constante dão $O(n^2)$. E diz sempre o que é $n$ e o que estás a contar: " $n$ é o tamanho do vetor e conto comparações" evita metade das confusões.
+A análise habitual conta operações elementares de custo constante. Se os números crescem sem limite, somar ou multiplicar inteiros já depende do seu número de bits. Nos exemplos de C++, assumimos valores que cabem nos tipos usados e indicamos limites quando precisamos de os controlar.
 
-<Typst
-  source={crescimento}
-  format="svg"
-  alt="Gráfico com quatro curvas de crescimento entre n igual a 0 e 10: n sobe até 10, n log n até cerca de 33, n ao quadrado até 100 e 2 elevado a n sai do gráfico antes de n igual a 7."
-/>
+## O, Ω e Θ
 
-As quatro curvas contam a história da cadeira: entre linear e quadrático vivem os algoritmos simpáticos, e a exponencial é a parede contra a qual todas as técnicas das próximas páginas lutam. Repara como $2^n$ abandona o gráfico antes de $n = 7$: é por isso que "só" $2^{50}$ candidatos é sinónimo de impossível.
+Para funções não negativas, $f\in O(g)$ significa que existem $c>0$ e $n_0$ tais que $f(n)\le cg(n)$ para todo $n\ge n_0$. É um **limite superior**. $f\in\Omega(g)$ troca essa desigualdade por $f(n)\ge cg(n)$ e dá um limite inferior. $f\in\Theta(g)$ exige os dois.
 
-:::warning[O custo esconde-se nos detalhes]
-$O(1)$ não quer dizer instantâneo, quer dizer independente de $n$. E o pior caso manda: um algoritmo que é rápido quase sempre mas explode numa entrada adversa é um algoritmo $O(\text{explos\~ao})$. Nos mini-testes, identifica sempre se te pedem pior caso, caso médio ou amortizado[^amortizado].
-:::
+Por exemplo, $f(n)=3n^2+10n+5$. Para $n\ge1$, temos $3n^2\le f(n)\le18n^2$, logo $f\in\Theta(n^2)$. Também é verdade que $f\in O(n^3)$, mas esse limite informa menos. Dizer $O(n^2)$ não afirma que toda a entrada demora exatamente esse tempo, nem que o melhor caso é quadrático.
 
-[^amortizado]: A análise amortizada distribui o custo de operações caras mas raras pelas baratas: Cormen et al., Introduction to Algorithms, capítulo sobre análise amortizada (bibliografia obrigatória da cadeira).
+A ordem dos crescimentos mais usados é
 
-## A caixa de ferramentas
+$$1\prec\log n\prec n\prec n\log n\prec n^2\prec n^3\prec 2^n\prec n!.$$
 
-Cada estrutura compra velocidade numa operação e paga-a noutra. O vetor dá acesso direto por posição em $O(1)$ mas inserir no meio custa $O(n)$. A lista ligada inverte a troca em alguns casos, mas perde o acesso direto. A tabela de dispersão dá procura, inserção e remoção em $O(1)$ médio à custa de memória extra e de um pior caso degradado. A árvore equilibrada de pesquisa dá tudo em $O(\log n)$ com garantias. Não há estrutura melhor em absoluto; há a estrutura certa para o padrão de acessos do teu algoritmo.
+A base do logaritmo altera uma constante. Uma potência $n^k$ com $k$ fixo é polinomial. Em $2^n$, acrescentar um elemento duplica o número de candidatos; em $n!$, a multiplicação depende de $n$.
 
-## Exemplo: procurar num vetor de inteiros
+## Contar ciclos
 
-Tens o vetor `[4, 1, 7, 3, 9, 2, 8, 5]` e queres saber se contém o valor `8` e em que posição. A procura linear percorre do início: compara `4`, `1`, `7`, `3`, `9`, `2` e só no sétimo elemento encontra `8`. São 7 comparações para $n = 8$, e no pior caso são $n$. Custo: $O(n)$ tempo e $O(1)$ memória extra.
+Estes dois ciclos não fazem o mesmo trabalho:
 
-Com uma tabela de dispersão construída sobre os mesmos valores, a procura de `8` calcula a função de dispersão, salta diretamente para o balde e confirma em 1 comparação típica. Custo médio: $O(1)$ tempo, à custa de $O(n)$ memória para a tabela e de um pior caso $O(n)$ se tudo colidir no mesmo balde. Para $n = 8$ a diferença é irrelevante; para $n = 10^6$ com muitas procuras, é a diferença entre segundos e horas. É este raciocínio, feito antes de desenhar, que as próximas páginas assumem: cada técnica de [força bruta](/cadeiras/da/forca-bruta/) a [programação dinâmica](/cadeiras/da/programacao-dinamica/) vive ou morre do custo das operações que repete.
+```cpp
+// Excertos: n é positivo e cada operação do corpo custa O(1).
+for (int i = 0; i < n; ++i)
+    for (int j = 0; j < i; ++j)
+        operacao();
 
-## Contar comparações em C++
+for (int i = 1; i < n; i *= 2)
+    operacao();
+```
 
-O programa abaixo procura um valor ausente em mil posições ordenadas e conta as comparações dos dois métodos. A procura linear faz 1000 comparações; a binária faz 10, porque cada comparação parte o intervalo a metade. Corre e confirma: o rácio acompanha $n$ contra $\log n$, não é ruído de cronómetro.
+O primeiro faz $0+1+\cdots+(n-1)=n(n-1)/2$ operações, portanto $\Theta(n^2)$. O segundo visita $1,2,4,\ldots$ e termina ao atingir $n$, portanto faz $\Theta(\log n)$ operações. O código real deve evitar overflow de `i`; aqui o excerto descreve apenas a contagem.
 
-<CodePlayground
-  language="cpp"
-  title="Linear contra binária: contar comparações"
-  code={
-    '#include <iostream>\n#include <vector>\n\nint main() {\n    const int n = 1000;\n    std::vector<int> v(n);\n    for (int i = 0; i < n; i++) v[i] = 2 * i;\n    int alvo = 2 * n + 1;  // ausente: pior caso\n    int lin = 0;\n    for (int x : v) { lin++; if (x == alvo) break; }\n    int bin = 0, lo = 0, hi = n - 1;\n    while (lo <= hi) {\n        bin++;\n        int m = (lo + hi) / 2;\n        if (v[m] == alvo) break;\n        else if (v[m] < alvo) lo = m + 1;\n        else hi = m - 1;\n    }\n    std::cout << \"linear: \" << lin << \"\\nbinaria: \" << bin << \"\\n\";\n}'
-  }
-/>
+Uma sequência de dois passos soma os custos. Um ciclo soma o custo de cada iteração. Multiplicar dois limites só é correto quando esse produto corresponde ao número de vezes que o trabalho interno ocorre. Se uma BFS percorre a lista de cada vértice uma vez, o total dessas listas é $m$, não $nm$.
+
+## Melhor caso, pior caso e custo amortizado
+
+Na procura linear, um alvo na primeira posição exige uma comparação; um alvo ausente exige $n$. Temos melhor caso $\Theta(1)$ e pior caso $\Theta(n)$. O caso médio exige uma distribuição de entradas. Não podemos obtê-lo apenas pela média desses dois limites.
+
+Uma inserção no fim de `vector` é amortizadamente $O(1)$. Algumas inserções provocam realocação e copiam $\Theta(n)$ elementos, mas uma sequência de $n$ inserções tem custo total $O(n)$ com crescimento geométrico da capacidade. **Amortizado** é uma garantia sobre sequências de operações; **médio** é uma expectativa sobre uma distribuição.
+
+## Estruturas e operações
+
+| Estrutura                      | Operações úteis                           | Custo e condição                                                              |
+| ------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------- |
+| Vetor                          | Acesso por índice                         | $\Theta(1)$                                                                   |
+| Vetor ordenado                 | Pesquisa binária                          | $O(\log n)$; manter a ordem pode exigir deslocar $O(n)$ elementos             |
+| Fila/pilha                     | Inserir e retirar na extremidade adequada | $O(1)$ nas implementações habituais                                           |
+| Heap binário                   | Inserir, extrair mínimo                   | $O(\log n)$; consultar mínimo é $O(1)$                                        |
+| Árvore de pesquisa equilibrada | Procurar, inserir, remover                | $O(\log n)$                                                                   |
+| Tabela de dispersão            | Procurar e inserir                        | $O(1)$ esperado com dispersão e ocupação adequadas; pior caso $O(n)$          |
+| Union-find                     | Unir componentes, encontrar representante | $O(\alpha(n))$ amortizado com compressão de caminhos e união por rank/tamanho |
+
+A fila de prioridade da STL não tem `decreaseKey`. Em Dijkstra podemos inserir um novo par `(distância, vértice)` e ignorar os pares antigos quando saem. Essa decisão muda a contagem de entradas da heap. Não alteres um campo usado pelo comparador de um objeto já na heap e esperes que ela se reorganize sozinha.
+
+## Representar grafos
+
+Uma matriz de adjacência usa $\Theta(n^2)$ espaço e testa se existe uma aresta em $\Theta(1)$. Percorrer todos os vizinhos de um vértice custa $\Theta(n)$, mesmo que tenha poucas arestas.
+
+Uma lista usa $\Theta(n+m)$ espaço e percorre os vizinhos em $\Theta(\deg(u))$. Num grafo não dirigido guardamos normalmente cada aresta nos dois sentidos, o que multiplica o espaço por dois e mantém a mesma ordem assimptótica. Arestas paralelas e pesos zero devem ter uma representação explícita; zero não deve significar simultaneamente "não há aresta" e "há uma aresta de custo zero".
+
+Um grafo esparso pode ter $m=O(n)$; um grafo simples denso pode ter $m=\Theta(n^2)$. Assim, $O((n+m)\log n)$ e $O(n^2)$ são alternativas diferentes conforme a densidade. A escolha vem das operações necessárias e dos limites da entrada.
+
+## O que entregar numa análise
+
+Para uma solução, identifica os parâmetros, conta estados ou operações, inclui a estrutura de suporte e separa tempo de memória auxiliar. Por exemplo: "a BFS com listas inicializa $n$ marcas e examina $m$ arestas, pelo que usa $O(n+m)$ tempo e $O(n)$ memória auxiliar, além do grafo". Esta frase explica a origem do limite e as suas condições.
