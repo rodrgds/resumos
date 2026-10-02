@@ -1,73 +1,115 @@
 ---
-title: Relógio e porta série
-description: RTC com validação de leitura e UART com tramas e paridade.
+title: Porta série e UART
+description: Tramas assíncronas, registos UART, DLAB, interrupções, FIFOs e filas.
 section: conteudo
-order: 8
+order: 10
+practices:
+  - lc/praticar-serie
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
 import trama from '../../lc/trama-serie.typ?raw';
 
-Os dois últimos periféricos são lentos e pacientes, o oposto do vídeo: o **RTC** guarda a hora mesmo com o PC desligado, e a **porta série** (UART) troca bytes com o exterior um bit de cada vez. Ambos ensinam a mesma lição: nunca confies numa leitura sem validar primeiro que ela é válida.
+A UART converte bytes em bits enviados pela linha e reconstrói bytes recebidos. O programa acede a registos de oito bits. Uma sequência de bytes não se transforma automaticamente numa mensagem da aplicação: essa estrutura pertence ao protocolo da página seguinte.
 
-## RTC: ler a hora com validação
+## Comunicação assíncrona
 
-O RTC tem um registo por campo (segundos, minutos, horas e por aí fora), em BCD: cada byte guarda dois dígitos decimais, um em cada metade. O valor `0x23` nas horas significa 2 dezenas e 3 unidades, ou seja 23 horas. A conversão é `(byte >> 4) * 10 + (byte & 0x0F)`: para `0x23` dá $2 \times 10 + 3 = 23$. Confirma correndo o programa, que imprime `horas=23`.
+Em transmissão série, os bits seguem um após outro. Em comunicação assíncrona, emissor e recetor usam relógios independentes e combinam previamente a duração de cada bit. Um start bit marca o início do carácter; os dados, eventual paridade e stop bits completam a trama.
 
-<CodePlayground
-  language="c"
-  title="Converter BCD em decimal"
-  code={
-    '#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t reg = 0x23;\n    int horas = (reg >> 4) * 10 + (reg & 0x0F);\n    printf("horas=%d\\n", horas);\n    return 0;\n}'
-  }
-/>
-
-O pormenor crítico é o bit de atualização em curso (_update in progress_): o RTC atualiza os registos uma vez por segundo, e ler a meio da atualização devolve uma hora inconsistente (os minutos novos com os segundos velhos). A sequência correta é esperar que o bit desligue, ler todos os campos de seguida e, por segurança, confirmar que continuam coerentes. Uma leitura sem esta espera funciona quase sempre e falha exatamente no segundo em que estás a demonstrar o projeto.
-
-## Porta série: tramas e paridade
-
-A UART envia cada byte como uma **trama**: um bit de arranque (start), os bits de dados, um bit de paridade opcional e um ou mais bits de paragem (stop).
+Na configuração **7E1**, há sete bits de dados, paridade par e um stop bit. Somando o start bit, cada carácter ocupa dez bits. Na configuração **8N1**, há oito dados e nenhuma paridade, também dez bits no total. O número de bits úteis não é sempre o número de bits transmitidos.
 
 <Typst
   source={trama}
   format="svg"
-  alt="Bits de uma trama série: arranque, sete bits de dados, paridade par e paragem."
+  alt="Uma trama 7E1 contém start a 0, sete bits de dados, um bit de paridade par e um stop a 1, dez bits no total."
 />
 
-Numa configuração 8N1 (8 dados, sem paridade, 1 stop), cada byte custa 10 bits no fio: a 9600 baud, passam cerca de $9600 / 10 = 960$ bytes por segundo. A conta da taxa útil é sempre bits de dados a dividir pelo total de bits da trama.
+Em 8N1 a 9600 bit/s, o máximo ideal é $9600/10=960$ bytes de dados por segundo. Uma mensagem de 20 bytes ocupa pelo menos $200/9600\approx20{,}83$ ms, sem pausas entre caracteres nem bytes de controlo da aplicação.
 
-A **paridade par** acrescenta um bit que torna par o número total de 1s na trama. Toma o dado `0b1011001`: tem quatro 1s, número par, por isso o bit de paridade é 0. Já o dado `0b1011011` tem cinco 1s, por isso o bit de paridade é 1 e o total fica seis. O recetor repete a conta: se o total for ímpar, a trama corrompeu-se e descarta-se. A paridade apanha qualquer número ímpar de bits virados, mas é cega a dois erros na mesma trama.
+A paridade par faz o total de bits a 1, incluindo paridade, ser par. Deteta um número ímpar de inversões, mas pode não detetar duas inversões. Não garante integridade de uma mensagem inteira.
 
-## Exemplo: verificar uma trama recebida
+**Simplex** só comunica num sentido. **Half-duplex** comunica nos dois sentidos, mas um de cada vez. **Full-duplex** permite transmissão nos dois sentidos em simultâneo. Ter uma UART não determina sozinho o protocolo de turnos da aplicação.
 
-Chega uma trama com dados `0b1011011` e bit de paridade 1, em paridade par. A verificação:
+## Registos e endereços
 
-1. Conta os 1s nos dados: `0b1011011` tem cinco.
-2. Soma o bit de paridade: $5 + 1 = 6$, número par.
-3. Total par com paridade par: trama válida, aceita o byte.
+COM1 tem base `0x3F8` e IRQ4; COM2 tem base `0x2F8` e IRQ3. Os offsets são relativos à base:
 
-Corre a verificação em código: o programa conta os 1s de `0x5B` (que é `0b1011011`), soma a paridade e imprime `valida`.
+| Offset | Leitura                   | Escrita                               |
+| ------ | ------------------------- | ------------------------------------- |
+| 0      | RBR, byte recebido        | THR, byte a transmitir                |
+| 1      | IER, interrupções ativas  | IER                                   |
+| 2      | IIR, causa de interrupção | FCR, controlo das FIFOs               |
+| 3      | LCR, parâmetros da trama  | LCR                                   |
+| 4      | MCR, controlo de modem    | MCR                                   |
+| 5      | LSR, estado da linha      | Conforme especificação do dispositivo |
+| 6      | MSR, estado de modem      | Conforme especificação do dispositivo |
+| 7      | Scratch register          | Scratch register                      |
 
-<CodePlayground
-  language="c"
-  title="Verificar paridade par"
-  code={
-    '#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t dados = 0x5B;\n    int paridade = 1;\n    int uns = 0;\n    for (int i = 0; i < 7; i++) if (dados & (1 << i)) uns++;\n    int total = uns + paridade;\n    printf("uns=%d total=%d %s\\n", uns, total, total % 2 == 0 ? "valida" : "invalida");\n    return 0;\n}'
-  }
-/>
+Os offsets 0 e 1 têm outra interpretação quando DLAB, bit 7 de LCR, vale 1: tornam-se DLL e DLM, os bytes baixo e alto do divisor. Antes de receber ou transmitir dados, garante DLAB a 0.
 
-Se o total desse ímpar, o byte descartava-se e o protocolo pedia retransmissão. Repara que a verificação é uma conta de dois passos feita em todos os bytes recebidos: barata, automática e a única defesa contra um fio ruidoso.
+## LCR e divisor
 
-## Ver também
+Os bits 1 a 0 de LCR selecionam 5, 6, 7 ou 8 bits de dados, por códigos 00 a 11. O bit 2 seleciona um stop bit quando vale 0; quando vale 1 seleciona dois, ou 1,5 se houver cinco bits de dados. O bit 3 ativa paridade e os bits seguintes escolhem o tipo.
 
-Estes dois vídeos mostram o protocolo RS-232 a nível dos sinais no fio, com o bit de arranque, os dados e a paragem desenhados no osciloscópio. Vê o primeiro para a trama e o segundo para a eletrónica da UART.
+Para 8N1, LCR sem DLAB vale `0x03`. Para 7E1, vale `0x1A`: código 2 para sete dados, bit 3 para paridade e bit 4 para paridade par.
 
-<YouTube id="AHYNxpqKqwo" title="O protocolo RS-232, Ben Eater" />
+Com o relógio nominal da UART clássica, a taxa de bits é:
 
-<YouTube id="zsERDRM1oy8" title="Interface RS-232 com o UART 6551, Ben Eater" />
+$$bitrate=\frac{115200}{D}.$$
 
-:::warning[Bits de configuração: confirmar, nunca assumir]
-Taxa de transmissão, bits de dados, paridade e stop bits têm de ser iguais nos dois lados da porta série. Com qualquer divergência, os bytes chegam mas descodificam lixo consistente, o sintoma mais enganador da cadeira: tudo parece funcionar exceto o conteúdo. Perante lixo consistente, confere a configuração antes de culpares o código.
-:::
+A 9600 bit/s, $D=12=\texttt{0x000C}$. A sequência é ler e conservar LCR, ativar DLAB, escrever DLL no offset 0 e DLM no offset 1, e limpar DLAB com a configuração de trama pretendida. Para 7E1, poderias escrever LCR `0x9A`, DLL `0x0C`, DLM `0x00` e finalmente LCR `0x1A`.
+
+Enquanto DLAB estiver a 1, escrever em base + 0 altera o divisor, não transmite um carácter. Deixar DLAB ativo é uma causa concreta de "enviei, mas não chegou nada". A taxa pedida deve ter divisor representável e não nulo; quantifica o erro quando não divide 115200 exatamente.
+
+## LSR e polling
+
+| Bit de LSR | Significado                              |
+| ---------- | ---------------------------------------- |
+| 0          | Há dados recebidos                       |
+| 1          | Overrun, houve perda por falta de espaço |
+| 2          | Erro de paridade                         |
+| 3          | Erro de framing, como stop bit inválido  |
+| 4          | Break recebido                           |
+| 5          | THR vazio, pode aceitar outro carácter   |
+| 6          | THR e registo de deslocamento vazios     |
+| 7          | Erro associado à FIFO, conforme o modelo |
+
+Para transmitir, espera bit 5 e escreve THR. O bit 6 é necessário quando queres saber se o último carácter já saiu fisicamente, por exemplo antes de fechar a ligação. THR vazio não significa que a linha já terminou a transmissão.
+
+Para receber, verifica bit 0 e erros, lê RBR e aplica a política do protocolo aos bytes inválidos. Usa os efeitos de leitura especificados para a UART concreta; uma leitura de estado pode limpar alguns flags. Guarda o estado antes de o voltares a ler.
+
+Polling com espera ilimitada pode prender o programa se o outro processo nunca enviar o byte esperado. Usa um timeout e distingue ausência de dado, falha da chamada Minix e erro reportado pela UART.
+
+## IER e IIR
+
+IER ativa causas: bit 0 para receção, bit 1 para THR vazio, bit 2 para estado de receção e bit 3 para estado do modem. Ativar uma causa na UART e subscrever a IRQ no Minix são passos diferentes, ambos necessários.
+
+No IIR, **bit 0 a 1 significa que não há interrupção pendente**. Se estiver a 0, os bits de identificação indicam a causa mais prioritária. Os valores usuais, depois de aplicar a máscara `0x0E`, são:
+
+| Identificador | Causa                         |
+| ------------- | ----------------------------- |
+| `0x06`        | Estado da linha de receção    |
+| `0x04`        | Dados recebidos               |
+| `0x0C`        | Timeout de caracteres na FIFO |
+| `0x02`        | THR vazio                     |
+| `0x00`        | Estado de modem               |
+
+O handler consulta IIR, atende a causa pela operação exigida e volta a consultar até não haver causas pendentes, dentro de uma política que evite monopolizar o ciclo. No caso de receção, retira os bytes disponíveis para uma fila. No caso de erro, lê o estado necessário e informa o nível superior.
+
+Para transmissão por interrupções, mantém uma fila de saída. Quando a fila recebe o primeiro byte após um período inativo, inicia a transmissão se THR estiver pronto e ativa a causa apropriada. Quando não há mais bytes, evita deixar interrupções de transmissão inúteis ativas. Esperar apenas por uma futura interrupção pode deixar o primeiro byte na fila sem arrancar.
+
+## FIFO e fila da aplicação
+
+A FIFO de hardware absorve pequenos atrasos. No modelo 16550 com FIFO de 16 bytes, FCR bit 0 ativa as FIFOs; bits 1 e 2 pedem limpeza de receção e transmissão; bits 7 a 6 escolhem limiares de receção 1, 4, 8 ou 14 bytes. Esses limiares não são a capacidade da fila da aplicação.
+
+Um limiar alto pode reduzir o número de interrupções, mas aumenta a espera dos primeiros bytes. Se a mensagem for menor do que o limiar, a causa de timeout de caracteres permite tratar os bytes sem esperar indefinidamente que a FIFO encha.
+
+A fila em software separa leitura do dispositivo e parsing de mensagens. Um único `char received` perde valores se o handler ler vários bytes antes de a aplicação os consumir. Numa fila circular, conserva cabeça, cauda e quantidade ou uma convenção inequívoca para distinguir cheio de vazio.
+
+Se a fila encher, define uma política: descartar com sinalização de perda, pausar o produtor se o protocolo o permitir ou aumentar capacidade depois de medir a carga. Parar de ler a UART não impede o outro lado de transmitir e pode causar overrun.
+
+## Verificar a comunicação
+
+No ambiente da cadeira, duas máquinas virtuais podem ligar as portas série através de sockets. Verifica primeiro bytes conhecidos num sentido e depois no outro. A ligação virtual pode não modelar todos os efeitos elétricos ou de temporização de uma ligação física; não uses esse resultado para dispensar parâmetros corretos numa UART real.
+
+O Minix pode já ter um driver para a porta. Em modo de interrupções, usa a subscrição exclusiva prevista pelo ambiente para evitar consumo concorrente. Ao terminar, desativa as causas que ativaste na UART, repõe parâmetros alterados quando aplicável e remove a subscrição. A página seguinte define como os bytes se tornam mensagens recuperáveis.

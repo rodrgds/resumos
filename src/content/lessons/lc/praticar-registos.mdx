@@ -1,0 +1,91 @@
+---
+title: Praticar registos e polling
+description: Exercícios originais de raciocínio, com pistas e soluções completas.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="lc-substituir-campo"
+  title="Substituir um campo sem alterar os outros"
+  explanation="/cadeiras/lc/falar-com-hardware/#testar-e-alterar-campos"
+  answer={{ kind: 'number', value: 203, tolerance: 0 }}
+>
+  <p>
+    Um registo legível e de escrita normal vale 0xD3. Os bits 4 a 2 contêm um
+    modo. Substitui esse modo por 2 sem alterar os outros bits. Dá o novo byte
+    em decimal.
+  </p>
+  <div slot="hint">A máscara do campo é 0x1C.</div>
+  <div slot="hint-more">Limpa 0x1C e insere 2 &lt;&lt; 2, que vale 0x08.</div>
+  <div slot="solution">
+    0xD3 &amp; ~0x1C conserva 0xC3. O novo campo é 0x08. O OR dá 0xCB, que vale
+    203. Os bits fora de 0x1C não mudam.
+  </div>
+  <div slot="mistakes">
+    Usar apenas OR conserva bits do modo antigo. &amp;&amp; não substitui
+    campos.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-portas-memoria"
+  title="Classificar dois acessos"
+  explanation="/cadeiras/lc/falar-com-hardware/#registos-e-espaços-de-endereçamento"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Classifiquei a leitura de 0x64 como port-mapped I/O.',
+      'Classifiquei o framebuffer como memória mapeada.',
+      'Distingui endereço físico de apontador virtual.',
+    ],
+  }}
+>
+  <p>
+    Classifica uma leitura de estado do i8042 com sys_inb(0x64, ...) e uma
+    escrita no framebuffer obtido por vm_map_phys. Por que não se deve converter
+    simplesmente o endereço físico da VRAM para uint8_t *?
+  </p>
+  <div slot="hint">
+    Um endereço de porta não é um endereço no espaço virtual do processo.
+  </div>
+  <div slot="hint-more">
+    O sistema tem de criar o mapeamento e conceder o acesso.
+  </div>
+  <div slot="solution">
+    sys_inb consulta o espaço separado de portas de I/O, por intermédio de uma
+    kernel call. O framebuffer mapeado usa acessos à memória virtual do
+    processo, ligados à região física de VRAM. Um cast não cria esse mapeamento
+    nem as permissões necessárias.
+  </div>
+  <div slot="mistakes">
+    Chamar memory-mapped I/O a ambas as operações ou confundir uma conversão de
+    tipo com uma operação do sistema.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-latencia-polling"
+  title="Estimar a espera por consulta"
+  explanation="/cadeiras/lc/falar-com-hardware/#polling-e-timeout"
+  answer={{ kind: 'number', value: 4, tolerance: 0, unit: 'ms' }}
+>
+  <p>
+    O programa consulta um dispositivo a cada 8 ms. Um evento permanece
+    disponível até ser lido e chega num instante uniforme entre consultas. Qual
+    é a espera média até à consulta que o deteta, ignorando o tempo da chamada?
+  </p>
+  <div slot="hint">A espera varia entre aproximadamente 0 e um período.</div>
+  <div slot="hint-more">
+    A média de um intervalo uniforme de 0 a 8 é o seu ponto médio.
+  </div>
+  <div slot="solution">
+    A espera média é 8/2 = 4 ms. A pior espera aproxima-se de 8 ms. A hipótese
+    de o evento permanecer disponível impede perder o evento antes da consulta.
+  </div>
+  <div slot="mistakes">
+    Usar 8 ms como média ou aplicar a conta a impulsos que desaparecem antes de
+    serem consultados.
+  </div>
+</Exercise>

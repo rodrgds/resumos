@@ -8,7 +8,7 @@
   node((2, 2), [0xFB \ delta Y], corner-radius: 4pt),
   node((0, 1), [bit 3 = 1 \ sincroniza], corner-radius: 4pt),
   node((1, 1), [+5 \ direita], corner-radius: 4pt),
-  node((2, 1), [-5 \ para cima], corner-radius: 4pt),
+  node((2, 1), [-5 \ para baixo], corner-radius: 4pt),
   edge((0, 2), (0, 1), "-|>"),
   edge((1, 2), (1, 1), "-|>"),
   edge((2, 2), (2, 1), "-|>"),

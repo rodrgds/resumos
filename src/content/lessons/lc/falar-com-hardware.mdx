@@ -1,74 +1,118 @@
 ---
 title: Falar com o hardware
-description: Mapeamento em memória, registos e polling com máscaras de bits.
+description: Portas de entrada e saída, memória mapeada, máscaras e polling com limites.
 section: conteudo
-order: 2
+order: 3
+practices:
+  - lc/praticar-registos
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import registo from '../../lc/registo-byte.typ?raw';
 
-Um periférico, visto do programa, é um conjunto de **registos** indentados por endereços: escreves num endereço para lhe dar ordens e lês de outro para saber o estado e receber dados. A técnica chama-se mapeamento em memória (_memory-mapped I/O_), e dominá-la é falar com o hardware. Tudo o resto da cadeira é variação sobre este tema com registos diferentes.
+Um controlador liga o processador a um periférico. O programa interage com o controlador através de registos: lê dados recebidos, escreve ordens e consulta o estado da operação. Os registos podem ter efeitos que uma variável normal não tem, como consumir um byte quando o lês.
 
-## Registos e portas
+## Registos e espaços de endereçamento
 
-Cada periférico expõe alguns endereços. Por convenção, uns são de **estado** (dizem o que se passa), outros de **dados** (transportam os bytes) e outros de **controlo** (configuram o comportamento). Lês o estado, decides, e só depois tocas nos dados ou no controlo. Nunca escrevas num registo sem saber que bits estás a mexer: muitos registos misturam campos independentes no mesmo byte, e escrever o byte inteiro pode mudar um campo que querias intacto.
+Há registos de **dados**, de **estado** e de **controlo**. A classificação indica a função, mas não obriga cada um a ter um endereço distinto. O mesmo endereço pode selecionar registos diferentes conforme leias ou escrevas.
 
-A leitura e a escrita fazem-se com funções de acesso a portas, que recebem o endereço e o valor. O padrão de cada operação é sempre o mesmo: máscara para isolar o campo, comparação para decidir, escrita cirúrgica para atuar.
+No i8042, ler `0x64` consulta o estado; escrever `0x64` envia um comando ao controlador. Ler `0x60` retira dados do output buffer; escrever `0x60` envia um byte pelo input buffer. Os nomes input e output referem-se ao ponto de vista do controlador, não do processador.
 
-## Máscaras de bits
+Há duas maneiras de colocar esses endereços no sistema:
 
-Uma **máscara** é um valor com 1s exatamente nas posições que te interessam, combinada com o registo através de AND para leitura ou OR para escrita:
+| Acesso            | Espaço de endereçamento    | Operação do processador                       |
+| ----------------- | -------------------------- | --------------------------------------------- |
+| Memory-mapped I/O | Parte do espaço de memória | Instruções de acesso à memória                |
+| Port-mapped I/O   | Espaço de I/O separado     | Instruções próprias, como `IN` e `OUT` em x86 |
+
+As portas do timer, do i8042 e da UART são port-mapped I/O. O framebuffer é memória mapeada. Não chames memory-mapped I/O a todas as leituras de portas. A arquitetura ARM usa memória mapeada para este acesso; x86 também suporta memória mapeada, além do seu espaço de portas de 16 bits.
+
+## Privilégios e Minix
+
+Um processo normal não pode executar qualquer operação de hardware. O sistema limita o acesso para proteger os outros processos e os seus recursos. No Minix, os drivers são processos em espaço de utilizador com permissões próprias. O programa de LC usa **kernel calls** para pedir operações privilegiadas ao microkernel, por exemplo `sys_inb` e `sys_outb`.
+
+Uma máquina virtual fornece um PC emulado. O Minix acede ao hardware da máquina virtual, não recebe por isso acesso livre aos dispositivos físicos do computador anfitrião. O código dos laboratórios depende da imagem Minix e das bibliotecas de apoio fornecidas para LC.
+
+`sys_inb` escreve o resultado numa variável de 32 bits, mesmo quando lê apenas um byte. Passar o endereço de um `uint8_t` através de um cast não aumenta o objeto: permitiria escrever para lá do seu fim. Esta função completa faz a adaptação segura no ambiente Minix/LCF:
 
 ```c
-uint8_t status = ler_registo(REG_ESTADO);
+#include <lcom/lcf.h>
+#include <stdint.h>
 
-if (status & BIT_PRONTO) {
-  uint8_t dado = ler_registo(REG_DADOS);
-  /* processar o byte recebido */
+int read_port_byte(int port, uint8_t *value) {
+  if (value == NULL) return 1;
+  uint32_t raw;
+  int result = sys_inb(port, &raw);
+  if (result != OK) return result;
+  *value = (uint8_t)raw;
+  return OK;
 }
 ```
 
-`BIT_PRONTO` vale `1 << 0` se o bit de pronto for o bit 0. O teste `status & BIT_PRONTO` é diferente de zero quando o bit está ligado, seja qual for o resto do byte. Para ligar um bit sem tocar nos outros, usa OR: `controlo | BIT_ATIVAR`. Para desligar, usa AND com o complemento: `controlo & ~BIT_ATIVAR`. Estes três gestos, AND para testar, OR para ligar, AND com NOT para desligar, resolvem quase todas as manipulações de registos da cadeira.
+O chamador recebe um byte apenas após uma leitura bem-sucedida. A função não é executável no navegador: precisa dos cabeçalhos, serviços e permissões Minix do laboratório. Os nomes de tipos antigos `u32_t` e `u8_t` aparecem em algumas APIs com o mesmo papel.
 
-Um exemplo concreto: o registo de estado vale `0x21`, ou seja `0b00100001`. Cada campo testa-se com a sua máscara, cego aos outros campos:
+## Testar e alterar campos
+
+Uma máscara tem bits a 1 nas posições que interessam. Num byte `r`, as operações usuais são:
+
+| Intenção                                     | Expressão      |
+| -------------------------------------------- | -------------- |
+| Saber se algum bit da máscara `m` está ativo | `(r & m) != 0` |
+| Saber se todos estão ativos                  | `(r & m) == m` |
+| Ligar os bits de `m`                         | `r \| m`       |
+| Limpar os bits de `m`                        | `r & ~m`       |
+| Inverter os bits de `m`                      | `r ^ m`        |
+
+`&` combina bits. `&&` testa a verdade de expressões e devolve 0 ou 1. Para `r = 0x20` e `m = 0x01`, `r & m` é 0, mas `r && m` é 1. O segundo teste não diz se o bit 0 está ativo.
 
 <Typst
   source={registo}
   format="svg"
-  alt="Byte de estado com os campos nomeados: bit 0 é o pronto e testa-se com 0x01, bit 5 é o erro e testa-se com 0x20."
+  alt="Num byte, o bit 5 testa-se com 0x20 e o bit 0 com 0x01; cada máscara isola um campo diferente."
 />
 
-Confirma os gestos correndo o exemplo: com `0x21`, o pronto dá 1 e o erro dá 1; ligar e desligar o bit 2 leva o controlo de `0x00` a `0x04` e de volta a `0x00`.
-
-<CodePlayground
-  language="c"
-  title="Testar, ligar e desligar bits"
-  code={
-    '#include <stdio.h>\n#include <stdint.h>\n\n#define BIT_PRONTO (1 << 0)\n#define BIT_ERRO (1 << 5)\n\nint main(void) {\n    uint8_t status = 0x21;\n    printf("pronto=%d\\n", (status & BIT_PRONTO) != 0);\n    printf("erro=%d\\n", (status & BIT_ERRO) != 0);\n    uint8_t controlo = 0x00;\n    controlo = controlo | (1 << 2);\n    printf("controlo=0x%02X\\n", controlo);\n    controlo = controlo & ~(1 << 2);\n    printf("controlo=0x%02X\\n", controlo);\n    return 0;\n}'
-  }
-/>
-
-Se o bit de pronto for o bit 0, `0x21 & 0x01` dá `0x01`, diferente de zero, por isso há dado à espera. Se o bit de erro for o bit 5, `0x21 & 0x20` dá `0x20`, por isso há também um erro assinalado. Dois testes independentes no mesmo byte, cada um cego ao outro campo.
-
-## Polling: o ciclo de espera
-
-O **polling** pergunta ao dispositivo em ciclo até ele estar pronto. Se já viste a comparação entre mecanismos em [Entrada e saída](/cadeiras/ac/entrada-saida/), aqui está a implementação:
+Para substituir um campo, limpa primeiro o campo antigo e insere o novo. Se os bits 4 a 2 contêm um modo, a máscara é `0x1C`. Com `r = 0xA7` e o novo modo 5:
 
 ```c
-while (!(ler_registo(REG_ESTADO) & BIT_PRONTO)) {
-  /* espera ativa: o processador não faz mais nada */
-}
-uint8_t dado = ler_registo(REG_DADOS);
+uint8_t next = (uint8_t)((r & ~0x1Cu) | (5u << 2));
 ```
 
-Repara nas duas leituras separadas: o estado lê-se dentro do ciclo, os dados lêem-se uma vez fora dele. Ler os dados dentro do ciclo consumiria bytes antes de os processares. E repara que o ciclo não tem corpo: a espera ativa é propositada, mas é também o preço, porque o processador fica preso aqui até o dispositivo responder.
+`0xA7 & ~0x1C` conserva `0xA3`. `5 << 2` dá `0x14`. O resultado é `0xB7`. Usar apenas OR deixaria bits do modo anterior ligados. Usa valores sem sinal nas máscaras e garante que a contagem de um deslocamento é menor do que a largura do operando.
 
-:::warning[Os dois erros clássicos do polling]
-Primeiro, testar o bit errado ou com a máscara deslocada: o ciclo nunca sai, ou sai cedo demais. Confirma sempre a posição do bit no diagrama do registo antes de escreveres a máscara. Segundo, esquecer um limite de tentativas nos dispositivos lentos: se o hardware não responder, o programa fica pendurado sem dizer porquê. Nos trabalhos, um contador de tentativas com mensagem de erro poupa horas de depuração.
-:::
+Esta leitura, alteração e escrita só é válida se o registo for legível e permitir essa semântica. Um registo write-only, ou com bits que se limpam ao escrever 1, exige a sequência descrita pelo dispositivo.
 
-## Para levar para a próxima página
+## Polling e timeout
 
-O polling funciona e é simples, mas ata o processador ao ritmo do periférico mais lento. A página sobre [Interrupções](interrupcoes/) inverte a relação: em vez de perguntares sem parar, subscreves o evento e segues a tua vida até o hardware te chamar.
+Em **polling**, o programa consulta o estado até a condição ser satisfeita. Antes de ler o output buffer do i8042, espera `OBF = 1`. Antes de escrever uma ordem, espera `IBF = 0`. São condições diferentes.
+
+Um ciclo sem limite pode nunca terminar. Define uma política de falha e deixa o controlador ter tempo para responder. Esta função completa do ambiente Minix espera até cinco tentativas, espaçadas por 20 ms:
+
+```c
+#include <lcom/lcf.h>
+#include <stdint.h>
+
+int wait_kbc_input_empty(void) {
+  const unsigned attempts = 5;
+  const unsigned delay_us = 20000;
+  for (unsigned i = 0; i < attempts; ++i) {
+    uint32_t status;
+    int result = sys_inb(0x64, &status);
+    if (result != OK) return result;
+    if ((status & (1u << 1)) == 0) return OK;
+    if (i + 1 < attempts)
+      tickdelay(micros_to_ticks(delay_us));
+  }
+  return 1;
+}
+```
+
+O resultado esperado é `OK` assim que IBF estiver a 0, ou erro se a leitura falhar ou a condição não surgir. São cinco observações e no máximo quatro atrasos, cerca de 80 ms mais o custo das chamadas e o arredondamento a ticks. Isto é uma política para este exemplo, não uma constante do dispositivo.
+
+Polling não implica sempre espera ativa sem corpo: o programa pode consultar periodicamente e executar outra tarefa entre consultas. Com período de consulta $P$, um evento que fica disponível até ser lido espera entre aproximadamente 0 e $P$ antes de ser detetado. Se os instantes forem uniformes, a espera média é $P/2$. Um buffer pequeno pode perder eventos durante esse intervalo.
+
+## Quando escolher polling
+
+Polling evita o custo de configurar e receber interrupções e pode servir para uma operação curta e esperada, como obter uma resposta a um comando. Interrupções permitem bloquear à espera de eventos pouco frequentes. A escolha depende da frequência dos eventos, do tempo de resposta permitido, da capacidade do buffer e do custo de cada consulta ou atendimento.
+
+Não concluas que uma das opções é sempre mais rápida. A próxima página separa o pedido de interrupção do dispositivo, o atendimento no kernel e a notificação recebida pelo programa.

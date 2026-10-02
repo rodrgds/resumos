@@ -1,0 +1,84 @@
+---
+title: Praticar UART
+description: Exercícios originais de raciocínio, com pistas e soluções completas.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="lc-taxa-util"
+  title="Contar bits por carácter"
+  explanation="/cadeiras/lc/relogio-serie/#comunicação-assíncrona"
+  answer={{ kind: 'number', value: 1920, tolerance: 0, unit: 'bytes/s' }}
+>
+  <p>
+    Uma UART usa 19200 bit/s em 7E1. Qual é a taxa máxima ideal de caracteres de
+    dados por segundo, sem pausas?
+  </p>
+  <div slot="hint">Inclui start, dados, paridade e stop.</div>
+  <div slot="hint-more">Um carácter ocupa 1 + 7 + 1 + 1 bits.</div>
+  <div slot="solution">
+    Cada carácter ocupa dez bits e a taxa é 19200/10 = 1920 caracteres por
+    segundo. Cada carácter contém sete bits úteis. O protocolo da aplicação pode
+    reduzir ainda mais a taxa de payload.
+  </div>
+  <div slot="mistakes">
+    Dividir apenas por sete ou confundir bytes úteis da aplicação com toda a
+    transmissão.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-dlab-alias"
+  title="Escrever no registo certo"
+  explanation="/cadeiras/lc/relogio-serie/#lcr-e-divisor"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei DLL no offset 0 com DLAB ativo.',
+      'Limpei DLAB antes de escrever dados.',
+      'Preservei os parâmetros da trama.',
+    ],
+  }}
+>
+  <p>
+    COM1 tem LCR = 0x83. O programa escreve 0x41 em 0x3F8 esperando enviar a
+    letra A. O que alterou e o que devia fazer?
+  </p>
+  <div slot="hint">0x83 tem bit 7 ativo.</div>
+  <div slot="hint-more">Com DLAB, o offset 0 deixa de ser THR.</div>
+  <div slot="solution">
+    Alterou DLL, o byte baixo do divisor, porque DLAB está a 1. Devia limpar
+    DLAB mantendo a configuração 8N1, por exemplo LCR = 0x03, verificar LSR.THRE
+    e só depois escrever 0x41 em THR. O divisor pode agora precisar de
+    reposição.
+  </div>
+  <div slot="mistakes">
+    Interpretar qualquer escrita no endereço base como transmissão, sem atender
+    ao estado de LCR.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-iir-ativo-baixo"
+  title="Decidir se existe uma causa"
+  explanation="/cadeiras/lc/relogio-serie/#ier-e-iir"
+  answer={{ kind: 'number', value: 1, tolerance: 0 }}
+>
+  <p>
+    Lês IIR = 0xC1. Responde 1 se não há interrupção pendente ou 0 se há uma
+    causa que deve ser despachada agora.
+  </p>
+  <div slot="hint">Os bits superiores podem indicar estado da FIFO.</div>
+  <div slot="hint-more">O bit 0 tem a regra de pendência ativa a zero.</div>
+  <div slot="solution">
+    A resposta é 1. O bit 0 de 0xC1 vale 1, portanto não há causa pendente. Não
+    interpretes os bits de identificação como uma causa antes de conferir esse
+    bit.
+  </div>
+  <div slot="mistakes">
+    Usar if (iir &amp; 1) para entrar no despacho de causas ou confundir o
+    estado de FIFO com a pendência.
+  </div>
+</Exercise>

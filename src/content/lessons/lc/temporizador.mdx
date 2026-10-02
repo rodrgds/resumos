@@ -1,85 +1,116 @@
 ---
 title: Temporizador
-description: O i8254, o divisor de frequência e a medida de tempo com interrupções.
+description: Contadores i8254, palavra de controlo, read-back, divisor e intervalos em ticks.
 section: conteudo
-order: 4
+order: 5
+practices:
+  - lc/praticar-timer
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import cadeia from '../../lc/cadeia-timer.typ?raw';
+import InteractiveDemo from '../../../components/InteractiveDemo.astro';
+import TimerDivider from '../../lc/TimerDivider.astro';
 
-O **temporizador** (i8254) é o periférico mais simples e o primeiro que vais programar: gera interrupções a um ritmo que tu defines. É também o relógio de todo o projeto, porque quase tudo o resto (ritmo de jogo, timeouts, medições) se conta em tiques dele. Perceber o divisor aqui é perceber metade dos periféricos seguintes.
+O i8254 tem três contadores de 16 bits. Cada um recebe impulsos de um relógio de entrada e produz uma saída conforme o modo escolhido. No PC, a saída do contador 0 está ligada à IRQ0. É essa saída que usamos para obter ticks periódicos.
 
-## O relógio de entrada e o divisor
+## Relógio, divisor e modos
 
-O i8254 recebe um relógio fixo de 1193182 Hz e divide-o por um **divisor** que tu programas, de 1 a 65535. A frequência de saída é a conta direta:
+Nos exemplos usamos a frequência nominal de entrada $f_{in}=1\,193\,182\ \text{Hz}$. No código do laboratório usa a constante `TIMER_FREQ` do cabeçalho de apoio, sem a repetir em várias funções.
 
-$$
-f_{\text{sa\'ida}} = \frac{1193182}{\text{divisor}}
-$$
+Nos modos periódicos, um divisor $N$ determina a frequência:
 
-<Typst
-  source={cadeia}
-  format="svg"
-  alt="Cadeia do temporizador: o relógio fixo de 1193182 Hz dividido por 19886 produz interrupções a 60 Hz."
-/>
+$$f_{out}=\frac{f_{in}}{N},\qquad T=\frac{N}{f_{in}}.$$
 
-O modo habitual gera uma onda quadrada: a saída fica metade do período a 1 e metade a 0, e cada flanco pode gerar uma interrupção. Programar o temporizador é escolher o divisor para a frequência que queres e escrever os dois bytes dele (menos e mais significativo) no registo do contador, depois de enviar a palavra de controlo que seleciona o contador e o modo.
+Em contagem binária, o valor carregado `0x0000` representa 65536, não um divisor zero. Os modos 2 e 3 exigem um divisor de pelo menos 2. Em BCD, o contador representa quatro algarismos decimais e o intervalo é diferente; não interpretes um valor BCD como um contador binário de 16 bits.
 
-## Exemplo: 60 interrupções por segundo
+| Modo               | Comportamento da saída                                                 |
+| ------------------ | ---------------------------------------------------------------------- |
+| 0, terminal count  | A saída sobe quando a contagem termina e conserva esse nível           |
+| 1, one-shot        | Um disparo externo inicia um impulso, que pode ser novamente disparado |
+| 2, rate generator  | Um impulso baixo de um ciclo por período, com recarga automática       |
+| 3, square wave     | Saída alta e baixa durante partes aproximadamente iguais do período    |
+| 4, software strobe | Impulso no fim da contagem iniciada por software                       |
+| 5, hardware strobe | Impulso no fim da contagem disparada externamente                      |
 
-A frequência usada nos trabalhos é 60 Hz. O divisor ideal seria $1193182 / 60 = 19886{,}37$, mas o divisor tem de ser inteiro, por isso programa-se 19886. A frequência real fica:
+No modo 3, um divisor par dá metades iguais. Com divisor ímpar, a fase alta dura um ciclo de entrada mais do que a baixa. Não contes os dois flancos da onda como duas interrupções por período: a ligação ao controlador de interrupções responde ao flanco previsto pelo hardware.
 
-$$
-f_{real} = \frac{1193182}{19886} = 60 + \frac{22}{19886} \approx 60{,}0011\ \text{Hz}
-$$
+## Palavra de controlo
 
-porque $19886 \times 60 = 1193160$ e sobram 22. O erro é de cerca de uma parte em 55000: numa hora, o relógio desvia-se menos de um décimo de segundo. Confirma a conta correndo o programa: o divisor sai 19886 e a frequência real sai 60,0011 Hz.
+As portas dos contadores são `0x40`, `0x41` e `0x42`; a porta de controlo é `0x43`. A palavra de controlo normal tem estes campos:
 
-<CodePlayground
-  language="c"
-  title="Divisor e frequência real"
-  code={
-    '#include <stdio.h>\n\nint main(void) {\n    long clock = 1193182;\n    int divisor = (int)(clock / 60);\n    long real = (clock * 10000L) / divisor;\n    printf("divisor=%d\\n", divisor);\n    printf("f=%ld.%04ld Hz\\n", real / 10000, real % 10000);\n    return 0;\n}'
-  }
-/>
+| Bits  | Campo                                               |
+| ----- | --------------------------------------------------- |
+| 7 a 6 | Contador: 00 para 0, 01 para 1, 10 para 2           |
+| 5 a 4 | Acesso: 01 só LSB, 10 só MSB, 11 LSB seguido de MSB |
+| 3 a 1 | Modo de contagem                                    |
+| 0     | Base: 0 binária, 1 BCD                              |
 
-Moral dupla: o hardware real raramente dá a frequência exata que pediste, e quase nunca isso importa, desde que saibas quantificar o desvio em vez de o ignorar.
+Por exemplo, contador 2, LSB seguido de MSB, modo 3, binário:
 
-Com 60 interrupções por segundo, cada tique vale $1/60$ de segundo (cerca de 16,7 ms). O contador da página anterior transforma-se em cronómetro: divide o número de tiques por 60 e tens segundos.
+$$10\ 11\ 011\ 0_2=\texttt{0xB6}.$$
 
-## Outra frequência: 100 Hz
+Para carregar $N=1234=\texttt{0x04D2}$, escreve `0xB6` em `0x43`, depois `0xD2` em `0x42`, depois `0x04` em `0x42`. O endereço é o mesmo nas duas escritas; é a configuração de acesso que determina qual byte está a ser carregado.
 
-Se precisares de mais resolução temporal, o método é o mesmo com outro alvo. Compara os dois casos:
+Não invertas a ordem. Se escrevesses `0x04` e `0xD2`, carregarias `0xD204`, ou 53764. No contador 0, isso produziria cerca de 22,19 Hz em vez da frequência esperada para 1234.
 
-<Tabs id="divisor-frequencias" labels={['60 Hz', '100 Hz']}>
-  <div slot="panel-0">
+## Read-back e estado
 
-Alvo 60 Hz, o caso dos trabalhos: divisor 19886, frequência real 60,0011 Hz, tique de 16,7 ms. Erro de uma parte em 55000.
+Para conhecer a configuração, escreve um **read-back command** em `0x43` e lê o estado na porta do contador escolhido. Os bits 7 e 6 são 11 para distinguir este comando de uma palavra de controlo normal.
 
-  </div>
-  <div slot="panel-1">
+| Bit | Valor relevante no read-back                      |
+| --- | ------------------------------------------------- |
+| 5   | 0 para capturar a contagem, 1 para não a capturar |
+| 4   | 0 para capturar o estado, 1 para não o capturar   |
+| 3   | 1 seleciona o contador 2                          |
+| 2   | 1 seleciona o contador 1                          |
+| 1   | 1 seleciona o contador 0                          |
+| 0   | Reservado, escreve 0                              |
 
-Alvo 100 Hz: $1193182 / 100 = 11931{,}82$, programa-se o divisor 11931. A frequência real é $1193182 / 11931 \approx 100{,}0069$ Hz e cada tique vale 10 ms. Pagas o preço em interrupções por segundo: quase o dobro de atendimentos para o mesmo trabalho.
+COUNT e STATUS são seleções ativas a 0. Para obter **só o estado** do contador 0, a palavra é `0xE2`: `0xC0` identifica read-back, `0x20` evita a contagem e `0x02` seleciona o contador. Depois, lê `0x40` uma vez.
 
-  </div>
-</Tabs>
+No byte de estado, o bit 7 representa OUT e o bit 6 é Null Count, que indica se o novo valor ainda não foi carregado no elemento de contagem. Os bits 5 a 0 repetem acesso, modo e base. Não interpretes os bits 7 e 6 do estado como seleção do contador.
 
-## Medir um intervalo conhecido
+Extrai o modo com `(status >> 1) & 7`. Os códigos 6 e 7 são alternativas de 2 e 3; normaliza-os subtraindo 4. Para ler também a contagem, respeita a ordem de leitura definida para o estado capturado e os bytes do contador. O latch permite obter um valor coerente sem juntar bytes de contagens diferentes.
 
-Para cronometrar algo, regista o contador no início e no fim e subtrai. Se o início foi no tique 120 e o fim no tique 453, passaram $453 - 120 = 333$ tiques, ou seja $333 / 60 = 5{,}55$ segundos. A resolução é de um tique: intervalos abaixo de 16,7 ms medem-se em zero ou um tique, sem meio termo. Quando precisares de mais precisão, a solução é subir a frequência (com um divisor menor) e pagar o preço em interrupções por segundo.
+## Escolher a frequência
 
-:::warning[O contador dá a volta]
-O contador de tiques é um inteiro com tamanho finito. Se o usares como relógio durante muito tempo, ele transborda e a subtração fim menos início deixa de funcionar. Nos trabalhos, ou usas um contador de 32 bits (que a 60 Hz demora mais de dois anos a dar a volta) ou tratas o transbordo explicitamente na subtração.
-:::
+Para pedir 60 Hz, o divisor ideal é:
 
-## Para saber mais
+$$N^*=\frac{1\,193\,182}{60}=19\,886{,}366\ldots$$
 
-- [Programação do i8254 (OSDev)](https://osdev.wiki/wiki/Programmable_Interval_Timer): palavra de controlo, divisor e um exemplo `timer_phase` para comparar com o teu.
-- [Intel 8253/8254 (Wikipédia)](https://en.wikipedia.org/wiki/intel_8254): os três canais do chip e a que está ligado cada um no PC.
+Como o divisor é inteiro, uma política habitual no laboratório usa o quociente inteiro, $N=19886=\texttt{0x4DAE}$. A frequência real é:
 
-## Para levar para a próxima página
+$$f_{real}=\frac{1\,193\,182}{19886}\approx60{,}001106\ \text{Hz}.$$
 
-O temporizador é periódico e previsível: sabes sempre quando a próxima interrupção chega. O [Teclado](teclado/) é o oposto: interrupções esporádicas, ditadas por dedos humanos, com bytes que é preciso descodificar um a um.
+Carregam-se LSB `0xAE` e MSB `0x4D`. O período é cerca de 16,66636 ms. Uma contagem de 216000 ticks, interpretada como uma hora a 60 Hz, termina cerca de 0,0664 s antes de uma hora real neste modelo de relógio ideal.
+
+A escolha por quociente inteiro e a escolha por arredondamento ao inteiro mais próximo são políticas diferentes. Com 100 Hz, o quociente dá 11931 e cerca de 100,006873 Hz; o arredondamento dá 11932 e cerca de 99,998491 Hz. Declara qual estás a usar antes de comparar resultados.
+
+A simulação usa quociente inteiro e contagem binária em modo 3. Altera a frequência para observar o divisor, os bytes e a diferença entre pedido e resultado. Não modela tolerância do oscilador, atrasos do Minix nem perda de notificações.
+
+<InteractiveDemo label="Divisor e bytes do temporizador i8254">
+  <TimerDivider />
+</InteractiveDemo>
+
+Antes de converter para `uint16_t`, verifica a frequência e o quociente. Um pedido de 18 Hz exige um divisor maior do que 65536 e não cabe no intervalo binário. Converter primeiro pode produzir um divisor pequeno e uma frequência inesperada. Para usar 65536, conserva esse valor num tipo mais largo durante as contas e codifica-o como dois bytes zero.
+
+## Preservar a configuração
+
+Se a função só altera a frequência, conserva os quatro bits inferiores do estado, que contêm modo e base. A palavra normal reúne seleção do contador, acesso LSB/MSB e `status & 0x0F`:
+
+```c
+uint8_t control = (uint8_t)((timer << 6) | 0x30 | (status & 0x0F));
+```
+
+Este é um excerto de construção da palavra, com `timer` previamente validado entre 0 e 2. Ler a configuração, construir a palavra e carregar o divisor são operações com possíveis falhas de I/O. Se a base for BCD, uma rotina que só calcula divisores binários deve rejeitá-la ou tratá-la explicitamente.
+
+Alterar timer 0 também afeta o Minix: o sistema assume a frequência que programou para medir tempo. Se passares de 60 para 30 Hz sem mudar esse pressuposto, o relógio do sistema avança cerca de metade do tempo real. Repõe a configuração exigida pelo ambiente ao terminar a experiência.
+
+## Ticks, intervalos e overflow
+
+Com frequência $f$, $k$ ticks representam aproximadamente $k/f$ segundos. Entre os contadores 120 e 453, passaram 333 ticks, ou 5,55 s a 60 Hz. A resolução é um tick; o resultado não mede frações de tick.
+
+Para um contador sem sinal de 32 bits, a subtração também é feita módulo $2^{32}$. Se `start = 0xFFFFFFFE` e `now = 3`, `now - start` dá 5 em `uint32_t`, apesar da passagem por zero. O cálculo é útil desde que o intervalo real tenha menos de uma volta completa do contador. Não funciona se já passaram uma ou mais voltas sem que as tenhas contabilizado.
+
+Para decidir timeouts por comparação de diferenças, mantém todos os valores com o mesmo tipo sem sinal e uma duração dentro do intervalo suportado. A 60 Hz, uma volta de 32 bits dura cerca de 828,5 dias. Um contador com sinal não oferece a mesma regra: o overflow com sinal é comportamento indefinido.
+
+Finalmente, distinguir frequência do hardware e frequência de desenho evita erros de animação. Um timer a 60 Hz pode gerar um desenho a cada dois ticks, ou 30 frames/s. A lógica pode receber teclas entre frames; não a bloqueies à espera de um desenho.

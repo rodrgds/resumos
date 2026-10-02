@@ -1,0 +1,136 @@
+<div class="timer-divider" data-lc-timer>
+  <label>
+    Frequência pedida, em Hz
+    <input
+      type="number"
+      min="19"
+      max="1000"
+      step="1"
+      value="60"
+      data-frequency
+    />
+  </label>
+  <div
+    class="timer-flow"
+    role="group"
+    aria-label="Relógio de entrada dividido pelo contador produz a frequência de saída"
+  >
+    <div class="timer-step">
+      <span>Relógio de entrada</span>
+      <strong>1 193 182 Hz</strong>
+    </div>
+    <svg class="timer-arrow" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2 12h20m-7-6 7 6-7 6" />
+    </svg>
+    <div class="timer-step">
+      <span>Dividir por N</span>
+      <strong data-divisor>19886</strong>
+    </div>
+    <svg class="timer-arrow" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2 12h20m-7-6 7 6-7 6" />
+    </svg>
+    <div class="timer-step">
+      <span>Frequência real</span>
+      <strong data-real>60,001106 Hz</strong>
+    </div>
+  </div>
+  <output aria-live="polite" data-result>
+    N = 19886, LSB = 0xAE, MSB = 0x4D. Período = 16,66636 ms.
+  </output>
+</div>
+<script>
+  const inputClock = 1193182;
+  for (const demo of document.querySelectorAll<HTMLElement>(
+    '[data-lc-timer]',
+  )) {
+    const input = demo.querySelector<HTMLInputElement>('[data-frequency]')!;
+    const output = demo.querySelector<HTMLOutputElement>('[data-result]')!;
+    const divisor = demo.querySelector('[data-divisor]')!;
+    const realLabel = demo.querySelector('[data-real]')!;
+    const decimal = (n: number, digits: number) =>
+      n.toLocaleString('pt-PT', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+        useGrouping: false,
+      });
+    const byte = (n: number) =>
+      `0x${n.toString(16).toUpperCase().padStart(2, '0')}`;
+    input.addEventListener('input', () => {
+      const requested = input.valueAsNumber;
+      if (!Number.isInteger(requested) || requested < 19 || requested > 1000) {
+        output.textContent = 'Escolhe um número inteiro entre 19 e 1000 Hz.';
+        divisor.textContent = '?';
+        realLabel.textContent = '?';
+        return;
+      }
+      const n = Math.floor(inputClock / requested);
+      const real = inputClock / n;
+      divisor.textContent = String(n);
+      realLabel.textContent = `${decimal(real, 6)} Hz`;
+      output.textContent = `N = ${n}, LSB = ${byte(n & 255)}, MSB = ${byte(n >> 8)}. Período = ${decimal(1000 / real, 5)} ms.`;
+    });
+  }
+</script>
+<style>
+  .timer-divider {
+    display: grid;
+    gap: 16px;
+  }
+  label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  input {
+    width: 7rem;
+    padding: 8px;
+    font: inherit;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .timer-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(
+        0,
+        1fr
+      );
+    align-items: center;
+    gap: 8px;
+  }
+  .timer-step {
+    display: grid;
+    place-content: center;
+    gap: 4px;
+    min-height: 5rem;
+    padding: 12px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .timer-arrow {
+    width: 24px;
+    height: 24px;
+    justify-self: center;
+  }
+  path {
+    fill: none;
+    stroke: var(--text);
+    stroke-width: 2;
+  }
+  strong,
+  output {
+    font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 640px) {
+    .timer-flow {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .timer-arrow {
+      transform: rotate(90deg);
+    }
+  }
+</style>

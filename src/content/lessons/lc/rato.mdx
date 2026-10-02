@@ -1,78 +1,111 @@
 ---
 title: Rato
-description: Pacotes PS/2 de três bytes, deltas com sinal e botões.
+description: Pacotes PS/2, deltas de nove bits, comandos e deteção de gestos.
 section: conteudo
-order: 6
+order: 7
+practices:
+  - lc/praticar-rato
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 import Typst from '../../../components/Typst.astro';
 import pacote from '../../lc/pacote-rato.typ?raw';
 
-O **rato** PS/2 envia a cada movimento um pacote de três bytes: botões e sinais no primeiro, deslocamentos nos outros dois. O teu programa sincroniza-se no primeiro byte, junta os três e reconstrói o movimento. É o exercício mais completo de manipulação de bits da cadeira, porque quase toda a informação está partida em campos de poucos bits.
+O rato PS/2 comunica através do i8042, como o teclado, mas usa IRQ12 e pacotes de três bytes. O hardware entrega um byte por interrupção. Só depois de reunir os três bytes podes interpretar botões e movimento.
 
 ## Anatomia do pacote
 
-Os três bytes têm papéis fixos:
+Os dois contadores de deslocamento do rato têm nove bits em complemento para dois. O primeiro byte contém o bit mais significativo de cada delta; os bytes seguintes contêm os oito bits inferiores.
 
-- **Byte 1**: bits de estado. O bit 3 vale sempre 1 e serve de âncora de sincronização. Os bits 0, 1 e 2 dizem se os botões esquerdo, direito e do meio estão premidos. Os bits 4 e 5 dão o sinal dos deslocamentos em X e Y, e os bits 6 e 7 assinalam overflow em X e Y.
-- **Byte 2**: deslocamento em X em complemento para dois.
-- **Byte 3**: deslocamento em Y em complemento para dois, com o eixo Y a crescer para baixo no protocolo (o programa converte para as coordenadas do ecrã).
+| Byte             | Conteúdo                           |
+| ---------------- | ---------------------------------- |
+| 0, bit 7         | Overflow de Y                      |
+| 0, bit 6         | Overflow de X                      |
+| 0, bit 5         | Bit de sinal de Y                  |
+| 0, bit 4         | Bit de sinal de X                  |
+| 0, bit 3         | Sempre 1 no primeiro byte          |
+| 0, bits 2, 1 e 0 | Botões do meio, direito e esquerdo |
+| 1                | Oito bits inferiores do delta X    |
+| 2                | Oito bits inferiores do delta Y    |
 
-Antes de mais nada, confirma o bit 3 do primeiro byte: se não estiver a 1, estás dessincronizado e esse byte pertence ao meio de um pacote. Descarta e continua a ler até encontrares um byte com o bit 3 ligado.
+Os botões indicam o estado no instante do pacote, não apenas uma mudança. Um botão a 1 em vários pacotes pode significar que continua premido.
 
-## Complemento para dois e overflow
+## Reconstruir nove bits
 
-Os deltas são bytes com sinal: `0x05` vale +5, e `0xFB` vale $-(256 - 251) = -5$. O sinal no byte 1 tem de concordar com o valor: se o bit de sinal de X estiver ligado, o byte 2 deve ser negativo quando lido com sinal. Quando o bit de overflow correspondente está ligado, o movimento foi demasiado rápido para caber num byte e o delta não é fiável: o programa deve ignorar esse eixo nesse pacote em vez de aplicar um salto absurdo ao cursor.
+Se o bit de sinal de X estiver a 0, $\Delta x$ é o valor sem sinal do segundo byte. Se estiver a 1, subtrai 256:
 
-## Exemplo: reconstruir um movimento
+$$\Delta x=b_1-256\cdot s_x,\qquad\Delta y=b_2-256\cdot s_y.$$
 
-Chegam três bytes: `0x28`, `0x05`, `0xFB`. A reconstrução:
+Aqui $b_1$ e $b_2$ estão entre 0 e 255; $s_x$ e $s_y$ são 0 ou 1 obtidos do primeiro byte. Isto representa o intervalo de nove bits, de -256 a 255, na ausência de overflow.
 
-1. Primeiro byte `0x28`, ou seja `0b00101000`. O bit 3 está a 1: pacote sincronizado. Bits 0 a 2 a 0: nenhum botão premido. Bit 4 a 0: X positivo. Bit 5 a 1: Y negativo. Bits 6 e 7 a 0: sem overflow.
-2. Segundo byte `0x05`: deslocamento em X de +5.
-3. Terceiro byte `0xFB`: em complemento para dois, $-(256 - 251) = -5$ em Y do protocolo (para baixo), ou seja 5 unidades para cima no ecrã.
+Não uses apenas `(int8_t)b1`. Se o sinal X for 0 e `b1 = 0xC8`, o delta correto é +200, mas um inteiro de oito bits com sinal representaria -56. Se o sinal X for 1 e `b1 = 0x05`, o delta é $5-256=-251$, apesar de o bit 7 de `b1` estar a 0.
+
+Nos pacotes `28 05 FB`, o sinal X é 0 e o sinal Y é 1. Obtemos $\Delta x=5$ e $\Delta y=251-256=-5$.
 
 <Typst
   source={pacote}
   format="svg"
-  alt="Os três bytes do pacote do rato e o que cada um produz: sincronização e botões, mais 5 em X, menos 5 em Y."
+  alt="Pacote 28 05 FB: sem botões ou overflow, X desloca-se mais 5 para a direita e Y menos 5 para baixo nas coordenadas físicas do rato."
 />
 
-Resultado: o cursor move-se 5 píxeis para a direita e 5 para cima, sem botões. Confirma correndo o descodificador: a saída é deslocamento `dx=5`, `dy` de protocolo `-5` (5 para cima no ecrã) e nenhum botão.
+No protocolo, Y positivo significa movimento para cima. Num ecrã onde Y cresce para baixo, atualiza `screen_y -= delta_y`. Partindo de `(100, 100)`, o pacote do exemplo leva a `(105, 105)`, cinco unidades para a direita e para baixo.
+
+O programa completo seguinte imprime `dx=5 dy=-5 x=105 y=105`:
 
 <CodePlayground
   language="c"
-  title="Descodificar um pacote"
+  title="Deltas PS/2 de nove bits"
   code={
-    '#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t b1 = 0x28, b2 = 0x05, b3 = 0xFB;\n    int sinc = (b1 & 0x08) != 0;\n    int esq = (b1 & 0x01) != 0;\n    int dx = (int8_t)b2;\n    int dy = (int8_t)b3;\n    printf("sinc=%d esq=%d dx=%d dy_prot=%d\\n", sinc, esq, dx, dy);\n    printf("cima=%d\\n", -dy);\n    return 0;\n}'
+    '#include <stdint.h>\n#include <stdio.h>\n\nint main(void) {\n  uint8_t bytes[] = {0x28, 0x05, 0xFB};\n  int dx = (int)bytes[1] - ((bytes[0] & 0x10u) ? 256 : 0);\n  int dy = (int)bytes[2] - ((bytes[0] & 0x20u) ? 256 : 0);\n  int x = 100 + dx;\n  int y = 100 - dy;\n  printf("dx=%d dy=%d x=%d y=%d\\n", dx, dy, x, y);\n  return 0;\n}'
   }
 />
 
-Três bytes opacos transformados num movimento com direção, módulo e estado de botões, só com máscaras e aritmética de bytes.
+Este exemplo assume ausência de overflow e não aplica limites do ecrã. Na aplicação, mantém a soma num tipo com sinal, limita às coordenadas permitidas e só depois converte para o tipo da posição.
 
-## Com e sem botões
+## Montagem e sincronização
 
-O único campo que muda quando o utilizador prime um botão é o primeiro byte. Compara:
+Mantém um array de três bytes e um índice. Se o índice for 0, aceita apenas um byte com bit 3 a 1. Se não tiver esse bit, descarta-o. Nos índices 1 e 2, guarda o byte sem repetir o teste, porque os dados podem ter qualquer valor.
 
-<Tabs id="pacote-botoes" labels={['Sem botões', 'Botão esquerdo']}>
-  <div slot="panel-0">
+Quando o índice chega a 3, entrega o pacote completo e volta a 0. O bit 3 também pode estar ativo nos bytes de dados. Portanto, é uma ajuda de sincronização, não uma prova de que nunca juntaste pedaços de dois pacotes.
 
-Pacote `0x28 0x05 0xFB`: bits 0 a 2 a 0, nenhum botão premido. O movimento é o do exemplo acima, 5 para a direita e 5 para cima.
+Se uma leitura falhar ou houver erro de comunicação durante a montagem, invalida o pacote parcial e volta a procurar um primeiro byte. Um erro não deve produzir um movimento com bytes antigos. Se os bits de overflow estiverem ativos, a magnitude correspondente não é fiável. Define se ignoras esse eixo ou todo o movimento; ainda podes interpretar os botões se o pacote foi recebido validamente.
 
-  </div>
-  <div slot="panel-1">
+## Stream, remote e reporting
 
-Pacote `0x29 0x05 0xFB`: o primeiro byte passa a `0b00101001`, com o bit 0 a 1. O movimento é igual, mas o botão esquerdo está premido durante o deslocamento, o gesto de arrastar.
+Em **stream mode**, o rato envia pacotes quando há movimento ou mudança de botões, até à taxa de amostragem configurada. Ativar o modo não é o mesmo que ativar o envio: data reporting pode estar desligado.
 
-  </div>
-</Tabs>
+Em **remote mode**, o programa pede um pacote com `0xEB`. Isso é útil para uma experiência de polling. Cada byte do pacote continua a passar pelo output buffer do i8042; não chega um array de três bytes numa única leitura.
 
-:::warning[Ordem de leitura e sincronização]
-Os três bytes têm de ser lidos por ordem e sem misturar pacotes: se o handler guardar os bytes num buffer, o consumidor tem de os retirar três a três a começar sempre por um byte sincronizado. Perder um byte sem dar por isso desloca todos os pacotes seguintes. A verificação do bit 3 em cada primeiro byte é o alarme que deteta a dessincronização.
-:::
+| Comando do rato | Função                                       |
+| --------------- | -------------------------------------------- |
+| `0xF4`          | Ativar data reporting em stream mode         |
+| `0xF5`          | Desativar data reporting                     |
+| `0xEA`          | Selecionar stream mode                       |
+| `0xF0`          | Selecionar remote mode                       |
+| `0xEB`          | Pedir dados em remote mode                   |
+| `0xF3`          | Definir taxa de amostragem, com um argumento |
+| `0xF6`          | Repor parâmetros por defeito                 |
 
-## Para saber mais
+Subscreve IRQ12 com a política exclusiva apropriada ao laboratório, para o driver normal do Minix não disputar os bytes. Guarda a configuração relevante e repõe o modo e reporting ao sair.
 
-- [PS/2 Mouse (OSDev)](http://wiki.osdev.org/PS/2_Mouse): o formato do pacote de 3 bytes e os modos com roda de scroll.
+## Enviar um comando
+
+Os comandos do rato não se escrevem diretamente na porta de comandos do KBC. Para enviar cada byte:
+
+1. Espera IBF a 0 e escreve `0xD4` em `0x64`, a ordem ao KBC para encaminhar o byte seguinte ao rato.
+2. Espera IBF a 0 e escreve o byte em `0x60`.
+3. Espera a resposta e lê-a de `0x60`, tratando timeout e erros.
+
+O rato confirma cada byte recebido: `0xFA` é ACK, `0xFE` pede reenvio e `0xFC` assinala erro. Limita as tentativas. O ACK não é o conteúdo da resposta de um comando que devolve dados: essa resposta vem depois.
+
+Para definir taxa de amostragem, há uma sequência para `0xF3` e outra para o argumento. Cada uma usa `0xD4` e recebe o seu ACK. Se o argumento provocar pedido de reenvio, a política do protocolo pode exigir repetir o comando completo, não apenas o argumento.
+
+Em stream mode com reporting ativo, desativa reporting antes de enviar outros comandos para não misturar pacotes de movimento com respostas. A fase de comandos e a fase de receção de pacotes devem ter um dono claro do output buffer.
+
+## De pacotes a gestos
+
+Um gesto depende de uma sequência, por isso precisa de estado. Num exemplo próprio, queremos um arrasto horizontal para a direita com botão esquerdo premido, comprimento de pelo menos 100 unidades e desvio vertical absoluto no máximo 5.
+
+Começa em `WAIT_PRESS`. Na transição de botão solto para premido, passa a `DRAWING` e põe os acumulados a zero. Enquanto o botão continuar premido, soma os deltas. Se o movimento voltar para a esquerda ou o desvio ultrapassar a tolerância, invalida o candidato. Se $x\geq100$ e $|y|\leq5$, reconhece o gesto. Largar o botão antes disso cancela-o.
+
+A decisão de usar desvio vertical **acumulado** é parte do enunciado. Aceitar cada pacote com $|\Delta y|\leq5$ permitiria dez pacotes de +5 e um desvio final de 50. O parser de bytes e a máquina do gesto resolvem problemas distintos: a primeira produz pacotes completos; a segunda interpreta o seu significado ao longo do tempo.
