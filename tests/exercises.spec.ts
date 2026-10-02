@@ -35,6 +35,14 @@ test('fresh validation gives bounded feedback and restored progress stays still'
     wrongMotion[0].frames.every(({ x, y }) => Math.abs(x) <= 4 && y === 0),
   ).toBe(true);
   await expect(page.locator('.exercise-confetti')).toHaveCount(0);
+  await expect(question.getByRole('status')).toContainText(
+    'Resposta incorreta',
+  );
+  await page.reload();
+  await question.locator(':scope > details > summary').click();
+  await expect(question.getByRole('status')).toContainText(
+    'Resposta incorreta',
+  );
 
   await response.fill('210');
   const bounds = await check.evaluate((button) => {
@@ -81,7 +89,7 @@ test('reduced motion keeps validation feedback without celebrations or nudges', 
     await response.fill(value);
     await check.click();
     await expect(question.getByRole('status')).toContainText(
-      value === '210' ? 'Resposta correta' : 'Ainda não',
+      value === '210' ? 'Resposta correta' : 'Resposta incorreta',
     );
     await expect(page.locator('.exercise-confetti')).toHaveCount(0);
     expect(

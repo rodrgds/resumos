@@ -1,7 +1,12 @@
 export type Assistance = 'none' | 'hint' | 'solution';
 export interface ExerciseProgress {
   assistance: Assistance;
-  result?: 'attempted' | 'correct' | 'self-checked';
+  result?:
+    | 'attempted'
+    | 'correct'
+    | 'self-checked'
+    | 'self-correct'
+    | 'self-incorrect';
   resultAssistance?: Assistance;
 }
 const STORAGE_KEY = 'resumos-exercise-progress';
@@ -19,7 +24,13 @@ function readRecords(): Record<string, ExerciseProgress> {
           item &&
           ['none', 'hint', 'solution'].includes(item.assistance) &&
           (item.result === undefined ||
-            ['attempted', 'correct', 'self-checked'].includes(item.result)) &&
+            [
+              'attempted',
+              'correct',
+              'self-checked',
+              'self-correct',
+              'self-incorrect',
+            ].includes(item.result)) &&
           (item.resultAssistance === undefined ||
             ['none', 'hint', 'solution'].includes(item.resultAssistance)),
       ),

@@ -96,7 +96,9 @@ test('zero tolerance requires the exact numerical answer', async ({ page }) => {
   await question.locator(':scope > details > summary').click();
   await question.getByLabel('A tua resposta').fill('210.00000000000003');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
-  await expect(question.getByRole('status')).toContainText('Ainda não');
+  await expect(question.getByRole('status')).toContainText(
+    'Resposta incorreta',
+  );
 });
 
 test('practice opens in the lesson and the cheat sheet stays outside its sequence', async ({
@@ -193,7 +195,9 @@ test('numeric answers enforce tolerance and retain help attribution across clear
   await question.locator(':scope > details > summary').click();
   await question.getByLabel('A tua resposta').fill('3,52');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
-  await expect(question.getByRole('status')).toContainText('Ainda não');
+  await expect(question.getByRole('status')).toContainText(
+    'Resposta incorreta',
+  );
   await question.getByLabel('A tua resposta').fill('3,51');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
   await expect(question.getByRole('status')).toContainText(
@@ -222,6 +226,18 @@ test('numeric answers enforce tolerance and retain help attribution across clear
 test('choice explanations and self assessment stay distinct from automatic correctness', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('resumos-exercise-progress')) return;
+    localStorage.setItem(
+      'resumos-exercise-progress',
+      JSON.stringify({
+        'exemplo/soma-pares/1': {
+          result: 'self-checked',
+          assistance: 'solution',
+        },
+      }),
+    );
+  });
   await page.goto('/exemplo/apontamentos/');
   const choice = page.getByRole('region', {
     name: '5. Escolher o estado certo',
@@ -237,15 +253,35 @@ test('choice explanations and self assessment stay distinct from automatic corre
   await expect(choice.getByRole('status')).toContainText('Resposta correta');
   const open = page.getByRole('region', { name: '1. Justificar a fórmula' });
   await open.locator(':scope > details > summary').click();
+  await expect(open.getByRole('status')).toContainText(
+    'Sem correção automática',
+  );
   await open
     .getByLabel('A tua resposta')
     .fill('A minha resposta privada: somar duas linhas.');
-  await open.getByRole('button', { name: 'Registar tentativa' }).click();
-  await expect(open.getByRole('status')).toContainText('Tentativa registada');
-  await open.getByLabel('Ver solução', { exact: true }).click();
-  await open.getByRole('button', { name: 'Conferi a minha resposta' }).click();
+  await open.getByRole('button', { name: 'Comparar com a solução' }).click();
   await expect(open.getByRole('status')).toContainText(
-    'Resposta conferida por ti, após consultar a solução',
+    'Sem correção automática',
+  );
+  await expect(open.locator('[data-help="solution"]')).toHaveAttribute(
+    'open',
+    '',
+  );
+  await open.getByRole('button', { name: 'Preciso de corrigir' }).click();
+  await expect(open.getByRole('status')).toContainText(
+    'Resposta incorreta segundo a tua avaliação',
+  );
+  await page.reload();
+  await open.locator(':scope > details > summary').click();
+  await expect(open.getByRole('status')).toContainText(
+    'Resposta incorreta segundo a tua avaliação',
+  );
+  await open.getByLabel('Ver solução', { exact: true }).click();
+  await open
+    .getByRole('button', { name: 'A minha resposta está correta' })
+    .click();
+  await expect(open.getByRole('status')).toContainText(
+    'Resposta correta segundo a tua avaliação, após consultar a solução',
   );
   const saved = await page.evaluate(() =>
     localStorage.getItem('resumos-exercise-progress'),
