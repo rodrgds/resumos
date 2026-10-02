@@ -243,6 +243,10 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 
 `language` aceita `python`, `c`, `cpp`, `java`, `javascript`, `sql`, `haskell`, `prolog` ou `php`. `code` é o programa completo; `input` fornece a entrada padrão, ou o corpo HTTP acessível por `php://input` em PHP e `title` muda o título do bloco. Java precisa da classe `Main`, sem declaração de pacote. Haskell precisa de `main` e não suporta entrada interativa; GHC requer WebAssembly JSPI, disponível nas versões recentes de Chrome e Edge. Prolog executa o predicado `main/0` com SWI-Prolog, não SICStus. Os exemplos usam Python 3.11, C17, C++17, Java 8, QuickJS, SQLite, GHC 9.14 e PHP 8.4. Não dependas de pacotes externos, rede ou ficheiros do computador do leitor. Cada execução começa de novo. Os motores só são descarregados ao executar.
 
+Para entrada com várias linhas, usa uma expressão, como `input={"3\n10 20 30"}`. Num atributo MDX entre aspas, `\n` chega ao programa como dois caracteres, sem criar uma linha nova.
+
+O motor C/C++ não suporta exceções. Programas com `throw`, `catch`, `ifstream` ou `ofstream`, e programas que precisem de UNIX ou Minix, ficam em blocos estáticos completos, com instruções de compilação e resultados esperados. Confirma os restantes exemplos no editor do site, além de os compilar localmente.
+
 Para HTML, CSS e JavaScript com DOM, usa `WebPlayground`. A pré-visualização não tem acesso às notas nem à rede:
 
 ```mdx
