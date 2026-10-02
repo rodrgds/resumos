@@ -1006,7 +1006,7 @@ test('manual video navigation changes recordings without changing the lesson pos
     previous = next;
     await expect(dialog.locator('.brainrot-caption')).toHaveText(caption!);
     await expect(dialog.locator('video')).toHaveCount(3);
-    await expect(dialog.locator('video[src]')).toHaveCount(2);
+    await expect(dialog.locator('video[src]')).toHaveCount(3);
   }
   await dialog
     .getByRole('button', { name: 'Vídeo anterior', exact: true })
@@ -1196,7 +1196,7 @@ test('leaving the page closes the reader before a back-forward cache restore', a
   );
   await expect(dialog).not.toBeVisible();
   await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
-  await expect(dialog.locator('video[src]')).toHaveCount(2);
+  await expect(dialog.locator('video[src]')).toHaveCount(3);
   await page.goto('/exemplo/diagramas/');
   await page.goBack();
   await expect(
@@ -1397,7 +1397,7 @@ test.describe('touch feed', () => {
       await expect(
         dialog.getByRole('button', { name: 'Iniciar leitura' }),
       ).toBeVisible();
-      await expect(dialog.locator('video[src]')).toHaveCount(2);
+      await expect(dialog.locator('video[src]')).toHaveCount(3);
     }
     expect(
       await page.evaluate(

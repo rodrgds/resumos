@@ -1,13 +1,17 @@
 import type { BrainrotClip } from '../data/brainrot-clips';
 
 const SETTLE_DELAY_MS = 140;
+type ClipSlot = {
+  clip: BrainrotClip;
+  video: HTMLVideoElement;
+  item: HTMLElement;
+};
 
 export class ClipFeed {
   #element: HTMLElement;
   #clips: BrainrotClip[];
   #sequences = new Map<string, BrainrotClip[]>();
-  #slots: { clip: BrainrotClip; video: HTMLVideoElement; item: HTMLElement }[] =
-    [];
+  #slots: ClipSlot[] = [];
   #onChange: (label: string) => void;
   #onError: () => void;
   #timer?: ReturnType<typeof setTimeout>;
@@ -19,6 +23,11 @@ export class ClipFeed {
   #wheelTime = 0;
   #wheelDistance = 0;
   #wheelMoved = false;
+  #waitingForClip?: ClipSlot;
+  #manual?: ClipSlot;
+  #sequential?: ClipSlot;
+  #manualScrolling = false;
+  #naturalEnded = false;
 
   constructor(
     element: HTMLElement,
@@ -118,6 +127,10 @@ export class ClipFeed {
       if (this.#resetting) return;
       clearTimeout(this.#timer);
       const target = Math.round(element.scrollTop / element.clientHeight);
+      if (element.scrollTop !== element.clientHeight) {
+        this.#manualScrolling = true;
+        this.#align(element.scrollTop > element.clientHeight ? 1 : -1);
+      }
       if (target !== 1) this.#load(this.#slots[target]);
       if (!this.#touching)
         this.#timer = setTimeout(() => this.#settle(), SETTLE_DELAY_MS);
@@ -169,12 +182,36 @@ export class ClipFeed {
       );
     video.addEventListener('ended', () => {
       if (this.#slots[1]?.video !== video) return;
-      this.#element.scrollTop = this.#element.clientHeight * 2;
-      this.#settle({ sequential: true });
+      this.#naturalEnded = true;
+      // An explicit scroll takes precedence over automatic sequential playback.
+      if (
+        this.#touching ||
+        this.#manualScrolling ||
+        this.#waitingForClip === this.#manual
+      )
+        return;
+      this.#transition(this.#sequential);
     });
     video.addEventListener('error', () => {
-      if (this.#slots[1]?.video === video) this.#onError();
+      if (
+        this.#slots[1]?.video === video ||
+        this.#waitingForClip?.video === video
+      ) {
+        this.#waitingForClip = undefined;
+        this.#onError();
+      }
     });
+    const ready = () => {
+      if (this.#slots[1]?.video === video) this.#preview();
+      if (
+        this.#waitingForClip?.video === video &&
+        video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+        !video.seeking
+      )
+        this.#transition(this.#waitingForClip);
+    };
+    video.addEventListener('loadeddata', ready);
+    video.addEventListener('seeked', ready);
     item.append(video);
     return { clip, video, item };
   }
@@ -201,7 +238,7 @@ export class ClipFeed {
     });
   }
 
-  #settle({ sequential = false }: { sequential?: boolean } = {}) {
+  #settle() {
     if (
       this.#touching ||
       !this.#element.clientHeight ||
@@ -211,31 +248,60 @@ export class ClipFeed {
     const position = Math.round(
       this.#element.scrollTop / this.#element.clientHeight,
     );
-    if (position === 1) return;
-    if (!sequential) {
-      this.#randomize();
+    this.#manualScrolling = false;
+    if (position === 1) {
+      if (this.#naturalEnded && this.#waitingForClip !== this.#manual)
+        this.#transition(this.#sequential);
       return;
     }
-    if (position === 2) {
-      const old = this.#slots.shift()!;
-      this.#release(old.video);
-      old.item.remove();
-      const next = this.#slot(this.#adjacent(this.#slots[1].clip, 1));
-      this.#slots.push(next);
-      this.#element.append(next.item);
-    } else {
-      const old = this.#slots.pop()!;
-      this.#release(old.video);
-      old.item.remove();
-      const previous = this.#slot(this.#adjacent(this.#slots[0].clip, -1));
-      this.#slots.unshift(previous);
-      this.#element.prepend(previous.item);
+    this.#transition(this.#manual);
+  }
+
+  #transition(prepared?: ClipSlot) {
+    if (!prepared || this.#slots.length !== 3) return;
+    if (prepared.video.error) {
+      this.#waitingForClip = undefined;
+      this.#centre();
+      this.#onError();
+      return;
     }
+    if (
+      prepared.video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+      prepared.video.seeking
+    ) {
+      // Keep the decoded current frame visible until the target is ready.
+      this.#waitingForClip = prepared;
+      this.#centre();
+      return;
+    }
+    this.#waitingForClip = undefined;
+    this.#show(prepared);
+  }
+
+  #align(direction: number) {
+    if (!this.#manual || this.#slots[direction > 0 ? 2 : 0] === this.#manual)
+      return;
+    // Both gesture directions reveal the same prepared random recording.
+    const top = this.#element.scrollTop;
+    this.#slots = [this.#slots[2], this.#slots[1], this.#slots[0]];
+    this.#resetting = true;
+    this.#element.replaceChildren(...this.#slots.map((slot) => slot.item));
+    this.#element.scrollTop = top;
+    requestAnimationFrame(() => {
+      this.#resetting = false;
+    });
+  }
+
+  #show(prepared: ClipSlot) {
+    const current = this.#slots[1];
+    const unused = this.#slots[prepared === this.#slots[0] ? 2 : 0];
+    this.#slots = [current, prepared, unused];
+    this.#element.replaceChildren(...this.#slots.map((slot) => slot.item));
     this.#centre();
     this.#activate();
   }
 
-  #randomize() {
+  #prepareManual() {
     const current = this.#slots[1].clip;
     const sequences = [...this.#sequences.values()];
     const other = sequences.filter(
@@ -249,25 +315,56 @@ export class ClipFeed {
         : sequence;
     const clip = parts[Math.floor(Math.random() * parts.length)];
     const offset = Math.random();
-    for (const slot of this.#slots) this.#release(slot.video);
-    this.#slots = [
-      this.#slot(this.#adjacent(clip, -1)),
-      this.#slot(clip, offset),
-      this.#slot(this.#adjacent(clip, 1)),
-    ];
-    this.#element.replaceChildren(...this.#slots.map((slot) => slot.item));
-    this.#centre();
-    this.#activate();
+    const previous = this.#slots[2];
+    this.#release(previous.video);
+    const prepared = this.#slot(clip, offset);
+    previous.item.replaceWith(prepared.item);
+    this.#slots[2] = prepared;
+    this.#manual = prepared;
+    this.#preview();
+    this.#load(prepared);
+  }
+
+  #preview() {
+    const current = this.#slots[1]?.video;
+    const prepared = this.#manual?.video;
+    if (
+      !current ||
+      !prepared ||
+      !current.videoWidth ||
+      current.seeking ||
+      current.readyState < HTMLMediaElement.HAVE_CURRENT_DATA
+    )
+      return;
+    // Keep a still frame behind the upcoming card while its random seek buffers.
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.min(320, current.videoWidth);
+    canvas.height = Math.round(
+      (canvas.width * current.videoHeight) / current.videoWidth,
+    );
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.drawImage(current, 0, 0, canvas.width, canvas.height);
+    prepared.poster = canvas.toDataURL('image/jpeg');
   }
 
   #activate() {
+    this.#waitingForClip = undefined;
+    this.#manualScrolling = false;
+    this.#naturalEnded = false;
     const current = this.#slots[1];
     if (!current) return;
     for (const slot of this.#slots) slot.video.pause();
-    // The previous clip relinquishes its decoder and buffer. Only current + next preload.
-    this.#release(this.#slots[0].video);
     this.#load(current);
-    this.#load(this.#slots[2]);
+    const previous = this.#slots[0];
+    this.#release(previous.video);
+    const sequential = this.#slot(this.#adjacent(current.clip, 1));
+    previous.item.replaceWith(sequential.item);
+    this.#slots[0] = sequential;
+    this.#sequential = sequential;
+    this.#load(sequential);
+    // One random seek for gestures, one sequential successor for natural playback.
+    this.#prepareManual();
     this.#onChange(current.clip.label);
     if (this.#playing && !this.#motion.matches)
       void current.video.play().catch(this.#onError);
@@ -301,6 +398,17 @@ export class ClipFeed {
   }
 
   move(direction: number) {
+    const prepared = this.#manual?.video;
+    if (
+      prepared &&
+      (prepared.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+        prepared.seeking)
+    ) {
+      this.#transition(this.#manual);
+      return;
+    }
+    this.#manualScrolling = true;
+    this.#align(direction);
     this.#element.scrollTo({
       top: this.#element.clientHeight * (direction > 0 ? 2 : 0),
       behavior: this.#motion.matches ? 'instant' : 'smooth',
@@ -317,6 +425,11 @@ export class ClipFeed {
   close() {
     clearTimeout(this.#timer);
     this.#touching = false;
+    this.#waitingForClip = undefined;
+    this.#manual = undefined;
+    this.#sequential = undefined;
+    this.#manualScrolling = false;
+    this.#naturalEnded = false;
     for (const { video } of this.#slots) this.#release(video);
     this.#slots = [];
     this.#element.replaceChildren();
