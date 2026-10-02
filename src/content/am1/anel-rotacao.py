@@ -77,7 +77,11 @@ class AnelRotacao(Scene):
             label("y = x²").move_to([-4.15, -0.5, 0]),
             label("−2", size=36).move_to(axes.c2p(-2, 0) + [0, -0.35, 0]),
             label("2", size=36).move_to(axes.c2p(2, 0) + [0, -0.35, 0]),
-            label("x = 1", size=36).move_to(axes.c2p(1, 0) + [0, -0.35, 0]),
+            label("x = 1", size=36).move_to([1.55, -2.15, 0]),
+            Line(
+                axes.c2p(1, 1), [0.8, -2.15, 0],
+                color=palette["muted"], stroke_width=2,
+            ),
         )
         outer_name = label("R = 5 − x²").move_to([3.65, -0.45, 0])
         inner_name = label("r = 5 − 4 = 1").move_to([3.65, -1.25, 0])
