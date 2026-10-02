@@ -16,6 +16,10 @@ export function setupVimReading() {
   cursor.setAttribute('aria-hidden', 'true');
   cursor.hidden = true;
   document.body.append(cursor);
+  const feedback = document.createElement('p');
+  feedback.dataset.vimStatus = '';
+  feedback.setAttribute('role', 'status');
+  document.body.append(feedback);
   let enabled = false;
   let passages: Passage[] = [];
   let text = '';
@@ -23,6 +27,8 @@ export function setupVimReading() {
   let active = false;
   let count = '';
   let pendingG = false;
+  let selectionMode: 'character' | 'line' | null = null;
+  let selectionAnchor = 0;
   let query = '';
   let matches: number[] = [];
   let frame = 0;
@@ -104,11 +110,147 @@ export function setupVimReading() {
   function move(to: number) {
     position = Math.max(0, Math.min(text.length - 1, to));
     active = true;
+    if (!selectionMode) feedback.textContent = '';
+    // A reading motion owns the cursor; leave focused controls to Tab again.
+    if (!document.querySelector('dialog[open]'))
+      (document.activeElement as HTMLElement | null)?.blur?.();
+    if (selectionMode) selectRange();
     const rect = range()?.getBoundingClientRect();
     if (rect && (rect.top < 100 || rect.bottom > innerHeight - 40)) {
       window.scrollBy({ top: rect.top - innerHeight / 3, behavior: 'instant' });
     }
     draw();
+  }
+
+  function selectRange() {
+    const selection = window.getSelection();
+    const start = point(Math.min(selectionAnchor, position));
+    const end = point(Math.max(selectionAnchor, position));
+    if (!selection || !start || !end) return;
+    let startNode: Node = start.node;
+    let startOffset = start.offset;
+    let endNode: Node = end.node;
+    let endOffset = Math.min(
+      end.node.length,
+      end.offset +
+        ((end.node.data.codePointAt(end.offset) ?? 0) > 0xffff ? 2 : 1),
+    );
+    if (selectionMode === 'line' && selection.modify) {
+      selection.collapse(start.node, start.offset);
+      selection.modify('move', 'backward', 'lineboundary');
+      if (selection.focusNode && article?.contains(selection.focusNode)) {
+        startNode = selection.focusNode;
+        startOffset = selection.focusOffset;
+      }
+      selection.collapse(end.node, end.offset);
+      selection.modify('move', 'forward', 'lineboundary');
+      if (selection.focusNode && article?.contains(selection.focusNode)) {
+        endNode = selection.focusNode;
+        endOffset = selection.focusOffset;
+      }
+    }
+    if (position < selectionAnchor)
+      selection.setBaseAndExtent(endNode, endOffset, startNode, startOffset);
+    else selection.setBaseAndExtent(startNode, startOffset, endNode, endOffset);
+  }
+
+  function mousePlacement(event: PointerEvent) {
+    if (
+      !enabled ||
+      event.button !== 0 ||
+      event.pointerType !== 'mouse' ||
+      document.querySelector('dialog[open]')
+    )
+      return;
+    const target = event.target as Element;
+    if (target.closest(`${excluded}, [role="button"], [role="tab"]`)) return;
+    index();
+    const selection = window.getSelection();
+    if (target.closest('a[href]') && (!selection || selection.isCollapsed))
+      return;
+    let node: Node | null = null;
+    let offset = 0;
+    selectionMode = null;
+    if (
+      selection &&
+      !selection.isCollapsed &&
+      article?.contains(selection.anchorNode) &&
+      article.contains(selection.focusNode)
+    ) {
+      const selected = selection.getRangeAt(0);
+      node = selection.focusNode;
+      const forward =
+        node === selected.endContainer &&
+        selection.focusOffset === selected.endOffset;
+      offset = selection.focusOffset - (forward ? 1 : 0);
+      const anchor = passages.find(
+        (entry) => entry.node === selection.anchorNode,
+      );
+      if (anchor) {
+        selectionAnchor = characterStart(
+          anchor.start + selection.anchorOffset - (forward ? 0 : 1),
+        );
+        selectionMode = 'character';
+      }
+    } else {
+      const caret = document.caretPositionFromPoint?.(
+        event.clientX,
+        event.clientY,
+      );
+      // Older Safari exposes only the legacy caret hit-test API.
+      const legacy = document as {
+        caretRangeFromPoint?: (x: number, y: number) => Range | null;
+      };
+      const fallback = !caret
+        ? legacy.caretRangeFromPoint?.(event.clientX, event.clientY)
+        : null;
+      node = caret?.offsetNode ?? fallback?.startContainer ?? null;
+      offset = caret?.offset ?? fallback?.startOffset ?? 0;
+    }
+    const at = passages.find((entry) => entry.node === node);
+    if (!at) return;
+    count = '';
+    pendingG = false;
+    // Keep the native drag selection exactly as made, including its direction.
+    position = characterStart(at.start + Math.min(offset, at.node.length - 1));
+    active = true;
+    feedback.textContent = '';
+    draw();
+  }
+
+  function characterStart(offset: number) {
+    const start = Math.max(0, Math.min(offset, text.length - 1));
+    return /[\uDC00-\uDFFF]/.test(text[start] || '')
+      ? Math.max(0, start - 1)
+      : start;
+  }
+
+  async function yank() {
+    const selection = window.getSelection();
+    if (
+      !selection ||
+      selection.isCollapsed ||
+      !article?.contains(selection.anchorNode) ||
+      !article.contains(selection.focusNode)
+    ) {
+      feedback.textContent = 'Seleciona texto para copiar.';
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(selection.toString());
+      if (enabled) feedback.textContent = 'Texto copiado.';
+    } catch {
+      if (enabled)
+        feedback.textContent = 'Não foi possível copiar. Usa Ctrl/Cmd+C.';
+    }
+    selectionMode = null;
+  }
+
+  function selectionChanged() {
+    if (selectionMode && window.getSelection()?.isCollapsed) {
+      selectionMode = null;
+      feedback.textContent = '';
+    }
   }
 
   // Let the browser resolve visual lines, then restore the reader's selection.
@@ -203,10 +345,9 @@ export function setupVimReading() {
   });
   dialog.addEventListener('close', () => {
     input.value = '';
-    if (dialog.returnValue !== 'match') {
-      query = '';
-      matches = [];
-    }
+    if (dialog.returnValue === 'match') return;
+    query = '';
+    matches = [];
     if (
       document.activeElement === document.body ||
       dialog.contains(document.activeElement)
@@ -217,7 +358,8 @@ export function setupVimReading() {
   function handle({
     key,
     repeat: repeatEvent,
-  }: Pick<KeyboardEvent, 'key' | 'repeat'>) {
+    target,
+  }: Pick<KeyboardEvent, 'key' | 'repeat' | 'target'>) {
     if (!enabled || !article) return false;
     if (
       repeatEvent &&
@@ -227,11 +369,57 @@ export function setupVimReading() {
     )
       return false;
     if (key === 'Escape') {
+      if (selectionMode) window.getSelection()?.removeAllRanges();
+      selectionMode = null;
+      feedback.textContent = '';
       count = '';
       pendingG = false;
       query = '';
       matches = [];
       return false;
+    }
+    if (key === 'v' || key === 'V') {
+      index();
+      const mode = key === 'V' ? 'line' : 'character';
+      if (selectionMode === mode) {
+        selectionMode = null;
+        feedback.textContent = '';
+        window.getSelection()?.removeAllRanges();
+      } else {
+        if (!selectionMode) selectionAnchor = position;
+        selectionMode = mode;
+        feedback.textContent = `${mode === 'line' ? 'Seleção de linhas' : 'Seleção de caracteres'}. y copia; Tab destaca ou comenta.`;
+        move(position);
+      }
+      return true;
+    }
+    if (key === 'y') {
+      count = '';
+      pendingG = false;
+      void yank();
+      return true;
+    }
+    if (key === 'Enter' || key === ' ') {
+      if (
+        selectionMode ||
+        (target as Element)
+          ?.closest(
+            'a, button, input, select, textarea, summary, [role="button"], [role="tab"]',
+          )
+          ?.checkVisibility()
+      )
+        return false;
+      const at = point(position);
+      if (!at) return false;
+      const control =
+        at.node.parentElement?.closest<HTMLElement>('summary, a[href]');
+      if (!control || (key === ' ' && control.tagName !== 'SUMMARY'))
+        return false;
+      control.click();
+      index();
+      const next = passages.find((entry) => entry.node === at.node);
+      if (next) move(next.start + at.offset);
+      return true;
     }
     if (key === '/') {
       index();
@@ -344,6 +532,8 @@ export function setupVimReading() {
   }
 
   window.addEventListener('scroll', schedule, { passive: true, capture: true });
+  article?.addEventListener('pointerup', mousePlacement);
+  document.addEventListener('selectionchange', selectionChanged);
   window.addEventListener('resize', schedule);
   const resize = new ResizeObserver(schedule);
   if (article) resize.observe(article);
@@ -362,6 +552,9 @@ export function setupVimReading() {
       document.fonts.removeEventListener('loadingdone', schedule);
       cancelAnimationFrame(frame);
       cursor.remove();
+      feedback.remove();
+      article?.removeEventListener('pointerup', mousePlacement);
+      document.removeEventListener('selectionchange', selectionChanged);
     },
     { once: true },
   );
@@ -371,12 +564,14 @@ export function setupVimReading() {
       enabled = value;
       count = '';
       pendingG = false;
+      selectionMode = null;
       if (enabled && article) {
         index();
         active = true;
       }
       if (!enabled) {
         active = false;
+        feedback.textContent = '';
         query = '';
         matches = [];
         text = '';
