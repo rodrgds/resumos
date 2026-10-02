@@ -1,125 +1,136 @@
 ---
 title: CSS, caixa e layout
-description: Seletores, cascata e especificidade, modelo de caixa, flexbox, grelha e desenho responsivo.
+description: Seletores, cascata, herança, medidas, fluxo, posicionamento, flexbox, grid e desenho responsivo.
 section: conteudo
 order: 2
+practices:
+  - ltw/praticar-css
 ---
 
 import WebPlayground from '../../../components/WebPlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import caixa from '../../ltw/modelo-caixa.dot?raw';
+import catalogo from '../../ltw/catalogo.html?raw';
+import estilo from '../../ltw/catalogo.css?raw';
 
-O CSS veste o [esqueleto HTML](html-estrutura/): escolhe que elementos pintar, como se mede cada caixa e como as caixas se dispõem na página. São três mecanismos separados: os seletores dizem onde aplicar, a cascata decide quem ganha em caso de conflito e os modos de layout posicionam as caixas.
+O CSS resolve perguntas diferentes. O seletor escolhe os elementos; a cascata escolhe a declaração aplicável; o modelo de caixa calcula as medidas; o layout coloca as caixas. Segue esta ordem quando um resultado parece errado.
 
-## Seletores e a conta da especificidade
+## Seletores
 
-Quando duas regras pintam o mesmo elemento de cores diferentes, ganha a mais específica. A especificidade conta-se em três colunas: identificadores (`#id`), classes e pseudo-classes (`.classe`, `:hover`), e elementos (`p`, `li`). Compara estas duas regras para o preço na lista de produtos:
+Uma regra como `.livro > h2 { color: navy; }` escolhe os `h2` filhos diretos de um elemento com classe `livro`. O espaço escolhe descendentes a qualquer profundidade. A vírgula separa seletores, não acrescenta uma condição.
+
+| Seletor                        | Elementos selecionados                                  |
+| ------------------------------ | ------------------------------------------------------- |
+| `article.livro`                | `article` com a classe `livro`                          |
+| `[name="q"]`                   | Elementos com esse atributo e valor                     |
+| `.livro p`                     | Parágrafos descendentes de `.livro`                     |
+| `.livro > p`                   | Parágrafos filhos diretos                               |
+| `h2 + p`                       | O `p` imediatamente a seguir a um `h2`, com o mesmo pai |
+| `h2 ~ p`                       | Todos os irmãos `p` posteriores a um `h2`               |
+| `li:first-child`               | `li` que é o primeiro elemento filho                    |
+| `li:first-of-type`             | O primeiro `li` entre os irmãos                         |
+| `li:nth-child(2n)`             | `li` numa posição par entre todos os elementos filhos   |
+| `input:checked`                | Controlos marcados                                      |
+| `a:hover`, `a:focus-visible`   | Ligações sob o apontador ou com foco visível            |
+| `p::first-letter`, `p::before` | Uma parte ou um pseudo-elemento do `p`                  |
+
+Se um `ul` começa com outro elemento e só depois tem um `li`, esse `li` pode ser `:first-of-type` sem ser `:first-child`. O índice de `:nth-child` começa em 1 e conta elementos, não nós de texto.
+
+`:not(.esgotado)` exclui uma condição; `:is(.livro, .revista)` reúne alternativas; `.livro:has(button)` escolhe o elemento pela existência de um descendente que corresponde. Em seletores aninhados, `&` representa o seletor exterior. Para uma pergunta de seleção, desenha os pais e irmãos antes de contar especificidade.
+
+## Cascata e herança
+
+A especificidade só decide entre declarações que já estão no mesmo nível da cascata. Primeiro contam origem e importância, e a ordem das camadas quando existem; depois a especificidade; por fim, a posição no código. Aqui vamos comparar declarações normais do autor, sem camadas:
 
 ```css
-#produtos .preco {
+#catalogo .preco {
   color: red;
-}
-ul#produtos li span.preco {
+} /* (1, 1, 0) */
+ul#catalogo li span.preco {
   color: green;
-}
+} /* (1, 1, 3) */
 ```
 
-A primeira conta 1 identificador, 1 classe e 0 elementos: escreve-se (1, 1, 0). A segunda conta 1 identificador (`#produtos`), 1 classe (`.preco`) e 3 elementos (`ul`, `li`, `span`): (1, 1, 3). Compara coluna a coluna da esquerda para a direita; a segunda regra empata nas duas primeiras e ganha na terceira, por isso o preço sai verde. Um estilo em linha no atributo `style` ganha a todas, e o `!important` ganha a tudo menos a outro `!important`: evita os dois, porque transformam a cascata num leilão sem regras.
+Ambas atingem o mesmo `span.preco`. A segunda ganha porque empata em identificadores e classes, mas tem mais elementos. Comparamos o trio `(IDs, classes/atributos/pseudo-classes, elementos/pseudo-elementos)` da esquerda para a direita. Dez classes não ultrapassam um identificador. `*` e combinadores não acrescentam especificidade.
 
-:::tip[Como desempatar em teste]
-Escreve os trios lado a lado e compara da esquerda para a direita, como números de três dígitos. (1, 0, 5) ganha a (0, 12, 0): um identificador vale mais do que qualquer número de classes.
-:::
-
-## O modelo de caixa
-
-Cada elemento é uma caixa com quatro camadas, de dentro para fora: conteúdo, enchimento (`padding`), borda (`border`) e margem (`margin`). Lê o diagrama de fora para dentro: a margem separa caixas vizinhas e não recebe cor de fundo, a borda é a linha visível, o enchimento respira dentro da borda e o conteúdo é o que declaras na largura.
-
-<Dot
-  source={caixa}
-  alt="Modelo de caixa em quatro camadas encaixadas: por fora a margem, depois a borda, depois o enchimento e no centro o conteúdo."
-/>
-
-A largura que declaras cobre por omissão só o conteúdo, e o enchimento e a borda somam-se por fora, o que parte contas de layout. A primeira linha de quase todas as folhas de estilo resolve isto:
+`:where(...)` tem especificidade zero. `:is`, `:not` e `:has` usam a maior especificidade entre os argumentos. Um estilo em linha tem precedência sobre as regras normais da folha do autor; `!important` altera a importância, não a especificidade. Declarações importantes do utilizador podem ultrapassar as do autor. Não resumas a cascata a "o seletor mais comprido ganha".
 
 ```css
-* {
-  box-sizing: border-box;
-}
-```
-
-Com `border-box`, a largura declarada inclui conteúdo, enchimento e borda, e o cartão de produto com `width: 200px` mede mesmo 200 píxeis. As margens verticais de blocos vizinhos colapsam: ficam com a maior das duas, não com a soma. Quando um espaço vertical teimar em não obedecer à soma, suspeita de colapso de margens antes de somares enchimentos.
-
-## Dispor cartões com flexbox e grelha
-
-A montra da mercearia é uma fila de cartões que se ajusta ao ecrã. Experimenta: muda o `minmax(200px, 1fr)` para `minmax(350px, 1fr)` e prime **Pré-visualizar** para veres a grelha partir para menos colunas.
-
-<WebPlayground
-  html={
-    '<div class="montra">\n  <div class="cartao"><h3>Queijo</h3><p>8,50 €</p><button>Comprar</button></div>\n  <div class="cartao"><h3>Presunto</h3><p>12,00 €</p><button>Comprar</button></div>\n  <div class="cartao"><h3>Azeite</h3><p>6,00 €</p><button>Comprar</button></div>\n</div>'
+@layer base, componentes;
+@layer base {
+  #catalogo p {
+    color: red;
   }
-  css={
-    '.montra {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));\n  gap: 1rem;\n}\n.cartao {\n  display: flex;\n  flex-direction: column;\n  border: 1px solid #ccc;\n  padding: 1rem;\n}\n.cartao button {\n  margin-top: auto;\n}'
-  }
-/>
-
-A grelha cria tantas colunas de 200 píxeis quantas couberem e parte para a linha seguinte sozinha. Dentro de cada cartão, a coluna flexível empurra o botão para o fundo com `margin-top: auto`, por isso todos os botões ficam alinhados mesmo quando os nomes dos produtos têm tamanhos diferentes. A mesma montra se fosse só flexbox:
-
-<Tabs id="montra-grelha-flex" labels={['Grelha', 'Flexbox']}>
-  <div slot="panel-0">
-
-```css
-.montra {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
 }
-```
-
-A grelha decide o número de colunas pela largura disponível. Usa-a para a página e para conjuntos de cartões.
-
-  </div>
-  <div slot="panel-1">
-
-```css
-.montra {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.cartao {
-  flex: 1 1 200px;
-}
-```
-
-O flexbox embrulha os cartões e cada um cresce para encher a linha. Usa-o para alinhar coisas dentro de uma caixa, como o botão no fundo do cartão.
-
-  </div>
-</Tabs>
-
-Regra prática: grelha para a página e para conjuntos de cartões, flexbox para alinhar coisas dentro de uma caixa.
-
-## Desenho responsivo com media queries
-
-No telemóvel, a montra de várias colunas passa a uma só, e o menu horizontal passa a vertical:
-
-```css
-@media (max-width: 600px) {
-  .montra {
-    grid-template-columns: 1fr;
-  }
-  nav a {
-    display: block;
+@layer componentes {
+  p {
+    color: blue;
   }
 }
 ```
 
-Testa com as ferramentas de desenvolvimento do navegador, que simulam larguras de telemóvel sem saíres do computador. Desenha primeiro para o ecrã pequeno e acrescenta colunas com `min-width` à medida que o ecrã cresce: é mais fácil alargar do que espremer.
+Para declarações normais, a camada posterior ganha antes de contar especificidade, por isso o parágrafo fica azul. Regras normais sem camada ficam acima das normais com camada. A prioridade das camadas inverte-se para declarações importantes.
 
-:::details[Ver o raciocínio do mobile first]
-Começa com uma coluna e sem floreados: tudo o que é essencial aparece. Depois, para ecrãs com pelo menos 600 píxeis, liga a grelha de cartões; para ecrãs grandes, alarga o conteúdo com uma largura máxima centrada. Cada media query acrescenta, nenhuma remenda. Se um elemento só faz sentido no computador, pergunta se faz sentido de todo.
-:::
+Herança é outro mecanismo. `color` e propriedades de texto costumam herdar; margem, borda e padding não. Uma declaração diretamente no filho vence um valor herdado, mesmo que o seletor no pai tenha muitos IDs. `inherit` pede o valor calculado do pai; `initial` pede o valor inicial da propriedade; `unset` herda se a propriedade é herdada e usa o inicial nos restantes casos.
 
-## Para saber mais
+## Medidas e modelo de caixa
 
-- Guia de flexbox da MDN, com conceitos e casos de uso: https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Flexible_box_layout.
+Uma caixa tem conteúdo, padding, border e margin. Com `box-sizing: content-box`, a largura declarada mede o conteúdo. Se temos `width: 240px`, padding de 12px em cada lado e border de 2px:
+
+$$
+\text{largura até à borda}=240+2\times12+2\times2=268\text{ px}.
+$$
+
+Com margem de 10px em cada lado, a ocupação horizontal é 288px. Com `border-box`, os mesmos 240px já incluem padding e borda, e o conteúdo tem 212px. A margem continua fora dos 240px.
+
+Margens verticais de blocos em fluxo normal podem colapsar. Duas margens positivas de 16px e 24px dão 24px entre os blocos, não 40px. Essa regra não se aplica da mesma forma aos itens flex e grid. Padding não colapsa.
+
+`rem` usa o tamanho de letra da raiz. `em` em `font-size` usa o tamanho do pai; em outras propriedades, usa o tamanho de letra do próprio elemento. Se a raiz tem 16px e um filho usa `font-size: 2em` dentro de um pai com 20px, o filho tem 40px. Nesse filho, `padding: 1em` mede 40px, mas `padding: 1rem` mede 16px. Percentagens dependem da propriedade e da caixa de referência. `vw` e `vh` dependem do viewport.
+
+## Fluxo e posicionamento
+
+Um bloco participa normalmente numa sequência vertical. Um elemento inline participa nas linhas de texto, com regras de largura e altura diferentes. `inline-block` participa na linha e aceita dimensões de caixa. `display: none` retira a caixa do layout; `visibility: hidden` conserva o espaço.
+
+| `position` | Efeito                                                                                                     |
+| ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `static`   | Fluxo normal; `top` e `left` não deslocam a caixa                                                          |
+| `relative` | Desloca visualmente e conserva o lugar original                                                            |
+| `absolute` | Sai do fluxo; posiciona-se pela caixa de referência, frequentemente o antepassado posicionado mais próximo |
+| `fixed`    | Sai do fluxo e, no caso habitual, usa o viewport                                                           |
+| `sticky`   | Permanece no fluxo e fica preso ao limite definido durante o scroll                                        |
+
+Um antepassado transformado também pode estabelecer a caixa de referência, incluindo para `fixed`. `z-index` compara níveis dentro de contextos de empilhamento; um filho não salta arbitrariamente acima de um contexto exterior. `float` permite texto à volta de uma caixa; `clear` impede o bloco de ficar ao lado dos floats indicados. Para grelhas e alinhamento, usa flexbox ou grid.
+
+## Flexbox e grid
+
+Flexbox dispõe itens principalmente num eixo. `flex-direction` define o eixo principal; `justify-content` alinha nesse eixo e `align-items` no transversal. `flex-wrap` permite novas linhas. `flex: 1 1 200px` dá crescimento 1, redução 1 e base de 200px, não uma largura fixa garantida.
+
+Grid define linhas e colunas. `1fr` reparte espaço disponível, depois de considerar outras medidas e limites. `minmax(0, 1fr)` permite uma coluna reduzir sem o mínimo automático do conteúdo a forçar o layout. `gap` cria intervalos entre itens. `grid-column: 1 / 3` vai da linha 1 à linha 3 e ocupa duas colunas. `grid-template-areas` dá nomes a zonas retangulares.
+
+<WebPlayground html={catalogo} css={estilo} />
+
+O catálogo começa com uma coluna. A partir de 600px, a media query cria três. Dentro de cada cartão, flexbox organiza título, texto e botão em coluna; `margin-top: auto` absorve o espaço livre antes do botão. Assim, os botões alinham quando os cartões têm a mesma altura, sem fixar a altura do texto.
+
+## Cor, variáveis e movimento
+
+Cor pode usar nomes, hexadecimal, `rgb` ou `hsl`. O fundo pertence à caixa definida por `background`; `background-size: cover` pode cortar a imagem para cobrir a área. A fonte deve ter uma família de recurso, e `line-height` sem unidade acompanha o tamanho da letra.
+
+```css
+:root {
+  --cor-livro: #345;
+}
+.livro {
+  border-color: var(--cor-livro);
+}
+button {
+  transition: transform 150ms ease;
+}
+button:hover {
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+}
+```
+
+Uma custom property participa na cascata e costuma herdar. `transform` muda o desenho da caixa sem reservar um novo lugar no fluxo. `transition` interpola uma alteração de propriedade; não inicia por si uma sequência repetida. Testa o layout com textos longos, zoom e largura pequena. Uma media query responde ao ambiente, mas não corrige uma largura mínima que já não cabe.

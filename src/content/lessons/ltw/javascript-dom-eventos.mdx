@@ -1,132 +1,153 @@
 ---
 title: JavaScript no cliente e DOM
-description: Sintaxe de JavaScript, funções, DOM, eventos, propagação e validação de formulários.
+description: Tipos, arrays, funções, closures, objetos, protótipos, DOM, eventos e delegação.
 section: conteudo
 order: 4
+practices:
+  - ltw/praticar-javascript
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
 import WebPlayground from '../../../components/WebPlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import propagacao from '../../ltw/propagacao.dot?raw';
+import arrays from '../../ltw/arrays.js?raw';
+import closures from '../../ltw/closures.js?raw';
+import tarefas from '../../ltw/tarefas.html?raw';
+import programa from '../../ltw/tarefas.js?raw';
 
-O PHP monta a página no servidor antes de a enviar. O JavaScript corre no navegador depois de a página chegar e mexe nela sem pedir nada ao servidor. Vens de [funções em Python](/cadeiras/fp/funcoes/) e de [tipos estáticos em C++](/cadeiras/p/cpp-fundamentos/): o JavaScript tem funções parecidas com as de Python mas tipagem dinâmica ainda mais solta do que a do PHP, com conversões que surpreendem.
+JavaScript pode calcular valores e alterar a página já carregada. A linguagem e o DOM são coisas diferentes: arrays, funções e objetos pertencem à linguagem; `document`, elementos e eventos são APIs do navegador. Um programa JavaScript sem DOM pode correr noutro ambiente.
 
-<YouTube id="DHjqpvDnNGE" title="JavaScript in 100 Seconds" />
+## Tipos e conversões
 
-## Sintaxe sem surpresas, quase
-
-Declara variáveis com `const` por omissão e `let` quando o valor muda. O `var` antigo tem regras de alcance estranhas e não o deves usar em código novo:
+Usa `const` para uma ligação que não será reatribuída e `let` quando será. `const` não torna um objeto imutável. `var` tem âmbito de função e regras de declaração diferentes do âmbito de bloco de `let` e `const`.
 
 ```js
-const preco = 8.5;
-let qtd = 2;
-console.log('Total: ' + preco * qtd);
+const livro = { titulo: 'Redes' };
+livro.titulo = 'SQL'; // permitido
+// livro = {};       // reatribuição proibida
 ```
 
-Isto escreve `Total: 17` na consola do navegador, que abres nas ferramentas de desenvolvimento. As funções são valores como outros quaisquer, por isso passam-se como argumentos, o que vais usar em todos os eventos:
+Os tipos primitivos incluem string, number, boolean, null, undefined, bigint e symbol. `typeof null` devolve historicamente `'object'`, apesar de `null` não ser um objeto. `undefined` aparece, por exemplo, ao ler uma propriedade ausente.
 
 ```js
-function soma(a, b) {
-  return a + b;
+console.log('8' + 1); // 81, string
+console.log('8' - 1); // 7, number
+console.log('8' === 8); // false
+console.log(Number('8') + 1); // 9
+console.log(Number('8x')); // NaN
+```
+
+`+` pode concatenar; `-` exige operações numéricas. `===` evita conversões implícitas na igualdade. `NaN` significa que o resultado não é um número válido; usa `Number.isNaN` ou `Number.isFinite` conforme a condição. `Number('')` é 0, por isso confirma uma entrada obrigatória antes de converter.
+
+Num teste booleano, `0`, `''`, `null`, `undefined`, `NaN` e `false` são falsos; arrays e objetos vazios são verdadeiros. `x || alternativa` substitui todos os valores falsos; `x ?? alternativa` só substitui `null` e `undefined`. Uma quantidade válida igual a zero pode exigir `??`, não `||`.
+
+## Arrays e funções como valores
+
+`for...of` percorre valores de um iterável; `for...in` percorre nomes de propriedades e não é o percurso habitual para valores de um array. `map` transforma, `filter` seleciona e `reduce` acumula:
+
+<CodePlayground
+  language="javascript"
+  title="Filtrar e somar preços"
+  code={arrays}
+/>
+
+A saída é:
+
+```text
+Redes, SQL
+30
+3
+```
+
+`filter` escolheu preços 18 e 12. `map` extraiu os títulos. `reduce`, com total inicial 0, somou os preços. O array original conserva três entradas. Os objetos dentro de uma cópia superficial continuam partilhados; alterar `baratos[0].preco` também altera esse objeto em `livros`.
+
+Uma função é um valor que pode ser passado como callback. `livros.map((livro) => livro.titulo)` recebe uma função; escrever `map(obterTitulo())` chamaria `obterTitulo` imediatamente e passaria o resultado. Numa arrow function com corpo entre chavetas, usa `return` para devolver um valor.
+
+A desestruturação extrai partes, como `const { titulo, preco } = livro`. Spread, como `[...livros]`, cria uma cópia superficial. Um `Set` guarda valores únicos; um `Map` associa chaves a valores sem limitar as chaves a nomes de propriedades de um objeto.
+
+## Âmbito e closures
+
+O âmbito lexical depende do local onde a função foi criada. Uma closure é uma função com acesso ao ambiente lexical que conserva:
+
+<CodePlayground
+  language="javascript"
+  title="Conservar contadores numa closure"
+  code={closures}
+/>
+
+A saída é `6 7 1 8`. A primeira chamada cria um ambiente com `valor = 5`, usado por `a`. A segunda cria outro, com `valor = 0`, usado por `b`. Chamar `a` altera o seu próprio valor. O retorno de `criarContador` não destrói esse ambiente enquanto a função devolvida o usa.
+
+Com `let`, cada iteração de um `for` pode ter uma ligação própria, útil em callbacks. Com um `var` partilhado, callbacks que correm depois do ciclo podem ler todos o valor final. Prevê o momento de execução, não apenas o lugar onde o callback foi escrito.
+
+## Objetos, this e protótipos
+
+Num método normal chamado como `objeto.metodo()`, `this` refere habitualmente esse objeto. Separar o método do objeto pode perder essa associação:
+
+```js
+'use strict';
+const livro = {
+  titulo: 'Redes',
+  nome() {
+    return this.titulo;
+  },
+};
+const nome = livro.nome;
+console.log(livro.nome()); // Redes
+console.log(nome.call(livro)); // Redes
+const nomeLigado = nome.bind(livro);
+console.log(nomeLigado()); // Redes
+```
+
+Chamar apenas `nome()` neste exemplo estrito tenta aceder a `titulo` num `this` indefinido. `bind` cria uma função ligada; `call` faz a chamada com um `this` explícito. Uma arrow function herda `this` do ambiente em que foi criada, não o recebe do objeto pela mesma regra. Por isso não a uses como substituto automático de um método que depende de `this`.
+
+Se uma propriedade não existe no objeto, a procura pode continuar no seu protótipo e depois nos protótipos seguintes. Classes usam esse mecanismo:
+
+```js
+class Livro {
+  constructor(titulo) {
+    this.titulo = titulo;
+  }
+  nome() {
+    return this.titulo;
+  }
 }
-const dobro = (x) => x * 2;
+const redes = new Livro('Redes');
+console.log(redes.nome()); // Redes
+console.log(redes.hasOwnProperty('titulo')); // true
+console.log(redes.hasOwnProperty('nome')); // false
 ```
 
-Quanto às conversões, decora os dois casos clássicos: `'8' + 1` dá `'81'` porque o `+` com texto concatena, mas `'8' - 1` dá `7` porque o `-` só sabe subtrair e converte. Quando um cálculo sair torto, converte explicitamente com `Number()` antes de culpares a lógica.
+`titulo` pertence à instância; `nome` está em `Livro.prototype`. `extends` liga cadeias de protótipos, `super` permite chamar a implementação da classe base e membros `static` pertencem à classe. Campos privados com `#` têm uma restrição de acesso própria da linguagem.
 
-## Mexer na página pelo DOM
+## Ler e alterar o DOM
 
-O DOM é a página vista como uma árvore de objetos: cada etiqueta é um nó que podes ler, criar e alterar. A lista de tarefas da mercearia, com adicionar e remover, cabe nestas linhas em `tarefas.js`. Experimenta-a aqui: escreve um item, prime Enter, e remove-o a seguir.
+`querySelector` devolve o primeiro elemento ou `null`; `querySelectorAll` devolve uma NodeList estática. `children` contém elementos; `childNodes` inclui também texto e comentários. Por isso, espaços e mudanças de linha podem alterar `childNodes` sem acrescentar elementos.
 
-<WebPlayground
-  html={
-    '<form id="form"><input id="texto" /><button>Adicionar</button></form>\n<ul id="tarefas"></ul>'
-  }
-  js={
-    'const lista = document.querySelector("#tarefas");\ndocument.querySelector("#form").addEventListener("submit", (e) => {\n  e.preventDefault();\n  const texto = document.querySelector("#texto").value.trim();\n  if (!texto) return;\n  const li = document.createElement("li");\n  li.textContent = texto;\n  const btn = document.createElement("button");\n  btn.textContent = "Remover";\n  btn.addEventListener("click", () => li.remove());\n  li.append(btn);\n  lista.append(li);\n});'
-  }
-/>
+Para percorrer elementos, usa `parentElement`, `firstElementChild` e `nextElementSibling`. `closest(seletor)` começa no próprio elemento e procura um antepassado correspondente. `classList` altera classes; `dataset.id` lê `data-id`. Uma propriedade como `input.value` representa o valor atual, que pode diferir do atributo inicial escrito no HTML.
 
 ```js
-const lista = document.querySelector('#tarefas');
-document.querySelector('#form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const texto = document.querySelector('#texto').value.trim();
-  if (!texto) return;
-  const li = document.createElement('li');
-  li.textContent = texto;
-  const btn = document.createElement('button');
-  btn.textContent = 'Remover';
-  btn.addEventListener('click', () => li.remove());
-  li.append(btn);
-  lista.append(li);
-});
+const item = document.createElement('li');
+item.textContent = '<b>Redes</b>';
+lista.append(item);
 ```
 
-O `querySelector` escolhe elementos com a mesma sintaxe do CSS. O `addEventListener` regista uma função que corre quando o evento acontece: aqui, submeter o formulário cria um `li` novo com um botão que se remove a si próprio. O `preventDefault` impede o comportamento normal do formulário, que seria recarregar a página e deitar fora a lista. O texto entra por `textContent`, nunca por `innerHTML` com dados do utilizador, e a diferença entre os dois é esta:
+O utilizador vê o texto literal `<b>Redes</b>`. `innerHTML` interpretaria marcação. Para dados do utilizador, `textContent` evita misturar dados com HTML. `append` acrescenta nós; `replaceChildren` substitui todos os filhos; `remove` retira o nó. Mudar `style` aplica declarações em linha; mudar uma classe permite manter o aspeto no CSS.
 
-<Tabs id="texto-html" labels={['textContent', 'innerHTML']}>
-  <div slot="panel-0">
+## Eventos e delegação
 
-```js
-li.textContent = '<b>Queijo</b>';
-```
+O callback de `addEventListener` recebe um evento. `event.target` é o alvo onde o evento começou; `event.currentTarget` é o elemento cujo listener está a correr. Em captura, percorremos antepassados em direção ao alvo; em bubbling, o evento sobe do alvo pelos antepassados, quando o tipo de evento o permite.
 
-O elemento mostra o texto literal `<b>Queijo</b>`, sem etiquetas. É o comportamento seguro para dados do utilizador: nada do que ele escreve vira código. A razão está na página de [segurança](seguranca-web/).
+`preventDefault()` impede uma ação por defeito, como submeter o formulário. Não pára a propagação. `stopPropagation()` interrompe a propagação, não a ação por defeito. Estas operações resolvem problemas diferentes.
 
-  </div>
-  <div slot="panel-1">
+<WebPlayground html={tarefas} js={programa} />
 
-```js
-li.innerHTML = '<b>Queijo</b>';
-```
+Escreve `Rever HTTP`, adiciona e remove a tarefa. O formulário cria um `li`, com o texto e um botão. O listener de remoção fica no `ul`, não em cada botão: o clique sobe, `closest` identifica o botão e o programa remove o `li` correspondente. Esta delegação também funciona para itens criados depois de registar o listener.
 
-O elemento mostra **Queijo** a negrito, porque a cadeia foi interpretada como HTML. Útil para o teu próprio modelo, perigoso para dados do utilizador: uma carga com `script` corria. Só usa com cadeias que escreveste tu.
+O contador usa `children.length`, porque conta itens e não nós de texto. O texto entra por `textContent`. Experimenta escrever `<img src=x>` e confirma que aparece literalmente, sem criar uma imagem. O estado visível muda apenas no cliente; recarregar descarta esta lista.
 
-  </div>
-</Tabs>
+## Carregamento e temporizadores
 
-## A propagação dos eventos
+Um script clássico com `defer` executa depois da análise do documento e antes de `DOMContentLoaded`, conservando a ordem entre scripts deferidos. `async` executa quando o download termina, sem garantir essa ordem nem esperar pela análise completa. Módulos são deferidos por defeito.
 
-Um clique num botão dentro de um cartão dentro da página atravessa os três: primeiro desce do documento até ao botão (captura) e depois sobe de volta (bolha). Por omissão, os teus tratadores correm na subida.
+`setTimeout(callback, atraso)` agenda um callback para não correr antes do atraso, mas não garante um instante exato. `setInterval` repete; usa `clearTimeout` ou `clearInterval` para cancelar. O JavaScript corrente termina antes dos callbacks agendados, tema que continuamos em [HTTP e Ajax](/cadeiras/ltw/http-ajax-json/#promessas-e-ordem-de-execução).
 
-<Dot
-  source={propagacao}
-  alt="Propagação de um clique: desce do documento para a div e desta para o botão na fase de captura, e sobe do botão para a div e desta para o documento na fase de bolha."
-/>
-
-Experimenta este exercício com um botão dentro de uma `div`:
-
-```js
-document
-  .querySelector('#caixa')
-  .addEventListener('click', () => console.log('caixa'));
-document.querySelector('#botao').addEventListener('click', (e) => {
-  e.stopPropagation();
-  console.log('botão');
-});
-```
-
-Clicar no botão escreve só "botão", porque o `stopPropagation` trava a subida e a caixa nunca fica a saber. Sem essa linha, escrevia "botão" e depois "caixa", e um tratador na caixa que fecha um menu ou apaga uma seleção disparava sem seres tu a querer. Quando um clique fizer duas coisas em vez de uma, procura o tratador esquecido algures na subida.
-
-## Validar o formulário antes de enviar
-
-O HTML já valida o básico com `required` e `type`, mas regras como "a data de entrega é depois de hoje" pedem JavaScript. Valida no evento de submissão e bloqueia o envio quando falhar:
-
-```js
-document.querySelector('#encomenda').addEventListener('submit', (e) => {
-  const qtd = Number(document.querySelector('#qtd').value);
-  if (!(qtd >= 1)) {
-    e.preventDefault();
-    document.querySelector('#erro').textContent = 'A quantidade mínima é 1.';
-  }
-});
-```
-
-A mensagem aparece num elemento reservado para erros, junto ao campo, em vez de numa caixa de alerta que interrompe tudo. E lembra-te do limite desta validação: ela ajuda o utilizador honesto, mas o servidor volta a validar tudo, porque um pedido pode ser forjado sem passar pelo teu formulário. A validação do cliente é cortesia; a do servidor é segurança.
-
-:::tip[Depura na consola, não no escuro]
-Quando nada acontecer ao clicar, abre a consola: o JavaScript para no primeiro erro e diz a linha. Um `console.log` antes e depois da linha suspeita mostra se o tratador correu e com que valores. Nove em cada dez bloqueios são um seletor mal escrito que devolveu `null`.
-:::
+Um `<template>` guarda conteúdo inerte em `template.content`, que podes clonar com `cloneNode(true)` e inserir depois de preencher dados com destinos seguros. Shadow DOM cria uma árvore encapsulada para um componente, separando grande parte dos estilos e estrutura do documento exterior. Não é uma fronteira de segurança para guardar segredos.

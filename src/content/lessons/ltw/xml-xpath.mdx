@@ -1,106 +1,138 @@
 ---
 title: XML e XPath
-description: Documentos bem formados, elementos e atributos, e consultas XPath com predicados.
+description: Boa formação, validação, namespaces, árvores, caminhos XPath, predicados e funções.
 section: conteudo
 order: 8
+practices:
+  - ltw/praticar-xml
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import arvore from '../../ltw/arvore-xml.typ?raw';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import programa from '../../ltw/xml.php?raw';
 
-O XML representa dados em texto com etiquetas: legível por pessoas, processável por máquinas e independente da linguagem. Nesta cadeira aparece como formato de troca e de configuração, e o XPath é a linguagem para ir buscar pedaços a um documento XML sem o percorrer à mão.
+XML representa dados e documentos com elementos e atributos definidos pelo formato que escolhemos. Ao contrário do HTML, não tem um vocabulário fixo de etiquetas com significado para o navegador. XPath seleciona nós dessa árvore ou calcula valores a partir deles.
 
-## Documentos bem formados
-
-Um documento XML tem um elemento raiz único, etiquetas bem aninhadas e atributos entre aspas. O catálogo da mercearia em `catalogo.xml`:
+## Documento bem formado
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <catalogo>
-  <livro isbn="978-0-13-110362-7">
-    <titulo>C Programming Language</titulo>
-    <autor>Kernighan</autor>
-    <preco>45.00</preco>
+  <livro id="r1">
+    <titulo>Redes</titulo>
+    <preco>18</preco>
   </livro>
-  <livro isbn="978-0-596-52068-7">
-    <titulo>JavaScript: The Good Parts</titulo>
-    <autor>Crockford</autor>
-    <preco>25.00</preco>
+  <livro id="a1">
+    <titulo>Algoritmos</titulo>
+    <preco>25</preco>
+  </livro>
+  <livro id="s1">
+    <titulo>SQL</titulo>
+    <preco>12</preco>
   </livro>
 </catalogo>
 ```
 
-Visto como árvore, que é como o XPath o navega: a raiz `catalogo` tem dois filhos `livro`, e cada livro tem os seus `titulo` e `preco`.
+Existe um único elemento raiz, `catalogo`. As etiquetas fecham pela ordem inversa à abertura, os nomes distinguem maiúsculas e os valores de atributos usam aspas. `<livro id=r1>` não é bem formado; `<Titulo>Redes</titulo>` também não. Elementos vazios podem usar `<aviso/>`.
 
-<Typst
-  source={arvore}
-  format="svg"
-  alt="Árvore do catálogo: catalogo divide-se em dois livros; cada livro divide-se em titulo e preco."
-/>
+O nó raiz do documento contém o elemento `catalogo`; não são o mesmo nó. Cada `livro` tem um atributo `id` e dois elementos filhos. Os valores como `Redes` são nós de texto. Mudanças de linha e indentação também podem criar nós de texto. Atributos não são filhos na árvore XPath.
 
-Cada `livro` é um elemento com um atributo (`isbn`) e três elementos filhos. A distinção entre atributo e elemento filho é uma decisão de modelação: atributos para identificadores e metadados curtos, elementos para conteúdo que pode crescer ou repetir-se. Ao contrário do HTML, o XML não perdoa: uma etiqueta por fechar ou mal aninhada invalida o documento inteiro. Valida sempre antes de culpares a consulta.
+`&amp;` representa `&`, e `&lt;` representa `<` em texto. Uma secção `<![CDATA[...]]>` permite texto que não é interpretado como marcação, mas não pode conter o seu próprio terminador `]]>`. Comentários não podem conter `--` no interior.
 
-## Consultas XPath
+## Boa formação e validade
 
-O XPath navega na árvore com um caminho parecido com o dos ficheiros. Sobre o catálogo acima:
+Boa formação verifica as regras sintáticas do XML. Validade exige também cumprir um contrato, como DTD, XML Schema ou Relax NG. Um documento com `<preco>caro</preco>` pode ser bem formado e falhar um esquema que exija número.
 
-- `//livro` escolhe todos os elementos `livro`, em qualquer profundidade.
-- `//livro/titulo` escolhe os títulos desses livros.
-- `//livro[@isbn="978-0-596-52068-7"]` escolhe o livro com esse atributo.
-- `//livro[preco<30]/titulo` escolhe os títulos dos livros com preço abaixo de 30, ou seja, "JavaScript: The Good Parts".
-
-Os parênteses retos são predicados: condições que filtram os nós. Lê a última de dentro para fora: para cada `livro`, fica com os que têm `preco` menor que 30 e devolve o `titulo`. É a mesma ideia do `WHERE` do SQL que usaste no [PHP](php-dinamicas-bd/), aplicada a uma árvore em vez de uma tabela.
-
-Em PHP, a consulta corre com `DOMDocument` e `DOMXPath`, sem percorreres a árvore à mão:
-
-```php
-<?php
-$xml = new DOMDocument();
-$xml->load('catalogo.xml');
-$xp = new DOMXPath($xml);
-foreach ($xp->query('//livro[preco<30]/titulo') as $t) {
-    echo $t->textContent, "\n";
-}
-?>
-```
-
-A saída é uma linha: `JavaScript: The Good Parts`. O `load` lê e valida a boa formação, o `query` avalia o XPath e devolve a lista de nós, e o `textContent` extrai o texto de cada um. Se a saída vier vazia, confirma os nomes das etiquetas e o aninhamento no documento antes de reescreveres a expressão.
-
-:::tip[Exercício por predicado]
-Escreve a expressão que devolve os autores dos livros com preço superior a 40. Resposta: `//livro[preco>40]/autor`, que devolve "Kernighan". E para contar quantos são? Envolve com `count(...)`: `count(//livro[preco>40])` devolve `1`. Se a tua expressão devolver vazio, confirma os nomes das etiquetas e o aninhamento no documento antes de a reescreveres.
-:::
-
-## Quando usar XML
-
-Usa XML quando o formato precisa de validação formal contra um esquema, de namespaces para misturar vocabulários ou de ferramentas de transformação. Para trocar dados simples entre o teu JavaScript e o teu PHP, o JSON da página de [HTTP](http-ajax-json/) é mais leve e direto. Lado a lado, para o mesmo produto:
-
-<Tabs id="json-xml" labels={['JSON', 'XML']}>
-  <div slot="panel-0">
-
-```json
-{ "titulo": "Queijo da Serra", "preco": 8.5 }
-```
-
-Troca simples que o programa consome: o JavaScript lê com `JSON.parse` e o PHP escreve com `json_encode`. Sem contrato formal, sem validação.
-
-  </div>
-  <div slot="panel-1">
+Uma DTD possível para o catálogo, sem repetir aqui o documento inteiro:
 
 ```xml
-<produto>
-  <titulo>Queijo da Serra</titulo>
-  <preco>8.5</preco>
-</produto>
+<!ELEMENT catalogo (livro*)>
+<!ELEMENT livro (titulo, preco)>
+<!ATTLIST livro id ID #REQUIRED>
+<!ELEMENT titulo (#PCDATA)>
+<!ELEMENT preco (#PCDATA)>
 ```
 
-Documento com contrato: valida contra um esquema, aceita namespaces e transforma-se com ferramentas próprias. Mais verboso, mais garantias.
+`livro*` permite zero ou mais livros. `(titulo, preco)` exige os dois nessa ordem. O atributo `id` é obrigatório, com unicidade e formato de ID. `#PCDATA` admite texto, mas esta DTD não exige que o preço seja numérico. Um XSD pode acrescentar tipos, como `xs:decimal`, e restrições. Uma DTD não é uma base de dados nem substitui a verificação de regras de negócio.
 
-  </div>
-</Tabs>
+Ao processar XML não confiável, não atives resolução arbitrária de entidades externas nem carregamento de recursos do cliente. Esses mecanismos podem expor ficheiros ou fazer pedidos do servidor. O formato estar bem formado não o torna seguro.
 
-A relação entre os dois resume-se assim: JSON para dados que o programa consome, XML para documentos que precisam de contrato.
+## Caminhos XPath
 
-## Para saber mais
+Vamos usar XPath 1.0, como no DOMXPath de PHP. O contexto é o nó a partir do qual uma expressão é avaliada.
 
-- Documentação MDN de XPath, com a linguagem, funções e uso em JavaScript: https://developer.mozilla.org/en-US/docs/Web/XML/XPath.
+| Expressão                            | Resultado sobre o catálogo                                 |
+| ------------------------------------ | ---------------------------------------------------------- |
+| `/catalogo/livro`                    | Os três elementos `livro`                                  |
+| `/catalogo/livro/titulo`             | Os três elementos `titulo`                                 |
+| `/catalogo/livro/titulo/text()`      | Os seus nós de texto                                       |
+| `//livro`                            | Livros descendentes do documento, em qualquer profundidade |
+| `/catalogo/livro/@id`                | Atributos `id` dos livros                                  |
+| `/catalogo/livro[@id='s1']/titulo`   | O elemento cujo texto é SQL                                |
+| `/catalogo/livro[preco < 20]/titulo` | Títulos Redes e SQL                                        |
+| `count(/catalogo/livro)`             | O número 3                                                 |
+| `sum(/catalogo/livro/preco)`         | O número 55                                                |
+
+`/` no início fixa o nó raiz do documento. Entre passos, `/` liga o eixo de filhos habitual. `//` abrevia um percurso por descendentes, não apenas filhos diretos. `.` representa o contexto e `..` o pai. `@` seleciona atributos; `*` seleciona elementos com qualquer nome nesse passo.
+
+## Predicados e posição
+
+Um predicado entre `[]` filtra os candidatos do passo em que aparece. `[preco < 20]` avalia o preço de cada livro candidato. `[2]` equivale a uma condição sobre a posição, que começa em 1.
+
+```text
+/catalogo/livro[2]/titulo
+/catalogo/livro[preco < 20][1]/titulo
+/catalogo/livro[1][preco < 20]/titulo
+```
+
+A primeira dá Algoritmos. A segunda primeiro filtra baratos e depois escolhe o primeiro, Redes. A terceira escolhe o primeiro livro e só depois verifica o preço. Neste catálogo também dá Redes, mas não daria o mesmo se o primeiro livro custasse 30. A ordem dos filtros faz parte da pergunta.
+
+`//livro[1]` escolhe livros que são o primeiro `livro` entre os irmãos em cada grupo relevante. `(//livro)[1]` escolhe um único primeiro livro do conjunto global. Quando só há um `catalogo`, podem coincidir; com várias secções, a diferença torna-se visível.
+
+Podemos combinar condições com `and`, `or` e `not`. `contains(titulo, 'Red')` procura texto contido; `starts-with` verifica prefixo; `normalize-space` remove espaços exteriores e reduz sequências de espaços. `last()` usa a última posição. `|` une conjuntos de nós. Eixos como `ancestor::`, `descendant::` e `following-sibling::` permitem explicitar relações da árvore.
+
+Uma igualdade como `ingredientes/ingrediente = 'arroz'` em XPath 1.0 é verdadeira se algum dos nós selecionados tiver esse valor de texto. Não exige que todos os ingredientes sejam arroz. Essa distinção é útil em consultas de receitas ou catálogos com várias categorias.
+
+## Executar em PHP
+
+O exemplo completo carrega XML de uma string, consulta e conta:
+
+<CodePlayground
+  language="php"
+  title="Consultar o catálogo com XPath"
+  code={programa}
+/>
+
+A saída é:
+
+```text
+Redes
+SQL
+Total: 3
+```
+
+`loadXML` constrói a árvore a partir de texto. `query` devolve nós; `evaluate` também serve para resultados escalares, como `count`. Para obter o texto dos elementos escolhidos, usamos `textContent`. Não confundas um conjunto vazio com a string vazia de um elemento existente.
+
+## Namespaces
+
+Um namespace distingue vocabulários através de um URI. O prefixo é uma abreviatura local, não a identidade definitiva do nome:
+
+```xml
+<c:catalogo xmlns:c="urn:biblioteca">
+  <c:livro id="r1"><c:titulo>Redes</c:titulo></c:livro>
+</c:catalogo>
+```
+
+`c:livro` pertence ao namespace `urn:biblioteca`. Outro documento pode usar prefixo `b` para o mesmo URI, sem mudar esse nome expandido. Declarar `xmlns="urn:biblioteca"` coloca elementos sem prefixo nesse namespace. A declaração por defeito não coloca automaticamente atributos sem prefixo no namespace.
+
+Em XPath 1.0, um nome sem prefixo procura elementos sem namespace. Para consultar um documento com namespace por defeito, regista um prefixo na consulta:
+
+```php
+$xpath->registerNamespace('b', 'urn:biblioteca');
+$livros = $xpath->query('/b:catalogo/b:livro');
+```
+
+O prefixo `b` da consulta não precisa de ser o `c` do documento. Precisa de apontar para o mesmo URI. O URI identifica o namespace; não implica que o programa deva descarregar algo desse endereço.
+
+## Tecnologias relacionadas
+
+XPath seleciona. XSLT transforma XML, por exemplo em HTML ou noutro XML. XQuery consulta e constrói resultados. XSL-FO descreve formatação de documentos, frequentemente para PDF. SVG é um vocabulário XML para gráficos. Um documento XML não ganha validade, namespaces ou um esquema só por usar etiquetas; é o formato e o processamento escolhidos que dão essas propriedades. JSON também pode ter contratos de validação, por isso a escolha não se reduz a "XML validado, JSON sem regras".

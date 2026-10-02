@@ -1,0 +1,132 @@
+---
+title: Praticar PHP
+description: Exercícios próprios para aplicar e justificar a matéria.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="ltw-nota-zero"
+  title="Distinguir zero de ausência"
+  explanation="/cadeiras/ltw/php-dinamicas-bd/#valores-strings-e-arrays"
+  answer={{"kind": "self", "checklist": ["Conservei 0 como valor válido.", "Usei uma única chamada e comparação estrita."]}}
+>
+
+Uma função obterNota devolve um inteiro de 0 a 20 ou null quando não existe nota. Porque falha `if (obterNota($id))`? Escreve uma condição correta sem chamar a função duas vezes.
+
+<div slot="hint">
+
+Zero é falso numa condição booleana.
+
+</div>
+<div slot="hint-more">
+
+Guarda o resultado e compara estritamente com null.
+
+</div>
+<div slot="solution">
+
+Usa `$nota = obterNota($id); if ($nota !== null) { /* existe */ }`. A nota zero é um resultado válido e passa esta condição. A condição original confundia um valor existente igual a zero com ausência.
+
+</div>
+<div slot="mistakes">
+
+Não usar empty, porque também rejeita 0, nem assumir que uma nota em falta é uma string vazia.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-parametro-array"
+  title="Validar a fronteira HTTP"
+  explanation="/cadeiras/ltw/php-dinamicas-bd/#receber-um-pedido"
+  answer={{"kind": "self", "checklist": ["Rejeitei ausência, lixo e array.", "Passei um inteiro validado à função."]}}
+>
+
+Uma ação aceita quantidade inteira entre 1 e 5. Analisa as entradas ausente, quantidade=3, quantidade=3x e quantidade[]=3. Descreve a validação antes de chamar reservar(int $q).
+
+<div slot="hint">
+
+Uma entrada HTTP não é necessariamente uma string.
+
+</div>
+<div slot="hint-more">
+
+Confirma is_string antes de filter_var e usa min_range/max_range.
+
+</div>
+<div slot="solution">
+
+A ausência deve falhar; 3 deve produzir o inteiro 3; 3x deve falhar; quantidade[]=3 gera um array e deve falhar antes da validação escalar. Obtém `$_POST['quantidade'] ?? null`, exige string e FILTER_VALIDATE_INT entre 1 e 5. Só depois passa o inteiro à função.
+
+</div>
+<div slot="mistakes">
+
+intval(3x) aceitaria parcialmente a string. strict_types na função não substitui validação HTTP.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-consulta-limite"
+  title="Escolher SQL e ordenação"
+  explanation="/cadeiras/ltw/php-dinamicas-bd/#sqlite-e-consultas-preparadas"
+  answer={{"kind": "self", "checklist": ["Preparei o limite como valor.", "Escolhi a coluna numa lista fechada."]}}
+>
+
+Escreve uma consulta PDO para listar titulo e preco de livros com preco menor ou igual a um limite recebido. A ordenação recebida só pode ser titulo ou preco. Explica por que não usar ORDER BY :coluna.
+
+<div slot="hint">
+
+Valores usam marcadores; nomes de colunas precisam de uma lista fixa.
+
+</div>
+<div slot="hint-more">
+
+Escolhe um dos dois textos conhecidos e prepara a condição de preço.
+
+</div>
+<div slot="solution">
+
+Depois de validar o limite, usa um mapa como `$colunas = ['titulo' => 'titulo', 'preco' => 'preco'];` e recusa uma escolha fora dele. Constrói `SELECT titulo, preco FROM livro WHERE preco <= :limite ORDER BY ` seguido apenas da coluna fixa escolhida. Prepara e executa com ['limite' => $limite]. Um marcador representa um valor, não um identificador SQL.
+
+</div>
+<div slot="mistakes">
+
+Preparar não torna seguro concatenar uma coluna arbitrária enviada pelo cliente.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-acao-reserva"
+  title="Separar alteração e confirmação"
+  explanation="/cadeiras/ltw/php-dinamicas-bd/#alterar-dados-de-forma-consistente"
+  answer={{"kind": "self", "checklist": ["Expliquei rollback da primeira alteração.", "Usei commit no sucesso e 303 com exit."]}}
+>
+
+A reserva reduz stock e insere uma linha. A inserção falha após o UPDATE. O que tem de acontecer à primeira alteração? Após sucesso, como evitas repetir o POST ao atualizar a confirmação?
+
+<div slot="hint">
+
+As duas alterações pertencem à mesma transação.
+
+</div>
+<div slot="hint-more">
+
+O cliente deve seguir um 303 para uma página de leitura.
+
+</div>
+<div slot="solution">
+
+Se a inserção falha, faz rollback da transação, recuperando o stock. Só faz commit depois dos dois passos. No sucesso, envia Location para um destino fixo com estado 303 e termina com exit. O cliente lê a confirmação por GET, de modo que atualizar essa página não repete o POST.
+
+</div>
+<div slot="mistakes">
+
+Location sozinho não termina o PHP. A transação não substitui validar stock no UPDATE nem confirmar a autorização.
+
+</div>
+</Exercise>
