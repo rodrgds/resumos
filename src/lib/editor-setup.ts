@@ -11,7 +11,7 @@ import {
   highlightActiveLine,
   keymap,
 } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Prec } from '@codemirror/state';
 import {
   foldGutter,
   indentOnInput,
@@ -19,9 +19,22 @@ import {
   HighlightStyle,
   bracketMatching,
   foldKeymap,
+  LanguageSupport,
+  Language,
+  LRLanguage,
 } from '@codemirror/language';
-import { history, defaultKeymap, historyKeymap } from '@codemirror/commands';
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
+import {
+  history,
+  defaultKeymap,
+  historyKeymap,
+  indentWithTab,
+  temporarilySetTabFocusMode,
+} from '@codemirror/commands';
+import {
+  highlightSelectionMatches,
+  searchKeymap,
+  selectNextOccurrence,
+} from '@codemirror/search';
 import {
   closeBrackets,
   autocompletion,
@@ -29,11 +42,37 @@ import {
   completionKeymap,
 } from '@codemirror/autocomplete';
 import { lintKeymap } from '@codemirror/lint';
-import { tags } from '@lezer/highlight';
+import { tags, Tag, styleTags } from '@lezer/highlight';
+import { editorVim } from './editor-vim';
+
+const parameter = Tag.define(tags.variableName);
+export function editorLanguage(support: LanguageSupport | Language) {
+  if (
+    !(support instanceof LanguageSupport) ||
+    !(support.language instanceof LRLanguage)
+  )
+    return support;
+  return new LanguageSupport(
+    support.language.configure({
+      props: [
+        styleTags({
+          'ParamList/VariableName ParamList/VariableDefinition ParameterDeclaration/VariableName':
+            parameter,
+        }),
+      ],
+    }),
+    support.support,
+  );
+}
 
 const codeHighlightStyle = HighlightStyle.define([
   {
-    tag: [tags.keyword, tags.operator, tags.modifier, tags.meta],
+    tag: parameter,
+    color: 'var(--code-token-parameter)',
+    '--code-selected-text': 'var(--code-token-parameter)',
+  },
+  {
+    tag: [tags.keyword, tags.meta],
     color: 'var(--code-token-keyword)',
     '--code-selected-text': 'var(--code-token-keyword)',
   },
@@ -43,13 +82,7 @@ const codeHighlightStyle = HighlightStyle.define([
     '--code-selected-text': 'var(--code-token-string)',
   },
   {
-    tag: [
-      tags.number,
-      tags.bool,
-      tags.null,
-      tags.constant(tags.name),
-      tags.color,
-    ],
+    tag: [tags.number, tags.null, tags.constant(tags.name), tags.color],
     color: 'var(--code-token-constant)',
     '--code-selected-text': 'var(--code-token-constant)',
   },
@@ -57,7 +90,6 @@ const codeHighlightStyle = HighlightStyle.define([
     tag: [
       tags.function(tags.variableName),
       tags.function(tags.propertyName),
-      tags.typeName,
       tags.tagName,
       tags.labelName,
     ],
@@ -66,8 +98,33 @@ const codeHighlightStyle = HighlightStyle.define([
   },
   {
     tag: [tags.propertyName, tags.attributeName],
-    color: 'var(--code-token-parameter)',
-    '--code-selected-text': 'var(--code-token-parameter)',
+    color: 'var(--code-token-property)',
+    '--code-selected-text': 'var(--code-token-property)',
+  },
+  {
+    tag: tags.variableName,
+    color: 'var(--code-token-variable)',
+    '--code-selected-text': 'var(--code-token-variable)',
+  },
+  {
+    tag: tags.typeName,
+    color: 'var(--code-token-type)',
+    '--code-selected-text': 'var(--code-token-type)',
+  },
+  {
+    tag: tags.bool,
+    color: 'var(--code-token-boolean)',
+    '--code-selected-text': 'var(--code-token-boolean)',
+  },
+  {
+    tag: tags.operator,
+    color: 'var(--code-token-operator)',
+    '--code-selected-text': 'var(--code-token-operator)',
+  },
+  {
+    tag: tags.modifier,
+    color: 'var(--code-token-modifier)',
+    '--code-selected-text': 'var(--code-token-modifier)',
   },
   {
     tag: tags.punctuation,
@@ -99,6 +156,16 @@ const selectedWhitespace = EditorView.decorations.compute(
 
 export function editorSetup(root: HTMLElement) {
   return [
+    editorVim(),
+    Prec.highest(
+      EditorView.domEventHandlers({
+        keydown(event, view) {
+          // Multiple selections consume Escape before CodeMirror's Tab escape handler.
+          if (event.key === 'Escape') temporarilySetTabFocusMode(view);
+          return false;
+        },
+      }),
+    ),
     lineNumbers(),
     highlightActiveLineGutter(),
     highlightSpecialChars(),
@@ -125,8 +192,9 @@ export function editorSetup(root: HTMLElement) {
     rectangularSelection(),
     crosshairCursor(),
     highlightActiveLine(),
-    highlightSelectionMatches(),
+    highlightSelectionMatches({ highlightWordAroundCursor: true }),
     keymap.of([
+      { key: 'Ctrl-d', run: selectNextOccurrence, preventDefault: true },
       ...closeBracketsKeymap,
       ...defaultKeymap,
       ...searchKeymap,
@@ -134,6 +202,7 @@ export function editorSetup(root: HTMLElement) {
       ...foldKeymap,
       ...completionKeymap,
       ...lintKeymap,
+      indentWithTab,
     ]),
   ];
 }

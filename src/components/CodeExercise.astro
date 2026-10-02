@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import EditorFullscreen from './EditorFullscreen.astro';
 import type { CodeAnswer } from '../lib/code-exercise';
 import '../styles/playground.css';
 interface Props {
@@ -8,73 +9,99 @@ interface Props {
 const { answer } = Astro.props;
 ---
 
-<div
-  class="playground"
-  data-code-exercise
-  data-pagefind-ignore
-  data-annotation-ignore
->
-  <div class="playground-toolbar">
-    <strong>{answer.language === 'python' ? 'Python' : 'JavaScript'}</strong>
-    <div>
-      <button type="button" data-code-reset aria-label="Repor código" disabled>
-        <Icon name="arrow-path" size={15} />
-      </button>
-      <button type="button" data-code-stop hidden>
-        <Icon name="stop" size={14} /> Parar
-      </button>
-      <button type="button" data-code-check disabled>
-        <Icon name="play" size={14} /> Verificar código
-      </button>
+<div data-editor-workspace>
+  <div
+    class="playground"
+    data-code-exercise
+    data-pagefind-ignore
+    data-annotation-ignore
+  >
+    <div class="playground-toolbar">
+      <strong>{answer.language === 'python' ? 'Python' : 'JavaScript'}</strong>
+      <div>
+        <EditorFullscreen />
+        <button
+          type="button"
+          data-code-reset
+          aria-label="Repor código"
+          disabled
+        >
+          <Icon name="arrow-path" size={15} />
+        </button>
+        <button type="button" data-code-stop hidden>
+          <Icon name="stop" size={14} /> Parar
+        </button>
+        <button type="button" data-code-check disabled>
+          <Icon name="play" size={14} /> Verificar código
+        </button>
+      </div>
     </div>
+    <div class="editor-panes">
+      <div class="editor-source-pane">
+        <pre
+          data-code-source
+          tabindex="0"
+        ><code class={`language-${answer.language}`}>{answer.starter}</code></pre>
+        <div data-code-editor></div>
+      </div>
+      <template data-fold-open>
+        <Icon name="chevron-down" size={14} />
+      </template>
+      <template data-fold-closed>
+        <Icon name="chevron-right" size={14} />
+      </template>
+      <div class="editor-result-pane">
+        <div class="editor-pane-label">Testes e resultado</div>
+        <p class="editor-empty">
+          Verifica o código para comparar o resultado com os testes.
+        </p>
+        <details class="playground-input" data-code-tests>
+          <summary class="icon-disclosure">
+            Testes <Icon name="chevron-down" size={16} />
+          </summary>
+          <ol>
+            {answer.tests.map((test) => (
+              <li>
+                <strong>{test.name}</strong>
+                {test.code && <pre><code class={`language-${answer.language}`}>{test.code}</code></pre>}
+                {test.input && (
+                  <p>
+                    Entrada: <code>{test.input}</code>
+                  </p>
+                )}
+                <p>
+                  Saída esperada: <code>{test.output || '(sem saída)'}</code>
+                </p>
+              </li>
+            ))}
+          </ol>
+        </details>
+        <div class="playground-result" data-code-result hidden>
+          <div class="code-feedback-row">
+            <Icon name="check-circle" class="feedback-correct" size={16} />
+            <Icon
+              name="exclamation-circle"
+              class="feedback-attempted"
+              size={16}
+            />
+            <p role="status" data-code-status></p>
+          </div>
+          <pre
+            aria-label="Diagnóstico dos testes"
+            data-code-output
+            tabindex="0"
+            hidden
+          ></pre>
+        </div>
+      </div>
+    </div>
+    <noscript>
+      <p>
+        Ativa JavaScript para editar e verificar o código. Os testes e a solução
+        continuam disponíveis.
+      </p>
+    </noscript>
   </div>
-  <pre
-    data-code-source
-    tabindex="0"
-  ><code class={`language-${answer.language}`}>{answer.starter}</code></pre>
-  <div data-code-editor></div>
-  <template data-fold-open>
-    <Icon name="chevron-down" size={14} />
-  </template>
-  <template data-fold-closed>
-    <Icon name="chevron-right" size={14} />
-  </template>
-  <details class="playground-input" data-code-tests>
-    <summary class="icon-disclosure">
-      Testes <Icon name="chevron-down" size={16} />
-    </summary>
-    <ol>
-      {answer.tests.map((test) => (
-        <li>
-          <strong>{test.name}</strong>
-          {test.code && <pre><code class={`language-${answer.language}`}>{test.code}</code></pre>}
-          {test.input && (
-            <p>
-              Entrada: <code>{test.input}</code>
-            </p>
-          )}
-          <p>
-            Saída esperada: <code>{test.output || '(sem saída)'}</code>
-          </p>
-        </li>
-      ))}
-    </ol>
-  </details>
-  <div class="playground-result" data-code-result hidden>
-    <p role="status" data-code-status></p>
-    <pre
-      aria-label="Diagnóstico dos testes"
-      data-code-output
-      tabindex="0"
-      hidden
-    ></pre>
-  </div>
-  <noscript>
-    <p>
-      Ativa JavaScript para editar e verificar o código. Os testes e a solução
-      continuam disponíveis.
-    </p>
-  </noscript>
 </div>
 <script>
   import { setupCodeExercises } from '../scripts/code-exercises';

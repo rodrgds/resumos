@@ -92,7 +92,7 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
     single.checked = enabled;
     vimInput.checked = vim;
     appearanceVim.checked = vim;
-    reading.setEnabled(vim);
+    applyVim();
     for (const action of Object.keys(defaults) as Action[]) {
       const row = document.createElement('div');
       row.className = 'shortcut-row';
@@ -111,6 +111,11 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
       list.append(row);
     }
   }
+  function applyVim() {
+    reading.setEnabled(vim);
+    document.documentElement.dataset.vim = String(vim);
+    window.dispatchEvent(new Event('resumos:vim'));
+  }
   single.addEventListener('change', () => {
     enabled = single.checked;
     save();
@@ -128,7 +133,7 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
       vim = input.checked;
       vimInput.checked = vim;
       appearanceVim.checked = vim;
-      reading.setEnabled(vim);
+      applyVim();
       status.textContent = '';
       appearanceStatus.textContent = '';
       save();
@@ -203,7 +208,7 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
             'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), textarea, select, [contenteditable]:not([contenteditable="false"]), .cm-editor',
           )
           ?.checkVisibility() ||
-        document.querySelector('dialog[open]')
+        document.querySelector('dialog[open], .editor-workspace:popover-open')
       )
         return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {

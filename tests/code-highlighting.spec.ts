@@ -1,5 +1,51 @@
 import { expect, test } from '@playwright/test';
 
+test('web console shows output and synchronous/asynchronous errors, ignores other senders and bounds output', async ({
+  page,
+}) => {
+  await page.goto('/exemplo/codigo/');
+  const root = page.getByRole('region', {
+    name: 'Experimentar HTML, CSS e JavaScript',
+    exact: true,
+  });
+  await root.getByText('CSS e JavaScript', { exact: true }).click();
+  const code = root.getByRole('textbox', { name: 'JavaScript', exact: true });
+  const render = root.getByRole('button', {
+    name: 'Pré-visualizar',
+    exact: true,
+  });
+  const output = root.getByLabel('Consola', { exact: true });
+  await code.fill(
+    'console.log("ready", { answer: 42 }); throw new Error("bad preview");',
+  );
+  await render.click();
+  await expect(output).toContainText('ready {"answer":42}');
+  await expect(output).toContainText('Erro: Uncaught Error: bad preview');
+  await expect(root.getByRole('status')).toContainText('Consulta a consola');
+  await expect(render).toBeEnabled();
+  await code.fill(
+    'console.log("next"); Promise.reject(new Error("promise failed"));',
+  );
+  await render.click();
+  await expect(output).toHaveText('next\nErro: promise failed\n');
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'null',
+        data: {
+          type: 'resumos-web-console',
+          level: 'error',
+          text: 'wrong sender',
+        },
+      }),
+    ),
+  );
+  await expect(output).not.toContainText('wrong sender');
+  await code.fill('console.log("x".repeat(40000));');
+  await render.click();
+  await expect.poll(() => output.textContent()).toBe('x'.repeat(32000));
+});
+
 for (const language of ['prolog', 'riscv']) {
   test(`${language} distinguishes syntax tokens in the editor`, async ({
     page,
@@ -31,7 +77,8 @@ for (const language of ['HTML', 'CSS', 'JavaScript']) {
     await page.goto('/exemplo/codigo/');
     const playground = page.locator('[data-web-playground]');
     await playground.scrollIntoViewIfNeeded();
-    if (language !== 'HTML') await playground.locator('summary').click();
+    if (language !== 'HTML')
+      await playground.getByText('CSS e JavaScript', { exact: true }).click();
     const editor = playground.getByRole('textbox', {
       name: language,
       exact: true,
@@ -56,7 +103,7 @@ test('web editors preview edits, keep the frame isolated and reset all languages
 }) => {
   await page.goto('/exemplo/codigo/');
   const playground = page.locator('[data-web-playground]');
-  await playground.locator('summary').click();
+  await playground.getByText('CSS e JavaScript', { exact: true }).click();
   await playground
     .getByRole('textbox', { name: 'HTML', exact: true })
     .fill('<p id="result">Before</p>');
