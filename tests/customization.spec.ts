@@ -171,10 +171,12 @@ for (const palette of [
       expect(style.color).toBe(prose);
       expect(style.font).toContain('JetBrains Mono');
       await page.goto('/exemplo/codigo/');
-      const code = page.getByRole('textbox', {
-        name: 'Código python',
-        exact: true,
-      });
+      const code = page
+        .getByRole('region', { name: 'Experimentar Python', exact: true })
+        .getByRole('textbox', {
+          name: 'Código python',
+          exact: true,
+        });
       await code.scrollIntoViewIfNeeded();
       await code.click();
       const editor = page.locator('.cm-editor').first();

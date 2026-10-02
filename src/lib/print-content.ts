@@ -63,6 +63,17 @@ export function preparePrintContent(html: string) {
           }
           continue;
         }
+        if (has(child, 'data-code-exercise')) {
+          for (const selector of ['data-code-source', 'data-code-tests']) {
+            const authored = find(child, (element) => has(element, selector));
+            if (!authored) continue;
+            clean(authored, namespace);
+            if (authored.tagName === 'details')
+              authored.attrs.push({ name: 'open', value: '' });
+            children.push(authored);
+          }
+          continue;
+        }
         if (has(child, 'data-pagefind-ignore')) continue;
         if (has(child, 'data-exercise')) {
           const title = find(child, (element) => element.tagName === 'summary');
@@ -153,6 +164,13 @@ export function preparePrintContent(html: string) {
           }
         }
         if (has(child, 'data-playground')) {
+          const helpers = find(child, (element) =>
+            has(element, 'data-helpers-source'),
+          );
+          if (helpers) {
+            clean(helpers);
+            children.push(helpers);
+          }
           const source = find(child, (element) => has(element, 'data-source'));
           if (source) {
             clean(source);

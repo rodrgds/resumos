@@ -26,7 +26,9 @@ self.onmessage = async ({ data: { code, input } }) => {
       : [];
     pyodide.setStdin({ stdin: () => lines.shift() ?? null });
     send({ type: 'status', text: 'A carregar as bibliotecas…' });
-    await pyodide.loadPackagesFromImports(code);
+    await pyodide.loadPackagesFromImports(code, {
+      messageCallback: () => {},
+    });
     let plots = 0;
     pyodide.registerJsModule('resumos_display', {
       show: (data, alt) => {

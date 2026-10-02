@@ -1,6 +1,5 @@
 import math
 import statistics
-import matplotlib.pyplot as plt
 
 x = sorted([2, 3, 3, 4, 5, 6, 7, 18])
 
@@ -21,12 +20,4 @@ print(f"Variância amostral: {statistics.variance(x):.4f}")
 print(f"Desvio amostral: {statistics.stdev(x):.4f}")
 print(f"Q1, mediana, Q3: {q1}, {mediana}, {q3}")
 print(f"Barreiras: {bi}, {bs}; valores afastados: {fora}")
-fig, ax = plt.subplots(figsize=(7, 2.6))
-ax.bxp([dict(med=mediana, q1=q1, q3=q3,
-             whislo=min(dentro), whishi=max(dentro), fliers=fora)],
-       vert=False, widths=0.4)
-ax.set_xlabel("Duração (minutos)")
-ax.set_yticks([])
-ax.set_title("Caixa com quantis tipo 2")
-fig.tight_layout()
-plt.show()
+desenhar_caixa(q1, mediana, q3, dentro, fora)

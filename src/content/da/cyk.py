@@ -17,8 +17,5 @@ else:
                     if left in table[i, split] and right in table[i + split, length - split]:
                         found.add(parent)
             table[i, length] = found
-    for length in range(1, n + 1):
-        cells = ["{" + ",".join(sorted(table[i, length])) + "}"
-                 for i in range(n - length + 1)]
-        print(f"comprimento {length}: " + " ".join(cells))
+    mostrar_tabela_cyk(table, n)
     print("aceite" if "S" in table[0, n] else "rejeitada")

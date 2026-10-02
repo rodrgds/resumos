@@ -8,6 +8,8 @@ order: 3
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import grelha from '../../ia/grelha-astar.typ?raw';
+import programa from '../../ia/astar.py?raw';
+import apoio from '../../ia/astar-apoio.py?raw';
 
 A pesquisa cega expande por ordem geométrica e só encontra o objetivo por exaustão. Uma **heurística** $h(n)$ estima o custo que falta de cada nó $n$ até ao objetivo e permite expandir primeiro o que parece promissor. Quando a estimativa é honesta, a pesquisa encontra o ótimo muito mais depressa. Quando mente por excesso, pode devolver caminhos piores. Esta página mostra a diferença com uma grelha calculada até ao fim.
 
@@ -33,12 +35,13 @@ Há dois caminhos ótimos com 6 passos: por cima, (0,0), (0,1), (0,2), (0,3), (1
 
 O A\* sobre esta grelha, executável abaixo, expande por f crescente e devolve um caminho de custo 6.
 
+`vizinhos_grelha` gera as casas livres nas quatro direções, dentro do tamanho indicado. Essa função fica no código de apoio; a fronteira, a heurística e as expansões do A\* continuam visíveis. Experimenta acrescentar `(0, 3)` aos bloqueios e seguir o novo percurso de expansão.
+
 <CodePlayground
   language="python"
   title="A* na grelha"
-  code={
-    'import heapq\n\nbloqueados = {(1, 1), (1, 2), (2, 1)}\ninicio, objetivo = (0, 0), (3, 3)\nh = lambda n: (3 - n[0]) + (3 - n[1])\n\ndef vizinhos(n):\n    r, c = n\n    for dr, dc in [(0, 1), (1, 0), (0, -1), (-1, 0)]:\n        m = (r + dr, c + dc)\n        if 0 <= m[0] < 4 and 0 <= m[1] < 4 and m not in bloqueados:\n            yield m\n\nfronteira = [(6, 0, inicio, [inicio])]\nvisto = {}\nwhile fronteira:\n    f, g, n, caminho = heapq.heappop(fronteira)\n    if n in visto:\n        continue\n    visto[n] = g\n    if n == objetivo:\n        print("expandidos:", list(visto))\n        print("custo:", g)\n        break\n    for m in vizinhos(n):\n        if m not in visto:\n            heapq.heappush(fronteira, (g + 1 + h(m), g + 1, m, caminho + [m]))'
-  }
+  code={programa}
+  helpers={apoio}
 />
 
 Isto expande `(0, 0), (0, 1), (1, 0), (0, 2), (2, 0), (0, 3)` antes de continuar pela fronteira com f 6, exatamente a ordem calculada à mão acima, e termina com custo 6.

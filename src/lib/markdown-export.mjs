@@ -106,6 +106,18 @@ export default function markdownExport() {
                 ? `\n\n${node.outerHTML}\n\n`
                 : node.outerHTML,
           });
+          converter.addRule('playground-helpers', {
+            filter: (node) =>
+              node.hasAttribute('data-playground') &&
+              !!node.querySelector('[data-helpers-source]'),
+            replacement: (_content, node) => {
+              const helpers = node.querySelector(
+                '[data-helpers-source]',
+              ).textContent;
+              const code = node.querySelector('[data-source]').textContent;
+              return `\n\n\`\`\`${node.getAttribute('data-language')}\n${helpers}\n\n${code}\n\`\`\`\n\n`;
+            },
+          });
           converter.addRule('web-code', {
             filter: (node) => node.hasAttribute('data-web-playground'),
             replacement: (_content, node) =>
@@ -115,6 +127,26 @@ export default function markdownExport() {
                     `\n\n\`\`\`${language}\n${node.querySelector(`[data-${language}]`)?.textContent || ''}\n\`\`\`\n\n`,
                 )
                 .join(''),
+          });
+          converter.addRule('code-exercise', {
+            filter: (node) => node.hasAttribute('data-code-exercise'),
+            replacement: (_content, node) => {
+              const answer = JSON.parse(
+                node.closest('[data-exercise]').getAttribute('data-answer'),
+              );
+              const fence = (code) =>
+                `\n\n\`\`\`${answer.language}\n${code}\n\`\`\`\n\n`;
+              return (
+                fence(answer.starter) +
+                '\n\n### Testes\n\n' +
+                answer.tests
+                  .map(
+                    (test) =>
+                      `**${test.name}**\n${test.code ? fence(test.code) : ''}${test.input ? `\nEntrada:\n\n\`\`\`text\n${test.input}\n\`\`\`\n` : ''}\nSaída esperada:\n\n\`\`\`text\n${test.output}\n\`\`\`\n`,
+                  )
+                  .join('\n')
+              );
+            },
           });
           converter.addRule('video', {
             filter: (node) => node.hasAttribute('data-video'),
