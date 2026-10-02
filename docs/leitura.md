@@ -4,79 +4,75 @@
 
 ## Pesquisa
 
-A pesquisa global usa Pagefind e funciona sem servidor de pesquisa. O build indexa o conteúdo de `data-pagefind-body`; ferramentas e notas locais ficam excluídas. Em desenvolvimento, a integração serve o último índice construído. Corre `npm run build` para o atualizar.
+`/` ou Ctrl/⌘ K abre a pesquisa do site. Pagefind indexa apenas conteúdo público no build, sem servidor de pesquisa. Em desenvolvimento, corre `npm run build` para atualizar o índice.
 
 ## Notas e destaques
 
-Seleciona texto numa página de apontamentos e escolhe **Destacar** ou **Comentar**. Tab chega às ações da seleção e Escape fecha-as. Clica num destaque para editar o comentário. O caderno reúne as notas desta página ou de todo o site, permite voltar ao trecho, desfazer uma remoção e descarregar tudo em Markdown. As notas do bloco antigo continuam em “Notas anteriores”.
+Seleciona texto e escolhe **Destacar** ou **Comentar**. Tab chega às ações; Escape fecha-as. O marcador na margem abre a nota junto ao trecho, ou num painel inferior no telemóvel. O caderno reúne notas da página ou do site, permite voltar ao trecho, desfazer uma remoção e exportar Markdown. As notas antigas continuam em **Notas anteriores**.
 
-As preferências, os atalhos e o caderno ficam em `localStorage`. Não sincronizam entre dispositivos ou domínios. O caderno avisa quando não consegue guardar e permite descarregar o texto antes de sair. Limpar os dados do navegador apaga as notas.
+Notas e preferências ficam só neste navegador, sem sincronização. Limpar os dados do site apaga-as; o caderno avisa quando não consegue guardar e permite descarregar o texto.
 
-Os destaques usam a [CSS Custom Highlight API](https://developer.mozilla.org/en-US/docs/Web/API/CSS_Custom_Highlight_API), sem alterar o HTML do resumo. Em navegadores antigos, as notas continuam acessíveis no caderno. `src/lib/text-anchors.ts` guarda o trecho e o contexto: quando o conteúdo muda ou se torna ambíguo, a nota fica no caderno com um aviso. As fórmulas entram como uma unidade, com o LaTeX original quando existe. Âncoras antigas continuam a usar as posições anteriores. Imagens não entram na seleção de texto. `src/lib/annotations.ts` guarda uma entrada por nota para evitar que separadores diferentes sobrescrevam o caderno inteiro.
+Os destaques Rough Notation são desenhados fora do texto, com realce nativo como alternativa. `text-anchors.ts` localiza os trechos pelo texto e contexto. Se o conteúdo mudar ou houver ambiguidade, a nota permanece no caderno sem marcar outro trecho. Fórmulas são unidades de seleção; imagens não são texto. `annotations.ts` guarda notas individualmente para evitar que separadores sobrescrevam o caderno inteiro.
 
 ## Atalhos
 
-Por predefinição, `/` pesquisa, `n` abre as notas, `,` abre a aparência, `?` abre os atalhos e `a` abre o Chat nas páginas que o têm. Ctrl ou ⌘ K pesquisa todo o site. Os atalhos funcionam também quando um botão tem foco, mas não em campos de texto, editores ou diálogos abertos. Podes mudá-los ou desativar os atalhos de uma tecla.
+| Tecla           | Ação                   |
+| --------------- | ---------------------- |
+| `/` ou Ctrl/⌘ K | Pesquisar              |
+| `n`             | Caderno                |
+| `,`             | Aparência              |
+| `?`             | Configurar atalhos     |
+| `a`             | Abrir Chat, nas lições |
 
-Ativa **Navegação Vim** na aparência ou nos atalhos. Nas páginas de apontamentos aparece um cursor de leitura, sem modo de inserção. `h` e `l` movem um carácter; `j` e `k`, uma linha visual; `w`, `b` e `e`, palavras; `0`, `^` e `$`, o início, primeiro carácter não branco e fim da linha. `gg` vai ao início e `G` ao fim. `{` e `}` passam entre parágrafos e outros blocos de leitura. Um número repete o movimento, por exemplo `3j`. Nos cartões, `h`, `j`, `k`, `l` movem o foco para links que podes abrir com Enter.
+Podes remapear ou desativar os atalhos de uma tecla. Funcionam com botões focados, mas não enquanto escreves nem em diálogos abertos.
 
-Com Vim ativo numa página de leitura, `/` pesquisa apenas o texto público dessa página. Enter avança para um resultado; `n` e `N` repetem a pesquisa para a frente e para trás. Escape cancela a pesquisa e as sequências pendentes, sem desligar Vim. Sem uma pesquisa ativa, `n` mantém o atalho do caderno. `a` continua a abrir o Chat. Tab, Enter e os atalhos do navegador mantêm o seu comportamento. O cursor não altera o texto, as seleções nem as anotações. A pesquisa não é guardada nem enviada. Se um atalho personalizado usar uma tecla de movimento, muda-o antes de ativar Vim.
+Ativa **Navegação Vim** em Aparência ou Atalhos. O cursor é só de leitura:
+
+| Movimento          | Efeito                                                   |
+| ------------------ | -------------------------------------------------------- |
+| `h`, `j`, `k`, `l` | Carácter à esquerda/direita ou linha visual abaixo/acima |
+| `w`, `b`, `e`      | Palavra seguinte, anterior ou fim da palavra             |
+| `0`, `^`, `$`      | Início, primeiro carácter não branco ou fim da linha     |
+| `gg`, `G`          | Início ou fim do texto                                   |
+| `{`, `}`           | Bloco de leitura anterior ou seguinte                    |
+
+Um número repete o movimento, como `3j`. Nos cartões, `h`, `j`, `k`, `l` movem o foco e Enter abre o link. Muda remapeamentos incompatíveis antes de ativar Vim.
+
+Com Vim ativo, `/` pesquisa a página atual; Enter vai ao resultado e `n`/`N` repetem a pesquisa. Escape cancela-a sem desligar Vim; depois, `n` volta a abrir o caderno. Ctrl/⌘ K mantém a pesquisa global. O cursor preserva o texto, as seleções e as anotações; a pesquisa não é guardada nem enviada.
 
 ## Perguntar ao Chat
 
-O menu de IA está nas páginas de apontamentos. Segue os [links do Fumadocs](https://github.com/fuma-nama/fumadocs/blob/824a02860da9701584d12462069963d172c3588f/packages/base-ui/src/layouts/shared/page-actions.tsx) para ChatGPT e Claude: envia os URLs públicos do Markdown e da página, com uma instrução para os ler. ChatGPT recebe também `hints=search`, como no Fumadocs. O popover acompanha o botão através de Floating UI e ajusta-se às margens do ecrã. Perplexity recebe a mesma pergunta. Gemini usa copiar e abrir. Estes links são convenções das interfaces dos fornecedores, não uma API estável. Há uma pergunta visível para copiar se necessário. Em localhost usa-se o endereço público configurado em `astro.config.mjs`. O conteúdo da página e as notas privadas nunca são copiados ou enviados. Não há chaves de API.
+O menu abre ChatGPT, Claude ou Perplexity com os URLs públicos da página e do Markdown e um pedido para os ler. Gemini usa copiar e abrir; se a cópia falhar, aparece texto para copiar manualmente. Os links dos fornecedores podem mudar, pois não são uma API estável. Não se enviam conteúdo da página ou notas privadas, nem se usam chaves de API. Em localhost usa-se o endereço público configurado em `astro.config.mjs`.
 
-## Aparência
+## Aparência e navegação
 
-A barra lateral de personalização mostra os temas e as fontes para seleção direta. Cores, larguras e sugestões de CSS ficam visíveis, sem abrir secções. O cabeçalho e o botão de reposição continuam acessíveis durante o scroll. As preferências mantêm o armazenamento anterior.
+Escolhe tema, fonte e larguras de página e texto na aparência. FEUP e adaptações de [Gruvbox](https://github.com/morhetz/gruvbox), [Catppuccin](https://github.com/catppuccin/catppuccin), [Nord](https://www.nordtheme.com/docs/colors-and-palettes), [Dracula / Alucard](https://github.com/dracula/dracula-theme), [Flexoki](https://stephango.com/flexoki) e [Solarized](https://ethanschoonover.com/solarized/) têm variantes claras e escuras em `src/data/reading-themes.ts`. Os cartões mantêm as cores das cadeiras. Código estático e editável partilham a paleta e as fontes IBM Plex Mono, JetBrains Mono ou monoespaçada do sistema.
 
-## Versões Markdown
+No computador, a cadeira e as secções acompanham o artigo em barras laterais. Abaixo de 1200px, **Conteúdos** abre a navegação sobre a página. O progresso mostra posição na cadeira, não conclusão. O cabeçalho reaparece ao subir ou focar um controlo; abrir notas não desloca o artigo.
 
-`src/lib/markdown-export.mjs` gera os ficheiros públicos `.md`, os SVG de referência e `/llms.txt` após o build. O botão "Perguntar ao Chat" inclui a versão Markdown para facilitar a leitura por assistentes.
+**Continuar a ler** retoma a posição ou sugere o tópico seguinte após o fim. O histórico guarda até 20 páginas e mostra quatro recentes. Não entra em pesquisa, exportações ou Chat. Os pins de semestre acrescentam cartões no topo; a introdução só aparece sem histórico nem pins válidos.
 
-## Leitura e anotações
+Nos grupos CT, **Escolher CT** personaliza o cartão e o semestre fixado, sem fazer inscrição na FEUP. **Sem opção escolhida** repõe o grupo. Os links publicados e as fichas oficiais continuam disponíveis sem JavaScript.
 
-As páginas de leitura têm texto com 640px por defeito e uma largura geral de 1200px. Em ecrãs a partir de 1200px, a navegação da cadeira fica à esquerda e as secções da página à direita. Nos restantes, **Conteúdos** abre por cima da página. A barra da cadeira mostra a posição entre os resumos. No computador, **Nesta página** sublinha a secção atual e risca as anteriores com Rough Notation, na cor de destaque e com animação. Movimento reduzido desativa a animação. Não existe uma barra de secções no telemóvel. A posição não significa que os resumos anteriores foram estudados. **Perguntar ao Chat** e **Brain rot** ficam diretamente visíveis. O cabeçalho recolhe ao descer e reaparece ao subir ou receber foco pelo teclado, em todos os ecrãs. A fonte inicial é Source Serif 4. As escolhas guardadas mantêm-se.
-
-Seleciona texto e escolhe **Destacar** ou **Comentar**. Os destaques usam Rough Notation. O marcador na margem abre a nota junto ao trecho; no telemóvel, abre um painel inferior. O caderno completo abre por cima da página. As notas continuam só neste navegador, com exportação em Markdown.
-
-A página de projetos mantém o endereço `/projetos/`, mas está oculta na navegação, nos links da página inicial e na pesquisa.
-
-## Temas
-
-A aparência inclui FEUP e adaptações das paletas [Gruvbox](https://github.com/morhetz/gruvbox), [Catppuccin](https://github.com/catppuccin/catppuccin), [Nord](https://www.nordtheme.com/docs/colors-and-palettes) e [Dracula / Alucard](https://github.com/dracula/dracula-theme). `src/data/reading-themes.ts` define as variantes claras e escuras. As larguras da página e do texto têm controlos separados.
-
-## Histórico de leitura
-
-A homepage mostra a última leitura e até quatro páginas recentes depois da primeira visita a um conteúdo. “Continuar a ler” retoma a posição; ao chegar ao fim, sugere o tópico seguinte. O histórico guarda até 20 páginas apenas neste navegador. “Limpar histórico” apaga-o. Não entra na pesquisa, nos ficheiros Markdown nem nos pedidos ao Chat.
+O build gera `.md` de cada página pública e `/llms.txt`, sem notas ou rascunhos. A página `/projetos/` permanece acessível, mas oculta na navegação e pesquisa.
 
 ## Personalização local
 
-Os pins de semestre acrescentam cartões horizontais no topo da homepage e mantêm a grelha original. A introdução aparece enquanto não houver histórico de leitura nem semestres fixados. Limpar o histórico só a repõe se não houver pins.
+Em **CSS personalizado**, guardar e ativar são ações separadas. Podes editar, desativar ou eliminar snippets. **Adicionar sugestões em falta** repõe sugestões desativadas sem substituir edições. Tudo fica em `resumos-css-snippets`, só neste navegador.
 
-Nos cartões de CT I, II e III, abre «Escolher CT» e seleciona a tua unidade curricular. A escolha substitui o cartão do grupo e acompanha o semestre fixado. Fica guardada neste navegador e não faz a inscrição na FEUP. «Sem opção escolhida» repõe o grupo. As opções sem resumos mostram «Em breve» e dão acesso à ficha do SIGARRA. Sem JavaScript, a lista mantém os links para os resumos publicados e as fichas oficiais.
+Código desloca-se horizontalmente por defeito. A sugestão **Quebrar linhas de código** ajusta blocos estáticos e editores à largura disponível sem alterar o programa. Seleções conservam as cores da sintaxe; pontos de espaços e tabulações não entram no texto copiado.
 
-A aparência também inclui adaptações de [Flexoki](https://stephango.com/flexoki) e [Solarized](https://ethanschoonover.com/solarized/). Os blocos estáticos e executáveis partilham as variáveis `--code-*` e a fonte escolhida para código: IBM Plex Mono, JetBrains Mono ou a fonte monoespaçada do sistema.
+| Elemento        | Seletor estável                                       |
+| --------------- | ----------------------------------------------------- |
+| Cabeçalho       | `.site-header`                                        |
+| Navegação       | `[data-nav="nucleos"]`, `[data-nav="contribute"]`     |
+| Ferramentas     | `[data-action="notes"]`, `[data-action="appearance"]` |
+| Histórico       | `[data-reading-history]`                              |
+| Pins            | `[data-pinned-semesters]`                             |
+| Cartões         | `.course-card`                                        |
+| Texto           | `.prose`                                              |
+| Código estático | `.astro-code`                                         |
+| Exemplos        | `[data-playground]`, `.web-playground`                |
+| Ações da página | `.page-actions`, `[data-open-ai]`, `#ai-menu`         |
 
-Em **CSS personalizado**, podes ativar as sugestões, editar o seu CSS ou adicionar snippets. Guardar e ativar são ações separadas. Cada snippet pode ser desativado ou eliminado. Os snippets ficam em `resumos-css-snippets`, só neste navegador, e não entram na pesquisa, exportação Markdown ou pedidos de IA.
-
-As sugestões incluem ocultar Brain rot, deixar o cabeçalho no topo da página, sublinhar links, quebrar linhas de código estático e editável e alternar o fundo das linhas de tabelas. **Adicionar sugestões em falta** acrescenta as sugestões novas ou eliminadas, desativadas, sem substituir as que editaste.
-
-Seletores de personalização estáveis:
-
-| Elemento              | Seletor                                               |
-| --------------------- | ----------------------------------------------------- |
-| Cabeçalho             | `.site-header`                                        |
-| Links de navegação    | `[data-nav="nucleos"]`, `[data-nav="contribute"]`     |
-| Botões de ferramentas | `[data-action="notes"]`, `[data-action="appearance"]` |
-| Continuar a ler       | `[data-reading-history]`                              |
-| Semestres fixados     | `[data-pinned-semesters]`                             |
-| Cartões de cadeiras   | `.course-card`                                        |
-| Texto da página       | `.prose`                                              |
-| Código estático       | `.astro-code`                                         |
-| Exemplos executáveis  | `[data-playground]`, `.web-playground`                |
-| Ações da página       | `.page-actions`, `[data-open-ai]`, `#ai-menu`         |
-
-O código mantém cada linha inteira e permite deslocar o bloco na horizontal, também nos editores. Para o ajustar à largura do ecrã, ativa a sugestão «Quebrar linhas de código» na aparência. Não altera o programa, apenas a apresentação.
-
-Usa `--page`, `--surface`, `--text`, `--muted`, `--line`, `--accent` e `--accent-soft` para acompanhar o tema. Se um snippet esconder os controlos, acrescenta `?sem-css=1` ao URL. A página abre a aparência com os snippets suspensos, para os poderes corrigir. Também podes abrir a aparência pela tecla vírgula ou pelo rodapé.
+Usa `--page`, `--surface`, `--text`, `--muted`, `--line`, `--accent` e `--accent-soft` para acompanhar o tema. Se o CSS esconder os controlos, acrescenta `?sem-css=1` ao URL para abrir Aparência com snippets suspensos e corrigir o problema.

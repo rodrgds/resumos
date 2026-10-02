@@ -2,7 +2,7 @@
 
 [Documentação](README.md)
 
-Lê [CONTRIBUTING.md](../CONTRIBUTING.md) para escrever uma página. Markdown e MDX usam o mesmo processador de LaTeX: `$...$` no texto e `$$...$$` em bloco, renderizados com KaTeX.
+Para escrever uma página, segue [CONTRIBUTING.md](../CONTRIBUTING.md). Este guia identifica os componentes que processam o conteúdo.
 
 - `src/content/lessons/exemplo/apontamentos.md`: texto, fórmulas, imagem local, tabela e código.
 - `src/content/lessons/exemplo/diagramas.mdx`: Typst, CeTZ-Plot, Fletcher, DOT e vídeo do YouTube.
@@ -20,7 +20,7 @@ Os imports internos do Typst partem da raiz do projeto, por exemplo `/src/conten
 
 Os testes em `tests/fixtures/` usam `RESUMOS_TEST_CONTENT=1`. Essa variável nunca deve estar definida em produção.
 
-O menu de conteúdos abre sobre a página e segue as secções do frontmatter, como nos [Resumos LEIC](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/src/components/Sidebar.js). O primeiro resumo publicado ativa o cartão da cadeira. Markdown e MDX suportam notas de rodapé e containers através de `remark-directive`; `src/lib/remark-containers.mjs` transforma-os em HTML sem JavaScript.
+Markdown e MDX partilham KaTeX, notas de rodapé e caixas. `src/lib/remark-containers.mjs` transforma as diretivas em HTML; `markdown.shikiConfig` partilha a sintaxe e os marcadores de espaços. A navegação vem da coleção publicada, não de rotas escritas à mão.
 
 ## Notas do autor
 

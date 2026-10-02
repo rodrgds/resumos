@@ -1,11 +1,33 @@
 # Exemplos executáveis
 
-[Documentação](README.md)
+[Documentação](README.md) · [Autoria](../CONTRIBUTING.md#código-que-o-leitor-pode-executar) · [Linguagens e limites](linguagens.md)
 
-Os exemplos usam [CodeMirror](https://codemirror.net/) e [Runno WASI](https://github.com/taybenlor/runno). Um Worker por execução recebe apenas código e entrada padrão, sem acesso ao DOM ou ao armazenamento das notas. Parar termina o Worker. Python usa Pyodide 314.0.7, com NumPy, pandas, Matplotlib e outros pacotes do seu catálogo, carregados a partir dos imports. `plt.show()` apresenta gráficos PNG; os ficheiros criados durante uma execução ficam em memória e desaparecem no fim. Os binários do Runno incluem Clang 8 para C17 e C++17, QuickJS e SQLite. RISC-V de 32 bits usa [RARS para JavaScript](https://github.com/Specy/rars) através de `@specy/risc-v` 3.0.0, num Worker próprio. Java usa CheerpJ 4.3 com Java 8 e Eclipse JDT 3.26. Haskell usa o GHC in Browser 9.14 de haskell-wasm, Prolog usa SWI-Prolog 8.1.2 (pacote WASM) e PHP 8.4 usa os pacotes oficiais do WordPress Playground. Para pacotes carregados indiretamente, como SciPy num gráfico de densidade, inclui um import explícito. As versões seguem o catálogo fixo do Pyodide; exemplos antigos com `DataFrame.append` devem usar `pd.concat`. Os downloads iniciais podem demorar; existe um limite de dois minutos por execução e 32 mil caracteres de saída.
+## Isolamento
 
-Python, Java, Haskell, Prolog e PHP têm acesso a JavaScript ou armazenamento e precisam de uma origem própria para proteger as notas. O projeto Cloudflare Pages `resumos-code` executa `npm ci && npm run build:runners` na raiz e publica apenas `runners/dist/`, em `resumos-code.pages.dev`, a partir do mesmo repositório. Nunca sirvas as páginas de leitura nessa origem. A CSP permite o diretório fixo do Pyodide em `worker-src`, porque o [carregamento dos módulos de um Worker](https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-module-worker-script-graph) mantém o destino `worker` nos imports estáticos. Os testes do executor aplicam a CSP de produção, trocando apenas a origem autorizada em `frame-ancestors` pela origem local do leitor. Para desenvolvimento, executa `npm run build:runners` e serve `runners/dist/` em `127.0.0.1:4324`; o site pode continuar em `localhost:4321`. Os avisos e as fontes das licenças estão em [runners/NOTICE.md](../runners/NOTICE.md).
+Cada execução recebe código e entrada num Worker descartável, sem acesso ao DOM ou às notas. Parar termina o Worker. Ficheiros criados pelo programa ficam em memória até ao fim. A execução tem limite de dois minutos e 32 mil caracteres de saída.
 
-`WebPlayground` usa um iframe com origem opaca e uma política que bloqueia a rede. `allow-forms` permite a validação e os eventos locais de formulários; a diretiva [CSP `form-action 'none'`](https://www.w3.org/TR/CSP/#directive-form-action) impede o envio. Os exemplos executáveis são opcionais por página. O site continua estático. `ToolEmbed` carrega DartPad por escolha do leitor e abre Ripes numa janela separada. DartPad compila no serviço externo da Google; Ripes simula RISC-V no navegador. [Linguagens e limites por cadeira](../docs/linguagens.md).
+Python, Java, Haskell, Prolog e PHP usam `resumos-code.pages.dev`, porque os motores têm acesso a JavaScript ou armazenamento. Essa origem publica apenas `runners/dist/`, nunca páginas de leitura. O projeto Cloudflare `resumos-code` compila com `npm ci && npm run build:runners`. Mantém a CSP de produção; a configuração de testes troca apenas a origem autorizada do leitor.
 
-Os programas PHP incluem `<?php`; sem essa abertura, o motor apresenta o texto sem o avaliar. O motor Prolog consulta o ficheiro e chama `main/0`. Não acrescentes `initialization(main)`, que repetiria a execução. Para conferir o mesmo programa nativamente, usa `php ficheiro.php` e `swipl -q -s ficheiro.pl -g main -t halt`, sem acrescentar código ao ficheiro.
+`WebPlayground` usa iframe de origem opaca, sem rede. `allow-forms` permite eventos e validação locais; CSP `form-action 'none'` continua a impedir envios. DartPad é a exceção explícita de compilação externa e só abre por escolha do leitor.
+
+## Testar localmente
+
+Dentro de Devenv, prepara e serve os motores numa origem separada:
+
+```sh
+npm run build:runners
+python3 -m http.server 4324 --bind 127.0.0.1 --directory runners/dist
+```
+
+Mantém esse servidor aberto enquanto testas o site em `localhost:4321`. A porta 4324 serve só os motores. Confirma o programa publicado no browser e nativamente; não acrescentes código apenas para o teste passar.
+
+## Contratos das linguagens
+
+- Python carrega pacotes do catálogo Pyodide pelos imports. Inclui imports explícitos para dependências indiretas, como SciPy. `plt.show()` apresenta PNGs; dados ficam no programa ou em ficheiros em memória.
+- C/C++ WASI não substitui POSIX, Minix, hardware, MPI ou OpenMP. Exceções e file I/O precisam de programas estáticos e instruções locais.
+- Java usa classe `Main`, sem pacote. Haskell tem `main`, sem stdin interativo, e requer JSPI.
+- PHP inclui `<?php`; `input` fornece o corpo acessível por `php://input`.
+- Prolog define `main/0`, sem `initialization(main)`: o motor chama o predicado depois de consultar. Nativamente, usa `swipl -q -s ficheiro.pl -g main -t halt`.
+- RISC-V usa RARS de 32 bits, com entrada por linhas e sem ficheiros do computador. SQL usa SQLite, não PostgreSQL.
+
+Motores e compatibilidade por cadeira estão em [linguagens.md](linguagens.md); versões e licenças em [runners/NOTICE.md](../runners/NOTICE.md) e nos pacotes fixados. A CSP do Python autoriza o diretório fixo do Pyodide em `worker-src`, também usado pelos imports de módulos do Worker.
