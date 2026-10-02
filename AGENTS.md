@@ -7,6 +7,7 @@
 - Preserve the user's colourful course grid and FEUP accent. See `PRODUCT.md` and `DESIGN.md` for the approved direction.
 - Compile trusted Typst sources at build time through `src/lib/typst.ts`. HTML export requires Typst 0.15+ and is experimental. Test equations and diagrams when changing this adapter.
 - Reading content uses `Prose.astro`. Markdown and MDX share the unified maths pipeline. Typst SVG requires descriptive alt text.
+- Link between lessons with absolute public routes such as `/cadeiras/aed/ordenacao/`. Check fragments against built heading IDs, including accents and links in exercise print templates.
 - Content fixtures belong under `tests/fixtures`; `RESUMOS_TEST_CONTENT=1` is for tests only and must never be set for a production build.
 - Leave root `/data/` and `/_data/` as ignored local reference material. Never publish them. Keep ignore rules rooted so `src/data/` remains tracked.
 - Keep reference downloads, inventories and editorial audit reports in ignored `/_data/`. Course introductions own bibliography and source links; lesson bodies teach the subject without source or collection notes. Editorial frontmatter is optional. Use the student's Moodle materials as the teaching baseline, checking their academic year. Delegate each course to a separate content agent once its materials are available; validate maths, code and rendering without adding tests that repeat content.
