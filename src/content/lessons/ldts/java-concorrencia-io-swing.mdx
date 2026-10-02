@@ -1,0 +1,218 @@
+---
+title: Concorrência, I/O e Swing
+description: Coordenar threads, ler e escrever dados e responder a eventos numa interface Java.
+order: 3
+practices:
+  - ldts/praticar-concorrencia-io
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Um jogo não pode deixar de responder enquanto lê um ficheiro. Separar tarefas pode resolver o bloqueio, mas introduz uma pergunta nova: o que acontece se duas tarefas acederem ao mesmo estado ao mesmo tempo?
+
+## Começar e esperar por uma thread
+
+Uma **thread** é um fluxo de execução dentro de um processo. Threads do mesmo processo podem partilhar objetos, mas têm pilhas de chamadas próprias. Concorrência significa que as tarefas podem avançar em períodos sobrepostos; não implica que corram em paralelo em todos os instantes.
+
+`Runnable` descreve uma tarefa. `new Thread(tarefa).start()` cria uma execução concorrente e a JVM chama `run`. Chamar `run()` diretamente executa um método normal na thread atual. `join()` espera que a thread termine; não a inicia.
+
+Este programa completo é para executar localmente com `javac Main.java` e `java Main`:
+
+```java
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        Thread trabalho = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("trabalho terminado");
+            }
+        });
+        trabalho.start();
+        trabalho.join();
+        System.out.println("resultado recolhido");
+    }
+}
+```
+
+As duas linhas surgem nessa ordem porque `join` termina depois da thread. Sem `join`, não poderíamos garantir a ordem entre a impressão do trabalho e a do método `main`. Um `sleep` não prova que outra tarefa acabou.
+
+## Uma operação composta pode perder alterações
+
+`contador++` contém leitura, soma e escrita. Se duas threads leem zero antes de qualquer uma escrever, ambas podem escrever um. Duas operações produziram apenas um incremento.
+
+| Passo | Thread A              | Thread B              |
+| ----- | --------------------- | --------------------- |
+| 1     | Lê 0                  |                       |
+| 2     |                       | Lê 0                  |
+| 3     | Calcula 1 e escreve 1 |                       |
+| 4     |                       | Calcula 1 e escreve 1 |
+
+Uma **race condition** faz o resultado depender da intercalação. Uma **data race** ocorre quando acessos conflituosos ao mesmo estado, pelo menos um de escrita, não estão coordenados pela sincronização exigida. Não basta observar uma execução correta para concluir que não existe o problema.
+
+## Proteger estado com o mesmo lock
+
+Um bloco `synchronized` adquire o monitor de um objeto. Só uma thread de cada vez entra em secções protegidas pelo **mesmo monitor**. Sair do monitor e voltar a adquiri-lo noutra thread também estabelece visibilidade das alterações segundo as regras de memória de Java.
+
+Um método de instância `synchronized` usa `this`. Um método estático `synchronized` usa o objeto `Class` dessa classe. Dois objetos `Contador` diferentes não partilham automaticamente o mesmo lock.
+
+Guarda este programa completo em `Main.java` e corre-o localmente:
+
+```java
+class Contador {
+    private int valor;
+
+    synchronized void incrementar() { valor++; }
+    synchronized int ler() { return valor; }
+}
+
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        final Contador contador = new Contador();
+        Runnable tarefa = new Runnable() {
+            public void run() {
+                for (int i = 0; i < 1000; i++) contador.incrementar();
+            }
+        };
+        Thread a = new Thread(tarefa);
+        Thread b = new Thread(tarefa);
+        a.start();
+        b.start();
+        a.join();
+        b.join();
+        System.out.println(contador.ler());
+    }
+}
+```
+
+A saída é `2000`: cada incremento termina antes de outro entrar no mesmo contador. Todos os acessos concorrentes a esse estado têm de respeitar a mesma disciplina. `volatile` ajuda a publicar leituras e escritas de uma variável, mas não transforma `valor++` numa operação atómica. Para um contador isolado, `AtomicInteger.incrementAndGet()` é outra opção.
+
+## Esperar por uma condição
+
+`wait()` liberta o monitor e suspende a thread. Antes de retornar, volta a adquirir o monitor. `notifyAll()` acorda quem espera nesse objeto, mas a thread que notifica continua com o monitor até sair da secção.
+
+A condição deve ser verificada num `while`, porque pode ter mudado antes de a thread retomar e podem existir despertares sem a condição pretendida. Chamamos estes métodos enquanto detemos o monitor correspondente.
+
+Este excerto define uma caixa de um elemento; as chamadas seriam feitas por threads produtoras e consumidoras:
+
+```java
+class Caixa {
+    private Integer valor;
+
+    synchronized void colocar(int novo) throws InterruptedException {
+        while (valor != null) wait();
+        valor = novo;
+        notifyAll();
+    }
+
+    synchronized int retirar() throws InterruptedException {
+        while (valor == null) wait();
+        int resultado = valor;
+        valor = null;
+        notifyAll();
+        return resultado;
+    }
+}
+```
+
+A caixa vazia tem `valor == null`. O produtor espera enquanto está cheia; o consumidor espera enquanto está vazia. Mudar o estado e notificar sob o mesmo monitor impede perder a coordenação entre o teste da condição e a espera. Numa aplicação, uma `BlockingQueue` costuma fornecer este comportamento sem implementares os monitores à mão.
+
+## Interrupção e deadlock
+
+`interrupt()` pede a uma thread que interrompa o trabalho. Não a termina à força. O código consulta o sinal ou reage a `InterruptedException` em operações como `sleep`, `wait` e `join`. Se capturas a exceção e não a propagas, normalmente restaura o sinal com `Thread.currentThread().interrupt()` e termina a tarefa de forma coerente.
+
+Um **deadlock** aparece, por exemplo, quando A detém o lock 1 e espera pelo 2, enquanto B detém o 2 e espera pelo 1. Adquirir vários locks sempre pela mesma ordem evita este ciclo nesse cenário. Mantém as secções curtas e evita operações externas ou bloqueantes enquanto deténs locks.
+
+## Bytes, texto e buffers
+
+`InputStream` e `OutputStream` transportam bytes. `Reader` e `Writer` transportam texto. Um `InputStreamReader` descodifica bytes segundo uma codificação; não assumes que a codificação predefinida é igual em todas as máquinas.
+
+`BufferedReader` acrescenta um buffer e permite ler linhas. Streams binárias como `DataInputStream` leem tipos primitivos segundo um formato próprio; esse formato não é o texto decimal de um inteiro.
+
+<CodePlayground
+  language="java"
+  title="Ler texto UTF-8 a partir de bytes"
+  code={
+    'import java.io.BufferedReader;\nimport java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.io.InputStreamReader;\nimport java.nio.charset.StandardCharsets;\n\npublic class Main {\n    public static void main(String[] args) throws IOException {\n        byte[] dados = "Ana:3\\nRita:5\\n".getBytes(StandardCharsets.UTF_8);\n        int total = 0;\n        try (BufferedReader leitor = new BufferedReader(\n        new InputStreamReader(new ByteArrayInputStream(dados),\n        StandardCharsets.UTF_8))) {\n            String linha;\n            while ((linha = leitor.readLine()) != null) {\n                String[] partes = linha.split(":");\n                total += Integer.parseInt(partes[1]);\n            }\n        }\n        System.out.println(total);\n    }\n}'
+  }
+/>
+
+Obtemos `8`. A origem é memória para permitir executar no navegador. `readLine()` devolve `null` no fim, não uma string vazia. O exemplo pressupõe linhas válidas no formato `nome:inteiro`; um importador real deve tratar linhas incompletas e números inválidos.
+
+O `try-with-resources` fecha o recurso também se ocorrer uma exceção. Fechar o `BufferedReader` fecha o leitor e a stream que envolve. A ordem de construção segue os dados, bytes, descodificação, buffer e leitura por linha.
+
+## Ficheiros e recursos da aplicação
+
+Este programa completo escreve e lê um ficheiro local. Guarda-o em `Main.java` e corre `javac Main.java` seguido de `java Main` na pasta onde queres criar `pontos.txt`.
+
+```java
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        Path caminho = Paths.get("pontos.txt");
+        try (BufferedWriter escritor = Files.newBufferedWriter(
+                caminho, StandardCharsets.UTF_8)) {
+            escritor.write("120");
+            escritor.newLine();
+        }
+        try (BufferedReader leitor = Files.newBufferedReader(
+                caminho, StandardCharsets.UTF_8)) {
+            System.out.println(leitor.readLine());
+        }
+    }
+}
+```
+
+A saída é `120`. O programa cria ou substitui `pontos.txt` na pasta atual. Um recurso empacotado em `src/main/resources` tem outro ciclo de vida: faz parte da aplicação e pode estar dentro de um JAR. Usa `getResourceAsStream` para o ler, em vez de assumir que existe como ficheiro normal no disco. Verifica a possibilidade de a stream ser `null` quando o recurso não existe.
+
+## Swing e eventos
+
+Em Swing, `JFrame` é uma janela, `JPanel` agrupa componentes e `JButton` emite eventos. Um **layout manager** coloca os componentes de acordo com regras. Evita coordenadas absolutas para a organização da interface, porque tamanhos de letra e janelas variam.
+
+A **Event Dispatch Thread**, EDT, processa eventos e atualiza a interface. Cria e altera a interface nessa thread. Um listener que demora bloqueia os outros eventos e o redesenho. Trabalho longo pode correr num `SwingWorker`, cujo `done()` atualiza a interface na EDT.
+
+Este programa completo requer um ambiente gráfico local, não o editor do navegador:
+
+```java
+import java.awt.BorderLayout;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+
+public class Main {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                JFrame janela = new JFrame("Pontuacao");
+                final int[] pontos = {0};
+                final JLabel valor = new JLabel("0");
+                JButton somar = new JButton("Somar ponto");
+                somar.addActionListener(evento -> {
+                    pontos[0]++;
+                    valor.setText(Integer.toString(pontos[0]));
+                });
+                JPanel painel = new JPanel(new BorderLayout(12, 12));
+                painel.add(valor, BorderLayout.CENTER);
+                painel.add(somar, BorderLayout.SOUTH);
+                janela.setContentPane(painel);
+                janela.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                janela.pack();
+                janela.setLocationRelativeTo(null);
+                janela.setVisible(true);
+            }
+        });
+    }
+}
+```
+
+Cada clique acrescenta um ponto. O array de um elemento serve apenas para guardar o estado deste exemplo curto; no [MVC](/cadeiras/ldts/mvc-projeto/), colocaremos o estado num modelo próprio. O listener e a criação da janela correm na EDT, por isso este estado não é partilhado com outra thread.
+
+Para desenho personalizado, redefine `paintComponent(Graphics g)` e chama `super.paintComponent(g)`. Usa o `Graphics` recebido, desenha a partir do estado e pede uma atualização com `repaint()`. Não uses uma chamada direta a `getGraphics()` como forma de manter um desenho: o próximo redesenho pode apagá-lo.

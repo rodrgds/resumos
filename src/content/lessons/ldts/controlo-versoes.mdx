@@ -1,127 +1,177 @@
 ---
 title: Controlo de versões com Git
-description: Repositórios locais e remotos, branches, workflows e gestão de dependências com Gradle.
-section: conteudo
+description: Índice, commits, branches, integração e um build Java reproduzível com Gradle.
 order: 1
+practices:
+  - ldts/praticar-git-gradle
 ---
 
-import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
-import ramos from '../../ldts/ramos.dot?raw';
+Um colega alterou o movimento do herói e tu alteraste a pontuação. Precisamos de guardar cada decisão e combinar o trabalho sem perder nenhuma versão. Git guarda o histórico; Gradle declara como compilar e testar o projeto.
 
-Todo o trabalho de LDTS, dos exercícios ao projeto, vive num repositório Git. O controlo de versões guarda o histórico de cada ficheiro, permite desfazer mudanças e deixa três pessoas editarem o mesmo projeto sem se atropelarem. O Gradle entra como gestor de dependências e de build: declara as bibliotecas uma vez e qualquer máquina compila e testa da mesma forma.
+## As três áreas do Git
 
-## Repositório local e remoto
+O **working tree** contém os ficheiros que estás a editar. O **índice**, ou staging area, contém o próximo snapshot que escolheste com `git add`. Um **commit** guarda esse snapshot no histórico local, com mensagem e referência aos seus pais.
 
-Um **repositório** é uma pasta com histórico. Crias um, gravas mudanças em **commits** e publicas num **remoto** (o GitHub, no caso da cadeira):
-
-```bash
-git init jogo
-cd jogo
-git add README.md
-git commit -m "Arranque do projeto"
-git remote add origin https://github.com/equipa/jogo.git
-git push -u origin main
+```text
+ficheiros editados  --git add-->  índice  --git commit-->  histórico
 ```
 
-Cada commit é uma fotografia com mensagem. Escreve mensagens que digam o que mudou e porquê, como "Adiciona movimento do herói com as setas". O `-u` no primeiro `push` liga o teu branch local ao remoto para os seguintes serem só `git push`.
+`git add` copia o conteúdo daquele instante para o índice. Se voltares a editar depois, o próximo commit continua a usar a versão preparada, até repetires o `add`.
 
-Antes de commitar, `git status` mostra o que mudou e `git log --oneline` mostra o histórico. Estes dois comandos respondem a quase todas as perguntas de "onde estou" e "o que fiz".
+Experimenta numa pasta nova:
+
+```bash
+mkdir treino-git
+cd treino-git
+git init -b main
+printf 'versao 1\n' > regra.txt
+git add regra.txt
+printf 'versao 2\n' > regra.txt
+git diff
+git diff --cached
+git commit -m "Regista a primeira regra"
+```
+
+`git diff` compara working tree com índice, por isso mostra a passagem de versão 1 para versão 2. `git diff --cached` compara índice com o commit atual, por isso mostra o ficheiro novo com versão 1. O commit guarda versão 1; versão 2 continua como alteração local.
+
+No estado curto, a primeira coluna descreve o índice e a segunda o working tree. `M  regra.txt` significa alteração preparada; ` M regra.txt`, alteração por preparar; `MM regra.txt`, as duas. `??` identifica um ficheiro ainda não seguido.
+
+Antes de um commit, consulta `git status --short`, `git diff` e `git diff --cached`. Prepara caminhos concretos quando há trabalho de várias tarefas na mesma pasta. Um commit deve permitir compreender uma alteração com o seu motivo.
 
 ## Branches e merges
 
-Um **branch** é uma linha de trabalho paralela. A regra de ouro: nunca trabalhes diretamente no `main`. Cada funcionalidade nasce num branch próprio:
+Um branch é uma referência móvel para um commit. `HEAD` costuma indicar o branch atual; num checkout de um commit isolado pode estar destacado, sem branch. Criar um branch não copia os ficheiros para outra pasta.
 
 ```bash
-git checkout -b heroi-move
-# ... editas, testas, commit ...
-git checkout main
-git merge heroi-move
-git push
+git switch -c movimento
+# edita e guarda os ficheiros da funcionalidade
+git add regra.txt
+git commit -m "Permite mover o heroi para cima"
+git switch main
+git merge movimento
 ```
 
-O `merge` junta o branch de volta ao `main`. O diagrama mostra o branch `heroi-move` a nascer do `main` e a voltar a ele no merge:
+O merge integra `movimento` no branch em que estás, aqui `main`. Há dois casos:
 
-<Dot
-  source={ramos}
-  alt="Grafo com a linha main a passar por A, B, C e E, e o branch heroi-move a sair de B, passar por D e voltar a E no merge."
-/>
-
-Se dois branches mexeram nas mesmas linhas, o Git marca um **conflito** no ficheiro e pede-te para escolher. Abres o ficheiro e vês os marcadores das duas versões:
+- Se `main` é antepassado de `movimento`, um **fast-forward** move a referência de `main` para a frente. Não precisa de commit de merge.
+- Se ambos avançaram a partir de um antepassado comum, o merge combina as mudanças. Um commit de merge tem os dois históricos como pais.
 
 ```text
-<<<<<<< HEAD
-int velocidade = 2;
-=======
-int velocidade = 3;
->>>>>>> heroi-move
+              C---D  movimento
+             /     \
+A---B-------E-------M  main
 ```
 
-Apagas os marcadores, decides que versão fica, fazes `add` e `commit`. Conflitos assustam na primeira vez, mas são só o Git a dizer que precisa de um humano para decidir.
+Neste desenho, `M` integra `D` e `E`. Os commits `C` e `D` não desaparecem. O branch é o nome que aponta para o seu último commit.
 
-:::tip[Como evitar conflitos dolorosos]
-Faz `pull` antes de começar a trabalhar, mantém os branches curtos (um ou dois dias) e commita com frequência. Um branch com três semanas de trabalho vai conflituar com tudo.
-:::
+## Resolver um conflito
 
-<YouTube id="e2IbNHi4uCI" title="Git Branches Tutorial (freeCodeCamp)" />
+Um conflito surge quando Git não consegue decidir o conteúdo final. Pode acontecer em linhas sobrepostas ou, por exemplo, quando um branch remove um ficheiro e outro o altera.
+
+```text
+  <<<<<<< HEAD
+  int velocidade = 2;
+  =======
+  int velocidade = 3;
+  >>>>>>> movimento
+```
+
+`HEAD` é a versão do branch atual. A outra parte vem do branch integrado. Escolhe o comportamento certo, edita o ficheiro e remove todos os marcadores. Depois corre os testes, prepara o ficheiro com `git add regra.txt` e conclui com `git commit`. A solução pode combinar as duas versões, não tem de escolher uma por inteiro.
+
+Se precisas de abandonar este merge ainda por concluir, `git merge --abort` tenta repor o estado anterior. Começa a integração com o working tree limpo para não misturar uma resolução com trabalho por guardar.
+
+## Repositório local e remoto
+
+O remoto é outro repositório, frequentemente alojado no GitHub. Os commits existem localmente antes do `push`. `origin` é o nome convencional do remoto criado por `clone`, não uma regra sobre qual repositório manda.
+
+| Comando                           | Efeito                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| `git fetch origin`                | Obtém objetos e atualiza referências como `origin/main`, sem integrar no branch atual. |
+| `git pull --ff-only`              | Obtém e integra apenas se for possível avançar sem divergência.                        |
+| `git push -u origin movimento`    | Publica o branch e configura a referência remota acompanhada.                          |
+| `git log --oneline --graph --all` | Mostra o histórico e os ramos conhecidos.                                              |
+
+Se `pull --ff-only` recusar, os históricos divergiram. Inspeciona o grafo e combina com merge ou rebase segundo o workflow da equipa. **Rebase** reaplica commits sobre outra base e cria identificadores novos; reescrever commits já partilhados exige coordenação.
 
 ## Workflows em equipa
 
-No projeto de três pessoas, o workflow é simples: `main` está sempre a compilar e a passar os testes. Cada um cria branches a partir de um `main` atualizado, abre um pull request quando termina e outra pessoa revê antes do merge. Ninguém faz merge do próprio trabalho sem revisão, e ninguém commita código que não compila.
+Uma opção simples para o projeto é usar branches curtos e pull requests. Atualiza `main`, cria um branch, implementa um comportamento, testa e pede revisão. Integra quando o resultado está compreendido e o build passa.
 
-## Abrir o projeto no IntelliJ
+A revisão deve confirmar o contrato, os casos limite e as dependências, não apenas a formatação. Evita incluir ficheiros gerados ou alterações de outra tarefa no mesmo commit. No `.gitignore`, `build/`, `.gradle/` e `*.class` são exclusões habituais; ficheiros já seguidos continuam seguidos mesmo depois de acrescentares uma regra.
 
-O IntelliJ é o ambiente da cadeira. Para começar um exercício ou o projeto:
+## Desfazer sem perder a história
 
-1. No ecrã inicial, escolhe **Open** e aponta para a pasta do repositório clonado. O IntelliJ deteta o `build.gradle` e propõe **Open as Project**.
-2. Aceita **Trust Project** e espera que o Gradle sincronize: a barra de progresso diz "Syncing" e depois mostra as dependências (JUnit, Mockito) em **External Libraries**.
-3. Abre a janela **Gradle** (lado direito), expande **Tasks**, **verification**, e corre `test` com duplo clique. A primeira corrida descarrega as dependências e demora mais; as seguintes são rápidas.
-4. Para correr o jogo, usa a tarefa `run` em **Tasks**, **application**, ou o botão verde junto ao método `main`.
+`git revert <commit>` cria um commit que inverte as mudanças de outro. É adequado para um commit já partilhado, porque preserva a história.
 
-Se a sincronização falhar, verifica primeiro a ligação à rede e depois **File**, **Invalidate Caches** com restart. Metade dos "o Gradle partiu" resolve-se aí.
+`git restore regra.txt` descarta mudanças desse ficheiro no working tree e recupera o conteúdo do índice. `git restore --staged regra.txt` retira a mudança do índice sem apagar a edição local. `git reset` move uma referência e pode alterar índice e ficheiros conforme a opção; `--hard` descarta mudanças locais. Identifica primeiro o que queres recuperar e onde existe a versão a preservar.
 
 ## Dependências com Gradle
 
-O `build.gradle` declara o projeto, as dependências e como correr os testes. Um exemplo mínimo para o jogo em Java:
+Um build deve especificar versões e tarefas, para não depender de ficheiros `.jar` copiados à mão. O **Gradle Wrapper**, `gradlew` e `gradle/wrapper/`, fixa a versão do Gradle do projeto. Guarda-o no Git e usa `./gradlew`, ou `gradlew.bat` no Windows, em vez de uma instalação global diferente.
+
+Vamos preparar o projeto que usaremos nos testes. Este exemplo local usa JDK 17 para correr Gradle 8.14.3 e compila código compatível com Java 8. A versão de Java que corre a ferramenta pode ser diferente da versão alvo do programa. Usa o wrapper e o JDK indicados no projeto da cadeira quando forem diferentes.
+
+Guarda este `build.gradle` na raiz:
 
 ```groovy
 plugins {
     id 'java'
     id 'application'
+    id 'jacoco'
 }
 
 repositories {
     mavenCentral()
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
-    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.4'
+    testImplementation 'org.mockito:mockito-core:4.11.0'
 }
 
 application {
-    mainClass = 'com.equipa.jogo.Jogo'
+    mainClass = 'Main'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+tasks.named('jacocoTestReport') {
+    dependsOn test
+    reports {
+        html.required = true
+    }
+}
 ```
 
-Com isto, `gradle test` compila tudo e corre os testes em qualquer máquina, e `gradle run` arranca o jogo. Quando precisares de uma biblioteca nova, acrescentas uma linha a `dependencies` em vez de copiar ficheiros `.jar` para o repositório. O [guia oficial de projetos Java com Gradle](https://docs.gradle.org/current/userguide/building_java_projects.html) explica cada bloco deste ficheiro.
+`implementation` seria uma dependência do programa; `testImplementation` só participa nos testes. `testRuntimeOnly` fornece código necessário ao executar testes, sem o pôr na compilação do programa. JUnit Jupiter escreve e executa os testes; `useJUnitPlatform()` seleciona a plataforma correspondente.
 
-:::warning[Não commites o que o Gradle gera]
-A pasta `build/` e os ficheiros `.class` são produto do build, não fonte. Garante que o `.gitignore` os exclui desde o primeiro commit, senão cada build suja o histórico com binários.
-:::
+A estrutura é:
 
-## Exemplo completo: funcionalidade num branch
+```text
+build.gradle
+settings.gradle
+src/main/java/Main.java
+src/test/java/LimiteTest.java
+src/main/resources/
+src/test/resources/
+```
 
-O cenário: adicionar a classe `Posicao` ao jogo sem partir o `main`.
+Em `settings.gradle`, escreve `rootProject.name = 'treino-ldts'`. Se ainda não tens wrapper e dispões de Gradle 8.14.3, corre `gradle wrapper --gradle-version 8.14.3` uma vez. Num projeto recebido da cadeira, o wrapper já deve existir.
 
-1. `git checkout -b posicao` para criar o branch.
-2. Escreve a classe e um teste, corre `gradle test` e vê tudo verde.
-3. `git add .` e `git commit -m "Adiciona Posicao com soma de vetores"`.
-4. `git push -u origin posicao`, abre pull request, um colega revê.
-5. Merge para o `main` e apaga o branch com `git branch -d posicao`.
+```bash
+./gradlew test
+./gradlew run
+./gradlew jacocoTestReport
+```
 
-Se o `gradle test` falhasse no passo 2, o `main` nunca saberia: é exatamente para isso que o branch existe.
+`test` compila os testes e executa-os; o relatório HTML fica em `build/reports/tests/test/index.html`. `run` precisa de uma classe `Main` com método `main`. O relatório de cobertura fica em `build/reports/jacoco/test/html/index.html`.
+
+No IntelliJ, abre a pasta que contém `settings.gradle`, seleciona o JDK e sincroniza o projeto Gradle. Se falhar, lê a primeira causa indicada no erro e compara JDK, wrapper, repositórios e dependências. Uma falha de descarga e um erro de compilação pedem verificações diferentes.
