@@ -6,7 +6,6 @@ order: 4
 ---
 
 import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
 import pipeline from '../../cpd/pipeline.dot?raw';
 
 Há três formas de dividir trabalho, e cada uma pede uma ferramenta diferente. Esta página distingue-as e mete-te a paralelizar um ciclo real com OpenMP, o modelo de memória partilhada da primeira metade da cadeira.
@@ -44,21 +43,12 @@ int main(void) {
 }
 ```
 
-Compila com `gcc -O2 -fopenmp soma.c -o soma` e corre com `./soma`. A cláusula `reduction(+:soma)` dá a cada thread um acumulador privado e soma-os no fim, por isso o resultado é exato sem proteção manual. Numa medição típica com 4 núcleos[^tempos-openmp], o tempo cai de cerca de 0,32 s para cerca de 0,09 s, um speedup de 3,5 com eficiência de 88 por cento.
+Compila com `gcc -O2 -fopenmp soma.c -o soma` e corre com `./soma`. A cláusula `reduction(+:soma)` dá a cada thread um acumulador privado e soma-os no fim. Neste exemplo, todos os termos são 1 e a soma cabe exatamente no tipo usado. Para tempos ilustrativos de 0,32 s e 0,09 s com 4 núcleos, o speedup seria $0,32/0,09\approx3,56$ e a eficiência cerca de 89%. Estes valores exemplificam o cálculo; mede o teu programa com `omp_get_wtime`.
 
 ## Quando não compensa
 
-Repete com $N = 1000$ e o programa paralelo fica mais lento que o sequencial. Criar a equipa de threads e juntar os acumuladores custa dezenas de microsegundos, e para mil iterações esse custo fixo supera o ganho. A regra prática: paraleliza ciclos longos com iterações independentes e mede sempre. Iterações com dependências entre si, como uma recorrência em que cada passo usa o anterior, não se paralelizam com `parallel for`.
-
-<YouTube id="cMWGeJyrc9w" title="Introduction to OpenMP: 02 part 1 Module 1" />
-
-## Para saber mais
-
-- [Especificações oficiais do OpenMP](https://www.openmp.org/specifications/): a referência para diretivas e cláusulas.
-- [Recursos de OpenMP em Princeton](https://researchcomputing.princeton.edu/education/external-online-resources/openmp): coleção comentada com o curso de Tim Mattson.
-
-[^tempos-openmp]: Valores ilustrativos para vetor de $10^8$ doubles num processador concreto com 4 núcleos. Verifica na tua máquina com `omp_get_wtime`, porque a largura de banda da memória manda tanto como o número de núcleos.
+Repete com $N = 1000$ e compara os tempos. O trabalho de criar a equipa e combinar os acumuladores pode superar o ganho num ciclo curto. Paraleliza iterações independentes e mede o efeito. Uma recorrência em que cada passo precisa do resultado anterior não admite simplesmente `parallel for`.
 
 :::details[Ver a saída esperada]
-Com o vetor cheio de uns, a soma tem de dar exatamente 100000000. Se der outro valor, a redução está mal escrita ou falta a cláusula, e tens uma condição de corrida, o tema da próxima página. O tempo varia com a máquina, mas a relação deve manter-se, paralelo claramente mais rápido para $N$ grande e mais lento para $N$ pequeno.
+Com o vetor cheio de uns, a soma tem de dar exatamente 100000000. Um valor diferente exige verificar a inicialização, os limites e a sincronização. O tempo depende da máquina, do número de threads e da dimensão da entrada; confirma o ganho por medição.
 :::
