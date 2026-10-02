@@ -1,133 +1,134 @@
 ---
 title: Java orientado a objetos
-description: Tipos, coleções, classes e objetos, herança e composição em vez de herança profunda.
-section: conteudo
+description: Valores e referências, contratos, composição, igualdade, coleções e genéricos.
 order: 2
+practices:
+  - ldts/praticar-java
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import composicao from '../../ldts/composicao.typ?raw';
 
-Java é a linguagem do projeto de LDTS. Se vens de [classes e objetos](/cadeiras/p/classes-objetos/) em C++, quase tudo te soa familiar: classes, construtores, encapsulamento e herança funcionam da mesma forma. As diferenças que interessam são a máquina virtual com recolha de lixo (adeus `delete`), uma só herança de classes com muitas interfaces, e uma biblioteca de coleções que vais usar todos os dias.
+O herói tem uma posição e pode mover-se. Vamos representar esse estado sem permitir que qualquer parte do programa o altere para valores inválidos. A escolha dos métodos e dos tipos faz parte do desenho, antes de escrever uma hierarquia de classes.
 
-## Tipos e coleções
+## Tipos, literais e controlo
 
-Java distingue tipos primitivos (`int`, `double`, `boolean`, `char`) de tipos referência (objetos). Texto é `String`, e listas, conjuntos e mapas vêm de `java.util`:
+Java é estaticamente tipado: cada variável tem um tipo conhecido na compilação. Os tipos primitivos são `byte`, `short`, `int`, `long`, `float`, `double`, `char` e `boolean`. `int` guarda inteiros de 32 bits; `double` representa números de vírgula flutuante, com aproximação. `char` é uma unidade UTF-16, não necessariamente um carácter completo. `String` é um objeto imutável, não um primitivo.
 
-```java
-import java.util.ArrayList;
-import java.util.List;
+Literais como `3`, `3L`, `2.5`, `'A'`, `"cima"` e `true` têm tipos próprios. Em `int metade = 5 / 2`, a divisão entre inteiros produz `2`; `5 / 2.0` produz `2.5`. Um cast não recupera a fração já perdida.
 
-List<String> nomes = new ArrayList<>();
-nomes.add("Heroi");
-nomes.add("Monstro");
-System.out.println(nomes.size());
-```
+`if`, `switch`, `for` e `while` controlam a execução como em outras linguagens. Uma condição Java tem de ser booleana; um inteiro não serve como condição. `&&` e `||` fazem curto-circuito, por isso `p != null && p.equals(origem)` não chama `equals` quando `p` é `null`.
 
-Isto escreve `2`. Programa contra a interface (`List`) e instancia a implementação (`ArrayList`): se um dia precisares de outra implementação, só muda uma linha. Os genéricos entre `< >` dizem que tipo vive dentro da coleção, e o compilador impede misturas.
+Os arrays têm tamanho fixo e índices de zero a `length - 1`. As coleções permitem representar grupos que crescem e diminuem.
 
-## Classes e objetos
+## Valores e referências
 
-A sintaxe é próxima da de C++, sem ficheiros de cabeçalho e sem destrutores:
-
-```java
-public class Posicao {
-    private final int x;
-    private final int y;
-
-    public Posicao(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public int getX() { return x; }
-    public int getY() { return y; }
-
-    public Posicao somar(int dx, int dy) {
-        return new Posicao(x + dx, y + dy);
-    }
-}
-```
-
-Repara nas escolhas: atributos privados e `final` (ninguém muda uma posição por fora), acesso por getters, e `somar` que devolve uma posição nova em vez de alterar a atual. Objetos imutáveis como este são muito mais fáceis de testar, como vais ver em [testes unitários](testes-unitarios/). Corre o exemplo e confirma que a origem fica intacta:
+Uma variável primitiva guarda o valor. Uma variável de tipo de referência guarda uma referência para um objeto, ou `null`. Atribuir uma referência não copia o objeto.
 
 <CodePlayground
   language="java"
-  title="Posicao imutável"
+  title="Duas referências, um objeto"
   code={
-    'class Posicao {\n    private final int x;\n    private final int y;\n\n    Posicao(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    int getX() { return x; }\n    int getY() { return y; }\n\n    Posicao somar(int dx, int dy) {\n        return new Posicao(x + dx, y + dy);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Posicao origem = new Posicao(3, 4);\n        Posicao destino = origem.somar(1, -2);\n        System.out.println("origem: (" + origem.getX() + "," + origem.getY() + ")");\n        System.out.println("destino: (" + destino.getX() + "," + destino.getY() + ")");\n    }\n}'
+    'import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    static void alterar(List<String> nomes) {\n        nomes.add("Rita");\n        nomes = new ArrayList<String>();\n        nomes.add("Luis");\n    }\n\n    public static void main(String[] args) {\n        final List<String> equipa = new ArrayList<String>();\n        equipa.add("Ana");\n        List<String> outra = equipa;\n        alterar(outra);\n        System.out.println(equipa);\n        System.out.println(equipa == outra);\n    }\n\n}'
   }
 />
 
-A saída mostra `origem: (3,4)` e `destino: (4,2)`: somar construiu um objeto novo e a origem não mexeu.
+A saída é `[Ana, Rita]` e `true`. Java passa argumentos **por valor**, incluindo o valor de uma referência. O parâmetro e a variável do chamador começam a apontar para o mesmo objeto; `add` altera esse objeto. Atribuir uma lista nova ao parâmetro muda apenas a referência local.
 
-## Herança e composição
+`final` impede atribuir outra referência à variável `equipa`. Continua a ser possível alterar a lista. Para obter imutabilidade temos de controlar também o estado do objeto e as referências mutáveis que expomos.
 
-Java permite estender uma classe com `extends` e implementar várias interfaces com `implements`. A tentação é modelar o jogo com uma árvore de herança profunda: `Entidade`, depois `Personagem`, depois `Heroi` e `Monstro`, depois `MonstroVoador`. Cada nível partilha um pouco mais e percebe-se um pouco menos.
+## Classes e objetos
 
-A alternativa que a cadeira recomenda é **composição em vez de herança**: em vez de herdares comportamento, juntas peças. Se já viste [herança e polimorfismo](/cadeiras/p/heranca-polimorfismo/), pensa nisto como escolher "tem um" em vez de "é um":
+Uma **classe** define estado e operações. Um **objeto** é uma instância concreta com o seu estado. O construtor estabelece o estado inicial; os métodos devem manter os **invariantes**, condições que todo o objeto válido satisfaz.
 
-```java
-public interface Comportamento {
-    Posicao mover(Posicao atual);
-}
+Uma vida entre zero e cem é um invariante. Um setter público que aceita qualquer inteiro quebra-o. Uma operação `sofrerDano(int dano)` pode validar um dano não negativo e impedir que a vida desça abaixo de zero. Encapsular não é só escrever `private` e acrescentar getters e setters, é escolher operações que preservam o contrato.
 
-public class Monstro {
-    private Posicao posicao;
-    private Comportamento comportamento;
+A visibilidade controla quem pode chamar ou consultar: `private` fica na classe; sem modificador fica no pacote; `protected` permite acesso no pacote e, com regras próprias, por subclasses; `public` expõe uma API. Um método `static` pertence à classe e não dispõe de um `this`. Um método de instância atua sobre o objeto a que `this` se refere.
 
-    public Monstro(Posicao posicao, Comportamento comportamento) {
-        this.posicao = posicao;
-        this.comportamento = comportamento;
-    }
+## Um valor imutável
 
-    public void agir() {
-        posicao = comportamento.mover(posicao);
-    }
-}
-```
+Uma posição identifica uma célula. Escolhemos inteiros e um movimento que **devolve uma posição nova**, sem alterar a origem. Esta classe não decide se a célula está dentro da arena; essa regra pertence à arena.
 
-Um monstro **tem um** comportamento, não **é um** tipo de comportamento:
-
-<Typst
-  source={composicao}
-  format="svg"
-  alt="Diagrama com a caixa Monstro ligada por uma seta tem um à caixa Comportamento."
+<CodePlayground
+  language="java"
+  title="Mover sem alterar a origem"
+  code={
+    'import java.util.HashSet;\nimport java.util.Set;\n\nfinal class Posicao {\n    private final int x;\n    private final int y;\n\n    Posicao(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    Posicao somar(int dx, int dy) {\n        return new Posicao(x + dx, y + dy);\n    }\n\n    @Override\n    public boolean equals(Object outro) {\n        if (this == outro) return true;\n        if (!(outro instanceof Posicao)) return false;\n        Posicao p = (Posicao) outro;\n        return x == p.x && y == p.y;\n    }\n\n    @Override\n    public int hashCode() {\n        return 31 * x + y;\n    }\n\n    @Override\n    public String toString() {\n        return "(" + x + "," + y + ")";\n    }\n\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Posicao origem = new Posicao(3, 4);\n        Posicao destino = origem.somar(1, -2);\n        Set<Posicao> visitadas = new HashSet<Posicao>();\n        visitadas.add(destino);\n        visitadas.add(new Posicao(4, 2));\n        System.out.println(origem + " -> " + destino);\n        System.out.println(destino == new Posicao(4, 2));\n        System.out.println(destino.equals(new Posicao(4, 2)));\n        System.out.println(visitadas.size());\n    }\n}'
+  }
 />
 
-Para criar um monstro novo, escreves uma classe pequena que implementa `Comportamento` e passas uma instância ao construtor. Nada de hierarquias de cinco níveis para representar "anda em zigzag".
+A saída é `(3,4) -> (4,2)`, `false`, `true` e `1`. A origem ficou intacta. O `Set` reconheceu as duas posições de coordenadas iguais como o mesmo valor.
 
-<Tabs id="monstro-heranca-composicao" labels={['Herança', 'Composição']}>
-  <div slot="panel-0">
+## Igualdade e hash
 
-```java
-class MonstroVoador extends Monstro {
-    // herdou tudo; para mudar o voo,
-    // editas a hierarquia inteira
-}
-```
+Para objetos, `==` compara identidade, ou seja, se são o mesmo objeto. `equals` compara a igualdade definida pelo tipo. Por defeito, `Object.equals` também usa identidade; em `Posicao` escolhemos igualdade por coordenadas.
 
-A herança prende a variação à árvore de classes. Um monstro que voa e persegue precisa de um ramo novo na hierarquia, mesmo que só a combinação seja nova. Cada nível a mais torna o teste de cada folha mais caro.
+`equals` deve ser reflexivo, simétrico, transitivo e consistente enquanto o estado relevante não muda. Para um objeto não nulo, `equals(null)` deve ser falso. Se dois objetos são iguais, **têm de ter o mesmo `hashCode`**. O inverso não é exigido, porque dois valores diferentes podem colidir.
 
-  </div>
-  <div slot="panel-1">
+Por isso redefinimos os dois métodos. Um `HashSet` usa o hash para escolher onde procurar e depois a igualdade para distinguir valores. Se o hash dependesse da identidade, posições iguais poderiam ir para grupos diferentes.
 
-```java
-Monstro morcego = new Monstro(
-    new Posicao(1, 1), new Voar()
-);
-Monstro cacador = new Monstro(
-    new Posicao(1, 1), new PerseguirHeroi()
-);
-```
+Evita alterar campos usados em `equals` e `hashCode` enquanto o objeto é uma chave de `HashMap` ou um elemento de `HashSet`. Pode deixar de ser encontrado no grupo em que foi colocado. Um tipo imutável evita esta mudança.
 
-A composição troca peças ao construir. Para um monstro que muda a meio do nível, guarda o comportamento num campo com um método `setComportamento`: o mesmo monstro voa de manhã e persegue à tarde sem nenhuma classe nova. É por isto que o projeto prefere "tem um": o jogo muda de comportamento sem mudar de classes.
+## Herança, interfaces e composição
 
-  </div>
-</Tabs>
+Uma interface descreve operações que um cliente pode pedir. Uma classe concreta implementa-as. O **polimorfismo dinâmico** escolhe a implementação em tempo de execução conforme o objeto, mesmo quando a variável tem o tipo da interface.
 
-:::tip[Herança para o estável, composição para o variável]
-Usa herança quando a relação nunca vai mudar (um `Retangulo` é sempre uma `Forma`). Usa composição quando o comportamento varia, porque trocar um objeto em tempo de execução é trivial e reescrever uma hierarquia não é.
-:::
+Uma classe abstrata pode combinar operações abstratas, implementação e estado partilhados. Uma classe Java só estende uma classe, mas pode implementar várias interfaces. Uma interface não obriga os implementadores a herdarem o mesmo estado.
+
+A **herança** deve permitir substituição: qualquer objeto derivado tem de cumprir as promessas da base. Ter campos semelhantes não chega. A **composição** guarda um colaborador e delega-lhe uma tarefa. Permite variar essa tarefa sem criar subclasses para todas as combinações.
+
+<CodePlayground
+  language="java"
+  title="O mesmo inimigo, dois movimentos"
+  code={
+    'interface Movimento {\n    int proximoX(int atual);\n}\n\nclass ParaDireita implements Movimento {\n    public int proximoX(int atual) { return atual + 1; }\n}\n\nclass Parado implements Movimento {\n    public int proximoX(int atual) { return atual; }\n}\n\nclass Inimigo {\n    private int x;\n    private final Movimento movimento;\n\n    Inimigo(int x, Movimento movimento) {\n        this.x = x;\n        this.movimento = movimento;\n    }\n\n    void passo() { x = movimento.proximoX(x); }\n    int getX() { return x; }\n\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Inimigo a = new Inimigo(2, new ParaDireita());\n        Inimigo b = new Inimigo(2, new Parado());\n        a.passo();\n        b.passo();\n        System.out.println(a.getX() + " " + b.getX());\n    }\n}'
+  }
+/>
+
+Obtemos `3 2`. `Inimigo` contém um `Movimento`; não precisa de saber que classe o implementa. A posição e o algoritmo ficam separados. Esta colaboração será o padrão Strategy.
+
+**Overriding** redefine numa subclasse um método herdado com assinatura compatível. **Overloading** oferece métodos com o mesmo nome e parâmetros diferentes; a escolha da assinatura depende dos tipos conhecidos na compilação. `@Override` permite ao compilador detetar uma assinatura escrita por engano.
+
+## Tipos e coleções
+
+Escolhe a coleção pelo contrato que precisas:
+
+| Interface  | O que representa                         | Exemplo                              |
+| ---------- | ---------------------------------------- | ------------------------------------ |
+| `List<E>`  | Sequência ordenada com duplicados        | Comandos pela ordem em que chegaram. |
+| `Set<E>`   | Elementos sem duplicados lógicos         | Células já visitadas.                |
+| `Map<K,V>` | Uma associação por chave                 | Comando associado a cada tecla.      |
+| `Queue<E>` | Elementos a retirar segundo uma política | Ações pendentes numa fila.           |
+
+`ArrayList` dá acesso por índice em tempo constante e acrescenta no fim em tempo constante amortizado. Inserir ou remover no meio desloca elementos, com custo linear no número de elementos. `HashSet` e `HashMap` têm operações básicas com custo esperado constante quando os hashes se distribuem bem; não prometem ordem de iteração.
+
+Um `Map` substitui o valor quando inseres uma chave igual à existente. Usa `containsKey` quando tens de distinguir ausência de um valor `null`. Um `for-each` usa um iterador; remover diretamente da coleção durante a iteração pode provocar `ConcurrentModificationException`. Se o contrato o permitir, usa `Iterator.remove()` ou constrói uma coleção do resultado.
+
+## Genéricos e wildcards
+
+`List<String>` deixa o compilador verificar que só acrescentas strings. Não precisa de casts ao ler. Usa tipos wrapper, como `Integer`, em vez de `int` como parâmetro de tipo; Java faz boxing e unboxing, mas unboxing de `null` lança `NullPointerException`.
+
+Mesmo que `Integer` seja subtipo de `Number`, `List<Integer>` **não** é subtipo de `List<Number>`. Se fosse, um cliente poderia acrescentar um `Double` à lista de inteiros. Os genéricos são invariantes.
+
+Um wildcard permite declarar como a coleção participa:
+
+- `List<? extends Number>` produz números que podes ler como `Number`. Não podes acrescentar um `Integer` arbitrário, porque a lista pode ser de `Double`.
+- `List<? super Integer>` aceita inteiros. Ao ler, só sabes que o resultado é `Object`, porque a lista pode conter outros objetos.
+- `List<?>` aceita uma lista de qualquer tipo, mas não permite inserir um valor não nulo sem conhecer esse tipo.
+
+Não interpretes `extends` como imutabilidade: ainda podes, por exemplo, remover elementos. A restrição diz respeito ao tipo dos valores que acrescentas.
+
+<CodePlayground
+  language="java"
+  title="Copiar de quem produz para quem recebe"
+  code={
+    'import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    static <T> void copiar(List<? extends T> origem,\n    List<? super T> destino) {\n        for (T valor : origem) destino.add(valor);\n    }\n\n    public static void main(String[] args) {\n        List<Integer> origem = Arrays.asList(2, 3);\n        List<Number> destino = new ArrayList<Number>();\n        destino.add(1.5);\n        copiar(origem, destino);\n        System.out.println(destino);\n    }\n\n}'
+  }
+/>
+
+A saída é `[1.5, 2, 3]`. A origem produz valores de um tipo compatível com `T`; o destino aceita esse tipo. O método não precisa de converter a lista inteira nem de perder a verificação na compilação.
+
+## Exceções e contratos
+
+Uma exceção interrompe o fluxo normal até encontrar um `catch` compatível. `throw` lança uma exceção; `throws` declara as exceções que um método pode propagar. Exceções verificadas, como `IOException`, têm de ser tratadas ou declaradas. `RuntimeException` e subclasses, como `IllegalArgumentException`, não exigem essa declaração.
+
+Usa uma exceção com significado para o erro. Não captures `Exception` só para continuar com um estado inválido. Um recurso que precisa de ser fechado deve ficar num `try-with-resources`, como veremos em I/O. A recolha de lixo liberta memória sem referências alcançáveis, mas não substitui o fecho de ficheiros nem a libertação de outros recursos.

@@ -1,101 +1,117 @@
 ---
 title: Code smells e refactoring
-description: Cheiros típicos de código doente e as refatorações que os resolvem sem mudar comportamento.
-section: conteudo
-order: 6
+description: Diagnosticar dificuldades de mudança e transformar o código preservando os seus contratos.
+order: 7
+practices:
+  - ldts/praticar-refactoring
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
 
-Um **code smell** é um sintoma de mau desenho: o código funciona, mas cheira a problema futuro. **Refactoring** é a cura: reestruturar o código sem mudar o comportamento observável. A rede de segurança são os testes da página anterior. A regra de ouro: nunca refatores sem testes verdes, e corre-os a cada passo pequeno. O catálogo clássico destes cheiros e curas está documentado no refactoring.guru.[^catalogo]
+A regra de preço está repetida em três classes. Uma alteração exige editar as três e pode deixar respostas diferentes. Esse é um problema de manutenção concreto. Vamos reconhecer o sinal e melhorar a estrutura sem aproveitar a mudança para alterar a regra.
 
-[^catalogo]: Refactoring.guru, catálogo de code smells e refatorações com exemplos (https://refactoring.guru/).
+## O que é refactoring
+
+**Refactoring**, ou refatoração, é uma transformação da estrutura interna que preserva o comportamento observável. Extrair um método ou mover uma regra pode mudar o local do código sem mudar valores, efeitos, erros ou ordem relevante.
+
+Os testes ajudam a detetar alterações, mas não são uma prova completa de equivalência. Antes de transformar, identifica o contrato e os casos que poderiam mudar. Corrigir um erro e refatorar são passos diferentes: a correção muda um comportamento incorreto; a refatoração preserva o comportamento decidido.
 
 ## Os cheiros mais comuns
 
-**Método longo**: um método com cinquenta linhas faz várias coisas. Resolve-se com **extrair método**, dando um nome a cada bloco.
+Um **code smell** é um sinal para investigar, não uma demonstração automática de mau código. Não existe um número de linhas que decida sozinho se um método está errado.
 
-**Classe grande**: a `Jogo` que sabe de input, física, desenho e pontuação. Resolve-se com **extrair classe**, como fizeste no SOLID.
+| Sinal               | Problema a investigar                                     | Transformação possível                                       |
+| ------------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
+| Long Method         | Várias intenções e níveis de detalhe no mesmo método.     | Extract Method, com nomes que expliquem as intenções.        |
+| Large Class         | Razões independentes para alterar a mesma classe.         | Extract Class.                                               |
+| Duplicate Code      | A mesma regra exige mudanças em vários sítios.            | Extrair a regra para um responsável comum.                   |
+| Feature Envy        | Uma operação depende sobretudo dos dados de outro objeto. | Move Method, se esse objeto deve ser responsável pela regra. |
+| Data Clumps         | Um grupo de valores viaja sempre junto.                   | Introduce Parameter Object ou um tipo do domínio.            |
+| Primitive Obsession | Primitivos representam conceitos com regras próprias.     | Criar um tipo que valide e ofereça operações adequadas.      |
+| Long Parameter List | Muitas decisões independentes numa chamada.               | Separar operações ou agrupar dados que pertencem juntos.     |
+| Refused Bequest     | Uma subclasse recusa operações prometidas pela base.      | Rever a hierarquia e usar composição.                        |
 
-**Código duplicado**: o mesmo bloco em três sítios. Cada correção futura tem de ser feita três vezes, e uma vai ser esquecida. Resolve-se com **extrair método** e chamar o método nos três sítios.
+Feature Envy não se decide contando chamadas. Um serializador consulta muitos dados por função; isso não significa que a serialização deva entrar no modelo. Pergunta que módulo deve conhecer e proteger a regra.
 
-**Feature Envy**: um método que usa mais os dados de outra classe que os seus. O método tem inveja da outra classe e devia mudar-se para lá com **mover método**.
+Uma classe de dados pode ser adequada para transportar uma resposta ou representar um valor. Torna-se um problema quando regras do mesmo conceito ficam espalhadas pelos clientes. Uma operação `transferir` pode pertencer a uma conta; uma vista que consulta o saldo continua a ter uma responsabilidade distinta.
 
-**Data class**: uma classe só com getters e setters, sem comportamento. O comportamento vive espalhado por quem usa a classe. Resolve-se a mover os métodos para dentro dela.
+## Mudanças dispersas e dependências
 
-**Switch extenso**: um `switch` sobre o tipo que cresce a cada funcionalidade nova. Resolve-se com polimorfismo: cada caso vira uma classe, como os `Comando` do SOLID.
+**Divergent Change** ocorre quando mudanças de naturezas diferentes exigem editar a mesma classe. **Shotgun Surgery** ocorre quando uma mudança exige pequenas edições em muitas classes. O primeiro sugere separar responsabilidades; o segundo pode sugerir juntar uma regra que ficou dispersa.
 
-**Data Clumps**: os mesmos três parâmetros (`x`, `y`, `cor`) a viajarem juntos em cinco assinaturas. Resolve-se com **extrair classe**, agrupando-os num objeto como `Posicao`.
+Outros sinais ajudam a procurar a causa:
 
-**Long Parameter List**: um método com seis ou sete parâmetros que ninguém consegue chamar sem consultar a assinatura. Resolve-se a agrupar parâmetros relacionados num objeto ou a dividir o método.
+- `Temporary Field`: um campo só tem significado durante certas fases e exige verificações constantes.
+- `Message Chains`: um cliente conhece um percurso como `arena.getHeroi().getPosicao().getX()`, ficando ligado à estrutura interna.
+- `Middle Man`: uma classe só delega sem esconder uma decisão útil. Confirma antes se representa uma fronteira ou contrato necessário.
+- `Speculative Generality`: abstrações e parâmetros para alternativas que não existem e aumentam o esforço de leitura.
+- `Dead Code`: código sem uso que já não faz parte do contrato.
 
-**Primitive Obsession**: usar `String` para telefones, `int` para dinheiro, `double` para posições. Resolve-se com **substituir primitiva por objeto**, criando pequenos tipos com validação própria.
-
-<Tabs id="cheiro-cura" labels={['Método longo', 'Feature Envy', 'Switch extenso']}>
-  <div slot="panel-0">
-
-Método longo esconde várias intenções num bloco só. A cura é **extrair método**: cada bloco ganha um nome que diz o que faz, e o método original passa a ler-se como uma lista de passos. No exemplo abaixo, `atualizar` passou de onze linhas para duas chamadas com nome.
-
-  </div>
-  <div slot="panel-1">
-
-Feature Envy é um método que vive nos dados de outra classe. A cura é **mover método**: o cálculo muda-se para a classe cujos dados consulta, e o método original delega. O `moverMonstro` foi morar na `Arena` porque é lá que vivem limites, ocupação, vento e gravidade.
-
-  </div>
-  <div slot="panel-2">
-
-Switch extenso sobre o tipo cresce a cada caso novo. A cura é **substituir condicional por polimorfismo**: cada caso vira uma classe com o mesmo método, e a escolha passa a ser que objeto construir. Os `Comando` do SOLID são este padrão aplicado às teclas.
-
-  </div>
-</Tabs>
+Um `switch` não é sempre um smell. Investiga quando a mesma decisão sobre tipo se repete em muitos módulos ou cresce sempre que acrescentas uma alternativa. Nesse caso, polimorfismo pode localizar cada comportamento.
 
 ## Como refatorar em segurança
 
-Refactoring faz-se em passos minúsculos, cada um com os testes verdes no fim:
+1. Descreve o comportamento a preservar e corre os testes existentes.
+2. Se faltam casos relevantes, acrescenta-os antes da transformação.
+3. Faz uma transformação pequena, como extrair um método.
+4. Compila e corre os testes. Inspeciona efeitos e erros que os testes não cobrem.
+5. Repete até a responsabilidade ficar no local pretendido.
 
-1. Garante que há um teste a cobrir o código que vais mexer.
-2. Faz uma mudança pequena: extrai um método, muda um nome, move uma linha.
-3. Corre os testes. Se falharem, desfaz e tenta de outra forma.
-4. Só quando está verde é que dás o passo seguinte.
+Ferramentas do IDE ajudam a atualizar referências, mas não conhecem todas as regras do domínio. Ao mover um método, confirma a ordem de chamadas, as exceções, o estado partilhado e a visibilidade.
 
-:::warning[Refactoring não é reescrever]
-Se mudas comportamento e estrutura ao mesmo tempo, e algo parte, não sabes qual das duas mudanças causou. Primeiro refatora com testes verdes, depois muda comportamento, depois refatora outra vez.
-:::
+## Exemplo: extrair a regra do preço
 
-## Exemplo: método longo com Feature Envy
+Neste exemplo próprio, cada unidade custa 200 cêntimos até cinco unidades; as seguintes custam 150. Aceitamos de zero a mil unidades. O preço é um inteiro em cêntimos, por isso não introduzimos arredondamentos de vírgula flutuante.
 
-Este método atualiza um monstro e cheira mal duas vezes: é longo e passa a vida nos dados da arena:
+A primeira versão completa mistura a regra de preço com a impressão. Guarda-a como `Main.java` se quiseres compará-la localmente:
 
 ```java
-void atualizar(Monstro m, Arena arena) {
-    Posicao p = m.getPosicao();
-    int nx = p.getX() + arena.getVentoX();
-    int ny = p.getY() + arena.getGravidade();
-    if (arena.dentroLimites(nx, ny) && !arena.ocupado(nx, ny)) {
-        m.setPosicao(new Posicao(nx, ny));
+public class Main {
+    static void imprimir(int unidades) {
+        if (unidades < 0 || unidades > 1000) {
+            throw new IllegalArgumentException("quantidade invalida");
+        }
+        int preco;
+        if (unidades <= 5) {
+            preco = unidades * 200;
+        } else {
+            preco = 5 * 200 + (unidades - 5) * 150;
+        }
+        System.out.println(preco);
     }
-    arena.contarPasso();
-    if (arena.getPassos() % 10 == 0) {
-        arena.surgirItem();
+
+    public static void main(String[] args) {
+        imprimir(0);
+        imprimir(3);
+        imprimir(6);
     }
 }
 ```
 
-O método usa `arena` cinco vezes e `m` duas: tem inveja da arena. A versão refatorada move o cálculo para onde os dados vivem e extrai métodos com nome. Corre e confirma que o monstro anda uma casa e o relógio avança:
+As saídas esperadas vêm da regra: zero custa `0`, três custam $3 \times 200 = 600$ e seis custam $5 \times 200 + 150 = 1150$.
+
+Vamos extrair o cálculo e manter a validação dentro dele, para qualquer cliente obter a mesma regra. O método de impressão delega e continua a ter o mesmo efeito:
 
 <CodePlayground
   language="java"
-  title="Depois da refatoração"
+  title="A regra separada da apresentação"
   code={
-    'import java.util.ArrayList;\nimport java.util.List;\n\nclass Posicao {\n    private final int x;\n    private final int y;\n\n    Posicao(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    int getX() { return x; }\n    int getY() { return y; }\n}\n\nclass Monstro {\n    private Posicao posicao;\n\n    Monstro(Posicao posicao) {\n        this.posicao = posicao;\n    }\n\n    Posicao getPosicao() { return posicao; }\n    void setPosicao(Posicao posicao) { this.posicao = posicao; }\n}\n\nclass Arena {\n    private final List<Monstro> monstros = new ArrayList<>();\n    private int passos = 0;\n\n    void adicionar(Monstro monstro) {\n        monstros.add(monstro);\n    }\n\n    void moverMonstro(Monstro monstro) {\n        Posicao atual = monstro.getPosicao();\n        monstro.setPosicao(new Posicao(atual.getX() + 1, atual.getY()));\n    }\n\n    void avancarRelogio() {\n        passos++;\n    }\n\n    void atualizar(Monstro monstro) {\n        moverMonstro(monstro);\n        avancarRelogio();\n    }\n\n    int getPassos() { return passos; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Arena arena = new Arena();\n        Monstro monstro = new Monstro(new Posicao(2, 3));\n        arena.adicionar(monstro);\n        arena.atualizar(monstro);\n        arena.atualizar(monstro);\n        Posicao fim = monstro.getPosicao();\n        System.out.println("posicao: (" + fim.getX() + "," + fim.getY() + ")");\n        System.out.println("passos: " + arena.getPassos());\n    }\n}'
+    'final class Tarifa {\n    private static final int LIMITE = 5;\n    private static final int PRECO_INICIAL = 200;\n    private static final int PRECO_ADICIONAL = 150;\n\n    static int calcular(int unidades) {\n        if (unidades < 0 || unidades > 1000) {\n            throw new IllegalArgumentException("quantidade invalida");\n        }\n        int iniciais = Math.min(unidades, LIMITE);\n        int adicionais = Math.max(0, unidades - LIMITE);\n        return iniciais * PRECO_INICIAL + adicionais * PRECO_ADICIONAL;\n    }\n\n}\n\npublic class Main {\n    static void imprimir(int unidades) {\n        System.out.println(Tarifa.calcular(unidades));\n    }\n\n    public static void main(String[] args) {\n        imprimir(0);\n        imprimir(3);\n        imprimir(6);\n    }\n\n}'
   }
 />
 
-A saída mostra `posicao: (4,3)` e `passos: 2`. O `moverMonstro` fica na `Arena`, junto dos dados que consulta. O `avancarRelogio` esconde a contagem. O método original passou de onze linhas para duas chamadas com nome, e os testes continuam verdes porque nada observável mudou.
+Voltamos a obter `0`, `600` e `1150`. Para zero a cinco unidades, `adicionais` é zero e `iniciais` é a quantidade. Acima de cinco, `iniciais` fica em cinco e `adicionais` é o excesso. Mantivemos a rejeição fora do intervalo e a mesma mensagem de erro.
 
-<YouTube
-  id="PJjHfa5yxlU"
-  title="Get a Whiff of This, Sandi Metz na RailsConf 2016"
-/>
+Não alterámos a unidade monetária nem o desconto. Trocar a fórmula por uma que aplica 150 a todas as unidades acima de cinco produziria 900 para seis e seria uma mudança de regra, não uma refatoração.
+
+## Outras transformações
+
+**Extract Variable** dá um nome a uma expressão difícil. Preserva quantas vezes ela é calculada quando há efeitos ou estado que muda. Extrair uma chamada do interior de um ciclo para fora pode mudar o resultado.
+
+**Guard Clauses** tratam casos que terminam cedo e deixam o percurso normal visível. Mantém a ordem de verificações se ela decide qual erro acontece primeiro.
+
+**Move Method** aproxima uma regra dos dados que ela precisa. Começa por criar o método no destino e delegar do local antigo; depois atualiza clientes se isso fizer parte da mudança.
+
+**Encapsulate Collection** impede clientes de contornar as operações do dono. Devolver uma cópia ou uma vista não modificável pode resolver problemas diferentes: uma vista não modificável ainda pode refletir mudanças na coleção original.
+
+**Replace Conditional with Polymorphism** separa alternativas que variam. Só o faz quando as alternativas têm um contrato comum útil. O objetivo é reduzir a propagação de mudanças, não eliminar toda a condição do programa.

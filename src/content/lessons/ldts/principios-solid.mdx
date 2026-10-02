@@ -1,80 +1,108 @@
 ---
 title: Princípios SOLID
-description: Os cinco princípios com sinais de violação em código Java e a refatoração de uma classe de jogo.
-section: conteudo
-order: 3
+description: Separar razões para mudar, proteger contratos e escolher dependências que permitem evolução.
+order: 4
+practices:
+  - ldts/praticar-solid
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import solid from '../../ldts/solid.typ?raw';
 
-SOLID são cinco princípios para desenhar classes que aguentam mudanças. Não são regras de sintaxe que o compilador verifica: são cheiros que aprendes a detetar. Cada princípio responde a uma forma típica de o código apodrecer, e todos pagam dividendos quando o projeto cresce nas seis semanas do integrador.
+Vamos acrescentar um inimigo ao jogo. Se isso exige alterar a entrada, o desenho e os testes de posições, há dependências a mais. SOLID ajuda a identificar por que uma mudança se propaga e onde devemos separar responsabilidades.
 
 ## Os cinco princípios
 
-**S de Single Responsibility**: uma classe tem uma razão para mudar. Uma classe `Jogo` que lê input, atualiza monstros, desenha o ecrã e guarda recordes tem quatro razões para mudar, logo quatro fontes de bugs.
+| Princípio                  | Pergunta a fazer ao desenho                                                   |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| SRP, Single Responsibility | Esta classe junta razões independentes para mudar?                            |
+| OCP, Open/Closed           | Consigo acrescentar esta alternativa sem reescrever os clientes estáveis?     |
+| LSP, Liskov Substitution   | O subtipo mantém todas as promessas que o cliente da base usa?                |
+| ISP, Interface Segregation | O cliente depende de operações que não precisa?                               |
+| DIP, Dependency Inversion  | A regra da aplicação depende de detalhes externos ou de um contrato adequado? |
 
-**O de Open/Closed**: aberta a extensão, fechada a modificação. Para adicionar um monstro novo, deves criar uma classe nova, não editar a antiga. A composição da página anterior é a técnica que torna isto possível: o `Monstro` aceita qualquer `Comportamento` sem ser modificado.
+Uma classe não precisa de ser pequena para ter uma responsabilidade coerente. E uma aplicação não precisa de uma interface para cada classe. Vamos justificar cada princípio através de uma mudança concreta.
 
-**L de Liskov Substitution**: uma subclasse deve poder substituir a classe mãe sem partir nada. Se `Retangulo` tem `setLargura` e `setAltura` independentes, um `Quadrado` que herda dele e força os lados iguais viola o princípio: código que funcionava com retângulos parte-se com quadrados.[^liskov] Quando a herança mente sobre a relação, troca por composição.
+## SRP: uma razão para mudar
 
-**I de Interface Segregation**: interfaces pequenas e específicas em vez de uma interface gorda. Uma interface `Entidade` que obriga paredes e itens a implementar `mover` está errada: separa em `Desenhavel`, `Movivel` e `Coletavel`, e cada classe implementa só o que usa.
+Uma `Pontuacao` calcula pontos, escreve um ficheiro e desenha um texto no ecrã. As regras de pontuação, o formato do ficheiro e a apresentação podem mudar por motivos independentes. Separar essas decisões evita que mudar o formato altere a regra do jogo.
 
-**D de Dependency Inversion**: depender de abstrações, não de concretizações. O `Monstro` da página anterior recebe um `Comportamento` (interface), não um `AndarEmZigZag` concreto. Isto também é o que permite testar com doubles, como vais ver nos testes.
+O modelo pode fornecer o valor e operações válidas. Um adaptador guarda-o. Uma vista apresenta-o. Métodos relacionados com a mesma regra podem continuar juntos.
 
-[^liskov]: O exemplo do quadrado e do retângulo é o caso clássico de violação, descrito na entrada sobre o princípio de substituição de Liskov na Wikipédia (https://en.wikipedia.org/wiki/Liskov_substitution_principle).
+Uma forma de reconhecer o problema é perguntar quem pede a mudança e qual a regra afetada. Dividir cada método numa classe cria mais ligações sem necessariamente separar uma decisão útil.
 
-## Exemplo: refatorar uma classe que faz tudo
+## OCP: escolher onde permitir extensão
 
-Parte deste `ControladorArena` que viola Single Responsibility e Open/Closed:
+Imagina um controlador que recebe a tecla e contém um `switch` com todos os comandos. Cada comando novo altera o mesmo método. Se as ações variam frequentemente, o controlador pode depender de uma interface `Comando`, cujo `executar()` cada ação implementa.
 
-```java
-public class ControladorArena {
-    public void passo(String tecla) {
-        if (tecla.equals("cima")) heroi.subir();
-        else if (tecla.equals("baixo")) heroi.descer();
-        // ... mais teclas, desenho do ecrã e lógica de monstros aqui
-    }
-}
-```
+Acrescentar uma classe e registá-la ainda muda a configuração da aplicação. OCP protege o cliente que usa o contrato, não promete que nenhum ficheiro possa mudar. Também não obriga a prever todas as extensões futuras.
 
-Cada tecla nova, cada monstro novo e cada mudança no desenho mexem nesta classe. A refatoração separa as responsabilidades:
+Um mapa de comandos tem sentido quando queremos trocar ações sem alterar o controlador. Um `switch` pequeno sobre uma enumeração fechada pode continuar a ser a solução mais clara.
 
-```java
-public class ControladorArena {
-    private final Heroi heroi;
-    private final Map<String, Comando> comandos;
+## LSP: substituição é um contrato
 
-    public void passo(String tecla) {
-        comandos.getOrDefault(tecla, Comando.nada()).executar(heroi);
-    }
-}
-```
-
-Agora cada tecla é um objeto `Comando` registado no mapa. Adicionar uma tecla é criar uma classe e registá-la: extensão sem modificação (Open/Closed), e a classe voltou a ter uma só razão para mudar (Single Responsibility). O desenho do ecrã e a lógica dos monstros saem para as suas próprias classes pelo mesmo processo:
-
-<Typst
-  source={solid}
-  format="svg"
-  alt="Diagrama com a caixa ControladorArena faz tudo a apontar para três caixas separadas: ControladorArena passo, Comando executar e VistaArena desenhar."
-/>
-
-Executa a versão refatorada: regista uma tecla, prime uma tecla registada e uma por registar, e confirma que o controlador nunca precisou de ser editado:
+Suponhamos que `Retangulo` permite alterar largura sem alterar altura. O cliente escolhe largura 4 e altura 3, e espera área 12. Uma subclasse `Quadrado` que faz cada setter alterar ambas as dimensões produz área 9. O subtipo viola o contrato usado pelo cliente.
 
 <CodePlayground
   language="java"
-  title="Comandos sem editar o controlador"
+  title="O mesmo cliente recebe duas implementações"
   code={
-    'import java.util.HashMap;\nimport java.util.Map;\n\ninterface Comando {\n    String executar();\n}\n\nclass Subir implements Comando {\n    public String executar() { return "heroi sobe"; }\n}\n\nclass Nada implements Comando {\n    public String executar() { return "tecla ignorada"; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Map<String, Comando> comandos = new HashMap<>();\n        comandos.put("cima", new Subir());\n        String[] teclas = {"cima", "espaco"};\n        for (String tecla : teclas) {\n            Comando comando = comandos.getOrDefault(tecla, new Nada());\n            System.out.println(tecla + " -> " + comando.executar());\n        }\n    }\n}'
+    'class Retangulo {\n    protected int largura;\n    protected int altura;\n    void setLargura(int valor) { largura = valor; }\n    void setAltura(int valor) { altura = valor; }\n    int area() { return largura * altura; }\n}\n\nclass Quadrado extends Retangulo {\n    @Override\n    void setLargura(int valor) { largura = altura = valor; }\n    @Override\n    void setAltura(int valor) { largura = altura = valor; }\n}\n\npublic class Main {\n    static int preparar(Retangulo forma) {\n        forma.setLargura(4);\n        forma.setAltura(3);\n        return forma.area();\n    }\n\n    public static void main(String[] args) {\n        System.out.println(preparar(new Retangulo()));\n        System.out.println(preparar(new Quadrado()));\n    }\n\n}'
   }
 />
 
-A saída mostra `cima -> heroi sobe` e `espaco -> tecla ignorada`. Repara que `Subir` é uma classe nova e o código que escolhe o comando não mudou: é o Open/Closed a funcionar.
+A saída é `12` e `9`. A relação matemática entre figuras não basta para justificar a herança de uma API mutável. Poderíamos definir uma interface imutável `Forma` com `area()`, sem prometer setters independentes, e deixar retângulos e quadrados implementá-la.
 
-:::warning[SOLID não é burocracia]
-Cinco classes de uma linha para substituir um `if` com dois ramos é pior, não melhor. Aplica os princípios onde o código muda com frequência: no núcleo do jogo, não nos cantos que ninguém toca.
-:::
+Em termos de contratos, um subtipo não deve exigir pré-condições mais fortes nem garantir pós-condições mais fracas. Deve também preservar os invariantes e as propriedades de evolução do estado que a base promete. Se a base aceita um valor positivo, o subtipo não pode passar a aceitar apenas valores acima de dez sem quebrar clientes válidos.
 
-<YouTube id="_InRvNmB1Ug" title="SOLID Principles in Java (NodePrism)" />
+## ISP: interfaces segundo os clientes
+
+Uma interface `Dispositivo` com `lerTecla`, `desenhar` e `tocarSom` obriga um teclado a implementar operações irrelevantes. Métodos vazios ou `UnsupportedOperationException` podem revelar esse problema.
+
+Separa `Entrada`, `Vista` e `Audio` quando os clientes precisam dessas capacidades em separado. Um objeto real pode implementar várias interfaces. O controlador que só lê teclas depende de `Entrada`, por isso uma alteração ao áudio não muda o seu contrato.
+
+A divisão deve seguir usos coerentes. Uma interface com uma única operação não é automaticamente melhor que outra com várias operações relacionadas.
+
+## DIP: a regra define o contrato
+
+Uma regra de fim de jogo que cria diretamente `FicheiroPontuacoes` passa a depender da pasta, do formato e das falhas do sistema de ficheiros. Em vez disso, define o que precisa, por exemplo `Pontuacoes.guardar(int valor)`. O adaptador de ficheiro implementa esse contrato.
+
+O código de alto nível depende da abstração. O detalhe também depende dessa abstração para a implementar. A escolha do adaptador concreto fica na montagem da aplicação, normalmente perto do `main`.
+
+Este excerto mostra a fronteira:
+
+```java
+interface Pontuacoes {
+    void guardar(int valor);
+}
+
+class FimDeJogo {
+    private final Pontuacoes pontuacoes;
+
+    FimDeJogo(Pontuacoes pontuacoes) {
+        this.pontuacoes = pontuacoes;
+    }
+
+    void concluir(int valor) {
+        if (valor < 0) throw new IllegalArgumentException("pontos negativos");
+        pontuacoes.guardar(valor);
+    }
+}
+```
+
+**Injeção de dependências** é passar o colaborador ao objeto, como no construtor. **Inversão de dependências** é a decisão sobre de que contratos os módulos dependem. Passar uma classe concreta pelo construtor é injeção, mas não demonstra por si só DIP.
+
+A interface deve usar conceitos da regra, não obrigar o modelo a fornecer um caminho de ficheiro ou uma instrução SQL. Os testes podem passar uma implementação em memória ou um substituto controlado.
+
+## Coesão, acoplamento e pacotes
+
+**Coesão** descreve como os elementos de um módulo colaboram numa responsabilidade. **Acoplamento** descreve quanto um módulo depende de outros e das suas decisões. Queremos dependências necessárias e explícitas, não eliminar toda a colaboração.
+
+Classes que mudam juntas por uma razão comum podem pertencer ao mesmo pacote. Um ciclo entre pacotes torna mais difícil alterar ou reutilizar um deles isoladamente. Para o quebrar, localiza a dependência indevida e extrai um contrato no lado que precisa da capacidade.
+
+Se `modelo` importa `vista`, uma regra do jogo passa a exigir a interface gráfica. Inverter essa dependência permite reutilizar o modelo numa vista de terminal e nos testes. A lição de [MVC](/cadeiras/ldts/mvc-projeto/) aplica esta separação a uma interação completa.
+
+## Justificar uma decisão
+
+Antes de acrescentar uma abstração, escreve a mudança que ela deve suportar. Depois identifica o cliente que deve ficar estável e o contrato que as alternativas partilham. Finalmente compara a complexidade adicional com a dependência que removeste.
+
+Por exemplo, trocar ficheiros por armazenamento em memória deve preservar `FimDeJogo`. O contrato `Pontuacoes` permite isso. Criar três interfaces entre duas funções puras sem qualquer alternativa concreta não resolve o mesmo problema.

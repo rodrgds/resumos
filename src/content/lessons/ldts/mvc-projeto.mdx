@@ -1,99 +1,75 @@
 ---
 title: MVC e projeto integrador
-description: Model-View-Controller em aplicações event driven e a organização do projeto em equipa.
-section: conteudo
-order: 8
+description: Separar regras, apresentação e ações, seguindo um movimento completo e os seus testes.
+order: 9
+practices:
+  - ldts/praticar-mvc
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import mvc from '../../ldts/mvc.typ?raw';
 
-**MVC** separa a aplicação em três papéis. O **Model** guarda o estado e as regras: posições, vidas, pontuação. A **View** desenha o estado no ecrã e não decide nada. O **Controller** recebe os eventos (teclas, cliques), atualiza o Model e pede à View para redesenhar. Em aplicações **event driven** como o jogo, nada corre em sequência fixa: o programa espera eventos e reage.
+O utilizador pede um movimento para a direita. A célula pode estar bloqueada. Se o botão altera diretamente a posição e o texto, a interface passa a decidir uma regra do jogo. MVC separa quem interpreta a ação, quem valida o movimento e quem apresenta o resultado.
 
-<Typst
-  source={mvc}
-  format="svg"
-  alt="Triângulo com Model, View e Controller. O Controller atualiza o Model e pede o redesenho à View, que lê o Model."
-/>
+## Model, View e Controller
 
-## Porque separar
+O **Model** representa estado e regras do domínio. Mantém invariantes, como ficar dentro da arena. Não precisa de saber se mostramos o herói em Swing ou num terminal.
 
-Sem MVC, a classe do jogo lê teclas, mexe em posições e desenha tudo misturado, e cada mudança toca em tudo. Com MVC, cada pergunta tem um dono: "onde está o herói" é o Model, "como se desenha" é a View, "o que acontece ao premir cima" é o Controller. Os testes agradecem: o Model testa-se sem ecrã nem teclado, como fizeste nos [testes unitários](testes-unitarios/).
+A **View** apresenta o estado e recolhe ou encaminha eventos da interface. Traduz valores em texto, formas e componentes. Não decide se um movimento é válido.
 
-## Mapear o Hero
+O **Controller** interpreta ações e coordena operações. Um clique, uma tecla ou outro evento pode transformar-se no mesmo pedido ao modelo. Depois a vista apresenta o estado resultante.
 
-No jogo do projeto, o mapeamento típico é este:
+Existem variantes de MVC. Nesta página, o controlador atualiza explicitamente a vista. Noutra variante, a vista subscreve mudanças do modelo com Observer. Em ambos os casos, as regras não dependem dos componentes gráficos.
 
-- **Model**: `Arena` com o herói, os monstros, as paredes e a pontuação, mais as regras de movimento e colisão. Não importa nenhum pacote de desenho.
-- **View**: a classe que pega na `Arena` e desenha cada elemento no terminal com a biblioteca do projeto (Lanterna, no caso do jogo Hero). Só lê o Model, nunca o altera.
-- **Controller**: o `ControladorArena` com o mapa de `Comando` por tecla. Recebe o evento, atualiza o Model e chama a View.
+## Seguir uma ação completa
 
-O ciclo de um evento fica assim: tecla premida, Controller atualiza a posição no Model, View redesenha a arena. Se um dia trocares Lanterna por outra biblioteca, só a View muda. O [repositório oficial da Lanterna](https://github.com/mabe02/lanterna/) documenta a biblioteca de terminal usada no jogo.
-
-Na Lanterna, o esqueleto do ciclo é ler a tecla, atualizar e redesenhar:
-
-```java
-Screen screen = new DefaultTerminalFactory().createScreen();
-screen.startScreen();
-KeyStroke tecla = screen.readInput(); // bloqueia até haver tecla
-arena.atualizar(tecla);
-desenharArena(screen, arena);
-screen.refresh();
-screen.stopScreen();
-```
-
-O `readInput` bloqueia à espera do utilizador: é o "event driven" na prática. O resto do programa é o Model puro que já testaste. Como a Lanterna precisa de um terminal a sério, o bloco executável abaixo usa só Java puro com teclas programadas: a entrada já contém a sequência e o programa imprime o estado a cada passo.
+Vamos usar uma arena com cinco células, de zero a quatro. O herói começa em dois. Pedimos `+1`, depois `+2`, depois `-1`.
 
 <CodePlayground
   language="java"
-  title="Ciclo tecla, estado, pontos"
-  input={'direita\ndireita\nitem\nsair'}
+  title="A vista mostra o movimento que foi aceite"
   code={
-    'import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        int x = 5;\n        int pontos = 0;\n        Scanner teclado = new Scanner(System.in);\n        while (teclado.hasNextLine()) {\n            String tecla = teclado.nextLine().trim();\n            if (tecla.equals("sair")) {\n                break;\n            }\n            if (tecla.equals("direita")) {\n                x = x + 1;\n            }\n            if (tecla.equals("item")) {\n                pontos = pontos + 50;\n            }\n            System.out.println("heroi em " + x + ", pontos " + pontos);\n        }\n        teclado.close();\n    }\n}'
+    'class Modelo {\n    private final int largura;\n    private int x;\n\n    Modelo(int largura, int x) {\n        if (largura <= 0 || x < 0 || x >= largura) {\n            throw new IllegalArgumentException("arena invalida");\n        }\n        this.largura = largura;\n        this.x = x;\n    }\n\n    boolean mover(int deslocamento) {\n        long destino = (long) x + deslocamento;\n        if (destino < 0 || destino >= largura) return false;\n        x = (int) destino;\n        return true;\n    }\n\n    int getX() { return x; }\n\n}\n\ninterface Vista {\n    void mostrar(int x);\n}\n\nclass VistaTexto implements Vista {\n    public void mostrar(int x) { System.out.println("heroi: " + x); }\n}\n\nclass Controlador {\n    private final Modelo modelo;\n    private final Vista vista;\n\n    Controlador(Modelo modelo, Vista vista) {\n        this.modelo = modelo;\n        this.vista = vista;\n    }\n\n    void mover(int deslocamento) {\n        modelo.mover(deslocamento);\n        vista.mostrar(modelo.getX());\n    }\n\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Modelo modelo = new Modelo(5, 2);\n        Controlador controlador = new Controlador(modelo, new VistaTexto());\n        controlador.mover(1);\n        controlador.mover(2);\n        controlador.mover(-1);\n    }\n}'
   }
 />
 
-A saída mostra o herói a andar para a direita e os pontos a saltar para 50 quando apanha o item. Cada linha impressa é um "redesenho": o estado muda, o observador vê.
+A saída é `heroi: 3`, `heroi: 3` e `heroi: 2`. A segunda tentativa procura a célula cinco, que está fora. O modelo devolve falso e mantém três. O controlador desenha a posição real, não o destino pedido.
 
-## Organizar o projeto em equipa
+O cálculo usa `long` para que um deslocamento inteiro muito grande não faça overflow antes de verificar os limites. Só converte para `int` depois de validar um destino dentro da largura inteira.
 
-Três pessoas, seis semanas, um repositório. O que funciona:
+## O que depende de quê
 
-- Divide por camadas MVC, uma pessoa por camada, com as interfaces (`Ecra`, `Comportamento`, `Comando`) acordadas na primeira semana.
-- Cada funcionalidade num branch com revisão antes do merge, como no [controlo de versões](controlo-versoes/).
-- Testes escritos junto com o código: o Model com testes unitários puros, o Controller com mocks da View, e a cobertura e o Pitest no build para apanhar testes fracos.
-- Refactoring contínuo: quando um smell aparece, trata-o nessa semana. Na última semana já não há tempo para reestruturar.
+A montagem, aqui o `main`, escolhe `VistaTexto`. O controlador conhece o modelo e a interface `Vista`. O modelo não importa nenhuma dessas classes de apresentação.
 
-:::warning[Os relatórios contam]
-O projeto avalia produto e relatórios. Guarda decisões à medida que as tomas: que padrões aplicaste e porquê, que smells encontraste, o que os testes apanharam. Reconstruir isto na véspera da entrega produz relatórios vagos e notas que o produto não salva.
-:::
+```text
+montagem: escolhe e liga os objetos
+controlador --> modelo
+controlador --> contrato da vista <-- vista concreta
+```
 
-## Exemplo: planear os testes do projeto
+Uma `VistaSwing` pode implementar o mesmo contrato. Os listeners traduzem eventos em chamadas ao controlador. Como os eventos Swing são tratados na EDT, operações curtas do modelo podem correr aí; operações demoradas precisam de uma tarefa separada e de voltar à EDT para apresentar o resultado.
 
-Antes de escrever código novo, lista o que vais testar. Para a funcionalidade "herói apanha item e ganha pontos":
+Não escondas uma regra no desenho. Se a vista limita a posição mas o modelo aceita qualquer valor, os testes do modelo e outra vista continuam vulneráveis.
 
-<Tabs id="testes-camadas" labels={['Model', 'Controller', 'Observer']}>
-  <div slot="panel-0">
+## Testar cada comportamento
 
-Testa a regra pura, sem ecrã nem teclado. Cria a arena, apanha o item, verifica os 50 pontos e que o item desapareceu. É o teste mais barato e o mais importante: se a regra está errada aqui, está errada em todo o lado.
+O modelo pode ser testado sem janela: começa em dois, move para três, recusa cinco e mantém três. Testa também a construção inválida, ambos os limites e deslocamentos extremos. O esperado vem do intervalo da arena.
 
-  </div>
-  <div slot="panel-1">
+Para o controlador, passa uma vista controlada e confirma que recebe a posição aceite. O cenário de movimento bloqueado distingue mostrar `getX()` de mostrar o destino pedido. Um teste só com movimentos válidos não reconhece esse erro.
 
-Testa a reação à tecla com a View em mock. Prende a entrada na tecla certa, corre o passo e verifica com `verify` que a View recebeu o redesenho esperado. Não testa a regra (isso é do Model), testa a ligação tecla, ação, desenho.
+Para a vista concreta, verifica a tradução para texto ou componentes, incluindo os eventos que envia. Não precisas de abrir uma janela para testar a regra dos limites. Um teste completo da aplicação pode depois verificar que uma tecla percorre todas as peças.
 
-  </div>
-  <div slot="panel-2">
+## Onde entram os padrões
 
-Testa a notificação com um observador espião. Apanha o item e confirma que a pontuação foi notificada com o valor certo. Se um segundo observador for registado a meio, também ele recebe: é o desacoplamento do Observer à prova.
+Command pode representar cada ação do utilizador. Strategy pode variar o movimento de um inimigo. State pode controlar Jogar e Pausa. Observer pode avisar vistas de mudanças. Uma fábrica pode escolher objetos na montagem.
 
-  </div>
-</Tabs>
+Usa-os quando resolvem esse problema no projeto. Não precisas de aplicar todos os padrões nem de contar quantas classes criaste. Na justificação, liga a decisão a uma mudança concreta e explica o que ficou mais fácil de testar ou alterar.
 
-1. Model: apanhar o item soma 50 à pontuação e remove o item da arena (teste puro, sem ecrã).
-2. Controller: a tecla move o herói para a casa do item (mock da View verifica o redesenho).
-3. Observer: a pontuação é notificada quando o item desaparece (verifica com mock de observador).
+## Trabalhar num projeto pequeno
 
-Três testes, três camadas, cada um a proteger a sua responsabilidade. Quando o projeto crescer, esta lista vira a bateria que te deixa refatorar sem medo.
+Começa com uma funcionalidade que percorra a aplicação inteira: ler uma ação, validar uma mudança e mostrar o resultado. Guarda esse comportamento e os seus testes antes de acrescentar alternativas.
+
+Divide trabalho por contratos e comportamentos, para evitar que cada pessoa construa uma camada sem nunca testar a ligação. Combina nomes, tipos e invariantes antes de trabalhar em paralelo. Integra cedo e executa o build depois de combinar os branches.
+
+Um relatório técnico deve explicar as escolhas com exemplos do próprio código. Para uma refatoração, mostra a dificuldade inicial, a transformação e a evidência de que o comportamento foi preservado. Para um padrão, identifica participantes e consequências. Um diagrama deve responder a uma pergunta que o texto faz.
+
+As regras e pesos de avaliação pertencem à [apresentação da cadeira](/cadeiras/ldts/). Usa as instruções do projeto da tua edição para requisitos, entregas e formato, sem confundir este jogo ilustrativo com um enunciado oficial.

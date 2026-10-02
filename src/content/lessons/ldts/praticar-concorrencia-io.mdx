@@ -1,0 +1,131 @@
+---
+title: Praticar concorrência e I/O
+description: Exercícios próprios com pistas, resolução e erros frequentes.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="threads-incremento"
+  title="Uma intercalação com atualização perdida"
+  explanation="/cadeiras/ldts/java-concorrencia-io-swing/#uma-operação-composta-pode-perder-alterações"
+  answer={{ kind: 'number', value: 1, tolerance: 0 }}
+>
+  <p>
+    O contador começa em zero. A lê zero; B lê zero; A escreve um; B escreve um.
+    Qual é o valor final?
+  </p>
+  <div slot="hint">
+    <p>
+      Segue a última escrita, sem contar os pedidos abstratos de incremento.
+    </p>
+  </div>
+  <div slot="hint-more">
+    <p>As duas somas usaram o mesmo valor lido.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      O valor final é um. Cada thread calculou zero mais um e a segunda escrita
+      substituiu um por um. O resultado esperado de dois incrementos
+      indivisíveis seria dois.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Um acesso inteiro simples não torna a sequência leitura-soma-escrita
+      atómica.
+    </p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="threads-monitor"
+  title="Dois locks para o mesmo contador"
+  explanation="/cadeiras/ldts/java-concorrencia-io-swing/#proteger-estado-com-o-mesmo-lock"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Sim, qualquer synchronized impede todas as threads de entrar.',
+        correct: false,
+        explanation: 'A exclusão só se aplica ao mesmo monitor.',
+      },
+      {
+        text: 'Não, cada monitor permite que uma thread entre ao mesmo tempo.',
+        correct: true,
+        explanation: 'As threads não disputam o mesmo lock.',
+      },
+      {
+        text: 'Sim, desde que ambas usem volatile.',
+        correct: false,
+        explanation: 'Volatile não torna a operação composta ++ atómica.',
+      },
+    ],
+  }}
+>
+  <p>
+    Duas threads incrementam o mesmo campo. Uma sincroniza no objeto A e outra
+    no objeto B, com A e B distintos. O incremento está protegido da
+    concorrência entre elas?
+  </p>
+  <div slot="hint">
+    <p>Identifica o objeto usado como monitor em cada bloco.</p>
+  </div>
+  <div slot="hint-more">
+    <p>A thread que detém A não impede outra de adquirir B.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      Não. A disciplina tem de proteger todos os acessos ao campo com o mesmo
+      monitor, ou usar uma operação atómica adequada. Dois synchronized em
+      objetos diferentes não criam essa exclusão.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>Não confundas visibilidade com indivisibilidade.</p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="io-codificacao"
+  title="Ler e fechar uma stream de texto"
+  explanation="/cadeiras/ldts/java-concorrencia-io-swing/#bytes-texto-e-buffers"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Usa InputStreamReader com UTF-8.',
+      'Envolve num BufferedReader para ler linhas.',
+      'Usa try-with-resources e distingue erro de formato de fim da stream.',
+    ],
+  }}
+>
+  <p>
+    Recebes bytes UTF-8 de um ficheiro. Indica como ler linhas e garantir o
+    fecho também quando uma linha tem um número inválido.
+  </p>
+  <div slot="hint">
+    <p>A transformação bytes para texto precisa de uma codificação.</p>
+  </div>
+  <div slot="hint-more">
+    <p>
+      Um BufferedReader pode envolver o InputStreamReader e ser o recurso do
+      try.
+    </p>
+  </div>
+  <div slot="solution">
+    <p>
+      Constrói InputStreamReader(stream, StandardCharsets.UTF_8), envolve num
+      BufferedReader e coloca-o num try-with-resources. readLine devolve null no
+      fim. Um NumberFormatException é um erro do conteúdo e o recurso fecha na
+      mesma ao sair do try.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Uma linha vazia não é o fim da stream. Não ignores uma exceção e continues
+      com dados incompletos.
+    </p>
+  </div>
+</Exercise>

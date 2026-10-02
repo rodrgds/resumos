@@ -1,59 +1,74 @@
 ---
 title: Cheat sheet de LDTS
-description: Decisões rápidas para Git, Java, testes, padrões, desenho OO, refatoração e UML.
+description: Contratos, condições e decisões para rever Git, Java, testes, UML e desenho de aplicações.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: Resumos LDTS SofiaViP
-      url: https://drive.google.com/file/d/1hcOt8gAPt-hdaZIsVSoaxifYwK7Lmnq4/view
-  coverage: As páginas 2 a 18 do PDF apresentam Git, Java e coleções, testes unitários e de propriedades, padrões de desenho, princípios de desenho OO, refatoração e UML. A página 1 é a capa.
-  gaps:
-    - O PDF não é uma referência completa de Java, JUnit, Gradle ou todos os padrões; a parte de testes baseados em propriedades é breve.
-    - A edição do programa e as regras de avaliação a que os apontamentos correspondem não foram confirmadas.
+order: 0
 ---
 
-Usa-a para escolher um passo ou uma estrutura, não como lista de nomes para decorar.
+## Git e Gradle
 
-## Git e trabalho em equipa
+| Decisão                          | Lembra                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Escolher o próximo commit        | `add` prepara o conteúdo daquele instante. Editar depois não atualiza o índice. Confere `diff --cached`.     |
+| Integrar branches                | Fast-forward move a referência; histórias divergentes exigem combinar mudanças. Merge entra no branch atual. |
+| Obter ou publicar                | `fetch` obtém sem integrar; `pull` obtém e integra; `push` publica.                                          |
+| Desfazer no histórico partilhado | `revert` acrescenta um commit inverso. `reset --hard` pode destruir mudanças locais.                         |
+| Reproduzir o build               | Usa o wrapper e as versões declaradas. `testImplementation` não é uma dependência do programa.               |
 
-**Working tree → staging area → commit.** `git add` escolhe o conteúdo do próximo commit; `git commit` grava esse snapshot local. Antes de o criar, consulta `git status` e `git diff --cached`. Um branch aponta para um commit e avança com novos commits. Num merge sem fast-forward há um commit que reúne as duas histórias; se houver conflito, resolve o conteúdo e testa antes de concluir. `fetch` atualiza referências remotas sem integrar, `pull` integra depois de obter, `push` publica os commits locais. Vê [repositório local e remoto](/cadeiras/ldts/controlo-versoes/#repositório-local-e-remoto), [branches e merges](/cadeiras/ldts/controlo-versoes/#branches-e-merges) e [workflow em equipa](/cadeiras/ldts/controlo-versoes/#workflows-em-equipa).
+[Áreas do Git](/cadeiras/ldts/controlo-versoes/#as-três-áreas-do-git) · [Integração](/cadeiras/ldts/controlo-versoes/#branches-e-merges) · [Gradle](/cadeiras/ldts/controlo-versoes/#dependências-com-gradle)
 
-**Recuperação:** `git revert <commit>` acrescenta um commit inverso e preserva o histórico partilhado. `git reset` move a referência local; `--hard` descarta também mudanças de ficheiros e índice. Verifica o âmbito antes de o usar. Mantém ficheiros gerados e segredos fora do repositório; resolve dependências no sistema de build do projeto. Vê [Gradle](/cadeiras/ldts/controlo-versoes/#dependências-com-gradle).
+## Java e estado
 
-## Java e modelação OO
+- Java passa argumentos por valor, incluindo referências. Alterar o objeto pode afetar o chamador; reatribuir o parâmetro não muda a variável do chamador.
+- `final` impede reatribuição, não garante imutabilidade do objeto.
+- Para objetos, `==` compara identidade; `equals` representa igualdade lógica. Objetos iguais têm o mesmo hash; hashes iguais não provam igualdade.
+- Não alteres campos de igualdade/hash enquanto o objeto está num `HashSet` ou é chave de `HashMap`.
+- `List` mantém sequência e duplicados; `Set` unicidade; `Map` um valor por chave. `HashSet` e `HashMap` não prometem ordem de iteração.
+- Genéricos são invariantes. `? extends T` permite ler como `T`; `? super T` permite inserir `T`. `extends` não torna a coleção imutável.
+- `start()` inicia a thread; `run()` direto é uma chamada normal; `join()` espera o fim. `sleep()` não é sincronização.
+- `synchronized` coordena acessos pelo mesmo monitor. `volatile` não torna `++` atómico. Usa `while` para testar a condição de `wait()`.
+- Bytes usam streams; texto usa readers/writers e uma codificação. `try-with-resources` fecha recursos. Swing atualiza a interface na EDT.
 
-Uma variável primitiva guarda um valor; uma variável de tipo de referência guarda uma referência que pode ser `null`. `final` impede atribuir outra referência, **não** torna o objeto imutável. `static` pertence à classe; um método de instância pode usar o estado do objeto. `==` compara referências para objetos; `equals` deve representar igualdade lógica. Se redefinires `equals`, mantém o contrato de `hashCode`, sobretudo em `HashSet` e `HashMap`. Escolhe `List` para ordem e duplicados, `Set` para unicidade e `Map` para associação chave-valor. Vê [tipos e coleções](/cadeiras/ldts/java-orientado-objetos/#tipos-e-coleções) e [classes e objetos](/cadeiras/ldts/java-orientado-objetos/#classes-e-objetos).
+[Referências](/cadeiras/ldts/java-orientado-objetos/#valores-e-referências) · [Hash](/cadeiras/ldts/java-orientado-objetos/#igualdade-e-hash) · [Genéricos](/cadeiras/ldts/java-orientado-objetos/#genéricos-e-wildcards) · [Sincronização](/cadeiras/ldts/java-concorrencia-io-swing/#proteger-estado-com-o-mesmo-lock)
 
-**Herança** modela substituição válida: uma subclasse deve poder ocupar o lugar da base sem quebrar as suas promessas. **Composição** modela posse ou colaboração e costuma ser mais simples quando o comportamento pode variar. Uma interface fixa operações esperadas sem exigir uma implementação; uma classe abstrata pode partilhar estado e implementação. Encapsula o estado e expõe operações que protejam os invariantes. Vê [herança e composição](/cadeiras/ldts/java-orientado-objetos/#herança-e-composição) e [princípios SOLID](/cadeiras/ldts/principios-solid/#os-cinco-princípios).
+## Desenho e testes
 
-## Testes que dizem algo
+| Ideia               | Condição decisiva                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------- |
+| SRP                 | Separa razões independentes para mudar.                                                                  |
+| OCP                 | Protege o cliente estável; a montagem ainda pode mudar.                                                  |
+| LSP                 | O subtipo não exige mais nem promete menos.                                                              |
+| ISP                 | O cliente não depende de operações irrelevantes.                                                         |
+| DIP                 | Regras e detalhes dependem de contratos adequados. Injeção por si só não prova DIP.                      |
+| Teste útil          | Esperado derivado do contrato, casos normais, fronteiras e erros.                                        |
+| Stub / mock         | Stub fornece respostas; mock verifica interações exigidas.                                               |
+| Cobertura / mutação | Executar código não prova asserções; um mutante morto revela uma mudança detetada. Analisa equivalentes. |
+| Refatoração         | Preserva resultados, efeitos e erros observáveis. Faz passos pequenos e verifica cada um.                |
 
-Um teste unitário prepara o estado, executa **uma ação** e verifica um resultado observável. Testa casos normais, limites e erros a partir do contrato, sem copiar a lógica da implementação. Um _stub_ devolve respostas controladas; um _mock_ permite verificar interações quando estas fazem parte do comportamento exigido. Injeção de dependências permite trocar dependências externas por substitutos. Cobertura conta código executado, não prova a qualidade das asserções; _mutation testing_ verifica se alterações artificiais são detetadas. Vê [JUnit](/cadeiras/ldts/testes-unitarios/#o-primeiro-teste-com-junit), [mocks e stubs](/cadeiras/ldts/testes-unitarios/#mocks-e-stubs-com-mockito) e [cobertura](/cadeiras/ldts/testes-unitarios/#cobertura-e-mutation-testing).
+[SOLID](/cadeiras/ldts/principios-solid/#os-cinco-princípios) · [JUnit](/cadeiras/ldts/testes-unitarios/#o-primeiro-teste-com-junit) · [Mutação](/cadeiras/ldts/testes-unitarios/#cobertura-e-mutation-testing) · [Refatoração](/cadeiras/ldts/smells-refactoring/#como-refatorar-em-segurança)
 
-Nos **testes baseados em propriedades**, declara um invariante válido para muitas entradas, gera casos e reduz um contraexemplo até ficar fácil de explicar. Regista a _seed_ para repetir falhas. Uma propriedade útil, por exemplo, pode afirmar que codificar e descodificar um valor suportado recupera esse valor; não basta verificar que o método não lança exceção. O PDF só introduz esta técnica, não desenvolve um fluxo completo.
+## Escolher padrões
 
-## Padrões, princípios e refatoração
+| Problema                                          | Padrão                                               |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| Trocar um algoritmo                               | Strategy                                             |
+| Reagir conforme o estado e transitar              | State                                                |
+| Guardar ou enfileirar um pedido                   | Command, undo exige estado e política próprios.      |
+| Notificar interessados                            | Observer, com ciclo de vida de subscrição.           |
+| Tratar folhas e grupos uniformemente              | Composite                                            |
+| Subclasses escolhem um produto                    | Factory Method                                       |
+| Escolher uma família de produtos                  | Abstract Factory                                     |
+| Traduzir uma interface                            | Adapter                                              |
+| Acrescentar comportamento conservando a interface | Decorator, a ordem pode importar.                    |
+| Restringir instâncias e dar acesso global         | Singleton, com custos de isolamento e estado global. |
 
-Escolhe um padrão pelo problema concreto:
+[Padrões explicados](/cadeiras/ldts/padroes-desenho/)
 
-| Necessidade                                       | Padrão e consequência                                              |
-| ------------------------------------------------- | ------------------------------------------------------------------ |
-| Variar um algoritmo sem condicionais espalhadas   | **Strategy**: troca a implementação por composição.                |
-| Mudar comportamento conforme o estado interno     | **State**: o estado atual escolhe transições e ações.              |
-| Notificar dependentes quando algo muda            | **Observer**: define subscrição e ciclo de vida dos observadores.  |
-| Criar famílias relacionadas de objetos            | **Abstract Factory**: clientes dependem das interfaces da família. |
-| Converter uma interface existente noutra esperada | **Adapter**: traduz pedidos sem mudar o cliente.                   |
-| Acrescentar responsabilidades a um objeto         | **Decorator**: envolve o objeto e preserva a interface.            |
+## UML e arquitetura
 
-**Factory Method** entrega a escolha da classe concreta a subclasses; **Command** encapsula um pedido; **Singleton** impõe uma instância global, mas introduz estado global e dificulta isolamento em testes. Um padrão não substitui uma justificação de desenho. Vê [padrões de desenho](/cadeiras/ldts/padroes-desenho/#os-dez-padrões-em-rascunho-rápido), [Strategy e State](/cadeiras/ldts/padroes-desenho/#exemplo-strategy-e-state-nos-monstros) e [Observer](/cadeiras/ldts/padroes-desenho/#exemplo-observer-na-pontuação).
+Classes mostram estrutura; sequência mostra ordem de mensagens; comunicação mostra ligações e ordem numerada; estados mostram eventos, guardas e transições. A multiplicidade num extremo conta objetos desse extremo para um objeto do outro. O losango de composição fica no todo. Uma referência Java não prova posse forte.
 
-**SRP:** uma classe tem uma razão clara para mudar. **OCP:** extensões não exigem alterar todas as alternativas existentes. **LSP:** subtipos mantêm contratos da base. **ISP:** interfaces pequenas evitam métodos irrelevantes para clientes. **DIP:** código de alto nível depende de abstrações adequadas. Estes princípios orientam decisões, não são regras para criar uma interface por classe. Se um método é longo, mistura níveis de abstração ou mexe mais nos dados de outra classe, caracteriza o problema, fixa comportamento com testes e refatora em passos pequenos. Vê [SOLID](/cadeiras/ldts/principios-solid/#os-cinco-princípios), [cheiros](/cadeiras/ldts/smells-refactoring/#os-cheiros-mais-comuns) e [refatorar em segurança](/cadeiras/ldts/smells-refactoring/#como-refatorar-em-segurança).
+MVC separa regras no modelo, apresentação na vista e interpretação/coordenação no controlador. Mostra o estado aceite pelo modelo, incluindo operações recusadas. Service Layer coordena casos de uso; Domain Model protege regras; Data Mapper separa persistência; Repository oferece consultas em termos do domínio. Testar uma chamada a `guardar` não prova que os dados ficaram persistidos.
 
-## UML para comunicar o desenho
-
-No **diagrama de classes**, mostra classes, atributos, operações e multiplicidades: associação liga objetos; agregação é um todo/parte fraco; composição implica que a parte pertence ao ciclo de vida do todo; generalização representa substituição. No **diagrama de sequência**, lê o tempo de cima para baixo e distingue chamadas, respostas e condições. Um **diagrama de estados** mostra estados, eventos e transições; documenta quando uma transição pode ocorrer, não apenas os nomes dos estados. Vê [classes](/cadeiras/ldts/diagramas-uml/#diagrama-de-classes), [sequência](/cadeiras/ldts/diagramas-uml/#diagrama-de-sequência) e [comunicação](/cadeiras/ldts/diagramas-uml/#diagrama-de-comunicação).
-
-No projeto, separa **modelo** (regras e estado), **vista** (apresentação) e **controlador** (interpretação das ações). Confirma a direção das dependências e testa cada parte no limite que lhe pertence. Vê [MVC](/cadeiras/ldts/mvc-projeto/#mapear-o-hero) e [testes do projeto](/cadeiras/ldts/mvc-projeto/#exemplo-planear-os-testes-do-projeto).
-
-O PDF é uma seleção de tópicos, não uma especificação completa do projeto ou do programa atual.
+[UML](/cadeiras/ldts/diagramas-uml/) · [MVC](/cadeiras/ldts/mvc-projeto/) · [Arquitetura empresarial](/cadeiras/ldts/arquitetura-empresarial/)

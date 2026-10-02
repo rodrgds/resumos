@@ -1,0 +1,140 @@
+---
+title: Praticar arquitetura empresarial
+description: Exercícios próprios com pistas, resolução e erros frequentes.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="arquitetura-dominio"
+  title="Quem protege o encerramento?"
+  explanation="/cadeiras/ldts/arquitetura-empresarial/#transaction-script-e-domain-model"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'A entidade Partida protege a transição e calcula a regra.',
+      'O serviço coordena procura, operação e persistência.',
+      'A apresentação recebe o resultado sem alterar campos internos.',
+    ],
+  }}
+>
+  <p>
+    Terminar uma partida exige que esteja em curso e calcula uma penalização
+    própria do seu estado. Num Domain Model, onde colocarias esta regra e o que
+    deixarias ao serviço?
+  </p>
+  <div slot="hint">
+    <p>Distingue uma regra da partida da coordenação de uma operação.</p>
+  </div>
+  <div slot="hint-more">
+    <p>
+      A entidade pode oferecer terminar(), em vez de setters para estado e
+      pontuação.
+    </p>
+  </div>
+  <div slot="solution">
+    <p>
+      Partida.terminar valida o estado e aplica a penalização preservando
+      invariantes. O serviço obtém a partida, chama a operação e persiste-a. A
+      apresentação pede o caso de uso e mostra o resultado.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Não coloques toda a regra num serviço que altera livremente campos da
+      entidade.
+    </p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="arquitetura-persistencia"
+  title="O que prova que foi guardado?"
+  explanation="/cadeiras/ldts/arquitetura-empresarial/#seguir-um-caso-de-uso"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Os dados sobrevivem ao reinício da aplicação.',
+        correct: false,
+        explanation: 'O mock não escreveu num armazenamento real.',
+      },
+      {
+        text: 'O serviço pediu ao colaborador que guardasse essa partida.',
+        correct: true,
+        explanation: 'Essa é a interação observada.',
+      },
+      {
+        text: 'O SQL tem a tabela e os parâmetros corretos.',
+        correct: false,
+        explanation: 'O adaptador SQL não foi exercitado.',
+      },
+    ],
+  }}
+>
+  <p>
+    Um teste verifica uma chamada a repositorio.guardar(partida) num mock. Qual
+    afirmação fica demonstrada por esse teste?
+  </p>
+  <div slot="hint">
+    <p>O que realmente correu foi o serviço e um substituto.</p>
+  </div>
+  <div slot="hint-more">
+    <p>A durabilidade precisa de uma fronteira de armazenamento real.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      O teste prova o pedido do serviço ao repositório. Para provar a
+      persistência, um teste de integração deve guardar no adaptador real e
+      voltar a ler num âmbito novo adequado.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Uma chamada verificada não demonstra o efeito de I/O de uma implementação
+      que não correu.
+    </p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="arquitetura-falha-ausencia"
+  title="Ausência não é falha de acesso"
+  explanation="/cadeiras/ldts/arquitetura-empresarial/#repository"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Distingue um registo inexistente de uma falha de armazenamento.',
+      'Não apresenta indisponibilidade como ausência confirmada.',
+      'Propõe erro ou resultado explícito segundo o contrato.',
+    ],
+  }}
+>
+  <p>
+    procurarPorId devolve Optional.empty quando não encontra a partida. Uma
+    implementação captura qualquer erro de ligação e devolve também empty.
+    Explica que distinção perdeu.
+  </p>
+  <div slot="hint">
+    <p>Não conseguir consultar é diferente de consultar e não encontrar.</p>
+  </div>
+  <div slot="hint-more">
+    <p>A apresentação pode dizer incorretamente que a partida não existe.</p>
+  </div>
+  <div slot="solution">
+    <p>
+      A implementação perdeu a distinção entre ausência de dados e
+      impossibilidade de verificar os dados. Propaga um erro de acesso adequado
+      ou usa um resultado explícito que preserve esse caso. Optional.empty
+      continua a significar ausência após uma consulta válida.
+    </p>
+  </div>
+  <div slot="mistakes">
+    <p>
+      Capturar todos os erros e devolver um valor normal pode esconder falhas e
+      provocar decisões incorretas.
+    </p>
+  </div>
+</Exercise>

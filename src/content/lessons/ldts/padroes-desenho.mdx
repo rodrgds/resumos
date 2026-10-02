@@ -1,101 +1,276 @@
 ---
 title: Padrões de desenho
-description: Os dez padrões do programa aplicados a problemas concretos do jogo.
-section: conteudo
-order: 7
+description: Os dez padrões do programa, escolhidos pelo problema e pelas suas consequências.
+order: 8
+practices:
+  - ldts/praticar-padroes
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import observer from '../../ldts/observer.dot?raw';
-import strategy from '../../ldts/strategy-state.typ?raw';
 
-Um **padrão de desenho** é uma solução reutilizável para um problema recorrente, com nome, estrutura e consequências conhecidas. O programa lista dez: Factory-Method, Command, Composite, Observer, Strategy, Abstract Factory, State, Adapter, Decorator e Singleton. Não os decores como definições: aprende a reconhecer o problema que cada um resolve, porque nos exercícios e nas provas a pergunta é sempre "que padrão aplicavas aqui".
+O algoritmo de movimento muda, mas o inimigo continua a ter posição e vida. Já separámos esse algoritmo através de uma interface. Um padrão dá um nome a essa colaboração, explica em que situações é útil e que custos introduz.
 
-## Os dez padrões em rascunho rápido
+Não é uma classe pronta a copiar. Para aplicar um padrão, identifica o cliente, a decisão que varia e o contrato que permite separar essa decisão.
 
-**Strategy** troca algoritmos em tempo de execução: o `Monstro` recebe um `Comportamento` diferente. Usa quando há várias formas de fazer a mesma coisa.
+## Strategy: trocar o algoritmo
 
-**State** troca comportamento conforme o estado interno: um monstro calmo foge, um monstro alerta persegue. Usa quando um objeto se comporta de forma muito diferente consoante o estado, em vez de um `switch` gigante.
+**Strategy** encapsula algoritmos alternativos com a mesma interface. O contexto guarda uma estratégia e delega-lhe a operação. O cliente ou a configuração escolhe a alternativa.
 
-**Observer** avisa interessados quando algo muda: a pontuação observa os monstros e atualiza-se quando um cai. Usa para dependências um para muitos sem acoplamento.
+No exemplo de [composição](/cadeiras/ldts/java-orientado-objetos/#herança-interfaces-e-composição), `Inimigo` é o contexto, `Movimento` a estratégia e `ParaDireita` e `Parado` as alternativas. `passo()` não testa o tipo do movimento. Para acrescentar uma perseguição, criamos outra implementação do contrato.
 
-**Command** transforma um pedido num objeto: cada tecla vira um `Comando` com `executar`. Usa para desfazer, filas e menus.
+A estratégia precisa dos dados suficientes para calcular o resultado, não de acesso a todo o estado interno. A escolha concreta continua a existir em algum lado, normalmente na construção ou configuração do inimigo. Se o algoritmo é fixo e pequeno, separar várias classes pode não ajudar.
 
-**Factory Method** e **Abstract Factory** criam objetos sem expor a classe concreta. A diferença está no tamanho da encomenda: o Factory Method cria **um** objeto (uma fábrica de monstros que devolve o tipo certo para cada nível), enquanto a Abstract Factory cria **famílias** coerentes (uma fábrica de nível que devolve monstros, paredes e itens no mesmo estilo). Usa o primeiro quando a criação de um objeto tem lógica, o segundo quando vários objetos têm de combinar entre si.
+## State: reagir conforme o estado
 
-**Composite** trata um grupo como um objeto: uma parede feita de segmentos desenha-se como uma peça. Usa para estruturas em árvore.
+**State** delega o comportamento num objeto que representa o estado atual. As operações podem mudar esse estado. O foco é o ciclo de vida do contexto, em vez da seleção de um algoritmo pelo cliente.
 
-**Decorator** acrescenta comportamento por embrulho: um monstro com bónus de velocidade embrulha o monstro base. Usa para combinações que explodiriam em subclasses.
-
-**Adapter** converte uma interface noutra: adapta a biblioteca de ecrã à interface `Ecra` do jogo. Usa para integrar código que não controlas.
-
-**Singleton** garante uma só instância: o registo de recordes. Usa com moderação, porque estado global dificulta testes.
-
-## Exemplo: Strategy e State nos monstros
-
-O movimento dos monstros usa Strategy, como na página de [Java](java-orientado-objetos/):
+Este programa completo mostra um jogo que começa ativo. Guarda-o em `Main.java` para correr localmente:
 
 ```java
-Comportamento zigzag = new AndarEmZigZag();
-Comportamento perseguir = new PerseguirHeroi(heroi);
-Monstro m1 = new Monstro(new Posicao(5, 5), zigzag);
-Monstro m2 = new Monstro(new Posicao(8, 2), perseguir);
-```
+interface Estado {
+    void tick(Jogo jogo);
+    void alternar(Jogo jogo);
+}
 
-Quando o nível aperta, o estado do monstro muda a estratégia por dentro:
+class Ativo implements Estado {
+    public void tick(Jogo jogo) { jogo.avancar(); }
+    public void alternar(Jogo jogo) { jogo.mudar(new Pausa()); }
+}
 
-```java
-public class MonstroAlerta implements EstadoMonstro {
-    public Comportamento comportamento(Heroi heroi) {
-        return new PerseguirHeroi(heroi);
+class Pausa implements Estado {
+    public void tick(Jogo jogo) { }
+    public void alternar(Jogo jogo) { jogo.mudar(new Ativo()); }
+}
+
+class Jogo {
+    private Estado estado = new Ativo();
+    private int passos;
+    void tick() { estado.tick(this); }
+    void alternar() { estado.alternar(this); }
+    void mudar(Estado novo) { estado = novo; }
+    void avancar() { passos++; }
+    int getPassos() { return passos; }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Jogo jogo = new Jogo();
+        jogo.tick();
+        jogo.alternar();
+        jogo.tick();
+        jogo.alternar();
+        jogo.tick();
+        System.out.println(jogo.getPassos());
     }
 }
 ```
 
-O `Monstro` pede ao seu estado o comportamento atual. Calmo devolve passeio, alerta devolve perseguição:
+A saída é `2`. O primeiro e o terceiro `tick` avançam; o segundo é tratado em Pausa e não altera o contador. A transição é definida pelos estados. Poderíamos deixá-la no contexto, desde que houvesse um responsável claro.
 
-<Typst
-  source={strategy}
-  format="svg"
-  alt="Diagrama com Monstro no centro, EstadoCalmo e EstadoAlerta a devolverem o Comportamento correspondente."
-/>
+State e Strategy podem ter estruturas parecidas. A intenção distingue-os: trocar perseguição por patrulha é Strategy; reagir de outra forma depois de entrar em Pausa é State. Um pequeno conjunto de estados também pode ser representado por uma enumeração e condições sem perder clareza.
 
-O `switch` sobre o estado desapareceu, e um estado novo é uma classe nova. Troca a estratégia em tempo de execução e vê a diferença:
+## Command: guardar um pedido
+
+**Command** representa um pedido como objeto. O invocador não precisa de conhecer os detalhes da operação; o comando conhece o recetor e os dados necessários. Podemos guardar comandos numa fila ou num histórico.
+
+Para desfazer um movimento, precisamos do estado anterior. Fazer o movimento inverso nem sempre recupera esse estado, por exemplo quando colisões ou limites impediram parte da ação.
 
 <CodePlayground
   language="java"
-  title="Trocar de estratégia a meio"
+  title="Executar e desfazer um comando"
   code={
-    'interface Comportamento {\n    String mover();\n}\n\nclass AndarEmZigZag implements Comportamento {\n    public String mover() { return "ziguezagueia"; }\n}\n\nclass PerseguirHeroi implements Comportamento {\n    public String mover() { return "persegue o heroi"; }\n}\n\nclass Monstro {\n    private Comportamento comportamento;\n\n    Monstro(Comportamento comportamento) {\n        this.comportamento = comportamento;\n    }\n\n    void setComportamento(Comportamento comportamento) {\n        this.comportamento = comportamento;\n    }\n\n    String agir() {\n        return comportamento.mover();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Monstro monstro = new Monstro(new AndarEmZigZag());\n        System.out.println("nivel facil: " + monstro.agir());\n        monstro.setComportamento(new PerseguirHeroi());\n        System.out.println("nivel dificil: " + monstro.agir());\n    }\n}'
+    'interface Comando {\n    void executar();\n    void desfazer();\n}\n\nclass Heroi {\n    private int x;\n    Heroi(int x) { this.x = x; }\n    int getX() { return x; }\n    void colocar(int x) { this.x = x; }\n}\n\nclass Mover implements Comando {\n    private final Heroi heroi;\n    private final int deslocamento;\n    private int anterior;\n    private boolean executado;\n\n    Mover(Heroi heroi, int deslocamento) {\n        this.heroi = heroi;\n        this.deslocamento = deslocamento;\n    }\n\n    public void executar() {\n        if (executado) throw new IllegalStateException("ja executado");\n        anterior = heroi.getX();\n        heroi.colocar(anterior + deslocamento);\n        executado = true;\n    }\n\n    public void desfazer() {\n        if (!executado) throw new IllegalStateException("nao executado");\n        heroi.colocar(anterior);\n        executado = false;\n    }\n\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Heroi heroi = new Heroi(2);\n        Comando comando = new Mover(heroi, 3);\n        comando.executar();\n        System.out.println(heroi.getX());\n        comando.desfazer();\n        System.out.println(heroi.getX());\n    }\n}'
   }
 />
 
-A saída mostra `nivel facil: ziguezagueia` e `nivel dificil: persegue o heroi`. Nenhuma classe do monstro foi editada: a variação vive nos objetos de comportamento.
+Obtemos `5` e `2`. `Main` é o invocador; `Mover` o comando concreto; `Heroi` o recetor. Este exemplo supõe que nada altera o herói entre executar e desfazer. Num histórico, desfaz os comandos por ordem inversa. Um pedido com efeitos externos, como enviar uma mensagem, pode não ter inversão exata; o padrão não garante undo automaticamente.
 
-## Exemplo: Observer na pontuação
+## Observer: notificar interessados
 
-A pontuação observa cada monstro sem os monstros saberem dela:
+**Observer** permite que um sujeito notifique vários observadores através de um contrato. O sujeito não conhece as classes concretas que reagem. Cada interessado subscreve e deve poder deixar de subscrever.
+
+Na pontuação, um observador pode atualizar o texto e outro verificar uma conquista. A sequência é: alterar o valor, obter o novo estado válido e notificar os inscritos. O observador pode receber o valor, modelo **push**, ou pedir o estado ao sujeito, modelo **pull**.
+
+Este excerto mostra um sujeito com notificação síncrona:
 
 ```java
-monstro.adicionarObservador(pontuacao);
-// ... quando o monstro cai:
-observadores.forEach(o -> o.notificar(100));
+interface Observador {
+    void mudou(int pontos);
+}
+
+class Pontuacao {
+    private int pontos;
+    private final java.util.List<Observador> observadores =
+        new java.util.ArrayList<Observador>();
+
+    void subscrever(Observador observador) { observadores.add(observador); }
+    void remover(Observador observador) { observadores.remove(observador); }
+
+    void somar(int valor) {
+        pontos += valor;
+        java.util.List<Observador> copia =
+            new java.util.ArrayList<Observador>(observadores);
+        for (Observador observador : copia) observador.mudou(pontos);
+    }
+}
 ```
 
-Adicionar um contador de mortes ou um efeito sonoro é registar mais um observador:
+A cópia estabiliza os destinatários desta notificação se um callback alterar a lista. O exemplo pressupõe uma única thread e callbacks que não voltam a alterar a pontuação. Num sistema real, decide também o que acontece se um observador lança uma exceção e se a remoção vale logo para a notificação atual ou apenas para as seguintes.
 
-<Dot
-  source={observer}
-  alt="Grafo com Monstro a notificar Pontuacao, Mortes e Som, sem setas de volta."
+Uma referência esquecida na lista pode manter um observador vivo e continuar a enviar-lhe eventos. Por isso o ciclo de vida da subscrição faz parte do contrato.
+
+## Composite: tratar uma árvore pela mesma interface
+
+**Composite** usa uma interface comum para folhas e grupos. O grupo guarda filhos dessa interface, que podem ser folhas ou outros grupos. O cliente pede a operação sem testar qual é o caso.
+
+Imagina um grupo de inimigos com força total. Uma folha devolve a sua força. Um grupo soma a força dos filhos; se um filho for outro grupo, a mesma chamada continua recursivamente.
+
+Este programa completo imprime a força de uma árvore:
+
+```java
+import java.util.Arrays;
+import java.util.List;
+
+interface Unidade {
+    int forca();
+}
+
+class Soldado implements Unidade {
+    private final int valor;
+    Soldado(int valor) { this.valor = valor; }
+    public int forca() { return valor; }
+}
+
+class Grupo implements Unidade {
+    private final List<Unidade> filhos;
+    Grupo(Unidade... filhos) { this.filhos = Arrays.asList(filhos); }
+    public int forca() {
+        int total = 0;
+        for (Unidade filho : filhos) total += filho.forca();
+        return total;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Unidade grupo = new Grupo(new Soldado(2),
+            new Grupo(new Soldado(3), new Soldado(4)));
+        System.out.println(grupo.forca());
+    }
+}
+```
+
+A saída é `9`. `Unidade` é o componente, `Soldado` a folha e `Grupo` o composto. Nem todas as operações têm de pertencer à interface comum: acrescentar um filho pode ficar só em `Grupo`, para não obrigar uma folha a fingir que suporta filhos.
+
+Composite não é o mesmo que composição UML. O padrão trata uma árvore uniformemente; a relação UML descreve posse. Se permitires partilhar filhos ou criar ciclos, precisas de regras explícitas para evitar contagens duplicadas ou recursão sem fim.
+
+## Factory Method: subclasses escolhem o produto
+
+**Factory Method** deixa uma operação de criação ser redefinida por subclasses do criador. A lógica que utiliza o produto depende da interface desse produto.
+
+Este programa completo separa a criação da arma da lógica de ataque:
+
+```java
+interface Arma {
+    int dano();
+}
+
+class Espada implements Arma {
+    public int dano() { return 4; }
+}
+
+class Feitico implements Arma {
+    public int dano() { return 7; }
+}
+
+abstract class Combatente {
+    protected abstract Arma criarArma();
+    int atacar() { return criarArma().dano(); }
+}
+
+class Guerreiro extends Combatente {
+    protected Arma criarArma() { return new Espada(); }
+}
+
+class Mago extends Combatente {
+    protected Arma criarArma() { return new Feitico(); }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(new Guerreiro().atacar());
+        System.out.println(new Mago().atacar());
+    }
+}
+```
+
+A saída é `4` e `7`. `Combatente` é o criador; `criarArma` o factory method; `Guerreiro` e `Mago` os criadores concretos. `atacar` não escolhe classes de armas. Neste exemplo cria uma arma em cada ataque; guardar ou reutilizar o produto é uma decisão separada.
+
+Evita chamar operações redefiníveis no construtor da base: o construtor da subclasse ainda pode não ter inicializado o estado de que elas dependem. Um método estático que contém um `switch` e devolve produtos pode ser uma fábrica simples, mas não demonstra esta colaboração por subclasses.
+
+## Abstract Factory: escolher uma família
+
+**Abstract Factory** fornece operações de criação para uma família de produtos relacionados. O cliente recebe a fábrica e usa as interfaces dos produtos. A fábrica concreta garante que as variantes pertencem à mesma família.
+
+Uma arena pode ter uma fábrica de tema com `criarInimigo()` e `criarArma()`. A fábrica Medieval cria um cavaleiro e uma espada; a fábrica Espacial cria um robô e um laser. Trocar a fábrica troca a família sem editar o cliente que monta a arena.
+
+O contrato das interfaces pode ser este excerto:
+
+```java
+interface FabricaTema {
+    Inimigo criarInimigo();
+    Arma criarArma();
+}
+
+interface Inimigo {
+    String descricao();
+}
+
+interface Arma {
+    int dano();
+}
+```
+
+A implementação concreta fornece ambos os métodos. Acrescentar outra família é simples: outra fábrica e produtos. Acrescentar um novo **tipo de produto**, como `criarEscudo()`, exige mudar o contrato e todas as fábricas. Esta é uma consequência que deve pesar na escolha.
+
+Factory Method resolve a decisão de um produto numa hierarquia de criadores. Abstract Factory fornece uma família através de um objeto fábrica. Uma Abstract Factory pode implementar os seus métodos de criação usando Factory Methods, mas as intenções continuam distintas.
+
+## Adapter e Decorator
+
+**Adapter** traduz uma interface existente para o contrato de que o cliente precisa. **Decorator** envolve um objeto, conserva a interface e acrescenta comportamento. Ambos usam composição, mas não resolvem o mesmo problema.
+
+Neste exemplo, o cliente precisa de um preço em cêntimos. A biblioteca antiga fornece euros inteiros, por isso o adapter converte unidades. Um decorator acrescenta a taxa de entrega.
+
+<CodePlayground
+  language="java"
+  title="Adaptar a unidade e acrescentar uma taxa"
+  code={
+    'interface Preco {\n    int centimos();\n}\n\nclass PrecoAntigo {\n    int euros() { return 12; }\n}\n\nclass AdapterPreco implements Preco {\n    private final PrecoAntigo antigo;\n    AdapterPreco(PrecoAntigo antigo) { this.antigo = antigo; }\n    public int centimos() { return antigo.euros() * 100; }\n}\n\nclass ComEntrega implements Preco {\n    private final Preco base;\n    ComEntrega(Preco base) { this.base = base; }\n    public int centimos() { return base.centimos() + 250; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Preco base = new AdapterPreco(new PrecoAntigo());\n        Preco total = new ComEntrega(base);\n        System.out.println(base.centimos());\n        System.out.println(total.centimos());\n    }\n}'
+  }
 />
 
-Nenhum monstro muda, porque nenhum monstro conhece os observadores: é o desacoplamento que o padrão promete.
+Obtemos `1200` e `1450`. O adapter permite usar a classe antiga sem a alterar. O decorator aceita qualquer `Preco`, incluindo outro decorator. Se aplicares duas entregas, cobras duas taxas; a composição não valida sozinha se essa combinação tem sentido.
 
-<YouTube id="wiQdrH2YpT4" title="Observer Design Pattern (Derek Banas)" />
+Num adapter real, define também erros, unidades e conversões que podem perder informação. Num decorator, a ordem pode mudar o resultado: aplicar 10% de desconto antes ou depois de acrescentar 250 cêntimos não produz sempre o mesmo total. A interface comum não torna as operações comutativas.
 
-:::tip[Como escolher na prova]
-Pergunta o que varia: algoritmos que se trocam é Strategy, comportamento que depende de estado é State, notificações a vários interessados é Observer, pedidos como objetos é Command, criação com lógica é Factory. O nome do padrão descreve a solução, não o problema.
-:::
+## Singleton: uma instância com acesso global
+
+**Singleton** impõe uma instância e um ponto global de acesso. Um exemplo Java com criação antecipada é:
+
+```java
+final class Configuracao {
+    private static final Configuracao INSTANCIA = new Configuracao();
+    private Configuracao() { }
+    static Configuracao instancia() { return INSTANCIA; }
+}
+```
+
+A inicialização da classe protege a criação da instância segundo as regras de Java. Isso não torna automaticamente thread-safe qualquer estado mutável acrescentado à classe. Uma implementação lazy sem sincronização pode criar mais de uma instância em acessos concorrentes.
+
+O acesso global esconde dependências e pode fazer testes partilharem estado. Se a aplicação precisa de uma configuração única, muitas vezes podes criá-la uma vez na montagem e passá-la aos clientes. Ter uma instância durante uma execução é diferente de proibir outras instâncias pelo tipo.
+
+## Escolher pelo problema
+
+Quando vês classes com a mesma estrutura, pergunta quem decide variar e o que o cliente precisa de ignorar. Strategy varia um algoritmo; State varia a reação conforme o estado; Command guarda um pedido; Observer distribui notificações. Composite trata folhas e grupos; Adapter traduz; Decorator acrescenta responsabilidades. As fábricas separam criação; Singleton restringe instâncias e acrescenta acesso global.
+
+Depois explica o custo. Um padrão pode acrescentar objetos, interfaces, gestão de ciclo de vida ou restrições de teste. A solução deve tornar uma mudança concreta mais simples e preservar um contrato compreensível.

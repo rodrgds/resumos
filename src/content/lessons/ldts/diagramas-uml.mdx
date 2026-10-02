@@ -1,63 +1,94 @@
 ---
 title: Diagramas UML
-description: Diagramas de classes, sequência e comunicação, lidos e desenhados à mão antes de codificar.
-section: conteudo
-order: 5
+description: Ler e relacionar classes, sequências, comunicação e estados sem confundir estrutura com execução.
+order: 6
+practices:
+  - ldts/praticar-uml
 ---
 
-import Dot from '../../../components/Dot.astro';
-import Typst from '../../../components/Typst.astro';
-import classes from '../../ldts/uml-classes.typ?raw';
-import sequencia from '../../ldts/uml-sequencia.typ?raw';
-import comunicacao from '../../ldts/comunicacao.dot?raw';
+import UmlDiagram from '../../ldts/UmlDiagram.astro';
 
-UML é uma linguagem de desenho para software: serve para pensar antes de codificar e para explicar depois. Em LDTS usas três diagramas. O diagrama de **classes** mostra a estrutura: que classes existem e como se relacionam. O de **sequência** mostra uma interação ao longo do tempo: quem chama quem, por que ordem. O de **comunicação** mostra a mesma interação focada nas ligações entre objetos.
+Um desenho de classes responde a quem conhece quem. Não responde à ordem em que um clique move o herói. UML oferece representações diferentes para perguntas diferentes. Escolhe primeiro o que queres comunicar, depois os elementos que o desenho precisa.
 
 ## Diagrama de classes
 
-Cada classe é um retângulo com três partes: nome, atributos e métodos. As setas entre retângulos dizem a relação:
+Uma classe pode ter três compartimentos: nome, atributos e operações. `+` significa público, `-` privado, `#` protegido e `~` visível no pacote. Atributos e operações estáticos aparecem sublinhados; elementos abstratos podem aparecer em itálico ou com indicação de abstrato.
 
-- **Associação** (linha simples): uma classe usa outra, como `Monstro` que conhece a sua `Posicao`.
-- **Herança** (seta com triângulo vazio): `MonstroVoador` estende `Monstro`.
-- **Implementação** (linha tracejada com triângulo vazio): `AndarEmZigZag` implementa `Comportamento`.
-- **Composição** (losango cheio): a parte morre com o todo, como os `Comando` que pertencem ao `ControladorArena`.
-- **Agregação** (losango vazio): a parte sobrevive ao todo, como o `Heroi` que existe fora da `Arena`.
+Uma operação pode mostrar parâmetros e retorno, como `+ mover(x: int): boolean`. Uma interface pode usar o estereótipo `«interface»`. Os nomes são tipos; num diagrama de objetos, `heroi:Heroi` identificaria uma instância.
 
-Lê-se o losango do lado do todo: "a arena é composta por comandos". Multiplicidades como `1` ou `*` dizem quantos objetos participam de cada lado. No jogo, o núcleo fica assim:
+As relações têm significados diferentes:
 
-<Typst
-  source={classes}
-  format="svg"
-  alt="Diagrama com ControladorArena ligado a Heroi e a Ecra, e Heroi ligado a Posicao, cada ligação marcada com multiplicidade 1."
-/>
+| Relação              | Notação                                            | O que afirma                                                                      |
+| -------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Associação           | Linha contínua                                     | Objetos mantêm uma relação estrutural. Uma seta aberta pode indicar navegação.    |
+| Dependência          | Seta tracejada                                     | Um elemento usa outro, por exemplo como parâmetro ou variável temporária.         |
+| Generalização        | Linha e triângulo vazio para a base                | Um tipo especializa outro e deve respeitar o contrato da base.                    |
+| Realização           | Linha tracejada e triângulo vazio para a interface | Uma classe implementa o contrato.                                                 |
+| Agregação partilhada | Losango vazio do lado do todo                      | Relação todo/parte fraca; a semântica de posse precisa de ser definida no modelo. |
+| Composição           | Losango cheio do lado do todo                      | Posse forte: uma parte pertence no máximo a um todo composto de cada vez.         |
 
-Repara que `Posicao` aparece sem métodos de escrita: o diagrama também documenta a imutabilidade que viste no Java.
+Na composição, o modelo associa o ciclo de vida da parte ao todo: eliminar o todo elimina as partes que ainda lhe pertencem. Uma parte pode ser retirada ou transferida antes disso. Não interpretes esta regra conceptual como uma chamada automática ao garbage collector de Java.
+
+Uma referência num campo Java não prova composição. Usa associação quando não estás a afirmar posse forte. Também não assumes navegação nas duas direções apenas porque a linha não mostra uma seta; o desenho pode deixar essa informação por especificar.
+
+## Multiplicidades
+
+A multiplicidade num extremo diz quantos objetos desse extremo podem relacionar-se com **um objeto do outro extremo**. `1` é exatamente um; `0..1`, opcional; `0..*` ou `*`, zero ou mais; `1..*`, pelo menos um.
+
+<UmlDiagram kind="classes" />
+
+Neste modelo escolhemos que uma arena possui um herói e zero ou mais paredes. O losango fica na arena, o todo. O herói conhece uma posição. A associação à posição não afirma que a posição só possa ser usada por esse herói.
+
+Se cada herói só pertence a uma arena, a multiplicidade no extremo da arena também seria `1`. O desenho reduzido mostra apenas as multiplicidades necessárias à pergunta sobre o conteúdo da arena; num modelo completo, explicita os dois extremos e os nomes dos papéis.
+
+Uma associação pode ter dados próprios. Por exemplo, a relação entre aluno e projeto pode guardar papel e data de entrada. Uma classe de associação representa esses dados da relação, em vez de os duplicar em cada aluno ou projeto.
 
 ## Diagrama de sequência
 
-O tempo desce pela página. Cada participante tem uma linha de vida vertical, e cada chamada é uma seta horizontal com o nome do método. Uma caixa fina sobre a linha de vida mostra enquanto o método está ativo, e as setas tracejadas são os retornos. Lê-se de cima para baixo como um guião: primeiro isto, depois aquilo. O movimento do herói em quatro passos:
+Os participantes têm linhas de vida. O tempo avança de cima para baixo e representa **ordem**, não duração proporcional à distância vertical. Uma mensagem de chamada tem como destino o objeto que oferece a operação.
 
-<Typst
-  source={sequencia}
-  format="svg"
-  alt="Diagrama de sequência com ControladorArena, Heroi e Ecra. As setas numeradas vão de passo a somar, à nova posição e ao desenhar."
-/>
+Uma seta de chamada síncrona usa uma ponta preenchida; uma mensagem assíncrona usa uma ponta aberta. Um retorno, quando o mostramos, é tracejado. Uma ativação é um retângulo fino sobre a linha de vida que indica execução. O esquema abaixo mostra chamadas síncronas e omite as ativações para destacar o percurso.
+
+<UmlDiagram kind="sequence" />
+
+O modelo começa na posição 2. O controlador pede `mover(1)`, onde o argumento é um deslocamento. O modelo aceita, passa para a posição 3 e devolve `true`. Depois o controlador lê a posição e pede à vista `mostrar(3)`. A vista mostra o resultado que o modelo aceitou, não a posição apenas pedida pelo utilizador.
+
+Uma mensagem para o próprio objeto representa uma chamada interna. Uma criação inicia a linha de vida do novo participante; uma destruição termina-a com uma cruz.
+
+## Condições e repetição
+
+Um fragmento `alt` separa percursos alternativos por guardas, como `[livre]` e `[ocupada]`. `opt` representa um percurso opcional. `loop` contém mensagens repetidas enquanto uma condição ou contagem o determina.
+
+Para um movimento bloqueado, podemos desenhar `alt`: no ramo `[livre]`, o modelo atualiza a posição; no ramo `[ocupada]`, mantém-na. A chamada à vista pode ficar depois do fragmento, porque ocorre nos dois casos.
+
+Uma guarda é uma condição entre parênteses retos. Não é um método novo do objeto nem uma garantia de que os outros ramos são impossíveis. As guardas devem descrever as condições reais do cenário.
 
 ## Diagrama de comunicação
 
-Mostra os mesmos objetos e as mesmas chamadas, mas sem eixo de tempo: as setas numeradas (`1: lerTecla()`, `2: desenhar(...)`) dão a ordem. É útil quando a estrutura das ligações importa mais que o timing exato:
+Representa os participantes e as ligações por onde enviam mensagens. Como não há eixo vertical de tempo, a numeração fixa a ordem.
 
-<Dot
-  source={comunicacao}
-  alt="Grafo com ControladorArena, Heroi, Posicao e Ecra ligados por setas numeradas de 1 a 5, do passo ao desenhar."
-/>
+<UmlDiagram kind="communication" />
 
-## Exemplo: completar o diagrama do Hero
+Aqui `1`, `2` e `3` são chamadas consecutivas do controlador. Se `mover` chamasse uma operação interna noutro participante, essa chamada poderia ser `1.1`; uma segunda chamada dentro da mesma ativação seria `1.2`. A numeração hierárquica mostra o aninhamento, não apenas uma lista global.
 
-Imagina o Hero parado na arena e o utilizador a premir "cima". O diagrama de classes tem `ControladorArena` associado a `Heroi` e a `Ecra`, e `Heroi` associado a `Posicao`. Para o completares, verifica três coisas: cada associação tem o nome do papel e a multiplicidade, `Posicao` é imutável (métodos que devolvem `Posicao` nova), e nenhuma seta de herança aparece onde a relação é "usa".
+Uma repetição pode ser indicada por `*[condição]`. Sequência e comunicação podem descrever a mesma interação, mas a sequência torna a ordem mais visível e a comunicação destaca as ligações.
 
-O passo em sequência descreve-se assim: a linha de vida do `ControladorArena` recebe `passo("cima")`, chama `somar(0, -1)` na `Posicao` atual do herói, recebe a nova posição, atualiza o herói e chama `desenhar` no `Ecra`. Cinco setas, por esta ordem, contam a história completa do movimento.
+## Diagrama de estados
 
-:::tip[Desenha à mão primeiro]
-Um diagrama feito depois do código é decoração. O valor está em desenhar antes: se não consegues desenhar as cinco setas, ainda não percebeste a interação, e é mais barato descobrir isso no papel que no depurador.
-:::
+Um estado representa uma situação em que o objeto responde a eventos de determinada maneira. A mesma ação `pausar` só faz sentido durante o jogo, não no menu.
+
+<UmlDiagram kind="state" />
+
+O círculo preenchido indica o início; o círculo com outro dentro indica o fim. O jogo começa em Menu, `começar` leva a Jogar, `pausar` leva a Pausa e `retomar` regressa a Jogar. `perder` termina este percurso.
+
+Uma transição pode ter a forma `evento [guarda] / efeito`. Em `mover [célula livre] / atualizar posição`, o evento desencadeia a tentativa, a guarda decide se é permitida e o efeito descreve o que acontece.
+
+`entry` é uma ação ao entrar num estado e `exit` ao sair. Uma transição externa para o mesmo estado volta a executar saída e entrada; uma reação interna pode tratar o evento sem sair do estado. Esta diferença importa se a entrada reinicia um temporizador.
+
+Estados compostos agrupam uma máquina interna. Por exemplo, Jogar pode conter Normal e Invencível. Não confundas esse agrupamento com uma subclasse Java: o diagrama descreve comportamento permitido, não exige uma implementação específica.
+
+## Conferir o desenho com o contrato
+
+Percorre uma situação concreta, como mover de 2 para 3 com a célula livre. Confirma que cada operação chamada existe no recetor, que há uma ligação para o conhecer e que o estado permite a ação. Repete com a célula bloqueada.
+
+Se o código guarda apenas `Modelo`, o desenho não deve mostrar uma dependência direta do controlador para todas as suas peças internas. Se o desenho e o código diferem, decide qual está correto para o contrato e corrige o outro. Um diagrama serve antes da implementação para discutir escolhas e depois para explicar o que ficou.
