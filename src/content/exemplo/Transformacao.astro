@@ -1,0 +1,252 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+
+const entries = [
+  { name: 'a', row: 1, column: 1, value: 2 },
+  { name: 'b', row: 1, column: 2, value: 1 },
+  { name: 'c', row: 2, column: 1, value: 0 },
+  { name: 'd', row: 2, column: 2, value: 3 },
+];
+---
+
+<InteractiveDemo label="Matriz, área e orientação do quadrado unitário">
+  <example-transform>
+    <fieldset disabled>
+      <legend>Matriz A, por linhas</legend>
+      <div class="entries">
+        {entries.map(({ name, row, column, value }) => (
+          <label>
+            {name}
+            <input
+              type="number"
+              min="-8"
+              max="8"
+              step="1"
+              value={value}
+              aria-label={`${name}, linha ${row}, coluna ${column}`}
+            />
+          </label>
+        ))}
+      </div>
+    </fieldset>
+    <button type="button" disabled>
+      Repor matriz
+    </button>
+    <p data-result role="status">
+      det(A) = 6; área = 6. A orientação mantém-se.
+    </p>
+    <svg
+      viewBox="-1 -4 5 5"
+      role="img"
+      aria-label="Quadrado unitário tracejado e imagem com vértices (0, 0), (2, 0), (3, 3) e (1, 3)."
+    >
+      <line class="axis" data-x x1="-1" y1="0" x2="4" y2="0" />
+      <line class="axis" data-y x1="0" y1="-4" x2="0" y2="1" />
+      <polygon class="original" points="0,0 1,0 1,-1 0,-1" />
+      <polygon class="image" data-image points="0,0 2,0 3,-3 1,-3" />
+      <line class="first" data-first x1="0" y1="0" x2="2" y2="0" />
+      <line class="second" data-second x1="0" y1="0" x2="1" y2="-3" />
+    </svg>
+    <p data-columns>A e₁ = (2, 0); A e₂ = (1, 3).</p>
+    <p class="legend">
+      Tracejado: quadrado de área 1. Preenchimento: imagem pela matriz A. Os
+      segmentos que partem da origem são as imagens de e₁ e e₂.
+    </p>
+    <noscript>
+      Este é o resultado para a matriz inicial. Ativa JavaScript para alterar as
+      entradas.
+    </noscript>
+  </example-transform>
+</InteractiveDemo>
+
+<script>
+  class ExampleTransform extends HTMLElement {
+    connectedCallback() {
+      const inputs = [...this.querySelectorAll<HTMLInputElement>('input')];
+      const plot = this.querySelector('svg')!;
+      const result = this.querySelector<HTMLElement>('[data-result]')!;
+      const update = () => {
+        if (
+          !inputs.every(
+            (input) =>
+              Number.isFinite(input.valueAsNumber) && input.validity.valid,
+          )
+        ) {
+          result.textContent =
+            'Usa quatro números inteiros entre −8 e 8. O desenho mantém a última matriz válida.';
+          return;
+        }
+        const [a, b, c, d] = inputs.map((input) => input.valueAsNumber);
+        const vertices = [
+          [0, 0],
+          [a, c],
+          [a + b, c + d],
+          [b, d],
+        ];
+        // SVG cresce para baixo; o plano cartesiano cresce para cima.
+        const xs = [0, 1, ...vertices.map(([x]) => x)];
+        const ys = [0, -1, ...vertices.map(([, y]) => -y)];
+        const left = Math.min(...xs) - 1;
+        const top = Math.min(...ys) - 1;
+        const right = Math.max(...xs) + 1;
+        const bottom = Math.max(...ys) + 1;
+        plot.setAttribute(
+          'viewBox',
+          `${left} ${top} ${right - left} ${bottom - top}`,
+        );
+        plot.setAttribute(
+          'aria-label',
+          `Quadrado unitário tracejado e imagem com vértices ${vertices.map(([x, y]) => `(${x}, ${y})`).join(', ')}.`,
+        );
+        this.querySelector('[data-image]')!.setAttribute(
+          'points',
+          vertices.map(([x, y]) => `${x},${-y}`).join(' '),
+        );
+        for (const [selector, x, y] of [
+          ['[data-first]', a, c],
+          ['[data-second]', b, d],
+        ] as const) {
+          const line = this.querySelector(selector)!;
+          line.setAttribute('x2', String(x));
+          line.setAttribute('y2', String(-y));
+        }
+        for (const [selector, coordinates] of [
+          ['[data-x]', { x1: left, y1: 0, x2: right, y2: 0 }],
+          ['[data-y]', { x1: 0, y1: top, x2: 0, y2: bottom }],
+        ] as const) {
+          for (const [attribute, value] of Object.entries(coordinates)) {
+            this.querySelector(selector)!.setAttribute(
+              attribute,
+              String(value),
+            );
+          }
+        }
+        const det = a * d - b * c;
+        const orientation =
+          det === 0
+            ? 'A imagem colapsa; não tem orientação no plano.'
+            : det > 0
+              ? 'A orientação mantém-se.'
+              : 'A orientação inverte-se.';
+        result.textContent = `det(A) = ${det}; área = ${Math.abs(det)}. ${orientation}`;
+        this.querySelector('[data-columns]')!.textContent =
+          `A e₁ = (${a}, ${c}); A e₂ = (${b}, ${d}).`;
+      };
+      inputs.forEach((input) => input.addEventListener('input', update));
+      this.querySelector('button')!.addEventListener('click', () => {
+        inputs.forEach((input) => {
+          input.value = input.defaultValue;
+        });
+        update();
+      });
+      this.querySelector('fieldset')!.disabled = false;
+      this.querySelector('button')!.disabled = false;
+      update();
+    }
+  }
+  customElements.define('example-transform', ExampleTransform);
+</script>
+
+<style>
+  example-transform {
+    display: block;
+    min-width: 0;
+    color: var(--text);
+  }
+  fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0 0 16px;
+    min-width: 0;
+  }
+  legend {
+    padding: 0;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  .entries {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    max-width: 280px;
+  }
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--page);
+    color: var(--text);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+  button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--page);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+  button:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  input:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  p {
+    margin: 16px 0 0;
+    line-height: 1.5;
+  }
+  [data-result] {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: 280px;
+    margin-top: 16px;
+  }
+  line,
+  polygon {
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+  .axis {
+    stroke: var(--line);
+  }
+  .original {
+    fill: none;
+    stroke: var(--text);
+    stroke-dasharray: 4 3;
+  }
+  .image {
+    fill: color-mix(in srgb, var(--accent) 18%, transparent);
+    stroke: var(--accent);
+  }
+  .first {
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+  .second {
+    stroke: var(--text);
+    stroke-dasharray: 6 3;
+  }
+</style>
