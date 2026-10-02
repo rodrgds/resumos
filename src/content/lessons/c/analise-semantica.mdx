@@ -2,6 +2,8 @@
 title: Análise semântica
 description: Tabela de símbolos, âmbitos com shadowing e verificação de tipos, com um bloco exemplo resolvido.
 section: conteudo
+practices:
+  - c/praticar-analise-semantica
 order: 4
 ---
 
@@ -28,7 +30,9 @@ Lê a pilha como o analisador a vê: com o bloco aberto há duas entradas para `
 
 ## Exemplo: bloco com shadowing e erro de tipo
 
-```java
+Neste pseudocódigo, cada bloco admite shadowing e uma declaração só fica visível **depois** do seu inicializador. É uma regra escolhida para o exemplo, que deve ser confirmada na especificação de cada linguagem. A tabela guarda tipos e declarações; os valores abaixo servem para seguir a execução.
+
+```text
 int x = 3;
 {
   int x = x + 1;
@@ -45,7 +49,7 @@ Construção da tabela, por ordem:
 
 Agora a chamada com argumentos trocados. Com `int soma(int a, int b)` declarada, a chamada `soma(true, 2)` percorre a árvore da chamada e compara cada argumento com o parâmetro correspondente: o primeiro é booleano onde se esperava inteiro. Erro semântico com a posição da chamada, antes de gerar uma única instrução. Repara na divisão de trabalho: a sintaxe aceitou a chamada (a forma está certa), a semântica rejeita-a (o significado está errado).
 
-Os três erros mais comuns no projeto passam todos a sintaxe e morrem aqui. Confirma cada mensagem.
+Estes três exemplos têm forma sintática válida, mas violam as regras semânticas indicadas.
 
 <Tabs id="erros-semanticos" labels={['Por declarar', 'Tipo incompatível', 'Fora do âmbito']}>
   <div slot="panel-0">
@@ -85,7 +89,7 @@ A declaração morreu com o bloco que a continha. O uso seguinte encontra só os
   </div>
 </Tabs>
 
-E a procura de nomes a correr, sem shadowing pelo meio para te distrair. Este bloco imprime 4.
+Em Java, usamos nomes locais diferentes para este bloco. O programa imprime 4.
 
 <CodePlayground
   language="java"
@@ -95,15 +99,21 @@ E a procura de nomes a correr, sem shadowing pelo meio para te distrair. Este bl
   }
 />
 
-O `y` interior lê o `x` exterior porque a procura sobe a pilha até ao global. Repara que Java não deixa redeclarar `x` dentro do bloco: se precisares de shadowing para um teste, usa a linguagem do projeto, onde o exemplo desta página vale.
+O `y` interior lê o `x` do bloco do método, que é um âmbito exterior, não global. Java não permite esta redeclaração de `x` local num bloco aninhado. Além disso, o âmbito de uma variável local Java inclui o seu inicializador: `int z = z + 1` não lê automaticamente uma declaração exterior e falha por falta de inicialização. Não transfiras as regras do pseudocódigo para Java ou para o projeto sem as confirmar.
 
 ## Verificação de tipos
 
-As regras de tipo sobem pela árvore: o tipo de `a + b` exige operandos numéricos do mesmo tipo e devolve esse tipo; uma condição de `if` ou `while` exige booleano; uma atribuição exige compatibilidade entre o lado direito e a variável. Cada regra violada é um erro com posição. O projeto avalia exatamente isto: declarações em falta, tipos incompatíveis e usos fora do âmbito, cada um reportado onde o programador consegue corrigir.
+Na linguagem didática, só admitimos `int` e `boolean`, sem conversões implícitas. As regras de tipo sobem pela árvore: o tipo de `a + b` exige operandos numéricos do mesmo tipo e devolve esse tipo; uma condição de `if` ou `while` exige booleano; uma atribuição exige compatibilidade entre o lado direito e a variável. Cada regra violada é um erro com posição. Outras linguagens podem promover tipos numéricos ou permitir sobrecarga. A regra depende da especificação, não do aspeto do operador.
 
-:::tip[Como cai isto em teste]
-O enunciado típico dá-te um programa curto e pede a tabela de símbolos no fim de cada bloco e os erros detetados. Desenha uma coluna por âmbito, regista cada declaração quando ela entra em vigor (o inicializador usa o âmbito anterior) e verifica cada uso e cada operação contra a tabela.
+:::tip[Como seguir os âmbitos]
+Nesta linguagem didática, para construir a tabela e encontrar erros, desenha uma coluna por âmbito, regista cada declaração quando ela entra em vigor (o inicializador usa o âmbito anterior) e verifica cada uso e cada operação contra a tabela.
 :::
+
+## Atributos e ordem de cálculo
+
+Uma definição dirigida pela sintaxe associa atributos aos nós e regras para os calcular. Um atributo **sintetizado** usa informação dos filhos; um atributo **herdado** recebe contexto do pai ou de irmãos, segundo as regras definidas.
+
+Na produção `E → E1 + T`, a regra `E.tipo = verificarSoma(E1.tipo, T.tipo)` sintetiza o tipo da expressão a partir dos operandos. A tabela de símbolos disponível num nó pode ser um atributo herdado: o bloco entrega o seu âmbito aos filhos antes de estes resolverem nomes. Assim, o contexto desce e os tipos sobem. A ordem de avaliação deve respeitar estas dependências; um ciclo sem regra de resolução impede este cálculo simples.
 
 ## Para levar para a próxima página
 

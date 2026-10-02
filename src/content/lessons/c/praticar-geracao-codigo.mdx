@@ -1,0 +1,192 @@
+---
+title: Praticar a geração de código
+description: Exercícios próprios com pistas e resolução explicada.
+section: exercicios
+order: 26
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="c-dependencias-ordem"
+  title="Preservar RAW, WAR e WAW"
+  explanation="/cadeiras/c/geracao-codigo/#escalonar-respeitando-dependências"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei RAW de 1 para 2 pelo valor de x.',
+      'Identifiquei WAR de 2 para 3 porque 2 deve ler o x antigo.',
+      'Identifiquei WAW de 1 para 3 e preservei a ordem 1,2,3.',
+    ],
+  }}
+>
+
+    Identifica as dependências que impedem trocas neste bloco, numerado de 1 a
+    3. x e y são variáveis distintas e não há efeitos laterais.
+
+```text
+1  x = a + b
+2  y = x * c
+3  x = d + e
+```
+
+  <div slot="hint">
+
+Anota os nomes lidos e escritos em cada linha.
+
+</div>
+  <div slot="hint-more">
+
+A linha 3 não pode passar antes da leitura de x da linha 2.
+
+</div>
+  <div slot="solution">
+
+1 escreve x; 2 lê x, criando RAW 1→2. 2 deve ler esse valor antes de 3
+substituir x, criando WAR 2→3. As duas escritas de x criam WAW 1→3, para que x
+termine com d + e. A ordem original é a única permutação válida destas três
+instruções sem renomear variáveis.
+
+</div>
+  <div slot="mistakes">
+
+Não procures apenas leituras após escritas. A reutilização de x também cria
+restrições.
+
+</div>
+</Exercise>
+
+<Exercise id="c-colorir-ciclo" title="Alocar sem derramar" explanation="/cadeiras/c/geracao-codigo/#alocação-por-coloração" answer={{"kind": "self", "checklist": ["Atribuí o mesmo registo a p e r e o outro a q e s.", "Confirmei registos diferentes nos quatro pares adjacentes.", "Não acrescentei arestas p-r ou q-s que o enunciado não tem."]}}>
+
+Um grafo tem nós p, q, r, s e apenas arestas p-q, q-r, r-s, s-p. Dá uma alocação com dois registos e justifica por que não precisa de derrame.
+
+<div slot="hint">
+
+Alterna os registos ao percorrer o ciclo.
+
+</div>
+<div slot="hint-more">
+
+Um ciclo de quatro nós fecha com uma alternância compatível.
+
+</div>
+<div slot="solution">
+
+Uma alocação é R1=&#123;p,r&#125;, R2=&#123;q,s&#125;. As quatro arestas unem
+sempre R1 a R2. p e r não interferem, e q e s também não, por isso podem
+reutilizar o mesmo registo. O número de nós não é o número de registos
+necessários.
+
+</div>
+<div slot="mistakes">
+
+Não derrames só porque há quatro valores e dois registos. Verifica quando os
+valores interferem.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="c-jasmin-altura"
+  title="Calcular o limite da pilha"
+  explanation="/cadeiras/c/geracao-codigo/#exemplo-jasmin-para-a--b--c"
+  answer={{ kind: 'number', value: 3, tolerance: 0, unit: 'unidades' }}
+>
+
+    A sequência abaixo calcula (a - b) * (c + d), com locais inteiros
+    inicializados. Partindo de pilha vazia, qual é a menor .limit stack
+    suficiente para esta sequência? Dá um inteiro exato.
+
+```asm
+iload_1
+iload_2
+isub
+iload_3
+iload 4
+iadd
+imul
+istore 5
+```
+
+  <div slot="hint">
+
+Segue a altura depois de cada instrução.
+
+</div>
+  <div slot="hint-more">
+
+O resultado de a - b fica na pilha enquanto c e d entram.
+
+</div>
+  <div slot="solution">
+
+As alturas são 1, 2, 1, 2, 3, 2, 1, 0. O máximo é 3, atingido depois de iload 4. Todas as cargas são de int, que ocupa uma unidade; portanto .limit stack 3
+chega para esta sequência.
+
+</div>
+  <div slot="mistakes">
+
+Não contes locais como elementos da pilha nem limites a contagem aos dois
+operandos do operador atual.
+
+</div>
+</Exercise>
+
+<Exercise id="c-juncao-jvm" title="Verificar os caminhos da pilha" explanation="/cadeiras/c/geracao-codigo/#exemplo-jasmin-para-a--b--c" answer={{"kind": "choice", "options": [{"text": "Empilhar 0 no caminho vazio antes da junção.", "correct": true, "explanation": "Ambos os caminhos passam a chegar com um int; istore_1 consome o valor escolhido."}, {"text": "Aumentar .limit stack para 10.", "correct": false, "explanation": "A capacidade maior não resolve alturas incompatíveis nem cria o operando em falta."}, {"text": "Trocar istore_1 por iadd.", "correct": false, "explanation": "iadd exige dois inteiros; nenhum destes caminhos fornece os dois."}]}}>
+
+Dois caminhos chegam a L_fim: um com [int] e outro com []. O método quer executar istore_1 em L_fim. Que correção preserva uma escolha entre os valores inteiros 6 e 0?
+
+<div slot="hint">
+
+Uma junção tem de oferecer a mesma forma de pilha nos caminhos de entrada.
+
+</div>
+<div slot="hint-more">
+
+O ramo vazio precisa de produzir o valor que representa o seu resultado.
+
+</div>
+<div slot="solution">
+
+O ramo que produz 6 e o ramo que produz 0 devem chegar ambos com [int]. Depois
+istore_1 guarda o valor escolhido e deixa a pilha vazia. O limite de
+capacidade não substitui a verificação de alturas e tipos.
+
+</div>
+<div slot="mistakes">
+
+Não uses .limit stack como se corrigisse underflow ou a incompatibilidade
+entre caminhos.
+
+</div>
+</Exercise>
+
+<Exercise id="c-selecionar-imediato" title="Escolher uma instrução imediata" explanation="/cadeiras/c/geracao-codigo/#selecionar-instruções" answer={{"kind": "self", "checklist": ["Usei addi para 6, que cabe no intervalo.", "Usei li e add para 10, que não cabe no imediato.", "Conservei R_a e dei nomes aos registos de destino e temporário."]}}>
+
+Uma máquina hipotética tem addi com imediato inteiro entre -8 e 7, li para qualquer constante e add entre registos. Traduz t = a + 6 e u = a + 10. a já está em R_a; usa o menor número de instruções em cada caso.
+
+<div slot="hint">
+
+Verifica o limite antes de escolher a forma mais curta.
+
+</div>
+<div slot="hint-more">
+
+A constante 10 precisa de um registo temporário neste alvo.
+
+</div>
+<div slot="solution">
+
+Para t, addi R_t, R_a, 6 usa uma instrução. Para u, li R_tmp, 10; add R_u,
+R_a, R_tmp usa duas. addi com 10 seria inválida, mesmo que a operação
+matemática fosse a desejada. A disponibilidade de uma instrução depende das
+restrições do alvo.
+
+</div>
+<div slot="mistakes">
+
+Não truncas a constante para a fazer caber nem acrescentes uma carga
+desnecessária para 6.
+
+</div>
+</Exercise>

@@ -2,6 +2,8 @@
 title: Geração de código e registos
 description: Seleção de instruções, alocação de registos por coloração e Jasmin para uma expressão com a pilha de operandos.
 section: conteudo
+practices:
+  - c/praticar-geracao-codigo
 order: 7
 ---
 
@@ -10,6 +12,10 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import interferencia from '../../c/interferencia.dot?raw';
 
 A geração de código traduz o código intermédio para as instruções da máquina alvo. São três decisões encadeadas: **seleção** (que instruções cobrem cada operação), **escalonamento** (por que ordem, respeitando dependências) e **alocação de registos** (que valores vivem em registos e quais ficam em memória).
+
+## Selecionar instruções
+
+A seleção cobre as operações intermédias com instruções disponíveis no alvo. Numa máquina de registos hipotética, `t = a + 5` pode usar `addi R_t, R_a, 5` se a constante couber no campo imediato. Sem essa instrução, precisamos de carregar 5 num registo e depois somar. Na JVM, usamos `iload` para `a`, uma instrução que empilhe 5, e `iadd`. A escolha depende da semântica, dos operandos admitidos e do custo do alvo; nomes iguais de operações não garantem instruções iguais.
 
 ## Escalonar respeitando dependências
 
@@ -21,13 +27,15 @@ t2 = t1 * c
 t3 = a + b
 ```
 
-`t2` lê `t1`, por isso `t2` vem sempre depois de `t1`. Mas `t3` só lê `a` e `b`, que mais ninguém escreve aqui: é independente das duas. Ordens válidas: `t1, t2, t3`, `t1, t3, t2` e `t3, t1, t2`. A ordem `t1, t3, t2` é a mais esperta se a soma demorar: enquanto `t1` fica pronto, o processador adianta `t3` em vez de esperar parado pelo `t2`. Em teste, sublinha primeiro as dependências e só depois propõe a ordem; uma troca que viole uma RAW está errada mesmo que pareça mais rápida.
+`t2` lê `t1`, por isso `t2` vem sempre depois de `t1`. Mas `t3` só lê `a` e `b`, que mais ninguém escreve aqui: é independente das duas. Ordens válidas: `t1, t2, t3`, `t1, t3, t2` e `t3, t1, t2`. A ordem `t1, t3, t2` pode preencher uma espera pela soma se o processador admitir essa sobreposição. O ganho depende das latências e dos recursos do alvo.
+
+Com destinos reutilizados, há também **WAR** (escrita após leitura): a escrita não pode destruir o valor que uma leitura anterior precisa. Uma **WAW** (escrita após escrita) obriga a preservar qual escrita deixa o valor final. Acessos à mesma memória, chamadas e operações observáveis podem criar dependências adicionais.
 
 ## Alocação por coloração
 
 Os registos são poucos e os temporários são muitos. O compilador constrói o **grafo de interferência**: um nó por valor vivo, uma aresta entre dois valores vivos ao mesmo tempo. Colorir o grafo com $k$ cores (os $k$ registos) é atribuir registos sem conflitos: vizinhos ficam em registos diferentes.
 
-Quando $k$ cores não chegam, algum valor é **derramado** (_spill_): em vez de registo, vive em memória, com um carregamento antes de cada uso e uma gravação depois de cada definição. O derrame resolve o conflito à custa de acessos extra, por isso o compilador escolhe a vítima pelo custo: derrama o valor usado menos vezes dentro de ciclos.
+Quando $k$ cores não chegam, algum valor é **derramado** (_spill_): em vez de registo, vive em memória, com um carregamento antes de cada uso e uma gravação depois de cada definição. O derrame resolve o conflito à custa de acessos extra, por isso o compilador estima o custo, dando mais peso aos usos em ciclos e considerando os conflitos de cada valor. Depois de inserir os acessos, volta a analisar e alocar: os carregamentos também precisam de registos.
 
 <Dot
   source={interferencia}
@@ -38,7 +46,7 @@ Com $k = 2$ registos, o triângulo $a$, $b$, $c$ não tem coloração: $a$ e $b$
 
 ## Exemplo: Jasmin para `(a + b) * c`
 
-No projeto, o alvo é a JVM através do Jasmin, que usa uma **pilha de operandos**: as instruções tiram operandos da pilha e empurram o resultado. Com `a`, `b`, `c` nas variáveis locais 1, 2 e 3, e o resultado na 4:
+Nos exemplos seguintes, o alvo é a JVM através do Jasmin, que usa uma **pilha de operandos**: as instruções tiram operandos da pilha e empurram o resultado. Com `a`, `b`, `c` nas variáveis locais 1, 2 e 3, e o resultado na 4:
 
 ```asm
 iload_1
@@ -72,7 +80,9 @@ Confirma a altura máxima a correr. A simulação abaixo executa o mesmo exemplo
   }
 />
 
-O programa imprime `[] 2`: a pilha termina vazia (tudo consumido e guardado) e nunca passou de 2. Muda a expressão, por exemplo para `(a + b) * (c + d)`, e vê a altura subir para 3.
+A simulação conserva apenas a altura, não calcula os valores. A pilha termina vazia e atinge 2 elementos. Para `(a + b) * (c + d)`, uma sequência que calcula primeiro `a + b` e depois `c + d` chega a 3: o primeiro resultado espera enquanto se empilham `c` e `d`.
+
+`.limit locals 5` cobre os índices 0 a 4 deste exemplo, se o método não usar mais locais. Em cada ponto de junção do controlo, os caminhos de entrada precisam de alturas iguais e tipos compatíveis. `long` e `double` ocupam duas unidades da pilha; a contagem por elementos aqui vale porque só usamos `int`.
 
 As variáveis locais e a pilha de operandos da JVM não são registos físicos do processador. `iload` copia um inteiro de um local para a pilha; `istore` faz o percurso inverso. Guardar um resultado ou um temporário num local não prova que houve derrame por falta de registos. Aqui, `istore 4` apenas guarda o resultado da expressão. Se um compilador JIT traduzir este bytecode para código nativo, a alocação de registos físicos e os eventuais derrames são decisões dessa tradução.
 

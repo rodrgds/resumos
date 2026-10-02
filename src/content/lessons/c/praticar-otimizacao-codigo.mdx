@@ -1,0 +1,202 @@
+---
+title: Praticar a análise e otimização
+description: Exercícios próprios com pistas e resolução explicada.
+section: exercicios
+order: 27
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="c-liveness-retrocesso"
+  title="Calcular a vivacidade"
+  explanation="/cadeiras/c/otimizacao-codigo/#análise-de-fluxo-de-dados"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Antes da linha 3 obtive {c,t}; antes da linha 2 obtive {t}; antes da linha 1 obtive {a,b}.',
+      'Retirei o destino e acrescentei os operandos usados em cada passo.',
+      'Não mantive a versão antiga de c depois da sua redefinição.',
+    ],
+  }}
+>
+
+    Apenas z está viva à saída. Calcula as variáveis vivas antes de cada linha
+    do bloco abaixo, incluindo a primeira. Usa conjuntos e aplica leitura antes
+    da definição.
+
+```text
+1  t = a + b
+2  c = t * 2
+3  z = c + t
+```
+
+  <div slot="hint">
+
+Começa em &#123;z&#125; e percorre o bloco de baixo para cima.
+
+</div>
+  <div slot="hint-more">
+
+Antes de z = c + t, precisamos dos dois operandos, não do z antigo.
+
+</div>
+  <div slot="solution">
+
+Saída: &#123;z&#125;. Antes de 3, retiramos z e acrescentamos c e t:
+&#123;c,t&#125;. Antes de 2, retiramos c e acrescentamos t: &#123;t&#125;.
+Antes de 1, retiramos t e acrescentamos a e b: &#123;a,b&#125;. c antigo não é
+necessário porque a linha 2 o redefine antes do uso.
+
+</div>
+  <div slot="mistakes">
+
+Não propagues liveness só para a frente nem conserves o destino antigo quando
+a instrução o substitui.
+
+</div>
+</Exercise>
+
+<Exercise id="c-constantes-juncao" title="Analisar uma junção" explanation="/cadeiras/c/otimizacao-codigo/#análise-de-fluxo-de-dados" answer={{"kind": "self", "checklist": ["Não atribuí um valor constante a x quando os ramos discordam.", "Dobrei z para 15 porque k conserva o mesmo valor nos dois caminhos.", "Na variante com x = 4 nos dois ramos, dobrei y para 6."]}}>
+
+Um if define x = 4 no ramo verdadeiro e x = 9 no falso. Depois executa y = x + 2. Há outra constante conhecida, k = 3, que nenhum ramo altera. O que podes propagar em y e em z = k \* 5? E se ambos os ramos definissem x = 4?
+
+<div slot="hint">
+
+A informação à saída da junção tem de valer em todos os caminhos.
+
+</div>
+<div slot="hint-more">
+
+Uma definição possível de 4 não exclui a definição possível de 9.
+
+</div>
+<div slot="solution">
+
+No primeiro caso, y pode valer 6 ou 11, por isso x e y não são constantes
+conhecidas na junção. k vale sempre 3, logo z = 15 é seguro. Se os dois ramos
+definem x = 4, concordam no valor e podemos obter y = 6, mesmo existindo duas
+definições diferentes de x.
+
+</div>
+<div slot="mistakes">
+
+Uma definição única não é condição necessária para propagar uma constante;
+várias definições podem concordar no valor.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="c-otimizar-bloco"
+  title="Reescrever mantendo a saída"
+  explanation="/cadeiras/c/otimizacao-codigo/#exemplo-propagar-e-eliminar"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Propaguei a = 7 e dobrei b para 12.',
+      'Mantive out = 24.',
+      'Removi a, b e unused depois de confirmar que os seus valores não têm usos observáveis.',
+    ],
+  }}
+>
+
+    Só out é observável à saída; as variáveis são locais e as somas não têm
+    efeitos nem exceções. Otimiza o bloco abaixo e justifica cada remoção.
+
+```text
+a = 7
+b = a + 5
+out = b + b
+unused = 31
+```
+
+  <div slot="hint">
+
+Primeiro substitui constantes, depois procura as atribuições que ficaram sem
+uso.
+
+</div>
+  <div slot="hint-more">
+
+out = b + b passa a out = 12 + 12.
+
+</div>
+  <div slot="solution">
+
+a = 7 permite reescrever b = 7 + 5 e dobrar para b = 12. out = b + b passa a
+out = 24. Depois dessas substituições, a e b deixam de ter usos; unused também
+nunca é lida. Com as hipóteses dadas, resta out = 24 e o valor observável
+conserva-se.
+
+</div>
+  <div slot="mistakes">
+
+Não removas a definição de b antes de propagar os seus usos nem ignores as
+hipóteses sobre efeitos.
+
+</div>
+</Exercise>
+
+<Exercise id="c-morto-efeitos" title="Preservar uma chamada observável" explanation="/cadeiras/c/otimizacao-codigo/#exemplo-propagar-e-eliminar" answer={{"kind": "choice", "options": [{"text": "Conservar a chamada e descartar apenas o valor devolvido.", "correct": true, "explanation": "A impressão faz parte do comportamento observável, mesmo quando ninguém usa o retorno."}, {"text": "Eliminar toda a linha t = escreve().", "correct": false, "explanation": "A mensagem desapareceria, alterando o comportamento do programa."}, {"text": "Substituir escreve() por 0.", "correct": false, "explanation": "Um valor constante não reproduz o efeito de impressão."}]}}>
+
+Em t = escreve(); out = 8, t não está viva à saída. escreve imprime uma mensagem e devolve um inteiro. Qual transformação é segura?
+
+<div slot="hint">
+
+O valor morto e a operação que o produz são coisas diferentes.
+
+</div>
+<div slot="hint-more">
+
+Pergunta o que o utilizador observa além de out.
+
+</div>
+<div slot="solution">
+
+Podemos deixar de guardar o retorno em t, se a representação o permitir, mas
+devemos executar escreve para preservar a mensagem. A vivacidade do destino só
+prova que o valor não é necessário; não prova que a operação pode desaparecer.
+
+</div>
+<div slot="mistakes">
+
+Não uses a ausência de usos como prova suficiente para apagar chamadas ou
+operações que podem falhar.
+
+</div>
+</Exercise>
+
+<Exercise id="c-ponto-fixo-ciclo" title="Iterar a vivacidade num ciclo" explanation="/cadeiras/c/otimizacao-codigo/#análise-de-fluxo-de-dados" answer={{"kind": "self", "checklist": ["Obtive IN1={n}, OUT1={x,n}; IN2=OUT2={x,n}.", "Obtive IN3=OUT3={x,n}; IN4={x}, OUT4={}.", "Expliquei que x em USE3 é a leitura anterior à redefinição e que n atravessa o ciclo."]}}>
+
+B1 define x = 0 e vai para B2. B2 testa x &lt; n e vai para B3 ou B4. B3 define x = x + 1 e volta para B2. B4 devolve x. n nunca é definida aqui. Calcula IN e OUT dos quatro blocos até estabilizar. Não há valores vivos depois do retorno.
+
+<div slot="hint">
+
+Usa USE1=&#123;&#125;, DEF1=&#123;x&#125;; USE2=&#123;x,n&#125;,
+DEF2=&#123;&#125;; USE3=&#123;x&#125;, DEF3=&#123;x&#125;; USE4=&#123;x&#125;,
+DEF4=&#123;&#125;.
+
+</div>
+<div slot="hint-more">
+
+O retorno lê x, mas não tem sucessor. OUT3 recebe IN2 pela aresta de regresso.
+
+</div>
+<div slot="solution">
+
+B4 exige x à entrada e nada à saída. B2 exige x e n para o teste. Pelo
+regresso, OUT3=&#123;x,n&#125;; retirar DEF3=&#123;x&#125; e juntar
+USE3=&#123;x&#125; dá IN3=&#123;x,n&#125;. OUT2 une IN3 e IN4, ficando
+&#123;x,n&#125;, e IN2 também. OUT1=IN2=&#123;x,n&#125;; B1 redefine x, por
+isso IN1=&#123;n&#125;. Reaplicar as equações já não altera nenhum conjunto:
+chegámos ao ponto fixo.
+
+</div>
+<div slot="mistakes">
+
+Não apagues x de USE3 só porque B3 também o define. A leitura acontece
+primeiro. Não percas n no corpo só porque não é usada dentro dele.
+
+</div>
+</Exercise>
