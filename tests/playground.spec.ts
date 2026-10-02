@@ -1,5 +1,32 @@
 import { expect, test } from '@playwright/test';
 
+test('C++ executes standard sorting and duplicate removal', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.goto('/exemplo/codigo/');
+  const playground = page.getByRole('region', {
+    name: 'Experimentar C++',
+    exact: true,
+  });
+  await playground.scrollIntoViewIfNeeded();
+  await playground
+    .getByRole('textbox', { name: 'Código cpp', exact: true })
+    .fill(
+      '#include <algorithm>\n#include <iostream>\n#include <vector>\nint main() {\n    std::vector<int> values{3, 1, 3, 2};\n    std::sort(values.begin(), values.end());\n    values.erase(std::unique(values.begin(), values.end()), values.end());\n    for (int value : values) std::cout << value << " ";\n    std::cout << "\\n";\n}',
+    );
+  await playground
+    .getByRole('button', { name: 'Executar', exact: true })
+    .click();
+  await expect(
+    playground.getByRole('button', { name: 'Executar', exact: true }),
+  ).toBeEnabled({ timeout: 75_000 });
+  await expect(playground.getByLabel('Resultado', { exact: true })).toHaveText(
+    '1 2 3 \n',
+  );
+  await expect(playground.getByRole('status')).toHaveText('Concluído');
+});
+
 test('PHP evaluates the authored scope example', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/cadeiras/lbaw/aplicacao-laravel/');

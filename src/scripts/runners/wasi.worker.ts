@@ -126,6 +126,7 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
           '-lc',
           '-lc++',
           '-lc++abi',
+          '/sys/lib/clang/8.0.1/lib/wasi/libclang_rt.builtins-wasm32.a',
           '-o',
           '/program.wasm',
         ]);
