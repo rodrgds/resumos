@@ -69,7 +69,7 @@ Vermelho-preta: raiz e NIL pretos, sem dois vermelhos consecutivos, igual altura
 
 Hash: igualdade implica mesmo hash; colisão não implica igualdade. Encadeamento: esperado $O(1+\alpha)$, $\alpha=n/m$; pior linear. Endereçamento aberto precisa de distinguir livre, ocupado e apagado. Tombstone não termina pesquisa. Inserir memoriza tombstone mas continua para excluir duplicado. Hash duplo precisa de passo coprimo com `m`. Rehash recalcula posições. [Dispersão](/cadeiras/aed/tabelas-dispersao/).
 
-Heap: forma completa + pai prioritário. Zero-based: filhos `2i+1,2i+2`; pai `(i-1)/2`, para `i>0`. Extremo $O(1)$; inserir/retirar $O(\log(n+1))`; construir de baixo para cima $\Theta(n)$. Descer pelo filho mais prioritário. Não oferece pesquisa arbitrária logarítmica. Top-k maiores usa min-heap de capacidade `k`. [Heaps](/cadeiras/aed/filas-prioridade-heaps/).
+Heap: forma completa + pai prioritário. Zero-based: filhos `2i+1,2i+2`; pai `(i-1)/2`, para `i>0`. Extremo $O(1)$; inserir/retirar $O(\log(n+1))$; construir de baixo para cima $\Theta(n)$. Descer pelo filho mais prioritário. Não oferece pesquisa arbitrária logarítmica. Top-k maiores usa min-heap de capacidade `k`. [Heaps](/cadeiras/aed/filas-prioridade-heaps/).
 
 ## Grafos
 
