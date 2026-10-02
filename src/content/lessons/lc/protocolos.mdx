@@ -1,0 +1,139 @@
+---
+title: Protocolos de comunicação
+description: Mensagens sobre bytes, delimitadores, escaping, integridade e sincronização entre aplicações.
+section: conteudo
+order: 11
+practices:
+  - lc/praticar-protocolos
+---
+
+A UART entrega bytes. Uma aplicação precisa de saber quais formam uma mensagem, que operação representam e se chegaram válidos. Um protocolo define esse contrato nos dois lados da ligação.
+
+## Limites e significado das mensagens
+
+Se envias um scancode e depois um pacote de rato, o recetor não sabe onde acaba um e começa outro apenas por ver bytes. Um cabeçalho pode indicar tipo e comprimento. Outra opção usa um delimitador de fim que não aparece sem codificação nos dados.
+
+Define também unidades e ordem dos campos. Uma mensagem `MOVE` pode conter deslocamentos em unidades do protocolo ou uma posição absoluta em píxeis. Os dois sentidos não são equivalentes. Para campos de vários bytes, escolhe explicitamente uma ordem, como byte mais significativo primeiro, e reconstrói-a com máscaras e deslocamentos.
+
+Não envies a representação crua de uma `struct`. O compilador pode inserir padding e as máquinas podem usar tipos ou ordens de bytes diferentes. O contrato pertence ao formato serializado, não à disposição interna dos objetos C.
+
+## Um formato com escaping
+
+Vamos construir um protocolo próprio pequeno, apenas para estudar framing e recuperação. Cada frame tem um delimitador `0x7E`, um corpo e outro delimitador. O corpo contém tipo, sequência, comprimento, payload e um checksum XOR.
+
+O checksum é o XOR dos bytes do corpo anteriores a ele. É uma verificação simples: pode detetar certas alterações, mas duas alterações compensatórias podem passar. Um protocolo com requisitos mais fortes escolheria um código de deteção, como um CRC, com propriedades adequadas ao erro esperado.
+
+Se `0x7E` ou `0x7D` aparecer no corpo, transmite `0x7D` seguido do byte original XOR `0x20`. Assim, um delimitador nos dados torna-se `7D 5E` e um escape torna-se `7D 5D`. O recetor remove essa codificação antes de interpretar o corpo.
+
+Exemplo com tipo `01`, sequência `07`, comprimento `02` e payload `7E 05`:
+
+```text
+Corpo antes de escaping: 01 07 02 7E 05 7F
+Frame transmitido:      7E 01 07 02 7D 5E 05 7F 7E
+```
+
+O checksum vale `01 XOR 07 XOR 02 XOR 7E XOR 05 = 7F`. O frame ocupa nove bytes na UART. A 9600 bit/s em 8N1, leva pelo menos $9\cdot10/9600=9{,}375$ ms. Os dois bytes úteis não são os únicos bytes que a ligação transmite.
+
+## Construir o frame
+
+Este programa completo é C portátil. Reserva espaço para o pior caso de escaping e imprime exatamente os nove bytes do exemplo.
+
+```c
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+
+static size_t build_frame(uint8_t type, uint8_t sequence,
+                          const uint8_t *payload, size_t length,
+                          uint8_t *output, size_t capacity) {
+  if (length > 255 || capacity < 2 * (length + 4) + 2) return 0;
+  if (length != 0 && payload == NULL) return 0;
+  if (output == NULL) return 0;
+  uint8_t body[259];
+  body[0] = type;
+  body[1] = sequence;
+  body[2] = (uint8_t)length;
+  uint8_t checksum = type ^ sequence ^ (uint8_t)length;
+  for (size_t i = 0; i < length; ++i) {
+    body[3 + i] = payload[i];
+    checksum ^= payload[i];
+  }
+  body[3 + length] = checksum;
+  size_t used = 0;
+  output[used++] = 0x7E;
+  for (size_t i = 0; i < length + 4; ++i) {
+    uint8_t byte = body[i];
+    if (byte == 0x7E || byte == 0x7D) {
+      output[used++] = 0x7D;
+      output[used++] = byte ^ 0x20u;
+    } else {
+      output[used++] = byte;
+    }
+  }
+  output[used++] = 0x7E;
+  return used;
+}
+
+int main(void) {
+  const uint8_t payload[] = {0x7E, 0x05};
+  uint8_t output[32];
+  size_t length = build_frame(1, 7, payload, sizeof payload,
+                              output, sizeof output);
+  if (length == 0) return 1;
+  for (size_t i = 0; i < length; ++i)
+    printf("%02X%s", (unsigned)output[i], i + 1 == length ? "\n" : " ");
+  return 0;
+}
+```
+
+O limite de payload é parte deste formato. Não aceites um comprimento recebido antes de verificar a capacidade do buffer. A construção só é válida quando os dois lados usam as mesmas regras de escaping e checksum.
+
+## Parser com estado
+
+O recetor conserva estado entre bytes. Um modelo tem `WAIT_START`, `BODY` e `ESCAPED`:
+
+| Estado e entrada         | Ação                                          |
+| ------------------------ | --------------------------------------------- |
+| `WAIT_START`, `7E`       | Começar um corpo vazio                        |
+| `WAIT_START`, outro byte | Ignorar                                       |
+| `BODY`, `7D`             | Passar a `ESCAPED`                            |
+| `BODY`, byte normal      | Guardar, se ainda houver capacidade           |
+| `ESCAPED`, byte válido   | Guardar byte XOR `20` e regressar a `BODY`    |
+| `BODY`, `7E`             | Validar o corpo completo e preparar o próximo |
+
+A regra de erro também faz parte do contrato. Se surge um delimitador com um escape incompleto, descarta o corpo parcial e usa o delimitador para recuperar o início. Se excede a capacidade ou há erro UART, invalida a mensagem. Um timeout impede ficar para sempre à espera de um corpo que o emissor abandonou.
+
+No fecho, confere tipo, número de campos, comprimento e checksum. Só depois publica um evento da aplicação. Não atualizes a posição com o primeiro campo antes de saber se o resto da mensagem é válido.
+
+Uma chegada fragmentada não é um erro. O handler pode receber dois bytes agora e os restantes depois. A fila e o parser conservam-nos sem bloquear à espera da mensagem completa. Um delimitador pode aparecer depois de uma mensagem danificada e permitir recomeçar.
+
+## ACK, timeout e duplicados
+
+Um ACK confirma que o recetor aceitou uma mensagem, segundo a regra definida. Não é uma prova de que o utilizador já viu o efeito no ecrã.
+
+Num protocolo stop-and-wait, o emissor guarda a mensagem, envia-a e espera o ACK. Se o timeout termina, reenvia. Para impedir duplicação de efeitos, cada mensagem tem uma sequência:
+
+1. O emissor envia `MOVE +5` com sequência 7.
+2. O recetor aplica o movimento uma vez e envia ACK 7.
+3. O ACK perde-se e o emissor reenvia a mesma mensagem.
+4. O recetor reconhece a sequência já aceite, envia novamente ACK 7 e não repete o movimento.
+
+Sem o quarto passo, o cursor moveria +10. Define a sequência esperada, o tratamento de duplicados, o número máximo de tentativas e o comportamento quando a sessão falha. Um campo de sequência de oito bits dá a volta; a identificação da sessão e a janela de mensagens válidas têm de impedir que uma mensagem muito antiga pareça nova.
+
+Para dados que representam um estado absoluto, aplicar duas vezes o mesmo valor pode ser inofensivo. Uma posição absoluta pode substituir um delta quando essa política é adequada. Continua a ser necessário rejeitar mensagens antigas que fariam o estado recuar.
+
+## Iniciar e sincronizar
+
+Uma solução simples atribui papéis distintos: um lado inicia `JOIN` e o outro responde `START` quando está pronto. Se o recetor ainda não existe, o iniciador repete com timeout até ao limite escolhido. Ambos precisam de concordar sobre versão do protocolo e sessão.
+
+Se ambos iniciarem ao mesmo tempo, define um desempate por identidade ou papel. Não esperes que atrasos aleatórios resolvam sempre uma regra que falta. Uma reconexão também deve descartar bytes e estado parcial da sessão anterior.
+
+Numa aplicação centralizada, um computador calcula o estado e o outro envia entradas e apresenta o estado recebido. Na replicação, ambos calculam o estado. Para obter o mesmo resultado, precisam do mesmo estado inicial, das mesmas entradas na mesma ordem, dos mesmos instantes lógicos e de regras determinísticas. Receber as mesmas entradas por ordens diferentes pode produzir resultados diferentes.
+
+## Por que não enviar o framebuffer
+
+Uma imagem de 1024 por 768 a 8 bpp tem 786432 bytes. A 115200 bit/s em 8N1, a capacidade ideal é 11520 bytes/s. Uma imagem levaria pelo menos:
+
+$$\frac{786432}{11520}\approx68{,}27\ \text{s}.$$
+
+Um frame por 68 segundos não serve para uma animação. Envia entradas, posições ou alterações de estado e desenha localmente. O cálculo continua otimista: ignora cabeçalhos, checksum, escaping, confirmações e retransmissões.

@@ -1,67 +1,138 @@
 ---
-title: 'Projeto: eventos e debugging'
-description: Máquinas de estados com vários periféricos e debugging pelo método científico.
+title: Eventos, estado e debugging
+description: Separar drivers e aplicação, representar transições e localizar erros por experiências pequenas.
 section: conteudo
-order: 9
+order: 12
+practices:
+  - lc/praticar-eventos
 ---
 
 import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
 import maquina from '../../lc/maquina-jogo.dot?raw';
 
-O **projeto** junta tudo: dois ou mais periféricos a gerar eventos ao mesmo tempo, um programa que reage sem polling e uma sessão de demonstração onde nada pode falhar. A técnica que organiza o caos é a **máquina de estados**, a mesma ideia das máquinas finitas de [Circuitos sequenciais](/cadeiras/fsc/circuitos-sequenciais/), agora a conduzir um jogo em vez de um circuito. E quando algo falhar, o método para o caçar é o método científico.
+Uma aplicação recebe bytes, transforma-os em eventos e atualiza o estado. O desenho apresenta uma fotografia desse estado. Se separares estes passos, consegues testar o raciocínio sem precisar de reproduzir sempre o mesmo movimento na máquina virtual.
 
 ## Programação por eventos
 
-Com interrupções, o programa principal não pergunta nada: bloqueia à espera de eventos e reage. Cada handler limita-se a registar o que aconteceu (tecla premida, tique do temporizador, pacote do rato) em variáveis partilhadas, e o ciclo principal consome esses eventos um a um. Esta separação é o que permite lidar com vários periféricos ao mesmo tempo sem que nenhum fique à espera do polling dos outros.
+Um evento pode ser um tick, uma tecla completa, um pacote de rato ou uma mensagem recebida pela UART. Nem todo o dado bruto já é um evento útil. Um prefixo E0 precisa do byte seguinte; uma mensagem série precisa de todos os campos e da verificação de integridade.
 
-## Exemplo: máquina de estados de um mini jogo
+A divisão de responsabilidades é:
 
-Um jogo simples com teclado e temporizador vive em quatro estados:
+1. O driver acede a registos e recolhe os dados.
+2. O descodificador produz eventos completos.
+3. A aplicação atualiza estado e decide ações.
+4. O módulo gráfico desenha o estado num frame.
 
-| Estado | O que mostra             | Transições                                                                   |
-| ------ | ------------------------ | ---------------------------------------------------------------------------- |
-| MENU   | título e instruções      | tecla Enter passa a JOGO                                                     |
-| JOGO   | sprites e pontuação      | tecla P passa a PAUSA, fim das vidas passa a FIM, cada tique avança a lógica |
-| PAUSA  | imagem congelada e aviso | tecla P volta a JOGO, tecla Esc volta a MENU                                 |
-| FIM    | pontuação final          | tecla Enter volta a MENU                                                     |
+O driver do rato não deve decidir se um clique inicia um jogo. Isso depende da aplicação. O código do menu não deve saber a porta do i8042. Uma biblioteca é reutilizável quando o contrato esconde esses detalhes e conserva a informação de que os chamadores precisam.
+
+No ciclo Minix, recebe a mensagem, atende todas as máscaras ativas e processa os eventos produzidos antes de voltar a bloquear. Deixar um evento numa variável para o tratar "quando não houver interrupções" pode fazer o programa bloquear antes de o consumir.
+
+## Máquinas de estados
+
+Uma máquina de estados explicita o que cada evento faz em cada situação. Para um jogo simples, podemos ter MENU, JOGO, PAUSA e FIM.
 
 <Dot
   source={maquina}
-  alt="Máquina de estados do mini jogo: MENU vai a JOGO com Enter, JOGO vai a PAUSA com P e a FIM sem vidas, PAUSA volta a JOGO com P e a MENU com Esc, FIM volta a MENU com Enter."
+  alt="Menu entra em jogo com Enter; P alterna jogo e pausa; Esc na pausa volta ao menu; sem vidas termina o jogo; Enter no fim regressa ao menu."
 />
 
-Cada evento (tecla ou tique) entra numa função que olha para o estado atual e decide: em JOGO, a tecla P pausa; em PAUSA, a mesma tecla retoma. O desenho de cada imagem depende só do estado e dos dados, nunca do histórico de eventos. Quando um comportamento estranho aparecer, a primeira pergunta é sempre "em que estado estávamos e que evento chegou": nove em dez bugs do projeto são transições em falta ou a mais.
+A transição não depende apenas da tecla. Enter no menu começa, enquanto Enter no fim regressa ao menu. Um tick na pausa pode atualizar um cursor do menu, mas não deve avançar o tempo do jogo se a regra diz que o jogo está parado.
 
-## Debugging como ciência experimental
+Uma máquina **Mealy** associa saídas à transição, dependendo de estado e entrada. Uma máquina **Moore** associa saídas ao estado. Ambas podem representar a mesma função, embora possam precisar de diferentes números de estados. Em código por eventos, produzir uma ação ao aceitar uma transição é uma representação frequente.
 
-Quando o programa falha, não mudes código à toa. O método que funciona:
+Os dados também fazem parte do estado. Um `enum` sozinho não representa vidas, posição ou ticks acumulados. Podes usar uma `struct` com o estado e os dados comuns, ou uma tagged union para dados que só existem em algumas alternativas.
 
-1. **Observa e regista**: o que acontece exatamente, em que estado, com que sequência de eventos. Escreve, não confies na memória.
-2. **Formula uma hipótese**: uma frase testável, como "o cursor salta porque o pacote do rato chega dessincronizado após overflow".
-3. **Prevê**: se a hipótese for verdadeira, que observação a confirmaria. Por exemplo: "se for dessincronização, o bit 3 do primeiro byte está a 0 nesses pacotes".
-4. **Testa uma coisa de cada vez**: instrumenta o código para registar só essa observação e corre.
-5. **Conclui e itera**: hipótese confirmada, corrige; refutada, formula a próxima com o que aprendeste.
+## Um exemplo completo sem hardware
 
-Um registo realista cabe numa tabela: cada linha com a hipótese, a previsão, o resultado e a conclusão. Três linhas destas valem mais que uma tarde a mudar máscaras ao acaso. Duas hipóteses típicas do projeto, para treinares o formato:
+Este programa C portátil simula Enter, ticks e P. Um jogo termina após três ticks ativos. O tick durante a pausa não aumenta o contador.
 
-<Tabs id="hipoteses-debugging" labels={['Dessincronização', 'Overflow']}>
-  <div slot="panel-0">
+```c
+#include <stdio.h>
 
-Hipótese: o cursor salta porque o pacote chega dessincronizado. Previsão: se for isto, o bit 3 do primeiro byte está a 0 nos pacotes dos saltos. Teste: regista o primeiro byte de cada pacote durante dez segundos de movimento e conta quantos têm o bit 3 desligado.
+enum state { MENU, GAME, PAUSE, END };
+enum event { ENTER, P_KEY, TICK };
+struct game { enum state state; unsigned active_ticks; };
 
-  </div>
-  <div slot="panel-1">
+static void handle(struct game *g, enum event event) {
+  switch (g->state) {
+    case MENU:
+      if (event == ENTER) {
+        g->active_ticks = 0;
+        g->state = GAME;
+      }
+      break;
+    case GAME:
+      if (event == P_KEY) g->state = PAUSE;
+      else if (event == TICK && ++g->active_ticks == 3) g->state = END;
+      break;
+    case PAUSE:
+      if (event == P_KEY) g->state = GAME;
+      break;
+    case END:
+      if (event == ENTER) g->state = MENU;
+      break;
+  }
+}
 
-Hipótese: o cursor salta porque o movimento é rápido demais e há overflow. Previsão: se for isto, os bits 6 ou 7 do primeiro byte estão ligados nos pacotes dos saltos. Teste: regista os mesmos pacotes e conta quantos têm overflow assinalado.
+int main(void) {
+  struct game g = {MENU, 0};
+  const enum event events[] = {ENTER, TICK, P_KEY, TICK, P_KEY, TICK, TICK};
+  const char *names[] = {"MENU", "JOGO", "PAUSA", "FIM"};
+  for (size_t i = 0; i < sizeof events / sizeof events[0]; ++i) {
+    handle(&g, events[i]);
+    printf("%s %u\n", names[g.state], g.active_ticks);
+  }
+  return 0;
+}
+```
 
-  </div>
-</Tabs>
+A saída é:
 
-:::tip[Para a demonstração]
-Congela uma versão que funciona uns dias antes e testa-a de rajada: reinícios, teclas erradas, rato parado, overflow propositado. O júri vai fazer exatamente o que não testaste. Uma máquina de estados com um estado FIM bem tratado e um programa que nunca fica pendurado impressionam mais que uma funcionalidade extra a meio.
-:::
+```text
+JOGO 0
+JOGO 1
+PAUSA 1
+PAUSA 1
+JOGO 1
+JOGO 2
+FIM 3
+```
 
-## Para saber mais
+Cada linha permite seguir o estado depois de um evento. Este exemplo tem uma condição de fim por ticks, diferente da condição "sem vidas" do diagrama; o mecanismo de transição é o mesmo. Uma função pura sobre eventos conhecidos permite verificar fronteiras, como o primeiro tick após regressar da pausa.
 
-- [Documentação do Minix 3](https://www.minix3.org/docs/): guias oficiais do sistema onde o projeto corre.
+## Filas, ordem e ritmo
+
+Se chegam vários bytes ou eventos antes de os tratares, usa uma fila, com limite e política de overflow. Uma variável com o último evento não guarda toda a sequência. Quando os eventos são movimentos absolutos, por vezes podes substituir uma posição antiga pela mais recente; quando são cliques ou deltas, essa substituição muda o comportamento.
+
+A ordem também muda resultados. Se `PAUSE` e `TICK` estão prontos na mesma iteração, decide qual aplicar primeiro. Num jogo com tempo limite, essa escolha determina se o último tick conta. Conserva a mesma regra em testes, execução local e protocolo remoto.
+
+Atualiza a lógica quando recebe entradas. Desenha a um ritmo escolhido, por exemplo a cada dois ticks de um timer de 60 Hz. Isso evita redesenhar o ecrã inteiro por cada byte de um scancode. O estado final de várias entradas pode ser apresentado num só frame sem perder as entradas.
+
+Carrega recursos gráficos antes do ciclo e liberta-os depois. Não faças parsing de XPM ou alocações grandes em cada tick. Otimiza depois de medir: copiar linhas contíguas de um pixmap pode custar menos do que chamar uma função de desenho por píxel, mas deve preservar transparência, clipping e pitch.
+
+## Inicialização e falha parcial
+
+A inicialização precisa de um caminho inverso. Se obténs timer, teclado, pixmaps e vídeo por esta ordem, uma falha no vídeo obriga a libertar os pixmaps e as subscrições já obtidas. Uma flag de recurso adquirido, ou uma função de limpeza que tolere recursos ausentes, permite tratar todos os caminhos.
+
+Não chames a aplicação "pronta" antes de todos os recursos obrigatórios estarem válidos. Mantém erros distinguíveis: alocação falhada, configuração VBE recusada, subscrição falhada e timeout do dispositivo pedem verificações diferentes.
+
+Na saída normal, deixa de gerar novos eventos, repõe configurações alteradas, remove subscrições, liberta pixmaps e buffers e restaura o modo de texto. A ordem deve respeitar as dependências, para uma rotina não usar um recurso já destruído.
+
+## Debugging como experiência
+
+Começa por uma observação reproduzível. "O cursor salta para a esquerda ao mover depressa para a direita" sugere uma hipótese concreta: um delta positivo acima de 127 foi interpretado como `int8_t`.
+
+Prevê antes de alterar: para um pacote `08 C8 00`, o delta correto é +200. O erro produziria -56. Simula exatamente esse pacote no descodificador. Se obténs -56, o problema está antes da atualização do cursor ou do desenho. Se obténs +200, verifica a soma, o clipping e a representação da posição.
+
+O método é sempre o mesmo:
+
+1. Reduz a entrada à menor sequência que ainda falha.
+2. Formula uma hipótese sobre uma operação ou estado.
+3. Escolhe a observação que distinguiria essa hipótese das alternativas.
+4. Altera uma causa, volta a correr a mesma sequência e compara.
+
+Para uma interrupção ausente, observa configuração do dispositivo, subscrição, máscara recebida e leitura do buffer. Para imagem errada, verifica modo, pitch, offset e formato de cor. Para ligação errada, começa com bytes conhecidos antes de culpar o parser de mensagens.
+
+Regista valores no limite entre módulos, evitando imprimir em cada ciclo de espera sem necessidade. O logging altera tempo e carga. Se um erro desaparece quando acrescentas prints, isso é uma observação sobre temporização, não prova de correção.
+
+Depois da correção, conserva um caso que reproduza o comportamento, como uma sequência de bytes ou eventos, e verifica também o caso vizinho que poderia quebrar. O objetivo é explicar o erro e a correção por resultados observáveis.

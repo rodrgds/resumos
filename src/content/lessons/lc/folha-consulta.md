@@ -1,47 +1,113 @@
 ---
 title: Cheat sheet de LC
-description: Portas, timer, interrupções, teclado, rato e vídeo dos laboratórios de LCom em consulta breve.
+description: Máscaras, sequências, fórmulas e erros de C e dos periféricos do PC.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: Apontamentos de Laboratório de Computadores, SofiaViP
-      url: https://drive.google.com/file/d/18RQnr_bxQAURJRqwh5Pj13q6DUmQY9AX/view
-  coverage: Síntese dos apontamentos SofiaViP, páginas 2 a 9, centradas nos laboratórios e no projeto.
-  gaps:
-    - A fonte não identifica uma edição atual da cadeira; portas, funções Minix e requisitos de laboratório devem ser confirmados no enunciado da tua ocorrência.
-    - Os apontamentos não cobrem RTC, porta série nem uma especificação completa do projeto; esta folha não acrescenta esses tópicos como se viessem da fonte.
+order: 1
 ---
 
-Os nomes das rotinas e os endereços abaixo pertencem ao ambiente Minix/PC dos laboratórios. Confirma-os no teu enunciado e nos cabeçalhos instalados.
+## C e memória
 
-## Falar com dispositivos
+| Operação ou condição            | Consulta rápida                                           |
+| ------------------------------- | --------------------------------------------------------- |
+| Byte de um dispositivo          | `uint8_t`; `sys_inb` recebe armazenamento de 32 bits      |
+| Complementar só oito bits       | `(uint8_t)~byte`, antes de deslocar                       |
+| Alterar o objeto do chamador    | Receber o seu endereço e desreferenciar                   |
+| Alterar o apontador do chamador | Devolver novo apontador ou receber `T **`                 |
+| Duração automática              | Termina com o bloco; não devolver endereço local          |
+| Memória dinâmica                | Conferir `malloc`, inicializar, libertar uma vez          |
+| Array recebido por parâmetro    | Passar também o comprimento                               |
+| Biblioteca estática             | `ar rcs libname.a a.o`; ligar objetos antes da biblioteca |
+| Apontador para função           | `int (*f)(int)`, assinatura compatível                    |
 
-- O **driver** isola o acesso ao periférico e expõe operações ao resto do sistema. `sys_inb(port, &value)` lê uma porta de E/S; `sys_outb(port, value)` escreve nela. Portas de dados, estado e controlo têm papéis diferentes: consulta o **estado** antes de ler ou escrever dados quando o protocolo o exige. [Ver registos e portas](/cadeiras/lc/falar-com-hardware/#registos-e-portas).
-- Uma máscara lê ou altera bits escolhidos sem apagar os restantes: testar `value & MASK`, ligar `value | MASK`, desligar `value & ~MASK`. Para um bit $n$, usa $1\ll n$ com tipo e largura adequados. Não confundas operadores bit a bit `&`, `|`, `~` com os lógicos `&&`, `||`, `!`. [Ver máscaras](/cadeiras/lc/falar-com-hardware/#máscaras-de-bits).
-- **Polling** repete a leitura do estado até o dispositivo estar pronto. É simples, mas ocupa CPU enquanto espera. **Interrupção** deixa o processo bloquear e acorda-o após uma notificação; usa a política exigida no laboratório, sem fazer um ciclo de espera desnecessário. [Ver polling](/cadeiras/lc/falar-com-hardware/#polling-o-ciclo-de-espera) e [interrupções](/cadeiras/lc/interrupcoes/#quem-avisa-quem).
+[Tipos e compilação](/cadeiras/lc/c-estruturado/), [memória e funções](/cadeiras/lc/memoria-funcoes/).
 
-## Timer 8254 e interrupções
+## Registos e interrupções
 
-| Campo               | Regra de consulta                                                                                                                       |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Frequência          | Para o timer 0, $f_{\text{out}}=f_{\text{in}}/d$, com divisor $d$ válido para o modo e hardware configurados.                           |
-| Palavra de controlo | Seleciona timer, modo de acesso, modo de operação e contagem binária/BCD. Ao mudar só uma opção, preserva os outros campos.             |
-| Divisor             | No acesso LSB/MSB, escreve primeiro o byte menos significativo e depois o mais significativo; valida os limites aceites pela interface. |
-| Notificação         | Identifica a linha através da máscara devolvida pela subscrição, trata apenas os bits esperados e desliga a subscrição ao sair.         |
+| Intenção                | Expressão                                  |
+| ----------------------- | ------------------------------------------ |
+| Algum bit de `m`        | `(r & m) != 0`                             |
+| Todos os bits de `m`    | `(r & m) == m`                             |
+| Ligar, limpar, inverter | `r \| m`, `r & ~m`, `r ^ m`                |
+| Substituir campo        | `(r & ~mask) \| ((value << shift) & mask)` |
+| Máscara da notificação  | `1u << bit_pedido`, não `1u << IRQ`        |
+| Vários bits pendentes   | `if` independentes, sem `else if`          |
 
-Os apontamentos usam o modo 3 para onda quadrada e o timer 0 como fonte de interrupções periódicas. Calcula o divisor a partir da frequência pedida e dos valores **efetivos** do laboratório; não troques o valor do divisor com a frequência de saída. [Ver relógio e divisor](/cadeiras/lc/temporizador/#o-relógio-de-entrada-e-o-divisor).
+Portas de timer, i8042 e UART pertencem ao espaço de I/O. Framebuffer é memória mapeada. No PIC, máscara a 1 bloqueia IRQ; na notificação Minix, bit a 1 indica pedido. Guardar bit pedido antes de `sys_irqsetpolicy`; usar hook devolvido nas restantes kernel calls. Receber, conferir notificação, origem HARDWARE e máscara. Limpar recursos também após falha parcial.
 
-No Minix da fonte, `sys_irqsetpolicy(irq, policy, &hook_id)` subscreve a IRQ. O `hook_id` participa na construção da máscara `BIT(hook_id)` e pode ser atualizado; conserva o valor correto para reconhecer notificações e remover a política. Interrupções do timer 0 podem ter prioridade sobre as do teclado no PC descrito. [Ver linhas](/cadeiras/lc/interrupcoes/#as-linhas-de-cada-periférico) e [subscrição](/cadeiras/lc/interrupcoes/#subscrever-uma-interrupção).
+[Registos](/cadeiras/lc/falar-com-hardware/#testar-e-alterar-campos), [hooks](/cadeiras/lc/interrupcoes/#hook-e-máscara-de-notificação).
+
+## Timer i8254
+
+- Portas 0, 1, 2: `40`, `41`, `42` hex. Controlo: `43` hex. Timer 0 usa IRQ0.
+- Palavra normal: seleção nos bits 7:6, acesso em 5:4, modo em 3:1 e BCD em 0.
+- LSB/MSB: acesso `11`. Escrever LSB e depois MSB na mesma porta do contador.
+- Modo 2 dá impulso periódico; modo 3 dá onda aproximadamente quadrada. Divisor mínimo 2 nesses modos; binário zero codifica 65536.
+- $f=f_{in}/N$, $t=k/f$. Conferir divisor antes de converter para 16 bits.
+- Estado por read-back do timer 0: `E2` hex em controlo, depois ler `40` hex. COUNT e STATUS ativos a 0.
+- Extrair modo: `(st >> 1) & 7`; normalizar 6 para 2 e 7 para 3. Preservar `st & 0x0F` ao mudar só acesso e frequência.
+- Subtração sem sinal mede intervalos através de uma passagem por zero, se o intervalo tiver menos de uma volta completa.
+
+[Configuração](/cadeiras/lc/temporizador/#palavra-de-controlo), [divisor](/cadeiras/lc/temporizador/#escolher-a-frequência), [intervalos](/cadeiras/lc/temporizador/#ticks-intervalos-e-overflow).
 
 ## Teclado e rato
 
-- O controlador do teclado produz **scancodes**: no conjunto usado nos apontamentos, `0x01` é um _make code_ de um byte e `0x81` o respetivo _break code_. Não assumas que todos os códigos têm um byte; acompanha os prefixos e só considera o código completo no fim da sequência. [Ver make e break](/cadeiras/lc/teclado/#make-e-break).
-- Antes de ler o buffer de saída, verifica o registo de estado, incluindo disponibilidade e bits de erro. A mesma porta de dados pode transportar bytes do teclado e do rato, pelo que o bit de origem importa. O _hook_ de interrupção e a máscara têm de corresponder à IRQ subscrita. [Ver leitura](/cadeiras/lc/teclado/#ler-com-polling-ou-interrupção).
-- No rato PS/2 do laboratório, monta o pacote de três bytes **pela ordem recebida**. O primeiro contém os bits dos botões, sinal e sincronização; os restantes dão $\Delta x$ e $\Delta y$. Converte os deslocamentos com extensão de sinal e rejeita/recomeça se perderes a sincronização. Não contes um byte do teclado como parte do pacote do rato. [Ver pacote](/cadeiras/lc/rato/#anatomia-do-pacote) e [movimento](/cadeiras/lc/rato/#exemplo-reconstruir-um-movimento).
+| Campo ou operação             | Regra                                                                |
+| ----------------------------- | -------------------------------------------------------------------- |
+| i8042 estado                  | Ler `64` hex; OBF bit 0, IBF bit 1, AUX bit 5, erros 7:6             |
+| Ler dados                     | OBF a 1, ler `60` hex e descartar se inválido                        |
+| Escrever comando ou argumento | Esperar IBF a 0 antes de cada escrita                                |
+| Set 1                         | Esc make `01`, break `81`; E0 é prefixo, não evento                  |
+| Command byte KBC              | Ler com comando `20`; escrever com comando `60`; valor em porta `60` |
+| Rato                          | IRQ12, três bytes por pacote, uma leitura por notificação            |
+| Primeiro byte do rato         | Bit 3 a 1; não testar esse bit nos restantes bytes                   |
+| Deltas PS/2                   | Byte baixo menos 256 se o sinal do primeiro byte for 1               |
+| Coordenadas de ecrã           | `x += dx`, `y -= dy`; validar com sinal e limitar                    |
+| Comando de rato               | `D4` em porta `64`, byte em `60`, ACK `FA`                           |
+| Respostas                     | `FE` reenvio, `FC` erro; limitar tentativas                          |
+| Reporting                     | `F4` ativa, `F5` desativa; não misturar respostas e pacotes          |
 
-## Vídeo e integração
+[Teclado](/cadeiras/lc/teclado/#make-break-e-prefixos), [pacotes](/cadeiras/lc/rato/#reconstruir-nove-bits), [comandos](/cadeiras/lc/rato/#enviar-um-comando).
 
-- Em **modo indexado**, o valor de um píxel é índice de uma paleta; em **modo direto**, codifica componentes de cor no próprio valor. O número de bytes por píxel depende do modo, não é sempre um nem sempre quatro. Consulta resolução, profundidade e _pitch_ antes de calcular endereços. [Ver framebuffer](/cadeiras/lc/video/#modo-gráfico-e-framebuffer).
-- Para desenhar uma linha horizontal ou retângulo, valida os limites antes de escrever; pixels consecutivos numa linha ocupam posições consecutivas, mas a linha seguinte começa a `pitch` bytes. Num modo com _double buffering_, desenha no buffer secundário e copia para o visível no momento adequado, reduzindo a cintilação. [Ver desenho](/cadeiras/lc/video/#exemplo-desenhar-um-retângulo) e [double buffering](/cadeiras/lc/video/#double-buffering-contra-a-cintilação).
-- Integra teclado, timer, rato e vídeo num **ciclo de eventos**: cada notificação atualiza o estado, e o desenho apresenta esse estado. Mantém explícita a política de saída e liberta as subscrições e buffers em todos os caminhos. A estimativa de esforço para o projeto que aparece nos apontamentos não é uma regra de avaliação atual. [Ver programação por eventos](/cadeiras/lc/projeto/#programação-por-eventos).
+## Vídeo
+
+- VBE `INT 10h`: AX `4F00` controlador, `4F01` modo, `4F02` seleção. BX bit 14 pede framebuffer linear. Sucesso VBE: AX `004F`.
+- Mapear VRAM física para o espaço virtual; não escrever num cast de `PhysBasePtr`.
+- $B=\lceil bpp/8\rceil$, offset $=y\cdot pitch+x\cdot B$, tamanho de imagem $=pitch\cdot height$.
+- Indexed guarda índice da paleta. Direct color usa tamanhos e posições dos campos do modo.
+- 24 bpp ocupa três bytes; escrever quatro pisa o píxel seguinte.
+- XPM é texto; `xpm_load` produz pixmap. Carregar uma vez, validar falha e definir propriedade.
+- Double buffering por cópia reduz desenho intermédio; sincronização vertical continua necessária para evitar tearing. Page flipping muda a imagem apresentada na VRAM.
+
+[Endereços](/cadeiras/lc/video/#calcular-o-endereço-de-um-píxel), [cores](/cadeiras/lc/video/#índices-e-cores-diretas), [buffers](/cadeiras/lc/video/#double-buffering-e-tearing).
+
+## RTC
+
+- Selecionar registo em `70` hex; ler ou escrever dados em `71` hex. IRQ8.
+- BCD: $10(v\gg4)+(v\mathbin{\&}15)$, só com algarismos válidos. B.DM a 1 significa binário.
+- B bit 1 a 1 significa 24 h. Em 12 h, separar PM antes de converter.
+- A.UIP indica atualização. Garantir leitura coerente, não apenas converter bytes.
+- B bits PIE/AIE/UIE 6/5/4; C bits PF/AF/UF 6/5/4. Ler C limpa flags, testar causas independentemente.
+- Alarme com dois bits superiores a 1 num campo aceita qualquer valor desse campo.
+
+[Formatos](/cadeiras/lc/relogio-tempo-real/#bcd-e-formato-das-horas), [coerência](/cadeiras/lc/relogio-tempo-real/#ler-uma-hora-coerente).
+
+## UART e protocolos
+
+- COM1: base `3F8` hex, IRQ4. COM2: base `2F8` hex, IRQ3.
+- Offsets 0 dados, 1 IER, 2 IIR/FCR, 3 LCR, 5 LSR.
+- LCR.DLAB a 1 transforma offsets 0 e 1 em DLL/DLM. Limpar antes de dados ou IER.
+- Taxa clássica $=115200/D$. 8N1: LCR `03` hex e dez bits por byte útil.
+- LSR bit 0 dado disponível, bit 5 THR vazio, bit 6 transmissão toda terminada.
+- IIR bit 0 a 1 significa nenhuma causa pendente. Ler e tratar todas as causas relevantes.
+- FIFO não substitui fila de software. Definir capacidade e política de perda.
+- Mensagens precisam de framing, comprimento, tipos e integridade. Delimitadores nos dados exigem escaping.
+- Reenvio após timeout precisa de sequência e tratamento de duplicados para não repetir efeitos.
+
+[UART](/cadeiras/lc/relogio-serie/#registos-e-endereços), [mensagens](/cadeiras/lc/protocolos/#um-formato-com-escaping), [duplicados](/cadeiras/lc/protocolos/#ack-timeout-e-duplicados).
+
+## Aplicação e diagnóstico
+
+Driver recolhe dados; parser produz eventos; aplicação muda estado; desenho apresenta um frame. Processar todos os eventos antes de voltar a bloquear. Definir ordem para eventos simultâneos, recursos adquiridos e limpeza inversa. Para depurar, escolher uma entrada mínima, prever o resultado e testar uma hipótese de cada vez.
+
+[Máquinas de estados](/cadeiras/lc/projeto/#máquinas-de-estados), [debugging](/cadeiras/lc/projeto/#debugging-como-experiência).

@@ -1,30 +1,56 @@
 ---
 title: Laboratório de Computadores
-description: Programação de baixo nível no Minix, dos periféricos do PC às interrupções e ao projeto final.
+description: C, periféricos do PC, interrupções Minix e aplicações por eventos, com exemplos resolvidos e prática.
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Ficha de LC, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560103
+    - title: Materiais docentes de LC, Moodle 2025/26
+      url: https://moodle2526.up.pt/course/view.php?id=4355
+  gaps:
+    - A ficha SIGARRA de 2026/27 ainda não contém programa e avaliação.
+    - O sítio externo de guiões laboratoriais não estava acessível na revisão.
 ---
 
-LC é a cadeira onde deixas de programar contra abstrações simpáticas e passas a falar diretamente com o hardware: lês registos, mascaras bits, atendes interrupções e desenhas píxeis num framebuffer que mais ninguém gere por ti. O ambiente é o Minix 3 numa máquina virtual, a linguagem é C e os periféricos são os clássicos do PC: temporizador, teclado, rato, placa de vídeo, relógio de tempo real e porta série. Vens de [Programação](/cadeiras/p/cpp-fundamentos/) com C++ na mão e de [Arquitetura](/cadeiras/ac/entrada-saida/) com a teoria de polling e interrupções; aqui vais implementar os dois do zero.
+Em LC, um programa em C configura dispositivos, lê os seus registos e reage a eventos. O ambiente dos laboratórios é Minix numa máquina virtual VirtualBox. O percurso liga a representação de bytes aos periféricos do PC e à organização de uma aplicação que usa vários deles.
 
-## Como está organizado
+## Percurso de estudo
 
-Começa por [C estruturado e ferramentas](c-estruturado/), que troca as classes de C++ por módulos, Makefiles e Doxygen. Depois, [Falar com o hardware](falar-com-hardware/) mostra o mapeamento em memória, os registos e o polling com máscaras de bits, e [Interrupções](interrupcoes/) troca o varrimento pela subscrição de IRQs com rotinas de atendimento.
+Começa por [C estruturado e ferramentas](c-estruturado/) e [Memória, funções e objetos em C](memoria-funcoes/). Precisas de dominar apontadores, duração dos objetos, conversões e compilação separada antes de usar as APIs dos dispositivos.
 
-A segunda metade é um periférico por página, sempre com o mesmo método: que registos existem, que bits interessam, que sequência os programa. Pela ordem habitual dos trabalhos: [Temporizador](temporizador/), [Teclado](teclado/), [Rato](rato/), [Placa de vídeo](video/) e [Relógio e porta série](relogio-serie/). Fecha com [Projeto: eventos e debugging](projeto/), que junta vários periféricos numa máquina de estados e ensina a caçar bugs como um experimentalista.
+[Falar com o hardware](falar-com-hardware/) distingue portas de I/O de memória mapeada e ensina máscaras e polling. [Interrupções](interrupcoes/) explica PIC, IRQ, vetor e notificação Minix, sem os confundir.
 
-## Como estudar
+Segue os periféricos pela ordem [Temporizador](temporizador/), [Teclado](teclado/), [Rato](rato/) e [Placa de vídeo](video/). Em cada um, acompanha uma configuração e uma interpretação de dados até ao resultado. Depois estuda [Relógio de tempo real](relogio-tempo-real/), [Porta série e UART](relogio-serie/) e [Protocolos de comunicação](protocolos/).
 
-Lê cada página com o Minix aberto e experimenta cada sequência na máquina virtual. Em LC, perceber o diagrama do registo com os olhos não chega: escreve a máscara, lê o registo, confirma o bit e só depois avança. Quando algo não funcionar (e vai acontecer muitas vezes), não mudes três coisas de cada vez: formula uma hipótese, prevê o que devias observar e testa só isso. A última página dá-te o método completo.
+[Eventos, estado e debugging](projeto/) reúne os componentes numa aplicação. Os exercícios no fim das páginas são originais e treinam contas, registos, sequências de bytes, estados e diagnóstico. A [Cheat sheet](folha-consulta/) é uma folha de consulta para rever depois de estudar as explicações.
 
-## Avaliação
+## Como praticar
 
-Na edição de 2025/26, a avaliação é distribuída e não há exame final: a nota é $0{,}4 \times T + 0{,}6 \times \text{Proj}$, com mínimo de 8,0 valores tanto no teste teórico como no projeto. O projeto faz-se em grupos de 4, com classificações individuais possíveis, e a frequência exige não ultrapassar 25 por cento de faltas. Confirma sempre os pesos e as regras da edição corrente na ficha da unidade curricular no SIGARRA e na página da disciplina no Moodle.
+Antes de executar uma sequência de I/O, escreve a porta, a condição de estado e o efeito esperado de cada passo. Num byte de configuração, identifica os campos que podem mudar e os que devem ficar intactos. Num parser, segue o estado depois de cada byte, incluindo erros e entradas incompletas.
 
-## Fontes e âmbito
+Os exemplos de C portátil podem correr fora do Minix. As funções que usam LCF, kernel calls ou BIOS precisam da imagem e das permissões do laboratório; a página indica os seus pressupostos e efeito esperado. As simulações modelam apenas as relações descritas, não executam I/O real.
 
-Estas páginas seguem o âmbito da unidade curricular de Laboratório de Computadores (L.EIC018) do 2.º ano, 2.º semestre da LEIC, ocorrência de 2025/26: periféricos e modos de funcionamento, mapeamento em memória, polling e interrupções, controladores de interrupções e rotinas, programação em C e estruturação de código, memória de processos e chamadas de funções, programação por eventos e máquinas de estados, bibliotecas e ligação estática, debugging sistemático e ferramentas (cc, make, ar, diff, patch, Git, doxygen). O trabalho faz-se em Minix 3 sobre VirtualBox, com o compilador CLANG e documentação em Doxygen.
+## Avaliação de 2025/26
 
-Material oficial da FEUP:
+A ficha de 2025/26 define avaliação distribuída sem exame final, com teste teórico de 40% e projeto de 60%:
 
-- Ficha da unidade curricular de Laboratório de Computadores, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/UCURR_GERAL.FICHA_UC_VIEW?pv_ocorrencia_id=560103).
+$$NF=0{,}4T+0{,}6Proj.$$
 
-O livro de referência da cadeira é _Making Embedded Systems_, de Elecia White. Os capítulos 1, 2, 35 e 36 de _Operating Systems: Three Easy Pieces_, de Arpaci-Dusseau, são leitura complementar indicada na ficha.
+Exige pelo menos 8,0 valores no teste. O projeto realiza-se em grupos de quatro e pode ter classificações individuais diferentes. A frequência exige não exceder 25% de faltas às aulas previstas. A melhoria da componente teórica pode fazer-se no teste de recurso.
+
+A ficha permite usar notas de projeto superiores a 10 obtidas em 2023/24 ou 2024/25, mediante sinalização ao regente no formulário próprio, com dispensa das aulas práticas nesses casos. Não permite reutilizar notas de testes anteriores. Estas condições pertencem a essa edição. Confirma as regras que se aplicam à tua inscrição na [ficha corrente de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586996) e no Moodle.
+
+## Materiais e bibliografia
+
+A base de estudo é o [Moodle de LC de 2025/26](https://moodle2526.up.pt/course/view.php?id=4355), com materiais docentes sobre C, Minix, timer, interrupções, teclado, rato, eventos, vídeo, XPM, sprites, RTC, UART e protocolos. Inclui o guião de introdução a C e a aula de construção de aplicações. Várias apresentações reutilizadas têm datas de 2024 ou 2025 e exemplos de laboratórios de anos anteriores; esses exemplos explicam mecanismos, não fixam entregas nem regras da edição atual.
+
+Os vídeos de preparação e _Weekly tips_ estão no mesmo Moodle, junto dos materiais a que se referem. Usa-os para acompanhar operações e ferramentas do laboratório, conservando os PDFs e o guião da tua edição como referência para parâmetros e requisitos. O acesso pode exigir autenticação da U.Porto.
+
+A [ficha completa de 2025/26 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560103) indica:
+
+- Elecia White, _Making Embedded Systems: Design Patterns for Great Software_, O'Reilly, 2011. Bibliografia obrigatória.
+- Derek Molloy, _Exploring Raspberry Pi: Interfacing to the Real World with Embedded Linux_, Wiley, 2016. Bibliografia complementar.
+- Remzi e Andrea Arpaci-Dusseau, [_Operating Systems: Three Easy Pieces_](https://pages.cs.wisc.edu/~remzi/OSTEP/), capítulos 1, 2, 35 e 36. Bibliografia complementar.
+
+Para aprofundar a interface de cada dispositivo, consulta as especificações i8254, i8259, VBE e UART indicadas nos materiais docentes. A [página pública de LC](https://web.fe.up.pt/~pfs/aulas/lcom2223/index.html) conserva materiais de uma edição anterior.

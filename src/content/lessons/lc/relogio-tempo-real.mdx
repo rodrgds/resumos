@@ -1,0 +1,81 @@
+---
+title: Relógio de tempo real
+description: Registos RTC, formatos BCD, leituras coerentes e causas de interrupção.
+section: conteudo
+order: 9
+practices:
+  - lc/praticar-rtc
+---
+
+O RTC conserva data e hora, incluindo quando o computador está desligado, através da sua alimentação de reserva. Não é o mesmo que o timer: o timer mede intervalos de execução; o RTC fornece hora do dia, alarmes e eventos periódicos.
+
+## Endereço e dados
+
+O RTC tem registos internos. Para aceder a um deles, seleciona o índice pela porta `0x70` e transfere o valor pela porta `0x71`. A porta de endereço também tem um bit relacionado com o controlo de NMI no PC; conserva a política exigida pelo ambiente em vez de o alterar sem intenção.
+
+| Índice                 | Conteúdo                                  |
+| ---------------------- | ----------------------------------------- |
+| `0x00`, `0x02`, `0x04` | Segundos, minutos e horas                 |
+| `0x01`, `0x03`, `0x05` | Campos do alarme                          |
+| `0x07`, `0x08`, `0x09` | Dia do mês, mês e ano                     |
+| `0x0A`                 | Registo A, atualização e taxa periódica   |
+| `0x0B`                 | Registo B, formatos e ativação de eventos |
+| `0x0C`                 | Registo C, causas de eventos              |
+| `0x0D`                 | Registo D, validade da memória e hora     |
+
+Escrever `0x0A` em `0x70` e ler `0x71` consulta A. Uma leitura de `0x71` sem selecionar antes o índice pode consultar o registo que outra operação deixou selecionado. Seleção e transferência formam uma operação lógica que deve ser protegida de acessos concorrentes segundo o ambiente.
+
+## BCD e formato das horas
+
+No registo B, DM, bit 2, seleciona binário quando vale 1 e BCD quando vale 0. O bit 1 seleciona 24 horas quando vale 1, ou 12 horas quando vale 0.
+
+Em **BCD**, cada nibble representa um algarismo decimal. O valor `0x59` representa 59, não 89. A conversão é:
+
+$$decimal=10\cdot(value\gg4)+(value\mathbin{\&}\texttt{0x0F}).$$
+
+Esta fórmula assume dois algarismos BCD válidos. Um nibble acima de 9 é inválido. Em binário, `0x3B` já representa 59 e não deve ser convertido por BCD.
+
+No formato de 12 horas, o bit 7 do campo de horas marca PM. Retira-o antes de converter os algarismos. Para obter horas de 0 a 23, transforma 12 AM em 0 e soma 12 às horas PM depois de transformar 12 em 0. Assim, 12 AM dá 0, 12 PM dá 12 e 9 PM dá 21.
+
+Não mudes o formato do RTC apenas para simplificar a leitura. Essa alteração afeta outros utilizadores do dispositivo e exigiria transformar os valores de tempo e alarme existentes.
+
+## Ler uma hora coerente
+
+Os registos atualizam-se de forma assíncrona. Se leres segundos de `07:32:59` e minutos depois da passagem para `07:33:00`, podes construir `07:33:59`, que nunca foi a hora real da leitura.
+
+O registo A tem UIP, bit 7. O RTC assinala a atualização antes de a começar e limpa UIP quando termina. Esperar UIP a 0 e depois ler os campos pressupõe que terminas antes da próxima atualização e que não és suspenso demasiado tempo durante a sequência.
+
+Uma estratégia de polling reforça a coerência com repetição:
+
+1. Espera UIP a 0, com um limite de espera.
+2. Lê todos os campos e a configuração necessária para os interpretar.
+3. Repete a leitura a partir de UIP a 0.
+4. Aceita apenas duas fotografias consecutivas iguais e obtidas sem atualização assinalada; caso contrário, tenta novamente.
+
+Esta estratégia depende de acessos curtos, de não haver outro programa a reconfigurar o relógio e de uma política de tentativas. Não dá ao programa controlo sobre os registos internos. Outra opção é usar a interrupção de fim de atualização e ler dentro do intervalo disponível antes da atualização seguinte.
+
+O bit SET de B inibe atualizações para permitir **escrever** os campos de data e hora. Usá-lo descuidadamente para ler altera o funcionamento do dispositivo. Desativar interrupções num núcleo também não é uma solução universal para acessos concorrentes em vários núcleos.
+
+## Três causas, uma IRQ
+
+O RTC pode produzir eventos periódicos, alarmes e fim de atualização. Todos usam IRQ8. B controla quais geram interrupções:
+
+| Bit de B | Ativa              |
+| -------- | ------------------ |
+| 6, PIE   | Eventos periódicos |
+| 5, AIE   | Alarmes            |
+| 4, UIE   | Fim de atualização |
+
+A contém o seletor de taxa periódica. Para os valores usuais do seletor RS entre 3 e 15, a frequência é $32768/2^{RS-1}$ Hz. Por exemplo, RS = 6 dá 1024 Hz e RS = 15 dá 2 Hz. Preserva os bits superiores do registo ao alterar o seletor e não extrapoles a fórmula para os códigos especiais 0, 1 e 2.
+
+O registo C assinala PF, AF e UF nos bits 6, 5 e 4. IRQF no bit 7 indica o pedido. **Ler C limpa as causas assinaladas** e permite que a linha deixe de manter esse pedido. Uma rotina que nunca lê C pode atender o primeiro evento e deixar de receber os seguintes.
+
+Guarda o byte lido e testa cada causa com um `if` independente. Com C = `0xD0`, temos IRQF, PF e UF ativos. Um `else if` trataria só um dos dois eventos. Os flags podem registar eventos mesmo quando a respetiva geração de interrupção está desativada; interpreta-os com a configuração aplicável.
+
+## Alarmes e validade
+
+Os três campos de alarme comparam segundos, minutos e horas. Um campo com os dois bits superiores a 1 representa "qualquer valor". Com hora e minuto indiferentes e segundos 0, o alarme coincide no início de cada minuto. Com os três campos indiferentes, coincide a cada segundo, se a geração de alarme estiver ativa.
+
+O registo D tem VRT no bit 7. Se estiver a 0, a validade da memória e da hora é duvidosa, por exemplo após falha da alimentação de reserva. Converter bytes para uma data bem formada não prova que o relógio esteja certo.
+
+Para alterar um bit de B, lê o valor anterior, modifica apenas a máscara pretendida e repõe-o quando terminares. Limpar PIE não deve mudar DM nem o formato de 12/24 horas. A limpeza final tem duas partes: desativar a causa no RTC e remover a subscrição no Minix.

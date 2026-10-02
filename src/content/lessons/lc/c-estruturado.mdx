@@ -1,173 +1,198 @@
 ---
 title: C estruturado e ferramentas
-description: De C++ para C, módulos com cabeçalhos, Makefile, Git e Doxygen no Minix.
+description: Tipos, conversões, módulos, compilação separada e bibliotecas estáticas em C.
 section: conteudo
 order: 1
+practices:
+  - lc/praticar-c
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 import Typst from '../../../components/Typst.astro';
 import modulo from '../../lc/modulo-hc.typ?raw';
-import stackframe from '../../lc/stack-frame.typ?raw';
 
-Em LC programas em C, não em C++. Desaparecem as classes, as referências, o `new` e o `iostream`. Em troca ganhas controlo direto sobre a memória e um conjunto pequeno de ferramentas que vais usar em todos os trabalhos: o compilador `cc` (CLANG), o `make`, o `ar` para bibliotecas, o Git e o Doxygen para documentar. Esta página faz a tradução e monta o posto de trabalho.
+Um driver precisa de representar bytes, chamar funções do sistema e guardar estado entre eventos. Em LC fazemos isso em C. O primeiro passo é distinguir o que a linguagem garante do que depende do compilador ou do ambiente Minix.
 
 ## De C++ para C
 
-As diferenças que vais sentir na primeira semana:
+C tem funções, estruturas, apontadores e controlo de fluxo. Não tem classes, referências de C++, sobrecarga de funções nem `new` e `delete`. Uma `struct` guarda dados; funções recebem o seu endereço para os consultar ou alterar. Para alocar memória usamos `malloc` e para a devolver usamos `free`.
 
-- Sem classes: dados e funções vivem separados. Onde tinhas um objeto com métodos, tens agora uma `struct` mais funções que a recebem por apontador.
-- Sem `new` e `delete`: a alocação dinâmica faz-se com `malloc` e `free` da `stdlib.h`, e a memória continua a ser problema teu.
-- Sem `iostream`: entrada e saída com `printf` e `scanf` da `stdio.h`, com formatos explícitos (`%d`, `%x`, `%c`).
-- Sem referências e sem sobrecarga: passagem por valor ou por apontador, e cada função tem um nome único.
-
-O resto do C++ que conheces (apontadores, `struct`, controlo de fluxo, aritmética de bits) transfere-se sem mudanças. Se os apontadores ainda tremem, revê-os antes de tocares em registos de hardware.
-
-Experimenta a alocação dinâmica, que é onde quase todos os erros de memória começam. Este programa aloca um vetor de 5 inteiros, soma-o e liberta-o; a saída é `soma=150`.
-
-<CodePlayground
-  language="c"
-  title="Alocar, somar e libertar"
-  code={
-    '#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n    int n = 5;\n    int *v = malloc(n * sizeof(int));\n    if (v == NULL) return 1;\n    for (int i = 0; i < n; i++) v[i] = (i + 1) * 10;\n    int soma = 0;\n    for (int i = 0; i < n; i++) soma += v[i];\n    printf("soma=%d\\n", soma);\n    free(v);\n    return 0;\n}'
-  }
-/>
-
-Repara nas três obrigações que o C++ escondia: verificar se o `malloc` devolveu `NULL`, libertar com `free` no fim e nunca tocar no vetor depois de libertado. Falhar a terceira corrompe memória silenciosamente, sem erro imediato que te avise.
-
-## Módulos com cabeçalhos
-
-Um módulo é um par de ficheiros: o cabeçalho `.h` declara o que o módulo oferece, o `.c` implementa. Quem usa o módulo inclui só o `.h`:
+C e C++ partilham muita sintaxe, mas um programa aceite como C++ não é necessariamente C válido. Por exemplo, em C escreve `struct position` se não tiveres criado um `typedef`. Uma declaração `int f(void)` diz que `f` não recebe argumentos. Usa protótipos completos, para o compilador poder conferir as chamadas.
 
 ```c
-/* timer.h */
-#ifndef TIMER_H
-#define TIMER_H
+#include <stdbool.h>
+#include <stdint.h>
 
-int timer_set_frequency(unsigned long freq);
-int timer_subscribe_int(void);
+typedef struct {
+  int16_t x;
+  int16_t y;
+} position;
 
-#endif
+bool position_equal(position a, position b) {
+  return a.x == b.x && a.y == b.y;
+}
 ```
 
-A guarda `#ifndef` impede inclusões duplas: sem ela, dois `#include` do mesmo cabeçalho duplicam as declarações e a compilação parte. Cada `.c` inclui o seu `.h` primeiro e depois as bibliotecas de que precisa. O diagrama resume as dependências: o `.c` implementa o que o `.h` declara, e o `main.c` só vê o `.h`.
+Esta função recebe cópias das posições. Alterar `a.x` dentro dela não altera a posição do chamador. Para alterar um objeto do chamador, a função precisa de receber um apontador para esse objeto.
+
+## Tipos e saída formatada
+
+O tamanho de `int` depende da implementação. Quando o tamanho faz parte do contrato de um dispositivo, usa os tipos de `<stdint.h>`: `uint8_t` para um byte sem sinal, `uint16_t` para 16 bits e `uint32_t` para 32 bits. Usa `size_t` para tamanhos e índices de objetos na memória.
+
+`printf` não deduz os tipos pela cadeia de formato. Cada conversão tem de corresponder ao argumento: `%d` recebe `int`, `%u` recebe `unsigned int`, `%zu` recebe `size_t` e `%p` recebe `void *`. Para tipos de largura fixa, `<inttypes.h>` fornece macros como `PRIu32`.
+
+```c
+#include <inttypes.h>
+#include <stdio.h>
+
+int main(void) {
+  uint32_t ticks = 300;
+  uint8_t status = 0xA5;
+  printf("ticks=%" PRIu32 " status=0x%02X\n",
+         ticks, (unsigned)status);
+  return 0;
+}
+```
+
+A saída é `ticks=300 status=0xA5`. O cast explicita o tipo pedido por `%X`. Uma incompatibilidade de formato não é apenas uma apresentação errada: pode causar comportamento indefinido. Ativa os avisos do compilador.
+
+## Promoções e conversões de inteiros
+
+Antes de muitas operações, C promove valores mais pequenos do que `int`. Num sistema onde `int` representa todos os valores de `uint8_t`, um byte torna-se um `int`. A operação deixa de ter apenas oito bits.
+
+Considera `uint8_t value = 0x5A`. O complemento de oito bits seria `0xA5`. Porém, `~value` opera sobre o valor promovido. Com `int` de 32 bits e representação em complemento para dois, o resultado tem os bits de `0xFFFFFFA5`. Deslocar esse valor negativo à direita depende da implementação da linguagem usada no curso. Não derives um resultado portátil a partir de um deslocamento de um inteiro negativo.
+
+Para complementar exatamente o byte, reduz o resultado a `uint8_t` antes do deslocamento:
+
+```c
+uint8_t value = 0x5A;
+uint8_t result = (uint8_t)~value >> 4;
+```
+
+O cast produz `0xA5`. Esse valor é promovido a um `int` positivo para o deslocamento, por isso o resultado é `0x0A`, ou 10. Converter apenas no fim não corrige a operação anterior.
+
+Outro caso frequente mistura um inteiro negativo com um inteiro sem sinal:
+
+```c
+int delta = -1;
+unsigned int width = 10;
+bool inside = delta < width;
+```
+
+Quando os tipos têm a mesma categoria e o `int` não representa todos os valores de `unsigned int`, `delta` converte-se para um grande valor sem sinal. O teste pode dar falso. Valida primeiro que `delta >= 0` e só depois compara `(unsigned int)delta < width`. Para posições com movimento negativo, mantém as contas num tipo com sinal até validares os limites.
+
+## Apontadores, arrays e tamanho
+
+`&x` obtém o endereço de `x`. Se `p` aponta para um `int` válido, `*p` lê ou altera esse inteiro. `p + 1` avança o tamanho de um `int`, não um byte. O tipo do apontador determina a unidade da aritmética.
+
+```c
+int values[] = {10, 20, 30};
+int *p = values;
+p++;
+*p = 25;
+```
+
+Agora `values` contém `{10, 25, 30}`. Em muitas expressões, o array converte-se num apontador para o primeiro elemento. O array e o apontador continuam a ser objetos diferentes: `sizeof values` dá o tamanho de todo o array, mas `sizeof p` dá o tamanho de um endereço.
+
+Um parâmetro `int values[]` é ajustado para `int *values`. A função não recebe o comprimento do array. Passa-o à parte e nunca acedas fora do intervalo. Podes formar um apontador para uma posição imediatamente a seguir ao fim para controlar um ciclo, mas não o podes desreferenciar.
+
+## Módulos e encapsulamento
+
+O ficheiro `.h` declara o que outros módulos podem usar. O `.c` implementa essas operações. Inclui o próprio cabeçalho no `.c`, para o compilador conferir que a definição corresponde à declaração.
 
 <Typst
   source={modulo}
   format="svg"
-  alt="Diagrama de dependências de um módulo: timer.h declara, timer.c implementa, main.c inclui timer.h."
+  alt="timer.h declara a interface; timer.c inclui esse cabeçalho e implementa-a; main.c inclui o mesmo cabeçalho para chamar as funções."
 />
 
-Esta disciplina parece burocracia até ao dia em que o projeto tem seis periféricos e cada um vive no seu módulo.
+Este módulo de contador é completo e independente do Minix.
 
-## A pilha e as chamadas de funções
+```c title="counter.h"
+#ifndef COUNTER_H
+#define COUNTER_H
 
-Cada chamada de função reserva na pilha um **registo de ativação** (_stack frame_) com tudo o que a função precisa para correr e regressar: os argumentos do chamador, o endereço de retorno, o apontador do registo anterior e as variáveis locais.
+#include <stdint.h>
 
-<Typst
-  source={stackframe}
-  format="svg"
-  alt="Pilha de um registo de ativação, de cima para baixo: argumentos, endereço de retorno, apontador guardado e variáveis locais."
-/>
+void counter_reset(void);
+void counter_tick(void);
+uint32_t counter_value(void);
 
-Perceber esta pilha explica três fenómenos que vais encontrar. Primeiro, variáveis locais não inicializadas contêm o lixo que lá estava: ninguém limpa o registo ao entrar. Segundo, devolver o endereço de uma variável local é um erro clássico, porque o registo morre no retorno e o apontador fica a apontar para memória reutilizada. Terceiro, recursão funda demais esgota a pilha (_stack overflow_), porque cada chamada empilha um registo novo sem libertar os anteriores.
+#endif
+```
 
-## Compilar com um Makefile
+```c title="counter.c"
+#include "counter.h"
 
-Compilar à mão cada ficheiro com o `cc` funciona uma vez. À segunda, escreve um `Makefile` que diga como construir cada objeto e como os ligar:
+static uint32_t ticks;
 
-```make
+void counter_reset(void) { ticks = 0; }
+void counter_tick(void) { ++ticks; }
+uint32_t counter_value(void) { return ticks; }
+```
+
+```c title="main.c"
+#include "counter.h"
+#include <inttypes.h>
+#include <stdio.h>
+
+int main(void) {
+  counter_reset();
+  counter_tick();
+  counter_tick();
+  printf("%" PRIu32 "\n", counter_value());
+  return 0;
+}
+```
+
+A variável `ticks` tem duração estática e visibilidade limitada ao ficheiro porque foi declarada com `static`. Os outros módulos chamam as funções, sem modificar o contador por acesso direto. Não definas uma variável global num cabeçalho incluído por vários `.c`. Se a partilha for necessária, declara-a com `extern` no cabeçalho e define-a uma única vez.
+
+## Compilar e ligar
+
+A construção tem quatro etapas: o pré-processador expande `#include` e macros; o compilador traduz C para assembly; o assembler produz código objeto; o linker resolve referências entre objetos e bibliotecas. Um `.o` ainda pode conter chamadas a funções cuja definição está noutro objeto.
+
+Com os três ficheiros anteriores na mesma pasta:
+
+```sh
+cc -std=c11 -Wall -Wextra -Wpedantic -c counter.c
+cc -std=c11 -Wall -Wextra -Wpedantic -c main.c
+cc main.o counter.o -o demo
+./demo
+```
+
+A saída é `2`. Um erro de sintaxe ou de tipo aparece na compilação. Uma referência a `counter_tick` sem definição aparece na ligação. Incluir `counter.h` dá a declaração, não acrescenta automaticamente `counter.c` ao executável.
+
+Para criar e usar uma biblioteca estática:
+
+```sh
+ar rcs libcounter.a counter.o
+cc main.o -L. -lcounter -o demo
+```
+
+`ar` agrupa código objeto num arquivo. `-L.` acrescenta a pasta atual à procura; `-lcounter` procura uma biblioteca com nome como `libcounter.a`. Com linkers que processam arquivos por ordem, coloca a biblioteca depois dos objetos que usam os seus símbolos. A ligação estática copia para o executável o código necessário do arquivo, não liga o programa ao código fonte.
+
+## Make, Git e documentação
+
+Um Makefile descreve alvos e dependências. Se mudares `counter.h`, tanto `counter.o` como `main.o` precisam de ser recompilados. As linhas das receitas começam com uma tabulação.
+
+```makefile
 CC = cc
-CFLAGS = -Wall -Wextra
+CFLAGS = -std=c11 -Wall -Wextra -Wpedantic
 
-proj: main.o timer.o kbd.o
-	$(CC) $(CFLAGS) -o proj main.o timer.o kbd.o
+demo: main.o counter.o
+	$(CC) main.o counter.o -o demo
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+main.o: main.c counter.h
+counter.o: counter.c counter.h
 
 clean:
-	rm -f *.o proj
+	rm -f demo main.o counter.o
+
+.PHONY: clean
 ```
 
-As linhas de receita começam obrigatoriamente por tabulação, não por espaços: é o erro mais clássico do primeiro Makefile. Com isto, `make` recompila só o que mudou e `make clean` limpa os objetos.
+`make` compara dependências e datas para construir o que mudou. Os Makefiles do ambiente de LC também ligam as bibliotecas de apoio necessárias; não substituas esse ambiente por este exemplo portátil.
 
-Quando um módulo estabiliza, empacota-o numa **biblioteca estática** com o `ar` em vez de recompilar o `.o` sempre. A receita junta o objeto num `.a` e o programa liga-o com `-l`:
+No Git, revê `git diff` antes de guardar uma alteração. `diff -u old.c new.c` produz um patch de texto; `patch` aplica-o a uma base compatível. Um patch não é um executável nem resolve automaticamente alterações incompatíveis na mesma linha.
 
-```make
-libtimer.a: timer.o
-	ar rcs libtimer.a timer.o
-
-proj: main.o libtimer.a
-	$(CC) $(CFLAGS) -o proj main.o -L. -ltimer
-```
-
-O `ar rcs` cria o arquivo (`c`), insere o objeto substituindo versões antigas (`r`) e escreve o índice (`s`). O `-L.` diz onde procurar bibliotecas e o `-ltimer` pede a `libtimer.a`. A biblioteca copia o código para dentro do executável na ligação: o programa final não precisa do `.a` para correr.
-
-:::tip[Como ler um erro do clang]
-Compila este programa sem o `#include <stdio.h>` e o clang responde com `use of undeclared identifier 'printf'` mais uma sugestão. O método é sempre o mesmo: lê a primeira linha do erro (ficheiro e número da linha), percebe o que o compilador não encontrou e corrige só isso antes de recompilar. Resolve os erros de cima para baixo, porque um erro a montante costuma arrastar os de baixo.
-:::
-
-## O compilador em cada ambiente
-
-Os comandos são os mesmos, o ambiente muda. Escolhe o separador do teu caso.
-
-<Tabs id="compilador-ambientes" labels={['Minix (CLANG)', 'Linux (GCC)']}>
-  <div slot="panel-0">
-
-No Minix compilas com o `cc`, que é o CLANG. Verifica a versão e compila com avisos no máximo, porque os avisos do CLANG apanham máscaras deslocadas e formatos errados antes de correres o programa.
-
-```sh
-cc --version
-cc -Wall -Wextra -o teste teste.c
-```
-
-  </div>
-  <div slot="panel-1">
-
-Em Linux para treinar C fora da máquina virtual usa o GCC, com as mesmas flags. O código dos módulos compila igual; só as chamadas específicas do Minix (como a subscrição de interrupções) é que não existem cá fora.
-
-```sh
-gcc --version
-gcc -Wall -Wextra -o teste teste.c
-```
-
-  </div>
-</Tabs>
-
-## Git, diff e Doxygen
-
-Cada trabalho vive num repositório Git. A sequência mínima que tens de saber de cor:
-
-```sh
-git init
-git add timer.c timer.h
-git commit -m "temporizador: polling a ler o estado"
-git status
-git log --oneline
-```
-
-O `status` antes de cada commit confirma o que entra; o `log --oneline` mostra o histórico numa linha por commit. Quando trabalhares em grupo, `pull` antes de começar e `push` ao acabar.
-
-Para partilhar uma correção sem repositório comum, gera-se um remendo com `diff` e aplica-se com `patch`:
-
-```sh
-diff -u timer_velho.c timer_novo.c > correcao.patch
-patch -p1 < correcao.patch
-```
-
-O formato `-u` mostra o contexto em volta de cada mudança, e o `-p1` descasca o primeiro nível de diretórios do caminho no remendo. Antes de aplicar, lê o `.patch`: cada bloco diz que linhas saem (com `-`) e que linhas entram (com `+`).
-
-A documentação escreve-se no próprio código em formato Doxygen, com `/** ... */` antes de cada função pública a explicar parâmetros e retorno. Gerar a documentação passa a ser comandos, não um relatório escrito à parte no fim do semestre:
-
-```sh
-doxygen -g
-doxygen Doxyfile
-```
-
-O primeiro comando cria um `Doxyfile` com todas as opções comentadas; ajustas nele o nome do projeto e os diretórios de entrada, e o segundo gera as páginas HTML. Abre o `index.html` gerado e confirma que cada função pública aparece com os seus parâmetros documentados.
-
-:::warning[O que o C não faz por ti]
-Não há verificação de limites em vetores, não há inicialização automática de variáveis e um apontador solto corrompe memória silenciosamente. Quando o programa se comportar de forma impossível, suspeita primeiro de escrita fora de limites e de variável não inicializada, antes de culpares o hardware.
-:::
+Documenta a interface com Doxygen: o que a operação faz, pré-condições, parâmetros, resultado e quem liberta a memória. Uma descrição como "incrementa contador" não explica a política de overflow nem o instante em que o contador reinicia. A documentação útil permite chamar a função sem ler a sua implementação.

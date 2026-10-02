@@ -1,113 +1,120 @@
 ---
 title: Interrupções
-description: IRQs, subscrição, rotinas de atendimento e máscaras no Minix.
+description: PIC, vetores, hooks e notificações de hardware no ciclo de eventos Minix.
 section: conteudo
-order: 3
+order: 4
+practices:
+  - lc/praticar-interrupcoes
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import fluxo from '../../lc/fluxo-irq.typ?raw';
 import caminho from '../../lc/caminho-irq.dot?raw';
 
-O polling prende o processador a perguntar. As **interrupções** invertem o sentido da conversa: o periférico avisa quando tem algo a dizer, e o processador atende. O preço é um mecanismo com mais peças, subscrição de linhas de interrupção, rotinas de atendimento e máscaras, que esta página monta peça a peça.
+Uma interrupção permite ao dispositivo assinalar um evento. No PC clássico, o pedido passa pelo controlador de interrupções antes de o processador o atender. No Minix, há ainda outra etapa: o kernel notifica o processo que subscreveu esse pedido.
 
-## Quem avisa quem
+## IRQ, vetor e rotina
 
-Cada periférico capaz de interromper está ligado a uma linha **IRQ** (_interrupt request_). O pedido não chega direto ao processador: passa pelo **controlador de interrupções** (PIC), que assinala o pedido e só o entrega se essa linha estiver desmascarada. O processador suspende o programa, corre a **rotina de atendimento** (_handler_) e depois retoma onde parou. A rotina deve ser curta: lê o estado, recolhe os dados, assinala que há trabalho novo e sai. O processamento pesado fica para o programa principal, que consome o que a rotina recolheu.
+Uma **IRQ** é uma linha de pedido de interrupção. O PIC i8259 regista pedidos, aplica máscaras e escolhe qual apresentar ao processador. No PC clássico há dois PICs em cascata. A IRQ2 do primeiro liga ao segundo, pelo que não há 16 entradas independentes para dispositivos.
 
-<Typst
-  source={fluxo}
-  format="svg"
-  alt="Fluxo de uma interrupção: o periférico gera o evento, o PIC assinala o IRQ, o CPU suspende o programa, o handler recolhe os dados e o programa principal consome-os."
-/>
+| Dispositivo | IRQ global |
+| ----------- | ---------- |
+| Timer 0     | 0          |
+| Teclado     | 1          |
+| COM2        | 3          |
+| COM1        | 4          |
+| RTC         | 8          |
+| Rato PS/2   | 12         |
 
-O resultado disto é que entre eventos o processador é livre. Um teclado que gera meia dúzia de interrupções por segundo custa meia dúzia de atendimentos; em polling, o mesmo teclado custaria milhões de perguntas por segundo.
+Na máscara do PIC, um bit a 1 **desativa** a linha correspondente. É uma máscara de bloqueio. Não a confundas com a máscara de eventos recebidos no Minix, onde um bit a 1 assinala uma notificação.
 
-## As linhas de cada periférico
-
-O PC clássico tem 16 linhas, da IRQ0 à IRQ15, e cada periférico da cadeira tem a sua fixa. Decora esta tabela, porque a máscara de subscrição e o diagnóstico de "não chega nada" passam sempre por ela:
-
-| Periférico       | Linha |
-| ---------------- | ----- |
-| Temporizador     | IRQ0  |
-| Teclado          | IRQ1  |
-| Porta série COM2 | IRQ3  |
-| Porta série COM1 | IRQ4  |
-| RTC              | IRQ8  |
-| Rato             | IRQ12 |
-
-Em DOT, a topologia é sempre a mesma: periféricos pendurados no controlador, controlador a falar com o CPU, CPU a despachar para o handler certo.
+O PIC entrega um **vetor**, um número que o processador usa para escolher a entrada na tabela de descritores de interrupção, a IDT em IA-32. O vetor não é o número da IRQ. A associação entre IRQ e vetor é configurável pelo sistema, por isso não derives um vetor do número da IRQ no código da aplicação.
 
 <Dot
   source={caminho}
-  alt="Diagrama do caminho de uma interrupção: teclado e temporizador ligam ao PIC, o PIC ao CPU e o CPU ao handler."
+  alt="O periférico envia a IRQ ao PIC, o PIC sinaliza o CPU, e o atendimento genérico do kernel notifica o processo Minix."
 />
 
-## Subscrever uma interrupção
+Em IA-32, o atendimento guarda o contexto exigido, executa a rotina e restaura o contexto para continuar o programa interrompido. A rotina precisa de reconhecer o pedido no controlador, com EOI, e terminar pelo mecanismo de retorno de interrupção apropriado. No modelo clássico dos slides, isso aparece como `IRETD`. A arquitetura ARM tem exceções e controladores próprios; não usa a IDT nem as instruções `IN`, `OUT` ou `IRETD` do x86.
 
-No Minix, usar uma interrupção segue sempre a mesma sequência: subscrever a linha IRQ para receberes notificações, ativar a linha, entrar no ciclo de espera por mensagens e, no fim, desativar e remover a subscrição. Em pseudocódigo com a API do Minix:
+## Dois atendimentos diferentes
+
+A rotina genérica do Minix, no kernel, recebe a interrupção real, mascara a linha, notifica os interessados, aplica a política de reativação, envia EOI e regressa. A função `timer_ih` ou `kbc_ih` que escreves no laboratório corre no teu processo, quando o teu ciclo lê a notificação e a chama.
+
+Isto muda o raciocínio sobre concorrência. As tuas funções C não são chamadas arbitrariamente pela CPU enquanto uma outra instrução C tua está a correr. No modelo de um processo e um ciclo de receção, chamas cada handler de forma sequencial. Não acrescentes `volatile` como se isso resolvesse sincronização, nem envies EOI ao PIC por iniciativa própria: o kernel trata da interrupção física.
+
+O handler do dispositivo recolhe estado e dados. A lógica da aplicação interpreta-os depois. Para teclado e rato, uma notificação permite recolher o byte disponível; não esperes ali pelos restantes bytes de um scancode ou pacote. Podem chegar em notificações futuras.
+
+## Hook e máscara de notificação
+
+`sys_irqsetpolicy(irq, policy, &hook)` usa `hook` em dois sentidos:
+
+1. À entrada, o valor escolhe o bit da notificação que o processo quer usar.
+2. À saída, a variável contém o identificador que deves passar a outras kernel calls sobre essa subscrição.
+
+Guarda o número do bit pedido **antes** da chamada. A máscara a testar é `1u << bit_number`. A IRQ pode ser 12 e o bit pedido pode ser 2. Nesse caso, a máscara de notificação é `0x04`, não `1 << 12`. Os bits das várias subscrições do processo devem ser distintos e caber no campo de notificações.
+
+`IRQ_REENABLE` autoriza a rotina genérica a reativar a linha. Sem essa política, o processo tem de chamar `sys_irqenable` quando estiver pronto. `IRQ_EXCLUSIVE` impede a partilha da subscrição com outro driver. É relevante para periféricos como o rato, onde não queres que o driver normal do Minix consuma os mesmos dados. No timer, a subscrição pode coexistir com a do sistema.
+
+## Ciclo completo com timer
+
+Esta função completa destina-se a um módulo do ambiente Minix/LCF, com permissão para subscrever IRQ0. Chama `wait_timer_ticks(60)` depois de inicializares o programa de apoio. Se o timer estiver a 60 Hz, o efeito esperado é regressar após cerca de um segundo. Não configura a frequência e não é um programa de C portátil.
 
 ```c
-sys_irqsetpolicy(TIMER_IRQ, IRQ_REENABLE, &bit_mask);
-sys_irqenable(&bit_mask);
+#include <lcom/lcf.h>
+#include <stdint.h>
 
-int ipc_status;
-message msg;
-while (continuar) {
-  driver_receive(ANY, &msg, &ipc_status);
-  if (is_ipc_notify(ipc_status) && (msg.m_source == HARDWARE)) {
-    timer_handler(); /* curta: conta e sai */
+int wait_timer_ticks(uint32_t limit) {
+  if (limit == 0) return OK;
+  const int notification_bit = 0;
+  int hook = notification_bit;
+  const uint32_t mask = 1u << notification_bit;
+  int result = sys_irqsetpolicy(0, IRQ_REENABLE, &hook);
+  if (result != OK) return result;
+
+  result = sys_irqenable(&hook);
+  if (result != OK) {
+    sys_irqrmpolicy(&hook);
+    return result;
   }
-}
 
-sys_irqdisable(&bit_mask);
-sys_irqrmpolicy(&bit_mask);
+  uint32_t ticks = 0;
+  while (ticks < limit) {
+    message msg;
+    int ipc_status;
+    result = driver_receive(ANY, &msg, &ipc_status);
+    if (result != OK) break;
+    if (!is_ipc_notify(ipc_status)) continue;
+    if (_ENDPOINT_P(msg.m_source) != HARDWARE) continue;
+    if (msg.m_notify.interrupts & mask) ++ticks;
+  }
+
+  int disable_result = sys_irqdisable(&hook);
+  int remove_result = sys_irqrmpolicy(&hook);
+  if (result != OK) return result;
+  if (disable_result != OK) return disable_result;
+  return remove_result;
+}
 ```
 
-Cada chamada tem um papel: `setpolicy` regista o interesse e diz se a linha se rearma sozinha, `enable` abre a porta, `driver_receive` bloqueia o processo até chegar uma mensagem (de hardware ou de outro processo), e no fim `disable` e `rmpolicy` devolvem tudo ao estado inicial. Esquecer a limpeza final deixa a linha armada para o próximo programa, que recebe interrupções que não pediu.
+Há três filtros: a mensagem é uma notificação, vem do hardware e contém o bit do timer. Uma mensagem normal não contém necessariamente o significado que esperas em `m_notify`.
 
-## Máscaras e linhas partilhadas
+`driver_receive` bloqueia o processo enquanto não há uma mensagem. Não precisas de um ciclo que consulta uma variável à espera de que o teu handler corra sozinho, porque és tu que o chamas depois da receção.
 
-A **máscara** (`bit_mask`) identifica a tua linha no meio de todas: cada IRQ corresponde a um bit, e o bit a 1 significa "esta é a minha". Quando o `driver_receive` acorda, confirma sempre que a notificação veio mesmo da tua linha antes de chamares o handler, porque o processo pode receber mensagens de outras fontes no mesmo ciclo.
+Notificações podem agrupar pedidos. O bit significa que há um pedido assinalado; não contém um contador de quantas interrupções ocorreram enquanto o processo estava ocupado. Contar um tick por notificação é o modelo usado nos pequenos ciclos do laboratório, mas não garante um relógio sem perdas se bloqueares longamente o atendimento.
 
-Duas regras de higiene que evitam os bugs mais penosos: a rotina nunca espera por nada (não há polling dentro de um handler, e muito menos chamadas bloqueantes), e os dados partilhados entre a rotina e o programa principal são o mínimo possível, atualizados de forma que uma leitura a meio nunca veja um estado inconsistente.
+## Vários dispositivos na mesma notificação
 
-## Exemplo: medir um segundo com o temporizador
-
-O temporizador interrompe 60 vezes por segundo. Para medir um segundo, o handler incrementa um contador e o programa principal espera que ele chegue a 60:
+Suponhamos que pediste o bit 0 para o timer e o bit 3 para o teclado. Uma notificação com `interrupts = 0x09` contém ambos. Os testes devem ser independentes:
 
 ```c
-static int ticks = 0;
-
-void timer_handler(void) {
-  ticks++;
-}
+if (pending & timer_mask) timer_ih();
+if (pending & keyboard_mask) keyboard_ih();
 ```
 
-Com `ticks` a subir de 60 em 60 por segundo, esperar `ticks >= 60` é esperar um segundo, e esperar `ticks >= 300` são cinco segundos. A conta é direta porque a frequência é conhecida: número de interrupções a dividir pela frequência dá o tempo decorrido. Confirma a aritmética correndo a simulação: 60 tiques dão 1 segundo, 300 dão 5 e 3600 dão 60.
+Um `else if` descartaria um evento quando os dois bits estivessem ativos. Define também a ordem da lógica da aplicação. Se um timeout e uma tecla chegarem juntos, a política de aceitação da tecla no limite do tempo deve ser explícita.
 
-<CodePlayground
-  language="c"
-  title="Tiques em segundos"
-  code={
-    '#include <stdio.h>\n\nint main(void) {\n    int periodos[] = {60, 300, 3600};\n    for (int i = 0; i < 3; i++) {\n        int ticks = 0;\n        for (int t = 0; t < periodos[i]; t++) ticks++;\n        printf("%d tiques = %d s\\n", periodos[i], ticks / 60);\n    }\n    return 0;\n}'
-  }
-/>
+## Latência e limpeza
 
-Este mesmo contador serve de relógio para tudo o resto, do ritmo de um jogo ao timeout de uma operação.
+A interrupção não tem latência zero. O evento espera enquanto as interrupções estão bloqueadas, enquanto pedidos prioritários são atendidos e enquanto o processo ainda não recebeu a notificação. Um handler curto reduz o tempo ocupado, mas não elimina esses custos.
 
-## Ver também
-
-Este vídeo explica as diferenças entre polling, interrupções e DMA com exemplos visuais. Vê-o depois de perceberes a subscrição acima: cada mecanismo do vídeo mapeia para uma sequência desta página.
-
-<YouTube
-  id="LNPBr3WvuNg"
-  title="Diferenças entre polling, interrupções e DMA explicadas"
-/>
-
-:::tip[Como depurar interrupções que não chegam]
-Se o handler nunca corre, verifica por esta ordem: a linha foi subscrita e ativada, a máscara corresponde ao IRQ certo, o ciclo chama `driver_receive` de verdade em vez de fazer polling por cima, e a subscrição foi feita antes de ativares. Em nove de dez casos, o problema está nesta lista, não no hardware.
-:::
+Ao terminar, repõe configurações alteradas e remove cada subscrição obtida. Trata também os caminhos de falha parcial. A ausência de dados pode resultar de uma linha não ativada, máscara errada, dispositivo que não gera o evento, leitura que não consome o buffer ou outro driver que o consome primeiro. Verifica estas hipóteses por observações, sem trocar várias configurações ao mesmo tempo.

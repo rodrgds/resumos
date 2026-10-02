@@ -1,69 +1,126 @@
 ---
 title: Teclado
-description: O controlador i8042, scancodes de make e break e a descodificação de teclas.
+description: Estado do i8042, scancodes set 1, command byte e leitura por polling ou interrupções.
 section: conteudo
-order: 5
+order: 6
+practices:
+  - lc/praticar-teclado
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
 import maquina from '../../lc/maquina-teclado.dot?raw';
 
-O **teclado** fala com o PC através do controlador i8042: cada tecla premida ou libertada gera um ou mais bytes chamados **scancodes**. O teu programa lê esses bytes do buffer de saída do controlador e reconstrói o que o utilizador fez. É o primeiro periférico esporádico e o primeiro exercício sério de descodificação byte a byte.
+O teclado produz códigos ao premir e largar teclas. O controlador i8042 do PC recebe esses bytes e coloca-os no output buffer. O programa lê o byte, conserva-o se for válido e só produz um evento de tecla quando o código está completo.
 
-## Make e break
+## Estado do i8042
 
-Cada tecla produz dois eventos: o **make**, quando é premida, e o **break**, quando é libertada. No conjunto de scancodes usado nos trabalhos, o make de uma tecla normal é um byte, e o break são dois: o prefixo `0xF0` seguido do mesmo byte. Por exemplo, a tecla A tem make `0x1C` e break `0xF0 0x1C`.[^scancodes]
+Consulta o registo de estado em `0x64`. Os bits usados nas leituras e escritas são:
 
-As teclas especiais (setas, Insert, Delete e companhia) usam um prefixo extra `0xE0`. A seta direita, por exemplo, tem make `0xE0 0x74` e break `0xE0 0xF0 0x74`. Repara na estrutura: o `0xE0` diz "tecla estendida", e o resto segue a regra normal de make e break.
+| Bit | Nome    | Significado quando vale 1               |
+| --- | ------- | --------------------------------------- |
+| 7   | PARITY  | O byte recebido tem erro de paridade    |
+| 6   | TIMEOUT | Houve erro de timeout na comunicação    |
+| 5   | AUX     | O byte do output buffer veio do rato    |
+| 1   | IBF     | O input buffer está cheio, não escrevas |
+| 0   | OBF     | Há um byte para ler no output buffer    |
 
-[^scancodes]: Tabela de scancodes do conjunto 2 e comandos do controlador i8042 em [PS/2 Keyboard (OSDev)](https://wiki.osdev.org/PS/2_Keyboard).
+Em polling, espera OBF e distingue a origem pelo AUX. Numa subscrição exclusiva da IRQ1, sabes que a notificação é do teclado, mas ainda precisas de tratar falhas de leitura e erros de comunicação. Teclado e rato partilham a porta de dados: o teu desenho deve impedir que uma rotina consuma um byte destinado à outra.
 
-## Ler com polling ou interrupção
+Se OBF estiver ativo, lê `0x60` mesmo quando o estado assinala erro, para retirar o byte inválido. Descarta-o depois. Deixar esse byte no output buffer pode impedir novas entregas. Não confundas "descartar" com "não ler".
 
-O controlador assinala dado disponível no bit de pronto do registo de estado: em polling, esperas por esse bit e lês o byte do buffer de saída, exatamente como na página sobre [falar com o hardware](falar-com-hardware/). Por interrupção, subscreves o IRQ do teclado e cada byte que chega invoca o handler, que o guarda num buffer para o programa principal consumir.
+## Make, break e prefixos
 
-Nos dois casos, a leitura tem de tratar o erro de paridade e o timeout assinalados nos bits próprios do estado: um byte com erro descarta-se em vez de se descodificar, porque alimenta a máquina de estados com lixo.
+Nos exemplos usamos os **scancodes set 1** usados pelo ambiente do laboratório. Para muitas teclas, o make code indica que a tecla foi premida e o break code é o make com o bit 7 ativo. Esc produz make `0x01` e break `0x81`.
 
-## Exemplo: descodificar premir e libertar
+Um scancode não é um carácter ASCII. A tecla que produz `0x1E` no set 1 não entrega o byte ASCII de `a`. Para obter texto, tens de interpretar layout, Shift, Caps Lock e outras teclas. Para controlar uma aplicação, podes trabalhar diretamente com eventos de tecla.
 
-O utilizador prime e liberta a tecla A. O programa recebe três bytes: `0x1C`, `0xF0`, `0x1C`. A descodificação corre assim:
+Algumas teclas usam o prefixo `0xE0`. Por exemplo, a seta para a direita produz make `E0 4D` e break `E0 CD`. Duas notificações entregam os dois bytes. O prefixo não é um evento completo e não deve provocar uma ação sozinho.
 
-1. Chega `0x1C`. Não é prefixo (`0xE0` ou `0xF0`), por isso é um make: a tecla com código `0x1C` foi premida. Regista "A premida".
-2. Chega `0xF0`. É o prefixo de break: o próximo byte completa um break, não é um evento sozinho. Guarda o estado "à espera do segundo byte".
-3. Chega `0x1C` com o estado pendente: é o break da tecla `0x1C`. Regista "A libertada" e limpa o estado.
-
-Três bytes, dois eventos, uma máquina de estados com três ramos: o normal, a espera após `0xF0` e o ramo estendido após `0xE0`.
+O set 1 tem também sequências especiais mais longas, como Pause. O descodificador simples seguinte trata códigos de um byte e códigos com um prefixo E0. Uma aplicação que precise das teclas especiais deve reconhecer a sequência completa; este modelo não é um parser universal de todos os teclados.
 
 <Dot
   source={maquina}
-  alt="Máquina de estados do descodificador: do estado normal, um byte normal fica, 0xF0 vai para espera de break, 0xE0 vai para o ramo estendido; ambos regressam ao normal."
+  alt="Descodificador set 1 com dois estados: sem prefixo aceita um código simples ou guarda E0; com E0 guardado, o byte seguinte completa o código e regressa ao estado inicial."
 />
 
-Corre o descodificador sobre o vetor fixo e confirma que produz um make e um break da mesma tecla:
+## Descodificador por estados
 
-<CodePlayground
-  language="c"
-  title="Descodificar make e break"
-  code={
-    '#include <stdio.h>\n#include <stdint.h>\n\nint main(void) {\n    uint8_t seq[] = {0x1C, 0xF0, 0x1C};\n    int espera_break = 0;\n    for (int i = 0; i < 3; i++) {\n        uint8_t b = seq[i];\n        if (b == 0xF0) { espera_break = 1; continue; }\n        if (espera_break) {\n            printf("break 0x%02X\\n", b);\n            espera_break = 0;\n        } else {\n            printf("make 0x%02X\\n", b);\n        }\n    }\n    return 0;\n}'
+Este programa completo é C portátil. Simula a chegada dos bytes `E0 4D E0 CD 81`, com a mesma lógica que pode ficar acima do handler de hardware. Imprime make e break da seta direita, depois break de Esc.
+
+```c
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+
+typedef struct { bool extended; } decoder;
+
+static bool feed(decoder *d, uint8_t byte,
+                 bool *extended, bool *released, uint8_t *key) {
+  if (!d->extended && byte == 0xE0) {
+    d->extended = true;
+    return false;
   }
-/>
+  *extended = d->extended;
+  *released = (byte & 0x80u) != 0;
+  *key = (uint8_t)(byte & 0x7Fu);
+  d->extended = false;
+  return true;
+}
 
-Se chegar `0xE0`, entra-se no ramo das teclas estendidas com a mesma lógica. O padrão é sempre este: cada byte ou é um evento completo ou muda o estado do descodificador para interpretar o seguinte.
+int main(void) {
+  decoder d = {false};
+  const uint8_t bytes[] = {0xE0, 0x4D, 0xE0, 0xCD, 0x81};
+  for (size_t i = 0; i < sizeof bytes; ++i) {
+    bool extended, released;
+    uint8_t key;
+    if (feed(&d, bytes[i], &extended, &released, &key))
+      printf("%s key=0x%02X extended=%u\n",
+             released ? "break" : "make", (unsigned)key,
+             (unsigned)extended);
+  }
+  return 0;
+}
+```
 
-## Ver também
+A saída é:
 
-Este vídeo abre um teclado PS/2 real e mostra no osciloscópio os bytes que cada tecla gera, incluindo os prefixos. Vê-o para ligares os scancodes desta página aos sinais no fio.
+```text
+make key=0x4D extended=1
+break key=0x4D extended=1
+break key=0x01 extended=0
+```
 
-<YouTube
-  id="7aXbh9VUB3U"
-  title="Como funciona a interface de um teclado PS/2, Ben Eater"
-/>
+O estado do prefixo persiste entre chamadas. Se perderes ou descartares um byte por erro, define também uma política de recuperação do parser; não uses um prefixo antigo para classificar um byte de uma nova sequência.
 
-Para a tabela completa de scancodes e os comandos do controlador, a referência é [PS/2 Keyboard (OSDev)](https://wiki.osdev.org/PS/2_Keyboard).
+## Handler e aplicação
 
-:::tip[Como testar sem dedos rápidos]
-Para depurar, não toques no teclado de verdade: alimenta o descodificador com sequências fixas no código (por exemplo o vetor `{0x1C, 0xF0, 0x1C}`) e confirma os eventos produzidos. Só quando a sequência fixa passar é que ligas o hardware real. Separar a descodificação da leitura é o que torna isto possível.
-:::
+O handler de teclado lê o estado, retira um byte e assinala se esse byte é válido. A função de montagem conserva o prefixo. O código da aplicação escolhe o que um evento completo faz.
+
+Subscreve IRQ1 com `IRQ_REENABLE | IRQ_EXCLUSIVE` no contexto do laboratório, para impedir o driver normal de consumir o mesmo buffer. Se timer e teclado forem subscritos, testa as duas máscaras de forma independente. Quando esperas a libertação de Esc, termina ao receber um scancode completo `0x81`, não ao ver qualquer byte cujo bit 7 seja 1. `0xE0` também tem o bit 7 ativo e é um prefixo.
+
+Para uma tecla mantida premida, podem chegar vários make codes de repetição. Uma ação que deve ocorrer só uma vez por pressão precisa de distinguir a transição de solta para premida dos make codes seguintes.
+
+## Command byte do KBC
+
+O **command byte** configura o controlador. Não é o registo de estado, embora a porta `0x64` participe no acesso aos dois.
+
+| Bit do command byte | Significado quando vale 1       |
+| ------------------- | ------------------------------- |
+| 0                   | Ativa interrupções do teclado   |
+| 1                   | Ativa interrupções do rato      |
+| 4                   | Desativa a interface do teclado |
+| 5                   | Desativa a interface do rato    |
+
+Para o ler, espera IBF a 0, escreve comando `0x20` em `0x64`, espera a resposta no output buffer e lê `0x60`. Para escrever um novo valor, espera IBF a 0, escreve comando `0x60` em `0x64`, espera novamente IBF a 0 e escreve o novo byte em `0x60`.
+
+Aqui `0x60` pode ser tanto um valor de comando como um endereço de porta. Distingue-os pela posição na sequência. Não escrevas o valor do command byte diretamente em `0x64`.
+
+Se queres apenas ativar interrupções do teclado, lê o valor anterior e faz `old | 0x01`. Não substituas o byte por `0x01`, porque isso pode alterar a configuração do rato e outros bits. Em experiências de polling que desativam interrupções, guarda e repõe a configuração anterior no fim.
+
+## Inatividade com timer e teclado
+
+Um timeout de inatividade mede o tempo desde a última entrada válida. Quando um byte ou evento válido chega, repõe o contador conforme a definição do exercício. Em cada tick, incrementa-o. Para um limite de 3 s a 60 Hz, termina quando chega a 180 ticks.
+
+O critério importa: "sem bytes válidos" e "sem teclas completas" não são idênticos para scancodes com prefixo. Explicita qual conta como atividade. Processar a tecla antes do timer numa notificação com ambos pode levar a um resultado diferente de processar primeiro o timeout no instante limite.
+
+Para comparar polling e interrupções, conta as chamadas de I/O em ambas as soluções para a mesma sequência e duração. Polling lê estado repetidamente sem dado; o handler lê estado e dados quando recebe uma notificação. A comparação mede trabalho efetivamente feito, não prova que todas as cargas tenham a mesma relação de custos.

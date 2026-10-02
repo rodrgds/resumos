@@ -1,85 +1,151 @@
 ---
 title: Placa de vídeo
-description: Modos VBE, framebuffer linear e double buffering sem cintilação.
+description: VBE, memória mapeada, cores, XPM, sprites e apresentação de frames.
 section: conteudo
-order: 7
+order: 8
+practices:
+  - lc/praticar-video
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 import Typst from '../../../components/Typst.astro';
 import fb from '../../lc/framebuffer.typ?raw';
 
-A **placa de vídeo** em modo gráfico expõe a imagem como um **framebuffer**: uma zona de memória onde cada posição corresponde a um píxel no ecrã. Desenhar é escrever bytes nos endereços certos. O trabalho desta página é mapear o modo gráfico, calcular o endereço de cada píxel e eliminar a cintilação com dois buffers.
+Em modo gráfico, o ecrã representa uma matriz de píxeis. O framebuffer guarda a cor de cada píxel e o controlador de vídeo lê essa memória para apresentar a imagem. Desenhar exige conhecer tanto a organização da memória como a codificação das cores.
 
-## Modo gráfico e framebuffer
+## Modo e informação VBE
 
-O modo define-se pelo padrão VBE: resolução, bits por píxel e endereço base do framebuffer linear. Um modo clássico dos trabalhos é 1024 por 768 com 8 bits por píxel (256 cores indexadas): cada píxel ocupa exatamente um byte, e o framebuffer inteiro ocupa $1024 \times 768 = 786432$ bytes. O endereço do píxel $(x, y)$ é:
+A VBE, Video BIOS Extension, oferece uma interface para consultar e selecionar modos gráficos sem programar os registos privados de cada GPU. O ambiente do laboratório usa a interface da BIOS `INT 0x10`, invocada através do apoio Minix.
+
+| Função em AX | Operação                                            |
+| ------------ | --------------------------------------------------- |
+| `0x4F00`     | Informação do controlador VBE                       |
+| `0x4F01`     | Informação de um modo                               |
+| `0x4F02`     | Selecionar modo                                     |
+| `0x4F07`     | Consultar ou alterar o início da imagem apresentada |
+
+Para selecionar o modo `0x105` com framebuffer linear, BX recebe `0x105 | (1 << 14)`, ou `0x4105`. O bit 14 pede o acesso linear; não faz parte do identificador base do modo.
+
+Uma função completa para o ambiente Minix/LCF, com o apoio de BIOS da imagem da cadeira, é:
+
+```c
+#include <lcom/lcf.h>
+#include <machine/int86.h>
+#include <stdint.h>
+
+int set_linear_mode(uint16_t mode) {
+  reg86_t registers = {0};
+  registers.intno = 0x10;
+  registers.ax = 0x4F02;
+  registers.bx = (uint16_t)(mode | (1u << 14));
+  int result = sys_int86(&registers);
+  if (result != OK) return result;
+  return registers.ax == 0x004F ? OK : 1;
+}
+```
+
+O resultado esperado de `set_linear_mode(0x105)` é o modo selecionado, se suportado. A função verifica duas coisas: a chamada Minix foi executada e a VBE devolveu sucesso em AX. Não aloca nem mapeia o framebuffer. Não funciona num compilador C portátil nem substitui a inicialização completa de vídeo.
+
+Antes de desenhar, consulta a informação do modo. Conserva resolução horizontal e vertical, bits por píxel, bytes por linha, modelo de memória, posições e tamanhos dos campos RGB e endereço físico da VRAM. Não assumas que dois modos de 16 bpp têm os mesmos campos de cor.
+
+A função VBE `0x4F01` escreve um bloco de informação em memória acessível pela BIOS, indicado por ES:DI no modelo de real mode. O apoio da cadeira trata dessa alocação e cópia para `vbe_mode_info_t`. Um apontador virtual arbitrário de C não é automaticamente um endereço válido para a BIOS.
+
+## Mapear memória física
+
+`PhysBasePtr` é o endereço físico do framebuffer. Não o convertas simplesmente para um apontador e escrevas: o processo usa endereços virtuais. No Minix, a sequência é obter permissão para a região com `sys_privctl`, mapeá-la com `vm_map_phys` e conservar o apontador virtual devolvido.
+
+Se cada linha ocupa `pitch` bytes e há `height` linhas, a região usada por uma imagem ocupa `pitch * height` bytes. Valida o produto num tipo capaz de representar o tamanho e confere falhas em todas as operações. Ao sair, desmonta o mapeamento e repõe o modo de texto através do apoio do ambiente. Falhar depois de selecionar o modo também exige reposição.
+
+## Calcular o endereço de um píxel
+
+Num modo linear com píxeis ocupando um número inteiro de bytes:
 
 $$
-\text{endere\c{c}o} = \text{base} + y \times \text{bytes\_por\_linha} + x \times \text{bytes\_por\_p\'ixel}
+B=\left\lceil\frac{bpp}{8}\right\rceil,\qquad
+\text{offset}(x,y)=y\cdot pitch+x\cdot B.
 $$
+
+$B$ é o número de bytes por píxel. `pitch` pode ser maior do que `width * B`, devido a alinhamento ou organização do modo. O intervalo visível exige $0\leq x<width$ e $0\leq y<height$.
 
 <Typst
   source={fb}
   format="svg"
-  alt="Grelha de píxeis com coordenadas e a fórmula do índice: linha vezes bytes por linha mais coluna vezes bytes por píxel."
+  alt="Píxeis consecutivos na mesma linha ocupam posições consecutivas; o início da linha seguinte depende do pitch. No exemplo de 8 bpp sem padding, o índice é y vezes 1024 mais x."
 />
 
-Com 8 bits por píxel, `bytes_por_píxel` é 1 e `bytes_por_linha` é 1024 (mais eventuais bytes de enchimento no fim de cada linha, que se lêem nas informações do modo e nunca se assumem). Com mais bits por píxel, cada píxel ocupa vários bytes seguidos e a cor escreve-se por componentes.
+No modo de 1024 por 768 a 8 bpp com `pitch = 1024`, o píxel `(200,150)` começa em $150\cdot1024+200=153800$. Uma imagem ocupa 786432 bytes, ou 768 KiB. Isso não é necessariamente toda a VRAM disponível na placa.
 
-## Exemplo: desenhar um retângulo
+Agora considera largura 4, altura 2, 24 bpp e `pitch = 14`. Cada linha tem 12 bytes visíveis mais dois bytes de padding. O píxel `(3,1)` começa em $14+3\cdot3=23$ e ocupa os bytes 23, 24 e 25. O cálculo `y * width * 3 + x * 3` começaria erradamente no byte 21.
 
-Para pintar um retângulo de 100 por 50 píxeis com o canto superior esquerdo em $(200, 150)$, percorrem-se as 50 linhas de $y = 150$ a $y = 199$ e, em cada uma, escrevem-se 100 bytes a partir de $x = 200$:
+## Índices e cores diretas
+
+Num modo **indexado**, o valor do píxel escolhe uma entrada da paleta. Com oito bits, há até 256 índices; isso não significa que cada índice seja um valor RGB de oito bits.
+
+Num modo **direct color**, a palavra do píxel contém componentes. Para cada componente com $s$ bits a partir da posição $p$, isola-a com:
+
+$$component=(color\gg p)\mathbin{\&}(2^s-1).$$
+
+Para compor a cor, limita cada componente ao seu campo e desloca-a para a posição correta. No formato RGB565, R tem cinco bits na posição 11, G seis na posição 5 e B cinco na posição 0. Para $(R,G,B)=(31,0,15)$:
+
+$$color=(31\ll11)\,|\,(0\ll5)\,|\,15=\texttt{0xF80F}.$$
+
+No x86 little-endian, os dois bytes em memória são `0F F8`. O significado dos campos da palavra e a ordem dos bytes em memória são questões diferentes. Em 24 bpp, não existe um tipo `uint24_t` padrão e escrever um `uint32_t` pisaria o píxel seguinte.
+
+Este programa portátil escreve um píxel de 24 bits numa imagem com padding. Define explicitamente que os três bytes contêm os 24 bits inferiores em ordem little-endian:
 
 ```c
-for (int y = 150; y < 150 + 50; y++) {
-  for (int x = 200; x < 200 + 100; x++) {
-    framebuffer[y * 1024 + x] = COR;
-  }
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+
+static bool pixel24(uint8_t *buffer, size_t size, size_t pitch,
+                    size_t width, size_t height, size_t x, size_t y,
+                    uint32_t color) {
+  if (x >= width || y >= height) return false;
+  size_t offset = y * pitch + x * 3;
+  if (offset > size || size - offset < 3) return false;
+  for (unsigned i = 0; i < 3; ++i)
+    buffer[offset + i] = (uint8_t)(color >> (8 * i));
+  return true;
+}
+
+int main(void) {
+  uint8_t image[28] = {0};
+  if (!pixel24(image, sizeof image, 14, 4, 2, 3, 1, 0x123456))
+    return 1;
+  printf("%02X %02X %02X\n", (unsigned)image[23],
+         (unsigned)image[24], (unsigned)image[25]);
+  return 0;
 }
 ```
 
-São $100 \times 50 = 5000$ bytes escritos. O cálculo do índice usa sempre `bytes_por_linha` (1024), nunca a largura visível assumida de cor: se o modo tiver enchimento, usar a largura desalinhava todas as linhas abaixo da primeira. Confirma a aritmética: o índice do píxel $(200, 150)$ é 153800 e o framebuffer total tem 786432 bytes.
+A saída é `56 34 12`. Este exemplo usa dimensões pequenas fixas, em que os produtos não transbordam. Uma API que aceite dimensões arbitrárias deve validar também as multiplicações. A função guarda bytes, não converte uma cor RGB para campos arbitrários de um modo VBE.
 
-<CodePlayground
-  language="c"
-  title="Índice e tamanho do framebuffer"
-  code={
-    '#include <stdio.h>\n\nint main(void) {\n    int largura = 1024, altura = 768, bpp = 1;\n    int x = 200, y = 150;\n    int indice = y * largura + x * bpp;\n    printf("indice=%d\\n", indice);\n    printf("total=%d\\n", largura * altura * bpp);\n    return 0;\n}'
-  }
-/>
+## Linhas, retângulos e clipping
 
-Cada primitiva gráfica (linha, círculo, sprite) é uma variação deste padrão de percorrer posições e escrever cores.
+Uma linha horizontal escreve píxeis com X consecutivo e Y fixo. Um retângulo chama a mesma operação em várias linhas. Para largura $w$ e altura $h$, desenha no intervalo semiaberto $[x,x+w)\times[y,y+h)$, que contém $wh$ píxeis.
 
-## 8 ou 16 bits por píxel
+Escolhe o contrato: rejeitar figuras parcialmente fora do ecrã ou recortá-las, **clipping**. Para rejeitar sem overflow, depois de validar a origem, compara `w <= screen_width - x` e `h <= screen_height - y`. Calcular `x + w` primeiro num tipo pequeno pode dar a volta e aceitar uma figura inválida.
 
-A única coisa que muda com a profundidade de cor é quantos bytes cada píxel ocupa:
+Para copiar uma linha de um sprite, respeita o passo entre linhas tanto na origem como no destino. Uma única cópia de `sprite_width * sprite_height * B` só é correta se a disposição dos dois retângulos for contígua de forma compatível. No ecrã, a próxima linha pode começar muito depois do fim da linha do sprite.
 
-<Tabs id="profundidade-cor" labels={['8 bpp', '16 bpp']}>
-  <div slot="panel-0">
+## XPM e sprites
 
-Um byte por píxel: `bytes_por_píxel` é 1, o índice é `y * 1024 + x` e o total é 786432 bytes. A cor é um índice para a paleta de 256 cores.
+Um XPM representa píxeis por símbolos de texto. O cabeçalho indica largura, altura, número de cores e número de caracteres por píxel. Seguem-se as definições de cores e as linhas da imagem. Um XPM de altura $h$ com $c$ cores contém, no formato simples usado no exemplo, $1+c+h$ strings.
 
-  </div>
-  <div slot="panel-1">
+`xpm_load` converte essa representação para um pixmap no formato pedido, como `XPM_INDEXED` ou `XPM_8_8_8`. A estrutura `xpm_image_t` guarda dimensões, tamanho e bytes. Verifica se a conversão devolve `NULL`. Carrega uma vez por recurso e reutiliza o resultado, em vez de voltar a interpretar o XPM em cada frame.
 
-Dois bytes por píxel: `bytes_por_píxel` é 2, o índice é `y * bytes_por_linha + x * 2` e o total é 1572864 bytes. A cor escreve-se por componentes (vermelho, verde, azul) nos dois bytes.
+Um **sprite** reúne um pixmap e a informação necessária para o colocar na cena. A transparência significa não escrever certos píxeis do sprite. Não assumas que preto é sempre transparente: usa o valor e o formato definidos para o recurso. A ordem de desenho determina quais objetos ficam por cima de outros.
 
-  </div>
-</Tabs>
+Uma animação pode escolher um de vários pixmaps. Se cada figura dura quatro frames e desenhas a 30 frames/s, cada figura dura $4/30$ s. Com três figuras, um ciclo completo dura $12/30=0{,}4$ s. Mudar o pixmap e mudar a posição são operações separadas.
 
-## Double buffering contra a cintilação
+Para movimento, se `speed = 3` significa três píxeis por frame, a 30 frames/s obtemos 90 píxeis/s. Na convenção de velocidade negativa usada em exercícios do laboratório, `speed = -3` significa um píxel a cada três frames, ou 10 píxeis/s a 30 frames/s. Limita o último passo à distância que falta, para chegar à posição final sem passar além dela.
 
-Se desenhares diretamente no buffer visível, o utilizador vê o desenho a meio: sprites a aparecer por partes e o fundo a piscar. A solução é o **double buffering**: desenhas a imagem completa num segundo buffer fora do ecrã e depois copias tudo de uma vez (ou trocas o buffer visível). A cópia de $786432$ bytes é rápida face ao tempo de uma imagem, e o olho só vê imagens completas.
+## Double buffering e tearing
 
-A regra de ouro: nunca mistures desenho e apresentação no mesmo buffer. O ciclo de cada imagem é sempre desenhar tudo no buffer escondido, apresentar, e só depois começar a próxima.
+Desenhar diretamente na imagem visível pode mostrar um fundo apagado ou objetos incompletos. Com **double buffering**, compões o frame completo num back buffer e depois copias para o framebuffer. Isso reduz a exposição das fases intermédias de desenho, mas uma cópia ainda demora tempo.
 
-:::tip[Como depurar gráficos]
-Quando o ecrã mostra lixo, verifica por esta ordem: o modo foi bem definido e o endereço base é o anunciado, o cálculo do índice usa os bytes por linha do modo, a cor escrita cabe nos bits por píxel, e estás a desenhar no buffer escondido e a apresentar depois. A maioria dos ecrãs estranhos é um índice mal calculado, não hardware avariado.
-:::
+Se o controlador ler o framebuffer durante a cópia, uma parte da imagem pode ser do frame antigo e outra do novo. Isso é **tearing**. Double buffering por cópia não garante que o ecrã veja apenas frames completos.
 
-## Para saber mais
+Com **page flipping**, ambos os buffers estão na VRAM e alteras qual é o apresentado, usando uma operação como VBE `Set Display Start`. Para evitar tearing, a mudança deve respeitar a sincronização com o refrescamento vertical. A frequência do timer da aplicação não garante que estejas sincronizado com o ecrã.
 
-- [Modos de vídeo VBE (OSDev)](https://wiki.osdev.org/VESA_Video_Modes): estrutura de informação do modo e ativação do framebuffer linear.
-- [Desenhar no framebuffer linear (OSDev)](https://wiki.osdev.org/Drawing_In_a_Linear_Framebuffer): desenho com `pitch` e bits por píxel.
+**Triple buffering** acrescenta outro back buffer para permitir preparar um novo frame enquanto um frame completo aguarda apresentação. Exige uma política sobre qual apresentar e o apoio da implementação. Não melhora automaticamente uma chamada de apresentação bloqueante. Distingue sempre tempo de simulação, ritmo de construção dos frames e ritmo de refrescamento do ecrã.

@@ -1,0 +1,221 @@
+---
+title: Memória, funções e objetos em C
+description: Duração dos objetos, stack frames, propriedade da memória e apontadores para funções.
+section: conteudo
+order: 2
+practices:
+  - lc/praticar-memoria
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import stackframe from '../../lc/stack-frame.typ?raw';
+
+Um endereço só é útil enquanto o objeto a que aponta existe. Muitos erros de C nascem da confusão entre o nome de uma variável, o objeto na memória e a duração desse objeto.
+
+## Organização da memória
+
+Um processo tem um espaço de endereçamento virtual. Uma organização habitual separa código executável, dados globais e estáticos, memória de alocação dinâmica e pilhas das chamadas. Esta organização não fixa endereços universais nem uma posição obrigatória para cada variável: o compilador pode guardar valores em registos e eliminar objetos que não precisam de existir na memória.
+
+| Objeto                          | Quando existe                       | Quem controla a duração |
+| ------------------------------- | ----------------------------------- | ----------------------- |
+| Variável automática de um bloco | Da entrada no bloco até à saída     | A execução do bloco     |
+| Global ou `static`              | Durante a execução do programa      | O programa e o ambiente |
+| Memória de `malloc`             | Da alocação bem-sucedida até `free` | O código que a possui   |
+
+**Âmbito** é onde podes usar um nome no código. **Duração** é durante quanto tempo o objeto existe. Uma variável `static` dentro de uma função tem âmbito local, mas conserva o valor entre chamadas.
+
+## Passagem de parâmetros
+
+C passa todos os argumentos por valor. Um apontador também é um valor: a função recebe uma cópia do endereço. Desreferenciar essa cópia permite alterar o objeto original.
+
+```c
+#include <stdio.h>
+
+static int by_value(int x) { x = 9; return x; }
+static void by_pointer(int *x) { *x = 9; }
+
+int main(void) {
+  int n = 3;
+  by_value(n);
+  printf("%d\n", n);
+  by_pointer(&n);
+  printf("%d\n", n);
+  return 0;
+}
+```
+
+A saída é `3` e depois `9`. Na primeira chamada, apenas a cópia muda; o chamador ignora o valor devolvido. Na segunda, `*x` designa `n`.
+
+A mesma distinção explica por que `p = NULL` dentro de uma função que recebe `int *p` não põe a variável do chamador a `NULL`. Para substituir o apontador do chamador, devolve o novo apontador ou recebe o endereço desse apontador, de tipo `int **`.
+
+## Chamada, stack frame e retorno
+
+Uma chamada precisa de guardar onde deve continuar depois do retorno, tornar os argumentos disponíveis e reservar espaço para os dados locais que o exigirem. No modelo IA-32 habitual com argumentos na pilha, cada chamada cria um **stack frame**.
+
+<Typst
+  source={stackframe}
+  format="svg"
+  alt="Modelo de um stack frame IA-32: argumentos, endereço de retorno, frame pointer anterior e variáveis locais. A convenção de chamada determina a disposição concreta."
+/>
+
+O frame pointer pode servir de referência fixa para encontrar os argumentos e variáveis locais, enquanto o stack pointer acompanha a ocupação da pilha. O código chamado conserva os registos que a convenção exige e coloca o resultado no local definido por essa convenção. No retorno, desfaz o frame e continua no endereço guardado.
+
+Este é um modelo da convenção de chamada, não uma exigência de C. Noutras arquiteturas ou com otimização, alguns argumentos vão em registos e o frame pointer pode não existir. Em recursão, cada chamada tem os seus próprios objetos automáticos: a variável local da chamada exterior não é a da chamada interior.
+
+Nunca devolvas o endereço de uma variável automática:
+
+```c
+/* Incorreto: o objeto local deixa de existir quando a função retorna. */
+int *bad_result(void) {
+  int result = 42;
+  return &result;
+}
+```
+
+Mesmo que um teste imprima 42, o acesso já não é válido. Para devolver um inteiro, devolve o inteiro. Para produzir vários resultados, usa uma `struct` por valor ou recebe um apontador para armazenamento que o chamador possui.
+
+## Alocação e propriedade
+
+`malloc` devolve armazenamento sem inicialização ou `NULL` se falhar. Calcula o tamanho a partir do objeto apontado, valida a falha, inicializa antes de ler e liberta exatamente uma vez. Depois de `free`, não leias nem escrevas o objeto, mesmo que ainda tenhas o seu endereço.
+
+Este exemplo completo cria cinco inteiros. A saída é `soma=150`.
+
+<CodePlayground
+  language="c"
+  title="Alocar e libertar um vetor"
+  code={
+    '#include <stdio.h>\n#include <stdlib.h>\n\nint main(void) {\n  size_t n = 5;\n  int *values = malloc(n * sizeof *values);\n  if (values == NULL) return 1;\n  int sum = 0;\n  for (size_t i = 0; i < n; ++i) {\n    values[i] = (int)(i + 1) * 10;\n    sum += values[i];\n  }\n  printf("soma=%d\\n", sum);\n  free(values);\n  values = NULL;\n  return 0;\n}'
+  }
+/>
+
+Para tamanhos recebidos de fora, confere também que `n * sizeof *values` não transborda `SIZE_MAX`. Um cast ao resultado de `malloc` é desnecessário em C quando incluis `<stdlib.h>`.
+
+A **propriedade** responde a duas perguntas: quem pode usar o objeto e quem o deve libertar? Por exemplo, um sprite pode possuir o seu pixmap. Destruir o sprite liberta os dois. Se vários sprites partilham um pixmap, cada um libertá-lo causaria uma dupla libertação. Nesse caso, o módulo de recursos mantém o pixmap e os sprites apenas o usam.
+
+Num construtor com várias alocações, uma falha na segunda obriga a libertar a primeira. Não publiques um objeto parcialmente inicializado. A regra também vale para recursos de hardware: se a subscrição do rato falhar depois da do timer, remove a subscrição do timer antes de sair.
+
+## Estruturas, unions e alinhamento
+
+Uma `struct` reserva espaço para todos os campos. O compilador pode acrescentar bytes de alinhamento entre campos e no fim. Por isso, a soma dos tamanhos dos campos pode ser menor do que `sizeof(struct)`.
+
+Uma `union` partilha armazenamento entre alternativas. Num valor com alternativas, guarda também uma etiqueta que indique qual delas está ativa:
+
+```c
+enum event_kind { KEY_EVENT, MOVE_EVENT };
+struct event {
+  enum event_kind kind;
+  union {
+    unsigned key;
+    struct { int x, y; } move;
+  } data;
+};
+```
+
+Se `kind == MOVE_EVENT`, interpreta `data.move`. Não uses `data.key` para descobrir automaticamente a alternativa. Esta estrutura chama-se **tagged union** e evita reservar os dados de todos os eventos ao mesmo tempo.
+
+Uma estrutura de um protocolo ou da BIOS pode exigir uma disposição exata. Nesses casos, o apoio da cadeira usa estruturas empacotadas. Isso pode criar campos desalinhados e é dependente do compilador. Não envies uma `struct` C crua pela UART: padding, endianness e tamanhos podem mudar. Serializa cada campo num formato definido.
+
+## Filas e tipos genéricos
+
+Uma fila conserva a ordem de chegada. Numa fila circular com capacidade $C$, o índice de entrada aponta para o próximo lugar onde escrever, o de saída aponta para o próximo elemento e a quantidade distingue cheio de vazio. Depois de avançar, usa índice módulo $C$.
+
+Com capacidade 3, começa em `in = out = count = 0`. Enfileirar A e B coloca-os nas posições 0 e 1. Retirar A deixa `out = 1` e `count = 1`. Enfileirar C usa a posição 2 e faz `in` voltar a 0. Enfileirar D usa a posição 0. A fila está cheia e a ordem de saída é B, C, D, apesar de a ordem física no array ser D, B, C.
+
+Para guardar valores de diferentes tipos, conserva o tamanho de um elemento e copia bytes. Um `void *` não permite aritmética de apontadores no C padrão, porque `void` não tem tamanho. Usa um apontador para `unsigned char` na representação interna e calcula `index * element_size`.
+
+Este programa completo guarda dois pares de coordenadas numa fila genérica de capacidade 3. A fila copia os valores, não conserva apontadores para as variáveis locais de quem insere. A saída é `2,3` e `5,8`.
+
+```c
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct queue {
+  unsigned char *bytes;
+  size_t capacity, element_size, in, out, count;
+};
+
+static struct queue *queue_new(size_t capacity, size_t element_size) {
+  if (capacity == 0 || element_size == 0 || capacity > SIZE_MAX / element_size)
+    return NULL;
+  struct queue *q = malloc(sizeof *q);
+  if (q == NULL) return NULL;
+  q->bytes = malloc(capacity * element_size);
+  if (q->bytes == NULL) { free(q); return NULL; }
+  q->capacity = capacity;
+  q->element_size = element_size;
+  q->in = q->out = q->count = 0;
+  return q;
+}
+
+static bool queue_put(struct queue *q, const void *value) {
+  if (q->count == q->capacity) return false;
+  memcpy(q->bytes + q->in * q->element_size, value, q->element_size);
+  q->in = (q->in + 1) % q->capacity;
+  ++q->count;
+  return true;
+}
+
+static bool queue_get(struct queue *q, void *value) {
+  if (q->count == 0) return false;
+  memcpy(value, q->bytes + q->out * q->element_size, q->element_size);
+  q->out = (q->out + 1) % q->capacity;
+  --q->count;
+  return true;
+}
+
+static void queue_delete(struct queue *q) {
+  if (q == NULL) return;
+  free(q->bytes);
+  free(q);
+}
+
+int main(void) {
+  struct point { int x, y; } a = {2, 3}, b = {5, 8}, value;
+  struct queue *q = queue_new(3, sizeof a);
+  if (q == NULL) return 1;
+  if (!queue_put(q, &a) || !queue_put(q, &b)) {
+    queue_delete(q);
+    return 1;
+  }
+  while (queue_get(q, &value)) printf("%d,%d\n", value.x, value.y);
+  queue_delete(q);
+  return 0;
+}
+```
+
+O chamador tem de fornecer objetos com pelo menos `element_size` bytes nas operações de inserção e remoção. A cópia é superficial: se um elemento contiver um apontador, copia o endereço, não o objeto apontado. Define separadamente quem possui esse objeto.
+
+Uma API de biblioteca pode ocultar `struct queue` no `.c` e expor apenas o tipo incompleto no `.h`. Uma fila com crescimento dinâmico exige ainda tratar falhas de realocação e reconstruir a ordem quando os elementos atravessam o fim do array. Um `realloc` bem-sucedido conserva bytes, mas não reorganiza sozinho uma fila circular. O exemplo usa capacidade fixa e devolve falha quando fica cheia.
+
+## Apontadores para funções
+
+`int (*operation)(int)` declara um apontador para uma função que recebe um `int` e devolve um `int`. Os parênteses são necessários: `int *operation(int)` declararia uma função que devolve um apontador.
+
+```c
+#include <stdio.h>
+
+static int twice(int n) { return 2 * n; }
+static int increment(int n) { return n + 1; }
+
+int main(void) {
+  int (*operations[])(int) = {twice, increment};
+  for (size_t i = 0; i < 2; ++i)
+    printf("%d\n", operations[i](4));
+  return 0;
+}
+```
+
+A saída é `8` e `5`. Uma tabela deste tipo pode selecionar um handler pelo tipo de evento. Confere o índice antes de aceder e mantém todas as funções com a assinatura declarada. Converter apontadores incompatíveis não adapta os argumentos.
+
+Um tipo opaco permite esconder os campos de um objeto: o cabeçalho declara `struct sprite;`, expõe operações com `struct sprite *` e o `.c` define os campos. O utilizador não precisa do tamanho interno para conservar o apontador. Precisa de conhecer o contrato de criação, uso e destruição.
+
+## Argumentos variáveis
+
+Uma função com `...` não recebe informação automática sobre o número e o tipo dos argumentos. `printf` usa a cadeia de formato; um construtor de animações pode receber uma contagem explícita. A leitura usa `va_list`, `va_start`, `va_arg` e `va_end` de `<stdarg.h>`.
+
+Os argumentos variáveis sofrem promoções: `float` passa como `double` e tipos inteiros pequenos passam normalmente como `int`. Pedir `va_arg(args, float)` para um `float` recebido assim é errado. Quando não precisas de tipos variáveis, um array mais um comprimento costuma ter um contrato mais fácil de conferir.

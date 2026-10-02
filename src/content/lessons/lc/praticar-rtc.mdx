@@ -1,0 +1,93 @@
+---
+title: Praticar RTC
+description: Exercícios originais de raciocínio, com pistas e soluções completas.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="lc-bcd-hora"
+  title="Converter BCD e PM"
+  explanation="/cadeiras/lc/relogio-tempo-real/#bcd-e-formato-das-horas"
+  answer={{ kind: 'number', value: 21, tolerance: 0, unit: 'h' }}
+>
+  <p>
+    O RTC está em BCD e formato de 12 horas. O byte de horas vale 0x89, com bit
+    7 a indicar PM. Qual é a hora em formato de 0 a 23?
+  </p>
+  <div slot="hint">Separa primeiro o bit PM.</div>
+  <div slot="hint-more">0x09 em BCD significa 9.</div>
+  <div slot="solution">
+    0x89 contém PM e os algarismos BCD 09. Como é 9 PM, a conversão dá 9 + 12 =
+    21 horas. Não incluas o bit PM na conversão BCD.
+  </div>
+  <div slot="mistakes">
+    Converter 0x89 inteiro como BCD ou tratar o byte como binário.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-causas-rtc"
+  title="Atender causas simultâneas"
+  explanation="/cadeiras/lc/relogio-tempo-real/#três-causas-uma-irq"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei PF e AF.',
+      'Guardei o resultado da leitura de C.',
+      'Usei testes independentes e expliquei o efeito de limpeza.',
+    ],
+  }}
+>
+  <p>
+    O handler lê C e obtém 0xE0. Quais são as causas assinaladas e por que deve
+    usar o byte guardado para as tratar?
+  </p>
+  <div slot="hint">C tem IRQF no bit 7 e causas nos bits 6, 5 e 4.</div>
+  <div slot="hint-more">0xE0 tem bits 7, 6 e 5 a 1.</div>
+  <div slot="solution">
+    IRQF está ativo e as causas são PF, periodic, e AF, alarm. UF não está
+    ativo. A leitura de C limpa flags; reler C para decidir a segunda causa pode
+    já não a mostrar. Guarda 0xE0 e usa if independentes para PF e AF.
+  </div>
+  <div slot="mistakes">
+    Tratar só uma causa com else if ou omitir a leitura de C e deixar o pedido
+    ativo.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-hora-incoerente"
+  title="Reconstruir uma leitura impossível"
+  explanation="/cadeiras/lc/relogio-tempo-real/#ler-uma-hora-coerente"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Construí uma hora que não corresponde ao instante real.',
+      'Expliquei a atualização entre campos.',
+      'Propus uma estratégia com hipóteses e repetição.',
+    ],
+  }}
+>
+  <p>
+    A hora muda de 12:59:59 para 13:00:00. Lês horas antes da mudança e minutos
+    e segundos depois. Que hora obténs e por que consultar UIP apenas uma vez
+    pode não bastar?
+  </p>
+  <div slot="hint">O campo de horas veio da fotografia antiga.</div>
+  <div slot="hint-more">
+    O processo pode ser suspenso entre a consulta e as leituras.
+  </div>
+  <div slot="solution">
+    Obténs 12:00:00, quase uma hora atrás da nova hora. Os campos pertencem a
+    atualizações diferentes. UIP a 0 numa consulta anterior não impede uma
+    atualização após suspensão do processo. Uma estratégia usa leituras
+    completas repetidas e coerentes, ou uma leitura após fim de atualização,
+    respeitando o intervalo de tempo disponível.
+  </div>
+  <div slot="mistakes">
+    Supor que registos distintos são lidos como uma fotografia atómica ou que
+    converter BCD resolve coerência.
+  </div>
+</Exercise>
