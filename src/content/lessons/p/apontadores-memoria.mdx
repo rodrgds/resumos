@@ -1,148 +1,143 @@
 ---
 title: Apontadores e memória
-description: Endereços, dereferenciação, aritmética de apontadores, new e delete, fugas de memória e RAII.
+description: 'Endereços, aliases, limites, duração de vida, new e delete, propriedade e RAII.'
 section: conteudo
-order: 2
+order: 3
+practices:
+  - p/praticar-memoria
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
-import caixas from '../../p/caixas.typ?raw';
+import Dot from '../../../components/Dot.astro';
 
-Cada variável do teu programa vive num sítio concreto da memória, e esse sítio tem um **endereço**, um número que o identifica. Até agora ignoraste os endereços, e fizeste bem. Mas há estruturas, como listas ligadas e vetores que crescem, que só consegues construir se guardares e seguires endereços. Um **apontador** é exatamente isso: uma variável que guarda o endereço de outra variável.
+Um apontador guarda o endereço de um objeto. Saber o endereço permite aceder ao objeto, mas não garante que ele ainda existe, que o acesso é permitido ou que o apontador é responsável por o destruir. Estas perguntas têm de ser respondidas separadamente.
 
 ## Endereço de e dereferenciação
 
-O operador `&` devolve o endereço de uma variável e o operador `*` tem dois papéis: na declaração, marca a variável como apontador; fora dela, **dereferencia** o apontador, ou seja, acede ao valor que está no endereço guardado:
-
-```cpp
-#include <iostream>
-
-int main() {
-    int x = 42;
-    int* p = &x;
-    std::cout << *p << "\n";
-    *p = 7;
-    std::cout << x << "\n";
-}
-```
-
-Isto escreve `42` e depois `7`. O apontador `p` guarda o endereço de `x`, por isso `*p` lê o valor de `x` e `*p = 7` altera `x` sem lhe tocares pelo nome. Um apontador e a variável para onde aponta são duas vistas da mesma caixa: mudar por uma das vistas aparece na outra.
-
-Se imprimires o próprio `p` com `std::cout << p`, vês o endereço em hexadecimal, algo como `0x7ffee3a1b2cc`. O valor concreto muda de cada vez que corres o programa; o que interessa é que dois apontadores para a mesma variável mostram o mesmo endereço.
-
-<Dot
-  source={
-    'digraph Apontador { rankdir=LR; p [shape=box, label="p"]; x [shape=box, label="x = 42"]; p -> x [label="endereço de x"]; }'
-  }
-  alt="Diagrama com duas caixas: p aponta com uma seta para x, que guarda 42."
-/>
-
-:::warning[Apontadores por inicializar]
-Um apontador declarado sem valor inicial, como `int* p;`, aponta para um endereço qualquer. Dereferenciá-lo (`*p = 7;`) escreve num sítio aleatório da memória e o programa pode avariar de formas estranhas. Inicializa sempre os apontadores: ou com um endereço válido (`&x`), ou com `nullptr` quando ainda não apontam para nada, e testa `if (p != nullptr)` antes de os usares.
-:::
-
-<YouTube id="DTxHyVn0ODg" title="POINTERS in C++, The Cherno" />
-
-## Apontadores e arrays
-
-Um array de C é um bloco contíguo de elementos do mesmo tipo, e o nome do array comporta-se como um apontador para o primeiro elemento. Somar um inteiro a um apontador avança esse número de elementos, não de bytes: chama-se **aritmética de apontadores**.
-
-```cpp
-#include <iostream>
-
-int main() {
-    int v[4] = {10, 20, 30, 40};
-    int* p = v;
-    std::cout << *p << " " << *(p + 2) << "\n";
-    std::cout << p[1] << "\n";
-}
-```
-
-Isto escreve `10 30` e depois `20`. O `p + 2` salta dois inteiros a partir do início e `*(p + 2)` lê o terceiro elemento, `30`. A notação `p[1]` é equivalente a `*(p + 1)`: indexar um apontador é dereferenciar com um deslocamento. É por isto que os índices começam em zero: `v[0]` é o elemento que está a zero posições do início.
-
-O reverso também é verdade: `v[i]` num array usa a mesma aritmética. Quando saíres dos limites do array, o compilador não te trava e lês ou escreves memória de outra variável. É uma das fontes clássicas de erros em C e C++, e a razão pela qual a [STL](/cadeiras/p/templates-stl/) prefere o `vector`, que sabe o seu próprio tamanho.
-
-## Alocação dinâmica com new e delete
-
-As variáveis que declaraste até aqui vivem na **pilha** (stack) e desaparecem quando a função termina. Quando precisas de memória que sobreviva à função, ou cujo tamanho só conheces enquanto o programa corre, pedes memória à **área livre** (heap) com `new` e devolve-la com `delete`. Corre o exemplo com a entrada `4`:
+`&a` obtém o endereço de `a`. Numa declaração, `int* p` define um apontador para `int`. Numa expressão, `*p` **desreferencia** o apontador, ou seja, acede ao objeto apontado. `p = &b` muda o endereço guardado; `*p = 7` muda o objeto nesse endereço.
 
 <CodePlayground
   language="cpp"
-  title="Vetor com tamanho decidido em execução"
-  input="4"
+  title="Dois apontadores para o mesmo objeto"
+  input=""
   code={
-    '#include <iostream>\n\nint main() {\n    int n;\n    std::cout << "Quantos valores? ";\n    std::cin >> n;\n    int* v = new int[n];\n    for (int i = 0; i < n; i++) {\n        v[i] = (i + 1) * 10;\n    }\n    int soma = 0;\n    for (int i = 0; i < n; i++) {\n        soma += v[i];\n    }\n    std::cout << "Soma: " << soma << "\\n";\n    delete[] v;\n}'
+    '#include <iostream>\n\nint main() {\n    int a = 3;\n    int b = 8;\n    int* p = &a;\n    int* q = p;\n    *q += 2;\n    p = &b;\n    *p -= 1;\n    std::cout << a << " " << b << " " << *q << "\\n";\n}\n'
   }
 />
 
-Isto mostra `Quantos valores? Soma: 100`. O `new int[n]` reserva espaço para `n` inteiros escolhidos em tempo de execução, algo impossível com um array de tamanho fixo. Confere a soma: $10 + 20 + 30 + 40 = 100$. E repara no `delete[] v` com parênteses retos: array pedido com `new[]` devolve-se com `delete[]`; um único objeto pedido com `new` devolve-se com `delete` simples. Trocar os dois é um erro que o compilador não apanha.
+Saída:
+
+```text
+5 7 5
+```
+
+No início, `p` e `q` apontam para `a`. `*q += 2` altera `a` de `3` para `5`. Depois, `p = &b` muda apenas `p`; `q` continua a apontar para `a`. `*p -= 1` altera `b` para `7`. Os dois apontadores são objetos distintos, embora tenham começado com o mesmo valor.
+
+<Dot
+  source={
+    'digraph aliases { rankdir=LR; node [shape=box]; p [label="p"]; q [label="q"]; a [label="a = 5"]; b [label="b = 7"]; p -> b; q -> a; }'
+  }
+  alt="Estado final: p aponta para b, com valor 7; q aponta para a, com valor 5."
+/>
+
+Dois acessos ao mesmo objeto são **aliases**. Uma cópia de apontador copia um endereço, não duplica o objeto apontado. Imprimir um endereço pode ajudar a comparar identidades, mas o seu número depende da execução e não serve como saída fixa de um exercício.
+
+## Apontadores nulos e const
+
+`nullptr` representa ausência de objeto. Podes compará-lo e testá-lo; não podes desreferenciá-lo. `int* p;` deixa um apontador local sem inicialização. Em C++17, ler esse valor indeterminado ou tentar usá-lo não tem resultado válido em que possas confiar.
+
+| Declaração           | Pode mudar o endereço? | Pode alterar o `int` por esse acesso? |
+| -------------------- | ---------------------- | ------------------------------------- |
+| `int* p`             | Sim                    | Sim                                   |
+| `const int* p`       | Sim                    | Não                                   |
+| `int* const p`       | Não                    | Sim                                   |
+| `const int* const p` | Não                    | Não                                   |
+
+`const int* p` não torna necessariamente constante o objeto. Se o original não é `const`, outro acesso modificável pode alterá-lo. Já retirar `const` para modificar um objeto originalmente constante tem comportamento indefinido.
+
+## Apontadores e arrays
+
+Um array converte-se, em muitas expressões, num apontador para o primeiro elemento. `p + i` avança `i` elementos do tipo apontado, não `i` bytes. `p[i]` equivale a `*(p + i)` quando essa operação é válida.
+
+```cpp
+// Excerto com um array vivo de quatro elementos.
+int v[] = {10, 20, 30, 40};
+int* inicio = v;
+int* fim = v + 4;
+```
+
+`*(inicio + 2)` vale `30`. `fim` é a posição imediatamente depois do array, válida para marcar o fim de um intervalo. Não é um elemento e não se desreferencia. Avançar para além dessa posição também sai dos limites permitidos. Subtrair dois apontadores para elementos do mesmo array, ou para a posição depois do fim, dá a distância em elementos.
+
+A aritmética de apontadores não serve para saltar entre objetos independentes. O intervalo habitual é `[inicio, fim)`: inclui o início e exclui o fim. A página [Templates e STL](/cadeiras/p/templates-stl/#iteradores) usa esta convenção nos algoritmos.
+
+## Pilha, área livre e duração de vida
+
+Uma variável local normal tem **duração automática** e é destruída ao sair do bloco. A implementação costuma guardar estes objetos na pilha, ou _stack_. Um objeto criado com `new` tem duração dinâmica e permanece até à destruição explícita. O seu armazenamento vem da área livre, habitualmente chamada _heap_. A norma descreve durações de armazenamento; não exige uma organização física específica com estes nomes.
+
+Um apontador local e o objeto dinâmico para o qual aponta têm vidas diferentes. Ao sair da função, destruir o apontador não destrói um objeto criado com `new`. Retornar o endereço de uma variável local também não prolonga a vida dessa variável.
+
+```cpp
+// Código incorreto para análise. Não executar.
+int* endereco_invalido() {
+    int local = 5;
+    return &local;
+}
+```
+
+O objeto `local` morre ao sair da função. O endereço devolvido fica **pendente**, ou _dangling_. Não existe uma "saída esperada" para a leitura por esse endereço. Retorna o valor, ou usa um objeto com propriedade e duração adequadas.
+
+## Alocação dinâmica com new e delete
+
+`new T(...)` cria um objeto e devolve o seu endereço. `new T[n]` cria um array. Usa `delete` para o primeiro e `delete[]` para o segundo. A troca tem comportamento indefinido. `new` normal lança `std::bad_alloc` se não conseguir reservar memória.
+
+<CodePlayground
+  language="cpp"
+  title="Reserva dinâmica com tamanho validado"
+  input="4"
+  code={
+    '#include <iostream>\n\nint main() {\n    int n = 0;\n    if (!(std::cin >> n) || n < 0 || n > 1000) {\n        std::cout << "Tamanho invalido\\n";\n        return 0;\n    }\n    int* valores = new int[n]{};\n    int soma = 0;\n    for (int i = 0; i < n; ++i) {\n        valores[i] = i + 1;\n        soma += valores[i];\n    }\n    std::cout << "Soma: " << soma << "\\n";\n    delete[] valores;\n}\n'
+  }
+/>
+
+Saída:
+
+```text
+Soma: 10
+```
+
+O tamanho é limitado para evitar uma reserva descontrolada e para manter a soma em `int`. `new int[n]{}` inicializa os elementos a zero. O ciclo substitui-os por `1`, `2`, `3` e `4`, somando `10`. Para `n = 0`, a soma é `0` e `delete[]` continua válido. O endereço de um array vazio não autoriza qualquer indexação.
 
 ## Fugas de memória e double-free
 
-Cada `new` sem o `delete` correspondente é uma **fuga de memória** (memory leak): a memória fica reservada mas ninguém a pode usar nem libertar, e num programa longo as fugas acumulam-se até o computador ficar sem memória. O erro simétrico é o **double-free**, libertar duas vezes a mesma memória, que corrompe a gestão da área livre e costuma avariar o programa.
+Há fuga quando um recurso reservado deixa de ter uma forma válida de ser libertado. Sobrescrever o único apontador dono perde essa possibilidade. Libertar duas vezes o mesmo objeto causa _double-free_; aceder depois da libertação é _use-after-free_. Ambos têm comportamento indefinido.
 
-```cpp
-#include <iostream>
-
-int main() {
-    int* p = new int(5);
-    std::cout << *p << "\n";
-    delete p;
-    p = nullptr;
-}
-```
-
-Isto escreve `5`. O `new int(5)` reserva um inteiro já inicializado a `5`. Depois do `delete`, o apontador fica **pendente** (dangling): aponta para memória que já não é nossa. Atribuir `nullptr` logo a seguir é um hábito barato que transforma usos acidentais em erros detetáveis em vez de corrupção silenciosa.
-
-:::tip[Um new, um delete, no mesmo nível]
-Escreve o `delete` logo que escreves o `new`, antes de escreveres o código do meio. Assim nunca te esqueces, e se o código do meio crescer com saídas antecipadas (`return` a meio da função), vês logo que precisas de libertar antes de cada saída. Quando este malabarismo começar a cansar, é sinal de que precisas da próxima secção.
-:::
+Depois de `delete p`, todos os aliases do objeto ficam pendentes. Fazer `p = nullptr` evita um uso posterior por esse nome e permite `delete p` sem efeito. Não corrige os outros aliases, não deteta automaticamente o erro e não torna a desreferenciação nula segura. `delete nullptr` é válido; `*nullptr` não é.
 
 ## O essencial de RAII e smart pointers
 
-Gerir `new` e `delete` à mão em programas grandes é impraticável: basta uma exceção ou um `return` esquecido para a fuga acontecer. A resposta do C++ moderno é o **RAII** (Resource Acquisition Is Initialization): um objeto que pede o recurso no construtor e o liberta no destrutor, por isso a libertação acontece automaticamente quando o objeto sai de âmbito, aconteça o que acontecer. Vais perceber construtores e destrutores nas [classes](/cadeiras/p/classes-objetos/), mas a ideia fica já registada.
+**RAII**, _Resource Acquisition Is Initialization_, liga um recurso à duração de vida de um objeto dono. O construtor adquire ou recebe o recurso; o destrutor liberta-o. Ao sair normalmente de um âmbito, ou quando uma exceção sai dele, os donos automáticos são destruídos. Assim, a libertação não depende de repetir `delete` em cada saída.
 
-A aplicação direta são os **smart pointers** da biblioteca `<memory>`: `unique_ptr` para posse exclusiva e `shared_ptr` para posse partilhada. Com um `unique_ptr`, nem escreves `delete`:
+`std::vector` e `std::string` já gerem a sua memória. `std::unique_ptr<T>` representa propriedade exclusiva de um objeto dinâmico; não se copia, mas pode transferir a propriedade por movimento. `get()` fornece um apontador observador, sem transferir propriedade.
 
-```cpp
-#include <iostream>
-#include <memory>
-
-int main() {
-    std::unique_ptr<int> p = std::make_unique<int>(5);
-    std::cout << *p << "\n";
-}
-```
-
-Isto escreve `5`, tal como o exemplo anterior, mas sem `delete`: quando `p` sai de âmbito no fim de `main`, o destrutor liberta a memória sozinho. Nos teus primeiros exercícios continua a praticar `new` e `delete` à mão, porque o exame testa essa mecânica; nos teus projetos, prefere smart pointers e `vector`, que é onde o C++ moderno vive.
-
-<YouTube id="UOB7-B2MfwA" title="SMART POINTERS in C++, The Cherno" />
-
-## Exemplo resolvido: ler a memória em palavras
-
-Segue este programa e descreve o estado da memória depois de cada linha, sem correres nada. É o exercício que mais treina para o exame.
-
-```cpp
-int a = 3;      // (1)
-int* p = &a;    // (2)
-int b = *p + 1; // (3)
-*p = 10;        // (4)
-```
-
-Depois de (1), há uma caixa chamada `a` com o valor `3`. Depois de (2), há uma segunda caixa chamada `p` que guarda o endereço de `a`; desenhada como uma seta, a seta aponta para a caixa de `a`. Depois de (3), `*p` vale `3` (segue a seta e lê), por isso nasce uma terceira caixa `b` com o valor `4`; a seta não muda. Depois de (4), segue a seta e escreve `10` na caixa de destino: `a` passa a `10` e `b` continua `4`.
-
-<Typst
-  source={caixas}
-  format="svg"
-  alt="Três caixas: a guarda 3, p aponta com uma seta para a, e b guarda 4. A seta mostra que *p = 10 escreve na caixa de a."
+<CodePlayground
+  language="cpp"
+  title="Transferir propriedade exclusiva"
+  input=""
+  code={
+    '#include <iostream>\n#include <memory>\n#include <utility>\n\nint main() {\n    auto primeiro = std::make_unique<int>(7);\n    int* observador = primeiro.get();\n    auto segundo = std::move(primeiro);\n    std::cout << std::boolalpha << (primeiro == nullptr) << " "\n              << *segundo << " " << *observador << "\\n";\n}\n'
+  }
 />
 
-O ponto onde os alunos tropeçam é a linha (4): `*p = 10` não toca em `p`, toca em `a` através de `p`. O apontador continua a apontar para o mesmo sítio; o que mudou foi o conteúdo do sítio. Sempre que vires `*p` do lado esquerdo de uma atribuição, pergunta: "para onde aponta `p`?", porque é essa caixa que vai mudar.
+Saída:
 
-## Para saber mais
+```text
+true 7 7
+```
 
-- [Referência de `unique_ptr`](https://en.cppreference.com/cpp/memory/unique_ptr): posse exclusiva e `make_unique` na documentação oficial.
-- [Tutorial de apontadores](https://www.learncpp.com/cpp-tutorial/introduction-to-pointers/): erros comuns de inicialização com exemplos mínimos.
+Depois do movimento, `primeiro` está vazio e `segundo` é o dono. O inteiro não mudou de endereço e `observador` ainda é válido. Ao destruir `segundo`, o inteiro desaparece; qualquer observador que sobreviva fica pendente. Nunca faças `delete observador`.
+
+`std::shared_ptr` permite vários donos e destrói o objeto quando termina a última propriedade forte. Tem custo de gestão e não resolve ciclos de propriedade fortes. Usa-o quando o modelo realmente exige propriedade partilhada, não para evitar decidir quem é o dono. `std::weak_ptr` permite observar essa propriedade sem a prolongar.
+
+## Ler a memória em palavras
+
+Para seguir código com apontadores, desenha os objetos vivos, os seus valores e as setas separadamente. Em cada atribuição, identifica se o lado esquerdo é o apontador ou o objeto apontado. Em cada destruição, risca o objeto e marca todos os aliases como pendentes. Esta forma de raciocinar continua a ser necessária quando usas smart pointers: a gestão automática evita muitas fugas, mas um observador ainda pode durar mais que o dono.

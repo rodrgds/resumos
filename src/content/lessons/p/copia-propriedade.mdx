@@ -1,0 +1,172 @@
+---
+title: Cópia, movimento e propriedade
+description: 'Cópia superficial e profunda, atribuição, autoatribuição, movimento e regras de três, cinco e zero.'
+section: conteudo
+order: 5
+practices:
+  - p/praticar-copia
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+
+Copiar um objeto pode significar copiar valores, duplicar um recurso ou partilhar propriedade. O tipo tem de escolher uma destas semânticas. Um apontador, por si só, não diz qual foi escolhida.
+
+## Construção de cópia e atribuição
+
+Em `T b = a;`, `b` ainda não existe e é construído a partir de `a`. Em `b = a;`, `b` já existe e recebe outro estado. A construção de cópia usa habitualmente `T(const T&)`; a atribuição de cópia usa `T& operator=(const T&)`.
+
+A versão gerada pelo compilador copia bases e membros. Se o membro é um `int`, copia o valor. Se é um `std::vector`, o vetor trata a cópia dos seus elementos. Se é um apontador cru, copia o endereço.
+
+## Cópia superficial e profunda
+
+Considera este excerto incorreto como classe dona de memória. Não o executes.
+
+```cpp
+class DonoIncompleto {
+public:
+    DonoIncompleto() : dados_(new int(5)) {}
+    ~DonoIncompleto() { delete dados_; }
+private:
+    int* dados_;
+};
+```
+
+A cópia implícita de um `DonoIncompleto` deixa os dois objetos com o mesmo endereço. Os dois destrutores tentam libertar o mesmo inteiro. A propriedade fica duplicada sem uma regra válida de destruição.
+
+Uma **cópia superficial** copia a representação, incluindo endereços. Uma **cópia profunda** cria recursos independentes e copia o seu conteúdo. Partilhar um recurso também pode ser correto, mas precisa de uma política explícita, como a de `shared_ptr`.
+
+<Dot
+  source={
+    'digraph copia { rankdir=LR; node [shape=box]; a [label="a: dono"]; b [label="b: cópia independente"]; x [label="recurso de a: 4, 6"]; y [label="recurso de b: 9, 6"]; a -> x; b -> y; }'
+  }
+  alt="Após cópia profunda e alteração de b, a possui os valores 4 e 6, e b possui outro recurso com 9 e 6."
+/>
+
+## Um buffer com propriedade exclusiva
+
+O exemplo usa `unique_ptr<int[]>` para garantir a libertação, mas implementa a cópia para dar ao `Buffer` semântica de valor. O invariante é que existem `tamanho_` inteiros acessíveis; quando o tamanho é zero, não existe elemento válido. `at` verifica o índice.
+
+Programa completo para compilar localmente:
+
+```cpp
+#include <cstddef>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <utility>
+
+class Buffer {
+public:
+    explicit Buffer(std::size_t n)
+        : tamanho_(n), dados_(n == 0 ? nullptr : std::make_unique<int[]>(n)) {}
+
+    Buffer(const Buffer& outro) : Buffer(outro.tamanho_) {
+        for (std::size_t i = 0; i < tamanho_; ++i) dados_[i] = outro.dados_[i];
+    }
+
+    Buffer& operator=(const Buffer& outro) {
+        if (this == &outro) return *this;
+        Buffer copia(outro);
+        trocar(copia);
+        return *this;
+    }
+
+    Buffer(Buffer&& outro) noexcept
+        : tamanho_(std::exchange(outro.tamanho_, 0)),
+          dados_(std::move(outro.dados_)) {}
+
+    Buffer& operator=(Buffer&& outro) noexcept {
+        if (this == &outro) return *this;
+        dados_ = std::move(outro.dados_);
+        tamanho_ = std::exchange(outro.tamanho_, 0);
+        return *this;
+    }
+
+    ~Buffer() = default;
+    std::size_t size() const { return tamanho_; }
+    int& at(std::size_t i) {
+        if (i >= tamanho_) throw std::out_of_range("Indice invalido");
+        return dados_[i];
+    }
+    const int& at(std::size_t i) const {
+        if (i >= tamanho_) throw std::out_of_range("Indice invalido");
+        return dados_[i];
+    }
+private:
+    void trocar(Buffer& outro) noexcept {
+        std::swap(tamanho_, outro.tamanho_);
+        dados_.swap(outro.dados_);
+    }
+    std::size_t tamanho_;
+    std::unique_ptr<int[]> dados_;
+};
+
+int main() {
+    Buffer a(2);
+    a.at(0) = 4;
+    a.at(1) = 6;
+    Buffer b = a;
+    b.at(0) = 9;
+    Buffer c(0);
+    c = b;
+    const Buffer& alias = c;
+    c = alias;
+    Buffer d = std::move(b);
+    std::cout << a.at(0) << " " << c.at(0) << " " << d.at(0) << "\n";
+    std::cout << b.size() << " " << d.size() << "\n";
+}
+```
+
+Saída:
+
+```text
+4 9 9
+0 2
+```
+
+A construção `Buffer b = a` reserva dois inteiros novos e copia `4` e `6`. Alterar `b.at(0)` para `9` não afeta `a`. A atribuição `c = b` faz uma nova cópia, agora de `9` e `6`. A autoatribuição através de `alias` mantém `c` intacto.
+
+## Atribuir sem perder o recurso anterior
+
+A atribuição de cópia constrói primeiro `copia`. Se a reserva falhar, a exceção sai antes de alterar o destino. Depois, `trocar` troca tamanho e propriedade sem lançar. Quando o temporário morre, destrói o recurso que pertencia ao destino. Esta técnica chama-se **copy-and-swap**.
+
+A alternativa "libertar o destino e só depois copiar" perde o estado anterior se a reserva falhar. Também falha na autoatribuição se destrói o recurso que ainda pretende ler. Testar `this == &outro` resolve a autoatribuição, mas não resolve sozinho a segurança perante falhas de reserva.
+
+`operator=` devolve `*this` por referência, permitindo expressões como `a = b = c`. A atribuição não deve devolver uma referência ao temporário de cópia.
+
+## Movimento não é uma cópia profunda
+
+`std::move` permite tratar uma expressão como candidata a movimento. Não transfere nada sozinho. A operação selecionada, aqui o construtor `Buffer(Buffer&&)`, é que transfere a propriedade.
+
+O movimento de `b` para `d` transfere o endereço do array sem copiar os inteiros. O exemplo põe explicitamente o tamanho de `b` a zero. Por isso, `b` fica vazio e pode ser destruído ou receber nova atribuição. Tentar `b.at(0)` lançaria uma exceção.
+
+O estado de um objeto movido depende do contrato do tipo. Não assumes que qualquer `std::string` ou `std::vector` movido fica vazio; a biblioteca garante um estado válido, frequentemente não especificado. O `Buffer` desta página oferece uma garantia mais concreta. `noexcept` indica que as operações de movimento apresentadas não lançam, o que também ajuda coleções a escolher movimento durante uma realocação.
+
+## Regras de três, cinco e zero
+
+A **regra de três** manda rever destrutor, construtor de cópia e atribuição de cópia quando a gestão manual de um recurso exige uma destas operações. Em C++ com movimento, a **regra de cinco** acrescenta construtor e atribuição de movimento. Não significa que todos os tipos devam implementar cinco funções; uma operação pode ser gerada, definida ou proibida com `= delete`, consoante o contrato.
+
+A **regra de zero** é preferir membros que já gerem corretamente os recursos. A classe seguinte não precisa de nenhuma operação especial escrita à mão.
+
+<CodePlayground
+  language="cpp"
+  title="Regra de zero com vector"
+  input=""
+  code={
+    '#include <cstddef>\n#include <iostream>\n#include <vector>\n\nclass Leituras {\npublic:\n    void adicionar(int valor) { valores_.push_back(valor); }\n    int primeiro() const { return valores_.at(0); }\n    std::size_t tamanho() const { return valores_.size(); }\nprivate:\n    std::vector<int> valores_;\n};\n\nint main() {\n    Leituras a;\n    a.adicionar(4);\n    Leituras b = a;\n    b.adicionar(8);\n    std::cout << a.primeiro() << " " << b.primeiro() << "\\n";\n    std::cout << a.tamanho() << " " << b.tamanho() << "\\n";\n}\n'
+  }
+/>
+
+Saída:
+
+```text
+4 4
+1 2
+```
+
+Cada `Leituras` possui o seu vetor. Acrescentar `8` à cópia deixa o original com um elemento e a cópia com dois. O compilador compõe as operações corretas a partir das do membro. O exemplo manual anterior ensina a mecânica; uma coleção habitual de inteiros deve usar `vector` para evitar reproduzir essa gestão.
+
+## Escolher a semântica
+
+Se um tipo representa um valor, como um relógio ou uma coleção de leituras, faz sentido que a cópia conserve o significado e seja independente. Se representa propriedade exclusiva de um recurso que não se duplica, pode proibir cópia e permitir movimento. Se vários objetos devem prolongar a mesma vida, precisa de propriedade partilhada. Decide isto antes de escrever o destrutor: a política de cópia faz parte da interface do tipo.

@@ -1,0 +1,111 @@
+---
+title: Organizar e depurar programas
+description: 'Cabeçalhos, definições, ligação, CMake, CLion e um procedimento de depuração.'
+section: conteudo
+order: 10
+practices:
+  - p/praticar-organizacao
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Um programa com vários ficheiros precisa de declarar interfaces e ligar as implementações certas. Separar ficheiros não chega: a divisão deve permitir compreender uma operação sem conhecer todos os detalhes das restantes.
+
+## Cabeçalhos e implementação
+
+Vamos separar uma função que duplica um valor real. Cria estes três ficheiros na mesma pasta.
+
+`dobro.hpp` declara a interface. A guarda impede repetir o conteúdo do cabeçalho na mesma unidade de tradução.
+
+```cpp
+#ifndef DOBRO_HPP
+#define DOBRO_HPP
+
+double dobro(double valor);
+
+#endif
+```
+
+`dobro.cpp` define a operação. Incluir o próprio cabeçalho ajuda o compilador a detetar divergências entre declaração e definição.
+
+```cpp
+#include "dobro.hpp"
+
+double dobro(double valor) {
+    return 2.0 * valor;
+}
+```
+
+`main.cpp` usa a interface sem reproduzir a implementação.
+
+```cpp
+#include "dobro.hpp"
+#include <iostream>
+
+int main() {
+    std::cout << dobro(4.0) << "\n";
+}
+```
+
+Este programa escreve `8`. A saída continua igual se reorganizares a implementação sem alterar o contrato.
+
+## Compilação e ligação
+
+Cada `.cpp`, depois do pré-processamento dos seus `#include`, forma uma **unidade de tradução**. A compilação produz ficheiros objeto; a ligação reúne-os e resolve as referências entre eles.
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic -c dobro.cpp -o dobro.o
+g++ -std=c++17 -Wall -Wextra -Wpedantic -c main.cpp -o main.o
+g++ main.o dobro.o -o exemplo
+./exemplo
+```
+
+Também podes compilar e ligar de uma vez com `g++ -std=c++17 main.cpp dobro.cpp -o exemplo`. Compilar só `main.cpp` encontra a declaração, mas a ligação falha por faltar a definição de `dobro`.
+
+Uma definição não `inline` de função colocada num cabeçalho incluído por vários `.cpp` pode criar múltiplas definições na ligação. Coloca a implementação num `.cpp`, ou usa a regra adequada para funções `inline` e templates. Não incluas ficheiros `.cpp` para resolver um erro de ligação; acrescenta-os ao alvo de compilação.
+
+## CMake para vários ficheiros
+
+Guarda este `CMakeLists.txt` junto das fontes:
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(exemplo LANGUAGES CXX)
+add_executable(exemplo main.cpp dobro.cpp)
+target_compile_features(exemplo PRIVATE cxx_std_17)
+set_target_properties(exemplo PROPERTIES CXX_EXTENSIONS OFF)
+```
+
+Na pasta do projeto, corre:
+
+```sh
+cmake -S . -B build
+cmake --build build
+./build/exemplo
+```
+
+`-S` escolhe a pasta das fontes e `-B` a pasta dos ficheiros de build. Não edites os ficheiros gerados dentro de `build`. A localização do executável pode variar num gerador com várias configurações, como Debug e Release. No CLion, abre a pasta com `CMakeLists.txt`, confirma a toolchain e escolhe o alvo `exemplo`.
+
+## Localizar a fase do erro
+
+| Sintoma                       | Fase provável | O que conferir                                |
+| ----------------------------- | ------------- | --------------------------------------------- |
+| Tipo ou nome desconhecido     | Compilação    | Declaração, include, namespace e assinatura   |
+| Referência não definida       | Ligação       | `.cpp` no alvo, definição e tipos iguais      |
+| Símbolo definido várias vezes | Ligação       | Definições repetidas e conteúdo de cabeçalhos |
+| Resultado errado              | Execução      | Entrada, contrato, estado e caminho seguido   |
+| Falha de memória              | Execução      | Limites, duração de vida e propriedade        |
+
+Lê a primeira mensagem relevante. Um erro de sintaxe pode causar muitas mensagens seguintes. Um erro de ligação não se resolve alterando a entrada do programa, porque a execução ainda não começou.
+
+## Usar o depurador
+
+Compila com informação de depuração, por exemplo `-g -O0`, ou seleciona Debug no CLion. Coloca um breakpoint antes da operação suspeita e corre com a entrada que reproduz o erro. Observa argumentos e variáveis, avança uma instrução e compara o estado com o que o contrato exige.
+
+**Step into** entra na função chamada; **step over** executa-a sem abrir o seu corpo; **step out** termina a chamada atual. A pilha de chamadas mostra como chegaste à linha. Ao seguir apontadores, distingue o valor do endereço do conteúdo apontado e confirma que o objeto ainda vive.
+
+## Um procedimento para corrigir erros
+
+Primeiro, reduz o problema a uma entrada pequena com saída conhecida. Depois identifica a primeira operação em que o estado diverge do esperado. Corrige essa operação, volta a correr a mesma entrada e acrescenta um caso que detete a causa. Só então testa fronteiras próximas.
+
+Se uma função remove negativos mas perde também o elemento seguinte, segue dois negativos consecutivos. Esse caso revela se o iterador é avançado indevidamente depois de `erase`. Dez testes com positivos não esclarecem esse erro. Usa avisos, sanitizers e testes em conjunto, cada um procura falhas diferentes.

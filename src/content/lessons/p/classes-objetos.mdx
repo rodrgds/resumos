@@ -1,305 +1,130 @@
 ---
 title: Classes e objetos
-description: Classes, construtores e destrutor, encapsulamento, métodos const e sobrecarga simples de operadores.
+description: 'Estado, invariantes, encapsulamento, construção, destruição, métodos const e operadores.'
 section: conteudo
-order: 3
+order: 4
+practices:
+  - p/praticar-classes
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import aluno from '../../p/aluno.typ?raw';
 
-Nos [fundamentos](/cadeiras/p/cpp-fundamentos/) separaste dados (variáveis) de comportamento (funções). Uma **classe** junta os dois: descreve um tipo novo com os seus dados (**atributos**) e as operações sobre esses dados (**métodos**). Cada variável desse tipo é um **objeto**. Se programaste com tuplos e dicionários em [Tuplos e listas](/cadeiras/fp/tuplos-listas/), pensa numa classe como um contentor de dados que já traz as suas próprias funções coladas.
+Um relógio pode guardar hora e minuto em dois inteiros. Mas dois inteiros também permitem estados sem sentido, como `70` minutos. Uma classe define o estado e as operações que o mantêm válido. Cada objeto é uma instância independente desse tipo.
 
 ## Definir uma classe e criar objetos
 
-Uma classe declara-se com a palavra `class`, e os seus membros dividem-se em **públicos** (quem usa o objeto pode aceder) e **privados** (só os métodos da classe acedem). Os métodos definem-se dentro ou fora da classe:
+A interface pública diz o que o chamador pode fazer. Os membros privados guardam a representação e só são acessíveis aos membros e amigos da classe. **Encapsular** é manter uma fronteira que preserva o significado dos dados, não apenas escrever getters e setters para cada campo.
+
+Este relógio guarda minutos desde a meia-noite. O seu **invariante** é `0 <= minutos_ < 1440`. O chamador conhece horas e minutos; não precisa de saber a representação escolhida.
+
+Programa completo para compilar localmente:
 
 ```cpp
 #include <iostream>
-#include <string>
+#include <stdexcept>
 
-class Aluno {
+class Relogio {
 public:
-    Aluno(const std::string& n, int nro) : nome(n), numero(nro) {}
-
-    void apresentar() {
-        std::cout << nome << " (" << numero << ")\n";
+    Relogio(int hora, int minuto) {
+        if (hora < 0 || hora >= 24 || minuto < 0 || minuto >= 60)
+            throw std::invalid_argument("Hora invalida");
+        minutos_ = 60 * hora + minuto;
     }
-
+    int hora() const { return minutos_ / 60; }
+    int minuto() const { return minutos_ % 60; }
+    void avancar(int quantidade) {
+        if (quantidade < 0 || quantidade > 1440)
+            throw std::invalid_argument("Avanco invalido");
+        minutos_ = (minutos_ + quantidade) % 1440;
+    }
+    bool operator==(const Relogio& outro) const {
+        return minutos_ == outro.minutos_;
+    }
 private:
-    std::string nome;
-    int numero;
+    int minutos_ = 0;
 };
 
 int main() {
-    Aluno a("Ana", 202400123);
-    a.apresentar();
+    Relogio a(23, 50);
+    Relogio b = a;
+    a.avancar(25);
+    const Relogio& leitura = a;
+    std::cout << leitura.hora() << ":" << leitura.minuto() << "\n";
+    std::cout << b.hora() << ":" << b.minuto() << "\n";
+    std::cout << std::boolalpha << (a == Relogio(0, 15)) << "\n";
 }
 ```
 
-Isto escreve `Ana (202400123)`. O objeto `a` guarda o nome e o número, e o método `apresentar` sabe ir buscar esses dados sem receber argumentos: dentro de um método, os atributos do próprio objeto estão sempre ao alcance. O operador ponto (`.`) escolhe o membro de um objeto concreto.
+Saída:
 
-<Typst
-  source={aluno}
-  format="svg"
-  alt="Diagrama do objeto a: liga-se aos métodos públicos como apresentar, mas não toca diretamente nos atributos privados nome e numero."
-/>
-
-Métodos curtos definem-se dentro da classe, como acima. Métodos compridos lêem-se melhor fora, com o nome qualificado `Aluno::`:
-
-<Tabs id="metodo-dentro-fora" labels={['Dentro da classe', 'Fora da classe']}>
-  <div slot="panel-0">
-
-```cpp
-class Aluno {
-public:
-    void apresentar() {
-        std::cout << nome << " (" << numero << ")\n";
-    }
-    // ...
-};
+```text
+0:15
+23:50
+true
 ```
 
-Declaração e corpo juntos. Serve para métodos de uma ou duas linhas; a classe continua a ler-se de uma vez.
-
-  </div>
-  <div slot="panel-1">
-
-```cpp
-class Aluno {
-public:
-    void apresentar();
-    // ...
-};
-
-void Aluno::apresentar() {
-    std::cout << nome << " (" << numero << ")\n";
-}
-```
-
-A classe mostra só a interface e o corpo vive fora, qualificado com `Aluno::`. É a organização dos projetos com ficheiros separados: declarações no `.h`, definições no `.cpp`.
-
-  </div>
-</Tabs>
-
-## Construtores e destrutor
-
-O **construtor** é um método especial com o mesmo nome da classe que corre quando o objeto nasce. Garante que nenhum objeto existe num estado inválido: quem cria um `Aluno` é obrigado a dar nome e número logo. O `: nome(n), numero(nro)` a seguir aos parênteses é a **lista de inicialização** e atribui os valores antes de o objeto começar a ser usado; prefere-a sempre a atribuir dentro do corpo.
-
-Uma classe pode ter vários construtores (**sobrecarga**), desde que os parâmetros difiram:
-
-```cpp
-#include <iostream>
-
-class Contador {
-public:
-    Contador() : valor(0) {}
-    Contador(int inicial) : valor(inicial) {}
-
-    int ler() { return valor; }
-    void incrementar() { valor++; }
-
-private:
-    int valor;
-};
-
-int main() {
-    Contador c1;
-    Contador c2(10);
-    c2.incrementar();
-    std::cout << c1.ler() << " " << c2.ler() << "\n";
-}
-```
-
-Isto escreve `0 11`. O `c1` usou o construtor sem argumentos e começou em `0`; o `c2` começou em `10` e o incremento levou-o a `11`. O compilador escolhe o construtor pelos argumentos, tal como escolhe entre funções sobrecarregadas.
-
-O simétrico do construtor é o **destrutor** (`~Contador()`), que corre quando o objeto morre, ao sair de âmbito ou por `delete`. Numa classe simples não precisas de o escrever. Mas quando a classe pedir memória com `new` nos [apontadores](/cadeiras/p/apontadores-memoria/), o destrutor é o sítio onde essa memória se liberta: é o mecanismo por trás do RAII.
-
-## Copiar objetos com memória própria
-
-Por omissão, copiar um objeto copia os atributos um a um. Para atributos simples isso chega; para um apontador, copia-se o endereço, e ficam dois objetos a partilhar a mesma memória: o primeiro destrutor liberta-a e o segundo liberta-a outra vez (double-free). Uma classe com `new` precisa de definir a cópia: construtor de cópia, operador de atribuição e destrutor, a chamada **regra dos três**:
-
-```cpp
-#include <iostream>
-
-class Bloco {
-public:
-    Bloco(int n) : tamanho(n), dados(new int[n]) {}
-    ~Bloco() { delete[] dados; }
-
-    Bloco(const Bloco& outro)
-        : tamanho(outro.tamanho), dados(new int[outro.tamanho]) {
-        for (int i = 0; i < tamanho; i++) dados[i] = outro.dados[i];
-    }
-
-    Bloco& operator=(const Bloco& outro) {
-        if (this != &outro) {
-            int* novos = new int[outro.tamanho];
-            for (int i = 0; i < outro.tamanho; i++) novos[i] = outro.dados[i];
-            delete[] dados;
-            dados = novos;
-            tamanho = outro.tamanho;
-        }
-        return *this;
-    }
-
-    void escrever(int i, int v) { dados[i] = v; }
-    int ler(int i) const { return dados[i]; }
-
-private:
-    int tamanho;
-    int* dados;
-};
-
-int main() {
-    Bloco a(2);
-    a.escrever(0, 7);
-    Bloco b = a;
-    b.escrever(0, 9);
-    std::cout << a.ler(0) << " " << b.ler(0) << "\n";
-}
-```
-
-Isto escreve `7 9`: cada bloco tem o seu array e a escrita em `b` não toca em `a`. Sem o construtor de cópia, `Bloco b = a` copiava só o endereço e o programa avariava no fim do `main`, com dois `delete[]` sobre o mesmo array. Repara nos dois cuidados do operador de atribuição: testa a auto-atribuição (`this != &outro`) e aloca a memória nova antes de libertar a antiga, para o objeto nunca ficar a meio. Se a tua classe só tem atributos simples (`string`, `int`, `vector`), não escrevas nada disto: a cópia automática já está certa.
+O construtor transforma `23:50` em `1430`. Avançar `25` produz `1455`; o resto da divisão por `1440` dá `15`, que corresponde a `0:15`. A cópia `b` conserva `23:50`, porque recebeu o valor do membro e não partilha estado com `a`.
 
 ## Encapsulamento
 
-Manter os atributos privados e expor só o necessário chama-se **encapsulamento**. A ideia: quem usa a classe não precisa de saber como os dados estão guardados, só precisa das operações garantidas. Se um dia mudares a representação interna, o código que usa a classe continua igual.
+O construtor rejeita uma hora fora de `0` a `23` e um minuto fora de `0` a `59`. `avancar` aceita uma quantidade de `0` a `1440`. Esta condição mantém a soma representável no tipo e define o contrato da operação. Nenhuma operação pública permite escrever `minutos_ = -1`.
 
-```cpp
-#include <iostream>
+A validação tem de acontecer antes de alterar o estado. Se `avancar(-5)` lança uma exceção, o relógio fica com o mesmo valor. Uma classe que permite um estado inválido e espera que cada chamador o corrija não está a proteger o seu invariante.
 
-class Nota {
-public:
-    Nota(int v) { definir(v); }
+Não é necessário guardar simultaneamente `hora_`, `minuto_` e `minutos_`. Isso obrigaria a atualizar três representações da mesma informação. Aqui, `hora()` e `minuto()` calculam resultados a partir de um estado único.
 
-    void definir(int v) {
-        if (v < 0) v = 0;
-        if (v > 20) v = 20;
-        valor = v;
-    }
+## Construtores e destrutor
 
-    int ler() { return valor; }
+Um construtor tem o nome da classe e não tem tipo de retorno. Uma lista de inicialização, como `Marca(const std::string& nome) : nome_(nome)`, constrói os membros diretamente. Atribuir no corpo acontece depois da inicialização e não a substitui. Membros `const` e referências precisam de ser inicializados, não podem receber a primeira atribuição no corpo.
 
-private:
-    int valor;
-};
-
-int main() {
-    Nota n(25);
-    std::cout << n.ler() << "\n";
-    n.definir(-3);
-    std::cout << n.ler() << "\n";
-}
-```
-
-Isto escreve `20` e depois `0`. A regra "nota entre 0 e 20" vive num único sítio, o método `definir`, e o construtor reutiliza-o. Com o atributo público, qualquer parte do programa podia escrever `n.valor = 25` e a regra quebrava-se em silêncio. O encapsulamento troca um pequeno incómodo (escrever métodos de acesso) por uma garantia: o objeto nunca fica inválido.
-
-## Métodos const
-
-Um método que não altera o objeto deve declarar isso com `const` a seguir aos parênteses. Assim ele pode ser chamado sobre objetos constantes, e o compilador impede alterações acidentais, tal como nos parâmetros `const` dos [fundamentos](/cadeiras/p/cpp-fundamentos/):
-
-```cpp
-#include <iostream>
-
-class Ponto {
-public:
-    Ponto(double px, double py) : x(px), y(py) {}
-
-    double soma_coordenadas() const { return x + y; }
-    void deslocar(double dx, double dy) {
-        x += dx;
-        y += dy;
-    }
-
-private:
-    double x, y;
-};
-
-int main() {
-    const Ponto p(3.0, 4.0);
-    std::cout << p.soma_coordenadas() << "\n";
-}
-```
-
-Isto escreve `7`. Como `p` é `const`, só aceita métodos `const`: `soma_coordenadas` pode ser chamado, mas `deslocar` sobre `p` nem compilava. Ganha o hábito de marcar todos os métodos de leitura como `const` desde a primeira versão; acrescentar depois obriga a rever a classe toda.
-
-## Sobrecarga de operadores
-
-Em C++ podes dar novo significado aos operadores (`+`, `==`, `<<`) para os teus tipos. É o que permite somar dois objetos com a mesma naturalidade com que somas dois inteiros. Um exemplo pequeno e útil: comparar dois pontos com `==`:
-
-```cpp
-#include <iostream>
-
-class Ponto {
-public:
-    Ponto(double px, double py) : x(px), y(py) {}
-
-    bool operator==(const Ponto& outro) const {
-        return x == outro.x && y == outro.y;
-    }
-
-    void mostrar() const {
-        std::cout << "(" << x << ", " << y << ")\n";
-    }
-
-private:
-    double x, y;
-};
-
-int main() {
-    Ponto a(1.0, 2.0);
-    Ponto b(1.0, 2.0);
-    Ponto c(3.0, 4.0);
-    std::cout << (a == b) << " " << (a == c) << "\n";
-}
-```
-
-Isto escreve `1 0`. O método `operator==` recebe o ponto da direita como parâmetro e compara com o da esquerda, que é o próprio objeto. Repara nos dois `const`: o método não altera nenhum dos dois pontos. Sem esta sobrecarga, `a == b` compararia os objetos como blocos de memória, o que raramente é o que queres.
-
-O `operator<<` para imprimir com `std::cout << p` não pode ser método, porque o objeto da esquerda é o fluxo, não o ponto. Escreve-se como função amiga ou livre que recebe o fluxo e o objeto:
-
-```cpp
-#include <iostream>
-
-class Ponto {
-public:
-    Ponto(double px, double py) : x(px), y(py) {}
-
-    friend std::ostream& operator<<(std::ostream& saida, const Ponto& p);
-
-private:
-    double x, y;
-};
-
-std::ostream& operator<<(std::ostream& saida, const Ponto& p) {
-    return saida << "(" << p.x << ", " << p.y << ")";
-}
-
-int main() {
-    Ponto p(1.5, 2.0);
-    std::cout << p << "\n";
-}
-```
-
-Isto escreve `(1.5, 2)`. O `friend` dá à função livre acesso aos atributos privados; sem ele, o operador só veria a parte pública. Devolver o fluxo (`return saida`) permite encadear saídas, como `std::cout << p << "\n"`. Este é o operador que os projetos pedem com mais frequência: substitui todos os métodos `mostrar` por esta forma.
-
-## Exemplo completo: uma fração
-
-Vamos construir uma classe `Fracao` com construtor, leitura, soma e comparação, e usá-la num programa completo. Uma fração guarda numerador e denominador; somar $a/b + c/d$ dá $(a d + c b)/(b d)$. Corre o programa:
+As bases são construídas primeiro; os membros são construídos pela ordem de declaração na classe, mesmo que a lista do construtor use outra ordem. Depois corre o corpo do construtor. O destrutor tem o nome `~Classe()` e não recebe parâmetros. Depois do seu corpo, os membros são destruídos na ordem inversa.
 
 <CodePlayground
   language="cpp"
-  title="Classe Fracao com soma e comparação"
+  title="Construção e destruição em âmbitos"
+  input=""
   code={
-    '#include <iostream>\n\nclass Fracao {\npublic:\n    Fracao(int n, int d) : num(n), den(d) {}\n\n    Fracao operator+(const Fracao& outra) const {\n        return Fracao(num * outra.den + outra.num * den, den * outra.den);\n    }\n\n    bool operator==(const Fracao& outra) const {\n        return num * outra.den == outra.num * den;\n    }\n\n    void mostrar() const {\n        std::cout << num << "/" << den << "\\n";\n    }\n\nprivate:\n    int num, den;\n};\n\nint main() {\n    Fracao a(1, 2);\n    Fracao b(1, 3);\n    Fracao soma = a + b;\n    soma.mostrar();\n    std::cout << (soma == Fracao(5, 6)) << "\\n";\n}'
+    '#include <iostream>\n#include <string>\n\nclass Marca {\npublic:\n    explicit Marca(const std::string& nome) : nome_(nome) {\n        std::cout << "Criar " << nome_ << "\\n";\n    }\n    ~Marca() { std::cout << "Destruir " << nome_ << "\\n"; }\nprivate:\n    std::string nome_;\n};\n\nint main() {\n    Marca a("A");\n    {\n        Marca b("B");\n        Marca c("C");\n        std::cout << "Dentro\\n";\n    }\n    std::cout << "Fora\\n";\n}\n'
   }
 />
 
-Isto escreve `5/6` e depois `1`. Confere a soma: $1/2 + 1/3 = (1 times 3 + 1 times 2)/(2 times 3) = 5/6$. E a comparação evita divisões reais: $5/6 == 5/6$ porque $5 times 6 == 5 times 6$. Repara que `operator+` devolve um objeto novo sem tocar nos operandos, tal como `+` entre inteiros não altera os inteiros.
+Saída:
 
-:::details[O que falta para a fração ser perfeita]
-A soma devia simplificar o resultado (por exemplo, $1/2 + 1/2$ dá `2/4` em vez de `1/1`), o denominador devia ser validado contra zero no construtor e o `mostrar` devia ser um `operator<<`. São três bons exercícios: cada um exercita uma parte desta página, encapsulamento, construtor e sobrecarga.
-:::
+```text
+Criar A
+Criar B
+Criar C
+Dentro
+Destruir C
+Destruir B
+Fora
+Destruir A
+```
+
+O bloco interior cria `B` antes de `C`, mas destrói `C` antes de `B`. `A` só morre no fim de `main`. O destrutor não é uma função que tenhas de chamar manualmente para cada objeto automático. Um objeto dinâmico precisa de ser destruído pelo dono, por exemplo através de `unique_ptr`.
+
+`explicit` num construtor evita certas conversões implícitas para o tipo. Neste caso, exige que a construção de uma `Marca` seja intencional. O exemplo escreve mensagens para tornar a ordem visível; em código habitual, o destrutor trata recursos e evita lançar exceções.
+
+## Métodos const
+
+O `const` depois dos parâmetros, como em `int hora() const`, permite chamar o método num objeto constante ou por uma referência constante. Dentro do método, `this` dá acesso constante ao objeto. `avancar` não é constante porque altera o estado.
+
+Uma consulta que devolve um apontador modificável para um membro pode permitir alterar estado indiretamente. Por isso, const-correctness também depende dos tipos devolvidos, não apenas da palavra `const` no método. Usa resultados por valor ou acessos de leitura quando a interface promete só consultar.
+
+## this, static e visibilidade
+
+Numa chamada `a.avancar(25)`, `this` aponta para `a`. `this->minutos_` e `minutos_` acedem ao mesmo membro dentro do método. Usa `this` quando ajuda a distinguir nomes ou a devolver o próprio objeto.
+
+Um membro `static` pertence à classe e não a um objeto específico. Uma função estática não tem `this`; só pode aceder a membros de instância se receber um objeto. Uma variável estática local tem duração até ao fim do programa, embora o seu nome só seja visível na função.
+
+Em `class`, os membros são privados por defeito. `public` expõe o contrato. `protected` dá acesso também a classes derivadas e aumenta a quantidade de código capaz de alterar a representação. Preferir estado privado facilita manter o invariante, inclusive quando existe herança.
+
+## Sobrecarga de operadores
+
+`operator==` define a comparação entre dois relógios e devolve `bool`. Como ambos usam a mesma representação normalizada, basta comparar `minutos_`. Um operador deve conservar o significado habitual. Não uses `+` para uma operação surpreendente que destrói ou altera o operando esquerdo.
+
+A sobrecarga não permite criar operadores novos, mudar a precedência ou modificar operações entre dois tipos fundamentais. Pelo menos um dos operandos deve ter tipo de classe ou enumeração. Um operador membro recebe o operando esquerdo através de `this`; um operador livre recebe os dois. `friend` concede acesso privado a uma função específica, não torna todos os campos públicos.
+
+## Copiar objetos com memória própria
+
+Quando todos os membros são valores, strings ou coleções que gerem os seus recursos, a cópia gerada pelo compilador costuma servir. Se um membro é um apontador dono, copiar só o endereço não duplica o recurso. A página [Cópia, movimento e propriedade](/cadeiras/p/copia-propriedade/) segue esta diferença e constrói uma cópia independente.

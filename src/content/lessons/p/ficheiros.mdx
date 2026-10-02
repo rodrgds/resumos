@@ -1,0 +1,97 @@
+---
+title: Ficheiros e validação
+description: 'Abertura, leitura, escrita, estado dos fluxos e separação entre linhas e registos.'
+section: conteudo
+order: 8
+practices:
+  - p/praticar-ficheiros
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Um ficheiro de texto precisa de um formato. Vamos usar uma linha por registo, com um nome sem espaços e uma nota inteira de `0` a `20`. A biblioteca lê caracteres; o programa é responsável por verificar se esses caracteres cumprem o formato e o significado pretendidos.
+
+## Abrir, escrever e fechar
+
+`std::ifstream` abre para leitura e `std::ofstream` para escrita. Por defeito, `ofstream` substitui o conteúdo de um ficheiro existente. Usa `std::ios::app` quando o contrato é acrescentar ao fim. O caminho relativo é resolvido a partir da pasta de trabalho do processo, não da pasta onde está o código.
+
+Programa completo para compilar localmente:
+
+```cpp
+#include <fstream>
+#include <iostream>
+#include <string>
+
+int main() {
+    {
+        std::ofstream saida("notas.txt");
+        if (!saida) { std::cout << "Erro de abertura\n"; return 0; }
+        saida << "Ana 15\nRui 12\n";
+        saida.close();
+        if (!saida) { std::cout << "Erro de escrita\n"; return 0; }
+    }
+    std::ifstream entrada("notas.txt");
+    if (!entrada) { std::cout << "Erro de leitura\n"; return 0; }
+    std::string nome;
+    int nota = 0;
+    int total = 0;
+    while (entrada >> nome >> nota) {
+        std::cout << nome << ": " << nota << "\n";
+        total += nota;
+    }
+    if (entrada.bad()) { std::cout << "Erro de I/O\n"; return 0; }
+    std::cout << "Total: " << total << "\n";
+}
+```
+
+Saída:
+
+```text
+Ana: 15
+Rui: 12
+Total: 27
+```
+
+O programa cria `notas.txt` na pasta de trabalho, substituindo o conteúdo se já existir. O executor do navegador não disponibiliza uma pasta para criar este ficheiro, por isso este programa deve correr localmente. A escrita é fechada antes da leitura para completar a saída; verificamos também se `close()` sinalizou falha. O destrutor fecha automaticamente, mas uma verificação explícita permite tratar um erro final de escrita.
+
+O ficheiro produzido é conhecido e tem dois registos válidos. O leitor acima demonstra leitura por tokens, não valida qualquer ficheiro arbitrário. Um registo incompleto no fim exige uma decisão própria e não deve ser confundido com o fim normal. Para dados externos, a leitura por linhas seguinte torna essa distinção clara.
+
+## Ler sem antecipar o fim
+
+O ciclo `while (entrada >> nome >> nota)` só entra no corpo depois de ler os dois campos. `eof()` indica que uma operação anterior encontrou o fim; não prevê se a próxima leitura vai resultar. Por isso, `while (!entrada.eof())` pode repetir o último registo ou usar dados incompletos.
+
+Os fluxos conservam estado. `fail()` sinaliza falha de uma operação ou conversão; `bad()` sinaliza uma falha grave de I/O; `eof()` indica encontro do fim. Estes estados podem coexistir. Depois de uma falha, novas leituras não prosseguem normalmente até limpar o estado com `clear()` e tratar a entrada problemática. Limpar o estado sem consumir ou corrigir a causa pode criar um ciclo sem progresso.
+
+## Separar linhas e registos
+
+A leitura por tokens ignora espaços e fins de linha. Se o formato exige exatamente um registo por linha, lê primeiro a linha e interpreta-a num `istringstream`. Esta classe permite tratar uma string como um fluxo, sem abrir outro ficheiro.
+
+<CodePlayground
+  language="cpp"
+  title="Validar cada registo de uma entrada"
+  input="Ana 15\nEva 21\nLeo 12 lixo\nRui 20"
+  code={
+    '#include <iostream>\n#include <sstream>\n#include <string>\n\nint main() {\n    std::string linha;\n    int numero = 0;\n    while (std::getline(std::cin, linha)) {\n        ++numero;\n        std::istringstream registo(linha);\n        std::string nome;\n        std::string extra;\n        int nota = 0;\n        if (!(registo >> nome >> nota) || (registo >> extra) || nota < 0 || nota > 20) {\n            std::cout << "Linha " << numero << " invalida\\n";\n            continue;\n        }\n        std::cout << nome << ": " << nota << "\\n";\n    }\n}\n'
+  }
+/>
+
+Saída:
+
+```text
+Ana: 15
+Linha 2 invalida
+Linha 3 invalida
+Rui: 20
+```
+
+A linha de Eva contém um inteiro legível, mas fora do intervalo, por isso é inválida. A de Leo contém campos extra. O teste `(registo >> extra)` deteta esse conteúdo depois da nota. Uma linha vazia, um nome sem nota ou uma nota como `12abc` também são rejeitados. Espaços depois da nota são permitidos, porque não formam outro token.
+
+Cada iteração cria um fluxo novo para a linha. Uma falha de conversão não contamina a seguinte. Se o formato permitisse nomes com espaços, teria de usar outra separação, por exemplo um delimitador, e definir como esse delimitador pode aparecer nos campos.
+
+## Binário não é memória bruta portátil
+
+`std::ios::binary` evita transformações de texto próprias da plataforma. Não define por si só um formato de dados. Escrever os bytes de uma struct depende do padding, da ordem dos bytes e da representação dos tipos. Um formato portátil especifica tamanhos, ordem dos bytes e codificação, ou usa uma biblioteca que trate essas decisões.
+
+## Caso resolvido: fim depois de um nome
+
+Imagina a linha `Ana`, sem nota. `getline` resulta porque leu uma linha. A extração do nome resulta, mas a da nota falha. O programa rejeita o registo e não usa o valor anterior de `nota`. Agora imagina um ficheiro vazio: `getline` falha antes do corpo do ciclo e não existe registo a validar. Os dois casos chegam ao fim dos dados, mas têm significados diferentes.

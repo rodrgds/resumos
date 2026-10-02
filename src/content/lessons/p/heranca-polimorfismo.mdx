@@ -1,113 +1,68 @@
 ---
-title: 'Herança e polimorfismo'
-description: Classes derivadas, funções virtuais e override, classes abstratas, slicing e destrutor virtual.
+title: Herança e polimorfismo
+description: 'Substituição, acesso, construção, funções virtuais, classes abstratas, slicing e destrutores virtuais.'
 section: conteudo
-order: 4
+order: 6
+practices:
+  - p/praticar-heranca
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import slicing from '../../p/slicing.typ?raw';
 
-Quando duas [classes](/cadeiras/p/classes-objetos/) partilham dados e comportamento, copiar os membros de uma para a outra duplica código e espalha cada correção por vários sítios. A **herança** resolve isto: uma classe **derivada** herda os membros de uma classe **base** e acrescenta ou especializa o que precisa. O **polimorfismo** vai um passo além: trata objetos de classes diferentes através da mesma interface, e cada objeto responde à sua maneira.
+Uma promoção é um produto cujo preço final é calculado de forma diferente. Podemos definir a consulta `total()` na classe base e escolher o cálculo conforme o objeto concreto. O chamador usa a mesma interface sem conhecer todas as classes derivadas.
 
 ## Herdar de uma classe base
 
-A classe derivada declara a base a seguir a dois pontos. Herdam-se os membros públicos e protegidos (`protected`, acessível à classe e às derivadas); o construtor da base corre sempre antes do da derivada:
+`class Promocao : public Produto` estabelece herança pública. Um objeto `Promocao` contém um subobjeto `Produto` e os membros próprios. Uma referência ou um apontador para `Promocao` pode ser convertido para o acesso correspondente à base.
 
-```cpp
-#include <iostream>
-#include <string>
+A herança pública deve permitir usar a derivada onde o contrato da base é esperado. Se a derivada recusa operações válidas para a base ou muda o seu significado, a relação precisa de ser revista. Ter código em comum não é razão suficiente para herdar. Para representar "tem um", usa composição, um membro de outro tipo.
 
-class Pessoa {
-public:
-    Pessoa(const std::string& n) : nome(n) {}
+<CodePlayground
+  language="cpp"
+  title="Tipo estático, chamada virtual e slicing"
+  input=""
+  code={
+    '#include <iostream>\n\nclass Produto {\npublic:\n    explicit Produto(double preco) : preco_(preco) {}\n    virtual ~Produto() = default;\n    virtual double total() const { return preco_; }\nprotected:\n    double preco() const { return preco_; }\nprivate:\n    double preco_;\n};\n\nclass Promocao : public Produto {\npublic:\n    Promocao(double preco, double desconto)\n        : Produto(preco), desconto_(desconto) {}\n    double total() const override { return preco() * (1.0 - desconto_); }\nprivate:\n    double desconto_;\n};\n\nint main() {\n    Promocao promocao(100.0, 0.25);\n    const Produto& referencia = promocao;\n    Produto copia = promocao;\n    std::cout << referencia.total() << " " << copia.total() << "\\n";\n}\n'
+  }
+/>
 
-    void apresentar() const {
-        std::cout << "Sou " << nome << "\n";
-    }
+Saída:
 
-protected:
-    std::string nome;
-};
-
-class Aluno : public Pessoa {
-public:
-    Aluno(const std::string& n, int nro) : Pessoa(n), numero(nro) {}
-
-    void apresentar_numero() const {
-        std::cout << nome << " tem o numero " << numero << "\n";
-    }
-
-private:
-    int numero;
-};
-
-int main() {
-    Aluno a("Ana", 123);
-    a.apresentar();
-    a.apresentar_numero();
-}
+```text
+75 100
 ```
 
-Isto escreve `Sou Ana` e depois `Ana tem o numero 123`. O construtor de `Aluno` chama o da base na lista de inicialização (`Pessoa(n)`) antes de inicializar o seu próprio atributo. O método herdado `apresentar` funciona sobre o objeto derivado sem ser reescrito, e o membro `protected` fica visível nos métodos de `Aluno` mas continua escondido de `main`.
+Neste exemplo, a pré-condição é um preço não negativo e finito, e um desconto entre `0` e `1`. O desconto `0.25` reduz `100` para `75`. O código escolhe valores que satisfazem essas condições; uma versão que recebe dados externos teria de as validar.
+
+`preco_` continua privado. A derivada consulta-o através do método protegido `preco()`. Membros privados da base não são acessíveis diretamente à derivada. Na herança pública, os membros públicos da base continuam públicos e os protegidos continuam protegidos. Herança privada ou protegida altera a acessibilidade e não oferece a mesma substituição pública.
 
 ## Funções virtuais e override
 
-Se a derivada redefinir um método da base, qual das versões corre? Sem `virtual`, decide o tipo da variável em tempo de compilação. Com `virtual`, decide o tipo real do objeto em tempo de execução: é esta escolha tardia que se chama **polimorfismo**. A redefinição marca-se com `override`, que manda o compilador confirmar que existe mesmo um método virtual com essa assinatura na base:
+O **tipo estático** é o tipo conhecido a partir da declaração. `referencia` tem tipo estático `const Produto&`. O **tipo dinâmico** corresponde ao objeto concreto referido, aqui `Promocao`.
 
-```cpp
-#include <iostream>
-#include <string>
+Numa chamada virtual através de uma referência ou apontador para a base, a implementação é escolhida pelo tipo dinâmico. Por isso, `referencia.total()` chama `Promocao::total()` e produz `75`. Sem `virtual`, uma chamada pela interface da base escolheria a função da base pelo tipo estático.
 
-class Pessoa {
-public:
-    Pessoa(const std::string& n) : nome(n) {}
-    virtual ~Pessoa() = default;
+`override` pede ao compilador que confirme que a função substitui uma virtual da base. O `const` faz parte da assinatura. Esquecer esse `const` não cria a substituição pretendida; `override` transforma o engano num erro de compilação. Sobrecarga escolhe entre assinaturas; substituição virtual escolhe a implementação de uma assinatura herdada. São mecanismos diferentes.
 
-    virtual void apresentar() const {
-        std::cout << "Sou " << nome << "\n";
-    }
+Uma chamada explicitamente qualificada, como `promocao.Produto::total()`, escolhe a implementação da base. Durante construção e destruição, as chamadas virtuais não chegam a partes derivadas ainda não construídas ou já destruídas. Evita depender desse tipo de despacho para inicializar a derivada.
 
-protected:
-    std::string nome;
-};
+## A armadilha do slicing
 
-class Aluno : public Pessoa {
-public:
-    Aluno(const std::string& n, int nro) : Pessoa(n), numero(nro) {}
+`Produto copia = promocao` constrói um novo `Produto` apenas com a parte base. O desconto não pertence a esse novo objeto. Este **slicing** explica a saída `100`: `copia` tem tipo dinâmico `Produto`, logo até uma função virtual usa a implementação da base.
 
-    void apresentar() const override {
-        std::cout << "Sou " << nome << ", aluno numero " << numero << "\n";
-    }
-
-private:
-    int numero;
-};
-
-void cumprimentar(const Pessoa& p) {
-    p.apresentar();
-}
-
-int main() {
-    Aluno a("Ana", 123);
-    cumprimentar(a);
-}
-```
-
-Isto escreve `Sou Ana, aluno numero 123`. A função `cumprimentar` recebe uma referência para `Pessoa`, mas o objeto real é um `Aluno`, e é a versão de `Aluno` que corre. Sem o `virtual`, sairia `Sou Ana`: a função veria só a parte `Pessoa` do objeto. Repara que a passagem por referência é essencial aqui; por valor, nem o `virtual` salvava, como mostra a próxima secção.
-
-:::tip[override é o teu corretor automático]
-Escreve sempre `override` nas redefinições. Se a assinatura tiver um detalhe errado (um `const` a menos, um tipo trocado), sem `override` crias silenciosamente um método novo que nunca é chamado por polimorfismo; com `override` o compilador reclama logo. É dos hábitos com melhor rácio custo-benefício em C++.
-:::
+Passar uma derivada por valor a um parâmetro de tipo base também corta a parte derivada. Um `vector<Produto>` guarda objetos base, não preserva objetos derivados completos. Para observar objetos polimórficos usa referências ou apontadores; para os possuir usa donos polimórficos apropriados.
 
 ## Classes abstratas
 
-Uma função virtual **pura** (`= 0`) não tem implementação na base e obriga cada derivada concreta a defini-la. Uma classe com pelo menos uma função virtual pura é **abstrata**: não se pode instanciar, serve apenas de interface comum:
+Uma função `virtual double area() const = 0;` é virtual pura. A classe é **abstrata** e não permite construir um objeto diretamente. Define uma operação que as classes concretas devem completar.
+
+Programa completo para compilar localmente:
 
 ```cpp
 #include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <vector>
 
 class Forma {
 public:
@@ -115,100 +70,59 @@ public:
     virtual double area() const = 0;
 };
 
+class Retangulo : public Forma {
+public:
+    Retangulo(double largura, double altura) : largura_(largura), altura_(altura) {
+        if (!(largura > 0 && largura <= 1000000 && altura > 0 && altura <= 1000000))
+            throw std::invalid_argument("Dimensoes invalidas");
+    }
+    double area() const override { return largura_ * altura_; }
+private:
+    double largura_;
+    double altura_;
+};
+
 class Quadrado : public Forma {
 public:
-    Quadrado(double l) : lado(l) {}
-    double area() const override { return lado * lado; }
-
+    explicit Quadrado(double lado) : lado_(lado) {
+        if (!(lado > 0 && lado <= 1000000))
+            throw std::invalid_argument("Lado invalido");
+    }
+    double area() const override { return lado_ * lado_; }
 private:
-    double lado;
+    double lado_;
 };
 
 int main() {
-    Quadrado q(3.0);
-    std::cout << q.area() << "\n";
+    std::vector<std::unique_ptr<Forma>> formas;
+    formas.push_back(std::make_unique<Retangulo>(3.0, 4.0));
+    formas.push_back(std::make_unique<Quadrado>(5.0));
+    double total = 0;
+    for (const auto& forma : formas) total += forma->area();
+    std::cout << total << "\n";
 }
 ```
 
-Isto escreve `9`. Tentar declarar `Forma f;` nem compilava: uma forma genérica não tem área calculável, por isso a linguagem impede que exista. Cada forma concreta (quadrado, círculo, triângulo) implementa o seu `area`, e o código que usa formas fala só com a interface `Forma`. É o padrão do exemplo completo abaixo.
+Saída:
 
-<Dot
-  source={
-    'digraph Formas { rankdir=TB; Forma [shape=box, label="Forma (abstrata)\\narea() = 0"]; Quadrado [shape=box, label="Quadrado\\narea() override"]; Circulo [shape=box, label="Circulo\\narea() override"]; Forma -> Quadrado; Forma -> Circulo; }'
-  }
-  alt="Hierarquia de classes: Forma abstrata com o método virtual puro area, da qual derivam Quadrado e Circulo, cada uma com a sua implementação."
-/>
-
-## A armadilha do slicing
-
-Guardar um objeto derivado numa variável do tipo base **corta** a parte derivada: chama-se **slicing** (fatiamento). A variável base só tem espaço para a parte base, e o resto perde-se, incluindo o comportamento polimórfico:
-
-```cpp
-#include <iostream>
-
-class Base {
-public:
-    virtual void quem() const { std::cout << "base\n"; }
-    virtual ~Base() = default;
-};
-
-class Derivada : public Base {
-public:
-    void quem() const override { std::cout << "derivada\n"; }
-};
-
-int main() {
-    Derivada d;
-    Base copia = d;
-    copia.quem();
-    Base& ref = d;
-    ref.quem();
-}
+```text
+37
 ```
 
-Isto escreve `base` e depois `derivada`. A `copia` sofreu slicing: é um `Base` genuíno construído a partir da parte `Base` de `d`, por isso responde `base`. A referência `ref` aponta para o objeto completo, por isso o `virtual` escolhe `derivada`. A regra prática: polimorfismo usa-se com referências ou apontadores, nunca com objetos por valor. É também por isto que contentores de objetos polimórficos guardam apontadores (de preferência smart pointers, como viste nos [apontadores](/cadeiras/p/apontadores-memoria/)).
+O vetor guarda donos de `Forma`, mas os objetos dinâmicos são um retângulo e um quadrado. Cada chamada `forma->area()` escolhe a implementação concreta. As áreas são `3 × 4 = 12` e `5 × 5 = 25`; a soma é `37`. A coleção vazia daria `0`.
 
-<Typst
-  source={slicing}
-  format="svg"
-  alt="A cópia por valor guarda só a parte Base e corta o resto; a referência aponta ao objeto Derivada completo e vê tudo."
-/>
+Usamos `const auto&` no ciclo porque um `unique_ptr` não se copia. O apontador permite chamar métodos do objeto; a propriedade exclusiva mantém-no vivo. Este desenho não exige expor os campos de cada forma.
 
 ## A regra do destrutor virtual
 
-Se uma classe tem pelo menos uma função virtual, o destrutor também deve ser virtual. Quando apagas um objeto derivado através de um apontador para a base, só o destrutor virtual garante que corre o destrutor da derivada antes do da base:
+Quando um objeto derivado é destruído através de um apontador para a base, o destrutor da base tem de ser virtual. Caso contrário, a destruição desse objeto por `delete Base*` tem comportamento indefinido. Isto também vale para um `unique_ptr<Base>` com o destrutor habitual.
 
-```cpp
-#include <iostream>
+`virtual ~Forma() = default;` permite destruir primeiro a parte derivada e depois a base. Se a interface proíbe destruição pela base, outra opção de desenho é um destrutor protegido não virtual. Para uma coleção dona de formas, o destrutor público virtual é a escolha adequada.
 
-class Base {
-public:
-    virtual ~Base() { std::cout << "limpa base\n"; }
-};
+## Ordem de construção
 
-class Derivada : public Base {
-public:
-    ~Derivada() override { std::cout << "limpa derivada\n"; }
-};
+Uma derivada constrói primeiro a base, depois os seus membros pela ordem de declaração e finalmente executa o corpo do construtor. Em `Promocao`, `Produto(preco)` corre antes de inicializar `desconto_`. A destruição faz a ordem inversa. A derivada não inicializa diretamente campos privados da base; chama o construtor da base.
 
-int main() {
-    Base* p = new Derivada();
-    delete p;
-}
-```
+## Herança ou composição
 
-Isto escreve `limpa derivada` e depois `limpa base`. Sem o `virtual`, só correria o destrutor da base, e os recursos da derivada (memória pedida com `new`, ficheiros abertos) ficavam por libertar. Nos exemplos desta página escrevemos `virtual ~Forma() = default;`: destrutor virtual com implementação omissa, suficiente quando não há limpeza própria a fazer.
-
-## Exemplo completo: áreas de formas
-
-Vamos juntar classe abstrata, duas derivadas e uma função que trata ambas pela interface comum. A área do círculo é $pi r^2$; usamos $3.1416$ como valor de $pi$. Corre o programa:
-
-<CodePlayground
-  language="cpp"
-  title="Áreas por polimorfismo"
-  code={
-    '#include <iostream>\n\nclass Forma {\npublic:\n    virtual ~Forma() = default;\n    virtual double area() const = 0;\n};\n\nclass Quadrado : public Forma {\npublic:\n    Quadrado(double l) : lado(l) {}\n    double area() const override { return lado * lado; }\n\nprivate:\n    double lado;\n};\n\nclass Circulo : public Forma {\npublic:\n    Circulo(double r) : raio(r) {}\n    double area() const override { return 3.1416 * raio * raio; }\n\nprivate:\n    double raio;\n};\n\nvoid mostrar_area(const Forma& f) {\n    std::cout << "Area: " << f.area() << "\\n";\n}\n\nint main() {\n    Quadrado q(3.0);\n    Circulo c(1.0);\n    mostrar_area(q);\n    mostrar_area(c);\n}'
-  }
-/>
-
-Isto escreve `Area: 9` e `Area: 3.1416`. A mesma função `mostrar_area` calcula áreas de formas diferentes sem saber quais: recebe referências para a base (sem slicing) e o `virtual` escolhe a fórmula certa em cada chamada. Confere o círculo: $3.1416 times 1^2 = 3.1416$. Se acrescentares um `Triangulo` amanhã, esta função continua igual: esse é o ganho do polimorfismo, código novo sem mexer no código que já funciona.
+Um quadrado pode partilhar o cálculo de área com um retângulo, mas uma interface de retângulo com setters independentes de largura e altura cria um problema. Um quadrado precisa de manter as dimensões iguais. Herdar dessa interface alteraria o contrato dos setters. No exemplo, ambos implementam `Forma` e cada tipo conserva o seu próprio invariante. A relação escolhida depende das operações públicas, não só do desenho geométrico.

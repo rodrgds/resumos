@@ -1,223 +1,181 @@
 ---
 title: Templates e STL
-description: Funções e classes genéricas, vector, iteradores e algoritmos como sort e find.
+description: 'Código genérico, escolha de contentores, iteradores, invalidação, algoritmos e comparadores.'
 section: conteudo
-order: 5
+order: 7
+practices:
+  - p/praticar-stl
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import intervalos from '../../p/intervalos.typ?raw';
 
-Muitas funções fazem exatamente o mesmo com tipos diferentes: o máximo de dois inteiros e o máximo de dois reais só diferem no tipo. Copiar a função para cada tipo duplica código e cada correção tem de ser repetida. Os **templates** evitam isso: escreves a função uma vez com um tipo genérico e o compilador cria uma versão para cada tipo usado. A **STL** (Standard Template Library) é a coleção de estruturas e algoritmos genéricos que a linguagem já traz: vetores, iteradores e funções como ordenar e pesquisar.
+Podemos precisar da mesma operação para inteiros, reais ou objetos de uma classe. Um template descreve a operação com um parâmetro de tipo. O compilador cria as versões necessárias e verifica se os tipos concretos permitem as operações usadas.
+
+A biblioteca padrão combina contentores, iteradores e algoritmos. O contentor guarda os valores; os iteradores delimitam o intervalo; o algoritmo realiza uma operação nesse intervalo. Esta separação evita escrever outra ordenação para cada tipo de coleção.
 
 ## Funções template
 
-Uma função template recebe o tipo como parâmetro, escrito entre parênteses angulares. O compilador deduz o tipo em cada chamada e gera a versão correspondente:
+`template <typename T>` introduz um parâmetro de tipo. `typename` e `class` são equivalentes nesta declaração simples. Na chamada `maior(3, 8)`, o compilador deduz `T = int`; em `maior(2.5, 1.5)`, deduz `double`.
+
+Programa completo para compilar localmente:
 
 ```cpp
 #include <iostream>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 template <typename T>
-T maximo(const T& a, const T& b) {
-    if (a > b) {
-        return a;
-    }
-    return b;
-}
-
-int main() {
-    std::cout << maximo(3, 7) << "\n";
-    std::cout << maximo(2.5, 1.8) << "\n";
-    std::cout << maximo(std::string("casa"), std::string("carro")) << "\n";
-}
-```
-
-Isto escreve `7`, `2.5` e `carro`. A mesma definição serviu para `int`, `double` e `string`: cada chamada gerou (instanciou) a sua versão. A única exigência é que o tipo suporte as operações usadas, aqui o `>`; tentar `maximo` com um tipo sem `>` dá um erro de compilação na instanciação, muitas vezes longo e confuso. Quando vires um erro gigante depois de chamares um template, procura a primeira linha que menciona o teu código.
-
-Repara nos parâmetros `const T&`: referência constante, como nos [fundamentos](/cadeiras/p/cpp-fundamentos/). Sem a referência, cada chamada copiava os argumentos; sem o `const`, não aceitava valores temporários.
-
-## Classes template
-
-Uma classe também pode ser genérica. O exemplo clássico é uma caixa que guarda um valor de qualquer tipo:
-
-```cpp
-#include <iostream>
-#include <string>
+T maior(T a, T b) { return a < b ? b : a; }
 
 template <typename T>
-class Caixa {
+class Pilha {
 public:
-    Caixa(const T& v) : valor(v) {}
-
-    T ler() const { return valor; }
-    void guardar(const T& v) { valor = v; }
-
+    void inserir(const T& valor) { dados_.push_back(valor); }
+    T retirar() {
+        if (dados_.empty()) throw std::out_of_range("Pilha vazia");
+        T valor = dados_.back();
+        dados_.pop_back();
+        return valor;
+    }
+    bool vazia() const { return dados_.empty(); }
 private:
-    T valor;
+    std::vector<T> dados_;
 };
 
 int main() {
-    Caixa<int> ci(42);
-    Caixa<std::string> cs("ola");
-    std::cout << ci.ler() << " " << cs.ler() << "\n";
+    std::cout << maior(3, 8) << " " << maior(2.5, 1.5) << "\n";
+    Pilha<std::string> palavras;
+    palavras.inserir("primeira");
+    palavras.inserir("segunda");
+    std::cout << palavras.retirar() << " " << palavras.retirar() << "\n";
+    std::cout << std::boolalpha << palavras.vazia() << "\n";
 }
 ```
 
-Isto escreve `42 ola`. Na declaração do objeto o tipo já não se deduz: tens de o escrever (`Caixa<int>`), porque o compilador precisa de saber quanto espaço reservar. É assim que funcionam o `vector<int>` e as outras estruturas da STL: classes template que já alguém escreveu e testou por ti.
+Saída:
 
-<YouTube id="Jh2urtP00Zg" title="C++ Tutorial: Using the STL std::vector" />
+```text
+8 2.5
+segunda primeira
+true
+```
+
+O corpo de `maior` exige que `a < b` seja válido e que o resultado escolhido possa ser devolvido por valor. `maior(3, 2.5)` não deduz um único `T` nesta assinatura, porque os argumentos têm tipos diferentes. `maior<double>(3, 2.5)` escolhe explicitamente `double` e converte o `3`.
+
+Um template não elimina requisitos dos tipos. `maior(objeto1, objeto2)` só funciona se esse tipo oferecer a comparação necessária. As definições dos templates têm de estar disponíveis quando o compilador as instancia. Por isso, ficam habitualmente no cabeçalho, ao contrário de funções não template cuja implementação pode ficar num `.cpp` separado.
+
+## Classes template
+
+`Pilha<std::string>` e `Pilha<int>` são tipos distintos. Cada instância conserva a mesma disciplina, último a entrar, primeiro a sair, mas guarda valores de outro tipo. A retirada do exemplo copia o último valor antes de o remover e lança uma exceção se a pilha está vazia. Exige, portanto, um tipo copiável.
+
+O parâmetro de tipo e a interface definem os requisitos. Uma versão para valores de propriedade exclusiva precisaria de movimento na retirada e numa inserção adequada. Não escrevas "aceita qualquer tipo" sem verificar as operações exigidas.
 
 ## vector: o array que cresce
 
-O `vector` é o substituto moderno do array de C que viste nos [apontadores](/cadeiras/p/apontadores-memoria/): guarda os elementos num bloco contíguo, sabe o seu tamanho e cresce com `push_back`. Vem de [Tuplos e listas](/cadeiras/fp/tuplos-listas/) a ideia de lista que cresce com `append`; o `push_back` é o equivalente:
+`std::vector<T>` tem armazenamento contíguo, tamanho variável e acesso por índice. `size()` conta elementos vivos; `capacity()` conta quantos podem caber sem nova reserva. `reserve(n)` pode aumentar capacidade, mas não cria elementos. `resize(n)` muda o tamanho, construindo ou destruindo elementos.
 
-```cpp
-#include <iostream>
-#include <vector>
+`v[i]` exige `i < v.size()` e não verifica o limite. `v.at(i)` verifica e lança `std::out_of_range`. `front`, `back` e `pop_back` exigem um vetor não vazio. Reservar capacidade para dez elementos não permite escrever `v[9]` se o tamanho ainda é zero.
 
-int main() {
-    std::vector<int> notas;
-    notas.push_back(12);
-    notas.push_back(15);
-    notas.push_back(10);
-    std::cout << notas.size() << "\n";
-    std::cout << notas[0] << " " << notas[2] << "\n";
-    notas[1] = 18;
-    for (int n : notas) {
-        std::cout << n << " ";
-    }
-    std::cout << "\n";
-}
-```
+`push_back` tem custo amortizado constante: algumas inserções são mais caras porque realocam e transferem os elementos. Inserir ou remover no meio desloca elementos e custa linear no número deslocado. A gestão automática de memória não elimina os custos das operações.
 
-Isto escreve `3`, depois `12 10` e depois `12 18 10`. O `size()` devolve o número de elementos, a indexação funciona como no array e o ciclo `for (int n : notas)` percorre todos os elementos sem gerir índices. Tal como o `append` de Python, o `push_back` pode obrigar a realocar o bloco interior, por isso não guardes apontadores para elementos de um vetor enquanto o alteras.
+## Escolher um contentor
 
-:::warning[Indexar fora do vector não é travado]
-Tal como nos arrays, `notas[10]` num vetor de três elementos não dá erro de compilação: lê lixo ou avaria o programa. Para acesso verificado existe `notas.at(1)`, que lança uma exceção se o índice for inválido (vais perceber exceções na [próxima página](/cadeiras/p/excecoes-testes/)). Nos exercícios, usa `[]` quando já garantiste os limites com o `size()` e `at()` quando o índice vem de fora.
-:::
+Nesta tabela, `n` é o número de elementos. Os custos usuais de procura por chave pressupõem comparações ou dispersão de custo constante.
+
+| Contentor             | Organização                         | Acesso e operação úteis                                          |
+| --------------------- | ----------------------------------- | ---------------------------------------------------------------- |
+| `array<T, N>`         | Contíguo, tamanho fixo              | Índice em tempo constante                                        |
+| `vector<T>`           | Contíguo, tamanho variável          | Índice constante; adicionar no fim amortizado constante          |
+| `deque<T>`            | Sequência de blocos                 | Índice constante; inserir nos extremos constante                 |
+| `list<T>`             | Nós ligados                         | Inserir/remover com iterador conhecido constante; procura linear |
+| `set<T>`              | Chaves únicas ordenadas             | Procura, inserção e remoção logarítmicas                         |
+| `map<K, V>`           | Chaves únicas ordenadas com valores | Procura por chave logarítmica                                    |
+| `unordered_map<K, V>` | Tabela de dispersão                 | Procura média constante, pior caso linear                        |
+
+Uma lista não oferece acesso por índice. Encontrar o nó pode custar linear, mesmo que a remoção desse nó seja constante. `stack` e `queue` são adaptadores que expõem as operações de pilha e fila sobre um contentor subjacente. Escolhe pela sequência de operações de que precisas, não só por uma complexidade isolada.
 
 ## map e set: chaves e conjuntos
 
-Nem tudo é uma sequência. O `map` associa chaves a valores, como um dicionário de Python: serve para contar ocorrências ou guardar registos por nome. O `set` guarda valores únicos e ordenados, e diz em tempo logarítmico se um valor lá está:
+<CodePlayground
+  language="cpp"
+  title="Contar palavras por chave"
+  input=""
+  code={
+    '#include <iostream>\n#include <map>\n#include <sstream>\n#include <string>\n\nint main() {\n    std::istringstream entrada("azul verde azul vermelho verde azul");\n    std::map<std::string, int> frequencias;\n    std::string palavra;\n    while (entrada >> palavra) ++frequencias[palavra];\n    for (const auto& par : frequencias)\n        std::cout << par.first << ": " << par.second << "\\n";\n    std::cout << std::boolalpha << (frequencias.find("branco") == frequencias.end())\n              << " " << frequencias.size() << "\\n";\n}\n'
+  }
+/>
 
-```cpp
-#include <iostream>
-#include <map>
-#include <set>
-#include <string>
+Saída:
 
-int main() {
-    std::map<std::string, int> notas = {{"Ana", 15}, {"Rui", 12}};
-    notas["Iris"] = 18;
-    std::cout << notas["Ana"] << " " << notas.size() << "\n";
-    std::set<int> vistos = {3, 1, 3, 2, 1};
-    std::cout << vistos.size() << ":";
-    for (int x : vistos) {
-        std::cout << " " << x;
-    }
-    std::cout << "\n";
-}
+```text
+azul: 3
+verde: 2
+vermelho: 1
+true 3
 ```
 
-Isto escreve `15 3` e depois `3: 1 2 3`. O `map` tem três entradas depois da inserção e `notas["Ana"]` vale `15`. O `set` ignorou os repetidos e guardou `1 2 3` por ordem, por isso o tamanho é `3`. A regra de ouro: sequência ordenada ou acesso por posição pede `vector`; procura por chave pede `map`; pertença sem repetições pede `set`.
+`frequencias[palavra]` insere a chave com valor inteiro inicializado a zero se ela ainda não existe. O incremento passa esse zero para um. Esta inserção é desejada numa contagem, mas surpreendente numa simples consulta. `find("branco")` não insere nada; devolve `end()` porque não encontrou, e o tamanho continua `3`.
+
+`map` percorre as chaves pela ordem do comparador. `set` guarda apenas as chaves, sem o segundo valor, e ignora inserções repetidas de uma chave equivalente. `unordered_map` não oferece ordem de percurso fixa.
 
 ## Iteradores
 
-Um **iterador** é um objeto que aponta para um elemento de um contentor e sabe avançar para o seguinte. É a abstração que permite aos algoritmos da STL trabalharem sobre qualquer contentor: o algoritmo só vê iteradores, nunca o vetor ou a lista por baixo. Todo o contentor oferece `begin()` (primeiro elemento) e `end()` (posição a seguir ao último):
-
-<Typst
-  source={intervalos}
-  format="svg"
-  alt="Vetor com os elementos 10, 20 e 30. begin aponta ao 10 e end aponta à posição a seguir ao 30."
-/>
-
-Há duas formas de percorrer, e convém reconheceres ambas porque os exercícios misturam-nas:
-
-<Tabs id="percorrer-vetor" labels={['Ciclo por intervalo', 'Iteradores explícitos']}>
-  <div slot="panel-0">
+Um iterador identifica uma posição num contentor. `begin()` identifica o primeiro elemento e `end()` a posição depois do último. No vazio, são iguais. Um intervalo `[first, last)` pode representar o vazio sem caso especial; percorre enquanto `it != last`, lê `*it` e avança com `++it`. Nunca desreferencies `end()`.
 
 ```cpp
-for (int n : v) {
-    std::cout << n << " ";
-}
-```
-
-A forma curta para ler todos os elementos. Esconde os iteradores, mas é sobre eles que o ciclo corre por baixo.
-
-  </div>
-  <div slot="panel-1">
-
-```cpp
-for (auto it = v.begin(); it != v.end(); it++) {
+// Excerto: v é um vector<int> já existente.
+for (auto it = v.begin(); it != v.end(); ++it) {
     std::cout << *it << " ";
 }
 ```
 
-A forma explícita: `*it` lê o elemento e `it++` avança. Precisas dela quando o algoritmo pede iteradores, como o `sort` e o `find` abaixo.
+Iteradores têm capacidades diferentes. `vector` fornece acesso aleatório e permite `it + 3`. `list` fornece avanço e recuo, mas não soma de um deslocamento. `std::sort` exige acesso aleatório; numa `list`, usa a sua operação `sort()`.
 
-  </div>
-</Tabs>
+## Invalidação de iteradores
 
-Na prática escreves `auto it = v.begin()`, que pede ao compilador para deduzir o tipo comprido (`std::vector<int>::iterator`) por ti.
+Um iterador ou referência pode deixar de ser válido quando a coleção muda. Num `vector`, uma realocação invalida todos os iteradores, apontadores e referências aos elementos. Se uma inserção não realoca, os acessos anteriores à posição conservam-se, mas os da posição em diante, incluindo o antigo `end`, são invalidados. `erase` invalida os acessos na posição removida e posteriores.
+
+Não guardes um iterador e continues a usá-lo depois de uma operação que o pode invalidar. Para remover durante um percurso de `vector`, a forma habitual é `it = v.erase(it)` quando removes, e `++it` quando conservas. `erase` devolve um novo iterador válido para o elemento seguinte, ou `end()`.
+
+Em `list` e nos contentores associativos ordenados, remover um elemento invalida os acessos a esse elemento, e inserir normalmente não invalida os anteriores. As regras de `deque` e dos contentores de dispersão diferem; não generalizes a regra do vetor.
 
 ## Algoritmos: sort e find
 
-A biblioteca `<algorithm>` traz funções prontas que operam sobre intervalos de iteradores. As duas que vais usar já: `sort` ordena e `find` procura e devolve um iterador para o elemento (ou `end()` se não existir):
+Programa completo para compilar localmente:
 
 ```cpp
 #include <algorithm>
-#include <iostream>
-#include <vector>
-
-int main() {
-    std::vector<int> v = {30, 10, 20};
-    std::sort(v.begin(), v.end());
-    for (int n : v) {
-        std::cout << n << " ";
-    }
-    std::cout << "\n";
-    auto it = std::find(v.begin(), v.end(), 20);
-    if (it != v.end()) {
-        std::cout << "Encontrei na posicao " << (it - v.begin()) << "\n";
-    }
-}
-```
-
-Isto escreve `10 20 30` e depois `Encontrei na posicao 1`. Repara que `find` devolve um iterador, não um índice: subtrair `v.begin()` converte para posição, e comparar com `v.end()` diz se a procura falhou. Este padrão (testar contra `end()`) aparece em quase todos os algoritmos de procura da STL. Se precisares de ordenar por outro critério, o `sort` aceita um terceiro argumento com a comparação, que escreves como função ou `lambda`; a ideia de passar comportamento como argumento vem da [programação funcional](/cadeiras/fp/programacao-funcional/) que já conheces.
-
-Para somar (ou juntar) todos os elementos com um valor inicial existe o `accumulate` de `<numeric>`:
-
-```cpp
 #include <iostream>
 #include <numeric>
 #include <vector>
 
 int main() {
-    std::vector<int> v = {1, 2, 3, 4};
-    std::cout << std::accumulate(v.begin(), v.end(), 0) << "\n";
+    std::vector<int> valores = {5, 2, 3, 2, 1, 4, 5};
+    std::sort(valores.begin(), valores.end());
+    valores.erase(std::unique(valores.begin(), valores.end()), valores.end());
+    valores.erase(std::remove_if(valores.begin(), valores.end(),
+        [](int x) { return x % 2 == 0; }), valores.end());
+    for (int x : valores) std::cout << x << " ";
+    std::cout << "\n" << std::accumulate(valores.begin(), valores.end(), 0) << "\n";
 }
 ```
 
-Isto escreve `10`. O terceiro argumento é o valor inicial e o tipo do resultado: com `0` somas inteiros, com `0.0` somavas reais.
+Saída:
 
-## Exemplo completo: contar e ordenar
+```text
+1 3 5
+9
+```
 
-Vamos escrever uma função genérica `contar_maiores` que conta quantos elementos de um vetor excedem um limite, e usá-la com dois tipos diferentes. Depois ordenamos um dos vetores com `sort`. Corre o programa:
+Depois de ordenar, temos `1 2 2 3 4 5 5`. `unique` compacta valores iguais **adjacentes** e devolve o novo fim lógico; não muda o tamanho do vetor. O primeiro `erase` destrói os elementos que ficaram fora desse fim. Depois, `remove_if` compacta os que não satisfazem o predicado; o segundo `erase` remove os restantes. Ficamos com `1 3 5`, cuja soma é `9`.
 
-<CodePlayground
-  language="cpp"
-  title="Contar e ordenar com templates e STL"
-  code={
-    '#include <algorithm>\n#include <iostream>\n#include <vector>\n\ntemplate <typename T>\nint contar_maiores(const std::vector<T>& v, const T& limite) {\n    int n = 0;\n    for (const T& x : v) {\n        if (x > limite) {\n            n++;\n        }\n    }\n    return n;\n}\n\nint main() {\n    std::vector<int> notas = {8, 12, 15, 9, 18};\n    std::vector<double> temps = {36.5, 37.8, 36.9, 38.2};\n    std::cout << contar_maiores(notas, 10) << "\\n";\n    std::cout << contar_maiores(temps, 37.0) << "\\n";\n    std::sort(notas.begin(), notas.end());\n    std::cout << notas.front() << " " << notas.back() << "\\n";\n}'
-  }
-/>
+`find` percorre até encontrar um valor ou chegar ao fim. `count_if` conta os que satisfazem um predicado. `accumulate`, de `<numeric>`, começa no valor inicial recebido; esse valor também influencia o tipo do acumulador. Para somar `double`, usa `0.0` quando queres acumulação real.
 
-Isto escreve `3`, `2` e `8 18`. Confere: em `notas`, excedem `10` o `12`, o `15` e o `18`; em `temps`, excedem `37.0` o `37.8` e o `38.2`. Depois de ordenar, `front()` é o menor (`8`) e `back()` é o maior (`18`). A função serviu os dois tipos sem duplicação, e o vetor passou por referência constante: sem cópia e sem alterações.
+Uma **lambda**, como `[](int x) { return x % 2 == 0; }`, cria uma operação sem lhe dar um nome separado. `[]` declara capturas; `[limite]` copia uma variável e `[&limite]` referencia-a. Uma captura por referência não prolonga a vida do objeto capturado.
 
-## Para saber mais
+## Comparadores e pesquisa ordenada
 
-- [Referência de `std::vector`](https://en.cppreference.com/cpp/container/vector): métodos, complexidade e exemplos na documentação oficial.
+Um comparador de ordenação deve representar "vem antes", com uma relação estrita consistente. Para qualquer `x`, `comp(x, x)` tem de ser falso. `a <= b` não serve como comparador de `sort`, porque dá verdadeiro para valores iguais. Para desempatar objetos, compara primeiro o critério principal e depois o secundário, conservando a transitividade.
+
+`sort` não garante a ordem anterior entre elementos equivalentes. `stable_sort` conserva-a. `lower_bound` encontra a primeira posição que não vem antes do valor procurado. O intervalo tem de estar particionado de acordo com esse critério, normalmente ordenado pelo mesmo comparador. Procurar por pesquisa binária num vetor arbitrário não satisfaz essa condição.
