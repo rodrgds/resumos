@@ -1,0 +1,116 @@
+---
+title: Decomposição sem perda de informação
+description: Projeção de dependências, BCNF, junção sem perda, chase e síntese em 3FN.
+section: conteudo
+order: 5
+practices:
+  - bd/praticar-decomposicao
+---
+
+Separar uma tabela elimina repetições, mas podemos perder a informação sobre que valores pertenciam ao mesmo tuplo. Uma boa decomposição procura eliminar anomalias, permitir reconstruir os dados e conservar as regras que precisamos de verificar.
+
+## Decompor não é cortar as linhas
+
+Decompor $R(A,B,C)$ em $R_1(A,B)$ e $R_2(B,C)$ divide os **atributos**. Cada nova instância é uma projeção de $R$, com eliminação de duplicados na teoria relacional. Os esquemas, em conjunto, têm de conter todos os atributos originais.
+
+Para reconstruir, fazemos a junção natural dos resultados. A decomposição é **sem perda** se, para toda a instância de $R$ que satisfaz as DFs, essa junção devolve exatamente $R$. Não pode acrescentar tuplos espúrios nem retirar os originais.
+
+Considera dois tuplos originais:
+
+| A   | B   | C   |
+| --- | --- | --- |
+| 1   | 2   | 3   |
+| 4   | 2   | 5   |
+
+As projeções são $(1,2),(4,2)$ em $AB$ e $(2,3),(2,5)$ em $BC$. Como os quatro pares partilham $B=2$, a junção devolve quatro tuplos: os dois originais e $(1,2,5),(4,2,3)$. Perdemos a correspondência entre A e C. Nenhum atributo desapareceu, mas apareceu informação falsa.
+
+## Critério para duas relações
+
+Para uma decomposição binária $R\to R_1,R_2$, sob DFs, a junção é sem perda se e só se o conjunto comum determina um dos lados:
+
+$$
+(R_1\cap R_2)\to R_1
+\quad\text{ou}\quad
+(R_1\cap R_2)\to R_2.
+$$
+
+As dependências são avaliadas no fecho do conjunto original. Se decompomos $ABC$ em $AB$ e $BC$, o comum é $B$. A condição é $B\to A$ ou $B\to C$, omitindo os atributos triviais.
+
+Se $B\to C$, todas as linhas com o mesmo B têm o mesmo C. Uma linha de AB só pode juntar-se ao C que já tinha, por isso a junção não inventa outra combinação. No contraexemplo anterior, $B=2$ tem dois valores de C e dois de A; nenhuma das condições se verifica.
+
+Não concluas que qualquer sequência de projeções é sem perda só porque "as tabelas têm uma coluna comum". Uma coluna comum permite juntar; a dependência funcional é que justifica a reconstrução correta.
+
+## Projetar dependências
+
+Ao estudar uma relação resultante, usamos todas as DFs implicadas que envolvem apenas os seus atributos. Não basta retirar da lista original as setas com atributos ausentes.
+
+Com $A\to B$ e $B\to C$, a projeção sobre $AC$ inclui $A\to C$, embora essa seta não estivesse escrita originalmente. Para a descobrir, calculamos $A^+$ no conjunto original e conservamos os atributos de AC que aparecem no fecho.
+
+Uma forma sistemática é calcular fechos dos subconjuntos do novo esquema e obter as dependências internas. Em esquemas pequenos, é praticável à mão. Omite as triviais e as redundantes quando apresentares uma base da projeção.
+
+## Decompor até BCNF
+
+Escolhe uma DF não trivial $X\to Y$ cujo determinante não seja superchave. Uma decomposição usual é:
+
+$$
+R_1=X\cup Y,\qquad R_2=R-(Y-X).
+$$
+
+A interseção contém X, que determina $R_1$, por isso este passo é sem perda. A variante que usa $X^+$ escolhe $R_1=X^+$ e $R_2=X\cup(R-X^+)$. Também é válida. Em ambos os casos, projeta as DFs e repete até todas as relações estarem em BCNF.
+
+Vamos decompor $R(A,B,C,D,E)$ com $AB\to C$, $C\to D$ e $D\to E$. Já sabemos que a candidata é AB.
+
+1. $D\to E$ viola BCNF, porque $D^+=DE$. Separamos $DE$ e $ABCD$. O comum D determina DE, logo não há perda.
+2. Em ABCD, $C\to D$ viola BCNF. Separamos CD e ABC. O comum C determina CD.
+3. DE está em BCNF, com candidata D. CD também, com candidata C. Em ABC, AB determina C e é candidata; a relação está em BCNF.
+
+O resultado é $ABC,CD,DE$. Cada passo é sem perda, logo a composição dos passos também o é. As três DFs originais podem ser verificadas localmente, uma em cada relação, por isso esta decomposição também preserva as dependências.
+
+Uma ordem diferente de escolhas pode produzir esquemas diferentes. Verifica propriedades dos esquemas obtidos, em vez de decorar uma única resposta textual.
+
+## Preservação de dependências
+
+Uma decomposição **preserva as dependências** quando as DFs projetadas sobre as novas relações, tomadas em conjunto, implicam todas as DFs originais. Assim, podemos verificar as regras separadamente sem juntar tabelas.
+
+Considere-se $R(A,B,C)$ com $AB\to C$ e $C\to B$. A DF $C\to B$ viola BCNF. Decompomos em $CB$ e $AC$.
+
+A junção é sem perda: o atributo comum C determina CB. As duas relações estão em BCNF. Porém, não preservam $AB\to C$. Em CB só temos $C\to B$; em AC não há DF não trivial. O fecho de AB sob as DFs locais continua AB, sem C.
+
+O problema pode ser visto nos dados. CB contém $(c_1,b)$ e $(c_2,b)$; AC contém $(a,c_1)$ e $(a,c_2)$. Cada tabela respeita as suas DFs, mas a junção tem dois C distintos para o mesmo par $(a,b)$, violando $AB\to C$.
+
+Portanto, **sem perda e preservação são propriedades diferentes**. A primeira diz que podemos reconstruir projeções de uma instância válida. A segunda diz que validar tabelas isoladas chega para garantir as regras na instância reconstruída.
+
+## Síntese em 3FN
+
+A síntese em 3FN consegue uma decomposição sem perda que preserva DFs, aceitando a exceção dos atributos primos.
+
+1. Obtém uma cobertura mínima com um atributo à direita.
+2. Para cada DF $X\to A$, cria uma relação com $X\cup\{A\}$. Podes reunir DFs com o mesmo determinante numa relação.
+3. Retira relações cujo esquema esteja contido no de outra.
+4. Se nenhuma relação contiver uma chave candidata do esquema original, acrescenta uma relação com essa chave.
+
+A última condição assegura a ligação necessária à reconstrução. Não basta criar uma relação para cada seta e esquecer atributos sem dependências.
+
+Para $R(A,B,C,D)$ com cobertura mínima $A\to B$, $B\to C$, $A\to D$, obtemos ABD e BC. A candidata A já está em ABD. As relações estão em 3FN, a junção é sem perda pelo comum B que determina BC, e cada DF tem lugar numa das relações.
+
+Para o exemplo $AB\to C$, $C\to B$, a síntese cria ABC e CB. Como CB está contida em ABC, retiramo-la. Ficamos com ABC, que está em 3FN porque todos os atributos são primos. Conservamos a dependência que a decomposição BCNF tinha perdido.
+
+## Chase para várias relações
+
+O critério binário não testa diretamente uma decomposição arbitrária em três ou mais relações. O **chase** constrói um tableau e aplica as DFs para descobrir se a junção consegue recuperar um tuplo sem ambiguidades.
+
+Cria uma coluna por atributo e uma linha por relação. Numa coluna A, escreve o símbolo distinguido $a_A$ se a relação dessa linha contém A. Nas outras células, escreve símbolos próprios, como $b_{1C}$, que começam distintos de todos os restantes.
+
+Para cada DF $X\to Y$, procura linhas que concordem nas colunas X. Unifica os símbolos nas colunas Y, substituindo todas as ocorrências do símbolo. Se um dos símbolos for distinguido, conserva-o; se nenhum for, escolhe um e conserva a escolha. Repete até estabilizar. Se alguma linha ficar com símbolos distinguidos em todas as colunas, a decomposição é sem perda.
+
+Exemplo: $R(A,B,C)$, $A\to B$, $B\to C$, decomposta em AB, BC e AC.
+
+| Relação | A        | B        | C        |
+| ------- | -------- | -------- | -------- |
+| AB      | $a_A$    | $a_B$    | $b_{1C}$ |
+| BC      | $b_{2A}$ | $a_B$    | $a_C$    |
+| AC      | $a_A$    | $b_{3B}$ | $a_C$    |
+
+As linhas AB e AC concordam em $a_A$. Por $A\to B$, substituímos $b_{3B}$ por $a_B$. Agora as três linhas concordam em B. Por $B\to C$, substituímos $b_{1C}$ por $a_C$. A linha AB ficou $(a_A,a_B,a_C)$, provando junção sem perda.
+
+O chase aplica **igualdades de símbolos**, não faz uma junção numérica de uma amostra. Se estabilizar sem linha totalmente distinguida, não há garantia de junção sem perda pelas DFs dadas.

@@ -1,0 +1,106 @@
+---
+title: Concorrência e isolamento
+description: Escalonamentos, serialização, leituras sujas, fantasmas, atualizações perdidas e snapshots.
+section: conteudo
+order: 13
+practices:
+  - bd/praticar-concorrencia
+---
+
+Duas transações podem ser corretas isoladamente e produzir um estado errado quando intercaladas. Isolamento define o que cada uma pode observar e que resultados concorrentes são permitidos.
+
+## Escalonamentos seriais e serializáveis
+
+Um **escalonamento** é a ordem intercalada das operações de várias transações, respeitando a ordem interna de cada uma. É **serial** se uma transação acaba antes de começar a seguinte. É **serializável** se o seu efeito e as observações relevantes equivalem a alguma execução serial, mesmo com operações intercaladas.
+
+Serializabilidade não escolhe necessariamente qual transação vem primeiro. Se duas transações começam ao mesmo tempo, o resultado pode equivaler a T1/T2 ou T2/T1. Ambas podem ser válidas, embora produzam respostas diferentes.
+
+## Atualização perdida
+
+O stock inicial é 10. Duas aplicações leem o stock e depois escrevem um valor calculado fora do SGBD:
+
+| Passo | T1        | T2        |
+| ----- | --------- | --------- |
+| 1     | Lê 10     |           |
+| 2     |           | Lê 10     |
+| 3     | Escreve 9 |           |
+| 4     |           | Escreve 9 |
+
+Foram vendidas duas unidades, mas só foi retirada uma. A segunda escrita sobrepõe a primeira, uma **atualização perdida**.
+
+Uma atualização relativa `SET stock = stock - 1` evita aquele padrão de ler-calcular-escrever no cliente. Uma reserva pode usar `UPDATE Produto SET stock = stock - 1 WHERE id = ? AND stock >= 1` e conferir se uma linha foi afetada. Se a operação envolver várias tabelas, agrupa-as numa transação e trata os conflitos segundo o motor. Esta técnica não resolve automaticamente todas as regras entre linhas diferentes.
+
+## Leituras sujas, não repetíveis e fantasmas
+
+Uma **leitura suja** observa uma alteração de outra transação antes de esta confirmar. Se T1 passa o saldo de 100 para 50, T2 lê 50 e T1 faz rollback, T2 usou um valor que nunca ficou confirmado.
+
+Uma **leitura não repetível** ocorre quando uma transação lê a mesma linha duas vezes e vê valores diferentes porque outra transação confirmou uma atualização entretanto. Ler apenas dados confirmados evita sujidade, mas não assegura estabilidade entre duas instruções.
+
+Um **fantasma** é uma mudança no conjunto de linhas que satisfaz um predicado. T1 conta encomendas acima de 100 euros; T2 insere e confirma uma nova encomenda desse tipo; T1 repete a contagem e obtém mais uma. A diferença não é apenas o valor de uma linha previamente lida.
+
+Uma consulta única pode ter um snapshot coerente e duas consultas sucessivas ver snapshots diferentes. A pergunta é sempre "durante qual intervalo e sob que nível de isolamento?".
+
+## Níveis do modelo SQL
+
+O quadro seguinte descreve os mínimos tradicionais do modelo SQL para estas anomalias. Um motor pode oferecer garantias mais fortes.
+
+| Nível            | Leitura suja | Não repetível | Fantasma     |
+| ---------------- | ------------ | ------------- | ------------ |
+| Read uncommitted | Pode ocorrer | Pode ocorrer  | Pode ocorrer |
+| Read committed   | Proibida     | Pode ocorrer  | Pode ocorrer |
+| Repeatable read  | Proibida     | Proibida      | Pode ocorrer |
+| Serializable     | Proibida     | Proibida      | Proibido     |
+
+Evitar estas três anomalias não chega, por si só, para provar toda a serializabilidade. É preciso considerar dependências entre leituras e escritas e regras que envolvem várias linhas. O comportamento concreto do motor importa mais do que uma interpretação informal do nome do nível.
+
+## Grafo de precedências
+
+Duas operações de transações diferentes **entram em conflito** se acedem ao mesmo item e pelo menos uma escreve. Uma leitura e outra leitura não entram em conflito.
+
+No grafo, cada nó é uma transação. Desenha $T_i\to T_j$ se uma operação de Ti precede uma operação conflitante de Tj. Um escalonamento é **serializável por conflitos** se e só se este grafo for acíclico. Uma ordenação topológica dá uma ordem serial equivalente por conflitos.
+
+Considera `r1(X), r2(X), w1(X), w2(X)`. A leitura de T1 antes da escrita de T2 dá T1→T2. A leitura de T2 antes da escrita de T1 dá T2→T1. Há um ciclo, logo não é serializável por conflitos.
+
+Agora `r1(X), w1(X), r2(X), w2(X)` só exige T1→T2. Equivale à ordem T1/T2. Este teste refere-se a serializabilidade por conflitos, uma condição mais restrita do que outras formas de equivalência por observações.
+
+## Bloqueios e snapshots
+
+Um protocolo de bloqueios pode impedir que outra transação escreva um item enquanto uma leitura ou escrita precisa de o proteger. Em **bloqueio em duas fases**, a transação primeiro adquire bloqueios e depois liberta-os, sem adquirir novos após começar a libertar. Com as hipóteses do protocolo, isso garante serializabilidade por conflitos.
+
+Se T1 segura A e espera B, e T2 segura B e espera A, há um **deadlock**. O sistema precisa de detetar ou evitar o ciclo e pode abortar uma transação. Uma aplicação deve conseguir repetir a transação inteira, não apenas a última instrução sem refazer as leituras.
+
+Outra técnica é **MVCC**, controlo de concorrência multiversão. Conserva versões que permitem a leitores observar snapshots coerentes sem bloquear todas as escritas. Um snapshot coerente não garante que decisões sobre várias linhas sejam serializáveis.
+
+## Write skew: duas linhas, uma regra
+
+Ana e Rui estão de serviço. A regra exige pelo menos uma pessoa de serviço. Cada transação lê que há duas pessoas e retira a sua própria pessoa do serviço. Se usarem o mesmo snapshot inicial e puderem confirmar escritas em linhas diferentes, o resultado pode ter zero pessoas.
+
+Não houve leitura suja. Nenhuma transação sobrepôs a escrita da outra. Ainda assim, qualquer ordem serial correta faria a segunda ver só uma pessoa e recusar a saída. Esta anomalia, **write skew**, mostra por que isolamento por snapshot não equivale a serializabilidade.
+
+Uma solução tem de proteger a regra completa, por exemplo através de isolamento serializável com repetição após conflito ou de um mecanismo de bloqueio que serialize decisões sobre o conjunto relevante. Bloquear apenas a linha que cada pessoa vai alterar pode não chegar.
+
+## PostgreSQL
+
+Em PostgreSQL, `READ COMMITTED` é o nível por omissão e cada instrução normalmente obtém um snapshot dos dados confirmados no início dessa instrução. Duas consultas na mesma transação podem observar dados diferentes. `READ UNCOMMITTED` comporta-se como `READ COMMITTED`.
+
+`REPEATABLE READ` usa um snapshot estável da transação e também impede os fantasmas descritos no quadro, oferecendo mais que o mínimo tradicional. Pode ainda permitir anomalias de serialização como write skew. `SERIALIZABLE` deteta dependências que podem tornar a execução incompatível com uma ordem serial e pode abortar uma transação com erro de serialização.
+
+Este excerto é PostgreSQL, não SQLite:
+
+```sql
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+-- Leituras e alterações que implementam a regra.
+COMMIT;
+```
+
+A aplicação precisa de tratar a possibilidade de erro e repetir toda a transação. `SELECT ... FOR UPDATE` bloqueia linhas selecionadas, mas não é uma prova genérica para toda a regra de negócio nem uma operação disponível da mesma forma em SQLite.
+
+## SQLite
+
+SQLite permite vários leitores, mas apenas um escritor de cada vez. Em modo rollback journal, leitores e escritores podem bloquear-se. Em WAL, leitores podem continuar a ler o seu snapshot enquanto outro processo escreve; só uma escrita decorre de cada vez.
+
+Se uma transação leitora tenta passar a escritora depois de outra ligação confirmar alterações que tornam o seu snapshot antigo, SQLite pode recusar essa promoção com `SQLITE_BUSY_SNAPSHOT`. É necessário terminar e repetir a transação a partir de leituras novas. `BEGIN IMMEDIATE` obtém cedo a capacidade de escrita, ou falha/espera se outro escritor a tiver, evitando aquela promoção tardia.
+
+O isolamento habitual entre ligações impede leituras de alterações não confirmadas. A exceção envolve cache partilhada e `PRAGMA read_uncommitted`, uma configuração específica; não assumes que SQLite oferece um menu equivalente aos quatro níveis de PostgreSQL.
+
+O bloco executável de uma página usa uma única ligação SQLite. Pode demonstrar rollback e savepoints, mas não prova comportamento concorrente entre duas ligações. Para prever esse comportamento, identifica o modo de journaling, os momentos de leitura/escrita e o tratamento dos erros de concorrência.

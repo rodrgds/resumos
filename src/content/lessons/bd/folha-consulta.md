@@ -1,55 +1,111 @@
 ---
 title: Cheat sheet de BD
-description: Decisões rápidas de modelação, mapeamento relacional, normalização, SQLite e álgebra relacional.
+description: Chaves, formas normais, decomposição, álgebra, SQL, isolamento e decisões de desenho.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: Resumos BD SofiaViP
-      url: https://drive.google.com/file/d/1N1GyVPZ-kOPDKtR12QB-65QQKTtxwLgX/view
-  coverage: Síntese das páginas 2 a 11 do resumo, com UML, mapeamento, chaves, dependências funcionais, formas normais, SQLite, vistas, gatilhos e álgebra relacional.
-  gaps:
-    - A capa da página 1 não contém matéria.
-    - Consultas SQL completas, índices, transações, armazéns de dados e NoSQL das páginas atuais não são desenvolvidos nesta fonte.
-    - A correspondência destes apontamentos a uma edição atual da unidade curricular não foi verificada.
 ---
 
-Parte da regra do domínio que precisa de ficar verdadeira. Representa-a no modelo conceptual, escolhe onde vive a chave no esquema relacional e só depois escreve operações. Modelação em **UML**; exemplos em **SQLite**.
+## Modelação e relações
 
-## Modelo conceptual para relações
+| Construção    | Tradução e cuidado                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| Classe        | Relação com atributos e chave. Um nome repetível não identifica um objeto.                              |
+| 1:N           | FK no lado N; `NOT NULL` se tiver de referenciar alguém. Não obriga cada objeto do lado 1 a participar. |
+| N:M           | Relação da associação, FKs e chave segundo as multiplicidades. Atributos da ligação ficam aqui.         |
+| 1:1           | FK com `UNIQUE`; `NOT NULL` para obrigatoriedade no lado que a guarda.                                  |
+| Ternária      | Relação com os participantes. Multiplicidade num lado conta-o para um par fixo dos outros dois.         |
+| Generalização | Por classe, por tipo concreto ou tabela única. Confere completude e disjunção separadamente.            |
 
-| Situação                             | Decisão de mapeamento                                                                                                                                                                  |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Classe                               | Uma relação com atributos e chave primária; a chave identifica cada objeto.                                                                                                            |
-| Associação $1:N$                     | Chave estrangeira no lado $N$, a apontar para a chave do lado $1$; `NOT NULL` se a participação desse lado for obrigatória.                                                            |
-| Associação $N:M$                     | Relação própria com as duas chaves estrangeiras, geralmente formando uma chave composta; acrescenta os atributos da associação.                                                        |
-| Associação $1:1$                     | Coloca uma chave estrangeira num dos lados e impõe `UNIQUE`; escolhe o lado segundo a participação e a possibilidade de nulos.                                                         |
-| Associação de aridade maior que dois | Relação própria com as chaves dos participantes; não a substituas automaticamente por várias associações binárias, pois podes perder a combinação original.                            |
-| Subclasse                            | Decide se guardas uma relação por classe, por ramo ou uma relação comum com discriminador. Verifica se as subclasses são disjuntas/sobrepostas e completas/parciais antes de escolher. |
+A multiplicidade junto de uma classe conta objetos **dessa classe** por objeto da outra. Uma classe de associação não distingue várias ligações do mesmo par. Uma FK não impõe mínimos de participação no lado referenciado. [UML](/cadeiras/bd/modelo-conceptual-uml/#associações-e-multiplicidades) · [Mapeamento](/cadeiras/bd/mapeamento-relacional/#associações-um-para-muitos).
 
-Em UML, a multiplicidade junto de uma extremidade limita quantos objetos **dessa** classe se associam a um objeto da outra. Uma classe de associação guarda atributos da **ligação**, não de um participante isolado. Na composição, a parte tem um único composto de cada vez e o ciclo de vida depende dele; a agregação admite uma ligação mais fraca. Não traduzes qualquer desenho com um único padrão sem verificar estas condições. Vê [associações e multiplicidades](/cadeiras/bd/modelo-conceptual-uml/#associações-e-multiplicidades) e [mapeamento relacional](/cadeiras/bd/mapeamento-relacional/#muitos-para-muitos-e-um-para-um).
+## Dependências e formas normais
 
-## Chaves e dependências
+$X\to Y$ significa que concordar em X obriga a concordar em Y em todas as instâncias válidas. Para $X^+$, começa em X e aplica DFs cujas esquerdas já tens, até estabilizar. Superchave: fecho completo. Candidata: superchave mínima. Primo: pertence a alguma candidata. [Fechos e chaves](/cadeiras/bd/normalizacao/#fecho-de-um-conjunto-de-atributos).
 
-Uma **chave candidata** identifica unicamente uma linha e é mínima; escolhe uma como **primária**. Uma **superchave** pode ter atributos a mais. A chave estrangeira referencia uma chave candidata da relação alvo e precisa de uma política para atualização e remoção. `NULL` significa ausência de valor conhecido ou aplicável, não um valor comum.
+| Forma | Critério                                                        |
+| ----- | --------------------------------------------------------------- |
+| 1FN   | Valores atómicos no modelo, sem grupos repetidos.               |
+| 2FN   | Não primo não depende de parte própria de candidata.            |
+| 3FN   | Para cada DF não trivial $X\to A$, X é superchave ou A é primo. |
+| BCNF  | Em toda a DF não trivial, X é superchave.                       |
 
-Numa dependência funcional $X\to Y$, duas linhas que concordam em $X$ têm de concordar em $Y$ em **todas as instâncias válidas**, não só na amostra atual. Para calcular $X^+$, começa por $X$ e acrescenta repetidamente o lado direito de cada dependência cujo lado esquerdo já esteja contido no fecho. $X$ é superchave se $X^+$ contém todos os atributos. Splitting, combining e transitividade ajudam a inferir dependências, mas as regras de negócio determinam quais são verdadeiras. Vê [dependências funcionais](/cadeiras/bd/normalizacao/#dependências-funcionais).
+Pode haver 3FN sem BCNF: $AB\to C$, $C\to B$, candidatas AB e AC. C não é superchave, mas B é primo. [Classificação](/cadeiras/bd/normalizacao/#classificar-uma-relação).
 
-## Normalizar sem perder dados
+## Decomposição
 
-| Forma | Pergunta de revisão                                                                                             |
-| ----- | --------------------------------------------------------------------------------------------------------------- |
-| 1FN   | Cada célula guarda um valor atómico para o modelo escolhido?                                                    |
-| 2FN   | Em 1FN, algum atributo não primo depende apenas de **parte** de uma chave candidata composta? Se sim, separa-o. |
-| 3FN   | Em 2FN, para cada dependência não trivial $X\to A$, $X$ é superchave **ou** $A$ é atributo primo?               |
-| BCNF  | Para toda a dependência não trivial $X\to Y$, $X$ é superchave? É mais exigente do que 3FN.                     |
+| Objetivo           | Como conferir                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Sem perda, binária | O comum determina um dos lados: $(R_1\cap R_2)\to R_1$ ou $R_2$.                                                 |
+| Sem perda, geral   | Chase. Unifica pelas DFs; procura uma linha só com símbolos distinguidos.                                        |
+| Preservar DFs      | A união das projeções implica as DFs originais. Confere por fechos.                                              |
+| BCNF               | Pela violação $X\to Y$, separa $X\cup Y$ e $R-(Y-X)$; projeta e repete.                                          |
+| Síntese 3FN        | Cobertura mínima, relação por DF, retira esquemas contidos e acrescenta candidata se nenhuma relação a contiver. |
 
-A decomposição procura evitar anomalias de inserção, atualização e remoção. Confirma **junção sem perda**: recompor as relações não deve criar linhas espúrias. Confirma também se preserva as dependências; uma decomposição em BCNF pode não as preservar, enquanto a síntese em 3FN consegue preservar as dependências usadas. Vê [formas normais](/cadeiras/bd/normalizacao/#as-formas-por-ordem) e [decomposição até BCNF](/cadeiras/bd/normalizacao/#decompor-até-bcnf).
+BCNF garante decomposição sem perda pelo algoritmo, mas pode perder preservação. Cobertura mínima: separa direitas, reduz esquerdas, retira DFs redundantes. Para testar redundância de uma DF, retira-a antes do fecho. [Decomposição](/cadeiras/bd/decomposicao/#decompor-até-bcnf).
 
-## SQLite e operações
+## Álgebra relacional
 
-Ao criar uma tabela, declara `PRIMARY KEY`, `UNIQUE`, `NOT NULL`, `CHECK` e `REFERENCES` onde a regra pertence. Em SQLite, ativa `PRAGMA foreign_keys = ON` **por ligação** para aplicar as referências. Define explicitamente a ação `ON DELETE`/`ON UPDATE` que corresponde ao domínio, por exemplo `RESTRICT`, `CASCADE` ou `SET NULL`, e assegura que a coluna admite nulos quando necessário. `INSERT`, `UPDATE` e `DELETE` alteram dados; sem `WHERE`, `UPDATE` e `DELETE` abrangem todas as linhas. O `rowid` de SQLite é um detalhe da implementação, não substitui uma chave estável do domínio. Vê [restrições em CREATE TABLE](/cadeiras/bd/sql-definicao-dados/#create-table-e-restrições).
+| Operador          | Efeito                                                   |
+| ----------------- | -------------------------------------------------------- |
+| $\sigma_p$        | Filtra tuplos.                                           |
+| $\pi_X$           | Escolhe atributos e elimina duplicados.                  |
+| $\rho$            | Renomeia relação ou atributos.                           |
+| $\times$          | Todos os pares; cardinalidade $m n$.                     |
+| $\bowtie_p$       | Seleção de pares que satisfazem p.                       |
+| $\bowtie$         | Igualdade de todos os nomes comuns; sem comuns, produto. |
+| $\cup,\cap,-$     | Esquemas compatíveis; diferença tem direção.             |
+| $R(X,Y)\div S(Y)$ | X ligados a todos os Y de S.                             |
 
-Uma **vista** dá nome a uma consulta e normalmente não guarda as linhas. A atualização de vistas tem condições próprias; não assumas que uma vista com junções ou agregações é editável. Um **gatilho** reage a `INSERT`, `UPDATE` ou `DELETE`; em SQLite, `NEW` e `OLD` referem, quando aplicável, a linha nova e anterior. Usa restrições declarativas antes de um gatilho quando expressam a mesma regra. Vê [vistas](/cadeiras/bd/vistas-gatilhos-acessos/#vistas-perguntas-com-nome) e [gatilhos](/cadeiras/bd/vistas-gatilhos-acessos/#gatilhos-regras-que-se-cumprem-sozinhas).
+Divisão: candidatos $\pi_X(R)$; faltas $(\pi_X(R)\times S)-R$; retira candidatos com faltas. Se S vazia, devolve $\pi_X(R)$. Para outro universo de candidatos, define-o explicitamente. [Álgebra](/cadeiras/bd/algebra-relacional/#divisão-perguntas-com-todos).
 
-Na **álgebra relacional**, $\sigma$ filtra linhas, $\pi$ escolhe atributos, $\times$ combina cada par de linhas e $\bowtie_\theta$ combina pares que satisfazem $\theta$. A junção natural iguala automaticamente atributos de nome comum, por isso confirma os nomes antes de a usar. União, diferença e interseção exigem esquemas compatíveis e seguem semântica de conjuntos; SQL usa multiconjuntos por omissão, pelo que duplicados requerem atenção. A divisão responde a perguntas do tipo «para **todos** os valores de outra relação». Consulta [operadores essenciais](/cadeiras/bd/algebra-relacional/#os-operadores-essenciais).
+## SQLite e SQL
+
+- `PRAGMA foreign_keys = ON` por ligação, antes da transação. FK composta declara-se em conjunto.
+- `CHECK` rejeita falso, não desconhecido. Usa `NOT NULL` para obrigatoriedade.
+- `UNIQUE` permite vários `NULL`. Em primárias textuais/compostas comuns, declara `NOT NULL` explicitamente.
+- `INTEGER` é afinidade em tabelas comuns; `VARCHAR(20)` não limita comprimento. `STRICT` tem outro contrato.
+- `5 / 2 = 2`; usa operando real para divisão real.
+- `WHERE` filtra linhas; `HAVING` filtra grupos. Não agregues depois de uma junção sem conferir a multiplicação de linhas.
+- `COUNT(*)` conta linhas; `COUNT(x)` ignora nulos; `COUNT(DISTINCT x)` ignora nulos e repetições.
+- Agregação vazia sem `GROUP BY`: `COUNT = 0`; `SUM/AVG/MIN/MAX = NULL`. Com `GROUP BY`, não há grupos.
+- `LEFT JOIN` conserva a esquerda. Filtros da direita no `WHERE` podem remover as linhas sem correspondência.
+- `NULL = NULL` é desconhecido; usa `IS NULL`. `WHERE` conserva apenas verdadeiro.
+- `NOT IN` com nulos pode não produzir a ausência pretendida. `NOT EXISTS` exprime ausência de correspondências.
+- "Todos" equivale a `NOT EXISTS` de uma falta, usando outro `NOT EXISTS` dentro. Requisitos vazios satisfazem a condição universal.
+- `DISTINCT` aplica-se à combinação completa. `ORDER BY` define a ordem; `LIMIT 1` não resolve empates por si só.
+
+[DDL](/cadeiras/bd/sql-definicao-dados/#create-table-e-restrições) · [Consultas](/cadeiras/bd/sql-consultas/#group-by-e-having) · [Subconsultas](/cadeiras/bd/sql-subconsultas/#perguntas-com-todos).
+
+## CTEs, vistas, gatilhos e acessos
+
+CTE dura uma instrução. Recursão tem parte inicial, passo e prova de terminação. `UNION` elimina tuplos completos, não apenas o id; acrescentar profundidade pode impedir a eliminação de ciclos. [Recursão](/cadeiras/bd/sql-recursao/#grafos-e-ciclos).
+
+Vista virtual guarda uma pergunta; materializada guarda resultados. SQLite atualiza vistas através de `INSTEAD OF`, não automaticamente. Gatilhos SQLite são por linha: INSERT tem NEW, DELETE tem OLD, UPDATE tem ambos. `UPDATE OF` não prova mudança de valor. Prefere restrições declarativas. [Vistas e gatilhos](/cadeiras/bd/vistas-gatilhos-acessos/#gatilhos-evento-condição-e-ação).
+
+SQLite não tem `GRANT`/`REVOKE`/RLS. PostgreSQL separa privilégios, papéis e políticas por linha. RLS não concede privilégios; proprietário, superutilizador e `BYPASSRLS` têm regras de exceção. Parâmetros separam dados de código. [Acessos](/cadeiras/bd/vistas-gatilhos-acessos/#autenticação-e-autorização).
+
+## Índices e transações
+
+Índice não único acelera acesso, sem impor unicidade. Um composto ordena pela ordem das colunas; igualdade no prefixo e intervalo no seguinte são um padrão útil. Mais índices aumentam custo de escrita. Confere plano e distribuição. [Índices](/cadeiras/bd/indices-transacoes/#escolher-pelas-perguntas).
+
+ACID: atomicidade, consistência, isolamento, durabilidade. `COMMIT` confirma; `ROLLBACK` desfaz a transação; `ROLLBACK TO` regressa ao savepoint. Um erro SQLite pode desfazer só a instrução. Confere linhas afetadas e trata o erro antes de confirmar. [Transações](/cadeiras/bd/indices-transacoes/#um-erro-não-faz-sempre-rollback-de-tudo).
+
+## Concorrência
+
+| Anomalia      | O que acontece                                           |
+| ------------- | -------------------------------------------------------- |
+| Suja          | Lê alteração ainda não confirmada.                       |
+| Não repetível | Relê a linha e observa outra versão confirmada.          |
+| Fantasma      | Muda o conjunto que satisfaz um predicado.               |
+| Perdida       | Uma escrita sobrepõe outra atualização.                  |
+| Write skew    | Escritas em linhas distintas quebram uma regra conjunta. |
+
+Grafo: conflito é mesmo item e pelo menos uma escrita; aresta da operação anterior para a posterior. Acíclico significa serializável por conflitos. Snapshot estável não prova serializabilidade. PostgreSQL RR também evita fantasmas; serializable pode abortar e exige repetição. SQLite tem um escritor e pode rejeitar promoção de snapshot antigo. [Isolamento](/cadeiras/bd/concorrencia/#níveis-do-modelo-sql).
+
+## Analítica e NoSQL
+
+Define o grão antes das medidas. Factos ligam dimensões. Não somes saldos ao longo do tempo nem faças médias de percentagens sem pesos. Estrela tem dimensões diretas; floco normaliza dimensões; constelação partilha dimensões entre factos.
+
+OLAP: roll-up agrega; drill-down detalha; slice fixa; dice restringe subconjuntos; pivot muda eixos. ROLLUP usa prefixos, CUBE todos os subconjuntos; não são comandos SQLite. [Armazéns](/cadeiras/bd/armazens-dados-nosql/#primeiro-escolhe-o-grão).
+
+NoSQL inclui chave-valor, documentos, famílias de colunas e grafos. Esquema flexível não dispensa validação; NoSQL não exclui ACID. CAP trata consistência linearizável e disponibilidade **durante uma partição**, não a consistência de invariantes de ACID. Replicar copia; particionar distribui subconjuntos. [NoSQL](/cadeiras/bd/armazens-dados-nosql/#replicação-partição-e-cap).

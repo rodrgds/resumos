@@ -1,0 +1,183 @@
+---
+title: Subconsultas, conjuntos e divisão
+description: EXISTS, IN, NULL, subconsultas escalares, máximos e perguntas universais em SQL.
+section: conteudo
+order: 9
+practices:
+  - bd/praticar-subconsultas
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
+
+Uma subconsulta usa o resultado de outra consulta como valor, conjunto ou tabela. A forma certa depende da pergunta. "Existe uma encomenda" não exige devolver todas as encomendas; "todos os produtos foram comprados" exige demonstrar a ausência de uma exceção.
+
+## IN e EXISTS
+
+`IN` testa pertença a uma coluna de resultados:
+
+```sql
+SELECT id, nome FROM Cliente
+WHERE id IN (SELECT idCliente FROM Encomenda);
+```
+
+Ana aparece uma vez apesar das duas encomendas. A consulta percorre Cliente e testa uma condição, em vez de criar uma linha por correspondência. Emails ou nomes repetidos na saída exterior continuam repetidos se pertencerem a clientes distintos.
+
+`EXISTS` é verdadeiro se a subconsulta produzir pelo menos uma linha, e falso se estiver vazia. O valor escolhido na lista de `SELECT` não interessa. Costumamos escrever `SELECT 1`.
+
+<CodePlayground
+  language="sql"
+  title="Clientes que compraram rato"
+  code={`${loja}
+SELECT c.id, c.nome
+FROM Cliente AS c
+WHERE EXISTS (
+  SELECT 1 FROM Encomenda AS e
+  JOIN Item AS i ON i.idEncomenda = e.id
+  WHERE e.idCliente = c.id AND i.idProduto = 11
+)
+ORDER BY c.id;`}
+/>
+
+Devolve Ana e Rui. `e.idCliente = c.id` é uma **correlação**: a subconsulta depende do cliente da linha exterior. Se a retirarmos, a existência de uma única compra de rato torna a condição verdadeira para todos os clientes, incluindo Mia.
+
+É útil imaginar a subconsulta para cada linha exterior, mas o otimizador pode executar de outra forma. A correlação define o significado, não uma contagem obrigatória de execuções físicas.
+
+## NOT EXISTS e ausências
+
+Para clientes sem encomendas, inverte a condição:
+
+```sql
+SELECT c.id, c.nome
+FROM Cliente AS c
+WHERE NOT EXISTS (
+  SELECT 1 FROM Encomenda AS e WHERE e.idCliente = c.id
+);
+```
+
+Só Mia satisfaz a pergunta. "Existe uma encomenda de outro cliente" não significa "este cliente não tem encomendas". Uma ausência precisa de quantificação sobre todas as correspondências possíveis, expressa aqui por `NOT EXISTS`.
+
+Uma alternativa é `LEFT JOIN` seguido de `WHERE e.id IS NULL`, usando uma coluna da direita que não pode ser nula numa linha real. Não testes uma coluna naturalmente anulável para distinguir ausência de correspondência.
+
+## O perigo de NOT IN com NULL
+
+`x NOT IN (...)` corresponde à negação de comparações de pertença. Se não houver igualdade verdadeira, mas algum valor da lista for `NULL`, o resultado pode ser desconhecido, que `WHERE` elimina.
+
+<CodePlayground
+  language="sql"
+  title="Uma ausência que NOT IN não consegue provar"
+  code={`CREATE TABLE Candidato(id INTEGER PRIMARY KEY);
+CREATE TABLE Registo(id INTEGER);
+INSERT INTO Candidato VALUES (1), (2), (3);
+INSERT INTO Registo VALUES (1), (NULL);
+SELECT id FROM Candidato WHERE id NOT IN (SELECT id FROM Registo)
+ORDER BY id;
+SELECT c.id FROM Candidato AS c
+WHERE NOT EXISTS (SELECT 1 FROM Registo AS r WHERE r.id = c.id)
+ORDER BY c.id;`}
+/>
+
+A primeira consulta não devolve linhas. A segunda devolve 2 e 3. Para o candidato 2, `2 <> 1` é verdadeiro, mas `2 <> NULL` é desconhecido; a primeira consulta não prova a não pertença.
+
+Se a coluna da subconsulta for garantidamente `NOT NULL` e o valor exterior também, `NOT IN` pode ser adequado. Filtrar os `NULL` interiores resolve parte do problema, mas não define automaticamente o que fazer com um `NULL` exterior.
+
+## Subconsultas escalares e tabelas derivadas
+
+Uma subconsulta **escalar** ocupa o lugar de um valor, por exemplo o total de uma encomenda. Deve ter uma coluna e um resultado unívoco.
+
+```sql
+SELECT e.id,
+       (SELECT SUM(i.qtd * i.precoUnitario)
+        FROM Item AS i WHERE i.idEncomenda = e.id) AS total
+FROM Encomenda AS e;
+```
+
+Uma encomenda sem linhas teria total `NULL`; `COALESCE(..., 0)` é adequado se a interpretação pretendida for total zero. Em PostgreSQL, uma subconsulta escalar com várias linhas dá erro. SQLite usa a primeira linha, o que pode esconder uma pergunta mal definida. Não dependas disso para escolher um valor: usa agregação ou uma escolha ordenada que corresponda à pergunta.
+
+Uma subconsulta em `FROM` devolve uma **tabela derivada**. Podemos primeiro calcular totais por encomenda e depois obter a média desses totais:
+
+<CodePlayground
+  language="sql"
+  title="Média dos totais, sem misturar linhas e encomendas"
+  code={`${loja}
+SELECT AVG(total) / 100.0 AS mediaEuros
+FROM (
+  SELECT idEncomenda, SUM(qtd * precoUnitario) AS total
+  FROM Item GROUP BY idEncomenda
+) AS Totais;`}
+/>
+
+Os totais são 11500, 18000 e 7500 cêntimos. A média é $37000/3$ cêntimos, cerca de 123,33 euros. `AVG(qtd * precoUnitario)` daria a média das quatro linhas de compra, uma pergunta diferente.
+
+## Máximos e empates
+
+Um máximo pode ser formulado como "não existe outro valor maior". Para preços conhecidos:
+
+```sql
+SELECT p.id, p.nome FROM Produto AS p
+WHERE NOT EXISTS (
+  SELECT 1 FROM Produto AS outro
+  WHERE outro.precoCentimos > p.precoCentimos
+);
+```
+
+Monitor é a resposta da loja. Se dois produtos tiverem o preço máximo, ambos aparecem. Uma alternativa é comparar com `(SELECT MAX(precoCentimos) FROM Produto)`. Com valores não nulos, as duas formulações dão os mesmos máximos.
+
+Se o preço pudesse ser `NULL`, o produto desconhecido também passaria no `NOT EXISTS` anterior: nenhuma comparação com ele seria verdadeira. Acrescenta `p.precoCentimos IS NOT NULL` para excluir desconhecidos, se essa for a pergunta. O resultado de `MAX` sobre uma tabela vazia ou só com nulos também é `NULL`.
+
+## ANY, ALL e o conjunto vazio
+
+Em SQL de motores que os suportam, `x > ANY(S)` pede pelo menos um valor de S inferior a x; `x > ALL(S)` exige que todos os valores de S sejam inferiores a x. SQLite não implementa estes operadores quantificados, por isso precisamos de reescritas.
+
+Quando x e os valores de S são não nulos, `x > ANY(S)` equivale a `EXISTS` com `s.valor < x`; `x > ALL(S)` equivale a `NOT EXISTS` com `s.valor >= x`. Se S estiver vazia, ANY é falso e ALL é verdadeiro. Substituir ALL por `x > MAX(S)` perde este caso, porque `MAX` devolve `NULL`.
+
+Com valores nulos, a negação da ausência de comparações falsas não reproduz sempre a lógica a três valores de ALL. Primeiro define o tratamento dos desconhecidos, ou restringe explicitamente o problema a valores não nulos. A fórmula universal de divisão abaixo usa ids não nulos.
+
+## Operadores de conjuntos
+
+`UNION`, `INTERSECT` e `EXCEPT` eliminam duplicados por omissão. `UNION ALL` conserva todas as ocorrências. Em SQLite, `INTERSECT ALL` e `EXCEPT ALL` não estão disponíveis. As consultas têm de devolver o mesmo número de colunas, com significados e tipos compatíveis; nomes diferentes podem ser uniformizados com aliases.
+
+Por exemplo, ids de clientes que compraram teclado mas não rato:
+
+```sql
+SELECT e.idCliente FROM Encomenda AS e
+JOIN Item AS i ON i.idEncomenda = e.id WHERE i.idProduto = 10
+EXCEPT
+SELECT e.idCliente FROM Encomenda AS e
+JOIN Item AS i ON i.idEncomenda = e.id WHERE i.idProduto = 11;
+```
+
+A resposta é vazia: Ana comprou os dois. Mudar `EXCEPT` para uma condição `i.idProduto <> 11` devolveria Ana através da linha do teclado, ignorando a compra de rato.
+
+## Perguntas com todos
+
+Queremos os clientes que compraram todos os produtos da relação Exigido. Traduz "para todos" para "não existe um produto exigido que não tenha sido comprado". Usamos Cliente como universo de candidatos.
+
+<CodePlayground
+  language="sql"
+  title="Comprar todos os produtos exigidos"
+  code={`${loja}
+CREATE TABLE Exigido(idProduto INTEGER PRIMARY KEY REFERENCES Produto(id));
+INSERT INTO Exigido VALUES (10), (11);
+SELECT c.id, c.nome
+FROM Cliente AS c
+WHERE NOT EXISTS (
+  SELECT 1 FROM Exigido AS x
+  WHERE NOT EXISTS (
+    SELECT 1 FROM Encomenda AS e
+    JOIN Item AS i ON i.idEncomenda = e.id
+    WHERE e.idCliente = c.id AND i.idProduto = x.idProduto
+  )
+)
+ORDER BY c.id;`}
+/>
+
+Para Ana, os produtos 10 e 11 têm correspondência. A subconsulta intermédia não encontra uma falta, por isso Ana entra. Para Rui falta o 10, e para Mia faltam ambos. A resposta é Ana.
+
+Apaga as linhas de Exigido no bloco e volta a executar. Todos os clientes, incluindo Mia, passam: não há requisito por cumprir. Isto é a verdade vacuamente satisfeita de uma condição universal. Se o enunciado também exigir pelo menos uma compra, acrescenta um `EXISTS` independente.
+
+Uma solução por contagem pode comparar a quantidade de produtos exigidos distintos comprados com a quantidade de requisitos. Tem de contar apenas produtos do conjunto Exigido, eliminar repetições e preservar clientes sem compras quando Exigido estiver vazio. Contar todas as linhas de Item falha se um produto aparecer em várias encomendas ou se forem comprados produtos que não eram exigidos.
+
+## Escrever sem perder o quantificador
+
+Para "algum", procura uma correspondência. Para "nenhum", procura a ausência de correspondências. Para "todos", procura a ausência de uma exceção. Depois decide o universo dos candidatos e o tratamento de `NULL`. Essa tradução em palavras deve continuar a ser verdadeira quando a tabela interior estiver vazia.

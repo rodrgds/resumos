@@ -1,0 +1,108 @@
+---
+title: Praticar subconsultas e quantificadores
+description: Exercícios próprios com pistas, resolução e erros frequentes.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
+
+<Exercise
+  id="not-in-null"
+  title="Ausência e desconhecido"
+  explanation="/cadeiras/bd/sql-subconsultas/#o-perigo-de-not-in-com-null"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Previ resposta vazia para NOT IN.',
+      'Previ 2 e 3 para NOT EXISTS e expliquei a correlação.',
+    ],
+  }}
+>
+  <p>
+    Candidato tem ids 1,2,3. Registo contém 1 e NULL. Compara id NOT IN (SELECT
+    id FROM Registo) e NOT EXISTS de um registo com r.id = c.id.
+  </p>
+  <div slot="hint">
+    Para id 2, há uma comparação verdadeira com 1 e outra desconhecida com NULL.
+  </div>
+  <div slot="hint-more">
+    NOT EXISTS pergunta se existe uma igualdade verdadeira; o NULL não a
+    fornece.
+  </div>
+  <div slot="solution">
+    NOT IN não devolve candidatos: para 1, a pertença é verdadeira; para 2 e 3,
+    a não pertença fica desconhecida devido ao NULL. NOT EXISTS devolve 2 e 3,
+    pois não existe uma igualdade verdadeira para esses ids. A correlação r.id =
+    c.id é necessária. Se a pergunta tratar valores desconhecidos de outra
+    maneira, essa regra deve ser explícita.
+  </div>
+  <div slot="mistakes">
+    Não uses NULL = NULL para testar ausência. Filtrar NULL interior também não
+    resolve por si só um NULL exterior.
+  </div>
+</Exercise>
+
+<Exercise
+  id="todos-produtos-consulta"
+  title="Comprar todos, mesmo com compras repetidas"
+  explanation="/cadeiras/bd/sql-subconsultas/#perguntas-com-todos"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Usei a ausência de uma falta com correlações completas.',
+      'Justifiquei repetição e conjunto vazio.',
+    ],
+  }}
+>
+  <p>
+    Escreve a condição para clientes que compraram todos os ids de Exigido. Deve
+    funcionar com várias encomendas do mesmo produto e com Exigido vazio. Usa
+    Cliente como universo.
+  </p>
+  <div slot="work">
+    <p>Acrescenta a condição à consulta. Com os requisitos 10 e 11, a resposta deve ser apenas Ana. Depois de apagares Exigido, deve incluir Ana, Rui e Mia. A execução apresenta o resultado; confere também estes dois casos.</p>
+    <CodePlayground
+      language="sql"
+      title="Completar a consulta universal"
+      code={`${loja}
+CREATE TABLE Exigido(idProduto INTEGER PRIMARY KEY REFERENCES Produto(id));
+INSERT INTO Exigido VALUES (10), (11);
+-- Acrescenta a condição antes de ORDER BY.
+SELECT c.id, c.nome FROM Cliente AS c
+ORDER BY c.id;`}
+    />
+  </div>
+
+  <div slot="hint">Traduz para não existe um requisito em falta.</div>
+  <div slot="hint-more">
+    Um requisito falta se não existe uma compra do produto por esse cliente.
+  </div>
+  <div slot="solution">
+    Usa dois NOT EXISTS correlacionados. Exterior: não existe x em Exigido tal
+    que não exista Encomenda e Item com e.idCliente = c.id, i.idEncomenda = e.id
+    e i.idProduto = x.idProduto. O interior é um teste de existência, por isso
+    compras repetidas não mudam o resultado. Com Exigido vazio, o exterior é
+    verdadeiro para todos os clientes. Para exigir alguma compra, acrescenta
+    outro EXISTS.
+
+```sql
+SELECT c.id, c.nome FROM Cliente AS c
+WHERE NOT EXISTS (
+  SELECT 1 FROM Exigido AS x
+  WHERE NOT EXISTS (
+    SELECT 1 FROM Encomenda AS e
+    JOIN Item AS i ON i.idEncomenda = e.id
+    WHERE e.idCliente = c.id AND i.idProduto = x.idProduto
+  )
+)
+ORDER BY c.id;
+```
+
+</div>
+  <div slot="mistakes">
+    Contar linhas Item não conta produtos distintos. Um INNER JOIN que parte de
+    compras pode perder clientes sem compras quando os requisitos estão vazios.
+  </div>
+</Exercise>

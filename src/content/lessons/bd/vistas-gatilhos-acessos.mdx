@@ -1,110 +1,154 @@
 ---
 title: Vistas, gatilhos e controlo de acessos
-description: CREATE VIEW, CREATE TRIGGER e GRANT e REVOKE com testes.
+description: Consultas com nome, atualização de vistas, eventos e permissões em SQLite e PostgreSQL.
 section: conteudo
-order: 7
+order: 11
+practices:
+  - bd/praticar-vistas
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
+import loja from '../../bd/loja.sql?raw';
 
-Tabelas guardam factos; o resto da gestão faz-se com objetos que vivem por cima delas. Uma **vista** (_view_) é uma pergunta guardada com nome, um **gatilho** (_trigger_) é código que dispara sozinho em cada escrita, e o **controlo de acessos** decide que utilizadores podem fazer o quê.
+Uma vista dá nome a uma pergunta. Um gatilho reage a uma alteração. Uma permissão define quem pode executar uma operação. Os três mecanismos vivem no SGBD, mas resolvem problemas diferentes e variam entre motores.
 
 ## Vistas: perguntas com nome
 
-"Total gasto por cada cliente" da página de consultas merece nome próprio se for pedida todos os dias:
-
-```sql
-CREATE VIEW TotalPorCliente AS
-SELECT Cliente.nome AS nome, COALESCE(SUM(Item.qtd * Produto.preco), 0) AS total
-FROM Cliente
-LEFT JOIN Encomenda ON Encomenda.idCliente = Cliente.id
-LEFT JOIN Item ON Item.idEncomenda = Encomenda.id
-LEFT JOIN Produto ON Produto.id = Item.idProduto
-GROUP BY Cliente.nome;
-```
-
-Depois usa-se como tabela: `SELECT * FROM TotalPorCliente WHERE total > 100;` devolve só a Ana com 295. A vista não duplica dados, recalcula em cada uso, por isso reflete sempre as vendas atuais. Serve para simplificar (`SELECT` curto em vez da junção de quatro tabelas) e para segurança (mostrar totais sem expor linhas individuais).
-
-## Gatilhos: regras que se cumprem sozinhas
-
-O `CHECK (stock >= 0)` impede stock negativo em escritas diretas, mas uma venda deve _decrementar_ o stock e falhar se não houver. Um gatilho corre antes de cada atualização e aborta a operação proibida:[^trigger-sintaxe]
-
-```sql
-CREATE TRIGGER impede_stock_negativo
-BEFORE UPDATE OF stock ON Produto
-FOR EACH ROW
-WHEN NEW.stock < 0
-BEGIN
-  SELECT RAISE(ABORT, 'Stock nao pode ser negativo');
-END;
-```
-
-Testa o gatilho com uma venda possível e uma impossível. Executa e lê o erro e o stock final:
+Uma **vista virtual** guarda a definição de uma consulta, não uma cópia permanente dos seus resultados. Podemos consultá-la como uma tabela:
 
 <CodePlayground
   language="sql"
-  title="Gatilho permite vender 1 e aborta vender 10"
-  code={
-    'CREATE TABLE Produto(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, stock INTEGER NOT NULL CHECK (stock >= 0));\nINSERT INTO Produto VALUES (12, \u0027Monitor\u0027, 5);\nCREATE TRIGGER impede_stock_negativo BEFORE UPDATE OF stock ON Produto FOR EACH ROW WHEN NEW.stock < 0 BEGIN SELECT RAISE(ABORT, \u0027Stock nao pode ser negativo\u0027); END;\nUPDATE Produto SET stock = stock - 1 WHERE id = 12;\nUPDATE Produto SET stock = stock - 10 WHERE id = 12;\nSELECT id, nome, stock FROM Produto;'
-  }
+  title="Uma vista acompanha alterações dos dados"
+  code={`${loja}
+CREATE VIEW TotalEncomenda AS
+SELECT idEncomenda, SUM(qtd * precoUnitario) AS total
+FROM Item GROUP BY idEncomenda;
+SELECT * FROM TotalEncomenda ORDER BY idEncomenda;
+UPDATE Item SET qtd = 3 WHERE idEncomenda = 100 AND idProduto = 10;
+SELECT * FROM TotalEncomenda ORDER BY idEncomenda;`}
 />
 
-A primeira venda passa (5 para 4). A segunda aborta com a mensagem do gatilho e o resultado final mostra `12|Monitor|4`: a instrução proibida foi desfeita sem tocar no stock. Repara na diferença para o `CHECK`: o gatilho reage ao _evento_ (a tentativa de atualização) e pode olhar para os valores antigos (`OLD`) e novos (`NEW`).
+Os primeiros totais são 11500, 18000 e 7500 cêntimos. Depois da atualização, o total da 100 passa a 16000. Não fizemos um `UPDATE` da vista: alterámos Item, e a consulta da vista passou a calcular outro resultado.
 
-Quando dispara cada tipo de gatilho:
+Uma vista pode simplificar consultas e apresentar apenas certas colunas. Uma **vista materializada** guarda resultados para reutilização e precisa de uma política de atualização. PostgreSQL oferece vistas materializadas; SQLite não tem o mesmo comando nativo. Guardar o resultado numa tabela comum não o mantém automaticamente sincronizado.
 
-<Tabs id="gatilhos-tipos" labels={['BEFORE', 'AFTER', 'INSTEAD OF']}>
-  <div slot="panel-0">
+## Atualizar uma vista
 
-Corre antes da escrita e pode abortá-la: é o guarda da porta. O `impede_stock_negativo` acima é `BEFORE`, porque uma venda impossível nem deve começar.
+A atualização pode ser ambígua. Se uma vista mostra um total de 100 euros, escrever 120 não diz qual das linhas de compra devemos mudar. Mesmo numa projeção simples, uma inserção pode deixar sem valor colunas obrigatórias da tabela base.
 
-  </div>
-  <div slot="panel-1">
+SQLite não permite modificar vistas diretamente. Um gatilho `INSTEAD OF` pode definir a tradução. PostgreSQL consegue atualizar automaticamente certas vistas simples; vistas com agregações e outras construções exigem outro tratamento. Não transfiras essa regra entre motores.
 
-Corre depois da escrita confirmada e serve para efeitos secundários, como auditoria. Este regista cada venda numa tabela de rasto:
-
-```sql
-CREATE TABLE Venda(id INTEGER PRIMARY KEY, total REAL NOT NULL);
-CREATE TABLE Auditoria(id INTEGER PRIMARY KEY, texto TEXT NOT NULL);
-CREATE TRIGGER regista_venda
-AFTER INSERT ON Venda
+<CodePlayground
+  language="sql"
+  title="Definir uma atualização sobre uma vista SQLite"
+  code={`${loja}
+CREATE VIEW NomeCliente AS SELECT id, nome FROM Cliente;
+CREATE TRIGGER AtualizarNome
+INSTEAD OF UPDATE OF nome ON NomeCliente
 FOR EACH ROW
 BEGIN
-  INSERT INTO Auditoria(texto) VALUES ('venda ' || NEW.id);
+  UPDATE Cliente SET nome = NEW.nome WHERE id = OLD.id;
 END;
-```
+UPDATE NomeCliente SET nome = 'Ana Silva' WHERE id = 1;
+SELECT id, nome FROM Cliente ORDER BY id;`}
+/>
 
-  </div>
-  <div slot="panel-2">
+A linha 1 da tabela base passa a Ana Silva. `OLD.id` identifica a linha anterior e `NEW.nome` dá o valor pedido. Este gatilho só define a atualização do nome; não implementa inserções, eliminações ou mudança do id.
 
-Substitui a escrita e só existe sobre vistas, que não aceitam escritas diretas. Este permite inserir nomes através da vista `Nomes`:
+Quando uma vista tem um filtro, uma atualização pode fazer a linha desaparecer da própria vista. Em PostgreSQL, `WITH CHECK OPTION` pode exigir que os dados continuem a satisfazer o filtro numa vista atualizável. Num gatilho SQLite, escreve a validação correspondente e rejeita pedidos inválidos em vez de assumir que o motor a deduz.
 
-```sql
-CREATE TRIGGER insere_nome
-INSTEAD OF INSERT ON Nomes
-FOR EACH ROW
+## Gatilhos: evento, condição e ação
+
+Um **gatilho**, ou _trigger_, segue uma regra evento-condição-ação. O evento é `INSERT`, `UPDATE` ou `DELETE`; a condição `WHEN` é opcional; a ação executa-se quando a condição é verdadeira.
+
+Em SQLite, os gatilhos são por linha, mesmo que omitas `FOR EACH ROW`. Uma instrução que altera dez linhas pode dispará-los dez vezes. `BEFORE` executa antes da alteração da linha; `AFTER`, depois; `INSTEAD OF` substitui a operação sobre uma vista. Outros motores também oferecem gatilhos por instrução e conjuntos de linhas de transição.
+
+| Evento   | Valores disponíveis em SQLite |
+| -------- | ----------------------------- |
+| `INSERT` | `NEW`                         |
+| `DELETE` | `OLD`                         |
+| `UPDATE` | `OLD` e `NEW`                 |
+
+`UPDATE OF stock` reage a instruções que incluem stock nas colunas atualizadas; não garante que o valor mudou. Acrescenta uma condição de diferença se isso for necessário.
+
+## Um registo de alterações
+
+Queremos registar cada mudança efetiva do stock. O valor inicial do teclado é 20.
+
+<CodePlayground
+  language="sql"
+  title="Auditar mudanças de stock, sem registar atualizações iguais"
+  code={`${loja}
+CREATE TABLE AlteracaoStock(
+  idProduto INTEGER, anterior INTEGER, novo INTEGER
+);
+CREATE TRIGGER AuditarStock
+AFTER UPDATE OF stock ON Produto
+FOR EACH ROW WHEN OLD.stock <> NEW.stock
 BEGIN
-  INSERT INTO Produto(nome) VALUES (NEW.nome);
+  INSERT INTO AlteracaoStock VALUES (NEW.id, OLD.stock, NEW.stock);
 END;
-```
+UPDATE Produto SET stock = stock - 2 WHERE id = 10;
+UPDATE Produto SET stock = stock WHERE id = 10;
+SELECT * FROM AlteracaoStock;`}
+/>
 
-  </div>
-</Tabs>
+O registo é `10|20|18`. A segunda instrução dispara o evento, mas a condição é falsa, por isso não acrescenta uma linha. O `CHECK (stock >= 0)` continua a ser a forma declarativa de proibir stock negativo.
 
-## Controlo de acessos
+Usa restrições antes de gatilhos quando exprimem a mesma regra. Um `UNIQUE` é mais claro para unicidade e uma estrangeira com cascata é mais clara para integridade referencial do que reimplementar ambos em código de gatilho.
 
-Em SQL padrão, o dono dá e tira permissões por utilizador e por objeto:
+## Rejeitar uma alteração
+
+Em SQLite, `RAISE(ABORT, 'mensagem')` num gatilho rejeita a instrução e desfaz as suas alterações, sem necessariamente abortar a transação exterior inteira. `RAISE(ROLLBACK, ...)` também termina a transação ativa; `FAIL` tem diferenças quanto a alterações anteriores da mesma instrução; `IGNORE` ignora trabalho sem dar esse erro. Escolhe o efeito que a regra exige.
+
+Um limite de no máximo cinco encomendas por cliente, por exemplo, requer verificar inserções **e mudanças de cliente** em encomendas existentes. Um gatilho só de inserção deixa uma segunda via para violar a regra. Para mínimos, pensa também nas eliminações. O mecanismo não substitui a análise de todas as operações.
+
+A ação de um gatilho pode ativar outros gatilhos. Evita depender da ordem de gatilhos que o motor não garante e considera ciclos. Se alterares a própria linha num gatilho `BEFORE`, o resultado pode ter comportamento indefinido em SQLite; usa restrições, rejeição ou um desenho `AFTER` bem definido.
+
+## Autenticação e autorização
+
+**Autenticação** confirma a identidade de quem se liga. **Autorização** decide o que essa identidade pode fazer. Conhecer a palavra-passe de uma conta não deveria dar automaticamente o direito de apagar tabelas.
+
+SQLite é um motor embebido, normalmente sobre um ficheiro. Não implementa utilizadores SQL, `GRANT`, `REVOKE` nem políticas RLS como PostgreSQL. A aplicação e as permissões do sistema operativo controlam o acesso. Uma vista SQLite não protege colunas contra quem consegue abrir livremente o ficheiro da base de dados.
+
+Os exemplos seguintes são **PostgreSQL**, não se executam nos blocos SQLite.
+
+## Privilégios e papéis em PostgreSQL
+
+Um papel, ou _role_, reúne privilégios e pode ter capacidade de login. Uma aplicação de relatórios precisa de ler, não de alterar o esquema:
 
 ```sql
-GRANT SELECT ON TotalPorCliente TO funcionario;
-REVOKE INSERT ON Produto FROM funcionario;
+CREATE ROLE consulta;
+GRANT SELECT ON Produto, Encomenda TO consulta;
+GRANT consulta TO analista;
+REVOKE SELECT ON Encomenda FROM consulta;
 ```
 
-O funcionário consulta os totais mas não altera produtos. Atenção a um detalhe prático: o SQLite, o software da cadeira, não tem utilizadores nem implementa `GRANT` e `REVOKE`; aqui o controlo de acessos estuda-se como linguagem padrão, a usar num SGBD com contas, como o PostgreSQL. No teste, responde o SQL padrão; no projeto em SQLite, a proteção equivalente faz-se com vistas e gatilhos.
+Este excerto pressupõe as tabelas e o papel analista já criados, e um executor com autoridade para conceder direitos. Depois da revogação, consulta mantém leitura de Produto mas perde a concessão de leitura de Encomenda. Analista ainda pode ter essa permissão por outro papel ou concessão direta.
 
-## Para saber mais
+`WITH GRANT OPTION` permite transmitir um privilégio de objeto. `REVOKE ... CASCADE` pode retirar concessões dependentes; `RESTRICT` impede a revogação quando existem dependências relevantes. A propriedade de um objeto e o direito de o alterar ou eliminar não são apenas um `GRANT SELECT` mais amplo.
 
-- Sintaxe do `CREATE TRIGGER` com `OLD`, `NEW`, `WHEN` e `RAISE`: [sqlite.org/lang_createtrigger.html](https://sqlite.org/lang_createtrigger.html).
+O **menor privilégio** atribui apenas as operações necessárias. Permissões sobre colunas podem permitir ler nome sem ler email, desde que não exista uma concessão mais ampla que já dê acesso à tabela inteira.
 
-[^trigger-sintaxe]: A sintaxe com `OLD`, `NEW`, `WHEN` e `RAISE(ABORT, ...)` é a documentada em [sqlite.org/lang_createtrigger.html](https://sqlite.org/lang_createtrigger.html).
+## Segurança por linha
+
+Em PostgreSQL, RLS restringe as linhas visíveis ou modificáveis, além dos privilégios de objeto. Para uma tabela `Documento(id, dono, texto)` em que dono coincide com o nome do utilizador SQL:
+
+```sql
+ALTER TABLE Documento ENABLE ROW LEVEL SECURITY;
+CREATE POLICY documentos_proprios ON Documento
+  USING (dono = current_user)
+  WITH CHECK (dono = current_user);
+```
+
+`USING` filtra linhas existentes e `WITH CHECK` valida os valores novos. Esta política não concede `SELECT` ou `UPDATE`; os privilégios continuam necessários. Sem uma política aplicável, ativar RLS faz negar o acesso às linhas para utilizadores sujeitos às políticas.
+
+Superutilizadores e papéis com `BYPASSRLS` contornam RLS. O proprietário normalmente também a contorna, a menos que imponha `FORCE ROW LEVEL SECURITY`. Uma aplicação que usa uma conta única para todos os clientes precisa de uma estratégia segura de identidade; `current_user` distingue contas SQL, não utilizadores da aplicação por magia.
+
+## Injeção SQL e parâmetros
+
+Construir uma consulta juntando texto do utilizador ao código permite que esse texto altere a estrutura da instrução. Uma entrada como `' OR 1=1 --` pode transformar um filtro de login numa condição sempre verdadeira.
+
+Usa uma consulta parametrizada e entrega os valores separadamente ao driver, por exemplo `WHERE email = ?` em SQLite. O carácter `?` é um parâmetro, não uma string para substituir manualmente. Escapar ou validar a entrada não substitui a separação entre dados e código.
+
+Nomes de colunas e palavras como `ASC` normalmente não são valores parametrizáveis. Para escolher uma coluna de ordenação, usa uma lista fechada de opções conhecidas. Combina parâmetros com privilégios reduzidos; cada medida resolve uma parte diferente do problema.

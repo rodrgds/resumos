@@ -1,0 +1,71 @@
+---
+title: Praticar índices e transações
+description: Exercícios próprios com pistas, resolução e erros frequentes.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="indice-cliente-data"
+  title="Escolher a ordem de um índice"
+  explanation="/cadeiras/bd/indices-transacoes/#escolher-pelas-perguntas"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Justifiquei igualdade no prefixo e intervalo seguinte.',
+      'Indiquei as condições que ainda influenciam a escolha.',
+    ],
+  }}
+>
+  <p>
+    A consulta frequente é WHERE idCliente=7 AND data BETWEEN duas datas.
+    Compara os índices (idCliente,data) e (data,idCliente), sem assumir
+    distribuições adicionais.
+  </p>
+  <div slot="hint">
+    Um índice composto ordena primeiro pela primeira coluna.
+  </div>
+  <div slot="hint-more">
+    Fixar cliente permite percorrer apenas o intervalo de datas desse cliente.
+  </div>
+  <div slot="solution">
+    (idCliente,data) é a escolha natural para este padrão: a igualdade fixa o
+    prefixo e o intervalo atua nas datas desse cliente. (data,idCliente)
+    organiza primeiro todas as encomendas por data, podendo exigir percorrer
+    clientes diferentes no intervalo. Não há uma regra universal de que o
+    primeiro será sempre mais rápido: tamanho, distribuição, cobertura e outras
+    consultas influenciam o plano. Confere EXPLAIN QUERY PLAN e a carga real.
+  </div>
+  <div slot="mistakes">
+    Não escolhas por ordem das condições no WHERE; o otimizador não depende
+    dessa ordem textual. Um índice também tem custo de manutenção.
+  </div>
+</Exercise>
+
+<Exercise
+  id="savepoint-resultado"
+  title="Rollback parcial"
+  explanation="/cadeiras/bd/indices-transacoes/#savepoints"
+  answer={{ kind: 'number', value: 15, tolerance: 0 }}
+>
+  <p>
+    Um valor começa em 10. Dentro de BEGIN, somamos 5, criamos SAVEPOINT s,
+    multiplicamos por 2, fazemos ROLLBACK TO s, RELEASE s e COMMIT. Qual o valor
+    final?
+  </p>
+  <div slot="hint">O savepoint foi criado depois da soma.</div>
+  <div slot="hint-more">
+    ROLLBACK TO desfaz a multiplicação, não a operação anterior.
+  </div>
+  <div slot="solution">
+    O valor final é 15. A soma alterou 10 para 15 antes do marcador. A
+    multiplicação deu 30, mas foi desfeita ao regressar ao savepoint. RELEASE
+    retirou o marcador e o COMMIT exterior confirmou 15. Um ROLLBACK da
+    transação inteira teria reposto 10.
+  </div>
+  <div slot="mistakes">
+    Não confundas RELEASE de um savepoint interior com confirmação durável da
+    transação exterior.
+  </div>
+</Exercise>

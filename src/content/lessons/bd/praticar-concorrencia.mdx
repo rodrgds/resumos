@@ -1,0 +1,78 @@
+---
+title: Praticar concorrência
+description: Exercícios próprios com pistas, resolução e erros frequentes.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="grafo-ciclo-duas"
+  title="Encontrar as duas dependências"
+  explanation="/cadeiras/bd/concorrencia/#grafo-de-precedências"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Listei conflitos nas duas direções.',
+      'Usei o ciclo para concluir sobre serialização por conflitos.',
+    ],
+  }}
+>
+  <p>
+    O escalonamento é r1(X), r2(X), w1(X), w2(X). Desenha o grafo de
+    precedências e decide se é serializável por conflitos.
+  </p>
+  <div slot="hint">
+    Considera operações do mesmo item em transações distintas, com pelo menos
+    uma escrita.
+  </div>
+  <div slot="hint-more">
+    r1 antes de w2 e r2 antes de w1 impõem direções opostas.
+  </div>
+  <div slot="solution">
+    Existe T1→T2 por r1(X) antes de w2(X), e também por w1(X) antes de w2(X).
+    Existe T2→T1 por r2(X) antes de w1(X). O ciclo impede uma ordenação
+    topológica, logo o escalonamento não é serializável por conflitos. r1 e r2
+    não geram uma aresta entre si porque são ambas leituras.
+  </div>
+  <div slot="mistakes">
+    Não analises apenas a ordem das duas escritas. As dependências de leitura
+    para escrita também contam.
+  </div>
+</Exercise>
+
+<Exercise
+  id="write-skew-servico"
+  title="Snapshots estáveis e regra conjunta"
+  explanation="/cadeiras/bd/concorrencia/#write-skew-duas-linhas-uma-regra"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei write skew.',
+      'Comparei com ambas as ordens seriais e indiquei proteção da regra.',
+    ],
+  }}
+>
+  <p>
+    Ana e Rui estão ambos de serviço. Duas transações leem esse estado e cada
+    uma retira uma pessoa diferente. Ambas confirmam, deixando zero. Identifica
+    a anomalia e explica por que não equivale a uma ordem serial correta.
+  </p>
+  <div slot="hint">As escritas não atingem a mesma linha.</div>
+  <div slot="hint-more">
+    Na segunda transação serial, a contagem já seria um.
+  </div>
+  <div slot="solution">
+    É write skew. Cada transação decide sobre o mesmo snapshot inicial, mas
+    escreve uma linha diferente, por isso não precisa de sobrepor a escrita da
+    outra. Em qualquer ordem serial que aplique a regra de pelo menos uma
+    pessoa, a segunda transação vê uma pessoa restante e não a retira. É
+    necessário proteger a regra entre linhas, por exemplo com serializable e
+    repetição após conflito ou um bloqueio que serialize essas decisões.
+  </div>
+  <div slot="mistakes">
+    Não é uma leitura suja, pois o snapshot pode conter só dados confirmados.
+    Não é a atualização perdida típica, pois as escritas são em linhas
+    diferentes.
+  </div>
+</Exercise>

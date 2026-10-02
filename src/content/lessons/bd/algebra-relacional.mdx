@@ -1,78 +1,122 @@
 ---
 title: Álgebra relacional
-description: Seleção, projeção, junções e conjuntos para formalizar perguntas.
+description: Operações sobre conjuntos, renomeação, junções, divisão e equivalências.
 section: conteudo
-order: 5
+order: 7
+practices:
+  - bd/praticar-algebra
 ---
 
 import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
 import pipeline from '../../bd/pipeline-algebra.typ?raw';
+import SelectionDemo from '../../bd/SelectionDemo.astro';
 
-Antes do `SELECT` houve a matemática. A **álgebra relacional** é a linguagem formal de perguntas sobre tabelas: cada operador recebe relações e devolve uma relação, por isso os operadores **encadeiam-se** como funções. Percebê-la é perceber o que cada cláusula do SQL faz, e a cadeira pede-a explicitamente.
+A álgebra relacional descreve uma pergunta como uma composição de operações. Cada operador recebe relações e devolve uma relação, por isso o resultado de um passo pode entrar no seguinte. Nesta página usamos a álgebra clássica, com **conjuntos**, sem duplicados e sem ordem de linhas.
 
 ## Os operadores essenciais
 
-Sobre uma tabela `Produto(id, nome, preco, stock)`:
+A **seleção** $\sigma_p(R)$ conserva os tuplos de R que satisfazem o predicado p. $\sigma_{precoCentimos>3000}(Produto)$ conserva Teclado e Monitor, com todos os seus atributos. A seleção não escolhe colunas.
 
-- **Seleção** $\sigma_{cond}(R)$: filtra linhas. $\sigma_{preco > 30}(Produto)$ devolve Teclado e Monitor.
-- **Projeção** $\pi_{cols}(R)$: escolhe colunas. $\pi_{nome, preco}(Produto)$ devolve os três nomes com preços.
-- **Produto cartesiano** $R \times S$: combina cada linha de uma com cada linha da outra.
-- **Junção natural** $R \bowtie S$: combina pelas colunas de nomes iguais, fundindo-as. É o produto cartesiano seguido da igualdade nas colunas comuns, sem as colunas duplicadas.
-- **Junção com condição** $R \bowtie_{cond} S$: combina pelas linhas que satisfazem a condição, mesmo quando as colunas têm nomes diferentes. Com o **operador de renomeação** $\rho$ mudas nomes de colunas para criar colunas comuns quando precisares da junção natural pura.
-- **União** $R \cup S$, **interseção** $R \cap S$ e **diferença** $R - S$: operações de conjuntos, que exigem tabelas compatíveis (mesmas colunas).
+A **projeção** $\pi_X(R)$ conserva os atributos X e elimina tuplos repetidos. Se dois produtos distintos se chamarem Rato, $\pi_{nome}(Produto)$ contém Rato uma vez. Uma projeção SQL precisa de `DISTINCT` para reproduzir essa semântica de conjuntos.
 
-A ordem clássica é filtrar antes de juntar: $\sigma$ reduz as linhas, $\bowtie$ combina, $\pi$ corta as colunas no fim.
+O **produto cartesiano** $R\times S$ combina cada tuplo de R com cada tuplo de S. Se houver m e n tuplos, o resultado tem $m n$ tuplos, assumindo nomes de atributos desambiguados. Se uma relação estiver vazia, o produto está vazio.
 
-Cada operador e a sua cláusula SQL:
+A **renomeação** $\rho$ altera o nome de uma relação ou dos seus atributos, conservando os valores. Escrevemos, por exemplo, $\rho_{C(idCliente,nome,email)}(Cliente)$. A ordem indicada corresponde à dos atributos na notação do esquema original. Outras convenções de renomeação são possíveis; explicita a usada.
 
-<Tabs id="algebra-operadores" labels={['Seleção', 'Projeção', 'Junção', 'Conjuntos']}>
-  <div slot="panel-0">
+Na pequena demonstração seguinte, R contém quatro produtos, incluindo dois com o mesmo nome. A seleção usa preço maior ou igual ao limite; a projeção opcional guarda apenas o nome e elimina duplicados. Os preços estão em euros nesta demonstração.
 
-$\sigma_{cond}(R)$ filtra linhas e é o `WHERE`: $\sigma_{preco > 30}(Produto)$ vira `SELECT * FROM Produto WHERE preco > 30`.
+<SelectionDemo />
 
-  </div>
-  <div slot="panel-1">
+Com limite 0, há quatro tuplos. Ao projetar apenas o nome, ficam três. Com limite 30, os produtos são Teclado, Monitor e o segundo Rato, continuando três nomes.
 
-$\pi_{cols}(R)$ escolhe colunas e é a lista do `SELECT`: $\pi_{nome, preco}(Produto)$ vira `SELECT nome, preco FROM Produto`.
+## Junções
 
-  </div>
-  <div slot="panel-2">
+A **teta-junção** $R\bowtie_p S$ equivale a $\sigma_p(R\times S)$. O predicado pode usar igualdade ou outras comparações. Numa equijunção, comparamos atributos por igualdade. Atributos do mesmo nome precisam de qualificação ou renomeação.
 
-$R \bowtie_{cond} S$ é o `JOIN ... ON`: a condição `ON` é a condição da junção. A junção natural pura ($\bowtie$ sem condição) só existe quando há colunas com o mesmo nome.
+A **junção natural** $R\bowtie S$ impõe igualdade em **todos os atributos de nome comum** e conserva uma cópia de cada atributo comum. Se não houver nenhum nome comum, equivale ao produto cartesiano. Se houver vários, todos participam, mesmo que não fossem a ligação que tinhas em mente.
 
-  </div>
-  <div slot="panel-3">
+Na loja, `Cliente(id,nome,email)` e `Encomenda(id,data,idCliente)` têm `id` em comum, mas um id de cliente não é um id de encomenda. Uma junção natural compararia estes ids erradamente. Usa a condição `Cliente.id = Encomenda.idCliente` ou renomeia o id do cliente antes da junção natural.
 
-União, interseção e diferença pedem tabelas compatíveis: em SQL são `UNION`, `INTERSECT` e `EXCEPT`. A diferença $R - S$ ("os clientes sem encomendas") vira `EXCEPT`.
+A junção natural de `R(A,B)` com `S(B,C)` liga pelo B. A de `R(A,B)` com `T(C,D)` produz todas as combinações, porque não há nomes comuns.
 
-  </div>
-</Tabs>
+## União, diferença e interseção
+
+$R\cup S$ contém os tuplos que estão em pelo menos um lado; $R\cap S$, os que estão nos dois; $R-S$, os que estão em R e não em S. Os esquemas têm de ser compatíveis: mesmos atributos, com domínios correspondentes. Renomeia ou projeta antes da operação se necessário.
+
+A diferença não é comutativa. `CompraramTeclado − CompraramRato` responde a quem comprou teclado e não rato; trocar os lados muda a pergunta. A condição "há uma compra que não é rato" também é diferente de "não há qualquer compra de rato".
+
+A interseção pode ser escrita só com diferença: $R\cap S=R-(R-S)$. Estes operadores não somam contagens de duplicados, porque a álgebra clássica usa conjuntos.
 
 ## Uma pergunta completa
 
-"Nome dos clientes com encomendas em 2026-01-05." Primeiro filtra as encomendas, junta com os clientes e projeta o nome:
+Queremos os nomes dos clientes com encomendas em 5 de janeiro de 2026. Seja C a renomeação de Cliente que muda `id` para `idCliente`. Primeiro filtramos Encomenda, depois juntamos pelo atributo comum idCliente e finalmente projetamos nome:
 
 $$
-\pi_{nome}(\sigma_{data = '2026-01-05'}(Encomenda) \bowtie_{idCliente = id} Cliente)
+E_5=\sigma_{data='2026-01-05'}(Encomenda)
 $$
 
-O encadeamento em figura, da tabela à resposta:
+$$
+C=\rho_{C(idCliente,nome,email)}(Cliente)
+$$
+
+$$
+Resposta=\pi_{nome}(E_5\bowtie C).
+$$
 
 <Typst
   source={pipeline}
   format="svg"
-  alt="Encadeamento de operadores: Encomenda passa pela seleção da data, pela junção com Cliente e pela projeção do nome, e devolve Ana."
+  alt="Encomenda passa por seleção da data, junção explícita com Cliente e projeção do nome, dando Ana."
 />
 
-Passo a passo com os dados da loja: a seleção deixa só a encomenda 100 (data 2026-01-05, cliente 1). A junção com `Cliente` na condição `idCliente = id` acrescenta a linha da Ana. A projeção final devolve uma tabela de uma coluna e uma linha: `Ana`. Cada operador intermédio é uma tabela válida, e é por isso que podes ler a expressão de dentro para fora a verificar cada etapa.
+A seleção deixa a encomenda 100, do cliente 1. A junção acrescenta Ana. A projeção devolve o conjunto com um tuplo, Ana. Se Ana tivesse duas encomendas nesse dia, a projeção continuaria a mostrá-la uma vez. Se duas pessoas diferentes chamadas Ana satisfizessem a condição, a projeção apenas do nome também as fundiria. Para identificar pessoas, conserva o id.
 
-:::tip[Junção natural contra junção com condição]
-Repara que as colunas se chamam `idCliente` num lado e `id` no outro: não há coluna comum, por isso a junção natural pura não se aplica aqui e a condição é explícita.[^join-condicao] Quando o enunciado disser só $\bowtie$, confirma primeiro os nomes das colunas; se forem diferentes, escreve a condição ou renomeia com $\rho$.
-:::
+## Clientes sem encomendas
 
-:::tip[Como traduzir para SQL]
-Cada operador tem a sua cláusula: $\sigma$ é o `WHERE`, $\pi$ é a lista do `SELECT`, $\bowtie$ é o `JOIN ... ON` ou `USING`, e $-$ é `EXCEPT`. Se souberes escrever a pergunta em álgebra, a página de [consultas SQL](sql-consultas/) é transcrição quase direta.
-:::
+Não podemos descobrir uma ausência filtrando apenas encomendas existentes. Precisamos do conjunto de candidatos e de retirar os que aparecem:
 
-[^join-condicao]: A junção natural combina linhas pelas colunas com nomes iguais. Com `idCliente` e `id`, a junção do exemplo precisa da condição explícita `idCliente = id`; é uma junção com condição (teta-junção), não uma junção natural pura.
+$$
+Todos=\pi_{id}(Cliente)
+$$
+
+$$
+Compradores=\rho_{Compradores(id)}(\pi_{idCliente}(Encomenda))
+$$
+
+$$
+SemCompra=Todos-Compradores.
+$$
+
+Com os dados da loja, Todos é $\{1,2,3\}$ e Compradores é $\{1,2\}$; a diferença é $\{3\}$. Para obter nome e email, juntamos esse resultado com Cliente. A renomeação tornou os esquemas compatíveis.
+
+## Divisão: perguntas com todos
+
+Se $R(X,Y)$ regista pares e $S(Y)$ contém os valores exigidos, $R\div S$ devolve os X que estão ligados a **todos** os Y de S. O esquema da resposta contém os atributos de R que não estão em S.
+
+Suponhamos `Comprou(idCliente,idProduto)` com $(1,10),(1,11),(1,12),(2,11)$ e `Exigido(idProduto)` com 10 e 11. O cliente 1 comprou todos os produtos exigidos; o 2 não comprou o 10. A divisão devolve 1.
+
+Pode ser construída com operadores básicos:
+
+$$
+Candidatos=\pi_X(R)
+$$
+
+$$
+Faltas=(Candidatos\times S)-R
+$$
+
+$$
+R\div S=Candidatos-\pi_X(Faltas).
+$$
+
+O produto enumera pares que deveriam existir. A diferença encontra os que faltam. A projeção identifica candidatos com pelo menos uma falta; a diferença final retira-os.
+
+Se S estiver vazia, não falta nenhum requisito e a divisão devolve $\pi_X(R)$. Repara no universo dos candidatos: um cliente que não aparece em Comprou não pertence à projeção inicial. Se quisermos todos os clientes, incluindo os sem compras quando não há requisitos, usamos Cliente como universo e a mesma ideia de retirar faltas. A [divisão em SQL](/cadeiras/bd/sql-subconsultas/#perguntas-com-todos) explicita esta escolha.
+
+## Equivalências e execução
+
+Podemos separar uma seleção conjuntiva: $\sigma_{p\land q}(R)=\sigma_p(\sigma_q(R))$. Se p só usa atributos de R, podemos aplicar essa seleção antes de juntar R com S. Isso pode reduzir o número de tuplos intermédios sem mudar a resposta.
+
+A projeção também pode reduzir atributos antes de uma junção, mas tem de conservar os usados pela condição e os necessários ao resultado. Se retirarmos `idCliente` antes de ligar as encomendas aos clientes, perdemos a ligação.
+
+Estas equivalências explicam transformações de um otimizador. Não determinam a ordem física exata que o SGBD seguirá. Junções externas e a lógica de `NULL` exigem cuidados adicionais; não lhes apliques automaticamente todas as identidades da álgebra clássica.

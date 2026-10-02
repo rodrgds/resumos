@@ -1,145 +1,169 @@
 ---
 title: Consultas SQL
-description: SELECT, junções, agregação e subconsultas sobre a loja.
+description: Seleção, junções, NULL, agregação e resultados sem duplicações acidentais.
 section: conteudo
-order: 6
+order: 8
+practices:
+  - bd/praticar-consultas
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
+import loja from '../../bd/loja.sql?raw';
 
-A DML de leitura é o `SELECT`, e a sua estrutura segue a álgebra relacional: filtra linhas (`WHERE`), combina tabelas (`JOIN`), agrupa (`GROUP BY`), filtra grupos (`HAVING`) e projeta colunas (`SELECT`). A ordem de escrita é fixa, `SELECT ... FROM ... WHERE ... GROUP BY ... HAVING ... ORDER BY`, mesmo quando só usas metade das cláusulas.
+Uma consulta declara a resposta que queremos, deixando o SGBD escolher como a obter. Antes do código, define o que representa uma linha: um produto, uma encomenda ou um cliente. Esta decisão evita que uma junção transforme uma contagem de clientes numa contagem de compras.
 
-A ordem lógica em figura, do `WHERE` ao `ORDER BY`:
-
-<Dot
-  source={`digraph Plano { rankdir = LR; WHERE -> JOIN; JOIN -> GROUPBY [label = "GROUP BY"]; GROUPBY -> HAVING; HAVING -> SELECT; SELECT -> ORDERBY [label = "ORDER BY"]; }`}
-  alt="Ordem lógica de uma consulta: WHERE filtra linhas, JOIN combina tabelas, GROUP BY agrupa, HAVING filtra grupos, SELECT projeta colunas e ORDER BY ordena."
-/>
-
-## Filtrar e ordenar
-
-"Produtos com preço acima de 30, do mais caro ao mais barato":
+## SELECT e filtros
 
 ```sql
-SELECT nome, preco FROM Produto
-WHERE preco > 30
-ORDER BY preco DESC;
+SELECT id, nome, precoCentimos / 100.0 AS euros
+FROM Produto
+WHERE precoCentimos > 3000
+ORDER BY precoCentimos DESC, id;
 ```
 
-Resultado: Monitor 180.0, Teclado 45.0. O `WHERE` é a seleção $\sigma$, a lista do `SELECT` é a projeção $\pi$. Repara que o Rato ficou de fora pelo filtro e a ordem é decrescente pelo `DESC`.
+Este excerto usa a loja. Devolve Monitor a 180 e Teclado a 45 euros, por esta ordem. `WHERE` filtra linhas e a lista de `SELECT` calcula as colunas da resposta. Podemos filtrar uma coluna que não aparece no resultado.
 
-## Juntar e agregar
+`AS` atribui um nome ao resultado de uma expressão. Um alias de tabela, como `Produto AS p`, abrevia referências e permite usar a mesma tabela com papéis diferentes. Não altera os dados nem o nome permanente da tabela.
 
-"Total gasto por cada cliente, incluindo quem nunca comprou":
+`BETWEEN a AND b` inclui ambos os limites. `LIKE 'Ra%'` procura uma sequência que começa por Ra; `%` representa zero ou mais caracteres e `_`, um carácter. Em SQLite, `LIKE` é normalmente insensível à diferença de maiúsculas ASCII, enquanto `=` segue a collation escolhida. Não assumes o mesmo comportamento para todos os caracteres Unicode ou todos os motores.
 
-```sql
-SELECT Cliente.nome, COALESCE(SUM(Item.qtd * Produto.preco), 0) AS total
-FROM Cliente
-LEFT JOIN Encomenda ON Encomenda.idCliente = Cliente.id
-LEFT JOIN Item ON Item.idEncomenda = Encomenda.id
-LEFT JOIN Produto ON Produto.id = Item.idProduto
-GROUP BY Cliente.nome
-ORDER BY total DESC;
-```
+Combina predicados com `AND`, `OR` e `NOT`. Usa parênteses quando misturas condições: `categoria = 'A' AND (stock = 0 OR precoCentimos > 10000)` exige categoria A em ambos os casos. Sem os parênteses, o segundo caso poderia aceitar outra categoria.
 
-O `LEFT JOIN` mantém os clientes sem encomendas, onde a soma seria nula e o `COALESCE` a converte em 0. Contas: Ana, 2 Teclados (90) mais 1 Rato (25) mais 1 Monitor (180), total 295; Rui, 3 Ratos, total 75; Mia, sem linhas, total 0.
+## Duplicados e ordem
 
-Corre a consulta sobre a loja completa e confirma os três totais:
+SQL usa **multiconjuntos** por omissão. Se projetarmos `idCliente` de Encomenda, Ana aparece duas vezes. `SELECT DISTINCT idCliente` elimina a repetição. `DISTINCT` aplica-se à combinação completa das colunas escolhidas.
+
+Eliminar nomes repetidos pode juntar pessoas diferentes. Para obter uma linha por cliente, escolhe o seu id e o nome ou usa uma condição de existência sobre Cliente. Não uses `DISTINCT` para esconder uma junção errada.
+
+A ordem de uma tabela ou consulta não é garantida sem `ORDER BY`. `LIMIT 1` sem uma ordem definida escolhe uma linha sem significado estável. Se houver empates, acrescenta um critério de desempate quando a pergunta exigir exatamente uma linha; se pedir todos os máximos, não os elimines com `LIMIT 1`.
+
+## Junções com condição
+
+Uma junção liga linhas que satisfazem `ON`. Qualifica nomes ambíguos e escreve a ligação de cada par de tabelas:
 
 <CodePlayground
   language="sql"
-  title="Totais por cliente sobre a loja completa"
-  code={
-    'PRAGMA foreign_keys = ON;\nCREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL);\nCREATE TABLE Produto(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, preco REAL NOT NULL, stock INTEGER NOT NULL);\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, data TEXT NOT NULL, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nCREATE TABLE Item(idEncomenda INTEGER REFERENCES Encomenda(id), idProduto INTEGER REFERENCES Produto(id), qtd INTEGER NOT NULL, PRIMARY KEY (idEncomenda, idProduto));\nINSERT INTO Cliente VALUES (1, \u0027Ana\u0027, \u0027ana@mail\u0027), (2, \u0027Rui\u0027, \u0027rui@mail\u0027), (3, \u0027Mia\u0027, \u0027mia@mail\u0027);\nINSERT INTO Produto VALUES (10, \u0027Teclado\u0027, 45.0, 20), (11, \u0027Rato\u0027, 25.0, 50), (12, \u0027Monitor\u0027, 180.0, 5);\nINSERT INTO Encomenda VALUES (100, \u00272026-01-05\u0027, 1), (101, \u00272026-01-12\u0027, 1), (102, \u00272026-01-08\u0027, 2);\nINSERT INTO Item VALUES (100, 10, 2), (100, 11, 1), (101, 12, 1), (102, 11, 3);\nSELECT Cliente.nome, COALESCE(SUM(Item.qtd * Produto.preco), 0) AS total FROM Cliente LEFT JOIN Encomenda ON Encomenda.idCliente = Cliente.id LEFT JOIN Item ON Item.idEncomenda = Encomenda.id LEFT JOIN Produto ON Produto.id = Item.idProduto GROUP BY Cliente.nome ORDER BY total DESC;'
-  }
+  title="Cada linha comprada com o seu cliente e produto"
+  code={`${loja}
+SELECT e.id AS encomenda, c.nome AS cliente,
+       p.nome AS produto, i.qtd,
+       i.qtd * i.precoUnitario AS totalCentimos
+FROM Encomenda AS e
+JOIN Cliente AS c ON c.id = e.idCliente
+JOIN Item AS i ON i.idEncomenda = e.id
+JOIN Produto AS p ON p.id = i.idProduto
+ORDER BY e.id, p.id;`}
 />
 
-O resultado é `Ana|295.0`, `Rui|75.0`, `Mia|0`: os separadores verticais são o formato de lista do SQLite, e a Mia aparece com 0 graças ao `COALESCE`.
+O resultado tem quatro linhas: Ana/Teclado/2/9000 e Ana/Rato/1/2500 na 100; Ana/Monitor/1/18000 na 101; Rui/Rato/3/7500 na 102. Uma linha da resposta é uma linha de Item, não uma encomenda nem um cliente.
 
-Duas armadilhas habituais: agregar sem `GROUP BY` quando há colunas soltas, e filtrar grupos com `WHERE` em vez de `HAVING`. `WHERE` filtra linhas antes de agrupar; `HAVING` filtra grupos depois. "Clientes com total acima de 100" acrescenta `HAVING total > 100` e devolve só a Ana.
+Omitir uma condição pode criar um produto cartesiano. Juntar três clientes com três encomendas sem condição produz nove pares, incluindo associações falsas. `NATURAL JOIN` não é uma correção automática: Cliente e Encomenda têm ambos `id`, com significados distintos.
 
-## Subconsultas
+`JOIN ... USING(idCliente)` exige uma coluna desse nome em ambos os lados e devolve uma só cópia dessa coluna. `ON` permite nomes diferentes e condições mais gerais.
 
-"Clientes que compraram o Monitor", com uma subconsulta que primeiro descobre quem:
+## Junções externas e clientes sem compras
 
-```sql
-SELECT nome FROM Cliente
-WHERE id IN (
-  SELECT Encomenda.idCliente FROM Encomenda
-  JOIN Item ON Item.idEncomenda = Encomenda.id
-  JOIN Produto ON Produto.id = Item.idProduto
-  WHERE Produto.nome = 'Monitor'
-);
-```
+Um `INNER JOIN` elimina linhas sem correspondência. Um `LEFT JOIN` conserva todas as linhas da esquerda e preenche as colunas da direita com `NULL` quando não há correspondência.
 
-A consulta interior devolve o cliente 1 (a encomenda 101 leva o produto 12) e a exterior traduz para `Ana`. Sempre que a pergunta tem um "os X que ..." com condição noutra tabela, uma subconsulta com `IN` é a formulação direta.
-
-A mesma pergunta em três formulações, para comparares:
-
-<Tabs id="consultas-monitor" labels={['IN', 'EXISTS', 'JOIN']}>
-  <div slot="panel-0">
-
-A subconsulta devolve os ids e o `IN` testa pertença. É a leitura mais direta do "clientes que ...".
-
-```sql
-SELECT nome FROM Cliente
-WHERE id IN (
-  SELECT Encomenda.idCliente FROM Encomenda
-  JOIN Item ON Item.idEncomenda = Encomenda.id
-  JOIN Produto ON Produto.id = Item.idProduto
-  WHERE Produto.nome = 'Monitor'
-);
-```
-
-  </div>
-  <div slot="panel-1">
-
-O `EXISTS` testa linha a linha se há prova da compra, correlacionando a interior com a exterior pelo cliente. Costuma ser a mais rápida com índices.
-
-```sql
-SELECT nome FROM Cliente c
-WHERE EXISTS (
-  SELECT 1 FROM Encomenda e
-  JOIN Item i ON i.idEncomenda = e.id
-  JOIN Produto p ON p.id = i.idProduto
-  WHERE e.idCliente = c.id AND p.nome = 'Monitor'
-);
-```
-
-  </div>
-  <div slot="panel-2">
-
-A junção direta seguida de `DISTINCT` elimina os duplicados (um cliente com duas compras do Monitor apareceria duas vezes). Prefere-a quando também queres colunas das outras tabelas.
-
-```sql
-SELECT DISTINCT c.nome FROM Cliente c
-JOIN Encomenda e ON e.idCliente = c.id
-JOIN Item i ON i.idEncomenda = e.id
-JOIN Produto p ON p.id = i.idProduto
-WHERE p.nome = 'Monitor';
-```
-
-  </div>
-</Tabs>
-
-:::warning[O erro mais comum]
-Juntar sem condição de junção e obter o produto cartesiano: cada cliente repetido por cada encomenda de todos. Se o resultado tem linhas a mais e valores absurdos, falta o `ON` ou ele compara as colunas erradas. Confere sempre que cada `JOIN` tem o seu `ON` com PK de um lado e FK do outro.
-:::
-
-## Para ver em vídeo
-
-<YouTube
-  id="HXV3zeQKqGY"
-  title="SQL Tutorial - Full Database Course for Beginners"
-/>
-<YouTube
-  id="9prkapPewGs"
-  title="6 SQL Joins you MUST know! (Animated + Practice)"
+<CodePlayground
+  language="sql"
+  title="Conservar Mia na contagem de encomendas"
+  code={`${loja}
+SELECT c.id, c.nome, COUNT(e.id) AS encomendas
+FROM Cliente AS c
+LEFT JOIN Encomenda AS e ON e.idCliente = c.id
+GROUP BY c.id, c.nome
+ORDER BY c.id;`}
 />
 
-## Para saber mais
+A resposta é Ana com 2, Rui com 1 e Mia com 0. `COUNT(e.id)` ignora o `NULL` da linha artificial de Mia. `COUNT(*)` daria 1 para Mia, porque essa linha existe no resultado da junção.
 
-- Gramática do `SELECT`, junções e agregação na documentação oficial: [sqlite.org/lang_select.html](https://sqlite.org/lang_select.html).
+Se quisermos conservar clientes sem encomendas numa data, coloca o filtro da data no `ON`:
+
+```sql
+FROM Cliente AS c
+LEFT JOIN Encomenda AS e
+  ON e.idCliente = c.id AND e.data = '2026-01-05'
+```
+
+Mover `e.data = ...` para `WHERE` retira as linhas sem correspondência, pois a comparação com `NULL` não é verdadeira. Uma condição no `ON` decide correspondências; uma condição no `WHERE` filtra o resultado já produzido.
+
+`RIGHT JOIN` conserva o lado direito e `FULL OUTER JOIN` conserva ambos os lados. SQLite inclui estes operadores a partir de 3.39; em versões anteriores, usa reescritas adequadas. Todos os exemplos executáveis destas páginas usam `LEFT JOIN` quando precisam de preservar linhas sem correspondência.
+
+## NULL e lógica a três valores
+
+Uma comparação com `NULL`, incluindo `NULL = NULL`, normalmente dá **desconhecido**. `WHERE` conserva apenas verdadeiro, descartando falso e desconhecido. Para testar ausência, usa `IS NULL` ou `IS NOT NULL`.
+
+| p            | `NOT p`      |
+| ------------ | ------------ |
+| verdadeiro   | falso        |
+| falso        | verdadeiro   |
+| desconhecido | desconhecido |
+
+`falso AND desconhecido` é falso; `verdadeiro AND desconhecido` é desconhecido. `verdadeiro OR desconhecido` é verdadeiro; `falso OR desconhecido` é desconhecido. Assim, `preco > 30 OR preco <= 30` não inclui automaticamente uma linha cujo preço seja `NULL`.
+
+`COALESCE(x, alternativa)` devolve o primeiro argumento não nulo. Só transforma um desconhecido em zero quando zero for a interpretação certa. Um stock desconhecido não significa que não existe stock.
+
+## GROUP BY e HAVING
+
+`GROUP BY` reúne linhas com os mesmos valores das colunas de agrupamento. As funções de agregação calculam um resultado para cada grupo. `WHERE` filtra linhas antes do agrupamento; `HAVING` filtra grupos depois.
+
+<CodePlayground
+  language="sql"
+  title="Encomendas que ultrapassam 100 euros"
+  code={`${loja}
+SELECT idEncomenda, SUM(qtd * precoUnitario) / 100.0 AS euros
+FROM Item
+GROUP BY idEncomenda
+HAVING SUM(qtd * precoUnitario) > 10000
+ORDER BY idEncomenda;`}
+/>
+
+A 100 tem 115 euros e a 101 tem 180. A 102 tem 75 e fica de fora. `WHERE SUM(...) > ...` não é a forma de filtrar o total de um grupo.
+
+`COUNT(*)` conta linhas. `COUNT(x)` conta os x não nulos; `COUNT(DISTINCT x)` conta valores distintos não nulos. `SUM`, `AVG`, `MIN` e `MAX` ignoram valores nulos. Sem linhas e sem `GROUP BY`, `COUNT` dá 0, enquanto `SUM`, `AVG`, `MIN` e `MAX` dão `NULL`. Com `GROUP BY`, uma entrada vazia não produz grupos.
+
+<CodePlayground
+  language="sql"
+  title="Agregações com NULL e com entrada vazia"
+  code={`CREATE TABLE Valor(x INTEGER);
+INSERT INTO Valor VALUES (10), (NULL), (20);
+SELECT COUNT(*) AS linhas, COUNT(x) AS conhecidos,
+       SUM(x) AS soma, AVG(x) AS media FROM Valor;
+SELECT COUNT(*) AS linhas,
+       COALESCE(CAST(SUM(x) AS TEXT), 'NULL') AS soma
+FROM Valor WHERE 0;
+SELECT x, COUNT(*) FROM Valor WHERE 0 GROUP BY x;`}
+/>
+
+A primeira resposta é `3|2|30|15.0`. A segunda é `0|NULL`. A terceira não devolve linhas. A média é 15 porque divide por dois valores conhecidos, não por três linhas.
+
+SQLite permite colunas soltas numa consulta agregada, mas o valor escolhido pode não representar o grupo de forma estável. Há regras especiais para certos usos de `MIN` e `MAX`, que ainda deixam ambiguidades com empates. Escreve cada coluna da resposta no agrupamento ou numa agregação, ou formula explicitamente a escolha com uma subconsulta. Não uses essa permissividade para justificar SQL portátil.
+
+## Não contar depois de multiplicar sem verificar
+
+Se juntarmos Cliente, Encomenda e Item, a encomenda 100 aparece duas vezes porque tem dois produtos. `COUNT(e.id)` passa a contar linhas compradas, dando 3 para Ana. Para contar encomendas nesse resultado, usa `COUNT(DISTINCT e.id)`; para somar valores de encomendas já agregados, evita uma junção que volte a multiplicá-los.
+
+Agrupar por nome também funde pessoas de nome igual. Agrupa por chave e inclui o nome. Cada junção deve ter uma cardinalidade esperada antes de calculares a agregação.
+
+## Expressões e datas
+
+`CASE` calcula valores por condições:
+
+```sql
+SELECT nome,
+       CASE WHEN stock = 0 THEN 'esgotado'
+            WHEN stock < 10 THEN 'baixo'
+            ELSE 'disponível' END AS estado
+FROM Produto;
+```
+
+No exemplo, Monitor tem stock baixo; Teclado e Rato estão disponíveis. Um `CASE` sem `ELSE` devolve `NULL` quando nenhuma condição corresponde.
+
+Datas ISO guardadas como texto, no formato `AAAA-MM-DD`, podem ser comparadas lexicograficamente se o formato for uniforme e válido. Para durações, usa funções de data, como `julianday(fim) - julianday(inicio)`. Subtrair dois textos com datas não calcula dias. Inclui a decisão de contar ou não os dias inicial e final no enunciado.
+
+## Ordem lógica da consulta
+
+Para explicar uma consulta, pensa em `FROM` e junções, depois `WHERE`, agrupamento, `HAVING`, expressões de `SELECT`, `DISTINCT`, `ORDER BY` e `LIMIT`. Esta é uma ordem de interpretação, não uma promessa sobre o plano físico do motor.
+
+Quando uma resposta surpreender, observa a tabela intermédia antes de agregar. Quase sempre é mais útil conferir quais as linhas produzidas pela junção do que acrescentar outro `DISTINCT` no fim.
