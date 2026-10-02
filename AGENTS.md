@@ -44,6 +44,7 @@
 
 - CSS snippets are local-only. Preserve the customization selectors documented in [docs/leitura.md](docs/leitura.md#personalização-local) and the `?sem-css=1` recovery path. Apply snippets after generated styles but before visible content; insert CSS as text, never HTML.
 - Static and runnable code share `--code-*` tokens and `--code-font`. Keep the shared Shiki configuration in `markdown.shikiConfig` so Markdown and MDX follow the selected palette.
+- Code selection preserves each syntax token's colour. Keep selection backgrounds contrast-safe across palettes, including comments. Whitespace markers use Shiki's transformer and CodeMirror's decorations, never replacement characters in copied, exported or executed source.
 - Code lines scroll horizontally by default, including CodeMirror editors. The optional wrapping CSS preset covers static and editable code; migrate only untouched saved preset CSS and preserve user changes.
 - Hide the homepage introduction when there is valid reading history or a valid semester pin, including before first paint. Clearing history must respect pins. Pinned semesters duplicate course cards at the top; original fragment IDs belong only to the catalogue.
 

@@ -2,6 +2,7 @@ import {
   lineNumbers,
   highlightActiveLineGutter,
   highlightSpecialChars,
+  highlightWhitespace,
   drawSelection,
   dropCursor,
   rectangularSelection,
@@ -33,10 +34,12 @@ const codeHighlightStyle = HighlightStyle.define([
   {
     tag: [tags.keyword, tags.operator, tags.modifier, tags.meta],
     color: 'var(--code-token-keyword)',
+    '--code-selected-text': 'var(--code-token-keyword)',
   },
   {
     tag: [tags.string, tags.attributeValue],
     color: 'var(--code-token-string)',
+    '--code-selected-text': 'var(--code-token-string)',
   },
   {
     tag: [
@@ -47,6 +50,7 @@ const codeHighlightStyle = HighlightStyle.define([
       tags.color,
     ],
     color: 'var(--code-token-constant)',
+    '--code-selected-text': 'var(--code-token-constant)',
   },
   {
     tag: [
@@ -57,15 +61,22 @@ const codeHighlightStyle = HighlightStyle.define([
       tags.labelName,
     ],
     color: 'var(--code-token-function)',
+    '--code-selected-text': 'var(--code-token-function)',
   },
   {
     tag: [tags.propertyName, tags.attributeName],
     color: 'var(--code-token-parameter)',
+    '--code-selected-text': 'var(--code-token-parameter)',
   },
-  { tag: tags.punctuation, color: 'var(--code-token-punctuation)' },
+  {
+    tag: tags.punctuation,
+    color: 'var(--code-token-punctuation)',
+    '--code-selected-text': 'var(--code-token-punctuation)',
+  },
   {
     tag: tags.comment,
     color: 'var(--code-token-comment)',
+    '--code-selected-text': 'var(--code-token-comment)',
     fontStyle: 'italic',
   },
 ]);
@@ -75,6 +86,7 @@ export function editorSetup(root: HTMLElement) {
     lineNumbers(),
     highlightActiveLineGutter(),
     highlightSpecialChars(),
+    highlightWhitespace(),
     history(),
     foldGutter({
       markerDOM(open) {
