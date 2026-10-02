@@ -92,9 +92,57 @@ import Exercise from '../../../components/Exercise.astro';
 - `choice` recebe `options`, cada uma com `text`, `correct` e `explanation`. Deve haver uma única resposta correta. Explica também por que cada distrator falha.
 - `self` recebe `checklist`, uma lista de critérios observáveis. Usa-o em provas curtas, previsões de estado ou código que exige justificação. Registar uma tentativa não a classifica como correta.
 
-Para tarefas de programação, coloca um `CodePlayground` no slot `work`, com testes e resultados esperados visíveis. Usa os mesmos Workers descartáveis dos exemplos normais. A execução dos testes ajuda a conferir o resultado; a autoavaliação não pretende ser um juiz automático de código.
+Para tarefas de programação com resultado verificável, usa `answer.kind: code`, como abaixo. Reserva `self` para raciocínios que exigem uma justificação. Um `CodePlayground` no slot `work` continua a servir para explorar código numa questão de autoavaliação.
 
 Os identificadores devem ser únicos na cadeira. Aumenta `revision` quando mudares o enunciado, a resposta ou a interpretação dos resultados, para separar as novas tentativas das antigas. O navegador guarda apenas resultado e nível de ajuda, até 300 registos. Não guarda respostas nem código. Abrir uma pista ou solução fica registado mesmo depois de fechar a caixa, limpar a resposta ou recarregar. Consultar ajuda depois não apaga o resultado anterior; uma nova resposta regista a ajuda já vista. A lista de autoavaliação nunca se transforma numa classificação automática. Sem JavaScript, enunciados, pistas e soluções continuam legíveis.
+
+### Respostas de programação
+
+O tipo `code` aceita inicialmente `python` e `javascript`. Define o código inicial em `starter` e casos públicos em `tests`. Para uma função, cada caso chama a função e imprime o resultado; não compares o texto da resposta com uma solução esperada.
+
+Este exemplo MDX está pronto a usar numa página de exercícios da cadeira fictícia:
+
+```mdx
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="somar-lista"
+  title="Somar uma lista"
+  revision={1}
+  explanation="/exemplo/apontamentos/#limites-de-um-ciclo"
+  answer={{
+    kind: 'code',
+    language: 'python',
+    starter: 'def soma(valores):\n    pass',
+    tests: [
+      { name: 'Três valores', code: 'print(soma([1, 2, 3]))', output: '6' },
+      { name: 'Lista vazia', code: 'print(soma([]))', output: '0' },
+      { name: 'Com negativos', code: 'print(soma([-4, 0, 7]))', output: '3' },
+    ],
+  }}
+>
+  <p>
+    Define soma(valores): recebe uma lista de inteiros e devolve a soma, sem
+    imprimir. A soma vazia é zero.
+  </p>
+  <div slot="hint">Começa com um total igual a zero.</div>
+  <div slot="hint-more">
+    Acrescenta cada valor ao total e devolve-o depois do ciclo.
+  </div>
+  <div slot="solution">
+    Usa return sum(valores), ou acumula os valores num ciclo e devolve o total.
+  </div>
+  <div slot="mistakes">
+    Não devolvas dentro do ciclo nem troques return por print.
+  </div>
+</Exercise>
+```
+
+Cada caso tem um `name` descritivo e um `output` esperado. Pode receber `input` para a entrada padrão e `code` para executar depois da resposta, separado por duas quebras de linha. Cada caso começa num motor descartável novo. Compara-se toda a saída padrão e exige-se código de saída zero; só se normalizam CRLF e quebras de linha finais. Espaços, linhas intermédias e mensagens extra contam. Para funções, conserva o nome, os parâmetros e o retorno pedidos; os testes fazem a impressão.
+
+Os casos podem ser consultados pelo leitor. São uma verificação pedagógica, não uma avaliação resistente a fraude nem uma prova de correção. Inclui entradas normais, vazias quando fizerem sentido e limites que distingam erros prováveis. Calcula os resultados independentemente da solução e verifica também uma implementação alternativa e uma errada.
+
+O editor permite executar os testes, parar e repor o código inicial. As respostas são transitórias e não ficam guardadas. O registo conserva apenas o resultado e a ajuda consultada, incluindo pistas e solução. Vê [a função de soma](https://resumos.rgo.pt/exemplo/apontamentos/#exercicios).
 
 ## Escolher um formato
 
@@ -245,7 +293,26 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 />
 ```
 
-`language` aceita `python`, `c`, `cpp`, `java`, `javascript`, `sql`, `haskell`, `prolog` ou `php`. `code` é o programa completo; `input` fornece a entrada padrão, ou o corpo HTTP acessível por `php://input` em PHP e `title` muda o título do bloco. Java precisa da classe `Main`, sem declaração de pacote. Haskell precisa de `main` e não suporta entrada interativa; GHC requer WebAssembly JSPI, disponível nas versões recentes de Chrome e Edge. Prolog executa o predicado `main/0` com SWI-Prolog, não SICStus. Os exemplos usam Python 3.11, C17, C++17, Java 8, QuickJS, SQLite, GHC 9.14 e PHP 8.4. Não dependas de pacotes externos, rede ou ficheiros do computador do leitor. Cada execução começa de novo. Os motores só são descarregados ao executar.
+`language` aceita `python`, `c`, `cpp`, `java`, `javascript`, `sql`, `haskell`, `prolog` ou `php`. Sem auxiliares, `code` é o programa completo; `input` fornece a entrada padrão, ou o corpo HTTP acessível por `php://input` em PHP e `title` muda o título do bloco. Java precisa da classe `Main`, sem declaração de pacote. Haskell precisa de `main` e não suporta entrada interativa; GHC requer WebAssembly JSPI, disponível nas versões recentes de Chrome e Edge. Prolog executa o predicado `main/0` com SWI-Prolog, não SICStus. Os exemplos usam Python 3.11, C17, C++17, Java 8, QuickJS, SQLite, GHC 9.14 e PHP 8.4. Não dependas de pacotes externos, rede ou ficheiros do computador do leitor. Cada execução começa de novo. Os motores só são descarregados ao executar.
+
+### Código auxiliar
+
+Usa a propriedade opcional `helpers` quando o programa precisa de funções de apoio que não são o tema da explicação. Guarda-as em `src/content/<cadeira>/` e importa o texto com `?raw`:
+
+```mdx
+import CodePlayground from '../../../components/CodePlayground.astro';
+import supportCode from '../../exemplo/apoio.py?raw';
+
+<CodePlayground
+  language="python"
+  helpers={supportCode}
+  code={'print(dobro(21))'}
+/>
+```
+
+Neste exemplo, `apoio.py` define `dobro(n)` e a saída deve ser `42`. Substitui esse caminho pelo teu ficheiro. O leitor edita apenas `code`; o código auxiliar começa oculto e pode ser consultado, mas não editado. Em cada execução, o motor recebe os auxiliares antes do código visível, como um único programa completo. Prepara as declarações e o ponto de entrada para essa ordem, sobretudo nas linguagens compiladas. Não escondas o algoritmo que estás a ensinar.
+
+Os auxiliares são código público incluído na página, disponível também sem JavaScript e na versão Markdown, não uma forma de guardar segredos. Esta opção não acrescenta uploads, persistência de código nem acesso às notas. Mantém os mesmos motores isolados e as mesmas restrições de execução. Numa cadeira que ensina Python, mantém visível a sintaxe que o leitor precisa de aprender. Vê [os exemplos executáveis](https://resumos.rgo.pt/exemplo/codigo/).
 
 Para entrada com várias linhas, usa uma expressão, como `input={"3\n10 20 30"}`. Num atributo MDX entre aspas, `\n` chega ao programa como dois caracteres, sem criar uma linha nova.
 
@@ -277,6 +344,32 @@ Consulta os guias de [formatos e compilação](docs/conteudo.md), [execução e 
 
 ### Demos interativas
 
-Usa `InteractiveDemo.astro` para experimentar a matéria com controlos e um visual. O componente da cadeira fica em `src/content/<cadeira>/` e recebe um `label` descritivo. Explica as hipóteses e o que observar na lição. O bloco não acrescenta cabeçalho, editor nem ações: mostra apenas o que ajuda a aprender. Usa SVG para desenhos simples; escolhe uma biblioteca de gráficos quando for necessária. Animações respeitam movimento reduzido.
+Usa `InteractiveDemo.astro` para experimentar a matéria com controlos e um visual. Vê [a matriz e o quadrado unitário](https://resumos.rgo.pt/exemplo/interatividade/), com o componente completo em [`src/content/exemplo/Transformacao.astro`](src/content/exemplo/Transformacao.astro). O leitor altera a matriz e observa a área e a orientação, sem editar HTML ou JavaScript.
 
-Reserva `WebPlayground` para ensinar HTML, CSS e JavaScript. Nas outras cadeiras, usa blocos de código quando correr ou alterar esse código ajuda a entender a técnica. Não exponhas a implementação web de uma demo matemática ou física.
+1. Cria o componente em `src/content/<cadeira>/`. Coloca o `label` descritivo no invólucro `InteractiveDemo`, que exclui os controlos da pesquisa e das anotações. Este é o esqueleto de um componente `.astro`, não a implementação inteira:
+
+   ```astro
+   ---
+   import InteractiveDemo from '../../components/InteractiveDemo.astro';
+   ---
+
+   <InteractiveDemo label="Matriz, área e orientação do quadrado unitário">
+     <!-- Controlos com labels, SVG inicial e resultado inicial. -->
+   </InteractiveDemo>
+   ```
+
+2. Importa-o na lição MDX. A demo do exemplo já inclui o invólucro, por isso não a envolvas outra vez:
+
+   ```mdx
+   import Transformacao from '../../exemplo/Transformacao.astro';
+
+   <Transformacao />
+   ```
+
+3. Escreve as hipóteses na lição. No exemplo, usamos vetores coluna, uma transformação linear sem translação e um quadrado de área 1. Explica o que mudar e porquê, incluindo um caso singular e um determinante negativo. Conserva a fórmula e a interpretação no texto, fora do bloco interativo.
+4. Dá nomes descritivos aos controlos e disponibiliza uma reposição. Mantém uma figura e um resultado iniciais úteis sem JavaScript; desativa os controlos enquanto não funcionarem. Assinala entradas inválidas sem mostrar um novo resultado enganador. Usa `--accent`, `--text`, `--surface` e os restantes tokens do site, e distingue as figuras também pelo traço ou pelos rótulos.
+5. Confirma as contas com valores conhecidos e verifica a página no navegador, em claro e escuro, com teclado e a 320 px. Não acrescentes cabeçalhos ou ações sem função pedagógica. Se houver animação, respeita movimento reduzido.
+
+Prefere SVG nativo para figuras com poucos pontos, eixos ou curvas. Usa canvas para muitos objetos ou desenhos que precisem de ser refeitos continuamente. Uma biblioteca como p5.js pode ajudar quando a experiência precisa das suas ferramentas de desenho ou animação; não a acrescentes só para desenhar um paralelogramo. Em canvas, conserva uma descrição e os resultados no HTML, porque os píxeis não são texto acessível.
+
+Reserva `WebPlayground` para ensinar HTML, CSS e JavaScript. Nas outras cadeiras, usa `CodePlayground` quando correr ou alterar o código ajuda a entender a técnica, como modificar um algoritmo. Quando o objetivo é observar o efeito de um parâmetro da matéria, usa controlos próprios e não exponhas a implementação web da demo.
