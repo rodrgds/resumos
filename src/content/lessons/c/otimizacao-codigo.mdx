@@ -2,6 +2,8 @@
 title: Análise e otimização de código
 description: Análise de fluxo de dados, propagação de constantes e eliminação de código morto num bloco básico.
 section: conteudo
+practices:
+  - c/praticar-otimizacao-codigo
 order: 8
 ---
 
@@ -14,9 +16,9 @@ Otimizar é transformar o programa para correr mais rápido (ou ocupar menos esp
 
 ## Análise de fluxo de dados
 
-A análise propaga factos pelos blocos do grafo de fluxo até estabilizar (**ponto fixo**): cada bloco combina os factos dos antecessores, aplica o seu efeito e passa o resultado aos sucessores, repetindo até nada mudar. Duas análises clássicas:
+A análise associa factos às entradas e saídas dos blocos. Aplica o efeito de cada bloco e combina informação dos blocos ligados, na direção da análise, até estabilizar num **ponto fixo**. Duas análises clássicas:
 
-- **Variáveis vivas**: uma variável está viva num ponto se o seu valor atual pode ser lido no futuro. Decide o que manter em registos e o que pode ser descartado.
+- **Variáveis vivas**: uma variável está viva num ponto se existe um caminho em que o seu valor atual é lido antes de ser redefinido. Decide o que manter em registos e o que pode ser descartado.
 - **Definições que alcançam**: que atribuições podem ter produzido o valor lido em cada uso. Sustenta a propagação de constantes e de cópias.
 
 <Tabs id="analises-fluxo" labels={['Variáveis vivas', 'Definições que alcançam']}>
@@ -40,10 +42,28 @@ t2 = t1 + 3  # chega a t2 = t1 + 3 ao uso na linha 3? sim, única
 x = t2       # chega ao fim? sim, via x
 ```
 
-Pergunta para trás: de onde veio este valor? Uma única definição a alcançar cada uso é o que autoriza substituir o nome pelo valor.
+Pergunta para trás: de onde veio este valor? Uma definição constante que chega a todos os caminhos permite substituir o nome por essa constante. Uma única definição, por si só, não prova que o valor é constante nem que repetir a expressão é seguro.
 
   </div>
 </Tabs>
+
+A pergunta sobre liveness olha para usos futuros, mas o cálculo propaga-se **para trás**. Para um bloco `B`, `USE` contém nomes lidos antes de uma definição no bloco e `DEF` contém nomes definidos:
+
+```text
+OUT[B] = união de IN[S], para cada sucessor S
+IN[B] = USE[B] ∪ (OUT[B] − DEF[B])
+```
+
+Começa com conjuntos vazios, exceto os valores observáveis na saída, e repete. Em `x = x + 1`, o `x` antigo pertence a `USE`: a leitura acontece antes da nova definição.
+
+As definições que alcançam propagam-se **para a frente**. Damos uma etiqueta a cada atribuição; `GEN` contém as definições que sobrevivem até à saída do bloco e `KILL` as outras definições dos mesmos nomes:
+
+```text
+IN[B] = união de OUT[P], para cada antecessor P
+OUT[B] = GEN[B] ∪ (IN[B] − KILL[B])
+```
+
+Numa junção, uma variável só é uma constante conhecida se todos os caminhos possíveis concordarem no valor. Se um ramo define `x = 2` e outro `x = 7`, não podemos substituir o `x` seguinte por nenhum deles. Estes conjuntos finitos crescem até estabilizar; os ciclos exigem voltar a visitar os blocos.
 
 ## Exemplo: propagar e eliminar
 
@@ -56,13 +76,15 @@ x = t2
 y = 10
 ```
 
-A análise de definições que alcançam diz que, no uso de `t1`, a única definição possível é `t1 = 5`. A **propagação de constantes** substitui: `t2 = 5 + 3`, que o **dobramento de constantes** avalia em `t2 = 8`. Propaga outra vez: `x = 8`. Agora `t1` e `t2` não têm nenhum uso restante, por isso a **eliminação de código morto** remove as duas primeiras instruções. E `y = 10`? Se `y` não está viva à saída do bloco (nenhum sucessor no grafo a lê), remove-se também. Resultado:
+A análise de definições que alcançam diz que, no uso de `t1`, a única definição possível é `t1 = 5`. A **propagação de constantes** substitui: `t2 = 5 + 3`, que o **dobramento de constantes** avalia em `t2 = 8`. Propaga outra vez: `x = 8`. Agora `t1` e `t2` não têm nenhum uso restante, por isso a **eliminação de código morto** remove as duas primeiras instruções. E `y = 10`? Se `y` não está viva à saída do bloco (nenhum sucessor no grafo a lê), remove-se também.
+
+Aqui assumimos variáveis locais, expressões sem efeitos nem exceções, e apenas `x` observável à saída. Uma atribuição a uma variável morta não pode desaparecer se a expressão fizer uma chamada observável ou lançar uma exceção. Resultado:
 
 ```
 x = 8
 ```
 
-Confirma com o grafo de fluxo: o bloco continua a definir exatamente as variáveis vivas à saída com os mesmos valores, por isso nenhum caminho do programa distingue o antes do depois. É este o teste de cada otimização: os valores observáveis nos pontos de saída mantêm-se.
+Neste modelo, a versão reduzida conserva o valor de `x` e não há outros efeitos observáveis. Num compilador real, também é preciso preservar chamadas, escrita em memória observável e exceções, segundo as regras da linguagem.
 
 <Typst
   source={otimizacao}

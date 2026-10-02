@@ -2,6 +2,8 @@
 title: Ambientes de execução
 description: Pilha, registos de ativação, organização de memória e passagem por valor contra passagem por referência.
 section: conteudo
+practices:
+  - c/praticar-ambientes-execucao
 order: 5
 ---
 
@@ -14,7 +16,7 @@ Quando o programa corre, cada chamada de função precisa de espaço próprio pa
 
 ## Organização de memória
 
-Um programa em execução divide a memória em zonas com tempos de vida diferentes:
+Este modelo separa zonas por função e tempo de vida. A disposição concreta depende da máquina e do runtime; o diagrama não representa endereços físicos:
 
 - **Código**: as instruções, só de leitura.
 - **Dados estáticos/globais**: variáveis globais, com endereço fixo durante toda a execução.
@@ -27,7 +29,9 @@ Um programa em execução divide a memória em zonas com tempos de vida diferent
   alt="As quatro zonas de memória em execução: código só de leitura, dados estáticos com endereço fixo, pilha de registos de ativação e monte de objetos dinâmicos."
 />
 
-Variáveis locais vivem no registo de ativação da chamada atual, por isso duas chamadas da mesma função têm cópias independentes. É isto que torna a recursão possível: cada chamada tem o seu espaço, mesmo sendo o mesmo código.
+Neste modelo, as variáveis locais vivem no registo de ativação da chamada atual, por isso duas chamadas da mesma função têm cópias independentes. É isto que torna a recursão possível: cada chamada tem o seu espaço, mesmo sendo o mesmo código.
+
+O registo pode incluir parâmetros, locais, temporários, endereço de retorno e registos preservados. A **ligação dinâmica** aponta para o registo do chamador; não é o endereço de retorno, que indica a instrução onde continuar. Em linguagens com funções aninhadas, uma **ligação estática** permite encontrar o âmbito lexical exterior, que pode ser diferente do chamador. Valores capturados por uma função que sobrevive à chamada podem precisar de espaço no monte.
 
 ## Exemplo: recursão com dois registos
 
@@ -50,7 +54,7 @@ Lê a pilha de baixo para cima: cada registo guarda o seu `n` e para onde voltar
 
 ## Passagem de parâmetros
 
-- **Por valor**: a função recebe uma cópia do argumento. Alterar o parâmetro dentro da função não afeta o chamador. É o comportamento dos tipos primitivos em Java e, com as regras próprias de cada linguagem, o caso comum que deves assumir por omissão. Em [Programação](/cadeiras/p/) viste os mesmos efeitos ao passar objetos contra primitivos.
+- **Por valor**: a função recebe uma cópia do argumento. Reatribuir o parâmetro dentro da função não muda a variável do chamador. Java passa todos os argumentos por valor. Para um objeto, esse valor é uma referência: a função pode alterar o objeto partilhado, mas atribuir outra referência ao parâmetro não muda a variável do chamador.
 - **Por referência**: a função recebe acesso direto à variável do chamador (na prática, o endereço). Alterar o parâmetro altera o original. Útil para devolver vários resultados ou evitar copiar estruturas grandes, perigoso porque cria efeitos à distância.
 
 A escolha aparece no código gerado: por valor copia o conteúdo para o registo do chamado; por referência copia só o endereço e cada acesso atravessa-o. Quando uma linguagem oferece os dois modos, a declaração do parâmetro decide qual o mecanismo, e a análise semântica já verificou a compatibilidade de tipos nessa altura.
@@ -71,15 +75,15 @@ A função recebe uma cópia: o `n` interior morre no retorno e o `v` do chamado
   </div>
   <div slot="panel-1">
 
-```java
-void inc(/* ref */ int n) {
+```text
+void inc(ref int n) {
   n = n + 1;
 }
 // chamador: int v = 5; inc(v);
 // depois da chamada, v passa a valer 6
 ```
 
-A função recebe acesso à variável do chamador (o endereço, na prática): escrever em `n` escreve em `v`. O comentário `ref` marca o modo, porque a chamada parece igual à anterior e o efeito é oposto.
+A função recebe acesso à variável do chamador (o endereço, na prática): escrever em `n` escreve em `v`. `ref` é pseudocódigo, não sintaxe Java. Deve fazer parte da especificação da linguagem e da convenção de chamada.
 
   </div>
 </Tabs>

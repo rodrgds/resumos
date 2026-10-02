@@ -2,6 +2,8 @@
 title: Análise sintática
 description: Gramáticas, árvores sintáticas, ambiguidade com precedência e construção de analisadores descendentes.
 section: conteudo
+practices:
+  - c/praticar-analise-sintatica
 order: 3
 ---
 
@@ -19,7 +21,7 @@ A gramática ingénua de expressões, $E \to E + E \mid E \times E \mid (E) \mid
 
 $$E \to E + T \mid T, \quad T \to T \times F \mid F, \quad F \to (E) \mid \text{id} \mid \text{num}.$$
 
-Agora deriva `a + a * a` e só há um caminho: o `+` fica no topo porque a soma vive no nível $E$, enquanto o produto fica preso dentro de $T$ no ramo direito. A árvore resultante calcula $(a + (a \times a))$, a leitura correta. A associatividade à esquerda vem da recursão à esquerda ($E \to E + T$): `a + a + a` agrupa como $((a+a)+a)$.
+A expressão `a + a * a` tem agora uma única árvore, embora possa ter diferentes ordens de derivação: o `+` fica no topo porque a soma vive no nível $E$, enquanto o produto fica preso dentro de $T$ no ramo direito. A árvore resultante calcula $(a + (a \times a))$, a leitura correta. A associatividade à esquerda vem da recursão à esquerda ($E \to E + T$): `a + a + a` agrupa como $((a+a)+a)$.
 
 <Typst
   source={arvores}
@@ -38,12 +40,16 @@ A mesma derivação vista como grafo, da raiz para as folhas. Segue cada ramo: $
 
 ## Construir o analisador
 
+A árvore de derivação guarda os não terminais e a pontuação da gramática. A **árvore sintática abstrata** (AST) guarda as operações e os seus operandos, sem nós auxiliares como `E`, `T` e `F`. Os parênteses influenciam a estrutura, mas já não precisam de ser nós.
+
 Duas famílias de analisadores dominam:
 
 - **Descendentes** (_top-down_, LL): constroem a árvore da raiz para as folhas, prevendo a regra a aplicar a partir do próximo símbolo. São os que escreves à mão com mais facilidade: uma função por não terminal. Exigem gramáticas sem recursão à esquerda e com decisão local, o que muitas vezes obriga a transformar a gramática primeiro.
-- **Ascendentes** (_bottom-up_, LR): leem os símbolos empilhando e reduzem para não terminais quando reconhecem o lado direito de uma regra. Aceitam uma classe maior de gramáticas e são os gerados por ferramentas clássicas. No projeto, o gerador usado (por exemplo o ANTLR) constrói o analisador a partir da gramática que escreves, e perceber o que ele espera evita metade dos conflitos.
+- **Ascendentes** (_bottom-up_, LR): leem os símbolos empilhando e reduzem para não terminais quando reconhecem o lado direito de uma regra. Aceitam uma classe maior de gramáticas e são os gerados por ferramentas clássicas. Ferramentas como Bison geram analisadores deste tipo.
 
-Um conflito típico é o `else` pendente: numa gramática com `if (E) S` e `if (E) S else S`, um `else` pode pertencer a dois `if`s abertos. A convenção resolve sempre para o `if` mais próximo, e a gramática do projeto deve refletir essa decisão em vez de a deixar ao acaso.
+O ANTLR 4 gera analisadores descendentes com previsão adaptativa. Aceita certas regras diretamente recursivas à esquerda e transforma-as internamente, com precedência definida pela ordem das alternativas. Não é um gerador LR nem um simples analisador LL(1).
+
+Um conflito típico é o `else` pendente: numa gramática com `if (E) S` e `if (E) S else S`, um `else` pode pertencer a dois `if`s abertos. A convenção habitual associa-o ao `if` mais próximo ainda sem `else`, e a gramática do projeto deve refletir essa decisão em vez de a deixar ao acaso.
 
 <Tabs id="else-pendente" labels={['Ambígua', 'Com associação fixa']}>
   <div slot="panel-0">
@@ -54,7 +60,7 @@ S -> if (E) S else S
 S -> instrucao
 ```
 
-Em `if (a) if (b) x(); else y();`, o `else` pode fechar o `if` interior ou o exterior. A gramática aceita as duas leituras e o analisador tem de adivinhar.
+Em `if (a) if (b) x(); else y();`, o `else` pode fechar o `if` interior ou o exterior. A gramática aceita as duas leituras; é preciso uma regra explícita para escolher uma delas.
 
   </div>
   <div slot="panel-1">
@@ -72,9 +78,31 @@ Separar instruções associadas das livres fixa a convenção na gramática: o `
   </div>
 </Tabs>
 
+## Seguir shifts e reduções
+
+Um analisador LR usa **shift** para consumir o próximo token e empilhá-lo; uma **redução** substitui no topo o lado direito de uma produção pelo seu não terminal. Reduzir não consome entrada. A pilha também guarda estados que, com o símbolo de avanço, escolhem a ação. LR constrói a derivação mais à direita pela ordem inversa.
+
+Com `E → E + num | num`, a sequência para `num + num` pode seguir estes passos, mostrando apenas os símbolos da pilha:
+
+| Pilha     | Entrada por consumir | Ação                  |
+| --------- | -------------------- | --------------------- |
+| vazia     | `num + num $`        | shift de `num`        |
+| `num`     | `+ num $`            | reduzir `E → num`     |
+| `E`       | `+ num $`            | shift de `+`          |
+| `E +`     | `num $`              | shift de `num`        |
+| `E + num` | `$`                  | reduzir `E → E + num` |
+| `E`       | `$`                  | aceitar               |
+
+Um **item** marca com um ponto quanto de uma produção já foi reconhecido: `E → E + · num` espera `num`; `E → E + num ·` permite uma redução, se a tabela a autorizar. Em SLR, as reduções de uma produção completa usam as colunas de `FOLLOW` do seu lado esquerdo. Um conflito shift/reduce oferece as duas ações na mesma célula; um conflito reduce/reduce oferece duas reduções. Reconhecer um lado direito no topo, por si só, não chega para escolher com segurança.
+
 ## Decidir com um símbolo de avanço
 
-Um analisador descendente escolhe a regra olhando só para o próximo símbolo. Com a gramática sem recursão à esquerda $E \to T R$, $R \to + T R \mid \epsilon$, $T \to \text{id}$, os conjuntos de previsão são $\text{FIRST}(E) = \text{FIRST}(T) = \{\text{id}\}$, $\text{FIRST}(R) = \{+, \epsilon\}$ e $\text{FOLLOW}(R) = \{\text{fim}\}$, onde `fim` representa o marcador `$`. A tabela de decisão fica assim: em $E$ com `id` aplica $E \to T R$; em $R$ com `+` aplica $R \to + T R$; em $R$ com `$` aplica $R \to \epsilon$.
+Num analisador **LL(1)**, o primeiro L indica leitura da esquerda para a direita, o segundo uma derivação mais à esquerda, e 1 indica um símbolo de avanço. A escolha usa dois conjuntos:
+
+- `FIRST(X)` contém os terminais que podem começar uma cadeia derivada de `X`; inclui `ε` se `X` puder desaparecer.
+- `FOLLOW(A)` contém os terminais que podem vir imediatamente depois de `A`; inclui `$` se `A` puder ficar no fim. Não contém `ε`.
+
+Para uma regra `A → α`, preenche-se a tabela nas colunas de `FIRST(α)` sem `ε`. Se `α` puder desaparecer, preenchem-se também as colunas de `FOLLOW(A)`. Com a gramática sem recursão à esquerda $E \to T R$, $R \to + T R \mid \epsilon$, $T \to \text{id}$, os conjuntos de previsão são $\text{FIRST}(E) = \text{FIRST}(T) = \{\text{id}\}$, $\text{FIRST}(R) = \{+, \epsilon\}$ e $\text{FOLLOW}(R) = \{\text{fim}\}$, onde `fim` representa o marcador `$`. A tabela de decisão fica assim: em $E$ com `id` aplica $E \to T R$; em $R$ com `+` aplica $R \to + T R$; em $R$ com `$` aplica $R \to \epsilon$.
 
 Análise de `id + id`, com a pilha à esquerda e a entrada à direita:
 
@@ -88,14 +116,14 @@ Análise de `id + id`, com a pilha à esquerda e a entrada à direita:
 | $R$ `$`         | `$`         | $R \to \epsilon$ (vê `$`)       |
 | `$`             | `$`         | aceite                          |
 
-Cada decisão usa um símbolo e nunca volta atrás: é por isso que este analisador corre em tempo linear. Se uma célula da tabela tivesse duas regras, a gramática não seria LL e terias de a transformar antes de escrever o analisador.
+Cada decisão usa um símbolo e nunca volta atrás: é por isso que este analisador corre em tempo linear. Se uma célula da tabela tivesse duas regras, a gramática não seria LL(1). Poderias transformá-la ou escolher um analisador com mais capacidade de previsão.
 
 ## Erros sintáticos úteis
 
-Quando o próximo símbolo não cabe em nenhuma continuação válida, o analisador para e deve dizer onde e o que esperava: "erro sintático na linha 7, coluna 12: esperava `;`". A recuperação simples é o modo de pânico: descartar símbolos até um ponto de sincronização (como `;` ou `}`) e continuar, para reportar vários erros numa passagem. No projeto, boas mensagens valem pontos e poupam horas de depuração, por isso trata o erro como parte da gramática, não como remendo final.
+Quando o próximo símbolo não cabe em nenhuma continuação válida, o analisador para e deve dizer onde e o que esperava: "erro sintático na linha 7, coluna 12: esperava `;`". A recuperação simples é o modo de pânico: descartar símbolos até um ponto de sincronização (como `;` ou `}`) e continuar, para reportar vários erros numa passagem. Uma mensagem útil inclui o símbolo recebido, o esperado e a posição. Depois de recuperar, evita repetir o mesmo erro em cada nó dependente.
 
 :::warning[O erro mais comum]
-Aceitar a gramática ambígua e "resolver depois". Não há depois: a árvore errada propaga-se à semântica e ao código gerado. Sempre que dois operadores partilham o nível, estratifica antes de gerar o analisador.
+Define precedência e associatividade antes de usar a árvore nas fases seguintes. Podes estratificar a gramática ou usar os mecanismos do gerador. Operadores no mesmo nível de precedência podem partilhar uma regra, desde que a associatividade fique definida.
 :::
 
 ## Para levar para a próxima página

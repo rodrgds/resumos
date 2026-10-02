@@ -2,6 +2,8 @@
 title: Análise lexical
 description: Expressões regulares e autómatos finitos para reconhecer símbolos, com o prefixo mais longo numa linha de código.
 section: conteudo
+practices:
+  - c/praticar-analise-lexica
 order: 2
 ---
 
@@ -9,7 +11,7 @@ import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import automatoLex from '../../c/automato-lex.typ?raw';
 
-A análise lexical é a porta de entrada do compilador: transforma o texto fonte, uma sequência de caracteres, numa sequência de **símbolos** (_tokens_) com categoria e posição. Cada símbolo junta um tipo (identificador, número, operador) ao texto reconhecido e à linha e coluna onde apareceu. Tudo o resto do compilador trabalha sobre símbolos, nunca mais sobre caracteres soltos.
+A análise lexical é a porta de entrada do compilador: transforma o texto fonte, uma sequência de caracteres, numa sequência de **símbolos** (_tokens_) com categoria e posição. Cada símbolo junta um tipo (identificador, número, operador) ao texto reconhecido e à linha e coluna onde apareceu. O analisador sintático trabalha com estas categorias. Guardamos também o lexema, ou seja, o texto reconhecido, para mensagens e valores literais.
 
 ## Especificar com expressões regulares
 
@@ -19,7 +21,7 @@ Cada categoria de símbolo descreve-se com uma [expressão regular](/cadeiras/tc
 - inteiro: `[0-9]+`
 - operadores e pontuação: literais como `=`, `+`, `*`, `(`, `)`, `;`
 
-Palavras reservadas como `if` ou `while` casam com o padrão de identificador, por isso tratam-se à parte: depois de reconhecer um identificador, consulta-se uma tabela de palavras reservadas e reclassifica-se o símbolo se for caso disso. Espaços, tabulações e comentários não produzem símbolos, mas contam linhas e colunas para os erros futuros.
+Palavras reservadas como `if` ou `while` casam com o padrão de identificador, por isso tratam-se à parte: depois de reconhecer um identificador, consulta-se uma tabela de palavras reservadas e reclassifica-se o símbolo se for caso disso. Nesta linguagem, espaços, tabulações e comentários não produzem símbolos, mas contam linhas e colunas para os erros futuros. Noutras linguagens, a indentação ou uma mudança de linha pode ser significativa.
 
 ## Reconhecer com autómatos
 
@@ -31,10 +33,18 @@ Uma expressão regular descreve, um [autómato finito](/cadeiras/tc/automatos-fi
 <Typst
   source={automatoLex}
   format="svg"
-  alt="Autómato com estado inicial q0, transição por letra para o estado final de identificador e por dígito para o estado final de inteiro, cada um com um ciclo sobre si próprio."
+  alt="Autómato com estado inicial q0, transição por letra ou sublinhado para o estado final de identificador e por dígito para o estado final de inteiro, cada um com um ciclo sobre si próprio."
 />
 
-Lê o diagrama como o reconhecedor corre: de `q0`, uma letra leva ao estado de identificador (moldura grossa significa estado final) e um dígito ao estado de inteiro. Os ciclos dizem para continuar a consumir enquanto o caráter for do mesmo tipo; quando chega um caráter que não casa, o símbolo fecha com tudo o que foi consumido. É o prefixo mais longo desenhado.
+O diagrama mostra apenas identificadores e inteiros ASCII. De `q0`, uma letra ou `_` leva ao estado de identificador (moldura grossa significa estado final) e um dígito ao estado de inteiro. Os ciclos dizem para continuar a consumir enquanto o caráter for do mesmo tipo; quando chega um caráter que não casa, o símbolo fecha com tudo o que foi consumido. Num autómato geral, guarda-se a última posição de aceitação e recua-se até ela quando não há transição. Assim, um caminho que ainda não chegou a um estado final não faz perder um prefixo válido já reconhecido.
+
+### Da expressão regular ao DFA
+
+Uma construção habitual transforma a expressão regular num autómato não determinístico (NFA), que pode ter várias transições para o mesmo caráter e transições `ε` sem consumir entrada. O **fecho-ε** de um conjunto inclui os próprios estados e todos os alcançáveis só por `ε`.
+
+A construção por subconjuntos dá um DFA: o estado inicial é o fecho-ε do inicial do NFA. Para cada caráter, seguimos todas as transições dos estados do conjunto e calculamos o fecho-ε dos destinos. Um conjunto é final se contiver algum estado final do NFA. Num léxico com várias categorias, guardamos também a prioridade dos estados finais.
+
+Por exemplo, com `q0 --ε--> q1`, `q1 --a--> q1` e `q1 --b--> q2`, sendo só `q2` final, o inicial do DFA é `{q0,q1}`. Ao ler `a`, chegamos a `{q1}`; ao ler `b`, a `{q2}`, final. Este autómato aceita `b`, `ab`, `aab`, e não aceita `a`. O conjunto vazio representa ausência de caminho. Só construímos os subconjuntos alcançáveis, embora possam existir até `2^n` com `n` estados no NFA.
 
 ## Exemplo: o prefixo mais longo em ação
 
@@ -46,22 +56,22 @@ Linha fonte: `soma12 = valor + 30;`. O reconhecedor avança caráter a caráter:
 - `+`, depois `30`: `NUM(30)`, porque `3` seguido de `0` estende o inteiro e o `;` não é dígito.
 - `;`: pontuação.
 
-Resultado: `ID(soma12) = ID(valor) + NUM(30) ;`, cada um com a sua posição. Um erro lexical típico seria um caráter sem padrão, como `~`: o analisador deve parar com "caráter inesperado na linha L, coluna C", e é esta mensagem que vais agradecer no projeto.
+Resultado: `ID(soma12) = ID(valor) + NUM(30) ;`, cada um com a sua posição. Um erro lexical típico seria um caráter sem padrão, como `~`: o analisador deve parar com "caráter inesperado na linha L, coluna C".
 
-Confirma o algoritmo a correr sobre a mesma linha. Muda a entrada e vê onde cada símbolo fecha.
+O programa abaixo reconhece identificadores e inteiros ASCII e a pontuação indicada. Não implementa comentários nem posições. Reclassifica `if` e `while` depois de reconhecer o identificador completo e rejeita caracteres sem padrão.
 
 <CodePlayground
   language="python"
   title="Prefixo mais longo"
   code={
-    'texto = "soma12 = valor + 30;"\ni, simbolos = 0, []\nwhile i < len(texto):\n    c = texto[i]\n    if c.isspace():\n        i += 1\n    elif c.isalpha() or c == "_":\n        j = i\n        while j < len(texto) and (texto[j].isalnum() or texto[j] == "_"):\n            j += 1\n        simbolos.append(("ID", texto[i:j]))\n        i = j\n    elif c.isdigit():\n        j = i\n        while j < len(texto) and texto[j].isdigit():\n            j += 1\n        simbolos.append(("NUM", texto[i:j]))\n        i = j\n    else:\n        simbolos.append((c, c))\n        i += 1\nprint(simbolos)'
+    'import string\n\ntexto = "soma12 = valor + 30;"\nletras = string.ascii_letters + "_"\ndigitos = string.digits\nreservadas = {"if": "IF", "while": "WHILE"}\ni, simbolos = 0, []\nwhile i < len(texto):\n    c = texto[i]\n    if c in " \\t\\r\\n":\n        i += 1\n    elif c in letras:\n        j = i + 1\n        while j < len(texto) and texto[j] in letras + digitos:\n            j += 1\n        lexema = texto[i:j]\n        simbolos.append((reservadas.get(lexema, "ID"), lexema))\n        i = j\n    elif c in digitos:\n        j = i + 1\n        while j < len(texto) and texto[j] in digitos:\n            j += 1\n        simbolos.append(("NUM", texto[i:j]))\n        i = j\n    elif c in "=+*();":\n        simbolos.append((c, c))\n        i += 1\n    else:\n        raise ValueError(f"Caráter inesperado na posição {i + 1}: {c!r}")\nprint(simbolos)'
   }
 />
 
 Repara no ciclo interior de cada ramo: é ele que implementa o prefixo mais longo, estendendo o casamento enquanto o próximo caráter for do tipo certo. As palavras reservadas tratam-se depois, reclassificando o identificador reconhecido.
 
-:::tip[Como cai isto em teste]
-O enunciado típico dá-te os padrões e uma linha de código e pede a sequência de símbolos. Simula o autómato à mão, consumindo sempre o prefixo mais longo, e justifica cada fronteira: "para aqui porque o próximo caráter já não casa com nenhum padrão ativo".
+:::tip[Como resolver a tokenização]
+Dado um conjunto de padrões e uma linha de código, constrói a sequência de símbolos. Simula o autómato à mão, consumindo sempre o prefixo mais longo, e justifica cada fronteira: "para aqui porque o próximo caráter já não casa com nenhum padrão ativo".
 :::
 
 ## Para levar para a próxima página

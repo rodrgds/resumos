@@ -1,0 +1,128 @@
+---
+title: Praticar a análise lexical
+description: Exercícios próprios com pistas e resolução explicada.
+section: exercicios
+order: 21
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise id="c-tokens-reservadas" title="Desempatar palavras reservadas" explanation="/cadeiras/c/analise-lexica/#reconhecer-com-autómatos" answer={{"kind": "self", "checklist": ["Obtive IF, ID(if2), EQ, NUM(007), SEMI, ID(_n), ASSIGN, NUM(3).", "Usei o comprimento para if2 e == e a ordem das regras para if.", "Conservei o lexema 007 sem confundir tokenização com conversão numérica."]}}>
+
+As regras, por ordem, são IF: if; ID: [a-zA-Z\_][a-zA-Z0-9_]\*; NUM: [0-9]+; EQ: ==; ASSIGN: =; SEMI: ;. Ignora espaços. Tokeniza if if2==007; \_n=3 e justifica os desempates.
+
+<div slot="hint">
+
+Compara o comprimento consumido por cada regra na posição atual.
+
+</div>
+<div slot="hint-more">
+
+Em if2, ID consome três caracteres; IF só consome dois.
+
+</div>
+<div slot="solution">
+
+if empata em comprimento entre IF e ID e ganha IF por vir primeiro. if2 é um
+ID inteiro pelo prefixo mais longo. == forma EQ e não dois ASSIGN. 007 é um
+único NUM porque o padrão permite zeros iniciais. A sequência é IF(if),
+ID(if2), EQ(==), NUM(007), SEMI(;), ID(\_n), ASSIGN(=), NUM(3). Converter 007
+para o valor 7 é um passo separado.
+
+</div>
+<div slot="mistakes">
+
+Não apliques prioridade de regras antes do comprimento. Não imponhas uma regra
+de zeros iniciais que o padrão não tem.
+
+</div>
+</Exercise>
+
+<Exercise id="c-dfa-simulacao" title="Seguir um autómato" explanation="/cadeiras/c/analise-lexica/#reconhecer-com-autómatos" answer={{"kind": "self", "checklist": ["Segui _p4 de q0 para q_id e mantive q_id nos restantes caracteres.", "Separei 42q em NUM(42) e ID(q).", "Reiniciei o autómato em q0 ao começar o segundo token."]}}>
+
+No autómato da lição, segue \_p4 e 42q desde q0. Dá os estados percorridos e os tokens. Não há regra que proíba um identificador imediatamente depois de um número.
+
+<div slot="hint">
+
+Um caráter que não prolonga o token pode começar o próximo.
+
+</div>
+<div slot="hint-more">
+
+q não prolonga NUM, mas pode começar ID.
+
+</div>
+<div slot="solution">
+
+\_p4 percorre q0, q_id, q_id, q_id e fecha como ID(\_p4). 42q percorre q0,
+q_num, q_num; q não tem transição a partir de q_num, por isso fecha NUM(42).
+Recomeça em q0 com q e obtém ID(q). A sintaxe poderá rejeitar esta sequência,
+mas os padrões lexicais dados aceitam-na.
+
+</div>
+<div slot="mistakes">
+
+Não confundas uma fronteira de token com um erro nem aceites q como dígito.
+
+</div>
+</Exercise>
+
+<Exercise id="c-lexico-carater-invalido" title="Distinguir os padrões ASCII" explanation="/cadeiras/c/analise-lexica/#especificar-com-expressões-regulares" answer={{"kind": "choice", "options": [{"text": "Produzir ID(caf) e depois reportar é como caráter sem padrão.", "correct": true, "explanation": "c, a e f pertencem ao intervalo ASCII; é não pertence a [a-zA-Z_]."}, {"text": "Produzir ID(café) porque isalpha aceita é.", "correct": false, "explanation": "isalpha de Python reconhece letras Unicode e não implementa o padrão ASCII anunciado."}, {"text": "Produzir NUM(café) por ser um literal.", "correct": false, "explanation": "O padrão NUM admite apenas dígitos ASCII, não palavras."}]}}>
+
+Com os padrões ASCII da lição e sem outra regra, que tratamento é correto para café = 8?
+
+<div slot="hint">
+
+A implementação tem de seguir o conjunto de caracteres declarado.
+
+</div>
+<div slot="hint-more">
+
+[a-zA-Z] não inclui letras acentuadas.
+
+</div>
+<div slot="solution">
+
+O prefixo válido é caf. Ao chegar a é, nenhum padrão o reconhece, por isso o
+léxico reporta a posição desse caráter. Para permitir café, teríamos de mudar
+a especificação de identificadores e a implementação.
+
+</div>
+<div slot="mistakes">
+
+Uma função Unicode de uma biblioteca não alarga automaticamente a linguagem
+especificada.
+
+</div>
+</Exercise>
+
+<Exercise id="c-subconjuntos-dfa" title="Construir estados do DFA" explanation="/cadeiras/c/analise-lexica/#da-expressão-regular-ao-dfa" answer={{"kind": "self", "checklist": ["O inicial é {0,1,2} e os restantes estados alcançáveis são {1}, {3} e {}.", "De {0,1,2} e {1}, a leva a {1} e b a {3}.", "De {3}, qualquer caráter leva ao vazio; só {3} é final."]}}>
+
+Um NFA tem inicial 0, final 3 e só estas transições: 0 --ε--&gt; 1, 0 --ε--&gt; 2, 1 --a--&gt; 1, 1 --b--&gt; 3, 2 --b--&gt; 3. Constrói os subconjuntos alcançáveis do DFA para o alfabeto &#123;a,b&#125;, incluindo o estado vazio. Indica quais são finais.
+
+<div slot="hint">
+
+Começa pelo fecho-ε do estado 0.
+
+</div>
+<div slot="hint-more">
+
+Depois de consumir um caráter, não voltes automaticamente ao fecho do estado
+inicial.
+
+</div>
+<div slot="solution">
+
+O inicial A=&#123;0,1,2&#125;. A --a--&gt; B=&#123;1&#125; e A --b--&gt;
+C=&#123;3&#125;. B --a--&gt; B e B --b--&gt; C. C --a--&gt; D=&#123;&#125; e C
+--b--&gt; D; D tem ciclos por a e b. Só C é final, porque contém 3. O DFA
+aceita a\*b: zero ou mais a seguidos de um b e fim.
+
+</div>
+<div slot="mistakes">
+
+Não mantenhas 0 e 2 depois de consumir a nem marques o estado inicial como
+final só por ter transições ε.
+
+</div>
+</Exercise>

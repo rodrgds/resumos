@@ -2,6 +2,8 @@
 title: Código intermédio e blocos básicos
 description: Código de três endereços, tradução de um while com condição composta e partição em blocos com o grafo de fluxo.
 section: conteudo
+practices:
+  - c/praticar-codigo-intermedio
 order: 6
 ---
 
@@ -10,7 +12,11 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Tabs from '../../../components/Tabs.astro';
 import fluxo from '../../c/fluxo.dot?raw';
 
-Entre a árvore sintática e as instruções da máquina há um nível intermédio: uma representação simples, explícita e independente da máquina alvo, onde as otimizações e a geração de código trabalham com conforto. A forma clássica é o **código de três endereços**: cada instrução tem no máximo um operador e dois operandos de leitura, com o resultado num temporário.
+Entre a árvore sintática e as instruções da máquina há um nível intermédio: uma representação que explicita operações e controlo, para as otimizações e a geração de código. A forma clássica é o **código de três endereços**: uma atribuição típica tem a forma `destino = operando1 op operando2`. Os três endereços são o destino e os dois operandos; podem ser nomes ou constantes. Cópias, saltos, chamadas e retornos usam outras formas e nem sempre definem um temporário.
+
+## Níveis de representação
+
+Uma representação de alto nível pode conservar operações como acesso a vetor ou chamada de método. Ao baixar o nível, explicitamos endereços, deslocamentos e operações simples. Por exemplo, num vetor de inteiros de 4 bytes sem cabeçalho, o endereço de `v[i]` é `base + 4 * i`. O tamanho do elemento e a disposição do vetor são hipóteses do alvo, não constantes universais.
 
 ## Traduzir expressões e controlo
 
@@ -60,7 +66,7 @@ t3 = t1 && t2
 if_false t3 goto L_fora
 ```
 
-Os dois lados avaliam-se sempre e o `&&` vira uma operação sobre booleanos. Mais simples de gerar, mas avalia `c != 0` mesmo quando `a < b` já falhou, o que muda o significado se o segundo teste tiver efeitos.
+Os dois lados avaliam-se sempre e o `&&` vira uma operação sobre booleanos. Mais simples de gerar, mas avalia `c != 0` mesmo quando `a < b` já falhou, o que muda o significado se o segundo teste tiver efeitos ou puder falhar, como `d != 0 && n / d > 2` quando `d` vale zero.
 
   </div>
 </Tabs>
@@ -71,14 +77,14 @@ Lê o fluxo: testa a primeira condição e sai se falhar; testa a segunda e sai 
 
 Um **bloco básico** é uma sequência de instruções que se executa sempre do início ao fim: entra-se só pela primeira instrução e sai-se só pela última. Para partir o código em blocos, marcam-se os **líderes**: a primeira instrução, cada destino de salto e cada instrução logo a seguir a um salto. Cada bloco vai de um líder até antes do líder seguinte.
 
-No exemplo, os líderes são `L_topo` (primeira e destino do `goto`), as duas instruções `if_false` seguintes? Não: aplica a regra com rigor. Instruções numeradas: 1 `t1 = a < b`, 2 `if_false t1 goto L_fora`, 3 `t2 = c != 0`, 4 `if_false t2 goto L_fora`, 5 `t3 = a + 1`, 6 `a = t3`, 7 `goto L_topo`, 8 `L_fora:`. Líderes: 1 (primeira), 3 (segue-se a um salto condicional), 5 (segue-se a um salto condicional), 8 (destino de salto). Blocos: B1 = {1, 2}, B2 = {3, 4}, B3 = {5, 6, 7}, B4 = {8}. O **grafo de fluxo** liga-os pelas arestas possíveis: B1 para B2 (condição verdadeira) e para B4 (saída), B2 para B3 e para B4, B3 de volta para B1.
+Numeramos os rótulos juntamente com as operações para este exemplo. Um rótulo final representa a saída, sem instrução executável. Instruções numeradas: 1 `t1 = a < b`, 2 `if_false t1 goto L_fora`, 3 `t2 = c != 0`, 4 `if_false t2 goto L_fora`, 5 `t3 = a + 1`, 6 `a = t3`, 7 `goto L_topo`, 8 `L_fora:`. Líderes: 1 (primeira), 3 (segue-se a um salto condicional), 5 (segue-se a um salto condicional), 8 (destino de salto). Blocos: B1 = {1, 2}, B2 = {3, 4}, B3 = {5, 6, 7}, B4 = {8}. O **grafo de fluxo** liga-os pelas arestas possíveis: B1 para B2 (condição verdadeira) e para B4 (saída), B2 para B3 e para B4, B3 de volta para B1.
 
 <Dot
   source={fluxo}
   alt="Grafo de fluxo do exemplo: B1 liga a B2 e B4, B2 liga a B3 e B4, B3 volta a B1."
 />
 
-Segue as arestas com o dedo: cada caminho do grafo é uma execução possível do `while` (zero voltas, uma volta, várias). Se uma aresta do teu desenho não corresponde a nenhum caminho real, o bloco está mal partido.
+Cada caminho do grafo descreve uma execução possível do `while`, com zero, uma ou várias iterações. Se uma aresta do teu desenho não corresponde a nenhum caminho real, o bloco está mal partido.
 
 A partição feita por um programa, sobre as mesmas oito instruções. Muda a lista e vê os líderes mexerem-se.
 
@@ -86,7 +92,7 @@ A partição feita por um programa, sobre as mesmas oito instruções. Muda a li
   language="python"
   title="Líderes e blocos"
   code={
-    'instrucoes = [\n    "t1 = a < b",\n    "if_false t1 goto L_fora",\n    "t2 = c != 0",\n    "if_false t2 goto L_fora",\n    "t3 = a + 1",\n    "a = t3",\n    "goto L_topo",\n    "L_fora:",\n]\nsaltos = {"if_false", "goto"}\nlideres = {0}\nfor n, inst in enumerate(instrucoes):\n    partes = inst.split()\n    if partes[0] in saltos or partes[0].endswith(":"):\n        alvo = partes[-1].rstrip(":")\n        for m, outra in enumerate(instrucoes):\n            if outra.split()[0].rstrip(":") == alvo:\n                lideres.add(m)\n        if n + 1 < len(instrucoes):\n            lideres.add(n + 1)\nbloco, atual = [], 0\nfor n, inst in enumerate(instrucoes):\n    if n in lideres and bloco:\n        print(f"B{atual} = {bloco}")\n        atual += 1\n        bloco = []\n    bloco.append(inst)\nprint(f"B{atual} = {bloco}")'
+    'instrucoes = [\n    "L_topo: t1 = a < b",\n    "if_false t1 goto L_fora",\n    "t2 = c != 0",\n    "if_false t2 goto L_fora",\n    "t3 = a + 1",\n    "a = t3",\n    "goto L_topo",\n    "L_fora:",\n]\nrotulos = {}\nfor n, inst in enumerate(instrucoes):\n    if ":" in inst:\n        rotulo, _ = inst.split(":", 1)\n        rotulos[rotulo] = n\nlideres = {0}\nfor n, inst in enumerate(instrucoes):\n    operacao = inst.split(":", 1)[-1].strip().split()\n    if operacao and operacao[0] in {"if_false", "goto"}:\n        lideres.add(rotulos[operacao[-1]])\n        if n + 1 < len(instrucoes):\n            lideres.add(n + 1)\ninicio = sorted(lideres)\nfor b, a in enumerate(inicio):\n    fim = inicio[b + 1] if b + 1 < len(inicio) else len(instrucoes)\n    print(f"B{b + 1} = {list(range(a + 1, fim + 1))}")'
   }
 />
 

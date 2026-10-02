@@ -1,0 +1,167 @@
+---
+title: Praticar a análise semântica
+description: Exercícios próprios com pistas e resolução explicada.
+section: exercicios
+order: 23
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="c-ambitos-inicializador"
+  title="Resolver nomes com uma regra explícita"
+  explanation="/cadeiras/c/analise-semantica/#exemplo-bloco-com-shadowing-e-erro-de-tipo"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'O inicializador de n interior usa n exterior, com valor 6.',
+      'Associei o primeiro print ao n interior e o segundo ao exterior.',
+      'Obtive a sequência 12, 6 e mantive as duas declarações distintas.',
+    ],
+  }}
+>
+
+    No pseudocódigo abaixo, uma declaração só fica visível depois do
+    inicializador e o bloco permite shadowing. Dá a declaração usada em cada
+    print e os valores impressos.
+
+```text
+int n = 6;
+{
+  int n = n * 2;
+  print(n);
+}
+print(n);
+```
+
+  <div slot="hint">
+
+Abre um mapa vazio ao entrar no bloco.
+
+</div>
+  <div slot="hint-more">
+
+A nova entrada n ainda não existe quando calculas n \* 2.
+
+</div>
+  <div slot="solution">
+
+A tabela exterior contém n: int. Ao entrar no bloco, o mapa interior está
+vazio; n \* 2 resolve n no exterior e calcula 12. Depois inserimos n: int no
+mapa interior. O primeiro print encontra esta declaração e escreve 12. Ao
+fechar o bloco, retiramos o mapa; o segundo print encontra a declaração
+exterior e escreve 6. A tabela não precisa de guardar estes valores para
+resolver os nomes.
+
+</div>
+  <div slot="mistakes">
+
+Não generalizes a regra do inicializador a Java nem alteres o valor exterior
+por redeclaração.
+
+</div>
+</Exercise>
+
+<Exercise id="c-tipos-chamada" title="Verificar chamada e retorno" explanation="/cadeiras/c/analise-semantica/#verificação-de-tipos" answer={{"kind": "self", "checklist": ["Detetei que o segundo argumento 1 é int e o parâmetro exige boolean.", "Detetei que o retorno boolean não pode inicializar r de tipo int.", "Propus testa(4, true) e boolean r = testa(4, true), respetivamente."]}}>
+
+A linguagem não tem conversões implícitas. Com boolean testa(int n, boolean ativo), verifica testa(4, 1) e int r = testa(4, true). Identifica o erro em cada caso e propõe uma correção.
+
+<div slot="hint">
+
+Verifica argumentos antes de comparar o retorno com o destino.
+
+</div>
+<div slot="hint-more">
+
+O tipo da chamada vem da assinatura, mesmo que a função receba um inteiro.
+
+</div>
+<div slot="solution">
+
+testa(4, 1) tem dois argumentos, mas o segundo não tem o tipo boolean exigido.
+Substituí-lo por true corrige esse erro. Em int r = testa(4, true), os
+argumentos estão corretos; a chamada devolve boolean e o destino é int.
+Declarar boolean r corrige esta atribuição. São dois pontos de verificação
+independentes.
+
+</div>
+<div slot="mistakes">
+
+Não confundas número de argumentos correto com tipos corretos nem assumes 1
+como true nesta linguagem.
+
+</div>
+</Exercise>
+
+<Exercise id="c-java-referencia-programa" title="Programar o âmbito de um campo" explanation="/cadeiras/c/analise-semantica/#tabela-de-símbolos-e-âmbitos" answer={{"kind": "self", "checklist": ["Escrevi um programa Java completo com public static void main(String[] args).", "Acedi ao campo por uma referência ao objeto, sem redeclarar a mesma variável local num bloco interior.", "O programa imprime 2 e 9 e expliquei o acesso caixa.valor."]}}>
+
+Escreve uma classe Java Caixa com campo int valor = 9 e método main. Em main, cria uma Caixa, declara int valor = 2 e escreve primeiro a variável local e depois o campo do objeto. Explica como distingues os nomes.
+
+<div slot="hint">
+
+Um campo e uma variável local podem ter o mesmo nome.
+
+</div>
+<div slot="hint-more">
+
+Cria Caixa caixa = new Caixa(); e usa caixa.valor para tornar o acesso ao
+campo explícito.
+
+</div>
+<div slot="solution">
+
+Uma solução completa: valor sem qualificação resolve a variável local.
+caixa.valor acede ao campo do objeto criado. Esta prática tem autoavaliação;
+corre o programa Java e compara as duas linhas.
+
+```java
+public class Caixa {
+    int valor = 9;
+
+    public static void main(String[] args) {
+        Caixa caixa = new Caixa();
+        int valor = 2;
+        System.out.println(valor);
+        System.out.println(caixa.valor);
+    }
+}
+```
+
+</div>
+<div slot="mistakes">
+
+main é estático, por isso não podes usar this nele. Não troques o acesso ao
+campo por outra variável local.
+
+</div>
+</Exercise>
+
+<Exercise id="c-atributos-tipos" title="Planear a ordem dos atributos" explanation="/cadeiras/c/analise-semantica/#atributos-e-ordem-de-cálculo" answer={{"kind": "self", "checklist": ["Passei Γ aos nós que resolvem identificadores.", "Resolvi x como int e sintetizei int para o literal 5.", "Calculei o tipo de + só depois dos tipos dos dois operandos."]}}>
+
+Para E → E1 + T, um nó recebe o âmbito Γ e deve calcular o tipo de x + 5. Γ contém x:int. Indica a informação herdada e sintetizada e uma ordem válida de cálculo. O + só admite inteiros.
+
+<div slot="hint">
+
+A procura de x precisa de contexto; a soma precisa dos resultados dos filhos.
+
+</div>
+<div slot="hint-more">
+
+Não podes verificar a soma antes de saber os dois tipos.
+
+</div>
+<div slot="solution">
+
+Primeiro entregamos Γ aos filhos. O identificador x consulta Γ e obtém int; o
+literal 5 tem tipo int. Estes tipos sobem como atributos sintetizados. Por
+fim, verificarSoma(int,int) devolve int para E. Γ é herdado, porque transporta
+contexto para baixo; o tipo de E é sintetizado, porque depende dos filhos.
+
+</div>
+<div slot="mistakes">
+
+Não uses o valor 5 como se fosse um tipo nem confundas a direção dos atributos
+com a ordem física dos tokens.
+
+</div>
+</Exercise>
