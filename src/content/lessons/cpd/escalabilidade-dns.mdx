@@ -1,6 +1,6 @@
 ---
 title: Escalabilidade e o caso DNS
-description: Replicação, partição e cache, com a resolução de um nome passo a passo.
+description: Replicação, partição, cache e TTL, com uma resolução DNS simplificada e as suas limitações.
 section: conteudo
 order: 8
 ---
@@ -10,36 +10,50 @@ import Dot from '../../../components/Dot.astro';
 import arvore from '../../cpd/arvore-dns.typ?raw';
 import passos from '../../cpd/passos-dns.dot?raw';
 
-Escalabilidade é a capacidade de servir mais carga acrescentando recursos, sem redesenhar o sistema. Depois de distribuir o trabalho e tolerar falhas, esta página fecha a cadeira com as técnicas que fazem sistemas crescerem e com o exemplo maior de todos, o DNS.
+Um único servidor pode tornar-se o limite do sistema. Escalar é conseguir suportar mais carga ou mais dados, com custos aceitáveis. Acrescentar máquinas só ajuda se o trabalho puder ser distribuído.
 
-## As três técnicas básicas
+## Replicar, partir e guardar em cache
 
-A **replicação** põe cópias dos mesmos dados ou serviços em várias máquinas. Ganha-se disponibilidade e capacidade de leitura, paga-se com a necessidade de manter as cópias coerentes. A **partição** (_sharding_) divide os dados em fatias, cada uma entregue a um grupo de máquinas. Ganha-se capacidade de escrita e de armazenamento, paga-se com operações que atravessam fatias. A **cache** guarda respostas recentes perto de quem pergunta, com um prazo de validade (TTL). Ganha-se velocidade e alívio nos servidores, paga-se com dados potencialmente desatualizados dentro do TTL.
+A **replicação** mantém cópias dos mesmos dados ou serviço. Pode aumentar a capacidade de leitura e a disponibilidade. A escrita precisa de uma regra para atualizar as cópias; leituras em réplicas atrasadas podem devolver dados antigos.
 
-Quase todos os sistemas grandes combinam as três, e o DNS mostra como.
+A **partição**, ou sharding, divide os dados entre grupos de máquinas. Pode distribuir armazenamento e escritas, mas uma consulta ou transação entre partições precisa de coordenação. Uma chave muito procurada continua a poder sobrecarregar a sua partição.
+
+A **cache** reutiliza respostas perto de quem pergunta. Um TTL, _time to live_, limita o tempo durante o qual uma resposta pode ser reutilizada. A cache reduz consultas repetidas, mas pode manter dados antigos até expirar. Estas técnicas podem combinar-se.
+
+Se 900 de 1000 pedidos encontrarem uma resposta válida em cache, só 100 precisam do serviço de origem, neste modelo. A taxa de acerto é 90%. Isso não implica uma redução de 90% no tempo médio: precisamos também dos tempos de acerto e de falta.
+
+## Nomes, zonas e delegação
+
+O DNS organiza nomes numa árvore. Em `www.exemplo.pt`, `.pt` é o domínio de topo, `exemplo.pt` é um domínio e `www` é um nome abaixo dele. Uma **zona** é a parte da árvore administrada por um conjunto de servidores autoritativos, excluindo subárvores delegadas noutras zonas.
+
+O servidor **autoritativo** responde pelos dados da sua zona. O **resolvedor recursivo** procura a resposta para o cliente e guarda dados em cache. As zonas repartem a responsabilidade; vários servidores autoritativos por zona oferecem redundância. Anycast permite que o mesmo endereço de serviço seja anunciado em vários locais, com o encaminhamento a escolher um percurso.
 
 <Typst
   source={arvore}
   format="svg"
-  alt="Árvore do DNS. A raiz aponta para ponto pt e ponto com, ponto pt aponta para exemplo ponto pt. Ao lado, o resolvedor com cache e TTL consulta cada nível por ordem."
+  alt="A árvore de nomes liga raiz, ponto pt e exemplo ponto pt. O resolvedor consulta os servidores desses níveis e guarda respostas na sua cache, respeitando o TTL de cada registo."
 />
 
-## Exemplo completo
+## Uma resolução passo a passo
 
-Resolução de `www.exemplo.pt` por um resolvedor que parte de cache vazia:
+O cliente pede ao seu resolvedor o endereço IPv4 de `www.exemplo.pt`, um registo A. Suponhamos que a cache não contém respostas úteis, o resolvedor conhece os endereços iniciais da raiz e não há aliases CNAME. O exemplo omite consultas adicionais para descobrir endereços de servidores.
 
-1. O resolvedor pergunta a um servidor **raiz** quem serve `.pt`. Os raiz são poucos, replicados por anycast em centenas de locais, e respondem só com a referência para os servidores de `.pt`.
-2. Pergunta a um servidor de `.pt` quem serve `exemplo.pt`. A zona `.pt` está particionada por sufixo, por isso estes servidores só sabem dos domínios `.pt`, uma fatia do espaço total.
-3. Pergunta ao servidor **autoritativo** de `exemplo.pt` qual o endereço de `www.exemplo.pt` e recebe a resposta final.
-4. Guarda cada resposta em cache pelo seu TTL. O próximo pedido igual resolve-se localmente, sem nenhum pacote na rede.
+1. O resolvedor consulta a raiz. Recebe uma **referência**, ou referral, para servidores de `.pt`, não o endereço final de `www`.
+2. Consulta um servidor de `.pt`. Recebe a delegação para os servidores autoritativos de `exemplo.pt`.
+3. Consulta um desses servidores. Recebe o registo A de `www.exemplo.pt` com o seu TTL.
+4. Responde ao cliente e guarda os registos relevantes em cache, cada um pelo prazo respetivo.
 
-A hierarquia distribui o trabalho: os servidores raiz apontam para os domínios de topo e cada zona delega responsabilidade por parte do espaço de nomes. A cache evita repetir consultas enquanto as respostas continuam válidas. Nenhum servidor precisa de guardar todos os nomes do sistema.
+O cliente fez um pedido recursivo ao resolvedor. O resolvedor fez consultas iterativas, seguindo referências. Os servidores raiz e de `.pt` não pesquisaram todos os níveis em nome dele.
 
 <Dot
   source={passos}
-  alt="Os 4 passos da resolução. O resolvedor pergunta à raiz, depois ao servidor ponto pt, depois ao autoritativo, e guarda tudo em cache com TTL."
+  alt="O resolvedor consulta raiz, ponto pt e autoritativo de exemplo ponto pt, por esta ordem no exemplo sem cache útil. Depois guarda os registos recebidos em cache com os seus TTLs."
 />
 
-:::tip[Como pensar em teste]
-Perante "como escala este sistema", procura as três técnicas pelo nome. Réplicas para ler mais e sobreviver a falhas, partição para guardar mais e escrever mais, cache com TTL para repetir barato. Depois identifica o preço de cada uma, coerência, operações entre fatias e dados temporariamente velhos.
-:::
+Se outro cliente pedir o mesmo registo enquanto ele for válido, o resolvedor pode responder sem novas consultas aos servidores DNS. Ainda há mensagens entre esse cliente e o resolvedor. Só uma cache no próprio cliente pode evitar também esse percurso.
+
+## TTL e dados antigos
+
+Um registo chega com TTL de 300 s no instante zero. Ao fim de 120 s, restam 180 s de validade; um acerto em cache não reinicia o prazo original. Se o autoritativo mudar o endereço ao fim de 60 s, a cache pode continuar a devolver o antigo até ao limite previsto, salvo mecanismos de atualização ou invalidação.
+
+TTL menor permite receber alterações mais cedo, mas aumenta consultas. TTL maior reduz consultas, mas prolonga a possibilidade de respostas antigas. Delegações e endereços podem expirar em instantes diferentes. A hierarquia e a cache aliviam carga, mas não garantem consistência instantânea nem ausência de pontos sobrecarregados.

@@ -1,65 +1,75 @@
 ---
 title: Tolerância a falhas
-description: Eleição de líder, two-phase commit e primary-backup, com uma eleição em anel resolvida passo a passo.
+description: Modelos de falha, eleição, two-phase commit e primário-apoio, com as condições das suas garantias.
 section: conteudo
 order: 7
 ---
 
 import Dot from '../../../components/Dot.astro';
 import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
 import anel from '../../cpd/anel-eleicao.dot?raw';
 import sequencia from '../../cpd/sequencia-2pc.typ?raw';
 
-Num sistema distribuído, máquinas falham enquanto as outras continuam. A tolerância a falhas é o conjunto de protocolos que mantém o serviço correto apesar disso. Esta página cobre os três que a ficha exige, com garantias de cada um.
+Um protocolo precisa de dizer que falhas admite e o que ainda garante quando elas ocorrem. Eleger um líder, confirmar uma transação e replicar um serviço resolvem problemas diferentes.
 
-## Eleição de líder
+## Modelos e garantias
 
-Muitos sistemas precisam de exatamente um coordenador. Quando o líder falha, os sobreviventes elegem outro. No algoritmo de **anel** (Chang-Roberts), os processos formam um anel lógico e cada um conhece só o seu sucessor. Quem deteta a falha envia uma mensagem de eleição com o seu identificador. Cada processo reencaminha o maior identificador que já viu e descarta os menores. Quando um processo recebe o seu próprio identificador de volta, sabe que é o maior do anel e anuncia-se coordenador.
+Uma falha **crash-stop** faz o processo parar definitivamente. Em **crash-recovery**, pode reiniciar, conservando apenas o que ficou em armazenamento durável. Uma falha **bizantina** permite comportamento arbitrário, como enviar informações contraditórias. Os protocolos simples desta página admitem falhas por paragem, não processos maliciosos.
 
-## Exemplo completo
+A **segurança** exige que não aconteça algo inválido, como dois participantes decidirem resultados opostos para a mesma transação. O **progresso** exige que algo termine, como os participantes acabarem por decidir. Um protocolo pode preservar a segurança ficando bloqueado.
 
-Quatro processos com identificadores 2, 5, 7 e 9 em anel, pela ordem 2, 5, 7, 9. O líder 9 falha e o processo 5 deteta primeiro.
+## Eleição num anel
 
-1. O 5 envia `eleição(5)` ao seu sucessor, o 7.
-2. O 7 compara, 5 é menor que 7, por isso substitui e envia `eleição(7)` ao 2.
-3. O 2 compara, 7 é maior que 2, reencaminha `eleição(7)` ao 5.
-4. O 5 compara, 7 é maior que 5, reencaminha `eleição(7)` ao 7.
-5. O 7 recebe o seu próprio identificador. É o maior, declara-se líder e envia `coordenador(7)` a dar a volta ao anel.
+Suponhamos um anel lógico com identificadores únicos, ligações fiáveis e nenhuma nova falha durante a eleição. Cada processo conhece o sucessor. Numa variante simples com um único iniciador, a mensagem transporta o maior identificador encontrado: ao receber um menor que o seu, o processo substitui-o; ao receber um maior, reencaminha-o. Quando recebe o próprio identificador, esse processo venceu. Eleições simultâneas exigem regras adicionais para não multiplicar indefinidamente as mensagens.
 
-Total de mensagens de eleição: 4, uma por processo, mais 3 de anúncio. Se o 2 tivesse detetado a falha primeiro, teria enviado `eleição(2)`, que o 5 substituiria por 5 e o 7 por 7, com o mesmo vencedor. O invariante é esse, o maior identificador sobrevivente dá sempre a volta completa e vence.
+Uma falha pode partir o anel. Antes deste algoritmo, precisamos de reconstruir as ligações para contornar o processo parado. Um timeout e a eleição, por si só, não resolvem uma partição nem garantem que só um lado opere como líder.
+
+## Uma eleição completa
+
+O anel era $2\to5\to7\to9\to2$. O processo 9 parou. Assumimos que o anel já foi reconstruído como $2\to5\to7\to2$. Só o processo 5 inicia:
+
+1. $5\to7$: `eleição(5)`.
+2. O 7 substitui 5 pelo seu identificador e envia $7\to2$: `eleição(7)`.
+3. O 2 reencaminha $2\to5$: `eleição(7)`.
+4. O 5 reencaminha $5\to7$: `eleição(7)`.
+5. O 7 recebe o seu identificador e envia `coordenador(7)` por $7\to2\to5\to7$. A mensagem é retirada quando regressa.
+
+Há quatro envios de eleição e três de anúncio, sete no total. Não são "quatro, um por processo": há três sobreviventes e uma aresta foi percorrida duas vezes. O maior identificador percorre o anel inteiro sem ser substituído, por isso regressa ao seu dono.
 
 <Dot
   source={anel}
-  alt="Anel com os processos 2, 5 e 7 mais o 9 assinalado como falhado. A mensagem eleição com 7 circula pelos três sobreviventes."
+  alt="Anel reconstruído com 2, 5 e 7; 9 está separado por ter falhado. O primeiro envio é eleição(5) de 5 para 7. Depois eleição(7) percorre 7 para 2, 2 para 5 e 5 para 7."
 />
 
-## Two-phase commit e primary-backup
+## Two-phase commit
 
-O **two-phase commit** (2PC) garante que uma transação distribuída ou acontece em todos os participantes ou em nenhum. O coordenador pergunta a todos se podem confirmar (fase 1) e só envia a ordem de confirmação se todos disserem sim (fase 2). A garantia, atomicidade total, paga-se com bloqueio, se o coordenador falha a meio, os participantes ficam presos à espera.
+Uma transação transfere dinheiro entre bases de dados A e B. Queremos uma decisão global: **confirmar** em ambas ou **abortar** em ambas. O **two-phase commit**, 2PC, coordena essa decisão; não faz as escritas aparecerem no mesmo instante físico nem substitui o controlo de concorrência de cada base de dados.
+
+Na fase de preparação, o coordenador envia `preparar`. Cada participante verifica se pode confirmar. Antes de votar **sim**, guarda duravelmente os dados e o estado preparado necessários para cumprir a decisão futura. Pode manter bloqueios. Votar sim não significa confirmar, significa comprometer-se a esperar pela decisão.
+
+Na segunda fase, o coordenador confirma só depois de obter todos os votos sim. Se recebe um não, ou o prazo termina antes de recolher todos os votos, pode decidir abortar. Regista duravelmente a decisão antes de a enviar. Os participantes registam e aplicam a decisão; as confirmações de receção permitem concluir a coordenação.
 
 <Typst
   source={sequencia}
   format="svg"
-  alt="Sequência do two-phase commit. O coordenador pergunta preparar, os participantes votam sim, e o coordenador ordena confirmar. Se falhar entre o voto e a ordem, os participantes bloqueiam."
+  alt="O coordenador pede preparação. P1 e P2 registam preparado e votam sim. O coordenador regista a decisão antes de enviar confirmar. Um participante preparado sem acesso a uma decisão conhecida pode bloquear."
 />
 
-O **primary-backup** (primário apoio) replica um serviço com um primário que executa e um apoio que observa. O primário envia atualizações de estado ao apoio. Se o primário falha, o apoio assume depois de uma eleição. A garantia é continuidade do serviço, não atomicidade fina como o 2PC, e o custo é o atraso de replicar cada atualização antes de responder ao cliente.
+## Por que o 2PC pode bloquear
 
-<Tabs id="protocolos-perguntas" labels={['Eleição', '2PC', 'Primary-backup']}>
-  <div slot="panel-0">
+A votou sim e não recebeu a decisão. Há duas execuções compatíveis com aquilo que A sabe:
 
-Responde a "quem manda agora". Usa-se quando o coordenador falha e é preciso exatamente um substituto. Aparece antes do primary-backup e depois de qualquer falha de líder.
+- B votou sim, o coordenador registou confirmar e comunicou a B antes de falhar.
+- B votou não, o coordenador registou abortar e falhou antes de comunicar a A.
 
-  </div>
-  <div slot="panel-1">
+A não pode escolher confirmar nem abortar apenas por timeout. Pode perguntar a outro participante; se este conhece uma decisão definitiva, aprende-a. Se todos os participantes acessíveis estão preparados e ninguém sabe a decisão, têm de esperar pela recuperação ou por acesso a informação suficiente.
 
-Responde a "todos ou nenhum". Usa-se em transações que tocam várias máquinas, como uma transferência entre duas bases de dados. O preço é o bloqueio se o coordenador falhar a meio.
+Assim, a falha do coordenador **pode** bloquear o 2PC, mas não bloqueia sempre todos os participantes. Os registos duráveis tornam a recuperação possível. Se se perderem os registos e os dados de que a garantia depende, já não estamos no modelo assumido.
 
-  </div>
-  <div slot="panel-2">
+## Replicação primário-apoio
 
-Responde a "o serviço continua". Usa-se para um servidor que cai e outro que assume sem interromper os clientes. O preço é replicar cada atualização antes de responder.
+No **primário-apoio**, um primário ordena as operações e replica o estado para um apoio. Na versão síncrona, só responde ao cliente depois de o apoio guardar a atualização exigida pelo protocolo. Isto acrescenta latência, mas permite preservar operações confirmadas se o primário falhar e o apoio sobreviver.
 
-  </div>
-</Tabs>
+Na versão assíncrona, pode responder antes de replicar. Se cair nesse intervalo, o apoio pode perder uma atualização que o cliente já considerava concluída. Não há uma única garantia para todas as variantes.
+
+Promover um apoio também exige impedir que o antigo primário continue a aceitar escritas, chamado **fencing**. Uma partição pode deixar ambos vivos; usar apenas timeouts pode criar dois primários. Eleição, replicação e proteção contra primários antigos precisam de regras coerentes, e o cliente pode ter de voltar a ligar-se durante a recuperação.

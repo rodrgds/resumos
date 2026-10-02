@@ -1,6 +1,6 @@
 ---
 title: Sistemas distribuídos e comunicação
-description: Troca de mensagens, invocação remota e multicast, com um servidor mínimo e análise de falhas.
+description: TCP, UDP, RPC, multicast e servidores com estado, com repetição de pedidos e ordenação.
 section: conteudo
 order: 6
 ---
@@ -8,46 +8,80 @@ order: 6
 import Dot from '../../../components/Dot.astro';
 import duvida from '../../cpd/duvida-rede.dot?raw';
 
-Na segunda metade da cadeira, cada máquina tem a sua memória e a sua velocidade, e a única ponte entre elas é a rede. Um sistema distribuído é um conjunto de processos assim que coopera para um objetivo comum, parecendo ao utilizador um sistema coerente.
+Num sistema distribuído, processos com memória própria cooperam por mensagens. Cada processo só conhece o seu estado e o que já recebeu. Uma máquina pode falhar enquanto outras continuam, uma **falha parcial**.
 
-## Os modelos de comunicação
+## Modelos de comunicação
 
-Na **troca de mensagens**, os processos enviam e recebem bytes explicitamente, como cartas. Sockets TCP e UDP vivem aqui. Na **invocação remota** (RPC, _remote procedure call_), o programador chama uma função que executa noutra máquina, e a biblioteca trata de empacotar argumentos, enviar, esperar e desembrulhar o resultado. Parece uma chamada local, mas atravessa a rede com latência e risco de falha. O **multicast** envia uma mensagem para um grupo de processos de uma vez, útil para difusão de atualizações e descoberta de serviços.
+Na **troca de mensagens**, a aplicação envia e recebe dados explicitamente. Uma **invocação remota**, RPC, oferece uma chamada a uma operação noutro processo: serializa os argumentos, envia-os e devolve uma resposta. Um ponteiro local não tem o mesmo significado noutra máquina; os dados precisam de uma representação acordada.
 
-A diferença decisiva para a memória partilhada: aqui não há relógio comum nem memória comum. Cada processo vê apenas as mensagens que já lhe chegaram, e uma resposta que demora pode significar máquina lenta ou máquina morta. Essa ambiguidade, a **falha parcial**, é o tema recorrente daqui até ao fim da cadeira.
+O **multicast** dirige uma mensagem a um grupo. Um envio não prova que todos a receberam nem que a entregaram na mesma ordem. As garantias dependem do protocolo usado.
+
+| Transporte | O que oferece                                                                                      | O que a aplicação ainda decide                               |
+| ---------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| TCP        | Fluxo de bytes ordenado, com retransmissão de dados perdidos enquanto a ligação consegue progredir | Fronteiras dos pedidos, timeouts e significado das respostas |
+| UDP        | Datagramas, preservando as fronteiras de cada mensagem entregue                                    | Tratamento de perda, duplicação e reordenação                |
+
+TCP não preserva as fronteiras dos teus `write`: uma leitura pode receber parte de um pedido ou vários juntos. Define um enquadramento, como uma linha por mensagem ou um tamanho antes do conteúdo. Nem TCP nem UDP garantem que uma operação da aplicação executou só por o envio local ter terminado.
+
+## Atraso, timeout e repetição
+
+Num modelo **síncrono**, há limites conhecidos para os tempos de comunicação e processamento. Num modelo **assíncrono**, não podemos usar um limite conhecido para concluir que um processo morreu. Um timeout cria uma suspeita, não uma prova. Também pode haver uma partição da rede que impeça processos vivos de comunicar.
 
 <Dot
   source={duvida}
-  alt="Cliente e servidor trocam pedido e resposta. Após timeout o cliente repete, sem saber se o servidor está lento ou morto."
+  alt="O cliente envia um pedido e espera pela resposta. Após um timeout, não sabe se o pedido não chegou, se o servidor ainda trabalha ou se a operação terminou e a resposta se perdeu."
 />
 
-## Exemplo completo
+Considera `debitar(10)`. O servidor debita 10 euros, mas a resposta perde-se. Se o cliente repetir como uma nova operação, pode debitar mais 10 euros. Já `definir_estado("pago")` é **idempotente** quanto ao estado: repetir o mesmo pedido tem o mesmo efeito que aplicá-lo uma vez. Ler a hora não altera estado, mas as respostas de duas leituras podem diferir.
 
-Um servidor de horas mínimo em Go, uma das ferramentas da ficha. O servidor escuta na porta 8080 e responde com a hora atual a cada cliente:
+Uma solução para o débito usa um identificador de pedido estável. O servidor regista o identificador e o resultado e, ao receber uma repetição, devolve o resultado guardado. Para sobreviver a falhas, o registo e o efeito precisam de uma atualização atómica e durável. Guardar só em memória perde a proteção após reiniciar.
+
+**Pelo menos uma vez** permite repetições até obter resposta, podendo repetir efeitos. **No máximo uma vez** evita executar duplicados, mas não garante que o pedido execute. Nenhuma delas dá, por si só, ao cliente conhecimento do resultado após qualquer falha.
+
+## Um servidor local em Go
+
+Este programa completo atende ligações TCP uma de cada vez. Escuta apenas no computador local. A quebra de linha delimita a resposta e fechar a ligação indica o fim do fluxo.
 
 ```go
 package main
 
 import (
     "fmt"
+    "log"
     "net"
     "time"
 )
 
 func main() {
-    ln, _ := net.Listen("tcp", ":8080")
+    ln, err := net.Listen("tcp", "127.0.0.1:8080")
+    if err != nil {
+        log.Fatal(err)
+    }
     defer ln.Close()
     for {
-        conn, _ := ln.Accept()
-        fmt.Fprintln(conn, time.Now().Format(time.RFC3339))
+        conn, err := ln.Accept()
+        if err != nil {
+            log.Print(err)
+            continue
+        }
+        if err = conn.SetWriteDeadline(time.Now().Add(2 * time.Second)); err != nil {
+            log.Print(err)
+            conn.Close()
+            continue
+        }
+        if _, err = fmt.Fprintln(conn, time.Now().Format(time.RFC3339)); err != nil {
+            log.Print(err)
+        }
         conn.Close()
     }
 }
 ```
 
-Guarda em `servidor.go`, corre com `go run servidor.go` e testa noutro terminal com `nc localhost 8080` ou com um pequeno cliente Go com `net.Dial("tcp", "localhost:8080")` seguido de leitura até EOF. A saída é uma linha como `2026-03-14T10:30:00Z`.
+Precisas de Go instalado. Guarda em `servidor.go`, corre `go run servidor.go` e mantém esse terminal aberto. Noutro terminal, `nc 127.0.0.1 8080` recebe uma linha com a hora, como `2026-03-14T10:30:00Z`. A hora real e o fuso dependem do computador. Ctrl C termina o servidor.
 
-Go é também a ferramenta da ficha para concorrência dentro de cada processo. O essencial de um canal cabe em cinco linhas, uma goroutine envia e o programa principal recebe:
+No código, `:=` declara e atribui uma variável, `defer` agenda uma operação para quando a função termina e `for` sem condição repete até ser interrompido. O teste `err != nil` trata uma operação que falhou, em vez de usar uma ligação inválida.
+
+Uma **goroutine** é uma execução concorrente gerida pelo runtime Go. Um canal Go liga goroutines no mesmo programa; não transporta dados entre máquinas. Num canal sem buffer, como `make(chan string)`, um envio espera por uma receção correspondente:
 
 ```go
 package main
@@ -57,16 +91,22 @@ import "fmt"
 func main() {
     ch := make(chan string)
     go func() { ch <- "pontual" }()
-    fmt.Println(<-ch) // imprime "pontual"
+    fmt.Println(<-ch)
 }
 ```
 
-O envio bloqueia até haver recetor, por isso a ordem é garantida sem relógios nem esperas. É este mecanismo, canais entre goroutines, que o projeto distribuído usa para falar entre máquinas.
+O resultado é `pontual`. Este canal sincroniza as duas goroutines. Para comunicar com outro processo, usa sockets ou outra biblioteca de comunicação de rede.
 
-Agora a análise que o teste pede. Se uma mensagem se perde, o TCP retransmite e o cliente espera, por isso com TCP a perda vira atraso. Se o servidor cai a meio, o cliente fica à espera até ao timeout sem distinguir "lento" de "morto". E se o cliente repetir o pedido por timeout e o servidor afinal estava vivo, o pedido executa duas vezes. Operações que se repetem sem efeito extra, como ler a hora, chamam-se **idempotentes** e são a resposta padrão a este problema.
+## Servidores com estado e eventos
 
-O multicast poupa envios mas não dispensa confirmações. Imagina o coordenador a difundir `commit` para o grupo `{A, B, C}` de uma vez. A e B respondem `ok`, o C cala-se. O coordenador reenvia só ao C, agora em unicast, até ele confirmar ou o timeout declarar a falha. Um envio chegou aos três, mas sem os acks ninguém sabia a quem tinha chegado.
+Um servidor **sem estado de sessão** não precisa de recordar pedidos anteriores do cliente para interpretar o próximo. Isso não significa ausência de base de dados. Um servidor **com estado de sessão** mantém, por exemplo, a fase de uma transferência; recuperar ou replicar esse estado faz parte do protocolo.
 
-:::tip[Como pensar em teste]
-Perante um cenário com falhas, pergunta sempre três coisas. O que cada processo sabe quando decide, porque só vê as mensagens recebidas. Se a falha é distinguível de atraso, e com que timeout. E se repetir a operação é seguro, ou seja, se ela é idempotente.
-:::
+Um servidor iterativo trata um pedido de cada vez. Um servidor com threads ou goroutines pode tratar outros pedidos enquanto um espera por I/O, mas precisa de coordenar o estado partilhado. Um servidor baseado em eventos usa I/O não bloqueante e mantém o estado de cada pedido entre eventos. Bloquear o seu ciclo de eventos pode atrasar todos os clientes.
+
+Ter só uma thread não elimina todos os problemas de concorrência. Dois pedidos podem ler o mesmo saldo e, em eventos posteriores, gravar resultados incompatíveis. A unidade que precisa de proteção é a operação sobre o estado, não apenas cada instrução isolada.
+
+## Ordenar mensagens
+
+A ordem **FIFO** preserva a ordem de cada emissor. A ordem **causal** respeita dependências: se B envia uma mensagem depois de receber a de A, entrega-se a de A antes da de B. A ordem **total** faz os destinatários concordarem na ordem de entrega, mesmo para mensagens independentes. Ordem total, por si só, não exige respeitar a causalidade.
+
+Estas propriedades não são garantias de entrega fiável. TCP ordena bytes de uma ligação; não estabelece uma ordem global entre vários emissores. Difundir uma atualização a três réplicas pode exigir confirmação, eliminação de duplicados e uma política de ordem. Se C não confirma, o coordenador sabe apenas que ainda não recebeu a confirmação, não que C morreu.

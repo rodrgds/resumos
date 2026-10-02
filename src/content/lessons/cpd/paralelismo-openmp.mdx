@@ -1,6 +1,6 @@
 ---
 title: Tipos de paralelismo e OpenMP
-description: Paralelismo funcional, de dados e em streams, com um ciclo paralelizado em OpenMP e medição.
+description: Escolher a divisão do trabalho, usar redução e medir um ciclo sem ignorar dependências.
 section: conteudo
 order: 4
 ---
@@ -9,54 +9,77 @@ import Dot from '../../../components/Dot.astro';
 import pipeline from '../../cpd/pipeline.dot?raw';
 import reducao from '../../cpd/reducao.dot?raw';
 
-Há três formas de dividir trabalho, e cada uma pede uma ferramenta diferente. Esta página distingue-as e mete-te a paralelizar um ciclo real com OpenMP, o modelo de memória partilhada da primeira metade da cadeira.
+Antes de acrescentar uma diretiva, precisamos de saber que partes do trabalho podem avançar juntas e que dados cada parte lê ou altera.
 
-## Os três tipos
+## Tipos de paralelismo
 
-No paralelismo **funcional**, tarefas diferentes correm ao mesmo tempo. Um núcleo comprime imagens enquanto outro trata do áudio. No paralelismo **de dados**, a mesma operação aplica-se a fatias diferentes dos dados. Cada núcleo soma uma parte do vetor. No paralelismo **em streams** (_pipeline_), os dados atravessam fases encadeadas. Enquanto a fase 3 trata a imagem 1, a fase 2 trata a imagem 2 e a fase 1 recebe a imagem 3.
+No paralelismo **funcional**, executamos tarefas diferentes, como tratar áudio e comprimir imagens. No paralelismo **de dados**, aplicamos a mesma operação a fatias diferentes, como somar partes de um vetor. Num **pipeline**, cada elemento atravessa fases; fases diferentes tratam elementos diferentes ao mesmo tempo.
 
 <Dot
   source={pipeline}
-  alt="Três fases encadeadas. A fase 1 tem a imagem 3, a fase 2 tem a imagem 2 e a fase 3 tem a imagem 1."
+  alt="Num instante do pipeline, a fase 1 trata a imagem 3, a fase 2 trata a imagem 2 e a fase 3 trata a imagem 1. Cada imagem continua a atravessar as fases por ordem."
 />
 
-O paralelismo de dados é o mais comum em computação numérica e é o que o OpenMP serve melhor, porque um ciclo com iterações independentes é exatamente uma operação repetida sobre fatias de dados.
+O pipeline pode aumentar o número de imagens concluídas por segundo sem reduzir o tempo de uma imagem isolada. Se três fases demorarem 2, 3 e 1 ms e tiverem recursos separados, a primeira imagem demora 6 ms. Depois de preencher o pipeline, a fase mais lenta limita a uma imagem por 3 ms, ignorando transferências.
 
-## OpenMP em dez linhas
+## Dividir antes de programar
 
-O OpenMP paraleliza com diretivas de compilador. Este programa soma um vetor de $10^8$ doubles:
+Identifica tarefas e dependências. Decide como dividir os dados, quando comunicar resultados e onde sincronizar. Escolhe uma **granularidade**, a quantidade de trabalho por tarefa, que não faça a coordenação dominar o cálculo.
+
+Se cada iteração tiver custo semelhante, uma distribuição estática costuma ter pouco custo. Se os custos variarem muito, uma distribuição dinâmica pode equilibrar melhor a carga, pagando pela atribuição de trabalho durante a execução. Mede: equilíbrio perfeito também não garante ganho se a memória já estiver saturada.
+
+## Trabalho e caminho crítico
+
+Num modelo ideal de tarefas, o **trabalho** $W$ é a soma dos tempos de todas as tarefas numa execução sequencial. O **caminho crítico** $D$ é a maior soma de tempos numa cadeia de dependências. Mesmo com recursos ilimitados, essa cadeia tem de ser respeitada.
+
+Com $p$ unidades iguais, sem comunicação nem outros custos, o tempo não pode ser menor do que $\max(W/p,D)$. É um limite inferior, não uma promessa de escalonamento perfeito. Por exemplo, três tarefas independentes de 2 s seguidas de uma combinação de 1 s têm $W=7$ s e $D=3$ s. Com três unidades, as três primeiras tarefas podem correr juntas e a combinação acaba aos 3 s.
+
+Este modelo obriga a olhar para as dependências. Amdahl usa uma divisão mais simples entre fração serial e trabalho perfeitamente divisível.
+
+## Uma redução em OpenMP
+
+O OpenMP é um modelo de memória partilhada com diretivas de compilador. Este programa completo soma um milhão de uns. Precisa de um compilador C com OpenMP instalado localmente; o motor C do navegador não oferece OpenMP.
 
 ```c
 #include <omp.h>
 #include <stdio.h>
-#define N 100000000
+#define N 1000000
 
 int main(void) {
     static double v[N];
-    double soma = 0.0;
     for (long i = 0; i < N; i++) v[i] = 1.0;
+    double soma = 0.0;
     double t0 = omp_get_wtime();
-    #pragma omp parallel for reduction(+:soma)
+    #pragma omp parallel for default(none) shared(v) reduction(+:soma) schedule(static)
     for (long i = 0; i < N; i++) soma += v[i];
-    double t1 = omp_get_wtime();
-    printf("soma = %.0f tempo = %.2f s\n", soma, t1 - t0);
+    double tempo = omp_get_wtime() - t0;
+    printf("soma = %.0f tempo = %.6f s\n", soma, tempo);
     return 0;
 }
 ```
 
-Compila com `gcc -O2 -fopenmp soma.c -o soma` e corre com `./soma`. A cláusula `reduction(+:soma)` dá a cada thread um acumulador privado e soma-os no fim. Neste exemplo, todos os termos são 1 e a soma cabe exatamente no tipo usado. Para tempos ilustrativos de 0,32 s e 0,09 s com 4 núcleos, o speedup seria $0,32/0,09\approx3,56$ e a eficiência cerca de 89%. Estes valores exemplificam o cálculo; mede o teu programa com `omp_get_wtime`.
+Guarda em `soma.c` e compila com `gcc -O2 -fopenmp soma.c -o soma`. Com esse compilador disponível, corre no terminal:
 
-Num vetor de oito uns, podemos atribuir quatro elementos a cada uma de duas threads. Cada acumulador privado começa em 0 e termina em 4; a redução combina-os para obter $4+4=8$. Com um contador partilhado protegido por `atomic`, os oito incrementos teriam de atualizar a mesma posição de memória. A redução evita essa contenção durante a soma de cada fatia, embora a combinação final também tenha um custo.
+```sh
+OMP_NUM_THREADS=1 ./soma
+OMP_NUM_THREADS=4 ./soma
+```
+
+`parallel for` cria uma equipa e distribui as iterações. `i` é privado a cada thread; `v` é partilhado e só lido. `default(none)` obriga a declarar o tratamento dos dados que precisam dessa decisão. A cláusula `reduction(+:soma)` dá a cada thread uma soma privada, inicialmente zero, e combina-as no fim. Sem a redução, as atualizações de `soma` criariam uma corrida de dados.
+
+Com oito uns e duas fatias de quatro, as somas privadas são 4 e 4. A combinação produz 8. Não há uma atualização partilhada por cada elemento:
 
 <Dot
   source={reducao}
-  alt="Oito uns divididos em duas fatias de quatro. Cada thread calcula uma soma privada de 4 e a redução combina 4 mais 4 para obter 8. Um contador partilhado com atomic exige oito atualizações na mesma posição de memória."
+  alt="Duas threads somam quatro uns cada uma numa variável privada. A redução combina 4 mais 4 para obter 8. A alternativa atomic atualiza oito vezes o mesmo contador."
 />
 
-## Quando não compensa
+## Correção e custo
 
-Repete com $N = 1000$ e compara os tempos. O trabalho de criar a equipa e combinar os acumuladores pode superar o ganho num ciclo curto. Paraleliza iterações independentes e mede o efeito. Uma recorrência em que cada passo precisa do resultado anterior não admite simplesmente `parallel for`.
+Neste programa, a soma correta é 1000000. Para valores gerais em vírgula flutuante, mudar a ordem das adições pode alterar o arredondamento: a soma paralela não tem de ser igual bit a bit à sequencial.
 
-:::details[Ver a saída esperada]
-Com o vetor cheio de uns, a soma tem de dar exatamente 100000000. Um valor diferente exige verificar a inicialização, os limites e a sincronização. O tempo depende da máquina, do número de threads e da dimensão da entrada; confirma o ganho por medição.
-:::
+O tempo medido inclui criar a equipa, somar e combinar. Não inclui inicializar o vetor. Repetir medições ajuda a distinguir variação de ganho; comparar uma e quatro threads mede esta versão, não necessariamente o ganho face à melhor implementação sequencial.
+
+Se os tempos forem 0,32 s e 0,09 s, $S_4\approx3{,}56$ e $E_4\approx88{,}89\%$. São valores ilustrativos. Num vetor curto, o custo de coordenação pode superar o trabalho útil.
+
+Uma redução resolve acumulações compatíveis, não qualquer dependência. O ciclo `a[i] = a[i-1] + x[i]` continua a precisar de uma estratégia que respeite os resultados anteriores.
