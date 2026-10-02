@@ -68,7 +68,7 @@ Usa parágrafos para raciocinar, listas para passos ou casos e tabelas para comp
 
 Mantém a explicação principal e o exemplo necessário visíveis. Demonstrações extensas, alternativas e aprofundamentos podem ficar numa secção separada ou num bloco expansível suportado pelo projeto. Uma folha de consulta pode ser compacta, mas deve conservar condições de aplicação e ligar à explicação.
 
-Uma figura deve mostrar uma relação, um estado ou uma mudança. Diz no texto o que observar e descreve o conteúdo no texto alternativo. Cores e setas complementam os nomes; a explicação deve continuar a funcionar sem distinguir cores. Confirma a legibilidade dos rótulos num ecrã de telemóvel. Se reduzir um SVG tornar o texto demasiado pequeno, adapta a disposição ou permite deslocar a figura sem reduzir as letras.
+Uma figura deve mostrar uma relação, um estado ou uma mudança. Diz no texto o que observar e descreve o conteúdo no texto alternativo. Cores e setas complementam os nomes; a explicação deve continuar a funcionar sem distinguir cores. Confirma a legibilidade dos rótulos num ecrã de telemóvel. Se reduzir um SVG tornar o texto demasiado pequeno, adapta a disposição ou permite deslocar a figura sem reduzir as letras. Usa as cores existentes do site e verifica no browser se as curvas aparecem nos dois temas e se cada controlo tem um nome descritivo para leitores de ecrã.
 
 ## Rever antes de entregar
 
