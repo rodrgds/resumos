@@ -22,19 +22,19 @@ Em FP, resolves problemas em Python e explicas como os programas chegam ao resul
 
 ## Percurso de estudo
 
-1. [Primeiros programas](primeiros-programas/) começa pelo algoritmo, tipos, expressões, entrada e saída. Aprende a distinguir uma falha de sintaxe de um resultado errado.
-2. [Condições e ciclos](condicoes-ciclos/) mostra como escolher um ramo, repetir um cálculo e justificar que o ciclo termina.
-3. [Funções](funcoes/) separa subproblemas, retorno, passagem de argumentos e âmbito dos nomes.
-4. [Strings](strings/) trabalha índices, fatias e transformações de texto.
-5. [Tuplos e listas](tuplos-listas/) distingue sequências imutáveis, mutação, alias e cópia.
-6. [Dicionários e conjuntos](dicionarios-conjuntos/) escolhe entre associação por chave e pertença sem duplicados.
-7. [Recursão](recursao/) liga um caso base à redução do problema e segue as chamadas até ao regresso.
-8. [Programação funcional](programacao-funcional/) trata funções como valores e compara soluções com `map`, `filter` e `reduce`.
-9. [Compreensões e geradores](compreensoes-geradores/) transforma coleções com compreensões. A parte de geradores aprofunda a diferença entre construir e consumir uma sequência.
-10. [Algoritmos e complexidade](algoritmos-complexidade/) aplica pesquisa e contagem de operações. É um complemento às estratégias de resolução de problemas, não um tópico autónomo nomeado na ficha de 2025/26.
-11. [Ficheiros, exceções e testes](ficheiros-excecoes/) junta persistência, tratamento de entradas inválidas, módulos e verificação.
+1. [Primeiros programas](/cadeiras/fp/primeiros-programas/) começa pelo algoritmo, tipos, expressões, entrada e saída. Aprende a distinguir uma falha de sintaxe de um resultado errado.
+2. [Condições e ciclos](/cadeiras/fp/condicoes-ciclos/) mostra como escolher um ramo, repetir um cálculo e justificar que o ciclo termina.
+3. [Funções](/cadeiras/fp/funcoes/) separa subproblemas, retorno, passagem de argumentos e âmbito dos nomes.
+4. [Strings](/cadeiras/fp/strings/) trabalha índices, fatias e transformações de texto.
+5. [Tuplos e listas](/cadeiras/fp/tuplos-listas/) distingue sequências imutáveis, mutação, alias e cópia.
+6. [Dicionários e conjuntos](/cadeiras/fp/dicionarios-conjuntos/) escolhe entre associação por chave e pertença sem duplicados.
+7. [Recursão](/cadeiras/fp/recursao/) liga um caso base à redução do problema e segue as chamadas até ao regresso.
+8. [Programação funcional](/cadeiras/fp/programacao-funcional/) trata funções como valores e compara soluções com `map`, `filter` e `reduce`.
+9. [Compreensões e geradores](/cadeiras/fp/compreensoes-geradores/) transforma coleções com compreensões. A parte de geradores aprofunda a diferença entre construir e consumir uma sequência.
+10. [Algoritmos e complexidade](/cadeiras/fp/algoritmos-complexidade/) aplica pesquisa e contagem de operações. É um complemento às estratégias de resolução de problemas, não um tópico autónomo nomeado na ficha de 2025/26.
+11. [Ficheiros, exceções e testes](/cadeiras/fp/ficheiros-excecoes/) junta persistência, tratamento de entradas inválidas, módulos e verificação.
 
-Cada lição tem exemplos resolvidos e exercícios próprios, com duas pistas, resolução e erros frequentes. Tenta resolver antes de abrir a ajuda. Nos exercícios de programação, os testes apresentados ajudam a verificar o contrato, mas não substituem a explicação da solução. A [cheat sheet](folha-consulta/) serve para consulta depois de estudares.
+Cada lição tem exemplos resolvidos e exercícios próprios, com duas pistas, resolução e erros frequentes. Tenta resolver antes de abrir a ajuda. Nos exercícios de programação, os testes apresentados ajudam a verificar o contrato, mas não substituem a explicação da solução. A [cheat sheet](/cadeiras/fp/folha-consulta/) serve para consulta depois de estudares.
 
 ## Como praticar
 
@@ -46,15 +46,15 @@ Nos editores desta cadeira, a linguagem é Python 3. O código corre numa execu�
 
 A ficha pública de [2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586981), consultada a 1 de outubro de 2026, identifica a unidade curricular e a docência, mas não apresenta programa, bibliografia ou regras de avaliação. Estes apontamentos usam o programa preenchido de [2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087). Consulta a ficha e o Moodle do teu ano para o calendário e as condições em vigor.
 
-Em 2025/26, a avaliação indicava provas individuais em computador, com questões teóricas e exercícios de programação. A época normal ponderava MT1 e MT2 a 40% cada e MT3 a 20%; o recurso usava ER a 100%. Estas regras descrevem essa edição, não confirmam a avaliação de 2026/27.
+Em 2025/26, havia provas individuais em computador, com questões teóricas e exercícios de programação. As datas, ponderações e condições de 2026/27 têm de ser confirmadas nos materiais desse ano.
 
 ## Fontes e âmbito
 
 A base oficial é o programa de FP de 2025/26: pensamento computacional, dados simples e compostos, condicionais, iteração, funções, passagem de parâmetros, recursão, ficheiros, programação livre de efeitos, funções de ordem superior, compreensões, estratégias de resolução, teste e depuração. Os resultados de aprendizagem também incluem exceções e problemas numéricos.
 
-O [Moodle de 2024/25, curso 4883](https://moodle2425.up.pt/course/view.php?id=4883), estava acessível, mas os módulos consultados não continham ficheiros de ensino. Essa coleção não permite confirmar os slides usados pelo aluno. As fichas históricas RE01 a RE13, preservadas no [repositório público de FPRO](https://github.com/educorreia932/FEUP-FPRO), ajudam a escolher tipos de problemas. Não foram tratadas como enunciados nem regras atuais.
+As fichas de 2018/19 no [repositório público de FPRO](https://github.com/educorreia932/FEUP-FPRO) ajudam a escolher tipos de problemas. O [Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4883) consultado não disponibilizava materiais de ensino. Estas fontes não confirmam os enunciados nem as regras atuais.
 
-Os [slides de Python 3 de André Restivo](https://arestivo.github.io/slides/?s=python), mantidos no [repositório do autor](https://github.com/arestivo/slides), apoiam a sintaxe, coleções, controlo, funções, módulos e ficheiros. Não identificam uma edição de FP. O apêndice de PostgreSQL fica fora destes apontamentos. O [Caderno FP SofiaViP](https://drive.google.com/file/d/1-2tiPzWQX8LHHWILl3z-4pShVDhP0C1m/view) foi usado como apoio de estudante, sem valor oficial.
+Os [slides de Python 3 de André Restivo](https://arestivo.github.io/slides/?s=python) apoiam a sintaxe e os exemplos. O [Caderno FP SofiaViP](https://drive.google.com/file/d/1-2tiPzWQX8LHHWILl3z-4pShVDhP0C1m/view) é um apoio de estudante, sem valor oficial. Nenhum identifica uma edição atual de FP.
 
 Bibliografia da ficha de 2025/26:
 
