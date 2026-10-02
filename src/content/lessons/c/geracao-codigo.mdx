@@ -34,7 +34,7 @@ Quando $k$ cores não chegam, algum valor é **derramado** (_spill_): em vez de 
   alt="Grafo de interferência com quatro valores: a, b e c ligados entre si em triângulo, d ligado só a c, e c marcado com círculo duplo como vítima de derrame."
 />
 
-Com $k = 2$ registos, o triângulo $a$, $b$, $c$ não tem coloração: $a$ e $b$ ocupam os dois registos e $c$ conflita com ambos. Se $c$ for o valor usado menos vezes (fora de ciclos), é a vítima: vive em memória com `istore` e `iload` à volta de cada uso, e $d$, que só conflitava com $c$, fica livre para um dos registos. A marca de círculo duplo é a decisão do alocador, não uma propriedade do programa.
+Com $k = 2$ registos, o triângulo $a$, $b$, $c$ não tem coloração: $a$ e $b$ ocupam os dois registos e $c$ conflita com ambos. Se $c$ for o valor usado menos vezes (fora de ciclos), é a vítima: o compilador guarda-o em memória e insere instruções de carregamento e gravação da máquina alvo. Sem $c$ no grafo, $d$ fica livre para um dos registos. A marca de círculo duplo é a decisão do alocador, não uma propriedade do programa.
 
 ## Exemplo: Jasmin para `(a + b) * c`
 
@@ -49,7 +49,18 @@ imul
 istore 4
 ```
 
-Segue a pilha: empurra `a`, empurra `b`, `iadd` consome os dois e empurra a soma; empurra `c`, `imul` consome soma e `c` e empurra o produto; `istore 4` guarda-o. A altura máxima é 2, e o verificador da JVM confirma-a estaticamente: cada instrução declara o seu efeito na pilha, por isso um desequilíbrio é erro de compilação, não surpresa em execução.
+Segue a pilha, inicialmente vazia. O topo fica à direita:
+
+| Instrução  | Pilha depois da instrução |
+| ---------- | ------------------------- |
+| `iload_1`  | `[a]`                     |
+| `iload_2`  | `[a, b]`                  |
+| `iadd`     | `[a + b]`                 |
+| `iload_3`  | `[a + b, c]`              |
+| `imul`     | `[(a + b) * c]`           |
+| `istore 4` | `[]`                      |
+
+`iadd` e `imul` consomem dois inteiros e empurram um resultado. `istore 4` retira o produto da pilha e guarda-o na variável local 4. A altura máxima é 2, por isso `.limit stack 2` chega para esta sequência no método Jasmin. O verificador da JVM verifica os tipos e as alturas da pilha nos caminhos do método e rejeita bytecode inválido antes de o executar.
 
 Confirma a altura máxima a correr. A simulação abaixo executa o mesmo exemplo instrução a instrução e imprime a pilha final com a altura máxima.
 
@@ -63,7 +74,7 @@ Confirma a altura máxima a correr. A simulação abaixo executa o mesmo exemplo
 
 O programa imprime `[] 2`: a pilha termina vazia (tudo consumido e guardado) e nunca passou de 2. Muda a expressão, por exemplo para `(a + b) * (c + d)`, e vê a altura subir para 3.
 
-Onde entra o derrame aqui? As variáveis locais do Jasmin funcionam como a memória de derrame: quando a expressão precisa de mais valores vivos do que os registos (ou as posições de pilha) disponíveis, o gerador guarda temporários em locais extra com `istore` e recarrega-os com `iload`, exatamente o par gravação-carregamento do derrame. Numa expressão maior, verias `istore` a meio do cálculo a guardar um parcial e `iload` a trazê-lo de volta quando preciso.
+As variáveis locais e a pilha de operandos da JVM não são registos físicos do processador. `iload` copia um inteiro de um local para a pilha; `istore` faz o percurso inverso. Guardar um resultado ou um temporário num local não prova que houve derrame por falta de registos. Aqui, `istore 4` apenas guarda o resultado da expressão. Se um compilador JIT traduzir este bytecode para código nativo, a alocação de registos físicos e os eventuais derrames são decisões dessa tradução.
 
 ## Para levar para a próxima página
 

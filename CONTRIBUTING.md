@@ -123,6 +123,8 @@ A solução fica aqui. Experimenta primeiro sem a abrir.
 
 As caixas aceitam `note`, `info`, `tip`, `warning`, `danger` e `details`. O título entre parênteses retos é opcional. Dentro da caixa podes usar Markdown normal. Um nome desconhecido interrompe o build para detetar erros de escrita.
 
+Escolhe a caixa pela dúvida que resolve: uma condição fácil de esquecer, um contraexemplo ou uma ideia que liga os passos. Não acrescentes uma caixa de cada tipo a todas as páginas. Mantém a explicação necessária visível; usa `details` para uma resolução que o leitor deve tentar primeiro ou para um aprofundamento.
+
 ### Imagens
 
 Guarda imagens públicas em `public/` e usa texto alternativo que explique o que mostram. Fotografias e logótipos mantêm as cores por defeito. Para adaptar um esquema ao modo escuro, escolhe `dim` (menos brilho) ou `invert` (inverter cores) e verifica o resultado.
@@ -184,6 +186,8 @@ O vídeo mostra uma miniatura do YouTube. O leitor só carrega o player quando c
 ### Animações com Manim
 
 Usa [Manim Community](https://docs.manim.community/en/stable/) quando o movimento ajudar a explicar uma mudança. Vê [os dois exemplos](/exemplo/animacoes/) e os seus ficheiros `src/content/exemplo/vetores.py` e `derivada.py`.
+
+Uma animação deve permitir seguir algo concreto, como uma subárvore que muda de ligação ou um ponto que acompanha uma curva. Diz o que observar e mantém os estados inicial e final legíveis. Se uma figura parada permitir comparar os mesmos dados ao ritmo do leitor, prefere a figura. Não há uma quota de animações por cadeira ou por lição.
 
 1. Guarda a cena Python em `src/content/<cadeira>/`. Importa `palette` de `resumos_manim` e usa `palette['text']`, `palette['accent']` e `palette['diagram-secondary']` nos objetos. O adaptador define o fundo com `palette['surface']`. Usa rótulos ou traços diferentes para que a cor não seja a única distinção.
 2. Regista um identificador em `src/data/manim-scenes.json`. Indica `source`, o nome da classe em `scene`, um instante representativo em segundos em `posterTime` e os ficheiros locais importados ou lidos em `dependencies`. Guarda esses ficheiros no repositório. O instante do poster deve ficar dentro da duração da cena.
