@@ -3,6 +3,7 @@ import { readingFonts } from '../data/reading-fonts';
 import { readingHistory } from '../lib/reading-history';
 import { readSemesterPins } from '../lib/pinned-semesters';
 import { codeFonts } from '../data/code-fonts';
+import codeThemes from '../generated/code-colors.json';
 const allowed = {
   theme: ['system', 'light', 'dark'],
   accent: ['red', 'blue', 'green'],
@@ -89,6 +90,15 @@ function apply() {
   const colors = root.dataset.theme === 'dark' ? palette.dark : palette.light;
   for (const [key, value] of Object.entries(colors))
     root.style.setProperty(`--${key}`, value);
+  const syntax =
+    codeThemes[palette.id as keyof typeof codeThemes][
+      root.dataset.theme === 'dark' ? 'dark' : 'light'
+    ];
+  for (const [key, value] of Object.entries(syntax))
+    root.style.setProperty(
+      key === 'foreground' ? '--code-foreground' : `--code-token-${key}`,
+      value,
+    );
 }
 apply();
 media.addEventListener('change', apply);
@@ -98,11 +108,30 @@ function bind() {
   const output = document.querySelector<HTMLOutputElement>('#size-value');
   if (!form || !output) return;
   const sync = () => {
+    const selected = readingThemes.find(
+      (theme) => theme.id === preferences.palette,
+    )!;
+    const family = selected.family || selected.name;
+    form.querySelector<HTMLElement>('#palette-variant-label')!.textContent =
+      family === 'Flexoki' ? 'Acento Flexoki' : 'Variante';
+    const variants = form.querySelector<HTMLSelectElement>('#palette-variant')!;
+    if (variants.dataset.family !== family) {
+      variants.replaceChildren(
+        ...readingThemes
+          .filter((theme) => (theme.family || theme.name) === family)
+          .map((theme) => new Option(theme.variant || theme.name, theme.id)),
+      );
+      variants.dataset.family = family;
+    }
+    form.querySelector<HTMLElement>('#theme-variant')!.hidden =
+      variants.options.length < 2;
     for (const input of form.querySelectorAll<
       HTMLInputElement | HTMLSelectElement
     >('input, select')) {
       if (input instanceof HTMLInputElement && input.type === 'radio')
-        input.checked = input.value === preferences[input.name];
+        input.checked = input.dataset.themeFamily
+          ? input.dataset.themeFamily === family
+          : input.value === preferences[input.name];
       else input.value = preferences[input.name];
     }
     output.value = `${preferences.size}%`;
@@ -138,6 +167,7 @@ function bind() {
     ) {
       preferences[key] = input.value;
       save();
+      sync();
     }
   });
   form.addEventListener('reset', (event) => {

@@ -165,10 +165,6 @@ for (const palette of [
           radius: css.borderRadius,
         };
       });
-      const prose = await page
-        .locator('.lesson-body .prose')
-        .evaluate((el) => getComputedStyle(el).color);
-      expect(style.color).toBe(prose);
       expect(style.font).toContain('JetBrains Mono');
       await page.goto('/exemplo/codigo/');
       const code = page

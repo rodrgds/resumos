@@ -1,16 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { readingThemes } from '../src/data/reading-themes';
 
-for (const palette of [
-  'feup',
-  'gruvbox',
-  'catppuccin',
-  'nord',
-  'dracula',
-  'flexoki',
-  'solarized',
-]) {
+for (const { id: palette } of readingThemes) {
   for (const appearance of ['light', 'dark'] as const) {
-    test(`selected code stays readable on every line in ${palette} ${appearance}`, async ({
+    test(`selected code and reading colours stay readable in ${palette} ${appearance}`, async ({
       page,
     }) => {
       await page.addInitScript((palette) => {
@@ -61,6 +54,19 @@ for (const palette of [
               );
             };
             const root = content.closest('.cm-editor')!;
+            const reading = getComputedStyle(document.documentElement);
+            const readingContrasts: number[] = [];
+            for (const foreground of ['text', 'muted', 'accent']) {
+              const fg = luminance(reading.getPropertyValue(`--${foreground}`));
+              for (const background of ['page', 'surface', 'soft']) {
+                const bg = luminance(
+                  reading.getPropertyValue(`--${background}`),
+                );
+                readingContrasts.push(
+                  (Math.max(bg, fg) + 0.05) / (Math.min(bg, fg) + 0.05),
+                );
+              }
+            }
             const selection = root.querySelector('.cm-selectionBackground')!;
             const contrasts: number[] = [];
             let syntaxPreserved = true;
@@ -119,11 +125,13 @@ for (const palette of [
               selectionVisible,
               syntaxPreserved,
               selectionContrast: Math.min(...selectionContrasts),
+              readingContrast: Math.min(...readingContrasts),
             };
           });
           expect(result.selectionVisible).toBe(true);
           expect(result.syntaxPreserved).toBe(true);
           expect(result.selectionContrast).toBeGreaterThanOrEqual(1.25);
+          expect(result.readingContrast).toBeGreaterThanOrEqual(4.5);
           return result.contrast;
         })
         .toBeGreaterThanOrEqual(4.5);

@@ -82,6 +82,12 @@ test('printed animations include their local poster images', async ({
 test('print expands disclosures and shows every tab with readable code colours', async ({
   page,
 }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'resumos-preferences',
+      JSON.stringify({ theme: 'dark', palette: 'catppuccin' }),
+    ),
+  );
   await page.goto('/exemplo/formatacao/');
   await page.evaluate(() => {
     window.print = () => {};
@@ -102,16 +108,22 @@ test('print expands disclosures and shows every tab with readable code colours',
     printed.getByText(/O cálculo direto chega ao mesmo resultado/),
   ).toBeVisible();
   const code = tabs.locator('pre.astro-code').filter({ hasText: 'int n = 4;' });
+  const typeColor = await code
+    .getByText('int', { exact: true })
+    .evaluate((token) => getComputedStyle(token).color);
   const colours = await code.evaluate((pre) => {
-    const token = pre.querySelector<HTMLElement>(
-      'span[style*="--code-token-keyword"]',
-    )!;
     return {
-      token: getComputedStyle(token).color,
       plain: getComputedStyle(pre).color,
       printColor: getComputedStyle(pre).printColorAdjust,
     };
   });
-  expect(colours.token).not.toBe(colours.plain);
+  expect(typeColor).not.toBe(colours.plain);
+  const channels = typeColor.match(/\d+/g)!.map((channel) => {
+    const value = Number(channel) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  const luminance =
+    channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  expect(1.05 / (luminance + 0.05)).toBeGreaterThanOrEqual(4.5);
   expect(colours.printColor).toBe('exact');
 });
