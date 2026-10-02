@@ -1,11 +1,10 @@
 ---
 title: Praticar ficheiros e exceções
-description: Exercícios próprios para prever resultados, justificar decisões e verificar programas.
+description: Ler dados, tratar falhas esperadas e conservar ficheiros.
 section: exercicios
 ---
 
 import Exercise from '../../../components/Exercise.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 
 <Exercise
   id="ficheiro-modo"
@@ -241,49 +240,144 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 <Exercise
   id="validar-linhas"
   title="Tratar só a falha esperada"
-  revision={1}
+  revision={2}
   explanation="/cadeiras/fp/ficheiros-excecoes/#exceções-try-except-else-e-finally"
   answer={{
-    kind: 'self',
-    checklist: [
-      'Obtive 6.',
-      'Tratei apenas ValueError.',
-      'Mantive -1 como entrada válida.',
+    kind: 'code',
+    language: 'python',
+    starter: 'def soma_validos(linhas):\n    return 0',
+    tests: [
+      {
+        name: 'Valores válidos e inválidos',
+        code: 'print(soma_validos(["3", "x", "-1", "4"]))',
+        output: '6',
+      },
+      { name: 'Lista vazia', code: 'print(soma_validos([]))', output: '0' },
+      {
+        name: 'Só inválidos',
+        code: 'print(soma_validos(["", "abc", "1.5"]))',
+        output: '0',
+      },
+      {
+        name: 'Espaços, sinais e zero',
+        code: 'print(soma_validos([" -2 ", "+7", "0", "3.0"]))',
+        output: '5',
+      },
+      {
+        name: 'Entrada preservada',
+        code: 'xs = ["4", "erro", "-3"]\nprint(soma_validos(xs))\nprint(xs)',
+        output: "1\n['4', 'erro', '-3']",
+      },
     ],
   }}
 >
   <p>
-    {
-      'Soma os inteiros das linhas ["3", "x", "-1", "4"], ignorando apenas linhas que não se convertem em inteiro. O resultado esperado é 6.'
-    }
+    Define soma_validos(linhas): recebe uma lista de strings, soma as que int
+    consegue converter e ignora apenas as que levantam ValueError. Aceita
+    números negativos, espaços em torno do inteiro e zero. Devolve a soma sem
+    imprimir.
   </p>
-  <div slot="work">
-    <CodePlayground
-      language="python"
-      title="Tratar só a falha esperada"
-      input=""
-      code={
-        'def soma_validos(linhas):\n    return None\n\nprint(soma_validos(["3", "x", "-1", "4"]))'
-      }
-    />
+  <div slot="hint">
+    A conversão pode levantar ValueError.
   </div>
-  <div slot="hint">{'A conversão pode levantar ValueError.'}</div>
-  <div slot="hint-more">{'Acumula só depois de uma conversão válida.'}</div>
+  <div slot="hint-more">
+    Coloca a conversão em try. Acumula só depois de obter um inteiro.
+  </div>
   <div slot="solution">
-    {
-      'As entradas válidas são 3, -1 e 4; somam 6. Um except ValueError pode saltar a entrada x, sem esconder outras falhas do programa.'
-    }
-    <pre>
-      <code>
-        {
-          'def soma_validos(linhas):\n    total = 0\n    for linha in linhas:\n        try:\n            numero = int(linha)\n        except ValueError:\n            continue\n        total += numero\n    return total\n\nprint(soma_validos(["3", "x", "-1", "4"]))'
-        }
-      </code>
-    </pre>
+    As entradas válidas do primeiro caso são 3, -1 e 4, cuja soma é 6. O
+    tratador salta a string x. Os testes públicos não provam que só ValueError é
+    tratado; confere também esse requisito na solução.
+
+```python
+def soma_validos(linhas):
+    total = 0
+    for linha in linhas:
+        try:
+            numero = int(linha)
+        except ValueError:
+            continue
+        total += numero
+    return total
+```
+
   </div>
   <div slot="mistakes">
-    {
-      'Ignorar todas as exceções ou descartar os negativos sem que o contrato o peça.'
-    }
+    Usar isdigit e perder negativos ou sinais, converter primeiro em float e
+    aceitar decimais, ou esconder todas as exceções.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ler-inteiros"
+  title="Ler sem confundir uma linha em branco"
+  revision={1}
+  explanation="/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros"
+  answer={{
+    kind: 'code',
+    language: 'python',
+    starter: 'def ler_inteiros(caminho):\n    return []',
+    tests: [
+      {
+        name: 'Linha em branco no meio',
+        code: 'with open("entrada.txt", "w", encoding="utf-8") as f:\n    f.write("12\\n\\n -3 \\n0\\n")\nprint(ler_inteiros("entrada.txt"))',
+        output: '[12, -3, 0]',
+      },
+      {
+        name: 'Ficheiro vazio',
+        code: 'with open("entrada.txt", "w", encoding="utf-8") as f:\n    f.write("")\nprint(ler_inteiros("entrada.txt"))',
+        output: '[]',
+      },
+      {
+        name: 'Última linha sem mudança de linha',
+        code: 'with open("entrada.txt", "w", encoding="utf-8") as f:\n    f.write("2\\n2\\n5")\nprint(ler_inteiros("entrada.txt"))',
+        output: '[2, 2, 5]',
+      },
+      {
+        name: 'Conteúdo preservado',
+        code: 'with open("entrada.txt", "w", encoding="utf-8") as f:\n    f.write("7\\n")\nprint(ler_inteiros("entrada.txt"))\nwith open("entrada.txt", encoding="utf-8") as f:\n    print(repr(f.read()))',
+        output: "[7]\n'7\\n'",
+      },
+      {
+        name: 'Caminho inexistente',
+        code: 'try:\n    ler_inteiros("inexistente.txt")\nexcept FileNotFoundError:\n    print("ficheiro em falta")\nelse:\n    print("devia falhar")',
+        output: 'ficheiro em falta',
+      },
+    ],
+  }}
+>
+  <p>
+    Define ler_inteiros(caminho): lê um ficheiro UTF-8 com um inteiro por linha
+    e devolve uma lista pela ordem do ficheiro. Ignora linhas só com espaços ou
+    mudanças de linha. As restantes linhas são inteiros válidos. Conserva o
+    conteúdo; deixa FileNotFoundError propagar se o caminho faltar.
+  </p>
+  <div slot="hint">
+    Percorrer o ficheiro com for termina no fim, sem confundir uma linha em
+    branco com esse fim.
+  </div>
+  <div slot="hint-more">
+    Abre com with em modo de leitura. Aplica strip à linha e só converte se
+    restar texto.
+  </div>
+  <div slot="solution">
+    strip remove espaços e mudanças de linha. Uma linha em branco é ignorada,
+    mas o for continua. O modo r conserva o conteúdo; with fecha o ficheiro
+    mesmo se a leitura falhar.
+
+```python
+def ler_inteiros(caminho):
+    resultado = []
+    with open(caminho, "r", encoding="utf-8") as ficheiro:
+        for linha in ficheiro:
+            texto = linha.strip()
+            if texto:
+                resultado.append(int(texto))
+    return resultado
+```
+
+  </div>
+  <div slot="mistakes">
+    Abrir com w, parar na primeira linha em branco ou devolver uma lista vazia
+    para esconder um caminho inexistente.
   </div>
 </Exercise>
