@@ -24,8 +24,13 @@ const actions = {
   notes: setupNotes(),
   appearance: () => openDialog('#appearance'),
   shortcuts: () => openDialog('#shortcuts'),
-  ai: () =>
-    document.querySelector<HTMLButtonElement>('[data-open-ai]')?.click(),
+  ai: () => {
+    const trigger = document.querySelector<HTMLButtonElement>('[data-open-ai]');
+    const menu = document.querySelector<HTMLElement>('#ai-menu');
+    if (!trigger || !menu) return;
+    trigger.focus({ preventScroll: true });
+    if (!menu.matches(':popover-open')) menu.showPopover({ source: trigger });
+  },
 };
 for (const button of document.querySelectorAll<HTMLButtonElement>(
   '[data-action]',
@@ -34,6 +39,18 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
   button.addEventListener('click', actions[action]);
 }
 for (const dialog of document.querySelectorAll<HTMLDialogElement>('dialog')) {
+  dialog.addEventListener('keydown', (event) => {
+    if (
+      event.key !== 'Escape' ||
+      event.isComposing ||
+      event.defaultPrevented ||
+      !(event.target as Element).closest('input[type="search"]')
+    )
+      return;
+    // Search inputs otherwise consume Escape before the dialog can cancel.
+    event.preventDefault();
+    dialog.requestClose();
+  });
   dialog
     .querySelector('[data-close]')
     ?.addEventListener('click', () => dialog.close());

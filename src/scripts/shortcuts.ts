@@ -1,4 +1,5 @@
 import { readLocal, writeLocal } from '../lib/storage';
+import { setupVimReading } from './vim-reading';
 const STORAGE_KEY = 'resumos-shortcuts';
 const defaults = {
   search: '/',
@@ -15,8 +16,39 @@ const labels = {
   ai: 'Perguntar ao Chat',
 };
 type Action = keyof typeof defaults;
-const vimKeys = ['h', 'j', 'k', 'l'];
+const vimKeys = [
+  'h',
+  'j',
+  'k',
+  'l',
+  'w',
+  'b',
+  'e',
+  '0',
+  '^',
+  '$',
+  'g',
+  '{',
+  '}',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+];
+const conflictsWithVim = (bindings: Record<Action, string>) =>
+  Object.entries(bindings).some(
+    ([action, key]) =>
+      vimKeys.includes(key) ||
+      (key === '/' && action !== 'search') ||
+      (key === 'n' && action !== 'notes'),
+  );
 export function setupShortcuts(actions: Record<Action, () => void>) {
+  const reading = setupVimReading();
   let bindings = { ...defaults };
   let enabled = true;
   let vim = false;
@@ -31,9 +63,7 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
       )
         bindings = candidate;
       enabled = saved.enabled !== false;
-      vim =
-        saved.vim === true &&
-        !Object.values(bindings).some((key) => vimKeys.includes(key));
+      vim = saved.vim === true && !conflictsWithVim(bindings);
     }
   } catch {
     /* Invalid local preferences fall back to the defaults. */
@@ -42,16 +72,25 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
   const status = document.querySelector('#shortcut-status')!;
   const single = document.querySelector<HTMLInputElement>('#single-keys')!;
   const vimInput = document.querySelector<HTMLInputElement>('#vim-keys')!;
+  const appearanceVim = document.querySelector<HTMLInputElement>(
+    '#appearance-vim-keys',
+  )!;
+  const appearanceStatus = document.querySelector<HTMLElement>(
+    '#appearance-vim-status',
+  )!;
   let recording: Action | null = null;
   const save = () => {
-    if (!writeLocal(STORAGE_KEY, JSON.stringify({ bindings, enabled, vim })))
-      status.textContent =
+    if (!writeLocal(STORAGE_KEY, JSON.stringify({ bindings, enabled, vim }))) {
+      status.textContent = appearanceStatus.textContent =
         'As alterações só se aplicam até fechares esta página.';
+    }
   };
   function render() {
     list.replaceChildren();
     single.checked = enabled;
     vimInput.checked = vim;
+    appearanceVim.checked = vim;
+    reading.setEnabled(vim);
     for (const action of Object.keys(defaults) as Action[]) {
       const row = document.createElement('div');
       row.className = 'shortcut-row';
@@ -74,18 +113,24 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
     enabled = single.checked;
     save();
   });
-  vimInput.addEventListener('change', () => {
-    if (
-      vimInput.checked &&
-      Object.values(bindings).some((key) => vimKeys.includes(key))
-    ) {
-      vimInput.checked = false;
-      status.textContent = 'Liberta primeiro as teclas h, j, k e l.';
-      return;
-    }
-    vim = vimInput.checked;
-    save();
-  });
+  for (const input of [vimInput, appearanceVim])
+    input.addEventListener('change', () => {
+      if (input.checked && conflictsWithVim(bindings)) {
+        input.checked = false;
+        const message =
+          'Liberta primeiro os atalhos que usam movimentos Vim. Podes mudá-los em Atalhos.';
+        status.textContent = message;
+        appearanceStatus.textContent = message;
+        return;
+      }
+      vim = input.checked;
+      vimInput.checked = vim;
+      appearanceVim.checked = vim;
+      reading.setEnabled(vim);
+      status.textContent = '';
+      appearanceStatus.textContent = '';
+      save();
+    });
   document.querySelector('#reset-shortcuts')!.addEventListener('click', () => {
     bindings = { ...defaults };
     enabled = true;
@@ -102,8 +147,9 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
   document.addEventListener(
     'keydown',
     (event) => {
-      if (event.isComposing || event.repeat) return;
+      if (event.isComposing) return;
       if (recording) {
+        if (event.repeat) return;
         event.preventDefault();
         event.stopPropagation();
         if (event.key === 'Escape') {
@@ -128,7 +174,10 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
           (Object.entries(bindings).some(
             ([action, value]) => action !== recording && value === key,
           ) ||
-            (vim && vimKeys.includes(key)))
+            (vim &&
+              (vimKeys.includes(key) ||
+                (key === '/' && recording !== 'search') ||
+                (key === 'n' && recording !== 'notes'))))
         ) {
           status.textContent = 'Essa tecla já está em uso.';
           return;
@@ -148,34 +197,42 @@ export function setupShortcuts(actions: Record<Action, () => void>) {
       if (
         event.defaultPrevented ||
         target
-          .closest('input, textarea, select, [contenteditable="true"]')
+          .closest(
+            'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), textarea, select, [contenteditable]:not([contenteditable="false"]), .cm-editor',
+          )
           ?.checkVisibility() ||
         document.querySelector('dialog[open]')
       )
         return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        if (event.repeat) return;
         event.preventDefault();
         actions.search();
         return;
       }
       if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (reading.handle(event)) {
+        event.preventDefault();
+        return;
+      }
       const key = event.key.toLowerCase();
       if (enabled) {
         const action = (Object.keys(bindings) as Action[]).find(
           (action) => bindings[action] === key,
         );
         if (action) {
+          if (event.repeat) return;
           event.preventDefault();
           actions[action]();
           return;
         }
       }
-      if (vim && vimKeys.includes(key)) {
+      if (vim && ['h', 'j', 'k', 'l'].includes(key)) {
         const cards = [
           ...document.querySelectorAll<HTMLElement>(
-            '[data-course], .group-card, .lesson-link',
+            'a[data-course], button[data-course], [data-course] > a, a.group-card, a.lesson-link',
           ),
-        ];
+        ].filter((card) => card.checkVisibility());
         if (!cards.length) return;
         event.preventDefault();
         const current = cards.find((card) => card === document.activeElement);
