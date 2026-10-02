@@ -42,7 +42,7 @@ Não apliques estas expressões fora do modelo. [Contas e traços](/cadeiras/rc/
 
 ## CRC e ARQ
 
-CRC: gerador de grau r, acrescentar r zeros, dividir por XOR, colocar resto. Resto zero significa **nenhum erro foi detetado**; não garante ausência de erro. Distância mínima d deteta até d−1 erros. Bit stuffing: zero depois de cinco uns nos dados.
+CRC: gerador de grau r, acrescentar r zeros, dividir por XOR, colocar resto. Resto zero significa **nenhum erro foi detetado**; não garante ausência de erro. Distância mínima d deteta até d−1 erros. Bit stuffing: zero depois de cinco uns entre flags, incluindo CRC.
 
 RR(n): próximo esperado n. REJ(n): repetir desde n em Go-Back-N; SREJ(n): repetir apenas n em Selective Repeat. GBN descarta fora de ordem; SR guarda dentro da janela. Com m bits: $W_{GBN}\le2^m-1$, $W_{SR}\le2^{m-1}$ para janelas iguais. ACK perdido não autoriza entregar duplicados. [Explicação](/cadeiras/rc/ligacao-de-dados/).
 

@@ -47,7 +47,7 @@ import Exercise from '../../../components/Exercise.astro';
   <p slot="hint-more">{'O próximo byte esperado é 1200.'}</p>
   <p slot="solution">
     {
-      'ACK1200. SACK pode informar o bloco posterior se negociado, mas o ACK cumulativo continua 1200.'
+      'ACK 1200. SACK pode informar o bloco posterior se negociado, mas o ACK cumulativo continua 1200.'
     }
   </p>
   <p slot="mistakes">{'Responder 1600 porque esse é o maior byte recebido.'}</p>
@@ -57,7 +57,7 @@ import Exercise from '../../../components/Exercise.astro';
   id="rc-tcp-limite"
   title={'Converter janela em débito'}
   explanation="/cadeiras/rc/transporte-e-aplicacoes/#fluxo-e-congestionamento"
-  answer={{ kind: 'number', value: 8, tolerance: 0 }}
+  answer={{ kind: 'number', value: 8, tolerance: 0, unit: 'Mbit/s' }}
 >
   <p>
     {
@@ -69,7 +69,7 @@ import Exercise from '../../../components/Exercise.astro';
   <p slot="solution">
     {'8 Mbit/s. A ligação permite 40, mas a janela limita antes.'}
   </p>
-  <p slot="mistakes">{'Dar 1 Mbit/spor esquecer multiplicarbytespor 8.'}</p>
+  <p slot="mistakes">{'Dar 1 Mbit/s por esquecer multiplicar bytes por 8.'}</p>
 </Exercise>
 
 <Exercise
@@ -88,7 +88,7 @@ import Exercise from '../../../components/Exercise.astro';
     {'Congestion avoidance cresce aproximadamente 1 MSS por RTT.'}
   </p>
   <p slot="solution">
-    {'9 MSS, neste modelo simplificado. Otraço 1,2,4,8 passa a 9,10.'}
+    {'9 MSS, neste modelo simplificado. O traço 1,2,4,8 passa a 9,10.'}
   </p>
   <p slot="mistakes">{'Continuar a duplicar acima do limiar.'}</p>
 </Exercise>
@@ -110,4 +110,45 @@ import Exercise from '../../../components/Exercise.astro';
     {'4000 bytes novos. O recetor é a limitação neste estado.'}
   </p>
   <p slot="mistakes">{'Usar cwnd sozinho ou esquecer bytes já em trânsito.'}</p>
+</Exercise>
+
+<Exercise
+  id="rc-tcp-recuperacao"
+  title="Distinguir timeout e ACKs duplicados"
+  explanation="/cadeiras/rc/transporte-e-aplicacoes/#slow-start-aimd-e-perdas"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Os três ACKs duplicados permitem fast retransmit sem esperar pelo timeout.',
+      'Reno usa fast recovery após os ACKs duplicados, reduzindo o limiar.',
+      'Um timeout volta a uma janela de perda pequena e a slow start.',
+      'A perda observada não prova por si só que houve congestionamento.',
+    ],
+  }}
+>
+  <p>
+    Compara duas perdas no TCP Reno clássico. Na primeira, chegam três ACKs
+    duplicados; na segunda, não há confirmações que permitam essa recuperação e
+    expira o timeout. Explica como o emissor inicia a recuperação e como muda o
+    crescimento da janela. A perda pode resultar de um erro do canal.
+  </p>
+  <p slot="hint">
+    Os eventos dão quantidades diferentes de informação ao emissor.
+  </p>
+  <p slot="hint-more">
+    ACKs duplicados mostram que segmentos posteriores chegaram; um timeout não
+    dá essa indicação. Distingue fast recovery de slow start.
+  </p>
+  <p slot="solution">
+    Com três ACKs duplicados, Reno retransmite rapidamente o segmento em falta e
+    entra em fast recovery, reduzindo o limiar para cerca de metade dos dados em
+    voo, sujeito ao mínimo do algoritmo. Num timeout, retransmite, reduz a
+    janela a uma janela de perda pequena e recomeça slow start. Não trata as
+    duas perdas com a mesma alteração de janela. Estes sinais indicam falha de
+    entrega, mas não distinguem sempre congestionamento de erros do canal.
+  </p>
+  <p slot="mistakes">
+    Esperar pelo timeout mesmo quando há fast retransmit, aplicar a mesma janela
+    nos dois casos, ou atribuir qualquer perda a congestionamento.
+  </p>
 </Exercise>

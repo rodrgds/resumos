@@ -8,6 +8,8 @@ practices:
 editorial:
   basedOn: 2026/27
   sources:
+    - title: Ligação de dados, slides no Moodle atual
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33681
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
     - title: RFC1662, delimitação e transparência de PPP
@@ -18,13 +20,13 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import JanelaArq from '../../rc/JanelaArq.astro';
 
-A camada de ligação entrega **tramas** entre vizinhos. Precisa de delimitar cada trama e verificar erros. Alguns protocolos acrescentam confirmações, retransmissões e controlo de fluxo. Ethernet, por exemplo, deteta erros, mas não oferece retransmissão fiável de tramas como o ARQ estudado aqui.
+A camada de ligação entrega **tramas** entre vizinhos. Precisa de delimitar cada trama e verificar erros. Alguns protocolos acrescentam confirmações, retransmissões e controlo de fluxo. Ethernet, por exemplo, deteta erros, mas não oferece retransmissão fiável de tramas como o **ARQ**, _Automatic Repeat reQuest_, estudado aqui. A confirmação de receção chama-se **ACK**, _acknowledgment_.
 
 ## Delimitar sem confundir dados com controlo
 
 Uma trama pode conter comprimento, delimitadores especiais ou uma codificação física que assinala os limites. Num protocolo com uma flag de início e fim, os dados não podem ser interpretados como flags.
 
-No **byte stuffing**, os bytes especiais são precedidos por um escape e transformados segundo a regra do protocolo. No **bit stuffing** de HDLC, o emissor introduz um zero depois de cinco uns consecutivos nos dados; o recetor remove esse zero. A flag `01111110` fica distinguível. O stuffing ocorre depois de formar o conteúdo protegido e é retirado antes da verificação desse conteúdo.
+No **byte stuffing**, os bytes especiais são precedidos por um escape e transformados segundo a regra do protocolo. No **bit stuffing** de HDLC, o emissor introduz um zero depois de cinco uns consecutivos no conteúdo entre flags, incluindo o CRC; o recetor remove esse zero. A flag `01111110` fica distinguível. O stuffing ocorre depois de formar o conteúdo protegido e é retirado antes da verificação desse conteúdo.
 
 Não uses diretamente a dimensão do ficheiro para calcular o tempo de transmissão: inclui cabeçalhos, controlo de erros e escapes. Num byte stuffing, a sobrecarga depende dos bytes efetivamente presentes, não de uma percentagem universal.
 
@@ -32,9 +34,23 @@ Não uses diretamente a dimensão do ficheiro para calcular o tempo de transmiss
 
 A paridade simples deteta qualquer número ímpar de bits alterados, mas pode falhar com dois. Uma checksum soma unidades de dados segundo um algoritmo. Um **CRC** interpreta os bits como coeficientes de um polinómio binário e usa divisão módulo 2: somar e subtrair são XOR, sem transportes.
 
-Para gerador $G$ de grau $r$, acrescenta $r$ zeros à mensagem $D$, divide $D\,2^r$ por $G$ e coloca o resto de $r$ bits no fim. A palavra transmitida fica divisível por $G$.
+Para gerador $G$ de grau $r$, acrescenta $r$ zeros à mensagem $D$, divide $D\,2^r$ por $G$ e coloca o resto de $r$ bits no fim. $D\,2^r$ representa deslocar os bits da mensagem $r$ posições para a esquerda, não multiplicar números numa divisão decimal. A palavra transmitida fica divisível por $G$.
 
-**Exemplo próprio.** Mensagem `1101`, gerador `1011` de grau 3. Divide `1101000` por `1011`; o resto é `001`. Transmite `1101001`. O código permite acompanhar o cálculo e alterar um bit:
+**Exemplo próprio.** Mensagem `1101`, gerador `1011` de grau 3. Acrescentamos três zeros e alinhamos o primeiro 1 do gerador com o primeiro 1 ainda por eliminar:
+
+```text
+  1101000
+⊕ 1011000
+= 0110000
+⊕ 0101100
+= 0011100
+⊕ 0010110
+= 0001010
+⊕ 0001011
+= 0000001
+```
+
+O resto já tem menos de quatro bits significativos, por isso a divisão termina. Escrevemo-lo com três bits, `001`, e transmitimos `1101001`. O código permite repetir o cálculo e alterar um bit:
 
 <CodePlayground language="python" title="Gerar e verificar um CRC" code={`def resto(bits, gerador):
     valor = int(bits, 2)
@@ -52,7 +68,7 @@ print("Resto recebido:", resto(trama, gerador))
 corrompida = format(int(trama, 2) ^ 4, f"0{len(trama)}b")
 print("Com um erro:", resto(corrompida, gerador))`} />
 
-**Resto zero não prova ausência de erro.** Um erro cujo polinómio seja múltiplo do gerador passa despercebido. Um CRC de grau $r$ com termo constante 1 deteta todas as rajadas de comprimento até $r$; outras garantias dependem do polinómio e do comprimento da mensagem. A aproximação $2^{-r}$ para erro não detetado exige um modelo de erros adequado.
+**Resto zero não prova ausência de erro.** Um erro cujo polinómio seja múltiplo do gerador passa despercebido. Uma **rajada** vai do primeiro ao último bit alterado, incluindo os bits corretos entre eles. Um CRC de grau $r$ com termo constante 1 deteta todas as rajadas de comprimento até $r$; outras garantias dependem do polinómio e do comprimento da mensagem. A aproximação $2^{-r}$ para erro não detetado exige um modelo de erros adequado.
 
 A **distância mínima** de um código é a menor distância de Hamming entre duas palavras válidas, ou seja, o menor número de bits diferentes. Um código de distância d deteta até d−1 alterações e, com descodificação apropriada, pode corrigir até $\lfloor(d-1)/2\rfloor$ alterações. Isto não significa que qualquer verificador CRC faça essa correção.
 
@@ -134,8 +150,6 @@ ARQ **por salto** repete só a ligação onde ocorreu a perda, exigindo memória
 
 Num modelo ideal com K ligações iguais de capacidade C, perdas independentes p por ligação e retransmissão sem outras limitações, temos $C_{salto}=C(1-p)$ e $C_{extremos}=C(1-p)^K$. Para K=5 e p=0,1, dão 0,9C e 0,59049C. A diferença cresce com o número de saltos e as perdas. Não aplica estes valores automaticamente a TCP real, que também depende de janela, RTT, congestionamento e temporizadores.
 
-Refaz o traço com a convenção RR(n). Identifica a trama esperada após cada confirmação e calcula um CRC sem consultar a resolução.
-
 ## Combinar BER, janela e redundância
 
 Um problema pode pedir várias decisões sobre a mesma ligação. Resolve primeiro o tempo e a janela, depois o erro de trama, e só no fim o débito útil. O exemplo seguinte usa o modelo ideal de Selective Repeat, com ACK desprezável e erros independentes.
@@ -148,7 +162,7 @@ Dados: $R=4$ Mbit/s, $L=4000$ bits de dados por trama, propagação num sentido 
 4. **Com erros:** $U=(1-p_e)U_0\approx0{,}259399$, logo o débito útil é $RU\approx1{,}037594$ Mbit/s.
 5. **Janela para ocupar a ligação sem erros:** $W\ge1+2a=101$. Selective Repeat precisa de pelo menos oito bits, pois sete só permitem janela 64 e oito permitem 128. Aumentar a janela não elimina a perda de capacidade causada pelos erros.
 
-Agora compara duas codificações corretoras. Uma acrescenta 10% de bits e deixa FER 0,08. Outra acrescenta 30% e deixa FER 0,03. Estas FER são dados do problema depois da correção, não se deduzem apenas da BER original. Mantém a janela 32 e os 4000 bits de dados úteis por trama.
+Agora compara duas codificações corretoras **FEC**, _Forward Error Correction_. Acrescentam redundância para corrigir certos erros no recetor sem pedir outra transmissão. Uma acrescenta 10% de bits e deixa FER 0,08. Outra acrescenta 30% e deixa FER 0,03. Estas FER são dados do problema depois da correção, não se deduzem apenas da BER original. Mantém a janela 32 e os 4000 bits de dados úteis por trama.
 
 | Codificação     | Bits transmitidos | $t_f$  | Utilização $U$ | Fração útil | Débito útil     |
 | --------------- | ----------------- | ------ | -------------- | ----------- | --------------- |
