@@ -4,9 +4,9 @@
 
 ## O que foi verificado
 
-Foram verificadas **125 entradas bibliográficas em 31 cadeiras**. Uma obra só aparece como adotada quando existe uma página pública da FEUP/SIGARRA que a inclui. A disponibilidade legal foi verificada à parte, em páginas oficiais de autores, editoras, projetos ou repositórios institucionais.
+Foram verificadas **124 entradas bibliográficas em 31 cadeiras**. Uma obra só aparece como adotada quando existe uma página pública da FEUP/SIGARRA que a inclui. A disponibilidade legal foi verificada à parte, em páginas oficiais de autores, editoras, projetos ou repositórios institucionais.
 
-ALGA, AMII, Projeto UP, AED, Física II e LDTS têm bibliografias 2026/2027 preenchidas e verificadas. Nas restantes cadeiras, o inventário indica a ocorrência preenchida mais recente efetivamente verificada. Uma bibliografia histórica prova uso nesse ano, sem confirmar automaticamente a edição atual.
+ALGA, AMII, Projeto UP, AED, Física II, LDTS, BD e SO têm bibliografias 2026/2027 preenchidas e verificadas. Nas restantes cadeiras, o inventário indica a ocorrência preenchida mais recente efetivamente verificada. Uma bibliografia histórica prova uso nesse ano, sem confirmar automaticamente a edição atual.
 
 PDFs aleatórios no GitHub, espelhos de manuais e cópias sem autorização clara foram excluídos. `Acesso gratuito autorizado` também não significa automaticamente uma licença aberta para redistribuir ou adaptar.
 
@@ -185,11 +185,12 @@ A ficha de AMII repete a entrada de Barbosa; o catálogo conserva uma entrada. A
 - **[Algorithms in C++: Parts 1–4, Fundamentals, Data Structures, Sorting, Searching](https://www.cs.princeton.edu/~rs/)** — Robert Sedgewick — 3rd edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
 - **[Introduction to Algorithms](https://mitpress.mit.edu/9780262533058/introduction-to-algorithms/)** — Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein — 3rd or 4th edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
 
-### BD — Bases de Dados
+### BD: Bases de Dados
 
-**Evidência da cadeira:** [2021/2022](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=484405).
+**Evidência da cadeira:** [Programa e bibliografia de 2026/2027, verificados em 2 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990).
 
-- **[A First Course in Database Systems](http://www.pearson.com/us/higher-education/product/Ullman-First-Course-in-Database-Systems-A-3rd-Edition/9780136006374.html)** — Jeffrey D. Ullman, Jennifer Widom — 3rd edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
+- **[A First Course in Database Systems](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990)**, Jeffrey D. Ullman e Jennifer Widom, ISBN 9780136006374. **Papel:** obrigatória. **Acesso:** biblioteca ou compra.
+- **Database Management Systems**, Raghu Ramakrishnan e Johannes Gehrke, ISBN 0071168982, capítulos 18 a 20. **Papel:** complementar. **Acesso:** biblioteca ou compra; texto integral não identificado localmente.
 
 ### F II — Física II
 
@@ -216,13 +217,15 @@ As edições atuais de Villate são a terceira edição de 2019, reimpressa em 2
 
 A ficha de LDTS mantém um ISBN antigo para Thinking in Java apesar de pedir a quarta edição ou superior; o inventário não trata esses dados como uma edição confirmada.
 
-### SO — Sistemas Operativos
+### SO: Sistemas Operativos
 
-**Evidência da cadeira:** [2019/2020](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=436440).
+**Evidência da cadeira:** [Programa e bibliografia de 2026/2027, verificados em 2 de outubro de 2026](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586993).
 
-- **[Operating System Concepts](https://epdc.wiley.com/pub/interactives/430aeb50-b6ef-49ef-9a1e-3f568ee3734e/link01.html)** — Abraham Silberschatz, Peter Baer Galvin, Greg Gagne — 9th edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
-- **[UNIX Systems Programming: Communication, Concurrency and Threads](https://www.pearson.com/us/higher-education/program/Robbins-UNIX-Systems-Programming-Communication-Concurrency-and-Threads-Communication-Concurrency-and-Threads-2nd-Edition/PGM332591.html)** — Kay A. Robbins, Steven Robbins — 2nd edition. **Papel:** obrigatória. **Acesso:** comercial, biblioteca ou subscrição.
-- **[Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/)** — Remzi H. Arpaci-Dusseau, Andrea C. Arpaci-Dusseau — FEUP lists 2018; official v1.10 (2023). **Papel:** complementar. **Acesso:** texto gratuito autorizado; sem licença aberta verificada.
+- **[Operating System Concepts](https://discovery.up.pt/permalink/351PUCS_INST/95s0gq/alma990009498950108801)**, Abraham Silberschatz, Peter Baer Galvin e Greg Gagne. **Papel:** obrigatória. **Acesso:** biblioteca ou compra. A ficha atual não identifica edição, ano nem ISBN.
+
+O documento de funcionamento do Moodle de 2025/26 recomenda a nona edição; os slides identificam a décima edição de 2018. UNIX Systems Programming e OSTEP constam da bibliografia histórica de 2019/2020, preservada no JSON.
+
+**Complemento gratuito:** [Operating Systems: Three Easy Pieces](https://pages.cs.wisc.edu/~remzi/OSTEP/), de Remzi e Andrea Arpaci-Dusseau. Os 68 capítulos públicos estão guardados, com simuladores e código. A ficha atual de SO não o lista; o acesso gratuito não estabelece uma licença aberta para copiar a prosa.
 
 ### DA — Desenho de Algoritmos
 

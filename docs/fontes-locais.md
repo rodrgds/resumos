@@ -73,7 +73,7 @@ O arquivo público de AED acrescentou 36 PDFs dos docentes, com 1 323 páginas, 
 
 ## Limites da coleção
 
-As 75 obras fornecidas estão identificadas na [bibliografia](fontes-bibliografia.json). Das 125 entradas adotadas, 111 ainda não têm um livro ou suplemento correspondente identificado localmente. Algumas obras repetem-se entre cadeiras. Há cinco entradas adotadas com PDF completo local, duas com capítulos OSTEP, quatro com suplementos, duas com downloads indisponíveis e uma cujo livro exige um pedido aos autores. As alternativas abertas são contadas à parte.
+As 75 obras fornecidas estão identificadas na [bibliografia](fontes-bibliografia.json). Das 124 entradas adotadas, 111 ainda não têm um livro ou suplemento correspondente identificado localmente. Algumas obras repetem-se entre cadeiras. Há cinco entradas adotadas com PDF completo local, uma com capítulos OSTEP, quatro com suplementos, duas com downloads indisponíveis e uma cujo livro exige um pedido aos autores. As alternativas abertas são contadas à parte.
 
 A ligação oficial de Building Skills in Python devolve 404. University Physics, Volume 1, foi guardado pelo botão atual do OpenStax: 959 páginas e licença CC BY-NC-SA 4.0 no PDF de 2026. As obras sem ficheiro local mantêm o seu estado explícito. As lacunas de acesso aos Moodles também continuam identificadas.
 
