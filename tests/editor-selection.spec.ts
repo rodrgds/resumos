@@ -28,6 +28,9 @@ for (const palette of [
           exact: true,
         });
       await editor.scrollIntoViewIfNeeded();
+      await editor.fill(
+        'def exemplo(valor):\n    # Um comentário\n    return "resultado", valor + 2',
+      );
       await editor.click();
       await page.keyboard.press('ControlOrMeta+a');
       await expect(
@@ -60,6 +63,7 @@ for (const palette of [
             const root = content.closest('.cm-editor')!;
             const selection = root.querySelector('.cm-selectionBackground')!;
             const contrasts: number[] = [];
+            let syntaxPreserved = true;
             let selectionVisible = true;
             for (const line of content.querySelectorAll('.cm-line')) {
               const backgrounds = [false, true].map((selected) => {
@@ -78,6 +82,9 @@ for (const palette of [
               });
               selectionVisible &&= backgrounds[0] !== backgrounds[1];
               for (const token of [line, ...line.querySelectorAll('span')]) {
+                syntaxPreserved &&=
+                  getComputedStyle(token, '::selection').color ===
+                  getComputedStyle(token).color;
                 ctx.clearRect(0, 0, 1, 1);
                 for (const color of [
                   getComputedStyle(root).backgroundColor,
@@ -98,11 +105,17 @@ for (const palette of [
                 );
               }
             }
-            return { contrast: Math.min(...contrasts), selectionVisible };
+            return {
+              contrast: Math.min(...contrasts),
+              selectionVisible,
+              syntaxPreserved,
+            };
           });
-          return result.selectionVisible && result.contrast >= 4.5;
+          expect(result.selectionVisible).toBe(true);
+          expect(result.syntaxPreserved).toBe(true);
+          return result.contrast;
         })
-        .toBe(true);
+        .toBeGreaterThanOrEqual(4.5);
     });
   }
 }
