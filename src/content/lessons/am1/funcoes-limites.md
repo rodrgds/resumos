@@ -3,6 +3,8 @@ title: Funções, limites e continuidade
 description: Domínio, inversas, radianos, limites laterais, indeterminações e continuidade antes de derivar.
 section: conteudo
 order: 1
+practices:
+  - am1/pratica-fundamentos
 ---
 
 Antes de calcular uma derivada ou um integral, precisamos de saber onde a função existe e o que acontece perto dos pontos problemáticos. Nesta página revemos as ferramentas de pré-cálculo usadas nas contas seguintes.
@@ -32,20 +34,26 @@ A tangente só existe quando $\cos x\ne0$. Também usamos $\cot x=\cos x/\sin x$
 
 As funções trigonométricas não são injetivas em todo o domínio. Para definir as inversas escolhemos uma restrição:
 
-| Inversa                  | Domínio     | Valores da inversa |
-| ------------------------ | ----------- | ------------------ |
-| $\arcsin x$              | $[-1,1]$    | $[-\pi/2,\pi/2]$   |
-| $\arccos x$              | $[-1,1]$    | $[0,\pi]$          |
-| $\arctan x$              | $\mathbb R$ | $]-\pi/2,\pi/2[$   |
-| $\operatorname{arccot}x$ | $\mathbb R$ | $]0,\pi[$          |
+| Inversa                  | Domínio                       | Valores da inversa             |
+| ------------------------ | ----------------------------- | ------------------------------ |
+| $\arcsin x$              | $[-1,1]$                      | $[-\pi/2,\pi/2]$               |
+| $\arccos x$              | $[-1,1]$                      | $[0,\pi]$                      |
+| $\arctan x$              | $\mathbb R$                   | $]-\pi/2,\pi/2[$               |
+| $\operatorname{arccot}x$ | $\mathbb R$                   | $]0,\pi[$                      |
+| $\operatorname{arcsec}x$ | $]-\infty,-1]\cup[1,+\infty[$ | $[0,\pi]\setminus\{\pi/2\}$    |
+| $\operatorname{arccsc}x$ | $]-\infty,-1]\cup[1,+\infty[$ | $[-\pi/2,\pi/2]\setminus\{0\}$ |
 
 Adotamos $\operatorname{arccot}x=\pi/2-\arctan x$. Assim, $\arcsin(\sin x)=x$ apenas no intervalo principal. Por exemplo, $\arcsin(\sin(3\pi/4))=\pi/4$, porque o arco-seno devolve um valor entre $-\pi/2$ e $\pi/2$.
+
+Com os ramos da tabela, $\operatorname{arcsec}x=\arccos(1/x)$ e $\operatorname{arccsc}x=\arcsin(1/x)$. As restrições de valores fazem parte da definição das inversas.
 
 As identidades $\sin(2x)=2\sin x\cos x$ e $\cos(2x)=1-2\sin^2x=2\cos^2x-1$ vão permitir simplificar integrais. Lembra também que $\ln(ab)=\ln a+\ln b$ exige $a,b>0$ e que $\ln(a+b)$ não se separa.
 
 ## O que significa um limite
 
 Escrever $\lim_{x\to a}f(x)=L$ diz que os valores de $f(x)$ ficam tão perto de $L$ quanto quisermos quando $x$ está suficientemente perto de $a$, com $x\ne a$. O valor $f(a)$ pode ser diferente ou nem existir.
+
+O ponto $a$ deve poder ser aproximado por pontos do domínio diferentes de $a$. Se estiver isolado no domínio, esta definição não lhe atribui um limite.
 
 Precisamente, para todo $\varepsilon>0$ existe $\delta>0$ tal que, para todo $x$ no domínio,
 
