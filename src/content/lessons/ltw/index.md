@@ -1,34 +1,73 @@
 ---
 title: Linguagens e Tecnologias Web
-description: HTML, CSS, PHP, JavaScript, HTTP, segurança, expressões regulares e XML para construir sítios dinâmicos.
+description: Construir páginas com HTML e CSS, programar o cliente e o servidor, e explicar HTTP, segurança, expressões regulares e XML.
 section: conteudo
 order: 0
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: LTW, SIGARRA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104
+    - title: André Restivo, LTW 2025/26
+      url: https://pages.up.pt/~up353972/page/courses/ltw/
+  coverage: Programa da ficha de 2025/26 e sequência pública de aulas do docente, com exemplos e exercícios próprios.
+  gaps:
+    - Regras e materiais da edição de 2026/27 por confirmar.
+    - Páginas protegidas do projeto, exame e algumas soluções práticas indisponíveis.
 ---
 
-Linguagens e Tecnologias Web é a cadeira onde aprendes a construir sítios a sério: páginas bem estruturadas, com estilo próprio, que reagem no navegador e vão buscar dados a um servidor com base de dados. Vens de [programação procedimental](/cadeiras/fp/) em Python e de [C++](/cadeiras/p/) com tipos estáticos; aqui vais trabalhar com linguagens de tipagem dinâmica como PHP e JavaScript, onde as mesmas ideias de funções, parâmetros e erros aparecem com regras mais soltas e armadilhas novas.
+Em LTW construímos uma aplicação que tem dois lados. O navegador apresenta o HTML, aplica CSS e executa JavaScript. O servidor recebe pedidos HTTP, executa PHP e consulta uma base de dados. Para resolver um problema, começa por identificar em que lado está o dado e em que momento o código corre.
 
-## Como está organizado
+Os exemplos usam um catálogo de livros e pequenas reservas. São exemplos e exercícios próprios, não resoluções de provas oficiais. Pressupõem funções, ciclos e estruturas de dados de programação, SQL básico e uso de Git.
 
-O fio condutor destas páginas é uma pequena mercearia em linha: uma lista de produtos guardada numa base de dados SQLite, uma página que a mostra, pesquisa que filtra sem recarregar e um login para o dono da loja. Vais reencontrar este cenário em várias páginas, sempre com um pedaço novo.
+## Percurso de estudo
 
-Começa por [HTML e estrutura semântica](html-estrutura/), que monta o esqueleto da página de produto com formulário acessível e validação. Depois, [CSS, caixa e layout](css-estilo-layout/) veste esse esqueleto com seletores, flexbox, grelha e desenho responsivo.
+1. [HTML e estrutura semântica](/cadeiras/ltw/html-estrutura/). Escolher elementos, construir formulários e prever os dados enviados.
+2. [CSS, caixa e layout](/cadeiras/ltw/css-estilo-layout/). Resolver seletores e cascata, medir caixas e construir layouts responsivos.
+3. [PHP e páginas dinâmicas](/cadeiras/ltw/php-dinamicas-bd/). Validar pedidos, consultar SQLite e organizar páginas, ações e sessões.
+4. [JavaScript e DOM](/cadeiras/ltw/javascript-dom-eventos/). Seguir variáveis e funções, alterar a árvore e responder a eventos.
+5. [HTTP e Ajax](/cadeiras/ltw/http-ajax-json/). Ler mensagens, usar JSON, lidar com promessas e distinguir origem de autenticação.
+6. [Segurança web](/cadeiras/ltw/seguranca-web/). Identificar o que o atacante controla e escolher uma defesa para cada fronteira.
+7. [Expressões regulares](/cadeiras/ltw/expressoes-regulares/). Construir padrões, prever o primeiro resultado e interpretar capturas.
+8. [XML e XPath](/cadeiras/ltw/xml-xpath/). Distinguir boa formação de validade e selecionar nós com contexto e namespaces.
 
-A terceira parte põe o servidor a trabalhar: [PHP e páginas dinâmicas com base de dados](php-dinamicas-bd/) lê os produtos do SQLite, trata parâmetros e sessões, e organiza o código com includes. A quarta parte corre no navegador: [JavaScript no cliente e DOM](javascript-dom-eventos/) manipula a página por eventos e valida formulários.
+Cada lição tem exemplos resolvidos e exercícios no fim. Tenta prever o resultado antes de executar. Depois altera um dado, uma condição ou um seletor e explica a diferença. A [Cheat sheet](/cadeiras/ltw/folha-consulta/) serve para consultar regras depois de as estudares.
 
-Segue-se a conversa entre os dois lados: [HTTP, pedidos e Ajax](http-ajax-json/) lê pedidos e respostas, usa REST e JSON e implementa a pesquisa com `fetch`. Depois, [Segurança web](seguranca-web/) corrige a loja contra injeção SQL, XSS e CSRF. Por fim, duas ferramentas transversais: [Expressões regulares](expressoes-regulares/) para validar e limpar texto, e [XML e XPath](xml-xpath/) para representar e consultar dados em XML.
+Para treinar em conjunto, implementa uma reserva que começa num formulário, valida no PHP, usa uma consulta preparada, identifica o utilizador pela sessão e devolve uma resposta. Confirma o pedido no separador Rede do navegador. Repete com quantidade zero, parâmetro ausente e utilizador sem permissão.
 
-## Como estudar
+## Ambiente dos exemplos
 
-Lê cada página com o editor aberto e um servidor local a correr. Em LTW, ler o exemplo não chega: escreve o código, abre a página no navegador, abre as ferramentas de desenvolvimento e vê o que viaja na rede. Quando algo falhar, decide primeiro de que lado está o erro: inspeciona o HTML e a consola no cliente, e imprime os parâmetros recebidos no servidor. Mete um erro de propósito, como um parâmetro em falta, e confirma que a tua página trata esse caso em vez de partir.
+Os editores HTML/CSS/JavaScript executam numa pré-visualização isolada sem rede. Mostram DOM, eventos e layout; não fazem pedidos ao teu servidor. Os blocos PHP usam PHP 8.4 numa origem separada. A ficha de 2025/26 indica PHP 7.4 e sqlite3. As regras de conversão e funcionalidades variam com a versão, por isso confirma o ambiente pedido pelo docente.
 
-## Avaliação
+Para uma aplicação com vários ficheiros, instala o ambiente indicado na aula, cria a base de dados a partir do script SQL e corre `php -S localhost:8000` na pasta pública do projeto. Abre `http://localhost:8000/`; abrir o ficheiro PHP diretamente não o executa. Este servidor serve para desenvolvimento local.
 
-A forma de avaliação varia de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes o peso do exame e do trabalho laboratorial, as notas mínimas e as regras do projeto.
+## Avaliação de 2025/26
 
-## Fontes e âmbito
+A [ficha de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104) define 50% de exame e 50% de trabalho, com mínimo de 8/20 no exame. Frequência exige participar e entregar o projeto, sem ultrapassar 25% de faltas às práticas e teórico-práticas. A entrega antecede a apresentação na última semana de aulas.
 
-Estas páginas seguem o âmbito da unidade curricular de Linguagens e Tecnologias Web (L.EIC019) do 2.º ano, 2.º semestre da LEIC, ocorrência de 2025/26: HTML 5 e CSS 3, a linguagem PHP, JavaScript do lado do cliente, o protocolo HTTP, segurança web, expressões regulares, e XML com XPath. O software indicado na ficha é o sqlite3 e o PHP 7.4.
+Quem conserva a frequência anterior informa o responsável na primeira semana e não se inscreve nas turmas TP. Trabalhadores-estudantes cumprem os mesmos prazos e combinam apresentações intermédias. O exame pode melhorar no recurso da mesma edição; o projeto não. Melhorar um projeto de uma edição anterior já aprovada exige frequentar novamente a UC.
 
-Material oficial da FEUP:
+A [página do docente](https://pages.up.pt/~up353972/page/courses/ltw/) divide os 50% de projeto em 10% e 40%. Os detalhes protegidos de exame, projeto e algumas soluções não estavam disponíveis nesta revisão. Confirma formatos, datas, recursos permitidos e regras de 2026/27 no Moodle e na ficha dessa edição. Estes apontamentos não garantem uma classificação nem substituem esses materiais.
 
-- Ficha da unidade curricular de Linguagens e Tecnologias Web, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104).
+## Materiais e bibliografia
+
+A base são os materiais de 2025/26 ligados no Moodle e na página de André Restivo, incluindo os slides e as propostas práticas. As explicações e soluções destas páginas foram escritas de novo.
+
+- [Slides e exercícios de André Restivo](https://pages.up.pt/~up353972/page/courses/ltw/). Segue a sequência de aulas e consulta o enunciado original de cada prática.
+- [Exemplo Chinook do docente](https://github.com/arestivo/chinook). Observa a separação entre páginas, templates, ações e base de dados. Código de demonstração antigo pode usar práticas que precisam de correção, incluindo SHA-1 para palavras-passe.
+- Elizabeth Castro e Bruce Hyslop, _HTML5 & CSS3: Visual QuickStart Guide_, 2011, ISBN 0-321-71961-1.
+- David Flanagan, _JavaScript: The Definitive Guide_, 2011, ISBN 0-596-80552-7.
+- Anders Møller e Michael I. Schwartzbach, _An Introduction to XML and Web Technologies_, ISBN 0-321-26966-7.
+
+Os três livros constam da bibliografia da ficha. As regras normativas de HTTP/1.1 e JSON estão nas [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html) e [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html). Para pormenores atuais de APIs, consulta [MDN Web Docs](https://developer.mozilla.org/), [manual do PHP](https://www.php.net/manual/en/) e [SQLite](https://www.sqlite.org/docs.html). Para os contextos de saída e defesas de segurança, consulta as cheat sheets da OWASP sobre [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html), [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) e [palavras-passe](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+
+## Vídeos para rever
+
+- [HTML in 100 Seconds](https://www.youtube.com/watch?v=ok-plXXHlWw). Revê a distinção entre estrutura e apresentação; depois escolhe os elementos para uma página sem CSS.
+- [Hyper Text Transfer Protocol Crash Course](https://www.youtube.com/watch?v=0OrmKCB0UrQ). Segue uma mensagem HTTP e distingue linha inicial, cabeçalhos e corpo.
+- [RESTful APIs in 100 Seconds](https://www.youtube.com/watch?v=-MTSQjw5DrM). Relaciona recursos e métodos; verifica por que JSON, por si, não define REST.
+- [Hacking Websites with SQL Injection](https://www.youtube.com/watch?v=_jKylhJtPmI). Identifica o ponto onde a entrada muda a sintaxe SQL e reescreve-o com marcadores.
+- [JavaScript in 100 Seconds](https://www.youtube.com/watch?v=DHjqpvDnNGE). Usa como panorama da linguagem, depois segue as variáveis nos exemplos de closures e eventos.
+- [Learn Regular Expressions In 20 Minutes](https://www.youtube.com/watch?v=rhzKDrUiJVk). Observa classes, grupos e quantificadores; pausa para prever a correspondência antes de a veres.
+
+Os vídeos são complementos. O programa e as regras de avaliação vêm da FEUP.

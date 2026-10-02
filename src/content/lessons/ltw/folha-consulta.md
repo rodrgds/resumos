@@ -1,44 +1,38 @@
 ---
-title: Cheat sheet de LTW
-description: Referência curta para HTML, CSS, PHP, JavaScript e DOM, conforme os apontamentos de SofiaViP.
+title: Cheat sheet
+description: Regras para prever HTML, CSS, PHP, JavaScript, HTTP, segurança, regex e XPath.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: Resumos LTW (até DOM) SofiaViP
-      url: https://drive.google.com/file/d/1oPo24z5B_E4aHgSTvD3wTMgtYtXftv6e/view
-  coverage: A página 1 é a capa; as páginas 2 a 15 resumem Web e URL, HTML e formulários, CSS e layout, PHP e sessões, JavaScript, DOM e uma nota breve sobre Ajax e temporizadores.
-  gaps:
-    - O PDF não desenvolve XML/XPath, segurança Web, APIs REST nem aplicações completas com base de dados; as notas de Ajax são breves.
-    - A edição do programa e as regras de avaliação a que os apontamentos correspondem não foram confirmadas.
+order: 0
 ---
 
-Para cada página, separa **estrutura, apresentação, comportamento e resposta do servidor**.
+## HTML e CSS
 
-## HTML e formulários
+- [Formulários](/cadeiras/ltw/html-estrutura/#formulários-e-dados-enviados): `id` liga à label; `name` identifica o parâmetro. Checkbox não marcada e `disabled` não enviam. `readonly` normalmente envia. `POST` não cifra; valida de novo no servidor.
+- [Seletores](/cadeiras/ltw/css-estilo-layout/#seletores): espaço = descendente; `>` = filho; `+` = irmão seguinte; `~` = irmãos posteriores. `nth-child` conta todos os elementos; `nth-of-type` só o tipo.
+- [Cascata](/cadeiras/ltw/css-estilo-layout/#cascata-e-herança): origem/importância e camadas antes de especificidade; posição desempata. Trio `(ID, classes/atributos/pseudo-classes, elementos/pseudo-elementos)`. Declaração no filho vence herança.
+- [Caixa](/cadeiras/ltw/css-estilo-layout/#medidas-e-modelo-de-caixa): `content-box` soma padding e border à largura; `border-box` já os inclui. Margin fica fora. `rem` usa a raiz; `em` depende da propriedade e do tamanho de letra relevante.
+- [Layout](/cadeiras/ltw/css-estilo-layout/#fluxo-e-posicionamento): `relative` conserva espaço; `absolute` e `fixed` saem do fluxo; `sticky` conserva. Flex organiza eixos; grid organiza linhas e colunas. `justify-content` segue o eixo principal.
 
-Um URL identifica um recurso e pode incluir esquema, anfitrião, caminho, parâmetros de consulta e fragmento. O navegador pede o recurso e interpreta a resposta. Em HTML, começa por `<!doctype html>`, `html`, `head` e `body`; usa `title`, `meta charset` e `meta viewport` no cabeçalho. Escolhe elementos pela **função semântica** (`main`, `nav`, `section`, `article`, `h1`–`h6`) e mantém a hierarquia de títulos coerente. Um `id` deve ser único na página. Vê [estrutura HTML](/cadeiras/ltw/html-estrutura/#o-esqueleto-mínimo).
+## PHP e JavaScript
 
-Num formulário, cada controlo enviado precisa de `name`; associa `label` ao `id` do controlo. `type`, `required`, `min`, `max` e `pattern` ajudam a entrada, mas a validação do navegador **não substitui** a validação no servidor. `GET` põe dados no URL e é adequado a consultas sem efeitos; `POST` envia dados no corpo e é adequado a alterações. Usa tabelas para dados tabulares, com cabeçalhos e associações claras, não para dispor a página. Vê [formulários](/cadeiras/ltw/html-estrutura/#formulários-acessíveis) e [tabelas](/cadeiras/ltw/html-estrutura/#tabelas-para-dados-não-para-layout).
+- [PHP](/cadeiras/ltw/php-dinamicas-bd/#receber-um-pedido): entrada pode faltar ou ser array. Verifica tipo, valida e só depois converte. `===` distingue tipos; `isset` rejeita null; `empty` rejeita também `'0'`.
+- [PDO](/cadeiras/ltw/php-dinamicas-bd/#sqlite-e-consultas-preparadas): `prepare` + `execute` para valores. Marcadores não substituem identificadores. `fetch` devolve linha ou false. Transação = commit conjunto ou rollback.
+- [Redirecionamento e sessão](/cadeiras/ltw/php-dinamicas-bd/#sessões-e-autenticação): `header` antes de saída; `Location` não pára o programa, usa `exit`. Após POST, 303 permite GET. Sessão no servidor, identificador habitualmente no cookie.
+- [JavaScript](/cadeiras/ltw/javascript-dom-eventos/#tipos-e-conversões): `const` impede reatribuição, não mutação. `+` pode concatenar. `??` substitui null/undefined; `||` substitui valores falsos. `map` transforma, `filter` seleciona, `reduce` acumula.
+- [Funções e eventos](/cadeiras/ltw/javascript-dom-eventos/#eventos-e-delegação): closure conserva ambiente lexical. `this` normal depende da chamada; arrow herda-o. `target` é o alvo; `currentTarget` é o elemento cujo listener está a correr. `preventDefault` impede ação, não propagação.
 
-## CSS sem adivinhar a cascata
+## HTTP e segurança
 
-Um seletor escolhe elementos; a cascata compara origem/importância, especificidade e ordem. Em regra, um ID tem mais especificidade do que uma classe, e uma classe mais do que um tipo; não somes especificidades como números decimais. Com `box-sizing: border-box`, a largura declarada inclui _padding_ e borda. Margens continuam fora. `rem` refere o tamanho de letra da raiz; `em`, o contexto do elemento. Vê [seletores e especificidade](/cadeiras/ltw/css-estilo-layout/#seletores-e-a-conta-da-especificidade) e [modelo de caixa](/cadeiras/ltw/css-estilo-layout/#o-modelo-de-caixa).
+- [HTTP](/cadeiras/ltw/http-ajax-json/#métodos-segurança-e-idempotência): GET seguro e idempotente; PUT/DELETE idempotentes; POST não em geral. Idempotência descreve efeito, não resposta igual. Fragmento não vai ao servidor.
+- [Cabeçalhos](/cadeiras/ltw/http-ajax-json/#ler-mensagens): Accept pede formato; Content-Type descreve corpo. Set-Cookie na resposta, Cookie no pedido. 201 criado; 204 sem corpo; 303 redireciona; 304 cache válida; 400 entrada; 403 recusa; 404 ausente; 405 método; 500 interno.
+- [Ajax](/cadeiras/ltw/http-ajax-json/#json-e-fetch): `fetch` não rejeita só por 404; verifica `ok`. `json()` também é assíncrono. Encoda parâmetros; ignora respostas antigas. CORS permite leitura entre origens, não autentica nem impede CSRF.
+- [Defesas](/cadeiras/ltw/seguranca-web/#injeção-sql): SQL preparado; escape conforme contexto; `textContent` para texto; token CSRF não vazio e verificado; autorização no servidor; caminhos fixos ou controlados; HTTPS no transporte.
+- [Palavras-passe](/cadeiras/ltw/seguranca-web/#palavras-passe-e-sessão): password_hash/password_verify, nunca SHA-1 simples. Salt não salva uma palavra-passe fraca. Regenera sessão ao autenticar.
 
-No fluxo normal, os blocos ocupam linhas e os elementos inline acompanham o texto. `position: absolute` sai do fluxo e posiciona-se relativamente ao ancestral posicionado mais próximo; `fixed` prende-se ao _viewport_. **Flexbox** dispõe itens num eixo principal, com `justify-content` nesse eixo e `align-items` no transversal. **Grid** define linhas e colunas para composições bidimensionais. Uma _media query_ adapta o layout ao espaço disponível; verifica também conteúdo longo, zoom e ecrãs estreitos. Vê [flex e grid](/cadeiras/ltw/css-estilo-layout/#dispor-cartões-com-flexbox-e-grelha) e [media queries](/cadeiras/ltw/css-estilo-layout/#desenho-responsivo-com-media-queries).
+## Regex e XML
 
-## PHP e estado do pedido
-
-PHP corre no servidor e gera uma resposta, muitas vezes HTML. Cada pedido HTTP é independente: para guardar estado entre pedidos, a aplicação usa mecanismos como sessões, associadas a um identificador enviado pelo navegador. Lê entrada de `$_GET` ou `$_POST` conforme o método e valida **tipo, formato e autorização** antes de a usar. `$_SESSION` contém dados do lado do servidor depois de iniciar a sessão; não trates o identificador de sessão como prova suficiente de autorização para qualquer ação. Vê [primeiro script](/cadeiras/ltw/php-dinamicas-bd/#o-primeiro-script) e [sessões](/cadeiras/ltw/php-dinamicas-bd/#sessões-e-login).
-
-Ao aceder a uma base de dados, passa valores por parâmetros de uma instrução preparada; nunca constróis SQL com entrada colada numa string. Ao mostrar texto não confiável em HTML, escapa-o para o contexto de saída. Estas regras são necessárias para usar os exemplos do PDF em projetos reais; o PDF não desenvolve a análise de segurança. Vê [acesso à BD](/cadeiras/ltw/php-dinamicas-bd/#ler-produtos-do-sqlite) e [injeção SQL](/cadeiras/ltw/seguranca-web/#injeção-sql-nunca-colar-entrada-no-sql).
-
-## JavaScript, DOM e eventos
-
-Em JavaScript, `const` impede reatribuir a variável, não congela o objeto. `let` permite reatribuição; evita `var` quando o âmbito de bloco é o pretendido. `===` compara sem conversão implícita de tipos; `==` pode converter operandos. Arrays guardam elementos ordenados; objetos agrupam propriedades; `Map` mantém associações chave-valor e `Set` valores únicos. Uma _closure_ retém acesso ao ambiente léxico da função que a criou. Vê [sintaxe JavaScript](/cadeiras/ltw/javascript-dom-eventos/#sintaxe-sem-surpresas-quase).
-
-O DOM representa o documento como nós. Seleciona com `querySelector` ou `querySelectorAll`, altera `textContent` para texto e cria nós com `createElement`/`append` quando precisares de estrutura. `innerHTML` interpreta marcação e exige tratamento explícito de conteúdo não confiável. Num evento, `event.target` é a origem e `event.currentTarget` o elemento cujo listener está a correr; a propagação permite delegar eventos num ancestral estável. `preventDefault()` cancela a ação padrão quando o evento é cancelável; não pára a propagação. Vê [DOM](/cadeiras/ltw/javascript-dom-eventos/#mexer-na-página-pelo-dom) e [eventos](/cadeiras/ltw/javascript-dom-eventos/#a-propagação-dos-eventos).
-
-Uma operação assíncrona não termina necessariamente antes da próxima linha de código. A nota final do PDF menciona pedidos Ajax e temporizadores; em código atual, `fetch()` devolve uma promessa. Verifica `response.ok`, trata erros e atualiza apenas o DOM necessário quando os dados chegarem. Vê [pesquisa com fetch](/cadeiras/ltw/http-ajax-json/#pesquisa-com-fetch-sem-recarregar), que desenvolve este tema além do PDF.
-
-O PDF é um apoio parcial. Confirma a matéria e os critérios da edição que estás a frequentar.
+- [Regex](/cadeiras/ltw/expressoes-regulares/#peças-e-precedência): `[]` escolhe um caráter; `*` zero+, `+` um+, `?` opcional. `(?:...)` agrupa sem capturar. Agrupa alternativas antes de ancorar. Guloso tenta máximo; preguiçoso tenta mínimo.
+- [Capturas](/cadeiras/ltw/expressoes-regulares/#capturas-e-referências): grupo 0 é tudo; `\1` exige repetição da captura. Lookaround testa sem consumir. Formato de data não prova data existente.
+- [XML](/cadeiras/ltw/xml-xpath/#boa-formação-e-validade): boa formação = sintaxe; validade = contrato. Namespace é URI, não prefixo. Por defeito afeta elementos, não atributos sem prefixo.
+- [XPath](/cadeiras/ltw/xml-xpath/#predicados-e-posição): `/` parte da raiz; `//` procura descendentes; `@` atributo; `text()` texto; `[condição]` filtra. Posições começam em 1. `//x[1]` pode dar vários; `(//x)[1]` dá o primeiro global.

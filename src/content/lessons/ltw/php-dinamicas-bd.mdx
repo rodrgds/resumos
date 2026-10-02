@@ -1,139 +1,176 @@
 ---
 title: PHP e páginas dinâmicas com base de dados
-description: Sintaxe de PHP, parâmetros HTTP, sessões, PDO com SQLite e organização com includes.
+description: Tipos, funções, pedidos, PDO, transações, templates, sessões e autenticação no servidor.
 section: conteudo
 order: 3
+practices:
+  - ltw/praticar-php
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import ciclo from '../../ltw/ciclo-pedido.dot?raw';
+import dados from '../../ltw/dados.php?raw';
+import sqlite from '../../ltw/sqlite.php?raw';
 
-O HTML e o CSS que viste até aqui são estáticos: todos os visitantes recebem a mesma página. O PHP corre no servidor e monta a página na hora, com dados que podem mudar a cada pedido. Vens de [programação procedimental](/cadeiras/fp/) em Python: as funções e os parâmetros são os mesmos de [sempre](/cadeiras/fp/funcoes/), mas a tipagem é dinâmica, as variáveis começam por `$` e cada pedido começa com a memória vazia. O software da cadeira é PHP 7.4 com sqlite3, segundo a ficha da unidade curricular[^ficha-ltw].
+O PHP corre no servidor para cada pedido. Pode consultar a base de dados e produzir HTML ou JSON. O cliente recebe essa saída, não as variáveis nem as funções do PHP. Uma variável local criada num pedido não fica automaticamente disponível no seguinte.
 
-[^ficha-ltw]: Ficha da unidade curricular de Linguagens e Tecnologias Web, ocorrência de 2025/26: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104.
+## Valores, strings e arrays
 
-Cada pedido à mercearia faz a mesma viagem: o navegador pede, o PHP prepara e executa a consulta, o SQLite devolve as linhas e o PHP monta o HTML da resposta.
-
-<Dot
-  source={ciclo}
-  alt="Ciclo de um pedido: o navegador envia o GET ao PHP no servidor, o PHP prepara e executa a consulta no ficheiro loja.sqlite, recebe as linhas e devolve HTML ao navegador."
-/>
-
-## O primeiro script
-
-Guarda isto em `ola.php` e abre-o através do servidor, nunca como ficheiro local, porque o navegador sozinho não corre PHP:
+Uma variável começa por `$`; o valor tem um tipo em execução. `===` compara valor e tipo, enquanto `==` admite conversões. Se uma função devolve uma nota de 0 a 20 ou `null` quando o aluno não existe, verifica `!== null`. O teste `if ($nota)` também rejeitaria a nota válida 0.
 
 ```php
 <?php
-$nome = $_GET['nome'] ?? 'visitante';
-echo '<p>Olá, ' . htmlspecialchars($nome) . '!</p>';
-?>
+$nota = 0;
+var_dump($nota !== null); // bool(true)
+var_dump((bool) $nota);   // bool(false)
+echo 'Nota: ' . $nota;    // Nota: 0
 ```
 
-O operador `??` e o escape funcionam em qualquer contexto. Corre esta versão mínima, que usa o valor por omissão porque fora do servidor não há parâmetros:
+A concatenação usa `.`, não `+`. Strings com aspas duplas podem interpolar variáveis; aspas simples tratam o texto mais literalmente, com exceções para a barra e a própria aspa. `strlen` mede bytes, por isso um caráter UTF-8 pode ocupar mais de uma unidade. Não o confundas com a quantidade de letras visíveis.
+
+Um array PHP é um mapa ordenado de chaves para valores. Pode funcionar como lista ou como registo:
+
+```php
+<?php
+$livro = ['titulo' => 'Redes', 'preco' => 18];
+$nomes = ['Redes', 'SQL'];
+$nomes[] = 'Algoritmos';
+foreach ($nomes as $indice => $nome) {
+    echo $indice, ': ', $nome, "\n";
+}
+```
+
+A saída tem as linhas `0: Redes`, `1: SQL`, `2: Algoritmos`. `count` conta entradas. `array_map` transforma valores e `array_filter` escolhe-os; alguns métodos conservam chaves, por isso uma lista filtrada pode não ter índices consecutivos. `isset($x)` é falso se `$x` não existe ou vale `null`; `array_key_exists` distingue uma chave existente com valor `null` de uma chave ausente. `empty` também considera vazios valores como `0` e a string `'0'`.
+
+## Funções, tipos e erros
+
+As funções têm o seu âmbito. Passar um array por valor permite alterá-lo localmente sem alterar o do chamador; um parâmetro com `&` passa por referência. Objetos têm outra semântica: duas variáveis podem referir o mesmo objeto.
+
+```php
+<?php
+declare(strict_types=1);
+function total(int $preco, int $quantidade = 1): int {
+    return $preco * $quantidade;
+}
+echo total(1250, 2); // 2500
+```
+
+`strict_types` altera a aceitação de argumentos escalares nas chamadas feitas por esse ficheiro. Não valida parâmetros HTTP nem altera todos os operadores de conversão. Em modo estrito, chamar esta função com `'2'` em vez de `2` gera `TypeError`. Valida e converte a entrada na fronteira antes de chamar funções do domínio. `?int` admite inteiro ou `null`.
+
+Uma classe junta estado e operações; `private` limita o acesso e `public` expõe-o. `$this` identifica o objeto atual; uma operação `static` pertence à classe. `extends` herda de outra classe e `implements` declara um contrato de interface. Não precisas de uma classe para cada página: usa-a quando representa um conceito e reúne operações relacionadas.
+
+```php
+<?php
+class Reserva {
+    private int $quantidade;
+    public function __construct(int $quantidade) {
+        if ($quantidade < 1) throw new InvalidArgumentException('Quantidade inválida');
+        $this->quantidade = $quantidade;
+    }
+    public function unidades(): int { return $this->quantidade; }
+}
+echo (new Reserva(2))->unidades(); // 2
+```
+
+`throw` interrompe o percurso normal. Um `catch` apropriado trata a exceção; `finally` corre no fim, incluindo quando houve exceção. Distingue um erro de entrada que podes explicar ao utilizador de um erro interno que deves registar sem revelar caminhos, SQL ou segredos ao cliente.
+
+## Receber um pedido
+
+`$_GET` contém parâmetros da query string. `$_POST` contém parâmetros de corpos codificados como formulário, não qualquer corpo de um `POST`. Para JSON, lê `php://input` e usa `json_decode`. `$_SERVER['REQUEST_METHOD']` indica o método.
+
+Um parâmetro enviado pelo cliente pode faltar, ser uma string inesperada ou ser um array, por exemplo `quantidade[]=2`. No exemplo executável, a entrada é o corpo HTTP; `parse_str` faz explicitamente o trabalho de descodificar o formulário:
 
 <CodePlayground
   language="php"
-  code={
-    '<?php\n$nome = $_GET["nome"] ?? "visitante";\necho "Olá, " . htmlspecialchars($nome) . "!";'
-  }
+  title="Validar a quantidade recebida"
+  code={dados}
+  input="quantidade=2"
 />
 
-A saída é `Olá, visitante!`. No servidor, o mesmo ficheiro comporta-se conforme o endereço:
+A saída é `Total: 2500 cêntimos`. Com `quantidade=0`, `quantidade=2x`, corpo vazio ou `quantidade[]=2`, a saída é `Quantidade inválida.`. Primeiro confirmamos que o valor é string; depois verificamos inteiro entre 1 e 3. Testar apenas `intval('2x')` aceitaria 2 e perderia a informação de que a entrada tinha lixo.
 
-<Tabs id="ola-parametro" labels={['Sem parâmetro', 'Com ?nome=Ana']}>
-  <div slot="panel-0">
+Numa ação real de formulário, usa `$bruto = $_POST['quantidade'] ?? null`, verifica o método e devolve um estado de erro adequado. Usa inteiros em cêntimos quando queres contas exatas de dinheiro; números de vírgula flutuante podem introduzir arredondamento.
 
-Abre `ola.php` sem nada a seguir. Como `$_GET['nome']` não existe, o `??` entrega `'visitante'` e a página mostra:
+## SQLite e consultas preparadas
 
-```html
-<p>Olá, visitante!</p>
+O PDO dá uma interface para a base de dados. A conexão escolhe o driver; uma consulta preparada mantém os valores separados do texto SQL:
+
+<CodePlayground language="php" title="Consultar preços com PDO" code={sqlite} />
+
+O programa cria uma base em memória, insere três livros e consulta preços abaixo de 20. O resultado é:
+
+```text
+SQL: 12
+Redes: 18
 ```
 
-  </div>
-  <div slot="panel-1">
+`prepare` analisa uma instrução com marcadores; `execute` fornece os valores. `fetch` obtém uma linha ou `false` quando não há mais; `fetchAll` obtém as restantes. `PDO::FETCH_ASSOC` permite aceder por nomes de colunas. O modo de exceção torna os erros SQL explícitos.
 
-Abre `ola.php?nome=Ana`. Agora o parâmetro existe, o `??` entrega `'Ana'` e a página mostra:
+Uma consulta preparada não permite substituir nomes de tabelas, colunas ou palavras-chave por marcadores. Se o cliente escolhe a ordenação, mapeia a entrada para uma lista de nomes fixos. `LIKE` continua a dar significado a `%` e `_` dentro de um parâmetro: preparar evita injeção SQL, não transforma os padrões de `LIKE` em pesquisas literais.
 
-```html
-<p>Olá, Ana!</p>
-```
+Para persistir entre pedidos, usa uma base em ficheiro e um caminho estável, por exemplo `new PDO('sqlite:' . __DIR__ . '/../database/biblioteca.db')`. O processo do servidor precisa de permissão para aceder à base; não a coloques numa pasta pública que permita o download.
 
-  </div>
-</Tabs>
+## Alterar dados de forma consistente
 
-Abrir `ola.php?nome=Ana` mostra "Olá, Ana!". Abrir sem parâmetro mostra "Olá, visitante!", porque o operador `??` usa o valor da direita quando o parâmetro não existe. Repara em dois hábitos que vais repetir em todas as páginas: ler parâmetros de `$_GET` (endereço) ou `$_POST` (formulário) com um valor por omissão, e passar tudo o que vem do utilizador por `htmlspecialchars` antes de o mostrar, para etiquetas injetadas saírem como texto. A razão desta segunda regra está na página de [segurança](seguranca-web/).
-
-O ponto e vírgula, as chavetas e o `if` funcionam como em C. A diferença que mais morde no início é a tipagem dinâmica: `$qtd = "3"` guarda texto, e `"3" + 1` dá `4` porque o PHP converte sozinho. Confia nos tipos como confias num colega distraído: verifica antes de operar.
-
-## Ler produtos do SQLite
-
-A lista de produtos vive numa base de dados SQLite, e o PHP fala com ela através do PDO. Precisas do mínimo de SQL para isto: `SELECT` escolhe colunas, `FROM` escolhe a tabela e `WHERE` filtra linhas. Guarda a pesquisa da mercearia em `pesquisa.php`:
+Uma reserva pode exigir reduzir stock e criar uma linha. Uma transação faz com que as alterações sejam confirmadas em conjunto ou anuladas. Este excerto pressupõe a conexão `$db`, entrada já validada e autenticação e CSRF já verificados:
 
 ```php
-<?php
-$db = new PDO('sqlite:loja.sqlite');
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$termo = $_GET['q'] ?? '';
-$stmt = $db->prepare('SELECT nome, preco FROM produtos WHERE nome LIKE :t');
-$stmt->execute([':t' => '%' . $termo . '%']);
-echo '<ul>';
-foreach ($stmt->fetchAll() as $p) {
-    echo '<li>' . htmlspecialchars($p['nome']) . ' : ' . $p['preco'] . ' €</li>';
-}
-echo '</ul>';
-?>
-```
-
-Abrir `pesquisa.php?q=queijo` lista só os produtos com "queijo" no nome. O `prepare` com o marcador `:t` separa o código SQL do valor pesquisado: o termo viaja como dado, nunca como instrução. Esta separação é a defesa contra injeção SQL, explicada na página de [segurança](seguranca-web/). Nunca cole um `$_GET` diretamente dentro do texto do SQL.
-
-:::warning[Testa o parâmetro em falta]
-Abre `pesquisa.php` sem o `?q=`. Como o termo por omissão é texto vazio, o `LIKE '%%'` casa com tudo e a página lista todos os produtos. Decide sempre o que cada página faz sem parâmetros: listar tudo, mostrar mensagem ou recusar. "Sem parâmetro" não é um caso raro, é o primeiro pedido que um visitante faz.
-:::
-
-## Sessões e login
-
-Cada pedido PHP começa de novo, por isso o login precisa de memória entre pedidos: a sessão. O servidor guarda os dados e entrega ao navegador só um identificador num cookie. O login do dono da loja, em `login.php`:
-
-```php
-<?php
-session_start();
-if (($_POST['acao'] ?? '') === 'entrar') {
-    $db = new PDO('sqlite:loja.sqlite');
-    $stmt = $db->prepare('SELECT id, hash FROM users WHERE nome = :n');
-    $stmt->execute([':n' => $_POST['user']]);
-    $u = $stmt->fetch();
-    if ($u && password_verify($_POST['pass'], $u['hash'])) {
-        $_SESSION['uid'] = $u['id'];
-        echo '<p>Sessão iniciada.</p>';
-    } else {
-        echo '<p>Credenciais inválidas.</p>';
+$db->beginTransaction();
+try {
+    $stmt = $db->prepare('UPDATE livro SET stock = stock - :q WHERE id = :id AND stock >= :q');
+    $stmt->execute(['q' => $quantidade, 'id' => $livroId]);
+    if ($stmt->rowCount() !== 1) {
+        throw new RuntimeException('Stock insuficiente');
     }
+    $stmt = $db->prepare('INSERT INTO reserva (utilizador_id, livro_id, quantidade) VALUES (?, ?, ?)');
+    $stmt->execute([$utilizadorId, $livroId, $quantidade]);
+    $db->commit();
+} catch (Throwable $erro) {
+    if ($db->inTransaction()) $db->rollBack();
+    throw $erro;
 }
-?>
 ```
 
-O `session_start()` tem de correr antes de qualquer saída, porque envia o cookie no cabeçalho. A palavra passe nunca se compara em claro: `password_hash` cria o resumo na altura do registo e `password_verify` confirma-o no login. Se a tabela de utilizadores vazar, o atacante fica com resumos, não com palavras passe. Depois do login, cada página protegida confirma `$_SESSION['uid'] ?? null` antes de mostrar conteúdo privado.
+A condição `stock >= :q` pertence ao próprio `UPDATE`. Ler o stock antes e depois atualizar sem condição deixaria uma janela entre os passos. Se a inserção falhar, o rollback recupera a redução de stock. As restrições da base, como chaves estrangeiras, completam a validação; em SQLite, ativa `PRAGMA foreign_keys = ON` em cada conexão quando dependes delas.
 
-## Organizar com includes
+## Páginas, ações e templates
 
-Quando o cabeçalho e a ligação à base de dados se repetem em dez páginas, qualquer mudança obriga a dez edições. Parte os pedaços comuns em ficheiros e inclui-os:
+Uma página consulta e apresenta. Uma ação recebe entrada, valida, altera dados e redireciona. O template produz HTML a partir de dados já calculados. Coloca a conexão e as consultas numa camada própria, para não repetir SQL nos templates.
 
 ```php
 <?php
-require_once 'config.php';   // cria $db
-include 'cabecalho.php';     // abre o HTML comum
-?>
+require_once __DIR__ . '/../database/livros.php';
+require_once __DIR__ . '/../templates/livros.php';
+$livros = procurarLivros($db, $termo);
+mostrarLivros($livros);
 ```
 
-O `require_once` para a página com erro se o ficheiro faltar, e só o inclui uma vez; usa-o para o essencial, como a configuração. O `include` avisa e continua; serve para pedaços opcionais de apresentação. Um projeto típico tem `config.php` com a ligação, `cabecalho.php` e `rodape.php` com o HTML comum, e uma pasta por funcionalidade. Quando o tratamento de erros crescer para `try` e `catch`, a lógica é a mesma que já conheces do [tratamento de exceções](/cadeiras/fp/ficheiros-excecoes/): tenta, apanha o erro e mostra uma página amigável em vez do rastreio interno.
+Este é um excerto de organização, com funções definidas nesses ficheiros. `require` falha quando falta um ficheiro necessário; `include` pode continuar com aviso. A variante `_once` evita inclusões repetidas. `__DIR__` dá a pasta do ficheiro atual, evitando depender da pasta de execução.
 
-:::details[O que foi verificado nesta página]
-Os trechos seguem a API do PDO e as funções de sessão e de palavras passe do PHP 7.4 indicadas na ficha. O comportamento do SQL foi confirmado contra o sqlite3: `LIKE '%queijo%'` devolve só o Queijo da Serra e `LIKE '%%'` devolve todos os produtos. Corre cada trecho no teu servidor local e confirma as saídas antes de os usares no projeto.
-:::
+Ao apresentar texto em HTML, usa `htmlspecialchars($texto, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')`. Uma string válida na base de dados ainda precisa do escape apropriado ao contexto de saída.
 
-## Para saber mais
+```php
+header('Location: /reservas/', true, 303);
+exit;
+```
 
-- Manual do PHP sobre prepared statements com PDO: https://www.php.net/manual/en/pdo.prepared-statements.php.
+`header` deve correr antes de saída que envie os cabeçalhos. O redirecionamento instrui o cliente; não pára o PHP, por isso usamos `exit`. Após um `POST`, `303` leva o navegador a fazer um `GET` ao destino. Isso evita repetir o `POST` ao atualizar a página de confirmação.
+
+## Sessões e autenticação
+
+HTTP não guarda automaticamente a identidade entre pedidos. `session_start()` recupera ou cria estado no servidor; um cookie contém habitualmente o identificador da sessão. Não guarda a palavra-passe nem todo o conteúdo de `$_SESSION` no navegador.
+
+No registo, guarda `password_hash($palavraPasse, PASSWORD_DEFAULT)`. No login, consulta o utilizador pelo identificador e verifica o resumo com `password_verify`. Este excerto pressupõe `$utilizador` obtido por consulta preparada:
+
+```php
+session_start();
+if ($utilizador && password_verify($palavraPasse, $utilizador['password_hash'])) {
+    session_regenerate_id(true);
+    $_SESSION['utilizador_id'] = $utilizador['id'];
+    header('Location: /reservas/', true, 303);
+    exit;
+}
+```
+
+Regenerar o identificador após autenticar combate fixação de sessão. Configura cookies com `HttpOnly`, `Secure` em HTTPS e uma política `SameSite` adequada. Usa um destino fixo ou validado; não confies cegamente no `Referer` recebido.
+
+Autenticar identifica o utilizador. Autorizar verifica o que ele pode fazer. Uma ação de edição deve confirmar a sessão e a propriedade do registo, mesmo que o botão só apareça para o dono. No logout, limpa `$_SESSION`, destrói a sessão e remove o cookie quando aplicável. A [segurança web](/cadeiras/ltw/seguranca-web/) explica as defesas que completam estas ações.

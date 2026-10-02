@@ -1,146 +1,133 @@
 ---
 title: Segurança web
-description: Injeção SQL, XSS, CSRF, travessia de caminho, HTTPS e guarda de palavras passe, com correção guiada.
+description: Injeção SQL, XSS, CSRF, autorização, travessia de caminhos, HTTPS, palavras-passe e sessões.
 section: conteudo
 order: 6
+practices:
+  - ltw/praticar-seguranca
 ---
 
-import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import csrf from '../../ltw/ataque-csrf.dot?raw';
+Para analisar uma vulnerabilidade, identifica o dado controlado pelo atacante, a operação que o usa e a fronteira que o dado atravessa. Validar entrada, preparar SQL e escapar saída têm propósitos diferentes. Uma defesa correta num desses passos não substitui as outras.
 
-Todas as páginas que escreveste até aqui confiam no utilizador: mostram o que ele escreve, executam o que ele envia, abrem o ficheiro que ele pede. A segurança web é inverter essa confiança por omissão. Cada ataque desta página explora um sítio onde o programador misturou dados com instruções; cada defesa volta a separá-los. Vê cada par antes e depois com os teus olhos antes de leres a explicação.
+## Injeção SQL
 
-<Tabs id="antes-depois" labels={['Injeção SQL', 'XSS no echo', 'CSRF no formulário']}>
-  <div slot="panel-0">
-
-Antes, com o parâmetro colado no SQL:
+Este excerto concatena dados numa instrução SQL:
 
 ```php
-$sql = "SELECT nome, preco FROM produtos WHERE nome LIKE '%$termo%'";
+$sql = "SELECT id FROM utilizador WHERE nome = '$nome'";
 ```
 
-Depois, com o marcador a separar dado de instrução:
+Se o atacante escolhe `$nome = "' OR 1=1 -- "`, a consulta resultante fica:
+
+```sql
+SELECT id FROM utilizador WHERE nome = '' OR 1=1 -- '
+```
+
+`OR 1=1` é sempre verdadeiro e `-- ` comenta o resto. A intenção de procurar um nome tornou-se uma condição que aceita linhas diferentes. O ataque não precisa de executar vários comandos para causar dano.
 
 ```php
-$stmt = $db->prepare('SELECT nome, preco FROM produtos WHERE nome LIKE :t');
-$stmt->execute([':t' => '%' . $termo . '%']);
+$stmt = $db->prepare('SELECT id FROM utilizador WHERE nome = ?');
+$stmt->execute([$nome]);
 ```
 
-  </div>
-  <div slot="panel-1">
+O marcador recebe o valor como dado. A string de ataque passa a ser um nome literal e não altera a sintaxe. Mantém os valores fora do texto SQL. Para identificadores, como a coluna de ordenação, escolhe entre nomes fixos autorizados; marcadores não representam identificadores SQL.
 
-Antes, com a saída crua a executar o que o utilizador escreveu:
+## XSS e contexto de saída
+
+XSS ocorre quando dados controlados pelo atacante passam a código ou marcação ativa na origem da aplicação. Pode ser persistente, como um comentário guardado; refletido, como uma pesquisa devolvida na resposta; ou baseado no DOM, quando JavaScript coloca entrada num destino perigoso.
 
 ```php
-echo '<p>' . $comentario . '</p>';
+// Excerto vulnerável num corpo HTML
+ echo '<p>' . $comentario . '</p>';
+// Correção para apresentar texto nesse contexto
+ echo '<p>' . htmlspecialchars($comentario, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
 ```
 
-Depois, com o escape a transformar etiquetas em texto visível:
+Com a correção, `<script>...</script>` aparece como texto. O escape para texto HTML também serve para valores de atributos entre aspas quando aplicado corretamente, mas não valida a semântica de um URL nem torna qualquer contexto seguro. Um `href` ainda precisa de limitar esquemas aceites; JavaScript embebido e CSS têm regras próprias. Evita construir código com dados do utilizador.
 
-```php
-echo '<p>' . htmlspecialchars($comentario) . '</p>';
-```
+No DOM, prefere `textContent` para texto e criação de elementos com atributos validados. `innerHTML` interpreta marcação; não o uses para um comentário cru. Sanitizar HTML permitido exige uma biblioteca adequada, com regras explícitas, não uma regex para apagar `<script>`.
 
-  </div>
-  <div slot="panel-2">
+`HttpOnly` pode impedir que um script leia o cookie, mas XSS ainda pode fazer pedidos autenticados e ler dados na página. Uma política CSP pode limitar código executável e recursos como defesa adicional; não corrige um destino inseguro de saída.
 
-Antes, sem segredo que o atacante desconheça:
+## CSRF
 
-```html
-<form method="post">
-  <input type="hidden" name="acao" value="apagar" />
-  <button>Apagar conta</button>
-</form>
-```
+Um pedido de alteração pode chegar de outra página e trazer credenciais enviadas automaticamente pelo navegador. Se o servidor verifica apenas o cookie de sessão, pode executar a ação sem saber se o utilizador quis iniciá-la. POST por si não impede isso.
 
-Depois, com o token que só a tua página conhece:
+Um token CSRF é um valor imprevisível associado à sessão. O servidor envia-o no formulário e exige-o no pedido de alteração. A página de outra origem não deve conseguir lê-lo pela política de mesma origem. O token não substitui a autenticação nem a autorização.
 
-```html
-<form method="post">
-  <input type="hidden" name="csrf" value="<?= $_SESSION['csrf'] ?>" />
-  <input type="hidden" name="acao" value="apagar" />
-  <button>Apagar conta</button>
-</form>
-```
-
-  </div>
-</Tabs>
-
-## Injeção SQL: nunca colar entrada no SQL
-
-A página de pesquisa do [PHP](php-dinamicas-bd/) já usa a defesa certa, por isso vê primeiro o ataque contra a versão ingénua. Se o código colar o parâmetro no SQL:
-
-```php
-$sql = "SELECT nome, preco FROM produtos WHERE nome LIKE '%$termo%'";
-```
-
-então pesquisar `' OR '1'='1` transforma a consulta em algo que casa com todas as linhas, e pesquisar com ponto e vírgula pode empilhar comandos destrutivos. A correção é o `prepare` com marcadores, que já usas: o termo viaja como dado e nunca é interpretado como SQL[^pdo]. Regra sem exceções: nenhum `$_GET`, `$_POST` ou cookie entra em texto de SQL. Nem o campo escondido do formulário, nem o nome do ficheiro enviado: tudo o que vem do cliente é entrada.
-
-[^pdo]: Manual do PHP sobre prepared statements com PDO: https://www.php.net/manual/en/pdo.prepared-statements.php.
-
-<YouTube id="_jKylhJtPmI" title="Hacking Websites with SQL Injection" />
-
-## XSS: escapar tudo o que se mostra
-
-O XSS (scripts entre sítios) injeta JavaScript na tua página através de dados que mostras sem escapar[^owasp-xss]. Um comentário com o texto `<script>alert(1)</script>` corre código no navegador de quem o ler, e uma carga a sério rouba a sessão em vez de mostrar um alerta. A defesa no servidor é o `htmlspecialchars` que já usas em cada `echo`, e no cliente é preferir `textContent` a `innerHTML` com dados do utilizador, como na [lista de tarefas](javascript-dom-eventos/).
-
-[^owasp-xss]: OWASP, página sobre XSS com os tipos de ataque e os vetores mais comuns: https://owasp.org/www-community/attacks/xss/.
-
-Experimenta a neutralização: com escape, a carga aparece na página como texto literal `<script>...` visível e inofensivo; sem escape, o navegador executa-a. É a mesma cadeia de caracteres nos dois casos, e só a saída decide se é texto ou código. Por isso a regra se aplica na saída, em todas as páginas, mesmo nas "só de leitura".
-
-## CSRF: confirmar quem mandou o pedido
-
-O CSRF (falsificação de pedido entre sítios) aproveita a sessão aberta: uma página maliciosa faz o navegador da vítima submeter um formulário ao teu sítio, e o servidor obedece porque o cookie da sessão vai junto. Segue as setas: a vítima cai na isca, o navegador junta o cookie ao pedido forjado e o servidor obedece por reconhecer a sessão.
-
-<Dot
-  source={csrf}
-  alt="Ataque CSRF em três passos: o sítio malicioso atrai a vítima com um formulário que se submete sozinho, o navegador da vítima envia o pedido com o cookie da sessão, e a loja obedece por não haver token a confirmar a origem."
-/>
-
-A defesa é um segredo que o atacante não conhece: um token por sessão que cada formulário inclui e o servidor confirma.
+Estes excertos pertencem, respetivamente, à página que mostra o formulário e à ação que o processa:
 
 ```php
 <?php
 session_start();
-if (empty($_SESSION['csrf'])) {
-    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+if (!isset($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
 ?>
-<form method="post">
-  <input type="hidden" name="csrf" value="<?= $_SESSION['csrf'] ?>">
-  <!-- resto do formulário -->
+<form action="/actions/reservar.php" method="post">
+  <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf'], ENT_QUOTES, 'UTF-8') ?>">
+  <button>Confirmar reserva</button>
 </form>
 ```
-
-No processamento, compara e recusa tudo o que não bater certo. Sem piedade nem mensagens simpáticas para o atacante: pedido sem token válido morre aqui.
 
 ```php
 <?php
 session_start();
-$token = $_POST['csrf'] ?? '';
-if (!hash_equals($_SESSION['csrf'] ?? '', $token)) {
+$esperado = $_SESSION['csrf'] ?? null;
+$recebido = $_POST['csrf'] ?? null;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST'
+    || !is_string($esperado) || $esperado === ''
+    || !is_string($recebido)
+    || !hash_equals($esperado, $recebido)) {
     http_response_code(403);
     exit('Pedido recusado.');
 }
-// daqui para a frente, o pedido veio de um formulário teu
-?>
+// Seguem-se autenticação, autorização e validação dos dados da reserva.
 ```
 
-O `hash_equals` compara em tempo constante, sem atalhos que denunciem os primeiros caracteres. A página maliciosa não lê o token, por isso os pedidos forjados falham a comparação. Aplica o token a todas as ações que alteram algo: encomendar, apagar, mudar a palavra passe. Leituras por `GET` não precisam dele, o que é mais uma razão para `GET` nunca alterar nada.
+O teste exige que exista um token esperado não vazio. Comparar dois valores ausentes convertidos em `''` aceitaria indevidamente um pedido sem token. `hash_equals` compara os valores sem a comparação habitual que pode variar com prefixos.
 
-## O resto da lista curta
+`SameSite` e verificação de `Origin` podem reforçar a proteção conforme o desenho. CORS trata leitura entre origens; não prova intenção do utilizador. Um ataque XSS na aplicação pode obter tokens e contornar esta defesa. Não coloques ações de alteração em GET.
 
-- **Travessia de caminho**: se o utilizador escolhe um ficheiro, `../../etc/passwd` não pode sair da pasta permitida. Valida o nome contra uma lista ou resolve o caminho e confirma que continua dentro da pasta.
-- **Palavras passe**: guarda resumos com `password_hash` e confirma com `password_verify`, como no [login](php-dinamicas-bd/). Nunca guardes nem registes palavras passe em claro.
-- **HTTPS**: cifra a conversa entre navegador e servidor. Sem ele, palavras passe e sessões viajam legíveis para quem espreitar a rede. Em produção é obrigatório; em desenvolvimento local, assume que tudo o que corre em HTTP é observável.
+## Autenticação e autorização
 
-:::tip[Como rever o teu projeto]
-Percorre esta lista por cada página: alguma entrada chega ao SQL sem `prepare`? Alguma saída chega ao HTML sem escape? Alguma ação por `POST` não confirma o token? Algum ficheiro abre com um nome vindo do utilizador? Quatro perguntas, e cada "sim" é uma correção concreta antes da entrega.
-:::
+Um utilizador autenticado pode não ter permissão para editar a reserva de outra pessoa. O identificador recebido num campo hidden, URL ou JSON continua a ser entrada. Verifica a associação na operação real:
 
-## Para saber mais
+```php
+$stmt = $db->prepare('UPDATE reserva SET quantidade = ? WHERE id = ? AND utilizador_id = ?');
+$stmt->execute([$quantidade, $reservaId, $_SESSION['utilizador_id']]);
+```
 
-- Página da OWASP sobre XSS, com tipos e vetores de ataque: https://owasp.org/www-community/attacks/xss/.
-- Cheat sheet da OWASP de prevenção de XSS, por contexto de saída: https://cheatsheetseries.owasp.org/cheatsheets/Cross%5FSite%5FScripting%5FPrevention%5FCheat%5FSheet.html.
+O utilizador vem da sessão verificada, não de `$_POST['utilizador_id']`. A consulta restringe o registo ao dono. Confirma o efeito esperado e devolve um erro quando não existe uma reserva autorizada. Esconder um botão ou impedir uma ação em JavaScript melhora a interface, mas o atacante pode enviar o pedido diretamente.
+
+## Palavras-passe e sessão
+
+Guarda um resumo próprio para palavras-passe com `password_hash`; verifica com `password_verify`. `PASSWORD_DEFAULT` escolhe o algoritmo da versão e pode mudar, por isso a coluna deve suportar resumos com tamanho suficiente. O resumo guarda os parâmetros necessários à verificação, incluindo salt.
+
+Salt diferente impede que resumos iguais revelem diretamente palavras-passe iguais e dificulta reutilizar tabelas pré-calculadas. Não torna uma palavra-passe fraca resistente a tentativas. SHA-1 e SHA-256 simples são rápidos e inadequados para guardar palavras-passe, mesmo com salt manual. Limita tentativas de login e evita mensagens que revelem contas desnecessariamente.
+
+Regenera o identificador de sessão ao autenticar ou mudar privilégios. Em produção, usa HTTPS e cookies `Secure`, `HttpOnly` e `SameSite` adequado. Nunca confies num identificador de sessão recebido para autorizar sem recuperar o estado e verificar a ação.
+
+## Caminhos e ficheiros
+
+Se `readfile($_GET['ficheiro'])` recebe `../../config.php`, o programa pode revelar um ficheiro fora do conjunto pretendido. Remover literalmente `../` não cobre todas as formas de manipular caminhos.
+
+Quando só há poucos documentos, mapeia identificadores para caminhos fixos:
+
+```php
+$ficheiros = ['guia' => __DIR__ . '/../privado/guia.pdf'];
+$id = $_GET['id'] ?? null;
+if (!is_string($id) || !isset($ficheiros[$id])) {
+    http_response_code(404);
+    exit;
+}
+readfile($ficheiros[$id]);
+```
+
+Esse é um excerto de um endpoint que ainda deve verificar a permissão de leitura. Para uploads, valida tamanho e formato real, escolhe nomes no servidor e guarda fora de pastas onde possam executar. A extensão e o tipo declarados pelo cliente não são prova suficiente.
+
+## HTTPS e revisão de uma ação
+
+HTTPS usa TLS para proteger confidencialidade e integridade do tráfego e autenticar o servidor conforme os certificados. Não corrige SQL injection, XSS nem autorização. Um sítio malicioso também pode ter HTTPS.
+
+Ao rever uma ação de reserva, segue o percurso: método correto, sessão válida, token CSRF, dono autorizado, parâmetros com tipo e limites, SQL preparado, alteração consistente e saída no contexto certo. Para cada teste, explica um pedido que falharia sem ele. Assim a defesa fica ligada ao ataque que impede, em vez de ser uma lista de funções decoradas.

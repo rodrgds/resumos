@@ -1,0 +1,138 @@
+---
+title: Praticar HTTP e Ajax
+description: Exercícios próprios para aplicar e justificar a matéria.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="ltw-mensagem-http"
+  title="Interpretar um pedido"
+  explanation="/cadeiras/ltw/http-ajax-json/#ler-mensagens"
+  answer={{"kind": "self", "checklist": ["Separei alvo e fragmento.", "Distingui Accept e Content-Type."]}}
+>
+
+Um pedido é GET /livros/7?modo=curto HTTP/1.1, com Host: catalogo.example e Accept: application/json. O URL original acaba em #preco. Explica cada parte e o cabeçalho que deve descrever um corpo JSON da resposta.
+
+<div slot="hint">
+
+Método e alvo estão na primeira linha; fragmento não integra o alvo.
+
+</div>
+<div slot="hint-more">
+
+Accept é preferência. Content-Type descreve o corpo efetivo.
+
+</div>
+<div slot="solution">
+
+GET pede a representação de /livros/7 com query modo=curto. Host identifica catalogo.example. O fragmento #preco não viaja ao servidor. Accept pede JSON; a resposta JSON deve usar Content-Type: application/json. A resposta ainda inclui uma linha de estado, como 200.
+
+</div>
+<div slot="mistakes">
+
+Não responder que Accept descreve o corpo recebido nem anexar #preco à query.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-metodos-repetidos"
+  title="Repetir DELETE e POST"
+  explanation="/cadeiras/ltw/http-ajax-json/#métodos-segurança-e-idempotência"
+  answer={{"kind": "self", "checklist": ["Expliquei DELETE idempotente com estados diferentes.", "Distingui criação POST de pesquisa GET."]}}
+>
+
+DELETE /reservas/4 responde 204 na primeira chamada e 404 na segunda. Isso viola idempotência? Dois POST /reservas criam duas reservas iguais. Explica a diferença e escolhe o método de uma pesquisa só de leitura.
+
+<div slot="hint">
+
+Idempotência diz respeito ao efeito pretendido, não à resposta.
+
+</div>
+<div slot="hint-more">
+
+Depois do primeiro DELETE, o recurso continua removido.
+
+</div>
+<div slot="solution">
+
+As respostas diferentes não violam idempotência: repetir a remoção conserva o estado final pretendido. POST pode criar de novo, por isso não é idempotente em geral. Uma pesquisa só de leitura usa GET e não deve alterar reservas. Um contrato adicional poderia deduplicar POST, mas não se presume.
+
+</div>
+<div slot="mistakes">
+
+Não usar GET para apagar nem confundir igualdade das respostas com idempotência.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-promessa-erro"
+  title="Prever callbacks e erros"
+  explanation="/cadeiras/ltw/http-ajax-json/#promessas-e-ordem-de-execução"
+  answer={{"kind": "self", "checklist": ["Obtive um, tres, dois.", "Incluí teste a ok para 404."]}}
+>
+
+Prevê a ordem de console.log neste programa. Depois explica por que fetch para um endpoint que responde 404 pode entrar no then em vez do catch.
+
+```js
+console.log('um');
+Promise.resolve().then(() => console.log('dois'));
+console.log('tres');
+```
+
+<div slot="hint">
+
+O callback da promessa não interrompe o código corrente.
+
+</div>
+<div slot="hint-more">
+
+Um estado HTTP não bem-sucedido não é automaticamente rejeição de fetch.
+
+</div>
+<div slot="solution">
+
+A ordem é um, tres, dois. A promessa resolvida agenda o callback após o código corrente. fetch pode resolver com uma Response cujo status é 404; o programa precisa de testar resposta.ok e lançar um erro para o tratar no catch. Erros de rede podem rejeitar antes.
+
+</div>
+<div slot="mistakes">
+
+Não esperar que await/fetch bloqueiem toda a página, nem confiar no catch para reconhecer sozinho todos os estados HTTP.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-origem-pesquisa"
+  title="Ler uma API de outra origem"
+  explanation="/cadeiras/ltw/http-ajax-json/#sop-e-cors"
+  answer={{"kind": "self", "checklist": ["Usei origem concreta e credenciais dos dois lados.", "Expliquei resposta opaca e resultado antigo."]}}
+>
+
+A página https://a.example consulta https://api.example com cookies. Que condições de CORS são necessárias para ler a resposta? mode: no-cors resolveria? Porque uma pesquisa antiga não deve substituir uma mais recente?
+
+<div slot="hint">
+
+Credenciais exigem configuração do cliente e permissão da origem concreta.
+
+</div>
+<div slot="hint-more">
+
+Uma resposta opaca não permite ler o JSON. A ordem de conclusão pode divergir da ordem de envio.
+
+</div>
+<div slot="solution">
+
+O cliente usa credentials: include; o servidor permite credenciais e a origem https://a.example explicitamente, não \*. Regras dos cookies e eventual preflight também se aplicam. no-cors não desbloqueia o corpo, que fica opaco. Um contador identifica a pesquisa atual e permite ignorar respostas de pedidos antigos que acabem mais tarde.
+
+</div>
+<div slot="mistakes">
+
+CORS não autentica o utilizador. Enviar um pedido e ler a resposta são permissões diferentes.
+
+</div>
+</Exercise>

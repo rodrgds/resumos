@@ -1,130 +1,128 @@
 ---
 title: HTML e estrutura semântica
-description: Documentos HTML5, semântica, formulários acessíveis, tabelas e validação com diagnóstico de erros.
+description: Estrutura do documento, conteúdo semântico, tabelas, formulários e dados enviados ao servidor.
 section: conteudo
 order: 1
+practices:
+  - ltw/praticar-html
 ---
 
 import WebPlayground from '../../../components/WebPlayground.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import arvore from '../../ltw/arvore-documento.typ?raw';
+import FluxoWeb from '../../ltw/FluxoWeb.astro';
+import formulario from '../../ltw/formulario.html?raw';
+import programa from '../../ltw/formulario.js?raw';
 
-O HTML descreve a estrutura da página: o que é um título, o que é um parágrafo, onde começa um formulário. O navegador usa essa estrutura para mostrar a página, e os leitores de ecrã e os motores de pesquisa usam-na para a entender[^mdn-formularios]. Escrever bom HTML é escolher a etiqueta certa para cada pedaço de conteúdo, não empilhar `div` genéricos.
+Uma página HTML descreve o significado e a ordem do conteúdo. Um título continua a ser um título sem CSS. Um botão continua a ser ativável por teclado. É essa estrutura que o navegador transforma numa árvore, o DOM, que o JavaScript pode depois alterar.
 
-[^mdn-formularios]: MDN, guia de formulários web, com a regra de ligar cada `label` ao campo e as práticas de validação usadas nesta página: https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms.
+## Cliente e servidor
 
-## O esqueleto mínimo
+Ao abrir uma página dinâmica, o navegador envia um pedido HTTP. O servidor executa o PHP, consulta os dados e responde com HTML. O navegador interpreta esse HTML e pode fazer novos pedidos para CSS, imagens e JavaScript.
 
-Toda a página HTML5 começa com a mesma base. Guarda isto em `produto.html`:
+<FluxoWeb />
+
+O código PHP não chega ao navegador. Se uma página depende de PHP, abrir `pagina.php` como ficheiro local não substitui um servidor. Por outro lado, alterar o DOM com JavaScript só muda o estado daquela página; não guarda automaticamente nada na base de dados.
+
+## Documento, elementos e atributos
+
+Este é um documento completo:
 
 ```html
-<!DOCTYPE html>
-<html lang="pt">
+<!doctype html>
+<html lang="pt-PT">
   <head>
     <meta charset="utf-8" />
-    <title>Queijo da Serra : Mercearia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Catálogo da biblioteca</title>
     <link rel="stylesheet" href="estilo.css" />
+    <script src="catalogo.js" defer></script>
   </head>
   <body>
-    <header>
-      <h1>Mercearia Central</h1>
-      <nav><a href="index.html">Início</a></nav>
-    </header>
+    <header><h1>Biblioteca</h1></header>
+    <nav aria-label="Principal"><a href="/livros/">Livros</a></nav>
     <main>
       <article>
-        <h2>Queijo da Serra</h2>
-        <p>Curado 60 dias. Preço: 8,50 €.</p>
+        <h2>Redes de computadores</h2>
+        <p>Disponível para reserva.</p>
       </article>
     </main>
   </body>
 </html>
 ```
 
-O `<!DOCTYPE html>` diz ao navegador que isto é HTML5. O atributo `lang="pt"` indica a língua da página. O `head` guarda metadados que não aparecem no corpo, como o título do separador e a folha de estilo. No `body`, cada etiqueta declara o papel do conteúdo: `header` é o cabeçalho, `nav` é a navegação, `main` é o conteúdo principal e `article` é uma peça autónoma, neste caso o produto.
+O `doctype` pede o modo de renderização normal. `lang` declara a língua. O `head` contém metadados, incluindo o título do separador; o `body` contém o conteúdo. `defer` permite descarregar o script durante a leitura do HTML e executá-lo depois de analisar o documento. Não confere execução assíncrona a cada linha do programa.
 
-A mesma página vista como árvore, que é como o navegador e o JavaScript a veem:
-
-<Typst
-  source={arvore}
-  format="svg"
-  alt="Árvore do documento mínimo: html divide-se em head e body; body divide-se em header e main; main contém article."
-/>
-
-Usa sempre a etiqueta com o significado certo: `h1` a `h6` para títulos por ordem sem saltos, `p` para parágrafos, `ul` ou `ol` para listas, `table` para dados tabulares. Um leitor de ecrã anuncia "navegação" ao entrar num `nav` e permite saltar de título em título; com `div` em todo o lado, essa ajuda desaparece.
-
-<YouTube id="ok-plXXHlWw" title="HTML in 100 Seconds" />
-
-## Formulários acessíveis
-
-O formulário de encomenda mostra a regra de ouro da acessibilidade: cada campo tem uma `label` ligada ao campo pelo atributo `for`, que repete o `id` do campo.
+Um elemento habitual tem etiqueta de abertura, conteúdo e etiqueta de fecho. Os elementos vazios, como `img`, `input` e `meta`, não têm conteúdo nem etiqueta de fecho. Os atributos acrescentam informação à abertura. `id` identifica um elemento e deve ser único no documento; `class` pode listar várias classes e repetir-se em vários elementos.
 
 ```html
-<form action="encomenda.php" method="post">
-  <label for="nome">Nome:</label>
-  <input type="text" id="nome" name="nome" required />
-  <label for="qtd">Quantidade:</label>
-  <input type="number" id="qtd" name="qtd" min="1" value="1" />
-  <button type="submit">Encomendar</button>
-</form>
+<p id="aviso" class="mensagem urgente">Só resta um exemplar.</p>
 ```
 
-Experimenta o formulário: prime **Encomendar** sem preencher o nome e o navegador queixa-se; escreve zero na quantidade e ele recusa. A moldura bloqueia o envio de propósito, por isso nada chega a lado nenhum, mas a validação é a real.
+`aviso` é o identificador; `mensagem` e `urgente` são duas classes. Um atributo booleano, como `disabled`, vale pela presença. Escrever `disabled="false"` continua a desativar o controlo.
 
-<WebPlayground
-  html={
-    '<form action="encomenda.php" method="post">\n  <label for="nome">Nome:</label>\n  <input type="text" id="nome" name="nome" required />\n  <label for="qtd">Quantidade:</label>\n  <input type="number" id="qtd" name="qtd" min="1" value="1" />\n  <button type="submit">Encomendar</button>\n</form>'
-  }
-/>
+## Escolher a etiqueta
 
-Clicar no texto "Nome:" põe o cursor no campo, porque a `label` está ligada a ele. O atributo `name` é o nome que viaja para o servidor com o valor preenchido; sem `name`, o campo não é enviado. O `required` e o `min="1"` pedem ao navegador para validar antes de enviar, sem JavaScript. Escolhe o `type` certo para cada dado: `email`, `number`, `date` e `tel` dão teclados adequados no telemóvel e validação gratuita.
+`main` identifica o conteúdo principal. `nav` agrupa navegação. `article` representa conteúdo que pode ser lido por si, como uma notícia; `section` agrupa uma secção temática, normalmente com título. `header` e `footer` podem pertencer à página ou a um artigo. `div` e `span` agrupam conteúdo sem lhe acrescentar significado.
 
-:::tip[Não peças ao utilizador o que podes validar]
-Se a quantidade mínima é 1, escreve `min="1"` em vez de confiares que ninguém escreve zero. Cada restrição declarada no HTML é um erro que nunca chega ao servidor.
-:::
+Usa `a` para navegar e `button` para agir. Dentro de um formulário, declara `type="button"` num botão que não deve submeter. Usa `ul` para uma lista sem ordem relevante, `ol` para passos ordenados e `dl` para pares de termos e descrições. Não uses níveis de título para escolher o tamanho da letra; respeita a hierarquia do conteúdo e altera o aspeto com CSS.
 
-## Tabelas para dados, não para layout
+`strong` indica importância; `em` dá ênfase. `code` marca código e `pre` preserva espaços e mudanças de linha. No texto normal, o navegador colapsa sequências de espaços. Escreve `&lt;` para mostrar `<` e `&amp;` para mostrar `&` quando precisam de ser texto.
 
-A lista de preços da mercearia é uma tabela, com cabeçalho em `th` e legenda em `caption`:
+Uma imagem informativa precisa de `alt` que comunique a informação relevante. Uma imagem decorativa tem `alt=""`. `figure` pode reunir imagem e `figcaption`. Para áudio e vídeo, `controls` oferece controlos nativos; legendas e transcrições dão acesso à informação sem depender do som. SVG descreve formas; canvas oferece uma área onde um programa desenha píxeis.
+
+## Ligações e caminhos
+
+Em `https://biblioteca.example/livros/?q=redes#resultados`, o fragmento `resultados` aponta para um `id` da página. O fragmento não é enviado no pedido HTTP. `href="/livros/"` começa na raiz do sítio; `href="capa.png"` resolve relativamente ao endereço do documento; `../` sobe um nível do caminho.
+
+Para prever um caminho relativo, substitui o último segmento da base, não o domínio inteiro. A partir de `https://biblioteca.example/catalogo/item.html`, `../ajuda.html` resolve para `https://biblioteca.example/ajuda.html`.
+
+## Tabelas
+
+Uma tabela representa dados em linhas e colunas. A legenda explica o conjunto, e os cabeçalhos identificam o significado das células:
 
 ```html
 <table>
   <caption>
-    Preços por quilo
+    Exemplares disponíveis
   </caption>
-  <tr>
-    <th>Produto</th>
-    <th>Preço</th>
-  </tr>
-  <tr>
-    <td>Queijo da Serra</td>
-    <td>8,50 €</td>
-  </tr>
-  <tr>
-    <td>Presunto</td>
-    <td>12,00 €</td>
-  </tr>
+  <thead>
+    <tr>
+      <th scope="col">Livro</th>
+      <th scope="col">Exemplares</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">Redes</th>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th scope="row">SQL</th>
+      <td>1</td>
+    </tr>
+  </tbody>
 </table>
 ```
 
-Reserva as tabelas para dados que fazem sentido em linhas e colunas. Para dispor a página em colunas usa CSS, que é o tema da [próxima página](css-estilo-layout/).
+`rowspan` ocupa várias linhas e `colspan` ocupa várias colunas. Conta as posições ocupadas por cada célula antes de prever o alinhamento. Usa CSS, não tabelas, para dispor o menu e o conteúdo de uma página.
 
-## Validar e diagnosticar
+## Formulários e dados enviados
 
-O validador do W3C lê a tua página e aponta os erros de estrutura. Cola lá o exemplo seguinte, que tem um erro clássico de aninhamento:
+Um formulário define o destino em `action` e o método em `method`. Com `GET`, os parâmetros aparecem na query string, apropriada para uma pesquisa. Com `POST`, a codificação habitual coloca-os no corpo do pedido. `POST` não cifra os dados; HTTPS é que protege o transporte.
 
-```html
-<p>Em promoção:
-  <div>Queijo da Serra</div>
-</p>
-```
+Neste exemplo, o JavaScript interceta a submissão e mostra a codificação dos campos, sem fazer um pedido:
 
-O validador queixa-se de que o `div` não pode viver dentro de um `p`. Isto acontece porque o parágrafo só aceita conteúdo de texto e etiquetas em linha; o navegador fecha o `p` mais cedo do que esperas e a página parte-se em dois blocos. A correção é trocar o `p` exterior por um `div`, ou o `div` interior por um `span`. Quando o layout sair estranho sem razão aparente, valida primeiro: nove em cada dez mistérios destes são etiquetas mal aninhadas ou por fechar.
+<WebPlayground html={formulario} js={programa} />
 
-:::warning[O erro mais comum]
-Esquecer o `name` nos campos do formulário e depois queixar-se de que o servidor "não recebe nada". O navegador só envia campos com `name`. Confere sempre os nomes antes de culpares o PHP.
-:::
+Escreve `Ana` e quantidade `2`. Sem a caixa de aviso, o resultado é `nome=Ana&quantidade=2`. Ao marcá-la, acrescenta `&aviso=sim`. `id` liga o campo à sua `label`; `name` dá o nome do parâmetro. Trocar `id` sem atualizar `for` quebra a associação. Remover `name` faz desaparecer o parâmetro.
 
-## Para saber mais
+A submissão inclui controlos com nome que participam no envio. Uma checkbox não marcada não envia valor; se não tiver `value`, a marcada usa normalmente `on`. Num grupo de radio buttons com o mesmo `name`, só a opção selecionada envia. Um campo `disabled` não envia; um campo `readonly` continua a enviar quando o tipo admite esse atributo. O botão de submissão acionado pode também enviar o seu par nome/valor.
 
-- Guia de formulários da MDN, com estrutura, controlos, validação e envio: https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms.
+`select` envia o valor da opção selecionada. Um `select multiple` pode enviar vários valores com o mesmo nome. `textarea` escreve o valor inicial entre as etiquetas. `fieldset` e `legend` dão nome a um grupo de controlos. Um upload exige `method="post"` e `enctype="multipart/form-data"`; o servidor tem de validar o ficheiro recebido.
+
+## Validação e limites
+
+`required`, `min`, `max`, `minlength`, `maxlength`, tipos como `email` e `pattern` ajudam o utilizador antes do envio. `placeholder` é uma sugestão que desaparece ao escrever, não substitui uma `label`. `type="tel"` pode escolher um teclado útil, mas não impõe sozinho um formato de número.
+
+A validação do navegador pode ser contornada. O PHP precisa de verificar de novo presença, tipo, limites e permissões. A quantidade zero pode chegar ao servidor mesmo quando o formulário tem `min="1"`.
+
+Se o DOM não corresponde ao que escreveste, verifica aninhamento e elementos permitidos. Em `<p>Texto<div>Bloco</div></p>`, o navegador fecha o parágrafo antes do `div`; o DOM resultante não é a árvore imaginada. O inspetor mostra a árvore real, e o validador identifica erros estruturais. Esta diferença também explica seletores CSS e percursos DOM que parecem falhar.

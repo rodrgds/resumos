@@ -1,0 +1,132 @@
+---
+title: Praticar Segurança web
+description: Exercícios próprios para aplicar e justificar a matéria.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="ltw-defesa-contexto"
+  title="Escolher a defesa certa"
+  explanation="/cadeiras/ltw/seguranca-web/#xss-e-contexto-de-saída"
+  answer={{"kind": "self", "checklist": ["Separei SQL de saída HTML.", "Escolhi prepare e destino de texto/escape de saída."]}}
+>
+
+Uma ação concatena nome numa consulta SQL e mais tarde coloca esse nome em innerHTML. Um colega aplica htmlspecialchars antes de guardar e afirma que resolveu tudo. Identifica os problemas e as duas defesas necessárias.
+
+<div slot="hint">
+
+São duas interpretações distintas: SQL e marcação HTML.
+
+</div>
+<div slot="hint-more">
+
+Escapar HTML não separa dados de SQL.
+
+</div>
+<div slot="solution">
+
+A consulta continua vulnerável a injeção SQL e precisa de valores em marcadores preparados. A saída deve tratar o nome como texto, usando textContent no cliente ou escape correto no contexto HTML do servidor. Guardar texto já escapado também pode causar dupla codificação e não serve todos os contextos. Validação de formato pode complementar, mas não substitui nenhuma destas defesas.
+
+</div>
+<div slot="mistakes">
+
+Não escolher uma função universal de escape nem tratar dados da base como automaticamente seguros.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-token-ausente"
+  title="Encontrar um CSRF sem token"
+  explanation="/cadeiras/ltw/seguranca-web/#csrf"
+  answer={{"kind": "self", "checklist": ["Mostrei a aceitação de vazio/vazio.", "Exigi token válido antes da comparação."]}}
+>
+
+O servidor compara `hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')`. Que acontece quando ambos faltam? Corrige a condição e explica por que POST e CORS não chegam.
+
+<div slot="hint">
+
+Dois valores vazios são iguais.
+
+</div>
+<div slot="hint-more">
+
+Exige um token esperado existente, não vazio e string, e um recebido string.
+
+</div>
+<div slot="solution">
+
+A condição ingénua aceita dois valores vazios. A ação deve verificar método POST, existência e tipo do token da sessão, valor esperado não vazio, tipo do token recebido e só depois hash_equals. Um formulário de outra origem pode enviar POST com credenciais automaticamente aplicáveis. CORS restringe leitura da resposta, não prova intenção nem impede todos os envios.
+
+</div>
+<div slot="mistakes">
+
+Não gerar um token só na ação e assumir que isso comprova o formulário; o valor deve estar ligado ao fluxo legítimo.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-reserva-dono"
+  title="Autorizar o registo correto"
+  explanation="/cadeiras/ltw/seguranca-web/#autenticação-e-autorização"
+  answer={{"kind": "self", "checklist": ["Usei o dono vindo da sessão.", "Restringi o próprio UPDATE ao registo autorizado."]}}
+>
+
+Uma ação permite editar reserva_id vindo do cliente se existir utilizador_id na sessão. O utilizador altera reserva_id para o de outra pessoa. Qual a verificação em falta? Mostra uma condição SQL apropriada.
+
+<div slot="hint">
+
+Ter sessão não concede acesso a todos os registos.
+
+</div>
+<div slot="hint-more">
+
+Liga o registo ao utilizador autenticado no WHERE.
+
+</div>
+<div slot="solution">
+
+Falta autorizar a propriedade do registo. Uma condição apropriada é WHERE id = :reserva AND utilizador_id = :utilizador, com reserva recebida e validada e utilizador obtido da sessão. Ambos são valores preparados. Confirma que houve um registo autorizado a alterar, e verifica também os novos dados e CSRF. Esconder o botão não protege o endpoint.
+
+</div>
+<div slot="mistakes">
+
+Não aceitar utilizador_id de um hidden como autoridade para a permissão.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-salt-password"
+  title="Explicar salt e HTTPS"
+  explanation="/cadeiras/ltw/seguranca-web/#palavras-passe-e-sessão"
+  answer={{"kind": "self", "checklist": ["Expliquei resumos diferentes e limite do salt.", "Distingui HTTPS de defesa SQL."]}}
+>
+
+Dois utilizadores escolhem a mesma palavra-passe. O sistema usa password_hash para cada um. Os resumos têm de ser iguais? Um salt salva a palavra-passe 123456? HTTPS resolveria uma consulta SQL concatenada?
+
+<div slot="hint">
+
+O resumo inclui salt e parâmetros; o algoritmo é próprio para palavras-passe.
+
+</div>
+<div slot="hint-more">
+
+Distingue ataque offline à palavra-passe e proteção do transporte.
+
+</div>
+<div slot="solution">
+
+Os resumos não têm de ser iguais e normalmente diferem por salts distintos. Isso dificulta pré-cálculo e comparação direta, mas 123456 continua fácil de tentar. password_verify verifica a palavra-passe contra cada resumo. HTTPS protege o transporte, não a interpretação SQL no servidor, que continua a exigir preparação. Regenera a sessão depois de autenticar.
+
+</div>
+<div slot="mistakes">
+
+Não usar SHA-1 simples com salt nem inferir segurança da aplicação a partir do cadeado HTTPS.
+
+</div>
+</Exercise>

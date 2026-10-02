@@ -1,123 +1,243 @@
 ---
 title: HTTP, pedidos e Ajax
-description: URIs, pedidos e respostas, cabeçalhos, REST, JSON e pesquisa com fetch sobre o PHP.
+description: URLs, mensagens, métodos, estados, cookies, cache, promessas, JSON, fetch, SOP e CORS.
 section: conteudo
 order: 5
+practices:
+  - ltw/praticar-http
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import conversa from '../../ltw/conversa-http.typ?raw';
+HTTP é um protocolo de aplicação baseado em pedidos e respostas. O cliente pede um recurso; o servidor responde com estado, cabeçalhos e, quando existe, um corpo. Cada pedido é independente ao nível do protocolo. Cookies e sessões acrescentam mecanismos para ligar vários pedidos ao mesmo utilizador.
 
-O navegador e o servidor conversam por HTTP: o cliente envia um pedido e o servidor devolve uma resposta. Cada clique, cada formulário e cada pesquisa com `fetch` é um pedido destes. Perceber o formato da conversa permite depurar os dois lados e desenhar interfaces limpas entre eles.
+## URL e origem
 
-<YouTube id="0OrmKCB0UrQ" title="Hyper Text Transfer Protocol Crash Course" />
+Em `https://biblioteca.example:443/livros/12?q=redes#reserva`, temos esquema `https`, host `biblioteca.example`, porta 443, caminho `/livros/12`, query `q=redes` e fragmento `reserva`. A porta habitual de HTTPS é 443 e a de HTTP é 80. O fragmento fica no navegador e não integra o alvo enviado ao servidor.
 
-## Ler um pedido e uma resposta
+Uma origem combina esquema, host e porta. `https://biblioteca.example` e `http://biblioteca.example` são origens distintas. Duas páginas com caminhos diferentes, mas o mesmo esquema, host e porta, têm a mesma origem. URL localiza um recurso; URI é o conceito mais geral de identificação, que também inclui identificadores sem localização de acesso.
 
-Um pedido tem um método, um caminho, cabeçalhos e às vezes um corpo. Uma resposta tem um estado, cabeçalhos e um corpo. Eis a pesquisa da mercearia escrita à mão, com o pedido a ir do navegador para o servidor e a resposta a voltar:
+## Ler mensagens
 
-<Typst
-  source={conversa}
-  format="svg"
-  alt="Conversa HTTP da pesquisa: o navegador envia GET /pesquisa.php?q=queijo ao servidor PHP, que devolve 200 OK com corpo em application/json."
-/>
+Esta representação textual usa HTTP/1.1. Versões mais recentes mudam a codificação no transporte, conservando conceitos como método, estado e campos de cabeçalho.
+
+```http
+GET /livros?q=redes HTTP/1.1
+Host: biblioteca.example
+Accept: application/json
+Cookie: PHPSESSID=exemplo
 
 ```
-GET /pesquisa.php?q=queijo HTTP/1.1
-Host: localhost:8000
-Accept: application/json
 
+A primeira linha identifica método, alvo e versão. `Host` identifica o servidor pedido; `Accept` indica formatos que o cliente aceita. A linha vazia separa cabeçalhos do corpo, que aqui não existe.
+
+```http
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 42
+Content-Length: 20
+Cache-Control: no-store
 
-[{"nome":"Queijo da Serra","preco":8.5}]
+[{"titulo":"Redes"}]
 ```
 
-A primeira linha do pedido diz o método (`GET`), o caminho com os parâmetros (`/pesquisa.php?q=queijo`) e a versão do protocolo. A primeira linha da resposta diz o estado: `200 OK` correu bem, `404` não encontrou, `500` partiu no servidor. O cabeçalho `Content-Type` diz em que formato vem o corpo, e o corpo traz os dados. Quando uma página falhar, abre o separador de rede das ferramentas de desenvolvimento e lê esta conversa: o estado e o corpo dizem de que lado está o erro antes de tocares no código.
+`Content-Type` descreve o corpo enviado, não os formatos desejados. `Accept` é uma preferência do cliente; o servidor pode responder com um formato compatível ou recusar quando não consegue satisfazê-la. `Content-Length` conta os bytes do corpo, não letras nem linhas. Na rede, HTTP/1.1 separa linhas com CRLF. Um pedido com corpo precisa de enquadramento, como Content-Length ou Transfer-Encoding, para o servidor saber onde termina.
 
-Os métodos mais usados são `GET` para ler, `POST` para criar ou enviar formulários, `PUT` para substituir e `DELETE` para apagar. A diferença que decide qual usar:
-
-<Tabs id="get-post" labels={['GET', 'POST']}>
-  <div slot="panel-0">
+Um formulário normal pode produzir:
 
 ```http
-GET /pesquisa.php?q=queijo HTTP/1.1
-```
-
-O `GET` lê sem alterar nada no servidor: é seguro repetir, marcar como favorito e recarregar. Os parâmetros viajam no endereço, por isso nunca levam palavras passe nem ações. Leituras e pesquisas vão por aqui.
-
-  </div>
-  <div slot="panel-1">
-
-```http
-POST /encomenda.php HTTP/1.1
+POST /reservas HTTP/1.1
+Host: biblioteca.example
 Content-Type: application/x-www-form-urlencoded
+Content-Length: 21
 
-nome=Ana&qtd=2
+livro=12&quantidade=2
 ```
 
-O `POST` entrega um corpo para o servidor guardar ou alterar algo: encomendar, entrar, apagar. Repetir pode duplicar a ação, por isso o navegador avisa antes de reenviar. Tudo o que altera vai por aqui ou pelos outros métodos de escrita.
+JSON usa outra codificação, como `{"livro":12,"quantidade":2}`, e `Content-Type: application/json`. Em PHP, não confundas essa mensagem com `$_POST`: lê o corpo e descodifica JSON explicitamente. Uploads costumam usar `multipart/form-data` e limites que separam as partes.
 
-  </div>
-</Tabs>
+## Métodos, segurança e idempotência
 
-Regra prática: `GET` nunca altera nada no servidor, por isso é seguro repetir e marcar como favorito; tudo o que altera vai por `POST` ou pelos outros métodos.
+Um método **seguro** pede leitura, sem solicitar uma alteração de estado da aplicação. **Idempotente** significa que repetir o mesmo pedido tem o mesmo efeito pretendido que o fazer uma vez. A resposta pode variar e pode haver efeitos acessórios, como registos de acesso.
 
-## REST e JSON
+| Método    | Uso habitual                              | Seguro | Idempotente         |
+| --------- | ----------------------------------------- | ------ | ------------------- |
+| `GET`     | Obter uma representação                   | Sim    | Sim                 |
+| `HEAD`    | Obter cabeçalhos como em GET, sem corpo   | Sim    | Sim                 |
+| `POST`    | Submeter dados para processamento         | Não    | Não, em geral       |
+| `PUT`     | Criar ou substituir no endereço escolhido | Não    | Sim                 |
+| `DELETE`  | Remover a associação do recurso           | Não    | Sim                 |
+| `PATCH`   | Aplicar alterações parciais               | Não    | Depende da operação |
+| `OPTIONS` | Consultar opções de comunicação           | Sim    | Sim                 |
 
-Uma interface REST organiza o servidor por recursos com endereços estáveis: `GET /produtos` lista, `GET /produtos/3` lê um, `POST /produtos` cria. O formato de troca é quase sempre JSON, que é texto com a sintaxe dos objetos e arrays do JavaScript:
+Dois `DELETE /reservas/7` podem responder primeiro 204 e depois 404, conservando a idempotência da remoção. Dois `POST /reservas` podem criar duas reservas. Uma API pode implementar chaves de idempotência para uma operação POST, mas isso é um contrato adicional da aplicação. `GET /apagar?id=7` viola a semântica segura, apesar do nome do método.
 
-```json
-{ "nome": "Queijo da Serra", "preco": 8.5, "stock": true }
+REST usa recursos, representações e uma interface uniforme. `/livros/12` identifica um recurso; o método indica a operação. JSON não torna uma API automaticamente REST. Stateless significa que cada pedido inclui a informação necessária para o interpretar; não proíbe guardar livros ou reservas na base de dados.
+
+## Estados, cookies e cache
+
+| Estado | Interpretação                                                    |
+| ------ | ---------------------------------------------------------------- |
+| 200    | Pedido bem-sucedido, com representação quando aplicável          |
+| 201    | Recurso criado, frequentemente identificado por `Location`       |
+| 204    | Sucesso sem corpo                                                |
+| 303    | Pedir ao cliente que consulte outro destino, normalmente por GET |
+| 304    | A representação em cache continua válida, sem novo corpo         |
+| 400    | Pedido inválido                                                  |
+| 401    | Faltam credenciais válidas de autenticação                       |
+| 403    | Operação recusada                                                |
+| 404    | Recurso não encontrado, ou existência não divulgada              |
+| 405    | Método não permitido; `Allow` indica os admitidos                |
+| 500    | Erro interno do servidor                                         |
+
+`Set-Cookie` vai na resposta para pedir que o navegador guarde um cookie; `Cookie` vai em pedidos posteriores conforme domínio, caminho, segurança e política aplicáveis. Um cookie é entrada controlada pelo cliente, não prova independente de permissão. `HttpOnly` impede leitura por JavaScript; não impede que o navegador envie o cookie em pedidos.
+
+`Cache-Control: no-store` pede que não guardem a resposta. `no-cache` admite guardá-la, mas exige revalidação antes de a reutilizar. `ETag` identifica uma versão; o cliente pode enviar `If-None-Match`, e o servidor responder 304 se ela não mudou. Não guardes respostas privadas em caches partilhadas por engano.
+
+## Promessas e ordem de execução
+
+Uma Promise representa um resultado futuro, que pode cumprir-se ou rejeitar-se. `then` regista o que fazer após cumprir; `catch` trata rejeições; `finally` permite finalizar. `async` faz a função devolver uma promessa; `await` suspende essa função até à conclusão, sem bloquear todo o navegador.
+
+```js
+console.log('A');
+Promise.resolve().then(() => console.log('B'));
+console.log('C');
 ```
 
-Em [PHP](php-dinamicas-bd/), uma página que devolve JSON em vez de HTML é um serviço que qualquer cliente consome. O par do `fetch` da secção seguinte é este `api.php` mínimo, que reaproveita a consulta da página de pesquisa:
+A saída é `A`, `C`, `B`. O código corrente acaba antes do callback da promessa. Microtarefas de promessas pendentes são processadas antes da tarefa seguinte, como um callback de temporizador que entretanto esteja pronto. Um ciclo pesado continua a bloquear a execução dos callbacks; `async` não transforma cálculo síncrono numa thread.
+
+`Promise.all` reúne resultados e rejeita se uma das promessas rejeitar. Só inicia operações concorrentes se elas forem efetivamente iniciadas antes de esperar por cada uma. Erros lançados dentro de `async` tornam-se rejeições; envolve `await` num `try/catch` para os tratar nesse percurso.
+
+## JSON e fetch
+
+JSON representa objetos, arrays, strings, números, booleanos e `null`. Na troca entre sistemas, usa UTF-8; o media type `application/json` não define um parâmetro charset. Nomes de propriedades e strings usam aspas duplas; não admite comentários, funções nem vírgulas finais. `JSON.stringify` transforma valores em texto, e `JSON.parse` faz o inverso. Não uses `eval` para ler JSON.
+
+Esta função é um excerto para uma página com `ul#resultados`:
+
+```js
+async function pesquisar(termo) {
+  const parametros = new URLSearchParams({ q: termo });
+  const resposta = await fetch('/api/livros?' + parametros);
+  if (!resposta.ok) throw new Error('HTTP ' + resposta.status);
+  const livros = await resposta.json();
+  const lista = document.querySelector('#resultados');
+  lista.replaceChildren();
+  for (const livro of livros) {
+    const item = document.createElement('li');
+    item.textContent = livro.titulo;
+    lista.append(item);
+  }
+}
+```
+
+`fetch` resolve a promessa mesmo para muitos erros HTTP, incluindo 404 e 500. É o teste a `ok`, que corresponde a estados 200 a 299, que os transforma em erro neste programa. Erros de rede podem rejeitar antes de existir resposta. `json()` lê e descodifica o corpo e também é assíncrono. O cabeçalho do formato não substitui a validação do conteúdo recebido.
+
+Se duas pesquisas estão pendentes, a mais antiga pode acabar depois e substituir a mais recente. Usa um contador de pedidos para ignorar resultados antigos ou cancela com `AbortController`. Encodar parâmetros com `URLSearchParams` preserva espaços, `&`, `+` e acentos como dados, em vez de alterar a estrutura do endereço.
+
+### Aplicação local completa
+
+Para experimentar a comunicação real, guarda os três ficheiros seguintes na mesma pasta e corre `php -S localhost:8000`. Abre `/ajax.html`. O catálogo está em memória para isolar HTTP, não persiste alterações.
+
+:::details[ajax.html]
+
+```html
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pesquisar livros</title>
+    <script src="ajax.js" defer></script>
+  </head>
+  <body>
+    <h1>Pesquisar livros</h1>
+    <form id="pesquisa">
+      <label for="q">Título</label><input id="q" name="q" />
+      <button>Pesquisar</button>
+    </form>
+    <p id="estado" aria-live="polite"></p>
+    <ul id="resultados"></ul>
+  </body>
+</html>
+```
+
+:::
+
+:::details[ajax.js]
+
+```js
+let pedido = 0;
+const estado = document.querySelector('#estado');
+const lista = document.querySelector('#resultados');
+document
+  .querySelector('#pesquisa')
+  .addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const atual = ++pedido;
+    estado.textContent = 'A pesquisar…';
+    const parametros = new URLSearchParams({
+      q: document.querySelector('#q').value,
+    });
+    try {
+      const resposta = await fetch('api-livros.php?' + parametros);
+      if (!resposta.ok) throw new Error('HTTP ' + resposta.status);
+      const livros = await resposta.json();
+      if (atual !== pedido) return;
+      lista.replaceChildren();
+      for (const livro of livros) {
+        const item = document.createElement('li');
+        item.textContent = livro.titulo;
+        lista.append(item);
+      }
+      estado.textContent = `Resultados: ${livros.length}`;
+    } catch (erro) {
+      if (atual !== pedido) return;
+      lista.replaceChildren();
+      estado.textContent = 'Pesquisa indisponível.';
+    }
+  });
+```
+
+:::
+
+:::details[api-livros.php]
 
 ```php
 <?php
 header('Content-Type: application/json');
-$db = new PDO('sqlite:loja.sqlite');
-$termo = $_GET['q'] ?? '';
-$stmt = $db->prepare('SELECT nome, preco FROM produtos WHERE nome LIKE :t');
-$stmt->execute([':t' => '%' . $termo . '%']);
-echo json_encode($stmt->fetchAll());
-?>
-```
-
-O `header` antes de qualquer saída declara o formato, e o `json_encode` transforma as linhas em texto JSON. Sem o cabeçalho certo, o `fetch` recebe texto que o `r.json()` recusa. Em JavaScript, `JSON.parse` transforma texto em objeto e `JSON.stringify` faz o inverso.
-
-<YouTube id="-MTSQjw5DrM" title="RESTful APIs in 100 Seconds" />
-
-## Pesquisa com fetch sem recarregar
-
-O `fetch` faz um pedido HTTP a partir do JavaScript e devolve uma promessa com a resposta. A pesquisa da mercearia filtra a lista sem recarregar a página:
-
-```js
-async function pesquisar(termo) {
-  const r = await fetch('api.php?q=' + encodeURIComponent(termo));
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  const produtos = await r.json();
-  const lista = document.querySelector('#resultados');
-  lista.replaceChildren();
-  for (const p of produtos) {
-    const li = document.createElement('li');
-    li.textContent = p.nome + ' : ' + p.preco + ' €';
-    lista.append(li);
-  }
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    header('Allow: GET');
+    http_response_code(405);
+    echo json_encode(['erro' => 'Método não permitido']);
+    exit;
 }
-document.querySelector('#q').addEventListener('input', (e) => {
-  pesquisar(e.target.value).catch(() => {
-    document.querySelector('#resultados').textContent =
-      'Pesquisa indisponível.';
-  });
-});
+$termo = $_GET['q'] ?? '';
+if (!is_string($termo) || strlen($termo) > 100) {
+    http_response_code(400);
+    echo json_encode(['erro' => 'Pesquisa inválida']);
+    exit;
+}
+$catalogo = [['titulo' => 'Redes'], ['titulo' => 'Algoritmos'], ['titulo' => 'SQL']];
+$resultados = array_values(array_filter($catalogo, function ($livro) use ($termo) {
+    return stripos($livro['titulo'], $termo) !== false;
+}));
+echo json_encode($resultados, JSON_UNESCAPED_UNICODE);
 ```
 
-O `encodeURIComponent` protege acentos e espaços no parâmetro. O `await` pausa a função até a resposta chegar sem bloquear a página. O teste `r.ok` apanha estados como 404 e 500 antes de tentar ler JSON que não existe. E o `catch` mostra uma mensagem em vez de deixar a lista antiga a fingir que está atualizada. Cada pedido destes aparece no separador de rede, onde confirmas o endereço, o estado e o corpo antes de culpares o código.
-
-:::warning[O erro mais comum]
-Esquecer que o `fetch` é assíncrono e usar `produtos` fora da função ou antes do `await`, onde ainda é uma promessa pendente. Tudo o que depende da resposta vive depois do `await`, dentro da mesma função assíncrona.
 :::
+
+Pesquisar `red` mostra `Redes` e `Resultados: 1`; vazio mostra os três livros. O endpoint responde 405 a POST e 400 a `q[]=red`. `array_values` repõe índices consecutivos após filtrar para `json_encode` emitir um array JSON, não um objeto com chaves numéricas descontínuas.
+
+`XMLHttpRequest` faz o mesmo tipo de comunicação por callbacks: `open` configura, `setRequestHeader` define campos depois de abrir, `send` envia, e `load` indica chegada da resposta. Verifica `status` antes de usar `responseText`. No callback normal, `this` pode ser o objeto do pedido; numa arrow function, essa associação não segue a mesma regra.
+
+## SOP e CORS
+
+A same-origin policy restringe o acesso de scripts a dados de outras origens. Não impede todos os pedidos entre sítios: por exemplo, formulários e recursos embebidos podem causar pedidos sem permitir ler a resposta. Por isso SOP e CORS não substituem proteção contra CSRF.
+
+CORS permite ao servidor declarar quais as origens autorizadas a ler a resposta. Um pedido que exige preflight envia primeiro `OPTIONS`, com `Origin`, método e cabeçalhos pretendidos. O servidor responde com os campos de autorização adequados. A aplicação continua a precisar de autenticar e autorizar o pedido real.
+
+Para credenciais entre origens, o cliente usa `credentials: 'include'` e o servidor precisa de permitir credenciais e a origem concreta, não `Access-Control-Allow-Origin: *`. As regras dos cookies ainda podem impedir o envio. `mode: 'no-cors'` não desbloqueia leitura de JSON: produz uma resposta opaca.
+
+## MPA, SPA e PWA
+
+Uma MPA navega entre documentos produzidos pelo servidor. Uma SPA carrega um documento inicial e atualiza a interface e a navegação sobretudo no cliente. SPA não significa ausência de servidor nem dispensa URLs, histórico, estados de carregamento e controlo de acesso. Uma MPA também pode usar Ajax em algumas ações.
+
+Uma PWA pode acrescentar manifest, instalação e service worker para cache e funcionamento offline. Esses mecanismos não são sinónimos de SPA. APIs como geolocalização, armazenamento e notificações têm permissões, contextos e limites próprios. Frameworks organizam código e componentes, mas não alteram as regras de HTTP, DOM ou segurança que acabámos de estudar.
+
+SSR constrói a representação HTML no servidor; CSR constrói-a sobretudo no cliente a partir de dados. Esta distinção é independente de MPA/SPA. Um Worker pode executar trabalho sem acesso direto ao DOM e comunica por mensagens. Um service worker tem um ciclo de instalação e ativação e pode intercetar pedidos das páginas que controla; não é uma função que corre dentro de cada evento do DOM.
