@@ -1,79 +1,75 @@
 ---
 title: Tabelas de dispersão
-description: Funções de dispersão, colisões por encadeamento e endereçamento aberto, e o fator de carga.
+description: Colisões, fator de carga, sondagem e remoção sem interromper uma cadeia de pesquisa.
 section: conteudo
-order: 6
+order: 10
+practices:
+  - aed/praticar-tabelas-dispersao
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import tabela from '../../aed/tabela-dispersao.typ?raw';
 
-A ABP pesquisa em $O(\log n)$ comparando chaves. Uma tabela de dispersão tenta $O(1)$: em vez de procurar a chave, **calcula** onde ela está. O cálculo raramente é perfeito, e esta página é sobre gerir as imperfeições sem perder o tempo constante.
+Uma tabela de dispersão associa uma chave a uma posição calculada por uma função de hash. Não conserva ordem entre chaves. O objetivo é pesquisa, inserção e remoção de custo esperado constante sob hipóteses sobre a distribuição das chaves e a ocupação.
 
-## A ideia
+## Endereçamento direto e função hash
 
-Uma **função de dispersão** $h$ transforma cada chave num índice da tabela: para guardar o par (chave, valor), põe-no na posição $h(chave)$; para o ler, recalcula $h(chave)$ e vai lá. Uma boa função espalha as chaves uniformemente pelos índices, é rápida e determinista (a mesma chave dá sempre o mesmo índice). O exemplo canónico para chaves inteiras é $h(k) = k \bmod m$, sendo $m$ o tamanho da tabela.
+Se as chaves forem inteiros em `[0,M)`, podes guardar a chave `x` diretamente na posição `x`. O acesso é constante, mas a memória é $\Theta(M)$ mesmo com poucos elementos. Uma função hash reduz um universo grande a `m` posições, permitindo uma tabela menor e causando inevitavelmente colisões quando existem mais chaves possíveis que posições.
 
-Duas chaves com o mesmo índice fazem uma **colisão**. Colisões são inevitáveis quando há mais chaves que posições, e prováveis muito antes disso: com 23 pessoas numa sala, a probabilidade de dois aniversários coincidirem já passa de metade. Por isso a tabela precisa de uma estratégia de colisões, não de esperança.
+Uma boa função é barata e distribui as chaves usadas pelas posições. Não precisa de ser criptográfica. Para igualdade compatível com hashing, chaves consideradas iguais têm de produzir o mesmo hash. Um hash diferente prova desigualdade; um hash igual não prova igualdade.
+
+Para strings, uma combinação polinomial pode usar Horner, incorporando um carácter de cada vez. O cálculo inicial custa $O(L)$ para comprimento `L`. Overflow em tipos inteiros sem sinal tem semântica modular definida; overflow com sinal não tem. O tamanho de um tipo e a implementação de `std::hash` podem variar, pelo que não dependas de um número de hash concreto entre plataformas.
+
+## Encadeamento separado
+
+Cada posição guarda um conjunto ou uma lista das chaves que ali colidem. Com `n` chaves e `m` posições, o fator de carga é $\alpha=n/m$. Sob distribuição aproximadamente uniforme, a cadeia esperada tem comprimento $\alpha$ e uma operação custa $O(1+\alpha)$, para hash e comparação de custo constante.
+
+Com todas as chaves na mesma posição, uma pesquisa pode custar $\Theta(n)$. Controlar a carga não corrige uma função que envia todas as chaves para o mesmo sítio. Média esperada não significa garantia de pior caso.
+
+## Sondagem e três estados
+
+No endereçamento aberto, as chaves ficam no próprio array. A sondagem linear tenta $(h(x)+i)\bmod m$, com `i=0,1,...`. A pesquisa termina numa célula **livre que nunca foi usada**, ao encontrar a chave, ou após `m` tentativas. A tabela precisa de distinguir livre, ocupada e apagada.
+
+Com `m=7` e `h(x)=x mod 7`, as chaves 10, 17 e 24 ocupam as posições 3, 4 e 5. Se retirares 17 e marcares a posição 4 como livre, pesquisar 24 parará cedo e concluirá incorretamente que falta. Marca-a como **apagada**, ou tombstone, para que a pesquisa continue.
+
+| Operação           | Posição 3 | Posição 4 | Posição 5 |
+| ------------------ | --------- | --------- | --------- |
+| inserir 10, 17, 24 | 10        | 17        | 24        |
+| remover 17         | 10        | apagada   | 24        |
+| inserir 31         | 10        | 31        | 24        |
+
+A inserção pode guardar a primeira posição apagada para reutilizar, mas deve continuar a sondar até excluir uma chave igual já presente. Inserir logo na tombstone poderia criar um duplicado mais à frente. Se completar uma volta, pode reutilizar a posição apagada; sem posição disponível, a tabela está cheia.
 
 <CodePlayground
   language="cpp"
-  title="Onde cai cada chave"
+  title="Hash"
   code={
-    '#include <iostream>\nusing namespace std;\nint main() {\n    int chaves[] = {12, 25, 9, 30, 18};\n    for (int k : chaves) cout << k << " -> posicao " << (k % 7) << "\\n";\n}'
+    '#include <array>\n#include <iostream>\nclass Tabela {\n    enum class Estado { livre, ocupado, apagado };\n    struct Celula { int chave = 0; Estado estado = Estado::livre; };\n    static constexpr int M = 7;\n    std::array<Celula, M> t{};\n    static int inicio(int x) { int r = x % M; return r < 0 ? r + M : r; }\npublic:\n    bool contem(int x) const {\n        for (int k = 0; k < M; ++k) {\n            const auto& c = t[(inicio(x) + k) % M];\n            if (c.estado == Estado::livre) return false;\n            if (c.estado == Estado::ocupado && c.chave == x) return true;\n        }\n        return false;\n    }\n    bool inserir(int x) {\n        int livre = -1;\n        for (int k = 0; k < M; ++k) {\n            const int i = (inicio(x) + k) % M;\n            if (t[i].estado == Estado::ocupado) {\n                if (t[i].chave == x) return false;\n            } else {\n                if (livre == -1) livre = i;\n                if (t[i].estado == Estado::livre) break;\n            }\n        }\n        if (livre == -1) return false;\n        t[livre] = {x, Estado::ocupado}; return true;\n    }\n    bool remover(int x) {\n        for (int k = 0; k < M; ++k) {\n            auto& c = t[(inicio(x) + k) % M];\n            if (c.estado == Estado::livre) return false;\n            if (c.estado == Estado::ocupado && c.chave == x) {\n                c.estado = Estado::apagado; return true;\n            }\n        }\n        return false;\n    }\n};\nint main() {\n    Tabela t;\n    for (int x : {10, 17, 24}) t.inserir(x);\n    t.remover(17);\n    std::cout << "24 existe: " << t.contem(24) << \'\\n\';\n    std::cout << "31 inserido: " << t.inserir(31) << \'\\n\';\n    std::cout << "24 repetido: " << t.inserir(24) << \'\\n\';\n    t.inserir(-4); std::cout << "-4 existe: " << t.contem(-4) << \'\\n\';\n}\n'
   }
 />
 
-O programa imprime `12 -> posicao 5`, `25 -> posicao 4`, `9 -> posicao 2`, `30 -> posicao 2` e `18 -> posicao 4`: as duas colisões (na posição 2 e na 4) aparecem antes de desenhares a tabela.
+Resultado:
 
-## Encadeamento
+```text
+24 existe: 1
+31 inserido: 1
+24 repetido: 0
+-4 existe: 1
+```
 
-No **encadeamento** (chaining), cada posição guarda uma lista ligada de pares. Inserir 5 chaves numa tabela de tamanho 7 com $h(k) = k \bmod 7$, pela ordem 12, 25, 9, 30, 18:
+A tabela fixa do exemplo não cresce. `inserir` devolve falso tanto para duplicado como para falta de espaço; uma interface de produção pode distinguir esses resultados. O resto de uma chave negativa é normalizado para `[0,7)`. O limite de sete sondagens evita ciclos infinitos numa tabela cheia, mesmo sem uma célula livre.
 
-- $12 \bmod 7 = 5$: posição 5 fica $[12]$.
-- $25 \bmod 7 = 4$: posição 4 fica $[25]$.
-- $9 \bmod 7 = 2$: posição 2 fica $[9]$.
-- $30 \bmod 7 = 2$: colisão com o 9; a posição 2 fica $[9, 30]$.
-- $18 \bmod 7 = 4$: colisão com o 25; a posição 4 fica $[25, 18]$.
+## Agrupamento e variantes
 
-<Typst
-  source={tabela}
-  format="svg"
-  alt="Tabela de dispersão de tamanho 7 após as cinco inserções: cadeias com 9 e 30 na posição 2, com 25 e 18 na posição 4, e 12 sozinho na posição 5."
-/>
+A sondagem linear cria agrupamentos de células ocupadas: uma colisão alarga uma zona que passa a atrair mais chaves. Na sondagem quadrática, as tentativas incluem um termo quadrático; a cobertura de todas as posições depende do tamanho e dos coeficientes. Não assumes que uma sequência quadrática percorre a tabela inteira.
 
-Pesquisar o 30 recalcula o índice 2 e percorre a cadeia: compara com 9 (diferente), compara com 30 (igual). Duas comparações em vez de uma, o preço da colisão. Apagar remove o nó da cadeia, como numa lista ligada.
+No hashing duplo, a posição é $(h_1(x)+i h_2(x))\bmod m$. Para visitar todas as posições, o passo deve ser não nulo e coprimo com `m`. Com `m` primo, qualquer passo em `[1,m)` funciona. Um passo com divisor comum de `m` visita só parte da tabela.
 
-O **fator de carga** $\alpha = n/m$ (chaves por posição) prevê o custo: com boa dispersão, cada cadeia tem cerca de $\alpha$ elementos e a pesquisa custa $O(1 + \alpha)$. Aqui $\alpha = 5/7 \approx 0{,}71$. Quando $\alpha$ cresce, a tabela **redimensiona**: cria uma tabela maior e reinsere tudo (rehashing). Redimensionar custa $O(n)$, mas acontece raramente, por isso o custo amortizado por inserção continua $O(1)$, como na fila de duas pilhas.
+No endereçamento aberto, a carga tem de ser inferior a um para existir espaço livre. O número de tombstones também afeta os percursos; `n/m` baixo não garante pesquisas curtas depois de muitas remoções. Uma reconstrução elimina tombstones e pode aumentar a capacidade.
 
-## Endereçamento aberto
+## Rehash e custo
 
-No **endereçamento aberto**, os pares vivem todos dentro da tabela; em colisão, tenta-se a próxima posição livre segundo uma **sondagem**. Na sondagem linear tenta-se $h(k), h(k)+1, h(k)+2, \dots$ (módulo $m$). É simples e amiga da cache, mas forma **aglomerados**: posições ocupadas atraem mais tentativas, que ocupam mais posições. A sondagem quadrática e a dispersão dupla espalham melhor as tentativas.
+Ao mudar `m`, recalcula a posição de cada chave e reinsere-a segundo a nova sequência de sondagem. Copiar cada célula para o mesmo índice não conserva a pesquisa. Rehash custa pelo menos $\Theta(n)$ e invalida a organização anterior.
 
-O preço do endereçamento aberto aparece na remoção: apagar uma chave a meio de uma sequência de sondagem parte o caminho das chaves seguintes, por isso marca-se a posição como **apagada** (tombstone) em vez de livre. Segue com sondagem linear numa tabela de tamanho 7: insere 9 (posição 2), 30 (colide em 2, fica na 3) e 18 ($18 \bmod 7 = 4$). Apaga o 9: a posição 2 fica marcada como apagada, não livre. Pesquisa o 30: calcula o índice 2, encontra a marca de apagado e continua em vez de parar, e encontra o 30 na posição 3. Se a posição 2 tivesse ficado livre, a pesquisa parava logo e concluía, mal, que o 30 não existe. As remoções acumulam lixo e obrigam a redimensionar mais cedo. Escolhe encadeamento quando as remoções são frequentes e a memória não aperta; endereçamento aberto quando a tabela cabe na cache e as chaves são estáveis.
+Crescer geometricamente pode tornar o custo de reconstruções amortizado linear ao longo de `n` inserções. Isto não elimina o pior caso das colisões: a garantia combinada costuma ser **custo esperado amortizado** constante, sob hipóteses adequadas.
 
-<Tabs id="colisoes-encadeamento-aberto" labels={['Encadeamento', 'Endereçamento aberto']}>
-  <div slot="panel-0">
-
-Cada posição guarda uma lista: inserir é pendurar no fim da cadeia e apagar é remover o nó. A tabela nunca "enche" no sentido da sondagem, mas as cadeias alongam e o custo segue o fator de carga. É a escolha quando há muitas remoções ou o número de chaves é imprevisível.
-
-  </div>
-  <div slot="panel-1">
-
-Tudo vive no vetor: melhor localidade e sem apontadores, mas a tabela não passa de cerca de 70 por cento de ocupação sem degradar. Apagar exige tombstones e inserções falhadas exigem redimensionar. É a escolha quando as chaves são estáveis e a tabela cabe na cache.
-
-  </div>
-</Tabs>
-
-:::tip[Como cai em teste]
-Dão-te a função, o tamanho e a sequência de inserções e pedem a tabela final, ou dão-te a tabela e perguntam quantas comparações custa uma pesquisa. Segue a ordem dada sem saltos: cada inserção vê a tabela deixada pelas anteriores. E confirma sempre o módulo das tuas contas antes de escreveres a posição.
-:::
-
-## Ver também
-
-<YouTube id="KyUTuwz_b7Q" title="Tabelas e funções de dispersão" />
-
-O vídeo constrói a intuição da função de dispersão antes das estratégias de colisão, pela mesma ordem desta página.
+`unordered_set` e `unordered_map` oferecem operações médias constantes e pior caso linear. `reserve` pode evitar reconstruções repetidas se souberes uma dimensão aproximada; não torna uma função hash má uniforme. `find` consulta sem inserir; `unordered_map[key]` cria um elemento se a chave faltar. Rehash invalida iteradores da biblioteca, embora referências a elementos possam ter garantias diferentes; consulta a regra da operação que usas.

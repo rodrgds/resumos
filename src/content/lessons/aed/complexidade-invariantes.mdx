@@ -1,85 +1,135 @@
 ---
-title: Complexidade e invariantes
-description: Notação assintótica para tempo e espaço, e invariantes para provar a correção de ciclos.
+title: Correção, invariantes e complexidade
+description: Provar o que um algoritmo calcula e contar tempo e memória em função da entrada.
 section: conteudo
 order: 1
+practices:
+  - aed/praticar-complexidade-invariantes
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import curvas from '../../aed/complexidade-curvas.typ?raw';
 
-Dois programas fazem o mesmo e um deles demora o dobro. Qual escolhes? A resposta séria depende do tamanho da entrada: o dobro numa lista de dez elementos é ruído, numa lista de dez milhões é a diferença entre responder hoje e responder amanhã. A análise de complexidade mede como o custo cresce com a entrada, e os invariantes provam que o programa calcula o que promete. São as duas ferramentas que vais usar em todas as páginas desta cadeira.
+Um algoritmo precisa de duas justificações: **calcula o resultado pedido** e **usa recursos suficientes para a dimensão da entrada**. Um programa rápido que falha com valores repetidos continua errado. Um programa correto que faz mil milhões de operações pode não terminar dentro do limite.
 
-## O que conta como custo
+## Contrato e invariante
 
-Fixar primeiro o que se mede: o **tamanho da entrada** $n$ (número de elementos, de vértices, de bits) e o **custo** que interessa (comparações, acessos à memória, operações elementares). O resto é ruído de máquina e ignora-se. Quando dissermos que um algoritmo é $O(n^2)$, estamos a dizer que o número de operações elementares cresce no máximo com o quadrado de $n$, a menos de constantes.
+O **contrato** separa a pré-condição, que o chamador garante, da pós-condição, que o algoritmo garante. Para procurar o máximo: o vetor tem pelo menos um elemento; a resposta é um valor presente no vetor e nenhum elemento é maior. Se também pedires a posição, tens de decidir o que acontece num empate.
 
-A notação Big-O descreve um **limite superior**: $f(n) = O(g(n))$ significa que, a partir de certo $n$, $f(n)$ fica abaixo de uma constante vezes $g(n)$. Há mais duas que vais encontrar: $\Omega$ para limite inferior (o algoritmo custa pelo menos isto) e $\Theta$ quando os dois limites coincidem (o custo é exatamente desta ordem). Na prática da cadeira, $O$ domina: queres garantir que o programa aguenta o pior caso.
+Considera este pseudocódigo, que devolve a primeira posição do máximo num vetor não vazio:
 
-Os tempos que interessam, do melhor para o pior: $O(1)$ constante, $O(\log n)$ logarítmico, $O(n)$ linear, $O(n \log n)$, $O(n^2)$ quadrático e $O(2^n)$ exponencial. Decora a intuição, não a lista: logaritmo é "cortar o problema a metade em cada passo", $n \log n$ é "cortar e depois juntar", quadrático é "comparar tudo com tudo".
+```text
+melhor = 0
+para i = 1, ..., n-1:
+    se v[i] > v[melhor]: melhor = i
+devolver melhor
+```
 
-<Typst
-  source={curvas}
-  format="svg"
-  alt="Gráfico das curvas O(1), O(log n), O(n), O(n log n) e O(n²) para n de 1 a 10. A curva quadrática sobe muito mais depressa que as outras."
-/>
+À entrada de cada iteração, o **invariante** é: `melhor` é a primeira posição do máximo de `v[0..i)`. A notação `[0,i)` inclui 0 e exclui `i`.
 
-Repara como a quadrática se destaca das outras mesmo com $n$ pequeno: é por isso que um algoritmo $O(n^2)$ aguenta os testes pequenos do Mooshak e rebenta no limite de tempo dos grandes.
+1. **Inicialização:** antes da primeira iteração, `i=1`. O prefixo só contém `v[0]`, e `melhor=0` satisfaz a propriedade.
+2. **Manutenção:** se `v[i]` for maior, a posição `i` é o novo máximo. Se for menor ou igual, manter a posição antiga conserva o máximo e o primeiro empate. Depois de aumentar `i`, a propriedade vale para o prefixo seguinte.
+3. **Conclusão:** ao sair, `i=n`. O prefixo é o vetor inteiro, logo a propriedade implica a pós-condição.
+4. **Terminação:** a quantidade inteira não negativa `n-i` diminui em cada passo. O ciclo não pode continuar indefinidamente.
 
-## Linear contra binária em $n = 1000$
+A prova das três primeiras etapas dá **correção parcial**: se terminar, o resultado é correto. Acrescentar a terminação dá **correção total**. Uma propriedade como «o máximo ainda existe» é demasiado fraca para justificar a posição devolvida. Usar `>=` conserva o máximo, mas passa a escolher a última ocorrência.
 
-Recorda a [pesquisa linear e binária](/cadeiras/fp/algoritmos-complexidade/): a linear percorre o vetor até encontrar, a binária exige o vetor ordenado e descarta metade a cada comparação. Conta comparações no pior caso com $n = 1000$.
+## Contar operações
 
-Na linear, o pior caso é o elemento estar na última posição ou não existir: $1000$ comparações. Na binária, cada comparação elimina metade dos candidatos: depois de $k$ comparações restam $1000 / 2^k$ elementos, e o processo termina quando resta um, ou seja $2^k \geq 1000$. Como $2^9 = 512$ e $2^{10} = 1024$, bastam $k = 10$ comparações. Mil contra dez, e a diferença aumenta com $n$: para um milhão, a linear faz um milhão de comparações e a binária faz $20$, porque $2^{20} = 1\,048\,576$.
+Escolhe uma operação representativa, como comparações de chaves, e expressa a contagem em função do tamanho `n`. O máximo anterior faz exatamente `n-1` comparações. Não precisa de ordenar: isso acrescentaria trabalho sem melhorar uma única consulta.
 
-O preço da binária está fora da pesquisa: alguém teve de ordenar o vetor primeiro, e ordenar custa pelo menos $O(n \log n)$[^limite]. Se pesquisares uma vez num vetor desordenado, ordenar mais pesquisar sai mais caro que a linear. A análise decide consoante o uso, não em abstrato.
+| Fragmento de ciclo                       | Número de execuções do corpo         | Ordem apertada   |
+| ---------------------------------------- | ------------------------------------ | ---------------- |
+| `i=0..n-1`                               | $n$                                  | $\Theta(n)$      |
+| dois ciclos independentes de tamanho `n` | $n^2$                                | $\Theta(n^2)$    |
+| `i=1..n`, `j=1..i`                       | $n(n+1)/2$                           | $\Theta(n^2)$    |
+| `i=1; i<n; i*=2`                         | $\lceil\log_2 n\rceil$, para $n\ge1$ | $\Theta(\log n)$ |
+| ciclo linear seguido de ciclo quadrático | $n+n^2$                              | $\Theta(n^2)$    |
+
+Não multipliques custos de ciclos consecutivos. Não classifiques todos os ciclos encaixados como quadráticos: se o ciclo exterior duplica `i` e o interior executa `i` vezes, a soma é $1+2+4+\cdots<2n$, portanto $\Theta(n)$. Um índice que apenas avança ao longo de todo o programa pode justificar uma soma linear, mesmo dentro de outro ciclo.
+
+O modelo costuma tratar operações sobre inteiros de dimensão fixa e acesso a uma posição de array como constantes. Comparar duas strings com comprimento máximo `L` pode custar $O(L)$. Copiar um vetor de `n` posições custa $\Theta(n)$, mesmo que a chamada pareça uma única instrução.
+
+## Limites assintóticos
+
+Para funções não negativas a partir de certa dimensão:
+
+- $T(n)\in O(f(n))$ se existem $c>0,n_0$ com $T(n)\le c f(n)$ para todo $n\ge n_0$.
+- $T(n)\in\Omega(f(n))$ se existe um limite inferior análogo.
+- $T(n)\in\Theta(f(n))$ se os dois limites valem.
+
+Para $T(n)=3n^2+7n+4$, com $n\ge1$, temos $3n^2\le T(n)\le14n^2$. Logo $T(n)\in\Theta(n^2)$. Também pertence a $O(n^3)$, mas esse limite informa menos. $O$ não significa «pior caso»: podes dar um limite superior para o melhor caso, o caso médio ou o pior caso, desde que indiques qual analisaste.
+
+A ordem de crescimento habitual é
+
+$$1\prec\log n\prec n\prec n\log n\prec n^2\prec n^3\prec2^n\prec n!.$$
+
+A base do logaritmo muda apenas uma constante. Uma medição de 0,4 s com dimensão `n` sugere cerca de 1,6 s ao duplicar `n` num algoritmo quadrático, se a parcela quadrática dominar e as condições forem semelhantes. É uma estimativa, não uma garantia sobre outra máquina ou outra distribuição de dados.
+
+## Recorrências e espaço
+
+Uma chamada que resolve duas metades e faz trabalho linear satisfaz $T(n)=2T(n/2)+\Theta(n)$. Em cada nível da árvore de chamadas, o trabalho total é $\Theta(n)$; há $\Theta(\log n)$ níveis. O total é $\Theta(n\log n)$.
+
+Uma chamada que só segue uma metade com trabalho constante satisfaz $T(n)=T(n/2)+\Theta(1)=\Theta(\log n)$. Uma chamada que reduz o tamanho em um e percorre o restante satisfaz $T(n)=T(n-1)+\Theta(n)=\Theta(n^2)$.
+
+Conta também o **espaço auxiliar**, sem a entrada e a saída quando essa convenção é explícita. Uma recursão com profundidade `h` ocupa $O(h)$ na pilha de chamadas. Duas chamadas consecutivas não exigem o espaço das duas subárvores ao mesmo tempo. Um vetor auxiliar reutilizado de tamanho `n` mais uma pilha de profundidade $\log n$ custa $O(n)$.
+
+## Pior caso, média e amortização
+
+O pior caso maximiza o custo entre entradas da mesma dimensão. O caso médio exige uma distribuição de probabilidades: não basta dizer «normalmente». Um quicksort aleatório tem custo esperado $O(n\log n)$ devido à escolha aleatória do pivô, embora ainda exista uma execução quadrática.
+
+A análise **amortizada** limita uma sequência de operações, sem assumir entradas aleatórias. Num vetor que duplica a capacidade quando fica cheio, as cópias ao inserir `n` elementos somam $1+2+4+\cdots<2n$. Uma inserção isolada pode custar $\Theta(n)$; o custo amortizado por inserção é $O(1)$. Realocar pode invalidar referências e iteradores, mesmo com custo amortizado baixo.
+
+## Pré-processar consultas
+
+Para responder à soma de um intervalo `[l,r)`, constrói prefixos: $p[0]=0$ e $p[i+1]=p[i]+v[i]$. Por indução, $p[i]$ é a soma das primeiras `i` posições. Assim,
+
+$$\sum_{i=l}^{r-1}v[i]=p[r]-p[l].$$
+
+Construir custa $\Theta(n)$, cada consulta custa $\Theta(1)$, e `q` consultas custam $\Theta(n+q)$ no total. Somar cada intervalo de novo pode custar $\Theta(nq)$. Se o vetor mudar, os prefixos deixam de corresponder aos dados.
 
 <CodePlayground
   language="cpp"
-  title="Comparações: linear contra binária"
+  title="Prefixos"
   code={
-    '#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {\n    vector<int> v(1000);\n    for (int i = 0; i < 1000; i++) v[i] = i;\n    int alvo = 2000, linear = 0, binaria = 0;\n    for (int x : v) { linear++; if (x == alvo) break; }\n    int lo = 0, hi = 999;\n    while (lo <= hi) {\n        binaria++;\n        int meio = (lo + hi) / 2;\n        if (v[meio] == alvo) break;\n        if (v[meio] < alvo) lo = meio + 1; else hi = meio - 1;\n    }\n    cout << "linear: " << linear << "\\nbinaria: " << binaria << "\\n";\n}'
+    "#include <iostream>\n#include <vector>\nint main() {\n    int n, q;\n    if (!(std::cin >> n >> q) || n < 0 || n > 10000 || q < 0) return 1;\n    std::vector<long long> p(n + 1, 0);\n    for (int i = 0; i < n; ++i) {\n        int x;\n        if (!(std::cin >> x) || x < -1000000 || x > 1000000) return 1;\n        p[i + 1] = p[i] + x;\n    }\n    for (int i = 0; i < q; ++i) {\n        int l, r;\n        if (!(std::cin >> l >> r) || l < 0 || r < l || r > n) return 1;\n        std::cout << p[r] - p[l] << '\\n';\n    }\n}\n"
+  }
+  input={'4 3\n4 -2 7 1\n1 3\n2 2\n0 4\n'}
+/>
+
+Resultado:
+
+```text
+5
+0
+10
+```
+
+A entrada começa por `n q`, seguida dos `n` valores e dos `q` pares `l r`. O programa aceita o intervalo vazio e limita os valores para que a soma caiba em `long long`. `p[3]-p[1]=9-4=5`; `p[2]-p[2]=0`. Testa também `n=0`, `q=1` e a consulta `0 0`.
+
+Outra melhoria algébrica é Horner: para $a_0+a_1x+\cdots+a_dx^d$, começa em `a[d]` e repete `r=r*x+a[i]` com `i` decrescente. O invariante identifica `r` com o sufixo do polinómio já incorporado. Faz `d` multiplicações e `d` somas, em vez de recalcular cada potência.
+
+## Melhor soma contígua
+
+Considera a maior soma de um intervalo **não vazio**. Enumerar todos os pares de extremos e somar cada intervalo custa $O(n^3)$. Atualizar a soma enquanto se avança o extremo direito reduz para $O(n^2)$; prefixos também permitem avaliar cada par em tempo constante, mas ainda deixam um número quadrático de pares.
+
+O algoritmo de Kadane guarda `atual`, a maior soma de um intervalo que termina exatamente na posição anterior, e `melhor`, a maior soma de qualquer intervalo processado. Ao ler `x`, um intervalo que acaba aqui começa em `x` ou prolonga um que acabava antes. Logo `atual=max(x,atual+x)`. Depois `melhor=max(melhor,atual)`. Estas duas alternativas cobrem todos os intervalos e a hipótese indutiva justifica usar o melhor prolongamento anterior.
+
+Em `[-3,5,-2,4,-8,6]`, os valores de `atual` são `-3,5,3,7,-1,6`, e a melhor soma é 7, do intervalo `[5,-2,4]`. Num vetor só de negativos, a resposta é o maior elemento, não zero. Se o intervalo vazio fosse permitido, zero passaria a ser uma resposta possível; seria outro contrato.
+
+<CodePlayground
+  language="cpp"
+  title="Maior soma de um intervalo não vazio"
+  code={
+    '#include <algorithm>\n#include <iostream>\n#include <optional>\n#include <vector>\nstd::optional<long long> melhorSoma(const std::vector<int>& a) {\n    if (a.empty()) return std::nullopt;\n    long long atual = a[0], melhor = a[0];\n    for (std::size_t i = 1; i < a.size(); ++i) {\n        atual = std::max<long long>(a[i], atual + a[i]);\n        melhor = std::max(melhor, atual);\n    }\n    return melhor;\n}\nint main() {\n    for (const std::vector<int>& a : {std::vector<int>{-3, 5, -2, 4, -8, 6},\n                                     std::vector<int>{-6, -2, -8},\n                                     std::vector<int>{}}) {\n        const auto r = melhorSoma(a);\n        if (r) std::cout << *r << \'\\n\';\n        else std::cout << "sem intervalo\\n";\n    }\n}\n'
   }
 />
 
-O programa imprime `linear: 1000` e `binaria: 10`: o alvo 2000 não existe no vetor, por isso a linear percorre tudo e a binária parte o intervalo dez vezes até o esvaziar. Muda o alvo para 499 e vê as duas contagens caírem.
+Resultado:
 
-## Espaço também conta
-
-A **complexidade espacial** mede a memória extra além da entrada. A pesquisa binária iterativa usa $O(1)$ de espaço extra (algumas variáveis); a versão recursiva usa $O(\log n)$ pela pilha de chamadas. O mergesort, que vais seguir na próxima página, precisa de um vetor auxiliar de tamanho $n$: tempo $O(n \log n)$, espaço $O(n)$. O quicksort no próprio vetor usa $O(\log n)$ de pilha em média. Quando a memória é curta, esta coluna da tabela pesa tanto como a do tempo.
-
-## Invariantes: provar o ciclo
-
-Complexidade diz quanto custa; **correção** diz que o resultado está certo. Para ciclos, a técnica é o **invariante**: uma afirmação sobre as variáveis que é verdadeira antes de cada iteração e que, combinada com a condição de saída, implica o resultado.
-
-Toma a soma dos primeiros $n$ inteiros:
-
-```cpp
-int soma = 0;
-for (int i = 1; i <= n; i++) {
-    soma += i;
-}
+```text
+7
+-2
+sem intervalo
 ```
 
-O invariante é: antes da iteração com valor $i$, vale $soma = (i-1) \cdot i / 2$. Verifica por indução sobre $i$, como aprendeste em [indução](/cadeiras/md/inducao-recorrencia/): para $i = 1$, $soma = 0$ e $(1-1) \cdot 1 / 2 = 0$. Se vale para $i$, a iteração soma $i$ e obtém $(i-1) \cdot i / 2 + i = (i^2 - i + 2i)/2 = i \cdot (i+1)/2$, que é exatamente o invariante para $i+1$. Quando o ciclo termina, $i = n+1$, e o invariante dá $soma = n \cdot (n+1)/2$, a fórmula fechada. O invariante transforma "o ciclo parece somar tudo" numa prova.
-
-:::tip[Como escrever um invariante]
-Descreve o que já está feito em função do contador: "antes da iteração $i$, as primeiras $i-1$ posições estão tratadas". Depois confirma três pontos: vale antes da primeira iteração, cada iteração preserva-o, e com a condição de saída ele implica o resultado. Se algum falhar, ou o invariante está mal escrito ou o programa tem um erro.
-:::
-
-## Ver também
-
-<YouTube
-  id="jZzyERW7h1A"
-  title="CS50x 2024, aula 3: algoritmos e análise de custo"
-/>
-
-Para rever o argumento das comparações com outra voz, a aula 3 do CS50x constrói a pesquisa binária e a notação assintótica a partir do zero.
-
-[^limite]: O limite $\Omega(n \log n)$ vale para ordenações que só comparam pares de elementos: com $n!$ ordens possíveis e dois resultados por comparação, são precisas pelo menos $\log_2(n!) \approx n \log n$ comparações. Segues a conta completa na [página de ordenação](pesquisa-ordenacao/).
-
-## Para levar para a próxima página
-
-A análise de um algoritmo não é a mesma coisa que a classe de um problema: um algoritmo concreto corre em $O(n^2)$ enquanto o problema pode admitir solução melhor. A distinção entre "este programa custa isto" e "este problema exige pelo menos isto" reaparece em [complexidade](/cadeiras/tc/complexidade/), com as classes P e NP. Já a seguir, aplica estas contas à [pesquisa e ordenação](pesquisa-ordenacao/).
+O programa usa `optional` para representar a ausência de intervalo numa entrada vazia. Assume até 10 000 valores com módulo até um milhão para que as somas caibam em `long long`. Tempo $O(n)$ e espaço auxiliar $O(1)$. A saída negativa no segundo caso distingue este contrato de uma implementação que começa o melhor em zero.

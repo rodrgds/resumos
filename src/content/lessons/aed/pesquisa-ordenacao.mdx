@@ -1,95 +1,90 @@
 ---
-title: Pesquisa e ordenação em arrays
-description: Pesquisa sequencial e binária, ordenação por comparação e o confronto quicksort contra mergesort.
+title: Pesquisa em arrays e pesquisa de resposta
+description: Intervalos semiabertos, valores repetidos, limites de inserção e predicados monótonos.
 section: conteudo
 order: 2
+practices:
+  - aed/praticar-pesquisa-ordenacao
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import arvore from '../../aed/mergesort-arvore.typ?raw';
 
-Ordenar é o problema mais estudado da computação, porque aparece dentro de quase tudo: pesquisar depressa, remover duplicados, juntar conjuntos, preparar dados para outro algoritmo. Esta página fixa a pesquisa em vetores, apresenta as ordenações que tens de saber seguir à mão e explica por que nenhuma ordenação por comparação escapa a $O(n \log n)$.
+Antes de escolher uma pesquisa, fixa o resultado: qualquer ocorrência, a primeira, o número de ocorrências ou a primeira posição que satisfaz uma condição. Estas perguntas exigem pós-condições diferentes.
 
-## Pesquisar: sequencial e binária
+## Pesquisa sequencial
 
-A **pesquisa sequencial** percorre o vetor do início ao fim até encontrar o valor ou esgotar as posições: $O(n)$ no pior caso, $O(1)$ de espaço, e funciona em qualquer vetor. A **pesquisa binária** exige o vetor ordenado e compara com o elemento do meio: se o alvo for menor, continua na metade esquerda; se for maior, na direita. Cada comparação corta os candidatos a metade, por isso custa $O(\log n)$, como contaste na página anterior.
+Percorre todas as posições até encontrar o valor. Funciona num vetor desordenado, usa espaço auxiliar $O(1)$ e tem pior caso $\Theta(n)$. O melhor caso é $\Theta(1)$ se encontrares o primeiro elemento. Com um alvo presente e uniformemente distribuído pelas posições, a média é $(n+1)/2$ comparações. Sem uma hipótese sobre as entradas, não existe essa média garantida.
 
-Há variantes que deves reconhecer: encontrar a **primeira** ou a **última** ocorrência num vetor com repetidos (quando o meio é igual ao alvo, continua-se para o lado respetivo em vez de parar), e o limite de inserção (a posição onde o valor entraria para manter a ordem). Todas mantêm $O(\log n)$ porque cada passo continua a descartar metade.
+Uma sentinela pode eliminar a verificação do fim dentro do ciclo, mas exige espaço extra ou alteração temporária da entrada. Tens de distinguir a sentinela de uma ocorrência real e repor qualquer valor alterado. Não altera a ordem linear do custo.
 
-## Ordenação por comparação
+Ordenar uma vez para responder a `q` pesquisas custa $O(n\log n+q\log n)$. Pesquisar sequencialmente custa $O(nq)$. Com uma única pesquisa, ordenar primeiro costuma ser trabalho desnecessário. Se precisas das posições originais, guarda-as antes de ordenar.
 
-| Algoritmo | Pior caso     | Caso médio    | Espaço extra | Estável |
-| --------- | ------------- | ------------- | ------------ | ------- |
-| Seleção   | $O(n^2)$      | $O(n^2)$      | $O(1)$       | não     |
-| Inserção  | $O(n^2)$      | $O(n^2)$      | $O(1)$       | sim     |
-| Mergesort | $O(n \log n)$ | $O(n \log n)$ | $O(n)$       | sim     |
-| Quicksort | $O(n^2)$      | $O(n \log n)$ | $O(\log n)$  | não     |
+## Pesquisa binária com limites
 
-A **ordenação por seleção** repete "escolhe o mínimo do que falta e põe-no na posição": simples, sempre quadrática, boa quando trocar é caro e comparar é barato. A **ordenação por inserção** insere cada elemento na parte já ordenada: quadrática no geral, mas $O(n)$ num vetor quase ordenado, por isso é a escolha para entradas pequenas. **Estável** significa que elementos iguais mantêm a ordem relativa original, o que interessa quando ordenas por uma chave e há desempates noutra.
+Num vetor ordenado por ordem crescente, `lower_bound(x)` é a primeira posição com valor maior ou igual a `x`; `upper_bound(x)` é a primeira posição com valor estritamente maior. Ambas podem devolver `n`, a posição depois do último elemento. Não acedas a `v[n]`.
 
-O limite fundamental: qualquer algoritmo que só compare pares de elementos precisa de $\Omega(n \log n)$ comparações no pior caso. A intuição é que $n$ elementos têm $n!$ ordens possíveis e cada comparação só distingue dois resultados, por isso são precisas pelo menos $\log_2(n!) \approx n \log n$ comparações para isolar a ordem certa. O mergesort atinge este limite; o quicksort atinge-o em média.
+Para o limite inferior, mantém `[l,r)`, começando em `[0,n)`:
 
-## Mergesort num vetor de 7 elementos
+- Todas as posições antes de `l` contêm valores menores que `x`.
+- Todas as posições a partir de `r` contêm valores maiores ou iguais a `x`.
+- A fronteira procurada está entre `l` e `r`, incluindo os extremos.
 
-O mergesort divide ao meio, ordena cada metade e **intercala** (merge) as metades ordenadas. Segue o vetor $[5, 2, 7, 1, 6, 3, 4]$:
+Calcula `m=l+(r-l)/2`. Se `v[m]<x`, a ordenação permite excluir todo `[l,m]`, ficando `l=m+1`. Caso contrário, `m` ainda pode ser a primeira posição válida, pelo que fazes `r=m`. O intervalo perde pelo menos uma posição. Ao terminar, `l=r` e as duas regiões conhecidas provam a resposta.
 
-- Divide em $[5, 2, 7, 1]$ e $[6, 3, 4]$.
-- A primeira metade divide em $[5, 2]$ e $[7, 1]$, que ordenam para $[2, 5]$ (1 comparação: $5$ contra $2$) e $[1, 7]$ (1 comparação). A intercalação compara $2$ com $1$ (fica $1$), $2$ com $7$ (fica $2$), $5$ com $7$ (fica $5$) e despeja o $7$: $[1, 2, 5, 7]$ com 3 comparações.
-- A segunda metade divide em $[6]$ e $[3, 4]$; esta ordena para $[3, 4]$ (1 comparação) e a intercalação com $[6]$ compara $6$ com $3$ e com $4$: $[3, 4, 6]$ com 2 comparações.
-- A intercalação final de $[1, 2, 5, 7]$ com $[3, 4, 6]$ compara $1$ com $3$, $2$ com $3$, $5$ com $3$, $5$ com $4$, $5$ com $6$ e $7$ com $6$, e despeja o $7$: $[1, 2, 3, 4, 5, 6, 7]$ com 6 comparações.
+| Passo para `x=3` em `[1,3,3,3,8]` | `l` | `r` | `m` | Atualização              |
+| --------------------------------- | --- | --- | --- | ------------------------ |
+| 1                                 | 0   | 5   | 2   | `v[2]=3`, portanto `r=2` |
+| 2                                 | 0   | 2   | 1   | `v[1]=3`, portanto `r=1` |
+| 3                                 | 0   | 1   | 0   | `v[0]=1`, portanto `l=1` |
+| fim                               | 1   | 1   |     | resposta 1               |
 
-Total: $1 + 1 + 3 + 1 + 2 + 6 = 14$ comparações. Repara no padrão: cada nível da divisão faz cerca de $n$ comparações e há $\log n$ níveis, daí o $O(n \log n)$. O preço é o vetor auxiliar de tamanho $n$ em cada intercalação.
-
-<Typst
-  source={arvore}
-  format="svg"
-  alt="Árvore de recursão do mergesort no vetor de 7 elementos, com o número de comparações em cada intercalação: 1, 1 e 1 no primeiro nível de junções, 3 e 2 no segundo, 6 na junção final, total 14."
-/>
-
-Lê a árvore de cima para baixo como divisão e de baixo para cima como junção: os números nas setas de subida são as comparações de cada intercalação, e a soma dá as 14 que contaste à mão.
-
-## Quicksort no mesmo vetor
-
-O quicksort escolhe um **pivô**, **particiona** (menores à esquerda, maiores à direita) e resolve cada lado. Com o esquema de Lomuto e pivô na última posição, a primeira partição de $[5, 2, 7, 1, 6, 3, 4]$ com pivô $4$ faz 6 comparações e produz $[2, 1, 3, 4, 6, 7, 5]$, com o $4$ já na posição final. Resolve $[2, 1, 3]$ (pivô $3$, 2 comparações, fica igual), $[2, 1]$ (pivô $1$, 1 comparação, troca para $[1, 2]$), $[6, 7, 5]$ (pivô $5$, 2 comparações, passa a $[5, 7, 6]$) e $[7, 6]$ (1 comparação, troca para $[6, 7]$). Total: $6 + 2 + 1 + 2 + 1 = 12$ comparações.
+No limite superior, a região descartada à esquerda contém valores menores **ou iguais** a `x`. O teste passa a `v[m]<=x`. A diferença entre os dois limites conta as ocorrências, incluindo zero quando o alvo falta.
 
 <CodePlayground
   language="cpp"
-  title="Partição de Lomuto passo a passo"
+  title="Limites"
   code={
-    '#include <iostream>\n#include <vector>\nusing namespace std;\n\nint lomuto(vector<int>& v, int lo, int hi) {\n    int pivo = v[hi], i = lo;\n    for (int j = lo; j < hi; j++)\n        if (v[j] < pivo) swap(v[i++], v[j]);\n    swap(v[i], v[hi]);\n    return i;\n}\n\nint main() {\n    vector<int> v = {5, 2, 7, 1, 6, 3, 4};\n    int p = lomuto(v, 0, 6);\n    cout << "pivo na posicao " << p << ": ";\n    for (int x : v) cout << x << " ";\n    cout << "\\n";\n}'
+    "#include <iostream>\n#include <vector>\nenum class Limite { inferior, superior };\nstd::size_t limite(const std::vector<int>& v, int x, Limite tipo) {\n    std::size_t l = 0, r = v.size();\n    while (l < r) {\n        const std::size_t m = l + (r - l) / 2;\n        if (v[m] < x || (tipo == Limite::superior && v[m] == x)) l = m + 1;\n        else r = m;\n    }\n    return l;\n}\nint main() {\n    const std::vector<int> v{1, 3, 3, 3, 8};\n    for (int x : {0, 3, 9}) {\n        const auto l = limite(v, x, Limite::inferior), r = limite(v, x, Limite::superior);\n        std::cout << x << \": \" << l << ' ' << r << ' ' << r - l << '\\n';\n    }\n    std::cout << \"vazio: \" << limite({}, 3, Limite::inferior) << '\\n';\n}\n"
   }
 />
 
-O programa imprime `pivo na posicao 3: 2 1 3 4 6 7 5`: seis comparações, o $4$ na posição final 3, menores à esquerda e maiores à direita, exatamente a primeira partição que seguiste acima.
+Resultado:
 
-Neste vetor o quicksort fez menos comparações (12 contra 14) e não usou vetor auxiliar. Mas o seu pior caso é real: com o vetor já ordenado e pivô na ponta, cada partição só isola um elemento e o custo degrada para $O(n^2)$. A defesa é escolher bem o pivô (aleatório, ou mediana de três) e mudar para inserção nas partições pequenas. É por isso que a [STL](/cadeiras/p/templates-stl/) usa uma variante híbrida no `sort`, não o quicksort puro.
+```text
+0: 0 0 0
+3: 1 4 3
+9: 5 5 0
+vazio: 0
+```
 
-<Tabs id="particao-lomuto-hoare" labels={['Lomuto', 'Hoare']}>
-  <div slot="panel-0">
+`Limite::inferior` e `Limite::superior` escolhem a fronteira. Cada execução trata também o alvo menor que o mínimo, maior que o máximo e o vetor vazio. Em C++, `std::lower_bound` e `std::upper_bound` devolvem iteradores; num `vector`, a diferença entre iteradores dá a posição. Em iteradores apenas de avanço, o número de comparações continua logarítmico, mas os avanços podem ser lineares. Num `set`, prefere o método `set.lower_bound`.
 
-O esquema de **Lomuto** usa o último elemento como pivô e um índice que separa os menores. É o mais fácil de escrever sem erros e é o que os testes pedem para seguir à mão. Paga uma troca por cada elemento menor que o pivô, mesmo quando o vetor já está quase arrumado.
+O custo no vetor é $O(\log(n+1))$ e o espaço auxiliar é $O(1)$. Usar `[l,r)` evita um índice `-1` num tipo sem sinal e dispensa um caso especial para `n=0`. Alterar só um dos limites sem rever o invariante pode causar um ciclo infinito ou saltar uma ocorrência.
 
-  </div>
-  <div slot="panel-1">
+## Pesquisa binária da resposta
 
-O esquema de **Hoare** usa dois índices que caminham um para o outro a partir das pontas e trocam quando se cruzam no sítio errado. Faz menos trocas que o Lomuto (cerca de três vezes menos em média) e é o que as bibliotecas preferem. Em compensação, o pivô não termina necessariamente na posição final, por isso a recursão trata os intervalos com mais cuidado.
+A pesquisa binária também serve para encontrar a menor resposta viável, mesmo sem um vetor explícito. Precisas de um predicado monótono: falso para respostas demasiado pequenas e verdadeiro a partir de uma fronteira.
 
-  </div>
-</Tabs>
+Divide pesos positivos `[4,6,3,7]` em no máximo dois grupos contíguos, minimizando a maior soma. Para um limite `M`, percorre da esquerda para a direita e acrescenta pesos ao grupo atual enquanto couberem; quando o próximo exceder `M`, abre outro grupo. Se algum peso exceder `M`, a resposta é inviável.
 
-:::warning[Comparações não são tudo]
-Dois algoritmos com o mesmo $O$ podem diferir por constantes, localidade de cache e número de trocas. O quicksort costuma ganhar ao mergesort na prática porque trabalha no próprio vetor, com acessos sequenciais que a cache adora. A análise assintótica ordena os candidatos; a medição escolhe o vencedor.
-:::
+A estratégia gulosa usa o menor número de grupos: o primeiro grupo termina tão tarde quanto é permitido. Qualquer solução válida não pode terminar o seu primeiro grupo mais à direita. Repetindo o argumento no sufixo, a solução gulosa nunca precisa de mais grupos que outra solução.
 
-## Ordenação linear
+| `M` | Grupos gulosos        | Viável com até 2? |
+| --- | --------------------- | ----------------- |
+| 9   | `[4]`, `[6,3]`, `[7]` | não               |
+| 10  | `[4,6]`, `[3,7]`      | sim               |
+| 15  | `[4,6,3]`, `[7]`      | sim               |
 
-Sem comparar pares, o limite $n \log n$ não se aplica. A **counting sort** conta quantas vezes aparece cada valor (quando os valores estão num intervalo pequeno conhecido) e reescreve o vetor: $O(n + k)$ para $k$ valores possíveis. Ordena $[2, 0, 2, 1, 3, 0, 2]$ com valores de 0 a 3: conta um $0$ duas vezes, um $1$ uma vez, um $2$ três vezes e um $3$ uma vez, ou seja a tabela $[2, 1, 3, 1]$; reescreve dois zeros, um um, três dois e um três, e obtém $[0, 0, 1, 2, 2, 2, 3]$. Nenhuma comparação entre elementos, só contagem e escrita. A **radix sort** ordena dígito a dígito com uma ordenação estável auxiliar. O truque é sempre o mesmo: trocar comparações por informação sobre os valores. Quando os valores são arbitrários, volta-se à comparação.
+Se `M` funciona, um limite maior também funciona: a mesma divisão continua válida. Pesquisa no intervalo fechado entre o maior peso e a soma total, convertendo o esquema para uma primeira resposta verdadeira. Cada teste custa $O(n)$; com amplitude inteira `S`, o custo é $O(n\log(S+1))$ e espaço auxiliar constante.
 
-## Ver também
+Pesos negativos invalidam a justificação gulosa. «Exatamente `k` grupos não vazios» só é equivalente a «no máximo `k`» aqui quando `1<=k<=n`: podes subdividir grupos de pesos positivos sem aumentar a soma máxima. Declara esta condição antes de reutilizar o predicado.
 
-<YouTube id="kPRA0W1kECg" title="15 algoritmos de ordenação em 6 minutos" />
+## Bisseção em números reais
 
-O vídeo mostra as 15 ordenações a correr lado a lado: vê como o quicksort e o mergesort avançam depressa enquanto a seleção e a inserção ficam para trás. Para brincar com cada comparação, o [Visualgo](https://visualgo.net/en/sorting) anima as trocas passo a passo, e a [documentação do sort da STL](https://en.cppreference.com/w/cpp/algorithm/sort) diz que garantias a implementação real oferece.
+Para encontrar uma raiz de uma função contínua com sinais opostos nos extremos, calcula o meio e conserva a metade que mantém a mudança de sinal. A continuidade garante a existência de uma raiz; não garante que seja única. Uma função com uma raiz de multiplicidade par pode não mudar de sinal.
+
+Em $f(x)=x^2-3$, no intervalo `[1,2]`, os primeiros meios são 1,5, 1,75 e 1,625. Os novos intervalos são `[1,5;2]`, `[1,5;1,75]` e `[1,625;1,75]`. Após `k` divisões, a largura é $1/2^k$. Usar o meio final dá erro absoluto de localização no máximo metade da largura, em aritmética exata.
+
+Com `double`, termina também se o meio for igual a um extremo ou atingires um limite de iterações. Compara os sinais diretamente, em vez de multiplicar dois valores que podem exceder o intervalo representável. Um teste de valor pequeno de `f(x)` e um teste de intervalo pequeno medem coisas diferentes. Para $\sqrt3$, a aproximação a seis casas decimais é `1,732051`.
+
+Pesquisa discreta exige monotonia do predicado; bisseção com mudança de sinal exige continuidade. Justifica a hipótese usada antes de descartar metade do espaço de respostas.

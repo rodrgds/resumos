@@ -1,0 +1,81 @@
+---
+title: Ordenação e estabilidade
+description: Traçar ordenações, provar a intercalação e distinguir garantias de pior caso e custos esperados.
+section: conteudo
+order: 3
+practices:
+  - aed/praticar-ordenacao
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Ordenar transforma uma sequência numa sequência que respeita um comparador e contém exatamente os mesmos elementos. Se só procuras um mínimo, não precisas de ordenar. Se vais fazer muitas pesquisas, juntar conjuntos ou agrupar chaves, a ordem pode compensar o custo inicial.
+
+## Ordenações elementares
+
+Na **seleção**, antes de tratar a posição `i`, o prefixo `[0,i)` contém os `i` menores elementos nas posições finais. Procura o mínimo no sufixo e troca-o com `v[i]`. Faz $n(n-1)/2$ comparações em qualquer entrada, portanto $\Theta(n^2)$, mas apenas $O(n)$ trocas. Não é estável: em `[2A,2B,1]`, a primeira troca produz `[1,2B,2A]`.
+
+Na **inserção**, o prefixo `[0,i)` está ordenado e contém os elementos originais desse prefixo. Guarda `v[i]`, desloca para a direita os elementos estritamente maiores e insere o valor no espaço aberto. `[4,2,3]` passa por `[2,4,3]` e `[2,3,4]`. Deslocar apenas os estritamente maiores preserva a ordem dos empates. O número de deslocações é o número de inversões: pares fora de ordem. O custo é $\Theta(n+I)$, com `I` inversões; numa entrada ordenada é linear e numa entrada inversa é quadrático. «Quase ordenada» só permite uma garantia se quantificares as inversões.
+
+Na **bubble sort**, compara vizinhos e troca quando estão invertidos. Uma passagem leva o máximo do intervalo para o fim. Sem uma condição de paragem, continua quadrática mesmo se a entrada já estiver ordenada. Com um indicador de ausência de trocas, o melhor caso é linear. Trocar só elementos estritamente fora de ordem torna-a estável.
+
+## Mergesort e prova do merge
+
+Divide `[l,r)` em `[l,m)` e `[m,r)`, ordena cada metade e intercala-as. Durante a intercalação, o prefixo auxiliar já escrito contém os menores elementos ainda consumidos, por ordem; `i` e `j` apontam para o primeiro elemento não consumido de cada metade. O menor dos dois candidatos é o menor de todos os elementos restantes, porque cada metade está ordenada. Escrevê-lo preserva o invariante. Quando uma metade acaba, copia a outra.
+
+Traça `[6,2,5,1]`: as metades ordenam para `[2,6]` e `[1,5]`. O merge escolhe 1, depois 2, depois 5 e copia 6. Faz três comparações nesta junção; as duas junções inferiores fizeram uma cada, dando cinco no total.
+
+<CodePlayground
+  language="cpp"
+  title="Ordenacao"
+  code={
+    '#include <algorithm>\n#include <iostream>\n#include <vector>\nvoid mergeSort(std::vector<int>& a, std::vector<int>& t,\n               std::size_t l, std::size_t r) {\n    if (r - l < 2) return;\n    const auto m = l + (r - l) / 2;\n    mergeSort(a, t, l, m);\n    mergeSort(a, t, m, r);\n    auto i = l, j = m, k = l;\n    while (i < m && j < r)\n        t[k++] = a[j] < a[i] ? a[j++] : a[i++];\n    while (i < m) t[k++] = a[i++];\n    while (j < r) t[k++] = a[j++];\n    for (k = l; k < r; ++k) a[k] = t[k];\n}\nint main() {\n    std::vector<int> a{5, 2, 7, 1, 6, 3, 4, 2}, t(a.size());\n    mergeSort(a, t, 0, a.size());\n    for (std::size_t i = 0; i < a.size(); ++i)\n        std::cout << (i ? " " : "") << a[i];\n    std::cout << \'\\n\';\n    const std::vector<int> antes = a;\n    std::sort(a.begin(), a.end());\n    std::cout << "igual a sort: " << (a == antes) << \'\\n\';\n}\n'
+  }
+/>
+
+Resultado:
+
+```text
+1 2 2 3 4 5 6 7
+igual a sort: 1
+```
+
+Na igualdade, o programa escolhe o elemento da esquerda, preservando a estabilidade. A divisão termina quando o intervalo tem menos de dois elementos, incluindo o vetor vazio. O vetor auxiliar é criado uma vez e reutilizado.
+
+A recorrência é $T(n)=2T(n/2)+\Theta(n)$, logo $\Theta(n\log n)$ em melhor, médio e pior caso nesta implementação. O auxiliar ocupa $\Theta(n)$ e a pilha $O(\log n)$. Criar um novo vetor por chamada aumenta alocações, mas não obriga a manter o trabalho de todos os níveis em memória ao mesmo tempo.
+
+## Quicksort e partição
+
+No esquema de Lomuto, para um intervalo não vazio `[l,r)`, escolhe `p=v[r-1]`. Percorre `j=l..r-2` e mantém `[l,i)` com valores menores que `p` e `[i,j)` com valores maiores ou iguais. Se `v[j]<p`, troca com `v[i]` e avança `i`. No fim, troca o pivô com `v[i]`. O pivô fica na posição final; resolve `[l,i)` e `[i+1,r)`.
+
+Em `[5,2,7,1,4]`, o pivô é 4. Depois de processar 5, 2, 7 e 1, o vetor fica `[2,1,7,5,4]`; a troca final produz `[2,1,4,5,7]`. Foram quatro comparações com o pivô. A partição não ordena cada lado.
+
+Se as divisões forem equilibradas, o custo é $\Theta(n\log n)$. Se cada pivô isolar um único elemento, $T(n)=T(n-1)+\Theta(n)=\Theta(n^2)$. O último elemento como pivô provoca esse caso numa sequência crescente; com a comparação estrita, todos os valores iguais também o provocam.
+
+Um pivô escolhido uniformemente ao acaso dá custo esperado $O(n\log n)$, mas não elimina o pior caso. Uma partição em três regiões, menores, iguais e maiores, evita repetir trabalho nos empates. A pilha do quicksort recursivo ingénuo pode ocupar $\Theta(n)$ no pior caso. Recursar só sobre a região menor e iterar sobre a maior limita a pilha a $O(\log n)$, mesmo quando o tempo é quadrático.
+
+O esquema de Hoare aproxima dois índices e troca pares fora da região pretendida. A fronteira devolvida não tem de ser a posição final do pivô. Não combines os intervalos recursivos de Lomuto com a fronteira de Hoare.
+
+## Estabilidade e comparação válida
+
+Uma ordenação é **estável** se preserva a ordem relativa dos elementos cuja chave é equivalente. Ao ordenar registos primeiro pelo nome e depois pela nota com uma ordenação estável, os empates de nota continuam por nome. Podes obter a mesma ordem final com um comparador que inclua ambos os critérios.
+
+O comparador de C++ deve definir uma **ordem fraca estrita**: `comp(x,x)` é falso; a relação é transitiva; a equivalência definida por nem `comp(a,b)` nem `comp(b,a)` também é transitiva. `<=` não serve. Subtrair duas chaves para decidir a ordem pode causar overflow; compara-as diretamente. Não uses uma tolerância de ponto flutuante que torne a equivalência não transitiva.
+
+`std::sort` garante $O(n\log n)$ comparações no pior caso em C++17 e não garante estabilidade. O padrão não exige uma implementação concreta. `std::stable_sort` preserva os empates; com memória auxiliar suficiente faz $O(n\log n)$ comparações, e sem essa memória pode usar $O(n\log^2 n)$. O custo de copiar ou comparar os registos pode acrescentar outro fator.
+
+## Limite inferior e ordenação sem comparações
+
+Para `n` chaves distintas, uma ordenação por comparações tem de distinguir `n!` permutações. A árvore de decisões binária precisa de pelo menos `n!` folhas, logo altura pelo menos $\lceil\log_2(n!)\rceil=\Omega(n\log n)$. É um limite de pior caso no modelo de comparação, não um limite para qualquer algoritmo com informação sobre as chaves.
+
+**Counting sort** usa chaves inteiras em `[0,k)`. Conta frequências, calcula prefixos das contagens e coloca cada elemento na sua posição. Para preservar empates, percorre a entrada da direita para a esquerda e reduz a posição final disponível da respetiva chave. Para `[(2,A),(1,B),(2,C),(0,D)]`, a saída é `[(0,D),(1,B),(2,A),(2,C)]`. Reconstruir só frequências ordena números, mas perde os outros campos dos registos.
+
+O tempo é $\Theta(n+k)$ e o espaço auxiliar da versão estável é $\Theta(n+k)$. Um intervalo enorme de chaves pode tornar esta escolha pior que comparar. **Radix sort** por dígitos do menos significativo para o mais significativo exige uma ordenação estável em cada passagem. Depois de `d` passagens, a ordem dos `d` dígitos processados está correta; o custo é $\Theta(d(n+b))$ com base `b`. Chaves negativas e comprimentos diferentes exigem uma representação e uma política explícitas.
+
+| Algoritmo          | Melhor            | Pior              | Auxiliar habitual          | Estável nesta versão? |
+| ------------------ | ----------------- | ----------------- | -------------------------- | --------------------- |
+| Seleção            | $\Theta(n^2)$     | $\Theta(n^2)$     | $O(1)$                     | não                   |
+| Inserção           | $\Theta(n)$       | $\Theta(n^2)$     | $O(1)$                     | sim                   |
+| Bubble com paragem | $\Theta(n)$       | $\Theta(n^2)$     | $O(1)$                     | sim                   |
+| Mergesort em vetor | $\Theta(n\log n)$ | $\Theta(n\log n)$ | $O(n)$                     | sim                   |
+| Quicksort Lomuto   | $\Theta(n\log n)$ | $\Theta(n^2)$     | $O(n)$ na recursão ingénua | não                   |
