@@ -1,0 +1,100 @@
+---
+title: Programação linear inteira
+description: Variáveis inteiras e binárias, relaxação, branch and bound e cortes válidos.
+section: conteudo
+order: 15
+practices:
+  - da/praticar-inteira
+---
+
+A programação linear inteira, **ILP**, acrescenta restrições de integridade a um modelo linear. Contar máquinas ou atribuir uma tarefa a uma pessoa não permite comprar ou escolher uma fração. A geometria continua a ajudar, mas os pontos admissíveis inteiros são discretos.
+
+## Variáveis binárias e modelos
+
+Uma variável $x_i\in\{0,1\}$ representa uma decisão sim/não. A mochila 0-1 fica
+
+$$\max\sum_i v_ix_i,\qquad \sum_i w_ix_i\le W,\qquad x_i\in\{0,1\}.$$
+
+Numa atribuição de tarefas, $x_{ij}=1$ significa atribuir a tarefa $j$ à pessoa $i$. Para uma atribuição por tarefa, usa $\sum_i x_{ij}=1$; para no máximo $b_i$ tarefas por pessoa, $\sum_j x_{ij}\le b_i$. Compatibilidades podem excluir variáveis ou impor $x_{ij}=0$. Não dupliques a mesma tarefa na contagem por esquecer uma igualdade.
+
+Um custo fixo de abrir uma instalação precisa de uma variável binária $y_i$. Uma restrição $\sum_j x_{ij}\le M_i y_i$ permite atribuições apenas quando está aberta. $M_i$ deve ser um limite válido e tão apertado quanto o modelo permita. Um valor demasiado pequeno elimina soluções; um valor desnecessariamente grande enfraquece a relaxação e pode criar problemas numéricos.
+
+## Relaxação linear
+
+Retirar a integridade alarga o conjunto de soluções. Para maximização, o ótimo LP é um **limite superior** do ótimo inteiro; para minimização, é um **limite inferior**. Se uma solução ótima da relaxação já for inteira em todas as variáveis exigidas, também é ótima no ILP.
+
+Considera
+
+$$\max x+y,\qquad 2x+y\le4,\quad x+2y\le4,\quad x,y\ge0\text{ inteiros}.$$
+
+A relaxação tem ótimo $(4/3,4/3)$ e valor $8/3$. Os pontos inteiros $(2,0)$, $(1,1)$ e $(0,2)$ têm valor 2; nenhuma solução inteira atinge 3, pois somar as restrições dá $3(x+y)\le8$. Como $x+y$ é inteiro, fica $x+y\le2$.
+
+## Arredondar não resolve o ILP
+
+Arredondar cada coordenada pode violar uma desigualdade, uma igualdade ou uma exigência mínima. No modelo $x+y\ge1$, $x-y=0$, $x,y\ge0$ inteiros, minimizar $x+y$ tem relaxação ótima $(1/2,1/2)$, valor 1. Arredondar ambos para baixo dá $(0,0)$, que viola o mínimo; arredondar um para cima e outro para baixo viola a igualdade. A solução inteira ótima é $(1,1)$, valor 2.
+
+Mesmo um arredondamento admissível não é automaticamente ótimo. Precisamos de comparar ou de provar um limite. O valor LP sozinho não identifica o ponto inteiro que atinge o melhor valor possível.
+
+## Branch and bound com relaxações
+
+Em cada nó, resolve a relaxação LP com as restrições herdadas. Num problema de maximização:
+
+1. Se a relaxação é inviável, poda o nó.
+2. Se o seu limite superior não supera o incumbente inteiro, poda o nó quando só precisas de um ótimo.
+3. Se a solução é inteira, atualiza o incumbente e fecha o nó.
+4. Caso contrário, escolhe uma variável inteira $x_j$ com valor fracionário $a$ e cria os ramos $x_j\le\lfloor a\rfloor$ e $x_j\ge\lceil a\rceil$.
+
+Todos os valores inteiros de $x_j$ pertencem a um desses ramos. Não perdemos uma solução inteira e excluímos o ponto fracionário atual. Repetir a divisão em cada ramo mantém a cobertura do espaço de soluções.
+
+### Seguir o exemplo
+
+Na raiz do exemplo, $(x,y)=(4/3,4/3)$ e limite $8/3$. Ramifica em $x\le1$ e $x\ge2$.
+
+No ramo $x\ge2$, a restrição $2x+y\le4$ e $y\ge0$ forçam $x=2,y=0$. É inteiro, valor 2, e passa a incumbente.
+
+No ramo $x\le1$, a relaxação pode chegar a $(1,3/2)$, valor $5/2$. Esse limite ainda é maior que 2, portanto não basta para podar. Ramifica em $y\le1$ e $y\ge2$:
+
+- Com $y\le1$, o ótimo é $(1,1)$, valor 2.
+- Com $y\ge2$, $x+2y\le4$ força $(0,2)$, valor 2.
+
+Todos os ramos ficaram resolvidos ou podados. O ótimo inteiro é 2. Para devolver todos os ótimos, conserva os empates; para apenas um, basta o primeiro ótimo e limites que excluam valores superiores.
+
+Podemos usar também que o objetivo tem valor inteiro: um limite $8/3$ permite o limite mais apertado $\lfloor8/3\rfloor=2$. Com um incumbente de 2, a raiz já seria podável. Este arredondamento do **limite** é válido porque sabemos que todo o objetivo inteiro é inteiro; não é arredondar uma solução fracionária.
+
+A ordem DFS ou melhor-limite afeta tempo e memória. O pior caso continua exponencial. Um bom incumbente e limites apertados reduzem a árvore, mas não transformam o problema geral em LP.
+
+## Cortes válidos
+
+Um corte acrescenta uma desigualdade satisfeita por todos os pontos inteiros admissíveis e violada pela solução fracionária atual. Reduz a relaxação sem retirar nenhuma solução inteira.
+
+No exemplo, somar as restrições e usar a integridade de $x+y$ dá o corte $x+y\le2$. O ponto $(4/3,4/3)$ é eliminado; os três ótimos inteiros permanecem. Este corte prova diretamente o valor ótimo quando combinado com uma solução de valor 2.
+
+Não basta desenhar uma linha que afaste o ponto atual. É necessário provar que a linha conserva **todos** os inteiros admissíveis, incluindo os que ainda não vimos.
+
+### Corte fracionário de Gomory
+
+Numa formulação puramente inteira com variáveis não negativas, uma linha da base pode escrever-se
+
+$$x_B+\sum_j a_jx_j=b,$$
+
+com $x_B$ e $x_j$ inteiros. Se $b$ é fracionário, usa a parte fracionária $\{r\}=r-\lfloor r\rfloor$ e acrescenta
+
+$$\sum_j\{a_j\}x_j\ge\{b\}.$$
+
+A justificação vem de $x_B+\sum_j\lfloor a_j\rfloor x_j$ ser inteiro. Como $x_j\ge0$ e $\lfloor a_j\rfloor\le a_j$, esse inteiro é no máximo $b$, logo no máximo $\lfloor b\rfloor$. Subtrair da equação dá o corte.
+
+Por exemplo, $x_B+\frac12x_1+\frac13x_2=\frac73$ dá $\frac12x_1+\frac13x_2\ge\frac13$. Na solução básica fracionária atual, as não básicas $x_1=x_2=0$ violam o corte. Qualquer solução inteira da equação respeita-o. A parte fracionária de $-1/3$ é $2/3$, não $-1/3$; usa o chão matemático, não truncar para zero.
+
+Esta fórmula não se aplica sem alterações a uma linha com variáveis contínuas. ILP misto exige cortes adequados à mistura de domínios. Métodos modernos combinam ramificação e cortes, mas cada corte continua a precisar da mesma condição de validade.
+
+## Integridade e fluxo
+
+Alguns modelos LP têm ótimos inteiros sem precisarem de procurar por ramificação. Em redes de fluxo com capacidades inteiras, os aumentos inteiros preservam integridade e atingem um ótimo inteiro. A estrutura dessas restrições permite métodos especializados polinomiais.
+
+Não generalizes: uma matriz com coeficientes inteiros pode ter ótimo fracionário, como o exemplo $2x+y\le4$, $x+2y\le4$. Para usar integridade como propriedade do LP, precisamos de um resultado sobre a estrutura do modelo, não apenas sobre o aspeto dos coeficientes.
+
+## Relação com NP-completude
+
+Podemos representar uma cláusula $\ell_1\lor\ell_2\lor\ell_3$ por $L_1+L_2+L_3\ge1$, usando uma variável binária $x$ para literal positivo e $1-x$ para a sua negação. A atribuição satisfaz a fórmula se e só se cumpre todas essas desigualdades.
+
+Por exemplo, $(x\lor\neg y\lor z)$ dá $x+(1-y)+z\ge1$. A transformação usa tamanho polinomial e mostra que viabilidade inteira já pode representar satisfazibilidade. Isto explica a dificuldade geral do ILP, apesar de as restrições serem lineares.

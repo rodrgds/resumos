@@ -1,0 +1,209 @@
+<div data-da-flow>
+  <svg
+    viewBox="0 0 400 270"
+    role="img"
+    aria-label="Rede de fluxo com origem s, vértices a e b, e destino t. Cada aresta mostra fluxo sobre capacidade."
+  >
+    <defs>
+      <marker
+        id="da-flow-arrow"
+        markerWidth="8"
+        markerHeight="8"
+        refX="7"
+        refY="4"
+        orient="auto"
+      >
+        <path d="M0 0L8 4L0 8Z" fill="context-stroke" />
+      </marker>
+    </defs>
+    <g
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      marker-end="url(#da-flow-arrow)"
+    >
+      <path d="M56 123L175 52" data-edge="sa" />
+      <path d="M56 145L175 216" data-edge="sb" />
+      <path d="M193 64L193 203" data-edge="ab" />
+      <path d="M216 52L337 123" data-edge="at" />
+      <path d="M216 216L337 145" data-edge="bt" />
+      <path
+        d="M211 203Q252 135 211 64"
+        data-reverse
+        stroke-dasharray="5 4"
+        visibility="hidden"
+      />
+    </g>
+    <g class="labels">
+      <text x="95" y="79" data-flow-label="sa">
+        0 / 3
+      </text>
+      <text x="95" y="207" data-flow-label="sb">
+        0 / 2
+      </text>
+      <text x="153" y="138" data-flow-label="ab">
+        0 / 2
+      </text>
+      <text x="280" y="79" data-flow-label="at">
+        0 / 2
+      </text>
+      <text x="280" y="207" data-flow-label="bt">
+        0 / 3
+      </text>
+      <text x="280" y="138" data-reverse-label visibility="hidden">
+        inversa: 0
+      </text>
+    </g>
+    <g class="nodes">
+      <circle cx="40" cy="135" r="22" />
+      <circle cx="195" cy="40" r="22" />
+      <circle cx="195" cy="228" r="22" />
+      <circle cx="355" cy="135" r="22" />
+    </g>
+    <g class="vertex-labels">
+      <text x="40" y="140">
+        s
+      </text>
+      <text x="195" y="45">
+        a
+      </text>
+      <text x="195" y="233">
+        b
+      </text>
+      <text x="355" y="140">
+        t
+      </text>
+    </g>
+  </svg>
+  <label>
+    Passo <input type="range" min="0" max="4" value="0" step="1" data-step />
+    <output data-step-value>0</output>
+  </label>
+  <p aria-live="polite" data-description>
+    Fluxo zero. Ainda não escolhemos um caminho.
+  </p>
+  <p>
+    Valor do fluxo: <strong data-value>0</strong>. Rótulos: fluxo / capacidade.
+  </p>
+  <noscript>
+    No último passo, a inversa b para a cancela uma unidade em a para b e
+    permite atingir fluxo 5.
+  </noscript>
+</div>
+<style>
+  svg {
+    width: 100%;
+    height: auto;
+    color: var(--text);
+  }
+  .nodes circle {
+    fill: var(--surface);
+    stroke: var(--text);
+    stroke-width: 2;
+  }
+  text {
+    fill: var(--text);
+    font-size: 18px;
+    text-anchor: middle;
+  }
+  .vertex-labels text {
+    font-weight: 700;
+  }
+  label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  input {
+    flex: 1;
+    min-width: 100px;
+    accent-color: var(--accent);
+  }
+  output {
+    min-width: 2ch;
+  }
+  p {
+    margin-block: 12px 0;
+  }
+</style>
+<script>
+  const states = [
+    {
+      flow: [0, 0, 0, 0, 0],
+      value: 0,
+      path: [],
+      description: 'Fluxo zero. Ainda não escolhemos um caminho.',
+    },
+    {
+      flow: [2, 0, 2, 0, 2],
+      value: 2,
+      path: ['sa', 'ab', 'bt'],
+      description:
+        's, a, b, t: aumentamos 2. A inversa b para a permite cancelar até 2.',
+    },
+    {
+      flow: [3, 0, 2, 1, 2],
+      value: 3,
+      path: ['sa', 'at'],
+      description: 's, a, t: aumentamos 1. A saída s para a fica saturada.',
+    },
+    {
+      flow: [3, 1, 2, 1, 3],
+      value: 4,
+      path: ['sb', 'bt'],
+      description:
+        's, b, t: aumentamos 1. Ainda há espaço em a para t, mas não em s para a.',
+    },
+    {
+      flow: [3, 2, 1, 2, 3],
+      value: 5,
+      path: ['sb', 'reverse', 'at'],
+      description:
+        's, b, a, t: aumentamos 1 pela inversa. O fluxo em a para b desce de 2 para 1; o valor total sobe para 5.',
+    },
+  ];
+  const edges = ['sa', 'sb', 'ab', 'at', 'bt'];
+  const capacities = [3, 2, 2, 2, 3];
+  for (const demo of document.querySelectorAll<HTMLElement>('[data-da-flow]')) {
+    const input = demo.querySelector<HTMLInputElement>('[data-step]');
+    if (!input) continue;
+    const update = () => {
+      const state = states[Number(input.value)];
+      const output = demo.querySelector('[data-step-value]');
+      const value = demo.querySelector('[data-value]');
+      const description = demo.querySelector('[data-description]');
+      if (output) output.textContent = input.value;
+      if (value) value.textContent = String(state.value);
+      if (description) description.textContent = state.description;
+      edges.forEach((edge, i) => {
+        const label = demo.querySelector(`[data-flow-label="${edge}"]`);
+        const path = demo.querySelector(`[data-edge="${edge}"]`);
+        if (label) label.textContent = `${state.flow[i]} / ${capacities[i]}`;
+        path?.setAttribute(
+          'stroke',
+          state.path.includes(edge) ? 'var(--accent)' : 'currentColor',
+        );
+        path?.setAttribute(
+          'stroke-width',
+          state.path.includes(edge) ? '4' : '2',
+        );
+      });
+      const reverse = demo.querySelector('[data-reverse]');
+      const reverseLabel = demo.querySelector('[data-reverse-label]');
+      const visibility = state.flow[2] > 0 ? 'visible' : 'hidden';
+      reverse?.setAttribute('visibility', visibility);
+      reverse?.setAttribute(
+        'stroke',
+        state.path.includes('reverse') ? 'var(--accent)' : 'currentColor',
+      );
+      reverse?.setAttribute(
+        'stroke-width',
+        state.path.includes('reverse') ? '4' : '2',
+      );
+      reverseLabel?.setAttribute('visibility', visibility);
+      if (reverseLabel) reverseLabel.textContent = `inversa: ${state.flow[2]}`;
+    };
+    input.addEventListener('input', update);
+    update();
+  }
+</script>
