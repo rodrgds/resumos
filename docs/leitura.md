@@ -16,7 +16,11 @@ Os destaques usam a [CSS Custom Highlight API](https://developer.mozilla.org/en-
 
 ## Atalhos
 
-Por predefinição, `/` pesquisa, `n` abre as notas, `,` abre a aparência, `?` abre os atalhos e `a` abre o menu de IA nas páginas que o têm. Ctrl ou ⌘ K também pesquisa. Os atalhos não atuam em campos de texto. Podes mudar ou desativar as teclas e ativar navegação com `h`, `j`, `k`, `l`.
+Por predefinição, `/` pesquisa, `n` abre as notas, `,` abre a aparência, `?` abre os atalhos e `a` abre o Chat nas páginas que o têm. Ctrl ou ⌘ K pesquisa todo o site. Os atalhos funcionam também quando um botão tem foco, mas não em campos de texto, editores ou diálogos abertos. Podes mudá-los ou desativar os atalhos de uma tecla.
+
+Ativa **Navegação Vim** na aparência ou nos atalhos. Nas páginas de apontamentos aparece um cursor de leitura, sem modo de inserção. `h` e `l` movem um carácter; `j` e `k`, uma linha visual; `w`, `b` e `e`, palavras; `0`, `^` e `$`, o início, primeiro carácter não branco e fim da linha. `gg` vai ao início e `G` ao fim. `{` e `}` passam entre parágrafos e outros blocos de leitura. Um número repete o movimento, por exemplo `3j`. Nos cartões, `h`, `j`, `k`, `l` movem o foco para links que podes abrir com Enter.
+
+Com Vim ativo numa página de leitura, `/` pesquisa apenas o texto público dessa página. Enter avança para um resultado; `n` e `N` repetem a pesquisa para a frente e para trás. Escape cancela a pesquisa e as sequências pendentes, sem desligar Vim. Sem uma pesquisa ativa, `n` mantém o atalho do caderno. `a` continua a abrir o Chat. Tab, Enter e os atalhos do navegador mantêm o seu comportamento. O cursor não altera o texto, as seleções nem as anotações. A pesquisa não é guardada nem enviada. Se um atalho personalizado usar uma tecla de movimento, muda-o antes de ativar Vim.
 
 ## Perguntar ao Chat
 

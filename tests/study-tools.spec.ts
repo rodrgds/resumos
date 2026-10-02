@@ -5,23 +5,27 @@ test('shortcuts can be remapped, reject conflicts and survive reload', async ({
   page,
 }) => {
   await page.goto('/');
+  await expect(page.locator('#shortcut-list button')).toHaveCount(5);
   await page.keyboard.press('?');
   await page.getByRole('button', { name: 'Mudar atalho: Caderno' }).click();
   await page.keyboard.press('/');
   await expect(page.locator('#shortcut-status')).toHaveText(
     'Essa tecla já está em uso.',
   );
-  await page.keyboard.press('b');
+  await page.keyboard.press('x');
   await expect(page.locator('#shortcut-status')).toHaveText('Atalho guardado.');
   await page.keyboard.press('Escape');
   await page.reload();
   await page.keyboard.press('n');
   await expect(page.locator('#scratchpad')).toBeHidden();
-  await page.keyboard.press('b');
+  await page.keyboard.press('x');
   await expect(page.locator('#scratchpad')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.keyboard.press('?');
-  await page.getByLabel('Navegar nos cartões').check();
+  await page
+    .locator('#shortcuts')
+    .getByLabel('Navegação Vim', { exact: true })
+    .check();
   await page.keyboard.press('Escape');
   await expect(
     page.getByRole('link', { name: 'Resumos LEIC FEUP' }),
