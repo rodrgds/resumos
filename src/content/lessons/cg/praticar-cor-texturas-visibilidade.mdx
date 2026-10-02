@@ -1,0 +1,132 @@
+---
+title: Praticar cor, texturas e visibilidade
+description: Calcular HSV e filtragem, seguir o teste de profundidade e o bias.
+section: exercicios
+order: 6
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="cg-hsv-saturacao"
+  title="Saturação de uma cor RGB"
+  explanation="/cadeiras/cg/cor-texturas-visibilidade/#cor-perceção-e-modelos"
+  answer={{"kind": "number", "value": 0.75, "tolerance": 0.0001}}
+>
+  <p>Uma cor tem componentes RGB $(0{,}8,0{,}2,0{,}4)$. Calcula a saturação HSV no intervalo $[0,1]$, usando a fórmula da lição.</p>
+  <div slot="hint">Identifica primeiro o máximo e o mínimo.</div>
+  <div slot="hint-more">$V=0{,}8$ e $S=(V-\min(R,G,B))/V$.</div>
+  <div slot="solution">$S=(0{,}8-0{,}2)/0{,}8=0{,}75$. Este número mede a saturação desta representação HSV. Não é uma medida completa da saturação percebida nem da energia da luz.</div>
+  <div slot="mistakes">Não confundas V = 0,8 com S. O matiz escolhe a cor dominante, não entra nesta conta de saturação.</div>
+</Exercise>
+
+<Exercise
+  id="cg-bilinear-centros"
+  title="Amostragem entre centros de texel"
+  explanation="/cadeiras/cg/cor-texturas-visibilidade/#texturas"
+  answer={{"kind": "number", "value": 60, "tolerance": 0.0001}}
+>
+  <p>Numa textura $8\times8$, usa $UV=(0{,}25,0{,}375)$, sem problemas de borda. Os vizinhos inferiores esquerdos, inferiores direitos, superiores esquerdos e superiores direitos têm intensidades lineares 20, 40, 80 e 100. Calcula a filtragem bilinear padrão de OpenGL/WebGL.</p>
+  <div slot="hint">Subtrai meia unidade às coordenadas UV multiplicadas pela dimensão.</div>
+  <div slot="hint-more">$s=0{,}25\times8-0{,}5=1{,}5$ e $t=0{,}375\times8-0{,}5=2{,}5$.</div>
+  <div slot="solution">Os vizinhos têm índices $(1,2)$, $(2,2)$, $(1,3)$ e $(2,3)$. As duas frações são $1/2$, por isso os quatro pesos são $1/4$. A intensidade é $(20+40+80+100)/4=60$.</div>
+  <div slot="mistakes">Usar apenas uN e vN colocaria a amostra num índice inteiro e ignoraria a posição dos centros dos texeis.</div>
+</Exercise>
+
+<Exercise
+  id="cg-mipmap-finito"
+  title="Memória de uma pirâmide completa"
+  explanation="/cadeiras/cg/cor-texturas-visibilidade/#texturas"
+  answer={{ kind: 'number', value: 21, tolerance: 0, unit: 'texeis' }}
+>
+  <p>
+    Uma textura $4\times4$ tem mipmaps completos até $1\times1$. Quantos texeis
+    guarda toda a pirâmide, incluindo a imagem inicial?
+  </p>
+  <div slot="hint">A dimensão de cada lado é dividida por 2 em cada nível.</div>
+  <div slot="hint-more">Os níveis são $4\times4$, $2\times2$ e $1\times1$.</div>
+  <div slot="solution">
+    O total é $16+4+1=21$ texeis. O acréscimo é $5/16$ da imagem inicial, ou
+    31,25%. O terço adicional é o limite para imagens grandes, não um valor
+    exato para esta pirâmide finita.
+  </div>
+  <div slot="mistakes">
+    Dividir a dimensão por 2 reduz o número de texeis por 4. Não contes só os
+    níveis adicionais.
+  </div>
+</Exercise>
+
+<Exercise
+  id="cg-bump-silhueta"
+  title="Relevo na iluminação"
+  explanation="/cadeiras/cg/cor-texturas-visibilidade/#texturas"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'Bump mapping',
+        correct: true,
+        explanation:
+          'Altera a normal na iluminação sem alterar vértices ou silhueta.',
+      },
+      {
+        text: 'Deslocar vértices da malha',
+        correct: false,
+        explanation: 'Altera a geometria e pode alterar a silhueta.',
+      },
+      {
+        text: 'Só mudar a cor difusa por uma imagem',
+        correct: false,
+        explanation:
+          'Acrescenta um padrão de cor, mas não altera as normais que produzem os brilhos.',
+      },
+    ],
+  }}
+>
+  <p>
+    Queres sugerir pequenas rugas através da iluminação, conservando os vértices
+    e a silhueta do objeto. Que técnica corresponde ao objetivo?
+  </p>
+  <div slot="hint">
+    Procura qual dos dados entra na luz sem mudar a superfície geométrica.
+  </div>
+  <div slot="hint-more">
+    A orientação usada no produto escalar pode variar por fragmento.
+  </div>
+  <div slot="solution">
+    Bump mapping modifica a normal usada na iluminação. Um deslocamento de
+    vértices produziria relevo geométrico; mudar só a cor difusa produziria
+    manchas sem mudar o alinhamento especular. O bump não reproduz a silhueta
+    que um relevo real teria.
+  </div>
+  <div slot="mistakes">
+    O efeito de relevo na luz não demonstra que a geometria ficou mais
+    detalhada.
+  </div>
+</Exercise>
+
+<Exercise
+  id="cg-depth-sequencia"
+  title="Três fragmentos no mesmo píxel"
+  explanation="/cadeiras/cg/cor-texturas-visibilidade/#visibilidade"
+  answer={{"kind": "number", "value": 0.35, "tolerance": 0.0001}}
+>
+  <p>O depth buffer começa em 1 e o teste LESS está ativo, com escrita de profundidade. Chegam fragmentos opacos de profundidades $0{,}7$, $0{,}35$ e $0{,}5$, por esta ordem. Qual é a profundidade final?</p>
+  <div slot="hint">Cada fragmento compara com o valor que ficou depois do anterior.</div>
+  <div slot="hint-more">A comparação é estrita: só escreve se a profundidade nova for menor.</div>
+  <div slot="solution">$0{,}7<1$, por isso escreve $0{,}7$. Depois $0{,}35<0{,}7$, por isso substitui por $0{,}35$. Finalmente $0{,}5$ não é menor que $0{,}35$ e falha. Fica $0{,}35$, a profundidade mais próxima nesta convenção.</div>
+  <div slot="mistakes">Não guardes o último valor sem testar nem uses a comparação de uma convenção em que profundidades maiores significam mais perto.</div>
+</Exercise>
+
+<Exercise
+  id="cg-shadow-bias"
+  title="Sombra com margem de precisão"
+  explanation="/cadeiras/cg/cor-texturas-visibilidade/#sombras-projetadas"
+  answer={{"kind": "choice", "options": [{"text": "A iluminado, B na sombra", "correct": true, "explanation": "0,424 ≤ 0,425 e 0,43 > 0,425, usando a profundidade do mapa mais bias."}, {"text": "A e B na sombra", "correct": false, "explanation": "Ignora a margem de 0,005 que tolera a diferença do fragmento A."}, {"text": "A e B iluminados", "correct": false, "explanation": "A profundidade de B excede também a margem."}]}}
+>
+  <p>O mapa de sombras guarda $0{,}42$. Usa bias $b=0{,}005$ e considera sombra se $z_{fragmento}>z_{mapa}+b$. Dois fragmentos têm profundidades A = $0{,}424$ e B = $0{,}43$, na mesma projeção da luz. Qual é o resultado?</p>
+  <div slot="hint">Calcula uma só fronteira de comparação para os dois fragmentos.</div>
+  <div slot="hint-more">A fronteira é $0{,}42+0{,}005=0{,}425$.</div>
+  <div slot="solution">A fica iluminado porque $0{,}424\le0{,}425$. B fica na sombra porque $0{,}43>0{,}425$. Ignorar o bias classificaria A como sombra; permitir todos os valores ignoraria a oclusão de B. A classificação refere-se apenas a esta fonte.</div>
+  <div slot="mistakes">Não compares uma distância euclidiana à luz com uma profundidade projetada. Um bias demasiado alto pode apagar sombras válidas.</div>
+</Exercise>
