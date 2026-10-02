@@ -50,9 +50,9 @@ test('returning readers never paint the introduction before page scripts load', 
 
 test('DOT default text inherits theme foreground', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto('/cadeiras/alga/espacos-vetoriais/');
+  await page.goto('/_content-test');
   const foreground = await page
-    .locator('.lesson-body .prose')
+    .locator('.prose')
     .evaluate((el) => getComputedStyle(el).color);
   await expect(page.locator('.diagram-figure text').first()).toHaveCSS(
     'fill',

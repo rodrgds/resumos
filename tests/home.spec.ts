@@ -40,15 +40,27 @@ test('global search finds courses and content without filtering the homepage', a
 test('unpublished courses explain their status and restore focus', async ({
   page,
 }) => {
-  const card = page.locator('[data-course][data-acronym="PUP"]');
+  await page.getByText('Escolher CT III', { exact: true }).click();
+  await page
+    .getByRole('combobox', { name: 'Opção de CT III' })
+    .selectOption('ct-ctlge');
+  const card = page.locator('#cadeiras [data-course][data-acronym="CTLGE"]');
   await card.click();
-  await expect(page.getByRole('dialog')).toContainText('Projeto UP');
+  await expect(page.getByRole('dialog')).toContainText(
+    'Liderança e Gestão de Equipas',
+  );
   await expect(page.getByRole('dialog')).toContainText(
     'ainda estão por escrever',
   );
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(card).toBeFocused();
+  await page.locator('#cadeiras [data-semester="3-1"] .semester-pin').click();
+  const pinned = page.locator('[data-pinned-semesters] [data-acronym="CTLGE"]');
+  await pinned.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(pinned).toBeFocused();
 });
 
 test('semester pins add horizontal cards at the top and survive reload', async ({
@@ -70,16 +82,21 @@ test('semester pins add horizontal cards at the top and survive reload', async (
   await expect(pinned).toBeVisible();
   await expect(page.locator('#page-hero')).toBeHidden();
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
-  await pinned.locator('[data-acronym="PUP"]').click();
-  await expect(page.locator('#course-detail')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(pinned.locator('[data-acronym="PUP"]')).toBeFocused();
   await pinned.locator('.semester-pin').click();
   await expect(pinned).toBeHidden();
   await expect(page.locator('#page-hero')).toBeVisible();
   await expect(pin).toHaveAttribute('aria-pressed', 'false');
   await page.reload();
   await expect(pinned).toBeHidden();
+  await pin.click();
+  const published = pinned.locator('a[data-course]').first();
+  const destination = new URL(
+    (await published.getAttribute('href'))!,
+    page.url(),
+  ).href;
+  await published.click();
+  await expect(page).toHaveURL(destination);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 });
 
 test('visiting the catalogue alone keeps the introduction visible', async ({
