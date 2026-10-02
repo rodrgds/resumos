@@ -65,6 +65,7 @@ for (const palette of [
             const contrasts: number[] = [];
             let syntaxPreserved = true;
             let selectionVisible = true;
+            const selectionContrasts: number[] = [];
             for (const line of content.querySelectorAll('.cm-line')) {
               const backgrounds = [false, true].map((selected) => {
                 ctx.clearRect(0, 0, 1, 1);
@@ -81,6 +82,14 @@ for (const palette of [
                 return [...ctx.getImageData(0, 0, 1, 1).data].join(',');
               });
               selectionVisible &&= backgrounds[0] !== backgrounds[1];
+              const [normal, selected] = backgrounds.map((rgba) => {
+                const [r, g, b] = rgba.split(',').map(Number);
+                return luminance(`rgb(${r}, ${g}, ${b})`);
+              });
+              selectionContrasts.push(
+                (Math.max(normal, selected) + 0.05) /
+                  (Math.min(normal, selected) + 0.05),
+              );
               for (const token of [line, ...line.querySelectorAll('span')]) {
                 syntaxPreserved &&=
                   getComputedStyle(token, '::selection').color ===
@@ -109,10 +118,12 @@ for (const palette of [
               contrast: Math.min(...contrasts),
               selectionVisible,
               syntaxPreserved,
+              selectionContrast: Math.min(...selectionContrasts),
             };
           });
           expect(result.selectionVisible).toBe(true);
           expect(result.syntaxPreserved).toBe(true);
+          expect(result.selectionContrast).toBeGreaterThanOrEqual(1.25);
           return result.contrast;
         })
         .toBeGreaterThanOrEqual(4.5);
