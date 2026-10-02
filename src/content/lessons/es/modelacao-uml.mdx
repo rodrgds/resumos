@@ -1,0 +1,95 @@
+---
+title: Modelação com UML
+description: Casos de uso, classes, multiplicidades, sequência, atividades e estados sem confundir domínio com implementação.
+order: 6
+practices:
+  - es/praticar-uml
+---
+
+import UmlUseCases from '../../es/UmlUseCases.astro';
+import UmlDomain from '../../es/UmlDomain.astro';
+import UmlSequence from '../../es/UmlSequence.astro';
+
+Um modelo escolhe os aspetos do sistema que queremos estudar e omite os restantes. UML é uma linguagem de modelação, não um processo de desenvolvimento. Um diagrama ajuda quando responde a uma pergunta concreta e é consistente com as regras descritas.
+
+## Casos de uso
+
+Um **ator** é um papel externo que interage com o sistema. Pode ser uma pessoa ou outro sistema. Uma pessoa pode desempenhar vários papéis. Um **caso de uso** descreve comportamento do sistema que produz um resultado observável com valor para um ator.
+
+A fronteira indica o sistema que estamos a modelar. Se modelarmos só a aplicação móvel, o servidor pode ser um ator externo. Se modelarmos o sistema completo, o servidor faz parte da solução.
+
+Na aplicação de reservas, o estudante reserva uma sala. Essa operação inclui verificar disponibilidade. Pedir equipamento só acontece se o estudante o solicitar.
+
+<UmlUseCases />
+
+A associação entre ator e caso de uso é uma linha. A relação **include** é uma dependência tracejada que aponta do caso que inclui para o caso incluído. Mostra comportamento incorporado no caso base. A relação **extend** também é tracejada e aponta da extensão para o caso base, com um ponto de extensão e uma condição. O caso base tem significado sem a extensão.
+
+Não uses extend para ligar duas ações só porque uma pode acontecer depois da outra. Recuperar acesso pode ser um objetivo independente e não uma extensão de iniciar sessão. A relação precisa de representar incorporação de comportamento, não proximidade no menu.
+
+## Descrever um caso de uso
+
+Uma elipse não especifica os passos e exceções. Para "Reservar sala", escrevemos:
+
+| Campo                     | Descrição                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Ator principal            | Estudante                                                                                             |
+| Pré-condição              | O estudante está autenticado                                                                          |
+| Gatilho                   | O estudante pede a reserva                                                                            |
+| Fluxo principal           | Escolhe sala e intervalo; o sistema verifica regras e disponibilidade; confirma e apresenta a reserva |
+| Alternativa               | Se o intervalo deixou de estar livre, o sistema informa o conflito e não cria a reserva               |
+| Pós-condição de sucesso   | Existe uma reserva confirmada em nome do estudante                                                    |
+| Garantia em caso de falha | Não fica uma reserva parcialmente criada                                                              |
+
+Uma pré-condição diz o que assumimos antes do caso. Não substitui um passo que precisa de tratar uma situação possível. Se a autenticação puder expirar durante a operação, define o comportamento dessa falha.
+
+## Classes e modelo de domínio
+
+Um **modelo de domínio** representa conceitos e relações do problema, como Estudante, Reserva e Sala. Não pretende enumerar todos os ecrãs, bases de dados e classes técnicas.
+
+Uma classe descreve objetos com características comuns. Os compartimentos podem apresentar nome, atributos e operações. Num modelo de domínio podemos omitir operações técnicas que ainda não decidimos.
+
+<UmlDomain />
+
+A **multiplicidade** numa ponta diz quantas instâncias dessa classe podem relacionar-se com uma instância da outra classe. Partindo de Reserva, lemos 1 junto de Estudante: cada reserva pertence a exatamente um estudante. Partindo de Estudante, lemos 0..\* junto de Reserva: um estudante pode ter nenhuma ou várias reservas.
+
+A multiplicidade não proíbe sobreposições de horários. Precisamos de uma restrição adicional: duas reservas confirmadas da mesma sala não se sobrepõem. Estrutura e regras complementam-se.
+
+## Relações entre classes
+
+Uma **associação** exprime uma relação estrutural. Uma **dependência**, normalmente tracejada, indica que um elemento usa outro e pode ser afetado pela sua alteração.
+
+A **generalização** liga uma especialização ao conceito geral, com triângulo vazio apontado para o geral. Só faz sentido quando a especialização pode ser tratada como esse conceito. "Administrador usa a aplicação" não demonstra que precisamos de uma subclasse Administrador.
+
+A **composição** tem losango cheio na ponta do todo. Representa propriedade forte das partes; uma parte pertence no máximo a um todo composto de cada vez, e a destruição do todo implica a destruição das partes que ainda lhe pertencem. Não escolhas composição apenas porque uma classe contém uma referência.
+
+A **agregação partilhada**, de losango vazio, tem uma semântica mais fraca. Uma associação simples costuma ser mais clara quando não precisamos de expressar uma relação todo-parte precisa.
+
+Na aplicação, Sala não é parte composta de Reserva: a sala continua a existir depois de apagar a reserva. Também não há razão para pôr uma base de dados no modelo de domínio apenas por guardar os objetos.
+
+## Sequência e colaboração
+
+Um **diagrama de sequência** mostra participantes e mensagens num cenário. A linha de vida prolonga-se para baixo e o tempo avança nessa direção. O nome de um participante pode identificar a instância e o tipo, como ecrã:Ecrã.
+
+Neste desenho detalhado, a regra de concorrência pertence ao serviço e ao repositório do servidor. A operação criarSeLivre verifica e cria atomicamente, em vez de fazer uma verificação local seguida de uma gravação desprotegida.
+
+<UmlSequence />
+
+Uma chamada síncrona espera pela resposta; uma mensagem assíncrona permite ao emissor continuar. Uma resposta pode ser omitida quando fica clara. O fragmento **alt** separa alternativas com guardas, **opt** descreve um comportamento opcional e **loop** uma repetição. As guardas têm de explicar as condições.
+
+As mensagens devem corresponder a responsabilidades possíveis dos participantes. Se o diagrama manda o ecrã confirmar uma reserva sem consultar a autoridade dos dados, o desenho revela um erro, mesmo que as setas estejam bem desenhadas.
+
+## Atividades e estados
+
+Um **diagrama de atividades** mostra um fluxo de ações. Uma decisão escolhe uma saída com base numa guarda; uma junção reúne caminhos alternativos. Uma bifurcação, fork, inicia fluxos concorrentes; uma sincronização, join, espera pelos fluxos que deve reunir. Decisão e concorrência não são a mesma coisa.
+
+Depois de criar uma reserva, o sistema pode atualizar a lista e enviar uma notificação em paralelo. Um fork pode mostrar esse paralelismo. Uma decisão separa confirmação e conflito porque são resultados alternativos.
+
+Uma **máquina de estados** descreve como um objeto reage a eventos. Na Reserva, podemos ter Confirmada, Cancelada e Terminada. Um cancelamento só passa de Confirmada para Cancelada se o início ainda não tiver ocorrido. A transição tem evento e guarda; uma ação de saída pode libertar o intervalo.
+
+Estados descrevem situações do objeto, não nomes de ecrãs. "Página inicial" não é um estado de Reserva. Um diagrama de estados pode ajudar a encontrar testes para transições válidas e recusadas.
+
+## Conferir modelos
+
+Segue um cenário com dados concretos. Uma reserva R pertence ao estudante Ana e ocupa a sala A das 14h às 15h. Confirma que o modelo de domínio admite essa estrutura, que o caso de uso descreve a criação e que a sequência respeita a regra de disponibilidade.
+
+Depois muda uma condição: a sala está ocupada ou a rede falha. O modelo deve explicar o resultado sem inventar outra regra a meio. Na [arquitetura](/cadeiras/es/arquitetura-desenho/), escolhemos os módulos que concretizam estas responsabilidades.

@@ -1,98 +1,86 @@
 ---
 title: Gestão de projetos de software
-description: Planeamento, estimação com pontos, velocidade, burndown e gestão clássica contra ágil.
-section: conteudo
-order: 3
+description: Planeamento, dependências, riscos, estimação, velocidade, burndown e trabalho em curso.
+order: 4
+practices:
+  - es/praticar-gestao
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import burndown from '../../es/burndown.typ?raw';
+import WipDemo from '../../es/WipDemo.astro';
 
-Gerir um projeto é responder a três perguntas em permanência: o que falta fazer, quanto tempo vai demorar e se vamos chegar a tempo. A gestão clássica responde com um plano detalhado feito no início. A gestão ágil responde com estimativas revistas a cada sprint e um acompanhamento visual do progresso. Ambas precisam de números honestos.
+Planear é decidir como atingir um objetivo com recursos e restrições. Monitorizar é observar o que acontece. Controlar é tomar medidas com base nessa observação. Um plano útil permite detetar um problema enquanto ainda podemos mudar o trabalho.
 
-## Planear e monitorizar
+## Âmbito, tarefas e dependências
 
-Planear é partir o âmbito em tarefas com dono e prazo, identificar dependências (o que bloqueia o quê) e marcar marcos verificáveis, como "início de sessão demonstrado ao dono do produto". Monitorizar é comparar o feito com o planeado em cada ponto e decidir cedo: cortar âmbito, pedir ajuda ou renegociar o prazo. A decisão tardia é a mais cara, porque já gastaste o tempo e ficaste sem margem.
+O **âmbito** define o que entra e o que fica fora do projeto. Na primeira versão da aplicação queremos consultar salas, reservar e cancelar. Pagamentos e reservas de equipamento ficam fora.
 
-O instrumento ágil de monitorização é o **burndown**: um gráfico com o trabalho restante (eixo vertical) ao longo dos dias do sprint (eixo horizontal). Uma linha ideal desce do total até zero. Se a linha real está acima da ideal, a equipa está atrasada; se está plana durante dias, algo bloqueou; se cai de repente no fim, as tarefas foram atualizadas tarde e o acompanhamento falhou durante o sprint.
+Podemos decompor o trabalho em tarefas, identificar dependências, responsáveis, durações estimadas e marcos. Um **marco** é um ponto de verificação, como uma reserva completa demonstrada num dispositivo. Não é apenas "fim da semana".
 
-No gráfico, um sprint de 40 pontos tem a linha ideal a descer 4 pontos por dia. A linha real mostra 26 pontos restantes ao fim do dia 5, claramente acima da ideal: é o atraso do exercício desta página, apanhado a meio do sprint em vez de no fim.
+O **caminho crítico** é o caminho de maior duração numa rede de dependências e determina a menor duração do plano sob as hipóteses usadas. Considera estas tarefas:
 
-<Typst
-  source={burndown}
-  format="svg"
-  alt="Burndown de um sprint de dez dias com 40 pontos: a linha ideal desce do canto superior esquerdo até zero no dia 10, e a linha real desce mais devagar, marcando 26 pontos restantes no dia 5."
-/>
+| Tarefa                | Duração | Só começa depois de |
+| --------------------- | ------: | ------------------- |
+| A, acordar regras     |  2 dias | Nada                |
+| B, construir serviço  |  4 dias | A                   |
+| C, construir ecrã     |  3 dias | A                   |
+| D, integrar e validar |  2 dias | B e C               |
 
-## Estimar com pontos e velocidade
+Depois de A, B e C podem correr em paralelo se houver capacidade. O caminho A, B, D dura $2+4+2=8$ dias. O caminho A, C, D dura sete. A duração mínima é oito dias; a soma de todas as durações, 11, não é a duração do projeto. C tem um dia de folga neste plano. Um atraso de dois dias em C pode tornar esse caminho crítico.
 
-Estimar em horas é mentir com precisão: ninguém sabe se uma tarefa demora seis ou dez horas. As equipas ágeis estimam em **pontos de história**, uma medida relativa de esforço e incerteza. Uma história simples de referência vale 1 ou 2 pontos; outra que parece o triplo do trabalho vale o triplo dos pontos. O que interessa é a proporção, não o valor absoluto. A técnica habitual para convergir é o **planning poker**: cada membro mostra a sua estimativa em simultâneo e discutem-se as divergências, o que evita que a opinião do primeiro a falar arraste as outras.
+Estas contas pressupõem dependências corretas e recursos disponíveis. Se a mesma pessoa executar B e C, temos de rever o plano.
 
-A **velocidade** de uma equipa é a média de pontos concluídos por sprint. Com três sprints de 18, 22 e 20 pontos, a velocidade é:
+## Riscos e reservas
 
-$$v = \frac{18 + 22 + 20}{3} = 20 \text{ pontos por sprint}$$
+Um **risco** é uma possibilidade incerta que pode afetar os objetivos. Um problema já ocorrido é uma situação a resolver, não apenas um risco futuro.
 
-Isto diz quantos pontos cabem no próximo sprint (cerca de 20) e quando termina um backlog: 100 pontos a 20 por sprint são cinco sprints. A velocidade mede-se, não decreta-se: impor "a partir de agora fazemos 30" não acelera nada, só estraga a previsão.
+Para cada risco, regista a causa, a consequência, sinais de ocorrência, uma resposta e quem o acompanha. Se a API de salas puder limitar pedidos, fazemos uma experiência, medimos o limite e planeamos uma alternativa.
 
-Confirma as contas tu próprio. O programa soma os três sprints, divide por três para obter a velocidade e divide o backlog pela velocidade, arredondando para cima porque meio sprint parado não conta.
+A exposição simplificada é $p \times I$, com probabilidade $p$ e impacto $I$. Uma probabilidade de 0,25 de causar oito dias adicionais dá dois dias de exposição esperada. Isso ajuda a comparar riscos; não garante que o atraso será dois dias. Um evento raro e grave pode exigir atenção mesmo quando o valor médio é baixo.
 
-<CodePlayground
-  language="javascript"
-  title="Velocidade e previsão"
-  code={
-    'const sprints = [18, 22, 20];\nlet soma = 0;\nfor (const pontos of sprints) soma += pontos;\nconst velocidade = soma / sprints.length;\nconsole.log("Velocidade: " + velocidade + " pontos por sprint");\nconsole.log("Um backlog de 100 pontos demora " + Math.ceil(100 / velocidade) + " sprints.");'
-  }
-/>
+## Estimar
 
-## Gestão clássica contra gestão ágil
+Uma estimativa é uma previsão baseada em informação e hipóteses. Pode usar analogia com trabalho anterior, julgamento de especialistas, decomposição em tarefas ou modelos calibrados com dados. Indica o que inclui e qual é a incerteza.
 
-<Tabs id="es-gestao-abordagens" labels={['Clássica', 'Ágil']}>
-  <div slot="panel-0">
+**Pontos de história** exprimem tamanho relativo, considerando esforço, complexidade e incerteza segundo a convenção da equipa. Não são horas universais. Uma equipa pode usar uma história conhecida como referência e comparar as restantes.
 
-**Plano:** detalhado no início, mudar custa.
+No planning poker, as pessoas estimam individualmente antes de revelar os valores. Quando aparecem 3 e 8 pontos, discutem as hipóteses. Uma pessoa pode estar a contar apenas o ecrã, enquanto outra inclui a integração e os erros de rede. O resultado útil é esclarecer o trabalho, não escolher uma média sem conversa.
 
-**Requisitos:** fixos por contrato.
+Uma história demasiado grande deve ser dividida em resultados úteis. "Fazer todos os ecrãs" não é a mesma divisão que "consultar disponibilidade de uma sala": a segunda pode atravessar ecrã, regras e dados, entregando uma capacidade verificável.
 
-**Controlo:** cumprir o plano inicial.
+## Velocidade e previsão
 
-**Cliente:** vê o produto no fim.
+A **velocidade** é a quantidade de trabalho concluído por iteração, medida na unidade usada pela equipa. Se só contam itens Done, trabalho quase concluído não acrescenta pontos.
 
-**Adequada a:** requisitos estáveis, contratos rígidos.
+Em três Sprints comparáveis, a equipa concluiu 18, 22 e 20 pontos. A média é
 
-  </div>
-  <div slot="panel-1">
+$$v = \frac{18+22+20}{3}=20 \text{ pontos por Sprint}.$$
 
-**Plano:** revisto a cada sprint, mudar é rotina.
+Um backlog de 100 pontos sugere cinco Sprints à velocidade média. Usando os extremos observados, a previsão simples varia entre $\lceil100/22\rceil=5$ e $\lceil100/18\rceil=6$ Sprints. Não é um intervalo estatístico de confiança. Pressupõe capacidade, critérios de conclusão, estimativas e âmbito comparáveis.
 
-**Requisitos:** ordenados por valor, evoluem.
+Férias, novas dependências e alterações de âmbito exigem atualizar a previsão. Não compares a produtividade de equipas pelas suas velocidades: podem atribuir valores diferentes ao mesmo trabalho.
 
-**Controlo:** entregar valor a cada iteração.
+## Ler um burndown
 
-**Cliente:** vê incrementos e decide o rumo.
+Um **burndown** mostra o trabalho restante ao longo do tempo. A linha ideal linear é uma referência, não uma lei sobre o ritmo de execução.
 
-**Adequada a:** requisitos incertos, feedback frequente.
+Num Sprint de dez dias com 40 pontos, a referência no fim do dia cinco é 20. Se restarem 26, a equipa concluiu 14 e está seis pontos acima dessa linha. Para terminar o âmbito atual, precisaria de concluir 26 em cinco dias, uma média de 5,2 pontos por dia.
 
-  </div>
-</Tabs>
+Isto não permite concluir automaticamente que temos de cortar seis pontos. As histórias podem terminar em blocos, as estimativas podem ter mudado ou pode ter entrado trabalho. Se o ritmo observado de 14 pontos em cinco dias se mantivesse, concluíamos mais 14 e sobravam 12. Também esta extrapolação é apenas uma hipótese.
 
-Nenhuma vence sempre. Um contrato com âmbito fechado e preço fixo pede gestão clássica. Um produto novo, em que ninguém sabe ao certo o que os utilizadores querem, pede gestão ágil. Numa pergunta de comparação, ancora a escolha na estabilidade dos requisitos.
+A decisão começa por olhar para itens, bloqueios, capacidade restante e Sprint Goal. Os Developers e o Product Owner podem ajustar o âmbito preservando o objetivo e a qualidade. Um **burnup**, que mostra trabalho concluído e âmbito total, ajuda a distinguir progresso de crescimento do âmbito.
 
-:::tip[Como cai isto em teste]
-O exercício clássico dá-te histórias com pontos, a velocidade da equipa e um burndown, e pergunta se o sprint chega ao fim e o que cortar. O método é sempre o mesmo: soma os pontos planeados, compara com a velocidade, lê a posição da linha real e propõe cortar as histórias de menor valor primeiro.
-:::
+## Trabalho em curso
 
-## Exercício: ler um burndown e cortar âmbito
+O **WIP**, work in progress, é o trabalho começado e ainda não concluído. Abrir muitos itens pode atrasar o momento em que algum fica utilizável, mesmo sem mudar a quantidade total de trabalho.
 
-Um sprint de dez dias planeou 40 pontos. A velocidade histórica da equipa é 36 pontos por sprint. Ao fim do dia 5, o burndown mostra 26 pontos restantes quando a linha ideal marcaria 20.
+A simulação considera quatro itens de três unidades cada, todos disponíveis no início. A equipa executa uma unidade por dia e alterna entre os itens em curso. Quando termina um item, começa o seguinte se ainda houver trabalho. Não há dependências, diferenças de tamanho ou custo de alternância.
 
-1. **Diagnóstico.** Faltam 26 pontos em 5 dias, ou seja, um ritmo de 5,2 pontos por dia, quando o ritmo necessário era 4 por dia. A equipa está atrasada cerca de 6 pontos, e a velocidade histórica (36, abaixo dos 40 planeados) já avisava que o sprint estava sobrecarregado.
-2. **Decisão.** É preciso cortar cerca de 6 pontos de âmbito. Olha para o backlog do sprint ordenado por valor: supõe que contém "bloquear conta após 5 tentativas falhadas" (5 pontos) e "mostrar força da palavra passe" (3 pontos). Corta a funcionalidade de menor valor imediato e renegocia com o dono do produto: o bloqueio por tentativas protege contra ataques e fica; o medidor de força, útil mas acessório, passa para o próximo sprint.
-3. **Lição.** O erro aconteceu no planeamento, ao aceitar 40 pontos com velocidade de 36. O burndown só revelou a meio o que os números já diziam no início. Registar isto na retrospetiva ("não planear acima da velocidade") vale mais do que o serão extra para tentar recuperar o sprint.
+<WipDemo />
 
-## Para saber mais
+Com limite um, o primeiro item termina no dia três. Com limite quatro, o primeiro termina no dia nove. Em ambos os casos o último termina no dia 12. O modelo mostra o efeito da alternância sobre a conclusão; não demonstra que todas as equipas devam trabalhar num único item. Trabalho bloqueado ou competências distintas podem justificar outro limite.
 
-- [Criação e ordenação do product backlog, Atlassian](https://www.atlassian.com/agile/scrum/backlogs): como o dono do produto decide o que tem valor e o que fica para depois.
+## Gestão clássica e ágil
 
-Na próxima página, [Requisitos](requisitos-uml/), vais ver como escrever as histórias e os requisitos que alimentam este planeamento.
+A gestão preditiva detalha antecipadamente o trabalho conhecido e controla os desvios. A gestão ágil usa objetivos, prioridades e planos de curto prazo revistos com evidência. Ambas precisam de riscos, recursos e decisões honestas.
+
+Uma data fixa pode exigir variar o âmbito. Um requisito obrigatório pode exigir mais tempo ou outra solução. A equipa deve tornar essas escolhas explícitas, em vez de esconder o desvio em estimativas artificialmente baixas.
