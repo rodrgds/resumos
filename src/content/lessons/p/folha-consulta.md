@@ -1,55 +1,57 @@
 ---
 title: Cheat sheet de P
-description: Regras e armadilhas de C++ para rever tipos, funções, memória, templates, classes e ficheiros.
+description: Tipos, passagem de argumentos, memória, cópia, objetos, STL, ficheiros e compilação.
 section: recursos
 studyKind: revision
 editorial:
   sources:
     - title: Resumos de Programação, SofiaViP
       url: https://drive.google.com/file/d/1tGxsf5qYJZxWgZgGnUcAc2juFPSrEPUo/view
-  coverage: Consulta breve dos tópicos das páginas 2 a 12 dos Resumos Prog de SofiaViP, com correções de regras de linguagem quando necessárias.
-  gaps:
-    - O documento não identifica uma edição atual da cadeira nem uma versão de C++; confirma a ferramenta e o programa da tua ocorrência.
-    - Esta folha omite programas completos, testes e demonstrações; segue os links para as explicações.
 ---
 
-Para ler código com `new`, `delete` e arrays C, confere a duração dos objetos e quem liberta a memória. Ao escrever código novo, prefere objetos que gerem a própria memória.
+## Tipos e funções
 
-## Tipos, expressões e controlo
+- `5 / 2` dá `2`; `5.0 / 2` dá `2.5`. Converter o destino depois não recupera a fração. Divisão inteira trunca em direção a zero. Divisão inteira por zero e overflow com sinal têm comportamento indefinido. [Expressões](/cadeiras/p/cpp-fundamentos/#operadores-e-divisão).
+- `=` atribui; `==` compara. Um intervalo exige `min <= x && x <= max`, não `min <= x <= max`. `&&` e `||` usam curto-circuito. Inicializa antes de ler e confirma o sucesso de `cin`. [Entrada e controlo](/cadeiras/p/cpp-fundamentos/#entrada-e-saída-com-iostream).
+- `T` passa por valor; `T&` dá acesso modificável; `const T&` evita a cópia e restringe esse acesso; `T*` pode ser nulo. Uma referência não muda de destino. Sobrecargas não se distinguem só pelo retorno. [Funções](/cadeiras/p/funcoes-arrays/#valor-referência-e-const).
+- Um array C tem índices de `0` a `N-1`. Num parâmetro, ajusta-se para apontador e precisa de tamanho separado. `sizeof` do parâmetro não mede o array original. Uma string de C exige `\0`, logo `n+1` posições para `n` unidades de texto. [Arrays e texto](/cadeiras/p/funcoes-arrays/#arrays-c-e-dimensões).
 
-- `int`, `char`, `bool` e os tipos de vírgula flutuante têm representações distintas. A norma **não fixa em todos os sistemas** que `int` tem 4 bytes ou que `long` tem 8: usa `sizeof(T)` e os limites de `<limits>` quando a largura importa. `void` indica ausência de valor de retorno, não o tipo de uma variável. [Ver tipos](/cadeiras/p/cpp-fundamentos/#declarar-variáveis-com-tipos-fixos).
-- Uma expressão inteira pode perder a parte fracionária antes de ser atribuída a `double`: `5 / 2` vale `2`, enquanto `5.0 / 2` vale `2.5`. `&&` e `||` avaliam o segundo operando apenas quando precisam. O operador `?:` escolhe uma das duas expressões; `switch` prossegue pelos casos seguintes sem `break` ou outra saída.
-- `while` testa antes de entrar; `do ... while` executa o corpo pelo menos uma vez. Uma variável local sem inicialização não tem valor seguro para ler. `const` impede modificar o objeto através desse nome ou referência; não significa, por si só, que todas as referências ao mesmo objeto sejam constantes.
-- Diretivas `#include` são tratadas antes da compilação; um cabeçalho declara interfaces, mas não substitui a ligação das definições necessárias. `namespace` organiza nomes; `std::` identifica nomes da biblioteca padrão. [Ver compilação](/cadeiras/p/cpp-fundamentos/#compilar-e-correr-com-g).
+## Memória e propriedade
 
-## Funções e passagem de argumentos
+| Expressão    | Significado                            |
+| ------------ | -------------------------------------- |
+| `p = &x`     | Guarda o endereço de x                 |
+| `*p = 7`     | Altera o objeto apontado               |
+| `p + i`      | Avança i elementos no mesmo array      |
+| `p->campo`   | Equivale a `(*p).campo`                |
+| `const T* p` | Apontador ajustável, acesso de leitura |
+| `T* const p` | Endereço fixo, acesso modificável      |
 
-Por **valor**, a função recebe uma cópia; por **referência** (`T&`), opera sobre o objeto original; por `const T&`, evita uma cópia e promete não modificar através dessa referência. Um apontador (`T*`) também pode dar acesso ao original, mas pode ser nulo. Escolhe `const T&` para objetos grandes só de leitura e `T&` quando a alteração é parte do contrato. [Ver referências](/cadeiras/p/cpp-fundamentos/#referências-contra-cópias).
+- `[begin, end)` exclui o fim. A posição depois do último elemento pode marcar o fim, mas não pode ser desreferenciada. A aritmética não permite saltar entre objetos independentes. [Limites](/cadeiras/p/apontadores-memoria/#apontadores-e-arrays).
+- Um objeto automático morre ao sair do âmbito; retornar o seu endereço não prolonga a vida. `new T` exige `delete`; `new T[n]` exige `delete[]`. `delete nullptr` é válido; desreferenciar `nullptr` não é. Após destruição, todos os aliases ficam pendentes. Pôr um deles a nulo não repara os outros. [Duração](/cadeiras/p/apontadores-memoria/#pilha-área-livre-e-duração-de-vida).
+- RAII liga a libertação à vida do dono. Prefere `vector`, `string` e `unique_ptr`; usa `shared_ptr` quando a propriedade é realmente partilhada. Um observador não prolonga a vida do recurso. [RAII](/cadeiras/p/apontadores-memoria/#o-essencial-de-raii-e-smart-pointers).
 
-Argumentos por defeito ficam no fim da lista de parâmetros e devem estar visíveis no ponto de chamada. Uma **sobrecarga** distingue funções pelo número ou tipo dos parâmetros, não apenas pelo tipo de retorno. Chamar uma função template ou uma sobrecarga exige que o compilador encontre uma opção válida sem ambiguidade.
+## Objetos, cópia e herança
 
-## Arrays e texto
+- O construtor deve estabelecer o invariante; cada operação pública deve conservá-lo. Bases e membros constroem-se antes do corpo, pela ordem de declaração; destroem-se em ordem inversa. `const` depois do método permite consulta por objeto constante. [Classes](/cadeiras/p/classes-objetos/#construtores-e-destrutor).
+- `T b = a` constrói uma cópia; `b = a` atribui a um objeto existente. A cópia de apontador copia o endereço. Um dono precisa de decidir entre cópia profunda, partilha ou cópia proibida. Na atribuição, prepara o novo recurso antes de perder o anterior. [Cópia](/cadeiras/p/copia-propriedade/#atribuir-sem-perder-o-recurso-anterior).
+- Regra de três: destrutor, construção e atribuição de cópia. Regra de cinco acrescenta movimento. Regra de zero prefere membros que já gerem recursos. `std::move` permite movimento; a operação escolhida efetua-o. Não assumes um estado concreto da origem sem contrato. [Movimento](/cadeiras/p/copia-propriedade/#regras-de-três-cinco-e-zero).
+- Virtual pela referência ou apontador da base usa o tipo dinâmico. `override` confere a substituição, incluindo `const`. Copiar para um objeto base provoca slicing. `= 0` declara uma virtual pura. Destruir derivadas pela base exige destrutor virtual. [Polimorfismo](/cadeiras/p/heranca-polimorfismo/#funções-virtuais-e-override).
 
-- Um array `T a[N]` tem $N$ elementos contíguos. Índices válidos vão de `0` a `N - 1`; ler ou escrever fora deles é comportamento indefinido. Ao passar um array C a uma função, ele decai para apontador e a dimensão deixa de acompanhar o argumento. Usa `std::vector` quando o tamanho varia e `std::array` quando é fixo e conhecido em compilação. [Ver memória contígua](/cadeiras/p/apontadores-memoria/#apontadores-e-arrays).
-- Uma **C string** termina no byte `\0`. Texto com $n$ caracteres exige pelo menos $n+1$ posições no array; `strlen` não conta o terminador. `strcpy` e `strcat` só são seguras se o destino tiver espaço para todos os caracteres e o terminador. `std::string` gere o tamanho e é a opção habitual para texto. [Ver strings](/cadeiras/p/cpp-fundamentos/#strings).
-- Uma `struct` reúne campos e pode ter **padding**, por isso `sizeof(struct)` pode exceder a soma dos `sizeof` dos campos. Arrays multidimensionais C guardam os elementos de uma linha de forma contígua; ao passar a uma função, as dimensões posteriores precisam de estar no tipo.
+## STL
 
-## Apontadores e duração de vida
+- `vector` oferece índice constante e inserção no fim amortizada constante. `list` permite remoção constante com posição conhecida, mas procura linear. `map` e `set` ordenam chaves e oferecem procura logarítmica. `unordered_map` procura em tempo médio constante, sem ordem fixa. [Escolha](/cadeiras/p/templates-stl/#escolher-um-contentor).
+- `reserve` muda capacidade; `resize` muda tamanho. Uma realocação de `vector` invalida todos os acessos aos elementos. `erase` invalida na posição e depois; usa o iterador devolvido para continuar. Não desreferencies `end()`. [Invalidação](/cadeiras/p/templates-stl/#invalidação-de-iteradores).
+- `sort` exige acesso aleatório e um comparador estrito, com `comp(x, x) == false`. `unique` remove repetidos adjacentes do intervalo lógico; `remove_if` compacta; ambos precisam de `erase` para reduzir o contentor. Pesquisa binária exige a ordenação adequada. `map[chave]` pode inserir; `find` consulta sem inserir. [Algoritmos](/cadeiras/p/templates-stl/#algoritmos-sort-e-find).
 
-`&x` obtém o endereço de `x`; `*p` acede ao objeto apontado por `p`; `p->campo` equivale a `(*p).campo`. Só desreferencies um apontador que aponta para um objeto ainda vivo. `nullptr` não aponta para um objeto; não se lê nem escreve através dele. Uma referência tem de ser inicializada e não pode ser redirecionada depois. [Ver endereços](/cadeiras/p/apontadores-memoria/#endereço-de-e-dereferenciação).
+## Erros, ficheiros e build
 
-`new T` emparelha com `delete`; `new T[n]` com `delete[]`. Depois de libertar o objeto, todos os apontadores que o referiam ficam pendentes. Esquecer a libertação causa **fuga**; libertar duas vezes ou usar depois de libertar é erro. O destrutor de um objeto automático corre ao sair do âmbito, inclusive quando uma exceção sai dele. Por isso, prefere **RAII**, `std::vector` e smart pointers para que a libertação acompanhe a duração de vida do dono. [Ver RAII](/cadeiras/p/apontadores-memoria/#o-essencial-de-raii-e-smart-pointers).
+- `while (fluxo >> valor)` usa apenas leituras válidas. `eof()` descreve o passado, não prevê a leitura. `getline` conserva espaços interiores; valida todos os campos e rejeita conteúdo extra. [Ficheiros](/cadeiras/p/ficheiros/#ler-sem-antecipar-o-fim).
+- Exceções destroem donos automáticos já construídos ao sair dos âmbitos. Apanha por referência constante. Um destrutor não deve deixar sair exceções. Testa fronteiras a partir do contrato; `assert` pode desaparecer com `NDEBUG`. Sanitizers só observam os caminhos executados. [Erros e testes](/cadeiras/p/excecoes-testes/#testar-com-asserts).
+- O cabeçalho declara; o `.cpp` define; a ligação reúne os ficheiros objeto. Uma definição em falta causa erro de ligação. Templates precisam da definição visível na instanciação. [Módulos](/cadeiras/p/organizar-programas/#compilação-e-ligação).
 
-## Estruturas ligadas
-
-Numa lista simplesmente ligada, cada nó aponta para o seguinte; uma lista dupla guarda também o anterior. Mantém claros o **primeiro**, o **último** e o caso vazio. Ao remover um nó, liga primeiro os vizinhos e só depois o destrói; ao destruir a lista, guarda `next` antes de libertar o nó atual. Inserir no início com o primeiro nó conhecido custa $O(1)$; encontrar uma posição custa $O(n)$.
-
-Numa árvore binária de pesquisa sem duplicados, chaves menores ficam à esquerda e maiores à direita. Inserção e procura custam $O(h)$, com $h$ a altura; sem equilíbrio, $h$ pode ser $n-1$. Destruir uma árvore exige visitar os filhos antes de libertar o pai. Estas estruturas da fonte mostram a gestão manual; para coleções usuais, consulta também [`vector`, `map` e `set`](/cadeiras/p/templates-stl/#map-e-set-chaves-e-conjuntos).
-
-## Templates, classes e ficheiros
-
-Uma função ou classe **template** define código parametrizado por tipos. O compilador instancia-o quando o usa com tipos concretos; a operação escrita no corpo tem de existir nesses tipos. `typename` e `class` são equivalentes na declaração simples de um parâmetro de tipo. [Ver funções template](/cadeiras/p/templates-stl/#funções-template).
-
-Uma **classe** agrupa estado e operações. O construtor inicializa o objeto; o destrutor liberta recursos que ele possui. Copiar um objeto que detém um recurso exige decidir como duplicar ou partilhar esse recurso. Quando escreves um destrutor, construtor de cópia ou atribuição de cópia manual, revê também as restantes operações de cópia e movimento; sempre que possível, deixa esses trabalhos a membros que seguem RAII. Métodos `const` não alteram o estado observável através desse objeto. [Ver construtores e cópia](/cadeiras/p/classes-objetos/#copiar-objetos-com-memória-própria).
-
-`ifstream` lê ficheiros, `ofstream` escreve e `fstream` permite ambos. Confirma que a abertura resultou; `getline` lê uma linha, enquanto `>>` separa tokens por espaços. `eof()` só fica verdadeiro **depois** de uma tentativa de leitura que chega ao fim: usa a própria leitura como condição do ciclo. [Ver ficheiros](/cadeiras/p/cpp-fundamentos/#ler-e-escrever-ficheiros).
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic -g programa.cpp -o programa
+cmake -S . -B build
+cmake --build build
+```

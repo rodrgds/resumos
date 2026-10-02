@@ -1,167 +1,132 @@
 ---
-title: 'Exceções e testes'
-description: throw, try e catch, segurança com RAII, boas práticas, comentários de documentação e testes com asserts.
+title: Exceções e testes
+description: 'Propagação de erros, desenrolamento da pilha, RAII, contratos, testes unitários e sanitizers.'
 section: conteudo
-order: 6
+order: 9
+practices:
+  - p/praticar-erros
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
 
-Até aqui, quando algo corria mal (índice inválido, divisão por zero, ficheiro inexistente), o programa ou avariava ou devolvia um código de erro que ninguém verificava. As **exceções** dão ao erro um caminho próprio: o código que deteta o problema **lança** (throw) um objeto de erro, e o código que sabe lidar com ele **apanha** (catch) esse objeto, mesmo que esteja várias chamadas acima na pilha. Já viste esta ideia em Python nos [ficheiros e exceções](/cadeiras/fp/ficheiros-excecoes/); a mecânica em C++ é gémea, com uma diferença importante na gestão da memória.
+Uma função pode encontrar uma situação em que não consegue cumprir o seu contrato. Uma exceção permite abandonar essa operação e procurar um chamador que saiba tratar a falha. Os testes verificam o comportamento esperado; os sanitizers procuram certas violações durante a execução. Nenhum destes mecanismos substitui os restantes.
 
 ## Lançar e apanhar
 
-Envolve o código arriscado num bloco `try` e trata cada tipo de erro num bloco `catch`. O exemplo clássico é o acesso verificado `at()` do `vector`, que lança `std::out_of_range` quando o índice sai dos limites. Corre o programa e repara no que acontece à linha a seguir ao erro:
+`throw` lança um objeto que descreve o erro. `try` delimita o código protegido; `catch` escolhe um tratador compatível com o tipo lançado. `<stdexcept>` fornece exceções como `invalid_argument`, `out_of_range` e `runtime_error`.
 
-<CodePlayground
-  language="cpp"
-  title="Acesso verificado com at()"
-  code={
-    '#include <iostream>\n#include <vector>\n\nint main() {\n    std::vector<int> v = {10, 20, 30};\n    try {\n        std::cout << v.at(1) << "\\n";\n        std::cout << v.at(10) << "\\n";\n        std::cout << "Nunca chega aqui\\n";\n    } catch (const std::out_of_range&) {\n        std::cout << "Indice invalido\\n";\n    }\n    std::cout << "O programa continua\\n";\n}'
-  }
-/>
-
-Isto escreve `20`, depois `Indice invalido` e depois `O programa continua`. O primeiro `at` corre bem e escreve `20`. O segundo lança a exceção: o resto do bloco `try` é abandonado (a terceira linha nunca executa) e o controlo salta para o `catch` correspondente. Depois do `catch`, o programa segue normalmente. Sem o `try`, a exceção não apanhada terminava o programa com uma mensagem de erro.
-
-Para os teus próprios erros, lança objetos da biblioteca `<stdexcept>`, como `std::runtime_error`, com uma mensagem que explique o problema:
+Programa completo para compilar localmente:
 
 ```cpp
 #include <iostream>
 #include <stdexcept>
 
-double dividir(double a, double b) {
-    if (b == 0.0) {
-        throw std::runtime_error("divisao por zero");
-    }
-    return a / b;
+class Recurso {
+public:
+    Recurso() { std::cout << "Adquirir\n"; }
+    ~Recurso() { std::cout << "Libertar\n"; }
+};
+
+double dividir(double numerador, double denominador) {
+    if (denominador == 0.0) throw std::invalid_argument("Divisao por zero");
+    return numerador / denominador;
+}
+
+void calcular() {
+    Recurso recurso;
+    std::cout << dividir(12.0, 0.0) << "\n";
+    std::cout << "Fim do calculo\n";
 }
 
 int main() {
     try {
-        std::cout << dividir(7.0, 2.0) << "\n";
-        std::cout << dividir(1.0, 0.0) << "\n";
-    } catch (const std::runtime_error& e) {
-        std::cout << "Erro: " << e.what() << "\n";
+        calcular();
+    } catch (const std::exception& erro) {
+        std::cout << "Erro: " << erro.what() << "\n";
     }
+    std::cout << "Continuar\n";
 }
 ```
 
-Isto escreve `3.5` e depois `Erro: divisao por zero`. O método `what()` devolve a mensagem guardada na exceção. Repara que o `catch` recebe por referência constante (`const ... &`): apanhar por valor copiava o objeto e podia cortar informação de tipos derivados, o mesmo problema de slicing que viste na [herança](/cadeiras/p/heranca-polimorfismo/).
+Saída:
 
-:::tip[Exceções são para o excecional]
-Usa exceções para situações anómalas (ficheiro em falta, índice impossível, pré-condição violada), não para controlar o fluxo normal do programa. Um ciclo que tentasse índices até apanhar `out_of_range` funcionava, mas seria lento e ilegível; para isso há o `size()`. Reserva o `throw` para o caso que não devia acontecer.
-:::
+```text
+Adquirir
+Libertar
+Erro: Divisao por zero
+Continuar
+```
 
-<YouTube id="6DqX8OJKM1g" title="Almost all the ways to handle errors in C++" />
+A divisão lança antes de produzir um resultado. A execução abandona `dividir`, depois `calcular`, e chega ao `catch` de `main`. A linha `Fim do calculo` não corre. O objeto `recurso` é destruído na saída de `calcular`, por isso `Libertar` aparece antes da mensagem de erro. Depois do tratador, a execução continua após o bloco `try`/`catch`, não na linha que lançou.
+
+Apanha por `const std::exception&` ou pela referência constante ao tipo específico. Apanhar por valor pode copiar e cortar informação de uma exceção derivada. Coloca tratadores mais específicos antes dos gerais. Dentro de um `catch`, `throw;` relança a exceção atual.
 
 ## Exceções e RAII: a memória continua segura
 
-Aqui está a diferença que importa em relação a Python. Quando uma exceção atravessa funções, todos os objetos locais dessas funções são destruídos pelo caminho (chama-se **desenrolamento da pilha**, stack unwinding). Se os teus recursos estiverem em objetos com destrutores, como o `vector` ou os smart pointers dos [apontadores](/cadeiras/p/apontadores-memoria/), a limpeza acontece sozinha mesmo no caminho da exceção:
+Quando uma exceção atravessa um âmbito, os objetos automáticos já construídos são destruídos em ordem inversa. Este **desenrolamento da pilha** mantém recursos seguros quando têm donos RAII. Um apontador cru local é destruído, mas isso não liberta o que foi criado com `new`.
 
-```cpp
-#include <iostream>
-#include <memory>
-#include <stdexcept>
+Se um construtor lança, o objeto completo não chega a ser construído e o seu destrutor não corre. As bases e os membros já construídos são destruídos. Guardar o recurso num membro RAII permite essa limpeza; reservá-lo num apontador cru e lançar antes de completar a construção pode causar fuga.
 
-void arriscar() {
-    std::unique_ptr<int> p = std::make_unique<int>(99);
-    std::cout << *p << "\n";
-    throw std::runtime_error("algo correu mal");
-}
+Destrutores devem libertar recursos sem deixar sair exceções. Se uma segunda exceção sai de um destrutor durante o desenrolamento, o programa termina. `noexcept` declara que uma operação não deixa propagar exceções; violar essa promessa também termina o programa.
 
-int main() {
-    try {
-        arriscar();
-    } catch (const std::runtime_error& e) {
-        std::cout << "Apanhei: " << e.what() << "\n";
-    }
-}
-```
+## Garantias perante falhas
 
-Isto escreve `99` e depois `Apanhei: algo correu mal`, e a memória do inteiro é libertada no desenrolamento, sem `delete` escrito por ti. Se em vez do smart pointer tivesses um `new` cru seguido de `throw` antes do `delete`, essa memória fugia: é a demonstração mais curta de porque o C++ moderno prefere RAII a gestão manual.
+A garantia **básica** conserva invariantes e não perde recursos, embora o estado possa mudar. A garantia **forte** deixa o estado anterior intacto quando a operação falha. Uma garantia de **não lançar** promete que não sai exceção.
 
-## Boas práticas
+Na [atribuição do Buffer](/cadeiras/p/copia-propriedade/#atribuir-sem-perder-o-recurso-anterior), preparar a cópia antes da troca dá garantia forte. Não é necessário prometer essa garantia em toda a operação; é necessário documentar a que o chamador pode esperar.
 
-As regras abaixo não são estilo pessoal; são o que distingue um programa que passa nos testes de um programa que passa nos testes e se consegue ler um mês depois:
-
-- **Nomes honestos**: variáveis e funções com nomes que dizem o que guardam ou fazem (`media`, não `m`; `numero_aluno`, não `x2`). Se precisares de um comentário para explicar o nome, muda o nome.
-- **Funções curtas com uma tarefa**: se uma função faz duas coisas, divide-a em duas. Cada função cabe idealmente num ecrã, e o seu nome descreve o resultado ou o efeito.
-- **`const` por omissão**: parâmetros que só se lêem, métodos que não alteram o objeto e variáveis locais que não voltam a mudar. O compilador passa a trabalhar para ti.
-- **Sem números mágicos**: o `20` da nota máxima ou o `3.1416` do $pi$ devem ser constantes com nome (`const int NOTA_MAX = 20;`), declaradas uma vez. Quando o valor mudar, muda num sítio.
-- **Sem `using namespace std;` nos cabeçalhos**: num ficheiro pequeno parece inofensivo, mas polui todos os ficheiros que o incluem e pode colidir com os teus nomes. Escreve `std::` ou importa só o que usas.
-- **Compila sem avisos**: `-Wall` ligado sempre, como viste nos [fundamentos](/cadeiras/p/cpp-fundamentos/), e trata cada aviso como um erro até prova em contrário.
-
-## Documentar com comentários
-
-Documenta a **intenção**, não a sintaxe: o código já diz o que faz, o comentário diz porquê e em que condições. O formato corrente em C++ usa comentários `///` antes de cada função pública, com o que recebe, o que devolve e que exceções pode lançar; ferramentas como o Doxygen geram páginas a partir deles:
-
-```cpp
-/// Calcula a media de tres notas.
-/// Devolve um valor entre 0 e 20.
-/// Nao valida as entradas: o chamador garante notas validas.
-double media(double a, double b, double c) {
-    return (a + b + c) / 3.0;
-}
-```
-
-Três linhas chegam para outra pessoa (ou tu, daqui a dois meses) usar a função sem ler o corpo. Comenta também as decisões surpreendentes no meio do código: um `+ 1` para compensar indexação, uma ordem de argumentos exigida por uma biblioteca. Não comentes o óbvio (`i++; // incrementa i` é ruído, não documentação).
+Uma entrada inválida do utilizador é previsível. Podes devolver um estado de erro, um valor opcional ou tratar o fluxo diretamente. Uma exceção serve quando falhar impede cumprir a operação e o tratamento pertence a outro nível. Não uses exceções para substituir a condição habitual de um ciclo.
 
 ## Testar com asserts
 
-Um **teste** executa o teu código com entradas conhecidas e confirma as saídas. O instrumento mais simples em C++ é o `assert` da biblioteca `<cassert>`: verifica uma condição e, se ela for falsa, termina o programa indicando o ficheiro e a linha. É ideal para testar funções puras enquanto as escreves. Corre o programa:
+Um teste unitário chama uma operação com uma entrada pequena e compara o efeito com um resultado calculado a partir do contrato. Aqui, contamos valores no intervalo fechado `[minimo, maximo]`. Se o limite inferior é maior que o superior, o intervalo não contém valores.
 
 <CodePlayground
   language="cpp"
-  title="Testes com assert"
+  title="Testar uma operação pelos seus resultados"
+  input=""
   code={
-    '#include <cassert>\n#include <iostream>\n\nint quadrado(int x) {\n    return x * x;\n}\n\nvoid testar_quadrado() {\n    assert(quadrado(0) == 0);\n    assert(quadrado(5) == 25);\n    assert(quadrado(-3) == 9);\n}\n\nint main() {\n    testar_quadrado();\n    std::cout << "Testes passaram\\n";\n}'
+    '#include <cassert>\n#include <iostream>\n#include <vector>\n\nint contar_intervalo(const std::vector<int>& valores, int minimo, int maximo) {\n    int quantidade = 0;\n    for (int x : valores)\n        if (minimo <= x && x <= maximo) ++quantidade;\n    return quantidade;\n}\n\nint main() {\n    assert(contar_intervalo({}, 0, 20) == 0);\n    assert(contar_intervalo({-1, 0, 1, 19, 20, 21}, 0, 20) == 4);\n    assert(contar_intervalo({7, 7, 8}, 7, 7) == 2);\n    assert(contar_intervalo({1, 2, 3}, 5, 4) == 0);\n    std::cout << "4 casos passaram\\n";\n}\n'
   }
 />
 
-Isto escreve `Testes passaram`. Se algum `assert` falhasse, o programa abortava nessa linha em vez de continuar com um valor errado. O hábito que a cadeira espera: para cada função que escreves, uma função `testar_*` com dois ou três casos, incluindo os casos limite (zero, negativos, vazio). Quando mais tarde mudares a implementação, corres os testes e sabes logo se partiste alguma coisa.
+Saída:
 
-Repara que o `assert` desaparece nas compilações otimizadas com `NDEBUG` definido: serve para apanhar os teus erros durante o desenvolvimento, não para validar dados do utilizador em produção. A distinção decide-se assim:
-
-<Tabs id="assert-contra-if" labels={['assert (desenvolvimento)', 'if mais exceção (produção)']}>
-  <div slot="panel-0">
-
-```cpp
-int quadrado(int x) {
-    return x * x;
-}
-
-void testar_quadrado() {
-    assert(quadrado(5) == 25);
-}
+```text
+4 casos passaram
 ```
 
-O `assert` verifica as tuas hipóteses enquanto programas. Desaparece com `NDEBUG` e nunca deve guardar o programa de dados externos.
+O segundo caso separa valores imediatamente antes, nos limites e imediatamente depois. Só `0`, `1`, `19` e `20` contam. O terceiro verifica o intervalo reduzido a um valor e repetidos. Estes resultados vêm do enunciado, não de repetir o mesmo algoritmo no teste.
 
-  </div>
-  <div slot="panel-1">
+`assert` interrompe o programa se a condição falha e apresenta a localização. Pode ser removido quando `NDEBUG` está definido. Não coloques dentro de `assert` uma operação de que o programa depende e não uses `assert` para validar dados externos em produção. Uma biblioteca de testes mantém as verificações ativas e apresenta vários resultados; a ideia de testar o contrato é a mesma.
 
-```cpp
-double dividir(double a, double b) {
-    if (b == 0.0) {
-        throw std::runtime_error("divisao por zero");
-    }
-    return a / b;
-}
+## Escolher casos de teste
+
+Começa por um caso pequeno que possas resolver à mão. Depois procura as fronteiras do contrato: vazio, um elemento, primeiro e último índice, repetidos, valores negativos, valor máximo permitido e falha prevista. Para cópia, altera a cópia e confirma que o original conserva o estado; para propriedade, verifica que cada recurso é libertado uma única vez.
+
+Não precisas de todas as combinações. Precisas de casos que distinguem erros plausíveis. Testar apenas `{1, 2, 3}` não distingue um intervalo aberto de um fechado se nenhum valor coincide com os limites.
+
+## Sanitizers
+
+Num ambiente local com GCC ou Clang e suporte aos sanitizers, compila uma versão de depuração:
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer programa.cpp -o programa
+./programa
 ```
 
-Para entradas vindas de fora (teclado, ficheiro), usa verificações normais com `if` e exceções, que continuam ativas em produção.
+AddressSanitizer deteta muitos acessos fora de memória válida e usos depois de libertar. UndefinedBehaviorSanitizer deteta certas operações inválidas, como alguns overflows com sinal. O suporte e a deteção de fugas dependem da plataforma. Só analisam os caminhos executados e não garantem ausência de erros. Não estão ativos nos exemplos do navegador.
 
-  </div>
-</Tabs>
+Uma mensagem do sanitizer aponta a operação inválida e costuma incluir a cadeia de chamadas. Lê primeiro a primeira falha, reduz a entrada que a provoca e corrige a causa. Um programa que "imprimiu o resultado certo" pode mesmo assim ter comportamento indefinido.
 
-:::details[Uma rotina de trabalho completa]
-Para cada exercício: lê o enunciado e escreve dois ou três exemplos à mão com resultado esperado; declara a função com um comentário `///`; implementa-a; escreve a função `testar_*` com os teus exemplos mais um caso limite; compila com `-Wall` e corre. Se um teste falhar, o erro está ou no código ou no teu exemplo à mão, e descobrir qual dos dois é metade da aprendizagem.
-:::
+## Documentar com comentários
 
-## Para saber mais
+Documenta condições que o tipo não exprime, alterações observáveis e significado dos erros. O comentário `// incrementa i` acima de `++i` repete o código. Um comentário que explica que um intervalo é fechado, ou que uma função não é dona do apontador recebido, informa o chamador.
 
-- [Tratamento básico de exceções](https://www.learncpp.com/cpp-tutorial/basic-exception-handling/): `try`, `throw` e `catch` com exemplos mínimos.
-- [Tutorial de exceções](https://cplusplus.com/doc/tutorial/exceptions/): exemplo de `what()` e boas práticas.
-- [Blocos de documentação do Doxygen](https://www.doxygen.nl/manual/docblocks.html): o formato dos comentários `///`.
+```cpp
+// Excerto de interface.
+// Conta valores em [minimo, maximo]. Se minimo > maximo, devolve zero.
+int contar_intervalo(const std::vector<int>& valores, int minimo, int maximo);
+```
+
+Usa nomes que descrevem o domínio e funções com uma operação clara. Se o comentário e o comportamento divergem, não resolves o problema acrescentando outro comentário. Corrige o contrato ou a implementação e testa a interpretação escolhida.

@@ -1,0 +1,137 @@
+---
+title: Funções, arrays e texto
+description: 'Contratos, passagem de argumentos, arrays C, estruturas, strings e leitura de linhas.'
+section: conteudo
+order: 2
+practices:
+  - p/praticar-funcoes
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Uma função dá nome a uma operação e separa o que o chamador precisa de saber da forma como a operação é realizada. Para a usar corretamente, interessa conhecer os parâmetros, o resultado, as alterações e as condições de entrada.
+
+## Declarar e chamar funções
+
+A declaração `int maximo(int a, int b);` anuncia o tipo do resultado e dos parâmetros. A definição acrescenta o corpo. A declaração tem de estar visível antes da chamada; a definição necessária tem de existir quando o programa é ligado.
+
+```cpp
+// Excerto: definição de uma função.
+int maximo(int a, int b) {
+    return a > b ? a : b;
+}
+```
+
+`maximo(4, 9)` devolve `9`. `return` termina a chamada; não imprime o resultado. O chamador decide se o guarda, se o usa numa conta ou se o imprime. Uma função `void` não devolve um valor.
+
+Uma **sobrecarga** usa o mesmo nome com listas de parâmetros diferentes. O compilador escolhe pela chamada; o tipo de retorno, por si só, não distingue duas sobrecargas. Argumentos por defeito permitem omitir os últimos argumentos, por exemplo `void imprimir(int n, char separador = ' ');`. O valor por defeito tem de estar visível no ponto da chamada. Não o repitas na definição se já o declaraste num cabeçalho.
+
+## Valor, referência e const
+
+<CodePlayground
+  language="cpp"
+  title="Cópia, referência e leitura"
+  input=""
+  code={
+    '#include <iostream>\n#include <string>\n\nvoid incrementar_copia(int x) { ++x; }\nvoid incrementar(int& x) { ++x; }\nstd::size_t comprimento(const std::string& texto) { return texto.size(); }\n\nint main() {\n    int n = 4;\n    incrementar_copia(n);\n    std::cout << n << "\\n";\n    incrementar(n);\n    std::cout << n << " " << comprimento("Ana Maria") << "\\n";\n}\n'
+  }
+/>
+
+Saída:
+
+```text
+4
+5 9
+```
+
+`incrementar_copia` cria um parâmetro independente com o valor `4`, altera-o e destrói-o no fim. `n` fica `4`. `incrementar` recebe uma referência ao original e deixa `n` com `5`. Uma referência é um nome alternativo para um objeto, tem de ser inicializada e não pode passar a referir outro objeto. Atribuir à referência altera o objeto referido.
+
+| Parâmetro         | O que a função recebe          | Uso habitual                           |
+| ----------------- | ------------------------------ | -------------------------------------- |
+| `int n`           | Um valor independente          | Números pequenos, só de leitura        |
+| `T& objeto`       | Acesso ao original             | Alteração faz parte da operação        |
+| `const T& objeto` | Acesso de leitura ao original  | Evitar copiar uma string ou coleção    |
+| `T* objeto`       | Um endereço, que pode ser nulo | Opcionalidade ou acesso a um intervalo |
+
+`const T&` impede alterações através dessa referência; não torna constantes todas as outras formas de acesso ao objeto. Evitar uma cópia de um `int` raramente justifica uma referência. Retornar um `std::string` por valor é seguro e permite ao compilador evitar cópias; retornar uma referência a uma variável local deixa acesso a um objeto que já morreu.
+
+## Arrays C e dimensões
+
+Um array `int v[4]` contém quatro inteiros contíguos. Os índices válidos são `0`, `1`, `2` e `3`. `v[4]` está fora do array. Um array não aumenta de tamanho e não transporta automaticamente o seu comprimento quando é passado como argumento.
+
+Numa lista de parâmetros, `const int valores[]` é ajustado para `const int* valores`. Por isso, a função abaixo recebe também `n`.
+
+<CodePlayground
+  language="cpp"
+  title="Somar um intervalo de array"
+  input=""
+  code={
+    '#include <cstddef>\n#include <iostream>\n\nint soma(const int* valores, std::size_t n) {\n    int total = 0;\n    for (std::size_t i = 0; i < n; ++i) total += valores[i];\n    return total;\n}\n\nint main() {\n    int valores[] = {4, -2, 7, 1};\n    std::cout << soma(valores, 4) << "\\n";\n    std::cout << soma(valores + 1, 2) << "\\n";\n    std::cout << soma(nullptr, 0) << "\\n";\n}\n'
+  }
+/>
+
+Saída:
+
+```text
+10
+5
+0
+```
+
+O contrato de `soma` exige `n` elementos válidos a partir do endereço recebido e uma soma representável em `int`. Na segunda chamada, o intervalo começa no `-2` e contém `-2` e `7`, logo soma `5`. Na chamada vazia, o ciclo não desreferencia o apontador. `soma(nullptr, 1)` violaria o contrato.
+
+`sizeof(valores)` dentro desta função mede o apontador, não o array do chamador. Para um tamanho fixo com interface que o conserva, usa `std::array<T, N>`. Para tamanho variável, usa `std::vector<T>`.
+
+Um array C multidimensional tem os elementos da última dimensão contíguos. Em `int matriz[2][3]`, há duas linhas de três inteiros. Uma função que recebe `const int matriz[][3]` precisa de conhecer a dimensão interior para avançar entre linhas. Isto não equivale a `int**`: um apontador para linhas de três inteiros e um apontador para apontadores têm representações e tipos diferentes.
+
+## Structs e tipos compostos
+
+Uma `struct` reúne campos que descrevem um valor, por exemplo um ponto.
+
+```cpp
+// Excerto: tipo e acesso aos seus campos.
+struct Ponto {
+    double x;
+    double y;
+};
+Ponto p{2.0, 3.0};
+```
+
+`p.x` vale `2.0`. `Ponto` é um tipo; `p` é um objeto desse tipo. O compilador pode introduzir **padding**, bytes entre campos ou no fim para alinhar os objetos. Por isso, `sizeof(Ponto)` não deve ser deduzido somando tamanhos de campos. Não graves a memória bruta de uma struct como formato portátil de ficheiro.
+
+`struct` e `class` permitem membros e métodos. A diferença sintática central é o acesso por defeito: público na `struct`, privado na `class`. Uma enumeração com âmbito, como `enum class Estado { livre, ocupado };`, cria valores nomeados e evita confundir um estado com um inteiro qualquer.
+
+## Strings e linhas
+
+`std::string` guarda uma sequência de unidades `char`. `size()` conta essas unidades, não caracteres Unicode visuais. A indexação exige um índice válido; `at()` verifica o limite e lança uma exceção. `+` concatena strings e `==` compara o conteúdo. `substr(pos, quantidade)` extrai uma parte; `find` devolve uma posição ou `std::string::npos` quando não encontra.
+
+Depois de `>>` ler um número, o fim de linha pode continuar na entrada. Um `getline` imediato leria o resto dessa linha, frequentemente vazio. Neste formato, a idade ocupa a primeira linha e o nome a segunda. Descartamos o resto da primeira linha antes de ler o nome.
+
+<CodePlayground
+  language="cpp"
+  title="Ler número e linha"
+  input="19\nAna Maria"
+  code={
+    '#include <iostream>\n#include <limits>\n#include <string>\n\nint main() {\n    int idade = 0;\n    if (!(std::cin >> idade)) {\n        std::cout << "Idade invalida\\n";\n        return 0;\n    }\n    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), \'\\n\');\n    std::string nome;\n    if (!std::getline(std::cin, nome)) {\n        std::cout << "Nome em falta\\n";\n        return 0;\n    }\n    std::cout << nome << " | " << idade << " | " << nome.size() << "\\n";\n}\n'
+  }
+/>
+
+Saída:
+
+```text
+Ana Maria | 19 | 9
+```
+
+`ignore` descarta até ao `\n`, incluindo-o. `std::getline` guarda os espaços interiores e retira o terminador. A alternativa `getline(std::cin >> std::ws, nome)` descarta também espaços iniciais e linhas vazias; só a uses quando isso corresponde ao formato pretendido.
+
+## Strings de C e o terminador
+
+Uma string de C é uma sequência de `char` terminada por `\0`. O array `char nome[] = "Ana";` tem quatro posições: `A`, `n`, `a`, `\0`. O terminador não aparece no texto impresso, mas ocupa memória. `<cstring>` fornece `strlen`, que percorre até ao terminador, e operações de cópia. Estas funções exigem que os apontadores e capacidades estejam corretos.
+
+Arrays de `char` comparados com `==` não comparam o texto, comparam endereços depois da conversão para apontadores. Usa `std::string`, ou `std::strcmp` quando o contrato pede strings de C válidas. `strcpy` não verifica o tamanho do destino. Reservar só três posições para copiar `"Ana"` é insuficiente.
+
+## Recursão e progresso
+
+Uma função recursiva chama-se a si própria. Precisa de um caso base e de uma medida que diminua até esse caso. A soma recursiva de `1` até `n` pode usar `soma(0) = 0` e `soma(n) = n + soma(n - 1)` para `n > 0`. Se não tratares `0`, podes criar chamadas sem fim.
+
+Cada chamada conserva os seus parâmetros e variáveis locais. Um grande número de chamadas pode esgotar a pilha. Quando um ciclo resolve o mesmo problema com um acumulador, não precisas de recursão. Usa-a quando a decomposição do problema a torna clara, não como substituição automática de qualquer ciclo.

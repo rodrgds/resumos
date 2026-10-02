@@ -1,240 +1,130 @@
 ---
 title: Fundamentos de C++
-description: Tipos estáticos, declarações, entrada e saída, referências, const e strings, com compilação em g++.
+description: 'Tipos, expressões, entrada e saída, condições, ciclos e âmbito de variáveis.'
 section: conteudo
 order: 1
+practices:
+  - p/praticar-fundamentos
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import divisao from '../../p/divisao.typ?raw';
 
-Em [Primeiros programas](/cadeiras/fp/primeiros-programas/) escrevias `x = 5` e Python decidia sozinho que `x` era um inteiro. Em C++ tens de dizer qual é o tipo antes de usar a variável, e esse tipo nunca mais muda. Isto parece burocracia, mas é uma troca: o compilador verifica os tipos antes de o programa correr e apanha uma classe inteira de erros ainda no editor.
+Um programa em C++ declara o tipo de cada objeto antes de o usar. O compilador verifica se as operações fazem sentido para esses tipos e produz um executável. O programa só lê a entrada quando o executável corre.
+
+Este programa permite observar uma diferença entre guardar um resultado num `double` e fazer uma divisão real.
 
 ## Declarar variáveis com tipos fixos
 
-Cada variável precisa de um **tipo** e de um **nome** antes do primeiro uso. Os tipos básicos que vais usar são `int` (inteiros), `double` (reais), `char` (caracteres) e `bool` (verdadeiro ou falso):
+`int` guarda inteiros, `double` guarda valores de vírgula flutuante, `char` guarda uma unidade de carácter e `bool` guarda `true` ou `false`. Um **objeto** é uma região de armazenamento com um tipo; uma variável dá-lhe um nome. Inicializa as variáveis antes da primeira leitura.
 
 ```cpp
-#include <iostream>
-
-int main() {
-    int idade = 19;
-    double media = 14.5;
-    char inicial = 'A';
-    bool aprovado = true;
-    std::cout << idade << " " << media << " " << inicial << " " << aprovado << "\n";
-}
+// Excerto de declarações.
+int quantidade = 0;
+double preco = 2.75;
+char letra = 'A';
+bool encontrado = false;
+const int limite = 20;
+auto total = 3.5; // O compilador deduz double; o tipo continua fixo.
 ```
 
-Isto escreve `19 14.5 A 1`. Repara que um `bool` sai como `1` (verdadeiro) ou `0` (falso) por omissão. E repara também que cada linha termina com ponto e vírgula: esquecer o ponto e vírgula é o erro de compilação mais comum das primeiras semanas, e a mensagem do compilador aponta quase sempre para a linha seguinte.
+`const` impede alterar o objeto através desse nome. `auto` pede ao compilador que deduza o tipo a partir do inicializador, não adia a decisão para a execução. Uma inicialização com chavetas, como `int n{3};`, impede certas conversões que perdem informação. `int n{3.7};` é rejeitado; `int n = 3.7;` converte para `3`.
 
-O tipo fixa o que a variável pode guardar. Se escreveres `int x = 3.7;`, o compilador aceita mas corta a parte decimal e guarda `3`. Em Python o valor mudava de tipo sem avisar; em C++ a variável manda, não o valor.
+A largura de `int` e de `long` depende do sistema. Não assumes que todos os computadores usam os mesmos tamanhos. `sizeof(T)` mede bytes; `<limits>` permite consultar os limites de cada tipo. `char` não representa por si só todos os caracteres de um texto Unicode. Nos exemplos de texto desta cadeira, conta-se armazenamento, não letras visuais.
 
-## Entrada e saída com iostream
+## Operadores e divisão
 
-A biblioteca `iostream` trata da entrada e da saída. O operador `<<` envia valores para o ecrã (`std::cout`) e o operador `>>` lê valores do teclado (`std::cin`):
-
-```cpp
-#include <iostream>
-
-int main() {
-    int n;
-    std::cout << "Diz um numero: ";
-    std::cin >> n;
-    std::cout << "O dobro e " << 2 * n << "\n";
-}
-```
-
-Se escreveres `7` na entrada, isto mostra `Diz um numero: O dobro e 14`. A direção dos parênteses angulares ajuda a memorizar: os dados fluem na direção para onde as setas apontam, do programa para o ecrã com `<<` e do teclado para a variável com `>>`.
-
-O prefixo `std::` indica que `cout` e `cin` pertencem à biblioteca padrão. Vais ver programas que escrevem `using namespace std;` para o omitir, mas nos teus primeiros programas prefere o prefixo explícito: deixa claro de onde vem cada nome.
-
-## Compilar e correr com g++
-
-C++ é uma linguagem **compilada**: escreves o código num ficheiro, o compilador traduz esse ficheiro para código máquina e só depois executas o resultado. Guarda o programa acima em `dobro.cpp` e corre estes dois comandos no terminal, na pasta do ficheiro:
-
-<Tabs id="compilar-gpp" labels={['Linux', 'macOS', 'Windows (WSL)']}>
-  <div slot="panel-0">
-
-```bash
-g++ -Wall -std=c++17 -o dobro dobro.cpp
-./dobro
-```
-
-O `g++` já vem instalado na maioria das distribuições Linux; se faltar, instala o pacote `g++` do teu gestor de pacotes.
-
-  </div>
-  <div slot="panel-1">
-
-```bash
-g++ -Wall -std=c++17 -o dobro dobro.cpp
-./dobro
-```
-
-No macOS, o comando `g++` é um atalho para o Clang, que aceita as mesmas opções para estes programas. Se o terminal responder `command not found`, instala as ferramentas com `xcode-select --install`.
-
-  </div>
-  <div slot="panel-2">
-
-```bash
-g++ -Wall -std=c++17 -o dobro dobro.cpp
-./dobro
-```
-
-No Windows, corre estes comandos dentro do WSL (Windows Subsystem for Linux) com uma distribuição Ubuntu, onde o `g++` se instala com `sudo apt install g++`. Evita compilar em pastas sincronizadas com o OneDrive, que costumam causar erros estranhos de escrita.
-
-  </div>
-</Tabs>
-
-O primeiro comando compila: `-o dobro` escolhe o nome do executável, `-std=c++17` fixa a versão da linguagem e `-Wall` liga os avisos do compilador, que apanham erros subtis antes de correres o programa. Se a compilação não escrever nada, correu bem. O segundo comando executa o programa. Quando houver um erro, o `g++` indica o ficheiro, a linha e a razão; lê essa mensagem primeiro e só depois olhes para o código.
-
-:::tip[Compila com avisos desde o primeiro dia]
-O `-Wall` não é opcional para quem está a aprender. Muitos programas que "compilam bem" sem avisos escondem conversões de tipos ou variáveis não usadas que depois aparecem como resultados errados. Habituar-te a compilar sem avisos poupa horas de depuração.
-:::
-
-## Projetos com CMake e CLion
-
-Um ficheiro compila-se com um comando `g++`, mas um projeto com vários ficheiros precisa de uma receita de compilação. O **CMake** descreve essa receita num ficheiro `CMakeLists.txt`, e o **CLion** é o ambiente da cadeira que corre o CMake por ti. Um projeto mínimo com um só programa precisa disto:
-
-```text
-cmake_minimum_required(VERSION 3.16)
-project(notas)
-set(CMAKE_CXX_STANDARD 17)
-add_executable(notas main.cpp)
-```
-
-Cada linha diz uma coisa: versão mínima do CMake, nome do projeto, versão da linguagem e que executável construir a partir de que ficheiros. No CLion, crias um projeto novo, colas o teu código no `main.cpp` e carregas no martelo para compilar e no triângulo para correr: o ambiente escreve estes comandos por ti, mas é o mesmo `g++` por baixo. Quando o CLion se queixar de que não encontra o compilador, verifica nas definições o caminho da toolchain; no WSL, o CLion precisa da toolchain remota apontada à distribuição Ubuntu.
-
-## Referências contra cópias
-
-Quando passas uma variável a uma função em C++, a função recebe por omissão uma **cópia**: alterar o parâmetro dentro da função não toca na variável original. Para a função alterar o argumento, pede uma **referência** com `&`, que é um segundo nome para a mesma variável:
-
-```cpp
-#include <iostream>
-
-void por_copia(int x) { x = 0; }
-void por_referencia(int& x) { x = 0; }
-
-int main() {
-    int a = 5;
-    por_copia(a);
-    std::cout << a << "\n";
-    por_referencia(a);
-    std::cout << a << "\n";
-}
-```
-
-Isto escreve `5` e depois `0`. A primeira chamada alterou apenas a cópia, por isso `a` continuou `5`. A segunda chamada alterou a própria variável `a` através da referência. Esta distinção não existia em [Funções](/cadeiras/fp/funcoes/): em Python, passar uma lista já permitia alterá-la, e passar um número nunca permitia. Em C++, és tu que escolhes, parâmetro a parâmetro.
-
-Usa referências também para evitar copiar valores grandes sem necessidade, como vais ver nas [strings](#strings) e nos vetores da [STL](/cadeiras/p/templates-stl/).
-
-<YouTube id="IzoFn3dfsPA" title="REFERENCES in C++, The Cherno" />
-
-## const: prometer que não muda
-
-A palavra `const` declara que um valor não vai ser alterado. Usa-a em parâmetros que a função só lê, porque o compilador passa a impedir alterações acidentais:
-
-```cpp
-#include <iostream>
-
-int soma_tres(const int& x) {
-    return x + 3;
-}
-
-int main() {
-    int a = 5;
-    std::cout << soma_tres(a) << " " << a << "\n";
-}
-```
-
-Isto escreve `8 5`. O parâmetro é uma referência (sem cópia) mas é `const` (sem alterações): a função lê `x` e devolve `8`, e `a` continua `5`. Se tentasses escrever `x = 0;` dentro da função, o programa nem compilava. Mais tarde vais aplicar a mesma ideia aos métodos das tuas [classes](/cadeiras/p/classes-objetos/).
-
-## Strings
-
-Texto em C++ é a classe `std::string`, da biblioteca `<string>`. Ao contrário das strings de Python, que já conheces de [Tuplos e listas](/cadeiras/fp/tuplos-listas/), aqui precisas de incluir a biblioteca e de decidir como passar cada string às funções:
-
-```cpp
-#include <iostream>
-#include <string>
-
-int comprimento_duplo(const std::string& s) {
-    return 2 * s.size();
-}
-
-int main() {
-    std::string nome;
-    std::cout << "Como te chamas? ";
-    std::cin >> nome;
-    std::cout << "Ola, " << nome << "! O dobro do tamanho e "
-              << comprimento_duplo(nome) << "\n";
-}
-```
-
-Se escreveres `Ana` na entrada, isto mostra `Como te chamas? Ola, Ana! O dobro do tamanho e 6`. O método `size()` devolve o número de caracteres, tal como `len` em Python. Repara que `std::cin >> nome` lê apenas até ao primeiro espaço: `Ana Maria` ficaria só `Ana`. Para ler uma linha inteira usa `std::getline`, como na secção de ficheiros abaixo.
-
-## Ler e escrever ficheiros
-
-Teclado e ecrã chegam para os primeiros exercícios, mas os projetos leem e escrevem ficheiros. As classes `ifstream` (ler) e `ofstream` (escrever) trabalham como `cin` e `cout`, com `>>` e `<<`; a diferença é que abres um ficheiro pelo nome e o fechas no fim:
-
-```cpp
-#include <fstream>
-#include <iostream>
-#include <string>
-
-int main() {
-    std::ofstream saida("notas.txt");
-    saida << "Ana 15\nRui 12\n";
-    saida.close();
-    std::ifstream entrada("notas.txt");
-    std::string nome;
-    int nota;
-    while (entrada >> nome >> nota) {
-        std::cout << nome << ": " << nota << "\n";
-    }
-}
-```
-
-Isto escreve o ficheiro `notas.txt` com duas linhas e depois lê-o de volta, mostrando `Ana: 15` e `Rui: 12`. O ciclo `while (entrada >> nome >> nota)` funciona porque ler de um fluxo devolve o próprio fluxo, que em condição é falso quando a leitura falha, ou seja, no fim do ficheiro. Fecha sempre a escrita com `close()` antes de leres o mesmo ficheiro, para garantir que tudo foi gravado. Para ler uma linha inteira com espaços, troca `entrada >> nome` por `std::getline(entrada, nome)` e trata a linha depois.
-
-## Exemplo completo: média de três notas
-
-Vamos juntar declarações, leitura, uma função com referência constante e saída formatada. O programa lê três notas, calcula a média numa função e diz se o aluno passa (média maior ou igual a 10). Corre-o com a entrada `12 15 9`:
+`+`, `-`, `*`, `/` e `%` fazem operações aritméticas. `%` calcula o resto de uma divisão inteira. `==` compara; `=` atribui. Os operadores relacionais, como `<` e `>=`, produzem um `bool`.
 
 <CodePlayground
   language="cpp"
-  title="Média de três notas"
-  input="12 15 9"
+  title="Tipos e divisão"
+  input=""
   code={
-    '#include <iostream>\n\ndouble media(double a, double b, double c) {\n    return (a + b + c) / 3.0;\n}\n\nint main() {\n    double n1, n2, n3;\n    std::cout << "Tres notas: ";\n    std::cin >> n1 >> n2 >> n3;\n    double m = media(n1, n2, n3);\n    std::cout << "Media: " << m << "\\n";\n    if (m >= 10.0) {\n        std::cout << "Aprovado\\n";\n    } else {\n        std::cout << "Reprovado\\n";\n    }\n}'
+    '#include <iostream>\n\nint main() {\n    int a = 7;\n    int b = 2;\n    double truncado = a / b;\n    double quociente = static_cast<double>(a) / b;\n    std::cout << truncado << " " << quociente << "\\n";\n    std::cout << a % b << " " << std::boolalpha << (a > b) << "\\n";\n}\n'
   }
 />
 
-Isto escreve:
+Saída:
 
 ```text
-Tres notas: Media: 12
-Aprovado
+3 3.5
+1 true
 ```
 
-Confere a conta: $(12 + 15 + 9) / 3 = 12$. O `3.0` em vez de `3` garante a divisão real, e a diferença entre os dois tipos de divisão resume-se assim:
+A expressão `a / b` é avaliada antes da atribuição. Como os dois operandos são inteiros, o resultado é `3`, que só depois se converte para `3.0`. Na outra expressão, `static_cast<double>(a)` converte o operando antes da divisão e o resultado é `3.5`.
 
-<Typst
-  source={divisao}
-  format="svg"
-  alt="Tabela com duas linhas: 7 / 2 é divisão inteira e dá 3; 7 / 2.0 é divisão real e dá 3.5."
+A divisão inteira trunca em direção a zero. Por exemplo, `-7 / 2` dá `-3` e `-7 % 2` dá `-1`, mantendo `a == (a / b) * b + a % b` quando a operação é representável. Dividir um inteiro por zero tem comportamento indefinido. O overflow de um inteiro com sinal também tem comportamento indefinido; não podes contar com que volte ao menor valor. Os valores `double` são aproximados, por isso a igualdade exata nem sempre serve para comparar resultados de contas.
+
+`&&` representa "e", `||` representa "ou" e `!` nega uma condição. Os dois primeiros usam **curto-circuito**. Em `n != 0 && soma / n > 10`, a divisão só é avaliada se `n != 0`. Usa parênteses quando ajudam a ver a ordem. Não escrevas `0 <= nota <= 20`: C++ compara primeiro `0 <= nota`, produz `0` ou `1`, e compara esse resultado com `20`. Escreve `0 <= nota && nota <= 20`.
+
+`++i` incrementa antes de produzir o valor; `i++` produz o valor anterior e incrementa. Num ciclo que ignora esse valor, ambos avançam uma posição. Evita alterar a mesma variável várias vezes na mesma expressão.
+
+## Entrada e saída com iostream
+
+`#include <iostream>` disponibiliza os fluxos padrão. `std::cout << valor` escreve; `std::cin >> valor` tenta ler um token e convertê-lo para o tipo da variável. `std::` indica o namespace da biblioteca padrão. Um fluxo em condição vale verdadeiro se estiver apto a continuar, falso se a leitura falhou.
+
+Não uses uma variável como se a leitura tivesse resultado sem confirmar o estado do fluxo. Em `if (!(std::cin >> n))`, o programa deteta entrada ausente ou inválida. Esta validação é diferente de verificar se o valor está no intervalo permitido.
+
+## Escolha, iteração e âmbito
+
+`if` executa um ramo conforme uma condição. `else` corresponde ao `if` sem `else` mais próximo. `switch` compara um valor integral ou enumeração com casos constantes; sem `break`, `return` ou outra saída, a execução continua no caso seguinte. `while` testa antes da iteração; `do ... while` testa depois e executa pelo menos uma vez.
+
+O `for` separa inicialização, condição e avanço. Vamos ler uma quantidade de notas e contar as que são pelo menos `10`. O intervalo de notas deste exemplo é de `0` a `20` e a quantidade não pode exceder `1000`.
+
+<CodePlayground
+  language="cpp"
+  title="Contar valores válidos"
+  input="5\n9 10 15 0 20"
+  code={
+    '#include <iostream>\n\nint main() {\n    int quantidade = 0;\n    if (!(std::cin >> quantidade) || quantidade < 0 || quantidade > 1000) {\n        std::cout << "Quantidade invalida\\n";\n        return 0;\n    }\n    int aprovadas = 0;\n    for (int i = 0; i < quantidade; ++i) {\n        int nota = 0;\n        if (!(std::cin >> nota) || nota < 0 || nota > 20) {\n            std::cout << "Nota invalida\\n";\n            return 0;\n        }\n        if (nota >= 10) ++aprovadas;\n    }\n    std::cout << "Aprovadas: " << aprovadas << "\\n";\n}\n'
+  }
 />
 
-Com inteiros, C++ corta a parte decimal, e `36 / 3` até daria certo aqui, mas `35 / 3` daria `11` em vez de `11.67`. Sempre que quiseres resultado real, envolve pelo menos um operando real na divisão.
+Saída:
 
-:::warning[Os erros mais comuns do início]
-Esquecer o ponto e vírgula; esquecer o `#include` da biblioteca usada (`<string>` para strings); comparar strings com `==` funciona em C++ (ao contrário de arrays de C, que vais conhecer nos [apontadores](/cadeiras/p/apontadores-memoria/)); e declarar a variável sem tipo por hábito de Python. Quando o compilador reclamar, lê a primeira mensagem de erro e ignora as seguintes, que costumam ser consequências da primeira.
-:::
+```text
+Aprovadas: 3
+```
 
-## Para continuar
+Antes da iteração de índice `i`, já lemos `i` notas válidas e `aprovadas` conta apenas essas notas. Esta afirmação é um **invariante** do ciclo. A leitura seguinte e o `if` mantêm-no; `++i` aproxima o ciclo do fim. Ao terminar, `i` atingiu a quantidade, logo todas as notas foram consideradas. Para quantidade zero, o corpo não corre e a saída é `Aprovadas: 0`.
 
-<YouTube id="vLnPwxZdW4Y" title="C++ Tutorial for Beginners, freeCodeCamp" />
+Uma variável declarada num bloco só é visível nesse bloco e nos blocos interiores que não a ocultam. O `i` declarado no `for` deixa de estar visível depois dele. Uma variável local normal tem duração automática: a sua vida termina ao sair do bloco. Âmbito indica onde o nome é visível; duração de vida indica quando o objeto existe. Não são a mesma coisa.
 
-O curso acima revê estes fundamentos em vídeo. Para veres o que o compilador faz ao teu código, cola um exemplo no [Compiler Explorer](https://godbolt.org/) e observa o assembly gerado com `-O2` contra `-O0`.
+## Compilar e correr com g++
+
+Guarda o programa num ficheiro `notas.cpp`. Num terminal com GCC disponível, na pasta do ficheiro, corre:
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic notas.cpp -o notas
+./notas
+```
+
+O primeiro comando compila e liga o programa. `-o` escolhe o executável; `-std=c++17` fixa a linguagem; as opções `-W` ativam avisos. Se não houver erros, executa o segundo comando e introduz os números. Depois de mudar o código, volta a compilar. Correr um executável antigo não valida a versão que acabaste de escrever.
+
+No macOS, o comando `g++` pode identificar o Clang. Confirma com `g++ --version`; os programas destas páginas usam C++17 portátil. No Windows, usa a toolchain indicada pela cadeira, ou um terminal WSL com GCC. O navegador permite correr os exemplos sem configurar a máquina, mas projetos com vários ficheiros precisam de um ambiente local.
+
+## Projetos com CMake e CLion
+
+CMake descreve que fontes formam cada executável. O CLion permite configurar a toolchain, correr o CMake e depurar. O IDE usa o compilador configurado, que não é necessariamente o mesmo em todas as máquinas.
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(notas LANGUAGES CXX)
+add_executable(notas main.cpp)
+target_compile_features(notas PRIVATE cxx_std_17)
+set_target_properties(notas PROPERTIES CXX_EXTENSIONS OFF)
+```
+
+Para este projeto, guarda o programa como `main.cpp` junto de `CMakeLists.txt` e corre `cmake -S . -B build`, seguido de `cmake --build build`. O executável aparece na pasta de build, ou numa subpasta da configuração escolhida. A página [Organizar e depurar programas](/cadeiras/p/organizar-programas/) desenvolve a compilação separada e o uso do depurador.
+
+## Referências contra cópias
+
+Uma função pode receber uma cópia ou dar acesso ao objeto original. A escolha faz parte do contrato, não depende de o tipo ser "imutável" noutra linguagem. Vê [Funções, arrays e texto](/cadeiras/p/funcoes-arrays/#valor-referência-e-const) para seguir a diferença linha a linha.
+
+## Strings
+
+`std::string` é o tipo habitual para texto e gere o seu armazenamento. `std::cin >> texto` lê até ao próximo espaço; `std::getline` lê uma linha. Os [exemplos de texto](/cadeiras/p/funcoes-arrays/#strings-e-linhas) distinguem estas duas operações e as strings de C.
+
+## Ler e escrever ficheiros
+
+Ficheiros usam fluxos como a entrada padrão, mas a abertura e os erros precisam de tratamento. A página [Ficheiros e validação](/cadeiras/p/ficheiros/#ler-sem-antecipar-o-fim) explica o ciclo correto e por que `while (!eof())` é inadequado.
