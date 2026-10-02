@@ -11,13 +11,15 @@ practices:
 
 Um apontamento pode ter **definições**, exemplos e pequenos exercícios. Usa as tuas palavras e liga às fontes que consultaste.
 
-Neste exemplo, vamos somar os primeiros $n$ números naturais. O resultado é:
+Neste exemplo, vamos somar os inteiros de 1 até $n$, com $n$ inteiro não negativo. Para $n=0$, a soma não tem termos e vale zero. O resultado é:
 
 $$
 \sum_{k=1}^{n} k = \frac{n(n+1)}{2}
 $$
 
 Para $n = 4$, temos $1 + 2 + 3 + 4 = 10$.
+
+Para perceber a fórmula, escreve a soma por ordem crescente e depois por ordem decrescente. Ao somar as duas linhas coluna a coluna, cada coluna dá $n+1$. Há $n$ colunas, por isso o dobro da soma é $n(n+1)$. Dividir por 2 recupera a soma original. Este argumento também funciona quando $n$ é ímpar.
 
 ## Um pequeno programa
 
@@ -28,6 +30,8 @@ def soma_naturais(n):
 print(soma_naturais(4))  # 10
 ```
 
+Em Python, `//` faz a divisão inteira. Aqui não perdemos uma parte decimal: de dois inteiros consecutivos, $n$ e $n+1$, um é par. O produto é sempre divisível por 2.
+
 ## Uma tabela
 
 | n   | Soma |
@@ -36,6 +40,8 @@ print(soma_naturais(4))  # 10
 | 2   | 3    |
 | 3   | 6    |
 | 4   | 10   |
+
+Para calcular a média de pontos por fila, divide o total pelo número de filas. Com quatro filas, temos $10/4=2{,}5$ pontos por fila em média. A média pode não ser inteira, mesmo quando cada fila tem um número inteiro de pontos.
 
 ## Limites de um ciclo
 
