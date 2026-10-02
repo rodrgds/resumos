@@ -1,0 +1,91 @@
+---
+title: Ciclos, ordem topológica e conetividade
+description: Tempos de descoberta, low-link, componentes fortes, pontes e pontos de articulação.
+section: conteudo
+order: 13
+practices:
+  - aed/praticar-grafos-aplicacoes
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+DFS fornece mais informação que um conjunto de visitados: o estado de uma chamada, a ordem de descoberta e as ligações entre subárvores permitem detetar ciclos, ordenar dependências e identificar pontos críticos.
+
+## Ciclos dirigidos e não dirigidos
+
+Numa DFS dirigida, usa três estados: branco, ainda não descoberto; cinzento, chamada ainda ativa; preto, chamada terminada. Uma aresta para um vértice cinzento fecha um ciclo: o destino é um antepassado no caminho de chamadas, que já tem um caminho até ao vértice atual. Uma aresta para preto não prova um ciclo, porque pode ligar a um ramo que já terminou.
+
+Para reconstruir um ciclo, segue os pais do vértice atual até ao antepassado cinzento e fecha com a aresta encontrada. Um laço é um ciclo de comprimento um, se a definição do problema o permitir. Repete DFS em todos os vértices para detetar ciclos em componentes desligadas da primeira origem.
+
+Num grafo não dirigido, a aresta de regresso ao pai existe na lista e não é, por si só, um ciclo. Ignora apenas essa aresta. Se houver arestas paralelas, ignorar todos os vizinhos iguais ao pai perde o ciclo de duas arestas: atribui um identificador a cada aresta e ignora só o identificador usado para entrar no vértice.
+
+## Ordem topológica
+
+Uma ordem topológica é uma sequência de todos os vértices tal que, para cada aresta `u->v`, `u` aparece antes de `v`. Existe exatamente quando o grafo dirigido é acíclico, um DAG.
+
+Na DFS de um DAG, uma aresta `u->v` não pode apontar para cinzento. Se aponta para branco, a chamada de `v` termina antes de `u`; se aponta para preto, `v` já terminou. Logo ordenar por tempos de saída decrescentes coloca `u` antes de `v`. Deteta ciclos antes de apresentar a sequência como uma ordem válida.
+
+O algoritmo de **Kahn** guarda os graus de entrada e uma fila dos vértices de grau zero. Retira um deles, acrescenta-o à ordem e reduz o grau de entrada dos seus destinos, colocando os que chegam a zero na fila. O invariante diz que o grau restante conta arestas vindas de vértices ainda não retirados. Um vértice de grau zero não tem predecessor restante e pode ser escolhido com segurança.
+
+Para as arestas `0->2`, `1->2`, `2->3`, `1->4`, começa com a fila `[0,1]`. Retirar 0 deixa o grau de 2 igual a 1. Retirar 1 liberta 2 e 4. A ordem com esta fila é `[0,1,2,4,3]`. `[1,0,4,2,3]` também é válida. Se acrescentares `3->1`, sobram vértices sem grau zero: existe um ciclo. Kahn devolve uma ordem completa se e só se retirar `V` vértices.
+
+Ambas as abordagens custam $O(V+E)$ e espaço auxiliar $O(V)$. Para escolher sempre o menor vértice disponível, substitui a fila por uma min-heap; a escolha acrescenta um fator logarítmico nas operações de prioridade.
+
+## Componentes fortes e fracas
+
+Em grafos não dirigidos, uma componente conexa é um conjunto máximo de vértices ligados por caminhos. Num grafo dirigido, uma **componente fortemente conexa**, SCC, é um conjunto máximo em que cada par é alcançável nos dois sentidos. A componente fraca ignora os sentidos das arestas e pode juntar várias SCC.
+
+Contrair cada SCC a um vértice produz um DAG: um ciclo entre componentes permitiria alcançar todas nos dois sentidos e obrigaria a juntá-las numa só. Vértices isolados são componentes individuais.
+
+## Tarjan e a pilha de componentes
+
+Tarjan faz uma DFS, guarda `disc[u]`, o tempo de descoberta, e `low[u]`, informação sobre o menor tempo que pode ligar a região de DFS ainda por atribuir a uma componente. Mantém uma pilha de vértices descobertos mas ainda não atribuídos a uma SCC.
+
+Ao entrar em `u`, define `disc[u]=low[u]` e empilha-o. Para cada `u->v`:
+
+- Se `v` não foi descoberto, visita-o e faz `low[u]=min(low[u],low[v])`.
+- Se `v` já foi descoberto e **continua na pilha de componentes**, faz `low[u]=min(low[u],disc[v])`.
+- Se `v` já pertence a uma componente terminada, ignora essa aresta para esta atualização.
+
+Quando `low[u]==disc[u]`, `u` é a raiz de uma componente: retira da pilha até incluir `u`, atribuindo a mesma componente a todos. Os vértices retirados conseguem alcançar essa raiz pela informação acumulada; a raiz alcança-os pelos caminhos de descoberta. A condição impede que a componente fique ligada a um antepassado ainda pendente.
+
+A pilha de componentes não é a pilha de chamadas. Um vértice pode ter terminado a sua chamada DFS e continuar na pilha de componentes, à espera de que um antepassado feche a SCC. Substituir `naPilha` por «cinzento» produz resultados errados. Na segunda atualização, usa `disc[v]`, não indiscriminadamente `low[v]`.
+
+<CodePlayground
+  language="cpp"
+  title="Tarjan"
+  code={
+    '#include <algorithm>\n#include <iostream>\n#include <vector>\nclass Componentes {\n    const std::vector<std::vector<int>>& g;\n    std::vector<int> descoberta, low, pilha, componente;\n    std::vector<bool> naPilha;\n    int tempo = 0, total = 0;\n    void dfs(int u) {\n        descoberta[u] = low[u] = tempo++;\n        pilha.push_back(u); naPilha[u] = true;\n        for (int v : g[u]) {\n            if (descoberta[v] == -1) { dfs(v); low[u] = std::min(low[u], low[v]); }\n            else if (naPilha[v]) low[u] = std::min(low[u], descoberta[v]);\n        }\n        if (low[u] != descoberta[u]) return;\n        while (true) {\n            const int v = pilha.back(); pilha.pop_back();\n            naPilha[v] = false; componente[v] = total;\n            if (v == u) break;\n        }\n        ++total;\n    }\npublic:\n    explicit Componentes(const std::vector<std::vector<int>>& grafo)\n        : g(grafo), descoberta(g.size(), -1), low(g.size()),\n          componente(g.size(), -1), naPilha(g.size(), false) {\n        for (std::size_t u = 0; u < g.size(); ++u)\n            if (descoberta[u] == -1) dfs(static_cast<int>(u));\n    }\n    int quantidade() const { return total; }\n    bool juntos(int u, int v) const { return componente[u] == componente[v]; }\n};\nint main() {\n    const std::vector<std::vector<int>> g{{1},{0,2},{3},{2,4},{}};\n    Componentes c(g);\n    std::cout << "componentes: " << c.quantidade() << \'\\n\';\n    std::cout << "0 e 1: " << c.juntos(0,1) << \'\\n\';\n    std::cout << "2 e 3: " << c.juntos(2,3) << \'\\n\';\n    std::cout << "0 e 4: " << c.juntos(0,4) << \'\\n\';\n}\n'
+  }
+/>
+
+Resultado:
+
+```text
+componentes: 3
+0 e 1: 1
+2 e 3: 1
+0 e 4: 0
+```
+
+As componentes são `{0,1}`, `{2,3}` e `{4}`. A DFS descobre os vértices por esta ordem: `0,1,2,3,4`. A aresta `1->0` reduz `low[1]` para 0; `3->2` reduz `low[3]` para 2. O vértice 4 fecha primeiro, depois 2 fecha com 3 e por fim 0 fecha com 1. Os números usados para identificar componentes dependem da ordem de visita e não são parte da definição.
+
+Cada vértice entra e sai da pilha uma vez e cada aresta é examinada uma vez. Tempo $O(V+E)$ e espaço auxiliar $O(V)$. O programa pressupõe destinos válidos e trata também vértices isolados e um grafo vazio.
+
+## Pontes e pontos de articulação
+
+Agora o grafo é **não dirigido**. Uma ponte é uma aresta cuja remoção aumenta o número de componentes. Um ponto de articulação é um vértice cuja remoção, com as suas arestas, aumenta esse número. A definição também funciona em grafos já desconexos.
+
+Na DFS, inicializa `low[u]=disc[u]`. Uma aresta de árvore `u-v` contribui com `low[v]` depois de visitar `v`; uma aresta para um vértice já descoberto, diferente da aresta de entrada, contribui com `disc[v]`. Aqui `low[v]` indica o antepassado mais antigo alcançável pela subárvore de `v` usando arestas de árvore e uma aresta de retorno.
+
+Para um filho DFS `v` de `u`:
+
+- `u-v` é ponte se **`low[v]>disc[u]`**. A subárvore não consegue voltar a `u` nem a um antepassado sem essa aresta.
+- Um `u` que não é raiz é articulação se algum filho satisfaz **`low[v]>=disc[u]`**. Sem `u`, esse ramo não alcança a zona anterior da DFS.
+- A raiz é articulação se tem pelo menos dois filhos **na árvore DFS**. O seu grau no grafo não é o critério.
+
+A desigualdade das pontes é estrita. Com `low[v]==disc[u]`, existe uma ligação de retorno a `u` e a aresta não é ponte; retirar o próprio `u` ainda pode separar o ramo, justificando a igualdade para articulação.
+
+No triângulo `0-1-2-0`, acrescenta `1-3` e `3-4`, e um vértice isolado 5. As arestas do triângulo não são pontes. `1-3` e `3-4` são pontes; 1 e 3 são articulações. Se a DFS começa em 0, a raiz tem só um filho DFS, embora tenha dois vizinhos, e não é articulação. Uma aresta paralela entre 3 e 4 faria essa ligação deixar de ser ponte.
+
+Mantém identificadores de arestas para suportar paralelas e recomeça DFS em cada vértice ainda não descoberto. Tempo $O(V+E)$, espaço auxiliar $O(V)$. Para verificar uma implementação em grafos pequenos, remove cada aresta ou vértice, conta componentes de novo e compara com as condições `low`; essa referência lenta testa a definição diretamente.

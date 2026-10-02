@@ -1,0 +1,63 @@
+---
+title: Tipos abstratos e escolha da representação
+description: Separar operações observáveis, invariantes da representação e custos concretos.
+section: conteudo
+order: 4
+practices:
+  - aed/praticar-tipos-abstratos
+---
+
+Um **tipo abstrato de dados**, ou TAD, descreve valores e operações sem exigir uma representação. Uma pilha admite inserir, consultar e retirar o elemento mais recente. Pode usar um vetor ou nós ligados; o comportamento LIFO é o mesmo, os custos e as regras de memória podem mudar.
+
+## Interface, contrato e representação
+
+Para uma lista de valores, uma interface pode oferecer `size`, `empty`, consulta por posição, inserção e remoção. Cada operação precisa de condições: consultar a posição `i` exige `0<=i<size`; retirar o primeiro elemento exige uma lista não vazia, ou uma interface que devolva explicitamente uma ausência.
+
+O **invariante da representação** liga os campos privados ao valor abstrato. Numa lista simplesmente ligada com `primeiro` e `tamanho`:
+
+- `primeiro` é nulo exatamente quando o tamanho é zero.
+- A cadeia termina num apontador nulo, não tem ciclos e contém exatamente `tamanho` nós.
+- Cada nó pertence à lista; não é libertado enquanto continuar ligado.
+
+O construtor estabelece o invariante. Cada método público assume-o à entrada e repõe-o à saída. O destrutor liberta os recursos possuídos. Campos públicos permitiriam criar uma cadeia cíclica ou um tamanho falso sem passar pelos métodos.
+
+Distingue o valor abstrato de um detalhe: uma fila vazia não precisa de ter um índice interno igual a zero. Basta que as operações observáveis indiquem ausência de elementos e que os índices respeitem a representação.
+
+## Vetor ou nós ligados
+
+| Operação                          | Vetor contíguo                    | Lista simplesmente ligada                        |
+| --------------------------------- | --------------------------------- | ------------------------------------------------ |
+| acesso à posição `i`              | $O(1)$                            | $O(i+1)$                                         |
+| inserir/remover à frente          | $O(n)$                            | $O(1)$                                           |
+| acrescentar no fim                | $O(1)$ amortizado com crescimento | $O(1)$ com apontador para último; $O(n)$ sem ele |
+| remover o último                  | $O(1)$                            | $O(n)$ para encontrar o anterior                 |
+| inserir depois de um nó conhecido | deslocações $O(n)$ no caso geral  | $O(1)$                                           |
+| memória por elemento              | valor e eventual capacidade livre | valor e um ou mais apontadores                   |
+
+«Inserir numa lista é constante» só é correto se já tens a ligação ou o nó necessário. Encontrar a posição pode dominar o custo. Num vetor, a continuidade da memória favorece acessos sequenciais; uma lista evita algumas deslocações, mas faz alocações e segue apontadores.
+
+Uma lista duplamente ligada conhece o anterior de cada nó e pode retirar um nó conhecido em $O(1)$. Continuar sem acesso direto por índice impede pesquisa binária eficiente por sucessivos meios. Um vetor ordenado faz consultas binárias rápidas, mas inserir mantendo a ordem exige deslocações.
+
+## Memória, cópia e iteradores
+
+Uma estrutura que possui nós dinâmicos precisa de uma política de cópia: copiar profundamente, transferir posse, ou impedir a cópia. Copiar só o apontador inicial cria dois proprietários dos mesmos nós. Os exemplos de nós desta cadeira impedem cópia e libertam os nós no destrutor. Os containers da biblioteca tratam essa posse por ti.
+
+Um iterador identifica uma posição segundo as regras do container. Num `vector`, realocar invalida todos os iteradores, referências e apontadores para elementos. Uma inserção sem realocação pode invalidar os que apontam para a posição de inserção ou depois dela. Num `list`, inserir preserva iteradores existentes; apagar invalida os do elemento apagado. Usa a garantia da operação concreta antes de guardar um iterador entre alterações.
+
+Templates permitem expressar uma estrutura para tipos diferentes. A implementação tem requisitos: ordenar exige comparação válida; copiar exige que o tipo suporte a cópia usada; acumular exige operações aritméticas adequadas. Generalizar o nome do tipo não prova essas propriedades.
+
+## Biblioteca e composição de custos
+
+`vector`, `list`, `deque`, `stack`, `queue`, `set`, `map`, `unordered_set`, `unordered_map` e `priority_queue` oferecem interfaces diferentes. `stack` e `queue` são adaptadores: limitam as operações de um container subjacente. Uma fila de prioridade não mantém a ordem de chegada.
+
+Ao analisar um algoritmo, substitui cada chamada pelo seu custo real. Fazer `n` inserções num `set` custa $O(n\log n)$; percorrê-lo inteiro custa $O(n)$. Fazer `n` consultas esperadas constantes numa tabela hash dá custo esperado linear sob as hipóteses de hashing, sem uma garantia linear de pior caso. Copiar uma estrutura por valor ao chamar uma função pode custar mais que a função em si; usa referência constante se só precisas de ler.
+
+## Implementar e testar um contrato
+
+Antes de programar, escreve a entrada, a saída, os limites e a política de casos especiais. Se usas índices em `[0,n)`, conserva essa convenção em todas as funções. Se os enunciados usam `[1,n]`, converte uma vez na fronteira de entrada.
+
+Para cada operação, testa vazio, um elemento, repetidos, alteração da frente e do fim, ausência de uma chave e várias operações seguidas. Depois de cada alteração, confere o invariante, não só uma impressão final. Uma lista com tamanho correto e um ciclo continua inválida.
+
+Compara algoritmos próprios com uma solução simples independente em entradas pequenas: pesquisa com um percurso linear, ordenação com a biblioteca, caminhos de grafos com uma matriz de alcançabilidade. A solução de referência pode ser lenta porque o seu papel é detetar erros.
+
+Compila C++17 com avisos, por exemplo `g++ -std=c++17 -Wall -Wextra -Wpedantic programa.cpp -o programa`. Separar interface e implementação ajuda a documentar as pré-condições de cada método. Em submissões automáticas, lê exatamente o formato pedido e imprime apenas a saída exigida; uma mensagem de depuração pode invalidar uma resposta correta. Verifica overflow, limites de memória e profundidade da recursão antes de aumentar a dimensão dos testes.

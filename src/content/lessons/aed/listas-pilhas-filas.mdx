@@ -1,74 +1,75 @@
 ---
-title: Listas, pilhas e filas
-description: Listas ligadas com nós e apontadores, pilha LIFO, fila FIFO e a fila feita de duas pilhas.
+title: Listas, deques, pilhas e filas
+description: Ligações seguras, operações nas extremidades e análise amortizada de uma fila com duas pilhas.
 section: conteudo
-order: 3
+order: 5
+practices:
+  - aed/praticar-listas-pilhas-filas
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import Typst from '../../../components/Typst.astro';
-import fila from '../../aed/fila-duas-pilhas.typ?raw';
-import cadeia from '../../aed/lista.dot?raw';
 
-Um vetor guarda os elementos lado a lado e por isso insere devagar no meio: é preciso deslocar tudo. As estruturas desta página trocam o acesso direto por **nós** ligados por apontadores: inserir e remover no sítio certo passa a $O(1)$, à custa de só conseguir chegar aos elementos caminhando. É a primeira vez que implementas um tipo abstrato de dados do zero, por isso revê [apontadores e `new`/`delete`](/cadeiras/p/apontadores-memoria/) e [classes](/cadeiras/p/classes-objetos/) antes de continuares.
+A escolha entre vetor, lista, pilha e fila depende das operações que o algoritmo precisa. Não escolhas uma estrutura apenas porque permite guardar todos os valores.
 
-## Listas ligadas
+## Lista simplesmente ligada
 
-Uma **lista ligada** é uma cadeia de nós, cada um com o valor e o apontador para o seguinte. A lista guarda só a **cabeça** (head); o último nó aponta para `nullptr`. Inserir no início é criar o nó e pendurá-lo à frente ($O(1)$); remover o primeiro é avançar a cabeça e libertar o nó ($O(1)$). Mas chegar à posição $i$ obriga a caminhar $i$ ligações: acesso e pesquisa são $O(n)$.
+Cada nó guarda um valor e a ligação para o seguinte. Para inserir à frente, cria o novo nó com a ligação antiga e só depois altera `primeiro`. Para retirar a frente, guarda o nó antigo, avança `primeiro` e liberta o nó guardado. Estas operações custam $O(1)$.
 
-<Dot
-  source={cadeia}
-  alt="Lista ligada com três nós: a cabeça aponta para o primeiro, cada nó aponta para o seguinte e a cauda aponta para vazio."
-/>
-
-A **lista duplamente ligada** dá a cada nó também o apontador para o anterior. Gasta mais um apontador por nó, mas permite caminhar para trás e remover um nó conhecido em $O(1)$ (na simples, remover exige encontrar o antecessor). Com um apontador para a **cauda** (tail), inserir no fim também é $O(1)$.
-
-O erro clássico é perder nós: se fizeres `cabeca = cabeca->seguinte` sem `delete` no nó antigo, a memória fica ocupada sem ninguém a apontar para ela. Cada `new` no código da lista precisa do seu `delete` na remoção e no destrutor. Desenha as setas no papel antes de as mexeres no código: mudar a ordem de duas atribuições de apontadores é a diferença entre inserir e partir a lista.
-
-## Pilha e fila
-
-A **pilha** (stack) é LIFO: o último a entrar é o primeiro a sair. Operações `push` (empilha), `pop` (desempilha) e `top` (espreita), todas $O(1)$. Serve onde a ordem é "desfazer": chamadas de função, avaliação de expressões, voltar atrás numa pesquisa.
-
-A **fila** (queue) é FIFO: o primeiro a entrar é o primeiro a sair. Operações `enqueue` (entra no fim), `dequeue` (sai da frente) e `front`, todas $O(1)$. Serve onde a ordem é "atender por chegada": impressoras, pacotes de rede, a pesquisa em largura dos grafos.
-
-Ambas se implementam sobre lista ligada (empilhar é inserir na cabeça; desenfileirar é remover da cabeça mantendo cauda para entrar no fim) ou sobre vetor circular. O tipo abstrato diz **o que** (LIFO contra FIFO); a implementação escolhe **como**.
-
-## Uma fila feita de duas pilhas
-
-Duas pilhas LIFO combinam-se numa fila FIFO. Mantém uma pilha de **entrada** e uma de **saída**: `enqueue` empilha na entrada; `dequeue` desempilha da saída, e se a saída estiver vazia, despeja a entrada toda para a saída primeiro (o que inverte a ordem duas vezes e a repõe). Simula `push 1, push 2, pop, push 3, pop, pop`, onde push é enqueue e pop é dequeue:
-
-| Passo  | Entrada (topo à direita) | Saída (topo à direita) | Devolve |
-| ------ | ------------------------ | ---------------------- | ------- |
-| push 1 | [1]                      | []                     |         |
-| push 2 | [1, 2]                   | []                     |         |
-| pop    | []                       | [2, 1] após despejo    | 1       |
-| push 3 | [3]                      | [2]                    |         |
-| pop    | [3]                      | []                     | 2       |
-| pop    | []                       | [3] após despejo       | 3       |
-
-<Typst
-  source={fila}
-  format="svg"
-  alt="Três instantâneos da fila de duas pilhas: após os dois pushes, após o primeiro pop que devolve 1, e no fim com saída 1, 2, 3."
-/>
-
-A saída é $1, 2, 3$: ordem de chegada, portanto FIFO. Cada elemento muda de pilha no máximo uma vez, por isso o custo é $O(1)$ **amortizado**: um `pop` isolado pode custar $O(n)$ no despejo, mas $n$ operações custam $O(n)$ no total. A distinção entre "cada operação" e "a média da sequência" é a ideia de amortização, que vais reencontrar nas tabelas de dispersão e nos vetores que crescem.
+Para remover um valor no meio, precisas de alterar a ligação que chega ao nó. Um apontador para essa ligação permite tratar a cabeça e o interior com o mesmo código. No programa, `ligacao` aponta para `primeiro` ou para o campo `seguinte` de um nó anterior. Se apagares o nó atual, a ligação passa a apontar para o sucessor e deve voltar a ser examinada; avançar logo poderia saltar dois valores iguais consecutivos.
 
 <CodePlayground
   language="cpp"
-  title="Fila com duas pilhas"
+  title="Lista fila"
   code={
-    '#include <iostream>\n#include <stack>\n#include <vector>\nusing namespace std;\n\nint main() {\n    vector<int> entrada, saida;\n    auto enqueue = [&](int x) { entrada.push_back(x); };\n    auto dequeue = [&]() {\n        if (saida.empty())\n            while (!entrada.empty()) {\n                saida.push_back(entrada.back());\n                entrada.pop_back();\n            }\n        int x = saida.back();\n        saida.pop_back();\n        return x;\n    };\n    enqueue(1); enqueue(2);\n    cout << dequeue() << " ";\n    enqueue(3);\n    cout << dequeue() << " " << dequeue() << "\\n";\n}'
+    '#include <iostream>\n#include <vector>\nclass Lista {\n    struct No { int valor; No* seguinte; };\n    No* primeiro = nullptr;\npublic:\n    Lista() = default;\n    Lista(const Lista&) = delete;\n    Lista& operator=(const Lista&) = delete;\n    ~Lista() { while (primeiro) { No* p = primeiro; primeiro = p->seguinte; delete p; } }\n    void inserirFrente(int x) { primeiro = new No{x, primeiro}; }\n    void remover(int x) {\n        No** ligacao = &primeiro;\n        while (*ligacao) {\n            No* p = *ligacao;\n            if (p->valor == x) { *ligacao = p->seguinte; delete p; }\n            else ligacao = &p->seguinte;\n        }\n    }\n    void mostrar() const {\n        for (No* p = primeiro; p; p = p->seguinte)\n            std::cout << p->valor << (p->seguinte ? " " : "\\n");\n        if (!primeiro) std::cout << "vazia\\n";\n    }\n};\nclass Fila {\n    std::vector<int> entrada, saida;\npublic:\n    void inserir(int x) { entrada.push_back(x); }\n    bool retirar(int& x) {\n        if (saida.empty()) {\n            while (!entrada.empty()) {\n                saida.push_back(entrada.back()); entrada.pop_back();\n            }\n        }\n        if (saida.empty()) return false;\n        x = saida.back(); saida.pop_back(); return true;\n    }\n};\nint main() {\n    Lista l;\n    for (int x : {8, 5, 3, 5}) l.inserirFrente(x);\n    l.remover(5); l.mostrar();\n    Fila f; f.inserir(3); f.inserir(5);\n    int x;\n    if (f.retirar(x)) std::cout << x << \'\\n\';\n    f.inserir(8);\n    while (f.retirar(x)) std::cout << x << \'\\n\';\n    std::cout << "vazia: " << !f.retirar(x) << \'\\n\';\n}\n'
   }
 />
 
-O programa imprime `1 2 3`: segue a tabela linha a linha e confirma que cada `dequeue` devolve por ordem de chegada. Repara que o despejo da entrada para a saída só acontece quando a saída está vazia, que é exatamente o que mantém o custo amortizado.
+Resultado:
 
-:::tip[Como escolher na prova]
-Vetor quando o acesso por índice domina e o tamanho é estável; lista quando as inserções e remoções no meio dominam; pilha quando precisas de desfazer; fila quando precisas de atender por ordem. Justifica sempre com o custo da operação dominante, não com preferência.
-:::
+```text
+3 8
+3
+5
+8
+vazia: 1
+```
 
-## Ver também
+A lista inicial é `5 -> 3 -> 5 -> 8`. Retirar todos os valores 5 deixa `3 -> 8`. A cópia está desativada porque os nós têm um único proprietário; o destrutor liberta-os de forma iterativa. Os apontadores para nós apagados deixam de ser válidos. Na fila, os valores saem pela ordem 3, 5 e 8.
 
-O [Visualgo](https://visualgo.net/en/list) simula inserções e remoções em listas, pilhas e filas com os apontadores à vista: corre a mesma sequência da tabela e vê as setas mexerem-se.
+Pesquisar e percorrer custam $\Theta(n)$ no pior caso. Retirar o último exige chegar ao penúltimo, mesmo que exista um apontador para o último. Alterar a ligação custa constante; encontrar a ligação não custa necessariamente constante.
+
+## Lista dupla e circular
+
+Numa lista duplamente ligada, cada nó guarda `anterior` e `seguinte`. Ao inserir `x` entre `a` e `b`, ajusta as quatro ligações: `a.seguinte=x`, `x.anterior=a`, `x.seguinte=b`, `b.anterior=x`. Uma sentinela simplifica as extremidades, mas não representa um valor da lista.
+
+Numa lista circular com sentinela, o vazio tem as duas ligações da sentinela para ela própria. O percurso termina quando regressa à sentinela, não quando encontra um apontador nulo. Para cada ligação entre nós vizinhos, seguir `seguinte` e depois `anterior` deve regressar ao nó de partida. Retirar um nó conhecido é constante; obter o nó por índice continua linear.
+
+## Deque, pilha e fila
+
+Um **deque** permite inserir e retirar em ambas as extremidades. Não implica permitir inserções interiores eficientes. Um deque de array circular guarda um índice de início, um tamanho e uma capacidade. A posição lógica `i` corresponde a `(inicio+i)%capacidade`. Nunca calcules o resto por capacidade zero; reservar capacidade faz parte do contrato.
+
+Uma **pilha** é LIFO: o último a entrar é o primeiro a sair. Num vetor, `push_back`, `back` e `pop_back` servem para a pilha. Uma **fila** é FIFO: entra no fim e sai pela frente. Num deque, `push_back`, `front` e `pop_front` evitam deslocar todos os elementos. `top`, `front` e `pop` exigem não vazio na biblioteca.
+
+| Entrada de 4, 7, 2 | Próximo a sair | Ordem completa |
+| ------------------ | -------------- | -------------- |
+| pilha              | 2              | 2, 7, 4        |
+| fila               | 4              | 4, 7, 2        |
+
+A pilha modela tarefas suspensas, desfazer operações e percursos em profundidade. A fila modela pedidos por ordem de chegada e percursos por camadas. Uma fila de prioridade escolhe uma prioridade, sem garantir FIFO nos empates.
+
+## Fila com duas pilhas
+
+A pilha `entrada` recebe as inserções. A pilha `saida` tem no topo o elemento mais antigo. Se `saida` estiver vazia, transfere todos os elementos de `entrada` para ela: a inversão põe o mais antigo no topo. Se ainda estiver vazia, a fila está vazia.
+
+O invariante diz que a sequência da fila é `saida` do topo para o fundo, seguida de `entrada` do fundo para o topo. Só transferir quando `saida` está vazia mantém essa ordem. Inserir 8 quando `saida` ainda contém 5 não deve transferir 8 para cima de 5.
+
+Uma retirada isolada pode mover `n` elementos e custar $\Theta(n)$. Ao longo de `m` operações, cada elemento entra em `entrada`, sai dela, entra em `saida` e sai dela no máximo uma vez por cada etapa. Assim, o número total de operações nas pilhas é $O(m)$, e o custo amortizado por operação da fila é $O(1)$. Se as pilhas são vetores dinâmicos, inclui também o seu custo amortizado de crescimento.
+
+## Aplicações de pilhas
+
+Para verificar parênteses de vários tipos, empilha cada abertura. Ao ler um fecho, a pilha deve estar não vazia e o topo deve ser a abertura correspondente; depois retira-o. No fim, a pilha tem de estar vazia. `([)]` tem o mesmo número de aberturas e fechos, mas é inválido porque `)` não corresponde ao topo `[`. O invariante identifica a pilha com as aberturas ainda não fechadas, pela sua ordem de encaixe. Tempo $O(n)$ e espaço $O(n)$ no pior caso.
+
+Uma **pilha monótona** pode resolver o próximo valor estritamente maior. Percorre da esquerda para a direita, guardando índices cujos valores ainda não encontraram resposta e estão por ordem não crescente. Quando chega um valor maior, retira todos os índices com valor menor e responde com a posição atual. Cada índice é inserido e retirado no máximo uma vez, logo o total é linear. Para `[3,1,4,4,2]`, as posições seguintes maiores são `[2,2,ausente,ausente,ausente]`. Um valor igual não responde a «estritamente maior».
+
+A mesma contagem de entradas e saídas explica por que um ciclo `while` dentro de um ciclo linear não implica, por si só, tempo quadrático.

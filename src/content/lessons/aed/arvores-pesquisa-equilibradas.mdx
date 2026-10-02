@@ -1,68 +1,78 @@
 ---
-title: Árvores de pesquisa equilibradas
-description: A propriedade de ordem das ABP, inserção e remoção, e rotações que mantêm a altura logarítmica.
+title: Árvores AVL e vermelho-pretas
+description: Rotações que conservam a ordem e invariantes que limitam a altura.
 section: conteudo
-order: 5
+order: 9
+practices:
+  - aed/praticar-arvores-pesquisa-equilibradas
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import simples from '../../aed/avl-rotacao.typ?raw';
-import dupla from '../../aed/avl-dupla.typ?raw';
 
-A travessia em ordem de uma árvore binária sai ordenada. E se a árvore **mantiver** essa ordem a cada inserção, pesquisar passa a descer um caminho em vez de percorrer tudo. Essa é a árvore binária de pesquisa. O resto da página é a luta contra o seu inimigo: a degeneração.
+Uma BST simples pode ter altura linear. Uma árvore equilibrada conserva a ordem de pesquisa e acrescenta um invariante que força altura logarítmica. As rotações corrigem a forma sem mudar a sequência em-ordem.
 
-## A propriedade de ordem
+## Rotações e ordem
 
-Uma **árvore binária de pesquisa** (ABP) exige que, em cada nó, todos os valores da subárvore esquerda sejam menores e todos os da direita sejam maiores. Pesquisar desce comparando: igual, encontrou; menor, vai à esquerda; maior, vai à direita. Inserir desce até uma folha vazia e pendura lá o novo nó. Cada passo desce um nível, por isso tudo custa $O(h)$, sendo $h$ a altura.
+Numa rotação à direita, a raiz `z` tem filho esquerdo `y`. A subárvore direita de `y` passa a ser a esquerda de `z`; `z` passa a ser o filho direito de `y`. Antes e depois, a ordem é `A, y, B, z, C`, com `A<y<B<z<C`. Nenhuma chave atravessa um limite de ordem. A rotação à esquerda é simétrica.
 
-Insere a sequência 10, 20, 30 numa ABP vazia: o 10 é a raiz, o 20 é maior e vai para a direita do 10, o 30 é maior que 10 e que 20 e vai para a direita do 20. Resultado: uma cadeia 10, 20, 30 pendurada para a direita, com altura 2 em vez de 1. Inserir por ordem transforma a árvore numa lista e o $O(h)$ em $O(n)$. A ordem de inserção decide a forma; a forma decide o custo.
+Uma rotação mexe num número constante de ligações, logo custa $O(1)$. Se guardas alturas ou tamanhos nos nós, atualiza primeiro a antiga raiz e depois a nova, porque o segundo cálculo depende do primeiro. Também tens de ligar a nova raiz ao pai ou à raiz da árvore.
 
-## Remoção
+## Invariante AVL
 
-Remover uma folha ou um nó com um só filho é direto (desliga, ou liga o neto ao avô). O caso com **dois filhos** precisa de um substituto que preserve a ordem: o **mínimo da subárvore direita** (o sucessor), que é o menor valor maior que o removido. Copia-se o sucessor para o lugar do removido e apaga-se o sucessor na sua posição original, onde tem no máximo um filho direito. A remoção continua $O(h)$, mas só enquanto a árvore não degenerar.
+Usamos altura de vazio `-1` e fator de equilíbrio $b=h_{esq}-h_{dir}$. Cada nó AVL satisfaz $b\in\{-1,0,1\}$. Não é necessário que as duas subárvores tenham o mesmo número de nós.
 
-Segue um exemplo: na árvore com raiz 20, filho esquerdo 10 e filho direito 30 (que tem filho esquerdo 25), remove o 20. O sucessor é o mínimo da direita, o 25. O 25 ocupa o lugar do 20 e apaga-se o 25 original, que é folha: a árvore fica com raiz 25, esquerda 10 e direita 30. Confirma a ordem: $10 < 25 < 30$, e nada mais mudou de sítio.
+Depois de inserir uma folha como numa BST, sobe pelo caminho de inserção, atualiza alturas e trata o primeiro desequilíbrio:
 
-## Equilibrar com rotações
+| Desequilíbrio            | Caminho mais alto                | Correção                         |
+| ------------------------ | -------------------------------- | -------------------------------- |
+| `b=2`, esquerda-esquerda | filho esquerdo pesado à esquerda | rotação à direita                |
+| `b=2`, esquerda-direita  | filho esquerdo pesado à direita  | esquerda no filho, direita no nó |
+| `b=-2`, direita-direita  | filho direito pesado à direita   | rotação à esquerda               |
+| `b=-2`, direita-esquerda | filho direito pesado à esquerda  | direita no filho, esquerda no nó |
 
-Uma árvore **equilibrada** mantém $h = O(\log n)$ e com isso pesquisa, inserção e remoção logarítmicas. A ferramenta é a **rotação**, que muda a forma sem partir a ordem. A cadeia 10, 20, 30 equilibra-se com uma **rotação à esquerda** no 10: o 20 sobe a raiz, o 10 desce a filho esquerdo do 20 e o 30 continua filho direito. Confirma a ordem: tudo à esquerda do 20 (só o 10) é menor, tudo à direita (só o 30) é maior. A árvore passa de altura 2 a altura 1.
-
-<Typst
-  source={simples}
-  format="svg"
-  alt="Rotação à esquerda na cadeia 10, 20, 30: antes, os três pendurados para a direita; depois, o 20 na raiz com o 10 à esquerda e o 30 à direita."
-/>
-
-A rotação à direita é o espelho. Quando a cadeia dobra para dentro, uma rotação não chega: insere 30, 10, 20 e obténs o 30 com filho esquerdo 10, que tem filho direito 20. Roda primeiro o 10 à esquerda (o 20 sobe, o 10 desce-lhe à esquerda) e depois o 30 à direita (o 20 sobe a raiz, com 10 à esquerda e 30 à direita). Duas rotações, altura final 1.
-
-<Typst
-  source={dupla}
-  format="svg"
-  alt="Rotação dupla esquerda-direita: a árvore inicial, a intermédia após rodar o 10 à esquerda, e a final com o 20 na raiz."
-/>
-
-As árvores AVL fazem uma ou duas rotações a cada inserção ou remoção para manter as alturas das duas subárvores de cada nó a diferir no máximo uma unidade. Não precisas de decorar os quatro casos de cor para esta página; precisas de saber executar uma rotação simples e de justificar por que ela preserva a propriedade de ordem.
+Ao inserir 30, 10 e 20, a raiz 30 fica com fator 2 e o filho 10 com fator -1. Uma rotação à esquerda em 10 cria a cadeia com 20 acima de 10; uma rotação à direita em 30 coloca 20 na raiz, com filhos 10 e 30. A em-ordem continua 10, 20, 30.
 
 <CodePlayground
   language="cpp"
-  title="Cadeia 10, 20, 30 e rotação"
+  title="Avl"
   code={
-    '#include <iostream>\n#include <algorithm>\nusing namespace std;\nstruct No { int v; No *e, *d; };\nint altura(No* n) { return n ? 1 + max(altura(n->e), altura(n->d)) : -1; }\nNo* rodaEsq(No* a) {\n    No* b = a->d;\n    a->d = b->e; b->e = a;\n    return b;\n}\nvoid insere(No*& n, int v) {\n    if (!n) { n = new No{v, 0, 0}; return; }\n    insere(v < n->v ? n->e : n->d, v);\n}\nint main() {\n    No* raiz = 0;\n    insere(raiz, 10); insere(raiz, 20); insere(raiz, 30);\n    cout << "altura antes: " << altura(raiz) << "\\n";\n    raiz = rodaEsq(raiz);\n    cout << "altura depois: " << altura(raiz) << "\\n";\n}'
+    "#include <algorithm>\n#include <iostream>\nclass AVL {\n    struct No { int x, h = 0; No* e = nullptr; No* d = nullptr; };\n    No* raiz = nullptr;\n    static int altura(No* p) { return p ? p->h : -1; }\n    static void atualizar(No* p) { p->h = 1 + std::max(altura(p->e), altura(p->d)); }\n    static No* direita(No* p) {\n        No* q = p->e; p->e = q->d; q->d = p;\n        atualizar(p); atualizar(q); return q;\n    }\n    static No* esquerda(No* p) {\n        No* q = p->d; p->d = q->e; q->e = p;\n        atualizar(p); atualizar(q); return q;\n    }\n    static No* inserir(No* p, int x) {\n        if (!p) return new No{x};\n        if (x < p->x) p->e = inserir(p->e, x);\n        else if (p->x < x) p->d = inserir(p->d, x);\n        else return p;\n        atualizar(p);\n        const int b = altura(p->e) - altura(p->d);\n        if (b > 1) {\n            if (x > p->e->x) p->e = esquerda(p->e);\n            return direita(p);\n        }\n        if (b < -1) {\n            if (x < p->d->x) p->d = direita(p->d);\n            return esquerda(p);\n        }\n        return p;\n    }\n    static void destruir(No* p) { if (p) { destruir(p->e); destruir(p->d); delete p; } }\n    static void mostrar(No* p) { if (p) { mostrar(p->e); std::cout << p->x << ' '; mostrar(p->d); } }\npublic:\n    AVL() = default;\n    AVL(const AVL&) = delete;\n    AVL& operator=(const AVL&) = delete;\n    ~AVL() { destruir(raiz); }\n    void inserir(int x) { raiz = inserir(raiz, x); }\n    void mostrar() const { mostrar(raiz); std::cout << '\\n'; }\n    int altura() const { return altura(raiz); }\n};\nint main() {\n    AVL a;\n    for (int x : {30, 10, 20, 40, 50, 20}) a.inserir(x);\n    a.mostrar();\n    std::cout << \"altura: \" << a.altura() << '\\n';\n    AVL vazia; std::cout << \"vazia: \" << vazia.altura() << '\\n';\n}\n"
   }
 />
 
-O programa imprime `altura antes: 2` e `altura depois: 1`: a inserção ordenada constrói a cadeia de altura 2 e a rotação à esquerda repõe a altura 1, com a ordem preservada. Muda a sequência para 30, 10, 20 e confirma que uma rotação simples já não resolve.
+Resultado:
 
-Volta à pesquisa do valor 25. Na cadeia degenerada comparas 10, 20 e 30 antes de concluir que não existe: 3 comparações. Na árvore rodada comparas 20, desces à direita para 30, desces à esquerda para o vazio: 2 comparações. Com $n$ nós, a diferença é entre $n$ e $\log n$ passos, a mesma diferença da linear para a binária na primeira página, agora comprada com rotações em vez de ordenação prévia.
+```text
+10 20 30 40 50
+altura: 2
+vazia: -1
+```
 
-:::warning[Equilibrada não é cheia]
-Equilibrada significa altura logarítmica, não forma perfeita. Uma AVL pode ter um lado uma unidade mais alto que o outro em cada nó. Não tentes "completar" a árvore nos exercícios; verifica a condição de equilíbrio nó a nó e roda só onde ela falha.
-:::
+O programa implementa inserção, ignora duplicados e mantém alturas. Não implementa remoção. Para remoção AVL, remove primeiro como numa BST e verifica todos os antepassados: a altura reduzida pode exigir correções sucessivas até à raiz. Escolhe a rotação pelo fator do filho, porque a chave apagada já não identifica o ramo pesado. Com `b=2` e filho de fator zero, usa uma rotação simples à direita; o caso simétrico vale para `b=-2`.
 
-## Ver também
+## Porque a altura AVL é logarítmica
 
-<YouTube id="FNeL18KsWPc" title="Árvores AVL e ordenação AVL, MIT 6.006" />
+Se `N(h)` é o menor número de nós numa AVL de altura `h`, então
 
-A aula do MIT executa inserções e rotações AVL à mão, com os fatores de equilíbrio ao lado de cada nó. Para praticar, o [Visualgo](https://visualgo.net/en/bst) anima inserções, remoções e rotações AVL na árvore que construíres.
+$$N(-1)=0,\quad N(0)=1,\quad N(h)=1+N(h-1)+N(h-2).$$
+
+Para atingir altura `h`, uma subárvore tem de ter altura `h-1`; o invariante obriga a outra a ter pelo menos `h-2`. Esta recorrência cresce como os números de Fibonacci, portanto exponencialmente em `h`. Invertendo a relação, $h=O(\log(n+1))$. Pesquisa, inserção e remoção custam $O(\log(n+1))`; as rotações não acrescentam um fator logarítmico por nível.
+
+## Invariantes vermelho-pretos
+
+Uma árvore vermelho-preta é uma BST com uma cor por nó e folhas vazias `NIL` consideradas pretas. A raiz é preta; um nó vermelho não pode ter filho vermelho; todos os caminhos de um nó até folhas `NIL` têm o mesmo número de nós pretos, segundo uma convenção fixa de contagem.
+
+Chama **altura preta** ao número de nós pretos num caminho descendente, excluindo o nó inicial e incluindo a folha `NIL`. Uma subárvore com altura preta `b` tem pelo menos $2^b-1$ nós internos. Como não há dois vermelhos consecutivos, a altura é no máximo duas vezes a altura preta, dando $h\le2\log_2(n+1)$. O equilíbrio é menos restrito que na AVL, mas continua a garantir operações logarítmicas.
+
+## Inserção e reparação vermelho-preta
+
+Insere o nó como numa BST e pinta-o de vermelho. Assim não alteras a altura preta dos caminhos. Se o pai for preto, não há conflito. Se o pai for vermelho, o avô existe porque a raiz é preta:
+
+- Com **tio vermelho**, pinta pai e tio de preto e avô de vermelho. O número de pretos nos caminhos mantém-se; o conflito pode subir para o avô.
+- Com **tio preto**, uma configuração interior precisa primeiro de uma rotação no pai para ficar exterior. Depois roda no avô e troca as cores do pai e do avô. O novo topo local fica preto e os filhos vermelhos deixam de ser consecutivos.
+
+No fim, pinta a raiz de preto. As configurações têm casos simétricos para o pai ser filho esquerdo ou direito. Não decidas uma rotação apenas por três valores: as cores e o lado do tio também importam.
+
+Na remoção, retirar um nó vermelho não reduz a altura preta. Retirar um nó preto pode deixar um ramo com um preto a menos. A reparação compara o irmão e os seus filhos: um irmão vermelho é convertido por rotação e recoloração para um caso com irmão preto; com filhos do irmão pretos, recolora e propaga a falta; com um filho vermelho adequado, rotações e recolorações restauram a altura preta. Estes passos devem respeitar as folhas `NIL`, que não são valores do conjunto.
+
+AVL conserva altura mais apertada, podendo favorecer pesquisa. Vermelho-preta admite mais variação e pode requerer menos reparações em alterações. A escolha prática depende do padrão de operações e da implementação; a notação assintótica não prevê qual será mais rápida numa medição concreta.

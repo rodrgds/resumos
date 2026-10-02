@@ -1,71 +1,79 @@
 ---
-title: Árvores binárias
-description: Nós, altura, travessias em pré-ordem, em ordem e pós-ordem, e reconstrução a partir de duas travessias.
+title: Árvores binárias e percursos
+description: Altura, profundidade, recursão estrutural e ordens de visita.
 section: conteudo
-order: 4
+order: 7
+practices:
+  - aed/praticar-arvores-binarias
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
-import Typst from '../../../components/Typst.astro';
-import desenho from '../../aed/arvore-travessias.typ?raw';
-import estrutura from '../../aed/arvore.dot?raw';
 
-Uma lista é uma fila de nós; uma árvore é uma hierarquia. Cada nó tem até dois filhos, e dessa regra simples nascem as travessias, a pesquisa logarítmica da próxima página e os heaps da seguinte. O trabalho desta página é mecânico e tem de ficar automático: percorrer qualquer árvore nas três ordens sem hesitar.
+Uma árvore binária é vazia ou tem uma raiz e duas subárvores binárias, esquerda e direita. A posição de cada filho importa. Não existe, por definição, qualquer ordenação dos valores: uma árvore binária de pesquisa acrescenta essa propriedade.
 
-## Vocabulário
+## Forma, altura e profundidade
 
-Uma **árvore binária** é vazia ou um **nó raiz** com uma subárvore esquerda e uma direita, ambas binárias. Quem tem filhos é **interno**; quem não tem é **folha**. A **altura** é o número de arestas do caminho mais longo da raiz a uma folha (uma árvore só com a raiz tem altura 0). Uma árvore **cheia** tem todos os níveis completos; uma **completa** tem todos os níveis completos exceto talvez o último, preenchido da esquerda para a direita. Uma árvore completa com $n$ nós tem altura $\lfloor \log_2 n \rfloor$: cada nível duplica a capacidade, por isso a altura cresce devagar.
+A profundidade de um nó é o número de arestas da raiz até ele. A raiz tem profundidade zero. A altura de um nó é o maior número de arestas desse nó até uma folha. Adotamos altura `-1` para a árvore vazia e `0` para uma folha. Alguns enunciados contam nós em vez de arestas; nesse caso os valores mudam em uma unidade.
 
-A implementação é um nó com valor e dois apontadores, como nas listas mas a dobrar:
+Uma árvore **completa** tem todos os níveis preenchidos, exceto eventualmente o último, preenchido da esquerda para a direita. Uma árvore **perfeita** tem todos os níveis preenchidos. Uma árvore **estrita** tem zero ou dois filhos em cada nó. Estas condições são diferentes; «equilibrada» precisa de uma condição quantitativa sobre a altura.
 
-```cpp
-struct No {
-    int valor;
-    No* esq;
-    No* dir;
-};
-```
+Numa árvore de altura `h`, existem no máximo $2^d$ nós à profundidade `d` e no máximo $2^{h+1}-1$ nós no total. Logo uma árvore com `n` nós tem altura pelo menos $\lceil\log_2(n+1)\rceil-1$. Uma cadeia de `n` nós tem altura `n-1`, o máximo possível.
 
-Os mesmos avisos das listas aplicam-se: cada `new` precisa do seu `delete`, e o destrutor percorre a árvore a libertar.
+## Recursão estrutural
 
-## As três travessias
+Para contar nós, o vazio contribui zero e uma raiz contribui um mais os tamanhos das subárvores. Para a altura, o vazio contribui `-1` e um nó contribui um mais o máximo das alturas dos filhos. Não somes as alturas: um caminho descendente escolhe um filho de cada vez.
 
-Cada travessia visita todos os nós uma vez; diferem na posição da raiz entre as subárvores. Toma esta árvore de 7 nós: raiz 4, filho esquerdo 2 (filhos 1 e 3), filho direito 6 (filhos 5 e 7).
+A prova é por indução na estrutura. O resultado é correto para o vazio. Se as chamadas devolvem tamanhos corretos para as duas subárvores, somar esses tamanhos com a raiz conta todos os nós uma única vez. A mesma hipótese sobre alturas justifica escolher o caminho mais longo.
+
+Cada nó é visitado uma vez: tempo $\Theta(n)$. A pilha tem no máximo um caminho da raiz à folha: espaço $O(h+1)$, que pode ser linear numa cadeia. Uma árvore de dimensão grande e desequilibrada pode exceder a pilha de chamadas; usa um percurso iterativo quando os limites o exigem.
+
+## Pré-ordem, em-ordem e pós-ordem
+
+A diferença está no momento em que visitas a raiz:
+
+| Percurso   | Ordem                               | Uso frequente                                         |
+| ---------- | ----------------------------------- | ----------------------------------------------------- |
+| pré-ordem  | raiz, esquerda, direita             | descrever a estrutura a partir da raiz                |
+| em-ordem   | esquerda, raiz, direita             | obter chaves ordenadas numa árvore de pesquisa        |
+| pós-ordem  | esquerda, direita, raiz             | calcular valores dependentes dos filhos; libertar nós |
+| por níveis | fila, da raiz para níveis seguintes | profundidades e largura                               |
 
 <Dot
-  source={estrutura}
-  alt="Árvore binária de 7 nós: raiz 4, filho esquerdo 2 com filhos 1 e 3, filho direito 6 com filhos 5 e 7."
+  source={
+    'digraph G { node [shape=circle]; n8[label="8"]; n4[label="4"]; n10[label="10"]; n2[label="2"]; n6[label="6"]; n9[label="9"]; n8->n4[label="esq."]; n8->n10[label="dir."]; n4->n2; n4->n6; n10->n9[label="esq."]; }'
+  }
+  alt="Árvore com raiz 8; filhos 4 e 10; 4 tem filhos 2 e 6; 10 tem filho esquerdo 9."
 />
 
-<Typst
-  source={desenho}
-  format="svg"
-  alt="A mesma árvore com a ordem de visita da pré-ordem numerada por baixo de cada nó: 4 é o primeiro, 1 é o terceiro, 7 é o sétimo."
-/>
-
-- **Pré-ordem** (raiz, esquerda, direita): 4, 2, 1, 3, 6, 5, 7. A raiz sai sempre primeiro: serve para copiar ou serializar a árvore, porque a reconstrução sabe onde começa cada subárvore. São os números por baixo dos nós no desenho.
-- **Em ordem** (esquerda, raiz, direita): 1, 2, 3, 4, 5, 6, 7. Numa árvore de pesquisa, sai ordenado: é a travessia que vais usar para listar.
-- **Pós-ordem** (esquerda, direita, raiz): 1, 3, 2, 5, 7, 6, 4. Os filhos saem antes do pai: serve para libertar memória (apagar o pai antes dos filhos perdia-lhes o endereço) e para avaliar expressões.
-
-Todas custam $O(n)$ porque visitam cada nó uma vez, e usam $O(h)$ de pilha, sendo $h$ a altura. Numa árvore degenerada (uma lista disfarçada), $h = n$.
+Para a árvore desenhada, os percursos são pré-ordem `8 4 2 6 10 9`, em-ordem `2 4 6 8 9 10` e pós-ordem `2 6 4 9 10 8`. O percurso por níveis é `8 4 10 2 6 9`.
 
 <CodePlayground
   language="cpp"
-  title="As três travessias"
+  title="Arvore"
   code={
-    '#include <iostream>\nusing namespace std;\nstruct No { int v; No *e, *d; };\nvoid pre(No* n) { if (!n) return; cout << n->v << " "; pre(n->e); pre(n->d); }\nvoid em(No* n) { if (!n) return; em(n->e); cout << n->v << " "; em(n->d); }\nvoid pos(No* n) { if (!n) return; pos(n->e); pos(n->d); cout << n->v << " "; }\nint main() {\n    No n1{1,0,0}, n3{3,0,0}, n5{5,0,0}, n7{7,0,0};\n    No n2{2,&n1,&n3}, n6{6,&n5,&n7}, n4{4,&n2,&n6};\n    pre(&n4); cout << "\\n"; em(&n4); cout << "\\n"; pos(&n4); cout << "\\n";\n}'
+    '#include <algorithm>\n#include <iostream>\n#include <vector>\nstruct No { int valor, esq, dir; };\nconst std::vector<No> a{{8,1,2},{4,3,4},{10,5,-1},{2,-1,-1},{6,-1,-1},{9,-1,-1}};\nint altura(int p) { return p == -1 ? -1 : 1 + std::max(altura(a[p].esq), altura(a[p].dir)); }\nint tamanho(int p) { return p == -1 ? 0 : 1 + tamanho(a[p].esq) + tamanho(a[p].dir); }\nvoid visitar(int p, int ordem, std::vector<int>& r) {\n    if (p == -1) return;\n    if (ordem == 0) r.push_back(a[p].valor);\n    visitar(a[p].esq, ordem, r);\n    if (ordem == 1) r.push_back(a[p].valor);\n    visitar(a[p].dir, ordem, r);\n    if (ordem == 2) r.push_back(a[p].valor);\n}\nint main() {\n    for (int ordem = 0; ordem < 3; ++ordem) {\n        std::vector<int> r; visitar(0, ordem, r);\n        for (std::size_t i = 0; i < r.size(); ++i)\n            std::cout << (i ? " " : "") << r[i];\n        std::cout << \'\\n\';\n    }\n    std::cout << "nos: " << tamanho(0) << "; altura: " << altura(0) << \'\\n\';\n    std::cout << "vazia: " << tamanho(-1) << \' \' << altura(-1) << \'\\n\';\n}\n'
   }
 />
 
-O programa imprime as três linhas `4 2 1 3 6 5 7`, `1 2 3 4 5 6 7` e `1 3 2 5 7 6 4`: confere com as sequências que seguiste à mão e com os números do desenho para a pré-ordem.
+Resultado:
 
-:::tip[Como não trocar as ordens]
-Lê o nome como a posição da raiz: **pré** é antes dos filhos, **pós** é depois, **em** é no meio. Fixa uma árvore pequena como a de cima e recita as três sequências até saírem sem pensar.
-:::
+```text
+8 4 2 6 10 9
+2 4 6 8 9 10
+2 6 4 9 10 8
+nos: 6; altura: 2
+vazia: 0 -1
+```
 
-## Reconstruir a partir de duas travessias
+Os índices dos filhos no programa referem-se a posições válidas do vetor, ou a `-1` para ausência. A estrutura fixa não tem ciclos nem nós partilhados entre pais. Se se permitissem essas situações, deixaria de ser uma árvore e as recorrências poderiam visitar nós várias vezes ou não terminar.
 
-Dadas a pré-ordem $[4, 2, 1, 3, 6, 5, 7]$ e a em ordem $[1, 2, 3, 4, 5, 6, 7]$, reconstrói: o primeiro da pré-ordem é a raiz, $4$. Na em ordem, tudo à esquerda do $4$ ($[1, 2, 3]$) é a subárvore esquerda e tudo à direita ($[5, 6, 7]$) é a direita. Na pré-ordem, a seguir ao $4$ vêm os nós da esquerda ($[2, 1, 3]$) e depois os da direita ($[6, 5, 7]$). Repete: raiz da esquerda é $2$, com $[1]$ à esquerda e $[3]$ à direita na em ordem; raiz da direita é $6$, com $[5]$ e $[7]$. A árvore está reconstruída.
+## Reconstruir e representar
 
-Uma travessia sozinha não chega (várias árvores partilham a mesma em ordem), e pré mais pós também não bastam sem mais informação. Mas em ordem mais pré, ou em ordem mais pós, determinam a árvore: a em ordem separa esquerda de direita, a outra diz quem é a raiz de cada parte. Este é um exercício clássico de teste; resolve-o sempre por este algoritmo, nunca por tentativa.
+Com valores distintos, pré-ordem e em-ordem determinam a árvore: o primeiro valor da pré-ordem é a raiz; a sua posição na em-ordem separa os valores das subárvores. Os tamanhos dessas regiões separam a pré-ordem restante. Repete o procedimento nas duas regiões.
+
+Para pré-ordem `[8,4,2,6,10,9]` e em-ordem `[2,4,6,8,9,10]`, a raiz é 8 e a esquerda tem três nós. A pré-ordem esquerda começa em 4; na em-ordem esquerda, 2 fica antes de 4 e 6 depois. A direita começa em 10 e tem 9 à esquerda. Procurar a raiz por percurso linear em cada chamada pode dar custo quadrático; um mapa de posições permite localizar cada chave sem repetir esses percursos.
+
+Pré-ordem sozinha não determina uma árvore binária genérica: `[1,2]` pode ter 2 à esquerda ou à direita. Marcas explícitas de vazio resolvem a ambiguidade; uma folha em pré-ordem torna-se `valor, vazio, vazio`. Com chaves repetidas, pré-ordem mais em-ordem pode voltar a ser ambígua.
+
+Para contar nós à profundidade `k`, o vazio contribui zero; com `k=0`, um nó existente contribui um; caso contrário, soma os resultados dos filhos com `k-1`. Para `k<0`, devolve zero. O algoritmo só precisa de visitar até ao nível pedido; o limite de pior caso continua $O(n)$.

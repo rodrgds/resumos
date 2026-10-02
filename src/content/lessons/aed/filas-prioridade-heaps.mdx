@@ -1,63 +1,69 @@
 ---
 title: Filas de prioridade e heaps
-description: Heap binário com inserção e remoção logarítmicas, e o heapsort por remoções sucessivas.
+description: Forma completa, prioridade entre pai e filhos, construção linear e retirada do extremo.
 section: conteudo
-order: 7
+order: 11
+practices:
+  - aed/praticar-filas-prioridade-heaps
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Typst from '../../../components/Typst.astro';
-import heap from '../../aed/heap-arvore-vetor.typ?raw';
 
-Uma fila comum atende por chegada; uma **fila de prioridade** atende por importância: cada elemento tem uma prioridade e o próximo a sair é sempre o mais prioritário. É a estrutura por trás do agendamento de tarefas, da simulação de eventos e, como vais ver em Desenho de Algoritmos, dos caminhos mais curtos. O heap binário implementa-a em $O(\log n)$ por operação.
+Uma fila de prioridade permite inserir e consultar ou retirar o elemento mais prioritário. Não oferece, por si só, pesquisa eficiente de uma chave arbitrária nem um percurso ordenado. Uma **heap binária** é uma representação deste TAD.
 
-## O heap binário
+## Dois invariantes independentes
 
-Um **heap binário** é uma árvore binária completa (todos os níveis cheios exceto o último, preenchido da esquerda) com a **propriedade de heap**: num heap mínimo, cada pai é menor ou igual aos filhos. Consequência imediata: o mínimo está sempre na raiz, acessível em $O(1)$. E por ser completa, guarda-se num vetor sem apontadores: o filho esquerdo do índice $i$ está em $2i+1$, o direito em $2i+2$, o pai em $\lfloor (i-1)/2 \rfloor$.
+Uma max-heap tem a forma de uma árvore binária completa e cada pai tem valor maior ou igual ao dos filhos. A forma permite guardar os nós por níveis num vetor sem buracos; a ordem garante que o máximo está na raiz. Não obriga o filho esquerdo a ser menor que o direito, nem impõe a ordem de uma BST.
 
-**Inserir** põe o valor na primeira posição livre (mantém a forma completa) e sobe-o (**sift-up**) enquanto for menor que o pai. **Remover o mínimo** tira a raiz, move o último elemento para a raiz e desce-o (**sift-down**), trocando sempre com o menor dos filhos. Subir ou descer percorre no máximo a altura, e a altura de uma árvore completa com $n$ nós é $\lfloor \log_2 n \rfloor$: tudo $O(\log n)$.
+Com índices a partir de zero, os filhos de `i` são `2*i+1` e `2*i+2`, quando essas posições existem. O pai de `i>0` é `(i-1)/2`. Numa convenção a partir de um, as fórmulas mudam para `2*i`, `2*i+1` e `i/2`. Não mistures as duas.
 
-## Construir um heap de 6 valores
+O vetor `[12,9,7,4,4,1]` representa uma max-heap: 12 tem filhos 9 e 7; 9 tem filhos 4 e 4; 7 tem filho 1. A altura é $\lfloor\log_2 n\rfloor$ para `n>0`. O vetor não está ordenado, mas qualquer descendente é no máximo o seu antepassado.
 
-Insere por ordem 7, 3, 9, 1, 5, 4 num heap mínimo, mostrando o vetor:
+## Inserir e retirar
 
-- 7: $[7]$.
-- 3: $[7, 3]$, sobe (pai 7 maior): $[3, 7]$.
-- 9: $[3, 7, 9]$, pai 3 menor, fica.
-- 1: $[3, 7, 9, 1]$, pai 7 maior, troca: $[3, 1, 9, 7]$; pai 3 maior, troca: $[1, 3, 9, 7]$.
-- 5: $[1, 3, 9, 7, 5]$, pai 3 menor, fica.
-- 4: $[1, 3, 9, 7, 5, 4]$, pai 9 maior, troca: $[1, 3, 4, 7, 5, 9]$; pai 1 menor, fica.
+Para inserir, acrescenta o valor no fim, conservando a forma completa. Só o caminho do novo nó até à raiz pode violar a ordem. Enquanto o valor exceder o pai, troca-os e sobe. Em `[9,4,7]`, inserir 12 produz `[9,4,7,12]`, depois `[9,12,7,4]` e finalmente `[12,9,7,4]`.
 
-<Typst
-  source={heap}
-  format="svg"
-  alt="O heap final desenhado como árvore e como vetor: raiz 1, filhos 3 e 4, e por baixo o vetor 1, 3, 4, 7, 5, 9 com os índices 0 a 5."
-/>
+Para retirar o máximo, guarda a raiz, põe o último elemento na raiz e reduz o tamanho. As subárvores já são heaps; só a nova raiz pode violar a prioridade. Troca-a com o **maior** filho enquanto esse filho for maior. Escolher sempre o esquerdo pode deixar o direito acima do pai.
 
-Confirma a propriedade: 1 é menor que 3 e 4; 3 é menor que 7 e 5; 4 é menor que 9. Repara que o vetor $[1, 3, 4, 7, 5, 9]$ **não** está ordenado: o heap só garante o mínimo no topo e pais antes dos filhos. Confundir heap com vetor ordenado é o erro mais comum desta página.
+O invariante da descida é que a única possível violação está no nó atual e que as subárvores abaixo dele são heaps. A troca com o maior filho repõe a ordem no nó antigo; a possível violação desce um nível. Empates não exigem troca.
 
 <CodePlayground
   language="cpp"
-  title="Inserções com sift-up"
+  title="Heap"
   code={
-    '#include <iostream>\n#include <vector>\nusing namespace std;\nint main() {\n    vector<int> h;\n    for (int x : {7, 3, 9, 1, 5, 4}) {\n        h.push_back(x);\n        int i = h.size() - 1;\n        while (i > 0 && h[(i - 1) / 2] > h[i]) {\n            swap(h[i], h[(i - 1) / 2]);\n            i = (i - 1) / 2;\n        }\n        for (int v : h) cout << v << " ";\n        cout << "\\n";\n    }\n}'
+    '#include <algorithm>\n#include <iostream>\n#include <vector>\nclass Heap {\n    std::vector<int> a;\n    void descer(std::size_t i) {\n        while (i < a.size() / 2) {\n            std::size_t j = 2 * i + 1;\n            if (j + 1 < a.size() && a[j] < a[j + 1]) ++j;\n            if (a[j] <= a[i]) break;\n            std::swap(a[i], a[j]); i = j;\n        }\n    }\npublic:\n    explicit Heap(std::vector<int> v) : a(std::move(v)) {\n        for (std::size_t i = a.size() / 2; i > 0; --i) descer(i - 1);\n    }\n    bool retirar(int& x) {\n        if (a.empty()) return false;\n        x = a.front(); a.front() = a.back(); a.pop_back();\n        if (!a.empty()) descer(0);\n        return true;\n    }\n};\nint main() {\n    Heap h({4, 9, 1, 12, 4, 7}); int x; bool primeiro = true;\n    while (h.retirar(x)) { std::cout << (primeiro ? "" : " ") << x; primeiro = false; }\n    std::cout << "\\nvazio: " << !h.retirar(x) << \'\\n\';\n}\n'
   }
 />
 
-O programa imprime uma linha por inserção: `7`, `3 7`, `3 7 9`, `1 3 9 7`, `1 3 9 7 5` e `1 3 4 7 5 9`, exatamente os vetores que seguiste acima. Repara na quarta linha: o 1 sobe duas posições, uma por cada comparação com um pai maior.
+Resultado:
+
+```text
+12 9 7 4 4 1
+vazio: 1
+```
+
+O programa constrói uma heap a partir de seis valores e retira-os por ordem decrescente, mantendo os dois valores 4. `retirar` devolve falso no vazio. Uma heap vazia não tem raiz para consultar. O custo de inserir e retirar é $O(\log(n+1))`; consultar o máximo custa $O(1)$.
+
+## Construção em tempo linear
+
+Inserir os elementos um a um custa $O(n\log n)$ no pior caso. Para construir a partir de um vetor, começa no último pai, índice `n/2-1`, e faz a descida em cada pai até à raiz. Os filhos já foram tratados quando chega a vez do pai.
+
+Há muitos nós perto das folhas, onde descer custa pouco. O número de nós com altura pelo menos `h` é da ordem de $n/2^h$. O trabalho total é limitado por
+
+$$O\left(n\sum_{h\ge1}\frac{h}{2^h}\right)=O(n).$$
+
+A soma converge; o limite superior $n\log n$ obtido ao cobrar a altura máxima a todos os nós é demasiado largo. Ler o vetor já exige $\Omega(n)$, pelo que construir é $\Theta(n)$.
 
 ## Heapsort
 
-Se o mínimo está sempre na raiz, ordenar é remover o mínimo $n$ vezes. A primeira remoção no heap acima: tira o 1, move o último (9) para a raiz, $[9, 3, 4, 7, 5]$, e desce o 9 trocando com o menor filho: filhos 3 e 4, troca com 3, $[3, 9, 4, 7, 5]$; filhos 9 e 7, troca com 7, $[3, 7, 4, 9, 5]$. Saiu o 1 e o heap está refeito. As remoções seguintes devolvem 3, 4, 5, 7 e 9, por esta ordem: a saída é $[1, 3, 4, 5, 7, 9]$.
+Constrói uma max-heap, troca a raiz com a última posição ativa, reduz a região da heap e volta a descer a raiz. O sufixo contém os maiores valores nas posições finais, por ordem crescente. Ao terminar, o vetor inteiro está crescente.
 
-O **heapsort** faz exatamente isto no próprio vetor, $n$ remoções de $O(\log n)$ cada: tempo $O(n \log n)$ garantido (sem o pior caso quadrático do quicksort) e espaço $O(1)$. Paga dois preços: não é estável e tem má localidade (os sift-down saltam pelo vetor), por isso perde para o quicksort e o mergesort na maioria dos dados reais. Usa o heap quando precisas da fila de prioridade viva, não quando precisas de ordenar uma vez.
+Construção linear seguida de `n-1` retiradas dá $O(n\log n)$ no pior caso. A implementação iterativa usa $O(1)$ de espaço auxiliar sobre o vetor e não é estável. Na biblioteca, `make_heap`, `push_heap` e `pop_heap` operam sobre uma região; `pop_heap` move o extremo para o fim, mas não reduz o container. É necessário retirar o último elemento depois, se esse for o objetivo.
 
-:::details[Construção em tempo linear]
-Inserir $n$ valores um a um custa $O(n \log n)$, mas construir o heap despejando os valores no vetor e aplicando sift-down de baixo para cima custa $O(n)$. A intuição: a maioria dos nós está nos níveis de baixo, onde descer é barato. É um daqueles resultados que parecem errados até somares a série.
-:::
+## Prioridades, empates e top-k
 
-## Ver também
+`std::priority_queue<int>` devolve o maior inteiro. Um comparador `std::greater<int>` cria uma min-heap. Com registos, define primeiro a prioridade e depois o desempate, por exemplo menor instante e, no empate, menor número de sequência. Sem desempate, não assumes FIFO entre prioridades iguais.
 
-O [Visualgo](https://visualgo.net/en/heap) mostra o sift-up e o sift-down lado a lado com o vetor: corre as mesmas seis inserções e vê cada troca acontecer na árvore e no vetor ao mesmo tempo.[^linear]
+Para conservar os `k` maiores valores de um fluxo, mantém uma min-heap com no máximo `k` elementos. Se estiver cheia e o novo valor não exceder a raiz, descarta-o; caso contrário substitui a raiz. O invariante é que a heap contém os maiores `k` elementos processados, com multiplicidades, quando já existem pelo menos `k`. Tempo $O(n\log(k+1))`, espaço $O(k)`. Para `k=0`, não consultes a raiz: a resposta é vazia.
 
-[^linear]: A construção linear soma o trabalho por nível: cerca de $n/2$ nós que descem no máximo 1, $n/4$ que descem no máximo 2, e por aí fora. A série $\sum_i n \cdot i / 2^{i+1}$ converge para $O(n)$, porque os níveis caros têm pouquíssimos nós.
+Uma heap dá o extremo depressa, mas procurar ou alterar uma chave arbitrária pode custar $O(n)$ sem uma estrutura auxiliar que conheça a sua posição. Alterar um valor no vetor exige voltar a subir ou descer conforme a direção da alteração.

@@ -1,37 +1,63 @@
 ---
 title: Algoritmos e Estruturas de Dados
-description: Análise de complexidade, ordenação, listas, árvores, dispersão, heaps e grafos em C++.
+description: Correção, análise de custos, estruturas de dados e algoritmos em C++17.
 section: conteudo
 order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha LEIC de AED, 2026/27
+      url: https://sigarra.up.pt/feup/pt/UCURR_GERAL.FICHA_UC_VIEW?pv_ocorrencia_id=586989
+    - title: Aulas públicas de AED, 2026/27
+      url: https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2627/
+    - title: Aulas públicas de AED, 2025/26
+      url: https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/
 ---
 
-Algoritmos e Estruturas de Dados é a cadeira onde aprendes a escolher: perante um problema, que estrutura guarda os dados e que algoritmo os transforma, e quanto custa essa escolha quando a entrada cresce. Vens de [Programação](/cadeiras/p/cpp-fundamentos/), onde o C++ e as classes já são familiares, e de [Funções](/cadeiras/fp/algoritmos-complexidade/), onde viste a primeira análise de custos. Aqui essas ideias tornam-se método: tipos abstratos de dados implementados por ti, complexidade provada e programas avaliados automaticamente no Mooshak.
+AED ensina a justificar três decisões: o algoritmo resolve o problema, a estrutura permite as operações necessárias e o custo cabe nos limites da entrada. Os exemplos usam C++17; deves conhecer funções, classes, referências, apontadores e memória dinâmica de [Programação](/cadeiras/p/).
 
-## Como está organizado
+## Percurso
 
-Começa por [Complexidade e invariantes](complexidade-invariantes/), que fixa a notação assintótica para tempo e espaço e mostra como provar que um ciclo faz o que promete. Depois, [Pesquisa e ordenação em arrays](pesquisa-ordenacao/) compara a pesquisa sequencial com a binária e segue o quicksort e o mergesort passo a passo no mesmo vetor.
+1. [Correção e complexidade](complexidade-invariantes/): contratos, invariantes, somas, recorrências e custos amortizados.
+2. [Pesquisa](pesquisa-ordenacao/) e [ordenação](ordenacao/): intervalos, repetidos, pesquisa da resposta, estabilidade e limites do modelo de comparação.
+3. [Tipos abstratos](tipos-abstratos/) e [estruturas lineares](listas-pilhas-filas/): escolher a representação, manter ligações e analisar sequências de operações.
+4. [Envolvente convexa](envolvente-convexa/): orientação geométrica, Graham e a escolha entre pilha e lista circular.
+5. [Árvores binárias](arvores-binarias/), [árvores de pesquisa](arvores-pesquisa/) e [equilíbrio](arvores-pesquisa-equilibradas/): percursos, remoções, AVL e vermelho-pretas.
+6. [Dispersão](tabelas-dispersao/) e [heaps](filas-prioridade-heaps/): acesso por chave ou prioridade, colisões e construção linear.
+7. [DFS e BFS](grafos-pesquisa/) e [aplicações em grafos](grafos-aplicacoes/): caminhos mínimos sem pesos, ciclos, ordem topológica, componentes fortes, pontes e articulações.
 
-A segunda parte constrói estruturas: [Listas, pilhas e filas](listas-pilhas-filas/) com nós e apontadores, [Árvores binárias](arvores-binarias/) com as três travessias, e [Árvores de pesquisa equilibradas](arvores-pesquisa-equilibradas/) onde as rotações mantêm a altura logarítmica. A terceira parte organiza o acesso por chave e por prioridade: [Tabelas de dispersão](tabelas-dispersao/) com colisões resolvidas à vista, e [Filas de prioridade e heaps](filas-prioridade-heaps/) com o heapsort. Fecha com [Grafos e pesquisa](grafos-pesquisa/), onde a pesquisa em largura e em profundidade decide ciclos, conetividade e ordens topológicas.
+Cada capítulo termina com exercícios que pedem uma decisão, um traço ou uma justificação. Tenta resolver antes de abrir as pistas. A [Cheat sheet](folha-consulta/) reúne condições e custos para revisão; as provas e os exemplos ficam nos capítulos.
 
-## Como estudar
+## Trabalho prático
 
-Lê cada página com o compilador aberto e implementa a estrutura antes de veres a solução: lista ligada, árvore de pesquisa, tabela de dispersão e heap cabem todos em programas curtos. Compila sempre com os avisos ligados e o padrão da cadeira:
+Começa por uma entrada pequena e escreve o estado depois de cada operação. Declara os casos vazios, a política de duplicados e as convenções de índices e altura. Depois programa, compila com avisos e compara com uma referência simples. Testa também uma entrada crescente, uma inversa, muitos iguais e os limites numéricos.
 
-```sh
-g++ -std=c++17 -O2 -Wall programa.cpp -o programa
-```
+Nos grafos, testa vértices isolados, componentes desconexas e ciclos. Nas estruturas com nós, testa alterações da cabeça, da raiz e do último elemento. Antes de submeter no Mooshak, confirma o formato de entrada e saída e retira mensagens de depuração. Os programas destas páginas ensinam os algoritmos; não são soluções completas dos trabalhos da cadeira.
 
-Antes de submeteres no Mooshak, corre o programa com os casos limite: entrada vazia, um só elemento, valores repetidos e a entrada máxima. O avaliador responde com um veredito por teste: aceite, resposta errada, tempo esgotado ou erro de execução. Um tempo esgotado nos testes grandes com os pequenos a passar é o sintoma clássico de complexidade a mais, volta à análise da primeira página. Em AED, perceber o desenho não chega; o hábito que conta pontos é seguir o estado dos dados à mão, com papel, numa entrada pequena, e só depois confirmar com o programa. Resolve a seguir os exercícios de cada ficha e submete no Mooshak, porque o avaliador automático testa entradas que tu não lembraste, incluindo a vazia e a de um só elemento.
+## Avaliação de 2026/27
 
-## Avaliação
+As aulas de introdução e a [página de avaliação](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2627/evaluation.html) definem:
 
-A forma de avaliação varia de ano para ano. Consulta a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle para saberes os pesos dos testes, do trabalho laboratorial e do exame, e as regras de frequência e de melhoria.
+- `NP`: soma das notas de dois testes práticos de programação, cada um com 10 valores, total de 0 a 20.
+- `E`: nota do exame escrito da época normal ou de recurso, de 0 a 20.
+- Classificação final $C=\max(0{,}65E+0{,}35NP,\;0{,}75E+0{,}25NP)$; aprovação com $C\ge9{,}5$.
+
+Por exemplo, `E=12` e `NP=16` dão `13,4` pela primeira ponderação e `13` pela segunda; é usada `13,4`. Os testes práticos de 2026/27 não podem ser repetidos. Para primeira inscrição nesse ano, a melhoria incide na componente de exame.
+
+Para obter frequência, não podes exceder 25% de faltas às aulas teórico-práticas. Quem cumpriu a assiduidade no ano anterior tem dispensa, embora a frequência das aulas seja aconselhada. Quem não aprovou em 2025/26 e realizou a componente prática pode pedir para conservar essa nota, informando os regentes no início do ano. As condições de melhoria de notas práticas de estudantes já aprovados exigem contacto com os regentes. Consulta a ficha e os anúncios da tua edição para datas e situações individuais.
 
 ## Fontes e âmbito
 
-Estas páginas seguem o âmbito da unidade curricular de Algoritmos e Estruturas de Dados (L.EIC011) do 2.º ano, 1.º semestre da LEIC, ocorrência de 2025/26: complexidade temporal e espacial, correção de algoritmos, pesquisa e ordenação em arrays, listas, pilhas e filas, árvores binárias e equilibradas, tabelas de dispersão, filas de prioridade e heaps, e algoritmos básicos em grafos. As ferramentas de trabalho são o compilador GCC com C++17 e o Mooshak para avaliação automática.
+O programa de referência é a [ficha preenchida de AED da LEIC, ocorrência 586989, 2026/27](https://sigarra.up.pt/feup/pt/UCURR_GERAL.FICHA_UC_VIEW?pv_ocorrencia_id=586989). As ferramentas indicadas são GCC com C++17, VSCode e Mooshak.
 
-Material oficial da FEUP:
+A base docente é a [página pública de Ana Paula Tomás e Pedro Ribeiro, 2026/27](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2627/). Em 2 de outubro de 2026 estavam disponíveis quatro apresentações, da introdução à pesquisa, e as duas primeiras aulas práticas. Para os tópicos posteriores, o percurso foi cruzado com as quinze apresentações e as fichas práticas públicas de [2025/26](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/), mantendo o âmbito confirmado no programa atual. O [exame-modelo público de 2024/25](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2425/exam_sample_questions.pdf) ajudou a identificar tipos de raciocínio; os exercícios destas páginas são originais.
 
-- Ficha da unidade curricular de Algoritmos e Estruturas de Dados, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/UCURR_GERAL.FICHA_UC_VIEW?pv_ocorrencia_id=560096).
-- Página oficial da UC com programa, material e laboratórios de 2025/26: [aulas de AED](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/).
+O Moodle de 2025/26 e alguns exames ou soluções protegidos não estiveram acessíveis e não são apresentados como materiais revistos. Os [Resumos AED de SofiaViP](https://drive.google.com/file/d/1oFfndRpq_F8MQeffoU4_rRBn-04pZiCY/view) são um suplemento histórico de estudante, sem uma edição atual identificada.
+
+A bibliografia obrigatória indicada na ficha é:
+
+- Mark Allen Weiss, _Data Structures and Algorithm Analysis in C++_, ISBN 0-201-36122-1.
+- Robert Sedgewick, _Algorithms in C++_, ISBN 0-201-35088-2.
+- Thomas H. Cormen e coautores, _Introduction to Algorithms_, 3.ª ou 4.ª edição; a ficha indica ISBN 978-0-262-53305-8.
+
+Para contratos da biblioteca, foram consultadas as secções do projeto público do padrão C++ sobre [ordenação](https://eel.is/c++draft/alg.sorting), [pesquisa binária](https://eel.is/c++draft/alg.binary.search) e [containers não ordenados](https://eel.is/c++draft/unord.req). Esse projeto acompanha a evolução da linguagem; os programas publicados usam apenas C++17.

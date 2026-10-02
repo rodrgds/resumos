@@ -1,60 +1,83 @@
 ---
 title: Cheat sheet de AED
-description: Operações, custos e condições para rever estruturas de dados, pesquisa, ordenação e grafos.
+description: Invariantes, condições e custos para rever sem substituir as demonstrações.
 section: recursos
 studyKind: revision
 editorial:
   sources:
-    - title: Resumos AED, SofiaViP
+    - title: Resumos AED, SofiaViP, suplemento histórico
       url: https://drive.google.com/file/d/1oFfndRpq_F8MQeffoU4_rRBn-04pZiCY/view
-  coverage: Consulta breve dos tópicos presentes nas páginas 2 a 9 dos Resumos AED de SofiaViP, com custos e condições de aplicação.
-  gaps:
-    - O documento não identifica uma edição atual da cadeira; confirma o programa e a avaliação da tua ocorrência.
-    - Esta folha omite demonstrações, código completo e exemplos longos; segue os links para as explicações.
+    - title: Aulas públicas de AED, 2025/26
+      url: https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/
 ---
 
-Em cada custo, $n$ é o número de elementos; nos grafos, $V$ e $E$ são os conjuntos de vértices e arestas. Confirma a representação e o caso analisado antes de usar uma fórmula.
+`n` é o número de elementos, `h` a altura em arestas, `k` a amplitude das chaves de counting sort e `V,E` os números de vértices e arestas. Os custos de comparação e hashing são constantes apenas quando a dimensão das chaves o permite.
 
-## Correção e custo
+## Provar e contar
 
-- Um **invariante de ciclo** é verdadeiro antes da primeira iteração, continua verdadeiro depois de cada iteração e, com a condição de paragem, implica o resultado. Mostra também que o ciclo termina, por exemplo com uma quantidade não negativa que diminui. [Ver a prova](/cadeiras/aed/complexidade-invariantes/#invariantes-provar-o-ciclo).
-- $O(g(n))$ limita o crescimento por cima; $\Omega(g(n))$, por baixo; $\Theta(g(n))$, dos dois lados, para entradas suficientemente grandes. Distingue **tempo** de **memória extra**, e pior caso de caso médio. Por exemplo, $3n^2+8n+1=\Theta(n^2)$.
-- Para comparar tempos, usa a mesma tarefa e modelo de custo. A ordem de crescimento não diz que um algoritmo vence em todas as entradas: constantes, dados e memória também contam. [Ver o que medir](/cadeiras/aed/complexidade-invariantes/#o-que-conta-como-custo).
+**Contrato:** pré-condição e pós-condição. **Ciclo:** inicialização, manutenção, conclusão e uma quantidade que diminui para provar terminação. **Recursão:** caso base e hipótese indutiva para subproblemas menores.
+
+$O$ limita por cima, $\Omega$ por baixo e $\Theta$ pelos dois lados. Identifica o caso analisado. Média exige uma distribuição; amortização limita uma sequência sem assumir entradas aleatórias.
+
+| Trabalho                                  | Custo                               |
+| ----------------------------------------- | ----------------------------------- |
+| percurso único                            | $\Theta(n)$                         |
+| $1+2+\cdots+n$                            | $\Theta(n^2)$                       |
+| $1+2+4+\cdots+2^{\lfloor\log_2 n\rfloor}$ | $\Theta(n)$                         |
+| reduzir o intervalo a metade              | $\Theta(\log n)$                    |
+| duas metades com junção linear            | $\Theta(n\log n)$                   |
+| prefixos e `q` consultas de soma          | $\Theta(n+q)$; consulta $p[r]-p[l]$ |
+
+[Provas, recorrências e espaço](/cadeiras/aed/complexidade-invariantes/).
 
 ## Pesquisa e ordenação
 
-| Método              | Condição e custo                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------ |
-| Pesquisa sequencial | Não exige ordem; $O(n)$ no pior caso, $O(1)$ espaço extra.                                       |
-| Pesquisa binária    | Exige acesso por índice e dados ordenados; compara no meio e descarta metade, $O(\log n)$ tempo. |
-| Merge sort          | Divide, ordena as metades e funde; $\Theta(n\log n)$ tempo e $O(n)$ espaço extra em vetores.     |
-| Quick sort          | Particiona por pivô; $O(n\log n)$ esperado, $O(n^2)$ no pior caso.                               |
-| Heap sort           | Extrai repetidamente o extremo de uma heap; $O(n\log n)$ tempo e $O(1)$ espaço extra num vetor.  |
+Pesquisa linear: pior $\Theta(n)$, sem exigir ordem. Binária em vetor: $O(\log(n+1))$, exige a partição compatível com o teste. Em `[l,r)`, `m=l+(r-l)/2`; descarta com `l=m+1` ou conserva o candidato com `r=m`.
 
-Insertion, selection e bubble sort custam $O(n^2)$ no pior caso; insertion sort é $O(n)$ se os dados já estiverem ordenados. O custo de Shell sort depende da sequência de saltos. Ordenações por **comparação** precisam de $\Omega(n\log n)$ comparações no pior caso. Counting sort e radix sort evitam esse limite porque usam chaves com estrutura adicional: counting sort custa $O(n+k)$ para chaves inteiras num intervalo de $k$ valores; radix sort custa $O(d(n+k))$ com $d$ dígitos e counting sort **estável** em cada passagem. Uma ordenação estável conserva a ordem original entre chaves iguais. [Ver pesquisa](/cadeiras/aed/pesquisa-ordenacao/#pesquisar-sequencial-e-binária), [comparação](/cadeiras/aed/pesquisa-ordenacao/#ordenação-por-comparação) e [ordenação linear](/cadeiras/aed/pesquisa-ordenacao/#ordenação-linear).
+**Lower bound:** primeiro `>=x`; **upper bound:** primeiro `>x`; ambos podem devolver `n`. Contagem de `x` = superior menos inferior. Pesquisa de resposta exige predicado monótono; inclui o custo de o avaliar. [Limites e resposta](/cadeiras/aed/pesquisa-ordenacao/).
 
-## ADT, listas, pilhas e filas
+| Ordenação        | Melhor            | Pior              | Auxiliar         | Estabilidade habitual              |
+| ---------------- | ----------------- | ----------------- | ---------------- | ---------------------------------- |
+| seleção          | $\Theta(n^2)$     | $\Theta(n^2)$     | $O(1)$           | não                                |
+| inserção         | $\Theta(n)$       | $\Theta(n^2)$     | $O(1)$           | sim, deslocar só maiores           |
+| merge em vetor   | $\Theta(n\log n)$ | $\Theta(n\log n)$ | $O(n)$           | sim, escolher esquerda nos empates |
+| quicksort        | $\Theta(n\log n)$ | $\Theta(n^2)$     | pilha até $O(n)$ | não                                |
+| heapsort         | $O(n\log n)$      | $O(n\log n)$      | $O(1)$ iterativo | não                                |
+| counting estável | $\Theta(n+k)$     | $\Theta(n+k)$     | $O(n+k)$         | sim                                |
 
-Um **tipo de dados abstrato** (ADT) especifica operações e comportamento; a representação fica escondida. Um vetor permite acesso por índice em $O(1)$ e inserção no meio em $O(n)$. Numa lista ligada, inserir ou remover junto de um nó já conhecido pode custar $O(1)$; encontrar esse nó continua a custar $O(n)$. Um iterador é uma forma de percorrer uma coleção, não um requisito de todas as interfaces de ADT. [Ver listas](/cadeiras/aed/listas-pilhas-filas/#listas-ligadas).
+Comparação pura tem limite inferior $\Omega(n\log n)$ no pior caso. Radix LSD exige cada passagem estável. `sort` exige ordem fraca estrita, garante $O(n\log n)$ comparações e não estabilidade. [Provas e traços](/cadeiras/aed/ordenacao/).
 
-Uma **pilha** retira primeiro o último elemento inserido (LIFO); uma **fila**, o primeiro (FIFO). Uma deque permite operações nas duas extremidades. Escolhe a implementação pela operação que precisas de repetir, não apenas pelo nome da coleção. Templates em C++ permitem reutilizar uma estrutura com tipos diferentes, mas não mudam o custo das suas operações. [Ver pilha e fila](/cadeiras/aed/listas-pilhas-filas/#pilha-e-fila).
+## Estruturas lineares e geometria
 
-## Árvores e ordem
+TAD define comportamento; representação define campos e custos. Vetor: acesso $O(1)$, alteração interior $O(n)$, acrescentar $O(1)$ amortizado. Lista: acesso por índice $O(n)$; alteração por ligação conhecida $O(1)$. Lista simples retira o último em $O(n)$; lista dupla permite retirar um nó conhecido em $O(1)$.
 
-- Numa árvore binária, a **profundidade** de um nó é a distância da raiz até ele; a **altura** é a maior distância desse nó a uma folha. Com altura $h$ medida em arestas, há entre $h+1$ e $2^{h+1}-1$ nós. Não confundas altura da árvore com número de níveis.
-- **Pré-ordem:** nó, esquerda, direita. **Em ordem:** esquerda, nó, direita. **Pós-ordem:** esquerda, direita, nó. Numa árvore binária de pesquisa (BST), a travessia em ordem devolve as chaves por ordem. [Ver as travessias](/cadeiras/aed/arvores-binarias/#as-três-travessias).
-- Numa BST, as chaves da esquerda são menores e as da direita maiores, segundo o comparador definido. Procura, inserção e remoção custam $O(h)$, sendo $h$ a altura. Para remover um nó com dois filhos, substitui a chave pelo predecessor ou sucessor em ordem e remove esse nó. Se a árvore degenerar, $h=\Theta(n)$.
-- Rotações conservam a ordem da BST. Árvores AVL e vermelho-pretas mantêm altura $O(\log n)$ por regras de equilíbrio diferentes; operações de procura e atualização ficam em $O(\log n)$. Numa vermelho-preta, a raiz é preta, nós vermelhos não têm filhos vermelhos e todos os caminhos de um nó às folhas nulas têm o mesmo número de nós pretos. [Ver rotações](/cadeiras/aed/arvores-pesquisa-equilibradas/#equilibrar-com-rotações).
+**Pilha:** LIFO. **Fila:** FIFO. **Deque:** ambas as extremidades. Fila com duas pilhas transfere só quando a saída está vazia: retirada isolada $O(n)$, custo amortizado $O(1)$. Pilha monótona: cada índice entra e sai no máximo uma vez. [TADs](/cadeiras/aed/tipos-abstratos/), [ligações e amortização](/cadeiras/aed/listas-pilhas-filas/).
 
-## Prioridades e dispersão
+Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. [Envolvente](/cadeiras/aed/envolvente-convexa/).
 
-Numa **heap binária máxima**, cada pai tem prioridade pelo menos tão alta como os filhos. O maior está na raiz; não há ordem total entre irmãos. Inserir sobe a chave, remover a raiz faz descer a substituta: $O(\log n)$ cada. Consultar a raiz custa $O(1)$; construir a heap de um vetor por _heapify_ custa $O(n)$. A `priority_queue` de C++ usa uma heap máxima por defeito. [Ver a heap](/cadeiras/aed/filas-prioridade-heaps/#o-heap-binário).
+## Árvores
 
-Uma **tabela de dispersão** calcula uma posição a partir da chave. Com boa função de dispersão e fator de carga controlado, pesquisa, inserção e remoção custam $O(1)$ em média, mas podem custar $O(n)$ no pior caso. **Encadeamento** guarda colisões numa lista por posição. **Endereçamento aberto** procura outra posição na própria tabela; a sondagem linear percorre posições seguidas, a quadrática usa saltos quadráticos e nem sempre visita toda a tabela. Remover exige preservar a sequência de procura, por exemplo com uma marca de apagado. [Ver as colisões](/cadeiras/aed/tabelas-dispersao/#endereçamento-aberto).
+Altura do vazio `-1`, folha `0`; $h=1+\max(h_e,h_d)$. Pré: raiz-esq-dir; em: esq-raiz-dir; pós: esq-dir-raiz. Percurso $\Theta(n)$, pilha $O(h+1)$. Completa enche o último nível da esquerda; perfeita enche todos. [Árvores binárias](/cadeiras/aed/arvores-binarias/).
 
-## Grafos e percursos
+BST: **toda** a esquerda menor e **toda** a direita maior, com política de duplicados. Pesquisa, inserção e remoção $O(h+1)$; pior $O(n)$. Dois filhos: substituir pelo mínimo da direita ou máximo da esquerda, retirando a ocorrência antiga. Em-ordem dá ordem crescente. [BST](/cadeiras/aed/arvores-pesquisa/).
 
-Um grafo pode ser dirigido, ponderado, simples ou multigrafo. Num grafo dirigido, distingue grau de entrada e de saída. Um **DAG** é dirigido e não tem ciclos. Uma matriz de adjacência usa $O(V^2)$ espaço e testa uma aresta em $O(1)$; listas de adjacência usam $O(V+E)$ espaço e percorrem os vizinhos sem examinar todas as posições da matriz. [Ver representações](/cadeiras/aed/grafos-pesquisa/#representar).
+AVL: $b=h_e-h_d\in\{-1,0,1\}$. LL: direita; RR: esquerda; LR: esquerda no filho, direita na raiz; RL: simétrico. Remoção pode reparar vários antepassados. $N(h)=1+N(h-1)+N(h-2)$ implica $h=O(\log n)$.
 
-- **DFS** avança por um ramo antes de voltar; serve para detetar ciclos, componentes e tempos de conclusão. **BFS** visita por camadas e dá caminhos com menos arestas em grafos sem pesos. Com listas de adjacência, ambas custam $O(V+E)$ tempo e $O(V)$ memória auxiliar; com matriz, o percurso custa $O(V^2)$. Marca os vértices quando entram na procura para evitar visitas repetidas. [Ver os percursos](/cadeiras/aed/grafos-pesquisa/#bfs-e-dfs-num-grafo-de-6-vértices).
-- Uma **ordem topológica** existe só num DAG e põe $u$ antes de $v$ para cada aresta $u\to v$. Uma **componente fortemente conexa** é um conjunto máximo de vértices que se alcançam mutuamente num grafo dirigido. Num grafo não dirigido, um **ponto de articulação** ou uma **ponte** aumenta o número de componentes ao remover, respetivamente, o vértice ou a aresta. [Ver conetividade](/cadeiras/aed/grafos-pesquisa/#ciclos-topologia-e-conetividade).
+Vermelho-preta: raiz e NIL pretos, sem dois vermelhos consecutivos, igual altura preta por caminho. Altura no máximo $2\log_2(n+1)$. Inserção: tio vermelho recolore; tio preto usa rotações e cores. [Equilíbrio](/cadeiras/aed/arvores-pesquisa-equilibradas/).
+
+## Hash e prioridades
+
+Hash: igualdade implica mesmo hash; colisão não implica igualdade. Encadeamento: esperado $O(1+\alpha)$, $\alpha=n/m$; pior linear. Endereçamento aberto precisa de distinguir livre, ocupado e apagado. Tombstone não termina pesquisa. Inserir memoriza tombstone mas continua para excluir duplicado. Hash duplo precisa de passo coprimo com `m`. Rehash recalcula posições. [Dispersão](/cadeiras/aed/tabelas-dispersao/).
+
+Heap: forma completa + pai prioritário. Zero-based: filhos `2i+1,2i+2`; pai `(i-1)/2`, para `i>0`. Extremo $O(1)$; inserir/retirar $O(\log(n+1))`; construir de baixo para cima $\Theta(n)$. Descer pelo filho mais prioritário. Não oferece pesquisa arbitrária logarítmica. Top-k maiores usa min-heap de capacidade `k`. [Heaps](/cadeiras/aed/filas-prioridade-heaps/).
+
+## Grafos
+
+Listas: memória e percurso $O(V+E)$. Matriz: memória e percurso completo $O(V^2)$, teste de aresta $O(1)$. DFS usa pilha; BFS usa fila e encontra distâncias mínimas em número de arestas. Marcar na descoberta. Recomeçar para componentes desconexas. [Representações e caminhos](/cadeiras/aed/grafos-pesquisa/).
+
+- Ciclo dirigido: aresta para cinzento. Não dirigido: excluir só a aresta de entrada; usar IDs para paralelas.
+- Topológica: `u` antes de `v` para toda `u->v`; existe só em DAG. DFS inverte pós-ordem; Kahn retira grau zero e exige `V` retirados.
+- SCC: alcançabilidade nos dois sentidos. Tarjan usa pilha de ainda não atribuídos, que é diferente da pilha de chamadas. Fecha quando `low[u]=disc[u]`.
+- Ponte `u-v`: `low[v]>disc[u]`. Articulação não raiz: algum filho com `low[v]>=disc[u]`. Raiz: pelo menos dois filhos DFS.
+
+Estas aplicações custam $O(V+E)$ com listas e espaço auxiliar $O(V)$. [Ciclos e conetividade](/cadeiras/aed/grafos-aplicacoes/).

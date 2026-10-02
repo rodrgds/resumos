@@ -1,77 +1,77 @@
 ---
-title: Grafos e pesquisa
-description: Representação por listas e matrizes, pesquisa em largura e em profundidade, ciclos e ordem topológica.
+title: Grafos, DFS e BFS
+description: Representações, florestas de pesquisa e caminhos mínimos em grafos sem pesos.
 section: conteudo
-order: 8
+order: 12
+practices:
+  - aed/praticar-grafos-pesquisa
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
-import Tabs from '../../../components/Tabs.astro';
-import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
-import desenho from '../../aed/grafos.dot?raw';
-import camadas from '../../aed/bfs-camadas.typ?raw';
 
-Listas, árvores e heaps organizam os dados numa forma. Um **grafo** modela relações arbitrárias: páginas e ligações, estradas e cruzamentos, tarefas e dependências. É a estrutura mais geral da cadeira e também a mais recompensadora, porque dois algoritmos simples, BFS e DFS, respondem a uma lista surpreendente de perguntas.
+Um grafo $G=(V,E)$ representa vértices e ligações. Em grafos dirigidos, `u->v` não implica `v->u`; em grafos não dirigidos, uma aresta liga os dois sentidos. Um grafo simples não tem laços nem arestas paralelas. Indica quais destas condições assumes antes de contar graus ou detetar ciclos.
 
-## Representar
+## Representação e custo
 
-Um grafo tem **vértices** e **arestas** (dirigidas, com sentido, ou não dirigidas). Duas representações:
+Numa matriz de adjacência, guarda uma posição para cada par de vértices. Memória $\Theta(V^2)$; testar ou alterar uma aresta custa $O(1)$, mas enumerar os vizinhos de um vértice custa $\Theta(V)$. Uma matriz booleana não representa diretamente multiplicidades.
 
-- **Lista de adjacência**: cada vértice guarda a lista dos seus vizinhos. Espaço $O(V + E)$, e percorrer os vizinhos de um vértice custa o seu grau. É a escolha por defeito para grafos esparsos, que são quase todos.
-- **Matriz de adjacência**: tabela $V \times V$ com 1 onde há aresta. Testar se dois vértices são vizinhos é $O(1)$, mas o espaço é $O(V^2)$ mesmo sem arestas. Só compensa em grafos densos.
+Numa lista de adjacência, cada vértice guarda os vizinhos existentes. Memória $\Theta(V+E)$; um grafo não dirigido guarda cada aresta nas duas listas. Enumerar vizinhos custa $\Theta(\deg(u))`; testar ou remover uma aresta numa lista simples pode exigir um percurso desses vizinhos. Num grafo dirigido, as listas de saída não dão imediatamente todas as arestas de entrada.
 
-Num grafo dirigido distingue-se o **grau de saída** do de entrada; num caminho dirigido as setas têm de alinhar. Um **ciclo** é um caminho que volta ao início; um grafo dirigido sem ciclos é um **DAG**.
+Um percurso que visita todos os vértices e todas as listas custa $\Theta(V+E)$. Com matriz, custa $\Theta(V^2)$. Estas expressões incluem vértices isolados: dizer apenas $O(E)$ não cobre um grafo sem arestas.
 
-## BFS e DFS num grafo de 6 vértices
+## DFS e a floresta de pesquisa
 
-Toma o grafo dirigido com vértices 1 a 6 e arestas $1 \to 2$, $1 \to 3$, $2 \to 4$, $3 \to 4$, $3 \to 5$, $4 \to 6$, $5 \to 6$.
+A pesquisa em profundidade, DFS, marca um vértice e visita recursivamente cada vizinho ainda não marcado. Marca **antes** de explorar as arestas para não voltar a entrar no mesmo vértice num ciclo. A pilha de chamadas conserva o caminho de tarefas suspensas.
+
+O invariante diz que cada vértice marcado foi alcançado por um caminho da origem, e cada chamada explora as arestas do seu vértice. Se existir um caminho até um vértice não visitado no fim, nesse caminho existe uma primeira aresta de visitado para não visitado; a DFS teria seguido essa aresta, uma contradição. Logo visita exatamente os alcançáveis.
+
+Uma DFS a partir de uma origem não percorre necessariamente todo o grafo. Para construir uma floresta, percorre todos os vértices e começa uma DFS em cada um ainda não visitado. Num grafo não dirigido, cada nova raiz identifica uma componente conexa. Num grafo dirigido, as raízes desta floresta não contam componentes fortemente conexas.
+
+A ordem depende da origem e da ordem dos vizinhos. Uma versão iterativa com uma pilha de vértices pode produzir uma ordem diferente da recursiva; para reproduzir exatamente tempos de entrada e saída, guarda também a posição do próximo vizinho a explorar.
+
+## BFS por camadas
+
+A pesquisa em largura, BFS, usa uma fila. A origem tem distância zero; ao descobrir um vizinho ainda não visitado, atribui-lhe `dist[u]+1`, guarda `u` como pai e insere-o na fila. Marca-o no momento da inserção, para que duas arestas não o insiram várias vezes.
 
 <Dot
-  source={desenho}
-  alt="Grafo dirigido com 6 vértices: 1 aponta para 2 e 3, 2 aponta para 4, 3 aponta para 4 e 5, 4 e 5 apontam para 6."
+  source={'graph G { node [shape=circle]; 0--1; 0--2; 1--3; 2--3; 3--4; 5; }'}
+  alt="Grafo não dirigido: 0 liga a 1 e 2; ambos ligam a 3; 3 liga a 4; 5 está isolado."
 />
 
-A **BFS** (pesquisa em largura) usa uma [fila](listas-pilhas-filas/) e visita por camadas de distância; a **DFS** (pesquisa em profundidade) usa uma pilha (ou recursão) e esgota cada ramo até ao fim. Ambas marcam cada vértice uma vez: tempo $O(V + E)$ com listas de adjacência.
+Partindo de 0 e examinando vizinhos pela ordem das listas, a BFS descobre `0,1,2,3,4`; 5 fica inacessível. As camadas são `{0}`, `{1,2}` e `{3}`, depois `{4}`. O pai de 3 é 1 porque 1 é processado antes de 2; existe também um caminho mínimo por 2.
 
-BFS a partir do 1, com vizinhos por ordem crescente: visita 1 e enfileira 2, 3; visita 2 e enfileira 4; visita 3 e enfileira 5 (o 4 já está marcado); visita 4 e enfileira 6; visita 5 (o 6 já está marcado); visita 6. Ordem: 1, 2, 3, 4, 5, 6. Como a BFS expande por distância crescente, esta ordem dá as distâncias mínimas do 1 em arestas: o 6 está a 3 passos ($1 \to 2 \to 4 \to 6$), e nenhum caminho mais curto existe.
-
-<Typst
-  source={camadas}
-  format="svg"
-  alt="A BFS por camadas a partir do vértice 1: camada de distância 0 com o 1, distância 1 com 2 e 3, distância 2 com 4 e 5, distância 3 com o 6."
+<CodePlayground
+  language="cpp"
+  title="Bfs"
+  code={
+    '#include <algorithm>\n#include <iostream>\n#include <queue>\n#include <vector>\nint main() {\n    std::vector<std::vector<int>> g{{1,2},{0,3},{0,3},{1,2,4},{3},{}};\n    std::vector<int> dist(g.size(), -1), pai(g.size(), -1);\n    std::queue<int> q; dist[0] = 0; q.push(0);\n    while (!q.empty()) {\n        const int u = q.front(); q.pop();\n        for (int v : g[u]) if (dist[v] == -1) {\n            dist[v] = dist[u] + 1; pai[v] = u; q.push(v);\n        }\n    }\n    for (std::size_t i = 0; i < dist.size(); ++i)\n        std::cout << (i ? " " : "") << dist[i];\n    std::cout << \'\\n\';\n    std::vector<int> caminho;\n    for (int v = 4; v != -1; v = pai[v]) caminho.push_back(v);\n    std::reverse(caminho.begin(), caminho.end());\n    for (std::size_t i = 0; i < caminho.size(); ++i)\n        std::cout << (i ? " " : "") << caminho[i];\n    std::cout << \'\\n\';\n}\n'
+  }
 />
 
-DFS a partir do 1, recursiva, mesma ordem de vizinhos: 1 desce a 2, que desce a 4, que desce a 6, que não tem saída nova; volta a 4, sem saída nova; volta a 2, sem saída nova; volta a 1, desce a 3, que desce a 5 (o 4 e o 6 já marcados). Ordem de primeira visita: 1, 2, 4, 6, 3, 5. Repara como difere da BFS: a DFS atravessa o grafo em vez de o varrer.
+Resultado:
 
-<Tabs id="bfs-contra-dfs" labels={['BFS', 'DFS']}>
-  <div slot="panel-0">
+```text
+0 1 1 2 3 -1
+0 1 3 4
+```
 
-Usa uma **fila** e visita por camadas de distância crescente a partir da origem. Responde a "qual o caminho mais curto" em arestas e a "o que está a $k$ passos". O preço é guardar a fronteira toda, que pode ser larga.
+O programa usa `-1` para distância ainda desconhecida e para pai inexistente. Antes de reconstruir um caminho para um destino, verifica `dist[destino]!=-1`; o exemplo usa 4, que é alcançável. Para um destino inacessível, seguir apenas o pai produziria uma lista com o destino e não um caminho válido.
 
-  </div>
-  <div slot="panel-1">
+## Porque BFS encontra distâncias mínimas
 
-Usa uma **pilha** (ou recursão) e esgota cada ramo até ao fim antes de voltar atrás. Responde a "há ciclo", "em que ordem topológica" e "o grafo é conexo". O preço é a pilha de recursão, que pode fundar num caminho comprido.
+A fila processa vértices por distância não decrescente: ao processar a camada `d`, todos os novos vértices recebem `d+1` e entram atrás dos que já estavam na fila. Um vértice só é descoberto uma vez.
 
-  </div>
-</Tabs>
+Se um vértice descoberto com distância `d+1` tivesse um caminho mais curto, o seu predecessor nesse caminho teria distância no máximo `d-1` e teria sido processado antes. Esse predecessor já o teria descoberto com uma distância menor, contradizendo a primeira descoberta. Portanto a distância registada é o menor número de arestas.
 
-## Ciclos, topologia e conetividade
+O argumento exige arestas com o mesmo custo. Com `A->B` de peso 10, `A->C` de peso 1 e `C->B` de peso 1, BFS prefere a aresta direta por usar menos arestas, apesar de o caminho via C ter peso total 2. Um problema com pesos diferentes exige outro algoritmo; não reutilizes a prova de BFS.
 
-A DFS classifica as arestas pelo que encontra: uma aresta para um vértice ainda **em processamento** (na pilha de recursão) fecha um ciclo. Aqui nenhuma aresta aponta para um antecessor em processamento (do 3, o 4 já terminou; do 5, o 6 já terminou), por isso o grafo **não tem ciclo**: é um DAG. Num DAG, a ordem inversa de término da DFS é uma **ordem topológica**, onde cada aresta vai de antes para depois: os términos saem por 6, 4, 2, 5, 3, 1, logo 1, 3, 5, 2, 4, 6 é topológica. Confirma: $1 \to 2$, $1 \to 3$, $2 \to 4$, $3 \to 4$, $3 \to 5$, $4 \to 6$, $5 \to 6$, todas da esquerda para a direita.
+Tempo $O(V+E)$ com listas; vetores de distância, pais e visitados ocupam $O(V)$, e a fila também pode atingir $O(V)$. DFS recursiva pode ter profundidade $O(V)$, mesmo num grafo esparso.
 
-Junta agora a aresta $6 \to 3$ ao grafo e repete a DFS: do 6, a aresta nova leva ao 3, ainda por descobrir; do 3 desce ao 5; do 5, a aresta para o 6 encontra-o ainda em processamento na pilha de recursão. Essa aresta fecha o ciclo $3 \to 5 \to 6 \to 3$, e o grafo deixa de ser DAG: já não há ordem topológica possível.
+## Caminhos, diâmetro e grafos implícitos
 
-Para **conetividade** em grafos não dirigidos, uma BFS ou DFS a partir de qualquer vértice que visite todos prova que o grafo é conexo; os vértices não visitados pedem nova pesquisa, e cada arranque conta uma **componente conexa**. Toma o grafo não dirigido com vértices 1 a 5 e arestas $1-2$, $2-3$ e $4-5$: a pesquisa a partir do 1 visita 1, 2 e 3 e para; o 4 continua por visitar, por isso arranca-se nova pesquisa no 4, que visita 4 e 5. Dois arranques, duas componentes conexas: $\{1, 2, 3\}$ e $\{4, 5\}$. A mesma ideia, no grafo dirigido, separa o alcance (quem chego a partir daqui) da conexidade mútua.
+A árvore de pais de BFS fornece um caminho mínimo por destino, não todos os caminhos mínimos. A distância de uma origem a si própria é zero. Num grafo não dirigido conexo, o diâmetro é a maior distância mínima entre pares. Repetir BFS de cada origem calcula-o em $O(V(V+E))$; num grafo desconexo tens de definir se consideras diâmetro infinito, por componente, ou se o problema exclui esse caso.
 
-:::tip[Como escolher entre BFS e DFS]
-BFS quando a pergunta envolve distância mínima ou camadas (menor número de arestas, redes sociais, labirintos). DFS quando envolve estrutura (ciclos, ordem topológica, componentes, resolver com voltar atrás). O código é quase igual; a fila contra a pilha muda o significado do percurso.
-:::
+Numa grelha, os vértices podem ser posições livres e os vizinhos podem ser calculados a partir dos quatro movimentos, sem construir todas as listas. Verifica fronteiras e obstáculos antes de descobrir uma posição. Se o estado inclui uma chave recolhida, orientação ou outro recurso, só a posição não chega: visitados e distância devem identificar o estado completo.
 
-## Ver também
-
-<YouTube id="s-CYnVz-uh4" title="Pesquisa em largura, MIT 6.006" />
-
-A aula do MIT executa a BFS à mão e prova que a primeira visita é pelo caminho mais curto. Para comparar as duas ordens no mesmo grafo, o [Visualgo](https://visualgo.net/en/dfsbfs) corre a BFS e a DFS lado a lado.
+BFS com várias origens começa com todas as origens na fila a distância zero. O mesmo argumento por camadas dá a distância à origem mais próxima. Não é preciso executar uma BFS separada para cada origem.
