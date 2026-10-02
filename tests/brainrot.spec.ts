@@ -986,22 +986,24 @@ test('voice and clips stay lazy; captions follow audio and pause with the reader
   );
 });
 
-test('the feed advances adjacent clips without changing the lesson position or retaining off-screen videos', async ({
+test('manual video navigation changes recordings without changing the lesson position or retaining off-screen videos', async ({
   page,
 }) => {
   const dialog = await openReader(page);
   const caption = await dialog.locator('.brainrot-caption').textContent();
   const current = dialog.locator('.brainrot-clip:nth-child(2) video');
   const first = await current.getAttribute('src');
-  const visited = [first];
   let previous = first;
   for (let step = 0; step < 7; step++) {
     await dialog
       .getByRole('button', { name: 'Vídeo seguinte', exact: true })
       .click();
     await expect(current).not.toHaveAttribute('src', previous!);
-    previous = await current.getAttribute('src');
-    visited.push(previous);
+    const next = await current.getAttribute('src');
+    expect(next!.replace(/-\d+\.mp4$/, '')).not.toBe(
+      previous!.replace(/-\d+\.mp4$/, ''),
+    );
+    previous = next;
     await expect(dialog.locator('.brainrot-caption')).toHaveText(caption!);
     await expect(dialog.locator('video')).toHaveCount(3);
     await expect(dialog.locator('video[src]')).toHaveCount(2);
@@ -1009,7 +1011,7 @@ test('the feed advances adjacent clips without changing the lesson position or r
   await dialog
     .getByRole('button', { name: 'Vídeo anterior', exact: true })
     .click();
-  await expect(current).toHaveAttribute('src', visited.at(-2)!);
+  await expect(current).not.toHaveAttribute('src', previous!);
 });
 
 test('the reader preserves mixed text, nested lists, images and maths while excluding private controls', async ({
@@ -1637,6 +1639,9 @@ for (const [model, modelFile] of [
 }
 
 test.describe('personal voice recording', () => {
+  // Concurrent requests to Chromium's fake microphone can stall on macOS.
+  test.describe.configure({ mode: 'default' });
+
   test('a recording stays local, is used by Sopro, survives navigation and can be deleted', async ({
     page,
   }) => {

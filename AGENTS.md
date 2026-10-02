@@ -42,12 +42,14 @@
 
 - CSS snippets are local-only. Preserve the customization selectors documented in [docs/leitura.md](docs/leitura.md#personalização-local) and the `?sem-css=1` recovery path. Apply snippets after generated styles but before visible content; insert CSS as text, never HTML.
 - Static and runnable code share `--code-*` tokens and `--code-font`. Keep the shared Shiki configuration in `markdown.shikiConfig` so Markdown and MDX follow the selected palette.
+- Code lines scroll horizontally by default, including CodeMirror editors. The optional wrapping CSS preset covers static and editable code; migrate only untouched saved preset CSS and preserve user changes.
 - Hide the homepage introduction when there is valid reading history or a valid semester pin, including before first paint. Clearing history must respect pins. Pinned semesters duplicate course cards at the top; original fragment IDs belong only to the catalogue.
 
 - Runnable and web editors share CodeMirror setup and token colours in `src/lib/editor-setup.ts`. Use language parsers for highlighting; keep web previews in their opaque, network-blocked iframe. Native form validation and submit callbacks need `allow-forms`; preserve CSP `form-action 'none'` to block sending requests. The WhatsApp action copies only the public page URL and a message starter.
 
 - Brain rot narrates published lesson content locally through disposable Piper and Sopro Workers. Keep text, generated audio, notes and user videos on-device. Match ONNX JS and WASM versions. Clip scrolling must preserve narration and bound loaded videos; sources and reuse terms belong in `public/brainrot/CREDITOS.txt`.
 - Brain rot background segments are contiguous within each `series` in `src/data/brainrot-clips.ts`. Keep numbered files complete from part zero to the source end; preload only current and next, advance on `ended`, and wrap only after the last part.
+- Explicit Brain rot scrolling and video navigation choose another recording and a random segment/time when alternatives exist. Natural playback remains sequential within that recording; changing the background never seeks the lesson narration.
 - Brain rot audio boundaries follow complete sentences, never caption width. Keep word timing and ungenerated duration explicitly approximate. Share only the canonical page URL; opening media must remain an explicit action. Preserve published syntax tokens and original playground source in visual cards. Scope each visual to its own cue; inline maths belongs in captions as an atomic notation token with its spoken text. Never carry a previous card into unrelated narration.
 - Brain rot voices come from the pinned pt-PT model catalogue in `src/data/brainrot-voices.ts`, never Web Speech or installed voices. Changing models requires a new Worker and invalidates prepared audio and durations. Keep Miro/Dii models unmodified and preserve their non-commercial attribution terms.
 

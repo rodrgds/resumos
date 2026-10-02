@@ -145,7 +145,6 @@ export function setupPlaygrounds() {
         extensions: [
           editorSetup(root),
           languages[language](),
-          EditorView.lineWrapping,
           EditorView.contentAttributes.of({
             'aria-label': `Código ${language}`,
             spellcheck: 'false',
