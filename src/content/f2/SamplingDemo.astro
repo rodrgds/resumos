@@ -1,0 +1,137 @@
+<div data-f2-sampling>
+  <div class="controls">
+    <label>
+      Frequência do sinal (Hz) <output data-f-value>7</output>
+      <input data-f type="range" min="1" max="15" step="1" value="7" />
+    </label>
+    <label>
+      Frequência de amostragem (Hz) <output data-fs-value>10</output>
+      <input data-fs type="range" min="4" max="40" step="1" value="10" />
+    </label>
+  </div>
+  <p data-summary aria-live="polite">
+    Frequência reduzida: 3 Hz. Há aliasing.
+  </p>
+  <div class="plot">
+    <svg
+      viewBox="0 0 440 230"
+      role="img"
+      aria-label="Cosseno original a cheio, cosseno de frequência reduzida a tracejado e amostras como pontos"
+    >
+      <path d="M35 25 V195 M35 110 H425" fill="none" stroke="currentColor" />
+      <g fill="currentColor" font-size="15">
+        <text x="5" y="45">
+          1
+        </text>
+        <text x="0" y="184">
+          −1
+        </text>
+        <text x="365" y="220">
+          t (s)
+        </text>
+        <text x="32" y="212">
+          0
+        </text>
+        <text x="417" y="212">
+          1
+        </text>
+      </g>
+      <path
+        data-original
+        d=""
+        fill="none"
+        stroke="var(--primary)"
+        stroke-width="2"
+      />
+      <path
+        data-alias
+        d=""
+        fill="none"
+        stroke="currentColor"
+        stroke-dasharray="5 4"
+        stroke-width="2"
+      />
+      <g data-samples fill="var(--primary)"></g>
+    </svg>
+  </div>
+  <p class="legend">
+    Linha cheia: original. Tracejado: frequência reduzida. Pontos: amostras.
+  </p>
+</div>
+<script>
+  document
+    .querySelectorAll<HTMLElement>('[data-f2-sampling]')
+    .forEach((demo) => {
+      const fInput = demo.querySelector<HTMLInputElement>('[data-f]')!;
+      const fsInput = demo.querySelector<HTMLInputElement>('[data-fs]')!;
+      const update = () => {
+        const f = Number(fInput.value),
+          fs = Number(fsInput.value);
+        const reduced = Math.abs(f - Math.round(f / fs) * fs);
+        demo.querySelector('[data-f-value]')!.textContent = String(f);
+        demo.querySelector('[data-fs-value]')!.textContent = String(fs);
+        demo.querySelector('[data-summary]')!.textContent =
+          `Frequência reduzida: ${reduced} Hz. ${fs > 2 * f ? 'A taxa excede o dobro desta frequência.' : fs === 2 * f ? 'Na fronteira de Nyquist, a fase pode tornar a amostragem ambígua.' : 'Há aliasing.'}`;
+        for (const [selector, frequency] of [
+          ['[data-original]', f],
+          ['[data-alias]', reduced],
+        ] as const) {
+          demo.querySelector(selector)!.setAttribute(
+            'd',
+            Array.from({ length: 801 }, (_, n) => {
+              const t = n / 800;
+              return `${n ? 'L' : 'M'}${35 + 390 * t} ${110 - 70 * Math.cos(2 * Math.PI * frequency * t)}`;
+            }).join(' '),
+          );
+        }
+        const samples = demo.querySelector('[data-samples]')!;
+        samples.replaceChildren();
+        for (let n = 0; n <= fs; n++) {
+          const circle = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'circle',
+          );
+          circle.setAttribute('cx', String(35 + (390 * n) / fs));
+          circle.setAttribute(
+            'cy',
+            String(110 - 70 * Math.cos((2 * Math.PI * f * n) / fs)),
+          );
+          circle.setAttribute('r', '4');
+          samples.append(circle);
+        }
+      };
+      [fInput, fsInput].forEach((input) =>
+        input.addEventListener('input', update),
+      );
+      update();
+    });
+</script>
+<style>
+  .controls {
+    display: grid;
+    gap: 14px;
+  }
+  label {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+  input {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 32px;
+    accent-color: var(--primary);
+  }
+  .plot {
+    overflow-x: auto;
+  }
+  svg {
+    width: 440px;
+    max-width: none;
+    color: var(--text);
+    display: block;
+  }
+  .legend {
+    font-size: 13px;
+  }
+</style>
