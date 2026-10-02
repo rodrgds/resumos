@@ -60,6 +60,7 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
     ['chatgpt', 'prompt'],
     ['claude', 'q'],
     ['perplexity', 'q'],
+    ['grok', 'q'],
   ]) {
     const link = page.locator(`[data-provider="${provider}"]`);
     const url = new URL((await link.getAttribute('href'))!);
@@ -71,6 +72,9 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
     );
     await expect(link.locator('.provider-icon')).toBeVisible();
   }
+  await expect(
+    page.getByRole('link', { name: 'Grok', exact: true }),
+  ).toHaveAttribute('href', /^https:\/\/grok\.com\/\?q=/);
   await expect(
     page.locator('[data-provider="gemini"] .provider-icon'),
   ).toBeVisible();
