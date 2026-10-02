@@ -163,7 +163,7 @@ test('Python executes data analysis and displays its plot', async ({
   await playground
     .getByRole('textbox', { name: 'Código python', exact: true })
     .fill(
-      'import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nvalues = np.array([10, 14, 18])\nframe = pd.DataFrame({"grupo": ["A", "A", "B"], "valor": values})\nprint(frame.groupby("grupo")["valor"].mean().to_dict())\nplt.bar(["A", "B"], [12, 18])\nplt.title("Média por grupo")\nplt.show()',
+      'import numpy as np\nimport pandas as pd\nimport matplotlib.pyplot as plt\nvalues = np.array([10, 14, 18])\nframe = pd.DataFrame({"grupo": ["A", "A", "B"], "valor": values})\nprint(frame.groupby("grupo")["valor"].mean().to_dict())\nprint("Loading numpy")\nplt.bar(["A", "B"], [12, 18])\nplt.title("Média por grupo")\nplt.show()',
     );
   await playground
     .getByRole('button', { name: 'Executar', exact: true })
@@ -174,9 +174,9 @@ test('Python executes data analysis and displays its plot', async ({
     timeout: 90_000,
   });
   await expect(playground.getByRole('status')).toHaveText('Concluído');
-  await expect(
-    playground.getByLabel('Resultado', { exact: true }),
-  ).toContainText("{'A': 12.0, 'B': 18.0}");
+  await expect(playground.getByLabel('Resultado', { exact: true })).toHaveText(
+    "{'A': 12.0, 'B': 18.0}\nLoading numpy\n",
+  );
   await expect(
     playground.getByLabel('Resultado', { exact: true }),
   ).not.toContainText('MatplotlibDeprecationWarning');

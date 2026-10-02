@@ -1,4 +1,5 @@
 import { EditorView } from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
 import { editorSetup } from '../lib/editor-setup';
 import { keymap } from '@codemirror/view';
 import { python } from '@codemirror/lang-python';
@@ -16,7 +17,7 @@ import {
   type Language,
   type RunMessage,
 } from '../lib/runners/types';
-import { runIsolated } from '../lib/runners/isolated';
+import { runProgram } from '../lib/runners/run';
 
 const languages = {
   python,
@@ -43,6 +44,16 @@ export function setupPlaygrounds() {
       const language = root.dataset.language as Language;
       const source = root.querySelector<HTMLElement>('[data-source]')!;
       const original = source.textContent || '';
+      const helperSource = root.querySelector<HTMLElement>(
+        '[data-helpers-source]',
+      );
+      const helpers = helperSource?.textContent || '';
+      const helperPanel =
+        root.querySelector<HTMLDetailsElement>('[data-helpers]');
+      const helperButton = root.querySelector<HTMLButtonElement>(
+        '[data-toggle-helpers]',
+      );
+      let helperEditor: EditorView | undefined;
       const runButton = root.querySelector<HTMLButtonElement>('[data-run]')!;
       const resetButton =
         root.querySelector<HTMLButtonElement>('[data-reset]')!;
@@ -107,33 +118,14 @@ export function setupPlaygrounds() {
         stopButton.hidden = false;
         const request = {
           language,
-          code: editor.state.doc.toString(),
+          code: helpers
+            ? `${helpers}\n\n${editor.state.doc.toString()}`
+            : editor.state.doc.toString(),
           input:
             root.querySelector<HTMLTextAreaElement>('[data-stdin]')?.value ||
             '',
         };
-        if (['python', 'java', 'haskell', 'prolog', 'php'].includes(language))
-          cancel = runIsolated(request, receive, root);
-        else {
-          // Keep each constructor static so Vite bundles both Worker entrypoints.
-          const worker =
-            language === 'riscv'
-              ? new Worker(
-                  new URL('./runners/riscv.worker.ts', import.meta.url),
-                  { type: 'module' },
-                )
-              : new Worker(
-                  new URL('./runners/wasi.worker.ts', import.meta.url),
-                  { type: 'module' },
-                );
-          cancel = () => worker.terminate();
-          worker.onmessage = (event) => receive(event.data);
-          worker.onerror = () =>
-            finish(
-              'Não foi possível executar. Verifica a ligação e tenta novamente.',
-            );
-          worker.postMessage(request);
-        }
+        cancel = runProgram(request, receive, root);
         timer = setTimeout(
           () => finish('Execução interrompida após dois minutos.'),
           MAX_RUN_MS,
@@ -161,6 +153,37 @@ export function setupPlaygrounds() {
         ],
       });
       source.hidden = true;
+      if (helperPanel && helperButton && helperSource) {
+        helperPanel.querySelector('summary')!.hidden = true;
+        helperPanel.hidden = !helperPanel.open;
+        helperButton.hidden = false;
+        helperButton.onclick = () => {
+          helperPanel.open = !helperPanel.open;
+          helperPanel.hidden = !helperPanel.open;
+          helperButton.setAttribute('aria-expanded', String(helperPanel.open));
+          const label = helperPanel.open
+            ? 'Ocultar funções de apoio'
+            : 'Mostrar funções de apoio';
+          helperButton.setAttribute('aria-label', label);
+          helperButton.title = label;
+          if (!helperPanel.open || helperEditor) return;
+          helperEditor = new EditorView({
+            doc: helpers,
+            parent: root.querySelector('[data-helpers-editor]')!,
+            extensions: [
+              editorSetup(root),
+              languages[language](),
+              EditorState.readOnly.of(true),
+              EditorView.editable.of(false),
+              EditorView.contentAttributes.of({
+                'aria-label': 'Código das funções de apoio',
+                tabindex: '0',
+              }),
+            ],
+          });
+          helperSource.hidden = true;
+        };
+      }
       runButton.onclick = run;
       stopButton.onclick = () => finish('Execução interrompida.');
       resetButton.onclick = () => {
@@ -181,6 +204,7 @@ export function setupPlaygrounds() {
           cancel?.();
           clearTimeout(timer);
           editor.destroy();
+          helperEditor?.destroy();
         },
         { once: true },
       );

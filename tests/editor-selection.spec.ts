@@ -21,10 +21,12 @@ for (const palette of [
       }, palette);
       await page.emulateMedia({ colorScheme: appearance });
       await page.goto('/exemplo/codigo/');
-      const editor = page.getByRole('textbox', {
-        name: 'Código python',
-        exact: true,
-      });
+      const editor = page
+        .getByRole('region', { name: 'Experimentar Python', exact: true })
+        .getByRole('textbox', {
+          name: 'Código python',
+          exact: true,
+        });
       await editor.scrollIntoViewIfNeeded();
       await editor.click();
       await page.keyboard.press('ControlOrMeta+a');
