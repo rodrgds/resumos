@@ -1,0 +1,148 @@
+---
+title: 'Praticar: Comunicação distribuída'
+description: Exercícios originais com decisões, cálculos e pistas graduais.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="cpd-timeout-debito"
+  title="Resposta ausente, efeito desconhecido"
+  explanation="/cadeiras/cpd/sistemas-distribuidos-comunicacao/#atraso-timeout-e-repetição"
+  answer={{"kind": "self", "checklist": ["Diz que o pedido pode não ter chegado ou pode ter executado sem resposta recebida.", "Mostra o risco de debitar duas vezes ao repetir como novo pedido.", "Propõe identificador estável e registo atómico e durável do efeito e resultado."]}}
+>
+
+Um cliente pede um débito de 25 euros. Expira o timeout sem resposta. Pode concluir que não houve débito? Como permite repetir sem criar outro débito, incluindo depois de reiniciar o servidor?
+
+  <div slot="hint">
+
+Pedido e resposta podem falhar separadamente.
+
+  </div>
+
+  <div slot="hint-more">
+
+A operação pode terminar antes de a resposta se perder.
+
+  </div>
+
+  <div slot="solution">
+
+Não pode concluir. O servidor pode ter debitado e a resposta ter-se perdido. O cliente repete com o mesmo identificador. O servidor guarda o efeito, identificador e resultado de forma atómica e durável, e devolve o resultado anterior ao reconhecer a repetição.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não usar um identificador novo na repetição. Uma lista de identificadores só em memória não sobrevive a reinícios.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-tcp-fronteiras"
+  title="Uma escrita, duas leituras"
+  explanation="/cadeiras/cpd/sistemas-distribuidos-comunicacao/#modelos-de-comunicação"
+  answer={{"kind": "choice", "options": [{"text": "É permitido: TCP entrega um fluxo; a aplicação reúne bytes até ao delimitador.", "correct": true, "explanation": "A divisão em leituras não tem de coincidir com as escritas."}, {"text": "É uma falha do TCP porque cada write tem de corresponder a um read.", "correct": false, "explanation": "TCP não oferece essa correspondência."}, {"text": "É obrigatório abandonar TCP e usar UDP.", "correct": false, "explanation": "Um protocolo sobre TCP pode definir linhas, tamanhos ou outros delimitadores."}]}}
+>
+
+O servidor envia `OK 42` seguido de uma quebra de linha num único write. O cliente lê primeiro `OK ` e depois `42` e a quebra de linha. Qual é a interpretação correta?
+
+  <div slot="hint">
+
+TCP preserva bytes por ordem, não mensagens da aplicação.
+
+  </div>
+
+  <div slot="hint-more">
+
+O pedido completo termina quando chega a quebra de linha.
+
+  </div>
+
+  <div slot="solution">
+
+As duas leituras podem formar a mesma resposta válida. O cliente acumula até à quebra de linha e trata também o caso de EOF antes de uma resposta completa.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não assumir que um read devolve uma mensagem completa.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-ordem-causal"
+  title="Uma resposta que depende de uma mensagem"
+  explanation="/cadeiras/cpd/sistemas-distribuidos-comunicacao/#ordenar-mensagens"
+  answer={{"kind": "choice", "options": [{"text": "Causal exige m1 antes de m2 nos processos que entregam ambas.", "correct": true, "explanation": "A receção de m1 precedeu o envio de m2, criando uma dependência causal."}, {"text": "FIFO entre emissores distintos, por si só, exige m1 antes de m2.", "correct": false, "explanation": "FIFO preserva a ordem de cada emissor, não relações entre emissores diferentes."}, {"text": "Ordem total sem causalidade exige sempre m1 antes de m2.", "correct": false, "explanation": "Pode impor a mesma ordem invertida a todos, a menos que inclua também a condição causal."}]}}
+>
+
+A envia m1. Depois de B entregar m1, B envia m2. Qual garantia exige que outro destinatário que entrega ambas receba logicamente m1 antes de m2?
+
+  <div slot="hint">
+
+A mensagem de B depende da receção anterior.
+
+  </div>
+
+  <div slot="hint-more">
+
+Distingue ordem por emissor, por causa e ordem comum.
+
+  </div>
+
+  <div slot="solution">
+
+A ordem causal conserva esta dependência. FIFO não basta porque os emissores são diferentes. Ordem total obriga os destinatários a concordar, mas precisa da condição causal para impor esta direção.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não confundir chegada dos bytes com entrega da mensagem à aplicação nem ordem total com causalidade.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-eventos-saldo"
+  title="Uma thread e duas operações"
+  explanation="/cadeiras/cpd/sistemas-distribuidos-comunicacao/#servidores-com-estado-e-eventos"
+  answer={{"kind": "self", "checklist": ["Segue duas leituras de saldo 100 antes de qualquer escrita.", "Mostra duas escritas de 90 a perderem um dos débitos.", "Propõe tornar o débito uma operação atómica sobre o estado."]}}
+>
+
+Um servidor de eventos tem uma única thread. Dois pedidos de débito de 10 leem saldo 100, aguardam uma operação externa e só depois gravam saldo menos 10. Cada escrita grava 90. O saldo correto seria 80. Explica por que uma thread não evitou o erro.
+
+  <div slot="hint">
+
+Um pedido pode continuar num evento posterior.
+
+  </div>
+
+  <div slot="hint-more">
+
+O segundo pedido lê antes de o primeiro concluir a operação.
+
+  </div>
+
+  <div slot="solution">
+
+Os pedidos intercalaram etapas lógicas, embora nenhuma instrução executasse em paralelo. Ambos calcularam 100-10 e a segunda escrita substituiu a primeira por 90. O débito completo precisa de uma operação atómica, transação ou serialização adequada por conta.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não afirmar que todo servidor de eventos está livre de condições de corrida lógicas.
+
+  </div>
+
+</Exercise>
