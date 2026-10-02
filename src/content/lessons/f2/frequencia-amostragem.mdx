@@ -1,90 +1,94 @@
 ---
-title: Frequência e amostragem
-description: Resposta em frequência, filtros, teorema de Nyquist e aliasing.
-section: conteudo
-order: 8
+title: Resposta em frequência e amostragem
+description: Filtros, ganho e fase, realimentação, réplicas espectrais, Nyquist e aliasing.
+order: 15
+practices:
+  - f2/praticar-amostragem
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
-import filtros from '../../f2/filtros.typ?raw';
+import InteractiveDemo from '../../../components/InteractiveDemo.astro';
+import SamplingDemo from '../../f2/SamplingDemo.astro';
 
-Se a entrada de um SLIT for a sinusoide $e^{j\omega t}$, a saída é a mesma sinusoide multiplicada pela **resposta em frequência** $H(\omega)$, um número complexo que depende só de $\omega$. Todo o comportamento do sistema fica contido numa função de uma variável: o módulo $|H|$ diz quanto passa a cada frequência, o argumento diz o atraso de fase. É esta curva que desenhas quando caracterizas um filtro, e é ela que decide que frequências sobrevivem até à amostragem.
+Um SLIT trata cada frequência por um ganho complexo. A amostragem altera o espectro de outra forma: repete-o em torno de múltiplos da frequência de amostragem. Se essas cópias se sobrepõem, frequências diferentes ficam indistinguíveis nas amostras.
 
-## Resposta em frequência do RC
+## Resposta em frequência
 
-Para o filtro RC passa-baixo da [página anterior](/cadeiras/f2/sistemas-lti/), com saída no condensador, o divisor de tensão em fasores dá
+Aplicamos $x(t)=e^{j\omega t}$ à convolução. Tirando $e^{j\omega t}$ do integral,
 
 $$
-H(\omega) = \frac{1}{1 + j\omega RC}, \qquad |H(\omega)| = \frac{1}{\sqrt{1 + (\omega RC)^2}}.
+y(t)=e^{j\omega t}\int_{-\infty}^{\infty}h(\lambda)e^{-j\omega\lambda}d\lambda
+=H(\omega)e^{j\omega t}.
 $$
 
-Em $\omega = 0$ passa tudo ($|H| = 1$); quando $\omega \to \infty$ passa zero. A **frequência de corte** $f_c = 1/(2\pi RC)$ marca $|H| = 1/\sqrt{2} \approx 0{,}707$, a meia potência. Abaixo dela o sinal passa quase intacto, acima é atenuado a cerca de dez vezes por década de frequência.
+As exponenciais complexas são funções próprias do sistema. $H(\omega)$ é a transformada de Fourier da resposta impulsional. Para entrada geral, $Y(\omega)=H(\omega)X(\omega)$, um produto, não uma convolução espectral.
 
-O gráfico compara as duas montagens gémeas com os mesmos $R$ e $C$: o passa-baixo (saída no condensador) e o passa-alto (saída na resistência, $|H| = \omega RC/\sqrt{1 + (\omega RC)^2}$). Cruzam-se no corte, onde ambos valem $0{,}707$.
+Para uma sinusoide real, o módulo $|H|$ multiplica a amplitude e o argumento $\arg H$ acrescenta fase. Em cascata, os $H$ multiplicam; em paralelo com soma das saídas, somam. Com realimentação negativa $e=x-H_2y$ e caminho direto $y=H_1e$, a relação formal é $H_{\rm eq}=H_1/(1+H_1H_2)$. A existência de uma expressão algébrica não prova estabilidade do sistema fechado.
 
-<Typst
-  source={filtros}
-  format="svg"
-  alt="Duas curvas de módulo de resposta em frequência contra frequência normalizada pelo corte: o passa-baixo desce de um até zero e o passa-alto sobe de zero até um, cruzando-se no corte com valor 0,707."
-/>
+## Filtro RC passa-baixo
 
-<Tabs id="baixo-ou-alto" labels={['Passa-baixo', 'Passa-alto']}>
-  <div slot="panel-0">
+Com saída no condensador,
 
-Saída no condensador: $|H| = 1/\sqrt{1 + (\omega RC)^2}$. Passa o contínuo e as baixas, atenua as altas. Usa-o antes do conversor para matar o que causaria aliasing.
+$$
+H(\omega)=\frac1{1+j\omega\tau},\qquad
+|H|=\frac1{\sqrt{1+(\omega\tau)^2}},\qquad
+\arg H=-\arctan(\omega\tau).
+$$
 
-  </div>
-  <div slot="panel-1">
+A frequência de corte é $\omega_c=1/\tau$, ou $f_c=1/(2\pi RC)$. No corte, o ganho é $1/\sqrt2$, aproximadamente $-3{,}01\,\mathrm{dB}$, e a fase $-45^\circ$. Para um ganho de tensão, decibéis usam $20\log_{10}|H|$; a comparação de potências usa $10\log_{10}$.
 
-Saída na resistência: $|H| = \omega RC/\sqrt{1 + (\omega RC)^2}$. Bloqueia o contínuo ($|H| = 0$ em $\omega = 0$) e passa as altas. Usa-o para remover nível DC ou acoplamento entre andares.
+Para $R=1\,\mathrm{k\Omega}$ e $C=1\,\mathrm{\mu F}$, $f_c=159\,\mathrm{Hz}$. Uma entrada de amplitude $5\,\mathrm V$ a $\omega=1000\,\mathrm{rad/s}$ sai com amplitude $3{,}54\,\mathrm V$ e atraso de fase $\pi/4$. O atraso entre máximos é $(\pi/4)/1000=0{,}785\,\mathrm{ms}$ nesta frequência; não é um atraso constante para todas as frequências.
 
-  </div>
-</Tabs>
+Com saída na resistência, $H_{\rm PA}=j\omega\tau/(1+j\omega\tau)$ é passa-alto. Em baixa frequência aproxima-se de zero, em alta aproxima-se de um. A escolha dos terminais de saída muda o filtro.
 
-Com $R = 1{,}0\ \text{k}\Omega$ e $C = 1{,}0\ \mu\text{F}$, $f_c = 1/(2\pi \times 10^{-3}) \approx 159{,}15\ \text{Hz}$. Corre o programa e confirma a saída: `0.954`, `0.707` e `0.303`.
+Um RLC série com saída em $R$ tem $H_R=R/[R+j(\omega L-1/(\omega C))]$, um passa-banda. Ganho e fase são propriedades do porto entrada-saída, não só do nome dos componentes.
 
-<CodePlayground
-  language="python"
-  title="Módulo do passa-baixo"
-  code={`import math
-R = 1000.0
-C = 1e-6
-fc = 1 / (2 * math.pi * R * C)
-for f in (50.0, 159.15, 500.0):
-    h = 1 / math.hypot(1.0, 2 * math.pi * f * R * C)
-    print(f"{f:6.1f} Hz -> |H| = {h:.3f}")`}
-/>
+## Amostragem no tempo e na frequência
 
-Aos $50\ \text{Hz}$ passam $95\%$, no corte $71\%$ como previsto, e aos $500\ \text{Hz}$ sobram $30\%$.
+Para período $T_s$, $f_s=1/T_s$ e $\omega_s=2\pi/T_s$, o trem de impulsos é $p(t)=\sum_n\delta(t-nT_s)$. O sinal amostrado ideal é
 
-## Amostragem e Nyquist
+$$
+x_s(t)=x(t)p(t)=\sum_nx(nT_s)\delta(t-nT_s).
+$$
 
-Medir um sinal contínuo em instantes espaçados de $T_s$ é **amostrar** à frequência $f_s = 1/T_s$, produzindo a sequência $x[n] = x(nT_s)$. O **teorema de Nyquist** fixa o limite: para reconstruir um sinal com frequência máxima $f_{\text{m\'ax}}$ precisas de $f_s > 2f_{\text{m\'ax}}$. Amostrar devagar não dá um sinal "menos nítido", dá um sinal errado. A reconstrução exata exige ainda filtrar antes de amostrar (nada acima de $f_s/2$ à entrada) e interpolar depois com o filtro ideal; sem estas duas guardas, a sequência sozinha não chega.
+É diferente da sequência $x[n]$, embora guarde os mesmos valores. A transformada do trem é $(2\pi/T_s)\sum_k\delta(\omega-k\omega_s)$. Como produto no tempo vira convolução em frequência,
 
-Porquê? Amostrar multiplica o espectro em cópias espaçadas de $f_s$. Se $f_s$ for pequena, as cópias sobrepõem-se e as frequências altas dobram-se sobre as baixas: é o **aliasing**. Uma sinusoide de frequência $f$ amostrada a $f_s$ (com $f$ entre $f_s/2$ e $f_s$) aparece como frequência $|f - f_s|$. O filtro anti-aliasing antes do conversor existe exatamente para matar as altas frequências antes que elas se disfarcem de baixas.
+$$
+X_s(\omega)=\frac1{T_s}\sum_{k=-\infty}^{\infty}X(\omega-k\omega_s).
+$$
 
-## Exemplo: sinusoide dobrada
+As cópias estão separadas por $\omega_s$. Não confundas $f_s$, em hertz, com $\omega_s$, em radianos por segundo.
 
-Uma sinusoide de $3{,}0\ \text{kHz}$ amostrada a $f_s = 5{,}0\ \text{kHz}$. A frequência de Nyquist é $f_s/2 = 2{,}5\ \text{kHz}$, e $3{,}0 > 2{,}5$: há aliasing. A frequência aparente é $|3{,}0 - 5{,}0| = 2{,}0\ \text{kHz}$. No computador vês uma sinusoide perfeita de $2{,}0\ \text{kHz}$, indistinguível de uma original, e nenhum processamento posterior a desmascara. A cura seria amostrar acima de $6{,}0\ \text{kHz}$, ou filtrar tudo acima de $2{,}5\ \text{kHz}$ antes de amostrar. É por isto que o áudio de CD usa $44{,}1\ \text{kHz}$ para $20\ \text{kHz}$ audíveis: margem para o filtro anti-aliasing real, que nunca corta a pique.
+## Teorema de amostragem
 
-:::warning[Aliasing não é ruído, é impostura]
-O sinal com aliasing parece limpo e mede-se bem: está é na frequência errada. Sempre que uma medição digital mostra uma frequência suspeitamente baixa e estável, pergunta primeiro pela frequência de amostragem antes de culpar o sensor.
-:::
+Se o sinal é limitado em banda, $X(\omega)=0$ para $|\omega|>2\pi B$, a reconstrução ideal sem sobreposição exige
 
-## Ver também
+$$
+f_s>2B.
+$$
 
-Amostragem e aliasing explicados com animações de espetros sobrepostos:
+Usamos a desigualdade estrita para evitar ambiguidades na fronteira. Amostrar uma sinusoide precisamente duas vezes por período pode perder toda a informação de amplitude ou fase, por exemplo um seno amostrado nos zeros.
 
-<YouTube id="yWqrx08UeUs" title="Sampling, Aliasing and Nyquist Theorem" />
+Na reconstrução ideal,
 
-## Para saber mais
+$$
+x(t)=\sum_nx[n]\,\operatorname{sinc}\left(\pi\left(\frac t{T_s}-n\right)\right),
+\qquad\operatorname{sinc}(z)=\frac{\sin z}{z}.
+$$
 
-- [Amostragem e aliasing com figuras de espetros](https://dsprelated.com/foundations/sampling.php): a sobreposição das cópias do espectro desenhada passo a passo.
-- [Demonstração de amostragem e resposta em frequência do MIT](https://ocw.mit.edu/courses/res-6-008-digital-signal-processing-spring-2011/resources/demonstration-1-sampling-aliasing-and-frequency-response-part-1/): aliasing audível e resposta de filtros em exemplos reais.
+Esta fórmula exige todas as amostras e banda adequada. Um sistema real usa aproximações e um filtro analógico antes do conversor para atenuar frequências acima da banda pretendida. Filtrar depois de ocorrer aliasing não recupera, em geral, a frequência original.
 
-## Para onde ir
+## Aliasing
 
-Fecha o arco da cadeira: o campo gerou a onda, a onda confinou-se em circuito, o circuito virou sistema, e o sistema entrega amostras prontas a processar. Volta à [apresentação](index/) para rever o mapa, e treina cada passagem com números antes do mini-teste.
+Para $x(t)=\cos(2\pi ft)$, as amostras são $\cos(2\pi f n/f_s)$. Acrescentar um múltiplo inteiro de $f_s$ a $f$ não altera a sequência; trocar o sinal da frequência também não altera este cosseno.
+
+Uma sinusoide de $900\,\mathrm{Hz}$ amostrada a $1000\,\mathrm{Hz}$ tem as mesmas amostras que um cosseno de $100\,\mathrm{Hz}$, porque $900=1000-100$. A frequência aparente pode obter-se reduzindo $f$ ao intervalo $[-f_s/2,f_s/2]$ e tomando o módulo para este cosseno real. Para uma sinusoide com fase, considera também a alteração da fase na reflexão.
+
+O modelo abaixo mostra um cosseno de amplitude um e as amostras ideais, sem quantização. A curva tracejada é o cosseno de frequência reduzida que coincide nos pontos. Experimenta $f=7\,\mathrm{Hz}$ e $f_s=10\,\mathrm{Hz}$: os pontos também pertencem ao cosseno de $3\,\mathrm{Hz}$.
+
+<InteractiveDemo label="Comparar uma sinusoide e as suas amostras com aliasing">
+  <SamplingDemo />
+</InteractiveDemo>
+
+## Quantizar não é amostrar
+
+Uma aquisição a $48\,\mathrm{kHz}$ com $16$ bits por amostra, num canal, usa $768\,\mathrm{kbit/s}$ sem compressão. A frequência de amostragem limita a banda representável; o número de bits limita a resolução dos valores. Aumentar os bits não corrige uma frequência de amostragem insuficiente.

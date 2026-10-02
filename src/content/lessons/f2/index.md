@@ -1,41 +1,86 @@
 ---
 title: Física II
-description: Eletromagnetismo e circuitos, dos campos e das equações de Maxwell aos sinais e à amostragem.
-section: conteudo
+description: Campos elétricos e magnéticos, circuitos, medições e processamento de sinais.
 order: 0
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Física II, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991
+    - title: Materiais teóricos e teórico-práticos de Física II, Moodle 2025/26
+      url: https://moodle2526.up.pt/mod/resource/view.php?id=135878
+    - title: Jaime E. Villate, Eletricidade, Magnetismo e Circuitos, 3.ª edição, 2019
+      url: https://villate.org/eletricidade/
+    - title: Jaime E. Villate, Exercícios Resolvidos de Eletricidade, Magnetismo e Circuitos, 3.ª edição, 2020
+      url: https://def.fe.up.pt/eletricidade/problemas.html
+  coverage: Eletromagnetismo, redes resistivas e reativas, medições, linhas de transmissão, sinais, SLIT, Fourier e amostragem, com exemplos e exercícios próprios.
+  gaps:
+    - Os materiais de aula usados são de 2025/26; a avaliação foi conferida na ficha de 2026/27, não em futuros enunciados ou avisos do Moodle.
+    - Os vídeos indicados pelo docente estão ligados como recursos opcionais, sem revisão integral do seu conteúdo.
 ---
 
-Se Física I descrevia corpos que se movem, Física II descreve o que não se vê a mover-se: cargas que criam campos, campos que variam e induzem correntes, correntes que transportam sinais. É a camada analógica por baixo dos sistemas informáticos: sem eletromagnetismo não há memórias nem processadores, sem circuitos não há placas, sem amostragem não há áudio nem imagem digital. É uma cadeira do 2.º ano, 1.º semestre.
+Física II relaciona cargas e campos com o funcionamento dos circuitos. Primeiro calculamos forças, potenciais e energia. Depois estudamos tensões e correntes, incluindo a memória de condensadores e bobinas. Por fim, tratamos essas grandezas como sinais e vemos o que um filtro e um conversor digital conseguem conservar.
 
-Para acompanhar estas páginas precisas do cálculo vetorial de AM2, sobretudo [fluxo e integrais de superfície](/cadeiras/am2/superficies-fluxo/), e das [oscilações](/cadeiras/f1/oscilacoes/) de F1, que reaparecem nos circuitos em regime forçado. Sempre que a matemática prender, volta a essas páginas antes de insistir na física.
+Precisas de vetores, produto escalar e vetorial, derivadas, integrais, números complexos e equações diferenciais simples. Para fluxo, divergência e rotacional, revê [AM2](/cadeiras/am2/). Força, trabalho e oscilações vêm de [F1](/cadeiras/f1/).
 
-## Organização das páginas
+## Percurso de estudo
 
-O percurso segue um sinal sinusoidal desde o campo até à amostra digital:
+1. [Carga e campo elétrico](/cadeiras/f2/carga-campo/): estrutura atómica, Coulomb, Lorentz e trajetórias.
+2. [Equações de Maxwell](/cadeiras/f2/equacoes-maxwell/): fluxo, circulação, simetrias e conservação da carga.
+3. [Potencial, condutores e capacidade](/cadeiras/f2/potencial-capacidade/): trabalho, blindagem e energia eletrostática.
+4. [Magnetismo e indução](/cadeiras/f2/magnetismo-inducao/): forças em fios, Ampère, Faraday, Lenz e transformadores.
+5. [Ondas eletromagnéticas](/cadeiras/f2/ondas-eletromagneticas/): fase, polarização, Poynting e radiação.
+6. [Condução elétrica](/cadeiras/f2/conducao-eletrica/): deriva, resistividade, semicondutores e Hall.
+7. [Circuitos resistivos](/cadeiras/f2/circuitos-resistivos/): nós, malhas, divisores, Thévenin e Norton.
+8. [Circuitos reativos](/cadeiras/f2/circuitos-reativos/): condições iniciais, RC, RL e RLC.
+9. [Medições e incertezas](/cadeiras/f2/laboratorio/): instrumentos, propagação e ajuste de dados.
+10. [Regime sinusoidal](/cadeiras/f2/regime-sinusoidal/): fasores, potência e ressonância.
+11. [Linhas de transmissão](/cadeiras/f2/linhas-transmissao/): atrasos, parâmetros distribuídos e reflexão.
+12. [Sinais e sistemas](/cadeiras/f2/sinais/): energia, memória, causalidade, estabilidade e linearidade.
+13. [Sistemas lineares invariantes](/cadeiras/f2/sistemas-lti/): convolução e resposta impulsional.
+14. [Fourier](/cadeiras/f2/fourier/): harmónicos e transformadas.
+15. [Resposta em frequência e amostragem](/cadeiras/f2/frequencia-amostragem/): filtros, banda e aliasing.
 
-1. [Carga e campo elétrico](/cadeiras/f2/carga-campo/): lei de Coulomb, campo de cargas pontuais e sobreposição, com unidades e ordens de grandeza.
-2. [Equações de Maxwell](/cadeiras/f2/equacoes-maxwell/): fluxo, lei de Gauss, lei de Faraday e lei de Ampère-Maxwell, com o sentido físico de cada termo.
-3. [Ondas eletromagnéticas](/cadeiras/f2/ondas-eletromagneticas/): da variação acoplada de E e B à velocidade da luz, ao espectro e ao transporte de energia.
-4. [Circuitos resistivos](/cadeiras/f2/circuitos-resistivos/): lei de Ohm, leis de Kirchhoff, método dos nós e equivalente de Thévenin.
-5. [Circuitos reativos](/cadeiras/f2/circuitos-reativos/): condensador e bobina, transitórios RC e RL e a constante de tempo.
-6. [Regime forçado sinusoidal](/cadeiras/f2/regime-sinusoidal/): fasores, impedância, ressonância no RLC e potência ativa.
-7. [Sistemas lineares invariantes](/cadeiras/f2/sistemas-lti/): resposta impulsional, convolução e resposta ao escalão, com o filtro RC como exemplo.
-8. [Frequência e amostragem](/cadeiras/f2/frequencia-amostragem/): resposta em frequência, filtros, teorema de Nyquist e aliasing.
+Os exercícios no fim de cada página são próprios, com duas pistas, solução e erros frequentes. Resolve-os antes de abrir a ajuda. A [cheat sheet](/cadeiras/f2/folha-consulta/) reúne relações e condições para consulta depois de estudar.
 
-## Como estudar
+## Como resolver problemas
 
-Desenha o sistema antes de escrever equações, tal como fazias com os [diagramas de corpo livre](/cadeiras/f1/): nos campos, marca cargas, simetrias e a superfície de Gauss; nos circuitos, marca nós, malhas e sentidos de corrente. A simetria é a ferramenta mais rentável da cadeira: reconhecer que um problema é esférico, cilíndrico ou plano escolhe a superfície de Gauss e resolve metade do exercício.
+Desenha a geometria ou o circuito. Marca referências de tensão, corrente, normal e sentido do percurso. Escreve as hipóteses antes das equações: eletrostática ou campos variáveis, condutor ou isolante, estado inicial ou regime permanente, amplitude de pico ou eficaz.
 
-Leva as **unidades em cada passo**. Um campo em $\text{N/C}$ ou $\text{V/m}$, uma capacidade em $\text{F}$ e uma frequência em $\text{Hz}$ verificam as expressões de borla. E confirma cada resultado com um caso limite: anular uma resistência, levar o tempo a zero ou ao infinito, ou desligar a fonte costuma dizer logo se a fórmula faz sentido.
+Mantém unidades nas contas e verifica um resultado por outro caminho. Em circuitos, compara a potência entregue e absorvida. Num transitório, confirma o instante inicial e o limite final. Num campo, testa a direção e a simetria. Num sinal amostrado, compara os valores nos instantes de amostragem, não apenas a forma da curva.
 
-## Avaliação
+## Avaliação de 2026/27
 
-A avaliação da cadeira é distribuída e varia entre anos. Na ocorrência de referência combina questões de aula (QA), dois mini-testes (MT1 e MT2) e laboratório (LAB), com tectos de classificação intermédios conforme as componentes opcionais realizadas, e exige frequência às teórico-práticas. Confirma sempre as regras atuais na [ficha da unidade curricular no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560098) e na página da cadeira no Moodle. Estas páginas cobrem a matéria, não as regras de avaliação.
+A [ficha de Física II de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991) indica avaliação distribuída com exame final. Com $T$ a nota do teste, $LAB$ a do trabalho laboratorial e $E$ a do exame, a classificação é
 
-## Fontes e âmbito
+$$
+\max\left(E,\;0{,}3T+0{,}1LAB+0{,}6E\right).
+$$
 
-O programa seguido aqui é o da ficha de L.EIC013 Física II, 2025/26, 1.º semestre ([ver no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560098)): eletrodinâmica com carga elétrica, campo eletromagnético, equações de Maxwell e ondas eletromagnéticas; circuitos elétricos com redes resistivas, redes reativas, regime forçado sinusoidal e laboratórios; sinais e sistemas com sistemas lineares invariantes no tempo, análise em frequência e amostragem com sinais no tempo discreto.
+É obrigatória a participação em $75\%$ das aulas teórico-práticas para obter frequência. A assiduidade obtida vale também no ano imediatamente seguinte. Trabalhadores estudantes e situações justificadas equiparadas têm o regime indicado na ficha, com nota final do exame; a época especial usa um exame de formato próprio e classificação integral desse exame.
 
-## Para onde ir
+Confirma os avisos da edição em que estás inscrito. Os mini-testes e o recurso de 2025/26 abaixo são treino histórico: as suas datas, duração e regras não definem as provas de 2026/27.
 
-Começa pela [carga e pelo campo elétrico](/cadeiras/f2/carga-campo/), onde a lei de Coulomb fixa as unidades e as ordens de grandeza que vais usar até ao fim.
+## Materiais do docente
+
+A base de estudo são os materiais do Moodle de 2025/26. As apresentações teóricas 1 a 13 abrangem carga, campo, Maxwell, ondas, condução, redes resistivas e reativas, análise laboratorial, regime sinusoidal, ressonância e linhas de transmissão, sinais, SLIT e frequência. As folhas TP 1 a 12 dão problemas correspondentes.
+
+- [Primeira apresentação, carga elétrica](https://moodle2526.up.pt/mod/resource/view.php?id=77336) e [primeira folha TP](https://moodle2526.up.pt/mod/resource/view.php?id=77433).
+- [Análise de dados laboratoriais](https://moodle2526.up.pt/mod/resource/view.php?id=115798), [resistências](https://moodle2526.up.pt/mod/resource/view.php?id=119354), [multímetro](https://moodle2526.up.pt/mod/resource/view.php?id=119355) e [placa de protótipos](https://moodle2526.up.pt/mod/resource/view.php?id=119356).
+- [SLIT no domínio das frequências](https://moodle2526.up.pt/mod/resource/view.php?id=135878), que completa o percurso de sinais.
+- [Formulário v0.6](https://moodle2526.up.pt/mod/resource/view.php?id=108558), [mini-teste de 5 de novembro de 2025](https://moodle2526.up.pt/mod/resource/view.php?id=130314) e [recurso de 2 de fevereiro de 2026](https://moodle2526.up.pt/mod/resource/view.php?id=109689).
+
+As ligações do Moodle podem exigir autenticação. Confere sempre a notação: nestas páginas, os fasores são de pico, e a transformada de Fourier usa frequência angular com $1/(2\pi)$ na inversa.
+
+## Bibliografia
+
+- Jaime E. Villate, [Eletricidade, Magnetismo e Circuitos](https://villate.org/eletricidade/), 3.ª edição, setembro de 2019, 2.ª reimpressão de 2022, ISBN 978-972-99396-6-2. O livro usa licença CC BY-SA 3.0 e ajuda a aprofundar campos, circuitos e ondas.
+- Jaime E. Villate, [Exercícios Resolvidos de Eletricidade, Magnetismo e Circuitos](https://def.fe.up.pt/eletricidade/problemas.html), 3.ª edição, setembro de 2020, ISBN 978-972-752-271-2, licença CC BY-SA 4.0. Usa-o para comparar passos de resolução depois de tentares um problema.
+
+Os textos, exemplos, exercícios e diagramas destas páginas foram escritos para este percurso. Não são transcrições das provas ou figuras dos livros.
+
+## Vídeos e simulações
+
+O docente indica [The language of Maxwell's equations](https://www.youtube.com/watch?v=rB83DpBJQsE) para visualizar divergência e rotacional: relaciona o fluxo com fontes e a circulação com o contorno. A [introdução aos fasores](https://www.youtube.com/watch?v=bouYTlFMYO0) ajuda a relacionar uma sinusoide com amplitude e fase. A [introdução aos laboratórios](https://www.youtube.com/watch?v=Yg52Xhiwqo8) acompanha a preparação dos instrumentos. São recursos opcionais indicados no Moodle, sem revisão integral aqui.
+
+Para experimentar circuitos, o [kit de circuitos DC da PhET](https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc) permite comparar ligações em série e paralelo. A [visualização de Faraday do MIT](https://web.mit.edu/8.02t/www/802TEAL3D/visualizations/faraday/index.htm) ajuda a seguir a relação entre campo variável e campo induzido. Usa os modelos interativos nas lições para RC, harmónicos e aliasing antes de passar a montagens reais.

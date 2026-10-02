@@ -1,91 +1,94 @@
 ---
 title: Sistemas lineares invariantes
-description: Resposta impulsional, convolução e resposta ao escalão, com o filtro RC como exemplo.
-section: conteudo
-order: 7
+description: Convolução contínua e discreta, resposta impulsional, causalidade e interligações.
+order: 13
+practices:
+  - f2/praticar-slit
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import respostah from '../../f2/resposta-h.typ?raw';
-import blocos from '../../f2/blocos.dot?raw';
 
-Um filtro RC recebe um sinal e devolve outro. Em vez de resolveres uma equação diferencial para cada entrada possível, a teoria de sistemas caracteriza a caixa uma vez (a resposta impulsional) e depois calcula qualquer saída por uma integral (a convolução). Funciona para qualquer sistema **linear e invariante no tempo** (SLIT): a saída de uma soma é a soma das saídas, a saída de uma entrada atrasada é a saída atrasada, e nada muda com o passar do tempo.
+Um sistema linear e invariante no tempo, SLIT ou LTI, é caracterizado pela resposta a um impulso, com estado inicial nulo. A linearidade permite somar respostas; a invariância permite deslocá-las. Juntas, dão a convolução.
 
 ## Resposta impulsional
 
-O **impulso unitário** $\delta(t)$ é um pulso infinitamente estreito e alto com área unitária. A **resposta impulsional** $h(t)$ é a saída do sistema quando a entrada é $\delta(t)$ (com o sistema inicialmente em repouso). Ela identifica o sistema: dois SLIT com a mesma $h(t)$ são indistinguíveis por fora.
-
-Para o filtro RC passa-baixo (fonte, $R$ e $C$ em série, saída aos terminais do condensador), a equação é $RC\,dy/dt + y = x$, com $x$ a entrada e $y$ a saída. A resposta impulsional é
+$h(t)$ é a saída para $\delta(t)$; $h[n]$ é a saída para $\delta[n]$. Um impulso aplicado em $t_0$ produz $h(t-t_0)$. Para um filtro RC passa-baixo, com saída na capacidade,
 
 $$
-h(t) = \frac{1}{\tau}\,e^{-t/\tau}\,u(t), \qquad \tau = RC,
+\tau y'+y=x,\qquad h(t)=\frac1\tau e^{-t/\tau}u(t),\quad\tau=RC>0.
 $$
 
-onde $u(t)$ é o escalão unitário ($0$ para $t < 0$, $1$ para $t \geq 0$), que impõe a causalidade: sem entrada passada não há saída presente. Repara que $h(t)$ tem a forma do transitório dos [circuitos reativos](/cadeiras/f2/circuitos-reativos/), porque é o mesmo circuito a responder ao pulso mais simples possível.
+Como o ganho entre tensões é adimensional, $h(t)$ tem unidade $\mathrm{s^{-1}}$. A área de $h$ é um. A fórmula descreve a resposta de estado nulo, não uma eventual tensão já armazenada.
 
-A curva (normalizada) mostra a janela de memória do sistema: passada uma largura de $\tau$, a contribuição do passado caiu para $37\%$ e continua a decair. É esta largura que decide se o sistema é rápido ou lento.
+## Convolução discreta
 
-<Typst
-  source={respostah}
-  format="svg"
-  alt="Curva da resposta impulsional a decair de um até zero, com uma linha vertical em tau a assinalar a largura da janela de memória."
-/>
-
-## Convolução
-
-Qualquer entrada $x(t)$ decompõe-se numa sucessão de impulsos de área $x(\lambda)\,d\lambda$ em cada instante $\lambda$. Por linearidade e invariância, cada um contribui com $x(\lambda)h(t - \lambda)\,d\lambda$ para a saída no instante $t$. Somar todos dá a **integral de convolução**:
+Decompomos $x[n]$ em impulsos deslocados, $x[n]=\sum_kx[k]\delta[n-k]$. Cada parcela produz $x[k]h[n-k]$. Somando,
 
 $$
-y(t) = \int_{-\infty}^{+\infty} x(\lambda)\,h(t - \lambda)\,d\lambda = (x * h)(t).
+y[n]=(x*h)[n]=\sum_{k=-\infty}^{\infty}x[k]h[n-k].
 $$
 
-Lê-se assim: para saber a saída agora, pesas o passado da entrada pela resposta impulsional. Se $h$ decai depressa (τ pequeno), só o passado recente conta e o sistema é rápido; se decai devagar, o sistema tem memória longa e é lento. Em diagrama de blocos, a convolução é a seta entre a entrada e a saída através do sistema.
+Para cada índice de saída, verifica quais os termos não nulos. A reflexão $h[-k]$ e o deslocamento $h[n-k]$ são os passos que tornam a convolução diferente de uma multiplicação ponto a ponto.
 
-<Dot
-  source={blocos}
-  alt="Diagrama de blocos: elipse de entrada x de t, caixa do sistema h de t, elipse de saída y de t, com a seta de entrada marcada convolução."
-/>
+### Exemplo: média de três amostras
 
-## Exemplo: resposta do RC ao escalão
+Com $h[0]=h[1]=h[2]=1/3$ e restantes zero, $y[n]=(x[n]+x[n-1]+x[n-2])/3$. Para entrada $x[0]=3$, $x[1]=6$, $x[2]=0$ e restantes zero, a saída nos índices $0$ até $4$ é $[1,3,3,2,0]$.
 
-Aplica um escalão $x(t) = V_0\,u(t)$ ao filtro RC com $R = 1{,}0\ \text{k}\Omega$, $C = 1{,}0\ \mu\text{F}$ ($\tau = 1{,}0\ \text{ms}$) e $V_0 = 5{,}0\ \text{V}$. Para $t \geq 0$:
+Em $n=1$, só contribuem $x[0]h[1]+x[1]h[0]=1+2=3$. Em $n=3$, a amostra $6$ ainda contribui através de $h[2]$, embora a entrada atual seja zero. Esta é a memória do filtro.
 
-$$
-y(t) = \int_0^t V_0\,\frac{1}{\tau}e^{-(t-\lambda)/\tau}\,d\lambda.
-$$
-
-Com a mudança $s = t - \lambda$, o integral fica $V_0(1 - e^{-t/\tau})$, ou seja
-
-$$
-y(t) = V_0\left(1 - e^{-t/\tau}\right)u(t).
-$$
-
-É a exponencial de carga que já conheces, agora obtida por convolução em vez de resolver a equação diferencial. Aos $t = 2{,}0\ \text{ms}$ (dois $\tau$): $y = 5{,}0 \times (1 - e^{-2}) = 5{,}0 \times (1 - 0{,}1353) = 5{,}0 \times 0{,}8647 \approx 4{,}32\ \text{V}$. A constante de tempo volta a mandar: a saída atinge $63\%$ em $\tau$, e a convolução mostra porquê, porque $\tau$ é a largura da janela de memória $h(t)$.
-
-O programa abaixo integra a convolução numericamente (regra do ponto médio) em vez de usar a fórmula fechada: a saída deve dar `y(2 ms) = 4.32 V`, igual ao cálculo analítico.
+O programa implementa a soma com índices explícitos. Altera `x` ou `h` para conferir quais os termos que prolongam a saída. O comprimento da convolução completa de sequências de comprimentos $N$ e $M$ é $N+M-1$.
 
 <CodePlayground
   language="python"
-  title="Convolução numérica do escalão"
-  code={`import math
-V0 = 5.0
-tau = 1e-3
-t = 2e-3
-dt = 1e-6
-n = int(t / dt)
-s = 0.0
-for k in range(n):
-    lam = (k + 0.5) * dt
-    s += V0 * (1 / tau) * math.exp(-(t - lam) / tau) * dt
-print(f"y(2 ms) = {s:.2f} V")`}
+  title="Seguir os índices de uma convolução"
+  code={`x = [3.0, 6.0, 0.0]
+h = [1/3, 1/3, 1/3]
+y = []
+for n in range(len(x) + len(h) - 1):
+    total = 0.0
+    for k in range(len(x)):
+        if 0 <= n-k < len(h):
+            total += x[k] * h[n-k]
+    y.append(round(total, 6))
+print(y)`}
 />
 
-:::tip[Escolhe o método pelo problema]
-Uma entrada e condição inicial concretas pedem a equação diferencial direta. Uma família de entradas, ou a pergunta "como depende a saída da memória do sistema", pede a convolução. Nos testes, a convolução aparece quando o enunciado dá $h(t)$ e pergunta a resposta a um pulso ou escalão.
-:::
+## Convolução contínua
 
-## Para onde ir
+O raciocínio equivalente com impulsos de área $x(\lambda)d\lambda$ dá
 
-A convolução descreve o sistema no tempo. Aplicada a uma sinusoide, ela reduz-se a multiplicar por um número complexo que depende da frequência: é a [resposta em frequência](/cadeiras/f2/frequencia-amostragem/), que liga os sistemas aos filtros e à amostragem.
+$$
+y(t)=\int_{-\infty}^{\infty}x(\lambda)h(t-\lambda)d\lambda.
+$$
+
+Para funções causais que começam em zero, muitas vezes os limites reduzem-se a $0$ e $t$. Confirma os suportes antes de os usar: um pulso atrasado altera a região de sobreposição.
+
+### Exemplo: pulso num filtro RC
+
+A entrada é $x(t)=U_0[u(t)-u(t-T)]$. Por linearidade, a resposta é a diferença entre duas respostas ao escalão. Para $t<0$, $y=0$; para $0\le t<T$,
+
+$$
+y(t)=U_0(1-e^{-t/\tau});
+$$
+
+para $t\ge T$,
+
+$$
+y(t)=U_0(1-e^{-T/\tau})e^{-(t-T)/\tau}.
+$$
+
+Durante o pulso, a capacidade carrega; depois, descarrega a partir da tensão atingida em $T$. Com $U_0=5\,\mathrm V$, $T=\tau=1\,\mathrm{ms}$, temos $y(T)=3{,}16\,\mathrm V$ e $y(2T)=1{,}16\,\mathrm V$. As duas expressões dão o mesmo valor na comutação.
+
+## Causalidade e estabilidade pela resposta
+
+Um SLIT é causal se $h(t)=0$ para $t<0$, ou $h[n]=0$ para $n<0$. Para respostas ordinárias, é BIBO estável se $\int|h(t)|dt<\infty$, ou $\sum|h[n]|<\infty$. O RC tem integral absoluta um e é estável. O acumulador discreto tem $h[n]=u[n]$, soma infinita e não é estável.
+
+Um ganho instantâneo $K$ tem $h(t)=K\delta(t)$ e é estável, apesar de exigir interpretar o impulso como distribuição, não usar literalmente a integral de uma função ordinária. Não confundas causalidade com estabilidade: o acumulador é causal e instável.
+
+## Interligar sistemas
+
+A convolução é comutativa, associativa e distributiva quando as operações envolvidas estão definidas. Em cascata, $h_{\rm eq}=h_1*h_2$; em paralelo com soma das saídas, $h_{\rm eq}=h_1+h_2$. O impulso é a identidade, $x*\delta=x$.
+
+Dois filtros RC iguais em cascata, sem interação elétrica entre os estágios, têm $h_{\rm eq}(t)=(t/\tau^2)e^{-t/\tau}u(t)$. O fator $t$ surge do intervalo de integração. Cascata de blocos matemáticos não garante que dois circuitos físicos ligados diretamente mantenham as respostas individuais: a carga do segundo pode alterar o primeiro.
+
+Com realimentação, a saída regressa à entrada. A [resposta em frequência](/cadeiras/f2/frequencia-amostragem/) permite resolver a relação por álgebra, mas a estabilidade do conjunto precisa de verificação própria.

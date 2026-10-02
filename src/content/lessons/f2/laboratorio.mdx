@@ -1,0 +1,105 @@
+---
+title: Medições e incertezas
+section: laboratorios
+description: Multímetro, placa de protótipos, tolerâncias, propagação de incertezas e ajuste de dados.
+order: 9
+practices:
+  - f2/praticar-laboratorio
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Uma leitura do multímetro é uma estimativa. Para comparar com o modelo, precisamos de saber o circuito realmente montado, o efeito do instrumento e a incerteza da medição.
+
+## Montar e medir
+
+Antes de alimentar uma placa de protótipos, identifica os contactos ligados internamente. Em placas comuns, cada grupo de cinco furos da mesma linha está ligado; a ranhura central separa os lados. Os carris de alimentação podem estar interrompidos a meio. Confirma continuidade com o circuito desligado, em vez de assumir que toda uma linha é um único nó.
+
+O voltímetro liga-se em paralelo. A sua resistência de entrada elevada reduz, mas não elimina, o efeito sobre o circuito. O amperímetro liga-se em série e tem resistência pequena. Ligá-lo em paralelo com uma fonte pode provocar um curto. Para medir resistência, desliga a alimentação, descarrega condensadores e isola a resistência quando outros caminhos alteram a leitura.
+
+Escolhe a grandeza, DC ou AC, os terminais de prova e uma escala adequada antes de ligar. Começa pela escala maior se desconheces o valor. Consulta os limites e a proteção de cada terminal no instrumento utilizado. Estes ensaios destinam-se a fontes de baixa tensão de laboratório; não experimentes ligações à rede elétrica.
+
+### Exemplo: efeito do voltímetro
+
+Um divisor de $1\,\mathrm{M\Omega}+1\,\mathrm{M\Omega}$ alimentado a $10\,\mathrm V$ daria $5\,\mathrm V$ sem carga. Um voltímetro de $10\,\mathrm{M\Omega}$ em paralelo com o resistor inferior dá $R_2'=1\parallel10=10/11\,\mathrm{M\Omega}$. A leitura prevista é
+
+$$
+u=10\frac{10/11}{1+10/11}=\frac{100}{21}=4{,}762\,\mathrm V.
+$$
+
+O desvio de cerca de $4{,}8\%$ é efeito de carga, não necessariamente um instrumento avariado.
+
+## Código de cores e tolerância
+
+Numa resistência de quatro bandas, as duas primeiras são dígitos, a terceira é o multiplicador $10^m$ e a quarta indica tolerância. Os dígitos preto, castanho, vermelho, laranja, amarelo, verde, azul, violeta, cinzento e branco correspondem a $0$ até $9$. Dourado e prateado dão multiplicadores $10^{-1}$ e $10^{-2}$, ou tolerâncias de $5\%$ e $10\%$ quando são a última banda.
+
+Por exemplo, vermelho, violeta, castanho, dourado significa $27\times10^1=270\,\Omega$, com tolerância $5\%$, ou intervalo nominal de $256{,}5$ a $283{,}5\,\Omega$. Em cinco bandas, usam-se três dígitos antes do multiplicador. Tolerância de fabrico não é automaticamente uma incerteza padrão: se modelares o intervalo como uniforme com semilargura $a$, a incerteza padrão é $a/\sqrt3$.
+
+## Média, dispersão e incerteza
+
+Para $n$ observações $x_i$, a média e o desvio padrão amostral são
+
+$$
+\bar x=\frac1n\sum_i x_i,\qquad
+s=\sqrt{\frac{\sum_i(x_i-\bar x)^2}{n-1}}.
+$$
+
+$s$ estima a dispersão de uma observação. Para observações independentes do mesmo valor, a incerteza padrão da média é $u_A(\bar x)=s/\sqrt n$. Não substituas uma pela outra sem dizer o que estás a apresentar.
+
+Incertezas de tipo A são avaliadas por observações estatísticas; as de tipo B usam outras informações, como calibração, resolução e especificações. A resolução não é toda a incerteza do aparelho. Para uma especificação de multímetro, aplica a percentagem da leitura e o número de dígitos indicados pelo fabricante.
+
+Uma diferença face ao valor de referência é um erro de medição. Um efeito sistemático pode deslocar todas as leituras e não desaparecer ao repetir. Pequena dispersão não prova exatidão. Uma incerteza padrão não garante que o valor está dentro de um intervalo; com modelo normal, o intervalo de uma incerteza padrão tem cobertura aproximada de $68\%$.
+
+## Propagação de incertezas
+
+Para $y=f(x_1,\ldots,x_n)$, incertezas pequenas e entradas não correlacionadas,
+
+$$
+u(y)^2=\sum_i\left(\frac{\partial f}{\partial x_i}\right)^2u(x_i)^2.
+$$
+
+Com correlação, acrescentam-se os termos de covariância. Derivadas trigonométricas usam ângulos em radianos.
+
+Para $P=RI^2$, as derivadas são $I^2$ e $2RI$, logo
+
+$$
+\frac{u(P)}P=\sqrt{\left(\frac{u(R)}R\right)^2+
+4\left(\frac{u(I)}I\right)^2}.
+$$
+
+Se $R=(100\pm1)\,\Omega$ e $I=(0{,}0200\pm0{,}0002)\,\mathrm A$, com incertezas padrão independentes, $P=0{,}0400\,\mathrm W$ e $u(P)/P=\sqrt{0{,}01^2+0{,}02^2}=0{,}0224$. Apresentamos $P=(40{,}0\pm0{,}9)\,\mathrm{mW}$, indicando que a incerteza é padrão. Reduzir a incerteza relativa da corrente pode ser mais útil, porque entra multiplicada por dois.
+
+## Ajustar uma reta
+
+Para $y=ax+b$, mínimos quadrados ordinários minimizam a soma dos quadrados dos resíduos verticais. O modelo estatístico simples assume incerteza em $x$ desprezável, dispersão de $y$ igual entre pontos e resíduos independentes. Se as incertezas em $y$ diferirem, considera pesos; se as de $x$ forem relevantes, o ajuste ordinário pode ser inadequado.
+
+As fórmulas sem pesos são
+
+$$
+a=\frac{\sum(x_i-\bar x)(y_i-\bar y)}{\sum(x_i-\bar x)^2},
+\qquad b=\bar y-a\bar x.
+$$
+
+O programa ajusta $U$ em função de $I$ para estimar uma resistência. A saída é `R = 100.00 Ohm` e `b = 0.010 V`. Altera uma leitura e observa como mudam declive e resíduos. A ordenada na origem pode sugerir um desvio instrumental; não prova por si só a causa.
+
+<CodePlayground
+  language="python"
+  title="Estimar uma resistência pelas medições"
+  code={`I = [0.01, 0.02, 0.03, 0.04]
+U = [1.02, 2.00, 3.00, 4.02]
+xm = sum(I) / len(I)
+ym = sum(U) / len(U)
+R = sum((x-xm)*(y-ym) for x, y in zip(I, U)) / sum((x-xm)**2 for x in I)
+b = ym - R*xm
+print(f"R = {R:.2f} Ohm")
+print(f"b = {b:.3f} V")
+print("Residuos (V):", [round(y-(R*x+b), 3) for x, y in zip(I, U)])`}
+/>
+
+Num gráfico científico, identifica grandezas e unidades nos eixos, mostra uma gama útil e inclui incertezas quando disponíveis. Monte Carlo pode propagar modelos de incerteza gerando conjuntos sintéticos e repetindo o ajuste; a dispersão dos parâmetros ajustados estima a sua incerteza. Usa um número de simulações suficiente e explicita a distribuição assumida, em vez de tratar o resultado aleatório como exato.
+
+## Medições magnéticas
+
+Um magnetómetro de telemóvel mede componentes no referencial do aparelho. Rodar o telemóvel muda as componentes mesmo se o campo exterior não mudar. Para comparar duas situações, mantém posição e orientação, afasta fontes magnéticas próximas e regista uma série de leituras. Um desvio de calibração não desaparece ao calcular a média.
+
+Para estimar a corrente num fio longo, compara o campo com e sem corrente e usa a componente devida ao fio. Se a diferença de campo tangencial for $20\,\mathrm{\mu T}$ a $0{,}50\,\mathrm m$, a aproximação de fio infinito dá $I=2\pi rB/\mu_0\simeq50\,\mathrm A$. A presença de retorno da corrente, outros fios e a orientação desconhecida podem impedir esta estimativa. Não uses diretamente o módulo total, que pode incluir o campo terrestre.

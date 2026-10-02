@@ -1,0 +1,118 @@
+<div data-f2-rc>
+  <div class="controls">
+    <label>
+      Resistência (kΩ) <output data-r-value>1</output>
+      <input data-r type="range" min="0.5" max="5" step="0.5" value="1" />
+    </label>
+    <label>
+      Capacidade (µF) <output data-c-value>1</output>
+      <input data-c type="range" min="0.5" max="5" step="0.5" value="1" />
+    </label>
+    <label>
+      Instante (ms) <output data-t-value>2</output>
+      <input data-t type="range" min="0" max="10" step="0.1" value="2" />
+    </label>
+  </div>
+  <p class="result" aria-live="polite" data-result>
+    τ = 1 ms; uC(2 ms) = 4,32 V; i = 0,677 mA.
+  </p>
+  <div class="plot">
+    <svg
+      viewBox="0 0 420 220"
+      role="img"
+      aria-label="Tensão no condensador entre 0 e 10 milissegundos"
+    >
+      <path d="M40 25 V175 H400" fill="none" stroke="currentColor" />
+      <g fill="currentColor" font-size="15">
+        <text x="4" y="30">
+          5 V
+        </text>
+        <text x="8" y="179">
+          0
+        </text>
+        <text x="340" y="205">
+          10 ms
+        </text>
+      </g>
+      <path
+        data-curve
+        d="M40 175 L76 80 L112 45 L220 26 L400 25"
+        stroke="var(--primary)"
+        fill="none"
+        stroke-width="3"
+      />
+      <circle data-point cx="112" cy="45" r="5" fill="var(--primary)" />
+    </svg>
+  </div>
+</div>
+<script>
+  document.querySelectorAll<HTMLElement>('[data-f2-rc]').forEach((demo) => {
+    const r = demo.querySelector<HTMLInputElement>('[data-r]')!;
+    const c = demo.querySelector<HTMLInputElement>('[data-c]')!;
+    const t = demo.querySelector<HTMLInputElement>('[data-t]')!;
+    const format = (value: number, digits = 2) =>
+      value.toLocaleString('pt-PT', { maximumFractionDigits: digits });
+    const update = () => {
+      const resistance = Number(r.value);
+      const capacity = Number(c.value);
+      const time = Number(t.value);
+      const tau = resistance * capacity;
+      const voltage = (ms: number) => 5 * (1 - Math.exp(-ms / tau));
+      for (const [key, value] of [
+        ['r', resistance],
+        ['c', capacity],
+        ['t', time],
+      ] as const)
+        demo.querySelector(`[data-${key}-value]`)!.textContent = format(value);
+      demo.querySelector('[data-result]')!.textContent =
+        `τ = ${format(tau)} ms; uC(${format(time)} ms) = ${format(voltage(time))} V; i = ${format((5 / resistance) * Math.exp(-time / tau), 3)} mA.`;
+      demo
+        .querySelector('[data-curve]')!
+        .setAttribute(
+          'd',
+          Array.from(
+            { length: 201 },
+            (_, i) =>
+              `${i ? 'L' : 'M'}${40 + (360 * i) / 200} ${175 - 30 * voltage(i / 20)}`,
+          ).join(' '),
+        );
+      const point = demo.querySelector('[data-point]')!;
+      point.setAttribute('cx', String(40 + 36 * time));
+      point.setAttribute('cy', String(175 - 30 * voltage(time)));
+    };
+    [r, c, t].forEach((input) => input.addEventListener('input', update));
+    update();
+  });
+</script>
+<style>
+  .controls {
+    display: grid;
+    gap: 14px;
+  }
+  label {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+  input {
+    grid-column: 1 / -1;
+    width: 100%;
+    accent-color: var(--primary);
+    min-height: 32px;
+  }
+  output {
+    font-variant-numeric: tabular-nums;
+  }
+  .result {
+    margin-block: 16px;
+  }
+  .plot {
+    overflow-x: auto;
+  }
+  svg {
+    display: block;
+    width: 420px;
+    max-width: none;
+    color: var(--text);
+  }
+</style>
