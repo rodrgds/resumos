@@ -30,4 +30,4 @@ R, MATLAB e outras linguagens podem aparecer em materiais ou projetos. As fichas
 - [CheerpJ](https://cheerpj.com/): Java 8 com Eclipse JDT.
 - [DartPad](https://github.com/dart-lang/dart-pad/wiki/Embedding-Guide) e [Ripes](https://github.com/mortbopet/Ripes): ferramentas abertas por escolha do leitor. DartPad fica incorporado; Ripes abre separado porque requer isolamento entre origens para usar SharedArrayBuffer.
 
-Os créditos e versões ficam aqui e no README, sem rodapé em cada editor.
+Consulta também [runners/NOTICE.md](../runners/NOTICE.md) para versões e licenças. Os editores não têm rodapés de créditos.

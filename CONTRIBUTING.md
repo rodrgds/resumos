@@ -1,19 +1,14 @@
 # Contribuir
 
-Tens apontamentos de uma cadeira? Abre um pull request em [rodrgds/resumos](https://github.com/rodrgds/resumos). Para sugerir uma alteração ou avisar de um erro, [abre uma issue](https://github.com/rodrgds/resumos/issues/new).
+Corrige um erro, acrescenta um exercício ou escreve apontamentos num pull request em [rodrgds/resumos](https://github.com/rodrgds/resumos). Para sugerir alterações, [abre uma issue](https://github.com/rodrgds/resumos/issues/new).
 
 ## Começar
 
-1. Faz um fork e clona o repositório.
-2. Entra em `devenv shell` e corre `npm ci`.
-3. Corre `npm run build` e `npm run dev`.
-4. Abre `http://localhost:4321/exemplo/` para ver os exemplos.
-
-O índice de pesquisa é gerado no build. Volta a correr `npm run build` quando quiseres pesquisar conteúdo novo durante o desenvolvimento.
+Faz um fork, clona o repositório e segue o [ambiente de desenvolvimento](docs/desenvolvimento.md#correr-e-verificar). A [cadeira fictícia](https://resumos.rgo.pt/exemplo/) mostra os formatos disponíveis; as suas fontes estão em `src/content/lessons/exemplo/`.
 
 ## Criar um resumo
 
-Cria `src/content/lessons/<cadeira>/<pagina>.md` ou `.mdx`. O nome da pasta da cadeira é o seu `id` em `src/data/courses.ts` (LEIC) ou `src/data/meic.ts` (MEIC). Usa nomes curtos, em minúsculas e separados por hífen, como `fp/primeiros-passos.md`.
+Cria `src/content/lessons/<cadeira>/<pagina>.md` ou `.mdx`. Usa o `id` da cadeira em `src/data/courses.ts` ou `src/data/meic.ts` e nomes como `fp/primeiros-passos.md`.
 
 ```yaml
 ---
@@ -25,51 +20,32 @@ draft: true
 ---
 ```
 
-`title` e `description` são obrigatórios. `section` pode ser `conteudo`, `laboratorios`, `exercicios`, `guias` ou `recursos`. Dentro de cada secção, `order` define a ordem; títulos desempatam. Os valores por defeito são `conteudo`, `0` e `draft: false`.
+`title` e `description` são obrigatórios. `section` aceita `conteudo`, `laboratorios`, `exercicios`, `guias` ou `recursos`. `order` ordena as páginas; títulos desempatam. Os valores por defeito são `conteudo`, `0` e `draft: false`.
 
-Mantém `draft: true` enquanto escreves. O rascunho não tem página pública, não aparece na pesquisa e não ativa o cartão da cadeira. Para o rever no navegador, muda temporariamente para `false` no teu checkout. Só publica essa mudança quando o conteúdo estiver pronto.
+Mantém `draft: true` até o conteúdo estar pronto. Para o rever no navegador, muda-o temporariamente para `false` no teu checkout. Rascunhos não geram páginas nem pesquisa. O primeiro resumo publicado ativa o cartão da cadeira; menus e links anterior/seguinte são automáticos. Um `index.md` opcional apresenta a cadeira. A pasta `exemplo` fica separada, em `/exemplo/`.
 
-O primeiro resumo publicado liga automaticamente o cartão da cadeira a `/cadeiras/<cadeira>/`. A sidebar, o índice da página e os links anterior/seguinte são gerados pelo conteúdo. Não precisas de editar rotas ou layouts. Um `index.md` opcional escreve a apresentação da cadeira. A pasta `exemplo` é reservada à cadeira fictícia, em `/exemplo/`.
+Escreve em português simples, com palavras próprias. Explica os passos e as condições de aplicação. Usa os materiais da cadeira como base, verificando o ano académico, e reúne a bibliografia na apresentação, não no corpo de cada lição. Publica apenas materiais que possas reproduzir. O [guia de escrita](.agents/skills/resumos-writing/SKILL.md) desenvolve estes critérios.
+
+Liga entre páginas por rotas absolutas, como `/cadeiras/fp/funcoes/`. Confirma os fragmentos nos títulos da página construída.
 
 ## Cheat sheets e âmbito
 
-Uma folha de consulta serve quem já estudou o tema. Escreve-a de propósito: junta fórmulas, condições, critérios de escolha, procedimentos e erros frequentes. Liga à secção que explica cada ideia. Evita converter o resumo inteiro numa lista de parágrafos curtos.
+Uma folha de consulta reúne fórmulas, condições, procedimentos e erros frequentes, com links para as explicações. Usa `studyKind: revision` e `section: recursos`. Aparece como Cheat sheet, fora da sequência de leitura.
 
-Usa `studyKind: revision` numa página com `section: recursos`, como `me/folha-consulta.md`. A página aparece no menu como “Cheat sheet”, fora da numeração, do progresso e dos links anterior/seguinte. A navegação das restantes páginas é uma lista única, sem separar conteúdo de guias.
+O frontmatter `editorial` é opcional. `basedOn` identifica o ano usado; `sources` recebe títulos e URLs; `coverage` e `gaps` descrevem o âmbito e as lacunas da página. Uma revisão pode acrescentar `review` com `edition`, `reviewer` e `date` em `AAAA-MM-DD`, só depois de conferir as fontes. A data de um commit não é uma revisão. Estes metadados não geram blocos na leitura e não são herdados por outras páginas.
 
-“Imprimir” fica junto de Chat e Brain rot. Imprime a página atual; quando há exercícios associados, permite incluí-los e acrescentar soluções no fim. Um cheat sheet imprime diretamente. A impressão usa conteúdo público preparado no build, num template inerte que só entra no documento ao imprimir. Não inclui respostas, notas nem registos de tentativas. Sem JavaScript, a impressão do navegador inclui o texto da página. Revê a impressão A4, sobretudo tabelas e fórmulas largas.
-
-O frontmatter aceita metadados editoriais opcionais:
-
-```yaml
-editorial:
-  basedOn: 2025/26
-  sources:
-    - title: Programa de DA, SIGARRA 2025/26
-      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560101
-  coverage: Técnicas listadas no percurso. Faltam guiões dos projetos.
-  gaps:
-    - Correspondência com a edição de 2026/27 por verificar.
-```
-
-`basedOn` identifica o programa usado como base. Quando alguém fizer uma revisão, acrescenta `review` com `edition`, `reviewer` e `date` em `AAAA-MM-DD`. Preenche estes valores apenas depois de comparar o conteúdo com as fontes da edição indicada. O nome identifica quem fez essa revisão, não o autor da fonte. Não uses a data de um commit, de download ou de formatação como data de revisão.
-
-Os metadados de uma página não são herdados pelas restantes. Em `index.md`, `coverage` descreve a cobertura da cadeira; noutras páginas, descreve só essa página. Mantém uma frase concreta sobre o que existe e o que falta, sem percentagens. A edição do catálogo e a revisão dos apontamentos são factos distintos. Os metadados ficam no ficheiro de autoria; não acrescentam blocos de estado à leitura.
-
-Reúne as fontes consultadas na apresentação da cadeira (`index.md` ou `index.mdx`), sem citações bibliográficas ou notas de recolha no corpo das lições. O frontmatter editorial é opcional. Nas folhas inspiradas na SofiaViP, mantém o crédito e a ligação ao original em `editorial.sources`. Usa os materiais do Moodle do aluno como base, confirmando o ano nos próprios ficheiros, e completa-os com livros e outras fontes. Downloads, inventários e notas de revisão ficam no arquivo local ignorado em `_data/`, fora do Git e do build. Não cries relatórios de cobertura nem testes que repitam os apontamentos. Escreve com palavras próprias e conserva as condições matemáticas; não copies materiais sem direito de reprodução.
+Downloads e notas de revisão ficam no arquivo local ignorado `_data/`. Mantém os créditos das adaptações em `editorial.sources`. Não publiques inventários de recolha nem testes que repitam o texto dos apontamentos.
 
 ## Exercícios ligados ao tema
 
-Cria um ficheiro MDX com `section: exercicios`, apenas com os componentes das questões. Na lição que ensina o tema, indica os identificadores completos desses conjuntos:
+Cria um MDX com `section: exercicios` e componentes `Exercise`. Na lição correspondente, associa o conjunto:
 
 ```yaml
 practices:
   - exemplo/praticar-somas
 ```
 
-Cada questão aparece fechada, numa pequena lista “Exercícios” no fim da lição. O leitor abre apenas a que quer resolver. Não há categoria de exercícios no menu nem percurso separado. Cada conjunto tem de estar associado a uma lição publicada da mesma cadeira; referências inválidas, rascunhos e conjuntos sem lição interrompem o build. Escolhe poucas questões que peçam decisões diferentes. [Texto e fórmulas](/exemplo/apontamentos/#exercicios) reúne oito exemplos.
-
-Usa `Exercise` para resposta numérica, escolha múltipla ou autoavaliação. Cada questão precisa de um `id` estável, título, ligação à explicação exata, duas pistas, solução e erros frequentes:
+As questões aparecem recolhidas no fim da lição. Cada conjunto precisa de uma lição publicada da mesma cadeira; referências inválidas interrompem o build. Escolhe questões que peçam decisões diferentes.
 
 ```mdx
 import Exercise from '../../../components/Exercise.astro';
@@ -88,27 +64,25 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 ```
 
-- `number` aceita um valor finito, tolerância absoluta não negativa e `unit` opcional. O leitor pode usar vírgula ou ponto decimal. Explicita no enunciado o arredondamento e as unidades.
-- `choice` recebe `options`, cada uma com `text`, `correct` e `explanation`. Deve haver uma única resposta correta. Explica também por que cada distrator falha.
-- `self` recebe `checklist`, uma lista de critérios observáveis. Usa-o em provas curtas, previsões de estado ou código que exige justificação. Registar uma tentativa não a classifica como correta.
+Cada questão precisa de um `id` único na cadeira, uma ligação à explicação exata e os quatro slots do exemplo. Aumenta `revision` quando mudares o enunciado, a resposta ou o seu significado.
 
-Para tarefas de programação com resultado verificável, usa `answer.kind: code`, como abaixo. Reserva `self` para raciocínios que exigem uma justificação. Um `CodePlayground` no slot `work` continua a servir para explorar código numa questão de autoavaliação.
+| Tipo     | Quando usar                                           | Campos                                                    |
+| -------- | ----------------------------------------------------- | --------------------------------------------------------- |
+| `number` | Valor verificável; indica unidades e arredondamento   | `value`, tolerância absoluta `tolerance`, `unit` opcional |
+| `choice` | Uma opção correta, com explicação de cada alternativa | `options` com `text`, `correct` e `explanation`           |
+| `self`   | Prova ou raciocínio que exige justificação            | `checklist` com critérios observáveis                     |
+| `code`   | Programa verificável por comportamento                | `language`, `starter`, `tests`                            |
 
-Os identificadores devem ser únicos na cadeira. Aumenta `revision` quando mudares o enunciado, a resposta ou a interpretação dos resultados, para separar as novas tentativas das antigas. O navegador guarda apenas resultado e nível de ajuda, até 300 registos. Não guarda respostas nem código. Abrir uma pista ou solução fica registado mesmo depois de fechar a caixa, limpar a resposta ou recarregar. Consultar ajuda depois não apaga o resultado anterior; uma nova resposta regista a ajuda já vista. A lista de autoavaliação nunca se transforma numa classificação automática. Sem JavaScript, enunciados, pistas e soluções continuam legíveis.
+Na autoavaliação, o leitor compara com a solução e indica se está certo ou precisa de corrigir. Não é uma classificação automática. O navegador guarda apenas resultados e ajuda consultada, nunca respostas ou código. Abrir uma pista depois da resposta não muda a ajuda atribuída àquela resposta. Enunciados, pistas e soluções continuam legíveis sem JavaScript.
 
 ### Respostas de programação
 
-O tipo `code` aceita inicialmente `python` e `javascript`. Define o código inicial em `starter` e casos públicos em `tests`. Para uma função, cada caso chama a função e imprime o resultado; não compares o texto da resposta com uma solução esperada.
-
-Este exemplo MDX está pronto a usar numa página de exercícios da cadeira fictícia:
+`code` aceita Python e JavaScript. Os casos são públicos, executados separadamente em motores descartáveis. Define entradas normais e casos limite, incluindo a entrada vazia quando fizer sentido. Verifica uma implementação alternativa e uma errada, sem comparar o texto do código.
 
 ```mdx
-import Exercise from '../../../components/Exercise.astro';
-
 <Exercise
   id="somar-lista"
   title="Somar uma lista"
-  revision={1}
   explanation="/exemplo/apontamentos/#limites-de-um-ciclo"
   answer={{
     kind: 'code',
@@ -121,37 +95,21 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
-    Define soma(valores): recebe uma lista de inteiros e devolve a soma, sem
-    imprimir. A soma vazia é zero.
-  </p>
+  <p>Define soma(valores): devolve a soma sem imprimir. A soma vazia é zero.</p>
   <div slot="hint">Começa com um total igual a zero.</div>
-  <div slot="hint-more">
-    Acrescenta cada valor ao total e devolve-o depois do ciclo.
-  </div>
-  <div slot="solution">
-    Usa return sum(valores), ou acumula os valores num ciclo e devolve o total.
-  </div>
-  <div slot="mistakes">
-    Não devolvas dentro do ciclo nem troques return por print.
-  </div>
+  <div slot="hint-more">Acumula os valores antes de devolver o total.</div>
+  <div slot="solution">Usa return sum(valores) ou um ciclo acumulador.</div>
+  <div slot="mistakes">Não devolvas dentro do ciclo nem uses print.</div>
 </Exercise>
 ```
 
-Cada caso tem um `name` descritivo e um `output` esperado. Pode receber `input` para a entrada padrão e `code` para executar depois da resposta, separado por duas quebras de linha. Cada caso começa num motor descartável novo. Compara-se toda a saída padrão e exige-se código de saída zero; só se normalizam CRLF e quebras de linha finais. Espaços, linhas intermédias e mensagens extra contam. Para funções, conserva o nome, os parâmetros e o retorno pedidos; os testes fazem a impressão.
-
-Os casos podem ser consultados pelo leitor. São uma verificação pedagógica, não uma avaliação resistente a fraude nem uma prova de correção. Inclui entradas normais, vazias quando fizerem sentido e limites que distingam erros prováveis. Calcula os resultados independentemente da solução e verifica também uma implementação alternativa e uma errada.
-
-O editor permite executar os testes, parar e repor o código inicial. As respostas são transitórias e não ficam guardadas. O registo conserva apenas o resultado e a ajuda consultada, incluindo pistas e solução. Vê [a função de soma](https://resumos.rgo.pt/exemplo/apontamentos/#exercicios).
+Cada teste tem `name` e `output`; `input` e `code` são opcionais. `code` executa depois da resposta. Compara-se toda a saída padrão e exige-se código de saída zero. Só se normalizam CRLF e quebras de linha finais. Os casos ajudam a aprender, não provam correção nem impedem fraude.
 
 ## Escolher um formato
 
-- **Markdown** para texto, imagens, tabelas, código e fórmulas LaTeX. Vê `src/content/lessons/exemplo/apontamentos.md`.
-- **MDX** para juntar esse texto a componentes. Vê `diagramas.mdx` e `formatacao.mdx` na mesma pasta.
-- **Typst** para escrever o conteúdo inteiro ou só gráficos e diagramas. Guarda os ficheiros em `src/content/<cadeira>/` e importa-os com `?raw` numa página MDX.
-- **DOT** para grafos. Importa o ficheiro com `?raw` e passa-o ao componente `Dot`.
-
-Markdown e MDX partilham `$...$` e `$$...$$`, renderizados com KaTeX. Não incluas `layout` nem `source` no frontmatter: o site trata deles.
+- Markdown para texto, tabelas, imagens, código e LaTeX. MDX acrescenta componentes.
+- `$...$` e `$$...$$` usam KaTeX nos dois formatos. O site define o layout; não acrescentes `layout` ou `source` ao frontmatter.
+- Typst produz texto selecionável ou SVG; DOT produz grafos SVG. Consulta [o processamento de conteúdo](docs/conteudo.md) para compilação e imports.
 
 ### Notas de rodapé e caixas
 
@@ -165,121 +123,42 @@ Texto com **negrito**, ligações e $fórmulas$.
 :::
 
 :::details[Ver a resolução]
-A solução fica aqui. Experimenta primeiro sem a abrir.
+Uma explicação mais longa.
 :::
 ```
 
-As caixas aceitam `note`, `info`, `tip`, `warning`, `danger` e `details`. O título entre parênteses retos é opcional. Dentro da caixa podes usar Markdown normal. Um nome desconhecido interrompe o build para detetar erros de escrita.
+As caixas aceitam `note`, `info`, `tip`, `warning`, `danger` e `details`. Escolhe-as pela dúvida que resolvem; mantém a explicação principal visível.
 
-Escolhe a caixa pela dúvida que resolve: uma condição fácil de esquecer, um contraexemplo ou uma ideia que liga os passos. Não acrescentes uma caixa de cada tipo a todas as páginas. Mantém a explicação necessária visível; usa `details` para uma resolução que o leitor deve tentar primeiro ou para um aprofundamento.
+### Imagens, separadores e vídeo
 
-### Imagens
+Guarda imagens em `public/` com texto alternativo descritivo. `Figure` acrescenta legenda e ligação ao original. Para o modo escuro, escolhe `dim` ou `invert` apenas quando necessário; fotografias e logótipos conservam as cores.
 
-Guarda imagens públicas em `public/` e usa texto alternativo que explique o que mostram. Fotografias e logótipos mantêm as cores por defeito. Para adaptar um esquema ao modo escuro, escolhe `dim` (menos brilho) ou `invert` (inverter cores) e verifica o resultado.
-
-```md
-![Descrição da imagem.](/examples/pontos.svg)
-
-::image{src="/examples/pontos.svg" alt="Quatro filas de pontos." dark="dim"}
-```
-
-Em MDX, `Figure` acrescenta legenda e um link para abrir a imagem original:
-
-```mdx
-import Figure from '../../../components/Figure.astro';
-
-<Figure
-  src="/examples/pontos.svg"
-  alt="Quatro filas de pontos."
-  caption="Legenda e crédito."
-  dark="dim"
-/>
-```
-
-### Separadores
-
-Usa um `id` único por página. Os painéis têm nomes `panel-0`, `panel-1`, etc. Os separadores suportam setas, Home e End; sem JavaScript, o conteúdo de todos os painéis continua visível.
-
-```mdx
-import Tabs from '../../../components/Tabs.astro';
-
-<Tabs id="linguagens" labels={['Python', 'C++']}>
-  <div slot="panel-0">Exemplo em Python.</div>
-  <div slot="panel-1">Exemplo em C++.</div>
-</Tabs>
-```
-
-### Typst, grafos e vídeo
-
-```mdx
-import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
-import grafico from '../../exemplo/crescimento.typ?raw';
-import grafo from '../../exemplo/arvore.dot?raw';
-
-<Typst source={grafico} format="svg" alt="O que o gráfico representa." />
-<Dot source={grafo} alt="O que o grafo representa." />
-<YouTube id="fNk_zzaMoSs" title="Uma explicação em vídeo" />
-```
-
-Os caminhos relativos acima partem de `src/content/lessons/<cadeira>/`. Ajusta-os se criares subpastas. Copia os nomes reais dos ficheiros em `src/content/exemplo/`.
-
-`Typst` sem `format` produz HTML selecionável. `format="svg"` usa a paginação do Typst e exige uma descrição `alt`. A exportação HTML ainda é experimental, por isso revê o resultado, sobretudo as equações.
-
-As páginas de exemplo usam CeTZ 0.5.2, CeTZ-Plot 0.1.4 e Fletcher 0.5.8. Fixa sempre a versão nos imports Typst. O primeiro build descarrega esses pacotes do Typst Universe. Typst e DOT compilam no build, não no navegador do leitor.
-
-O vídeo mostra uma miniatura do YouTube. O leitor só carrega o player quando clica.
+`Tabs` recebe um `id` único e `labels`, com slots `panel-0`, `panel-1`, etc. `YouTube` recebe `id` e `title`, e só carrega o player por escolha do leitor. A [página de formatação](src/content/lessons/exemplo/formatacao.mdx) mostra os componentes completos.
 
 ### Animações com Manim
 
-Usa [Manim Community](https://docs.manim.community/en/stable/) quando o movimento ajudar a explicar uma mudança. Vê [os dois exemplos](/exemplo/animacoes/) e os seus ficheiros `src/content/exemplo/vetores.py` e `derivada.py`.
+Usa movimento quando ajudar a explicar uma mudança; para comparar estados ao ritmo do leitor, prefere uma figura. Vê as [animações de exemplo](https://resumos.rgo.pt/exemplo/animacoes/).
 
-Uma animação deve permitir seguir algo concreto, como uma subárvore que muda de ligação ou um ponto que acompanha uma curva. Diz o que observar e mantém os estados inicial e final legíveis. Se uma figura parada permitir comparar os mesmos dados ao ritmo do leitor, prefere a figura. Não há uma quota de animações por cadeira ou por lição.
-
-1. Guarda a cena Python em `src/content/<cadeira>/`. Importa `palette` de `resumos_manim` e usa `palette['text']`, `palette['accent']` e `palette['diagram-secondary']` nos objetos. O adaptador define o fundo com `palette['surface']`. Usa rótulos ou traços diferentes para que a cor não seja a única distinção.
-2. Regista um identificador em `src/data/manim-scenes.json`. Indica `source`, o nome da classe em `scene`, um instante representativo em segundos em `posterTime` e os ficheiros locais importados ou lidos em `dependencies`. Guarda esses ficheiros no repositório. O instante do poster deve ficar dentro da duração da cena.
-3. Na raiz do projeto, gera os ficheiros com o perfil opcional de Devenv:
+1. Guarda a cena em `src/content/<cadeira>/`. Usa as cores de `palette` em `resumos_manim` e rótulos que não dependam só da cor.
+2. Regista `source`, `scene`, `posterTime` e dependências locais em `src/data/manim-scenes.json`.
+3. Gera a cena pelo identificador:
 
    ```sh
    devenv --profile manim shell -- npm run render:manim -- soma-vetores
    ```
 
-   Substitui `soma-vetores` pelo identificador registado. Sem identificadores, o comando atualiza todas as cenas. O perfil fornece Manim 0.21.0, FFmpeg e a fonte DejaVu Sans, fixados pelo `devenv.lock`. O ambiente normal de escrita não precisa destes programas.
+4. Importa `Manim.astro` e usa `<Manim animation="soma-vetores" title="Somar deslocamentos" description="O vetor v começa na ponta de u; a soma liga o início ao ponto final." />`.
+5. Inclui a cena, as dependências, `src/generated/manim/<id>.json` e `public/manim/<id>/` no pull request. Revê rótulos em telemóvel e nos dois temas.
 
-4. Usa o componente na página MDX:
+O renderizador executa Python no computador do autor. O build e os visitantes usam apenas os ficheiros gerados; fontes alteradas exigem novo render. A descrição deve ensinar a mudança sem depender da animação, que começa pausada com movimento reduzido.
 
-   ```mdx
-   import Manim from '../../../components/Manim.astro';
+### Demos interativas
 
-   <Manim
-     animation="soma-vetores"
-     title="Somar dois deslocamentos"
-     description="O vetor v desloca-se até começar na ponta de u. A soma liga o ponto de partida ao ponto final e tem coordenadas (4, 3)."
-   />
-   ```
+Cria um componente em `src/content/<cadeira>/`, envolvido em `InteractiveDemo.astro` com `label` descritivo, e importa-o na lição. A [transformação de uma matriz](src/content/exemplo/Transformacao.astro) é um exemplo completo.
 
-5. Inclui a cena, as dependências, `src/generated/manim/<identificador>.json` e `public/manim/<identificador>/` no pull request. Corre os checks habituais e revê a página num ecrã pequeno, em claro e escuro.
-
-Os vídeos têm 720p e 30 fotogramas por segundo. O comando gera MP4s e posters para todas as paletas do site, incluindo os três acentos FEUP. Só a versão escolhida é carregada. O player repete a animação enquanto está visível e pausa fora do ecrã ou num separador oculto. Clicar, tocar, premir Espaço ou Enter alterna entre pausa e reprodução. Só aparece um pequeno indicador quando está parado. A preferência de movimento reduzido faz a animação começar parada, sem carregar o vídeo. A descrição deve explicar a mudança e o resultado sem depender do movimento.
-
-Mudar o tema mantém a posição e o estado de reprodução. As cores dentro do vídeo acompanham as paletas integradas; snippets CSS e a fonte de leitura não alteram os píxeis já gerados. A legenda e a moldura continuam a usar os estilos da página. Escolhe texto grande na cena e conserva as fórmulas importantes na página, onde podem aumentar com as preferências do leitor.
-
-O build verifica se os ficheiros gerados correspondem à cena, às dependências declaradas, às paletas e ao renderizador. Se pedir para voltar a gerar uma cena, corre o comando indicado e inclui os novos ficheiros. O build normal e o Cloudflare usam os vídeos guardados, sem executar Python. Revê o código das cenas como qualquer outro programa do repositório; o renderizador executa Python com acesso ao computador do autor.
-
-## Antes de enviar
-
-- Escreve em português simples, com as tuas palavras. Indica as fontes.
-- Só inclui imagens e materiais que tenhas direito a partilhar. Dá crédito ao autor.
-- Adiciona descrições às imagens e aos diagramas.
-- Verifica as equações, os links, a sidebar e a página num ecrã pequeno e nos dois temas.
-- Corre `npm run format`, `npm run check`, `npm test` e `npm run build`.
-
-O pull request deve dizer o que acrescentaste ou corrigiste. Uma alteração pequena e completa é suficiente.
+Mostra controlos da matéria, não a implementação web. Explica as hipóteses na lição e conserva um visual útil sem JavaScript. Dá nomes aos controlos, trata entradas inválidas e usa os tokens do tema. Prefere SVG para figuras simples; uma biblioteca só se justifica quando a experiência precisa dela. Verifica contas, teclado, movimento reduzido, claro/escuro e 320 px.
 
 ## Código que o leitor pode executar
-
-Em MDX, usa `CodePlayground` para os exemplos das linguagens abaixo:
 
 ```mdx
 import CodePlayground from '../../../components/CodePlayground.astro';
@@ -293,83 +172,25 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 />
 ```
 
-`language` aceita `python`, `c`, `cpp`, `java`, `javascript`, `sql`, `haskell`, `prolog` ou `php`. Sem auxiliares, `code` é o programa completo; `input` fornece a entrada padrão, ou o corpo HTTP acessível por `php://input` em PHP e `title` muda o título do bloco. Java precisa da classe `Main`, sem declaração de pacote. Haskell precisa de `main` e não suporta entrada interativa; GHC requer WebAssembly JSPI, disponível nas versões recentes de Chrome e Edge. Prolog executa o predicado `main/0` com SWI-Prolog, não SICStus. Os exemplos usam Python 3.11, C17, C++17, Java 8, QuickJS, SQLite, GHC 9.14 e PHP 8.4. Não dependas de pacotes externos, rede ou ficheiros do computador do leitor. Cada execução começa de novo. Os motores só são descarregados ao executar.
+`code` é o programa completo, `input` fornece a entrada padrão e `title` é opcional. Para várias linhas, usa `input={"3\n10 20 30"}`; um atributo MDX entre aspas não interpreta `\n`. Consulta [linguagens e limites](docs/linguagens.md) e [execução local](docs/execucao.md) antes de escolher o motor. Verifica o programa no editor do site, além de o correr nativamente.
 
 ### Código auxiliar
 
-Usa a propriedade opcional `helpers` quando o programa precisa de funções de apoio que não são o tema da explicação. Guarda-as em `src/content/<cadeira>/` e importa o texto com `?raw`:
+Importa funções de apoio com `?raw` e passa-as em `helpers`. Ficam recolhidas e só de leitura, mas são públicas e entram no programa antes de `code`, também nas versões Markdown e sem JavaScript. Mantém visíveis o algoritmo, os parâmetros e a sintaxe que estás a ensinar. Não acrescentes frases que apenas antecipem a saída ou mandem carregar em Executar.
 
-```mdx
-import CodePlayground from '../../../components/CodePlayground.astro';
-import supportCode from '../../exemplo/apoio.py?raw';
-
-<CodePlayground
-  language="python"
-  helpers={supportCode}
-  code={'print(dobro(21))'}
-/>
-```
-
-Neste exemplo, `apoio.py` define `dobro(n)` e a saída deve ser `42`. Substitui esse caminho pelo teu ficheiro. O leitor edita apenas `code`; o código auxiliar começa oculto e pode ser consultado, mas não editado. Em cada execução, o motor recebe os auxiliares antes do código visível, como um único programa completo. Prepara as declarações e o ponto de entrada para essa ordem, sobretudo nas linguagens compiladas. Não escondas o algoritmo que estás a ensinar.
-
-Os auxiliares são código público incluído na página, disponível também sem JavaScript e na versão Markdown, não uma forma de guardar segredos. Esta opção não acrescenta uploads, persistência de código nem acesso às notas. Mantém os mesmos motores isolados e as mesmas restrições de execução. Numa cadeira que ensina Python, mantém visível a sintaxe que o leitor precisa de aprender. Vê [os exemplos executáveis](https://resumos.rgo.pt/exemplo/codigo/).
-
-Para entrada com várias linhas, usa uma expressão, como `input={"3\n10 20 30"}`. Num atributo MDX entre aspas, `\n` chega ao programa como dois caracteres, sem criar uma linha nova.
-
-O motor C/C++ não suporta exceções. Programas com `throw`, `catch`, `ifstream` ou `ofstream`, e programas que precisem de UNIX ou Minix, ficam em blocos estáticos completos, com instruções de compilação e resultados esperados. Confirma os restantes exemplos no editor do site, além de os compilar localmente.
-
-Para HTML, CSS e JavaScript com DOM, usa `WebPlayground`. A pré-visualização não tem acesso às notas nem à rede:
-
-```mdx
-import WebPlayground from '../../../components/WebPlayground.astro';
-
-<WebPlayground html={'<h1>Olá!</h1>'} css={'h1 { color: teal; }'} js={''} />
-```
-
-Consulta [os exemplos](https://resumos.rgo.pt/exemplo/codigo/). Testa o resultado com entradas conhecidas antes de publicar. Para testar os motores isolados localmente, executa `npm run build:runners` e serve o resultado noutra origem: `python3 -m http.server 4324 --bind 127.0.0.1 --directory runners/dist`. Essa porta é exclusiva do motor e não deve servir o site.
-
-Para RISC-V de 32 bits, usa `CodePlayground language="riscv"` com chamadas de sistema do RARS, como no exemplo. O programa começa em `main` e aceita dados de entrada para as chamadas de leitura. Não tem acesso a ficheiros do computador.
-
-Para Dart/Flutter e para explorar um processador RISC-V passo a passo, usa `<ToolEmbed tool="dartpad" />` ou `<ToolEmbed tool="ripes" />`, importando `components/ToolEmbed.astro`. DartPad também aceita `gist="ID"` para carregar um exemplo público. Estes serviços só carregam depois de o leitor escolher abrir o editor. O DartPad usa compilação externa. Consulta [linguagens e limites](docs/linguagens.md) antes de preparar conteúdo para uma cadeira.
+Para ensinar HTML, CSS e JavaScript com DOM, usa `WebPlayground`. Para observar um parâmetro da matéria, usa uma demo com controlos próprios. DartPad e Ripes estão disponíveis através de `ToolEmbed`; o DartPad compila externamente.
 
 ## Leitura e versões Markdown
 
-A largura da página e a largura do texto são independentes. Os temas mudam as cores de leitura; os cartões das cadeiras mantêm as suas cores. Nos diagramas Typst e DOT, preto, branco e as cores base do projeto acompanham o tema. Outras cores escolhidas pelo autor são preservadas. Não uses apenas a cor para distinguir dados.
+Cores de diagramas acompanham o tema; distingue dados também por rótulos ou traços. O build gera `.md` das páginas públicas e `/llms.txt`, sem rascunhos nem notas locais. Por exemplo, `/exemplo/diagramas.md`. Não edites esses ficheiros gerados.
 
-O build gera uma versão `.md` de cada página pública e um índice `/llms.txt`. Usa o endereço sem a barra final, por exemplo `/exemplo/diagramas.md`. O Markdown vem do HTML publicado, incluindo fórmulas, código e links para SVG com descrição. Não inclui rascunhos nem notas locais. Não edites esses ficheiros gerados.
+## Antes de enviar
+
+- Confirma fontes, direitos de reprodução, contas e programas.
+- Revê links, navegação, imagens com descrição e a página em telemóvel, nos dois temas e em impressão A4.
+- No ambiente Devenv, corre `npm run format:check`, `npm run check`, `npm test` e `npm run build`. Corrige a formatação só nos ficheiros alterados.
+- Explica no pull request o que acrescentaste ou corrigiste.
 
 ## Referência técnica
 
-Consulta os guias de [formatos e compilação](docs/conteudo.md), [execução e isolamento](docs/execucao.md) e [desenvolvimento e publicação](docs/desenvolvimento.md). O [guia de escrita](.agents/skills/resumos-writing/SKILL.md) define a voz dos apontamentos.
-
-### Demos interativas
-
-Usa `InteractiveDemo.astro` para experimentar a matéria com controlos e um visual. Vê [a matriz e o quadrado unitário](https://resumos.rgo.pt/exemplo/interatividade/), com o componente completo em [`src/content/exemplo/Transformacao.astro`](src/content/exemplo/Transformacao.astro). O leitor altera a matriz e observa a área e a orientação, sem editar HTML ou JavaScript.
-
-1. Cria o componente em `src/content/<cadeira>/`. Coloca o `label` descritivo no invólucro `InteractiveDemo`, que exclui os controlos da pesquisa e das anotações. Este é o esqueleto de um componente `.astro`, não a implementação inteira:
-
-   ```astro
-   ---
-   import InteractiveDemo from '../../components/InteractiveDemo.astro';
-   ---
-
-   <InteractiveDemo label="Matriz, área e orientação do quadrado unitário">
-     <!-- Controlos com labels, SVG inicial e resultado inicial. -->
-   </InteractiveDemo>
-   ```
-
-2. Importa-o na lição MDX. A demo do exemplo já inclui o invólucro, por isso não a envolvas outra vez:
-
-   ```mdx
-   import Transformacao from '../../exemplo/Transformacao.astro';
-
-   <Transformacao />
-   ```
-
-3. Escreve as hipóteses na lição. No exemplo, usamos vetores coluna, uma transformação linear sem translação e um quadrado de área 1. Explica o que mudar e porquê, incluindo um caso singular e um determinante negativo. Conserva a fórmula e a interpretação no texto, fora do bloco interativo.
-4. Dá nomes descritivos aos controlos e disponibiliza uma reposição. Mantém uma figura e um resultado iniciais úteis sem JavaScript; desativa os controlos enquanto não funcionarem. Assinala entradas inválidas sem mostrar um novo resultado enganador. Usa `--accent`, `--text`, `--surface` e os restantes tokens do site, e distingue as figuras também pelo traço ou pelos rótulos.
-5. Confirma as contas com valores conhecidos e verifica a página no navegador, em claro e escuro, com teclado e a 320 px. Não acrescentes cabeçalhos ou ações sem função pedagógica. Se houver animação, respeita movimento reduzido.
-
-Prefere SVG nativo para figuras com poucos pontos, eixos ou curvas. Usa canvas para muitos objetos ou desenhos que precisem de ser refeitos continuamente. Uma biblioteca como p5.js pode ajudar quando a experiência precisa das suas ferramentas de desenho ou animação; não a acrescentes só para desenhar um paralelogramo. Em canvas, conserva uma descrição e os resultados no HTML, porque os píxeis não são texto acessível.
-
-Reserva `WebPlayground` para ensinar HTML, CSS e JavaScript. Nas outras cadeiras, usa `CodePlayground` quando correr ou alterar o código ajuda a entender a técnica, como modificar um algoritmo. Quando o objetivo é observar o efeito de um parâmetro da matéria, usa controlos próprios e não exponhas a implementação web da demo.
+[Documentação](docs/README.md) · [Guia de escrita](.agents/skills/resumos-writing/SKILL.md)
