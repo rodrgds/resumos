@@ -6,7 +6,6 @@ order: 2
 ---
 
 import Typst from '../../../components/Typst.astro';
-import YouTube from '../../../components/YouTube.astro';
 import linha from '../../cpd/linha-cache.typ?raw';
 
 Dois programas com as mesmas operações podem demorar tempos muito diferentes conforme a ordem em que tocam na memória. Esta página explica porquê, e é a base prática do primeiro projeto da cadeira.
@@ -31,14 +30,14 @@ Em C, uma matriz `double a[N][N]` guarda cada linha seguida em memória. Percorr
 
 ## Exemplo completo
 
-Multiplicação ingénua $C = A \times B$ com $N = 1024$, somando ao longo de $k$. A versão por linhas fixa $i$ e $j$ e percorre $k$ em sequência, aproveitando a cache. A versão por colunas percorre a matriz saltando entre linhas. Numa medição típica num portátil atual:
+O programa abaixo soma 1 a cada elemento de uma matriz de ordem 1024. Na representação de C, os elementos de uma linha são contíguos. O percurso por colunas salta entre linhas. Considera estes tempos ilustrativos, que servem para calcular a diferença e não são medições deste programa:
 
 | Versão      | Tempo          |
 | ----------- | -------------- |
 | Por linhas  | cerca de 1,1 s |
 | Por colunas | cerca de 3,9 s |
 
-A diferença, um fator de 3 a 4, vem quase toda da cache, porque as operações aritméticas são as mesmas.[^tempos-cache] A leitura crítica: antes de paralelizar, ordena os acessos. Um programa paralelo com mau padrão de acesso multiplica o problema pelo número de núcleos, que passam a disputar a largura de banda da memória em vez de calcular.
+A razão entre os tempos ilustrativos é $3,9/1,1\approx3,55$. As operações aritméticas são iguais, mas a ordem dos acessos muda o aproveitamento da cache. Mede as duas versões na mesma máquina antes de atribuir uma diferença concreta a esse efeito. Paralelizar também pode aumentar a disputa pela largura de banda da memória.
 
 Os dois percursos em C, a única diferença é a ordem dos índices:
 
@@ -56,13 +55,6 @@ for (long j = 0; j < N; j++)
     for (long i = 0; i < N; i++)
         b[i][j] = a[i][j] + 1.0;
 ```
-
-<YouTube
-  id="4YeRe60KWTc"
-  title="Storage Hierarchy, Caching, and Locality, Princeton COS 217"
-/>
-
-[^tempos-cache]: Os valores 1,1 s e 3,9 s são ilustrativos, medidos num portátil concreto para $N = 1024$. Noutra máquina mudam, mas a ordem de grandeza da diferença mantém-se enquanto a linha tiver 64 bytes.
 
 :::details[Ver por que 8 doubles por linha]
 Um `double` ocupa 8 bytes e a linha de cache tem 64 bytes, por isso cada linha traz 8 elementos seguidos. No percurso por linhas, cada falta à cache serve 8 acessos úteis. No percurso por colunas com $N = 1024$, cada acesso cai numa linha diferente e cada falta serve 1 acesso útil, pelo que o programa traz cerca de 8 vezes mais dados da memória.
