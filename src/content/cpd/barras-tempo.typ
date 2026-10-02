@@ -10,5 +10,5 @@
   content((0, 1.5), [Tp real = 4 s em 4 núcleos], anchor: "west")
   rect((0, 0.9), (1.5, 1.3), fill: rgb("28716c"), stroke: none)
   rect((1.5, 0.9), (2.0, 1.3), fill: rgb("8c2d3b"), stroke: none)
-  content((2.2, 1.1), [fatia serial + coordenação], anchor: "west")
+  content((2.2, 1.1), [diferença para o ideal: 1 s], anchor: "west")
 })

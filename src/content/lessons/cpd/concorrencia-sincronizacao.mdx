@@ -1,6 +1,6 @@
 ---
 title: Concorrência e sincronização
-description: Condições de corrida e secções críticas, com um contador partilhado que falha e depois acerta.
+description: Corridas de dados, atomic, critical, barreiras e deadlock, com um contador e uma ordem de bloqueios.
 section: conteudo
 order: 5
 ---
@@ -8,25 +8,27 @@ order: 5
 import Typst from '../../../components/Typst.astro';
 import entrelacamento from '../../cpd/entrelecamento.typ?raw';
 
-Duas threads a escrever na mesma variável sem coordenação podem produzir resultados errados difíceis de depurar. Esta página mostra o mecanismo e a correção.
+Duas threads podem executar uma operação correta isoladamente e produzir um programa incorreto quando partilham dados. A sincronização define que acessos podem ocorrer juntos e quais têm de esperar.
 
 ## A condição de corrida
 
-Uma **condição de corrida** acontece quando o resultado depende da ordem dos acessos entrelaçados das threads. Incrementar um contador parece atómico, mas são três passos, ler, somar 1, escrever. Se duas threads lerem o mesmo valor antes de qualquer uma escrever, um dos incrementos perde-se.
+Uma **condição de corrida** acontece quando o comportamento depende da ordem relativa das tarefas. Uma **corrida de dados** é um caso mais específico: acessos concorrentes à mesma posição, pelo menos um escreve, sem a sincronização exigida pelo modelo de memória.
 
-A zona de código que só pode executar numa thread de cada vez chama-se **secção crítica**. Protegê-la é o trabalho da sincronização. Em OpenMP, `#pragma omp critical` protege um bloco de instruções. `#pragma omp atomic` protege uma operação suportada sobre uma posição de memória, como um incremento. Todos os acessos concorrentes a essa posição precisam de proteção compatível; proteger apenas uma das threads não elimina a corrida.
-
-O desenho mostra um modelo simplificado de um incremento perdido. As duas threads leem 0 antes de qualquer escrita, por isso ambas escrevem 1 e o contador termina a 1 em vez de 2. Este entrelaçamento ajuda a perceber o problema, mas não descreve todos os comportamentos possíveis de um programa C com uma corrida de dados.
+No modelo simplificado de `contador++`, lemos o contador, somamos 1 e escrevemos. Se duas threads lerem 0 antes de qualquer escrita, ambas escrevem 1. Perdemos um incremento.
 
 <Typst
   source={entrelacamento}
   format="svg"
-  alt="Duas threads leem o contador a 0, escrevem 1 cada uma, e o total fica a 1 em vez de 2."
+  alt="As threads A e B leem 0 antes de escrever. Ambas escrevem 1 e o contador termina a 1, embora tenham ocorrido dois incrementos no modelo simplificado."
 />
 
-## Contador partilhado
+Em C, uma corrida de dados provoca **comportamento indefinido**. O desenho explica um incremento perdido, não enumera os resultados permitidos pelo programa real. Obter o valor esperado em muitos ensaios não demonstra correção.
 
-Os excertos seguintes distribuem 400000 incrementos de um contador partilhado por uma equipa de quatro threads. O resultado correto é 400000. Sem proteção:
+## Atomic e secção crítica
+
+Uma **secção crítica** protege um conjunto de operações que não pode ser intercalado com outro acesso protegido pelo mesmo mecanismo. Em OpenMP, `critical` permite proteger um bloco. `atomic` protege uma operação suportada sobre uma posição, como um incremento; não torna um bloco inteiro atómico.
+
+Estes são excertos para colocar num programa com OpenMP e `stdio.h`. O primeiro contém uma corrida:
 
 ```c
 long contador = 0;
@@ -35,11 +37,7 @@ for (long i = 0; i < 400000; i++) contador++;
 printf("%ld\n", contador);
 ```
 
-:::warning[Uma corrida de dados não tem resultado garantido]
-Há acessos concorrentes ao mesmo contador, pelo menos um escreve e não existe sincronização. Em C, esta corrida de dados causa **comportamento indefinido**. Pode aparecer um valor como 287341, mas não há garantia de que fique abaixo de 400000 nem de que mude entre execuções. Obter 400000, mesmo muitas vezes seguidas, não prova que o programa esteja correto.
-:::
-
-Com proteção:
+O segundo protege cada incremento:
 
 ```c
 long contador = 0;
@@ -51,4 +49,18 @@ for (long i = 0; i < 400000; i++) {
 printf("%ld\n", contador);
 ```
 
-Agora imprime sempre 400000. O preço é a serialização dos incrementos, que a [lei de Amdahl](/cadeiras/cpd/lei-de-amdahl/) conta como fração serial. Daqui sai a regra de ouro da sincronização: secções críticas curtas e raras. Proteger cada incremento de um ciclo longo anula o paralelismo, por isso na prática acumula-se em variáveis privadas e combina-se no fim, como a redução da página de [OpenMP](/cadeiras/cpd/paralelismo-openmp/).
+O segundo obtém 400000. Há uma barreira implícita no fim de `parallel for`, por isso a leitura feita por `printf` ocorre depois de todos terminarem. Todos os acessos simultâneos ao contador precisam de proteção compatível. Proteger apenas os escritores enquanto outro lê sem proteção durante o ciclo continua a ser um problema.
+
+Incrementos atómicos disputam a mesma posição, mas isso não prova que o programa inteiro deixe de ganhar com paralelismo. Para uma soma, [acumuladores privados com redução](/cadeiras/cpd/paralelismo-openmp/#uma-redução-em-openmp) costumam reduzir essa contenção.
+
+## Barreiras e condições
+
+Uma **barreira** impede uma thread de passar antes de todas as threads do grupo chegarem. É útil entre produzir dados e consumi-los. Não impede duas threads de escreverem no mesmo elemento durante a fase anterior; não substitui um `atomic`, uma secção crítica ou a atribuição de elementos distintos.
+
+Um **mutex** permite a uma thread entrar numa região protegida de cada vez. Uma variável de condição permite esperar por uma condição sobre o estado. Depois de acordar, verifica novamente a condição sob o mutex, normalmente num ciclo, porque o estado pode ter mudado antes de recuperares o acesso.
+
+## Deadlock e ordem de bloqueios
+
+Um **deadlock** ocorre quando tarefas ficam presas à espera umas das outras. A thread A tem o bloqueio X e espera por Y. A thread B tem Y e espera por X. Nenhuma consegue chegar ao ponto onde liberta o bloqueio que a outra precisa.
+
+Uma correção é impor a mesma ordem em todas as threads: adquirir X antes de Y e libertar depois. Elimina esse ciclo de espera, embora não resolva todas as causas possíveis de bloqueio. A correção tem duas partes: proteger o estado para evitar resultados inválidos e garantir que o programa ainda consegue avançar.

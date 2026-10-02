@@ -1,79 +1,64 @@
 ---
 title: Introdução à computação paralela
-description: Speedup, eficiência e tempo de execução, com um cálculo completo e a sua interpretação.
+description: Processos, threads, speedup e eficiência, com medições comparáveis e limites de interpretação.
 section: conteudo
 order: 1
 ---
 
 import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import barras from '../../cpd/barras-tempo.typ?raw';
 
-Um programa sequencial corre as instruções uma a uma. Um programa paralelo divide o trabalho por vários núcleos que avançam ao mesmo tempo. Esta página fixa o vocabulário mínimo da cadeira e as três medidas com que vais julgar qualquer paralelização.
+Queremos tratar uma imagem mais depressa. Podemos dividir os píxeis por vários núcleos, desde que o cálculo de uma parte não precise do resultado de outra. Depois precisamos de medir se a divisão compensou.
 
-## O vocabulário base
+## Processos, threads e núcleos
 
-Um **processo** é um programa em execução com o seu espaço de memória. Uma **thread** é uma linha de execução dentro de um processo, que partilha a memória com as outras threads do mesmo processo. Um **núcleo** (_core_) é a unidade física do processador que executa instruções. Na parte paralela da cadeira trabalhas quase sempre com threads do mesmo processo em memória partilhada, tipicamente com OpenMP.
+Um **processo** é um programa em execução com o seu espaço de endereços. Uma **thread** é uma sequência de execução dentro de um processo. As threads do mesmo processo partilham dados, mas cada uma tem a sua pilha e o seu estado de execução. Um **núcleo** é uma unidade do processador que executa instruções.
 
-Dizemos que um trecho é **paralelizável** quando pode ser dividido em partes independentes. Somar os elementos de um vetor é paralelizável, porque cada núcleo soma uma fatia. Calcular os dígitos de uma recorrência em que cada valor depende do anterior não é, porque a ordem é obrigatória.
+**Concorrência** significa que várias tarefas podem avançar durante o mesmo intervalo. Num único núcleo, podem alternar. **Paralelismo** significa que executam ao mesmo tempo em unidades diferentes. Criar oito threads não garante que haja oito núcleos disponíveis.
 
-## As três medidas
+Somar um vetor admite somas de fatias independentes e uma combinação final. Já a recorrência `a[i] = a[i-1] + x[i]` tem uma dependência entre iterações. Não podemos distribuir esse ciclo sem tratar a dependência; isso não prova que seja impossível encontrar outro algoritmo paralelo para o mesmo problema.
 
-Corre o mesmo programa em 1 núcleo e em $p$ núcleos e mede os tempos de parede (_wall-clock_), $T_1$ e $T_p$. A partir daí:
+## Speedup e eficiência
 
-- **Speedup**: $S_p = T_1 / T_p$. Quantas vezes mais rápido ficou.
-- **Eficiência**: $E_p = S_p / p$. Que fração do hardware foi aproveitada.
-- **Tempo de execução**: $T_p$ em segundos, a medida que o utilizador sente.
+Mede o **tempo de parede**, o intervalo entre o início e o fim da operação. Seja $T_1$ o tempo da referência sequencial e $T_p$ o tempo com $p$ núcleos, para a mesma entrada e o mesmo resultado:
 
-O speedup ideal com $p$ núcleos é $p$, com eficiência de 100 por cento. Na prática fica sempre abaixo, por três razões que vais reencontrar a cadeira toda. Há trabalho que não se divide (a fração serial), há custo de coordenação (criar threads, sincronizar, comunicar) e há recursos partilhados que saturam (a memória e a cache).
+$$
+S_p = \frac{T_1}{T_p}, \qquad E_p = \frac{S_p}{p}.
+$$
 
-As três barras mostram onde vai o tempo no exemplo de baixo. A barra cheia são os 12 s sequenciais. A barra ideal comprime-os para 3 s. A barra real fica nos 4 s, e a fatia escura é exatamente o que a eficiência de 75 por cento perde, serial mais coordenação.
+O **speedup** mede o ganho de velocidade. A **eficiência** compara esse ganho com o número de núcleos. $E_p=0{,}75$ significa 75% do ganho linear ideal; não mede diretamente a percentagem de tempo em que cada núcleo esteve ocupado.
+
+No modelo ideal de trabalho fixo, sem custos adicionais e com divisão perfeita, $T_p=T_1/p$, $S_p=p$ e $E_p=1$. Medições podem apresentar speedup superior a $p$, por exemplo se a divisão fizer os dados caberem nas caches. Nesse caso, verifica também a referência, a entrada e as condições de medição.
+
+## Um cálculo completo
+
+Uma imagem demora $T_1=12$ s num núcleo e $T_4=4$ s em quatro núcleos:
+
+$$
+S_4=12/4=3, \qquad E_4=3/4=0{,}75=75\%.
+$$
+
+O tempo ideal seria $12/4=3$ s. A execução medida demora mais 1 s. Os tempos não permitem atribuir esse segundo só a trabalho serial ou só a sincronização. Também pode haver desequilíbrio entre fatias ou limite da largura de banda da memória.
 
 <Typst
   source={barras}
   format="svg"
-  alt="Três barras de tempo. T1 com 12 segundos, Tp ideal com 3 segundos e Tp real com 4 segundos, com a última fatia marcada como serial mais coordenação."
+  alt="A referência demora 12 segundos, o ideal com quatro núcleos demora 3 e a medição demora 4. A diferença de 1 segundo não identifica a sua causa."
 />
-
-## Exemplo completo
-
-Um programa de tratamento de imagem demora $T_1 = 12$ s num núcleo e $T_4 = 4$ s em 4 núcleos. Calculamos:
-
-$$
-S_4 = \frac{12}{4} = 3{,}0 \qquad E_4 = \frac{3{,}0}{4} = 0{,}75
-$$
-
-O speedup é 3 e a eficiência é 75 por cento. A interpretação: dos 4 núcleos, um quarto do potencial perdeu-se. Os 12 s de trabalho sequencial viraram 4 s de relógio em vez dos 3 s ideais, por isso 1 s por núcleo foi para a fração serial e para o custo de coordenação. Se o enunciado pedir para julgar a paralelização, é isto que se responde, o número mais o destino do tempo perdido.
-
-<Tabs id="speedup-casos" labels={['12 s em 4 núcleos', 'Treino: 20 s em 8 núcleos']}>
-  <div slot="panel-0">
-
-$S_4 = 12 / 4 = 3{,}0$ e $E_4 = 3{,}0 / 4 = 0{,}75$. Speedup 3, eficiência 75 por cento.
-
-  </div>
-  <div slot="panel-1">
-
-Um programa demora $T_1 = 20$ s e $T_8 = 4$ s. Então $S_8 = 20 / 4 = 5{,}0$ e $E_8 = 5{,}0 / 8 = 0{,}625$. Speedup 5, eficiência 62,5 por cento. Com o dobro dos núcleos, a eficiência caiu, porque a fatia de coordenação pesa mais no total.
-
-  </div>
-</Tabs>
-
-Confere as contas correndo o cálculo:
 
 <CodePlayground
   language="python"
-  title="Calculadora de speedup"
+  title="Calcular ganho e eficiência"
   code={
-    't1, tp, p = 12.0, 4.0, 4\ns = t1 / tp\nprint("speedup:", s)\nprint("eficiência:", round(s / p, 2))'
+    't1, tp, p = 12.0, 4.0, 4\nspeedup = t1 / tp\neficiencia = speedup / p\nprint("speedup:", speedup)\nprint("eficiência (%):", 100 * eficiencia)'
   }
 />
 
-:::tip[Como pensar em teste]
-Perante tempos com 1 e $p$ núcleos, calcula sempre as duas medidas e interpreta a eficiência. Uma eficiência abaixo de 50 por cento com poucos núcleos é sinal de que a coordenação ou a fração serial dominam, e sugere procurar o gargalo antes de pedir mais núcleos.
-:::
+Para outra entrada, $T_1=20$ s e $T_8=4$ s dão $S_8=5$ e $E_8=62{,}5\%$. Não podemos concluir que duplicar núcleos fez cair a eficiência: são problemas diferentes. Para estudar essa mudança, mede o mesmo problema com quatro e oito núcleos.
 
-:::warning[Speedup contra o quê]
-Para avaliar o ganho sobre uma solução sequencial, compara com uma implementação sequencial eficiente. A versão paralela com uma thread pode ainda pagar o custo de criar a equipa e gerir acumuladores. Usa a mesma entrada, resultado e condições de medição e declara qual é o programa de referência.
+## Medir sem confundir causas
 
-:::
+Compara com uma versão sequencial eficiente. A versão paralela com uma thread pode continuar a pagar custos de gestão. Declara qual usaste como referência, mantém a dimensão da entrada e repete medições nas mesmas condições.
+
+Mais núcleos podem reduzir $T_p$ e baixar $E_p$ ao mesmo tempo. Se o objetivo é terminar mais cedo, o menor tempo pode interessar. Se o objetivo é poupar recursos, considera também a eficiência. Para explicar o ganho limitado, procura a [fração serial](/cadeiras/cpd/lei-de-amdahl/#a-lei) e os custos de comunicação, memória e sincronização.
