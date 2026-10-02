@@ -8,7 +8,7 @@ import remarkContainers from './src/lib/remark-containers.mjs';
 import remarkMath from 'remark-math';
 import rehypeDisclosures from './src/lib/rehype-disclosures.mjs';
 import rehypeKatex from 'rehype-katex';
-import { createCssVariablesTheme } from 'shiki';
+import { codeTheme } from './src/lib/code-theme.mjs';
 import { transformerRenderWhitespace } from '@shikijs/transformers';
 
 const content = {
@@ -51,7 +51,7 @@ export default defineConfig({
   markdown: {
     processor: unified(content),
     shikiConfig: {
-      theme: createCssVariablesTheme({ variablePrefix: '--code-' }),
+      theme: codeTheme,
       transformers: [
         transformerRenderWhitespace(),
         {
