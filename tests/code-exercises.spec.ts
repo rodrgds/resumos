@@ -39,7 +39,9 @@ test('JavaScript function exercises check outputs and preserve the input contrac
     'Obtido:',
     { timeout: 45_000 },
   );
-  await expect(exercise.locator('[data-feedback]')).toContainText('Ainda não');
+  await expect(exercise.locator('[data-feedback]')).toContainText(
+    'Resposta incorreta',
+  );
 });
 
 test('code exercises accept different correct implementations and reject wrong behavior', async ({
@@ -63,7 +65,9 @@ test('code exercises accept different correct implementations and reject wrong b
     'Obtido:\n10',
     { timeout: 60_000 },
   );
-  await expect(exercise.locator('[data-feedback]')).toContainText('Ainda não');
+  await expect(exercise.locator('[data-feedback]')).toContainText(
+    'Resposta incorreta',
+  );
   await editor.fill('def soma_naturais(n):\n    return sum(range(1, n + 1))');
   await check.click();
   await expect(exercise.locator('[data-code-status]')).toHaveText(
