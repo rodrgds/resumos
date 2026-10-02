@@ -8,6 +8,7 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import ConvexHull from '../../aed/ConvexHull.astro';
 
 A **envolvente convexa** de um conjunto de pontos é o menor conjunto convexo que os contém. Em duas dimensões, a fronteira é um polígono quando existem pelo menos três pontos não colineares. Com um único ponto ou só pontos colineares, a fronteira degenera. Fixa se queres todos os pontos da fronteira ou apenas os vértices extremos; esta página conserva apenas extremos.
 
@@ -31,9 +32,11 @@ O invariante é que a pilha representa a cadeia convexa dos pontos processados, 
 
 No quadrado `(0,0)`, `(2,0)`, `(2,2)`, `(0,2)`, acrescenta `(1,0)` e `(1,1)`. O ponto `(1,0)` sai quando chega `(2,0)` porque são colineares. O ponto `(1,1)` sai quando um ponto seguinte mostra que está no interior. Os quatro cantos permanecem.
 
+<ConvexHull />
+
 <CodePlayground
   language="cpp"
-  title="Envolvente"
+  title="Construir a envolvente convexa"
   code={
     "#include <algorithm>\n#include <iostream>\n#include <vector>\nstruct Ponto {\n    long long x, y;\n    bool operator==(const Ponto& p) const { return x == p.x && y == p.y; }\n};\nlong long virar(Ponto p, Ponto q, Ponto r) {\n    return (q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);\n}\nlong long distancia2(Ponto p, Ponto q) {\n    return (q.x-p.x)*(q.x-p.x)+(q.y-p.y)*(q.y-p.y);\n}\nstd::vector<Ponto> graham(std::vector<Ponto> a) {\n    std::sort(a.begin(), a.end(), [](Ponto p, Ponto q) {\n        return p.y != q.y ? p.y < q.y : p.x < q.x;\n    });\n    a.erase(std::unique(a.begin(), a.end()), a.end());\n    if (a.size() < 3) return a;\n    const Ponto p = a[0];\n    std::sort(a.begin()+1, a.end(), [p](Ponto q, Ponto r) {\n        const auto c = virar(p,q,r);\n        return c != 0 ? c > 0 : distancia2(p,q) < distancia2(p,r);\n    });\n    std::vector<Ponto> h;\n    for (Ponto q : a) {\n        while (h.size() >= 2 && virar(h[h.size()-2], h.back(), q) <= 0) h.pop_back();\n        h.push_back(q);\n    }\n    return h;\n}\nint main() {\n    const auto h = graham({{0,0},{2,0},{2,2},{0,2},{1,1},{1,0},{0,0}});\n    for (Ponto p : h) std::cout << p.x << ' ' << p.y << '\\n';\n    std::cout << \"colineares: \" << graham({{0,0},{1,1},{2,2}}).size() << '\\n';\n}\n"
   }
