@@ -14,6 +14,8 @@ Notas e preferências ficam só neste navegador, sem sincronização. Limpar os 
 
 Os destaques Rough Notation são desenhados fora do texto, com realce nativo como alternativa. `text-anchors.ts` localiza os trechos pelo texto e contexto. Se o conteúdo mudar ou houver ambiguidade, a nota permanece no caderno sem marcar outro trecho. Fórmulas são unidades de seleção; imagens não são texto. `annotations.ts` guarda notas individualmente para evitar que separadores sobrescrevam o caderno inteiro.
 
+Nos blocos de código e editores, a seleção tem um fundo distinto e mantém as cores da sintaxe. Só os espaços e tabulações selecionados mostram pontos. Os pontos são visuais, não alteram o código copiado ou executado.
+
 ## Atalhos
 
 | Tecla           | Ação                   |

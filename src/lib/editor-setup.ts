@@ -2,7 +2,8 @@ import {
   lineNumbers,
   highlightActiveLineGutter,
   highlightSpecialChars,
-  highlightWhitespace,
+  Decoration,
+  EditorView,
   drawSelection,
   dropCursor,
   rectangularSelection,
@@ -81,12 +82,27 @@ const codeHighlightStyle = HighlightStyle.define([
   },
 ]);
 
+const selectedWhitespace = EditorView.decorations.compute(
+  ['doc', 'selection'],
+  (state) =>
+    Decoration.set(
+      state.selection.ranges.flatMap(({ from, to }) =>
+        Array.from(state.sliceDoc(from, to).matchAll(/[ \t]/g), (match) =>
+          Decoration.mark({
+            class: match[0] === ' ' ? 'cm-highlightSpace' : 'cm-highlightTab',
+          }).range(from + match.index, from + match.index + 1),
+        ),
+      ),
+      true,
+    ),
+);
+
 export function editorSetup(root: HTMLElement) {
   return [
     lineNumbers(),
     highlightActiveLineGutter(),
     highlightSpecialChars(),
-    highlightWhitespace(),
+    selectedWhitespace,
     history(),
     foldGutter({
       markerDOM(open) {
