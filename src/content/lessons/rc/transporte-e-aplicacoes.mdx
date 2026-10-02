@@ -19,6 +19,7 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
+import Manim from '../../../components/Manim.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import aperto from '../../rc/handshake.typ?raw';
 
@@ -41,18 +42,24 @@ A abertura normal tem SYN, SYN-ACK e ACK:
 <Typst
   source={aperto}
   format="svg"
-  alt="Cliente envia SYN sequência100; servidor responde SYN-ACK sequência500 confirmação101; cliente confirma com sequência101 e confirmação501."
+  alt="Cliente envia SYN sequência 100; servidor responde SYN-ACK sequência 500 confirmação 101; cliente confirma com sequência 101 e confirmação 501."
 />
 
 Depois deste exemplo, o primeiro byte do cliente tem número 101. Se enviar 200 bytes e depois 100, os segmentos começam em 101 e 301; após ambos, o servidor confirma 401. A numeração do servidor é independente.
 
-**Perda.** Chegam bytes 1000–1299 e 1600–1899, mas faltam 1300–1599. O ACK cumulativo continua em 1300. Quando chegam os bytes em falta, pode avançar para 1900. SACK, se negociado, permite indicar blocos recebidos fora de ordem sem alterar o significado do ACK cumulativo.
+**Perda.** Chegam bytes 1000–1299 e 1600–1899, mas faltam 1300–1599. O ACK cumulativo continua em 1300. Quando chegam os bytes em falta, pode avançar para 1900. SACK, se negociado, permite indicar blocos recebidos fora de ordem sem alterar o significado do ACK cumulativo. Os intervalos incluem os dois extremos: 1000–1299 contém 300 bytes. ACK 1300 refere-se ao **próximo** byte esperado, que ainda não foi recebido.
+
+<Manim
+  animation="rc-ack-cumulativo"
+  title="O ACK espera pelos bytes em falta"
+  description="O recetor recebe 1000–1299 e confirma 1300. Guarda 1600–1899, mas mantém ACK 1300 porque falta 1300–1599. Quando a lacuna chega, há bytes contínuos até 1899 e o ACK avança para 1900. Os extremos dos intervalos estão incluídos; o ACK indica o próximo byte esperado."
+/>
 
 O fecho usa FIN em cada direção e respetivas confirmações. Um lado pode terminar os seus envios sem que o outro já tenha terminado. TIME-WAIT ajuda a lidar com segmentos atrasados e com a confirmação final; não é uma retransmissão de dados em curso.
 
 ## Timeout e estimativa de RTT
 
-O tempo de ida e volta varia. Um temporizador muito curto retransmite dados ainda em trânsito; um muito longo demora a recuperar perdas. Uma estimativa suavizada usa amostras de RTT e uma medida de variação. A regra básica estudada é da forma $RTO=SRTT+4RTTVAR$, sujeita aos limites do algoritmo.
+O tempo de ida e volta varia. Um temporizador muito curto retransmite dados ainda em trânsito; um muito longo demora a recuperar perdas. Uma estimativa suavizada usa amostras de RTT e uma medida de variação. **SRTT** é a estimativa suavizada do RTT, **RTTVAR** mede a sua variação e **RTO** é o tempo até à retransmissão. A regra básica estudada é da forma $RTO=SRTT+4RTTVAR$, sujeita aos limites do algoritmo.
 
 Não uses indiscriminadamente uma amostra de uma transmissão repetida: pode ser impossível distinguir a que envio corresponde o ACK, problema tratado pelo algoritmo de Karn. Expirar o timeout aumenta a espera antes de tentar de novo. ACKs duplicados podem desencadear retransmissão rápida sem esperar pelo timeout, conforme a variante.
 
@@ -63,6 +70,8 @@ O **controlo de fluxo** evita exceder a capacidade do recetor. A janela anunciad
 Com $W$ **bytes** de janela efetiva e RTT de $T$ segundos, o limite ideal por janela é $8W/T$ bit/s. O débito também não excede o bottleneck do caminho. Para W=64000 bytes e RTT=0,08 s, obténs 6,4 Mbit/s. Se a ligação limitar a 5 Mbit/s, o menor limite passa a 5 Mbit/s.
 
 ## Slow start, AIMD e perdas
+
+**MSS**, _Maximum Segment Size_, mede o máximo de bytes de dados num segmento, sem cabeçalhos TCP ou IP. Escrever uma janela de 8 MSS significa oito segmentos desse tamanho. `ssthresh` é o limiar entre as duas fases de crescimento.
 
 No TCP clássico, **slow start** aumenta a janela por ACK, aproximadamente duplicando-a por RTT quando cada segmento é confirmado e há dados suficientes. Ao atingir `ssthresh`, **congestion avoidance** aumenta aproximadamente um MSS por RTT, crescimento aditivo.
 
@@ -87,4 +96,4 @@ print(f"Limite conjunto: {min(limite_janela, ligacao_bits_s)/1e6:.1f} Mbit/s")`}
 
 No Wireshark, segue um fluxo TCP e regista sequência, ACK, comprimento dos dados, flags e janela. A apresentação pode usar números relativos, distintos dos valores brutos. Se dois segmentos se perderem, desenha os bytes em falta antes de prever confirmações. A aplicação só recebe uma sequência contínua, mesmo que a captura já mostre segmentos posteriores.
 
-Para praticar, usa um traço de TCP disponibilizado para estudo ou uma captura tua autorizada e compara com o [percurso das aplicações](../aplicacoes/).
+Para praticar, usa um traço de TCP disponibilizado para estudo ou uma captura tua autorizada e compara com o [percurso das aplicações](/cadeiras/rc/aplicacoes/).
