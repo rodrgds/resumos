@@ -1,0 +1,148 @@
+---
+title: 'Praticar: Tolerância a falhas'
+description: Exercícios originais com decisões, cálculos e pistas graduais.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="cpd-anel-mensagens"
+  title="Outro iniciador no mesmo anel"
+  explanation="/cadeiras/cpd/tolerancia-falhas/#uma-eleição-completa"
+  answer={{"kind": "number", "value": 8, "tolerance": 0, "unit": "mensagens"}}
+>
+
+O anel reconstruído é $2	o5	o7	o2$, com ligações fiáveis. Só o 2 inicia a variante descrita na lição. Ao receber um identificador menor, um processo substitui-o pelo seu. Conta envios de eleição e um anúncio do vencedor que percorre todo o anel e regressa ao vencedor. Quantos envios há no total?
+
+  <div slot="hint">
+
+Segue o identificador em cada aresta, sem contar apenas processos.
+
+  </div>
+
+  <div slot="hint-more">
+
+O 7 só vence quando recebe de volta o seu próprio identificador.
+
+  </div>
+
+  <div slot="solution">
+
+Eleição: $2	o5$ com 2, $5	o7$ com 5, $7	o2$ com 7, $2	o5$ com 7 e $5	o7$ com 7. São cinco envios. O anúncio percorre três arestas, totalizando oito.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não parar quando 7 substitui a mensagem: ainda precisa de ver o seu identificador regressar. A contagem vale para esta variante de iniciador único.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-2pc-preparado"
+  title="Votar sim e depois perder contacto"
+  explanation="/cadeiras/cpd/tolerancia-falhas/#por-que-o-2pc-pode-bloquear"
+  answer={{"kind": "choice", "options": [{"text": "Espera ou procura uma decisão conhecida; só o timeout não autoriza abortar.", "correct": true, "explanation": "Outra máquina pode já conhecer uma decisão de confirmar."}, {"text": "Aborta sempre após o timeout.", "correct": false, "explanation": "Isso pode contradizer uma confirmação que outro participante já recebeu."}, {"text": "Confirma porque votar sim já é uma confirmação.", "correct": false, "explanation": "O voto é a promessa de cumprir a decisão global, não essa decisão."}]}}
+>
+
+A registou preparado e votou sim no 2PC. Não recebeu decisão e não consegue contactar ninguém. O que pode fazer sem violar a atomicidade?
+
+  <div slot="hint">
+
+A sua informação é compatível com mais de uma decisão global.
+
+  </div>
+
+  <div slot="hint-more">
+
+O coordenador pode ter comunicado confirmar a B antes de falhar.
+
+  </div>
+
+  <div slot="solution">
+
+A preserva o estado preparado e espera por informação suficiente. Timeout é ausência de resposta, não prova de abortar. Se puder contactar alguém com uma decisão definitiva, pode aprendê-la.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não confundir voto sim com commit nem impor aborto unilateral no estado preparado.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-2pc-nao"
+  title="Um voto impede confirmar"
+  explanation="/cadeiras/cpd/tolerancia-falhas/#two-phase-commit"
+  answer={{"kind": "self", "checklist": ["Escolhe abortar perante o voto não.", "Explica por que os outros votos sim não autorizam maioria.", "Regista a decisão duravelmente antes de comunicar."]}}
+>
+
+No 2PC, A e B votam sim e C vota não. O coordenador ainda está vivo. Que decisão toma e porquê? Em que ordem regista e envia essa decisão?
+
+  <div slot="hint">
+
+A regra de confirmação exige todos os votos.
+
+  </div>
+
+  <div slot="hint-more">
+
+Votos no 2PC não são uma votação por maioria.
+
+  </div>
+
+  <div slot="solution">
+
+O coordenador decide abortar porque C não pode confirmar. Regista abortar duravelmente antes de informar os participantes. A e B estavam preparados para cumprir a decisão, não tinham confirmado só por votar sim.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não usar maioria para confirmar no 2PC. Não enviar uma decisão que se perderia da memória após uma falha.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-apoio-assincrono"
+  title="Resposta antes de replicar"
+  explanation="/cadeiras/cpd/tolerancia-falhas/#replicação-primário-apoio"
+  answer={{"kind": "self", "checklist": ["Mostra a janela entre responder ao cliente e atualizar o apoio.", "Explica a possível perda da atualização após falhar o primário.", "Indica replicação durável antes da resposta e proteção contra o primário antigo."]}}
+>
+
+O primário responde que guardou uma atualização e só depois a envia ao apoio. Falha antes desse envio. O apoio assume. A resposta recebida pelo cliente garante que a atualização está no novo primário? Que regras mudariam essa garantia?
+
+  <div slot="hint">
+
+O apoio só conserva dados que chegou a receber e guardar.
+
+  </div>
+
+  <div slot="hint-more">
+
+Compara a ordem resposta e replicação nas variantes síncrona e assíncrona.
+
+  </div>
+
+  <div slot="solution">
+
+Não. Na replicação assíncrona, uma atualização já confirmada ao cliente pode faltar no apoio. Uma regra síncrona espera pela persistência exigida no apoio antes da resposta, assumindo que este sobrevive. A promoção também precisa de impedir escritas do antigo primário; não é resolvida só por replicar.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não prometer continuidade sem interrupção ou segurança contra partições apenas porque há duas cópias.
+
+  </div>
+
+</Exercise>

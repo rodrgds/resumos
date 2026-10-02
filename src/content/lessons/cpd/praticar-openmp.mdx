@@ -1,0 +1,144 @@
+---
+title: 'Praticar: Paralelismo e OpenMP'
+description: Exercícios originais com decisões, cálculos e pistas graduais.
+section: exercicios
+order: 0
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="cpd-pipeline-debito"
+  title="Limite de um pipeline"
+  explanation="/cadeiras/cpd/paralelismo-openmp/#tipos-de-paralelismo"
+  answer={{"kind": "number", "value": 4, "tolerance": 0, "unit": "ms por elemento"}}
+>
+
+Um pipeline tem três fases que demoram 1, 4 e 2 ms por elemento. Cada fase tem um recurso dedicado, pode sobrepor-se às outras e trata um elemento de cada vez. Sem custo de transferência, qual é o intervalo mínimo entre conclusões em regime estável?
+
+  <div slot="hint">
+
+O pipeline não conclui mais depressa do que a sua fase mais lenta.
+
+  </div>
+
+  <div slot="hint-more">
+
+Distingue primeira conclusão de conclusões seguintes.
+
+  </div>
+
+  <div slot="solution">
+
+O intervalo é 4 ms, limitado pela segunda fase. O primeiro elemento demora $1+4+2=7$ ms a atravessar as três fases. Depois do preenchimento, podem concluir-se elementos a cada 4 ms.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não usar 7 ms como intervalo em regime estável nem 1 ms por ser a fase mais rápida.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-dependencia-ciclo"
+  title="Uma diretiva não elimina dependências"
+  explanation="/cadeiras/cpd/paralelismo-openmp/#correção-e-custo"
+  answer={{"kind": "choice", "options": [{"text": "É preciso tratar a dependência de a[i] em a[i-1] antes de distribuir o ciclo.", "correct": true, "explanation": "A iteração seguinte lê um resultado da anterior."}, {"text": "Basta colocar reduction sobre a.", "correct": false, "explanation": "Uma redução não implementa automaticamente a recorrência."}, {"text": "Basta dar um índice diferente a cada thread.", "correct": false, "explanation": "As escritas distintas não eliminam a leitura do resultado anterior."}]}}
+>
+
+Queremos paralelizar `a[i] = a[i-1] + x[i]`, para índices de 1 até n-1. Qual é a análise correta antes de usar `parallel for`?
+
+  <div slot="hint">
+
+Lista leituras e escritas de uma iteração.
+
+  </div>
+
+  <div slot="hint-more">
+
+A iteração i+1 lê a posição que a iteração i escreve.
+
+  </div>
+
+  <div slot="solution">
+
+Há uma dependência entre iterações. Precisamos de conservar essa ordem ou usar outro algoritmo que produza o mesmo resultado com uma estratégia paralela adequada.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não analisar apenas os destinos das escritas.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-reducao-decimais"
+  title="Somas ligeiramente diferentes"
+  explanation="/cadeiras/cpd/paralelismo-openmp/#correção-e-custo"
+  answer={{"kind": "self", "checklist": ["Explica que a redução combina somas parciais noutra ordem.", "Relaciona essa ordem com o arredondamento em vírgula flutuante.", "Propõe uma comparação numérica com tolerância adequada ao problema, sem ignorar erros grandes."]}}
+>
+
+Uma soma com `reduction(+:soma)` dá um valor ligeiramente diferente da soma sequencial de doubles gerais. O programa inicializa os dados corretamente e não tem corrida. Isto prova um erro? Como compararias os resultados?
+
+  <div slot="hint">
+
+A adição em vírgula flutuante envolve arredondamento.
+
+  </div>
+
+  <div slot="hint-more">
+
+Uma soma parcial muda a associação das adições.
+
+  </div>
+
+  <div slot="solution">
+
+Não prova um erro. A redução pode alterar a ordem de adição e os arredondamentos. Compara com uma tolerância absoluta ou relativa justificada pela escala e precisão exigida; investiga diferenças que a excedam. Para os uns exatos do exemplo, a soma esperada continua a ser exata.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não exigir igualdade bit a bit para qualquer entrada nem aceitar toda diferença só por usar doubles.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  id="cpd-caminho-critico"
+  title="Um limite pelas dependências"
+  explanation="/cadeiras/cpd/paralelismo-openmp/#trabalho-e-caminho-crítico"
+  answer={{ kind: 'number', value: 6, tolerance: 0, unit: 's' }}
+>
+
+As tarefas A, B, C e F demoram 2, 5, 3 e 1 s. A e B são independentes. C só pode começar depois de A; F só depois de B e C. Com duas unidades iguais e sem custos adicionais, qual é o limite inferior dado pelo trabalho e pelo caminho crítico?
+
+  <div slot="hint">
+
+Soma o trabalho total e segue cada cadeia de dependências.
+
+  </div>
+  <div slot="hint-more">
+
+As cadeias são A, C, F e B, F. Compara a maior duração com o trabalho dividido por dois.
+
+  </div>
+  <div slot="solution">
+
+$W=2+5+3+1=11$ s. As cadeias A, C, F e B, F demoram ambas 6 s, logo $D=6$ s. O limite é $\max(11/2,6)=6$ s. Aqui pode ser atingido: uma unidade executa B durante 5 s, a outra A e depois C durante 5 s, e F termina um segundo depois.
+
+  </div>
+  <div slot="mistakes">
+
+Não usar só W/2, porque as dependências impõem outro limite. Um limite inferior, em geral, não garante que haja um escalonamento que o atinja.
+
+  </div>
+</Exercise>
