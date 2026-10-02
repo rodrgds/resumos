@@ -1,0 +1,105 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+const products = [
+  { id: 10, nome: 'Teclado', preco: 45 },
+  { id: 11, nome: 'Rato', preco: 25 },
+  { id: 12, nome: 'Monitor', preco: 180 },
+  { id: 13, nome: 'Rato', preco: 30 },
+];
+---
+
+<InteractiveDemo label="Seleção e projeção de uma relação de produtos">
+  <div data-bd-selection data-products={JSON.stringify(products)}>
+    <label>
+      Preço mínimo em euros
+      <input type="range" min="0" max="180" value="0" step="5" data-threshold />
+      <output data-value>0</output>
+    </label>
+    <label>
+      <input type="checkbox" data-project /> Projetar apenas o nome
+    </label>
+    <p data-description role="status">
+      4 tuplos no resultado.
+    </p>
+    <table>
+      <caption>Resultado da operação</caption>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>nome</th>
+          <th>preço</th>
+        </tr>
+      </thead>
+      <tbody>
+        {products.map((p) => (
+          <tr>
+            <td>{p.id}</td>
+            <td>{p.nome}</td>
+            <td>{p.preco}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</InteractiveDemo>
+<script>
+  type Product = { id: number; nome: string; preco: number };
+  for (const demo of document.querySelectorAll<HTMLElement>(
+    '[data-bd-selection]',
+  )) {
+    const products: Product[] = JSON.parse(demo.dataset.products!);
+    const threshold = demo.querySelector<HTMLInputElement>('[data-threshold]')!;
+    const project = demo.querySelector<HTMLInputElement>('[data-project]')!;
+    const update = () => {
+      const selected = products.filter(
+        (p) => p.preco >= Number(threshold.value),
+      );
+      const rows = project.checked
+        ? [...new Set(selected.map((p) => p.nome))].map((nome) => [nome])
+        : selected.map((p) => [String(p.id), p.nome, String(p.preco)]);
+      const head = document.createElement('tr');
+      for (const label of project.checked
+        ? ['nome']
+        : ['id', 'nome', 'preço']) {
+        const cell = document.createElement('th');
+        cell.textContent = label;
+        head.append(cell);
+      }
+      demo.querySelector('thead')!.replaceChildren(head);
+      demo.querySelector('tbody')!.replaceChildren(
+        ...rows.map((row) => {
+          const line = document.createElement('tr');
+          for (const value of row) {
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            line.append(cell);
+          }
+          return line;
+        }),
+      );
+      demo.querySelector('output')!.textContent = threshold.value;
+      demo.querySelector('[data-description]')!.textContent =
+        `${rows.length} tuplos no resultado.`;
+    };
+    threshold.addEventListener('input', update);
+    project.addEventListener('change', update);
+  }
+</script>
+<style>
+  label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6em;
+    margin-block: 0.6em;
+  }
+  input[type='range'] {
+    max-width: 100%;
+  }
+  table {
+    width: 100%;
+  }
+  caption {
+    text-align: left;
+  }
+</style>

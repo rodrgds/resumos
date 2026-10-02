@@ -1,0 +1,114 @@
+---
+title: CTEs e consultas recursivas
+description: Resultados intermédios, parte inicial, passo recursivo, hierarquias e terminação.
+section: conteudo
+order: 10
+practices:
+  - bd/praticar-recursao
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
+
+Uma **CTE**, _common table expression_, dá nome a um resultado dentro de uma instrução SQL. Ajuda a dividir uma pergunta em etapas sem criar uma vista permanente. A variante recursiva produz linhas a partir de linhas já obtidas.
+
+## WITH: dar nome a um passo
+
+<CodePlayground
+  language="sql"
+  title="Totais por encomenda, depois por cliente"
+  code={`${loja}
+WITH Totais AS (
+  SELECT idEncomenda, SUM(qtd * precoUnitario) AS total
+  FROM Item GROUP BY idEncomenda
+), PorCliente AS (
+  SELECT e.idCliente, SUM(t.total) AS total
+  FROM Encomenda AS e JOIN Totais AS t ON t.idEncomenda = e.id
+  GROUP BY e.idCliente
+)
+SELECT c.id, c.nome, COALESCE(p.total, 0) / 100.0 AS euros
+FROM Cliente AS c LEFT JOIN PorCliente AS p ON p.idCliente = c.id
+ORDER BY c.id;`}
+/>
+
+Totais tem uma linha por encomenda. PorCliente reúne essas linhas por comprador. A resposta tem Ana com 295 euros, Rui com 75 e Mia com 0. O `LEFT JOIN` e `COALESCE` têm papéis distintos: o primeiro conserva Mia; o segundo apresenta o total ausente como zero.
+
+Uma CTE pode referenciar outra definida na mesma instrução. O seu nome deixa de existir no fim dessa instrução. Não garante materialização nem uma vantagem de desempenho; o otimizador pode integrá-la no plano. A razão inicial para a usar aqui é exprimir claramente o nível de cada agregação.
+
+## Parte inicial e passo recursivo
+
+Uma CTE recursiva tem uma **parte inicial**, que cria as primeiras linhas, e um **passo recursivo**, que usa o resultado anterior para criar mais. As duas partes têm de devolver o mesmo número de colunas com significados compatíveis.
+
+<CodePlayground
+  language="sql"
+  title="Gerar os números de 1 a 5"
+  code={`WITH RECURSIVE Numero(n) AS (
+  SELECT 1
+  UNION ALL
+  SELECT n + 1 FROM Numero WHERE n < 5
+)
+SELECT n FROM Numero ORDER BY n;`}
+/>
+
+A parte inicial produz 1. O passo lê 1 e produz 2, depois 3, 4 e 5. Ao ler 5, `n < 5` é falso e não produz uma linha nova. A recursão termina. A condição usa o valor anterior: trocar `< 5` por `<= 5` produziria também 6.
+
+Não contes com um suposto limite fixo de profundidade para tornar uma consulta correta. Escreve uma condição de terminação e, quando necessário, um limite de trabalho compatível com a pergunta. Os limites e restrições dependem do motor.
+
+## Percorrer uma hierarquia
+
+Cada categoria tem no máximo uma categoria mãe. A raiz tem `NULL`. Queremos a raiz e todos os seus descendentes, com profundidade 0 para a raiz.
+
+<CodePlayground
+  language="sql"
+  title="Categorias descendentes de Informática"
+  code={`PRAGMA foreign_keys = ON;
+CREATE TABLE Categoria(
+  id INTEGER PRIMARY KEY,
+  nome TEXT NOT NULL,
+  idMae INTEGER REFERENCES Categoria(id)
+);
+INSERT INTO Categoria VALUES
+  (1, 'Informática', NULL), (2, 'Periféricos', 1),
+  (3, 'Teclados', 2), (4, 'Monitores', 1), (5, 'Casa', NULL);
+WITH RECURSIVE Descendente(id, nome, profundidade) AS (
+  SELECT id, nome, 0 FROM Categoria WHERE id = 1
+  UNION ALL
+  SELECT c.id, c.nome, d.profundidade + 1
+  FROM Categoria AS c JOIN Descendente AS d ON c.idMae = d.id
+)
+SELECT id, nome, profundidade FROM Descendente
+ORDER BY profundidade, id;`}
+/>
+
+A resposta é Informática/0, Periféricos/1, Monitores/1 e Teclados/2. Casa não é alcançada. A condição `c.idMae = d.id` segue filhos; inverter os papéis pode seguir ascendentes em vez de descendentes.
+
+O exemplo assume uma hierarquia sem ciclos. A estrangeira verifica que a mãe existe, mas permite criar um ciclo entre categorias. A validação da estrutura é uma regra adicional.
+
+## Grafos e ciclos
+
+Num grafo, o mesmo nó pode ser alcançado por vários caminhos. Se queremos apenas o conjunto de nós alcançáveis, podemos usar uma coluna id e `UNION`, que elimina resultados já obtidos:
+
+<CodePlayground
+  language="sql"
+  title="Alcançabilidade com um ciclo"
+  code={`CREATE TABLE Aresta(origem INTEGER, destino INTEGER,
+  PRIMARY KEY(origem, destino));
+INSERT INTO Aresta VALUES (1,2), (2,3), (3,1), (2,4);
+WITH RECURSIVE Alcancavel(id) AS (
+  SELECT 1
+  UNION
+  SELECT a.destino FROM Aresta AS a
+  JOIN Alcancavel AS r ON a.origem = r.id
+)
+SELECT id FROM Alcancavel ORDER BY id;`}
+/>
+
+O resultado é 1, 2, 3 e 4. Voltar ao nó 1 não introduz um novo tuplo. `UNION ALL` conservaria as repetições e seguiria o ciclo indefinidamente se não houvesse outra condição.
+
+Se acrescentarmos profundidade, `(1,0)` e `(1,3)` são tuplos diferentes. `UNION` já não elimina esse retorno apenas por ter o mesmo id. Para listar caminhos ou distâncias, precisamos de outra estratégia, como impedir a repetição de nós no caminho e limitar a exploração. A escolha das colunas faz parte da prova de terminação.
+
+## Limites de SQLite
+
+Em SQLite, a parte recursiva tem de usar a tabela recursiva segundo as restrições do motor, sem referências adicionais em subconsultas, e não pode usar agregações nem funções de janela nessa parte. Podemos agregar no `SELECT` exterior depois de produzir as linhas.
+
+Uma CTE recursiva não é necessariamente a melhor opção para toda a pergunta. No método de D'Hondt, por exemplo, podemos gerar divisores 1 a M recursivamente, cruzá-los com os votos, calcular quocientes, escolher os M lugares e só depois contar mandatos. A recursão pertence à geração dos divisores; não precisamos de tornar toda a agregação recursiva. A regra de desempate tem de ser especificada para a eleição concreta.

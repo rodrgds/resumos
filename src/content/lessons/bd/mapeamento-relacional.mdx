@@ -1,106 +1,129 @@
 ---
 title: Do UML ao esquema relacional
-description: Mapear classes e associações para tabelas, chaves primárias e estrangeiras.
+description: Relações, chaves, associações n-árias e estratégias de tradução de generalizações.
 section: conteudo
-order: 2
+order: 3
+practices:
+  - bd/praticar-mapeamento
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 import esquema from '../../bd/esquema-relacional.typ?raw';
 
-O **esquema relacional** é a tradução do diagrama UML para tabelas: cada tabela tem colunas, cada linha é uma instância e as ligações entre tabelas fazem-se com chaves. Há uma regra de tradução para cada construção do diagrama, e aplicá-las mecanicamente dá o esquema certo.
+O modelo conceptual fala de objetos e ligações. O modelo relacional guarda tuplos em relações e liga-os por valores de chaves. A tradução tem de preservar o significado, não apenas criar uma tabela para cada caixa.
 
 ## A regra base e as chaves
 
-Cada classe vira uma tabela com os seus atributos como colunas. A chave da classe vira a **chave primária** (_primary key_, PK): a coluna, ou combinação, que identifica cada linha e nunca se repete nem é nula. Uma **chave estrangeira** (_foreign key_, FK) é uma coluna que guarda a chave primária de outra tabela, criando a ligação entre as linhas.
+Cada classe origina uma relação com os seus atributos simples. Uma **superchave** identifica um tuplo sem ambiguidade. Uma **chave candidata** é uma superchave mínima: retirar qualquer atributo faz perder essa capacidade. Escolhemos uma candidata como **chave primária** e conservamos as outras como chaves alternativas.
 
-Para a loja:
+Se `id` e `email` identificam clientes, ambos são candidatos, desde que o email seja obrigatório e único no domínio. `id, nome` é superchave mas não candidata, porque `id` já chega. No nosso exemplo, emails desconhecidos são permitidos, pelo que email não é chave candidata conceptual, embora exista uma restrição `UNIQUE` em SQL.
 
-```
-Cliente(id, nome, email)          -- PK: id
-Produto(id, nome, preco, stock)   -- PK: id
-```
+Uma **chave estrangeira** referencia uma chave candidata de outra relação ou da própria relação. Pode ser composta. As referências de uma chave composta têm de corresponder ao mesmo tuplo alvo, não a tuplos separados para cada coluna.
 
 ## Associações um para muitos
 
-A associação um para muitos traduz-se com uma chave estrangeira do lado **muitos**. Cada encomenda tem um cliente, por isso a tabela `Encomenda` ganha a coluna `idCliente` a apontar para `Cliente(id)`:
+Cada encomenda tem um cliente, por isso:
 
-```
-Encomenda(id, data, idCliente)    -- PK: id; FK: idCliente -> Cliente(id)
+```text
+Cliente(id, nome, email)             PK: id
+Encomenda(id, data, idCliente)        PK: id
+Encomenda.idCliente → Cliente.id
 ```
 
-Não ponhas a estrangeira do outro lado: uma coluna `idEncomenda` em `Cliente` só guardaria uma encomenda por cliente e estragava o `*`. A regra é sempre esta: a FK vive na tabela do lado muitos e aponta para a PK do lado um.
+A estrangeira fica em Encomenda, o lado muitos. Uma única coluna em Cliente não poderia guardar várias encomendas. Se a encomenda tem exatamente um cliente, `idCliente` é `NOT NULL`; se pudesse não ter cliente, admitiria `NULL`.
+
+A estrangeira garante que o cliente referenciado existe. Não garante que todos os clientes tenham encomendas. Por isso, a exigência `1..*` junto de Encomenda precisaria de outro mecanismo, como validação transacional ao confirmar os dados.
+
+Também podemos criar uma relação separada `Faz(idEncomenda, idCliente)` cuja chave é `idEncomenda`. A unicidade da encomenda mantém o máximo de um cliente. Esta alternativa é útil quando a ligação tem identidade ou evolução próprias; a estrangeira integrada costuma ser mais simples.
 
 ## Muitos para muitos e um para um
 
-Muitos para muitos não cabem numa estrangeira e exigem uma **tabela própria**, que é a classe associativa do diagrama com as duas chaves mais os seus atributos:
+Uma associação muitos para muitos origina uma relação com as duas chaves:
 
+```text
+Item(idEncomenda, idProduto, qtd, precoUnitario)
+PK: (idEncomenda, idProduto)
+idEncomenda → Encomenda.id
+idProduto → Produto.id
 ```
-Item(idEncomenda, idProduto, qtd) -- PK: (idEncomenda, idProduto)
-   FK: idEncomenda -> Encomenda(id); FK: idProduto -> Produto(id)
+
+O par impede duas linhas do mesmo produto na mesma encomenda. Acrescentar um `id` artificial é possível, mas exige conservar `UNIQUE(idEncomenda, idProduto)` se essa continuar a ser a regra. A quantidade e o preço da compra pertencem à associação.
+
+Numa associação um para um, uma estrangeira isolada ainda permitiria várias referências ao mesmo tuplo. Acrescenta `UNIQUE`. Para um cartão que pertence a exatamente um cliente e um cliente com no máximo um cartão:
+
+```text
+Cartao(numero, idCliente)
+PK: numero
+FK: idCliente → Cliente.id, NOT NULL, UNIQUE
 ```
 
-A chave primária é o par: a mesma encomenda pode ter vários produtos e o mesmo produto pode estar em várias encomendas, mas cada par aparece uma vez. A quantidade `qtd` vive aqui porque depende do par, não de cada lado isolado.
-
-Associações um para um traduzem-se com uma estrangeira de um dos lados marcada como única, ou fundindo as duas tabelas numa só quando a participação é obrigatória dos dois lados.
-
-As três regras lado a lado, cada uma com o exemplo da loja:
-
-<Tabs id="mapeamento-regras" labels={['Um para muitos', 'Muitos para muitos', 'Um para um']}>
-  <div slot="panel-0">
-
-Um cliente faz muitas encomendas: a FK `idCliente` vive em `Encomenda` e aponta para `Cliente(id)`. O lado um nunca ganha colunas novas.
-
-  </div>
-  <div slot="panel-1">
-
-Encomenda contém produtos com quantidade: nasce a tabela `Item(idEncomenda, idProduto, qtd)` com PK no par e duas FKs. A quantidade mora no par.
-
-  </div>
-  <div slot="panel-2">
-
-Um cliente tem no máximo um cartão de fidelidade e vice-versa: FK única de um dos lados, ou uma tabela só com as colunas dos dois quando a participação é obrigatória. A loja não usa este caso.
-
-  </div>
-</Tabs>
+Esta tradução não obriga cada cliente a ter cartão. Se ambos os lados tiverem participação obrigatória, a fusão pode evitar a obrigação de manter duas linhas correspondentes, mas só faz sentido quando os objetos e os seus ciclos de vida justificam essa escolha.
 
 ## Conversão completa da loja
-
-Aplicando as três regras ao diagrama da página anterior:
-
-```
-Cliente(id, nome, email)
-Produto(id, nome, preco, stock)
-Encomenda(id, data, idCliente -> Cliente)
-Item(idEncomenda -> Encomenda, idProduto -> Produto, qtd)
-```
-
-Em figura, com as primárias sublinhadas e as setas das estrangeiras:
 
 <Typst
   source={esquema}
   format="svg"
-  alt="Esquema relacional da loja: quatro tabelas com chaves primárias sublinhadas; Encomenda aponta para Cliente e Item aponta para Encomenda e Produto através de chaves estrangeiras."
+  alt="Quatro relações da loja. Encomenda.idCliente referencia Cliente.id. Item tem chave composta idEncomenda e idProduto, com referências a Encomenda.id e Produto.id."
 />
 
-Confere com os dados da apresentação: a encomenda 100 tem `idCliente = 1` (a Ana), e a linha `(100, 10, 2)` diz que ela leva 2 Teclados. Repara que nada se repete: o nome da Ana está só em `Cliente`, o preço do Teclado só em `Produto`. Essa ausência de repetição é o que a [normalização](normalizacao/) vai formalizar e verificar.
+As chaves garantem uma linha por cliente, produto e encomenda, e uma linha por par encomenda/produto. O mínimo de um produto por encomenda continua por garantir: podemos criar uma encomenda e ainda não criar Item. Um `NOT NULL` nas estrangeiras de Item não muda isso, porque uma tabela vazia não tem linhas que o violem.
 
-## A estrangeira a morder
+Há uma diferença entre armazenar um estado intermédio durante a criação e aceitar esse estado como encomenda confirmada. A aplicação pode inserir a encomenda e as suas linhas numa transação, validando o mínimo antes de confirmar. A regra precisa de estar definida para todas as operações que possam quebrá-la, incluindo remover a última linha.
 
-Cria o esquema mínimo e tenta registar uma encomenda do cliente 99, que não existe. Executa e vê o erro:
+## Associações reflexivas e qualificadas
 
-<CodePlayground
-  language="sql"
-  title="Estrangeira rejeita o cliente inexistente"
-  code={
-    'PRAGMA foreign_keys = ON;\nCREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL);\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nINSERT INTO Cliente VALUES (1, \u0027Ana\u0027);\nINSERT INTO Encomenda VALUES (100, 99);\nSELECT * FROM Encomenda;'
-  }
-/>
+Uma pessoa com no máximo um progenitor registado usa uma referência à própria tabela:
 
-O SQLite recusa a segunda inserção com `FOREIGN KEY constraint failed` e a tabela `Encomenda` continua vazia: a linha impossível nunca entra. Sem o pragma ligado no início, a mesma inserção passava sem queixa e a base de dados ficava incoerente.
+```text
+Pessoa(id, nome, idProgenitor)
+PK: id
+FK: idProgenitor → Pessoa.id, admite NULL
+```
 
-:::warning[O erro mais comum]
-Criar a tabela da associação muitos para muitos com uma PK artificial e sem unicidade no par. Se `Item` tivesse `id` próprio sem restrição única em `(idEncomenda, idProduto)`, nada impediria duas linhas iguais para o mesmo par e a quantidade deixava de fazer sentido.
-:::
+Uma associação muitos para muitos entre pessoas exige uma relação própria com papéis distintos. Em `Amizade(idPessoaA, idPessoaB)`, uma chave no par elimina duplicação na mesma ordem. Para representar uma amizade não orientada uma única vez, podemos exigir `idPessoaA < idPessoaB`, além de duas estrangeiras. Essa condição proíbe também a autorreferência.
+
+Para os números de membro locais ao clube:
+
+```text
+Membro(idClube, numeroMembro, idPessoa)
+PK: (idClube, numeroMembro)
+FK: idClube → Clube.id; idPessoa → Pessoa.id
+UNIQUE: (idClube, idPessoa), se cada pessoa só tiver uma inscrição por clube
+```
+
+O número sozinho não é chave. A última unicidade é uma hipótese adicional e deve ser imposta apenas se o domínio a exigir.
+
+## Associações n-árias
+
+Traduz uma associação ternária para uma relação com as chaves dos três participantes e os atributos da ligação:
+
+```text
+Fornecimento(idFornecedor, idProduto, idProjeto, quantidade)
+```
+
+Se todos os máximos forem muitos, o triplo é normalmente a chave da associação. Se para cada Produto/Projeto houver no máximo um fornecedor, temos a dependência `(idProduto, idProjeto) → idFornecedor`; o par Produto/Projeto passa a identificar o fornecimento. Não escolhas mecanicamente o triplo como chave candidata quando a multiplicidade já torna parte dele redundante.
+
+As estrangeiras verificam existência dos participantes. A chave e outras unicidades verificam as multiplicidades máximas. Mínimos que exigem a participação de todos os objetos não resultam destas estrangeiras.
+
+## Traduzir generalizações
+
+Há três estratégias principais. Considera `Pessoa(id, nome)` com subclasses `Aluno(curso)` e `Docente(departamento)`.
+
+**Uma relação por classe** mantém `Pessoa(id, nome)`, `Aluno(id, curso)` e `Docente(id, departamento)`. O `id` das subclasses é simultaneamente primária e estrangeira para Pessoa. Representa naturalmente uma pessoa que é aluno e docente, mas consultar o nome e o curso exige uma junção.
+
+**Uma relação por tipo concreto** guarda todos os atributos de cada tipo. Se a generalização for completa e disjunta, podemos usar apenas `Aluno(id, nome, curso)` e `Docente(id, nome, departamento)`. Não deve existir uma Pessoa autónoma. Se houver sobreposição, não basta copiar a mesma pessoa para duas tabelas sem coordenação: podemos precisar de tipos para as combinações de subclasses, como AlunoDocente. O número de combinações pode crescer depressa.
+
+**Uma relação única** guarda os atributos de todas as classes, por exemplo `Pessoa(id, nome, eAluno, eDocente, curso, departamento)`. Os indicadores permitem distinguir pertença de um atributo específico desconhecido. Um único discriminador com valores Aluno/Docente serve uma generalização disjunta, mas não uma sobreposta. Precisamos de `CHECK`s e de regras para colunas que só se aplicam a certas subclasses.
+
+Na estratégia por classe, duas estrangeiras para Pessoa não garantem completude nem disjunção. Uma Pessoa pode não estar em nenhuma subclasse ou estar nas duas. Estas condições precisam de validação própria se o modelo as exigir.
+
+## Composição e elementos derivados
+
+Composição e agregação traduzem-se estruturalmente como associações. A composição pode justificar `ON DELETE CASCADE`, mas a política depende de como o sistema representa a eliminação. Arquivar uma encomenda não é apagar os seus tuplos.
+
+Um total derivado pode ser calculado numa consulta ou vista. Se o guardares, introduzes uma obrigação de consistência com as linhas. Um valor derivado não é automaticamente uma coluna independente e não deve receber alterações arbitrárias.
+
+## Conferir a tradução
+
+Para cada chave, explica por que identifica o tuplo e por que nenhum subconjunto chega. Para cada associação, localiza as estrangeiras, o máximo imposto por unicidade e os mínimos ainda por implementar. Depois testa um exemplo permitido e um proibido. Um esquema com todas as setas desenhadas pode continuar a aceitar estados que o UML proíbe.

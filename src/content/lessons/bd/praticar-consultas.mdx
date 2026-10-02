@@ -1,0 +1,93 @@
+---
+title: Praticar consultas e agregação
+description: Exercícios próprios com pistas, resolução e erros frequentes.
+section: exercicios
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="count-left-mia"
+  title="Contar correspondências, não linhas artificiais"
+  explanation="/cadeiras/bd/sql-consultas/#junções-externas-e-clientes-sem-compras"
+  answer={{ kind: 'number', value: 1, tolerance: 0 }}
+>
+  <p>
+    Cliente LEFT JOIN Encomenda devolve para Mia uma linha com e.id = NULL.
+    Quanto dá COUNT(*) para o grupo de Mia e qual a expressão que conta
+    corretamente encomendas?
+  </p>
+  <div slot="hint">
+    LEFT JOIN conserva uma linha da esquerda mesmo sem correspondência.
+  </div>
+  <div slot="hint-more">COUNT(x) ignora x nulo.</div>
+  <div slot="solution">
+    COUNT(*) dá 1 porque conta a linha produzida. COUNT(e.id) dá 0, pois id é
+    não nulo em encomendas reais e NULL apenas nesta linha sem correspondência.
+    Com INNER JOIN, Mia não teria grupo, em vez de ter uma contagem zero.
+  </div>
+  <div slot="mistakes">
+    Não substituas COUNT(e.id) por COUNT(COALESCE(e.id,0)); isso volta a contar
+    a linha artificial.
+  </div>
+</Exercise>
+
+<Exercise
+  id="join-multiplica-encomendas"
+  title="Uma encomenda com duas linhas"
+  explanation="/cadeiras/bd/sql-consultas/#não-contar-depois-de-multiplicar-sem-verificar"
+  answer={{ kind: 'number', value: 3, tolerance: 0 }}
+>
+  <p>
+    Ana tem a encomenda 100 com duas linhas e a 101 com uma. Depois de juntar
+    Cliente, Encomenda e Item, COUNT(e.id) dá quantas linhas? Como contar
+    encomendas?
+  </p>
+  <div slot="hint">Enumera uma linha do resultado por Item.</div>
+  <div slot="hint-more">A 100 aparece duas vezes, a 101 uma.</div>
+  <div slot="solution">
+    COUNT(e.id) dá 3. Para contar encomendas nesse resultado, usa COUNT(DISTINCT
+    e.id), que dá 2. Também podes evitar a junção a Item se ela não for
+    necessária. Agrupa por id do cliente, não apenas nome, para não fundir
+    pessoas diferentes.
+  </div>
+  <div slot="mistakes">
+    DISTINCT no SELECT exterior não corrige automaticamente uma contagem já
+    calculada sobre linhas multiplicadas.
+  </div>
+</Exercise>
+
+<Exercise
+  id="agregacao-vazia"
+  title="Agregação sem linhas"
+  explanation="/cadeiras/bd/sql-consultas/#group-by-e-having"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Previ uma linha na agregação global e nenhuma na agrupada.',
+      'Distingui zero de NULL.',
+    ],
+  }}
+>
+  <p>
+    Com uma tabela T(x) vazia, prevê SELECT COUNT(*), SUM(x) FROM T e SELECT x,
+    COUNT(*) FROM T GROUP BY x.
+  </p>
+  <div slot="hint">
+    A primeira consulta é uma agregação global; a segunda precisa de grupos
+    existentes.
+  </div>
+  <div slot="hint-more">
+    COUNT devolve zero e SUM devolve NULL numa entrada vazia.
+  </div>
+  <div slot="solution">
+    A primeira devolve uma linha (0,NULL). A segunda não devolve linhas, porque
+    não há grupos. COALESCE(SUM(x),0) pode apresentar zero quando esse
+    significado for pretendido, mas não muda o facto de a agregação original ser
+    NULL.
+  </div>
+  <div slot="mistakes">
+    Não assumes que SUM vazio é zero em SQL nem que uma consulta com GROUP BY
+    cria um grupo vazio.
+  </div>
+</Exercise>

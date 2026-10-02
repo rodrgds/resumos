@@ -1,136 +1,141 @@
 ---
-title: Criação de tabelas em SQL
-description: DDL em SQLite, tipos, chaves, restrições e os ficheiros criar e povoar.
+title: Criação e alteração de dados em SQL
+description: DDL, restrições, tipos SQLite, integridade referencial e INSERT, UPDATE e DELETE.
 section: conteudo
-order: 4
+order: 6
+practices:
+  - bd/praticar-ddl
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
+import loja from '../../bd/loja.sql?raw';
 
-O SQL divide-se em duas metades: a **DDL** (_data definition language_), que cria a estrutura, e a DML, que mexe nos dados e nas perguntas. Criar a base de dados da loja é escrever a DDL do esquema relacional mais os `INSERT` que a enchem, nos ficheiros `criar.sql` e `povoar.sql` que o projeto da cadeira pede.
-
-## Abrir o SQLite
-
-Antes dos ficheiros, confirma que tens o SQLite a correr. Escolhe o teu sistema:
-
-<Tabs id="sqlite-sistemas" labels={['Linux', 'macOS', 'Windows']}>
-  <div slot="panel-0">
-
-No Debian e derivados, instala e abre uma base de dados em memória para experimentar:
-
-```bash
-sudo apt install sqlite3
-sqlite3 :memory:
-```
-
-O convite `sqlite>` confirma que estás dentro. Sai com `.quit`.
-
-  </div>
-  <div slot="panel-1">
-
-Com o Homebrew instalado, o comando é um só e a sessão abre da mesma forma:
-
-```bash
-brew install sqlite3
-sqlite3 :memory:
-```
-
-  </div>
-  <div slot="panel-2">
-
-Descarrega o pacote `sqlite-tools` em [sqlite.org/download.html](https://sqlite.org/download.html), descompacta e corre `sqlite3.exe` na pasta. Os comandos da sessão são iguais aos das outras plataformas.
-
-  </div>
-</Tabs>
+A linguagem de definição de dados, **DDL**, cria e altera o esquema. A linguagem de manipulação, **DML**, consulta ou muda os tuplos. `CREATE TABLE Produto` cria uma estrutura; `INSERT INTO Produto` acrescenta um produto a essa estrutura.
 
 ## CREATE TABLE e restrições
 
-Cada tabela declara colunas com tipo e **restrições de integridade**, as regras que o SGBD impõe a cada escrita:
+Uma tabela precisa de colunas, tipos e regras. Vamos começar por Produto:
 
 ```sql
-CREATE TABLE Cliente (
-  id    INTEGER PRIMARY KEY,
-  nome  TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL
-);
-
 CREATE TABLE Produto (
-  id    INTEGER PRIMARY KEY,
-  nome  TEXT NOT NULL,
-  preco REAL NOT NULL CHECK (preco > 0),
-  stock INTEGER NOT NULL CHECK (stock >= 0)
+  id INTEGER PRIMARY KEY,
+  nome TEXT NOT NULL,
+  precoCentimos INTEGER NOT NULL CHECK (precoCentimos >= 0),
+  stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0)
 );
 ```
 
-`PRIMARY KEY` identifica e proíbe nulos e repetidos. `NOT NULL` proíbe omissões, `UNIQUE` proíbe repetidos sem identificar, `CHECK` impõe uma condição. Os tipos do SQLite são poucos (`INTEGER`, `TEXT`, `REAL`); a robustez vem das restrições, não dos tipos.
+`PRIMARY KEY` escolhe a identidade. `NOT NULL` exige um valor. `CHECK` rejeita uma linha quando a sua expressão é falsa. `DEFAULT` fornece um valor quando a inserção omite a coluna, mas não substitui um `NULL` escrito explicitamente.
 
-As estrangeiras ligam as tabelas e o SQLite só as fiscaliza se o pedires em cada sessão:[^pragma-fk]
+O preço guarda-se em cêntimos inteiros para evitar arredondamentos de ponto flutuante nas contas monetárias. `4500` representa 45 euros; para mostrar euros podemos dividir por `100.0`. Dividir dois inteiros em SQLite faz divisão inteira: `5 / 2` dá 2, enquanto `5 / 2.0` dá 2,5.
 
-```sql
-PRAGMA foreign_keys = ON;
+Uma restrição `UNIQUE(email)` proíbe emails conhecidos repetidos. Em SQLite permite vários `NULL`. Se email tiver de ser uma chave candidata, acrescenta `NOT NULL`.
 
-CREATE TABLE Encomenda (
-  id        INTEGER PRIMARY KEY,
-  data      TEXT NOT NULL,
-  idCliente INTEGER NOT NULL REFERENCES Cliente(id)
-);
+A teoria exige que a primária nunca seja nula. Em SQLite há uma particularidade histórica: primárias que não sejam `INTEGER PRIMARY KEY` podem admitir `NULL` em tabelas comuns. Declara `NOT NULL` nas colunas de chaves textuais e compostas, ou usa uma tabela `STRICT` ou `WITHOUT ROWID` quando apropriado. A declaração exata `INTEGER PRIMARY KEY` corresponde ao `rowid` numa tabela comum; `INT PRIMARY KEY` não tem o mesmo comportamento.
 
-CREATE TABLE Item (
-  idEncomenda INTEGER REFERENCES Encomenda(id),
-  idProduto   INTEGER REFERENCES Produto(id),
-  qtd         INTEGER NOT NULL CHECK (qtd > 0),
-  PRIMARY KEY (idEncomenda, idProduto)
-);
-```
+## Tipos e valores desconhecidos
 
-A chave primária composta do par impede linhas duplicadas para o mesmo par, como exige o mapeamento. Corre o esquema completo e confirma as quatro tabelas criadas:
+SQLite associa tipos aos valores e usa a declaração da coluna como **afinidade**, uma preferência de conversão. Uma coluna `INTEGER` numa tabela comum pode guardar texto que não se consegue converter. Não trata `VARCHAR(20)` como uma imposição de comprimento. Usa uma restrição explícita se o máximo de vinte caracteres for uma regra.
+
+Tabelas `STRICT`, disponíveis a partir de SQLite 3.37, impõem tipos de forma mais estrita, com conversões sem perda quando possíveis. Não tornam todas as regras do domínio automáticas. Uma idade inteira ainda pode ser negativa sem `CHECK`.
+
+`NULL` representa um valor desconhecido ou não aplicável. `CHECK (preco > 0)` sozinho não proíbe `NULL`: a expressão fica desconhecida e SQLite não a trata como falsa. Combina o `CHECK` com `NOT NULL` quando o valor é obrigatório.
 
 <CodePlayground
   language="sql"
-  title="Criar o esquema e listar as tabelas"
-  code={
-    'PRAGMA foreign_keys = ON;\nCREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL);\nCREATE TABLE Produto(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, preco REAL NOT NULL CHECK (preco > 0), stock INTEGER NOT NULL CHECK (stock >= 0));\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, data TEXT NOT NULL, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nCREATE TABLE Item(idEncomenda INTEGER REFERENCES Encomenda(id), idProduto INTEGER REFERENCES Produto(id), qtd INTEGER NOT NULL CHECK (qtd > 0), PRIMARY KEY (idEncomenda, idProduto));\nSELECT name FROM sqlite_master WHERE type = \u0027table\u0027 ORDER BY name;'
-  }
+  title="CHECK, NULL e afinidade em SQLite"
+  code={`CREATE TABLE Exemplo(valor INTEGER CHECK (valor > 0));
+INSERT INTO Exemplo VALUES (NULL), (7), ('texto');
+SELECT COALESCE(CAST(valor AS TEXT), 'NULL') AS valor,
+       typeof(valor) AS tipo
+FROM Exemplo ORDER BY rowid;
+SELECT 5 / 2 AS divisaoInteira, 5 / 2.0 AS divisaoReal;`}
 />
 
-O resultado lista `Cliente`, `Encomenda`, `Item` e `Produto` por ordem alfabética: o esquema existe e está vazio, pronto a povoar.
+O resultado mostra `NULL|null`, `7|integer` e `texto|text`, depois `2|2.5`. O texto passa o `CHECK` neste exemplo porque a comparação entre classes de armazenamento não é uma verificação de "número positivo". Para exigir valores inteiros positivos numa tabela comum, podes acrescentar `CHECK (typeof(valor) = 'integer' AND valor > 0)` e `NOT NULL`, ou escolher `STRICT`.
 
-## Povoar e falhar com dignidade
+## Integridade referencial
 
-O `povoar.sql` enche as tabelas por ordem de dependência, pais antes de filhos, com os dados do cenário da [apresentação](index/):
-
-```sql
-INSERT INTO Cliente VALUES
-  (1, 'Ana', 'ana@mail'), (2, 'Rui', 'rui@mail'), (3, 'Mia', 'mia@mail');
-INSERT INTO Produto VALUES
-  (10, 'Teclado', 45.0, 20), (11, 'Rato', 25.0, 50), (12, 'Monitor', 180.0, 5);
-INSERT INTO Encomenda VALUES
-  (100, '2026-01-05', 1), (101, '2026-01-12', 1), (102, '2026-01-08', 2);
-INSERT INTO Item VALUES
-  (100, 10, 2), (100, 11, 1), (101, 12, 1), (102, 11, 3);
-```
-
-E as restrições mordem quando tentas violar o modelo. Inserir uma encomenda do cliente 99, que não existe, devolve `FOREIGN KEY constraint failed`; inserir um produto com preço negativo devolve `CHECK constraint failed`. Estes erros não são chatices do SQLite: são o esquema a proteger a loja de dados impossíveis. Quando um `INSERT` falhar no projeto, lê a restrição citada em vez de a remover.
-
-## Escrever depois de povoar
-
-Povoar é só o primeiro `INSERT`. A DML de escrita tem mais dois verbos, ambos com `WHERE` obrigatório na prática:
+Uma chave estrangeira afirma que o valor conhecido existe na chave referenciada. Em SQLite, ativa a verificação **em cada ligação**, antes da transação:
 
 ```sql
-UPDATE Produto SET preco = 22.0 WHERE nome = 'Rato';
-DELETE FROM Cliente WHERE id = 3;
+PRAGMA foreign_keys = ON;
+CREATE TABLE Encomenda (
+  id INTEGER PRIMARY KEY,
+  data TEXT NOT NULL,
+  idCliente INTEGER NOT NULL REFERENCES Cliente(id)
+);
 ```
 
-O `UPDATE` baixa o preço do Rato de 25 para 22; sem o `WHERE`, baixava o preço de _todos_ os produtos. O `DELETE` remove a Mia, que não tem encomendas. Tentar `DELETE FROM Cliente WHERE id = 1` falha com `FOREIGN KEY constraint failed`, porque as encomendas 100 e 101 apontam para a Ana: primeiro apagam-se os filhos (`Item`, depois `Encomenda`), só depois o pai. Essa ordem inversa à do povoamento é a regra de ouro das eliminações.
+A tabela Cliente tem de existir quando usamos a referência. O alvo pode ser uma primária ou uma chave com unicidade compatível. Uma estrangeira não é automaticamente única: várias encomendas podem apontar para Ana.
 
-:::warning[O erro mais comum]
-Criar as tabelas sem `PRAGMA foreign_keys = ON` e descobrir tarde que as estrangeiras eram decorativas. O SQLite aceita a sintaxe `REFERENCES` sempre, mas só rejeita violações com o pragma ligado. Corre-o no início de cada sessão e de cada script.
-:::
+Para uma referência composta, declara-a em conjunto:
 
-## Para saber mais
+```sql
+FOREIGN KEY (edificio, numero) REFERENCES Sala(edificio, numero)
+```
 
-- Sintaxe oficial do `CREATE TABLE` e das restrições de coluna e tabela: [sqlite.org/lang_createtable.html](https://sqlite.org/lang_createtable.html).
-- Chaves estrangeiras e porquê do `PRAGMA foreign_keys = ON`: [sqlite.org/foreignkeys.html](https://sqlite.org/foreignkeys.html).
+Duas referências separadas não asseguram que o edifício e o número pertencem à mesma sala. Em SQLite, se qualquer coluna da estrangeira composta for `NULL`, essa linha não precisa de corresponder a um tuplo alvo. Se a referência for obrigatória, declara todas as suas colunas `NOT NULL`.
 
-[^pragma-fk]: O SQLite interpreta a cláusula `REFERENCES` sempre, mas só impõe chaves estrangeiras com `PRAGMA foreign_keys = ON` em cada sessão. Ver [sqlite.org/foreignkeys.html](https://sqlite.org/foreignkeys.html).
+## Atualizar ou apagar o alvo
+
+A política de referência define o que acontece às linhas dependentes:
+
+| Ação          | Efeito                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| `NO ACTION`   | A operação falha se a referência continuar inválida no momento da verificação. É o valor por omissão. |
+| `RESTRICT`    | Recusa a alteração do alvo com dependentes, imediatamente, mesmo numa referência diferida.            |
+| `CASCADE`     | Propaga a atualização da chave ou elimina os dependentes ao apagar o alvo.                            |
+| `SET NULL`    | Coloca a estrangeira a `NULL`; as colunas têm de o permitir.                                          |
+| `SET DEFAULT` | Coloca o valor por omissão, que continua a precisar de satisfazer a referência.                       |
+
+As referências são imediatas por omissão. Uma referência `DEFERRABLE INITIALLY DEFERRED` pode ficar temporariamente inválida dentro da transação, mas tem de ser válida no `COMMIT`. Isto não é o mesmo que desligar `foreign_keys`.
+
+Na loja, apagar uma encomenda elimina as linhas Item por cascata. Apagar um produto vendido é recusado. As duas escolhas correspondem a objetos com ciclos de vida diferentes.
+
+## Criar e povoar a loja
+
+O bloco seguinte contém o esquema e todos os dados. `Item` declara a chave composta e guarda o preço da compra. Consulta os totais em cêntimos para conferir o povoamento.
+
+<CodePlayground
+  language="sql"
+  title="Esquema, povoamento e totais da loja"
+  code={`${loja}
+SELECT idEncomenda, SUM(qtd * precoUnitario) AS totalCentimos
+FROM Item GROUP BY idEncomenda ORDER BY idEncomenda;`}
+/>
+
+A encomenda 100 tem $2\times4500+2500=11500$ cêntimos; a 101 tem 18000; a 102 tem $3\times2500=7500$. A estrangeira não obriga uma encomenda a ter Item, como vimos no mapeamento. `CHECK` não aceita uma subconsulta que conte linhas noutra tabela em SQLite.
+
+## INSERT, UPDATE e DELETE
+
+Especifica as colunas na inserção, sobretudo quando omites valores:
+
+```sql
+INSERT INTO Produto(id, nome, precoCentimos) VALUES (13, 'Cabo', 900);
+```
+
+Este excerto pressupõe a primeira versão de Produto, com `stock DEFAULT 0`. Se a tabela não tiver esse valor por omissão, a mesma inserção viola `NOT NULL`. A definição do esquema faz parte das condições de um exemplo.
+
+`INSERT ... SELECT` insere o resultado de uma consulta. `UPDATE` altera as linhas que satisfazem `WHERE`; `DELETE` remove-as. Sem `WHERE`, ambos abrangem todas as linhas. As restrições também se aplicam às atualizações.
+
+<CodePlayground
+  language="sql"
+  title="Alteração de preço e eliminação em cascata"
+  code={`${loja}
+UPDATE Produto SET precoCentimos = precoCentimos + 500 WHERE id = 10;
+DELETE FROM Encomenda WHERE id = 100;
+SELECT id, precoCentimos FROM Produto WHERE id = 10;
+SELECT idEncomenda, idProduto, qtd FROM Item
+ORDER BY idEncomenda, idProduto;`}
+/>
+
+O teclado passa a 5000 cêntimos. Restam as linhas `(101,12,1)` e `(102,11,3)`, porque as da encomenda 100 foram apagadas por cascata. O produto 10 continua a existir. Uma alteração do preço atual não modifica `Item.precoUnitario` nas vendas conservadas.
+
+Não uses `INSERT OR REPLACE` como sinónimo universal de atualizar. Em SQLite, a resolução `REPLACE` pode eliminar a linha que entra em conflito e inserir outra, ativando efeitos referenciais de eliminação. Para uma atualização, escreve a operação pretendida ou usa uma cláusula `ON CONFLICT ... DO UPDATE` compatível com a chave e a versão do motor.
+
+## ALTER e DROP
+
+`ALTER TABLE` muda o esquema. SQLite suporta, entre outras operações, renomear uma tabela, renomear uma coluna e acrescentar uma coluna. As alterações permitidas dependem da versão e têm limites para restrições e dependências. Uma migração que não caiba nessas operações pode exigir criar uma tabela nova, copiar dados e substituir a antiga numa transação.
+
+`DROP TABLE` remove a estrutura e os dados; `DELETE FROM` remove linhas, conservando o esquema. `CREATE TABLE ... AS SELECT` cria uma tabela com resultados, mas em SQLite não copia primárias, estrangeiras nem `CHECK`s da origem. Uma cópia de dados não é uma cópia de todas as regras.

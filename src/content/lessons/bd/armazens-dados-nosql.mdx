@@ -1,107 +1,179 @@
 ---
 title: Armazéns de dados e NoSQL
-description: Modelo multidimensional, OLAP e quando trocar o relacional.
+description: Grão, esquemas multidimensionais, ETL, OLAP, famílias NoSQL e consultas MongoDB.
 section: conteudo
-order: 9
+order: 14
+practices:
+  - bd/praticar-analitica-nosql
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
 import estrela from '../../bd/estrela.typ?raw';
+import loja from '../../bd/loja.sql?raw';
 
-O modelo relacional foi desenhado para o dia a dia da loja: registar cada venda depressa e sem contradições (o mundo **OLTP**). Mas responder a "como evoluíram as vendas por categoria e mês no último ano" sobre esse esquema é juntar quatro tabelas e agregar milhões de linhas. Para análise há um modelo próprio, e para dados sem esquema fixo há outro. Saber escolher entre os três é o último resultado de aprendizagem da cadeira.
+Registar uma venda e comparar as vendas de vários anos são tarefas diferentes. A primeira precisa de atualizar poucos factos sem quebrar regras. A segunda pode ler milhões de factos históricos para produzir poucas agregações. O padrão de acesso ajuda a escolher o desenho e o sistema.
 
-## Armazém de dados e OLAP
+## OLTP e armazém de dados
 
-Um **armazém de dados** (_data warehouse_) copia periodicamente os factos operacionais para um esquema otimizado para leitura e análise (**OLAP**). A organização típica é em **estrela**: uma tabela de factos central com medidas (quantidade, valor) rodeada de tabelas de dimensões (tempo, produto, cliente, loja). A pergunta anual acima vira uma agregação direta sobre a estrela, sem junções de normalização pelo caminho.
+**OLTP**, processamento transacional, suporta operações correntes como reservar stock, criar uma encomenda e atualizar uma morada. Procura transações curtas, integridade e dados atuais.
+
+Um **armazém de dados**, ou _data warehouse_, integra dados para análise. É orientado a assuntos, como vendas, em vez de a cada aplicação de origem. Reúne formatos e códigos de várias fontes, conserva a evolução temporal e privilegia carregamento e consulta em vez de alterações operacionais contínuas.
+
+"Não volátil" significa que os factos analíticos são relativamente estáveis e não sofrem o mesmo ciclo de atualizações operacionais. Não significa que nunca se corrigem dados ou que o sistema dispensa integridade e transações.
+
+O armazém pode receber dados periodicamente, ficando atrasado em relação ao sistema operacional. Essa latência pode ser aceitável num relatório mensal e inaceitável para decidir se ainda há uma unidade em stock.
+
+## Primeiro escolhe o grão
+
+O **grão** diz o que representa uma linha da tabela de factos. Para a loja, escolhemos **um produto numa encomenda**. A linha da encomenda 100/produto 10 guarda quantidade 2 e valor 9000 cêntimos.
+
+A **tabela de factos** guarda medidas e referências a **dimensões**, que dão os eixos de análise, como tempo, produto e cliente. Não mistures numa mesma medida linhas de encomenda com totais de encomenda: a junção e a soma poderiam contar a mesma venda duas vezes.
 
 <Typst
   source={estrela}
   format="svg"
-  alt="Esquema em estrela: a tabela de factos Vendas ao centro, com quantidade e valor, rodeada pelas dimensões Tempo, Produto e Cliente."
+  alt="Esquema em estrela. FatoVenda, com chave idEncomenda e idProduto, referencia as dimensões Tempo, Produto e Cliente e guarda quantidade e valor em cêntimos."
 />
 
-Navegar no cubo tem quatro operações com nome próprio. Imagina sempre a estrela de vendas da loja:
+As dimensões têm chaves próprias. A chave operacional de um produto pode ser preservada, mas armazéns também usam chaves substitutas para distinguir versões históricas da dimensão. Se um cliente mudar de cidade e quisermos analisar a cidade **na altura da compra**, substituir a cidade em todos os registos antigos perde essa história.
 
-- **Roll-up**: subir na hierarquia e agregar. De vendas por dia para vendas por mês: somas os dias e perdes detalhe.
-- **Drill-down**: o inverso, descer na hierarquia. De vendas por mês para vendas por dia: abres o mês e vês os dias.
-- **Slice**: fixar uma dimensão. Só as vendas do Monitor: prendes a dimensão produto num valor e analisas o resto.
-- **Dice**: recortar um subcubo em várias dimensões. Vendas do Monitor à Ana no primeiro trimestre: prendes produto, cliente e tempo de uma vez.
+## Medidas e agregação
 
-Um relatório mensal é um roll-up temporal direto. Executa sobre os dados da loja:
+Quantidade vendida e valor da venda são aditivos no grão escolhido, desde que as unidades sejam compatíveis. Podemos somá-los por produto, cliente ou tempo.
+
+Um saldo de conta num certo dia é **semiaditivo**: pode somar-se entre contas na mesma data, mas somar saldos diários não dá o saldo do mês. Uma percentagem é normalmente **não aditiva**. Para a margem média, pode ser necessário somar receitas e custos e depois calcular a razão, em vez de fazer a média de percentagens com pesos diferentes.
+
+O preço médio por unidade da loja é `SUM(valor) / SUM(qtd)`, não a média simples dos preços das linhas. As linhas têm quantidades diferentes, por isso contribuem com pesos diferentes.
+
+## Estrela, floco de neve e constelação
+
+Um **esquema em estrela** tem uma tabela de factos ligada diretamente a dimensões, frequentemente desnormalizadas para facilitar consulta. Uma dimensão Produto pode conter nome e categoria numa só tabela.
+
+Um **floco de neve** normaliza parte das dimensões, separando, por exemplo, Categoria de Produto. Reduz certas repetições, mas introduz mais junções.
+
+Uma **constelação de factos** tem várias tabelas de factos que partilham dimensões, como Vendas e Devolucoes. Define o grão de cada uma. Juntar diretamente várias vendas a várias devoluções do mesmo produto pode multiplicar medidas. Uma comparação correta pode exigir agregar cada facto no mesmo nível antes de juntar.
+
+## ETL e data marts
+
+**ETL** significa extrair, transformar e carregar. A extração recolhe dados completos ou mudanças desde o último carregamento. A transformação uniformiza formatos, limpa erros, reconcilia ids, converte unidades e resolve regras de histórico. O carregamento preenche dimensões e factos na ordem que respeita as referências.
+
+Se duas fontes usam o código 10 para produtos diferentes, não podemos juntar só por esse número. Se uma fonte dá euros e outra cêntimos, também não podemos somar os valores antes de converter. O desenho inclui a proveniência e as regras de correspondência, mesmo quando essas colunas não aparecem num relatório final.
+
+Um **data mart** é um conjunto analítico focado num grupo ou assunto. É dependente quando deriva de um armazém central; independente quando integra diretamente fontes próprias. A diferença refere-se à origem e integração, não apenas ao tamanho.
+
+## Operações OLAP
+
+**OLAP**, processamento analítico, explora medidas em diferentes níveis e subconjuntos:
+
+- **Roll-up** agrega, por exemplo dias em meses e meses em anos.
+- **Drill-down** desce ao detalhe, por exemplo ano para mês, se esse detalhe existir.
+- **Slice** fixa uma dimensão, como o ano de 2026.
+- **Dice** escolhe um subconjunto em várias dimensões, como janeiro a março e duas categorias.
+- **Pivot** muda a disposição dos eixos da apresentação, sem alterar o significado dos factos.
+- **Drill-across** compara factos ligados através de dimensões compatíveis.
+
+Um cubo de dados pode ter mais de três dimensões. O nome cubo é uma representação, não uma limitação a três atributos.
+
+## Agregar em SQL
+
+O exemplo abaixo extrai factos das linhas de compra e agrega por mês. É uma consulta SQLite sobre o esquema operacional pequeno, para observar o cálculo analítico.
 
 <CodePlayground
   language="sql"
-  title="Relatório mensal com GROUP BY"
-  code={
-    'CREATE TABLE Encomenda(id INTEGER PRIMARY KEY, data TEXT NOT NULL);\nCREATE TABLE Item(idEncomenda INTEGER REFERENCES Encomenda(id), idProduto INTEGER REFERENCES Produto(id), qtd INTEGER NOT NULL, PRIMARY KEY (idEncomenda, idProduto));\nCREATE TABLE Produto(id INTEGER PRIMARY KEY, nome TEXT NOT NULL, preco REAL NOT NULL);\nINSERT INTO Encomenda VALUES (100, \u00272026-01-05\u0027), (101, \u00272026-01-12\u0027), (102, \u00272026-01-08\u0027);\nINSERT INTO Produto VALUES (10, \u0027Teclado\u0027, 45.0), (11, \u0027Rato\u0027, 25.0), (12, \u0027Monitor\u0027, 180.0);\nINSERT INTO Item VALUES (100, 10, 2), (100, 11, 1), (101, 12, 1), (102, 11, 3);\nSELECT strftime(\u0027%Y-%m\u0027, Encomenda.data) AS mes, SUM(Item.qtd * Produto.preco) AS total FROM Encomenda JOIN Item ON Item.idEncomenda = Encomenda.id JOIN Produto ON Produto.id = Item.idProduto GROUP BY mes;'
-  }
+  title="Vendas mensais e preço médio por unidade"
+  code={`${loja}
+WITH Facto AS (
+  SELECT e.data, i.qtd, i.qtd * i.precoUnitario AS valor
+  FROM Item AS i JOIN Encomenda AS e ON e.id = i.idEncomenda
+)
+SELECT substr(data, 1, 7) AS mes, SUM(qtd) AS unidades,
+       SUM(valor) / 100.0 AS euros,
+       SUM(valor) / (100.0 * SUM(qtd)) AS eurosPorUnidade
+FROM Facto GROUP BY substr(data, 1, 7) ORDER BY mes;`}
 />
 
-O resultado é `2026-01|370.0`: 115 da encomenda 100, 180 da 101 e 75 da 102, somadas pelo mês. Numa estrela a sério, o `mes` viria da dimensão tempo em vez do `strftime`, mas a agregação é a mesma.
+Janeiro tem 7 unidades e 370 euros. O preço médio por unidade é $370/7$, cerca de 52,86 euros. A média simples dos preços unitários das quatro linhas seria 68,75 euros, uma medida diferente.
 
-O preço é claro: os dados do armazém têm a idade da última carga, nunca o segundo atual, e manter dois sistemas custa. Usa armazém quando as perguntas são analíticas, agregadas e históricas; mantém o relacional para o registo operacional do momento.
+Em motores com estas extensões, `GROUP BY ROLLUP(ano, categoria)` produz agrupamentos por `(ano,categoria)`, por `ano` e o total geral. `CUBE(ano,categoria)` inclui também o agrupamento apenas por `categoria`, ou seja, todos os subconjuntos de dimensões. SQLite não implementa estes comandos; podemos construir os níveis com consultas e `UNION ALL`.
 
-## NoSQL em quatro sabores
+Nos resultados de OLAP, um `NULL` que marca um subtotal não deve ser confundido com um valor desconhecido da dimensão. Motores que suportam `GROUPING` permitem distinguir essas situações.
 
-**NoSQL** não é "sem SQL" por capricho: é abdicar do esquema rígido e, muitas vezes, de parte do ACID em troca de escala ou flexibilidade. As quatro famílias, com o Teclado da loja em cada uma:
+## Famílias NoSQL
 
-<Tabs id="nosql-familias" labels={['Chave-valor', 'Documento', 'Colunar', 'Grafo']}>
-  <div slot="panel-0">
+**NoSQL** reúne modelos que não se limitam ao modelo relacional tradicional. Não define uma garantia única de transações, esquema ou linguagem.
 
-Um dicionário gigante distribuído: cada acesso é por chave exata. Serve para sessões, carrinhos e caches.
+| Família             | Modelo e acesso habitual                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| Chave-valor         | Uma chave dá acesso a um valor, útil para sessões e caches.                              |
+| Documentos          | Objetos com campos, arrays e estruturas aninhadas, consultados por conteúdo.             |
+| Famílias de colunas | Linhas por chave com conjuntos de colunas flexíveis, desenhadas para acesso distribuído. |
+| Grafos              | Nós e arestas com propriedades, úteis para percorrer relações e caminhos.                |
 
-```
-produto:10 -> { nome: Teclado, preco: 45.0, stock: 20 }
-```
+Famílias de colunas, como no modelo Bigtable, não são simplesmente o mesmo que armazenamento colunar analítico. Este último guarda colunas em conjunto para ler e agregar grandes conjuntos, podendo servir um sistema relacional.
 
-  </div>
-  <div slot="panel-1">
+Um modelo de documentos permite estruturas diferentes, mas continua a precisar de regras de validação e de significado dos campos. Não significa "sem esquema" no sentido de "sem qualquer contrato". Sistemas NoSQL podem oferecer transações ACID; MongoDB, por exemplo, oferece transações com vários documentos em configurações suportadas. Verifica as garantias concretas da operação e do sistema.
 
-Objetos semiestruturados, como JSON, com esquema flexível por documento. Serve para catálogos, onde cada produto tem os seus atributos.
+## Replicação, partição e CAP
+
+**Replicação** conserva cópias dos dados em vários nós. **Sharding** divide os dados entre nós por uma chave de partição. São técnicas diferentes e podem coexistir. Acrescentar réplicas não aumenta automaticamente a capacidade de todas as escritas; escolher uma chave de partição desigual pode concentrar a carga num nó.
+
+Durante uma partição de rede, nós que não conseguem comunicar têm de escolher como tratar operações que exigem coordenação. O teorema **CAP** estabelece a incompatibilidade entre garantir simultaneamente consistência linearizável e disponibilidade para todas as operações durante essa partição, sob o modelo do teorema. Não é uma regra para "escolher quaisquer dois" sem considerar uma falha de comunicação.
+
+A consistência de CAP refere-se à aparência de uma única cópia atualizada, não à letra C de ACID, que trata invariantes do domínio. **Consistência eventual** admite leituras desatualizadas e procura convergência quando deixam de ocorrer alterações e a comunicação permite propagar os dados. Não significa que qualquer conflito se resolva sozinho corretamente.
+
+**BASE** descreve uma orientação para disponibilidade e convergência eventual. Não é uma especificação única de produto nem o contrário obrigatório de todas as propriedades ACID.
+
+## Consultar documentos em MongoDB
+
+Estes excertos são para **mongosh**, numa coleção de exemplo, e não para o motor SQLite. Considera documentos com `_id`, `nome`, `preco`, `categorias` e `detalhes`, como:
 
 ```json
-{ "id": 10, "nome": "Teclado", "extras": { "layout": "PT", "rgb": true } }
+{
+  "_id": 10,
+  "nome": "Teclado",
+  "preco": 45,
+  "categorias": ["periférico", "entrada"],
+  "detalhes": { "layout": "PT" }
+}
 ```
 
-  </div>
-  <div slot="panel-2">
+`find` recebe um filtro e uma projeção. O excerto seguinte procura preço acima de 30 e devolve nome e preço, omitindo `_id`, por ordem decrescente de preço:
 
-Tabelas guardadas por colunas em vez de linhas, ótimas para agregar uma coluna sobre milhões de linhas. Serve para telemetria e analítica.
-
-```
-coluna preco: [45.0, 25.0, 180.0]   -- lê só a coluna pedida
-```
-
-  </div>
-  <div slot="panel-3">
-
-Nós e arestas como cidadãos de primeira classe. Serve para redes sociais e recomendações, onde as perguntas são sobre ligações.
-
-```
-(Ana)-[:COMPROU]->(Teclado)   -- a compra é uma aresta, não uma tabela
+```javascript
+db.produtos
+  .find({ preco: { $gt: 30 } }, { _id: 0, nome: 1, preco: 1 })
+  .sort({ preco: -1, nome: 1 });
 ```
 
-  </div>
-</Tabs>
+A projeção de inclusão não se mistura livremente com exclusão, exceto o tratamento especial de `_id`. Para um campo aninhado, usa `"detalhes.layout"`; para procurar um elemento num array simples, o filtro `{ categorias: "entrada" }` procura essa presença.
 
-## A tabela de decisão
+`insertOne` insere um documento; `updateOne` altera no máximo um documento correspondente; `updateMany` altera todos os correspondentes. Operadores como `$set` modificam campos e `$inc` incrementa valores. `deleteMany` elimina todos os documentos do filtro.
 
-| Situação                                             | Escolha             | Porquê                                                          |
-| ---------------------------------------------------- | ------------------- | --------------------------------------------------------------- |
-| Registar vendas da loja sem contradições             | Relacional          | Integridade e transações por cada escrita                       |
-| Relatório anual de vendas por mês e categoria        | Armazém de dados    | Agregações históricas sobre a estrela, sem pesar no operacional |
-| Catálogo onde cada produto tem atributos próprios    | Documento (NoSQL)   | Esquema flexível, sem colunas nulas para todos                  |
-| Carrinho de compras com milhões de acessos por chave | Chave-valor (NoSQL) | Leitura e escrita por chave a grande escala                     |
+```javascript
+db.produtos.updateOne({ _id: 10 }, { $set: { 'detalhes.layout': 'US' } });
+```
 
-A pergunta de teste típica dá-te um cenário e pede a escolha justificada: identifica primeiro o padrão de acesso (escritas com integridade, análise agregada ou escala sem esquema) e só depois casa com a coluna da esquerda. E quando o cenário mistura os dois mundos, como a loja real, a resposta honesta é híbrida: relacional para operar, armazém para analisar.
+A operação altera apenas o campo layout. Substituir o documento inteiro é uma operação diferente, que pode apagar campos omitidos. Um filtro por `null` em MongoDB pode também corresponder a documentos sem o campo; distingue ausência de campo e valor explícito quando a pergunta o exigir.
 
-## Para ver em vídeo
+## Pipelines de agregação
 
-<YouTube
-  id="qI_g07C_Q5I"
-  title="Introduction to NoSQL • Martin Fowler • GOTO 2012"
-/>
-<YouTube id="uD3p_rZPBUQ" title="An Introduction To NoSQL Databases" />
+Um pipeline passa documentos por etapas. `$match` filtra, `$project` escolhe ou calcula campos, `$unwind` transforma um array em linhas, `$group` agrega, `$sort` ordena e `$limit` limita a resposta.
+
+```javascript
+db.produtos.aggregate([
+  { $unwind: '$categorias' },
+  { $group: { _id: '$categorias', produtos: { $sum: 1 } } },
+  { $sort: { produtos: -1, _id: 1 } },
+]);
+```
+
+Cada produto contribui uma vez por elemento do array. Um teclado com duas categorias contribui para dois grupos. Arrays com elementos repetidos exigem decidir se queremos contar ocorrências ou produtos distintos; `$unwind` não elimina repetições.
+
+`$lookup` acrescenta correspondências de outra coleção, normalmente num array. `$facet` calcula vários subpipelines a partir da mesma entrada. A disponibilidade destes mecanismos mostra por que "NoSQL nunca faz junções nem agregações" é uma descrição errada.
+
+## Escolher sem slogans
+
+Para vendas com referências e regras transacionais entre entidades, o relacional é uma escolha natural. Para análise histórica, um desenho multidimensional permite agregações bem definidas. Para catálogos com atributos aninhados e acessos por documento, um modelo de documentos pode simplificar certas leituras.
+
+A decisão exige saber o grão, as consultas, a frequência de escrita, as relações entre dados e as garantias durante falhas. Escala e flexibilidade não dispensam estas perguntas, e um sistema pode combinar vários modelos para tarefas diferentes.

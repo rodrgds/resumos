@@ -1,67 +1,133 @@
 ---
 title: Índices e transações
-description: Quando indexar, ACID, concorrência e rollback explicado.
+description: Escolha de índices, planos de consulta, propriedades ACID, commit, rollback e savepoints.
 section: conteudo
-order: 8
+order: 12
+practices:
+  - bd/praticar-indices-transacoes
 ---
 
-import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import transacao from '../../bd/transacao.typ?raw';
+import loja from '../../bd/loja.sql?raw';
 
-Duas perguntas fecham a gestão da base de dados: como responder depressa quando as tabelas crescem, e como garantir que operações a meio não deixam a loja num estado impossível. A resposta à primeira é o **índice** (_index_); à segunda, a **transação** (_transaction_).
+Uma consulta pode estar correta e visitar muitas linhas para encontrar poucas. Um índice procura reduzir esse trabalho. Uma sequência de alterações também pode estar correta em cada instrução e ficar incompleta após uma falha. Uma transação define quais as alterações que devem ser tratadas como uma unidade.
 
-## Índices: quando e qual
+## O que um índice guarda
 
-Sem índice, procurar as encomendas da Ana percorre a tabela `Encomenda` toda. Um índice na estrangeira cria uma estrutura de pesquisa por esse valor:
+Um **índice** é uma estrutura persistente que relaciona valores de uma chave de pesquisa com a localização das linhas. Não muda a resposta lógica de uma consulta. O motor pode usá-lo para encontrar correspondências, percorrer intervalos ou obter uma ordem útil sem ordenar tudo.
+
+Numa árvore equilibrada, a procura da primeira correspondência costuma crescer com o logaritmo do número de entradas; depois há o custo de percorrer e recuperar as correspondências. Uma tabela hash é adequada a igualdade, mas não fornece diretamente a mesma ordenação para intervalos. SQLite usa índices baseados em árvores, não uma opção `USING HASH` no comando `CREATE INDEX`.
+
+Não confundas **chave de pesquisa** do índice com chave candidata. Podemos indexar `stock` apesar de vários produtos terem o mesmo stock. `CREATE UNIQUE INDEX` acrescenta também uma regra de unicidade, enquanto um índice comum só acrescenta um método de acesso.
+
+## Escolher pelas perguntas
+
+Para consultar encomendas de um cliente num intervalo de datas, um índice composto pode ser útil:
 
 ```sql
-CREATE INDEX idx_encomenda_cliente ON Encomenda(idCliente);
+CREATE INDEX idx_encomenda_cliente_data
+ON Encomenda(idCliente, data);
 ```
 
-Agora "encomendas do cliente 1" salta direto às linhas 100 e 101. A regra de escolha: indexa colunas que aparecem em condições de igualdade e junções frequentes, tipicamente chaves estrangeiras, e evita indexar tudo, porque cada índice atrasa escritas e ocupa espaço. A chave primária já traz índice próprio, por isso `CREATE INDEX` em `id` seria redundante. Perante "que índice crias para esta consulta?", procura a coluna do `WHERE` ou do `ON` com mais repetições de pesquisa e menos escritas.
+As entradas ficam ordenadas primeiro por cliente e, dentro dele, por data. A igualdade no primeiro atributo permite procurar o intervalo relevante no segundo. O índice também pode ajudar consultas apenas por cliente. Uma procura apenas por data não beneficia da mesma forma desse prefixo, embora certos planos e distribuições permitam outras estratégias do otimizador.
 
-Vê a diferença no plano de execução, antes e depois de criar o índice:[^eqp]
+A ordem `(data, idCliente)` tem comportamento diferente. Se procurarmos um intervalo amplo de datas, a igualdade do cliente já não restringe da mesma maneira um único intervalo ordenado. Escolhe a ordem pelo conjunto de consultas mais frequentes e pelas distribuições reais.
+
+Índices também ajudam junções, por exemplo encontrar as encomendas que referenciam um cliente. SQLite não cria automaticamente um índice para cada estrangeira. As primárias e unicidades já têm mecanismos de acesso próprios, com a particularidade de `INTEGER PRIMARY KEY` corresponder ao rowid.
+
+## Ler um plano
 
 <CodePlayground
   language="sql"
-  title="EXPLAIN QUERY PLAN antes e depois do índice"
-  code={
-    'CREATE TABLE Cliente(id INTEGER PRIMARY KEY, nome TEXT NOT NULL);\nCREATE TABLE Encomenda(id INTEGER PRIMARY KEY, idCliente INTEGER NOT NULL REFERENCES Cliente(id));\nEXPLAIN QUERY PLAN SELECT id FROM Encomenda WHERE idCliente = 1;\nCREATE INDEX idx_encomenda_cliente ON Encomenda(idCliente);\nEXPLAIN QUERY PLAN SELECT id FROM Encomenda WHERE idCliente = 1;'
-  }
+  title="Plano antes e depois de um índice composto"
+  code={`${loja}
+EXPLAIN QUERY PLAN
+SELECT id, data FROM Encomenda
+WHERE idCliente = 1 AND data >= '2026-01-01';
+CREATE INDEX idx_encomenda_cliente_data ON Encomenda(idCliente, data);
+EXPLAIN QUERY PLAN
+SELECT id, data FROM Encomenda
+WHERE idCliente = 1 AND data >= '2026-01-01';`}
 />
 
-O primeiro plano diz `SCAN Encomenda`: percorre a tabela toda. O segundo diz `SEARCH Encomenda USING ... INDEX idx_encomenda_cliente`: salta direto às linhas do cliente. Quando uma consulta está lenta, este é o primeiro comando a correr.
+O primeiro plano percorre Encomenda. O segundo pode procurar usando o índice, com as condições do cliente e da data. Os números e o texto exato do plano dependem da versão. Confere sobretudo `SCAN`, `SEARCH` e o nome do índice, sem tratar estas três linhas de dados como uma medição de desempenho.
 
-## Transações e ACID
+Um índice **cobridor** contém os valores de que a consulta precisa, permitindo evitar acessos adicionais à tabela em certos planos. Nos índices comuns de uma tabela SQLite com rowid, esse identificador também está nas entradas; isso ajuda a devolver o id de uma `INTEGER PRIMARY KEY`.
 
-Uma venda é várias escritas que só fazem sentido juntas: inserir a encomenda, inserir as linhas e baixar o stock. Se o programa avariar a meio, a loja fica com encomenda sem stock abatido. A **transação** embrulha as escritas num bloco atómico com quatro propriedades, **ACID**: atomicidade (tudo ou nada), consistência (de estado válido em estado válido), isolamento (transações concorrentes não se veem a meio) e durabilidade (o confirmado sobrevive a falhas).
+## O custo dos índices
 
-```sql
+Cada inserção, eliminação e alteração dos atributos indexados precisa de manter os índices. Eles ocupam espaço e têm custo de criação. Se uma condição devolve quase toda a tabela, um percurso completo pode ser mais barato que muitas visitas por índice.
+
+A **seletividade** indica quanto a condição restringe os dados. Uma coluna com poucos valores pode ser útil ou inútil conforme a frequência dos valores procurados e o plano. "Há dois valores distintos" não chega para decidir: um deles pode corresponder a uma fração muito pequena das linhas.
+
+O otimizador usa estatísticas para estimar custos. `ANALYZE` recolhe estatísticas em SQLite. A escolha final depende do tamanho, da distribuição, dos índices e da carga de leitura e escrita. Criar um índice em todas as colunas não é uma estratégia de desenho.
+
+## Uma transação e as propriedades ACID
+
+Uma **transação** agrupa operações que têm de formar uma unidade. Transferir 25 euros exige debitar uma conta e creditar outra. Uma falha entre as duas operações não pode deixar uma transferência a meio.
+
+- **Atomicidade**: as alterações da transação são confirmadas em conjunto ou desfeitas.
+- **Consistência**: a transação leva um estado válido a outro válido segundo as regras do domínio.
+- **Isolamento**: define o que transações concorrentes podem observar e como interferem.
+- **Durabilidade**: as alterações confirmadas sobrevivem às falhas abrangidas pelas garantias e configuração do sistema.
+
+O SGBD verifica as restrições declaradas, mas não adivinha todas as regras. Uma transação que debita duas contas sem creditar nenhuma pode ser atómica e ainda estar errada. Consistência exige código correto e restrições adequadas.
+
+## BEGIN, COMMIT e ROLLBACK
+
+Em SQLite, fora de uma transação explícita, as instruções decorrem em transações implícitas. `BEGIN` inicia uma transação explícita, `COMMIT` confirma e `ROLLBACK` desfaz as alterações dessa transação.
+
+<CodePlayground
+  language="sql"
+  title="Transferência desfeita e depois confirmada"
+  code={`CREATE TABLE Conta(id INTEGER PRIMARY KEY,
+  saldo INTEGER NOT NULL CHECK (saldo >= 0));
+INSERT INTO Conta VALUES (1, 10000), (2, 5000);
 BEGIN;
-INSERT INTO Encomenda VALUES (103, '2026-01-08', 2);
-INSERT INTO Item VALUES (103, 12, 1);
-UPDATE Produto SET stock = stock - 1 WHERE id = 12;
+UPDATE Conta SET saldo = saldo - 2500 WHERE id = 1;
+UPDATE Conta SET saldo = saldo + 2500 WHERE id = 2;
 ROLLBACK;
-```
-
-O `ROLLBACK` anula tudo: a encomenda 103 desaparece e o stock do Monitor volta a 5, como se nada tivesse corrido. Troca por `COMMIT` e as três escritas tornam-se permanentes de uma vez. A concorrência entra aqui: dois caixas a vender o último Monitor ao mesmo tempo são duas transações sobre o mesmo `stock`, e o isolamento mais as restrições garante que uma delas falha em vez de venderem o mesmo exemplar duas vezes.
-
-Os dois destinos da mesma sequência de escritas:
-
-<Typst
-  source={transacao}
-  format="svg"
-  alt="Linha temporal de uma transação: BEGIN, três escritas e depois COMMIT, que torna tudo visível, ou ROLLBACK, que anula tudo e deixa a base de dados como estava."
+SELECT id, saldo FROM Conta ORDER BY id;
+BEGIN;
+UPDATE Conta SET saldo = saldo - 2500 WHERE id = 1;
+UPDATE Conta SET saldo = saldo + 2500 WHERE id = 2;
+COMMIT;
+SELECT id, saldo FROM Conta ORDER BY id;`}
 />
 
-:::tip[Como pensar em teste]
-Perante um cenário de falha a meio ("o que fica guardado?"), conta as escritas dentro da transação: sem `COMMIT`, nada fica; com `COMMIT` antes da falha, fica tudo até aí. E perante "falta atomicidade", procura operações compostas sem `BEGIN`/`COMMIT`, que deixam estados intermédios visíveis.
-:::
+Depois do rollback, os saldos são 10000 e 5000. Depois do commit, são 7500 e 7500. A soma continua 15000 cêntimos. A primeira transferência não deixou efeitos guardados.
 
-## Para saber mais
+O código pressupõe que as duas contas existem e que há saldo suficiente. Um `UPDATE` de uma conta inexistente altera zero linhas e não dá automaticamente erro. Uma aplicação deve conferir o número de linhas afetadas e só confirmar quando todas as condições da transferência estiverem cumpridas.
 
-- Sintaxe do `CREATE INDEX`: [sqlite.org/lang_createindex.html](https://www.sqlite.org/lang_createindex.html).
-- `EXPLAIN QUERY PLAN` para distinguir `SCAN` de `SEARCH`: [sqlite.org/eqp.html](https://sqlite.org/eqp.html).
+## Um erro não faz sempre rollback de tudo
 
-[^eqp]: A leitura de `SCAN` contra `SEARCH ... USING INDEX` segue a documentação do SQLite em [sqlite.org/eqp.html](https://sqlite.org/eqp.html).
+Em SQLite, uma violação de `CHECK` com a política por omissão costuma abortar a **instrução**, mantendo anteriores instruções da transação. Se o primeiro débito ocorreu e a segunda operação falhou, não assumes que o débito já foi desfeito. Trata o erro e decide fazer rollback da transação inteira.
+
+PostgreSQL tem outro comportamento: um erro deixa normalmente a transação em estado abortado até rollback, ou recuperação para um savepoint. A distinção importa ao ler código de aplicação e ao prever resultados.
+
+## Savepoints
+
+Um **savepoint** marca um ponto de recuperação dentro de uma transação:
+
+<CodePlayground
+  language="sql"
+  title="Desfazer apenas a segunda alteração"
+  code={`CREATE TABLE Valor(id INTEGER PRIMARY KEY, n INTEGER NOT NULL);
+INSERT INTO Valor VALUES (1, 10);
+BEGIN;
+UPDATE Valor SET n = n + 5 WHERE id = 1;
+SAVEPOINT tentativa;
+UPDATE Valor SET n = n * 2 WHERE id = 1;
+ROLLBACK TO tentativa;
+RELEASE tentativa;
+COMMIT;
+SELECT n FROM Valor;`}
+/>
+
+A primeira atualização dá 15. A segunda dá 30, mas `ROLLBACK TO` regressa a 15. `RELEASE` retira o marcador; o `COMMIT` exterior confirma 15. Libertar um savepoint interior não equivale a tornar as suas alterações definitivamente duráveis antes do commit exterior.
+
+## Falhas e duração
+
+Um SGBD pode usar registos de escrita, journaling ou WAL para recuperar estados após falhas. Atomicidade desfaz trabalho não confirmado; durabilidade conserva trabalho confirmado dentro das condições assumidas. A recuperação não substitui cópias de segurança contra eliminação deliberada, corrupção fora dessas garantias ou perda de todos os suportes.
+
+Mantém transações curtas. Pedir confirmação humana enquanto a transação está aberta pode conservar bloqueios por muito tempo. A página de [concorrência](/cadeiras/bd/concorrencia/) explica por que atomicidade, por si só, não impede leituras inconsistentes nem decisões simultâneas erradas.

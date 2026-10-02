@@ -1,82 +1,114 @@
 ---
 title: Normalização e formas normais
-description: Dependências funcionais, anomalias, 1FN a 3FN e Boyce-Codd com decomposição.
+description: Dependências funcionais, fecho, chaves candidatas, cobertura mínima e 1FN a BCNF.
 section: conteudo
-order: 3
+order: 4
+practices:
+  - bd/praticar-normalizacao
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
+Uma tabela de vendas pode guardar o nome do produto em cada linha comprada. Se esse nome mudar, precisamos de corrigir várias linhas. Se apagarmos a última venda, podemos perder o único registo do produto. A **normalização** usa as dependências entre atributos para reconhecer estas repetições e separar factos.
 
-Uma tabela mal desenhada repete factos: o nome do cliente em cada encomenda, o preço do produto em cada linha vendida. A repetição traz **anomalias**: para mudar o preço tens de atualizar N linhas (atualização), não consegues registar um produto ainda sem vendas (inserção) e apagar a última venda apaga o produto (eliminação). A **normalização** remove a redundância decompondo tabelas, e as **formas normais** dizem quando parar.[^ullman]
+Não é qualquer repetição textual que constitui uma anomalia. O preço atual e o preço acordado numa venda têm significados diferentes. Mesmo que ambos sejam 45 euros hoje, atualizar o primeiro não deve atualizar o segundo.
 
 ## Dependências funcionais
 
-Uma **dependência funcional** (FD) `X -> Y` diz que o valor de `X` determina o de `Y`: linhas com o mesmo `X` têm obrigatoriamente o mesmo `Y`. Na loja: `idCliente -> nomeCliente` (o id determina o nome) e `idProd -> nomeProd, preco`. Uma **chave** (ou superchave mínima) é um conjunto de colunas que determina todas as outras: em `Item`, só o par `(idEncomenda, idProduto)` determina a quantidade.
+Uma **dependência funcional**, abreviada DF ou FD nos slides, tem a forma $X\to Y$, onde $X$ e $Y$ são conjuntos de atributos. Em todas as instâncias válidas, se dois tuplos concordarem em $X$, têm de concordar em $Y$.
 
-Para testar formas normais, primeiro lista as FDs e descobre as chaves. Tudo o resto é mecânico.
+Em `Produto(id, nome, precoCentimos)`, `id → nome, precoCentimos` é uma regra do domínio. `nome → id` não é válida se nomes repetidos forem permitidos. Uma amostra com três nomes diferentes não prova essa dependência. Uma amostra com dois produtos de nome igual e ids distintos pode refutá-la.
+
+A dependência é **trivial** se $Y\subseteq X$. `id, nome → nome` não impõe uma regra nova. Uma dependência não trivial pode ter alguns atributos à direita que também estão à esquerda; esses atributos não contribuem para a restrição.
+
+Uma DF não afirma que só existe um tuplo com esse $X$. Podem existir vários, desde que concordem em $Y$. `idEncomenda → idCliente` admite vários produtos na mesma encomenda.
+
+## Inferir dependências
+
+Os axiomas de Armstrong permitem obter todas as DFs implicadas por um conjunto inicial:
+
+- Reflexividade: se $Y\subseteq X$, então $X\to Y$.
+- Aumento: de $X\to Y$, obtemos $XZ\to YZ$.
+- Transitividade: de $X\to Y$ e $Y\to Z$, obtemos $X\to Z$.
+
+A justaposição representa união de conjuntos, não multiplicação. Por exemplo, $AB$ significa $\{A,B\}$.
+
+Podemos separar e reunir atributos **à direita**: $A\to BC$ equivale a $A\to B$ e $A\to C$. Não podemos separar automaticamente a esquerda: $AB\to C$ não implica $A\to C$ nem $B\to C$. Na loja, o par encomenda/produto determina a quantidade; cada atributo isolado não a determina.
+
+## Fecho de um conjunto de atributos
+
+O **fecho** $X^+$ contém todos os atributos determinados por $X$ segundo as DFs dadas. Para o calcular:
+
+1. Começa com os atributos de $X$.
+2. Se o lado esquerdo de uma DF já estiver todo no fecho, acrescenta o lado direito.
+3. Repete até nenhuma DF acrescentar atributos.
+
+O processo termina porque só acrescentamos atributos e o esquema tem um conjunto finito deles. Para testar $X\to Y$, verifica se $Y\subseteq X^+$.
+
+Considera $R(A,B,C,D,E)$ com:
+
+$$
+AB\to C,\qquad C\to D,\qquad D\to E.
+$$
+
+Para calcular $(AB)^+$, começamos com $AB$. A primeira DF acrescenta $C$, a segunda acrescenta $D$ e a terceira acrescenta $E$. O resultado é $ABCDE$. Assim, $AB$ determina o esquema inteiro.
+
+Já $A^+=A$ e $B^+=B$. Nenhum determina os outros atributos. Para $C$, começamos com $C$, acrescentamos $D$ e depois $E$, obtendo $CDE$. Não podemos usar $AB\to C$ ao contrário para obter $A$ ou $B$.
+
+## Chaves candidatas e atributos primos
+
+$X$ é **superchave** quando $X^+$ contém todos os atributos de $R$. É **chave candidata** quando é superchave e nenhum subconjunto próprio o é. Portanto, um fecho completo prova superchave; a minimalidade exige outro passo.
+
+No exemplo anterior, $AB$ é candidata porque o seu fecho é completo e nem $A$ nem $B$ chegam. É a única: nenhum atributo consegue obter $A$ ou $B$ pelas DFs dadas, pois estes nunca aparecem à direita. Qualquer chave tem de conter ambos. Os supersets $ABC$ e $ABDE$ são superchaves, mas não candidatas.
+
+Um atributo é **primo** se pertence a pelo menos uma chave candidata, não apenas à primária escolhida. Para encontrar todas as chaves, começa pelos atributos que não aparecem à direita de nenhuma DF não trivial. Testa extensões em ordem crescente e descarta supersets de candidatas já encontradas. Confirma sempre os fechos.
+
+Por exemplo, em $S(A,B,C)$ com $AB\to C$ e $C\to B$, temos duas candidatas: $AB$ e $AC$. Ambas determinam o esquema; $A$, $B$ e $C$ isolados não. Todos os atributos são primos, mesmo que escolhamos $AB$ como primária.
 
 ## As formas, por ordem
 
-Supõe esta tabela única, com a chave `(idEnc, idProd)`:
+A **1.ª forma normal**, 1FN, usa valores atómicos dentro dos domínios escolhidos, sem grupos repetidos de atributos. Guardar `produto1`, `produto2` e `produto3` limita artificialmente uma encomenda. Guardar uma lista de ids numa célula dificulta referências e operações relacionais. Uma relação Item resolve estes problemas.
 
-```
-Vendas(idEnc, dataEnc, idCliente, nomeCliente, idProd, nomeProd, preco, qtd)
-```
+A atomicidade depende do modelo. Uma data pode ser um valor do domínio, mesmo que consigamos decompor o seu texto em ano, mês e dia. "Atómico" não significa "impossível de dividir de qualquer maneira".
 
-- **1FN**: cada célula tem um valor atómico, sem listas nem grupos repetidos. Assume-se cumprida.
-- **2FN**: nenhum atributo fora da chave depende de _parte_ da chave. Falha aqui: `idEnc -> dataEnc` e `idProd -> nomeProd, preco` usam só metade da chave. São **dependências parciais**.
-- **3FN**: nenhum atributo fora da chave depende de outro atributo fora da chave. Mesmo depois de resolver as parciais, `idCliente -> nomeCliente` seria uma **dependência transitiva** se `idCliente` não fosse chave.
-- **Boyce-Codd (BCNF)**: todo o determinante de uma FD não trivial é superchave. É a versão sem exceções da 3FN: em BCNF, cada seta parte de uma (super)chave.
+A **2FN** exige 1FN e que cada atributo não primo dependa totalmente de cada chave candidata. Não pode depender de uma parte própria de uma candidata composta. Se todas as candidatas tiverem um único atributo, não há uma parte própria não vazia que crie a dependência parcial habitual.
 
-Para comparar de relance:
+A **3FN** exige, para cada DF não trivial $X\to A$ com um atributo à direita, que $X$ seja superchave **ou que $A$ seja primo**. A descrição "não haver dependências entre atributos não chave" ajuda em casos simples com uma candidata, mas não substitui esta definição.
 
-| Forma | O que proíbe                            | Exemplo na tabela Vendas                          |
-| ----- | --------------------------------------- | ------------------------------------------------- |
-| 2FN   | Dependência de parte da chave           | `idProd -> preco` usa metade da chave             |
-| 3FN   | Dependência transitiva entre não chaves | `idCliente -> nomeCliente` via atributo não chave |
-| BCNF  | Determinante que não é superchave       | Qualquer seta que parta de fora de uma chave      |
+A **BCNF**, forma normal de Boyce-Codd, exige que o determinante $X$ de toda a DF não trivial seja superchave. Não há a exceção de atributo primo.
 
-## Ver a contradição acontecer
+| Forma | Condição que verificamos                                                            |
+| ----- | ----------------------------------------------------------------------------------- |
+| 2FN   | Nenhum atributo não primo depende de parte própria de uma candidata.                |
+| 3FN   | Numa DF não trivial, o determinante é superchave ou o atributo determinado é primo. |
+| BCNF  | Numa DF não trivial, o determinante é superchave.                                   |
 
-Na tabela única, nada impede dois preços diferentes para o mesmo produto. Executa e repara nas duas linhas do Teclado:
+Uma relação em BCNF está em 3FN; uma relação em 3FN está em 2FN, assumindo o modelo em 1FN. A implicação inversa pode falhar.
 
-<CodePlayground
-  language="sql"
-  title="Preço contraditório sem normalização"
-  code={
-    'CREATE TABLE Vendas(idEnc INTEGER, idProd INTEGER, nomeProd TEXT, preco REAL, qtd INTEGER);\nINSERT INTO Vendas VALUES (100, 10, \u0027Teclado\u0027, 45.0, 2), (101, 10, \u0027Teclado\u0027, 40.0, 1);\nSELECT idProd, nomeProd, preco FROM Vendas WHERE idProd = 10;'
-  }
-/>
+## Classificar uma relação
 
-O resultado mostra `10|Teclado|45.0` e `10|Teclado|40.0`: o mesmo produto com dois preços, e nenhuma restrição reclama. Depois da decomposição, o preço vive só em `Produto(idProd, ...)` e esta contradição é impossível por construção.
+Em $R(A,B,C,D,E)$ com $AB\to C$, $C\to D$ e $D\to E$, a candidata é $AB$. Os atributos $C,D,E$ são não primos.
 
-## Decompor até BCNF
+A relação está em 2FN: nem $A$ nem $B$ determinam atributos não primos. Falha 3FN por $C\to D$: $C^+=CDE$ não é o esquema completo, logo $C$ não é superchave; $D$ não é primo. $D\to E$ também viola 3FN. A forma mais alta é 2FN.
 
-Parte a tabela pelas FDs problemáticas, uma de cada vez, até cada tabela ter só setas a partir de chaves:
+Agora considera $S(A,B,C)$ com $AB\to C$ e $C\to B$. As candidatas são $AB$ e $AC$, portanto $B$ é primo. A DF $C\to B$ não viola 3FN, embora $C$ não seja superchave. Viola BCNF. Esta relação está em 3FN e não em BCNF.
 
-```
-Cliente(idCliente, nomeCliente)        -- idCliente -> nomeCliente, é chave: ok
-Produto(idProd, nomeProd, preco)       -- idProd -> ..., é chave: ok
-Encomenda(idEnc, dataEnc, idCliente)   -- idEnc -> ..., é chave: ok
-Item(idEnc, idProd, qtd)               -- (idEnc, idProd) -> qtd, é chave: ok
-```
+Precisamos de considerar as DFs implicadas, não apenas uma lista arbitrária de setas. Para BCNF, verificar os determinantes das DFs de uma base equivalente é suficiente quando o determinante de cada DF não trivial dessa base é superchave. Depois de decompor, a base original tem de ser projetada sobre cada esquema.
 
-Cada facto vive num sítio só: o preço do Teclado está apenas em `Produto`. Mudar o preço é uma atualização; registar um produto sem vendas é uma inserção em `Produto`; apagar encomendas nunca apaga produtos. As três anomalias desapareceram, e o resultado é exatamente o esquema do [mapeamento](mapeamento-relacional/). Quando o UML está bem feito, o mapeamento já sai normalizado; a normalização é a prova de que está, e a rede de segurança quando o diagrama nasceu torto.
+## As anomalias da loja
 
-:::tip[Como cai isto em teste]
-O enunciado dá-te uma tabela e as FDs. O método: sublinha a chave, marca cada FD como total, parcial ou transitiva, classifica a forma normal mais alta que passa e decompõe pela primeira FD que falha, repetindo até tudo passar. Mostra sempre as chaves das tabelas resultantes, porque é nelas que o corretor confirma BCNF.
-:::
+Imagina `Venda(idEncomenda, idProduto, nomeProduto, qtd)` com candidata `(idEncomenda, idProduto)` e `idProduto → nomeProduto`.
 
-## Para ver em vídeo
+O nome depende de parte da candidata, violando 2FN. Cada compra volta a guardar o nome. Uma alteração exige várias atualizações; um produto ainda sem compras não tem um lugar independente; apagar a última compra apaga também a informação do nome.
 
-<YouTube
-  id="GFQaEYEc8_8"
-  title="Learn Database Normalization - 1NF, 2NF, 3NF, 4NF, 5NF"
-/>
-<YouTube
-  id="J-drts33N8g"
-  title="1st, 2nd and 3rd Normal Form (Database Normalisation)"
-/>
+A decomposição `Produto(idProduto, nomeProduto)` e `Item(idEncomenda, idProduto, qtd)` separa as propriedades do produto das propriedades da compra. A página de [decomposição](/cadeiras/bd/decomposicao/) explica por que esta separação não inventa combinações ao reconstruir os dados.
 
-[^ullman]: As definições de dependência funcional e de Boyce-Codd seguem Ullman, A First Course in Database Systems, a bibliografia obrigatória da cadeira.
+## Cobertura mínima
+
+Uma **cobertura mínima** é um conjunto equivalente de DFs com um único atributo à direita, sem atributos dispensáveis à esquerda e sem DFs redundantes. Equivalente significa que os dois conjuntos implicam as mesmas dependências.
+
+Considera $F=\{A\to BC,\ B\to C,\ AB\to D\}$.
+
+1. Separa $A\to BC$ em $A\to B$ e $A\to C$.
+2. Em $AB\to D$, o $B$ é dispensável: a partir de $A$ obtemos $B$, depois $D$. Podemos substituir por $A\to D$.
+3. $A\to C$ é redundante, porque $A\to B$ e $B\to C$ já a implicam. Retira-a.
+
+Fica $\{A\to B,\ B\to C,\ A\to D\}$. Confere cada remoção com fechos. Para testar se uma **DF inteira** é redundante, retira-a antes de calcular o fecho; caso contrário, ela própria prova o resultado que querias testar. A ordem das reduções pode produzir coberturas mínimas diferentes, mas equivalentes.

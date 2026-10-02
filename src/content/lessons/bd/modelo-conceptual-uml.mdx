@@ -1,70 +1,103 @@
 ---
 title: Modelo conceptual em UML
-description: Classes, atributos, associações, multiplicidades e chaves no diagrama de classes.
+description: Classes, multiplicidades, associações, generalizações e regras do domínio.
 section: conteudo
-order: 1
+order: 2
+practices:
+  - bd/praticar-modelacao
 ---
 
-import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
-import lojaUml from '../../bd/loja-uml.typ?raw';
+import LojaUml from '../../bd/LojaUml.astro';
 
-Antes de criar uma tabela, é preciso decidir que coisas existem no problema e como se relacionam. O **modelo conceptual** regista essas decisões sem pensar ainda em tabelas: que entidades há, que propriedades tem cada uma e que ligações existem entre elas. A linguagem da cadeira para o desenhar é o diagrama de classes **UML** (_Unified Modeling Language_).[^uml-ficha]
+Antes de criar tabelas, decide o que o sistema precisa de recordar. Uma loja guarda clientes e produtos, mas também os acontecimentos que os ligam, como uma encomenda. O **modelo conceptual** descreve esses factos e as regras que uma instância válida tem de cumprir. Em BD usamos o subconjunto de UML destinado à modelação de dados, sem métodos de programação.
 
 ## Classes e atributos
 
-Uma **classe** é um tipo de coisa do problema, como `Cliente` ou `Produto`. Cada classe tem **atributos**, as propriedades que queremos guardar: `Cliente` tem `nome` e `email`, `Produto` tem `nome`, `preco` e `stock`. Cada objeto concreto, a Ana ou o Teclado, é uma **instância** com um valor em cada atributo.
+Uma **classe** descreve objetos com propriedades e significado comuns. `Cliente` tem `id`, `nome` e `email`; Ana é uma instância dessa classe. O atributo pertence à definição da classe, o seu valor pertence a cada objeto.
 
-Um ou mais atributos identificam cada instância sem ambiguidade e formam a **chave**: o `id` do cliente, o `id` do produto. Marca a chave no diagrama (convenção: sublinhado ou estereótipo `<<PK>>`), porque tudo o resto, das associações à normalização, depende de saberes o que identifica o quê. Atributos como o nome do cliente não servem de chave: dois clientes podem chamar-se igual.
+Escolhe uma classe quando precisas de identificar objetos e guardar as suas propriedades ou ligações. Se a cidade de uma morada for apenas texto para mostrar, pode ser um atributo. Se o sistema guarda população, país e ligações da cidade a outras entidades, `Cidade` deve ser uma classe. A decisão depende do problema, não da palavra usada no enunciado.
+
+Uma **chave** identifica cada objeto. O nome de uma pessoa não é uma boa chave se nomes iguais forem permitidos. Um identificador artificial pode ser útil, mas não elimina outras unicidades do domínio: se cada cliente tem um número fiscal distinto, esse número continua a precisar de uma restrição própria. Aqui sublinhamos os atributos da chave escolhida.
+
+Não escrevas `idCliente` em `Encomenda` só para simular uma ligação conceptual. Liga as classes por uma associação. A chave estrangeira aparece depois, no modelo relacional.
 
 ## Associações e multiplicidades
 
-Uma **associação** liga duas classes: um cliente _faz_ encomendas, uma encomenda _contém_ produtos. A **multiplicidade** diz quantos de cada lado participam, e é a decisão mais importante do diagrama:
+Uma **associação** liga objetos. Uma ligação concreta entre Ana e a encomenda 100 é uma instância da associação `faz`.
 
-- `1`: exatamente um. Cada encomenda pertence a exatamente um cliente.
-- `0..1`: zero ou um. Um produto pode estar sem encomenda nenhuma.
-- `*`: zero ou mais. Um cliente pode ter zero, uma ou muitas encomendas.
-- `1..*`: uma ou mais.
+A multiplicidade junto de uma extremidade conta objetos **dessa classe** associados a um objeto da outra. Lê cada direção separadamente:
 
-Lê-se cada direção separadamente. "Um cliente faz `*` encomendas; cada encomenda é feita por `1` cliente" descreve uma associação **um para muitos**. "Uma encomenda contém `1..*` produtos; cada produto aparece em `*` encomendas" descreve **muitos para muitos**. Errar a multiplicidade é o erro clássico: se disseres que cada encomenda tem um só produto, o modelo já não representa a loja.
+- `1` significa exatamente um, o mesmo que `1..1`.
+- `0..1` permite ausência, mas proíbe dois.
+- `*` abrevia `0..*`, sem limite superior.
+- `1..*` exige pelo menos um.
+- `2..5` exige entre dois e cinco, incluindo os limites.
 
-Associações muitos para muitos guardam quase sempre dados próprios, como a quantidade de cada produto na encomenda. Essa associação com atributos, a classe associativa `ItemEncomenda` com `qtd`, vai dar origem a uma tabela própria no esquema relacional.
+Na ligação `Cliente 1 ── 0..* Encomenda`, o `1` junto de Cliente diz que cada encomenda tem um cliente. O `0..*` junto de Encomenda diz que um cliente pode não ter encomendas ou ter muitas. Não contamos clientes a partir da multiplicidade junto de Encomenda.
+
+O mínimo e o máximo têm funções diferentes. Mudar `0..*` para `1..*` não muda o facto de ser uma associação muitos para um; muda a obrigação de participar. Mia, que ainda não comprou, satisfaz `0..*` e viola `1..*`.
 
 ## O diagrama da loja
 
-Junta as peças no cenário da [apresentação](index/):
+Assumimos que uma encomenda registada tem pelo menos um produto, que o mesmo produto aparece no máximo uma vez em cada encomenda e que todas as encomendas pertencem a um cliente. A quantidade e o preço acordado dizem respeito à compra daquele produto naquela encomenda.
 
-```
-Cliente(<<PK>> id, nome, email)
-  "1" ---- faz ---- "*" Encomenda(<<PK>> id, data)
+<LojaUml />
 
-Encomenda "*" ---- contém ---- "1..*" Produto(<<PK>> id, nome, preco, stock)
-  classe associativa: ItemEncomenda(qtd)
-```
+A encomenda 100 pode conter Teclado e Rato. Um Produto pode não ter sido vendido. As multiplicidades junto de Produto e Encomenda são, respetivamente, `1..*` e `0..*`. O preço atual pertence a Produto; o preço da compra pertence a Item. Mesmo quando os dois números coincidem, são factos diferentes.
 
-O mesmo desenho em figura, com as chaves sublinhadas e a classe associativa a tracejado:
+Se admitirmos encomendas em preparação sem produtos, precisamos de alterar o mínimo para `0..*`, ou de distinguir o estado de preparação do estado confirmado. Uma implementação não pode escolher silenciosamente uma regra diferente do desenho.
 
-<Typst
-  source={lojaUml}
-  format="svg"
-  alt="Diagrama UML da loja: Cliente faz Encomenda (um para muitos); Encomenda contém Produto (muitos para muitos) com a classe associativa ItemEncomenda, que guarda a quantidade."
-/>
+## Classes de associação e acontecimentos repetidos
 
-E a mesma estrutura como grafo, para veres só as ligações e as multiplicidades:
+Uma **classe de associação** guarda propriedades da ligação, como `qtd` em Item. Nenhum produto tem uma quantidade comprada única para todas as encomendas, e nenhuma encomenda tem uma quantidade única para todos os produtos. O valor depende do par.
 
-<Dot
-  source={`digraph Loja { rankdir = LR; Cliente -> Encomenda [label = "faz, 1:*"]; Encomenda -> Produto [label = "contem, *:1..*"]; ItemEncomenda -> Encomenda [style = dashed]; ItemEncomenda -> Produto [style = dashed]; }`}
-  alt="Grafo da loja: Cliente faz Encomenda de um para muitos; Encomenda contém Produto de muitos para muitos; ItemEncomenda liga-se às duas a tracejado."
-/>
+Uma associação UML liga um dado par de objetos uma vez. Se um aluno se pode candidatar à mesma faculdade em vários anos, uma classe de associação apenas entre `Aluno` e `Faculdade`, com `ano` como atributo, não chega para distinguir várias ligações ao mesmo par. Modela `Candidatura` como uma classe própria, ligada ao aluno e à faculdade, com chave que distingue os acontecimentos. Pode ser um `id` ou, se as regras o permitirem, o conjunto aluno, faculdade e ano.
 
-Lê a segunda associação com atenção: cada encomenda contém pelo menos um produto (`1..*`), cada produto pode não estar em encomenda nenhuma (`*`), e a quantidade vive na classe associativa. Pergunta de teste típica: "um produto sem encomendas viola o diagrama?" Não, porque o lado do produto admite zero. "Uma encomenda sem produtos?" Sim, viola o `1..*`.
+A mesma dúvida surge na loja. Se o mesmo produto puder surgir em linhas distintas da mesma encomenda, por exemplo com descontos diferentes, precisamos de uma classe `Linha` com um número de linha. O modelo apresentado consolida cada produto numa só linha e usa o par como identificador.
 
-:::tip[Como validar um diagrama]
-Para cada associação, inventa um caso concreto e testa as duas direções: "a Ana tem duas encomendas, ok; a encomenda 100 tem dois donos, proibido". Se um caso realista da loja for proibido pelo diagrama, ou um absurdo for permitido, a multiplicidade está errada.
-:::
+## Papéis, associações reflexivas e qualificadores
 
-## Para levar para a próxima página
+Uma classe pode associar-se a si própria. Em `Pessoa`, uma associação parental liga uma pessoa no papel de progenitor a outra no papel de filho. Os papéis evitam confundir as duas referências na tradução para tabelas. Uma regra de "não ser o próprio progenitor" não resulta apenas das multiplicidades; precisa de uma restrição adicional.
 
-O diagrama diz _o quê_, mas o SQLite só percebe tabelas. A página sobre [mapeamento relacional](mapeamento-relacional/) converte cada classe e cada associação em tabelas com chaves primárias e estrangeiras, incluindo a tabela que nasce da classe associativa.
+Um **qualificador** identifica uma ligação dentro do contexto de um objeto. Um clube atribui números aos seus membros. O número 7 pode existir em dois clubes diferentes, mas dentro de um clube identifica no máximo uma pessoa. O identificador relevante é `(clube, numeroMembro)`, não `numeroMembro` globalmente.
 
-[^uml-ficha]: O programa da cadeira (diagrama de classes UML) vem da ficha de Bases de Dados (L.EIC012), ocorrência de 2025/26: [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560097).
+A multiplicidade de uma associação qualificada tem de ser lida com esse contexto. "Para este clube e este número, há no máximo uma pessoa" é diferente de "o clube tem no máximo uma pessoa".
+
+## Associações com três participantes
+
+`Fornecimento(Fornecedor, Produto, Projeto)` afirma que um fornecedor fornece um produto a um projeto. O facto completo envolve os três objetos ao mesmo tempo.
+
+Substituir esta associação por três ligações binárias pode inventar combinações. Se F1 fornece P1 ao projeto J1 e P2 a J2, guardar apenas os pares perde a informação de que P1 foi para J1. A junção dos pares pode sugerir fornecimentos que nunca existiram.
+
+Numa associação ternária, a multiplicidade junto de um participante limita quantos valores desse participante existem **para uma combinação fixa dos outros dois**. Se junto de Fornecedor estiver `1`, cada par Produto/Projeto determina um fornecedor. Não significa que cada fornecedor esteja ligado a um único produto ou projeto.
+
+## Generalizações
+
+Uma **generalização** representa "é um": um Funcionário é uma Pessoa. A subclasse herda os atributos e as associações da superclasse e acrescenta propriedades específicas.
+
+Há duas decisões independentes:
+
+| Propriedade | Pergunta                                                          |
+| ----------- | ----------------------------------------------------------------- |
+| Completa    | Todo o objeto da superclasse pertence a pelo menos uma subclasse? |
+| Parcial     | Existem objetos só na superclasse?                                |
+| Disjunta    | Um objeto pertence no máximo a uma subclasse?                     |
+| Sobreposta  | Um objeto pode pertencer a várias subclasses?                     |
+
+`Pessoa → Aluno, Docente` pode ser parcial e sobreposta: nem toda a pessoa é aluno ou docente, e uma pessoa pode ser ambos. `Pagamento → Cartao, Transferencia`, sob uma regra que exige exatamente uma forma de pagamento, é completa e disjunta. Não inferimos uma destas propriedades a partir da outra.
+
+## Composição, agregação e restrições
+
+A **composição** representa uma parte com um único composto de cada vez e com ciclo de vida dependente do composto. Uma linha de encomenda pertence a uma encomenda; se removemos a encomenda definitivamente, as suas linhas deixam de existir. O losango preenchido fica junto do todo.
+
+A **agregação** usa um losango vazio para uma relação todo/parte mais fraca. A parte pode sobreviver à remoção do todo. Não acrescentes automaticamente uma política de eliminação em cascata só porque há um losango.
+
+As multiplicidades não exprimem todas as regras. Se o capitão de uma equipa tem de ser um dos seus jogadores, duas associações "tem jogadores" e "tem capitão" não asseguram essa inclusão. Acrescenta a restrição `capitao pertence aos jogadores da equipa`.
+
+Um elemento **derivado**, marcado com `/`, calcula-se a partir de outros. `/total` da encomenda é a soma de `qtd × precoUnitario`. Decidir guardá-lo exige uma regra que o mantenha atualizado. A barra mostra a dependência, não implementa o cálculo.
+
+## Resolver um enunciado
+
+Sublinha os objetos que precisam de identidade e os acontecimentos que podem repetir-se. Para cada ligação, escreve duas frases com "cada" e "pode" ou "tem de". Essas frases dão os limites mínimo e máximo. Só depois coloca atributos e regras que as multiplicidades não representam.
+
+Valida com contraexemplos. Uma encomenda com dois clientes deve ser proibida; um cliente sem encomendas deve ser permitido. Se não conseguires justificar um limite a partir do enunciado, não o inventes. Explicita a hipótese de modelação.
