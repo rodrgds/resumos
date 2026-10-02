@@ -7,6 +7,7 @@ order: 4
 
 import Dot from '../../../components/Dot.astro';
 import pipeline from '../../cpd/pipeline.dot?raw';
+import reducao from '../../cpd/reducao.dot?raw';
 
 Há três formas de dividir trabalho, e cada uma pede uma ferramenta diferente. Esta página distingue-as e mete-te a paralelizar um ciclo real com OpenMP, o modelo de memória partilhada da primeira metade da cadeira.
 
@@ -44,6 +45,13 @@ int main(void) {
 ```
 
 Compila com `gcc -O2 -fopenmp soma.c -o soma` e corre com `./soma`. A cláusula `reduction(+:soma)` dá a cada thread um acumulador privado e soma-os no fim. Neste exemplo, todos os termos são 1 e a soma cabe exatamente no tipo usado. Para tempos ilustrativos de 0,32 s e 0,09 s com 4 núcleos, o speedup seria $0,32/0,09\approx3,56$ e a eficiência cerca de 89%. Estes valores exemplificam o cálculo; mede o teu programa com `omp_get_wtime`.
+
+Num vetor de oito uns, podemos atribuir quatro elementos a cada uma de duas threads. Cada acumulador privado começa em 0 e termina em 4; a redução combina-os para obter $4+4=8$. Com um contador partilhado protegido por `atomic`, os oito incrementos teriam de atualizar a mesma posição de memória. A redução evita essa contenção durante a soma de cada fatia, embora a combinação final também tenha um custo.
+
+<Dot
+  source={reducao}
+  alt="Oito uns divididos em duas fatias de quatro. Cada thread calcula uma soma privada de 4 e a redução combina 4 mais 4 para obter 8. Um contador partilhado com atomic exige oito atualizações na mesma posição de memória."
+/>
 
 ## Quando não compensa
 

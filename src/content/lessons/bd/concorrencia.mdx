@@ -7,6 +7,8 @@ practices:
   - bd/praticar-concorrencia
 ---
 
+import Manim from '../../../components/Manim.astro';
+
 Duas transações podem ser corretas isoladamente e produzir um estado errado quando intercaladas. Isolamento define o que cada uma pode observar e que resultados concorrentes são permitidos.
 
 ## Escalonamentos seriais e serializáveis
@@ -74,6 +76,14 @@ Outra técnica é **MVCC**, controlo de concorrência multiversão. Conserva ver
 ## Write skew: duas linhas, uma regra
 
 Ana e Rui estão de serviço. A regra exige pelo menos uma pessoa de serviço. Cada transação lê que há duas pessoas e retira a sua própria pessoa do serviço. Se usarem o mesmo snapshot inicial e puderem confirmar escritas em linhas diferentes, o resultado pode ter zero pessoas.
+
+Na animação, T1 e T2 mantêm o snapshot com `Ana = sim` e `Rui = sim`, mesmo quando o estado confirmado muda. O modelo de isolamento por snapshot permite os dois commits porque as escritas afetam linhas diferentes e não verifica esta regra entre linhas. Não estamos a simular SQLite.
+
+<Manim
+  animation="bd-write-skew"
+  title="Duas saídas decididas sobre o mesmo snapshot"
+  description="T1 e T2 leem Ana e Rui de serviço. T1 retira Ana e confirma; T2 retira Rui com base no snapshot inicial e também confirma. Ficam zero pessoas. Na execução serial, T1 sai primeiro e T2 vê apenas Rui de serviço, por isso recusa a segunda saída e conserva uma pessoa."
+/>
 
 Não houve leitura suja. Nenhuma transação sobrepôs a escrita da outra. Ainda assim, qualquer ordem serial correta faria a segunda ver só uma pessoa e recusar a saída. Esta anomalia, **write skew**, mostra por que isolamento por snapshot não equivale a serializabilidade.
 

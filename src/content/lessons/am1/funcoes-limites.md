@@ -47,11 +47,25 @@ As identidades $\sin(2x)=2\sin x\cos x$ e $\cos(2x)=1-2\sin^2x=2\cos^2x-1$ vão 
 
 Escrever $\lim_{x\to a}f(x)=L$ diz que os valores de $f(x)$ ficam tão perto de $L$ quanto quisermos quando $x$ está suficientemente perto de $a$, com $x\ne a$. O valor $f(a)$ pode ser diferente ou nem existir.
 
-Precisamente, para todo $\varepsilon>0$ existe $\delta>0$ tal que, para $x$ no domínio,
+Precisamente, para todo $\varepsilon>0$ existe $\delta>0$ tal que, para todo $x$ no domínio,
 
 $$
 0<|x-a|<\delta\quad\Longrightarrow\quad |f(x)-L|<\varepsilon.
 $$
+
+**Exemplo: provar que $\lim_{x\to2}(3x+1)=7$.** Queremos que a distância entre $3x+1$ e $7$ seja menor do que um $\varepsilon>0$ arbitrário. Simplificando essa distância,
+
+$$
+|(3x+1)-7|=|3x-6|=3|x-2|.
+$$
+
+Assim, precisamos de $|x-2|<\varepsilon/3$. Dado qualquer $\varepsilon>0$, escolhemos $\delta=\varepsilon/3>0$. Para todo $x\in\mathbb R$ tal que $0<|x-2|<\delta$, temos
+
+$$
+|(3x+1)-7|=3|x-2|<3\delta=\varepsilon.
+$$
+
+A escolha de $\delta$ depende de $\varepsilon$, não de $x$, e funciona para todos os pontos dessa vizinhança. Isto prova o limite pela definição.
 
 O limite pela esquerda usa $x<a$; o limite pela direita usa $x>a$. Se há domínio dos dois lados, o limite existe e é finito se e só se ambos os limites laterais existem e são iguais. Para $f(x)=|x|/x$, os limites em zero são $-1$ e $1$. O limite bilateral não existe.
 
