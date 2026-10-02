@@ -72,7 +72,17 @@ test('reading help preserves an earlier result and does not invent an attempt', 
   );
   await question.getByLabel('A tua resposta').fill('210');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
-  await question.getByLabel('Ver solução', { exact: true }).click();
+  const savedAssistance = await question
+    .getByLabel('Ver solução', { exact: true })
+    .evaluate((summary) => {
+      (summary as HTMLElement).click();
+      const records: Record<string, { result?: string; assistance: string }> =
+        JSON.parse(localStorage.getItem('resumos-exercise-progress') || '{}');
+      return Object.values(records).find(
+        (record) => record.result === 'correct',
+      );
+    });
+  expect(savedAssistance?.assistance).toBe('solution');
   await expect(question.getByRole('status')).toContainText(
     'Resposta correta, com pistas',
   );
