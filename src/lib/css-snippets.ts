@@ -9,6 +9,8 @@ export interface CssSnippet {
 export const SNIPPETS_KEY = 'resumos-css-snippets';
 const legacyHideAiCss =
   '[data-open-ai], #ai-menu, #copy-prompt { display: none; }';
+const legacyWrapCodeCss =
+  '.prose pre.astro-code, .prose pre.astro-code code { white-space: pre-wrap; overflow-wrap: anywhere; }';
 
 export const defaultSnippets: readonly CssSnippet[] = [
   {
@@ -49,9 +51,9 @@ export const defaultSnippets: readonly CssSnippet[] = [
   },
   {
     id: 'wrap-code',
-    name: 'Quebrar linhas de código estático',
+    name: 'Quebrar linhas de código',
     enabled: false,
-    css: '.prose pre.astro-code, .prose pre.astro-code code { white-space: pre-wrap; overflow-wrap: anywhere; }',
+    css: '.prose pre.astro-code, .prose pre.astro-code code, .prose pre[data-source], .prose .cm-content, .prose .cm-line { white-space: pre-wrap; overflow-wrap: anywhere; } .prose .cm-content { flex-shrink: 1; }',
   },
   {
     id: 'striped-tables',
@@ -81,14 +83,25 @@ export function readSnippets(): CssSnippet[] {
         return true;
       });
       // Upgrade only untouched preset CSS, preserving edits, names and toggles.
-      return snippets.map((snippet) =>
-        snippet.id === 'hide-ai' && snippet.css === legacyHideAiCss
-          ? {
-              ...snippet,
-              css: defaultSnippets.find((item) => item.id === 'hide-ai')!.css,
-            }
-          : snippet,
-      );
+      return snippets.map((snippet) => {
+        const legacyCss =
+          snippet.id === 'hide-ai'
+            ? legacyHideAiCss
+            : snippet.id === 'wrap-code'
+              ? legacyWrapCodeCss
+              : undefined;
+        if (snippet.css !== legacyCss) return snippet;
+        const preset = defaultSnippets.find((item) => item.id === snippet.id)!;
+        return {
+          ...snippet,
+          css: preset.css,
+          name:
+            snippet.id === 'wrap-code' &&
+            snippet.name === 'Quebrar linhas de código estático'
+              ? preset.name
+              : snippet.name,
+        };
+      });
     }
   } catch {
     /* Invalid storage falls back to the disabled presets. */

@@ -109,7 +109,7 @@ for (const width of [1440, 390]) {
         'Ocultar Brain rot',
         'Cabeçalho sem seguir o scroll',
         'Sublinhar links dos apontamentos',
-        'Quebrar linhas de código estático',
+        'Quebrar linhas de código',
         'Alternar o fundo das linhas de tabelas',
       ]) {
         await page.getByLabel(name, { exact: true }).check();

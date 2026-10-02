@@ -147,7 +147,7 @@ export class ClipFeed {
     return sequence[(position + direction + sequence.length) % sequence.length];
   }
 
-  #slot(clip: BrainrotClip) {
+  #slot(clip: BrainrotClip, offset = 0) {
     const item = document.createElement('div');
     item.className = 'brainrot-clip';
     const video = document.createElement('video');
@@ -155,10 +155,22 @@ export class ClipFeed {
     video.playsInline = true;
     video.preload = 'none';
     video.setAttribute('aria-hidden', 'true');
+    if (offset > 0)
+      video.addEventListener(
+        'loadedmetadata',
+        () => {
+          if (
+            video.getAttribute('src') === clip.src &&
+            Number.isFinite(video.duration)
+          )
+            video.currentTime = video.duration * offset;
+        },
+        { once: true },
+      );
     video.addEventListener('ended', () => {
       if (this.#slots[1]?.video !== video) return;
       this.#element.scrollTop = this.#element.clientHeight * 2;
-      this.#settle();
+      this.#settle({ sequential: true });
     });
     video.addEventListener('error', () => {
       if (this.#slots[1]?.video === video) this.#onError();
@@ -189,7 +201,7 @@ export class ClipFeed {
     });
   }
 
-  #settle() {
+  #settle({ sequential = false }: { sequential?: boolean } = {}) {
     if (
       this.#touching ||
       !this.#element.clientHeight ||
@@ -200,6 +212,10 @@ export class ClipFeed {
       this.#element.scrollTop / this.#element.clientHeight,
     );
     if (position === 1) return;
+    if (!sequential) {
+      this.#randomize();
+      return;
+    }
     if (position === 2) {
       const old = this.#slots.shift()!;
       this.#release(old.video);
@@ -215,6 +231,31 @@ export class ClipFeed {
       this.#slots.unshift(previous);
       this.#element.prepend(previous.item);
     }
+    this.#centre();
+    this.#activate();
+  }
+
+  #randomize() {
+    const current = this.#slots[1].clip;
+    const sequences = [...this.#sequences.values()];
+    const other = sequences.filter(
+      (sequence) => sequence[0].series !== current.series,
+    );
+    const candidates = other.length ? other : sequences;
+    const sequence = candidates[Math.floor(Math.random() * candidates.length)];
+    const parts =
+      sequence.length > 1
+        ? sequence.filter((clip) => clip !== current)
+        : sequence;
+    const clip = parts[Math.floor(Math.random() * parts.length)];
+    const offset = Math.random();
+    for (const slot of this.#slots) this.#release(slot.video);
+    this.#slots = [
+      this.#slot(this.#adjacent(clip, -1)),
+      this.#slot(clip, offset),
+      this.#slot(this.#adjacent(clip, 1)),
+    ];
+    this.#element.replaceChildren(...this.#slots.map((slot) => slot.item));
     this.#centre();
     this.#activate();
   }

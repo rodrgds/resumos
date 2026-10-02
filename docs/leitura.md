@@ -56,7 +56,7 @@ A aparência também inclui adaptações de [Flexoki](https://stephango.com/flex
 
 Em **CSS personalizado**, podes ativar as sugestões, editar o seu CSS ou adicionar snippets. Guardar e ativar são ações separadas. Cada snippet pode ser desativado ou eliminado. Os snippets ficam em `resumos-css-snippets`, só neste navegador, e não entram na pesquisa, exportação Markdown ou pedidos de IA.
 
-As sugestões incluem ocultar Brain rot, deixar o cabeçalho no topo da página, sublinhar links, quebrar linhas de código estático e alternar o fundo das linhas de tabelas. **Adicionar sugestões em falta** acrescenta as sugestões novas ou eliminadas, desativadas, sem substituir as que editaste.
+As sugestões incluem ocultar Brain rot, deixar o cabeçalho no topo da página, sublinhar links, quebrar linhas de código estático e editável e alternar o fundo das linhas de tabelas. **Adicionar sugestões em falta** acrescenta as sugestões novas ou eliminadas, desativadas, sem substituir as que editaste.
 
 Seletores de personalização estáveis:
 
@@ -72,5 +72,7 @@ Seletores de personalização estáveis:
 | Código estático       | `.astro-code`                                         |
 | Exemplos executáveis  | `[data-playground]`, `.web-playground`                |
 | Ações da página       | `.page-actions`, `[data-open-ai]`, `#ai-menu`         |
+
+O código mantém cada linha inteira e permite deslocar o bloco na horizontal, também nos editores. Para o ajustar à largura do ecrã, ativa a sugestão «Quebrar linhas de código» na aparência. Não altera o programa, apenas a apresentação.
 
 Usa `--page`, `--surface`, `--text`, `--muted`, `--line`, `--accent` e `--accent-soft` para acompanhar o tema. Se um snippet esconder os controlos, acrescenta `?sem-css=1` ao URL. A página abre a aparência com os snippets suspensos, para os poderes corrigir. Também podes abrir a aparência pela tecla vírgula ou pelo rodapé.
