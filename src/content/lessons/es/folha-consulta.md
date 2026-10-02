@@ -1,63 +1,105 @@
 ---
-title: Cheat sheet de ES
-description: Escolhas e entregáveis de processos, requisitos, gestão, arquitetura, construção e testes.
+title: Cheat sheet de Engenharia de Software
+description: Distinções, condições, notação e decisões para rever a matéria.
 section: recursos
 studyKind: revision
-editorial:
-  sources:
-    - title: Resumos ES SofiaViP
-      url: https://drive.google.com/file/d/180eozddl6KckJEDmwEN3Rp_-nWlXQ-1b/view
-  coverage: Síntese das páginas 2 a 14 do resumo, sobre processos, requisitos e modelos, gestão, arquitetura, construção, Scrum, verificação e testes.
-  gaps:
-    - A página 1 é capa; os exemplos e listas de padrões Scrum e de apresentação da página 14 não são material de procedimento nesta folha.
-    - A fonte não desenvolve um método completo de estimativa, métricas de cobertura, segurança ou operação após entrega.
-    - A correspondência destes apontamentos a uma edição atual da unidade curricular não foi verificada.
+order: 1
 ---
-
-Em ES, a pergunta prática é **que incerteza queres reduzir e que evidência prova que a reduziste?** Liga cada decisão a um artefacto verificável: requisito, modelo, incremento, teste ou registo de defeito.
 
 ## Processo e gestão
 
-| Se o problema é…                           | Escolhe e acompanha…                                                                                                                                                                                                 |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mudança de requisitos previsível ou tardia | Um processo por etapas pode planear mais cedo; desenvolvimento incremental entrega partes para obter retorno e ajustar prioridades. O modelo em cascata torna a mudança tardia mais cara.                            |
-| Incerteza técnica ou de uso                | Um protótipo testa uma hipótese antes de fixar a solução; não confundas o protótipo com produto pronto para manutenção.                                                                                              |
-| Coordenar uma equipa iterativa             | Uma lista priorizada de trabalho, um objetivo de iteração e um incremento verificável. Acompanhamento mede progresso contra entregáveis, não apenas tempo ocupado.                                                   |
-| Decidir o que cabe no prazo                | Estima esforço e risco, compara capacidade observada com trabalho restante e ajusta âmbito com quem define prioridades. O triângulo âmbito, tempo e recursos tem qualidade como restrição, não como variável grátis. |
+| Distingue                                                                               | Critério                                                                   |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| [Atividade e artefacto](/cadeiras/es/processos-software/#atividades-e-artefactos)       | A atividade produz ou altera; o artefacto é o resultado                    |
+| [Iteração e incremento](/cadeiras/es/processos-software/#iterativo-e-incremental)       | Iterar revê; incrementar acrescenta capacidade                             |
+| [RUP](/cadeiras/es/processos-software/#rup)                                             | Conceção, elaboração, construção e transição; disciplinas atravessam fases |
+| [Preditivo e ágil](/cadeiras/es/processos-software/#planeamento-preditivo-e-adaptativo) | Diferem no detalhe e momento do planeamento; ambos podem receber feedback  |
+| [Esforço e duração](/cadeiras/es/introducao/#esforço-não-é-duração)                     | Pessoa-dias não se convertem livremente em dias de calendário              |
 
-RUP organiza iterações em torno de casos de uso e arquitetura; XP destaca práticas de construção como testes, integração e refatoração; Scrum organiza trabalho e retorno em ciclos curtos. Estas descrições ajudam a comparar responsabilidades, não obrigam a aplicar um modelo puro. Em Scrum, o **Product Owner** ordena o trabalho pelo valor, a equipa decide como o executar e o **Scrum Master** ajuda a remover impedimentos; a revisão inspeciona o incremento, a retrospetiva inspeciona o modo de trabalhar. Vê [processos de software](/cadeiras/es/processos-software/#rup-xp-e-scrum-lado-a-lado) e [planeamento](/cadeiras/es/gestao-projetos/#planear-e-monitorizar).
+Pares possíveis numa equipa: $n(n-1)/2$. Não mede reuniões nem custo real.
+
+[Caminho crítico](/cadeiras/es/gestao-projetos/#âmbito-tarefas-e-dependências): maior duração entre caminhos de dependências, sob recursos e hipóteses do plano.
+
+[Velocidade](/cadeiras/es/gestao-projetos/#velocidade-e-previsão): trabalho Done por Sprint. Previsão simples: $\lceil \text{backlog}/v \rceil$. Exige unidade, capacidade e critérios comparáveis; não compares equipas por pontos.
+
+[Burndown](/cadeiras/es/gestao-projetos/#ler-um-burndown): mostra trabalho restante. Desvio da linha ideal é sinal para investigar, não quantidade obrigatória a cortar. Burnup pode mostrar crescimento de âmbito.
+
+## Scrum e XP
+
+| Conceito        | Lembra                                               |
+| --------------- | ---------------------------------------------------- |
+| Product Backlog | Trabalho ordenado; compromisso Product Goal          |
+| Sprint Backlog  | Sprint Goal, itens escolhidos e plano dos Developers |
+| Increment       | Utilizável e conforme à Definition of Done           |
+| Product Owner   | Valor e gestão do backlog                            |
+| Developers      | Plano, qualidade e incremento                        |
+| Scrum Master    | Compreensão de Scrum e eficácia da equipa            |
+| Review          | Produto e futuro do backlog                          |
+| Retrospective   | Processo, qualidade e colaboração                    |
+
+[Scrum](/cadeiras/es/scrum/#artefactos-e-objetivos): Sprint de um mês ou menos; Daily de 15 minutos. Critérios da história e Definition of Done complementam-se. Definition of Ready é uma prática adicional.
+
+[XP](/cadeiras/es/xp/#valores-e-práticas): feedback técnico, TDD, integração, refactoring, pares, entregas pequenas, desenho simples e ritmo sustentável.
+
+[TDD](/cadeiras/es/xp/#tdd): teste falha pelo comportamento pretendido, implementação passa, refactoring preserva resultados. Erro de preparação não prova o caso.
+
+[Refactoring](/cadeiras/es/xp/#refactoring): muda estrutura, preserva comportamento observável. Mudar um limite funcional exige outro requisito e outra expectativa.
 
 ## Requisitos e modelos
 
-Um requisito **funcional** descreve uma capacidade ou comportamento; um **não funcional** impõe uma qualidade ou restrição observável. Escreve ambos de modo que se possa testar se foram cumpridos. O percurso é elicitar necessidades com as partes interessadas, analisar conflitos e prioridades, especificar e validar o entendimento. Uma história de utilizador regista uma necessidade em pouco texto; critérios de aceitação dão os limites que a tornam verificável. Vê [tipos de requisitos](/cadeiras/es/requisitos-uml/#tipos-de-requisitos) e [elicitação a validação](/cadeiras/es/requisitos-uml/#da-elicitação-à-validação).
+[Engenharia de requisitos](/cadeiras/es/requisitos-uml/#análise-especificação-e-validação): elicitar, analisar, especificar e validar; gerir mudanças ao longo do processo.
 
-| Modelo                    | Pergunta que responde                                                                                                                   |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Casos de uso              | Quem interage com o sistema e que objetivo obtém? Inclui fronteira, atores e cenário, sem tratar o desenho como especificação completa. |
-| Modelo de domínio/classes | Que conceitos, atributos, relações e restrições existem? Separa conceitos do domínio de decisões de implementação.                      |
-| Sequência                 | Que objetos ou componentes trocam mensagens e em que ordem num cenário?                                                                 |
-| Estados                   | Que estados e transições governam um objeto ao longo do tempo?                                                                          |
-| Atividades                | Que passos, decisões e fluxos paralelos compõem um processo?                                                                            |
-| Componentes e implantação | Que módulos fornecem ou exigem interfaces e onde correm os artefactos?                                                                  |
+| Tipo          | Pergunta                                                       |
+| ------------- | -------------------------------------------------------------- |
+| Funcional     | Que função ou comportamento deve existir?                      |
+| Não funcional | Que qualidade ou restrição tem de ser respeitada?              |
+| De domínio    | Que regra vem do contexto? Pode ser funcional ou não funcional |
 
-Escolhe a vista pelo erro que precisas de evitar. Um diagrama claro e pequeno pode comunicar melhor do que vários sem pergunta definida. Consulta [casos de uso](/cadeiras/es/requisitos-uml/#casos-de-uso-em-uml) e [classes e sequência](/cadeiras/es/arquitetura-desenho/#diagramas-de-classes-e-de-sequência).
+[Histórias](/cadeiras/es/requisitos-uml/#histórias-de-utilizador): quem, objetivo e razão. Card, conversation, confirmation. INVEST: independente, negociável, com valor, estimável, pequena e testável.
 
-## Arquitetura e construção
+[Aceitação](/cadeiras/es/requisitos-uml/#critérios-de-aceitação): Dado contexto, Quando ação, Então resultado. Inclui estado final e casos de recusa.
 
-A arquitetura fixa componentes, relações, interfaces e princípios que tornam certas mudanças fáceis ou difíceis. Compara padrões com o fluxo real: **camadas** se queres separar responsabilidades; **MVC** se apresentação e interação devem evoluir sem misturar o modelo; **pipes and filters** se dados passam por transformações; **repositório** se vários componentes precisam de um ponto comum para dados. Define dependências e interfaces antes de escolher um nome de padrão. Vê [estilos de arquitetura](/cadeiras/es/arquitetura-desenho/#estilos-de-arquitetura).
+[Casos de uso](/cadeiras/es/modelacao-uml/#casos-de-uso): ator é papel externo; caso produz resultado com valor; fronteira define o sistema.
 
-Na construção, entrega alterações pequenas e integráveis. Um teste escrito antes do comportamento pode esclarecer o contrato; refatorar muda a estrutura interna sem alterar o comportamento observado. Integração contínua junta alterações frequentemente e executa verificações em cada integração. A manutenção **corretiva** repara falhas, a **adaptativa** responde a mudanças do ambiente e a **perfectiva** melhora ou acrescenta capacidades. Vê [práticas XP](/cadeiras/es/construcao-evolucao/#práticas-xp-na-construção) e [tipos de manutenção](/cadeiras/es/construcao-evolucao/#evolução-e-tipos-de-manutenção).
+- Include: seta tracejada do caso que inclui para o incluído.
+- Extend: seta tracejada da extensão para o base, com condição e ponto de extensão.
+- Generalização: triângulo vazio para o elemento geral.
 
-## Verificar, validar e testar
+[Classes](/cadeiras/es/modelacao-uml/#classes-e-modelo-de-domínio): lê multiplicidade na ponta oposta. $1$, exatamente uma; $0..1$, nenhuma ou uma; $0..*$, nenhuma ou várias. Restrições temporais precisam de regras adicionais.
 
-**Verificação:** o produto cumpre a especificação? **Validação:** resolve a necessidade de quem o usa? Revisões, inspeções e análise estática examinam artefactos sem executar o programa; testes observam execução. São complementares. Um teste mostra a presença de um defeito quando falha, não demonstra a ausência de todos os defeitos quando passa.
+[Composição](/cadeiras/es/modelacao-uml/#relações-entre-classes): losango cheio no todo, propriedade forte e ciclo de vida das partes. Referência não implica composição.
 
-| Nível      | Evidência procurada                                                                                       |
-| ---------- | --------------------------------------------------------------------------------------------------------- |
-| Unidade    | Uma pequena parte cumpre o seu contrato.                                                                  |
-| Integração | Partes ligadas comunicam corretamente.                                                                    |
-| Sistema    | O sistema completo cumpre requisitos observáveis.                                                         |
-| Aceitação  | O cliente ou utilizador decide segundo critérios acordados.                                               |
-| Regressão  | Uma alteração não voltou a quebrar comportamento já aceite; repete testes adequados de níveis anteriores. |
+[Sequência](/cadeiras/es/modelacao-uml/#sequência-e-colaboração): tempo desce; mensagens ligam participantes; alt, alternativas; opt, opção; loop, repetição. Guardas dizem quando acontece.
 
-Para derivar casos, parte dos critérios de aceitação, fronteiras de valores, partições de entradas e estados/transições relevantes. O método **caixa preta** usa comportamento especificado; **caixa branca** usa a estrutura do programa. Regista defeitos com condição inicial, passos, resultado esperado e observado, para que outra pessoa os reproduza. Vê [níveis de teste](/cadeiras/es/verificacao-validacao/#níveis-de-teste) e [inspeções](/cadeiras/es/verificacao-validacao/#inspeções-e-análise-estática).
+[Atividades e estados](/cadeiras/es/modelacao-uml/#atividades-e-estados): decisão escolhe caminhos; fork e join tratam concorrência. Estado é situação de um objeto, não um ecrã.
+
+## Arquitetura
+
+[Vistas 4+1](/cadeiras/es/arquitetura-desenho/#vistas-e-uml): lógica, implementação, processo e implantação, relacionadas por cenários.
+
+Pacote agrupa elementos. Componente encapsula comportamento e interfaces. Artefacto é uma peça concreta. Nó é recurso de execução.
+
+[Desenho](/cadeiras/es/arquitetura-desenho/#coesão-acoplamento-e-ocultação): responsabilidades coesas, dependências explícitas e decisões variáveis escondidas por contratos. Uma interface tem de permitir preservar as regras.
+
+[Estilos](/cadeiras/es/arquitetura-desenho/#estilos-e-padrões): camadas, cliente-servidor, MVC, pipes and filters e repositório respondem a preocupações diferentes e podem combinar-se.
+
+## Qualidade e evolução
+
+| Distingue                                                                                         | Critério                                                    |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| [Verificação e validação](/cadeiras/es/verificacao-validacao/#verificação-e-validação)            | Conforme à especificação e adequado à necessidade           |
+| Estático e dinâmico                                                                               | Analisar representação e executar                           |
+| [Caixa preta e branca](/cadeiras/es/verificacao-validacao/#caixa-preta-e-caixa-branca)            | Derivar da especificação e da estrutura interna             |
+| [Unidade, integração, sistema, aceitação](/cadeiras/es/verificacao-validacao/#níveis-e-objetivos) | Unidade, interação, sistema completo e decisão de aceitação |
+| [Severidade e prioridade](/cadeiras/es/verificacao-validacao/#defeitos-e-regressão)               | Impacto e urgência                                          |
+| [Delivery e deployment](/cadeiras/es/construcao-evolucao/#entrega-e-implantação)                  | Preparar entrega e implantar automaticamente                |
+
+[Caso de teste](/cadeiras/es/verificacao-validacao/#caso-de-teste-e-oráculo): estado inicial, entradas, condições e resultados esperados. Oráculo independente da implementação. Cobertura mede execução, não prova correção.
+
+[Intervalos semiabertos](/cadeiras/es/verificacao-validacao/#um-exemplo-com-intervalos): sobreposição se $i_1<f_2$ e $i_2<f_1$. Intervalos adjacentes não se sobrepõem.
+
+[Manutenção](/cadeiras/es/construcao-evolucao/#manutenção): corretiva, defeitos; adaptativa, ambiente; perfetiva, capacidade; preventiva, problemas futuros.
+
+[Retrospetiva](/cadeiras/es/melhoria-processo/#cinco-passos): preparar, reunir dados, interpretar, escolher ações e acompanhar. Uma melhoria precisa de ação, prazo e evidência.
+
+[Projeto](/cadeiras/es/projeto/#relatório-de-desenvolvimento): documenta para a próxima equipa. Um [protótipo vertical](/cadeiras/es/projeto/#um-protótipo-vertical) atravessa partes da solução; uma demonstração identifica versão, cenário e limitações.

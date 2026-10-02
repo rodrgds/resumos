@@ -1,34 +1,53 @@
 ---
 title: Engenharia de Software
-description: Do requisito ao produto em equipa, processos, gestão, UML, construção e testes.
-section: conteudo
+description: Requisitos, modelos, decisões de desenho e evidência de qualidade para desenvolver software em equipa.
 order: 0
+editorial:
+  basedOn: 2025/26
+  gaps:
+    - A ocorrência de 2026/27 ainda não tem programa preenchido.
+    - Nem todas as referências externas e vídeos do Moodle têm texto integral disponível.
 ---
 
-Programar bem já tu sabes fazer. Engenharia de Software trata do que vem a seguir: construir software em equipa, com requisitos que mudam, prazos reais e utilizadores que não leram o teu código. A matéria segue o ciclo de vida de um produto, da ideia até à manutenção, e cada página corresponde a uma fase desse ciclo.
+Uma aplicação pode funcionar no teu computador e falhar quando duas pessoas a usam ao mesmo tempo. Pode passar os testes e resolver o problema errado. Engenharia de Software ensina a ligar necessidades, decisões técnicas, trabalho em equipa e evidência de qualidade.
 
-## Como está organizado
+## Percurso de estudo
 
-Começa pela [Introdução](introducao/), que explica porque um produto com dez programadores não é dez vezes um programa individual. Depois, [Processos de software](processos-software/) apresenta as formas de organizar o trabalho, do RUP ao Scrum, e [Gestão de projetos](gestao-projetos/) mostra como planear, estimar e acompanhar um projeto sem adivinhar.
+Começa pelos [fundamentos](/cadeiras/es/introducao/) e pelos [processos](/cadeiras/es/processos-software/). Depois acompanha uma equipa com [Scrum](/cadeiras/es/scrum/) e [gestão de projetos](/cadeiras/es/gestao-projetos/). Aprende a transformar uma necessidade em [requisitos](/cadeiras/es/requisitos-uml/), a descrevê-la com [UML](/cadeiras/es/modelacao-uml/) e a escolher a [arquitetura](/cadeiras/es/arquitetura-desenho/).
 
-A segunda metade é técnica: [Requisitos](requisitos-uml/) ensina a descobrir e especificar o que o software deve fazer, com casos de uso em UML; [Arquitetura e desenho](arquitetura-desenho/) decide a estrutura antes de escrever código, com diagramas de classes e de sequência; [Construção e evolução](construcao-evolucao/) cobre Git, integração contínua e manutenção; e [Verificação e validação](verificacao-validacao/) fecha o ciclo com testes de integração, de sistema e de aceitação.
+A segunda parte trata da evidência e da mudança: [verificação e validação](/cadeiras/es/verificacao-validacao/), [práticas de XP](/cadeiras/es/xp/), [construção e evolução](/cadeiras/es/construcao-evolucao/) e [melhoria do processo](/cadeiras/es/melhoria-processo/). Termina com a [documentação e demonstração do projeto](/cadeiras/es/projeto/). A [cheat sheet](/cadeiras/es/folha-consulta/) reúne condições e distinções para rever depois de estudar.
 
-## Um exemplo corrido
+As páginas usam exemplos próprios de uma aplicação de reserva de salas. Os exercícios no fim de cada tema pedem classificações, modelos, cálculos e decisões justificadas. Antes de abrir a solução, escreve a tua resposta e tenta encontrar um caso que a possa contradizer.
 
-Para ligar as fases, vamos seguir a mesma funcionalidade em todas as páginas: o início de sessão de uma aplicação. Nos requisitos escrevemos o que o início de sessão deve fazer e desenhamos os casos de uso. Na arquitetura decidimos as classes e a sequência de passos. Na construção o código passa por pull request e integração contínua. Na validação escrevemos os critérios de aceitação e testamos o fluxo completo. Quando chegares ao fim, terás visto a mesma funcionalidade passar por todas as fases, que é exatamente o que o projeto da cadeira te pede para fazer em equipa.
+## Avaliação e ano de referência
 
-## Como estudar
+A base destes apontamentos é o Moodle de **2025/26**, com aulas datadas da primavera de 2026, e a [ficha SIGARRA dessa ocorrência](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560102). Alguns materiais reutilizam páginas de anos anteriores. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586995) ainda não tem o programa preenchido. Estes apontamentos não confirmam as regras do novo ano.
 
-Lê cada página a pensar no projeto: que artefacto desta fase já produziste e qual está em falta. Desenha os diagramas à mão antes de os passares a limpo, porque o valor está nas decisões que tomas enquanto desenhas, não no desenho final. Nos exercícios de estimação e de testes, faz as contas e escreve os casos tu próprio; ler um burndown ou um caso de aceitação feito por outra pessoa não treina nada.
+Em 2025/26, a avaliação era distribuída, sem exame final:
 
-## Avaliação
+| Componente                 | Peso |
+| -------------------------- | ---: |
+| Participação nas aulas, PA |  15% |
+| Projeto em equipa, TP      |  60% |
+| Trabalhos individuais, TPC |  25% |
 
-A avaliação é distribuída ao longo do semestre, sem exame final, e combina participação nas aulas, projeto desenvolvido em equipa e trabalhos práticos individuais. Os pesos e as regras concretas mudam de ano para ano, por isso confirma sempre a ficha da unidade curricular no SIGARRA e a página da disciplina no Moodle antes de planeares o teu semestre.
+A fórmula publicada era $CF = \operatorname{round}(0{,}15PA + 0{,}60TP + 0{,}25TPC)$. A classificação do projeto era individual, podendo variar dentro da equipa. Para estudantes dispensados da assiduidade, a ficha retirava PA e atribuía 40% aos TPC. A frequência exigia participação efetiva no projeto e cumprimento das regras de assiduidade aplicáveis. Confirma no Moodle e na ficha do teu ano as entregas, dispensas, frequência e melhoria.
 
-## Fontes e âmbito
+## Materiais e bibliografia
 
-Estas páginas seguem o âmbito da unidade curricular de Engenharia de Software (L.EIC017) do 2.º ano, 2.º semestre da LEIC, ocorrência de 2025/26: introdução, processos de software, gestão de projetos, requisitos, arquitetura e desenho, construção e evolução, verificação e validação. A bibliografia obrigatória da ficha é Ian Sommerville, Software Engineering (10.ª edição), cuja página oficial de livros está em [iansommerville.com/books](https://iansommerville.com/books/), e o software indicado é o Flutter SDK com o Android Studio.
+O [Moodle de ES 2025/26](https://moodle2526.up.pt/course/view.php?id=4440) é a base docente: introdução e história, processos e RUP, Agile e Scrum, requisitos, simulação Scrum, verificação e validação, XP, arquitetura, padrões Scrum, construção, evolução, retrospetivas, desenvolvimento assistido por IA e apresentação de produtos. As referências externas incompletas não foram tratadas como material integral. Exemplos de projetos de alunos servem para observar artefactos, sem substituir o programa docente.
 
-Material oficial da FEUP:
+A ficha indica:
 
-- Ficha da unidade curricular de Engenharia de Software, ocorrência de 2025/26, com objetivos, programa, bibliografia e avaliação (consultada em setembro de 2026): [SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560102).
+- Ian Sommerville, _Software Engineering_, 10.ª edição global, Pearson, 2015, ISBN 9781292096131. A [página do autor](https://iansommerville.com/software-engineering-book/) reúne recursos do livro.
+- Russ Miles e Kim Hamilton, _Learning UML 2.0_, O'Reilly, 2006, ISBN 0-596-00982-8, como bibliografia complementar.
+
+Para esclarecer regras e notação, consulta o [Scrum Guide de 2020](https://scrumguides.org/scrum-guide.html), a [especificação UML 2.5.1 da OMG](https://www.omg.org/spec/UML/2.5.1), o [Manifesto Ágil](https://agilemanifesto.org/iso/ptpt/manifesto.html) e os guias oficiais de [arquitetura](https://docs.flutter.dev/app-architecture/guide) e [testes em Flutter](https://docs.flutter.dev/testing/overview). O exemplo Flutter dos slides inspira separação de responsabilidades, não obriga a usar uma estrutura em todas as aplicações.
+
+## Vídeos recomendados
+
+- [Grady Booch, The History of Software Engineering](https://www.youtube.com/watch?v=QUz10Z1AfLc), webinar indicado no Moodle. Observa como a evolução do hardware altera os problemas de organização, abstração e custo do software. Ajuda a perceber por que a disciplina ultrapassa a escrita de código.
+- [Introdução à engenharia de requisitos](https://vimeo.com/274897152), ligação dos slides de requisitos. Observa a passagem da necessidade para propriedades verificáveis do sistema.
+- [Prototipagem em papel](https://www.youtube.com/watch?v=5Ch3VsautWQ), ligação dos mesmos slides. Observa como testar o percurso de um utilizador antes de implementar o ecrã.
+
+Os vídeos complementam as explicações. Os exercícios destes apontamentos são próprios, não são provas anteriores nem previsões de perguntas de avaliação.

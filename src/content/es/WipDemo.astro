@@ -1,0 +1,168 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+const itemCount = 4;
+const unitsPerItem = 3;
+const totalDays = itemCount * unitsPerItem;
+---
+
+<InteractiveDemo label="Comparar o tempo de conclusão com diferentes limites de trabalho em curso">
+  <div
+    data-es-wip
+    data-item-count={itemCount}
+    data-units-per-item={unitsPerItem}
+  >
+    <label for="es-wip-limit">
+      Itens em curso: <output data-es-limit>1</output>
+    </label>
+    <input
+      id="es-wip-limit"
+      type="range"
+      min="1"
+      max={itemCount}
+      value="1"
+      step="1"
+    />
+    <div
+      class="timeline"
+      data-es-timeline
+      role="group"
+      aria-label="Dias de trabalho por item"
+    >
+      {Array.from({ length: itemCount }, (_, item) => (
+        <div
+          class="es-wip-row"
+          role="group"
+          aria-label={String.fromCharCode(65 + item)}
+        >
+          <span>{String.fromCharCode(65 + item)}</span>
+          {Array.from({ length: totalDays }, (_, i) => i + 1).map((day) => (
+            <span
+              class:list={{
+                worked:
+                  day > item * unitsPerItem && day <= (item + 1) * unitsPerItem,
+                finished: day === (item + 1) * unitsPerItem,
+              }}
+            >
+              {day}
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
+    <p class="legend">
+      Cada célula é um dia. As células preenchidas marcam trabalho; o contorno
+      duplo marca a conclusão.
+    </p>
+    <p data-es-result aria-live="polite">
+      Primeiro item: dia {unitsPerItem}. Tempo médio de conclusão:{' '}
+      {((unitsPerItem * (itemCount + 1)) / 2).toLocaleString('pt-PT')} dias.
+      Último item: dia {totalDays}.
+    </p>
+  </div>
+</InteractiveDemo>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-es-wip]');
+  if (root) {
+    const itemCount = Number(root.dataset.itemCount);
+    const unitsPerItem = Number(root.dataset.unitsPerItem);
+    const totalDays = itemCount * unitsPerItem;
+    const input = root.querySelector<HTMLInputElement>('input')!;
+    const limit = root.querySelector<HTMLOutputElement>('[data-es-limit]')!;
+    const timeline = root.querySelector<HTMLElement>('[data-es-timeline]')!;
+    const result = root.querySelector<HTMLElement>('[data-es-result]')!;
+    const update = () => {
+      const wip = Number(input.value);
+      const remaining = Array<number>(itemCount).fill(unitsPerItem);
+      const finished = Array<number>(itemCount).fill(0);
+      const worked = Array.from({ length: itemCount }, () => new Set<number>());
+      const active = Array.from({ length: wip }, (_, i) => i);
+      let next = wip;
+      for (let day = 1; day <= totalDays; day++) {
+        const item = active.shift()!;
+        worked[item].add(day);
+        remaining[item]--;
+        if (remaining[item] === 0) {
+          finished[item] = day;
+          if (next < itemCount) active.push(next++);
+        } else active.push(item);
+      }
+      limit.value = String(wip);
+      timeline.replaceChildren();
+      worked.forEach((days, item) => {
+        const row = document.createElement('div');
+        row.className = 'es-wip-row';
+        row.setAttribute('role', 'group');
+        row.setAttribute(
+          'aria-label',
+          'Item ' + String.fromCharCode(65 + item),
+        );
+        const name = document.createElement('span');
+        name.textContent = String.fromCharCode(65 + item);
+        row.append(name);
+        for (let day = 1; day <= totalDays; day++) {
+          const cell = document.createElement('span');
+          cell.className = [
+            days.has(day) ? 'worked' : '',
+            finished[item] === day ? 'finished' : '',
+          ].join(' ');
+          cell.textContent = String(day);
+          cell.title = `Item ${name.textContent}, dia ${day}: ${finished[item] === day ? 'concluído' : days.has(day) ? 'trabalho' : 'sem trabalho'}`;
+          cell.setAttribute('aria-label', cell.title);
+          row.append(cell);
+        }
+        timeline.append(row);
+      });
+      const mean = finished.reduce((sum, day) => sum + day, 0) / itemCount;
+      result.textContent = `Primeiro item: dia ${Math.min(...finished)}. Tempo médio de conclusão: ${mean.toLocaleString('pt-PT')} dias. Último item: dia ${totalDays}.`;
+    };
+    input.addEventListener('input', update);
+    update();
+  }
+</script>
+<style>
+  label {
+    display: block;
+    font-weight: 600;
+  }
+  input {
+    width: 100%;
+    margin: 12px 0;
+    accent-color: var(--accent);
+  }
+  .timeline {
+    overflow-x: auto;
+    display: grid;
+    gap: 6px;
+  }
+  :global(.es-wip-row) {
+    display: grid;
+    grid-template-columns: 20px repeat(12, minmax(20px, 1fr));
+    gap: 3px;
+    min-width: 296px;
+  }
+  :global(.es-wip-row span) {
+    text-align: center;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 12px;
+    padding: 4px 0;
+  }
+  :global(.es-wip-row .worked) {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+  :global(.es-wip-row .worked) {
+    font-weight: 700;
+  }
+  :global(.es-wip-row .finished) {
+    border: 3px double currentColor;
+    padding: 2px 0;
+  }
+  .legend {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  p {
+    margin-bottom: 0;
+  }
+</style>

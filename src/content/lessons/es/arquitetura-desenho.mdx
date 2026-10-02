@@ -1,95 +1,90 @@
 ---
 title: Arquitetura e desenho de software
-description: Estilos de arquitetura, diagramas UML de classes e sequência, reutilização e desenho detalhado.
-section: conteudo
-order: 5
+description: Responsabilidades, estilos, vistas UML, reutilização e decisões de desenho detalhado.
+order: 7
+practices:
+  - es/praticar-arquitetura
 ---
 
-import Dot from '../../../components/Dot.astro';
-import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
-import YouTube from '../../../components/YouTube.astro';
-import classes from '../../es/classes.dot?raw';
-import sequencia from '../../es/sequencia.typ?raw';
+A aplicação de salas tem ecrãs, regras de reserva, armazenamento e serviços externos. A arquitetura define os elementos principais, as suas responsabilidades e relações, e os princípios que orientam a evolução. O desenho detalhado decide como cada elemento cumpre as suas responsabilidades.
 
-A **arquitetura** decide a estrutura do sistema: que partes existem, que responsabilidades tem cada uma e como comunicam. O **desenho detalhado** decide como cada parte cumpre a sua responsabilidade: classes, métodos, estruturas de dados. Arquitetura errada significa reescrever; detalhe errado significa refatorar. Por isso a arquitetura decide-se cedo e com mais cerimónia.
+## Requisitos que orientam a arquitetura
 
-## Estilos de arquitetura
+Um **requisito arquiteturalmente significativo** influencia a estrutura ou uma decisão difícil de alterar. Suportar vários dispositivos, manter dados coerentes ou funcionar sem rede pode exigir decisões distintas.
 
-Um estilo é uma forma recorrente de organizar as partes. Escolher é trocar vantagens por custos, por isso cada estilo traz a pergunta que o justifica.
+Para a aplicação, precisamos de impedir reservas simultâneas sobrepostas. Uma verificação no ecrã não chega, porque outro dispositivo pode reservar depois dessa verificação. Colocamos a decisão final no servidor, que controla os dados e confirma ou recusa numa operação atómica.
 
-<Tabs id="es-arquitetura-estilos" labels={['Camadas', 'Cliente servidor', 'MVC', 'Microsserviços']}>
-  <div slot="panel-0">
+A arquitetura não fica automaticamente correta por usar um padrão conhecido. Precisamos de a avaliar nos cenários críticos. Um protótipo vertical que cria uma reserva desde o ecrã até aos dados pode revelar riscos de integração antes de construir todos os ecrãs.
 
-**Em camadas.** Apresentação, lógica de negócio, dados. Cada camada só fala com a de baixo. Simples de perceber e de testar por camadas; a app do exemplo cabe aqui. Escolhe quando a simplicidade vale mais do que a escala.
+## Coesão, acoplamento e ocultação
 
-  </div>
-  <div slot="panel-1">
+A **coesão** descreve a relação entre as responsabilidades de um módulo. Um serviço de reservas que valida intervalos e coordena reservas tem responsabilidades relacionadas. Misturar aí desenho de botões e exportação de imagens dificulta a compreensão.
 
-**Cliente servidor.** A app pede, o servidor responde. Separa o que corre no dispositivo do que corre na infraestrutura e permite evoluir cada lado. Escolhe quando há um lado cliente e um lado servidor com ritmos de evolução diferentes.
+O **acoplamento** descreve dependências entre módulos. Não tentamos eliminar todas: a apresentação precisa de obter dados. Tentamos tornar as dependências explícitas e evitar que uma mudança interna obrigue a alterar muitos consumidores.
 
-  </div>
-  <div slot="panel-2">
+A **ocultação de informação** esconde decisões que podem mudar atrás de uma interface. O serviço pede criar uma reserva através de um contrato; não precisa de saber os nomes das tabelas. Trocar o armazenamento pode assim preservar os consumidores.
 
-**MVC.** Modelo (dados e regras), Vista (ecrã), Controlador (mediação). Mantém a interface separada da lógica para poderes mudar o ecrã sem tocar nas regras. Escolhe quando a interface muda muitas vezes e as regras não.
+A interface deve especificar resultados e falhas. "Guardar" sem explicar conflito ou indisponibilidade deixa o chamador sem saber como agir.
 
-  </div>
-  <div slot="panel-3">
+## Estilos e padrões
 
-**Microsserviços.** Pequenos serviços independentes que comunicam pela rede. Escalam e evoluem em separado, mas pagam complexidade de operação e de consistência. Escolhe quando a escala e a independência das equipas justificam operar uma rede de serviços.
+| Organização         | Ideia                                            | Quando ajuda                                  | Custo ou limite                                           |
+| ------------------- | ------------------------------------------------ | --------------------------------------------- | --------------------------------------------------------- |
+| Camadas             | Agrupar responsabilidades por nível de abstração | Separar apresentação, regras e acesso a dados | Dependências mal escolhidas podem criar atalhos e rigidez |
+| Cliente-servidor    | Clientes pedem serviços a uma autoridade remota  | Partilhar dados e controlo entre dispositivos | Rede, disponibilidade e segurança passam a importar       |
+| MVC                 | Separar modelo, vista e controlo da interação    | Alterar apresentação sem espalhar regras      | É preciso definir responsabilidades concretas             |
+| Pipes and filters   | Etapas transformam dados ao longo de um fluxo    | Processamento sequencial de dados             | Conversão e coordenação entre etapas podem custar         |
+| Repositório central | Subsistemas partilham um repositório de dados    | Integrar ferramentas sobre informação comum   | Esquema e disponibilidade criam dependências comuns       |
 
-  </div>
-</Tabs>
+Uma arquitetura pode usar vários estilos. A aplicação pode ser cliente-servidor fisicamente e organizada em camadas em cada lado. Não são alternativas exclusivas.
 
-Numa pergunta de escolha, justifica com os requisitos não funcionais (escala esperada, equipa disponível, criticidade). Camadas simples podem virar monolitos rígidos; microsserviços escalam mas exigem operação séria.
+Numa arquitetura de camadas estrita, uma camada usa a seguinte. Numa versão relaxada, pode usar camadas inferiores não adjacentes. O atalho pode reduzir passos, mas aumenta as dependências que precisamos de justificar.
 
-## Diagramas de classes e de sequência
+Um repositório arquitetural partilhado por subsistemas não é exatamente o mesmo conceito que uma classe Repository que encapsula acesso a dados numa aplicação.
 
-O **diagrama de classes** mostra a estrutura: classes com atributos e métodos, e relações (associação, agregação, herança). Revê [classes e objetos](/cadeiras/p/classes-objetos/) se precisares. Para registar um pedido na app:
+## Vistas e UML
 
-<Dot
-  source={classes}
-  alt="Diagrama de classes com Utilizador, Pedido e BaseDados. O Utilizador efetua vários Pedidos, e cada Pedido é guardado na BaseDados."
-/>
+Uma vista destaca um conjunto de preocupações. O modelo **4+1** usa cenários para relacionar quatro vistas:
 
-Lê-se: um utilizador efetua vários pedidos; cada pedido tem itens e sabe calcular o seu total. O verbo na associação ("efetua") importa: associações sem nome escondem decisões.
+| Vista            | Pergunta                                          | Diagramas possíveis       |
+| ---------------- | ------------------------------------------------- | ------------------------- |
+| Lógica           | Como repartimos responsabilidades e abstrações?   | Classes e pacotes         |
+| Implementação    | Como organizamos unidades de desenvolvimento?     | Componentes               |
+| Processo         | Que atividades e processos interagem em execução? | Atividades e interações   |
+| Implantação      | Onde correm os elementos e como comunicam?        | Implantação               |
+| Casos de uso, +1 | Que cenários atravessam e validam estas decisões? | Casos de uso e descrições |
 
-<YouTube
-  id="UI6lqHOVHic"
-  title="Tutorial de diagramas de classes UML, Lucid Software"
-/>
+Um **pacote** agrupa elementos do modelo. Um **componente** encapsula uma parte modular e expõe interfaces fornecidas e requeridas. Um **artefacto** é uma peça concreta, como um executável ou um ficheiro de configuração. Um **nó** é um recurso de execução onde podemos implantar artefactos.
 
-O **diagrama de sequência** mostra o comportamento no tempo: objetos em cima, tempo a descer, mensagens com setas, retornos a tracejado. Para o mesmo cenário, as sete mensagens por ordem, com o ramo alternativo à direita:
+Na aplicação, o pacote Reservas agrupa conceitos e serviços. Um componente API oferece operações de reserva. O artefacto do servidor corre num nó servidor; o artefacto móvel corre no telemóvel. Um pacote não é um computador, e uma classe não precisa de corresponder a um componente implantável.
 
-<Typst
-  source={sequencia}
-  format="svg"
-  alt="Sequência de sete mensagens de cima para baixo: registar pedido, criar, calcular total, devolver pedido, guardar, confirmar gravação e mostrar confirmação. Um ramo alternativo mostra que um item sem preço devolve erro sem guardar."
-/>
+## Um desenho para a aplicação
 
-Os dois diagramas respondem a perguntas diferentes: o de classes diz o que existe, o de sequência diz como colabora. Um desenho completo precisa dos dois.
+Podemos separar:
 
-<YouTube
-  id="pCK6prSq8aw"
-  title="Como fazer um diagrama de sequência UML, Lucid Software"
-/>
+1. A apresentação mostra salas, recolhe escolhas e apresenta estados de espera, sucesso e falha.
+2. O serviço de reservas aplica regras e coordena a criação.
+3. O acesso a dados concretiza consultas e alterações através de um contrato.
+4. Um adaptador isola a API externa de horários.
 
-## Reutilização e desenho detalhado
+A interface de dados deve permitir criarSeLivre como operação atómica. Se oferecermos apenas consultar e guardar, o serviço pode não conseguir preservar a regra de concorrência. Uma fronteira mal desenhada precisa de ser revista.
 
-**Reutilizar** é preferir código já feito e testado: bibliotecas, frameworks, serviços. Reutilizar poupa tempo e defeitos, mas cria dependência: a biblioteca pode mudar, ter vulnerabilidades ou não fazer exatamente o que precisas. A regra prática: reutiliza o que é genérico e bem testado (autenticação, validação, datas), escreve o que é o valor do teu produto (as regras de negócio que te distinguem).
+Numa aplicação Flutter com MVVM, a View apresenta o estado e passa ações à ViewModel. A ViewModel prepara o estado da interface e coordena operações. Repositories gerem os dados da aplicação, e Services isolam fontes externas. Uma camada de domínio pode ajudar com regras complexas ou partilhadas, mas não é obrigatória em todas as funcionalidades.
 
-No desenho detalhado, mantém cada módulo pequeno e com uma responsabilidade, se és programador decompõe como em [funções](/cadeiras/fp/funcoes/): cada função e cada classe fazem uma coisa e fazem bem. Fronteiras claras entre módulos são o que permite mudar um requisito sem partir o resto, como viste na [introdução](introducao/).
+## Reutilização
 
-:::tip[Como desenhar sem paralisar]
-Desenha primeiro a sequência feliz num guardanapo: três a cinco mensagens chegam. Só depois pergunta pelos erros (credenciais inválidas, base de dados em baixo) e acrescenta os fluxos alternativos. Quem começa pelos erros nunca chega ao fluxo principal.
-:::
+Reutilizar pode envolver funções, bibliotecas, componentes, frameworks, serviços ou sistemas completos. Avalia adequação funcional, interfaces, qualidade, licença, suporte, atualizações e custo de integração.
 
-## Exercício: classes, sequência e decisão de reutilizar
+Uma biblioteca resolve um problema que a aplicação chama. Um framework organiza parte da execução e chama o código da aplicação nos pontos previstos, uma forma de inversão de controlo.
 
-Para "registar um pedido" na app:
+Para autenticação, uma solução mantida pode reduzir erros de implementação. Continuamos responsáveis pela configuração, autorização e tratamento de falhas. Para regras específicas das salas, precisamos de conservar o conhecimento do domínio, mesmo que usemos componentes existentes.
 
-1. **Classes.** Desenha `Utilizador` (email, palavra passe, iniciarSessao), `Pedido` (itens, total, calcularTotal) e `BaseDados` (guardar, carregar). Marca a associação "efetua" entre utilizador e pedidos e justifica cada método com um requisito: `calcularTotal` existe porque o requisito de totais o exige.
-2. **Sequência.** Escreve as sete mensagens do diagrama acima e acrescenta o fluxo alternativo: se `calcularTotal` detetar um item sem preço, a App devolve erro ao utilizador sem guardar nada. Repara como o diagrama alternativo revela um requisito em falta: "o que é um item válido".
-3. **Reutilizar ou escrever.** A app precisa de transformar palavras passe antes de as guardar. Escrever a tua própria função criptográfica é um erro clássico: parece simples e falha de formas subtis. Justifica reutilizar uma biblioteca estabelecida de dispersão com sal: é código genérico, revisto por especialistas e testado por milhões de utilizadores, enquanto a lógica de portes dinâmicos, essa sim específica do negócio, escreve-se em casa.
+## Desenho detalhado e decisão justificada
 
-Na próxima página, [Construção e evolução](construcao-evolucao/), o desenho transforma-se em código gerido com Git e integração contínua.
+O desenho detalhado escolhe classes, operações, algoritmos e estruturas de dados. Deve manter regras coerentes, invariantes e responsabilidades compreensíveis.
+
+A duração válida de uma reserva exige fim posterior ao início e duração dentro do limite. Centralizar essa regra evita que o ecrã e o servidor discordem. A validação da interface melhora o feedback; a validação na autoridade dos dados preserva a regra.
+
+Regista uma decisão com o contexto, alternativas, escolha e consequências. "Usamos camadas porque são boas" não explica nada. "Separamos acesso a dados para testar regras sem depender da rede e substituir a API de horários" explica uma necessidade e o efeito esperado.
+
+Mudanças arquiteturais podem ser graduais ou grandes. Não há uma regra de que todo o erro arquitetural exija reescrever o sistema.
