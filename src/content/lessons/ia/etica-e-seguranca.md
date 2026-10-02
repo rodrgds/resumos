@@ -13,7 +13,7 @@ O **teste de Turing** declara uma máquina inteligente se um juiz humano não a 
 
 ## O viés entra pelos dados
 
-Um classificador aprende o que os dados mostram, incluindo os preconceitos lá dentro. O filtro de spam da página de [incerteza](incerteza-e-bayes/) com 20 mensagens é inofensivo, mas o mesmo Naive Bayes treinado em currículos históricos aprende quem foi contratado no passado e repete o padrão, incluindo discriminação por género ou origem. O classificador de animais da página de [aprendizagem](aprendizagem-e-redes/) se treinado só com fotos de pinguins em jardins zoológicos falha nos pinguins na neve: o erro não está no algoritmo, está na amostra.
+Um classificador aprende o que os dados mostram, incluindo os preconceitos lá dentro. O filtro de spam da página de [incerteza](/cadeiras/ia/incerteza-e-bayes/) com 20 mensagens é inofensivo, mas o mesmo Naive Bayes treinado em currículos históricos aprende quem foi contratado no passado e repete o padrão, incluindo discriminação por género ou origem. O classificador de animais da página de [aprendizagem](/cadeiras/ia/aprendizagem-e-redes/) se treinado só com fotos de pinguins em jardins zoológicos falha nos pinguins na neve: o erro não está no algoritmo, está na amostra.
 
 Daqui saem duas obrigações práticas: auditar os dados antes de treinar (quem está representado, quem falta) e avaliar por grupo, não só no global. A matriz de confusão por grupo mostra o que a exatidão global esconde: 95 por cento de exatidão pode ser 100 por cento num grupo e 50 noutro.
 
