@@ -1,7 +1,7 @@
 import { EditorView, keymap } from '@codemirror/view';
 import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
-import { editorSetup } from '../lib/editor-setup';
+import { editorSetup, editorLanguage } from '../lib/editor-setup';
 import {
   normalizeTestOutput,
   type CodeAnswer,
@@ -121,6 +121,7 @@ export function setupCodeExercises() {
         reset.disabled = true;
         stop.hidden = false;
         result.hidden = false;
+        delete result.dataset.result;
         output.hidden = true;
         output.textContent = '';
         clearFeedback();
@@ -131,6 +132,7 @@ export function setupCodeExercises() {
             const outcome = await evaluate(test, code);
             if (id !== runId) return;
             if (!outcome.passed) {
+              result.dataset.result = 'attempted';
               status.textContent = `Falhou: ${test.name}`;
               output.hidden = false;
               output.textContent = outcome.diagnostic;
@@ -147,6 +149,7 @@ export function setupCodeExercises() {
             }
           }
           status.textContent = `${answer.tests.length}/${answer.tests.length} testes passaram.`;
+          result.dataset.result = 'correct';
           exercise.dispatchEvent(
             new CustomEvent('exercise-code-result', {
               bubbles: true,
@@ -154,9 +157,11 @@ export function setupCodeExercises() {
             }),
           );
         } catch (error) {
-          if (id === runId)
+          if (id === runId) {
+            result.dataset.result = 'attempted';
             status.textContent =
               error instanceof Error ? error.message : String(error);
+          }
         } finally {
           if (id === runId) finish();
         }
@@ -166,7 +171,9 @@ export function setupCodeExercises() {
         parent: root.querySelector('[data-code-editor]')!,
         extensions: [
           editorSetup(root),
-          answer.language === 'python' ? python() : javascript(),
+          editorLanguage(
+            answer.language === 'python' ? python() : javascript(),
+          ),
           EditorView.contentAttributes.of({
             'aria-label': `Código ${answer.language}`,
             spellcheck: 'false',

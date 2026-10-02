@@ -26,10 +26,19 @@ test('JavaScript function exercises check outputs and preserve the input contrac
   await editor.fill(
     'function totalAte(precos, limite) { return precos.filter(p => p <= limite).reduce((a, b) => a + b, 0); }',
   );
+  await exercise
+    .getByRole('button', { name: 'Expandir editor', exact: true })
+    .click();
   await check.click();
   await expect(exercise.locator('[data-code-status]')).toHaveText(
     '4/4 testes passaram.',
     { timeout: 60_000 },
+  );
+  await exercise
+    .getByRole('button', { name: 'Fechar editor expandido', exact: true })
+    .click();
+  await expect(exercise.locator('[data-code-status]')).toHaveText(
+    '4/4 testes passaram.',
   );
   await editor.fill(
     'function totalAte(precos, limite) { precos.splice(0); return 30; }',

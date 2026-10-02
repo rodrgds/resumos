@@ -1,6 +1,6 @@
 import { EditorView } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
-import { editorSetup } from '../lib/editor-setup';
+import { editorSetup, editorLanguage } from '../lib/editor-setup';
 import { keymap } from '@codemirror/view';
 import { python } from '@codemirror/lang-python';
 import { javascript } from '@codemirror/lang-javascript';
@@ -136,7 +136,7 @@ export function setupPlaygrounds() {
         parent: root.querySelector('[data-editor]')!,
         extensions: [
           editorSetup(root),
-          languages[language](),
+          editorLanguage(languages[language]()),
           EditorView.contentAttributes.of({
             'aria-label': `Código ${language}`,
             spellcheck: 'false',
@@ -172,7 +172,7 @@ export function setupPlaygrounds() {
             parent: root.querySelector('[data-helpers-editor]')!,
             extensions: [
               editorSetup(root),
-              languages[language](),
+              editorLanguage(languages[language]()),
               EditorState.readOnly.of(true),
               EditorView.editable.of(false),
               EditorView.contentAttributes.of({

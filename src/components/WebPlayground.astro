@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import EditorFullscreen from './EditorFullscreen.astro';
 import '../styles/playground.css';
 interface Props {
   html: string;
@@ -7,88 +8,123 @@ interface Props {
   js?: string;
 }
 const { html, css = '', js = '' } = Astro.props;
+const languageGroup = `web-language-${crypto.randomUUID()}`;
 ---
 
-<section
-  data-annotation-ignore
-  class="web-playground"
-  data-web-playground
-  aria-label="Experimentar HTML, CSS e JavaScript"
->
-  <div class="playground-toolbar" data-pagefind-ignore>
-    <strong>HTML / CSS / JavaScript</strong>
-    <div>
-      <button data-web-reset aria-label="Repor exemplo web">
-        <Icon name="arrow-path" size={15} />
-      </button>
-      <button data-web-run>
-        <Icon name="play" size={15} /> Pré-visualizar
-      </button>
-    </div>
-  </div>
-  <div class="web-editors">
-    <div>
-      <span>HTML</span>
-      <textarea
-        data-html
-        aria-label="HTML"
-        rows="4"
-        spellcheck="false"
-      >{html}</textarea>
-    </div>
-    <details>
-      <summary class="icon-disclosure">
-        CSS e JavaScript
-        <Icon name="chevron-down" size={16} />
-      </summary>
-      <div>
-        <span>CSS</span>
-        <textarea
-          data-css
-          aria-label="CSS"
-          rows="4"
-          spellcheck="false"
-        >{css}</textarea>
-      </div>
-      <div>
-        <span>JavaScript</span>
-        <textarea
-          data-js
-          aria-label="JavaScript"
-          rows="4"
-          spellcheck="false"
-        >{js}</textarea>
-      </div>
-    </details>
-  </div>
-  <template data-fold-open>
-    <Icon name="chevron-down" size={14} />
-  </template>
-  <template data-fold-closed>
-    <Icon name="chevron-right" size={14} />
-  </template>
-  <iframe
-    title="Pré-visualização do exemplo web"
-    sandbox="allow-scripts allow-forms"
-    referrerpolicy="no-referrer"
-    aria-busy="true"
-    hidden
-  ></iframe>
-  <p
-    data-web-status
-    class="web-preview-status"
-    role="status"
-    aria-live="polite"
+<div data-editor-workspace>
+  <section
+    data-annotation-ignore
+    class="web-playground"
+    data-web-playground
+    aria-label="Experimentar HTML, CSS e JavaScript"
   >
-    A preparar a pré-visualização…
-  </p>
-</section>
+    <div class="playground-toolbar" data-pagefind-ignore>
+      <strong>HTML / CSS / JavaScript</strong>
+      <div>
+        <EditorFullscreen />
+        <button data-web-reset aria-label="Repor exemplo web">
+          <Icon name="arrow-path" size={15} />
+        </button>
+        <button data-web-run>
+          <Icon name="play" size={15} /> Pré-visualizar
+        </button>
+      </div>
+    </div>
+    <div class="editor-panes">
+      <div class="web-editors editor-source-pane">
+        <fieldset class="web-language-tabs">
+          <legend class="sr-only">Código a editar</legend>
+          {['HTML', 'CSS', 'JavaScript'].map((label, index) => (
+            <label>
+              <input
+                type="radio"
+                name={languageGroup}
+                value={index}
+                checked={index === 0}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+        <div data-web-language="0">
+          <span>HTML</span>
+          <textarea
+            data-html
+            aria-label="HTML"
+            rows="4"
+            spellcheck="false"
+          >{html}</textarea>
+        </div>
+        <details>
+          <summary class="icon-disclosure">
+            CSS e JavaScript
+            <Icon name="chevron-down" size={16} />
+          </summary>
+          <div data-web-language="1">
+            <span>CSS</span>
+            <textarea
+              data-css
+              aria-label="CSS"
+              rows="4"
+              spellcheck="false"
+            >{css}</textarea>
+          </div>
+          <div data-web-language="2">
+            <span>JavaScript</span>
+            <textarea
+              data-js
+              aria-label="JavaScript"
+              rows="4"
+              spellcheck="false"
+            >{js}</textarea>
+          </div>
+        </details>
+      </div>
+      <template data-fold-open>
+        <Icon name="chevron-down" size={14} />
+      </template>
+      <template data-fold-closed>
+        <Icon name="chevron-right" size={14} />
+      </template>
+      <div class="editor-result-pane">
+        <div class="editor-pane-label">Pré-visualização</div>
+        <iframe
+          title="Pré-visualização do exemplo web"
+          sandbox="allow-scripts allow-forms"
+          referrerpolicy="no-referrer"
+          aria-busy="true"
+          hidden
+        ></iframe>
+        <p
+          data-web-status
+          class="web-preview-status"
+          role="status"
+          aria-live="polite"
+        >
+          A preparar a pré-visualização…
+        </p>
+        <details class="web-console">
+          <summary class="icon-disclosure">
+            Consola <Icon name="chevron-down" size={16} />
+          </summary>
+          <pre
+            data-web-console-output
+            aria-label="Consola"
+            tabindex="0"
+          >Sem mensagens.</pre>
+        </details>
+      </div>
+    </div>
+  </section>
+</div>
 <script>
   import { EditorView } from '@codemirror/view';
   import { html as htmlLanguage } from '@codemirror/lang-html';
   import { css as cssLanguage } from '@codemirror/lang-css';
   import { javascript } from '@codemirror/lang-javascript';
-  import { editorSetup } from '../lib/editor-setup';
+  import { editorSetup, editorLanguage } from '../lib/editor-setup';
+  import { webPreviewDocument, WEB_CONSOLE_MESSAGE } from '../lib/web-preview';
+  import { OUTPUT_LIMIT } from '../lib/runners/types';
 
   document
     .querySelectorAll<HTMLElement>('[data-web-playground]')
@@ -98,6 +134,45 @@ const { html, css = '', js = '' } = Astro.props;
       const js = root.querySelector<HTMLTextAreaElement>('[data-js]')!;
       let frame = root.querySelector('iframe')!;
       const status = root.querySelector<HTMLElement>('[data-web-status]')!;
+      const consolePanel =
+        root.querySelector<HTMLDetailsElement>('.web-console')!;
+      const consoleOutput = root.querySelector<HTMLElement>(
+        '[data-web-console-output]',
+      )!;
+      let consoleLength = 0;
+      let runtimeError = false;
+      const receiveConsole = (event: MessageEvent) => {
+        if (event.source !== frame.contentWindow || event.origin !== 'null')
+          return;
+        const message = event.data;
+        if (
+          !message ||
+          message.type !== WEB_CONSOLE_MESSAGE ||
+          typeof message.text !== 'string' ||
+          !['log', 'info', 'warn', 'error', 'debug'].includes(message.level)
+        )
+          return;
+        if (consoleLength >= OUTPUT_LIMIT) return;
+        if (!consoleLength) consoleOutput.textContent = '';
+        const prefix =
+          message.level === 'error'
+            ? 'Erro: '
+            : message.level === 'warn'
+              ? 'Aviso: '
+              : '';
+        const line = `${prefix}${message.text}\n`.slice(
+          0,
+          OUTPUT_LIMIT - consoleLength,
+        );
+        consoleOutput.append(document.createTextNode(line));
+        consoleLength += line.length;
+        if (message.level !== 'error') return;
+        runtimeError = true;
+        consolePanel.open = true;
+        status.hidden = false;
+        status.textContent = 'Erro na pré-visualização. Consulta a consola.';
+      };
+      window.addEventListener('message', receiveConsole);
       const controls = [
         root.querySelector<HTMLButtonElement>('[data-web-run]')!,
         root.querySelector<HTMLButtonElement>('[data-web-reset]')!,
@@ -110,7 +185,7 @@ const { html, css = '', js = '' } = Astro.props;
           parent: source.parentElement!,
           extensions: [
             editorSetup(root),
-            languages[index],
+            editorLanguage(languages[index]),
             EditorView.contentAttributes.of({
               'aria-label': source.getAttribute('aria-label')!,
               spellcheck: 'false',
@@ -120,7 +195,39 @@ const { html, css = '', js = '' } = Astro.props;
         source.remove();
         return editor;
       });
+      const languageTabs =
+        root.querySelector<HTMLElement>('.web-language-tabs')!;
+      const languagePanels = [
+        ...root.querySelectorAll<HTMLElement>('[data-web-language]'),
+      ];
+      const extraLanguages = root.querySelector<HTMLDetailsElement>(
+        '.web-editors > details',
+      )!;
+      let wasOpen = false;
+      function selectLanguage() {
+        const expanded = Boolean(root.closest('.editor-workspace'));
+        const selected = Number(
+          languageTabs.querySelector<HTMLInputElement>('input:checked')!.value,
+        );
+        extraLanguages.hidden = expanded && selected === 0;
+        languagePanels.forEach((panel, index) => {
+          panel.hidden = expanded && index !== selected;
+        });
+        editors[selected].requestMeasure();
+      }
+      languageTabs.addEventListener('change', selectLanguage);
+      root.addEventListener('resumos:workspace', () => {
+        if (root.closest('.editor-workspace')) {
+          wasOpen = extraLanguages.open;
+          extraLanguages.open = true;
+          consolePanel.open = true;
+        } else extraLanguages.open = wasOpen;
+        selectLanguage();
+      });
       const render = () => {
+        consoleLength = 0;
+        runtimeError = false;
+        consoleOutput.textContent = 'Sem mensagens.';
         controls[0].disabled = true;
         const nextFrame = document.createElement('iframe');
         nextFrame.title = frame.title;
@@ -139,7 +246,7 @@ const { html, css = '', js = '' } = Astro.props;
             frame.hidden = false;
             frame.removeAttribute('aria-busy');
             frame.dataset.webReady = 'true';
-            status.hidden = true;
+            status.hidden = !runtimeError;
             controls[0].disabled = false;
           },
           { once: true },
@@ -150,7 +257,7 @@ const { html, css = '', js = '' } = Astro.props;
           editor.state.doc.toString(),
         );
         // Local submit events work; CSP blocks form navigation and network requests.
-        nextFrame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'"><style>body{font-family:system-ui;padding:16px}${cssCode}</style></head><body>${htmlCode}<script>${jsCode}<\/script></body></html>`;
+        nextFrame.srcdoc = webPreviewDocument(htmlCode, cssCode, jsCode);
         frame.replaceWith(nextFrame);
         frame = nextFrame;
       };
@@ -175,7 +282,10 @@ const { html, css = '', js = '' } = Astro.props;
       });
       window.addEventListener(
         'pagehide',
-        () => editors.forEach((editor) => editor.destroy()),
+        () => {
+          window.removeEventListener('message', receiveConsole);
+          editors.forEach((editor) => editor.destroy());
+        },
         { once: true },
       );
       render();
