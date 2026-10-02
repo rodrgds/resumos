@@ -241,3 +241,223 @@ test('Chat shortcut opens, rather than toggles away, a visible Chat menu', async
   await page.keyboard.press('a');
   await expect(page.locator('#ai-menu')).toBeVisible();
 });
+
+test('Vim follows mouse clicks and drags, and y copies the native selection only while enabled', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.addInitScript(() =>
+    localStorage.setItem('resumos-shortcuts', JSON.stringify({ vim: true })),
+  );
+  await page.goto('/exemplo/apontamentos/');
+  const paragraph = page.locator('[data-annotatable] p').first();
+  const before = await page.locator('[data-annotatable]').innerHTML();
+  const coordinates = await paragraph.evaluate((element) => {
+    const node = element.firstChild!;
+    return [0, 5, 8].map((offset) => {
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, offset + 1);
+      const rect = range.getBoundingClientRect();
+      return { x: rect.x + 0.1, y: rect.y + rect.height / 2 };
+    });
+  });
+  await page.mouse.click(coordinates[1].x, coordinates[1].y);
+  await expectCursorAt(page, '[data-annotatable] p', 5);
+  await page.keyboard.press('l');
+  await expectCursorAt(page, '[data-annotatable] p', 6);
+  await page.mouse.move(coordinates[0].x, coordinates[0].y);
+  await page.mouse.down();
+  await page.mouse.move(coordinates[2].x, coordinates[2].y, { steps: 8 });
+  await page.mouse.up();
+  expect(await page.evaluate(() => getSelection()!.toString())).toBe(
+    'Um apont',
+  );
+  await expectCursorAt(page, '[data-annotatable] p', 7);
+  await page.keyboard.press('y');
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('Um apont');
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Texto copiado.' }),
+  ).toBeVisible();
+  expect(await page.locator('[data-annotatable]').innerHTML()).toBe(before);
+  await page.evaluate(() => getSelection()!.removeAllRanges());
+  await page.mouse.move(coordinates[2].x, coordinates[2].y);
+  await page.mouse.down();
+  await page.mouse.move(coordinates[0].x, coordinates[0].y, { steps: 8 });
+  await page.mouse.up();
+  await expectCursorAt(page, '[data-annotatable] p', 0);
+  await page.keyboard.press('l');
+  expect(await page.evaluate(() => getSelection()!.toString())).toBe('m apont');
+  await page.evaluate(() => {
+    const original = navigator.clipboard.writeText;
+    navigator.clipboard.writeText = async function () {
+      navigator.clipboard.writeText = original;
+      throw new DOMException('Clipboard denied', 'NotAllowedError');
+    };
+  });
+  await page.keyboard.press('y');
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Não foi possível copiar' }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => getSelection()!.toString())).toBe('m apont');
+  await page.keyboard.press(',');
+  await page.locator('#appearance-vim-keys').uncheck();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-vim-cursor]')).toBeHidden();
+  await page.evaluate(() => navigator.clipboard.writeText('untouched'));
+  await paragraph.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    getSelection()!.removeAllRanges();
+    getSelection()!.addRange(range);
+  });
+  await page.keyboard.press('y');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    'untouched',
+  );
+});
+
+test('mouse selections keep whole Unicode characters when Vim moves either endpoint', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.addInitScript(() =>
+    localStorage.setItem('resumos-shortcuts', JSON.stringify({ vim: true })),
+  );
+  await page.goto('/exemplo/apontamentos/');
+  const paragraph = page.locator('[data-annotatable] p').first();
+  const coordinates = await paragraph.evaluate((element) => {
+    element.textContent = 'A🙂B';
+    return [0, 3].map((offset) => {
+      const range = document.createRange();
+      range.setStart(element.firstChild!, offset);
+      range.setEnd(element.firstChild!, offset + 1);
+      const rect = range.getBoundingClientRect();
+      return { x: rect.x + 0.1, y: rect.y + rect.height / 2 };
+    });
+  });
+  for (const reverse of [false, true]) {
+    await page.evaluate(() => getSelection()!.removeAllRanges());
+    const start = coordinates[reverse ? 1 : 0];
+    const end = coordinates[reverse ? 0 : 1];
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, { steps: 8 });
+    await page.mouse.up();
+    await page.keyboard.press(reverse ? 'l' : 'h');
+    const expected = reverse ? '🙂' : 'A';
+    expect(await page.evaluate(() => getSelection()!.toString())).toBe(
+      expected,
+    );
+    await page.keyboard.press('y');
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(expected);
+  }
+});
+
+test('Vim visual selection uses the existing highlight and comment actions', async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('resumos-shortcuts', JSON.stringify({ vim: true })),
+  );
+  await page.goto('/exemplo/apontamentos/');
+  await page.keyboard.press('g');
+  await page.keyboard.press('g');
+  await page.keyboard.press('v');
+  await page.keyboard.press('2');
+  await page.keyboard.press('l');
+  expect(await page.evaluate(() => getSelection()!.toString())).toBe('Uma');
+  const highlight = page.getByRole('button', { name: 'Destacar', exact: true });
+  await page.keyboard.press('Tab');
+  await expect(highlight).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('button', { name: 'Abrir nota: Uma', exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press('}');
+  await page.keyboard.press('v');
+  await page.keyboard.press('e');
+  expect(await page.evaluate(() => getSelection()!.toString())).toBe('Um');
+  await expect(highlight).toBeVisible();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(
+    page.getByRole('button', { name: 'Comentar', exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  await page.getByLabel('O teu comentário').fill('Comentário criado em Vim');
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: 'Abrir nota: Uma', exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Abrir nota: Um', exact: true })
+    .click();
+  await expect(page.getByLabel('O teu comentário')).toHaveValue(
+    'Comentário criado em Vim',
+  );
+});
+
+test('Vim selects complete visual lines and activates disclosures without trapping focused controls', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() =>
+    localStorage.setItem('resumos-shortcuts', JSON.stringify({ vim: true })),
+  );
+  await page.goto('/exemplo/apontamentos/');
+  await page.evaluate(() => document.fonts.ready);
+  await page.keyboard.press('g');
+  await page.keyboard.press('g');
+  await page.keyboard.press('}');
+  await page.keyboard.press('V');
+  const selectedLine = await page.evaluate(() => getSelection()!.toString());
+  expect(selectedLine).toMatch(/^Um apontamento/);
+  expect(selectedLine).not.toContain('Usa as tuas palavras');
+  await page.keyboard.press('j');
+  const twoLines = await page.evaluate(() => getSelection()!.toString());
+  expect(twoLines.startsWith(selectedLine)).toBe(true);
+  expect(twoLines.length).toBeGreaterThan(selectedLine.length);
+  await page.keyboard.press('k');
+  expect(await page.evaluate(() => getSelection()!.toString())).toBe(
+    selectedLine,
+  );
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => getSelection()!.isCollapsed)).toBe(true);
+  await page.goto('/exemplo/formatacao/');
+  await page.keyboard.press('/');
+  await page
+    .getByRole('searchbox', { name: 'Texto nesta página' })
+    .fill('Ver a resolução de um exercício');
+  await page.keyboard.press('Enter');
+  const details = page
+    .locator('details')
+    .filter({
+      has: page.getByText('Ver a resolução de um exercício', { exact: true }),
+    })
+    .first();
+  await expect(details).not.toHaveAttribute('open');
+  await page.keyboard.press('Space');
+  await expect(details).toHaveAttribute('open', '');
+  await page.keyboard.press('Enter');
+  await expect(details).not.toHaveAttribute('open');
+  await page.locator('[data-open-ai]').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#ai-menu')).toBeVisible();
+  await expect(details).not.toHaveAttribute('open');
+  await page.goto('/exemplo/apontamentos/');
+  await page.keyboard.press('/');
+  await page
+    .getByRole('searchbox', { name: 'Texto nesta página' })
+    .fill('gráficos, diagramas e vídeo');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/exemplo\/diagramas\/$/);
+});

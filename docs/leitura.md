@@ -38,6 +38,10 @@ Ativa **Navegação Vim** em Aparência ou Atalhos. O cursor é só de leitura:
 
 Um número repete o movimento, como `3j`. Nos cartões, `h`, `j`, `k`, `l` movem o foco e Enter abre o link. Muda remapeamentos incompatíveis antes de ativar Vim.
 
+Clica no texto para posicionar o cursor ou arrasta para selecionar. `v` seleciona caracteres e `V` linhas visuais completas; os movimentos expandem a seleção. `y` copia o texto selecionado. Tab leva a **Destacar** e **Comentar**; Enter ativa a ação escolhida. Escape sai da seleção. Fora do modo Vim, o rato e estas teclas mantêm o comportamento normal.
+
+Com o cursor num título recolhível, Espaço ou Enter abre e fecha o bloco. Num link, Enter abre o destino. Botões e campos focados mantêm a ação nativa.
+
 Com Vim ativo, `/` pesquisa a página atual; Enter vai ao resultado e `n`/`N` repetem a pesquisa. Escape cancela-a sem desligar Vim; depois, `n` volta a abrir o caderno. Ctrl/⌘ K mantém a pesquisa global. O cursor preserva o texto, as seleções e as anotações; a pesquisa não é guardada nem enviada.
 
 ## Perguntar ao Chat

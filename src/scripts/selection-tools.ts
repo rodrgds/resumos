@@ -88,6 +88,17 @@ export function setupSelection(
       });
   }
   document.addEventListener('keydown', (event) => {
+    if (
+      event.key === 'Tab' &&
+      !event.shiftKey &&
+      !(event.target as Element).closest(
+        'input, textarea, select, [contenteditable], .cm-editor',
+      )
+    ) {
+      // Keyboard selection actions must not wait for the selectionchange debounce.
+      clearTimeout(timer);
+      capture();
+    }
     if (toolbar.hidden) return;
     if (event.key === 'Escape') {
       const hadFocus = toolbar.contains(document.activeElement);
