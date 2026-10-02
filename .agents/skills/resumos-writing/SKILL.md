@@ -50,7 +50,7 @@ Quando preparares uma cadeira para exames, relaciona cada tópico dos materiais 
 
 Confirma o ano nos próprios ficheiros, além do endereço do Moodle. Se uma apresentação antiga contradisser a ficha atual, conserva a origem e a dúvida no registo editorial. Uma fonte indisponível continua a ser uma lacuna, mesmo quando um livro cobre o mesmo tema. Distingue exercícios próprios, adaptações e provas antigas; uma prova anterior ajuda a escolher tipos de problemas, mas não confirma as regras do exame atual.
 
-As lições ensinam a matéria e mostram os passos necessários. As cheat sheets concentram fórmulas, condições, distinções e erros frequentes, com links para a explicação. Nos exemplos de código, confirma a versão das bibliotecas e a saída do bloco efetivamente publicado. Numa simulação, explicita as hipóteses do modelo e mostra o efeito de mudar os valores. A matéria vem primeiro: usa `InteractiveDemo` com controlos do tema e um visual, sem editores HTML/CSS/JS, cabeçalhos ou ações extra. Mostra código apenas quando corrê-lo ou editá-lo ensina a técnica. Reserva `WebPlayground` para desenvolvimento web. Recomenda um vídeo junto da dúvida que resolve e indica o que observar.
+As lições ensinam a matéria e mostram os passos necessários. As cheat sheets concentram fórmulas, condições, distinções e erros frequentes, com links para a explicação. Nos exemplos de código, confirma a versão das bibliotecas e a saída do bloco efetivamente publicado. Numa simulação, explicita as hipóteses do modelo e mostra o efeito de mudar os valores. A matéria vem primeiro: usa `InteractiveDemo` com controlos do tema e um visual, sem editores HTML/CSS/JS, cabeçalhos ou ações extra. Mostra código apenas quando corrê-lo ou editá-lo ensina a técnica. Reserva `WebPlayground` para desenvolvimento web. Reúne os vídeos recomendados na apresentação da cadeira; indica a dúvida que cada um resolve e o que observar.
 
 ## Guias práticos
 
@@ -68,7 +68,7 @@ Usa parágrafos para raciocinar, listas para passos ou casos e tabelas para comp
 
 Mantém a explicação principal e o exemplo necessário visíveis. Demonstrações extensas, alternativas e aprofundamentos podem ficar numa secção separada ou num bloco expansível suportado pelo projeto. Uma folha de consulta pode ser compacta, mas deve conservar condições de aplicação e ligar à explicação.
 
-Uma figura deve mostrar uma relação, um estado ou uma mudança. Diz no texto o que observar e descreve o conteúdo no texto alternativo. Cores e setas complementam os nomes; a explicação deve continuar a funcionar sem distinguir cores.
+Uma figura deve mostrar uma relação, um estado ou uma mudança. Diz no texto o que observar e descreve o conteúdo no texto alternativo. Cores e setas complementam os nomes; a explicação deve continuar a funcionar sem distinguir cores. Confirma a legibilidade dos rótulos num ecrã de telemóvel. Se reduzir um SVG tornar o texto demasiado pequeno, adapta a disposição ou permite deslocar a figura sem reduzir as letras.
 
 ## Rever antes de entregar
 
