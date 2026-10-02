@@ -72,10 +72,38 @@ test('web editors preview edits, keep the frame isolated and reset all languages
   const frame = playground.frameLocator('iframe');
   await expect(frame.locator('#result')).toHaveText('After');
   await expect(frame.locator('#result')).toHaveCSS('color', 'rgb(0, 128, 0)');
-  await expect(playground.locator('iframe')).toHaveAttribute(
-    'sandbox',
-    'allow-scripts',
-  );
+  let formRequests = 0;
+  await page.route('https://web-preview-test.invalid/**', async (route) => {
+    formRequests++;
+    await route.abort();
+  });
+  await playground
+    .getByRole('textbox', { name: 'HTML', exact: true })
+    .fill(
+      '<form id="form" action="https://web-preview-test.invalid/submit" method="post"><label>Amount<input id="amount" name="amount" value="1" required></label><button>Submit</button></form><p id="result">Before</p>',
+    );
+  await playground
+    .getByRole('textbox', { name: 'JavaScript', exact: true })
+    .fill(
+      'document.querySelector("#form").addEventListener("submit", event => { event.preventDefault(); document.querySelector("#result").textContent = document.querySelector("#amount").value; });',
+    );
+  await playground
+    .getByRole('button', { name: 'Pré-visualizar', exact: true })
+    .click();
+  await frame.getByRole('textbox', { name: 'Amount' }).fill('3');
+  await frame.getByRole('button', { name: 'Submit', exact: true }).click();
+  await expect(frame.locator('#result')).toHaveText('3');
+  await playground
+    .getByRole('textbox', { name: 'JavaScript', exact: true })
+    .fill(
+      'document.addEventListener("securitypolicyviolation", event => { if (event.violatedDirective === "form-action") document.querySelector("#result").textContent = "Blocked submission"; });',
+    );
+  await playground
+    .getByRole('button', { name: 'Pré-visualizar', exact: true })
+    .click();
+  await frame.getByRole('button', { name: 'Submit', exact: true }).click();
+  await expect(frame.locator('#result')).toHaveText('Blocked submission');
+  expect(formRequests).toBe(0);
   await playground
     .getByRole('textbox', { name: 'JavaScript', exact: true })
     .fill(

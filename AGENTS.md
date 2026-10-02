@@ -44,7 +44,7 @@
 - Static and runnable code share `--code-*` tokens and `--code-font`. Keep the shared Shiki configuration in `markdown.shikiConfig` so Markdown and MDX follow the selected palette.
 - Hide the homepage introduction when there is valid reading history or a valid semester pin, including before first paint. Clearing history must respect pins. Pinned semesters duplicate course cards at the top; original fragment IDs belong only to the catalogue.
 
-- Runnable and web editors share CodeMirror setup and token colours in `src/lib/editor-setup.ts`. Use language parsers for highlighting; keep web previews in their opaque, network-blocked iframe. The WhatsApp action copies only the public page URL and a message starter.
+- Runnable and web editors share CodeMirror setup and token colours in `src/lib/editor-setup.ts`. Use language parsers for highlighting; keep web previews in their opaque, network-blocked iframe. Native form validation and submit callbacks need `allow-forms`; preserve CSP `form-action 'none'` to block sending requests. The WhatsApp action copies only the public page URL and a message starter.
 
 - Brain rot narrates published lesson content locally through disposable Piper and Sopro Workers. Keep text, generated audio, notes and user videos on-device. Match ONNX JS and WASM versions. Clip scrolling must preserve narration and bound loaded videos; sources and reuse terms belong in `public/brainrot/CREDITOS.txt`.
 - Brain rot background segments are contiguous within each `series` in `src/data/brainrot-clips.ts`. Keep numbered files complete from part zero to the source end; preload only current and next, advance on `ended`, and wrap only after the last part.
