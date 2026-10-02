@@ -111,15 +111,23 @@ export function setupExercises() {
         return;
       showResult(detail.correct, detail.message);
     });
-    help.forEach((details) =>
-      details.addEventListener('toggle', () => {
-        if (!details.open) return;
+    help.forEach((details) => {
+      const recordHelp = () => {
         readHelp();
+        if (details.dataset.help === 'solution') assistance = 'solution';
+        else if (assistance === 'none') assistance = 'hint';
         progress = { ...progress, assistance };
         saveExerciseProgress(key, progress);
         showProgress();
-      }),
-    );
+      };
+      details.querySelector('summary')!.addEventListener('click', (event) => {
+        // Native toggle is queued; save opening help before a reload can race it.
+        if (!event.defaultPrevented && !details.open) recordHelp();
+      });
+      details.addEventListener('toggle', () => {
+        if (details.open) recordHelp();
+      });
+    });
     root.querySelectorAll<HTMLElement>('[data-enhanced]').forEach((element) => {
       element.hidden = false;
     });
