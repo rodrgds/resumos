@@ -54,6 +54,44 @@ test('C++ executes standard sorting and duplicate removal', async ({
   await expect(playground.getByRole('status')).toHaveText('Concluído');
 });
 
+test('Round Robin runs the authored C program and rejects invalid quanta', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await page.goto('/cadeiras/so/escalonamento/');
+  const playground = page.getByRole('region', {
+    name: 'Round Robin com chegadas em zero',
+    exact: true,
+  });
+  await playground.scrollIntoViewIfNeeded();
+  await expect(
+    playground.getByRole('textbox', { name: 'Código c', exact: true }),
+  ).toBeVisible();
+  await playground.locator('.playground-input summary').click();
+  const input = playground.getByRole('textbox', {
+    name: 'Uma entrada por linha',
+    exact: true,
+  });
+  const run = playground.getByRole('button', { name: 'Executar', exact: true });
+  const output = playground.getByLabel('Resultado', { exact: true });
+  await input.fill('3');
+  await run.click();
+  await expect(run).toBeEnabled({ timeout: 75_000 });
+  await expect(playground.getByRole('status')).toHaveText('Concluído');
+  await expect(output).toHaveText(
+    'P1: fim=14 espera=8\nP2: fim=6 espera=3\nP3: fim=8 espera=6\nP4: fim=15 espera=11\nEspera media: 7.00\n',
+  );
+  for (const invalid of ['3abc', '999999999999999999999999999999']) {
+    await input.fill(invalid);
+    await run.click();
+    await expect(run).toBeEnabled({ timeout: 75_000 });
+    await expect(output).toHaveText('Usa um quantum inteiro entre 1 e 100.\n');
+    await expect(playground.getByRole('status')).toHaveText(
+      'Terminou com erro (1)',
+    );
+  }
+});
+
 test('PHP evaluates the authored scope example', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/cadeiras/lbaw/aplicacao-laravel/');
