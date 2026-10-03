@@ -38,7 +38,7 @@ Gestalt: proximidade, semelhança, continuidade, região comum e figura-fundo. R
 
 Affordance é possibilidade de ação; significante comunica-a; mapping liga controlo a efeito; feedback responde à ação.
 
-Heurísticas: estado, mundo real, controlo/liberdade, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação e ajuda. Justificar cada falha com tarefa, comportamento, consequência e alteração. [Explicação](/cadeiras/ipc/principios-usabilidade/).
+Heurísticas: estado, mundo real, controlo/liberdade, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação e ajuda. Justifica cada falha com tarefa, comportamento, consequência e alteração. [Explicação](/cadeiras/ipc/principios-usabilidade/).
 
 Investigar → necessidades → requisitos → alternativas → protótipo → avaliação → revisão. PACT: pessoas, atividades, contextos, tecnologias. Persona sintetiza padrões fundamentados; proto-persona declara hipóteses. Cenário dá situação/objetivo; tarefa de teste dá resultado sem ensinar cliques. Requisito de usabilidade indica público, contexto, medida e limiar. [Explicação](/cadeiras/ipc/design-centrado-utilizador/).
 
