@@ -48,7 +48,7 @@ Para uma cláusula longa de cinco literais, introduz auxiliares:
 
 $$(\ell_1\lor\ell_2\lor y_1)\land(\neg y_1\lor\ell_3\lor y_2)\land(\neg y_2\lor\ell_4\lor\ell_5).$$
 
-Ela é satisfazível para alguma escolha de $y_1,y_2$ exatamente quando a cláusula original é verdadeira. A transformação preserva satisfazibilidade, não a equivalência para todas as atribuições das variáveis novas. A generalização acrescenta um número linear de cláusulas e transforma CNF-SAT em 3-CNF-SAT.
+Ela é satisfazível para alguma escolha de $y_1,y_2$ exatamente quando a cláusula original é verdadeira. A transformação preserva satisfazibilidade, não a equivalência para todas as atribuições das variáveis novas. A generalização acrescenta um número linear de cláusulas e transforma CNF-SAT em 3-CNF-SAT. Uma cláusula com um ou dois literais pode repetir literais até ter três posições, sem mudar a condição de verdade.
 
 ## De satisfazibilidade para clique
 
@@ -68,13 +68,45 @@ Uma clique de tamanho $k$ em $G$ é independente de tamanho $k$ no complemento $
 
 A direção e o complemento são decisivos. Procurar diretamente uma cobertura de $G$ de tamanho $n-k$ corresponderia a um conjunto independente de $G$, não a uma clique.
 
+## De 3-SAT para três cores
+
+**3-COLORABILITY** pergunta se um grafo não dirigido admite uma [coloração](/cadeiras/da/retrocesso-ramificacao/#colora%C3%A7%C3%A3o-e-aloca%C3%A7%C3%A3o-de-registos) com no máximo três cores. Uma lista de cores verifica-se em $O(n+m)$: confirma a cor de cada vértice e que cada aresta tem extremos diferentes. O problema pertence, portanto, a NP. Para provar a dificuldade, transformamos uma fórmula 3-SAT num grafo.
+
+Cria primeiro um triângulo com vértices $T,F,B$. Os três precisam de cores distintas, às quais damos esses mesmos nomes. Para cada variável $x$, cria vértices $x$ e $\neg x$, liga-os entre si e liga ambos a $B$. Só podem ter as cores $T$ e $F$, em sentidos opostos, representando uma atribuição booleana.
+
+Para cada cláusula $(\ell_1\lor\ell_2\lor\ell_3)$, acrescenta seis vértices novos $O_1,O_2,O_3,I_1,I_2,I_3$ e estas arestas:
+
+| Ligações                             | Restrição que impõem                          |
+| ------------------------------------ | --------------------------------------------- |
+| $I_1I_2$, $I_2I_3$, $I_3I_1$         | O triângulo interno usa as três cores         |
+| $I_iO_i$, para $i=1,2,3$             | Cada interno difere do externo correspondente |
+| $O_iT$ e $O_i\ell_i$, para $i=1,2,3$ | Cada externo difere de $T$ e do seu literal   |
+
+Nesta construção, os externos ligam-se ao vértice **$T$**. Fixar este nome evita trocar o papel das cores na prova.
+
+Se os três literais forem falsos, cada $O_i$ é adjacente a $T$ e $F$, logo fica forçado a $B$. Nenhum $I_i$ pode usar $B$. Um triângulo não admite apenas duas cores, portanto a cláusula falsa impede colorir o grafo.
+
+Se algum literal, por exemplo $\ell_1$, for verdadeiro, dá $F$ a $O_1$ e $B$ aos outros dois externos. São escolhas válidas, mesmo que os outros literais também sejam verdadeiros. Dá $B$ a $I_1$ e $T,F$ aos dois restantes. Todas as arestas têm cores diferentes nos extremos. Qualquer cláusula verdadeira pode, assim, ser completada.
+
+Uma atribuição que satisfaz a fórmula colore os vértices das variáveis e completa cada cláusula. Reciprocamente, qualquer coloração define uma atribuição, e nenhuma cláusula pode ter todos os literais falsos. Temos as duas implicações da redução. Com $v$ variáveis e $q$ cláusulas, há $3+2v+6q$ vértices e $O(v+q)$ arestas; a construção é linear. Assim, 3-COLORABILITY é NP-completo.
+
+O **número cromático** $\chi(G)$ é o menor número de cores de uma coloração válida. Uma clique de tamanho $k$ exige $k$ cores. Se $\Delta(G)$ é o maior grau, colorir sequencialmente com uma cor livre usa no máximo $\Delta(G)+1$ cores num grafo simples, pois cada vértice tem no máximo $\Delta(G)$ vizinhos. Isso é um limite superior, não uma garantia de mínimo. Num triângulo, $\chi=3$ e $\Delta=2$: nem sequer $\Delta$ cores chegam sempre.
+
 ## Um caso que fica em P: 2-SAT
 
 Para cada variável cria os vértices $x$ e $\neg x$. Uma cláusula $(a\lor b)$ equivale a $\neg a\Rightarrow b$ e $\neg b\Rightarrow a$; acrescenta essas duas arestas.
 
 A fórmula é insatisfazível se alguma variável e a sua negação estiverem na mesma SCC. Nesse caso, escolher qualquer valor força o outro por implicações. Se nenhuma coincide, a condensação é um DAG e podemos escolher valores segundo uma ordem das componentes, dando a cada literal o valor complementar da sua negação. A regra concreta de comparação depende de como numeramos as componentes; verifica-a contra a ordem topológica usada.
 
-O grafo tem $2n$ vértices e $2q$ arestas para $q$ cláusulas, e as SCC dão decisão em $O(n+q)$. Passar de duas para três posições por cláusula muda a classe conhecida do problema, embora os enunciados se pareçam.
+Para uma regra independente da numeração das SCC, escolhe uma ordem topológica da condensação e dá a cada componente a sua posição crescente. Atribui $x$ a verdadeiro se a componente de $x$ estiver **depois** da de $\neg x$. Cada variável e a sua negação recebem valores opostos.
+
+Esta regra respeita as implicações. Suponhamos que $a\Rightarrow b$ tem $a$ verdadeiro e $b$ falso. Há também a aresta $\neg b\Rightarrow\neg a$, pois cada cláusula acrescenta as duas. As posições teriam de satisfazer
+
+$$\operatorname{pos}(\neg a)<\operatorname{pos}(a)\le\operatorname{pos}(b)<\operatorname{pos}(\neg b)\le\operatorname{pos}(\neg a),$$
+
+o que é impossível. Logo nenhuma cláusula fica falsa. Numa cláusula unitária $(x)$, vista como $(x\lor x)$, a aresta $\neg x\to x$ coloca $x$ depois da sua negação e atribui-lhe verdadeiro, como esperado.
+
+O grafo tem $2n$ vértices e $2q$ arestas para $q$ cláusulas, e as SCC dão decisão em $O(n+q)$. 2-SAT está em P; 3-SAT é NP-completo. Isto não prova uma separação entre as classes, porque continua em aberto se $P=NP$.
 
 ## Garantia de aproximação
 

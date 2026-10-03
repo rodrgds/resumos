@@ -34,6 +34,8 @@ procura(estado):
 
 Desfazer é parte da correção. Uma marca de ocupação esquecida elimina escolhas válidas num ramo seguinte. Devolver imediatamente depois da primeira solução serve para encontrar **uma**; contar ou listar todas exige continuar a procura.
 
+Distingue o estado do ramo de informação global já provada. Para encontrar uma saída num labirinto fixo, sem consumir recursos, uma DFS pode marcar cada casa permanentemente: as saídas dessa casa não dependem do caminho usado para chegar lá. Numa grelha $n\times n$, visita até $n^2$ casas e quatro vizinhos por casa, com tempo e memória $O(n^2)$. Para enumerar todos os caminhos simples, as casas ocupadas pertencem ao caminho atual e têm de ser desmarcadas ao regressar; já pode haver exponencialmente muitos caminhos. A operação de desfazer depende do significado do estado.
+
 ## Soma de subconjuntos com duas podas
 
 Assume valores estritamente positivos e alvo $T\ge0$. No estado $(i,s)$, já decidimos os elementos anteriores a $i$ e somamos $s$. Seja $R_i$ a soma de todos os valores ainda disponíveis.
@@ -82,15 +84,51 @@ Para colorir um grafo com $k$ cores, escolhe um vértice ainda sem cor e experim
 
 A escolha de vértices de maior grau ou com mais cores vizinhas já usadas pode reduzir a procura. Continua a ser uma regra de ordenação da exploração, não uma prova de que o primeiro resultado usa o mínimo de cores.
 
-Num modelo de alocação de registos, cada variável é um vértice; uma aresta significa que os seus valores precisam de coexistir e não podem usar o mesmo registo. As cores representam registos. Reutilizar um registo para variáveis sem interferência é permitido. A construção correta do grafo depende da análise das variáveis vivas, não apenas de as duas aparecerem na mesma instrução.
+### Vivacidade antes e depois de uma instrução
 
-Uma análise de vivacidade típica usa, para cada nó de controlo $u$,
+Um valor está **vivo** num ponto se pode ser usado numa continuação antes de ser substituído por uma nova definição. Não basta contar as variáveis escritas numa instrução. Para uma instrução $u$, `use[u]` contém os valores lidos e `def[u]` os escritos; `succ(u)` contém as instruções que podem executar a seguir.
+
+Uma análise de vivacidade usa
 
 $$\operatorname{out}[u]=\bigcup_{v\in\operatorname{succ}(u)}\operatorname{in}[v],$$
 
 $$\operatorname{in}[u]=\operatorname{use}[u]\cup\big(\operatorname{out}[u]\setminus\operatorname{def}[u]\big).$$
 
-Itera a partir de conjuntos vazios até não haver alterações. O domínio é finito e os conjuntos crescem monotonamente, por isso termina. Um vértice de grau menor que $k$ pode ser removido e recolocado depois de colorir o restante grafo: nessa altura tem menos de $k$ cores proibidas. Quando não há tal vértice, a simplificação não prova impossibilidade; pode ser necessário tentar outras escolhas ou transferir valores para memória, o **spill**.
+`out` guarda os valores necessários depois da instrução. `in` acrescenta os usados agora e retira os valores que a instrução redefine. Em `x = x + 1`, `use` e `def` contêm ambos `x`: ler o valor antigo e escrever o novo são operações distintas.
+
+Itera a partir de conjuntos vazios até não haver alterações. Os conjuntos só crescem num domínio finito, por isso termina. Com ciclos no fluxo de controlo, uma só passagem para trás pode não chegar.
+
+Considera esta sequência, sem outros usos depois de `ret`:
+
+```text
+1: a = 1
+2: b = 2
+3: c = a + b
+4: ret c
+```
+
+| Instrução | `use`         | `def`         | `in`          | `out`         |
+| --------- | ------------- | ------------- | ------------- | ------------- |
+| 1         | $\varnothing$ | $\{a\}$       | $\varnothing$ | $\{a\}$       |
+| 2         | $\varnothing$ | $\{b\}$       | $\{a\}$       | $\{a,b\}$     |
+| 3         | $\{a,b\}$     | $\{c\}$       | $\{a,b\}$     | $\{c\}$       |
+| 4         | $\{c\}$       | $\varnothing$ | $\{c\}$       | $\varnothing$ |
+
+$a$ e $b$ coexistem antes da instrução 3 e precisam de registos distintos. Depois de ler esses operandos, os seus valores deixam de ser necessários; o registo de $a$ pode receber $c$. Neste modelo, que permite reutilizar um registo de operando para o resultado, duas cores chegam. Uma restrição específica da máquina teria de ser acrescentada ao modelo.
+
+### De intervalos a webs e interferências
+
+Uma **web** reúne intervalos de vivacidade da mesma variável que se sobrepõem, incluindo sobreposições transitivas. Duas vidas separadas da variável podem formar webs distintas e receber registos diferentes. Os vértices do grafo de interferências representam essas webs; uma aresta significa que os dois valores precisam de coexistir.
+
+Por exemplo, intervalos de `x` que cobrem os pontos $\{1,2,3\}$ e $\{3,4,5\}$ fundem-se numa web $\{1,2,3,4,5\}$. Um terceiro intervalo $\{8,9\}$ fica separado se não houver outro que os ligue. As listas representam pontos do fluxo de controlo: não substituas uma lista pelos números entre o seu mínimo e máximo, pois podes inventar pontos que ela não contém.
+
+O instante dentro da instrução também conta. Uma web que termina por leitura e outra que começa pela escrita do resultado na mesma instrução podem não interferir, como $a$ e $c$ no exemplo. A marca de fim não deve ser tratada como se o valor anterior ainda precisasse de sobreviver depois da escrita.
+
+A coloração atribui uma cor, ou registo, a cada web, com cores diferentes nos extremos de cada aresta. Para $k$ registos, remove um vértice com grau atual menor que $k$ e empilha-o. Depois de colorir o restante, recoloca-o: tem menos de $k$ vizinhos já coloridos, logo existe uma cor livre. É o **grau no grafo restante** que conta.
+
+Quando não há tal vértice, a simplificação não prova impossibilidade. Um ciclo de quatro vértices tem todos os graus iguais a 2 e, mesmo assim, admite duas cores. Podes tentar outra procura ou transferir uma web para memória, o **spill**. Dividir uma web, ou **splitting**, pode reduzir interferências, mas exige preservar o valor nas transições entre as partes; retirar arestas arbitrariamente alteraria o programa.
+
+O segundo projeto de 2025/26 fornece os intervalos de vivacidade como entrada. A análise `in/out` explica a sua origem, mas não acrescenta ao enunciado uma obrigação de construir um compilador ou calcular esses intervalos. O trabalho algorítmico inclui juntar intervalos em webs, construir interferências e comparar coloração, spilling e splitting. Os formatos e limites das variantes pertencem ao enunciado dessa edição.
 
 ## Branch and bound: direção do limite
 
