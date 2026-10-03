@@ -6,7 +6,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-01'
+    date: '2026-10-03'
   sources:
     - title: Ficha de AM II, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587961
@@ -27,24 +27,24 @@ Precisamos das derivadas e primitivas de AM1 e dos vetores, produtos escalar e v
 
 ## Percurso de estudo
 
-| Tema                                                              | O que deves conseguir fazer                                                                               |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| [Curvas paramétricas](curvas-parametricas/)                       | Encontrar velocidade, triedro, planos, comprimento, curvatura e centro de curvatura.                      |
-| [Limites e continuidade](limites-continuidade/)                   | Descrever domínios e níveis, reconhecer quádricas e provar ou refutar um limite.                          |
-| [Derivadas e gradiente](derivadas-gradiente/)                     | Distinguir parciais, derivadas direcionais e diferenciabilidade; usar jacobianas e diferenciais.          |
-| [Cadeia e funções implícitas](regra-cadeia-implicitas/)           | Derivar composições e equações sem isolar a variável dependente.                                          |
-| [Taylor e extremos](taylor-extremos/)                             | Construir aproximações, classificar candidatos e comparar extremos livres e condicionados.                |
-| [Integrais de linha e Green](integrais-linha/)                    | Distinguir comprimento de deslocamento, encontrar potenciais e conferir orientação.                       |
-| [Integrais duplos](integrais-duplos/)                             | Descrever uma região nas duas ordens, usar polares e uma mudança de variáveis.                            |
-| [Integrais triplos](integrais-triplos/)                           | Projetar sólidos e escolher cartesianas, cilíndricas ou esféricas.                                        |
-| [Superfícies e fluxo](superficies-fluxo/)                         | Calcular áreas e fluxos e escolher entre cálculo direto, divergência e Stokes.                            |
-| [Equações diferenciais parciais](equacoes-diferenciais-parciais/) | Reconhecer uma EDP linear, verificar soluções e impor dados iniciais ou de fronteira em exemplos básicos. |
+| Tema                                                                            | O que deves conseguir fazer                                                                               |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [Curvas paramétricas](/cadeiras/am2/curvas-parametricas/)                       | Encontrar velocidade, triedro, planos, comprimento, curvatura e centro de curvatura.                      |
+| [Limites e continuidade](/cadeiras/am2/limites-continuidade/)                   | Descrever domínios e níveis, reconhecer quádricas e provar ou refutar um limite.                          |
+| [Derivadas e gradiente](/cadeiras/am2/derivadas-gradiente/)                     | Distinguir parciais, derivadas direcionais e diferenciabilidade; usar jacobianas e diferenciais.          |
+| [Cadeia e funções implícitas](/cadeiras/am2/regra-cadeia-implicitas/)           | Derivar composições e equações sem isolar a variável dependente.                                          |
+| [Taylor e extremos](/cadeiras/am2/taylor-extremos/)                             | Construir aproximações, classificar candidatos e comparar extremos livres e condicionados.                |
+| [Integrais de linha e Green](/cadeiras/am2/integrais-linha/)                    | Distinguir comprimento de deslocamento, encontrar potenciais e conferir orientação.                       |
+| [Integrais duplos](/cadeiras/am2/integrais-duplos/)                             | Descrever uma região nas duas ordens, usar polares e uma mudança de variáveis.                            |
+| [Integrais triplos](/cadeiras/am2/integrais-triplos/)                           | Projetar sólidos e escolher cartesianas, cilíndricas ou esféricas.                                        |
+| [Superfícies e fluxo](/cadeiras/am2/superficies-fluxo/)                         | Calcular áreas e fluxos e escolher entre cálculo direto, divergência e Stokes.                            |
+| [Equações diferenciais parciais](/cadeiras/am2/equacoes-diferenciais-parciais/) | Reconhecer uma EDP linear, verificar soluções e impor dados iniciais ou de fronteira em exemplos básicos. |
 
-Cada capítulo termina com exercícios próprios. Tenta primeiro sem ajuda, abre a primeira pista quando não souberes como começar e usa a segunda para desbloquear a conta. A solução mostra também as condições do método. A [cheat sheet](folha-consulta/) serve para rever depois de compreenderes as páginas.
+Cada capítulo termina com exercícios próprios. Tenta primeiro sem ajuda, abre a primeira pista quando não souberes como começar e usa a segunda para desbloquear a conta. A solução mostra também as condições do método. A [cheat sheet](/cadeiras/am2/folha-consulta/) serve para rever depois de compreenderes as páginas.
 
 ## Avaliação de 2026/27
 
-A ficha do SIGARRA, consultada em 1 de outubro de 2026, indica avaliação distribuída sem exame final: dois testes de desenvolvimento, cada um com peso de 50%, e a média arredondada às unidades. O recurso é uma prova global sobre os conteúdos do semestre. A frequência exige presença em 75% das aulas práticas; a assiduidade obtida vale também no ano imediatamente seguinte. A melhoria faz-se no recurso.
+A ficha do SIGARRA, consultada em 3 de outubro de 2026, indica avaliação distribuída sem exame final: dois testes de desenvolvimento, cada um com peso de 50%, e a média arredondada às unidades. O recurso é uma prova global sobre os conteúdos do semestre. A frequência exige presença em 75% das aulas práticas; a assiduidade obtida vale também no ano imediatamente seguinte. A melhoria faz-se no recurso.
 
 A ficha proíbe dispositivos eletrónicos, salvo os autorizados pela equipa docente ou previstos por estatuto. Datas, duração e materiais permitidos devem ser confirmados nos avisos da tua turma. Os enunciados de 2024/25 eram sem consulta e sem calculadora, mas isso não substitui as instruções da prova atual. Não transportes para este ano o mínimo de 7 por teste que aparece na ficha de 2023/24.
 
