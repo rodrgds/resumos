@@ -12,7 +12,9 @@ editorial:
       url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
-Consulta depois de perceberes cada modelo. Cada linha indica a condição que decide a conta.
+Chegaste ao fim do percurso e já percebeste cada modelo; esta página responde a uma pergunta diferente: qual é a fórmula ou a condição exata de cada caso, para consulta rápida durante a revisão?
+
+Cada linha indica a condição que decide a conta.
 
 ## RV32
 
