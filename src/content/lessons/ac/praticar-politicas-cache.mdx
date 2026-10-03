@@ -1,6 +1,6 @@
 ---
 title: Praticar políticas de cache
-description: Problemas próprios com condições, pistas e resoluções completas.
+description: Questões de treino com hipóteses, pistas e resoluções justificadas.
 section: exercicios
 editorial:
   basedOn: 2024/25
@@ -10,14 +10,16 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-wb-trace"
+  revision={2}
   title="Contar escritas e leituras"
   explanation="/cadeiras/ac/politicas-cache/#um-traço-com-vítimas-modificadas"
   answer={{ kind: 'number', value: 4, tolerance: 0 }}
 >
   <div>
-    Cache WB direta 2 linhas de 4 B, vazia. Palavras completas: E0=7, L0, E8=9,
-    L4, L0. Quantos acessos à memória principal, contando leitura ou escrita de
-    linha como um?
+    Cache WB/allocate direta, 2 linhas de 4 B, vazia. O modelo dispensa ler uma
+    linha que será totalmente escrita e não faz flush final. Palavras completas:
+    E0=7, L0, E8=9, L4, L0. Quantos acessos à memória principal, contando
+    leitura ou escrita de linha como um?
   </div>
   <div slot="hint">Uma escrita de palavra cobre a linha inteira.</div>
   <div slot="hint-more">Há duas vítimas dirty e duas cargas.</div>
@@ -33,6 +35,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-wb-parcial"
+  revision={1}
   title="Preservar bytes não escritos"
   explanation="/cadeiras/ac/politicas-cache/#write-through-e-write-back"
   answer={{ kind: 'number', value: 2, tolerance: 0 }}
@@ -57,6 +60,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-cache-cpi"
+  revision={1}
   title="Combinar I e D"
   explanation="/cadeiras/ac/politicas-cache/#de-taxas-de-falta-para-cpi"
   answer={{ kind: 'number', value: 2.96, tolerance: 1e-6 }}
@@ -76,6 +80,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-cache-local-global"
+  revision={1}
   title="Usar a taxa local certa"
   explanation="/cadeiras/ac/politicas-cache/#vários-níveis-de-cache"
   answer={{ kind: 'number', value: 3.4, tolerance: 1e-6, unit: 'ciclos' }}
@@ -89,5 +94,54 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="solution">TMAM=3,4 ciclos; taxa RAM global=0,10×0,20=2%.</div>
   <div slot="mistakes">
     Cobrar 8 ciclos a todos os pedidos ou tratar 20% local como 20% global.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-cache-ram-dirty"
+  revision={1}
+  title="O que uma linha dirty permite concluir"
+  explanation="/cadeiras/ac/politicas-cache/#o-que-se-pode-conhecer-da-memória"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'O CPU lê 9; o valor atual na RAM é indeterminado.',
+        correct: true,
+        explanation:
+          'A linha válida responde ao CPU, mas dirty não revela o valor anterior da RAM.',
+      },
+      {
+        text: 'O CPU e a RAM têm ambos 9.',
+        correct: false,
+        explanation: 'WB ainda pode não ter descarregado a modificação.',
+      },
+      {
+        text: 'O CPU não pode ler porque dirty significa inválida.',
+        correct: false,
+        explanation: 'Dirty indica modificação, não invalidade.',
+      },
+    ],
+  }}
+>
+  <div>
+    Cache WB, sem agentes externos nem buffers de escrita. A linha válida do
+    endereço X é dirty e contém X=9. Não sabemos o valor inicial nem houve
+    write-back. O que sabemos sobre uma leitura do CPU e sobre a RAM?
+  </div>
+  <div slot="hint">
+    Distingue a cópia que serve a leitura da cópia no nível seguinte.
+  </div>
+  <div slot="hint-more">
+    Validade e dirty são bits com significados diferentes.
+  </div>
+  <div slot="solution">
+    O CPU obtém 9 por acerto. A RAM conserva o valor anterior, que não foi dado.
+    Dirty não permite afirmar que esse valor é diferente de 9, apenas que não há
+    garantia de igualdade.
+  </div>
+  <div slot="mistakes">
+    Inventar o valor antigo ou concluir que dirty prova necessariamente uma
+    diferença de valores.
   </div>
 </Exercise>
