@@ -52,7 +52,7 @@ editorial:
 - COUNT(*) conta linhas; COUNT(coluna) conta valores não nulos. SUM vazio dá NULL.
 - LEFT JOIN conserva o lado esquerdo. Filtro da direita no WHERE pode eliminar as linhas sem correspondência.
 - NOT IN pode dar desconhecido com NULL. NOT EXISTS testa ausência de linhas.
-- «Todos»: não existe um candidato sem correspondência. Sobre conjunto vazio, pode aceitar por vacuidade.
+- «Todos»: não existe um candidato sem correspondência. Sobre conjunto vazio, pode aceitar por vacuidade, por isso verifica a condição de existência quando a pergunta a exige.
 - UNION elimina repetidos; UNION ALL conserva. Janela OVER mantém linhas; GROUP BY reduz grupos.
 - Álgebra relacional clássica usa conjuntos; SQL conserva repetidos por defeito.
 
