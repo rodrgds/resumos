@@ -10,7 +10,7 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import ciclo from './ciclo-processo.dot?raw';
 
-Um editor quer guardar um ficheiro enquanto outro programa lê dados da rede. Ambos usam CPU, memória e dispositivos. O **sistema operativo** gere esses recursos e fornece operações que os programas conseguem usar sem conhecer todos os pormenores do hardware.
+Um editor quer guardar um ficheiro enquanto outro programa lê dados da rede. Ambos precisam de CPU, memória e dispositivos. O **sistema operativo** gere esses recursos, ou seja oferece operações que os programas usam sem conhecerem o hardware em detalhe.
 
 ## Recursos e abstrações
 
@@ -23,9 +23,9 @@ O núcleo, ou _kernel_, é a parte privilegiada do sistema que gere CPU, memóri
 | Disco                | Ficheiro e diretório            | Onde ficam os blocos e quem pode aceder       |
 | Dispositivo ou canal | Descritor                       | Como ler, escrever e esperar                  |
 
-A abstração esconde pormenores sem apagar diferenças. `read` pode ler um ficheiro ou um pipe, mas `lseek` não permite reposicionar um pipe. O dispositivo continua a impor condições às operações.
+A abstração esconde pormenores sem apagar diferenças, porque o dispositivo continua a impor condições. `read` pode ler um ficheiro ou um pipe, mas `lseek` não reposiciona um pipe.
 
-O sistema procura eficiência, acesso adequado aos recursos e proteção. Estes objetivos podem competir: dar CPU a um processo durante muito tempo reduz trocas de contexto, mas pode atrasar uma aplicação interativa.
+O sistema procura eficiência, acesso adequado aos recursos e proteção. Estes objetivos competem, por isso dar CPU a um processo durante muito tempo reduz trocas de contexto mas atrasa uma aplicação interativa.
 
 ## Multiprogramação, concorrência e paralelismo
 
@@ -33,20 +33,20 @@ Um programa alterna rajadas de CPU e operações de I/O. Se bloquear à espera d
 
 A **partilha de tempo**, ou _time sharing_, também interrompe processos que ainda poderiam continuar. Cada um recebe uma parte do tempo da CPU, permitindo interação sem esperar pelo fim dos restantes.
 
-Concorrência significa que os períodos de execução de várias tarefas se sobrepõem. Uma CPU pode alternar entre elas. Paralelismo significa execução simultânea, por exemplo em dois núcleos. Uma condição de corrida pode existir com uma única CPU, porque a interrupção entre duas operações já permite entrelaçamentos.
+Concorrência significa que os períodos de execução de várias tarefas se sobrepõem, ou seja uma CPU pode alternar entre elas. Paralelismo significa execução simultânea, por exemplo em dois núcleos. Uma condição de corrida pode existir com uma única CPU, porque a interrupção entre duas operações já permite entrelaçamentos.
 
 ## Modo utilizador e modo núcleo
 
 O hardware distingue modos de execução. Em modo utilizador, uma aplicação não pode reprogramar livremente o temporizador nem escolher uma tabela de páginas para ler memória de outro processo. Essas operações exigem privilégio.
 
-Para pedir uma operação protegida, o programa faz uma **chamada de sistema**. O percurso típico é:
+Para pedir uma operação protegida, o programa faz uma **chamada de sistema**, ou seja pede ao núcleo que execute por ele. O percurso típico é:
 
 1. O programa chama uma função da biblioteca que prepara o número da operação e os argumentos.
 2. Uma instrução própria transfere o controlo para uma entrada do núcleo.
 3. O núcleo verifica os argumentos e as permissões, executa o pedido ou regista que é preciso esperar.
 4. O resultado chega ao programa, que continua em modo utilizador quando puder correr.
 
-`strlen` calcula um comprimento em memória e não precisa de entrar no núcleo. `open` precisa de consultar o sistema de ficheiros e as permissões. `printf` pode guardar texto num buffer da biblioteca antes de `write` o enviar ao núcleo. Uma chamada de função C e uma chamada de sistema não são a mesma coisa.
+`strlen` calcula um comprimento em memória e não precisa de entrar no núcleo. `open` precisa de consultar o sistema de ficheiros e as permissões, por isso entra no núcleo. `printf` pode guardar texto num buffer da biblioteca antes de `write` o enviar ao núcleo. Uma chamada de função C e uma chamada de sistema não são a mesma coisa.
 
 Uma mudança de modo também não implica uma **troca de contexto** entre processos. O mesmo processo pode entrar no núcleo e voltar. Numa troca de contexto, o sistema guarda o estado necessário para retomar uma tarefa e carrega o de outra, incluindo registos e informação de escalonamento.
 
@@ -56,11 +56,11 @@ Uma **interrupção de hardware** anuncia um evento externo ao fluxo corrente de
 
 O processador guarda estado e desvia a execução para um tratador. O núcleo identifica o evento, trata-o e decide o que pode correr a seguir. Não tem de retomar imediatamente o processo interrompido.
 
-Uma falta de página pode ser recuperável: o endereço é válido, mas os dados ainda não estão na RAM. Escrever numa página sem permissão pode provocar a terminação do processo. Não interpretes toda a exceção como um erro fatal.
+Uma falta de página pode ser recuperável, porque o endereço é válido mas os dados ainda não estão na RAM. Escrever numa página sem permissão pode terminar o processo. Por isso não interpretes toda a exceção como um erro fatal.
 
 ## Um pedido que bloqueia
 
-Suponhamos que A faz uma leitura cujos dados ainda não estão disponíveis. A passa de **a correr** para **bloqueado**. O escalonador escolhe B entre os processos **prontos**. Quando os dados de A chegam, a interrupção permite torná-lo pronto. A só volta a correr quando for escolhido.
+Suponhamos que A faz uma leitura cujos dados ainda não estão disponíveis. A passa de **a correr** para **bloqueado**, ou seja fica a espera de um evento. O escalonador escolhe B entre os processos **prontos**. Quando os dados de A chegam, a interrupção torna-o pronto. A só volta a correr quando for escolhido.
 
 <Dot
   source={ciclo}

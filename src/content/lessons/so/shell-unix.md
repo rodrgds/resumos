@@ -7,7 +7,7 @@ practices:
   - so/praticar-shell
 ---
 
-A shell lê um comando, expande os seus argumentos e prepara as entradas e saídas do programa. Para prever um resultado, separa o que a shell faz do que o programa faz.
+A shell lê um comando, expande os seus argumentos e prepara as entradas e saídas do programa. Para preveres um resultado, separa o que a shell faz do que o programa faz.
 
 ## Caminhos e diretório de trabalho
 
@@ -32,7 +32,7 @@ printf '%s\n' *.c
 find . -name '*.c' -print
 ```
 
-No primeiro comando, a shell procura os nomes na pasta corrente. No segundo, as aspas entregam `*.c` ao `find`, que procura na árvore. Sem aspas, o padrão pode ser expandido cedo e dar argumentos diferentes dos pretendidos.
+No primeiro comando, a shell procura os nomes na pasta corrente, ou seja a expansão acontece antes de `printf` correr. No segundo, as aspas entregam `*.c` ao `find`, que procura na árvore. Sem aspas, o padrão pode ser expandido cedo e dar argumentos diferentes dos pretendidos.
 
 Aspas simples conservam o texto literal. Aspas duplas conservam espaços, mas ainda permitem expansões como `$HOME`. A expansão `{a,b}` da Bash produz duas alternativas de texto, mesmo que os ficheiros não existam. Um glob não é uma expressão regular: o `*` de `grep` tem outro significado.
 
@@ -55,9 +55,9 @@ sort -n < numeros.txt | uniq > distintos.txt
 cat distintos.txt
 ```
 
-A saída final é `2`, `5`, `9`, uma por linha. `sort -n` ordena numericamente; `uniq` elimina repetições adjacentes. Sem ordenar, duas ocorrências separadas poderiam sobreviver.
+A saída final é `2`, `5`, `9`, uma por linha. `sort -n` ordena numericamente e `uniq` elimina repetições adjacentes, por isso sem ordenar duas ocorrências separadas poderiam sobreviver.
 
-A shell retira `< numeros.txt` da lista de argumentos de `sort`. O programa recebe dados por stdin, não o texto `<`. Este detalhe explica por que um programa com `argc == 1` ainda consegue ler um ficheiro redirecionado.
+A shell retira `< numeros.txt` da lista de argumentos de `sort`, por isso o programa recebe dados por stdin, não o texto `<`. Este detalhe explica por que um programa com `argc == 1` ainda consegue ler um ficheiro redirecionado.
 
 A ordem dos redirecionamentos importa. `comando > tudo.txt 2>&1` envia os dois canais para o ficheiro. Em `comando 2>&1 > saida.txt`, stderr conserva o destino que stdout tinha antes de mudar.
 
@@ -74,15 +74,17 @@ tail -n 3 dados.txt
 
 `grep -v` exclui linhas que correspondem ao padrão. `cut` escolhe campos usando `:` como separador. `sed` substitui todas as ocorrências por linha por causa de `g`. Estes comandos não alteram o ficheiro de entrada por si só.
 
-`wc -l` conta caracteres de mudança de linha, não necessariamente linhas visuais: `printf abc | wc -l` dá 0. `wc -c` conta bytes; um carácter acentuado em UTF-8 pode ocupar mais de um byte.
+`wc -l` conta caracteres de mudança de linha, não linhas visuais, ou seja `printf abc | wc -l` dá 0. `wc -c` conta bytes, por isso um carácter acentuado em UTF-8 pode ocupar mais de um byte.
 
 ## Processos e jobs
 
-`comando &` inicia um job sem a shell esperar pelo seu fim antes de apresentar outro prompt. O processo não fica automaticamente independente do terminal nem imune ao logout. `jobs` mostra jobs da shell; `ps` consulta processos do sistema.
+`comando &` inicia um job sem a shell esperar pelo seu fim antes de apresentar outro prompt. O processo não fica automaticamente independente do terminal nem imune ao logout, porque continuas ligado à mesma sessão.
 
-`Ctrl+C` costuma enviar `SIGINT` ao grupo em primeiro plano. `Ctrl+Z` costuma enviar `SIGTSTP`; `fg` retoma um job em primeiro plano. `kill` envia sinais e não significa sempre matar. Para pedir terminação, começa normalmente com `SIGTERM`; `SIGKILL` não permite limpeza pelo programa.
+`jobs` mostra jobs da shell e `ps` consulta processos do sistema.
 
-`ps -A | wc -l` é apenas uma aproximação ao número de processos. Pode incluir um cabeçalho, os próprios programas da pipeline e alterações ocorridas enquanto os dados são recolhidos.
+`Ctrl+C` costuma enviar `SIGINT` ao grupo em primeiro plano. `Ctrl+Z` costuma enviar `SIGTSTP` e `fg` retoma um job em primeiro plano. `kill` envia sinais, ou seja não significa sempre matar. Para pedires terminação, começa normalmente com `SIGTERM`, porque `SIGKILL` não permite limpeza pelo programa.
+
+`ps -A | wc -l` é apenas uma aproximação ao número de processos, porque pode incluir um cabeçalho, os próprios programas da pipeline e alterações ocorridas enquanto os dados são recolhidos.
 
 ## Manual, permissões e arquivo
 

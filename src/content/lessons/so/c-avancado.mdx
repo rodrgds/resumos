@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import memoria from '../../so/memoria.c?raw';
 
-Em C, um apontador dá acesso a um objeto, mas não diz se esse objeto ainda existe nem quem o deve libertar. Antes de usar a API do sistema, precisamos de acompanhar os valores, os endereços e o tempo de vida dos dados.
+Em C, um apontador dá acesso a um objeto, mas não diz se esse objeto ainda existe nem quem o deve libertar. Antes de usares a API do sistema, acompanha os valores, os endereços e o tempo de vida dos dados.
 
 ## Do ficheiro fonte ao executável
 
@@ -25,7 +25,7 @@ gcc programa.o -o programa
 
 `-c` não liga. Se o programa usa uma função declarada mas sem definição disponível, a compilação do objeto pode passar e a ligação falhar com `undefined reference`. Um cabeçalho descreve a interface; incluir um `.h` não fornece automaticamente a implementação.
 
-No terminal Linux, um ponto de partida é `gcc -std=c17 -Wall -Wextra -Wpedantic -g programa.c -o programa`. `-g` acrescenta informação para depuração, não corrige o programa. `-Wall` não ativa literalmente todos os avisos. Lê-os e corrige a causa. No debugger, um breakpoint em `main`, `next` e `step` permitem acompanhar linhas e entrar em funções.
+No terminal Linux, um ponto de partida é `gcc -std=c17 -Wall -Wextra -Wpedantic -g programa.c -o programa`. `-g` acrescenta informação para depuração, ou seja não corrige o programa. `-Wall` não ativa literalmente todos os avisos. Lê-os e corrige a causa. No debugger, põe um breakpoint em `main` e usa `next` e `step` para acompanhar linhas e entrar em funções.
 
 ## Programa e processo
 
@@ -50,15 +50,17 @@ No fim, `x == 9` e `y == 3`. Alterar `p` não altera `q`: cada apontador guarda 
 
 C passa todos os argumentos por valor. `swap(int a, int b)` troca cópias. `swap(int *a, int *b)` também recebe cópias, mas essas cópias apontam para os objetos do chamador e permitem alterá-los com `*a` e `*b`.
 
-Num array, `p + 1` avança um elemento, não necessariamente um byte. Para um `int *`, o avanço é `sizeof(int)` bytes. `a[i]` equivale a `*(a + i)` quando o índice é válido. Só podes desreferenciar dentro do array; o apontador imediatamente a seguir pode ser usado como limite, mas não para ler um elemento.
+Num array, `p + 1` avança um elemento, não necessariamente um byte, porque para um `int *` o avanço é `sizeof(int)` bytes. `a[i]` equivale a `*(a + i)` quando o índice é válido.
 
-`sizeof array / sizeof array[0]` conta elementos quando `array` ainda é um array nesse âmbito. Num parâmetro `int array[]`, o tipo ajusta-se para apontador e essa conta deixa de medir o array. Passa também o comprimento.
+Só podes desreferenciar dentro do array. O apontador imediatamente a seguir pode servir como limite, mas não para ler um elemento.
+
+`sizeof array / sizeof array[0]` conta elementos quando `array` ainda é um array nesse âmbito. Num parâmetro `int array[]`, o tipo ajusta-se para apontador e essa conta deixa de medir o array, por isso passa também o comprimento.
 
 `void *` guarda um endereço de objeto sem fixar o seu tipo. É o retorno de `malloc` e o tipo do argumento de uma thread. Em C, podes atribuí-lo a um apontador para o tipo concreto antes de aceder ao objeto, sem cast. Não podes desreferenciar `void *` nem fazer a sua aritmética em C17. `void f(void)` declara uma função sem argumentos e sem retorno; em C17, `f()` numa declaração não especifica os argumentos.
 
 ## Tempo de vida e propriedade
 
-Não devolvas `&local` de uma função: quando ela retorna, a variável automática deixa de existir. O endereço pode continuar a ter bits aparentemente plausíveis, mas usá-lo tem comportamento indefinido. Não existe uma saída obrigatória, nem sequer a garantia de um segmentation fault.
+Não devolvas `&local` de uma função, porque quando ela retorna a variável automática deixa de existir. O endereço pode continuar a ter bits aparentemente plausíveis, mas usá-lo tem comportamento indefinido. Não existe uma saída obrigatória, nem sequer a garantia de um segmentation fault.
 
 Um bloco obtido com `malloc` continua a existir até `free`. A função que devolve esse bloco deve deixar claro quem o liberta. `malloc` não inicializa os bytes; `calloc` põe os bytes a zero. Testa `NULL` antes de escrever.
 
@@ -70,7 +72,7 @@ Um bloco obtido com `malloc` continua a existir até `free`. A função que devo
 
 O programa escreve `original=4 copia=9`. O segundo bloco tem uma cópia do valor, não do endereço. Depois de `free`, deixa de ser válido aceder ao bloco. Atribuir `NULL` ao apontador libertado pode ajudar a detetar usos locais, mas não corrige outros apontadores que ainda guardem o endereço.
 
-Para redimensionar, usa um temporário:
+Para redimensionares, usa um temporário, porque escrever diretamente `valores = realloc(...)` perderia o endereço antigo se a operação falhasse:
 
 ```c
 int *novo = realloc(valores, novo_tamanho * sizeof *valores);
@@ -81,7 +83,7 @@ if (novo == NULL) {
 }
 ```
 
-Este é um excerto: confirma antes que `novo_tamanho` é positivo e que a multiplicação cabe em `size_t`. Escrever diretamente `valores = realloc(...)` perderia o endereço antigo se a operação falhasse. Quando tiver sucesso, o endereço antigo deixa de ser utilizável, mesmo que os bits não tenham mudado.
+Este é um excerto: confirma antes que `novo_tamanho` é positivo e que a multiplicação cabe em `size_t`. Quando tiver sucesso, o endereço antigo deixa de ser utilizável, mesmo que os bits não tenham mudado.
 
 ## Strings e estruturas
 
