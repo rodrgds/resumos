@@ -4,11 +4,19 @@ import statistics
 x = sorted([2, 3, 3, 4, 5, 6, 7, 18])
 
 def quantil_tipo2(dados, p):
+    if not dados or not 0 <= p <= 1:
+        raise ValueError("Usa dados ordenados não vazios e 0 <= p <= 1.")
+    if p == 0:
+        return dados[0]
+    if p == 1:
+        return dados[-1]
     posicao = len(dados) * p
-    k = math.floor(posicao)
-    if posicao.is_integer():
+    inteiro = round(posicao)
+    # Um produto como 100 * 0.29 pode ficar ligeiramente abaixo de 29.
+    if 0 < inteiro < len(dados) and math.isclose(posicao, inteiro, rel_tol=0, abs_tol=1e-12):
+        k = inteiro
         return (dados[k - 1] + dados[k]) / 2
-    return dados[k]
+    return dados[math.floor(posicao)]
 
 q1, mediana, q3 = [quantil_tipo2(x, p) for p in (0.25, 0.5, 0.75)]
 aiq = q3 - q1
