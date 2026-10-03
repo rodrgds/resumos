@@ -30,9 +30,7 @@ Começa por [Assembly RISC-V](/cadeiras/ac/riscv-assembly/) e [Desempenho](/cade
 
 Os exercícios estão no fim de cada tema, com pistas e resolução. Prevê o resultado antes de os abrir: um estado de cache, uma tabela por ciclo ou uma justificação de dependências é parte da resposta. A [cheat sheet](/cadeiras/ac/folha-consulta/) serve para consultar fórmulas e condições depois de compreender o percurso.
 
-## Fontes e edição
-
-:::details[Ver base, bibliografia e vídeos]
+:::details[Fontes e edição: base, bibliografia e vídeos]
 A base são os materiais da [disciplina no Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4594): sete apresentações teóricas, seis fichas com soluções, resumos WT/WB, cartão de instruções e soluções ILP em folha de cálculo. A ficha de periféricos identifica 2023/24 e foi reutilizada nessa disciplina. As duas apresentações de FSC sobre RV32 e implementação do CPU datam de novembro e dezembro de 2022.
 
 Estes materiais usam RV32 e operações SIMD empacotadas de uma versão histórica da proposta P. Não se devem misturar com AArch64/NEON de apontamentos de outras edições, nem com RVV, a extensão de registos vetoriais. A proposta P atual também evoluiu: as mnemónicas destas lições seguem o modelo dos materiais, conferido com a [proposta histórica](https://github.com/riscv/riscv-p-spec/blob/master/old-doc/P-ext-proposal.adoc). O preditor de dois bits da apresentação de pipeline usa uma máquina de histerese; a lição distingue-a do contador saturante.
@@ -43,12 +41,10 @@ Bibliografia indicada nos materiais: Patterson e Hennessy, _Computer Organizatio
 
 Referências complementares: [especificação RV32I](https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html) e [extensão M](https://docs.riscv.org/reference/isa/v20260120/unpriv/m-st-ext.html), para operações e codificação; [ABI RISC-V](https://riscv-non-isa.github.io/riscv-elf-psabi-doc/), para nomes de registos e chamadas; [RARS](https://github.com/TheThirdOne/rars), para executar os exemplos RV32 base. Os blocos de semântica SIMD calculam vias em Python, pois o executável RV32 base não monta essas instruções empacotadas.
 
-O Moodle também recomenda [a otimização SGEMM de Zhao Dongyu](https://medium.com/@zhaodongyu/optimize-sgemm-on-risc-v-platform-b0098630b444), com localidade e blocagem, e [Cooling Chips Still A Top Challenge](https://semiengineering.com/cooling-chips-still-a-top-challenge/), sobre dissipação térmica. O primeiro usa RVV 0.7.1 nas versões vetoriais, um contexto distinto dos exercícios packed SIMD. Os vídeos portugueses [Varrimento](https://www.youtube.com/watch?v=4nxblx4ADQ8) e [Interrupções](https://www.youtube.com/watch?v=DBVVpybCXcU) acompanham a lição de entrada e saída.
+O Moodle também recomenda [a otimização SGEMM de Zhao Dongyu](https://medium.com/@zhaodongyu/optimize-sgemm-on-risc-v-platform-b0098630b444), com localidade e blocagem, e [Cooling Chips Still A Top Challenge](https://semiengineering.com/cooling-chips-still-a-top-challenge/), sobre dissipação térmica. O primeiro usa RVV 0.7.1 nas versões vetoriais, um contexto distinto dos exercícios packed SIMD. Os vídeos portugueses acompanham [Varrimento periódico](/cadeiras/ac/entrada-saida/#varrimento-periódico) e [Interrupções](/cadeiras/ac/entrada-saida/#interrupções).
 :::
 
-## Avaliação
-
-:::details[Ver regras da edição 2024/25]
+:::details[Avaliação: regras da edição 2024/25]
 A apresentação de 2024/25 descreve dois testes em computador, T1 e T2, com escolha múltipla e respostas curtas, e nota final `(T1+T2)/2`. Indica até três faltas às aulas teórico-práticas e regras específicas de frequência. São regras **dessa edição**: confirma no teu Moodle e na ficha SIGARRA a avaliação, datas e condições que te são aplicáveis.
 
 Os testes e questionários fechados não foram iniciados. As lições e exercícios desenvolvem os assuntos e tipos de raciocínio das fichas disponíveis; não permitem afirmar que todas as perguntas de exames fechados foram revistas.
