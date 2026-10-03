@@ -989,6 +989,12 @@ test('voice and clips stay lazy; captions follow audio and pause with the reader
 test('manual video navigation changes recordings without changing the lesson position or retaining off-screen videos', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    // Seek into the recording that previously failed during decoding.
+    const values = [0.66, 0.89, 0.085, 0.037, 0.376];
+    let position = 0;
+    Math.random = () => values[position++] ?? 0.75;
+  });
   const dialog = await openReader(page);
   const caption = await dialog.locator('.brainrot-caption').textContent();
   const current = dialog.locator('.brainrot-clip:nth-child(2) video');
@@ -999,6 +1005,20 @@ test('manual video navigation changes recordings without changing the lesson pos
       .getByRole('button', { name: 'Vídeo seguinte', exact: true })
       .click();
     await expect(current).not.toHaveAttribute('src', previous!);
+    if (step === 0) {
+      await expect(current).toHaveAttribute(
+        'src',
+        '/brainrot/minecraft-002.mp4',
+      );
+      await expect
+        .poll(() =>
+          current.evaluate(
+            (video: HTMLVideoElement) =>
+              video.readyState >= 2 && !video.seeking,
+          ),
+        )
+        .toBe(true);
+    }
     const next = await current.getAttribute('src');
     expect(next!.replace(/-\d+\.mp4$/, '')).not.toBe(
       previous!.replace(/-\d+\.mp4$/, ''),
