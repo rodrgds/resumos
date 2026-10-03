@@ -17,7 +17,9 @@ editorial:
     - Os materiais docentes de 2026/27 não foram consultados; a base das lições continua a ser 2024/25.
 ---
 
-Em Matemática Discreta (MD) aprendemos a representar afirmações e a provar propriedades de objetos como inteiros, relações e grafos. Uma resposta não termina no resultado: é preciso mostrar que o método se aplica, justificar os passos e conferir os casos que poderiam refutar a afirmação.
+No fim desta cadeira vais conseguir traduzir frases para lógica, provar afirmações sobre inteiros, conjuntos, relações e grafos, e argumentar por indução. Ou seja, não basta calcular o resultado, porque cada passo precisa de justificação e dos casos que a podem refutar.
+
+Vamos seguir o percurso abaixo pela ordem, pois cada bloco usa a linguagem do anterior. Tenta os exercícios no fim de cada lição antes de abrir as pistas. Numa prova, escreve a hipótese usada em cada passo. A [cheat sheet](/cadeiras/md/folha-consulta/) reúne as condições dos métodos para revisão.
 
 ## Percurso de estudo
 
@@ -41,9 +43,11 @@ O segundo aplica as provas a estruturas discretas:
 13. [Indução e recorrências](/cadeiras/md/inducao-recorrencia/): bases, hipótese, chamadas menores e soluções de sequências.
 14. [Indução estrutural](/cadeiras/md/inducao-estrutural/): conjuntos recursivos, palavras, listas e provas de programas.
 
-Os exercícios estão no fim da lição que os explica. Tenta resolver antes de abrir as pistas. Numa prova, escreve a hipótese que usas em cada passo. Num contraexemplo, confere todas as premissas e a conclusão. A [cheat sheet](/cadeiras/md/folha-consulta/) reúne as condições dos métodos para revisão.
+Os exercícios estão no fim da lição que os explica.
 
 ## Fontes, anos e âmbito
+
+:::details[Ver fontes, anos e âmbito]
 
 A base são os materiais docentes de **MD 2024/25 no Moodle da FEUP**: as onze apresentações teóricas, as onze fichas principais, problemas adicionais, o formulário e provas com resoluções. As aulas de lógica e inteiros são de João Barbosa; as de conjuntos, relações, funções, grafos e indução são de Hugo Pacheco. As apresentações de grafos e indução disponibilizadas nessa edição mantêm **2023/24 na capa**. As restantes apresentações identificam 2024/25. O percurso inclui todos estes blocos.
 
@@ -57,7 +61,11 @@ A [ficha de 2026/27 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_
 
 Para aprofundar grafos, indução e sequências há também o livro aberto [Discrete Mathematics: An Open Introduction, de Oscar Levin](https://discrete.openmathbooks.org/dmoi3.html), 3.ª edição. É uma referência adicional, não bibliografia adotada pela FEUP.
 
+:::
+
 ## Avaliação de 2026/27
+
+:::details[Ver regras de avaliação]
 
 A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586983), consultada em 3 de outubro de 2026, define:
 
@@ -70,3 +78,5 @@ onde $EX$ é a classificação dos exercícios avaliados nas práticas e $PT,ST$
 O recurso abrange toda a matéria, sem divisão em partes. A sua nota passa a ser a classificação da cadeira. A melhoria também se faz nesse exame. Para trabalhadores-estudantes, a ficha prevê, por opção do estudante, $F=0{,}5PT+0{,}5ST$, com os mesmos mínimos dos testes e da nota final.
 
 Os materiais de 2024/25 usavam dois testes com peso de 50% cada e recurso por partes. Essas regras antigas não se aplicam à edição atual. Os materiais docentes de 2026/27 não foram consultados; confirma no teu Moodle o calendário e as indicações sobre cada avaliação.
+
+:::
