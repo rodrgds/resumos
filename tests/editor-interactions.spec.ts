@@ -96,7 +96,7 @@ test('expanded editors preserve edits and undo, contain focus, and put output be
   ).toBeFocused();
 });
 
-test('matching words and Ctrl+D edit the next occurrence together without deleting the selection', async ({
+test('only selected text highlights matches and Ctrl+D edits the next occurrence together', async ({
   page,
 }) => {
   await page.goto('/exemplo/codigo/');
@@ -106,8 +106,14 @@ test('matching words and Ctrl+D edit the next occurrence together without deleti
   await editor.fill('value = 1\nprint(value)\nprint(value)');
   await page.keyboard.press('ControlOrMeta+a');
   await page.keyboard.press('ArrowLeft');
-  await expect(editor.locator('.cm-selectionMatch')).toHaveCount(3);
+  await page.keyboard.press('ArrowRight');
+  await expect(editor.locator('.cm-selectionMatch')).toHaveCount(0);
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect(editor.locator('.cm-selectionMatch')).toHaveCount(2);
+  await page.keyboard.press('ArrowLeft');
+  await expect(editor.locator('.cm-selectionMatch')).toHaveCount(0);
   await page.keyboard.press('Control+d');
+  await expect(editor.locator('.cm-selectionMatch')).toHaveCount(2);
   await page.keyboard.press('Control+d');
   await page.keyboard.type('total');
   await expect(editor).toHaveText('total = 1print(total)print(value)');
