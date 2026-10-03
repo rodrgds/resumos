@@ -8,6 +8,6 @@
   node((2, 0), [Comando \ executar()], corner-radius: 4pt),
   node((1, 1), [VistaArena \ desenhar()], corner-radius: 4pt),
   edge((0, 1), (1, 0), "->", label: [separar]),
-  edge((1, 0), (2, 0), "-|>", label: [usa]),
+  edge((1, 0), (2, 0), "->", label: [usa]),
   edge((1, 0), (1, 1), "->", label: [pede]),
 )

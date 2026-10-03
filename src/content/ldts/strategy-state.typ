@@ -9,6 +9,6 @@
   node((1, 2), [Comportamento \ mover()], corner-radius: 4pt),
   edge((1, 0), (0, 1), "->", label: [calmo]),
   edge((1, 0), (2, 1), "->", label: [alerta]),
-  edge((0, 1), (1, 2), "-|>", label: [devolve]),
-  edge((2, 1), (1, 2), "-|>", label: [devolve]),
+  edge((0, 1), (1, 2), "->", label: [devolve]),
+  edge((2, 1), (1, 2), "->", label: [devolve]),
 )
