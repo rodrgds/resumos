@@ -1,14 +1,23 @@
 #import "@preview/cetz:0.5.2": canvas, draw
 #set page(width: auto, height: auto, margin: 8pt)
-#set text(size: 10pt)
+#set text(size: 12pt)
 #canvas({
+  let inner = 2
+  let outer = 3
+  let angle = 25deg
+  let last = 55deg
+  let polar(r, a) = (r * calc.cos(a), r * calc.sin(a))
   draw.line((0, 0), (4.2, 0), mark: (end: ">"))
-  draw.content((2.1, -0.35), [$r$])
-  draw.line((0, 0), (2.72, 1.27), mark: (end: ">"))
-  draw.content((2.95, 1.45), [$theta$])
-  draw.arc((0, 0), radius: 3, start: 0deg, stop: 25deg)
-  draw.arc((0, 0), radius: 2, start: 8deg, stop: 20deg, stroke: rgb("8c2d3b"))
-  draw.line((1.97, 0.28), (2.93, 0.42), stroke: rgb("8c2d3b"))
-  draw.line((1.88, 0.70), (2.81, 1.05), stroke: rgb("8c2d3b"))
-  draw.content((2.4, 1.15), [$r dif r dif theta$])
+  draw.content((4.3, -0.3), [$x$])
+  draw.line((0, 0), polar(3.7, angle), stroke: (dash: "dashed"))
+  draw.line((0, 0), polar(3.7, last), stroke: (dash: "dashed"))
+  draw.arc((0, 0), anchor: "origin", radius: inner, start: angle, stop: last, stroke: rgb("8c2d3b"))
+  draw.arc((0, 0), anchor: "origin", radius: outer, start: angle, stop: last, stroke: rgb("8c2d3b"))
+  draw.line(polar(inner, angle), polar(outer, angle), stroke: rgb("8c2d3b"))
+  draw.line(polar(inner, last), polar(outer, last), stroke: rgb("8c2d3b"))
+  draw.content((1.1, 0.25), [$r$])
+  draw.content((3.2, 0.9), [$dif r$])
+  draw.content((2.9, 2.4), [$r dif theta$])
+  draw.content((1.9, 1.6), [$dif A$])
+  draw.content((2, -0.7), [largura radial $dif r$; largura angular $approx r dif theta$])
 })
