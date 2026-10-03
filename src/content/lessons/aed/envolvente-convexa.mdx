@@ -20,15 +20,15 @@ $$\operatorname{cross}(p,q,r)=(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x).$$
 
 Um resultado positivo é uma curva para a esquerda, negativo para a direita e zero significa colinearidade. O módulo é duas vezes a área do triângulo. Para `(0,0)`, `(2,0)`, `(2,2)`, o resultado é 4; trocar os dois últimos pontos muda o sinal.
 
-O produto exige espaço numérico suficiente. Se cada coordenada inteira tem módulo no máximo $10^6$, cada diferença tem módulo no máximo $2\cdot10^6$ e a diferença dos produtos cabe em `long long`. Converter só depois de multiplicar inteiros pequenos não evita overflow; os operandos têm de estar no tipo largo antes da multiplicação. Coordenadas reais exigem uma política para erros numéricos, que este exemplo inteiro evita.
+O produto exige espaço numérico suficiente. Se cada coordenada inteira tem módulo no máximo $10^6$, cada diferença tem módulo no máximo $2\cdot10^6$ e a diferença dos produtos cabe em `long long`. Converte os operandos para o tipo largo antes de multiplicar, porque converter só depois não evita overflow. Coordenadas reais exigem uma política para erros numéricos, que este exemplo inteiro evita.
 
 ## Graham com uma pilha
 
 Escolhe o ponto com menor `y`, desempata pelo menor `x`, e chama-lhe pivô. Todos os outros pontos estão na mesma meia-volta em torno dele. Ordena-os pelo ângulo polar, usando o sinal do produto vetorial; pontos na mesma direção ficam do mais próximo para o mais distante. Não precisas de calcular ângulos com `atan2`.
 
-Percorre a sequência ordenada e conserva a fronteira parcial numa pilha. Antes de inserir `q`, enquanto os dois últimos pontos da pilha e `q` não fizerem uma curva estrita para a esquerda, retira o último ponto. Insere `q`. Remover também na colinearidade elimina pontos interiores de uma aresta.
+Percorre a sequência ordenada e conserva a fronteira parcial numa pilha. Antes de inserires `q`, enquanto os dois últimos pontos da pilha e `q` não fizerem uma curva estrita para a esquerda, retira o último ponto. Insere `q`. Remover também na colinearidade elimina pontos interiores de uma aresta.
 
-O invariante é que a pilha representa a cadeia convexa dos pontos processados, por ordem angular, com curvas estritas para a esquerda. Uma curva para a direita põe o vértice do meio no interior da nova cadeia; retirá-lo conserva os extremos necessários. Na colinearidade, o mais próximo já não é um extremo da aresta. A ordenação angular impede voltar a necessitar de um vértice retirado.
+O invariante é que a pilha representa a cadeia convexa dos pontos processados, por ordem angular, com curvas estritas para a esquerda. Uma curva para a direita põe o vértice do meio no interior da nova cadeia, por isso retirá-lo conserva os extremos necessários. Na colinearidade, o mais próximo já não é um extremo da aresta. E a ordenação angular impede voltar a necessitar de um vértice retirado.
 
 No quadrado `(0,0)`, `(2,0)`, `(2,2)`, `(0,2)`, acrescenta `(1,0)` e `(1,1)`. O ponto `(1,0)` sai quando chega `(2,0)` porque são colineares. O ponto `(1,1)` sai quando um ponto seguinte mostra que está no interior. Os quatro cantos permanecem.
 
@@ -42,16 +42,6 @@ No quadrado `(0,0)`, `(2,0)`, `(2,2)`, `(0,2)`, acrescenta `(1,0)` e `(1,1)`. O 
   }
 />
 
-Resultado:
-
-```text
-0 0
-2 0
-2 2
-0 2
-colineares: 2
-```
-
 O exemplo exige coordenadas inteiras com módulo até $10^6$. Remove duplicados antes de ordenar por ângulo. Zero, um ou dois pontos não entram no caso geral. Se todos forem colineares, ficam os dois extremos. A saída do polígono começa no pivô e segue o sentido anti-horário, sem repetir o primeiro ponto no fim.
 
 Ordenar custa $O(n\log n)$. Cada ponto entra na pilha uma vez e sai no máximo uma vez, pelo que a construção custa $O(n)$ apesar do `while` interior. Espaço auxiliar $O(n)$ nesta representação. A estabilidade da ordenação não é necessária porque os empates relevantes são resolvidos pela distância e os duplicados foram retirados.
@@ -60,19 +50,21 @@ Ordenar custa $O(n\log n)$. Cada ponto entra na pilha uma vez e sai no máximo u
 
 Outra abordagem mantém a envolvente como uma lista duplamente ligada circular. Começa com uma envolvente válida dos pontos iniciais; um ponto interior não a altera. Para um ponto exterior, encontra as duas tangentes à fronteira, retira a cadeia de arestas visível a partir do ponto e liga o novo ponto aos extremos dessa cadeia.
 
-Uma lista circular permite continuar ao longo da fronteira quando se passa pelo primeiro vértice. A lista dupla permite retirar nós conhecidos sem procurar o anterior. Achar as tangentes ainda pode exigir percorrer a fronteira; repetir esse percurso para muitos pontos dá pior caso quadrático numa implementação linear por inserção.
+Uma lista circular permite continuar ao longo da fronteira quando se passa pelo primeiro vértice. A lista dupla permite retirar nós conhecidos sem procurar o anterior. Mas achar as tangentes ainda pode exigir percorrer a fronteira, ou seja, repetir esse percurso para muitos pontos dá pior caso quadrático numa implementação linear por inserção.
 
-A versão incremental de Edelsbrunner, com **pontos ordenados por `x`**, pode fazer melhor. Para `n>=3`, sob a hipótese de pontos distintos e sem três colineares, ordena por `x` crescente, desempata por `y` decrescente e começa com três pontos em ordem anti-horária. O ponto seguinte é exterior à envolvente parcial e a pesquisa das tangentes começa no último ponto inserido, o extremo à direita. Avança em cada sentido enquanto a orientação mostrar que o vértice atual deve sair da fronteira. Liga o novo ponto às duas tangentes e elimina a cadeia entre elas.
+:::details[Versão incremental de Edelsbrunner]
+Com **pontos ordenados por `x`**, para `n>=3`, sob a hipótese de pontos distintos e sem três colineares, ordena por `x` crescente, desempata por `y` decrescente e começa com três pontos em ordem anti-horária. O ponto seguinte é exterior à envolvente parcial e a pesquisa das tangentes começa no último ponto inserido, o extremo à direita. Avança em cada sentido enquanto a orientação mostrar que o vértice atual deve sair da fronteira. Liga o novo ponto às duas tangentes e elimina a cadeia entre elas.
 
-Aqui os avanços das tangentes podem ser cobrados aos vértices eliminados: cada ponto entra uma vez e não é reencontrado depois de sair. O trabalho total após ordenar é linear, dando $O(n\log n)$ no conjunto. Este argumento depende da ordenação e do início da pesquisa; procurar tangentes desde uma posição arbitrária em cada inserção não tem a mesma garantia. Duplicados e colinearidade precisam de tratamento adicional, por isso o programa desta página usa Graham com a política de extremos já definida.
+Aqui os avanços das tangentes cobram-se aos vértices eliminados: cada ponto entra uma vez e não é reencontrado depois de sair. O trabalho total após ordenar é linear, dando $O(n\log n)$ no conjunto. Este argumento depende da ordenação e do início da pesquisa; procurar tangentes desde uma posição arbitrária em cada inserção não tem a mesma garantia. Duplicados e colinearidade precisam de tratamento adicional, por isso o programa desta página usa Graham com a política de extremos já definida.
+:::
 
 No Graham, a ordem angular permite corrigir apenas o fim da cadeia com uma pilha. Na abordagem incremental, o novo ponto pode alterar uma cadeia em qualquer zona do polígono, justificando a lista circular. A estrutura deve refletir a ordem em que o algoritmo recebe e elimina candidatos.
 
-Não assumas que os três primeiros pontos são distintos e não colineares sem o declarar. Para entradas gerais, trata os casos degenerados antes de construir um polígono inicial. Decidir conservar todos os pontos colineares da fronteira exige rever tanto a ordenação dos empates como o teste de remoção.
+Não assumes que os três primeiros pontos são distintos e não colineares sem o declarar. Para entradas gerais, trata os casos degenerados antes de construir um polígono inicial. Decidir conservar todos os pontos colineares da fronteira exige reveres tanto a ordenação dos empates como o teste de remoção.
 
 ## Pesquisar um ponto no polígono
 
-Depois de construir a envolvente, podes testar muitos pontos sem percorrer todas as arestas. Assume um polígono convexo com `h>=3` vértices extremos distintos, em ordem anti-horária `v[0],…,v[h-1]`. Os segmentos de `v[0]` para os outros vértices dividem o polígono em triângulos com direções ordenadas. A pergunta «a direção de `p` já passou a de `v[i]`?» pode ser respondida com orientação, sem calcular ângulos.
+Depois de construíres a envolvente, podes testar muitos pontos sem percorrer todas as arestas. Assume um polígono convexo com `h>=3` vértices extremos distintos, em ordem anti-horária `v[0],…,v[h-1]`. Os segmentos de `v[0]` para os outros vértices dividem o polígono em triângulos com direções ordenadas. A pergunta «a direção de `p` já passou a de `v[i]`?» responde-se com orientação, sem calcular ângulos.
 
 Primeiro verifica as duas direções extremas. Se `cross(v[0],v[1],p)<0` ou `cross(v[0],v[h-1],p)>0`, o ponto está fora. Se um desses produtos for zero, testa se `p` pertence ao **segmento** correspondente, incluindo os extremos: além de ser colinear, cada coordenada tem de ficar entre as coordenadas dos dois extremos. Estar na mesma reta não chega.
 
