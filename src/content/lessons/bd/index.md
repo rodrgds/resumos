@@ -40,9 +40,7 @@ Antes de escrever SQL, define o que representa uma linha da resposta. "Uma linha
 
 Confere a resposta com poucos dados que conheças. Acrescenta um cliente sem compras, duas pessoas com o mesmo nome, um `NULL`, um empate ou uma tabela vazia. Estes casos distinguem uma consulta correta de outra que apenas acertou na primeira amostra. Nos problemas de normalização, usa as dependências do domínio, não coincidências nos dados apresentados.
 
-## Avaliação
-
-:::details[Ver pesos, mínimos e frequência]
+:::details[Avaliação: pesos, mínimos e frequência]
 
 A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990), consultada em 3 de outubro de 2026, indica:
 
@@ -55,9 +53,7 @@ Estes pesos diferem dos materiais de 2025/26, que indicavam 20%, 30% e 50%, com 
 
 :::
 
-## Materiais e bibliografia
-
-:::details[Ver base de ensino, fichas e bibliografia]
+:::details[Materiais e bibliografia: base de ensino, fichas e bibliografia]
 
 A base de ensino é o [Moodle de BD de 2025/26](https://moodle2526.up.pt/course/view.php?id=3996): plano de aulas, apresentações teóricas, fichas práticas e respetivas soluções. O plano inclui explicitamente CTEs e recursão, segurança e autorização, além dos tópicos do programa. Alguns ficheiros reutilizados têm anos anteriores no nome ou no conteúdo, em particular a teoria de desenho relacional de 2023/2024 e as fichas DDL de 2023, 2024 e 2025. A sua presença no Moodle de 2025/26 não altera esses anos de origem.
 
