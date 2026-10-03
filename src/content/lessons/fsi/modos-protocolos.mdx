@@ -27,7 +27,7 @@ import dh from '../../fsi/diffie-hellman.mmd?raw';
 
 Uma cifra de bloco transforma um bloco sob uma chave. Para proteger uma mensagem maior, precisamos de um modo de operação. O modo define a relação entre blocos e os valores adicionais usados na cifragem.
 
-Uma cifra de bloco como AES trabalha sobre blocos de tamanho fixo. XOR compara bits: dá 1 quando são diferentes e 0 quando são iguais. Por isso, $x\oplus x=0$ e $x\oplus0=x$. Por exemplo, `1010 XOR 1100 = 0110`.
+Uma cifra de bloco como AES trabalha sobre blocos de tamanho fixo. XOR compara bits: dá 1 quando são diferentes e 0 quando são iguais, ou seja $x\oplus x=0$ e $x\oplus0=x$. Por exemplo, `1010 XOR 1100 = 0110`.
 
 ## ECB, CBC e CTR
 
@@ -37,7 +37,7 @@ Uma cifra de bloco como AES trabalha sobre blocos de tamanho fixo. XOR compara b
 | CBC  | Cada bloco combina-se com a cifra anterior                        | IV inicial imprevisível                         | Exige blocos completos; sozinho não autentica                       |
 | CTR  | XOR da mensagem com blocos de uma sequência cifrada de contadores | Contadores que não se repetem sob a mesma chave | Reutilização revela relações entre mensagens; sozinho não autentica |
 
-Em ECB, uma mensagem de blocos `A A B A` dá um padrão `X X Y X`. Um observador não precisa de descobrir A para reconhecer repetições. "Usar AES" sem dizer o modo não responde a este problema.
+Em ECB, uma mensagem de blocos `A A B A` dá um padrão `X X Y X`. Um observador não precisa de descobrir A para reconhecer repetições, por isso "usar AES" sem dizer o modo não responde a este problema.
 
 Em CBC, $C_i=E_K(P_i\oplus C_{i-1})$, com $C_0=IV$. Em CTR, $C_i=P_i\oplus E_K(\text{contador}_i)$. Aqui $P_i$ é um bloco de texto em claro, $C_i$ um bloco cifrado, $K$ a chave e $\oplus$ o XOR. O IV de CBC e os contadores de CTR têm requisitos distintos. Em CTR, evita repetir qualquer bloco de contador, inclusive entre mensagens: inícios diferentes ainda podem gerar sequências sobrepostas.
 
@@ -59,19 +59,19 @@ porque $S\oplus S=0$. Se uma mensagem é conhecida, a outra fica recuperável. E
   }
 />
 
-`zip` junta os bytes nas mesmas posições. A verificação de comprimento impede que a operação perca os bytes finais de uma entrada mais longa. O resultado recupera `NAO`. Esta simulação usa três bytes fixos para mostrar a identidade algébrica; não implementa uma cifra segura. O one-time pad tem confidencialidade perfeita apenas com chave uniformemente aleatória, tão longa como a mensagem, secreta e usada uma única vez.
+`zip` junta os bytes nas mesmas posições. A verificação de comprimento impede que a operação perca os bytes finais de uma entrada mais longa. Esta simulação usa três bytes fixos para mostrar a identidade algébrica; não implementa uma cifra segura. O one-time pad só tem confidencialidade perfeita com chave uniformemente aleatória, tão longa como a mensagem, secreta e usada uma única vez.
 
 ## Cifragem autenticada
 
 Um MAC autentica dados, mas não os esconde. Cifrar sem autenticar pode permitir alterações controladas ou ataques através das respostas a dados inválidos. **AEAD** protege a confidencialidade do conteúdo e a integridade do conteúdo e dos dados associados, como um número de sequência. Estes dados associados não ficam cifrados.
 
-Usa construções estudadas, como AES-GCM ou ChaCha20-Poly1305, com os requisitos de nonce da construção. Para GCM, reutilizar um nonce com a mesma chave compromete a segurança. A aplicação deve rejeitar dados cuja etiqueta não verifica, antes de lhes dar significado. Não desenhes uma combinação própria de cifra e hash.
+Usa construções estudadas, como AES-GCM ou ChaCha20-Poly1305, com os requisitos de nonce da construção. Para GCM, reutilizar um nonce com a mesma chave compromete a segurança. A aplicação deve rejeitar dados cuja etiqueta não verifica, antes de lhes dar significado, porque não deves desenhar uma combinação própria de cifra e hash.
 
 AEAD não elimina automaticamente a repetição. Uma mensagem válida antiga continua a ter uma etiqueta válida. O protocolo precisa de números de sequência, nonces/desafios frescos ou estado que permita rejeitar repetições.
 
 ## Diffie-Hellman em números pequenos
 
-Usamos a [aritmética modular](/cadeiras/fsi/criptografia/#aritmética-modular). Os números são pequenos para permitir refazer as contas, não são parâmetros seguros.
+Usamos a [aritmética modular](/cadeiras/fsi/criptografia/#aritmética-modular). Os números são pequenos para permitir refazer as contas, ou seja não são parâmetros seguros.
 
 Ana e Bruno publicam $p=23$ e $g=5$. Ana escolhe $a=6$ e envia $A=g^a\bmod p=8$. Bruno escolhe $b=15$ e envia $B=g^b\bmod p=19$. Ana calcula $B^a\bmod p=2$ e Bruno calcula $A^b\bmod p=2$.
 
@@ -88,7 +88,7 @@ Ana e Bruno publicam $p=23$ e $g=5$. Ana escolhe $a=6$ e envia $A=g^a\bmod p=8$.
   }
 />
 
-O segredo coincide porque $(g^b)^a=(g^a)^b=g^{ab}$ no grupo usado. Num protocolo real, os parâmetros e a validação dos valores recebidos têm requisitos de segurança, e uma função de derivação transforma o segredo em chaves adequadas.
+Num protocolo real, os parâmetros e a validação dos valores recebidos têm requisitos de segurança, e uma função de derivação transforma o segredo em chaves adequadas, porque o acordo $(g^b)^a=(g^a)^b=g^{ab}$ só explica a coincidência no grupo usado.
 
 **Sem autenticação**, um intermediário pode substituir A e B pelos seus valores e estabelecer um segredo com cada lado. O acordo não prova com quem falamos. Certificados e assinaturas sobre o contexto da troca, ou uma chave previamente partilhada, podem autenticar o acordo.
 

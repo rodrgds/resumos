@@ -16,7 +16,7 @@ editorial:
 
 ## Analisar um ataque
 
-Ativo → ameaça → vulnerabilidade → vetor → propriedade afetada → defesa → risco residual. Distingue capacidade do atacante de uma hipótese sem evidência. [Explicação](/cadeiras/fsi/principios-seguranca/).
+Ativo → ameaça → vulnerabilidade → vetor → propriedade afetada → defesa → risco residual. Distingue capacidade do atacante de uma hipótese sem evidência, porque é essa cadeia que o teste espera ver escrita. [Explicação](/cadeiras/fsi/principios-seguranca/).
 
 - Confidencialidade: quem lê. Integridade: quem altera e segundo que regras. Disponibilidade: quando o serviço responde.
 - Perda esperada, num modelo de um evento: $E=pL$. Não converter categorias qualitativas em probabilidades sem dados.
@@ -26,7 +26,7 @@ Ativo → ameaça → vulnerabilidade → vetor → propriedade afetada → defe
 
 Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desenho aberto, separação de privilégios, mínimo mecanismo comum e aceitação psicológica. Isolamento limita autoridade e comunicação. Defesa em profundidade exige falhas diferentes. TCB é aquilo de que a segurança depende. [Explicação](/cadeiras/fsi/sistemas-seguros/).
 
-- Espaços virtuais distintos: mesmo endereço numérico não implica mesma página física. Kernel valida a transição e os argumentos.
+- Espaços virtuais distintos: o mesmo endereço numérico não implica a mesma página física, porque cada processo usa a sua tradução. O kernel valida a transição e os argumentos.
 - Container partilha kernel; VM tem kernel convidado. Seccomp limita chamadas, não substitui toda a política de acesso.
 - Secure Boot verifica componentes autorizados; Measured Boot regista; TPM protege chaves/medições. Atestar exige frescura e política. [Explicação](/cadeiras/fsi/sistemas-seguros/).
 
@@ -48,7 +48,7 @@ Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desen
 
 RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/criptografia/).
 
-- ECB revela repetições. CBC exige IV imprevisível e blocos completos. PKCS#7 acrescenta um bloco de preenchimento quando o tamanho já é múltiplo do bloco. CTR exige não repetir nenhum bloco de contador sob a mesma chave, mesmo entre mensagens.
+- ECB revela repetições. CBC exige IV imprevisível e blocos completos. PKCS#7 acrescenta um bloco de preenchimento quando o tamanho já é múltiplo do bloco. CTR exige não repetir nenhum bloco de contador sob a mesma chave, mesmo entre mensagens, porque a reutilização revela o XOR dos textos em claro.
 - Se reutilizas a sequência XOR: $C_1\oplus C_2=P_1\oplus P_2$.
 - AEAD dá confidencialidade e integridade; não dá proteção automática contra repetição.
 - DH: $A=g^a$, $B=g^b$, segredo $B^a=A^b$ no grupo. Sem autenticação permite intermediário ativo.
@@ -66,7 +66,7 @@ RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/cr
 ## Código e rede
 
 - Buffer de $N$ bytes: string de até $N-1$ bytes com terminador. Medir antes de copiar; verificar overflow de tamanhos.
-- `printf`: formato externo controla interpretação; `%s` lê string, `%n` escreve a contagem em `int *`. Usa formato literal e tipos corretos.
+- `printf`: formato externo controla interpretação; `%s` lê string, `%n` escreve a contagem em `int *`, por isso usa formato literal e tipos corretos.
 - ROP reutiliza código; NX não o impede sozinho. Pilha e argumentos dependem da convenção.
 - Canário terminador depende da cópia; aleatório depende de imprevisibilidade. Taint: source → propagação → sink; dinâmica só cobre execuções observadas.
 - TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável.
