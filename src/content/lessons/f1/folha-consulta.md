@@ -6,7 +6,7 @@ order: 8
 studyKind: revision
 ---
 
-Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substituir números. Os exemplos usam $g=9{,}81\ \mathrm{m/s^2}$.
+Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substituir números, porque o sinal decide o resultado. Os exemplos usam $g=9{,}81\ \mathrm{m/s^2}$.
 
 ## Cinemática
 
@@ -39,7 +39,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - $K=mv^2/2$; $W_\mathrm{total}=\Delta K$.
 - $W_\mathrm{cons}=-\Delta U$; $F_x=-U'(x)$.
 - $U_g=mgy$ perto da superfície; $U_e=kx^2/2$; gravitação $U=-GMm/r$ com zero no infinito.
-- $K_i+U_i+W_\text{não\ cons}=K_f+U_f$. Energia mecânica constante apenas se esse trabalho for zero.
+- $K_i+U_i+W_\text{não\ cons}=K_f+U_f$. Energia mecânica constante apenas se esse trabalho for zero, ou seja sem atrito nem forças externas a dissipar.
 - Equilíbrio $U'=0$. Mínimo estável, máximo instável. $U''=0$ não decide.
 - $P=\vec F\cdot\vec v$. Rendimento $\eta=P_\text{útil}/P_\mathrm{entrada}$.
 - Volta vertical interior: $mg+N=mv_\mathrm{topo}^2/R$. Ponto deslizante sem atrito, partida do repouso: $h_{\mathrm{min}}=5R/2$.
@@ -50,7 +50,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 
 - $\vec R_\mathrm{CM}=\sum m_i\vec r_i/M$ ou $M^{-1}\int\vec r\,dm$.
 - $\vec P=M\vec V_\mathrm{CM}$ e $M\vec A_\mathrm{CM}=\sum\vec F_\mathrm{ext}$.
-- Impulso $\vec J_\mathrm{ext}=\Delta\vec P$. Conservação do momento exige impulso externo nulo na componente usada.
+- Impulso $\vec J_\mathrm{ext}=\Delta\vec P$. Conservação do momento exige impulso externo nulo na componente usada, por isso verifica direção a direção.
 - Corpos juntos: $u=(m_1v_1+m_2v_2)/(m_1+m_2)$.
 - Choque elástico 1D: conserva $P$ e $K$, ou usa $u_2-u_1=v_1-v_2$ com momento. Só massas iguais trocam velocidades.
 - Pêndulo balístico: momento no impacto, energia na subida. Não conservar energia cinética através do impacto inelástico.
