@@ -14,9 +14,9 @@ editorial:
       url: https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/
 ---
 
-AED ensina a justificar três decisões: o algoritmo resolve o problema, a estrutura permite as operações necessárias e o custo cabe nos limites da entrada. Os exemplos usam C++17; deves conhecer funções, classes, referências, apontadores e memória dinâmica de [Programação](/cadeiras/p/).
+No fim desta cadeira vais justificar se um algoritmo calcula o resultado pedido, vais escolher a estrutura que oferece as operações necessárias e vais contar tempo e memória em função da entrada. Ou seja, vais decidir com provas e custos, porque o enunciado e os limites mandam na solução. Os exemplos usam C++17, por isso precisas de funções, classes, referências, apontadores e memória dinâmica de [Programação](/cadeiras/p/).
 
-Se precisas de recordar a sintaxe usada nos exemplos, começa pelos [fundamentos de C++ para AED](/cadeiras/aed/fundamentos-cpp/).
+Se a sintaxe dos vetores ou das referências ainda te prende, começa pelos [fundamentos de C++ para AED](/cadeiras/aed/fundamentos-cpp/). Depois segue o percurso pela ordem, porque cada capítulo usa os contratos e as contagens dos anteriores.
 
 ## Percurso
 
@@ -36,8 +36,7 @@ Começa por uma entrada pequena e escreve o estado depois de cada operação. De
 
 Nos grafos, testa vértices isolados, componentes desconexas e ciclos. Nas estruturas com nós, testa alterações da cabeça, da raiz e do último elemento. Antes de submeter no Mooshak, confirma o formato de entrada e saída e retira mensagens de depuração. Os programas destas páginas ensinam os algoritmos; não são soluções completas dos trabalhos da cadeira.
 
-## Avaliação de 2026/27
-
+:::details[Avaliação de 2026/27]
 As aulas de introdução e a [página de avaliação](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2627/evaluation.html) definem:
 
 - `NP`: soma das notas de dois testes práticos de programação, cada um com 10 valores, total de 0 a 20.
@@ -47,9 +46,9 @@ As aulas de introdução e a [página de avaliação](https://www.dcc.fc.up.pt/~
 Por exemplo, `E=12` e `NP=16` dão `13,4` pela primeira ponderação e `13` pela segunda; é usada `13,4`. Os testes práticos de 2026/27 não podem ser repetidos. Para primeira inscrição nesse ano, a melhoria incide na componente de exame.
 
 Para obter frequência, não podes exceder 25% de faltas às aulas teórico-práticas. Quem cumpriu a assiduidade no ano anterior tem dispensa, embora a frequência das aulas seja aconselhada. Quem não aprovou em 2025/26 e realizou a componente prática pode pedir para conservar essa nota, informando os regentes no início do ano. As condições de melhoria de notas práticas de estudantes já aprovados exigem contacto com os regentes. Consulta a ficha e os anúncios da tua edição para datas e situações individuais.
+:::
 
-## Fontes e âmbito
-
+:::details[Fontes e âmbito]
 O programa de referência é a [ficha preenchida de AED da LEIC, ocorrência 586989, 2026/27](https://sigarra.up.pt/feup/pt/UCURR_GERAL.FICHA_UC_VIEW?pv_ocorrencia_id=586989). As ferramentas indicadas são GCC com C++17, VSCode e Mooshak.
 
 A base docente é a [página pública de Ana Paula Tomás e Pedro Ribeiro, 2026/27](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2627/). Em 2 de outubro de 2026 estavam disponíveis quatro apresentações, da introdução à pesquisa, e as duas primeiras aulas práticas. Para os tópicos posteriores, o percurso foi cruzado com as quinze apresentações e as fichas práticas públicas de [2025/26](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/), mantendo o âmbito confirmado no programa atual. O [exame-modelo público de 2024/25](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2425/exam_sample_questions.pdf) ajudou a identificar tipos de raciocínio; os exercícios destas páginas são originais.
@@ -63,3 +62,4 @@ A bibliografia obrigatória indicada na ficha é:
 - Thomas H. Cormen e coautores, _Introduction to Algorithms_, 3.ª ou 4.ª edição; a ficha indica ISBN 978-0-262-53305-8.
 
 Para contratos da biblioteca, foram consultadas as secções do projeto público do padrão C++ sobre [ordenação](https://eel.is/c++draft/alg.sorting), [pesquisa binária](https://eel.is/c++draft/alg.binary.search), [invalidação em vetores](https://eel.is/c++draft/vector.modifiers) e [containers não ordenados](https://eel.is/c++draft/unord.req). Esse projeto acompanha a evolução da linguagem; os programas publicados usam apenas C++17.
+:::

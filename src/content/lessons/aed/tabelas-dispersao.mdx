@@ -13,7 +13,7 @@ Uma tabela de dispersão associa uma chave a uma posição calculada por uma fun
 
 ## Endereçamento direto e função hash
 
-Se as chaves forem inteiros em `[0,M)`, podes guardar a chave `x` diretamente na posição `x`. O acesso é constante, mas a memória é $\Theta(M)$ mesmo com poucos elementos. Uma função hash reduz um universo grande a `m` posições, permitindo uma tabela menor e causando inevitavelmente colisões quando existem mais chaves possíveis que posições.
+Se as chaves forem inteiros em `[0,M)`, podes guardar a chave `x` diretamente na posição `x`. O acesso é constante, mas a memória é $\Theta(M)$ mesmo com poucos elementos. Uma função hash reduz um universo grande a `m` posições e permite uma tabela menor, mas causa inevitavelmente colisões quando existem mais chaves possíveis que posições.
 
 Uma boa função é barata e distribui as chaves usadas pelas posições. Não precisa de ser criptográfica. Para igualdade compatível com hashing, chaves consideradas iguais têm de produzir o mesmo hash. Um hash diferente prova desigualdade; um hash igual não prova igualdade.
 
@@ -29,7 +29,7 @@ Com todas as chaves na mesma posição, uma pesquisa pode custar $\Theta(n)$. Co
 
 No endereçamento aberto, as chaves ficam no próprio array. A sondagem linear tenta $(h(x)+i)\bmod m$, com `i=0,1,...`. A pesquisa termina numa célula **livre que nunca foi usada**, ao encontrar a chave, ou após `m` tentativas. A tabela precisa de distinguir livre, ocupada e apagada.
 
-Com `m=7` e `h(x)=x mod 7`, as chaves 10, 17 e 24 ocupam as posições 3, 4 e 5. Se retirares 17 e marcares a posição 4 como livre, pesquisar 24 parará cedo e concluirá incorretamente que falta. Marca-a como **apagada**, ou tombstone, para que a pesquisa continue.
+Com `m=7` e `h(x)=x mod 7`, as chaves 10, 17 e 24 ocupam as posições 3, 4 e 5. Se retirares 17 e marcares a posição 4 como livre, pesquisar 24 para cedo e conclui incorretamente que falta. Marca-a como **apagada**, ou tombstone, para que a pesquisa continue.
 
 | Operação           | Posição 3 | Posição 4 | Posição 5 |
 | ------------------ | --------- | --------- | --------- |
@@ -37,7 +37,7 @@ Com `m=7` e `h(x)=x mod 7`, as chaves 10, 17 e 24 ocupam as posições 3, 4 e 5.
 | remover 17         | 10        | apagada   | 24        |
 | inserir 31         | 10        | 31        | 24        |
 
-A inserção pode guardar a primeira posição apagada para reutilizar, mas deve continuar a sondar até excluir uma chave igual já presente. Inserir logo na tombstone poderia criar um duplicado mais à frente. Se completar uma volta, pode reutilizar a posição apagada; sem posição disponível, a tabela está cheia.
+A inserção pode guardar a primeira posição apagada para reutilizar, mas deve continuar a sondar até excluir uma chave igual já presente. Inserir logo na tombstone criaria um duplicado mais à frente. Se completares uma volta, podes reutilizar a posição apagada; sem posição disponível, a tabela está cheia.
 
 <CodePlayground
   language="cpp"
@@ -47,28 +47,19 @@ A inserção pode guardar a primeira posição apagada para reutilizar, mas deve
   }
 />
 
-Resultado:
-
-```text
-24 existe: 1
-31 inserido: 1
-24 repetido: 0
--4 existe: 1
-```
-
-A tabela fixa do exemplo não cresce. `inserir` devolve falso tanto para duplicado como para falta de espaço; uma interface de produção pode distinguir esses resultados. O resto de uma chave negativa é normalizado para `[0,7)`. O limite de sete sondagens evita ciclos infinitos numa tabela cheia, mesmo sem uma célula livre.
+A tabela do exemplo é fixa e não cresce. `inserir` devolve falso tanto para duplicado como para falta de espaço; uma interface de produção distinguiria esses resultados. O resto de uma chave negativa é normalizado para `[0,7)`. O limite de sete sondagens evita ciclos infinitos numa tabela cheia, mesmo sem uma célula livre.
 
 ## Agrupamento e variantes
 
 A sondagem linear cria agrupamentos de células ocupadas: uma colisão alarga uma zona que passa a atrair mais chaves. Na sondagem quadrática, as tentativas incluem um termo quadrático; a cobertura de todas as posições depende do tamanho e dos coeficientes. Não assumes que uma sequência quadrática percorre a tabela inteira.
 
-No hashing duplo, a posição é $(h_1(x)+i h_2(x))\bmod m$. Para visitar todas as posições, o passo deve ser não nulo e coprimo com `m`. Com `m` primo, qualquer passo em `[1,m)` funciona. Um passo com divisor comum de `m` visita só parte da tabela.
+No hashing duplo, a posição é $(h_1(x)+i h_2(x))\bmod m$. Para visitares todas as posições, o passo deve ser não nulo e coprimo com `m`. Com `m` primo, qualquer passo em `[1,m)` funciona. Um passo com divisor comum de `m` visita só parte da tabela.
 
-No endereçamento aberto, a carga tem de ser inferior a um para existir espaço livre. O número de tombstones também afeta os percursos; `n/m` baixo não garante pesquisas curtas depois de muitas remoções. Uma reconstrução elimina tombstones e pode aumentar a capacidade.
+No endereçamento aberto, a carga tem de ser inferior a um para existir espaço livre. O número de tombstones também afeta os percursos, ou seja, `n/m` baixo não garante pesquisas curtas depois de muitas remoções. Uma reconstrução elimina tombstones e pode aumentar a capacidade.
 
 ## Rehash e custo
 
-Ao mudar `m`, recalcula a posição de cada chave e reinsere-a segundo a nova sequência de sondagem. Copiar cada célula para o mesmo índice não conserva a pesquisa. Rehash custa pelo menos $\Theta(n)$ e invalida a organização anterior.
+Ao mudares `m`, recalcula a posição de cada chave e reinsere-a segundo a nova sequência de sondagem. Copiar cada célula para o mesmo índice não conserva a pesquisa. Rehash custa pelo menos $\Theta(n)$ e invalida a organização anterior.
 
 Crescer geometricamente pode tornar o custo de reconstruções amortizado linear ao longo de `n` inserções. Isto não elimina o pior caso das colisões: a garantia combinada costuma ser **custo esperado amortizado** constante, sob hipóteses adequadas.
 

@@ -11,7 +11,7 @@ editorial:
       url: https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/
 ---
 
-`n` é o número de elementos, `h` a altura em arestas, `k` a amplitude das chaves de counting sort e `V,E` os números de vértices e arestas. Os custos de comparação e hashing são constantes apenas quando a dimensão das chaves o permite.
+`n` é o número de elementos, `h` a altura em arestas, `k` a amplitude das chaves de counting sort e `V,E` os números de vértices e arestas. Os custos de comparação e hashing são constantes apenas quando a dimensão das chaves o permite. Usa esta página para rever condições e custos; as provas ficam nos capítulos.
 
 ## Provar e contar
 
@@ -49,17 +49,17 @@ Comparação pura tem limite inferior $\Omega(n\log n)$ no pior caso. Radix LSD 
 
 ## Estruturas lineares e geometria
 
-TAD define comportamento; representação define campos e custos. Vetor: acesso $O(1)$, alteração interior $O(n)$, acrescentar $O(1)$ amortizado. Lista: acesso por índice $O(n)$; alteração por ligação conhecida $O(1)$. Lista simples retira o último em $O(n)$; lista dupla permite retirar um nó conhecido em $O(1)$.
+TAD define comportamento; representação define campos e custos. Vetor: acesso $O(1)$, alteração interior $O(n)$, acrescentar $O(1)$ amortizado. Lista: acesso por índice $O(n)$; alteração por ligação conhecida $O(1)$. Lista simples retira o último em $O(n)$; lista dupla retira um nó conhecido em $O(1)$.
 
 **Pilha:** LIFO. **Fila:** FIFO. **Deque:** ambas as extremidades. Fila com duas pilhas transfere só quando a saída está vazia: retirada isolada $O(n)$, custo amortizado $O(1)$. Pilha monótona: cada índice entra e sai no máximo uma vez. [TADs](/cadeiras/aed/tipos-abstratos/), [ligações e amortização](/cadeiras/aed/listas-pilhas-filas/).
 
-Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. Ponto em polígono convexo: $O(\log h)$, com vértices extremos únicos em ordem anti-horária; nos raios extremos, testar o segmento. [Envolvente](/cadeiras/aed/envolvente-convexa/).
+Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. Ponto em polígono convexo: $O(\log h)$, com vértices extremos únicos em ordem anti-horária; nos raios extremos, testa o segmento. [Envolvente](/cadeiras/aed/envolvente-convexa/).
 
 ## Árvores
 
 Altura do vazio `-1`, folha `0`; $h=1+\max(h_e,h_d)$. Pré: raiz-esq-dir; em: esq-raiz-dir; pós: esq-dir-raiz. Percurso $\Theta(n)$, pilha $O(h+1)$. Completa enche o último nível da esquerda; perfeita enche todos. [Árvores binárias](/cadeiras/aed/arvores-binarias/).
 
-BST: **toda** a esquerda menor e **toda** a direita maior, com política de duplicados. Pesquisa, inserção e remoção $O(h+1)$; pior $O(n)$. Dois filhos: substituir pelo mínimo da direita ou máximo da esquerda, retirando a ocorrência antiga. Em-ordem dá ordem crescente. [BST](/cadeiras/aed/arvores-pesquisa/).
+BST: **toda** a esquerda menor e **toda** a direita maior, com política de duplicados. Pesquisa, inserção e remoção $O(h+1)$; pior $O(n)$. Dois filhos: substitui pelo mínimo da direita ou máximo da esquerda, retirando a ocorrência antiga. Em-ordem dá ordem crescente. [BST](/cadeiras/aed/arvores-pesquisa/).
 
 AVL: $b=h_e-h_d\in\{-1,0,1\}$. LL: direita; RR: esquerda; LR: esquerda no filho, direita na raiz; RL: simétrico. Remoção pode reparar vários antepassados. $N(h)=1+N(h-1)+N(h-2)$ implica $h=O(\log n)$.
 
@@ -69,13 +69,13 @@ Vermelho-preta: raiz e NIL pretos, sem dois vermelhos consecutivos, igual altura
 
 Hash: igualdade implica mesmo hash; colisão não implica igualdade. Encadeamento: esperado $O(1+\alpha)$, $\alpha=n/m$; pior linear. Endereçamento aberto precisa de distinguir livre, ocupado e apagado. Tombstone não termina pesquisa. Inserir memoriza tombstone mas continua para excluir duplicado. Hash duplo precisa de passo coprimo com `m`. Rehash recalcula posições. [Dispersão](/cadeiras/aed/tabelas-dispersao/).
 
-Heap: forma completa + pai prioritário. Zero-based: filhos `2i+1,2i+2`; pai `(i-1)/2`, para `i>0`. Extremo $O(1)$; inserir/retirar $O(\log(n+1))$; construir de baixo para cima $\Theta(n)$. Descer pelo filho mais prioritário. Não oferece pesquisa arbitrária logarítmica. Top-k maiores usa min-heap de capacidade `k`. [Heaps](/cadeiras/aed/filas-prioridade-heaps/).
+Heap: forma completa + pai prioritário. Zero-based: filhos `2i+1,2i+2`; pai `(i-1)/2`, para `i>0`. Extremo $O(1)$; inserir/retirar $O(\log(n+1))$; construir de baixo para cima $\Theta(n)$. Desce pelo filho mais prioritário. Não oferece pesquisa arbitrária logarítmica. Top-k maiores usa min-heap de capacidade `k`. [Heaps](/cadeiras/aed/filas-prioridade-heaps/).
 
 ## Grafos
 
-Listas: memória e percurso $O(V+E)$. Matriz: memória e percurso completo $O(V^2)$, teste de aresta $O(1)$. DFS usa pilha; BFS usa fila e encontra distâncias mínimas em número de arestas. Marcar na descoberta. Recomeçar para componentes desconexas. [Representações e caminhos](/cadeiras/aed/grafos-pesquisa/).
+Listas: memória e percurso $O(V+E)$. Matriz: memória e percurso completo $O(V^2)$, teste de aresta $O(1)$. DFS usa pilha; BFS usa fila e encontra distâncias mínimas em número de arestas. Marca na descoberta. Recomeça para componentes desconexas. [Representações e caminhos](/cadeiras/aed/grafos-pesquisa/).
 
-- Ciclo dirigido: aresta para cinzento. Não dirigido: excluir só a aresta de entrada; usar IDs para paralelas.
+- Ciclo dirigido: aresta para cinzento. Não dirigido: exclui só a aresta de entrada; usa IDs para paralelas.
 - Topológica: `u` antes de `v` para toda `u->v`; existe só em DAG. DFS inverte pós-ordem; Kahn retira grau zero e exige `V` retirados.
 - SCC: alcançabilidade nos dois sentidos. Tarjan usa pilha de ainda não atribuídos, que é diferente da pilha de chamadas. Fecha quando `low[u]=disc[u]`.
 - Ponte `u-v`: `low[v]>disc[u]`. Articulação não raiz: algum filho com `low[v]>=disc[u]`. Raiz: pelo menos dois filhos DFS.
