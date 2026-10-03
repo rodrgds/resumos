@@ -27,7 +27,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import emparelha from '../../pfl/p7unifica.typ?raw';
 import arvoreSLD from '../../pfl/p7sld.dot?raw';
 
-Em Prolog defines relações com **factos**, que afirmam casos concretos, e **regras**, que ligam uma conclusão a condições. Uma **consulta**, ou query, pede os valores que satisfazem uma relação. O programa é uma base de conhecimento; a execução é procura com retrocesso. A lógica por baixo é a [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD, restrita a **cláusulas de Horn**: no máximo um literal positivo. Esta forma permite resolução orientada a objetivos, mas não garante terminação.
+Em Prolog defines relações com **factos**, que afirmam casos concretos, e **regras**, que ligam uma conclusão a condições. Uma **consulta**, ou query, pede os valores que satisfazem uma relação, ou seja o programa é uma base de conhecimento e a execução é procura com retrocesso.
 
 ## Factos, regras e queries
 
@@ -38,19 +38,17 @@ pai(leo, rui).
 avo(X, Z) :- pai(X, Y), pai(Y, Z).
 ```
 
-As três primeiras linhas são factos: Tomás é pai da Ana, e por aí fora. A última é uma regra, lida "X é avô de Z **se** X é pai de Y **e** Y é pai de Z". As maiúsculas são **variáveis** (por preencher); as minúsculas são **átomos** (valores concretos). A query `?- avo(ana, X).` pede os X que satisfazem a relação, e o Prolog responde `X = rui`.
+A última é uma regra, lida "X é avô de Z **se** X é pai de Y **e** Y é pai de Z". As maiúsculas são **variáveis** (por preencher); as minúsculas são **átomos** (valores concretos).
 
 ## Unificação
 
-Antes de procurar, o motor precisa de casar termos. **Unificar** dois termos é encontrar uma substituição que os torna iguais. Procuramos a mais geral, que não fixe valores desnecessários:
+Antes de procurar, o motor precisa de casar termos. **Unificar** dois termos é encontrar uma substituição que os torna iguais, ou seja procuramos a mais geral, que não fixe valores desnecessários:
 
 - `pai(ana, X)` com `pai(ana, leo)` unifica com `{X/leo}`.
 - `pai(X, leo)` com `pai(ana, leo)` unifica com `{X/ana}`.
 - `pai(X, leo)` com `pai(tomas, ana)` falha: `leo` nunca iguala `ana`, e nenhuma substituição muda átomos.
 
-A substituição aplica-se a toda a consulta de uma vez, o que propaga cada descoberta a todos os lugares onde a variável aparece. É este mecanismo, e não atribuição, que move valores pelo programa.
-
-O diagrama compara um par que unifica e um que falha. No segundo, a primeira posição permitiria `X=tomas`, mas a segunda exige igualar os átomos distintos `leo` e `ana`.
+A substituição aplica-se a toda a consulta de uma vez, o que propaga cada descoberta a todos os lugares onde a variável aparece, ou seja é este mecanismo, e não atribuição, que move valores pelo programa.
 
 <Typst
   source={emparelha}
@@ -66,16 +64,14 @@ Para responder `?- avo(ana, X).`, o motor constrói uma **árvore de procura**. 
 2. `pai(ana, Y)` unifica com o facto `pai(ana, leo)`: `{Y/leo}`. Resta `pai(leo, X)`.
 3. `pai(leo, X)` unifica com `pai(leo, rui)`: `{X/rui}`. Não resta nada: sucesso, e a resposta compõe as substituições, `X = rui`.
 
-Se pedires mais soluções (`;`), o motor faz **retrocesso**: volta ao último ponto com alternativas por explorar. Aqui não há mais factos `pai(ana, _)` nem `pai(leo, _)`, por isso responde `false`. Desenhar esta árvore é a técnica de estudo da página: quando o programa diz `false` onde esperavas resposta, o desenho mostra o ramo que morreu e a cláusula em falta.
-
-A árvore completa da query, com o ramo de sucesso e o beco do retrocesso:
+Se pedires mais soluções (`;`), o motor faz **retrocesso**: volta ao último ponto com alternativas por explorar. Quando o programa diz `false` onde esperavas resposta, desenha a árvore: ela mostra o ramo que morreu e a cláusula em falta.
 
 <Dot
   source={arvoreSLD}
   alt="Árvore SLD de avo(ana, X): a query unifica com a regra, pai(ana, Y) casa com o facto dando Y igual a leo, pai(leo, X) casa dando X igual a rui; o retrocesso não encontra alternativas."
 />
 
-A consulta `avo(ana,X)` encontra Rui como neto da Ana:
+Experimenta a consulta:
 
 <CodePlayground
   language="prolog"
@@ -94,7 +90,7 @@ A consulta `avo(ana,X)` encontra Rui como neto da Ana:
 true.
 ```
 
-Não há facto com `rui` como pai, a prova falha finitamente, e a negação sucede. Isto é "negação por falha", não negação lógica: o motor não prova que é falso, constata que não consegue provar que é verdade.
+Não há facto com `rui` como pai, por isso a prova falha finitamente e a negação sucede, ou seja isto é "negação por falha", não negação lógica: o motor não prova que é falso, constata que não consegue provar que é verdade.
 
 :::warning[Variáveis livres na negação]
 `?- \+ pai(X, leo).` responde `false`, e não "ninguém". Como `pai(ana, leo)` prova-se com `X = ana`, a negação falha, e o `X` fica por ligar. Regra prática: só nega objetivos sem variáveis por preencher, ou liga-as antes. A ordem entre gerar candidatos e negar a relação muda o resultado.
@@ -106,7 +102,7 @@ Um termo pode ser uma variável, uma constante ou uma estrutura `f(t1,...,tn)`. 
 
 Em `p(X) :- q(X,Y).`, o `Y` é local àquela utilização da cláusula. Ao usar a cláusula outra vez, renomeamos todas as suas variáveis para variáveis frescas. Sem esta renomeação, duas chamadas independentes poderiam ficar ligadas por acidente.
 
-Para unificar `par(X,f(X))` com `par(a,Y)`, a primeira posição dá `X=a`; propagamos essa ligação e a segunda dá `Y=f(a)`. Para unificar `par(X,X)` com `par(a,b)`, a primeira posição dá `X=a` e a segunda exige `a=b`; falha. Não podemos escolher uma ligação diferente para cada ocorrência do mesmo `X`.
+Para unificar `par(X,f(X))` com `par(a,Y)`, a primeira posição dá `X=a`; propagamos essa ligação e a segunda dá `Y=f(a)`. Para unificar `par(X,X)` com `par(a,b)`, a primeira posição dá `X=a` e a segunda exige `a=b`; falha, porque não podemos escolher uma ligação diferente para cada ocorrência do mesmo `X`.
 
 ## Ocorre a variável dentro do termo?
 
@@ -116,8 +112,8 @@ Na unificação de termos finitos, `X=f(X)` deve falhar: substituir `X` pelo ter
 
 SLD resolve um objetivo positivo escolhendo uma cláusula cuja cabeça unifica e substituindo o objetivo pelo corpo dessa cláusula. Prolog costuma escolher o objetivo mais à esquerda e explorar cláusulas de cima para baixo, em profundidade. Uma prova pode existir num ramo posterior e nunca ser encontrada porque um ramo anterior é infinito.
 
-`p :- p.` antes de `p.` mostra o problema: a primeira tentativa volta a chamar `p` indefinidamente. Trocar as cláusulas permite encontrar uma primeira resposta, mas pedir todas volta a entrar no ramo infinito. Não é suficiente haver um caso base algures; a estratégia tem de conseguir chegar a ele.
+`p :- p.` antes de `p.` mostra o problema: a primeira tentativa volta a chamar `p` indefinidamente. Trocar as cláusulas permite encontrar uma primeira resposta, mas pedir todas volta a entrar no ramo infinito, ou seja não basta haver um caso base algures; a estratégia tem de conseguir chegar a ele.
 
-Uma cláusula de Horn tem no máximo um literal positivo. Uma cláusula definida tem exatamente um, representado pela cabeça. Esta forma facilita a resolução, mas não torna todos os programas decidíveis nem garante que terminam.
+Uma cláusula de Horn tem no máximo um literal positivo, ou seja é a restrição da [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD que permite resolução orientada a objetivos, mas não garante terminação. Uma cláusula definida tem exatamente um, representado pela cabeça.
 
-A negação por falha também precisa de uma falha finita. Se `g` divergir, `\+ g` não confirma a negação. E `\+ pai(X,leo)` não gera as pessoas que não são pais de Leo: falha logo que encontra algum pai. Primeiro enumera pessoas com um objetivo positivo, depois nega a relação para cada pessoa instanciada.
+A negação por falha também precisa de uma falha finita. Se `g` divergir, `\+ g` não confirma a negação.

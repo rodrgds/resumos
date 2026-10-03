@@ -25,7 +25,7 @@ import Tabs from '../../../components/Tabs.astro';
 import media from '../../pfl/media.hs?raw';
 import pipeline from '../../pfl/p3pipeline.typ?raw';
 
-Uma função é de **ordem superior** se recebe uma função ou devolve uma função. Em Haskell, cada aplicação fornece um argumento. Uma função "de dois argumentos" é uma função que recebe o primeiro e devolve outra função à espera do segundo. Esta convenção chama-se **currying** e transforma a aplicação parcial, passar só alguns argumentos, numa forma de especializar funções.
+Uma função é de **ordem superior** se recebe uma função ou devolve uma função. Em Haskell, cada aplicação fornece um argumento, ou seja uma função "de dois argumentos" é uma função que recebe o primeiro e devolve outra função à espera do segundo. Esta convenção chama-se **currying** e transforma a aplicação parcial, passar só alguns argumentos, numa forma de especializar funções.
 
 ## Aplicação parcial
 
@@ -64,11 +64,9 @@ mediaAprovados notas = case filter (>= 9.5) notas of
   xs -> Just (sum xs / fromIntegral (length xs))
 ```
 
-Em `[8,12,6,15,10]`, `filter` conserva `[12,15,10]`. A soma é `37` e o comprimento é `3`, dando `Just 12.333333333333334`. A soma já é `Double`; só precisamos de converter o comprimento, que é `Int`. Com `[2,7]`, o filtro produz `[]` e o resultado é `Nothing`.
+Em `[8,12,6,15,10]`, `filter` conserva `[12,15,10]`. A soma é `37` e o comprimento é `3`, dando `Just 12.333333333333334`, porque a soma já é `Double` e só precisamos de converter o comprimento, que é `Int`. Com `[2,7]`, o filtro produz `[]` e o resultado é `Nothing`.
 
 Podes usar `where` para dar nome a etapas intermédias. Nesta versão usamos `case` para tratar as duas formas do resultado do filtro.
-
-O diagrama segue os dados da pauta `[8,12,6,15,10]` por esse pipeline, de cima para baixo:
 
 <Typst
   source={pipeline}
@@ -76,17 +74,13 @@ O diagrama segue os dados da pauta `[8,12,6,15,10]` por esse pipeline, de cima p
   alt="Pipeline da média das aprovações: a pauta passa pelo filter, fica 12, 15 e 10, soma 37 com 3 elementos e divide para 12,33."
 />
 
-O programa usa a mesma função nos casos com e sem aprovações:
-
 <CodePlayground
   language="haskell"
   code={media}
   title="Média segura, folds e prefixos"
 />
 
-:::warning[Divisão sem casos de ausência]
-Uma versão que calcula `sum xs / fromIntegral (length xs)` na lista vazia faz `0/0`, que em `Double` dá `NaN`. Não é uma média. Além disso, a assinatura `[Int]` é incompatível com o literal `9.5` no filtro. Um tipo correto e um caso de ausência explícito resolvem problemas diferentes.
-:::
+Uma versão que calcula `sum xs / fromIntegral (length xs)` na lista vazia faz `0/0`, que em `Double` dá `NaN`, ou seja não é uma média. Além disso, a assinatura `[Int]` é incompatível com o literal `9.5` no filtro, por isso um tipo correto e um caso de ausência explícito resolvem problemas diferentes.
 
 ## foldr contra foldl
 
@@ -100,7 +94,7 @@ somaE :: [Int] -> Int
 somaE = foldl (+) 0
 ```
 
-`foldr (-) 0 [1,2,3]` calcula `1 - (2 - (3 - 0))`, que dá `2`. Já `foldl (-) 0 [1,2,3]` calcula `((0 - 1) - 2) - 3`, que dá `-6`. Com inteiros sem overflow e `(+)`, os dois concordam, e é por isso que o exemplo da média não distingue; com `(-)`, a direção muda o resultado. `(:)` cabe diretamente em `foldr`; em `foldl`, é preciso inverter a ordem dos argumentos, como em `flip (:)`. A comparação seguinte expande `foldr` em recursão direta. Uma versão com acumulador explícito seguiria `foldl`:
+`foldr (-) 0 [1,2,3]` calcula `1 - (2 - (3 - 0))`, que dá `2`. Já `foldl (-) 0 [1,2,3]` calcula `((0 - 1) - 2) - 3`, que dá `-6`. Com inteiros sem overflow e `(+)`, os dois concordam, e é por isso que o exemplo da média não distingue; com `(-)`, a direção muda o resultado. `(:)` cabe diretamente em `foldr`; em `foldl`, é preciso inverter a ordem dos argumentos, como em `flip (:)`.
 
 <Tabs id="dobras" labels={['Com foldr', 'Recursão à mão']}>
   <div slot="panel-0">
@@ -135,7 +129,7 @@ ghci> take 3 (repeat "ola")
 ["ola","ola","ola"]
 ```
 
-`iterate` aplica a função ao resultado anterior para sempre; o `take` puxa só os cinco primeiros e o resto nunca chega a existir. O caso limite mostra a regra: `length` numa lista infinita nunca termina, porque precisa de ver o fim que não existe. Quando uma função de consumo parcial, como `take`, encontra um produtor infinito, como `iterate`, a preguiça é o que torna a combinação possível.
+`iterate` aplica a função ao resultado anterior para sempre; o `take` puxa só os cinco primeiros e o resto nunca chega a existir, ou seja quando uma função de consumo parcial, como `take`, encontra um produtor infinito, como `iterate`, a preguiça é o que torna a combinação possível. O caso limite mostra a regra: `length` numa lista infinita nunca termina, porque precisa de ver o fim que não existe.
 
 ## Escolher a função de ordem superior
 
@@ -143,7 +137,7 @@ ghci> take 3 (repeat "ola")
 
 `all p xs` é verdadeiro se todos os elementos satisfazem `p`; `any p xs` basta-se com um. Na lista vazia, `all` dá `True` e `any` dá `False`. Estas identidades permitem escrever `and = foldr (&&) True` e `or = foldr (||) False`.
 
-Uma composição lê-se da direita para a esquerda. `sum . map (^2) . filter even` seleciona pares, calcula quadrados e soma. Para `[1,2,3,4]`, as etapas são `[2,4]`, `[4,16]`, `20`. Se precisas de ver a entrada de cada etapa, escreve primeiro a versão com argumento e nomes locais; só depois retira o argumento.
+Uma composição lê-se da direita para a esquerda. `sum . map (^2) . filter even` seleciona pares, calcula quadrados e soma, ou seja para `[1,2,3,4]` as etapas são `[2,4]`, `[4,16]`, `20`. Se precisas de ver a entrada de cada etapa, escreve primeiro a versão com argumento e nomes locais; só depois retira o argumento.
 
 ## Derivar um fold
 

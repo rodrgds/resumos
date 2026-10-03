@@ -26,7 +26,7 @@ import parser from '../../pfl/parser.hs?raw';
 import arvores from '../../pfl/p5arvores.typ?raw';
 import chamadas from '../../pfl/p5parser.dot?raw';
 
-Uma função pura não pode ler do teclado: o mesmo argumento deve determinar o mesmo resultado, mas a linha lida depende de uma interação. Haskell separa o cálculo puro do contacto com o mundo no tipo **`IO`**. Um valor `IO ()` é uma **ação**, uma receita que, quando executada, interage e devolve `()`. O `main` do programa é uma ação composta.
+Uma função pura não pode ler do teclado, porque o mesmo argumento deve determinar o mesmo resultado, mas a linha lida depende de uma interação. Haskell separa o cálculo puro do contacto com o mundo no tipo **`IO`**. Um valor `IO ()` é uma **ação**, uma receita que, quando executada, interage e devolve `()`. O `main` do programa é uma ação composta.
 
 ## I/O com do
 
@@ -115,9 +115,7 @@ symbol :: Char -> Parser Char
 symbol c = token (sat (== c))
 ```
 
-`Functor` aplica uma função ao resultado com `fmap`. `Applicative` fornece `pure`, sucesso sem consumir entrada, e `<*>`, sequência de um parser de funções com um parser de argumentos. `Monad` fornece `>>=`, que escolhe o parser seguinte a partir do valor acabado de ler. Aqui `return` tem o mesmo papel que `pure`, e o `do` usa `>>=`. Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta.
-
-`parse nat "42x"` dá `[(42,"x")]`: lê o número e deixa o resto. A gramática seguinte compõe estes combinadores para ler expressões:
+`Functor` aplica uma função ao resultado com `fmap`. `Applicative` fornece `pure`, sucesso sem consumir entrada, e `<*>`, sequência de um parser de funções com um parser de argumentos. `Monad` fornece `>>=`, que escolhe o parser seguinte a partir do valor acabado de ler. Aqui `return` tem o mesmo papel que `pure`, e o `do` usa `>>=`. Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta. O resultado `[(valor, resto)]` conserva a entrada por consumir, ou seja `parse nat "42x"` dá `[(42,"x")]`. A gramática seguinte compõe estes combinadores para ler expressões:
 
 ```haskell
 expr :: Parser Int
@@ -139,7 +137,7 @@ factor = (do symbol '('
              return e) +++ token nat
 ```
 
-A precedência vive na estrutura: `expr` soma `term`s e `term` multiplica `factor`s, por isso `*` liga mais que `+`. As duas árvores mostram a diferença: sem parênteses o `*` fica por baixo do `+`; com parênteses a soma desce primeiro.
+A precedência vive na estrutura: `expr` soma `term`s e `term` multiplica `factor`s, por isso `*` liga mais que `+`.
 
 <Typst
   source={arvores}
@@ -147,16 +145,12 @@ A precedência vive na estrutura: `expr` soma `term`s e `term` multiplica `facto
   alt="Árvores sintáticas de 2+3*4 e de (2+3)*4: na primeira o vezes agrupa 3 e 4 por baixo do mais; na segunda o mais agrupa 2 e 3 por baixo do vezes."
 />
 
-O grafo de chamadas resume quem chama quem: `expr` e `term` chamam-se a si próprios na recursão dos operadores, e a base da cadeia é o número.
-
 <Dot
   source={chamadas}
   alt="Grafo de chamadas do parser: expr chama term e a si própria; term chama factor e a si próprio; factor chama expr e nat; nat usa many1 e digit."
 />
 
-Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`; dá `[(14, "")]`. E `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro.
-
-O programa completo inclui a base, a gramática e `completa`, que recusa uma entrada com texto por consumir:
+Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`; dá `[(14, "")]`. E `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro. O exemplo corrido usa também `completa`, definida já a seguir:
 
 <CodePlayground
   language="haskell"
@@ -168,7 +162,7 @@ O programa completo inclui a base, a gramática e `completa`, que recusa uma ent
 
 O `+++` definido nesta página tenta `q` na entrada original quando `p` devolve `[]`. Por isso há retrocesso mesmo que `p` tenha consumido caracteres antes de falhar. Este contrato difere de parsers que guardam explicitamente se a falha aconteceu depois de consumir entrada.
 
-No parser determinístico, o resultado tem zero ou uma solução. Se quiseres um parser não determinístico com várias soluções, os casos `[(v,out)]` deixam de chegar: tens de combinar cada resultado possível. Não mistures os dois contratos.
+No parser determinístico, o resultado tem zero ou uma solução, por isso se quiseres um parser não determinístico com várias soluções, os casos `[(v,out)]` deixam de chegar: tens de combinar cada resultado possível, ou seja não mistures os dois contratos.
 
 `parse expr "2+3x"` dá `[(5,"x")]`. A alternativa também permite que `parse expr "2+"` recue para o prefixo `2` e deixe `"+"`. Uma aplicação que exige uma expressão inteira deve aceitar apenas `[(v,"")]`, depois de consumir espaços:
 
@@ -179,13 +173,13 @@ completa p texto = case parse (token p) texto of
   _ -> Nothing
 ```
 
-`completa expr " 2 + 3*4 "` dá `Just 14`; `"2+"`, `"2+3x"` e `"(2+3"` dão `Nothing`. Sucesso do prefixo não valida todo o ficheiro.
+`completa expr " 2 + 3*4 "` dá `Just 14`; `"2+"`, `"2+3x"` e `"(2+3"` dão `Nothing`, porque sucesso do prefixo não valida todo o ficheiro.
 
 `many p` exige que `p` consuma entrada em cada sucesso. Se `p` for `pure 1`, o parser pode repetir para sempre sem avançar. É a condição de progresso correspondente ao caso recursivo de uma lista.
 
 ## Precedência e associatividade
 
-A gramática `expr = term '+' expr | term` dá prioridade à multiplicação, mas associa a soma à direita. Como a adição de inteiros é associativa, os resultados não revelam essa escolha. Se trocares `+` por `-`, `8-3-1` passa a `8-(3-1)=6`. A associatividade usual à esquerda daria `(8-3)-1=4`. Uma solução é ler um primeiro termo, ler pares operador-termo e acumular pela esquerda.
+A gramática `expr = term '+' expr | term` dá prioridade à multiplicação, mas associa a soma à direita, ou seja como a adição de inteiros é associativa, os resultados não revelam essa escolha. Se trocares `+` por `-`, `8-3-1` passa a `8-(3-1)=6`. A associatividade usual à esquerda daria `(8-3)-1=4`. Uma solução é ler um primeiro termo, ler pares operador-termo e acumular pela esquerda.
 
 Recursão à esquerda, como `expr = expr '+' term | term`, não serve diretamente num parser recursivo descendente: chama `expr` de novo sem consumir nada. Reformula a gramática com um acumulador ou um combinador de cadeias.
 
