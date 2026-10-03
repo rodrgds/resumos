@@ -22,9 +22,9 @@ União é comutativa; concatenação não é. $(E+F)^*\not\equiv E^*+F^*$ em ger
 
 | Tarefa              | Procedimento                                                                                    |
 | ------------------- | ----------------------------------------------------------------------------------------------- |
-| DFA                 | Define significado dos estados; uma transição por símbolo; aceita só depois de ler tudo.        |
+| DFA                 | Define o significado dos estados; uma transição por símbolo; aceita só depois de ler tudo.      |
 | NFA                 | Mantém todos os destinos; aceita se algum percurso completo terminar em final.                  |
-| Fecho-$\varepsilon$ | Inclui os estados iniciais do conjunto e segue zero ou mais arestas vazias.                     |
+| Fecho-$\varepsilon$ | Inclui os estados do conjunto e segue zero ou mais arestas vazias.                              |
 | NFA para DFA        | Início $E(\{q_0\})$; saída $E(\bigcup_{q\in S}\delta(q,a))$; final se $S\cap F\ne\emptyset$.    |
 | Complemento         | Determiniza e completa antes de trocar finais.                                                  |
 | Thompson            | Fragmentos com entrada/saída; união escolhe, concatenação liga, estrela permite saltar/repetir. |
@@ -43,7 +43,7 @@ Regulares são fechadas para união, interseção, complemento, diferença, conc
 - Equivalência: nenhum estado alcançável no produto em que só uma componente seja final.
 - Minimização: remove inacessíveis, marca pares final/não final, propaga marcas pelos destinos e junta pares não distinguíveis.
 
-Para provar que duas classes não podem fundir, dá uma continuação que uma aceita e a outra rejeita. [Procedimentos e exemplo](/cadeiras/tc/limites-regulares/).
+Para provar que dois estados não podem fundir, dá uma continuação que um aceita e o outro rejeita. [Procedimentos e exemplo](/cadeiras/tc/limites-regulares/).
 
 **Lema regular:** se $L$ é regular, $\exists p\ge1$, $\forall s\in L$ com $|s|\ge p$, $\exists x,y,z$ tais que
 
@@ -69,7 +69,7 @@ PDA: $(q,w,\gamma)$ regista estado, entrada restante e pilha, com topo à esquer
 - CFG para PDA: expande a variável do topo por $\varepsilon$; lê e retira terminais iguais.
 - PDA para CFG: $[pXq]$ gera o que remove $X$ indo de $p$ a $q$.
 
-Os dois critérios de PDA são equivalentes mediante conversão de máquinas não determinísticas. A mesma máquina pode ter linguagens diferentes pelos dois critérios. CFG e PDA têm o mesmo poder; DPDA tem menos poder que NPDA. [Construções](/cadeiras/tc/automatos-pilha/).
+Os dois critérios de PDA são equivalentes por conversão de máquinas não determinísticas. A mesma máquina pode ter linguagens diferentes pelos dois critérios. CFG e PDA têm o mesmo poder; DPDA tem menos poder que NPDA. [Construções](/cadeiras/tc/automatos-pilha/).
 
 Simplificar: vazias, unitárias, não geradores, inacessíveis. Depois substitui terminais em corpos longos e divide corpos com mais de duas variáveis.
 
@@ -85,7 +85,7 @@ Pertença e vazio de CFG são decidíveis. Equivalência, universalidade e ambig
 
 ## Turing e complexidade
 
-TM: lê, escreve e desloca a cabeça. Em $\alpha q\beta$, a cabeça lê o primeiro símbolo de $\beta$. Máquina reconhecedora pode não parar fora da linguagem; decisor para em todas as entradas. Se $L$ e $\overline L$ são reconhecíveis, $L$ é decidível. $HALT$ e $A_{TM}$ são reconhecíveis e indecidíveis. [Modelo e provas](/cadeiras/tc/turing-decidibilidade/).
+TM: lê, escreve e desloca a cabeça. Em $\alpha q\beta$, a cabeça lê o primeiro símbolo de $\beta$. A reconhecedora pode não parar fora da linguagem; o decisor para em todas as entradas. Se $L$ e $\overline L$ são reconhecíveis, $L$ é decidível. $HALT$ e $A_{TM}$ são reconhecíveis e indecidíveis. [Modelo e provas](/cadeiras/tc/turing-decidibilidade/).
 
 Redução $A\le_m B$: função total computável que preserva sim/não. Para provar $B$ indecidível, reduz a ele um $A$ já indecidível. Não confundas simular por um limite finito com decidir paragem sem limite.
 
