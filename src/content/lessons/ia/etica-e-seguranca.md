@@ -8,7 +8,9 @@ practices:
 order: 10
 ---
 
-As páginas anteriores ensinam a construir decisores: classificadores, pesquisas, otimizadores. Esta pergunta o que pode correr mal quando esses decisores saem do caderno, porque os limites estão nas conclusões, nos dados e nos objetivos.
+Depois de construir classificadores, pesquisas e otimizadores, esta página responde a o que pode correr mal quando esses decisores saem do caderno.
+
+Pensa no filtro de spam das 20 mensagens treinado em currículos históricos e no aspirador das duas salas com ordem de recolher sujidade: o primeiro repete quem foi contratado no passado e o segundo pode espalhar sujidade para a voltar a recolher. Os limites estão nas conclusões, nos dados e nos objetivos.
 
 ## Imitar não é compreender
 
