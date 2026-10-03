@@ -192,7 +192,7 @@ export function editorSetup(root: HTMLElement) {
     rectangularSelection(),
     crosshairCursor(),
     highlightActiveLine(),
-    highlightSelectionMatches({ highlightWordAroundCursor: true }),
+    highlightSelectionMatches(),
     keymap.of([
       { key: 'Ctrl-d', run: selectNextOccurrence, preventDefault: true },
       ...closeBracketsKeymap,
