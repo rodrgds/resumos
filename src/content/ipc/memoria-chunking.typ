@@ -1,11 +1,15 @@
-#import "@preview/fletcher:0.5.8": diagram, node, edge
-#set page(width: auto, height: auto, margin: 8pt)
-#set text(size: 10pt)
-#diagram(
-  node-stroke: 1pt, spacing: 26pt,
-  node((0, 0), [Memória de trabalho: capacidade limitada], corner-radius: 4pt),
-  node((2, 0), [Chunking: agrupar com sentido], corner-radius: 4pt),
-  node((4, 0), [Conhecimento de longo prazo: recuperação com pistas], corner-radius: 4pt),
-  edge((0, 0), (2, 0), [agrupa], "-|>"),
-  edge((2, 0), (4, 0), [pistas], "-|>"),
-)
+#set page(width: 210pt, height: auto, margin: 10pt)
+#set text(size: 11pt)
+#set par(spacing: 10pt)
+#block(width: 100%, inset: 8pt, stroke: 1pt, radius: 4pt)[
+  *Sem separadores*\
+  14921776
+]
+#align(center)[↓]
+#block(width: 100%, inset: 8pt, stroke: 1pt, radius: 4pt)[
+  *Com agrupamento*\
+  1492 · 1776
+]
+#block(width: 100%, inset: 8pt)[
+  As datas são unidades com sentido para quem as conhece. O significado vem do conhecimento de longo prazo; o código continua a ter oito dígitos.
+]
