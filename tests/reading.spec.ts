@@ -55,6 +55,26 @@ test.describe('course diagrams without JavaScript', () => {
     for (const size of sizes) expect(size).toBeGreaterThanOrEqual(12);
   });
 
+  test('relational schema labels remain legible on a narrow screen', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.goto('/cadeiras/lbaw/esquema-relacional/');
+    const sizes = await page
+      .locator('.lesson-body .diagram-figure svg text')
+      .evaluateAll((labels) =>
+        labels.map((label) => {
+          const matrix = (label as SVGTextElement).getScreenCTM()!;
+          return (
+            Number.parseFloat(getComputedStyle(label).fontSize) *
+            Math.hypot(matrix.a, matrix.b)
+          );
+        }),
+      );
+    expect(sizes.length).toBeGreaterThan(0);
+    for (const size of sizes) expect(size).toBeGreaterThanOrEqual(12);
+  });
+
   test('matrix demo renders the initial transformed square', async ({
     page,
   }) => {
