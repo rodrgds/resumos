@@ -67,18 +67,18 @@ Uma função pura depende dos valores recebidos e não produz efeitos observáve
 
 ## Transformar e reduzir
 
-| Operação            | Forma e contrato                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Transformar         | `map(f, xs)` devolve um iterador com `f(x)` para cada entrada.                                                                       |
-| Selecionar          | `filter(p, xs)` conserva as entradas onde `p(x)` é verdadeiro.                                                                       |
-| Acumular            | `reduce(f, xs, z)` faz um fold à esquerda a partir de `z`. Com `xs` vazio devolve `z`; sem inicial, o vazio falha.                   |
-| Compreensão         | `[f(x) for x in xs if p(x)]` filtra e constrói uma lista. Um `if ... else` dentro da expressão escolhe valores, não retira posições. |
-| Chave de ordenação  | `sorted(registos, key=lambda r: (-r[1], r[0]))` ordena pelo segundo campo decrescente e pelo primeiro crescente.                     |
-| Devolver uma função | Uma closure conserva acesso ao âmbito envolvente. O contexto não é automaticamente uma cópia de cada valor.                          |
+| Operação            | Forma e contrato                                                                                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transformar         | `map(f, xs)` devolve um iterador com `f(x)` para cada entrada.                                                                                                                                       |
+| Selecionar          | `filter(p, xs)` conserva as entradas onde `p(x)` é verdadeiro.                                                                                                                                       |
+| Acumular            | `reduce(f, xs, z)` faz um fold à esquerda a partir de `z`. Com `xs` vazio devolve `z`; sem inicial, o vazio falha.                                                                                   |
+| Compreensão         | `[f(x) for x in xs if p(x)]` filtra e constrói uma lista nova; não garante ausência de efeitos se `f(x)` alterar objetos. Um `if ... else` dentro da expressão escolhe valores, não retira posições. |
+| Chave de ordenação  | `sorted(registos, key=lambda r: (-r[1], r[0]))` ordena pelo segundo campo decrescente e pelo primeiro crescente.                                                                                     |
+| Devolver uma função | Uma closure conserva acesso ao âmbito envolvente. O contexto não é automaticamente uma cópia de cada valor.                                                                                          |
 
 Um iterador consumido não recomeça. `(f(x) for x in xs)` é gerador; `yield` entrega um valor e suspende; `return` termina. Usa lista para índices e vários percursos, gerador para consumo progressivo. Verifica a ordem entre filtrar e transformar.
 
-[Map, filter e reduce](/cadeiras/fp/programacao-funcional/#map-filter-e-reduce). [Closures](/cadeiras/fp/programacao-funcional/#devolver-funções-e-âmbito-léxico). [Compreensões](/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas). [Geradores](/cadeiras/fp/compreensoes-geradores/#geradores-e-yield).
+[Compreensões](/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas). [Geradores](/cadeiras/fp/compreensoes-geradores/#geradores-e-yield). [Map, filter e reduce](/cadeiras/fp/programacao-funcional/#map-filter-e-reduce). [Closures](/cadeiras/fp/programacao-funcional/#devolver-funções-e-âmbito-léxico).
 
 ## Recursão e pesquisa
 
@@ -99,7 +99,7 @@ Escolhe uma convenção para ausência, como `None`, e não a uses como índice.
 
 `with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair. `"w"` substitui o conteúdo; `"a"` acrescenta; `"x"` exige um ficheiro novo. Caminhos relativos partem da pasta de trabalho. `readline()` devolve `""` no fim; uma linha em branco é normalmente `"\n"`. Para CSV, usa `csv` e `newline=""`.
 
-`except Tipo` trata a falha esperada; `else` corre sem exceção no `try`; `finally` corre na saída. `raise` comunica a falha ao chamador. Não escondas qualquer defeito com um tratador indiscriminado. `assert` verifica hipóteses internas e pode ser desativado. Entradas inválidas precisam de validação explícita.
+`except Tipo` trata a falha esperada; `else` corre apenas se o `try` terminar normalmente, sem `return`, `break` ou `continue`; `finally` corre sempre na saída. `raise` comunica a falha ao chamador. Não escondas qualquer defeito com um tratador indiscriminado. `assert` verifica hipóteses internas e pode ser desativado. Entradas inválidas precisam de validação explícita.
 
 Calcula o resultado esperado antes de executar. Testa limites, vazio, repetições e entradas inválidas conforme o contrato. Para uma falha, reduz a entrada e encontra a primeira instrução cujo estado diverge do esperado.
 

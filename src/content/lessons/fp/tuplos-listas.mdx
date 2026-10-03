@@ -11,9 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import AliasDiagram from '../../fp/AliasDiagram.astro';
 import ShallowCopyDiagram from '../../fp/ShallowCopyDiagram.astro';
 
-Depois de tratares texto com strings, esta página responde a esta pergunta: como guarda um programa uma sequência de valores que pode crescer e mudar?
-
-Uma lista e um tuplo conservam uma sequência de objetos. A diferença principal é se podes substituir, inserir ou retirar elementos na própria sequência, ou seja, se a sequência é mutável.
+Uma string guarda caracteres; muitos problemas pedem guardar vários valores que podem crescer e mudar. Uma lista e um tuplo conservam uma sequência de objetos. A diferença principal é a mutabilidade: podes substituir, inserir ou retirar elementos de uma lista, mas não de um tuplo.
 
 ## Sequências e tuplos
 
@@ -25,6 +23,17 @@ Um tuplo é imutável, mas pode conter objetos mutáveis. Em `registo = ("Ana", 
 
 ## Alterar uma lista
 
+Começa com uma lista concreta e segue-a:
+
+```python
+xs = [10, 20]
+xs.append(30)
+xs[0] = 11
+print(xs)
+```
+
+A lista passa por `[10, 20]`, depois `[10, 20, 30]` e depois `[11, 20, 30]`. `append` altera a própria lista; a atribuição por índice substitui um elemento existente.
+
 | Operação          | Efeito                                               |
 | ----------------- | ---------------------------------------------------- |
 | `xs.append(x)`    | Acrescenta um elemento, mesmo que `x` seja uma lista |
@@ -35,7 +44,7 @@ Um tuplo é imutável, mas pode conter objetos mutáveis. Em `registo = ("Ana", 
 | `del xs[i]`       | Retira o elemento sem o devolver                     |
 | `xs[a:b] = ys`    | Substitui uma fatia, podendo mudar o comprimento     |
 
-`append`, `extend`, `insert`, `remove`, `sort` e `reverse` devolvem `None`. Não escrevas `xs = xs.append(4)`, porque acabarias com `xs` associado a `None`. `xs + ys` cria outra lista. Não alteres o comprimento da lista que estás a percorrer sem uma estratégia explícita; retirar um elemento pode deslocar o seguinte e fazê-lo escapar ao ciclo.
+`append`, `extend`, `insert`, `remove`, `sort` e `reverse` devolvem `None`. Não escrevas `xs = xs.append(4)`, porque acabarias com `xs` associado a `None`. Por exemplo, `ys = xs.append(4)` guarda `None` em `ys` e altera `xs`. `xs + ys` cria outra lista. Não alteres o comprimento da lista que estás a percorrer sem uma estratégia explícita; retirar um elemento pode deslocar o seguinte e fazê-lo escapar ao ciclo.
 
 ## Alias contra cópia, igualdade contra identidade
 
@@ -67,13 +76,21 @@ Um tuplo é imutável, mas pode conter objetos mutáveis. Em `registo = ("Ana", 
   }
 />
 
-As duas primeiras saídas têm o 9 porque a primeira linha é partilhada. A expressão `[linha.copy() for linha in matriz]` constrói uma lista com a cópia de cada linha. Esta forma chama-se compreensão e será explicada em [compreensões e geradores](/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas). Neste exemplo, os elementos das linhas são inteiros, por isso a alteração já é independente. Para estruturas mais profundas, copiar um só nível adicional pode não chegar.
+As duas primeiras saídas têm o 9 porque a primeira linha é partilhada. Para copiar cada linha sem usar ainda compreensões, constrói a lista nova com um ciclo:
+
+```python
+independente = []
+for linha in matriz:
+    independente.append(linha.copy())
+```
+
+Cada iteração acrescenta a cópia de uma linha. A forma equivalente com compreensão será explicada em [compreensões e geradores](/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas). Neste exemplo, os elementos das linhas são inteiros, por isso a alteração já é independente. Para estruturas mais profundas, copiar um só nível adicional pode não chegar.
 
 <ShallowCopyDiagram />
 
 O esquema mostra o estado após `copia[0][0] = 9`. Cada caixa é um objeto; cada seta é uma referência a esse objeto. As listas exteriores são distintas, mas as referências nas posições 0 e 1 de ambas chegam às mesmas listas interiores. Por isso, alterar um elemento da primeira linha através de `copia` também muda o que vemos através de `matriz`.
 
-Evita `[[0] * 3] * 2` para criar duas linhas independentes. A repetição exterior repete a referência à mesma linha. Usa `[[0] * 3 for _ in range(2)]` quando precisares de uma linha nova em cada posição, porque o nome `_` recebe o contador que não usas.
+Evita `[[0] * 3] * 2` para criar duas linhas independentes. A repetição exterior repete a referência à mesma linha. Quando precisares de uma linha nova em cada posição, cria cada linha dentro de um ciclo ou usa a forma da secção anterior; a versão com compreensão aparece na lição própria. O nome `_` recebe o contador que não usas.
 
 :::details[Ver a mesma construção com um ciclo]
 
