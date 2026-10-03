@@ -70,6 +70,28 @@ int* fim = v + 4;
 
 A aritmética de apontadores não serve para saltar entre objetos independentes. O intervalo habitual é `[inicio, fim)`: inclui o início e exclui o fim. A página [Templates e STL](/cadeiras/p/templates-stl/#iteradores) usa esta convenção nos algoritmos.
 
+## Campos e nós ligados
+
+Para aceder a um campo através de um apontador, `p->valor` equivale a `(*p).valor`. Um **nó** pode guardar um valor e o endereço do nó seguinte. Os nós não precisam de estar contíguos: seguimos o campo `seguinte`, não somamos um ao apontador.
+
+<CodePlayground
+  language="cpp"
+  title="Percorrer três nós sem copiar objetos"
+  code={
+    '#include <iostream>\n\nstruct No {\n    int valor;\n    No* seguinte;\n};\n\nint main() {\n    No terceiro{3, nullptr};\n    No segundo{2, &terceiro};\n    No primeiro{1, &segundo};\n    for (No* atual = &primeiro; atual != nullptr; atual = atual->seguinte)\n        std::cout << atual->valor << " ";\n    std::cout << "\\n";\n}\n'
+  }
+/>
+
+Saída:
+
+```text
+1 2 3
+```
+
+O percurso começa no primeiro nó. Depois de ler `1`, o campo `seguinte` leva ao segundo, depois ao terceiro. O último guarda `nullptr`, por isso a condição impede uma leitura por um apontador nulo. O ciclo termina porque esta cadeia tem um fim e não regressa a um nó anterior.
+
+Os três objetos são locais e mantêm-se vivos durante o percurso. Os campos são observadores: não destroem os nós. Não uses `delete` nestes endereços, porque os objetos não foram criados com `new`. Se uma estrutura reservar nós dinamicamente, precisa de definir quem os possui e liberta.
+
 ## Pilha, área livre e duração de vida
 
 Uma variável local normal tem **duração automática** e é destruída ao sair do bloco. A implementação costuma guardar estes objetos na pilha, ou _stack_. Um objeto criado com `new` tem duração dinâmica e permanece até à destruição explícita. O seu armazenamento vem da área livre, habitualmente chamada _heap_. A norma descreve durações de armazenamento; não exige uma organização física específica com estes nomes.
@@ -95,7 +117,7 @@ O objeto `local` morre ao sair da função. O endereço devolvido fica **pendent
   title="Reserva dinâmica com tamanho validado"
   input="4"
   code={
-    '#include <iostream>\n\nint main() {\n    int n = 0;\n    if (!(std::cin >> n) || n < 0 || n > 1000) {\n        std::cout << "Tamanho invalido\\n";\n        return 0;\n    }\n    int* valores = new int[n]{};\n    int soma = 0;\n    for (int i = 0; i < n; ++i) {\n        valores[i] = i + 1;\n        soma += valores[i];\n    }\n    std::cout << "Soma: " << soma << "\\n";\n    delete[] valores;\n}\n'
+    '#include <iostream>\n\nint main() {\n    int n = 0;\n    if (!(std::cin >> n) || n < 0 || n > 1000) {\n        std::cout << "Tamanho invalido\\n";\n        return 0;\n    }\n    int* valores = new int[n]{};\n    long long soma = 0;\n    for (int i = 0; i < n; ++i) {\n        valores[i] = i + 1;\n        soma += valores[i];\n    }\n    std::cout << "Soma: " << soma << "\\n";\n    delete[] valores;\n}\n'
   }
 />
 
@@ -105,7 +127,7 @@ Saída:
 Soma: 10
 ```
 
-O tamanho é limitado para evitar uma reserva descontrolada e para manter a soma em `int`. `new int[n]{}` inicializa os elementos a zero. O ciclo substitui-os por `1`, `2`, `3` e `4`, somando `10`. Para `n = 0`, a soma é `0` e `delete[]` continua válido. O endereço de um array vazio não autoriza qualquer indexação.
+O tamanho é limitado para evitar uma reserva descontrolada. A soma usa `long long`, que representa `500500`, a soma máxima deste exemplo, mesmo num sistema com `int` de 16 bits. `new int[n]{}` inicializa os elementos a zero. O ciclo substitui-os por `1`, `2`, `3` e `4`, somando `10`. Para `n = 0`, a soma é `0` e `delete[]` continua válido. O endereço de um array vazio não autoriza qualquer indexação.
 
 ## Fugas de memória e double-free
 

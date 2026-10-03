@@ -39,13 +39,13 @@ A [Cheat sheet](/cadeiras/p/folha-consulta/) serve para rever regras e condiçõ
 
 Prevê a saída antes de correr um programa. Se houver apontadores, desenha objetos e setas; se houver ciclos, acompanha índice e acumulador; se houver classes, identifica o invariante. Depois compara a execução com a previsão e muda um caso de fronteira.
 
-Os exercícios no fim das lições são próprios, com formatos de leitura de código, decisão e justificação. Não são provas antigas nem soluções de um projeto da cadeira. Resolve primeiro sem abrir as pistas. Num projeto, aplica os mesmos critérios a uma operação pequena de cada vez: contrato, implementação, teste e integração.
+Os exercícios no fim das lições são próprios, com leitura de código, decisão, justificação e escrita de funções. As respostas em C++ usam autoavaliação: compara o comportamento e o raciocínio com a solução. Correr um programa no editor não classifica a resposta automaticamente. Não são provas antigas nem soluções de um projeto da cadeira. Resolve primeiro sem abrir as pistas. Num projeto, aplica os mesmos critérios a uma operação pequena de cada vez: contrato, implementação, teste e integração.
 
 ## Programa e avaliação
 
-O âmbito segue a [ficha preenchida de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560094), consultada em 1 de outubro de 2026. Inclui programação imperativa em C/C++, memória dinâmica, objetos, herança, templates, STL, exceções, bibliotecas padrão, módulos, documentação, testes e runtime sanitizers. As ferramentas indicadas são GCC, CMake e CLion.
+O âmbito segue a [ficha preenchida de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560094), confirmada em 3 de outubro de 2026. Inclui programação imperativa em C/C++, memória dinâmica, objetos, herança, templates, STL, exceções, bibliotecas padrão, módulos, documentação, testes e runtime sanitizers. As ferramentas indicadas são GCC, CMake e CLion.
 
-Essa edição usa 10% de projeto e 90% de provas, com a componente de provas definida pelo máximo entre a média dos dois mini-testes e o recurso. Esta informação descreve 2025/26. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586987) consultada ainda não apresenta programa nem regras de avaliação preenchidos. Confirma as condições, datas e materiais permitidos no SIGARRA e no Moodle da tua edição.
+Essa edição usa 10% de projeto e 90% de provas, com a componente de provas definida pelo máximo entre a média dos dois mini-testes e o recurso. Esta informação descreve 2025/26. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586987), consultada em 3 de outubro de 2026, ainda não apresenta programa, bibliografia nem regras de avaliação preenchidos. Confirma as condições, datas e materiais permitidos no SIGARRA e no Moodle da tua edição.
 
 ## Bibliografia e fontes
 

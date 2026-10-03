@@ -22,7 +22,7 @@ int maximo(int a, int b) {
 }
 ```
 
-`maximo(4, 9)` devolve `9`. `return` termina a chamada; não imprime o resultado. O chamador decide se o guarda, se o usa numa conta ou se o imprime. Uma função `void` não devolve um valor.
+O operador condicional `condicao ? a : b` escolhe `a` se a condição é verdadeira e `b` caso contrário. Aqui, `4 > 9` é falso, por isso `maximo(4, 9)` devolve `9`. `return` termina a chamada; não imprime o resultado. O chamador decide se o guarda, se o usa numa conta ou se o imprime. Uma função `void` não devolve um valor.
 
 Uma **sobrecarga** usa o mesmo nome com listas de parâmetros diferentes. O compilador escolhe pela chamada; o tipo de retorno, por si só, não distingue duas sobrecargas. Argumentos por defeito permitem omitir os últimos argumentos, por exemplo `void imprimir(int n, char separador = ' ');`. O valor por defeito tem de estar visível no ponto da chamada. Não o repitas na definição se já o declaraste num cabeçalho.
 
@@ -59,7 +59,7 @@ Saída:
 
 Um array `int v[4]` contém quatro inteiros contíguos. Os índices válidos são `0`, `1`, `2` e `3`. `v[4]` está fora do array. Um array não aumenta de tamanho e não transporta automaticamente o seu comprimento quando é passado como argumento.
 
-Numa lista de parâmetros, `const int valores[]` é ajustado para `const int* valores`. Por isso, a função abaixo recebe também `n`.
+Numa lista de parâmetros, `const int valores[]` é ajustado para `const int* valores`. Por isso, a função abaixo recebe também `n`. `std::size_t`, de `<cstddef>`, é o tipo inteiro sem sinal usado para tamanhos e índices. Não representa valores negativos.
 
 <CodePlayground
   language="cpp"
@@ -80,7 +80,9 @@ Saída:
 
 O contrato de `soma` exige `n` elementos válidos a partir do endereço recebido e uma soma representável em `int`. Na segunda chamada, o intervalo começa no `-2` e contém `-2` e `7`, logo soma `5`. Na chamada vazia, o ciclo não desreferencia o apontador. `soma(nullptr, 1)` violaria o contrato.
 
-`sizeof(valores)` dentro desta função mede o apontador, não o array do chamador. Para um tamanho fixo com interface que o conserva, usa `std::array<T, N>`. Para tamanho variável, usa `std::vector<T>`.
+`sizeof(valores)` dentro desta função mede o apontador, não o array do chamador. Para um tamanho fixo com interface que o conserva, usa `std::array<T, N>`. Para tamanho variável, usa `std::vector<T>`. Um `std::vector<int>` guarda uma sequência de inteiros; `std::vector<int> v{4, -2, 7}` cria três elementos. A página [Templates e STL](/cadeiras/p/templates-stl/#vector-o-array-que-cresce) desenvolve esta coleção.
+
+Um **for por intervalo**, como `for (int x : valores)`, visita cada elemento de um array cujo tamanho é conhecido ou de uma coleção. `x` recebe uma cópia de cada inteiro; alterar `x` não altera o elemento. Com `for (int& x : valores)`, `x` refere-se ao elemento e permite alterá-lo. Um apontador isolado não fornece o tamanho para este percurso.
 
 Um array C multidimensional tem os elementos da última dimensão contíguos. Em `int matriz[2][3]`, há duas linhas de três inteiros. Uma função que recebe `const int matriz[][3]` precisa de conhecer a dimensão interior para avançar entre linhas. Isto não equivale a `int**`: um apontador para linhas de três inteiros e um apontador para apontadores têm representações e tipos diferentes.
 
@@ -103,7 +105,7 @@ Ponto p{2.0, 3.0};
 
 ## Strings e linhas
 
-`std::string` guarda uma sequência de unidades `char`. `size()` conta essas unidades, não caracteres Unicode visuais. A indexação exige um índice válido; `at()` verifica o limite e lança uma exceção. `+` concatena strings e `==` compara o conteúdo. `substr(pos, quantidade)` extrai uma parte; `find` devolve uma posição ou `std::string::npos` quando não encontra.
+`std::string` guarda uma sequência de unidades `char`. `size()` conta essas unidades, não caracteres Unicode visuais. Para ler ou alterar unidades do texto, usa índices de `0` a `size() - 1`; numa string vazia não há nenhuma. `at()` verifica esse limite e lança uma exceção. `texto[texto.size()]` permite consultar o terminador nulo, mas não é mais uma unidade do texto nem permite guardar outro carácter nessa posição. `+` concatena strings e `==` compara o conteúdo. `substr(pos, quantidade)` extrai uma parte; `find` devolve uma posição ou `std::string::npos` quando não encontra.
 
 Depois de `>>` ler um número, o fim de linha pode continuar na entrada. Um `getline` imediato leria o resto dessa linha, frequentemente vazio. Neste formato, a idade ocupa a primeira linha e o nome a segunda. Descartamos o resto da primeira linha antes de ler o nome.
 
@@ -132,6 +134,8 @@ Arrays de `char` comparados com `==` não comparam o texto, comparam endereços 
 
 ## Recursão e progresso
 
-Uma função recursiva chama-se a si própria. Precisa de um caso base e de uma medida que diminua até esse caso. A soma recursiva de `1` até `n` pode usar `soma(0) = 0` e `soma(n) = n + soma(n - 1)` para `n > 0`. Se não tratares `0`, podes criar chamadas sem fim.
+Uma função recursiva chama-se a si própria. Precisa de um caso base e de uma medida que diminua até esse caso. A soma recursiva de `1` até `n` pode usar `soma(0) = 0` e `soma(n) = n + soma(n - 1)` para `n > 0`. O contrato exige `n >= 0` e uma soma representável no tipo escolhido. Se não tratares `0`, podes criar chamadas sem fim.
+
+Para `n = 3`, a expansão é `3 + (2 + (1 + soma(0)))`. O caso base devolve `0`; ao regressar pelas chamadas, calculamos `1`, depois `3`, depois `6`. A descida reduz `n`; a subida combina os resultados. Uma entrada negativa não se aproxima do caso base ao subtrair um.
 
 Cada chamada conserva os seus parâmetros e variáveis locais. Um grande número de chamadas pode esgotar a pilha. Quando um ciclo resolve o mesmo problema com um acumulador, não precisas de recursão. Usa-a quando a decomposição do problema a torna clara, não como substituição automática de qualquer ciclo.
