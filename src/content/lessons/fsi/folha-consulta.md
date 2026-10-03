@@ -41,12 +41,14 @@ Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desen
 | RSA de brinquedo | $n=pq$, $\varphi=(p-1)(q-1)$, $ed\equiv1\pmod\varphi$, $c=m^e\bmod n$            |
 | PKI              | Cadeia, âncora confiável, nome, datas, usos/restrições e estado segundo política |
 
+- César, só A a Z: $y=(x+k)\bmod26$, recuperação com $-k$. Tem 26 deslocamentos; não protege dados reais.
+- Inverso modular: $ed\equiv1\pmod n$ existe se $e$ e $n$ são coprimos.
 - Chaves por par: $N(N-1)/2$. Com KDC, $N$ chaves duradouras entidade-centro no modelo simplificado; sessões à parte.
 - CRL identifica revogações no seu âmbito. Verificar emissor, assinatura, atualidade e âmbito; ausência numa lista antiga não prova validade.
 
 RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/criptografia/).
 
-- ECB revela repetições. CBC exige IV adequado e preenchimento. CTR exige não repetir contadores sob a mesma chave.
+- ECB revela repetições. CBC exige IV imprevisível e blocos completos. PKCS#7 acrescenta um bloco de preenchimento quando o tamanho já é múltiplo do bloco. CTR exige não repetir nenhum bloco de contador sob a mesma chave, mesmo entre mensagens.
 - Se reutilizas a sequência XOR: $C_1\oplus C_2=P_1\oplus P_2$.
 - AEAD dá confidencialidade e integridade; não dá proteção automática contra repetição.
 - DH: $A=g^a$, $B=g^b$, segredo $B^a=A^b$ no grupo. Sem autenticação permite intermediário ativo.

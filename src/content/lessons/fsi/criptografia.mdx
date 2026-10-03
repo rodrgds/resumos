@@ -37,7 +37,7 @@ Ana quer enviar uma mensagem ao Bruno sem que outra pessoa a leia. Bruno também
 | MAC                    | Chave partilhada                      | Integridade e autenticidade entre quem conhece a chave           | Confidencialidade ou prova pública do autor                |
 | Assinatura digital     | Privada do signatário                 | Integridade e verificação pública da origem                      | Confidencialidade                                          |
 
-Uma assinatura usa operações próprias `Sign` e `Verify`. Não se deve defini-la como "cifrar com a chave privada": isso não descreve algoritmos como EdDSA e omite a codificação segura do RSA. Se a chave privada foi roubada, verificar a assinatura não distingue o titular do ladrão.
+Uma assinatura usa operações próprias `Sign` e `Verify`. Não se deve defini-la como "cifrar com a chave privada": isso não descreve algoritmos como EdDSA e omite a codificação segura do RSA. Se a chave privada foi roubada, verificar a assinatura não distingue o titular do ladrão. Uma assinatura pode apoiar o não repúdio, porque terceiros podem verificar a prova. A atribuição de uma ação à pessoa continua a depender da associação da chave, da sua proteção e do contexto.
 
 Uma função hash tem saída de tamanho fixo. A resistência a pré-imagem dificulta encontrar uma entrada para um resumo dado; a resistência a segunda pré-imagem dificulta encontrar outra entrada com o resumo de uma entrada dada; a resistência a colisões dificulta encontrar quaisquer duas entradas diferentes com o mesmo resumo. São problemas diferentes. Para uma saída ideal de $n$ bits, a pesquisa genérica de colisões custa aproximadamente $2^{n/2}$ tentativas, por causa do paradoxo do aniversário.
 
@@ -47,11 +47,27 @@ Para confidencialidade, Ana cifra para a chave pública **do Bruno**, que decifr
 
 Em sistemas híbridos, uma chave de sessão protege os dados com uma cifra simétrica autenticada. Um mecanismo de acordo ou encapsulamento de chaves estabelece esse segredo. Isto evita usar operações de chave pública para todo o conteúdo. O acordo de chaves também precisa de autenticação, como veremos em [modos e protocolos](/cadeiras/fsi/modos-protocolos/).
 
+## Cifras clássicas e espaço de chaves
+
+A cifra de César desloca cada letra num alfabeto. Vamos usar só as 26 maiúsculas ASCII, com `A=0`, `B=1`, até `Z=25`, e manter espaços e pontuação. Com deslocamento $k=3$, `ZEBRA` passa a `CHEUD`. Depois de Z voltamos a A.
+
+Se $x$ é o número da letra, ciframos com $y=(x+k)\bmod26$ e recuperamos com $x=(y-k)\bmod26$. O símbolo $\bmod$ dá o resto não negativo da divisão pelo módulo. Por exemplo, $28\bmod26=2$, a letra C. O deslocamento é a chave.
+
+Só há 26 deslocamentos distintos, incluindo zero. Experimentar todos permite reconhecer uma mensagem legível. Numa substituição monoalfabética, cada letra recebe outra letra distinta: há $26! = 26\times25\times\cdots\times1$ permutações, mas as repetições e frequências do texto continuam a dar informação. Um espaço de chaves grande, sozinho, não demonstra segurança. Estas cifras servem para estudar ideias, não para proteger dados atuais.
+
+## Aritmética modular
+
+Escrever $u\equiv v\pmod n$ significa que $u-v$ é múltiplo de $n$. Não significa que os dois inteiros são iguais. Assim, $21\equiv1\pmod{20}$ porque a diferença é 20.
+
+Dois inteiros são **coprimos** quando o seu máximo divisor comum é 1. Um inverso modular de $e$ é um inteiro $d$ que satisfaz $ed\equiv1\pmod n$; existe precisamente quando $e$ e $n$ são coprimos. Para $e=3$ e módulo 20, $d=7$ serve porque $3\times7=21$ deixa resto 1. Já 2 não tem inverso módulo 20: todos os seus produtos são pares e não podem deixar resto 1.
+
+Podemos reduzir os resultados intermédios de uma potência. Para $26^7\bmod33$, temos $26^2\bmod33=16$ e $26^4\bmod33=25$. Como $7=4+2+1$, calculamos $25\times16\times26\bmod33=5$. Em Python, `pow(26, 7, 33)` faz a exponenciação modular sem construir primeiro o inteiro $26^7$.
+
 ## RSA de brinquedo
 
 Vamos calcular apenas RSA sem codificação, para compreender a aritmética. **Este esquema não é seguro para uso real.** Os esquemas reais de cifragem e assinatura acrescentam construções como OAEP e PSS.
 
-Bruno escolhe os primos $p=3$ e $q=11$. Então $n=pq=33$ e $\varphi(n)=(p-1)(q-1)=20$. Escolhe $e=3$, coprimo com 20, e $d=7$, porque $ed=21\equiv1\pmod{20}$. A chave pública é $(n,e)$ e a privada inclui $d$.
+Bruno escolhe os primos $p=3$ e $q=11$. Então $n=pq=33$ e $\varphi(n)=(p-1)(q-1)=20$. A função $\varphi$ conta os inteiros de 1 até $n-1$ coprimos com $n$; esta fórmula usa dois primos distintos. Escolhe $e=3$, coprimo com 20, e $d=7$, porque $ed=21\equiv1\pmod{20}$. A chave pública é $(n,e)$ e a privada inclui $d$.
 
 Para $m=5$, com $0\leq m<n$, Ana calcula $c=m^e\bmod n=125\bmod33=26$. Bruno recupera $m=c^d\bmod n=26^7\bmod33=5$.
 
