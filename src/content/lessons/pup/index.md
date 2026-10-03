@@ -21,12 +21,12 @@ Para começar, deves conseguir editar documentos, usar correio eletrónico e par
 
 - [Serviços e recursos](/cadeiras/pup/servicos-recursos/).
 - [Aprender e trabalhar em equipa](/cadeiras/pup/aprendizagem-equipa/).
+- [Segurança e emergência](/cadeiras/pup/seguranca/).
 - [Pesquisa e escrita com fontes](/cadeiras/pup/pesquisa-escrita/).
+- [Sustentabilidade em engenharia](/cadeiras/pup/sustentabilidade/).
 - [Relatórios técnicos](/cadeiras/pup/relatorios/).
 - [Gráficos e posters](/cadeiras/pup/comunicacao-visual/).
 - [Apresentação e defesa](/cadeiras/pup/apresentacao-defesa/).
-- [Sustentabilidade em engenharia](/cadeiras/pup/sustentabilidade/).
-- [Segurança e emergência](/cadeiras/pup/seguranca/).
 
 Refaz os exemplos e resolve as questões no fim de cada lição antes de abrir as pistas. A [cheat sheet](/cadeiras/pup/folha-consulta/) reúne as distinções para consulta rápida.
 
