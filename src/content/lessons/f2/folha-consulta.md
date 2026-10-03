@@ -48,7 +48,7 @@ $Q=\int\rho_VdV$, $I=\int\vec J\cdot d\vec A$, $\partial_t\rho_V=-\nabla\cdot\ve
 
 [Kirchhoff](/cadeiras/f2/circuitos-resistivos/#leis-de-kirchhoff): $\sum i=0$, $\sum u=0$ no modelo concentrado. Convenção passiva $p=ui$. Resistores série somam $R$; paralelo soma $1/R$. Divisor sem carga $u_2=U_sR_2/(R_1+R_2)$.
 
-[Thévenin](/cadeiras/f2/circuitos-resistivos/#thévenin-e-norton): $U_{\rm Th}$ em aberto; anular fontes independentes dá $R_{\rm Th}$. Tensão ideal vira curto, corrente ideal vira aberto. $I_N=U_{\rm Th}/R_{\rm Th}$. Carga: $I_L=U_{\rm Th}/(R_{\rm Th}+R_L)$. Máxima potência resistiva em $R_L=R_{\rm Th}$, com eficiência $50\%$.
+[Thévenin](/cadeiras/f2/circuitos-resistivos/#thévenin-e-norton): $U_{\rm Th}$ em aberto; anular fontes independentes dá $R_{\rm Th}$. Tensão ideal vira curto, corrente ideal vira aberto. $I_N=U_{\rm Th}/R_{\rm Th}$. Carga: $I_L=U_{\rm Th}/(R_{\rm Th}+R_L)$. Máxima potência resistiva em $R_L=R_{\rm Th}>0$: $P_{\max}=U_{\rm Th}^2/(4R_{\rm Th})$. Os $50\%$ de eficiência pertencem ao equivalente, não necessariamente à rede original.
 
 [RC e RL](/cadeiras/f2/circuitos-reativos/#transitório-rc): $i_C=C\dot u_C$, $u_L=L\dot i_L$. $u_C$ e $i_L$ são contínuos sem impulsos ideais. $x(t)=x_\infty+(x_0-x_\infty)e^{-t/\tau}$; $\tau_{RC}=R_{\rm Th}C$, $\tau_{RL}=L/R_{\rm vista}$. DC estacionário: condensador aberto, bobina em curto.
 
