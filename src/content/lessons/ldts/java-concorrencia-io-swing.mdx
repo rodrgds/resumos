@@ -8,7 +8,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Depois de representar o estado do jogo com classes e objetos em Java, esta página responde como fazer tarefas avançarem em períodos sobrepostos sem bloquear a interface nem corromper o estado partilhado.
+Com o estado do jogo representado em classes, faz agora tarefas avançarem em períodos sobrepostos sem bloquear a interface nem corromper o estado partilhado. O jogo lê ficheiros e responde a cliques; duas tarefas a mexer na mesma pontuação exigem coordenação explícita.
 
 Um jogo não pode deixar de responder enquanto lê um ficheiro. Separar tarefas pode resolver o bloqueio, mas introduz uma pergunta nova: o que acontece se duas tarefas acederem ao mesmo estado ao mesmo tempo?
 
@@ -118,6 +118,15 @@ class Caixa {
 
 A caixa vazia tem `valor == null`. O produtor espera enquanto está cheia; o consumidor espera enquanto está vazia. Mudar o estado e notificar sob o mesmo monitor impede perder a coordenação entre o teste da condição e a espera. Numa aplicação, uma `BlockingQueue` costuma fornecer este comportamento sem implementares os monitores à mão.
 
+Percorre uma execução com duas threads. O produtor coloca 1 e 2; o consumidor retira dois valores:
+
+1. Produtor adquire o monitor, vê `valor == null`, guarda 1, notifica e liberta.
+2. Consumidor adquire, vê `valor == 1`, retira, põe `null`, notifica e liberta.
+3. Produtor volta a adquirir, vê `null`, guarda 2, notifica.
+4. Consumidor adquire, retira 2.
+
+Se o consumidor chegar primeiro com a caixa vazia, entra no `while`, chama `wait()`, liberta o monitor e suspende. Quando o produtor notifica, o consumidor retoma, volta a adquirir o monitor e testa de novo a condição antes de ler. É por isso que o teste vive num `while`: acordar não reserva o valor.
+
 ## Interrupção e deadlock
 
 `interrupt()` pede a uma thread que interrompa o trabalho. Não a termina à força. O código consulta o sinal ou reage a `InterruptedException` em operações como `sleep`, `wait` e `join`. Se capturas a exceção e não a propagas, normalmente restaura o sinal com `Thread.currentThread().interrupt()` e termina a tarefa de forma coerente.
@@ -177,7 +186,35 @@ A saída é `120`. O programa cria ou substitui `pontos.txt` na pasta atual. Um 
 
 Em Swing, `JFrame` é uma janela, `JPanel` agrupa componentes e `JButton` emite eventos. Um **layout manager** coloca os componentes de acordo com regras. Evita coordenadas absolutas para a organização da interface, porque tamanhos de letra e janelas variam.
 
-A **Event Dispatch Thread**, EDT, processa eventos e atualiza a interface. Cria e altera a interface nessa thread. Um listener que demora bloqueia os outros eventos e o redesenho. Trabalho longo pode correr num `SwingWorker`. O listener cria-o, chama `execute()` e termina; `doInBackground()` realiza o trabalho noutra thread e devolve o resultado. `done()` corre na EDT e pode obter esse resultado com `get()`, tratando falhas antes de atualizar a interface. Chamar `get()` na EDT antes de a tarefa terminar bloqueia-a. Não alteres componentes Swing em `doInBackground()`.
+A **Event Dispatch Thread**, EDT, processa eventos e atualiza a interface. Cria e altera a interface nessa thread. Um listener que demora bloqueia os outros eventos e o redesenho. Trabalho longo corre num `SwingWorker`, que separa três momentos. Segue o percurso EDT para worker para EDT:
+
+1. O listener, na EDT, cria o worker, chama `execute()` e termina logo, libertando a interface.
+2. `doInBackground()` corre numa thread de trabalho: lê o ficheiro e devolve uma string. Nunca toca em componentes Swing aqui.
+3. `done()` corre de novo na EDT: chama `get()` para obter o resultado, trata exceções da leitura e atualiza o `JLabel`.
+
+O excerto seguinte mostra só o listener; `somar`, `valor` e `lerFicheiroGrande()` pertencem ao programa da interface.
+
+```java
+somar.addActionListener(evento -> {
+    SwingWorker<String, Void> tarefa = new SwingWorker<String, Void>() {
+        @Override
+        protected String doInBackground() throws Exception {
+            return lerFicheiroGrande();
+        }
+        @Override
+        protected void done() {
+            try {
+                valor.setText(get());
+            } catch (Exception ex) {
+                valor.setText("falha a ler");
+            }
+        }
+    };
+    tarefa.execute();
+});
+```
+
+Chamar `get()` no listener enquanto a tarefa decorre voltaria a bloquear a EDT. Envolver tudo em `invokeLater` sem worker só adia o mesmo bloqueio.
 
 Este programa completo requer um ambiente gráfico local, não o editor do navegador:
 

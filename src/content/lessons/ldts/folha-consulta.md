@@ -6,19 +6,19 @@ studyKind: revision
 order: 0
 ---
 
-No fim do percurso, esta página responde como rever depressa as condições e decisões de Git, Java, testes, UML e desenho.
+Reve depressa as condições e decisões de Git, Java, testes, UML e desenho.
 
 Cada linha resume uma decisão já explicada nas lições: o que verificar antes de escolher um comando, uma coleção ou um padrão, com ligações para a explicação completa.
 
 ## Git e Gradle
 
-| Decisão                          | Lembra                                                                                                       |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Escolher o próximo commit        | `add` prepara o conteúdo daquele instante. Editar depois não atualiza o índice. Confere `diff --cached`.     |
-| Integrar branches                | Fast-forward move a referência; histórias divergentes exigem combinar mudanças. Merge entra no branch atual. |
-| Obter ou publicar                | `fetch` obtém sem integrar; `pull` obtém e integra; `push` publica.                                          |
-| Desfazer no histórico partilhado | `revert` acrescenta um commit inverso. `reset --hard` pode destruir mudanças locais.                         |
-| Reproduzir o build               | Usa o wrapper e as versões declaradas. `testImplementation` não é uma dependência do programa.               |
+| Decisão                          | Lembra                                                                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Escolher o próximo commit        | `add` prepara o conteúdo daquele instante. Editar depois não atualiza o índice. Confere `diff --cached`.                                                           |
+| Integrar branches                | Fast-forward move a referência; histórias divergentes exigem combinar mudanças. Merge entra no branch atual.                                                       |
+| Obter ou publicar                | `fetch` obtém sem integrar; `pull` obtém e integra; `push` publica.                                                                                                |
+| Desfazer no histórico partilhado | `revert` acrescenta um commit inverso. `reset --hard` pode destruir mudanças locais.                                                                               |
+| Reproduzir o build               | Usa o wrapper, `options.release = 8` para o alvo e as versões declaradas. `testImplementation` não é uma dependência do programa. Cria `Main.java` antes de `run`. |
 
 [Áreas do Git](/cadeiras/ldts/controlo-versoes/#as-três-áreas-do-git) · [Integração](/cadeiras/ldts/controlo-versoes/#branches-e-merges) · [Gradle](/cadeiras/ldts/controlo-versoes/#dependências-com-gradle)
 
@@ -30,7 +30,7 @@ Cada linha resume uma decisão já explicada nas lições: o que verificar antes
 - Não alteres campos de igualdade/hash enquanto o objeto está num `HashSet` ou é chave de `HashMap`.
 - `List` mantém sequência e duplicados; `Set` unicidade; `Map` um valor por chave. `HashSet` e `HashMap` não prometem ordem de iteração.
 - Uma vista não modificável acompanha alterações da coleção original. Uma cópia defensiva separa as coleções, mas pode partilhar elementos mutáveis.
-- Genéricos são invariantes. `? extends T` permite ler como `T`; `? super T` permite inserir `T`. `extends` não torna a coleção imutável.
+- Genéricos são invariantes. Define `Caixa<T>` e métodos `<E>` antes de usar wildcards. `? extends T` permite ler como `T`; `? super T` permite inserir `T`. `extends` não torna a coleção imutável.
 - `start()` inicia a thread; `run()` direto é uma chamada normal; `join()` espera o fim. `sleep()` não é sincronização.
 - `synchronized` coordena acessos pelo mesmo monitor. `volatile` não torna `++` atómico. Usa `while` para testar a condição de `wait()`.
 - Bytes usam streams; texto usa readers/writers e uma codificação. `try-with-resources` fecha recursos. Swing atualiza a interface na EDT.
@@ -72,7 +72,7 @@ Cada linha resume uma decisão já explicada nas lições: o que verificar antes
 
 ## UML e arquitetura
 
-Classes mostram estrutura; sequência mostra ordem de mensagens; comunicação mostra ligações e ordem numerada; estados mostram eventos, guardas e transições. A multiplicidade num extremo conta objetos desse extremo para um objeto do outro. O losango de composição fica no todo. Uma referência Java não prova posse forte.
+Classes mostram estrutura; sequência mostra ordem de mensagens com `alt` para alternativas; comunicação mostra ligações e ordem numerada com `1.1` para chamadas aninhadas; estados mostram eventos, guardas e transições. Operações `getX()` iguais no código e nos diagramas. A multiplicidade num extremo conta objetos desse extremo para um objeto do outro. O losango de composição fica no todo. Uma referência Java não prova posse forte.
 
 MVC separa regras no modelo, apresentação na vista e interpretação/coordenação no controlador. Mostra o estado aceite pelo modelo, incluindo operações recusadas. Service Layer coordena casos de uso; Domain Model protege regras; Data Mapper separa persistência; Repository oferece consultas em termos do domínio. Testar uma chamada a `guardar` não prova que os dados ficaram persistidos.
 

@@ -8,7 +8,7 @@ practices:
 
 import YouTube from '../../../components/YouTube.astro';
 
-No início do percurso, esta página responde como guardar cada decisão do código e montar o projeto da mesma forma em qualquer máquina.
+Guarda cada decisão do código e monta o projeto da mesma forma em qualquer máquina. Sem isto, dois colegas alteram o mesmo jogo e ninguém sabe que versão mexeu no movimento ou na pontuação.
 
 Imagina um jogo simples com um herói que se move e uma pontuação que aumenta. Um colega alterou o movimento e tu alteraste a pontuação, e é preciso guardar cada decisão e combinar o trabalho sem perder nenhuma versão.
 
@@ -121,7 +121,9 @@ A revisão deve confirmar o contrato, os casos limite e as dependências, não a
 
 Um build deve especificar versões e tarefas, para não depender de ficheiros `.jar` copiados à mão. O **Gradle Wrapper**, `gradlew` e `gradle/wrapper/`, fixa a versão do Gradle do projeto. Guarda-o no Git e usa `./gradlew`, ou `gradlew.bat` no Windows, em vez de uma instalação global diferente.
 
-Vamos preparar o projeto que usaremos nos testes. Este exemplo local usa JDK 17 para correr Gradle 8.14.3 e compila código compatível com Java 8. A versão de Java que corre a ferramenta pode ser diferente da versão alvo do programa. Usa o wrapper e o JDK indicados no projeto da cadeira quando forem diferentes.
+Vamos preparar o projeto completo que usaremos nos testes. Este exemplo local usa JDK 17 para correr Gradle 8.14.3 e compilar para Java 8. A versão de Java que corre a ferramenta pode ser diferente da versão alvo do programa: o Gradle corre num JDK, o código compila para outro alvo. Usa o wrapper e o JDK indicados no projeto da cadeira quando forem diferentes.
+
+`sourceCompatibility` e `targetCompatibility` ajustam sintaxe e bytecode, mas não impedem o uso de APIs de versões posteriores. Para impor mesmo o alvo, usa `options.release = 8`, que configura sintaxe, bytecode e APIs da plataforma em conjunto.
 
 Guarda este `build.gradle` na raiz:
 
@@ -136,9 +138,8 @@ repositories {
     mavenCentral()
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+tasks.withType(JavaCompile).configureEach {
+    options.release = 8
 }
 
 dependencies {
@@ -178,12 +179,24 @@ src/test/resources/
 
 Em `settings.gradle`, escreve `rootProject.name = 'treino-ldts'`. Se ainda não tens wrapper e dispões de Gradle 8.14.3, corre `gradle wrapper --gradle-version 8.14.3` uma vez. Num projeto recebido da cadeira, o wrapper já deve existir.
 
+Cria primeiro o programa mínimo, porque `run` precisa dele. Guarda em `src/main/java/Main.java`:
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("treino pronto");
+    }
+}
+```
+
+Só depois corre, por esta ordem:
+
 ```bash
 ./gradlew test
 ./gradlew run
 ./gradlew jacocoTestReport
 ```
 
-`test` compila os testes e executa-os; o relatório HTML fica em `build/reports/tests/test/index.html`. `run` precisa de uma classe `Main` com método `main`. O relatório de cobertura fica em `build/reports/jacoco/test/html/index.html`.
+`test` compila e executa os testes; o relatório HTML fica em `build/reports/tests/test/index.html`. `run` executa o `Main` acima. O relatório de cobertura fica em `build/reports/jacoco/test/html/index.html`. Se `run` falhar com classe principal em falta, confirma que criaste o ficheiro no caminho exato antes de culpar o Gradle.
 
 No IntelliJ, abre a pasta que contém `settings.gradle`, seleciona o JDK e sincroniza o projeto Gradle. Se falhar, lê a primeira causa indicada no erro e compara JDK, wrapper, repositórios e dependências. Uma falha de descarga e um erro de compilação pedem verificações diferentes.

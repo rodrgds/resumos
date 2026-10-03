@@ -8,13 +8,15 @@ practices:
 
 import YouTube from '../../../components/YouTube.astro';
 
-Depois de separar responsabilidades com os princípios SOLID, esta página responde como verificar automaticamente se o comportamento cumpre o contrato.
+Com responsabilidades separadas pelos princípios SOLID, verifica agora automaticamente se o comportamento cumpre o contrato. A arena promete que células fora do intervalo são rejeitadas; o teste confirma essa promessa sem olhar para a condição escrita no código.
 
 Imagina uma arena dividida em células, que são as casas numeradas onde o herói pode estar. A regra que diz em que células o herói pode entrar é o contrato que vamos testar: um teste unitário, que é uma verificação automática de um comportamento pequeno, compara o resultado com essa regra. O valor esperado vem da regra da arena, não de copiar a condição do código para o teste.
 
 ## Escolher o que verificar
 
 Um teste unitário verifica uma unidade pequena através do seu comportamento observável. Pode abranger vários objetos simples que colaboram. Um teste de integração verifica a colaboração com uma fronteira real, como leitura de ficheiros. Um teste do sistema percorre a aplicação completa.
+
+Deriva os casos de partições do contrato antes de escreveres código de teste. Para `contem` com largura 5, há três partições: dentro (`0` a `4`), abaixo (`< 0`) e acima (`>= 5`). Escolhe um representante de cada, mais as fronteiras exatas `0`, `4`, `-1` e `5`. O esperado vem da regra da arena, não da condição copiada do código: isto é teste black-box. Depois de leres a implementação, acrescenta casos white-box que a estrutura sugere, como largura zero no construtor.
 
 Usa casos normais, limites e inválidos. Para largura 5, as células 0 e 4 estão dentro; -1 e 5 estão fora. Uma largura zero ou negativa não representa uma arena válida e deve ser rejeitada. Este último caso pertence ao contrato de construção, não à pergunta sobre uma célula válida.
 
@@ -181,6 +183,8 @@ Cobertura mede código executado pelos testes. Cobertura de linhas pergunta se u
 
 Imagina um teste que chama `contem(2)` e não verifica nada. Executa a linha da condição, mas aceita tanto `true` como `false`. A cobertura pode subir sem melhorar a proteção.
 
+O curto-circuito mostra outro limite da cobertura de linhas. Em `x >= 0 && x < largura`, um teste só com `x = 2` executa a linha mas nunca avalia o segundo operando a falso por causa do primeiro. Precisas de casos que façam cada condição decidir o resultado: `-1` chumba na primeira, `5` passa a primeira e chumba na segunda.
+
 **Mutation testing** altera o programa em pequenas operações, por exemplo trocar `<` por `<=`. Um mutante é **morto** quando os testes falham com essa mudança. Se todos passam, o mutante **sobrevive**. Um mutante sem cobertura nem sequer teve esse comportamento exercitado.
 
 No nosso `Limite`, trocar `x < largura` por `x <= largura` faz `contem(5)` passar de falso a verdadeiro. O teste exterior com `5` mata esse mutante. Testar só `2` e `6` não distingue as duas condições.
@@ -209,4 +213,6 @@ No relatório, escolhe a condição de `contem` e lê a mudança de cada mutante
 
 Num ciclo de desenvolvimento guiado por testes, começa com uma exigência pequena e observa a falha pelo motivo esperado. Implementa a mudança mínima que cumpre o contrato, observa o teste passar e só depois melhora a estrutura.
 
-Um erro de importação não prova que o teste deteta o comportamento. E ver verde antes de existir uma implementação pode revelar que o teste não verifica o requisito. Num defeito já existente, tenta reproduzi-lo através da interface pública mais próxima do utilizador e conserva esse caso como regressão.
+Um erro de importação não prova que o teste deteta o comportamento. E ver verde antes de existir uma implementação pode revelar que o teste não verifica o requisito.
+
+Property-based testing, nos slides e no resumo estudantil, gera muitos valores aleatórios e verifica uma propriedade em vez de exemplos fixos. É um complemento útil para descobrir fronteiras esquecidas, não matéria obrigatória enumerada na ficha atual. Num defeito já existente, tenta reproduzi-lo através da interface pública mais próxima do utilizador e conserva esse caso como regressão.

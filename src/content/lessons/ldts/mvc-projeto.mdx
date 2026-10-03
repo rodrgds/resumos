@@ -8,7 +8,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Depois de nomear colaborações com padrões de desenho, esta página responde quem interpreta a ação do utilizador, quem valida a regra e quem mostra o resultado.
+Com as colaborações nomeadas pelos padrões, decide agora quem interpreta a ação do utilizador, quem valida a regra e quem mostra o resultado. O botão não altera a posição diretamente: pede ao controlador, o modelo aceita ou recusa, a vista mostra o estado aceite.
 
 O utilizador pede um movimento para a direita e a célula de destino pode estar bloqueada. MVC, que é a separação entre as regras, a apresentação e a coordenação das ações, impede que o botão altere diretamente a posição: a regra decide se o movimento é válido e a interface mostra o resultado aceite.
 
@@ -48,7 +48,13 @@ controlador --> modelo
 controlador --> contrato da vista <-- vista concreta
 ```
 
-Uma `VistaSwing` pode implementar o mesmo contrato. Os listeners traduzem eventos em chamadas ao controlador. Como os eventos Swing são tratados na EDT, operações curtas do modelo podem correr aí; operações demoradas precisam de uma tarefa separada e de voltar à EDT para apresentar o resultado.
+Uma `VistaSwing` pode implementar o mesmo contrato. Os listeners traduzem eventos em chamadas ao controlador. Liga o botão sem pôr regra na vista:
+
+```java
+somar.addActionListener(evento -> controlador.mover(1));
+```
+
+O clique vira `mover(1)`; o controlador pede ao modelo e mostra `modelo.getX()`. A vista nunca calcula limites. Como os eventos Swing são tratados na EDT, operações curtas do modelo podem correr aí; operações demoradas precisam de uma tarefa separada e de voltar à EDT para apresentar o resultado.
 
 Não escondas uma regra no desenho. Se a vista limita a posição mas o modelo aceita qualquer valor, os testes do modelo e outra vista continuam vulneráveis.
 
@@ -56,7 +62,25 @@ Não escondas uma regra no desenho. Se a vista limita a posição mas o modelo a
 
 O modelo pode ser testado sem janela: começa em dois, move para três, recusa cinco e mantém três. Testa também a construção inválida, ambos os limites e deslocamentos extremos. O esperado vem do intervalo da arena.
 
-Para o controlador, passa uma vista controlada e confirma que recebe a posição aceite. O cenário de movimento bloqueado distingue mostrar `getX()` de mostrar o destino pedido. Um teste só com movimentos válidos não reconhece esse erro.
+Para o controlador, passa uma vista controlada e confirma que recebe a posição aceite. O cenário de movimento bloqueado distingue mostrar `getX()` de mostrar o destino pedido. Concretiza sem janela:
+
+```java
+class VistaMemoria implements Vista {
+    int ultimo = -1;
+    public void mostrar(int x) { ultimo = x; }
+}
+```
+
+Usa-a com as classes `Modelo` e `Controlador` da lição:
+
+```java
+Modelo modelo = new Modelo(5, 4);
+VistaMemoria vista = new VistaMemoria();
+new Controlador(modelo, vista).mover(1);
+assert vista.ultimo == 4;
+```
+
+`VistaMemoria` guarda o valor de `mostrar(int x)` num campo. O modelo recusa 5 e fica em 4; o controlador errado mostraria 5 e este teste falhava. Um teste só com movimentos válidos não reconhece esse erro.
 
 Para a vista concreta, verifica a tradução para texto ou componentes, incluindo os eventos que envia. Não precisas de abrir uma janela para testar a regra dos limites. Um teste completo da aplicação pode depois verificar que uma tecla percorre todas as peças.
 

@@ -6,7 +6,7 @@ practices:
   - ldts/praticar-arquitetura
 ---
 
-Depois de seguir uma ação completa com MVC no projeto, esta página responde onde ficam as regras, as operações e os dados guardados quando a aplicação cresce.
+Com uma ação MVC a percorrer modelo, vista e controlador, decide agora onde ficam regras, operações e dados guardados quando a aplicação cresce. Terminar a partida calcula pontos, valida o encerramento e persiste o resultado: três decisões com donos diferentes.
 
 Um pedido termina a partida e guarda o resultado: calcular a pontuação, decidir se a partida pode terminar e escrever uma linha numa base de dados são decisões diferentes. A arquitetura, que é a decisão sobre onde ficam essas responsabilidades e que contratos as ligam, separa quem coordena a operação de quem guarda o resultado.
 
@@ -18,7 +18,50 @@ Podemos distinguir apresentação, operações da aplicação, domínio e persis
 
 A apresentação recebe o pedido. Uma operação da aplicação coordena o caso de uso. O domínio valida a mudança. Um adaptador persiste o resultado. Os detalhes de SQL ou ficheiros não precisam de entrar nas entidades do domínio.
 
-Por exemplo, `TerminarPartida` recebe o identificador, obtém a partida, chama `partida.terminar()` e guarda o resultado. A partida decide se pode terminar e qual é a pontuação. A operação decide como combinar esse trabalho com a persistência.
+Segue o caso terminar a partida 7, com entidade, serviço e repositório. A entidade protege a regra:
+
+```java
+class Partida {
+    enum Estado { EM_CURSO, TERMINADA }
+    private Estado estado = Estado.EM_CURSO;
+    private int pontos;
+    Partida(int pontos) { this.pontos = pontos; }
+    void terminar() {
+        if (estado != Estado.EM_CURSO) {
+            throw new IllegalStateException("partida ja terminada");
+        }
+        if (pontos < 0) pontos = 0;
+        estado = Estado.TERMINADA;
+    }
+    boolean terminada() { return estado == Estado.TERMINADA; }
+    int getPontos() { return pontos; }
+}
+```
+
+O serviço coordena procura, operação e persistência, distinguindo ausência de falha:
+
+```java
+class TerminarPartida {
+    private final Partidas partidas;
+    TerminarPartida(Partidas partidas) { this.partidas = partidas; }
+    String terminar(long id) {
+        Partida partida = partidas.procurarPorId(id)
+            .orElseThrow(() -> new IllegalArgumentException("partida inexistente"));
+        partida.terminar();
+        partidas.guardar(partida);
+        return "partida " + id + ": " + partida.getPontos() + " pontos";
+    }
+}
+```
+
+Três percursos: sucesso termina e guarda; `Optional.empty()` após consulta válida devolve erro de ausência; exceção de I/O do repositório propaga-se como falha de acesso, sem fingir ausência. Em memória, `HashMap<Long, Partida>` serve para testes; em SQL, o mapper traduz linhas em `Partida` válidas.
+
+```text
+chamadas em execução: Apresentacao -> TerminarPartida -> Partida, Partidas
+dependências de código: TerminarPartida --> Partidas; PartidasMemoria --> Partidas; nada no domínio importa SQL
+```
+
+Uma Identity Map no âmbito da operação devolve a mesma instância nas duas leituras da partida 7, evitando dois objetos divergentes. Não torna as escritas atómicas nem impede outra operação de alterar a mesma linha: isso pertence à transação.
 
 Uma falha depois da alteração em memória e antes de guardar exige uma política. Não basta dividir o código em camadas para tornar a operação atómica. Temos de definir o que fica confirmado e o que pode ser repetido.
 
@@ -81,7 +124,7 @@ Um **Data Transfer Object**, DTO, transporta os dados necessários numa fronteir
 
 ## Seguir um caso de uso
 
-Para terminar a partida 7, a apresentação pede a operação ao serviço. O serviço obtém a entidade através de `Partidas`, trata a ausência, pede à entidade que termine e persiste a mudança. Devolve um resultado à apresentação.
+Para terminar a partida 7, a apresentação pede `terminar(7)` ao serviço. O serviço obtém a entidade através de `Partidas`, trata a ausência com erro explícito, pede `partida.terminar()`, persiste com `guardar` e devolve um DTO com identificador e pontuação. A apresentação mostra esse resultado sem tocar nos campos internos.
 
 Testa separadamente a regra de encerramento e a coordenação. Num teste do serviço, uma implementação em memória pode confirmar qual partida foi alterada. Um teste de integração da persistência verifica que o registo realmente sobrevive a uma nova leitura. Uma verificação de chamadas a um mock não prova essa durabilidade.
 

@@ -9,7 +9,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Depois de representar o estado em Java e de coordenar tarefas sem bloquear a interface, esta página responde como separar responsabilidades para que uma mudança não se propague pelo programa.
+Com o estado representado e as tarefas coordenadas, separa agora responsabilidades para que uma mudança não se propague pelo programa. Acrescentar um inimigo não deve obrigar a editar a entrada, o desenho e os testes de posições ao mesmo tempo.
 
 Vamos acrescentar um inimigo ao jogo. Se isso exige alterar a entrada, o desenho e os testes de posições, há partes a depender umas das outras mais do que deviam. SOLID, que são cinco princípios para desenhar classes que aguentam mudanças, ajuda a identificar por que uma mudança se propaga e onde devemos separar responsabilidades.
 
@@ -36,6 +36,32 @@ Para cada princípio, identifica uma alteração concreta que motivaria a separa
 Uma `Pontuacao` calcula pontos, escreve um ficheiro e desenha um texto no ecrã. As regras de pontuação, o formato do ficheiro e a apresentação podem mudar por motivos independentes. Separar essas decisões evita que mudar o formato altere a regra do jogo.
 
 O modelo pode fornecer o valor e operações válidas. Um adaptador guarda-o. Uma vista apresenta-o. Métodos relacionados com a mesma regra podem continuar juntos.
+
+Concretiza numa pontuação. Antes, tudo vive junto:
+
+```java
+class Pontuacao {
+    int pontos;
+    void somar(int v) { pontos += v; }
+    void guardarFicheiro() { /* formato + I/O aqui */ }
+    void desenharEcra() { /* texto gráfico aqui */ }
+}
+```
+
+Mudar o formato do ficheiro reedita a classe da regra do jogo. Depois, cada razão de mudança tem um dono:
+
+```java
+class Pontos { /* regra: somar, limites */ }
+class PontuacoesFicheiro { /* formato + escrita */ }
+class PontosVista { /* apresentação */ }
+```
+
+```text
+antes:  Pontuacao --> Ficheiro, Ecra, Regra
+depois: Jogo --> Pontos; PontuacoesFicheiro --> Pontos; PontosVista --> Pontos
+```
+
+A regra fica estável quando o formato muda. Dividir cada método numa classe sem separar uma decisão útil só cria ligações novas.
 
 Uma forma de reconhecer o problema é perguntar quem pede a mudança e qual a regra afetada. Dividir cada método numa classe cria mais ligações sem necessariamente separar uma decisão útil.
 
@@ -108,7 +134,7 @@ A interface deve usar conceitos da regra, não obrigar o modelo a fornecer um ca
 
 Classes que mudam juntas por uma razão comum podem pertencer ao mesmo pacote. Um ciclo entre pacotes torna mais difícil alterar ou reutilizar um deles isoladamente. Para o quebrar, localiza a dependência indevida e extrai um contrato no lado que precisa da capacidade.
 
-Se `modelo` importa `vista`, uma regra do jogo passa a exigir a interface gráfica. Inverter essa dependência permite reutilizar o modelo numa vista de terminal e nos testes. A lição de [MVC](/cadeiras/ldts/mvc-projeto/) aplica esta separação a uma interação completa.
+Se `modelo` importa `vista`, uma regra do jogo passa a exigir a interface gráfica. Os princípios de pacotes pedem o mesmo raciocínio a maior escala: pacotes estáveis com contratos claros, sem ciclos que impeçam reutilizar um lado isolado. Inverter essa dependência permite reutilizar o modelo numa vista de terminal e nos testes. A lição de [MVC](/cadeiras/ldts/mvc-projeto/) aplica esta separação a uma interação completa.
 
 ## Justificar uma decisão
 

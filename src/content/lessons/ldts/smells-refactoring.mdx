@@ -9,7 +9,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Depois de ler a estrutura e a execução nos diagramas UML, esta página responde como reconhecer uma dificuldade de mudança e melhorar o código sem alterar o comportamento.
+Com a estrutura e a execução desenhadas em UML, reconhece agora uma dificuldade de mudança e melhora o código sem alterar o comportamento. A regra de preço repetida em três classes obriga a três edições por cada mudança de preços.
 
 A regra de preço está repetida em três classes: uma alteração obriga a editar as três e pode deixar respostas diferentes. Refactoring, que é transformar a estrutura interna preservando o comportamento observável, move essa regra para um responsável comum sem aproveitar para mudar o preço.
 
@@ -102,7 +102,30 @@ public class Main {
 
 As saídas esperadas vêm da regra: zero custa `0`, três custam $3 \times 200 = 600$ e seis custam $5 \times 200 + 150 = 1150$.
 
-Vamos extrair o cálculo e manter a validação dentro dele, para qualquer cliente obter a mesma regra. O método de impressão delega e continua a ter o mesmo efeito:
+Vamos em três passos pequenos, verificando o comportamento em cada um. Casos de guarda: `imprimir(0)`, `imprimir(3)` e `imprimir(6)` dão `0`, `600` e `1150`.
+
+Passo 1, extrair sem mudar a fórmula. Move o cálculo tal como está para `calcular`, com a mesma ramificação:
+
+```java
+static int calcular(int unidades) {
+    if (unidades < 0 || unidades > 1000) {
+        throw new IllegalArgumentException("quantidade invalida");
+    }
+    int preco;
+    if (unidades <= 5) {
+        preco = unidades * 200;
+    } else {
+        preco = 5 * 200 + (unidades - 5) * 150;
+    }
+    return preco;
+}
+```
+
+`imprimir` passa a `System.out.println(calcular(unidades));`. Corre os três casos: mesmos valores, mesma exceção.
+
+Passo 2, mudar o responsável sem mudar valores. Cria `Tarifa.calcular` com esse corpo e delega. Os clientes passam a partilhar uma regra única; o comportamento continua igual.
+
+Passo 3, simplificar a fórmula preservando resultados. Só agora introduz constantes e a forma sem ramos:
 
 <CodePlayground
   language="java"

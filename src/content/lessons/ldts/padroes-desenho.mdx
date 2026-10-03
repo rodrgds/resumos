@@ -9,7 +9,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Depois de melhorar a estrutura com refactoring sem mudar o comportamento, esta página responde que colaboração entre objetos resolve cada problema repetido do desenho.
+Com a estrutura melhorada por refactoring, escolhe agora que colaboração entre objetos resolve cada problema repetido do desenho. O movimento do inimigo varia, mas posição e vida continuam no inimigo: o algoritmo muda de dono sem partir o cliente.
 
 O algoritmo de movimento muda, mas o inimigo continua a ter posição e vida. Já separámos esse algoritmo através de uma interface. Um padrão, que é um nome para essa colaboração entre objetos, explica em que situações é útil e que custos introduz.
 
@@ -92,6 +92,8 @@ Obtemos `5` e `2`. `Main` é o invocador; `Mover` o comando concreto; `Heroi` o 
 
 **Observer** permite que um sujeito notifique vários observadores através de um contrato. O sujeito não conhece as classes concretas que reagem. Cada interessado subscreve e deve poder deixar de subscrever.
 
+Começa pelo caso simples: um sujeito com lista de inscritos e notificação síncrona. O cliente subscreve dois observadores, altera o valor e cada um recebe `mudou(pontos)`. Sair da lista termina as notificações futuras.
+
 Na pontuação, um observador pode atualizar o texto e outro verificar uma conquista. A sequência é: alterar o valor, obter o novo estado válido e notificar os inscritos. O observador pode receber o valor, modelo **push**, ou pedir o estado ao sujeito, modelo **pull**.
 
 Este excerto mostra um sujeito com notificação síncrona:
@@ -132,7 +134,17 @@ Identifica quem mantém as subscrições, quem provoca a notificação e como um
 
 **Composite** usa uma interface comum para folhas e grupos. O grupo guarda filhos dessa interface, que podem ser folhas ou outros grupos. O cliente pede a operação sem testar qual é o caso.
 
-Imagina um grupo de inimigos com força total. Uma folha devolve a sua força. Um grupo soma a força dos filhos; se um filho for outro grupo, a mesma chamada continua recursivamente.
+Imagina um grupo de inimigos com força total. Uma folha devolve a sua força. Um grupo soma a força dos filhos; se um filho for outro grupo, a mesma chamada continua recursivamente. Desenha a árvore antes de somar:
+
+```text
+Grupo(exterior)
++- Soldado(4)
++- Grupo(interior)
+   +- Soldado(2)
+   +- Soldado(7)
+```
+
+O interior dá `2 + 7 = 9`; o exterior dá `4 + 9 = 13`. Cada chamada usa a mesma interface `forca()`, sem testar o tipo do filho.
 
 Este programa completo imprime a força de uma árvore:
 
@@ -242,7 +254,69 @@ interface Arma {
 }
 ```
 
-A implementação concreta fornece ambos os métodos. Acrescentar outra família é simples: outra fábrica e produtos. Acrescentar um novo **tipo de produto**, como `criarEscudo()`, exige mudar o contrato e todas as fábricas. Esta é uma consequência que deve pesar na escolha.
+A implementação concreta fornece ambos os métodos. Juntando contrato, produtos, fábricas e cliente, cada programa completo desta página corre no seu próprio `Main.java`. Guarda este como `Main.java` e corre-o localmente:
+
+```java
+interface Inimigo {
+    String descricao();
+}
+
+interface Arma {
+    int dano();
+}
+
+interface FabricaTema {
+    Inimigo criarInimigo();
+    Arma criarArma();
+}
+
+class Cavaleiro implements Inimigo {
+    public String descricao() { return "cavaleiro"; }
+}
+
+class Espada implements Arma {
+    public int dano() { return 4; }
+}
+
+class Robo implements Inimigo {
+    public String descricao() { return "robo"; }
+}
+
+class Laser implements Arma {
+    public int dano() { return 7; }
+}
+
+class FabricaMedieval implements FabricaTema {
+    public Inimigo criarInimigo() {
+        return new Cavaleiro();
+    }
+    public Arma criarArma() { return new Espada(); }
+}
+
+class FabricaEspacial implements FabricaTema {
+    public Inimigo criarInimigo() { return new Robo(); }
+    public Arma criarArma() { return new Laser(); }
+}
+
+class ArenaJogo {
+    private final Inimigo inimigo;
+    private final Arma arma;
+    ArenaJogo(FabricaTema fabrica) {
+        inimigo = fabrica.criarInimigo();
+        arma = fabrica.criarArma();
+    }
+    String descrever() { return inimigo.descricao() + ":" + arma.dano(); }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(new ArenaJogo(new FabricaMedieval()).descrever());
+        System.out.println(new ArenaJogo(new FabricaEspacial()).descrever());
+    }
+}
+```
+
+A saída é `cavaleiro:4` e `robo:7`. O cliente `ArenaJogo` só conhece `FabricaTema`, `Inimigo` e `Arma`; trocar a fábrica troca a família sem editar o cliente. Acrescentar outra família é simples: outra fábrica e produtos. Acrescentar um novo **tipo de produto**, como `criarEscudo()`, exige mudar o contrato e todas as fábricas. Esta é uma consequência que deve pesar na escolha.
 
 Factory Method resolve a decisão de um produto numa hierarquia de criadores. Abstract Factory fornece uma família através de um objeto fábrica. Uma Abstract Factory pode implementar os seus métodos de criação usando Factory Methods, mas as intenções continuam distintas.
 
