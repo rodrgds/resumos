@@ -160,7 +160,7 @@ O renderizador executa Python no computador do autor. O build e os visitantes us
 
 Cria um componente em `src/content/<cadeira>/`, envolvido em `InteractiveDemo.astro` com `label` descritivo, e importa-o na lição. A [transformação de uma matriz](src/content/exemplo/Transformacao.astro) é um exemplo completo.
 
-Mostra controlos da matéria, não a implementação web. Explica as hipóteses na lição e conserva um visual útil sem JavaScript. Dá nomes aos controlos, trata entradas inválidas e usa os tokens do tema. Prefere SVG para figuras simples; uma biblioteca só se justifica quando a experiência precisa dela. Verifica contas, teclado, movimento reduzido, claro/escuro e 320 px.
+Mostra controlos da matéria, não a implementação web. Explica as hipóteses na lição e conserva um visual útil sem JavaScript. O desenho e os valores iniciais devem corresponder aos controlos, com as mesmas contas usadas na interação. Dá nomes aos controlos, trata entradas inválidas e usa os tokens do tema. Prefere SVG para figuras simples; uma biblioteca só se justifica quando a experiência precisa dela. Verifica contas, teclado, movimento reduzido, claro/escuro e 320 px.
 
 ## Código que o leitor pode executar
 
