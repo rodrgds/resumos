@@ -14,6 +14,8 @@ editorial:
     - A edição do programa e as regras de avaliação a que os apontamentos correspondem não foram confirmadas.
 ---
 
+Depois de percorreres o caminho do vértice ao píxel, esta folha responde a onde está a fórmula ou a decisão certa na hora de rever.
+
 Antes de calcular, fixa **espaço de coordenadas, convenção de vetores e sentido da luz/câmara**.
 
 ## Transformar pontos, vetores e normais
