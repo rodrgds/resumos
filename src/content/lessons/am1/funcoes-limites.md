@@ -7,7 +7,7 @@ practices:
   - am1/pratica-fundamentos
 ---
 
-Começamos aqui o percurso de AM I: esta página responde a que entradas uma função aceita e para que valor as saídas apontam perto de um ponto.
+Começamos o percurso de AM I com duas perguntas concretas. Que valores de $x$ podemos usar em $f(x)=\sqrt{x-2}/(x-3)$? E para que valor aponta $\sin x/x$ quando $x$ se aproxima de zero? A primeira fixa o domínio. A segunda pede um limite.
 
 Pensa na tabela de preços de um café: a cada número de cafés corresponde um único valor a pagar. Uma **função**, que é essa correspondência entre cada entrada e um único valor de saída, generaliza esta ideia.
 
@@ -25,6 +25,8 @@ Uma função $f:D\to\mathbb R$ atribui a cada $x$ do domínio $D$ um único valo
 Por exemplo, em $f(x)=\ln(x-1)/\sqrt{4-x}$, o logaritmo exige $x>1$ e a raiz no denominador exige $x<4$. O domínio é $]1,4[$. Não podemos testar limites pela esquerda de $1$ dentro deste domínio.
 
 Se $f$ for injetiva, valores diferentes de entrada dão valores diferentes de saída. A inversa $f^{-1}$ desfaz a aplicação de $f$ e tem como domínio a imagem de $f$. O símbolo $f^{-1}$ não significa $1/f$.
+
+Por exemplo, $f(x)=x^2$ com $x\ge0$ é estritamente crescente, logo injetiva, com imagem $[0,+\infty[$. Para $y\ge0$, $y=x^2$ dá $x=\sqrt y$. A inversa é $g(y)=\sqrt y$, com domínio $[0,+\infty[$. Confere: $g(f(x))=x$ para $x\ge0$ e $f(g(y))=y$ para $y\ge0$. Sem a restrição do domínio, $x^2$ não teria inversa.
 
 ## Trigonometria e funções inversas
 
@@ -52,6 +54,10 @@ Adotamos $\operatorname{arccot}x=\pi/2-\arctan x$. Assim, $\arcsin(\sin x)=x$ ap
 Com os ramos da tabela, $\operatorname{arcsec}x=\arccos(1/x)$ e $\operatorname{arccsc}x=\arcsin(1/x)$. As restrições de valores fazem parte da definição das inversas.
 
 As identidades $\sin(2x)=2\sin x\cos x$ e $\cos(2x)=1-2\sin^2x=2\cos^2x-1$ vão permitir simplificar integrais. Lembra também que $\ln(ab)=\ln a+\ln b$ exige $a,b>0$ e que $\ln(a+b)$ não se separa.
+
+## Gráficos transformados
+
+A partir do gráfico de $f$, o gráfico de $f(x)+k$ desloca-se $k$ unidades na vertical, e o de $f(x-h)$ desloca-se $h$ unidades na horizontal. Multiplicar por $a>1$ estica; por $0<a<1$ comprime. Por exemplo, $\sqrt{x-2}$ é o gráfico da raiz deslocado duas unidades para a direita, com domínio $[2,+\infty[$. O sinal menos em $f(-x)$ espelha o gráfico no eixo vertical.
 
 ## O que significa um limite
 

@@ -4,12 +4,12 @@ description: Fórmulas e condições de diferenciação, séries, integração, 
 section: recursos
 studyKind: revision
 editorial:
-  basedOn: 2025/26
+  basedOn: 2026/27
   sources:
     - title: Resumos AM SofiaViP
       url: https://drive.google.com/file/d/15hBdUfPVPdZ8exFLuA_LYStff61YH2td/view
-    - title: Programa de AM I, SIGARRA 2025/26
-      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560086
+    - title: Programa de AM I, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587960
   coverage: Fórmulas e condições dos blocos desenvolvidos nas lições, incluindo Taylor, Laplace e Fourier.
 ---
 
@@ -27,9 +27,9 @@ $$
 
 $(\ln|u|)'=u'/u$ para $u\ne0$; $(\arctan u)'=u'/(1+u^2)$; $(\arcsin u)'=u'/\sqrt{1-u^2}$ para $|u|<1$. Para $u>0$, $(u^v)'=u^v(v'\ln u+vu'/u)$. [Regras](/cadeiras/am1/derivadas/#regras-básicas).
 
-Rolle exige continuidade em $[a,b]$, derivabilidade interior e $f(a)=f(b)$. Lagrange exige as duas primeiras condições e garante $f'(c)=[f(b)-f(a)]/(b-a)$. L'Hôpital exige $0/0$ ou $\infty/\infty$, derivabilidade perto do ponto, $g'\ne0$ e existência do limite de $f'/g'$. [Hipóteses](/cadeiras/am1/teoremas-valor-medio/#teorema-de-cauchy-e-regra-de-lhôpital).
+Rolle exige continuidade em $[a,b]$, derivabilidade interior e $f(a)=f(b)$, para posição escalar em movimento retilíneo. Lagrange exige as duas primeiras condições e garante $f'(c)=[f(b)-f(a)]/(b-a)$. L'Hôpital exige $0/0$ ou $\infty/\infty$, derivabilidade perto do ponto, $g'\ne0$ e existência do limite de $f'/g'$. [Hipóteses](/cadeiras/am1/teoremas-valor-medio/#teorema-de-cauchy-e-regra-de-lhôpital).
 
-Extremos interiores deriváveis exigem $f'=0$, mas o recíproco falha. Classifica pelo sinal de $f'$. Inflexão exige mudança de concavidade num ponto do gráfico. Para extremos absolutos em $[a,b]$, compara candidatos e extremos. [Estudo](/cadeiras/am1/estudo-funcoes/#monotonia-e-extremos).
+Extremos interiores deriváveis exigem $f'=0$, mas o recíproco falha. Classifica pelo sinal de $f'$ com continuidade no candidato. Inflexão exige mudança de concavidade num ponto do gráfico. Para extremos absolutos em $[a,b]$, compara candidatos e extremos. [Estudo](/cadeiras/am1/estudo-funcoes/#monotonia-e-extremos).
 
 ## Taylor e séries
 
@@ -96,7 +96,7 @@ $\cosh^2x-\sinh^2x=1$; $(\sinh)'=\cosh$, $(\cosh)'=\sinh$; $\int dx/\sqrt{1+x^2}
 | $y'+Py=Q$     | $\mu=e^{\int P}$; $(\mu y)'=\mu Q$                  |
 | $y'+Py=Qy^n$  | $v=y^{1-n}$; $n\ne0,1$; verifica soluções excluídas |
 
-Para $ay''+by'+cy=f$, $a\ne0$, resolve $ar^2+br+c=0$ e soma uma particular. Raízes distintas dão exponenciais; dupla dá $(C_1+C_2x)e^{rx}$; complexas dão $e^{\alpha x}(C_1\cos\beta x+C_2\sin\beta x)$. Em ressonância, multiplica o candidato por $x^m$, com $m$ igual à multiplicidade. [EDOs](/cadeiras/am1/equacoes-diferenciais/#segunda-ordem-linear-com-coeficientes-constantes).
+Para $ay''+by'+cy=f$, $a\ne0$, resolve $ar^2+br+c=0$ e soma uma particular. Raízes distintas dão exponenciais; dupla dá $(C_1+C_2x)e^{rx}$; complexas dão $e^{\alpha x}(C_1\cos\beta x+C_2\sin\beta x)$. Em ressonância, multiplica o candidato por $x^m$, com $m$ igual à multiplicidade. Se conheces uma solução $y_1$, a redução $y=y_1u$ baixa a ordem. Variação dos parâmetros exige a forma normalizada com $g=f/a$. [Segunda ordem](/cadeiras/am1/equacoes-segunda-ordem/#característica-e-problemas-de-valor-inicial).
 
 ## Laplace e Fourier
 

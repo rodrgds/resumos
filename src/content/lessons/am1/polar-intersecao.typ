@@ -1,0 +1,20 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  import draw: *
+  line((-3.2, 0), (5.2, 0))
+  line((0, -2.8), (0, 2.8))
+  content((5.2, 0), anchor: "west", [$x$])
+  content((0, 2.8), anchor: "south", [$y$])
+  circle((0, 0), radius: 2.2, stroke: rgb("28716c") + 1pt)
+  circle((2.2, 0), radius: 2.2, stroke: rgb("8c2d3b") + 1pt)
+  line((0, 0), (1.1, 1.91), stroke: rgb("8c2d3b") + 0.6pt)
+  line((0, 0), (1.1, -1.91), stroke: rgb("8c2d3b") + 0.6pt)
+  circle((1.1, 1.91), radius: 0.1, fill: rgb("c97b2d"), stroke: none)
+  circle((1.1, -1.91), radius: 0.1, fill: rgb("c97b2d"), stroke: none)
+  content((1.1, 2.35), [$theta = pi/3$])
+  content((1.1, -2.35), [$theta = -pi/3$])
+  content((-1.5, -2.6), [$r = 1$])
+  content((3.6, -2.6), [$r = 2 cos theta$])
+})
