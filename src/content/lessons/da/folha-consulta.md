@@ -76,25 +76,25 @@ Para maximizar: incumbente é limite inferior, nó tem limite superior; podar $U
 | $\Theta(n^{\log_ba})$                                         | $\Theta(n^{\log_ba}\log n)$ |
 | $\Omega(n^{\log_ba+\varepsilon})$ e $af(n/b)\le cf(n)$, $c<1$ | $\Theta(f(n))$              |
 
-Hanoi: $H(n)=2H(n-1)+1=2^n-1$, fora deste formato. Exponenciação por quadrados: uma chamada de expoente metade, $O(\log(k+1))$ multiplicações. Máscaras com somas recalculadas: $\Theta(n2^n)$; recursão binária com totais incrementais: $\Theta(2^n)$ antes de cópias. TSP dirigido com origem fixa: $(n-1)!$ circuitos, custo direto $\Theta(n!)$.
+Hanoi: $H(n)=2H(n-1)+1=2^n-1$, fora deste formato. Exponenciação por quadrados: uma chamada de expoente metade, $O(\log(k+1))$ multiplicações. Máscaras com somas recalculadas: $\Theta(n2^n)$; recursão binária com totais incrementais: $\Theta(2^n)$ antes de cópias. TSP dirigido com origem fixa: $(n-1)!$ ordens candidatas, custo direto $\Theta(n!)$.
 
 ## Estados de programação dinâmica
 
-| Problema                                                                       | Estado e transição                                                       | Custo           |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | --------------- |
-| Mochila 0-1                                                                    | $F[i,w]=\max(F[i-1,w],v_i+F[i-1,w-p_i])$ se cabe; caso contrário excluir | $O(nW)$         |
-| Trocos ilimitados                                                              | $C[i,t]=\min(C[i-1,t],1+C[i,t-c_i])$                                     | $O(nT)$         |
-| Trocos limitados                                                               | $\min_q(q+C[i-1,t-qc_i])$, $q\le s_i$                                    | $O(nTS)$ direto |
-| Soma de subconjuntos                                                           | Excluir OU incluir a partir da linha anterior                            | $O(nT)$         |
-| Subvetor não vazio                                                             | $E[i]=\max(A[i],E[i-1]+A[i])$; máximo sobre $i$                          | $O(n)$          |
-| [LCS](/cadeiras/da/sequencias-dinamica/#subsequ%C3%AAncia-comum-mais-longa)    | Iguais: diagonal +1; diferentes: máximo de cima e esquerda               | $O(             | X   |           | Y   | )$  |
-| [Edição](/cadeiras/da/sequencias-dinamica/#dist%C3%A2ncia-de-edi%C3%A7%C3%A3o) | Mínimo de remover, inserir, manter/substituir                            | $O(             | X   |           | Y   | )$  |
-| [Matrizes](/cadeiras/da/sequencias-dinamica/#cadeia-de-matrizes)               | $M[i,j]=\min_k(M[i,k]+M[k+1,j]+p_{i-1}p_kp_j)$                           | $O(n^3)$        |
-| [CYK](/cadeiras/da/linguagens-dinamica/#cyk-e-forma-normal-de-chomsky)         | Não-terminais por segmento; todas as divisões e produções binárias       | $O(n^3          | P   | )$ direto |
+| Problema                                                                       | Estado e transição                                                       | Custo                             |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------- |
+| Mochila 0-1                                                                    | $F[i,w]=\max(F[i-1,w],v_i+F[i-1,w-p_i])$ se cabe; caso contrário excluir | $O(nW)$                           |
+| Trocos ilimitados                                                              | $C[i,t]=\min(C[i-1,t],1+C[i,t-c_i])$                                     | $O(nT)$                           |
+| Trocos limitados                                                               | $\min_q(q+C[i-1,t-qc_i])$, $q\le s_i$                                    | $O(nTS)$ direto                   |
+| Soma de subconjuntos                                                           | Excluir OU incluir a partir da linha anterior                            | $O(nT)$                           |
+| Subvetor não vazio                                                             | $E[i]=\max(A[i],E[i-1]+A[i])$; máximo sobre $i$                          | $O(n)$                            |
+| [LCS](/cadeiras/da/sequencias-dinamica/#subsequ%C3%AAncia-comum-mais-longa)    | Iguais: diagonal +1; diferentes: máximo de cima e esquerda               | $O(\lvert X\rvert\lvert Y\rvert)$ |
+| [Edição](/cadeiras/da/sequencias-dinamica/#dist%C3%A2ncia-de-edi%C3%A7%C3%A3o) | Mínimo de remover, inserir, manter/substituir                            | $O(\lvert X\rvert\lvert Y\rvert)$ |
+| [Matrizes](/cadeiras/da/sequencias-dinamica/#cadeia-de-matrizes)               | $M[i,j]=\min_k(M[i,k]+M[k+1,j]+p_{i-1}p_kp_j)$                           | $O(n^3)$                          |
+| [CYK](/cadeiras/da/linguagens-dinamica/#cyk-e-forma-normal-de-chomsky)         | Não-terminais por segmento; todas as divisões e produções binárias       | $O(n^3\lvert P\rvert)$ direto     |
 
 Bases: mochila zero; trocos alvo zero com zero moedas e alvo positivo sem moedas com infinito; LCS prefixo vazio zero; edição prefixo vazio custa o comprimento do outro. Reconstruir exige pais, decisões ou divisões. Reduzir memória pode eliminar essa informação.
 
-$O(nW)$ e $O(nT)$ são pseudopolinomiais quando capacidade/alvo estão codificados em binário. Uma string com vários não-terminais numa célula CYK não prova ambiguidade; é preciso mais de uma árvore a partir do inicial.
+$O(nW)$ e $O(nT)$ são pseudopolinomiais quando capacidade/alvo estão codificados em binário. Vários não-terminais numa célula CYK não provam ambiguidade; é preciso mais de uma árvore a partir do inicial.
 
 [Kleene](/cadeiras/da/linguagens-dinamica/#constru%C3%A7%C3%A3o-de-kleene):
 
@@ -105,6 +105,8 @@ Inicializar transições diretas e $\varepsilon$ na diagonal; união até aos es
 ## Complexidade e aproximação
 
 [Classes e reduções](/cadeiras/da/complexidade-aproximacao/#decis%C3%A3o-certificados-e-classes): P resolve em tempo polinomial; NP verifica certificado polinomial. NP-completo = NP e NP-difícil. $A\le_p B$ transforma A em B, logo um solver de B resolve A. Para provar dificuldade de B, reduzir um problema difícil **para B**.
+
+[Três cores](/cadeiras/da/complexidade-aproximacao/#de-3-sat-para-tr%C3%AAs-cores): vértices $x,\neg x$ ligados entre si e a $B$ codificam valores opostos. Dispositivo de cláusula admite coloração se e só se algum literal é verdadeiro. $\omega(G)\le\chi(G)\le\Delta(G)+1$, com $\omega$ o tamanho da maior clique e $\Delta$ o maior grau; o limite superior vale para grafos simples.
 
 | Aproximação                                                | Garantia      | Hipótese decisiva                                                    |
 | ---------------------------------------------------------- | ------------- | -------------------------------------------------------------------- |

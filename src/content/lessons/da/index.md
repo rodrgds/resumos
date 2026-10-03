@@ -33,7 +33,7 @@ Escreve primeiro o que é uma solução válida. Se procuras um ótimo, define o
 
 Ao analisar a implementação, separa quatro perguntas: qual é o estado mantido, que decisões são possíveis, por que uma decisão ou poda é segura e quantas vezes cada operação acontece. Reconstruir um caminho, um conjunto de objetos ou uma atribuição faz parte da resposta quando o enunciado o pede.
 
-Os programas executáveis usam C++ com entrada pela consola e não precisam de ficheiros nem exceções. Os exemplos de gramáticas usam Python para tornar os conjuntos visíveis. Os números são pequenos para permitir seguir a execução; as análises de complexidade consideram entradas de tamanho variável.
+Os programas executáveis usam C++ com entrada pela consola e não precisam de ficheiros nem exceções. Os exemplos de gramáticas usam Python para tornar os conjuntos visíveis. Nos exercícios, Python pode ser verificado automaticamente pelos casos públicos. Código C++, provas e modelos usam autoavaliação: compara o teu raciocínio com a solução e os critérios, pois correr um programa não prova a sua correção nem a sua complexidade. Os números são pequenos para permitir seguir a execução; as análises de complexidade consideram entradas de tamanho variável.
 
 ## Edição e avaliação
 
@@ -43,7 +43,7 @@ $$NF=0{,}35(T_1+T_2)+0{,}15(P_1+P_2).$$
 
 Cada componente exige pelo menos 8 valores. Os projetos são feitos em grupos de dois ou três e têm demonstração obrigatória. A ficha prevê recurso global para a componente escrita. Estas regras descrevem 2025/26; confirma as regras da tua edição antes de planear a avaliação.
 
-O primeiro projeto de 2025/26 trata a atribuição de revisores a artigos através de fluxo máximo. O segundo estuda alocação de registos num compilador, com análise de variáveis vivas e coloração de grafos. As lições explicam os modelos e os algoritmos, mas não substituem os formatos de entrada, critérios de entrega ou decisões específicas desses enunciados.
+O primeiro projeto de 2025/26 trata a atribuição de revisores a artigos através de fluxo máximo. O segundo fornece intervalos de vivacidade para construir webs e um grafo de interferências, usado na alocação de registos de um compilador. Inclui coloração, transferência de webs para memória e divisão de webs. As lições explicam os modelos e os algoritmos, mas não substituem os formatos de entrada, critérios de entrega ou decisões específicas desses enunciados.
 
 ## Fontes
 
