@@ -7,6 +7,8 @@ practices:
   - so/praticar-ficheiros-api
 ---
 
+Já vimos programas em C e a shell; esta página responde a: como lê e escreve um programa os bytes de um ficheiro?
+
 Queremos copiar os bytes de um ficheiro para a saída padrão, ou seja o texto que o programa entrega por defeito. Há duas interfaces principais: a biblioteca C, que é o conjunto de funções auxiliares da linguagem e representa um ficheiro aberto com um `FILE *`, podendo juntar dados num buffer, isto é numa zona temporária de memória, e a API POSIX, ou seja as funções que pedem serviços diretamente ao núcleo, que representa um ficheiro aberto com um número inteiro chamado **descritor**. Conhecer ambas evita misturar tipos, ou seja permite escolher o nível de controlo necessário.
 
 ## FILE e descritor
