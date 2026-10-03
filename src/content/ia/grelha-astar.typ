@@ -1,6 +1,6 @@
 #import "@preview/cetz:0.5.2": canvas, draw
 #set page(width: auto, height: auto, margin: 8pt)
-#set text(size: 10pt)
+#set text(size: 12pt)
 #canvas({
   let h = (r, c) => (3 - r) + (3 - c)
   for r in range(4) {
@@ -10,7 +10,13 @@
         draw.rect((c, 3 - r), (c + 1, 4 - r), fill: rgb("8c2d3b"))
       } else {
         draw.rect((c, 3 - r), (c + 1, 4 - r))
-        draw.content((c + 0.5, 3.5 - r), [#h(r, c)])
+        draw.content((c + 0.5, 3.4 - r), [#h(r, c)])
+        if (r == 0) and (c == 0) {
+          draw.content((c + 0.5, 3.8 - r), [S])
+        }
+        if (r == 3) and (c == 3) {
+          draw.content((c + 0.5, 3.8 - r), [G])
+        }
       }
     }
   }

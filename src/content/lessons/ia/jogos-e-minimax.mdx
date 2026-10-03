@@ -9,7 +9,7 @@ import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import minimax from '../../ia/minimax.dot?raw';
 
-Quando há um adversário, o labirinto mexe-se contra ti: cada jogada tua é seguida da pior resposta possível do outro lado. O **Minimax** calcula a jogada ótima assumindo adversário perfeito, os **cortes alfa-beta** evitam calcular ramos que não mudam a decisão, e a **pesquisa em árvore Monte Carlo** (MCTS) troca a perfeição por amostragem quando a árvore é demasiado grande. Os três partem da mesma árvore de jogo.
+Num jogo com adversário, cada jogada tua pode ser seguida por uma resposta que reduz a tua utilidade. O **Minimax** calcula a jogada ótima assumindo adversário perfeito, os **cortes alfa-beta** evitam calcular ramos que não mudam a decisão, e a **pesquisa em árvore Monte Carlo** (MCTS) troca a perfeição por amostragem quando a árvore é demasiado grande. Aqui consideramos dois jogadores, turnos alternados, regras determinísticas, informação perfeita e soma zero: o ganho de MAX é a perda de MIN. Minimax completo usa utilidades de estados terminais. Com limite de profundidade, usa uma função de avaliação nas folhas de corte e já não garante a melhor jogada do jogo completo.
 
 ## Minimax numa árvore pequena
 
@@ -19,7 +19,7 @@ Propaga de baixo para cima. O nó A é MIN e escolhe o mínimo dos filhos: $\min
 
 ## Cortes alfa-beta
 
-O **alfa** ($\alpha$) é o melhor valor já garantido para o MAX no caminho até à raiz; o **beta** ($\beta$) é o melhor valor já garantido para o MIN. Quando $\alpha \ge \beta$ num nó, o resto dos seus filhos não influencia a decisão e é cortado. Percorre a mesma árvore da esquerda para a direita:
+O **alfa** ($\alpha$) é um limite inferior que MAX já consegue obter pelas alternativas examinadas; o **beta** ($\beta$) é um limite superior que MIN já consegue impor. Os limites herdados vêm das decisões dos antecessores. Quando $\alpha \ge \beta$ num nó, o resto dos seus filhos não influencia a decisão e é cortado. Percorre a mesma árvore da esquerda para a direita:
 
 1. Raiz MAX com $\alpha = -\infty$, $\beta = +\infty$. Desce a A.
 2. Nó A (MIN) com $\alpha = -\infty$, $\beta = +\infty$. Primeira folha 3: o mínimo fica 3, por isso $\beta = 3$. Segunda folha 5: como $5 \ge \beta$, o MIN continua a escolher 3. A folha 5 é lida mas não altera a decisão; o corte a sério vem a seguir. A devolve 3.
@@ -27,20 +27,20 @@ O **alfa** ($\alpha$) é o melhor valor já garantido para o MAX no caminho até
 4. Nó B (MIN): primeira folha 2. Como $2 \le \alpha$, o MAX já tem 3 garantido noutro ramo e nunca deixaria o jogo vir para aqui. **Corte**: a folha 9 não é avaliada. B devolve 2.
 5. Raiz: $\max(3, 2) = 3$.
 
-Uma folha poupada em quatro, mesmo resultado do Minimax completo. Em árvores grandes e bem ordenadas (melhores jogadas primeiro), o alfa-beta corta tanto que duplica a profundidade alcançável no mesmo tempo. A ordem dos filhos decide tudo: se as folhas de B viessem como 9 e depois 2, o corte 2 não acontecia, porque o 9 é avaliado antes de se saber que o ramo é mau.
+Uma folha poupada em quatro, mesmo resultado do Minimax completo. Com ordenação ideal, o tempo pode passar de $O(b^m)$ para $O(b^{m/2})$, para ramificação $b$ e profundidade $m$. Isso permite aproximadamente duplicar a profundidade no mesmo orçamento. No pior caso não há essa redução. A ordem dos filhos decide tudo: se as folhas de B viessem como 9 e depois 2, a condição de corte só se verificava depois de ler 2, quando já não restavam folhas para poupar.
 
 <Dot
   source={minimax}
   alt="Árvore Minimax: a raiz MAX liga aos nós MIN A e B; A liga às folhas 3 e 5, B liga às folhas 2 e 9. O caminho raiz, A, 3 está destacado e a aresta para o 9 está tracejada como cortada."
 />
 
-O Minimax com alfa-beta sobre esta árvore, executável abaixo, escreve o alfa e o beta em cada nó. Repara que a folha 5 chega a ser lida, mas o mínimo de A continua 3, por isso não altera nada: o corte a sério é só o da folha 9. A frase da secção anterior fica assim mais precisa: a folha 5 é irrelevante, a folha 9 é poupada.
+O Minimax com alfa-beta sobre esta árvore, executável abaixo, escreve o alfa e o beta em cada nó. Repara que a folha 5 chega a ser lida, mas o mínimo de A continua 3, por isso não altera nada: o corte a sério é só o da folha 9. O código aplica a condição de corte tanto em MAX como em MIN, embora esta árvore só permita poupar uma folha em MIN.
 
 <CodePlayground
   language="python"
   title="Minimax com alfa-beta"
   code={
-    'folhas = {"3": 3, "5": 5, "2": 2, "9": 9}\narvore = {"raiz": ("MAX", ["A", "B"]),\n          "A": ("MIN", ["3", "5"]),\n          "B": ("MIN", ["2", "9"])}  # -inf vale menos infinito\n\ndef minimax(n, alfa, beta):\n    if n in folhas:\n        print("folha", n, "=", folhas[n])\n        return folhas[n]\n    tipo, filhos = arvore[n]\n    if tipo == "MAX":\n        valor = float("-inf")\n        for f in filhos:\n            valor = max(valor, minimax(f, alfa, beta))\n            alfa = max(alfa, valor)\n            print(n + ": alfa =", alfa, ", beta =", beta)\n        return valor\n    valor = float("inf")\n    for i, f in enumerate(filhos):\n        valor = min(valor, minimax(f, alfa, beta))\n        beta = min(beta, valor)\n        print(n + ": alfa =", alfa, ", beta =", beta)\n        if alfa >= beta:\n            print("corte em " + n + ": " + str(filhos[i + 1:]) + " sem avaliar")\n            break\n    return valor\n\nprint("valor:", minimax("raiz", float("-inf"), float("inf")))'
+    'folhas = {"3": 3, "5": 5, "2": 2, "9": 9}\narvore = {"raiz": ("MAX", ["A", "B"]),\n          "A": ("MIN", ["3", "5"]),\n          "B": ("MIN", ["2", "9"])}  # -inf vale menos infinito\n\ndef minimax(n, alfa, beta):\n    if n in folhas:\n        print("folha", n, "=", folhas[n])\n        return folhas[n]\n    tipo, filhos = arvore[n]\n    if tipo == "MAX":\n        valor = float("-inf")\n        for f in filhos:\n            valor = max(valor, minimax(f, alfa, beta))\n            alfa = max(alfa, valor)\n            print(n + ": alfa =", alfa, ", beta =", beta)\n            if alfa >= beta:\n                print("corte em " + n)\n                break\n        return valor\n    valor = float("inf")\n    for i, f in enumerate(filhos):\n        valor = min(valor, minimax(f, alfa, beta))\n        beta = min(beta, valor)\n        print(n + ": alfa =", alfa, ", beta =", beta)\n        if alfa >= beta:\n            print("corte em " + n + ": " + str(filhos[i + 1:]) + " sem avaliar")\n            break\n    return valor\n\nprint("valor:", minimax("raiz", float("-inf"), float("inf")))'
   }
 />
 
@@ -52,6 +52,12 @@ Cortar no sítio errado por trocar alfa com beta. Regra curta: o MAX atualiza o 
 
 ## Monte Carlo quando a árvore é gigante
 
-No Go ou no xadrez com limite de tempo, a árvore completa não cabe em lado nenhum. O MCTS constrói estatísticas por amostragem em quatro fases repetidas: **seleção** (desce pela árvore guardada escolhendo filhos com bom equilíbrio entre vitórias e poucas visitas), **expansão** (acrescenta um filho novo), **simulação** (joga aleatoriamente até ao fim a partir daí) e **retropropagação** (atualiza visitas e vitórias em todos os nós do caminho).
+No Go ou no xadrez com limite de tempo, a árvore completa não cabe em lado nenhum. O MCTS constrói estatísticas por amostragem em quatro fases repetidas: **seleção** (desce pela árvore guardada escolhendo filhos com bom equilíbrio entre vitórias e poucas visitas), **expansão** (acrescenta um filho novo), **simulação** (joga segundo uma política de simulação, por exemplo aleatória, até ao fim) e **retropropagação** (atualiza visitas e vitórias em todos os nós do caminho).
 
-Um exemplo mínimo: a raiz tem 10 visitas; o filho A foi visitado 6 vezes com 4 vitórias, o filho B 4 vezes com 1 vitória. A próxima seleção tende para A (melhor taxa), mas B conserva poucas visitas, por isso continua a ser explorado de vez em quando. Ao fim de milhares de iterações, o filho com mais visitas é a jogada escolhida. Não há garantia de otimalidade como no Minimax, há uma aproximação cada vez melhor com mais tempo, que é exatamente o compromisso que os jogos reais exigem.
+Um exemplo mínimo: a raiz tem 10 visitas; o filho A foi visitado 6 vezes com 4 vitórias, o filho B 4 vezes com 1 vitória. Para tornar a escolha concreta, usa a regra UCT:
+
+$$
+U_i = \frac{w_i}{n_i} + c\sqrt{\frac{\ln N}{n_i}}.
+$$
+
+$w_i$ conta vitórias, $n_i$ visitas ao filho, $N$ visitas ao pai e $c$ regula exploração. Com $c=\sqrt{2}$, A tem $U_A \approx 1{,}543$ e B tem $U_B \approx 1{,}323$, por isso selecionamos A. O segundo termo favorece filhos pouco visitados; um filho sem visitas é experimentado antes de aplicar a divisão. Nos nós do adversário, as estatísticas devem refletir o objetivo desse jogador, por exemplo usando vitórias do jogador que escolhe ali, em vez de maximizar sempre as vitórias de MAX. Ao fim de milhares de iterações, o filho com mais visitas é a jogada escolhida. Não há garantia de jogada ótima com um orçamento finito. Mais simulações melhoram a estimativa em condições adequadas, mas o resultado depende da política de seleção e de simulação.

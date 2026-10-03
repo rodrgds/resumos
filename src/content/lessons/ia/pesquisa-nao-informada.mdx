@@ -9,13 +9,13 @@ import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import puzzle from '../../ia/puzzle8.dot?raw';
 
-Muitos problemas são labirintos disfarçados: do estado inicial ao objetivo há caminhos, e é preciso encontrar um. A **pesquisa não informada** (ou cega) explora o espaço de estados sem nenhuma pista sobre que direção é promissora. Distingue-se da pesquisa heurística, que usa pistas, mas a maquinaria é a mesma: gerar sucessores, lembrar visitados e escolher a ordem de expansão. A ordem é tudo, porque é ela que decide quanto trabalho se faz até ao objetivo.
+Muitos problemas são labirintos disfarçados: do estado inicial ao objetivo há caminhos, e é preciso encontrar um. A **pesquisa não informada** (ou cega) explora o espaço de estados sem nenhuma pista sobre que direção é promissora. Distingue-se da pesquisa heurística, que usa pistas, mas a maquinaria é a mesma: gerar sucessores, lembrar visitados e escolher a ordem de expansão. A ordem da fronteira determina que nós se visitam primeiro. Uma solução é um caminho, e o seu custo é a soma dos custos das ações.
 
 ## Espaço de estados
 
 Um problema de pesquisa tem: estado inicial, ações possíveis em cada estado, modelo de transição (para onde cada ação leva), teste de objetivo e custo de cada ação. O conjunto de todos os estados alcançáveis forma o **espaço de estados**, e a pesquisa constrói uma **árvore de pesquisa** sobre ele, que pode repetir estados do espaço quando há vários caminhos para o mesmo sítio.
 
-O exemplo desta página é um fragmento do 8-puzzle (tabuleiro 3 por 3 com 8 peças e uma casa vazia, onde cada ação desliza uma peça vizinha para a casa vazia). Parte do estado S, com a casa vazia no centro, e considera os quatro primeiros sucessores e dois níveis abaixo de dois deles:
+O exemplo desta página é um fragmento do 8-puzzle (tabuleiro 3 por 3 com 8 peças e uma casa vazia, onde cada ação desliza uma peça vizinha para a casa vazia). Parte do estado S, com a casa vazia no centro, e considera os quatro sucessores do início e os filhos de dois desses sucessores:
 
 - S: `1 2 3 / 4 _ 6 / 7 5 8`, vazia no centro.
 - A (cima): `1 _ 3 / 4 2 6 / 7 5 8`.
@@ -32,23 +32,27 @@ Confirma B2: mover a casa vazia de B para a direita troca-a com o 8, e a última
   alt="Grafo do fragmento do 8-puzzle: S no topo liga a A, B, C e D; A liga a A1 e A2; B liga a B1 e B2. O caminho S, B, B2 está destacado e B2 está marcado como objetivo."
 />
 
-A largura sobre este fragmento, executável abaixo, expande por níveis e gera B2 na expansão de B.
+## Gerar, retirar e expandir
+
+**Gerar** um nó é construí-lo como sucessor. A **fronteira** guarda os nós à espera de visita. **Expandir** um nó é gerar os seus sucessores. O teste de objetivo pode acontecer na geração ou ao retirar da fronteira; fixa essa convenção antes de contar.
+
+O código seguinte testa o objetivo ao retirar da fila. Guarda o pai de cada estado para reconstruir o caminho e marca estados visitados quando os coloca na fila, evitando duplicados e ciclos.
 
 <CodePlayground
   language="python"
   title="BFS no fragmento"
   code={
-    'from collections import deque\n\nsucessores = {\n    "S": ["A", "B", "C", "D"],\n    "A": ["A1", "A2"],\n    "B": ["B1", "B2"],\n}\nvisitados = {"S"}\nfila = deque(["S"])\nwhile fila:\n    n = fila.popleft()\n    print(n)\n    for m in sucessores.get(n, []):\n        if m not in visitados:\n            visitados.add(m)\n            fila.append(m)'
+    'from collections import deque\n\nsucessores = {\n    "S": ["A", "B", "C", "D"],\n    "A": ["A1", "A2"],\n    "B": ["B1", "B2"],\n}\npai = {"S": None}\nfila = deque(["S"])\nexpandidos = []\nwhile fila:\n    n = fila.popleft()\n    if n == "B2":\n        caminho = []\n        while n is not None:\n            caminho.append(n)\n            n = pai[n]\n        print("expandidos:", expandidos)\n        print("caminho:", list(reversed(caminho)))\n        break\n    expandidos.append(n)\n    for m in sucessores.get(n, []):\n        if m not in pai:\n            pai[m] = n\n            fila.append(m)'
   }
 />
 
-Isto escreve `S A B C D A1 A2 B1 B2`, a ordem de expansão da largura: B2 aparece durante a expansão de B, a distância 2 do início.
+B2 é gerado quando se expande B, o terceiro nó. O código continua até retirar B2, depois de expandir `S, A, B, C, D, A1, A2, B1`: oito expansões. O objetivo não é expandido. O caminho reconstruído é `S, B, B2`, com duas ações.
 
 ## Largura contra profundidade
 
-A pesquisa em **largura** (BFS) expande por níveis: primeiro S, depois A, B, C, D, depois A1, A2, B1, B2. Expande 8 nós até gerar o objetivo (na expansão de B) e devolve o caminho S, B, B2. Com custo uniforme por ação, a largura encontra sempre o caminho mais curto, porque visita todos os estados a distância 1 antes de qualquer estado a distância 2. O preço é a memória: guarda todos os nós do nível atual, e o nível cresce depressa.
+A pesquisa em **largura** (BFS) visita por níveis: primeiro S, depois A, B, C, D, depois A1, A2, B1, B2. Com teste ao retirar da fila, expande oito nós antes de reconhecer B2. Se testasse o objetivo na geração, bastariam três expansões: S, A e B. Com custo uniforme por ação, a largura encontra sempre o caminho mais curto, porque visita todos os estados a distância 1 antes de qualquer estado a distância 2. O preço é a memória: guarda todos os nós do nível atual, e o nível cresce depressa.
 
-A pesquisa em **profundidade** (DFS) desce sempre pelo primeiro sucessor: expande S, depois A, depois A1, depois o primeiro sucessor de A1 (descer a casa vazia dá `4 1 3 / _ 2 6 / 7 5 8`), e continua a descer. No fragmento de 3 níveis, os três primeiros expandidos são S, A, A1, e o objetivo B2, que está no ramo de B, fica por explorar. A profundidade usa pouca memória (só o caminho atual), mas pode perder-se em ramos infinitos e devolve o primeiro objetivo que encontra, não o mais próximo. É exploração recursiva com caso base no objetivo ou no limite de profundidade, o mesmo padrão da [recursão](/cadeiras/fp/recursao/) em programação.
+A pesquisa em **profundidade** (DFS) desce sempre pelo primeiro sucessor: expande S, depois A, depois A1, depois o primeiro sucessor de A1 (descer a casa vazia dá `4 1 3 / _ 2 6 / 7 5 8`), e continua a descer. No fragmento de 3 níveis, os três primeiros expandidos são S, A, A1, e o objetivo B2, que está no ramo de B, fica por explorar. A profundidade guarda o caminho e os sucessores ainda por explorar, mas pode perder-se em ramos infinitos e devolve o primeiro objetivo que encontra, não o mais próximo. No fragmento finito, depois de A1 visita A2, recua para B, visita B1 e encontra B2. No 8-puzzle completo, A1 tem outros sucessores e a ordem pode mudar. Numa pesquisa em grafo finito com visitados, DFS termina e encontra uma solução se existir; ainda assim não garante o custo mínimo. Pode implementar-se recursivamente, com caso base no objetivo ou num limite, o mesmo padrão da [recursão](/cadeiras/fp/recursao/) em programação.
 
 :::warning[O erro mais comum]
 Dizer que a profundidade "é mais rápida". Ela expande menos nós quando o objetivo está no ramo que ela desce primeiro, e muitos mais quando está noutro ramo. Sem informação sobre onde está o objetivo, não há garantia nenhuma. Rapidez só se discute com a posição do objetivo na ordem de expansão.
@@ -56,7 +60,7 @@ Dizer que a profundidade "é mais rápida". Ela expande menos nós quando o obje
 
 ## Custo uniforme e aprofundamento iterativo
 
-Quando as ações têm custos diferentes, a largura deixa de garantir o caminho mais barato. A pesquisa de **custo uniforme** expande sempre o nó com menor custo acumulado $g$ desde o início, que é a largura quando cada ação custa 1. É ótima, mas tal como a largura guarda muitos nós.
+Quando as ações têm custos diferentes, a largura deixa de garantir o caminho mais barato. A pesquisa de **custo uniforme** expande sempre o nó com menor custo acumulado $g$ desde o início, que é a largura quando cada ação custa 1. Com custos não negativos num grafo finito, é ótima se aceitar um caminho mais barato para um estado já descoberto e testar o objetivo ao retirar o nó de menor custo. Gerar um objetivo não basta: pode estar na fronteira outro caminho mais barato. Num espaço infinito, a completude exige condições adicionais, como ramificação finita e custos de ação pelo menos $\varepsilon > 0$.
 
 O **aprofundamento iterativo** combina o melhor dos dois: corre profundidades limitadas com limite 0, 1, 2, e por aí fora. Cada iteração revisita os níveis de cima (trabalho repetido), mas em árvores com fator de ramificação alto esse custo extra é pequeno face ao último nível, e a memória é a da profundidade. Quando cada ação custa o mesmo, encontra o caminho mais curto como a largura.
 
@@ -64,8 +68,12 @@ O **aprofundamento iterativo** combina o melhor dos dois: corre profundidades li
 
 No fragmento acima, com o objetivo B2 a distância 2 pelo ramo B:
 
-- Largura: ordem S, A, B, C, D, A1, A2, B1, e B2 é gerado na expansão de B. Caminho devolvido com custo 2, que é ótimo.
-- Profundidade (primeiro sucessor primeiro): ordem S, A, A1, e continua a descer pelo ramo de A sem tocar em B nos 3 níveis do fragmento. Se o objetivo estivesse no ramo A, ganhava; estando no ramo B, perde.
-- Custo uniforme com custo 1 por ação: coincide com a largura neste fragmento. Se a ação S para B custasse 5 e as outras 1, expandiria A, C e D (custo 1) antes de B (custo 5), e o caminho ótimo podia deixar de passar por B.
+- Largura, testando ao retirar: oito expansões, pela ordem S, A, B, C, D, A1, A2, B1. B2 é gerado na terceira e reconhecido depois da oitava. Custo 2.
+- Profundidade no fragmento, primeiro sucessor primeiro: S, A, A1, A2, B, B1; a seguir retira B2 e para. No problema completo pode explorar muitos outros estados antes de voltar a B.
+- Custo uniforme com custo 1 por ação: coincide com a largura neste fragmento. Se a ação S para B custasse 5 e as outras 1, expandiria A, C e D (custo 1) antes de B (custo 5), e o caminho S, B, B2 custaria 6. No fragmento não há outra solução, por isso continua a ser ótimo; seria preciso acrescentar outro caminho para mudar a escolha final.
 
-A moral do fragmento vale para o 8-puzzle inteiro: a estratégia de expansão decide que parte do espaço visitas, e sem heurística pagas sempre a visita a muitos estados irrelevantes. As heurísticas da próxima página servem para não os visitar.
+## Custo e memória
+
+Numa árvore, $b$ é o máximo de sucessores por nó, $d$ a profundidade do objetivo mais superficial e $m$ a profundidade máxima. Com teste de objetivo ao retirar, BFS usa tempo e memória $O(b^d)$; DFS usa tempo $O(b^m)$ e memória $O(bm)$; aprofundamento iterativo usa tempo $O(b^d)$ e memória $O(bd)$, para $b > 1$. Guardar todos os visitados num grafo acrescenta memória, até $O(|V|)$ para $|V|$ estados alcançáveis.
+
+Uma estratégia é **completa** se encontra uma solução quando existe, sob as hipóteses indicadas. É **ótima** se devolve uma solução de custo mínimo. Largura e aprofundamento iterativo são completos com ramificação finita e ótimos quando as ações têm o mesmo custo positivo. A [pesquisa heurística](/cadeiras/ia/pesquisa-heuristica/) usa uma estimativa do custo restante para ordenar a fronteira.

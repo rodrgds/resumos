@@ -11,6 +11,14 @@ import prova from '../../ia/prova-acima.dot?raw';
 
 Para pesquisar, o agente precisa do problema bem descrito. A **representação do conhecimento** guarda factos e regras numa **base de conhecimento**, e a **inferência** deriva conclusões novas a partir dela. A lógica proposicional e a lógica de primeira ordem dão a linguagem; o encadeamento para a frente e para trás dão os dois sentidos de uso. O exemplo desta página usa blocos, com três regras e um objetivo provado das duas maneiras.
 
+## Proposições, predicados e inferência
+
+Uma **proposição** é uma afirmação com valor verdadeiro ou falso. Se $S$ significa "o sensor deteta sujidade" e $A$ significa "o agente aspira", a regra $S \to A$ junto com $S$ permite concluir $A$. É _modus ponens_. A regra sozinha não permite concluir $S$ a partir de $A$; o agente pode aspirar por outro motivo.
+
+A lógica de primeira ordem acrescenta objetos, predicados e quantificadores. $Bloco(a)$ afirma uma propriedade do objeto $a$; $Sobre(a,b)$ relaciona dois objetos. $\forall x$ significa "para todo o objeto $x$" e $\exists x$ significa "existe pelo menos um objeto $x$". Por exemplo, $\forall x\,[Bloco(x) \to \exists y\,Sobre(x,y)]$ diz que cada bloco está sobre algum objeto. Esse objeto pode ser diferente para cada bloco.
+
+A base **implica logicamente** uma conclusão quando ela é verdadeira em todos os modelos que satisfazem a base. Um método de inferência é **correto** se só deriva conclusões implicadas pela base e **completo** se deriva todas as conclusões implicadas no fragmento que trata. Os encadeamentos desta página usam regras definidas, uma forma de cláusula de Horn com premissas positivas e uma conclusão positiva. Não são um procedimento completo para toda a lógica de primeira ordem.
+
 ## A base de exemplo
 
 Factos sobre blocos: $Bloco(a)$, $Bloco(b)$, $Sobre(a, b)$ e $Sobre(b, mesa)$. Regras com variáveis (lê $x$, $y$ e $z$ como "para todos"):
@@ -36,30 +44,32 @@ Cada passo instancia as variáveis com objetos concretos e só dispara quando as
   alt="Grafo da prova de Acima(a, mesa): os factos Sobre(a, b) e Sobre(b, mesa) derivam Acima(a, b) e Acima(b, mesa) pela regra R1, e estes derivam Acima(a, mesa) pela regra R2, destacada como objetivo."
 />
 
-O mesmo encadeamento em código, que deriva os factos novos e os escreve:
+O código seguinte trata R1 e R2. Repete as regras até não acrescentar factos, um **ponto fixo**. Usa uma cópia dos factos em cada ronda para não alterar o conjunto durante a iteração.
 
 <CodePlayground
   language="python"
   title="Encadeamento para a frente"
   code={
-    'factos = {("Sobre", "a", "b"), ("Sobre", "b", "mesa")}\nfor _, x, y in [f for f in factos if f[0] == "Sobre"]:\n    factos.add(("Acima", x, y))  # R1\nfor _, x, y in [f for f in factos if f[0] == "Acima"]:\n    for _, y2, z in [f for f in factos if f[0] == "Acima"]:\n        if y == y2:\n            factos.add(("Acima", x, z))  # R2\nprint(sorted(f for f in factos if f[0] == "Acima"))'
+    'factos = {("Sobre", "a", "b"), ("Sobre", "b", "mesa")}\nwhile True:\n    anteriores = set(factos)\n    for relacao, x, y in anteriores:\n        if relacao == "Sobre":\n            factos.add(("Acima", x, y))\n        if relacao == "Acima":\n            for relacao2, y2, z in anteriores:\n                if relacao2 == "Acima" and y == y2:\n                    factos.add(("Acima", x, z))\n    if factos == anteriores:\n        break\nprint(sorted(f for f in factos if f[0] == "Acima"))'
   }
 />
 
-Isto escreve `[('Acima', 'a', 'b'), ('Acima', 'a', 'mesa'), ('Acima', 'b', 'mesa')]`: os dois passos de R1 e depois o passo de R2 que prova o objetivo.
+A saída é `[('Acima', 'a', 'b'), ('Acima', 'a', 'mesa'), ('Acima', 'b', 'mesa')]`: os dois passos de R1 e depois o passo de R2 que prova o objetivo.
 
 ## Encadeamento para trás
 
-O encadeamento para trás parte do objetivo e procura regras que o conclusam, transformando-o em subobjetivos até chegar a factos. Para $Acima(a, mesa)$:
+O encadeamento para trás parte do objetivo e procura regras que o concluam, transformando-o em subobjetivos até chegar a factos. Para $Acima(a, mesa)$:
 
 1. Que regra conclui algo da forma $Acima(\_, \_)$ com $mesa$ no fim? R2, com $x = a$ e $z = mesa$. Subobjetivos: $Acima(a, y)$ e $Acima(y, mesa)$, para algum $y$.
 2. Tenta $y = b$. $Acima(a, b)$ conclui-se por R1 com $x = a$, $y = b$, cujo subobjetivo $Sobre(a, b)$ é facto. Primeiro ramo fechado.
 3. $Acima(b, mesa)$ conclui-se por R1 com $x = b$, $y = mesa$, cujo subobjetivo $Sobre(b, mesa)$ é facto. Segundo ramo fechado. Objetivo provado.
 
+Também poderíamos tentar R1 para o objetivo inicial, mas pediria $Sobre(a,mesa)$, que não é um facto. Esse ramo falha antes de se tentar R2. Regras recursivas como R2 exigem cuidado com ciclos: a ordem das regras e a deteção de subobjetivos repetidos podem decidir se a execução termina.
+
 Repara na escolha do passo 2: $y = b$ não caiu do céu, é o único objeto que aparece como "meio" nos factos $Sobre$. Em geral, o encadeamento para trás pesquisa sobre substituições possíveis, e é por isso que a programação em lógica (Prolog) se comporta como uma pesquisa com retrocesso: cada escolha de regra e de instância é um ramo. A execução do Prolog, com unificação e retrocesso, está explicada na página de [lógica e Prolog](/cadeiras/pfl/logica-unificacao-prolog/).
 
 :::details[Ver a prova por resolução]
-A resolução trabalha com cláusulas e deriva a cláusula vazia a partir da base mais o objetivo negado. Instancia R2 com $x = a$ e $z = mesa$: $\lnot Acima(a, y) \lor \lnot Acima(y, mesa) \lor Acima(a, mesa)$. Passo 1: resolve com o facto $Acima(a, b)$ e obtém $\lnot Acima(b, mesa) \lor Acima(a, mesa)$. Passo 2: resolve com o facto $Acima(b, mesa)$ e obtém $Acima(a, mesa)$, que contradiz o objetivo negado. Dois passos de resolução fazem o trabalho dos dois encadeamentos.
+A resolução trabalha com cláusulas e deriva a cláusula vazia a partir da base mais o objetivo negado. Instancia R2 com $x = a$ e $z = mesa$: $\lnot Acima(a, y) \lor \lnot Acima(y, mesa) \lor Acima(a, mesa)$. Passo 1: resolve com o facto $Acima(a, b)$ e obtém $\lnot Acima(b, mesa) \lor Acima(a, mesa)$. Passo 2: resolve com o facto $Acima(b, mesa)$ e obtém $Acima(a, mesa)$, que contradiz o objetivo negado. Por fim, resolve-se $Acima(a,mesa)$ com $\lnot Acima(a,mesa)$ e obtém-se a **cláusula vazia**, a contradição. Os dois factos $Acima(a,b)$ e $Acima(b,mesa)$ já tinham sido derivados por R1; não são factos iniciais da base.
 :::
 
 :::details[O papel de R3 no exemplo]
@@ -68,6 +78,6 @@ R3 nunca foi usada na prova, e está no exemplo de propósito. O encadeamento pa
 
 ## Sistemas periciais e limites
 
-Um **sistema pericial** é uma base de conhecimento grande com um motor de inferência, tipicamente para trás, que explica as conclusões mostrando as regras usadas. Foram a primeira aplicação comercial da IA (diagnóstico, configuração) e funcionam bem em domínios estreitos com regras claras.
+Um **sistema pericial** é uma base de conhecimento grande com um motor de inferência, tipicamente para trás, que explica as conclusões mostrando as regras usadas. Foram uma aplicação comercial importante da IA, em diagnóstico e configuração, e funcionam bem em domínios estreitos com regras claras.
 
-O limite é a aquisição e a rigidez: alguém tem de escrever as regras, e o mundo fora delas não existe para o sistema. Quando as regras são incertas ou aprendidas de dados, passam a interessar as probabilidades da próxima página em vez da verdade absoluta desta.
+O limite é a aquisição e a rigidez: alguém tem de escrever as regras, e o mundo fora delas não existe para o sistema. Se a base não permite provar $Acima(mesa,a)$, isso não prova a sua negação. Na lógica clássica, ausência de prova é desconhecimento. A negação por falha de Prolog tem uma convenção operacional diferente. Quando as regras ou os dados têm incerteza, podemos usar as probabilidades da próxima página.
