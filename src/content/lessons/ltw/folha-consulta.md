@@ -6,6 +6,10 @@ studyKind: revision
 order: 0
 ---
 
+Depois de estudares as lições do percurso, esta página responde onde rever cada regra depressa antes de resolver exercícios.
+
+Usa-a como consulta: cada linha resume uma condição e aponta para a explicação completa da lição.
+
 ## HTML e CSS
 
 - [Formulários](/cadeiras/ltw/html-estrutura/#formulários-e-dados-enviados): `id` liga à label; `name` identifica o parâmetro. Checkbox não marcada e `disabled` não enviam. `readonly` normalmente envia. `POST` não cifra; valida de novo no servidor.
