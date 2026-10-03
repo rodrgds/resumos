@@ -11,23 +11,29 @@ A vírgula fixa usa a mesma resolução em todo o intervalo. A vírgula flutuant
 
 ## Campos e valores
 
+O sinal $s$ vale 0 para positivo e 1 para negativo. A tabela indica o número de bits de cada campo e o bias do formato.
+
 | Formato  | Sinal $s$ | Expoente $E$ | Fração $F$ | Bias |
 | -------- | --------- | ------------ | ---------- | ---- |
 | binary32 | 1         | 8            | 23         | 127  |
 | binary64 | 1         | 11           | 52         | 1023 |
 | bfloat16 | 1         | 8            | 7          | 127  |
 
+Aqui $E$ e $F$ são os inteiros sem sinal lidos dos respetivos campos. $E_{\max}$ é o valor com todos os bits do expoente a 1, 255 em binary32. O bias é a constante subtraída a $E$, e $p$ é o número de bits da fração.
+
 Se $0<E<E_{\max}$, o número é normal:
 
 $$x=(-1)^s\left(1+\frac{F}{2^p}\right)2^{E-\mathrm{bias}},$$
 
-onde $p$ é o número de bits da fração. O 1 antes da vírgula é implícito. Assim binary32 tem 24 bits de precisão no significando dos normais.
+O 1 antes da vírgula é implícito. Assim binary32 tem 24 bits de precisão no significando dos normais.
 
 Se $E=0$, não há esse 1:
 
 $$x=(-1)^s\frac{F}{2^p}2^{1-\mathrm{bias}}.$$
 
 Com $F\ne0$ obtemos um subnormal. Com $F=0$ obtemos $+0$ ou $-0$. Se todos os bits do expoente forem 1, $F=0$ significa infinito e $F\ne0$ significa NaN, _not a number_. NaN não é um número muito grande.
+
+Binary32 e binary64 são formatos IEEE 754. Bfloat16 usa a disposição indicada na tabela; não se deve inferir que qualquer operação ou conversão de bfloat16 tenha as mesmas regras de um ambiente IEEE 754 completo. Nos exemplos de arredondamento abaixo usamos explicitamente o modo mais próximo, com empates para par.
 
 ## Codificar um valor
 
@@ -52,7 +58,7 @@ Agrupar em grupos de quatro bits dá `0xC1540000`. Para descodificar, reconstró
 
 Em binary32, o menor normal positivo é $2^{-126}$ e o menor subnormal positivo é $2^{-149}$. O maior finito é $(2-2^{-23})2^{127}$. Os subnormais mantêm passos de $2^{-149}$ perto de zero, com menos bits significativos à medida que o valor diminui.
 
-Entre $2^e$ e $2^{e+1}$, os normais binary32 têm espaçamento $2^{e-23}$. Entre 1 e 2 é $2^{-23}$; entre 2 e 4 é $2^{-22}$. Em bfloat16, o menor representável maior que 2 é $2+2^{-6}$. O expoente tem a mesma largura de binary32, mas a precisão é muito menor.
+No intervalo $[2^e,2^{e+1})$, os normais binary32 têm espaçamento $2^{e-23}$. Entre 1 e 2 é $2^{-23}$; entre 2 e 4 é $2^{-22}$. Em bfloat16, o menor representável maior que 2 é $2+2^{-6}$. O expoente tem a mesma largura de binary32, mas a precisão é muito menor.
 
 ## Somar e subtrair
 
@@ -61,6 +67,8 @@ Para somar $5{,}5+1{,}25$, escreve $1{,}011_2\times2^2$ e $1{,}01_2\times2^0$. A
 Subtrair usa o mesmo alinhamento. Por exemplo $5{,}5-5{,}25$ dá $(1{,}011-1{,}0101)\times2^2=0{,}0001\times2^2=1\times2^{-2}=0{,}25$. Depois de uma quase anulação, pode ser preciso normalizar deslocando para a esquerda.
 
 No formato finito, conserva bits adicionais durante a conta e arredonda no fim. O modo usual é o mais próximo, com empates para o significando cujo último bit conservado é par. Truncar sempre não implementa esta regra.
+
+Um modelo pequeno com três bits de fração ajuda a ver um empate. Entre 1 e 2, os números avançam de 1/8 em 1/8. O valor $1+1/16=1{,}0001_2$ fica a meio de `1,000` e `1,001`: escolhemos `1,000`, cujo último bit é 0. Já $1+3/16=1{,}0011_2$ fica a meio de `1,001` e `1,010`: escolhemos `1,010`. Empate para par pode arredondar para cima ou para baixo. Este modelo serve apenas para explicar a regra; binary32 conserva 23 bits de fração.
 
 ## Multiplicar e perder precisão
 
