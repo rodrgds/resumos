@@ -17,7 +17,7 @@ import Dot from '../../../components/Dot.astro';
 import vlans from '../../rc/vlan.typ?raw';
 import estrela from '../../rc/comutador.dot?raw';
 
-Um comutador encaminha tramas dentro de uma rede de ligação. Aprende as portas de origem das tramas e procura a porta do endereço de destino. Esta operação não calcula uma rota IP. **MAC** é o endereço de ligação da interface usado nestas tramas, não o endereço IP de um destino noutra rede.
+Um comutador encaminha tramas dentro da rede de ligação. Aprende portas de origem e procura a porta do destino. Isto não calcula rota IP. **MAC** é o endereço de ligação da interface, não o IP de outra rede.
 
 ## Aprendizagem e reenvio
 
@@ -31,7 +31,7 @@ Para cada trama recebida, o comutador:
 
 A tabela tem envelhecimento. Uma estação que muda de porta pode ser reaprendida; não é preciso aguardar sempre pela expiração. A inundação não altera os endereços da trama.
 
-**Exemplo.** A, B, C e D estão nas portas 1 a 4. A tabela começa vazia. A→B aprende A:1 e sai em 2, 3, 4. B→A aprende B:2 e sai só em 1. C→A aprende C:3 e sai só em 1. Se A→C entrar pela porta 1, sai só em 3. Aprende sempre a origem, mesmo quando não conhece o destino.
+**Exemplo.** Liga A, B, C e D às portas 1 a 4 com tabela vazia. A→B aprende A:1 e sai em 2, 3, 4. B→A aprende B:2 e sai só em 1. C→A aprende C:3 e sai só em 1. Aprende sempre a origem, mesmo sem conhecer o destino.
 
 <Dot
   source={estrela}
@@ -40,7 +40,7 @@ A tabela tem envelhecimento. Uma estação que muda de porta pode ser reaprendid
 
 ## Ethernet e domínios
 
-Uma trama Ethernet inclui MAC de destino e origem, campo de tipo ou comprimento, dados e FCS. O **FCS**, _Frame Check Sequence_, é a verificação CRC no fim da trama. Deteta erros na trama; uma trama inválida é descartada. A retransmissão fiável, quando necessária, fica noutro protocolo.
+Uma trama Ethernet inclui MAC de destino e origem, tipo ou comprimento, dados e FCS. O **FCS** é a verificação CRC no fim. Deteta erros e leva a descartar a trama; a retransmissão fiável, se necessária, fica noutro protocolo.
 
 Um **domínio de colisão** partilha um meio half-duplex. Um concentrador liga as estações ao mesmo domínio. Num comutador, cada porta separa esse domínio; em full-duplex não há colisões nesse enlace. Um **domínio de broadcast** é o conjunto alcançado por uma trama broadcast. Um comutador sem separação em VLANs não o divide. Um router separa redes de ligação e não reenvia simplesmente o broadcast Ethernet recebido.
 
@@ -60,15 +60,15 @@ A e B na VLAN 10 podem trocar tramas. A e C em VLANs diferentes precisam de enca
 
 ## Ciclos e spanning tree
 
-Ligações redundantes criam ciclos na topologia física. Uma trama broadcast pode circular e multiplicar-se: Ethernet não tem um TTL que limite essas cópias como IP. A aprendizagem MAC também pode oscilar entre portas.
+Ligações redundantes criam ciclos físicos. Um broadcast pode circular e multiplicar-se, porque Ethernet não tem TTL como IP. A aprendizagem MAC também pode oscilar.
 
-**Spanning Tree** escolhe uma topologia lógica sem ciclos. Os equipamentos elegem uma raiz e selecionam caminhos para ela, deixando portas redundantes sem encaminhar dados. A topologia pode mudar após uma falha. Não memorizes «desliga o cabo mais caro»: o algoritmo usa identificadores, custos e critérios de desempate.
+**Spanning Tree** escolhe uma topologia lógica sem ciclos. Os equipamentos elegem raiz e caminhos, deixando redundantes sem encaminhar. Não memorizes «desliga o cabo mais caro»: o algoritmo usa identificadores, custos e desempates.
 
 Num triângulo A-B-C, é possível manter as três ligações físicas e permitir encaminhamento em apenas duas. O caminho ativo pode deixar de ser o caminho fisicamente mais curto para certos pares; a prioridade é impedir ciclos.
 
 ## Wi-Fi: associação e mobilidade
 
-Um **BSS**, _Basic Service Set_, agrupa estações numa célula Wi-Fi. Num BSS de infraestrutura, usam um ponto de acesso. O SSID identifica a rede apresentada, enquanto o BSSID identifica o conjunto de serviço concreto. Canais sobrepostos, interferência, distância e contenção afetam o débito útil.
+Um **BSS** agrupa estações numa célula Wi-Fi. Na infraestrutura usam um ponto de acesso. O SSID identifica a rede apresentada e o BSSID o conjunto concreto. Canais sobrepostos, interferência, distância e contenção afetam o débito útil.
 
 A associação estabelece a relação entre estação e ponto de acesso; autenticação e proteção de dados dependem do mecanismo usado. Não confundas encontrar uma rede com conseguir autenticar-te nela. Um conjunto de pontos de acesso interligados pode formar um **ESS**, _Extended Service Set_, e permitir mobilidade entre células.
 
@@ -76,7 +76,7 @@ As tramas 802.11 podem conter mais campos de endereço que Ethernet, distinguind
 
 ## Seguir IP e MAC ao longo do caminho
 
-A envia para B numa rede diferente. A constrói um pacote com IP de origem A e destino B, mas a trama tem como destino o **MAC do gateway**, obtido por ARP em IPv4. O router recebe-a e constrói outra trama com o seu MAC de saída e o MAC do próximo salto.
+A envia para B noutra rede. A constrói pacote com IP origem A e destino B, mas a trama leva o **MAC do gateway**, obtido por ARP. O router recebe-a e constrói outra com o seu MAC de saída e o MAC do próximo salto.
 
 | Local observado  | IP de origem | IP de destino | MAC de origem                | MAC de destino                 |
 | ---------------- | ------------ | ------------- | ---------------------------- | ------------------------------ |

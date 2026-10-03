@@ -17,7 +17,7 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Filas from '../../rc/Filas.astro';
 
-Uma ligação de grande débito pode continuar a responder lentamente. O débito limita a quantidade por segundo; a latência inclui transmissão, propagação, processamento e espera. Começa por separar estas parcelas.
+Uma ligação rápida pode responder devagar. O débito limita quantidade por segundo e a latência soma transmissão, propagação, processamento e espera. Separa primeiro estas parcelas.
 
 ## Atraso de um salto
 
@@ -39,17 +39,17 @@ A 100 Mbit/s com RTT de 40 ms, $R\,RTT=4$ Mbit, ou 500000 bytes. Uma janela de a
 
 ## Lei de Little
 
-Num sistema estável, a média de elementos presentes $N$ satisfaz:
+Num sistema estável, a média presente $N$ satisfaz:
 
 $$N=\lambda T.$$
 
-$\lambda$ é a taxa efetiva de entradas, $T$ o tempo médio passado no sistema. É uma relação entre médias de longo prazo, não exige chegadas Poisson. Aplica a mesma fronteira a todas as grandezas: **fila** exclui o elemento em serviço; **sistema** inclui-o.
+$\lambda$ é a taxa efetiva de entradas e $T$ o tempo médio no sistema. É uma relação entre médias, por isso não exige Poisson. Aplica a mesma fronteira a tudo: **fila** exclui serviço, **sistema** inclui-o.
 
 Se chegam 200 pacotes/s e cada pacote passa em média 30 ms no sistema, $N=200\times0{,}03=6$ pacotes. Se a fila admite perdas, a taxa admitida pode diferir da taxa oferecida.
 
 ## M/M/1: hipóteses e fórmulas
 
-O modelo assume chegadas Poisson de taxa $\lambda$, tempos de serviço exponenciais de taxa $\mu$, um servidor, independência e capacidade de espera ilimitada. A taxa $\mu$ mede quantos pacotes o servidor atenderia por segundo se estivesse sempre ocupado. O serviço médio de um pacote dura $1/\mu$. A carga é $\rho=\lambda/\mu$. As médias estacionárias seguintes exigem $\rho<1$:
+O modelo assume chegadas Poisson de taxa $\lambda$, serviço exponencial de taxa $\mu$, um servidor e espera ilimitada. A taxa $\mu$ mede pacotes por segundo com servidor sempre ocupado. O serviço médio dura $1/\mu$. A carga é $\rho=\lambda/\mu$. As médias seguintes exigem $\rho<1$:
 
 $$T=\frac1{\mu-\lambda},\qquad T_q=\frac{\rho}{\mu-\lambda},$$
 $$N=\frac{\rho}{1-\rho},\qquad N_q=\frac{\rho^2}{1-\rho}.$$
@@ -62,13 +62,17 @@ Se multiplicares $\lambda$ e $\mu$ por dez, a carga e $N$ mantêm-se, mas os tem
 
 ## M/D/1 não é M/M/1
 
-Com chegadas Poisson, serviço **constante**, um servidor e fila FIFO, que atende por ordem de chegada, ilimitada, sem interromper o serviço de um pacote, usa M/D/1. As médias seguintes exigem $\rho<1$:
+Com chegadas Poisson, serviço **constante**, um servidor e fila FIFO ilimitada sem preempção, usa M/D/1. As médias exigem $\rho<1$:
 
 $$T_q=\frac{\rho}{2\mu(1-\rho)},\qquad T=T_q+\frac1\mu.$$
 
 Nos números anteriores, $T_q=16$ ms e $T=24$ ms. A mesma carga não determina o mesmo atraso: a variabilidade do serviço conta. Para M/G/1 com a mesma disciplina FIFO, serviços independentes e identicamente distribuídos, independentes das chegadas, a fórmula de Pollaczek-Khinchine usa o segundo momento finito do serviço, $T_q=\lambda E[S^2]/(2(1-\rho))$. Não é uma fórmula universal para qualquer disciplina de fila.
 
 ## Experimentar a carga
+
+:::tip[Ideia-chave]
+Antes de aplicares uma fórmula, escreve o modelo, confirma $\rho<1$ e decide se o pedido inclui serviço, porque isso evita mais erros do que decorar $1/(\mu-\lambda)$.
+:::
 
 A simulação abaixo calcula **médias teóricas**, não gera tráfego nem prevê uma rede concreta. Assume $\mu=100$ pacotes/s e permite mudar $\lambda$. Observa a diferença entre tempo de serviço e tempo de fila.
 
@@ -86,4 +90,4 @@ print(f"Sistema: {T*1000:.1f} ms; fila: {Tq*1000:.1f} ms")
 print(f"N: {lam*T:.1f}; Nq: {lam*Tq:.1f}")`}
 />
 
-Antes de aplicar uma fórmula, escreve o modelo, verifica a estabilidade e identifica se o resultado pedido inclui o serviço. Estes três passos evitam mais erros do que memorizar apenas $1/(\mu-\lambda)$.
+Antes de aplicar uma fórmula, escreve o modelo, verifica a estabilidade e identifica se o resultado pedido inclui o serviço.

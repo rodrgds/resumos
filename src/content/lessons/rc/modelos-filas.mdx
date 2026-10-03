@@ -14,7 +14,7 @@ editorial:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-[As filas básicas](/cadeiras/rc/desempenho-e-filas/) assumem que qualquer chegada consegue esperar. Uma interface real tem memória limitada. Quando o sistema está cheio, uma nova chegada pode ser descartada. Agora distinguimos taxa **oferecida** de taxa **admitida**.
+[As filas básicas](/cadeiras/rc/desempenho-e-filas/) assumem espera ilimitada. Uma interface real tem memória limitada, por isso distingue taxa **oferecida** de taxa **admitida**: quando o sistema enche, o pacote novo pode ser descartado.
 
 ## Poisson e serviço
 
@@ -22,7 +22,7 @@ Num processo Poisson de taxa $\lambda$, o número de chegadas num intervalo $t$ 
 
 $$P(A(t)=k)=e^{-\lambda t}\frac{(\lambda t)^k}{k!}.$$
 
-Intervalos sem sobreposição têm contagens independentes, e o tempo entre chegadas é exponencial com média $1/\lambda$. Não significa que os pacotes cheguem exatamente espaçados por essa média.
+Intervalos sem sobreposição têm contagens independentes e o tempo entre chegadas é exponencial com média $1/\lambda$. Não significa espaçamento exato por essa média.
 
 Para $\lambda=20$ pacotes/s e intervalo de 0,1 s, o número médio é 2. A probabilidade de zero chegadas é $e^{-2}\approx0{,}1353$. A de pelo menos uma é $1-e^{-2}\approx0{,}8647$.
 
@@ -30,7 +30,7 @@ A notação de Kendall **M/M/1** indica chegadas Poisson, tempos de serviço exp
 
 ## M/M/1/B: define a capacidade
 
-Nesta página, **B é a capacidade total do sistema**, incluindo o pacote em serviço. Alguns enunciados usam B apenas para lugares de espera; nesse caso, substitui a capacidade total por B+1. Não uses uma fórmula antes de confirmar esta convenção.
+Nesta página, **B é a capacidade total do sistema**, incluindo serviço. Se um enunciado usar B só para espera, substitui por B+1. Confirma a convenção antes de usares fórmulas.
 
 Com $\rho=\lambda/\mu$, existem estados 0 até B. Para $\rho\ne1$:
 
@@ -57,6 +57,10 @@ print(f"Taxa admitida: {lam_efetiva:.4f} pacotes/s")
 print(f"Tempo no sistema: {N/lam_efetiva:.4f} s")`}
 />
 
+:::tip[Ideia-chave]
+Na fila finita, aplica Little à taxa admitida $\lambda_e=\lambda(1-p_B)$, porque a oferecida conta pacotes rejeitados.
+:::
+
 Ao contrário de M/M/1 com capacidade infinita, a fila finita admite uma distribuição estacionária mesmo com $\lambda\ge\mu$. O excesso de procura aparece como bloqueio. Isso não torna a taxa oferecida integralmente atendida.
 
 ## Inferir a ligação a partir do tempo ocioso
@@ -73,13 +77,13 @@ M/M/1 dá $T=1/(450-360)=11{,}111$ ms e $T_q=8{,}889$ ms. Se apenas o serviço p
 
 ## Espera limitada com serviço constante
 
-Imagina agora serviço constante $s=1/450$ s e capacidade total de quatro pacotes, **incluindo o que está em serviço**, FIFO e sem interrupções. Um pacote admitido encontra no máximo três à frente: um em serviço e dois em espera. O tempo em fila fica limitado por $3s=6{,}667$ ms, contando o serviço residual e os dois serviços completos. É um limite superior que pode ser aproximado se a chegada ocorrer logo após o início do serviço; não é a espera média.
+Imagina serviço constante $s=1/450$ s e capacidade total de quatro pacotes, **incluindo serviço**, FIFO sem preempção. Um admitido encontra no máximo três à frente. A fila fica limitada por $3s=6{,}667$ ms. É um limite superior, não a espera média.
 
 Se os quatro lugares forem apenas de espera, a capacidade total é cinco e o limite muda. A distribuição estacionária de M/M/1/B não se aplica automaticamente à fila M/D/1/B: mudar o serviço muda o modelo.
 
 ## M/G/1 e variância do serviço
 
-Seja $S$ o tempo de serviço de um pacote. $E[S]$ é a sua média, $Var(S)$ a variância e $E[S^2]$ a média do seu quadrado. Com chegadas Poisson, serviços independentes e identicamente distribuídos, independentes das chegadas, de média $E[S]$ e segundo momento finito $E[S^2]$, um servidor, fila FIFO ilimitada sem interromper o serviço e $\rho=\lambda E[S]<1$:
+Seja $S$ o tempo de serviço. $E[S]$ é a média, $Var(S)$ a variância e $E[S^2]$ a média do quadrado. Com Poisson, serviços iid independentes das chegadas, um servidor, FIFO ilimitada sem preempção e $\rho=\lambda E[S]<1$:
 
 $$T_q=\frac{\lambda E[S^2]}{2(1-\rho)},\qquad T=T_q+E[S].$$
 
@@ -95,7 +99,7 @@ Se $\gamma_i$ for a taxa externa do nó i e $p_{ji}$ a probabilidade de um pacot
 
 $$\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}.$$
 
-Resolve estas equações **antes** de usar as fórmulas das filas. A taxa interna pode exceder a taxa externa porque os pacotes visitam mais de um nó ou regressam ao mesmo.
+Resolve estas equações **antes** de usares fórmulas de filas, porque a taxa interna pode exceder a externa quando há visitas repetidas.
 
 **Exemplo com retorno.** Entram 40 pacotes/s em A. Metade vai depois para B; um quarto das saídas de B regressa a A, o resto sai. Assim $\lambda_A=40+0{,}25\lambda_B$ e $\lambda_B=0{,}5\lambda_A$. Logo $\lambda_A=40/0{,}875\approx45{,}714$ e $\lambda_B\approx22{,}857$.
 

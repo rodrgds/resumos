@@ -20,11 +20,11 @@ import apoio from '../../rc/acesso-ao-meio-apoio.py?raw';
 import janela from '../../rc/vulneravel.typ?raw';
 import paragem from '../../rc/contencao.mmd?raw';
 
-Num meio partilhado, duas transmissões sobrepostas podem impedir a receção. O protocolo de acesso decide quando transmitir, como reagir a uma falha e como repartir a capacidade. Escutar antes de transmitir ajuda, mas a propagação e estações escondidas impedem garantir ausência de colisões.
+Num meio partilhado, duas transmissões sobrepostas podem impedir a receção. O protocolo decide quando transmitir e como reagir a falhas. Escutar ajuda, mas propagação e estações escondidas impedem garantir ausência de colisões.
 
 ## ALOHA puro e com ranhuras
 
-No **ALOHA puro**, transmite-se assim que há dados. Uma trama de duração $T$ é vulnerável a outra que comece entre $T$ antes e $T$ depois do seu início: intervalo de $2T$. No **ALOHA com ranhuras**, só se inicia uma transmissão na fronteira de uma ranhura de duração $T$; a vulnerabilidade reduz-se a uma ranhura.
+No **ALOHA puro**, transmite assim que há dados. Uma trama de duração $T$ é vulnerável entre $T$ antes e $T$ depois do início: intervalo $2T$. No **ALOHA com ranhuras**, só começa na fronteira de ranhura $T$; a vulnerabilidade cai para uma ranhura.
 
 <Typst
   source={janela}
@@ -32,11 +32,15 @@ No **ALOHA puro**, transmite-se assim que há dados. Uma trama de duração $T$ 
   alt="ALOHA puro tem intervalo vulnerável de dois tempos de trama; ALOHA com ranhuras restringe o início às fronteiras e reduz esse intervalo a um tempo de trama."
 />
 
-O modelo seguinte usa tramas iguais, tentativas agregadas Poisson e colisões que destroem todas as tramas sobrepostas, sem captura de uma delas pelo recetor. Com ranhuras, as chegadas ao recetor têm de respeitar a mesma sincronização. $G$ é a carga oferecida em tentativas por tempo de trama, incluindo retransmissões. O débito normalizado é:
+O modelo seguinte usa tramas iguais, tentativas agregadas Poisson e colisões destrutivas sem captura. Com ranhuras, as chegadas respeitam a sincronização. $G$ conta tentativas por tempo de trama, incluindo retransmissões:
 
 $$S_{puro}=Ge^{-2G},\qquad S_{ranhuras}=Ge^{-G}.$$
 
-Derivar em ordem a $G$ dá máximos em $G=1/2$ e $G=1$, respetivamente. Os máximos são $1/(2e)\approx0{,}184$ e $1/e\approx0{,}368$. Estes números dependem do modelo. Não são limites de todo o acesso aleatório, nem valores de utilização do Wi-Fi.
+Derivar em $G$ dá máximos em $G=1/2$ e $G=1$. Os máximos são $1/(2e)\approx0{,}184$ e $1/e\approx0{,}368$. Estes números dependem do modelo, por isso não valem para todo o acesso aleatório nem para Wi-Fi.
+
+:::tip[Ideia-chave]
+Mais tentativas podem reduzir o sucesso, porque aumentam colisões; o máximo da curva não prova estabilidade.
+:::
 
 As tentativas Poisson são uma hipótese ou aproximação, não uma consequência automática de repetir após colisões. O máximo da curva também não prova estabilidade: um número crescente de tramas pendentes pode aumentar as tentativas e reduzir o sucesso.
 
@@ -51,7 +55,7 @@ As tentativas Poisson são uma hipótese ou aproximação, não uma consequênci
 
 ## CSMA e persistência
 
-**Carrier Sense Multiple Access** escuta o meio antes de enviar. Ainda pode haver colisão: A começa e B, antes de lhe chegar o sinal, também observa silêncio. Quanto menor a propagação face à duração da trama, mais útil é a escuta.
+**Carrier Sense Multiple Access** escuta antes de enviar. Ainda pode colidir: A começa e B, antes de chegar o sinal, também vê silêncio. Quanto menor a propagação face à trama, mais útil é a escuta.
 
 - **1-persistente:** se livre, transmite; se ocupado, continua a escutar e transmite assim que liberta. Várias estações à espera podem arrancar juntas.
 - **Não persistente:** se ocupado, espera um tempo aleatório antes de escutar novamente. Reduz arranques simultâneos, mas pode deixar o canal livre durante a espera.
@@ -61,7 +65,7 @@ Não transportes as fórmulas de ALOHA diretamente para CSMA. O comportamento de
 
 ## CSMA/CD e tamanho mínimo
 
-Na Ethernet partilhada **half-duplex**, o emissor deteta uma colisão, envia o sinal de colisão e interrompe a transmissão. Depois tenta novamente com espera aleatória. Não precisa de desperdiçar toda uma trama longa.
+Na Ethernet partilhada **half-duplex**, o emissor deteta a colisão, envia o sinal de colisão e interrompe. Depois tenta de novo com espera aleatória.
 
 Para detetar a colisão mais distante enquanto ainda transmite, o tempo de transmissão mínimo deve ser pelo menos a propagação de ida e volta:
 
@@ -75,7 +79,7 @@ No **binary exponential backoff**, após a colisão de número $k$, sorteia-se u
 
 ## CSMA/CA, ACK e estações escondidas
 
-No Wi-Fi, uma estação não consegue normalmente detetar uma colisão no recetor enquanto transmite. A ausência de ACK indica falha de entrega, mas também pode resultar de erro de canal ou ACK perdido.
+No Wi-Fi, uma estação normalmente não deteta colisão no recetor enquanto transmite. Sem ACK, houve falha, mas tanto pode ser erro de canal como ACK perdido.
 
 No mecanismo básico de contenção, espera-se o intervalo apropriado de canal livre e conta-se um **backoff** em ranhuras. O contador congela quando o meio fica ocupado e retoma após o intervalo exigido. Quem tem o contador a zero transmite. O ACK segue após um intervalo mais curto, SIFS, dando prioridade à confirmação sobre novos concorrentes.
 
@@ -88,4 +92,4 @@ No mecanismo básico de contenção, espera-se o intervalo apropriado de canal l
 
 Duas estações são **escondidas** quando ambas alcançam o ponto de acesso, mas não se ouvem entre si. Escutar não resolve esta situação. RTS/CTS pode reservar o meio com mensagens curtas; o NAV avisa durante quanto tempo a troca ocupa o canal. Acrescenta sobrecarga e não elimina todas as colisões. Uma estação **exposta** pode adiar uma transmissão que seria compatível com outra, porque observa tráfego que não interfere com o seu recetor.
 
-Para comparar protocolos, escreve o que cada um sabe: canal livre localmente, colisão detetada, ACK recebido ou reserva anunciada. Uma observação local não implica que o recetor esteja disponível.
+Para comparar protocolos, escreve o que cada um sabe: canal livre local, colisão detetada, ACK recebido ou reserva anunciada. Uma observação local não prova que o recetor esteja livre.

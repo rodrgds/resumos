@@ -21,19 +21,19 @@ import Mermaid from '../../../components/Mermaid.astro';
 import JanelaArq from '../../rc/JanelaArq.astro';
 import stopAndWait from '../../rc/stop-and-wait.mmd?raw';
 
-A camada de ligação entrega **tramas** entre vizinhos. Precisa de delimitar cada trama e verificar erros. Alguns protocolos acrescentam confirmações, retransmissões e controlo de fluxo. Ethernet, por exemplo, deteta erros, mas não oferece retransmissão fiável de tramas como o **ARQ**, _Automatic Repeat reQuest_, estudado aqui. A confirmação de receção chama-se **ACK**, _acknowledgment_.
+A camada de ligação entrega **tramas** entre vizinhos, ou seja, delimita cada trama e verifica erros. Alguns protocolos acrescentam confirmações, retransmissões e controlo de fluxo. A Ethernet deteta erros, mas não faz retransmissão fiável como o **ARQ**. A confirmação chama-se **ACK**.
 
 ## Delimitar sem confundir dados com controlo
 
-Uma trama pode conter comprimento, delimitadores especiais ou uma codificação física que assinala os limites. Num protocolo com uma flag de início e fim, os dados não podem ser interpretados como flags.
+Uma trama pode indicar comprimento, usar delimitadores especiais ou assinalar limites na codificação física. Com flag de início e fim, os dados nunca podem parecer flags.
 
-No **byte stuffing**, os bytes especiais são precedidos por um escape e transformados segundo a regra do protocolo. No **bit stuffing** de HDLC, o emissor introduz um zero depois de cinco uns consecutivos no conteúdo entre flags, incluindo o CRC; o recetor remove esse zero. A flag `01111110` fica distinguível. O stuffing ocorre depois de formar o conteúdo protegido e é retirado antes da verificação desse conteúdo.
+No **byte stuffing**, precede bytes especiais com escape e transforma-os segundo a regra do protocolo. No **bit stuffing** de HDLC, o emissor insere um zero depois de cinco uns consecutivos entre flags, incluindo o CRC. O recetor remove esse zero. O stuffing acontece depois de formar o conteúdo protegido e sai antes de o verificares.
 
 Não uses diretamente a dimensão do ficheiro para calcular o tempo de transmissão: inclui cabeçalhos, controlo de erros e escapes. Num byte stuffing, a sobrecarga depende dos bytes efetivamente presentes, não de uma percentagem universal.
 
 ## Paridade, checksum e CRC
 
-A paridade simples deteta qualquer número ímpar de bits alterados, mas pode falhar com dois. Uma checksum soma unidades de dados segundo um algoritmo. Um **CRC** interpreta os bits como coeficientes de um polinómio binário e usa divisão módulo 2: somar e subtrair são XOR, sem transportes.
+A paridade simples deteta qualquer número ímpar de alterações, mas falha com dois. Uma checksum soma unidades segundo um algoritmo. Um **CRC** interpreta bits como coeficientes de um polinómio binário e divide módulo 2, ou seja, somar e subtrair são XOR sem transportes.
 
 Para gerador $G$ de grau $r$, acrescenta $r$ zeros à mensagem $D$, divide $D\,2^r$ por $G$ e coloca o resto de $r$ bits no fim. $D\,2^r$ representa deslocar os bits da mensagem $r$ posições para a esquerda, não multiplicar números numa divisão decimal. A palavra transmitida fica divisível por $G$.
 
@@ -69,7 +69,7 @@ print("Resto recebido:", resto(trama, gerador))
 corrompida = format(int(trama, 2) ^ 4, f"0{len(trama)}b")
 print("Com um erro:", resto(corrompida, gerador))`} />
 
-**Resto zero não prova ausência de erro.** Um erro cujo polinómio seja múltiplo do gerador passa despercebido. Uma **rajada** vai do primeiro ao último bit alterado, incluindo os bits corretos entre eles. Um CRC de grau $r$ com termo constante 1 deteta todas as rajadas de comprimento até $r$; outras garantias dependem do polinómio e do comprimento da mensagem. A aproximação $2^{-r}$ para erro não detetado exige um modelo de erros adequado.
+**Resto zero não prova ausência de erro.** Um erro múltiplo do gerador passa despercebido. Uma **rajada** vai do primeiro ao último bit alterado, incluindo bits corretos intermédios. Um CRC de grau $r$ com termo constante 1 deteta rajadas até $r$; outras garantias dependem do polinómio e do comprimento. A aproximação $2^{-r}$ exige um modelo de erros adequado.
 
 A **distância mínima** de um código é a menor distância de Hamming entre duas palavras válidas, ou seja, o menor número de bits diferentes. Um código de distância d deteta até d−1 alterações e, com descodificação apropriada, pode corrigir até $\lfloor(d-1)/2\rfloor$ alterações. Isto não significa que qualquer verificador CRC faça essa correção.
 
@@ -79,9 +79,9 @@ A deteção não corrige a trama. O recetor descarta-a ou pede uma retransmissã
 
 ## Stop-and-Wait e o bit alternado
 
-O emissor envia uma trama e espera confirmação. Se o temporizador expirar, retransmite. A ausência de ACK não distingue uma trama perdida de um ACK perdido.
+O emissor envia uma trama e espera confirmação. Se o temporizador expirar, retransmite, porque um ACK ausente não distingue trama perdida de ACK perdido.
 
-Números de sequência alternados 0 e 1 impedem entregar duas vezes uma trama retransmitida. Se o recetor já entregou a trama 0, volta a confirmá-la, mas não a entrega novamente. Depois espera 1. O temporizador pertence ao emissor; o recetor não deve bloquear indefinidamente à espera de um duplicado.
+Números 0 e 1 impedem entregar duas vezes uma retransmissão. Se o recetor já entregou 0, volta a confirmá-lo sem entregar de novo e espera 1.
 
 Define a convenção antes de seguir um traço. Aqui **RR(n)** significa «estou pronto para receber a trama n». Depois de receber 0 corretamente, o recetor envia RR(1). Outros enunciados podem confirmar explicitamente a última trama recebida, mudando a numeração do ACK.
 
@@ -112,13 +112,17 @@ Uma janela de $W$ tramas permite várias em trânsito. Sob estas mesmas hipótes
 | Memória no recetor        | Menor                                  | Maior, reordena antes de entregar |
 | Limite usual com $m$ bits | $W\le2^m-1$                            | $W\le2^{m-1}$ para janelas iguais |
 
+:::tip[Ideia-chave]
+Com $m$ bits, limita Go-Back-N a $2^m-1$ e Selective Repeat a $2^{m-1}$, porque a numeração tem de distinguir tramas novas de duplicados.
+:::
+
 **Traço.** O emissor envia 0, 1, 2 e 3. A trama 1 perde-se. Em Go-Back-N, o recetor entrega 0 e descarta 2 e 3. O emissor retransmite 1, 2 e 3 quando o protocolo o determinar. Em Selective Repeat, o recetor guarda 2 e 3 e, ao chegar 1, pode entregar 1, 2 e 3 por ordem.
 
 Os limites de janela evitam confundir uma trama antiga com uma nova após a volta da numeração. Com dois bits, a numeração tem quatro valores; uma janela Selective Repeat igual nas duas pontas não deve exceder dois. É uma restrição do protocolo e da ambiguidade de duplicados, não do tamanho de memória disponível.
 
 ## Resolver traços
 
-Regista, após cada evento: base da janela emissora, próximo número a enviar, tramas pendentes, próxima trama esperada e dados já entregues. Distingue **chegar**, **ser confirmado** e **ser entregue**. Um duplicado pode chegar e ser confirmado sem ser entregue.
+Regista após cada evento: base da janela, próximo a enviar, pendentes, próxima esperada e dados entregues. Distingue **chegar**, **ser confirmado** e **ser entregue**, porque um duplicado pode ser confirmado sem ser entregue.
 
 Calcula o tempo de timeout a partir da transmissão e do caminho do ACK, com a margem definida no enunciado. Um temporizador demasiado curto cria retransmissões inúteis; um demasiado longo atrasa a recuperação. Quando o enunciado inclui perdas probabilísticas, usa as hipóteses dadas, em vez de multiplicar uma eficiência sem perdas por um fator arbitrário.
 
@@ -149,13 +153,13 @@ $$
 
 ## Recuperação por salto e de extremo a extremo
 
-ARQ **por salto** repete só a ligação onde ocorreu a perda, exigindo memória e controlo nos equipamentos dessa ligação. ARQ **de extremo a extremo** recupera nas pontas, podendo repetir trabalho dos saltos anteriores. Os mecanismos podem coexistir, como numa ligação Wi-Fi com TCP.
+ARQ **por salto** repete só onde houve perda, mas exige memória e controlo nesse salto. ARQ **de extremo a extremo** recupera nas pontas e pode repetir trabalho anterior. Podem coexistir, como Wi-Fi com TCP.
 
 Num modelo ideal com K ligações iguais de capacidade C, perdas independentes p por ligação e retransmissão sem outras limitações, temos $C_{salto}=C(1-p)$ e $C_{extremos}=C(1-p)^K$. Para K=5 e p=0,1, dão 0,9C e 0,59049C. A diferença cresce com o número de saltos e as perdas. Não aplica estes valores automaticamente a TCP real, que também depende de janela, RTT, congestionamento e temporizadores.
 
 ## Combinar BER, janela e redundância
 
-Um problema pode pedir várias decisões sobre a mesma ligação. Resolve primeiro o tempo e a janela, depois o erro de trama, e só no fim o débito útil. O exemplo seguinte usa o modelo ideal de Selective Repeat, com ACK desprezável e erros independentes.
+Um problema pode pedir várias decisões sobre a mesma ligação. Resolve primeiro tempo e janela, depois erro de trama e só no fim débito útil. O exemplo seguinte usa Selective Repeat ideal, com ACK desprezável e erros independentes.
 
 Dados: $R=4$ Mbit/s, $L=4000$ bits de dados por trama, propagação num sentido de 50 ms, BER $p_b=5\times10^{-5}$ e seis bits de sequência. A janela máxima usual é $W=2^{6-1}=32$.
 
@@ -165,7 +169,9 @@ Dados: $R=4$ Mbit/s, $L=4000$ bits de dados por trama, propagação num sentido 
 4. **Com erros:** $U=(1-p_e)U_0\approx0{,}259399$, logo o débito útil é $RU\approx1{,}037594$ Mbit/s.
 5. **Janela para ocupar a ligação sem erros:** $W\ge1+2a=101$. Selective Repeat precisa de pelo menos oito bits, pois sete só permitem janela 64 e oito permitem 128. Aumentar a janela não elimina a perda de capacidade causada pelos erros.
 
-Agora compara duas codificações corretoras **FEC**, _Forward Error Correction_. Acrescentam redundância para corrigir certos erros no recetor sem pedir outra transmissão. Uma acrescenta 10% de bits e deixa FER 0,08. Outra acrescenta 30% e deixa FER 0,03. Estas FER são dados do problema depois da correção, não se deduzem apenas da BER original. Mantém a janela 32 e os 4000 bits de dados úteis por trama.
+Agora compara duas codificações corretoras **FEC**. Acrescentam redundância para corrigir certos erros sem pedir outra transmissão. Uma acrescenta 10% de bits e deixa FER 0,08. Outra acrescenta 30% e deixa FER 0,03. Estas FER são dados do problema depois da correção. Mantém a janela 32 e os 4000 bits úteis.
+
+:::details[Ver comparação das codificações]
 
 | Codificação     | Bits transmitidos | $t_f$  | Utilização $U$ | Fração útil | Débito útil     |
 | --------------- | ----------------- | ------ | -------------- | ----------- | --------------- |
@@ -173,13 +179,15 @@ Agora compara duas codificações corretoras **FEC**, _Forward Error Correction_
 | Mais 10%        | 4400              | 1,1 ms | 0,320317       | $4000/4400$ | 1,164787 Mbit/s |
 | Mais 30%        | 5200              | 1,3 ms | 0,398342       | $4000/5200$ | 1,225666 Mbit/s |
 
-Em cada linha, recalcula $a$ com o novo tempo de transmissão e usa $D_{\text{útil}}=RU\times L_{dados}/L_{transmitido}$. Não compares só a utilização: a redundância ocupa a ligação e aumenta a duração de cada trama. A segunda codificação dá maior débito útil nestes dados; não é uma regra universal sobre acrescentar mais bits.
+Em cada linha, recalcula $a$ com o novo tempo e usa $D_{\text{útil}}=RU\times L_{dados}/L_{transmitido}$. A redundância ocupa a ligação e aumenta cada trama. A segunda codificação ganha nestes dados, por isso não é regra universal.
+
+:::
 
 Se uma trama tem FER $p_e$ e são permitidas no máximo duas tentativas independentes, a probabilidade de entrega é $1-p_e^2$. Isto mede sucesso até ao limite, não utilização nem débito. «Uma retransmissão» permite duas tentativas, a original e a repetição.
 
 ## Simular uma perda na janela
 
-Escolhe onde se perde uma das cinco tramas e compara a recuperação. Este modelo usa janela de cinco e quatro bits de sequência, uma única perda de dados e ACK sem perdas. As cinco tramas iniciais já foram enviadas quando começa a recuperação. Ignora o tempo de propagação e os temporizadores. Mostra o estado do recetor e as retransmissões necessárias, não a duração de uma transferência real.
+Escolhe onde se perde uma das cinco tramas e compara a recuperação. O modelo usa janela de cinco e quatro bits de sequência, uma perda de dados e ACK sem perdas. Ignora propagação e temporizadores, porque mostra estado e retransmissões, não duração real.
 
 <JanelaArq />
 

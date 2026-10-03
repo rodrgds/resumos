@@ -23,19 +23,19 @@ import Manim from '../../../components/Manim.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import aperto from '../../rc/handshake.typ?raw';
 
-O transporte entrega dados entre **processos**. Portas distinguem serviços e conversas num terminal. Uma ligação TCP é identificada pelos endereços IP e portas das duas pontas. Um servidor na porta 80 pode manter muitas ligações distintas porque os pares remotos são diferentes.
+O transporte entrega dados entre **processos**. Portas distinguem serviços e conversas. Uma ligação TCP é identificada por IP e portas das duas pontas. Um servidor na porta 80 mantém muitas ligações, porque os pares remotos diferem.
 
 ## UDP e TCP
 
 UDP acrescenta um cabeçalho de 8 bytes com portas, comprimento e checksum. Não estabelece ligação, não garante entrega ou ordem, e preserva limites dos datagramas. A aplicação pode acrescentar os mecanismos de que precise.
 
-TCP oferece um **fluxo de bytes fiável e ordenado**. Não preserva as fronteiras de chamadas `send`: dois envios podem chegar numa leitura, e um envio pode exigir várias leituras. A aplicação precisa de delimitar as suas mensagens, por comprimento, delimitador ou outra regra.
+TCP oferece fluxo de bytes fiável e ordenado. Não preserva fronteiras de `send`: dois envios podem chegar numa leitura e um envio pode exigir várias leituras. Delimita as tuas mensagens por comprimento ou outra regra.
 
 Escolher UDP não garante baixa latência, tal como usar TCP não garante um débito fixo. DNS pode usar UDP ou TCP; HTTP/3 usa QUIC sobre UDP. A escolha deve considerar o protocolo concreto, os mecanismos acima do transporte e o modelo do exercício.
 
 ## Sequência, ACK e abertura
 
-TCP numera **bytes**, não segmentos. Se um segmento começa em 1000 e transporta 300 bytes, o seguinte começa em 1300. Um ACK 1300 confirma cumulativamente todos os bytes anteriores e indica o próximo esperado. Um ACK simples não consome um número; SYN e FIN consomem um cada.
+TCP numera **bytes**, não segmentos. Se um segmento começa em 1000 com 300 bytes, o seguinte começa em 1300. Um ACK 1300 confirma tudo antes e pede o próximo. SYN e FIN consomem um cada; um ACK simples não consome.
 
 A abertura normal tem SYN, SYN-ACK e ACK:
 
@@ -65,13 +65,13 @@ Não uses indiscriminadamente uma amostra de uma transmissão repetida: pode ser
 
 ## Fluxo e congestionamento
 
-O **controlo de fluxo** evita exceder a capacidade do recetor. A janela anunciada, `rwnd`, indica quanto pode receber. O **controlo de congestionamento** evita sobrecarregar a rede e usa `cwnd` no emissor. De forma simplificada, os dados em trânsito, **FlightSize**, não devem exceder $\min(rwnd,cwnd)$. A quantidade de bytes novos permitida é $\max(0,\min(rwnd,cwnd)-FlightSize)$.
+O **controlo de fluxo** protege o recetor e usa `rwnd`. O **controlo de congestionamento** protege a rede e usa `cwnd`. De forma simplificada, os dados em voo não excedem $\min(rwnd,cwnd)$. Os bytes novos permitidos são $\max(0,\min(rwnd,cwnd)-FlightSize)$.
 
 Com $W$ **bytes** de janela efetiva e RTT de $T$ segundos, o limite ideal por janela é $8W/T$ bit/s. O débito também não excede o bottleneck do caminho. Para W=64000 bytes e RTT=0,08 s, obténs 6,4 Mbit/s. Se a ligação limitar a 5 Mbit/s, o menor limite passa a 5 Mbit/s.
 
 ## Slow start, AIMD e perdas
 
-**MSS**, _Maximum Segment Size_, mede o máximo de bytes de dados num segmento, sem cabeçalhos TCP ou IP. Escrever uma janela de 8 MSS significa oito segmentos desse tamanho. `ssthresh` é o limiar entre as duas fases de crescimento.
+**MSS** é o máximo de dados num segmento, sem cabeçalhos TCP ou IP. Uma janela de 8 MSS são oito segmentos. `ssthresh` é o limiar entre fases de crescimento.
 
 No TCP clássico, **slow start** aumenta a janela por ACK, aproximadamente duplicando-a por RTT quando cada segmento é confirmado e há dados suficientes. Ao atingir `ssthresh`, **congestion avoidance** aumenta aproximadamente um MSS por RTT, crescimento aditivo.
 
@@ -93,6 +93,10 @@ print(f"Limite conjunto: {min(limite_janela, ligacao_bits_s)/1e6:.1f} Mbit/s")`}
 />
 
 ## Ler uma captura
+
+:::tip[Ideia-chave]
+Um ACK cumulativo confirma tudo até à primeira lacuna, ou seja, nunca ultrapassa bytes em falta.
+:::
 
 No Wireshark, segue um fluxo TCP e regista sequência, ACK, comprimento dos dados, flags e janela. A apresentação pode usar números relativos, distintos dos valores brutos. Se dois segmentos se perderem, desenha os bytes em falta antes de prever confirmações. A aplicação só recebe uma sequência contínua, mesmo que a captura já mostre segmentos posteriores.
 

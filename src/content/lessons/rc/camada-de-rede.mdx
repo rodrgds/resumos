@@ -24,15 +24,15 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import topologia from '../../rc/vlsm.dot?raw';
 
-IP entrega datagramas entre interfaces através de redes distintas. Não garante fiabilidade. O **encaminhamento por pacote** escolhe a saída usando uma tabela; os algoritmos e protocolos de routing constroem e atualizam essa tabela.
+IP entrega datagramas entre interfaces de redes distintas, sem garantir fiabilidade. O **encaminhamento por pacote** escolhe a saída pela tabela; os protocolos de routing constroem e atualizam essa tabela.
 
 ## IPv4 e prefixos
 
-Um endereço IPv4 tem 32 bits. O prefixo `/p` indica quantos bits identificam a rede; os restantes $32-p$ identificam posições dentro dela. A máscara tem $p$ uns seguidos de zeros. Aplica AND entre endereço e máscara para obter a rede.
+Um endereço IPv4 tem 32 bits. O prefixo `/p` indica bits de rede; os restantes $32-p$ identificam posições. A máscara tem $p$ uns seguidos de zeros. Faz AND entre endereço e máscara para obteres a rede.
 
 **Exemplo.** `192.0.2.77/26` tem máscara `255.255.255.192`. Os blocos do último octeto começam em 0, 64, 128 e 192. O endereço pertence a `192.0.2.64/26`, com broadcast `.127` e intervalos usuais de hosts `.65` a `.126`, total de 62.
 
-A fórmula $2^{32-p}-2$ aplica-se às sub-redes IPv4 usuais que reservam rede e broadcast. **Não é universal:** `/31` pode usar os dois endereços numa ligação ponto a ponto; `/32` representa um único endereço. As antigas classes A, B e C não substituem o prefixo CIDR indicado no problema.
+A fórmula $2^{32-p}-2$ vale para sub-redes usuais que reservam rede e broadcast. **Não é universal:** `/31` pode usar os dois endereços ponto a ponto e `/32` é um só endereço. As classes A, B e C não substituem o CIDR do enunciado.
 
 <CodePlayground
   language="python"
@@ -64,7 +64,11 @@ Na **agregação**, vários prefixos contíguos e alinhados podem ser anunciados
 
 O router escolhe, entre as rotas que correspondem ao destino, a de **prefixo mais longo**. A rota por omissão `/0` corresponde a tudo, mas perde para qualquer correspondência mais específica.
 
-Com `/0` por G0, `10.0.0.0/8` por G1 e `10.2.0.0/16` por G2, o destino `10.2.3.4` sai por G2. O destino `10.9.1.1` sai por G1. Isto não significa escolher a rota com menos saltos entre prefixos de comprimentos diferentes.
+:::tip[Ideia-chave]
+Entre rotas que correspondem ao destino, escolhe sempre o prefixo mais longo, porque a rota por omissão `/0` perde para qualquer correspondência mais específica.
+:::
+
+Com `/0` por G0, `10.0.0.0/8` por G1 e `10.2.0.0/16` por G2, o destino `10.2.3.4` sai por G2 e `10.9.1.1` sai por G1.
 
 A tabela indica saída e próximo salto. Se o destino for local, o próximo salto é o próprio destino. Se for remoto, é um router diretamente alcançável. IP do destino final e IP do próximo salto são campos com funções diferentes.
 
@@ -103,7 +107,7 @@ Para reduzir uma tabela por agregação, verifica alinhamento e próximo salto c
 
 ## ARP, DHCP e ICMP
 
-**ARP** resolve um IPv4 do salto local para o endereço de ligação. O pedido é difundido na LAN; o dono do IP responde com o seu MAC e o resultado pode ser guardado em cache. Para falar com uma rede remota, resolve-se o MAC do gateway, não o MAC do terminal remoto.
+**ARP** resolve um IPv4 do salto local para ligação. O pedido é difundido na LAN, o dono responde e o resultado pode ficar em cache. Para rede remota, resolve o MAC do gateway, não o do terminal remoto.
 
 **DHCP** pode atribuir endereço, máscara, gateway, DNS e tempo de concessão. A sequência inicial habitual é Discover, Offer, Request, ACK, com UDP, portas 68 do cliente e 67 do servidor. Renovar uma concessão não exige repetir sempre a sequência broadcast inicial.
 
@@ -113,7 +117,7 @@ Para reduzir uma tabela por agregação, verifica alinhamento e próximo salto c
 
 O cabeçalho inclui origem, destino, comprimento, protocolo superior, TTL e campos de fragmentação. O TTL diminui nos routers e impede circulação indefinida. A checksum IPv4 protege o cabeçalho, não toda a carga útil.
 
-A **MTU**, _Maximum Transmission Unit_, é o maior pacote IP que a ligação transporta sem o fragmentar. Se um datagrama exceder a MTU e a fragmentação for permitida, cada fragmento recebe cabeçalho. O offset conta blocos de **8 bytes** da carga útil original; exceto o último, a carga útil tem tamanho múltiplo de oito. O destino reconstitui usando a identificação e os campos de fragmentação.
+A **MTU** é o maior pacote IP que a ligação leva sem fragmentar. Se exceder a MTU e a fragmentação for permitida, cada fragmento recebe cabeçalho. O offset conta blocos de **8 bytes** da carga original; exceto o último, a carga é múltipla de oito. O destino reconstitui por identificação e campos de fragmentação.
 
 **Exemplo.** Datagrama de 4000 bytes, incluindo cabeçalho de 20, MTU 1500, sem opções e DF=0. Há 3980 bytes de dados. Cada fragmento completo leva 1480 bytes de dados. Resultam comprimentos 1500, 1500 e 1040; offsets 0, 185 e 370; MF 1, 1 e 0. Não dividas o comprimento total original por oito: o offset refere-se aos dados e cada fragmento tem cabeçalho novo.
 
