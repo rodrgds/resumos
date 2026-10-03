@@ -45,7 +45,16 @@ Ao ler `110`, passamos R0 → R1 → R0 → R0. O número é 6, múltiplo de 3. 
 
 Codifica R0=`00`, R1=`01`, R2=`10`. São necessários dois flip-flops, porque $\lceil\log_2 3\rceil=2$. Escolhe recuperação de `11` para `00`, com saída 0.
 
-A tabela anterior, expandida para bits $q_1,q_0,b$, dá:
+A tabela anterior, expandida para bits $q_1,q_0,b$ com próximo estado $n_1n_0$, dá:
+
+| $q_1q_0$     | $b=0\to n_1n_0$ | $b=1\to n_1n_0$ |
+| ------------ | --------------- | --------------- |
+| 00 pronto R0 | 00              | 01              |
+| 01 pronto R1 | 10              | 00              |
+| 10 pronto R2 | 01              | 10              |
+| 11 inválido  | 00              | 00              |
+
+Cada linha com próximo bit 1 gera um termo do produto. Da tabela completa obtém-se:
 
 $$D_1=\overline q_1q_0\overline b+q_1\overline q_0b,$$
 
@@ -55,7 +64,7 @@ $$z=\overline q_1\overline q_0.$$
 
 Cada termo de D vem de uma linha cuja próxima saída do flip-flop é 1. As equações dão `00` para o estado inválido, como escolhido. O circuito tem lógica combinatória para D e dois flip-flops que atualizam juntos.
 
-Em one-hot, usa-se um flip-flop por estado e apenas um está a 1. Isto pode simplificar a lógica, mas aumenta os flip-flops. O reset deve ativar o estado inicial e desativar os outros; pôr todos a 0 não é uma codificação válida de R0.
+Em one-hot, com bits $h_0,h_1,h_2$ para R0,R1,R2 e invariante de exatamente um bit a 1, as transições $r^+=(2r+b)\bmod3$ dão $h_0^+=h_0\overline b+h_1b$, $h_1^+=h_0b+h_2\overline b$, $h_2^+=h_1\overline b+h_2b$. Cada equação é OR de dois AND de duas entradas. Estas equações valem sob o invariante; sem lógica adicional, `000` ficaria em `000`. O reset assíncrono estabelece $h_0=1,h_1=h_2=0$. Para recuperar de um estado inválido, define $val=(h_0\overline h_1\overline h_2+\overline h_0h_1\overline h_2+\overline h_0\overline h_1h_2)$ e $inv=\overline{val}$. Usa $h_0^+=normal_0+inv$, $h_1^+=normal_1\cdot\overline{inv}$, $h_2^+=normal_2\cdot\overline{inv}$, de modo que qualquer código inválido regressa a R0 no flanco seguinte. Sem esta lógica adicional, `000` ficaria em `000`; o projeto base apoia-se no reset e no invariante.
 
 ## Reconhecer padrões e produzir um impulso
 
@@ -96,6 +105,26 @@ A máquina reduzida tem quatro estados: A, B, C e H, que representa D/E. A vai p
 
 :::
 
-Duas máquinas podem coordenar-se por handshake de quatro fases: emissor coloca dados estáveis e `valid=1`; recetor aceita e põe `ack=1`; emissor baixa valid; recetor baixa ack. O emissor mantém os dados até à aceitação. Um impulso de um ciclo pode ser perdido se o recetor não o observar.
+Duas máquinas podem coordenar-se por handshake de quatro fases, com dados, `valid` e `ack` no tempo:
+
+| Passo | Dados          | valid | ack | Regra                       |
+| ----- | -------------- | ----- | --- | --------------------------- |
+| 1     | emissor fixa D | 0     | 0   | D estabiliza antes de valid |
+| 2     | D estável      | 1     | 0   | emissor pede aceitação      |
+| 3     | D estável      | 1     | 1   | recetor aceitou D           |
+| 4     | D estável      | 0     | 1   | emissor fecha pedido        |
+| 5     | livre          | 0     | 0   | recetor fecha confirmação   |
+
+O emissor só muda D depois de ver `ack=1` e só baixa `valid` depois disso; o recetor só baixa `ack` depois de ver `valid=0`. Mudar D logo após pôr `valid=1` corrompe a transferência.
+
+import Handshake from '../../../components/Typst.astro';
+import handshake from '../../fsc/handshake-cronograma.typ?raw';
+
+<Handshake
+  source={handshake}
+  format="svg"
+  alt="Handshake de quatro fases: dados estáveis enquanto valid sobe, ack sobe, valid desce e ack desce."
+/>
+Um impulso de um ciclo pode ser perdido se o recetor não o observar.
 
 Entre relógios diferentes, entradas podem violar setup/hold e provocar metastabilidade. O modelo de FSM assume entradas amostradas válidas. A implementação exige sincronização apropriada; sincronizar bits independentes não garante uma palavra de dados coerente.

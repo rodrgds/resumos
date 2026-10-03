@@ -7,6 +7,10 @@ practices:
   - fsc/praticar-cpu-multiciclo
 ---
 
+import Dot from '../../../components/Dot.astro';
+import states from '../../fsc/cpu-estados.dot?raw';
+import datapath from '../../fsc/cpu-multiciclo-datapath.dot?raw';
+
 Depois de executar cada instrução num só ciclo, esta página responde a como executar instruções em várias etapas partilhando os mesmos circuitos.
 
 Um **CPU multiciclo**, que é um CPU que divide cada instrução em etapas, reutiliza os mesmos circuitos: a mesma **ALU**, que é o circuito que calcula resultados e endereços, pode atualizar o PC num ciclo e calcular um endereço noutro. Os **registos internos**, que são pequenos guardas entre etapas, conservam os resultados intermédios para não os perder quando o circuito é reutilizado.
@@ -17,7 +21,7 @@ Usamos uma memória partilhada para código e dados, uma ALU e os registos IR, M
 
 Um resultado disponível na saída de uma unidade combinatória não é o mesmo que o valor já guardado num registo. Por exemplo, ao ler memória em um ciclo, o writeback seguinte usa MDR, não uma nova leitura potencialmente diferente.
 
-Para saltos relativos, é necessário conhecer o **PC da instrução**. Se o fetch já avançou PC em 4, somar d ao PC avançado daria um destino 4 bytes à frente do correto. Chamamos PCinst ao endereço que o PC tinha no fetch. Neste modelo, ao preparar um branch no decode, o gerador estende primeiro d para 32 bits e calcula d−4 para somar ao PC já avançado. Uma organização equivalente pode guardar PCinst num registo e somar-lhe d. A ISA continua a definir o destino por PCinst+d.
+Para saltos relativos, é necessário conhecer o **PC da instrução**. A ISA define o destino como `PCinst+d`, com `PCinst` o endereço da própria instrução de salto. Neste modelo didático o fetch já fez `PC<-PC+4`; somar `d` ao PC avançado daria um destino 4 bytes à frente. Por isso, no decode de beq, o gerador estende `d` e calcula `d-4` para somar ao PC já avançado. Uma organização equivalente guarda `PCinst` num registo e soma-lhe `d`. A compensação `d-4` é uma adaptação deste modelo, não um campo da folha oficial do CPU.
 
 ## Seleções e habilitações
 
@@ -33,10 +37,18 @@ O gerador de imediatos fornece o deslocamento usual para lw e sw. No decode de b
 
 PC atualiza se $PCWrite+(PCWriteCond\cdot Zero)=1$. PCWrite permite escrita incondicional; PCWriteCond permite-a apenas na igualdade. IRWrite só se ativa no fetch, para um load não substituir a instrução pelos dados.
 
-## Estados e caminhos
+## Datapath partilhado
 
-import Dot from '../../../components/Dot.astro';
-import states from '../../fsc/cpu-estados.dot?raw';
+<Dot
+  source={datapath}
+  alt="Datapath multiciclo: memória partilhada endereçada por PC ou ALUOut; IR, MDR, A, B e ALUOut entre etapas; ALU com entradas PC/A e B/4/imediato; saída para ALUOut e MUX do PC; compensação d menos 4 no decode."
+/>
+
+No fetch, IorD=0 endereça com o PC e a ALU soma PC+4 com ALUSrcA=0 e ALUSrcB=01. Na leitura de dados, IorD=1 endereça com ALUOut. A e B conservam os operandos lidos no decode; ALUOut conserva o destino do branch enquanto a ALU compara A com B no estado 8.
+
+Exemplo numérico: beq em `PCinst=0x00400010` com `d=-8`. Após o fetch, PC=`0x00400014`. O decode calcula `(d-4)=-12` e faz `ALUOut<-0x00400014-12=0x00400008`, que é `PCinst+d`. Sem compensação, obteríamos `0x0040000C`, 4 bytes à frente.
+
+## Estados e caminhos
 
 <Dot
   source={states}

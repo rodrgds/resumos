@@ -23,6 +23,18 @@ O sobrescrito $+$ designa o estado depois do flanco, não uma soma. Um relógio 
 
 Para projetar com T, calcula $T=Q\oplus Q^+$: se o bit atual e o pretendido forem iguais, usa T=0; se diferirem, usa T=1. Com D, liga diretamente o bit pretendido. A mesma tabela de próximo estado pode, por isso, originar circuitos diferentes conforme o tipo de flip-flop.
 
+## Cronograma: latch contra flip-flop
+
+Lê o tempo da esquerda para a direita; cada coluna é um instante após estabilização:
+
+| Instante | D   | Enable/clk | Latch Q | FF Q | Porquê                                                   |
+| -------- | --- | ---------- | ------- | ---- | -------------------------------------------------------- |
+| t0       | 1   | 1/subida   | 1       | 1    | latch transparente copia; FF amostra 1 no flanco         |
+| t1       | 0   | 1/alto     | 0       | 1    | latch segue D com enable alto; FF conserva entre flancos |
+| t2       | 1   | 0/flanco   | 0       | 1    | latch fechado conserva; FF só muda no flanco seguinte    |
+
+Se D mudar de 1 para 0 ainda com enable alto, o latch segue para 0, mas o flip-flop conserva o 1 amostrado no flanco. É esta janela de amostragem que distingue os dois elementos.
+
 ## Enable e reset
 
 Um registo com enable carrega D se $E=1$ e conserva se $E=0$. Podemos escrever $Q^+=ED+\overline E Q$ bit a bit. Um reset síncrono só atua no flanco; um reset assíncrono atua assim que fica ativo, mesmo entre flancos.
@@ -53,6 +65,15 @@ import flipflop from '../../fsc/flipflop-d.typ?raw';
 
 O símbolo representa um único elemento de memória, enquanto o circuito de dois flip-flops do exemplo liga Q de cada um à lógica que calcula D do outro.
 
+import Cronograma from '../../../components/Typst.astro';
+import cronograma from '../../fsc/latch-ff-cronograma.typ?raw';
+
+<Cronograma
+  source={cronograma}
+  format="svg"
+  alt="Cronograma com D, enable e relógio, Q do latch e Q do flip-flop em t0, t1 e t2."
+/>
+
 ## Registos, deslocamento e banco de registos
 
 Um registo de $w$ bits tem $w$ flip-flops com o mesmo relógio. Num registo de deslocamento de quatro bits, $Q^+=[Q_2,Q_1,Q_0,x]$ desloca para a esquerda e entra x pelo LSB. Partindo de `0000`, as entradas `1,0,1` produzem `0001,0010,0101`.
@@ -71,6 +92,6 @@ D deve estar estável durante $t_{setup}$ antes do flanco e $t_{hold}$ depois. Q
 
 $$T_{clk}\ge t_{cq,max}+t_{comb,max}+t_{setup}.$$
 
-A restrição de hold é diferente: $t_{cq,min}+t_{comb,min}\ge t_{hold}$. Aumentar o período ajuda setup, mas não resolve automaticamente hold.
+A restrição de hold é diferente e usa o caminho mais curto: $t_{cq,min}+t_{comb,min}\ge t_{hold}$. Aumentar o período ajuda setup, mas não resolve automaticamente hold. Calcula setup com máximos e hold com mínimos, em contas separadas.
 
 Com $t_{cq,max}=1$ ns, caminho combinatório de 6 ns e setup de 1 ns, o período mínimo é 8 ns, frequência máxima 125 MHz neste modelo. Se o caminho mais curto chegar em 0,3 ns e hold exigir 0,5 ns, é necessário aumentar o atraso desse caminho. Não somes o caminho mais longo e o mais curto na mesma conta.

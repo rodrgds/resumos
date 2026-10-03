@@ -45,7 +45,16 @@ import textCode from '../../fsc/texto-ascii.s?raw';
 
 Aqui os valores e o resultado cabem em RV32 com sinal. Para outros dados, `add` continua a guardar apenas os 32 bits inferiores; se precisares da soma matemática exata, tens de detetar overflow ou usar uma representação mais larga. O comprimento é um inteiro não negativo e nunca excede os elementos disponíveis.
 
-Em cada passagem, `lw` lê um elemento, `add` acumula, o apontador avança 4 bytes e o contador diminui. Quando o contador é zero, a rotina sai antes de ler memória, por isso o caso vazio devolve 0 sem acessos inválidos.
+Em cada passagem, `lw t3,0(t0)` lê um elemento, `add t2,t2,t3` acumula, o apontador t0 avança 4 bytes e o contador t1 diminui. Quando t1 é zero, o programa salta para `done` antes de ler memória, por isso o caso vazio imprime 0 sem acessos inválidos. Este exemplo corre em `main` e termina com `ecall`; não é uma rotina com retorno em a0. Para o tornar rotina, recebe base em a0 e comprimento em a1 e devolve a soma em a0, sem `ecall`.
+
+Traçado com `[7,-3,10,0]`, t0=base, t1=por ler, t2=soma, t3=elemento:
+
+| Iteração | t0      | t1 antes | t2 antes | t3  | t2 depois |
+| -------- | ------- | -------- | -------- | --- | --------- |
+| 1        | base+0  | 4        | 0        | 7   | 7         |
+| 2        | base+4  | 3        | 7        | -3  | 4         |
+| 3        | base+8  | 2        | 4        | 10  | 14        |
+| 4        | base+12 | 1        | 14       | 0   | 14        |
 
 Para procurar o máximo, um vetor vazio precisa de contrato próprio, como devolver um sinal de erro. Num vetor não vazio, inicializa o máximo com o **primeiro elemento**, não com zero. Caso contrário, `[-8,-3]` daria incorretamente 0. Depois percorre os restantes com comparação com sinal.
 

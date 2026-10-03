@@ -40,13 +40,17 @@ Uma soma separada calcula PC+4. Outra calcula PC+d para o branch. `PCSrc=Branch 
 | R      | 1        | 0      | 0       | 0        | 0        | 0      | 10    |
 | lw     | 1        | 1      | 1       | 0        | 1        | 0      | 00    |
 | sw     | 0        | 1      | 0       | 1        | X        | 0      | 00    |
-| beq    | 0        | 0      | 0       | 0        | X        | 0      | 01    |
+| beq    | 0        | 0      | 0       | 0        | X        | 1      | 01    |
 
-Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2 e ALUSrc=1 escolhe o imediato. MemRead habilita a leitura de dados; Branch identifica beq. RegWrite e MemWrite habilitam alterações de estado. MemtoReg escolhe dados da memória se 1 e resultado da ALU se 0. X significa que o valor não influencia o efeito: em sw e beq não se escreve um registo, pelo que a seleção do writeback é irrelevante. Não ponhas X numa habilitação de escrita que tem de estar a 0.
+Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2 e ALUSrc=1 escolhe o imediato. MemRead habilita a leitura de dados; Branch identifica beq. RegWrite e MemWrite habilitam alterações de estado. MemtoReg escolhe dados da memória se 1 e resultado da ALU se 0. X significa que o valor não influencia o efeito: em sw e beq não se escreve um registo, pelo que a seleção do writeback é irrelevante. Branch=1 marca beq; a decisão final é `PCSrc=Branch AND Zero`. Com Zero=0, o PC avança 4; com Zero=1, salta para PC+d. Não ponhas X numa habilitação de escrita que tem de estar a 0.
 
 ALUOp=`00` pede soma; `01` pede subtração para a comparação; `10` usa f3 e f7 da instrução R. Neste modelo, ALUControl é `0000` para AND, `0001` para OR, `0010` para ADD e `0110` para SUB. ALUOp e ALUControl são sinais diferentes.
 
 O campo que ocuparia rs2 numa instrução I contém bits do imediato. O banco pode lê-los fisicamente, mas `lw` não usa essa segunda leitura. Por isso uma falha nesse porto pode afetar sw, R e beq sem afetar lw.
+
+## Tomado e não tomado
+
+Segue `beq x5,x6,-8` em PC=`0x00400010`. A ALU subtrai x6 a x5 e produz Zero. Se x5=x6, `PCSrc=1` e o PC seguinte é `0x00400008`; se diferirem, `PCSrc=0` e segue `0x00400014`. Um teste só com branches falsos nunca exercita o caminho de salto.
 
 ## Seguir um load completo
 

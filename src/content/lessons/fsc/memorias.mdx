@@ -45,6 +45,19 @@ import mem from '../../fsc/memoria-bancos.dot?raw';
   alt="A12 seleciona um de dois bancos. Cada banco contém dois chips 4K por 8, um para cada metade do barramento de 16 bits. A0 a A11 vão a todos os chips."
 />
 
+## Cronograma de leitura e escrita
+
+Lê o tempo da esquerda para a direita:
+
+| Passo     | CS  | OE  | WE  | Endereço  | Dado               | Efeito                                   |
+| --------- | --- | --- | --- | --------- | ------------------ | ---------------------------------------- |
+| leitura 1 | 1   | 1   | 0   | A estável | Z→D(A) após acesso | saída conduz após $t_{acc}$              |
+| leitura 2 | 0   | —   | 0   | —         | Z                  | chip desselecionado liberta o barramento |
+| escrita 1 | 1   | 0   | 0   | A estável | D estável          | prepara endereço e dado                  |
+| escrita 2 | 1   | 0   | 1   | A fixo    | D fixo             | pulso escreve; OE=0 evita conflito       |
+
+Mudar o endereço durante `WE=1` escreve na posição errada. Nunca atives dois chips com dados diferentes no mesmo barramento.
+
 ## Mapa de endereços
 
 Num sistema com endereços de 16 bits, queremos colocar uma RAM de 4 KiB em `0x8000` a `0x8FFF`. Os 12 bits inferiores escolhem a posição interna. Os quatro superiores têm de ser `1000` para selecionar o chip:
@@ -53,7 +66,15 @@ $$CS=A_{15}\overline A_{14}\overline A_{13}\overline A_{12}.$$
 
 O primeiro endereço tem todos os bits inferiores a 0; o último tem-nos a 1. São $0x1000=4096$ endereços, contando as duas extremidades. Um bloco de $2^{12}$ bytes deve começar numa fronteira com os 12 bits inferiores a 0 para esta descodificação simples.
 
-Se só descodificarmos $A_{15}=1$, o chip aparece repetido de `0x8000` a `0xFFFF`. `0x8123` e `0x9123` acedem à mesma posição `0x123`. São aliases: a descodificação parcial não criou mais armazenamento. Alterar por um endereço é visível pelo outro.
+Se só descodificarmos $A_{15}=1$, ignorando $A_{14},A_{13},A_{12}$, o chip aparece repetido de `0x8000` a `0xFFFF`. `0x8123=1000 0001 0010 0011` e `0x9123=1001 0001 0010 0011` diferem apenas em $A_{12}$ e acedem à mesma posição interna `0x123`. São aliases: a descodificação parcial não criou mais armazenamento. Alterar por um endereço é visível pelo outro.
+
+import Alias from '../../../components/Dot.astro';
+import alias from '../../fsc/memoria-alias.dot?raw';
+
+<Alias
+  source={alias}
+  alt="A15 seleciona o chip; A14, A13 e A12 ignorados fazem 0x8123 e 0x9123 chegar a mesma posicao 0x123."
+/>
 
 Na intercalação por endereços pares e ímpares, $A_0$ seleciona o banco e os restantes bits selecionam a posição dentro dele. Isto é diferente de usar o bit mais alto para colocar um banco depois do outro no mapa.
 

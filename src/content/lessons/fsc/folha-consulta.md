@@ -30,9 +30,9 @@ Usa-a como índice de consulta: cada linha resume uma regra e aponta para a liç
 
 ## RV32 e CPU
 
-- [Memória RV32](/cadeiras/fsc/legv8-registos-memoria/): registo e word=32 bits; endereço ao byte; word em B+4i; little endian, byte baixo no menor endereço. `.align 2` alinha a 4 bytes.
+- [Memória RV32](/cadeiras/fsc/legv8-registos-memoria/): registo e word=32 bits; endereço ao byte; word em B+4i; no RARS little endian, byte baixo no menor endereço. `.align 2` alinha a 4 bytes.
 - [Instruções](/cadeiras/fsc/legv8-instrucoes/): imediato I/S de 12 bits com sinal, [-2048,2047]. `lb/lh` estendem sinal; `lbu/lhu` zeros. Branch usa PC da instrução+d em bytes. `jal` guarda PC+4; `jalr` limpa bit0 do destino.
 - [Pilha](/cadeiras/fsc/procedimentos-pilha/): a/t/ra caller-saved; s/sp callee-saved. Non-leaf preserva o ra que recebeu. Reservar antes de escrever; manter sp alinhado a 16 bytes; restaurar em todos os retornos.
-- [Uniciclo](/cadeiras/fsc/datapath-controlo/): lw escreve dado da memória; sw escreve rs2; R escreve ALU; beq só muda PC. $PCSrc=Branch\land Zero$. X só em escolhas cujo valor não se usa.
+- [Uniciclo](/cadeiras/fsc/datapath-controlo/): lw escreve dado da memória; sw escreve rs2; R escreve ALU; beq só muda PC. $PCSrc=Branch\land Zero$ com Branch=1 em beq. X só em escolhas cujo valor não se usa.
 - [Multiciclo](/cadeiras/fsc/cpu-multiciclo/): lw=5, sw=4, R=4, beq=3 ciclos neste modelo. Contar execuções e expansões, incluindo testes finais. PC já avançado exige conservar PC da instrução ou compensar d−4 no branch.
 - [Desempenho](/cadeiras/fsc/desempenho/): $T=N\,CPI/f$, $CPI=\sum p_iCPI_i$ com frações de instruções; $S=T_{antigo}/T_{novo}$. Amdahl: $S=1/(1-p+p/s)$ com p fração do tempo original; para $0\le p<1$, limite $1/(1-p)$ quando $s\to\infty$. Se p=1, S=s.

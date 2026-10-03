@@ -45,6 +45,7 @@ Queremos $f(x)=2(x+1)$. `dobro` é uma leaf que devolve $2x$. `mais_um_dobro` ca
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import callCode from '../../fsc/procedimentos.s?raw';
+import cicloCode from '../../fsc/conta-alnum-ciclo.s?raw';
 
 <CodePlayground
   language="riscv"
@@ -63,6 +64,18 @@ Ao entrar na non-leaf, o frame fica:
 A rotina coloca 8 em s0 e passa esse valor em a0. A chamada a dobro modifica ra e produz o resultado em a0. O epílogo restaura s0 e ra sem alterar a0, liberta os 16 bytes e volta. Guardar ra **depois** do jal preservaria o retorno interior, não o retorno correto.
 
 No exemplo executável, `main` alinha o sp inicial do simulador com `andi sp,sp,-16`. Isso é preparação do programa principal, não uma operação para uma rotina fazer ao sp do chamador. Uma rotina comum assume o alinhamento acordado e deve devolver exatamente o sp recebido.
+
+## Chamada auxiliar dentro de um ciclo
+
+Para contar carateres alfanuméricos, a rotina percorre a string com o apontador em s0 e o contador em s1, ambos preservados no seu frame. Em cada iteração copia o byte para a0 com `lbu`, chama `is_alnum` e só depois avança s0 e soma o resultado de a0 a s1. Guardar o apontador em t0 falharia porque a chamada pode alterar t0 (caller-saved).
+
+<CodePlayground
+  language="riscv"
+  code={cicloCode}
+  title="Contar alfanuméricos com auxiliar em ciclo"
+/>
+
+O programa completo testa `"A7"` e imprime 2. Traçado: s0 aponta para `A`, chama a auxiliar com a0=65 e obtém 1, s1 passa a 1; s0 avança; a0=55 dá 1, s1 passa a 2; `0x00` termina e a0 recebe s1=2. s0 e s1 sobrevivem a cada `jal` porque `is_alnum`, como callee, não altera registos s: usa só a0 e t1. Em separado, `conta_alnum`, também como callee, guardou no seu frame e repõe no fim os valores de s0/s1 do `main`. a0 e t0 mudam livremente na auxiliar, por serem caller-saved.
 
 ## Chamadas dentro de ciclos e recursão
 

@@ -13,7 +13,7 @@ Nos circuitos, passa de [expressões booleanas](/cadeiras/fsc/algebra-boole-port
 
 A parte do computador cobre [organização e memória RISC-V](/cadeiras/fsc/legv8-registos-memoria/), [instruções e codificação](/cadeiras/fsc/legv8-instrucoes/), [programação](/cadeiras/fsc/programacao-riscv/), [procedimentos e pilha](/cadeiras/fsc/procedimentos-pilha/), [CPU uniciclo](/cadeiras/fsc/datapath-controlo/), [CPU multiciclo](/cadeiras/fsc/cpu-multiciclo/) e [desempenho](/cadeiras/fsc/desempenho/). A [cheat sheet](/cadeiras/fsc/folha-consulta/) reúne as fórmulas e condições para revisão.
 
-Cada capítulo termina com exercícios originais. Faz primeiro a tentativa, consulta uma pista quando faltar um passo e compara depois o raciocínio com a resolução. Nos programas, altera os dados e prevê a saída antes de executar.
+Cada capítulo termina com exercícios originais com pistas, resolução e erros frequentes. Nos capítulos de CPU, segue os registos internos por estado; nos de programação, segue registos e memória por iteração antes de preveres a saída. Faz primeiro a tentativa, consulta uma pista quando faltar um passo e compara depois o raciocínio com a resolução. Nos programas, altera os dados e prevê a saída antes de executar.
 
 :::details[Avaliação e âmbito da edição]
 
