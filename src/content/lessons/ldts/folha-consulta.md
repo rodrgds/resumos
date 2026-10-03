@@ -6,6 +6,10 @@ studyKind: revision
 order: 0
 ---
 
+No fim do percurso, esta página responde como rever depressa as condições e decisões de Git, Java, testes, UML e desenho.
+
+Cada linha resume uma decisão já explicada nas lições: o que verificar antes de escolher um comando, uma coleção ou um padrão, com ligações para a explicação completa.
+
 ## Git e Gradle
 
 | Decisão                          | Lembra                                                                                                       |
