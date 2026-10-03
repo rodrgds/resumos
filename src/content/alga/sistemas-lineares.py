@@ -7,7 +7,7 @@ def gauss(a, b):
         piv = max(range(col, n), key=lambda r: abs(m[r][col]))
         m[col], m[piv] = m[piv], m[col]
         if abs(m[col][col]) < 1e-12:
-            raise ValueError("Não há solução única. Classifica o sistema pela característica.")
+            raise ValueError("Pivô nulo ou demasiado pequeno. Verifica o sistema com contas exatas.")
         for row in range(n):
             if row != col and m[row][col] != 0:
                 f = m[row][col] / m[col][col]
