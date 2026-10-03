@@ -14,6 +14,7 @@
       }
     }
   }
+  draw.content((1, 8.5), [*encadeamento, hash(x) = x mod 7*])
   draw.content((-1.6, 7.2), [*pos.*])
   casa(0, ()); casa(1, ()); casa(2, (9, 30)); casa(3, ()); casa(4, (25, 18)); casa(5, (12,)); casa(6, ())
 })

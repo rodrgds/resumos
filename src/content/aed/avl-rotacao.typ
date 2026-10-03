@@ -6,7 +6,7 @@
     draw.circle((x, y), radius: .5)
     draw.content((x, y), [#v])
   }
-  draw.content((-2, 1), [*antes*])
+  draw.content((-2, 1), [*antes: só filhos direitos*])
   no(-2, 0, [10]); no(-2, -1.6, [20]); no(-2, -3.2, [30])
   draw.line((-2, -.5), (-2, -1.1)); draw.line((-2, -2.1), (-2, -2.7))
   draw.content((2, 1), [*depois*])
