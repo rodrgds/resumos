@@ -35,9 +35,7 @@ Antes de correr um programa, escreve o resultado que esperas e as ordens de saí
 
 Os exemplos C portáteis podem correr no editor da página. `fork`, `exec`, sinais, sockets e Pthreads precisam de um terminal num sistema UNIX. Para acompanhar as aulas, usa Linux, por exemplo numa máquina virtual ou no ambiente indicado pelos docentes. O executor do navegador não implementa um sistema Linux completo e não serve para esses exemplos.
 
-## Avaliação de 2026/27
-
-:::details[Ver regras de avaliação]
+:::details[Avaliação em 2026/27]
 
 A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586993), consultada a 3 de outubro de 2026, indica avaliação distribuída com dois testes de 10 valores. Cada um cobre sensivelmente metade da matéria teórica e dos exercícios TP, incluindo programação em computador. Com frequência, a classificação final é $T1 + T2$.
 
@@ -47,9 +45,7 @@ O recurso cobre toda a matéria teórica e prática e dá acesso aos reprovados 
 
 :::
 
-## Materiais e bibliografia
-
-:::details[Ver fontes e âmbito]
+:::details[Materiais e bibliografia]
 
 A base de ensino são os materiais do [Moodle de 2025/26](https://moodle2526.up.pt/course/view.php?id=4727): apresentações teóricas `part1` a `part6`, capítulos 9, 10, 12, 13 e 14, fichas práticas `f0` a `f7` em português e inglês e notas dos docentes sobre erros no primeiro teste. As versões PT/EN das fichas repetem os mesmos exercícios. O documento de funcionamento `os2526` está datado de 1 de setembro de 2025. A nota sobre tempos UNIX é de novembro de 2024, embora esteja disponibilizada nessa edição.
 

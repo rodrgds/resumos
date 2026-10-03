@@ -7,7 +7,7 @@ practices:
   - so/praticar-shell
 ---
 
-A shell lê um comando, expande os seus argumentos e prepara as entradas e saídas do programa. Para preveres um resultado, separa o que a shell faz do que o programa faz.
+Abres uma janela de terminal e escreves uma linha de texto para pedir algo ao computador. A **shell** é o programa, ou seja a aplicação, que lê essa linha, separa o pedido — o comando — dos valores que o acompanham — os argumentos — e prepara as entradas e saídas, isto é de onde o programa lê dados e para onde escreve resultados, antes de o chamar. Para preveres um resultado, separa o que a shell faz do que o programa faz.
 
 ## Caminhos e diretório de trabalho
 
