@@ -1,6 +1,39 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test('relation matrix remains readable and operable at 320px', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto('/cadeiras/md/operacoes-relacoes/');
+  const matrix = page.getByRole('table', {
+    name: 'Relação em {1, 2, 3}. Cada botão liga ou desliga um par.',
+  });
+  const region = matrix.locator('..');
+  const bounds = await region.boundingBox();
+  for (const cell of await matrix.locator('caption, th, button').all()) {
+    const box = await cell.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(bounds!.x);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(
+      bounds!.x + bounds!.width + 1,
+    );
+  }
+  const status = region.getByRole('status');
+  await expect(status).toContainText('Transitiva: não, falta (1, 3).');
+  await matrix.getByRole('button', { name: 'Par (1, 3)', exact: true }).click();
+  await expect(status).toContainText('Transitiva: sim.');
+  for (const value of [1, 2, 3]) {
+    await matrix
+      .getByRole('button', { name: `Par (${value}, ${value})`, exact: true })
+      .click();
+  }
+  await expect(status).toContainText('Reflexiva: sim.');
+  await matrix
+    .getByRole('button', { name: 'Par (3, 3)', exact: true })
+    .press('Space');
+  await expect(status).toContainText('Reflexiva: não.');
+});
+
 test.describe('course diagrams without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
