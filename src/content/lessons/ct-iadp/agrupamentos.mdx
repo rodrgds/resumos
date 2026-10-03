@@ -4,6 +4,7 @@ description: Separar por chaves, calcular agregações, pivot_table e distinguir
 section: conteudo
 order: 15
 practices:
+  - ct-iadp/praticar-reestruturar
   - ct-iadp/praticar-agrupamentos
 editorial:
   basedOn: 2026/27
@@ -14,13 +15,61 @@ editorial:
       url: https://pandas.pydata.org/docs/user_guide/groupby.html
     - title: pandas, reestruturação
       url: https://pandas.pydata.org/docs/user_guide/reshaping.html
-  coverage: Separar por chaves, calcular agregações, pivot_table e distinguir agg de transform.
+  coverage: Reestruturar tabelas longas e largas, separar por chaves, calcular agregações, pivot_table e distinguir agg de transform.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 
-Queremos o número total de unidades por cidade. Cada venda tem uma quantidade, mas o relatório precisa de uma linha por cidade. Agrupar identifica as vendas da mesma cidade; agregar reduz essas vendas a um resultado.
+Queremos o número total de unidades por cidade. Cada venda tem uma quantidade, mas o relatório precisa de uma linha por cidade. Agrupar identifica as vendas da mesma cidade e agregar reduz essas vendas a um resultado.
+
+Antes disso, temos de garantir que a tabela tem a forma certa: no formato **longo**, uma variável identifica o produto e outra guarda a quantidade, enquanto no formato **largo** cada produto pode ser uma coluna. Reestruturar muda a disposição, mantendo os valores quando a correspondência é única.
+
+## Longo para largo com pivot
+
+<CodePlayground
+  language="python"
+  title={'Mudar a forma da tabela'}
+  code={
+    'import pandas as pd\nlonga = pd.DataFrame({\n    "cidade": ["Porto", "Porto", "Braga", "Braga"],\n    "produto": ["pão", "leite", "pão", "leite"],\n    "quantidade": [2, 3, 5, 1],\n})\nlarga = longa.pivot(index="cidade", columns="produto", values="quantidade")\nprint(larga.to_string())\nreconstruida = larga.reset_index().melt(id_vars="cidade", var_name="produto", value_name="quantidade")\nprint(reconstruida.sort_values(["cidade", "produto"]).to_string(index=False))'
+  }
+/>
+
+`index` escolhe os identificadores das linhas, `columns` os valores que se tornam nomes de colunas e `values` a medida de cada célula.
+
+Para `pivot`, cada par cidade-produto precisa de um único valor. Se houver duas vendas de pão no Porto, a posição tem dois candidatos e pandas lança um erro, por isso a tabela precisa primeiro de uma decisão: somar as vendas, calcular a média ou conservar outra dimensão que as distinga.
+
+## Largo para longo com melt
+
+`melt` conserva as colunas `id_vars` e transforma as restantes em pares variável-valor. `var_name` dá nome à coluna que guarda o nome antigo da medida e `value_name` à coluna que guarda o valor.
+
+```python
+longa = larga.melt(
+    id_vars="data",
+    value_vars=["pão", "leite"],
+    var_name="produto",
+    value_name="quantidade",
+)
+```
+
+Cada linha inicial origina duas linhas, uma por produto. Não duplicámos observações da mesma medida: passámos a identificar a medida numa coluna.
+
+## stack e unstack
+
+`stack` move um nível dos nomes de colunas para o índice de linhas. `unstack` move um nível do índice para as colunas. Isto produz ou usa um **MultiIndex**, um índice com vários níveis.
+
+```python
+serie = longa.set_index(["cidade", "produto"])["quantidade"]
+larga = serie.unstack("produto")
+```
+
+Agora o par cidade-produto identifica cada valor da Series. Ao deslocar produto para as colunas, cidade fica nas linhas.
+
+## O que não é uma reestruturação
+
+`df.T` troca linhas por colunas, mas não resolve uma chave duplicada nem calcula totais. `rename` muda nomes sem mudar a disposição. `merge` associa observações entre tabelas.
+
+Antes de escolher a operação, escreve que colunas identificam uma observação e qual é a medida. Depois confere o número de valores e uma célula concreta no resultado.
 
 ## Separar, calcular e reunir
 
@@ -43,17 +92,17 @@ Porto vende 5 unidades em duas vendas e fatura 6,60 euros. Braga vende 9 unidade
   }
 />
 
-`as_index=False` conserva cidade como uma coluna. Sem esse argumento, cidade torna-se o índice do resultado. A agregação com nomes diz de que coluna vem cada cálculo e como se chama no relatório.
+`as_index=False` conserva cidade como uma coluna. Sem esse argumento, cidade torna-se o índice do resultado.
 
 ## size, count e múltiplas chaves
 
-`size` conta linhas do grupo. `count` conta valores não nulos de uma coluna. Se uma das vendas não tem produto conhecido, `size` continua a contar a venda e `count` nessa coluna não a conta.
+`size` conta linhas do grupo. `count` conta valores não nulos de uma coluna. Se uma venda não tem produto conhecido, `size` continua a contar a venda e `count` nessa coluna não a conta.
 
-`groupby(["cidade", "produto"])` cria um grupo por par. Cada chave adicional refina os grupos. Por defeito, linhas com chaves em falta podem ser excluídas; usa `dropna=False` quando devem formar um grupo explícito.
+`groupby(["cidade", "produto"])` cria um grupo por par, ou seja cada chave adicional refina os grupos. Por defeito, linhas com chaves em falta podem ser excluídas; usa `dropna=False` quando devem formar um grupo explícito.
 
-`agg(["sum", "mean"])` calcula várias estatísticas. Não agregues a coluna de preço com soma se a pergunta for faturação. Primeiro calcula quantidade vezes preço por venda e só depois soma esses totais.
+Não agregues a coluna de preço com soma se a pergunta for faturação. Primeiro calcula quantidade vezes preço por venda e só depois soma esses totais.
 
-Uma soma ignora valores em falta por defeito e pode dar zero para um grupo sem valores conhecidos. `vendas.groupby("cidade", dropna=False)["quantidade"].sum(min_count=1)` conserva o grupo de cidade desconhecida e exige uma quantidade conhecida para devolver um total. São duas decisões independentes: `dropna` trata a chave; `min_count` trata a medida.
+Uma soma ignora valores em falta por defeito e pode dar zero para um grupo sem valores conhecidos. `vendas.groupby("cidade", dropna=False)["quantidade"].sum(min_count=1)` conserva o grupo de cidade desconhecida e exige uma quantidade conhecida para devolver um total.
 
 ## transform conserva as linhas
 
@@ -64,7 +113,7 @@ total_cidade = vendas.groupby("cidade")["quantidade"].transform("sum")
 vendas["proporcao"] = vendas["quantidade"] / total_cidade
 ```
 
-No Porto, as proporções são `2/5` e `3/5`. Em Braga, `5/9` e `4/9`. A soma é um em cada cidade, se o total do grupo for diferente de zero e todas as vendas forem consideradas.
+No Porto, as proporções são `2/5` e `3/5`. Em Braga, `5/9` e `4/9`.
 
 ## Tabela dinâmica com pivot_table
 
@@ -80,4 +129,4 @@ tabela = vendas.pivot_table(
 
 Cada célula soma as quantidades de uma combinação cidade-produto. `pivot_table` admite combinações repetidas porque a agregação decide como as reunir. A função por defeito é média, por isso escreve `aggfunc="sum"` quando o enunciado pede totais.
 
-`fill_value=0` transforma uma combinação sem vendas em zero depois da agregação. Isto exige interpretar a ausência como nenhuma venda, não como uma quantidade desconhecida. `margins=True` acrescenta totais. Exclui essas linhas e colunas de uma nova soma das células, para não contares os mesmos dados duas vezes.
+`fill_value=0` transforma uma combinação sem vendas em zero depois da agregação. Isto exige interpretar a ausência como nenhuma venda, não como quantidade desconhecida.
