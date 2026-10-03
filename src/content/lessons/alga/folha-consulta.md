@@ -10,7 +10,9 @@ editorial:
       url: https://drive.google.com/file/d/1ZBprkJ8SuJvpFFTPqFwNNsCzJyhdJoeA/view
 ---
 
-Trabalhamos sobre $\mathbb R$. $A$ tem $m$ linhas e $n$ colunas; $r=\operatorname{car}(A)$.
+Esta folha resume todo o percurso de ALGA e responde à pergunta prática: que fórmula ou condição usar em cada conta, com a ligação para a explicação?
+
+Trabalhamos sobre $\mathbb R$. $A$ tem $m$ linhas e $n$ colunas; $r=\operatorname{car}(A)$: $A$ é a matriz dos coeficientes com $m$ linhas e $n$ colunas, e $r$ é a sua característica, o número de pivôs da forma em escada.
 
 ## Matrizes e determinantes
 
