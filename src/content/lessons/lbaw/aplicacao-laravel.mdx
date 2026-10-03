@@ -38,11 +38,11 @@ No percurso de um pedido, distingue o software pelo papel:
 
 O servidor pode devolver um ficheiro estático ou obter uma resposta da aplicação. O navegador é o cliente deste percurso. O motor que interpreta e apresenta HTML no navegador não substitui o servidor HTTP.
 
-Um **recurso** é uma coisa com endereço próprio que se cria, lê, atualiza e apaga. As sessões da loja são um recurso, e as rotas seguem a convenção REST, com o verbo HTTP a dizer a operação:
+Um **recurso** é algo identificável por um endereço, como uma sessão ou a lista de sessões. A aplicação define que operações permite sobre ele. As sessões da loja são um recurso. Estas rotas usam métodos HTTP com a semântica esperada; uma aplicação REST também tem outras condições, explicadas em [HTTP](/cadeiras/lbaw/http-estado/#rest-e-estado-da-aplicação):
 
 ```php
 Route::get('/sessoes', [SessaoController::class, 'index']);
-Route::post('/sessoes', [SessaoController::class, 'store']);
+Route::post('/sessoes', [SessaoController::class, 'store'])->middleware('auth');
 ```
 
 O `GET` lista, o `POST` cria. O controlador recebe o pedido já encaminhado e devolve uma resposta, sem gerar HTML à mão:
@@ -62,15 +62,16 @@ O `index` lê as sessões futuras ordenadas e entrega-as à vista. Nada é escri
 
 ```php
 // escrever muda o estado: exige validação e redirecionamento
-Route::post('/sessoes', [SessaoController::class, 'store']);
+Route::post('/sessoes', [SessaoController::class, 'store'])->middleware('auth');
 ```
 
-O `store` valida primeiro e só depois escreve. Em caso de erro volta ao formulário; em caso de sucesso redireciona, para recarregar não criar a sessão duas vezes.
+O `store` verifica a permissão, valida os dados e só depois escreve. Em caso de erro volta ao formulário; em caso de sucesso redireciona, para recarregar não criar a sessão duas vezes.
 
   </div>
 </Tabs>
 
 ```php
+// Excerto: Request, Gate e Sessao são importados no controlador.
 class SessaoController extends Controller
 {
     public function index()
@@ -83,23 +84,26 @@ class SessaoController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('create', Sessao::class);
         $dados = $request->validate([
             'evento_id' => 'required|exists:eventos,id',
             'data_hora' => 'required|date|after:now',
             'preco' => 'required|numeric|min:0',
             'lotacao' => 'required|integer|min:1',
         ]);
-        $sessao = Sessao::create($dados);
-        return redirect('/sessoes/' . $sessao->id);
+        Sessao::create($dados);
+        return redirect('/sessoes', 303);
     }
 }
 ```
 
-O método `validate` é o ponto a fixar: se os dados cumprirem as regras, devolve-os limpos; se falharem, interrompe e devolve o utilizador ao formulário com os erros. A regra `exists:eventos,id` repete na aplicação a chave estrangeira da base de dados, para dar erro amigável antes do erro técnico. A regra `after:now` valida a criação de uma sessão futura. Sessões antigas continuam a existir no histórico.
+O método `validate` é o ponto a fixar: se os dados cumprirem as regras, devolve os campos validados. Não os sanitiza para todos os destinos. Se falharem num formulário web, interrompe e redireciona com os erros; um pedido que espera JSON recebe normalmente 422. A regra `exists:eventos,id` repete na aplicação a chave estrangeira da base de dados, para dar erro amigável antes do erro técnico. A regra `after:now` valida a criação de uma sessão futura. Sessões antigas continuam a existir no histórico.
+
+Antes do exemplo, associa `SessaoPolicy` ao modelo. O seu método `create` recebe o utilizador autenticado e permite apenas os papéis que podem gerir sessões. `Gate` é a facade `Illuminate\Support\Facades\Gate`; recusa com 403 quando a policy não permite. O formulário usa `@csrf` e apresenta os erros com `@error` e os valores anteriores com `old(...)`.
 
 ## Migração e modelo
 
-A tabela nasce de uma **migração**, código versionado que cria e altera o esquema. É a mesma tabela do [esquema relacional](/cadeiras/lbaw/esquema-relacional/), escrita para o Laravel a aplicar e o grupo a rever:
+A tabela nasce de uma **migração**, código versionado que cria e altera o esquema. Este excerto cria as colunas e a FK da tabela do [esquema relacional](/cadeiras/lbaw/esquema-relacional/), com campos adicionais de criação e atualização:
 
 ```php
 Schema::create('sessoes', function (Blueprint $table) {
@@ -112,11 +116,14 @@ Schema::create('sessoes', function (Blueprint $table) {
 });
 ```
 
+O excerto de migração não declara os `CHECK` de preço e lotação. Mantém essas garantias no SQL de PostgreSQL, além da validação do formulário. Se usares o esquema sem `created_at` e `updated_at`, o modelo deve declarar `public $timestamps = false`.
+
 O modelo liga a classe à tabela e declara o que se pode preencher em massa:
 
 ```php
 class Sessao extends Model
 {
+    protected $table = 'sessoes';
     protected $fillable = ['evento_id', 'data_hora', 'preco', 'lotacao'];
 
     public function evento()
@@ -126,25 +133,25 @@ class Sessao extends Model
 }
 ```
 
-O `belongsTo` espelha a associação do UML: cada sessão pertence a um evento. A partir daqui, `$sessao->evento->titulo` navega da sessão ao evento sem SQL escrito à mão.
+O nome da tabela é explícito porque as convenções de pluralização não garantem os nomes portugueses do esquema. Os restantes modelos precisam do mesmo cuidado. O `belongsTo` espelha a associação do UML: cada sessão pertence a um evento. A partir daqui, `$sessao->evento->titulo` navega da sessão ao evento sem SQL escrito à mão.
 
 ## Um POST que falha a validação
 
-Preenche o formulário de nova sessão com lotação `0` e carrega em guardar. O pedido `POST /sessoes` chega ao `store`, o `validate` rejeita `lotacao` por violar `min:1`, e o utilizador volta ao formulário com a mensagem de erro junto ao campo e os restantes valores preservados. Nenhuma linha tocou na base de dados: a validação correu antes de qualquer escrita.
+Com um utilizador autorizado a criar sessões, preenche o formulário de nova sessão com lotação `0` e carrega em guardar. O pedido `POST /sessoes` chega ao `store`, o `validate` rejeita `lotacao` por violar `min:1`, e o utilizador volta ao formulário com a mensagem de erro junto ao campo e os restantes valores preservados. Nenhuma linha tocou na base de dados: a validação correu antes de qualquer escrita.
 
-Se a validação passasse, o `create` inseria a sessão e o redirecionamento mostrava a página da nova sessão. Se dois compradores disputarem o último lugar, a validação anterior à compra pode estar desatualizada. O [protocolo de concorrência](/cadeiras/lbaw/triggers-transacoes/) decide qual compra pode confirmar.
+Se a autorização e a validação passassem, o `create` inseria a sessão e o redirecionamento voltava à lista. Se dois compradores disputarem o último lugar, a validação anterior à compra pode estar desatualizada. O [protocolo de concorrência](/cadeiras/lbaw/triggers-transacoes/) decide qual compra pode confirmar.
 
-A mesma regra `min:1`, isolada do framework para a experimentares. Corre e confirma que imprime o erro da lotação:
+O bloco seguinte isola a condição «inteiro positivo». Usa um inteiro PHP; um formulário HTTP enviaria texto, que o validador Laravel também precisa de interpretar:
 
 <CodePlayground
   language="php"
   title="Validação isolada da lotação"
   code={
-    "function validar($dados) {\n    $erros = [];\n    if (!isset($dados['lotacao']) || !is_int($dados['lotacao']) || $dados['lotacao'] < 1) {\n        $erros['lotacao'] = 'A lotação tem de ser um inteiro a partir de 1.';\n    }\n    return $erros;\n}\n$erros = validar(['evento_id' => 3, 'preco' => 10, 'lotacao' => 0]);\nforeach ($erros as $campo => $mensagem) {\n    echo \"$campo: $mensagem\n\";\n}"
+    "<?php\nfunction validar($dados) {\n    $erros = [];\n    if (!isset($dados['lotacao']) || !is_int($dados['lotacao']) || $dados['lotacao'] < 1) {\n        $erros['lotacao'] = 'A lotação tem de ser um inteiro a partir de 1.';\n    }\n    return $erros;\n}\n$erros = validar(['evento_id' => 3, 'preco' => 10, 'lotacao' => 0]);\nforeach ($erros as $campo => $mensagem) {\n    echo \"$campo: $mensagem\n\";\n}"
   }
 />
 
-A saída é `lotacao: A lotação tem de ser um inteiro a partir de 1.` No Laravel real, este erro voltava ao formulário junto ao campo em vez de sair impresso; a condição que o produz é a mesma.
+A saída é `lotacao: A lotação tem de ser um inteiro a partir de 1.` Num formulário Laravel, o erro é apresentado junto ao campo. O bloco não reproduz a conversão das strings HTTP nem todas as regras do validador.
 
 <Dot
   source={
@@ -177,6 +184,8 @@ public function entrar(Request $request)
 }
 ```
 
+Este fragmento pressupõe o modelo autenticável e a coluna `password` do starter Laravel. Para usar `utilizadores.palavra_passe_hash` do esquema anterior, configura o provider e o modelo para essa tabela e esse atributo de hash. A chave `password` das credenciais continua a receber a palavra-passe em claro para a API a verificar. Não passes o hash como credencial.
+
 O `Auth::attempt` verifica a palavra-passe com hash e inicia a sessão. Se falhar, volta atrás com erro genérico de propósito: dizer "email certo, palavra-passe errada" ajuda quem ataca a adivinhar contas.
 
 Com a entrada feita, protege as rotas que precisam de comprador autenticado com o middleware `auth`:
@@ -189,59 +198,25 @@ Route::middleware('auth')->group(function () {
 
 Quem não entrou é redirecionado para o login em vez de chegar ao controlador. O middleware auth verifica autenticação. A autorização sobre a operação e o recurso precisa de uma policy, gate ou verificação equivalente no servidor.
 
-## Git, Docker e o arranque do projeto
+## Ambiente e ferramentas
 
-O projeto corre em grupo desde o primeiro dia, por isso o ambiente também é matéria. A base de dados vive em Docker e o código em Git, e ambos se configuram uma vez.
+O ambiente do projeto usa PHP e Laravel para a aplicação, Composer para as dependências, PostgreSQL para os dados e Docker Compose para a infraestrutura local. Git e GitLab guardam versões e permitem rever as alterações do grupo. Usa o template e o guia da edição atual, ligados na [apresentação da cadeira](/cadeiras/lbaw/#referências-complementares).
 
-```yaml
-# compose.yaml: a base de dados do grupo, igual para todos
-services:
-  bd:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: loja
-      POSTGRES_PASSWORD: segredo
-    ports:
-      - '5432:5432'
-    volumes:
-      - dados:/var/lib/postgresql/data
-volumes:
-  dados:
+Uma **imagem** Docker descreve o sistema de ficheiros e a configuração que servem para criar contentores. Um **contentor** é uma instância em execução dessa imagem. Um volume conserva os dados fora da camada descartável do contentor. Parar ou recriar o contentor não é o mesmo que apagar o volume da base de dados.
+
+## Blade: gerar uma vista
+
+`view('sessoes.index', ['sessoes' => $sessoes])` passa os dados à vista `resources/views/sessoes/index.blade.php`. Blade compila o template para PHP:
+
+```blade
+<ul>
+  @foreach ($sessoes as $sessao)
+    <li>{{ $sessao->evento->titulo }}: {{ $sessao->data_hora }}</li>
+  @endforeach
+</ul>
 ```
 
-Com este ficheiro, `docker compose up -d` levanta o PostgreSQL 16 com base `loja` e guarda os dados no volume mesmo que o contentor seja apagado. O Laravel aponta para ela com as variáveis de ambiente habituais. Se a base responder no arranque e o `migrate` correr sem erros, o ambiente está pronto.
-
-No Git, o fluxo que evita conflitos no projeto é curto: um ramo por funcionalidade, com revisão do grupo antes de juntar.
-
-```sh
-git checkout -b sessao-lista      # cria o ramo da funcionalidade
-git add .                         # junta as alterações feitas
-git commit -m "Lista sessões futuras"  # regista com mensagem clara
-git push -u origin sessao-lista   # publica o ramo para revisão
-git checkout main                 # volta ao principal atualizado
-git pull                          # traz o que o grupo já juntou
-```
-
-Cada funcionalidade viaja num ramo com nome claro e só entra no `main` depois de revista. Commits pequenos com mensagens que dizem o que mudou valem mais do que um commit gigante na véspera.
-
-## O que o relatório deve conter
-
-O projeto avalia-se pelo produto e pela documentação. Guarda decisões à medida que as tomas, uma secção por fase:
-
-- Requisitos: a tabela R1 a R4 final e os requisitos rejeitados com o motivo.
-- Modelo: o diagrama UML e as restrições escritas que o desenho não mostra.
-- Esquema: as tabelas e o teste de papel com os casos de uso que as validaram.
-- Integridade: que regras vivem na base de dados e porquê, com o protocolo de lotação e os triggers necessários.
-- Aplicação: rotas, validação e autenticação, com os erros que cada camada produz.
-- Interfaces: as decisões de usabilidade e a verificação de contraste e teclado.
-
-Reconstruir isto na véspera produz relatórios vagos. Uma frase por decisão, escrita no dia, chega.
-
-## Para saber mais
-
-:::details[Onde ver cada erro]
-Erro de validação: volta ao formulário com mensagens por campo, sem tocar na base de dados. Erro de chave estrangeira ou de trigger: exceção da base de dados que o controlador deve apanhar e transformar em mensagem. Erro 500 indica uma falha interna que pode ter várias causas. Lê a mensagem de cima para baixo até à primeira linha do teu código.
-:::
+`@foreach` repete o elemento para cada sessão. `{{ ... }}` escreve texto escapado para HTML. O acesso a `evento` precisa da relação do modelo e pode provocar consultas adicionais, como veremos no caso N+1.
 
 ## Ler o âmbito de uma variável em PHP
 
@@ -266,14 +241,14 @@ Uma rota escolhe a operação. Middleware pode verificar sessão e proteção CS
 ```php
 public function atualizar(Request $request, Bilhete $bilhete)
 {
-    $this->authorize('update', $bilhete);
+    Gate::authorize('update', $bilhete);
     $dados = $request->validate(['estado' => 'required|in:reservado,pago,cancelado']);
     // A transição de estado e a capacidade exigem ainda a regra de negócio.
     return $this->servicoCompras->alterarEstado($bilhete, $dados['estado']);
 }
 ```
 
-Este fragmento mostra a separação; pressupõe uma policy e um serviço com o protocolo de compra definido. Autorizar uma alteração não torna válida qualquer transição. Por exemplo, passar de cancelado a pago pode exigir voltar a reservar capacidade.
+Este fragmento usa a facade `Gate` e mostra a separação; pressupõe uma policy e um serviço com o protocolo de compra definido. Autorizar uma alteração não torna válida qualquer transição. Por exemplo, passar de cancelado a pago pode exigir voltar a reservar capacidade.
 
 ## ORM e o problema N+1
 

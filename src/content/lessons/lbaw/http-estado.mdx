@@ -23,6 +23,12 @@ import ciclo from '../../lbaw/http.dot?raw';
 
 Um pedido HTTP identifica uma operação sobre um recurso. A aplicação interpreta-o, verifica permissões, consulta ou altera dados e devolve uma resposta. Saber onde vivem os dados e as decisões ajuda a explicar tanto a arquitetura como as falhas de segurança.
 
+## URL e recurso
+
+Em `https://bilhetes.example:443/sessoes/12?idioma=pt#preco`, `https` é o esquema, `bilhetes.example` o host, `443` a porta, `/sessoes/12` o caminho, `idioma=pt` a query e `preco` o fragmento. O fragmento fica no cliente e não é enviado no alvo do pedido HTTP. A porta 443 é a porta predefinida de HTTPS e pode ser omitida.
+
+O caminho é um identificador interpretado pela aplicação; não precisa de corresponder a um ficheiro no disco.
+
 ## Pedido e resposta
 
 Um exemplo textual em HTTP/1.1:
@@ -48,17 +54,19 @@ Cache-Control: private, no-store
 
 ## Seguro e idempotente são propriedades diferentes
 
-| Método    | Semântica habitual                                   | Seguro? | Idempotente?      |
-| --------- | ---------------------------------------------------- | ------- | ----------------- |
-| GET, HEAD | Ler a representação, ou só metadados.                | Sim     | Sim               |
-| POST      | Pedir processamento ou criar um recurso subordinado. | Não     | Não por definição |
-| PUT       | Criar ou substituir o estado no endereço indicado.   | Não     | Sim               |
-| DELETE    | Remover a associação do recurso ao endereço.         | Não     | Sim               |
-| PATCH     | Aplicar uma alteração parcial.                       | Não     | Não por definição |
+| Método    | Semântica habitual                                   | Seguro? | Idempotente?  |
+| --------- | ---------------------------------------------------- | ------- | ------------- |
+| GET, HEAD | Ler a representação, ou só metadados.                | Sim     | Sim           |
+| POST      | Pedir processamento ou criar um recurso subordinado. | Não     | Não garantido |
+| PUT       | Criar ou substituir o estado no endereço indicado.   | Não     | Sim           |
+| DELETE    | Remover a associação do recurso ao endereço.         | Não     | Sim           |
+| PATCH     | Aplicar uma alteração parcial.                       | Não     | Não garantido |
 
 **Seguro** significa que a semântica pedida não pretende alterar o estado. Registos de acesso são efeitos laterais possíveis de uma leitura. **Idempotente** significa que repetir o mesmo pedido tem o mesmo efeito pretendido que fazê-lo uma vez. Duas eliminações podem responder 204 e depois 404 e continuar a ser idempotentes.
 
 `GET /apagar-conta` não se torna seguro por usar GET. Viola a semântica do método e pode ser ativado por um link, pré-carregamento ou crawler. Alterações exigem um método adequado, autorização e proteção contra CSRF quando usam credenciais automáticas.
+
+POST e PATCH podem ser desenhados com operações idempotentes, mas o método sozinho não dá essa garantia.
 
 ## Códigos que distinguem falhas
 
@@ -104,3 +112,23 @@ Uma resposta pública pode ser partilhada por caches se a política o permitir. 
 A origem combina **esquema, host e porta**. `https://loja.example` e `http://loja.example` têm origens diferentes. A política da mesma origem limita certas leituras entre origens no navegador. CORS permite ao servidor autorizar leituras de respostas por código de determinadas origens; alguns pedidos precisam de um preflight OPTIONS.
 
 CORS não é autenticação, não impede pedidos de clientes fora do navegador e não impede por si só CSRF. Um formulário pode enviar um pedido que altera estado mesmo quando o atacante não consegue ler a resposta. HTTPS protege o transporte, mas não corrige SQL injection, autorização em falta ou HTML inseguro.
+
+## REST e estado da aplicação
+
+**REST** é um estilo de arquitetura. Entre as suas condições estão separação cliente-servidor, interface uniforme, mensagens que se descrevem a si próprias, cache quando permitido e comunicação sem estado de sessão no servidor entre pedidos. Usar JSON ou nomes no plural não chega para cumprir essas condições.
+
+O estado dos **recursos**, como os bilhetes guardados na base de dados, pode continuar no servidor. A condição sem estado diz respeito ao contexto da interação: cada pedido precisa da informação necessária para ser compreendido. Uma aplicação com sessão de login guardada no servidor pode usar rotas e métodos HTTP adequados sem cumprir REST estritamente. HTTP ser sem estado não impede a aplicação de guardar essa sessão.
+
+## Especificar um recurso web
+
+Antes de implementar, descreve método e caminho, permissões, parâmetros e os resultados possíveis. Por exemplo, para `GET /api/sessoes/12`:
+
+| Parte         | Contrato do exemplo                                                |
+| ------------- | ------------------------------------------------------------------ |
+| Pedido        | `id` no caminho identifica uma sessão.                             |
+| Acesso        | Só devolve os campos públicos de uma sessão visível.               |
+| Sucesso       | 200 e `application/json`, com `id`, `titulo` e `livres`.           |
+| Ausência      | 404 quando não existe ou não deve ser revelada.                    |
+| Falha técnica | 500 sem detalhes internos; o cliente mostra uma mensagem de falha. |
+
+OpenAPI permite escrever este contrato de forma estruturada. Documentar só a página ou só os parâmetros deixa o cliente sem saber interpretar sucesso e falha. Uma resposta AJAX pode ser HTML ou JSON, consoante o contrato; o método JavaScript que lê o corpo tem de corresponder a essa escolha.

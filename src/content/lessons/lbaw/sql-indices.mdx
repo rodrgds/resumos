@@ -68,6 +68,14 @@ SELECT id FROM contas_exemplo WHERE username = 'ana';
 
 Este excerto é **PostgreSQL**, não SQLite. Devolve os identificadores 1 e 2, sem prometer uma ordem. O índice Hash não exige unicidade do username. Hash não implica superioridade sobre B-tree numa igualdade. Índices ocupam espaço e são mantidos nas escritas; mede com a carga real.
 
+## Carga, seletividade e organização física
+
+O desenho físico começa pela **carga de trabalho**: consultas e alterações importantes, frequência, volume de linhas, distribuição de valores e concorrência. Um índice acelera algumas leituras e acrescenta manutenção em inserções, atualizações e eliminações.
+
+A **cardinalidade** de uma relação é o número de linhas. Nas estatísticas de uma coluna, o número de valores distintos também é chamado cardinalidade. Um booleano pode ter dois valores distintos numa tabela com milhões de linhas. A **seletividade** de um filtro mede a fração de linhas que passam: devolver 100 entre 100 mil corresponde a 0,1%. A distribuição importa, não apenas o número de valores distintos.
+
+Em PostgreSQL, `CLUSTER sessoes USING sessoes_evento_data` reordena fisicamente a tabela segundo esse índice. É uma operação pontual: escritas futuras não mantêm essa ordem. Pode favorecer certos acessos por proximidade no disco, mas exige trabalho e bloqueio para reorganizar. Não é um mecanismo que distribui os dados por várias máquinas.
+
 ## Ler EXPLAIN sem confundir custo com tempo
 
 ```sql
@@ -152,5 +160,3 @@ Um sinal independente pode ser calculado na indexação ou atualizado em segundo
 Num exemplo próprio, somamos dois sinais normalizados entre zero e um. A tem correspondência textual 0,8 e qualidade 0,2, dando 1,0. B tem correspondência 0,6 e qualidade 0,8, dando 1,4. B fica primeiro nesta regra, apesar de ter menor correspondência textual. Mudar o peso muda a decisão; estes valores não são a fórmula interna de `ts_rank`.
 
 Antes de calcular posições, o conjunto de candidatos deve respeitar as permissões.
-
-O comportamento do planeador pode mudar entre versões.

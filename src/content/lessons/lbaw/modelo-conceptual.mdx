@@ -26,12 +26,12 @@ Os [requisitos](/cadeiras/lbaw/requisitos/) dizem o que o sistema faz. O modelo 
 
 Uma **classe** é um tipo de coisa que o sistema regista, com **atributos** que guardam os seus dados. Na Loja de Bilhetes precisamos de quatro:
 
-- **Utilizador**: nome, email (único) e hash da palavra-passe.
+- **Utilizador**: nome, email (único) e credencial de autenticação. O hash é a representação usada na implementação.
 - **Evento**: título, descrição e categoria.
-- **Sessão**: data, hora, preço e lotação. Cada sessão pertence a um evento.
+- **Sessão**: data e hora, preço não negativo e lotação positiva. Cada sessão pertence a um evento.
 - **Bilhete**: código e estado (reservado, pago ou cancelado). Cada bilhete liga um utilizador a uma sessão.
 
-Cada classe tem exatamente os atributos que os casos de uso exigem, nem mais nem menos. O email é único porque o registo com email duplicado é uma exceção tratada nos requisitos. O estado do bilhete existe porque a compra tem confirmação e pode ser cancelada. Se um atributo não serve nenhum requisito, corta-o.
+Escolhemos atributos que suportam as interações e as regras do domínio. O email é único porque o registo com email duplicado é uma exceção tratada nos requisitos. O estado do bilhete existe porque a compra tem confirmação e pode ser cancelada. Se não consegues justificar um atributo, revê o seu propósito antes de o incluir.
 
 ## Associações e multiplicidades
 
@@ -43,28 +43,28 @@ Uma **associação** liga duas classes, e a **multiplicidade** diz quantos objet
 
 <Dot
   source={
-    'digraph Modelo {\n  graph [bgcolor="transparent", rankdir=LR, pad=0.3];\n  node [shape=box, style="rounded,filled", fillcolor="#f3e9e9", color="#8c2d3b", fontcolor="#292a30", fontname="Arial", fontsize=14];\n  edge [color="#8c2d3b", fontcolor="#292a30", fontname="Arial", fontsize=12];\n  Evento -> Sessao [label="tem 1..*"];\n  Utilizador -> Bilhete [label="compra 0..*"];\n  Sessao -> Bilhete [label="tem 0..*"];\n}'
+    'graph Modelo {\n  graph [bgcolor="transparent", rankdir=TB, pad=0.3, ranksep=0.7];\n  node [shape=record, style=filled, fillcolor="#f3e9e9", color="#8c2d3b", fontcolor="#292a30", fontname="Arial", fontsize=14];\n  edge [color="#8c2d3b", fontcolor="#292a30", fontname="Arial", fontsize=13, labeldistance=2];\n  Evento [label="{Evento|titulo: texto\\ldescricao: texto\\lcategoria: texto\\l}"];\n  Sessao [label="{Sessão|data_hora: data e hora\\lpreco: não negativo\\llotacao: inteiro positivo\\l}"];\n  Utilizador [label="{Utilizador|nome: texto\\lemail: texto, único\\lcredencial: texto\\l}"];\n  Bilhete [label="{Bilhete|codigo: texto, único\\lestado: reservado, pago, cancelado\\l}"];\n  Evento -- Sessao [taillabel="1", headlabel="1..*"];\n  Utilizador -- Bilhete [taillabel="1", headlabel="0..*"];\n  Sessao -- Bilhete [taillabel="1", headlabel="0..*"];\n}'
   }
-  alt="Diagrama das quatro classes. Evento liga-se a Sessão com tem um a muitos. Utilizador liga-se a Bilhete com compra zero a muitos. Sessão liga-se a Bilhete com tem zero a muitos."
+  alt="Classes e atributos da Loja de Bilhetes. Um evento tem uma ou mais sessões; cada sessão pertence a um evento. Utilizador e Sessão podem ter zero ou mais bilhetes; cada bilhete pertence a um utilizador e a uma sessão."
 />
 
-Lê o diagrama nos dois sentidos antes de o dares por fechado: cada seta responde "quantos deste lado para cada um do outro".
+As linhas são associações. A multiplicidade junto a uma classe conta objetos dessa classe para um objeto do lado oposto. As setas de navegabilidade UML são outra informação, não o sentido de uma chave estrangeira.
 
 Repara na leitura inversa: dizer "uma sessão tem muitos bilhetes" não chega, porque também é preciso dizer que "cada bilhete é de uma só sessão". As duas leituras juntas é que fecham a regra, e é dessa regra que nascem as chaves estrangeiras no [esquema relacional](/cadeiras/lbaw/esquema-relacional/).
 
 ## Resolver o muitos para muitos
 
-Um utilizador compra bilhetes para várias sessões e cada sessão recebe bilhetes de vários utilizadores: entre **Utilizador** e **Sessão** há uma relação de muitos para muitos. Em UML não a desenhas direta quando ela tem dados próprios. O **Bilhete** é uma entidade associativa que a representa: guarda o código e o estado da compra e liga cada compra a exatamente um utilizador e uma sessão.
+Um utilizador compra bilhetes para várias sessões e cada sessão recebe bilhetes de vários utilizadores: entre **Utilizador** e **Sessão** há uma relação de muitos para muitos. Uma associação UML pode ter uma classe de associação para guardar dados próprios. Neste domínio precisamos de algo diferente, porque o mesmo par utilizador-sessão pode ter vários bilhetes. O **Bilhete** é uma entidade associativa que a representa: guarda o código e o estado da compra e liga cada compra a exatamente um utilizador e uma sessão.
 
-A regra para reconhecer este padrão: quando a ligação entre dois lados precisa de guardar informação (quando foi comprado, em que estado está), essa ligação merece ser uma classe. O bilhete tem código e estado, por isso é classe. Se a ligação não guardasse nada, uma associação simples chegava.
+Uma ligação com atributos pode ser modelada como classe de associação ou como entidade associativa. Decide também a identidade e se podem existir várias ocorrências para o mesmo par. Aqui, os bilhetes B1 e B2 pertencem à mesma pessoa U7 e à mesma sessão S12, mas são compras distintas.
 
 <Typst
   source={bilheteFigura}
   format="svg"
-  alt="Três caixas em linha: Utilizador, Bilhete com código e estado, Sessão. Uma seta de Utilizador para Bilhete com um, zero a muitos. Uma seta de Bilhete para Sessão com zero a muitos, um."
+  alt="Uma pessoa U7 tem dois bilhetes distintos, B1 pago e B2 reservado, ambos para a sessão S12. Cada bilhete liga essa pessoa à sessão."
 />
 
-O Bilhete tem identidade própria e duas associações. Permite várias compras do mesmo utilizador na mesma sessão. Uma classe de associação UML formal liga-se à associação que qualifica; não é a notação usada neste desenho.
+A figura mostra ocorrências concretas, não substitui o diagrama de classes. O Bilhete tem identidade própria e duas associações. Uma classe de associação UML formal liga-se à associação que qualifica; não é a notação usada aqui.
 
 ## Restrições que o desenho não mostra
 
