@@ -1,5 +1,4 @@
 #include <ctype.h>
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,12 +13,12 @@ int main(void) {
         puts("Usa um quantum inteiro entre 1 e 100.");
         return 1;
     }
-    errno = 0;
     char *fim_texto;
     long valor = strtol(entrada, &fim_texto, 10);
     int sem_numero = fim_texto == entrada;
     while (isspace((unsigned char)*fim_texto)) fim_texto++;
-    if (errno == ERANGE || sem_numero || *fim_texto != '\0' ||
+    // Os limites devolvidos por strtol em overflow também ficam fora de 1..100.
+    if (sem_numero || *fim_texto != '\0' ||
         valor < 1 || valor > 100 || ferror(stdin) ||
         (strchr(entrada, '\n') == NULL && !feof(stdin))) {
         puts("Usa um quantum inteiro entre 1 e 100.");
