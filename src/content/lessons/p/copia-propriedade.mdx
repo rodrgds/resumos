@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 
-Copiar um objeto pode significar copiar valores, duplicar um recurso ou partilhar propriedade. O tipo tem de escolher uma destas semânticas. Um apontador, por si só, não diz qual foi escolhida.
+Copiar um objeto pode significar copiar valores, duplicar um recurso ou partilhar propriedade. O tipo tem de escolher uma semântica, porque um apontador só por si não diz qual foi escolhida.
 
 ## Construção de cópia e atribuição
 
@@ -127,11 +127,16 @@ Saída:
 
 `std::make_unique<int[]>(n)` reserva um array de `n` inteiros inicializados a zero. A expressão `n == 0 ? nullptr : ...` escolhe não reservar quando o tamanho é zero. `std::exchange(outro.tamanho_, 0)` devolve o tamanho antigo e coloca zero na origem.
 
-A construção `Buffer b = a` reserva dois inteiros novos e copia `4` e `6`. Alterar `b.at(0)` para `9` não afeta `a`. A atribuição `c = b` faz uma nova cópia, agora de `9` e `6`. A autoatribuição através de `alias` mantém `c` intacto.
+A construção `Buffer b = a` reserva dois inteiros novos e copia `4` e `6`, por isso alterar `b.at(0)` para `9` não afeta `a`. A atribuição `c = b` copia `9` e `6`. A autoatribuição através de `alias` mantém `c` intacto.
 
 ## Atribuir sem perder o recurso anterior
 
-A atribuição de cópia constrói primeiro `copia`. Se a reserva falhar, a exceção sai antes de alterar o destino. Depois, `trocar` troca tamanho e propriedade sem lançar. Quando o temporário morre, destrói o recurso que pertencia ao destino. Esta técnica chama-se **copy-and-swap**.
+:::tip[Ideia-chave]
+
+Na atribuição, prepara o novo recurso antes de perder o anterior. Esta técnica **copy-and-swap** dá garantia forte: se a reserva falhar, o destino continua intacto.
+:::
+
+A atribuição de cópia constrói primeiro `copia`, ou seja, se a reserva falhar a exceção sai antes de tocares no destino. Depois, `trocar` troca tamanho e propriedade sem lançar.
 
 A alternativa "libertar o destino e só depois copiar" perde o estado anterior se a reserva falhar. Também falha na autoatribuição se destrói o recurso que ainda pretende ler. Testar `this == &outro` resolve a autoatribuição, mas não resolve sozinho a segurança perante falhas de reserva.
 
@@ -141,7 +146,7 @@ A alternativa "libertar o destino e só depois copiar" perde o estado anterior s
 
 `std::move` permite tratar uma expressão como candidata a movimento. Não transfere nada sozinho. A operação selecionada, aqui o construtor `Buffer(Buffer&&)`, é que transfere a propriedade.
 
-O movimento de `b` para `d` transfere o endereço do array sem copiar os inteiros. O exemplo põe explicitamente o tamanho de `b` a zero. Por isso, `b` fica vazio e pode ser destruído ou receber nova atribuição. Tentar `b.at(0)` lançaria uma exceção.
+O movimento de `b` para `d` transfere o endereço sem copiar os inteiros e põe o tamanho de `b` a zero. Por isso, `b` fica vazio e pode ser destruído ou receber nova atribuição.
 
 O estado de um objeto movido depende do contrato do tipo. Não assumes que qualquer `std::string` ou `std::vector` movido fica vazio; a biblioteca garante um estado válido, frequentemente não especificado. O `Buffer` desta página oferece uma garantia mais concreta. `noexcept` indica que as operações de movimento apresentadas não lançam, o que também ajuda coleções a escolher movimento durante uma realocação.
 
@@ -171,4 +176,4 @@ Cada `Leituras` possui o seu vetor. Acrescentar `8` à cópia deixa o original c
 
 ## Escolher a semântica
 
-Se um tipo representa um valor, como um relógio ou uma coleção de leituras, faz sentido que a cópia conserve o significado e seja independente. Se representa propriedade exclusiva de um recurso que não se duplica, pode proibir cópia e permitir movimento. Se vários objetos devem prolongar a mesma vida, precisa de propriedade partilhada. Decide isto antes de escrever o destrutor: a política de cópia faz parte da interface do tipo.
+Se um tipo representa um valor, a cópia deve ser independente. Se representa propriedade exclusiva, proíbe a cópia e permite movimento. Decide isto antes de escreveres o destrutor, porque a política de cópia faz parte da interface.

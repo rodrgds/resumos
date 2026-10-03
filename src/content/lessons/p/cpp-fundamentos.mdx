@@ -11,7 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 
 Um programa em C++ declara o tipo de cada objeto antes de o usar. O compilador verifica se as operações fazem sentido para esses tipos e produz um executável. O programa só lê a entrada quando o executável corre.
 
-Os exemplos acompanham os valores desde a entrada até à saída. Começamos pelos tipos, porque são eles que determinam como uma expressão é calculada.
+Os exemplos acompanham os valores desde a entrada até à saída. Começamos pelos tipos, ou seja, pela regra que decide como cada expressão é calculada.
 
 ## Declarar variáveis com tipos fixos
 
@@ -31,7 +31,7 @@ auto total = 3.5; // O compilador deduz double; o tipo continua fixo.
 
 `const` impede alterar o objeto através desse nome. `auto` pede ao compilador que deduza o tipo a partir do inicializador, não adia a decisão para a execução. Uma inicialização com chavetas, como `int n{3};`, impede certas conversões que perdem informação. `int n{3.7};` é rejeitado; `int n = 3.7;` converte para `3`.
 
-A largura de `int` e de `long` depende do sistema. Não assumes que todos os computadores usam os mesmos tamanhos. `sizeof(T)` mede bytes; `<limits>` permite consultar os limites de cada tipo. `char` não representa por si só todos os caracteres de um texto Unicode. Nos exemplos de texto desta cadeira, conta-se armazenamento, não letras visuais.
+A largura de `int` e de `long` depende do sistema, por isso não assumes tamanhos fixos. Usa `sizeof(T)` para medir bytes e `<limits>` para consultar limites. Nos exemplos desta cadeira, `char` conta armazenamento, não letras visuais de Unicode.
 
 ## Operadores e divisão
 
@@ -53,11 +53,16 @@ Saída:
 1 true
 ```
 
-A expressão `a / b` é avaliada antes da atribuição. Como os dois operandos são inteiros, o resultado é `3`, que só depois se converte para `3.0`. Na outra expressão, `static_cast<double>(a)` converte o operando antes da divisão e o resultado é `3.5`.
+A expressão `a / b` é avaliada antes da atribuição. Como os dois operandos são inteiros, o resultado é `3`, ou seja, só depois passa a `3.0` no destino. Com `static_cast<double>(a)`, convertes antes de dividir e obténs `3.5`.
 
 A divisão inteira trunca em direção a zero. Por exemplo, `-7 / 2` dá `-3` e `-7 % 2` dá `-1`, mantendo `a == (a / b) * b + a % b` quando a operação é representável. Dividir um inteiro por zero tem comportamento indefinido. O overflow de um inteiro com sinal também tem comportamento indefinido; não podes contar com que volte ao menor valor. Os valores `double` são aproximados, por isso a igualdade exata nem sempre serve para comparar resultados de contas.
 
-`&&` representa "e", `||` representa "ou" e `!` nega uma condição. Os dois primeiros usam **curto-circuito**. Em `n != 0 && soma / n > 10`, a divisão só é avaliada se `n != 0`. Usa parênteses quando ajudam a ver a ordem. Não escrevas `0 <= nota <= 20`: C++ compara primeiro `0 <= nota`, produz `0` ou `1`, e compara esse resultado com `20`. Escreve `0 <= nota && nota <= 20`.
+:::tip[Ideia-chave]
+
+A divisão usa os tipos dos operandos, não o tipo do destino. Com dois inteiros, `7 / 2` vale `3`, por isso converte antes de dividir quando queres a fração.
+:::
+
+`&&` representa "e", `||` representa "ou" e `!` nega uma condição. Os dois primeiros usam **curto-circuito**, ou seja, em `n != 0 && soma / n > 10` a divisão só é avaliada se `n != 0`. Usa parênteses quando ajudam a ver a ordem. Não escrevas `0 <= nota <= 20`: C++ compara primeiro `0 <= nota`, produz `0` ou `1`, e compara esse resultado com `20`. Escreve `0 <= nota && nota <= 20`.
 
 `++i` incrementa antes de produzir o valor; `i++` produz o valor anterior e incrementa. Num ciclo que ignora esse valor, ambos avançam uma posição. Evita alterar a mesma variável várias vezes na mesma expressão.
 
@@ -88,7 +93,7 @@ Saída:
 Aprovadas: 3
 ```
 
-Antes da iteração de índice `i`, já lemos `i` notas válidas e `aprovadas` conta apenas essas notas. Esta afirmação é um **invariante** do ciclo. A leitura seguinte e o `if` mantêm-no; `++i` aproxima o ciclo do fim. Ao terminar, `i` atingiu a quantidade, logo todas as notas foram consideradas. Para quantidade zero, o corpo não corre e a saída é `Aprovadas: 0`.
+Antes da iteração de índice `i`, já lemos `i` notas válidas e `aprovadas` conta apenas essas notas. Esta afirmação é um **invariante** do ciclo, ou seja, a leitura seguinte e o `if` mantêm-no e `++i` aproxima o fim. Quando `i` atinge a quantidade, todas as notas foram consideradas. Para quantidade zero, o corpo não corre.
 
 Uma variável declarada num bloco só é visível nesse bloco e nos blocos interiores que não a ocultam. O `i` declarado no `for` deixa de estar visível depois dele. Uma variável local normal tem duração automática: a sua vida termina ao sair do bloco. Âmbito indica onde o nome é visível; duração de vida indica quando o objeto existe. Não são a mesma coisa.
 
@@ -101,9 +106,12 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic notas.cpp -o notas
 ./notas
 ```
 
-O primeiro comando compila e liga o programa. `-o` escolhe o executável; `-std=c++17` fixa a linguagem; as opções `-W` ativam avisos. Se não houver erros, executa o segundo comando e introduz os números. Depois de mudar o código, volta a compilar. Correr um executável antigo não valida a versão que acabaste de escrever.
+O primeiro comando compila e liga o programa. `-o` escolhe o executável, `-std=c++17` fixa a linguagem e as opções `-W` ativam avisos. Se não houver erros, executa o segundo comando e introduz os números. Depois de mudares o código, volta a compilar, porque correr um executável antigo não valida a versão nova.
 
-No macOS, o comando `g++` pode identificar o Clang. Confirma com `g++ --version`; os programas destas páginas usam C++17 portátil. No Windows, usa a toolchain indicada pela cadeira, ou um terminal WSL com GCC. O navegador permite correr os exemplos sem configurar a máquina, mas projetos com vários ficheiros precisam de um ambiente local.
+:::details[Toolchain no macOS e no Windows]
+
+No macOS, o comando `g++` pode identificar o Clang. Confirma com `g++ --version`; os programas destas páginas usam C++17 portátil. No Windows, usa a toolchain indicada pela cadeira ou um terminal WSL com GCC. Projetos com vários ficheiros precisam de um ambiente local.
+:::
 
 ## Projetos com CMake e CLion
 
