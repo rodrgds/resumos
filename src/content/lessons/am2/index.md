@@ -44,9 +44,7 @@ Precisamos das derivadas e primitivas de AM1 e dos vetores e produtos escalar e 
 
 Cada capítulo termina com exercícios próprios. Tenta primeiro sem ajuda, abre a primeira pista quando não souberes como começar e usa a segunda para desbloquear a conta. A solução mostra também as condições do método. A [cheat sheet](/cadeiras/am2/folha-consulta/) serve para rever depois de compreenderes as páginas.
 
-## Avaliação de 2026/27
-
-:::details[Ver avaliação e regras de frequência]
+:::details[Avaliação em 2026/27]
 
 A ficha do SIGARRA, consultada em 3 de outubro de 2026, indica avaliação distribuída sem exame final: dois testes de desenvolvimento, cada um com peso de 50%, e a média arredondada às unidades. O recurso é uma prova global sobre os conteúdos do semestre. A frequência exige presença em 75% das aulas práticas; a assiduidade obtida vale também no ano imediatamente seguinte. A melhoria faz-se no recurso.
 
@@ -54,9 +52,7 @@ A ficha proíbe dispositivos eletrónicos, salvo os autorizados pela equipa doce
 
 :::
 
-## Fontes e âmbito
-
-:::details[Ver fontes e âmbito]
+:::details[Fontes e âmbito]
 
 O programa usado é o de [L.EIC007, 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587961). Inclui funções vetoriais; funções de várias variáveis, limites, derivadas e diferenciabilidade; cadeia, funções implícitas, Taylor e extremos; integrais de linha, duplos e triplos; Green, superfícies, divergência e Stokes; e introdução a EDP.
 
