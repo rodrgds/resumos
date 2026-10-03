@@ -8,6 +8,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="alias-ponteiros"
+  revision={1}
   title="Mudar um endereço ou um valor"
   explanation="/cadeiras/p/apontadores-memoria/#endereço-de-e-dereferenciação"
   answer={{
@@ -19,39 +20,40 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Segue{' '}
     <code>
       int a = 2, b = 7; int* p = &amp;a; int* q = p; p = &amp;b; *q = 5;
     </code>
     . Indica os valores finais e os destinos dos dois apontadores.
-  </p>
+  </div>
   <div slot="hint">
     <p>Desenha uma seta por apontador.</p>
   </div>
   <div slot="hint-more">
-    <p>
+    <div>
       p = &amp;b altera uma seta; *q = 5 altera o objeto onde acaba a outra.
-    </p>
+    </div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       No fim, <code>a = 5</code> e <code>b = 7</code>. <code>p</code> aponta
       para <code>b</code>; <code>q</code> continua a apontar para <code>a</code>
       . Copiar p para q não cria uma ligação que faça as futuras atribuições a p
       aparecerem em q.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Dois apontadores com o mesmo valor inicial continuam a ser objetos
       independentes.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
   id="delete-alias"
+  revision={1}
   title="O que fica pendente"
   explanation="/cadeiras/p/apontadores-memoria/#fugas-de-memória-e-double-free"
   answer={{
@@ -81,11 +83,11 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Uma sequência faz{' '}
     <code>int* p = new int(8); int* q = p; delete p; p = nullptr;</code>. Qual
     afirmação é correta?
-  </p>
+  </div>
   <div slot="hint">
     <p>A libertação destrói o objeto, não todos os apontadores.</p>
   </div>
@@ -93,16 +95,72 @@ import Exercise from '../../../components/Exercise.astro';
     <p>A atribuição a p só altera p.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       <code>q</code> conserva o antigo endereço, mas o inteiro já foi destruído.
       Não se pode ler <code>*q</code> nem repetir <code>delete q</code>. O valor
       nulo de <code>p</code> não repara q.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Um endereço que ainda tem o mesmo número não garante que o objeto continue
       vivo.
-    </p>
+    </div>
+  </div>
+</Exercise>
+
+<Exercise
+  id="duplicar-string-c"
+  revision={1}
+  title="Copiar o texto e o terminador"
+  explanation="/cadeiras/p/apontadores-memoria/#alocação-dinâmica-com-new-e-delete"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Reservei comprimento mais um e copiei o terminador nulo.',
+      'Obtive uma cópia independente, incluindo para a string vazia.',
+      'Identifiquei o chamador como dono e usei delete[] uma única vez.',
+    ],
+  }}
+>
+  <div>
+    Escreve <code>char* duplicar(const char* texto)</code>. Recebe uma string
+    de C válida, não nula, e devolve uma cópia num novo array criado com
+    <code>new[]</code>. O chamador fica responsável por
+    <code>delete[]</code>. Não alteres a origem. Esta resposta é de
+    autoavaliação; relembra o
+    <a href="/cadeiras/p/funcoes-arrays/#strings-de-c-e-o-terminador">terminador das strings de C</a>.
+  </div>
+  <div slot="hint">Conta unidades até encontrar o terminador, sem o confundir com texto.</div>
+  <div slot="hint-more">
+    Para <code>"Ana"</code>, reserva quatro posições e copia
+    <code>A</code>, <code>n</code>, <code>a</code> e <code>\0</code>. Para o
+    vazio, ainda precisas da posição do terminador.
+  </div>
+  <div slot="solution">
+
+```cpp
+char* duplicar(const char* texto) {
+    std::size_t n = std::strlen(texto);
+    char* copia = new char[n + 1];
+    for (std::size_t i = 0; i < n; ++i) copia[i] = texto[i];
+    copia[n] = '\0';
+    return copia;
+}
+```
+
+    Inclui <code>&lt;cstddef&gt;</code> e <code>&lt;cstring&gt;</code>.
+    Verifica com <code>char origem[] = "Ana"</code>: depois de copiar, muda
+    <code>copia[0]</code> para <code>'E'</code>. A cópia deve ser
+    <code>"Ena"</code> e a origem continuar <code>"Ana"</code>. Uma entrada
+    vazia devolve outro array com apenas <code>\0</code>. Liberta cada cópia
+    com <code>delete[]</code> depois da última utilização.
+
+  </div>
+  <div slot="mistakes">
+    Reservar só <code>n</code> posições não deixa espaço para o terminador.
+    Devolver o endereço de um array local deixa um apontador pendente. Copiar
+    só o endereço não cria texto independente. Esta função exige uma origem
+    válida; não aceita <code>nullptr</code> nem um array sem terminador.
   </div>
 </Exercise>
