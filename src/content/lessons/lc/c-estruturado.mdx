@@ -11,9 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import modulo from '../../lc/modulo-hc.typ?raw';
 
-Começamos o percurso de LC pelo programa em C: esta página responde como organizar, transformar e juntar as partes de um programa.
-
-Um programa é uma lista de instruções que o computador executa por ordem. Em LC escrevemos essas instruções em C, que é uma linguagem de programação onde as ordens se escrevem em texto e depois se transformam para o computador executar.
+Um driver de LC precisa de representar bytes, chamar funções do sistema e guardar estado entre eventos. Esta página mostra como organizar esse programa em C: tipos que descrevem registos, módulos que escondem estado e uma compilação que junta as partes.
 
 O programa mais pequeno desta página guarda dois números, soma-os e mostra o resultado no ecrã:
 
@@ -28,9 +26,9 @@ int main(void) {
 }
 ```
 
-A primeira linha traz a definição da ordem que mostra texto no ecrã. A função `main`, que é o bloco onde a execução começa, guarda 20 e 22 em `a` e `b`, ou seja, em duas variáveis, e a ordem `printf`, que apresenta texto no ecrã, mostra 42.
+A primeira linha traz a declaração da função que mostra texto no ecrã; a definição está na biblioteca ligada ao programa. A função `main`, que é o bloco onde a execução começa, guarda 20 e 22 em `a` e `b`, ou seja, em duas variáveis, e a ordem `printf`, que apresenta texto no ecrã, mostra 42.
 
-Quando um programa cresce, dividimo-lo em módulos, ou seja, partes do programa guardadas em ficheiros separados, que depois juntamos no programa final. Para quem já programou em C++, que é a linguagem que usaste em cadeiras anteriores, começamos pelo que muda.
+Quando um programa cresce, dividimo-lo em módulos. Cada módulo é uma parte guardada em ficheiros separados, que depois juntamos no programa final. Para quem já programou em C++, que é a linguagem que usaste em cadeiras anteriores, começamos pelo que muda.
 
 ## De C++ para C
 
@@ -98,7 +96,7 @@ unsigned int width = 10;
 bool inside = delta < width;
 ```
 
-Quando os tipos têm a mesma categoria e o `int` não representa todos os valores de `unsigned int`, `delta` converte-se para um grande valor sem sinal, por isso o teste pode dar falso. Valida primeiro que `delta >= 0` e só depois compara `(unsigned int)delta < width`. Para posições com movimento negativo, mantém as contas num tipo com sinal até validares os limites.
+Pelas conversões aritméticas usuais, `delta` converte-se para `unsigned int`, porque esse tipo representa valores que `int` não representa. O valor -1 passa a 4294967295, por isso o teste dá falso. Valida primeiro que `delta >= 0` e só depois compara `(unsigned int)delta < width`. Para posições com movimento negativo, mantém as contas num tipo com sinal até validares os limites.
 
 ## Apontadores, arrays e tamanho
 
@@ -193,7 +191,9 @@ cc main.o counter.o -o demo
 ./demo
 ```
 
-Incluir `counter.h` dá a declaração, mas não acrescenta automaticamente `counter.c` ao executável, por isso o programa imprime `2` apenas quando ligas os dois objetos. Um erro de sintaxe ou de tipo aparece na compilação. Uma referência a `counter_tick` sem definição aparece na ligação. Incluir `counter.h` dá a declaração, não acrescenta automaticamente `counter.c` ao executável.
+Incluir `counter.h` dá a declaração, mas não acrescenta automaticamente `counter.c` ao executável, por isso o programa imprime `2` apenas quando ligas os dois objetos. Um erro de sintaxe ou de tipo aparece na compilação. Uma referência a `counter_tick` sem definição aparece na ligação.
+
+Segue o diagnóstico pela fase. Se a mensagem fala de declaração em falta ou tipo incompatível, volta ao `.c` e ao cabeçalho. Se fala de referência indefinida a `counter_tick`, o problema está na linha de ligação. Compila primeiro cada fonte com `cc -c` e só depois liga com `cc main.o counter.o -o demo`. Se mudares `counter.h`, recompila os dois objetos, porque ambos dependem dele.
 
 Para criar e usar uma biblioteca estática:
 

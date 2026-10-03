@@ -2,7 +2,7 @@
 title: Rato
 description: Pacotes PS/2, deltas de nove bits, comandos e deteção de gestos.
 section: conteudo
-order: 7
+order: 8
 practices:
   - lc/praticar-rato
 ---
@@ -11,9 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import pacote from '../../lc/pacote-rato.typ?raw';
 
-Depois do teclado, esta página responde como interpretar o movimento e os botões do rato.
-
-O rato PS/2 comunica através do i8042, como o teclado, mas usa IRQ12 e pacotes de três bytes, ou seja, o hardware entrega um byte por interrupção e só depois de reunir os três bytes podes interpretar botões e movimento.
+O teclado já entrega eventos de tecla. O rato entrega movimento e botões em pacotes de três bytes. Esta página mostra como interpretar esses pacotes. O rato PS/2 comunica através do i8042, como o teclado, mas usa IRQ12. O hardware entrega um byte por interrupção e só depois de reunir os três bytes podes interpretar botões e movimento.
 
 ## Anatomia do pacote
 
@@ -42,7 +40,7 @@ Aqui $b_1$ e $b_2$ estão entre 0 e 255; $s_x$ e $s_y$ são 0 ou 1 obtidos do pr
 
 Não uses apenas `(int8_t)b1`, porque se o sinal X for 0 e `b1 = 0xC8`, o delta correto é +200 e um inteiro de oito bits com sinal representaria -56. Se o sinal X for 1 e `b1 = 0x05`, o delta é $5-256=-251$, apesar de o bit 7 de `b1` estar a 0.
 
-No pacote `28 05 FB`, o sinal X é 0 e o sinal Y é 1. Obtemos $\Delta x=5$ e $\Delta y=251-256=-5$.
+No pacote `28 05 FB`, o primeiro byte `0x28` tem o bit 5 a 1 e o bit 4 a 0, por isso o sinal X é 0 e o sinal Y é 1. Obtemos $\Delta x=5$ e $\Delta y=251-256=-5$.
 
 <Typst
   source={pacote}
@@ -98,7 +96,7 @@ Os comandos do rato não se escrevem diretamente na porta de comandos do KBC. Pa
 2. Espera IBF a 0 e escreve o byte em `0x60`.
 3. Espera a resposta e lê-a de `0x60`, tratando timeout e erros.
 
-O rato confirma cada byte recebido: `0xFA` é ACK, `0xFE` pede reenvio e `0xFC` assinala erro. Limita as tentativas. O ACK não é o conteúdo da resposta de um comando que devolve dados: essa resposta vem depois.
+O rato confirma com `0xFA` cada comando e cada argumento que aceita. A exceção documentada nos slides é o comando de reenvio: quando o byte recebido é o próprio `0xFE` enviado pelo anfitrião, o rato não devolve ACK. No sentido contrário, `0xFE` como resposta do rato pede reenvio e `0xFC` assinala erro. Limita as tentativas. O ACK não é o conteúdo da resposta de um comando que devolve dados: essa resposta vem depois.
 
 Para definir taxa de amostragem, há uma sequência para `0xF3` e outra para o argumento. Cada uma usa `0xD4` e recebe o seu ACK. Se o argumento provocar pedido de reenvio, a política do protocolo pode exigir repetir o comando completo, não apenas o argumento.
 

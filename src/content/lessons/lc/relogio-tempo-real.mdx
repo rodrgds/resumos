@@ -2,14 +2,17 @@
 title: Relógio de tempo real
 description: Registos RTC, formatos BCD, leituras coerentes e causas de interrupção.
 section: conteudo
-order: 9
+order: 5
 practices:
   - lc/praticar-rtc
 ---
 
-Depois de desenhar no ecrã, esta página responde como ler a data e a hora do relógio do computador.
+import Typst from '../../../components/Typst.astro';
+import rtcLeitura from '../../lc/rtc-leitura.typ?raw';
 
-O RTC, que é um relógio do computador com alimentação própria que continua a contar o tempo mesmo quando o computador está desligado, conserva a data e a hora. Não é o mesmo que o timer, ou seja, o timer mede intervalos de execução e o RTC fornece hora do dia, alarmes e eventos periódicos.
+Depois de perceberes como o hardware avisa o programa, esta página mostra como ler a data e a hora do relógio do computador. É também a primeira leitura de registos do Lab 1 de 2026.
+
+O RTC conserva a data e a hora com alimentação própria e continua a contar mesmo quando o computador está desligado. Não é o mesmo que o timer. O timer mede intervalos de execução; o RTC fornece hora do dia, alarmes e eventos periódicos.
 
 ## Endereço e dados
 
@@ -31,9 +34,11 @@ Escrever `0x0A` em `0x70` e ler `0x71` consulta A. Uma leitura de `0x71` sem sel
 
 No registo B, DM, bit 2, seleciona binário quando vale 1 e BCD quando vale 0. O bit 1 seleciona 24 horas quando vale 1, ou 12 horas quando vale 0.
 
-Em **BCD**, cada nibble representa um algarismo decimal, ou seja, o valor `0x59` representa 59, não 89. A conversão é:
+Em **BCD**, cada nibble representa um algarismo decimal. O valor `0x59` representa 59, não 89. A conversão é:
 
 $$decimal=10\cdot(value\gg4)+(value\mathbin{\&}\texttt{0x0F}).$$
+
+Para `0x59`, o nibble alto vale 5 e o baixo vale 9, por isso o resultado é 10 vezes 5 mais 9, ou 59.
 
 Esta fórmula assume dois algarismos BCD válidos. Um nibble acima de 9 é inválido. Em binário, `0x3B` já representa 59 e não deve ser convertido por BCD.
 
@@ -44,6 +49,14 @@ Não mudes o formato do RTC apenas para simplificar a leitura. Essa alteração 
 ## Ler uma hora coerente
 
 Os registos atualizam-se de forma assíncrona, por isso se leres segundos de `07:32:59` e minutos depois da passagem para `07:33:00`, podes construir `07:33:59`, que nunca foi a hora real da leitura.
+
+<Typst
+  source={rtcLeitura}
+  format="svg"
+  alt="Leitura partida: segundos 59 lidos antes da atualização de 07:32:59 para 07:33:00 e horas 07 com minutos 33 lidos depois, formando 07:33:59, uma hora que não correspondeu ao relógio em nenhum instante da leitura."
+/>
+
+Lê a figura de cima para baixo. O primeiro acesso lê 59 nos segundos, quando o relógio ainda marca 07:32:59. A atualização passa o relógio para 07:33:00. Os acessos seguintes trazem 07 nas horas e 33 nos minutos. Juntar os campos novos com os segundos antigos forma 07:33:59, que não correspondeu à hora real em nenhum instante desta leitura: o relógio saltou de 07:32:59 para 07:33:00 sem passar por 07:33:59.
 
 O registo A tem UIP, bit 7. O RTC assinala a atualização antes de a começar e limpa UIP quando termina. Esperar UIP a 0 e depois ler os campos pressupõe que terminas antes da próxima atualização e que não és suspenso demasiado tempo durante a sequência.
 

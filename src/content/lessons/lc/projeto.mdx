@@ -2,7 +2,7 @@
 title: Eventos, estado e debugging
 description: Separar drivers e aplicação, representar transições e localizar erros por experiências pequenas.
 section: conteudo
-order: 12
+order: 10
 practices:
   - lc/praticar-eventos
 ---
@@ -10,7 +10,7 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import maquina from '../../lc/maquina-jogo.dot?raw';
 
-No fim do percurso, com todos os dispositivos a funcionar, esta página responde como juntar tudo numa aplicação que reage a eventos.
+Com teclado, rato, temporizador e vídeo a funcionar isoladamente, falta juntá-los num jogo que responde a eventos. Esta página mostra como organizar essa aplicação.
 
 Uma aplicação recebe bytes, transforma-os em eventos e atualiza o estado. O desenho apresenta uma fotografia desse estado, ou seja, se separares estes passos, consegues testar o raciocínio sem precisar de reproduzir sempre o mesmo movimento na máquina virtual.
 
@@ -35,7 +35,7 @@ Uma máquina de estados explicita o que cada evento faz em cada situação. Para
 
 <Dot
   source={maquina}
-  alt="Menu entra em jogo com Enter; P alterna jogo e pausa; Esc na pausa volta ao menu; sem vidas termina o jogo; Enter no fim regressa ao menu."
+  alt="Menu entra em jogo com Enter; P alterna jogo e pausa; Esc na pausa volta ao menu; três ticks ativos em jogo terminam a partida; Enter no fim regressa ao menu."
 />
 
 A transição não depende apenas da tecla. Enter no menu começa, enquanto Enter no fim regressa ao menu. Um tick na pausa pode atualizar um cursor do menu, mas não deve avançar o tempo do jogo se a regra diz que o jogo está parado.
@@ -46,42 +46,48 @@ Os dados também fazem parte do estado. Um `enum` sozinho não representa vidas,
 
 ## Um exemplo completo sem hardware
 
-Este programa C portátil simula Enter, ticks e P. Um jogo termina após três ticks ativos, ou seja, o tick durante a pausa não aumenta o contador.
+Este programa C portátil simula iterações com uma tecla e um tick cada. Implementa exatamente a máquina do diagrama: o jogo termina após três ticks ativos, porque o tick só conta em JOGO. Cada iteração aplica primeiro a tecla e depois o tick.
 
 ```c
 #include <stdio.h>
 
 enum state { MENU, GAME, PAUSE, END };
-enum event { ENTER, P_KEY, TICK };
+enum key { NO_KEY, ENTER, P_KEY, ESC };
+struct input { enum key key; int tick; };
 struct game { enum state state; unsigned active_ticks; };
 
-static void handle(struct game *g, enum event event) {
+static void handle(struct game *g, struct input in) {
+  /* Ordem fixa desta aplicação: primeiro a tecla, depois o tick. */
   switch (g->state) {
     case MENU:
-      if (event == ENTER) {
+      if (in.key == ENTER) {
         g->active_ticks = 0;
         g->state = GAME;
       }
       break;
     case GAME:
-      if (event == P_KEY) g->state = PAUSE;
-      else if (event == TICK && ++g->active_ticks == 3) g->state = END;
+      if (in.key == P_KEY) g->state = PAUSE;
+      else if (in.tick && ++g->active_ticks == 3) g->state = END;
       break;
     case PAUSE:
-      if (event == P_KEY) g->state = GAME;
+      if (in.key == P_KEY) g->state = GAME;
+      else if (in.key == ESC) g->state = MENU;
       break;
     case END:
-      if (event == ENTER) g->state = MENU;
+      if (in.key == ENTER) g->state = MENU;
       break;
   }
 }
 
 int main(void) {
   struct game g = {MENU, 0};
-  const enum event events[] = {ENTER, TICK, P_KEY, TICK, P_KEY, TICK, TICK};
+  const struct input inputs[] = {
+    {ENTER, 0}, {NO_KEY, 1}, {P_KEY, 1}, {NO_KEY, 1},
+    {P_KEY, 0}, {NO_KEY, 1}, {NO_KEY, 1}
+  };
   const char *names[] = {"MENU", "JOGO", "PAUSA", "FIM"};
-  for (size_t i = 0; i < sizeof events / sizeof events[0]; ++i) {
-    handle(&g, events[i]);
+  for (size_t i = 0; i < sizeof inputs / sizeof inputs[0]; ++i) {
+    handle(&g, inputs[i]);
     printf("%s %u\n", names[g.state], g.active_ticks);
   }
   return 0;
@@ -100,7 +106,7 @@ JOGO 2
 FIM 3
 ```
 
-Cada linha permite seguir o estado depois de um evento, porque este exemplo usa uma condição de fim por ticks com o mesmo mecanismo de transição do diagrama.
+Cada linha permite seguir o estado depois de uma iteração. A terceira iteração prova a ordem fixa: tecla P e tick chegam juntos em JOGO e o resultado é PAUSA 1. A tecla foi aplicada primeiro e o tick foi ignorado; se o tick fosse aplicado primeiro, o contador chegaria a 2 antes da pausa. Fixa esta ordem e usa-a nos testes, na execução local e no protocolo remoto.
 
 ## Filas, ordem e ritmo
 

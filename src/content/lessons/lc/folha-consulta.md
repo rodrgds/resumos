@@ -75,7 +75,7 @@ Portas de timer, i8042 e UART pertencem ao espaço de I/O. Framebuffer é memór
 
 - VBE `INT 10h`: AX `4F00` controlador, `4F01` modo, `4F02` seleção. BX bit 14 pede framebuffer linear. Sucesso VBE: AX `004F`.
 - Mapear VRAM física para o espaço virtual; não escrever num cast de `PhysBasePtr`.
-- $B=\lceil bpp/8\rceil$, offset $=y\cdot pitch+x\cdot B$, tamanho de imagem $=pitch\cdot height$.
+- $B=\lceil bpp/8\rceil$, offset $=y\cdot pitch+x\cdot B$ com $0\leq x<width$ e $0\leq y<height$, tamanho de imagem $=pitch\cdot height$. Em 24 bpp, escreve exatamente três bytes por píxel e valida as multiplicações antes de endereçar.
 - Indexed guarda índice da paleta. Direct color usa tamanhos e posições dos campos do modo.
 - 24 bpp ocupa três bytes; escrever quatro pisa o píxel seguinte.
 - XPM é texto; `xpm_load` produz pixmap. Carregar uma vez, validar falha e definir propriedade.

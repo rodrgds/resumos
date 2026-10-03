@@ -13,17 +13,17 @@ editorial:
     - O sítio externo de guiões laboratoriais não estava acessível na revisão.
 ---
 
-No fim de LC consegues escrever um programa em C que configura um periférico, lê os seus registos e reage a eventos sem bloquear. Vamos usar Minix numa máquina virtual VirtualBox, porque é aí que tens permissões para pedir I/O ao kernel. O percurso liga a representação de bytes aos periféricos do PC e depois à organização de uma aplicação que usa vários deles.
+No fim de LC consegues escrever um programa em C que configura um periférico, lê os seus registos e reage a eventos sem bloquear. Vamos usar Minix numa máquina virtual VirtualBox. O Minix deixa o teu programa pedir I/O ao kernel através de kernel calls. A máquina virtual fornece um PC emulado, por isso o acesso fica limitado aos dispositivos emulados e não toca nos dispositivos físicos do anfitrião. O percurso liga a representação de bytes aos periféricos do PC e depois à organização de uma aplicação que usa vários deles.
 
 ## Percurso de estudo
 
-Começa por [C estruturado e ferramentas](/cadeiras/lc/c-estruturado/) e [Memória, funções e objetos em C](/cadeiras/lc/memoria-funcoes/). Precisas de dominar apontadores, duração dos objetos, conversões e compilação separada antes de usar as APIs dos dispositivos.
+Começa por [C estruturado e ferramentas](/cadeiras/lc/c-estruturado/) e [Memória, funções e objetos em C](/cadeiras/lc/memoria-funcoes/). Estes dois capítulos dão-te os apontadores, a duração dos objetos, as conversões e a compilação separada de que as APIs dos dispositivos precisam.
 
-[Falar com o hardware](/cadeiras/lc/falar-com-hardware/) distingue portas de I/O de memória mapeada e ensina máscaras e polling. [Interrupções](/cadeiras/lc/interrupcoes/) explica PIC, IRQ, vetor e notificação Minix, sem os confundir.
+[Falar com o hardware](/cadeiras/lc/falar-com-hardware/) distingue portas de I/O de memória mapeada e ensina máscaras e polling. [Interrupções](/cadeiras/lc/interrupcoes/) explica PIC, IRQ, vetor e notificação Minix, sem os confundir. O [Relógio de tempo real](/cadeiras/lc/relogio-tempo-real/) vem a seguir, porque o Lab 1 de 2026 usa-o para praticar registos e polling antes das interrupções do próprio RTC.
 
-Segue os periféricos pela ordem [Temporizador](/cadeiras/lc/temporizador/), [Teclado](/cadeiras/lc/teclado/), [Rato](/cadeiras/lc/rato/) e [Placa de vídeo](/cadeiras/lc/video/). Em cada um, acompanha uma configuração e uma interpretação de dados até ao resultado. Depois estuda [Relógio de tempo real](/cadeiras/lc/relogio-tempo-real/), [Porta série e UART](/cadeiras/lc/relogio-serie/) e [Protocolos de comunicação](/cadeiras/lc/protocolos/).
+Segue [Temporizador](/cadeiras/lc/temporizador/), [Teclado](/cadeiras/lc/teclado/), [Rato](/cadeiras/lc/rato/) e [Placa de vídeo](/cadeiras/lc/video/). Em cada um, acompanha uma configuração e uma interpretação de dados até ao resultado. [Eventos, estado e debugging](/cadeiras/lc/projeto/) junta depois esses componentes numa aplicação completa.
 
-[Eventos, estado e debugging](/cadeiras/lc/projeto/) reúne os componentes numa aplicação. Os exercícios no fim das páginas são originais e treinam contas, registos, sequências de bytes, estados e diagnóstico. A [Cheat sheet](/cadeiras/lc/folha-consulta/) é uma folha de consulta para rever depois de estudar as explicações.
+A [Porta série e UART](/cadeiras/lc/relogio-serie/) e os [Protocolos de comunicação](/cadeiras/lc/protocolos/) fecham o percurso com a comunicação entre máquinas. Em 2025/26 a série é matéria extra do projeto, por isso a integração básica não depende dela. Os exercícios no fim das páginas são originais e treinam contas, registos, sequências de bytes, estados e diagnóstico. A [Cheat sheet](/cadeiras/lc/folha-consulta/) é uma folha de consulta para rever depois de estudar as explicações.
 
 ## Como praticar
 
