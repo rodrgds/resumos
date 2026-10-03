@@ -46,6 +46,8 @@ A configuração usa `bash scripts/cloudflare-build.sh`, pasta de saída `dist`,
 
 O workflow GitHub Actions verifica formatação, tipos, testes de navegador e build. Cloudflare compila de forma independente, por isso os checks de GitHub não bloqueiam automaticamente a publicação.
 
+`src/pages/404.astro` gera `dist/404.html`. Mantém este ficheiro: sem uma página 404 na raiz, [Cloudflare Pages serve a página inicial para URLs inexistentes](https://developers.cloudflare.com/pages/configuration/serving-pages/). Confirma na publicação que um URL de rascunho devolve 404.
+
 ## Créditos
 
 Oito fontes de leitura alojadas localmente: Manrope, Inter, Atkinson Hyperlegible, Lexend, Source Serif 4, Lora, Literata e IBM Plex Mono. O navegador descarrega a fonte escolhida. Ícones [Heroicons](https://heroicons.com/) nos controlos. As cadeiras usam [Tabler Icons](https://github.com/tabler/tabler-icons) (MIT) e desenhos próprios através de `CourseIcon.astro`. O campo `icon` de cada cadeira escolhe o símbolo. Todos são SVG, sem JavaScript no navegador. [Fontes dos logótipos](../public/logos/README.md). A ilustração dos pontos foi criada para este projeto.

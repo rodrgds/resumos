@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { access } from 'node:fs/promises';
 
 test('relation matrix remains readable and operable at 320px', async ({
   page,
@@ -300,6 +301,15 @@ test('course navigation comes from content and keeps drafts private', async ({
   await page.getByRole('searchbox').fill('"qzxw9182kvjm4"');
   await expect(page.locator('#search-status')).toContainText('Não');
   await expect(page.locator('#search-results a')).toHaveCount(0);
+  // Cloudflare Pages needs this artifact to disable its homepage fallback.
+  await access('.test-dist/404.html');
+  const missingPage = await page.goto('/cadeiras/fp/rascunho/');
+  expect(missingPage?.status()).toBe(404);
+  await expect(
+    page.getByRole('heading', { name: 'Página não encontrada' }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Ver cadeiras', exact: true }).click();
+  await expect(page).toHaveURL('/');
 });
 
 test('footnotes, containers and details work in Markdown and MDX', async ({
