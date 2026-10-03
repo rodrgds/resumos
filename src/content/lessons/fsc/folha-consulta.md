@@ -6,6 +6,10 @@ studyKind: revision
 order: 99
 ---
 
+No fim do percurso, esta página responde a onde rever fórmulas, condições e erros frequentes antes de resolver exercícios.
+
+Usa-a como índice de consulta: cada linha resume uma regra e aponta para a lição que a explica.
+
 ## Representação
 
 - [Bases e inteiros](/cadeiras/fsc/inteiros-complemento-dois/): $x=\sum d_ib^i$. Fração binária finita: denominador reduzido potência de 2. Hexadecimal: 4 bits/algarismo; octal: 3. Unsigned $[0,2^n-1]$; C2 $[-2^{n-1},2^{n-1}-1]$. Negar: inverter e somar 1. Alargar C2: repetir sinal.
