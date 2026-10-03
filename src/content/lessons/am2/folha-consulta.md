@@ -9,6 +9,8 @@ editorial:
       url: https://drive.google.com/file/d/1Iif82mUI9EfH6StwtnImpK0W793EoUYY/view
 ---
 
+No fim do percurso de AM II, esta folha responde a: que fórmulas e condições rever antes de resolver?
+
 Desenha o domínio. Confere regularidade, orientação e jacobiano antes de calcular.
 
 ## Curvas
