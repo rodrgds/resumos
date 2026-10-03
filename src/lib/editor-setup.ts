@@ -40,12 +40,47 @@ import {
   autocompletion,
   closeBracketsKeymap,
   completionKeymap,
+  completeFromList,
+  ifNotIn,
 } from '@codemirror/autocomplete';
 import { lintKeymap } from '@codemirror/lint';
 import { tags, Tag, styleTags } from '@lezer/highlight';
 import { editorVim } from './editor-vim';
 
 const parameter = Tag.define(tags.variableName);
+// Remaining reserved words from https://docs.python.org/3/reference/lexical_analysis.html#keywords.
+// The language package already supplies constants and compound-statement snippets.
+const pythonKeywords = ifNotIn(
+  ['String', 'FormatString', 'Comment', 'PropertyName'],
+  completeFromList(
+    [
+      'and',
+      'as',
+      'assert',
+      'async',
+      'await',
+      'break',
+      'continue',
+      'del',
+      'elif',
+      'else',
+      'except',
+      'finally',
+      'global',
+      'in',
+      'is',
+      'lambda',
+      'nonlocal',
+      'not',
+      'or',
+      'pass',
+      'raise',
+      'return',
+      'with',
+      'yield',
+    ].map((label) => ({ label, type: 'keyword' })),
+  ),
+);
 export function editorLanguage(support: LanguageSupport | Language) {
   if (
     !(support instanceof LanguageSupport) ||
@@ -61,7 +96,12 @@ export function editorLanguage(support: LanguageSupport | Language) {
         }),
       ],
     }),
-    support.support,
+    [
+      support.support,
+      ...(support.language.name === 'python'
+        ? [support.language.data.of({ autocomplete: pythonKeywords })]
+        : []),
+    ],
   );
 }
 
