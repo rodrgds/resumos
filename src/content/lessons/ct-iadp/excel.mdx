@@ -1,0 +1,100 @@
+---
+title: Ler e escrever ficheiros Excel
+description: Folhas, tipos de células e relatórios XLSX com pandas, sem perder códigos nem substituir o original.
+section: conteudo
+order: 20
+practices:
+  - ct-iadp/praticar-excel
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Ficha da unidade curricular, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=590452
+    - title: pandas, read_excel
+      url: https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html
+    - title: pandas, ExcelWriter
+      url: https://pandas.pydata.org/docs/reference/api/pandas.ExcelWriter.html
+    - title: openpyxl, fórmulas
+      url: https://openpyxl.readthedocs.io/en/stable/simple_formulae.html
+  coverage: Leitura de folhas XLSX, códigos como texto, validação de dados e escrita de várias folhas.
+---
+
+Um livro Excel pode guardar várias folhas. Cada folha pode conter tabelas, títulos, fórmulas e células de apresentação. Para analisar uma tabela em Python, precisamos de identificar a folha, a linha de cabeçalho e o tipo de cada coluna.
+
+Esta página usa [DataFrames](/cadeiras/ct-iadp/series-dataframes/) e [agrupamentos](/cadeiras/ct-iadp/agrupamentos/). Os exemplos são para Python local com pandas e openpyxl, o motor que lê e escreve `.xlsx`. O motor Excel não faz parte do catálogo usado pelos blocos destas páginas.
+
+## Ler a folha certa
+
+```python
+import pandas as pd
+
+vendas = pd.read_excel(
+    "dados.xlsx",
+    sheet_name="Vendas",
+    usecols=["codigo", "cidade", "quantidade", "preco"],
+    dtype={"codigo": "string"},
+    engine="openpyxl",
+)
+```
+
+`sheet_name="Vendas"` procura uma folha pelo nome. `sheet_name=0` lê a primeira, que pode ser uma apresentação em vez dos dados. `sheet_name=None` devolve um dicionário de DataFrames, um por folha. Para conferir os nomes antes da leitura:
+
+```python
+with pd.ExcelFile("dados.xlsx", engine="openpyxl") as livro:
+    print(livro.sheet_names)
+```
+
+`header=0` usa a primeira linha como nomes de colunas. Se houver duas linhas de título antes do cabeçalho, usa `header=2`. As posições começam em zero. `usecols` escolhe as colunas, mas não valida unidades nem o significado dos dados.
+
+Um código `"0012"` deve estar guardado como texto na folha e ser lido como texto. Se a célula já guarda o número 12, com um formato que mostra quatro algarismos, `dtype="string"` não recupera automaticamente os zeros da apresentação. É preciso conhecer a regra do código para os reconstruir. Um formato de duas casas decimais também não altera o valor numérico guardado.
+
+## Criar e verificar um relatório
+
+Este programa completo cria dados fictícios num livro em memória, lê a folha, calcula os totais e escreve um ficheiro novo. Corre-o numa pasta de trabalho onde `relatorio-exemplo.xlsx` não contenha dados que queiras conservar.
+
+```python
+from io import BytesIO
+import pandas as pd
+
+entrada = BytesIO()
+vendas_iniciais = pd.DataFrame({
+    "codigo": ["0012", "0013", "0012"],
+    "cidade": ["Porto", "Porto", "Braga"],
+    "quantidade": [2, 3, 5],
+    "preco": [1.5, 1.2, 1.5],
+})
+with pd.ExcelWriter(entrada, engine="openpyxl") as escritor:
+    vendas_iniciais.to_excel(escritor, sheet_name="Vendas", index=False)
+
+entrada.seek(0)
+vendas = pd.read_excel(
+    entrada, sheet_name="Vendas", dtype={"codigo": "string"}, engine="openpyxl",
+)
+if vendas[["cidade", "quantidade", "preco"]].isna().any().any():
+    raise ValueError("Faltam dados essenciais")
+if (vendas["quantidade"] <= 0).any() or (vendas["preco"] < 0).any():
+    raise ValueError("Quantidade ou preço inválido")
+
+vendas["total"] = vendas["quantidade"] * vendas["preco"]
+resumo = vendas.groupby("cidade", as_index=False).agg(
+    unidades=("quantidade", "sum"), faturacao=("total", "sum"),
+)
+with pd.ExcelWriter("relatorio-exemplo.xlsx", engine="openpyxl") as escritor:
+    vendas.to_excel(escritor, sheet_name="Vendas", index=False)
+    resumo.to_excel(escritor, sheet_name="Resumo", index=False)
+
+print(vendas["codigo"].tolist())
+print(resumo.round(2).to_string(index=False))
+```
+
+Os códigos continuam `0012`, `0013` e `0012`. Porto vende cinco unidades e fatura 6,60 euros; Braga vende cinco e fatura 7,50. O ficheiro final tem duas folhas: os dados por venda e o resumo por cidade. `index=False` evita escrever o índice de posições como uma coluna adicional.
+
+`BytesIO` guarda bytes em memória, em vez do texto de `StringIO` usado para CSV. `seek(0)` volta ao início para a leitura. O contexto `with` termina a escrita antes de tentarmos ler o livro; também fecha o ficheiro do relatório.
+
+## Dados, fórmulas e apresentação
+
+pandas lê e escreve tabelas, mas não reproduz automaticamente toda a apresentação de um livro original. Células unidas, gráficos e formatação exigem atenção própria. openpyxl permite trabalhar com folhas e células, mas não calcula fórmulas Excel. Uma fórmula pode ter um resultado guardado pela última aplicação que a calculou; esse resultado pode estar desatualizado ou ausente.
+
+Para o relatório acima, calculamos os totais em Python e exportamos valores. Se o pedido exige fórmulas, define quem as vai recalcular e confere os resultados nesse ambiente. Não concluas que o valor está atualizado apenas porque a leitura não deu erro.
+
+O modo de escrita habitual de `ExcelWriter` substitui um ficheiro existente. Usa um nome novo para o relatório e conserva a entrada. Depois da exportação, volta a ler as folhas necessárias e confere nomes, códigos, contagem de linhas e totais. A exportação é mais uma transformação que precisa de ser verificada.

@@ -53,6 +53,8 @@ Porto vende 5 unidades em duas vendas e fatura 6,60 euros. Braga vende 9 unidade
 
 `agg(["sum", "mean"])` calcula várias estatísticas. Não agregues a coluna de preço com soma se a pergunta for faturação. Primeiro calcula quantidade vezes preço por venda e só depois soma esses totais.
 
+Uma soma ignora valores em falta por defeito e pode dar zero para um grupo sem valores conhecidos. `vendas.groupby("cidade", dropna=False)["quantidade"].sum(min_count=1)` conserva o grupo de cidade desconhecida e exige uma quantidade conhecida para devolver um total. São duas decisões independentes: `dropna` trata a chave; `min_count` trata a medida.
+
 ## transform conserva as linhas
 
 `agg` produz um resultado por grupo. `transform` devolve um valor associado a cada linha original. Para calcular a proporção de unidades de uma venda dentro da cidade:
@@ -62,7 +64,7 @@ total_cidade = vendas.groupby("cidade")["quantidade"].transform("sum")
 vendas["proporcao"] = vendas["quantidade"] / total_cidade
 ```
 
-No Porto, as proporções são `2/5` e `3/5`. Em Braga, `5/9` e `4/9`. A soma é um em cada cidade, se o total do grupo for não nulo e todas as vendas forem consideradas.
+No Porto, as proporções são `2/5` e `3/5`. Em Braga, `5/9` e `4/9`. A soma é um em cada cidade, se o total do grupo for diferente de zero e todas as vendas forem consideradas.
 
 ## Tabela dinâmica com pivot_table
 
@@ -78,6 +80,4 @@ tabela = vendas.pivot_table(
 
 Cada célula soma as quantidades de uma combinação cidade-produto. `pivot_table` admite combinações repetidas porque a agregação decide como as reunir. A função por defeito é média, por isso escreve `aggfunc="sum"` quando o enunciado pede totais.
 
-`fill_value=0` transforma uma combinação sem vendas em zero depois da agregação. Isto exige interpretar a ausência como nenhuma venda, não como uma quantidade desconhecida. `margins=True` acrescenta totais, mas só deves somá-los outra vez se quiseres contar os dados duas vezes.
-
-## Rever a agregação
+`fill_value=0` transforma uma combinação sem vendas em zero depois da agregação. Isto exige interpretar a ausência como nenhuma venda, não como uma quantidade desconhecida. `margins=True` acrescenta totais. Exclui essas linhas e colunas de uma nova soma das células, para não contares os mesmos dados duas vezes.

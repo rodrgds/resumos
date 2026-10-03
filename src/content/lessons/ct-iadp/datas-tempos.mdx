@@ -24,8 +24,6 @@ editorial:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
 
 Uma data identifica um dia; uma data e hora pode identificar um instante; uma duração mede um intervalo. Misturar estes três conceitos produz erros, sobretudo ao somar meses ou atravessar mudanças de hora.
 
@@ -46,6 +44,46 @@ Trinta dias depois de 31 de janeiro de 2026 é 2 de março. Um mês depois, com 
 `calendar.isleap` testa um ano bissexto. `calendar.monthrange` devolve o dia da semana do primeiro dia e o número de dias do mês; segunda-feira é 0. Para fevereiro de 2026, o primeiro dia é domingo, código 6, e há 28 dias. Em versões recentes, o dia pode aparecer como `calendar.SUNDAY`, que tem valor 6.
 
 Em `relativedelta`, `months=1` acrescenta um mês; `month=1` define o mês como janeiro. O plural e o singular exprimem operações diferentes.
+
+## Calendários em semanas
+
+`calendar.month(ano, mes)` devolve um calendário em texto. `calendar.weekday(ano, mes, dia)` devolve o dia da semana com segunda-feira igual a zero. Os nomes de dias e meses, como `calendar.day_name`, dependem da configuração de idioma.
+
+Um objeto `calendar.Calendar(firstweekday=0)` organiza semanas de segunda a domingo. `monthdayscalendar` devolve listas de sete posições; zeros representam dias fora do mês. `itermonthdates` devolve datas de semanas completas, incluindo dias dos meses vizinhos.
+
+<CodePlayground
+  language="python"
+  title="Distinguir datas do mês de posições vazias"
+  code={
+    'import calendar\ncalendario = calendar.Calendar(firstweekday=0)\nsemanas = calendario.monthdayscalendar(2026, 2)\nprint(semanas[0])\nprint(sum(dia != 0 for semana in semanas for dia in semana))\nprint(next(calendario.itermonthdates(2026, 2)))'
+  }
+/>
+
+Fevereiro começa num domingo: a primeira semana é `[0, 0, 0, 0, 0, 0, 1]`. Há 28 dias diferentes de zero. O iterador de datas começa em 26 de janeiro para completar a semana. Filtra `data.month == 2` se só queres os dias de fevereiro.
+
+## Ler, formatar e subtrair
+
+`strptime` lê texto segundo um formato; `strftime` faz o caminho inverso. `%d` é dia, `%m` mês, `%Y` ano com quatro algarismos, `%H` hora de 0 a 23, `%M` minutos e `%S` segundos. A diferença entre maiúsculas e minúsculas importa.
+
+<CodePlayground
+  language="python"
+  title="Uma duração que atravessa a meia-noite"
+  code={
+    'from datetime import datetime\ninicio = datetime.strptime("03/10/2026 23:45", "%d/%m/%Y %H:%M")\nfim = datetime.fromisoformat("2026-10-04T01:15")\nduracao = fim - inicio\nprint(fim.strftime("%d/%m/%Y %H:%M"))\nprint(duracao.total_seconds() / 60)\nprint(duracao.days, duracao.seconds)'
+  }
+/>
+
+Passaram 90 minutos. `total_seconds()` inclui todos os dias da duração; `.seconds` guarda apenas a parte restante após contabilizar dias. Para uma duração de 25 horas, `.seconds` vale 3600, mas `total_seconds()` vale 90000.
+
+`datetime.time` representa uma hora sem data; `datetime.combine(data, hora)` reúne ambos. `date.today()` e `datetime.now()` dependem do relógio do sistema. `datetime.now(timezone.utc)`, com `timezone` importado de `datetime`, cria um valor com fuso UTC. `date.weekday()` usa segunda-feira igual a 0, enquanto `isoweekday()` usa 1.
+
+`dateutil.parser.parse` aceita vários formatos, mas pode completar campos omitidos ou interpretar uma data ambígua de outra maneira. Para um ficheiro com formato conhecido, prefere um formato explícito; para texto ISO, `dateutil.parser.isoparse` devolve também o offset quando existe.
+
+## Converter segundos com time
+
+`time.gmtime(segundos)` transforma segundos desde a época em `struct_time` UTC; `time.localtime(segundos)` usa a hora local do sistema. `calendar.timegm` inverte a conversão UTC e `time.mktime` a conversão local. Em Unix, a época é 1 de janeiro de 1970, às 00:00 UTC.
+
+`struct_time` tem campos como `tm_year`, `tm_mon` e `tm_hour`. `time.strftime` formata a estrutura e `time.strptime` lê texto para a obter. Não uses `mktime` para interpretar uma estrutura UTC: o resultado pode mudar com o fuso local.
 
 ## Medir duração de código
 
@@ -72,6 +110,10 @@ Há uma data inválida, convertida em `NaT`. Os dias conhecidos são 1 e 3 de ou
 `serie.dt.year`, `.dt.month`, `.dt.day` e `.dt.dayofweek` extraem componentes. `.dt.strftime("%d/%m/%Y")` formata texto; depois disso, o resultado deixa de ser uma coluna temporal.
 
 `pd.date_range("2026-10-01", periods=3, freq="D")` cria três dias consecutivos. Um índice temporal ordenado permite selecionar intervalos com `loc`. `resample` agrupa por intervalos de tempo; `rolling(3)` calcula uma janela móvel de três observações. Três observações não equivalem a três dias se houver falhas no calendário. `rolling("3D")` usa uma janela temporal quando existe um índice temporal apropriado.
+
+`pd.Period("2026-10", freq="M")` representa todo o mês, não um instante. `pd.Timedelta(days=1)` representa 24 horas. `pd.DateOffset(days=1)` avança um dia de calendário, conservando a hora local quando aplicável. Na mudança de hora, esse dia pode durar 23 ou 25 horas. `pd.offsets.BDay()` avança um dia útil, normalmente ignorando fins de semana; não conhece automaticamente feriados portugueses.
+
+As frequências `"D"`, `"h"` e `"min"` representam dias, horas e minutos. Exemplos antigos com `"H"` devem usar `"h"` nas versões recentes.
 
 ## Fusos horários
 

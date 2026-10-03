@@ -22,8 +22,6 @@ editorial:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import Dot from '../../../components/Dot.astro';
-import YouTube from '../../../components/YouTube.astro';
 
 Vamos responder a duas perguntas: quanto faturou cada cidade e qual foi o preço médio por unidade vendida? Temos um CSV com vendas e outra tabela com preços por produto. Os dados abaixo são fictícios e pequenos para poderes verificar cada passo.
 
@@ -46,7 +44,7 @@ A custa 1,50 euros, B custa 1,20 e C custa 2,00. À mão, Porto fatura 6,60 e Br
   language="python"
   title={'Análise reproduzível'}
   code={
-    'from io import StringIO\nimport pandas as pd\n\ncsv_vendas = \'venda;cidade;produto;quantidade\\n1;Porto;A;2\\n2;Porto;B;3\\n3;Braga;A;5\\n4;Braga;C;4\\n\'\nvendas = pd.read_csv(StringIO(csv_vendas), sep=";", dtype={"produto": "string"})\nprecos = pd.DataFrame({"produto": ["A", "B", "C"], "preco": [1.5, 1.2, 2.0]})\n\nassert vendas["venda"].is_unique\nassert vendas[["cidade", "produto", "quantidade"]].notna().all().all()\nassert (vendas["quantidade"] > 0).all()\nassert precos["produto"].is_unique\n\ndados = vendas.merge(precos, on="produto", how="left", validate="many_to_one")\nassert len(dados) == len(vendas)\nassert dados["preco"].notna().all()\ndados["total"] = dados["quantidade"] * dados["preco"]\n\nrelatorio = dados.groupby("cidade", as_index=False).agg(\n    unidades=("quantidade", "sum"),\n    faturacao=("total", "sum"),\n    vendas=("venda", "size"),\n)\nrelatorio["preco_medio"] = relatorio["faturacao"] / relatorio["unidades"]\nassert abs(relatorio["faturacao"].sum() - dados["total"].sum()) < 1e-10\nprint(relatorio.round(4).to_string(index=False))\nprint("Faturação total:", round(dados["total"].sum(), 2))\nprint("Unidades:", dados["quantidade"].sum())\nprint("Preço médio global:", round(dados["total"].sum() / dados["quantidade"].sum(), 4))'
+    'from io import StringIO\nimport pandas as pd\n\ncsv_vendas = \'venda;cidade;produto;quantidade\\n1;Porto;A;2\\n2;Porto;B;3\\n3;Braga;A;5\\n4;Braga;C;4\\n\'\nvendas = pd.read_csv(StringIO(csv_vendas), sep=";", dtype={"produto": "string"})\nprecos = pd.DataFrame({"produto": ["A", "B", "C"], "preco": [1.5, 1.2, 2.0]})\n\nassert vendas["venda"].notna().all()\nassert vendas["venda"].is_unique\nassert vendas[["cidade", "produto", "quantidade"]].notna().all().all()\nassert (vendas["quantidade"] > 0).all()\nassert precos["produto"].notna().all()\nassert precos["produto"].is_unique\nassert (precos["preco"] >= 0).all()\n\ndados = vendas.merge(precos, on="produto", how="left", validate="many_to_one")\nassert len(dados) == len(vendas)\nassert dados["preco"].notna().all()\ndados["total"] = dados["quantidade"] * dados["preco"]\n\nrelatorio = dados.groupby("cidade", as_index=False).agg(\n    unidades=("quantidade", "sum"),\n    faturacao=("total", "sum"),\n    vendas=("venda", "size"),\n)\nrelatorio["preco_medio"] = relatorio["faturacao"] / relatorio["unidades"]\nassert abs(relatorio["faturacao"].sum() - dados["total"].sum()) < 1e-10\nprint(relatorio.round(4).to_string(index=False))\nprint("Faturação total:", round(dados["total"].sum(), 2))\nprint("Unidades:", dados["quantidade"].sum())\nprint("Preço médio global:", round(dados["total"].sum() / dados["quantidade"].sum(), 4))'
   }
 />
 
@@ -54,9 +52,9 @@ O preço médio por unidade é 1,32 euros no Porto e aproximadamente 1,7222 em B
 
 ## Por que cada verificação existe
 
-A chave de venda única impede contar o mesmo identificador duas vezes. As colunas essenciais não podem estar ausentes. A quantidade positiva faz parte do contrato deste exemplo; noutro conjunto, quantidades negativas podem representar devoluções e precisam de outra regra.
+Uma chave de venda conhecida e única impede contar o mesmo identificador duas vezes. As colunas essenciais não podem estar ausentes. A quantidade positiva faz parte do contrato deste exemplo; noutro conjunto, quantidades negativas podem representar devoluções e precisam de outra regra.
 
-A chave de produto única evita multiplicar linhas na junção. `how="left"` conserva as vendas, permitindo detetar produtos sem preço. Só calculamos totais depois de confirmar que todos têm correspondência.
+O catálogo exige produtos conhecidos e preços não negativos. A chave de produto única evita multiplicar linhas na junção. `how="left"` conserva as vendas, permitindo detetar produtos sem preço. Só calculamos totais depois de confirmar que todos têm correspondência.
 
 A contagem de linhas deve manter-se na junção muitos-para-um. A soma da faturação dos grupos deve coincidir com a soma antes de agrupar. Estas verificações não provam que os preços reais estão corretos, mas detetam perdas e duplicações no processamento.
 
