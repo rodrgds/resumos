@@ -28,6 +28,7 @@ export class ClipFeed {
   #sequential?: ClipSlot;
   #manualScrolling = false;
   #naturalEnded = false;
+  #failedClips = new Set<string>();
 
   constructor(
     element: HTMLElement,
@@ -193,6 +194,10 @@ export class ClipFeed {
       this.#transition(this.#sequential);
     });
     video.addEventListener('error', () => {
+      if (this.#manual?.video === video) {
+        this.#replaceFailedManual(this.#manual);
+        return;
+      }
       if (
         this.#slots[1]?.video === video ||
         this.#waitingForClip?.video === video
@@ -260,6 +265,11 @@ export class ClipFeed {
   #transition(prepared?: ClipSlot) {
     if (!prepared || this.#slots.length !== 3) return;
     if (prepared.video.error) {
+      if (prepared === this.#manual) {
+        this.#waitingForClip = prepared;
+        this.#replaceFailedManual(prepared);
+        return;
+      }
       this.#waitingForClip = undefined;
       this.#centre();
       this.#onError();
@@ -301,9 +311,29 @@ export class ClipFeed {
     this.#activate();
   }
 
+  #replaceFailedManual(failed: ClipSlot) {
+    const requested = this.#waitingForClip === failed;
+    this.#failedClips.add(failed.clip.src);
+    this.#waitingForClip = undefined;
+    if (!this.#prepareManual()) {
+      this.#centre();
+      this.#onError();
+      return;
+    }
+    if (requested) this.#transition(this.#manual);
+  }
+
   #prepareManual() {
     const current = this.#slots[1].clip;
-    const sequences = [...this.#sequences.values()];
+    const sequences = [...this.#sequences.values()]
+      .map((sequence) =>
+        sequence.filter((clip) => !this.#failedClips.has(clip.src)),
+      )
+      .filter((sequence) => sequence.length > 0);
+    if (!sequences.length) {
+      this.#manual = undefined;
+      return false;
+    }
     const other = sequences.filter(
       (sequence) => sequence[0].series !== current.series,
     );
@@ -315,14 +345,16 @@ export class ClipFeed {
         : sequence;
     const clip = parts[Math.floor(Math.random() * parts.length)];
     const offset = Math.random();
-    const previous = this.#slots[2];
+    const position = this.#slots[0] === this.#manual ? 0 : 2;
+    const previous = this.#slots[position];
     this.#release(previous.video);
     const prepared = this.#slot(clip, offset);
     previous.item.replaceWith(prepared.item);
-    this.#slots[2] = prepared;
+    this.#slots[position] = prepared;
     this.#manual = prepared;
     this.#preview();
     this.#load(prepared);
+    return true;
   }
 
   #preview() {
@@ -399,10 +431,10 @@ export class ClipFeed {
 
   move(direction: number) {
     const prepared = this.#manual?.video;
+    if (!prepared) return;
     if (
-      prepared &&
-      (prepared.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
-        prepared.seeking)
+      prepared.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+      prepared.seeking
     ) {
       this.#transition(this.#manual);
       return;
@@ -430,6 +462,7 @@ export class ClipFeed {
     this.#sequential = undefined;
     this.#manualScrolling = false;
     this.#naturalEnded = false;
+    this.#failedClips.clear();
     for (const { video } of this.#slots) this.#release(video);
     this.#slots = [];
     this.#element.replaceChildren();
