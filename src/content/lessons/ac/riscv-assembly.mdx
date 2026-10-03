@@ -14,7 +14,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import exemplo from '../../ac/examples/riscv-assembly.s?raw';
 import pilha from '../../ac/pilha.typ?raw';
 
-Uma ISA define as instruções e os registos que um programa pode usar. O processador implementa essa interface; a organização interna pode mudar sem alterar o programa. Vamos usar **RV32**, com registos inteiros de 32 bits, memória endereçada por byte e instruções base de 32 bits. A extensão M acrescenta multiplicação e divisão; as instruções SIMD empacotadas têm um modelo próprio.
+Uma ISA, ou arquitetura do conjunto de instruções, define as operações e os registos que um programa pode usar. Um registo guarda um valor dentro do processador; a memória guarda bytes identificados por endereços. O PC é o registo que indica o endereço da instrução a obter. O processador implementa essa interface; a organização interna pode mudar sem alterar o programa. Vamos usar **RV32**, com registos inteiros de 32 bits, memória endereçada por byte e instruções base de 32 bits. A extensão M acrescenta multiplicação e divisão; as instruções SIMD empacotadas têm um modelo próprio.
 
 ## Os registos que interessam
 
@@ -34,7 +34,9 @@ Não existe `t7`. O banco de vírgula flutuante, quando disponível, usa `f0` a 
 
 `add rd,rs1,rs2` soma dois registos; `addi rd,rs1,imm` soma um imediato com sinal de 12 bits, entre −2048 e 2047. `sub`, `and`, `or`, `xor`, `slt` seguem o formato de três registos. `slt` compara com sinal; `sltu` compara sem sinal. Não há flags de comparação globais.
 
-Uma soma inteira mantém os 32 bits baixos. O mesmo padrão `0xFFFFFFFF` representa 4294967295 sem sinal ou −1 com sinal. A instrução de comparação escolhida determina a interpretação.
+Uma soma inteira mantém os 32 bits baixos, sem gerar uma exceção por overflow. Com sinal, o intervalo é de −2³¹ a 2³¹−1; sem sinal, de 0 a 2³²−1. Por exemplo, `0x7FFFFFFF+1` produz `0x80000000`, que se interpreta como −2³¹ com sinal. O padrão continua correto como soma modular, mas já não representa a soma matemática com sinal.
+
+O mesmo padrão `0xFFFFFFFF` representa 4294967295 sem sinal ou −1 com sinal. A instrução de comparação escolhida determina a interpretação.
 
 | Instrução        | Tamanho       | Efeito                                        |
 | ---------------- | ------------- | --------------------------------------------- |
@@ -46,11 +48,11 @@ Em `lw t0,12(a0)`, o endereço é `a0 + 12`, em **bytes**. Para ler `vetor[i]` d
 
 Em little endian, a palavra `0x12345678` ocupa os bytes `78 56 34 12`, do endereço menor para o maior. Um `lb` sobre o byte `0xFE` produz −2; `lbu` produz 254. O alinhamento natural de uma palavra exige endereço múltiplo de 4.
 
-`slli` desloca à esquerda e introduz zeros. `srli` introduz zeros à direita; `srai` replica o bit de sinal. Os deslocamentos imediatos de RV32 vão de 0 a 31. Dividir um negativo por uma potência de dois com `srai` arredonda para baixo; `div` arredonda para zero, pelo que não são sempre equivalentes.
+`slli` desloca à esquerda e preenche os bits baixos com zeros. `srli` desloca à direita e preenche os bits altos com zeros; `srai` desloca à direita e preenche-os com o bit de sinal. Os deslocamentos imediatos de RV32 vão de 0 a 31. Dividir um negativo por uma potência de dois com `srai` arredonda para baixo; `div` arredonda para zero, pelo que não são sempre equivalentes.
 
 ## Codificar uma instrução
 
-Os campos conservam posições quando possível:
+O `opcode` identifica a família da instrução; `funct3` e `funct7` distinguem operações dentro dela. `rd` é o destino, `rs1/rs2` são origens e `imm` é uma constante codificada na instrução. Os campos conservam posições quando possível:
 
 | Formato | Campos, do bit 31 para o 0                       | Exemplos             |
 | ------- | ------------------------------------------------ | -------------------- |
@@ -60,6 +62,8 @@ Os campos conservam posições quando possível:
 | B       | `imm[12,10:5] rs2 rs1 funct3 imm[4:1,11] opcode` | `beq`                |
 | U       | `imm[31:12] rd opcode`                           | `lui`, `auipc`       |
 | J       | `imm[20,10:1,11,19:12] rd opcode`                | `jal`                |
+
+Na expressão seguinte, `<<` desloca bits à esquerda e `|` combina os campos com OR. Como cada campo ocupa bits distintos, os campos não se sobrepõem.
 
 Os tamanhos de `opcode`, `rd`, `funct3`, `rs1`, `rs2` são 7, 5, 3, 5 e 5 bits. Em `lw t2,40(t6)`, `rd=7`, `rs1=31`, `funct3=2`, `opcode=3` e `imm=40`:
 

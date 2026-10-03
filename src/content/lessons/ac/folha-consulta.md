@@ -15,7 +15,7 @@ editorial:
 ## RV32
 
 - 32 registos inteiros de 32 bits; `zero` é sempre 0. `t0…t6` e `a0…a7` podem mudar numa chamada; o chamado repõe `s0…s11`. `ra` guarda retorno; `sp` é reposto e mantém alinhamento 16 bytes.
-- Palavra 4 B: `lw/sw`. Bytes: `lb/lbu/sb`; meias palavras: `lh/lhu/sh`. Loads sem `u` estendem o sinal. Endereço de `lw rd,k(rs1)` = `rs1+k`, em bytes. Little endian guarda byte baixo no menor endereço.
+- Palavra 4 B: `lw/sw`. Bytes: `lb/lbu/sb`; meias palavras: `lh/lhu/sh`. `lb/lh` estendem o sinal; `lbu/lhu` preenchem com zeros. Endereço de `lw rd,k(rs1)` = `rs1+k`, em bytes. Little endian guarda byte baixo no menor endereço.
 - Imediato I/S: 12 bits com sinal. `lui` forma parte alta; `addi` baixo negativo exige compensação na alta. `mv rd,rs` = `addi rd,rs,0`; pseudoinstruções podem expandir-se.
 - `jal` guarda PC+4; `jalr` salta para `(base+imm)&~1`. Branch usa PC da própria instrução + deslocamento com sinal em bytes. `blt/bge` com sinal; `bltu/bgeu` sem sinal.
 - R: `funct7 rs2 rs1 funct3 rd opcode`; larguras 7,5,5,3,5,7. I: `imm12 rs1 funct3 rd opcode`. S divide imediato em bits 11:5 e 4:0; B reordena imediato e omite bit 0.
@@ -32,7 +32,7 @@ Ganho de rapidez: $S-1$; redução do tempo: $1-1/S$. MIPS ou frequência isolad
 
 ## Cache
 
-$C$ bytes de dados, $B$ bytes/linha, $A$ vias, $S=C/(BA)$ conjuntos. Offset $b=\log_2B$; índice $s=\log_2S$; tag $t=n-b-s$.
+$C$ bytes de dados, $B$ bytes/linha, $A$ vias, $S=C/(BA)$ conjuntos. Para $B$ e $S$ potências de 2: offset $b=\log_2B$; índice $s=\log_2S$; tag $t=n-b-s$.
 
 $$\begin{aligned}\text{bloco}&=\lfloor \text{endereço}/B\rfloor\\\text{índice}&=\text{bloco}\bmod S\\\text{tag}&=\lfloor \text{bloco}/S\rfloor\end{aligned}$$
 
@@ -52,6 +52,8 @@ $r$: acessos a dados/instrução. Unificada: acessos/instrução = $1+r$. L2 loc
 
 $$TMAM=t_1+m_1(t_2+m_{2,l}p_R).$$
 
+Penalidades adicionais, faltas sem sobreposição e esperas ainda não incluídas no CPI de base.
+
 ## Pipeline e ILP
 
 IF→ID→EX→MEM→WB. Período = máximo atraso de fase + registo, se fornecido. $N$ instruções, $k$ fases: ciclos $N+k-1+B$.
@@ -68,7 +70,7 @@ IF→ID→EX→MEM→WB. Período = máximo atraso de fase + registo, se forneci
 
 RV32: B0=bits 7:0, B3=31:24; H0=15:0, H1=31:16. ADD8/16 e SUB8/16 reduzem por via, sem carry entre vias. Comparação verdadeira=0xFF/0xFFFF; escolher signed/unsigned.
 
-SMUL16: dois produtos 32 bits em par físico par/seguinte; SMULX16 cruza vias. PKBT16=(a.H0, b.H1), primeira parcela na metade alta. Replicar byte: mascarar antes de shifts. Contadores 8 bits dão wrap a 256; `abs(−32768)` não cabe em 16 bits com sinal. KMDA satura no caso `0x80008000 × 0x80008000`. Verificar zero, resto, alinhamento e largura de acumulação.
+SMUL16: dois produtos 32 bits em par físico par/seguinte; SMULX16 cruza vias. PKBT16=(a.H0, b.H1), primeira parcela na metade alta. Replicar byte: mascarar antes de shifts. Contadores 8 bits dão wrap a 256; `abs(−32768)` não cabe em 16 bits com sinal; KABS16 satura em 32767. KMDA satura no caso `0x80008000 × 0x80008000`. Verificar zero, resto, alinhamento e largura de acumulação.
 
 ## Multicore e coerência
 
@@ -84,6 +86,6 @@ Write-invalidate invalida a **linha inteira**. Leitura de outro dado na linha po
 - Interrupções: eventos/s × ciclos/evento / frequência. DMA: $u=(R/B)c/f$; usar taxa agregada e custo setup+fim. Saída exige clean de dirty se não há coerência; entrada precisa evitar cópias antigas e write-back posterior.
 - HDD: fila + procura + rotação + transferência + controlador. Rotação média $30/RPM$ segundos. Transferência $B/R$.
 - Taxa máxima = mínimo dos limites CPU, bus, controladores, discos, na mesma unidade. MB=10⁶B; MiB=2²⁰B; KiB=1024 B.
-- Dois buffers e estágios independentes, incluindo enchimento e esvaziamento:
+- Dois buffers e estágios independentes, $n\ge1$, incluindo enchimento e esvaziamento:
 
 $$T_n=t_D+t_C+(n-1)\max(t_D,t_C).$$

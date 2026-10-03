@@ -11,6 +11,8 @@ editorial:
     - title: Proposta histórica de SIMD empacotado RISC-V
       url: https://github.com/riscv/riscv-p-spec/blob/master/old-doc/P-ext-proposal.adoc
   gaps:
+    - A ficha SIGARRA de 2026/27 ainda não publica programa nem avaliação.
+    - Não foram consultados materiais Moodle de 2026/27.
     - Os testes e questionários fechados não foram iniciados nem consultados como tentativas.
 ---
 
@@ -34,9 +36,9 @@ Estes materiais usam RV32 e operações SIMD empacotadas de uma versão históri
 
 As soluções foram usadas para compreender os modelos, com contas e exemplos próprios conferidos antes da redação. Quando o cartão de instruções e as apresentações divergem, as operações foram conferidas na especificação, incluindo STAS16/STSA16 e saturação de KMDA.
 
-Bibliografia indicada nos materiais: Patterson e Hennessy, _Computer Organization and Design, RISC-V Edition_, 2.ª edição, 2021. A ficha [SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560091) também indica _Memory Systems: Cache, DRAM, Disk_, de Jacob, Ng e Wang. Essa ficha é uma referência de outra edição, não prova das regras de 2024/25 ou do ano atual.
+Bibliografia indicada nos materiais: Patterson e Hennessy, _Computer Organization and Design, RISC-V Edition_, 2.ª edição, 2021. A ficha [SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560091) também indica _Memory Systems: Cache, DRAM, Disk_, de Jacob, Ng e Wang. A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586985), consultada a 3 de outubro de 2026, está ativa mas ainda não publica programa nem avaliação. Os materiais Moodle de 2026/27 não foram consultados. A bibliografia e os modelos abaixo continuam, por isso, ligados às edições identificadas, sem presumir as regras do ano atual.
 
-Referências complementares: [ABI RISC-V](https://riscv-non-isa.github.io/riscv-elf-psabi-doc/), para nomes de registos e chamadas; [RARS](https://github.com/TheThirdOne/rars), para executar os exemplos RV32 base. Os blocos de semântica SIMD calculam vias em Python, pois o executável RV32 base não monta essas instruções empacotadas.
+Referências complementares: [especificação RV32I](https://docs.riscv.org/reference/isa/v20260120/unpriv/rv32.html) e [extensão M](https://docs.riscv.org/reference/isa/v20260120/unpriv/m-st-ext.html), para operações e codificação; [ABI RISC-V](https://riscv-non-isa.github.io/riscv-elf-psabi-doc/), para nomes de registos e chamadas; [RARS](https://github.com/TheThirdOne/rars), para executar os exemplos RV32 base. Os blocos de semântica SIMD calculam vias em Python, pois o executável RV32 base não monta essas instruções empacotadas.
 
 O Moodle também recomenda [a otimização SGEMM de Zhao Dongyu](https://medium.com/@zhaodongyu/optimize-sgemm-on-risc-v-platform-b0098630b444), com localidade e blocagem, e [Cooling Chips Still A Top Challenge](https://semiengineering.com/cooling-chips-still-a-top-challenge/), sobre dissipação térmica. O primeiro usa RVV 0.7.1 nas versões vetoriais, um contexto distinto dos exercícios packed SIMD. Os vídeos portugueses [Varrimento](https://www.youtube.com/watch?v=4nxblx4ADQ8) e [Interrupções](https://www.youtube.com/watch?v=DBVVpybCXcU) acompanham a lição de entrada e saída.
 
