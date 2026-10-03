@@ -19,9 +19,7 @@ A segunda parte trata da evidência e da mudança: [verificação e validação]
 
 As páginas usam exemplos próprios de uma aplicação de reserva de salas. Os exercícios no fim de cada tema pedem classificações, modelos, cálculos e decisões justificadas. Antes de abrir a solução, escreve a tua resposta e tenta encontrar um caso que a possa contradizer.
 
-## Avaliação e ano de referência
-
-::::details[Ver pesos, fórmula e regras de 2025/26]
+::::details[Avaliação e ano de referência: pesos, fórmula e regras de 2025/26]
 
 A base destes apontamentos é o Moodle de **2025/26**, com aulas datadas da primavera de 2026, e a [ficha SIGARRA dessa ocorrência](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560102). Alguns materiais reutilizam páginas de anos anteriores. As regras gerais de Scrum abaixo seguem o Scrum Guide de 2020; quadros, estimativas e ferramentas apresentados nas aulas são escolhas do projeto, não novas regras obrigatórias do framework. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586995) ainda não tem o programa preenchido. Estes apontamentos não confirmam as regras do novo ano.
 
@@ -37,9 +35,7 @@ A fórmula publicada era $CF = \operatorname{round}(0{,}15PA + 0{,}60TP + 0{,}25
 
 ::::
 
-## Materiais e bibliografia
-
-::::details[Ver base de ensino, fichas e bibliografia]
+::::details[Materiais e bibliografia: base de ensino, fichas e bibliografia]
 
 O [Moodle de ES 2025/26](https://moodle2526.up.pt/course/view.php?id=4440) é a base docente: introdução e história, processos e RUP, Agile e Scrum, requisitos, simulação Scrum, verificação e validação, XP, arquitetura, padrões Scrum, construção, evolução, retrospetivas, desenvolvimento assistido por IA e apresentação de produtos. As referências externas incompletas não foram tratadas como material integral. Exemplos de projetos de alunos servem para observar artefactos, sem substituir o programa docente.
 
@@ -52,13 +48,11 @@ Para esclarecer regras e notação, consulta o [Scrum Guide de 2020](https://scr
 
 ::::
 
-## Vídeos recomendados
+::::details[Vídeos recomendados: o que observar em cada um]
 
-::::details[Ver vídeos e o que observar em cada um]
-
-- [Grady Booch, The History of Software Engineering](https://www.youtube.com/watch?v=QUz10Z1AfLc), webinar indicado no Moodle. Observa como a evolução do hardware altera os problemas de organização, abstração e custo do software. Ajuda a perceber por que a disciplina ultrapassa a escrita de código.
-- [Introdução à engenharia de requisitos](https://vimeo.com/274897152), ligação dos slides de requisitos. Observa a passagem da necessidade para propriedades verificáveis do sistema.
-- [Prototipagem em papel](https://www.youtube.com/watch?v=5Ch3VsautWQ), ligação dos mesmos slides. Observa como testar o percurso de um utilizador antes de implementar o ecrã.
+- História da disciplina: [como a disciplina surgiu](/cadeiras/es/introducao/#como-a-disciplina-surgiu), com o webinar de Grady Booch. Observa como a evolução do hardware altera os problemas de organização, abstração e custo do software.
+- Da necessidade à propriedade verificável: [tornar a afirmação verificável](/cadeiras/es/requisitos-uml/#tornar-a-afirmação-verificável), com a introdução à engenharia de requisitos. Observa a passagem da necessidade para propriedades verificáveis do sistema.
+- Protótipos: [protótipos e mudanças](/cadeiras/es/requisitos-uml/#protótipos-e-mudanças), com o vídeo de prototipagem em papel. Observa como testar o percurso de um utilizador antes de implementar o ecrã.
 
 Os vídeos complementam as explicações. Os exercícios destes apontamentos são próprios, não são provas anteriores nem previsões de perguntas de avaliação.
 
