@@ -1,10 +1,13 @@
-#set page(width: auto, height: auto, margin: 8pt)
+#set page(width: auto, height: auto, margin: 10pt)
 #set text(size: 11pt)
 #grid(
-  columns: (auto, auto, auto),
-  column-gutter: 0pt,
-  stroke: 1pt,
-  [`10`], [`20`], [`30`],
+  columns: (auto, auto, auto, auto),
+  align: center + horizon,
+  rect(inset: 8pt)[`10`],
+  rect(inset: 8pt)[`20`],
+  rect(inset: 8pt)[`30`],
+  box(inset: 8pt)[`end()`],
 )
-#v(6pt)
-`begin()` aponta ao primeiro elemento (`10`); `end()` aponta à posição a seguir ao último (`30`).
+#v(8pt)
+`begin()` identifica `10`. \
+`end()` marca o fim e não se desreferencia.
