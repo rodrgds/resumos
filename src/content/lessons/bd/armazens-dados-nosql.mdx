@@ -12,7 +12,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import estrela from '../../bd/estrela.typ?raw';
 import loja from '../../bd/loja.sql?raw';
 
-No fim do percurso, depois de garantir consultas, transações e isolamento na loja, esta página responde a como organizar dados para analisar anos de vendas e quando um desenho diferente do relacional ajuda.
+Registar uma venda mexe em poucas linhas de hoje. Comparar as vendas de três anos lê milhões de linhas para devolver uma. O padrão de acesso decide o desenho: tabelas operacionais para o dia a dia, factos e dimensões para análise, documentos para catálogos irregulares.
 
 Registar uma venda e comparar as vendas de vários anos são tarefas diferentes. A primeira precisa de atualizar poucos factos, ou seja, poucas linhas que registam o que aconteceu, sem quebrar regras. A segunda pode ler milhões desses factos históricos para produzir poucas agregações. O padrão de acesso ajuda a escolher o desenho e o sistema.
 
@@ -99,6 +99,8 @@ Janeiro tem 7 unidades e 370 euros, ou seja, o preço médio por unidade é $370
 
 Em motores com estas extensões, `GROUP BY ROLLUP(ano, categoria)` produz agrupamentos por `(ano,categoria)`, por `ano` e o total geral. `CUBE(ano,categoria)` inclui também o agrupamento apenas por `categoria`, ou seja, todos os subconjuntos de dimensões. SQLite não implementa estes comandos; podemos construir os níveis com consultas e `UNION ALL`.
 
+Na loja, que só tem vendas em janeiro, o drill-down mostra o mês com 370 euros e o roll-up acrescenta o total geral com o mesmo valor, marcado com `NULL` no mês. Esse `NULL` significa subtotal, não mês desconhecido.
+
 Nos resultados de OLAP, um `NULL` que marca um subtotal não deve ser confundido com um valor desconhecido da dimensão. Motores que suportam `GROUPING` permitem distinguir essas situações.
 
 ## Famílias NoSQL
@@ -176,6 +178,23 @@ Cada produto contribui uma vez por elemento do array. Um teclado com duas catego
 
 Depois de `$unwind`, o teclado do exemplo dá dois documentos: um com `categorias: "periférico"` e outro com `categorias: "entrada"`. Os restantes campos mantêm-se em ambos. `$group` recebe estes documentos separados e acrescenta 1 à contagem de cada categoria; não altera o produto guardado na coleção.
 
+Etapa a etapa, com o teclado e o rato:
+
+após `$unwind`, três documentos:
+
+```json
+{"nome": "Teclado", "categorias": "periferico"}
+{"nome": "Teclado", "categorias": "entrada"}
+{"nome": "Rato", "categorias": "periferico"}
+```
+
+após `$group` por categoria, dois documentos:
+
+```json
+{"_id": "periferico", "produtos": 2}
+{"_id": "entrada", "produtos": 1}
+```
+
 `$lookup` acrescenta correspondências de outra coleção, sempre num array, mesmo quando há no máximo uma. Para juntar cada encomenda ao seu cliente:
 
 ```javascript
@@ -192,7 +211,13 @@ db.encomendas.aggregate([
 ]);
 ```
 
-A encomenda 100 passa a ter `cliente: [{ _id: 1, nome: 'Ana' }]`. Se nenhum cliente corresponder, o array fica vazio; a encomenda não desaparece do resultado.
+A encomenda 100 passa a ter este campo:
+
+```json
+{ "_id": 100, "idCliente": 1, "cliente": [{ "_id": 1, "nome": "Ana" }] }
+```
+
+Se nenhum cliente corresponder, o array fica vazio; a encomenda não desaparece do resultado.
 
 `$facet` corre vários subpipelines sobre a mesma entrada e devolve um único documento, com um array por saída. Para caracterizar o catálogo em duas dimensões de uma vez:
 
@@ -210,7 +235,19 @@ db.produtos.aggregate([
 ]);
 ```
 
-A resposta tem um documento como `{ porCategoria: [...], precoMedio: [{ _id: null, media: ... }] }`. Os dois subpipelines recebem os mesmos documentos de entrada e são independentes: a saída de um não serve de entrada ao outro. Cada etapa de um `$facet` está limitada a 100 megabytes e o documento final ao limite BSON de 16 megabytes, por isso esta técnica serve resumos, não despejos integrais.
+A resposta tem um documento com um array por saída. Com o teclado e o rato:
+
+```json
+{
+  "porCategoria": [
+    { "_id": "periferico", "count": 2 },
+    { "_id": "entrada", "count": 1 }
+  ],
+  "precoMedio": [{ "_id": null, "media": 35 }]
+}
+```
+
+Os dois subpipelines recebem os mesmos documentos de entrada e são independentes: a saída de um não serve de entrada ao outro. A média é (45+25)/2. Cada etapa de um `$facet` está limitada a 100 megabytes e o documento final ao limite BSON de 16 megabytes, por isso esta técnica serve resumos, não despejos integrais.
 
 ## Escolher sem slogans
 

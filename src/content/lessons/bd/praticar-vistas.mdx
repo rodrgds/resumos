@@ -5,6 +5,8 @@ section: exercicios
 ---
 
 import Exercise from '../../../components/Exercise.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
 
 <Exercise
   id="trigger-update-igual"
@@ -54,5 +56,53 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Não mostres sintaxe PostgreSQL como se fosse executável no playground
     SQLite. Autenticar alguém não define automaticamente os seus privilégios.
+  </div>
+</Exercise>
+
+<Exercise
+  id="vista-total-propaga"
+  title="A vista acompanha a tabela base"
+  explanation="/cadeiras/bd/vistas-gatilhos-acessos/#vistas-perguntas-com-nome"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Defini a vista uma vez sobre Item.',
+      'Alterei a base, não a vista.',
+      'Previ 16000, 18000 e 7500.',
+    ],
+  }}
+>
+  <div>
+    Define a vista TotalEncomenda com o total de cada encomenda. Aumenta qtd de
+    2 para 3 na linha (100, 10) e prevê os três totais. A execução apresenta o
+    resultado; confere cada valor.
+  </div>
+  <div slot="work">
+    <p>
+      A vista guarda a pergunta, não uma cópia dos resultados. O total da 100
+      passa a 3×4500+2500.
+    </p>
+    <CodePlayground
+      language="sql"
+      title="Completar a vista de totais"
+      code={`${loja}
+CREATE VIEW TotalEncomenda AS
+SELECT idEncomenda, SUM(qtd * precoUnitario) AS total
+FROM Item GROUP BY idEncomenda;
+SELECT * FROM TotalEncomenda ORDER BY idEncomenda;
+UPDATE Item SET qtd = 3 WHERE idEncomenda = 100 AND idProduto = 10;
+SELECT * FROM TotalEncomenda ORDER BY idEncomenda;`}
+    />
+  </div>
+  <div slot="hint">Recalcula o total da 100 com a nova quantidade.</div>
+  <div slot="hint-more">As outras encomendas não mudam.</div>
+  <div slot="solution">
+    Os totais passam a 16000, 18000 e 7500. A vista recalcula sobre Item em cada
+    consulta, por isso a alteração da base reflete-se sem redefinir a vista. Não
+    fizemos `UPDATE` da vista: alterámos Item.
+  </div>
+  <div slot="mistakes">
+    Não esperes que a vista conserve o total antigo. Uma vista virtual não
+    guarda resultados.
   </div>
 </Exercise>

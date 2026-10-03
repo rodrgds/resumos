@@ -9,7 +9,7 @@ practices:
 
 import Manim from '../../../components/Manim.astro';
 
-Depois de agrupar alterações em transações, esta página responde a o que cada transação pode observar quando várias correm ao mesmo tempo.
+Duas reservas correm ao mesmo tempo sobre o stock 10. Cada uma lê 10 e escreve 9. Venderam-se duas unidades e só uma foi retirada. O isolamento define o que cada transação pode observar quando correm juntas.
 
 Duas transações podem ser corretas isoladamente e produzir um estado errado quando intercaladas, ou seja, isolamento define o que cada uma pode observar e que resultados concorrentes são permitidos.
 
@@ -65,6 +65,17 @@ No grafo, cada nó é uma transação. Desenha $T_i\to T_j$ se uma operação de
 
 Considera `r1(X), r2(X), w1(X), w2(X)`. A leitura de T1 antes da escrita de T2 dá T1→T2. A leitura de T2 antes da escrita de T1 dá T2→T1. Há um ciclo, logo não é serializável por conflitos.
 
+Com valores, T1 soma 10 a B depois de ler A, e T2 soma 10 a A depois de ler B, ambas a partir de A=B=100:
+
+| Passo | T1            | T2            |
+| ----- | ------------- | ------------- |
+| 1     | Lê A=100      |               |
+| 2     |               | Lê B=100      |
+| 3     | Escreve B=110 |               |
+| 4     |               | Escreve A=110 |
+
+`r1(A)` antes de `w2(A)` dá T1→T2; `r2(B)` antes de `w1(B)` dá T2→T1. O ciclo reprova a serialização por conflitos: nenhuma ordem serial equivale a este entrelaçamento.
+
 Agora `r1(X), w1(X), r2(X), w2(X)` só exige T1→T2. Equivale à ordem T1/T2. Este teste refere-se a serializabilidade por conflitos, uma condição mais restrita do que outras formas de equivalência por observações.
 
 ## Bloqueios e snapshots
@@ -72,6 +83,13 @@ Agora `r1(X), w1(X), r2(X), w2(X)` só exige T1→T2. Equivale à ordem T1/T2. E
 Um protocolo de bloqueios pode impedir que outra transação escreva um item enquanto uma leitura ou escrita precisa de o proteger. Em **bloqueio em duas fases**, a transação primeiro adquire bloqueios e depois liberta-os, sem adquirir novos após começar a libertar. Com as hipóteses do protocolo, isso garante serializabilidade por conflitos.
 
 Se T1 segura A e espera B, e T2 segura B e espera A, há um **deadlock**. O sistema precisa de detetar ou evitar o ciclo e pode abortar uma transação. Uma aplicação deve conseguir repetir a transação inteira, não apenas a última instrução sem refazer as leituras.
+
+| Transação | Segura | Espera |
+| --------- | ------ | ------ |
+| T1        | A      | B      |
+| T2        | B      | A      |
+
+Cada uma espera o que a outra segura; nenhuma avança.
 
 Outra técnica é **MVCC**, controlo de concorrência multiversão. Conserva versões que permitem a leitores observar snapshots coerentes sem bloquear todas as escritas. Um snapshot coerente não garante que decisões sobre várias linhas sejam serializáveis.
 

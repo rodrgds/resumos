@@ -49,7 +49,7 @@ test('inline notation stays within its sentence on the example sheet', async ({
     };
   });
   expect(Math.abs(bounds.formula - bounds.text)).toBeLessThan(10);
-  await page.setViewportSize({ width: 360, height: 800 });
+  await page.setViewportSize({ width: 320, height: 800 });
   await page.goto('/cadeiras/bd/algebra-relacional/');
   expect(
     await page.evaluate(

@@ -5,15 +5,30 @@ section: conteudo
 order: 1
 ---
 
-No início do percurso de bases de dados, esta página responde a o que guarda um sistema de gestão e como separamos a estrutura dos dados do seu conteúdo.
+Ana fez duas encomendas e o nome dela aparece nas duas. Se corrigirmos o nome num sítio e nos esquecermos do outro, a base de dados passa a contradizer-se. Um sistema de gestão de bases de dados guarda cada facto uma vez e controla quem lê e escreve ao mesmo tempo. Para isso, separa a estrutura dos dados do seu conteúdo: o esquema fixa as regras, a instância guarda os valores de agora.
 
 Guardar uma encomenda num ficheiro é possível. O problema aparece quando dois programas a alteram ao mesmo tempo, quando uma falha interrompe uma escrita ou quando precisamos de ligar a encomenda a um cliente. Um **sistema de gestão de bases de dados**, ou SGBD, é o programa que guarda esses dados e controla as operações sobre eles. SQLite, PostgreSQL e MongoDB são exemplos de SGBDs.
 
 ## Dados, esquema e instância
 
-Os dados são os factos concretos, por exemplo "o produto 10 chama-se Teclado". O **esquema** define a estrutura e as regras desses factos: `Produto(id, nome, precoCentimos, stock)`, a chave `id`, que identifica cada produto sem repetições, e a condição `stock >= 0`. A **instância** é o conteúdo num certo momento.
+Os dados são os factos concretos, por exemplo "o produto 10 chama-se Teclado". O **esquema** define a estrutura e as regras desses factos. A **instância** é o conteúdo num certo momento.
 
-Se vendermos dois teclados, a instância muda. Se acrescentarmos uma coluna `categoria`, o esquema muda. Uma tabela vazia continua a ter um esquema e restrições. O número de linhas não faz parte do esquema.
+Duas instâncias do mesmo esquema `Produto(id, nome, precoCentimos, stock)`:
+
+| id  | nome    | precoCentimos | stock |
+| --- | ------- | ------------- | ----- |
+| 10  | Teclado | 4500          | 20    |
+| 11  | Rato    | 2500          | 50    |
+
+| id  | nome    | precoCentimos | stock |
+| --- | ------- | ------------- | ----- |
+| 10  | Teclado | 4500          | 18    |
+| 11  | Rato    | 2500          | 50    |
+| 12  | Monitor | 18000         | 5     |
+
+O esquema é o mesmo nas duas tabelas: os mesmos atributos, a mesma chave e as mesmas condições. A instância mudou: o stock do teclado desceu e apareceu o monitor. Vender dois teclados muda a instância. Começar a registar a categoria muda o esquema.
+
+A **chave** `id` identifica cada produto sem repetições. A condição `stock >= 0` rejeita valores negativos. Uma tabela vazia continua a ter esquema e restrições. O número de linhas não faz parte do esquema.
 
 Uma base de dados é a coleção organizada de dados; o SGBD é o software que a guarda e interroga. Um ficheiro SQLite pode ser uma base de dados, mas o ficheiro não é o motor SQLite.
 

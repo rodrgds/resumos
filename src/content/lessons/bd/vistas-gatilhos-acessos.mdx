@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-Depois de escrever consultas e passos com nome em SQL, esta página responde a como guardar perguntas, reagir a alterações e controlar quem pode fazer o quê.
+O total de cada encomenda é uma pergunta com nome: vista. Registar cada mudança de stock é reagir a uma alteração: gatilho. Decidir quem pode ler a tabela é autorização. Três mecanismos diferentes, com regras diferentes por motor.
 
 Uma vista dá nome a uma pergunta. Um gatilho reage a uma alteração. Uma permissão define quem pode executar uma operação. Os três mecanismos vivem no SGBD mas resolvem problemas diferentes e variam entre motores.
 
@@ -55,6 +55,20 @@ UPDATE NomeCliente SET nome = 'Ana Silva' WHERE id = 1;
 SELECT id, nome FROM Cliente ORDER BY id;`}
 />
 
+Cliente antes e depois do `UPDATE` sobre a vista:
+
+| id  | nome |
+| --- | ---- |
+| 1   | Ana  |
+| 2   | Rui  |
+| 3   | Mia  |
+
+| id  | nome      |
+| --- | --------- |
+| 1   | Ana Silva |
+| 2   | Rui       |
+| 3   | Mia       |
+
 A linha 1 da tabela base passa a Ana Silva, porque `OLD.id` identifica a linha anterior e `NEW.nome` dá o valor pedido. Este gatilho só define a atualização do nome.
 
 Quando uma vista tem um filtro, uma atualização pode fazer a linha desaparecer da própria vista. Em PostgreSQL, `WITH CHECK OPTION` pode exigir que os dados continuem a satisfazer o filtro numa vista atualizável. Num gatilho SQLite, escreve a validação correspondente e rejeita pedidos inválidos em vez de assumir que o motor a deduz.
@@ -95,7 +109,7 @@ UPDATE Produto SET stock = stock WHERE id = 10;
 SELECT * FROM AlteracaoStock;`}
 />
 
-O registo é `10|20|18`, porque a segunda instrução dispara o evento mas a condição é falsa e não acrescenta uma linha. O `CHECK (stock >= 0)` continua a ser a forma declarativa de proibir stock negativo.
+AlteracaoStock começa vazia e termina com uma linha, `10|20|18`: a primeira instrução escreve-a, a segunda dispara o evento mas a condição é falsa e não acrescenta outra. O `CHECK (stock >= 0)` continua a ser a forma declarativa de proibir stock negativo.
 
 Usa restrições antes de gatilhos quando exprimem a mesma regra. Um `UNIQUE` é mais claro para unicidade e uma estrangeira com cascata é mais clara para integridade referencial do que reimplementar ambos em código de gatilho.
 

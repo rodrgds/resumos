@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-Com o esquema relacional da loja já desenhado, esta página responde a como criar as tabelas e as suas regras em SQL.
+A loja precisa de existir em SQLite: quatro tabelas, chaves, preços não negativos e referências que se verificam sozinhas. A linguagem de definição de dados cria o esquema; a de manipulação muda os tuplos.
 
 A linguagem de definição de dados, **DDL**, cria e altera o esquema. A linguagem de manipulação, **DML**, consulta ou muda os tuplos. `CREATE TABLE Produto` cria uma estrutura; `INSERT INTO Produto` acrescenta um produto a essa estrutura.
 
@@ -122,6 +122,30 @@ FROM Item GROUP BY idEncomenda ORDER BY idEncomenda;`}
 />
 
 A estrangeira não obriga uma encomenda a ter Item, como vimos no mapeamento, porque `CHECK` não aceita uma subconsulta que conte linhas noutra tabela em SQLite.
+
+## Três requisitos, três restrições
+
+Queremos uma tabela de reservas onde cada reserva indica um cliente existente, tem data e tem um número positivo de lugares:
+
+```sql
+CREATE TABLE Reserva(
+  id INTEGER PRIMARY KEY,
+  idCliente INTEGER NOT NULL REFERENCES Cliente(id),
+  data TEXT NOT NULL,
+  lugares INTEGER NOT NULL CHECK (lugares > 0)
+);
+```
+
+Quatro inserções, três recusas:
+
+| Inserção                     | Resultado                         |
+| ---------------------------- | --------------------------------- |
+| `(1, 1, '2026-02-01', 2)`    | aceite                            |
+| `(2, 99, '2026-02-01', 2)`   | recusada: o cliente 99 não existe |
+| `(3, 1, '2026-02-02', 0)`    | recusada: viola `lugares > 0`     |
+| `(4, 2, '2026-02-03', NULL)` | recusada: lugares é obrigatório   |
+
+Cada restrição mordeu uma inserção diferente e a tabela fica só com a reserva 1. A estrangeira exige ainda `PRAGMA foreign_keys = ON` em cada ligação, como na secção de integridade referencial.
 
 ## INSERT, UPDATE e DELETE
 

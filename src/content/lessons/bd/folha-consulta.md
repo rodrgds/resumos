@@ -43,7 +43,7 @@ Pode haver 3FN sem BCNF: $AB\to C$, $C\to B$, candidatas AB e AC. C não é supe
 | BCNF               | Pela violação $X\to Y$, separa $X\cup Y$ e $R-(Y-X)$; projeta e repete.                                          |
 | Síntese 3FN        | Cobertura mínima, relação por DF, retira esquemas contidos e acrescenta candidata se nenhuma relação a contiver. |
 
-BCNF garante decomposição sem perda pelo algoritmo, mas pode perder preservação. Cobertura mínima: separa direitas, reduz esquerdas, retira DFs redundantes. Para testar redundância de uma DF, retira-a antes do fecho. [Decomposição](/cadeiras/bd/decomposicao/#decompor-até-bcnf).
+BCNF garante decomposição sem perda pelo algoritmo, mas pode perder preservação. Cobertura mínima: separa direitas, reduz esquerdas, retira DFs redundantes. Para testar redundância de uma DF, retira-a antes do fecho. No chase, mostra os tableaux sucessivos: cada unificação muda símbolos até estabilizar. [Decomposição](/cadeiras/bd/decomposicao/#decompor-até-bcnf).
 
 ## Álgebra relacional
 
@@ -105,7 +105,7 @@ ACID: atomicidade, consistência, isolamento, durabilidade. `COMMIT` confirma; `
 | Perdida       | Uma escrita sobrepõe outra atualização.                  |
 | Write skew    | Escritas em linhas distintas quebram uma regra conjunta. |
 
-Grafo: conflito é mesmo item e pelo menos uma escrita; aresta da operação anterior para a posterior. Acíclico significa serializável por conflitos. Snapshot estável não prova serializabilidade. PostgreSQL RR também evita fantasmas; serializable pode abortar e exige repetição. SQLite tem um escritor e pode rejeitar promoção de snapshot antigo. [Isolamento](/cadeiras/bd/concorrencia/#níveis-do-modelo-sql).
+Grafo: conflito é mesmo item e pelo menos uma escrita; aresta da operação anterior para a posterior. Sem ciclo, uma ordenação topológica dá a ordem serial equivalente; com ciclo, reprova. Snapshot estável não prova serializabilidade. PostgreSQL RR também evita fantasmas; serializable pode abortar e exige repetição. SQLite tem um escritor e pode rejeitar promoção de snapshot antigo. [Isolamento](/cadeiras/bd/concorrencia/#níveis-do-modelo-sql).
 
 ## Analítica e NoSQL
 

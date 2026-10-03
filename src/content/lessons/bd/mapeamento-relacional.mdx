@@ -10,7 +10,7 @@ practices:
 import Typst from '../../../components/Typst.astro';
 import esquema from '../../bd/esquema-relacional.typ?raw';
 
-Depois de descrever os factos da loja no modelo conceptual, esta página responde a como traduzir esse desenho em relações com chaves.
+O quiosque já tem classes, associações e multiplicidades. Que relações, chaves e estrangeiras guardam exatamente esses factos? A tradução faz-se por etapas, e cada etapa precisa de um teste com dados.
 
 O modelo conceptual fala de objetos e ligações. O modelo relacional guarda tuplos em relações e liga-os por valores de chaves, por isso a tradução tem de preservar o significado, não apenas criar uma tabela para cada caixa.
 
@@ -133,3 +133,21 @@ Um total derivado pode ser calculado numa consulta ou vista. Se o guardares, int
 ## Conferir a tradução
 
 Para cada chave, explica por que identifica o tuplo e por que nenhum subconjunto chega. Para cada associação, localiza as estrangeiras, o máximo imposto por unicidade e os mínimos ainda por implementar. Depois testa um exemplo permitido e um proibido. Um esquema com todas as setas desenhadas pode continuar a aceitar estados que o UML proíbe.
+
+## Traduzir o quiosque por etapas
+
+Do modelo do quiosque saem quatro relações:
+
+```text
+Cliente(id, nome)                  PK: id
+Produto(id, nome, precoAtual)      PK: id
+Compra(id, data, idCliente)        PK: id
+Compra.idCliente → Cliente.id, NOT NULL
+Linha(idCompra, idProduto, qtd)   PK: (idCompra, idProduto)
+Linha.idCompra → Compra.id, NOT NULL
+Linha.idProduto → Produto.id, NOT NULL
+```
+
+`idCliente` fica em Compra, o lado muitos, e é `NOT NULL` porque cada compra tem exatamente um cliente. `Linha` guarda o par com a quantidade; a chave no par proíbe duas linhas do mesmo produto na mesma compra. As três estrangeiras verificam existência, não mínimos: uma compra sem linhas continua válida nestas tabelas.
+
+Testa com dados. A compra 7 de Rui com duas linhas é permitida. Uma linha com `idCompra` 99 é recusada pela estrangeira. Duas linhas do par 7/pão são recusadas pela chave. Uma compra sem linhas passa nas chaves e exige a validação transacional do mínimo, como na loja.

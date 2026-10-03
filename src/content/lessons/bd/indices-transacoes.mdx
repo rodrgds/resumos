@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-Depois de guardar perguntas e reações no SGBD, esta página responde a como encontrar linhas mais depressa e como agrupar alterações que têm de acontecer juntas.
+Encontrar as encomendas de um cliente num intervalo de datas pode percorrer a tabela inteira ou procurar num índice. Transferir 25 euros tem de debitar e creditar em conjunto, ou desfazer tudo. Rapidez de acesso e unidade de alteração são os dois temas.
 
 Uma consulta pode estar correta e visitar muitas linhas para encontrar poucas. Um **índice** é uma estrutura que ajuda a encontrar essas linhas sem percorrer tudo. Uma sequência de alterações pode estar correta em cada instrução e ficar incompleta após uma falha. Uma **transação** define quais as alterações que devem ser tratadas como uma unidade.
 
@@ -32,6 +32,16 @@ ON Encomenda(idCliente, data);
 ```
 
 As entradas ficam ordenadas primeiro por cliente e, dentro dele, por data. A igualdade no primeiro atributo permite procurar o intervalo relevante no segundo. O índice também pode ajudar consultas apenas por cliente. Uma procura apenas por data não beneficia da mesma forma desse prefixo, embora certos planos e distribuições permitam outras estratégias do otimizador.
+
+Com os dados da loja, as entradas de `(idCliente, data)` ficam assim ordenadas:
+
+| idCliente | data       | encomenda |
+| --------- | ---------- | --------- |
+| 1         | 2026-01-05 | 100       |
+| 1         | 2026-01-06 | 101       |
+| 2         | 2026-01-06 | 102       |
+
+Fixar o cliente 1 isola as duas primeiras entradas; o intervalo de datas percorre só esse bloco.
 
 A ordem `(data, idCliente)` tem comportamento diferente. Se procurarmos um intervalo amplo de datas, a igualdade do cliente já não restringe da mesma maneira um único intervalo ordenado. Escolhe a ordem pelo conjunto de consultas mais frequentes e pelas distribuições reais.
 
@@ -96,6 +106,15 @@ UPDATE Conta SET saldo = saldo + 2500 WHERE id = 2;
 COMMIT;
 SELECT id, saldo FROM Conta ORDER BY id;`}
 />
+
+Os estados das contas na transferência de 2500 cêntimos:
+
+| Momento                        | Conta 1 | Conta 2 | Confirmado |
+| ------------------------------ | ------- | ------- | ---------- |
+| início                         | 10000   | 5000    | —          |
+| dentro da transação            | 7500    | 7500    | ainda não  |
+| após `ROLLBACK`                | 10000   | 5000    | não        |
+| após `COMMIT` (nova tentativa) | 7500    | 7500    | sim        |
 
 Depois do rollback, os saldos voltam ao início e depois do commit refletem a transferência, porque a primeira transferência não deixou efeitos guardados.
 
