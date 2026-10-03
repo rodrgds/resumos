@@ -14,6 +14,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="check-null"
+  revision={1}
   title="Uma restrição que aceita desconhecido"
   explanation="/cadeiras/lbaw/esquema-relacional/#chaves-domínios-e-null"
   answer={{
@@ -45,10 +46,10 @@ import Exercise from '../../../components/Exercise.astro';
     <p>Desconhecido não é falso.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       NULL&gt;=0 é desconhecido. A linha passa no CHECK; NOT NULL é necessário
       para impedir a ausência.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>Não uses o comportamento do WHERE como regra do CHECK.</p>
@@ -57,6 +58,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="minimo-inverso"
+  revision={1}
   title="O limite de uma chave estrangeira"
   explanation="/cadeiras/lbaw/modelo-conceptual/#o-que-o-modelo-não-garante-sozinho"
   answer={{
@@ -81,10 +83,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     evento_id NOT NULL REFERENCES eventos(id) garante que cada evento tem uma
     sessão?
-  </p>
+  </div>
   <div slot="hint">
     <p>Tenta inserir só um evento.</p>
   </div>
@@ -92,10 +94,10 @@ import Exercise from '../../../components/Exercise.astro';
     <p>A FK verifica as linhas da tabela que referencia.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       O evento sem sessões não viola esta FK. O mínimo na direção inversa exige
       outra verificação ou um protocolo de criação.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>Não traduzas uma associação só num sentido.</p>
@@ -104,6 +106,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="cascade"
+  revision={1}
   title="Saber que lado é apagado"
   explanation="/cadeiras/lbaw/esquema-relacional/#apagar-e-referenciar"
   answer={{
@@ -128,10 +131,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     bilhetes.sessao_id referencia sessoes.id com ON DELETE CASCADE. Apagar um
     bilhete apaga a sessão?
-  </p>
+  </div>
   <div slot="hint">
     <p>Identifica a tabela referenciada.</p>
   </div>
@@ -139,12 +142,61 @@ import Exercise from '../../../components/Exercise.astro';
     <p>A sessão é o pai nessa restrição.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Apagar um bilhete não afeta a sessão por esta FK. Apagar a sessão propaga
       para as linhas de bilhetes que a referem.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>Não confundas eliminar uma referência com eliminar o alvo.</p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="escrever-associacao"
+  revision={1}
+  title="Traduzir uma regra para SQL"
+  explanation="/cadeiras/lbaw/esquema-relacional/#as-regras-de-conversão"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Coloco sessao_id no cartaz e faço referência a sessoes(id).',
+      'Uso NOT NULL para impedir um cartaz sem sessão.',
+      'Uso UNIQUE para impedir dois cartazes na mesma sessão.',
+      'Permito criar uma sessão sem cartaz.',
+    ],
+  }}
+>
+  <div>
+
+Cada cartaz pertence a uma sessão e cada sessão pode ter zero ou um cartaz. A tabela `sessoes` já tem a PK `id`. Escreve a declaração de `cartazes` com uma PK própria e as restrições necessárias. A verificação do SQL é manual.
+
+  </div>
+  <div slot="hint">
+
+O lado obrigatório deve guardar a referência.
+
+  </div>
+  <div slot="hint-more">
+
+Uma FK sem UNIQUE também permitiria vários cartazes por sessão.
+
+  </div>
+  <div slot="solution">
+
+```sql
+CREATE TABLE cartazes (
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sessao_id INTEGER NOT NULL UNIQUE REFERENCES sessoes(id)
+);
+```
+
+`NOT NULL` exige uma sessão para cada cartaz. A FK exige que essa sessão exista. `UNIQUE` limita a um cartaz por sessão. Nenhuma destas regras obriga a criar um cartaz para cada sessão.
+
+  </div>
+  <div slot="mistakes">
+
+Uma FK opcional em sessoes pode representar a associação, mas por si só não impede cartazes sem sessão. Não acrescentes IDENTITY à FK: o seu valor refere uma chave já existente.
+
   </div>
 </Exercise>

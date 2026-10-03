@@ -14,6 +14,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rotinas-postgresql"
+  revision={1}
   title="Escolher como invocar uma rotina"
   explanation="/cadeiras/lbaw/triggers-transacoes/#função-procedure-e-trigger"
   answer={{
@@ -25,38 +26,39 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Em PostgreSQL, uma função calcula um preço e uma procedure regista uma
     mensagem. Como as invocas? CALL autoriza sempre um COMMIT dentro da
     procedure?
-  </p>
+  </div>
   <div slot="hint">
     <p>Distingue uma expressão de uma instrução.</p>
   </div>
   <div slot="hint-more">
-    <p>
+    <div>
       Uma procedure chamada dentro de uma transação explícita tem restrições de
       controlo transacional.
-    </p>
+    </div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Uma função escalar pode aparecer em SELECT preco_com_taxa(10). A procedure
       usa CALL registar_mensagem('confirmado'). CALL não garante permissão para
       COMMIT interno: o contexto da chamada e a definição da rotina impõem
       condições.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Não transportes as regras de PostgreSQL para outro SGBD sem verificar a
       documentação.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
   id="corrida"
+  revision={1}
   title="Reproduzir a venda excessiva"
   explanation="/cadeiras/lbaw/triggers-transacoes/#um-count-dentro-de-um-trigger-pode-falhar"
   answer={{
@@ -68,10 +70,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Por que duas transações que contam bilhetes num trigger podem exceder a
     lotação?
-  </p>
+  </div>
   <div slot="hint">
     <p>Constrói um caso com um lugar e zero bilhetes.</p>
   </div>
@@ -79,10 +81,10 @@ import Exercise from '../../../components/Exercise.astro';
     <p>Cada transação pode observar zero.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       As duas observam zero, inserem e confirmam. Um trigger não cria
       automaticamente um bloqueio que serialize essa regra.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>«Corre numa transação» não demonstra que a invariante está protegida.</p>
@@ -91,6 +93,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="snapshot"
+  revision={1}
   title="Read Committed"
   explanation="/cadeiras/lbaw/triggers-transacoes/#snapshots-e-níveis-de-isolamento"
   answer={{
@@ -115,10 +118,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Em PostgreSQL Read Committed, duas SELECT na mesma transação têm
     obrigatoriamente o mesmo snapshot?
-  </p>
+  </div>
   <div slot="hint">
     <p>Observa quando começa cada instrução.</p>
   </div>
@@ -126,21 +129,22 @@ import Exercise from '../../../components/Exercise.astro';
     <p>Outra transação pode confirmar no intervalo.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Não. Pode haver uma leitura não repetível, mesmo sem ler dados não
       confirmados.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Não confundas snapshot por instrução com leitura de alterações por
       confirmar.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
   id="after"
+  revision={1}
   title="Momento do trigger AFTER"
   explanation="/cadeiras/lbaw/triggers-transacoes/#triggers-momento-unidade-e-retorno"
   answer={{
@@ -173,21 +177,22 @@ import Exercise from '../../../components/Exercise.astro';
     <p>Os efeitos do trigger pertencem à mesma transação.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Não. AFTER ocorre após a alteração correspondente e antes de a transação
       confirmar. O retorno de AFTER por linha é ignorado.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Não envies uma ação externa irreversível supondo que AFTER prova
       confirmação.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
   id="savepoint"
+  revision={1}
   title="Recuperar só uma parte"
   explanation="/cadeiras/lbaw/triggers-transacoes/#acid-e-o-que-cada-letra-promete"
   answer={{
@@ -211,10 +216,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Decrementas o contador, crias SAVEPOINT, inseres bilhete e fazes ROLLBACK
     TO. O decremento é anulado?
-  </p>
+  </div>
   <div slot="hint">
     <p>Coloca os passos numa linha temporal.</p>
   </div>
@@ -222,15 +227,57 @@ import Exercise from '../../../components/Exercise.astro';
     <p>O ponto está depois do decremento.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       O decremento permanece e a inserção desaparece. Se depois confirmas, podes
       quebrar a regra; o savepoint tem de corresponder à unidade lógica certa.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Não confies no nome «transação» sem observar quais operações são
       agrupadas.
-    </p>
+    </div>
+  </div>
+</Exercise>
+
+<Exercise
+  id="ultimo-lugar"
+  revision={1}
+  title="Seguir duas reservas coordenadas"
+  explanation="/cadeiras/lbaw/triggers-transacoes/#coordenar-a-alteração-da-mesma-linha"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'A altera a linha e mantém o bloqueio até terminar.',
+      'B espera e volta a testar livres > 0 após o COMMIT de A.',
+      'B altera zero linhas e não insere bilhete.',
+      'A confirma contador e bilhete na mesma transação.',
+    ],
+  }}
+>
+  <div>
+
+Em PostgreSQL Read Committed, `livres=1`. A executa `UPDATE sessoes SET livres=livres-1 WHERE id=12 AND livres>0 RETURNING id`. Antes de A confirmar, B executa o mesmo UPDATE. A cria o bilhete e confirma. Explica o resultado de B e quando B pode inserir um bilhete.
+
+  </div>
+  <div slot="hint">
+
+As duas operações tentam alterar a mesma linha.
+
+  </div>
+  <div slot="hint-more">
+
+O UPDATE de B volta a avaliar a condição sobre a versão confirmada por A.
+
+  </div>
+  <div slot="solution">
+
+B espera pelo bloqueio de A. Após o COMMIT, vê a versão com zero lugares, não altera a linha e não obtém id no RETURNING. Deve anular a compra, sem inserir bilhete. Se A fizesse ROLLBACK, B poderia diminuir o contador e criar o bilhete na sua própria transação. Não chega consultar livres antes do UPDATE, pois essa consulta não reserva o lugar.
+
+  </div>
+  <div slot="mistakes">
+
+Inserir sempre o bilhete, mesmo quando o UPDATE altera zero linhas, volta a permitir uma venda excessiva. O contador e o bilhete têm de confirmar juntos.
+
   </div>
 </Exercise>

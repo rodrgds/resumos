@@ -14,14 +14,15 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="count"
+  revision={1}
   title="Contar numa junção opcional"
   explanation="/cadeiras/lbaw/consultas-relacionais/#left-join-e-o-lugar-do-filtro"
   answer={{ kind: 'number', value: 0, tolerance: 0 }}
 >
-  <p>
+  <div>
     Uma sessão sem bilhetes chega a um LEFT JOIN como uma linha com b.id=NULL.
     Quanto dá COUNT(b.id)?
-  </p>
+  </div>
   <div slot="hint">
     <p>COUNT(coluna) ignora NULL.</p>
   </div>
@@ -29,10 +30,10 @@ import Exercise from '../../../components/Exercise.astro';
     <p>COUNT(*) daria 1 para essa linha.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Dá 0, porque não há valor não nulo em b.id. A linha da sessão continua no
       resultado.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>Não troques COUNT(b.id) por COUNT(*) sem rever a pergunta.</p>
@@ -41,6 +42,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="notin"
+  revision={1}
   title="O caso NULL"
   explanation="/cadeiras/lbaw/consultas-relacionais/#exists-not-in-e-todos"
   answer={{
@@ -72,10 +74,10 @@ import Exercise from '../../../components/Exercise.astro';
     <p>TRUE AND desconhecido é desconhecido.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       O resultado é desconhecido e o WHERE rejeita a linha. Uma subconsulta NOT
       EXISTS adequada evita esta armadilha.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>Não trates NULL como um valor concreto diferente de 2.</p>
@@ -84,6 +86,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="vazio-todos"
+  revision={1}
   title="Quantificação sobre conjunto vazio"
   explanation="/cadeiras/lbaw/consultas-relacionais/#exists-not-in-e-todos"
   answer={{
@@ -107,10 +110,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     O duplo NOT EXISTS para «comprou em todas as sessões» aceita um evento sem
     sessões?
-  </p>
+  </div>
   <div slot="hint">
     <p>Procura uma sessão que possa ser contraexemplo.</p>
   </div>
@@ -118,10 +121,10 @@ import Exercise from '../../../components/Exercise.astro';
     <p>O conjunto de sessões está vazio.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Aceita por vacuidade. Se o domínio exige pelo menos uma sessão, acrescenta
       um EXISTS que o afirme.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>Não introduzas uma pré-condição que o SQL não contém.</p>
@@ -130,14 +133,15 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="janela"
+  revision={1}
   title="Manter ou reduzir linhas"
   explanation="/cadeiras/lbaw/consultas-relacionais/#agregar-sem-esconder-o-detalhe"
   answer={{ kind: 'number', value: 2, tolerance: 0 }}
 >
-  <p>
+  <div>
     Duas vendas da mesma sessão valem 8 e 12. SUM(preco) OVER(PARTITION BY
     sessao_id) produz quantas linhas?
-  </p>
+  </div>
   <div slot="hint">
     <p>Uma janela mantém o detalhe de cada linha.</p>
   </div>
@@ -145,12 +149,62 @@ import Exercise from '../../../components/Exercise.astro';
     <p>Cada linha recebe o mesmo total 20.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Produz duas linhas, com total 20 em cada uma. GROUP BY produziria uma
       linha por sessão.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
     <p>Não confundas agregação de janela com agregação que reduz grupos.</p>
+  </div>
+</Exercise>
+
+<Exercise
+  id="escrever-contagem"
+  revision={1}
+  title="Escrever a consulta e verificar o resultado"
+  explanation="/cadeiras/lbaw/consultas-relacionais/#left-join-e-o-lugar-do-filtro"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Produzo uma linha para cada sessão, incluindo a sessão 2.',
+      'Conto apenas bilhetes pagos sem perder sessões com bilhetes cancelados.',
+      'Obtenho (1,2), (2,0) e (3,0), por ordem de id.',
+    ],
+  }}
+>
+  <div>
+
+Escreve uma consulta com uma linha por sessão e a quantidade de bilhetes pagos, ordenada pelo id da sessão. Há sessões 1, 2 e 3. Os bilhetes `(id, sessao_id, estado)` são `(10,1,'pago')`, `(11,1,'pago')` e `(12,3,'cancelado')`. A sessão 2 não tem bilhetes. Compara o resultado com os dados; a avaliação do SQL é manual.
+
+  </div>
+  <div slot="hint">
+
+A relação exterior precisa de conservar todas as sessões.
+
+  </div>
+  <div slot="hint-more">
+
+Filtra o estado no ON e conta uma coluna não nula do bilhete.
+
+  </div>
+  <div slot="solution">
+
+```sql
+SELECT s.id, COUNT(b.id) AS pagos
+FROM sessoes AS s
+LEFT JOIN bilhetes AS b
+  ON b.sessao_id = s.id AND b.estado = 'pago'
+GROUP BY s.id
+ORDER BY s.id;
+```
+
+A sessão 1 tem dois bilhetes pagos. As sessões 2 e 3 não têm correspondências pagas e recebem zero. Uma alternativa válida agrega os bilhetes pagos numa subconsulta e junta essa contagem às sessões, usando `COALESCE` para os casos sem correspondência.
+
+  </div>
+  <div slot="mistakes">
+
+COUNT(\*) conta a linha exterior sem correspondência como 1. Um filtro b.estado no WHERE elimina as sessões 2 e 3.
+
   </div>
 </Exercise>
