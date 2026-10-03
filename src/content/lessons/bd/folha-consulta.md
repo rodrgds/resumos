@@ -5,6 +5,8 @@ section: recursos
 studyKind: revision
 ---
 
+Esta folha reúne as regras e decisões já explicadas nas lições, para rever antes de resolver exercícios.
+
 ## Modelação e relações
 
 | Construção    | Tradução e cuidado                                                                                      |
