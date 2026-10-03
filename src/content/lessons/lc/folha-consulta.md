@@ -8,17 +8,17 @@ order: 1
 
 ## C e memória
 
-| Operação ou condição            | Consulta rápida                                           |
-| ------------------------------- | --------------------------------------------------------- |
-| Byte de um dispositivo          | `uint8_t`; `sys_inb` recebe armazenamento de 32 bits      |
-| Complementar só oito bits       | `(uint8_t)~byte`, antes de deslocar                       |
-| Alterar o objeto do chamador    | Receber o seu endereço e desreferenciar                   |
-| Alterar o apontador do chamador | Devolver novo apontador ou receber `T **`                 |
-| Duração automática              | Termina com o bloco; não devolver endereço local          |
-| Memória dinâmica                | Conferir `malloc`, inicializar, libertar uma vez          |
-| Array recebido por parâmetro    | Passar também o comprimento                               |
-| Biblioteca estática             | `ar rcs libname.a a.o`; ligar objetos antes da biblioteca |
-| Apontador para função           | `int (*f)(int)`, assinatura compatível                    |
+| Operação ou condição            | Consulta rápida                                                                   |
+| ------------------------------- | --------------------------------------------------------------------------------- |
+| Byte de um dispositivo          | `uint8_t`; `sys_inb` recebe armazenamento de 32 bits                              |
+| Complementar só oito bits       | `(uint8_t)~byte`, antes de deslocar                                               |
+| Alterar o objeto do chamador    | Receber o seu endereço e desreferenciar                                           |
+| Alterar o apontador do chamador | Devolver novo apontador ou receber `T **`                                         |
+| Duração automática              | Termina com o bloco; não devolver endereço local                                  |
+| Memória dinâmica                | Conferir `malloc`, inicializar, libertar uma vez; não avaliar aliases após `free` |
+| Array recebido por parâmetro    | Passar também o comprimento                                                       |
+| Biblioteca estática             | `ar rcs libname.a a.o`; ligar objetos antes da biblioteca                         |
+| Apontador para função           | `int (*f)(int)`, assinatura compatível                                            |
 
 [Tipos e compilação](/cadeiras/lc/c-estruturado/), [memória e funções](/cadeiras/lc/memoria-funcoes/).
 

@@ -98,10 +98,10 @@ O recetor conserva estado entre bytes. Um modelo tem `WAIT_START`, `BODY` e `ESC
 | `WAIT_START`, outro byte | Ignorar                                       |
 | `BODY`, `7D`             | Passar a `ESCAPED`                            |
 | `BODY`, byte normal      | Guardar, se ainda houver capacidade           |
-| `ESCAPED`, byte válido   | Guardar byte XOR `20` e regressar a `BODY`    |
+| `ESCAPED`, `5E` ou `5D`  | Guardar byte XOR `20` e regressar a `BODY`    |
 | `BODY`, `7E`             | Validar o corpo completo e preparar o próximo |
 
-A regra de erro também faz parte do contrato. Se surge um delimitador com um escape incompleto, descarta o corpo parcial e usa o delimitador para recuperar o início. Se excede a capacidade ou há erro UART, invalida a mensagem. Um timeout impede ficar para sempre à espera de um corpo que o emissor abandonou.
+A regra de erro também faz parte do contrato. Neste formato, depois de `7D` só aceitamos `5E` ou `5D`. Outro byte invalida o corpo e leva a `WAIT_START`, onde só um novo delimitador permite recomeçar. Se surge um delimitador com um escape incompleto, descarta o corpo parcial e usa o delimitador para recuperar o início. Delimitadores consecutivos mantêm um corpo vazio à espera de dados, sem publicar mensagens vazias. Se excede a capacidade ou há erro UART, invalida a mensagem. Um timeout impede ficar para sempre à espera de um corpo que o emissor abandonou.
 
 No fecho, confere tipo, número de campos, comprimento e checksum. Só depois publica um evento da aplicação. Não atualizes a posição com o primeiro campo antes de saber se o resto da mensagem é válido.
 

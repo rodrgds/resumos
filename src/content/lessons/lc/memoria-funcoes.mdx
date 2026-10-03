@@ -78,7 +78,7 @@ Mesmo que um teste imprima 42, o acesso já não é válido. Para devolver um in
 
 ## Alocação e propriedade
 
-`malloc` devolve armazenamento sem inicialização ou `NULL` se falhar. Calcula o tamanho a partir do objeto apontado, valida a falha, inicializa antes de ler e liberta exatamente uma vez. Depois de `free`, não leias nem escrevas o objeto, mesmo que ainda tenhas o seu endereço.
+`malloc` devolve armazenamento sem inicialização ou `NULL` se falhar. Calcula o tamanho a partir do objeto apontado, valida a falha, inicializa antes de ler e liberta exatamente uma vez. Depois de `free`, não leias nem escrevas o objeto. O valor dos apontadores que o designavam fica indeterminado; não os uses sequer para testar se a memória ainda existe. Podes atribuir `NULL` à variável do apontador sem ler o seu valor anterior, mas isso não altera outros aliases.
 
 Este exemplo completo cria cinco inteiros. A saída é `soma=150`.
 
@@ -93,6 +93,8 @@ Este exemplo completo cria cinco inteiros. A saída é `soma=150`.
 Para tamanhos recebidos de fora, confere também que `n * sizeof *values` não transborda `SIZE_MAX`. Um cast ao resultado de `malloc` é desnecessário em C quando incluis `<stdlib.h>`.
 
 A **propriedade** responde a duas perguntas: quem pode usar o objeto e quem o deve libertar? Por exemplo, um sprite pode possuir o seu pixmap. Destruir o sprite liberta os dois. Se vários sprites partilham um pixmap, cada um libertá-lo causaria uma dupla libertação. Nesse caso, o módulo de recursos mantém o pixmap e os sprites apenas o usam.
+
+Para aumentar uma alocação, `realloc` pode mover os dados para outro endereço. Guarda primeiro o resultado numa variável temporária. Se falhar para um tamanho não nulo, devolve `NULL` e a alocação anterior continua válida. Fazer `values = realloc(values, size)` perde o único endereço da alocação antiga se a chamada falhar. Se tiver sucesso, usa apenas o endereço devolvido; os apontadores anteriores, incluindo os que apontavam para elementos, deixam de ser válidos. Valida o produto do tamanho antes da chamada e trata o tamanho zero separadamente.
 
 Num construtor com várias alocações, uma falha na segunda obriga a libertar a primeira. Não publiques um objeto parcialmente inicializado. A regra também vale para recursos de hardware: se a subscrição do rato falhar depois da do timer, remove a subscrição do timer antes de sair.
 
