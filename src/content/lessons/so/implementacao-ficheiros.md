@@ -7,6 +7,8 @@ practices:
   - so/praticar-sistema-ficheiros
 ---
 
+Já vimos como um pedido chega ao dispositivo; esta página responde a: como ligam os nomes dos ficheiros aos blocos de dados guardados?
+
 O nome `notas.txt` precisa de levar aos blocos que contêm os dados. Entre o nome e o dispositivo há diretórios, metadados, posições de leitura e estruturas de alocação. Separar essas estruturas explica como um ficheiro pode ter dois nomes e continuar aberto depois de um nome desaparecer, ou seja o nome e os dados têm tempos de vida diferentes.
 
 ## Nome, inode e abertura
