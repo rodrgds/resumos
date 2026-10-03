@@ -1,0 +1,63 @@
+---
+title: Reestruturar tabelas
+description: Passar entre formato longo e largo com pivot, melt, stack e unstack.
+section: conteudo
+order: 14
+practices:
+  - ct-iadp/praticar-reestruturar
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, reestruturação
+      url: https://pandas.pydata.org/docs/user_guide/reshaping.html
+  coverage: Formatos longo e largo, pivot, melt, stack e unstack.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+Tens quatro vendas com cidade, produto e quantidade. Para um relatório por cidade, precisas de uma linha por cidade. Para comparar produtos lado a lado, precisas de uma coluna por produto. Reestruturar muda a disposição sem mudar o significado dos valores.
+
+No formato **longo**, uma coluna identifica o produto e outra guarda a quantidade. No formato **largo**, cada produto é uma coluna. Antes de escolheres a operação, escreve que colunas identificam uma observação e qual é a medida.
+
+## Longo para largo com pivot
+
+<CodePlayground
+  language="python"
+  title={'Mudar a forma da tabela'}
+  code={
+    'import pandas as pd\nlonga = pd.DataFrame({\n    "cidade": ["Porto", "Porto", "Braga", "Braga"],\n    "produto": ["p\u00e3o", "leite", "p\u00e3o", "leite"],\n    "quantidade": [2, 3, 5, 1],\n})\nlarga = longa.pivot(index="cidade", columns="produto", values="quantidade")\nprint(larga.to_string())\nprint("linhas:", larga.shape[0], "colunas:", larga.shape[1])'
+  }
+/>
+
+`index` escolhe os identificadores das linhas, `columns` os valores que se tornam nomes de colunas e `values` a medida de cada célula. O resultado tem duas linhas e duas colunas de produtos.
+
+Para `pivot`, cada par cidade-produto precisa de um único valor. Se houver duas vendas de pão no Porto, a posição tem dois candidatos e pandas lança um erro. Decide primeiro: somar as vendas, calcular a média ou conservar outra dimensão que as distinga.
+
+## Largo para longo com melt
+
+<CodePlayground
+  language="python"
+  title={'Voltar ao formato longo'}
+  code={
+    'import pandas as pd\nlonga = pd.DataFrame({\n    "cidade": ["Porto", "Porto", "Braga", "Braga"],\n    "produto": ["p\u00e3o", "leite", "p\u00e3o", "leite"],\n    "quantidade": [2, 3, 5, 1],\n})\nlarga = longa.pivot(index="cidade", columns="produto", values="quantidade")\nlarga_reset = larga.reset_index()\nlonga2 = larga_reset.melt(id_vars="cidade", value_vars=["p\u00e3o", "leite"], var_name="produto", value_name="quantidade")\nprint(longa2.sort_values(["cidade", "produto"]).to_string(index=False))\nprint("linhas:", len(longa2))'
+  }
+/>
+
+`melt` conserva as colunas `id_vars` e transforma as restantes em pares variável-valor. `var_name` dá nome à coluna com o nome antigo da medida. `value_name` dá nome à coluna com o valor. Cada linha inicial origina duas linhas, uma por produto. O resultado tem quatro linhas.
+
+## stack e unstack
+
+`stack` move um nível dos nomes de colunas para o índice de linhas. `unstack` move um nível do índice para as colunas. Isto produz ou usa um **MultiIndex**, um índice com vários níveis.
+
+```python
+serie = longa.set_index(["cidade", "produto"])["quantidade"]
+larga = serie.unstack("produto")
+```
+
+Agora o par cidade-produto identifica cada valor da Series. Ao deslocar produto para as colunas, cidade fica nas linhas.
+
+## O que não é uma reestruturação
+
+`df.T` troca linhas por colunas, mas não resolve uma chave duplicada nem calcula totais. `rename` muda nomes sem mudar a disposição. `merge` associa observações entre tabelas. Depois de reestruturares, confere o número de valores e uma célula concreta no resultado.

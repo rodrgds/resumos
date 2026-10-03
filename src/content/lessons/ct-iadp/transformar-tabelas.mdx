@@ -25,9 +25,9 @@ editorial:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Já sabes escolher linhas e resumir os valores de uma tabela; esta página responde como acrescentar um cálculo a cada linha e decidir o que conservar.
+Sabes escolher linhas e resumir valores. Agora precisas de acrescentar um cálculo a cada linha e decidir o que conservar.
 
-Temos uma tabela de vendas com quantidade e preço; criar a coluna de total acrescenta esse cálculo a cada linha. Uma transformação, ou seja uma alteração à tabela, deve dizer que valores muda e que informação conserva, ou seja apagar uma linha retira uma venda e precisa de uma razão.
+Temos uma tabela de vendas com quantidade e preço. Criar a coluna de total acrescenta esse cálculo a cada linha. Uma transformação altera a tabela. Por isso, diz que valores muda e que informação conserva. Apagar uma linha retira uma venda e precisa de uma razão.
 
 ## Criar uma coluna calculada
 
@@ -67,11 +67,20 @@ Uma atribuição com `df.loc[rotulo, ["produto", "unidades"]] = ["arroz", 4]` mu
 `serie.map(dicionario)` substitui valores através de uma correspondência. Valores sem correspondência ficam em falta, pelo que deves detetar chaves desconhecidas.
 
 ```python
+import pandas as pd
+df = pd.DataFrame({"produto": ["pão", "leite", "arroz"]})
 categorias = {"pão": "padaria", "leite": "laticínios"}
 df["categoria"] = df["produto"].map(categorias)
+print(df.to_string(index=False))
+# produto   categoria
+#     pão     padaria
+#   leite  laticínios
+#   arroz         NaN
 ```
 
-`serie.apply(funcao)` aplica uma função a cada valor. `df.apply(funcao, axis=1)` chama a função para cada linha; com `axis=0`, para cada coluna. Prefere operações vetorizadas simples quando exprimem diretamente o cálculo. Usar `apply` para multiplicar duas colunas esconde uma operação que pandas já suporta.
+O arroz fica em falta porque não tem entrada no dicionário. Conta os nulos depois do `map` antes de continuares.
+
+`serie.apply(funcao)` aplica uma função a cada valor. `df.apply(funcao, axis=1)` chama a função para cada linha; com `axis=0`, para cada coluna. Prefere operações vetorizadas simples quando exprimem diretamente o cálculo. Usar `apply` para multiplicar duas colunas esconde uma operação que pandas já suporta. Para criar uma coluna sem alterar a entrada, usa `df.assign(total=df["quantidade"] * df["preco"])`, que devolve outra tabela.
 
 ## Representar ausência
 
@@ -98,3 +107,7 @@ Um `pd.NA` isolado não pode ser tratado como verdadeiro ou falso. Algumas opera
 ## Duplicados e integridade
 
 `duplicated(subset=["id"])` deteta repetições de um identificador. `drop_duplicates` conserva uma ocorrência conforme `keep`. Duas linhas iguais podem ser duas vendas reais; não as elimines apenas porque os valores coincidem. Usa a chave que identifica a observação e confere os totais antes e depois da limpeza.
+
+## Reordenar linhas com outro índice
+
+`df.reindex([8, 3])` devolve as linhas por esses rótulos e nessa ordem. Rótulos em falta produzem linhas em falta. Usa `reindex` quando a ordem e o conjunto de rótulos fazem parte do contrato, como no relatório por cidade. Não o uses para ordenar por valores: aí a operação é `sort_values`.

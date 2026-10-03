@@ -4,7 +4,6 @@ description: Separar por chaves, calcular agregações, pivot_table e distinguir
 section: conteudo
 order: 15
 practices:
-  - ct-iadp/praticar-reestruturar
   - ct-iadp/praticar-agrupamentos
 editorial:
   basedOn: 2026/27
@@ -22,11 +21,11 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Já sabes juntar tabelas e escolher linhas; esta página responde como passar de muitas vendas a uma linha por grupo com um resumo.
+Sabes juntar tabelas e escolher linhas. Agora precisas de passar de muitas vendas a uma linha por grupo com um resumo.
 
-Queremos o número total de unidades por cidade. Cada venda tem uma quantidade, mas o relatório precisa de uma linha por cidade. Agrupar identifica as vendas da mesma cidade e agregar reduz essas vendas a um resultado.
+Queremos o número total de unidades por cidade. Cada venda tem uma quantidade, mas o relatório precisa de uma linha por cidade. Agrupar identifica as vendas da mesma cidade. Agregar reduz essas vendas a um resultado.
 
-Antes disso, temos de garantir que a tabela tem a forma certa: no formato **longo**, uma variável identifica o produto e outra guarda a quantidade, enquanto no formato **largo** cada produto pode ser uma coluna. Reestruturar muda a disposição, mantendo os valores quando a correspondência é única.
+Antes disso, a tabela precisa de ter a forma certa. Esse passo está desenvolvido em [Reestruturar tabelas](/cadeiras/ct-iadp/reestruturar-tabelas/). Aqui fica o essencial para seguires os grupos.
 
 ## Longo para largo com pivot
 
@@ -47,15 +46,16 @@ Para `pivot`, cada par cidade-produto precisa de um único valor. Se houver duas
 `melt` conserva as colunas `id_vars` e transforma as restantes em pares variável-valor. `var_name` dá nome à coluna que guarda o nome antigo da medida e `value_name` à coluna que guarda o valor.
 
 ```python
-longa = larga.melt(
-    id_vars="data",
+larga_reset = larga.reset_index()
+longa2 = larga_reset.melt(
+    id_vars="cidade",
     value_vars=["pão", "leite"],
     var_name="produto",
     value_name="quantidade",
 )
 ```
 
-Cada linha inicial origina duas linhas, uma por produto. Não duplicámos observações da mesma medida: passámos a identificar a medida numa coluna.
+Cada linha inicial origina duas linhas, uma por produto. Não duplicámos observações da mesma medida: passámos a identificar a medida numa coluna. O exemplo completo, com a tabela inicial e o resultado, está em [Reestruturar tabelas](/cadeiras/ct-iadp/reestruturar-tabelas/#largo-para-longo-com-melt).
 
 ## stack e unstack
 
@@ -137,3 +137,13 @@ tabela = vendas.pivot_table(
 Cada célula soma as quantidades de uma combinação cidade-produto. `pivot_table` admite combinações repetidas porque a agregação decide como as reunir. A função por defeito é média, por isso escreve `aggfunc="sum"` quando o enunciado pede totais.
 
 `fill_value=0` transforma uma combinação sem vendas em zero depois da agregação. Isto exige interpretar a ausência como nenhuma venda, não como quantidade desconhecida.
+
+## Filtrar grupos inteiros
+
+`groupby.filter` conserva ou remove grupos completos, consoante uma condição sobre o grupo:
+
+```python
+com_movimento = vendas.groupby("cidade").filter(lambda g: g["quantidade"].sum() >= 9)
+```
+
+Se só Braga soma pelo menos 9 unidades, o resultado conserva as duas vendas de Braga e remove as do Porto. É diferente de filtrar linhas: a decisão usa o agregado do grupo. Está nos slides da turma como terceiro uso de groupby, a par de agregação e transformação.

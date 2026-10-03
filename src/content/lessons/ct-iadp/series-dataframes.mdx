@@ -1,0 +1,68 @@
+---
+title: Series e DataFrames
+description: Construir tabelas, tipos por coluna, índice explícito e alinhamento por rótulos.
+section: conteudo
+order: 9
+practices:
+  - ct-iadp/praticar-series-dataframes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Programa e materiais da turma, Moodle 2026/27
+      url: https://moodle2627.up.pt/course/view.php?id=5341
+    - title: pandas, tutoriais introdutórios
+      url: https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html
+  coverage: Construção de Series e DataFrames, índice, tipos e alinhamento por rótulos.
+---
+
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
+
+Tens quatro vendas com cidade, produto, quantidade e preço. Antes de filtrares, precisas de construir a tabela e perceber como pandas identifica cada linha.
+
+## Construir uma tabela
+
+Uma **Series** é uma sequência de valores com rótulos. Um **DataFrame** é uma tabela com colunas e um índice de linhas. Cada coluna pode ter um tipo diferente.
+
+<CodePlayground
+  language="python"
+  title={'Uma tabela de vendas'}
+  code={
+    'import pandas as pd\nvendas = pd.DataFrame({\n    "cidade": ["Porto", "Porto", "Braga", "Braga"],\n    "produto": ["pão", "leite", "pão", "arroz"],\n    "quantidade": [2, 3, 5, 4],\n    "preco": [1.5, 1.2, 1.5, 2.0],\n})\nprint(vendas.to_string(index=False))\nprint(vendas.shape)\nprint(vendas.dtypes)'
+  }
+/>
+
+Há quatro observações e quatro colunas, por isso `shape` é `(4, 4)`. Cada linha representa uma venda. É a unidade de análise desta tabela.
+
+`vendas["quantidade"]` devolve uma Series. `vendas[["quantidade"]]` devolve um DataFrame com uma coluna. A forma e as operações seguintes mudam.
+
+## Tipos por coluna
+
+Corre `vendas.dtypes` antes de calculares. Números podem chegar como texto depois de ler um ficheiro. Códigos como `"0012"` devem ficar como texto para conservar os zeros. Tipos de strings podem aparecer como `object`, `string` ou `str`, consoante a versão. Confere o significado dos valores, não apenas o nome do tipo.
+
+## Tornar o índice explícito
+
+`df.set_index("codigo")` devolve uma tabela com essa coluna como índice. `reset_index()` devolve o índice para uma coluna e cria posições de zero em diante. Um índice pode ter valores repetidos. Verifica `df.index.is_unique` quando o problema exige uma chave única, em vez de o assumires.
+
+## O alinhamento usa rótulos
+
+<CodePlayground
+  language="python"
+  title={'Somar pela cidade'}
+  code={
+    'import pandas as pd\na = pd.Series([10, 20], index=["Porto", "Braga"])\nb = pd.Series([1, 2], index=["Braga", "Porto"])\nprint((a + b).sort_index().to_dict())\nc = pd.Series([3], index=["Aveiro"])\nprint(a.add(c, fill_value=0).sort_index().to_dict())'
+  }
+/>
+
+Não somamos a primeira posição à primeira posição. Somamos os valores da mesma cidade: Braga 21 e Porto 12. Quando um rótulo só está num dos lados, a operação normal produz ausência nesse rótulo. `fill_value=0` só é adequado quando a ausência significa nenhuma quantidade para acrescentar.
+
+<Dot
+  source={
+    'digraph { rankdir=LR; node [shape=box]; aP [label="a Porto: 10"]; aB [label="a Braga: 20"]; bB [label="b Braga: 1"]; bP [label="b Porto: 2"]; rP [label="Porto: 12"]; rB [label="Braga: 21"]; aP -> rP; bP -> rP; aB -> rB; bB -> rB; }'
+  }
+  alt={
+    'Valores das duas Series ligam-se pelo nome da cidade: Porto soma 10 com 2 e Braga soma 20 com 1.'
+  }
+/>
+
+Usa `s.loc[rotulo]` para rótulos e `s.iloc[posicao]` para posições. `s[0]` pode procurar o rótulo inteiro 0. Em código novo, escreve `s.iloc[0]` para a primeira posição.
