@@ -66,6 +66,8 @@ import Exercise from '../../../components/Exercise.astro';
 
 Cada questão precisa de um `id` único na cadeira, uma ligação à explicação exata e os quatro slots do exemplo. Aumenta `revision` quando mudares o enunciado, a resposta ou o seu significado.
 
+Em MDX, o Markdown cria os parágrafos dentro de componentes. Para texto em várias linhas, usa Markdown ou um `div`, não um `p` a envolver outro parágrafo. Um `p` com texto todo na mesma linha, como nos exemplos acima, continua válido.
+
 | Tipo     | Quando usar                                           | Campos                                                    |
 | -------- | ----------------------------------------------------- | --------------------------------------------------------- |
 | `number` | Valor verificável; indica unidades e arredondamento   | `value`, tolerância absoluta `tolerance`, `unit` opcional |
