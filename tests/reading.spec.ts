@@ -1,6 +1,33 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
+test.describe('course diagrams without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('matrix demo renders the initial transformed square', async ({
+    page,
+  }) => {
+    await page.goto('/cadeiras/alga/matrizes/');
+    const demo = page.locator('[data-matrix-transform]');
+    await expect(demo.locator('[data-result]')).toContainText('det(A) = 6');
+    await expect(demo.locator('[data-columns]')).toContainText('A e1 = (2, 0)');
+    await expect(demo.locator('[data-columns]')).toContainText('A e2 = (1, 3)');
+    const corners = await demo.locator('[data-image]').evaluate((polygon) =>
+      (polygon.getAttribute('points') || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((point) => point.split(',').map(Number)),
+    );
+    expect(corners).toEqual([
+      [0, 0],
+      [2, 0],
+      [3, -3],
+      [1, -3],
+    ]);
+  });
+});
+
 test('neutral diagram labels follow the effective text color', async ({
   page,
 }) => {
