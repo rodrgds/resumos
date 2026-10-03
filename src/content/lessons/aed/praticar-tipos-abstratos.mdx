@@ -1,72 +1,76 @@
 ---
 title: Praticar tipos abstratos e escolha da representação
-description: Questões originais com pistas, resolução e análise dos erros frequentes.
+description: Escolher uma representação e justificar posse e invalidação de iteradores.
 section: exercicios
 order: 4
 ---
 
 import Exercise from '../../../components/Exercise.astro';
 
+As justificações e os programas em C++ são de autoavaliação. Compara o raciocínio com os critérios da solução.
+
 <Exercise
   id="aed-escolher-lista"
+  revision={2}
   title="Escolher pela operação dominante"
   explanation="/cadeiras/aed/tipos-abstratos/#vetor-ou-nós-ligados"
   answer={{
     kind: 'self',
     checklist: [
-      'Obtive o estado final indicado na resolução.',
-      'Justifiquei as etapas com o invariante ou a condição aplicável.',
-      'Indiquei o custo e as hipóteses quando pedidos.',
+      'Escolhi vector pelo acesso constante por índice.',
+      'Comparei com o percurso O(i+1) da lista.',
+      'Distingui crescimento amortizado de uma realocação e da invalidação.',
     ],
   }}
 >
-  <p>
+  <div>
     Um programa faz um milhão de consultas por índice e poucas inserções no fim.
     Escolhe entre vector e lista simplesmente ligada e compara os custos.
-  </p>
+  </div>
   <div slot="hint">
     <p>Identifica a operação repetida mais vezes.</p>
   </div>
   <div slot="hint-more">
-    <p>
+    <div>
       A lista precisa de percorrer até à posição; o vetor calcula o endereço.
-    </p>
+    </div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Escolhe vector: acesso por índice O(1), acrescentar no fim O(1)
       amortizado. A lista custa O(i+1) por consulta de índice i e pode ter custo
       total muito maior. Se crescer o vetor, trata a invalidação de referências
       e iteradores. A escolha não se altera só porque a lista tem inserção
       constante à frente.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Não omitas o custo de localizar uma posição nem confundas amortizado com
       pior caso de uma inserção.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
   id="aed-copia-nos"
+  revision={2}
   title="Encontrar uma violação de posse"
   explanation="/cadeiras/aed/tipos-abstratos/#memória-cópia-e-iteradores"
   answer={{
     kind: 'self',
     checklist: [
-      'Obtive o estado final indicado na resolução.',
-      'Justifiquei as etapas com o invariante ou a condição aplicável.',
-      'Indiquei o custo e as hipóteses quando pedidos.',
+      'Identifiquei a memória libertada que as duas cópias partilham.',
+      'Expliquei o comportamento indefinido, sem prever uma saída.',
+      'Dei duas políticas de posse que impedem a dupla libertação.',
     ],
   }}
 >
-  <p>
+  <div>
     Uma classe possui uma cadeia de nós e o destrutor apaga todos. A cópia por
     omissão copia apenas o apontador inicial. O que acontece se duas cópias
     saírem do âmbito? Dá duas políticas corretas.
-  </p>
+  </div>
   <div slot="hint">
     <p>Segue a identidade dos nós, não apenas os valores guardados.</p>
   </div>
@@ -74,18 +78,58 @@ import Exercise from '../../../components/Exercise.astro';
     <p>Ambos os destruidores tentariam libertar os mesmos endereços.</p>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       A primeira destruição liberta a cadeia; a segunda percorre memória já
       libertada e pode libertá-la de novo. É comportamento indefinido, não uma
       saída previsível. Podes impedir cópia ou implementar cópia profunda,
       criando uma cadeia independente. Uma transferência de posse também pode
       ser definida, deixando a origem vazia e válida.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Não proponhas retirar o destrutor e deixar fugas; copiar valores para
       novos nós exige tratar também falhas de alocação.
-    </p>
+    </div>
+  </div>
+</Exercise>
+
+<Exercise
+  id="aed-iterador-realocacao"
+  revision={1}
+  title="Guardar uma posição depois de crescer"
+  explanation="/cadeiras/aed/tipos-abstratos/#memória-cópia-e-iteradores"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifiquei a realocação como causa da invalidação.',
+      'Guardei o índice antes da inserção e obtive um iterador novo depois.',
+      'Expliquei por que consultar o iterador antigo não tem resultado garantido.',
+    ],
+  }}
+>
+  <div>
+    Um vetor não vazio tem `size()==capacity()`. Guardas `it=v.begin()` e fazes
+    `v.push_back(8)`, que termina com sucesso. Podes consultar `*it` depois?
+    Como conservar a posição lógica do primeiro elemento sem usar um iterador
+    inválido?
+  </div>
+  <div slot="hint">
+    Sem capacidade livre, o vetor tem de obter outra zona de armazenamento.
+  </div>
+  <div slot="hint-more">
+    Uma posição numérica não aponta para a memória antiga.
+  </div>
+  <div slot="solution">
+    Não podes usar `*it`: aumentar o tamanho para além da capacidade exige
+    realocação e invalida todos os iteradores. Guarda o índice 0 e obtém de novo
+    `v.begin()` depois de inserir. O primeiro valor mantém-se, mas o seu
+    endereço pode mudar. Para uma posição geral num vetor, guarda `it-v.begin()`
+    antes da alteração e recompõe o iterador depois, se a operação preservar a
+    posição lógica.
+  </div>
+  <div slot="mistakes">
+    Guardar um apontador ou referência ao mesmo elemento também não evita a
+    invalidação.
   </div>
 </Exercise>
