@@ -10,7 +10,7 @@ editorial:
     - Os materiais docentes disponíveis são do Moodle de 2025/26; não foi comparado o Moodle de 2026/27.
 ---
 
-Uma aplicação de uma loja precisa de guardar clientes, produtos e encomendas. Se repetir o nome de cada cliente em todas as compras, uma mudança de nome pode deixar dados contraditórios. Se guardar uma lista de produtos numa só célula, perguntar quantos ratos vendeu torna-se difícil. BD ensina a escolher os factos a guardar, a relacioná-los e a formular perguntas sem perder as regras do problema.
+Uma aplicação de uma loja precisa de guardar clientes, produtos e encomendas. Se repetir o nome de cada cliente em todas as compras, uma mudança de nome pode deixar dados contraditórios. Se guardar uma lista de produtos numa só célula, perguntar quantos ratos vendeu torna-se difícil. No fim destas páginas vais saber escolher os factos a guardar, relacioná-los sem repetições e formular essas perguntas em SQL, porque cada tema liga a decisão de desenho ao exemplo resolvido e ao exercício correspondente.
 
 ## Percurso de estudo
 
@@ -42,6 +42,8 @@ Confere a resposta com poucos dados que conheças. Acrescenta um cliente sem com
 
 ## Avaliação
 
+:::details[Ver pesos, mínimos e frequência]
+
 A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990), consultada em 3 de outubro de 2026, indica:
 
 - Projeto: 20%; teste de SQL: 35%; exame: 45%. A nota final é arredondada.
@@ -51,7 +53,11 @@ A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_
 
 Estes pesos diferem dos materiais de 2025/26, que indicavam 20%, 30% e 50%, com mínimos de 7 no teste e no exame. Para a tua inscrição, confirma a ficha e os avisos do Moodle do respetivo ano. Os exercícios destas páginas são originais para treino, não provas oficiais nem uma previsão do exame.
 
+:::
+
 ## Materiais e bibliografia
+
+:::details[Ver base de ensino, fichas e bibliografia]
 
 A base de ensino é o [Moodle de BD de 2025/26](https://moodle2526.up.pt/course/view.php?id=3996): plano de aulas, apresentações teóricas, fichas práticas e respetivas soluções. O plano inclui explicitamente CTEs e recursão, segurança e autorização, além dos tópicos do programa. Alguns ficheiros reutilizados têm anos anteriores no nome ou no conteúdo, em particular a teoria de desenho relacional de 2023/2024 e as fichas DDL de 2023, 2024 e 2025. A sua presença no Moodle de 2025/26 não altera esses anos de origem.
 
@@ -63,3 +69,5 @@ A bibliografia da ficha atual é:
 - Complementar: Raghu Ramakrishnan e Johannes Gehrke, _Database Management Systems_, ISBN 0-07-116898-2, capítulos 18 a 20.
 
 Como apoio, foram consultadas as [apresentações abertas de André Restivo](https://github.com/arestivo/slides), o material SQL adicional do Moodle e a documentação dos motores: [SQLite](https://www.sqlite.org/docs.html), [isolamento em PostgreSQL](https://www.postgresql.org/docs/current/transaction-iso.html), [autorização em PostgreSQL](https://www.postgresql.org/docs/current/ddl-priv.html) e [consultas MongoDB](https://www.mongodb.com/docs/manual/crud/). Estas fontes completam a explicação e esclarecem diferenças entre sistemas; não substituem os materiais docentes.
+
+:::

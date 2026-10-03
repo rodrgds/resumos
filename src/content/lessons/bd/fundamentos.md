@@ -5,7 +5,7 @@ section: conteudo
 order: 1
 ---
 
-Guardar uma encomenda num ficheiro é possível. O problema aparece quando dois programas a alteram ao mesmo tempo, quando uma falha interrompe uma escrita ou quando precisamos de ligar a encomenda a um cliente. Um **sistema de gestão de bases de dados**, ou SGBD, gere os dados e as operações sobre eles. SQLite, PostgreSQL e MongoDB são SGBDs, com modelos e mecanismos diferentes.
+Guardar uma encomenda num ficheiro é possível. O problema aparece quando dois programas a alteram ao mesmo tempo, ou seja, quando uma falha interrompe uma escrita ou quando precisamos de ligar a encomenda a um cliente. Um **sistema de gestão de bases de dados**, ou SGBD, gere os dados e as operações sobre eles. SQLite, PostgreSQL e MongoDB são SGBDs, com modelos e mecanismos diferentes.
 
 ## Dados, esquema e instância
 
@@ -19,7 +19,7 @@ Uma base de dados é a coleção organizada de dados; o SGBD é o software que a
 
 O SGBD mantém dados persistentes, oferece uma linguagem de consulta e verifica as restrições declaradas. Controla acessos concorrentes e recupera após falhas segundo as garantias do motor e da configuração. Pode criar índices e escolher uma forma de executar uma consulta.
 
-A aplicação continua responsável por definir corretamente as regras. Se não declararmos que a quantidade é positiva, o SGBD não deduz essa intenção a partir do nome `qtd`. Se debitarmos dinheiro sem o creditar noutra conta, uma transação isolada pode executar essa operação errada sem interferência. Integridade técnica e correção do domínio exigem um desenho explícito.
+A aplicação continua responsável por definir corretamente as regras. Se não declararmos que a quantidade é positiva, o SGBD não deduz essa intenção a partir do nome `qtd`, porque o nome não é uma restrição. Se debitarmos dinheiro sem o creditar noutra conta, uma transação isolada pode executar essa operação errada sem interferência, por isso integridade técnica e correção do domínio exigem um desenho explícito.
 
 ## Três níveis de desenho
 
@@ -41,6 +41,6 @@ O nome "relacional" vem destas relações matemáticas, não da simples existên
 
 ## Uma pergunta e duas decisões
 
-Queremos os clientes que compraram um rato. O resultado deve ter uma linha por cliente, mesmo que tenha comprado o produto em várias encomendas. Precisamos de percorrer `Cliente → Encomenda → Item → Produto` e de eliminar repetições de clientes na resposta.
+Queremos os clientes que compraram um rato. O resultado deve ter uma linha por cliente, mesmo que tenha comprado o produto em várias encomendas, por isso precisamos de percorrer `Cliente → Encomenda → Item → Produto` e de eliminar repetições de clientes na resposta.
 
 O preço atual do rato não é necessário para esta pergunta. A forma física de guardar as tabelas também não deve mudar o seu significado. Primeiro definimos a pergunta e as relações relevantes; a consulta e o plano físico vêm depois.
