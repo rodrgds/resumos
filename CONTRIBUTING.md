@@ -116,7 +116,7 @@ Na autoavaliação, o leitor compara com a solução e indica se está certo ou 
 </Exercise>
 ```
 
-Cada teste tem `name` e `output`; `input` e `code` são opcionais. `code` executa depois da resposta. Compara-se toda a saída padrão e exige-se código de saída zero. Só se normalizam CRLF e quebras de linha finais. Prefere imprimir o valor devolvido a imprimir uma comparação que só dá `True` ou `False`. Para strings e estruturas Python, `repr` distingue os tipos. O leitor vê o teste executado, a entrada fornecida e a saída esperada; se falhar, vê também a saída obtida e o erro. Os casos ajudam a aprender, não provam correção nem impedem fraude.
+Cada teste tem `name` e `output`; `input` e `code` são opcionais. `code` executa depois da resposta. Compara-se toda a saída padrão e exige-se código de saída zero. Só se normalizam CRLF e quebras de linha finais. Prefere imprimir o valor devolvido a imprimir uma comparação que só dá `True` ou `False`. Para strings e estruturas Python, `repr` distingue os tipos. O leitor vê o teste executado, a entrada fornecida e a saída esperada; se falhar, vê também a saída obtida e o erro. Se o motor falhar, o erro aparece sem substituir o resultado guardado. Os casos ajudam a aprender, não provam correção nem impedem fraude.
 
 ## Escolher um formato
 
