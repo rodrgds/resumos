@@ -183,6 +183,13 @@ export function preparePrintContent(html: string) {
         const href = child.attrs.find((item) => item.name === 'href');
         if (href?.value.startsWith('#'))
           href.value = '#' + namespace + href.value.slice(1);
+        // SVG arrows, clipping and paint servers reference the same renamed ids.
+        if (child.namespaceURI === 'http://www.w3.org/2000/svg')
+          for (const attribute of child.attrs)
+            attribute.value = attribute.value.replace(
+              /url\(\s*(['"]?)#([^)'"\s]+)\1\s*\)/g,
+              (_, quote, value) => `url(${quote}#${namespace}${value}${quote})`,
+            );
         for (const reference of child.attrs.filter((item) =>
           ['aria-labelledby', 'aria-describedby', 'for'].includes(item.name),
         )) {

@@ -1,5 +1,31 @@
 import { expect, test } from '@playwright/test';
 
+test('printed Mermaid diagrams retain their arrowheads', async ({ page }) => {
+  await page.goto('/exemplo/diagramas/');
+  await page.evaluate(() => {
+    window.print = () => {};
+  });
+  await page.getByRole('button', { name: 'Imprimir', exact: true }).click();
+  await page.emulateMedia({ media: 'print' });
+  const figure = page.locator('[data-print-page] .mermaid-figure');
+  await expect(figure).toBeVisible();
+  const references = await figure.evaluate((element) => {
+    const arrows = Array.from(element.querySelectorAll('[marker-end]'));
+    return arrows.map((arrow) => {
+      const id = arrow.getAttribute('marker-end')!.match(/url\(#([^)]*)\)/)![1];
+      const marker = element.querySelector(`[id="${id}"]`);
+      return {
+        resolves: marker?.tagName === 'marker',
+        visible: !!marker?.querySelector('path'),
+      };
+    });
+  });
+  expect(references).toHaveLength(2);
+  expect(references.every(({ resolves, visible }) => resolves && visible)).toBe(
+    true,
+  );
+});
+
 test('printed lessons retain video thumbnails after they load', async ({
   page,
 }) => {

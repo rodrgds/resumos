@@ -10,6 +10,6 @@ curl --fail --location --retry 3 "https://github.com/typst/typst/releases/downlo
 printf '%s  %s\n' "$TYPST_SHA256" "$build_tools/typst.tar.xz" | sha256sum --check
 tar -xJf "$build_tools/typst.tar.xz" -C "$build_tools"
 export PATH="$build_tools/typst-x86_64-unknown-linux-musl:$PATH"
-npm ci
+PUPPETEER_SKIP_DOWNLOAD=1 npm ci
 npm run check
 npm run build
