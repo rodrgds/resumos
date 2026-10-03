@@ -48,9 +48,7 @@ Os editores HTML/CSS/JavaScript executam numa pré-visualização isolada sem re
 
 Para uma aplicação com vários ficheiros, instala o ambiente indicado na aula, cria a base de dados a partir do script SQL e corre `php -S localhost:8000` na pasta pública do projeto. Abre `http://localhost:8000/`; abrir o ficheiro PHP diretamente não o executa. Este servidor serve para desenvolvimento local.
 
-## Avaliação de 2025/26
-
-:::details[Ver regras de 2025/26]
+:::details[Avaliação de 2025/26]
 A [ficha de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104) define 50% de exame e 50% de trabalho, com mínimo de 8/20 no exame. Frequência exige participar e entregar o projeto, sem ultrapassar 25% de faltas às práticas e teórico-práticas. A entrega antecede a apresentação na última semana de aulas.
 
 Quem conserva a frequência anterior informa o responsável na primeira semana e não se inscreve nas turmas TP. Trabalhadores-estudantes cumprem os mesmos prazos e combinam apresentações intermédias. O exame pode melhorar no recurso da mesma edição; o projeto não. Melhorar um projeto de uma edição anterior já aprovada exige frequentar novamente a UC.
@@ -58,9 +56,7 @@ Quem conserva a frequência anterior informa o responsável na primeira semana e
 A [página do docente](https://pages.up.pt/~up353972/page/courses/ltw/) divide os 50% de projeto em 10% e 40%. Os detalhes protegidos de exame, projeto e algumas soluções não estavam disponíveis nesta revisão. Confirma formatos, datas, recursos permitidos e regras de 2026/27 no Moodle e na ficha dessa edição. Estes apontamentos não garantem uma classificação nem substituem esses materiais.
 :::
 
-## Materiais e bibliografia
-
-:::details[Ver fontes e âmbito]
+:::details[Materiais e bibliografia]
 O [Moodle de 2025/26](https://moodle2526.up.pt/course/view.php?id=4015) remete para a página de André Restivo, com slides e propostas práticas. Os slides nem sempre identificam o ano de produção. XML e XPath mantêm-se no percurso porque constam da ficha de 2025/26, embora não apareçam no calendário público mais recente do docente. As explicações e soluções destas páginas foram escritas de novo.
 
 - [Slides e exercícios de André Restivo](https://pages.up.pt/~up353972/page/courses/ltw/). Segue a sequência de aulas e consulta o enunciado original de cada prática.
@@ -72,16 +68,14 @@ O [Moodle de 2025/26](https://moodle2526.up.pt/course/view.php?id=4015) remete p
 Os três livros constam da bibliografia da ficha. As regras normativas de HTTP/1.1 e JSON estão nas [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html) e [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html). Para XML e XPath, consulta as normas [XML 1.0](https://www.w3.org/TR/xml/) e [XPath 1.0](https://www.w3.org/TR/1999/REC-xpath-19991116/). Para pormenores atuais de APIs, consulta [MDN Web Docs](https://developer.mozilla.org/), [manual do PHP](https://www.php.net/manual/en/) e [SQLite](https://www.sqlite.org/docs.html). Para os contextos de saída e defesas de segurança, consulta as cheat sheets da OWASP sobre [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html), [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) e [palavras-passe](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
 :::
 
-## Vídeos para rever
+:::details[Vídeos para rever]
 
-:::details[Ver vídeos recomendados]
-
-- [HTML in 100 Seconds](https://www.youtube.com/watch?v=ok-plXXHlWw). Revê a distinção entre estrutura e apresentação; depois escolhe os elementos para uma página sem CSS.
-- [Hyper Text Transfer Protocol Crash Course](https://www.youtube.com/watch?v=0OrmKCB0UrQ). Segue uma mensagem HTTP e distingue linha inicial, cabeçalhos e corpo.
-- [RESTful APIs in 100 Seconds](https://www.youtube.com/watch?v=-MTSQjw5DrM). Relaciona recursos e métodos; verifica por que JSON, por si, não define REST.
-- [Hacking Websites with SQL Injection](https://www.youtube.com/watch?v=_jKylhJtPmI). Identifica o ponto onde a entrada muda a sintaxe SQL e reescreve-o com marcadores.
-- [JavaScript in 100 Seconds](https://www.youtube.com/watch?v=DHjqpvDnNGE). Usa como panorama da linguagem, depois segue as variáveis nos exemplos de closures e eventos.
-- [Learn Regular Expressions In 20 Minutes](https://www.youtube.com/watch?v=rhzKDrUiJVk). Observa classes, grupos e quantificadores; pausa para prever a correspondência antes de a veres.
+- [Escolher elementos sem CSS](/cadeiras/ltw/html-estrutura/#escolher-a-etiqueta). Panorama de HTML para rever estrutura e apresentação antes de escolheres os elementos.
+- [Ler mensagens HTTP](/cadeiras/ltw/http-ajax-json/#ler-mensagens). Segue uma mensagem e distingue linha inicial, cabeçalhos e corpo.
+- [Recursos e métodos](/cadeiras/ltw/http-ajax-json/#métodos-segurança-e-idempotência). Relaciona recursos e métodos e verifica por que JSON, por si, não define REST.
+- [Injeção SQL](/cadeiras/ltw/seguranca-web/#injeção-sql). Vê onde a entrada muda a sintaxe e como os marcadores a impedem.
+- [Closures e eventos](/cadeiras/ltw/javascript-dom-eventos/#âmbito-e-closures). Panorama da linguagem antes de seguires variáveis em closures e eventos.
+- [Peças de um padrão](/cadeiras/ltw/expressoes-regulares/#peças-e-precedência). Observa classes, grupos e quantificadores e prevê a correspondência.
 
 Os vídeos são complementos. O programa e as regras de avaliação vêm da FEUP.
 :::
