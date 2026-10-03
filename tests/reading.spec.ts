@@ -76,6 +76,57 @@ test.describe('course diagrams without JavaScript', () => {
     for (const size of sizes) expect(size).toBeGreaterThanOrEqual(12);
   });
 
+  test('multicycle datapath labels remain legible with keyboard scrolling on a narrow screen', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.goto('/cadeiras/fsc/cpu-multiciclo/');
+    const datapath = page.getByRole('img', {
+      name: /Datapath multiciclo/,
+    });
+    const sizes = await datapath.locator('svg text').evaluateAll((labels) =>
+      labels.map((label) => {
+        const matrix = (label as SVGTextElement).getScreenCTM()!;
+        return (
+          Number.parseFloat(getComputedStyle(label).fontSize) *
+          Math.hypot(matrix.a, matrix.b)
+        );
+      }),
+    );
+    expect(sizes.length).toBeGreaterThan(0);
+    for (const size of sizes) expect(size).toBeGreaterThanOrEqual(12);
+    await expect(datapath).toHaveAttribute('tabindex', '0');
+    expect(
+      await datapath.evaluate((node) => node.scrollWidth > node.clientWidth),
+    ).toBe(true);
+    await datapath.focus();
+    await expect(datapath).toBeFocused();
+    for (let i = 0; i < 120; i++) {
+      const atEnd = await datapath.evaluate(
+        (node) => node.scrollLeft + node.clientWidth >= node.scrollWidth - 1,
+      );
+      if (atEnd) break;
+      await page.keyboard.press('ArrowRight');
+    }
+    await expect
+      .poll(() =>
+        datapath.evaluate(
+          (node) => node.scrollLeft + node.clientWidth >= node.scrollWidth - 1,
+        ),
+      )
+      .toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 844 });
+    await page.emulateMedia({ media: 'print' });
+    expect(
+      await datapath.evaluate((node) => node.scrollWidth <= node.clientWidth),
+    ).toBe(true);
+  });
+
   test('matrix demo renders the initial transformed square', async ({
     page,
   }) => {
