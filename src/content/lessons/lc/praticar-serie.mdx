@@ -8,14 +8,15 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-taxa-util"
+  revision={2}
   title="Contar bits por carácter"
   explanation="/cadeiras/lc/relogio-serie/#comunicação-assíncrona"
-  answer={{ kind: 'number', value: 1920, tolerance: 0, unit: 'bytes/s' }}
+  answer={{ kind: 'number', value: 1920, tolerance: 0, unit: 'caracteres/s' }}
 >
-  <p>
+  <div>
     Uma UART usa 19200 bit/s em 7E1. Qual é a taxa máxima ideal de caracteres de
     dados por segundo, sem pausas?
-  </p>
+  </div>
   <div slot="hint">Inclui start, dados, paridade e stop.</div>
   <div slot="hint-more">Um carácter ocupa 1 + 7 + 1 + 1 bits.</div>
   <div slot="solution">
@@ -31,6 +32,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-dlab-alias"
+  revision={1}
   title="Escrever no registo certo"
   explanation="/cadeiras/lc/relogio-serie/#lcr-e-divisor"
   answer={{
@@ -42,10 +44,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     COM1 tem LCR = 0x83. O programa escreve 0x41 em 0x3F8 esperando enviar a
     letra A. O que alterou e o que devia fazer?
-  </p>
+  </div>
   <div slot="hint">0x83 tem bit 7 ativo.</div>
   <div slot="hint-more">Com DLAB, o offset 0 deixa de ser THR.</div>
   <div slot="solution">
@@ -62,14 +64,15 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-iir-ativo-baixo"
+  revision={1}
   title="Decidir se existe uma causa"
   explanation="/cadeiras/lc/relogio-serie/#ier-e-iir"
   answer={{ kind: 'number', value: 1, tolerance: 0 }}
 >
-  <p>
+  <div>
     Lês IIR = 0xC1. Responde 1 se não há interrupção pendente ou 0 se há uma
     causa que deve ser despachada agora.
-  </p>
+  </div>
   <div slot="hint">Os bits superiores podem indicar estado da FIFO.</div>
   <div slot="hint-more">O bit 0 tem a regra de pendência ativa a zero.</div>
   <div slot="solution">
@@ -80,5 +83,41 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Usar if (iir &amp; 1) para entrar no despacho de causas ou confundir o
     estado de FIFO com a pendência.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-fifo-atraso"
+  revision={1}
+  title="Estimar quando se perdem dados"
+  explanation="/cadeiras/lc/relogio-serie/#fifo-e-fila-da-aplicação"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Contei 23 caracteres completos.',
+      'Comparei com capacidade 16.',
+      'Localizei perda antes de 2 ms e distingui FIFO de fila.',
+    ],
+  }}
+>
+  <div>
+    Uma FIFO de receção de 16 bytes começa vazia. A UART recebe sem pausas a
+    115200 bit/s em 8N1. Durante 2 ms o programa não retira nenhum byte. A FIFO
+    chega para evitar overrun? Ignora outros buffers e assume que o primeiro
+    start bit começa no início desse intervalo.
+  </div>
+  <div slot="hint">Cada carácter ocupa dez bits.</div>
+  <div slot="hint-more">
+    Em 2 ms há tempo para completar floor(0,002 × 115200 / 10) caracteres.
+  </div>
+  <div slot="solution">
+    Completam-se 23 caracteres em 2 ms, mas só cabem 16. O décimo sétimo termina
+    após 170/115200 s, cerca de 1,476 ms. Se nenhum byte sair da FIFO, já ocorre
+    overrun antes dos 2 ms. Uma fila de software só ajuda quando o handler corre
+    e transfere os bytes para ela.
+  </div>
+  <div slot="mistakes">
+    Contar capacidade da fila de software como se o hardware a preenchesse
+    sozinho, ou dividir por oito em 8N1.
   </div>
 </Exercise>
