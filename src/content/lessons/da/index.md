@@ -14,7 +14,7 @@ editorial:
     - A ficha de 2026/27 ainda não permite confirmar o programa nem a avaliação dessa edição.
 ---
 
-DA parte das estruturas de dados e da análise de algoritmos de AED. O trabalho aqui é escolher uma estratégia, mostrar que ela resolve o problema e perceber o custo dessa escolha. Uma implementação que parece funcionar num exemplo ainda precisa de uma prova e de casos que testem as suas condições.
+No fim desta cadeira consegues escolher uma estratégia para cada problema, porque sabes provar que ela resolve o problema e contar o seu custo. DA parte das estruturas de dados e da análise de algoritmos de AED para chegar aí, ou seja cada lição mostra a técnica, um exemplo resolvido e exercícios para praticar. Uma implementação que parece funcionar num exemplo ainda precisa de uma prova e de casos que testem as suas condições.
 
 ## Percurso
 
@@ -37,26 +37,33 @@ Os programas executáveis usam C++ com entrada pela consola e não precisam de f
 
 ## Edição e avaliação
 
+:::details[Ver edição e avaliação de 2025/26]
 A base destas páginas é o Moodle de **2025/26**, com apresentações teóricas, fichas TP de Spring 2026, enunciados dos dois projetos e testes com soluções. A ficha SIGARRA dessa edição atribui 70% aos dois testes e 30% aos dois projetos:
 
 $$NF=0{,}35(T_1+T_2)+0{,}15(P_1+P_2).$$
 
-Cada componente exige pelo menos 8 valores. Os projetos são feitos em grupos de dois ou três e têm demonstração obrigatória. A ficha prevê recurso global para a componente escrita. Estas regras descrevem 2025/26; confirma as regras da tua edição antes de planear a avaliação.
+Cada componente exige pelo menos 8 valores. Os projetos são feitos em grupos de dois ou três e têm demonstração obrigatória. A ficha prevê recurso global para a componente escrita. Estas regras descrevem 2025/26, por isso confirma as regras da tua edição antes de planear a avaliação.
 
 O primeiro projeto de 2025/26 trata a atribuição de revisores a artigos através de fluxo máximo. O segundo fornece intervalos de vivacidade para construir webs e um grafo de interferências, usado na alocação de registos de um compilador. Inclui coloração, transferência de webs para memória e divisão de webs. As lições explicam os modelos e os algoritmos, mas não substituem os formatos de entrada, critérios de entrega ou decisões específicas desses enunciados.
+:::
 
 ## Fontes
+
+:::details[Ver fontes e âmbito]
 
 - [Ficha SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560101), programa, bibliografia e avaliação.
 - [Moodle de DA 2025/26](https://moodle2526.up.pt/course/view.php?id=5334), requer autenticação. Foram consultadas as apresentações das aulas 1 a 10, as fichas TP1 a TP10, os projetos e os testes de 2026. As apresentações identificam Pedro C. Diniz e copyright de 2026. Os exemplos e as resoluções destas páginas foram escritos de novo.
 - Thomas H. Cormen e outros, _Introduction to Algorithms_, bibliografia obrigatória indicada na ficha. É a referência para as provas de grafos, programação dinâmica, reduções e otimização.
 
 O arquivo do Moodle inclui vídeos de apoio, mas a revisão destas páginas assenta nos documentos escritos. Não se presume que todos os vídeos foram vistos. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586994) ainda não tem informação suficiente para confirmar a equivalência do programa ou da avaliação.
+:::
 
 ## Vídeos para dúvidas concretas
 
+:::details[Ver vídeos para dúvidas concretas]
 Estes vídeos em inglês são complementos do MIT OpenCourseWare. As ligações e os temas foram conferidos nas páginas oficiais; não substituem os materiais da FEUP nem pressupõem que o vídeo inteiro foi visto.
 
 - [Gulosos e árvores abrangentes, aula 16 de 6.046J, 2005](https://ocw.mit.edu/courses/6-046j-introduction-to-algorithms-sma-5503-fall-2005/resources/lecture-16-greedy-algorithms-minimum-spanning-trees/). Para perceber por que uma escolha local pode ser segura, acompanha a troca de arestas na prova da MST e distingue a escolha do algoritmo da prova.
 - [Programação dinâmica, Fibonacci e caminhos mínimos, aula 19 de 6.006, 2011](https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/resources/lecture-19-dynamic-programming-i-fibonacci-shortest-paths/). Para passar de recursão repetida a estados guardados, identifica o significado de cada subproblema e conta os estados distintos, em vez das chamadas repetidas.
 - [Fluxo máximo e corte mínimo, aula 13 de 6.046J, 2015](https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/resources/lecture-13-incremental-improvement-max-flow-min-cut/). Para relacionar a execução com o certificado de otimalidade, observa o papel da rede residual e como um corte limita o valor de qualquer fluxo.
+  :::

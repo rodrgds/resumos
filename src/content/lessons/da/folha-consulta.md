@@ -6,7 +6,7 @@ studyKind: revision
 order: 1
 ---
 
-Nesta folha, $n=|V|$ e $m=|E|$ para grafos; noutras entradas, $n$ é o número de elementos. Os custos de grafos assumem listas de adjacência, salvo indicação. Consulta a explicação ligada quando precisares de derivar uma fórmula ou reconstruir uma solução.
+Nesta folha, $n=|V|$ e $m=|E|$ para grafos; noutras entradas, $n$ é o número de elementos. Os custos de grafos assumem listas de adjacência, salvo indicação. Segue a ligação quando precisares de derivar uma fórmula ou reconstruir uma solução.
 
 ## Escolher um algoritmo de grafos
 
