@@ -11,6 +11,16 @@ const labels = {
 
 export default function remarkContainers() {
   return (tree, file) => {
+    // Colons in times, bit ranges and language syntax are literal text.
+    visit(tree, 'textDirective', (node, index, parent) => {
+      parent.children[index] = {
+        type: 'text',
+        value: file
+          .toString()
+          .slice(node.position.start.offset, node.position.end.offset),
+        position: node.position,
+      };
+    });
     visit(tree, 'containerDirective', (node) => {
       if (!(node.name in labels))
         file.fail(`Container desconhecido: ${node.name}`, node);

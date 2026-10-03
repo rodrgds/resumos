@@ -68,6 +68,8 @@ Cada questão precisa de um `id` único na cadeira, uma ligação à explicaçã
 
 Em MDX, o Markdown cria os parágrafos dentro de componentes. Para texto em várias linhas, usa Markdown ou um `div`, não um `p` a envolver outro parágrafo. Um `p` com texto todo na mesma linha, como nos exemplos acima, continua válido.
 
+As diretivas documentadas usam blocos. Os dois pontos dentro do texto, como em `HH:MM`, `imm[11:5]` ou `ns:livro`, conservam-se como texto literal em Markdown e MDX.
+
 | Tipo     | Quando usar                                           | Campos                                                    |
 | -------- | ----------------------------------------------------- | --------------------------------------------------------- |
 | `number` | Valor verificável; indica unidades e arredondamento   | `value`, tolerância absoluta `tolerance`, `unit` opcional |
