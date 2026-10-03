@@ -33,7 +33,7 @@ Esta separação permite **independência dos dados**. A independência física 
 
 ## O modelo relacional
 
-Uma **relação** tem um conjunto de atributos e um conjunto de tuplos. Num esquema `Cliente(id, nome, email)`, cada tuplo associa um valor a cada atributo. O **domínio** de um atributo define os valores admissíveis, por exemplo inteiros positivos ou texto.
+Uma **relação** tem um conjunto de atributos e um conjunto de tuplos. Num esquema `Cliente(id, nome, email)`, cada tuplo associa um valor a cada atributo. O **domínio** de um atributo define os valores admissíveis, por exemplo inteiros positivos ou texto. A **aridade** é o número de atributos; a **cardinalidade** é o número de tuplos da instância. Cliente tem aridade 3, mesmo vazia. Inserir um cliente aumenta a cardinalidade, sem mudar a aridade.
 
 Na teoria relacional, não há tuplos duplicados e a ordem dos tuplos não faz parte da relação. Duas apresentações com linhas em ordens diferentes representam o mesmo conjunto. Em SQL, os resultados admitem duplicados por omissão e só `ORDER BY` garante uma ordem. Esta diferença vai importar nas projeções, junções e contagens.
 

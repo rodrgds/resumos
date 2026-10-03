@@ -42,7 +42,7 @@ Confere a resposta com poucos dados que conheças. Acrescenta um cliente sem com
 
 ## Avaliação
 
-A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990), consultada em 2 de outubro de 2026, indica:
+A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990), consultada em 3 de outubro de 2026, indica:
 
 - Projeto: 20%; teste de SQL: 35%; exame: 45%. A nota final é arredondada.
 - Mínimo de 8 valores em 20 no exame.

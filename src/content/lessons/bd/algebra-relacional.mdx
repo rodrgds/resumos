@@ -39,6 +39,20 @@ Na loja, `Cliente(id,nome,email)` e `Encomenda(id,data,idCliente)` têm `id` em 
 
 A junção natural de `R(A,B)` com `S(B,C)` liga pelo B. A de `R(A,B)` com `T(C,D)` produz todas as combinações, porque não há nomes comuns.
 
+## Semijunção e agregação
+
+A **semijunção** $R\ltimes S$ conserva apenas os tuplos de R com alguma correspondência em S. Não acrescenta as colunas de S. Na álgebra de conjuntos, podemos escrevê-la como $\pi_{atributos(R)}(R\bowtie S)$.
+
+Na loja, $Cliente\ltimes_{Cliente.id=Encomenda.idCliente}Encomenda$ dá Ana e Rui, uma vez cada, com os atributos de Cliente. Mia fica de fora. Ana ter duas encomendas não cria duas cópias da cliente. Em SQL, um `EXISTS` sobre Cliente exprime este teste; uma junção seguida de projeção sem `DISTINCT` pode manter repetições.
+
+Contar ou somar exige uma **extensão** da álgebra clássica. Aqui usamos $\gamma$ para agrupamento e agregação. Os slides também apresentam agregações como uma extensão de $\pi$; identifica sempre a convenção usada.
+
+$$
+\gamma_{idCliente;\,\operatorname{count}(*)\to n}(Encomenda)
+$$
+
+Agrupamos pelo cliente e chamamos n à contagem. Obtemos $(1,2)$ e $(2,1)$: duas encomendas para Ana e uma para Rui. Mia não aparece, porque não há tuplos seus em Encomenda. Para mostrar também clientes com zero, é preciso conservar o universo Cliente, como na [junção externa em SQL](/cadeiras/bd/sql-consultas/#junções-externas-e-clientes-sem-compras).
+
 ## União, diferença e interseção
 
 $R\cup S$ contém os tuplos que estão em pelo menos um lado; $R\cap S$, os que estão nos dois; $R-S$, os que estão em R e não em S. Os esquemas têm de ser compatíveis: mesmos atributos, com domínios correspondentes. Renomeia ou projeta antes da operação se necessário.
@@ -66,7 +80,7 @@ $$
 <Typst
   source={pipeline}
   format="svg"
-  alt="Encomenda passa por seleção da data, junção explícita com Cliente e projeção do nome, dando Ana."
+  alt="Encomenda passa por seleção da data, junção pelo idCliente com Cliente renomeado para C e projeção do nome, dando Ana."
 />
 
 A seleção deixa a encomenda 100, do cliente 1. A junção acrescenta Ana. A projeção devolve o conjunto com um tuplo, Ana. Se Ana tivesse duas encomendas nesse dia, a projeção continuaria a mostrá-la uma vez. Se duas pessoas diferentes chamadas Ana satisfizessem a condição, a projeção apenas do nome também as fundiria. Para identificar pessoas, conserva o id.
