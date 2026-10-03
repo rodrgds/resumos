@@ -14,7 +14,7 @@ Trabalhamos sobre $\mathbb R$. $A$ tem $m$ linhas e $n$ colunas; $r=\operatornam
 
 ## Matrizes e determinantes
 
-$(m\times n)(n\times p)=m\times p$. $(AB)^T=B^TA^T$. Se as inversas existirem, $(AB)^{-1}=B^{-1}A^{-1}$. $AXB=C\Rightarrow X=A^{-1}CB^{-1}$.
+$(m\times n)(n\times p)=m\times p$. $(AB)^T=B^TA^T$. Se as inversas existirem, $(AB)^{-1}=B^{-1}A^{-1}$. Se $A,B$ são invertíveis, $AXB=C\Rightarrow X=A^{-1}CB^{-1}$.
 
 $$
 \det\begin{bmatrix}a&b\\c&d\end{bmatrix}=ad-bc,\qquad
@@ -29,7 +29,7 @@ $C_{ij}=(-1)^{i+j}\det M_{ij}$; Laplace: $\det A=\sum_j a_{ij}C_{ij}$. $\operato
 | Multiplicar uma linha por $k$          | Multiplica por $k$     |
 | Somar a uma linha um múltiplo de outra | Mantém                 |
 
-Triangular: produto da diagonal. $\det(AB)=\det A\det B$, $\det(A^T)=\det A$, $\det(kA)=k^n\det A$. Sarrus só em $3\times3$. Área: $|\det[u\ v]|$; volume: $|\det[u\ v\ w]|$. [Explicação](../determinantes/).
+Para matrizes quadradas da mesma ordem $n$: triangular, produto da diagonal. $\det(AB)=\det A\det B$, $\det(A^T)=\det A$, $\det(kA)=k^n\det A$. Sarrus só em $3\times3$. Área: $|\det[u\ v]|$; volume: $|\det[u\ v\ w]|$. [Explicação](/cadeiras/alga/determinantes/).
 
 ## Sistemas e bases
 
@@ -41,7 +41,7 @@ Gauss atua em **toda** a ampliada. Pivôs não precisam de ser 1. Nunca divides 
 | $r=\operatorname{car}[A\mid b]=n$ | Uma solução                 |
 | $r=\operatorname{car}[A\mid b]<n$ | Infinitas, $n-r$ parâmetros |
 
-$Ax=0$: sempre possível. $[A\mid I]\to[I\mid A^{-1}]$ se $A$ invertível. Cramer exige $A$ quadrada e $\det A\ne0$: $x_i=\det A_i/\det A$. [Gauss](../sistemas-lineares/).
+$Ax=0$: sempre possível. $[A\mid I]\to[I\mid A^{-1}]$ se $A$ invertível. Cramer exige $A$ quadrada e $\det A\ne0$: $x_i=\det A_i/\det A$. [Gauss](/cadeiras/alga/sistemas-lineares/).
 
 Subespaço: contém 0, fechado para soma e escalares. Geradores em colunas: base nas **colunas originais com pivô**, dimensão $r$. Equações homogéneas: parametrizar, dimensão $n-r$. Independência: $Ac=0$ só tem $c=0$.
 
@@ -50,7 +50,7 @@ $$
 U\oplus V\iff U\cap V=\{0\}.
 $$
 
-Para completar uma base, acrescenta vetores fora do espaço já gerado. [Bases](../espacos-vetoriais/).
+Para completar uma base, acrescenta vetores fora do espaço já gerado. [Bases](/cadeiras/alga/espacos-vetoriais/).
 
 ## Produtos e ortogonalidade
 
@@ -66,7 +66,7 @@ $$
 u_j=v_j-\sum_{i<j}\frac{v_j\cdot u_i}{u_i\cdot u_i}u_i.
 $$
 
-Gram-Schmidt usa os $u_i$ anteriores; normaliza no fim. Base ortogonal de $W$: soma das projeções; erro em $W^\perp$. $\dim W+\dim W^\perp=n$. [Ortogonalidade](../ortogonalidade/).
+Gram-Schmidt usa os $u_i$ anteriores não nulos; normaliza no fim. Se produzir zero, retira esse vetor. Base ortogonal de $W$: soma das projeções; erro em $W^\perp$. $\dim W+\dim W^\perp=n$. [Ortogonalidade](/cadeiras/alga/ortogonalidade/).
 
 ## Retas e planos
 
@@ -81,24 +81,24 @@ Pé na reta $Q+td$: $H=Q+((P-Q)\cdot d)/(d\cdot d)\,d$. Distância: $\|P-H\|$.
 
 Retas de direções independentes: concorrentes se $(Q-P)\cdot(d_1\times d_2)=0$, enviesadas caso contrário. Distância: módulo desse misto dividido por $\|d_1\times d_2\|$. Direções paralelas exigem a fórmula ponto-reta.
 
-Ângulo mínimo entre retas: $|d_1\cdot d_2|/(\|d_1\|\|d_2\|)$ é o cosseno; entre planos, usa normais; reta-plano, $|d\cdot n|/(\|d\|\|n\|)$ é o **seno**. [Geometria](../retas-planos/).
+Ângulo mínimo entre retas: $|d_1\cdot d_2|/(\|d_1\|\|d_2\|)$ é o cosseno; entre planos, usa normais; reta-plano, $|d\cdot n|/(\|d\|\|n\|)$ é o **seno**. [Geometria](/cadeiras/alga/retas-planos/).
 
 ## Aplicações, coordenadas e valores próprios
 
-Linear: $T(au+bv)=aT(u)+bT(v)$. $T(0)=0$ é necessário, não suficiente. $\ker T$: resolver $Ax=0$; imagem: base nas colunas originais com pivô. $n=\dim\ker T+\dim\operatorname{Im}T$. Injetiva: núcleo nulo; sobrejetiva: característica $m$. Composição $S\circ T$: $BA$, com bases intermédias compatíveis.
+Linear: $T(au+bv)=aT(u)+bT(v)$. $T(0)=0$ é necessário, não suficiente. $\ker T$: resolver $Ax=0$; imagem: base nas colunas originais com pivô. $T:\mathbb R^n\to\mathbb R^m$: $n=\dim\ker T+\dim\operatorname{Im}T$. Injetiva: núcleo nulo; sobrejetiva: característica $m$. Composição $S\circ T$: $BA$, com bases intermédias compatíveis.
 
 $$
 v=P_B[v]_B,\quad [v]_C=P_C^{-1}P_B[v]_B,\quad
 [T]_{C\leftarrow B}=P_C^{-1}AP_B.
 $$
 
-Mesma base no domínio e chegada de um endomorfismo: $A_{\mathrm{novo}}=P^{-1}AP$. [Mudanças de base](../mudanca-de-base/).
+Mesma base no domínio e chegada de um endomorfismo: $A_{\mathrm{novo}}=P^{-1}AP$. [Mudanças de base](/cadeiras/alga/mudanca-de-base/).
 
 $$
 p_A(\lambda)=\det(A-\lambda I),\quad E_\lambda=\ker(A-\lambda I),\quad
 AP=PD,\quad A^k=PD^kP^{-1}.
 $$
 
-Vetor próprio **não nulo**. Constante de $p_A$: $\det A$; coeficiente dominante: $(-1)^n$. Diagonaliza em $\mathbb R$ se houver $n$ vetores próprios reais independentes. Para cada raiz: $1\leq m_g\leq m_a$; exige $m_g=m_a$ e todas as raízes reais. Valores distintos bastam, mas não são necessários. [Diagonalização](../valores-proprios/).
+Vetor próprio **não nulo**; $P$ invertível com colunas próprias na ordem de $D$. Potências: $k$ inteiro não negativo, ou negativo se $A$ invertível. Constante de $p_A$: $\det A$; coeficiente dominante: $(-1)^n$. Diagonaliza em $\mathbb R$ se houver $n$ vetores próprios reais independentes. Para cada raiz: $1\leq m_g\leq m_a$; exige $m_g=m_a$ e todas as raízes reais. Valores distintos bastam, mas não são necessários. [Diagonalização](/cadeiras/alga/valores-proprios/).
 
-Simétrica: $Q^TAQ=D$, com $Q$ ortogonal. Forma quadrática $X^TAX+\ell^TX+k=0$: metade do coeficiente cruzado fora da diagonal; centro resolve $2Ah+\ell=0$; diagonaliza ortogonalmente e analisa também termos lineares e constante. [Cónicas e quádricas](../conicas-quadricas/).
+Simétrica: $Q^TAQ=D$, com $Q$ ortogonal. Forma quadrática $X^TAX+\ell^TX+k=0$: metade do coeficiente cruzado fora da diagonal; centro resolve $2Ah+\ell=0$; diagonaliza ortogonalmente e analisa também termos lineares e constante. [Cónicas e quádricas](/cadeiras/alga/conicas-quadricas/).
