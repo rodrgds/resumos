@@ -25,30 +25,32 @@ editorial:
 
 import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
+import Mermaid from '../../../components/Mermaid.astro';
 import rede from '../../fsi/rede-segura.dot?raw';
+import tcp from '../../fsi/tcp-normal.mmd?raw';
 
-Depois de fechar vulnerabilidades no código, esta página responde a esta pergunta: como protegemos mensagens quando o caminho entre quem envia e quem recebe não é confiável?
+Quando o caminho entre quem envia e quem recebe não é confiável, precisamos de proteger mensagens contra observação, alteração e esgotamento de recursos.
 
-Uma rede transporta mensagens entre entidades, ou seja pessoas, contas ou processos que comunicam, que podem não confiar umas nas outras. Conforme a sua posição, um atacante pode observar tráfego, modificar o caminho ou esgotar recursos, por isso numa resposta distingue um atacante no caminho, na rede local ou apenas remoto.
+Uma rede transporta mensagens entre entidades. Uma entidade pode ser uma pessoa, conta ou processo. Essas entidades podem não confiar umas nas outras. Conforme a sua posição, um atacante pode observar tráfego, modificar o caminho ou esgotar recursos, por isso numa resposta distingue um atacante no caminho, na rede local ou apenas remoto.
 
 ## Observação e falsificação
 
 A **escuta** procura ler tráfego. A **falsificação**, ou spoofing, apresenta uma identidade ou endereço falso. Num ataque ativo de intermediário, o atacante interceta e pode alterar a comunicação entre os extremos.
 
-| Mecanismo atacado   | Fraqueza explorada                       | Defesa e limite                                                                                |
-| ------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| ARP numa rede local | Aceitar associações IP/MAC maliciosas    | Controlos na rede local; um canal autenticado protege dados mesmo com caminho hostil           |
-| DNS                 | Resposta ou resolução adulterada         | Validação DNSSEC onde aplicável; não cifra consultas nem garante que o serviço final é honesto |
-| TCP                 | Manipulação de estado ou segmentos       | Validações do protocolo e transporte autenticado; um endereço IP não é prova de identidade     |
-| Aplicação sem TLS   | Conteúdo legível ou alterável no caminho | TLS corretamente validado; os extremos continuam a ver o conteúdo                              |
+| Mecanismo atacado   | Fraqueza explorada                                                             | Defesa e limite                                                                                |
+| ------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| ARP numa rede local | O atacante na mesma rede responde primeiro e associa o seu MAC ao IP do router | Controlos na rede local; um canal autenticado protege dados mesmo com caminho hostil           |
+| DNS                 | Resposta ou resolução adulterada                                               | Validação DNSSEC onde aplicável; não cifra consultas nem garante que o serviço final é honesto |
+| TCP                 | Manipulação de estado ou segmentos                                             | Validações do protocolo e transporte autenticado; um endereço IP não é prova de identidade     |
+| Aplicação sem TLS   | Conteúdo legível ou alterável no caminho                                       | TLS corretamente validado; os extremos continuam a ver o conteúdo                              |
 
 Nem todo atacante pode ver todos os pacotes, por isso numa resposta justifica que mensagens ele controla.
 
 ## TLS, SSH e IPsec
 
-TLS protege o canal entre os extremos que terminam TLS. Num handshake autenticado, os participantes negoceiam parâmetros, estabelecem chaves e verificam a autenticação e o contexto da troca. Depois protegem registos com cifragem autenticada. TLS 1.3 tem diferenças relevantes face ao TLS antigo, incluindo a seleção de mecanismos criptográficos.
+TLS protege o canal entre os extremos que terminam TLS. Num handshake autenticado, segue quatro passos: o cliente anuncia versões e mecanismos; o servidor escolhe, apresenta o certificado e prova a posse da chave; ambos estabelecem chaves de sessão; depois protegem registos com cifragem autenticada. Nota que este handshake é do TLS, não do TCP: completar o TCP não autentica ninguém. TLS 1.3 tem diferenças relevantes face ao TLS antigo, incluindo a seleção de mecanismos criptográficos.
 
-HTTPS é HTTP transportado por TLS. Protege o conteúdo HTTP, incluindo caminho, cabeçalhos e corpo, durante o transporte. Um observador ainda pode conhecer endereços IP, tamanhos e tempos; o nome do servidor pode ficar visível por DNS ou por mecanismos do handshake, conforme a configuração, ou seja HTTPS não esconde dados do servidor nem corrige XSS ou uma autorização em falta.
+HTTPS é HTTP transportado por TLS. Protege o conteúdo HTTP, incluindo caminho, cabeçalhos e corpo, durante o transporte. Um observador ainda pode conhecer endereços IP, tamanhos e tempos; o nome do servidor pode ficar visível por DNS ou por mecanismos do handshake, conforme a configuração. Por isso, HTTPS não esconde dados do servidor nem corrige XSS ou uma autorização em falta.
 
 <Dot
   source={rede}
@@ -61,7 +63,13 @@ SSH oferece um canal autenticado para acesso remoto e outros serviços. A valida
 
 Uma firewall aplica uma política sobre tráfego. Um filtro sem estado decide com campos do pacote; um filtro com estado acompanha conexões; um proxy pode aplicar regras da aplicação. Aceitar qualquer pacote com o bit ACK não prova que pertence a uma conexão permitida.
 
-Uma regra deve dizer direção, origem, destino, protocolo, porta e, quando existe, estado. Depois verifica a ordem das regras e a decisão por defeito, porque permitir HTTPS para um servidor não impede ataques que chegam por pedidos HTTPS válidos.
+Uma regra deve dizer direção, origem, destino, protocolo, porta e, quando existe, estado. Depois verifica a ordem das regras e a decisão por defeito. Por exemplo:
+
+1. aceitar TCP de saída para porta 443 com estado novo ou estabelecido;
+2. aceitar TCP de entrada só com estado estabelecido;
+3. recusar o resto e registar.
+
+Com esta ordem, um SYN inicial de fora é recusado pela regra 3. Um pacote com ACK de fora sem conexão conhecida também é recusado, porque a regra 2 exige estado estabelecido. Permitir HTTPS para um servidor não impede ataques que chegam por pedidos HTTPS válidos.
 
 Um IDS deteta eventos suspeitos; um IPS pode bloquear. Deteção por assinatura reconhece padrões conhecidos; deteção por anomalia compara comportamento com um modelo. Uma mudança legítima pode produzir um falso positivo. Um ataque semelhante ao normal pode produzir um falso negativo.
 
@@ -86,15 +94,24 @@ Numa análise defensiva, combina origem do ficheiro, análise estática, execuç
 
 ## DoS, SYN flood e amplificação
 
-DoS afeta a disponibilidade. DDoS usa origens distribuídas, que podem incluir máquinas comprometidas ou refletores. Um SYN flood procura ocupar recursos de conexões TCP incompletas. SYN cookies reduzem o estado guardado antes de o cliente completar o handshake; não resolvem todos os limites de capacidade nem os ataques à aplicação.
+DoS afeta a disponibilidade. DDoS usa origens distribuídas, que podem incluir máquinas comprometidas ou refletores. Um SYN flood procura ocupar recursos de conexões TCP incompletas. O diagrama seguinte mostra o handshake normal e o flood no mesmo cenário, em duas partes.
 
-Em reflexão, um atacante falsifica o endereço da vítima em pedidos a terceiros. Os terceiros respondem à vítima. Se a resposta é maior que o pedido, há amplificação.
+<Mermaid
+  source={tcp}
+  alt="Handshake TCP em duas partes: cenário normal com SYN, SYN-ACK e ACK; cenário flood com SYN em nome do endereço falsificado, SYN-ACK sem resposta, fila cheia e SYN legítimo sem resposta. TCP não é TLS."
+/>
+
+No flood, o SYN-ACK vai para o endereço falsificado e nunca obtém resposta; o servidor guarda estado até encher a fila e o SYN do cliente legítimo fica sem resposta.
+
+SYN cookies reduzem o estado guardado antes de o cliente completar o handshake; não resolvem todos os limites de capacidade nem os ataques à aplicação.
+
+Em reflexão, três papéis participam. O atacante falsifica o endereço da vítima em pedidos pequenos a terceiros. Os terceiros respondem à vítima. A vítima recebe respostas que nunca pediu. Se a resposta é maior que o pedido, há amplificação.
 
 Suponhamos pedidos de 60 bytes e respostas de 3 000 bytes, contando apenas o conteúdo indicado. O fator é $3\,000/60=50$. Com 2 Mbit/s de pedidos, a vítima pode receber 100 Mbit/s de respostas, se os refletores conseguirem gerar esse tráfego. Cabeçalhos, perdas e limitações reais alteram a conta; o enunciado tem de dizer o que está incluído.
 
 ## O problema da taxa base
 
-Um IDS analisa 10 000 eventos. Há 10 ataques. Deteta 90% dos ataques e alerta em 1% dos eventos legítimos. Esperamos 9 verdadeiros positivos e $0{,}01\times9\,990=99{,}9$ falsos positivos. A precisão esperada dos alertas é:
+Um IDS analisa 10 000 eventos. Há 10 ataques. Deteta 90% dos ataques e alerta em 1% dos eventos legítimos. Lê a tabela por linhas: dos 10 ataques, 9 geram alerta e 1 não; dos 9 990 eventos legítimos, cerca de 99,9 geram alerta e os restantes não. Esperamos 9 verdadeiros positivos e $0{,}01\times9\,990=99{,}9$ falsos positivos. A precisão esperada dos alertas é:
 
 $$\frac{9}{9+99{,}9}\approx8{,}26\%.$$
 

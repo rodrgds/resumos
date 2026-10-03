@@ -6,6 +6,6 @@
   node((0, 2), [Servidor da loja], corner-radius: 4pt),
   node((0, 1), [CA intermédia], corner-radius: 4pt),
   node((0, 0), [CA raiz], corner-radius: 4pt),
-  edge((0, 0), (0, 1), "->", label: [assina]),
-  edge((0, 1), (0, 2), "->", label: [assina]),
+  edge((0, 0), (0, 1), "->", label: [assina certificado]),
+  edge((0, 1), (0, 2), "->", label: [assina certificado]),
 )

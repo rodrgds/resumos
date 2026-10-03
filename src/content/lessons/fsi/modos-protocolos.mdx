@@ -2,7 +2,7 @@
 title: 'Modos de cifra e protocolos'
 description: 'ECB, CBC, CTR, AEAD, repetição e acordo de chaves com Diffie-Hellman.'
 section: conteudo
-order: 4
+order: 3
 practices:
   - fsi/praticar-modos-protocolos
 editorial:
@@ -25,8 +25,10 @@ import Mermaid from '../../../components/Mermaid.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import dh from '../../fsi/diffie-hellman.mmd?raw';
+import cbc from '../../fsi/cbc-passos.mmd?raw';
+import dhmitm from '../../fsi/dh-intermediario.mmd?raw';
 
-Depois de escolher primitivas como a cifra e a assinatura, esta página responde a esta pergunta: como ciframos uma mensagem maior do que um bloco e combinamos um segredo sem o partilhar antes?
+Uma cifra como AES só transforma de cada vez um bloco fixo. Para uma mensagem maior precisamos de uma regra entre blocos. Para combinar um segredo sem o partilhar antes precisamos de um acordo de chaves.
 
 Uma cifra como AES só transforma de cada vez um bocado fixo de dados. A esse bocado chama-se **bloco**, e à cifra que trabalha assim chama-se **cifra de bloco**. Para proteger uma mensagem maior, dividimos a mensagem em blocos e precisamos de uma regra, o **modo de operação**, que define a relação entre blocos e os valores adicionais usados na cifragem. O XOR, ou seja a operação que compara bits e dá 1 quando são diferentes e 0 quando são iguais, é a peça que combina mensagem e sequência: $x\oplus x=0$ e $x\oplus0=x$. Por exemplo, `1010 XOR 1100 = 0110`.
 
@@ -38,11 +40,18 @@ Uma cifra como AES só transforma de cada vez um bocado fixo de dados. A esse bo
 | CBC  | Cada bloco combina-se com a cifra anterior                        | IV inicial imprevisível                         | Exige blocos completos; sozinho não autentica                       |
 | CTR  | XOR da mensagem com blocos de uma sequência cifrada de contadores | Contadores que não se repetem sob a mesma chave | Reutilização revela relações entre mensagens; sozinho não autentica |
 
-Em ECB, uma mensagem de blocos `A A B A` dá um padrão `X X Y X`. Um observador não precisa de descobrir A para reconhecer repetições, por isso "usar AES" sem dizer o modo não responde a este problema.
+Em ECB, cada bloco cifra de forma independente. Uma mensagem de blocos `A A B A` dá um padrão `X X Y X`. Um observador não precisa de descobrir A para reconhecer repetições, por isso "usar AES" sem dizer o modo não responde a este problema.
 
-Em CBC, $C_i=E_K(P_i\oplus C_{i-1})$, com $C_0=IV$. Em CTR, $C_i=P_i\oplus E_K(\text{contador}_i)$. Aqui $P_i$ é um bloco de texto em claro, $C_i$ um bloco cifrado, $K$ a chave e $\oplus$ o XOR. O IV de CBC e os contadores de CTR têm requisitos distintos. Em CTR, evita repetir qualquer bloco de contador, inclusive entre mensagens: inícios diferentes ainda podem gerar sequências sobrepostas.
+Em CBC, $C_i=E_K(P_i\oplus C_{i-1})$, com $C_0=IV$. Aqui $P_i$ é um bloco de texto em claro, $C_i$ um bloco cifrado e $K$ a chave. Com dois blocos: primeiro calcula-se $X_1=P_1\oplus IV$ e $C_1=E_K(X_1)$; depois $X_2=P_2\oplus C_1$ e $C_2=E_K(X_2)$. Para decifrar, inverte-se cada passo: $P_1=D_K(C_1)\oplus IV$ e $P_2=D_K(C_2)\oplus C_1$. O diagrama seguinte segue esses dois blocos.
 
-CBC convencional recebe blocos completos. Com preenchimento PKCS#7 e blocos de 16 bytes, uma mensagem de 14 bytes recebe dois bytes de valor 2. Uma de 16 recebe um bloco completo de 16 bytes de valor 16, para distinguir preenchimento de dados. O preenchimento não autentica a mensagem. CTR pode usar apenas os bytes necessários do último bloco e não precisa deste preenchimento.
+<Mermaid
+  source={cbc}
+  alt="Dois blocos CBC: cada texto em claro combina-se com a cifra anterior antes da cifra de bloco; a decifragem inverte cada passo."
+/>
+
+Em CTR, $C_i=P_i\oplus E_K(\text{contador}_i)$. O IV de CBC e os contadores de CTR têm requisitos distintos. Em CTR, evita repetir qualquer bloco de contador, inclusive entre mensagens: inícios diferentes ainda podem gerar sequências sobrepostas.
+
+CBC convencional recebe blocos completos. Com preenchimento PKCS#7 e blocos de 16 bytes, uma mensagem de 14 bytes recebe dois bytes `02 02`. Uma de 16 bytes recebe um bloco completo de dezasseis bytes de valor 16, para distinguir preenchimento de dados. Ao remover, o recetor lê o último byte $k$ e verifica que os últimos $k$ bytes valem todos $k$; se algum difere, rejeita em vez de remover. O preenchimento não autentica a mensagem. CTR pode usar apenas os bytes necessários do último bloco e não precisa deste preenchimento.
 
 ## Reutilizar uma sequência de XOR
 
@@ -68,11 +77,11 @@ Um MAC autentica dados, mas não os esconde. Cifrar sem autenticar pode permitir
 
 Usa construções estudadas, como AES-GCM ou ChaCha20-Poly1305, com os requisitos de nonce da construção. Para GCM, reutilizar um nonce com a mesma chave compromete a segurança. A aplicação deve rejeitar dados cuja etiqueta não verifica, antes de lhes dar significado, porque não deves desenhar uma combinação própria de cifra e hash.
 
-AEAD não elimina automaticamente a repetição. Uma mensagem válida antiga continua a ter uma etiqueta válida. O protocolo precisa de números de sequência, nonces/desafios frescos ou estado que permita rejeitar repetições.
+AEAD não elimina automaticamente a repetição. Uma mensagem válida antiga continua a ter uma etiqueta válida, porque a etiqueta prova que alguém com a chave protegeu aquele conteúdo e dados associados. Não prova que a mensagem é nova. A frescura precisa de mecanismo próprio, conforme o protocolo: por exemplo incluir um número de sequência nos dados associados e manter estado de receção com janela que tolera reordenação legítima, ou usar um desafio fresco por operação e rejeitar respostas fora do desafio pendente.
 
 ## Diffie-Hellman em números pequenos
 
-Usamos a [aritmética modular](/cadeiras/fsi/criptografia/#aritmética-modular). Os números são pequenos para permitir refazer as contas, ou seja não são parâmetros seguros.
+Usamos a [aritmética modular](/cadeiras/fsi/criptografia/#aritmética-modular). Os números são pequenos para permitir refazer as contas. Não são parâmetros seguros.
 
 Ana e Bruno publicam $p=23$ e $g=5$. Ana escolhe $a=6$ e envia $A=g^a\bmod p=8$. Bruno escolhe $b=15$ e envia $B=g^b\bmod p=19$. Ana calcula $B^a\bmod p=2$ e Bruno calcula $A^b\bmod p=2$.
 
@@ -91,7 +100,14 @@ Ana e Bruno publicam $p=23$ e $g=5$. Ana escolhe $a=6$ e envia $A=g^a\bmod p=8$.
 
 Num protocolo real, os parâmetros e a validação dos valores recebidos têm requisitos de segurança, e uma função de derivação transforma o segredo em chaves adequadas, porque o acordo $(g^b)^a=(g^a)^b=g^{ab}$ só explica a coincidência no grupo usado.
 
-**Sem autenticação**, um intermediário pode substituir A e B pelos seus valores e estabelecer um segredo com cada lado. O acordo não prova com quem falamos. Certificados e assinaturas sobre o contexto da troca, ou uma chave previamente partilhada, podem autenticar o acordo.
+**Sem autenticação**, um intermediário pode substituir A e B pelos seus valores e estabelecer um segredo com cada lado. O acordo não prova com quem falamos. No diagrama seguinte, o intermediário combina um segredo com Ana e outro segredo com Bruno; Ana e Bruno veem trocas aparentemente normais, mas partilham segredos diferentes com o intermediário.
+
+<Mermaid
+  source={dhmitm}
+  alt="Intermediário entre Ana e Bruno: estabelece um segredo com cada lado e retransmite mensagens."
+/>
+
+Certificados e assinaturas sobre o contexto da troca, ou uma chave previamente partilhada, podem autenticar o acordo.
 
 Chaves efémeras corretamente usadas e apagadas podem dar **sigilo futuro**: comprometer mais tarde a chave de autenticação de longo prazo não permite recuperar sessões antigas gravadas. Isso não protege uma sessão cujo próprio segredo efémero foi comprometido.
 

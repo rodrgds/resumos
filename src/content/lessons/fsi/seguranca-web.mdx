@@ -32,10 +32,10 @@ editorial:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import Mermaid from '../../../components/Mermaid.astro';
+import sessao from '../../fsi/sessao-web.mmd?raw';
 
-Depois de proteger o canal na rede, esta página responde a esta pergunta: como protegemos uma aplicação Web quando o cliente não é confiável?
-
-Uma aplicação Web é um servidor que recebe pedidos de navegadores que não controla. O navegador, ou seja o programa que corre o código dos sites no computador do utilizador, limita certas interações entre sites, mas o servidor tem de validar entradas, autenticar e autorizar operações independentemente da interface, porque esses limites do navegador não bloqueiam todos os pedidos.
+Uma aplicação Web é um servidor que recebe pedidos de navegadores que não controla. O navegador é o programa que corre o código dos sites no computador do utilizador. Esse programa limita certas interações entre sites, mas o servidor tem de validar entradas, autenticar e autorizar operações independentemente da interface, porque esses limites do navegador não bloqueiam todos os pedidos.
 
 ## Mesma origem não significa mesmo site
 
@@ -47,7 +47,17 @@ A política da mesma origem restringe, entre outras coisas, a leitura de respost
 
 ## Sessões e cookies
 
-O servidor cria um identificador imprevisível que referencia estado de sessão. O navegador devolve-o, habitualmente num cookie. Roubar o identificador pode permitir usar a sessão sem conhecer a palavra-passe.
+O servidor cria um identificador imprevisível que referencia estado de sessão. O navegador devolve-o, habitualmente num cookie. Roubar o identificador pode permitir usar a sessão sem conhecer a palavra-passe. Segue o ciclo:
+
+<Mermaid
+  source={sessao}
+  alt="Login, Set-Cookie, pedido com cookie, procura da sessão e autorização da operação."
+/>
+
+1. a utilizadora prova a identidade no login;
+2. o servidor cria a sessão e responde com `Set-Cookie`;
+3. o navegador envia o cookie em cada pedido;
+4. o servidor procura a sessão e decide se aquela conta pode executar aquela operação.
 
 ```http
 Set-Cookie: sessao=<valor-aleatorio>; Secure; HttpOnly; SameSite=Lax; Path=/
@@ -103,7 +113,7 @@ echo "<p>Olá, " . $_GET["nome"] . "!</p>";
 echo "<p>Olá, " . htmlspecialchars($_GET["nome"], ENT_QUOTES, "UTF-8") . "!</p>";
 ```
 
-A segunda versão codifica dados no contexto **texto HTML**. Não é uma solução universal para JavaScript, CSS ou URLs, por isso se queremos aceitar HTML rico precisamos de sanitização apropriada. No cliente, `textContent` insere texto; `innerHTML` interpreta marcação. Uma política CSP bem definida pode limitar certos ataques, mas não substitui a eliminação do ponto de injeção.
+Antes da correção, o navegador recebe `<p>Olá, <script>…</script>!</p>` e executa a marcação injetada. A segunda versão codifica dados no contexto **texto HTML**, por exemplo `<` passa a `&lt;`. Não é uma solução universal para JavaScript, CSS ou URLs, por isso se queremos aceitar HTML rico precisamos de sanitização apropriada. No cliente, `textContent` insere texto; `innerHTML` interpreta marcação. Uma política CSP bem definida pode limitar certos ataques, mas não substitui a eliminação do ponto de injeção.
 
 Um cookie HttpOnly não torna um XSS inofensivo. O código malicioso pode pedir uma transferência na origem legítima, mesmo sem ler o cookie.
 
@@ -143,7 +153,7 @@ O prefixo identifica o algoritmo, seguido do digest codificado em Base64. Mudar 
 
 ## Injeção SQL
 
-Concatenar a entrada na estrutura SQL permite que dados sejam interpretados como instruções. Com a entrada `' OR '1'='1`, uma condição construída como `nome = '<entrada>'` pode passar a ser verdadeira para todas as linhas.
+Concatenar a entrada na estrutura SQL permite que dados sejam interpretados como instruções. Com a entrada `' OR '1'='1`, a condição `nome = '<entrada>'` expande-se para `nome = '' OR '1'='1'`. Essa condição é verdadeira para todas as linhas, por isso a consulta devolve Ana e Bruno.
 
 <CodePlayground
   title="Comparar SQL concatenado com SQL parametrizado"
@@ -157,7 +167,7 @@ A consulta concatenada devolve Ana e Bruno, ou seja a parametrizada procura lite
 
 ## CSRF
 
-Em CSRF, o atacante tenta induzir o navegador de uma vítima autenticada a enviar uma operação que ela não escolheu. Não precisa de ler a resposta, ou seja imagina um serviço que altera o email por `GET /email?novo=...`: uma navegação induzida pode executar a alteração, inclusive em situações em que SameSite=Lax permite enviar o cookie.
+Em CSRF, o atacante tenta induzir o navegador de uma vítima autenticada a enviar uma operação que ela não escolheu. Não precisa de ler a resposta. Imagina um serviço que altera o email por `GET /email?novo=...`: uma navegação induzida pode executar a alteração, inclusive em situações em que SameSite=Lax permite enviar o cookie. O servidor recebe um pedido válido do navegador da vítima, com cookie incluído, e não distingue intenção. Por isso, operações que alteram estado usam método próprio e exigem token ou validação de origem.
 
 Não uses GET para alterações de estado. Para pedidos que alteram estado, usa as defesas da framework, como tokens ligados à sessão e validação de origem quando aplicável. SameSite é uma camada adicional. Um token público constante não prova a intenção do utilizador. XSS na origem pode contornar muitas defesas CSRF porque passa a agir no contexto legítimo.
 

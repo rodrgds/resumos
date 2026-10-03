@@ -2,7 +2,7 @@
 title: 'Construir sistemas seguros'
 description: 'Privilégio mínimo, memória e isolamento, Android, containers, seccomp, TPM e mediação.'
 section: conteudo
-order: 2
+order: 5
 practices:
   - fsi/praticar-sistemas-seguros
 editorial:
@@ -35,13 +35,11 @@ import Dot from '../../../components/Dot.astro';
 import camadas from '../../fsi/camadas.dot?raw';
 import isolamento from '../../fsi/isolamento.dot?raw';
 
-Depois de distinguir ativos, ameaças e risco, esta página responde a esta pergunta: como limitamos o que um atacante consegue fazer quando uma conta é roubada?
-
-Uma aplicação de notas não deve dar à conta que consulta pautas o poder de mudar utilizadores. Se essa conta for roubada, os seus privilégios, ou seja o que essa conta tem permissão para fazer, determinam o que o atacante consegue fazer, por isso construir um sistema seguro começa por limitar essas consequências.
+Uma aplicação de notas não deve dar à conta que consulta pautas o poder de mudar utilizadores. Se essa conta for roubada, os seus privilégios determinam o que o atacante consegue fazer. Chama-se privilégio ao conjunto de operações que essa conta tem permissão para fazer. Por isso, construir um sistema seguro começa por limitar essas consequências. Esta página assume as primitivas de [criptografia](/cadeiras/fsi/criptografia/): assinaturas para verificar componentes e hashes para medir software.
 
 ## Princípios de construção
 
-Os princípios de Saltzer e Schroeder ajudam a avaliar um desenho:
+Começa por um caso: a conta de consulta só precisa de ler a sua pauta durante o semestre. Privilégio mínimo pergunta se retiramos a escrita e o acesso depois do prazo. Negar por defeito pergunta se um pedido novo é recusado sem regra explícita. Mediação completa pergunta se existe algum caminho que contorna a verificação. Os princípios de Saltzer e Schroeder ajudam a avaliar um desenho:
 
 | Princípio                 | Pergunta a fazer                                                           |
 | ------------------------- | -------------------------------------------------------------------------- |
@@ -56,7 +54,7 @@ Os princípios de Saltzer e Schroeder ajudam a avaliar um desenho:
 
 Por exemplo, exigir aprovação de dois responsáveis para publicar uma pauta separa privilégios, porque pedir a mesma palavra-passe duas vezes não cria dois fatores independentes.
 
-**Isolamento** limita a comunicação e os recursos acessíveis entre componentes. Um processo separado, uma sandbox ou uma máquina virtual oferece isolamento com hipóteses diferentes. Se dois processos usam o mesmo ficheiro temporário gravável por todos, essa comunicação pode quebrar a separação pretendida.
+**Isolamento** limita a comunicação e os recursos acessíveis entre componentes. Um processo separado, uma sandbox ou uma máquina virtual oferece isolamento com hipóteses diferentes. Por exemplo, dois processos com o mesmo ficheiro temporário gravável por todos continuam a comunicar por esse ficheiro. Essa comunicação pode quebrar a separação pretendida.
 
 ## Memória virtual e fronteira do kernel
 
@@ -68,21 +66,23 @@ Em modelos históricos de x86, páginas do kernel podiam estar nas tabelas do pr
 
 ### Caso: mesmo endereço, outro objeto
 
-:::details[Ver por que o mesmo endereço virtual não implica partilha]
-
 A tem um buffer de 4 KiB em `0x4000`; B usa o mesmo endereço virtual para outra alocação. Uma instrução de A que escreve em `0x4000` segue a tradução de A, não a de B, porque cada processo usa a sua tabela de páginas. Só uma partilha configurada, uma operação autorizada ou uma falha numa fronteira de proteção altera essa conclusão. A memória virtual isola traduções e permissões, não a intenção dos programas.
+
+:::details[Variantes e limites deste caso]
+
+Se existir uma página explicitamente partilhada, ambos os números traduzem para a mesma página física. KPTI, execução especulativa e permissões de página mudam exposições concretas, mas não mudam a regra base: o número virtual só ganha significado através da tabela do processo.
 
 :::
 
 ## Android: isolamento por aplicação
 
-O Android atribui normalmente um UID a cada aplicação e usa processos e permissões Linux para separar os seus dados. A fronteira também se aplica a código nativo. SELinux acrescenta controlo obrigatório; filtros seccomp restringem chamadas de sistema.
+O Android atribui normalmente um UID a cada aplicação e usa processos e permissões Linux para separar os seus dados. A fronteira também se aplica a código nativo. Nesse modelo, o UID distingue aplicações, SELinux acrescenta controlo obrigatório sobre operações e filtros seccomp restringem que chamadas de sistema cada processo pode pedir.
 
 Permissões pedidas no manifesto e consentimento do utilizador regulam capacidades específicas, mas não são toda a sandbox. Uma aplicação autorizada a usar a câmara não recebe automaticamente acesso aos ficheiros privados de outra. Partilhas explicitamente autorizadas e componentes expostos têm regras próprias. Vulnerabilidades do kernel ou uma configuração privilegiada podem comprometer a fronteira.
 
 ## Containers, máquinas virtuais e seccomp
 
-Um container Linux típico partilha o kernel do anfitrião. Namespaces separam vistas de recursos; cgroups contabilizam e limitam recursos; capacidades e políticas de acesso limitam autoridade. Uma máquina virtual tem o seu próprio kernel convidado e comunica com hardware virtual através do hipervisor. Ambas dependem de componentes privilegiados e de configuração correta.
+Um container Linux típico partilha o kernel do anfitrião. Namespaces separam vistas de recursos, por exemplo cada container vê os seus próprios processos. Cgroups contabilizam e limitam recursos, por exemplo memória e CPU. As Linux capabilities e políticas de acesso limitam autoridade, por exemplo retirar o poder de montar sistemas de ficheiros. Uma máquina virtual tem o seu próprio kernel convidado e comunica com hardware virtual através do hipervisor. Ambas dependem de componentes privilegiados e de configuração correta.
 
 <Dot
   source={isolamento}
@@ -97,7 +97,7 @@ Por exemplo, um conversor que não precisa de criar processos pode ter uma polí
 
 **Secure Boot** verifica assinaturas de componentes de arranque segundo uma política de confiança, podendo recusar um componente não autorizado. **Measured Boot** regista medições criptográficas do que arrancou. Um TPM pode proteger chaves e acumular essas medições em registos PCR. Medir não é automaticamente bloquear.
 
-Num esquema de atestação, um verificador pede um desafio novo e recebe medições autenticadas ligadas ao desafio. Compara-as com a sua política. Uma medição diferente pode levar o verificador a negar acesso; uma medição esperada não prova que o sistema nunca será comprometido depois do arranque. A decisão depende da cadeia medida, da confiança nas chaves e da política de aceitação.
+Num esquema de atestação, quatro passos têm papéis diferentes. Medir regista o que arrancou. Proteger chaves no TPM impede a leitura fora da política. O verificador pede um desafio novo e recebe medições autenticadas ligadas a esse desafio. Decidir compara com a política e pode negar acesso. Uma medição diferente pode levar o verificador a negar acesso; uma medição esperada não prova que o sistema nunca será comprometido depois do arranque. A decisão depende da cadeia medida, da confiança nas chaves e da política de aceitação.
 
 Uma chave selada a determinada política de PCR pode ficar indisponível se o arranque mudar. Uma atualização legítima também pode mudar as medições, pelo que o desenho precisa de atualização e recuperação. TPM não é um antivírus nem uma garantia de que qualquer programa assinado é seguro.
 
@@ -122,9 +122,9 @@ Suponhamos que a interface esconde o botão "Alterar nota", mas o servidor aceit
 
 ## O representante confuso
 
-Um serviço de impressão pode ler ficheiros privados porque precisa de acesso técnico. Um utilizador pede-lhe para imprimir um caminho que não pode ler. Se o serviço usa apenas a sua própria autoridade, imprime um segredo em nome do utilizador. É o problema do **confused deputy**, um representante privilegiado que confunde a sua autoridade com a de quem fez o pedido.
+Um serviço de impressão pode ler ficheiros privados porque precisa de acesso técnico. Segue o pedido: o utilizador indica um caminho que não pode ler; o serviço abre esse caminho com a sua autoridade alargada; o serviço devolve o conteúdo ao utilizador. O serviço confundiu duas autoridades. É o problema do **confused deputy**, um representante privilegiado que confunde a sua autoridade com a de quem fez o pedido.
 
-O serviço deve verificar a autoridade do requerente sobre o objeto, ou receber uma capacidade limitada ao ficheiro autorizado. Ter autenticado o utilizador não autoriza todos os seus pedidos.
+O serviço deve verificar a autoridade do requerente sobre o objeto antes de abrir, ou receber uma capacidade limitada ao ficheiro autorizado e usar apenas essa referência. Ter autenticado o utilizador não autoriza todos os seus pedidos.
 
 ## Falhar de forma segura
 

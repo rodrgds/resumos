@@ -108,7 +108,7 @@ Pode interessar-lhe apenas executar a operação.
 
   <div slot="solution">
 
-SOP restringe leituras entre origens, mas não impede todas as navegações. Lax tem exceções apropriadas a navegações seguras, e <code>{"GET"}</code> não devia alterar estado. Move a operação para um método de alteração e aplica a defesa CSRF da framework, com token/validação de origem adequada.
+SOP restringe leituras entre origens, mas não impede todas as navegações: o pedido chega na mesma ao servidor com o cookie. Lax tem exceções apropriadas a navegações seguras, e `GET` não devia alterar estado. Move a operação para um método de alteração e aplica a defesa CSRF da framework, com token ligado à sessão e validação de origem adequada. Só trocar `GET` por `POST` não chega: uma navegação ou formulário induzido também envia `POST`.
 
   </div>
 
@@ -223,6 +223,42 @@ Não. A origem passa CSP, mas a verificação SRI falha e o recurso não é usad
   <div slot="mistakes">
 
 Não apresentar CSP como comparação de conteúdo nem SRI como lista de origens.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="sessao-ciclo-autorizacao"
+  title="Do login à fatura alheia"
+  explanation="/cadeiras/fsi/seguranca-web/#sessões-e-cookies"
+  answer={{"kind": "self", "checklist": ["Segue login, Set-Cookie, pedido, procura da sessão e autorização.", "Explica que sessão válida não autoriza qualquer objeto.", "Distingue roubo de sessão de autorização por objeto em falta e propõe invalidação no servidor."]}}
+>
+
+Uma utilizadora faz login, recebe o cookie de sessão e pede `GET /faturas/42` de outra conta. O servidor verifica apenas que a sessão existe. Segue o ciclo da sessão, explica por que a fatura é devolvida e propõe a correção com validação.
+
+  <div slot="hint">
+
+Separa identificar a conta de autorizar o objeto.
+
+  </div>
+
+  <div slot="hint-more">
+
+Um identificador imprevisível dificulta adivinhar, mas não decide permissões.
+
+  </div>
+
+  <div slot="solution">
+
+O login cria a sessão, o `Set-Cookie` entrega o identificador, o pedido devolve-o, o servidor encontra a sessão e autoriza mal: aceita qualquer sessão sem verificar se aquela conta pode ler a fatura 42. A correção verifica no servidor a relação entre utilizador autenticado e objeto pedido. Para validar, pede a própria fatura com a própria conta (deve permitir) e a alheia (deve negar). Apagar só o cookie local não invalida uma cópia roubada: a invalidação é no servidor.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não apresentes HttpOnly, SameSite ou HTTPS como correção de uma autorização em falta.
 
   </div>
 

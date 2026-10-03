@@ -16,7 +16,7 @@ editorial:
 
 ## Analisar um ataque
 
-Ativo → ameaça → vulnerabilidade → vetor → propriedade afetada → defesa → risco residual. Distingue capacidade do atacante de uma hipótese sem evidência, porque é essa cadeia que o teste espera ver escrita. [Explicação](/cadeiras/fsi/principios-seguranca/).
+Ativo → ameaça → vulnerabilidade → vetor → propriedade afetada → defesa → risco residual. Distingue capacidade do atacante de uma hipótese sem evidência. [Explicação](/cadeiras/fsi/principios-seguranca/).
 
 - Confidencialidade: quem lê. Integridade: quem altera e segundo que regras. Disponibilidade: quando o serviço responde.
 - Perda esperada, num modelo de um evento: $E=pL$. Não converter categorias qualitativas em probabilidades sem dados.
@@ -46,9 +46,9 @@ Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desen
 - Chaves por par: $N(N-1)/2$. Com KDC, $N$ chaves duradouras entidade-centro no modelo simplificado; sessões à parte.
 - CRL identifica revogações no seu âmbito. Verificar emissor, assinatura, atualidade e âmbito; ausência numa lista antiga não prova validade.
 
-RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/criptografia/).
+RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esquemas reais acrescentam construções: OAEP para cifragem e PSS para assinatura, além de alternativas analisadas. [Explicação](/cadeiras/fsi/criptografia/).
 
-- ECB revela repetições. CBC exige IV imprevisível e blocos completos. PKCS#7 acrescenta um bloco de preenchimento quando o tamanho já é múltiplo do bloco. CTR exige não repetir nenhum bloco de contador sob a mesma chave, mesmo entre mensagens, porque a reutilização revela o XOR dos textos em claro.
+- ECB revela repetições. CBC exige IV imprevisível e blocos completos; decifra com $P_i=D_K(C_i)\oplus C_{i-1}$, com $C_0=IV$. PKCS#7 acrescenta um bloco de preenchimento quando o tamanho já é múltiplo do bloco; na remoção, confirma todos os $k$ bytes. CTR exige não repetir nenhum bloco de contador sob a mesma chave, mesmo entre mensagens, porque a reutilização revela o XOR dos textos em claro.
 - Se reutilizas a sequência XOR: $C_1\oplus C_2=P_1\oplus P_2$.
 - AEAD dá confidencialidade e integridade; não dá proteção automática contra repetição.
 - DH: $A=g^a$, $B=g^b$, segredo $B^a=A^b$ no grupo. Sem autenticação permite intermediário ativo.
@@ -57,7 +57,7 @@ RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/cr
 ## Acessos
 
 - Autenticação identifica; autorização decide sujeito, objeto e operação.
-- ACL: permissões junto do objeto. Capacidade: referência protegida que confere autoridade.
+- ACL: permissões junto do objeto, como uma coluna da matriz. Capacidade: referência protegida que o sujeito apresenta; não é o mesmo que uma Linux capability.
 - Bell-LaPadula básico, confidencialidade: não ler acima, não escrever abaixo.
 - Biba estrito, integridade: não ler abaixo, não escrever acima.
 - Unix: escolher dono, senão grupo, senão outros. $r=4,w=2,x=1$.
@@ -69,7 +69,7 @@ RSA sem OAEP/PSS não é um esquema real seguro. [Explicação](/cadeiras/fsi/cr
 - `printf`: formato externo controla interpretação; `%s` lê string, `%n` escreve a contagem em `int *`, por isso usa formato literal e tipos corretos.
 - ROP reutiliza código; NX não o impede sozinho. Pilha e argumentos dependem da convenção.
 - Canário terminador depende da cópia; aleatório depende de imprevisibilidade. Taint: source → propagação → sink; dinâmica só cobre execuções observadas.
-- TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável.
+- TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável. Validações encadeadas com `else if` não protegem usos diferentes sem nova verificação.
 - Canário deteta algumas corrupções; NX restringe execução; ASLR dificulta prever endereços. Não corrigem a falha de memória. [Explicação](/cadeiras/fsi/programacao-defensiva/).
 - TLS protege transporte entre os seus extremos; não protege de um extremo malicioso.
 - Firewall filtra; IDS alerta; IPS pode bloquear. Precisão $=VP/(VP+FP)$, sensibilidade $=VP/(VP+FN)$.
