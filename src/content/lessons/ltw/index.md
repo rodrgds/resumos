@@ -10,9 +10,14 @@ editorial:
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560104
     - title: André Restivo, LTW 2025/26
       url: https://pages.up.pt/~up353972/page/courses/ltw/
+  review:
+    edition: 2026/27
+    reviewer: Revisão editorial dos Resumos FEUP
+    date: '2026-10-03'
   coverage: Programa da ficha de 2025/26 e sequência pública de aulas do docente, com exemplos e exercícios próprios.
   gaps:
-    - Regras e materiais da edição de 2026/27 por confirmar.
+    - A ficha de 2026/27 identifica a ocorrência, mas ainda não publica programa nem avaliação.
+    - Materiais de Moodle de 2026/27 por confirmar.
     - Páginas protegidas do projeto, exame e algumas soluções práticas indisponíveis.
 ---
 
@@ -33,6 +38,8 @@ Os exemplos usam um catálogo de livros e pequenas reservas. São exemplos e exe
 
 Cada lição tem exemplos resolvidos e exercícios no fim. Tenta prever o resultado antes de executar. Depois altera um dado, uma condição ou um seletor e explica a diferença. A [Cheat sheet](/cadeiras/ltw/folha-consulta/) serve para consultar regras depois de as estudares.
 
+A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586997) ainda não publica programa nem avaliação. O percurso segue a edição de 2025/26; confirma no Moodle da tua edição os tópicos e regras aplicáveis.
+
 Para treinar em conjunto, implementa uma reserva que começa num formulário, valida no PHP, usa uma consulta preparada, identifica o utilizador pela sessão e devolve uma resposta. Confirma o pedido no separador Rede do navegador. Repete com quantidade zero, parâmetro ausente e utilizador sem permissão.
 
 ## Ambiente dos exemplos
@@ -51,7 +58,7 @@ A [página do docente](https://pages.up.pt/~up353972/page/courses/ltw/) divide o
 
 ## Materiais e bibliografia
 
-A base são os materiais de 2025/26 ligados no Moodle e na página de André Restivo, incluindo os slides e as propostas práticas. As explicações e soluções destas páginas foram escritas de novo.
+O [Moodle de 2025/26](https://moodle2526.up.pt/course/view.php?id=4015) remete para a página de André Restivo, com slides e propostas práticas. Os slides não identificam todos o seu ano de produção. XML e XPath mantêm-se no percurso porque constam da ficha de 2025/26, embora não apareçam no calendário público mais recente do docente. As explicações e soluções destas páginas foram escritas de novo.
 
 - [Slides e exercícios de André Restivo](https://pages.up.pt/~up353972/page/courses/ltw/). Segue a sequência de aulas e consulta o enunciado original de cada prática.
 - [Exemplo Chinook do docente](https://github.com/arestivo/chinook). Observa a separação entre páginas, templates, ações e base de dados. Código de demonstração antigo pode usar práticas que precisam de correção, incluindo SHA-1 para palavras-passe.
@@ -59,7 +66,7 @@ A base são os materiais de 2025/26 ligados no Moodle e na página de André Res
 - David Flanagan, _JavaScript: The Definitive Guide_, 2011, ISBN 0-596-80552-7.
 - Anders Møller e Michael I. Schwartzbach, _An Introduction to XML and Web Technologies_, ISBN 0-321-26966-7.
 
-Os três livros constam da bibliografia da ficha. As regras normativas de HTTP/1.1 e JSON estão nas [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html) e [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html). Para pormenores atuais de APIs, consulta [MDN Web Docs](https://developer.mozilla.org/), [manual do PHP](https://www.php.net/manual/en/) e [SQLite](https://www.sqlite.org/docs.html). Para os contextos de saída e defesas de segurança, consulta as cheat sheets da OWASP sobre [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html), [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) e [palavras-passe](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+Os três livros constam da bibliografia da ficha. As regras normativas de HTTP/1.1 e JSON estão nas [RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html) e [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259.html). Para XML e XPath, consulta as normas [XML 1.0](https://www.w3.org/TR/xml/) e [XPath 1.0](https://www.w3.org/TR/1999/REC-xpath-19991116/). Para pormenores atuais de APIs, consulta [MDN Web Docs](https://developer.mozilla.org/), [manual do PHP](https://www.php.net/manual/en/) e [SQLite](https://www.sqlite.org/docs.html). Para os contextos de saída e defesas de segurança, consulta as cheat sheets da OWASP sobre [XSS](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html), [CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) e [palavras-passe](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
 
 ## Vídeos para rever
 

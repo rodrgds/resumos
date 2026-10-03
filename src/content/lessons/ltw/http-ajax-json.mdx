@@ -142,6 +142,7 @@ Para experimentar a comunicação real, guarda os três ficheiros seguintes na m
 <html lang="pt-PT">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Pesquisar livros</title>
     <script src="ajax.js" defer></script>
   </head>
@@ -226,11 +227,47 @@ Pesquisar `red` mostra `Redes` e `Resultados: 1`; vazio mostra os três livros. 
 
 `XMLHttpRequest` faz o mesmo tipo de comunicação por callbacks: `open` configura, `setRequestHeader` define campos depois de abrir, `send` envia, e `load` indica chegada da resposta. Verifica `status` antes de usar `responseText`. No callback normal, `this` pode ser o objeto do pedido; numa arrow function, essa associação não segue a mesma regra.
 
+Para enviar um formulário por Ajax, indica método e corpo. Este excerto pressupõe uma ação `/actions/reservar.php` que devolve JSON e verifica sessão, token CSRF e dados:
+
+```js
+async function reservar(livro, quantidade, csrf) {
+  const resposta = await fetch('/actions/reservar.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ livro, quantidade, csrf }),
+  });
+  if (!resposta.ok) throw new Error('HTTP ' + resposta.status);
+  return resposta.json();
+}
+```
+
+O corpo codificado chega a `$_POST`. A função devolve uma promessa, que o chamador deve esperar e tratar com `try/catch` ou `.catch(...)`. Se o endpoint redirecionar para HTML em vez de devolver JSON, `json()` falha mesmo que o estado final seja 200. O cliente e o servidor têm de concordar no formato da resposta.
+
 ## SOP e CORS
 
 A same-origin policy restringe o acesso de scripts a dados de outras origens. Não impede todos os pedidos entre sítios: por exemplo, formulários e recursos embebidos podem causar pedidos sem permitir ler a resposta. Por isso SOP e CORS não substituem proteção contra CSRF.
 
-CORS permite ao servidor declarar quais as origens autorizadas a ler a resposta. Um pedido que exige preflight envia primeiro `OPTIONS`, com `Origin`, método e cabeçalhos pretendidos. O servidor responde com os campos de autorização adequados. A aplicação continua a precisar de autenticar e autorizar o pedido real.
+CORS permite ao servidor declarar quais as origens autorizadas a ler a resposta. Um pedido que exige preflight envia primeiro `OPTIONS`, com `Origin`, método e cabeçalhos pretendidos. Não há preflight em todos os pedidos. Um `GET` sem cabeçalhos adicionais pode ser enviado diretamente; um `POST` com `Content-Type: application/json` exige normalmente preflight. O servidor responde com os campos de autorização adequados. Por exemplo, para uma página em `https://a.example` enviar JSON a `https://api.example`:
+
+```http
+OPTIONS /reservas HTTP/1.1
+Host: api.example
+Origin: https://a.example
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type
+
+```
+
+```http
+HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: https://a.example
+Access-Control-Allow-Methods: POST
+Access-Control-Allow-Headers: Content-Type
+Vary: Origin
+
+```
+
+Se a resposta autorizar o pedido, o navegador envia o POST. A resposta ao POST também precisa de `Access-Control-Allow-Origin`, para ser legível pelo script. `Vary: Origin` informa caches de que a resposta pode depender da origem. A aplicação continua a precisar de autenticar e autorizar o pedido real.
 
 Para credenciais entre origens, o cliente usa `credentials: 'include'` e o servidor precisa de permitir credenciais e a origem concreta, não `Access-Control-Allow-Origin: *`. As regras dos cookies ainda podem impedir o envio. `mode: 'no-cors'` não desbloqueia leitura de JSON: produz uma resposta opaca.
 
@@ -238,6 +275,6 @@ Para credenciais entre origens, o cliente usa `credentials: 'include'` e o servi
 
 Uma MPA navega entre documentos produzidos pelo servidor. Uma SPA carrega um documento inicial e atualiza a interface e a navegação sobretudo no cliente. SPA não significa ausência de servidor nem dispensa URLs, histórico, estados de carregamento e controlo de acesso. Uma MPA também pode usar Ajax em algumas ações.
 
-Uma PWA pode acrescentar manifest, instalação e service worker para cache e funcionamento offline. Esses mecanismos não são sinónimos de SPA. APIs como geolocalização, armazenamento e notificações têm permissões, contextos e limites próprios. Frameworks organizam código e componentes, mas não alteram as regras de HTTP, DOM ou segurança que acabámos de estudar.
+Uma PWA pode acrescentar manifest, instalação e service worker para cache e funcionamento offline. Esses mecanismos não são sinónimos de SPA. `localStorage` guarda pares de strings por origem e normalmente conserva-os entre sessões; `sessionStorage` separa-os também por separador e sessão da página. Não são cookies, não seguem automaticamente em pedidos e não devem guardar segredos acessíveis a qualquer script dessa origem. A History API pode atualizar o URL e o histórico de uma SPA sem carregar outro documento; o programa precisa de restaurar o conteúdo correto ao voltar atrás. APIs como geolocalização e notificações têm permissões, contextos e limites próprios. Frameworks organizam código e componentes, mas não alteram as regras de HTTP, DOM ou segurança que acabámos de estudar.
 
 SSR constrói a representação HTML no servidor; CSR constrói-a sobretudo no cliente a partir de dados. Esta distinção é independente de MPA/SPA. Um Worker pode executar trabalho sem acesso direto ao DOM e comunica por mensagens. Um service worker tem um ciclo de instalação e ativação e pode intercetar pedidos das páginas que controla; não é uma função que corre dentro de cada evento do DOM.

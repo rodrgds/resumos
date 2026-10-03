@@ -41,6 +41,10 @@ foreach ($nomes as $indice => $nome) {
 
 A saída tem as linhas `0: Redes`, `1: SQL`, `2: Algoritmos`. `count` conta entradas. `array_map` transforma valores e `array_filter` escolhe-os; alguns métodos conservam chaves, por isso uma lista filtrada pode não ter índices consecutivos. `isset($x)` é falso se `$x` não existe ou vale `null`; `array_key_exists` distingue uma chave existente com valor `null` de uma chave ausente. `empty` também considera vazios valores como `0` e a string `'0'`.
 
+`strpos('Redes', 'Red')` devolve 0; `strpos('Redes', 'SQL')` devolve `false`. A procura deve usar `!== false`, porque a posição zero é uma correspondência válida. `explode(',', 'Redes,SQL')` divide numa lista; `implode(' / ', $nomes)` junta os valores com esse separador.
+
+`sort` ordena valores e renumera chaves; `asort` ordena valores conservando as chaves; `ksort` ordena pelas chaves. Alteram o array recebido. Depois de `array_filter`, usa `array_values` se precisas de uma lista com índices consecutivos, por exemplo para emitir um array JSON.
+
 ## Funções, tipos e erros
 
 As funções têm o seu âmbito. Passar um array por valor permite alterá-lo localmente sem alterar o do chamador; um parâmetro com `&` passa por referência. Objetos têm outra semântica: duas variáveis podem referir o mesmo objeto.
@@ -56,7 +60,7 @@ echo total(1250, 2); // 2500
 
 `strict_types` altera a aceitação de argumentos escalares nas chamadas feitas por esse ficheiro. Não valida parâmetros HTTP nem altera todos os operadores de conversão. Em modo estrito, chamar esta função com `'2'` em vez de `2` gera `TypeError`. Valida e converte a entrada na fronteira antes de chamar funções do domínio. `?int` admite inteiro ou `null`.
 
-Uma classe junta estado e operações; `private` limita o acesso e `public` expõe-o. `$this` identifica o objeto atual; uma operação `static` pertence à classe. `extends` herda de outra classe e `implements` declara um contrato de interface. Não precisas de uma classe para cada página: usa-a quando representa um conceito e reúne operações relacionadas.
+Uma classe junta estado e operações. `private` limita o acesso à classe que declara o membro; `protected` permite também o acesso nas subclasses; `public` expõe-o. `$this` identifica o objeto atual; uma operação `static` pertence à classe e não tem `$this`. `extends` herda de uma única classe e `implements` declara um contrato de interface. Não precisas de uma classe para cada página: usa-a quando representa um conceito e reúne operações relacionadas.
 
 ```php
 <?php
@@ -70,6 +74,8 @@ class Reserva {
 }
 echo (new Reserva(2))->unidades(); // 2
 ```
+
+Para chamar um método estático, usa `Classe::metodo()`; uma propriedade estática usa `Classe::$propriedade`. Dentro de métodos, `self::` resolve a classe onde o código foi definido, `parent::` a classe pai e `static::` a classe usada na chamada, respeitando a herança. Uma classe `abstract` não pode ser instanciada e pode exigir métodos sem implementação; uma interface declara métodos que a classe deve cumprir. `final` impede estender a classe ou substituir o método marcado.
 
 `throw` interrompe o percurso normal. Um `catch` apropriado trata a exceção; `finally` corre no fim, incluindo quando houve exceção. Distingue um erro de entrada que podes explicar ao utilizador de um erro interno que deves registar sem revelar caminhos, SQL ou segredos ao cliente.
 
@@ -134,7 +140,20 @@ A condição `stock >= :q` pertence ao próprio `UPDATE`. Ler o stock antes e de
 
 ## Páginas, ações e templates
 
-Uma página consulta e apresenta. Uma ação recebe entrada, valida, altera dados e redireciona. O template produz HTML a partir de dados já calculados. Coloca a conexão e as consultas numa camada própria, para não repetir SQL nos templates.
+Uma página consulta e apresenta. Uma ação recebe entrada, valida, altera dados e redireciona. O template produz HTML a partir de dados já calculados. Coloca a conexão e as consultas numa camada própria, para não repetir SQL nos templates. Os delimitadores permitem alternar entre PHP e HTML. O texto fora deles é enviado diretamente; `<?= ... ?>` escreve o valor da expressão. Este exemplo completo recebe os dados numa lista antes de começar a saída:
+
+```php
+<?php
+$livros = [['titulo' => 'Redes & Web'], ['titulo' => '<SQL>']];
+?>
+<ul>
+<?php foreach ($livros as $livro) { ?>
+  <li><?= htmlspecialchars($livro['titulo'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></li>
+<?php } ?>
+</ul>
+```
+
+O HTML enviado contém `Redes &amp; Web` e `&lt;SQL&gt;`. O navegador apresenta os títulos originais como texto. O ciclo abre num bloco PHP e fecha noutro, envolvendo um `li` por livro. Guardar o título como texto e escapar ao apresentar permite reutilizá-lo em contextos diferentes.
 
 ```php
 <?php
