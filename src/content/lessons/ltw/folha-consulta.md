@@ -19,14 +19,14 @@ order: 0
 - [PHP](/cadeiras/ltw/php-dinamicas-bd/#receber-um-pedido): entrada pode faltar ou ser array. Verifica tipo, valida e só depois converte. `===` distingue tipos; `isset` rejeita null; `empty` rejeita também `'0'`.
 - [PDO](/cadeiras/ltw/php-dinamicas-bd/#sqlite-e-consultas-preparadas): `prepare` + `execute` para valores. Marcadores não substituem identificadores. `fetch` devolve linha ou false. Transação = commit conjunto ou rollback.
 - [Redirecionamento e sessão](/cadeiras/ltw/php-dinamicas-bd/#sessões-e-autenticação): `header` antes de saída; `Location` não pára o programa, usa `exit`. Após POST, 303 permite GET. Sessão no servidor, identificador habitualmente no cookie.
-- [JavaScript](/cadeiras/ltw/javascript-dom-eventos/#tipos-e-conversões): `const` impede reatribuição, não mutação. `+` pode concatenar. `??` substitui null/undefined; `||` substitui valores falsos. `map` transforma, `filter` seleciona, `reduce` acumula.
+- [JavaScript](/cadeiras/ltw/javascript-dom-eventos/#tipos-e-conversões): `const` impede reatribuição, não mutação. `+` pode concatenar. `??` substitui null/undefined; `||` substitui valores falsos. `map` transforma, `filter` seleciona, `reduce` acumula. `sort` altera o array; copia primeiro e usa `(a, b) => a - b` para ordenar números.
 - [Funções e eventos](/cadeiras/ltw/javascript-dom-eventos/#eventos-e-delegação): closure conserva ambiente lexical. `this` normal depende da chamada; arrow herda-o. `target` é o alvo; `currentTarget` é o elemento cujo listener está a correr. `preventDefault` impede ação, não propagação.
 
 ## HTTP e segurança
 
 - [HTTP](/cadeiras/ltw/http-ajax-json/#métodos-segurança-e-idempotência): GET seguro e idempotente; PUT/DELETE idempotentes; POST não em geral. Idempotência descreve efeito, não resposta igual. Fragmento não vai ao servidor.
 - [Cabeçalhos](/cadeiras/ltw/http-ajax-json/#ler-mensagens): Accept pede formato; Content-Type descreve corpo. Set-Cookie na resposta, Cookie no pedido. 201 criado; 204 sem corpo; 303 redireciona; 304 cache válida; 400 entrada; 403 recusa; 404 ausente; 405 método; 500 interno.
-- [Ajax](/cadeiras/ltw/http-ajax-json/#json-e-fetch): `fetch` não rejeita só por 404; verifica `ok`. `json()` também é assíncrono. Encoda parâmetros; ignora respostas antigas. CORS permite leitura entre origens, não autentica nem impede CSRF.
+- [Ajax](/cadeiras/ltw/http-ajax-json/#json-e-fetch): `fetch` não rejeita só por 404; verifica `ok`. `json()` também é assíncrono. Encoda parâmetros; ignora respostas antigas. CORS permite leitura entre origens, não autentica nem impede CSRF. `Access-Control-Allow-Origin` também é necessário na resposta real após preflight.
 - [Defesas](/cadeiras/ltw/seguranca-web/#injeção-sql): SQL preparado; escape conforme contexto; `textContent` para texto; token CSRF não vazio e verificado; autorização no servidor; caminhos fixos ou controlados; HTTPS no transporte.
 - [Palavras-passe](/cadeiras/ltw/seguranca-web/#palavras-passe-e-sessão): password_hash/password_verify, nunca SHA-1 simples. Salt não salva uma palavra-passe fraca. Regenera sessão ao autenticar.
 
@@ -35,4 +35,4 @@ order: 0
 - [Regex](/cadeiras/ltw/expressoes-regulares/#peças-e-precedência): `[]` escolhe um caráter; `*` zero+, `+` um+, `?` opcional. `(?:...)` agrupa sem capturar. Agrupa alternativas antes de ancorar. Guloso tenta máximo; preguiçoso tenta mínimo.
 - [Capturas](/cadeiras/ltw/expressoes-regulares/#capturas-e-referências): grupo 0 é tudo; `\1` exige repetição da captura. Lookaround testa sem consumir. Formato de data não prova data existente.
 - [XML](/cadeiras/ltw/xml-xpath/#boa-formação-e-validade): boa formação = sintaxe; validade = contrato. Namespace é URI, não prefixo. Por defeito afeta elementos, não atributos sem prefixo.
-- [XPath](/cadeiras/ltw/xml-xpath/#predicados-e-posição): `/` parte da raiz; `//` procura descendentes; `@` atributo; `text()` texto; `[condição]` filtra. Posições começam em 1. `//x[1]` pode dar vários; `(//x)[1]` dá o primeiro global.
+- [XPath](/cadeiras/ltw/xml-xpath/#predicados-e-posição): `/` parte da raiz; `//` procura descendentes; `@` atributo; `text()` texto; `[condição]` filtra. Posições começam em 1. `//x[1]` pode dar vários; `(//x)[1]` dá o primeiro global. Em XPath 1.0, `x != 'a'` exige algum x diferente; `not(x = 'a')` exige que nenhum seja igual.
