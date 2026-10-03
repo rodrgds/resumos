@@ -12,6 +12,8 @@ editorial:
       url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
+Consulta depois de perceberes cada modelo. Cada linha indica a condição que decide a conta.
+
 ## RV32
 
 - 32 registos inteiros de 32 bits; `zero` é sempre 0. `t0…t6` e `a0…a7` podem mudar numa chamada; o chamado repõe `s0…s11`. `ra` guarda retorno; `sp` é reposto e mantém alinhamento 16 bytes.
@@ -68,9 +70,9 @@ IF→ID→EX→MEM→WB. Período = máximo atraso de fase + registo, se forneci
 
 ## SIMD empacotado
 
-RV32: B0=bits 7:0, B3=31:24; H0=15:0, H1=31:16. ADD8/16 e SUB8/16 reduzem por via, sem carry entre vias. Comparação verdadeira=0xFF/0xFFFF; escolher signed/unsigned.
+RV32: B0=bits 7:0, B3=31:24; H0=15:0, H1=31:16. ADD8/16 e SUB8/16 reduzem por via, sem carry entre vias. Comparação verdadeira=0xFF/0xFFFF; escolhe signed/unsigned.
 
-SMUL16: dois produtos 32 bits em par físico par/seguinte; SMULX16 cruza vias. PKBT16=(a.H0, b.H1), primeira parcela na metade alta. Replicar byte: mascarar antes de shifts. Contadores 8 bits dão wrap a 256; `abs(−32768)` não cabe em 16 bits com sinal; KABS16 satura em 32767. KMDA satura no caso `0x80008000 × 0x80008000`. Verificar zero, resto, alinhamento e largura de acumulação.
+SMUL16: dois produtos 32 bits em par físico par/seguinte; SMULX16 cruza vias. PKBT16=(a.H0, b.H1), primeira parcela na metade alta. Replicar byte: mascarar antes de shifts. Contadores 8 bits dão wrap a 256; `abs(−32768)` não cabe em 16 bits com sinal; KABS16 satura em 32767. KMDA satura no caso `0x80008000 × 0x80008000`. Verifica zero, resto, alinhamento e largura de acumulação.
 
 ## Multicore e coerência
 
@@ -83,7 +85,7 @@ Write-invalidate invalida a **linha inteira**. Leitura de outro dado na linha po
 ## Entrada, saída e armazenamento
 
 - Polling: consultas/s × ciclos/consulta / frequência = fração CPU. Intervalo máximo ideal de um buffer $B/R$, sem margem de serviço.
-- Interrupções: eventos/s × ciclos/evento / frequência. DMA: $u=(R/B)c/f$; usar taxa agregada e custo setup+fim. Saída exige clean de dirty se não há coerência; entrada precisa evitar cópias antigas e write-back posterior.
+- Interrupções: eventos/s × ciclos/evento / frequência. DMA: $u=(R/B)c/f$; usa taxa agregada e custo setup+fim. Saída exige clean de dirty se não há coerência; entrada precisa evitar cópias antigas e write-back posterior.
 - HDD: fila + procura + rotação + transferência + controlador. Rotação média $30/RPM$ segundos. Transferência $B/R$.
 - Taxa máxima = mínimo dos limites CPU, bus, controladores, discos, na mesma unidade. MB=10⁶B; MiB=2²⁰B; KiB=1024 B.
 - Dois buffers e estágios independentes, $n\ge1$, incluindo enchimento e esvaziamento:
