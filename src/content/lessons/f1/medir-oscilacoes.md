@@ -7,6 +7,8 @@ practices:
   - f1/praticar-medicoes
 ---
 
+Já estudaste o modelo das oscilações que perdem amplitude; esta página pergunta como transformar picos medidos em período e amortecimento para testar esse modelo.
+
 Uma medição deve permitir testar o modelo, não apenas produzir uma curva parecida com uma oscilação. Aqui vamos partir de picos de um sinal amortecido e obter período, amortecimento e uma previsão verificável, ou seja transformamos leituras em parâmetros.
 
 ## O que mede o sensor
