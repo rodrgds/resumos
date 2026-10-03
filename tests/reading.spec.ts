@@ -26,6 +26,137 @@ test.describe('course diagrams without JavaScript', () => {
       [1, -3],
     ]);
   });
+
+  test('ramp begins with the chosen forces and a vertical weight', async ({
+    page,
+  }) => {
+    await page.goto('/cadeiras/f1/leis-newton/');
+    const demo = page.locator('[data-f1-ramp]');
+    await expect(demo.locator('output')).toContainText('16,99');
+    await expect(demo.locator('output')).toContainText('6,8');
+    await expect(demo.locator('output')).toContainText('1,51');
+    const geometry = await demo.evaluate((element) => {
+      const slope = element.querySelector('[data-slope]') as SVGGElement;
+      const weight = element.querySelector('[data-weight]') as SVGGElement;
+      const block = element.querySelector('.block') as SVGRectElement;
+      const slopeMatrix = slope.getCTM()!;
+      const weightMatrix = weight.getCTM()!;
+      const box = block.getBBox();
+      const center = new DOMPoint(
+        box.x + box.width / 2,
+        box.y + box.height / 2,
+      ).matrixTransform(block.getCTM()!);
+      const origin = new DOMPoint(0, 0).matrixTransform(weightMatrix);
+      return {
+        incline: slopeMatrix.b / slopeMatrix.a,
+        weightTilt: weightMatrix.b,
+        deltaX: origin.x - center.x,
+        deltaY: origin.y - center.y,
+      };
+    });
+    expect(geometry.incline).toBeCloseTo(-Math.sqrt(3) / 3, 5);
+    expect(geometry.weightTilt).toBeCloseTo(0, 5);
+    expect(geometry.deltaX).toBeCloseTo(0, 3);
+    expect(geometry.deltaY).toBeCloseTo(0, 3);
+  });
+
+  test('damped oscillator begins with its physical curve and readout', async ({
+    page,
+  }) => {
+    await page.goto('/cadeiras/f1/oscilacoes/');
+    const demo = page.locator('[data-f1-oscillator]');
+    await expect(demo.locator('output')).toContainText('0,32');
+    await expect(demo.locator('output')).toContainText('0,4');
+    const endpoints = await demo.evaluate((element) => {
+      const curve = element.querySelector('[data-curve]') as SVGPathElement;
+      const axis = element.querySelector('.axis') as SVGPathElement;
+      const bounds = axis.getBBox();
+      const zeroY = axis.getPointAtLength(axis.getTotalLength()).y;
+      const start = curve.getPointAtLength(0);
+      const end = curve.getPointAtLength(curve.getTotalLength());
+      return {
+        length: curve.getTotalLength(),
+        width: bounds.width,
+        startX: (start.x - bounds.x) / bounds.width,
+        endX: (end.x - bounds.x) / bounds.width,
+        finalDisplacementRatio: (zeroY - end.y) / (zeroY - start.y),
+      };
+    });
+    expect(endpoints.length).toBeGreaterThan(endpoints.width);
+    expect(endpoints.startX).toBeCloseTo(0, 5);
+    expect(endpoints.endX).toBeCloseTo(1, 5);
+    expect(endpoints.finalDisplacementRatio).toBeCloseTo(0.079116023619, 5);
+  });
+
+  for (const sample of [
+    {
+      route: '/cadeiras/f2/circuitos-reativos/',
+      curve: '[data-f2-rc] [data-curve]',
+      x: 112,
+      y: 45.3002924855,
+    },
+    {
+      route: '/cadeiras/f2/fourier/',
+      curve: '[data-f2-fourier] [data-wave]',
+      x: 123.75,
+      y: 43.791543674,
+    },
+    {
+      route: '/cadeiras/f2/frequencia-amostragem/',
+      curve: '[data-f2-sampling] [data-original]',
+      x: 54.5,
+      y: 151.14496766,
+    },
+    {
+      route: '/cadeiras/f2/frequencia-amostragem/',
+      curve: '[data-f2-sampling] [data-alias]',
+      x: 54.5,
+      y: 68.85503234,
+    },
+  ]) {
+    test(`initial physics curve matches the chosen values: ${sample.curve}`, async ({
+      page,
+    }) => {
+      await page.goto(sample.route);
+      const curve = page.locator(sample.curve);
+      await expect(curve).not.toHaveAttribute('d', '');
+      const point = await curve.evaluate((element, targetX) => {
+        const path = element as SVGPathElement;
+        let low = 0;
+        let high = path.getTotalLength();
+        for (let step = 0; step < 40; step++) {
+          const middle = (low + high) / 2;
+          if (path.getPointAtLength(middle).x < targetX) low = middle;
+          else high = middle;
+        }
+        const value = path.getPointAtLength((low + high) / 2);
+        return [value.x, value.y];
+      }, sample.x);
+      expect(point[0]).toBeCloseTo(sample.x, 2);
+      expect(Math.abs(point[1] - sample.y)).toBeLessThan(0.08);
+    });
+  }
+
+  test('sampling starts with eleven coincident original and alias samples', async ({
+    page,
+  }) => {
+    await page.goto('/cadeiras/f2/frequencia-amostragem/');
+    const samples = page.locator('[data-f2-sampling] [data-samples] circle');
+    await expect(samples).toHaveCount(11);
+    const points = await samples.evaluateAll((elements) =>
+      elements.map((element) => [
+        Number(element.getAttribute('cx')),
+        Number(element.getAttribute('cy')),
+      ]),
+    );
+    for (let n = 0; n <= 10; n++) {
+      expect(points[n][0]).toBeCloseTo(35 + 39 * n, 3);
+      expect(points[n][1]).toBeCloseTo(
+        110 - 70 * Math.cos((2 * Math.PI * 3 * n) / 10),
+        3,
+      );
+    }
+  });
 });
 
 test('neutral diagram labels follow the effective text color', async ({
