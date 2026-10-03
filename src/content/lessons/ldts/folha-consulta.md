@@ -25,6 +25,7 @@ order: 0
 - Para objetos, `==` compara identidade; `equals` representa igualdade lógica. Objetos iguais têm o mesmo hash; hashes iguais não provam igualdade.
 - Não alteres campos de igualdade/hash enquanto o objeto está num `HashSet` ou é chave de `HashMap`.
 - `List` mantém sequência e duplicados; `Set` unicidade; `Map` um valor por chave. `HashSet` e `HashMap` não prometem ordem de iteração.
+- Uma vista não modificável acompanha alterações da coleção original. Uma cópia defensiva separa as coleções, mas pode partilhar elementos mutáveis.
 - Genéricos são invariantes. `? extends T` permite ler como `T`; `? super T` permite inserir `T`. `extends` não torna a coleção imutável.
 - `start()` inicia a thread; `run()` direto é uma chamada normal; `join()` espera o fim. `sleep()` não é sincronização.
 - `synchronized` coordena acessos pelo mesmo monitor. `volatile` não torna `++` atómico. Usa `while` para testar a condição de `wait()`.

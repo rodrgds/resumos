@@ -12,6 +12,16 @@ import referencias from '../../ldts/referencias-java.dot?raw';
 
 O herói tem uma posição e pode mover-se. Vamos representar esse estado sem permitir que qualquer parte do programa o altere para valores inválidos. A escolha dos métodos e dos tipos faz parte do desenho, antes de escrever uma hierarquia de classes.
 
+## Ler e correr um programa
+
+Os exemplos completos usam uma classe pública `Main`, guardada em `Main.java`. `javac Main.java` compila o código para bytecode; `java Main` executa-o na máquina virtual Java, JVM. Precisas de um JDK para compilar, não apenas de um ambiente que execute Java. No projeto Gradle, as tarefas fazem estes passos por ti.
+
+O ponto de entrada é `public static void main(String[] args)`. `void` indica que o método não devolve um valor; `args` recebe os argumentos da linha de comandos. As chavetas delimitam classes e métodos, e `;` termina instruções como uma atribuição ou chamada.
+
+Numa declaração `int somar(int a, int b)`, o primeiro `int` é o tipo do resultado. `a` e `b` são parâmetros, e `return a + b;` devolve o resultado ao chamador. Uma chamada `somar(2, 3)` fornece os argumentos. O retorno não escreve no ecrã; `System.out.println` é uma operação separada.
+
+`new Posicao(3, 4)` cria um objeto e chama o construtor. Um construtor tem o nome da classe e não declara tipo de retorno. Em `this.x = x`, `this.x` é o campo do objeto e `x` é o parâmetro recebido. Um `import` permite escrever nomes curtos de tipos de outros pacotes; não instala uma biblioteca.
+
 ## Tipos, literais e controlo
 
 Java é estaticamente tipado: cada variável tem um tipo conhecido na compilação. Os tipos primitivos são `byte`, `short`, `int`, `long`, `float`, `double`, `char` e `boolean`. `int` guarda inteiros de 32 bits; `double` representa números de vírgula flutuante, com aproximação. `char` é uma unidade UTF-16, não necessariamente um carácter completo. `String` é um objeto imutável, não um primitivo.
@@ -20,7 +30,7 @@ Literais como `3`, `3L`, `2.5`, `'A'`, `"cima"` e `true` têm tipos próprios. E
 
 `if`, `switch`, `for` e `while` controlam a execução como em outras linguagens. Uma condição Java tem de ser booleana; um inteiro não serve como condição. `&&` e `||` fazem curto-circuito, por isso `p != null && p.equals(origem)` não chama `equals` quando `p` é `null`.
 
-Os arrays têm tamanho fixo e índices de zero a `length - 1`. As coleções permitem representar grupos que crescem e diminuem.
+Uma variável local tem de receber um valor antes de ser lida; o compilador não inventa um valor inicial. Os arrays têm tamanho fixo e índices de zero a `length - 1`. As coleções permitem representar grupos que crescem e diminuem.
 
 ## Valores e referências
 
@@ -81,6 +91,8 @@ Evita alterar campos usados em `equals` e `hashCode` enquanto o objeto é uma ch
 
 Uma interface descreve operações que um cliente pode pedir. Uma classe concreta implementa-as. O **polimorfismo dinâmico** escolhe a implementação em tempo de execução conforme o objeto, mesmo quando a variável tem o tipo da interface.
 
+Uma interface com uma única operação abstrata é uma **interface funcional**. Uma lambda fornece a implementação dessa operação, como `() -> System.out.println("fim")` para `Runnable.run()`. Os parâmetros ficam antes de `->` e o corpo depois. Uma expressão `new Runnable() { ... }` cria uma instância de uma classe anónima que implementa a interface; o bloco contém os seus métodos.
+
 Uma classe abstrata pode combinar operações abstratas, implementação e estado partilhados. Uma classe Java só estende uma classe, mas pode implementar várias interfaces. Uma interface não obriga os implementadores a herdarem o mesmo estado.
 
 A **herança** deve permitir substituição: qualquer objeto derivado tem de cumprir as promessas da base. Ter campos semelhantes não chega. A **composição** guarda um colaborador e delega-lhe uma tarefa. Permite variar essa tarefa sem criar subclasses para todas as combinações.
@@ -111,6 +123,24 @@ Escolhe a coleção pelo contrato que precisas:
 `ArrayList` dá acesso por índice em tempo constante e acrescenta no fim em tempo constante amortizado. Inserir ou remover no meio desloca elementos, com custo linear no número de elementos. `HashSet` e `HashMap` têm operações básicas com custo esperado constante quando os hashes se distribuem bem; não prometem ordem de iteração.
 
 Um `Map` substitui o valor quando inseres uma chave igual à existente. Usa `containsKey` quando tens de distinguir ausência de um valor `null`. Um `for-each` usa um iterador; remover diretamente da coleção durante a iteração pode provocar `ConcurrentModificationException`. Se o contrato o permitir, usa `Iterator.remove()` ou constrói uma coleção do resultado.
+
+## Proteger uma coleção
+
+Um campo `private` deixa de proteger o estado se um getter devolve a lista interna e os clientes a alteram diretamente. Escolhe o que o cliente pode fazer e se deve acompanhar mudanças futuras.
+
+Uma **cópia defensiva** cria outra coleção. Uma **vista não modificável** impede alterações através dessa vista, mas continua ligada à coleção original. Compara os dois casos:
+
+<CodePlayground
+  language="java"
+  title="Uma vista acompanha mudanças, uma cópia guarda a sequência"
+  code={
+    'import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.Collections;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> nomes = new ArrayList<String>(Arrays.asList("Ana"));\n        List<String> vista = Collections.unmodifiableList(nomes);\n        List<String> copia = new ArrayList<String>(nomes);\n        nomes.add("Rita");\n        System.out.println(vista);\n        System.out.println(copia);\n    }\n}'
+  }
+/>
+
+A vista mostra `[Ana, Rita]`; a cópia mostra `[Ana]`. Chamar `vista.add` lançaria `UnsupportedOperationException`, mas alterar `nomes` continua permitido. Para devolver um snapshot não modificável, podes envolver uma cópia com `Collections.unmodifiableList`.
+
+A cópia é superficial: copia as referências dos elementos, não cada objeto. Aqui as strings são imutáveis. Numa lista de heróis mutáveis, a cópia não impediria alterar a vida de um herói partilhado. Também pode ser preciso copiar a coleção recebida no construtor, para o chamador não alterar o estado por uma referência que conserva.
 
 ## Genéricos e wildcards
 
