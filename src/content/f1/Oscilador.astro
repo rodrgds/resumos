@@ -1,21 +1,20 @@
 ---
 import InteractiveDemo from '../../components/InteractiveDemo.astro';
+import { oscillatorState } from './models.js';
+const initialDamping = 1;
+const initial = oscillatorState(initialDamping);
 ---
 
 <InteractiveDemo label="Posição de uma massa e mola nos regimes de amortecimento">
   <div data-f1-oscillator>
     <label>
       Amortecimento b, em kg/s{' '}
-      <input type="range" min="0" max="20" step="0.1" value="1" />
+      <input type="range" min="0" max="20" step="0.1" value={initialDamping} />
     </label>
-    <output aria-live="polite"></output>
-    <svg
-      viewBox="0 0 560 300"
-      role="img"
-      aria-label="Posição em função do tempo de uma massa inicialmente afastada cinco centímetros do equilíbrio"
-    >
-      <path d="M45 25 V260 H535 M45 140 H535" class="axis" />
-      <path data-curve class="curve" />
+    <output aria-live="polite">{initial.summary}</output>
+    <svg viewBox="0 0 360 300" role="img" aria-label={initial.description}>
+      <path d="M45 25 V260 H335 M45 140 H335" class="axis" />
+      <path data-curve class="curve" d={initial.path} />
       <text x="5" y="36">
         +5
       </text>
@@ -31,10 +30,10 @@ import InteractiveDemo from '../../components/InteractiveDemo.astro';
       <text x="45" y="283">
         0
       </text>
-      <text x="450" y="283">
+      <text x="250" y="283">
         t (s)
       </text>
-      <text x="520" y="283">
+      <text x="320" y="283">
         1
       </text>
     </svg>
@@ -90,6 +89,7 @@ import InteractiveDemo from '../../components/InteractiveDemo.astro';
 </style>
 
 <script>
+  import { oscillatorState } from './models.js';
   for (const demo of document.querySelectorAll<HTMLElement>(
     '[data-f1-oscillator]',
   )) {
@@ -97,58 +97,11 @@ import InteractiveDemo from '../../components/InteractiveDemo.astro';
     const output = demo.querySelector('output')!;
     const curve = demo.querySelector<SVGPathElement>('[data-curve]')!;
     const graph = demo.querySelector('svg')!;
-    const number = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 2 });
     const update = () => {
-      const mass = 0.25;
-      const spring = 100;
-      const initialPosition = 0.05;
-      const damping = Number(input.value);
-      const omega = Math.sqrt(spring / mass);
-      const gamma = damping / (2 * mass);
-      const critical = Math.abs(gamma - omega) < 1e-9;
-      const under = gamma < omega;
-      const position = (t: number) => {
-        if (critical)
-          return initialPosition * (1 + gamma * t) * Math.exp(-gamma * t);
-        if (under) {
-          const frequency = Math.sqrt(omega * omega - gamma * gamma);
-          return (
-            initialPosition *
-            Math.exp(-gamma * t) *
-            (Math.cos(frequency * t) +
-              (gamma / frequency) * Math.sin(frequency * t))
-          );
-        }
-        const gap = Math.sqrt(gamma * gamma - omega * omega);
-        const fast = -gamma - gap;
-        const slow = -gamma + gap;
-        return (
-          (initialPosition *
-            (-fast * Math.exp(slow * t) + slow * Math.exp(fast * t))) /
-          (slow - fast)
-        );
-      };
-      const points = Array.from({ length: 401 }, (_, i) => {
-        const t = i / 400;
-        return `${i ? 'L' : 'M'}${45 + 490 * t},${140 - 2200 * position(t)}`;
-      });
-      curve.setAttribute('d', points.join(' '));
-      const regime =
-        damping === 0
-          ? 'Sem amortecimento'
-          : critical
-            ? 'Crítico'
-            : under
-              ? 'Subamortecido'
-              : 'Sobreamortecido';
-      const period = under
-        ? ` Período = ${number.format((2 * Math.PI) / Math.sqrt(omega * omega - gamma * gamma))} s.`
-        : ' Sem período de oscilação.';
-      output.textContent = `b = ${number.format(damping)} kg/s. ${regime}.${period} x(1 s) = ${number.format(position(1) * 100)} cm.`;
-      graph.setAttribute(
-        'aria-label',
-        `${regime}: posição entre zero e um segundo, com posição inicial cinco centímetros e velocidade inicial nula.`,
-      );
+      const state = oscillatorState(Number(input.value));
+      curve.setAttribute('d', state.path);
+      output.textContent = state.summary;
+      graph.setAttribute('aria-label', state.description);
     };
     input.addEventListener('input', update);
     update();
