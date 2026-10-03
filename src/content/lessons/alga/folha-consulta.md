@@ -10,9 +10,9 @@ editorial:
       url: https://drive.google.com/file/d/1ZBprkJ8SuJvpFFTPqFwNNsCzJyhdJoeA/view
 ---
 
-Esta folha resume todo o percurso de ALGA e responde à pergunta prática: que fórmula ou condição usar em cada conta, com a ligação para a explicação?
+Que fórmula ou condição usar em cada conta? Cada linha traz a ligação para a explicação.
 
-Trabalhamos sobre $\mathbb R$. $A$ tem $m$ linhas e $n$ colunas; $r=\operatorname{car}(A)$: $A$ é a matriz dos coeficientes com $m$ linhas e $n$ colunas, e $r$ é a sua característica, o número de pivôs da forma em escada.
+Trabalhamos sobre $\mathbb R$. $A$ é $m\times n$ e $r=\operatorname{car}(A)$ é o número de pivôs da forma em escada.
 
 ## Matrizes e determinantes
 
@@ -23,7 +23,7 @@ $$
 A^{-1}=\frac1{ad-bc}\begin{bmatrix}d&-b\\-c&a\end{bmatrix}\quad(ad-bc\ne0).
 $$
 
-$C_{ij}=(-1)^{i+j}\det M_{ij}$; Laplace: $\det A=\sum_j a_{ij}C_{ij}$. $\operatorname{adj}(A)=C^T$; $A^{-1}=\operatorname{adj}(A)/\det A$ se $\det A\ne0$.
+$M_{ij}$ é a submatriz sem a linha $i$ e a coluna $j$; $\det M_{ij}$ é o menor; $C_{ij}=(-1)^{i+j}\det M_{ij}$; Laplace: $\det A=\sum_j a_{ij}C_{ij}$. $\operatorname{adj}(A)=C^T$; $A^{-1}=\operatorname{adj}(A)/\det A$ se $\det A\ne0$.
 
 | Operação                               | Efeito no determinante |
 | -------------------------------------- | ---------------------- |
@@ -94,7 +94,7 @@ v=P_B[v]_B,\quad [v]_C=P_C^{-1}P_B[v]_B,\quad
 [T]_{C\leftarrow B}=P_C^{-1}AP_B.
 $$
 
-Mesma base no domínio e chegada de um endomorfismo: $A_{\mathrm{novo}}=P^{-1}AP$. [Mudanças de base](/cadeiras/alga/mudanca-de-base/).
+As colunas de $P_B$ e $P_C$ são bases, por isso essas matrizes são invertíveis. Mesma base no domínio e chegada de um endomorfismo: $A_{\mathrm{novo}}=P^{-1}AP$. [Mudanças de base](/cadeiras/alga/mudanca-de-base/).
 
 $$
 p_A(\lambda)=\det(A-\lambda I),\quad E_\lambda=\ker(A-\lambda I),\quad
@@ -103,4 +103,4 @@ $$
 
 Vetor próprio **não nulo**; $P$ invertível com colunas próprias na ordem de $D$. Potências: $k$ inteiro não negativo, ou negativo se $A$ invertível. Constante de $p_A$: $\det A$; coeficiente dominante: $(-1)^n$. Diagonaliza em $\mathbb R$ se houver $n$ vetores próprios reais independentes. Para cada raiz: $1\leq m_g\leq m_a$; exige $m_g=m_a$ e todas as raízes reais. Valores distintos bastam, mas não são necessários. [Diagonalização](/cadeiras/alga/valores-proprios/).
 
-Simétrica: $Q^TAQ=D$, com $Q$ ortogonal. Forma quadrática $X^TAX+\ell^TX+k=0$: metade do coeficiente cruzado fora da diagonal; centro resolve $2Ah+\ell=0$; diagonaliza ortogonalmente e analisa também termos lineares e constante. [Cónicas e quádricas](/cadeiras/alga/conicas-quadricas/).
+Simétrica (âmbito opcional): $Q^TAQ=D$, com $Q$ ortogonal. Forma quadrática $X^TAX+\ell^TX+k=0$: metade do coeficiente cruzado fora da diagonal; centro resolve $2Ah+\ell=0$; diagonaliza ortogonalmente e analisa também termos lineares e constante. [Cónicas e quádricas](/cadeiras/alga/conicas-quadricas/).
