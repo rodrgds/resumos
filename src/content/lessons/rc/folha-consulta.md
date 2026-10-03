@@ -9,6 +9,10 @@ editorial:
   coverage: Consulta compacta dos tópicos das onze lições. As derivações e resoluções estão nas lições.
 ---
 
+No fim do percurso de RC, esta página reúne as fórmulas para rever antes de resolver problemas.
+
+Cada linha traz a conta, a expressão e a condição em que vale; as derivações e os exemplos estão nas onze lições.
+
 ## Unidades, canal e erros
 
 $1\text{ byte}=8\text{ bit}$. kbit/s e Mbit/s decimais: $10^3$ e $10^6$. Converte ms, μs e km antes de calcular.
