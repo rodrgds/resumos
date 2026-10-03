@@ -24,7 +24,7 @@ import Tabs from '../../../components/Tabs.astro';
 import ambito from '../../lbaw/ambito.php?raw';
 import pedido from '../../lbaw/pedido-laravel.mmd?raw';
 
-Com a base de dados a guardar e a proteger os dados, falta a aplicação que os mostra e os altera. O Laravel organiza essa aplicação em peças com papéis fixos: a **rota** recebe o pedido HTTP, o **controlador** executa a lógica, o **modelo** fala com a tabela e a **vista** gera o HTML. Middleware, autorização e outros serviços podem participar no percurso. Nem todas as respostas usam uma vista HTML.
+Com a base de dados a guardar e a proteger os dados, falta a aplicação que os mostra e os altera. O Laravel organiza essa aplicação em peças com papéis fixos: a **rota** recebe o pedido HTTP, o **controlador** executa a lógica, o **modelo** fala com a tabela e a **vista** gera o HTML. Middleware, autorização e outros serviços podem participar no percurso, por isso nem todas as respostas usam uma vista HTML.
 
 ## O recurso Sessões de ponta a ponta
 
@@ -138,11 +138,11 @@ O nome da tabela é explícito porque as convenções de pluralização não gar
 
 ## Um POST que falha a validação
 
-Com um utilizador autorizado a criar sessões, preenche o formulário de nova sessão com lotação `0` e carrega em guardar. O pedido `POST /sessoes` chega ao `store`, o `validate` rejeita `lotacao` por violar `min:1`, e o utilizador volta ao formulário com a mensagem de erro junto ao campo e os restantes valores preservados. Nenhuma linha tocou na base de dados: a validação correu antes de qualquer escrita.
+Com um utilizador autorizado a criar sessões, preenche o formulário de nova sessão com lotação `0` e guarda. O pedido `POST /sessoes` chega ao `store`, o `validate` rejeita `lotacao` por violar `min:1`, e o utilizador volta ao formulário com a mensagem de erro junto ao campo e os restantes valores preservados. Nenhuma linha tocou na base de dados, porque a validação correu antes de qualquer escrita.
 
 Se a autorização e a validação passassem, o `create` inseria a sessão e o redirecionamento voltava à lista. Se dois compradores disputarem o último lugar, a validação anterior à compra pode estar desatualizada. O [protocolo de concorrência](/cadeiras/lbaw/triggers-transacoes/) decide qual compra pode confirmar.
 
-O bloco seguinte isola a condição «inteiro positivo». Usa um inteiro PHP; um formulário HTTP enviaria texto, que o validador Laravel também precisa de interpretar:
+O bloco seguinte isola a condição «inteiro positivo», ou seja, usa um inteiro PHP onde um formulário HTTP enviaria texto, que o validador Laravel também precisa de interpretar:
 
 <CodePlayground
   language="php"
@@ -152,7 +152,7 @@ O bloco seguinte isola a condição «inteiro positivo». Usa um inteiro PHP; um
   }
 />
 
-A saída é `lotacao: A lotação tem de ser um inteiro a partir de 1.` Num formulário Laravel, o erro é apresentado junto ao campo. O bloco não reproduz a conversão das strings HTTP nem todas as regras do validador.
+Num formulário Laravel, o erro é apresentado junto ao campo. O bloco não reproduz a conversão das strings HTTP nem todas as regras do validador.
 
 <Mermaid
   source={pedido}
@@ -262,5 +262,3 @@ O modelo não é a página. Não coloques decisões de autorização só no temp
 Usa parâmetros para valores nas consultas; valida escolhas de coluna e direção de ordenação por uma lista explícita. Escapa dados na vista e usa proteção CSRF nas rotas de alteração que recebem cookies. Quando a base de dados recusar uma regra conhecida, traduz o resultado para uma resposta útil sem expor SQL, credenciais ou stack traces.
 
 Uma atualização feita em vários modelos pode precisar de `DB::transaction(...)`, mas só envolver código nessa função não resolve a corrida do último lugar. Aplica também a coordenação de [transações](/cadeiras/lbaw/triggers-transacoes/).
-
-As APIs concretas variam com a versão do projeto. Os exemplos explicam o desenho e não constituem uma aplicação Laravel completa.
