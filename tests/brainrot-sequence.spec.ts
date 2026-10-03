@@ -325,3 +325,35 @@ test('natural completion waits for a stationary touch to release before advancin
     '/brainrot/gta-8VmCwcGw6SI-001.mp4',
   );
 });
+
+test('manual navigation replaces an unavailable background without changing the lesson', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Math.random = () => 0.75;
+  });
+  await page.route('**/brainrot/subway-wOPAA823UWI-048.mp4', (route) =>
+    route.abort('failed'),
+  );
+  await page.goto('/exemplo/apontamentos/');
+  await page.getByRole('button', { name: 'Brain rot', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Brain rot', exact: true });
+  const current = dialog.locator('.brainrot-clip:nth-child(2) video');
+  const caption = await dialog.locator('.brainrot-caption').textContent();
+  await dialog
+    .getByRole('button', { name: 'Vídeo seguinte', exact: true })
+    .click();
+  await expect(current).toHaveAttribute(
+    'src',
+    /subway-wOPAA823UWI-(?!048)\d+\.mp4$/,
+  );
+  await expect
+    .poll(() =>
+      current.evaluate(
+        (video: HTMLVideoElement) => video.readyState >= 2 && !video.seeking,
+      ),
+    )
+    .toBe(true);
+  await expect(dialog.locator('.brainrot-caption')).toHaveText(caption!);
+  await expect(dialog.locator('video[src]')).toHaveCount(3);
+});

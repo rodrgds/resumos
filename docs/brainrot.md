@@ -28,7 +28,7 @@ O cache IndexedDB guarda até 256 MiB e 1000 trechos, removendo os que não fora
 
 `src/data/brainrot-voices.ts` fixa modelos e revisões. Mantém Miro e Dii sem alterações e respeita CC BY-NC-ND 4.0. Referências e vídeos têm termos próprios em [CREDITOS.txt](../public/brainrot/CREDITOS.txt).
 
-`src/data/brainrot-clips.ts` define a sequência das gravações, com segmentos completos desde a parte zero. Prepara o vídeo atual, o segmento sequencial seguinte e um segmento de outra gravação no ponto aleatório escolhido para o próximo scroll. A troca reutiliza o frame descodificado; se a rede ainda não o entregou, mantém o fundo atual até estar pronto. Só volta ao início no fim da gravação. Fechar liberta os três vídeos; vídeos pessoais ficam em memória até fechar.
+`src/data/brainrot-clips.ts` define a sequência das gravações, com segmentos completos desde a parte zero. Prepara o vídeo atual, o segmento sequencial seguinte e um segmento de outra gravação no ponto aleatório escolhido para o próximo scroll. A troca reutiliza o frame descodificado; se a rede ainda não o entregou, mantém o fundo atual até estar pronto. Se um vídeo preparado falhar, escolhe outro e mantém o trecho narrado. Não volta a tentar esse segmento até reabrires o leitor. Só volta ao início no fim da gravação. Fechar liberta os três vídeos; vídeos pessoais ficam em memória até fechar.
 
 Cada frase completa tem um áudio; a divisão visual das legendas não divide a fala. O realce de palavras é aproximado, não alinhamento fonético. A extração lê o conteúdo publicado de `[data-annotatable]`, MathML e código original, nunca notas ou edições do leitor. Mantém cartões de código e tabelas estáticos, com a sintaxe publicada, sem inventar uma explicação de matrizes ou programas.
 
