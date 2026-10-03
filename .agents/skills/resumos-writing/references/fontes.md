@@ -71,6 +71,19 @@ As instruções e recomendações de ferramentas destes guias são históricas. 
 
 ## O que adaptar
 
+### Calibrar com capítulos concretos
+
+Antes de rever uma cadeira, lê um capítulo conceptual e um exemplo desenvolvido do mesmo domínio no clone local, quando disponível em `data/unrelated/resumos-leic-ist/content/`. Se faltar, usa as ligações ao commit acima. O clone consultado em 3 de outubro de 2026 corresponde ao mesmo commit `e8955899be9a7b449962aa1d86100bce4a091407`.
+
+- **BD, `bd/0007-normalization.md`, "Motivação: anomalias".** A tabela de contas permite apontar para a informação repetida e mostrar o efeito de inserir, atualizar ou remover uma linha. Adapta esta passagem do caso concreto para o conceito, em vez de começar pelas formas normais.
+- **IAED, `iaed/0017-hash-tables.md`, "Como Resolver Colisões?".** A pergunta nasce de uma dificuldade real: duas chaves pedem a mesma posição. O texto segue as operações sobre a figura e explica o que muda numa remoção. Usa perguntas que façam avançar a explicação e figuras com estados que o leitor consiga seguir.
+- **CDI II, `cdi-ii/0004-diferenciabilidade.md`, abertura e "o pequeno de h".** Recorda a definição em uma dimensão, identifica o obstáculo à sua generalização e transforma a expressão passo a passo. Apresenta exemplos e um caso que falha antes de continuar. É esta ponte entre conhecimento anterior e conceito novo que interessa reproduzir.
+- **EMD, `emd/0002-principio-pombal.md`, exemplo das somas consecutivas.** Antes de usar restos iguais, explica por que a diferença é divisível; depois mostra por que subtrair somas deixa um bloco consecutivo. Explica a razão da construção escolhida, além da conta final.
+
+Observa sobretudo como o texto responde à dúvida seguinte do aluno. Mantém a conversa natural, o exemplo ao longo de vários passos e as ligações entre ideias. Parágrafos curtos não são frases soltas: o leitor deve perceber por que uma frase leva à próxima.
+
+Esta amostra também mostra por que precisamos de verificar a matéria. Em IAED, `k % M` pode ter colisões mesmo com menos de `M` chaves: para `M=5`, 1 e 6 dão o mesmo índice. Em BD, para aplicar `CG → H` é preciso ter **C e G** no fecho, não apenas G. Inspira-te no modo de explicar e refaz as afirmações e contas com as fontes da FEUP.
+
 As páginas de entrada incluem frequentemente objetivos curriculares formais. O tom procurado vem sobretudo dos capítulos e guias que desenvolvem uma explicação. As páginas sem conteúdo não permitem inferir uma voz própria da cadeira.
 
 A recorrência de definições, exemplos trabalhados, reformulações e ligações a pré-requisitos fundamenta a skill. O uso consistente de "tu", a redução de apartes e a escolha de frases mais curtas são decisões editoriais para este projeto, não características uniformes do original.
