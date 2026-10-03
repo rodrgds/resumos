@@ -35,7 +35,7 @@ import Dot from '../../../components/Dot.astro';
 import camadas from '../../fsi/camadas.dot?raw';
 import isolamento from '../../fsi/isolamento.dot?raw';
 
-Uma aplicação de notas não deve dar à conta que consulta pautas o poder de mudar utilizadores. Se essa conta for roubada, os seus privilégios determinam o que o atacante consegue fazer. Construir um sistema seguro começa por limitar essas consequências.
+Uma aplicação de notas não deve dar à conta que consulta pautas o poder de mudar utilizadores. Se essa conta for roubada, os seus privilégios determinam o que o atacante consegue fazer, por isso construir um sistema seguro começa por limitar essas consequências.
 
 ## Princípios de construção
 
@@ -52,7 +52,7 @@ Os princípios de Saltzer e Schroeder ajudam a avaliar um desenho:
 | Mínimo mecanismo comum    | Reduzimos recursos partilhados que criam dependências e fugas?             |
 | Aceitação psicológica     | O caminho seguro é compreensível e utilizável?                             |
 
-Por exemplo, exigir aprovação de dois responsáveis para publicar uma pauta separa privilégios. Pedir a mesma palavra-passe duas vezes não cria dois fatores independentes.
+Por exemplo, exigir aprovação de dois responsáveis para publicar uma pauta separa privilégios, porque pedir a mesma palavra-passe duas vezes não cria dois fatores independentes.
 
 **Isolamento** limita a comunicação e os recursos acessíveis entre componentes. Um processo separado, uma sandbox ou uma máquina virtual oferece isolamento com hipóteses diferentes. Se dois processos usam o mesmo ficheiro temporário gravável por todos, essa comunicação pode quebrar a separação pretendida.
 
@@ -66,7 +66,11 @@ Em modelos históricos de x86, páginas do kernel podiam estar nas tabelas do pr
 
 ### Caso: mesmo endereço, outro objeto
 
-A tem um buffer de 4 KiB em `0x4000`; B usa o mesmo endereço virtual para outra alocação. Uma instrução de A que escreve em `0x4000` segue a tradução de A, não a de B. Só uma partilha configurada, uma operação autorizada ou uma falha numa fronteira de proteção altera essa conclusão. Memória virtual isola traduções e permissões, não a intenção dos programas.
+:::details[Ver por que o mesmo endereço virtual não implica partilha]
+
+A tem um buffer de 4 KiB em `0x4000`; B usa o mesmo endereço virtual para outra alocação. Uma instrução de A que escreve em `0x4000` segue a tradução de A, não a de B, porque cada processo usa a sua tabela de páginas. Só uma partilha configurada, uma operação autorizada ou uma falha numa fronteira de proteção altera essa conclusão. A memória virtual isola traduções e permissões, não a intenção dos programas.
+
+:::
 
 ## Android: isolamento por aplicação
 
@@ -85,7 +89,7 @@ Um container Linux típico partilha o kernel do anfitrião. Namespaces separam v
 
 **Seccomp-BPF** permite decidir sobre chamadas de sistema usando o número, arquitetura e argumentos disponíveis ao filtro. Pode devolver erro, terminar o processo ou aplicar outras ações previstas. Não interpreta livremente o conteúdo dos ponteiros fornecidos: uma regra sobre o número da chamada não verifica o texto de um caminho.
 
-Por exemplo, um conversor que não precisa de criar processos pode ter uma política que bloqueia essa chamada. Se uma vulnerabilidade tentar usá-la, o filtro limita esse caminho. Ainda são necessários limites de ficheiros, memória, rede e acesso. Seccomp reduz superfície exposta do kernel; sozinho não é uma sandbox completa. Um container privilegiado, um volume sensível montado ou acesso ao controlo do runtime pode anular a separação pretendida.
+Por exemplo, um conversor que não precisa de criar processos pode ter uma política que bloqueia essa chamada. Se uma vulnerabilidade tentar usá-la, o filtro limita esse caminho. Ainda são necessários limites de ficheiros, memória, rede e acesso, porque seccomp reduz superfície exposta do kernel e sozinho não é uma sandbox completa. Um container privilegiado, um volume sensível montado ou acesso ao controlo do runtime pode anular a separação pretendida.
 
 ## Arranque verificado, medições e TPM
 
@@ -112,7 +116,7 @@ Um **monitor de referência** é o modelo de um mecanismo que decide acessos ent
 
 "Confiável" aqui significa que a segurança depende de o componente funcionar corretamente. Não é um elogio nem uma prova de que foi verificado. Reduzir a TCB reduz o que precisamos de analisar.
 
-Suponhamos que a interface esconde o botão "Alterar nota", mas o servidor aceita `POST /notas/42` de qualquer conta. O botão não é um monitor eficaz: o atacante envia o pedido diretamente. A verificação pertence ao servidor, junto da operação protegida.
+Suponhamos que a interface esconde o botão "Alterar nota", mas o servidor aceita `POST /notas/42` de qualquer conta. O botão não é um monitor eficaz, porque o atacante envia o pedido diretamente. A verificação pertence ao servidor, junto da operação protegida.
 
 ## O representante confuso
 
@@ -124,4 +128,4 @@ O serviço deve verificar a autoridade do requerente sobre o objeto, ou receber 
 
 Se o servidor de autorização não responde, permitir todos os acessos é uma falha aberta. Negar os acessos protegidos preserva a política de autorização, mas pode reduzir a disponibilidade. O desenho tem de explicitar a propriedade prioritária e uma recuperação segura, em vez de assumir que existe uma resposta universal para qualquer serviço.
 
-Numa resposta de teste, identifica a fronteira de confiança, o componente que decide e a condição verificada. Depois segue um pedido que tenta contornar essa decisão. Isto é mais preciso do que enumerar princípios sem os aplicar.
+Numa resposta de teste, identifica a fronteira de confiança, o componente que decide e a condição verificada. Depois segue um pedido que tenta contornar essa decisão, porque isto é mais preciso do que enumerar princípios sem os aplicar.

@@ -39,7 +39,7 @@ import pilha from '../../fsi/pilha.typ?raw';
 import Dot from '../../../components/Dot.astro';
 import retornos from '../../fsi/retornos.dot?raw';
 
-Uma função que aceita nomes precisa de um contrato: que tipo de dados recebe, que tamanho admite e que faz quando a entrada é inválida. Uma entrada vinda da rede não passa a ser confiável só porque o formulário a validou no navegador.
+Uma função que aceita nomes precisa de um contrato: que tipo de dados recebe, que tamanho admite e que faz quando a entrada é inválida. Uma entrada vinda da rede não passa a ser confiável só porque o formulário a validou no navegador, porque o atacante pode enviar o pedido diretamente.
 
 ## Validar e interpretar
 
@@ -51,7 +51,7 @@ Ao validar caminhos, normalizar e verificar uma pasta permitida pode detetar `..
 
 ## Format strings: o formato é uma instrução
 
-Em `printf(formato, ...)`, o primeiro argumento descreve como interpretar os seguintes. `printf(entrada)` deixa a entrada escolher essa interpretação. Mesmo sem overflow, uma entrada com especificadores pode pedir leituras ou escritas para argumentos que o programa não forneceu.
+Em `printf(formato, ...)`, o primeiro argumento descreve como interpretar os seguintes, ou seja `printf(entrada)` deixa a entrada escolher essa interpretação. Mesmo sem overflow, uma entrada com especificadores pode pedir leituras ou escritas para argumentos que o programa não forneceu.
 
 | Especificador | Argumento esperado                                   | Efeito                                                      |
 | ------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
@@ -72,7 +72,7 @@ O seguinte programa usa apenas formatos literais e argumentos válidos. O `%` da
   }
 />
 
-A saída termina em `Contagem guardada: 3`. Para mostrar texto externo, usa `printf("%s", entrada)` ou uma API de texto apropriada. Isto não valida tamanho, ponteiro ou contexto HTML: cada problema exige o seu contrato.
+Para mostrar texto externo, usa `printf("%s", entrada)` ou uma API de texto apropriada. Isto não valida tamanho, ponteiro ou contexto HTML: cada problema exige o seu contrato.
 
 ## Buffer overflow
 
@@ -86,7 +86,7 @@ void saudar(const char *nome) {
 }
 ```
 
-É comportamento indefinido. Pode corromper dados, falhar ou permitir desvio de execução, dependendo da disposição da memória e das proteções. Não podemos deduzir da ordem das declarações qual variável será alterada.
+É comportamento indefinido. Pode corromper dados, falhar ou permitir desvio de execução, dependendo da disposição da memória e das proteções, por isso não deduzas da ordem das declarações qual variável será alterada.
 
 <Typst
   source={pilha}
@@ -102,13 +102,13 @@ Num exemplo convencional de x86 de 32 bits com frame pointer, a pilha cresce par
 
 Suponhamos que o enunciado fixa `buf` em `ebp-16`, com 12 bytes, e o endereço de retorno em `ebp+4`. A cópia da string escreve em endereços crescentes. A diferença entre os endereços é $4-(-16)=20$ bytes. O byte no índice 20 da cópia atinge o primeiro byte do endereço de retorno. Com vinte caracteres de um byte, esse byte seria o terminador; não precisamos de copiar um endereço completo para ter uma escrita indevida.
 
-A little-endian, o inteiro de 32 bits `0x11223344` ocupa, em endereços crescentes, os bytes `44 33 22 11`. A ordem dos bytes é diferente da direção em que a pilha cresce. Distingue endianness, offsets e sentido da cópia antes de analisar um desenho.
+A little-endian, o inteiro de 32 bits `0x11223344` ocupa, em endereços crescentes, os bytes `44 33 22 11`. A ordem dos bytes é diferente da direção em que a pilha cresce, por isso distingue endianness, offsets e sentido da cópia antes de analisar um desenho.
 
 Este exemplo analisa uma disposição dada. Não executa código injetado nem pressupõe que o programa real terá esses offsets. Linguagens com verificação de memória reduzem estas classes de erro, mas bibliotecas nativas e componentes inferiores continuam a precisar de análise.
 
 ## Corrigir a cópia
 
-Se `nome` é uma string terminada em nulo válida, podemos medir antes de copiar e rejeitar o que não cabe. `n >= sizeof buf` inclui o caso em que falta espaço para o terminador.
+Se `nome` é uma string terminada em nulo válida, mede antes de copiar e rejeita o que não cabe, porque `n >= sizeof buf` inclui o caso em que falta espaço para o terminador.
 
 <CodePlayground
   title="Rejeitar uma string que não cabe no buffer"
@@ -118,7 +118,7 @@ Se `nome` é uma string terminada em nulo válida, podemos medir antes de copiar
   }
 />
 
-A saída aceita Ana e os sete dígitos, e rejeita oito. Estamos a contar bytes, não letras Unicode: uma letra acentuada pode ocupar vários bytes em UTF-8. Para dados recebidos como bloco binário, não uses `strlen` sem garantir um terminador dentro de memória acessível. Recebe o comprimento e valida-o explicitamente.
+Estamos a contar bytes, não letras Unicode: uma letra acentuada pode ocupar vários bytes em UTF-8. Para dados recebidos como bloco binário, não uses `strlen` sem garantir um terminador dentro de memória acessível, ou seja recebe o comprimento e valida-o explicitamente.
 
 `strncpy` pode não escrever um terminador quando a origem é longa. Também pode truncar silenciosamente um identificador e fazê-lo colidir com outro. Escolhe entre rejeitar e truncar de acordo com o contrato, em vez de assumir que qualquer função com "n" no nome resolve o problema.
 
@@ -126,7 +126,7 @@ A saída aceita Ana e os sete dígitos, e rejeita oito. Estamos a contar bytes, 
 
 Um **use-after-free** usa uma referência depois de libertar o objeto. Um **double free** liberta-o duas vezes. Um **integer overflow** pode transformar um tamanho grande num tamanho pequeno antes da alocação. Por exemplo, multiplicar `quantidade * sizeof item` sem verificar o limite pode reservar menos bytes do que os que serão escritos.
 
-As proteções têm objetivos distintos. Um canário pode detetar algumas alterações na pilha antes do retorno. NX impede executar certas páginas de dados. ASLR dificulta prever endereços. Nenhuma destas proteções corrige o acesso fora dos limites, e ataques que reutilizam código existente podem evitar a necessidade de executar bytes na pilha.
+As proteções têm objetivos distintos. Um canário pode detetar algumas alterações na pilha antes do retorno. NX impede executar certas páginas de dados. ASLR dificulta prever endereços. Nenhuma destas proteções corrige o acesso fora dos limites, porque ataques que reutilizam código existente podem evitar a necessidade de executar bytes na pilha.
 
 ## Reutilização de código e ROP
 
@@ -139,12 +139,16 @@ Considera só este modelo didático: x86 de 32 bits, argumentos na pilha, funç�
   alt="Quatro posições consecutivas da pilha, em endereços crescentes: etapaA, etapaB, continuação e argumento 7. O primeiro retorno consome etapaA; à entrada de etapaB, a continuação é o retorno e 7 é o primeiro argumento."
 />
 
+:::details[Ver a sequência de retornos no modelo didático]
+
 1. O primeiro `ret` consome `etapaA` e deixa o topo em `etapaB`.
 2. A entrada de `etapaA` vê `etapaB` como endereço de retorno.
 3. O retorno de `etapaA` consome esse endereço. `etapaB` vê agora `continuação` como retorno e 7 como argumento.
 4. Quando `etapaB` retorna, a execução segue para `continuação`; o valor 7 ainda exige tratamento conforme a convenção.
 
 Não podemos acrescentar livremente argumentos às etapas anteriores: sem ajuste, esses valores ficariam no caminho dos retornos. Cadeias gerais usam instruções que ajustam a pilha e, noutras arquiteturas, preparam registos. Não extrapoles esta disposição para x86-64 ou para qualquer convenção de chamada.
+
+:::
 
 ASLR dificulta localizar código; uma fuga de endereços pode reduzir essa proteção. Verificação de integridade do fluxo de controlo e mecanismos de retorno protegido procuram restringir os destinos. A correção continua a ser remover a corrupção de memória que permite controlar o fluxo.
 
@@ -165,7 +169,7 @@ Um **canário aleatório** depende de o valor ser imprevisível e não ser expos
 | Estática | Analisa código e caminhos possíveis sem executar cada caso           | Aproximações de ponteiros e caminhos podem gerar falsos positivos ou omitir fluxos |
 | Dinâmica | Instrumenta uma execução e acompanha os valores que realmente passam | Um caminho não executado pelos dados de teste não foi observado                    |
 
-Suponhamos `linha = ler_rede(); copia = linha; printf(copia);`. A marca chega ao formato através da cópia, mesmo que a variável tenha outro nome. Mudar para `printf("%s", copia)` remove o controlo do formato: `copia` continua externa, mas passa como dado. Isto não prova que é uma string válida ou que outro uso será seguro.
+Suponhamos `linha = ler_rede(); copia = linha; printf(copia);`. A marca chega ao formato através da cópia, mesmo que a variável tenha outro nome. Mudar para `printf("%s", copia)` remove o controlo do formato, ou seja `copia` continua externa mas passa como dado. Isto não prova que é uma string válida ou que outro uso será seguro.
 
 Um teste dinâmico com apenas `Ana` pode não revelar um problema que depende de `%`. A análise estática pode identificar o fluxo potencial, mas precisa de modelar `ler_rede` e a chamada de impressão. Usa as duas técnicas como evidências complementares, não como provas automáticas de ausência de falhas.
 
