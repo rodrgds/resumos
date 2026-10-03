@@ -8,6 +8,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-cond-while"
+  revision={2}
   title="Retomar não garante dados"
   explanation="/cadeiras/so/programacao-concorrente/#esperar-por-uma-condição"
   answer={{
@@ -19,11 +20,12 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
-    Dois consumidores esperam por uma fila vazia. Depois de um sinal, o
-    consumidor que acorda pode encontrar a fila vazia? Explica por que o
+  <div>
+    Um consumidor espera por uma fila vazia. O produtor insere um item e
+    sinaliza. Um segundo consumidor pode chegar antes de o primeiro voltar a
+    obter o mutex. O primeiro pode encontrar a fila vazia? Explica por que o
     predicado deve estar num while.
-  </p>
+  </div>
   <div slot="hint">
     Entre acordar e obter o mutex, outra tarefa pode avançar.
   </div>
@@ -44,14 +46,15 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-semaforo-vagas"
+  revision={1}
   title="Quantos podem entrar"
   explanation="/cadeiras/so/programacao-concorrente/#semáforos"
   answer={{ kind: 'number', value: 3, tolerance: 0 }}
 >
-  <p>
+  <div>
     Um semáforo começa em 3. Cinco threads fazem wait antes de usar um recurso e
     post depois. Sem posts ainda ocorridos, quantas podem ter passado por wait?
-  </p>
+  </div>
   <div slot="hint">Cada passagem consome uma permissão.</div>
   <div slot="hint-more">As chamadas wait são atómicas.</div>
   <div slot="solution">
@@ -62,4 +65,32 @@ import Exercise from '../../../components/Exercise.astro';
     Confundir o número inicial com o número de threads ou concluir justiça FIFO
     sem essa garantia.
   </div>
+</Exercise>
+
+<Exercise
+  id="so-fila-semaforos-ordem"
+  revision={1}
+  title="Esperar sem impedir quem cria espaço"
+  explanation="/cadeiras/so/programacao-concorrente/#semáforos"
+  answer={{kind: 'self', checklist: [
+    'Mostrei o produtor bloqueado em vazios mantendo o mutex.',
+    'Mostrei o consumidor impedido de retirar pela posse do mutex.',
+    'Esperei por vazios antes de obter o mutex e anunciei cheios após inserir.',
+  ]}}
+>
+  <div>
+
+Uma fila de capacidade 2 está cheia. O produtor obtém o mutex e só depois faz `wait(vazios)`. O consumidor faz `wait(cheios)` e tenta obter o mutex antes de retirar. Constrói a ordem de eventos que impede ambos de avançar. Reordena as operações do produtor e indica os valores iniciais de `vazios` e `cheios` quando a fila está vazia.
+
+  </div>
+  <div slot="hint">Que tarefa pode criar a permissão pela qual o produtor espera?</div>
+  <div slot="hint-more">Numa fila cheia, `vazios=0`. O consumidor tem de entrar na secção crítica para retirar.</div>
+  <div slot="solution">
+
+O produtor obtém o mutex e bloqueia em `wait(vazios)`. O consumidor obtém uma permissão de `cheios`, mas bloqueia no mutex. O produtor precisa da retirada que o consumidor não consegue fazer.
+
+O produtor correto faz `wait(vazios)`, obtém o mutex, insere, liberta o mutex e faz `post(cheios)`. O consumidor faz `wait(cheios)`, obtém o mutex, retira, liberta o mutex e faz `post(vazios)`. Para a fila inicialmente vazia, os valores são `vazios=2` e `cheios=0`.
+
+  </div>
+  <div slot="mistakes">Libertar o mutex de outra tarefa à força ou retirar a proteção dos índices por já haver semáforos.</div>
 </Exercise>

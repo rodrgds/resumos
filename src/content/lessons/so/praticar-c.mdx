@@ -10,14 +10,15 @@ import contarLinhas from '../../so/contar-linhas.c?raw';
 
 <Exercise
   id="so-alias-pointer"
+  revision={1}
   title="Seguir dois apontadores"
   explanation="/cadeiras/so/c-avancado/#apontadores-e-passagem-por-valor"
   answer={{ kind: 'number', value: 8, tolerance: 0 }}
 >
-  <p>
+  <div>
     Começa com x=2, y=6, p=&x e q=p. Executa p=&y; *q=8; *p=4. Qual é o valor
     final de x?
-  </p>
+  </div>
   <div slot="hint">Atribuir a p não reescreve q.</div>
   <div slot="hint-more">q continua a apontar para x.</div>
   <div slot="solution">
@@ -31,6 +32,7 @@ import contarLinhas from '../../so/contar-linhas.c?raw';
 
 <Exercise
   id="so-vida-objeto"
+  revision={1}
   title="Devolver um objeto"
   explanation="/cadeiras/so/c-avancado/#tempo-de-vida-e-propriedade"
   answer={{
@@ -42,10 +44,10 @@ import contarLinhas from '../../so/contar-linhas.c?raw';
     ],
   }}
 >
-  <p>
+  <div>
     Uma função declara uma struct local e devolve o seu endereço. O chamador usa
     esse endereço depois do retorno. Explica o erro e duas formas de o evitar.
-  </p>
+  </div>
   <div slot="hint">Compara a duração da variável com a duração do uso.</div>
   <div slot="hint-more">
     Devolver a estrutura por valor copia o objeto; uma reserva dinâmica
@@ -64,14 +66,15 @@ import contarLinhas from '../../so/contar-linhas.c?raw';
 
 <Exercise
   id="so-max-negativos"
+  revision={1}
   title="Inicializar um máximo"
   explanation="/cadeiras/so/c-avancado/#argumentos-e-conversão"
   answer={{ kind: 'number', value: -2, tolerance: 0 }}
 >
-  <p>
+  <div>
     Um comando recebe os inteiros -8, -2 e -11. Qual deve ser o máximo? Que
     escolha de valor inicial evita aceitar zero como resposta?
-  </p>
+  </div>
   <div slot="hint">O máximo deve ser um dos dados.</div>
   <div slot="hint-more">Inicializa com o primeiro número validado.</div>
   <div slot="solution">
@@ -86,8 +89,9 @@ import contarLinhas from '../../so/contar-linhas.c?raw';
 
 <Exercise
   id="so-contar-newlines-c"
+  revision={1}
   title="Corrigir a contagem de linhas"
-  explanation="/cadeiras/so/ficheiros-api/#strings-opções-e-pesquisa"
+  explanation="/cadeiras/so/shell-unix/#filtrar-e-contar"
   answer={{
     kind: 'self',
     checklist: [
@@ -97,11 +101,11 @@ import contarLinhas from '../../so/contar-linhas.c?raw';
     ],
   }}
 >
-  <p>
+  <div>
     A função deve contar caracteres de mudança de linha numa string. Corrige a
     função e mantém os três exemplos de verificação. A string vazia tem zero;
     "abc" tem zero; "a\nb\n" tem duas.
-  </p>
+  </div>
   <div slot="work">
     <CodePlayground
       language="c"
@@ -123,4 +127,60 @@ import contarLinhas from '../../so/contar-linhas.c?raw';
     Mudar os esperados para combinar com o erro ou tratar só a string vazia com
     um caso especial, deixando "abc" incorreto.
   </div>
+</Exercise>
+
+<Exercise
+  id="so-maximo-validado"
+  revision={1}
+  title="Escrever um comando de máximo"
+  explanation="/cadeiras/so/c-avancado/#argumentos-e-conversão"
+  answer={{kind: 'self', checklist: [
+    'Rejeitei falta de números, texto inválido e valores fora de int.',
+    'Obtive -2 para -8 -2 -11 e 0 para 0.',
+    'Só apresentei o máximo depois de validar todos os argumentos.',
+  ]}}
+>
+  <div>
+
+Escreve em C um comando `maximo` que recebe um ou mais inteiros decimais representáveis por `int`. Deve escrever o máximo, ou terminar com erro sem imprimir um resultado se algum argumento for inválido. Verifica `./maximo -8 -2 -11`, `./maximo 0`, `./maximo`, `./maximo 12x` e um número maior do que `INT_MAX`. O executor C do navegador não passa estes argumentos; usa o terminal UNIX.
+
+  </div>
+  <div slot="hint">Valida cada string com `strtol` antes de a comparar.</div>
+  <div slot="hint-more">O primeiro número válido inicializa o máximo. Um zero devolvido por `strtol` só é válido se houve conversão completa e não houve erro.</div>
+  <div slot="solution">
+
+Guarda este programa em `maximo.c` e compila com `cc -std=c17 -Wall -Wextra -Wpedantic maximo.c -o maximo`.
+
+```c
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "uso: %s inteiro [inteiros]\n", argv[0]);
+        return 1;
+    }
+    int maximo = 0;
+    for (int i = 1; i < argc; i++) {
+        errno = 0;
+        char *fim;
+        long valor = strtol(argv[i], &fim, 10);
+        if (errno == ERANGE || fim == argv[i] || *fim != '\0' ||
+            valor < INT_MIN || valor > INT_MAX) {
+            fprintf(stderr, "inteiro invalido: %s\n", argv[i]);
+            return 1;
+        }
+        if (i == 1 || valor > maximo) maximo = (int)valor;
+    }
+    if (printf("%d\n", maximo) < 0 || fflush(stdout) == EOF) return 1;
+    return 0;
+}
+```
+
+A atribuição com `i == 1` substitui o zero inicial antes de qualquer comparação. Os dois primeiros comandos escrevem `-2` e `0`; os restantes terminam com estado 1. Uma entrada inválida posterior, como `./maximo 7 12x`, também rejeita todo o pedido.
+
+  </div>
+  <div slot="mistakes">Aceitar só o prefixo numérico de `12x`, converter para `int` antes de testar os limites ou imprimir um máximo parcial antes de detetar o erro.</div>
 </Exercise>
