@@ -9,7 +9,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Depois de trabalhares com valores em memória, esta página responde a como guardar e ler esses valores em ficheiros de texto.
+Os valores do programa desaparecem quando ele termina. Esta página guarda registos de nomes e notas em ficheiros de texto e volta a lê-los com validação.
 
 Um ficheiro de texto precisa de um formato. Vamos usar uma linha por registo, com um nome sem espaços e uma nota de `0` a `20`. A biblioteca lê caracteres; o teu programa verifica se eles cumprem o formato.
 
@@ -56,7 +56,7 @@ Total: 27
 
 O programa cria `notas.txt` na pasta de trabalho e corre localmente, porque o executor do navegador não cria ficheiros. Fecha a escrita antes de leres e verifica `close()`, pois o destrutor fecha mas não trata um erro final de escrita.
 
-O leitor acima demonstra leitura por tokens num ficheiro conhecido. Para dados externos, a leitura por linhas seguinte distingue um registo incompleto do fim normal.
+O leitor acima demonstra leitura por tokens num ficheiro conhecido. Para dados externos, a leitura por linhas seguinte distingue um registo incompleto do fim normal. Cada linha é validada em três passos: ler nome e nota, confirmar que não sobra texto e confirmar o intervalo.
 
 ## Ler sem antecipar o fim
 
@@ -73,7 +73,7 @@ A leitura por tokens ignora espaços e fins de linha. Se o formato exige exatame
   title="Validar cada registo de uma entrada"
   input={'Ana 15\nEva 21\nLeo 12 lixo\nRui 20'}
   code={
-    '#include <iostream>\n#include <sstream>\n#include <string>\n\nint main() {\n    std::string linha;\n    int numero = 0;\n    while (std::getline(std::cin, linha)) {\n        ++numero;\n        std::istringstream registo(linha);\n        std::string nome;\n        std::string extra;\n        int nota = 0;\n        if (!(registo >> nome >> nota) || (registo >> extra) || nota < 0 || nota > 20) {\n            std::cout << "Linha " << numero << " invalida\\n";\n            continue;\n        }\n        std::cout << nome << ": " << nota << "\\n";\n    }\n}\n'
+    '#include <iostream>\n#include <sstream>\n#include <string>\n\nint main() {\n    std::string linha;\n    int numero = 0;\n    while (std::getline(std::cin, linha)) {\n        ++numero;\n        std::istringstream registo(linha);\n        std::string nome;\n        std::string extra;\n        int nota = 0;\n        bool leu = static_cast<bool>(registo >> nome >> nota);\n        bool sobra = static_cast<bool>(registo >> extra);\n        bool intervalo = (nota >= 0 && nota <= 20);\n        if (!leu || sobra || !intervalo) {\n            std::cout << "Linha " << numero << " invalida\\n";\n            continue;\n        }\n        std::cout << nome << ": " << nota << "\\n";\n    }\n}\n'
   }
 />
 
@@ -91,9 +91,25 @@ Rui: 20
 Usa a própria leitura como condição: `while (entrada >> nome >> nota)` só entra com um par válido. `eof()` descreve o passado e não prevê a próxima leitura.
 :::
 
-A linha de Eva traz um inteiro fora do intervalo e a de Leo traz campos extra, que `(registo >> extra)` deteta. Uma linha vazia ou `12abc` também é rejeitada.
+Segue cada entrada do exemplo. `Ana 15` lê nome e `15`, sem sobra e dentro do intervalo: válida. `Eva 21` lê nome e `21`, sem sobra, mas fora do intervalo: inválida. `Leo 12 lixo` lê `12` e ainda encontra `lixo`: inválida. `Eva 12abc` lê `12` e deixa `abc` por consumir: inválida. Uma linha vazia falha logo na primeira leitura.
 
-Cada iteração cria um fluxo novo para a linha. Uma falha de conversão não contamina a seguinte. Se o formato permitisse nomes com espaços, teria de usar outra separação, por exemplo um delimitador, e definir como esse delimitador pode aparecer nos campos.
+| Entrada     | `leu` | `sobra` | `nota` | Decisão  |
+| ----------- | ----- | ------- | ------ | -------- |
+| `Ana 15`    | sim   | não     | 15     | válida   |
+| `Ana`       | não   | não     | 0      | inválida |
+| `Eva 12abc` | sim   | sim     | 12     | inválida |
+| vazia       | não   | não     | 0      | inválida |
+
+Cada iteração cria um fluxo novo para a linha. Uma falha de conversão não contamina a seguinte. Se o formato permitisse nomes com espaços, teria de usar outra separação, por exemplo um delimitador, e definir como esse delimitador pode aparecer nos campos. Depois de uma falha de conversão no fluxo principal, limpa o estado e consome a entrada problemática antes de continuar:
+
+```cpp
+// Excerto: recupera de uma leitura falhada.
+#include <limits>
+entrada.clear();
+entrada.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+```
+
+Limpar sem consumir a causa repete a mesma falha.
 
 ## Binário não é memória bruta portátil
 
@@ -101,4 +117,4 @@ Cada iteração cria um fluxo novo para a linha. Uma falha de conversão não co
 
 ## Caso resolvido: fim depois de um nome
 
-Imagina a linha `Ana`, sem nota. `getline` resulta porque leu uma linha. A extração do nome resulta, mas a da nota falha. O programa rejeita o registo e não usa o valor anterior de `nota`. Agora imagina um ficheiro vazio: `getline` falha antes do corpo do ciclo e não existe registo a validar. Os dois casos chegam ao fim dos dados, mas têm significados diferentes.
+Imagina a linha `Ana`, sem nota. `getline` resulta porque leu uma linha. A extração do nome resulta, mas a da nota falha, por isso `leu` é falso e o programa rejeita o registo sem usar o valor anterior de `nota`. Num ficheiro vazio, `getline` falha antes do corpo do ciclo e não existe registo a validar. Os dois casos chegam ao fim dos dados, mas têm significados diferentes: registo incompleto contra ausência de registo.

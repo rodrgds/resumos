@@ -10,9 +10,9 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 
-Depois de criares objetos com estado válido, esta página responde a o que acontece quando copias um objeto que gere memória.
+O relógio copia bem porque cada cópia tem o seu inteiro. Esta página trata do caso difícil: um objeto dono de memória, onde copiar o apontador não copia o recurso.
 
-Um objeto pode ser dono de um recurso, ou seja, de algo que só ele deve libertar, como uma zona de memória com os seus números. Copiar esse objeto obriga a decidir o destino do recurso: duplicar os números, partilhar a zona ou proibir a cópia. O tipo tem de escolher uma destas semânticas, ou seja, uma regra de cópia, porque um apontador só por si não diz qual foi escolhida.
+Um objeto pode ser dono de um recurso: algo que só ele deve libertar, como uma zona de memória com os seus números. Copiar esse objeto obriga a decidir o destino do recurso: duplicar os números, partilhar a zona ou proibir a cópia. O tipo tem de escolher uma destas semânticas, porque um apontador só por si não diz qual foi escolhida.
 
 ## Construção de cópia e atribuição
 
@@ -40,14 +40,42 @@ Uma **cópia superficial** copia a representação, incluindo endereços. Uma **
 
 <Dot
   source={
-    'digraph copia { rankdir=LR; node [shape=box]; a [label="a: dono"]; b [label="b: cópia independente"]; x [label="recurso de a: 4, 6"]; y [label="recurso de b: 9, 6"]; a -> x; b -> y; }'
+    'digraph copia { rankdir=LR; node [shape=box]; a [label="a: dono"]; b1 [label="b: copia superficial"]; x [label="recurso unico: 4, 6"]; a -> x; b1 -> x; }'
+  }
+  alt="Cópia superficial: a e b apontam para o mesmo recurso com 4 e 6. Os dois destrutores tentariam libertar o mesmo array."
+/>
+
+Depois da cópia profunda e de `b.at(0) = 9`, cada objeto tem o seu recurso:
+
+<Dot
+  source={
+    'digraph copia { rankdir=LR; node [shape=box]; a [label="a: dono"]; b [label="b: copia independente"]; x [label="recurso de a: 4, 6"]; y [label="recurso de b: 9, 6"]; a -> x; b -> y; }'
   }
   alt="Após cópia profunda e alteração de b, a possui os valores 4 e 6, e b possui outro recurso com 9 e 6."
 />
 
-## Um buffer com propriedade exclusiva
+## Primeiro a cópia: um recurso independente
 
 O exemplo usa `unique_ptr<int[]>` para garantir a libertação, mas implementa a cópia para dar ao `Buffer` semântica de valor. O invariante é que existem `tamanho_` inteiros acessíveis; quando o tamanho é zero, não existe elemento válido. `at` verifica o índice.
+
+Começa só pela construção de cópia, antes de leres atribuição e movimento:
+
+```cpp
+// Excerto: a cópia reserva e copia, nunca partilha o endereço.
+Buffer(const Buffer& outro) : Buffer(outro.tamanho_) {
+    for (std::size_t i = 0; i < tamanho_; ++i) dados_[i] = outro.dados_[i];
+}
+```
+
+Com `Buffer a(2)` contendo `4` e `6`, `Buffer b = a` reserva dois inteiros novos e copia cada posição. Alterar `b.at(0)` para `9` não afeta `a`. A delegação `Buffer(outro.tamanho_)` constrói primeiro um destino válido; se a reserva falhar, a exceção sai antes de existir qualquer cópia parcial.
+
+## Depois a atribuição: preparar antes de trocar
+
+Na cópia, o destino ainda não existe e a reserva pode falhar antes de haver um objeto parcial. Na atribuição, o destino já tem um recurso: no exemplo abaixo, `c` existe com tamanho zero e recebe `b` com dois inteiros. A mesma ordem protege os dois casos. Prepara primeiro a cópia completa num objeto temporário e só depois troca com o destino. Se a reserva falhar, o destino continua intacto. A tabela a seguir à listagem mostra os três momentos: preparar, trocar e destruir o antigo.
+
+## Um buffer com propriedade exclusiva
+
+O programa completo abaixo reúne cópia, atribuição e movimento. Lê cada operação pela ordem das secções anteriores.
 
 Programa completo para compilar localmente:
 
@@ -129,7 +157,15 @@ Saída:
 
 `std::make_unique<int[]>(n)` reserva um array de `n` inteiros inicializados a zero. A expressão `n == 0 ? nullptr : ...` escolhe não reservar quando o tamanho é zero. `std::exchange(outro.tamanho_, 0)` devolve o tamanho antigo e coloca zero na origem.
 
-A construção `Buffer b = a` reserva dois inteiros novos e copia `4` e `6`, por isso alterar `b.at(0)` para `9` não afeta `a`. A atribuição `c = b` copia `9` e `6`. A autoatribuição através de `alias` mantém `c` intacto.
+Segue o `main` com os estados do recurso. `Buffer b = a` reserva dois inteiros novos e copia `4` e `6`, por isso alterar `b.at(0)` para `9` não afeta `a`. `c = b` copia `9` e `6` para um destino que já existia com tamanho zero.
+
+| Momento             | `c` antes | Novo recurso             | Destruição do antigo             |
+| ------------------- | --------- | ------------------------ | -------------------------------- |
+| preparar `copia(b)` | tamanho 0 | reserva 2 e copia `9, 6` | nada, `c` intacto                |
+| `trocar(copia)`     | tamanho 0 | `c` recebe `9, 6`        | o vazio antigo morre com `copia` |
+| fim da atribuição   | `9, 6`    | —                        | concluída                        |
+
+A autoatribuição através de `alias` mantém `c` intacto. `Buffer d = std::move(b)` transfere o endereço sem copiar inteiros; `b` fica com tamanho zero.
 
 ## Atribuir sem perder o recurso anterior
 
@@ -150,7 +186,7 @@ A alternativa "libertar o destino e só depois copiar" perde o estado anterior s
 
 O movimento de `b` para `d` transfere o endereço sem copiar os inteiros e põe o tamanho de `b` a zero. Por isso, `b` fica vazio e pode ser destruído ou receber nova atribuição.
 
-O estado de um objeto movido depende do contrato do tipo. Não assumes que qualquer `std::string` ou `std::vector` movido fica vazio; a biblioteca garante um estado válido, frequentemente não especificado. O `Buffer` desta página oferece uma garantia mais concreta. `noexcept` indica que as operações de movimento apresentadas não lançam, o que também ajuda coleções a escolher movimento durante uma realocação.
+O estado de um objeto movido depende do contrato do tipo. Não assumes que qualquer `std::string` ou `std::vector` movido fica vazio; a biblioteca garante um estado válido, frequentemente não especificado, e esse objeto só pode ser destruído ou receber nova atribuição. O `Buffer` desta página oferece uma garantia mais concreta: tamanho zero. `noexcept` indica que as operações de movimento apresentadas não lançam, o que também ajuda coleções a escolher movimento durante uma realocação.
 
 ## Regras de três, cinco e zero
 

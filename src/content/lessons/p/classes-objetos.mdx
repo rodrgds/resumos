@@ -9,17 +9,19 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Depois de partilhares objetos entre funções, esta página responde a como impedir que um objeto fique com valores sem sentido.
+Dois inteiros soltos aceitam `70` minutos. Esta página constrói um relógio que recusa esse estado desde a criação e o conserva em cada operação.
 
-Uma classe define o estado e as operações que o mantêm válido, ou seja, cada objeto conserva o seu próprio estado dentro do contrato, isto é, das promessas sobre que valores são válidos. Um relógio com dois inteiros permite estados sem sentido, como `70` minutos.
+Uma classe define o estado e as operações que o mantêm válido. Cada objeto conserva o seu próprio estado dentro do contrato: as promessas sobre que valores são válidos. Um relógio com dois inteiros permite estados sem sentido, como `70` minutos.
 
 ## Definir uma classe e criar objetos
 
 A interface pública diz o que o chamador pode fazer. Os membros privados guardam a representação e só são acessíveis aos membros e amigos da classe. **Encapsular** é manter uma fronteira que preserva o significado dos dados, não apenas escrever getters e setters para cada campo.
 
-Este relógio guarda minutos desde a meia-noite. O seu **invariante** é `0 <= minutos_ < 1440`. O chamador conhece horas e minutos; não precisa de saber a representação escolhida.
+Este relógio guarda minutos desde a meia-noite, numa única representação. O seu **invariante** é `0 <= minutos_ < 1440`. O chamador conhece horas e minutos; não precisa de saber a representação escolhida. Guardar `hora_`, `minuto_` e `minutos_` em simultâneo obrigaria a atualizar três representações da mesma informação.
 
 Programa completo para compilar localmente:
+
+`throw` abandona a operação atual e procura um tratador. Aqui serve apenas para recusar construção ou alteração inválida; a página [Exceções e testes](/cadeiras/p/excecoes-testes/#lançar-e-apanhar) explica a propagação completa. O destrutor de um objeto automático corre sempre na saída do âmbito, mesmo quando uma exceção atravessa esse âmbito.
 
 ```cpp
 #include <iostream>
@@ -65,7 +67,7 @@ Saída:
 true
 ```
 
-O construtor transforma `23:50` em `1430`. Avançar `25` produz `1455`, cujo resto por `1440` dá `0:15`. A cópia `b` conserva `23:50`, porque não partilha estado com `a`.
+O construtor transforma `23:50` em `60 * 23 + 50 = 1430`. Avançar `25` produz `1455`, cujo resto por `1440` dá `15`, ou seja `0:15`. A cópia `b` conserva `1430` (`23:50`), porque cada objeto tem o seu próprio `minutos_`. Consulta por `const Relogio&` não copia o relógio nem o altera.
 
 ## Encapsulamento
 
@@ -117,13 +119,25 @@ Uma consulta que devolve um apontador modificável para um membro pode permitir 
 
 Numa chamada `a.avancar(25)`, `this` aponta para `a`. `this->minutos_` e `minutos_` acedem ao mesmo membro dentro do método. Usa `this` quando ajuda a distinguir nomes ou a devolver o próprio objeto.
 
-Um membro `static` pertence à classe e não a um objeto específico. Uma função estática não tem `this`; só pode aceder a membros de instância se receber um objeto. Uma variável estática local tem duração até ao fim do programa, embora o seu nome só seja visível na função.
+Um membro `static` pertence à classe e não a um objeto específico. Conta objetos criados, por exemplo:
+
+```cpp
+// Excerto: cada objeto recebe um número sequencial.
+struct Contador {
+    static int criados;
+    int id;
+    Contador() : id(++criados) {}
+};
+int Contador::criados = 0;
+```
+
+Depois de `Contador a; Contador b;`, `criados` vale `2`, com `a.id == 1` e `b.id == 2`. Uma função estática não tem `this`; só pode aceder a membros de instância se receber um objeto. Uma variável estática local tem duração até ao fim do programa, embora o seu nome só seja visível na função.
 
 Em `class`, os membros são privados por defeito. `public` expõe o contrato. `protected` dá acesso também a classes derivadas e aumenta a quantidade de código capaz de alterar a representação. Preferir estado privado facilita manter o invariante, inclusive quando existe herança.
 
 ## Sobrecarga de operadores
 
-`operator==` define a comparação entre dois relógios e devolve `bool`. Como ambos usam a mesma representação normalizada, basta comparar `minutos_`. Um operador deve conservar o significado habitual. Não uses `+` para uma operação surpreendente que destrói ou altera o operando esquerdo.
+`operator==` define a comparação entre dois relógios e devolve `bool`. Como ambos usam a mesma representação normalizada, basta comparar `minutos_`. Um operador deve conservar o significado habitual. Não uses `+` para uma operação surpreendente que destrói ou altera o operando esquerdo. Quando o operador precisa de simetria entre tipos diferentes, prefere uma função livre que recebe os dois operandos; um operador membro recebe o operando esquerdo através de `this`.
 
 A sobrecarga não permite criar operadores novos, mudar a precedência ou modificar operações entre dois tipos fundamentais. Pelo menos um dos operandos deve ter tipo de classe ou enumeração. Um operador membro recebe o operando esquerdo através de `this`; um operador livre recebe os dois. `friend` concede acesso privado a uma função específica, não torna todos os campos públicos.
 

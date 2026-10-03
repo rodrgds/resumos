@@ -23,7 +23,7 @@ editorial:
     - Os suplementos estudantis locais não identificam todos o seu ano letivo e não confirmam o formato das provas atuais.
 ---
 
-No fim destas páginas vais ler e escrever programas em C++17 que somam valores, percorrem coleções, gerem memória, definem classes e tratam ficheiros e erros. Cada lição parte de um programa pequeno que podes correr e alterar, ou seja, vês logo o efeito de cada decisão. Porque alguns programas criam ficheiros ou lançam exceções, temos versões marcadas para correres localmente com GCC e CMake.
+No fim destas páginas vais ler e escrever programas em C++17 que somam valores, percorrem coleções, gerem memória, definem classes e tratam ficheiros e erros. Cada lição parte de um programa pequeno que podes correr e alterar, por isso vês logo o efeito de cada decisão. Alguns programas criam ficheiros ou lançam exceções; esses estão marcados para correres localmente com GCC e CMake.
 
 ## Percurso
 
@@ -39,7 +39,7 @@ A [Cheat sheet](/cadeiras/p/folha-consulta/) serve para rever regras e condiçõ
 
 Prevê a saída antes de correr um programa. Se houver apontadores, desenha objetos e setas; se houver ciclos, acompanha índice e acumulador; se houver classes, identifica o invariante. Depois compara a execução com a previsão e muda um caso de fronteira.
 
-Os exercícios no fim das lições são próprios, ou seja, pedem leitura de código, decisão e escrita de funções. As respostas em C++ usam autoavaliação, por isso compara o comportamento e o raciocínio com a solução. Resolve primeiro sem abrir as pistas. Num projeto, aplica a mesma sequência a uma operação pequena de cada vez: contrato, implementação, teste e integração.
+Os exercícios no fim das lições são próprios. Pedem leitura de código, decisão sobre contratos e escrita de funções. As respostas em C++ usam autoavaliação, por isso compara o comportamento e o raciocínio com a solução. Resolve primeiro sem abrir as pistas. Num projeto, aplica a mesma sequência a uma operação pequena de cada vez: contrato, implementação, teste e integração.
 
 :::details[Programa e avaliação]
 
@@ -50,11 +50,11 @@ Essa edição usa 10% de projeto e 90% de provas, com a componente de provas def
 
 :::details[Fontes e âmbito]
 
-A ficha de 2025/26 indica como bibliografia obrigatória _C++ How to Program_, de Paul e Harvey Deitel, Pearson, 2016, e _C How to Program_, ISBN 978-0-13-705966-9. Como complemento, indica _The C Programming Language_, de Kernighan e Ritchie, ISBN 0-13-110362-8; _The C++ Programming Language_, de Bjarne Stroustrup, ISBN 978-0321563842; e _Big C++: Late Objects_, de Cay Horstmann, Wiley, 2017.
+Para esta edição, a referência de escrita é C++17. Vens de Fundamentos de Programação com Python: aqui os tipos decidem a divisão, a memória tem duração explícita e os erros de limites não dão exceção por defeito. A ficha de 2025/26 indica como bibliografia obrigatória _C++ How to Program_, de Paul e Harvey Deitel, Pearson, 2016, e _C How to Program_, ISBN 978-0-13-705966-9. Como complemento, indica _The C Programming Language_, de Kernighan e Ritchie, ISBN 0-13-110362-8; _The C++ Programming Language_, de Bjarne Stroustrup, ISBN 978-0321563842; e _Big C++: Late Objects_, de Cay Horstmann, Wiley, 2017.
 
-A [página de Stroustrup](https://www.stroustrup.com/4th.html) disponibiliza prefácio, índice e exercícios da quarta edição. O arquivo estudantil local _FEUP_PROG_ acrescentou exemplos de tipos de exercícios sobre funções, arrays, strings, memória, classes, herança e STL. As resoluções estudantis podem conter erros, por isso os programas destas páginas foram escritos e verificados separadamente.
+A [página de Stroustrup](https://www.stroustrup.com/4th.html) disponibiliza prefácio, índice e exercícios da quarta edição, orientada a C++11. Usa-a como referência de desenho; as regras de linguagem destas páginas seguem C++17. O arquivo estudantil local _FEUP_PROG_ acrescentou exemplos de tipos de exercícios sobre funções, arrays, strings, memória, classes, herança e STL. As resoluções estudantis podem conter erros, por isso os programas destas páginas foram escritos e verificados separadamente.
 
-Os [Resumos de Programação de SofiaViP](https://drive.google.com/file/d/1tGxsf5qYJZxWgZgGnUcAc2juFPSrEPUo/view) são um suplemento histórico. A página acessível do [Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4881) contém informação e apoio, sem ficheiros de ensino descarregáveis.
+Os [Resumos de Programação de SofiaViP](https://drive.google.com/file/d/1tGxsf5qYJZxWgZgGnUcAc2juFPSrEPUo/view) são um suplemento histórico sem ano letivo identificado. Os exemplos destas páginas foram escritos e verificados separadamente; quando um suplemento diverge, vale a ficha e o comportamento confirmado no compilador. A página acessível do [Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4881) contém informação e apoio, sem ficheiros de ensino descarregáveis.
 
 As regras de linguagem foram confrontadas com o [rascunho público do padrão C++](https://eel.is/c++draft/), restringindo os exemplos a C++17, e as decisões de propriedade com as [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines). Compilação, avisos e sanitizers seguem a [documentação de GCC](https://gcc.gnu.org/onlinedocs/gcc/) e a organização do build segue a [documentação de CMake](https://cmake.org/cmake/help/latest/guide/tutorial/index.html).
 :::

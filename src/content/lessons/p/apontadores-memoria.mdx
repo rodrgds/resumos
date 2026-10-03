@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 
-Depois de passares valores e referências a funções, esta página responde a o que acontece quando duas partes do programa mexem no mesmo objeto.
+A função `soma` recebe o endereço do primeiro elemento e lê a partir dele. Esta página explica o que esse endereço permite fazer, e o que continua por responder: se o objeto ainda existe e quem o deve destruir.
 
 Um apontador guarda o endereço de um objeto. Conhecer o endereço permite aceder ao objeto, mas não diz se ele ainda existe nem quem o deve destruir. Tens de responder a essas perguntas separadamente.
 
@@ -33,7 +33,7 @@ Saída:
 5 7 5
 ```
 
-No início, `p` e `q` apontam para `a`, por isso `*q += 2` altera `a` de `3` para `5`. Depois, `p = &b` muda apenas `p`; `q` continua em `a`. Os dois apontadores são objetos distintos, mesmo quando guardam o mesmo endereço.
+Segue as atribuições por ordem. No início, `p` e `q` apontam para `a`, por isso `*q += 2` altera `a` de `3` para `5`. Depois, `p = &b` muda apenas a seta de `p`; `q` continua em `a`. Finalmente `*p -= 1` altera `b` de `8` para `7`. Os dois apontadores são objetos distintos, mesmo quando guardam o mesmo endereço. O diagrama abaixo mostra o estado final; durante a execução, ambas as setas começaram em `a`.
 
 <Dot
   source={
@@ -55,7 +55,7 @@ Dois acessos ao mesmo objeto são **aliases**. Uma cópia de apontador copia um 
 | `int* const p`       | Não                    | Sim                                   |
 | `const int* const p` | Não                    | Não                                   |
 
-`const int* p` não torna necessariamente constante o objeto. Se o original não é `const`, outro acesso modificável pode alterá-lo. Já retirar `const` para modificar um objeto originalmente constante tem comportamento indefinido.
+Lê cada declaração do `*` para o nome. Em `const int* p`, o `int` é constante por esse acesso: podes mudar a seta, mas não `*p`. Em `int* const p`, a seta é fixa: podes alterar `*p`, mas não `p`. `const int* p` não torna necessariamente constante o objeto. Se o original não é `const`, outro acesso modificável pode alterá-lo. Já retirar `const` para modificar um objeto originalmente constante tem comportamento indefinido.
 
 ## Apontadores e arrays
 
@@ -92,7 +92,18 @@ Saída:
 
 O percurso lê `1`, segue `seguinte` até ao segundo e ao terceiro, e para porque o último guarda `nullptr`. A condição impede a leitura por um apontador nulo.
 
-Os três objetos são locais e mantêm-se vivos durante o percurso. Os campos são observadores: não destroem os nós. Não uses `delete` nestes endereços, porque os objetos não foram criados com `new`. Se uma estrutura reservar nós dinamicamente, precisa de definir quem os possui e liberta.
+Os três objetos são locais e mantêm-se vivos durante o percurso. Os campos são observadores: não destroem os nós. Não uses `delete` nestes endereços, porque os objetos não foram criados com `new`. Se os nós fossem dinâmicos, a destruição teria de guardar o seguinte antes de libertar o atual:
+
+```cpp
+// Excerto: libertação segura de uma lista dinâmica.
+while (primeiro != nullptr) {
+    No* seguinte = primeiro->seguinte;
+    delete primeiro;
+    primeiro = seguinte;
+}
+```
+
+Se fizeres `delete primeiro` antes de ler `seguinte`, perdes o endereço do resto da lista. A ordem é: guardar o seguinte, libertar o atual, avançar.
 
 ## Pilha, área livre e duração de vida
 
@@ -117,7 +128,7 @@ O objeto `local` morre ao sair da função. O endereço devolvido fica **pendent
 
 ## Alocação dinâmica com new e delete
 
-`new T(...)` cria um objeto e devolve o seu endereço. `new T[n]` cria um array. Usa `delete` para o primeiro e `delete[]` para o segundo. A troca tem comportamento indefinido. `new` normal lança `std::bad_alloc` se não conseguir reservar memória.
+Usa reserva dinâmica quando o tamanho só é conhecido durante a execução, como `n` lido da entrada. Um array local exigiria um tamanho fixo em compilação. `new T(...)` cria um objeto e devolve o seu endereço. `new T[n]` cria um array. Usa `delete` para o primeiro e `delete[]` para o segundo. A troca tem comportamento indefinido. `new` normal lança `std::bad_alloc` se não conseguir reservar memória.
 
 <CodePlayground
   language="cpp"

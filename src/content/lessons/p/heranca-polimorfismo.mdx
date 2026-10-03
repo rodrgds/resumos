@@ -8,10 +8,12 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import slicing from '../../p/slicing.typ?raw';
 
-Depois de decidires o destino da cópia de cada objeto, esta página responde a como usar a mesma interface para objetos com cálculos diferentes.
+Um preço normal devolve o valor da etiqueta. Uma promoção devolve o valor com desconto. Esta página usa a mesma operação `total()` para os dois cálculos, escolhendo a implementação pelo objeto concreto.
 
-A **classe base** é o tipo comum, ou seja, o que descreve as operações que todos os produtos oferecem; cada **derivada** é uma variação desse tipo com o seu próprio cálculo. Escreve `total()` na base e escolhe o cálculo conforme o objeto concreto, ou seja, o chamador usa a mesma interface, isto é, a mesma lista de operações, sem conhecer cada derivada. Uma promoção calcula o preço final de forma diferente de um preço normal.
+A **classe base** é o tipo comum: descreve as operações que todos os produtos oferecem. Cada **derivada** é uma variação desse tipo com o seu próprio cálculo. O chamador usa a mesma interface, a mesma lista de operações, sem conhecer cada derivada. Uma promoção calcula o preço final de forma diferente de um preço normal.
 
 ## Herdar de uma classe base
 
@@ -34,7 +36,13 @@ Saída:
 75 100
 ```
 
-Neste exemplo, o preço é não negativo e o desconto está entre `0` e `1`. O desconto `0.25` reduz `100` para `75`. Uma versão com dados externos teria de validar essas condições.
+Neste exemplo, o preço é não negativo e o desconto está entre `0` e `1`. O desconto `0.25` reduz `100` para `100 * (1 - 0.25) = 75`. Uma versão com dados externos teria de validar essas condições.
+
+<Typst
+  source={slicing}
+  format="svg"
+  alt="Promocao com 100 e desconto 0.25 devolve 75. Produto copia só da base devolve 100. Referência const Produto para a promocao conserva o objeto e devolve 75."
+/>
 
 `preco_` continua privado. A derivada consulta-o através do método protegido `preco()`. Membros privados da base não são acessíveis diretamente à derivada. Na herança pública, os membros públicos da base continuam públicos e os protegidos continuam protegidos. Herança privada ou protegida altera a acessibilidade e não oferece a mesma substituição pública.
 
@@ -44,7 +52,14 @@ O **tipo estático** é o tipo conhecido a partir da declaração. `referencia` 
 
 Numa chamada virtual através de uma referência ou apontador para a base, a implementação é escolhida pelo tipo dinâmico. Por isso, `referencia.total()` chama `Promocao::total()` e produz `75`. Sem `virtual`, uma chamada pela interface da base escolheria a função da base pelo tipo estático.
 
-`override` pede ao compilador que confirme que a função substitui uma virtual da base. O `const` faz parte da assinatura. Esquecer esse `const` não cria a substituição pretendida; `override` transforma o engano num erro de compilação. Sobrecarga escolhe entre assinaturas; substituição virtual escolhe a implementação de uma assinatura herdada. São mecanismos diferentes.
+`override` pede ao compilador que confirme que a função substitui uma virtual da base. O `const` faz parte da assinatura. Sem `override`, este erro compila e cria outra função:
+
+```cpp
+// Código incorreto para análise. Falta o const da base.
+double total() override { return preco() * (1.0 - desconto_); }
+```
+
+O compilador rejeita: a assinatura sem `const` não substitui `total() const`. Sem a palavra `override`, o erro passaria despercebido e a chamada pela base usaria sempre o preço sem desconto. Sobrecarga escolhe entre assinaturas; substituição virtual escolhe a implementação de uma assinatura herdada. São mecanismos diferentes.
 
 Uma chamada explicitamente qualificada, como `promocao.Produto::total()`, escolhe a implementação da base. Durante construção e destruição, as chamadas virtuais não chegam a partes derivadas ainda não construídas ou já destruídas. Evita depender desse tipo de despacho para inicializar a derivada.
 
@@ -57,7 +72,7 @@ Uma chamada virtual escolhe a implementação pelo tipo dinâmico, mas só se o 
 
 `Produto copia = promocao` constrói um novo `Produto` só com a parte base, por isso `copia` tem tipo dinâmico `Produto` e usa a implementação da base.
 
-Passar uma derivada por valor a um parâmetro de tipo base também corta a parte derivada. Um `vector<Produto>` guarda objetos base, não preserva objetos derivados completos. Para observar objetos polimórficos usa referências ou apontadores; para os possuir usa donos polimórficos apropriados.
+Passar uma derivada por valor a um parâmetro de tipo base também corta a parte derivada. Um `vector<Produto>` guarda objetos base, não preserva objetos derivados completos. Para observar objetos polimórficos usa referências ou apontadores; para os possuir usa donos polimórficos, como `vector<unique_ptr<Forma>>` da secção seguinte.
 
 ## Classes abstratas
 

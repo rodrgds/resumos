@@ -9,9 +9,13 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Depois de correres um programa pequeno, esta página responde a como dividir esse programa em funções que recebem valores e devolvem um resultado.
+O programa das notas já mistura leitura, validação e contagem na mesma função. Esta página separa essa operação numa função com contrato: o que recebe, o que devolve e o que exige.
 
-Uma função dá nome a uma operação, ou seja, separa o que o chamador precisa de saber da forma como a operação é realizada. Para a usares bem, lê os parâmetros, ou seja, os valores que o chamador entrega, o resultado, as alterações e as condições de entrada.
+Uma função dá nome a uma operação. Essa separação distingue o que o chamador precisa de saber da forma como a operação é realizada. Para a usares bem, lê o contrato: os parâmetros declarados na função, o resultado, as alterações e as condições de entrada.
+
+## Parâmetros e argumentos
+
+Os **parâmetros** são os nomes declarados na função: `a` e `b` em `int maximo(int a, int b)`. Os **argumentos** são as expressões fornecidas na chamada: `4` e `9` em `maximo(4, 9)`. O parâmetro recebe uma cópia ou acesso conforme o contrato; o argumento diz qual o valor ou objeto usado nessa chamada.
 
 ## Declarar e chamar funções
 
@@ -46,7 +50,7 @@ Saída:
 5 9
 ```
 
-`incrementar_copia` cria um parâmetro independente com o valor `4`, por isso `n` fica `4`. `incrementar` recebe uma referência ao original e deixa `n` com `5`. Uma referência é um nome alternativo para um objeto, ou seja, tem de ser inicializada e nunca muda de destino. Atribuir à referência altera o objeto referido.
+Segue o programa linha a linha. `n` começa em `4`. `incrementar_copia(n)` cria um parâmetro independente com o valor `4`; incrementar esse parâmetro não toca em `n`, que continua `4`. `incrementar(n)` recebe uma referência ao original e deixa `n` com `5`. `comprimento("Ana Maria")` conta 9 unidades: 3 de `Ana`, 1 espaço e 5 de `Maria`. Uma referência é um nome alternativo para um objeto. Tem de ser inicializada e nunca muda de destino. Atribuir à referência altera o objeto referido.
 
 | Parâmetro         | O que a função recebe          | Uso habitual                           |
 | ----------------- | ------------------------------ | -------------------------------------- |
@@ -56,6 +60,10 @@ Saída:
 | `T* objeto`       | Um endereço, que pode ser nulo | Opcionalidade ou acesso a um intervalo |
 
 `const T&` impede alterações através dessa referência; não torna constantes todas as outras formas de acesso ao objeto. Evitar uma cópia de um `int` raramente justifica uma referência. Retornar um `std::string` por valor é seguro e permite ao compilador evitar cópias; retornar uma referência a uma variável local deixa acesso a um objeto que já morreu.
+
+## Uma ponte para endereços
+
+A próxima secção passa arrays como `const int* valores`. Lê assim: `valores` guarda o endereço do primeiro inteiro e `valores[i]` acede ao elemento nessa posição. Ainda não precisas de aritmética de apontadores; a página [Apontadores e memória](/cadeiras/p/apontadores-memoria/#endereço-de-e-dereferenciação) explica-a depois com objetos e setas.
 
 ## Arrays C e dimensões
 
@@ -86,7 +94,19 @@ O contrato de `soma` exige `n` elementos válidos e soma representável em `int`
 
 Um **for por intervalo**, como `for (int x : valores)`, visita cada elemento de um array cujo tamanho é conhecido ou de uma coleção. `x` recebe uma cópia de cada inteiro; alterar `x` não altera o elemento. Com `for (int& x : valores)`, `x` refere-se ao elemento e permite alterá-lo. Um apontador isolado não fornece o tamanho para este percurso.
 
-Um array C multidimensional tem os elementos da última dimensão contíguos. Em `int matriz[2][3]`, há duas linhas de três inteiros. Uma função que recebe `const int matriz[][3]` precisa de conhecer a dimensão interior para avançar entre linhas. Isto não equivale a `int**`: um apontador para linhas de três inteiros e um apontador para apontadores têm representações e tipos diferentes.
+Um array C multidimensional tem os elementos da última dimensão contíguos. Em `int matriz[2][3]`, há duas linhas de três inteiros. Percorre com dois índices, um por dimensão:
+
+```cpp
+// Excerto: soma todos os elementos de uma matriz 2x3.
+int soma_matriz(const int matriz[][3], int linhas) {
+    int total = 0;
+    for (int l = 0; l < linhas; ++l)
+        for (int c = 0; c < 3; ++c) total += matriz[l][c];
+    return total;
+}
+```
+
+Com `{{1, 2, 3}, {4, 5, 6}}`, a soma é `21`. Uma função que recebe `const int matriz[][3]` precisa de conhecer a dimensão interior para avançar entre linhas. Isto não equivale a `int**`: um apontador para linhas de três inteiros e um apontador para apontadores têm representações e tipos diferentes.
 
 ## Structs e tipos compostos
 
@@ -128,6 +148,8 @@ Ana Maria | 19 | 9
 
 `ignore` descarta até ao `\n`, incluindo-o. `std::getline` guarda os espaços interiores e retira o terminador. A alternativa `getline(std::cin >> std::ws, nome)` descarta também espaços iniciais e linhas vazias; só a uses quando isso corresponde ao formato pretendido.
 
+Para separar campos dentro de uma linha, `find` localiza um separador e `substr` extrai cada parte. Com `s = "azul,verde"`, `s.find(',')` devolve `4`. `s.substr(0, 4)` é `"azul"` e `s.substr(5)` é `"verde"`. Quando `find` não encontra o carácter, devolve `std::string::npos`; nesse caso não há segundo campo.
+
 ## Strings de C e o terminador
 
 Uma string de C é uma sequência de `char` terminada por `\0`. O array `char nome[] = "Ana";` tem quatro posições: `A`, `n`, `a`, `\0`. O terminador não aparece no texto impresso, mas ocupa memória. `<cstring>` fornece `strlen`, que percorre até ao terminador, e operações de cópia. Estas funções exigem que os apontadores e capacidades estejam corretos.
@@ -140,7 +162,19 @@ Uma função recursiva chama-se a si própria. Precisa de um caso base e de uma 
 
 :::details[Ver a expansão de soma(3)]
 
-Para `n = 3`, a expansão é `3 + (2 + (1 + soma(0)))`. O caso base devolve `0`; ao regressar, calculamos `1`, depois `3`, depois `6`. A descida reduz `n` e a subida combina os resultados. Uma entrada negativa nunca se aproxima do caso base.
+Para `n = 3`, a descida constrói chamadas e a subida combina resultados:
+
+| Passo  | Chamada                 | Resultado |
+| ------ | ----------------------- | --------- |
+| descer | `soma(3) = 3 + soma(2)` | pendente  |
+| descer | `soma(2) = 2 + soma(1)` | pendente  |
+| descer | `soma(1) = 1 + soma(0)` | pendente  |
+| base   | `soma(0) = 0`           | 0         |
+| subir  | `1 + 0`                 | 1         |
+| subir  | `2 + 1`                 | 3         |
+| subir  | `3 + 3`                 | 6         |
+
+A descida reduz `n` e a subida combina os resultados. Uma entrada negativa nunca se aproxima do caso base.
 :::
 
 Cada chamada conserva os seus parâmetros e variáveis locais. Um grande número de chamadas pode esgotar a pilha. Quando um ciclo resolve o mesmo problema com um acumulador, não precisas de recursão. Usa-a quando a decomposição do problema a torna clara, não como substituição automática de qualquer ciclo.

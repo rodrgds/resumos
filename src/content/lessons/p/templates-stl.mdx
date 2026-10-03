@@ -11,7 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import uniqueErase from '../../p/unique-erase.typ?raw';
 
-Depois de escreveres uma operação para um tipo concreto, esta página responde a como reutilizar a mesma operação para vários tipos e percorrer as coleções prontas do C++.
+A função `soma` só trata inteiros e a pilha do exemplo guarda texto. Esta página generaliza as duas: primeiro com o contentor `vector`, depois com operações que servem vários tipos.
 
 Quando precisas da mesma operação para inteiros, reais ou objetos, descreve-a com um parâmetro de tipo, ou seja, com um espaço a preencher pelo tipo concreto. O compilador cria as versões necessárias e verifica se cada tipo concreto permite as operações usadas.
 
@@ -69,9 +69,13 @@ O corpo de `maior` exige que `a < b` seja válido. `maior(3, 2.5)` não deduz um
 
 Um template não elimina requisitos dos tipos. `maior(objeto1, objeto2)` só funciona se esse tipo oferecer a comparação necessária. As definições dos templates têm de estar disponíveis quando o compilador as instancia. Por isso, ficam habitualmente no cabeçalho, ao contrário de funções não template cuja implementação pode ficar num `.cpp` separado.
 
+## Primeiro o vector, depois a pilha genérica
+
+A `Pilha` abaixo usa `push_back`, `back`, `pop_back` e `empty`. Estas são operações de `vector`: acrescentar no fim, consultar o último, remover o último e testar se está vazio. A secção seguinte explica o custo e os limites de cada uma; lê-a antes de reutilizares a pilha com outro tipo.
+
 ## Classes template
 
-`Pilha<std::string>` e `Pilha<int>` são tipos distintos. Cada instância conserva a mesma disciplina, último a entrar, primeiro a sair, mas guarda valores de outro tipo. A retirada do exemplo copia o último valor antes de o remover e lança uma exceção se a pilha está vazia. Exige, portanto, um tipo copiável.
+`Pilha<std::string>` e `Pilha<int>` são tipos distintos. Cada instância conserva a mesma disciplina, último a entrar, primeiro a sair, mas guarda valores de outro tipo. A retirada do exemplo copia o último valor antes de o remover e lança uma exceção se a pilha está vazia. Exige, portanto, um tipo copiável. Um tipo só com movimento precisaria de outra retirada, que devolvesse por movimento em vez de copiar.
 
 O parâmetro de tipo e a interface definem os requisitos. Uma versão para valores de propriedade exclusiva precisaria de movimento na retirada e numa inserção adequada. Não escrevas "aceita qualquer tipo" sem verificar as operações exigidas.
 
@@ -79,7 +83,7 @@ O parâmetro de tipo e a interface definem os requisitos. Uma versão para valor
 
 `std::vector<T>` tem armazenamento contíguo, tamanho variável e acesso por índice. `size()` conta elementos vivos; `capacity()` conta quantos podem caber sem nova reserva. `reserve(n)` pode aumentar capacidade, mas não cria elementos. `resize(n)` muda o tamanho, construindo ou destruindo elementos.
 
-`v[i]` exige `i < v.size()` e não verifica o limite. `v.at(i)` verifica e lança `std::out_of_range`. `front`, `back` e `pop_back` exigem um vetor não vazio. Reservar capacidade para dez elementos não permite escrever `v[9]` se o tamanho ainda é zero.
+`v[i]` exige `i < v.size()` e não verifica o limite. `v.at(i)` verifica e lança `std::out_of_range`. `front`, `back` e `pop_back` exigem um vetor não vazio. Reservar capacidade para dez elementos não permite escrever `v[9]` se o tamanho ainda é zero. Depois de `reserve(3)`, o tamanho continua `0` e a capacidade passa a pelo menos `3`; depois de `resize(3)`, existem os índices `0`, `1` e `2`.
 
 `push_back` tem custo amortizado constante: algumas inserções são mais caras porque realocam e transferem os elementos. Inserir ou remover no meio desloca elementos e custa linear no número deslocado. A gestão automática de memória não elimina os custos das operações.
 
@@ -119,7 +123,7 @@ vermelho: 1
 true 3
 ```
 
-`frequencias[palavra]` insere a chave a zero se ela ainda não existe, ou seja, serve para contar mas surpreende numa simples consulta. Usa `find` quando queres consultar sem inserir.
+`frequencias[palavra]` insere a chave a zero se ela ainda não existe. Serve para contar, mas surpreende numa simples consulta. Usa `find` quando queres consultar sem inserir. Cada elemento de um `map` é um `pair<const Key, Valor>`: `par.first` é a chave e `par.second` é a contagem.
 
 `map` percorre as chaves pela ordem do comparador. `set` guarda apenas as chaves, sem o segundo valor, e ignora inserções repetidas de uma chave equivalente. `unordered_map` não oferece ordem de percurso fixa.
 
@@ -181,10 +185,21 @@ O fim lógico fica antes do sexto elemento, mas `end()` continua depois do séti
 
 `find` percorre até encontrar um valor ou chegar ao fim. `count_if` conta os que satisfazem um predicado. `accumulate`, de `<numeric>`, começa no valor inicial recebido; esse valor também influencia o tipo do acumulador. Para somar `double`, usa `0.0` quando queres acumulação real.
 
-Uma **lambda**, como `[](int x) { return x % 2 == 0; }`, cria uma operação sem lhe dar um nome separado. `[]` declara capturas; `[limite]` copia uma variável e `[&limite]` referencia-a. Uma captura por referência não prolonga a vida do objeto capturado.
+Uma **lambda**, como `[](int x) { return x % 2 == 0; }`, cria uma operação sem lhe dar um nome separado. Lê `[]` como a lista de capturas: vazia aqui, `[limite]` copia uma variável e `[&limite]` referencia-a. Uma captura por referência não prolonga a vida do objeto capturado. No exemplo abaixo, a lambda decide que elementos são pares; `remove_if` desloca os restantes para o início.
 
 ## Comparadores e pesquisa ordenada
 
-Um comparador de ordenação deve representar "vem antes", com uma relação estrita consistente. Para qualquer `x`, `comp(x, x)` tem de ser falso. `a <= b` não serve como comparador de `sort`, porque dá verdadeiro para valores iguais. Para desempatar objetos, compara primeiro o critério principal e depois o secundário, conservando a transitividade.
+Um comparador de ordenação deve representar "vem antes", com uma relação estrita consistente. Para qualquer `x`, `comp(x, x)` tem de ser falso. `a <= b` não serve como comparador de `sort`, porque dá verdadeiro para valores iguais. Para desempatar objetos, compara primeiro o critério principal e depois o secundário:
+
+```cpp
+// Excerto: ordena por nota e desempatata por identificador.
+struct Registo { int nota; int id; };
+bool antes(const Registo& a, const Registo& b) {
+    if (a.nota != b.nota) return a.nota < b.nota;
+    return a.id < b.id;
+}
+```
+
+Com `{10:2, 10:1, 9:3}`, a ordem é `9:3`, `10:1`, `10:2`. Só verificar `comp(x, x) == false` não prova transitividade; prova apenas o caso mais simples. `lower_bound` encontra a primeira posição que não vem antes do valor procurado. Num vetor `{1, 3, 5, 7}`, procurar `5` devolve a posição `2`.
 
 `sort` não garante a ordem anterior entre elementos equivalentes. `stable_sort` conserva-a. `lower_bound` encontra a primeira posição que não vem antes do valor procurado. O intervalo tem de estar particionado de acordo com esse critério, normalmente ordenado pelo mesmo comparador. Procurar por pesquisa binária num vetor arbitrário não satisfaz essa condição.
