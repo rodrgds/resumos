@@ -68,6 +68,7 @@ Divisão: candidatos $\pi_X(R)$; faltas $(\pi_X(R)\times S)-R$; retira candidato
 - `CHECK` rejeita falso, não desconhecido. Usa `NOT NULL` para obrigatoriedade.
 - `UNIQUE` permite vários `NULL`. Em primárias textuais/compostas comuns, declara `NOT NULL` explicitamente.
 - `INTEGER` é afinidade em tabelas comuns; `VARCHAR(20)` não limita comprimento. `STRICT` tem outro contrato.
+- `INTEGER PRIMARY KEY` omisso atribui max+1 e pode reutilizar o maior apagado. `AUTOINCREMENT` proíbe reutilização, com custo de `sqlite_sequence`.
 - `5 / 2 = 2`; usa operando real para divisão real.
 - `WHERE` filtra linhas; `HAVING` filtra grupos. Não agregues depois de uma junção sem conferir a multiplicação de linhas.
 - `COUNT(*)` conta linhas; `COUNT(x)` ignora nulos; `COUNT(DISTINCT x)` ignora nulos e repetições.
@@ -82,7 +83,7 @@ Divisão: candidatos $\pi_X(R)$; faltas $(\pi_X(R)\times S)-R$; retira candidato
 
 ## CTEs, vistas, gatilhos e acessos
 
-CTE dura uma instrução. Recursão tem parte inicial, passo e prova de terminação. `UNION` elimina tuplos completos, não apenas o id; acrescentar profundidade pode impedir a eliminação de ciclos. [Recursão](/cadeiras/bd/sql-recursao/#grafos-e-ciclos).
+CTE dura uma instrução. Recursão tem parte inicial, passo e prova de terminação. `UNION` elimina tuplos completos, não apenas o id; acrescentar profundidade pode impedir a eliminação de ciclos. D'Hondt: recursão só gera divisores 1..M; quocientes por produto cartesiano; top M com desempate explícito. [Recursão](/cadeiras/bd/sql-recursao/#só-os-divisores-precisam-de-recursão).
 
 Vista virtual guarda uma pergunta; materializada guarda resultados. SQLite atualiza vistas através de `INSTEAD OF`, não automaticamente. Gatilhos SQLite são por linha: INSERT tem NEW, DELETE tem OLD, UPDATE tem ambos. `UPDATE OF` não prova mudança de valor. Prefere restrições declarativas. [Vistas e gatilhos](/cadeiras/bd/vistas-gatilhos-acessos/#gatilhos-evento-condição-e-ação).
 
@@ -112,4 +113,4 @@ Define o grão antes das medidas. Factos ligam dimensões. Não somes saldos ao 
 
 OLAP: roll-up agrega; drill-down detalha; slice fixa; dice restringe subconjuntos; pivot muda eixos. ROLLUP usa prefixos, CUBE todos os subconjuntos; não são comandos SQLite. [Armazéns](/cadeiras/bd/armazens-dados-nosql/#primeiro-escolhe-o-grão).
 
-NoSQL inclui chave-valor, documentos, famílias de colunas e grafos. Esquema flexível não dispensa validação; NoSQL não exclui ACID. CAP trata consistência linearizável e disponibilidade **durante uma partição**, não a consistência de invariantes de ACID. Replicar copia; particionar distribui subconjuntos. [NoSQL](/cadeiras/bd/armazens-dados-nosql/#replicação-partição-e-cap).
+NoSQL inclui chave-valor, documentos, famílias de colunas e grafos. Esquema flexível não dispensa validação; NoSQL não exclui ACID. `distinct` devolve valores distintos; `countDocuments` conta documentos de um filtro. `$lookup` junta correspondências num array; `$facet` corre subpipelines independentes sobre a mesma entrada e devolve um documento com um array por saída. CAP trata consistência linearizável e disponibilidade **durante uma partição**, não a consistência de invariantes de ACID. Replicar copia; particionar distribui subconjuntos. [NoSQL](/cadeiras/bd/armazens-dados-nosql/#replicação-partição-e-cap).

@@ -109,8 +109,43 @@ O resultado é 1, 2, 3 e 4. Voltar ao nó 1 não introduz um novo tuplo. `UNION 
 
 Se acrescentarmos profundidade, `(1,0)` e `(1,3)` são tuplos diferentes. `UNION` já não elimina esse retorno apenas por ter o mesmo id. Para listar caminhos ou distâncias, precisamos de outra estratégia, como impedir a repetição de nós no caminho e limitar a exploração. A escolha das colunas faz parte da prova de terminação.
 
+## Só os divisores precisam de recursão
+
+No método de D'Hondt, cada lista compete com os quocientes votos/1, votos/2 e assim por diante, até ao número de mandatos M. Os M lugares vão para os M maiores quocientes. Com 4 mandatos e votos A=100, B=60, C=40, os quocientes são:
+
+| Lista | /1    | /2   | /3   | /4   |
+| ----- | ----- | ---- | ---- | ---- |
+| A     | 100,0 | 50,0 | 33,3 | 25,0 |
+| B     | 60,0  | 30,0 | 20,0 | 15,0 |
+| C     | 40,0  | 20,0 | 13,3 | 10,0 |
+
+Os quatro maiores são 100 de A, 60 de B, 50 de A e 40 de C. O resultado é A com 2, B com 1 e C com 1. Só a sequência de divisores 1 a M precisa de recursão; o resto são operações comuns:
+
+<CodePlayground
+  language="sql"
+  title="Distribuir 4 mandatos pelo método de D'Hondt"
+  code={`WITH RECURSIVE Divisor(k) AS (
+  SELECT 1
+  UNION ALL
+  SELECT k + 1 FROM Divisor WHERE k < 4
+),
+Voto(lista, votos) AS (
+  VALUES ('A', 100), ('B', 60), ('C', 40)
+),
+Quociente AS (
+  SELECT v.lista, v.votos / (d.k * 1.0) AS q
+  FROM Voto AS v CROSS JOIN Divisor AS d
+),
+Top AS (
+  SELECT lista FROM Quociente
+  ORDER BY q DESC, lista LIMIT 4
+)
+SELECT lista, COUNT(*) AS mandatos
+FROM Top GROUP BY lista ORDER BY lista;`}
+/>
+
+A resposta é A com 2, B com 1 e C com 1. O `ORDER BY q DESC, lista` inclui uma regra de desempate explícita: em caso de quocientes iguais, vence a lista com nome menor. Sem esse segundo critério, a escolha entre empatados ficaria indefinida. A agregação final conta lugares, não votos: cada ocorrência de uma lista nos 4 primeiros quocientes vale um mandato.
+
 ## Limites de SQLite
 
-Em SQLite, a parte recursiva tem de usar a tabela recursiva segundo as restrições do motor, sem referências adicionais em subconsultas, e não pode usar agregações nem funções de janela nessa parte. Podemos agregar no `SELECT` exterior depois de produzir as linhas.
-
-Uma CTE recursiva não é necessariamente a melhor opção para toda a pergunta. No método de D'Hondt, por exemplo, podemos gerar divisores 1 a M recursivamente, cruzá-los com os votos, calcular quocientes, escolher os M lugares e só depois contar mandatos. A recursão pertence à geração dos divisores; não precisamos de tornar toda a agregação recursiva. A regra de desempate tem de ser especificada para a eleição concreta.
+Em SQLite, a parte recursiva tem de usar a tabela recursiva segundo as restrições do motor, sem referências adicionais em subconsultas, e não pode usar agregações nem funções de janela nessa parte. No exemplo de D'Hondt, a agregação está no `SELECT` exterior, depois de produzidas as linhas. Uma CTE recursiva não é necessariamente a melhor opção para toda a pergunta: a recursão pertence à geração dos divisores; não precisamos de tornar toda a agregação recursiva.

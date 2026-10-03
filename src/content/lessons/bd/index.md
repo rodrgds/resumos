@@ -18,8 +18,8 @@ As páginas seguem uma sequência de decisões. Cada tema tem exemplos resolvido
 
 1. [Fundamentos](/cadeiras/bd/fundamentos/) distingue dados, esquema, instância e SGBD.
 2. [Modelo conceptual em UML](/cadeiras/bd/modelo-conceptual-uml/) representa classes, associações, multiplicidades e especializações. [Mapeamento relacional](/cadeiras/bd/mapeamento-relacional/) traduz o desenho e identifica as regras que uma simples chave estrangeira não garante.
-3. [Normalização](/cadeiras/bd/normalizacao/) calcula fechos e chaves, e verifica as formas normais. [Decomposição](/cadeiras/bd/decomposicao/) demonstra junção sem perda e preservação de dependências, incluindo o chase e a síntese em 3FN.
-4. [Definição de dados](/cadeiras/bd/sql-definicao-dados/) cria e altera tabelas em SQLite. [Álgebra relacional](/cadeiras/bd/algebra-relacional/) compõe operações sobre conjuntos.
+3. [Álgebra relacional](/cadeiras/bd/algebra-relacional/) compõe operações sobre conjuntos, com tabelas intermédias explícitas. [Normalização](/cadeiras/bd/normalizacao/) calcula fechos e chaves, e verifica as formas normais. [Decomposição](/cadeiras/bd/decomposicao/) demonstra junção sem perda e preservação de dependências, incluindo o chase e a síntese em 3FN.
+4. [Definição de dados](/cadeiras/bd/sql-definicao-dados/) cria e altera tabelas em SQLite.
 5. [Consultas SQL](/cadeiras/bd/sql-consultas/) trabalha seleção, junções, `NULL` e agregação. [Subconsultas e divisão](/cadeiras/bd/sql-subconsultas/) trata existência, máximos, conjuntos e perguntas com "todos". [CTEs e recursão](/cadeiras/bd/sql-recursao/) dá nome a resultados intermédios e percorre hierarquias.
 6. [Vistas, gatilhos e acessos](/cadeiras/bd/vistas-gatilhos-acessos/) separa SQL de SQLite e de PostgreSQL. [Índices e transações](/cadeiras/bd/indices-transacoes/) aborda custo e atomicidade; [Concorrência](/cadeiras/bd/concorrencia/) analisa escalonamentos e níveis de isolamento.
 7. [Armazéns de dados e NoSQL](/cadeiras/bd/armazens-dados-nosql/) trabalha o grão de factos, OLAP, distribuição e consultas a documentos.
@@ -49,7 +49,7 @@ A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_
 - Frequência: não exceder 25% de faltas às teórico-práticas, integrar um grupo e participar nas duas entregas do projeto.
 - As entregas valem 40% e 60% da nota do projeto. O projeto e o teste de SQL não têm avaliação de recurso nem melhoria.
 
-Estes pesos diferem dos materiais de 2025/26, que indicavam 20%, 30% e 50%, com mínimos de 7 no teste e no exame. Para a tua inscrição, confirma a ficha e os avisos do Moodle do respetivo ano. Os exercícios destas páginas são originais para treino, não provas oficiais nem uma previsão do exame.
+Estes pesos diferem dos materiais de 2025/26, que indicavam 20%, 30% e 50%, com mínimos de 7 no teste e no exame. Para a tua inscrição, confirma a ficha e os avisos do Moodle do respetivo ano. Os exercícios destas páginas foram escritos para treino a partir dos materiais docentes, incluindo adaptações de exemplos das apresentações; não são provas oficiais nem uma previsão do exame.
 
 :::
 
