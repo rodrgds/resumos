@@ -6,9 +6,7 @@ studyKind: revision
 order: 0
 ---
 
-Depois de estudares as lições do percurso, esta página responde onde rever cada regra depressa antes de resolver exercícios.
-
-Usa-a como consulta: cada linha resume uma condição e aponta para a explicação completa da lição.
+Usa esta página para rever cada regra depois de estudares as lições. Cada linha resume uma condição e aponta para a explicação completa.
 
 ## HTML e CSS
 
@@ -30,7 +28,7 @@ Usa-a como consulta: cada linha resume uma condição e aponta para a explicaç�
 
 - [HTTP](/cadeiras/ltw/http-ajax-json/#métodos-segurança-e-idempotência): GET seguro e idempotente; PUT/DELETE idempotentes; POST não em geral. Idempotência descreve efeito, não resposta igual. Fragmento não vai ao servidor.
 - [Cabeçalhos](/cadeiras/ltw/http-ajax-json/#ler-mensagens): Accept pede formato; Content-Type descreve corpo. Set-Cookie na resposta, Cookie no pedido. 201 criado; 204 sem corpo; 303 redireciona; 304 cache válida; 400 entrada; 403 recusa; 404 ausente; 405 método; 500 interno.
-- [Ajax](/cadeiras/ltw/http-ajax-json/#json-e-fetch): `fetch` não rejeita só por 404; verifica `ok`. `json()` também é assíncrono. Encoda parâmetros; ignora respostas antigas. CORS permite leitura entre origens, não autentica nem impede CSRF. `Access-Control-Allow-Origin` também é necessário na resposta real após preflight.
+- [Ajax](/cadeiras/ltw/http-ajax-json/#json-e-fetch): `fetch` resolve com 404; verifica `ok` e lança erro. `json()` lê o corpo e é assíncrono. Encoda parâmetros com `URLSearchParams`; usa contador ou `AbortController` para ignorar respostas antigas. CORS permite leitura entre origens, não autentica nem impede CSRF. `Access-Control-Allow-Origin` também é necessário na resposta real após preflight.
 - [Defesas](/cadeiras/ltw/seguranca-web/#injeção-sql): SQL preparado; escape conforme contexto; `textContent` para texto; token CSRF não vazio e verificado; autorização no servidor; caminhos fixos ou controlados; HTTPS no transporte.
 - [Palavras-passe](/cadeiras/ltw/seguranca-web/#palavras-passe-e-sessão): password_hash/password_verify, nunca SHA-1 simples. Salt não salva uma palavra-passe fraca. Regenera sessão ao autenticar.
 
@@ -39,4 +37,4 @@ Usa-a como consulta: cada linha resume uma condição e aponta para a explicaç�
 - [Regex](/cadeiras/ltw/expressoes-regulares/#peças-e-precedência): `[]` escolhe um caráter; `*` zero+, `+` um+, `?` opcional. `(?:...)` agrupa sem capturar. Agrupa alternativas antes de ancorar. Guloso tenta máximo; preguiçoso tenta mínimo.
 - [Capturas](/cadeiras/ltw/expressoes-regulares/#capturas-e-referências): grupo 0 é tudo; `\1` exige repetição da captura. Lookaround testa sem consumir. Formato de data não prova data existente.
 - [XML](/cadeiras/ltw/xml-xpath/#boa-formação-e-validade): boa formação = sintaxe; validade = contrato. Namespace é URI, não prefixo. Por defeito afeta elementos, não atributos sem prefixo.
-- [XPath](/cadeiras/ltw/xml-xpath/#predicados-e-posição): `/` parte da raiz; `//` procura descendentes; `@` atributo; `text()` texto; `[condição]` filtra. Posições começam em 1. `//x[1]` pode dar vários; `(//x)[1]` dá o primeiro global. Em XPath 1.0, `x != 'a'` exige algum x diferente; `not(x = 'a')` exige que nenhum seja igual.
+- [XPath](/cadeiras/ltw/xml-xpath/#predicados-e-posição): `/` parte da raiz do documento; `//` desce a descendentes; `@` escolhe atributos; `text()` escolhe texto; cada `[condição]` filtra o passo anterior. Posições começam em 1. `//livro[1]` escolhe o primeiro `livro` de cada grupo de irmãos; `(//livro)[1]` escolhe o primeiro do conjunto global. Em XPath 1.0, `x != 'a'` exige algum x diferente; `not(x = 'a')` exige que nenhum seja igual.

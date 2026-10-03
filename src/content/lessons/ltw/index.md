@@ -23,6 +23,8 @@ editorial:
 
 No fim desta cadeira vais construir uma aplicação com dois lados: o navegador apresenta HTML, aplica CSS e executa JavaScript, ou seja tu decides a estrutura, o aspeto e a interação; o servidor recebe pedidos HTTP, executa PHP e consulta a base de dados, por isso tens de validar cada pedido e responder com HTML ou JSON. Quando algo falha, começa por perguntar em que lado está o dado e em que momento o código corre.
 
+Um exemplo concreto: escolhes um livro e carregas em Reservar. O navegador envia um pedido com o identificador e a quantidade. O servidor valida esses valores, confirma a sessão e consulta a base de dados. Depois responde com HTML ou JSON. Se a quantidade for zero ou o utilizador não tiver permissão, a resposta deve explicar a recusa sem revelar detalhes internos.
+
 Vamos usar um catálogo de livros e pequenas reservas como fio condutor. São exemplos e exercícios próprios, não resoluções de provas oficiais. Precisas de funções, ciclos e estruturas de dados, SQL básico e uso de Git.
 
 ## Percurso de estudo

@@ -11,9 +11,7 @@ import Mermaid from '../../../components/Mermaid.astro';
 import YouTube from '../../../components/YouTube.astro';
 import cors from '../../ltw/cors.mmd?raw';
 
-Depois do servidor em PHP e da interação no navegador com JavaScript, esta página responde o que viaja em cada pedido e resposta HTTP.
-
-Escreve o endereço do catálogo e carrega Enter: o teu programa pede a página e o computador da biblioteca devolve-a. O HTTP é a forma combinada dessas trocas, ou seja define o que vai no pedido que pede algo e na resposta que devolve algo. Cada pedido traz uma linha inicial, cabeçalhos e às vezes um corpo; a resposta traz um estado, cabeçalhos e às vezes um corpo. Como cada pedido é independente, os cookies, ou seja pequenos textos que o navegador guarda e reenvia, e a sessão, ou seja o registo que o servidor guarda sobre esse utilizador, ajudam a ligar vários pedidos à mesma pessoa.
+Escreve o endereço do catálogo e carrega Enter. O navegador envia um pedido e o servidor devolve a página. Cada pedido HTTP traz linha inicial, cabeçalhos e por vezes corpo. Cada resposta traz estado, cabeçalhos e por vezes corpo. Como cada pedido é independente, os cookies guardados no navegador e a sessão guardada no servidor ligam vários pedidos à mesma pessoa.
 
 ## URL e origem
 
@@ -109,7 +107,7 @@ Se achas que usar JSON já é fazer REST, este vídeo separa as ideias. Relacion
 
 `Set-Cookie` vai na resposta para pedir que o navegador guarde um cookie; `Cookie` vai em pedidos posteriores conforme domínio, caminho, segurança e política aplicáveis. Um cookie é entrada controlada pelo cliente, não prova independente de permissão. `HttpOnly` impede leitura por JavaScript; não impede que o navegador envie o cookie em pedidos.
 
-`Cache-Control: no-store` pede que não guardem a resposta. `no-cache` admite guardá-la, mas exige revalidação antes de a reutilizar. `ETag` identifica uma versão; o cliente pode enviar `If-None-Match`, e o servidor responder 304 se ela não mudou. Não guardes respostas privadas em caches partilhadas por engano.
+Segue duas trocas. Na primeira, o servidor envia a representação com `ETag: "v1"`. Na segunda, o cliente envia `If-None-Match: "v1"`. Se nada mudou, o servidor responde 304 sem corpo e o cliente reutiliza a cache. `Cache-Control: no-store` pede que não guardem a resposta. `no-cache` admite guardá-la, mas exige revalidação antes de a reutilizar. `ETag` identifica uma versão; o cliente pode enviar `If-None-Match`, e o servidor responder 304 se ela não mudou. Não guardes respostas privadas em caches partilhadas por engano.
 
 ## Promessas e ordem de execução
 
@@ -121,7 +119,7 @@ Promise.resolve().then(() => console.log('B'));
 console.log('C');
 ```
 
-A saída é `A`, `C`, `B`, porque o código corrente acaba antes do callback da promessa. Microtarefas de promessas pendentes correm antes da tarefa seguinte, como um callback de temporizador entretanto pronto. Um ciclo pesado continua a bloquear os callbacks; `async` não transforma cálculo síncrono numa thread.
+A saída é `A`, `C`, `B`, porque o código corrente acaba antes do callback da promessa. Quando a promessa fica cumprida, as reações registadas com `then` são agendadas como microtarefas e correm antes da tarefa seguinte, como um callback de temporizador entretanto pronto. A promessa pendente em si não é uma microtarefa; as reações após cumprimento ou rejeição são. Um ciclo pesado continua a bloquear os callbacks; `async` não transforma cálculo síncrono numa thread.
 
 `Promise.all` reúne resultados e rejeita se uma das promessas rejeitar. Só inicia operações concorrentes se elas forem efetivamente iniciadas antes de esperar por cada uma. Erros lançados dentro de `async` tornam-se rejeições; envolve `await` num `try/catch` para os tratar nesse percurso.
 
@@ -149,7 +147,7 @@ async function pesquisar(termo) {
 
 `fetch` resolve a promessa mesmo para muitos erros HTTP, incluindo 404 e 500. É o teste a `ok`, que corresponde a estados 200 a 299, que os transforma em erro neste programa. Erros de rede podem rejeitar antes de existir resposta. `json()` lê e descodifica o corpo e também é assíncrono. O cabeçalho do formato não substitui a validação do conteúdo recebido.
 
-Se duas pesquisas estão pendentes, a mais antiga pode acabar depois e substituir a mais recente. Usa um contador de pedidos para ignorar resultados antigos ou cancela com `AbortController`. Encodar parâmetros com `URLSearchParams` preserva espaços, `&`, `+` e acentos como dados, em vez de alterar a estrutura do endereço.
+Ajax atualiza parte da página sem navegar. O código inicia o pedido, a página continua interativa e o resultado chega depois. Se duas pesquisas estão pendentes, segue a ordem de envio e a ordem de chegada. A pesquisa 1 parte primeiro e a 2 parte depois; se a 1 chegar depois da 2, não deve substituir a lista. Usa um contador de pedidos para ignorar resultados antigos ou cancela com `AbortController`. Encodar parâmetros com `URLSearchParams` preserva espaços, `&`, `+` e acentos como dados, em vez de alterar a estrutura do endereço.
 
 ### Aplicação local completa
 
@@ -243,7 +241,7 @@ echo json_encode($resultados, JSON_UNESCAPED_UNICODE);
 
 :::
 
-Pesquisar `red` mostra `Redes` e `Resultados: 1`; vazio mostra os três livros. O endpoint responde 405 a POST e 400 a `q[]=red`, porque `array_values` repõe índices consecutivos após filtrar para `json_encode` emitir um array JSON.
+Pesquisar `red` mostra `Redes` e `Resultados: 1`; vazio mostra os três livros. As validações no início do endpoint produzem 405 para método diferente de GET e 400 para `q[]=red`, que chega como array. Separadamente, `array_values` repõe índices consecutivos após filtrar, para `json_encode` emitir um array JSON como `[{...}]` em vez de um objeto.
 
 `XMLHttpRequest` faz o mesmo tipo de comunicação por callbacks: `open` configura, `setRequestHeader` define campos depois de abrir, `send` envia, e `load` indica chegada da resposta. Verifica `status` antes de usar `responseText`. No callback normal, `this` pode ser o objeto do pedido; numa arrow function, essa associação não segue a mesma regra.
 

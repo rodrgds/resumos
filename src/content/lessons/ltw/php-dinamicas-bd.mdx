@@ -11,9 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import dados from '../../ltw/dados.php?raw';
 import sqlite from '../../ltw/sqlite.php?raw';
 
-Depois da estrutura em HTML e do aspeto com CSS, esta página responde como o servidor constrói uma resposta a cada pedido com PHP e dados.
-
-O PHP corre no servidor para cada pedido: consulta a base de dados e produz uma página nova em HTML ou dados em JSON, ou seja texto com uma forma fixa que programas conseguem ler. O cliente recebe essa saída, não as variáveis nem as funções. Uma variável local criada num pedido não fica disponível no seguinte.
+Nesta página o servidor recebe um pedido de reserva, valida os valores, consulta a base de dados e responde com HTML ou JSON. O PHP corre no servidor a cada pedido. O cliente recebe apenas a saída. Uma variável criada num pedido não existe no seguinte.
 
 ## Valores, strings e arrays
 
@@ -45,7 +43,7 @@ A saída tem as linhas `0: Redes`, `1: SQL`, `2: Algoritmos`. `count` conta entr
 
 `strpos('Redes', 'Red')` devolve 0; `strpos('Redes', 'SQL')` devolve `false`. A procura deve usar `!== false`, porque a posição zero é uma correspondência válida. `explode(',', 'Redes,SQL')` divide numa lista; `implode(' / ', $nomes)` junta os valores com esse separador.
 
-`sort` ordena valores e renumera chaves; `asort` ordena valores conservando as chaves; `ksort` ordena pelas chaves. Alteram o array recebido. Depois de `array_filter`, usa `array_values` se precisas de uma lista com índices consecutivos, por exemplo para emitir um array JSON.
+`sort` ordena valores e renumera chaves; `asort` ordena valores conservando as chaves; `ksort` ordena pelas chaves. Alteram o array recebido. Depois de `array_filter`, usa `array_values` se precisas de uma lista com índices consecutivos, por exemplo para emitir um array JSON. Sem essa chamada, um filtro que remove a posição 0 conserva a chave 1, e `json_encode` emite um objeto como `{"1":"SQL"}`. Com `array_values`, as chaves voltam a 0 e o resultado é `["SQL"]`.
 
 ## Funções, tipos e erros
 
@@ -133,7 +131,7 @@ try {
 }
 ```
 
-A condição `stock >= :q` pertence ao próprio `UPDATE`. Ler o stock antes e depois atualizar sem condição deixaria uma janela entre os passos. Se a inserção falhar, o rollback recupera a redução de stock. As restrições da base, como chaves estrangeiras, completam a validação; em SQLite, ativa `PRAGMA foreign_keys = ON` em cada conexão quando dependes delas.
+Acompanha os estados. Antes da transação, o livro tem stock 3 e não existe reserva. O `UPDATE` com `stock >= :q` reduz para 2 apenas se houver stock. O `INSERT` cria a reserva. O `commit` torna as duas alterações visíveis em conjunto. Se o `INSERT` falhar, o `rollback` repõe o stock em 3. Ler o stock antes e atualizar depois sem condição deixaria uma janela entre os passos. As restrições da base, como chaves estrangeiras, completam a validação; em SQLite, ativa `PRAGMA foreign_keys = ON` em cada conexão quando dependes delas.
 
 ## Páginas, ações e templates
 
@@ -187,6 +185,6 @@ if ($utilizador && password_verify($palavraPasse, $utilizador['password_hash']))
 }
 ```
 
-Regenerar o identificador após autenticar combate fixação de sessão. Configura cookies com `HttpOnly`, `Secure` em HTTPS e uma política `SameSite` adequada. Usa um destino fixo ou validado; não confies cegamente no `Referer` recebido.
+Segue dois pedidos. No login, o servidor verifica a palavra-passe, regenera o identificador para combater fixação de sessão e guarda `utilizador_id` no estado do servidor. No pedido seguinte, o navegador envia apenas o identificador no cookie, e o servidor recupera o utilizador a partir dele. Regenerar o identificador após autenticar é obrigatório nesse percurso. Configura cookies com `HttpOnly`, `Secure` em HTTPS e uma política `SameSite` adequada. Usa um destino fixo ou validado; não confies cegamente no `Referer` recebido.
 
 Autenticar identifica o utilizador. Autorizar verifica o que ele pode fazer. Uma ação de edição deve confirmar a sessão e a propriedade do registo, mesmo que o botão só apareça para o dono. No logout, limpa `$_SESSION`, destrói a sessão e remove o cookie quando aplicável. A [segurança web](/cadeiras/ltw/seguranca-web/) explica as defesas que completam estas ações.

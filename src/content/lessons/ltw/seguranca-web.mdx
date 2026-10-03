@@ -9,9 +9,7 @@ practices:
 
 import YouTube from '../../../components/YouTube.astro';
 
-Depois de trocar pedidos e respostas entre o navegador e o servidor, esta página responde como proteger cada uso dos dados recebidos.
-
-Imagina que escreves um nome na pesquisa do catálogo e esse texto chega à pergunta feita à base de dados: uma vulnerabilidade é um ponto onde dados assim mudam o programa de forma indevida, e o atacante é quem tenta provocar essa mudança. Validar entrada, preparar SQL e escapar saída têm propósitos diferentes, ou seja uma defesa correta num desses passos não substitui as outras.
+Escreves um nome na pesquisa do catálogo e esse texto chega à pergunta feita à base de dados. Uma vulnerabilidade é um ponto onde dados assim mudam o programa de forma indevida. O atacante tenta provocar essa mudança. Validar a entrada, preparar o SQL e escapar a saída têm propósitos diferentes. Uma defesa correta num passo não substitui as outras.
 
 ## Injeção SQL
 
@@ -66,7 +64,7 @@ Um pedido de alteração pode chegar de outra página e trazer credenciais envia
 
 Um token CSRF é um valor imprevisível associado à sessão. O servidor envia-o no formulário e exige-o no pedido de alteração. A página de outra origem não deve conseguir lê-lo pela política de mesma origem. O token não substitui a autenticação nem a autorização.
 
-Estes excertos pertencem, respetivamente, à página que mostra o formulário e à ação que o processa:
+Segue o ataque antes do código. A vítima tem sessão válida. Uma página externa contém um formulário que aponta para a ação de reserva. O navegador envia o pedido com o cookie de sessão. O servidor não distingue esse pedido de um pedido iniciado no sítio legítimo. Estes excertos pertencem, respetivamente, à página que mostra o formulário e à ação que o processa:
 
 ```php
 <?php
@@ -109,7 +107,7 @@ $stmt = $db->prepare('UPDATE reserva SET quantidade = ? WHERE id = ? AND utiliza
 $stmt->execute([$quantidade, $reservaId, $_SESSION['utilizador_id']]);
 ```
 
-O utilizador vem da sessão verificada, não de `$_POST['utilizador_id']`. A consulta restringe o registo ao dono. Confirma o efeito esperado e devolve um erro quando não existe uma reserva autorizada. Esconder um botão ou impedir uma ação em JavaScript melhora a interface, mas o atacante pode enviar o pedido diretamente.
+Compara dois utilizadores. O utilizador A edita a reserva 7, que lhe pertence. O utilizador B tenta editar a reserva 7 alterando o identificador no pedido. O identificador continua a ser entrada. O utilizador vem da sessão verificada, não de `$_POST['utilizador_id']`. A consulta restringe o registo ao dono. Confirma o efeito esperado e devolve um erro quando não existe uma reserva autorizada. Esconder um botão ou impedir uma ação em JavaScript melhora a interface, mas o atacante pode enviar o pedido diretamente.
 
 ## Palavras-passe e sessão
 
@@ -117,7 +115,7 @@ Guarda um resumo próprio para palavras-passe com `password_hash`; verifica com 
 
 Salt é público e fica guardado com o resumo; não precisa de ser lembrado pelo utilizador nem enviado como segredo separado. `password_hash` cria-o automaticamente. Depois de um login válido, `password_needs_rehash` permite decidir se o resumo deve ser atualizado para os parâmetros atuais.
 
-Salt diferente impede que resumos iguais revelem diretamente palavras-passe iguais e dificulta reutilizar tabelas pré-calculadas. Não torna uma palavra-passe fraca resistente a tentativas. SHA-1 e SHA-256 simples são rápidos e inadequados para guardar palavras-passe, mesmo com salt manual. Limita tentativas de login e evita mensagens que revelem contas desnecessariamente.
+Acompanha o registo e o login. No registo, `password_hash` cria um salt aleatório, combina-o com a palavra-passe e guarda o resumo com os parâmetros. No login, `password_verify` repete a operação com o salt guardado. Salt diferente impede comparação direta de resumos iguais e dificulta tabelas pré-calculadas. Não torna uma palavra-passe fraca resistente a tentativas. SHA-1 e SHA-256 simples são rápidos e inadequados para guardar palavras-passe, mesmo com salt manual. Limita tentativas de login e evita mensagens que revelem contas desnecessariamente.
 
 Regenera o identificador de sessão ao autenticar ou mudar privilégios. Em produção, usa HTTPS e cookies `Secure`, `HttpOnly` e `SameSite` adequado. Nunca confies num identificador de sessão recebido para autorizar sem recuperar o estado e verificar a ação.
 
