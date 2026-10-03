@@ -10,7 +10,7 @@
   line((0, 3), (4.3, 3), stroke: (dash: "dashed"))
   line((0,0), (2,0), (2,2), (1,3), (0,3), close: true, fill: rgb("e8dce1"), stroke: rgb("8c2d3b"))
   circle((2,2), radius: 0.07, fill: rgb("8c2d3b"))
-  content((2.8,2.2), [(2, 2), z = 10])
+  content((3.2,2.2), [(2, 2), z = 10])
   content((4.5,-0.2), [x])
   content((-0.2,3.8), [y])
   for i in range(4) { content((i,-0.25), [#i]); }
