@@ -1,11 +1,11 @@
-#import "@preview/fletcher:0.5.8": diagram, node, edge
 #set page(width: auto, height: auto, margin: 10pt)
 #set text(size: 11pt)
-#diagram(
-  node-stroke: 1pt, spacing: 26pt,
-  node((0, 1), [privado: \ `nome`, `numero`], name: <priv>),
-  node((0, 0), [público: \ `apresentar()`], name: <pub>),
-  node((1, 0.5), [objeto `a`], name: <obj>),
-  edge(<obj>, <pub>, "->", label: [pode chamar]),
-  edge(<obj>, <priv>, "->", label: [não toca]),
+#table(
+  columns: (auto, auto),
+  inset: 8pt,
+  [*Código exterior à classe*], [*Acesso permitido?*],
+  [`a.apresentar()`], [Sim, método público],
+  [`a.nome` ou `a.numero`], [Não, membros privados],
 )
+#v(8pt)
+Os métodos da classe podem aceder aos seus membros privados.

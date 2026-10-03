@@ -1,13 +1,12 @@
-#import "@preview/fletcher:0.5.8": diagram, node, edge
 #set page(width: auto, height: auto, margin: 10pt)
 #set text(size: 11pt)
-#diagram(
-  node-stroke: 1pt, spacing: 26pt,
-  node((0, 1), [parte `Base`], name: <base1>),
-  node((0, 0), [parte `Derivada`], name: <der>),
-  node((1, 0.5), [`Base copia = d` \ (só cabe a parte `Base`)], name: <copia>),
-  node((2, 0.5), [`Base& ref = d` \ (aponta ao objeto todo)], name: <ref>),
-  edge(<der>, <base1>, "-"),
-  edge(<base1>, <copia>, "->", label: [corta]),
-  edge(<ref>, <der>, "->", label: [vê tudo]),
+#table(
+  columns: (auto, auto),
+  inset: 8pt,
+  [*Expressão*], [*Objeto usado por `total()`*],
+  [`Promocao p(100, 0.25)`], [Original: base e desconto. Devolve `75`.],
+  [`Produto copia = p`], [Novo objeto: apenas base. Devolve `100`.],
+  [`const Produto& r = p`], [Original, sem cópia. Chamada virtual devolve `75`.],
 )
+#v(8pt)
+A referência à base conserva o objeto derivado, mas só expõe a interface da base.
