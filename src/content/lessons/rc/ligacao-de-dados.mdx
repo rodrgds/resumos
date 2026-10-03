@@ -19,6 +19,7 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import JanelaArq from '../../rc/JanelaArq.astro';
+import CrcRegistos from '../../rc/CrcRegistos.astro';
 import stopAndWait from '../../rc/stop-and-wait.dot?raw';
 
 Dois aparelhos vizinhos trocam mensagens curtas por um cabo ou por rádio. A cada mensagem dessas chamamos **trama**, e ela precisa de limites claros e de verificação de erros. A **camada de ligação** é a parte da rede que trata dessa conversa entre vizinhos: delimita cada trama e verifica erros. Alguns protocolos, ou seja, regras de formato e resposta, acrescentam confirmações e retransmissões: pedir de novo o que chegou mal chama-se **ARQ**, e cada confirmação chama-se **ACK**. A Ethernet, a tecnologia comum das redes locais com fios, deteta erros mas não faz essa retransmissão.
@@ -51,7 +52,17 @@ Para gerador $G$ de grau $r$, acrescenta $r$ zeros à mensagem $D$, divide $D\,2
 = 0000001
 ```
 
-O resto já tem menos de quatro bits significativos, por isso a divisão termina. Escrevemo-lo com três bits, `001`, e transmitimos `1101001`. O código permite repetir o cálculo e alterar um bit:
+O resto já tem menos de quatro bits significativos, por isso a divisão termina. Escrevemo-lo com três bits, `001`, e transmitimos `1101001`.
+
+### Calcular bit a bit com registos
+
+Um circuito pode fazer a mesma divisão enquanto os bits chegam. Cada **registo** guarda um bit do resto. Os bits entram à direita, em `C0`, e avançam para a esquerda a cada passo. O bit que sai de `C2` volta às ligações XOR. Para `1011`, ou seja, $x^3+x+1$, há XOR à entrada de `C1` e de `C0`. Se o retorno for 0, o XOR mantém o bit; se for 1, troca-o.
+
+Na geração, entram a mensagem e três zeros. No fim, os registos contêm `001`. Na verificação, entram a trama inteira e o CRC recebido, sem acrescentar zeros. Altera um bit da trama e acompanha o resto. O circuito começa sempre a zero; esta demo mostra a divisão dos slides, sem as convenções adicionais de CRC usadas por protocolos concretos.
+
+<CrcRegistos />
+
+O código repete a divisão e verifica uma trama com um bit alterado:
 
 <CodePlayground language="python" title="Gerar e verificar um CRC" code={`def resto(bits, gerador):
     valor = int(bits, 2)
