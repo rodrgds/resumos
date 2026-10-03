@@ -8,10 +8,9 @@ order: 99
 
 ## Representação
 
-- [Bases](/cadeiras/fsc/representacao-dados/): $x=\sum d_ib^i$. Fração binária finita: denominador reduzido potência de 2. Hexadecimal: 4 bits/algarismo; octal: 3.
-- [Inteiros](/cadeiras/fsc/inteiros-complemento-dois/): unsigned $[0,2^n-1]$; C2 $[-2^{n-1},2^{n-1}-1]$. Negar: inverter e somar 1. Alargar C2: repetir sinal.
+- [Bases e inteiros](/cadeiras/fsc/inteiros-complemento-dois/): $x=\sum d_ib^i$. Fração binária finita: denominador reduzido potência de 2. Hexadecimal: 4 bits/algarismo; octal: 3. Unsigned $[0,2^n-1]$; C2 $[-2^{n-1},2^{n-1}-1]$. Negar: inverter e somar 1. Alargar C2: repetir sinal.
 - Overflow de soma C2: entradas com mesmo sinal, resultado com sinal diferente. Subtração: sinais das entradas diferentes, resultado diferente do sinal do primeiro operando. Carry final não é overflow com sinal.
-- [Qm.n](/cadeiras/fsc/virgula-fixa/): m inclui sinal; $N=m+n$, $x=X2^{-n}$, passo $2^{-n}$. Produto para mesma escala: $XY/2^n$, com intermédio alargado.
+- [Qm.n](/cadeiras/fsc/virgula-flutuante/): m inclui sinal; $N=m+n$, $x=X2^{-n}$, passo $2^{-n}$. Produto para mesma escala: $XY/2^n$, com intermédio alargado.
 - [IEEE 754](/cadeiras/fsc/virgula-flutuante/): normal $(-1)^s(1+F/2^p)2^{E-bias}$; subnormal $(-1)^s(F/2^p)2^{1-bias}$. E=0,F=0: zero; E máximo,F=0: infinito; E máximo,F≠0: NaN. Binary32: 1/8/23, bias127; binary64: 1/11/52, bias1023; bfloat16: 1/8/7, bias127.
 - [Imagem raster](/cadeiras/fsc/texto-imagens/): bytes de píxeis = largura × altura × bits/píxel /8; acrescentar paleta, cabeçalho e alinhamento quando pedidos.
 

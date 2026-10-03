@@ -33,7 +33,9 @@ A pilha cresce para endereços menores. Reservar 16 bytes faz `addi sp,sp,-16`; 
 
 Não escrevas abaixo de sp sem reservar o espaço. Guarda e recupera os valores nos mesmos offsets. Todos os caminhos de retorno têm de libertar o frame e restaurar o que foi preservado.
 
-No exemplo executável, `main` alinha o sp inicial do simulador com `andi sp,sp,-16`. Isso é preparação do programa principal, não uma operação para uma rotina fazer ao sp do chamador. Uma rotina comum assume o alinhamento acordado e deve devolver exatamente o sp recebido.
+:::tip[Ideia-chave]
+Reserva primeiro, escreve depois; restaura os valores guardados e liberta exatamente o mesmo tamanho em todos os caminhos de retorno.
+:::
 
 ## Exemplo non-leaf
 
@@ -48,7 +50,7 @@ import callCode from '../../fsc/procedimentos.s?raw';
   title="Chamada non-leaf com preservação"
 />
 
-Com x=7, a saída é 16 e depois 99, o valor de s0 no main. Ao entrar na non-leaf, o frame fica:
+Ao entrar na non-leaf, o frame fica:
 
 | Offset relativo ao sp reservado | Conteúdo         |
 | ------------------------------- | ---------------- |
@@ -56,7 +58,9 @@ Com x=7, a saída é 16 e depois 99, o valor de s0 no main. Ao entrar na non-lea
 | 8                               | s0 recebido, 99  |
 | 0 a 7                           | Espaço não usado |
 
-A rotina coloca 8 em s0 e passa esse valor em a0. A chamada a dobro modifica ra e produz a0=16. O epílogo restaura s0 e ra sem alterar a0, liberta os 16 bytes e volta. Guardar ra **depois** do jal preservaria o retorno interior, não o retorno correto.
+A rotina coloca 8 em s0 e passa esse valor em a0. A chamada a dobro modifica ra e produz o resultado em a0. O epílogo restaura s0 e ra sem alterar a0, liberta os 16 bytes e volta. Guardar ra **depois** do jal preservaria o retorno interior, não o retorno correto.
+
+No exemplo executável, `main` alinha o sp inicial do simulador com `andi sp,sp,-16`. Isso é preparação do programa principal, não uma operação para uma rotina fazer ao sp do chamador. Uma rotina comum assume o alinhamento acordado e deve devolver exatamente o sp recebido.
 
 ## Chamadas dentro de ciclos e recursão
 

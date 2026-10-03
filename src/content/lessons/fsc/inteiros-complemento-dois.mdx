@@ -1,15 +1,75 @@
 ---
 title: 'Inteiros, sinal e overflow'
-description: 'Representar, somar, subtrair, multiplicar e comparar inteiros de largura limitada.'
+description: 'Bases de numeração, conversões, representação de inteiros e overflow em largura limitada.'
 section: conteudo
 order: 3
 practices:
   - fsc/praticar-inteiros-complemento-dois
+  - fsc/praticar-representacao-dados
 ---
 
-Uma palavra de $n$ bits tem $2^n$ padrões. O hardware pode somar esses padrões sem saber se os interpretamos com ou sem sinal. A interpretação determina o intervalo válido e a condição de overflow.
+O código `1011` só tem valor numérico depois de escolhermos uma base e uma interpretação. Em binário sem sinal vale 11; com sinal pode valer um negativo. Vamos primeiro ler números em qualquer base e depois ver como o hardware representa inteiros com e sem sinal numa largura fixa.
+
+## Pesos posicionais
+
+Na base $b$, cada algarismo $d_i$ está entre 0 e $b-1$ e tem peso $b^i$. A vírgula separa os pesos inteiros dos fracionários:
+
+$$x=\sum_i d_i b^i.$$
+
+Por exemplo,
+
+$$10110{,}101_2=16+4+2+\frac12+\frac18=22{,}625_{10}.$$
+
+O índice $i=0$ marca o algarismo das unidades, à esquerda da vírgula; os índices $-1,-2,\ldots$ marcam a parte fracionária. O subscrito 2 ou 10 indica a base, não faz parte do número.
+
+O bit mais significativo, MSB, é o de maior peso; o LSB é o de menor peso da palavra. Um byte tem 8 bits. `KiB` significa $2^{10}$ bytes; `kB` significa $10^3$ bytes. Indica a unidade quando calculares capacidade.
+
+## Converter a parte inteira
+
+Para converter 173 para binário, divide sucessivamente por 2 e guarda os restos:
+
+| Divisão | Quociente | Resto |
+| ------- | --------- | ----- |
+| 173 / 2 | 86        | 1     |
+| 86 / 2  | 43        | 0     |
+| 43 / 2  | 21        | 1     |
+| 21 / 2  | 10        | 1     |
+| 10 / 2  | 5         | 0     |
+| 5 / 2   | 2         | 1     |
+| 2 / 2   | 1         | 0     |
+| 1 / 2   | 0         | 1     |
+
+Lê os restos de baixo para cima: $173=10101101_2$. O primeiro resto corresponde ao peso $2^0$, por isso não pode ficar à esquerda. Confirma: $128+32+8+4+1=173$.
+
+O método funciona para qualquer base inteira. Para hexadecimal, $173=10\times16+13$, pelo que obtemos `AD`, usando `A` para 10 e `D` para 13.
+
+## Converter a parte fracionária
+
+Multiplica a fração por 2. A parte inteira obtida é o próximo bit; continua com a parte fracionária:
+
+$$0{,}625\times2=1{,}25,\quad0{,}25\times2=0{,}5,\quad0{,}5\times2=1.$$
+
+Os bits, agora por ordem direta, são `101`. Logo $173{,}625=10101101{,}101_2$. Para uma base $b$, substitui a multiplicação por 2 por uma multiplicação por $b$.
+
+Uma fração reduzida tem expansão binária finita se o denominador for uma potência de 2. Por exemplo, $3/8$ termina; $1/10$ não termina porque o denominador contém um fator 5. Se parares após $n$ bits, truncaste a representação, e o valor guardado pode diferir do pretendido.
+
+## Agrupar bits
+
+Como $16=2^4$, cada algarismo hexadecimal corresponde a 4 bits. Como $8=2^3$, cada algarismo octal corresponde a 3 bits. Agrupa a partir da vírgula para fora; acrescenta zeros apenas nas extremidades necessárias:
+
+$$10101101{,}101_2=1010\ 1101{,}1010_2=\mathrm{AD}{,}\mathrm A_{16}.$$
+
+Em octal, $010\ 101\ 101{,}101_2=255{,}5_8$. O zero acrescentado à esquerda não altera o inteiro, tal como o zero acrescentado à direita da fração não altera o seu valor.
+
+## Quantos bits são necessários
+
+Com $n$ bits há $2^n$ códigos. O símbolo $\lceil x\rceil$ significa o menor inteiro maior ou igual a $x$. Para distinguir $M$ situações precisamos de $\lceil\log_2M\rceil$ bits. Se forem números de 0 até 300, há **301** valores, e 8 bits só dão 256 códigos. Precisamos de 9 bits.
+
+Um hexadecimal de 32 bits tem 8 algarismos, porque $32/4=8$. Não confundas o número de algarismos impressos com o número de bits: `0x0000000F` ocupa 32 bits nesta escrita, mas o valor 15 cabe em 4 bits sem sinal.
 
 ## Três representações
+
+Uma palavra de $n$ bits tem $2^n$ padrões. O hardware pode somar esses padrões sem saber se os interpretamos com ou sem sinal. A interpretação determina o intervalo válido e a condição de overflow.
 
 | Representação em $n$ bits | Intervalo                    | Zeros |
 | ------------------------- | ---------------------------- | ----- |
@@ -29,7 +89,7 @@ Assim `11101010` vale $-128+64+32+8+2=-22$. Também podemos lê-lo como o inteir
 
 Para representar $-22$ em 8 bits, escreve $22=00010110$, inverte (`11101001`) e soma 1 (`11101010`). Isto calcula $2^8-22$.
 
-O mínimo $-128$ não tem simétrico positivo em 8 bits. Inverter e somar 1 ao código `10000000` devolve o mesmo padrão; não transforma esse padrão em um $+128$ representável.
+O mínimo $-128$ não tem simétrico positivo em 8 bits. Inverter e somar 1 ao código `10000000` devolve o mesmo padrão; não transforma esse padrão num $+128$ representável.
 
 Ao aumentar a largura, números sem sinal recebem zeros à esquerda. Em complemento para dois, repete-se o bit de sinal: `11101010` passa a `11111111 11101010`. Em sinal e magnitude, conserva-se o bit de sinal na nova posição e acrescentam-se zeros à magnitude. Não mistures estas regras.
 
@@ -39,7 +99,11 @@ A soma de palavras mantém os $n$ bits inferiores, ou seja, calcula módulo $2^n
 
 Com 8 bits, $100+40=140$ dá `10001100`. Sem sinal, o resultado está certo. Com sinal, esse código vale $-116$: o valor 140 excedeu o máximo 127.
 
-Já $-1+1$ dá `11111111 + 00000001 = 1 00000000`. Há carry para fora, mas o resultado com sinal 0 é válido. **Carry e overflow com sinal são condições diferentes.**
+Já $-1+1$ dá `11111111 + 00000001 = 1 00000000`. Há carry para fora, mas o resultado com sinal 0 é válido.
+
+:::tip[Ideia-chave]
+**Carry e overflow com sinal são condições diferentes.** Usa a tabela abaixo conforme a interpretação; um carry final 1 não prova overflow com sinal.
+:::
 
 | Operação | Overflow com sinal                                                    |
 | -------- | --------------------------------------------------------------------- |
@@ -48,7 +112,7 @@ Já $-1+1$ dá `11111111 + 00000001 = 1 00000000`. Há carry para fora, mas o re
 
 Num somador, o overflow com sinal também é $V=C_{n-1}\oplus C_n$, XOR entre o carry que entra no bit de sinal e o que sai. Para adição sem sinal, $C_n=1$ indica overflow. Na subtração por complemento, um carry final 1 indica que não foi necessário empréstimo.
 
-Na subtração com 8 bits, $100-(-40)=140$ também ultrapassa 127. O circuito soma `01100100` a `00101000` e guarda `10001100`, interpretado como -116. Os operandos tinham sinais diferentes e o resultado tem sinal diferente do primeiro. Já $-100-40=-140$ guarda `01110100`, interpretado como +116. A regra tem de funcionar nos dois sentidos.
+Na subtração com 8 bits, $100-(-40)=140$ também ultrapassa 127. O circuito soma `01100100` a `00101000` e guarda `10001100`, interpretado como -116, porque os operandos tinham sinais diferentes e o resultado tem sinal diferente do primeiro. Já $-100-40=-140$ guarda `01110100`, interpretado como +116. A regra tem de funcionar nos dois sentidos.
 
 ## Multiplicação e comparação
 
