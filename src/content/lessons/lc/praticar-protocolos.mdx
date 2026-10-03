@@ -8,15 +8,16 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-escaping-tamanho"
+  revision={1}
   title="Calcular o custo do frame"
   explanation="/cadeiras/lc/protocolos/#um-formato-com-escaping"
   answer={{ kind: 'number', value: 9, tolerance: 0, unit: 'bytes' }}
 >
-  <p>
+  <div>
     No protocolo da página, o corpo é 02 01 02 7D 00 7C. Só o byte 7D precisa de
     escaping. Com um delimitador no início e outro no fim, quantos bytes são
     transmitidos?
-  </p>
+  </div>
   <div slot="hint">Há seis bytes no corpo antes de escaping.</div>
   <div slot="hint-more">O escape substitui um byte por dois.</div>
   <div slot="solution">
@@ -31,6 +32,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-ack-perdido"
+  revision={1}
   title="Impedir movimento duplicado"
   explanation="/cadeiras/lc/protocolos/#ack-timeout-e-duplicados"
   answer={{
@@ -42,11 +44,11 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     O recetor aplica MOVE +8 com sequência 14, mas o ACK perde-se. O emissor
     termina o timeout e reenvia. Que regra mantém o movimento em +8 em vez de
     +16?
-  </p>
+  </div>
   <div slot="hint">O recetor deve lembrar mensagens já aceites.</div>
   <div slot="hint-more">
     O reenvio é da mesma mensagem, não de uma nova operação.
@@ -65,14 +67,15 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-imagem-serie"
+  revision={1}
   title="Estimar um envio inviável"
   explanation="/cadeiras/lc/protocolos/#por-que-não-enviar-o-framebuffer"
   answer={{ kind: 'number', value: 80, tolerance: 0, unit: 's' }}
 >
-  <p>
+  <div>
     Uma imagem tem 921600 bytes. A porta transmite 115200 bit/s em 8N1, sem
     pausas. Qual é o tempo mínimo ideal para enviar uma imagem?
-  </p>
+  </div>
   <div slot="hint">Cada byte útil ocupa dez bits.</div>
   <div slot="hint-more">A taxa útil ideal é 11520 bytes/s.</div>
   <div slot="solution">
@@ -83,5 +86,41 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Dividir bytes diretamente por bit/s ou supor que o start e o stop não ocupam
     a linha.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-parser-recuperacao"
+  revision={1}
+  title="Recuperar depois de um escape incompleto"
+  explanation="/cadeiras/lc/protocolos/#parser-com-estado"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Descartei o primeiro corpo.',
+      'Recuperei BODY com corpo vazio.',
+      'Publiquei só a mensagem seguinte validada.',
+    ],
+  }}
+>
+  <div>
+    O parser começa em WAIT_START e recebe 7E 01 07 02 7D 7E, seguido de um
+    frame válido completo. Que corpo pode publicar? Explica o estado
+    imediatamente após o segundo 7E e por que não deve aplicar dados parciais.
+  </div>
+  <div slot="hint">7D pede um byte codificado, mas chega um delimitador.</div>
+  <div slot="hint-more">
+    O segundo 7E descarta o corpo incompleto e prepara um início.
+  </div>
+  <div slot="solution">
+    Não publica o primeiro corpo. Ao chegar o segundo 7E no estado ESCAPED,
+    descarta 01 07 02 e regressa a BODY com corpo vazio. O delimitador inicial
+    do frame seguinte conserva esse corpo vazio. Só publica a mensagem seguinte
+    depois de validar campos, comprimento e checksum no fecho. Aplicar campos da
+    primeira mensagem antes disso deixaria efeitos de uma mensagem inválida.
+  </div>
+  <div slot="mistakes">
+    Guardar 7E XOR 20 como dado depois de um escape, ou atualizar a aplicação
+    antes da validação completa.
   </div>
 </Exercise>

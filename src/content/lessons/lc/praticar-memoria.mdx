@@ -8,31 +8,33 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-apontador-libertado"
+  revision={2}
   title="Quem fica com o endereço?"
   explanation="/cadeiras/lc/memoria-funcoes/#passagem-de-parâmetros"
   answer={{
     kind: 'self',
     checklist: [
       'Expliquei a cópia do apontador.',
-      'Identifiquei o endereço pendente no chamador.',
+      'Identifiquei o valor indeterminado depois de free.',
       'Propus retorno de NULL ou parâmetro duplo.',
     ],
   }}
 >
-  <p>
+  <div>
     Uma função recebe int *p, chama free(p) e depois faz p = NULL. O chamador
     passou a sua variável values. Depois da chamada, pode testar values != NULL
     para saber se a memória ainda existe? Justifica e propõe uma interface
     adequada.
-  </p>
+  </div>
   <div slot="hint">A função recebe uma cópia do valor de values.</div>
   <div slot="hint-more">Alterar p não altera o objeto values do chamador.</div>
   <div slot="solution">
-    Não. O objeto dinâmico foi libertado, mas values pode conservar o endereço
-    antigo. A comparação com NULL não prova validade. O chamador pode fazer
-    values = destroy(values), com a função a devolver NULL, ou a função pode
-    receber int ** e alterar *p depois da libertação. Outros aliases continuam a
-    exigir uma política de propriedade.
+    Não. free termina a duração do objeto e deixa indeterminado o valor dos
+    apontadores que o designavam. Comparar esse valor com NULL não é uma
+    verificação válida em C portátil. O chamador pode fazer values =
+    destroy(values), com a função a devolver NULL, ou a função pode receber int
+    ** e alterar *p depois da libertação. Outros aliases continuam a exigir uma
+    política de propriedade.
   </div>
   <div slot="mistakes">
     Um apontador não se torna automaticamente NULL quando o objeto é libertado.
@@ -42,6 +44,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-duracao-local"
+  revision={1}
   title="Devolver um resultado válido"
   explanation="/cadeiras/lc/memoria-funcoes/#chamada-stack-frame-e-retorno"
   answer={{
@@ -53,11 +56,11 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Uma função cria int result = 17 e devolve &amp;result. Num teste, o chamador
     imprime 17. Esse resultado prova que a função está correta? Dá duas
     alternativas sem esse erro de duração.
-  </p>
+  </div>
   <div slot="hint">
     A memória pode ainda conter os mesmos bits depois do retorno.
   </div>
@@ -79,15 +82,16 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-despacho-funcoes"
+  revision={1}
   title="Ler uma tabela de funções"
   explanation="/cadeiras/lc/memoria-funcoes/#apontadores-para-funções"
   answer={{ kind: 'number', value: 11, tolerance: 0 }}
 >
-  <p>
+  <div>
     Uma tabela contém primeiro f(n) = 3n e depois g(n) = n + 7. Todas as funções
     têm tipo int(int). Qual é o resultado da chamada à função do índice 1 com
     argumento 4?
-  </p>
+  </div>
   <div slot="hint">Os índices começam em zero.</div>
   <div slot="hint-more">O índice 1 escolhe g, não f.</div>
   <div slot="solution">
@@ -97,5 +101,78 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Confundir índice 1 com a primeira entrada ou somar os resultados das duas
     funções.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-fila-volta"
+  revision={1}
+  title="Seguir uma fila cheia"
+  explanation="/cadeiras/lc/memoria-funcoes/#filas-e-tipos-genéricos"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Obtive in = out = 1 e count = 3.',
+      'Mantive a ordem 20, 30, 40.',
+      'Rejeitei inserir numa fila cheia sem perder dados.',
+    ],
+  }}
+>
+  <div>
+    Uma fila de capacidade 3 começa vazia. Insere 10, 20 e 30, retira um
+    elemento e insere 40. Dá os índices in e out, a quantidade e a ordem das
+    próximas saídas. Uma nova inserção deve ter sucesso?
+  </div>
+  <div slot="hint">Cada índice avança módulo 3.</div>
+  <div slot="hint-more">
+    Retirar não reorganiza o array. A próxima saída começa em out.
+  </div>
+  <div slot="solution">
+    Depois das três inserções, in = out = 0 e count = 3. Retirar 10 faz out = 1
+    e count = 2. Inserir 40 usa a posição 0 e faz in = 1 e count = 3. As saídas
+    são 20, 30 e 40. A fila está cheia; uma nova inserção falha sem alterar
+    dados nem índices.
+  </div>
+  <div slot="mistakes">
+    in = out também ocorre quando a fila está cheia. Sem count ou outra
+    convenção, os índices não distinguem os dois casos.
+  </div>
+</Exercise>
+
+<Exercise
+  id="lc-realloc-falha"
+  revision={1}
+  title="Conservar uma alocação na falha"
+  explanation="/cadeiras/lc/memoria-funcoes/#alocação-e-propriedade"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Mantive o bloco antigo alocado na falha.',
+      'Usei um apontador temporário.',
+      'Distingui tamanho em bytes e invalidação de aliases no sucesso.',
+    ],
+  }}
+>
+  <div>
+    values é o único apontador para uma alocação válida. A instrução values =
+    realloc(values, 200) devolve NULL. O bloco antigo foi libertado? Explica o
+    problema e uma sequência segura, sem executar uma falha deliberada de
+    memória.
+  </div>
+  <div slot="hint">O tamanho pedido é não nulo.</div>
+  <div slot="hint-more">
+    Na falha, realloc conserva a alocação original, mas a atribuição substitui o
+    seu endereço.
+  </div>
+  <div slot="solution">
+    O bloco antigo continua alocado. A atribuição perde o seu único endereço e
+    cria uma fuga de memória. Usa int *next = realloc(values, 200); se next for
+    NULL, conserva values e trata o erro; caso contrário, atribui values = next.
+    Depois do sucesso, não uses aliases do endereço anterior. Os 200 são bytes,
+    não 200 inteiros.
+  </div>
+  <div slot="mistakes">
+    Libertar values depois da atribuição falhada chama free(NULL) e não recupera
+    o bloco perdido. Não confundir falha com o sucesso que pode mover o bloco.
   </div>
 </Exercise>
