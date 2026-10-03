@@ -36,13 +36,13 @@ Gestalt: proximidade, semelhança, continuidade, região comum e figura-fundo. R
 
 [Explicação e contas](/cadeiras/ipc/percepcao-cognicao/).
 
-## Desenho e processo
+## Investigar e desenhar
 
-Affordance é possibilidade de ação; significante comunica-a; mapping liga controlo a efeito; feedback responde à ação.
+Investigar pergunta, método e síntese: entrevista para motivos, observação para comportamento, questionário para contar. Perguntas sobre acontecimentos concretos; sem perguntas duplas nem indução. Consentimento, dados mínimos e piloto do protocolo. [Explicação](/cadeiras/ipc/investigacao-utilizadores/).
 
-Heurísticas: estado, mundo real, controlo/liberdade, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação e ajuda. Justifica cada falha com tarefa, comportamento, consequência e alteração. [Explicação](/cadeiras/ipc/principios-usabilidade/).
+Investigar → necessidades → requisitos → alternativas → protótipo → avaliação → revisão. PACT: pessoas, atividades, contextos, tecnologias. Persona sintetiza padrões fundamentados; proto-persona declara hipóteses. Cenário as-is descreve o atual; to-be explora proposta. Tarefa de teste dá resultado sem ensinar cliques; wireframe mostra estrutura, wireflow liga estados e transições. Requisito de usabilidade indica público, contexto, medida e limiar. [Explicação](/cadeiras/ipc/design-centrado-utilizador/).
 
-Investigar → necessidades → requisitos → alternativas → protótipo → avaliação → revisão. PACT: pessoas, atividades, contextos, tecnologias. Persona sintetiza padrões fundamentados; proto-persona declara hipóteses. Cenário dá situação/objetivo; tarefa de teste dá resultado sem ensinar cliques. Requisito de usabilidade indica público, contexto, medida e limiar. [Explicação](/cadeiras/ipc/design-centrado-utilizador/).
+Affordance é possibilidade de ação; significante comunica-a; mapping liga controlo a efeito; feedback responde à ação. Heurísticas: estado, mundo real, controlo/liberdade, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação e ajuda. Justifica cada falha com tarefa, comportamento, consequência e alteração. [Explicação](/cadeiras/ipc/principios-usabilidade/).
 
 Horizontal: amplo e pouco profundo. Vertical: restrito e profundo. Fidelidade é outro eixo. Wizard of Oz simula comportamento; não prova o algoritmo real. [Explicação](/cadeiras/ipc/prototipagem/).
 
@@ -56,18 +56,18 @@ Horizontal: amplo e pouco profundo. Vertical: restrito e profundo. Fidelidade é
 | Como funciona no contexto?             | Estudo de campo      |
 | Que tempo prevê um percurso conhecido? | Modelo preditivo     |
 
-Walkthrough: objetivo do passo, ação disponível, relação ação/objetivo e progresso depois da ação. Formativa melhora desenho; sumativa avalia resultados. Definir sucesso, ajuda e limite de tempo antes do teste. Não contar interrupção como tempo de conclusão. [Explicação](/cadeiras/ipc/avaliacao-usabilidade/).
+Protocolo mínimo: tarefa verificável, critério de sucesso, ajuda permitida, limite de tempo e registo. Walkthrough: objetivo do passo, ação disponível, relação ação/objetivo e progresso depois da ação. Formativa melhora desenho; sumativa avalia resultados. Definir sucesso, ajuda e limite de tempo antes do teste. Não contar interrupção como tempo de conclusão. [Explicação](/cadeiras/ipc/avaliacao-usabilidade/).
 
 - Atitudinal: o que dizem/sentem. Comportamental: o que fazem. Qualitativo/quantitativo é outro eixo.
 - Entre participantes: pessoas diferentes por condição. Intra: as mesmas; controlar aprendizagem/ordem. Independente é condição; dependente é medida.
 - Média e mediana não são iguais; declarar falhas e dispersão. Correlação não prova causalidade.
 - Ética: consentimento informado, saída sem penalização, proteção dos dados e riscos proporcionados; pseudonimização não garante anonimato.
 - SUS padrão: ímpares $r_i-1$, pares $5-r_i$; somar e multiplicar por 2,5. Índice de 0 a 100, não percentagem de sucesso.
-- Valor-p não é probabilidade de a hipótese nula ser verdadeira; ausência de significância não prova igualdade. [Explicação](/cadeiras/ipc/estudos-utilizadores/).
+- Valor-p não é probabilidade de a hipótese nula ser verdadeira; ausência de significância não prova igualdade. Emparelhado: analisar diferenças por pessoa; IC da diferença média com $t$ e $s_d$. [Explicação](/cadeiras/ipc/estudos-utilizadores/).
 
 ## Acessibilidade e ajuda
 
-WCAG: percetível, operável, compreensível, robusto. Texto AA: 4,5:1 normal e 3:1 grande segundo definição e exceções. Contraste $(L_{\max}+0{,}05)/(L_{\min}+0{,}05)$, sem arredondar para passar. Foco, teclado, nomes, estados e sequência de tarefa precisam de verificação manual.
+WCAG: percetível, operável, compreensível, robusto. Texto AA: 4,5:1 normal e 3:1 grande segundo definição e exceções. Contraste $(L_{\max}+0{,}05)/(L_{\min}+0{,}05)$, sem arredondar para passar. Foco, teclado, nomes, estados e sequência de tarefa precisam de verificação manual. Alvos: 24 px ou espaçamento e exceções.
 
 Multimodal: canais de entrada/saída com alternativas, redundância ou complementaridade. Indicar como resolver conflitos e falhas de reconhecimento. [Explicação](/cadeiras/ipc/acessibilidade-multimodal/).
 
