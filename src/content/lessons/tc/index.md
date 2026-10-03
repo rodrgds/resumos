@@ -37,7 +37,7 @@ No fim deste percurso vais conseguir transformar uma condição sobre dados numa
 9. [Máquinas de Turing e decidibilidade](/cadeiras/tc/turing-decidibilidade/): programar a fita, justificar terminação e distinguir reconhecimento de decisão.
 10. [Complexidade](/cadeiras/tc/complexidade/): introdução ao custo dos algoritmos, certificados e reduções polinomiais.
 
-Cada lição termina com exercícios próprios de dificuldade crescente, com pistas, resolução e erros frequentes. A [Cheat sheet](/cadeiras/tc/folha-consulta/) reúne condições e procedimentos para consulta depois de estudar.
+Cada lição termina com exercícios de dificuldade crescente, com pistas, resolução e erros frequentes. Alguns enunciados são originais; outros são adaptações próximas das folhas práticas e do segundo teste de 2023/24, e estão assinalados como tal nas páginas de prática. A [Cheat sheet](/cadeiras/tc/folha-consulta/) reúne condições e procedimentos para consulta depois de estudar.
 
 Para cada construção, escreve primeiro o que cada estado ou variável significa. Depois segue uma palavra aceite, uma rejeitada e a palavra vazia. Por fim, justifica por que todas as entradas recebem a resposta certa. Para uma prova negativa pelo lema da repetição, distingue o que tu escolhes do que tens de cobrir em qualquer decomposição.
 
@@ -46,11 +46,11 @@ Os pré-requisitos são conjuntos, funções, lógica e [indução de MD](/cadei
 :::details[Materiais e edição: base editorial e cobertura]
 A base é o [Moodle de TC de 2024/25](https://moodle2425.up.pt/course/view.php?id=5426), com materiais de Jácome Cunha e Luís Antunes. A apresentação, a introdução e os slides de DFA, NFA, ε-NFA, expressões regulares, linguagens regulares e CFG identificam 2024/25. O Moodle reutiliza também slides de PDA, propriedades de CFL e Turing que identificam 2023/24, e folhas práticas de propriedades de CFL e Turing que identificam 2022/23. Algumas folhas de 2024/25 conservam cabeçalhos de 2023/24 em páginas interiores.
 
-O [segundo teste resolvido](https://moodle2425.up.pt/mod/resource/view.php?id=194400) identifica 13 de junho de 2024, apesar de estar nesse Moodle. Serve para reconhecer tipos de perguntas, como classificar gramáticas, seguir PDA e interpretar tabelas de Turing. Os exercícios destas páginas têm enunciados e resoluções próprios, não reproduzem esse teste.
+O [segundo teste resolvido](https://moodle2425.up.pt/mod/resource/view.php?id=194400) identifica 13 de junho de 2024, apesar de estar nesse Moodle. Serve para reconhecer tipos de perguntas, como classificar gramáticas, seguir PDA e interpretar tabelas de Turing. Os exercícios destas páginas têm resoluções próprias. Alguns enunciados adaptam tipos de perguntas desse teste e das folhas práticas; cada página de prática distingue exercícios originais de adaptações.
 
 A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586988), consultada em 3 de outubro de 2026, confirma TC no segundo semestre, com 6 ECTS, mas ainda não apresenta programa nem avaliação. O percurso segue os materiais disponíveis de 2024/25.
 
-A [ficha preenchida de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560095) inclui os mesmos modelos e propriedades. A página de complexidade desenvolve a ligação a computabilidade e custo dos algoritmos; o programa listado centra-se em linguagens formais e introdução às máquinas de Turing. Não infiras a profundidade da avaliação de complexidade a partir desta extensão.
+A [ficha preenchida de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560095) inclui os mesmos modelos e propriedades. A página de complexidade desenvolve a ligação a computabilidade e custo dos algoritmos; o programa listado centra-se em linguagens formais e introdução às máquinas de Turing. Trata a página de complexidade como extensão: estuda-a depois das máquinas de Turing e não infiras a profundidade da avaliação a partir desta extensão.
 :::
 
 :::details[Avaliação: regras de 2025/26]

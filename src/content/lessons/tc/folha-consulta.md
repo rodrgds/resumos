@@ -5,7 +5,7 @@ section: recursos
 studyKind: revision
 ---
 
-Depois de percorrer palavras, autómatos, gramáticas, fita e custo, esta página responde como rever depressa as condições e os procedimentos antes de resolver exercícios.
+Depois de estudar cada tema nas lições, usa esta página para rever depressa condições e procedimentos antes de resolver exercícios. Não substitui os exemplos completos.
 
 Cada tabela reúne o que há a conferir num tema e aponta para a explicação completa, por isso usa-a para confirmar uma condição, não para aprender o tema pela primeira vez.
 
@@ -68,14 +68,14 @@ Ambiguidade: uma palavra com duas árvores, ou duas derivações mais à esquerd
 
 PDA: $(q,w,\gamma)$ regista estado, entrada restante e pilha, com topo à esquerda. $a,X/\alpha$ lê $a$ e substitui $X$ por $\alpha$.
 
-- Estado final: entrada vazia e estado em $F$, sem exigir pilha vazia.
-- Pilha vazia: entrada e pilha vazias, incluindo o marcador de fundo.
+- Estado final: entrada vazia e estado em $F$, sem exigir pilha vazia; chegar a final com entrada restante não aceita.
+- Pilha vazia: entrada e pilha vazias, incluindo o marcador de fundo; esvaziar antes de consumir tudo não aceita.
 - CFG para PDA: expande a variável do topo por $\varepsilon$; lê e retira terminais iguais.
 - PDA para CFG: $[pXq]$ gera o que remove $X$ indo de $p$ a $q$.
 
 Os dois critérios de PDA são equivalentes por conversão de máquinas não determinísticas. A mesma máquina pode ter linguagens diferentes pelos dois critérios. CFG e PDA têm o mesmo poder; DPDA tem menos poder que NPDA. [Construções](/cadeiras/tc/automatos-pilha/).
 
-Simplificar: vazias, unitárias, não geradores, inacessíveis. Depois substitui terminais em corpos longos e divide corpos com mais de duas variáveis.
+Simplificar por esta ordem: vazias (substituindo o efeito por combinações), unitárias (copiando produções não unitárias alcançadas), não geradores e depois inacessíveis. Produções vazias e unitárias podem ser essenciais e não se apagam sem substituição. Depois substitui terminais em corpos longos e divide corpos com mais de duas variáveis.
 
 CNF: $A\to BC$ ou $A\to a$. Se $\varepsilon\in L$, permite $S_0\to\varepsilon$, com $S_0$ ausente dos corpos. CYK preenche intervalos por comprimento, tentando cada corte; aceita se o início aparece no intervalo total. Tempo $O(n^3)$ para gramática fixa. [Conversão e tabela](/cadeiras/tc/propriedades-livres/).
 

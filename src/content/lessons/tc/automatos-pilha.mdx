@@ -8,7 +8,7 @@ practices:
 
 import Dot from '../../../components/Dot.astro';
 
-Depois de gerar palavras com partes relacionadas com gramáticas, o percurso pergunta que máquina reconhece essas palavras com uma memória extra: esta página responde como emparelhar contagens sem fixar um limite.
+Para reconhecer $a^nb^n$ sem fixar um limite, guarda um marcador por cada $a$ e retira um por cada $b$. Os estados controlam a ordem dos blocos e uma **pilha** guarda a contagem. Esta página mostra esse modelo, os dois critérios de aceitação e as conversões com gramáticas.
 
 Para reconhecer $a^nb^n$, guarda um marcador por cada $a$ e retira um por cada $b$: os estados controlam a ordem dos blocos e uma **pilha**, onde o último símbolo colocado é o primeiro a sair, guarda a contagem sem limite previamente fixado. Um **autómato de pilha**, PDA, é a máquina que junta esses estados a essa pilha.
 
@@ -105,6 +105,12 @@ De estado final para pilha vazia, usa também um fundo novo, para impedir esvazi
 
 Esta equivalência não se aplica sem alterações às convenções determinísticas; as transições vazias acrescentadas podem criar escolhas.
 
+### Conversões de critério com transições concretas
+
+De pilha vazia para estado final, com fundo novo $\bot$. Supõe um PDA com $\delta(q_0,a,Z_0)=\{(q_0,AZ_0)\}$ por pilha vazia. A máquina nova tem início $p_0$, fundo $\bot$, transição $(p_0,\varepsilon,\bot) \to (q_0,Z_0\bot)$ e, para o estado simulado $q$ que expõe $\bot$, transição $(q,\varepsilon,\bot) \to (p_f,\varepsilon)$. Só o ramo que esvaziou a pilha simulada chega a $p_f$ com a entrada consumida. Para $a$ aceite por pilha vazia, a nova máquina lê $a$, expõe $\bot$ e aceita em $p_f$; para $aa$ rejeitada, nenhum ramo expõe $\bot$ no fim da entrada.
+
+De estado final para pilha vazia, com fundo novo $\bot$ e estado de limpeza $p_e$. De cada antigo final $f$, acrescenta $(f,\varepsilon,X) \to (p_e,\varepsilon)$ para todo o $X$ da pilha, e em $p_e$ retira todos os símbolos até $\bot$ inclusive. Se a máquina antiga aceita $aabb$ em $q_f$ com pilha $Z$, a nova consome $aabb$, passa a $p_e$ e esvazia $Z\bot$. Se chega a $q_f$ com entrada restante, $p_e$ não consegue consumir essa entrada e o ramo falha.
+
 ## De CFG para PDA
 
 Um PDA por pilha vazia pode simular derivações mais à esquerda. A pilha começa com $S$ e contém variáveis e terminais:
@@ -138,5 +144,27 @@ $$
 
 Se empilhar mais símbolos, usa uma variável por símbolo e estados intermédios para ligar as etapas. A gramática gera precisamente as entradas que esvaziam a pilha.
 :::
+
+### PDA para CFG num exemplo pequeno
+
+Considera um PDA por pilha vazia com estados $p,q$, $Z_0$ inicial e cinco transições:
+
+- $\delta(p,a,Z_0)=\{(p,AZ_0)\}$;
+- $\delta(p,a,A)=\{(p,AA)\}$;
+- $\delta(p,b,A)=\{(q,\varepsilon)\}$;
+- $\delta(q,b,A)=\{(q,\varepsilon)\}$;
+- $\delta(q,\varepsilon,Z_0)=\{(q,\varepsilon)\}$.
+
+A última transição esvazia o fundo no fim; sem ela, $ab$ deixaria $Z_0$ na pilha e não seria aceite por pilha vazia. Com as cinco transições, a máquina reconhece $\{a^nb^n \mid n \ge 1\}$.
+
+A variável $[pXq]$ gera as palavras que levam de $p$ a $q$ removendo o $X$ do topo sem tocar no que está abaixo. A regra geral para empilhar dois símbolos é: se $\delta(p,a,X)$ contém $(r,YZ)$, então para todos os estados $s,t$ acrescenta $[pXt] \to a[rYs][sZt]$. Para retirar um símbolo com $\delta(p,a,X)\ni(r,\varepsilon)$, acrescenta $[pXr] \to a$.
+
+- $S \to [pZ_0p] \mid [pZ_0q]$;
+- empilhar $Z_0\to AZ_0$ por $a$ de $p$ para $p$ dá, para todos $s,t$ em $\{p,q\}$: $[pZ_0t] \to a[pAs][sZ_0t]$, ou seja as quatro produções com $t=p,q$ e $s=p,q$;
+- empilhar $A\to AA$ por $a$ de $p$ para $p$ dá, para todos $s,t$ em $\{p,q\}$: $[pAt] \to a[pAs][sAt]$, ou seja as oito produções com $t=p,q$ e $s=p,q$;
+- $[pAq] \to b$ e $[qAq] \to b$, pelas duas transições que retiram $A$ lendo $b$;
+- $[qZ_0q] \to \varepsilon$, pela transição que esvazia o fundo.
+
+Para $ab$, fixa o estado intermédio $s=q$: $S \Rightarrow [pZ_0q] \Rightarrow a[pAq][qZ_0q] \Rightarrow ab[qZ_0q] \Rightarrow ab$. A primeira produção usa a transição $Z_0\to AZ_0$ com $s=q$; $[pAq]\to b$ consome o $b$; $[qZ_0q]\to\varepsilon$ esvazia o fundo. Cada variável regista onde começa e acaba a remoção de um marcador, e o $s$ quantificado liga as duas metades de $AZ_0$.
 
 Com a conversão inversa, isto prova: **uma linguagem é livre de contexto se e só se algum PDA a reconhece**.
