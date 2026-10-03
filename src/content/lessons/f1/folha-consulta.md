@@ -16,7 +16,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - Aceleração constante: $v_x=v_0+at$, $x=x_0+v_0t+at^2/2$, $v_x^2=v_0^2+2a\Delta x$.
 - Separação: $a(v)=dv/dt$; $a(x)=v\,dv/dx$. Verifica soluções excluídas por divisões.
 - Curvatura: $\vec a=\dot v\hat t+(v^2/\rho)\hat n$. Para $v\ne0$, $a_t=\vec v\cdot\vec a/v$ e $\rho=v^2/a_n$ se $a_n>0$.
-- Circunferência: $v=R|\omega|$, $a_n=R\omega^2$, $\omega=2\pi/T=2\pi f$.
+- Circunferência: $v=R|\omega|$, $a_n=R\omega^2$; em movimento uniforme $|\omega|=2\pi/T=2\pi f$. $R\alpha$ usa o sentido angular positivo; $a_t=dv/dt$ usa o sentido da velocidade.
 - Projétil sem resistência: $x=x_0+v_0\cos\theta\,t$, $y=y_0+v_0\sin\theta\,t-gt^2/2$. Alcance $v_0^2\sin2\theta/g$ só para alturas inicial e final iguais.
 
 ## Forças
@@ -67,7 +67,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - Rolamento ideal: $v_\mathrm{CM}=R|\omega|$, $K=Mv^2/2+I_\mathrm{CM}\omega^2/2$. Descida: $a=g\sin\theta/[1+I_\mathrm{CM}/(MR^2)]$. Confirma $|f_s|\le\mu_sN$.
 - Pêndulo físico, pequenos ângulos: $T=2\pi\sqrt{I_O/(Mgd)}$.
 
-| Forma e eixo                          | $I$          |
+| Corpo de densidade uniforme e eixo    | $I$          |
 | ------------------------------------- | ------------ |
 | Aro fino, simetria                    | $MR^2$       |
 | Disco/cilindro maciço, simetria       | $MR^2/2$     |
@@ -82,11 +82,11 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - Mola ideal: $\omega_0=\sqrt{k/m}$; $T=2\pi/\omega_0$.
 - $x=x_0\cos\omega_0t+(v_0/\omega_0)\sin\omega_0t$; $A^2=x_0^2+(v_0/\omega_0)^2$; $E=kA^2/2$.
 - Pêndulo simples: $T\approx2\pi\sqrt{\ell/g}$, pequenos ângulos em radianos.
-- Amortecimento linear: $\gamma=b/(2m)$; subcrítico se $\gamma<\omega_0$, crítico se iguais, sobrecrítico se maior.
+- Amortecimento linear: $\gamma=b/(2m)$; subcrítico se $0<\gamma<\omega_0$, crítico se iguais, sobrecrítico se maior; $b=0$ dá o oscilador ideal.
 - Subcrítico: $x=Ae^{-\gamma t}\cos(\omega_dt+\phi)$, $\omega_d^2=\omega_0^2-\gamma^2$.
 - $\tau=m/b=1/(2\gamma)$; $Q=\omega_0/(2\gamma)$; meia amplitude em $\ln2/\gamma$. A amplitude é $e^{-t/(2\tau)}$ nesta convenção.
 - Picos do mesmo sinal: $\delta=\ln(A_n/A_{n+1})=\gamma T_d$.
 - Força $F_0\cos\Omega t$: $A=(F_0/m)/\sqrt{(\omega_0^2-\Omega^2)^2+(2\gamma\Omega)^2}$.
-- Pico de amplitude: $\Omega_\mathrm{res}=\sqrt{\omega_0^2-2\gamma^2}$ apenas se $\gamma<\omega_0/\sqrt2$.
+- Pico de amplitude: $\Omega_\mathrm{res}=\sqrt{\omega_0^2-2\gamma^2}$ para $F_0$ constante e $0<\gamma<\omega_0/\sqrt2$.
 
 [Análise de medições](/cadeiras/f1/medir-oscilacoes/#ajustar-o-decaimento): usa amplitudes relativamente à linha de base, vários ciclos e logaritmos de razões adimensionais. Não confundir a constante de tempo da amplitude com a da energia.

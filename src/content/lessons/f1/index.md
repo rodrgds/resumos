@@ -8,7 +8,7 @@ editorial:
   review:
     edition: 2025/26
     reviewer: Codex
-    date: '2026-10-01'
+    date: '2026-10-03'
   sources:
     - title: Física I, L.EIC008, SIGARRA 2025/26
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560093
@@ -24,7 +24,8 @@ editorial:
       url: https://villate.org/dinamica/
   coverage: Programa de mecânica da ficha preenchida e tópicos das transparências de Salzedas, com exemplos próprios, exercícios e análise de oscilações experimentais.
   gaps:
-    - A ficha de 2026/27 ainda não apresenta programa nem avaliação.
+    - A ficha de 2026/27, consultada em 3 de outubro de 2026, ainda não apresenta programa nem avaliação.
+    - Não foram consultados materiais do Moodle de 2026/27.
     - O arquivo Moodle de 2024/25 contém o relatório experimental, mas não o guia experimental nem o programa Python referido nesse relatório.
 ---
 
@@ -46,13 +47,13 @@ Cada tema tem exercícios próprios com duas pistas e uma resolução. Tenta res
 
 ## Como resolver um problema
 
-Escolhe o corpo ou conjunto de corpos e o intervalo de tempo. Desenha eixos e fixa sinais. Num problema de forças, representa apenas as forças que atuam nesse corpo. Num problema de conservação, escreve a condição que permite conservar a grandeza. Por exemplo, momento linear exige impulso externo nulo, enquanto energia mecânica exige um balanço sem trabalho dissipativo.
+Escolhe o corpo ou conjunto de corpos e o intervalo de tempo. Desenha eixos e fixa sinais. Num problema de forças, representa apenas as forças que atuam nesse corpo. Num problema de conservação, escreve a condição que permite conservar a grandeza. Por exemplo, momento linear exige impulso externo nulo, enquanto energia mecânica exige trabalho total nulo das forças que não estão incluídas no potencial.
 
 Substitui os números depois de obteres as relações. Confirma unidades, sinais e casos limite. Uma normal negativa significa que o contacto suposto não pode existir. Uma energia cinética negativa significa que o estado não é acessível. Uma velocidade negativa apenas indica movimento contrário ao eixo escolhido.
 
 ## Programa e avaliação
 
-A base é a [ficha preenchida de 2025/26, L.EIC008](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560093), comparada com as transparências de F. Salzedas datadas de 27 de maio de 2026. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586986) já existe, mas ainda não apresenta programa nem regras de avaliação. Não se devem transportar automaticamente as regras anteriores para essa edição.
+A base é a [ficha preenchida de 2025/26, L.EIC008](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560093), comparada com as transparências de F. Salzedas datadas de 27 de maio de 2026. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586986) já existe, mas, na consulta de 3 de outubro de 2026, ainda não apresenta programa nem regras de avaliação. Não se devem transportar automaticamente as regras anteriores para essa edição.
 
 Em **2025/26**, a ficha define $\mathrm{CF}=\min(0{,}4\max(\mathrm{AD},E_1)+0{,}6E_2+\mathrm{AF},20)$. AD é o teste individual, $E_1$ a parte do exame sobre essa matéria e $E_2$ a parte sobre a restante matéria. AF vale no máximo um valor e só se aplica quando há aprovação sem esse acréscimo. A ficha também distingue a assiduidade da primeira inscrição e a dos repetentes. Confirma sempre a edição aplicável e os avisos docentes antes de uma prova.
 
