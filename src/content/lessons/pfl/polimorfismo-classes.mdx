@@ -68,6 +68,30 @@ Uma classe agrupa tipos com operações comuns, ou seja não é uma classe de ob
 
 ## Deduzir um tipo passo a passo
 
+### Deduzir `duas` passo a passo
+
+Para `duas f x = f (f x)`, dá nomes aos desconhecidos. Supõe `x :: a` e `f :: b -> c`. A chamada interior `f x` exige `b = a` e produz `c`. A chamada exterior aplica `f` a esse resultado, por isso `c` tem de ser também `a`. Logo `f :: a -> a` e `duas :: (a -> a) -> a -> a`. Não há operações sobre os valores, por isso não nasce nenhuma restrição de classe.
+
+### Duas medianas com restrições diferentes
+
+Compara duas formas de calcular a mediana de três valores. Por comparações, basta ordenar só com `(<=)`:
+
+```haskell
+inserirOrd :: Ord a => a -> [a] -> [a]
+inserirOrd x [] = [x]
+inserirOrd x (y:ys)
+  | x <= y    = x : y : ys
+  | otherwise = y : inserirOrd x ys
+
+ordenar3 :: Ord a => a -> a -> a -> [a]
+ordenar3 a b c = inserirOrd c (inserirOrd b [a])
+
+medianaOrd :: Ord a => a -> a -> a -> a
+medianaOrd x y z = head (tail (ordenar3 x y z))
+```
+
+`ordenar3 3 1 2` insere `1` em `[3]` para `[1,3]` e depois `2` para `[1,2,3]`. A mediana é `2`. Só usa `(<=)`, por isso só pede `Ord a`. Se calculares pela soma e pelos extremos, como `(x + y + z - minimum [x,y,z] - maximum [x,y,z])`, usas `(+)` e `(-)`, e o tipo passa a `(Ord a, Num a) => a -> a -> a -> a`. A segunda versão exclui listas de caracteres e outros tipos ordenados sem aritmética. Lê a restrição como registo das operações usadas.
+
 Considera `duasVezes f x = f (f x)`. Começamos com `x :: a`, ou seja a aplicação interior permite `f :: a -> b`. A aplicação exterior usa o mesmo `f` sobre o resultado de tipo `b`, por isso `b` tem de ser `a`. A saída também é `a`. O tipo final é:
 
 ```haskell

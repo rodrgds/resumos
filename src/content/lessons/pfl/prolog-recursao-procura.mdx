@@ -59,7 +59,14 @@ mau_max(X, Y, X) :- !.
 mau_max(X, Y, Y) :- X < Y.
 ```
 
-A query `?- mau_max(3, 5, M).` responde `M = 3`, que está errado: o corte compromete-se com a primeira cláusula antes de comparar. A diferença entre os dois é a posição do teste em relação ao corte: no verde, o teste guarda a cláusula; no vermelho, o corte dispara primeiro e o teste nunca corre.
+A query `?- mau_max(3, 5, M).` responde `M = 3`, que está errado. Compara os conjuntos de respostas no modo `(+,+,-)`:
+
+| Programa  | Respostas para `(3,5,M)` |
+| --------- | ------------------------ |
+| Com corte | `M = 3`                  |
+| Sem corte | `M = 3` e `M = 5`        |
+
+O corte é vermelho porque altera o conjunto de respostas. Mas a resposta errada `3` já existe sem corte, pela primeira cláusula. Não há teste depois desse corte para discutir posição: a primeira cláusula decide sem comparar. No `max` verde, retirar o corte não acrescenta respostas lógicas nesse contrato. A posição do teste, por si só, não define a cor do corte.
 
 Para juntar **todas** as respostas numa lista em vez de as pedir uma a uma, usa `findall`:
 
@@ -97,7 +104,7 @@ Experimenta a soma e o máximo:
   language="prolog"
   title="soma e máximo no navegador"
   code={
-    'soma([], 0).\nsoma([H|T], S) :- soma(T, R), S is H + R.\n\nmax(X, Y, X) :- X >= Y, !.\nmax(X, Y, Y) :- X < Y.\n\nmain :- soma([1,2,3], S), writeln(S), max(7, 5, M), writeln(M).'
+    'soma([], 0).\nsoma([H|T], S) :- soma(T, R), S is H + R.\n\nmax(X, Y, X) :- X >= Y, !.\nmax(X, Y, Y) :- X < Y.\n\nmain :- soma([1,2,3], S), write(S), nl, max(7, 5, M), write(M), nl.'
   }
 />
 
@@ -105,7 +112,7 @@ No grafo finito, cada passo visita um estado novo no caminho, por isso não pode
 
 ## SICStus na aula, SWI em casa
 
-O Prolog da cadeira é o SICStus; o do navegador destas páginas é o SWI. A sintaxe destas páginas corre nos dois. O que muda é o ambiente:
+O Prolog da cadeira é o SICStus; o do navegador destas páginas é o SWI. A sintaxe base das cláusulas é comum, mas os predicados de biblioteca e de escrita diferem. Os exemplos de escrita destas páginas usam `write/1` e `nl/0`, portáteis aos dois motores. `writeln/1` aparece apenas como nota SWI. O que muda é o ambiente:
 
 <Tabs id="sicstus-swi" labels={['SICStus (aula)', 'SWI e SWISH (casa)']}>
   <div slot="panel-0">
@@ -140,6 +147,10 @@ Definir membro por `membro(X,[X|_]).` e `membro(X,[_|T]) :- membro(X,T).` produz
 `X = 2+3` liga `X` ao termo `+(2,3)`; `X is 2+3` liga-o a `5`, ou seja `5 =:= 2+3` avalia os dois lados e compara números; `5 == 5.0` testa identidade e falha porque os termos têm representações diferentes. `X = Y` pode criar ligações; `X == Y` não as cria.
 
 Uma desigualdade por não unificação, `X \= Y`, falha se os termos puderem ser unificados agora. Com as duas variáveis livres, falha, embora depois pudéssemos dar-lhes valores diferentes. `dif(X,Y)` em SWI-Prolog adia a restrição de diferença. Para escrever código portátil para a cadeira, distingue estes contratos e confirma os predicados disponíveis no SICStus.
+
+### Modos de chamada e `is`
+
+Documenta cada predicado com o modo, por exemplo `soma(+ListaDeNumeros, -Total)`. Com saída livre, `soma([1,2,3], S)` calcula `S = 6`. Com saída instanciada, `soma([1,2,3], 6)` confirma e `soma([1,2,3], 5)` falha. `S is H + R` exige `H` e `R` ligados a números. `X = 2 + 3` liga ao termo `+(2,3)`; `X is 2 + 3` liga a `5`. Para comparar números já avaliados, usa `=:=`.
 
 ## Acumuladores e terminação
 

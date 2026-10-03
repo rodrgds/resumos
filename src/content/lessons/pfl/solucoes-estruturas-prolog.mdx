@@ -32,6 +32,23 @@ Depois de listas, aritmética e corte, esta página responde como juntar todas a
 
 Uma consulta pode ter várias provas. O motor devolve uma resposta de cada vez; os predicados de recolha exploram as provas e constroem uma lista, ou seja primeiro decide se queres conservar repetições, se precisas de agrupar e o que deve acontecer quando não há respostas. O exemplo desta página são as inscrições em cadeiras: várias provas de quem está inscrito onde são juntadas numa só lista.
 
+### Os três predicados sobre os mesmos factos
+
+Com `inscrito(ana,pfl). inscrito(ana,lbaw). inscrito(bruno,pfl).`, compara:
+
+```prolog
+?- findall(C, inscrito(ana,C), L).
+L = [pfl, lbaw].
+?- bagof(C, inscrito(ana,C), L).
+L = [pfl, lbaw].
+?- bagof(C, A^inscrito(A,C), L).
+L = [pfl, lbaw, pfl].
+?- setof(C, inscrito(ana,C), L).
+L = [lbaw, pfl].
+```
+
+`findall` junta todas as provas sem agrupar. `bagof` sem quantificador agrupa pela variável livre `A`; com `A^` junta tudo. `setof` ordena e remove repetidos. Sem soluções, `findall` sucede com `[]` e os outros falham. Lê primeiro estes casos e só depois a tabela comparativa.
+
 ## Escolher a recolha
 
 | Predicado        | Repetições                            | Variáveis livres no objetivo               | Sem respostas      |
@@ -58,6 +75,10 @@ Para juntar cadeiras de todas as pessoas sem esse agrupamento, escreve `bagof(C,
 
 `findall(X,fail,L)` dá `L=[]`; `bagof(X,fail,L)` falha. Um `bagof` também pode falhar dentro de uma regra e impedir os objetivos seguintes. Se o enunciado exige uma lista vazia quando não há candidatos, escolhe esse comportamento explicitamente.
 
+### Caudas abertas passo a passo
+
+Uma diferença `Prefixo-Cauda` representa uma lista com fim por preencher. Para juntar `[m,n|T]-T` com `[p,q|U]-U`, liga `T = [p,q|U]`. O resultado é `[m,n,p,q|U]-U`. Só `U` continua livre para fechar: `U = []` dá `[m,n,p,q]`. Ligar `T = []` antes da junção impediria acrescentar o segundo segmento.
+
 ## Listas abertas e diferenças de listas
 
 `[a,b|T]` é uma lista aberta quando `T` ainda não tem valor. Não é uma lista finita terminada em `[]`; preencher `T` acrescenta a continuação sem copiar o prefixo. Uma diferença de listas representa o par entre a lista completa e a sua cauda ainda por preencher, por exemplo `[a,b|T]-T`.
@@ -74,6 +95,10 @@ Para juntar `[a,b|T]-T` e `[c|U]-U`, unificamos `T` com `[c|U]`. O resultado é 
 />
 
 A concatenação habitual percorre a primeira lista, ou seja esta representação consegue ligar uma cauda aberta em tempo constante, sem percorrer o prefixo. A vantagem desaparece se tiveres de converter ou copiar a lista a cada operação.
+
+### Da DCG à cláusula traduzida
+
+A regra `s --> [a], s, [b].` traduz-se para `s([a|R1], S) :- s(R1, R2), R2 = [b|S].` com dois argumentos de diferença de listas. A query `s([a,a,b,b], [])` consome um `a`, resolve `s` no meio e consome um `b` no fim. A alternativa vazia `s --> [].` traduz-se para `s(S, S).`. A linguagem é `a^n b^n`: comprimento par e ordem obrigatória, não apenas contagens iguais.
 
 ## Gramáticas com DCG
 

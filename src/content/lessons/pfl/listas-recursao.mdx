@@ -94,6 +94,19 @@ Para `indices 'a' "casa"`, `zip` forma `[('c',0),('a',1),('s',2),('a',3)]` e o t
 
 Num gerador dependente, os nomes têm de ser definidos antes de usados. `[(x,y) | x <- [1..3], y <- [x..3]]` dá `[(1,1),(1,2),(1,3),(2,2),(2,3),(3,3)]`. Se trocarmos os geradores, `x` ainda não existe ao avaliar `[x..3]`.
 
+Um gerador posterior pode usar os nomes dos anteriores. O triângulo de Pascal numa linha usa esse facto: cada linha nasce da anterior por somas de pares vizinhos. Por exemplo, de `[1,3,3,1]` obténs `[1,4,6,4,1]` com `zipWith (+) ([0] ++ linha) (linha ++ [0])`. A compreensão `[(x,y) | x <- [1..3], y <- [x..3]]` mostra a mesma dependência entre geradores.
+
+### Derivar `myindex` por casos
+
+Para `myindex :: [a] -> Int -> a`, segue o índice e a lista em conjunto. Com índice `0`, a resposta é a cabeça, e a lista tem de ser não vazia. Com índice positivo `n + 1`, descarta a cabeça e procura `n` na cauda:
+
+```haskell
+myindex (x:_) 0 = x
+myindex (_:xs) n = myindex xs (n - 1)
+```
+
+`myindex [7,9,11] 0` dá `7` pela primeira equação. `myindex [7,9,11] 2` descarta `7` e `9` e chega a `myindex [11] 0`, que dá `11`. O domínio exclui índices negativos e índices além do fim. Cada chamada recebe uma cauda estritamente menor, por isso a medida `length` diminui até ao caso base.
+
 ## Recursão que termina
 
 Identifica o caso base e uma medida que diminui. Em funções sobre listas finitas, a medida costuma ser o comprimento da lista restante. Em `replicar n x`, pode ser `max 0 n`:
@@ -154,6 +167,21 @@ intercalar s (x:xs) = x:s:intercalar s xs
 ```
 
 A última equação só é usada quando há pelo menos dois elementos, porque os casos anteriores já trataram zero e um. Conservamos a cabeça e pomos o separador antes do resto.
+
+### As funções usadas em `permutar`
+
+`permutar` usa duas funções que a página seguinte estuda a fundo. Lê aqui apenas o contrato necessário:
+
+```haskell
+map :: (a -> b) -> [a] -> [b]
+map _ [] = []
+map f (x:xs) = f x : map f xs
+
+concatMap :: (a -> [b]) -> [a] -> [b]
+concatMap f xs = concat (map f xs)
+```
+
+`map (y:)` coloca `y` à frente de cada lista produzida pela recursão. `concatMap (posicoes x)` junta essas listas de possibilidades numa só lista. A definição completa de `map`, `filter` e `fold` fica para a página de ordem superior.
 
 ## Inserir em todas as posições e permutar
 

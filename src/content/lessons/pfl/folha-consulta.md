@@ -27,16 +27,16 @@ Cada linha indica a forma a reconhecer, a condição que muda a resposta e a lig
 
 ## Tipos e expressões
 
-| Forma                           | Lembra                                                                  |
-| ------------------------------- | ----------------------------------------------------------------------- |
-| `f x y`                         | É `(f x) y`; a aplicação tem prioridade sobre operadores.               |
-| `a -> b -> c`                   | É `a -> (b -> c)`; permite aplicação parcial.                           |
-| `[a]`, `(a,b)`                  | Lista homogénea; par com tipos possivelmente diferentes.                |
-| `Eq`, `Ord`                     | Igualdade; comparação ordenada, que exige `Eq`.                         |
-| `Num`, `Fractional`, `Integral` | `+,-,*`; `/`; `div,mod,quot,rem`. `Num` atual não implica `Eq`.         |
-| `fromIntegral n`                | Converte um valor integral; não é uma conversão automática.             |
-| `if c then a else b`            | `c :: Bool`; os dois resultados têm o mesmo tipo.                       |
-| Padrões e guardas               | Tentados pela ordem escrita; cobre todas as formas e declara o domínio. |
+| Forma                           | Lembra                                                                                               |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `f x y`                         | É `(f x) y`; a aplicação tem prioridade sobre operadores.                                            |
+| `a -> b -> c`                   | É `a -> (b -> c)`; permite aplicação parcial.                                                        |
+| `[a]`, `(a,b)`                  | Lista homogénea; par com tipos possivelmente diferentes.                                             |
+| `Eq`, `Ord`                     | Igualdade; comparação ordenada, que exige `Eq`.                                                      |
+| `Num`, `Fractional`, `Integral` | `+,-,*`; `/`; `div,mod,quot,rem`. `Num` atual não implica `Eq`.                                      |
+| `fromIntegral n`                | Converte um valor integral; não é uma conversão automática.                                          |
+| `if c then a else b`            | `c :: Bool`; os dois resultados têm o mesmo tipo.                                                    |
+| Padrões e guardas               | Tentados pela ordem escrita; cobre todas as formas e declara o domínio. `_` é curinga, não variável. |
 
 [Dedução de tipos](/cadeiras/pfl/polimorfismo-classes/) e [expressões](/cadeiras/pfl/haskell-expressoes-tipos/).
 
@@ -104,3 +104,5 @@ foldl f z (x:xs) = foldl f (f z x) xs
 Na árvore SLD: renomeia variáveis da cláusula, unifica a cabeça, propaga a substituição e resolve o objetivo mais à esquerda. Marca alternativas para retrocesso. Para termos finitos, rejeita `X=f(X)` pelo occurs check; algumas implementações de `=` aceitam ciclos.
 
 DFS não garante o caminho mais curto. BFS garante menor número de arestas com custos iguais e expansão finita. Minimax escolhe máximo ou mínimo conforme o jogador; não tira o máximo de todas as folhas. [Unificação](/cadeiras/pfl/logica-unificacao-prolog/), [controlo](/cadeiras/pfl/prolog-recursao-procura/), [soluções](/cadeiras/pfl/solucoes-estruturas-prolog/) e [procura](/cadeiras/pfl/procura-jogos-simbolos/).
+
+SICStus/SWI: `write/1` e `nl/0` são portáteis. `writeln/1`, `max_list/2` e `min_list/2` são notas SWI. Em SICStus, carrega `library(lists)` e usa comparação numérica explícita.

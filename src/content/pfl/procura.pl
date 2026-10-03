@@ -12,6 +12,8 @@ bfs([[X|R]|Fila],Z,C) :-
     append(Fila,Novos,Seguinte),
     bfs(Seguinte,Z,C).
 
+write_portatil(X) :- write(X), nl.
+
 main :-
-    once(caminho(a,e,[a],D)), writeln(D),
-    bfs([[a]],e,B), writeln(B).
+    once(caminho(a,e,[a],D)), write_portatil(D),
+    bfs([[a]],e,B), write_portatil(B).

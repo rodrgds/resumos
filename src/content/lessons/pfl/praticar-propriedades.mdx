@@ -146,3 +146,43 @@ import Exercise from '../../../components/Exercise.astro';
     <p>Não transformes um procedimento de teste numa prova exaustiva.</p>
   </div>
 </Exercise>
+
+<Exercise
+  id="gerador-valido"
+  revision={1}
+  title="Gerar listas e verificar as três partes"
+  explanation="/cadeiras/pfl/testes-quickcheck/#uma-propriedade-escrita-do-zero"
+  answer={{ kind: 'self', checklist: [
+    'Gero listas com listOf e choose.',
+    'Verifico saída ordenada e mesmas contagens.',
+    'Mostro que f xs = [] passa idempotência e falha conservação.',
+  ] }}
+>
+  <div>Escreve prop_sortConserva com gerador concreto e um caso errado que falha.</div>
+  <div slot="work">
+```haskell
+import Data.List (sort)
+import Test.QuickCheck
+
+ordenada :: [Int] -> Bool
+ordenada [] = True
+ordenada [_] = True
+ordenada (a:b:rs) = a <= b && ordenada (b:rs)
+
+contagens :: [Int] -> [Int]
+contagens xs = [length (filter (== v) xs) | v <- [-10..10]]
+
+prop_sortConserva :: Property
+prop_sortConserva = forAll genLista verifica
+where
+genLista = listOf (choose (-10, 10))
+verifica xs = ordenada (sort xs) && contagens (sort xs) == contagens xs
+
+```
+  </div>
+  <div slot="hint"><p>Gera a entrada em vez de filtrar entradas arbitrárias.</p></div>
+  <div slot="hint-more"><p>Compara sort xs com xs por contagens em cada valor.</p></div>
+  <div slot="solution"><div>A função errada f xs = [] passa em f (f xs) == f xs, mas falha em prop_sortConserva: para xs = [1,0], contagens (f xs) é só zeros e difere de contagens [1,0]. O gerador genLista produz listas como [1,0] sem descartar casos.</div></div>
+  <div slot="mistakes"><div>Não uses ==&gt; com condição que descarte quase tudo; gera entradas válidas.</div></div>
+</Exercise>
+```

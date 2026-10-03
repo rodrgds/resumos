@@ -9,9 +9,11 @@ mostrar_rotulo(Nome, Texto) :- atom_concat('tarefa:', Nome, Texto).
 imprimir_tarefas(F) :-
     tarefa(Nome, _),
     call(F, Nome, Texto),
-    writeln(Texto),
+    write_portatil(Texto),
     fail.
 imprimir_tarefas(_).
+
+write_portatil(X) :- write(X), nl.
 
 main :-
     write_canonical(a liga b liga c), nl,
@@ -19,5 +21,5 @@ main :-
     write_canonical(Termo), nl,
     findall(P-N, tarefa(N,P), Pares),
     keysort(Pares, Ordenados),
-    writeln(Ordenados),
+    write_portatil(Ordenados),
     imprimir_tarefas(mostrar_rotulo).

@@ -42,6 +42,10 @@ avo(X, Z) :- pai(X, Y), pai(Y, Z).
 
 A última é uma regra, lida "X é avô de Z **se** X é pai de Y **e** Y é pai de Z". As maiúsculas são **variáveis** (por preencher); as minúsculas são **átomos** (valores concretos).
 
+### De regra a cláusula de Horn
+
+A regra `avo(X, Z) :- pai(X, Y), pai(Y, Z).` corresponde à cláusula `avo(X,Z) v -pai(X,Y) v -pai(Y,Z)`: a cabeça é verdadeira ou alguma condição é falsa. Antes de cada resolução, renomeia as variáveis da cláusula copiada, por exemplo `avo(X1, Z1) :- pai(X1, Y1), pai(Y1, Z1)`. Sem renomeação, duas utilizações da mesma regra partilhariam variáveis que deviam ser independentes. O símbolo `_` é uma variável anónima nova em cada ocorrência: `_ = _` sucede sempre, enquanto `X = X` liga as duas posições ao mesmo valor.
+
 ## Unificação
 
 Antes de procurar, o motor precisa de casar termos. **Unificar** dois termos é encontrar uma substituição que os torna iguais, ou seja procuramos a mais geral, que não fixe valores desnecessários:
@@ -82,6 +86,12 @@ Experimenta a consulta:
     'pai(tomas, ana).\npai(ana, leo).\npai(leo, rui).\navo(X, Z) :- pai(X, Y), pai(Y, Z).\n\nmain :- avo(ana, X), writeln(X).'
   }
 />
+
+### Árvore SLD com falha e alternativa
+
+Para `?- avo(tomas, N).`, renomeia a regra para `avo(X1,Z1) :- pai(X1,Y1), pai(Y1,Z1)` e unifica a cabeça com a consulta, com `{X1/tomas, Z1/N}`. O resolvente fica `pai(tomas,Y1), pai(Y1,N)`. Escolhe o objetivo mais à esquerda. `pai(tomas,Y1)` unifica com `pai(tomas,ana)`, com `{Y1/ana}`. O novo resolvente é `pai(ana,N)`, que unifica com `pai(ana,leo)`, com `{N/leo}`. Resposta: `N = leo`.
+
+Se tentasses `pai(leo,rui)` no lugar errado, o ramo falharia por não haver facto `pai(rui,_)`. O motor desfaz as ligações desse ramo e retrocede ao último ponto de escolha. O diagrama `p7sld.dot` mostra as ligações entre regra, objetivo e facto; segue esta derivação no papel com os resolventes completos antes de leres o diagrama.
 
 ## Negação por falha
 
