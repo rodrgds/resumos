@@ -38,6 +38,7 @@ export default function markdownExport() {
         for (const page of pages) {
           if (page.pathname.startsWith('_')) continue;
           const path = page.pathname.replace(/^\/|\/$/g, '');
+          if (path === '404') continue;
           const document = parse(
             await readFile(join(root, path, 'index.html'), 'utf8'),
           );
