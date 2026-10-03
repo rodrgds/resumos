@@ -5,6 +5,10 @@ section: recursos
 studyKind: revision
 ---
 
+Depois de percorrer palavras, autómatos, gramáticas, fita e custo, esta página responde como rever depressa as condições e os procedimentos antes de resolver exercícios.
+
+Cada tabela reúne o que há a conferir num tema e aponta para a explicação completa, por isso usa-a para confirmar uma condição, não para aprender o tema pela primeira vez.
+
 ## Palavras e expressões
 
 | Conceito           | Conferir                                                                        |
