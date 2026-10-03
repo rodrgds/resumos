@@ -19,7 +19,16 @@ Cada capítulo termina com exercícios originais. Faz primeiro a tentativa, cons
 
 A base pedagógica é o material dos docentes disponibilizado ao aluno no Moodle de **2024/25**. Essa edição usa **RV32**, com palavras e registos de 32 bits. Dois endereços antigos contêm `legv8` no nome por compatibilidade com ligações publicadas; o seu conteúdo ensina RISC-V.
 
-As provas consultadas incluem o primeiro teste de 15 de novembro de 2024 e o segundo de 24 de janeiro de 2025. Ambos indicam 90 minutos e penalização de 15% da cotação da pergunta nas escolhas erradas. Os exemplos de avaliação incluem conversões, circuitos, formas de onda, memória, assembly, codificação, controlo do CPU e contas de desempenho. Estas regras descrevem aquelas provas, não confirmam a avaliação de outra edição. Consulta a tua página da cadeira para as regras em vigor. A [ficha pública de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560088) confirma os temas gerais, mas não substitui os materiais nem as regras de 2026/27. Não foi possível confirmar o programa da edição atual.
+As provas consultadas incluem o primeiro teste de 15 de novembro de 2024 e o segundo de 24 de janeiro de 2025. Ambos indicam 90 minutos e penalização de 15% da cotação da pergunta nas escolhas erradas. Estas regras descrevem aquelas provas, não a avaliação atual.
+
+A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586982), consultada em 3 de outubro de 2026, confirma os temas gerais deste percurso e estabelece:
+
+- Dois testes, T1 e T2, com peso de 42,5% cada. As três melhores das quatro fichas TP formam a média MF, com peso de 15% e mínimo de 5 valores para aprovação.
+- Para obter frequência, presença em pelo menos 75% das aulas TP e realização de pelo menos três fichas. A assiduidade obtida vale também no ano letivo seguinte.
+- Recurso global: $NF=0{,}85R+0{,}15MF$. Não permite recuperar apenas um teste nem melhorar MF. A melhoria também usa uma prova global com peso de 85%; MF só pode ser melhorada por frequência no ano seguinte.
+- Inscrição prévia nos testes pelos formulários dos docentes. A ausência ou falta de inscrição implica zero nesse teste.
+
+Confirma datas, duração e instruções na tua turma. Os materiais do Moodle de 2026/27 ainda não foram consultados; a ficha atual não permite assumir que cada modelo ou exercício histórico será avaliado.
 
 ## Fontes e bibliografia
 
