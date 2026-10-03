@@ -15,8 +15,6 @@ A parte do computador cobre [organização e memória RISC-V](/cadeiras/fsc/legv
 
 Cada capítulo termina com exercícios originais. Faz primeiro a tentativa, consulta uma pista quando faltar um passo e compara depois o raciocínio com a resolução. Nos programas, altera os dados e prevê a saída antes de executar.
 
-## Edição e avaliação
-
 :::details[Avaliação e âmbito da edição]
 
 A base pedagógica é o material dos docentes disponibilizado ao aluno no Moodle de **2024/25**. Essa edição usa **RV32**, com palavras e registos de 32 bits. Dois endereços antigos contêm `legv8` no nome por compatibilidade com ligações publicadas; o seu conteúdo ensina RISC-V.
@@ -33,8 +31,6 @@ A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_
 Confirma datas, duração e instruções na tua turma. Os materiais do Moodle de 2026/27 ainda não foram consultados; a ficha atual não permite assumir que cada modelo ou exercício histórico será avaliado.
 
 :::
-
-## Fontes e bibliografia
 
 :::details[Fontes e bibliografia]
 
