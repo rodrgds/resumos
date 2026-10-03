@@ -14,7 +14,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import exemplo from '../../ac/examples/riscv-assembly.s?raw';
 import pilha from '../../ac/pilha.typ?raw';
 
-Uma ISA, ou arquitetura do conjunto de instruções, define as operações e os registos que um programa pode usar. Um registo guarda um valor dentro do processador; a memória guarda bytes identificados por endereços. O PC é o registo que indica o endereço da instrução a obter. O processador implementa essa interface; a organização interna pode mudar sem alterar o programa. Vamos usar **RV32**, com registos inteiros de 32 bits, memória endereçada por byte e instruções base de 32 bits. A extensão M acrescenta multiplicação e divisão; as instruções SIMD empacotadas têm um modelo próprio.
+Um programa soma dois números e o processador tem de saber onde eles estão. Uma ISA, ou arquitetura do conjunto de instruções, define as operações e os registos que o programa pode usar. Um registo guarda um valor dentro do processador; a memória guarda bytes identificados por endereços. O PC é o registo que indica o endereço da instrução a obter. O processador implementa essa interface, por isso a organização interna pode mudar sem alterar o programa. Vamos usar **RV32**, com registos inteiros de 32 bits, memória endereçada por byte e instruções base de 32 bits. A extensão M acrescenta multiplicação e divisão; as instruções SIMD empacotadas têm um modelo próprio.
 
 ## Os registos que interessam
 
@@ -36,7 +36,7 @@ Não existe `t7`. O banco de vírgula flutuante, quando disponível, usa `f0` a 
 
 Uma soma inteira mantém os 32 bits baixos, sem gerar uma exceção por overflow. Com sinal, o intervalo é de −2³¹ a 2³¹−1; sem sinal, de 0 a 2³²−1. Por exemplo, `0x7FFFFFFF+1` produz `0x80000000`, que se interpreta como −2³¹ com sinal. O padrão continua correto como soma modular, mas já não representa a soma matemática com sinal.
 
-O mesmo padrão `0xFFFFFFFF` representa 4294967295 sem sinal ou −1 com sinal. A instrução de comparação escolhida determina a interpretação.
+O mesmo padrão `0xFFFFFFFF` representa 4294967295 sem sinal ou −1 com sinal, por isso a instrução de comparação escolhida determina a interpretação.
 
 | Instrução        | Tamanho       | Efeito                                        |
 | ---------------- | ------------- | --------------------------------------------- |
@@ -48,7 +48,7 @@ Em `lw t0,12(a0)`, o endereço é `a0 + 12`, em **bytes**. Para ler `vetor[i]` d
 
 Em little endian, a palavra `0x12345678` ocupa os bytes `78 56 34 12`, do endereço menor para o maior. Um `lb` sobre o byte `0xFE` produz −2; `lbu` produz 254. O alinhamento natural de uma palavra exige endereço múltiplo de 4.
 
-`slli` desloca à esquerda e preenche os bits baixos com zeros. `srli` desloca à direita e preenche os bits altos com zeros; `srai` desloca à direita e preenche-os com o bit de sinal. Os deslocamentos imediatos de RV32 vão de 0 a 31. Dividir um negativo por uma potência de dois com `srai` arredonda para baixo; `div` arredonda para zero, pelo que não são sempre equivalentes.
+`slli` desloca à esquerda e preenche os bits baixos com zeros. `srli` desloca à direita e preenche os bits altos com zeros; `srai` desloca à direita e preenche-os com o bit de sinal. Os deslocamentos imediatos de RV32 vão de 0 a 31. Dividir um negativo por uma potência de dois com `srai` arredonda para baixo, enquanto `div` arredonda para zero, pelo que não são sempre equivalentes.
 
 ## Codificar uma instrução
 
@@ -82,7 +82,7 @@ Em B e J, o bit zero do deslocamento é implícito. Reconstrói o deslocamento c
 
 Uma pseudoinstrução pode expandir-se em várias instruções reais. `mv t0,t1` equivale a `addi t0,t1,0`; `j L`, a `jal zero,L`. `li`, `la` e `call` dependem da constante ou distância. **Conta as instruções expandidas** se o problema pedir ciclos ou códigos máquina.
 
-Para formar `0x12345ABC` com `lui/addi`, a parte baixa `0xABC` é negativa como imediato de 12 bits: −1348. Usa `lui t0,0x12346` seguido de `addi t0,t0,-1348`. O incremento da parte alta compensa essa extensão de sinal.
+Para formar `0x12345ABC` com `lui/addi`, repara que a parte baixa `0xABC` é negativa como imediato de 12 bits: −1348. Por isso usa `lui t0,0x12346` seguido de `addi t0,t0,-1348`. O incremento da parte alta compensa essa extensão de sinal.
 
 ## Chamadas e a pilha
 

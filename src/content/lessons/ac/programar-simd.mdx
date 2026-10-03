@@ -12,15 +12,15 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import exemplo from '../../ac/examples/programar-simd.py?raw';
 
-Começa pela operação escalar, escolhe as vias, escreve o resultado por via e só depois traduz para instruções. Verifica comprimento zero, alinhamento, resto e overflow. Um vetor com número de elementos múltiplo de 4 não é necessariamente não vazio.
+Contar bytes menores que um limite exige percorrer o vetor sem perder o resto nem rebentar contadores. Começa pela operação escalar, escolhe as vias, escreve o resultado por via e só depois traduz para instruções. Verifica comprimento zero, alinhamento, resto e overflow, porque um vetor com número de elementos múltiplo de 4 não é necessariamente não vazio.
 
 ## Contar valores que satisfazem uma condição
 
-Pretende-se contar bytes com sinal menores que um limite. Em cada grupo de 4: carregar uma palavra; comparar com o limite replicado; converter a máscara de comparação em contagens; somar horizontalmente; avançar 4 bytes.
+Pretende-se contar bytes com sinal menores que um limite. Em cada grupo de 4: carrega uma palavra; compara com o limite replicado; converte a máscara de comparação em contagens; soma horizontalmente; avança 4 bytes.
 
 Para replicar um limite negativo, conserva primeiro os 8 bits baixos: `andi t0,a2,255`. Depois replica por shifts e OR. Replicar diretamente o valor estendido com sinal pode transportar bits altos para as outras vias.
 
-Uma máscara `[0xFF,0,0xFF,0xFF]` tem três verdadeiros. AND com `0x01010101` produz `[1,0,1,1]`. Extrair cada byte e somá-lo em um acumulador escalar dá 3.
+Uma máscara `[0xFF,0,0xFF,0xFF]` tem três verdadeiros. AND com `0x01010101` produz `[1,0,1,1]`. Extrai cada byte e soma-o num acumulador escalar: dá 3.
 
 Acumular máscaras com ADD8 durante todo o vetor cria contadores modulares. Ao atingir 256 verdadeiros na mesma via, o contador volta a zero. A alternativa seguinte reduz cada grupo imediatamente e trata o resto sem essa limitação:
 
@@ -103,7 +103,7 @@ Se SMUL16 produz dois produtos 32 bits, SUB16 não pode subtrair diretamente um 
 
 ## Coordenadas e números complexos
 
-Uma palavra pode guardar `(H1,H0)=(y,x)`. SWAP16 troca as coordenadas em uma operação; carregar/guardar continua a ter custo.
+Uma palavra pode guardar `(H1,H0)=(y,x)`. SWAP16 troca as coordenadas numa operação; carregar/guardar continua a ter custo.
 
 Para complexos $a=a_r+j a_i$, $b=b_r+j b_i$:
 

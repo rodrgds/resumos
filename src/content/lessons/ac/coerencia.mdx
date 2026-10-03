@@ -14,7 +14,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import exemplo from '../../ac/examples/coerencia.py?raw';
 import coerencia from '../../ac/coerencia.dot?raw';
 
-Em memória partilhada, vários núcleos podem aceder aos mesmos endereços. As caches privadas reduzem tráfego, mas podem guardar cópias do mesmo bloco. A execução correta exige sincronização e um protocolo que mantenha essas cópias coerentes.
+Dois núcleos somam metades do mesmo vetor e cada um guarda a sua soma na sua cache. Em memória partilhada, vários núcleos podem aceder aos mesmos endereços. As caches privadas reduzem tráfego, mas podem guardar cópias do mesmo bloco. A execução correta exige sincronização e um protocolo que mantenha essas cópias coerentes.
 
 ## Uma redução paralela
 
@@ -22,7 +22,7 @@ Para somar um vetor, cada núcleo começa por somar a sua parcela. Depois combin
 
 Com 8 núcleos, combinar 8 somas requer 3 rondas: 8→4→2→1. Se cada núcleo inicia o acumulador em zero e soma os 16 elementos, faz 16 adições. Assim, a fase local demora 16 tempos de adição e a árvore 3, ignorando comunicação/barreiras. Total 19, não 128/8=16.
 
-Com número de participantes ímpar, há uma soma que não pertence a um par. Pode passar à ronda seguinte ou ser acrescentada por um participante. Isso pode dar duas adições ao mesmo núcleo nessa ronda; conta o **caminho mais longo**.
+Com número de participantes ímpar, há uma soma que não pertence a um par. Pode passar à ronda seguinte ou ser acrescentada por um participante. Isso pode dar duas adições ao mesmo núcleo nessa ronda, por isso conta o **caminho mais longo**.
 
 <CodePlayground
   language="python"
@@ -49,7 +49,7 @@ Em snooping, caches observam as transações do interligador. Na política **wri
   alt="Estado de uma linha com duas cópias limpas, escrita exclusiva do núcleo 1 que invalida núcleo 2, e leitura posterior que obtém a linha atualizada do proprietário dirty."
 />
 
-Modelo do exemplo: caches WB, memória inicialmente atualizada; uma leitura externa de uma linha dirty faz o proprietário fornecer a linha e atualizar a memória, deixando as duas cópias limpas. Outros protocolos podem transferir o bloco sem atualizar imediatamente a memória; usa o contrato indicado.
+Modelo do exemplo: caches WB, memória inicialmente atualizada; uma leitura externa de uma linha dirty faz o proprietário fornecer a linha e atualizar a memória, deixando as duas cópias limpas. Outros protocolos podem transferir o bloco sem atualizar imediatamente a memória, por isso usa o contrato indicado.
 
 ## Um traço de duas palavras
 
@@ -62,13 +62,13 @@ Uma linha tem duas palavras `(X,Y)`, inicialmente `(5,8)`, limpa nas caches dos 
 | N2 escreve Y=11 | Inválida               | `(9,11)`, dirty        | Memória mantém `(9,8)`; invalidação                             |
 | N1 lê X         | `(9,11)`, limpa        | `(9,11)`, limpa        | Transferência e atualização da memória; leitura devolve 9       |
 
-Uma escrita em X não altera Y. Uma leitura de Y pode, contudo, precisar de obter a linha toda. Quando se copia uma linha, conserva **todos os seus elementos**, não apenas a palavra que motivou o acesso.
+Uma escrita em X não altera Y. Uma leitura de Y pode, contudo, precisar de obter a linha toda. Quando copias uma linha, conserva **todos os seus elementos**, não apenas a palavra que motivou o acesso.
 
 ## Partilha verdadeira e falsa
 
 Partilha verdadeira: um núcleo lê o valor que outro modifica. Partilha falsa: núcleos modificam ou leem **palavras diferentes** da mesma linha e sofrem invalidações por causa da granularidade do protocolo.
 
-Dois contadores independentes de 4 bytes em uma linha de 64 B podem disputar essa linha a cada atualização. Separá-los em linhas diferentes pode reduzir tráfego; isso aumenta espaço e deve atender ao alinhamento real.
+Dois contadores independentes de 4 bytes numa linha de 64 B podem disputar essa linha a cada atualização. Separá-los em linhas diferentes pode reduzir tráfego; isso aumenta espaço e deve atender ao alinhamento real.
 
 Uma falta após invalidação não é apenas uma falta por conflito de índice. É uma falta de coerência. Identifica qual escrita invalidou a linha e se o acesso usa o dado modificado ou apenas um vizinho.
 
@@ -76,4 +76,4 @@ Uma falta após invalidação não é apenas uma falta por conflito de índice. 
 
 Para 4 linhas de 16 B com endereços 16 bits, etiqueta 10 bits, índice 2 e deslocamento 4. No endereço `0xA6B0`, etiqueta=`0x29A`, índice 3 e palavra 0. `0xA6B8` tem a mesma etiqueta/índice, mas palavra 2.
 
-Se a escrita em `0xA6B0` muda só a palavra 0, a posterior leitura de `0xA6B8` deve devolver a palavra 2 conservada. A invalidação atinge a linha 3 inteira. Reconstruir endereço e posição antes de seguir o protocolo evita invalidar uma entrada ou devolver uma palavra errada.
+Se a escrita em `0xA6B0` muda só a palavra 0, a posterior leitura de `0xA6B8` deve devolver a palavra 2 conservada. A invalidação atinge a linha 3 inteira. Reconstrói endereço e posição antes de seguir o protocolo, para não invalidares uma entrada errada nem devolveres a palavra errada.

@@ -12,7 +12,7 @@ editorial:
 import Typst from '../../../components/Typst.astro';
 import bolha from '../../ac/pipeline-bolha.typ?raw';
 
-Uma pipeline sobrepõe fases de instruções diferentes. Aumenta a taxa de conclusão; uma instrução continua a atravessar vários ciclos. O modelo seguinte emite no máximo uma instrução por ciclo e usa memórias I/D separadas.
+Enquanto uma instrução escreve o resultado, a seguinte já podia estar a ser descodificada. Uma pipeline sobrepõe fases de instruções diferentes. Aumenta a taxa de conclusão, ou seja, uma instrução continua a atravessar vários ciclos. O modelo seguinte emite no máximo uma instrução por ciclo e usa memórias I/D separadas.
 
 ## As cinco fases
 
@@ -24,13 +24,13 @@ Uma pipeline sobrepõe fases de instruções diferentes. Aumenta a taxa de concl
 | MEM  | Ler/escrever dados; no modelo básico, redirecionar o salto |
 | WB   | Escrever resultado no registo, se a instrução o fizer      |
 
-As fases sem trabalho útil ainda ocupam a posição temporal do modelo. Um `sw` não escreve um registo em WB; não acrescentes uma escrita fictícia.
+As fases sem trabalho útil ainda ocupam a posição temporal do modelo. Um `sw` não escreve um registo em WB, por isso não acrescentes uma escrita fictícia.
 
 Com atrasos 200,100,150,250,100 ps, período de pipeline 250 ps e sem custo adicional de registos, cada instrução percorre 1250 ps. Em ciclo único, o caminho load leva 800 ps. Para 20 instruções sem paragens: pipeline 24×250=6000 ps; ciclo único 20×800=16000 ps. A rapidez relativa é 2,667, não 5.
 
 ## Conflitos estruturais e de dados
 
-Um **conflito estrutural** existe quando operações simultâneas requerem um recurso que não as suporta. Uma única memória com um porto não pode servir IF e um load em MEM no mesmo ciclo. Para resolver isso, bloqueia IF ou disponibiliza recursos separados. Inserir um NOP também requer obter uma instrução, não cria um segundo porto.
+Um **conflito estrutural** existe quando operações simultâneas requerem um recurso que não as suporta. Uma única memória com um porto não pode servir IF e um load em MEM no mesmo ciclo. Para resolver isso, bloqueia IF ou disponibiliza recursos separados. Inserir um NOP também requer obter uma instrução, logo não cria um segundo porto.
 
 Uma dependência RAW existe quando uma instrução precisa do valor escrito por uma anterior. Torna-se conflito se esse valor não estiver disponível na fase que o usa. Não basta procurar registos repetidos: identifica leituras, escritas e o instante de uso.
 
@@ -53,7 +53,7 @@ lw t0,0(a0)
 add t1,t0,t2
 ```
 
-O load só obtém o dado no fim de MEM. O EX do `add` no mesmo ciclo precisaria dele antes de existir. Com atalhos completos para EX, há uma paragem:
+O load só obtém o dado no fim de MEM. O EX do `add` no mesmo ciclo precisaria dele antes de existir, por isso há uma paragem mesmo com atalhos completos para EX:
 
 <Typst
   source={bolha}
@@ -89,4 +89,4 @@ Para um ciclo repetido muitas vezes, $CPI\approx(n+B_{\rm iter})/n$, incluindo d
 
 Um salto introduz incerteza no PC. Neste modelo básico, a comparação começa em EX e o PC é redirecionado em MEM. Há até três instruções mais novas no caminho errado. Os casos de predição e decisão antecipada estão em [Predição de saltos](/cadeiras/ac/predicao-saltos/).
 
-Forwarding também tem custo de hardware. Se uma versão precisa de 9 ciclos a 300 ps e outra de 7 ciclos a 400 ps, os tempos são 2700 e 2800 ps. A segunda tem menos ciclos, mas rapidez relativa 0,964; é mais lenta.
+Forwarding também tem custo de hardware. Se uma versão precisa de 9 ciclos a 300 ps e outra de 7 ciclos a 400 ps, os tempos são 2700 e 2800 ps. A segunda tem menos ciclos, mas a rapidez relativa é 0,964, ou seja, é mais lenta.
