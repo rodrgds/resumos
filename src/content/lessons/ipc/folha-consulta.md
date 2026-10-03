@@ -14,6 +14,8 @@ editorial:
     - Não foi possível comparar esta página com mini-testes e critérios de correção de 2026/27.
 ---
 
+Depois de estudares o percurso, esta folha resume as distinções e os procedimentos para reveres antes dos mini-testes, com ligações para cada explicação.
+
 ## Vocabulário
 
 - UI: meios de interação. UX: perceções/respostas antes, durante e depois do uso.
