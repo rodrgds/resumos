@@ -8,6 +8,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-pipe-eof"
+  revision={1}
   title="A ponta que impede o fim"
   explanation="/cadeiras/so/comunicacao-processos/#pipe-leitura-e-escrita"
   answer={{
@@ -19,10 +20,10 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     O filho fecha a sua escrita do pipe e lê em ciclo. O pai envia dados e faz
     waitpid sem fechar a escrita. Porque podem ficar ambos à espera?
-  </p>
+  </div>
   <div slot="hint">
     EOF depende de referências abertas, não da intenção de voltar a escrever.
   </div>
@@ -41,6 +42,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-sinal-janela"
+  revision={1}
   title="Um sinal perdido antes de pause"
   explanation="/cadeiras/so/comunicacao-processos/#sinais-sem-trabalho-inseguro"
   answer={{
@@ -52,13 +54,13 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Num programa while (!recebido) pause(), o tratador muda recebido para 1.
     Mostra uma ordem que deixa o programa bloqueado depois de receber o sinal.
-  </p>
+  </div>
   <div slot="hint">O teste e a entrada em espera são operações separadas.</div>
   <div slot="hint-more">
-    O sinal pode chegar depois do teste falso e antes da chamada pause.
+    O sinal pode chegar depois de confirmar recebido=0 e antes da chamada pause.
   </div>
   <div slot="solution">
     O ciclo testa recebido=0; o sinal chega e o tratador põe 1; o tratador
@@ -70,4 +72,30 @@ import Exercise from '../../../components/Exercise.astro';
     Pensar que volatile liga atomicamente o teste à espera ou chamar printf num
     tratador sem verificar segurança.
   </div>
+</Exercise>
+
+<Exercise
+  id="so-socket-fim-pedido"
+  revision={1}
+  title="Acabar o pedido e receber a resposta"
+  explanation="/cadeiras/so/comunicacao-processos/#fifos-e-sockets"
+  answer={{kind: 'self', checklist: [
+    'Identifiquei que o servidor espera EOF e o cliente espera a resposta.',
+    'Usei shutdown com SHUT_WR depois de enviar todo o pedido.',
+    'Conservei a leitura e só fechei o descritor depois de receber a resposta.',
+  ]}}
+>
+  <div>
+
+Num `socketpair` de fluxo, cada processo fechou a ponta que não usa. O cliente envia um pedido e começa a ler a resposta sem fechar a escrita. O servidor só responde depois de ler EOF. Porque param os dois? Como terminar o pedido sem perder a possibilidade de receber a resposta?
+
+  </div>
+  <div slot="hint">A ausência temporária de bytes não é EOF.</div>
+  <div slot="hint-more">O socket permite terminar apenas um dos sentidos.</div>
+  <div slot="solution">
+
+O servidor esvazia o pedido e espera mais bytes porque a escrita do cliente continua aberta. O cliente espera uma resposta que o servidor ainda não produz. Depois de enviar todo o pedido, o cliente faz `shutdown(fd, SHUT_WR)` e verifica o retorno. O servidor recebe os bytes restantes e depois EOF, envia a resposta e fecha. O cliente conserva a leitura até receber a resposta e só depois fecha. As transferências continuam a exigir ciclos para resultados parciais.
+
+  </div>
+  <div slot="mistakes">Usar `close` antes de receber a resposta, ou interpretar uma leitura curta como fim do pedido.</div>
 </Exercise>

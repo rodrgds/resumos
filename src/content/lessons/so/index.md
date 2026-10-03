@@ -16,18 +16,18 @@ editorial:
 
 Um programa pede memória, lê ficheiros e cria outros processos. O sistema operativo decide como satisfazer esses pedidos sem deixar que um programa estrague os dados de outro. Nesta cadeira estudamos os mecanismos e usamos a API de UNIX/Linux em C.
 
-Precisas de saber escrever funções, ciclos, arrays e estruturas. [C avançado](c-avancado/) revê os apontadores e o tempo de vida dos objetos antes de os usar nas chamadas de sistema.
+Precisas de saber escrever funções, ciclos, arrays e estruturas. [C avançado](/cadeiras/so/c-avancado/) revê os apontadores e o tempo de vida dos objetos antes de os usar nas chamadas de sistema.
 
 ## Percurso de estudo
 
-1. [Introdução aos sistemas operativos](introducao-sistemas-operativos/) e [shell UNIX](shell-unix/) explicam os recursos, as chamadas de sistema e os comandos que vais usar no terminal.
-2. [C avançado](c-avancado/) e [programar ficheiros e diretórios](ficheiros-api/) ligam a memória do programa às duas interfaces de I/O, a biblioteca C e os descritores do núcleo.
-3. [Processos](processos/) e [escalonamento](escalonamento/) mostram como criar fluxos de execução e decidir qual usa o processador.
-4. [Comunicação entre processos](comunicacao-processos/), [programação concorrente](programacao-concorrente/) e [impasses](impasses/) tratam a troca de dados e a sincronização.
-5. [Memória virtual](memoria-virtual/) e [paginação por procura](paginacao-procura/) explicam a tradução de endereços, as faltas de página e a gestão da RAM.
-6. [Ficheiros e entrada/saída](ficheiros-entrada-saida/) e [implementação de ficheiros](implementacao-ficheiros/) seguem um pedido desde a aplicação até aos blocos do dispositivo.
+1. [Introdução aos sistemas operativos](/cadeiras/so/introducao-sistemas-operativos/) e [shell UNIX](/cadeiras/so/shell-unix/) explicam os recursos, as chamadas de sistema e os comandos que vais usar no terminal.
+2. [C avançado](/cadeiras/so/c-avancado/) e [programar ficheiros e diretórios](/cadeiras/so/ficheiros-api/) ligam a memória do programa às duas interfaces de I/O, a biblioteca C e os descritores do núcleo.
+3. [Processos](/cadeiras/so/processos/) e [escalonamento](/cadeiras/so/escalonamento/) mostram como criar fluxos de execução e decidir qual usa o processador.
+4. [Comunicação entre processos](/cadeiras/so/comunicacao-processos/), [programação concorrente](/cadeiras/so/programacao-concorrente/) e [impasses](/cadeiras/so/impasses/) tratam a troca de dados e a sincronização.
+5. [Memória virtual](/cadeiras/so/memoria-virtual/) e [paginação por procura](/cadeiras/so/paginacao-procura/) explicam a tradução de endereços, as faltas de página e a gestão da RAM.
+6. [Ficheiros e entrada/saída](/cadeiras/so/ficheiros-entrada-saida/) e [implementação de ficheiros](/cadeiras/so/implementacao-ficheiros/) seguem um pedido desde a aplicação até aos blocos do dispositivo.
 
-A [cheat sheet](folha-consulta/) reúne fórmulas e condições para consulta. As lições têm exercícios próprios associados, com pistas e resolução. São prática dos tipos de raciocínio da cadeira, não reproduções de perguntas de uma prova.
+A [cheat sheet](/cadeiras/so/folha-consulta/) reúne fórmulas e condições para consulta. As lições têm exercícios próprios associados, com pistas e resolução. São prática dos tipos de raciocínio da cadeira, não reproduções de perguntas de uma prova.
 
 ## Como praticar
 
@@ -37,7 +37,7 @@ Os exemplos C portáteis podem correr no editor da página. `fork`, `exec`, sina
 
 ## Avaliação de 2026/27
 
-A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586993), consultada a 2 de outubro de 2026, indica avaliação distribuída com dois testes de 10 valores. Cada um cobre sensivelmente metade da matéria teórica e dos exercícios TP, incluindo programação em computador. Com frequência, a classificação final é $T1 + T2$.
+A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586993), consultada a 3 de outubro de 2026, indica avaliação distribuída com dois testes de 10 valores. Cada um cobre sensivelmente metade da matéria teórica e dos exercícios TP, incluindo programação em computador. Com frequência, a classificação final é $T1 + T2$.
 
 Para obter frequência, é necessário assistir a pelo menos 50% das aulas TP da turma. A assiduidade tem validade no ano letivo seguinte; quem a obteve no ano anterior pode pedir dispensa através do formulário dos docentes. Os regimes especiais previstos na ficha têm dispensa de presença nas condições aí descritas.
 
