@@ -61,7 +61,7 @@ $$
 
 Confirma os avisos da edição em que estás inscrito. Os mini-testes e o recurso de 2025/26 abaixo são treino histórico: as suas datas, duração e regras não definem as provas de 2026/27.
 
-## Materiais do docente
+## Materiais de 2025/26
 
 A base de estudo são os materiais do Moodle de 2025/26. As apresentações teóricas 1 a 13 abrangem carga, campo, Maxwell, ondas, condução, redes resistivas e reativas, análise laboratorial, regime sinusoidal, ressonância e linhas de transmissão, sinais, SLIT e frequência. As folhas TP 1 a 12 dão problemas correspondentes.
 
@@ -81,6 +81,6 @@ Os textos, exemplos, exercícios e diagramas destas páginas foram escritos para
 
 ## Vídeos e simulações
 
-O docente indica [The language of Maxwell's equations](https://www.youtube.com/watch?v=rB83DpBJQsE) para visualizar divergência e rotacional: relaciona o fluxo com fontes e a circulação com o contorno. A [introdução aos fasores](https://www.youtube.com/watch?v=bouYTlFMYO0) ajuda a relacionar uma sinusoide com amplitude e fase. A [introdução aos laboratórios](https://www.youtube.com/watch?v=Yg52Xhiwqo8) acompanha a preparação dos instrumentos. São recursos opcionais indicados no Moodle, sem revisão integral aqui.
+Os materiais de 2025/26 indicam [The language of Maxwell's equations](https://www.youtube.com/watch?v=rB83DpBJQsE) para visualizar divergência e rotacional: relaciona o fluxo com fontes e a circulação com o contorno. A [introdução aos fasores](https://www.youtube.com/watch?v=bouYTlFMYO0) ajuda a relacionar uma sinusoide com amplitude e fase. A [introdução aos laboratórios](https://www.youtube.com/watch?v=Yg52Xhiwqo8) acompanha a preparação dos instrumentos. São recursos opcionais dessa edição, sem revisão integral aqui.
 
 Para experimentar circuitos, o [kit de circuitos DC da PhET](https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc) permite comparar ligações em série e paralelo. A [visualização de Faraday do MIT](https://web.mit.edu/8.02t/www/802TEAL3D/visualizations/faraday/index.htm) ajuda a seguir a relação entre campo variável e campo induzido. Usa os modelos interativos nas lições para RC, harmónicos e aliasing antes de passar a montagens reais.
