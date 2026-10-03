@@ -1,16 +1,13 @@
 ---
-title: Complexidade e aproximação
-description: P, NP, reduções, certificados e algoritmos com garantia para cobertura, mochila e TSP métrico.
+title: Complexidade computacional
+description: P, NP, reduções, certificados, autorredução e casos especiais tratáveis.
 section: conteudo
 order: 13
 practices:
-  - da/praticar-aproximacao
+  - da/praticar-complexidade-computacional
 ---
 
-import Dot from '../../../components/Dot.astro';
-import cobertura from '../../da/cobertura.dot?raw';
-
-Depois do retrocesso e da ramificação, esta página responde o que significa um problema ser difícil e quando aceitar uma solução aproximada com garantia.
+Depois do retrocesso e da ramificação, esta página mostra o que significa um problema ser difícil. As aproximações com garantia vivem na página seguinte.
 
 Pensa na mochila onde é fácil somar pesos e valores de uma seleção proposta, ou seja **verificar** uma resposta, e difícil encontrar a melhor seleção de raiz: a teoria da complexidade separa estes dois trabalhos e as **aproximações** aceitam um resultado não ótimo limitando matematicamente o seu afastamento.
 
@@ -110,43 +107,40 @@ o que é impossível. Logo nenhuma cláusula fica falsa. Numa cláusula unitári
 
 O grafo tem $2n$ vértices e $2q$ arestas para $q$ cláusulas, e as SCC dão decisão em $O(n+q)$. 2-SAT está em P; 3-SAT é NP-completo. Isto não prova uma separação entre as classes, porque continua em aberto se $P=NP$.
 
+## Autorredução: do decisor à solução
+
+Um decisor responde sim ou não; um construtor devolve o objeto. Para a mochila de decisão com limite $K$, cada pergunta ao decisor fixa um objeto como dentro ou fora e ajusta capacidade e limite: perguntar com o objeto $i$ incluído equivale a decidir $(W-w_i,K-v_i)$ no resto; excluído equivale a $(W,K)$. Conserva a escolha que mantém a resposta afirmativa. Com $n$ chamadas, recupera a seleção sem enumerar subconjuntos.
+
+Para HAM-CYCLE, usa apenas o decisor comum que recebe um grafo. Se $G$ tem ciclo hamiltoniano, percorre as arestas por ordem: para cada aresta $e$, pergunta se $G-e$ ainda tem ciclo hamiltoniano. Se sim, remove $e$ em definitivo; se não, conserva $e$. O invariante é que o grafo corrente continua hamiltoniano. No fim, nenhuma aresta pode sair sem destruir essa propriedade, e um grafo hamiltoniano minimal com $n$ vértices é exatamente um ciclo de $n$ arestas. Se o decisor for polinomial, a construção com $m$ chamadas também é.
+
+## Certificados e instâncias especiais
+
+Um certificado de isomorfismo de grafos é uma permutação dos vértices; verificar consiste em comparar cada aresta transformada com a aresta correspondente, em tempo polinomial no número de vértices e arestas. O certificado curto não coloca o problema em P nem prova NP-completude; situa-o em NP.
+
+PARTITION pergunta se um multiconjunto de inteiros positivos admite divisão em duas partes com a mesma soma. É NP-completa por redução a partir de SUBSET-SUM, ou seja SUBSET-SUM $\le_p$ PARTITION: dado $(A,T)$ com $A$ multiconjunto de inteiros positivos e soma $s$, seja $b=|s-2T|$; se $b=0$, a instância já é PARTITION e nada se acrescenta, senão o novo multiconjunto tem soma $s+b$ e metade $(s+b)/2$. Se $A$ tem subconjunto com soma $T$, basta juntar $b$ a esse subconjunto quando $s>2T$ (ou ao complementar quando $s<2T$) para obter um lado com a metade exata. Reciprocamente, no lado da partição que contém $b$, retirar $b$ deixa soma $T$ em $A$ quando $s>2T$ (ou deixa $s-T$, cujo complementar em $A$ soma $T$, quando $s<2T$). Por exemplo, $[3,1,4,2,2]$ soma $12$ com $T=6$ e $b=0$, nada a acrescentar; $[3,1,2]$ e $[4,2]$ somam $6$ cada.
+
+SUBGRAPH-ISOMORPHISM pergunta se um padrão $H$ ocorre como subgrafo de $G$. É NP-completa por redução a partir de CLIQUE, ou seja CLIQUE $\le_p$ SUBGRAPH-ISOMORPHISM: o padrão é o grafo completo $K_k$ e o grafo maior é a entrada de CLIQUE. Há clique de tamanho $k$ se e só se $K_k$ ocorre como subgrafo.
+
+Casos especiais podem ficar tratáveis. Em árvores, a cobertura ótima de vértices obtém-se por programação dinâmica, porque cada subárvore resume a decisão do seu pai. Com apenas $k$ objetos excecionais e $k$ constante, enumerar os $2^k$ subconjuntos excecionais e completar cada resto com o método polinomial da parte regular dá tempo polinomial para cada $k$ fixo: no caso de pesos iguais, o resto escolhe os valores mais altos que cabem após ordenar, em $O(n\log n)$. Se o resto exigisse DP com tabela em $W$, o total seria apenas pseudopolinomial em $W$, não polinomial no tamanho binário. As hipóteses de $k$ fixo e de resto polinomial fazem parte do resultado.
+
 ## Garantia de aproximação
 
-Para custos positivos e fator $\rho\ge1$, uma aproximação de minimização garante $C\le\rho C^*$. Para maximização garante $C\ge C^*/\rho$. Deve também produzir uma solução **admissível** e correr em tempo polinomial. Uma heurística sem prova pode funcionar bem, mas não tem automaticamente essa garantia.
+Os algoritmos executados estão em [aproximações com garantia](/cadeiras/da/aproximacao-garantias/). Aqui fica só o vocabulário. Para custos positivos e fator $\rho\ge1$, uma aproximação de minimização garante $C\le\rho C^*$. Para maximização garante $C\ge C^*/\rho$. Deve também produzir uma solução **admissível** e correr em tempo polinomial. Uma heurística sem prova pode funcionar bem, mas não tem automaticamente essa garantia.
 
 Um esquema de aproximação permite escolher $\varepsilon>0$ e fator $1+\varepsilon$. Num PTAS, o tempo é polinomial no tamanho da entrada para cada $\varepsilon$ fixo; num FPTAS, é polinomial também em $1/\varepsilon$. A precisão pode aumentar o custo, e essa dependência faz parte do resultado.
 
 ## Cobertura de vértices: fator 2
 
-Escolhe uma aresta ainda não coberta, acrescenta **os dois extremos** e remove todas as arestas incidentes neles. Repete até não haver arestas.
-
-<Dot
-  source={cobertura}
-  alt="Estrela com centro c e quatro folhas a b d e. Escolher a aresta c a dá a cobertura c a de tamanho dois; a cobertura ótima é apenas c."
-/>
-
-As arestas escolhidas formam um emparelhamento $M$, porque removemos as incidentes antes da próxima escolha. Qualquer cobertura, incluindo a ótima, precisa de pelo menos um extremo de cada aresta de $M$. Como elas não partilham extremos, $|C^*|\ge|M|$. O algoritmo escolhe $|C|=2|M|$, logo $|C|\le2|C^*|$.
-
-Na estrela, escolhe duas pessoas para uma tarefa em que só o centro já cobre tudo; o fator 2 é atingido. Escolher sempre o vértice de maior grau é outra heurística e não herda esta prova. Um emparelhamento maximal pode ser suficiente para a aproximação, mesmo quando não é máximo.
+Síntese: escolher uma aresta livre e levar os dois extremos dá fator $2$, porque as arestas escolhidas formam um emparelhamento. A execução na estrela e a prova estão em [cobertura de vértices](/cadeiras/da/aproximacao-garantias/).
 
 ## Mochila: combinar duas opções
 
-Descarta objetos que não cabem sozinhos. Ordena os restantes por densidade e guarda o prefixo completo que cabe antes do primeiro objeto que não cabe, de valor $P$. Guarda também o maior valor individual $B$. Devolve a melhor das duas seleções.
-
-A relaxação fracionária enche esse prefixo e leva uma fração do primeiro objeto omitido $j$. Logo $OPT\le P+v_j\le P+B$. Temos $\max(P,B)\ge(P+B)/2\ge OPT/2$: é uma aproximação de fator 2. A prova usa o **primeiro** objeto omitido e o prefixo; variantes que saltam objetos devem ser analisadas com cuidado, embora acrescentar objetos ao prefixo válido não piore o seu valor.
+Síntese: o melhor entre o prefixo por densidade $P$ e o maior objeto individual $M$ dá fator $2$. A conta $OPT\le P+v_j\le P+M$ está em [mochila](/cadeiras/da/aproximacao-garantias/).
 
 ## TSP métrico: duplicar uma MST
 
-Assume grafo completo não dirigido, pesos não negativos e desigualdade triangular $c(u,v)\le c(u,x)+c(x,v)$. Constrói uma MST, duplica as suas arestas e percorre o circuito euleriano resultante. Quando um vértice já foi visitado, usa um atalho para o próximo novo vértice; no fim regressa ao início.
-
-Retirar uma aresta de um circuito ótimo dá uma árvore abrangente, portanto $c(MST)\le OPT$. Duplicá-la custa $2c(MST)$. Os atalhos não aumentam o custo pela desigualdade triangular. O circuito hamiltoniano final custa no máximo $2OPT$.
-
-No TSP geral, o atalho pode custar mais que o percurso removido. Sob $P\ne NP$, não há aproximação polinomial de fator constante para o TSP geral, porque podemos atribuir custo 1 às arestas de uma instância de ciclo hamiltoniano e custo maior que $\rho n$ às restantes. Uma $\rho$-aproximação distinguiria a existência de um circuito só com arestas baratas, e a condição métrica evita exatamente essa construção.
+Síntese: MST duplicada com atalhos dá fator $2$ sob desigualdade triangular. O quadrado com $MST=3$ e circuito $4$ está em [TSP métrico](/cadeiras/da/aproximacao-garantias/).
 
 ## Cobertura de conjuntos
 
-Dado um universo $U$ e conjuntos cuja união cobre $U$, escolhe repetidamente o conjunto que cobre mais elementos **ainda por cobrir**. Com custos unitários, a garantia é $H_d\le1+\ln d$, onde $d$ é o maior tamanho de um conjunto e $H_d=1+1/2+\cdots+1/d$.
-
-A ideia da prova cobra a cada elemento recém-coberto $1/r$ quando uma escolha cobre $r$ elementos novos. O total cobrado é o número de conjuntos escolhidos. Num conjunto ótimo com $s$ elementos, ordenar os seus elementos pelo instante de cobertura limita a cobrança total por $H_s$. Somando sobre uma cobertura ótima, o custo guloso é no máximo $H_d$ vezes o ótimo.
-
-Se houver elementos sem qualquer conjunto que os contenha, não existe cobertura; uma implementação deve detetar uma escolha com zero progresso e terminar. Com custos diferentes, escolhe a melhor razão entre elementos novos e custo e usa a análise ponderada correspondente.
+Síntese: escolher o maior ganho dá $H_d\le1+\ln d$ com custos unitários. A execução e a cobrança por elemento estão em [cobertura de conjuntos](/cadeiras/da/aproximacao-garantias/).

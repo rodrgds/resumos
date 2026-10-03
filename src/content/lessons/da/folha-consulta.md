@@ -26,6 +26,7 @@ Nesta folha, $n=|V|$, ou seja o número de vértices, e $m=|E|$, ou seja o núme
 | Todos os pares                    | [Floyd-Warshall](/cadeiras/da/caminhos-minimos/#floyd-warshall)                  | Diagonal negativa denuncia ciclo negativo          | $\Theta(n^3)$                                            |
 | Todos os pares esparsos           | [Johnson](/cadeiras/da/caminhos-minimos/#johnson)                                | Sem ciclos negativos                               | $O(nm+n(n+m)\log n)$ com decreaseKey                     |
 | Fluxo máximo                      | [Edmonds-Karp](/cadeiras/da/fluxo-maximo/#ford-fulkerson-e-edmonds-karp)         | Capacidade não negativa; BFS residual              | $O(nm^2)$                                                |
+| Emparelhamento bipartido          | [Emparelhamento](/cadeiras/da/fluxo-maximo/#emparelhamento-bipartido)            | Capacidades 1; no máximo min(                      | L                                                        | ,   | R   | ) aumentos | $O(min( | L   | ,   | R   | )(n+m))$ |
 
 A heap com entradas duplicadas em Dijkstra pode guardar $O(m)$ pares e custar $O(n+m\log(m+1))$. Não alteres uma chave dentro da heap sem a reorganizar. MST minimiza o custo total das ligações; uma árvore de caminhos mínimos minimiza distâncias desde uma raiz.
 
@@ -106,7 +107,7 @@ Inicializar transições diretas e $\varepsilon$ na diagonal; união até aos es
 
 ## Complexidade e aproximação
 
-[Classes e reduções](/cadeiras/da/complexidade-aproximacao/#decis%C3%A3o-certificados-e-classes): P resolve em tempo polinomial; NP verifica certificado polinomial. NP-completo = NP e NP-difícil. $A\le_p B$ transforma A em B, logo um solver de B resolve A. Para provar dificuldade de B, reduzir um problema difícil **para B**.
+[Classes e reduções](/cadeiras/da/complexidade-aproximacao/#decis%C3%A3o-certificados-e-classes): P resolve em tempo polinomial; NP verifica certificado polinomial. [Autorredução](/cadeiras/da/complexidade-aproximacao/#autorredu%C3%A7%C3%A3o-do-decisor-%C3%A0-solu%C3%A7%C3%A3o): n chamadas ao decisor recuperam a solução. [Aproximações](/cadeiras/da/aproximacao-garantias/): cobertura 2, mochila 2, TSP métrico 2, conjuntos H_d. NP-completo = NP e NP-difícil. $A\le_p B$ transforma A em B, logo um solver de B resolve A. Para provar dificuldade de B, reduzir um problema difícil **para B**.
 
 [Três cores](/cadeiras/da/complexidade-aproximacao/#de-3-sat-para-tr%C3%AAs-cores): vértices $x,\neg x$ ligados entre si e a $B$ codificam valores opostos. Dispositivo de cláusula admite coloração se e só se algum literal é verdadeiro. $\omega(G)\le\chi(G)\le\Delta(G)+1$, com $\omega$ o tamanho da maior clique e $\Delta$ o maior grau; o limite superior vale para grafos simples.
 
