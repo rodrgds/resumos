@@ -8,6 +8,7 @@ order: 0
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
+  revision={1}
   id="fsc-rv32-vetor-max"
   title="Máximo de negativos"
   explanation="/cadeiras/fsc/programacao-riscv/#somar-um-vetor"
@@ -43,6 +44,7 @@ Não resolve o erro trocar para comparação unsigned; isso muda a ordem matemá
 </Exercise>
 
 <Exercise
+  revision={1}
   id="fsc-rv32-str-digit"
   title="Converter dígitos ASCII"
   explanation="/cadeiras/fsc/programacao-riscv/#texto-ascii"
@@ -78,6 +80,7 @@ Não somes códigos ASCII diretamente ao valor numérico.
 </Exercise>
 
 <Exercise
+  revision={1}
   id="fsc-rv32-carry-igual"
   title="Carry sem sinal"
   explanation="/cadeiras/fsc/programacao-riscv/#soma-de-várias-palavras"
@@ -113,6 +116,7 @@ Não uses comparação com sinal nem menor ou igual para esta condição.
 </Exercise>
 
 <Exercise
+  revision={1}
   id="fsc-rv32-nan-mask"
   title="Classificar sem operações de float"
   explanation="/cadeiras/fsc/programacao-riscv/#soma-de-várias-palavras"
@@ -148,6 +152,7 @@ Não ignores a fração nem testes apenas um bit do expoente. As máscaras grand
 </Exercise>
 
 <Exercise
+  revision={1}
   id="fsc-rv32-descritor"
   title="Dois níveis de endereçamento"
   explanation="/cadeiras/fsc/programacao-riscv/#somar-um-vetor"
@@ -177,6 +182,64 @@ O excerto é `lw t1,0(t0)` para obter a base e `lw t2,8(t1)` para ler o elemento
   <div slot="mistakes">
 
 O endereço do campo não é o apontador que o campo armazena.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="fsc-rv32-inverter"
+  title="Trocar sem apagar o outro valor"
+  explanation="/cadeiras/fsc/programacao-riscv/#inverter-sem-perder-elementos"
+  answer={{"kind": "self", "checklist": ["Testa comprimento menor que dois antes de calcular o último apontador.", "Lê as duas words antes das escritas; avança e recua quatro bytes.", "Termina ao encontrar/cruzar apontadores; resultado [6,9,-2,4]."]}}
+>
+
+Uma rotina recebe um vetor válido de words em a0 e comprimento não negativo em a1. Deve inverter o vetor no próprio espaço, incluindo comprimentos 0,1, pares e ímpares. Escreve o núcleo RV32 usando apenas temporários, explica a condição de saída e segue `[4,-2,9,6]`.
+
+  <div slot="hint">
+
+Usa dois apontadores, um em cada extremo.
+
+  </div>
+
+  <div slot="hint-more">
+
+O último elemento tem endereço base+4×comprimento−4.
+
+  </div>
+
+  <div slot="solution">
+
+Uma solução leaf é:
+
+```asm
+    li t0, 2
+    bltu a1, t0, fim
+    mv t0, a0
+    slli t1, a1, 2
+    add t1, a0, t1
+    addi t1, t1, -4
+ciclo:
+    bgeu t0, t1, fim
+    lw t2, 0(t0)
+    lw t3, 0(t1)
+    sw t3, 0(t0)
+    sw t2, 0(t1)
+    addi t0, t0, 4
+    addi t1, t1, -4
+    j ciclo
+fim:
+    ret
+```
+
+Na primeira troca, 4 e 6 mudam de lugar; na segunda, -2 e 9. Ficamos com `[6,9,-2,4]` e os apontadores cruzam-se. Em comprimento ímpar encontram-se no elemento central, que fica igual. Comprimentos 0 e 1 voltam sem loads nem stores. A comparação de endereços é sem sinal e supomos que o vetor não atravessa o fim do espaço de endereços.
+
+  </div>
+
+  <div slot="mistakes">
+
+Escrever o primeiro valor sobre o segundo antes de ler ambos perde informação. Só verificar igualdade não cobre o cruzamento em comprimento par.
 
   </div>
 

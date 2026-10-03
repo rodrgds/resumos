@@ -41,11 +41,27 @@ import textCode from '../../fsc/texto-ascii.s?raw';
   title="Somar words, incluindo um vetor vazio"
 />
 
+Aqui os valores e o resultado cabem em RV32 com sinal. Para outros dados, `add` continua a guardar apenas os 32 bits inferiores; se precisares da soma matemática exata, tens de detetar overflow ou usar uma representação mais larga. O comprimento é um inteiro não negativo e nunca excede os elementos disponíveis.
+
 A saída é 14. Em cada passagem, `lw` lê um elemento, `add` acumula, o apontador avança 4 bytes e o contador diminui. Quando o contador é zero, sai antes de ler memória. Alterar o contador para 0 produz 0 e permite verificar o caso vazio.
 
 Para procurar o máximo, um vetor vazio precisa de contrato próprio, como devolver um sinal de erro. Num vetor não vazio, inicializa o máximo com o **primeiro elemento**, não com zero. Caso contrário, `[-8,-3]` daria incorretamente 0. Depois percorre os restantes com comparação com sinal.
 
 Para inverter um vetor, usa apontadores para a primeira e última word. Lê ambos os valores antes de escrever qualquer um, troca-os e aproxima os apontadores por 4 bytes. Termina quando se encontram ou cruzam. O caso ímpar deixa o elemento central no lugar.
+
+### Inverter sem perder elementos
+
+No vetor `[7,-3,10,0,8]`, trocamos primeiro 7 com 8, depois -3 com 0. O resultado é `[8,0,10,-3,7]`; o 10 central não muda. Durante cada troca é necessário ler as duas words antes da primeira escrita, para não apagar o segundo valor que ainda precisamos.
+
+import reverseCode from '../../fsc/inverter-vetor.s?raw';
+
+<CodePlayground
+  language="riscv"
+  code={reverseCode}
+  title="Inverter um vetor no próprio espaço"
+/>
+
+A rotina recebe a base em a0 e o comprimento em a1. Se houver menos de dois elementos, volta antes de calcular a última posição. Caso contrário, `slli t1,a1,2` converte elementos em bytes e o último elemento fica em base+4×comprimento−4. A comparação sem sinal entre os apontadores termina o ciclo quando se encontram ou cruzam. Supomos um vetor válido, alinhado e que não atravessa o fim do espaço de endereços. A rotina é leaf e só altera registos caller-saved.
 
 ## Texto ASCII
 

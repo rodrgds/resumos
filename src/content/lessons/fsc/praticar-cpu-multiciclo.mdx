@@ -8,10 +8,11 @@ order: 0
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
+  revision={2}
   id="fsc-cpu-states-sw"
   title="Estado guardado entre ciclos"
   explanation="/cadeiras/fsc/cpu-multiciclo/#estados-e-caminhos"
-  answer={{"kind": "number", "value": 4, "tolerance": 0, "unit": "ciclos"}}
+  answer={{"kind": "self", "checklist": ["Segue os estados 0,1,2,5, num total de quatro ciclos.", "B guarda o dado; ALUOut guarda o endereço; MemWrite escreve B."]}}
 >
 
 Segue um sw no CPU multiciclo e identifica onde ficam o dado e o endereço antes da escrita. Dá a sequência de estados e ciclos.
@@ -43,6 +44,7 @@ Não uses a saída atual da ALU no store se o caminho especifica ALUOut.
 </Exercise>
 
 <Exercise
+  revision={1}
   id="fsc-cpu-branch-oldpc"
   title="O fetch já avançou"
   explanation="/cadeiras/fsc/cpu-multiciclo/#recursos-e-registos-internos"
@@ -78,6 +80,7 @@ Uma tabela com PC+imm não é suficiente sem definir qual PC está a usar.
 </Exercise>
 
 <Exercise
+  revision={1}
   id="fsc-cpu-dynamic-cycles"
   title="Salto tomado e instruções não executadas"
   explanation="/cadeiras/fsc/cpu-multiciclo/#contar-instruções-e-ciclos"
@@ -106,13 +109,14 @@ São três R, um lw e um beq: $3\times4+5+3=20$ ciclos. O sw está no programa m
 
   <div slot="mistakes">
 
-Não somes novamente fetch e decode nem inclua o store saltado.
+Não somes novamente fetch e decode nem incluas o store saltado.
 
   </div>
 
 </Exercise>
 
 <Exercise
+  revision={1}
   id="fsc-cpu-irwrite"
   title="Instrução preservada durante load"
   explanation="/cadeiras/fsc/cpu-multiciclo/#seleções-e-habilitações"
@@ -141,7 +145,56 @@ IR mantém o lw para conservar rd e outros campos até ao writeback. Se IRWrite 
 
   <div slot="mistakes">
 
-Não assumes que o mesmo valor lido pode substituir qualquer registo interno sem mudar o efeito.
+Não assumas que o mesmo valor lido pode substituir qualquer registo interno sem mudar o efeito.
+
+  </div>
+
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="fsc-cpu-teste-final"
+  title="A última comparação também custa"
+  explanation="/cadeiras/fsc/cpu-multiciclo/#contar-instruções-e-ciclos"
+  answer={{"kind": "self", "checklist": ["beq três vezes; cada outra instrução duas vezes.", "Total 49 ciclos; custos de addi e jal são hipóteses deste exercício."]}}
+>
+
+Num CPU multiciclo já alargado para suportar addi e jal, usa addi=4, lw=5, add=4, beq=3, jal=3 ciclos. t1 começa em 2. Conta só desde `teste` até chegar a `fim`, excluindo qualquer instrução em fim:
+
+```asm
+teste:
+    beq t1, zero, fim
+    lw t3, 0(t0)
+    add t2, t2, t3
+    addi t0, t0, 4
+    addi t1, t1, -1
+    jal zero, teste
+fim:
+```
+
+Quantas vezes é executada cada instrução e quantos ciclos são necessários?
+
+  <div slot="hint">
+
+O corpo corre duas vezes, mas o teste ocorre outra vez para sair.
+
+  </div>
+
+  <div slot="hint-more">
+
+jal zero é aqui uma instrução real com custo explicitamente dado.
+
+  </div>
+
+  <div slot="solution">
+
+beq corre 3 vezes: duas vezes falso e uma vez verdadeiro. lw, add, as duas addi e jal correm 2 vezes cada. O total é $3\times3+2\times(5+4+4+4+3)=49$ ciclos. A sequência tem 13 instruções executadas, contando separadamente as duas addi. Os custos addi/jal são hipóteses do CPU alargado deste exercício; o CPU da lição só especifica R,lw,sw,beq.
+
+  </div>
+
+  <div slot="mistakes">
+
+Não contes só dois beq nem atribuas automaticamente os custos deste CPU alargado a qualquer implementação RISC-V.
 
   </div>
 
