@@ -45,7 +45,7 @@ Numa árvore, $b$ é ramificação, $d$ profundidade do objetivo mais superficia
 [Jogos](/cadeiras/ia/jogos-e-minimax/) · [Otimização](/cadeiras/ia/otimizacao-e-evolucao/)
 
 - Minimax: MAX toma máximo, MIN toma mínimo. Garantia completa em jogos determinísticos, finitos, de dois jogadores, soma zero e informação perfeita. Folhas de corte avaliadas por heurística retiram a garantia do jogo completo.
-- Alfa-beta: MAX atualiza $\alpha$, MIN atualiza $\beta$; corta se $\alpha\ge\beta$. Mesma decisão, menos trabalho. A ordem dos filhos afeta os cortes.
+- Alfa-beta: MAX atualiza $\alpha$, MIN atualiza $\beta$; corta se $\alpha\ge\beta$. Dá a mesma decisão com menos trabalho, por isso a ordem dos filhos afeta os cortes.
 - MCTS: seleção, expansão, simulação, retropropagação. UCT: $w_i/n_i+c\sqrt{\ln N/n_i}$. Filhos sem visitas são experimentados antes da divisão; estatísticas respeitam o jogador que escolhe.
 - Subida da colina estrita só aceita melhoria; para também num patamar. Ótimo local depende da vizinhança.
 - Arrefecimento, minimização: aceita deterioração $\Delta>0$ com probabilidade $e^{-\Delta/T}$, $T>0$.
