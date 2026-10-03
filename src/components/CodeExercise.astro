@@ -1,6 +1,9 @@
 ---
 import Icon from './Icon.astro';
 import EditorFullscreen from './EditorFullscreen.astro';
+import CodeTestCase from './CodeTestCase.astro';
+import { Code } from 'astro:components';
+import { codeTheme } from '../lib/code-theme.mjs';
 import type { CodeAnswer } from '../lib/code-exercise';
 import '../styles/playground.css';
 interface Props {
@@ -38,10 +41,13 @@ const { answer } = Astro.props;
     </div>
     <div class="editor-panes">
       <div class="editor-source-pane">
-        <pre
-          data-code-source
-          tabindex="0"
-        ><code class={`language-${answer.language}`}>{answer.starter}</code></pre>
+        <div data-code-source>
+          <Code
+            code={answer.starter}
+            lang={answer.language}
+            theme={codeTheme}
+          />
+        </div>
         <div data-code-editor></div>
       </div>
       <template data-fold-open>
@@ -59,19 +65,19 @@ const { answer } = Astro.props;
           <summary class="icon-disclosure">
             Testes <Icon name="chevron-down" size={16} />
           </summary>
-          <ol>
+          <ol class="code-test-list">
             {answer.tests.map((test) => (
               <li>
-                <strong>{test.name}</strong>
-                {test.code && <pre><code class={`language-${answer.language}`}>{test.code}</code></pre>}
-                {test.input && (
-                  <p>
-                    Entrada: <code>{test.input}</code>
-                  </p>
-                )}
-                <p>
-                  Saída esperada: <code>{test.output || '(sem saída)'}</code>
-                </p>
+                <details class="code-test-case">
+                  <summary class="icon-disclosure">
+                    {test.name} <Icon name="chevron-down" size={14} />
+                  </summary>
+                  <CodeTestCase
+                    test={test}
+                    language={answer.language}
+                    mode="reference"
+                  />
+                </details>
               </li>
             ))}
           </ol>
@@ -86,13 +92,21 @@ const { answer } = Astro.props;
             />
             <p role="status" data-code-status></p>
           </div>
-          <pre
+          <div
             aria-label="Diagnóstico dos testes"
             data-code-output
-            tabindex="0"
             hidden
-          ></pre>
+          ></div>
         </div>
+        {answer.tests.map((test) => (
+          <template data-code-diagnostic>
+            <CodeTestCase
+              test={test}
+              language={answer.language}
+              mode="diagnostic"
+            />
+          </template>
+        ))}
       </div>
     </div>
     <noscript>

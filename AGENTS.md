@@ -20,7 +20,7 @@
 - **Reading, appearance, annotations or keyboard navigation:** [docs/leitura.md](docs/leitura.md).
 - **Runnable code, exercise runtimes or web previews:** [docs/execucao.md](docs/execucao.md) and [docs/linguagens.md](docs/linguagens.md). Keep disposable runtimes and the separate runner origin isolated from reading pages and notes. Grade code by behavior, not source matching.
 - **Reading themes and syntax:** preserve saved palette ids. Verify upstream colours and record sources/adaptations in [docs/leitura.md](docs/leitura.md). Regenerate syntax tokens with `scripts/sync-code-themes.mjs` and all Manim variants when reading palette tokens change. Fullscreen must reuse the editor and isolated output, not copy their state.
-- **Exercises, interactive demos, Typst, DOT, Mermaid or Manim:** [CONTRIBUTING.md](CONTRIBUTING.md). Let Markdown create paragraphs in multiline MDX and preserve literal inline colon notation. Render trusted graphics at build time; readers never run their compilers. Verify authored code and visuals in the browser. Distinguish automatic correctness from self-assessment.
+- **Exercises, interactive demos, Typst, DOT, Mermaid or Manim:** [CONTRIBUTING.md](CONTRIBUTING.md). Let Markdown create paragraphs in multiline MDX and preserve literal inline colon notation. Render trusted exercise Markdown and graphics at build time; readers never run their compilers. Verify authored code and visuals in the browser. Distinguish automatic correctness from self-assessment.
 - **Brain rot, speech or voice assets:** [docs/brainrot.md](docs/brainrot.md) and [docs/vozes-locais.md](docs/vozes-locais.md). Keep synthesis local and preserve model/reference reuse terms.
 
 ## Verification

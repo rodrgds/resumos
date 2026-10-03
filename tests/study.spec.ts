@@ -67,9 +67,7 @@ test('reading help preserves an earlier result and does not invent an attempt', 
   });
   await question.locator(':scope > details > summary').click();
   await question.getByLabel('Primeira pista', { exact: true }).click();
-  await expect(question.getByRole('status')).toContainText(
-    'Ainda não registaste uma resposta',
-  );
+  await expect(question.getByRole('status')).toBeEmpty();
   await question.getByLabel('A tua resposta').fill('210');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
   const savedAssistance = await question
@@ -464,4 +462,33 @@ test('blocked storage does not prevent answering or opening a solution', async (
   await expect(question.getByRole('status')).toContainText(
     'correta, após consultar a solução',
   );
+});
+
+test('code notation remains formatted in choices, feedback and self-assessment', async ({
+  page,
+}) => {
+  await page.goto('/cadeiras/fp/funcoes/');
+  const choice = page.locator('#return-print');
+  await choice.locator(':scope > details > summary').click();
+  await expect(choice.locator('label code')).toHaveText('None');
+  await choice.getByLabel('A string "6"', { exact: true }).check();
+  await choice.getByRole('button', { name: 'Verificar resposta' }).click();
+  await expect(choice.getByRole('status').locator('code')).toHaveText('print');
+  await expect(choice.getByRole('status')).not.toContainText('`');
+  await page.goto('/cadeiras/ct-iadp/ficheiros/');
+  const question = page.locator('#csv-separador');
+  await question.locator(':scope > details > summary').click();
+  await expect(question.locator('.exercise-prompt code')).toHaveText(
+    'split(",")',
+  );
+  await question
+    .getByLabel('A tua resposta')
+    .fill('As aspas protegem a vírgula do campo.');
+  await question
+    .getByRole('button', { name: 'Comparar com a solução' })
+    .click();
+  await expect(question.locator('.exercise-checklist code')).toHaveText([
+    'csv.reader',
+    'csv.DictReader',
+  ]);
 });
