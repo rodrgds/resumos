@@ -1,0 +1,20 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  import draw: *
+  content((0.2, 3.0), [$x = A$, $v = 0$], anchor: "west")
+  line((2.6, 3.0), (4.6, 3.0))
+  circle((4.4, 3.0), radius: 0.07, fill: black)
+  content((0.2, 2.0), [$x = 0$, $v$ máxima], anchor: "west")
+  line((2.6, 2.0), (4.6, 2.0))
+  circle((3.6, 2.0), radius: 0.07, fill: black)
+  line((3.6, 2.0), (2.7, 2.0), mark: (end: "stealth"))
+  content((0.2, 1.0), [$x = -A$, $v = 0$], anchor: "west")
+  line((2.6, 1.0), (4.6, 1.0))
+  circle((2.8, 1.0), radius: 0.07, fill: black)
+  content((0.2, 0.0), [$x = 0$, $v$ máxima], anchor: "west")
+  line((2.6, 0.0), (4.6, 0.0))
+  circle((3.6, 0.0), radius: 0.07, fill: black)
+  line((3.6, 0.0), (4.5, 0.0), mark: (end: "stealth"))
+})

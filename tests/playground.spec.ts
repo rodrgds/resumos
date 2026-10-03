@@ -272,5 +272,5 @@ test('Python playground waits for preparation, highlights the theme and executes
   });
   await expect(
     playground.getByLabel('Resultado', { exact: true }),
-  ).toContainText('v1 = 1.00 m/s, v2 = 4.00 m/s');
+  ).toContainText('u1 = 1.00 m/s, u2 = 4.00 m/s');
 });

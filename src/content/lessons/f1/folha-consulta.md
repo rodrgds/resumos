@@ -14,7 +14,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 
 [Explicação e exemplos](/cadeiras/f1/cinematica/#integrar-o-movimento).
 
-- $\vec v=d\vec r/dt$, $\vec a=d\vec v/dt$. Rapidez $v=|\vec v|$.
+- $\vec v=d\vec r/dt$, $\vec a=d\vec v/dt$. Rapidez $v=|\vec v|$. Em 1D usa $v_x$ com sinal; $v$ é o módulo.
 - Aceleração constante: $v_x=v_0+at$, $x=x_0+v_0t+at^2/2$, $v_x^2=v_0^2+2a\Delta x$.
 - Separação: $a(v)=dv/dt$; $a(x)=v\,dv/dx$. Verifica soluções excluídas por divisões.
 - Curvatura: $\vec a=\dot v\hat t+(v^2/\rho)\hat n$. Para $v\ne0$, $a_t=\vec v\cdot\vec a/v$ e $\rho=v^2/a_n$ se $a_n>0$.
@@ -30,7 +30,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - Normal perpendicular ao contacto, obtida das equações. Contacto simples exige $N\ge0$.
 - Atrito estático $|f_s|\le\mu_sN$; cinético $|f_k|\approx\mu_kN$. Direção pela tendência ou velocidade relativa de deslizamento.
 - Rampa: $N=mg\cos\theta$ se não há outras forças perpendiculares. Repouso possível se $\tan\theta\le\mu_s$. Descida deslizante: $a=g(\sin\theta-\mu_k\cos\theta)$.
-- Movimento circular: $\sum F_\mathrm{radial}=mv^2/R$. Não acrescentar uma força centrípeta fictícia ao diagrama inercial.
+- Movimento circular: $\sum F_\text{para o centro}=mv^2/R$, com o positivo radial para o centro. Não acrescentar uma força centrípeta fictícia ao diagrama inercial.
 - Translação do referencial: $\vec F_\text{inércia}=-m\vec a_\mathrm{ref}$.
 
 ## Trabalho e energia
@@ -41,7 +41,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - $K=mv^2/2$; $W_\mathrm{total}=\Delta K$.
 - $W_\mathrm{cons}=-\Delta U$; $F_x=-U'(x)$.
 - $U_g=mgy$ perto da superfície; $U_e=kx^2/2$; gravitação $U=-GMm/r$ com zero no infinito.
-- $K_i+U_i+W_\text{não\ cons}=K_f+U_f$. Energia mecânica constante apenas se esse trabalho for zero, ou seja sem atrito nem forças externas a dissipar.
+- $K_i+U_i+W_\text{não\ cons}=K_f+U_f$. Energia mecânica constante apenas se esse trabalho for zero. Uma força não conservativa presente pode não fazer trabalho, como o atrito estático no rolamento ideal.
 - Equilíbrio $U'=0$. Mínimo estável, máximo instável. $U''=0$ não decide.
 - $P=\vec F\cdot\vec v$. Rendimento $\eta=P_\text{útil}/P_\mathrm{entrada}$.
 - Volta vertical interior: $mg+N=mv_\mathrm{topo}^2/R$. Ponto deslizante sem atrito, partida do repouso: $h_{\mathrm{min}}=5R/2$.
@@ -62,7 +62,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 [Eixos, equilíbrio e rolamento](/cadeiras/f1/rotacao/#momento-de-inércia).
 
 - $\vec L_O=\vec r\times\vec p$, $\vec\tau_O=\vec r\times\vec F$. Módulo $\tau=Fd_\perp$.
-- Origem inercial fixa: $d\vec L_O/dt=\vec\tau_\mathrm{ext}$.
+- Origem inercial fixa ou centro de massa: $d\vec L/dt=\vec\tau_\mathrm{ext}$ com a mesma referência nos dois lados.
 - $I=\int r_\perp^2\,dm$; eixos paralelos $I=I_\mathrm{CM}+Md^2$.
 - Eixo fixo, corpo rígido: $\tau_z=I\alpha$, $L_z=I\omega$, $K_\mathrm{rot}=I\omega^2/2$, $P=\tau_z\omega$.
 - Equilíbrio rígido: $\sum\vec F=0$ e $\sum\vec\tau=0$.
@@ -86,9 +86,9 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - Pêndulo simples: $T\approx2\pi\sqrt{\ell/g}$, pequenos ângulos em radianos.
 - Amortecimento linear: $\gamma=b/(2m)$; subcrítico se $0<\gamma<\omega_0$, crítico se iguais, sobrecrítico se maior; $b=0$ dá o oscilador ideal.
 - Subcrítico: $x=Ae^{-\gamma t}\cos(\omega_dt+\phi)$, $\omega_d^2=\omega_0^2-\gamma^2$.
-- $\tau=m/b=1/(2\gamma)$; $Q=\omega_0/(2\gamma)$; meia amplitude em $\ln2/\gamma$. A amplitude é $e^{-t/(2\tau)}$ nesta convenção.
+- $\tau=m/b=1/(2\gamma)$; $Q=\omega_0/(2\gamma)$; meia amplitude em $\ln2/\gamma$. A amplitude é $e^{-t/(2\tau)}$ nesta convenção, que usa $\omega_a$ nas transparências para a frequência amortecida aqui chamada $\omega_d$.
 - Picos do mesmo sinal: $\delta=\ln(A_n/A_{n+1})=\gamma T_d$.
 - Força $F_0\cos\Omega t$: $A=(F_0/m)/\sqrt{(\omega_0^2-\Omega^2)^2+(2\gamma\Omega)^2}$.
 - Pico de amplitude: $\Omega_\mathrm{res}=\sqrt{\omega_0^2-2\gamma^2}$ para $F_0$ constante e $0<\gamma<\omega_0/\sqrt2$.
 
-[Análise de medições](/cadeiras/f1/medir-oscilacoes/#ajustar-o-decaimento): usa amplitudes relativamente à linha de base, vários ciclos e logaritmos de razões adimensionais. Não confundir a constante de tempo da amplitude com a da energia.
+[Análise de medições](/cadeiras/f1/medir-oscilacoes/#ajustar-o-decaimento): usa amplitudes relativamente à linha de base, vários ciclos e logaritmos de razões adimensionais. Não confundir a constante de tempo da amplitude com a da energia. Para $g$ fixo, $\Delta\ell/\ell\approx2\Delta T/T$ no modelo de pêndulo simples.

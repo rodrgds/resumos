@@ -29,25 +29,27 @@ editorial:
     - O arquivo Moodle de 2024/25 contém o relatório experimental, mas não o guia experimental nem o programa Python referido nesse relatório.
 ---
 
-No fim de Física I consegues prever um movimento com um modelo simples, ou seja escolhes o sistema, fixas as hipóteses e comparas a previsão com uma medição. Vais relacionar posição, forças e energia para obter essa previsão, porque cada equação representa a situação física que escolheste.
+No fim de Física I consegues prever um movimento com um modelo simples. Escolhes o sistema, fixas as hipóteses, escreves as equações desse sistema e comparas a previsão com uma medição. Por exemplo, uma bola lançada pode ser tratada como ponto material quando só interessa a trajetória; deixa de o ser quando a rotação interessa.
 
-Precisas de vetores, derivadas, integrais e equações diferenciais simples, por isso usa as páginas de [AM1](/cadeiras/am1/) quando o cálculo travar. Os exemplos usam unidades SI e $g=9{,}81\ \mathrm{m/s^2}$, salvo indicação em contrário.
+Precisas de vetores, derivadas e integrais das cadeiras anteriores. A separação de variáveis é objetivo desta cadeira e é ensinada na cinemática, por isso não precisas de a dominar antes de começar. Quando o cálculo travar, usa as páginas de [AM1](/cadeiras/am1/). Os exemplos usam unidades SI e $g=9{,}81\ \mathrm{m/s^2}$, salvo indicação em contrário.
 
 ## Percurso
 
 1. [Cinemática](/cadeiras/f1/cinematica/): reconstruir movimentos, separar variáveis e distinguir aceleração tangencial de normal.
 2. [Leis de Newton](/cadeiras/f1/leis-newton/): escolher um referencial, desenhar forças e resolver contactos, atrito e movimento circular.
 3. [Trabalho e energia](/cadeiras/f1/trabalho-energia/): comparar estados, calcular trabalho e reconhecer equilíbrio e estabilidade.
-4. [Centro de massa e momento linear](/cadeiras/f1/centro-massa-momento/): delimitar um sistema, calcular impulsos e resolver colisões.
-5. [Rotação](/cadeiras/f1/rotacao/): calcular torques e inércias, impor equilíbrio e resolver rolamento, roldanas e pêndulos físicos.
-6. [Oscilações](/cadeiras/f1/oscilacoes/): determinar fase, energia, amortecimento e resposta a uma força periódica.
-7. [Medir oscilações](/cadeiras/f1/medir-oscilacoes/): interpretar picos, período, decremento logarítmico e limites de um ajuste experimental.
+4. [Oscilações](/cadeiras/f1/oscilacoes/): determinar fase, energia, amortecimento e resposta a uma força periódica.
+5. [Centro de massa e momento linear](/cadeiras/f1/centro-massa-momento/): delimitar um sistema, calcular impulsos e resolver colisões.
+6. [Rotação](/cadeiras/f1/rotacao/): calcular torques e inércias, impor equilíbrio e resolver rolamento, roldanas e pêndulos físicos.
+7. [Medir oscilações](/cadeiras/f1/medir-oscilacoes/): interpretar picos, período, decremento logarítmico, resíduos e incertezas de um ajuste experimental.
 
 Cada tema tem exercícios próprios com duas pistas e uma resolução. Tenta resolver antes de abrir a ajuda, porque a pista só ajuda quando já tentaste um caminho. A [cheat sheet](/cadeiras/f1/folha-consulta/) reúne fórmulas e condições depois de estudares as explicações.
 
 ## Como resolver um problema
 
-Escolhe o corpo ou conjunto de corpos e o intervalo de tempo. Desenha eixos e fixa sinais, ou seja decide o positivo antes de escrever equações. Num problema de forças, representa apenas as forças que atuam nesse corpo, porque a força que esse corpo exerce noutro pertence a outro diagrama. Num problema de conservação, escreve a condição que permite conservar a grandeza. Por exemplo, momento linear exige impulso externo nulo, enquanto energia mecânica exige trabalho total nulo das forças que não estão incluídas no potencial.
+Escolhe o corpo ou conjunto de corpos e o intervalo de tempo. Desenha eixos e fixa sinais antes de escrever equações. Num problema de forças, representa apenas as forças que atuam nesse corpo. A força que esse corpo exerce noutro pertence a outro diagrama.
+
+Num problema de conservação, escreve primeiro a condição. Momento linear conserva-se quando o impulso externo é nulo na direção usada. Energia mecânica conserva-se quando é nulo o trabalho das forças não incluídas no potencial. Repara que uma força pode existir sem fazer trabalho, como o atrito estático no rolamento ideal.
 
 Substitui os números depois de obteres as relações. Confirma unidades, sinais e casos limite, por isso lê um resultado estranho como aviso do modelo. Uma normal negativa significa que o contacto suposto não pode existir. Uma energia cinética negativa significa que o estado não é acessível. Uma velocidade negativa apenas indica movimento contrário ao eixo escolhido.
 
