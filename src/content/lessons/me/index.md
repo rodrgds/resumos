@@ -40,9 +40,7 @@ Em cada problema, identifica a unidade observada, a variável e o parâmetro pre
 
 Os exemplos executáveis em Python permitem conferir contas e experimentar gráficos. Os materiais das aulas também usam R. O software ajuda a explorar dados, mas não escolhe o modelo nem justifica as condições por ti. Nos exercícios usa a tabela ou o arredondamento solicitado no enunciado.
 
-## Ano e avaliação
-
-:::details[Ver ano, avaliação e âmbito]
+:::details[Ano e avaliação]
 
 O material de referência é de **2025/26**. A [ficha SIGARRA de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586998), consultada a 3 de outubro de 2026, confirma a cadeira, mas ainda não apresenta programa nem avaliação. Confirma as regras nos avisos atuais da equipa docente. As regras de avaliação de 2025/26 não devem ser usadas para planear 2026/27.
 
@@ -50,9 +48,7 @@ As questões-modelo T1 e T2 ilustram tipos de pergunta. Não são provas complet
 
 :::
 
-## Fontes e bibliografia
-
-:::details[Ver fontes e bibliografia]
+:::details[Fontes e bibliografia]
 
 A base principal foi a [página de ME no Moodle 2025/26](https://moodle2526.up.pt/course/view.php?id=4420): 14 aulas teóricas, sete folhas de exercícios com soluções e versões em inglês, notas de estatística descritiva, dois conjuntos de questões-modelo, formulários, tabelas e dois ficheiros de dados. O Moodle requer acesso institucional; esses documentos não são republicados aqui.
 

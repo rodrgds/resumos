@@ -45,9 +45,7 @@ O segundo aplica as provas a estruturas discretas:
 
 Os exercícios estão no fim da lição que os explica.
 
-## Fontes, anos e âmbito
-
-:::details[Ver fontes, anos e âmbito]
+:::details[Fontes, anos e âmbito]
 
 A base são os materiais docentes de **MD 2024/25 no Moodle da FEUP**: as onze apresentações teóricas, as onze fichas principais, problemas adicionais, o formulário e provas com resoluções. As aulas de lógica e inteiros são de João Barbosa; as de conjuntos, relações, funções, grafos e indução são de Hugo Pacheco. As apresentações de grafos e indução disponibilizadas nessa edição mantêm **2023/24 na capa**. As restantes apresentações identificam 2024/25. O percurso inclui todos estes blocos.
 
@@ -63,9 +61,7 @@ Para aprofundar grafos, indução e sequências há também o livro aberto [Disc
 
 :::
 
-## Avaliação de 2026/27
-
-:::details[Ver regras de avaliação]
+:::details[Avaliação de 2026/27]
 
 A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586983), consultada em 3 de outubro de 2026, define:
 
