@@ -39,7 +39,7 @@ export function setupExercises() {
       if (!progress) return;
       if (!progress.result) {
         delete feedback.dataset.result;
-        feedback.textContent = `${assistance === 'solution' ? 'Solução consultada' : 'Pista consultada'}. Ainda não registaste uma resposta.`;
+        feedback.textContent = '';
         return;
       }
       feedback.dataset.result = progress.result;
@@ -79,13 +79,17 @@ export function setupExercises() {
       else if (assistance === 'none' && help.some((details) => details.open))
         assistance = 'hint';
     };
-    const showResult = (correct: boolean, explanation = '') => {
+    const showResult = (
+      correct: boolean,
+      explanation: string | DocumentFragment = '',
+    ) => {
       readHelp();
       save(correct ? 'correct' : 'attempted');
       feedback.dataset.result = correct ? 'correct' : 'attempted';
       feedback.textContent = correct
-        ? `Resposta correta, ${assistanceLabel()}. ${explanation}`.trim()
-        : `Resposta incorreta. ${explanation}`.trim();
+        ? `Resposta correta, ${assistanceLabel()}.`
+        : 'Resposta incorreta.';
+      if (explanation) feedback.append(' ', explanation);
       effects.play({
         correct,
         trigger: root.querySelector<HTMLElement>(
@@ -158,7 +162,7 @@ export function setupExercises() {
         return;
       }
       let correct = false;
-      let explanation = '';
+      let explanation: string | DocumentFragment = '';
       if (answer.kind === 'number') {
         const input = root.querySelector<HTMLInputElement>('[data-response]')!;
         const value = parseNumericAnswer(input.value);
@@ -180,7 +184,9 @@ export function setupExercises() {
         }
         const option = answer.options[Number(input.value)];
         correct = option.correct;
-        explanation = option.explanation;
+        explanation = root
+          .querySelectorAll<HTMLTemplateElement>('[data-option-explanation]')
+          [Number(input.value)].content.cloneNode(true) as DocumentFragment;
       }
       showResult(correct, explanation);
     });

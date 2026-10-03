@@ -12,6 +12,12 @@ import { OUTPUT_LIMIT, type RunMessage } from '../lib/runners/types';
 
 const MAX_TEST_MS = 120_000;
 
+interface TestOutcome {
+  passed: boolean;
+  output: string;
+  error?: string;
+}
+
 export function setupCodeExercises() {
   document
     .querySelectorAll<HTMLElement>('[data-code-exercise]')
@@ -27,6 +33,18 @@ export function setupCodeExercises() {
       const result = root.querySelector<HTMLElement>('[data-code-result]')!;
       const status = root.querySelector<HTMLElement>('[data-code-status]')!;
       const output = root.querySelector<HTMLElement>('[data-code-output]')!;
+      const diagnostics = root.querySelectorAll<HTMLTemplateElement>(
+        '[data-code-diagnostic]',
+      );
+      const showDiagnostic = (index: number, outcome: TestOutcome) => {
+        output.replaceChildren(diagnostics[index].content.cloneNode(true));
+        output.querySelector<HTMLElement>('[data-code-obtained]')!.textContent =
+          outcome.output || '(sem saída)';
+        const error = output.querySelector<HTMLElement>('[data-code-error]')!;
+        error.hidden = !outcome.error;
+        error.textContent = outcome.error || '';
+        output.hidden = false;
+      };
       const clearFeedback = () =>
         exercise.dispatchEvent(new Event('exercise-code-reset'));
       let running = false;
@@ -44,10 +62,7 @@ export function setupCodeExercises() {
         cancel = undefined;
         finish();
       };
-      const evaluate = (
-        test: CodeTest,
-        code: string,
-      ): Promise<{ passed: boolean; diagnostic: string }> =>
+      const evaluate = (test: CodeTest, code: string): Promise<TestOutcome> =>
         new Promise((resolve, reject) => {
           let text = '';
           let dispose: (() => void) | undefined;
@@ -70,7 +85,7 @@ export function setupCodeExercises() {
           };
           const receive = (message: RunMessage) => {
             if (message.type === 'status')
-              status.textContent = `${test.name}: ${message.text}`;
+              status.textContent = `Teste «${test.name}»: ${message.text}`;
             if (message.type === 'output') {
               text += message.text;
               if (text.length > OUTPUT_LIMIT) {
@@ -84,7 +99,7 @@ export function setupCodeExercises() {
             }
             if (message.type === 'error') {
               cleanup();
-              reject(new Error(message.text));
+              resolve({ passed: false, output: text, error: message.text });
             }
             if (message.type === 'done') {
               cleanup();
@@ -93,11 +108,11 @@ export function setupCodeExercises() {
                 normalizeTestOutput(text) === normalizeTestOutput(test.output);
               resolve({
                 passed,
-                diagnostic:
+                output: text,
+                error:
                   message.exitCode === 0
-                    ? `Esperado:\n${test.output || '(sem saída)'}\n\nObtido:\n${text || '(sem saída)'}`
-                    : text ||
-                      `O programa terminou com erro (${message.exitCode}).`,
+                    ? undefined
+                    : `O programa terminou com erro (${message.exitCode}).`,
               });
             }
           };
@@ -133,9 +148,8 @@ export function setupCodeExercises() {
             if (id !== runId) return;
             if (!outcome.passed) {
               result.dataset.result = 'attempted';
-              status.textContent = `Falhou: ${test.name}`;
-              output.hidden = false;
-              output.textContent = outcome.diagnostic;
+              status.textContent = `Teste ${index + 1}/${answer.tests.length}: «${test.name}» falhou.`;
+              showDiagnostic(index, outcome);
               exercise.dispatchEvent(
                 new CustomEvent('exercise-code-result', {
                   bubbles: true,

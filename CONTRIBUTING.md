@@ -68,6 +68,8 @@ Cada questão precisa de um `id` único na cadeira, uma ligação à explicaçã
 
 Em MDX, o Markdown cria os parágrafos dentro de componentes. Para texto em várias linhas, usa Markdown ou um `div`, não um `p` a envolver outro parágrafo. Um `p` com texto todo na mesma linha, como nos exemplos acima, continua válido.
 
+Marca funções, chamadas e valores de código com crases em Markdown e com `<code>` no texto JSX. As strings `options[].text`, `options[].explanation` e `checklist[]` aceitam Markdown inline, incluindo código e fórmulas. O build gera a formatação; o navegador reutiliza esse HTML também no feedback. Usa slots para parágrafos ou blocos.
+
 As diretivas documentadas usam blocos. Os dois pontos dentro do texto, como em `HH:MM`, `imm[11:5]` ou `ns:livro`, conservam-se como texto literal em Markdown e MDX.
 
 | Tipo     | Quando usar                                           | Campos                                                    |
@@ -99,15 +101,22 @@ Na autoavaliação, o leitor compara com a solução e indica se está certo ou 
     ],
   }}
 >
-  <p>Define soma(valores): devolve a soma sem imprimir. A soma vazia é zero.</p>
+  <p>
+    Define <code>soma(valores)</code>: devolve a soma sem imprimir. A soma vazia
+    é zero.
+  </p>
   <div slot="hint">Começa com um total igual a zero.</div>
   <div slot="hint-more">Acumula os valores antes de devolver o total.</div>
-  <div slot="solution">Usa return sum(valores) ou um ciclo acumulador.</div>
-  <div slot="mistakes">Não devolvas dentro do ciclo nem uses print.</div>
+  <div slot="solution">
+    Usa <code>return sum(valores)</code> ou um ciclo acumulador.
+  </div>
+  <div slot="mistakes">
+    Não devolvas dentro do ciclo nem uses <code>print</code>.
+  </div>
 </Exercise>
 ```
 
-Cada teste tem `name` e `output`; `input` e `code` são opcionais. `code` executa depois da resposta. Compara-se toda a saída padrão e exige-se código de saída zero. Só se normalizam CRLF e quebras de linha finais. Os casos ajudam a aprender, não provam correção nem impedem fraude.
+Cada teste tem `name` e `output`; `input` e `code` são opcionais. `code` executa depois da resposta. Compara-se toda a saída padrão e exige-se código de saída zero. Só se normalizam CRLF e quebras de linha finais. Prefere imprimir o valor devolvido a imprimir uma comparação que só dá `True` ou `False`. Para strings e estruturas Python, `repr` distingue os tipos. O leitor vê o teste executado, a entrada fornecida e a saída esperada; se falhar, vê também a saída obtida e o erro. Os casos ajudam a aprender, não provam correção nem impedem fraude.
 
 ## Escolher um formato
 

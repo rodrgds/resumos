@@ -71,8 +71,23 @@ test('code exercises accept different correct implementations and reject wrong b
   await editor.fill('def soma_naturais(n):\n    return 10');
   await check.click();
   await expect(exercise.getByLabel('Diagnóstico dos testes')).toContainText(
-    'Obtido:\n10',
+    'print(soma_naturais(0))',
     { timeout: 60_000 },
+  );
+  const diagnostic = exercise.getByLabel('Diagnóstico dos testes');
+  await expect(
+    diagnostic.getByText('Esperado:', { exact: true }),
+  ).toBeVisible();
+  await expect(diagnostic.locator('[data-code-obtained]')).toHaveText('10');
+  const colors = await diagnostic
+    .locator('.code-test-source pre code *')
+    .evaluateAll(
+      (tokens) =>
+        new Set(tokens.map((token) => getComputedStyle(token).color)).size,
+    );
+  expect(colors).toBeGreaterThan(1);
+  await expect(exercise.locator('[data-code-status]')).toContainText(
+    'Teste 1/4',
   );
   await expect(exercise.locator('[data-feedback]')).toContainText(
     'Resposta incorreta',
@@ -92,7 +107,11 @@ test('code exercises accept different correct implementations and reject wrong b
     '4/4 testes passaram.',
     { timeout: 90_000 },
   );
-  const print = await page.locator('#print-template').innerHTML();
+  const print = await page
+    .locator('#print-template')
+    .evaluate(
+      (template) => (template as HTMLTemplateElement).content.textContent,
+    );
   expect(print).toContain('print(soma_naturais(20))');
   expect(print).not.toContain('private-reader-code');
   await page.reload();
