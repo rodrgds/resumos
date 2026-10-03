@@ -49,9 +49,7 @@ Desenha a geometria ou o circuito. Marca referências de tensão, corrente, norm
 
 Mantém unidades nas contas e verifica um resultado por outro caminho. Em circuitos, compara a potência entregue e absorvida. Num transitório, confirma o instante inicial e o limite final. Num campo, testa a direção e a simetria. Num sinal amostrado, compara os valores nos instantes de amostragem, não apenas a forma da curva.
 
-## Avaliação de 2026/27
-
-:::details[Ver avaliação de 2026/27]
+:::details[Avaliação de 2026/27]
 
 A [ficha de Física II de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991) indica avaliação distribuída com exame final. Com $T$ a nota do teste, $LAB$ a do trabalho laboratorial e $E$ a do exame, a classificação é
 
@@ -65,9 +63,7 @@ Confirma os avisos da edição em que estás inscrito. Os mini-testes e o recurs
 
 :::
 
-## Materiais de 2025/26
-
-:::details[Ver materiais de 2025/26]
+:::details[Materiais de 2025/26]
 
 A base de estudo são os materiais do Moodle de 2025/26. As apresentações teóricas 1 a 13 abrangem carga, campo, Maxwell, ondas, condução, redes resistivas e reativas, análise laboratorial, regime sinusoidal, ressonância e linhas de transmissão, sinais, SLIT e frequência. As folhas TP 1 a 12 dão problemas correspondentes.
 
@@ -80,9 +76,7 @@ As ligações do Moodle podem exigir autenticação. Confere sempre a notação:
 
 :::
 
-## Bibliografia
-
-:::details[Ver bibliografia]
+:::details[Bibliografia]
 
 - Jaime E. Villate, [Eletricidade, Magnetismo e Circuitos](https://villate.org/eletricidade/), 3.ª edição, setembro de 2019, 2.ª reimpressão de 2022, ISBN 978-972-99396-6-2. O livro usa licença CC BY-SA 3.0 e ajuda a aprofundar campos, circuitos e ondas.
 - Jaime E. Villate, [Exercícios Resolvidos de Eletricidade, Magnetismo e Circuitos](https://def.fe.up.pt/eletricidade/problemas.html), 3.ª edição, setembro de 2020, ISBN 978-972-752-271-2, licença CC BY-SA 4.0. Usa-o para comparar passos de resolução depois de tentares um problema.
@@ -91,11 +85,9 @@ Os textos, exemplos, exercícios e diagramas destas páginas foram escritos para
 
 :::
 
-## Vídeos e simulações
+:::details[Vídeos e simulações]
 
-:::details[Ver vídeos e simulações]
-
-Os materiais de 2025/26 indicam [The language of Maxwell's equations](https://www.youtube.com/watch?v=rB83DpBJQsE) para visualizar divergência e rotacional: relaciona o fluxo com fontes e a circulação com o contorno. A [introdução aos fasores](https://www.youtube.com/watch?v=bouYTlFMYO0) ajuda a relacionar uma sinusoide com amplitude e fase. A [introdução aos laboratórios](https://www.youtube.com/watch?v=Yg52Xhiwqo8) acompanha a preparação dos instrumentos. São recursos opcionais dessa edição, sem revisão integral aqui.
+Os vídeos recomendados pelos materiais de 2025/26 estão nas lições onde se vê o conceito: [Fluxo e circulação](/cadeiras/f2/equacoes-maxwell/#fluxo-e-circulação) para divergência e rotacional, [Fasores e impedância](/cadeiras/f2/regime-sinusoidal/#fasores-e-impedância) para amplitude e fase, e [Montar e medir](/cadeiras/f2/laboratorio/#montar-e-medir) para a preparação dos instrumentos. São recursos opcionais dessa edição, sem revisão integral aqui.
 
 Para experimentar circuitos, o [kit de circuitos DC da PhET](https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc) permite comparar ligações em série e paralelo. A [visualização de Faraday do MIT](https://web.mit.edu/8.02t/www/802TEAL3D/visualizations/faraday/index.htm) ajuda a seguir a relação entre campo variável e campo induzido. Usa os modelos interativos nas lições para RC, harmónicos e aliasing antes de passar a montagens reais.
 
