@@ -16,7 +16,7 @@ order: 1
 | [Preditivo e ágil](/cadeiras/es/processos-software/#planeamento-preditivo-e-adaptativo) | Diferem no detalhe e momento do planeamento; ambos podem receber feedback  |
 | [Esforço e duração](/cadeiras/es/introducao/#esforço-não-é-duração)                     | Pessoa-dias não se convertem livremente em dias de calendário              |
 
-Pares possíveis numa equipa: $n(n-1)/2$. Não mede reuniões nem custo real.
+Pares possíveis numa equipa: $n(n-1)/2$, ou seja não mede reuniões nem custo real.
 
 [Caminho crítico](/cadeiras/es/gestao-projetos/#âmbito-tarefas-e-dependências): maior duração entre caminhos de dependências, sob recursos e hipóteses do plano.
 
