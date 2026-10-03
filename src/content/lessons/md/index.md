@@ -2,6 +2,19 @@
 title: Matemática Discreta
 description: Lógica e provas, inteiros, conjuntos, relações, funções, grafos e indução, com exercícios resolvidos.
 order: 0
+editorial:
+  basedOn: 2024/25
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-03'
+  sources:
+    - title: MD no Moodle da FEUP, 2024/25
+      url: https://moodle2425.up.pt/course/view.php?id=5100
+    - title: Ficha de MD no SIGARRA, 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586983
+  gaps:
+    - Os materiais docentes de 2026/27 não foram consultados; a base das lições continua a ser 2024/25.
 ---
 
 Em Matemática Discreta (MD) aprendemos a representar afirmações e a provar propriedades de objetos como inteiros, relações e grafos. Uma resposta não termina no resultado: é preciso mostrar que o método se aplica, justificar os passos e conferir os casos que poderiam refutar a afirmação.
@@ -36,7 +49,7 @@ A base são os materiais docentes de **MD 2024/25 no Moodle da FEUP**: as onze a
 
 As explicações são escritas com palavras próprias. Os exercícios misturam problemas próprios e adaptações dos tipos pedidos nas fichas e provas, com contas e argumentos conferidos. Recorrências lineares completam o estudo de sequências e recursão. A notação segue as aulas: $0\in\mathbb N$, $\equiv_n$ para congruência e caixas de Fitch com regras de base. Os materiais Moodle exigem acesso à cadeira e não são republicados aqui.
 
-A [ficha de 2025/26 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560089) confirma o programa e indica como bibliografia obrigatória:
+A [ficha de 2026/27 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586983) confirma os blocos do programa e indica como bibliografia obrigatória:
 
 - Ralph P. Grimaldi, _Discrete and Combinatorial Mathematics: An Applied Introduction_.
 - Michael Huth e Mark Ryan, _Logic in Computer Science_.
@@ -44,10 +57,16 @@ A [ficha de 2025/26 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_
 
 Para aprofundar grafos, indução e sequências há também o livro aberto [Discrete Mathematics: An Open Introduction, de Oscar Levin](https://discrete.openmathbooks.org/dmoi3.html), 3.ª edição. É uma referência adicional, não bibliografia adotada pela FEUP.
 
-## Avaliação e diferença entre edições
+## Avaliação de 2026/27
 
-Nos materiais de **2024/25**, a classificação vem de dois testes com peso de 50% cada, mínimo de 6 valores em cada teste e média mínima de 9,5. O recurso dessa edição tem partes correspondentes aos testes. [Ficha de 2024/25](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=541869).
+A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586983), consultada em 3 de outubro de 2026, define:
 
-Em **2025/26**, a fórmula publicada é $F=0{,}2EX+0{,}4PT+0{,}4ST$: exercícios avaliados nas práticas, primeiro teste e segundo teste. Exige $EX>0$, ambos os testes com pelo menos 6 e $F\ge9{,}5$. A frequência exige respeitar o limite de faltas. O recurso abrange toda a matéria e é feito na totalidade, sem divisão em partes. Para trabalhadores-estudantes, a ficha prevê a opção de cálculo com 50% por teste. [Regras de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560089).
+$$
+F=0{,}2EX+0{,}4PT+0{,}4ST,
+$$
 
-Estas regras foram verificadas em 1 de outubro de 2026. A avaliação de 2026/27 não foi confirmada; consulta a ficha e as indicações do teu ano antes de aplicar pesos ou regras de recurso.
+onde $EX$ é a classificação dos exercícios avaliados nas práticas e $PT,ST$ são as dos dois testes. Para aprovação, exige $EX>0$, pelo menos 6 valores em cada teste e $F\ge9{,}5$. A frequência exige respeitar o limite legal de faltas; a assiduidade obtida num ano vale também para o seguinte.
+
+O recurso abrange toda a matéria, sem divisão em partes. A sua nota passa a ser a classificação da cadeira. A melhoria também se faz nesse exame. Para trabalhadores-estudantes, a ficha prevê, por opção do estudante, $F=0{,}5PT+0{,}5ST$, com os mesmos mínimos dos testes e da nota final.
+
+Os materiais de 2024/25 usavam dois testes com peso de 50% cada e recurso por partes. Essas regras antigas não se aplicam à edição atual. Os materiais docentes de 2026/27 não foram consultados; confirma no teu Moodle o calendário e as indicações sobre cada avaliação.
