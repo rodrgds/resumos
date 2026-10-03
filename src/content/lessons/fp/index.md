@@ -42,17 +42,13 @@ Antes de escrever código, identifica a entrada, o resultado e os casos limite. 
 
 Nos editores desta cadeira, a linguagem é Python 3. O código corre numa execução descartável. Os ficheiros criados pelo exemplo existem só nessa execução. Para praticar no teu computador, guarda o programa num ficheiro `.py` e corre `python3 nome.py` num terminal. Não escrevas o indicador `>>>` da consola dentro do ficheiro.
 
-## Edição e avaliação
-
-:::details[Ver edição e avaliação]
+:::details[Edição e avaliação]
 A ficha pública de [2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586981), consultada a 1 de outubro de 2026, identifica a unidade curricular e a docência, mas não apresenta programa, bibliografia ou regras de avaliação. Estes apontamentos usam o programa preenchido de [2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087). Consulta a ficha e o Moodle do teu ano para o calendário e as condições em vigor.
 
 Em 2025/26, havia provas individuais em computador, com questões teóricas e exercícios de programação. As datas, ponderações e condições de 2026/27 têm de ser confirmadas nos materiais desse ano.
 :::
 
-## Fontes e âmbito
-
-:::details[Ver fontes e âmbito]
+:::details[Fontes e âmbito]
 A base oficial é o programa de FP de 2025/26: pensamento computacional, dados simples e compostos, condicionais, iteração, funções, passagem de parâmetros, recursão, ficheiros, programação livre de efeitos, funções de ordem superior, compreensões, estratégias de resolução, teste e depuração. Os resultados de aprendizagem também incluem exceções e problemas numéricos.
 
 As fichas de 2018/19 no [repositório público de FPRO](https://github.com/educorreia932/FEUP-FPRO) ajudam a escolher tipos de problemas. O [Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4883) consultado não disponibilizava materiais de ensino. Estas fontes não confirmam os enunciados nem as regras atuais.
