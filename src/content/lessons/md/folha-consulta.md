@@ -5,6 +5,8 @@ section: recursos
 studyKind: revision
 ---
 
+Depois de percorrer lógica, inteiros, conjuntos, grafos e indução, esta página reúne as fórmulas e condições para rever antes de resolver exercícios.
+
 ## Lógica e dedução
 
 - $p\to q\Leftrightarrow\neg p\lor q\Leftrightarrow\neg q\to\neg p$. Só é falsa com $p=T,q=F$.
