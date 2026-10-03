@@ -22,7 +22,7 @@ Quantis tipo 2, $0<p<1$: se np é inteiro, $q_p=(x_{(np)}+x_{(np+1)})/2$; senão
 
 [Probabilidade](/cadeiras/me/probabilidades/): $P(A\cup B)=P(A)+P(B)-P(A\cap B)$; $P(A\mid B)=P(A\cap B)/P(B)$. Independência: $P(A\cap B)=P(A)P(B)$.
 
-Partição: $P(A)=\sum_iP(B_i)P(A\mid B_i)$; Bayes: $P(B_j\mid A)=P(B_j)P(A\mid B_j)/P(A)$.
+Partição com $P(B_i)>0$: $P(A)=\sum_iP(B_i)P(A\mid B_i)$; Bayes com $P(A)>0$: $P(B_j\mid A)=P(B_j)P(A\mid B_j)/P(A)$.
 
 [Variáveis](/cadeiras/me/variaveis-aleatorias/): $F(x)=P(X\le x)$; $P(a<X\le b)=F(b)-F(a)$. Discreta: somar probabilidades. Com densidade: integrar, $P(X=x)=0$. $V(X)=E(X^2)-E(X)^2$.
 
@@ -56,7 +56,7 @@ Emparelhadas: $D_i=X_i-Y_i$, $\bar d\pm t_{\alpha/2,n-1}s_D/\sqrt n$; normalidad
 
 [Proporção](/cadeiras/me/proporcoes/), AC 95%: $\tilde p=(x+2)/(n+4)$, $\tilde p\pm1,96\sqrt{\tilde p(1-\tilde p)/(n+4)}$. Wald: $\hat p\pm z_{\alpha/2}\sqrt{\hat p(1-\hat p)/n}$, com contagens adequadas, frágil perto dos extremos.
 
-AC 95% sem estimativa prévia: $n\ge1,96^2/(4\varepsilon^2)-4$. Diferença de proporções AC 95%: $\tilde p_i=(x_i+1)/(n_i+2)$, erro padrão pela soma de $\tilde p_i(1-\tilde p_i)/(n_i+2)$.
+AC 95% sem estimativa prévia: $n\ge1,96^2/(4\varepsilon^2)-4$. Diferença de proporções AC 95%: $\tilde p_i=(x_i+1)/(n_i+2)$, erro padrão igual à raiz quadrada da soma de $\tilde p_i(1-\tilde p_i)/(n_i+2)$.
 
 [Proporção unilateral](/cadeiras/me/proporcoes/#limites-unilaterais), Wald: $L,U=\hat p\mp z_\alpha\sqrt{\hat p(1-\hat p)/n}$; intervalo $[L;1]$ ou $[0;U]$, cortado a $[0,1]$, contagens adequadas.
 

@@ -4,7 +4,7 @@
 #canvas({
 
   draw.content((150.0pt, 262.0pt), [μ = 48])
-  draw.line((150.0pt, 20.0pt), (150.0pt, 250.0pt), stroke: 1pt + black, dash: "dashed")
+  draw.line((150.0pt, 8.0pt), (150.0pt, 250.0pt), stroke: 1pt + black, dash: "dashed")
   draw.line((45.0pt, 236.0pt), (225.0pt, 236.0pt), stroke: 2pt + rgb("28716c"))
   draw.line((90.0pt, 224.0pt), (270.0pt, 224.0pt), stroke: 2pt + rgb("28716c"))
   draw.line((24.0pt, 212.0pt), (204.0pt, 212.0pt), stroke: 2pt + rgb("28716c"))

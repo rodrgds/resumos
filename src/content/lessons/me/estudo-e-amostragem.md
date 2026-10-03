@@ -13,11 +13,21 @@ editorial:
     date: '2026-10-03'
 ---
 
-Abrimos aqui o percurso de Métodos Estatísticos: esta página responde ao que estamos a estudar e a como escolhemos os casos que medimos.
+Queres saber quanto tempo os vídeos demoram a começar na tua residência. Antes de resumir números, precisas de dizer quem foi observado, o que foi medido e o que o desenho permite concluir.
 
 Imagina que queres saber quanto tempo os vídeos demoram a começar na tua residência. Durante uma semana, apontas os tempos de arranque que observas e ficas com uma lista de 30 tempos, como 2 segundos, 5 segundos e 3 segundos.
 
-Essa lista de tempos que conseguiste observar é o que chamamos **amostra**, ou seja, o conjunto de casos que medimos. O conjunto de todos os arranques possíveis nessa residência no período que te interessa é o que chamamos **população**, ou seja, o conjunto sobre o qual queres concluir. Cada tempo registado é o que chamamos **variável**, ou seja, a característica que anotas em cada caso.
+Essa lista de 30 tempos é a **amostra**, o conjunto de casos que mediste. O conjunto de todos os arranques nessa residência no período em estudo é a **população**, o conjunto sobre o qual queres concluir.
+
+Cada arranque é uma **unidade**. A **variável** é o tempo de arranque, a característica medida em cada unidade. Cada número da lista, como 2, 5 ou 3 segundos, é um **valor observado** dessa variável.
+
+| Papel           | Neste exemplo                           |
+| --------------- | --------------------------------------- |
+| Unidade         | um arranque de vídeo                    |
+| Variável        | tempo de arranque, em segundos          |
+| Valor observado | 2, 5 ou 3 segundos                      |
+| Amostra         | os 30 arranques observados              |
+| População       | todos os arranques no período em estudo |
 
 Repara que a lista pode enganar: se os 30 tempos vierem todos da mesma noite com a rede congestionada, falam dessa noite, não de todas as noites. Por isso, antes de resumires a lista com uma média, ou seja, com a soma dos tempos dividida pela quantidade de tempos, pergunta a que conjunto a conclusão se refere.
 
@@ -25,7 +35,7 @@ Repara que a lista pode enganar: se os 30 tempos vierem todos da mesma noite com
 
 A **população** reúne as unidades sobre as quais queremos concluir. A **amostra** é o conjunto observado. Uma **variável** é uma característica registada em cada unidade: tempo, sistema operativo, número de falhas.
 
-Um parâmetro descreve a população, por exemplo a média $\mu$. Uma estatística é calculada a partir da amostra, por exemplo $\bar x$, ou seja, a média dos pedidos medidos é conhecida; a média de todos os pedidos da população pode continuar desconhecida.
+Um parâmetro descreve a população, por exemplo a média $\mu$. Uma estatística é calculada a partir da amostra, por exemplo $\bar x$. A média dos tempos medidos é conhecida; a média de todos os tempos da população pode continuar desconhecida.
 
 Delimita lugar, período e critérios de inclusão. «Os estudantes» é vago; «os estudantes inscritos numa licenciatura neste semestre» define melhor a população. Uma amostra voluntária pode representar sobretudo quem tem tempo ou interesse em responder. Aumentar o seu tamanho não elimina esse enviesamento.
 

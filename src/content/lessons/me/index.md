@@ -30,13 +30,13 @@ Começa por [estudos e amostragem](/cadeiras/me/estudo-e-amostragem/): quem foi 
 
 [Probabilidades](/cadeiras/me/probabilidades/) introduz acontecimentos, condicionamento, independência e Bayes. [Variáveis aleatórias](/cadeiras/me/variaveis-aleatorias/) transforma resultados em números e [distribuições conjuntas](/cadeiras/me/distribuicoes-conjuntas/) trata duas variáveis em simultâneo. Em [distribuições](/cadeiras/me/distribuicoes/) aprendes a reconhecer modelos, calcular probabilidades e ler tabelas.
 
-[Amostragem e limite central](/cadeiras/me/amostragem-limite-central/) explica a distribuição de uma média ou proporção entre amostras. Usa-a para construir [intervalos de confiança](/cadeiras/me/intervalos-confianca/) e [comparar médias](/cadeiras/me/comparacao-medias/). Depois estuda [testes de hipóteses](/cadeiras/me/testes-hipoteses/), [erros e potência](/cadeiras/me/erros-potencia/) e [testes por aleatorização](/cadeiras/me/aleatorizacao/).
+[Amostragem e limite central](/cadeiras/me/amostragem-limite-central/) explica a distribuição de uma estatística entre amostras, a começar pela média ou proporção. Usa-a para construir [intervalos de confiança](/cadeiras/me/intervalos-confianca/) e [testes de hipóteses](/cadeiras/me/testes-hipoteses/). Depois aprende a [comparar médias](/cadeiras/me/comparacao-medias/), estudar [erros e potência](/cadeiras/me/erros-potencia/) e usar [testes por aleatorização](/cadeiras/me/aleatorizacao/).
 
 O percurso termina com [inferência para proporções](/cadeiras/me/proporcoes/) e [testes do qui-quadrado](/cadeiras/me/qui-quadrado/). A [cheat sheet](/cadeiras/me/folha-consulta/) reúne as fórmulas e condições para consulta rápida.
 
 ## Como trabalhar
 
-Em cada problema, identifica a unidade observada, a variável e o parâmetro pretendido. Escolhe o método antes de substituir números. Escreve as condições, conserva casas decimais nas contas intermédias e fecha com uma frase sobre a população e a pergunta inicial.
+Em cada problema, identifica a unidade observada, a variável, cada valor observado e o parâmetro pretendido. Escolhe o método antes de substituir números. O percurso assume somatórios, combinatória e integrais simples de cadeiras anteriores. Escreve as condições, conserva casas decimais nas contas intermédias e fecha com uma frase sobre a população e a pergunta inicial.
 
 Os exemplos executáveis em Python permitem conferir contas e experimentar gráficos. Os materiais das aulas também usam R. O software ajuda a explorar dados, mas não escolhe o modelo nem justifica as condições por ti. Nos exercícios usa a tabela ou o arredondamento solicitado no enunciado.
 
