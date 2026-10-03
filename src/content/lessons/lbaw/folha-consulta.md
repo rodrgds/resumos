@@ -11,6 +11,8 @@ editorial:
   coverage: Consulta curta dos conceitos desenvolvidos nas lições, com condições e casos limite.
 ---
 
+Já percorreste as lições; esta folha resume as definições e condições para rever antes do teste.
+
 ## Requisitos e modelos
 
 | Conceito       | Fixar                                                                            |
