@@ -1,0 +1,536 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+import { calculateCrc, crcCircuit } from './crc';
+
+const initial = calculateCrc('1101', '1011');
+---
+
+<InteractiveDemo label="Gerar e verificar CRC com registos">
+  <div data-crc-demo>
+    <form class="parameters">
+      <div>
+        <label for="rc-crc-message">Mensagem (bits)</label>
+        <input
+          id="rc-crc-message"
+          name="message"
+          type="text"
+          value={initial.message}
+          inputmode="numeric"
+          spellcheck="false"
+          autocomplete="off"
+          aria-describedby="rc-crc-limits rc-crc-error"
+          disabled
+        />
+      </div>
+      <div>
+        <label for="rc-crc-generator">Gerador (bits)</label>
+        <input
+          id="rc-crc-generator"
+          name="generator"
+          type="text"
+          value={initial.generator}
+          inputmode="numeric"
+          spellcheck="false"
+          autocomplete="off"
+          aria-describedby="rc-crc-limits rc-crc-error"
+          disabled
+        />
+      </div>
+      <button type="submit" disabled>
+        Calcular CRC
+      </button>
+    </form>
+    <p class="small" id="rc-crc-limits">
+      Até 32 bits de mensagem. Gerador de 2 a 9 bits, começando e terminando em
+      1.
+    </p>
+    <p id="rc-crc-error" role="alert" hidden></p>
+    <noscript>
+      <p>
+        Ativa JavaScript para alterar os bits. O exemplo e os passos continuam
+        disponíveis.
+      </p>
+    </noscript>
+    <div data-calculation>
+      <p class="result" data-result role="status">
+        <strong>CRC: {initial.crc}</strong>
+        <span>Trama: {initial.frame}</span>
+      </p>
+      <p class="small" data-polynomial>
+        G(x) = {initial.polynomial}. Grau {initial.degree}, {initial.degree}{' '}
+        registos.
+      </p>
+      <fieldset>
+        <legend>Acompanhar o cálculo</legend>
+        <label>
+          <input
+            type="radio"
+            name="crc-mode"
+            value="generate"
+            checked
+            disabled
+          />{' '}
+          Gerar CRC
+        </label>
+        <label>
+          <input type="radio" name="crc-mode" value="verify" disabled />{' '}
+          Verificar trama
+        </label>
+      </fieldset>
+      <div data-received hidden>
+        <p class="small">Altera bits da trama recebida. O gerador mantém-se.</p>
+        <div
+          class="received"
+          role="group"
+          aria-label="Bits da trama recebida"
+        ></div>
+      </div>
+      <p data-stream-label>
+        Entrada: mensagem seguida de {initial.degree} zeros.
+      </p>
+      <div class="stream" aria-label="Bits de entrada" data-stream>
+        {Array.from(initial.input, (bit, index) => (
+          <span data-current={index === 0 ? '' : undefined}>{bit}</span>
+        ))}
+      </div>
+      <div
+        class="circuit"
+        tabindex="0"
+        aria-label="Circuito de registos, deslocável na horizontal"
+        data-circuit
+        set:html={crcCircuit(initial.generator, '000', '1')}
+      />
+      <div class="steps">
+        <button type="button" data-previous disabled>
+          Passo anterior
+        </button>
+        <label for="rc-crc-step">
+          Passo do cálculo
+          <input
+            id="rc-crc-step"
+            type="range"
+            min="0"
+            max={initial.input.length}
+            value="0"
+            disabled
+          />
+        </label>
+        <button type="button" data-next disabled>
+          Próximo bit
+        </button>
+      </div>
+      <p data-step-description>
+        Passo 0/{initial.input.length}. Os registos começam a zero.
+      </p>
+      <p class="small" data-detection hidden></p>
+      <details>
+        <summary>Todos os passos</summary>
+        <div
+          class="trace"
+          tabindex="0"
+          aria-label="Tabela do cálculo CRC, deslocável na horizontal"
+        >
+          <table>
+            <caption>Estado antes e depois de cada bit</caption>
+            <thead>
+              <tr>
+                <th scope="col">Passo</th>
+                <th scope="col">Entrada</th>
+                <th scope="col">Antes</th>
+                <th scope="col">Retorno</th>
+                <th scope="col">Depois</th>
+              </tr>
+            </thead>
+            <tbody data-trace>
+              {initial.steps.map((step, index) => (
+                <tr>
+                  <th scope="row">{index + 1}</th>
+                  <td>{step.input}</td>
+                  <td>{step.before}</td>
+                  <td>{step.feedback}</td>
+                  <td>{step.after}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </div>
+</InteractiveDemo>
+
+<script>
+  import { calculateCrc, crcCircuit, crcTrace, CrcInputError } from './crc';
+
+  document.querySelectorAll<HTMLElement>('[data-crc-demo]').forEach((root) => {
+    const form = root.querySelector('form')!;
+    const message = root.querySelector<HTMLInputElement>('[name="message"]')!;
+    const generator =
+      root.querySelector<HTMLInputElement>('[name="generator"]')!;
+    const error = root.querySelector<HTMLElement>('[role="alert"]')!;
+    const calculation = root.querySelector<HTMLElement>('[data-calculation]')!;
+    const result = root.querySelector<HTMLElement>('[data-result]')!;
+    const slider = root.querySelector<HTMLInputElement>('[type="range"]')!;
+    const previous = root.querySelector<HTMLButtonElement>('[data-previous]')!;
+    const next = root.querySelector<HTMLButtonElement>('[data-next]')!;
+    const modes = root.querySelectorAll<HTMLInputElement>('[name="crc-mode"]');
+    const received = root.querySelector<HTMLElement>('[data-received]')!;
+    const receivedButtons = received.querySelector<HTMLElement>('.received')!;
+    const stream = root.querySelector<HTMLElement>('[data-stream]')!;
+    const detection = root.querySelector<HTMLElement>('[data-detection]')!;
+    let model = calculateCrc(message.value, generator.value);
+    let frame = model.frame;
+    let verifying = false;
+    let step = 0;
+    let input = model.input;
+    let trace = model.steps;
+
+    const showStep = () => {
+      const registers =
+        step === 0 ? '0'.repeat(model.degree) : trace[step - 1].after;
+      root.querySelector<HTMLElement>('[data-circuit]')!.innerHTML = crcCircuit(
+        model.generator,
+        registers,
+        input[step] ?? null,
+      );
+      slider.value = String(step);
+      slider.setAttribute(
+        'aria-valuetext',
+        `Passo ${step} de ${input.length}. Registos: ${registers}`,
+      );
+      previous.disabled = step === 0;
+      next.disabled = step === input.length;
+      Array.from(stream.children).forEach((bit, index) => {
+        bit.toggleAttribute('data-current', index === step);
+        bit.toggleAttribute('data-read', index < step);
+      });
+      const current = trace[step - 1];
+      root.querySelector('[data-step-description]')!.textContent = current
+        ? `Passo ${step}/${input.length}. Entrou ${current.input}. Antes: ${current.before}. O retorno era ${current.feedback}; ${current.feedback ? 'aplicámos XOR nas ligações do gerador' : 'deslocámos os bits sem alterar as ligações XOR'}. Depois: ${current.after}.`
+        : `Passo 0/${input.length}. Os registos começam a zero. O primeiro bit entra à direita, em C0.`;
+    };
+
+    const showCalculation = () => {
+      input = verifying ? frame : model.input;
+      trace = verifying ? crcTrace(frame, model.generator) : model.steps;
+      const remainder = trace.at(-1)!.after;
+      const detected = remainder.includes('1');
+      result.replaceChildren();
+      const value = document.createElement('strong');
+      value.textContent = verifying
+        ? `Resto: ${remainder}. ${detected ? 'Erro detetado.' : 'Nenhum erro detetado.'}`
+        : `CRC: ${model.crc}`;
+      const word = document.createElement('span');
+      word.textContent = `${verifying ? 'Recebida' : 'Trama'}: ${verifying ? frame : model.frame}`;
+      result.append(value, word);
+      root.querySelector('[data-polynomial]')!.textContent =
+        `G(x) = ${model.polynomial}. Grau ${model.degree}, ${model.degree} ${model.degree === 1 ? 'registo' : 'registos'}.`;
+      received.hidden = !verifying;
+      receivedButtons.replaceChildren(
+        ...Array.from(frame, (bit, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = bit;
+          button.setAttribute('aria-label', `Alterar bit ${index + 1}`);
+          button.setAttribute(
+            'aria-pressed',
+            String(bit !== model.frame[index]),
+          );
+          button.addEventListener('click', () => {
+            frame =
+              frame.slice(0, index) +
+              (bit === '1' ? '0' : '1') +
+              frame.slice(index + 1);
+            step = 0;
+            showCalculation();
+            receivedButtons.querySelectorAll('button')[index].focus();
+          });
+          return button;
+        }),
+      );
+      root.querySelector('[data-stream-label]')!.textContent = verifying
+        ? 'Entrada: trama recebida, incluindo os bits de CRC.'
+        : `Entrada: mensagem seguida de ${model.degree} zeros.`;
+      stream.replaceChildren(
+        ...Array.from(input, (bit) => {
+          const cell = document.createElement('span');
+          cell.textContent = bit;
+          return cell;
+        }),
+      );
+      slider.max = String(input.length);
+      detection.hidden = !verifying;
+      detection.textContent =
+        !detected && frame !== model.frame
+          ? 'Os bits mudaram, mas o erro é múltiplo do gerador e passa despercebido. Resto zero não prova ausência de erro.'
+          : 'Resto diferente de zero deteta um erro. Resto zero não prova ausência de erro.';
+      root.querySelector('[data-trace]')!.replaceChildren(
+        ...trace.map((item, index) => {
+          const row = document.createElement('tr');
+          [
+            index + 1,
+            item.input,
+            item.before,
+            item.feedback,
+            item.after,
+          ].forEach((value, column) => {
+            const cell = document.createElement(column === 0 ? 'th' : 'td');
+            if (column === 0) cell.setAttribute('scope', 'row');
+            cell.textContent = String(value);
+            row.append(cell);
+          });
+          return row;
+        }),
+      );
+      showStep();
+    };
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      message.removeAttribute('aria-invalid');
+      generator.removeAttribute('aria-invalid');
+      try {
+        model = calculateCrc(message.value.trim(), generator.value.trim());
+      } catch (cause) {
+        if (!(cause instanceof CrcInputError)) throw cause;
+        const field = cause.field === 'message' ? message : generator;
+        field.setAttribute('aria-invalid', 'true');
+        field.focus();
+        error.textContent = cause.message;
+        error.hidden = false;
+        calculation.hidden = true;
+        return;
+      }
+      error.hidden = true;
+      calculation.hidden = false;
+      frame = model.frame;
+      step = 0;
+      showCalculation();
+    });
+    modes.forEach((mode) =>
+      mode.addEventListener('change', () => {
+        verifying = mode.value === 'verify';
+        step = 0;
+        showCalculation();
+      }),
+    );
+    previous.addEventListener('click', () => {
+      step = Math.max(0, step - 1);
+      showStep();
+    });
+    next.addEventListener('click', () => {
+      step = Math.min(input.length, step + 1);
+      showStep();
+    });
+    slider.addEventListener('input', () => {
+      step = Number(slider.value);
+      showStep();
+    });
+    root
+      .querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button')
+      .forEach((control) => {
+        control.disabled = false;
+      });
+    showCalculation();
+  });
+</script>
+
+<style>
+  .parameters {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .parameters > div {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+  label,
+  legend {
+    font-weight: 600;
+  }
+  .parameters label {
+    display: block;
+    margin-bottom: 6px;
+  }
+  input[type='text'],
+  [data-crc-demo] :global(button) {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--page);
+    color: var(--text);
+    font: inherit;
+  }
+  input[type='text'] {
+    width: 100%;
+    font-family: var(--code-font, monospace);
+  }
+  [data-crc-demo] :global(button) {
+    cursor: pointer;
+  }
+  button[type='submit'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--page);
+  }
+  [data-crc-demo] :global(button:hover:not(:disabled)) {
+    border-color: var(--accent);
+  }
+  button:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  :is(input, button, summary, .circuit, .trace):focus-visible,
+  .received :global(button:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  input[aria-invalid='true'] {
+    border-color: var(--accent);
+    border-style: dashed;
+  }
+  p {
+    margin: 12px 0;
+    overflow-wrap: anywhere;
+  }
+  .small {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .result {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin-block: 20px 8px;
+  }
+  .result :global(span) {
+    font-family: var(--code-font, monospace);
+    overflow-wrap: anywhere;
+  }
+  fieldset {
+    padding: 0;
+    margin: 20px 0 0;
+    border: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+  }
+  legend {
+    margin-bottom: 4px;
+  }
+  fieldset label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    gap: 8px;
+    font-weight: 400;
+  }
+  input[type='radio'],
+  input[type='range'] {
+    accent-color: var(--accent);
+  }
+  .stream,
+  .received {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .stream :global(span) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 30px;
+    border: 1px solid var(--line);
+    font-family: var(--code-font, monospace);
+  }
+  .stream :global([data-current]) {
+    border: 2px solid var(--accent);
+    font-weight: 700;
+  }
+  .stream :global([data-read]) {
+    background: var(--soft);
+  }
+  .received :global(button) {
+    min-width: 44px;
+    font-family: var(--code-font, monospace);
+  }
+  .received :global(button[aria-pressed='true']) {
+    border: 2px dashed var(--accent);
+    font-weight: 700;
+  }
+  .circuit,
+  .trace {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-color: var(--muted) var(--surface);
+  }
+  .circuit {
+    margin-block: 16px;
+  }
+  .circuit :global(svg) {
+    display: block;
+    max-width: none;
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: auto minmax(120px, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+  }
+  .steps label {
+    display: flex;
+    flex: 1 1 140px;
+    flex-direction: column;
+    font-size: 13px;
+  }
+  input[type='range'] {
+    min-height: 44px;
+    width: 100%;
+    margin: 0;
+  }
+  details {
+    margin-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  summary {
+    min-height: 44px;
+    padding-block: 12px;
+    cursor: pointer;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  caption {
+    text-align: left;
+    margin-block: 4px 8px;
+  }
+  .trace :global(th),
+  .trace :global(td) {
+    padding: 6px 10px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+  .trace :global(td) {
+    font-family: var(--code-font, monospace);
+  }
+  [hidden] {
+    display: none !important;
+  }
+  @media (max-width: 480px) {
+    .steps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .steps label {
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
+  }
+</style>
