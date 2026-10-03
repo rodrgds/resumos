@@ -5,6 +5,7 @@ section: exercicios
 ---
 
 import Exercise from '../../../components/Exercise.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
 
 <Exercise
   id="recursao-limite-seis"
@@ -15,7 +16,7 @@ import Exercise from '../../../components/Exercise.astro';
   <div>
     A CTE começa com <code>{'SELECT'}</code> 1 e usa <code>{'UNION ALL'}</code>{' '}
     <code>{'SELECT'}</code> n+1 FROM Numero <code>{'WHERE'}</code>
-    n&lt;=5, ou seja, qual o maior número produzido?
+    n&lt;=5. Qual o maior número produzido?
   </div>
   <div slot="hint">O predicado testa n antes de somar um.</div>
   <div slot="hint-more">Quando n é 5, a condição ainda é verdadeira.</div>
@@ -55,5 +56,71 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Um limite arbitrário de profundidade pode terminar a consulta mas cortar
     respostas válidas. Distingue terminação de correção.
+  </div>
+</Exercise>
+
+<Exercise
+  id="dhondt-divisores-recursivos"
+  title="Só os divisores precisam de recursão"
+  explanation="/cadeiras/bd/sql-recursao/#só-os-divisores-precisam-de-recursão"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Gerei os divisores 1 a 4 com a CTE recursiva.',
+      'Cruzei votos com divisores e escolhi os 4 maiores quocientes.',
+      'Obtive A com 2, B com 1 e C com 1, com desempate explícito.',
+    ],
+  }}
+>
+  <div>
+    Três listas têm 100, 60 e 40 votos e há 4 mandatos. Escreve a consulta de
+    D'Hondt que gera os divisores recursivamente e distribui os mandatos. A
+    execução apresenta o resultado; confere cada quociente do top 4.
+  </div>
+  <div slot="work">
+    <p>
+      Os quocientes candidatos são 100, 60, 50 e 40. A resposta deve ser A com
+      2, B com 1 e C com 1.
+    </p>
+    <CodePlayground
+      language="sql"
+      title="Completar a distribuição de D'Hondt"
+      code={`WITH RECURSIVE Divisor(k) AS (
+  SELECT 1
+  UNION ALL
+  SELECT k + 1 FROM Divisor WHERE k < 4
+),
+Voto(lista, votos) AS (
+  VALUES ('A', 100), ('B', 60), ('C', 40)
+),
+Quociente AS (
+  SELECT v.lista, v.votos / (d.k * 1.0) AS q
+  FROM Voto AS v CROSS JOIN Divisor AS d
+),
+Top AS (
+  SELECT lista FROM Quociente
+  ORDER BY q DESC, lista LIMIT 4
+)
+SELECT lista, COUNT(*) AS mandatos
+FROM Top GROUP BY lista ORDER BY lista;`}
+    />
+  </div>
+  <div slot="hint">
+    Cada lista compete com votos/1, votos/2, votos/3 e votos/4.
+  </div>
+  <div slot="hint-more">
+    Os lugares vão para os 4 maiores quocientes; cada ocorrência vale um
+    mandato.
+  </div>
+  <div slot="solution">
+    O top 4 é 100 de A, 60 de B, 50 de A e 40 de C, por isso A fica com 2, B com
+    1 e C com 1. Só a CTE Divisor é recursiva; quocientes, seleção e contagem
+    são operações comuns. O segundo critério de ordenação resolve empates de
+    quociente de forma explícita. Sem ele, a escolha entre empatados ficaria
+    indefinida.
+  </div>
+  <div slot="mistakes">
+    Não tornes a agregação recursiva. Não contes votos quando a pergunta pede
+    lugares nos maiores quocientes.
   </div>
 </Exercise>

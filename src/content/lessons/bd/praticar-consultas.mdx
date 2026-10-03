@@ -5,18 +5,21 @@ section: exercicios
 ---
 
 import Exercise from '../../../components/Exercise.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
 
 <Exercise
   id="count-left-mia"
   title="Contar correspondências, não linhas artificiais"
   explanation="/cadeiras/bd/sql-consultas/#junções-externas-e-clientes-sem-compras"
+  revision={2}
   answer={{ kind: 'number', value: 1, tolerance: 0 }}
 >
   <div>
     Cliente <code>{'LEFT JOIN'}</code> Encomenda devolve para Mia uma linha com
     <code>{'e.id'}</code> = <code>{'NULL'}</code>. Quanto dá{' '}
-    <code>{'COUNT(*)'}</code> para o grupo de Mia e qual a expressão que conta
-    corretamente encomendas?
+    <code>{'COUNT(*)'}</code> para o grupo de Mia? A expressão que conta
+    encomendas corretamente está explicada na resolução.
   </div>
   <div slot="hint">
     <code>{'LEFT JOIN'}</code> conserva uma linha da esquerda mesmo sem
@@ -43,12 +46,13 @@ import Exercise from '../../../components/Exercise.astro';
   id="join-multiplica-encomendas"
   title="Uma encomenda com duas linhas"
   explanation="/cadeiras/bd/sql-consultas/#não-contar-depois-de-multiplicar-sem-verificar"
+  revision={2}
   answer={{ kind: 'number', value: 3, tolerance: 0 }}
 >
   <div>
     Ana tem a encomenda 100 com duas linhas e a 101 com uma. Depois de juntar
-    Cliente, Encomenda e Item, <code>{'COUNT(e.id)'}</code> dá quantas linhas,
-    ou seja, como contar encomendas?
+    Cliente, Encomenda e Item, quanto dá <code>{'COUNT(e.id)'}</code>? A forma
+    de contar encomendas está explicada na resolução.
   </div>
   <div slot="hint">Enumera uma linha do resultado por Item.</div>
   <div slot="hint-more">A 100 aparece duas vezes, a 101 uma.</div>
@@ -100,5 +104,112 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Não assumes que <code>{'SUM'}</code> vazio é zero em SQL nem que uma
     consulta com GROUP BY cria um grupo vazio.
+  </div>
+</Exercise>
+
+<Exercise
+  id="pares-encomendas-mesmo-cliente"
+  title="Pares sem repetição na mesma tabela"
+  explanation="/cadeiras/bd/sql-consultas/#pares-sem-repetição-na-mesma-tabela"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Usei dois aliases para dar papéis diferentes a Encomenda.',
+      'Exigi o mesmo cliente e `e1.id < e2.id`.',
+      'Previ só o par 100 e 101.',
+    ],
+  }}
+>
+  <div>
+    Escreve SQL que devolva pares de encomendas distintas do mesmo cliente, cada
+    par uma vez. A execução apresenta o resultado; confere que Rui e Mia não
+    geram pares.
+  </div>
+  <div slot="work">
+    <p>
+      Completa a condição de junção. A resposta deve conter só o par 100 e 101.
+    </p>
+    <CodePlayground
+      language="sql"
+      title="Completar a autojunção de encomendas"
+      code={`${loja}
+SELECT e1.id AS primeira, e2.id AS segunda
+FROM Encomenda AS e1
+JOIN Encomenda AS e2
+  ON e2.idCliente = e1.idCliente AND e1.id < e2.id
+ORDER BY primeira, segunda;`}
+    />
+  </div>
+  <div slot="hint">
+    Uma tabela com dois papéis precisa de dois nomes na mesma consulta.
+  </div>
+  <div slot="hint-more">
+    Exclui pares de uma encomenda consigo própria e pares repetidos por ordem.
+  </div>
+  <div slot="solution">
+    A condição é <code>{'e2.idCliente = e1.idCliente AND e1.id < e2.id'}</code>.
+    Só Ana tem duas encomendas, por isso o resultado é o par 100 e 101. Com{' '}
+    <code>{'e1.id <> e2.id'}</code>, o par apareceria nas duas ordens. Sem a
+    condição de cliente, o resultado misturaria encomendas de pessoas
+    diferentes.
+  </div>
+  <div slot="mistakes">
+    Não uses o mesmo alias nos dois lados da condição. Uma autojunção sem
+    condição de ordem conta cada combinação duas vezes.
+  </div>
+</Exercise>
+
+<Exercise
+  id="total-por-cliente-left"
+  title="Totais por cliente, incluindo quem não comprou"
+  explanation="/cadeiras/bd/sql-consultas/#junções-externas-e-clientes-sem-compras"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Conservei Mia com LEFT JOIN e agrupei por id.',
+      'Somei sobre linhas de Item, não sobre encomendas.',
+      'Obtive Ana 295, Rui 75 e Mia 0 euros.',
+    ],
+  }}
+>
+  <div>
+    Escreve SQL que devolva, por cliente, o total comprado em euros, incluindo
+    Mia com zero. A execução apresenta o resultado; confere os três valores.
+  </div>
+  <div slot="work">
+    <p>
+      Parte de Cliente e conserva clientes sem encomendas. Os totais são 29500,
+      7500 e 0 cêntimos.
+    </p>
+    <CodePlayground
+      language="sql"
+      title="Completar os totais por cliente"
+      code={`${loja}
+SELECT c.id, c.nome, COALESCE(SUM(i.qtd * i.precoUnitario), 0) / 100.0 AS euros
+FROM Cliente AS c
+LEFT JOIN Encomenda AS e ON e.idCliente = c.id
+LEFT JOIN Item AS i ON i.idEncomenda = e.id
+GROUP BY c.id, c.nome
+ORDER BY c.id;`}
+    />
+  </div>
+  <div slot="hint">
+    Junta encomendas e linhas sem perder clientes, depois agrupa por cliente.
+  </div>
+  <div slot="hint-more">
+    A soma sobre linhas vazias dá <code>{'NULL'}</code>; converte para zero na
+    apresentação.
+  </div>
+  <div slot="solution">
+    Ana soma 11500 + 18000 = 29500 cêntimos, Rui soma 7500 e Mia soma{' '}
+    <code>{'NULL'}</code>, apresentado como 0. O agrupamento por id evita fundir
+    pessoas com o mesmo nome. Se o filtro de datas fosse para{' '}
+    <code>{'WHERE'}</code>, Mia desapareceria; no <code>{'ON'}</code>,
+    conserva-se a linha sem correspondência.
+  </div>
+  <div slot="mistakes">
+    Não contes encomendas quando a pergunta pede euros. Não filtres a tabela da
+    direita no <code>{'WHERE'}</code> se quiseres conservar clientes sem
+    compras.
   </div>
 </Exercise>
