@@ -18,7 +18,7 @@ Um **ator** é um papel externo que interage com o sistema. Pode ser uma pessoa 
 
 A fronteira indica o sistema que estamos a modelar. Se modelarmos só a aplicação móvel, o servidor pode ser um ator externo. Se modelarmos o sistema completo, o servidor faz parte da solução.
 
-Na aplicação de reservas, o estudante reserva uma sala. Essa operação inclui verificar disponibilidade. Pedir equipamento só acontece se o estudante o solicitar.
+Na aplicação de reservas, o estudante reserva uma sala. Essa operação inclui verificar disponibilidade. Pedir equipamento só acontece se o estudante o solicitar, no ponto de extensão equipamento de Reservar sala.
 
 <UmlUseCases />
 
@@ -68,7 +68,7 @@ Na aplicação, Sala não é parte composta de Reserva: a sala continua a existi
 
 ## Sequência e colaboração
 
-Um **diagrama de sequência** mostra participantes e mensagens num cenário. A linha de vida prolonga-se para baixo e o tempo avança nessa direção. O nome de um participante pode identificar a instância e o tipo, como ecrã:Ecrã.
+Um **diagrama de sequência** mostra participantes e mensagens num cenário. A linha de vida prolonga-se para baixo e o tempo avança nessa direção. O nome de um participante pode identificar a instância e o tipo, como `ecrã:Ecrã`. `:Ecrã` identifica apenas o tipo de um participante sem lhe dar um nome.
 
 Neste desenho detalhado, a regra de concorrência pertence ao serviço e ao repositório do servidor. A operação criarSeLivre verifica e cria atomicamente, em vez de fazer uma verificação local seguida de uma gravação desprotegida.
 
@@ -84,7 +84,16 @@ Um **diagrama de atividades** mostra um fluxo de ações. Uma decisão escolhe u
 
 Depois de criar uma reserva, o sistema pode atualizar a lista e enviar uma notificação em paralelo. Um fork pode mostrar esse paralelismo. Uma decisão separa confirmação e conflito porque são resultados alternativos.
 
-Uma **máquina de estados** descreve como um objeto reage a eventos. Na Reserva, podemos ter Confirmada, Cancelada e Terminada. Um cancelamento só passa de Confirmada para Cancelada se o início ainda não tiver ocorrido. A transição tem evento e guarda; uma ação de saída pode libertar o intervalo.
+Uma **máquina de estados** descreve como um objeto reage a eventos. Na Reserva, podemos ter Confirmada, Cancelada e Terminada. Um cancelamento só passa de Confirmada para Cancelada se o início ainda não tiver ocorrido. A transição pode escrever-se `evento [guarda] / efeito`. Por exemplo, `cancelar [agora < início] / libertar intervalo` liga Confirmada a Cancelada. A guarda é a condição necessária; o efeito acontece quando a transição é tomada. Uma ação de saída de Confirmada ocorreria em todas as saídas desse estado, por isso não é o mesmo que o efeito específico de cancelar.
+
+| Estado atual | Evento             | Condição                                             | Estado seguinte e efeito                             |
+| ------------ | ------------------ | ---------------------------------------------------- | ---------------------------------------------------- |
+| Confirmada   | cancelar           | Agora é anterior ao início e o pedido vem do titular | Cancelada; o intervalo deixa de estar reservado      |
+| Confirmada   | cancelar           | Agora é igual ou posterior ao início                 | Mantém Confirmada; o sistema recusa                  |
+| Confirmada   | atingir o fim      | A hora de fim chegou                                 | Terminada                                            |
+| Cancelada    | cancelar novamente | Qualquer hora                                        | Mantém Cancelada; não cria nem liberta outra reserva |
+
+A tabela fixa as regras deste exemplo. Não presume que pedidos repetidos devolvam sucesso: esse resultado precisa de um contrato próprio.
 
 Estados descrevem situações do objeto, não nomes de ecrãs. "Página inicial" não é um estado de Reserva. Um diagrama de estados pode ajudar a encontrar testes para transições válidas e recusadas.
 
