@@ -5,6 +5,8 @@ section: conteudo
 order: 1
 ---
 
+No início do percurso de bases de dados, esta página responde a o que guarda um sistema de gestão e como separamos a estrutura dos dados do seu conteúdo.
+
 Guardar uma encomenda num ficheiro é possível. O problema aparece quando dois programas a alteram ao mesmo tempo, quando uma falha interrompe uma escrita ou quando precisamos de ligar a encomenda a um cliente. Um **sistema de gestão de bases de dados**, ou SGBD, é o programa que guarda esses dados e controla as operações sobre eles. SQLite, PostgreSQL e MongoDB são exemplos de SGBDs.
 
 ## Dados, esquema e instância
