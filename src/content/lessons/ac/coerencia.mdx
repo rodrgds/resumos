@@ -18,9 +18,9 @@ Em memória partilhada, vários núcleos podem aceder aos mesmos endereços. As 
 
 ## Uma redução paralela
 
-Para somar um vetor, cada núcleo começa por somar a sua parcela. Depois combina somas parciais por pares. Uma **barreira** impede que um núcleo leia uma soma ainda não terminada pelo outro.
+Para somar um vetor, cada núcleo começa por somar a sua parcela. Depois combina somas parciais por pares. Uma **barreira** faz cada participante esperar pelos restantes antes de avançar para a ronda seguinte. Assim, nenhum lê uma soma que outro ainda está a calcular.
 
-Com 8 núcleos, combinar 8 somas requer 3 rondas: 8→4→2→1. Se cada núcleo soma 16 elementos em 16 adições, a fase local demora 16 tempos de adição e a árvore 3, ignorando comunicação/barreiras. Total 19, não 128/8=16.
+Com 8 núcleos, combinar 8 somas requer 3 rondas: 8→4→2→1. Se cada núcleo inicia o acumulador em zero e soma os 16 elementos, faz 16 adições. Assim, a fase local demora 16 tempos de adição e a árvore 3, ignorando comunicação/barreiras. Total 19, não 128/8=16.
 
 Com número de participantes ímpar, há uma soma que não pertence a um par. Pode passar à ronda seguinte ou ser acrescentada por um participante. Isso pode dar duas adições ao mesmo núcleo nessa ronda; conta o **caminho mais longo**.
 
@@ -37,6 +37,8 @@ Este bloco mostra a ordem da redução; executa sequencialmente, não mede uma m
 Coerência organiza leituras/escritas da **mesma posição** e propagação das escritas. Consistência define que ordenações de operações sobre **posições diferentes** os programas podem observar.
 
 Um núcleo pode escrever `dados=42` e depois `pronto=1`. Ver `pronto=1` em outro núcleo não garante automaticamente que uma leitura seguinte de dados veja 42 em qualquer modelo. Usa as operações de sincronização exigidas pelo modelo de memória. A coerência de cada linha não substitui essa ordenação.
+
+Também não torna uma atualização indivisível, ou **atómica**. Se dois núcleos leem um contador antes de qualquer um escrever, ambos podem calcular e guardar o mesmo incremento. Uma operação atómica ou exclusão mútua impede que outra atualização se intercale entre a leitura e a escrita. Uma barreira, por si só, só coordena fases.
 
 ## Monitorizar e invalidar
 
