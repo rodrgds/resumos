@@ -5,11 +5,11 @@ section: conteudo
 order: 1
 ---
 
-Guardar uma encomenda num ficheiro é possível. O problema aparece quando dois programas a alteram ao mesmo tempo, ou seja, quando uma falha interrompe uma escrita ou quando precisamos de ligar a encomenda a um cliente. Um **sistema de gestão de bases de dados**, ou SGBD, gere os dados e as operações sobre eles. SQLite, PostgreSQL e MongoDB são SGBDs, com modelos e mecanismos diferentes.
+Guardar uma encomenda num ficheiro é possível. O problema aparece quando dois programas a alteram ao mesmo tempo, quando uma falha interrompe uma escrita ou quando precisamos de ligar a encomenda a um cliente. Um **sistema de gestão de bases de dados**, ou SGBD, é o programa que guarda esses dados e controla as operações sobre eles. SQLite, PostgreSQL e MongoDB são exemplos de SGBDs.
 
 ## Dados, esquema e instância
 
-Os dados são os factos concretos, por exemplo "o produto 10 chama-se Teclado". O **esquema** define a estrutura e as regras desses factos: `Produto(id, nome, precoCentimos, stock)`, a chave `id` e a condição `stock >= 0`. A **instância** é o conteúdo num certo momento.
+Os dados são os factos concretos, por exemplo "o produto 10 chama-se Teclado". O **esquema** define a estrutura e as regras desses factos: `Produto(id, nome, precoCentimos, stock)`, a chave `id`, que identifica cada produto sem repetições, e a condição `stock >= 0`. A **instância** é o conteúdo num certo momento.
 
 Se vendermos dois teclados, a instância muda. Se acrescentarmos uma coluna `categoria`, o esquema muda. Uma tabela vazia continua a ter um esquema e restrições. O número de linhas não faz parte do esquema.
 
