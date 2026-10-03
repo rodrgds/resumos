@@ -4,6 +4,7 @@ description: calendar, time, datetime, dateutil, conversão pandas, fusos e agre
 section: conteudo
 order: 17
 practices:
+  - ct-iadp/praticar-texto-categorias
   - ct-iadp/praticar-datas-tempos
 editorial:
   basedOn: 2026/27
@@ -20,16 +21,79 @@ editorial:
       url: https://dateutil.readthedocs.io/en/stable/relativedelta.html
     - title: pandas, séries temporais
       url: https://pandas.pydata.org/docs/user_guide/timeseries.html
-  coverage: calendar, time, datetime, dateutil, conversão pandas, fusos e agregação temporal.
+    - title: pandas, texto
+      url: https://pandas.pydata.org/docs/user_guide/text.html
+    - title: pandas, categorias
+      url: https://pandas.pydata.org/docs/user_guide/categorical.html
+  coverage: Texto e categorias em pandas, calendar, time, datetime, dateutil, conversão pandas, fusos e agregação temporal.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Uma data identifica um dia; uma data e hora pode identificar um instante; uma duração mede um intervalo. Misturar estes três conceitos produz erros, sobretudo ao somar meses ou atravessar mudanças de hora.
+Uma coluna de cidade pode conter `"Porto"`, `" porto "` e `"PORTO"`. São três strings diferentes, mas podem identificar a mesma cidade, por isso normalizar texto exige uma regra sobre o que deve ser tratado como equivalente. O mesmo cuidado vale para datas: uma data identifica um dia, uma data e hora pode identificar um instante e uma duração mede um intervalo. Misturar estes conceitos produz erros, sobretudo ao somar meses ou atravessar mudanças de hora.
+
+## Métodos de strings numa coluna
+
+<CodePlayground
+  language="python"
+  title={'Normalizar sem inventar dados'}
+  code={
+    'import pandas as pd\ncidades = pd.Series([" Porto ", "BRAGA", None, "porto"], dtype="string")\nlimpas = cidades.str.strip().str.lower()\nprint(limpas.to_list())\nprint(limpas.str.contains("port", regex=False, na=False).to_list())\nprint(limpas.value_counts(dropna=False).to_string())'
+  }
+/>
+
+As strings conhecidas ficam `porto`, `braga` e `porto`; a ausência mantém-se. `na=False` define que as linhas sem texto não são selecionadas.
+
+A propriedade `.str` aplica métodos de texto aos elementos da Series. `str.len()` calcula o comprimento e `str.split(";", expand=True)` divide campos em colunas separadas.
+
+## Texto literal e expressões regulares
+
+`str.contains` pode interpretar o padrão como uma expressão regular. Um ponto numa expressão regular significa normalmente "qualquer carácter", não um ponto literal, por isso indica `regex=False` para procurar texto literal.
+
+```python
+codigos = pd.Series(["PT-001", "PT-014", "sem código"], dtype="string")
+extraidos = codigos.str.extract(r"^PT-(\d{3})$", expand=False)
+```
+
+O padrão exige o prefixo `PT-`, exatamente três algarismos e nenhum texto extra. O resultado conserva os algarismos como texto, incluindo zeros iniciais; a linha sem correspondência fica em falta.
+
+## Categorias
+
+Uma coluna categórica representa valores de um conjunto de categorias. Pode reduzir repetição e permitir uma ordem explícita. Converter uma string para categoria não corrige erros ortográficos.
+
+<CodePlayground
+  language="python"
+  title={'Dar ordem às categorias'}
+  code={
+    'import pandas as pd\ntipo = pd.CategoricalDtype(categories=["baixo", "médio", "alto"], ordered=True)\nprioridades = pd.Series(["alto", "baixo", "médio", "baixo"], dtype=tipo)\nprint(prioridades.sort_values().to_list())\nprint((prioridades > "médio").to_list())'
+  }
+/>
+
+A ordem é baixo, baixo, médio, alto. `serie.cat.categories` lista categorias possíveis. `.cat.codes` mostra códigos internos, mas esses códigos não são medidas numéricas.
+
+## Converter medidas em intervalos
+
+`pd.cut` transforma números em categorias por intervalo. Declara os limites e quais dos extremos entram em cada intervalo:
+
+<CodePlayground
+  language="python"
+  title="Classificar quantidades por intervalo"
+  code={
+    'import pandas as pd\nquantidades = pd.Series([0, 9, 10, 19, 20, None])\ngrupos = pd.cut(quantidades, bins=[0, 10, 20], right=False, labels=["0–9", "10–19"])\nprint(grupos.astype("string").to_list())\nprint(grupos.isna().to_list())'
+  }
+/>
+
+Com `right=False`, os intervalos são `[0, 10)` e `[10, 20)`: 10 fica no segundo e 20 fica de fora. Os nomes dos grupos devem corresponder a estas condições.
+
+## Categorias não observadas e ausências
+
+Uma categoria pode existir no tipo sem aparecer nos dados. Ao agrupar categorias, indica `observed=True` para considerar apenas combinações observadas ou `observed=False` quando queres também categorias definidas sem observações.
+
+Um valor fora das categorias declaradas pode transformar-se em ausência durante a conversão. Confere as strings antes e o número de nulos depois.
 
 ## Tipos da biblioteca padrão
 
-`datetime.date` guarda ano, mês e dia. `datetime.datetime` acrescenta a hora. `datetime.timedelta` guarda uma duração em dias, segundos e microssegundos. Subtrair duas datas produz uma duração; somar uma duração a uma data produz outra data.
+`datetime.date` guarda ano, mês e dia. `datetime.datetime` acrescenta a hora. `datetime.timedelta` guarda uma duração em dias, segundos e microssegundos. Subtrair duas datas produz uma duração e somar uma duração a uma data produz outra data.
 
 <CodePlayground
   language="python"
@@ -39,31 +103,19 @@ Uma data identifica um dia; uma data e hora pode identificar um instante; uma du
   }
 />
 
-Trinta dias depois de 31 de janeiro de 2026 é 2 de março. Um mês depois, com `relativedelta`, é 28 de fevereiro. Fevereiro não tem dia 31, pelo que a operação ajusta para o último dia válido.
+Trinta dias depois de 31 de janeiro de 2026 é 2 de março. Um mês depois, com `relativedelta`, é 28 de fevereiro, porque fevereiro não tem dia 31.
 
-`calendar.isleap` testa um ano bissexto. `calendar.monthrange` devolve o dia da semana do primeiro dia e o número de dias do mês; segunda-feira é 0. Para fevereiro de 2026, o primeiro dia é domingo, código 6, e há 28 dias. Em versões recentes, o dia pode aparecer como `calendar.SUNDAY`, que tem valor 6.
-
-Em `relativedelta`, `months=1` acrescenta um mês; `month=1` define o mês como janeiro. O plural e o singular exprimem operações diferentes.
+Em `relativedelta`, `months=1` acrescenta um mês e `month=1` define o mês como janeiro. O plural e o singular exprimem operações diferentes.
 
 ## Calendários em semanas
 
-`calendar.month(ano, mes)` devolve um calendário em texto. `calendar.weekday(ano, mes, dia)` devolve o dia da semana com segunda-feira igual a zero. Os nomes de dias e meses, como `calendar.day_name`, dependem da configuração de idioma.
+`calendar.month(ano, mes)` devolve um calendário em texto. `calendar.weekday(ano, mes, dia)` devolve o dia da semana com segunda-feira igual a zero.
 
-Um objeto `calendar.Calendar(firstweekday=0)` organiza semanas de segunda a domingo. `monthdayscalendar` devolve listas de sete posições; zeros representam dias fora do mês. `itermonthdates` devolve datas de semanas completas, incluindo dias dos meses vizinhos.
-
-<CodePlayground
-  language="python"
-  title="Distinguir datas do mês de posições vazias"
-  code={
-    'import calendar\ncalendario = calendar.Calendar(firstweekday=0)\nsemanas = calendario.monthdayscalendar(2026, 2)\nprint(semanas[0])\nprint(sum(dia != 0 for semana in semanas for dia in semana))\nprint(next(calendario.itermonthdates(2026, 2)))'
-  }
-/>
-
-Fevereiro começa num domingo: a primeira semana é `[0, 0, 0, 0, 0, 0, 1]`. Há 28 dias diferentes de zero. O iterador de datas começa em 26 de janeiro para completar a semana. Filtra `data.month == 2` se só queres os dias de fevereiro.
+Um objeto `calendar.Calendar(firstweekday=0)` organiza semanas de segunda a domingo. `monthdayscalendar` devolve listas de sete posições; zeros representam dias fora do mês. Filtra `data.month == 2` se só queres os dias de fevereiro.
 
 ## Ler, formatar e subtrair
 
-`strptime` lê texto segundo um formato; `strftime` faz o caminho inverso. `%d` é dia, `%m` mês, `%Y` ano com quatro algarismos, `%H` hora de 0 a 23, `%M` minutos e `%S` segundos. A diferença entre maiúsculas e minúsculas importa.
+`strptime` lê texto segundo um formato e `strftime` faz o caminho inverso. `%d` é dia, `%m` mês, `%Y` ano com quatro algarismos, `%H` hora de 0 a 23, `%M` minutos e `%S` segundos.
 
 <CodePlayground
   language="python"
@@ -73,23 +125,19 @@ Fevereiro começa num domingo: a primeira semana é `[0, 0, 0, 0, 0, 0, 1]`. Há
   }
 />
 
-Passaram 90 minutos. `total_seconds()` inclui todos os dias da duração; `.seconds` guarda apenas a parte restante após contabilizar dias. Para uma duração de 25 horas, `.seconds` vale 3600, mas `total_seconds()` vale 90000.
+Passaram 90 minutos. `total_seconds()` inclui todos os dias da duração; `.seconds` guarda apenas a parte restante após contabilizar dias.
 
-`datetime.time` representa uma hora sem data; `datetime.combine(data, hora)` reúne ambos. `date.today()` e `datetime.now()` dependem do relógio do sistema. `datetime.now(timezone.utc)`, com `timezone` importado de `datetime`, cria um valor com fuso UTC. `date.weekday()` usa segunda-feira igual a 0, enquanto `isoweekday()` usa 1.
-
-`dateutil.parser.parse` aceita vários formatos, mas pode completar campos omitidos ou interpretar uma data ambígua de outra maneira. Para um ficheiro com formato conhecido, prefere um formato explícito; para texto ISO, `dateutil.parser.isoparse` devolve também o offset quando existe.
+`datetime.combine(data, hora)` reúne data e hora. `datetime.now(timezone.utc)`, com `timezone` importado de `datetime`, cria um valor com fuso UTC. Para um ficheiro com formato conhecido, prefere um formato explícito; para texto ISO, `dateutil.parser.isoparse` devolve também o offset quando existe.
 
 ## Converter segundos com time
 
-`time.gmtime(segundos)` transforma segundos desde a época em `struct_time` UTC; `time.localtime(segundos)` usa a hora local do sistema. `calendar.timegm` inverte a conversão UTC e `time.mktime` a conversão local. Em Unix, a época é 1 de janeiro de 1970, às 00:00 UTC.
+`time.gmtime(segundos)` transforma segundos desde a época em `struct_time` UTC; `time.localtime(segundos)` usa a hora local do sistema. `calendar.timegm` inverte a conversão UTC e `time.mktime` a conversão local.
 
-`struct_time` tem campos como `tm_year`, `tm_mon` e `tm_hour`. `time.strftime` formata a estrutura e `time.strptime` lê texto para a obter. Não uses `mktime` para interpretar uma estrutura UTC: o resultado pode mudar com o fuso local.
+Não uses `mktime` para interpretar uma estrutura UTC, porque o resultado pode mudar com o fuso local.
 
 ## Medir duração de código
 
-`time.time()` dá um tempo baseado no relógio do sistema. Esse relógio pode ser ajustado. Para medir o tempo decorrido de uma operação, usa `time.perf_counter()` e subtrai o valor inicial ao final. O resultado depende da máquina e não é uma propriedade fixa do algoritmo.
-
-`time.sleep(1)` pede uma pausa de um segundo, mas o sistema pode retomar mais tarde. Não o uses para provar que uma operação dura exatamente um segundo.
+Para medir o tempo decorrido de uma operação, usa `time.perf_counter()` e subtrai o valor inicial ao final, porque `time.time()` usa o relógio do sistema e esse relógio pode ser ajustado. O resultado depende da máquina e não é uma propriedade fixa do algoritmo.
 
 ## Converter datas em pandas
 
@@ -101,22 +149,18 @@ Passaram 90 minutos. `total_seconds()` inclui todos os dias da duração; `.seco
   }
 />
 
-Há uma data inválida, convertida em `NaT`. Os dias conhecidos são 1 e 3 de outubro. O dia 1 soma 6,60 euros, o dia 2 fica sem valor conhecido e o dia 3 soma 7,50. `min_count=1` evita chamar zero a um dia sem observações.
-
-`errors="coerce"` permite inspecionar valores inválidos como ausentes; não os corrige. Com `errors="raise"`, a conversão falha ao encontrá-los. Um formato explícito evita interpretar `03/04/2026` como março em vez de abril.
+Há uma data inválida, convertida em `NaT`. `min_count=1` evita chamar zero a um dia sem observações. `errors="coerce"` permite inspecionar valores inválidos como ausentes; não os corrige.
 
 ## Aceder às partes e criar sequências
 
 `serie.dt.year`, `.dt.month`, `.dt.day` e `.dt.dayofweek` extraem componentes. `.dt.strftime("%d/%m/%Y")` formata texto; depois disso, o resultado deixa de ser uma coluna temporal.
 
-`pd.date_range("2026-10-01", periods=3, freq="D")` cria três dias consecutivos. Um índice temporal ordenado permite selecionar intervalos com `loc`. `resample` agrupa por intervalos de tempo; `rolling(3)` calcula uma janela móvel de três observações. Três observações não equivalem a três dias se houver falhas no calendário. `rolling("3D")` usa uma janela temporal quando existe um índice temporal apropriado.
+`pd.date_range("2026-10-01", periods=3, freq="D")` cria três dias consecutivos. `resample` agrupa por intervalos de tempo e `rolling(3)` calcula uma janela móvel de três observações. Três observações não equivalem a três dias se houver falhas no calendário.
 
-`pd.Period("2026-10", freq="M")` representa todo o mês, não um instante. `pd.Timedelta(days=1)` representa 24 horas. `pd.DateOffset(days=1)` avança um dia de calendário, conservando a hora local quando aplicável. Na mudança de hora, esse dia pode durar 23 ou 25 horas. `pd.offsets.BDay()` avança um dia útil, normalmente ignorando fins de semana; não conhece automaticamente feriados portugueses.
-
-As frequências `"D"`, `"h"` e `"min"` representam dias, horas e minutos. Exemplos antigos com `"H"` devem usar `"h"` nas versões recentes.
+`pd.Period("2026-10", freq="M")` representa todo o mês, não um instante. `pd.Timedelta(days=1)` representa 24 horas. As frequências `"D"`, `"h"` e `"min"` representam dias, horas e minutos; exemplos antigos com `"H"` devem usar `"h"`.
 
 ## Fusos horários
 
 Uma hora sem fuso é **naive** e não identifica por si só um instante mundial. `tz_localize("Europe/Lisbon")` interpreta uma hora local nesse fuso. `tz_convert("UTC")` representa o mesmo instante noutro fuso e exige um valor já localizado.
 
-Nas transições de hora, algumas horas locais são ambíguas ou não existem. Decide essa política na importação. Para registos de instantes com offsets conhecidos, `pd.to_datetime(..., utc=True)` normaliza-os para UTC. Conserva a distinção entre o instante e a apresentação na hora local.
+Para registos de instantes com offsets conhecidos, `pd.to_datetime(..., utc=True)` normaliza-os para UTC. Conserva a distinção entre o instante e a apresentação na hora local.
