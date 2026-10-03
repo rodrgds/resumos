@@ -33,7 +33,7 @@ Para matrizes quadradas da mesma ordem $n$: triangular, produto da diagonal. $\d
 
 ## Sistemas e bases
 
-Gauss atua em **toda** a ampliada. Pivôs não precisam de ser 1. Nunca divides por uma expressão paramétrica antes de separar os seus zeros.
+Gauss atua em toda a ampliada. Pivôs não precisam de ser 1. Nunca divides por uma expressão paramétrica antes de separar os seus zeros.
 
 | Para $Ax=b$, com $n$ incógnitas   | Classificação               |
 | --------------------------------- | --------------------------- |
