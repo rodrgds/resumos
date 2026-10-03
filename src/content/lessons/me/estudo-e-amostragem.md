@@ -19,7 +19,7 @@ Antes de calcular uma média, pergunta a quem ela se refere. Um estudo sobre tem
 
 A **população** reúne as unidades sobre as quais queremos concluir. A **amostra** é o conjunto observado. Uma **variável** é uma característica registada em cada unidade: tempo, sistema operativo, número de falhas.
 
-Um parâmetro descreve a população, por exemplo a média $\mu$. Uma estatística é calculada a partir da amostra, por exemplo $\bar x$. A média dos pedidos medidos é conhecida; a média de todos os pedidos da população pode continuar desconhecida.
+Um parâmetro descreve a população, por exemplo a média $\mu$. Uma estatística é calculada a partir da amostra, por exemplo $\bar x$, ou seja, a média dos pedidos medidos é conhecida; a média de todos os pedidos da população pode continuar desconhecida.
 
 Delimita lugar, período e critérios de inclusão. «Os estudantes» é vago; «os estudantes inscritos numa licenciatura neste semestre» define melhor a população. Uma amostra voluntária pode representar sobretudo quem tem tempo ou interesse em responder. Aumentar o seu tamanho não elimina esse enviesamento.
 
@@ -47,7 +47,7 @@ Um grupo de controlo permite comparar condições. Quando há efeitos de expecta
 
 ## Bloquear e emparelhar
 
-Num desenho por blocos, agrupam-se unidades semelhantes e aleatoriza-se a condição **dentro** de cada bloco. O objetivo é reduzir a variação de fatores conhecidos. Estratificar organiza a recolha; bloquear organiza a atribuição experimental.
+Num desenho por blocos, agrupas unidades semelhantes e aleatorizas a condição **dentro** de cada bloco. O objetivo é reduzir a variação de fatores conhecidos. Estratificar organiza a recolha; bloquear organiza a atribuição experimental.
 
 O emparelhamento é um caso particularmente útil: medir a mesma unidade antes e depois ou formar pares comparáveis. A análise usa as diferenças dentro dos pares. Dois grupos com o mesmo tamanho não são, só por isso, emparelhados.
 
