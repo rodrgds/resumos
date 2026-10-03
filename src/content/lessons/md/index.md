@@ -17,7 +17,7 @@ editorial:
     - Os materiais docentes de 2026/27 não foram consultados; a base das lições continua a ser 2024/25.
 ---
 
-No fim desta cadeira vais conseguir traduzir frases para lógica, provar afirmações sobre inteiros, conjuntos, relações e grafos, e argumentar por indução. Ou seja, não basta calcular o resultado, porque cada passo precisa de justificação e dos casos que a podem refutar.
+No fim desta cadeira vais conseguir traduzir frases para lógica, provar afirmações sobre inteiros, conjuntos, relações e grafos, e argumentar por indução. Não basta calcular o resultado. Cada passo precisa da hipótese usada e dos casos que o podem refutar.
 
 Vamos seguir o percurso abaixo pela ordem, pois cada bloco usa a linguagem do anterior. Tenta os exercícios no fim de cada lição antes de abrir as pistas. Numa prova, escreve a hipótese usada em cada passo. A [cheat sheet](/cadeiras/md/folha-consulta/) reúne as condições dos métodos para revisão.
 

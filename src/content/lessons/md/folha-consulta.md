@@ -5,7 +5,7 @@ section: recursos
 studyKind: revision
 ---
 
-Depois de percorrer lógica, inteiros, conjuntos, grafos e indução, esta página reúne as fórmulas e condições para rever antes de resolver exercícios.
+Usa esta página para rever antes de resolver exercícios. Cada linha resume um conceito já ensinado nas lições e aponta para a secção onde está o exemplo completo.
 
 ## Lógica e dedução
 
@@ -42,7 +42,7 @@ Depois de percorrer lógica, inteiros, conjuntos, grafos e indução, esta pági
 ## Conjuntos, relações, ordens e funções
 
 - $A=B$: duas inclusões ou equivalência de pertença. $|\mathcal P(A)|=2^{|A|}$ para $A$ finito. $\emptyset\in A$ e $\emptyset\subseteq A$ são perguntas diferentes.
-- $a(S\circ R)c\Longleftrightarrow\exists b(aRb\land bSc)$: primeiro $R$. $R^+$ usa caminhos de comprimento positivo; $R^*=R^+\cup\operatorname{id}$.
+- $a(S\circ R)c\Longleftrightarrow\exists b(aRb\land bSc)$: primeiro $R$. $R^+$ usa passeios de comprimento positivo (sequências de ligações onde vértices e arestas podem repetir-se); $R^*=R^+\cup\operatorname{id}$.
 - Equivalência: reflexiva, simétrica e transitiva. Ordem parcial: reflexiva, antissimétrica e transitiva. Simétrica e antissimétrica podem coexistir.
 - Minimal: nenhum distinto abaixo. Mínimo: abaixo de todos. Ínfimo: maior minorante no conjunto ambiente. Definições duais para maximal, máximo e supremo.
 - Função: total e funcional. Injetiva: imagens iguais implicam origens iguais. Sobrejetiva: todo o contradomínio é atingido. A inversa $B\to A$ é função se e só se $f:A\to B$ é bijetiva.
