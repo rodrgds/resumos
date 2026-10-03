@@ -26,7 +26,7 @@ export function themeDiagram(svg: string) {
       node.attrs.push({ name: 'fill', value: 'currentColor' });
     if ('attrs' in node)
       for (const attribute of node.attrs) {
-        if (attribute.name !== 'fill' && attribute.name !== 'stroke') continue;
+        if (!['fill', 'stroke', 'color'].includes(attribute.name)) continue;
         const value = attribute.value.toLowerCase();
         const rgba = /^(#[0-9a-f]{6})([0-9a-f]{2})$/.exec(value);
         const base = rgba && colors[rgba[1]];

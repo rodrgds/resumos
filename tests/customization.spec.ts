@@ -48,7 +48,7 @@ test('returning readers never paint the introduction before page scripts load', 
   await expect(page.locator('#page-hero')).toBeHidden();
 });
 
-test('DOT default text inherits theme foreground', async ({ page }) => {
+test('DOT and Mermaid text inherit theme foreground', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/_content-test');
   const foreground = await page
@@ -58,6 +58,10 @@ test('DOT default text inherits theme foreground', async ({ page }) => {
     'fill',
     foreground,
   );
+  for (const label of await page
+    .locator('.mermaid-figure text:not(:has(tspan)), .mermaid-figure tspan')
+    .all())
+    await expect(label).toHaveCSS('fill', foreground);
 });
 
 test('snippets can be saved, toggled, restored and recovered', async ({

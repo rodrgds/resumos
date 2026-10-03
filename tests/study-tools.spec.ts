@@ -107,7 +107,7 @@ test('mock course renders diagrams and only loads YouTube on request', async ({
     .getByRole('link', { name: 'Gráficos e diagramas', exact: true })
     .click();
   await expect(page.locator('.typst-figure svg')).toHaveCount(2);
-  await expect(page.locator('.diagram-figure svg')).toHaveCount(1);
+  await expect(page.locator('.diagram-figure svg')).toHaveCount(2);
   await expect(page.locator('.typst-content math')).toHaveCount(2);
   await expect(page.locator('iframe')).toHaveCount(0);
   await page.route('https://www.youtube-nocookie.com/**', (route) =>

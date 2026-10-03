@@ -114,6 +114,21 @@ Cada teste tem `name` e `output`; `input` e `code` são opcionais. `code` execut
 - Markdown para texto, tabelas, imagens, código e LaTeX. MDX acrescenta componentes.
 - `$...$` e `$$...$$` usam KaTeX nos dois formatos. O site define o layout; não acrescentes `layout` ou `source` ao frontmatter.
 - Typst produz texto selecionável ou SVG; DOT produz grafos SVG. Consulta [o processamento de conteúdo](docs/conteudo.md) para compilação e imports.
+- Mermaid serve para fluxos, sequências, estados, classes e relações entre entidades. Prefere-o quando a ordem das mensagens ou as transições são o assunto. Usa DOT para árvores, grafos e layouts que precisem de controlo próprio.
+
+Guarda Mermaid num ficheiro `.mmd` e incorpora-o em MDX:
+
+```mdx
+import Mermaid from '../../../components/Mermaid.astro';
+import pedido from '../../minha-cadeira/pedido.mmd?raw';
+
+<Mermaid
+  source={pedido}
+  alt="O cliente pede uma página e o servidor responde."
+/>
+```
+
+O diagrama é SVG estático gerado no build, com as cores de leitura. Usa mensagens curtas e descrição alternativa. Nos diagramas largos, conserva letras legíveis e verifica a deslocação horizontal por teclado e toque. Blocos de código com Mermaid mostram apenas o código; para desenhar, usa o componente.
 
 ### Notas de rodapé e caixas
 

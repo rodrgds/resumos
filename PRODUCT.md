@@ -10,7 +10,7 @@ A community study-notes website for FEUP LEIC students. Readers find their cours
 
 ## Scope
 
-Show the real FEUP curriculum with an honest empty state for unpublished notes. A separate fictional course demonstrates Markdown, MDX, LaTeX, Typst, DOT and video. Include a nuclei directory, global search, local notes, configurable shortcuts and page-context AI links. Keep the homepage free of local search and year filters.
+Show the real FEUP curriculum with an honest empty state for unpublished notes. A separate fictional course demonstrates Markdown, MDX, LaTeX, Typst, DOT, Mermaid and video. Include a nuclei directory, global search, local notes, configurable shortcuts and page-context AI links. Keep the homepage free of local search and year filters.
 
 ## Brand commitments
 

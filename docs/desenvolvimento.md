@@ -11,7 +11,7 @@ npm run build
 npm run dev
 ```
 
-Abre `http://localhost:4321`. Devenv fornece Node 24 e Typst 0.15.1. Fora de Devenv, instala estas dependências no ambiente do projeto.
+Abre `http://localhost:4321`. Devenv fornece Node 24 e Typst 0.15.1. Fora de Devenv, instala estas dependências no ambiente do projeto. Mermaid usa Chrome headless apenas na construção; os comandos de desenvolvimento, build e testes preparam a versão exigida pelo lockfile. Para chamar `astro` ou `playwright` diretamente, corre antes `npm run build:mermaid`.
 
 ```sh
 npm run check
