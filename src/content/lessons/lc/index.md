@@ -9,21 +9,21 @@ editorial:
     - title: Materiais docentes de LC, Moodle 2025/26
       url: https://moodle2526.up.pt/course/view.php?id=4355
   gaps:
-    - A ficha SIGARRA de 2026/27 ainda não contém programa e avaliação.
+    - A ficha SIGARRA de 2026/27 não continha programa e avaliação na consulta de 3 de outubro de 2026.
     - O sítio externo de guiões laboratoriais não estava acessível na revisão.
 ---
 
-Em LC, um programa em C configura dispositivos, lê os seus registos e reage a eventos. O ambiente dos laboratórios é Minix numa máquina virtual VirtualBox. O percurso liga a representação de bytes aos periféricos do PC e à organização de uma aplicação que usa vários deles.
+Em LC, um programa em C configura dispositivos, lê os seus registos e reage a eventos. Os materiais de 2025/26 usam Minix numa máquina virtual VirtualBox. O percurso liga a representação de bytes aos periféricos do PC e à organização de uma aplicação que usa vários deles.
 
 ## Percurso de estudo
 
-Começa por [C estruturado e ferramentas](c-estruturado/) e [Memória, funções e objetos em C](memoria-funcoes/). Precisas de dominar apontadores, duração dos objetos, conversões e compilação separada antes de usar as APIs dos dispositivos.
+Começa por [C estruturado e ferramentas](/cadeiras/lc/c-estruturado/) e [Memória, funções e objetos em C](/cadeiras/lc/memoria-funcoes/). Precisas de dominar apontadores, duração dos objetos, conversões e compilação separada antes de usar as APIs dos dispositivos.
 
-[Falar com o hardware](falar-com-hardware/) distingue portas de I/O de memória mapeada e ensina máscaras e polling. [Interrupções](interrupcoes/) explica PIC, IRQ, vetor e notificação Minix, sem os confundir.
+[Falar com o hardware](/cadeiras/lc/falar-com-hardware/) distingue portas de I/O de memória mapeada e ensina máscaras e polling. [Interrupções](/cadeiras/lc/interrupcoes/) explica PIC, IRQ, vetor e notificação Minix, sem os confundir.
 
-Segue os periféricos pela ordem [Temporizador](temporizador/), [Teclado](teclado/), [Rato](rato/) e [Placa de vídeo](video/). Em cada um, acompanha uma configuração e uma interpretação de dados até ao resultado. Depois estuda [Relógio de tempo real](relogio-tempo-real/), [Porta série e UART](relogio-serie/) e [Protocolos de comunicação](protocolos/).
+Segue os periféricos pela ordem [Temporizador](/cadeiras/lc/temporizador/), [Teclado](/cadeiras/lc/teclado/), [Rato](/cadeiras/lc/rato/) e [Placa de vídeo](/cadeiras/lc/video/). Em cada um, acompanha uma configuração e uma interpretação de dados até ao resultado. Depois estuda [Relógio de tempo real](/cadeiras/lc/relogio-tempo-real/), [Porta série e UART](/cadeiras/lc/relogio-serie/) e [Protocolos de comunicação](/cadeiras/lc/protocolos/).
 
-[Eventos, estado e debugging](projeto/) reúne os componentes numa aplicação. Os exercícios no fim das páginas são originais e treinam contas, registos, sequências de bytes, estados e diagnóstico. A [Cheat sheet](folha-consulta/) é uma folha de consulta para rever depois de estudar as explicações.
+[Eventos, estado e debugging](/cadeiras/lc/projeto/) reúne os componentes numa aplicação. Os exercícios no fim das páginas são originais e treinam contas, registos, sequências de bytes, estados e diagnóstico. A [Cheat sheet](/cadeiras/lc/folha-consulta/) é uma folha de consulta para rever depois de estudar as explicações.
 
 ## Como praticar
 
@@ -52,5 +52,7 @@ A [ficha completa de 2025/26 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_ger
 - Elecia White, _Making Embedded Systems: Design Patterns for Great Software_, O'Reilly, 2011. Bibliografia obrigatória.
 - Derek Molloy, _Exploring Raspberry Pi: Interfacing to the Real World with Embedded Linux_, Wiley, 2016. Bibliografia complementar.
 - Remzi e Andrea Arpaci-Dusseau, [_Operating Systems: Three Easy Pieces_](https://pages.cs.wisc.edu/~remzi/OSTEP/), capítulos 1, 2, 35 e 36. Bibliografia complementar.
+
+Para conferir as regras de C, o [rascunho público C11 N1570](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf) detalha duração dos objetos, conversões e alocação. É uma referência técnica de 2011, não um guião de LC.
 
 Para aprofundar a interface de cada dispositivo, consulta as especificações i8254, i8259, VBE e UART indicadas nos materiais docentes. A [página pública de LC](https://web.fe.up.pt/~pfs/aulas/lcom2223/index.html) conserva materiais de uma edição anterior.
