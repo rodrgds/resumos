@@ -8,6 +8,7 @@ order: 0
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
+  revision={1}
   id="arquitetura-dominio"
   title="Quem protege o encerramento?"
   explanation="/cadeiras/ldts/arquitetura-empresarial/#transaction-script-e-domain-model"
@@ -20,36 +21,37 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Terminar uma partida exige que esteja em curso e calcula uma penalização
     própria do seu estado. Num Domain Model, onde colocarias esta regra e o que
     deixarias ao serviço?
-  </p>
+  </div>
   <div slot="hint">
-    <p>Distingue uma regra da partida da coordenação de uma operação.</p>
+    <div>Distingue uma regra da partida da coordenação de uma operação.</div>
   </div>
   <div slot="hint-more">
-    <p>
+    <div>
       A entidade pode oferecer terminar(), em vez de setters para estado e
       pontuação.
-    </p>
+    </div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Partida.terminar valida o estado e aplica a penalização preservando
       invariantes. O serviço obtém a partida, chama a operação e persiste-a. A
       apresentação pede o caso de uso e mostra o resultado.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Não coloques toda a regra num serviço que altera livremente campos da
       entidade.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
+  revision={1}
   id="arquitetura-persistencia"
   title="O que prova que foi guardado?"
   explanation="/cadeiras/ldts/arquitetura-empresarial/#seguir-um-caso-de-uso"
@@ -74,32 +76,33 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Um teste verifica uma chamada a repositorio.guardar(partida) num mock. Qual
     afirmação fica demonstrada por esse teste?
-  </p>
+  </div>
   <div slot="hint">
-    <p>O que realmente correu foi o serviço e um substituto.</p>
+    <div>O que realmente correu foi o serviço e um substituto.</div>
   </div>
   <div slot="hint-more">
-    <p>A durabilidade precisa de uma fronteira de armazenamento real.</p>
+    <div>A durabilidade precisa de uma fronteira de armazenamento real.</div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       O teste prova o pedido do serviço ao repositório. Para provar a
       persistência, um teste de integração deve guardar no adaptador real e
       voltar a ler num âmbito novo adequado.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Uma chamada verificada não demonstra o efeito de I/O de uma implementação
       que não correu.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
+  revision={1}
   id="arquitetura-falha-ausencia"
   title="Ausência não é falha de acesso"
   explanation="/cadeiras/ldts/arquitetura-empresarial/#repository"
@@ -112,29 +115,75 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     procurarPorId devolve Optional.empty quando não encontra a partida. Uma
     implementação captura qualquer erro de ligação e devolve também empty.
     Explica que distinção perdeu.
-  </p>
+  </div>
   <div slot="hint">
-    <p>Não conseguir consultar é diferente de consultar e não encontrar.</p>
+    <div>Não conseguir consultar é diferente de consultar e não encontrar.</div>
   </div>
   <div slot="hint-more">
-    <p>A apresentação pode dizer incorretamente que a partida não existe.</p>
+    <div>
+      A apresentação pode dizer incorretamente que a partida não existe.
+    </div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       A implementação perdeu a distinção entre ausência de dados e
       impossibilidade de verificar os dados. Propaga um erro de acesso adequado
       ou usa um resultado explícito que preserve esse caso. Optional.empty
       continua a significar ausência após uma consulta válida.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Capturar todos os erros e devolver um valor normal pode esconder falhas e
       provocar decisões incorretas.
-    </p>
+    </div>
+  </div>
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="arquitetura-identity-map"
+  title="Duas cópias da mesma entidade"
+  explanation="/cadeiras/ldts/arquitetura-empresarial/#unit-of-work-e-identity-map"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Devolve a mesma instância para a mesma identidade dentro da operação.',
+      'Define o âmbito e evita um mapa global ilimitado.',
+      'Distingue consistência em memória de atomicidade e concorrência no armazenamento.',
+    ],
+  }}
+>
+  <div>
+    Durante uma operação, duas consultas carregam a partida 7 em objetos A e B
+    independentes. A primeira parte da operação altera A; a segunda consulta B e
+    vê o estado antigo. Explica o que uma Identity Map resolve, qual deve ser o
+    seu âmbito e por que não substitui uma transação ou a coordenação com outras
+    operações.
+  </div>
+  <div slot="hint">
+    O identificador é o mesmo, mas as referências podem apontar para objetos
+    diferentes.
+  </div>
+  <div slot="hint-more">
+    Conservar uma instância não impede outra operação de alterar a mesma linha
+    na base de dados.
+  </div>
+  <div slot="solution">
+    A Identity Map mantém uma instância por identificador durante a operação. A
+    segunda consulta da partida 7 devolve A, por isso as duas partes observam as
+    alterações desse objeto. Limita o mapa ao âmbito decidido e liberta-o no
+    fim. Isto não torna várias escritas atómicas nem impede outra operação de
+    atualizar a mesma partida. Essas garantias dependem da transação e da
+    política de concorrência. Uma Unit of Work pode coordenar mudanças
+    acompanhadas, mas também não fornece sozinha todas essas garantias.
+  </div>
+  <div slot="mistakes">
+    Não confundas identidade persistente da entidade com igualdade de valores
+    nem uses a cache como prova de dados atuais noutras operações.
   </div>
 </Exercise>

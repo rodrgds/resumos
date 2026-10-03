@@ -8,39 +8,41 @@ order: 0
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
+  revision={1}
   id="threads-incremento"
   title="Uma intercalação com atualização perdida"
   explanation="/cadeiras/ldts/java-concorrencia-io-swing/#uma-operação-composta-pode-perder-alterações"
   answer={{ kind: 'number', value: 1, tolerance: 0 }}
 >
-  <p>
+  <div>
     O contador começa em zero. A lê zero; B lê zero; A escreve um; B escreve um.
     Qual é o valor final?
-  </p>
+  </div>
   <div slot="hint">
-    <p>
+    <div>
       Segue a última escrita, sem contar os pedidos abstratos de incremento.
-    </p>
+    </div>
   </div>
   <div slot="hint-more">
-    <p>As duas somas usaram o mesmo valor lido.</p>
+    <div>As duas somas usaram o mesmo valor lido.</div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       O valor final é um. Cada thread calculou zero mais um e a segunda escrita
       substituiu um por um. O resultado esperado de dois incrementos
       indivisíveis seria dois.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Um acesso inteiro simples não torna a sequência leitura-soma-escrita
       atómica.
-    </p>
+    </div>
   </div>
 </Exercise>
 
 <Exercise
+  revision={1}
   id="threads-monitor"
   title="Dois locks para o mesmo contador"
   explanation="/cadeiras/ldts/java-concorrencia-io-swing/#proteger-estado-com-o-mesmo-lock"
@@ -65,30 +67,31 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Duas threads incrementam o mesmo campo. Uma sincroniza no objeto A e outra
     no objeto B, com A e B distintos. O incremento está protegido da
     concorrência entre elas?
-  </p>
+  </div>
   <div slot="hint">
-    <p>Identifica o objeto usado como monitor em cada bloco.</p>
+    <div>Identifica o objeto usado como monitor em cada bloco.</div>
   </div>
   <div slot="hint-more">
-    <p>A thread que detém A não impede outra de adquirir B.</p>
+    <div>A thread que detém A não impede outra de adquirir B.</div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Não. A disciplina tem de proteger todos os acessos ao campo com o mesmo
       monitor, ou usar uma operação atómica adequada. Dois synchronized em
       objetos diferentes não criam essa exclusão.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>Não confundas visibilidade com indivisibilidade.</p>
+    <div>Não confundas visibilidade com indivisibilidade.</div>
   </div>
 </Exercise>
 
 <Exercise
+  revision={1}
   id="io-codificacao"
   title="Ler e fechar uma stream de texto"
   explanation="/cadeiras/ldts/java-concorrencia-io-swing/#bytes-texto-e-buffers"
@@ -101,31 +104,112 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     Recebes bytes UTF-8 de um ficheiro. Indica como ler linhas e garantir o
     fecho também quando uma linha tem um número inválido.
-  </p>
+  </div>
   <div slot="hint">
-    <p>A transformação bytes para texto precisa de uma codificação.</p>
+    <div>A transformação bytes para texto precisa de uma codificação.</div>
   </div>
   <div slot="hint-more">
-    <p>
+    <div>
       Um BufferedReader pode envolver o InputStreamReader e ser o recurso do
       try.
-    </p>
+    </div>
   </div>
   <div slot="solution">
-    <p>
+    <div>
       Constrói InputStreamReader(stream, StandardCharsets.UTF_8), envolve num
       BufferedReader e coloca-o num try-with-resources. readLine devolve null no
       fim. Um NumberFormatException é um erro do conteúdo e o recurso fecha na
       mesma ao sair do try.
-    </p>
+    </div>
   </div>
   <div slot="mistakes">
-    <p>
+    <div>
       Uma linha vazia não é o fim da stream. Não ignores uma exceção e continues
       com dados incompletos.
-    </p>
+    </div>
+  </div>
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="threads-condicao-repetida"
+  title="Acordar não reserva o valor"
+  explanation="/cadeiras/ldts/java-concorrencia-io-swing/#esperar-por-uma-condição"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Reconhece que o segundo consumidor readquire o monitor com a caixa vazia.',
+      'Volta a verificar a condição e espera por outro valor.',
+      'Distingue notificação de reserva do recurso.',
+    ],
+  }}
+>
+  <div>
+    Dois consumidores esperam numa caixa vazia. O produtor coloca um único valor
+    e chama `notifyAll()`. O primeiro consumidor retoma e retira-o; só depois o
+    segundo readquire o monitor. Explica por que `while (valor == null) wait()`
+    está correto e trocar `while` por `if` está errado neste cenário.
+  </div>
+  <div slot="hint">
+    Inspeciona o estado quando o segundo consumidor entra, não quando foi
+    notificado.
+  </div>
+  <div slot="hint-more">
+    Com if, o segundo consumidor continua depois de wait sem voltar a testar
+    valor.
+  </div>
+  <div slot="solution">
+    Com `while`, o segundo consumidor vê novamente `valor == null` e volta a
+    esperar. Com `if`, passa diretamente à leitura, embora o primeiro já tenha
+    retirado o valor. Na caixa da lição, converter esse `Integer` nulo para
+    `int` lança `NullPointerException`. A notificação permite tentar retomar;
+    não entrega um valor a cada thread nem substitui o teste da condição.
+  </div>
+  <div slot="mistakes">
+    `synchronized` impede acesso simultâneo, mas não garante que a condição
+    continua verdadeira quando outra thread readquire o monitor.
+  </div>
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="swing-trabalho-longo"
+  title="Um listener que lê um ficheiro grande"
+  explanation="/cadeiras/ldts/java-concorrencia-io-swing/#swing-e-eventos"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Identifica que o listener ocupa a EDT.',
+      'Executa a leitura em doInBackground sem alterar componentes Swing.',
+      'Atualiza o JLabel em done na EDT e trata uma falha da leitura.',
+    ],
+  }}
+>
+  <div>
+    Um listener de um botão lê um ficheiro grande durante cinco segundos e só
+    depois atualiza um `JLabel`. Durante a leitura, os botões e o redesenho
+    deixam de responder. Explica o bloqueio e distribui a leitura e a
+    atualização entre `SwingWorker.doInBackground()` e `done()`.
+  </div>
+  <div slot="hint">A mesma thread trata listeners e redesenho.</div>
+  <div slot="hint-more">
+    Executar uma tarefa em segundo plano e atualizar a interface têm requisitos
+    diferentes.
+  </div>
+  <div slot="solution">
+    O listener ocupa a EDT durante cinco segundos, por isso os eventos seguintes
+    esperam. O listener inicia o `SwingWorker` com `execute()` e termina.
+    `doInBackground()` lê os dados numa thread de trabalho e devolve um
+    resultado. `done()` corre na EDT, obtém o resultado e atualiza o `JLabel`.
+    Trata a falha da tarefa para apresentar um erro em vez de um resultado
+    inventado. Chamar `get()` no listener enquanto a tarefa decorre voltaria a
+    bloquear a EDT.
+  </div>
+  <div slot="mistakes">
+    `invokeLater` com toda a leitura só adia o bloqueio para a EDT. Uma thread
+    de trabalho também não deve alterar o JLabel diretamente.
   </div>
 </Exercise>
