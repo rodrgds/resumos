@@ -105,7 +105,7 @@ test('Vim visual lines, local search and notes stay separate from editable contr
     localStorage.setItem('resumos-shortcuts', JSON.stringify({ vim: true }));
     localStorage.setItem('resumos-notes', 'Private scratch');
   });
-  await page.goto('/exemplo/apontamentos/');
+  await page.goto('/exemplo/vim-navigation/');
   await page.evaluate(() => document.fonts.ready);
   await page.keyboard.press('g');
   await page.keyboard.press('g');
