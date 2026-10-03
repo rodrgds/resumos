@@ -12,7 +12,7 @@ import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import automatoLex from '../../c/automato-lex.typ?raw';
 
-A análise lexical é a porta de entrada do compilador: transforma o texto fonte, uma sequência de caracteres, numa sequência de **símbolos** (_tokens_) com categoria e posição. Cada símbolo junta um tipo (identificador, número, operador) ao texto reconhecido e à linha e coluna onde apareceu. O analisador sintático trabalha com estas categorias. Guardamos também o lexema, ou seja, o texto reconhecido, para mensagens e valores literais.
+O texto fonte é só uma sequência de caracteres, mas o resto do compilador quer trabalhar com unidades com significado. A análise lexical faz essa fronteira: transforma caracteres numa sequência de **símbolos** (_tokens_) com categoria e posição. Cada símbolo junta um tipo (identificador, número, operador) ao texto reconhecido e à linha e coluna onde apareceu, ou seja, o analisador sintático passa a trabalhar com categorias. Guardamos também o lexema, que é o texto reconhecido, para mensagens e valores literais.
 
 ## Especificar com expressões regulares
 
@@ -37,15 +37,17 @@ Uma expressão regular descreve, um [autómato finito](/cadeiras/tc/automatos-fi
   alt="Autómato com estado inicial q0, transição por letra ou sublinhado para o estado final de identificador e por dígito para o estado final de inteiro, cada um com um ciclo sobre si próprio."
 />
 
-O diagrama mostra apenas identificadores e inteiros ASCII. De `q0`, uma letra ou `_` leva ao estado de identificador (moldura grossa significa estado final) e um dígito ao estado de inteiro. Os ciclos dizem para continuar a consumir enquanto o caráter for do mesmo tipo; quando chega um caráter que não casa, o símbolo fecha com tudo o que foi consumido. Num autómato geral, guarda-se a última posição de aceitação e recua-se até ela quando não há transição. Assim, um caminho que ainda não chegou a um estado final não faz perder um prefixo válido já reconhecido.
+O diagrama mostra apenas identificadores e inteiros ASCII. De `q0`, uma letra ou `_` leva ao estado de identificador (moldura grossa significa estado final) e um dígito ao estado de inteiro. Os ciclos dizem para continuar a consumir enquanto o caráter for do mesmo tipo; quando chega um caráter que não casa, o símbolo fecha com tudo o que foi consumido, porque guardamos a última posição de aceitação e recuamos até ela quando não há transição.
 
 ### Da expressão regular ao DFA
 
+:::details[Ver a construção por subconjuntos]
 Uma construção habitual transforma a expressão regular num autómato não determinístico (NFA), que pode ter várias transições para o mesmo caráter e transições `ε` sem consumir entrada. O **fecho-ε** de um conjunto inclui os próprios estados e todos os alcançáveis só por `ε`.
 
 A construção por subconjuntos dá um DFA: o estado inicial é o fecho-ε do inicial do NFA. Para cada caráter, seguimos todas as transições dos estados do conjunto e calculamos o fecho-ε dos destinos. Um conjunto é final se contiver algum estado final do NFA. Num léxico com várias categorias, guardamos também a prioridade dos estados finais.
 
 Por exemplo, com `q0 --ε--> q1`, `q1 --a--> q1` e `q1 --b--> q2`, sendo só `q2` final, o inicial do DFA é `{q0,q1}`. Ao ler `a`, chegamos a `{q1}`; ao ler `b`, a `{q2}`, final. Este autómato aceita `b`, `ab`, `aab`, e não aceita `a`. O conjunto vazio representa ausência de caminho. Só construímos os subconjuntos alcançáveis, embora possam existir até `2^n` com `n` estados no NFA.
+:::
 
 ## Exemplo: o prefixo mais longo em ação
 
@@ -59,7 +61,7 @@ Linha fonte: `soma12 = valor + 30;`. O reconhecedor avança caráter a caráter:
 
 Resultado: `ID(soma12) = ID(valor) + NUM(30) ;`, cada um com a sua posição. Um erro lexical típico seria um caráter sem padrão, como `~`: o analisador deve parar com "caráter inesperado na linha L, coluna C".
 
-O programa abaixo reconhece identificadores e inteiros ASCII e a pontuação indicada. Não implementa comentários nem posições. Reclassifica `if` e `while` depois de reconhecer o identificador completo e rejeita caracteres sem padrão.
+O programa abaixo reconhece identificadores e inteiros ASCII e a pontuação indicada, sem comentários nem posições, porque esses são os limites escolhidos para o exemplo. Reclassifica `if` e `while` depois de reconhecer o identificador completo e rejeita caracteres sem padrão.
 
 <CodePlayground
   language="python"
@@ -68,8 +70,6 @@ O programa abaixo reconhece identificadores e inteiros ASCII e a pontuação ind
     'import string\n\ntexto = "soma12 = valor + 30;"\nletras = string.ascii_letters + "_"\ndigitos = string.digits\nreservadas = {"if": "IF", "while": "WHILE"}\ni, simbolos = 0, []\nwhile i < len(texto):\n    c = texto[i]\n    if c in " \\t\\r\\n":\n        i += 1\n    elif c in letras:\n        j = i + 1\n        while j < len(texto) and texto[j] in letras + digitos:\n            j += 1\n        lexema = texto[i:j]\n        simbolos.append((reservadas.get(lexema, "ID"), lexema))\n        i = j\n    elif c in digitos:\n        j = i + 1\n        while j < len(texto) and texto[j] in digitos:\n            j += 1\n        simbolos.append(("NUM", texto[i:j]))\n        i = j\n    elif c in "=+*();":\n        simbolos.append((c, c))\n        i += 1\n    else:\n        raise ValueError(f"Caráter inesperado na posição {i + 1}: {c!r}")\nprint(simbolos)'
   }
 />
-
-Repara no ciclo interior de cada ramo: é ele que implementa o prefixo mais longo, estendendo o casamento enquanto o próximo caráter for do tipo certo. As palavras reservadas tratam-se depois, reclassificando o identificador reconhecido.
 
 :::tip[Como resolver a tokenização]
 Dado um conjunto de padrões e uma linha de código, constrói a sequência de símbolos. Simula o autómato à mão, consumindo sempre o prefixo mais longo, e justifica cada fronteira: "para aqui porque o próximo caráter já não casa com nenhum padrão ativo".

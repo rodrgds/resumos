@@ -12,7 +12,7 @@ import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import interferencia from '../../c/interferencia.dot?raw';
 
-A geração de código traduz o código intermédio para as instruções da máquina alvo. São três decisões encadeadas: **seleção** (que instruções cobrem cada operação), **escalonamento** (por que ordem, respeitando dependências) e **alocação de registos** (que valores vivem em registos e quais ficam em memória).
+O código intermédio ainda não corre: cada operação precisa de instruções concretas, e os valores precisam de um lugar para viver. A geração de código faz essa passagem para a máquina alvo em três decisões encadeadas: **seleção** (que instruções cobrem cada operação), **escalonamento** (por que ordem, respeitando dependências) e **alocação de registos** (que valores vivem em registos e quais ficam em memória).
 
 ## Selecionar instruções
 
@@ -30,13 +30,21 @@ t3 = a + b
 
 `t2` lê `t1`, por isso `t2` vem sempre depois de `t1`. Mas `t3` só lê `a` e `b`, que mais ninguém escreve aqui: é independente das duas. Ordens válidas: `t1, t2, t3`, `t1, t3, t2` e `t3, t1, t2`. A ordem `t1, t3, t2` pode preencher uma espera pela soma se o processador admitir essa sobreposição. O ganho depende das latências e dos recursos do alvo.
 
-Com destinos reutilizados, há também **WAR** (escrita após leitura): a escrita não pode destruir o valor que uma leitura anterior precisa. Uma **WAW** (escrita após escrita) obriga a preservar qual escrita deixa o valor final. Acessos à mesma memória, chamadas e operações observáveis podem criar dependências adicionais.
+Com destinos reutilizados, há também **WAR** (escrita após leitura) e **WAW** (escrita após escrita). Acessos à mesma memória, chamadas e operações observáveis podem criar dependências adicionais.
+
+:::details[Porque WAR e WAW importam]
+Na WAR, a escrita não pode destruir o valor que uma leitura anterior precisa. Na WAW, é preciso preservar qual escrita deixa o valor final.
+:::
 
 ## Alocação por coloração
 
 Os registos são poucos e os temporários são muitos. O compilador constrói o **grafo de interferência**: um nó por valor vivo, uma aresta entre dois valores vivos ao mesmo tempo. Colorir o grafo com $k$ cores (os $k$ registos) é atribuir registos sem conflitos: vizinhos ficam em registos diferentes.
 
-Quando $k$ cores não chegam, algum valor é **derramado** (_spill_): em vez de registo, vive em memória, com um carregamento antes de cada uso e uma gravação depois de cada definição. O derrame resolve o conflito à custa de acessos extra, por isso o compilador estima o custo, dando mais peso aos usos em ciclos e considerando os conflitos de cada valor. Depois de inserir os acessos, volta a analisar e alocar: os carregamentos também precisam de registos.
+Quando $k$ cores não chegam, algum valor é **derramado** (_spill_): em vez de registo, vive em memória, com um carregamento antes de cada uso e uma gravação depois de cada definição. O derrame resolve o conflito à custa de acessos extra, por isso o compilador estima o custo, dando mais peso aos usos em ciclos.
+
+:::details[Depois do derrame]
+Depois de inserir os acessos, o compilador volta a analisar e alocar, porque os carregamentos também precisam de registos.
+:::
 
 <Dot
   source={interferencia}
@@ -71,7 +79,7 @@ Segue a pilha, inicialmente vazia. O topo fica à direita:
 
 `iadd` e `imul` consomem dois inteiros e empurram um resultado. `istore 4` retira o produto da pilha e guarda-o na variável local 4. A altura máxima é 2, por isso `.limit stack 2` chega para esta sequência no método Jasmin. O verificador da JVM verifica os tipos e as alturas da pilha nos caminhos do método e rejeita bytecode inválido antes de o executar.
 
-Confirma a altura máxima a correr. A simulação abaixo executa o mesmo exemplo instrução a instrução e imprime a pilha final com a altura máxima.
+A simulação abaixo executa o mesmo exemplo instrução a instrução.
 
 <CodePlayground
   language="python"
@@ -81,7 +89,7 @@ Confirma a altura máxima a correr. A simulação abaixo executa o mesmo exemplo
   }
 />
 
-A simulação conserva apenas a altura, não calcula os valores. A pilha termina vazia e atinge 2 elementos. Para `(a + b) * (c + d)`, uma sequência que calcula primeiro `a + b` e depois `c + d` chega a 3: o primeiro resultado espera enquanto se empilham `c` e `d`.
+Para `(a + b) * (c + d)`, uma sequência que calcula primeiro `a + b` e depois `c + d` chega a 3: o primeiro resultado espera enquanto se empilham `c` e `d`.
 
 `.limit locals 5` cobre os índices 0 a 4 deste exemplo, se o método não usar mais locais. Em cada ponto de junção do controlo, os caminhos de entrada precisam de alturas iguais e tipos compatíveis. `long` e `double` ocupam duas unidades da pilha; a contagem por elementos aqui vale porque só usamos `int`.
 
@@ -89,4 +97,4 @@ As variáveis locais e a pilha de operandos da JVM não são registos físicos d
 
 ## Para levar para a próxima página
 
-O código corre e está correto. Mas antes de o entregar, há transformações que o tornam mais rápido sem lhe mudar o significado: a [análise e otimização](/cadeiras/c/otimizacao-codigo/).
+O código corre e está correto, por isso antes de o entregar há transformações que o tornam mais rápido sem lhe mudar o significado: a [análise e otimização](/cadeiras/c/otimizacao-codigo/).
