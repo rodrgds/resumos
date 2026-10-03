@@ -28,7 +28,7 @@ $Q=\int\rho_VdV$, $I=\int\vec J\cdot d\vec A$, $\partial_t\rho_V=-\nabla\cdot\ve
 
 ## Potencial, capacidade e indução
 
-[Potencial](/cadeiras/f2/potencial-capacidade/#potencial-e-energia): $\vec E=-\nabla V$ em eletrostática; $\Delta V=-\int\vec E\cdot d\vec\ell$, $\Delta U=q\Delta V$, $W=-\Delta U$. Cargas localizadas com $V(\infty)=0$: $V=\sum k_eq_i/r_i$. $V=0$ não implica $E=0$.
+[Potencial](/cadeiras/f2/potencial-capacidade/#potencial-e-energia): $\vec E=-\nabla V$ em eletrostática; $\Delta V=-\int\vec E\cdot d\vec\ell$, $\Delta U=q\Delta V$, $W=-\Delta U$. Cargas localizadas com $V(\infty)=0$: $V=\sum k_eq_i/r_i$. $V=0$ não implica $E=0$, porque o campo depende do gradiente.
 
 [Condutor em equilíbrio](/cadeiras/f2/potencial-capacidade/#condutores-em-equilíbrio): $E=0$ no material, $V$ constante, excesso de carga nas superfícies. Cavidade vazia fechada tem campo zero. Terra fixa potencial, não carga total.
 

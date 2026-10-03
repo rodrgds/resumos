@@ -19,9 +19,9 @@ editorial:
     - Os vídeos indicados pelo docente estão ligados como recursos opcionais, sem revisão integral do seu conteúdo.
 ---
 
-Física II relaciona cargas e campos com o funcionamento dos circuitos. Primeiro calculamos forças, potenciais e energia. Depois estudamos tensões e correntes, incluindo a memória de condensadores e bobinas. Por fim, tratamos essas grandezas como sinais e vemos o que um filtro e um conversor digital conseguem conservar.
+No fim desta cadeira consegues calcular campos a partir de cargas e correntes, resolver circuitos com resistências, condensadores e bobinas, e tratar tensões e correntes como sinais com filtros e amostragem. O percurso abaixo ordena esses passos: primeiro forças, potenciais e energia; depois tensões, correntes e memória; por fim sinais, filtros e conversão digital.
 
-Precisas de vetores, produto escalar e vetorial, derivadas, integrais, números complexos e equações diferenciais simples. Para fluxo, divergência e rotacional, revê [AM2](/cadeiras/am2/). Força, trabalho e oscilações vêm de [F1](/cadeiras/f1/).
+Precisas de vetores, produto escalar e vetorial, derivadas, integrais, números complexos e equações diferenciais simples. Para fluxo, divergência e rotacional, revê [AM2](/cadeiras/am2/), porque essas ferramentas reaparecem em Maxwell. Força, trabalho e oscilações vêm de [F1](/cadeiras/f1/).
 
 ## Percurso de estudo
 
@@ -51,6 +51,8 @@ Mantém unidades nas contas e verifica um resultado por outro caminho. Em circui
 
 ## Avaliação de 2026/27
 
+:::details[Ver avaliação de 2026/27]
+
 A [ficha de Física II de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991) indica avaliação distribuída com exame final. Com $T$ a nota do teste, $LAB$ a do trabalho laboratorial e $E$ a do exame, a classificação é
 
 $$
@@ -61,7 +63,11 @@ $$
 
 Confirma os avisos da edição em que estás inscrito. Os mini-testes e o recurso de 2025/26 abaixo são treino histórico: as suas datas, duração e regras não definem as provas de 2026/27.
 
+:::
+
 ## Materiais de 2025/26
+
+:::details[Ver materiais de 2025/26]
 
 A base de estudo são os materiais do Moodle de 2025/26. As apresentações teóricas 1 a 13 abrangem carga, campo, Maxwell, ondas, condução, redes resistivas e reativas, análise laboratorial, regime sinusoidal, ressonância e linhas de transmissão, sinais, SLIT e frequência. As folhas TP 1 a 12 dão problemas correspondentes.
 
@@ -72,15 +78,25 @@ A base de estudo são os materiais do Moodle de 2025/26. As apresentações teó
 
 As ligações do Moodle podem exigir autenticação. Confere sempre a notação: nestas páginas, os fasores são de pico, e a transformada de Fourier usa frequência angular com $1/(2\pi)$ na inversa.
 
+:::
+
 ## Bibliografia
+
+:::details[Ver bibliografia]
 
 - Jaime E. Villate, [Eletricidade, Magnetismo e Circuitos](https://villate.org/eletricidade/), 3.ª edição, setembro de 2019, 2.ª reimpressão de 2022, ISBN 978-972-99396-6-2. O livro usa licença CC BY-SA 3.0 e ajuda a aprofundar campos, circuitos e ondas.
 - Jaime E. Villate, [Exercícios Resolvidos de Eletricidade, Magnetismo e Circuitos](https://def.fe.up.pt/eletricidade/problemas.html), 3.ª edição, setembro de 2020, ISBN 978-972-752-271-2, licença CC BY-SA 4.0. Usa-o para comparar passos de resolução depois de tentares um problema.
 
 Os textos, exemplos, exercícios e diagramas destas páginas foram escritos para este percurso. Não são transcrições das provas ou figuras dos livros.
 
+:::
+
 ## Vídeos e simulações
+
+:::details[Ver vídeos e simulações]
 
 Os materiais de 2025/26 indicam [The language of Maxwell's equations](https://www.youtube.com/watch?v=rB83DpBJQsE) para visualizar divergência e rotacional: relaciona o fluxo com fontes e a circulação com o contorno. A [introdução aos fasores](https://www.youtube.com/watch?v=bouYTlFMYO0) ajuda a relacionar uma sinusoide com amplitude e fase. A [introdução aos laboratórios](https://www.youtube.com/watch?v=Yg52Xhiwqo8) acompanha a preparação dos instrumentos. São recursos opcionais dessa edição, sem revisão integral aqui.
 
 Para experimentar circuitos, o [kit de circuitos DC da PhET](https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc) permite comparar ligações em série e paralelo. A [visualização de Faraday do MIT](https://web.mit.edu/8.02t/www/802TEAL3D/visualizations/faraday/index.htm) ajuda a seguir a relação entre campo variável e campo induzido. Usa os modelos interativos nas lições para RC, harmónicos e aliasing antes de passar a montagens reais.
+
+:::
