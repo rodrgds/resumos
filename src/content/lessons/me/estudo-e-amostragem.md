@@ -13,6 +13,8 @@ editorial:
     date: '2026-10-03'
 ---
 
+Abrimos aqui o percurso de Métodos Estatísticos: esta página responde ao que estamos a estudar e a como escolhemos os casos que medimos.
+
 Imagina que queres saber quanto tempo os vídeos demoram a começar na tua residência. Durante uma semana, apontas os tempos de arranque que observas e ficas com uma lista de 30 tempos, como 2 segundos, 5 segundos e 3 segundos.
 
 Essa lista de tempos que conseguiste observar é o que chamamos **amostra**, ou seja, o conjunto de casos que medimos. O conjunto de todos os arranques possíveis nessa residência no período que te interessa é o que chamamos **população**, ou seja, o conjunto sobre o qual queres concluir. Cada tempo registado é o que chamamos **variável**, ou seja, a característica que anotas em cada caso.
