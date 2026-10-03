@@ -7,7 +7,7 @@ practices:
   - so/praticar-paginacao
 ---
 
-Nem todas as páginas de um processo precisam de estar na RAM ao mesmo tempo. A paginação por procura prepara uma página quando o processo a referencia. A vantagem depende de **localidade**: durante algum tempo, um programa costuma usar um conjunto relativamente pequeno de páginas.
+Nem todas as páginas de um processo precisam de estar na RAM ao mesmo tempo. A paginação por procura prepara uma página quando o processo a referencia. A vantagem depende de **localidade**: durante algum tempo, um programa costuma usar um conjunto relativamente pequeno de páginas, ou seja as referências próximas tendem a repetir páginas próximas.
 
 ## Tratar uma falta de página
 

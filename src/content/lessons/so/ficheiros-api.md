@@ -7,7 +7,7 @@ practices:
   - so/praticar-ficheiros-api
 ---
 
-Queremos copiar dados de um ficheiro para a saída padrão. Há duas interfaces principais: a biblioteca C, com `FILE *` e buffers, e a API POSIX, com descritores inteiros. Conhecer ambas evita misturar tipos e permite escolher o nível de controlo necessário.
+Queremos copiar dados de um ficheiro para a saída padrão. Há duas interfaces principais: a biblioteca C, com `FILE *` e buffers, e a API POSIX, com descritores inteiros. Conhecer ambas evita misturar tipos, ou seja permite escolher o nível de controlo necessário.
 
 ## FILE e descritor
 
@@ -22,11 +22,11 @@ Queremos copiar dados de um ficheiro para a saída padrão. Há duas interfaces 
 
 `fread(buf, tamanho, quantidade, fp)` devolve o número de elementos completos lidos. Com `tamanho == 1`, esse valor também conta bytes. Uma leitura curta pode significar fim de ficheiro ou erro; consulta `feof` e `ferror`. `read` devolve `ssize_t`: positivo é a quantidade de bytes, zero indica EOF e `-1` indica erro. Guarda o resultado num tipo com sinal antes de o interpretar. Num pedido de zero bytes, `read` pode devolver zero sem testar EOF; os ciclos desta página pedem sempre uma quantidade positiva.
 
-A biblioteca pode antecipar leituras e acumular escritas num buffer. Evita alternar `fread` e `read` sobre a mesma abertura sem compreender a sincronização: a posição no núcleo pode já estar adiante dos bytes que a biblioteca entregou à aplicação.
+A biblioteca pode antecipar leituras e acumular escritas num buffer, por isso evita alternar `fread` e `read` sobre a mesma abertura sem compreenderes a sincronização: a posição no núcleo pode já estar adiante dos bytes que a biblioteca entregou à aplicação.
 
 ## Ler e escrever todos os bytes
 
-Uma chamada a `write(fd, buf, n)` não garante que escreve `n` bytes. Uma interrupção também pode fazer a chamada falhar com `EINTR`. O programa seguinte copia a entrada padrão para a saída padrão e conserva a parte ainda não escrita.
+Uma chamada a `write(fd, buf, n)` não garante que escreve `n` bytes, porque uma interrupção também pode fazer a chamada falhar com `EINTR`. O programa seguinte copia a entrada padrão para a saída padrão e conserva a parte ainda não escrita.
 
 Guarda-o como `copiar.c` e compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic copiar.c -o copiar`.
 
@@ -66,7 +66,7 @@ printf 'abc\nxyz\n' | ./copiar > copia.txt
 cat copia.txt
 ```
 
-A saída são as duas linhas originais. Não acrescentámos `\0` ao buffer, porque trabalhamos com a quantidade lida, não com uma string. O programa também pode copiar bytes zero. Um ficheiro vazio termina na primeira leitura com zero.
+A saída são as duas linhas originais. Não acrescentámos `\0` ao buffer, porque trabalhamos com a quantidade lida, não com uma string. Um ficheiro vazio termina na primeira leitura com zero.
 
 Uma versão que recebe um nome precisa de validar `argc`, abrir com `O_RDONLY`, usar o descritor nas leituras e fechar os descritores que abriu. Para criar um destino novo ou substituir o conteúdo antigo, usa `O_WRONLY | O_CREAT | O_TRUNC` e fornece o argumento de permissões, por exemplo `0666`, modificado pela `umask`. Não abras o destino com truncamento antes de verificar que ele não é o próprio ficheiro de origem, inclusive através de outro hard link.
 

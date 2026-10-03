@@ -14,9 +14,9 @@ editorial:
       url: https://pages.cs.wisc.edu/~remzi/OSTEP/
 ---
 
-Um programa pede memória, lê ficheiros e cria outros processos. O sistema operativo decide como satisfazer esses pedidos sem deixar que um programa estrague os dados de outro. Nesta cadeira estudamos os mecanismos e usamos a API de UNIX/Linux em C.
+No fim vais saber criar processos com `fork` e `exec`, ou seja vais lançar programas a partir do teu código. Vais proteger dados partilhados com mutexes e semáforos, porque threads concorrentes podem entrelaçar acessos. Vais traduzir endereços virtuais e prever faltas de página, por isso percebes quanto custa cada acesso. E vais copiar bytes com a API POSIX sem perder dados em escritas parciais.
 
-Precisas de saber escrever funções, ciclos, arrays e estruturas. [C avançado](/cadeiras/so/c-avancado/) revê os apontadores e o tempo de vida dos objetos antes de os usar nas chamadas de sistema.
+Precisas de saber escrever funções, ciclos, arrays e estruturas. [C avançado](/cadeiras/so/c-avancado/) revê os apontadores e o tempo de vida dos objetos antes de os usares nas chamadas de sistema. Segue depois o percurso abaixo, porque cada etapa usa a anterior: primeiro os recursos, depois os processos e por fim a memória e os ficheiros.
 
 ## Percurso de estudo
 
@@ -37,13 +37,19 @@ Os exemplos C portáteis podem correr no editor da página. `fork`, `exec`, sina
 
 ## Avaliação de 2026/27
 
+:::details[Ver regras de avaliação]
+
 A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586993), consultada a 3 de outubro de 2026, indica avaliação distribuída com dois testes de 10 valores. Cada um cobre sensivelmente metade da matéria teórica e dos exercícios TP, incluindo programação em computador. Com frequência, a classificação final é $T1 + T2$.
 
 Para obter frequência, é necessário assistir a pelo menos 50% das aulas TP da turma. A assiduidade tem validade no ano letivo seguinte; quem a obteve no ano anterior pode pedir dispensa através do formulário dos docentes. Os regimes especiais previstos na ficha têm dispensa de presença nas condições aí descritas.
 
 O recurso cobre toda a matéria teórica e prática e dá acesso aos reprovados com frequência e aos inscritos para melhoria. A melhoria também cobre toda a matéria. A ficha proíbe dispositivos eletrónicos na avaliação, salvo os autorizados pelos docentes ou previstos num estatuto aplicável. Confirma datas, instruções e qualquer alteração no Moodle de [2026/27](https://moodle2627.up.pt/course/view.php?id=4478).
 
+:::
+
 ## Materiais e bibliografia
+
+:::details[Ver fontes e âmbito]
 
 A base de ensino são os materiais do [Moodle de 2025/26](https://moodle2526.up.pt/course/view.php?id=4727): apresentações teóricas `part1` a `part6`, capítulos 9, 10, 12, 13 e 14, fichas práticas `f0` a `f7` em português e inglês e notas dos docentes sobre erros no primeiro teste. As versões PT/EN das fichas repetem os mesmos exercícios. O documento de funcionamento `os2526` está datado de 1 de setembro de 2025. A nota sobre tempos UNIX é de novembro de 2024, embora esteja disponibilizada nessa edição.
 
@@ -57,3 +63,5 @@ As apresentações de Silberschatz identificam a 10.ª edição, de 2018; `os252
 - Documentação do núcleo Linux sobre [CFS](https://docs.kernel.org/scheduler/sched-design-CFS.html) e [EEVDF](https://docs.kernel.org/scheduler/sched-eevdf.html), para distinguir os modelos estudados da evolução do escalonador real.
 
 As explicações e os exercícios foram escritos para estas páginas. Os resumos históricos SofiaViP são referências complementares, não a autoridade para a avaliação atual. As notas de erros orientaram os casos de prática, mas afirmações sobre APIs foram conferidas com a sua documentação: abrir um ficheiro duas vezes é permitido, e cada abertura pode ter uma posição independente.
+
+:::

@@ -7,7 +7,7 @@ practices:
   - so/praticar-ipc
 ---
 
-Dois processos têm memórias privadas por defeito. Para cooperar, precisam de um canal ou de memória explicitamente partilhada. O mecanismo também define como reconhecem o fim dos dados e que ordem existe entre produzir e consumir.
+Dois processos têm memórias privadas por defeito. Para cooperarem, precisam de um canal ou de memória explicitamente partilhada. O mecanismo também define como reconhecem o fim dos dados e que ordem existe entre produzir e consumir.
 
 ## Escolher um mecanismo
 
@@ -19,13 +19,13 @@ Dois processos têm memórias privadas por defeito. Para cooperar, precisam de u
 | Sinal              | Notificação de evento            | PID e número simbólico       | Tratador restrito e sinais pendentes    |
 | Memória partilhada | Bytes acessíveis pelos processos | Mapeamento                   | Sincronizar acessos e tempo de vida     |
 
-Partilhar memória não torna uma operação composta atómica. Receber um sinal também não entrega automaticamente uma estrutura C com todos os dados do remetente.
+Partilhar memória não torna uma operação composta atómica, ou seja continua a precisar de sincronização. Receber um sinal também não entrega automaticamente uma estrutura C com todos os dados do remetente.
 
 ## Pipe: leitura e escrita
 
 `pipe(fd)` cria `fd[0]` para ler e `fd[1]` para escrever. Depois de `fork`, ambos os processos herdam ambas as pontas. Quem só lê deve fechar a escrita; quem só escreve deve fechar a leitura.
 
-Se o buffer estiver vazio e existir uma escrita aberta, `read` bloqueia. Se estiver vazio e **todas** as pontas de escrita tiverem sido fechadas, `read` devolve 0, EOF. Se não houver leitores, uma escrita pode gerar `SIGPIPE` e falhar com `EPIPE` se o sinal não terminar o processo.
+Se o buffer estiver vazio e existir uma escrita aberta, `read` bloqueia. Se estiver vazio e **todas** as pontas de escrita tiverem sido fechadas, `read` devolve 0, ou seja EOF. Se não houver leitores, uma escrita pode gerar `SIGPIPE` e falhar com `EPIPE` se o sinal não terminar o processo.
 
 O seguinte programa envia uma mensagem do pai ao filho. Guarda-o em `pipe.c`, compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic pipe.c -o pipe` e corre `./pipe`.
 
@@ -82,7 +82,7 @@ int main(void) {
 }
 ```
 
-A saída é `dados do pai`. Não enviamos o terminador zero: o filho escreve a quantidade realmente lida. O ciclo funciona se a mensagem chegar em várias leituras. O pai fecha a escrita **antes** de esperar; o filho precisa desse fecho para sair do ciclo.
+A saída é `dados do pai`. Não enviamos o terminador zero: o filho escreve a quantidade realmente lida. O pai fecha a escrita **antes** de esperar, porque o filho precisa desse fecho para sair do ciclo.
 
 Pipes são fluxos, não caixas de mensagens. Uma escrita pode ser entregue em várias leituras. Escritas até `PIPE_BUF` têm uma garantia de não entrelaçamento com outras escritas no pipe, mas isso não obriga `read` a devolver uma mensagem inteira. Dois sentidos independentes precisam de dois pipes ou de um socket bidirecional.
 
@@ -123,7 +123,9 @@ Sockets `AF_UNIX` também podem ser identificados por um endereço local; `AF_IN
 
 Um sinal notifica um evento, como pedido de terminação ou alteração de configuração. `kill` envia o sinal, sujeito a permissões. Usa nomes como `SIGINT`, `SIGTERM`, `SIGHUP` e `SIGUSR1`, não números dependentes do sistema. `SIGKILL` e `SIGSTOP` não podem ser capturados nem ignorados.
 
-Um tratador pode interromper código que já está dentro de `printf` ou `malloc`. Voltar a chamar essas funções no tratador não é seguro. Um padrão é guardar uma indicação do tipo `volatile sig_atomic_t` e fazer o trabalho no fluxo normal. Este tipo permite a indicação simples; não torna qualquer estrutura partilhada segura.
+Um tratador pode interromper código que já está dentro de `printf` ou `malloc`. Voltar a chamar essas funções no tratador não é seguro, por isso guarda uma indicação do tipo `volatile sig_atomic_t` e faz o trabalho no fluxo normal.
+
+Este tipo permite a indicação simples, ou seja não torna qualquer estrutura partilhada segura.
 
 O programa seguinte espera por `SIGUSR1` sem a janela entre testar a condição e adormecer. Guarda-o como `sinal.c` e compila no terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic sinal.c -o sinal`.
 
