@@ -20,10 +20,9 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
 import ciclo from '../../pfl/p6ciclo.typ?raw';
 
-Um teste de exemplo verifica um caso: `reverse [1,2,3]` dá `[3,2,1]`. Uma **propriedade** afirma uma lei para todos os casos: inverter duas vezes devolve a lista original. O **QuickCheck** gera entradas e procura uma que viole a propriedade. A lei deve descrever o contrato da função; os geradores escolhem os casos observados.
+Um teste de exemplo verifica um caso: `reverse [1,2,3]` dá `[3,2,1]`. Uma **propriedade** afirma uma lei para todos os casos: inverter duas vezes devolve a lista original. O **QuickCheck** gera entradas e procura uma que viole a propriedade, ou seja a lei deve descrever o contrato da função; os geradores escolhem os casos observados.
 
 ## A primeira propriedade
 
@@ -62,7 +61,7 @@ ghci> quickCheck prop_sortId
 [1,0]
 ```
 
-O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`. O **shrinking** tenta reduzir a entrada encontrada, conservando a falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. O fluxo de trabalho é este: escreve a propriedade, vê-a falhar, lê o contraexemplo, corrige a ideia. O diagrama resume o ciclo, que recomeça a cada correção:
+O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`. O **shrinking** tenta reduzir a entrada encontrada, conservando a falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. O fluxo de trabalho é este: escreve a propriedade, vê-a falhar, lê o contraexemplo e corrige a ideia:
 
 <Typst
   source={ciclo}
@@ -70,27 +69,7 @@ O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: 
   alt="Ciclo do QuickCheck: escrever a propriedade, gerar casos, correr, encolher a falha até ao contraexemplo reduzido e corrigir."
 />
 
-Quando os casos passam, a sessão mostra quantos foram testados. Quando um falha, mostra um contraexemplo reduzido.
-
-<Tabs id="sessoes-quickcheck" labels={['Passa', 'Falha']}>
-  <div slot="panel-0">
-
-```text
-ghci> quickCheck prop_revRev
-+++ OK, passed 100 tests.
-```
-
-  </div>
-  <div slot="panel-1">
-
-```text
-ghci> quickCheck prop_sortId
-*** Failed! Falsifiable (after 3 tests):
-[1,0]
-```
-
-  </div>
-</Tabs>
+A propriedade idempotente da ordenação passa:
 
 ```haskell
 prop_sortSort :: [Int] -> Bool
@@ -111,7 +90,7 @@ prop_divMod :: Integer -> Integer -> Property
 prop_divMod x y = y /= 0 ==> (x `div` y) * y + (x `mod` y) == x
 ```
 
-Os casos com `y == 0` são descartados antes de contar. Se a condição for demasiado rara, a ferramenta avisa que não conseguiu casos suficientes, e aí o remédio é um gerador à medida com `forAll`. Um gerador próprio permite construir entradas válidas em vez de descartar uma grande parte das tentativas.
+Os casos com `y == 0` são descartados antes de contar, por isso se a condição for demasiado rara, a ferramenta avisa que não conseguiu casos suficientes, e aí o remédio é um gerador à medida com `forAll`, ou seja construir entradas válidas em vez de descartar uma grande parte das tentativas.
 
 Um gerador à medida é uma ação que produz valores com a forma que queres. Para testar que o máximo de um par ordenado é o segundo elemento, gera pares já ordenados:
 
@@ -138,7 +117,7 @@ Boas fontes: leis algébricas (`x + 0 == x`), idempotência (`sort (sort xs) == 
 
 A idempotência `sort (sort xs) == sort xs` não caracteriza uma ordenação correta. Uma função que devolve sempre `[]` também satisfaz essa lei. Para conferir um algoritmo de ordenação, testa a ordem, a conservação dos elementos com multiplicidades e, quando tens uma referência independente, a igualdade com o resultado dessa referência.
 
-Uma propriedade de `insert x xs` que pressupõe `xs` ordenada deve gerar listas ordenadas ou formular essa pré-condição. Não escondas uma condição rara atrás de muitas implicações descartadas. Um gerador construtivo, como ordenar a lista antes de testar uma propriedade que só compara a inserção, produz entradas válidas mais vezes.
+Uma propriedade de `insert x xs` que pressupõe `xs` ordenada deve gerar listas ordenadas ou formular essa pré-condição, ou seja não escondas uma condição rara atrás de muitas implicações descartadas. Um gerador construtivo, como ordenar a lista antes de testar a inserção, produz entradas válidas mais vezes.
 
 O shrinking procura um contraexemplo menor segundo as reduções disponíveis. Não promete o mínimo global entre todas as entradas possíveis. A ausência de falhas em 100 casos também não é uma demonstração para todas as listas.
 

@@ -26,7 +26,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Tabs from '../../../components/Tabs.astro';
 import labirinto from '../../pfl/p8labirinto.dot?raw';
 
-Com factos, regras e unificação já respondes a queries sobre relações. Falta o resto do kit: **listas** para coleções, **aritmética** para contas, o **corte** para podar a procura, o **`findall`** para juntar todas as respostas, e a **procura** propriamente dita. É a [recursão](/cadeiras/fp/recursao/) outra vez, agora com cláusulas em vez de equações.
+Com factos, regras e unificação já respondes a queries sobre relações. Falta o resto do kit: **listas** para coleções, **aritmética** para contas, o **corte** para podar a procura, o **`findall`** para juntar todas as respostas, e a **procura** propriamente dita.
 
 ## Listas e aritmética
 
@@ -37,7 +37,7 @@ soma([], 0).
 soma([H|T], S) :- soma(T, R), S is H + R.
 ```
 
-A query `?- soma([1,2,3], S).` resolve `soma([2,3], R)`, depois `soma([3], R)`, até `soma([], 0)`, e no regresso calcula `S is 3 + 0`, depois `2 + 3`, depois `1 + 5`: `S = 6`. O **`is`** avalia o lado direito como expressão aritmética e unifica com a esquerda; sem ele, `S = H + R` ligaria `S` à expressão por avaliar, não ao número. Usa `is` para obter o resultado de uma expressão aritmética conhecida. Todas as variáveis do lado direito têm de estar ligadas quando ele corre; para comparar resultados numéricos, há operações próprias, como `=:=`.
+A query `?- soma([1,2,3], S).` resolve `soma([2,3], R)`, depois `soma([3], R)`, até `soma([], 0)`, e no regresso calcula `S is 3 + 0`, depois `2 + 3`, depois `1 + 5`: `S = 6`. O **`is`** avalia o lado direito como expressão aritmética e unifica com a esquerda, ou seja sem ele, `S = H + R` ligaria `S` à expressão por avaliar, não ao número. Todas as variáveis do lado direito têm de estar ligadas quando ele corre; para comparar resultados numéricos, usa `=:=`.
 
 ## Corte e findall
 
@@ -48,7 +48,7 @@ max(X, Y, X) :- X >= Y, !.
 max(X, Y, Y) :- X < Y.
 ```
 
-Com o corte, `max(3, 5, M)` usa a primeira cláusula, falha no teste, e o corte nunca chega a correr; a segunda dá `M = 5`. Com `max(7, 5, M)`, o teste passa, o corte elimina a segunda cláusula, e `M = 7` sem deixar alternativa pendente. Para números já instanciados, as guardas `X >= Y` e `X < Y` são exclusivas. Este corte é verde nesse contrato: retirá-lo não acrescenta uma resposta lógica. Um corte que mude respostas é vermelho, e é fonte clássica de erros.
+Com o corte, `max(3, 5, M)` usa a primeira cláusula, falha no teste, e o corte nunca chega a correr; a segunda dá `M = 5`. Com `max(7, 5, M)`, o teste passa, o corte elimina a segunda cláusula, e `M = 7` sem deixar alternativa pendente. Este corte é verde nesse contrato, ou seja retirá-lo não acrescenta uma resposta lógica. Um corte que mude respostas é vermelho.
 
 Contrasta com um corte vermelho, que decide antes de testar:
 
@@ -82,16 +82,14 @@ caminho(X, Z, Visitados, [X|Resto]) :-
   caminho(Y, Z, [Y|Visitados], Resto).
 ```
 
-(`member/2` vem de `library(lists)`; em SICStus carrega-se com `:- use_module(library(lists)).`.) A query `?- caminho(a, e, [a], C).` faz **procura em profundidade**: de `a` vai a `b` (única saída); de `b` tenta `c` primeiro (ordem das cláusulas); de `c` chega a `e`, que unifica com o caso base. Responde `C = [a, b, c, e]`, e ao pedir mais soluções retrocede até `b`, tenta `d`, e encontra o segundo caminho `[a, b, d, e]`.
-
-O mapa numerado pela ordem de descoberta: o primeiro caminho sai pelos números 1 a 3, o segundo pelos números 4 e 5.
+A query `?- caminho(a, e, [a], C).` faz **procura em profundidade**: de `a` vai a `b` (única saída); de `b` tenta `c` primeiro (ordem das cláusulas); de `c` chega a `e`, que unifica com o caso base. Responde `C = [a, b, c, e]`; ao pedir mais soluções retrocede até `b`, tenta `d`, e encontra `[a, b, d, e]`.
 
 <Dot
   source={labirinto}
   alt="Labirinto de a até e: a liga a b; b liga a c e a d; c e d ligam a e. A descoberta segue a ordem 1 a 5."
 />
 
-O programa combina a soma de uma lista com o máximo definido pelas duas guardas:
+Experimenta a soma e o máximo:
 
 <CodePlayground
   language="prolog"
@@ -131,13 +129,13 @@ juntar([], Ys, Ys).
 juntar([X|Xs], Ys, [X|Zs]) :- juntar(Xs, Ys, Zs).
 ```
 
-`juntar([a,b],[c],Z)` constrói `[a,b,c]`. `juntar(X,Y,[a,b])` procura divisões: `X=[],Y=[a,b]`; `X=[a],Y=[b]`; `X=[a,b],Y=[]`. A mesma relação serve para construir e decompor. Uma função com `is` pode perder essa reversibilidade, porque o lado direito exige números conhecidos.
+`juntar([a,b],[c],Z)` constrói `[a,b,c]`; `juntar(X,Y,[a,b])` procura divisões: `X=[],Y=[a,b]`; `X=[a],Y=[b]`; `X=[a,b],Y=[]`, ou seja a mesma relação serve para construir e decompor. Uma função com `is` pode perder essa reversibilidade, porque o lado direito exige números conhecidos.
 
 Definir membro por `membro(X,[X|_]).` e `membro(X,[_|T]) :- membro(X,T).` produz uma resposta por ocorrência. Com `[a,b,a]`, há duas provas de `membro(a,...)`, mesmo que a substituição seja a mesma. A base de conhecimento não é automaticamente um conjunto de respostas sem repetições.
 
 ## Aritmética e identidade
 
-`X = 2+3` liga `X` ao termo `+(2,3)`; `X is 2+3` liga-o a `5`. `5 =:= 2+3` avalia os dois lados e compara números; `5 == 5.0` testa identidade e falha porque os termos têm representações diferentes. `X = Y` pode criar ligações; `X == Y` não as cria.
+`X = 2+3` liga `X` ao termo `+(2,3)`; `X is 2+3` liga-o a `5`, ou seja `5 =:= 2+3` avalia os dois lados e compara números; `5 == 5.0` testa identidade e falha porque os termos têm representações diferentes. `X = Y` pode criar ligações; `X == Y` não as cria.
 
 Uma desigualdade por não unificação, `X \= Y`, falha se os termos puderem ser unificados agora. Com as duas variáveis livres, falha, embora depois pudéssemos dar-lhes valores diferentes. `dif(X,Y)` em SWI-Prolog adia a restrição de diferença. Para escrever código portátil para a cadeira, distingue estes contratos e confirma os predicados disponíveis no SICStus.
 
