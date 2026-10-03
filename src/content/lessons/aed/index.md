@@ -16,7 +16,7 @@ editorial:
 
 No fim desta cadeira vais justificar se um algoritmo calcula o resultado pedido, vais escolher a estrutura que oferece as operações necessárias e vais contar tempo e memória em função da entrada. Ou seja, vais decidir com provas e custos, porque o enunciado e os limites mandam na solução. Os exemplos usam C++17, por isso precisas de funções, classes, referências, apontadores e memória dinâmica de [Programação](/cadeiras/p/).
 
-Se a sintaxe dos vetores ou das referências ainda te prende, começa pelos [fundamentos de C++ para AED](/cadeiras/aed/fundamentos-cpp/). Depois segue o percurso pela ordem, porque cada capítulo usa os contratos e as contagens dos anteriores.
+Se a sintaxe dos vetores ou das referências ainda te prende, começa pelos [fundamentos de C++ para AED](/cadeiras/aed/fundamentos-cpp/). Depois segue o percurso pela ordem, porque cada capítulo usa os contratos e as contagens dos anteriores. O programa atual é o de 2026/27. Os materiais posteriores de 2025/26 servem para ver profundidade e tipos de exercícios, e o exame-modelo de 2024/25 para tipos de raciocínio; nenhum deles confirma as regras de avaliação atuais.
 
 ## Percurso
 

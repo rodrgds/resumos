@@ -21,14 +21,15 @@ No fim do percurso, esta página responde o que rever antes do exame quando já 
 
 $O$ limita por cima, $\Omega$ por baixo e $\Theta$ pelos dois lados. Identifica o caso analisado. Média exige uma distribuição; amortização limita uma sequência sem assumir entradas aleatórias.
 
-| Trabalho                                  | Custo                               |
-| ----------------------------------------- | ----------------------------------- |
-| percurso único                            | $\Theta(n)$                         |
-| $1+2+\cdots+n$                            | $\Theta(n^2)$                       |
-| $1+2+4+\cdots+2^{\lfloor\log_2 n\rfloor}$ | $\Theta(n)$                         |
-| reduzir o intervalo a metade              | $\Theta(\log n)$                    |
-| duas metades com junção linear            | $\Theta(n\log n)$                   |
-| prefixos e `q` consultas de soma          | $\Theta(n+q)$; consulta $p[r]-p[l]$ |
+| Trabalho                                        | Custo                                          |
+| ----------------------------------------------- | ---------------------------------------------- |
+| percurso único                                  | $\Theta(n)$                                    |
+| $1+2+\cdots+n$                                  | $\Theta(n^2)$                                  |
+| $1+2+4+\cdots+2^{\lfloor\log_2 n\rfloor}$       | $\Theta(n)$                                    |
+| reduzir o intervalo a metade                    | $\Theta(\log n)$                               |
+| duas metades com junção linear                  | $\Theta(n\log n)$                              |
+| prefixos e `q` consultas de soma                | $\Theta(n+q)$; consulta $p[r]-p[l]$            |
+| janela deslizante de tamanho `k` e `N` posições | $\Theta(N)$; retira `a[i-1]`, junta `a[i+k-1]` |
 
 [Provas, recorrências e espaço](/cadeiras/aed/complexidade-invariantes/).
 
@@ -55,7 +56,7 @@ TAD define comportamento; representação define campos e custos. Vetor: acesso 
 
 **Pilha:** LIFO. **Fila:** FIFO. **Deque:** ambas as extremidades. Fila com duas pilhas transfere só quando a saída está vazia: retirada isolada $O(n)$, custo amortizado $O(1)$. Pilha monótona: cada índice entra e sai no máximo uma vez. [TADs](/cadeiras/aed/tipos-abstratos/), [ligações e amortização](/cadeiras/aed/listas-pilhas-filas/).
 
-Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. Ponto em polígono convexo: $O(\log h)$, com vértices extremos únicos em ordem anti-horária; nos raios extremos, testa o segmento. [Envolvente](/cadeiras/aed/envolvente-convexa/).
+Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. Ponto em polígono convexo com `c` vértices: $O(\log c)$, com vértices extremos únicos em ordem anti-horária; nos raios extremos, testa o segmento. [Envolvente](/cadeiras/aed/envolvente-convexa/).
 
 ## Árvores
 

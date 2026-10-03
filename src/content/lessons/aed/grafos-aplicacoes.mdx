@@ -25,7 +25,7 @@ Num grafo não dirigido, a aresta de regresso ao pai existe na lista e não é, 
 
 Uma ordem topológica é uma sequência de todos os vértices tal que, para cada aresta `u->v`, `u` aparece antes de `v`. Existe exatamente quando o grafo dirigido é acíclico, um DAG.
 
-Na DFS de um DAG, uma aresta `u->v` não pode apontar para cinzento. Se aponta para branco, a chamada de `v` termina antes de `u`; se aponta para preto, `v` já terminou. Logo ordenar por tempos de saída decrescentes coloca `u` antes de `v`. Deteta ciclos antes de apresentares a sequência como uma ordem válida.
+Na DFS de um DAG, uma aresta `u->v` não pode apontar para cinzento. Classifica cada aresta na DFS dirigida: árvore para branco, trás para cinzento, avanço para preto descendente e cruzamento para preto de outro ramo. Só a aresta para cinzento prova ciclo. Se aponta para branco, a chamada de `v` termina antes de `u`; se aponta para preto, `v` já terminou. Logo ordenar por tempos de saída decrescentes coloca `u` antes de `v`. Deteta ciclos antes de apresentares a sequência como uma ordem válida.
 
 O algoritmo de **Kahn** guarda os graus de entrada e uma fila dos vértices de grau zero. Retira um deles, acrescenta-o à ordem e reduz o grau de entrada dos seus destinos, colocando os que chegam a zero na fila. O invariante diz que o grau restante conta arestas vindas de vértices ainda não retirados. Um vértice de grau zero não tem predecessor restante e pode ser escolhido com segurança.
 
@@ -37,7 +37,7 @@ Ambas as abordagens custam $O(V+E)$ e espaço auxiliar $O(V)$. Para escolheres s
 
 Em grafos não dirigidos, uma componente conexa é um conjunto máximo de vértices ligados por caminhos. Num grafo dirigido, uma **componente fortemente conexa**, SCC, é um conjunto máximo em que cada par é alcançável nos dois sentidos. A componente fraca ignora os sentidos das arestas e pode juntar várias SCC.
 
-Contrair cada SCC a um vértice produz um DAG: um ciclo entre componentes permitiria alcançar todas nos dois sentidos e obrigaria a juntá-las numa só. Vértices isolados são componentes individuais.
+Contrair cada SCC a um vértice produz um DAG: desenha cada SCC como um nó e conserva uma aresta entre SCC distintas; um ciclo entre componentes permitiria alcançar todas nos dois sentidos e obrigaria a juntá-las numa só. Vértices isolados são componentes individuais.
 
 ## Tarjan e a pilha de componentes
 
@@ -89,6 +89,6 @@ Para um filho DFS `v` de `u`:
 
 A desigualdade das pontes é estrita. Com `low[v]==disc[u]`, existe uma ligação de retorno a `u` e a aresta não é ponte; retirar o próprio `u` ainda pode separar o ramo, justificando a igualdade para articulação.
 
-No triângulo `0-1-2-0`, acrescenta `1-3` e `3-4`, e um vértice isolado 5. As arestas do triângulo não são pontes. `1-3` e `3-4` são pontes; 1 e 3 são articulações. Se a DFS começa em 0, a raiz tem só um filho DFS, embora tenha dois vizinhos, e não é articulação. Uma aresta paralela entre 3 e 4 faria essa ligação deixar de ser ponte.
+No triângulo `0-1-2-0`, acrescenta `1-3` e `3-4`, e um vértice isolado 5. Com DFS a partir de 0 por ordem crescente e contador incrementado a cada descoberta, `disc=[0,1,2,3,4,5]` e `low=[0,0,0,3,4,5]`; os retornos do triângulo baixam `low[2]` e `low[1]` para 0. Assim `low[4]=4>disc[3]=3` marca a ponte `3-4` e `low[3]=3>disc[1]=1` marca a ponte `1-3`; as desigualdades alargadas `low[4]>=disc[3]` e `low[3]>=disc[1]` marcam 3 e 1 como articulações. A raiz 0 tem um só filho DFS e não é articulação. As arestas do triângulo não são pontes. `1-3` e `3-4` são pontes; 1 e 3 são articulações. Se a DFS começa em 0, a raiz tem só um filho DFS, embora tenha dois vizinhos, e não é articulação. Uma aresta paralela entre 3 e 4 faria essa ligação deixar de ser ponte.
 
 Mantém identificadores de arestas para suportares paralelas e recomeça DFS em cada vértice ainda não descoberto. Tempo $O(V+E)$, espaço auxiliar $O(V)$. Para verificares uma implementação em grafos pequenos, remove cada aresta ou vértice, conta componentes de novo e compara com as condições `low`; essa referência lenta testa a definição diretamente.

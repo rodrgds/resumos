@@ -15,6 +15,8 @@ Ordenar transforma uma sequência numa sequência que respeita um comparador, ou
 
 ## Ordenações elementares
 
+Uma ordenação é **estável** quando conserva a ordem relativa de elementos com chaves equivalentes. Esta definição é necessária já aqui: a seleção troca elementos distantes e perde empates, enquanto a inserção e a bubble, feitas com deslocações e trocas só de elementos estritamente fora de ordem, os conservam. A secção própria mais abaixo retoma a definição com comparadores.
+
 Na **seleção**, antes de tratares a posição `i`, o prefixo `[0,i)` contém os `i` menores elementos nas posições finais. Procura o mínimo no sufixo e troca-o com `v[i]`. Faz $n(n-1)/2$ comparações em qualquer entrada, ou seja, $\Theta(n^2)$, mas apenas $O(n)$ trocas. Não é estável: em `[2A,2B,1]`, a primeira troca produz `[1,2B,2A]`.
 
 Na **inserção**, o prefixo `[0,i)` está ordenado e contém os elementos originais desse prefixo. Guarda `v[i]`, desloca para a direita os elementos estritamente maiores e insere o valor no espaço aberto. `[4,2,3]` passa por `[2,4,3]` e `[2,3,4]`. Deslocar apenas os estritamente maiores preserva a ordem dos empates. O número de deslocações é o número de inversões, ou seja, pares fora de ordem. O custo é $\Theta(n+I)$, com `I` inversões: linear numa entrada ordenada e quadrático numa entrada inversa. «Quase ordenada» só dá uma garantia se quantificares as inversões.
@@ -65,9 +67,12 @@ O comparador de C++ deve definir uma **ordem fraca estrita**: `comp(x,x)` é fal
 Para `n` chaves distintas, uma ordenação por comparações tem de distinguir `n!` permutações. A árvore de decisões binária precisa de pelo menos `n!` folhas, logo altura pelo menos $\lceil\log_2(n!)\rceil=\Omega(n\log n)$. É um limite de pior caso no modelo de comparação, não um limite para qualquer algoritmo com informação sobre as chaves.
 :::
 
-**Counting sort** usa chaves inteiras em `[0,k)`. Conta frequências, calcula prefixos das contagens e coloca cada elemento na sua posição. Para preservares empates, percorre a entrada da direita para a esquerda e reduz a posição final disponível da respetiva chave. Para `[(2,A),(1,B),(2,C),(0,D)]`, a saída é `[(0,D),(1,B),(2,A),(2,C)]`. Reconstruir só frequências ordena números, mas perde os outros campos dos registos.
+**Counting sort** usa chaves inteiras em `[0,k)`. Conta frequências, calcula prefixos das contagens e coloca cada elemento na sua posição. Para preservares empates, percorre a entrada da direita para a esquerda e reduz a posição final disponível da respetiva chave. Para `[(2,A),(1,B),(2,C),(0,D)]`, a saída é `[(0,D),(1,B),(2,A),(2,C)]`. Traço com `k=3`: frequências `[1,1,2]` e posições iniciais por chave `[0,1,2]`. Percorre da direita para a esquerda: `(0,D)` ocupa 0; `(2,C)` ocupa 3; `(1,B)` ocupa 1; `(2,A)` ocupa 2. Escrever da direita preserva `A` antes de `C`. Reconstruir só frequências ordena números, mas perde os outros campos dos registos.
 
-O tempo é $\Theta(n+k)$ e o espaço auxiliar da versão estável é $\Theta(n+k)$. Um intervalo enorme de chaves pode tornar esta escolha pior que comparar. **Radix sort** por dígitos do menos significativo para o mais significativo exige uma ordenação estável em cada passagem. Depois de `d` passagens, a ordem dos `d` dígitos processados está correta; o custo é $\Theta(d(n+b))$ com base `b`. Chaves negativas e comprimentos diferentes exigem uma representação e uma política explícitas.
+O tempo é $\Theta(n+k)$ e o espaço auxiliar da versão estável é $\Theta(n+k)$. Um intervalo enorme de chaves pode tornar esta escolha pior que comparar. **Radix sort** por dígitos do menos significativo para o mais significativo exige uma ordenação estável em cada passagem; cada passagem tem de ser estável para não desfazer a anterior.
+Com `[170,45,75,90,2]` e base 10, os dígitos das unidades são `[0,5,5,0,2]` e a passagem estável dá `[170,90,2,45,75]`, com dígitos `[0,0,2,5,5]`.
+Na passagem das dezenas, os dígitos são `[7,9,0,4,7]` e a passagem estável dá `[2,45,170,75,90]`, com dígitos `[0,4,7,7,9]`.
+Na passagem das centenas, os dígitos são `[0,0,1,0,0]` e a passagem estável dá `[2,45,75,90,170]`, com dígitos `[0,0,0,0,1]`. Depois de `d` passagens, a ordem dos `d` dígitos processados está correta; o custo é $\Theta(d(n+b))$ com base `b`. Chaves negativas e comprimentos diferentes exigem uma representação e uma política explícitas.
 
 | Algoritmo          | Melhor            | Pior              | Auxiliar habitual          | Estável nesta versão? |
 | ------------------ | ----------------- | ----------------- | -------------------------- | --------------------- |

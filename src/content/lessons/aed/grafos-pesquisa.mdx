@@ -30,7 +30,7 @@ Nos custos seguintes, usamos `V` e `E` também para as quantidades $|V|$ e $|E|$
 
 Numa matriz de adjacência, guarda uma posição para cada par de vértices. Memória $\Theta(V^2)$; testar ou alterar uma aresta custa $O(1)$, mas enumerar os vizinhos de um vértice custa $\Theta(V)$. Uma matriz booleana não representa diretamente multiplicidades.
 
-Numa lista de adjacência, cada vértice guarda os vizinhos existentes. Memória $\Theta(V+E)$; um grafo não dirigido guarda cada aresta nas duas listas. Enumerar vizinhos custa $\Theta(\deg(u))$; testar ou remover uma aresta numa lista simples pode exigir um percurso desses vizinhos. Num grafo dirigido, as listas de saída não dão imediatamente todas as arestas de entrada.
+Numa lista de adjacência, cada vértice guarda os vizinhos existentes. No grafo do exemplo, com arestas `0-1,0-2,1-3,2-3,3-4`, as listas são `0:[1,2]`, `1:[0,3]`, `2:[0,3]`, `3:[1,2,4]`, `4:[3]` e `5:[]`; a matriz tem 1 nessas posições e 0 nas restantes. O mesmo grafo ocupa $\Theta(V+E)$ em listas e $\Theta(V^2)$ em matriz. Memória $\Theta(V+E)$; um grafo não dirigido guarda cada aresta nas duas listas. Enumerar vizinhos custa $\Theta(\deg(u))$; testar ou remover uma aresta numa lista simples pode exigir um percurso desses vizinhos. Num grafo dirigido, as listas de saída não dão imediatamente todas as arestas de entrada.
 
 Um percurso que visita todos os vértices e todas as listas custa $\Theta(V+E)$. Com matriz, custa $\Theta(V^2)$. Estas expressões incluem vértices isolados: dizer apenas $O(E)$ não cobre um grafo sem arestas.
 
@@ -42,7 +42,7 @@ O invariante diz que cada vértice marcado foi alcançado por um caminho da orig
 
 Uma DFS a partir de uma origem não percorre necessariamente todo o grafo. Para construíres uma floresta, percorre todos os vértices e começa uma DFS em cada um ainda não visitado. Num grafo não dirigido, cada nova raiz identifica uma componente conexa. Num grafo dirigido, as raízes desta floresta não contam componentes fortemente conexas.
 
-A ordem depende da origem e da ordem dos vizinhos. Uma versão iterativa com uma pilha de vértices pode produzir uma ordem diferente da recursiva; para reproduzires exatamente tempos de entrada e saída, guarda também a posição do próximo vizinho a explorar.
+Com origem 0 e vizinhos por ordem crescente, a DFS visita `0,1,3,2,4` e depois `5` numa segunda raiz; regista entrada e saída de cada chamada para reproduzir tempos. A ordem depende da origem e da ordem dos vizinhos. Uma versão iterativa com uma pilha de vértices pode produzir uma ordem diferente da recursiva; para reproduzires exatamente tempos de entrada e saída, guarda também a posição do próximo vizinho a explorar.
 
 ## BFS por camadas
 
@@ -53,7 +53,7 @@ A pesquisa em largura, BFS, usa uma fila. A origem tem distância zero; ao desco
   alt="Grafo não dirigido: 0 liga a 1 e 2; ambos ligam a 3; 3 liga a 4; 5 está isolado."
 />
 
-Partindo de 0 e examinando vizinhos pela ordem das listas, a BFS descobre `0,1,2,3,4`; 5 fica inacessível. As camadas são `{0}`, `{1,2}` e `{3}`, depois `{4}`. O pai de 3 é 1 porque 1 é processado antes de 2; existe também um caminho mínimo por 2.
+Partindo de 0 e examinando vizinhos pela ordem das listas, a BFS descobre `0,1,2,3,4`; 5 fica inacessível. A fila evolui como `[0]`, `[1,2]`, `[2,3]`, `[3]`, `[4]` e `[]`, com distâncias `0,1,1,2,3` e pai de 3 igual a 1. Marca na inserção: sem isso, 3 entraria duas vezes por 1 e 2. As camadas são `{0}`, `{1,2}` e `{3}`, depois `{4}`. O pai de 3 é 1 porque 1 é processado antes de 2; existe também um caminho mínimo por 2.
 
 <CodePlayground
   language="cpp"
@@ -77,9 +77,13 @@ O argumento exige arestas com o mesmo custo. Com `A->B` de peso 10, `A->C` de pe
 
 Tempo $O(V+E)$ com listas; vetores de distância, pais e visitados ocupam $O(V)$, e a fila também pode atingir $O(V)$. DFS recursiva pode ter profundidade $O(V)$, mesmo num grafo esparso.
 
+### Bipartição e grelhas (fichas 09 e 10)
+
+Para bipartição, colore a origem com 0 e cada vizinho com a cor oposta durante a BFS; um conflito de cores prova um ciclo ímpar. Numa grelha, a fila guarda pares `(linha,coluna)` e verifica fronteiras e obstáculos antes de inserir. Começar com várias origens a distância zero dá a distância à origem mais próxima, como na nuvem de cinza do exercício AED070 (2025/26).
+
 ## Caminhos, diâmetro e grafos implícitos
 
-A árvore de pais de BFS fornece um caminho mínimo por destino, não todos os caminhos mínimos. A distância de uma origem a si própria é zero. Num grafo não dirigido conexo, o diâmetro é a maior distância mínima entre pares. Repetir BFS de cada origem calcula-o em $O(V(V+E))$; num grafo desconexo tens de definir se consideras diâmetro infinito, por componente, ou se o problema exclui esse caso.
+A árvore de pais de BFS fornece um caminho mínimo por destino, não todos os caminhos mínimos. No exercício AED069 (2025/26), o desempate compara caminhos a partir do destino e equivale a escolher sempre o menor predecessor; é um contrato particular desse enunciado, não uma regra geral de ordem lexicográfica a partir da origem. A distância de uma origem a si própria é zero. Num grafo não dirigido conexo, o diâmetro é a maior distância mínima entre pares. Repetir BFS de cada origem calcula-o em $O(V(V+E))$; num grafo desconexo tens de definir se consideras diâmetro infinito, por componente, ou se o problema exclui esse caso.
 
 Numa grelha, os vértices podem ser posições livres e os vizinhos podem ser calculados a partir dos quatro movimentos, sem construir todas as listas. Verifica fronteiras e obstáculos antes de descobrires uma posição. Se o estado inclui uma chave recolhida, orientação ou outro recurso, só a posição não chega: visitados e distância devem identificar o estado completo.
 

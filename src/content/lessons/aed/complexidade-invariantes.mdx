@@ -44,12 +44,27 @@ Escolhe uma operação representativa, como comparações de chaves, e conta-a e
 | Fragmento de ciclo                       | Número de execuções do corpo         | Ordem apertada   |
 | ---------------------------------------- | ------------------------------------ | ---------------- |
 | `i=0..n-1`                               | $n$                                  | $\Theta(n)$      |
-| dois ciclos independentes de tamanho `n` | $n^2$                                | $\Theta(n^2)$    |
+| dois ciclos consecutivos de tamanho `n`  | $2n$                                 | $\Theta(n)$      |
+| dois ciclos encaixados de tamanho `n`    | $n^2$                                | $\Theta(n^2)$    |
 | `i=1..n`, `j=1..i`                       | $n(n+1)/2$                           | $\Theta(n^2)$    |
 | `i=1; i<n; i*=2`                         | $\lceil\log_2 n\rceil$, para $n\ge1$ | $\Theta(\log n)$ |
 | ciclo linear seguido de ciclo quadrático | $n+n^2$                              | $\Theta(n^2)$    |
 
-Não multipliques custos de ciclos consecutivos. E não classifiques todos os ciclos encaixados como quadráticos: se o exterior duplica `i` e o interior executa `i` vezes, a soma é $1+2+4+\cdots<2n$, ou seja, $\Theta(n)$. Um índice que apenas avança ao longo de todo o programa pode justificar uma soma linear, mesmo dentro de outro ciclo.
+Não multipliques custos de ciclos consecutivos. Mostra os dois programas lado a lado.
+
+```cpp
+long long s = 0;
+for (int i = 0; i < n; ++i) s += a[i];
+for (int i = 0; i < n; ++i) s += b[i]; // total 2n passos
+```
+
+```cpp
+long long s = 0;
+for (int i = 0; i < n; ++i)
+    for (int j = 0; j < n; ++j) s += 1; // total n*n passos
+```
+
+Com `n=0`, ambos fazem zero iterações. Com `n=1000`, o primeiro faz cerca de 2000 adições e o segundo cerca de 1 000 000. Chamar «independentes» aos dois casos esconde esta diferença: o que importa é se um ciclo está dentro do outro. E não classifiques todos os ciclos encaixados como quadráticos: se o exterior duplica `i` e o interior executa `i` vezes, a soma é $1+2+4+\cdots<2n$, ou seja, $\Theta(n)$. Um índice que apenas avança ao longo de todo o programa pode justificar uma soma linear, mesmo dentro de outro ciclo.
 
 O modelo costuma tratar operações sobre inteiros de dimensão fixa e acesso a uma posição de array como constantes. Comparar duas strings com comprimento máximo `L` pode custar $O(L)$. Copiar um vetor de `n` posições custa $\Theta(n)$, mesmo que a chamada pareça uma única instrução.
 
@@ -113,6 +128,30 @@ O programa aceita o intervalo vazio e limita os valores para que a soma caiba em
 :::details[Avaliar um polinómio com Horner]
 Para $a_0+a_1x+\cdots+a_dx^d$, começa em `a[d]` e repete `r=r*x+a[i]` com `i` decrescente. Para $2-3x+4x^2$, com `x=2`, começa em 4, passa a `4×2-3=5` e termina em `5×2+2=12`. Depois de incorporar o coeficiente `a[i]`, o invariante é $r=a_i+a_{i+1}x+\cdots+a_dx^{d-i}$. Multiplicar por `x` e somar o coeficiente seguinte preserva essa forma. Faz `d` multiplicações e `d` somas, em vez de recalcular cada potência.
 :::
+
+### Janela deslizante com contagem (ficha atual 02, AED008)
+
+Na ficha atual 02, o problema [AED008] Saving Pipefish pede o número de janelas de tamanho `K` com pelo menos metade das posições acima de `T` (2026/27). Recontar cada janela do zero custa $O(NK)$. Mantém antes uma contagem da janela atual.
+
+O invariante é: antes de avaliar a janela que começa em `i`, `dentro` conta quantas das `K` posições dessa janela satisfazem `profundidade[j] >= T`. Para passar de `i` para `i+1`, retira a posição `i` e acrescenta a posição `i+K`. Cada posição entra e sai uma vez, logo o total é $\Theta(N)$ após a primeira janela.
+
+Com `N=7`, `K=3`, `T=150` e `[142,155,147,165,150,112,73]`, as contagens são `1,2,2,2,1` e há 3 janelas válidas. Com `K=1`, cada janela tem uma posição e a resposta conta os elementos `>=T`. Com `K=N`, há uma única janela. Verifica sempre `1<=K<=N` antes de aceder a `a[i+K]`.
+
+```cpp
+int validas(const std::vector<int>& a, int k, int t) {
+    int n = (int)a.size(), dentro = 0;
+    for (int i = 0; i < k; ++i) if (a[i] >= t) ++dentro;
+    int r = (dentro * 2 >= k);
+    for (int i = 1; i + k <= n; ++i) {
+        if (a[i - 1] >= t) --dentro;
+        if (a[i + k - 1] >= t) ++dentro;
+        if (dentro * 2 >= k) ++r;
+    }
+    return r;
+}
+```
+
+Multiplicar por dois evita divisão inteira no teste «pelo menos metade», incluindo `K` ímpar.
 
 ## Melhor soma contígua
 
