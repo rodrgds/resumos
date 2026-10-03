@@ -7,11 +7,11 @@ FSC liga os bits de um número às instruções que um processador executa. Prim
 
 ## Percurso de estudo
 
-A sequência começa em [sistemas digitais](sistemas-digitais/) e [bases de numeração](representacao-dados/). Seguem-se [inteiros](inteiros-complemento-dois/), [vírgula fixa](virgula-fixa/), [vírgula flutuante](virgula-flutuante/) e [texto e imagens](texto-imagens/).
+A sequência começa em [sistemas digitais](/cadeiras/fsc/sistemas-digitais/) e [bases de numeração](/cadeiras/fsc/representacao-dados/). Seguem-se [inteiros](/cadeiras/fsc/inteiros-complemento-dois/), [vírgula fixa](/cadeiras/fsc/virgula-fixa/), [vírgula flutuante](/cadeiras/fsc/virgula-flutuante/) e [texto e imagens](/cadeiras/fsc/texto-imagens/).
 
-Nos circuitos, passa de [expressões booleanas](algebra-boole-portas/) para [Karnaugh](karnaugh/), [módulos combinatórios](circuitos-combinatorios/), [registos e temporização](circuitos-sequenciais/), [máquinas de estados](maquinas-estados/) e [memórias](memorias/). Uma tabela de verdade descreve o resultado; um diagrama temporal explica quando esse resultado pode ser usado.
+Nos circuitos, passa de [expressões booleanas](/cadeiras/fsc/algebra-boole-portas/) para [Karnaugh](/cadeiras/fsc/karnaugh/), [módulos combinatórios](/cadeiras/fsc/circuitos-combinatorios/), [registos e temporização](/cadeiras/fsc/circuitos-sequenciais/), [máquinas de estados](/cadeiras/fsc/maquinas-estados/) e [memórias](/cadeiras/fsc/memorias/). Uma tabela de verdade descreve o resultado; um diagrama temporal explica quando esse resultado pode ser usado.
 
-A parte do computador cobre [organização e memória RISC-V](legv8-registos-memoria/), [instruções e codificação](legv8-instrucoes/), [programação](programacao-riscv/), [procedimentos e pilha](procedimentos-pilha/), [CPU uniciclo](datapath-controlo/), [CPU multiciclo](cpu-multiciclo/) e [desempenho](desempenho/). A [cheat sheet](folha-consulta/) reúne as fórmulas e condições para revisão.
+A parte do computador cobre [organização e memória RISC-V](/cadeiras/fsc/legv8-registos-memoria/), [instruções e codificação](/cadeiras/fsc/legv8-instrucoes/), [programação](/cadeiras/fsc/programacao-riscv/), [procedimentos e pilha](/cadeiras/fsc/procedimentos-pilha/), [CPU uniciclo](/cadeiras/fsc/datapath-controlo/), [CPU multiciclo](/cadeiras/fsc/cpu-multiciclo/) e [desempenho](/cadeiras/fsc/desempenho/). A [cheat sheet](/cadeiras/fsc/folha-consulta/) reúne as fórmulas e condições para revisão.
 
 Cada capítulo termina com exercícios originais. Faz primeiro a tentativa, consulta uma pista quando faltar um passo e compara depois o raciocínio com a resolução. Nos programas, altera os dados e prevê a saída antes de executar.
 
@@ -19,7 +19,7 @@ Cada capítulo termina com exercícios originais. Faz primeiro a tentativa, cons
 
 A base pedagógica é o material dos docentes disponibilizado ao aluno no Moodle de **2024/25**. Essa edição usa **RV32**, com palavras e registos de 32 bits. Dois endereços antigos contêm `legv8` no nome por compatibilidade com ligações publicadas; o seu conteúdo ensina RISC-V.
 
-As provas consultadas incluem o primeiro teste de 15 de novembro de 2024 e o segundo de 24 de janeiro de 2025. Ambos indicam 90 minutos e penalização de 15% da cotação da pergunta nas escolhas erradas. Os exemplos de avaliação incluem conversões, circuitos, formas de onda, memória, assembly, codificação, controlo do CPU e contas de desempenho. Estas regras descrevem aquelas provas, não confirmam a avaliação de outra edição. Consulta a tua página da cadeira para as regras em vigor.
+As provas consultadas incluem o primeiro teste de 15 de novembro de 2024 e o segundo de 24 de janeiro de 2025. Ambos indicam 90 minutos e penalização de 15% da cotação da pergunta nas escolhas erradas. Os exemplos de avaliação incluem conversões, circuitos, formas de onda, memória, assembly, codificação, controlo do CPU e contas de desempenho. Estas regras descrevem aquelas provas, não confirmam a avaliação de outra edição. Consulta a tua página da cadeira para as regras em vigor. A [ficha pública de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560088) confirma os temas gerais, mas não substitui os materiais nem as regras de 2026/27. Não foi possível confirmar o programa da edição atual.
 
 ## Fontes e bibliografia
 

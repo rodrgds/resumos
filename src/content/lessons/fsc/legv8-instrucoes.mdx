@@ -13,13 +13,15 @@ Uma instrução RV32I tem 32 bits. Os campos dizem qual a operação, que regist
 
 A sintaxe `add rd,rs1,rs2` significa $rd\leftarrow rs1+rs2$. `sub`, `and`, `or` e `xor` seguem a mesma ordem. O destino pode coincidir com uma fonte: a operação lê os valores antigos antes de escrever.
 
-`addi rd,rs1,imm` usa um imediato de 12 bits com sinal, de $-2048$ a 2047. O imediato é estendido com sinal também em `andi`, `ori` e `xori`. Por exemplo, `xori t0,t0,-1` inverte todos os bits; um imediato de `0xFFF` representa -1 neste campo.
+`addi rd,rs1,imm` usa um imediato de 12 bits com sinal, de $-2048$ a 2047. O imediato é estendido com sinal também em `andi`, `ori` e `xori`. Por exemplo, `xori t0,t0,-1` inverte todos os bits; os bits `111111111111`, ou `FFF` em hexadecimal, representam -1 neste campo. Escreve `-1` no programa para indicar esse valor com sinal, em vez de assumir que qualquer assembler aceita a escrita positiva 4095 como imediato de 12 bits.
 
 `sll` desloca para a esquerda; `srl` desloca para a direita introduzindo zeros; `sra` repete o sinal. Em RV32, as versões por registo usam os 5 bits inferiores da quantidade de deslocamento. `slli`, `srli`, `srai` usam uma quantidade de 0 a 31.
 
 `slt` e `sltu` escrevem 1 se a primeira fonte for menor que a segunda, com ou sem sinal. As somas mantêm os 32 bits inferiores e não lançam uma exceção por overflow inteiro.
 
 A extensão M acrescenta `mul` para a metade baixa do produto, e `mulh`, `mulhu`, `mulhsu` para a metade alta com fontes respetivamente sinal/sinal, sem sinal/sem sinal e sinal/sem sinal. `div` divide com sinal truncando para zero; `rem` dá o resto. `divu` e `remu` usam valores sem sinal. `srai` de -3 por uma posição dá -2, enquanto dividir -3 por 2 dá -1.
+
+Na extensão M, divisão por zero não gera uma exceção inteira: o quociente fica com todos os bits a 1 e o resto é o dividendo. No caso com sinal $-2^{31}/(-1)$, o quociente conserva $-2^{31}$ e o resto é 0. O programa deve testar estes casos quando o contrato exige um resultado matemático representável.
 
 ## Loads e stores
 
@@ -69,6 +71,14 @@ Para `lw a0,-12(s0)`, usa x10 e x8, op=`0000011`, f3=`010`. O imediato de 12 bit
 Dá `0xFF442503`. No store `sw a0,12(s0)`, reparte `000000001100` em `0000000` e `01100`; o código é `0x00A42623`.
 
 Para `beq x5,x6` com destino 16 bytes à frente, imm[4:1]=`1000` e os outros bits de imm são 0. Dá `0x00628863`. Não coloques o inteiro 16 diretamente num campo contínuo de 12 bits.
+
+Para `jal ra` com destino 8 bytes à frente, rd=x1, op=`1101111`. O deslocamento 8 tem imm[10:1]=`0000000100`; os restantes campos do imediato são 0:
+
+```text
+0 | 0000000100 | 0 | 00000000 | 00001 | 1101111
+```
+
+A palavra é `0x008000EF`. O salto usa PC+8, mas ra recebe PC+4. O endereço de destino e o endereço de retorno têm funções diferentes.
 
 ## Constantes e pseudo-instruções
 
