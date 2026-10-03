@@ -22,7 +22,7 @@ editorial:
     - Não estão disponíveis materiais Moodle de ME de 2026/27 nesta revisão.
 ---
 
-Uma amostra permite descrever o que foi observado e, sob condições explícitas, tirar conclusões sobre uma população. A cadeira liga estas duas tarefas através da probabilidade: primeiro vemos os dados, depois estudamos como variariam se recolhêssemos outra amostra.
+No fim desta cadeira vais conseguir descrever uma amostra sem te deixares enganar por gráficos ou médias, escolher o modelo de probabilidade certo para cada mecanismo e tirar conclusões sobre uma população com intervalos e testes, porque aprendes a escrever as condições antes de substituir números. O percurso começa na descrição, passa pela probabilidade e pelas distribuições e fecha na inferência para médias, proporções e contagens.
 
 ## Percurso
 
@@ -42,14 +42,22 @@ Os exemplos executáveis em Python permitem conferir contas e experimentar gráf
 
 ## Ano e avaliação
 
+:::details[Ver ano, avaliação e âmbito]
+
 O material de referência é de **2025/26**. A [ficha SIGARRA de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586998), consultada a 3 de outubro de 2026, confirma a cadeira, mas ainda não apresenta programa nem avaliação. Confirma as regras nos avisos atuais da equipa docente. As regras de avaliação de 2025/26 não devem ser usadas para planear 2026/27.
 
 As questões-modelo T1 e T2 ilustram tipos de pergunta. Não são provas completas de anos anteriores.
 
+:::
+
 ## Fontes e bibliografia
+
+:::details[Ver fontes e bibliografia]
 
 A base principal foi a [página de ME no Moodle 2025/26](https://moodle2526.up.pt/course/view.php?id=4420): 14 aulas teóricas, sete folhas de exercícios com soluções e versões em inglês, notas de estatística descritiva, dois conjuntos de questões-modelo, formulários, tabelas e dois ficheiros de dados. O Moodle requer acesso institucional; esses documentos não são republicados aqui.
 
 O programa e a avaliação foram conferidos na [ficha SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560105). A bibliografia obrigatória dessa ficha é _Estatística: Apontamentos de Apoio às Aulas_, de A. Miguel Gomes e José F. Oliveira (2018), e _Estatística_, de Rui Campos Guimarães e José António Sarsfield Cabral, 2.ª edição (2011). A bibliografia complementar inclui _Modern Mathematical Statistics with Applications_, de Jay L. Devore, _Introduction to Statistical Investigations_, de Nathan Tintle e colaboradores (2015), e _Introductory Statistics_, de Thomas H. Wonnacott. Estes manuais não estavam disponíveis em texto integral para esta revisão.
 
 Para os programas, foi consultada a [documentação oficial de SciPy](https://docs.scipy.org/doc/scipy/reference/stats.html). Os quantis amostrais seguem a convenção tipo 2 das aulas. Os quantis críticos são definidos pela cauda direita. Os ajustamentos para proporções são aproximados; o nome Wilson usado em alguns documentos das aulas não identifica o intervalo de Wilson score, que tem outra fórmula.
+
+:::
