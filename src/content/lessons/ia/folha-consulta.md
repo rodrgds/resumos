@@ -1,4 +1,5 @@
 ---
+draft: true
 title: Cheat sheet de Inteligência Artificial
 description: Definições, fórmulas e condições dos métodos de IA.
 section: recursos

@@ -1,4 +1,5 @@
 ---
+draft: true
 title: Cheat sheet de CG
 description: Fórmulas e decisões rápidas para transformações, iluminação, visibilidade, malhas, curvas e rasterização.
 section: recursos

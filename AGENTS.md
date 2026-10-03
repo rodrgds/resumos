@@ -9,6 +9,7 @@
 ## Content and privacy
 
 - Verify curriculum changes against SIGARRA for the correct academic year. LEIC elective groups, named CT options and MEIC named options are distinct; keep the fictional example course outside the curriculum.
+- Keep LEIC third-year second-semester lessons (C, CG, CPD and IA) as drafts while current FEUP source coverage is incomplete.
 - Publish through the content schema and published navigation. Drafts must stay out of routes, search, Markdown and print exports. Link to absolute public routes and verify fragments against built headings.
 - Root `/data/` and `/_data/` are ignored private reference material. Keep downloads and editorial reports there, never in published lessons. Bibliography belongs in course introductions.
 - Notes, annotations, reader code, exercise answers, reading history and personal recordings stay on-device. Search and exports contain public content only. Chat and sharing send only a public URL and message starter.

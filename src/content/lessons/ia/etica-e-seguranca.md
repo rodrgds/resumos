@@ -1,4 +1,5 @@
 ---
+draft: true
 title: Ética e segurança da IA
 description: Teste de Turing, viés de dados, alinhamento e segurança nos sistemas que estas páginas constroem.
 section: conteudo
