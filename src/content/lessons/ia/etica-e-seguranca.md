@@ -2,6 +2,8 @@
 title: Ética e segurança da IA
 description: Teste de Turing, viés de dados, alinhamento e segurança nos sistemas que estas páginas constroem.
 section: conteudo
+practices:
+  - ia/praticar-etica-e-seguranca
 order: 10
 ---
 
