@@ -7,7 +7,7 @@ practices:
   - lc/praticar-rtc
 ---
 
-O RTC conserva data e hora, incluindo quando o computador está desligado, através da sua alimentação de reserva. Não é o mesmo que o timer: o timer mede intervalos de execução; o RTC fornece hora do dia, alarmes e eventos periódicos.
+O RTC conserva data e hora, incluindo quando o computador está desligado, através da sua alimentação de reserva. Não é o mesmo que o timer, ou seja, o timer mede intervalos de execução e o RTC fornece hora do dia, alarmes e eventos periódicos.
 
 ## Endereço e dados
 
@@ -29,19 +29,19 @@ Escrever `0x0A` em `0x70` e ler `0x71` consulta A. Uma leitura de `0x71` sem sel
 
 No registo B, DM, bit 2, seleciona binário quando vale 1 e BCD quando vale 0. O bit 1 seleciona 24 horas quando vale 1, ou 12 horas quando vale 0.
 
-Em **BCD**, cada nibble representa um algarismo decimal. O valor `0x59` representa 59, não 89. A conversão é:
+Em **BCD**, cada nibble representa um algarismo decimal, ou seja, o valor `0x59` representa 59, não 89. A conversão é:
 
 $$decimal=10\cdot(value\gg4)+(value\mathbin{\&}\texttt{0x0F}).$$
 
 Esta fórmula assume dois algarismos BCD válidos. Um nibble acima de 9 é inválido. Em binário, `0x3B` já representa 59 e não deve ser convertido por BCD.
 
-No formato de 12 horas, o bit 7 do campo de horas marca PM. Retira-o antes de converter os algarismos. Para obter horas de 0 a 23, transforma 12 AM em 0 e soma 12 às horas PM depois de transformar 12 em 0. Assim, 12 AM dá 0, 12 PM dá 12 e 9 PM dá 21.
+No formato de 12 horas, o bit 7 do campo de horas marca PM, por isso retira-o antes de converter os algarismos. Para obter horas de 0 a 23, transforma 12 AM em 0 e soma 12 às horas PM depois de transformar 12 em 0. Assim, 12 AM dá 0, 12 PM dá 12 e 9 PM dá 21.
 
 Não mudes o formato do RTC apenas para simplificar a leitura. Essa alteração afeta outros utilizadores do dispositivo e exigiria transformar os valores de tempo e alarme existentes.
 
 ## Ler uma hora coerente
 
-Os registos atualizam-se de forma assíncrona. Se leres segundos de `07:32:59` e minutos depois da passagem para `07:33:00`, podes construir `07:33:59`, que nunca foi a hora real da leitura.
+Os registos atualizam-se de forma assíncrona, por isso se leres segundos de `07:32:59` e minutos depois da passagem para `07:33:00`, podes construir `07:33:59`, que nunca foi a hora real da leitura.
 
 O registo A tem UIP, bit 7. O RTC assinala a atualização antes de a começar e limpa UIP quando termina. Esperar UIP a 0 e depois ler os campos pressupõe que terminas antes da próxima atualização e que não és suspenso demasiado tempo durante a sequência.
 
@@ -70,7 +70,7 @@ A contém o seletor de taxa periódica. Para os valores usuais do seletor RS ent
 
 O registo C assinala PF, AF e UF nos bits 6, 5 e 4. IRQF no bit 7 indica o pedido. **Ler C limpa as causas assinaladas** e permite que a linha deixe de manter esse pedido. Uma rotina que nunca lê C pode atender o primeiro evento e deixar de receber os seguintes.
 
-Guarda o byte lido e testa cada causa com um `if` independente. Com C = `0xD0`, temos IRQF, PF e UF ativos. Um `else if` trataria só um dos dois eventos. Os flags podem registar eventos mesmo quando a respetiva geração de interrupção está desativada; interpreta-os com a configuração aplicável.
+Guarda o byte lido e testa cada causa com um `if` independente, porque com C = `0xD0` temos IRQF, PF e UF ativos e um `else if` trataria só um dos dois eventos. Os flags podem registar eventos mesmo quando a respetiva geração de interrupção está desativada; interpreta-os com a configuração aplicável.
 
 ## Alarmes e validade
 

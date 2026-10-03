@@ -12,7 +12,7 @@ import Typst from '../../../components/Typst.astro';
 import stackframe from '../../lc/stack-frame.typ?raw';
 import filaCircular from '../../lc/fila-circular.typ?raw';
 
-Um endereço só é útil enquanto o objeto a que aponta existe. Muitos erros de C nascem da confusão entre o nome de uma variável, o objeto na memória e a duração desse objeto.
+Um endereço só é útil enquanto o objeto a que aponta existe, ou seja, muitos erros de C nascem da confusão entre o nome de uma variável, o objeto na memória e a duração desse objeto.
 
 ## Organização da memória
 
@@ -28,7 +28,7 @@ Um processo tem um espaço de endereçamento virtual. Uma organização habitual
 
 ## Passagem de parâmetros
 
-C passa todos os argumentos por valor. Um apontador também é um valor: a função recebe uma cópia do endereço. Desreferenciar essa cópia permite alterar o objeto original.
+C passa todos os argumentos por valor, ou seja, um apontador também é um valor: a função recebe uma cópia do endereço. Desreferenciar essa cópia permite alterar o objeto original.
 
 ```c
 #include <stdio.h>
@@ -46,13 +46,13 @@ int main(void) {
 }
 ```
 
-A saída é `3` e depois `9`. Na primeira chamada, apenas a cópia muda; o chamador ignora o valor devolvido. Na segunda, `*x` designa `n`.
+A saída mostra `3` e depois `9`, porque na primeira chamada apenas a cópia muda e o chamador ignora o valor devolvido. Na segunda, `*x` designa `n`.
 
 A mesma distinção explica por que `p = NULL` dentro de uma função que recebe `int *p` não põe a variável do chamador a `NULL`. Para substituir o apontador do chamador, devolve o novo apontador ou recebe o endereço desse apontador, de tipo `int **`.
 
 ## Chamada, stack frame e retorno
 
-Uma chamada precisa de guardar onde deve continuar depois do retorno, tornar os argumentos disponíveis e reservar espaço para os dados locais que o exigirem. No modelo IA-32 habitual com argumentos na pilha, cada chamada cria um **stack frame**.
+Uma chamada precisa de guardar onde deve continuar depois do retorno, porque o processador tem de retomar o chamador. No modelo IA-32 habitual com argumentos na pilha, cada chamada cria um **stack frame**.
 
 <Typst
   source={stackframe}
@@ -74,13 +74,13 @@ int *bad_result(void) {
 }
 ```
 
-Mesmo que um teste imprima 42, o acesso já não é válido. Para devolver um inteiro, devolve o inteiro. Para produzir vários resultados, usa uma `struct` por valor ou recebe um apontador para armazenamento que o chamador possui.
+Mesmo que um teste imprima 42, o acesso já não é válido, porque o objeto local deixou de existir. Para devolver um inteiro, devolve o inteiro. Para produzir vários resultados, usa uma `struct` por valor ou recebe um apontador para armazenamento que o chamador possui.
 
 ## Alocação e propriedade
 
 `malloc` devolve armazenamento sem inicialização ou `NULL` se falhar. Calcula o tamanho a partir do objeto apontado, valida a falha, inicializa antes de ler e liberta exatamente uma vez. Depois de `free`, não leias nem escrevas o objeto. O valor dos apontadores que o designavam fica indeterminado; não os uses sequer para testar se a memória ainda existe. Podes atribuir `NULL` à variável do apontador sem ler o seu valor anterior, mas isso não altera outros aliases.
 
-Este exemplo completo cria cinco inteiros. A saída é `soma=150`.
+Este exemplo completo cria cinco inteiros e imprime `soma=150`, porque soma 10, 20, 30, 40 e 50 antes de libertar o vetor.
 
 <CodePlayground
   language="c"
@@ -135,7 +135,7 @@ Segue a fila a partir de `out`, não do início do array. Quando `in = out`, é 
 
 Para guardar valores de diferentes tipos, conserva o tamanho de um elemento e copia bytes. Um `void *` não permite aritmética de apontadores no C padrão, porque `void` não tem tamanho. Usa um apontador para `unsigned char` na representação interna e calcula `index * element_size`.
 
-Este programa completo guarda dois pares de coordenadas numa fila genérica de capacidade 3. A fila copia os valores, não conserva apontadores para as variáveis locais de quem insere. A saída é `2,3` e `5,8`.
+Este programa completo guarda dois pares de coordenadas numa fila genérica de capacidade 3. A fila copia os valores, não conserva apontadores para as variáveis locais de quem insere, por isso imprime `2,3` e `5,8`.
 
 ```c
 #include <stdbool.h>
@@ -199,7 +199,7 @@ int main(void) {
 }
 ```
 
-O chamador tem de fornecer objetos com pelo menos `element_size` bytes nas operações de inserção e remoção. A cópia é superficial: se um elemento contiver um apontador, copia o endereço, não o objeto apontado. Define separadamente quem possui esse objeto.
+O chamador tem de fornecer objetos com pelo menos `element_size` bytes, porque a fila copia bytes sem conhecer o tipo. A cópia é superficial: se um elemento contiver um apontador, copia o endereço, não o objeto apontado. Define separadamente quem possui esse objeto.
 
 Uma API de biblioteca pode ocultar `struct queue` no `.c` e expor apenas o tipo incompleto no `.h`. Uma fila com crescimento dinâmico exige ainda tratar falhas de realocação e reconstruir a ordem quando os elementos atravessam o fim do array. Um `realloc` bem-sucedido conserva bytes, mas não reorganiza sozinho uma fila circular. O exemplo usa capacidade fixa e devolve falha quando fica cheia.
 
@@ -221,7 +221,7 @@ int main(void) {
 }
 ```
 
-A saída é `8` e `5`. Uma tabela deste tipo pode selecionar um handler pelo tipo de evento. Confere o índice antes de aceder e mantém todas as funções com a assinatura declarada. Converter apontadores incompatíveis não adapta os argumentos.
+A saída mostra `8` e `5`, porque a tabela seleciona `twice(4)` e depois `increment(4)`. Confere o índice antes de aceder e mantém todas as funções com a assinatura declarada. Converter apontadores incompatíveis não adapta os argumentos.
 
 Um tipo opaco permite esconder os campos de um objeto: o cabeçalho declara `struct sprite;`, expõe operações com `struct sprite *` e o `.c` define os campos. O utilizador não precisa do tamanho interno para conservar o apontador. Precisa de conhecer o contrato de criação, uso e destruição.
 

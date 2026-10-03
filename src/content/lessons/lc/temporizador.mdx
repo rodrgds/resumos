@@ -10,7 +10,7 @@ practices:
 import InteractiveDemo from '../../../components/InteractiveDemo.astro';
 import TimerDivider from '../../lc/TimerDivider.astro';
 
-O i8254 tem três contadores de 16 bits. Cada um recebe impulsos de um relógio de entrada e produz uma saída conforme o modo escolhido. No PC, a saída do contador 0 está ligada à IRQ0. É essa saída que usamos para obter ticks periódicos.
+O i8254 tem três contadores de 16 bits. Cada um recebe impulsos de um relógio de entrada e produz uma saída conforme o modo escolhido, ou seja, programas o divisor para obter a frequência que queres. No PC, a saída do contador 0 está ligada à IRQ0.
 
 ## Relógio, divisor e modos
 
@@ -31,7 +31,7 @@ Em contagem binária, o valor carregado `0x0000` representa 65536, não um divis
 | 4, software strobe | Impulso no fim da contagem iniciada por software                       |
 | 5, hardware strobe | Impulso no fim da contagem disparada externamente                      |
 
-No modo 3, um divisor par dá metades iguais. Com divisor ímpar, a fase alta dura um ciclo de entrada mais do que a baixa. Não contes os dois flancos da onda como duas interrupções por período: a ligação ao controlador de interrupções responde ao flanco previsto pelo hardware.
+No modo 3, um divisor par dá metades iguais. Com divisor ímpar, a fase alta dura um ciclo de entrada mais do que a baixa, por isso não contes os dois flancos da onda como duas interrupções por período.
 
 ## Palavra de controlo
 
@@ -48,9 +48,9 @@ Por exemplo, contador 2, LSB seguido de MSB, modo 3, binário:
 
 $$10\ 11\ 011\ 0_2=\texttt{0xB6}.$$
 
-Para carregar $N=1234=\texttt{0x04D2}$, escreve `0xB6` em `0x43`, depois `0xD2` em `0x42`, depois `0x04` em `0x42`. O endereço é o mesmo nas duas escritas; é a configuração de acesso que determina qual byte está a ser carregado.
+Para carregar $N=1234=\texttt{0x04D2}$, escreve `0xB6` em `0x43`, depois `0xD2` em `0x42`, depois `0x04` em `0x42`, porque a configuração de acesso determina qual byte está a ser carregado.
 
-Não invertas a ordem. Se escrevesses `0x04` e `0xD2`, carregarias `0xD204`, ou 53764. No contador 0, isso produziria cerca de 22,19 Hz em vez da frequência esperada para 1234.
+Não invertas a ordem, porque se escrevesses `0x04` e `0xD2`, carregarias `0xD204`, ou 53764. No contador 0, isso produziria cerca de 22,19 Hz em vez da frequência esperada para 1234.
 
 ## Read-back e estado
 
@@ -73,6 +73,7 @@ Extrai o modo com `(status >> 1) & 7`. Os códigos 6 e 7 são alternativas de 2 
 
 ## Escolher a frequência
 
+:::details[De onde vem 60,001106 Hz]
 Para pedir 60 Hz, o divisor ideal é:
 
 $$N^*=\frac{1\,193\,182}{60}=19\,886{,}366\ldots$$
@@ -82,6 +83,7 @@ Como o divisor é inteiro, uma política habitual no laboratório usa o quocient
 $$f_{real}=\frac{1\,193\,182}{19886}\approx60{,}001106\ \text{Hz}.$$
 
 Carregam-se LSB `0xAE` e MSB `0x4D`. O período é cerca de 16,66636 ms. Uma contagem de 216000 ticks, interpretada como uma hora a 60 Hz, termina cerca de 0,0664 s antes de uma hora real neste modelo de relógio ideal.
+:::
 
 A escolha por quociente inteiro e a escolha por arredondamento ao inteiro mais próximo são políticas diferentes. Com 100 Hz, o quociente dá 11931 e cerca de 100,006873 Hz; o arredondamento dá 11932 e cerca de 99,998491 Hz. Declara qual estás a usar antes de comparar resultados.
 

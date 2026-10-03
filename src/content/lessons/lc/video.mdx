@@ -10,7 +10,7 @@ practices:
 import Typst from '../../../components/Typst.astro';
 import fb from '../../lc/framebuffer.typ?raw';
 
-Em modo gráfico, o ecrã representa uma matriz de píxeis. O framebuffer guarda a cor de cada píxel e o controlador de vídeo lê essa memória para apresentar a imagem. Desenhar exige conhecer tanto a organização da memória como a codificação das cores.
+Em modo gráfico, o ecrã representa uma matriz de píxeis. O framebuffer guarda a cor de cada píxel e o controlador de vídeo lê essa memória para apresentar a imagem, ou seja, para desenhar tens de conhecer a organização da memória e a codificação das cores.
 
 ## Modo e informação VBE
 
@@ -23,7 +23,7 @@ A VBE, Video BIOS Extension, oferece uma interface para consultar e selecionar m
 | `0x4F02`     | Selecionar modo                                     |
 | `0x4F07`     | Consultar ou alterar o início da imagem apresentada |
 
-Para selecionar o modo `0x105` com framebuffer linear, BX recebe `0x105 | (1 << 14)`, ou `0x4105`. O bit 14 pede o acesso linear; não faz parte do identificador base do modo.
+Para selecionar o modo `0x105` com framebuffer linear, BX recebe `0x105 | (1 << 14)`, ou `0x4105`. O bit 14 pede o acesso linear, ou seja, não faz parte do identificador base do modo.
 
 Uma função completa para o ambiente Minix/LCF, com o apoio de BIOS da imagem da cadeira, é:
 
@@ -45,13 +45,13 @@ int set_linear_mode(uint16_t mode) {
 
 O resultado esperado de `set_linear_mode(0x105)` é o modo selecionado, se suportado. A função verifica duas coisas: a chamada Minix foi executada e a VBE devolveu sucesso em AX. Não aloca nem mapeia o framebuffer. Não funciona num compilador C portátil nem substitui a inicialização completa de vídeo.
 
-Antes de desenhar, consulta a informação do modo. Conserva resolução horizontal e vertical, bits por píxel, bytes por linha, modelo de memória, posições e tamanhos dos campos RGB e endereço físico da VRAM. Não assumas que dois modos de 16 bpp têm os mesmos campos de cor.
+Antes de desenhar, consulta a informação do modo, porque não podes assumir que dois modos de 16 bpp têm os mesmos campos de cor. Conserva resolução horizontal e vertical, bits por píxel, bytes por linha, modelo de memória, posições e tamanhos dos campos RGB e endereço físico da VRAM.
 
 A função VBE `0x4F01` escreve um bloco de informação em memória acessível pela BIOS, indicado por ES:DI no modelo de real mode. O apoio da cadeira trata dessa alocação e cópia para `vbe_mode_info_t`. Um apontador virtual arbitrário de C não é automaticamente um endereço válido para a BIOS.
 
 ## Mapear memória física
 
-`PhysBasePtr` é o endereço físico do framebuffer. Não o convertas simplesmente para um apontador e escrevas: o processo usa endereços virtuais. No Minix, a sequência é obter permissão para a região com `sys_privctl`, mapeá-la com `vm_map_phys` e conservar o apontador virtual devolvido.
+`PhysBasePtr` é o endereço físico do framebuffer, por isso não o convertas simplesmente para um apontador e escrevas: o processo usa endereços virtuais. No Minix, a sequência é obter permissão para a região com `sys_privctl`, mapeá-la com `vm_map_phys` e conservar o apontador virtual devolvido.
 
 Se cada linha ocupa `pitch` bytes e há `height` linhas, a região usada por uma imagem ocupa `pitch * height` bytes. Valida o produto num tipo capaz de representar o tamanho e confere falhas em todas as operações. Ao sair, desmonta o mapeamento e repõe o modo de texto através do apoio do ambiente. Falhar depois de selecionar o modo também exige reposição.
 
@@ -90,7 +90,7 @@ $$color=(31\ll11)\,|\,(0\ll5)\,|\,15=\texttt{0xF80F}.$$
 
 No x86 little-endian, os dois bytes em memória são `0F F8`. O significado dos campos da palavra e a ordem dos bytes em memória são questões diferentes. Em 24 bpp, não existe um tipo `uint24_t` padrão e escrever um `uint32_t` pisaria o píxel seguinte.
 
-Este programa portátil escreve um píxel de 24 bits numa imagem com padding. Define explicitamente que os três bytes contêm os 24 bits inferiores em ordem little-endian:
+Este programa portátil escreve um píxel de 24 bits numa imagem com padding e imprime `56 34 12`, porque guarda os três bytes em ordem little-endian. Define explicitamente que os três bytes contêm os 24 bits inferiores:
 
 ```c
 #include <stdbool.h>
@@ -118,7 +118,7 @@ int main(void) {
 }
 ```
 
-A saída é `56 34 12`. Este exemplo usa dimensões pequenas fixas, em que os produtos não transbordam. Uma API que aceite dimensões arbitrárias deve validar também as multiplicações. A função guarda bytes, não converte uma cor RGB para campos arbitrários de um modo VBE.
+O exemplo imprime `56 34 12` para dimensões pequenas fixas, em que os produtos não transbordam, porque guarda bytes sem converter uma cor RGB para campos arbitrários de um modo VBE. Uma API que aceite dimensões arbitrárias deve validar também as multiplicações.
 
 ## Linhas, retângulos e clipping
 
@@ -152,7 +152,7 @@ Um XPM representa píxeis por símbolos de texto. O cabeçalho indica largura, a
 
 Um **sprite** reúne um pixmap e a informação necessária para o colocar na cena. A transparência significa não escrever certos píxeis do sprite. Não assumas que preto é sempre transparente: usa o valor e o formato definidos para o recurso. A ordem de desenho determina quais objetos ficam por cima de outros.
 
-Uma animação pode escolher um de vários pixmaps. Se cada figura dura quatro frames e desenhas a 30 frames/s, cada figura dura $4/30$ s. Com três figuras, um ciclo completo dura $12/30=0{,}4$ s. Mudar o pixmap e mudar a posição são operações separadas.
+Uma animação pode escolher um de vários pixmaps. Se cada figura dura quatro frames e desenhas a 30 frames/s, cada figura dura $4/30$ s. Com três figuras, um ciclo completo dura $12/30=0{,}4$ s.
 
 Para movimento, se `speed = 3` significa três píxeis por frame, a 30 frames/s obtemos 90 píxeis/s. Na convenção de velocidade negativa usada em exercícios do laboratório, `speed = -3` significa um píxel a cada três frames, ou 10 píxeis/s a 30 frames/s. Limita o último passo à distância que falta, para chegar à posição final sem passar além dela.
 
@@ -164,4 +164,10 @@ Se o controlador ler o framebuffer durante a cópia, uma parte da imagem pode se
 
 Com **page flipping**, ambos os buffers estão na VRAM e alteras qual é o apresentado, usando uma operação como VBE `Set Display Start`. Para evitar tearing, a mudança deve respeitar a sincronização com o refrescamento vertical. A frequência do timer da aplicação não garante que estejas sincronizado com o ecrã.
 
-**Triple buffering** acrescenta outro back buffer para permitir preparar um novo frame enquanto um frame completo aguarda apresentação. Exige uma política sobre qual apresentar e o apoio da implementação. Não melhora automaticamente uma chamada de apresentação bloqueante. Distingue sempre tempo de simulação, ritmo de construção dos frames e ritmo de refrescamento do ecrã.
+:::tip[Ideia-chave]
+Compõe cada frame completo fora da imagem visível e só depois apresenta-o com sincronização vertical, porque nem a cópia nem a troca de página são instantâneas.
+:::
+
+:::details[Triple buffering]
+**Triple buffering** acrescenta outro back buffer para preparar um novo frame enquanto um frame completo aguarda apresentação. Exige uma política sobre qual apresentar e o apoio da implementação. Distingue sempre tempo de simulação, ritmo de construção dos frames e ritmo de refrescamento do ecrã.
+:::

@@ -11,13 +11,13 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import modulo from '../../lc/modulo-hc.typ?raw';
 
-Um driver precisa de representar bytes, chamar funções do sistema e guardar estado entre eventos. Em LC fazemos isso em C. O primeiro passo é distinguir o que a linguagem garante do que depende do compilador ou do ambiente Minix.
+Um driver precisa de representar bytes, chamar funções do sistema e guardar estado entre eventos. Em LC fazemos isso em C, ou seja, tens de distinguir o que a linguagem garante do que depende do compilador ou do ambiente Minix.
 
 ## De C++ para C
 
 C tem funções, estruturas, apontadores e controlo de fluxo. Não tem classes, referências de C++, sobrecarga de funções nem `new` e `delete`. Uma `struct` guarda dados; funções recebem o seu endereço para os consultar ou alterar. Para alocar memória usamos `malloc` e para a devolver usamos `free`.
 
-C e C++ partilham muita sintaxe, mas um programa aceite como C++ não é necessariamente C válido. Por exemplo, em C escreve `struct position` se não tiveres criado um `typedef`. Uma declaração `int f(void)` diz que `f` não recebe argumentos. Usa protótipos completos, para o compilador poder conferir as chamadas.
+C e C++ partilham muita sintaxe, mas um programa aceite como C++ não é necessariamente C válido, porque C não tem classes nem sobrecarga. Por exemplo, em C escreve `struct position` se não tiveres criado um `typedef`. Uma declaração `int f(void)` diz que `f` não recebe argumentos. Usa protótipos completos, para o compilador poder conferir as chamadas.
 
 ```c
 #include <stdbool.h>
@@ -33,7 +33,7 @@ bool position_equal(position a, position b) {
 }
 ```
 
-Esta função recebe cópias das posições. Alterar `a.x` dentro dela não altera a posição do chamador. Para alterar um objeto do chamador, a função precisa de receber um apontador para esse objeto.
+Esta função recebe cópias das posições, por isso alterar `a.x` dentro dela não altera a posição do chamador. Para alterar um objeto do chamador, a função precisa de receber um apontador para esse objeto.
 
 ## Tipos e saída formatada
 
@@ -54,7 +54,7 @@ int main(void) {
 }
 ```
 
-A saída é `ticks=300 status=0xA5`. O cast explicita o tipo pedido por `%X`. Uma incompatibilidade de formato não é apenas uma apresentação errada: pode causar comportamento indefinido. Ativa os avisos do compilador.
+O cast explicita o tipo pedido por `%X`, por isso o programa imprime `ticks=300 status=0xA5`. Uma incompatibilidade de formato não é apenas uma apresentação errada, porque pode causar comportamento indefinido. Ativa os avisos do compilador.
 
 ## Promoções e conversões de inteiros
 
@@ -62,14 +62,14 @@ Antes de muitas operações, C promove valores mais pequenos do que `int`. Num s
 
 Considera `uint8_t value = 0x5A`. O complemento de oito bits seria `0xA5`. Porém, `~value` opera sobre o valor promovido. Com `int` de 32 bits e representação em complemento para dois, o resultado tem os bits de `0xFFFFFFA5`. Deslocar esse valor negativo à direita depende da implementação da linguagem usada no curso. Não derives um resultado portátil a partir de um deslocamento de um inteiro negativo.
 
-Para complementar exatamente o byte, reduz o resultado a `uint8_t` antes do deslocamento:
+Para complementar exatamente o byte, reduz o resultado a `uint8_t` antes do deslocamento, porque o deslocamento de um inteiro negativo depende da implementação:
 
 ```c
 uint8_t value = 0x5A;
 uint8_t result = (uint8_t)~value >> 4;
 ```
 
-O cast produz `0xA5`. Esse valor é promovido a um `int` positivo para o deslocamento, por isso o resultado é `0x0A`, ou 10. Converter apenas no fim não corrige a operação anterior.
+O cast produz `0xA5`, ou seja, esse valor é promovido a um `int` positivo para o deslocamento, por isso o resultado é `0x0A`, ou 10. Converter apenas no fim não corrige a operação anterior.
 
 Outro caso frequente mistura um inteiro negativo com um inteiro sem sinal:
 
@@ -79,7 +79,7 @@ unsigned int width = 10;
 bool inside = delta < width;
 ```
 
-Quando os tipos têm a mesma categoria e o `int` não representa todos os valores de `unsigned int`, `delta` converte-se para um grande valor sem sinal. O teste pode dar falso. Valida primeiro que `delta >= 0` e só depois compara `(unsigned int)delta < width`. Para posições com movimento negativo, mantém as contas num tipo com sinal até validares os limites.
+Quando os tipos têm a mesma categoria e o `int` não representa todos os valores de `unsigned int`, `delta` converte-se para um grande valor sem sinal, por isso o teste pode dar falso. Valida primeiro que `delta >= 0` e só depois compara `(unsigned int)delta < width`. Para posições com movimento negativo, mantém as contas num tipo com sinal até validares os limites.
 
 ## Apontadores, arrays e tamanho
 
@@ -92,7 +92,7 @@ p++;
 *p = 25;
 ```
 
-Agora `values` contém `{10, 25, 30}`. Em muitas expressões, o array converte-se num apontador para o primeiro elemento. O array e o apontador continuam a ser objetos diferentes: `sizeof values` dá o tamanho de todo o array, mas `sizeof p` dá o tamanho de um endereço.
+Agora `values` contém `{10, 25, 30}`, porque `p++` avançou um `int` e `*p = 25` alterou o segundo elemento. Em muitas expressões, o array converte-se num apontador para o primeiro elemento. O array e o apontador continuam a ser objetos diferentes: `sizeof values` dá o tamanho de todo o array, mas `sizeof p` dá o tamanho de um endereço.
 
 Um parâmetro `int values[]` é ajustado para `int *values`. A função não recebe o comprimento do array. Passa-o à parte e nunca acedas fora do intervalo. Podes formar um apontador para uma posição imediatamente a seguir ao fim para controlar um ciclo, mas não o podes desreferenciar.
 
@@ -108,7 +108,7 @@ size_t storage = sizeof name; /* 3 bytes, incluindo \0 */
 
 O array contém `L`, `C` e `\0`. Uma função que procura o fim da string exige que esse terminador exista dentro do objeto. Não passes um array de bytes de hardware diretamente a `%s` ou `strlen`: um pacote PS/2 pode conter zeros nos dados e não tem um terminador de string.
 
-`char name[] = "LC"` cria um array modificável. `const char *name = "LC"` aponta para um literal, que não deves alterar. Para copiar uma string para um array, reserva espaço para todos os caracteres e o terminador. Um limite de bytes copiados que deixa o destino sem `\0` não produz uma string válida.
+`char name[] = "LC"` cria um array modificável. `const char *name = "LC"` aponta para um literal, que não deves alterar. Para copiar uma string para um array, reserva espaço para todos os caracteres e o terminador. Um limite de bytes copiados que deixa o destino sem `\0` não produz uma string válida, porque a função que procura o fim exige o terminador dentro do objeto.
 
 ## Módulos e encapsulamento
 
@@ -174,7 +174,7 @@ cc main.o counter.o -o demo
 ./demo
 ```
 
-A saída é `2`. Um erro de sintaxe ou de tipo aparece na compilação. Uma referência a `counter_tick` sem definição aparece na ligação. Incluir `counter.h` dá a declaração, não acrescenta automaticamente `counter.c` ao executável.
+Incluir `counter.h` dá a declaração, mas não acrescenta automaticamente `counter.c` ao executável, por isso o programa imprime `2` apenas quando ligas os dois objetos. Um erro de sintaxe ou de tipo aparece na compilação. Uma referência a `counter_tick` sem definição aparece na ligação. Incluir `counter.h` dá a declaração, não acrescenta automaticamente `counter.c` ao executável.
 
 Para criar e usar uma biblioteca estática:
 

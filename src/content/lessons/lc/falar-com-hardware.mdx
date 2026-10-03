@@ -11,7 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import registo from '../../lc/registo-byte.typ?raw';
 
-Um controlador liga o processador a um periférico. O programa interage com o controlador através de registos: lê dados recebidos, escreve ordens e consulta o estado da operação. Os registos podem ter efeitos que uma variável normal não tem, como consumir um byte quando o lês.
+Um controlador liga o processador a um periférico. O programa lê dados recebidos, escreve ordens e consulta o estado, ou seja, interage com o controlador através de registos. Esses registos podem ter efeitos que uma variável normal não tem, porque ler pode consumir um byte.
 
 ## Registos e espaços de endereçamento
 
@@ -30,7 +30,7 @@ As portas do timer, do i8042 e da UART são port-mapped I/O. O framebuffer é me
 
 ## Privilégios e Minix
 
-Um processo normal não pode executar qualquer operação de hardware. O sistema limita o acesso para proteger os outros processos e os seus recursos. No Minix, os drivers são processos em espaço de utilizador com permissões próprias. O programa de LC usa **kernel calls** para pedir operações privilegiadas ao microkernel, por exemplo `sys_inb` e `sys_outb`.
+Um processo normal não pode executar qualquer operação de hardware, porque o sistema limita o acesso para proteger os outros processos. No Minix, os drivers são processos em espaço de utilizador com permissões próprias. O programa de LC usa **kernel calls** para pedir operações privilegiadas ao microkernel, por exemplo `sys_inb` e `sys_outb`.
 
 Uma máquina virtual fornece um PC emulado. O Minix acede ao hardware da máquina virtual, não recebe por isso acesso livre aos dispositivos físicos do computador anfitrião. O código dos laboratórios depende da imagem Minix e das bibliotecas de apoio fornecidas para LC.
 
@@ -64,7 +64,7 @@ Uma máscara tem bits a 1 nas posições que interessam. Num byte `r`, as opera�
 | Limpar os bits de `m`                        | `r & ~m`       |
 | Inverter os bits de `m`                      | `r ^ m`        |
 
-`&` combina bits. `&&` testa a verdade de expressões e devolve 0 ou 1. Para `r = 0x20` e `m = 0x01`, `r & m` é 0, mas `r && m` é 1. O segundo teste não diz se o bit 0 está ativo.
+`&` combina bits, ou seja, testa posições. `&&` testa a verdade de expressões e devolve 0 ou 1. Para `r = 0x20` e `m = 0x01`, `r & m` é 0, mas `r && m` é 1, por isso o segundo teste não diz se o bit 0 está ativo.
 
 <Typst
   source={registo}
@@ -78,13 +78,13 @@ Para substituir um campo, limpa primeiro o campo antigo e insere o novo. Se os b
 uint8_t next = (uint8_t)((r & ~0x1Cu) | (5u << 2));
 ```
 
-`0xA7 & ~0x1C` conserva `0xA3`. `5 << 2` dá `0x14`. O resultado é `0xB7`. Usar apenas OR deixaria bits do modo anterior ligados. Usa valores sem sinal nas máscaras e garante que a contagem de um deslocamento é menor do que a largura do operando.
+`0xA7 & ~0x1C` conserva `0xA3` e `5 << 2` dá `0x14`, por isso o resultado é `0xB7`. Usar apenas OR deixaria bits do modo anterior ligados. Usa valores sem sinal nas máscaras e garante que a contagem de um deslocamento é menor do que a largura do operando.
 
 Esta leitura, alteração e escrita só é válida se o registo for legível e permitir essa semântica. Um registo write-only, ou com bits que se limpam ao escrever 1, exige a sequência descrita pelo dispositivo.
 
 ## Polling e timeout
 
-Em **polling**, o programa consulta o estado até a condição ser satisfeita. Antes de ler o output buffer do i8042, espera `OBF = 1`. Antes de escrever uma ordem, espera `IBF = 0`. São condições diferentes.
+Em **polling**, o programa consulta o estado até a condição ser satisfeita, porque ainda não recebeu nenhuma notificação. Antes de ler o output buffer do i8042, espera `OBF = 1`. Antes de escrever uma ordem, espera `IBF = 0`. São condições diferentes.
 
 Um ciclo sem limite pode nunca terminar. Define uma política de falha e deixa o controlador ter tempo para responder. Esta função completa do ambiente Minix espera até cinco tentativas, espaçadas por 20 ms:
 
@@ -109,10 +109,10 @@ int wait_kbc_input_empty(void) {
 
 O resultado esperado é `OK` assim que IBF estiver a 0, ou erro se a leitura falhar ou a condição não surgir. São cinco observações e no máximo quatro atrasos, cerca de 80 ms mais o custo das chamadas e o arredondamento a ticks. Isto é uma política para este exemplo, não uma constante do dispositivo.
 
-Polling não implica sempre espera ativa sem corpo: o programa pode consultar periodicamente e executar outra tarefa entre consultas. Com período de consulta $P$, um evento que fica disponível até ser lido espera entre aproximadamente 0 e $P$ antes de ser detetado. Se os instantes forem uniformes, a espera média é $P/2$. Um buffer pequeno pode perder eventos durante esse intervalo.
+Polling não implica sempre espera ativa sem corpo, porque o programa pode consultar periodicamente e executar outra tarefa entre consultas. Com período de consulta $P$, um evento que fica disponível até ser lido espera entre aproximadamente 0 e $P$ antes de ser detetado. Se os instantes forem uniformes, a espera média é $P/2$. Um buffer pequeno pode perder eventos durante esse intervalo.
 
 ## Quando escolher polling
 
-Polling evita o custo de configurar e receber interrupções e pode servir para uma operação curta e esperada, como obter uma resposta a um comando. Interrupções permitem bloquear à espera de eventos pouco frequentes. A escolha depende da frequência dos eventos, do tempo de resposta permitido, da capacidade do buffer e do custo de cada consulta ou atendimento.
+Polling evita o custo de configurar e receber interrupções, por isso pode servir para uma operação curta e esperada, como obter uma resposta a um comando. Interrupções permitem bloquear à espera de eventos pouco frequentes. A escolha depende da frequência dos eventos, do tempo de resposta permitido, da capacidade do buffer e do custo de cada consulta ou atendimento.
 
 Não concluas que uma das opções é sempre mais rápida. A próxima página separa o pedido de interrupção do dispositivo, o atendimento no kernel e a notificação recebida pelo programa.

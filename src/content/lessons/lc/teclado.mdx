@@ -10,7 +10,7 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import maquina from '../../lc/maquina-teclado.dot?raw';
 
-O teclado produz códigos ao premir e largar teclas. O controlador i8042 do PC recebe esses bytes e coloca-os no output buffer. O programa lê o byte, conserva-o se for válido e só produz um evento de tecla quando o código está completo.
+O teclado produz códigos ao premir e largar teclas. O controlador i8042 do PC recebe esses bytes e coloca-os no output buffer, ou seja, o teu programa lê o byte, conserva-o se for válido e só produz um evento de tecla quando o código está completo.
 
 ## Estado do i8042
 
@@ -26,13 +26,13 @@ Consulta o registo de estado em `0x64`. Os bits usados nas leituras e escritas s
 
 Em polling, espera OBF e distingue a origem pelo AUX. Numa subscrição exclusiva da IRQ1, sabes que a notificação é do teclado, mas ainda precisas de tratar falhas de leitura e erros de comunicação. Teclado e rato partilham a porta de dados: o teu desenho deve impedir que uma rotina consuma um byte destinado à outra.
 
-Se OBF estiver ativo, lê `0x60` mesmo quando o estado assinala erro, para retirar o byte inválido. Descarta-o depois. Deixar esse byte no output buffer pode impedir novas entregas. Não confundas "descartar" com "não ler".
+Se OBF estiver ativo, lê `0x60` mesmo quando o estado assinala erro, para retirar o byte inválido, porque deixar esse byte no output buffer pode impedir novas entregas. Descarta-o depois.
 
 ## Make, break e prefixos
 
 Nos exemplos usamos os **scancodes set 1** usados pelo ambiente do laboratório. Para muitas teclas, o make code indica que a tecla foi premida e o break code é o make com o bit 7 ativo. Esc produz make `0x01` e break `0x81`.
 
-Um scancode não é um carácter ASCII. A tecla que produz `0x1E` no set 1 não entrega o byte ASCII de `a`. Para obter texto, tens de interpretar layout, Shift, Caps Lock e outras teclas. Para controlar uma aplicação, podes trabalhar diretamente com eventos de tecla.
+Um scancode não é um carácter ASCII, porque a tecla que produz `0x1E` no set 1 não entrega o byte ASCII de `a`. Para obter texto, tens de interpretar layout, Shift, Caps Lock e outras teclas. Para controlar uma aplicação, podes trabalhar diretamente com eventos de tecla.
 
 Algumas teclas usam o prefixo `0xE0`. Por exemplo, a seta para a direita produz make `E0 4D` e break `E0 CD`. Duas notificações entregam os dois bytes. O prefixo não é um evento completo e não deve provocar uma ação sozinho.
 
@@ -45,7 +45,7 @@ O set 1 tem também sequências especiais mais longas, como Pause. O descodifica
 
 ## Descodificador por estados
 
-Este programa completo é C portátil. Simula a chegada dos bytes `E0 4D E0 CD 81`, com a mesma lógica que pode ficar acima do handler de hardware. Imprime make e break da seta direita, depois break de Esc.
+Este programa completo é C portátil. Simula a chegada dos bytes `E0 4D E0 CD 81`, com a mesma lógica que pode ficar acima do handler de hardware, e imprime make e break da seta direita seguidos do break de Esc:
 
 ```c
 #include <stdbool.h>
@@ -82,7 +82,7 @@ int main(void) {
 }
 ```
 
-A saída é:
+O programa imprime:
 
 ```text
 make key=0x4D extended=1
@@ -90,7 +90,7 @@ break key=0x4D extended=1
 break key=0x01 extended=0
 ```
 
-O estado do prefixo persiste entre chamadas. Se perderes ou descartares um byte por erro, define também uma política de recuperação do parser; não uses um prefixo antigo para classificar um byte de uma nova sequência.
+O estado do prefixo persiste entre chamadas, por isso se perderes ou descartares um byte por erro, define também uma política de recuperação do parser. Não uses um prefixo antigo para classificar um byte de uma nova sequência.
 
 ## Handler e aplicação
 
@@ -117,7 +117,7 @@ Uma resposta a um comando e um scancode chegam pelo mesmo output buffer. A sequ�
 
 Aqui `0x60` pode ser tanto um valor de comando como um endereço de porta. Distingue-os pela posição na sequência. Não escrevas o valor do command byte diretamente em `0x64`.
 
-Se queres apenas ativar interrupções do teclado, lê o valor anterior e faz `old | 0x01`. Não substituas o byte por `0x01`, porque isso pode alterar a configuração do rato e outros bits. Em experiências de polling que desativam interrupções, guarda e repõe a configuração anterior no fim.
+Se queres apenas ativar interrupções do teclado, lê o valor anterior e faz `old | 0x01`, porque substituir o byte por `0x01` pode alterar a configuração do rato e outros bits. Em experiências de polling que desativam interrupções, guarda e repõe a configuração anterior no fim.
 
 ## Inatividade com timer e teclado
 
