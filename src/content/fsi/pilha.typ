@@ -6,6 +6,6 @@
   node((0, 3), [endereço de retorno], corner-radius: 4pt),
   node((0, 2), [outras variáveis], corner-radius: 4pt),
   node((0, 1), [buf (8 bytes)], corner-radius: 4pt),
-  node((1.6, 1), [entrada de 20 bytes]),
+  node((1.6, 1), [13 bytes (12 + nulo)]),
   edge((1.6, 1), (0, 1), "->", label: [transborda], bend: 20deg),
 )
