@@ -8,17 +8,17 @@ practices:
 order: 10
 ---
 
-As páginas anteriores ensinam a construir decisores: classificadores, pesquisas, otimizadores. Esta pergunta o que pode correr mal quando esses decisores saem do caderno. Os exemplos mostram limites das conclusões, dos dados e dos objetivos.
+As páginas anteriores ensinam a construir decisores: classificadores, pesquisas, otimizadores. Esta pergunta o que pode correr mal quando esses decisores saem do caderno, porque os limites estão nas conclusões, nos dados e nos objetivos.
 
 ## Imitar não é compreender
 
-O **teste de Turing** substitui a pergunta "as máquinas pensam?" por um jogo de imitação em conversa escrita. Avalia se um interrogador distingue as respostas de uma máquina das de uma pessoa, nas condições do teste. O resultado não demonstra consciência, compreensão nem correção factual. A relação entre comportamento e compreensão continua a ser uma questão filosófica. Quando usares assistentes de escrita ou de código, lembra-te de que a fluência do texto não garante a verdade do conteúdo.
+O **teste de Turing** substitui a pergunta "as máquinas pensam?" por um jogo de imitação em conversa escrita. Avalia se um interrogador distingue as respostas de uma máquina das de uma pessoa, nas condições do teste. O resultado não demonstra consciência, compreensão nem correção factual, por isso a relação entre comportamento e compreensão continua a ser uma questão filosófica. Quando usares assistentes de escrita ou de código, lembra-te de que a fluência do texto não garante a verdade do conteúdo.
 
 ## O viés entra pelos dados
 
 Um classificador aprende o que os dados mostram, incluindo os preconceitos lá dentro. O filtro de spam da página de [incerteza](/cadeiras/ia/incerteza-e-bayes/) com 20 mensagens é inofensivo, mas o mesmo Naive Bayes treinado em currículos históricos aprende quem foi contratado no passado e repete o padrão, incluindo discriminação por género ou origem. Um classificador de imagens treinado apenas com pinguins em jardins zoológicos pode usar o fundo como pista e falhar com pinguins na neve. É uma mudança da distribuição dos dados; pode exigir dados mais representativos e alterações no modelo. O exemplo numérico dos animais usava atributos, não imagens.
 
-Daqui saem duas obrigações práticas: auditar os dados antes de treinar (quem está representado, quem falta) e avaliar por grupo, não só no global. A matriz de confusão por grupo mostra o que a exatidão global esconde: 95 por cento de exatidão pode resultar de 100 por cento num grupo com 90 pessoas e 50 por cento noutro com 10: $(90+5)/100=0{,}95$. Para avaliar um filtro de candidaturas, compara também falsos positivos e falsos negativos por grupo e o custo dos erros.
+Daqui saem duas obrigações práticas: auditar os dados antes de treinar (quem está representado, quem falta) e avaliar por grupo, não só no global. A matriz de confusão por grupo mostra o que a exatidão global esconde: 95 por cento de exatidão pode resultar de 100 por cento num grupo com 90 pessoas e 50 por cento noutro com 10. Para avaliar um filtro de candidaturas, compara também falsos positivos e falsos negativos por grupo e o custo dos erros.
 
 ## Alinhamento e segurança
 
