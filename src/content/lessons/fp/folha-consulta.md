@@ -11,7 +11,7 @@ editorial:
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087
 ---
 
-Usa esta folha para escolher uma operação e conferir as suas condições. As ligações levam à explicação e à prática.
+Usa esta folha para escolher uma operação e conferir as suas condições, ou seja, o contrato, os limites e os erros frequentes. As ligações levam à explicação e à prática.
 
 ## Valores e expressões
 
