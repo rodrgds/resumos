@@ -10,6 +10,7 @@ import loja from '../../bd/loja.sql?raw';
 
 <Exercise
   id="not-in-null"
+  revision={2}
   title="Ausência e desconhecido"
   explanation="/cadeiras/bd/sql-subconsultas/#o-perigo-de-not-in-com-null"
   answer={{
@@ -20,12 +21,13 @@ import loja from '../../bd/loja.sql?raw';
     ],
   }}
 >
-  <p>
+  <div>
     Candidato tem ids 1,2,3. Registo contém 1 e NULL. Compara id NOT IN (SELECT
     id FROM Registo) e NOT EXISTS de um registo com r.id = c.id.
-  </p>
+  </div>
   <div slot="hint">
-    Para id 2, há uma comparação verdadeira com 1 e outra desconhecida com NULL.
+    Para id 2, a comparação 2 = 1 é falsa e 2 = NULL é desconhecida. Analisa
+    depois a negação de IN.
   </div>
   <div slot="hint-more">
     NOT EXISTS pergunta se existe uma igualdade verdadeira; o NULL não a
@@ -56,11 +58,11 @@ import loja from '../../bd/loja.sql?raw';
     ],
   }}
 >
-  <p>
+  <div>
     Escreve a condição para clientes que compraram todos os ids de Exigido. Deve
     funcionar com várias encomendas do mesmo produto e com Exigido vazio. Usa
     Cliente como universo.
-  </p>
+  </div>
   <div slot="work">
     <p>Acrescenta a condição à consulta. Com os requisitos 10 e 11, a resposta deve ser apenas Ana. Depois de apagares Exigido, deve incluir Ana, Rui e Mia. A execução apresenta o resultado; confere também estes dois casos.</p>
     <CodePlayground
@@ -104,5 +106,46 @@ ORDER BY c.id;
   <div slot="mistakes">
     Contar linhas Item não conta produtos distintos. Um INNER JOIN que parte de
     compras pode perder clientes sem compras quando os requisitos estão vazios.
+  </div>
+</Exercise>
+
+<Exercise
+  id="maximos-empate-null"
+  revision={1}
+  title="Conservar empates e excluir desconhecidos"
+  explanation="/cadeiras/bd/sql-subconsultas/#máximos-e-empates"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Devolvi os ids 2 e 3, sem perder o empate.',
+      'Excluí o preço desconhecido e tratei a tabela vazia.',
+      'Escrevi uma consulta que calcula o máximo a partir dos dados.',
+    ],
+  }}
+>
+  <div>
+    Oferta(id,preco) contém (1,10), (2,30), (3,30) e (4,NULL). Escreve SQL que
+    devolva os ids com o maior preço conhecido. Deve conservar todos os empates
+    e não devolver linhas se a tabela estiver vazia ou só tiver preços NULL.
+  </div>
+  <div slot="hint">MAX ignora NULL; uma igualdade com NULL não passa WHERE.</div>
+  <div slot="hint-more">Comparar cada preço com uma subconsulta MAX conserva todos os máximos.</div>
+  <div slot="solution">
+
+```sql
+SELECT id FROM Oferta
+WHERE preco = (SELECT MAX(preco) FROM Oferta)
+ORDER BY id;
+```
+
+    Devolve 2 e 3. MAX calcula 30; a linha 4 não satisfaz a igualdade porque
+    a comparação com NULL fica desconhecida. Numa tabela vazia ou só com
+    preços NULL, MAX dá NULL e nenhuma linha passa. Uma alternativa é
+    preco IS NOT NULL e NOT EXISTS de uma oferta com preço maior.
+
+  </div>
+  <div slot="mistakes">
+    LIMIT 1 perde um dos máximos. NOT EXISTS de um preço maior, sem excluir o
+    preço exterior NULL, aceitaria a linha 4. Não fixes o valor 30 na consulta.
   </div>
 </Exercise>

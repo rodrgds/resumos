@@ -45,16 +45,18 @@ BCNF garante decomposição sem perda pelo algoritmo, mas pode perder preservaç
 
 ## Álgebra relacional
 
-| Operador          | Efeito                                                   |
-| ----------------- | -------------------------------------------------------- |
-| $\sigma_p$        | Filtra tuplos.                                           |
-| $\pi_X$           | Escolhe atributos e elimina duplicados.                  |
-| $\rho$            | Renomeia relação ou atributos.                           |
-| $\times$          | Todos os pares; cardinalidade $m n$.                     |
-| $\bowtie_p$       | Seleção de pares que satisfazem p.                       |
-| $\bowtie$         | Igualdade de todos os nomes comuns; sem comuns, produto. |
-| $\cup,\cap,-$     | Esquemas compatíveis; diferença tem direção.             |
-| $R(X,Y)\div S(Y)$ | X ligados a todos os Y de S.                             |
+| Operador          | Efeito                                                                   |
+| ----------------- | ------------------------------------------------------------------------ |
+| $\sigma_p$        | Filtra tuplos.                                                           |
+| $\pi_X$           | Escolhe atributos e elimina duplicados.                                  |
+| $\rho$            | Renomeia relação ou atributos.                                           |
+| $\times$          | Todos os pares; cardinalidade $m n$.                                     |
+| $\bowtie_p$       | Seleção de pares que satisfazem p.                                       |
+| $\bowtie$         | Igualdade de todos os nomes comuns; sem comuns, produto.                 |
+| $\ltimes_p$       | Conserva tuplos da esquerda com correspondência, sem colunas da direita. |
+| $\gamma$          | Agrupa e agrega, extensão da álgebra clássica.                           |
+| $\cup,\cap,-$     | Esquemas compatíveis; diferença tem direção.                             |
+| $R(X,Y)\div S(Y)$ | X ligados a todos os Y de S.                                             |
 
 Divisão: candidatos $\pi_X(R)$; faltas $(\pi_X(R)\times S)-R$; retira candidatos com faltas. Se S vazia, devolve $\pi_X(R)$. Para outro universo de candidatos, define-o explicitamente. [Álgebra](/cadeiras/bd/algebra-relacional/#divisão-perguntas-com-todos).
 

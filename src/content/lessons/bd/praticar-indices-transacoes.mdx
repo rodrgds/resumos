@@ -18,11 +18,11 @@ import Exercise from '../../../components/Exercise.astro';
     ],
   }}
 >
-  <p>
+  <div>
     A consulta frequente é WHERE idCliente=7 AND data BETWEEN duas datas.
     Compara os índices (idCliente,data) e (data,idCliente), sem assumir
     distribuições adicionais.
-  </p>
+  </div>
   <div slot="hint">
     Um índice composto ordena primeiro pela primeira coluna.
   </div>
@@ -49,11 +49,11 @@ import Exercise from '../../../components/Exercise.astro';
   explanation="/cadeiras/bd/indices-transacoes/#savepoints"
   answer={{ kind: 'number', value: 15, tolerance: 0 }}
 >
-  <p>
+  <div>
     Um valor começa em 10. Dentro de BEGIN, somamos 5, criamos SAVEPOINT s,
     multiplicamos por 2, fazemos ROLLBACK TO s, RELEASE s e COMMIT. Qual o valor
     final?
-  </p>
+  </div>
   <div slot="hint">O savepoint foi criado depois da soma.</div>
   <div slot="hint-more">
     ROLLBACK TO desfaz a multiplicação, não a operação anterior.
@@ -67,5 +67,40 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Não confundas RELEASE de um savepoint interior com confirmação durável da
     transação exterior.
+  </div>
+</Exercise>
+
+<Exercise
+  id="sqlite-erro-transacao-aberta"
+  revision={1}
+  title="Um erro desfez quanto trabalho?"
+  explanation="/cadeiras/bd/indices-transacoes/#um-erro-não-faz-sempre-rollback-de-tudo"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Distingui o estado após a instrução falhada do estado após ROLLBACK.',
+      'Expliquei o tratamento necessário antes de confirmar.',
+    ],
+  }}
+>
+  <div>
+    Em SQLite, Conta(id,saldo) tem saldo NOT NULL CHECK(saldo >= 0).
+    A conta 1 começa com 100. Executamos BEGIN, um UPDATE que põe o saldo a 80
+    e outro UPDATE que o põe a -1. A aplicação apanha a violação de CHECK,
+    usando a política ABORT por omissão. Qual o saldo dentro da transação?
+    E depois de ROLLBACK? A transação terminou automaticamente com o erro?
+  </div>
+  <div slot="hint">ABORT desfaz a instrução, não as anteriores da mesma transação.</div>
+  <div slot="hint-more">O UPDATE para 80 terminou antes da instrução inválida.</div>
+  <div slot="solution">
+    Após o erro, o saldo continua 80 dentro da transação, que permanece aberta.
+    A escrita de -1 foi desfeita. ROLLBACK repõe 100 e termina a transação.
+    Se a aplicação fizer COMMIT após apanhar o erro, pode confirmar 80.
+    Numa operação que exige sucesso de todos os passos, deve fazer rollback
+    da unidade completa em vez de assumir que o motor já o fez.
+  </div>
+  <div slot="mistakes">
+    Não generalizes a política ABORT a ROLLBACK, FAIL ou a todos os tipos de
+    erro. PostgreSQL normalmente deixa a transação em estado abortado após erro.
   </div>
 </Exercise>
