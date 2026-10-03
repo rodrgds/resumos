@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 
-Um apontador guarda o endereço de um objeto. Saber o endereço permite aceder ao objeto, mas não garante que ele ainda existe, que o acesso é permitido ou que o apontador é responsável por o destruir. Estas perguntas têm de ser respondidas separadamente.
+Um apontador guarda o endereço de um objeto. Conhecer o endereço permite aceder ao objeto, mas não diz se ele ainda existe nem quem o deve destruir. Tens de responder a essas perguntas separadamente.
 
 ## Endereço de e dereferenciação
 
@@ -31,7 +31,7 @@ Saída:
 5 7 5
 ```
 
-No início, `p` e `q` apontam para `a`. `*q += 2` altera `a` de `3` para `5`. Depois, `p = &b` muda apenas `p`; `q` continua a apontar para `a`. `*p -= 1` altera `b` para `7`. Os dois apontadores são objetos distintos, embora tenham começado com o mesmo valor.
+No início, `p` e `q` apontam para `a`, por isso `*q += 2` altera `a` de `3` para `5`. Depois, `p = &b` muda apenas `p`; `q` continua em `a`. Os dois apontadores são objetos distintos, mesmo quando guardam o mesmo endereço.
 
 <Dot
   source={
@@ -88,13 +88,18 @@ Saída:
 1 2 3
 ```
 
-O percurso começa no primeiro nó. Depois de ler `1`, o campo `seguinte` leva ao segundo, depois ao terceiro. O último guarda `nullptr`, por isso a condição impede uma leitura por um apontador nulo. O ciclo termina porque esta cadeia tem um fim e não regressa a um nó anterior.
+O percurso lê `1`, segue `seguinte` até ao segundo e ao terceiro, e para porque o último guarda `nullptr`. A condição impede a leitura por um apontador nulo.
 
 Os três objetos são locais e mantêm-se vivos durante o percurso. Os campos são observadores: não destroem os nós. Não uses `delete` nestes endereços, porque os objetos não foram criados com `new`. Se uma estrutura reservar nós dinamicamente, precisa de definir quem os possui e liberta.
 
 ## Pilha, área livre e duração de vida
 
-Uma variável local normal tem **duração automática** e é destruída ao sair do bloco. A implementação costuma guardar estes objetos na pilha, ou _stack_. Um objeto criado com `new` tem duração dinâmica e permanece até à destruição explícita. O seu armazenamento vem da área livre, habitualmente chamada _heap_. A norma descreve durações de armazenamento; não exige uma organização física específica com estes nomes.
+Uma variável local normal tem **duração automática**, ou seja, é destruída ao sair do bloco. Um objeto criado com `new` tem duração dinâmica e permanece até à destruição explícita.
+
+:::details[Pilha e área livre]
+
+A implementação costuma guardar objetos automáticos na pilha (_stack_) e objetos dinâmicos na área livre (_heap_). A norma descreve apenas durações de armazenamento.
+:::
 
 Um apontador local e o objeto dinâmico para o qual aponta têm vidas diferentes. Ao sair da função, destruir o apontador não destrói um objeto criado com `new`. Retornar o endereço de uma variável local também não prolonga a vida dessa variável.
 
@@ -156,10 +161,15 @@ Saída:
 true 7 7
 ```
 
-Depois do movimento, `primeiro` está vazio e `segundo` é o dono. O inteiro não mudou de endereço e `observador` ainda é válido. Ao destruir `segundo`, o inteiro desaparece; qualquer observador que sobreviva fica pendente. Nunca faças `delete observador`.
+:::tip[Ideia-chave]
+
+Desenha objetos, valores e setas em separado. Em cada atribuição, pergunta se mudaste o apontador ou o objeto apontado; em cada destruição, marca todos os aliases como pendentes.
+:::
+
+Depois do movimento, `primeiro` está vazio e `segundo` é o dono. O inteiro não mudou de endereço e `observador` ainda é válido. Quando `segundo` morre, qualquer observador que sobreviva fica pendente.
 
 `std::shared_ptr` permite vários donos e destrói o objeto quando termina a última propriedade forte. Tem custo de gestão e não resolve ciclos de propriedade fortes. Usa-o quando o modelo realmente exige propriedade partilhada, não para evitar decidir quem é o dono. `std::weak_ptr` permite observar essa propriedade sem a prolongar.
 
 ## Ler a memória em palavras
 
-Para seguir código com apontadores, desenha os objetos vivos, os seus valores e as setas separadamente. Em cada atribuição, identifica se o lado esquerdo é o apontador ou o objeto apontado. Em cada destruição, risca o objeto e marca todos os aliases como pendentes. Esta forma de raciocinar continua a ser necessária quando usas smart pointers: a gestão automática evita muitas fugas, mas um observador ainda pode durar mais que o dono.
+Esta forma de raciocinar continua necessária com smart pointers: a gestão automática evita fugas, mas um observador ainda pode durar mais que o dono.

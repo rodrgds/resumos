@@ -11,7 +11,7 @@ editorial:
 
 ## Tipos e funções
 
-- `5 / 2` dá `2`; `5.0 / 2` dá `2.5`. Converter o destino depois não recupera a fração. Divisão inteira trunca em direção a zero. Divisão inteira por zero e overflow com sinal têm comportamento indefinido. [Expressões](/cadeiras/p/cpp-fundamentos/#operadores-e-divisão).
+- `5 / 2` dá `2`; `5.0 / 2` dá `2.5`, porque a divisão usa os operandos. Converter o destino depois não recupera a fração. Divisão inteira por zero e overflow com sinal têm comportamento indefinido. [Expressões](/cadeiras/p/cpp-fundamentos/#operadores-e-divisão).
 - `=` atribui; `==` compara. Um intervalo exige `min <= x && x <= max`, não `min <= x <= max`. `&&` e `||` usam curto-circuito. Inicializa antes de ler e confirma o sucesso de `cin`. [Entrada e controlo](/cadeiras/p/cpp-fundamentos/#entrada-e-saída-com-iostream).
 - `T` passa por valor; `T&` dá acesso modificável; `const T&` evita a cópia e restringe esse acesso; `T*` pode ser nulo. Uma referência não muda de destino. Sobrecargas não se distinguem só pelo retorno. [Funções](/cadeiras/p/funcoes-arrays/#valor-referência-e-const).
 - Um array C tem índices de `0` a `N-1`. Num parâmetro, ajusta-se para apontador e precisa de tamanho separado. `sizeof` do parâmetro não mede o array original. Uma string de C exige `\0`, logo `n+1` posições para `n` unidades de texto. [Arrays e texto](/cadeiras/p/funcoes-arrays/#arrays-c-e-dimensões).
@@ -29,7 +29,7 @@ editorial:
 
 - `[begin, end)` exclui o fim. A posição depois do último elemento pode marcar o fim, mas não pode ser desreferenciada. A aritmética não permite saltar entre objetos independentes. [Limites](/cadeiras/p/apontadores-memoria/#apontadores-e-arrays).
 - Um objeto automático morre ao sair do âmbito; retornar o seu endereço não prolonga a vida. `new T` exige `delete`; `new T[n]` exige `delete[]`. `delete nullptr` é válido; desreferenciar `nullptr` não é. Após destruição, todos os aliases ficam pendentes. Pôr um deles a nulo não repara os outros. [Duração](/cadeiras/p/apontadores-memoria/#pilha-área-livre-e-duração-de-vida).
-- RAII liga a libertação à vida do dono. Prefere `vector`, `string` e `unique_ptr`; usa `shared_ptr` quando a propriedade é realmente partilhada. Um observador não prolonga a vida do recurso. [RAII](/cadeiras/p/apontadores-memoria/#o-essencial-de-raii-e-smart-pointers).
+- RAII liga a libertação à vida do dono. Prefere `vector`, `string` e `unique_ptr`; usa `shared_ptr` só com propriedade realmente partilhada. Um observador não prolonga a vida do recurso. [RAII](/cadeiras/p/apontadores-memoria/#o-essencial-de-raii-e-smart-pointers).
 
 ## Objetos, cópia e herança
 

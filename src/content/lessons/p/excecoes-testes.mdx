@@ -9,7 +9,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Uma função pode encontrar uma situação em que não consegue cumprir o seu contrato. Uma exceção permite abandonar essa operação e procurar um chamador que saiba tratar a falha. Os testes verificam o comportamento esperado; os sanitizers procuram certas violações durante a execução. Nenhum destes mecanismos substitui os restantes.
+Uma função pode não conseguir cumprir o seu contrato. Uma exceção abandona essa operação e procura um chamador que saiba tratar a falha. Os testes verificam o comportamento esperado e os sanitizers procuram violações em execução, ou seja, nenhum substitui os restantes.
 
 ## Lançar e apanhar
 
@@ -57,7 +57,7 @@ Erro: Divisao por zero
 Continuar
 ```
 
-A divisão lança antes de produzir um resultado. A execução abandona `dividir`, depois `calcular`, e chega ao `catch` de `main`. A linha `Fim do calculo` não corre. O objeto `recurso` é destruído na saída de `calcular`, por isso `Libertar` aparece antes da mensagem de erro. Depois do tratador, a execução continua após o bloco `try`/`catch`, não na linha que lançou.
+A divisão lança antes de produzir resultado, por isso a execução abandona `dividir` e `calcular` até ao `catch` de `main`. O objeto `recurso` é destruído à saída, logo `Libertar` aparece antes do erro. Depois do tratador, a execução continua após o `try`/`catch`.
 
 Apanha por `const std::exception&` ou pela referência constante ao tipo específico. Apanhar por valor pode copiar e cortar informação de uma exceção derivada. Coloca tratadores mais específicos antes dos gerais. Dentro de um `catch`, `throw;` relança a exceção atual.
 
@@ -71,15 +71,13 @@ Destrutores devem libertar recursos sem deixar sair exceções. Se uma segunda e
 
 ## Garantias perante falhas
 
-A garantia **básica** conserva invariantes e não perde recursos, embora o estado possa mudar. A garantia **forte** deixa o estado anterior intacto quando a operação falha. Uma garantia de **não lançar** promete que não sai exceção.
-
-Na [atribuição do Buffer](/cadeiras/p/copia-propriedade/#atribuir-sem-perder-o-recurso-anterior), preparar a cópia antes da troca dá garantia forte. Não é necessário prometer essa garantia em toda a operação; é necessário documentar a que o chamador pode esperar.
+A garantia **básica** conserva invariantes sem prometer o estado final. A garantia **forte** restaura o estado anterior. Na [atribuição do Buffer](/cadeiras/p/copia-propriedade/#atribuir-sem-perder-o-recurso-anterior), preparar a cópia antes da troca dá garantia forte. Documenta a garantia que o chamador pode esperar.
 
 Uma entrada inválida do utilizador é previsível. Podes devolver um estado de erro, um valor opcional ou tratar o fluxo diretamente. Uma exceção serve quando falhar impede cumprir a operação e o tratamento pertence a outro nível. Não uses exceções para substituir a condição habitual de um ciclo.
 
 ## Testar com asserts
 
-Um teste unitário chama uma operação com uma entrada pequena e compara o efeito com um resultado calculado a partir do contrato. Aqui, contamos valores no intervalo fechado `[minimo, maximo]`. Se o limite inferior é maior que o superior, o intervalo não contém valores.
+Um teste unitário chama uma operação com uma entrada pequena e compara com o resultado do contrato. Aqui, contamos valores em `[minimo, maximo]`; se `minimo > maximo`, o intervalo é vazio.
 
 <CodePlayground
   language="cpp"
@@ -98,7 +96,7 @@ Saída:
 
 O segundo caso separa valores imediatamente antes, nos limites e imediatamente depois. Só `0`, `1`, `19` e `20` contam. O terceiro verifica o intervalo reduzido a um valor e repetidos. Estes resultados vêm do enunciado, não de repetir o mesmo algoritmo no teste.
 
-`assert` interrompe o programa se a condição falha e apresenta a localização. Pode ser removido quando `NDEBUG` está definido. Não coloques dentro de `assert` uma operação de que o programa depende e não uses `assert` para validar dados externos em produção. Uma biblioteca de testes mantém as verificações ativas e apresenta vários resultados; a ideia de testar o contrato é a mesma.
+`assert` interrompe se a condição falha, mas pode desaparecer com `NDEBUG`. Por isso, não ponhas lá operações de que o programa depende nem validação de dados externos em produção.
 
 ## Escolher casos de teste
 
@@ -117,7 +115,7 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic -g -O1 -fsanitize=address,undefined -fno
 
 AddressSanitizer deteta muitos acessos fora de memória válida e usos depois de libertar. UndefinedBehaviorSanitizer deteta certas operações inválidas, como alguns overflows com sinal. O suporte e a deteção de fugas dependem da plataforma. Só analisam os caminhos executados e não garantem ausência de erros. Não estão ativos nos exemplos do navegador.
 
-Uma mensagem do sanitizer aponta a operação inválida e costuma incluir a cadeia de chamadas. Lê primeiro a primeira falha, reduz a entrada que a provoca e corrige a causa. Um programa que "imprimiu o resultado certo" pode mesmo assim ter comportamento indefinido.
+Uma mensagem do sanitizer aponta a operação inválida com a cadeia de chamadas. Lê a primeira falha e reduz a entrada, porque um programa com saída certa pode ter comportamento indefinido.
 
 ## Documentar com comentários
 
