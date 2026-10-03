@@ -1,6 +1,6 @@
 ---
 title: Praticar Tomasulo
-description: Problemas próprios com condições, pistas e resoluções completas.
+description: Questões de treino com hipóteses, pistas e resoluções justificadas.
 section: exercicios
 editorial:
   basedOn: 2024/25
@@ -10,6 +10,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-tomasulo-tag"
+  revision={1}
   title="Capturar e renomear na ordem certa"
   explanation="/cadeiras/ac/tomasulo/#emitir-executar-e-difundir"
   answer={{
@@ -38,19 +39,30 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-tomasulo-cdb"
-  title="Arbitrar dois resultados"
+  revision={2}
+  title="Esperar pelos dois operandos"
   explanation="/cadeiras/ac/tomasulo/#um-exemplo-completo"
-  answer={{ kind: 'number', value: 9, tolerance: 0 }}
+  answer={{ kind: 'number', value: 8, tolerance: 0 }}
 >
   <div>
-    No exemplo de I1 mul, I2 add, I3 sub desta lição, qual é o ciclo de difusão
-    do resultado final de I3?
+    I1: f0=f2×f4; I2: f2=f6+f8; I3: f0=f0−f2. Todos os registos estão
+    inicialmente prontos. Há uma unidade de multiplicação e outra de
+    adição/subtração, ambas sem pipeline, com 2 ciclos de execução. Há uma
+    estação M1 e duas A1/A2. Emite uma instrução por ciclo a partir do ciclo 1;
+    começa a executar no ciclo seguinte à emissão ou à receção do último
+    operando. Difunde no ciclo seguinte ao fim da execução, num CDB que dá
+    prioridade à mais antiga. Em que ciclo se difunde I3?
   </div>
-  <div slot="hint">I1 e I2 competem pelo CDB.</div>
-  <div slot="hint-more">I1 difunde 5, I2 difunde 6; I3 executa 7 e 8.</div>
+  <div slot="hint">
+    I3 espera pelos resultados de I1 e I2, não pelos valores iniciais de f0/f2.
+  </div>
+  <div slot="hint-more">
+    I1 executa 2–3 e I2 executa 3–4. Escreve o CDB de cada uma.
+  </div>
   <div slot="solution">
-    I3 difunde no ciclo 9. O segundo operando chega no CDB 6 e a execução começa
-    no ciclo seguinte.
+    I1 difunde no ciclo 4 e I2 no 5, sem competir pelo CDB. I3 recebe o último
+    operando no ciclo 5, executa nos ciclos 6 e 7 e difunde no 8. Qi(f0)=A2
+    impede I1 de sobrescrever o destino, mas A2 recebe o seu valor.
   </div>
   <div slot="mistakes">
     Difundir dois resultados no mesmo CDB ou começar EX antes de receber o
@@ -60,6 +72,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-tomasulo-waw"
+  revision={1}
   title="Não sobrescrever uma versão mais nova"
   explanation="/cadeiras/ac/tomasulo/#tabela-de-operandos-após-emitir-i3"
   answer={{
@@ -96,5 +109,54 @@ import Exercise from '../../../components/Exercise.astro';
   </div>
   <div slot="mistakes">
     Confundir não escrever o registo com perder o resultado para consumidores.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-tomasulo-emissao-bloqueada"
+  revision={1}
+  title="Uma estação cheia pode bloquear uma instrução independente"
+  explanation="/cadeiras/ac/tomasulo/#bloqueios-e-arbitragem"
+  answer={{
+    kind: 'choice',
+    options: [
+      {
+        text: 'I3 espera porque I2 ainda não pode ser emitida.',
+        correct: true,
+        explanation:
+          'Neste modelo a emissão segue a ordem do programa, mesmo quando unidades diferentes estão livres.',
+      },
+      {
+        text: 'I3 é emitida logo para A1 porque é independente.',
+        correct: false,
+        explanation:
+          'Execução fora de ordem não permite ultrapassar uma instrução ainda na fila de emissão.',
+      },
+      {
+        text: 'I2 ocupa A1 temporariamente.',
+        correct: false,
+        explanation:
+          'Uma estação de adição não aceita a multiplicação neste contrato.',
+      },
+    ],
+  }}
+>
+  <div>
+    Tomasulo com emissão em ordem, uma estação M1 de multiplicação e uma A1 de
+    adição. I1 é mul e ocupa M1 até difundir; I2 é outra mul; I3 é add
+    independente e A1 está livre. Antes de I1 libertar M1, o que acontece a I3?
+  </div>
+  <div slot="hint">
+    Distingue esperar pela emissão de esperar em uma estação.
+  </div>
+  <div slot="hint-more">I2 não cabe em M1; I3 está depois de I2 na fila.</div>
+  <div slot="solution">
+    I3 não é emitida enquanto I2 bloqueia a fila por falta de estação. Se I2 já
+    tivesse sido emitida para outra estação, I3 poderia executar antes dela
+    quando tivesse operandos e unidade.
+  </div>
+  <div slot="mistakes">
+    Confundir emissão em ordem com execução em ordem ou atribuir uma operação a
+    uma estação de classe errada.
   </div>
 </Exercise>
