@@ -7,6 +7,10 @@ practices:
   - pfl/praticar-funcoes
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Rodrigo
+    date: '2026-10-03'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -21,7 +25,7 @@ import Tabs from '../../../components/Tabs.astro';
 import media from '../../pfl/media.hs?raw';
 import pipeline from '../../pfl/p3pipeline.typ?raw';
 
-Toda a função em Haskell recebe na verdade um só argumento. Uma função "de dois argumentos" é uma função que recebe o primeiro e devolve outra função à espera do segundo. Esta convenção chama-se **currying** e transforma a aplicação parcial, passar só alguns argumentos, na ferramenta mais usada da linguagem.
+Uma função é de **ordem superior** se recebe uma função ou devolve uma função. Em Haskell, cada aplicação fornece um argumento. Uma função "de dois argumentos" é uma função que recebe o primeiro e devolve outra função à espera do segundo. Esta convenção chama-se **currying** e transforma a aplicação parcial, passar só alguns argumentos, numa forma de especializar funções.
 
 ## Aplicação parcial
 
@@ -39,7 +43,7 @@ Isto generaliza o que viste em [FP](/cadeiras/fp/programacao-funcional/): o `lam
 
 ## map, filter e foldr
 
-O prelúdio traz as três de ordem superior que já conheces, com tipos honestos:
+O **Prelude**, importado por omissão, inclui estas funções de ordem superior. Estes tipos são as versões especializadas a listas:
 
 ```haskell
 map    :: (a -> b) -> [a] -> [b]
@@ -64,7 +68,7 @@ Em `[8,12,6,15,10]`, `filter` conserva `[12,15,10]`. A soma é `37` e o comprime
 
 Podes usar `where` para dar nome a etapas intermédias. Nesta versão usamos `case` para tratar as duas formas do resultado do filtro.
 
-O diagrama segue os dados da pauta `[8,12,6,15,10]` por esse pipeline, da esquerda para a direita:
+O diagrama segue os dados da pauta `[8,12,6,15,10]` por esse pipeline, de cima para baixo:
 
 <Typst
   source={pipeline}
@@ -72,15 +76,13 @@ O diagrama segue os dados da pauta `[8,12,6,15,10]` por esse pipeline, da esquer
   alt="Pipeline da média das aprovações: a pauta passa pelo filter, fica 12, 15 e 10, soma 37 com 3 elementos e divide para 12,33."
 />
 
-Corre o exemplo no navegador e muda a pauta para confirmar que a média acompanha:
+O programa usa a mesma função nos casos com e sem aprovações:
 
 <CodePlayground
   language="haskell"
   code={media}
   title="Média segura, folds e prefixos"
 />
-
-A primeira linha é `Just 12.333333333333334`; a segunda é `Nothing`. As restantes linhas conferem os folds e o prefixo de quadrados explicados abaixo.
 
 :::warning[Divisão sem casos de ausência]
 Uma versão que calcula `sum xs / fromIntegral (length xs)` na lista vazia faz `0/0`, que em `Double` dá `NaN`. Não é uma média. Além disso, a assinatura `[Int]` é incompatível com o literal `9.5` no filtro. Um tipo correto e um caso de ausência explícito resolvem problemas diferentes.
@@ -98,7 +100,7 @@ somaE :: [Int] -> Int
 somaE = foldl (+) 0
 ```
 
-`foldr (-) 0 [1,2,3]` calcula `1 - (2 - (3 - 0))`, que dá `2`. Já `foldl (-) 0 [1,2,3]` calcula `((0 - 1) - 2) - 3`, que dá `-6`. Com inteiros sem overflow e `(+)`, os dois concordam, e é por isso que o exemplo da média não distingue; com `(-)` ou com `(:)`, a direção decide o resultado. A versão com acumulador explícito é o `foldl` escrito à mão:
+`foldr (-) 0 [1,2,3]` calcula `1 - (2 - (3 - 0))`, que dá `2`. Já `foldl (-) 0 [1,2,3]` calcula `((0 - 1) - 2) - 3`, que dá `-6`. Com inteiros sem overflow e `(+)`, os dois concordam, e é por isso que o exemplo da média não distingue; com `(-)`, a direção muda o resultado. `(:)` cabe diretamente em `foldr`; em `foldl`, é preciso inverter a ordem dos argumentos, como em `flip (:)`. A comparação seguinte expande `foldr` em recursão direta. Uma versão com acumulador explícito seguiria `foldl`:
 
 <Tabs id="dobras" labels={['Com foldr', 'Recursão à mão']}>
   <div slot="panel-0">
@@ -137,7 +139,7 @@ ghci> take 3 (repeat "ola")
 
 ## Escolher a função de ordem superior
 
-`takeWhile p` conserva apenas o prefixo que satisfaz `p`; `filter p` examina a lista inteira. Em `[2,4,1,6]`, `takeWhile even` dá `[2,4]`, enquanto `filter even` dá `[2,4,6]`. `dropWhile even` dá `[1,6]`. O `6` já não é testado para terminar o prefixo: a fronteira foi o primeiro `1`.
+`takeWhile p` conserva apenas o prefixo que satisfaz `p`; `filter p` continua a procurar depois de um elemento falhar. Produzir todo o resultado de uma lista finita exige percorrê-la; pedir só um prefixo pode exigir menos. Em `[2,4,1,6]`, `takeWhile even` dá `[2,4]`, enquanto `filter even` dá `[2,4,6]`. `dropWhile even` dá `[1,6]`. O `6` já não é testado para terminar o prefixo: a fronteira foi o primeiro `1`.
 
 `all p xs` é verdadeiro se todos os elementos satisfazem `p`; `any p xs` basta-se com um. Na lista vazia, `all` dá `True` e `any` dá `False`. Estas identidades permitem escrever `and = foldr (&&) True` e `or = foldr (||) False`.
 

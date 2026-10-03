@@ -7,6 +7,10 @@ practices:
   - pfl/praticar-unificacao
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Rodrigo
+    date: '2026-10-03'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -23,7 +27,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import emparelha from '../../pfl/p7unifica.typ?raw';
 import arvoreSLD from '../../pfl/p7sld.dot?raw';
 
-Em Prolog não escreves como calcular. Declaras **factos** (o que é verdade) e **regras** (o que se conclui), fazes uma **query**, e o motor procura a resposta por ti. O programa é uma base de conhecimento; a execução é procura com retrocesso. A lógica por baixo é a [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD, restrita a **cláusulas de Horn**: no máximo um literal positivo. Esta forma permite resolução orientada a objetivos, mas não garante terminação.
+Em Prolog defines relações com **factos**, que afirmam casos concretos, e **regras**, que ligam uma conclusão a condições. Uma **consulta**, ou query, pede os valores que satisfazem uma relação. O programa é uma base de conhecimento; a execução é procura com retrocesso. A lógica por baixo é a [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD, restrita a **cláusulas de Horn**: no máximo um literal positivo. Esta forma permite resolução orientada a objetivos, mas não garante terminação.
 
 ## Factos, regras e queries
 
@@ -38,15 +42,15 @@ As três primeiras linhas são factos: Tomás é pai da Ana, e por aí fora. A �
 
 ## Unificação
 
-Antes de procurar, o motor precisa de casar termos. **Unificar** dois termos é encontrar a substituição mínima de variáveis que os torna iguais:
+Antes de procurar, o motor precisa de casar termos. **Unificar** dois termos é encontrar uma substituição que os torna iguais. Procuramos a mais geral, que não fixe valores desnecessários:
 
 - `pai(ana, X)` com `pai(ana, leo)` unifica com `{X/leo}`.
 - `pai(X, leo)` com `pai(ana, leo)` unifica com `{X/ana}`.
 - `pai(X, leo)` com `pai(tomas, ana)` falha: `leo` nunca iguala `ana`, e nenhuma substituição muda átomos.
 
-A substituição aplica-se a toda a query de uma vez, o que propaga cada descoberta a todos os lugares onde a variável aparece. É este mecanismo, e não atribuição, que move valores pelo programa.
+A substituição aplica-se a toda a consulta de uma vez, o que propaga cada descoberta a todos os lugares onde a variável aparece. É este mecanismo, e não atribuição, que move valores pelo programa.
 
-O diagrama emparelha os dois primeiros exemplos com os factos: à esquerda a query, à direita o facto, e no meio a substituição que os iguala. O terceiro par não tem seta de sucesso porque nenhum facto casa `tomas` com `ana` na segunda posição.
+O diagrama compara um par que unifica e um que falha. No segundo, a primeira posição permitiria `X=tomas`, mas a segunda exige igualar os átomos distintos `leo` e `ana`.
 
 <Typst
   source={emparelha}
@@ -71,11 +75,11 @@ A árvore completa da query, com o ramo de sucesso e o beco do retrocesso:
   alt="Árvore SLD de avo(ana, X): a query unifica com a regra, pai(ana, Y) casa com o facto dando Y igual a leo, pai(leo, X) casa dando X igual a rui; o retrocesso não encontra alternativas."
 />
 
-Corre a query no navegador com os factos da página:
+A consulta `avo(ana,X)` encontra Rui como neto da Ana:
 
 <CodePlayground
   language="prolog"
-  title="avô da Ana no navegador"
+  title="Quem é neto da Ana?"
   code={
     'pai(tomas, ana).\npai(ana, leo).\npai(leo, rui).\navo(X, Z) :- pai(X, Y), pai(Y, Z).\n\nmain :- avo(ana, X), writeln(X).'
   }
@@ -93,7 +97,7 @@ true.
 Não há facto com `rui` como pai, a prova falha finitamente, e a negação sucede. Isto é "negação por falha", não negação lógica: o motor não prova que é falso, constata que não consegue provar que é verdade.
 
 :::warning[Variáveis livres na negação]
-`?- \+ pai(X, leo).` responde `false`, e não "ninguém". Como `pai(ana, leo)` prova-se com `X = ana`, a negação falha, e o `X` fica por ligar. Regra prática: só nega objetivos sem variáveis por preencher, ou liga-as antes. Este é o erro mais traiçoeiro dos primeiros programas.
+`?- \+ pai(X, leo).` responde `false`, e não "ninguém". Como `pai(ana, leo)` prova-se com `X = ana`, a negação falha, e o `X` fica por ligar. Regra prática: só nega objetivos sem variáveis por preencher, ou liga-as antes. A ordem entre gerar candidatos e negar a relação muda o resultado.
 :::
 
 ## Termos e variáveis de cada cláusula

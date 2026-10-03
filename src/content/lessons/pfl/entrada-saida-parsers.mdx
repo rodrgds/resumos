@@ -7,6 +7,10 @@ practices:
   - pfl/praticar-parsers
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Rodrigo
+    date: '2026-10-03'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -18,11 +22,11 @@ editorial:
 import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
-import YouTube from '../../../components/YouTube.astro';
+import parser from '../../pfl/parser.hs?raw';
 import arvores from '../../pfl/p5arvores.typ?raw';
 import chamadas from '../../pfl/p5parser.dot?raw';
 
-Uma função pura não pode ler do teclado: o mesmo input teria de dar sempre o mesmo output, e o utilizador não colabora. Haskell separa o cálculo puro do contacto com o mundo no tipo **`IO`**. Um valor `IO ()` é uma **ação**, uma receita que, quando executada, interage e devolve `()`. O `main` do programa é uma ação composta.
+Uma função pura não pode ler do teclado: o mesmo argumento deve determinar o mesmo resultado, mas a linha lida depende de uma interação. Haskell separa o cálculo puro do contacto com o mundo no tipo **`IO`**. Um valor `IO ()` é uma **ação**, uma receita que, quando executada, interage e devolve `()`. O `main` do programa é uma ação composta.
 
 ## I/O com do
 
@@ -34,7 +38,7 @@ main = do
   putStrLn ("Ola, " ++ nome ++ "!")
 ```
 
-Cada linha do `do` é uma ação executada por ordem. A seta `<-` corre a ação e dá nome ao resultado: `nome` fica com a string lida. Sem seta, como em `putStrLn`, o resultado é ignorado. Repara que `++ nome ++` é cálculo puro dentro da ação: a fronteira entre puro e `IO` passa exatamente na seta. A regra de ouro: empurra a lógica para funções puras e deixa no `do` só a conversa com o exterior.
+Neste exemplo, cada linha do `do` executa uma ação por ordem. Um bloco `do` também pode conter definições puras com `let`. A seta `<-` corre a ação e dá nome ao resultado: `nome` fica com a string lida. Sem seta, como em `putStrLn`, o resultado é ignorado. `"Ola, " ++ nome ++ "!"` calcula uma string pura, e `putStrLn` cria a ação que a imprime. A seta liga o resultado de uma ação; não marca todos os efeitos do bloco. Separa os cálculos em funções puras e usa o bloco `do` para ligar as ações aos seus resultados.
 
 ## Parsers como funções
 
@@ -52,7 +56,7 @@ item = P (\inp -> case inp of
                    (c:cs) -> [(c, cs)])
 ```
 
-Resultado vazio significa falha. Sobre esta base definem-se os **combinadores**, parsers feitos de parsers: sequência com o `do` (o `Parser` é um mônada), alternativa com `+++` (tenta o segundo se o primeiro falhar) e repetição com `many`:
+Resultado vazio significa falha. Sobre esta base definem-se os **combinadores**, parsers feitos de parsers: sequência com o `do` (definimos uma instância de `Monad` para `Parser`), alternativa com `+++` (tenta o segundo se o primeiro falhar) e repetição com `many`:
 
 ```haskell
 import Data.Char (isDigit, isSpace)
@@ -111,19 +115,9 @@ symbol :: Char -> Parser Char
 symbol c = token (sat (== c))
 ```
 
-(`return` é `pure`; o `do` usa o `>>=` acima.) Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta.
+`Functor` aplica uma função ao resultado com `fmap`. `Applicative` fornece `pure`, sucesso sem consumir entrada, e `<*>`, sequência de um parser de funções com um parser de argumentos. `Monad` fornece `>>=`, que escolhe o parser seguinte a partir do valor acabado de ler. Aqui `return` tem o mesmo papel que `pure`, e o `do` usa `>>=`. Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta.
 
-Experimenta a base no navegador com o prelúdio completo do parser. O `nat` lê um número natural e diz o que sobrou:
-
-<CodePlayground
-  language="haskell"
-  title="nat e many1 digit no navegador"
-  code={
-    'import Data.Char (isDigit)\n\nnewtype Parser a = P (String -> [(a, String)])\n\nparse :: Parser a -> String -> [(a, String)]\nparse (P p) = p\n\nitem :: Parser Char\nitem = P (\\inp -> case inp of\n                   []     -> []\n                   (c:cs) -> [(c, cs)])\n\ninstance Functor Parser where\n  fmap f p = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> [(f v, out)])\n\ninstance Applicative Parser where\n  pure v = P (\\inp -> [(v, inp)])\n  pf <*> px = P (\\inp -> case parse pf inp of\n                            []        -> []\n                            [(f,out)] -> parse (fmap f px) out)\n\ninstance Monad Parser where\n  p >>= f = P (\\inp -> case parse p inp of\n                         []        -> []\n                         [(v,out)] -> parse (f v) out)\n\n(+++) :: Parser a -> Parser a -> Parser a\np +++ q = P (\\inp -> case parse p inp of\n                       []        -> parse q inp\n                       [(v,out)] -> [(v,out)])\n\nsat :: (Char -> Bool) -> Parser Char\nsat pr = do\n  c <- item\n  if pr c then return c else P (const [])\n\ndigit :: Parser Char\ndigit = sat isDigit\n\nmany :: Parser a -> Parser [a]\nmany p = many1 p +++ return []\n\nmany1 :: Parser a -> Parser [a]\nmany1 p = do\n  v <- p\n  vs <- many p\n  return (v:vs)\n\nnat :: Parser Int\nnat = do\n  xs <- many1 digit\n  return (read xs)\n\nmain :: IO ()\nmain = do\n  print (parse nat "42x")\n  print (parse (many1 digit) "7+8")'
-  }
-/>
-
-O número é lido e o resto fica por consumir, que é exatamente o contrato do parser. A gramática com precedência compõe-nos:
+`parse nat "42x"` dá `[(42,"x")]`: lê o número e deixa o resto. A gramática seguinte compõe estes combinadores para ler expressões:
 
 ```haskell
 expr :: Parser Int
@@ -162,13 +156,30 @@ O grafo de chamadas resume quem chama quem: `expr` e `term` chamam-se a si próp
 
 Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`; dá `[(14, "")]`. E `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro.
 
+O programa completo inclui a base, a gramática e `completa`, que recusa uma entrada com texto por consumir:
+
+<CodePlayground
+  language="haskell"
+  title="Números, precedência e consumo completo"
+  code={parser}
+/>
+
 ## Alternativa, falha e entrada restante
 
 O `+++` definido nesta página tenta `q` na entrada original quando `p` devolve `[]`. Por isso há retrocesso mesmo que `p` tenha consumido caracteres antes de falhar. Este contrato difere de parsers que guardam explicitamente se a falha aconteceu depois de consumir entrada.
 
 No parser determinístico, o resultado tem zero ou uma solução. Se quiseres um parser não determinístico com várias soluções, os casos `[(v,out)]` deixam de chegar: tens de combinar cada resultado possível. Não mistures os dois contratos.
 
-`parse expr "2+3x"` pode ter sucesso parcial e deixar `"x"`. Uma aplicação que exige uma expressão inteira deve aceitar apenas `[(v,"")]`, depois de consumir espaços. Sucesso do prefixo não valida todo o ficheiro.
+`parse expr "2+3x"` dá `[(5,"x")]`. A alternativa também permite que `parse expr "2+"` recue para o prefixo `2` e deixe `"+"`. Uma aplicação que exige uma expressão inteira deve aceitar apenas `[(v,"")]`, depois de consumir espaços:
+
+```haskell
+completa :: Parser a -> String -> Maybe a
+completa p texto = case parse (token p) texto of
+  [(valor, "")] -> Just valor
+  _ -> Nothing
+```
+
+`completa expr " 2 + 3*4 "` dá `Just 14`; `"2+"`, `"2+3x"` e `"(2+3"` dão `Nothing`. Sucesso do prefixo não valida todo o ficheiro.
 
 `many p` exige que `p` consuma entrada em cada sucesso. Se `p` for `pure 1`, o parser pode repetir para sempre sem avançar. É a condição de progresso correspondente ao caso recursivo de uma lista.
 

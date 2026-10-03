@@ -7,6 +7,10 @@ practices:
   - pfl/praticar-propriedades
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Rodrigo
+    date: '2026-10-03'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -19,7 +23,7 @@ import Typst from '../../../components/Typst.astro';
 import Tabs from '../../../components/Tabs.astro';
 import ciclo from '../../pfl/p6ciclo.typ?raw';
 
-Um teste de exemplo verifica um caso: `reverse [1,2,3]` dá `[3,2,1]`. Uma **propriedade** afirma uma lei para todos os casos: inverter duas vezes devolve a lista original. O **QuickCheck** testa a propriedade em centenas de casos aleatórios por ti. Em vez de inventares exemplos, inventas leis, e a ferramenta trata de as tentar partir.
+Um teste de exemplo verifica um caso: `reverse [1,2,3]` dá `[3,2,1]`. Uma **propriedade** afirma uma lei para todos os casos: inverter duas vezes devolve a lista original. O **QuickCheck** gera entradas e procura uma que viole a propriedade. A lei deve descrever o contrato da função; os geradores escolhem os casos observados.
 
 ## A primeira propriedade
 
@@ -58,7 +62,7 @@ ghci> quickCheck prop_sortId
 [1,0]
 ```
 
-O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`, já **reduzida** (shrinking) de um caso aleatório maior para um caso mais pequeno que ainda falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. O fluxo de trabalho é este: escreve a propriedade, vê-a falhar, lê o contraexemplo, corrige a ideia. O diagrama resume o ciclo, que recomeça a cada correção:
+O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`. O **shrinking** tenta reduzir a entrada encontrada, conservando a falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. O fluxo de trabalho é este: escreve a propriedade, vê-a falhar, lê o contraexemplo, corrige a ideia. O diagrama resume o ciclo, que recomeça a cada correção:
 
 <Typst
   source={ciclo}
@@ -66,7 +70,7 @@ O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: 
   alt="Ciclo do QuickCheck: escrever a propriedade, gerar casos, correr, encolher a falha até ao contraexemplo reduzido e corrigir."
 />
 
-Compara as duas sessões lado a lado: a propriedade verdadeira passa calada, a falsa mostra um contraexemplo reduzido.
+Quando os casos passam, a sessão mostra quantos foram testados. Quando um falha, mostra um contraexemplo reduzido.
 
 <Tabs id="sessoes-quickcheck" labels={['Passa', 'Falha']}>
   <div slot="panel-0">
@@ -115,17 +119,17 @@ Um gerador à medida é uma ação que produz valores com a forma que queres. Pa
 parOrdenado :: Gen (Int, Int)
 parOrdenado = do
   x <- arbitrary
-  y <- arbitrary `suchThat` (>= x)
-  return (x, y)
+  y <- arbitrary
+  return (min x y, max x y)
 
 prop_maxDireita :: Property
 prop_maxDireita = forAll parOrdenado $ \(x, y) -> max x y == y
 ```
 
-O `suchThat` filtra os valores gerados até um `y` maior ou igual a `x`; o `forAll` corre a propriedade só nesses pares. Como `x <= y` por construção, `max x y` vale sempre `y` e a propriedade passa.
+Geramos dois inteiros e colocamos o menor primeiro. Todas as tentativas produzem um par válido. O `forAll` usa esses pares para testar a propriedade. `suchThat` é outra possibilidade, mas repete tentativas até satisfazer a condição; uma condição impossível ou muito rara pode impedir a geração de terminar. `forAll` não reduz automaticamente entradas de um gerador próprio. Usa `forAllShrink` e um redutor que preserve a condição quando precisares desse comportamento.
 
 :::tip[De onde vêm as propriedades]
-Boas fontes: leis algébricas (`x + 0 == x`), idempotência (`sort (sort xs) == sort xs`), inversas (`reverse (reverse xs) == xs`) e modelos de referência (a tua função dá o mesmo que a versão lenta e óbvia). Se não consegues enunciar nenhuma lei sobre a função, é sinal de que ainda não percebeste o que ela promete.
+Boas fontes: leis algébricas (`x + 0 == x`), idempotência (`sort (sort xs) == sort xs`), inversas (`reverse (reverse xs) == xs`) e modelos de referência (a tua função dá o mesmo que a versão lenta e óbvia). Começa por escrever o que a função deve conservar ou produzir, incluindo os casos limite.
 :::
 
 [^cem]: Os 100 casos são a omissão da ferramenta; podes pedir mais com argumentos de configuração.
