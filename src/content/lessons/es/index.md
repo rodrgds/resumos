@@ -11,7 +11,7 @@ editorial:
 
 No fim desta cadeira vais conseguir transformar uma necessidade numa regra verificável, ou seja vais saber escrevê-la, modelá-la, decidir onde a garantir e mostrar evidência de que funciona. Vais também conseguir trabalhar em equipa com Scrum, porque cada tema usa a mesma aplicação de reserva de salas e os exercícios pedem sempre a decisão e a sua justificação.
 
-Por isso começa pelos [fundamentos](/cadeiras/es/introducao/) e pelos [processos](/cadeiras/es/processos-software/). Depois acompanha uma equipa com [Scrum](/cadeiras/es/scrum/) e [gestão de projetos](/cadeiras/es/gestao-projetos/). Aprende a transformar uma necessidade em [requisitos](/cadeiras/es/requisitos-uml/), a descrevê-la com [UML](/cadeiras/es/modelacao-uml/) e a escolher a [arquitetura](/cadeiras/es/arquitetura-desenho/).
+Por isso começa pelos [fundamentos](/cadeiras/es/introducao/) e pelos [processos](/cadeiras/es/processos-software/). Aprende a transformar uma necessidade em [requisitos](/cadeiras/es/requisitos-uml/) com histórias e aceitação. Depois acompanha uma equipa com [Scrum](/cadeiras/es/scrum/) e [gestão de projetos](/cadeiras/es/gestao-projetos/), que usam esses artefactos. Descreve o acordo com [UML](/cadeiras/es/modelacao-uml/) e escolhe a [arquitetura](/cadeiras/es/arquitetura-desenho/).
 
 ## Percurso de estudo
 
@@ -38,6 +38,8 @@ A fórmula publicada era $CF = \operatorname{round}(0{,}15PA + 0{,}60TP + 0{,}25
 ::::details[Materiais e bibliografia: base de ensino, fichas e bibliografia]
 
 O [Moodle de ES 2025/26](https://moodle2526.up.pt/course/view.php?id=4440) é a base docente: introdução e história, processos e RUP, Agile e Scrum, requisitos, simulação Scrum, verificação e validação, XP, arquitetura, padrões Scrum, construção, evolução, retrospetivas, desenvolvimento assistido por IA e apresentação de produtos. As referências externas incompletas não foram tratadas como material integral. Exemplos de projetos de alunos servem para observar artefactos, sem substituir o programa docente.
+
+Origem temporal dos materiais reutilizados: Processos com capa 2024/25 e rodapés 2025/26; Arquitetura com páginas ASSO 2023/24; Padrões Scrum com rodapés 2024/25 e Guide 2017; Construção com capa 2024/25; Pitch adaptado de ES 2022/23; Mike Cohn de 6 de junho de 2014; projetos Top6 de 2023/24 com releases de maio de 2024; dashboard de 2025/26; guia dos monitores sem ano interno. As regras de Scrum seguem o Guide 2020 salvo indicação de prática local.
 
 A ficha indica:
 

@@ -10,7 +10,7 @@ import UmlUseCases from '../../es/UmlUseCases.astro';
 import UmlDomain from '../../es/UmlDomain.astro';
 import UmlSequence from '../../es/UmlSequence.astro';
 
-Depois de acordarmos o que o sistema deve fazer, esta página pergunta como desenhar esse acordo em modelos que revelam dúvidas antes do código.
+Acordámos que reservar exige verificação atómica no servidor. Agora precisamos de desenhar esse acordo para encontrar dúvidas antes do código: quem participa, que regra impede a sobreposição e o que acontece quando a sala está ocupada.
 
 Na aplicação de reservas, queremos responder se cada reserva pertence a um estudante e como o ecrã pede a confirmação ao servidor.
 
@@ -22,11 +22,11 @@ Um **ator** é um papel externo que interage com o sistema. Pode ser uma pessoa 
 
 A fronteira indica o sistema que estamos a modelar. Se modelarmos só a aplicação móvel, o servidor pode ser um ator externo. Se modelarmos o sistema completo, o servidor faz parte da solução.
 
-Na aplicação de reservas, o estudante reserva uma sala. Essa operação inclui verificar disponibilidade. Pedir equipamento só acontece se o estudante o solicitar, no ponto de extensão equipamento de Reservar sala.
+Na aplicação de reservas, o estudante reserva uma sala. Essa operação inclui verificar disponibilidade. Pedir equipamento só acontece se o estudante o solicitar, no ponto de extensão equipamento de Reservar sala. Equipamento pertence a uma versão futura fora do âmbito inicial, por isso aparece aqui como extensão possível, não como compromisso da primeira entrega.
 
 <UmlUseCases />
 
-A associação entre ator e caso de uso é uma linha. A relação **include** é uma dependência tracejada que aponta do caso que inclui para o caso incluído. Mostra comportamento incorporado no caso base. A relação **extend** também é tracejada e aponta da extensão para o caso base, com um ponto de extensão e uma condição. O caso base tem significado sem a extensão.
+A associação entre ator e caso de uso é uma linha. A relação **include** é uma dependência tracejada que aponta do caso que inclui para o caso incluído. Mostra comportamento incorporado no caso base. A relação **extend** também é tracejada e aponta da extensão para o caso base, com um ponto de extensão e uma condição quando existe. A condição pode ser omitida na UML; nesse caso a extensão aplica-se sempre que o ponto é atingido. O caso base tem significado sem a extensão.
 
 Não uses extend para ligar duas ações só porque uma pode acontecer depois da outra. Recuperar acesso pode ser um objetivo independente e não uma extensão de iniciar sessão. A relação precisa de representar incorporação de comportamento, não proximidade no menu.
 
@@ -68,7 +68,7 @@ Uma **associação** exprime uma relação estrutural. Uma **dependência**, nor
 
 A **generalização** liga uma especialização ao conceito geral, com triângulo vazio apontado para o geral. Só faz sentido quando a especialização pode ser tratada como esse conceito. "Administrador usa a aplicação" não demonstra que precisamos de uma subclasse Administrador.
 
-A **composição** tem losango cheio na ponta do todo. Representa propriedade forte das partes; uma parte pertence no máximo a um todo composto de cada vez, e a destruição do todo implica a destruição das partes que ainda lhe pertencem. Não escolhas composição apenas porque uma classe contém uma referência.
+A **composição** tem losango cheio na ponta do todo. Representa propriedade forte das partes; uma parte pertence no máximo a um todo composto de cada vez, e a destruição do todo implica a destruição das partes que ainda lhe pertencem. Não escolhas composição apenas porque uma classe contém uma referência. Um exemplo positivo seria Reserva e LinhaDeReserva se cada linha só existisse dentro de uma reserva e fosse apagada com ela. Sala não é esse caso.
 
 A **agregação partilhada**, de losango vazio, tem uma semântica mais fraca. Uma associação simples costuma ser mais clara quando não precisamos de expressar uma relação todo-parte precisa.
 
@@ -88,9 +88,29 @@ As mensagens devem corresponder a responsabilidades possíveis dos participantes
 
 ## Atividades e estados
 
+### Um fluxo com fork e join
+
 Um **diagrama de atividades** mostra um fluxo de ações. Uma decisão escolhe uma saída com base numa guarda; uma junção reúne caminhos alternativos. Uma bifurcação, fork, inicia fluxos concorrentes; uma sincronização, join, espera pelos fluxos que deve reunir. Decisão e concorrência não são a mesma coisa.
 
-Depois de criar uma reserva, o sistema pode atualizar a lista e enviar uma notificação em paralelo. Um fork pode mostrar esse paralelismo. Uma decisão separa confirmação e conflito porque são resultados alternativos.
+Depois de confirmar, o sistema atualiza a lista e envia a notificação em paralelo. O diagrama usa um fork para iniciar os dois fluxos e um join para reunir antes de mostrar o resultado. Se a atualização falhar e a notificação seguir, o join revela que falta tratar a falha parcial.
+
+```
+receber pedido -> verificar disponibilidade -> [livre] confirmar
+                                             -> [ocupada] recusar
+confirmar -> fork -> atualizar lista
+                   -> enviar notificacao
+         -> join -> apresentar resultado
+```
+
+Uma decisão separa confirmação e conflito porque são resultados alternativos.
+
+Considere Confirmada com duas saídas: cancelar para Cancelada e atingir o fim para Terminada. O efeito libertar intervalo pertence só à transição de cancelamento. Uma ação de saída de Confirmada correria nas duas saídas e libertaria o intervalo também ao terminar, o que está errado.
+
+```
+Confirmada --cancelar [agora < inicio] / libertar intervalo--> Cancelada
+Confirmada --atingir o fim--> Terminada
+Cancelada --cancelar novamente--> Cancelada, sem efeito novo
+```
 
 Uma **máquina de estados** descreve como um objeto reage a eventos. Na Reserva, podemos ter Confirmada, Cancelada e Terminada. Um cancelamento só passa de Confirmada para Cancelada se o início ainda não tiver ocorrido. A transição pode escrever-se `evento [guarda] / efeito`. Por exemplo, `cancelar [agora < início] / libertar intervalo` liga Confirmada a Cancelada. A guarda é a condição necessária; o efeito acontece quando a transição é tomada. Uma ação de saída de Confirmada ocorreria em todas as saídas desse estado, por isso não é o mesmo que o efeito específico de cancelar.
 

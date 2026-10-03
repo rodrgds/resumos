@@ -22,7 +22,7 @@ Pares possíveis numa equipa: $n(n-1)/2$, ou seja não mede reuniões nem custo 
 
 [Velocidade](/cadeiras/es/gestao-projetos/#velocidade-e-previsão): trabalho Done por Sprint. Previsão simples: $\lceil \text{backlog}/v \rceil$. Exige unidade, capacidade e critérios comparáveis; não compares equipas por pontos.
 
-[Burndown](/cadeiras/es/gestao-projetos/#ler-um-burndown): mostra trabalho restante. Desvio da linha ideal é sinal para investigar, não quantidade obrigatória a cortar. Burnup pode mostrar crescimento de âmbito.
+[Burndown](/cadeiras/es/gestao-projetos/#ler-um-burndown): mostra trabalho restante sob âmbito e estimativas estáveis. Desvio da linha ideal é sinal para investigar, não quantidade obrigatória a cortar. Com 40 iniciais e 26 restantes, concluiu 14. Com mais 10 entrados, concluiu 24. Burnup pode mostrar crescimento de âmbito.
 
 ## Scrum e XP
 
@@ -94,7 +94,7 @@ Pacote agrupa elementos. Componente encapsula comportamento e interfaces. Artefa
 | [Severidade e prioridade](/cadeiras/es/verificacao-validacao/#defeitos-e-regressão)               | Impacto e urgência                                          |
 | [Delivery e deployment](/cadeiras/es/construcao-evolucao/#entrega-e-implantação)                  | Preparar entrega e implantar automaticamente                |
 
-[Caso de teste](/cadeiras/es/verificacao-validacao/#caso-de-teste-e-oráculo): estado inicial, entradas, condições e resultados esperados. Oráculo independente da implementação. Cobertura mede execução, não prova correção.
+[Caso de teste](/cadeiras/es/verificacao-validacao/#caso-de-teste-e-oráculo): estado inicial, entradas, condições e resultados esperados. Oráculo independente da implementação. Cobertura mede execução, não prova correção. Fronteiras de 30 a 120 usam três pontos por limite: 29, 30, 31 e 119, 120, 121.
 
 [Intervalos semiabertos](/cadeiras/es/verificacao-validacao/#um-exemplo-com-intervalos): com início anterior ao fim em ambos os intervalos, há sobreposição se $i_1<f_2$ e $i_2<f_1$. Intervalos adjacentes não se sobrepõem.
 
