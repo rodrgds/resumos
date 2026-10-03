@@ -24,7 +24,7 @@ O **multicast** dirige uma mensagem a um grupo. Um envio não prova que todos a 
 | TCP        | Fluxo de bytes ordenado, com retransmissão de dados perdidos enquanto a ligação consegue progredir | Fronteiras dos pedidos, timeouts e significado das respostas |
 | UDP        | Datagramas, preservando as fronteiras de cada mensagem entregue                                    | Tratamento de perda, duplicação e reordenação                |
 
-TCP não preserva as fronteiras dos teus `write`: uma leitura pode receber parte de um pedido ou vários juntos. Define um enquadramento, como uma linha por mensagem ou um tamanho antes do conteúdo. Nem TCP nem UDP garantem que uma operação da aplicação executou só por o envio local ter terminado.
+TCP não preserva as fronteiras dos teus `write`: uma leitura pode receber parte de um pedido ou vários juntos. Define um enquadramento, como uma linha por mensagem ou um tamanho antes do conteúdo. Nem TCP nem UDP garantem que uma operação da aplicação executou só porque o envio local terminou.
 
 ## Atraso, timeout e repetição
 
@@ -40,6 +40,10 @@ Considera `debitar(10)`. O servidor debita 10 euros, mas a resposta perde-se. Se
 Uma solução para o débito usa um identificador de pedido estável. O servidor regista o identificador e o resultado e, ao receber uma repetição, devolve o resultado guardado. Para sobreviver a falhas, o registo e o efeito precisam de uma atualização atómica e durável. Guardar só em memória perde a proteção após reiniciar.
 
 **Pelo menos uma vez** permite repetições até obter resposta, podendo repetir efeitos. **No máximo uma vez** evita executar duplicados, mas não garante que o pedido execute. Nenhuma delas dá, por si só, ao cliente conhecimento do resultado após qualquer falha.
+
+:::tip[Ideia-chave]
+Um timeout cria uma suspeita, não uma prova, porque o pedido pode ter executado e só a resposta se ter perdido.
+:::
 
 ## Um servidor local em Go
 
@@ -84,6 +88,8 @@ Precisas de Go instalado. Guarda em `servidor.go`, corre `go run servidor.go` e 
 
 No código, `:=` declara e atribui uma variável, `defer` agenda uma operação para quando a função termina e `for` sem condição repete até ser interrompido. O teste `err != nil` trata uma operação que falhou, em vez de usar uma ligação inválida.
 
+:::details[Canais Go e comunicação entre máquinas]
+
 Uma **goroutine** é uma execução concorrente gerida pelo runtime Go. Um canal Go liga goroutines no mesmo programa; não transporta dados entre máquinas. Num canal sem buffer, como `make(chan string)`, um envio espera por uma receção correspondente:
 
 ```go
@@ -98,7 +104,9 @@ func main() {
 }
 ```
 
-O resultado é `pontual`. Este canal sincroniza as duas goroutines. Para comunicar com outro processo, usa sockets ou outra biblioteca de comunicação de rede.
+O programa imprime `pontual`, porque o canal sem buffer sincroniza as duas goroutines. Para comunicar com outro processo, usa sockets ou outra biblioteca de comunicação de rede.
+
+:::
 
 ## Servidores com estado e eventos
 
