@@ -6,9 +6,11 @@ practices:
   - ldts/praticar-arquitetura
 ---
 
-Um pedido termina a partida e guarda o resultado. Calcular a pontuação, decidir se a partida pode terminar e escrever uma linha numa base de dados são decisões diferentes. A arquitetura define onde ficam e que contratos as ligam.
+Depois de seguir uma ação completa com MVC no projeto, esta página responde onde ficam as regras, as operações e os dados guardados quando a aplicação cresce.
 
-MVC organiza sobretudo a relação com a apresentação. Uma aplicação que também guarda dados precisa de decidir como coordena operações e como separa o domínio da persistência.
+Um pedido termina a partida e guarda o resultado: calcular a pontuação, decidir se a partida pode terminar e escrever uma linha numa base de dados são decisões diferentes. A arquitetura, que é a decisão sobre onde ficam essas responsabilidades e que contratos as ligam, separa quem coordena a operação de quem guarda o resultado.
+
+MVC organiza sobretudo a relação com a apresentação. Uma aplicação que também guarda dados precisa de separar o domínio, que são as regras e entidades do jogo, da persistência, que é a forma de guardar e ler esses dados.
 
 ## Camadas e dependências
 
