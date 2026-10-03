@@ -18,7 +18,7 @@ order: 0
 
 - [PHP](/cadeiras/ltw/php-dinamicas-bd/#receber-um-pedido): entrada pode faltar ou ser array. Verifica tipo, valida e só depois converte. `===` distingue tipos; `isset` rejeita null; `empty` rejeita também `'0'`.
 - [PDO](/cadeiras/ltw/php-dinamicas-bd/#sqlite-e-consultas-preparadas): `prepare` + `execute` para valores. Marcadores não substituem identificadores. `fetch` devolve linha ou false. Transação = commit conjunto ou rollback.
-- [Redirecionamento e sessão](/cadeiras/ltw/php-dinamicas-bd/#sessões-e-autenticação): `header` antes de saída; `Location` não pára o programa, usa `exit`. Após POST, 303 permite GET. Sessão no servidor, identificador habitualmente no cookie.
+- [Redirecionamento e sessão](/cadeiras/ltw/php-dinamicas-bd/#sessões-e-autenticação): `header` antes de saída; `Location` não pára o programa, por isso usa `exit`. Após POST, 303 permite GET. Sessão no servidor, identificador habitualmente no cookie.
 - [JavaScript](/cadeiras/ltw/javascript-dom-eventos/#tipos-e-conversões): `const` impede reatribuição, não mutação. `+` pode concatenar. `??` substitui null/undefined; `||` substitui valores falsos. `map` transforma, `filter` seleciona, `reduce` acumula. `sort` altera o array; copia primeiro e usa `(a, b) => a - b` para ordenar números.
 - [Funções e eventos](/cadeiras/ltw/javascript-dom-eventos/#eventos-e-delegação): closure conserva ambiente lexical. `this` normal depende da chamada; arrow herda-o. `target` é o alvo; `currentTarget` é o elemento cujo listener está a correr. `preventDefault` impede ação, não propagação.
 
