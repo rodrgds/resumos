@@ -7,7 +7,7 @@ practices:
   - am1/pratica-fundamentos
 ---
 
-Antes de calcular uma derivada ou um integral, precisamos de saber onde a função existe e o que acontece perto dos pontos problemáticos. Nesta página revemos as ferramentas de pré-cálculo usadas nas contas seguintes.
+Antes de calcular uma derivada ou um integral, precisamos de saber onde a função existe e o que acontece perto dos pontos problemáticos.
 
 ## Domínio e composição
 
