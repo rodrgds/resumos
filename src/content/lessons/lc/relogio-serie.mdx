@@ -10,11 +10,11 @@ practices:
 import Typst from '../../../components/Typst.astro';
 import trama from '../../lc/trama-serie.typ?raw';
 
-A UART converte bytes em bits enviados pela linha e reconstrói bytes recebidos. O programa acede a registos de oito bits. Uma sequência de bytes não se transforma automaticamente numa mensagem da aplicação: essa estrutura pertence ao protocolo da página seguinte.
+A UART converte bytes em bits enviados pela linha e reconstrói bytes recebidos. O programa acede a registos de oito bits, ou seja, uma sequência de bytes não se transforma automaticamente numa mensagem da aplicação: essa estrutura pertence ao protocolo da página seguinte.
 
 ## Comunicação assíncrona
 
-Em transmissão série, os bits seguem um após outro. Em comunicação assíncrona, emissor e recetor usam relógios independentes e combinam previamente a duração de cada bit. Um start bit marca o início do carácter; os dados, eventual paridade e stop bits completam a trama.
+Em transmissão série, os bits seguem um após outro. Em comunicação assíncrona, emissor e recetor usam relógios independentes e combinam previamente a duração de cada bit, porque um start bit marca o início de cada carácter.
 
 Na configuração **7E1**, há sete bits de dados, paridade par e um stop bit. Somando o start bit, cada carácter ocupa dez bits. Na configuração **8N1**, há oito dados e nenhuma paridade, também dez bits no total. O número de bits úteis não é sempre o número de bits transmitidos. A taxa de bits mede bit/s; a taxa de símbolos mede baud. Nesta linha binária há um bit por símbolo, por isso os valores coincidem. Essa igualdade não vale para todas as comunicações. Em 7E1, cada carácter só transporta sete bits úteis, mesmo que a API o guarde num byte de C.
 
@@ -24,9 +24,9 @@ Na configuração **7E1**, há sete bits de dados, paridade par e um stop bit. S
   alt="Uma trama 7E1 contém start a 0, sete bits de dados, um bit de paridade par e um stop a 1, dez bits no total."
 />
 
-Em 8N1 a 9600 bit/s, o máximo ideal é $9600/10=960$ bytes de dados por segundo. Uma mensagem de 20 bytes ocupa pelo menos $200/9600\approx20{,}83$ ms, sem pausas entre caracteres nem bytes de controlo da aplicação.
+Em 8N1 a 9600 bit/s, o máximo ideal é $9600/10=960$ bytes de dados por segundo, ou seja, uma mensagem de 20 bytes ocupa pelo menos $200/9600\approx20{,}83$ ms, sem pausas entre caracteres nem bytes de controlo da aplicação.
 
-A paridade par faz o total de bits a 1, incluindo paridade, ser par. Deteta um número ímpar de inversões, mas pode não detetar duas inversões. Não garante integridade de uma mensagem inteira.
+A paridade par faz o total de bits a 1, incluindo paridade, ser par, por isso deteta um número ímpar de inversões, mas pode não detetar duas inversões.
 
 **Simplex** só comunica num sentido. **Half-duplex** comunica nos dois sentidos, mas um de cada vez. **Full-duplex** permite transmissão nos dois sentidos em simultâneo. Ter uma UART não determina sozinho o protocolo de turnos da aplicação.
 
@@ -59,7 +59,7 @@ $$bitrate=\frac{115200}{D}.$$
 
 A 9600 bit/s, $D=12=\texttt{0x000C}$. A sequência é ler e conservar LCR, ativar DLAB, escrever DLL no offset 0 e DLM no offset 1, e limpar DLAB com a configuração de trama pretendida. Para 7E1, poderias escrever LCR `0x9A`, DLL `0x0C`, DLM `0x00` e finalmente LCR `0x1A`.
 
-Enquanto DLAB estiver a 1, escrever em base + 0 altera o divisor, não transmite um carácter. Deixar DLAB ativo é uma causa concreta de "enviei, mas não chegou nada". A taxa pedida deve ter divisor representável e não nulo; quantifica o erro quando não divide 115200 exatamente.
+Enquanto DLAB estiver a 1, escrever em base + 0 altera o divisor, não transmite um carácter, por isso deixar DLAB ativo explica "enviei, mas não chegou nada". A taxa pedida deve ter divisor representável e não nulo; quantifica o erro quando não divide 115200 exatamente.
 
 ## LSR e polling
 
@@ -74,7 +74,7 @@ Enquanto DLAB estiver a 1, escrever em base + 0 altera o divisor, não transmite
 | 6          | THR e registo de deslocamento vazios     |
 | 7          | Erro associado à FIFO, conforme o modelo |
 
-Para transmitir, espera bit 5 e escreve THR. O bit 6 é necessário quando queres saber se o último carácter já saiu fisicamente, por exemplo antes de fechar a ligação. THR vazio não significa que a linha já terminou a transmissão.
+Para transmitir, espera bit 5 e escreve THR, porque o bit 6 só é necessário quando queres saber se o último carácter já saiu fisicamente, por exemplo antes de fechar a ligação.
 
 Para receber, verifica bit 0 e erros, lê RBR e aplica a política do protocolo aos bytes inválidos. Usa os efeitos de leitura especificados para a UART concreta; uma leitura de estado pode limpar alguns flags. Guarda o estado antes de o voltares a ler.
 

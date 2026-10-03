@@ -7,7 +7,7 @@ practices:
   - lc/praticar-protocolos
 ---
 
-A UART entrega bytes. Uma aplicação precisa de saber quais formam uma mensagem, que operação representam e se chegaram válidos. Um protocolo define esse contrato nos dois lados da ligação.
+A UART entrega bytes. Uma aplicação precisa de saber quais formam uma mensagem, que operação representam e se chegaram válidos, ou seja, um protocolo define esse contrato nos dois lados da ligação.
 
 ## Limites e significado das mensagens
 
@@ -15,13 +15,13 @@ Se envias um scancode e depois um pacote de rato, o recetor não sabe onde acaba
 
 Define também unidades e ordem dos campos. Uma mensagem `MOVE` pode conter deslocamentos em unidades do protocolo ou uma posição absoluta em píxeis. Os dois sentidos não são equivalentes. Para campos de vários bytes, escolhe explicitamente uma ordem, como byte mais significativo primeiro, e reconstrói-a com máscaras e deslocamentos.
 
-Não envies a representação crua de uma `struct`. O compilador pode inserir padding e as máquinas podem usar tipos ou ordens de bytes diferentes. O contrato pertence ao formato serializado, não à disposição interna dos objetos C.
+Não envies a representação crua de uma `struct`, porque o compilador pode inserir padding e as máquinas podem usar tipos ou ordens de bytes diferentes.
 
 ## Um formato com escaping
 
 Vamos construir um protocolo próprio pequeno, apenas para estudar framing e recuperação. Cada frame tem um delimitador `0x7E`, um corpo e outro delimitador. O corpo contém tipo, sequência, comprimento, payload e um checksum XOR.
 
-O checksum é o XOR dos bytes do corpo anteriores a ele. É uma verificação simples: pode detetar certas alterações, mas duas alterações compensatórias podem passar. Um protocolo com requisitos mais fortes escolheria um código de deteção, como um CRC, com propriedades adequadas ao erro esperado.
+O checksum é o XOR dos bytes do corpo anteriores a ele. É uma verificação simples, ou seja, pode detetar certas alterações, mas duas alterações compensatórias podem passar.
 
 Se `0x7E` ou `0x7D` aparecer no corpo, transmite `0x7D` seguido do byte original XOR `0x20`. Assim, um delimitador nos dados torna-se `7D 5E` e um escape torna-se `7D 5D`. O recetor remove essa codificação antes de interpretar o corpo.
 
@@ -32,7 +32,7 @@ Corpo antes de escaping: 01 07 02 7E 05 7F
 Frame transmitido:      7E 01 07 02 7D 5E 05 7F 7E
 ```
 
-O checksum vale `01 XOR 07 XOR 02 XOR 7E XOR 05 = 7F`. O frame ocupa nove bytes na UART. A 9600 bit/s em 8N1, leva pelo menos $9\cdot10/9600=9{,}375$ ms. Os dois bytes úteis não são os únicos bytes que a ligação transmite.
+O checksum vale `01 XOR 07 XOR 02 XOR 7E XOR 05 = 7F`, por isso o frame ocupa nove bytes na UART. A 9600 bit/s em 8N1, leva pelo menos $9\cdot10/9600=9{,}375$ ms.
 
 ## Construir o frame
 
@@ -118,7 +118,7 @@ Num protocolo stop-and-wait, o emissor guarda a mensagem, envia-a e espera o ACK
 3. O ACK perde-se e o emissor reenvia a mesma mensagem.
 4. O recetor reconhece a sequência já aceite, envia novamente ACK 7 e não repete o movimento.
 
-Sem o quarto passo, o cursor moveria +10. Define a sequência esperada, o tratamento de duplicados, o número máximo de tentativas e o comportamento quando a sessão falha. Um campo de sequência de oito bits dá a volta; a identificação da sessão e a janela de mensagens válidas têm de impedir que uma mensagem muito antiga pareça nova.
+Sem o quarto passo, o cursor moveria +10, por isso define a sequência esperada, o tratamento de duplicados, o número máximo de tentativas e o comportamento quando a sessão falha. Um campo de sequência de oito bits dá a volta; a identificação da sessão e a janela de mensagens válidas têm de impedir que uma mensagem muito antiga pareça nova.
 
 Para dados que representam um estado absoluto, aplicar duas vezes o mesmo valor pode ser inofensivo. Uma posição absoluta pode substituir um delta quando essa política é adequada. Continua a ser necessário rejeitar mensagens antigas que fariam o estado recuar.
 
@@ -132,7 +132,7 @@ Numa aplicação centralizada, um computador calcula o estado e o outro envia en
 
 ## Por que não enviar o framebuffer
 
-Uma imagem de 1024 por 768 a 8 bpp tem 786432 bytes. A 115200 bit/s em 8N1, a capacidade ideal é 11520 bytes/s. Uma imagem levaria pelo menos:
+Uma imagem de 1024 por 768 a 8 bpp tem 786432 bytes. A 115200 bit/s em 8N1, a capacidade ideal é 11520 bytes/s, por isso uma imagem levaria pelo menos:
 
 $$\frac{786432}{11520}\approx68{,}27\ \text{s}.$$
 

@@ -6,6 +6,8 @@ studyKind: revision
 order: 1
 ---
 
+Usa esta folha depois de estudar as explicações, porque cada linha resume uma condição que a lição justifica.
+
 ## C e memória
 
 | Operação ou condição            | Consulta rápida                                                                   |

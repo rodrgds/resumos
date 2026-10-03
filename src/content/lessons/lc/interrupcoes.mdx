@@ -10,7 +10,7 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import caminho from '../../lc/caminho-irq.dot?raw';
 
-Uma interrupção permite ao dispositivo assinalar um evento. No PC clássico, o pedido passa pelo controlador de interrupções antes de o processador o atender. No Minix, há ainda outra etapa: o kernel notifica o processo que subscreveu esse pedido.
+Uma interrupção permite ao dispositivo assinalar um evento sem o programa estar sempre a consultar o estado. No PC clássico, o pedido passa pelo controlador de interrupções antes de o processador o atender. No Minix, há ainda outra etapa: o kernel notifica o processo que subscreveu esse pedido.
 
 ## IRQ, vetor e rotina
 
@@ -25,9 +25,9 @@ Uma **IRQ** é uma linha de pedido de interrupção. O PIC i8259 regista pedidos
 | RTC         | 8          |
 | Rato PS/2   | 12         |
 
-Na máscara do PIC, um bit a 1 **desativa** a linha correspondente. É uma máscara de bloqueio. Não a confundas com a máscara de eventos recebidos no Minix, onde um bit a 1 assinala uma notificação.
+Na máscara do PIC, um bit a 1 **desativa** a linha correspondente. É uma máscara de bloqueio, ou seja, não a confundas com a máscara de eventos recebidos no Minix, onde um bit a 1 assinala uma notificação.
 
-O PIC entrega um **vetor**, um número que o processador usa para escolher a entrada na tabela de descritores de interrupção, a IDT em IA-32. O vetor não é o número da IRQ. A associação entre IRQ e vetor é configurável pelo sistema, por isso não derives um vetor do número da IRQ no código da aplicação.
+O PIC entrega um **vetor**, um número que o processador usa para escolher a entrada na tabela de descritores de interrupção, a IDT em IA-32. O vetor não é o número da IRQ, por isso não derives um vetor do número da IRQ no código da aplicação.
 
 <Dot
   source={caminho}
@@ -40,9 +40,9 @@ Em IA-32, o atendimento guarda o contexto exigido, executa a rotina e restaura o
 
 A rotina genérica do Minix, no kernel, recebe a interrupção real, mascara a linha, notifica os interessados, aplica a política de reativação, envia EOI e regressa. A função `timer_ih` ou `kbc_ih` que escreves no laboratório corre no teu processo, quando o teu ciclo lê a notificação e a chama.
 
-Isto muda o raciocínio sobre concorrência. As tuas funções C não são chamadas arbitrariamente pela CPU enquanto uma outra instrução C tua está a correr. No modelo de um processo e um ciclo de receção, chamas cada handler de forma sequencial. Não acrescentes `volatile` como se isso resolvesse sincronização, nem envies EOI ao PIC por iniciativa própria: o kernel trata da interrupção física.
+Isto muda o raciocínio sobre concorrência, porque as tuas funções C não são chamadas arbitrariamente pela CPU enquanto outra instrução C tua está a correr. No modelo de um processo e um ciclo de receção, chamas cada handler de forma sequencial. Não acrescentes `volatile` como se isso resolvesse sincronização, nem envies EOI ao PIC por iniciativa própria: o kernel trata da interrupção física.
 
-O handler do dispositivo recolhe estado e dados. A lógica da aplicação interpreta-os depois. Para teclado e rato, uma notificação permite recolher o byte disponível; não esperes ali pelos restantes bytes de um scancode ou pacote. Podem chegar em notificações futuras.
+O handler do dispositivo recolhe estado e dados. A lógica da aplicação interpreta-os depois. Para teclado e rato, uma notificação permite recolher o byte disponível, por isso não esperes ali pelos restantes bytes de um scancode ou pacote. Podem chegar em notificações futuras.
 
 ## Hook e máscara de notificação
 
@@ -98,7 +98,7 @@ int wait_timer_ticks(uint32_t limit) {
 
 Há três filtros: a mensagem é uma notificação, vem do hardware e contém o bit do timer. Uma mensagem normal não contém necessariamente o significado que esperas em `m_notify`.
 
-`driver_receive` bloqueia o processo enquanto não há uma mensagem. Não precisas de um ciclo que consulta uma variável à espera de que o teu handler corra sozinho, porque és tu que o chamas depois da receção.
+`driver_receive` bloqueia o processo enquanto não há uma mensagem, por isso não precisas de um ciclo que consulta uma variável à espera de que o teu handler corra sozinho, porque és tu que o chamas depois da receção.
 
 Notificações podem agrupar pedidos. O bit significa que há um pedido assinalado; não contém um contador de quantas interrupções ocorreram enquanto o processo estava ocupado. Contar um tick por notificação é o modelo usado nos pequenos ciclos do laboratório, mas não garante um relógio sem perdas se bloqueares longamente o atendimento.
 

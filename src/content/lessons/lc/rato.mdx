@@ -11,7 +11,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import pacote from '../../lc/pacote-rato.typ?raw';
 
-O rato PS/2 comunica através do i8042, como o teclado, mas usa IRQ12 e pacotes de três bytes. O hardware entrega um byte por interrupção. Só depois de reunir os três bytes podes interpretar botões e movimento.
+O rato PS/2 comunica através do i8042, como o teclado, mas usa IRQ12 e pacotes de três bytes, ou seja, o hardware entrega um byte por interrupção e só depois de reunir os três bytes podes interpretar botões e movimento.
 
 ## Anatomia do pacote
 
@@ -28,7 +28,7 @@ Os dois contadores de deslocamento do rato têm nove bits em complemento para do
 | 1                | Oito bits inferiores do delta X    |
 | 2                | Oito bits inferiores do delta Y    |
 
-Os botões indicam o estado no instante do pacote, não apenas uma mudança. Um botão a 1 em vários pacotes pode significar que continua premido.
+Os botões indicam o estado no instante do pacote, não apenas uma mudança, por isso um botão a 1 em vários pacotes pode significar que continua premido.
 
 ## Reconstruir nove bits
 
@@ -38,7 +38,7 @@ $$\Delta x=b_1-256\cdot s_x,\qquad\Delta y=b_2-256\cdot s_y.$$
 
 Aqui $b_1$ e $b_2$ estão entre 0 e 255; $s_x$ e $s_y$ são 0 ou 1 obtidos do primeiro byte. Isto representa o intervalo de nove bits, de -256 a 255, na ausência de overflow.
 
-Não uses apenas `(int8_t)b1`. Se o sinal X for 0 e `b1 = 0xC8`, o delta correto é +200, mas um inteiro de oito bits com sinal representaria -56. Se o sinal X for 1 e `b1 = 0x05`, o delta é $5-256=-251$, apesar de o bit 7 de `b1` estar a 0.
+Não uses apenas `(int8_t)b1`, porque se o sinal X for 0 e `b1 = 0xC8`, o delta correto é +200 e um inteiro de oito bits com sinal representaria -56. Se o sinal X for 1 e `b1 = 0x05`, o delta é $5-256=-251$, apesar de o bit 7 de `b1` estar a 0.
 
 No pacote `28 05 FB`, o sinal X é 0 e o sinal Y é 1. Obtemos $\Delta x=5$ e $\Delta y=251-256=-5$.
 
@@ -48,9 +48,9 @@ No pacote `28 05 FB`, o sinal X é 0 e o sinal Y é 1. Obtemos $\Delta x=5$ e $\
   alt="Pacote 28 05 FB: sem botões ou overflow, X desloca-se mais 5 para a direita e Y menos 5 para baixo nas coordenadas físicas do rato."
 />
 
-No protocolo, Y positivo significa movimento para cima. Num ecrã onde Y cresce para baixo, atualiza `screen_y -= delta_y`. Partindo de `(100, 100)`, o pacote do exemplo leva a `(105, 105)`, cinco unidades para a direita e para baixo.
+No protocolo, Y positivo significa movimento para cima. Num ecrã onde Y cresce para baixo, atualiza `screen_y -= delta_y`, ou seja, partindo de `(100, 100)`, o pacote do exemplo leva a `(105, 105)`.
 
-O programa completo seguinte imprime `dx=5 dy=-5 x=105 y=105`:
+O programa seguinte imprime `dx=5 dy=-5 x=105 y=105`, porque aplica a fórmula de nove bits e a conversão para coordenadas de ecrã:
 
 <CodePlayground
   language="c"
@@ -66,7 +66,7 @@ Este exemplo assume ausência de overflow e não aplica limites do ecrã. Na apl
 
 Mantém um array de três bytes e um índice. Se o índice for 0, aceita apenas um byte com bit 3 a 1. Se não tiver esse bit, descarta-o. Nos índices 1 e 2, guarda o byte sem repetir o teste, porque os dados podem ter qualquer valor.
 
-Quando o índice chega a 3, entrega o pacote completo e volta a 0. O bit 3 também pode estar ativo nos bytes de dados. Portanto, é uma ajuda de sincronização, não uma prova de que nunca juntaste pedaços de dois pacotes.
+Quando o índice chega a 3, entrega o pacote completo e volta a 0, porque o bit 3 também pode estar ativo nos bytes de dados. É uma ajuda de sincronização, não uma prova de que nunca juntaste pedaços de dois pacotes.
 
 Se uma leitura falhar ou houver erro de comunicação durante a montagem, invalida o pacote parcial e volta a procurar um primeiro byte. Um erro não deve produzir um movimento com bytes antigos. Se os bits de overflow estiverem ativos, a magnitude correspondente não é fiável. Define se ignoras esse eixo ou todo o movimento; ainda podes interpretar os botões se o pacote foi recebido validamente.
 
