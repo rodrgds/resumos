@@ -13,7 +13,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Tabs from '../../../components/Tabs.astro';
 import ambitos from '../../c/ambitos.typ?raw';
 
-A análise semântica percorre a árvore sintática e pergunta o que a gramática não consegue responder: este nome foi declarado? Neste ponto do programa, o que significa? Os tipos desta operação são compatíveis? O instrumento central é a **tabela de símbolos**, que regista cada declaração com o seu nome, tipo, âmbito e posição.
+`a + b` com `b` por declarar passa na gramática e falha no significado. A análise semântica percorre a árvore sintática e pergunta o que a gramática não consegue responder: este nome foi declarado? Neste ponto do programa, o que significa? Os tipos desta operação são compatíveis? O instrumento central é a **tabela de símbolos**, que regista cada declaração com o seu nome, tipo, âmbito e posição.
 
 ## Tabela de símbolos e âmbitos
 
@@ -27,7 +27,7 @@ Funções e parâmetros vivem no âmbito da função: os parâmetros comportam-s
   alt="Pilha de âmbitos com o x do bloco por cima do x global enquanto o bloco está aberto, e só o x global depois de o bloco fechar."
 />
 
-Lê a pilha como o analisador a vê: com o bloco aberto há duas entradas para `x` e a procura encontra primeiro a de cima; fechado o bloco, a entrada interior desaparece e o `x` global volta a ser o único visível.
+Lê a pilha como o analisador a vê: com o bloco aberto há duas entradas para `x` e a procura encontra primeiro a de cima; fechado o bloco, a entrada interior desaparece.
 
 ## Exemplo: bloco com shadowing e erro de tipo
 
@@ -48,7 +48,7 @@ Construção da tabela, por ordem:
 3. Declaração `int x = ...`: o inicializador avalia-se **antes** de a nova entrada existir, por isso o `x` de `x + 1` resolve-se no global e vale 3. Depois regista-se `x -> int` no âmbito do bloco (shadowing ativo daqui em diante).
 4. `print(x)`: resolve-se no âmbito do bloco, o `x` interior, que vale 4. Escreve 4.
 
-Agora a chamada com argumentos trocados. Com `int soma(int a, int b)` declarada, a chamada `soma(true, 2)` percorre a árvore da chamada e compara cada argumento com o parâmetro correspondente: o primeiro é booleano onde se esperava inteiro. Erro semântico com a posição da chamada, antes de gerar uma única instrução. Repara na divisão de trabalho: a sintaxe aceitou a chamada (a forma está certa), a semântica rejeita-a (o significado está errado).
+Agora a chamada com argumentos trocados. Com `int soma(int a, int b)` declarada, a chamada `soma(true, 2)` percorre a árvore da chamada e compara cada argumento com o parâmetro correspondente: o primeiro é booleano onde se esperava inteiro, ou seja, erro semântico com a posição da chamada, antes de gerar uma única instrução. Repara na divisão de trabalho: a sintaxe aceitou a chamada (a forma está certa), a semântica rejeita-a (o significado está errado).
 
 Estes três exemplos têm forma sintática válida, mas violam as regras semânticas indicadas.
 
@@ -90,7 +90,7 @@ A declaração morreu com o bloco que a continha. O uso seguinte encontra só os
   </div>
 </Tabs>
 
-Em Java, usamos nomes locais diferentes para este bloco. O programa imprime 4.
+Em Java usamos nomes locais diferentes para este bloco, porque Java não permite esta redeclaração de `x` local num bloco aninhado. O `y` interior lê o `x` do bloco do método, que é um âmbito exterior, não global. Além disso, o âmbito de uma variável local Java inclui o seu inicializador: `int z = z + 1` não lê automaticamente uma declaração exterior e falha por falta de inicialização. Não transfiras as regras do pseudocódigo para Java ou para o projeto sem as confirmar.
 
 <CodePlayground
   language="java"
@@ -100,11 +100,9 @@ Em Java, usamos nomes locais diferentes para este bloco. O programa imprime 4.
   }
 />
 
-O `y` interior lê o `x` do bloco do método, que é um âmbito exterior, não global. Java não permite esta redeclaração de `x` local num bloco aninhado. Além disso, o âmbito de uma variável local Java inclui o seu inicializador: `int z = z + 1` não lê automaticamente uma declaração exterior e falha por falta de inicialização. Não transfiras as regras do pseudocódigo para Java ou para o projeto sem as confirmar.
-
 ## Verificação de tipos
 
-Na linguagem didática, só admitimos `int` e `boolean`, sem conversões implícitas. As regras de tipo sobem pela árvore: o tipo de `a + b` exige operandos numéricos do mesmo tipo e devolve esse tipo; uma condição de `if` ou `while` exige booleano; uma atribuição exige compatibilidade entre o lado direito e a variável. Cada regra violada é um erro com posição. Outras linguagens podem promover tipos numéricos ou permitir sobrecarga. A regra depende da especificação, não do aspeto do operador.
+Na linguagem didática, só admitimos `int` e `boolean`, sem conversões implícitas. As regras de tipo sobem pela árvore: o tipo de `a + b` exige operandos numéricos do mesmo tipo e devolve esse tipo; uma condição de `if` ou `while` exige booleano; uma atribuição exige compatibilidade entre o lado direito e a variável, porque cada regra violada é um erro com posição. Outras linguagens podem promover tipos numéricos ou permitir sobrecarga. A regra depende da especificação, não do aspeto do operador.
 
 :::tip[Como seguir os âmbitos]
 Nesta linguagem didática, para construir a tabela e encontrar erros, desenha uma coluna por âmbito, regista cada declaração quando ela entra em vigor (o inicializador usa o âmbito anterior) e verifica cada uso e cada operação contra a tabela.
@@ -112,9 +110,11 @@ Nesta linguagem didática, para construir a tabela e encontrar erros, desenha um
 
 ## Atributos e ordem de cálculo
 
+:::details[Ver atributos herdados e sintetizados]
 Uma definição dirigida pela sintaxe associa atributos aos nós e regras para os calcular. Um atributo **sintetizado** usa informação dos filhos; um atributo **herdado** recebe contexto do pai ou de irmãos, segundo as regras definidas.
 
 Na produção `E → E1 + T`, a regra `E.tipo = verificarSoma(E1.tipo, T.tipo)` sintetiza o tipo da expressão a partir dos operandos. A tabela de símbolos disponível num nó pode ser um atributo herdado: o bloco entrega o seu âmbito aos filhos antes de estes resolverem nomes. Assim, o contexto desce e os tipos sobem. A ordem de avaliação deve respeitar estas dependências; um ciclo sem regra de resolução impede este cálculo simples.
+:::
 
 ## Para levar para a próxima página
 
