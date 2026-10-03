@@ -13,7 +13,11 @@ editorial:
     date: '2026-10-03'
 ---
 
-Antes de calcular uma média, pergunta a quem ela se refere. Um estudo sobre tempos de resposta pode medir pedidos, sessões ou utilizadores. Dez pedidos da mesma sessão podem partilhar condições de rede; não são automaticamente dez observações independentes.
+Imagina que queres saber quanto tempo os vídeos demoram a começar na tua residência. Durante uma semana, apontas os tempos de arranque que observas e ficas com uma lista de 30 tempos, como 2 segundos, 5 segundos e 3 segundos.
+
+Essa lista de tempos que conseguiste observar é o que chamamos **amostra**, ou seja, o conjunto de casos que medimos. O conjunto de todos os arranques possíveis nessa residência no período que te interessa é o que chamamos **população**, ou seja, o conjunto sobre o qual queres concluir. Cada tempo registado é o que chamamos **variável**, ou seja, a característica que anotas em cada caso.
+
+Repara que a lista pode enganar: se os 30 tempos vierem todos da mesma noite com a rede congestionada, falam dessa noite, não de todas as noites. Por isso, antes de resumires a lista com uma média, ou seja, com a soma dos tempos dividida pela quantidade de tempos, pergunta a que conjunto a conclusão se refere.
 
 ## População, amostra e variável
 
