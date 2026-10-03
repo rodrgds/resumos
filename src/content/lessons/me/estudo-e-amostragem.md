@@ -5,6 +5,12 @@ section: conteudo
 order: 1
 practices:
   - me/praticar-estudos
+editorial:
+  basedOn: 2025/26
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-03'
 ---
 
 Antes de calcular uma média, pergunta a quem ela se refere. Um estudo sobre tempos de resposta pode medir pedidos, sessões ou utilizadores. Dez pedidos da mesma sessão podem partilhar condições de rede; não são automaticamente dez observações independentes.
