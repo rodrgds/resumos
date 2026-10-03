@@ -20,15 +20,15 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import Tabs from '../../../components/Tabs.astro';
 
-O [modelo conceptual](/cadeiras/lbaw/modelo-conceptual/) desenha o problema. O esquema relacional traduz esse desenho para tabelas que o PostgreSQL consegue guardar. A conversão segue regras fixas: cada regra do UML tem um destino certo nas tabelas, e aplica-las bem evita os erros que depois custam migrações.
+O [modelo conceptual](/cadeiras/lbaw/modelo-conceptual/) desenha o problema. O esquema relacional traduz esse desenho para tabelas que o PostgreSQL consegue guardar. O mapeamento determina onde ficam as referências. Algumas restrições ficam nas tabelas; outras precisam de operações coordenadas, como criar um evento com a sua primeira sessão.
 
 ## As regras de conversão
 
-Cada classe vira uma tabela, cada atributo vira uma coluna e cada objeto ganha um identificador único, a **chave primária**. As associações viram **chaves estrangeiras**: colunas que referem a chave primária de outra tabela.
+No nosso modelo sem generalizações, cada classe vira uma tabela e cada atributo vira uma coluna. Cada objeto ganha um identificador único, a **chave primária**. As associações viram **chaves estrangeiras**: colunas que referem a chave primária de outra tabela.
 
 - Associação de um para muitos (`1` a `1..*`): a chave estrangeira vai para o lado dos muitos. Cada sessão guarda `evento_id` a referir o evento. O evento não guarda nada sobre as sessões.
-- Associação de muitos para muitos resolvida por classe: a classe de associação vira tabela própria com duas chaves estrangeiras. A tabela `bilhetes` guarda `utilizador_id` e `sessao_id`.
-- Associação de um para um: a chave estrangeira vai para qualquer dos lados, com restrição de unicidade.
+- Associação de muitos para muitos resolvida por classe: a ligação vira tabela própria com duas chaves estrangeiras. A tabela `bilhetes` guarda `utilizador_id` e `sessao_id`.
+- Associação de um para um: escolhe o lado da referência segundo a obrigatoriedade e as operações, e acrescenta unicidade. Se um cartaz exige uma sessão mas uma sessão pode não ter cartaz, guardar a FK no cartaz evita referências vazias.
 
 A direção da chave estrangeira é a decisão que mais erros causa. Pergunta sempre "cada objeto deste lado refere quantos do outro". Cada sessão refere um evento, por isso a coluna vive na sessão. Se a pusesses no evento, um evento só conseguiria guardar uma sessão.
 
@@ -55,11 +55,11 @@ bilhetes (..., utilizador_id INTEGER NOT NULL REFERENCES utilizadores (id),
   </div>
   <div slot="panel-2">
 
-Um para um: a estrangeira vai para qualquer dos lados, com restrição de unicidade para impedir que dois objetos refiram o mesmo. Sem o `UNIQUE`, o um para um degrada-se em um para muitos silencioso.
+Um para um: a estrangeira com `UNIQUE` impede que dois cartazes refiram a mesma sessão. `NOT NULL` exige uma sessão para cada cartaz. Sem o `UNIQUE`, o um para um degrada-se em um para muitos silencioso.
 
 ```sql
 -- exemplo: cada sessão tem no máximo um cartaz
-cartazes (..., sessao_id INTEGER UNIQUE REFERENCES sessoes (id))
+cartazes (..., sessao_id INTEGER NOT NULL UNIQUE REFERENCES sessoes (id))
 ```
 
   </div>
@@ -71,29 +71,29 @@ Aplicadas as regras às quatro classes da Loja de Bilhetes:
 
 ```sql
 CREATE TABLE utilizadores (
-    id SERIAL PRIMARY KEY,
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nome TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     palavra_passe_hash TEXT NOT NULL
 );
 
 CREATE TABLE eventos (
-    id SERIAL PRIMARY KEY,
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     titulo TEXT NOT NULL,
     descricao TEXT,
     categoria TEXT
 );
 
 CREATE TABLE sessoes (
-    id SERIAL PRIMARY KEY,
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     evento_id INTEGER NOT NULL REFERENCES eventos (id),
     data_hora TIMESTAMP NOT NULL,
-    preco NUMERIC(8, 2) NOT NULL,
+    preco NUMERIC(8, 2) NOT NULL CHECK (preco >= 0),
     lotacao INTEGER NOT NULL CHECK (lotacao > 0)
 );
 
 CREATE TABLE bilhetes (
-    id SERIAL PRIMARY KEY,
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     utilizador_id INTEGER NOT NULL REFERENCES utilizadores (id),
     sessao_id INTEGER NOT NULL REFERENCES sessoes (id),
     codigo TEXT NOT NULL UNIQUE,
@@ -101,7 +101,7 @@ CREATE TABLE bilhetes (
 );
 ```
 
-Cada restrição do modelo aparece algures: o email único vira `UNIQUE`, a lotação positiva vira `CHECK`, o estado limitado aos três valores vira `CHECK` com a lista. O `SERIAL` cria o identificador automático que serve de chave primária. Repara que `descricao` aceita nulos e `titulo` não: um evento sem descrição ainda se vende, um evento sem título não se apresenta.
+Algumas restrições são locais: o email único vira `UNIQUE`, a lotação positiva vira `CHECK`, o estado limitado aos três valores vira `CHECK` com a lista. `GENERATED ALWAYS AS IDENTITY` gera os identificadores; `PRIMARY KEY` acrescenta unicidade e obrigatoriedade. A FK continua a ser um inteiro normal, sem gerar novos identificadores. `SERIAL` é a alternativa antiga, ainda suportada. A exigência de pelo menos uma sessão por evento e o limite total de bilhetes ainda não são garantidos por este SQL. Repara que `descricao` aceita nulos e `titulo` não: um evento sem descrição ainda se vende, um evento sem título não se apresenta.
 
 ## Uma violação de chave estrangeira explicada
 
@@ -126,22 +126,22 @@ A mesma proteção vale ao apagar: não consegues apagar um evento que ainda tem
 As setas apontam da estrangeira para a primária: lê "sessões refere eventos". Se desenhares o teu esquema assim antes de escreveres o SQL, as referências em falta saltam à vista.
 
 :::tip[Como validar o esquema]
-Percorre cada caso de uso e escreve as inserções que ele exige, como fizemos acima. Se algum passo precisar de uma coluna que não existe, falta um atributo. Se alguma inserção válida for recusada, há uma restrição a mais. O esquema está pronto quando todos os casos de uso passam neste teste de papel.
+Percorre cada caso de uso e escreve as inserções que ele exige, como fizemos acima. Se algum passo precisar de uma coluna que não existe, falta um atributo. Se alguma inserção válida for recusada, há uma restrição a mais. Este teste encontra omissões. Completa-o com operações inválidas e concorrentes; passar exemplos no papel não demonstra todas as garantias.
 :::
 
-## Corre o esquema na prática
+## Seguir uma compra entre tabelas
 
-O esquema completo, os dados de exemplo e a pergunta final cabem num programa só. Corre-o e confirma que a última linha devolve a compra ligada ao evento:
+A consulta final parte de um bilhete, segue a sessão e encontra o evento. As condições `ON` ligam a FK de cada linha à PK da linha que ela refere:
 
 <CodePlayground
   language="sql"
   title="Esquema e compra de exemplo"
   code={
-    "PRAGMA foreign_keys = ON;\nCREATE TABLE utilizadores (\n    id INTEGER PRIMARY KEY,\n    nome TEXT NOT NULL,\n    email TEXT NOT NULL UNIQUE,\n    palavra_passe_hash TEXT NOT NULL\n);\nCREATE TABLE eventos (\n    id INTEGER PRIMARY KEY,\n    titulo TEXT NOT NULL,\n    descricao TEXT,\n    categoria TEXT\n);\nCREATE TABLE sessoes (\n    id INTEGER PRIMARY KEY,\n    evento_id INTEGER NOT NULL REFERENCES eventos (id),\n    data_hora TEXT NOT NULL,\n    preco NUMERIC(8, 2) NOT NULL,\n    lotacao INTEGER NOT NULL CHECK (lotacao > 0)\n);\nCREATE TABLE bilhetes (\n    id INTEGER PRIMARY KEY,\n    utilizador_id INTEGER NOT NULL REFERENCES utilizadores (id),\n    sessao_id INTEGER NOT NULL REFERENCES sessoes (id),\n    codigo TEXT NOT NULL UNIQUE,\n    estado TEXT NOT NULL CHECK (estado IN ('reservado', 'pago', 'cancelado'))\n);\nINSERT INTO eventos (titulo, descricao, categoria)\nVALUES ('Noite de Fado', 'Fado na sala principal', 'musica');\nINSERT INTO sessoes (evento_id, data_hora, preco, lotacao)\nVALUES (1, '2026-12-14 21:30', 12.50, 100);\nINSERT INTO utilizadores (nome, email, palavra_passe_hash)\nVALUES ('Ana', 'ana@example.com', 'hash_apenas_para_demonstracao');\nINSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)\nVALUES (1, 1, 'B-0001', 'reservado');\nSELECT e.titulo, s.data_hora, b.codigo, b.estado\nFROM bilhetes AS b\nJOIN sessoes AS s ON s.id = b.sessao_id\nJOIN eventos AS e ON e.id = s.evento_id;"
+    "PRAGMA foreign_keys = ON;\nCREATE TABLE utilizadores (\n    id INTEGER PRIMARY KEY,\n    nome TEXT NOT NULL,\n    email TEXT NOT NULL UNIQUE,\n    palavra_passe_hash TEXT NOT NULL\n);\nCREATE TABLE eventos (\n    id INTEGER PRIMARY KEY,\n    titulo TEXT NOT NULL,\n    descricao TEXT,\n    categoria TEXT\n);\nCREATE TABLE sessoes (\n    id INTEGER PRIMARY KEY,\n    evento_id INTEGER NOT NULL REFERENCES eventos (id),\n    data_hora TEXT NOT NULL,\n    preco NUMERIC(8, 2) NOT NULL CHECK (preco >= 0),\n    lotacao INTEGER NOT NULL CHECK (lotacao > 0)\n);\nCREATE TABLE bilhetes (\n    id INTEGER PRIMARY KEY,\n    utilizador_id INTEGER NOT NULL REFERENCES utilizadores (id),\n    sessao_id INTEGER NOT NULL REFERENCES sessoes (id),\n    codigo TEXT NOT NULL UNIQUE,\n    estado TEXT NOT NULL CHECK (estado IN ('reservado', 'pago', 'cancelado'))\n);\nINSERT INTO eventos (titulo, descricao, categoria)\nVALUES ('Noite de Fado', 'Fado na sala principal', 'musica');\nINSERT INTO sessoes (evento_id, data_hora, preco, lotacao)\nVALUES (1, '2026-12-14 21:30', 12.50, 100);\nINSERT INTO utilizadores (nome, email, palavra_passe_hash)\nVALUES ('Ana', 'ana@example.com', 'hash_apenas_para_demonstracao');\nINSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)\nVALUES (1, 1, 'B-0001', 'reservado');\nSELECT e.titulo, s.data_hora, b.codigo, b.estado\nFROM bilhetes AS b\nJOIN sessoes AS s ON s.id = b.sessao_id\nJOIN eventos AS e ON e.id = s.evento_id;"
   }
 />
 
-A última linha imprime `Noite de Fado|2026-12-14 21:30|B-0001|reservado`. Repara nas adaptações ao motor desta página: `INTEGER PRIMARY KEY` em vez de `SERIAL` e datas como texto, porque aqui corre SQLite e não PostgreSQL. As chaves estrangeiras estão ativadas por PRAGMA. A afinidade de tipos SQLite e NUMERIC não reproduz todas as garantias de tipos e precisão de PostgreSQL. O hash mostrado é apenas um marcador de dados de teste, não serve para autenticar.
+A última linha imprime `Noite de Fado|2026-12-14 21:30|B-0001|reservado`. Repara nas adaptações ao motor desta página: `INTEGER PRIMARY KEY` em vez de `GENERATED ALWAYS AS IDENTITY` e datas como texto, porque aqui corre SQLite e não PostgreSQL. As chaves estrangeiras estão ativadas por PRAGMA. A afinidade de tipos SQLite e NUMERIC não reproduz todas as garantias de tipos e precisão de PostgreSQL. O hash mostrado é apenas um marcador de dados de teste, não serve para autenticar.
 
 ## Chaves, domínios e NULL
 
@@ -168,6 +168,8 @@ Não escolhas CASCADE para tudo. Eliminar uma categoria pode justificar outra a�
 Uma solução para especialização é uma tabela de supertipo e uma por subtipo, com a chave de cada subtipo também a ser FK para o supertipo. Partilha atributos sem os duplicar, mas a regra «todo o supertipo tem exatamente um destes subtipos» não aparece automaticamente só com essas FKs.
 
 Outra é uma tabela única com um discriminador e colunas específicas. Precisa de CHECKs que liguem o discriminador aos atributos exigidos; pode produzir muitos NULL. A escolha depende de consultas, restrições e da forma de especialização. Explica como garantes totalidade e disjunção quando são obrigatórias.
+
+Uma terceira estratégia usa uma tabela por classe concreta, repetindo nela os atributos do supertipo. Evita certas junções, mas uma consulta a todos os utilizadores pode exigir `UNION`. Se os subtipos se sobrepõem, a mesma pessoa pode surgir em várias tabelas, exigindo coordenação da identidade e dos atributos comuns. Não escolhas esta estratégia sem verificar as restrições da especialização.
 
 Numa relação N:N simples, uma tabela com PK composta `(utilizador_id,sessao_id)` permite no máximo uma ligação por par. **Bilhete** tem identidade própria: a mesma pessoa pode comprar vários para a mesma sessão, logo o par não é único neste exemplo. Não apliques automaticamente a PK composta de uma associação simples a uma entidade associativa com várias ocorrências por par.
 

@@ -2,6 +2,7 @@
 title: Cheat sheet de LBAW
 description: Definições, condições e padrões para rever o teste individual de bases de dados e aplicações web.
 studyKind: revision
+section: recursos
 editorial:
   basedOn: 2026/27
   sources:
@@ -21,7 +22,7 @@ editorial:
 | Especialização | Total/partial e disjoint/overlapping são dimensões independentes.                |
 | N:N            | Tabela associativa. O par só é chave se houver no máximo uma ocorrência por par. |
 
-[Requisitos](../requisitos/), [UML](../modelo-conceptual/) e [esquema](../esquema-relacional/).
+[Requisitos](/cadeiras/lbaw/requisitos/), [UML](/cadeiras/lbaw/modelo-conceptual/) e [esquema](/cadeiras/lbaw/esquema-relacional/).
 
 ## Restrições e normalização
 
@@ -35,13 +36,14 @@ editorial:
 | X⁺                     | Começa em X; aplica dependências até estabilizar.                                          |
 | Superchave / candidata | Determina todos os atributos / além disso é mínima por inclusão.                           |
 | Atributo primo         | Pertence a alguma chave candidata.                                                         |
-| 2FN                    | Sem dependência parcial de não primos numa parte própria de uma chave candidata.           |
-| 3FN                    | Para X→A não trivial, X é superchave ou A é primo.                                         |
-| BCNF                   | Para X→Y não trivial, X é superchave.                                                      |
+| 1FN                    | Cada atributo tem um valor do seu domínio, sem grupos repetidos na mesma célula.           |
+| 2FN                    | 1FN e sem dependência parcial de não primos numa parte própria de uma chave candidata.     |
+| 3FN                    | 1FN e, para X→A não trivial, X é superchave ou A é primo.                                  |
+| BCNF                   | 1FN e, para X→Y não trivial, X é superchave.                                               |
 | Sem perda, binária     | A interseção determina uma das relações, sob as dependências funcionais.                   |
 | Preservação            | Regras projetadas permitem verificar as originais sem junção. É uma propriedade diferente. |
 
-[Normalização](../normalizacao/).
+[Normalização](/cadeiras/lbaw/normalizacao/).
 
 ## SQL
 
@@ -54,7 +56,7 @@ editorial:
 - UNION elimina repetidos; UNION ALL conserva. Janela OVER mantém linhas; GROUP BY reduz grupos.
 - Álgebra relacional clássica usa conjuntos; SQL conserva repetidos por defeito.
 
-[Consultas](../consultas-relacionais/).
+[Consultas](/cadeiras/lbaw/consultas-relacionais/).
 
 ## Índices e pesquisa
 
@@ -72,7 +74,7 @@ editorial:
 | Precisão / recall | Relevantes devolvidos / todos devolvidos; relevantes devolvidos / todos os relevantes.       |
 | Ranking           | Correspondência depende da consulta; qualidade estática pode ser pré-calculada e atualizada. |
 
-[Índices](../sql-indices/).
+[Índices](/cadeiras/lbaw/sql-indices/).
 
 ## Transações
 
@@ -88,7 +90,7 @@ editorial:
 - Pagamento externo não é anulado pelo ROLLBACK da base de dados.
 - PostgreSQL: função participa em expressões; procedure usa CALL. Controlo transacional interno tem condições; não generalizar para outro SGBD.
 
-[Concorrência](../triggers-transacoes/).
+[Concorrência](/cadeiras/lbaw/triggers-transacoes/).
 
 ## HTTP, arquitetura e segurança
 
@@ -96,7 +98,7 @@ editorial:
 | ------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | GET/HEAD                 | Seguros e idempotentes.                                                                                      |
 | PUT/DELETE               | Idempotentes; respostas repetidas podem diferir.                                                             |
-| POST/PATCH               | Não idempotentes por definição.                                                                              |
+| POST/PATCH               | Idempotência não garantida pelo método.                                                                      |
 | 401 / 403                | Autenticação necessária / operação recusada.                                                                 |
 | 303 / 304                | Redirecionar para GET / representação em cache válida.                                                       |
 | no-cache / no-store      | Guardar com validação / pedir que não se guarde.                                                             |
@@ -113,7 +115,7 @@ editorial:
 | CSRF                     | Token verificado no servidor e defesas complementares. POST sozinho não chega.                               |
 | Palavra-passe            | Hash próprio com salt e custo; password_verify, sem recuperar o original.                                    |
 
-[HTTP](../http-estado/), [Laravel](../aplicacao-laravel/) e [segurança](../seguranca-web/).
+[HTTP](/cadeiras/lbaw/http-estado/), [Laravel](/cadeiras/lbaw/aplicacao-laravel/) e [segurança](/cadeiras/lbaw/seguranca-web/).
 
 ## Informação, cliente e NoSQL
 
@@ -130,4 +132,4 @@ editorial:
 - Atomicidade de um documento não implica atomicidade de vários. Verificar sistema e versão.
 - CAP: durante partição, há conflito entre as garantias definidas de consistência forte e disponibilidade; não é «escolher duas» sem contexto.
 
-[Informação](../interfaces-acessiveis/), [desempenho](../cliente-desempenho/) e [NoSQL](../nosql/).
+[Informação](/cadeiras/lbaw/interfaces-acessiveis/), [desempenho](/cadeiras/lbaw/cliente-desempenho/) e [NoSQL](/cadeiras/lbaw/nosql/).
