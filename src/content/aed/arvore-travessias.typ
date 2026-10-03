@@ -7,6 +7,7 @@
     draw.content((x, y), [#v])
     draw.content((x, y - .95), text(8pt, fill: rgb("8c2d3b"))[#pre])
   }
+  draw.content((0, 1.3), [*posição em pré-ordem abaixo de cada nó*])
   no(0, 0, [4], [1]); no(-3, -2.2, [2], [2]); no(3, -2.2, [6], [5])
   no(-4.5, -4.4, [1], [3]); no(-1.5, -4.4, [3], [4]); no(1.5, -4.4, [5], [6]); no(4.5, -4.4, [7], [7])
   draw.line((-.45, -.45), (-2.6, -1.85)); draw.line((.45, -.45), (2.6, -1.85))
