@@ -28,7 +28,7 @@ Gestalt: proximidade, semelhança, continuidade, região comum e figura-fundo. R
 
 | Modelo     | Fórmula/condição                                                                                           |
 | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| Fitts      | $MT=a+b\log_2(1+D/W)$; apontar, D e W na mesma unidade; parâmetros do contexto                             |
+| Fitts      | $MT=a+b\log_2(1+D/W)$; apontar, D e W na mesma unidade; W na direção do movimento; parâmetros do contexto  |
 | Hick-Hyman | $T=a+b\log_2(n+1)$ na variante equiprovável; não representa todo o tempo de um menu                        |
 | KLM        | Somar operadores e custos dados: K, P, H, M, R; percurso conhecido de pessoa experiente, sem modelar erros |
 
@@ -59,6 +59,7 @@ Walkthrough: objetivo do passo, ação disponível, relação ação/objetivo e 
 - Atitudinal: o que dizem/sentem. Comportamental: o que fazem. Qualitativo/quantitativo é outro eixo.
 - Entre participantes: pessoas diferentes por condição. Intra: as mesmas; controlar aprendizagem/ordem. Independente é condição; dependente é medida.
 - Média e mediana não são iguais; declarar falhas e dispersão. Correlação não prova causalidade.
+- Ética: consentimento informado, saída sem penalização, proteção dos dados e riscos proporcionados; pseudonimização não garante anonimato.
 - SUS padrão: ímpares $r_i-1$, pares $5-r_i$; somar e multiplicar por 2,5. Índice de 0 a 100, não percentagem de sucesso.
 - Valor-p não é probabilidade de a hipótese nula ser verdadeira; ausência de significância não prova igualdade. [Explicação](/cadeiras/ipc/estudos-utilizadores/).
 
