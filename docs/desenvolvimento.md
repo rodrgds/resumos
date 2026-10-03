@@ -46,6 +46,8 @@ A configuração usa `bash scripts/cloudflare-build.sh`, pasta de saída `dist`,
 
 O workflow GitHub Actions verifica formatação, tipos, testes de navegador e build. Cloudflare compila de forma independente, por isso os checks de GitHub não bloqueiam automaticamente a publicação.
 
+As lições usam os marcadores `email_off` para [impedir a transformação de endereços pelo Cloudflare](https://developers.cloudflare.com/waf/tools/scrape-shield/email-address-obfuscation/). Conserva-os: os emails fictícios em exemplos SQL têm de chegar intactos ao editor, à impressão e aos leitores sem JavaScript.
+
 `src/pages/404.astro` gera `dist/404.html`. Mantém este ficheiro: sem uma página 404 na raiz, [Cloudflare Pages serve a página inicial para URLs inexistentes](https://developers.cloudflare.com/pages/configuration/serving-pages/). Confirma na publicação que um URL de rascunho devolve 404.
 
 ## Créditos
