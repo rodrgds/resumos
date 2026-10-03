@@ -21,13 +21,13 @@ editorial:
 import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Uma tabela de encaminhamento precisa de refletir uma topologia que muda. O algoritmo procura caminhos segundo um **custo definido**. Esse custo não é automaticamente a latência nem o inverso do débito: lê a regra do problema.
+Uma tabela tem de acompanhar uma topologia que muda. O algoritmo procura caminhos segundo um **custo definido**. Esse custo não é automaticamente latência nem inverso do débito: lê a regra do problema.
 
 ## Link state e Dijkstra
 
-Num algoritmo **link state**, cada router conhece o custo das suas ligações, divulga essa informação e constrói uma representação da topologia. Sobre o grafo, calcula os caminhos de menor custo a partir de si.
+Num algoritmo **link state**, cada router divulga custos das suas ligações e constrói a topologia. Depois calcula menores custos a partir de si.
 
-Dijkstra mantém distâncias provisórias e um conjunto de nós já fixados. Começa com origem a zero e restantes a infinito. Escolhe o nó não fixado de menor distância, fixa-o e tenta melhorar cada vizinho usando `distância atual + custo da ligação`. Custos devem ser não negativos.
+Dijkstra mantém distâncias provisórias e nós fixados. Começa com origem a zero e restantes a infinito. Escolhe o não fixado de menor distância, fixa-o e tenta melhorar vizinhos com `atual + custo`. Os custos devem ser não negativos.
 
 <Dot
   source={`graph { rankdir=LR; node [shape=circle]; A -- B [label="2"]; A -- C [label="5"]; B -- C [label="1"]; B -- D [label="4"]; C -- D [label="1"]; }`}
@@ -68,13 +68,13 @@ Em igualdade de custos pode haver vários caminhos mínimos. Usa o critério de 
 
 ## Distance vector e Bellman-Ford
 
-Em **distance vector**, o router troca distâncias com vizinhos e não precisa de conhecer o grafo completo. Para destino $y$:
+Em **distance vector**, o router troca distâncias com vizinhos sem conhecer o grafo completo:
 
 $$D_x(y)=\min_{v\in vizinhos(x)}\{c(x,v)+D_v(y)\}.$$
 
 $x$ conhece os custos locais. Cada candidato soma custo até ao vizinho e a distância que esse vizinho anunciou para o destino. Guarda também o vizinho que produziu o mínimo.
 
-**Exemplo.** X liga a A com custo 2 e a B com custo 5. Para Z, A anuncia 7 e B anuncia 1. Via A custa 9; via B custa 6. X anuncia distância 6 e usa B. Não escolhe A só por a primeira ligação ser mais barata.
+**Exemplo.** X liga a A com custo 2 e a B com custo 5. Para Z, A anuncia 7 e B anuncia 1. Via A custa 9 e via B custa 6, por isso X anuncia 6 e usa B.
 
 Num traço por **rondas síncronas**, todos calculam com os vetores da ronda anterior. Atualizar imediatamente um router e usar esse resultado no seguinte modela uma execução diferente. Regista a inicialização: frequentemente distância zero a si, custos conhecidos aos vizinhos e infinito aos restantes.
 
@@ -100,6 +100,10 @@ Um **sistema autónomo** reúne redes sob uma administração e política de enc
 
 ## Custo e débito não são a mesma conta
 
-Supondo custo $1/R$, o caminho com ligações de 4 e 4 Mbit/s custa $1/4+1/4=0{,}5$. Um caminho direto de 3 Mbit/s custa $1/3\approx0{,}333$, logo é escolhido, embora o primeiro tenha **bottleneck**, ou gargalo, de 4 Mbit/s, o menor débito das suas ligações. **Minimizar a soma dos inversos não equivale a maximizar o menor débito.**
+Supondo custo $1/R$, duas ligações de 4 Mbit/s custam $1/4+1/4=0{,}5$. Um direto de 3 Mbit/s custa $1/3\approx0{,}333$, por isso é escolhido, embora o primeiro tenha **bottleneck** de 4 Mbit/s. **Minimizar a soma dos inversos não equivale a maximizar o menor débito.**
+
+:::tip[Ideia-chave]
+Soma custos para escolher o caminho e só depois calcula o bottleneck desse caminho, porque são contas diferentes.
+:::
 
 Para um exercício, entrega a tabela por iteração, o custo final, o caminho e o próximo salto. Se pedirem o débito, faz depois a conta independente sobre as capacidades do caminho escolhido.

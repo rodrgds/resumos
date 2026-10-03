@@ -32,7 +32,7 @@ $1\text{ byte}=8\text{ bit}$. kbit/s e Mbit/s decimais: $10^3$ e $10^6$. Convert
 
 Transmissão $t_f=L/R$; propagação $t_p=D/v$. Primeiro pacote store-and-forward: soma transmissão, propagação, processamento e fila em cada salto. N pacotes iguais, H ligações iguais, só transmissão: $(H+N-1)L/R$.
 
-Stop-and-Wait sem perdas: $U=t_f/(t_f+2t_p+t_a)$. Com ACK desprezável e $a=t_p/t_f$: $U=1/(1+2a)$. Janela W sem perdas: $U=\min(1,W/(1+2a))$. Débito útil = R×U×fração de dados úteis.
+Stop-and-Wait sem perdas: $U=t_f/(t_f+2t_p+t_a)$. Com ACK desprezável e $a=t_p/t_f$: $U=1/(1+2a)$. Janela W sem perdas: $U=\min(1,W/(1+2a))$. Débito útil = R×U×fração útil.
 
 Modelo com erro independente $p_e$: $U_{SW}=(1-p_e)/(1+2a)$, $U_{SR}=(1-p_e)\min(1,W/(1+2a))$.
 

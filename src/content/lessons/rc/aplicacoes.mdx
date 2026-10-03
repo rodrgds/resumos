@@ -22,11 +22,11 @@ editorial:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Uma aplicação define mensagens e ações, usando um transporte. O nome de um servidor, a porta do serviço e o formato da resposta resolvem problemas distintos. Para explicar o que acontece ao abrir uma página, segue a resolução do nome, a ligação ao destino e o pedido da aplicação.
+Para saberes o que acontece ao abrir uma página, segue resolução do nome, ligação ao destino e pedido da aplicação. Cada etapa usa um protocolo e uma porta diferentes.
 
 ## DNS: nomes e registos
 
-DNS é uma base de dados distribuída e hierárquica. O recursor usado pelo cliente pode consultar servidores de raiz, do domínio de topo e autoritativos, guardando resultados em cache até ao TTL.
+DNS é uma base distribuída e hierárquica. O recursor do cliente pode consultar raiz, domínio de topo e autoritativos, guardando em cache até ao TTL.
 
 Uma pergunta **recursiva** pede a resposta final ao servidor consultado. Numa interação **iterativa**, esse servidor pode indicar outro a consultar. No percurso habitual, o cliente pede recursão ao seu resolver e o resolver segue referências na hierarquia. Uma resposta em cache pode evitar as consultas seguintes.
 
@@ -54,7 +54,7 @@ Connection: close
 
 Uma resposta pode ser `200 OK`, `301 Moved Permanently`, `404 Not Found` ou `500 Internal Server Error`. `Content-Type` descreve o formato do corpo. GET pede uma representação; POST submete dados para processamento; PUT substitui uma representação; DELETE pede remoção. O significado exato depende do recurso e das regras HTTP.
 
-A ligação **persistente** reutiliza TCP para vários pedidos. Numa conta simplificada com RTT constante, sem DNS ou TLS e com objetos pequenos, uma ligação TCP nova custa aproximadamente um RTT para abrir e outro para pedido/resposta. Reutilizar a ligação evita repetir a abertura. Se houver paralelismo, pipelining ou versões diferentes de HTTP, os tempos mudam.
+A ligação **persistente** reutiliza TCP para vários pedidos. Numa conta simplificada com RTT constante, sem DNS ou TLS e objetos pequenos, um TCP novo custa cerca de um RTT a abrir e outro para pedido/resposta. Reutilizar evita repetir a abertura.
 
 Cookies permitem associar pedidos a estado da aplicação. HTTP não mantém automaticamente uma sessão de utilizador. Uma cache pode reutilizar conteúdo e validar uma versão com pedidos condicionais, por exemplo `If-Modified-Since` ou `If-None-Match`, recebendo `304 Not Modified` se aplicável.
 
@@ -73,7 +73,7 @@ print("Corpo:", corpo)`}
 
 ## FTP e sockets
 
-FTP clássico mantém uma ligação de **controlo** ao servidor na porta TCP 21 e abre ligações separadas para dados. No modo ativo, o servidor inicia a ligação de dados para o cliente; no passivo, o cliente liga-se à porta anunciada pelo servidor. A porta 20 é associada ao lado servidor em transferências ativas clássicas, não a toda a transferência FTP. FTP não cifra credenciais por si; SFTP é outro protocolo, sobre SSH.
+FTP clássico mantém controlo em TCP 21 e abre ligações separadas para dados. No ativo, o servidor inicia dados para o cliente; no passivo, o cliente liga-se à porta anunciada. FTP não cifra credenciais; SFTP é outro protocolo sobre SSH.
 
 Um cliente TCP usa socket, connect, send e recv. O servidor usa socket, bind, listen e accept; `accept` cria um socket para a conversa, mantendo o socket de escuta para outras. Em UDP, usam-se datagramas e endereços, por exemplo `sendto` e `recvfrom`, sem exigir um handshake TCP.
 
@@ -87,7 +87,7 @@ MIME descreve tipos de conteúdo, anexos e codificações no corpo. Um endereço
 
 ## Cliente-servidor e P2P
 
-No modelo cliente-servidor, um servidor fornece conteúdo aos clientes. Em P2P, participantes podem também fornecer conteúdo a outros. Um sistema P2P pode continuar a usar servidores auxiliares, como trackers; não exige ausência de qualquer componente central.
+No cliente-servidor, um servidor fornece conteúdo. Em P2P, participantes também fornecem a outros. Um P2P pode usar servidores auxiliares como trackers.
 
 Para distribuir um ficheiro de $F$ bits a N clientes, servidor com upload $u_s$ e clientes de download mínimo $d_{min}$, um limite inferior cliente-servidor é:
 
@@ -101,6 +101,10 @@ $$D_{P2P}\ge\max(F/u_s,F/d_{min},NF/(u_s+\sum u_i)).$$
 
 ## Uma página, do nome ao conteúdo
 
-Se nada estiver em cache, o terminal obtém configuração IP, identifica o próximo salto, resolve o nome por DNS, abre o transporte necessário e envia o pedido HTTP. ARP resolve o MAC local de destino, quando é IPv4 numa LAN Ethernet; não descobre o IP do servidor web. O router encaminha o pacote, não interpreta o HTML. No destino, a porta entrega o pedido ao processo servidor.
+Se nada estiver em cache, o terminal obtém IP, resolve o nome por DNS, abre o transporte e envia o pedido HTTP. ARP resolve o MAC local, não o IP do servidor. O router encaminha sem interpretar HTML.
+
+:::tip[Ideia-chave]
+Descreve sempre nome, ligação e pedido por esta ordem, porque cache ou ligação persistente só elimina etapas intermédias.
+::: No destino, a porta entrega o pedido ao processo servidor.
 
 Escreve o percurso sem consultar e identifica o que pode desaparecer quando há cache ou uma ligação persistente.
