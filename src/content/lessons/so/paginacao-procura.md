@@ -7,7 +7,7 @@ practices:
   - so/praticar-paginacao
 ---
 
-Já vimos como os endereços são traduzidos para a RAM; esta página responde a: o que acontece quando uma página necessária não está na RAM?
+Já viste como os endereços são traduzidos para a RAM. Agora o processo refere uma página ausente e o núcleo tem de escolher uma vítima. O que acontece quando uma página necessária não está na RAM?
 
 Nem todas as páginas de um processo precisam de estar na RAM ao mesmo tempo. A paginação por procura prepara uma página quando o processo a referencia. A vantagem depende de **localidade**: durante algum tempo, um programa costuma usar um conjunto relativamente pequeno de páginas, ou seja as referências próximas tendem a repetir páginas próximas.
 
@@ -24,6 +24,8 @@ Se há I/O, o processo pode bloquear e outro usar CPU entretanto. Uma falta por 
 Uma vítima **suja** foi alterada e pode exigir escrita antes de reutilizar a moldura. Uma página limpa de código pode ser descartada e reconstruída do executável. Não é necessário escrever todas as vítimas para swap.
 
 ## Fazer uma tabela de referências
+
+Lê primeiro as três regras: FIFO retira por ordem de entrada e ignora acertos; LRU retira pelo acesso mais antigo e cada acerto reordena; OPT retira pelo uso futuro mais distante e serve de referência mínima. Só depois preenche a tabela linha a linha, porque cada vítima depende da regra aplicada ao estado anterior.
 
 Para resolver um exercício, escreve as páginas residentes após **cada referência**, marca falta ou acerto e mantém o estado da política. Molduras inicialmente vazias também provocam faltas. Um acerto pode atualizar LRU ou o bit de referência, mesmo sem substituir nada.
 
@@ -48,7 +50,7 @@ Totais: FIFO 5, LRU 6 e OPT 5. No último passo de OPT, qualquer página que já
 
 **OPT** retira a página cuja próxima utilização está mais longe no futuro, ou que não volta a ser usada. Na referência 4 do exemplo, os próximos usos de 2, 1 e 3 são os passos 6, 7 e 8. Retiramos 3. OPT serve como referência mínima para a sequência conhecida; o sistema não conhece em geral o futuro.
 
-**LRU** retira a página cujo último acesso está mais longe no passado. Na referência 4, 2 foi usada no passo 2, 3 no passo 3 e 1 no passo 4. Retiramos 2. A implementação exata pode usar tempos de último acesso ou uma lista atualizada em cada referência, com custo de manutenção.
+**LRU** retira a página cujo último acesso está mais longe no passado, ou seja mede localidade temporal: o que foi usado há pouco tende a voltar. Na referência 4, 2 foi usada no passo 2, 3 no passo 3 e 1 no passo 4. Retiramos 2. A localidade espacial, usar páginas vizinhas, explica por que a ordem de percurso de uma matriz importa, mas não muda esta escolha. A implementação exata pode usar tempos de último acesso ou uma lista atualizada em cada referência, com custo de manutenção.
 
 Não confundas FIFO com LRU: no primeiro, a idade vem da entrada; no segundo, do último acesso.
 
@@ -58,7 +60,7 @@ FIFO pode ter mais faltas com mais molduras. Na sequência `1,2,3,4,1,2,5,1,2,3,
 
 No **relógio**, as molduras formam um anel e uma ponteira procura uma vítima. Se o bit de referência é 1, põe-no a zero e avança. Se é 0, substitui e avança. A utilização põe o bit a 1. Esta segunda oportunidade aproxima recência sem guardar uma ordem completa.
 
-Com ponteira em A e bits A=1, B=0, C=1, a procura limpa A e escolhe B. Não escolhe A só por ser a primeira. É preciso saber onde começa a ponteira e como os bits são atualizados.
+Traça o relógio com ponteira em A e bits A=1, B=0, C=1: examina A, limpa para 0 e avança; examina B com 0, escolhe B como vítima e avança a ponteira para C. Não escolhe A só por ser a primeira. É preciso saber onde começa a ponteira e como cada acesso põe o bit a 1. Para matrizes, fixa as hipóteses antes de contar: dimensões, ordem de percurso, tamanho de página e número de molduras. Sem elas, duas contagens diferentes podem parecer contraditórias.
 
 A segunda oportunidade melhorada considera referência e sujidade: uma página `(0,0)` não recente e limpa é uma boa vítima; `(0,1)` exige escrita. LFU retira a menos referenciada e MFU a mais referenciada, mas contagens históricas podem representar mal a localidade atual. Pools de molduras livres e escrita antecipada de páginas sujas podem reduzir o trabalho no momento da falta.
 
@@ -83,7 +85,7 @@ Converte milissegundos para nanossegundos antes de somar. Se o custo dado exclui
 
 ## Distribuir molduras
 
-Alocação igual dá o mesmo número a cada processo. Alocação proporcional pode usar o tamanho: com 60 molduras e processos de 10 e 20 páginas, uma divisão proporcional dá 20 e 40, respeitando mínimos e os ajustes de arredondamento definidos.
+Alocação igual dá o mesmo número a cada processo. Alocação proporcional pode usar o tamanho: com 60 molduras e processos de 100 e 200 páginas, uma divisão proporcional dá 20 e 40, respeitando mínimos e os ajustes de arredondamento definidos. Os tamanhos têm de comportar as quotas: o exemplo anterior com processos de 10 e 20 páginas não podia atribuir 20 e 40 molduras.
 
 Na substituição **local**, um processo só escolhe entre as suas molduras. Na **global**, pode retirar molduras que estavam atribuídas a outro. A global pode aproveitar melhor a memória livre de utilização, mas também espalhar pressão entre processos. A local limita interferência, sem garantir que cada processo tenha memória suficiente.
 
@@ -101,6 +103,6 @@ Em C, linhas de uma matriz são contíguas. Percorrer uma linha antes de passar 
 
 _Prepaging_ traz páginas antes do primeiro uso e pode evitar faltas iniciais, mas desperdiça I/O quando a previsão falha. Páginas em I/O podem precisar de ficar presas em memória para não serem substituídas a meio da transferência. Em NUMA, a memória próxima da CPU pode ser mais rápida, ligando alocação e escalonamento.
 
-Para memória do núcleo, **buddy** divide blocos em potências de dois e junta pares compatíveis quando ambos ficam livres. Um pedido de 21 KiB pode ocupar um bloco de 32 KiB, com 11 KiB de capacidade excedente. **Slab** guarda conjuntos de objetos do mesmo tipo para reutilização rápida, reduzindo trabalho de inicialização e fragmentação entre objetos, mas não eliminando todo o desperdício de páginas e alinhamento.
+Para memória do núcleo, onde as escolhas de paginação não se aplicam diretamente: **buddy** divide blocos em potências de dois e junta pares compatíveis quando ambos ficam livres. Um pedido de 21 KiB pode ocupar um bloco de 32 KiB, com 11 KiB de capacidade excedente. **Slab** guarda conjuntos de objetos do mesmo tipo para reutilização rápida, reduzindo trabalho de inicialização e fragmentação entre objetos, mas não eliminando todo o desperdício de páginas e alinhamento. Em NUMA, a proximidade entre CPU e memória entra na decisão de colocação.
 
 Compressão pode guardar várias páginas comprimidas numa moldura, evitando parte do I/O com custo de CPU. `mmap` de ficheiros também aproxima I/O da gestão de páginas: aceder ao mapeamento pode provocar uma falta, e alterações partilhadas podem precisar de sincronização com o ficheiro.

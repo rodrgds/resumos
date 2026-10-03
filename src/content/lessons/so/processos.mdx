@@ -10,7 +10,7 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import ciclo from './ciclo-processo.dot?raw';
 
-Já vimos programas e ficheiros; esta página responde a: o que é um processo e como cria um programa outros processos?
+Já viste programas e ficheiros. Agora queres lançar três compilações em paralelo, esperar por todas e distinguir o PID de cada filho. O que é um processo e como cria um programa outros processos?
 
 Um processo é uma execução com identidade e estado. Dois processos podem correr o mesmo programa e usar o mesmo valor numérico de endereço virtual, ou seja o número que cada processo usa para indicar uma posição na sua própria memória, sem partilharem a variável que esse endereço designa.
 
@@ -44,6 +44,8 @@ Este é um excerto, assumindo `fork` bem-sucedido. O filho tem `x == 9`; o pai c
 Os descritores herdados referem as mesmas descrições abertas, por isso uma leitura do pai pode avançar a posição que o filho observa. É partilha de estado do núcleo, não partilha automática de todas as variáveis C.
 
 ## Contar processos pela árvore
+
+Desenha cada `fork` como uma bifurcação com os PIDs reais. Num exemplo com pai 100: o primeiro `fork` cria o filho 101; depois o pai cria 102 e o filho 101 cria 103. A árvore tem quatro processos e mostra que PID identifica o processo, não o programa que ele corre.
 
 Se todos os processos executam três chamadas sucessivas de `fork`, temos $1 \to 2 \to 4 \to 8$ processos, incluindo o inicial, assumindo sucesso. Foram criados sete filhos no total.
 
@@ -113,7 +115,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-`./executar printf 'ola\n'` escreve `ola` e depois `estado=0`. O `waitpid` impõe que o pai só imprime depois do fim do filho. Para um nome inexistente, `execvp` falha, o filho termina com 127 e o pai mostra esse estado. O filho não deve continuar o código da shell depois da falha.
+`./executar printf 'ola\n'` escreve `ola` e depois `estado=0`. O `waitpid` impõe que o pai só imprime depois do fim do filho. Repara em `execvp(argv[1], argv + 1)`: `argv[1]` é o nome do comando e `argv + 1` é o vetor de argumentos do novo programa, a começar nesse nome e terminado por `NULL`. Para um nome inexistente, `execvp` falha, o filho termina com 127 e o pai mostra esse estado. O filho não deve continuar o código da shell depois da falha. O estado bruto exige macros: confirma `WIFEXITED` antes de ler `WEXITSTATUS` e `WIFSIGNALED` antes de ler `WTERMSIG`.
 
 `return` de uma função auxiliar só retorna dessa função. `exit` termina o processo, executa funções registadas com `atexit` e trata buffers stdio. `_exit` termina sem essa limpeza da biblioteca, por isso no filho que falhou antes de `exec` usa `_exit` para evitar repetir limpezas e descarregar buffers herdados do pai.
 
@@ -127,6 +129,68 @@ Duas linhas impressas por processos concorrentes não têm ordem garantida só p
 
 ## Criar vários trabalhadores
 
-Para lançar várias tarefas em paralelo, o pai cria os filhos primeiro e espera depois. Se esperar logo em cada iteração, serializa as tarefas. Guarda os PIDs criados com sucesso, recolhe todos e verifica os estados antes de avançar para uma etapa dependente, como ligar ficheiros objeto depois de compilá-los.
+Para lançar várias tarefas em paralelo, o pai cria os filhos primeiro e espera depois. Guarda cada PID devolvido num vetor, com o nome da tarefa correspondente. Depois percorre o vetor com `waitpid`, um filho de cada vez, e regista o estado de cada um. Só avança para a etapa dependente, como ligar ficheiros objeto depois de compilá-los, quando todos terminaram com sucesso. Se esperar logo em cada iteração, serializa as tarefas. Se recolher sem associar PID a tarefa, não sabe qual falhou.
+
+O programa seguinte lança três filhos que terminam com estados distintos e recolhe cada um pelo seu PID. Guarda-o em `trabalhadores.c` e compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic trabalhadores.c -o trabalhadores`.
+
+```c
+#define _POSIX_C_SOURCE 200809L
+#include <errno.h>
+#include <stdio.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+int main(void) {
+    const char *nomes[] = {"a", "b", "c"};
+    pid_t pids[3];
+    for (int i = 0; i < 3; i++) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork");
+            return 1;
+        }
+        if (pid == 0)
+            _exit(10 + i);
+        pids[i] = pid;
+        printf("lancei %s com PID %ld\n", nomes[i], (long)pid);
+    }
+    fflush(stdout);
+    int falhou = 0;
+    for (int i = 0; i < 3; i++) {
+        int estado;
+        pid_t r;
+        do {
+            r = waitpid(pids[i], &estado, 0);
+        } while (r < 0 && errno == EINTR);
+        if (r < 0) {
+            perror("waitpid");
+            return 1;
+        }
+        if (WIFEXITED(estado)) {
+            printf("%s (PID %ld): estado=%d\n", nomes[i], (long)pids[i],
+                   WEXITSTATUS(estado));
+            if (WEXITSTATUS(estado) != 10 + i)
+                falhou = 1;
+        } else {
+            printf("%s: fim anormal\n", nomes[i]);
+            falhou = 1;
+        }
+    }
+    return falhou;
+}
+```
+
+Saída observada (os PIDs variam em cada execução):
+
+```text
+lancei a com PID 31832
+lancei b com PID 31833
+lancei c com PID 31834
+a (PID 31832): estado=10
+b (PID 31833): estado=11
+c (PID 31834): estado=12
+```
+
+Os três filhos correm em paralelo porque a criação antecede a recolha. Cada estado é lido com macros depois de confirmar o tipo de fim, e o vetor associa cada PID à sua tarefa.
 
 Uma shell repete ler, analisar, criar, executar e recolher. Comandos internos que alteram o seu estado, como `cd` ou `exit`, ficam na própria shell. Um parser que divide apenas por espaços não suporta automaticamente aspas, expansões ou pipelines.

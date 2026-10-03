@@ -7,7 +7,7 @@ practices:
   - so/praticar-io
 ---
 
-Já vimos ficheiros do lado do programa e a memória; esta página responde a: como chega um pedido de leitura ao dispositivo onde os dados estão guardados?
+Já viste ficheiros do lado do programa e a memória. Agora um `read` pode sair da cache em nanossegundos ou esperar pelo disco em milissegundos. Como chega um pedido de leitura ao dispositivo onde os dados estão guardados?
 
 Um `read` de um ficheiro pode obter dados já em cache, ou seja numa cópia rápida guardada em memória, ou esperar que o dispositivo os transfira. A interface parece a mesma, mas o caminho e o custo são diferentes. Vamos por isso separar a organização dos dados da comunicação com o hardware.
 
@@ -31,7 +31,7 @@ A 7200 rotações por minuto, uma rotação demora $60/7200$ s, cerca de 8,33 ms
 
 Um SSD não tem cabeça nem atraso de rotação. Ainda tem latência, limite de largura de banda e gestão interna de páginas e blocos de apagamento. Não apliques uma otimização de movimento de cabeça a um dispositivo sem esse movimento. TRIM comunica ao dispositivo que certos blocos lógicos já não são necessários, permitindo gestão interna mais eficiente; não é uma garantia de apagamento seguro imediato.
 
-Latência mede quanto demora uma operação. Largura de banda mede bytes por unidade de tempo. Um dispositivo pode ter boa transferência sequencial e mau desempenho com muitas operações pequenas.
+Latência mede quanto demora uma operação. Largura de banda mede bytes por unidade de tempo: transferir 1 MiB a 100 MiB/s demora cerca de 10 ms, sem contar latência inicial. Um dispositivo pode ter boa transferência sequencial e mau desempenho com muitas operações pequenas.
 
 ## Controlador e driver
 
@@ -47,7 +47,7 @@ No **polling**, o software consulta repetidamente o estado até a operação pod
 
 Com **interrupções**, o dispositivo avisa quando há um evento. O driver inicia o pedido; a tarefa pode bloquear; uma interrupção de conclusão permite tratar o resultado e acordá-la. O custo inclui o tratador e eventual escalonamento. Uma interrupção não implica obrigatoriamente trocar para outro processo.
 
-Com **DMA**, a CPU prepara endereços, direção e tamanho e um mecanismo de hardware transfere dados entre dispositivo e memória. A CPU não precisa de copiar cada byte com uma instrução, mas continua a preparar e gerir o pedido. DMA e interrupções combinam-se: a transferência pode terminar com uma interrupção.
+Com **DMA**, segue a sequência: a CPU prepara endereços, direção e tamanho; o hardware transfere dados entre dispositivo e memória; uma interrupção anuncia a conclusão; o driver trata o resultado e acorda a tarefa. A CPU não precisa de copiar cada byte com uma instrução, mas continua a preparar e gerir o pedido. DMA e interrupções combinam-se: a transferência pode terminar com uma interrupção.
 
 Se um bloco de 64 KiB fosse tratado com uma interrupção por byte, teríamos 65536 interrupções. Um modelo com uma interrupção de conclusão por bloco teria uma, embora a operação ainda exija configuração e transferência. Agrupar pedidos reduz overhead e pode aumentar latência de entrega, por isso a escolha depende da aplicação.
 
@@ -77,7 +77,7 @@ Uma cache de páginas unificada permite coordenar acessos normais a ficheiros e 
 
 ## Seguir um read
 
-Para ler dados de um ficheiro, o sistema resolve o descritor, verifica a posição e encontra as páginas ou blocos necessários. Se estão em cache, pode copiar os bytes sem nova operação no dispositivo. Se faltam, o sistema submete I/O através do driver e do controlador. Na conclusão, atualiza estado, torna os dados disponíveis e permite que a tarefa avance.
+Segue o mesmo `read` nos dois casos. Com acerto na cache: o sistema resolve o descritor, verifica a posição, encontra a página em cache, copia os bytes e retorna. Com falha: resolve o descritor, verifica a posição, conclui que a página falta, submete I/O através do driver e do controlador, bloqueia a tarefa, trata a interrupção de conclusão, atualiza estado e acorda a tarefa. Para comparar modos bloqueante, não bloqueante e assíncrono, usa este mesmo pedido e pergunta em cada um: a chamada espera, retorna `EAGAIN` ou separa submissão de conclusão.
 
 `read` bem-sucedido não prova que houve acesso físico ao disco. `write` bem-sucedido também não prova que os dados já sobreviveriam a uma falha de energia. A biblioteca pode ter buffers e o núcleo pode ter páginas sujas; persistência exige operações e garantias próprias, como `fsync` no descritor adequado.
 

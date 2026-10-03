@@ -7,7 +7,7 @@ practices:
   - so/praticar-shell
 ---
 
-Já vimos o que o sistema operativo gere; esta página responde a: como pedimos ao sistema para correr programas e trabalhar com ficheiros?
+Já vimos o que o sistema gere. Agora queres ordenar ficheiros `.c`, guardar o resultado e encadear dois comandos. Como pedimos isto ao sistema sem que a shell e os programas troquem os papéis?
 
 Abres uma janela de terminal e escreves uma linha de texto para pedir algo ao computador. A **shell** é o programa, ou seja a aplicação, que lê essa linha, separa o pedido — o comando — dos valores que o acompanham — os argumentos — e prepara as entradas e saídas, isto é de onde o programa lê dados e para onde escreve resultados, antes de o chamar. Para preveres um resultado, separa o que a shell faz do que o programa faz.
 
@@ -27,7 +27,7 @@ Depois do primeiro `cd` estás em `treino/a/b`; `../..` sobe dois níveis até `
 
 ## Expandir nomes e proteger texto
 
-A shell expande `*.c` para nomes existentes que terminam em `.c`. `?` corresponde a um carácter e `[ab]` a um carácter do conjunto. As aspas protegem o texto contra certas expansões.
+Supõe uma pasta com `main.c`, `ajuda.c` e `notas.txt`. A shell expande `*.c` para os dois nomes existentes que terminam em `.c`, antes de correr o comando. `?` corresponde a um carácter e `[ab]` a um carácter do conjunto. As aspas protegem o texto contra certas expansões.
 
 ```sh
 printf '%s\n' *.c
@@ -92,7 +92,7 @@ tail -n 3 dados.txt
 
 `man 2 open` consulta uma chamada de sistema; `man 3 fopen` consulta uma função de biblioteca. `SYNOPSIS` mostra cabeçalhos e tipos. `RETURN VALUE` e `ERRORS` dizem como reconhecer falhas. `command -v gcc` mostra o comando que a shell encontra.
 
-`chmod 640 ficheiro` dá leitura e escrita ao dono, leitura ao grupo e nada aos restantes. Os dígitos são combinações de 4 para leitura, 2 para escrita e 1 para execução. Num diretório, execução permite atravessar nomes; leitura permite listar entradas. Apagar uma entrada depende das permissões do diretório que a contém.
+`chmod 640 ficheiro` dá leitura e escrita ao dono, leitura ao grupo e nada aos restantes. O equivalente simbólico é `chmod u=rw,go-rwx,g+r ficheiro`. Os dígitos são combinações de 4 para leitura, 2 para escrita e 1 para execução. Numa linha como `-rw-r-----`, o primeiro carácter indica ficheiro regular e os nove seguintes dão as permissões de dono, grupo e outros. Num diretório, execução permite atravessar nomes; leitura permite listar entradas. Apagar uma entrada depende das permissões do diretório que a contém.
 
 ```sh
 tar -czf treino.tar.gz treino

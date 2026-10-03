@@ -7,7 +7,7 @@ practices:
   - so/praticar-concorrencia
 ---
 
-Já vimos como cooperam processos separados; esta página responde a: como coordenamos threads que partilham a memória do mesmo processo?
+Já viste como cooperam processos separados. Agora queres somar linhas de vários ficheiros em threads sem perder atualizações nem passar apontadores que morrem no ciclo. Como coordenamos threads que partilham a memória do mesmo processo?
 
 Duas **threads**, ou seja duas linhas de execução dentro do mesmo processo, que partilham um contador precisam de combinar o que significa incrementá-lo. A linha `contador++` parece uma operação, mas uma leitura e uma escrita separadas já permitem perder uma atualização.
 
@@ -15,7 +15,74 @@ Duas **threads**, ou seja duas linhas de execução dentro do mesmo processo, qu
 
 Uma thread tem registos, contador de programa e pilha próprios. As threads do processo partilham o espaço de endereçamento, incluindo globais e heap, e os descritores. Uma variável automática pode ser acedida por outra thread se lhe passarmos um apontador válido; estar numa pilha não garante privacidade.
 
-`pthread_create` inicia uma função com assinatura `void *f(void *)`. O argumento precisa de continuar vivo enquanto a thread o usa. Passar a todas o endereço da mesma variável de um ciclo não cria uma cópia por thread. `pthread_join` espera pela terminação de uma thread e permite recolher o seu retorno. Não termina as outras threads.
+`pthread_create` inicia uma função com assinatura `void *f(void *)`. O argumento precisa de continuar vivo enquanto a thread o usa. Para passar um índice e um nome a cada thread, define uma `struct` com esses campos, guarda um vetor de estruturas vivo até aos joins e passa `&tarefa[i]` a cada thread. Passar a todas o endereço da mesma variável de um ciclo faz todas lerem o último valor. `pthread_join` espera pela terminação de uma thread e permite recolher o seu retorno com um `malloc` ou um valor estático por thread. Não termina as outras threads e não devolve um apontador para a pilha da thread.
+
+O programa seguinte passa uma estrutura distinta a cada thread e recolhe o retorno de cada uma com `pthread_join`. Guarda-o em `fios.c` e compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic fios.c -pthread -o fios`.
+
+```c
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct tarefa {
+    const char *nome;
+    int valor;
+};
+
+static void conferir(int erro, const char *op) {
+    if (erro == 0)
+        return;
+    fprintf(stderr, "%s: %s\n", op, strerror(erro));
+    exit(1);
+}
+
+static void *dobrar(void *arg) {
+    struct tarefa *t = arg;
+    long *r = malloc(sizeof *r);
+    if (r == NULL)
+        return NULL;
+    *r = 2L * t->valor;
+    return r;
+}
+
+int main(void) {
+    struct tarefa tarefas[] = {
+        {"a", 3}, {"b", 7}, {"c", -4},
+    };
+    const int n = 3;
+    pthread_t fios[3];
+    for (int i = 0; i < n; i++)
+        conferir(pthread_create(&fios[i], NULL, dobrar, &tarefas[i]),
+                 "create");
+    long total = 0;
+    for (int i = 0; i < n; i++) {
+        void *ret;
+        conferir(pthread_join(fios[i], &ret), "join");
+        if (ret == NULL) {
+            fputs("sem retorno\n", stderr);
+            return 1;
+        }
+        printf("%s: %d -> %ld\n", tarefas[i].nome, tarefas[i].valor,
+               *(long *)ret);
+        total += *(long *)ret;
+        free(ret);
+    }
+    printf("total=%ld\n", total);
+    return 0;
+}
+```
+
+Saída observada:
+
+```text
+a: 3 -> 6
+b: 7 -> 14
+c: -4 -> -8
+total=12
+```
+
+Cada thread recebe `&tarefas[i]`, que continua vivo até depois dos joins. O retorno é um bloco reservado pela thread e libertado pelo pai depois de o ler. Com o endereço da mesma variável do ciclo, todas poderiam ler o último índice.
 
 ## Uma atualização perdida
 
@@ -56,7 +123,7 @@ secção crítica
 interessado[i] = falso
 ```
 
-Se ambos entram no protocolo, a última escrita em `vez` decide quem espera; não podem ter simultaneamente a preferência. Esta prova assume operações atómicas e uma ordem de memória adequada. Traduzir o pseudocódigo para globais C comuns não cumpre essas hipóteses. Para programar, usa primitivas da biblioteca ou atomics com um modelo de memória escolhido conscientemente.
+Segue uma entrada: A assinala interesse e escreve `vez = B`; B assinala interesse e escreve `vez = A`. A última escrita decide, por isso uma espera e a outra entra. Se ambos entram no protocolo, a última escrita em `vez` decide quem espera; não podem ter simultaneamente a preferência. Esta prova assume operações atómicas e uma ordem de memória adequada. Traduzir o pseudocódigo para globais C comuns não cumpre essas hipóteses. Para programar, usa primitivas da biblioteca ou atomics com um modelo de memória escolhido conscientemente.
 
 **Test-and-set** lê um valor antigo e escreve o novo numa operação atómica. **Compare-and-swap** só escreve o novo valor se o antigo coincidir com o esperado. Um spinlock pode repetir test-and-set até obter o lock, consumindo CPU enquanto espera. Faz sentido em certos trechos curtos, mas uma espera longa desperdiça CPU. Desativar interrupções numa CPU não impede outra CPU de aceder aos mesmos dados.
 
@@ -132,7 +199,7 @@ pthread_cond_signal(&nao_cheio);
 pthread_mutex_unlock(&mutex);
 ```
 
-O produtor espera enquanto `quantidade == CAPACIDADE`, insere, aumenta a quantidade e sinaliza `nao_vazio`. A invariável, a condição que todas as operações preservam, é $0 \leq quantidade \leq CAPACIDADE$; índices avançam módulo capacidade.
+O produtor completo faz o simétrico: espera enquanto `quantidade == CAPACIDADE`, insere em `buffer[entrada]`, avança `entrada` módulo capacidade, aumenta a quantidade e sinaliza `nao_vazio`. Entre as duas metades, a invariável, a condição que todas as operações preservam, é $0 \leq quantidade \leq CAPACIDADE$; índices avançam módulo capacidade. Traça uma espera: o consumidor testa `quantidade == 0` com o mutex, chama `cond_wait` que liberta o mutex e dorme, o produtor insere e sinaliza, o consumidor acorda, volta a obter o mutex e confirma a condição num `while` antes de retirar.
 
 O teste precisa de `while`, porque pode haver despertares espúrios ou outra thread pode consumir o item antes de esta obter o mutex. `signal` não transfere imediatamente a CPU nem entrega o mutex ao consumidor.
 

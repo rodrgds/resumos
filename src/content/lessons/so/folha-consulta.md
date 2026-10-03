@@ -72,10 +72,10 @@ Pipe: ler em `fd[0]`, escrever em `fd[1]`; fechar pontas não usadas. EOF só co
 | Ciclo de `write` com restante                    | Perda ou duplicação numa escrita parcial       |
 | `stat` com sucesso e caminho correto             | Campos sem dados ou consulta noutra pasta      |
 
-`open` falha com -1; descritor 0 é válido. `fopen` falha com NULL. `read`: positivo bytes, 0 EOF, -1 erro. `getline` preserva o newline quando existe e precisa de `free`. `FILE *` e `int` são interfaces diferentes. [API de ficheiros](/cadeiras/so/ficheiros-api/#file-e-descritor).
+`open` falha com -1; descritor 0 é válido. `fopen` falha com NULL. `read` com pedido positivo: positivo bytes, 0 fim dos dados, -1 erro. Um pedido de 0 bytes pode devolver 0 sem indicar EOF. `getline` preserva o newline quando existe e precisa de `free`. `FILE *` e `int` são interfaces diferentes. POSIX inclui funções de biblioteca e chamadas de sistema; stdout transporta bytes. [API de ficheiros](/cadeiras/so/ficheiros-api/#file-e-descritor).
 
 Inode guarda metadados e localização; diretório associa nome a inode; descrição aberta guarda posição. `dup` partilha posição, nova `open` normalmente não. Hard link é outro nome do mesmo inode; symlink contém um caminho. `unlink` não invalida um descritor aberto. [Implementação](/cadeiras/so/implementacao-ficheiros/#nome-inode-e-abertura).
 
 Bitmap: volume/bloco dá número de bits; divide por 8 para bytes. Bloco de índice contém bloco/apontador entradas. Contíguo favorece acesso direto; ligado exige seguir cadeia; indexado exige índices. Journaling ajuda consistência, não substitui backup. [Alocação](/cadeiras/so/implementacao-ficheiros/#métodos-de-alocação).
 
-HDD: posicionamento + rotação + transferência. Rotação média: $30/rpm$ segundos. Polling consulta, interrupção notifica, DMA transfere com hardware. `write` e `fflush` não provam persistência no dispositivo. [I/O](/cadeiras/so/ficheiros-entrada-saida/#polling-interrupções-e-dma).
+HDD: posicionamento + rotação + transferência. Rotação média: $30/rpm$ segundos. Polling consulta, interrupção notifica, DMA transfere com hardware. `write` e `fflush` não provam persistência no dispositivo. Shell: a expansão acontece antes de o comando correr; `> ficheiro 2>&1` envia stdout e stderr para o ficheiro, e a ordem dos operadores importa. [I/O](/cadeiras/so/ficheiros-entrada-saida/#polling-interrupções-e-dma).

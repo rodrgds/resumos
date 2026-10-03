@@ -10,7 +10,7 @@ practices:
 import InteractiveDemo from '../../../components/InteractiveDemo.astro';
 import Traducao from '../../so/Traducao.astro';
 
-Já vimos processos e threads; esta página responde a: como protege o sistema a memória de cada processo e traduz os seus endereços?
+Já viste processos e threads. Agora queres perceber por que dois processos usam o mesmo endereço virtual sem colidir e quanto custa cada tradução. Como protege o sistema a memória de cada processo e traduz os seus endereços?
 
 Um programa usa endereços para encontrar instruções e dados. O sistema precisa de os colocar na RAM e impedir acessos aos dados de outros processos. A **MMU**, ou seja a unidade de gestão de memória, traduz endereços e verifica condições de proteção com informação preparada pelo núcleo.
 
@@ -34,7 +34,7 @@ Num modelo simples, o virtual $v$ é válido se $0 \leq v < L$, sendo $L$ o limi
 
 Para $b=12000$ e $L=2000$, $v=1500$ traduz para 13500; $v=2000$ é inválido, apesar de a soma 14000 existir. O limite é exclusivo neste modelo.
 
-Na alocação contígua, cada processo ocupa uma região física. Buracos livres podem ficar separados. **First-fit** escolhe o primeiro suficiente, **best-fit** o menor suficiente e **worst-fit** o maior.
+Na alocação contígua, cada processo ocupa uma região física. Parte de um buraco de 500 KiB para um pedido de 212: ficam 288 livres, mas noutra posição da lista. É esta evolução dos buracos que a tabela regista passo a passo. **First-fit** escolhe o primeiro suficiente, **best-fit** o menor suficiente e **worst-fit** o maior.
 
 Com buracos de 100, 500, 200, 300 e 600 KiB, por esta ordem, uma sequência de pedidos 212, 417 e 112 KiB dá:
 
@@ -62,7 +62,7 @@ $$
 p=\lfloor v/P\rfloor,\quad d=v\bmod P,\quad f=\operatorname{tabela}[p],\quad a=fP+d.
 $$
 
-$p$ é a página, $d$ o deslocamento, $f$ a moldura e $a$ o físico. O deslocamento passa sem alteração. Com endereços de $m$ bits, $n$ bits ficam para o deslocamento e $m-n$ para a página.
+$p$ é a página, $d$ o deslocamento, $f$ a moldura e $a$ o físico. O deslocamento passa sem alteração porque indica a posição dentro da página, e as páginas têm todas o mesmo tamanho. Com endereços de $m$ bits, $n$ bits ficam para o deslocamento e $m-n$ para a página.
 
 Com páginas de 4 KiB, $P=4096=2^{12}$. O virtual `0x1A3F5` divide-se em página `0x1A` e deslocamento `0x3F5`. Se a página está na moldura `0x07`, obtemos `0x073F5`. Em decimal, $7\times4096+1013=29685$.
 
@@ -76,11 +76,11 @@ Com página de 16 bytes e virtual 45, $p=2$, $d=13$, $f=5$ e físico 93. Este mo
 
 ## Fragmentação e tamanho das tabelas
 
-Um objeto de 10000 bytes precisa de $\lceil10000/4096\rceil=3$ páginas. São 12288 bytes de capacidade, com 2288 não usados no fim. A paginação evita exigir contiguidade entre as molduras atribuídas ao processo, mas conserva fragmentação interna.
+Um objeto de 10000 bytes, assumindo uma região alinhada ao início de página, precisa de $\lceil10000/4096\rceil=3$ páginas. São 12288 bytes de capacidade, com 2288 não usados no fim. A paginação evita exigir contiguidade entre as molduras atribuídas ao processo, mas conserva fragmentação interna.
 
 Uma tabela linear para 32 bits e páginas de 4 KiB tem $2^{20}$ entradas. Com 4 bytes por entrada, ocupa 4 MiB. Páginas maiores reduzem o número de entradas e podem melhorar o alcance do TLB, mas podem aumentar desperdício interno.
 
-Uma tabela **multinível** divide o índice. Num exemplo de dois níveis, 10 bits escolhem a tabela interior, outros 10 escolhem a entrada e 12 são o deslocamento. Tabelas interiores de regiões não mapeadas não precisam de existir. Um percurso com dois níveis pode precisar de duas leituras de tabela antes da leitura do dado se não houver cache.
+Uma tabela **multinível** divide o índice para evitar uma tabela gigante sempre residente. Num exemplo de dois níveis, 10 bits escolhem a tabela interior, outros 10 escolhem a entrada e 12 são o deslocamento. Traduz um endereço concreto assim: separa os três campos, usa o primeiro para escolher a tabela interior, o segundo para ler a moldura nessa tabela e junta o deslocamento. Tabelas interiores de regiões não mapeadas não precisam de existir. Um percurso com dois níveis pode precisar de duas leituras de tabela antes da leitura do dado se não houver cache.
 
 Uma tabela **hashed** pesquisa por número de página virtual e identifica a tradução nas colisões. Uma tabela **invertida** guarda uma entrada por moldura física, incluindo a identidade do processo e da página. Poupa espaço para espaços virtuais enormes, mas muda o custo de pesquisa e exige representar partilhas.
 

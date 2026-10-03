@@ -14,7 +14,7 @@ editorial:
       url: https://pages.cs.wisc.edu/~remzi/OSTEP/
 ---
 
-No fim vais saber criar processos com `fork` e `exec`, ou seja vais lançar programas a partir do teu código. Vais proteger dados partilhados com mutexes e semáforos, porque threads concorrentes podem entrelaçar acessos. Vais traduzir endereços virtuais e prever faltas de página, por isso percebes quanto custa cada acesso. E vais copiar bytes com a API POSIX sem perder dados em escritas parciais.
+Imagina que o teu programa lança outro programa, espera que ele termine e guarda o resultado num ficheiro sem perder bytes quando uma escrita sai parcial. No fim vais saber fazer isto com `fork` e `exec`, proteger dados partilhados com mutexes e semáforos, traduzir endereços virtuais e prever faltas de página, e copiar bytes com a API POSIX sem perder dados em escritas parciais.
 
 Precisas de saber escrever funções, ciclos, arrays e estruturas. [C avançado](/cadeiras/so/c-avancado/) revê os apontadores e o tempo de vida dos objetos antes de os usares nas chamadas de sistema. Segue depois o percurso abaixo, porque cada etapa usa a anterior: primeiro os recursos, depois os processos e por fim a memória e os ficheiros.
 
@@ -27,7 +27,7 @@ Precisas de saber escrever funções, ciclos, arrays e estruturas. [C avançado]
 5. [Memória virtual](/cadeiras/so/memoria-virtual/) e [paginação por procura](/cadeiras/so/paginacao-procura/) explicam a tradução de endereços, as faltas de página e a gestão da RAM.
 6. [Ficheiros e entrada/saída](/cadeiras/so/ficheiros-entrada-saida/) e [implementação de ficheiros](/cadeiras/so/implementacao-ficheiros/) seguem um pedido desde a aplicação até aos blocos do dispositivo.
 
-A [cheat sheet](/cadeiras/so/folha-consulta/) reúne fórmulas e condições para consulta. As lições têm exercícios próprios associados, com pistas e resolução. São prática dos tipos de raciocínio da cadeira, não reproduções de perguntas de uma prova.
+A [cheat sheet](/cadeiras/so/folha-consulta/) reúne fórmulas e condições para consulta. As lições têm exercícios próprios associados, com pistas e resolução. São prática dos tipos de raciocínio da cadeira, não reproduções de perguntas de uma prova. Os aprofundamentos de impasses e banqueiro e as notas sobre a evolução do escalonador Linux estão assinalados como complemento: só contam para avaliação se os materiais do ano os pedirem.
 
 ## Como praticar
 

@@ -10,13 +10,13 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import impasse from '../../so/impasse.dot?raw';
 
-Já vimos threads a partilhar memória; esta página responde a: quando ficam as tarefas bloqueadas umas à espera das outras sem nunca avançar?
+Já viste threads a partilhar memória. Agora duas tarefas prendem dois locks por ordens opostas e param. Quando ficam as tarefas bloqueadas umas à espera das outras sem nunca avançar?
 
 A tarefa A tem o **lock** X, ou seja a posse exclusiva de um recurso que só uma tarefa usa de cada vez, e pede Y. A tarefa B tem Y e pede X. Se só libertam o lock depois de obter o outro, nenhuma avança. Temos um **impasse**, ou seja um _deadlock_.
 
 ## Quatro condições
 
-Num modelo de recursos reutilizáveis, um impasse exige simultaneamente exclusão mútua, retenção de recursos enquanto se espera por outros, impossibilidade de retirar os recursos à força e espera circular.
+No caso de A com X a pedir Y e B com Y a pedir X: a exclusão mútua é cada lock servir só uma tarefa; a retenção com espera é cada uma guardar o seu lock enquanto pede o outro; a ausência de preempção é ninguém lhes retirar o lock à força; a espera circular é A esperar por B e B esperar por A. Num modelo de recursos reutilizáveis, um impasse exige estas quatro condições em simultâneo.
 
 Quebrar uma destas condições evita o impasse nesse modelo. Uma ordem global dos locks quebra a espera circular: todos obtêm X antes de Y. Se B já tem Y, não pode tentar obter X segundo esse protocolo.
 
@@ -24,7 +24,7 @@ Pedir todos os recursos de uma vez quebra retenção com espera, mas pode reduzi
 
 ## Grafos de recursos e de espera
 
-Num grafo de atribuição, uma aresta processo→recurso é um pedido; recurso→processo é uma atribuição. Com uma única instância de cada recurso, um ciclo prova impasse. Com múltiplas instâncias, pode haver um ciclo e ainda existir uma instância que permita a alguém acabar e libertar recursos.
+Num grafo de atribuição, uma aresta processo→recurso é um pedido; recurso→processo é uma atribuição. Com uma única instância de cada recurso, um ciclo prova impasse. Com múltiplas instâncias, um ciclo pode não chegar: com dois discos iguais, A e B podem esperar um pelo outro e ainda existir uma segunda unidade livre que deixa um deles concluir e libertar recursos. Por isso um ciclo só prova impasse no modelo de instância única.
 
 <Dot
   source={impasse}
@@ -43,7 +43,7 @@ Com três unidades de um recurso, A tem 1 e pode precisar no máximo de 2; B tem
 
 Agora A e B têm 1 cada e ambos podem precisar no máximo de 3. Só há uma livre e cada um ainda pode pedir 2. Não conseguimos garantir uma primeira conclusão pelos máximos declarados, por isso o estado é inseguro. Ainda não prova impasse: podem usar menos do que o máximo ou devolver recursos sem pedir mais.
 
-Para verificar segurança com vários tipos, começa num vetor `Work = Available`. Procura um processo cujo `Need = Max - Allocation` caiba componente a componente em Work. Simula a sua conclusão somando a sua Allocation a Work e repete. Se conseguires incluir todos, obtiveste uma sequência segura. O algoritmo do banqueiro só admite um pedido se respeita os máximos, a disponibilidade e deixa um estado seguro.
+Para verificar segurança com vários tipos, começa num vetor `Work = Available`. Calcula `Need = Max - Allocation` para cada processo. Procura um processo cujo `Need` caiba componente a componente em Work, simula a sua conclusão somando a sua Allocation a Work e regista a tabela após cada passo. Se conseguires incluir todos, obtiveste uma sequência segura. O algoritmo do banqueiro só admite um pedido se respeita os máximos, a disponibilidade e deixa um estado seguro. Este aprofundamento do banqueiro é um complemento: usa-o quando o enunciado pedir análise de segurança com máximos declarados.
 
 ## Deteção e recuperação
 

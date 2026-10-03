@@ -7,11 +7,13 @@ practices:
   - so/praticar-ipc
 ---
 
-Já vimos processos e como a CPU é partilhada; esta página responde a: como cooperam dois processos que têm memórias separadas?
+Já viste processos e a partilha da CPU. Agora queres que o pai envie linhas ao filho sem que o filho termine cedo nem fique preso à espera. Como cooperam dois processos que têm memórias separadas?
 
 Dois processos têm memórias privadas por defeito. Para cooperarem, precisam de um canal ou de memória explicitamente partilhada. O mecanismo também define como reconhecem o fim dos dados e que ordem existe entre produzir e consumir.
 
 ## Escolher um mecanismo
+
+Começa pelo caso mais simples: um pipe de pai para filho, com uma só direção e fim dos dados marcado por EOF. Os outros mecanismos resolvem variações deste problema: nome persistente com FIFO, dois sentidos ou rede com sockets, notificação sem dados com sinais e acesso direto com memória partilhada.
 
 | Mecanismo          | O que transporta                 | Identificação                | Condição a tratar                       |
 | ------------------ | -------------------------------- | ---------------------------- | --------------------------------------- |
@@ -84,7 +86,7 @@ int main(void) {
 }
 ```
 
-A saída é `dados do pai`. Não enviamos o terminador zero: o filho escreve a quantidade realmente lida. O pai fecha a escrita **antes** de esperar, porque o filho precisa desse fecho para sair do ciclo.
+A saída é `dados do pai`. Não enviamos o terminador zero: o filho escreve a quantidade realmente lida. Conta os descritores depois de `fork`: o pai e o filho herdam as duas pontas, por isso há quatro referências abertas. O pai fecha a leitura e conserva a escrita; o filho fecha a escrita e conserva a leitura. O pai fecha a escrita **antes** de esperar, porque o filho precisa desse fecho para sair do ciclo. Qualquer cópia esquecida da ponta de escrita adia o EOF.
 
 Pipes são fluxos, não caixas de mensagens. Uma escrita pode ser entregue em várias leituras. Escritas até `PIPE_BUF` têm uma garantia de não entrelaçamento com outras escritas no pipe, mas isso não obriga `read` a devolver uma mensagem inteira. Dois sentidos independentes precisam de dois pipes ou de um socket bidirecional.
 
@@ -117,7 +119,7 @@ No segundo terminal, `printf 'ola\n' > canal` permite que a leitura avance. Quan
 
 `socketpair(AF_UNIX, SOCK_STREAM, 0, fd)` cria dois descritores bidirecionais locais. Cada processo pode ler e escrever na ponta que conserva. `SOCK_STREAM` continua a exigir um protocolo de mensagens: por exemplo linhas, um comprimento prefixado ou uma quantidade fixa de bytes. Não imprimas um buffer com `%s` sem garantir `\0`.
 
-Num protocolo pedido/resposta, o servidor pode ler até EOF antes de responder. O cliente que conserva a ponta aberta para receber a resposta precisa de terminar apenas a escrita com `shutdown(fd, SHUT_WR)`. O servidor esvazia os dados pendentes e depois vê EOF, mas ainda pode responder no sentido inverso. `close` fecharia também a leitura do cliente. Se ambos enviarem mensagens grandes sem ler, os buffers podem encher e ambos bloquear; define a ordem de troca ou trata os dois sentidos em simultâneo.
+Num protocolo pedido/resposta sobre fluxo, define primeiro as fronteiras: linhas terminadas por newline, comprimento prefixado ou tamanho fixo. Depois define o fim do pedido. Uma combinação comum é o servidor ler até EOF antes de responder. O cliente que conserva a ponta aberta para receber a resposta precisa de terminar apenas a escrita com `shutdown(fd, SHUT_WR)`. O servidor esvazia os dados pendentes e depois vê EOF, mas ainda pode responder no sentido inverso. `close` fecharia também a leitura do cliente. Se ambos enviarem mensagens grandes sem ler, os buffers podem encher e ambos bloquear; define a ordem de troca ou trata os dois sentidos em simultâneo.
 
 Sockets `AF_UNIX` também podem ser identificados por um endereço local; `AF_INET` permite comunicação por rede. Pai e filho são uma forma simples de distribuir descritores, não uma restrição geral a todos os sockets ou a toda a memória partilhada.
 
@@ -163,7 +165,7 @@ int main(void) {
 }
 ```
 
-Corre `./sinal`, copia o PID apresentado e envia `kill -USR1 PID` noutro terminal, substituindo PID. O programa mostra a mensagem e termina. `sigsuspend` muda temporariamente a máscara e espera de forma atómica. No padrão ingénuo `while (!recebido) pause()`, o sinal poderia chegar depois do teste e antes de `pause`, deixando o processo à espera de um segundo sinal.
+Segue a ordem segura: bloqueia `SIGUSR1` com `sigprocmask`, instala o tratador com `sigaction`, mostra o PID e chama `sigsuspend` com uma máscara que desbloqueia o sinal. Corre `./sinal`, copia o PID apresentado e envia `kill -USR1 PID` noutro terminal, substituindo PID. O programa mostra a mensagem e termina. `sigsuspend` muda temporariamente a máscara e espera de forma atómica. No padrão ingénuo `while (!recebido) pause()`, o sinal poderia chegar depois do teste e antes de `pause`, deixando o processo à espera de um segundo sinal.
 
 Sinais tradicionais repetidos podem fundir-se enquanto estão pendentes. Não os uses como um contador fiável de mensagens. Para atualizar configuração, o tratador assinala o pedido e o ciclo principal lê o ficheiro.
 

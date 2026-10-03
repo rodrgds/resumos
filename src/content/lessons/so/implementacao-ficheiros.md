@@ -7,7 +7,7 @@ practices:
   - so/praticar-sistema-ficheiros
 ---
 
-Já vimos como um pedido chega ao dispositivo; esta página responde a: como ligam os nomes dos ficheiros aos blocos de dados guardados?
+Já viste como um pedido chega ao dispositivo. Agora dois nomes apontam para os mesmos dados e um ficheiro continua aberto depois de apagares o seu nome. Como ligam os nomes dos ficheiros aos blocos de dados guardados?
 
 O nome `notas.txt` precisa de levar aos blocos que contêm os dados. Entre o nome e o dispositivo há diretórios, metadados, posições de leitura e estruturas de alocação. Separar essas estruturas explica como um ficheiro pode ter dois nomes e continuar aberto depois de um nome desaparecer, ou seja o nome e os dados têm tempos de vida diferentes.
 
@@ -57,6 +57,8 @@ A pesquisa num diretório pode usar uma lista linear, com comparação de nomes,
 
 ## Métodos de alocação
 
+Cada método responde à mesma pergunta: dado o bloco lógico `i`, onde está o bloco físico. A alocação contígua soma ao início; extents procuram o intervalo; a ligada e a FAT seguem cadeias; a indexada consulta um índice. Só depois compara vantagens e limites na tabela.
+
 | Método   | Localizar bloco lógico $i$            | Vantagem                           | Limitação                                     |
 | -------- | ------------------------------------- | ---------------------------------- | --------------------------------------------- |
 | Contíguo | Início + $i$                          | Acesso sequencial e direto simples | Crescimento e fragmentação externa            |
@@ -71,7 +73,7 @@ Uma alocação ligada pode usar parte de cada bloco para um apontador, reduzindo
 
 ## Apontadores diretos e indiretos
 
-Num esquema de inode, apontadores diretos vão aos dados; um indireto simples vai a um bloco de apontadores; um duplo vai a apontadores de blocos de apontadores.
+Desenha o inode com 12 diretos, um simples e um duplo. Os diretos apontam para dados. O simples aponta para um bloco com 1024 apontadores para dados. O duplo aponta para um bloco com 1024 apontadores para blocos de apontadores. Num esquema de inode, apontadores diretos vão aos dados; um indireto simples vai a um bloco de apontadores; um duplo vai a apontadores de blocos de apontadores. A conta de capacidade conta só dados; os blocos de índice são custo adicional.
 
 Assumamos blocos de 4 KiB, apontadores de 4 bytes, 12 diretos, um indireto simples e um duplo. Cada bloco de índice contém $4096/4=1024$ apontadores. A capacidade de dados é:
 
@@ -106,7 +108,7 @@ Um `write` que retorna uma quantidade menor deixou apenas essa parte entregue. U
 
 ## Falhas e recuperação
 
-Criar um ficheiro pode precisar de marcar blocos ocupados, escrever dados, atualizar o inode e acrescentar um nome. Uma falha entre esses passos pode deixar estruturas inconsistentes.
+Criar um ficheiro pode precisar de marcar blocos ocupados, escrever dados, atualizar o inode e acrescentar um nome. Se a falha acontecer depois de escrever dados mas antes de ligar o nome, há blocos ocupados sem nome que os alcance. Uma falha entre esses passos pode deixar estruturas inconsistentes.
 
 Uma verificação de consistência compara referências, metadados e mapa livre e tenta reparar discrepâncias. Pode ser cara e não recupera necessariamente os dados pretendidos pelo utilizador.
 

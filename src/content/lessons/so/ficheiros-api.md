@@ -7,9 +7,9 @@ practices:
   - so/praticar-ficheiros-api
 ---
 
-Já vimos programas em C e a shell; esta página responde a: como lê e escreve um programa os bytes de um ficheiro?
+Já viste programas em C e a shell. Agora queres copiar bytes de um ficheiro sem duplicar nem perder dados quando o núcleo escreve menos do que pediste. Como lê e escreve um programa esses bytes?
 
-Queremos copiar os bytes de um ficheiro para a saída padrão, ou seja o texto que o programa entrega por defeito. Há duas interfaces principais: a biblioteca C, que é o conjunto de funções auxiliares da linguagem e representa um ficheiro aberto com um `FILE *`, podendo juntar dados num buffer, isto é numa zona temporária de memória, e a API POSIX, ou seja as funções que pedem serviços diretamente ao núcleo, que representa um ficheiro aberto com um número inteiro chamado **descritor**. Conhecer ambas evita misturar tipos, ou seja permite escolher o nível de controlo necessário.
+Queremos copiar os bytes de um ficheiro para a saída padrão, o fluxo de bytes que o programa escreve no descritor 1. O terminal é o destino habitual, mas pode ser um ficheiro ou um pipe. Há duas interfaces principais: a biblioteca C, com funções como `fopen` e `fread`, que representa um ficheiro aberto com um `FILE *` e pode juntar dados num buffer, uma zona temporária de memória, e a API POSIX, o conjunto normalizado de interfaces que inclui funções de biblioteca e chamadas de sistema. As funções `open`, `read` e `write` pedem serviços ao núcleo e representam um ficheiro aberto com um número inteiro chamado **descritor**. Conhecer ambas evita misturar tipos e permite escolher o nível de controlo necessário.
 
 ## FILE e descritor
 
@@ -28,7 +28,7 @@ A biblioteca pode antecipar leituras e acumular escritas num buffer, por isso ev
 
 ## Ler e escrever todos os bytes
 
-Uma chamada a `write(fd, buf, n)` não garante que escreve `n` bytes, porque uma interrupção também pode fazer a chamada falhar com `EINTR`. O programa seguinte copia a entrada padrão para a saída padrão e conserva a parte ainda não escrita.
+Uma chamada a `write(fd, buf, n)` não garante que escreve `n` bytes, porque o núcleo pode aceitar só uma parte ou a chamada pode falhar com `EINTR`. Traça um pedido de 8 bytes em que a primeira tentativa devolve 3: faltam 5, por isso a próxima tentativa usa o endereço `buf + 3` com quantidade 5. Repetir os 8 duplicaria os 3 já entregues. O programa seguinte copia a entrada padrão para a saída padrão e conserva a parte ainda não escrita.
 
 Guarda-o como `copiar.c` e compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic copiar.c -o copiar`.
 
@@ -127,6 +127,71 @@ Para procurar uma substring numa linha, `strstr` encontra a próxima ocorrência
 `opendir` devolve `DIR *`; `readdir` devolve uma entrada ou `NULL`; `closedir` fecha. `d_name` é apenas o nome da entrada, não o caminho completo. Se abriste `pasta` estando fora dela, `stat(entrada->d_name, ...)` procuraria no diretório de trabalho errado.
 
 Podes juntar o diretório e o nome, verificando comprimentos, ou usar `fstatat(dirfd(dir), entrada->d_name, &info, 0)`. Esta segunda opção resolve o nome relativamente ao diretório aberto. Trata `.` e `..` antes de uma travessia recursiva e define se segues links simbólicos, para não criar ciclos. Imediatamente antes de cada chamada a `readdir`, pôr `errno = 0` permite distinguir um fim normal de um erro quando retorna `NULL`.
+
+O programa seguinte lista uma pasta com `fstatat`, sem mudar o diretório de trabalho. Guarda-o em `listar.c` e compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic listar.c -o listar`.
+
+```c
+#define _POSIX_C_SOURCE 200809L
+#include <dirent.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "uso: %s pasta\n", argv[0]);
+        return 1;
+    }
+    DIR *d = opendir(argv[1]);
+    if (d == NULL) {
+        perror("opendir");
+        return 1;
+    }
+    int dfd = dirfd(d);
+    errno = 0;
+    struct dirent *e;
+    while ((e = readdir(d)) != NULL) {
+        if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) {
+            errno = 0;
+            continue;
+        }
+        struct stat info;
+        if (fstatat(dfd, e->d_name, &info, 0) < 0) {
+            perror("fstatat");
+            continue;
+        }
+        printf("%s: %lld bytes%s\n", e->d_name, (long long)info.st_size,
+               S_ISDIR(info.st_mode) ? " [dir]" : "");
+        errno = 0;
+    }
+    int erro = errno;
+    closedir(d);
+    if (erro != 0) {
+        errno = erro;
+        perror("readdir");
+        return 1;
+    }
+    return 0;
+}
+```
+
+Execução observada numa pasta com `a.txt` de 4 bytes, um link simbólico para `a.txt` e uma subpasta (a ordem de `readdir` varia; aqui ordenada para leitura):
+
+```sh
+printf 'ola\n' > demo/a.txt
+ln -sf a.txt demo/lig.txt
+mkdir -p demo/sub
+./listar demo | sort
+```
+
+```text
+a.txt: 4 bytes
+lig.txt: 4 bytes
+sub: 64 bytes [dir]
+```
+
+O `fstatat` sem flags segue o link e mede o destino. O tamanho em bytes de um diretório depende do sistema de ficheiros; o marcador `[dir]` vem de `S_ISDIR`. Os campos de `info` só são lidos após sucesso.
 
 ## Datas e medição
 

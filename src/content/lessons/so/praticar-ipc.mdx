@@ -102,3 +102,29 @@ O servidor esvazia o pedido e espera mais bytes porque a escrita do cliente cont
   </div>
   <div slot="mistakes">Usar `close` antes de receber a resposta, ou interpretar uma leitura curta como fim do pedido.</div>
 </Exercise>
+
+<Exercise
+  id="so-pipe-copia-esquecida"
+  revision={1}
+  title="Uma cópia esquecida da escrita"
+  explanation="/cadeiras/so/comunicacao-processos/#redirecionar-com-dup2"
+  answer={{kind: 'self', checklist: [
+    'Contei as quatro referências após fork.',
+    'Identifiquei a cópia da escrita conservada no supervisor.',
+    'Fechei ambas as pontas no supervisor antes de recolher.',
+  ]}}
+>
+  <div>
+
+Um supervisor cria um pipe e dois filhos para `produtor | consumidor`. Cada filho fechou a ponta que não usa, mas o supervisor conservou ambas as pontas e fez `waitpid` do consumidor. Porque nunca chega EOF ao consumidor? Que fechos faltam?
+
+  </div>
+  <div slot="hint">EOF depende de todas as escritas, não só das dos filhos.</div>
+  <div slot="hint-more">Depois de fork há quatro referências: duas no supervisor e uma útil em cada filho.</div>
+  <div slot="solution">
+
+O consumidor vê o buffer vazio mas existe uma escrita aberta no supervisor, por isso bloqueia. O supervisor espera pelo fim do consumidor. O supervisor deve fechar ambas as pontas logo após lançar os filhos e só depois recolher os dois. Cada filho fecha a ponta que não usa e o supervisor não conserva nenhuma.
+
+  </div>
+  <div slot="mistakes">Contar só as pontas dos filhos, ou esperar antes de fechar as cópias do supervisor.</div>
+</Exercise>

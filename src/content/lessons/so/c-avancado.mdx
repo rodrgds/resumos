@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import memoria from '../../so/memoria.c?raw';
 
-Já sabes pedir programas à shell; esta página responde a: como está organizado um programa em C antes de pedir serviços ao sistema?
+Já sabes pedir programas à shell. Agora queres uma biblioteca com contrato claro, sem devolver endereços de variáveis que já terminaram. Como está organizado um programa em C antes de pedir serviços ao sistema?
 
 Em C, um **apontador** é um valor que indica onde está guardado um dado, ou seja dá acesso a um objeto, mas não diz se esse objeto ainda existe nem quem o deve libertar. Antes de usares a API do sistema, ou seja as funções com que o programa pede serviços ao núcleo, acompanha os valores, os endereços e o tempo de vida dos dados.
 
@@ -124,7 +124,43 @@ ar rcs libvetor.a vetor.o
 gcc usar.c -L. -lvetor -lm -o usar
 ```
 
-A biblioteca estática fornece código ao executável na ligação. `-L.` acrescenta um diretório de pesquisa e `-lvetor` procura uma biblioteca com esse nome. A ordem importa para arquivos estáticos: põe a biblioteca depois dos objetos que usam os seus símbolos. `-lm` fornece a biblioteca matemática em ambientes que a separam.
+Um exemplo mínimo completo tem três ficheiros. O cabeçalho `vetor.h` declara a função, a implementação `vetor.c` define-a e o cliente `usar.c` chama-a e imprime o resultado:
+
+```c
+/* vetor.h */
+#ifndef VETOR_H
+#define VETOR_H
+int soma(int a, int b);
+#endif
+```
+
+```c
+/* vetor.c */
+#include "vetor.h"
+int soma(int a, int b) {
+    return a + b;
+}
+```
+
+```c
+/* usar.c */
+#include <stdio.h>
+#include "vetor.h"
+int main(void) {
+    int r = soma(2, 3);
+    printf("2 + 3 = %d\n", r);
+    return 0;
+}
+```
+
+```sh
+cc -std=c17 -Wall -Wextra -Wpedantic -c vetor.c
+ar rcs libvetor.a vetor.o
+cc -std=c17 -Wall -Wextra -Wpedantic usar.c -L. -lvetor -o usar
+./usar
+```
+
+A saída observada é `2 + 3 = 5`. O cliente inclui o cabeçalho para conhecer a declaração, mas só a ligação com a biblioteca fornece a definição. A biblioteca estática fornece código ao executável na ligação. `-L.` acrescenta um diretório de pesquisa e `-lvetor` procura uma biblioteca com esse nome. A ordem importa para arquivos estáticos: põe a biblioteca depois dos objetos que usam os seus símbolos. `-lm` fornece a biblioteca matemática em ambientes que a separam.
 
 Para uma biblioteca partilhada em Linux:
 
@@ -143,7 +179,7 @@ Um apontador de função, como `int (*f)(int)`, guarda uma função com esse tip
 
 Numa biblioteca de números complexos, `struct complexo { double real, imag; };` pode representar $a+bi$. Somar `(1,2)` e `(3,-1)` dá `(4,1)`; multiplicar dá $(1\times3-2\times(-1),\;1\times(-1)+2\times3)=(5,5)$. Devolver este objeto por valor não cria uma obrigação de `free`. Se a API devolvesse um apontador para um objeto reservado, precisaria de declarar essa obrigação. O mesmo cuidado aplica-se a vetores: distinguir um vetor matemático de dimensão fixa de um array dinâmico evita misturar contratos.
 
-Numa lista ligada, cada nó guarda um valor e o endereço do seguinte. A cabeça é `NULL` na lista vazia. Inserir no início muda o apontador da cabeça, por isso uma função pode receber o seu endereço, `struct no **`. Este excerto requer `<stdlib.h>` e uma cabeça inicialmente nula:
+Numa lista ligada, cada nó guarda um valor e o endereço do seguinte. A cabeça é `NULL` na lista vazia. Inserir no início muda o apontador da cabeça, por isso uma função recebe o seu endereço, `struct no **`. Segue os estados ao inserir 5 e depois 2 numa lista vazia: a cabeça passa de `NULL` para o nó de 5, depois para o nó de 2, que aponta para o de 5. A função escreve através de `*cabeca`, por isso a alteração sobrevive ao retorno. Passar só a cabeça por valor mudaria uma cópia local e perderia a nova lista. Este excerto requer `<stdlib.h>` e uma cabeça inicialmente nula:
 
 ```c
 struct no {
