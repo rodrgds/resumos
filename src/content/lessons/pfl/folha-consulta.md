@@ -5,6 +5,10 @@ section: recursos
 studyKind: revision
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Rodrigo
+    date: '2026-10-03'
   sources:
     - title: Programa PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -30,7 +34,7 @@ editorial:
 | `if c then a else b`            | `c :: Bool`; os dois resultados têm o mesmo tipo.                       |
 | Padrões e guardas               | Tentados pela ordem escrita; cobre todas as formas e declara o domínio. |
 
-[Dedução de tipos](../polimorfismo-classes/) e [expressões](../haskell-expressoes-tipos/).
+[Dedução de tipos](/cadeiras/pfl/polimorfismo-classes/) e [expressões](/cadeiras/pfl/haskell-expressoes-tipos/).
 
 ## Listas e folds
 
@@ -55,7 +59,7 @@ foldl f z (x:xs) = foldl f (f z x) xs
 | Inteiro para bits  | Divide positivos por dois, recolhe restos e inverte; define zero e negativos.               |
 | Permutações        | Permuta a cauda e insere a cabeça em todas as posições; caso base `[[]]`, `n!` ocorrências. |
 
-`foldr (-) 0 [1,2,3] = 2`; `foldl (-) 0 [1,2,3] = -6`. Associar não é avaliar tudo primeiro. [Listas](../listas-recursao/) e [ordem superior](../funcoes-ordem-superior/).
+`foldr (-) 0 [1,2,3] = 2`; `foldl (-) 0 [1,2,3] = -6`. Associar não é avaliar tudo primeiro. [Listas](/cadeiras/pfl/listas-recursao/) e [ordem superior](/cadeiras/pfl/funcoes-ordem-superior/).
 
 ## Árvores, I/O, parsers e propriedades
 
@@ -72,7 +76,7 @@ foldl f z (x:xs) = foldl f (f z x) xs
 | Propriedade     | Pré-condições, conservação e resultado; testes não são uma prova universal.                           |
 | Shrinking       | Contraexemplo reduzido, sem garantia de mínimo global.                                                |
 
-[Árvores](../tipos-algebricos-recursao/), [parsers](../entrada-saida-parsers/) e [propriedades](../testes-quickcheck/).
+[Árvores](/cadeiras/pfl/tipos-algebricos-recursao/), [parsers](/cadeiras/pfl/entrada-saida-parsers/) e [propriedades](/cadeiras/pfl/testes-quickcheck/).
 
 ## Prolog
 
@@ -95,4 +99,4 @@ foldl f z (x:xs) = foldl f (f z x) xs
 
 Na árvore SLD: renomeia variáveis da cláusula, unifica a cabeça, propaga a substituição e resolve o objetivo mais à esquerda. Marca alternativas para retrocesso. Para termos finitos, rejeita `X=f(X)` pelo occurs check; algumas implementações de `=` aceitam ciclos.
 
-DFS não garante o caminho mais curto. BFS garante menor número de arestas com custos iguais e expansão finita. Minimax escolhe máximo ou mínimo conforme o jogador; não tira o máximo de todas as folhas. [Unificação](../logica-unificacao-prolog/), [controlo](../prolog-recursao-procura/), [soluções](../solucoes-estruturas-prolog/) e [procura](../procura-jogos-simbolos/).
+DFS não garante o caminho mais curto. BFS garante menor número de arestas com custos iguais e expansão finita. Minimax escolhe máximo ou mínimo conforme o jogador; não tira o máximo de todas as folhas. [Unificação](/cadeiras/pfl/logica-unificacao-prolog/), [controlo](/cadeiras/pfl/prolog-recursao-procura/), [soluções](/cadeiras/pfl/solucoes-estruturas-prolog/) e [procura](/cadeiras/pfl/procura-jogos-simbolos/).
