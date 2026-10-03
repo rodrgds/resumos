@@ -135,3 +135,10 @@ Já percorreste as lições; esta folha resume as definições e condições par
 - CAP: durante partição, há conflito entre as garantias definidas de consistência forte e disponibilidade; não é «escolher duas» sem contexto.
 
 [Informação](/cadeiras/lbaw/interfaces-acessiveis/), [desempenho](/cadeiras/lbaw/cliente-desempenho/) e [NoSQL](/cadeiras/lbaw/nosql/).
+
+## Notação A5, schema e sequências
+
+- A5: `UK` unicidade, `NN` obrigatório, `DF` omissão, `CK` verificação, `->` referência. Traduz cada marca para `UNIQUE`, `NOT NULL`, `DEFAULT`, `CHECK` e `REFERENCES`.
+- Schema: base de dados contém schemas; `search_path` escolhe o schema ativo. Cria `CREATE SCHEMA lbawXXg` e `SET search_path TO lbawXXg`.
+- Sequências: `IDENTITY` gera identificadores; `currval` lê o último valor da sessão atual e não é afetado por outras sessões.
+- A6: cada transação declara e justifica o isolamento; população em script separado da criação.

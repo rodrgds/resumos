@@ -1,7 +1,7 @@
 ---
 title: Índices, planos e pesquisa em PostgreSQL
 description: Escolher índices a partir de consultas, ler EXPLAIN e distinguir pesquisa exata de pesquisa em texto.
-order: 6
+order: 7
 practices:
   - lbaw/praticar-indices
 editorial:
@@ -162,3 +162,9 @@ Um sinal independente pode ser calculado na indexação ou atualizado em segundo
 Num exemplo próprio, somamos dois sinais normalizados entre zero e um. A tem correspondência textual 0,8 e qualidade 0,2, dando 1,0. B tem correspondência 0,6 e qualidade 0,8, dando 1,4. B fica primeiro nesta regra, apesar de ter menor correspondência textual. Mudar o peso muda a decisão; estes valores não são a fórmula interna de `ts_rank`.
 
 Antes de calcular posições, o conjunto de candidatos deve respeitar as permissões.
+
+## Da carga ao plano comentado
+
+Descreve a carga antes de propores índices: tabela `sessoes` com 100 mil linhas a crescer 100 por dia; consulta frequente que filtra `evento_id` e intervalo de `data_hora` 50 vezes por dia; poucas escritas concorrentes. O índice `(evento_id, data_hora)` fixa o grupo do evento e percorre o intervalo já ordenado. Regista a decisão como em A6: relação, atributos, tipo B-tree, cardinalidade, clustering e justificação.
+
+Lê o plano assim: `cost=a..b` são unidades do planeador até à primeira e última linha, não milissegundos; `rows` e `width` são estimativas; `loops` multiplica o custo do nó. Se o planeador escolhe `Seq Scan` numa tabela pequena ou pouco seletiva, compara `EXPLAIN ANALYZE` com dados representativos depois de `ANALYZE`. Para pesquisa textual, o documento é título mais corpo normalizado em lexemas; o peso A do título e B do corpo decide a ordem, e `@@` filtra enquanto `ts_rank` ordena.

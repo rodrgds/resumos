@@ -1,7 +1,7 @@
 ---
 title: Aplicação web com Laravel
 description: Rotas, controladores, modelos e vistas para recursos REST apoiados na base de dados.
-order: 9
+order: 10
 practices:
   - lbaw/praticar-arquitetura
 editorial:
@@ -264,3 +264,9 @@ O modelo não é a página. Não coloques decisões de autorização só no temp
 Usa parâmetros para valores nas consultas; valida escolhas de coluna e direção de ordenação por uma lista explícita. Escapa dados na vista e usa proteção CSRF nas rotas de alteração que recebem cookies. Quando a base de dados recusar uma regra conhecida, traduz o resultado para uma resposta útil sem expor SQL, credenciais ou stack traces.
 
 Uma atualização feita em vários modelos pode precisar de `DB::transaction(...)`, mas só envolver código nessa função não resolve a corrida do último lugar. Aplica também a coordenação de [transações](/cadeiras/lbaw/triggers-transacoes/).
+
+## Onde cada falha aparece no percurso
+
+Segue um `POST /sessoes` com lotação 0 por um utilizador sem permissão: o middleware `auth` recusa quem não entrou; a policy recusa quem não gere sessões com 403; a validação recusa lotação 0 e devolve o formulário com erros e valores antigos; só depois a base de dados aplicaria `CHECK`. Cada camada protege a sua decisão e nenhuma substitui as outras.
+
+Adapta o esquema português com nomes de tabela explícitos, porque a pluralização do Eloquent não adivinha `sessoes`. Os excertos pressupõem `Request`, `Gate` e modelos importados; a migração de exemplo omite os `CHECK` de propósito, que ficam no SQL de PostgreSQL. O bloco PHP executável isola só a regra "inteiro a partir de 1": não reproduz a conversão de texto HTTP nem todas as regras do validador.

@@ -1,7 +1,7 @@
 ---
 title: Segurança da aplicação web
 description: SQL injection, XSS, CSRF, autorização e palavras-passe, com exemplos de defesa por contexto.
-order: 10
+order: 11
 practices:
   - lbaw/praticar-seguranca
 editorial:
@@ -111,3 +111,9 @@ O bloco isola duas APIs: codificação de texto para HTML e verificação de pal
 | Base de dados de palavras-passe é exposta.               | Hash resistente com parâmetros adequados, além de proteção do armazenamento. |
 
 São mecanismos diferentes: uma consulta parametrizada não impede alguém de consultar um objeto para o qual não tem autorização, e um token CSRF não impede XSS.
+
+## Um pedido ao bilhete alheio, camada a camada
+
+Segue `GET /bilhetes/900` do comprador 7 quando o bilhete é do 8: a consulta parametrizada encontra a linha sem injeção; o HTML escapa o título sem XSS; o token CSRF nem entra aqui porque é leitura; a decisão que falta é a autorização sobre o objeto, com `Gate::authorize('view', $bilhete)` no servidor. Esconder o link na vista não impede o pedido direto.
+
+Para escritas, recebe o identificador do comprador da sessão autenticada, nunca do campo `utilizador_id` do formulário. `$fillable` limita que atributos entram por atribuição em massa; quem pode operar sobre que objeto decide-se na policy. Um token CSRF válido não autoriza ninguém: prova que o pedido veio do formulário da sessão, não que a pessoa pode mexer naquele recurso.

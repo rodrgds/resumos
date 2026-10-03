@@ -1,7 +1,7 @@
 ---
 title: Consultas SQL, NULL e agregação
 description: Junções, quantificação, grupos e consultas analíticas, com resultados calculados sobre dados pequenos.
-order: 5
+order: 6
 practices:
   - lbaw/praticar-consultas
 editorial:
@@ -139,3 +139,9 @@ Constrói dados mínimos com zero, uma e várias correspondências; inclui repet
 Na álgebra relacional clássica, seleção σ filtra tuplos e projeção π escolhe atributos; junção combina relações por uma condição. União, interseção e diferença exigem esquemas compatíveis. O renomeamento ρ permite distinguir duas utilizações da mesma relação.
 
 `SELECT id FROM sessoes WHERE evento_id=3` corresponde a projetar id depois de selecionar evento_id=3, se abstrairmos NULL e os repetidos de SQL. A projeção clássica é um conjunto e elimina repetidos; SQL precisa de DISTINCT para essa semântica. Um produto cartesiano sem condição cria todas as combinações, que um filtro pode reduzir. No plano físico, o motor pode executar uma junção de outra forma sem alterar o resultado lógico.
+
+## O mesmo conjunto de dados do início ao fim
+
+Usa duas sessões e três bilhetes: S1 tem um pago e um reservado; S2 não tem bilhetes; um bilhete tem `sessao_id` NULL por erro de importação. A consulta com o filtro no `ON` devolve `(S1,1)` e `(S2,0)`: S2 aparece porque o `LEFT JOIN` conserva a esquerda. Com o filtro no `WHERE`, S2 desaparece e a resposta passa a `(S1,1)`. Verifica em SQLite: a primeira forma dá `[(1, 1), (2, 0)]`, a segunda dá `[(1, 1)]`.
+
+O mesmo conjunto mostra `NOT IN` contra `NOT EXISTS`: se a subconsulta inclui NULL, `2 NOT IN (1,NULL)` é desconhecido e o `WHERE` rejeita a linha, enquanto `NOT EXISTS` com correlação testa ausência de linhas. Constrói sempre dados com zero, uma e várias correspondências, mais NULL quando a coluna o permite, e calcula à mão antes de correres.

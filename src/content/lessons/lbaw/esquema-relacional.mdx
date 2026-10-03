@@ -1,7 +1,7 @@
 ---
 title: Do modelo ao esquema relacional
 description: Conversão de UML em tabelas, chaves primárias e estrangeiras, e validação do esquema da Loja de Bilhetes.
-order: 3
+order: 4
 practices:
   - lbaw/praticar-esquema
 editorial:
@@ -26,7 +26,7 @@ O [modelo conceptual](/cadeiras/lbaw/modelo-conceptual/) desenha o problema. O *
 
 ## As regras de conversão
 
-No nosso modelo sem generalizações, cada classe vira uma tabela e cada atributo vira uma coluna. Cada objeto ganha um identificador único, a **chave primária**. As associações viram **chaves estrangeiras**: colunas que referem a chave primária de outra tabela.
+No nosso modelo sem generalizações, cada classe vira uma tabela e cada atributo vira uma coluna. Cada objeto ganha um identificador único, a **chave primária**. As associações viram **chaves estrangeiras**: colunas que referem uma chave candidata elegível da tabela referida, normalmente a primária. A tabela referida pode ser a própria tabela, como em hierarquias com `parent_id`.
 
 - Associação de um para muitos (`1` a `1..*`): a chave estrangeira vai para o lado dos muitos. Cada sessão guarda `evento_id` a referir o evento. O evento não guarda nada sobre as sessões.
 - Associação de muitos para muitos resolvida por classe: a ligação vira tabela própria com duas chaves estrangeiras. A tabela `bilhetes` guarda `utilizador_id` e `sessao_id`.
@@ -176,3 +176,9 @@ Uma terceira estratégia usa uma tabela por classe concreta, repetindo nela os a
 Numa relação N:N simples, uma tabela com PK composta `(utilizador_id,sessao_id)` permite no máximo uma ligação por par. **Bilhete** tem identidade própria: a mesma pessoa pode comprar vários para a mesma sessão, logo o par não é único neste exemplo. Não apliques automaticamente a PK composta de uma associação simples a uma entidade associativa com várias ocorrências por par.
 
 A validação do esquema continua com [dependências funcionais e normalização](/cadeiras/lbaw/normalizacao/).
+
+## Notação compacta, schema e passagem a SQL
+
+A5 documenta cada relação em notação compacta antes do DDL. Lê `bilhetes(id, utilizador_id -> utilizadores NN, sessao_id -> sessoes NN, codigo UK NN, estado NN CK estado IN Estados)`: cada `->` é uma chave estrangeira, `UK` é unicidade, `NN` é obrigatório, `CK` é verificação e `Estados` é o domínio dos três valores. Traduz cada marca para SQL: `NN` vira `NOT NULL`, `UK` vira `UNIQUE`, `CK` vira `CHECK`, `->` vira `REFERENCES`.
+
+Em PostgreSQL, uma base de dados contém schemas e cada schema contém tabelas. O `search_path` diz em que schema o servidor procura tabelas sem prefixo. No servidor da faculdade, o schema `public` é partilhado: cria o schema do grupo com `CREATE SCHEMA lbawXXg` e começa os scripts com `SET search_path TO lbawXXg`, para não criar tabelas no schema partilhado.
