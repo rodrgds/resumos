@@ -9,14 +9,14 @@ studyKind: revision
 
 | Conceito           | Conferir                                                                        |
 | ------------------ | ------------------------------------------------------------------------------- |
-| Palavra vazia      | $                                                                               | \varepsilon | =0$; não é símbolo de entrada. |
+| Palavra vazia      | $\lvert\varepsilon\rvert=0$; não é símbolo de entrada.                          |
 | Linguagem vazia    | $\emptyset\ne\{\varepsilon\}$; $L\emptyset=\emptyset$, $L\{\varepsilon\}=L$.    |
 | Potência e estrela | $L^0=\{\varepsilon\}$; $L^*=\bigcup_{k\ge0}L^k$; $\emptyset^*=\{\varepsilon\}$. |
 | Complemento        | Relativo ao alfabeto: $\overline L=\Sigma^*\setminus L$.                        |
 | Reverso            | $(xy)^R=y^Rx^R$.                                                                |
 | Precedência de RE  | Estrela, concatenação, união. $01^*\ne(01)^*$.                                  |
 
-União é comutativa; concatenação não é. $(E+F)^*\not\equiv E^*+F^*$ em geral. [Explicação e contraexemplos](../linguagens-expressoes/).
+União é comutativa; concatenação não é. $(E+F)^*\not\equiv E^*+F^*$ em geral. [Explicação e contraexemplos](/cadeiras/tc/linguagens-expressoes/).
 
 ## Construções regulares
 
@@ -30,9 +30,11 @@ União é comutativa; concatenação não é. $(E+F)^*\not\equiv E^*+F^*$ em ger
 | Thompson            | Fragmentos com entrada/saída; união escolhe, concatenação liga, estrela permite saltar/repetir. |
 | Eliminar $k$        | $R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}$.                                                        |
 
-O DFA de um NFA com $n$ estados tem no máximo $2^n$ estados, contando o conjunto vazio quando alcançável. Não precisa de usar todos. [DFA](../automatos-finitos/), [NFA](../automatos-nao-deterministas/), [conversões](../expressoes-automatos/).
+O DFA de um NFA com $n$ estados tem no máximo $2^n$ estados, contando o conjunto vazio quando alcançável. Não precisa de usar todos. [DFA](/cadeiras/tc/automatos-finitos/), [NFA](/cadeiras/tc/automatos-nao-deterministas/), [conversões](/cadeiras/tc/expressoes-automatos/).
 
 ## Fecho, decisão e minimização
+
+Toda a linguagem finita é regular: une uma expressão por palavra.
 
 Regulares são fechadas para união, interseção, complemento, diferença, concatenação, estrela, reverso e quocientes. No produto, as transições são iguais para várias operações; muda o critério dos finais.
 
@@ -41,7 +43,7 @@ Regulares são fechadas para união, interseção, complemento, diferença, conc
 - Equivalência: nenhum estado alcançável no produto em que só uma componente seja final.
 - Minimização: remove inacessíveis, marca pares final/não final, propaga marcas pelos destinos e junta pares não distinguíveis.
 
-Para provar que duas classes não podem fundir, dá uma continuação que uma aceita e a outra rejeita. [Procedimentos e exemplo](../limites-regulares/).
+Para provar que duas classes não podem fundir, dá uma continuação que uma aceita e a outra rejeita. [Procedimentos e exemplo](/cadeiras/tc/limites-regulares/).
 
 **Lema regular:** se $L$ é regular, $\exists p\ge1$, $\forall s\in L$ com $|s|\ge p$, $\exists x,y,z$ tais que
 
@@ -56,7 +58,9 @@ Para refutar: supõe regular, recebe $p$, escolhe $s$, considera qualquer corte 
 
 CFG: $G=(V,\Sigma,P,S)$; $A\to\alpha$ tem uma variável à esquerda. $L(G)=\{w\in\Sigma^*\mid S\Rightarrow^*w\}$. Prova ambas as inclusões quando descreves a linguagem.
 
-Ambiguidade: uma palavra com duas árvores, ou duas derivações mais à esquerda distintas. Duas ordens de expansão da mesma árvore não bastam. [Gramáticas e ambiguidade](../gramaticas-livres/).
+Tipo 3: regras lineares todas à direita ou todas à esquerda. Tipo 2: uma variável à esquerda. Tipo 1: regras sem diminuir comprimento, com a exceção inicial vazia quando permitida. Tipo 0: lado esquerdo contém uma variável. Classifica as regras dadas, não a menor classe da linguagem. [Hierarquia](/cadeiras/tc/gramaticas-livres/#classificar-gramáticas).
+
+Ambiguidade: uma palavra com duas árvores, ou duas derivações mais à esquerda distintas. Duas ordens de expansão da mesma árvore não bastam. [Gramáticas e ambiguidade](/cadeiras/tc/gramaticas-livres/).
 
 PDA: $(q,w,\gamma)$ regista estado, entrada restante e pilha, com topo à esquerda. $a,X/\alpha$ lê $a$ e substitui $X$ por $\alpha$.
 
@@ -65,24 +69,24 @@ PDA: $(q,w,\gamma)$ regista estado, entrada restante e pilha, com topo à esquer
 - CFG para PDA: expande a variável do topo por $\varepsilon$; lê e retira terminais iguais.
 - PDA para CFG: $[pXq]$ gera o que remove $X$ indo de $p$ a $q$.
 
-Os dois critérios de PDA são equivalentes mediante conversão de máquinas não determinísticas. A mesma máquina pode ter linguagens diferentes pelos dois critérios. CFG e PDA têm o mesmo poder; DPDA tem menos poder que NPDA. [Construções](../automatos-pilha/).
+Os dois critérios de PDA são equivalentes mediante conversão de máquinas não determinísticas. A mesma máquina pode ter linguagens diferentes pelos dois critérios. CFG e PDA têm o mesmo poder; DPDA tem menos poder que NPDA. [Construções](/cadeiras/tc/automatos-pilha/).
 
 Simplificar: vazias, unitárias, não geradores, inacessíveis. Depois substitui terminais em corpos longos e divide corpos com mais de duas variáveis.
 
-CNF: $A\to BC$ ou $A\to a$. Se $\varepsilon\in L$, permite $S_0\to\varepsilon$, com $S_0$ ausente dos corpos. CYK preenche intervalos por comprimento, tentando cada corte; aceita se o início aparece no intervalo total. Tempo $O(n^3)$ para gramática fixa. [Conversão e tabela](../propriedades-livres/).
+CNF: $A\to BC$ ou $A\to a$. Se $\varepsilon\in L$, permite $S_0\to\varepsilon$, com $S_0$ ausente dos corpos. CYK preenche intervalos por comprimento, tentando cada corte; aceita se o início aparece no intervalo total. Tempo $O(n^3)$ para gramática fixa. [Conversão e tabela](/cadeiras/tc/propriedades-livres/).
 
 ## Limites das livres de contexto
 
 CFL são fechadas para união, concatenação, estrela, reverso e interseção com regular. Não são fechadas para interseção geral, complemento ou diferença geral.
 
-**Lema CFL:** $s=uvwxy$, $|vwx|\le p$, $|vx|\ge1$ e $uv^iwx^iy\in L$ para todo $i\ge0$. Bombeiam-se duas partes com o mesmo expoente, possivelmente uma vazia. A zona limitada pode estar em qualquer posição. [Prova e quantificadores](../propriedades-livres/#lema-da-repetição-para-cfl).
+**Lema CFL:** $s=uvwxy$, $|vwx|\le p$, $|vx|\ge1$ e $uv^iwx^iy\in L$ para todo $i\ge0$. Bombeiam-se duas partes com o mesmo expoente, possivelmente uma vazia. A zona limitada pode estar em qualquer posição. [Prova e quantificadores](/cadeiras/tc/propriedades-livres/#lema-da-repetição-para-cfl).
 
 Pertença e vazio de CFG são decidíveis. Equivalência, universalidade e ambiguidade de CFG são indecidíveis em geral.
 
 ## Turing e complexidade
 
-TM: lê, escreve e desloca a cabeça. Em $\alpha q\beta$, a cabeça lê o primeiro símbolo de $\beta$. Máquina reconhecedora pode não parar fora da linguagem; decisor para em todas as entradas. Se $L$ e $\overline L$ são reconhecíveis, $L$ é decidível. $HALT$ e $A_{TM}$ são reconhecíveis e indecidíveis. [Modelo e provas](../turing-decidibilidade/).
+TM: lê, escreve e desloca a cabeça. Em $\alpha q\beta$, a cabeça lê o primeiro símbolo de $\beta$. Máquina reconhecedora pode não parar fora da linguagem; decisor para em todas as entradas. Se $L$ e $\overline L$ são reconhecíveis, $L$ é decidível. $HALT$ e $A_{TM}$ são reconhecíveis e indecidíveis. [Modelo e provas](/cadeiras/tc/turing-decidibilidade/).
 
 Redução $A\le_m B$: função total computável que preserva sim/não. Para provar $B$ indecidível, reduz a ele um $A$ já indecidível. Não confundas simular por um limite finito com decidir paragem sem limite.
 
-P: decidir em tempo polinomial. NP: certificado de tamanho polinomial verificável em tempo polinomial. $P\subseteq NP$; $P=NP$ continua em aberto. NP-completo significa estar em NP e ser NP-difícil. Para provar dificuldade de $B$, reduz $A\le_p B$ com $A$ já NP-completo. O tamanho de um inteiro em binário cresce como $\log N$, não como $N$. [Complexidade](../complexidade/).
+P: decidir em tempo polinomial. NP: certificado de tamanho polinomial verificável em tempo polinomial. $P\subseteq NP$; $P=NP$ continua em aberto. NP-completo significa estar em NP e ser NP-difícil. Para provar dificuldade de $B$, reduz $A\le_p B$ com $A$ já NP-completo. O tamanho de um inteiro em binário cresce como $\log N$, não como $N$. [Complexidade](/cadeiras/tc/complexidade/).
