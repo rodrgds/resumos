@@ -7,6 +7,6 @@
   node((2, 1), [View \ desenha], corner-radius: 4pt),
   node((1, 0), [Controller \ teclas], corner-radius: 4pt),
   edge((1, 0), (0, 1), "->", label: [atualiza]),
-  edge((0, 1), (2, 1), "->", label: [lê]),
+  edge((2, 1), (0, 1), "->", label: [lê]),
   edge((1, 0), (2, 1), "->", label: [redesenha]),
 )
