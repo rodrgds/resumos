@@ -20,7 +20,7 @@ Queremos copiar dados de um ficheiro para a saída padrão. Há duas interfaces 
 
 `fopen` falha com `NULL`; `open` falha com `-1`. O descritor 0 é válido. Não uses `if (!fd)` para testar um erro de abertura.
 
-`fread(buf, tamanho, quantidade, fp)` devolve o número de elementos completos lidos. Com `tamanho == 1`, esse valor também conta bytes. Uma leitura curta pode significar fim de ficheiro ou erro; consulta `feof` e `ferror`. `read` devolve `ssize_t`: positivo é a quantidade de bytes, zero indica EOF e `-1` indica erro. Guarda o resultado num tipo com sinal antes de o interpretar.
+`fread(buf, tamanho, quantidade, fp)` devolve o número de elementos completos lidos. Com `tamanho == 1`, esse valor também conta bytes. Uma leitura curta pode significar fim de ficheiro ou erro; consulta `feof` e `ferror`. `read` devolve `ssize_t`: positivo é a quantidade de bytes, zero indica EOF e `-1` indica erro. Guarda o resultado num tipo com sinal antes de o interpretar. Num pedido de zero bytes, `read` pode devolver zero sem testar EOF; os ciclos desta página pedem sempre uma quantidade positiva.
 
 A biblioteca pode antecipar leituras e acumular escritas num buffer. Evita alternar `fread` e `read` sobre a mesma abertura sem compreender a sincronização: a posição no núcleo pode já estar adiante dos bytes que a biblioteca entregou à aplicação.
 
@@ -93,19 +93,20 @@ int main(void) {
     size_t capacidade = 0, numero = 0;
     ssize_t n;
     while ((n = getline(&linha, &capacidade, stdin)) != -1) {
-        printf("%zu: ", ++numero);
-        if (fwrite(linha, 1, (size_t)n, stdout) != (size_t)n) {
+        if (printf("%zu: ", ++numero) < 0 ||
+            fwrite(linha, 1, (size_t)n, stdout) != (size_t)n) {
             free(linha);
             return 1;
         }
     }
-    int erro = ferror(stdin) || ferror(stdout);
+    int erro = ferror(stdin) || !feof(stdin);
+    if (fflush(stdout) == EOF) erro = 1;
     free(linha);
     return erro ? 1 : 0;
 }
 ```
 
-O comprimento inclui o `\n` se existir e exclui o terminador `\0`. O programa conserva uma última linha sem mudança de linha. `getline` também pode ler bytes zero; funções de strings parariam cedo nesse caso. Liberta o buffer mesmo quando a leitura termina em EOF.
+O comprimento inclui o `\n` se existir e exclui o terminador `\0`. O programa conserva uma última linha sem mudança de linha. `getline` também pode ler bytes zero; funções de strings parariam cedo nesse caso. Liberta o buffer mesmo quando a leitura termina em EOF. O retorno `-1` de `getline` também pode ser erro, incluindo falha de reserva: só consideramos o fim normal se `feof` estiver ativo e não houver erro de leitura. `fflush` verifica ainda a entrega da saída que ficou em buffer.
 
 Para imprimir as últimas $k$ linhas de um ficheiro regular, uma solução simples faz duas passagens: conta $L$ linhas, reposiciona e imprime as linhas com índice pelo menos $\max(0,L-k)$, contando desde zero. Para stdin que pode ser um pipe, usa uma fila circular das últimas $k$ linhas, porque não podes contar e voltar atrás. O teste de leitura é o ciclo exterior; não coloques um ciclo que lê todo o ficheiro dentro de outro que supostamente lê só $k$ linhas.
 
@@ -123,7 +124,7 @@ Para procurar uma substring numa linha, `strstr` encontra a próxima ocorrência
 
 `opendir` devolve `DIR *`; `readdir` devolve uma entrada ou `NULL`; `closedir` fecha. `d_name` é apenas o nome da entrada, não o caminho completo. Se abriste `pasta` estando fora dela, `stat(entrada->d_name, ...)` procuraria no diretório de trabalho errado.
 
-Podes juntar o diretório e o nome, verificando comprimentos, ou usar `fstatat(dirfd(dir), entrada->d_name, &info, 0)`. Esta segunda opção resolve o nome relativamente ao diretório aberto. Trata `.` e `..` antes de uma travessia recursiva e define se segues links simbólicos, para não criar ciclos. Antes de `readdir`, pôr `errno = 0` permite distinguir um fim normal de um erro quando retorna `NULL`.
+Podes juntar o diretório e o nome, verificando comprimentos, ou usar `fstatat(dirfd(dir), entrada->d_name, &info, 0)`. Esta segunda opção resolve o nome relativamente ao diretório aberto. Trata `.` e `..` antes de uma travessia recursiva e define se segues links simbólicos, para não criar ciclos. Imediatamente antes de cada chamada a `readdir`, pôr `errno = 0` permite distinguir um fim normal de um erro quando retorna `NULL`.
 
 ## Datas e medição
 
