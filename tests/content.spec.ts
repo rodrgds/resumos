@@ -1,5 +1,15 @@
 import { expect, test } from '@playwright/test';
 
+test('literal colons survive Markdown and MDX rendering', async ({ page }) => {
+  await page.goto('/_content-test');
+  await expect(
+    page.getByText(
+      'Formato de hora: HH:MM. Bits: imm[11:5]. Nome XML: ns:livro. Rótulo literal: :estado[pronto]{id="x"}.',
+      { exact: true },
+    ),
+  ).toHaveCount(2);
+});
+
 test('Markdown and MDX render LaTeX alongside semantic Typst and SVG', async ({
   page,
 }) => {
