@@ -13,7 +13,7 @@ import { OUTPUT_LIMIT, type RunMessage } from '../lib/runners/types';
 const MAX_TEST_MS = 120_000;
 
 interface TestOutcome {
-  passed: boolean;
+  passed?: boolean;
   output: string;
   error?: string;
 }
@@ -73,11 +73,11 @@ export function setupCodeExercises() {
           };
           const timer = setTimeout(() => {
             cleanup();
-            reject(
-              new Error(
+            resolve({
+              output: text,
+              error:
                 'O teste demorou demasiado. Revê os ciclos e tenta novamente.',
-              ),
-            );
+            });
           }, MAX_TEST_MS);
           cancel = () => {
             cleanup();
@@ -90,16 +90,15 @@ export function setupCodeExercises() {
               text += message.text;
               if (text.length > OUTPUT_LIMIT) {
                 cleanup();
-                reject(
-                  new Error(
-                    'Demasiada saída. Reduz os prints e tenta novamente.',
-                  ),
-                );
+                resolve({
+                  output: text,
+                  error: 'Demasiada saída. Reduz os prints e tenta novamente.',
+                });
               }
             }
             if (message.type === 'error') {
               cleanup();
-              resolve({ passed: false, output: text, error: message.text });
+              resolve({ output: text, error: message.text });
             }
             if (message.type === 'done') {
               cleanup();
@@ -125,7 +124,10 @@ export function setupCodeExercises() {
             dispose = runProgram(request, receive, root);
           } catch (error) {
             cleanup();
-            reject(error);
+            resolve({
+              output: text,
+              error: error instanceof Error ? error.message : String(error),
+            });
           }
         });
       const run = async () => {
@@ -148,8 +150,12 @@ export function setupCodeExercises() {
             if (id !== runId) return;
             if (!outcome.passed) {
               result.dataset.result = 'attempted';
-              status.textContent = `Teste ${index + 1}/${answer.tests.length}: «${test.name}» falhou.`;
+              status.textContent =
+                outcome.passed === undefined
+                  ? `Erro no teste ${index + 1}/${answer.tests.length}: «${test.name}».`
+                  : `Teste ${index + 1}/${answer.tests.length}: «${test.name}» falhou.`;
               showDiagnostic(index, outcome);
+              if (outcome.passed === undefined) return;
               exercise.dispatchEvent(
                 new CustomEvent('exercise-code-result', {
                   bubbles: true,

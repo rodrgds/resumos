@@ -99,6 +99,22 @@ test('code exercises accept different correct implementations and reject wrong b
     { timeout: 90_000 },
   );
   await expect(exercise.locator('[data-feedback]')).toContainText('correta');
+  const progressBeforeEngineError = await page.evaluate(() =>
+    localStorage.getItem('resumos-exercise-progress'),
+  );
+  await page.route('**/python.worker.js', (route) => route.abort('failed'));
+  await check.click();
+  await expect(diagnostic.locator('[data-code-error]')).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(diagnostic).toContainText('print(soma_naturais(0))');
+  await expect(exercise.locator('[data-feedback]')).toBeEmpty();
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem('resumos-exercise-progress'),
+    ),
+  ).toBe(progressBeforeEngineError);
+  await page.unroute('**/python.worker.js');
   await editor.fill(
     '# private-reader-code\ndef soma_naturais(n):\n    return n * (n + 1) // 2',
   );
