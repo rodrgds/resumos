@@ -7,7 +7,9 @@ practices:
   - am1/pratica-fundamentos
 ---
 
-Antes de calcular uma derivada ou um integral, precisamos de saber onde a função existe e o que acontece perto dos pontos problemáticos.
+Pensa na tabela de preços de um café: a cada número de cafés corresponde um único valor a pagar. Uma **função**, que é essa correspondência entre cada entrada e um único valor de saída, generaliza esta ideia.
+
+Nesta página vemos onde essa correspondência faz sentido, que é o chamado **domínio**, e para que valor apontam as saídas quando as entradas se aproximam de um ponto, que é o chamado **limite**. Isto permite decidir que entradas a tabela aceita e o que acontece ao preço perto de um ponto problemático da tabela.
 
 ## Domínio e composição
 
