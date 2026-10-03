@@ -11,11 +11,15 @@ while fronteira:
     f, g, n, caminho = heapq.heappop(fronteira)
     if n in visto:
         continue
-    visto[n] = g
     if n == objetivo:
         print("expandidos:", list(visto))
         print("custo:", g)
+        print("caminho:", caminho)
         break
+    visto[n] = g
     for m in vizinhos_grelha(n, bloqueados, tamanho):
         if m not in visto:
             heapq.heappush(fronteira, (g + 1 + h(m), g + 1, m, caminho + [m]))
+
+else:
+    print("sem solução")

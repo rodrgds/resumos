@@ -11,11 +11,11 @@ import grelha from '../../ia/grelha-astar.typ?raw';
 import programa from '../../ia/astar.py?raw';
 import apoio from '../../ia/astar-apoio.py?raw';
 
-A pesquisa cega expande por ordem geométrica e só encontra o objetivo por exaustão. Uma **heurística** $h(n)$ estima o custo que falta de cada nó $n$ até ao objetivo e permite expandir primeiro o que parece promissor. Quando a estimativa é honesta, a pesquisa encontra o ótimo muito mais depressa. Quando mente por excesso, pode devolver caminhos piores. Esta página mostra a diferença com uma grelha calculada até ao fim.
+A pesquisa não informada escolhe a fronteira pela profundidade ou pelo custo já percorrido, sem estimar o que falta. Uma **heurística** $h(n)$ estima o custo que falta de cada nó $n$ até ao objetivo e permite expandir primeiro o que parece promissor. Uma estimativa que não sobrestima permite ao A\* manter a garantia de custo mínimo, nas condições abaixo. Não garante uma grande redução de trabalho: empates e heurísticas pouco informativas podem obrigar a explorar muitos nós. Esta página mostra a diferença com uma grelha calculada até ao fim.
 
 ## O exemplo da grelha
 
-Grelha 4 por 4, início em (0, 0), objetivo em (3, 3), movimentos nas quatro direções com custo 1. Casas bloqueadas: (1, 1), (1, 2) e (2, 1). As casas livres e a heurística de Manhattan $h(r, c) = (3 - r) + (3 - c)$ são:
+Grelha 4 por 4, com coordenadas (linha, coluna) de 0 a 3. Início em (0, 0), objetivo em (3, 3), movimentos nas quatro direções com custo 1. Casas bloqueadas: (1, 1), (1, 2) e (2, 1). As casas livres e a heurística de Manhattan $h(r, c) = (3 - r) + (3 - c)$ são:
 
 | Casa  | h   | Casa  | h   | Casa  | h   |
 | ----- | --- | ----- | --- | ----- | --- |
@@ -30,10 +30,10 @@ Há dois caminhos ótimos com 6 passos: por cima, (0,0), (0,1), (0,2), (0,3), (1
 <Typst
   source={grelha}
   format="svg"
-  alt="Grelha 4 por 4 com a heurística de Manhattan em cada casa livre. Três casas bloqueadas a escuro junto ao canto superior esquerdo. O início está marcado no canto superior esquerdo e o objetivo no canto inferior direito."
+  alt="Grelha 4 por 4 com a heurística de Manhattan em cada casa livre. Três casas bloqueadas a escuro junto ao canto superior esquerdo. S identifica o início no canto superior esquerdo; G identifica o objetivo no canto inferior direito."
 />
 
-O A\* sobre esta grelha, executável abaixo, expande por f crescente e devolve um caminho de custo 6.
+O A\* sobre esta grelha ordena a fronteira por $f$, depois por $g$ e, por fim, por (linha, coluna). Assim, os empates têm uma regra explícita e podemos reconstruir a ordem. O programa devolve um caminho de custo 6.
 
 `vizinhos_grelha` gera as casas livres nas quatro direções, dentro do tamanho indicado. Essa função fica no código de apoio; a fronteira, a heurística e as expansões do A\* continuam visíveis. Experimenta acrescentar `(0, 3)` aos bloqueios e seguir o novo percurso de expansão.
 
@@ -44,17 +44,19 @@ O A\* sobre esta grelha, executável abaixo, expande por f crescente e devolve u
   helpers={apoio}
 />
 
-Isto expande `(0, 0), (0, 1), (1, 0), (0, 2), (2, 0), (0, 3)` antes de continuar pela fronteira com f 6, exatamente a ordem calculada à mão acima, e termina com custo 6.
+Isto expande `(0, 0), (0, 1), (1, 0), (0, 2), (2, 0), (0, 3)` antes de continuar pela fronteira com f 6, a ordem calculada na secção de A\*, e termina com custo 6.
 
 ## Gulosa: rápida e sem garantias
 
 A pesquisa **gulosa** expande sempre o nó com menor $h$, ignorando o custo já pago. Do início, empata entre (0,1) e (1,0), ambos com $h = 5$. Supõe que escolhe (0,1), depois (0,2), (0,3), (1,3), (2,3) e o objetivo, sempre a descer o $h$. Aqui acerta no ótimo por sorte do desempate.
 
-Não confies na sorte. A gulosa segue o $h$ como um gradiente e fica presa em becos: se a casa (0,3) estivesse bloqueada, ela descia até (0,2), via o $h$ subir para trás e hesitava, podendo explorar muito antes de recuar. Pior, a gulosa não é ótima em geral: nada a impede de devolver um caminho comprido quando um curto existe, porque nunca compara o custo acumulado. É útil quando precisas de uma solução rápida e o ótimo não importa.
+A gulosa guarda uma fronteira, por isso não fica presa só porque um vizinho tem $h$ maior. Se (0,3) estivesse bloqueada, expandiria (0,2), sem sucessores novos, e depois retiraria (1,0), que continuava na fronteira. Com visitados num grafo finito, encontra uma solução se existir. Não garante o custo mínimo.
+
+Vê um contraexemplo com arestas dirigidas: S para A custa 1, A para G custa 10, S para B custa 2 e B para G custa 2. Usa $h(A)=0$, $h(B)=2$, $h(G)=0$. A gulosa visita A e depois G, com custo 11. O caminho S, B, G custa 4. Mesmo uma heurística admissível não torna a gulosa ótima, porque ela ignora $g$.
 
 ## A\*: o melhor dos dois
 
-O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real já pago do início até $n$. Junta o cuidado do custo uniforme com a direção da heurística. Segue os primeiros passos na grelha, com a fronteira entre parênteses:
+O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real já pago do início até $n$. Junta o cuidado do custo uniforme com a direção da heurística. Segue os primeiros passos na grelha, com o desempate do código:
 
 1. Fronteira \{(0,0): g 0, h 6, f 6}. Expande (0,0): gera (0,1) com f 6 e (1,0) com f 6.
 2. Expande (0,1) com f 6: gera (0,2) com g 2, h 4, f 6.
@@ -63,22 +65,28 @@ O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real j
 5. Expande (2,0) com f 6: gera (3,0) com g 3, h 3, f 6.
 6. Expande (0,3) com f 6: gera (1,3) com g 4, h 2, f 6.
 
-Repara no padrão: todos os nós expandidos têm f 6, que é o custo ótimo. O A\* continua a expandir a fronteira com f 6, (3,0), (1,3), (3,1), (2,3), até gerar o objetivo (3,3) com g 6, h 0, f 6. Quando o objetivo sai da fronteira com o menor f, nenhum outro caminho pode ser melhor, porque todos os restantes têm f maior ou igual. É este o argumento de otimalidade, e ele depende da honestidade da heurística.
+Repara no padrão: todos os nós expandidos têm f 6, que é o custo ótimo. O A\* continua a expandir a fronteira com f 6, (3,0), (1,3), (3,1), (2,3), até gerar o objetivo (3,3) com g 6, h 0, f 6. Ainda retira (3,2) antes do objetivo, pelo desempate, e só para quando retira (3,3).
+
+Se existisse uma solução de custo menor, um nó do seu caminho ainda na fronteira teria $f$ no máximo igual a esse custo, porque $h$ não sobrestima o que falta. Esse nó sairia antes do objetivo de custo 6. O argumento exige manter os caminhos mais baratos para os estados. Não basta dizer que a fronteira tem valores maiores: é preciso justificar que não se perdeu uma alternativa melhor.
 
 ## Admissível e consistente
 
-A heurística é **admissível** quando nunca sobrestima: $h(n) \le h^*(n)$ para todo o nó, onde $h^*$ é o custo real mínimo. Nesta grelha, cada movimento nas quatro direções custa 1 e muda a distância de Manhattan no máximo 1. Para passar de $h(n)$ até 0 no objetivo, qualquer caminho precisa de pelo menos $h(n)$ passos. Logo, $h(n) \le h^*(n)$ em cada casa, mesmo com obstáculos.
+Usamos heurísticas não negativas e $h(\text{objetivo})=0$. A heurística é **admissível** quando nunca sobrestima: $0 \le h(n) \le h^*(n)$ para todo o nó, onde $h^*$ é o custo real mínimo. Nesta grelha, cada movimento nas quatro direções custa 1 e muda a distância de Manhattan no máximo 1. Para passar de $h(n)$ até 0 no objetivo, qualquer caminho precisa de pelo menos $h(n)$ passos. Logo, $h(n) \le h^*(n)$ em cada casa, mesmo com obstáculos.
 
-A heurística é **consistente** (ou monótona) quando $h(n) \le custo(n, n') + h(n')$ para cada aresta, isto é, a estimativa nunca cai mais depressa que o custo real. Por exemplo, na aresta (0,1) para (0,2), temos $5 \le 1 + 4$. A Manhattan satisfaz a condição em todas as arestas desta grelha porque cada movimento muda a distância no máximo 1. Com $h(\text{objetivo}) = 0$, a consistência implica admissibilidade: aplicando a desigualdade ao longo de um caminho até ao objetivo, $h(n)$ não pode exceder a soma dos custos desse caminho. Também garante que o A\* não precisa de reabrir nós já expandidos.
+A heurística é **consistente** (ou monótona) quando $h(n) \le custo(n, n') + h(n')$ para cada aresta, isto é, a estimativa nunca cai mais depressa que o custo real. Por exemplo, na aresta (0,1) para (0,2), temos $5 \le 1 + 4$. A Manhattan satisfaz a condição em todas as arestas desta grelha porque cada movimento muda a distância no máximo 1. Com $h(\text{objetivo}) = 0$, a consistência implica admissibilidade: aplicando a desigualdade ao longo de um caminho até ao objetivo, $h(n)$ não pode exceder a soma dos custos desse caminho. Também garante que o A\* não precisa de reabrir nós já expandidos: o primeiro caminho retirado para um estado já tem custo mínimo. O código usa esta propriedade da Manhattan. Com uma heurística apenas admissível, mas inconsistente, pode ser necessário **reabrir** um estado se aparecer um caminho com $g$ menor. Marcar um estado definitivamente logo que é gerado pode perder o ótimo.
+
+Por exemplo, S para A custa 3, S para B custa 1, B para A custa 1 e A para G custa 2. Define $h(S)=4$, $h(A)=0$, $h(B)=3$ e $h(G)=0$. É admissível, mas a aresta B para A viola $3 \le 1 + 0$. A\* retira A com $g=3$, depois B com $g=1$. Tem de reabrir A com $g=2$ para obter S, B, A, G com custo 4. Sem reabertura, poderia devolver custo 5.
 
 :::warning[Uma aresta não prova consistência]
 Para provar consistência, verifica a desigualdade em **todas as arestas** ou dá um argumento que cubra qualquer aresta, como fizemos para a Manhattan. Uma única violação basta para refutar a consistência; uma aresta que satisfaz a condição não permite concluir nada sobre as restantes. O mesmo cuidado vale para a admissibilidade: uma sobrestimação refuta-a, mas verificá-la só no nó inicial não a prova.
 :::
 
-:::tip[Como cai em teste]
-O enunciado dá-te a grelha, a heurística e pede a ordem de expansão do A\* até ao objetivo, ou pergunta se a heurística é admissível. Faz uma tabela com colunas de nó, g, h e f, e expande sempre o menor f, desempatando como o enunciado disser. Para provar admissibilidade, compara h com o custo real mínimo em todos os nós ou justifica um limite inferior válido para qualquer nó.
+:::tip[Seguir uma execução]
+Para seguir a ordem de expansão do A\* até ao objetivo, faz uma tabela com colunas de nó, g, h e f, e expande sempre o menor f, desempatando como o enunciado disser. Para provar admissibilidade, compara h com o custo real mínimo em todos os nós ou justifica um limite inferior válido para qualquer nó.
 :::
 
-## Porque é que isto importa
+## Escolher a estimativa
 
-Sem heurística, a largura expande tudo até à profundidade do objetivo. Com uma boa heurística, o A\* expande sobretudo nós com $f$ próximo do ótimo e ignora o resto. É por isso que problemas intratáveis na prática, como os da página de [complexidade](/cadeiras/tc/complexidade/), se resolvem todos os dias com heurísticas: abdicas da garantia barata da exaustão e compras velocidade com uma estimativa honesta.
+Ignorar restrições pode dar um limite inferior. A Manhattan ignora os obstáculos; no 8-puzzle, a soma das distâncias de Manhattan das oito peças ignora que elas se bloqueiam mutuamente. Não contas a casa vazia. Cada movimento aproxima no máximo uma peça em uma unidade, por isso essa soma é admissível com custo 1 por movimento.
+
+Com $h=0$, A\* torna-se custo uniforme. Se duas heurísticas são admissíveis, o máximo delas também é admissível e pelo menos tão informativo como cada uma. Somá-las pode contar o mesmo trabalho duas vezes e sobrestimar. A qualidade da heurística ajuda na prática, mas o pior caso de A\* pode continuar exponencial. Na grelha desta página há tantos empates em $f=6$ que o desempate faz diferença no número de visitas.

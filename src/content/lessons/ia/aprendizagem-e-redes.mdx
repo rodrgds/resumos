@@ -10,17 +10,17 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import arvore from '../../ia/arvore-decisao.typ?raw';
 import perceptrao from '../../ia/perceptrao.typ?raw';
 
-Nas páginas anteriores, o conhecimento vinha escrito por ti: regras, probabilidades, heurísticas. Na **aprendizagem computacional**, o programa extrai o conhecimento dos dados. Há três regimes: **supervisionada** (dados com resposta certa, para classificar ou prever), **não supervisionada** (dados sem resposta, para agrupar) e **por reforço** (aprende por tentativa com recompensas). Esta página fica na supervisionada, com um dataset de 12 animais resolvido de três maneiras.
+Nas páginas anteriores, o conhecimento vinha escrito por ti: regras, probabilidades, heurísticas. Na **aprendizagem computacional**, o programa extrai o conhecimento dos dados. Há três regimes: **supervisionada** (dados com resposta certa, para classificar ou prever), **não supervisionada** (dados sem resposta, para agrupar) e **por reforço** (aprende por tentativa com recompensas). A classificação supervisionada ocupa a maior parte desta página. No fim, um exemplo por reforço mostra a diferença entre uma etiqueta e uma recompensa.
 
 ## O dataset
 
-Doze animais com dois atributos binários, penas e voa, e a classe ave ou mamífero. Aves: pardal (penas, voa), águia (penas, voa), pato (penas, voa), pinguim (penas, não voa), avestruz (penas, não voa), galinha (penas, não voa). Mamíferos: morcego (sem penas, voa), golfinho, cão, gato, cavalo e baleia (todos sem penas e sem voo).
+Usamos um conjunto didático de doze animais, sem o tratar como amostra representativa de todos os animais. Tem dois atributos binários, penas e voa, e a classe ave ou mamífero. Aves: pardal (penas, voa), águia (penas, voa), pato (penas, voa), pinguim (penas, não voa), avestruz (penas, não voa), galinha (penas, não voa). Mamíferos: morcego (sem penas, voa), golfinho, cão, gato, cavalo e baleia (todos sem penas e sem voo).
 
 ## Árvore de decisão com entropia
 
-Uma **árvore de decisão** pergunta atributos por ordem e classifica na folha. A pergunta de cada nó é a que mais reduz a incerteza, medida pela **entropia** $H = -\sum p_i \log_2 p_i$. Na raiz há 6 aves e 6 mamíferos: $H = -(0{,}5 \log_2 0{,}5 + 0{,}5 \log_2 0{,}5) = 1$ bit, incerteza máxima.
+Uma **árvore de decisão** pergunta atributos por ordem e classifica na folha. Nesta variante, a pergunta de cada nó maximiza o ganho de informação, calculado com a **entropia** $H = -\sum_i p_i \log_2 p_i$. $p_i$ é a proporção da classe $i$ no nó, e convencionamos $0\log_2 0=0$. Há outros critérios, como a impureza de Gini $1-\sum_i p_i^2$. Na raiz há 6 aves e 6 mamíferos: $H = -(0{,}5 \log_2 0{,}5 + 0{,}5 \log_2 0{,}5) = 1$ bit, incerteza máxima.
 
-Testa o atributo penas. O ramo "tem penas" tem 6 aves e 0 mamíferos ($H = 0$); o ramo "sem penas" tem 0 aves e 6 mamíferos ($H = 0$). A entropia ponderada depois da pergunta é 0, por isso o **ganho de informação** é $1 - 0 = 1$ bit, o máximo possível. Compara com o atributo voa: o ramo "voa" tem 3 aves e 1 mamífero ($H \approx 0{,}81$), o ramo "não voa" tem 3 aves e 5 mamíferos ($H \approx 0{,}95$), e a média ponderada dá $(4/12) \times 0{,}81 + (8/12) \times 0{,}95 \approx 0{,}91$, ou seja, ganho de só $0{,}09$. A árvore pergunta penas primeiro e classifica tudo na perfeição com profundidade 1.
+Testa o atributo penas. O ramo "tem penas" tem 6 aves e 0 mamíferos ($H = 0$); o ramo "sem penas" tem 0 aves e 6 mamíferos ($H = 0$). A entropia ponderada depois da pergunta é 0, por isso o **ganho de informação** é $1 - 0 = 1$ bit, o máximo possível. Compara com o atributo voa: o ramo "voa" tem 3 aves e 1 mamífero ($H \approx 0{,}81$), o ramo "não voa" tem 3 aves e 5 mamíferos ($H \approx 0{,}95$), e a média ponderada dá $(4/12) \times 0{,}81 + (8/12) \times 0{,}95 \approx 0{,}91$, ou seja, ganho de só $0{,}09$. A árvore pergunta penas primeiro e classifica tudo corretamente nos dados de treino com profundidade 1.
 
 A lição não é que penas seja sempre a resposta, é o método: calcula a entropia antes e depois de cada atributo candidato e escolhe o maior ganho. Árvores demasiado fundas decoram o treino e falham no novo (**sobreajuste**); limita-se a profundidade ou exige-se um mínimo de exemplos por folha.
 
@@ -30,7 +30,7 @@ A lição não é que penas seja sempre a resposta, é o método: calcula a entr
   alt="Árvore de decisão de profundidade 1: a raiz pergunta se tem penas; o ramo sim classifica 6 aves e o ramo não classifica 6 mamíferos."
 />
 
-As entropias da conta acima, executáveis abaixo:
+O código pesa a entropia de cada ramo pela fração de exemplos que chegam a ele. Um ramo com oito animais contribui o dobro de um ramo com quatro:
 
 <CodePlayground
   language="python"
@@ -40,7 +40,7 @@ As entropias da conta acima, executáveis abaixo:
   }
 />
 
-Isto escreve `raiz: 1.0`, `penas: 0.0 0.0`, `voa: 0.81 0.95` e `ganho voa: 0.09`: o atributo penas separa tudo com ganho máximo, voa quase não ajuda.
+O ganho de "voa" é cerca de 0,093 bits. O atributo "penas" separa todas as classes no conjunto de treino; este acerto não mede ainda a generalização.
 
 ## Matriz de confusão
 
@@ -51,11 +51,19 @@ Para avaliar um classificador, conta acertos e erros por classe na **matriz de c
 | Ave             | 2 (pardal, águia) | 1 (pinguim)       |
 | Mamífero        | 1 (morcego)       | 2 (cão, golfinho) |
 
-Exatidão: 4 em 6. O pinguim é um **falso negativo** (ave prevista mamífero) e o morcego um **falso positivo** (mamífero previsto ave). Repara como a exatidão sozinha engana: se 95 por cento dos animais fossem mamíferos, prever sempre mamífero dava 95 por cento de exatidão sem aprender nada. É por isso que se olha para a matriz e não só para o número global.
+Considera "ave" a classe positiva. Exatidão: 4 em 6. O pinguim é um **falso negativo** (ave prevista mamífero) e o morcego um **falso positivo** (mamífero previsto ave). Repara como a exatidão sozinha engana: se 95 por cento dos animais fossem mamíferos, prever sempre mamífero dava 95 por cento de exatidão sem aprender nada. Com $VP=2$, $VN=2$, $FP=1$ e $FN=1$, a **precisão** $VP/(VP+FP)$ é $2/3$: entre os animais previstos como aves, dois em três são aves. A **sensibilidade** (_recall_) $VP/(VP+FN)$ também é $2/3$: encontra duas das três aves. A medida $F_1=2\,\text{precisão}\,\text{sensibilidade}/(\text{precisão}+\text{sensibilidade})$ combina ambas e vale $2/3$. Quando um denominador é zero, tens de explicitar a convenção usada.
+
+## Seleção de modelos e generalização
+
+O **treino** ajusta pesos ou constrói a árvore. A **validação** escolhe hiperparâmetros, como a profundidade máxima. O **teste** estima o desempenho final depois dessas escolhas. Consultar repetidamente o teste para escolher o modelo transmite informação do teste ao treino e torna a estimativa otimista.
+
+Com 100 exemplos, podemos reservar 20 para teste e fazer validação cruzada com 4 partições nos outros 80. Para cada profundidade candidata, treinamos quatro modelos, cada um em 60 exemplos e validado nos 20 restantes. Comparamos a média da métrica nos quatro conjuntos de validação, escolhemos a profundidade e voltamos a treinar nos 80. Só então avaliamos uma vez nos 20 de teste. Não escolhemos simplesmente o melhor dos quatro modelos intermédios.
+
+Qualquer transformação aprendida dos dados, como normalizar pela média e desvio-padrão, ajusta-se apenas no treino de cada partição. Dados da mesma pessoa ou de momentos futuros exigem uma separação que respeite grupos ou tempo. Um conjunto de treino tão pequeno e artificial como o dos animais serve para aprender as contas, não para comparar modelos de forma fiável.
 
 ## Um perceptrão em duas épocas
 
-O **perceptrão** é o neurónio original: soma pesos vezes entradas mais viés, e devolve uma classe conforme o sinal. Treina-se corrigindo erros: quando erra um exemplo, soma (ou subtrai) as entradas aos pesos. Segue o treino com taxa 1, pesos a zeros e viés a zero, nos pontos $x_1 = (1, 0)$ da classe +1, $x_2 = (0, 1)$ da classe -1 e $x_3 = (2, 1)$ da classe +1:
+O **perceptrão** é o neurónio original: soma pesos vezes entradas mais viés, e devolve uma classe conforme o sinal. Treina-se corrigindo erros: para alvo $t\in\{-1,+1\}$, atualiza $w \leftarrow w+\eta t x$ e $b \leftarrow b+\eta t$, apenas quando a previsão está errada. $\eta>0$ é a taxa de aprendizagem, $w$ os pesos e $b$ o viés. Uma **época** é uma passagem por todos os exemplos. Segue o treino com taxa 1, pesos a zeros e viés a zero, nos pontos $x_1 = (1, 0)$ da classe +1, $x_2 = (0, 1)$ da classe -1 e $x_3 = (2, 1)$ da classe +1:
 
 - Época 1, $x_1$: saída $0 \ge 0$, prevê +1, correto. Sem alteração.
 - Época 1, $x_2$: saída $0$, prevê +1, mas é -1. Atualiza: pesos $(0, 0) - (0, 1) = (0, -1)$, viés $-1$.
@@ -64,7 +72,7 @@ O **perceptrão** é o neurónio original: soma pesos vezes entradas mais viés,
 - Época 2, $x_2$: saída $0$, prevê +1, mas é -1. Atualiza: pesos $(2, 0) - (0, 1) = (2, -1)$, viés $-1$.
 - Época 2, $x_3$: saída $(2)(2) + (-1)(1) - 1 = 2 \ge 0$, prevê +1, correto.
 
-Pesos finais $(2, -1)$ com viés $-1$: confirma os três pontos, $x_1$ dá 2, $x_2$ dá $-2$, $x_3$ dá 2, todos do lado certo.
+Pesos finais $(2, -1)$ com viés $-1$: confirma os três pontos, $x_1$ dá 1, $x_2$ dá $-2$, $x_3$ dá 2, todos do lado certo.
 
 <Typst
   source={perceptrao}
@@ -72,7 +80,7 @@ Pesos finais $(2, -1)$ com viés $-1$: confirma os três pontos, $x_1$ dá 2, $x
   alt="Diagrama do perceptrão treinado: as entradas x1 e x2 chegam ao neurónio com pesos 2 e menos 1, o viés menos 1 entra por baixo, e o neurónio devolve a classe."
 />
 
-O treino acima, executável: corre e confirma que escreve `[2, -1] -1`.
+O código usa a mesma ordem dos exemplos e prevê +1 quando a soma é zero. Essa convenção afeta os passos do treino:
 
 <CodePlayground
   language="python"
@@ -82,22 +90,36 @@ O treino acima, executável: corre e confirma que escreve `[2, -1] -1`.
   }
 />
 
-Se o teu código der outro resultado, revê a convenção do sinal na saída exatamente zero, que é onde quase toda a gente diverge. Os exemplos de Python seguem o estilo de [Fundamentos da Programação](/cadeiras/fp/).
+Com dados linearmente separáveis, o perceptrão pode encontrar uma fronteira que os separa; não consegue representar XOR com um único neurónio. Nesta fronteira, a equação é $2x_1-x_2-1=0$, e os três pontos ficam do lado correto. Duas épocas bastam neste exemplo, mas não são um limite geral.
 
 ## De um neurónio a uma rede
 
-Uma rede neuronal empilha muitos perceptrões em camadas e treina-os com gradiente em vez de correções discretas, mas a ideia é a mesma: ajustar parâmetros até os exemplos ficarem do lado certo da fronteira. A **generalização**, acertar em dados novos e não só no treino, avalia-se com a matriz da secção anterior em dados que o modelo nunca viu.
+Uma rede neuronal liga unidades em camadas, combinando somas ponderadas com funções de ativação. Sem ativações não lineares, várias camadas lineares continuariam a representar uma transformação linear. A generalização mede-se em dados separados do treino e da seleção do modelo.
 
-O percetrão usa degrau e correções discretas. Uma rede **multicamada** (MLP) usa ativações suaves como a sigmoide $\sigma(z) = 1 / (1 + e^{-z})$ e minimiza o erro quadrático $E = \frac{1}{2}(t - y)^2$ por **retropropagação**: calcula como cada peso contribui para o erro e corrige-o na direção oposta. Segue um passo completo numa rede 2-2-1, isto é, 2 entradas, 1 neurónio escondido e 1 saída, com entrada $x = (1, 0)$, alvo $t = 1$ e taxa 1.
+O perceptrão usa degrau e correções discretas. Uma rede **multicamada** (MLP) pode usar ativações diferenciáveis como a sigmoide $\sigma(z) = 1 / (1 + e^{-z})$. Neste exemplo, minimizamos o erro quadrático $E = \frac{1}{2}(t - y)^2$. A **retropropagação** calcula os gradientes; a descida do gradiente atualiza os parâmetros na direção oposta. Segue um passo completo numa rede 2-1-1, isto é, 2 entradas, 1 neurónio escondido e 1 saída, com entrada $x = (1, 0)$, alvo $t = 1$ e taxa 1.
 
 Pesos iniciais: escondido $w_h = (0{,}5, -0{,}5)$ com viés $0$; saída $w_o = 0{,}5$ com viés $0$. Propagação para a frente: $z_h = 0{,}5$, $a_h = \sigma(0{,}5) \approx 0{,}622$; $z_o = 0{,}5 \times 0{,}622 \approx 0{,}311$, $y = \sigma(0{,}311) \approx 0{,}577$. Erro $E = \frac{1}{2}(1 - 0{,}577)^2 \approx 0{,}089$.
 
-Retropropagação, da saída para a entrada. Na saída, $\delta_o = (y - t)\,y\,(1 - y) \approx (0{,}577 - 1) \times 0{,}577 \times 0{,}423 \approx -0{,}103$. Gradientes: $\partial E / \partial w_o = \delta_o \times a_h \approx -0{,}064$ e $\partial E / \partial b_o = \delta_o \approx -0{,}103$. Atualiza: $w_o = 0{,}5 + 0{,}064 = 0{,}564$ e $b_o = 0{,}103$. No escondido, $\delta_h = \delta_o \times w_o \times a_h \times (1 - a_h) \approx -0{,}0121$, por isso $w_{h1} = 0{,}5 + 0{,}0121 = 0{,}5121$ (o $w_{h2}$ não mexe porque $x_2 = 0$) e $b_h = 0{,}0121$.
+Retropropagação, da saída para a entrada. Na saída, $\delta_o = (y - t)\,y\,(1 - y) \approx (0{,}577 - 1) \times 0{,}577 \times 0{,}423 \approx -0{,}103$. Gradientes: $\partial E / \partial w_o = \delta_o a_h \approx -0{,}0642$ e $\partial E / \partial b_o = \delta_o \approx -0{,}1032$. No escondido, $\delta_h = \delta_o w_o a_h(1-a_h) \approx -0{,}0121$, **usando o peso antigo** $w_o=0{,}5$. Calculamos todos os gradientes antes de atualizar qualquer parâmetro, pois são derivadas do mesmo erro com os mesmos pesos.
 
-Confirma que o passo ajudou: com os pesos novos, $y \approx 0{,}612$ e $E \approx 0{,}075$, abaixo dos 0,089 iniciais. Um passo de gradiente é isto: medir a culpa de cada peso no erro e empurrá-lo um pouco na direção que baixa o erro. Repetir milhares de vezes sobre muitos exemplos é o treino de uma rede neuronal.
+Com a regra $\theta \leftarrow \theta - \eta\,\partial E/\partial\theta$ e $\eta=1$, obtemos $w_o \approx 0{,}5642$, $b_o \approx 0{,}1032$, $w_{h1} \approx 0{,}5121$ e $b_h \approx 0{,}0121$. O peso $w_{h2}$ continua em $-0{,}5$, porque o seu gradiente é $\delta_h x_2=0$.
+
+Confirma que o passo ajudou: com os pesos novos, $y \approx 0{,}612$ e $E \approx 0{,}075$, abaixo dos 0,089 iniciais. A regra da cadeia calcula como o erro varia quando um peso muda. Uma taxa demasiado alta pode aumentar o erro, por isso a melhoria deste passo não é uma garantia para qualquer taxa.
+
+Um **grafo computacional** representa as operações e as suas dependências. Um percurso neste exemplo é $x\to z_h\to a_h\to z_o\to y\to E$. Para a frente calculamos valores; para trás propagamos derivadas locais. Se um valor alimentar vários ramos, somamos as contribuições dos ramos para a sua derivada.
+
+## Sequências e redes recorrentes
+
+Uma MLP trata entradas sem memória entre exemplos. Uma **rede recorrente** (RNN) usa um estado escondido que transporta informação entre posições de uma sequência:
+
+$$
+h_t=\tanh(W_xx_t+W_hh_{t-1}+b).
+$$
+
+Aqui, $t$ é a posição, $x_t$ a entrada nessa posição, $h_t$ o estado escondido e $W_x,W_h,b$ parâmetros partilhados por todas as posições. Não confundas $h_t$ com a heurística da pesquisa. A ordem importa: a mesma palavra pode mudar de significado com o contexto anterior. O treino desenrola a rede ao longo do tempo e retropropaga o erro por esse grafo. Em sequências longas, os gradientes podem diminuir ou crescer demasiado; LSTM e GRU acrescentam mecanismos para controlar a memória. Uma RNN é uma arquitetura, não um regime de aprendizagem por reforço.
 
 ## Aprender por tentativa: reforço
 
-Na aprendizagem por reforço não há respostas certas nem classes: há estados, ações e **recompensas**, e o agente aprende uma **política** (o que fazer em cada estado) por tentativa. O **Q-learning** guarda $Q(\text{estado}, \text{a\c{c}\~ao})$, a recompensa futura esperada, e atualiza-a com $Q \leftarrow Q + \alpha\,[r + \gamma \max Q' - Q]$, onde $\alpha$ é a taxa e $\gamma$ desconta o futuro.
+Na aprendizagem por reforço o feedback vem de estados, ações e **recompensas**, em vez de etiquetas com a ação certa, e o agente aprende uma **política** (o que fazer em cada estado) por tentativa. O **Q-learning** guarda $Q(s,a)$, uma estimativa do retorno futuro descontado ao escolher essa ação e seguir depois a melhor política, e atualiza-a com $Q \leftarrow Q + \alpha\,[r + \gamma \max Q' - Q]$, onde $s$ é o estado, $a$ a ação, $r$ a recompensa recebida, $Q\prime$ os valores no estado seguinte, $\alpha$ a taxa e $0\le\gamma<1$ o desconto do futuro. Numa transição terminal, o termo de valor futuro é zero. É preciso explorar ações, por exemplo com uma política $\varepsilon$-gulosa: escolhe uma ação aleatória com probabilidade $\varepsilon$ e a de maior Q no resto dos casos.
 
-Grelha 2 por 2 com objetivo em (1, 1): entrar no objetivo dá $+10$, o resto dá 0. Taxa $\alpha = 0{,}5$, desconto $\gamma = 0{,}9$, tudo a zeros. Primeiro episódio, de (0, 1) para baixo até ao objetivo: $Q((0,1), Baixo) \leftarrow 0 + 0{,}5 \times [10 + 0] = 5$. Segundo episódio, de (0, 0) para a direita até (0, 1): $Q((0,0), Direita) \leftarrow 0 + 0{,}5 \times [0 + 0{,}9 \times 5] = 2{,}25$. A recompensa propaga-se para trás, uma casa por episódio: primeiro a casa vizinha do objetivo aprende 5, depois a seguinte aprende 2,25 a partir dela. É assim que o agente aprende o caminho sem nunca lhe mostrarem um exemplo correto.
+Grelha 2 por 2 com objetivo em (1, 1): entrar no objetivo dá $+10$, o resto dá 0. Taxa $\alpha = 0{,}5$, desconto $\gamma = 0{,}9$, tudo a zeros. Primeira atualização observada, de (0, 1) para baixo até ao objetivo: $Q((0,1), Baixo) \leftarrow 0 + 0{,}5 \times [10 + 0] = 5$. Numa transição posterior, de (0, 0) para a direita até (0, 1): $Q((0,0), Direita) \leftarrow 0 + 0{,}5 \times [0 + 0{,}9 \times 5] = 2{,}25$. Estas são duas transições observadas, não a descrição de dois episódios completos. O valor propaga-se a partir do estado seguinte; a ordem das visitas determina quando essa informação chega aos estados anteriores. Os valores 5 e 2,25 ainda são estimativas iniciais, não os retornos finais da política ótima.

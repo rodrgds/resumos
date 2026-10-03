@@ -12,13 +12,19 @@ import rede from '../../ia/rede-bayes.typ?raw';
 
 A lógica da página anterior decide entre verdadeiro e falso. O mundo real raramente colabora: sensores com ruído, sintomas partilhados por várias doenças, palavras que aparecem em spam e em mensagens normais. A **probabilidade** quantifica a crença quando a informação não chega para a certeza, e a **regra de Bayes** atualiza essa crença perante evidência nova. O exemplo é um filtro de spam com 20 mensagens e todas as contas à mostra.
 
+## Condicionar e somar casos
+
+Para eventos $A$ e $B$, com $P(B)>0$, a probabilidade condicional é $P(A \mid B)=P(A \cap B)/P(B)$. Ou seja, restringimos o universo aos casos em que $B$ acontece. A regra do produto dá $P(A \cap B)=P(A \mid B)P(B)$.
+
+$A$ e $B$ são **independentes** quando $P(A \cap B)=P(A)P(B)$. Independência condicional dada uma classe $C$ é outra hipótese: dentro de cada classe, $P(A,B\mid C)=P(A\mid C)P(B\mid C)$. Não implica que os eventos sejam independentes no conjunto todo.
+
 ## O exemplo das 20 mensagens
 
 Caixa com 20 mensagens: 8 spam e 12 normais (ham). A palavra "grátis" aparece em 6 das 8 spam e em 2 das 12 normais. Define $S$ como "é spam" e $G$ como "contém grátis":
 
 - $P(S) = 8/20 = 0{,}4$ e $P(\lnot S) = 0{,}6$.
 - $P(G \mid S) = 6/8 = 0{,}75$ e $P(G \mid \lnot S) = 2/12 \approx 0{,}167$.
-- $P(G) = 8/20 = 0{,}4$, porque 8 das 20 mensagens contêm a palavra.
+- $P(G) = 8/20 = 0{,}4$, porque 8 das 20 mensagens contêm a palavra. Também se obtém pela probabilidade total: $P(G\mid S)P(S)+P(G\mid\lnot S)P(\lnot S)=0{,}75\times0{,}4+(2/12)\times0{,}6=0{,}4$.
 
 A pergunta que interessa é a inversa: chegada uma mensagem com "grátis", qual a probabilidade de ser spam? A regra de Bayes responde:
 
@@ -30,10 +36,10 @@ Lê o resultado com cuidado: 75 por cento das mensagens com "grátis" são spam,
 
 <Tabs id="uma-duas-palavras" labels={['Uma palavra', 'Duas palavras']}>
   <div slot="panel-0">
-    Só com "grátis", Bayes dá $P(S \mid G) = 0{,}75$: conta direta, 6 spam em 8 mensagens com a palavra. Uma evidência fraca move pouco a crença.
+    Só com "grátis", Bayes dá $P(S \mid G) = 0{,}75$: conta direta, 6 spam em 8 mensagens com a palavra. A proporção sobe de 0,4 para 0,75 neste conjunto.
   </div>
   <div slot="panel-1">
-    Com "grátis" e "prémio", o Naive Bayes da próxima secção combina as duas evidências e chega a 0,947. Duas evidências fracas e independentes valem mais que uma.
+    Com "grátis" e "prémio", o Naive Bayes da próxima secção combina as duas evidências e chega a 0,947. O resultado depende da hipótese de independência condicional; as contagens marginais não dizem quantas mensagens têm ambas as palavras.
   </div>
 </Tabs>
 
@@ -44,7 +50,9 @@ Junta a palavra "prémio": aparece em 4 das 8 spam e em 1 das 12 normais. Para c
 - Proporcional a spam: $0{,}4 \times 0{,}75 \times 0{,}5 = 0{,}15$.
 - Proporcional a ham: $0{,}6 \times (2/12) \times (1/12) = 0{,}6/72 \approx 0{,}0083$.
 
-Normaliza: $0{,}15 / (0{,}15 + 0{,}0083) \approx 0{,}947$. A mensagem é classificada spam com 94,7 por cento de confiança. A hipótese de independência é ingénua, as palavras "grátis" e "prémio" provavelmente correlacionam, mas o classificador funciona bem na prática porque para decidir basta a ordem das classes estar certa, não as probabilidades exatas.
+Normaliza: $0{,}15 / (0{,}15 + 0{,}0083) \approx 0{,}947$. Com limiar 0,5, o modelo classifica a mensagem como spam. Os 94,7 por cento são uma probabilidade **do modelo**, não uma frequência conjunta confirmada nestas 20 mensagens. A hipótese exige independência em ambas as classes. Se as palavras dependerem uma da outra dentro da classe, o produto pode exagerar a evidência; uma boa classificação não garante probabilidades bem calibradas.
+
+No modelo binário completo, cada palavra pode estar presente ou ausente. Uma ausência usa $P(\lnot G\mid S)=1-P(G\mid S)$. Uma contagem zero anularia um produto; a suavização de Laplace acrescenta uma pseudocontagem a cada resultado. Por exemplo, para presença/ausência de "prémio" nas 8 spam, estima-se $(4+1)/(8+2)=0{,}5$.
 
 <CodePlayground
   language="python"
@@ -54,20 +62,33 @@ Normaliza: $0{,}15 / (0{,}15 + 0{,}0083) \approx 0{,}947$. A mensagem é classif
   }
 />
 
-Isto escreve `uma palavra: 0.75` e `duas palavras: 0.947`, as duas contas da página.
+A normalização divide cada peso pela soma dos pesos das duas classes. É o mesmo denominador para spam e ham, por isso as probabilidades finais somam 1.
 
-:::tip[Como cai em teste]
-Dão-te a tabela de contagens e pedem $P(\text{classe} \mid \text{evid\^encia})$. Passos: conta os totais, escreve as condicionais a partir das contagens, aplica Bayes, e normaliza dividindo pela soma das hipóteses. Verifica no fim que as probabilidades das classes somam 1.
+:::tip[Organizar uma conta]
+Para calcular $P(\text{classe} \mid \text{evidência})$ a partir de contagens, conta os totais, escreve as condicionais a partir das contagens, aplica Bayes, e normaliza dividindo pela soma das hipóteses. Verifica no fim que as probabilidades das classes somam 1.
 :::
 
 ## Redes Bayesianas
 
-Quando há muitas variáveis, a tabela conjunta é impossível: $n$ variáveis binárias pedem $2^n$ entradas. Uma **rede Bayesiana** é um grafo dirigido acíclico onde cada nó tem uma tabela só com os seus pais, e a conjunta fatoriza-se pelo produto. A estrutura codifica **independências**: cada variável é independente das não descendentes dados os pais.
+Quando há muitas variáveis, a tabela conjunta é impossível: $n$ variáveis binárias pedem $2^n$ entradas. Uma **rede Bayesiana** é um grafo dirigido acíclico onde cada variável tem uma distribuição condicional dados os seus pais, e a conjunta fatoriza-se pelo produto. A estrutura codifica **independências**: cada variável é independente das não descendentes dados os pais.
 
-No spam, a rede ingénua é classe no topo com uma seta para cada palavra: $P(S, G, P) = P(S)\,P(G \mid S)\,P(P \mid S)$, que é exatamente a conta da secção anterior. Se "prémio" dependesse também de "grátis", acrescentava-se uma seta entre elas e a tabela crescia. A rede é o meio termo entre a tabela completa, que não escala, e a ingenuidade total, que ignora dependências reais. Inferência nela (perguntar uma variável dadas outras) é o tema que fecha a incerteza e abre a porta à aprendizagem com dados incompletos.
+No spam, a rede ingénua é classe no topo com uma seta para cada palavra: $P(S, G, P) = P(S)\,P(G \mid S)\,P(P \mid S)$, que é exatamente a conta da secção anterior. Se "prémio" dependesse também de "grátis", acrescentava-se uma seta entre elas e a tabela crescia. Poucos pais por nó permitem tabelas pequenas, mas uma rede muito ligada pode continuar a exigir muitas entradas. Para inferir uma probabilidade com variáveis ocultas, multiplica os fatores, soma sobre os valores dessas variáveis e normaliza. Por exemplo, ignorando a palavra "prémio":
+
+$$
+P(S,G)=\sum_{p\in\{P,\lnot P\}}P(S)P(G\mid S)P(p\mid S)
+      = P(S)P(G\mid S),
+$$
+
+porque as probabilidades de presença e ausência de "prémio" somam 1. A inferência recupera assim a conta com uma palavra.
 
 <Typst
   source={rede}
   format="svg"
   alt="Rede Bayesiana ingénua do spam: o nó Spam no topo com uma seta para a palavra grátis e outra para a palavra prémio."
 />
+
+## Associação e causalidade
+
+Uma seta numa rede Bayesiana não prova causalidade. Uma **rede causal** acrescenta a hipótese de que as setas representam mecanismos causais e permite perguntar o efeito de intervir. Observar uma variável e forçar o seu valor são operações diferentes.
+
+Num modelo simples, regar causa chão molhado: $R \to M$. Define $P(R)=0{,}2$, $P(M\mid R)=1$ e $P(M\mid\lnot R)=0$. Observar chão molhado implica $P(R\mid M)=1$ neste modelo. Se molharmos o chão por outro meio, representado por uma intervenção $do(M=1)$, não obrigamos a rega a acontecer: $P(R\mid do(M=1))=0{,}2$. A intervenção substitui o mecanismo de $M$, sem mudar o de $R$. Estes números só valem sob as hipóteses deste exemplo.

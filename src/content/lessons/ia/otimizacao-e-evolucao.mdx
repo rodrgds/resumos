@@ -10,7 +10,7 @@ import Tabs from '../../../components/Tabs.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import paisagem from '../../ia/paisagem-aptidao.typ?raw';
 
-Nem todos os problemas pedem um caminho. Muitas vezes pedem um bom estado final, e o caminho até lá é irrelevante: é o caso de horários, escalas e das 4 rainhas desta página. A **pesquisa local** anda de vizinho em vizinho a melhorar uma função de avaliação, sem guardar a história. É barata e cega ao passado, o que lhe dá velocidade e lhe cria a armadilha central do tema: os ótimos locais.
+Nem todos os problemas pedem um caminho. Muitas vezes pedem um bom estado final, e o caminho até lá é irrelevante: é o caso de horários, escalas e das 4 rainhas desta página. A **pesquisa local** modifica uma configuração através da sua vizinhança e avalia as configurações com uma função objetivo. A subida da colina guarda apenas o estado atual; outras técnicas, como a pesquisa tabu, usam memória. Não guardar uma árvore inteira reduz a memória, mas melhorar localmente pode não levar ao ótimo global.
 
 ## O exemplo das 4 rainhas
 
@@ -22,7 +22,7 @@ Confirma a conta no estado inicial [1, 4, 2, 1]: os pares são (1,1)-(2,4), (1,1
 
 A **subida da colina** (hill climbing) repete: avalia os 12 vizinhos e move-se para o melhor; se nenhum for melhor, para. Passo 1 a partir de [1, 4, 2, 1]: um dos melhores vizinhos é [1, 4, 2, 3], com 1 ataque (só o par (3,2)-(4,3) se ataca na diagonal; confirma os outros cinco pares). Desce de 2 para 1 e move-se.
 
-Passo 2 a partir de [1, 4, 2, 3]: os 12 vizinhos valem 1, 2, 3 ou 4. Os vizinhos que mudam a coluna 1 valem 2, 3 e 3; os da coluna 2 valem 4, 3 e 3; os da coluna 3 valem 3, 2 e 1; os da coluna 4 valem 2, 2 e 2. Nenhum é melhor que 1. A subida para aqui: estado com 1 ataque onde tudo à volta empata ou é pior. É um **ótimo local**, e a subida da colina, que só aceita melhorias estritas, nunca mais sai dele. Repara que [3, 1, 4, 2] tem 0 ataques (verifica os seis pares: nenhuma linha repetida, nenhuma diagonal com diferença igual), por isso o ótimo global existe e está longe.
+Passo 2 a partir de [1, 4, 2, 3]: os 12 vizinhos valem 1, 2, 3 ou 4. Os vizinhos que mudam a coluna 1 valem 2, 3 e 3; os da coluna 2 valem 4, 3 e 3; os da coluna 3, usando as linhas 1, 3 e 4, valem 1, 3 e 2; os da coluna 4 valem 2, 2 e 2. Nenhum é melhor que 1. A subida para aqui: estado com 1 ataque onde tudo à volta empata ou é pior. É um **ótimo local**, e a subida da colina, que só aceita melhorias estritas, nunca mais sai dele. A configuração [3, 1, 4, 2] tem 0 ataques: nenhuma linha se repete e nenhum par tem a diferença de linhas igual à diferença de colunas. O estado preso é um mínimo local não estrito, porque tem um vizinho com o mesmo valor 1. Esse patamar basta para parar a variante que exige melhoria estrita.
 
 <Typst
   source={paisagem}
@@ -30,7 +30,7 @@ Passo 2 a partir de [1, 4, 2, 3]: os 12 vizinhos valem 1, 2, 3 ou 4. Os vizinhos
   alt="Paisagem de aptidão com o número de ataques por estado: um vale com 1 ataque que é ótimo local e um vale com 0 ataques que é o ótimo global, separados por uma subida."
 />
 
-A subida executável abaixo repete a regra estrita, avalia os 12 vizinhos e só se move para valor menor:
+A figura é uma paisagem esquemática, sem correspondência entre a posição horizontal e um tabuleiro concreto. A subida executável abaixo repete a regra estrita, avalia os 12 vizinhos e só se move para valor menor:
 
 <CodePlayground
   language="python"
@@ -44,11 +44,15 @@ Isto escreve `(1, 4, 2, 1) 2`, depois `(1, 4, 2, 3) 1`, e para com `preso`: de [
 
 ## Sair da armadilha
 
-Há três saídas clássicas. O **arrefecimento simulado** aceita por vezes um vizinho pior, com probabilidade que diminui ao longo do tempo (a "temperatura"). No início salta muito e explora; no fim comporta-se como a subida e refina. Aceitar piorar temporariamente é o que permite atravessar o vale entre o ótimo local e o global.
+O **arrefecimento simulado** sorteia um vizinho e aceita melhorias. Numa minimização, uma deterioração $\Delta = f(\text{vizinho}) - f(\text{atual}) > 0$ é aceite com probabilidade $e^{-\Delta/T}$, para temperatura $T>0$. No início, uma temperatura alta permite explorar; ao diminuir $T$, torna-se menos provável aceitar perdas. Um programa com tempo finito não garante o ótimo global.
+
+Passar de 1 para 3 ataques dá $\Delta=2$. Com $T=2$, a probabilidade é $e^{-1} \approx 0{,}368$; com $T=0{,}5$, é $e^{-4} \approx 0{,}018$. Aceitar piorar temporariamente permite sair do mínimo local.
 
 O **reinício aleatório** sorteia um estado novo quando prende e recomeça a subida. É simples e surpreendentemente eficaz quando os ótimos locais são muitos mas baratos de escalar.
 
-Os **algoritmos evolutivos** mantêm uma população de estados e aplicam **seleção** (os melhores reproduzem-se), **cruzamento** (filhos combinam partes de dois pais) e **mutação** (troca aleatória de um gene). Uma mutação no estado preso, por exemplo trocar a coluna 1 de 1 para 3, produz [3, 4, 2, 3] com 3 ataques: pior no imediato, mas noutra região do espaço, onde a subida seguinte pode encontrar outro caminho. A mutação não promete melhorar; promete diversidade, que é o que falta a uma população presa.
+Os **algoritmos evolutivos** mantêm uma população de estados e aplicam **seleção** (os melhores reproduzem-se), **cruzamento** (filhos combinam partes de dois pais) e **mutação** (troca aleatória de um gene). Uma mutação no estado preso, por exemplo trocar a coluna 1 de 1 para 3, produz [3, 4, 2, 3] com 3 ataques: pior no imediato, mas noutra região do espaço, onde a subida seguinte pode encontrar outro caminho. A mutação pode introduzir diversidade, mas não garante melhorar nem conservar diversidade na população.
+
+Um cruzamento de um ponto depois da segunda coluna, entre [1, 4, 2, 3] e [3, 1, 4, 2], produz [1, 4, 4, 2] e [3, 1, 2, 3]. O primeiro tem 2 ataques e o segundo tem 4: pais bons não garantem filhos melhores. Em seleção por torneio, sorteiam-se candidatos e escolhe-se o melhor. Numa roleta, usa uma aptidão não negativa que aumente quando os ataques diminuem, por exemplo $1/(1+f)$. Usar o número de ataques diretamente favoreceria os piores estados.
 
 <Tabs
   id="saidas-otimo-local"
@@ -56,8 +60,8 @@ Os **algoritmos evolutivos** mantêm uma população de estados e aplicam **sele
 >
   <div slot="panel-0">
     O arrefecimento simulado aceita vizinhos piores com probabilidade que cai
-    com a temperatura. Na paisagem acima, é o que permite descer do vale de 1
-    ataque, atravessar a subida e chegar ao vale de 0.
+    com a temperatura. Na paisagem acima, permite subir temporariamente a
+    contagem de ataques e procurar outro vale.
   </div>
   <div slot="panel-1">
     O reinício aleatório sorteia um estado novo quando prende e recomeça a
@@ -66,14 +70,21 @@ Os **algoritmos evolutivos** mantêm uma população de estados e aplicam **sele
   </div>
   <div slot="panel-2">
     A evolução mantém vários estados em paralelo e mistura-os por cruzamento e
-    mutação. A diversidade da população faz o papel dos saltos aleatórios: há
-    sempre alguém noutra região da paisagem.
+    mutação. A diversidade da população faz o papel dos saltos aleatórios: podem
+    surgir candidatos noutras regiões, mas a população também pode perder
+    diversidade.
   </div>
 </Tabs>
 
-:::tip[Como cai em teste]
-Pedem-te para executar dois ou três passos de subida da colina com a função dada, ou para explicar porque prendeu e que técnica o solta. Conta sempre todos os pares (para 4 rainhas são 6) e escreve os valores dos vizinhos antes de escolher. A justificação do ótimo local é uma frase com números: "vale 1 e nenhum dos 12 vizinhos é melhor".
+:::tip[Justificar a paragem]
+Para seguir a subida da colina ou justificar a sua paragem, conta sempre todos os pares (para 4 rainhas são 6) e escreve os valores dos vizinhos antes de escolher. A justificação do ótimo local é uma frase com números: "vale 1 e nenhum dos 12 vizinhos é melhor".
 :::
+
+## As rainhas como restrições
+
+Podemos representar o mesmo problema como um **problema de satisfação de restrições** (CSP). É uma forma complementar de modelar pesquisa: cada variável $Q_c$ indica a linha da rainha na coluna $c$, com domínio $\{1,2,3,4\}$. Para quaisquer colunas distintas $i,j$, exige-se $Q_i \ne Q_j$ e $|Q_i-Q_j| \ne |i-j|$. Uma solução satisfaz todas as restrições, sem precisar de uma função de custo.
+
+No **retrocesso**, atribuímos uma variável, rejeitamos conflitos com as atribuições anteriores e voltamos atrás quando não há valor possível. Se fixarmos $Q_1=2$, a verificação antecipada (_forward checking_) retira de $Q_2$ as linhas 1, 2 e 3; resta 4. Para $Q_3$ restam 1 e 3; para $Q_4$ restam 1, 3 e 4. Escolher a variável não atribuída com menos valores restantes chama-se MRV e leva a $Q_2$. Cada ramo precisa dos seus domínios: ao recuar, repõem-se os valores removidos. Satisfazer restrições par a par ainda não prova que exista uma atribuição completa.
 
 ## O limite teórico
 
