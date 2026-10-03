@@ -15,6 +15,8 @@ A referência é o modo de explicar dos [Resumos LEIC](https://resumos.leic.pt/)
 2. Escolhe um exemplo pequeno que permita seguir a explicação até ao resultado. Lê o [exemplo do mesmo tipo](references/exemplos.md) se estiveres a escrever uma página nova ou a mudar o tom de uma existente.
 3. Escreve e revê com as regras abaixo. Termina quando o leitor conseguir refazer o exemplo, perceber a razão dos passos e reconhecer as condições em que o método se aplica.
 
+Numa revisão de uma cadeira inteira, segue primeiro o [percurso de revisão](references/revisao-cadeira.md). Define a sequência a partir das fontes e das dependências entre conceitos; as páginas atuais podem ser reorganizadas.
+
 Para criar ou alterar ficheiros de conteúdo, segue o [CONTRIBUTING.md](../../../CONTRIBUTING.md). O site do Técnico é uma referência de escrita; o programa, a notação e as regras de avaliação vêm da cadeira da FEUP e do ano em causa.
 
 ## Voz e linguagem
@@ -29,13 +31,14 @@ Para criar ou alterar ficheiros de conteúdo, segue o [CONTRIBUTING.md](../../..
 - Substitui "é óbvio", "é trivial" ou "basta aplicar" pelo passo que falta. Explica a dificuldade sem avaliar a capacidade do leitor.
 - Usa títulos curtos sobre a matéria: "Como escolher o pivô", "Quando há colisões". Escreve em frase normal, sem maiúsculas em cada palavra. Separa orações com pontos ou vírgulas, sem travessões.
 
-## Começar sem presumir nada
+## Partir dos pré-requisitos certos
 
-- A primeira lição de cada cadeira parte do zero. O primeiro parágrafo usa só termos do dia a dia ou define cada termo na mesma frase em que aparece.
+- Assume os conhecimentos das cadeiras anteriores do plano, identificando os pré-requisitos na apresentação. Recorda apenas a ideia necessária e liga à explicação. Ensina os conceitos próprios desta cadeira desde a primeira utilização; simplificar não obriga a voltar a explicar o que é um programa em cada cadeira de programação.
 - Não abras com um exemplo que usa conceitos que a página ainda não apresentou. Antes de converter 3661 segundos, diz o que é um programa e um inteiro; antes de usar uma matriz para guardar coeficientes, mostra que uma matriz é um quadro de números.
 - A ordem é: mostra o objeto concreto, dá-lhe nome, só depois usa-o para resolver alguma coisa. Cada página só usa termos definidos nela ou em páginas anteriores do percurso; um termo futuro precisa de definição de uma frase.
 - Quando reescreves uma abertura, consulta a versão anterior da página no histórico do Git. Recupera o que ela ensinava bem em vez de inventares uma entrada nova.
-- Isto vale para todas as lições, não só a primeira. Cada página abre com uma linha de orientação: onde estamos no percurso e que pergunta esta página responde. Só depois vem o objeto concreto. Nunca abras a meio de um raciocínio ("não é qualquer repetição que constitui uma anomalia") nem com um exemplo desligado antes de dizeres para que serve a página.
+- Isto vale para todas as lições. Orienta o leitor com o problema que vai resolver e a ligação ao que já aprendeu. Uma situação concreta pode fazer ambos; dispensa frases de molde como "esta é a primeira página do percurso" quando só anunciam a página.
+- Distribui conceitos por passos. Uma frase com várias definições encaixadas, ligadas por "ou seja" ou "que é", pede divisão e um exemplo entre as ideias novas. Define o termo perto do uso, sem transformar a abertura num glossário.
 
 ## Explicar sem saltos
 
@@ -46,6 +49,7 @@ Apresenta a ideia em palavras, dá a definição precisa e usa-a num exemplo. A 
 - Define símbolos, unidades e convenções junto da primeira utilização. Mantém cada nome e símbolo associado à mesma coisa ao longo do texto, código e figuras.
 - Conserva hipóteses, quantificadores e limites da definição. Uma analogia ajuda a compreender; indica onde deixa de corresponder ao conceito técnico.
 - Num exercício, dá o enunciado, justifica a escolha do método, mostra as transformações relevantes e interpreta o resultado na situação inicial. Explica especialmente a passagem em que um aluno pode ficar preso.
+- Uma fórmula precisa de significado antes da substituição: o que mede cada símbolo, que condições permitem usá-la e que relação exprime. Mostra a transformação intermédia quando introduces uma técnica. Uma tabela de fórmulas ou uma lista de nomes serve para comparar ou rever depois da explicação.
 - Usa valores concretos e reutiliza o mesmo cenário enquanto for útil. Mostra um contraexemplo ou caso limite quando ajudar a distinguir conceitos ou revelar uma condição necessária.
 - Num algoritmo, segue o estado dos dados, explica a escolha de cada passo e por que termina. Se apresentares complexidade, diz o que mede o tamanho da entrada e qual o custo que estás a contar.
 - Num bloco de código, mostra a entrada e a saída ou o efeito observável. Explica a operação nova e a diferença entre calcular um valor e alterar os dados. Indica quando o trecho é apenas um excerto.
