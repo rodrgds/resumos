@@ -35,6 +35,7 @@ Para criar ou alterar ficheiros de conteúdo, segue o [CONTRIBUTING.md](../../..
 - Não abras com um exemplo que usa conceitos que a página ainda não apresentou. Antes de converter 3661 segundos, diz o que é um programa e um inteiro; antes de usar uma matriz para guardar coeficientes, mostra que uma matriz é um quadro de números.
 - A ordem é: mostra o objeto concreto, dá-lhe nome, só depois usa-o para resolver alguma coisa. Cada página só usa termos definidos nela ou em páginas anteriores do percurso; um termo futuro precisa de definição de uma frase.
 - Quando reescreves uma abertura, consulta a versão anterior da página no histórico do Git. Recupera o que ela ensinava bem em vez de inventares uma entrada nova.
+- Isto vale para todas as lições, não só a primeira. Cada página abre com uma linha de orientação: onde estamos no percurso e que pergunta esta página responde. Só depois vem o objeto concreto. Nunca abras a meio de um raciocínio ("não é qualquer repetição que constitui uma anomalia") nem com um exemplo desligado antes de dizeres para que serve a página.
 
 ## Explicar sem saltos
 
