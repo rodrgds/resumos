@@ -52,7 +52,7 @@ $Q=\int\rho_VdV$, $I=\int\vec J\cdot d\vec A$, $\partial_t\rho_V=-\nabla\cdot\ve
 
 [Thévenin](/cadeiras/f2/circuitos-resistivos/#thévenin-e-norton): $U_{\rm Th}$ em aberto; anular fontes independentes dá $R_{\rm Th}$. Tensão ideal vira curto, corrente ideal vira aberto. $I_N=U_{\rm Th}/R_{\rm Th}$. Carga: $I_L=U_{\rm Th}/(R_{\rm Th}+R_L)$. Máxima potência resistiva em $R_L=R_{\rm Th}>0$: $P_{\max}=U_{\rm Th}^2/(4R_{\rm Th})$. Os $50\%$ de eficiência pertencem ao equivalente, não necessariamente à rede original.
 
-[RC e RL](/cadeiras/f2/circuitos-reativos/#transitório-rc): $i_C=C\dot u_C$, $u_L=L\dot i_L$. $u_C$ e $i_L$ são contínuos sem impulsos ideais. $x(t)=x_\infty+(x_0-x_\infty)e^{-t/\tau}$; $\tau_{RC}=R_{\rm Th}C$, $\tau_{RL}=L/R_{\rm vista}$. DC estacionário: condensador aberto, bobina em curto.
+[RC e RL](/cadeiras/f2/circuitos-reativos/#transitório-rc): $i_C=C\dot u_C$, $u_L=L\dot i_L$. $u_C$ e $i_L$ são contínuos sem impulsos ideais. $x(t)=x_\infty+(x_0-x_\infty)e^{-t/\tau}$ com $x_0$ no instante $0^+$ e $x_\infty$ no limite DC; $\tau_{RC}=R_{\rm Th}C$, $\tau_{RL}=L/R_{\rm vista}$. DC estacionário: condensador aberto, bobina em curto. Pico e eficaz: $U_{\rm ef}=U_m/\sqrt2$ só para sinusoide sem offset.
 
 [RLC série](/cadeiras/f2/circuitos-reativos/#rlc-e-amortecimento): $\omega_0=1/\sqrt{LC}$, $\delta=R/(2L)$, $Q=\sqrt{L/C}/R$. $Q<1/2$ sem oscilação; $Q=1/2$ crítico; $Q>1/2$ subamortecido, $\omega_d=\sqrt{\omega_0^2-\delta^2}$. São precisas duas condições iniciais.
 
@@ -72,7 +72,7 @@ $Q=\int\rho_VdV$, $I=\int\vec J\cdot d\vec A$, $\partial_t\rho_V=-\nabla\cdot\ve
 
 [Sinais](/cadeiras/f2/sinais/#energia-e-potência-de-um-sinal): $E_x=\int|x|^2dt$, $P_x=\lim_{T\to\infty}(2T)^{-1}\int_{-T}^T|x|^2dt$. No discreto, usa somas. Sinusoide: energia infinita e $P_x=A^2/2$. As unidades dependem do sinal. Amostragem discretiza tempo, quantização discretiza valores.
 
-[SLIT](/cadeiras/f2/sistemas-lti/#convolução-contínua): $y=x*h$; contínuo $\int x(\lambda)h(t-\lambda)d\lambda$, discreto $\sum_kx[k]h[n-k]$. Causal: $h=0$ antes de zero. Estável BIBO para respostas ordinárias: $\int|h|<\infty$ ou $\sum|h|<\infty$. Cascata convolui $h$; paralelo soma $h$.
+[SLIT](/cadeiras/f2/sistemas-lti/#convolução-contínua): $y=x*h$; contínuo $\int x(\lambda)h(t-\lambda)d\lambda$ com limites pela interseção dos suportes, discreto $\sum_kx[k]h[n-k]$ só com índices não nulos. Causal: $h=0$ antes de zero. Estável BIBO para respostas ordinárias: $\int|h|<\infty$ ou $\sum|h|<\infty$. Cascata convolui $h$; paralelo soma $h$.
 
 ## Fourier e amostragem
 

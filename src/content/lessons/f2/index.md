@@ -13,7 +13,7 @@ editorial:
       url: https://villate.org/eletricidade/
     - title: Jaime E. Villate, Exercícios Resolvidos de Eletricidade, Magnetismo e Circuitos, 3.ª edição, 2020
       url: https://def.fe.up.pt/eletricidade/problemas.html
-  coverage: Eletromagnetismo, redes resistivas e reativas, medições, linhas de transmissão, sinais, SLIT, Fourier e amostragem, com exemplos e exercícios próprios.
+  coverage: Eletromagnetismo, redes resistivas e reativas, medições, linhas de transmissão, sinais, SLIT, Fourier e amostragem, com exemplos e exercícios escritos para este percurso e duas adaptações identificadas. A ficha SIGARRA de 2026/27 enumera sete blocos até indução e menciona processamento de sinais nos objetivos; os blocos de sinais derivam dos materiais arquivados de 2025/26 e são cobertura histórica, não confirmação do exame de 2026/27.
   gaps:
     - Os materiais de aula usados são de 2025/26; a avaliação foi conferida na ficha de 2026/27, não em futuros enunciados ou avisos do Moodle.
     - Os vídeos indicados pelo docente estão ligados como recursos opcionais, sem revisão integral do seu conteúdo.
@@ -41,7 +41,7 @@ Precisas de vetores, produto escalar e vetorial, derivadas, integrais, números 
 14. [Fourier](/cadeiras/f2/fourier/): harmónicos e transformadas.
 15. [Resposta em frequência e amostragem](/cadeiras/f2/frequencia-amostragem/): filtros, banda e aliasing.
 
-Os exercícios no fim de cada página são próprios, com duas pistas, solução e erros frequentes. Resolve-os antes de abrir a ajuda. A [cheat sheet](/cadeiras/f2/folha-consulta/) reúne relações e condições para consulta depois de estudar.
+Os exercícios no fim de cada página foram escritos para este percurso, com duas pistas, solução e erros frequentes. Resolve-os antes de abrir a ajuda. Dois casos reutilizam valores de materiais de 2025/26 para treinar o mesmo cálculo: o exemplo de referenciais em carga e campo usa os valores do mini-teste A, e um exercício de fasores usa amplitude e fase da TP9 com outra frequência. Quando isso acontece, a lição identifica a adaptação. A [cheat sheet](/cadeiras/f2/folha-consulta/) reúne relações e condições para consulta depois de estudar.
 
 ## Como resolver problemas
 
