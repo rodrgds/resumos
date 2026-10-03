@@ -16,17 +16,19 @@ editorial:
 
 AED ensina a justificar três decisões: o algoritmo resolve o problema, a estrutura permite as operações necessárias e o custo cabe nos limites da entrada. Os exemplos usam C++17; deves conhecer funções, classes, referências, apontadores e memória dinâmica de [Programação](/cadeiras/p/).
 
+Se precisas de recordar a sintaxe usada nos exemplos, começa pelos [fundamentos de C++ para AED](/cadeiras/aed/fundamentos-cpp/).
+
 ## Percurso
 
-1. [Correção e complexidade](complexidade-invariantes/): contratos, invariantes, somas, recorrências e custos amortizados.
-2. [Pesquisa](pesquisa-ordenacao/) e [ordenação](ordenacao/): intervalos, repetidos, pesquisa da resposta, estabilidade e limites do modelo de comparação.
-3. [Tipos abstratos](tipos-abstratos/) e [estruturas lineares](listas-pilhas-filas/): escolher a representação, manter ligações e analisar sequências de operações.
-4. [Envolvente convexa](envolvente-convexa/): orientação geométrica, Graham e a escolha entre pilha e lista circular.
-5. [Árvores binárias](arvores-binarias/), [árvores de pesquisa](arvores-pesquisa/) e [equilíbrio](arvores-pesquisa-equilibradas/): percursos, remoções, AVL e vermelho-pretas.
-6. [Dispersão](tabelas-dispersao/) e [heaps](filas-prioridade-heaps/): acesso por chave ou prioridade, colisões e construção linear.
-7. [DFS e BFS](grafos-pesquisa/) e [aplicações em grafos](grafos-aplicacoes/): caminhos mínimos sem pesos, ciclos, ordem topológica, componentes fortes, pontes e articulações.
+1. [Correção e complexidade](/cadeiras/aed/complexidade-invariantes/): contratos, invariantes, somas, recorrências e custos amortizados.
+2. [Pesquisa](/cadeiras/aed/pesquisa-ordenacao/) e [ordenação](/cadeiras/aed/ordenacao/): intervalos, repetidos, pesquisa da resposta, estabilidade e limites do modelo de comparação.
+3. [Tipos abstratos](/cadeiras/aed/tipos-abstratos/) e [estruturas lineares](/cadeiras/aed/listas-pilhas-filas/): escolher a representação, manter ligações e analisar sequências de operações.
+4. [Envolvente convexa](/cadeiras/aed/envolvente-convexa/): orientação geométrica, Graham e a escolha entre pilha e lista circular.
+5. [Árvores binárias](/cadeiras/aed/arvores-binarias/), [árvores de pesquisa](/cadeiras/aed/arvores-pesquisa/) e [equilíbrio](/cadeiras/aed/arvores-pesquisa-equilibradas/): percursos, remoções, AVL e vermelho-pretas.
+6. [Dispersão](/cadeiras/aed/tabelas-dispersao/) e [heaps](/cadeiras/aed/filas-prioridade-heaps/): acesso por chave ou prioridade, colisões e construção linear.
+7. [DFS e BFS](/cadeiras/aed/grafos-pesquisa/) e [aplicações em grafos](/cadeiras/aed/grafos-aplicacoes/): caminhos mínimos sem pesos, ciclos, ordem topológica, componentes fortes, pontes e articulações.
 
-Cada capítulo termina com exercícios que pedem uma decisão, um traço ou uma justificação. Tenta resolver antes de abrir as pistas. A [Cheat sheet](folha-consulta/) reúne condições e custos para revisão; as provas e os exemplos ficam nos capítulos.
+Cada capítulo termina com exercícios que pedem uma decisão, um traço ou uma justificação. Tenta resolver antes de abrir as pistas. A [Cheat sheet](/cadeiras/aed/folha-consulta/) reúne condições e custos para revisão; as provas e os exemplos ficam nos capítulos.
 
 ## Trabalho prático
 
@@ -60,4 +62,4 @@ A bibliografia obrigatória indicada na ficha é:
 - Robert Sedgewick, _Algorithms in C++_, ISBN 0-201-35088-2.
 - Thomas H. Cormen e coautores, _Introduction to Algorithms_, 3.ª ou 4.ª edição; a ficha indica ISBN 978-0-262-53305-8.
 
-Para contratos da biblioteca, foram consultadas as secções do projeto público do padrão C++ sobre [ordenação](https://eel.is/c++draft/alg.sorting), [pesquisa binária](https://eel.is/c++draft/alg.binary.search) e [containers não ordenados](https://eel.is/c++draft/unord.req). Esse projeto acompanha a evolução da linguagem; os programas publicados usam apenas C++17.
+Para contratos da biblioteca, foram consultadas as secções do projeto público do padrão C++ sobre [ordenação](https://eel.is/c++draft/alg.sorting), [pesquisa binária](https://eel.is/c++draft/alg.binary.search), [invalidação em vetores](https://eel.is/c++draft/vector.modifiers) e [containers não ordenados](https://eel.is/c++draft/unord.req). Esse projeto acompanha a evolução da linguagem; os programas publicados usam apenas C++17.

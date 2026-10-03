@@ -62,6 +62,22 @@ Outra abordagem mantém a envolvente como uma lista duplamente ligada circular. 
 
 Uma lista circular permite continuar ao longo da fronteira quando se passa pelo primeiro vértice. A lista dupla permite retirar nós conhecidos sem procurar o anterior. Achar as tangentes ainda pode exigir percorrer a fronteira; repetir esse percurso para muitos pontos dá pior caso quadrático numa implementação linear por inserção.
 
+A versão incremental de Edelsbrunner, com **pontos ordenados por `x`**, pode fazer melhor. Para `n>=3`, sob a hipótese de pontos distintos e sem três colineares, ordena por `x` crescente, desempata por `y` decrescente e começa com três pontos em ordem anti-horária. O ponto seguinte é exterior à envolvente parcial e a pesquisa das tangentes começa no último ponto inserido, o extremo à direita. Avança em cada sentido enquanto a orientação mostrar que o vértice atual deve sair da fronteira. Liga o novo ponto às duas tangentes e elimina a cadeia entre elas.
+
+Aqui os avanços das tangentes podem ser cobrados aos vértices eliminados: cada ponto entra uma vez e não é reencontrado depois de sair. O trabalho total após ordenar é linear, dando $O(n\log n)$ no conjunto. Este argumento depende da ordenação e do início da pesquisa; procurar tangentes desde uma posição arbitrária em cada inserção não tem a mesma garantia. Duplicados e colinearidade precisam de tratamento adicional, por isso o programa desta página usa Graham com a política de extremos já definida.
+
 No Graham, a ordem angular permite corrigir apenas o fim da cadeia com uma pilha. Na abordagem incremental, o novo ponto pode alterar uma cadeia em qualquer zona do polígono, justificando a lista circular. A estrutura deve refletir a ordem em que o algoritmo recebe e elimina candidatos.
 
 Não assumas que os três primeiros pontos são distintos e não colineares sem o declarar. Para entradas gerais, trata os casos degenerados antes de construir um polígono inicial. Decidir conservar todos os pontos colineares da fronteira exige rever tanto a ordenação dos empates como o teste de remoção.
+
+## Pesquisar um ponto no polígono
+
+Depois de construir a envolvente, podes testar muitos pontos sem percorrer todas as arestas. Assume um polígono convexo com `h>=3` vértices extremos distintos, em ordem anti-horária `v[0],…,v[h-1]`. Os segmentos de `v[0]` para os outros vértices dividem o polígono em triângulos com direções ordenadas. A pergunta «a direção de `p` já passou a de `v[i]`?» pode ser respondida com orientação, sem calcular ângulos.
+
+Primeiro verifica as duas direções extremas. Se `cross(v[0],v[1],p)<0` ou `cross(v[0],v[h-1],p)>0`, o ponto está fora. Se um desses produtos for zero, testa se `p` pertence ao **segmento** correspondente, incluindo os extremos: além de ser colinear, cada coordenada tem de ficar entre as coordenadas dos dois extremos. Estar na mesma reta não chega.
+
+Nos restantes casos, começa com `l=1` e `r=h-1`. Enquanto `r-l>1`, calcula o meio `m`. Se `cross(v[0],v[m],p)>=0`, faz `l=m`; caso contrário faz `r=m`. O invariante mantém a direção de `p` entre os raios de `l` e `r`. No fim, o único triângulo candidato é `v[0],v[l],v[r]`. As duas primeiras orientações já garantem que `p` está entre os seus raios; falta testar `cross(v[l],v[r],p)>=0`, que o coloca do lado interior da aresta exterior. A igualdade inclui a fronteira.
+
+No quadrado `[(0,0),(2,0),(2,2),(0,2)]`, para `p=(1,1)`, o meio inicial é o vértice 2 e o produto vale zero: fica `l=2,r=3`. A aresta de `(2,2)` para `(0,2)` dá produto 2, confirmando que `p` pertence ao polígono. Para `p=(3,1)`, o produto com o raio do vértice 2 é -4, ficando `l=1,r=2`; a aresta de `(2,0)` para `(2,2)` dá -2, portanto está fora. `(3,0)` fica na reta da primeira aresta, mas fora do segmento, e deve ser rejeitado no teste inicial.
+
+Cada pesquisa custa $O(\log h)$, com orientações de custo constante, e usa espaço auxiliar $O(1)$. Para `q` consultas e `n` pontos iniciais, o total é $O(n\log n+q\log h)$. Uma envolvente vazia não contém pontos; com um ponto, testa igualdade; com dois, testa pertença ao segmento. Estes casos não passam pela pesquisa de triângulos. Mantém também os limites aritméticos de `cross`.

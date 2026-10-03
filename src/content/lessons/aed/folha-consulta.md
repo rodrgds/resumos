@@ -53,7 +53,7 @@ TAD define comportamento; representação define campos e custos. Vetor: acesso 
 
 **Pilha:** LIFO. **Fila:** FIFO. **Deque:** ambas as extremidades. Fila com duas pilhas transfere só quando a saída está vazia: retirada isolada $O(n)$, custo amortizado $O(1)$. Pilha monótona: cada índice entra e sai no máximo uma vez. [TADs](/cadeiras/aed/tipos-abstratos/), [ligações e amortização](/cadeiras/aed/listas-pilhas-filas/).
 
-Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. [Envolvente](/cadeiras/aed/envolvente-convexa/).
+Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. Ponto em polígono convexo: $O(\log h)$, com vértices extremos únicos em ordem anti-horária; nos raios extremos, testar o segmento. [Envolvente](/cadeiras/aed/envolvente-convexa/).
 
 ## Árvores
 
