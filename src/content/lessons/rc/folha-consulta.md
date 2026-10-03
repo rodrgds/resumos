@@ -38,7 +38,7 @@ Transmissão $t_f=L/R$; propagação $t_p=D/v$. Primeiro pacote store-and-forwar
 
 Stop-and-Wait sem perdas: $U=t_f/(t_f+2t_p+t_a)$. Com ACK desprezável e $a=t_p/t_f$: $U=1/(1+2a)$. Janela W sem perdas: $U=\min(1,W/(1+2a))$. Débito útil = R×U×fração útil.
 
-Modelo com erro independente $p_e$: $U_{SW}=(1-p_e)/(1+2a)$, $U_{SR}=(1-p_e)\min(1,W/(1+2a))$.
+Modelo com erro independente $p_e$: $U_{SW}=(1-p_e)/(1+2a)$; fração de entregas Selective Repeat $E_{SR}=(1-p_e)\min(1,W/(1+2a))$. Mede débito útil normalizado; a ocupação física pode continuar em 100% com retransmissões.
 
 Go-Back-N com erros independentes e ACK desprezável: se $W\ge1+2a$, $U=(1-p_e)/(1+2ap_e)$; senão $U=W(1-p_e)/((1+2a)(1-p_e+Wp_e))$.
 
@@ -66,7 +66,7 @@ M/M/1 estável: tempo ocioso $p_0=1-\rho$, $P(N\ge k)=\rho^k$ no sistema; para k
 
 M/M/1/B, B capacidade total: $p_n=(1-\rho)\rho^n/(1-\rho^{B+1})$; se $\rho=1$, $p_n=1/(B+1)$. Bloqueio $p_B$, $\lambda_e=\lambda(1-p_B)$, $N=\sum n p_n$, $T=N/\lambda_e$.
 
-Jackson aberto: $\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}$. Resolve taxas, confirma estabilidade de cada nó, soma N dos nós e divide pela taxa externa para o tempo global. [Filas básicas](/cadeiras/rc/desempenho-e-filas/) e [modelos adicionais](/cadeiras/rc/modelos-filas/).
+Jackson aberto: $\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}$. Resolve taxas, confirma $\lambda_i/\mu_i<1$ em cada nó, soma N dos nós e divide pela taxa externa para o tempo global. RTO atualiza RTTVAR antes de SRTT, com mínimo recomendado de 1 s. [Filas básicas](/cadeiras/rc/desempenho-e-filas/) e [modelos adicionais](/cadeiras/rc/modelos-filas/).
 
 ## Acesso e LAN
 
@@ -86,7 +86,7 @@ Dijkstra: fixa a menor distância provisória e relaxa vizinhos. Distance vector
 
 ## TCP e aplicações
 
-TCP numera bytes; ACK cumulativo indica próximo esperado. SYN e FIN consomem 1; ACK sem dados não. Janela efetiva $\min(rwnd,cwnd)$; bytes novos descontam pendentes. Limite por janela W bytes: $8W/RTT$ bit/s. Fluxo protege recetor; congestionamento protege rede. Slow start aproximadamente duplica por RTT; congestion avoidance cresce aproximadamente 1 MSS por RTT, segundo o modelo.
+TCP numera bytes; ACK cumulativo indica próximo esperado. SYN e FIN consomem 1; ACK sem dados não. Janela efetiva em bytes $\min(rwnd,cwnd)$; bytes novos descontam pendentes. 8 MSS só são oito segmentos com segmentos de MSS bytes. Limite por janela W bytes: $8W/RTT$ bit/s. Fluxo protege recetor; congestionamento protege rede. Slow start aproximadamente duplica por RTT; congestion avoidance cresce aproximadamente 1 MSS por RTT, segundo o modelo.
 
 DNS: A/AAAA endereços, MX correio, CNAME alias, NS autoritativos, PTR inverso. UDP e TCP 53. HTTP/1.1 delimita cabeçalhos por CRLF; ligação persistente evita nova abertura; não confundir com HTTP/3. FTP: controlo TCP 21 e dados separados. SMTP envia correio; POP3/IMAP acedem à caixa. TCP não preserva fronteiras de chamadas send/recv.
 

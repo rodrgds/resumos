@@ -17,7 +17,7 @@ import Dot from '../../../components/Dot.astro';
 import vlans from '../../rc/vlan.typ?raw';
 import estrela from '../../rc/comutador.dot?raw';
 
-Depois de ver como os aparelhos dividem o mesmo cabo ou rádio, esta página responde a como organizar as tramas dentro de uma rede local.
+Um comutador escolhe a porta de saída de cada trama a partir do endereço MAC. Esta página mostra a tabela a aprender e a decidir, e como evitar ciclos e separar VLANs.
 
 Dentro de uma rede local, um **comutador** escolhe por que saída segue cada trama, ou seja, por que tomada sai cada mensagem curta entre vizinhos. Cada interface tem um endereço próprio dessa conversa local, o endereço **MAC**, distinto do endereço IP que identifica a origem e o destino entre redes. Escolher a saída não é calcular uma rota IP.
 
@@ -33,7 +33,17 @@ Para cada trama recebida, o comutador:
 
 A tabela tem envelhecimento. Uma estação que muda de porta pode ser reaprendida; não é preciso aguardar sempre pela expiração. A inundação não altera os endereços da trama.
 
-**Exemplo.** Liga A, B, C e D às portas 1 a 4 com tabela vazia. A→B aprende A:1 e sai em 2, 3, 4. B→A aprende B:2 e sai só em 1. C→A aprende C:3 e sai só em 1. Aprende sempre a origem, mesmo sem conhecer o destino.
+**Exemplo.** Liga A, B, C e D às portas 1 a 4 com tabela vazia.
+
+| Trama | Aprende | Destino                      | Decisão                                               |
+| ----- | ------- | ---------------------------- | ----------------------------------------------------- |
+| A→B   | A:1     | Desconhecido                 | Inunda 2, 3, 4                                        |
+| B→A   | B:2     | Conhecido noutra porta       | Envia só para 1                                       |
+| C→A   | C:3     | Conhecido noutra porta       | Envia só para 1                                       |
+| D→C   | D:4     | Conhecido na porta 3         | Envia só para 3                                       |
+| C→D   | —       | Conhecido na própria porta 3 | Filtra, pois origem e destino estão no mesmo segmento |
+
+Aprende sempre a origem, mesmo sem conhecer o destino.
 
 <Dot
   source={estrela}
@@ -64,7 +74,7 @@ A e B na VLAN 10 podem trocar tramas. A e C em VLANs diferentes precisam de enca
 
 Ligações redundantes criam ciclos físicos. Um broadcast pode circular e multiplicar-se, porque Ethernet não tem TTL como IP. A aprendizagem MAC também pode oscilar.
 
-**Spanning Tree** escolhe uma topologia lógica sem ciclos. Os equipamentos elegem raiz e caminhos, deixando redundantes sem encaminhar. Não memorizes «desliga o cabo mais caro»: o algoritmo usa identificadores, custos e desempates.
+**Spanning Tree** escolhe uma topologia lógica sem ciclos. Os equipamentos elegem a raiz pelo menor identificador, depois o menor custo até à raiz, e desempatam por menor identificador de ponte e de porta. As portas redundantes deixam de encaminhar. Não memorizes «desliga o cabo mais caro»: o algoritmo usa identificadores, custos e desempates.
 
 Num triângulo A-B-C, é possível manter as três ligações físicas e permitir encaminhamento em apenas duas. O caminho ativo pode deixar de ser o caminho fisicamente mais curto para certos pares; a prioridade é impedir ciclos.
 

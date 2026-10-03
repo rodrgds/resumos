@@ -22,7 +22,7 @@ import JanelaArq from '../../rc/JanelaArq.astro';
 import CrcRegistos from '../../rc/CrcRegistos.astro';
 import stopAndWait from '../../rc/stop-and-wait.dot?raw';
 
-Depois de ver como os bits viajam no cabo, esta página responde a como dois aparelhos delimitam cada mensagem curta e pedem de novo o que chega mal.
+Dois aparelhos vizinhos trocam tramas curtas e pedem de novo o que chega mal. Esta página mostra como delimitar cada trama, verificar erros e recuperar perdas com janelas e retransmissões.
 
 Dois aparelhos vizinhos trocam mensagens curtas por um cabo ou por rádio. A cada mensagem dessas chamamos **trama**, e ela precisa de limites claros e de verificação de erros. A **camada de ligação** é a parte da rede que trata dessa conversa entre vizinhos: delimita cada trama e verifica erros. Alguns protocolos, ou seja, regras de formato e resposta, acrescentam confirmações e retransmissões: pedir de novo o que chegou mal chama-se **ARQ**, e cada confirmação chama-se **ACK**. A Ethernet, a tecnologia comum das redes locais com fios, deteta erros mas não faz essa retransmissão.
 
@@ -60,7 +60,7 @@ O resto já tem menos de quatro bits significativos, por isso a divisão termina
 
 Um circuito pode fazer a mesma divisão enquanto os bits chegam. Cada **registo** guarda um bit do resto. Os bits entram à direita, em `C0`, e avançam para a esquerda a cada passo. O bit que sai de `C2` volta às ligações XOR. Para `1011`, ou seja, $x^3+x+1$, há XOR à entrada de `C1` e de `C0`. Se o retorno for 0, o XOR mantém o bit; se for 1, troca-o.
 
-Na geração, entram a mensagem e três zeros. No fim, os registos contêm `001`. Na verificação, entram a trama inteira e o CRC recebido, sem acrescentar zeros. Altera um bit da trama e acompanha o resto. O circuito começa sempre a zero; esta demo mostra a divisão dos slides, sem as convenções adicionais de CRC usadas por protocolos concretos.
+Na geração, entram a mensagem e três zeros. No fim, os registos contêm `001`. Na verificação, entra a palavra recebida completa, mensagem seguida do CRC, sem acrescentar zeros. Altera um bit da trama e acompanha o resto. O circuito começa sempre a zero; esta demo mostra a divisão dos slides, sem as convenções adicionais de CRC usadas por protocolos concretos.
 
 <CrcRegistos />
 
@@ -113,7 +113,7 @@ $$U=\frac{t_f}{t_f+2t_p+t_a}.$$
 
 Com $L=8000$ bits, $R=1$ Mbit/s, $t_p=20$ ms e ACK desprezável, $t_f=8$ ms e $U=8/48=1/6$. Se só 7600 bits forem dados úteis, o débito útil é $7600/0{,}048\approx158333$ bit/s.
 
-Uma janela de $W$ tramas permite várias em trânsito. Sob estas mesmas hipóteses, utilização ideal $U=\min(1,Wt_f/(t_f+2t_p+t_a))$. Com $W=6$, a ligação pode ficar ocupada continuamente. Com perdas, retransmissões e temporizadores reais, esta expressão já não basta.
+Uma janela de $W$ tramas permite várias em trânsito. Sob estas mesmas hipóteses, a fração ideal de tempo com transmissões úteis é $U=\min(1,Wt_f/(t_f+2t_p+t_a))$. Com $W=6$, a ligação pode ficar ocupada continuamente. Com perdas, retransmissões e temporizadores reais, esta expressão já não basta.
 
 ## Go-Back-N e Selective Repeat
 
@@ -131,7 +131,7 @@ Com $m$ bits, limita Go-Back-N a $2^m-1$ e Selective Repeat a $2^{m-1}$, porque 
 
 **Traço.** O emissor envia 0, 1, 2 e 3. A trama 1 perde-se. Em Go-Back-N, o recetor entrega 0 e descarta 2 e 3. O emissor retransmite 1, 2 e 3 quando o protocolo o determinar. Em Selective Repeat, o recetor guarda 2 e 3 e, ao chegar 1, pode entregar 1, 2 e 3 por ordem.
 
-Os limites de janela evitam confundir uma trama antiga com uma nova após a volta da numeração. Com dois bits, a numeração tem quatro valores; uma janela Selective Repeat igual nas duas pontas não deve exceder dois. É uma restrição do protocolo e da ambiguidade de duplicados, não do tamanho de memória disponível.
+Os limites de janela evitam confundir uma trama antiga com uma nova após a volta da numeração. Com dois bits, a numeração tem quatro valores; uma janela Selective Repeat igual nas duas pontas não deve exceder dois. Com janela três, uma repetição antiga de 0 chegaria com a nova ronda de 0 ainda ambígua; com janela dois, há sempre um número livre que separa passado e presente. É uma restrição do protocolo e da ambiguidade de duplicados, não do tamanho de memória disponível.
 
 ## Resolver traços
 
@@ -153,7 +153,7 @@ No Stop-and-Wait em que cada tentativa ocupa o mesmo ciclo:
 
 $$U_{SW}=\frac{1-p_e}{1+2a}.$$
 
-Em Selective Repeat, a expressão simplificada é $U_{SR}=(1-p_e)\min(1,W/(1+2a))$. Para Go-Back-N, a repetição de tramas posteriores aumenta o desperdício:
+Em Selective Repeat, a expressão simplificada para a fração de entregas úteis é $E_{SR}=(1-p_e)\min(1,W/(1+2a))$. Mede débito útil normalizado, não ocupação física do canal: com janela saturada, as retransmissões podem manter o canal ocupado a 100% enquanto as entregas descem. Para Go-Back-N, a repetição de tramas posteriores aumenta o desperdício:
 
 $$
 U_{GBN}=\begin{cases}
@@ -197,6 +197,20 @@ Em cada linha, recalcula $a$ com o novo tempo e usa $D_{\text{útil}}=RU\times L
 :::
 
 Se uma trama tem FER $p_e$ e são permitidas no máximo duas tentativas independentes, a probabilidade de entrega é $1-p_e^2$. Isto mede sucesso até ao limite, não utilização nem débito. «Uma retransmissão» permite duas tentativas, a original e a repetição.
+
+## Do CRC da teoria ao BCC do laboratório
+
+O CRC da teoria divide por XOR e deteta erros. O Lab 1 atual usa outro mecanismo, o BCC: BCC1 é `A XOR C` sobre endereço e controlo, BCC2 é o XOR de todos os bytes de dados, e o recetor confirma a igualdade.
+
+O byte stuffing da porta série escapa `7E` como `7D 5E` e `7D` como `7D 5D`, calculado depois do BCC. A configuração atual usa leitura bloqueante com `VMIN=1` e `VTIME=0`, sem `O_NONBLOCK`.
+
+A API atual é `llOpenTx`, `llOpenRx`, `llSend`, `llReceive`, `llCloseTx` e `llCloseRx`; a API antiga `llopen`, `llwrite`, `llread` e `llclose` pertence a documentos de 2024/2025 e não deve ser usada. O relatório de eficiência arquivado indica 2025/2026 e também não descreve a edição atual.
+
+| Passo       | CRC da lição          | BCC do Lab 1                      |
+| ----------- | --------------------- | --------------------------------- |
+| Entrada     | Mensagem mais r zeros | Endereço, controlo e dados        |
+| Conta       | Divisão módulo 2      | XOR de bytes                      |
+| Verificação | Resto zero            | BCC recalculado igual ao recebido |
 
 ## Simular uma perda na janela
 

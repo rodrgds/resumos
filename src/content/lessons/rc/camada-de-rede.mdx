@@ -24,7 +24,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import topologia from '../../rc/vlsm.dot?raw';
 
-Depois de organizar as tramas dentro de cada rede local, esta página responde a como um pacote encontra o caminho entre redes.
+As tramas circulam dentro de cada rede; os pacotes precisam de atravessar várias redes. Esta página mostra como endereçar sub-redes, escolher rotas e atravessar NAT e limites de MTU.
 
 Quando um pacote sai da tua rede para outra, é preciso escolher o caminho entre redes. O **IP**, o protocolo que liga redes entre si, entrega esses pacotes, a que chamamos **datagramas**, sem garantir fiabilidade. O **encaminhamento por pacote**, ou seja, a escolha da saída de cada datagrama pela tabela do router, decide salto a salto; os protocolos de routing constroem e atualizam essa tabela.
 
@@ -32,7 +32,7 @@ Quando um pacote sai da tua rede para outra, é preciso escolher o caminho entre
 
 Um endereço IPv4 tem 32 bits. O prefixo `/p` indica bits de rede; os restantes $32-p$ identificam posições. A máscara tem $p$ uns seguidos de zeros. Faz AND entre endereço e máscara para obteres a rede.
 
-**Exemplo.** `192.0.2.77/26` tem máscara `255.255.255.192`. Os blocos do último octeto começam em 0, 64, 128 e 192. O endereço pertence a `192.0.2.64/26`, com broadcast `.127` e intervalos usuais de hosts `.65` a `.126`, total de 62.
+**Exemplo.** `192.0.2.77/26` tem máscara `255.255.255.192`. Em binário, o último octeto é `01001101` e a máscara é `11000000`; o AND dá `01000000`, ou 64. Os blocos começam em 0, 64, 128 e 192. O endereço pertence a `192.0.2.64/26`, com broadcast `.127` e intervalos usuais de hosts `.65` a `.126`, total de 62.
 
 A fórmula $2^{32-p}-2$ vale para sub-redes usuais que reservam rede e broadcast. **Não é universal:** `/31` pode usar os dois endereços ponto a ponto e `/32` é um só endereço. As classes A, B e C não substituem o CIDR do enunciado.
 
@@ -121,11 +121,26 @@ O cabeçalho inclui origem, destino, comprimento, protocolo superior, TTL e camp
 
 A **MTU** é o maior pacote IP que a ligação leva sem fragmentar. Se exceder a MTU e a fragmentação for permitida, cada fragmento recebe cabeçalho. O offset conta blocos de **8 bytes** da carga original; exceto o último, a carga é múltipla de oito. O destino reconstitui por identificação e campos de fragmentação.
 
-**Exemplo.** Datagrama de 4000 bytes, incluindo cabeçalho de 20, MTU 1500, sem opções e DF=0. Há 3980 bytes de dados. Cada fragmento completo leva 1480 bytes de dados. Resultam comprimentos 1500, 1500 e 1040; offsets 0, 185 e 370; MF 1, 1 e 0. Não dividas o comprimento total original por oito: o offset refere-se aos dados e cada fragmento tem cabeçalho novo.
+**Exemplo.** Datagrama de 4000 bytes, incluindo cabeçalho de 20, MTU 1500, sem opções e DF=0. Há 3980 bytes de dados. Cada fragmento completo leva 1480 bytes de dados.
+
+| Fragmento | Dados           | Comprimento | Offset | MF  |
+| --------- | --------------- | ----------- | ------ | --- |
+| 1         | bytes 0–1479    | 1500        | 0      | 1   |
+| 2         | bytes 1480–2959 | 1500        | 185    | 1   |
+| 3         | bytes 2960–3979 | 1040        | 370    | 0   |
+
+Resultam comprimentos 1500, 1500 e 1040; offsets 0, 185 e 370; MF 1, 1 e 0. Não dividas o comprimento total original por oito: o offset refere-se aos dados e cada fragmento tem cabeçalho novo.
 
 ## NAT e IPv6
 
-NAT altera endereços; NAPT/PAT pode alterar também portas e manter uma tabela de associações. Vários clientes privados usam um endereço externo com portas distintas. Ligações iniciadas do exterior podem exigir uma associação estática, encaminhamento de portas ou outro mecanismo. NAT não substitui uma política de firewall.
+NAT altera endereços; NAPT/PAT pode alterar também portas e manter uma tabela de associações. Vários clientes privados usam um endereço externo com portas distintas.
+
+| Sentido | Origem         | Destino           | Tradução                                     |
+| ------- | -------------- | ----------------- | -------------------------------------------- |
+| Ida     | 10.0.0.5:1234  | 203.0.113.7:80    | Regista 10.0.0.5:1234 como 198.51.100.9:5001 |
+| Volta   | 203.0.113.7:80 | 198.51.100.9:5001 | Repõe 10.0.0.5:1234 como destino             |
+
+Ligações iniciadas do exterior podem exigir uma associação estática, encaminhamento de portas ou outro mecanismo. NAT não substitui uma política de firewall.
 
 IPv6 usa 128 bits, notação hexadecimal e compressão de um único trecho de zeros com `::`. O cabeçalho base tem 40 bytes, não inclui checksum, e usa Hop Limit. Routers IPv6 não fragmentam. Se o pacote não couber na MTU da saída, descartam-no e enviam à origem ICMPv6 _Packet Too Big_, indicando a MTU. A origem pode reduzir os pacotes ou usar um cabeçalho de fragmentação. Neighbor Discovery, baseado em ICMPv6, substitui funções do ARP. IPv6 usa multicast em funções em que IPv4 usava broadcast.
 
