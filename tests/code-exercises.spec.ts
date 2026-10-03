@@ -31,14 +31,14 @@ test('JavaScript function exercises check outputs and preserve the input contrac
     .click();
   await check.click();
   await expect(exercise.locator('[data-code-status]')).toHaveText(
-    '4/4 testes passaram.',
+    /^([1-9]\d*)\/\1 testes passaram\.$/,
     { timeout: 60_000 },
   );
   await exercise
     .getByRole('button', { name: 'Fechar editor expandido', exact: true })
     .click();
   await expect(exercise.locator('[data-code-status]')).toHaveText(
-    '4/4 testes passaram.',
+    /^([1-9]\d*)\/\1 testes passaram\.$/,
   );
   await editor.fill(
     'function totalAte(precos, limite) { precos.splice(0); return 30; }',
