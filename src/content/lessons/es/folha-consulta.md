@@ -71,7 +71,7 @@ Pares possíveis numa equipa: $n(n-1)/2$. Não mede reuniões nem custo real.
 
 [Sequência](/cadeiras/es/modelacao-uml/#sequência-e-colaboração): tempo desce; mensagens ligam participantes; alt, alternativas; opt, opção; loop, repetição. Guardas dizem quando acontece.
 
-[Atividades e estados](/cadeiras/es/modelacao-uml/#atividades-e-estados): decisão escolhe caminhos; fork e join tratam concorrência. Estado é situação de um objeto, não um ecrã.
+[Atividades e estados](/cadeiras/es/modelacao-uml/#atividades-e-estados): decisão escolhe caminhos; fork e join tratam concorrência. Estado é situação de um objeto, não um ecrã. Transição: `evento [guarda] / efeito`.
 
 ## Arquitetura
 
@@ -96,7 +96,7 @@ Pacote agrupa elementos. Componente encapsula comportamento e interfaces. Artefa
 
 [Caso de teste](/cadeiras/es/verificacao-validacao/#caso-de-teste-e-oráculo): estado inicial, entradas, condições e resultados esperados. Oráculo independente da implementação. Cobertura mede execução, não prova correção.
 
-[Intervalos semiabertos](/cadeiras/es/verificacao-validacao/#um-exemplo-com-intervalos): sobreposição se $i_1<f_2$ e $i_2<f_1$. Intervalos adjacentes não se sobrepõem.
+[Intervalos semiabertos](/cadeiras/es/verificacao-validacao/#um-exemplo-com-intervalos): com início anterior ao fim em ambos os intervalos, há sobreposição se $i_1<f_2$ e $i_2<f_1$. Intervalos adjacentes não se sobrepõem.
 
 [Manutenção](/cadeiras/es/construcao-evolucao/#manutenção): corretiva, defeitos; adaptativa, ambiente; perfetiva, capacidade; preventiva, problemas futuros.
 

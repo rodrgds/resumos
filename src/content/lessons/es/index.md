@@ -21,7 +21,7 @@ As páginas usam exemplos próprios de uma aplicação de reserva de salas. Os e
 
 ## Avaliação e ano de referência
 
-A base destes apontamentos é o Moodle de **2025/26**, com aulas datadas da primavera de 2026, e a [ficha SIGARRA dessa ocorrência](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560102). Alguns materiais reutilizam páginas de anos anteriores. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586995) ainda não tem o programa preenchido. Estes apontamentos não confirmam as regras do novo ano.
+A base destes apontamentos é o Moodle de **2025/26**, com aulas datadas da primavera de 2026, e a [ficha SIGARRA dessa ocorrência](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560102). Alguns materiais reutilizam páginas de anos anteriores. As regras gerais de Scrum abaixo seguem o Scrum Guide de 2020; quadros, estimativas e ferramentas apresentados nas aulas são escolhas do projeto, não novas regras obrigatórias do framework. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586995) ainda não tem o programa preenchido. Estes apontamentos não confirmam as regras do novo ano.
 
 Em 2025/26, a avaliação era distribuída, sem exame final:
 
@@ -31,7 +31,7 @@ Em 2025/26, a avaliação era distribuída, sem exame final:
 | Projeto em equipa, TP      |  60% |
 | Trabalhos individuais, TPC |  25% |
 
-A fórmula publicada era $CF = \operatorname{round}(0{,}15PA + 0{,}60TP + 0{,}25TPC)$. A classificação do projeto era individual, podendo variar dentro da equipa. Para estudantes dispensados da assiduidade, a ficha retirava PA e atribuía 40% aos TPC. A frequência exigia participação efetiva no projeto e cumprimento das regras de assiduidade aplicáveis. Confirma no Moodle e na ficha do teu ano as entregas, dispensas, frequência e melhoria.
+A fórmula publicada era $CF = \operatorname{round}(0{,}15PA + 0{,}60TP + 0{,}25TPC)$. A classificação do projeto era individual, podendo variar dentro da equipa. Para estudantes dispensados da assiduidade, a ficha retirava PA e atribuía 40% aos TPC. A frequência exigia participação efetiva no projeto e cumprimento das regras de assiduidade aplicáveis. Quem tinha dispensa precisava de apresentar regularmente a evolução do trabalho, com periodicidade acordada com os docentes, e de fazer a apresentação com os restantes estudantes. As entregas tinham as mesmas datas para todos. Só TPC podia ser melhorado na época de recurso, a pedido do estudante e com um trabalho individual extraordinário acordado. A ficha permitia aproveitar PA e TP do ano anterior, mas exigia TPC do ano corrente. Confirma no Moodle e na ficha do teu ano as entregas, dispensas, frequência e melhoria.
 
 ## Materiais e bibliografia
 
