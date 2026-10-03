@@ -153,3 +153,50 @@ test('print expands disclosures and shows every tab with readable code colours',
   expect(1.05 / (luminance + 0.05)).toBeGreaterThanOrEqual(4.5);
   expect(colours.printColor).toBe('exact');
 });
+
+test('printed diagrams keep dark note backgrounds legible', async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'resumos-preferences',
+      JSON.stringify({ theme: 'dark' }),
+    ),
+  );
+  await page.goto('/exemplo/diagramas/');
+  await page.evaluate(() => {
+    window.print = () => {};
+  });
+  await page.getByRole('button', { name: 'Imprimir', exact: true }).click();
+  await page.emulateMedia({ media: 'print' });
+  const printed = page.locator('[data-print-page]');
+  const note = printed.locator('svg [fill*="accent-soft"]').first();
+  expect(await note.count()).toBeGreaterThan(0);
+  const colours = await printed.evaluate((root) => {
+    const shape = root.querySelector(
+      'svg [fill*="accent-soft"]',
+    ) as SVGGraphicsElement;
+    const ink = root.querySelector('svg text') as SVGTextElement;
+    return {
+      background: getComputedStyle(shape).fill,
+      foreground: getComputedStyle(ink).fill,
+    };
+  });
+  const luminance = (colour: string) => {
+    const channels = colour
+      .match(/\d+/g)!
+      .slice(0, 3)
+      .map((channel) => {
+        const value = Number(channel) / 255;
+        return value <= 0.04045
+          ? value / 12.92
+          : ((value + 0.055) / 1.055) ** 2.4;
+      });
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  };
+  const light = luminance(colours.background);
+  const dark = luminance(colours.foreground);
+  expect(
+    (Math.max(light, dark) + 0.05) / (Math.min(light, dark) + 0.05),
+  ).toBeGreaterThanOrEqual(4.5);
+});
