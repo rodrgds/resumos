@@ -15,7 +15,7 @@ Desenha o domínio. Confere regularidade, orientação e jacobiano antes de calc
 
 ## Curvas
 
-Para uma parametrização regular $\mathbf r(t)$ de classe $C^2$, $v=\|\mathbf r'\|$, $\mathbf T=\mathbf r'/v$, $L=\int_a^bv\,dt$. Se $\mathbf T'\ne0$, $\mathbf N=\mathbf T'/\|\mathbf T'\|$ e $\mathbf B=\mathbf T\times\mathbf N$.
+Para uma parametrização regular $\mathbf r(t)$ de classe $C^2$, $v=\|\mathbf r'\|$, $\mathbf T=\mathbf r'/v$, $L=\int_a^bv\,dt$, $s(t)=\int_a^t v$. Se $\mathbf T'\ne0$, $\mathbf N=\mathbf T'/\|\mathbf T'\|$ e $\mathbf B=\mathbf T\times\mathbf N$. A aceleração decompõe-se em $\mathbf a=v'\mathbf T+v^2\kappa\mathbf N$.
 
 $$
 \kappa=\frac{\|\mathbf T'\|}{v}
@@ -75,7 +75,7 @@ Uma faixa vertical em $D$ dá $\int_a^b\int_{g_1(x)}^{g_2(x)}f\,dy\,dx$. Trocar 
 
 Aqui $r,\rho\ge0$ e $0\le\varphi\le\pi$; $\varphi$ mede o ângulo desde o eixo $z$ positivo. Na mudança $C^1$ $x=T(u)$, injetiva no interior e com jacobiano não nulo, usa $|\det J_T|$, transforma também a região e evita cobertura múltipla. [Esféricas](/cadeiras/am2/integrais-triplos/#coordenadas-esféricas).
 
-Massa é integral da densidade; cada coordenada do centro de massa é o integral da coordenada vezes a densidade, dividido pela massa positiva. Simetria exige compatibilidade do domínio e do integrando completo.
+Massa é integral da densidade; cada coordenada do centro de massa é o integral da coordenada vezes a densidade, dividido pela massa positiva. Simetria exige compatibilidade do domínio e do integrando completo. Inércia: $I_x=\iint y^2\sigma\,dA$, $I_y=\iint x^2\sigma\,dA$; o momento polar usa $x^2+y^2$. Trocar a ordem pode exigir partir o integral no ponto onde a fronteira muda.
 
 ## Linha e Green
 
@@ -112,4 +112,24 @@ Stokes: $\oint_{\partial S}F\cdot dr=\iint_S\operatorname{rot}F\cdot n\,dS$, sup
 
 Uma EDP linear tem u e derivadas à primeira potência, sem produtos entre elas; os coeficientes dependem das variáveis independentes. Integrar $u_x=f(x,y)$ introduz uma função arbitrária de y, não apenas uma constante.
 
-Transporte $u_t+cu_x=0$, com $u(x,0)=g(x)$, dá $u(x,t)=g(x-ct)$. Calor $u_t=u_{xx}$ em $(0,\pi)$ com fronteiras nulas admite modos $e^{-n^2t}\sin(nx)$. Onda $u_{tt}=c^2u_{xx}$ precisa de deslocamento e velocidade iniciais. Verifica equação, dados e domínio separadamente. [EDP](/cadeiras/am2/equacoes-diferenciais-parciais/#verificar-uma-solução).
+Transporte $u_t+cu_x=0$, com $u(x,0)=g(x)$, dá $u(x,t)=g(x-ct)$. Classificação $Au_{xx}+Bu_{xy}+Cu_{yy}$: $B^2-4AC$ com $B$ o coeficiente de $u_{xy}$.
+
+Calor em $(0,L)$ com Dirichlet:
+
+$$
+u=\sum B_n e^{-k(n\pi/L)^2t}\sin(n\pi x/L),\qquad B_n=2/L\int_0^L f\sin.
+$$
+
+Com Neumann isolado:
+
+$$
+u=a_0/2+\sum a_n e^{-k(n\pi/L)^2t}\cos(n\pi x/L);
+$$
+
+o termo constante não decai. Onda com fronteiras nulas:
+
+$$
+u=\sum\sin(n\pi x/L)(A_n\cos(n\pi ct/L)+B_n\sin(n\pi ct/L));
+$$
+
+usa os dois dados. Laplace no retângulo: modos $\sin(n\pi x/a)\sinh(n\pi y/a)$. Verifica equação, dados e domínio separadamente. [EDP](/cadeiras/am2/equacoes-diferenciais-parciais/#verificar-uma-solução).

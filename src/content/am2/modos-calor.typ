@@ -1,0 +1,17 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  draw.line((0, 0), (5.0, 0), mark: (end: ">"))
+  draw.line((0, -1.6), (0, 1.6), mark: (end: ">"))
+  draw.content((5.2, 0.3), [$x$])
+  draw.content((0.3, 1.6), [$u$])
+  draw.line((0.4, 0), (0.4, 1.0), stroke: rgb("8c2d3b"))
+  draw.line((0.4, 1.0), (4.6, 1.0), stroke: rgb("8c2d3b"))
+  draw.line((4.6, 1.0), (4.6, 0), stroke: rgb("8c2d3b"))
+  draw.content((2.5, 1.3), [dado inicial])
+  draw.line((0.4, 0), (2.5, 0.7), stroke: (dash: "dashed"))
+  draw.line((2.5, 0.7), (4.6, 0), stroke: (dash: "dashed"))
+  draw.content((2.5, -0.9), [primeiro modo])
+  draw.content((2.5, -1.3), [soma de modos segue o dado])
+})

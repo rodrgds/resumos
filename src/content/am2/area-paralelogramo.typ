@@ -1,0 +1,18 @@
+#import "@preview/cetz:0.5.2": canvas, draw
+#set page(width: auto, height: auto, margin: 8pt)
+#set text(size: 10pt)
+#canvas({
+  draw.line((0, 0), (4.6, 0), mark: (end: ">"))
+  draw.line((0, 0), (0, 3.6), mark: (end: ">"))
+  draw.content((4.8, 0.3), [$u$])
+  draw.content((0.3, 3.6), [$v$])
+  draw.rect((0.6, 0.6), (2.6, 2.0))
+  draw.content((1.6, 0.1), [$Delta u$])
+  draw.content((0.1, 1.3), [$Delta v$])
+  draw.line((3.2, 0.6), (4.4, 1.0), stroke: rgb("8c2d3b"))
+  draw.line((3.2, 0.6), (3.6, 2.2), stroke: rgb("28716c"))
+  draw.line((4.4, 1.0), (4.8, 2.6))
+  draw.line((3.6, 2.2), (4.8, 2.6))
+  draw.content((4.0, 0.2), [$bold(r)_u Delta u$])
+  draw.content((2.6, 1.8), [$bold(r)_v Delta v$])
+})

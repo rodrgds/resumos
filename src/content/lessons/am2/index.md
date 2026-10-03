@@ -17,8 +17,8 @@ editorial:
   coverage: Percurso do programa atual, com exemplos próprios, prática por tema e introdução a EDP lineares.
   gaps:
     - O Moodle de AM II de 2024/25 está indisponível para estudantes.
-    - As aulas locais não desenvolvem EDP, apenas anunciam as aulas 12 e 13. A profundidade e os métodos dessas aulas não foram confirmados.
-    - Não foi possível comparar os materiais de ensino de 2026/27 com os apontamentos.
+    - Faltam as aulas teóricas 12 e 13 e os materiais de 2026/27; a correspondência com o ensino atual fica por confirmar.
+    - A ficha prática 5 confirma cobertura substancial de EDP (separação, classificação, calor, ondas e Laplace), usada como base desta revisão.
 ---
 
 No fim de AM2 vais descrever curvas no espaço, decidir se um limite existe, aproximar funções por planos e polinómios, e escolher a região, a ordem e as coordenadas de cada integral. Vais também distinguir trabalho de massa num fio, fluxo de circulação, e verificar soluções básicas de equações diferenciais parciais.
@@ -29,18 +29,21 @@ Precisamos das derivadas e primitivas de AM1 e dos vetores e produtos escalar e 
 
 ## Percurso de estudo
 
-| Tema                                                                            | O que deves conseguir fazer                                                                               |
-| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| [Curvas paramétricas](/cadeiras/am2/curvas-parametricas/)                       | Encontrar velocidade, triedro, planos, comprimento, curvatura e centro de curvatura.                      |
-| [Limites e continuidade](/cadeiras/am2/limites-continuidade/)                   | Descrever domínios e níveis, reconhecer quádricas e provar ou refutar um limite.                          |
-| [Derivadas e gradiente](/cadeiras/am2/derivadas-gradiente/)                     | Distinguir parciais, derivadas direcionais e diferenciabilidade; usar jacobianas e diferenciais.          |
-| [Cadeia e funções implícitas](/cadeiras/am2/regra-cadeia-implicitas/)           | Derivar composições e equações sem isolar a variável dependente.                                          |
-| [Taylor e extremos](/cadeiras/am2/taylor-extremos/)                             | Construir aproximações, classificar candidatos e comparar extremos livres e condicionados.                |
-| [Integrais de linha e Green](/cadeiras/am2/integrais-linha/)                    | Distinguir comprimento de deslocamento, encontrar potenciais e conferir orientação.                       |
-| [Integrais duplos](/cadeiras/am2/integrais-duplos/)                             | Descrever uma região nas duas ordens, usar polares e uma mudança de variáveis.                            |
-| [Integrais triplos](/cadeiras/am2/integrais-triplos/)                           | Projetar sólidos e escolher cartesianas, cilíndricas ou esféricas.                                        |
-| [Superfícies e fluxo](/cadeiras/am2/superficies-fluxo/)                         | Calcular áreas e fluxos e escolher entre cálculo direto, divergência e Stokes.                            |
-| [Equações diferenciais parciais](/cadeiras/am2/equacoes-diferenciais-parciais/) | Reconhecer uma EDP linear, verificar soluções e impor dados iniciais ou de fronteira em exemplos básicos. |
+| Tema                                                                            | O que deves conseguir fazer                                                                              |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [Curvas paramétricas](/cadeiras/am2/curvas-parametricas/)                       | Encontrar velocidade, triedro, planos, comprimento, curvatura e centro de curvatura.                     |
+| [Limites e continuidade](/cadeiras/am2/limites-continuidade/)                   | Descrever domínios e níveis, reconhecer quádricas e provar ou refutar um limite.                         |
+| [Derivadas e gradiente](/cadeiras/am2/derivadas-gradiente/)                     | Distinguir parciais, derivadas direcionais e diferenciabilidade; usar jacobianas e diferenciais.         |
+| [Cadeia e funções implícitas](/cadeiras/am2/regra-cadeia-implicitas/)           | Derivar composições e equações sem isolar a variável dependente.                                         |
+| [Taylor e extremos](/cadeiras/am2/taylor-extremos/)                             | Construir aproximações, classificar candidatos e comparar extremos livres e condicionados.               |
+| [Integrais duplos](/cadeiras/am2/integrais-duplos/)                             | Descrever uma região nas duas ordens, trocar a ordem com partição e usar polares, jacobianos e momentos. |
+| [Integrais de linha e Green](/cadeiras/am2/integrais-linha/)                    | Distinguir comprimento de deslocamento, encontrar potenciais e conferir orientação.                      |
+| [Integrais triplos](/cadeiras/am2/integrais-triplos/)                           | Projetar sólidos, trocar a ordem, converter cilíndricas em cartesianas e escolher coordenadas.           |
+| [Superfícies e fluxo](/cadeiras/am2/superficies-fluxo/)                         | Justificar o elemento de área, calcular fluxos e escolher entre cálculo direto, divergência e Stokes.    |
+| [Equações diferenciais parciais](/cadeiras/am2/equacoes-diferenciais-parciais/) | Classificar, separar variáveis e verificar soluções com dados iniciais e de fronteira.                   |
+| [Calor e séries de Fourier](/cadeiras/am2/calor-series-fourier/)                | Resolver o calor com Dirichlet e Neumann por séries de senos e cossenos.                                 |
+| [Ondas e vibração](/cadeiras/am2/ondas-vibracao/)                               | Resolver a equação das ondas com deslocamento e velocidade iniciais.                                     |
+| [Laplace no retângulo](/cadeiras/am2/laplace-retangulo/)                        | Resolver Laplace com Dirichlet, Neumann e Robin por separação.                                           |
 
 Cada capítulo termina com exercícios próprios. Tenta primeiro sem ajuda, abre a primeira pista quando não souberes como começar e usa a segunda para desbloquear a conta. A solução mostra também as condições do método. A [cheat sheet](/cadeiras/am2/folha-consulta/) serve para rever depois de compreenderes as páginas.
 
@@ -56,7 +59,7 @@ A ficha proíbe dispositivos eletrónicos, salvo os autorizados pela equipa doce
 
 O programa usado é o de [L.EIC007, 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587961). Inclui funções vetoriais; funções de várias variáveis, limites, derivadas e diferenciabilidade; cadeia, funções implícitas, Taylor e extremos; integrais de linha, duplos e triplos; Green, superfícies, divergência e Stokes; e introdução a EDP.
 
-A base de ensino disponível é a [coleção oficial da ocorrência de 2024/25](https://sigarra.up.pt/feup/pt/conteudos_geral.ver?pct_pag_id=249640&pct_parametros=pv_ocorrencia_id=541872): aulas 1 a 11, cinco fichas práticas e testes. Os testes identificam expressamente 2024/25 nos próprios documentos. As aulas não indicam internamente o ano; a atribuição vem da ocorrência onde foram publicadas. O Moodle desse ano está indisponível para estudantes. A última apresentação só anuncia EDP nas aulas 12 e 13, que faltam à coleção. O capítulo de EDP é, por isso, uma introdução própria, sem afirmar quais os métodos ou a profundidade exigidos nessas aulas.
+A base de ensino disponível é a [coleção oficial da ocorrência de 2024/25](https://sigarra.up.pt/feup/pt/conteudos_geral.ver?pct_pag_id=249640&pct_parametros=pv_ocorrencia_id=541872): aulas 1 a 11, cinco fichas práticas e testes. Os testes identificam expressamente 2024/25 nos próprios documentos. As aulas não indicam internamente o ano; a atribuição vem da ocorrência onde foram publicadas. O Moodle desse ano está indisponível para estudantes. As aulas 12 e 13 faltam à coleção, mas a ficha 5 confirma a profundidade pedida em EDP: separação de variáveis nos exercícios 5.35, classificação em 5.36, calor com Dirichlet e Neumann em 5.37 e 5.38, ondas com dois dados iniciais em 5.39 e Laplace no retângulo em 5.40. As três páginas novas de calor, ondas e Laplace seguem esses tipos de problema, sem afirmar que reproduzem as aulas em falta.
 
 A bibliografia obrigatória atual é _Matemática para engenharia em Rn: diferenciação, integração e tópicos adicionais_, de José António Fonseca de Oliveira Correia, ISBN 9789899177956. A complementar inclui os apontamentos de Carlos Conceição António, _Noções sobre Geometria Analítica e Análise Matemática_, de José Augusto Trigo Barbosa, _Calculus: One and Several Variables_ de Salas, Hille e Etgen, _Problemas de integrais de linha e superfície e de séries de Fourier_ de Maria Luísa Romariz Madureira e _Advanced Engineering Mathematics_ de Erwin Kreyszig. A consulta local não inclui o livro obrigatório atual.
 

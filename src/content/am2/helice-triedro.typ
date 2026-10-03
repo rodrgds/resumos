@@ -9,6 +9,7 @@
   draw.circle((0, 0), radius: 3)
   draw.circle((3, 0), radius: 2.5pt, fill: rgb("8c2d3b"), stroke: none)
   draw.content((1.4, -3.9), [$bold(r)(0) = (1, 0, 0)$])
+  draw.content((0, -4.4), [projeção no plano $x y$: a subida em $z$ não aparece])
   draw.line((3, 0), (3, 1.8), mark: (end: ">"), stroke: rgb("8c2d3b"))
   draw.content((4.1, 1.5), [$bold(T)(0)$])
   draw.line((3, 0), (1.4, 0), mark: (end: ">"), stroke: rgb("28716c"))
