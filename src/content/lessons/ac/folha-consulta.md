@@ -18,6 +18,8 @@ Cada linha indica a condição que decide a conta.
 
 ## RV32
 
+Usa esta página como índice. Cada fórmula vale nas condições da lição ligada: RV32 e endereços em [Assembly](/cadeiras/ac/riscv-assembly/); CPI e Amdahl em [Desempenho](/cadeiras/ac/desempenho/); blocos e substituição em [Hierarquia](/cadeiras/ac/hierarquia-cache/); write-through e write-back em [Políticas](/cadeiras/ac/politicas-cache/); sinais e estados em [Percurso](/cadeiras/ac/percurso-dados/); paragens e saltos em [Pipeline](/cadeiras/ac/pipeline/) e [Predição](/cadeiras/ac/predicao-saltos/); escalonamento e Tomasulo em [ILP](/cadeiras/ac/superescalar/) e [Tomasulo](/cadeiras/ac/tomasulo/); vias e pares em [SIMD](/cadeiras/ac/simd/) e [Programar](/cadeiras/ac/programar-simd/); provas e coerência em [Multicore](/cadeiras/ac/multicore-energia/) e [Coerência](/cadeiras/ac/coerencia/); transferências e discos em [E/S](/cadeiras/ac/entrada-saida/) e [Armazenamento](/cadeiras/ac/armazenamento/).
+
 - 32 registos inteiros de 32 bits; `zero` é sempre 0. `t0…t6` e `a0…a7` podem mudar numa chamada; o chamado repõe `s0…s11`. `ra` guarda retorno; `sp` é reposto e mantém alinhamento 16 bytes.
 - Palavra 4 B: `lw/sw`. Bytes: `lb/lbu/sb`; meias palavras: `lh/lhu/sh`. `lb/lh` estendem o sinal; `lbu/lhu` preenchem com zeros. Endereço de `lw rd,k(rs1)` = `rs1+k`, em bytes. Little endian guarda byte baixo no menor endereço.
 - Imediato I/S: 12 bits com sinal. `lui` forma parte alta; `addi` baixo negativo exige compensação na alta. `mv rd,rs` = `addi rd,rs,0`; pseudoinstruções podem expandir-se.

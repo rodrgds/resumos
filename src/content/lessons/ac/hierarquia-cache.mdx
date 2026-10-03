@@ -36,6 +36,16 @@ O número de conjuntos é $S=C/(B A)$, com capacidade de **dados** $C$, bytes po
 
 ## Decompor um endereço
 
+Constrói primeiro por divisão inteira e só depois lê os bits. Para linha de 64 bytes e 32 conjuntos, com endereço $E$:
+
+$$\text{bloco} = E // 64, \quad \text{offset} = E \bmod 64, \quad \text{índice} = \text{bloco} \bmod 32, \quad \text{etiqueta} = \text{bloco} // 32.$$
+
+Para `0x12345678`, bloco `0x48D159`, offset 56, índice 25 e etiqueta `0x2468A`. O início da linha é `0x12345640`. Confere sempre que índice e offset cabem nos bits previstos antes de comparar etiquetas.
+
+Exemplo fechado com organização declarada. Matriz `8x8` de palavras em ordem por linhas a partir do endereço de palavra 0, logo 64 palavras. Cache de dados diretamente mapeada com 2 linhas de 16 palavras (128 bytes no total), inicialmente vazia; palavra `w` usa a linha `(w // 16) \bmod 2`.
+
+Por linhas, cada falta traz 16 palavras seguidas: faltas nos blocos 0, 1, 2 e 3, total 4 faltas para as 64 leituras. Por colunas, a primeira coluna lê as palavras 0, 8, 16, 24, 32, 40, 48 e 56, com 4 faltas, mas cada coluna seguinte volta a falhar porque os blocos foram expulsos: 4 faltas por coluna vezes 8 colunas, total 32 faltas. A ordem dos ciclos muda a taxa de faltas mesmo com o mesmo número de leituras.
+
 Para endereços de $n$ bits, com $B=2^b$ bytes por bloco e $S=2^s$ conjuntos:
 
 $$\underbrace{\text{etiqueta}}_{n-s-b}\quad\underbrace{\text{índice}}_s\quad\underbrace{\text{deslocamento}}_b.$$
@@ -80,6 +90,8 @@ Em uma cache de 2 vias com a mesma capacidade, há 2 conjuntos. Os blocos 0 e 4 
 Aumentar a linha também não garante melhoria. Com capacidade fixa, linhas maiores aproveitam vizinhos, mas deixam menos linhas disponíveis e transferem mais bytes em cada falta. Dados sem localidade espacial podem expulsar dados úteis sem compensar esse custo.
 
 ## Substituição e tipos de falta
+
+Segue o estado completo do conjunto. Com 2 vias e sequência de blocos A, B, A, C: após A e B o conjunto fica `[A, B]`. O segundo A acerta e, em LRU, passa a `[B, A]` do mais antigo ao mais recente. O C substitui B. Em FIFO, o segundo A não altera a ordem e C substitui A. Escreve a ordem em cada passo, porque a política decide a vítima.
 
 LRU substitui o bloco usado há mais tempo. FIFO substitui o carregado há mais tempo; um acerto altera LRU, mas não a ordem de chegada FIFO. Usa primeiro uma via inválida. O estado da política faz parte do traço.
 

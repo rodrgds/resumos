@@ -85,6 +85,10 @@ A entrada vazia passa pelas duas verificações e retorna zero sem ler memória.
 
 ## Produto interno de meias palavras
 
+Exemplo completo com pares. Para `x = [2, -3, 4, 1]` e `y = [5, 6, -2, 7]`, KMDA forma `-8` a partir de `2x5 + (-3)x6` e `-1` a partir de `4x(-2) + 1x7`. A soma escalar reúne `-9`. Cada KMDA consome duas meias palavras de cada operando e produz um parcial de 32 bits. Dois parciais exigem depois uma soma escalar.
+
+Para vetores longos, repete o padrão por blocos de 4 elementos, acumula parciais num registo escalar largo e trata o resto com cargas escalares. Não acumules parciais de 32 bits em vias de 8 bits.
+
 Para $\sum_i x_i y_i$, cada palavra carrega dois elementos de 16 bits. KMDA faz `x0×y0+x1×y1`; soma esse resultado a um acumulador escalar e avança 4 bytes. Para `x=[2,−3,4,1]`, `y=[5,6,−2,7]`, os parciais são −8 e −1; resultado −9.
 
 KMDA satura no caso em que as quatro meias palavras valem −32768. Um acumulador mais largo depois da instrução não recupera o valor já saturado. Para uma soma exata nesse caso, usa os dois produtos completos de SMUL16 e acumula-os com largura suficiente. A soma de muitos parciais também pode exceder 32 bits. A ordem de redução de inteiros sem overflow conserva o resultado; para vírgula flutuante pode mudar arredondamentos.
@@ -104,6 +108,10 @@ Para `Y[i]−d×|X[i]|`, SMAX16 entre X e −X funciona exceto no menor inteiro 
 Se SMUL16 produz dois produtos 32 bits, SUB16 não pode subtrair diretamente um desses registos como se contivesse ambos os produtos. Primeiro empacota as partes de 16 bits de cada produto, se couberem, ou faz subtrações escalares de 32 bits e guarda os resultados individualmente.
 
 ## Coordenadas e números complexos
+
+Caso de 8 bits pedido na ficha. A rotina `mirrorSeq` recebe coordenadas de 8 bits com dois pontos por palavra. Cada palavra contém dois valores de x e dois de y nas vias correspondentes. `SWAP8` troca os bytes dentro de cada meia palavra e coloca cada ponto na posição espelhada. O exemplo da lição com `SWAP16` e coordenadas de 16 bits é outro caso: aí cada palavra contém um ponto.
+
+Para complexos, escreve os quatro produtos antes de somar. Com `a = (2, 3)` e `b = (4, -1)`, os diretos são `8` e `-3`; os cruzados são `-2` e `12`. A parte real é `8 - (-3) = 11`. A imaginária é `-2 + 12 = 10`. Só empacota o resultado se ambas as partes couberem na largura de destino.
 
 Uma palavra pode guardar `(H1,H0)=(y,x)`. SWAP16 troca as coordenadas numa operação; carregar/guardar continua a ter custo.
 

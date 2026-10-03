@@ -20,7 +20,7 @@ Imagina que tens os números 2 e 3 e queres guardar a soma para usar a seguir. U
 
 Para fazer essa soma, o processador, ou seja, o componente que executa os passos, guarda os números em registos, ou seja, em caixas pequenas e rápidas dentro dele, e vai buscar à memória, ou seja, à fila de gavetas numeradas fora dele, os valores de que precisa. Cada gaveta tem um endereço, ou seja, o seu número nessa fila.
 
-Cada passo dessa lista chama-se instrução, ou seja, um pedido com formato fixo como «soma o conteúdo de duas caixas». O conjunto de instruções que um processador aceita chama-se ISA, ou seja, arquitetura do conjunto de instruções, e funciona como um contrato: o processador executa esse contrato, por isso a organização interna pode mudar sem alterar o programa. O PC, ou seja, o contador de programa, é o registo que guarda o endereço da próxima instrução a executar. Vamos usar **RV32**, ou seja, um modelo em que cada registo guarda um número inteiro, ou seja, um número sem casas decimais, com 32 bits, cada instrução base ocupa 32 bits e a memória está numerada byte a byte, onde um byte é um grupo de 8 bits e um bit é um dígito 0 ou 1. Nas secções abaixo usamos esses passos para somar valores e para guardar e voltar a ler resultados.
+Cada passo dessa lista chama-se instrução, ou seja, um pedido com formato fixo como «soma o conteúdo de duas caixas». O conjunto de instruções que um processador aceita chama-se ISA, ou seja, arquitetura do conjunto de instruções, e funciona como um contrato: o processador executa esse contrato, por isso a organização interna pode mudar sem alterar o programa. O PC, ou seja, o contador de programa, é o registo que guarda o endereço da instrução atual. Numa pipeline, a obtenção usa esse valor e só depois calcula o PC seguinte, por isso dizer próxima instrução sem essa distinção confunde o cálculo de destinos relativos ao PC. Vamos usar **RV32**, ou seja, um modelo em que cada registo guarda um número inteiro, ou seja, um número sem casas decimais, com 32 bits, cada instrução base ocupa 32 bits e a memória está numerada byte a byte, onde um byte é um grupo de 8 bits e um bit é um dígito 0 ou 1. Nas secções abaixo usamos esses passos para somar valores e para guardar e voltar a ler resultados.
 
 ## Os registos que interessam
 
@@ -37,6 +37,18 @@ Cada passo dessa lista chama-se instrução, ou seja, um pedido com formato fixo
 Não existe `t7`. O banco de vírgula flutuante, quando disponível, usa `f0` a `f31`; não é o mesmo banco dos `x`.
 
 ## Contas, imediatos e memória
+
+Um exemplo mínimo liga registos e memória antes de qualquer tabela.
+
+```riscv
+lw t0, 0(a0)
+add t1, t0, t2
+sw t1, 4(a0)
+```
+
+Supõe `a0 = 0x1000`, `t2 = 5` e a palavra em `0x1000` com valor 7. O `lw` lê 7 para `t0`. O `add` calcula 12 em `t1`. O `sw` guarda 12 em `0x1004`. Segue os três valores na ordem leitura, cálculo e escrita. Quando trocares o deslocamento, recalcula o endereço em bytes antes de prever o resultado.
+
+A convenção de chamadas usa `a0` a `a7` para argumentos, `a0` e `a1` para retorno, `ra` para o endereço de retorno e `sp` alinhado a 16 bytes. `t0` a `t6` podem mudar numa chamada. `s0` a `s11` têm de ser repostos pelo chamado quando usados. Uma função que chama outra guarda `ra` e os `s` que usa antes da chamada e repõe-nos antes de retornar.
 
 `add rd,rs1,rs2` soma dois registos; `addi rd,rs1,imm` soma um imediato com sinal de 12 bits, entre −2048 e 2047. `sub`, `and`, `or`, `xor`, `slt` seguem o formato de três registos. `slt` compara com sinal; `sltu` compara sem sinal. Não há flags de comparação globais.
 

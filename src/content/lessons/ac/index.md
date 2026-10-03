@@ -22,6 +22,10 @@ Começa por [Assembly RISC-V](/cadeiras/ac/riscv-assembly/) e [Desempenho](/cade
 
 ## Percurso de estudo
 
+Segue esta ordem porque cada bloco usa o anterior. RV32 fixa instruções e endereços. Desempenho fixa tempo, CPI e Amdahl. Caches fixam blocos, índices e políticas antes de qualquer conta de CPI com memória. Percurso de dados fixa sinais e estados antes da pipeline. Pipeline e predição fixam paragens e penalidades antes de ILP e Tomasulo. SIMD fixa vias e pares antes da programação por famílias. Multicore e coerência fixam redução e protocolos antes de entrada, saída e armazenamento.
+
+As fontes são as apresentações e fichas indicadas na apresentação, com anos confirmados entre 2022 e 2025, a proposta SIMD histórica de 2021 para as mnemónicas empacotadas e a especificação RV32I atual para registos e memória. A ficha SIGARRA de 2026/27 estava ativa sem programa nem avaliação quando foi consultada.
+
 Começa por [Assembly RISC-V](/cadeiras/ac/riscv-assembly/) e [Desempenho](/cadeiras/ac/desempenho/). Depois segue [Hierarquia e caches](/cadeiras/ac/hierarquia-cache/) e [Políticas de cache](/cadeiras/ac/politicas-cache/): separa endereços, simula cada acesso e calcula o custo da memória.
 
 [Percurso de dados](/cadeiras/ac/percurso-dados/), [Pipeline](/cadeiras/ac/pipeline/) e [Predição de saltos](/cadeiras/ac/predicao-saltos/) explicam controlo, atalhos, paragens e escolha do caminho. [Paralelismo ao nível de instruções](/cadeiras/ac/superescalar/) e [Tomasulo](/cadeiras/ac/tomasulo/) passam às unidades múltiplas e ao sequenciamento dinâmico.

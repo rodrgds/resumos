@@ -73,6 +73,26 @@ Sem forwarding, e com escrita WB na primeira metade e leitura ID na segunda meta
 
 ## Contar e reduzir paragens
 
+Traço finito completo com duas iterações. Fragmento repetido, com forwarding completo para EX e memórias I/D separadas:
+
+```riscv
+add a0, t0, a1
+lw t0, 0(a0)
+```
+
+Dentro de uma iteração, `add` para `lw` usa o atalho ALU para EX e não precisa de paragem. Entre iterações, o `lw` da iteração anterior produz `t0` para o `add` seguinte e impõe uma bolha load-use. Para `add1, lw1, add2, lw2`:
+
+| Ciclo | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   |
+| ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| add1  | IF  | ID  | EX  | MEM | WB  |     |     |     |     |
+| lw1   |     | IF  | ID  | EX  | MEM | WB  |     |     |     |
+| add2  |     |     | IF  | ID  | ID  | EX  | MEM | WB  |     |
+| lw2   |     |     |     | IF  | IF  | ID  | EX  | MEM | WB  |
+
+Só há uma aresta `lw` para `add` dentro desta janela: `lw1` para `add2`. A segunda aresta (`lw2` para um `add3` fora da janela) não se conta no traço finito. Logo $B = 1$, $C = N + 4 + B = 4 + 4 + 1 = 9$ ciclos até WB de `lw2`, e o CPI finito é $9/4 = 2{,}25$.
+
+Em regime com muitas iterações, cada grupo de 2 instruções paga 1 paragem, logo o CPI tende para $3/2 = 1{,}5$. Não leias 1,5 no traço de 4 instruções. O valor 1,5 é o limite com muitas repetições, não o quociente 9/4.
+
 Para $N$ instruções em 5 fases, contando até a última chegar a WB: $C=N+4+B$. Se se pede o instante de uma escrita final em memória, identifica MEM desse store; o seu WB não faz uma nova escrita. Conta as bolhas de dependências e controlo sem cobrar duas vezes uma espera que resolve ambos os conflitos. Dois loads imediatamente seguidos de consumidores ALU, sem outras dependências, dão $B=2$. Para 10 instruções, são 16 ciclos.
 
 Mover uma instrução independente entre load e consumidor pode ocultar essa paragem:

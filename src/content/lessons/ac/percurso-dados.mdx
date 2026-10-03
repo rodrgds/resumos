@@ -29,6 +29,14 @@ Em `lw t0,12(a0)`: obtém a instrução; lê `a0`; estende o imediato; a ALU cal
 
 ## Sinais de controlo
 
+Segue três instruções com valores antes de decorar a tabela. Supõe `a0 = 0x1000`, palavra em `0x100C` com valor 9, `t1 = 4`.
+
+Em `lw t0, 12(a0)`, a ALU soma `0x1000 + 12 = 0x100C`. A memória lê 9. O multiplexador de escrita escolhe a memória e o banco escreve 9 em `t0`. Sinais: `ALUSrc = 1`, `MemRead = 1`, `RegWrite = 1`, origem do dado escrito igual a memória.
+
+Em `sw t1, 12(a0)`, a ALU calcula o mesmo endereço. O dado de `t1` segue para a memória. Sinais: `ALUSrc = 1`, `MemWrite = 1`, sem escrita no banco.
+
+Em `beq t0, t1, L`, a ALU subtrai para testar igualdade e o imediato forma o destino. Se a comparação for verdadeira, o PC seguinte é o destino. Só depois desta passagem é que a tabela de controlos deixa de ser uma lista para decorar.
+
 `RegWrite` autoriza escrita no banco; `ALUSrc` escolhe registo ou imediato como segundo operando da ALU. `MemRead/MemWrite` controlam a memória de dados. `MemtoReg` escolhe a memória em vez da ALU para retorno ao banco. `Branch` autoriza a seleção do destino se a condição for verdadeira.
 
 | Classe | ALUSrc | MemtoReg | RegWrite | MemRead | MemWrite | Branch | ALUOp |
@@ -49,6 +57,10 @@ O período tem de acomodar a instrução mais lenta. Se obtenção leva 200 ps, 
 Não somes dois componentes que funcionam em paralelo. Primeiro segue o caminho combinacional mais longo entre elementos de estado.
 
 ## Uma máquina multiciclo
+
+Conta estados por instrução. Uma sequência possível: busca, descodificação e cálculo de endereço, acesso à memória, conclusão. Um `lw` usa quatro estados. Um `add` salta o acesso à memória. Um `beq` termina após decidir o PC. O CPI resulta da mistura: se metade das instruções usa 4 estados e metade usa 3, o CPI é 3,5 sem paragens adicionais.
+
+O período de ciclo único é o atraso do caminho mais longo, normalmente o `lw` com memória de instrução, registos, ALU, memória de dados e escrita. Na multiciclo, o período é o atraso do estado mais lento, mas cada instrução paga vários estados.
 
 A máquina multiciclo reutiliza memória e ALU em ciclos distintos, porque cada passo usa só uma parte do hardware. Registos temporários guardam a instrução (IR), dado carregado (MDR), operandos (A/B) e resultado (ALUOut). Assim, a instrução não se perde quando a memória recebe outro endereço.
 

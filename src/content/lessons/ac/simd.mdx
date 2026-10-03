@@ -51,6 +51,10 @@ Os resultados são reduzidos a 16 bits por via. Escreve as duas equações antes
 
 ## Comparações e deslocamentos
 
+Exemplo de shift por via. Com bytes `[0x81, 0x02, 0xFF, 0x10]` e deslocamento aritmético de 1 por via, cada via desloca-se isolada: `0x81` dá `0xC0`, `0x02` dá `0x01`, `0xFF` dá `0xFF`, `0x10` dá `0x08`. Um shift escalar do registo inteiro misturaria bits entre vias e seria outro resultado.
+
+Exemplo de mínimo com sinal. Com `a = [10, -20, 30, -40]` e `b = [5, -10, 40, -30]`, o mínimo por via dá `[5, -20, 30, -40]`. Compara via a via com a interpretação indicada. O caso `0xF0` contra 10 mostra a diferença: é menor com sinal e maior sem sinal.
+
 CMPEQ8/16 testa igualdade. SCMPLT/SCMPLE interpreta operandos com sinal; UCMPLT/UCMPLE, sem sinal. Uma comparação verdadeira produz **todos os bits 1 da via**, isto é 0xFF ou 0xFFFF; falsa produz zero.
 
 O padrão byte 0xF0 representa −16 com sinal e 240 sem sinal. Compará-lo com 10 dá verdadeiro em SCMPLT8 e falso em UCMPLT8.
@@ -58,6 +62,10 @@ O padrão byte 0xF0 representa −16 com sinal e 240 sem sinal. Compará-lo com 
 Deslocamentos lógicos introduzem zeros; aritméticos replicam o sinal **em cada via**. O número de posições usa 3 bits para vias de 8 bits e 4 para vias de 16 bits neste modelo. Não uses um shift escalar do registo inteiro para imitar um shift por via: misturaria bits entre parcelas.
 
 ## Multiplicação e pares de registos
+
+Distribuição dos produtos. Para `a = [-2, 3]` e `b = [4, 5]`, SMUL16 direto produz dois resultados de 32 bits: `-8` e `15`, um em cada registo do par. SMULX16 produz `-10` e `12`. O registo baixo do par recebe o produto da via baixa. O registo de 32 bits não contém dois produtos de 16 bits lado a lado.
+
+SMUL8 segue a mesma regra com quatro produtos de 16 bits em dois registos. As duas vias baixas ficam no registo par e as duas altas no registo ímpar. KMDA soma depois os dois produtos de 16 bits de cada palavra de 32 bits para formar um parcial de produto interno.
 
 SMUL16 multiplica com sinal H0×H0 e H1×H1. Cada produto ocupa 32 bits, por isso dois produtos exigem um par de registos. SMULX16 cruza H0×H1 e H1×H0. UMUL16/UMULX16 interpreta sem sinal. O par físico é um registo de índice par e o seguinte; por exemplo `t3/t4` são `x28/x29`. Na notação de par `d`, os destinos são `x[2d]` e `x[2d+1]`.
 
