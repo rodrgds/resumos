@@ -21,7 +21,7 @@ Na **bubble sort**, compara vizinhos e troca quando estão invertidos. Uma passa
 
 ## Mergesort e prova do merge
 
-Divide `[l,r)` em `[l,m)` e `[m,r)`, ordena cada metade e intercala-as. Durante a intercalação, o prefixo auxiliar já escrito contém os menores elementos ainda consumidos, por ordem; `i` e `j` apontam para o primeiro elemento não consumido de cada metade. O menor dos dois candidatos é o menor de todos os elementos restantes, porque cada metade está ordenada. Escrevê-lo preserva o invariante. Quando uma metade acaba, copia a outra.
+Divide `[l,r)` em `[l,m)` e `[m,r)`, ordena cada metade e intercala-as. Durante a intercalação, o prefixo auxiliar já escrito contém os menores elementos da entrada da junção, por ordem; `i` e `j` apontam para o primeiro elemento não consumido de cada metade. O menor dos dois candidatos é o menor de todos os elementos restantes, porque cada metade está ordenada. Escrevê-lo preserva o invariante. Quando uma metade acaba, copia a outra.
 
 Traça `[6,2,5,1]`: as metades ordenam para `[2,6]` e `[1,5]`. O merge escolhe 1, depois 2, depois 5 e copia 6. Faz três comparações nesta junção; as duas junções inferiores fizeram uma cada, dando cinco no total.
 
@@ -29,7 +29,7 @@ Traça `[6,2,5,1]`: as metades ordenam para `[2,6]` e `[1,5]`. O merge escolhe 1
   language="cpp"
   title="Mergesort com valores repetidos"
   code={
-    '#include <algorithm>\n#include <iostream>\n#include <vector>\nvoid mergeSort(std::vector<int>& a, std::vector<int>& t,\n               std::size_t l, std::size_t r) {\n    if (r - l < 2) return;\n    const auto m = l + (r - l) / 2;\n    mergeSort(a, t, l, m);\n    mergeSort(a, t, m, r);\n    auto i = l, j = m, k = l;\n    while (i < m && j < r)\n        t[k++] = a[j] < a[i] ? a[j++] : a[i++];\n    while (i < m) t[k++] = a[i++];\n    while (j < r) t[k++] = a[j++];\n    for (k = l; k < r; ++k) a[k] = t[k];\n}\nint main() {\n    std::vector<int> a{5, 2, 7, 1, 6, 3, 4, 2}, t(a.size());\n    mergeSort(a, t, 0, a.size());\n    for (std::size_t i = 0; i < a.size(); ++i)\n        std::cout << (i ? " " : "") << a[i];\n    std::cout << \'\\n\';\n    const std::vector<int> antes = a;\n    std::sort(a.begin(), a.end());\n    std::cout << "igual a sort: " << (a == antes) << \'\\n\';\n}\n'
+    '#include <algorithm>\n#include <iostream>\n#include <vector>\nvoid mergeSort(std::vector<int>& a, std::vector<int>& t,\n               std::size_t l, std::size_t r) {\n    if (r - l < 2) return;\n    const auto m = l + (r - l) / 2;\n    mergeSort(a, t, l, m);\n    mergeSort(a, t, m, r);\n    auto i = l, j = m, k = l;\n    while (i < m && j < r)\n        t[k++] = a[j] < a[i] ? a[j++] : a[i++];\n    while (i < m) t[k++] = a[i++];\n    while (j < r) t[k++] = a[j++];\n    for (k = l; k < r; ++k) a[k] = t[k];\n}\nint main() {\n    std::vector<int> a{5, 2, 7, 1, 6, 3, 4, 2}, t(a.size());\n    auto esperado = a;\n    std::sort(esperado.begin(), esperado.end());\n    mergeSort(a, t, 0, a.size());\n    for (std::size_t i = 0; i < a.size(); ++i)\n        std::cout << (i ? " " : "") << a[i];\n    std::cout << \'\\n\';\n    std::cout << "igual a sort: " << (a == esperado) << \'\\n\';\n}\n'
   }
 />
 
@@ -40,7 +40,7 @@ Resultado:
 igual a sort: 1
 ```
 
-Na igualdade, o programa escolhe o elemento da esquerda, preservando a estabilidade. A divisão termina quando o intervalo tem menos de dois elementos, incluindo o vetor vazio. O vetor auxiliar é criado uma vez e reutilizado.
+Na igualdade, o programa escolhe o elemento da esquerda, preservando a estabilidade. A divisão termina quando o intervalo tem menos de dois elementos, incluindo o vetor vazio. O vetor auxiliar é criado uma vez e reutilizado. A referência com `std::sort` parte de uma cópia da entrada original, verificando a ordem e a preservação dos valores.
 
 A recorrência é $T(n)=2T(n/2)+\Theta(n)$, logo $\Theta(n\log n)$ em melhor, médio e pior caso nesta implementação. O auxiliar ocupa $\Theta(n)$ e a pilha $O(\log n)$. Criar um novo vetor por chamada aumenta alocações, mas não obriga a manter o trabalho de todos os níveis em memória ao mesmo tempo.
 
@@ -52,7 +52,7 @@ Em `[5,2,7,1,4]`, o pivô é 4. Depois de processar 5, 2, 7 e 1, o vetor fica `[
 
 Se as divisões forem equilibradas, o custo é $\Theta(n\log n)$. Se cada pivô isolar um único elemento, $T(n)=T(n-1)+\Theta(n)=\Theta(n^2)$. O último elemento como pivô provoca esse caso numa sequência crescente; com a comparação estrita, todos os valores iguais também o provocam.
 
-Um pivô escolhido uniformemente ao acaso dá custo esperado $O(n\log n)$, mas não elimina o pior caso. Uma partição em três regiões, menores, iguais e maiores, evita repetir trabalho nos empates. A pilha do quicksort recursivo ingénuo pode ocupar $\Theta(n)$ no pior caso. Recursar só sobre a região menor e iterar sobre a maior limita a pilha a $O(\log n)$, mesmo quando o tempo é quadrático.
+Com chaves distintas, escolher o pivô uniformemente ao acaso dá custo esperado $O(n\log n)$, mas não elimina o pior caso. Com Lomuto e todas as chaves iguais, a aleatoriedade não muda as partições: o custo continua quadrático. Uma partição em três regiões, menores, iguais e maiores, evita repetir trabalho nos empates. A pilha do quicksort recursivo ingénuo pode ocupar $\Theta(n)$ no pior caso. Recursar só sobre a região menor e iterar sobre a maior limita a pilha a $O(\log n)$, mesmo quando o tempo é quadrático.
 
 O esquema de Hoare aproxima dois índices e troca pares fora da região pretendida. A fronteira devolvida não tem de ser a posição final do pivô. Não combines os intervalos recursivos de Lomuto com a fronteira de Hoare.
 
