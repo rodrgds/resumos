@@ -25,7 +25,7 @@ O build fica em `dist/`. Os testes compilam o site em `.test-dist/` e verificam-
 
 Em produção, `public/sw.js` regista um service worker depois do primeiro carregamento. Guarda as páginas visitadas e os recursos estáticos pequenos para leitura sem ligação, mas não guarda vídeos, áudios ou WebAssembly. A navegação tenta primeiro a rede para receber conteúdo novo; a cópia local só é usada quando a rede falha.
 
-Para renderizar animações, segue [Manim no guia de contribuição](../CONTRIBUTING.md#animações-com-manim). O build normal usa os ficheiros gerados, sem Manim ou FFmpeg.
+Para renderizar animações, segue [Manim no guia de contribuição](../CONTRIBUTING.md#animações-com-manim). O build normal descarrega os bundles publicados que faltam e usa os ficheiros gerados, sem Manim ou FFmpeg. GitHub Actions gera cenas novas ou alteradas e conserva cada render por fingerprint. `MANIM_RELEASE_URL` permite usar um espelho HTTP dos bundles para builds locais.
 
 ## Organização e dados
 

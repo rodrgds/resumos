@@ -176,9 +176,13 @@ Usa movimento quando ajudar a explicar uma mudança; para comparar estados ao ri
    ```
 
 4. Importa `Manim.astro` e usa `<Manim animation="soma-vetores" title="Somar deslocamentos" description="O vetor v começa na ponta de u; a soma liga o início ao ponto final." />`.
-5. Inclui a cena, as dependências, `src/generated/manim/<id>.json` e `public/manim/<id>/` no pull request. Revê rótulos em telemóvel e nos dois temas.
+5. Inclui a cena e as dependências no pull request. GitHub Actions reutiliza os renders existentes e gera os que faltam. Revê rótulos em telemóvel e nos dois temas.
 
-O renderizador executa Python no computador do autor. O build e os visitantes usam apenas os ficheiros gerados; fontes alteradas exigem novo render. A descrição deve ensinar a mudança sem depender da animação, que começa pausada com movimento reduzido.
+O renderizador executa Python no computador do autor ou em GitHub Actions. O build e os visitantes usam apenas os ficheiros gerados. O cache tem uma chave por cena, incluindo fontes, dependências, paletas e configuração. Os bundles completos ficam também no release `manim-assets`, fora do histórico Git, para recuperar um cache expirado. `npm run fetch:manim` descarrega apenas os renders em falta; os ficheiros de `public/manim/` são ignorados pelo Git.
+
+Em `main`, o workflow publica os bundles e atualiza os pequenos manifests em `src/generated/manim/`. Esse commit desencadeia o build de Cloudflare com os renders já disponíveis. Um build que ainda não encontre o bundle falha e mantém a versão publicada anterior. Os pull requests geram artifacts para os testes, sem publicar releases ou alterar `main`.
+
+A descrição deve ensinar a mudança sem depender da animação, que começa pausada com movimento reduzido.
 
 ### Demos interativas
 

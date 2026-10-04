@@ -5,7 +5,12 @@ on:
 permissions:
   contents: read
 jobs:
+  manim:
+    uses: ./.github/workflows/manim.yml
+    permissions:
+      contents: write
   check:
+    needs: manim
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,9 +22,16 @@ jobs:
         with:
           typst-version: 0.15.1
       - run: PUPPETEER_SKIP_DOWNLOAD=1 npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: manim-*
+          merge-multiple: true
+          path: .manim-artifacts
+      - run: for archive in .manim-artifacts/*.tar.gz; do tar -xzf "$archive"; done
       - run: npx playwright install --with-deps chromium
       - run: npm run format:check
       - run: npm run check
+      - run: npm run test:manim-assets
       - run: npm test
       - run: npm run build
       - run: npm run build:runners

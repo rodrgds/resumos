@@ -1,0 +1,113 @@
+name: Manim
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.scenes.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - id: scenes
+        run: |
+          node --input-type=module -e '
+            import { animationFingerprint, scenes } from "./src/lib/manim-assets.mjs";
+            console.log("matrix=" + JSON.stringify({ include: Object.keys(scenes).map(id => ({ id, fingerprint: animationFingerprint(id) })) }));
+          ' >> "$GITHUB_OUTPUT"
+  render:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: PUPPETEER_SKIP_DOWNLOAD=1 npm ci
+      - uses: actions/cache@v6
+        with:
+          path: |
+            public/manim/${{ matrix.id }}
+            src/generated/manim/${{ matrix.id }}.json
+          key: manim-v1-${{ runner.os }}-${{ matrix.id }}-${{ matrix.fingerprint }}
+      - run: npm run fetch:manim -- --available "$ANIMATION"
+        env:
+          ANIMATION: ${{ matrix.id }}
+      - id: ready
+        env:
+          ANIMATION: ${{ matrix.id }}
+        run: |
+          node --input-type=module -e '
+            import { getManimAnimation } from "./src/lib/manim-assets.mjs";
+            try { getManimAnimation(process.env.ANIMATION); console.log("render=false"); }
+            catch { console.log("render=true"); }
+          ' >> "$GITHUB_OUTPUT"
+      - uses: cachix/install-nix-action@v31
+        if: steps.ready.outputs.render == 'true'
+      - if: steps.ready.outputs.render == 'true'
+        run: nix profile add nixpkgs#devenv
+      - if: steps.ready.outputs.render == 'true'
+        run: devenv --profile manim shell -- npm run render:manim -- "$ANIMATION"
+        env:
+          ANIMATION: ${{ matrix.id }}
+      - run: npm run pack:manim -- "$ANIMATION"
+        env:
+          ANIMATION: ${{ matrix.id }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: manim-${{ matrix.id }}
+          path: .manim-artifacts/*.tar.gz
+          include-hidden-files: true
+          overwrite: true
+          retention-days: 7
+  publish:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: render
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: manim-publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: manim-*
+          merge-multiple: true
+          path: .manim-artifacts
+      - name: Preserve completed renders outside Git
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view manim-assets >/dev/null || gh release create manim-assets --target "$GITHUB_SHA" --prerelease --title 'Manim renders' --notes 'Fingerprint-keyed render bundles used by site builds.'
+          gh release view manim-assets --json assets --jq '.assets[].name' > /tmp/manim-published.txt
+          for archive in .manim-artifacts/*.tar.gz; do
+            if ! grep -Fxq "$(basename "$archive")" /tmp/manim-published.txt; then
+              gh release upload manim-assets "$archive"
+            fi
+            tar -xzf "$archive"
+          done
+      - name: Trigger the site build with completed render manifests
+        run: |
+          git fetch origin main
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo 'Main has advanced. Its own run will publish the current manifests.'
+            exit 0
+          fi
+          git add src/generated/manim
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Publish completed Manim renders'
+          git push origin HEAD:main

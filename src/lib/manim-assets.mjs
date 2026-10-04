@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, statSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { readingThemes } from '../data/reading-themes.ts';
 
 export const renderSettings = {
@@ -111,17 +112,19 @@ export function animationFingerprint(id) {
   return hash.digest('hex').slice(0, 16);
 }
 
-export function getManimAnimation(id) {
+export function getManimAnimation(id, { root = '.' } = {}) {
   const fingerprint = animationFingerprint(id);
   try {
     const animation = JSON.parse(
-      readFileSync(`src/generated/manim/${id}.json`, 'utf8'),
+      readFileSync(resolve(root, `src/generated/manim/${id}.json`), 'utf8'),
     );
     if (animation.fingerprint !== fingerprint) throw new Error('Stale render');
+    if (animation.base !== `/manim/${id}/${fingerprint}`)
+      throw new Error('Unexpected asset location');
     for (const variant of Object.keys(manimPalettes())) {
       for (const extension of ['mp4', 'webp']) {
         const path = `${animation.base}/${variant}.${extension}`;
-        if (!statSync(`public${path}`).size)
+        if (!statSync(resolve(root, `public${path}`)).size)
           throw new Error(`Empty asset: ${path}`);
       }
     }
