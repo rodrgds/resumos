@@ -4,6 +4,8 @@
 
 Os vídeos e a produção de clips vivem no projeto separado `resumos-videos`, em `~/dev/resumos-videos`. O leitor dos Resumos não carrega gameplay nem motores de voz.
 
+Os antigos URLs em `/brainrot/` redirecionam para a página de erro. Esta regra impede que cópias antigas em cache continuem a servir vídeos depois da migração.
+
 `/lesson-catalog.json` exporta as aulas publicadas com o id do conteúdo, título, cadeira e URL público. Não inclui apresentações, folhas de consulta, exercícios, rascunhos nem a cadeira de exemplo. O build usa a mesma seleção de aulas que a navegação.
 
 O projeto de vídeos lê este catálogo e associa cada clip a um ou mais ids. Uma aula pode ter vários clips sobre temas diferentes. A ausência de clips significa que ainda não há um vídeo, não que a aula esteja incompleta. Os clips podem ter um ficheiro local e um URL de publicação em redes sociais.
