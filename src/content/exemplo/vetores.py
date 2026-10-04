@@ -2,6 +2,7 @@ from manim import Arrow, Create, DashedLine, FadeIn, Scene, Text, VGroup, UP, DO
 from resumos_manim import palette
 
 
+# Text labels use the Devenv font, so CI needs no LaTeX toolchain.
 class SomaVetores(Scene):
     def construct(self):
         origin = [-3.8, -1.9, 0]

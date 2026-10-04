@@ -131,7 +131,7 @@ export function getManimAnimation(id, { root = '.' } = {}) {
     return animation;
   } catch (cause) {
     throw new Error(
-      `Manim: render "${id}" with devenv --profile manim shell -- npm run render:manim -- ${id}, then include its generated files.`,
+      `Manim: render "${id}" with devenv --profile manim shell -- npm run render:manim -- ${id}, or download its completed bundle with npm run fetch:manim -- ${id}.`,
       { cause },
     );
   }
