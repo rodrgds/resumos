@@ -9,6 +9,11 @@ export function setupSelection(
   let pending: TextAnchor | null = null;
   let range: Range | null = null;
   let pointerDown = false;
+  // An outside press dismisses the popup at once. Until a selection update
+  // arrives, the old selection may still look intact (its collapse can land
+  // after pointerup), so showing from it would resurrect the popup until
+  // the debounced selectionchange hides it again: the visible flicker.
+  let dismissedByPress = false;
   let timer = 0;
   const hide = () => {
     toolbar.hidden = true;
@@ -60,19 +65,24 @@ export function setupSelection(
   }
   document.addEventListener('selectionchange', () => {
     clearTimeout(timer);
+    // A genuine selection update re-arms showing; the debounce decides.
+    dismissedByPress = false;
     timer = window.setTimeout(capture, 180);
   });
   document.addEventListener('pointerdown', (event) => {
     if (toolbar.contains(event.target as Node)) return;
     pointerDown = true;
+    dismissedByPress = true;
     hide();
   });
   document.addEventListener('pointerup', () => {
     pointerDown = false;
+    if (dismissedByPress) return;
     capture();
   });
   document.addEventListener('pointercancel', () => {
     pointerDown = false;
+    dismissedByPress = false;
   });
   // Keep the native selection while a pointer activates its action.
   toolbar.addEventListener('pointerdown', (event) => event.preventDefault());

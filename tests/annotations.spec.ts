@@ -495,3 +495,30 @@ test('a note opened on mobile follows its passage after widening the viewport', 
     })
     .toBe(true);
 });
+
+test('an outside press does not resurrect the dismissed popup', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/exemplo/apontamentos/');
+  await selectText(page, passage);
+  const toolbar = page.getByRole('group', { name: 'Anotar seleção' });
+  // Synthetic press without collapsing: the old selection still looks
+  // intact, as when the browser delivers its collapse after pointerup.
+  await page.evaluate(() => {
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  });
+  await expect(toolbar).toBeHidden();
+  await page.evaluate(() => {
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+  });
+  // Longer than the selection debounce: the popup must stay gone instead
+  // of flashing back until the collapse hides it again.
+  await page.waitForTimeout(400);
+  await expect(toolbar).toBeHidden();
+  // A genuine selection update still re-arms the popup.
+  await page.evaluate(() =>
+    document.dispatchEvent(new Event('selectionchange')),
+  );
+  await expect(toolbar).toBeVisible();
+});
