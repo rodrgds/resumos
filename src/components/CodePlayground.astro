@@ -2,19 +2,27 @@
 import Icon from './Icon.astro';
 import EditorFullscreen from './EditorFullscreen.astro';
 import type { Language } from '../lib/runners/types';
+import { MAIN_FILENAMES, supportFiles } from '../lib/playground-files';
+import {
+  detectDelimiter,
+  isCsvFilename,
+  splitCsvSpans,
+} from '../lib/csv-columns';
 import '../styles/playground.css';
 interface Props {
   language: Language;
   code: string;
-  helpers?: string;
+  // Editable support files shown as tabs in the toolbar. The main program in
+  // `code` is the file that runs; the others are available to import or read,
+  // e.g. `files={{ "vendas.csv": vendas }}`.
+  files?: Record<string, string>;
   input?: string;
   title?: string;
 }
-const { language, code, helpers = '', input = '', title } = Astro.props;
-const helperCode = helpers.trim();
-const helpersId = helperCode
-  ? `playground-helpers-${crypto.randomUUID()}`
-  : undefined;
+const { language, code, files = {}, input = '', title } = Astro.props;
+const supports = supportFiles(language, files);
+const mainFilename = MAIN_FILENAMES[language];
+const fileGroup = `playground-files-${crypto.randomUUID()}`;
 const labels = {
   python: 'Python',
   javascript: 'JavaScript',
@@ -27,6 +35,23 @@ const labels = {
   php: 'PHP',
   riscv: 'RISC-V',
 };
+const escapeHtml = (text: string) =>
+  text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+// Column colours for data files, matching the editor decorations.
+const renderCsv = (content: string, filename: string) => {
+  const delimiter = detectDelimiter(content, filename);
+  return content
+    .split('\n')
+    .map((line, row) =>
+      splitCsvSpans(line, delimiter)
+        .map(
+          (span, column) =>
+            `<span class="csv-col-${column % 10}${row === 0 ? ' csv-header' : ''}">${escapeHtml(line.slice(span.start, span.end))}</span>`,
+        )
+        .join(`<span class="csv-delimiter">${escapeHtml(delimiter)}</span>`),
+    )
+    .join('\n');
+};
 ---
 
 <div data-editor-workspace>
@@ -38,100 +63,115 @@ const labels = {
     aria-label={title || `Experimentar ${labels[language]}`}
   >
     <div class="playground-toolbar" data-pagefind-ignore>
-      <strong>{title || labels[language]}</strong>
-      <div>
-        <EditorFullscreen />
-        {helperCode && (
-          <button
-            type="button"
-            data-toggle-helpers
-            aria-label="Mostrar funções de apoio"
-            title="Mostrar funções de apoio"
-            aria-controls={helpersId}
-            aria-expanded="false"
-            hidden
-          >
-            <Icon name="code-bracket" size={15} />
-          </button>
+      {supports.length > 0 && (
+        <fieldset class="playground-file-tabs" hidden>
+          <legend class="sr-only">Ficheiros do exemplo</legend>
+          {[{ name: mainFilename }, ...supports].map((file, index) => (
+            <label>
+              <input
+                type="radio"
+                name={fileGroup}
+                value={index}
+                checked={index === 0}
+              />
+              {file.name}
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <strong class="playground-title">{title || labels[language]}</strong>
+      <div class="playground-actions">
+        {language !== 'haskell' && (
+          <details class="playground-stdin">
+            <summary
+              aria-label={
+                language === 'php' ? 'Corpo do pedido' : 'Dados de entrada'
+              }
+              title={
+                language === 'php' ? 'Corpo do pedido' : 'Dados de entrada'
+              }
+            >
+              <Icon name="command-line" size={15} />
+            </summary>
+            <div class="playground-stdin-panel">
+              <label>
+                {language === 'php'
+                  ? 'Disponível em php://input'
+                  : 'Uma entrada por linha'}
+                <textarea data-stdin rows="3" spellcheck="false">
+                  {input}
+                </textarea>
+              </label>
+            </div>
+          </details>
         )}
-        <button type="button" data-reset aria-label="Repor código" disabled>
+        <EditorFullscreen />
+        <button
+          type="button"
+          data-reset
+          aria-label="Repor código"
+          title="Repor código"
+          disabled
+        >
           <Icon name="arrow-path" size={15} />
         </button>
-        <button type="button" data-stop hidden>
-          <Icon name="stop" size={14} /> Parar
+        <button type="button" data-stop aria-label="Parar" title="Parar" hidden>
+          <Icon name="stop" size={15} />
         </button>
         <button
           type="button"
           data-run
+          aria-label="Executar"
           title="Executar (Ctrl+Enter ou Cmd+Enter)"
           disabled
         >
-          <Icon name="play" size={15} /> Executar
+          <Icon name="play" size={15} />
         </button>
       </div>
     </div>
     <div class="editor-panes">
       <div class="editor-source-pane">
-        {helperCode && (
-          <details
-            id={helpersId}
-            class="playground-helpers"
-            data-helpers
-            data-pagefind-ignore
-            role="region"
-            aria-label="Funções de apoio"
-          >
-            <summary class="icon-disclosure">
-              Funções de apoio
-              <Icon name="chevron-down" size={16} />
-            </summary>
-            <p>
-              Estas funções correm antes do exemplo. Podes consultá-las, mas só
-              o código abaixo é editável.
-            </p>
-            <pre
-              data-helpers-source
-              tabindex="0"
-            ><code class={`language-${language}`}>{helperCode}</code></pre>
-            <div data-helpers-editor></div>
-          </details>
-        )}
-        <pre
-          data-source
-          tabindex="0"
-          aria-label={`Código ${labels[language]}`}
-        ><code class={`language-${language}`}>{code.trim()}</code></pre>
+        <div data-file-pane="0">
+          <pre
+            data-source
+            data-filename={mainFilename}
+            tabindex="0"
+            aria-label={`Código ${labels[language]}`}
+          ><code class={`language-${language}`}>{code.trim()}</code></pre>
+          <div data-editor></div>
+        </div>
+        {supports.map((file, index) => (
+          <div data-file-pane={index + 1} data-pagefind-ignore>
+            {isCsvFilename(file.name) ? (
+              <pre
+                data-support-source
+                data-filename={file.name}
+                tabindex="0"
+                aria-label={`Ficheiro ${file.name}`}
+              ><code set:html={renderCsv(file.content, file.name)} /></pre>
+            ) : (
+              <pre
+                data-support-source
+                data-filename={file.name}
+                tabindex="0"
+                aria-label={`Ficheiro ${file.name}`}
+              ><code>{file.content}</code></pre>
+            )}
+            <div data-support-editor data-filename={file.name}></div>
+          </div>
+        ))}
         <template data-fold-open>
           <Icon name="chevron-down" size={14} />
         </template>
         <template data-fold-closed>
           <Icon name="chevron-right" size={14} />
         </template>
-        <div data-editor></div>
       </div>
       <div class="editor-result-pane" data-pagefind-ignore>
         <div class="editor-pane-label">Resultado</div>
         <p class="editor-empty">
           Executa o código para ver a saída e os gráficos.
         </p>
-        {language !== 'haskell' && (
-          <details class="playground-input">
-            <summary class="icon-disclosure">
-              {language === 'php' ? 'Corpo do pedido' : 'Dados de entrada'}
-              <Icon name="chevron-down" size={16} />
-            </summary>
-            <label>
-              {language === 'php'
-                ? 'Disponível em php://input'
-                : 'Uma entrada por linha'}
-              <textarea
-                data-stdin
-                rows="3"
-                spellcheck="false"
-              >{input}</textarea>
-            </label>
-          </details>
-        )}
         <div class="playground-result" hidden>
           <div class="playground-status" role="status"></div>
           <pre data-output aria-label="Resultado" tabindex="0"></pre>

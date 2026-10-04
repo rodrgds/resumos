@@ -1,11 +1,15 @@
 import { PHP, loadPHPRuntime, setPhpIniEntries } from '@php-wasm/universal';
 import { getPHPLoaderModule } from '@php-wasm/web-8-4';
 
-self.onmessage = async ({ data: { code, input } }) => {
+self.onmessage = async ({ data: { code, input, files } }) => {
   const send = (message) => self.postMessage(message);
   try {
     const php = new PHP(await loadPHPRuntime(await getPHPLoaderModule()));
     await setPhpIniEntries(php, { html_errors: '0' });
+    for (const [name, content] of Object.entries(files ?? {})) {
+      if (typeof name !== 'string' || typeof content !== 'string') continue;
+      php.writeFile('/' + name, content);
+    }
     send({ type: 'status', text: 'A executar…' });
     const response = await php.runStream({ code, body: input });
     send({ type: 'output', text: await response.stdoutText });

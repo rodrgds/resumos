@@ -13,6 +13,8 @@ export interface RunRequest {
   language: Language;
   code: string;
   input: string;
+  // Editable support files, in tab order. The main program is always `code`.
+  files?: Record<string, string>;
 }
 export type RunMessage =
   | { type: 'output' | 'status' | 'error'; text: string }

@@ -1,4 +1,5 @@
 from math import ceil, sqrt
+from potencia_apoio import desenhar_potencia
 from scipy import stats
 
 mu0 = 100

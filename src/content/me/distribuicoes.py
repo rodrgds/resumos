@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import stats
+from distribuicoes_apoio import desenhar_histogramas_qq
 
 print(f"Binomial: P(X >= 2) = {stats.binom.sf(1, 12, 0.2):.6f}")
 print(f"Normal: P(X > 106) = {stats.norm.sf(106, loc=100, scale=4):.6f}")

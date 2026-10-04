@@ -1,5 +1,6 @@
 from itertools import combinations
 from statistics import mean
+from aleatorizacao_apoio import desenhar_permutacoes
 
 valores = [1, 2, 3, 4, 5, 6]
 n_a = 3

@@ -7,7 +7,7 @@ import {
 
 const send = (message: RunMessage) => self.postMessage(message);
 self.onmessage = async ({
-  data: { code, input },
+  data: { code, input, files },
 }: MessageEvent<RunRequest>) => {
   try {
     let outputLength = 0;
@@ -50,7 +50,13 @@ self.onmessage = async ({
       return value;
     };
     send({ type: 'status', text: 'A montar o programa…' });
-    const simulator = makeRiscVFromFiles({ 'main.s': code }, 'main.s');
+    // Extra assembly files are reachable through `.include "file.s"`.
+    const sources: Record<string, string> = { 'main.s': code };
+    for (const [name, content] of Object.entries(files ?? {})) {
+      if (typeof name !== 'string' || typeof content !== 'string') continue;
+      sources[name] = content;
+    }
+    const simulator = makeRiscVFromFiles(sources, 'main.s');
     RISCV.setIs64Bit(false);
     for (const name of [
       'printInt',

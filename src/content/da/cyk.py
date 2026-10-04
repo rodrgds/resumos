@@ -1,3 +1,5 @@
+from cyk_apoio import mostrar_tabela_cyk
+
 word = input().strip()
 if not word or len(word) > 40 or any(c not in "ab" for c in word):
     print("entrada invalida")

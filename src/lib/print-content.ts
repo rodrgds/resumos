@@ -22,6 +22,16 @@ function find(
     if (found) return found;
   }
 }
+function findAll(
+  node: Node,
+  predicate: (element: Element) => boolean,
+  found: Element[] = [],
+): Element[] {
+  if (!isElement(node)) return found;
+  if (predicate(node)) found.push(node);
+  for (const child of node.childNodes) findAll(child, predicate, found);
+  return found;
+}
 
 // The input is authored, build-rendered content, never answers or browser storage.
 export function preparePrintContent(html: string) {
@@ -164,15 +174,14 @@ export function preparePrintContent(html: string) {
           }
         }
         if (has(child, 'data-playground')) {
-          const helpers = find(child, (element) =>
-            has(element, 'data-helpers-source'),
+          // Main program first, then each support file in tab order.
+          const sources = findAll(
+            child,
+            (element) =>
+              has(element, 'data-source') ||
+              has(element, 'data-support-source'),
           );
-          if (helpers) {
-            clean(helpers);
-            children.push(helpers);
-          }
-          const source = find(child, (element) => has(element, 'data-source'));
-          if (source) {
+          for (const source of sources) {
             clean(source);
             children.push(source);
           }

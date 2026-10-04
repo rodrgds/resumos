@@ -1,5 +1,6 @@
 import math
 import statistics
+from descritiva_apoio import desenhar_caixa
 
 x = sorted([2, 3, 3, 4, 5, 6, 7, 18])
 

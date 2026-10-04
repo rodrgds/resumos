@@ -107,16 +107,41 @@ export default function markdownExport() {
                 ? `\n\n${node.outerHTML}\n\n`
                 : node.outerHTML,
           });
-          converter.addRule('playground-helpers', {
-            filter: (node) =>
-              node.hasAttribute('data-playground') &&
-              !!node.querySelector('[data-helpers-source]'),
+          converter.addRule('playground', {
+            filter: (node) => node.hasAttribute('data-playground'),
             replacement: (_content, node) => {
-              const helpers = node.querySelector(
-                '[data-helpers-source]',
-              ).textContent;
-              const code = node.querySelector('[data-source]').textContent;
-              return `\n\n\`\`\`${node.getAttribute('data-language')}\n${helpers}\n\n${code}\n\`\`\`\n\n`;
+              const tagFor = (filename) =>
+                ({
+                  py: 'python',
+                  js: 'javascript',
+                  mjs: 'javascript',
+                  sql: 'sql',
+                  cpp: 'cpp',
+                  cc: 'cpp',
+                  c: 'c',
+                  h: 'c',
+                  java: 'java',
+                  hs: 'haskell',
+                  pl: 'prolog',
+                  php: 'php',
+                  s: 'asm',
+                  json: 'json',
+                  csv: 'csv',
+                })[filename.split('.').pop()?.toLowerCase() || ''] || 'text';
+              return [
+                ...node.querySelectorAll(
+                  '[data-source], [data-support-source]',
+                ),
+              ]
+                .map((source) => {
+                  const filename =
+                    source.getAttribute('data-filename') || 'code';
+                  const language = source.hasAttribute('data-source')
+                    ? node.getAttribute('data-language')
+                    : tagFor(filename);
+                  return `\n\n**${filename}**\n\n\`\`\`${language}\n${source.textContent}\n\`\`\`\n\n`;
+                })
+                .join('');
             },
           });
           converter.addRule('web-code', {

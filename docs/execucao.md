@@ -33,7 +33,7 @@ Mantém esse servidor aberto enquanto testas o site em `localhost:4321`. A porta
 
 ## Contratos das linguagens
 
-- Python carrega pacotes do catálogo Pyodide pelos imports. Inclui imports explícitos para dependências indiretas, como SciPy. `plt.show()` apresenta PNGs; dados ficam no programa ou em ficheiros em memória.
+- Python carrega pacotes do catálogo Pyodide pelos imports do programa e dos ficheiros de apoio. Inclui imports explícitos para dependências indiretas, como SciPy. `plt.show()` apresenta PNGs; o programa principal corre e os ficheiros das tabs ficam disponíveis para importar (`from apoio import funcao`) ou ler (`open("vendas.csv")`). Em SQL, as sementes `.sql` correm antes do programa principal.
 - C/C++ WASI não substitui POSIX, Minix, hardware, MPI ou OpenMP. Exceções e file I/O precisam de programas estáticos e instruções locais.
 - Java usa classe `Main`, sem pacote. Haskell tem `main`, sem stdin interativo, e requer JSPI.
 - PHP inclui `<?php`; `input` fornece o corpo acessível por `php://input`.

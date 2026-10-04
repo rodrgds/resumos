@@ -200,11 +200,26 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 />
 ```
 
-`code` é o programa completo, `input` fornece a entrada padrão e `title` é opcional. Para várias linhas, usa `input={"3\n10 20 30"}`; um atributo MDX entre aspas não interpreta `\n`. Consulta [linguagens e limites](docs/linguagens.md) e [execução local](docs/execucao.md) antes de escolher o motor. Verifica o programa no editor do site, além de o correr nativamente.
+`code` é o ficheiro principal, o que corre, `input` fornece a entrada padrão e `title` é opcional. Para várias linhas, usa `input={"3\n10 20 30"}`; um atributo MDX entre aspas não interpreta `\n`. Consulta [linguagens e limites](docs/linguagens.md) e [execução local](docs/execucao.md) antes de escolher o motor. Verifica o programa no editor do site, além de o correr nativamente.
 
-### Código auxiliar
+### Ficheiros de apoio
 
-Importa funções de apoio com `?raw` e passa-as em `helpers`. Ficam recolhidas e só de leitura, mas são públicas e entram no programa antes de `code`, também nas versões Markdown e sem JavaScript. Mantém visíveis o algoritmo, os parâmetros e a sintaxe que estás a ensinar. Não acrescentes frases que apenas antecipem a saída ou mandem carregar em Executar.
+Quando o exemplo precisa de dados ou de código auxiliar, importa cada ficheiro com `?raw` e passa-o em `files`. O principal corre; os outros ficam em tabs editáveis por cima do editor, disponíveis para importar ou ler:
+
+```mdx
+import CodePlayground from '../../../components/CodePlayground.astro';
+import vendas from '../../ct-iadp/vendas.csv?raw';
+
+<CodePlayground
+  language="python"
+  files={{ 'vendas.csv': vendas }}
+  code={
+    'import pandas as pd\nvendas = pd.read_csv("vendas.csv", sep=";", decimal=",")'
+  }
+/>
+```
+
+Os ficheiros também saem nas versões Markdown, sem JavaScript e na impressão. Prefere ficheiros a `StringIO` ou a tabelas escritas no código quando os dados apenas alimentam o exemplo. Não escondas neles o algoritmo, os parâmetros nem a sintaxe que estás a ensinar: o leitor deve conseguir perceber o exemplo lendo o ficheiro principal. Em Python, importa o módulo auxiliar (`from apoio import funcao`); os pacotes são detetados nos imports de todos os ficheiros. Não acrescentes frases que apenas antecipem a saída ou mandem carregar em Executar.
 
 Para ensinar HTML, CSS e JavaScript com DOM, usa `WebPlayground`. Para observar um parâmetro da matéria, usa uma demo com controlos próprios. DartPad e Ripes estão disponíveis através de `ToolEmbed`; o DartPad compila externamente.
 

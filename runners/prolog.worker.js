@@ -1,7 +1,7 @@
 importScripts(
   'https://cdn.jsdelivr.net/npm/swipl-wasm@8.1.2/dist/swipl/swipl-web.js',
 );
-self.onmessage = async ({ data: { code, input } }) => {
+self.onmessage = async ({ data: { code, input, files } }) => {
   const send = (message) => self.postMessage(message);
   const output = (text) => send({ type: 'output', text: text + '\n' });
   try {
@@ -15,6 +15,10 @@ self.onmessage = async ({ data: { code, input } }) => {
         'https://cdn.jsdelivr.net/npm/swipl-wasm@8.1.2/dist/swipl/' + path,
       stdin: () => (position < bytes.length ? bytes[position++] : null),
     });
+    for (const [name, content] of Object.entries(files ?? {})) {
+      if (typeof name !== 'string' || typeof content !== 'string') continue;
+      swipl.FS.writeFile('/' + name, content);
+    }
     swipl.FS.writeFile('/program.pl', code);
     send({ type: 'status', text: 'A executar…' });
     const result = swipl.prolog.query("consult('/program.pl'), main.").once();

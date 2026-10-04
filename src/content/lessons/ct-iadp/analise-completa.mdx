@@ -22,6 +22,8 @@ editorial:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import vendasCompleta from '../../ct-iadp/vendas-completa.csv?raw';
+import precosCompleta from '../../ct-iadp/precos-completa.csv?raw';
 
 Sabes selecionar, relacionar, resumir e desenhar gráficos. Agora precisas de juntar esses passos numa análise que consegues verificar do início ao fim.
 
@@ -45,8 +47,9 @@ A custa 1,50 euros, B custa 1,20 e C custa 2,00. À mão, Porto fatura 6,60 e Br
 <CodePlayground
   language="python"
   title={'Análise reproduzível'}
+  files={{ 'vendas.csv': vendasCompleta, 'precos.csv': precosCompleta }}
   code={
-    'from io import StringIO\nimport pandas as pd\n\ncsv_vendas = \'venda;cidade;produto;quantidade\\n1;Porto;A;2\\n2;Porto;B;3\\n3;Braga;A;5\\n4;Braga;C;4\\n\'\nvendas = pd.read_csv(StringIO(csv_vendas), sep=";", dtype={"produto": "string"})\nprecos = pd.DataFrame({"produto": ["A", "B", "C"], "preco": [1.5, 1.2, 2.0]})\n\nassert vendas["venda"].notna().all()\nassert vendas["venda"].is_unique\nassert vendas[["cidade", "produto", "quantidade"]].notna().all().all()\nassert (vendas["quantidade"] > 0).all()\nassert precos["produto"].notna().all()\nassert precos["produto"].is_unique\nassert (precos["preco"] >= 0).all()\n\ndados = vendas.merge(precos, on="produto", how="left", validate="many_to_one")\nassert len(dados) == len(vendas)\nassert dados["preco"].notna().all()\ndados["total"] = dados["quantidade"] * dados["preco"]\n\nrelatorio = dados.groupby("cidade", as_index=False).agg(\n    unidades=("quantidade", "sum"),\n    faturacao=("total", "sum"),\n    vendas=("venda", "size"),\n)\nrelatorio["preco_medio"] = relatorio["faturacao"] / relatorio["unidades"]\nassert abs(relatorio["faturacao"].sum() - dados["total"].sum()) < 1e-10\nprint(relatorio.round(4).to_string(index=False))\nprint("Faturação total:", round(dados["total"].sum(), 2))\nprint("Unidades:", dados["quantidade"].sum())\nprint("Preço médio global:", round(dados["total"].sum() / dados["quantidade"].sum(), 4))'
+    'import pandas as pd\n\nvendas = pd.read_csv("vendas.csv", sep=";", dtype={"produto": "string"})\nprecos = pd.read_csv("precos.csv", sep=";", decimal=",", dtype={"produto": "string"})\n\nassert vendas["venda"].notna().all()\nassert vendas["venda"].is_unique\nassert vendas[["cidade", "produto", "quantidade"]].notna().all().all()\nassert (vendas["quantidade"] > 0).all()\nassert precos["produto"].notna().all()\nassert precos["produto"].is_unique\nassert (precos["preco"] >= 0).all()\n\ndados = vendas.merge(precos, on="produto", how="left", validate="many_to_one")\nassert len(dados) == len(vendas)\nassert dados["preco"].notna().all()\ndados["total"] = dados["quantidade"] * dados["preco"]\n\nrelatorio = dados.groupby("cidade", as_index=False).agg(\n    unidades=("quantidade", "sum"),\n    faturacao=("total", "sum"),\n    vendas=("venda", "size"),\n)\nrelatorio["preco_medio"] = relatorio["faturacao"] / relatorio["unidades"]\nassert abs(relatorio["faturacao"].sum() - dados["total"].sum()) < 1e-10\nprint(relatorio.round(4).to_string(index=False))\nprint("Faturação total:", round(dados["total"].sum(), 2))\nprint("Unidades:", dados["quantidade"].sum())\nprint("Preço médio global:", round(dados["total"].sum() / dados["quantidade"].sum(), 4))'
   }
 />
 
@@ -69,9 +72,9 @@ A contagem de linhas deve manter-se na junção muitos-para-um. A soma da fatura
 
 ## Acrescentar uma situação incompleta
 
-Substitui C por D numa das vendas e volta a executar. A verificação dos preços falha antes de produzir o relatório. Para continuar, é preciso consultar o catálogo ou definir uma política para vendas sem preço. Não substituas o preço em falta por zero só para obter uma tabela final.
+Substitui C por D na tab `vendas.csv` e volta a executar. A verificação dos preços falha antes de produzir o relatório. Para continuar, é preciso consultar o catálogo ou definir uma política para vendas sem preço. Não substituas o preço em falta por zero só para obter uma tabela final.
 
-Duplica a linha de A no catálogo e executa novamente. `validate="many_to_one"` rejeita a junção. Sem essa verificação, as duas vendas de A duplicariam: as 7 unidades passariam a contar duas vezes e a faturação ficaria inflacionada. A verificação impede esse relatório errado.
+Duplica a linha de A na tab `precos.csv` e executa novamente. `validate="many_to_one"` rejeita a junção. Sem essa verificação, as duas vendas de A duplicariam: as 7 unidades passariam a contar duas vezes e a faturação ficaria inflacionada. A verificação impede esse relatório errado.
 
 ## Preparar uma resolução de avaliação
 

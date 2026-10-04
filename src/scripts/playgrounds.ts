@@ -1,5 +1,10 @@
-import { EditorView } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import {
+  Decoration,
+  EditorView,
+  ViewPlugin,
+  type ViewUpdate,
+} from '@codemirror/view';
+import type { Range } from '@codemirror/state';
 import { editorSetup, editorLanguage } from '../lib/editor-setup';
 import { keymap } from '@codemirror/view';
 import { python } from '@codemirror/lang-python';
@@ -17,6 +22,12 @@ import {
   type Language,
   type RunMessage,
 } from '../lib/runners/types';
+import { supportLanguage } from '../lib/playground-files';
+import {
+  detectDelimiter,
+  isCsvFilename,
+  splitCsvSpans,
+} from '../lib/csv-columns';
 import { runProgram } from '../lib/runners/run';
 
 const languages = {
@@ -35,6 +46,49 @@ const MAX_RUN_MS = 120_000;
 const MAX_PLOTS = 8;
 const MAX_PLOT_BASE64_CHARS = 2 * 1024 * 1024;
 const PNG_DATA_PREFIX = 'data:image/png;base64,';
+// Rainbow-style column colours for data files, using the same splitter as
+// the server-rendered fallback so both paint identical columns.
+function csvColumns(filename: string) {
+  const build = (view: EditorView) => {
+    const delimiter = detectDelimiter(view.state.doc.toString(), filename);
+    const marks: Range<Decoration>[] = [];
+    for (const { from, to } of view.visibleRanges) {
+      let number = view.state.doc.lineAt(from).number;
+      for (;;) {
+        const line = view.state.doc.line(number);
+        if (line.from > to) break;
+        if (line.text.trim() !== '')
+          for (const [column, span] of splitCsvSpans(
+            line.text,
+            delimiter,
+          ).entries()) {
+            if (span.end > span.start)
+              marks.push(
+                Decoration.mark({
+                  class: `csv-col-${column % 10}${number === 1 ? ' csv-header' : ''}`,
+                }).range(line.from + span.start, line.from + span.end),
+              );
+          }
+        if (line.to >= to || number >= view.state.doc.lines) break;
+        number++;
+      }
+    }
+    return Decoration.set(marks, true);
+  };
+  return ViewPlugin.fromClass(
+    class {
+      decorations;
+      constructor(view: EditorView) {
+        this.decorations = build(view);
+      }
+      update(update: ViewUpdate) {
+        if (update.docChanged || update.viewportChanged)
+          this.decorations = build(update.view);
+      }
+    },
+    { decorations: (value) => value.decorations },
+  );
+}
 export function setupPlaygrounds() {
   document
     .querySelectorAll<HTMLElement>('[data-playground]')
@@ -42,18 +96,17 @@ export function setupPlaygrounds() {
       if (root.dataset.ready) return;
       root.dataset.ready = 'true';
       const language = root.dataset.language as Language;
-      const source = root.querySelector<HTMLElement>('[data-source]')!;
-      const original = source.textContent || '';
-      const helperSource = root.querySelector<HTMLElement>(
-        '[data-helpers-source]',
+      const panes = [...root.querySelectorAll<HTMLElement>('[data-file-pane]')];
+      const sources = panes.map((pane) =>
+        pane.querySelector<HTMLElement>(
+          '[data-source], [data-support-source]',
+        )!,
       );
-      const helpers = helperSource?.textContent || '';
-      const helperPanel =
-        root.querySelector<HTMLDetailsElement>('[data-helpers]');
-      const helperButton = root.querySelector<HTMLButtonElement>(
-        '[data-toggle-helpers]',
+      const originals = sources.map((source) => source.textContent || '');
+      const filenames = sources.map(
+        (source) => source.getAttribute('data-filename') || 'ficheiro',
       );
-      let helperEditor: EditorView | undefined;
+      const tabs = root.querySelector<HTMLElement>('.playground-file-tabs');
       const runButton = root.querySelector<HTMLButtonElement>('[data-run]')!;
       const resetButton =
         root.querySelector<HTMLButtonElement>('[data-reset]')!;
@@ -108,6 +161,58 @@ export function setupPlaygrounds() {
           );
         if (message.type === 'error') finish(message.text);
       };
+      const editors = panes.map((pane, index) => {
+        const csv = index > 0 && isCsvFilename(filenames[index]);
+        const mode = csv
+          ? null
+          : index === 0
+            ? language
+            : (supportLanguage(language, filenames[index]) ?? null);
+        return new EditorView({
+          doc: originals[index],
+          parent: pane.querySelector('[data-editor], [data-support-editor]')!,
+          extensions: [
+            editorSetup(root),
+            ...(mode ? [editorLanguage(languages[mode]())] : []),
+            ...(csv ? [csvColumns(filenames[index])] : []),
+            EditorView.contentAttributes.of({
+              'aria-label':
+                index === 0
+                  ? `Código ${language}`
+                  : `Ficheiro ${filenames[index]}`,
+              spellcheck: 'false',
+            }),
+            keymap.of([
+              {
+                key: 'Mod-Enter',
+                run: () => {
+                  run();
+                  return true;
+                },
+              },
+            ]),
+          ],
+        });
+      });
+      sources.forEach((source) => {
+        source.hidden = true;
+      });
+      const selectFile = (selected: number) => {
+        panes.forEach((pane, index) => {
+          pane.hidden = index !== selected;
+        });
+        editors[selected].requestMeasure();
+      };
+      if (tabs) {
+        tabs.hidden = false;
+        tabs.addEventListener('change', () => {
+          const selected = Number(
+            tabs.querySelector<HTMLInputElement>('input:checked')!.value,
+          );
+          selectFile(selected);
+        });
+        selectFile(0);
+      }
       const run = () => {
         if (cancel) return;
         result.hidden = false;
@@ -116,11 +221,14 @@ export function setupPlaygrounds() {
         status.textContent = 'A carregar o motor…';
         runButton.disabled = true;
         stopButton.hidden = false;
+        const files: Record<string, string> = {};
+        editors.forEach((editor, index) => {
+          if (index > 0) files[filenames[index]] = editor.state.doc.toString();
+        });
         const request = {
           language,
-          code: helpers
-            ? `${helpers}\n\n${editor.state.doc.toString()}`
-            : editor.state.doc.toString(),
+          code: editors[0].state.doc.toString(),
+          files,
           input:
             root.querySelector<HTMLTextAreaElement>('[data-stdin]')?.value ||
             '',
@@ -131,70 +239,34 @@ export function setupPlaygrounds() {
           MAX_RUN_MS,
         );
       };
-      const editor = new EditorView({
-        doc: original,
-        parent: root.querySelector('[data-editor]')!,
-        extensions: [
-          editorSetup(root),
-          editorLanguage(languages[language]()),
-          EditorView.contentAttributes.of({
-            'aria-label': `Código ${language}`,
-            spellcheck: 'false',
-          }),
-          keymap.of([
-            {
-              key: 'Mod-Enter',
-              run: () => {
-                run();
-                return true;
-              },
-            },
-          ]),
-        ],
-      });
-      source.hidden = true;
-      if (helperPanel && helperButton && helperSource) {
-        helperPanel.querySelector('summary')!.hidden = true;
-        helperPanel.hidden = !helperPanel.open;
-        helperButton.hidden = false;
-        helperButton.onclick = () => {
-          helperPanel.open = !helperPanel.open;
-          helperPanel.hidden = !helperPanel.open;
-          helperButton.setAttribute('aria-expanded', String(helperPanel.open));
-          const label = helperPanel.open
-            ? 'Ocultar funções de apoio'
-            : 'Mostrar funções de apoio';
-          helperButton.setAttribute('aria-label', label);
-          helperButton.title = label;
-          if (!helperPanel.open || helperEditor) return;
-          helperEditor = new EditorView({
-            doc: helpers,
-            parent: root.querySelector('[data-helpers-editor]')!,
-            extensions: [
-              editorSetup(root),
-              editorLanguage(languages[language]()),
-              EditorState.readOnly.of(true),
-              EditorView.editable.of(false),
-              EditorView.contentAttributes.of({
-                'aria-label': 'Código das funções de apoio',
-                tabindex: '0',
-              }),
-            ],
-          });
-          helperSource.hidden = true;
-        };
-      }
       runButton.onclick = run;
       stopButton.onclick = () => finish('Execução interrompida.');
+      root.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        for (const panel of root.querySelectorAll(
+          'details.playground-stdin[open]',
+        )) {
+          if (panel instanceof HTMLDetailsElement) panel.open = false;
+        }
+      });
       resetButton.onclick = () => {
         finish('');
         result.hidden = true;
         output.textContent = '';
         plots.replaceChildren();
-        editor.dispatch({
-          changes: { from: 0, to: editor.state.doc.length, insert: original },
-        });
-        editor.focus();
+        editors.forEach((editor, index) =>
+          editor.dispatch({
+            changes: {
+              from: 0,
+              to: editor.state.doc.length,
+              insert: originals[index],
+            },
+          }),
+        );
+        const visible = editors.findIndex(
+          (_editor, index) => !panes[index].hidden,
+        );
+        editors[visible < 0 ? 0 : visible].focus();
       };
       runButton.disabled = false;
       resetButton.disabled = false;
@@ -203,8 +275,7 @@ export function setupPlaygrounds() {
         () => {
           cancel?.();
           clearTimeout(timer);
-          editor.destroy();
-          helperEditor?.destroy();
+          editors.forEach((editor) => editor.destroy());
         },
         { once: true },
       );

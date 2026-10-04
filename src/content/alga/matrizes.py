@@ -1,3 +1,5 @@
+from matrizes_apoio import validar_produto
+
 def mul(a, b):
     validar_produto(a, b)
     return [[sum(x * y for x, y in zip(row, col)) for col in zip(*b)] for row in a]

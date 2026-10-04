@@ -1,4 +1,5 @@
 import heapq
+from astar_apoio import vizinhos_grelha
 
 tamanho = 4
 bloqueados = {(1, 1), (1, 2), (2, 1)}

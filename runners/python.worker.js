@@ -4,7 +4,7 @@ const OUTPUT_LIMIT = 32_000;
 const MAX_PLOTS = 8;
 const MAX_PLOT_BASE64_CHARS = 2 * 1024 * 1024;
 
-self.onmessage = async ({ data: { code, input } }) => {
+self.onmessage = async ({ data: { code, input, files } }) => {
   const send = (message) => self.postMessage(message);
   let globals;
   try {
@@ -25,8 +25,25 @@ self.onmessage = async ({ data: { code, input } }) => {
       ? input.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n')
       : [];
     pyodide.setStdin({ stdin: () => lines.shift() ?? null });
+    for (const [name, content] of Object.entries(files ?? {})) {
+      if (typeof name !== 'string' || typeof content !== 'string') continue;
+      pyodide.FS.writeFile(name, content);
+    }
     send({ type: 'status', text: 'A carregar as bibliotecas…' });
-    await pyodide.loadPackagesFromImports(code, {
+    // Only Python sources declare dependencies. Data files can look like
+    // broken Python (e.g. 01/10/2026) and would hide the real imports.
+    const sources = [
+      ...Object.entries(files ?? {})
+        .filter(
+          ([name, content]) =>
+            typeof name === 'string' &&
+            typeof content === 'string' &&
+            name.toLowerCase().endsWith('.py'),
+        )
+        .map(([, content]) => content),
+      code,
+    ];
+    await pyodide.loadPackagesFromImports(sources.join('\n'), {
       messageCallback: () => {},
     });
     let plots = 0;

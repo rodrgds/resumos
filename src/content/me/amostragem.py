@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import stats
+from amostragem_apoio import desenhar_medias
 
 rng = np.random.default_rng(2026)
 resultados = []

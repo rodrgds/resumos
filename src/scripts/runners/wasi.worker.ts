@@ -41,7 +41,7 @@ async function filesystem(name: string): Promise<WASIFS> {
 }
 self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
   try {
-    const { language, code, input } = data;
+    const { language, code, input, files } = data;
     let fs: WASIFS = {};
     let remainingInput: string | null = input
       ? input.replace(/\n?$/, '\n')
@@ -78,10 +78,35 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
     if (language === 'cpp' || language === 'c')
       fs = await filesystem('clang-fs.tar.gz');
     const date = new Date();
+    // Support files live next to the main program so C can include headers
+    // and programs can open data files with a relative path.
+    for (const [name, content] of Object.entries(files ?? {})) {
+      if (typeof name !== 'string' || typeof content !== 'string') continue;
+      if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(name)) continue;
+      fs[`/${name}`] = {
+        path: `/${name}`,
+        mode: 'string',
+        content,
+        timestamps: { access: date, modification: date, change: date },
+      };
+    }
+    // SQLite has no file import statement, so seed scripts run before main.
+    const sqlSeeds = Object.entries(files ?? {})
+      .filter(
+        ([name, content]) =>
+          typeof name === 'string' &&
+          typeof content === 'string' &&
+          name.toLowerCase().endsWith('.sql'),
+      )
+      .map(([, content]) => content as string);
+    const mainSource =
+      language === 'sql' && sqlSeeds.length > 0
+        ? [...sqlSeeds, code].join('\n')
+        : code;
     fs['/program'] = {
       path: '/program',
       mode: 'string',
-      content: code,
+      content: mainSource,
       timestamps: { access: date, modification: date, change: date },
     };
     let exitCode: number;

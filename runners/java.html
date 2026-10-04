@@ -5,7 +5,12 @@
   </title>
   <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
   <script type="module">
-    const runJava = async (code, input = '', send = console.log) => {
+    const runJava = async (
+      code,
+      input = '',
+      files = {},
+      send = console.log,
+    ) => {
       await cheerpjInit({ version: 8, status: 'none', clipboardMode: 'java' });
       // Pages returns whole archives; mounting bytes avoids HTTP Range requests.
       const response = await fetch('/ecj-3.26.0.jar');
@@ -28,13 +33,22 @@
       cheerpOSAddStringFile('/str/input', input);
       await System.setIn(await new Input('/str/input'));
       cheerpOSAddStringFile('/str/Main.java', code);
+      const extraSources = [];
+      for (const [name, content] of Object.entries(files)) {
+        if (typeof name !== 'string' || typeof content !== 'string') continue;
+        cheerpOSAddStringFile(`/str/${name}`, content);
+        // Data files are also visible next to the compiled classes.
+        if (!name.endsWith('.java'))
+          cheerpOSAddStringFile(`/files/${name}`, content);
+        else extraSources.push(`/str/${name}`);
+      }
       send({ type: 'status', text: 'A compilar…' });
       const Compiler =
         await lib.org.eclipse.jdt.core.compiler.batch.BatchCompiler;
       const Writer = await lib.java.io.PrintWriter;
       const writer = await new Writer(stream);
       const success = await Compiler.compile(
-        '-1.8 -d /files/ /str/Main.java',
+        ['-1.8', '-d', '/files/', '/str/Main.java', ...extraSources].join(' '),
         writer,
         writer,
         null,
@@ -59,21 +73,26 @@
         !/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(event.origin)
       )
         return;
-      const { code, input } = event.data || {};
+      const { code, input, files } = event.data || {};
       if (typeof code !== 'string' || typeof input !== 'string') return;
+      if (
+        files !== undefined &&
+        (typeof files !== 'object' || files === null || Array.isArray(files))
+      )
+        return;
       started = true;
       const port = event.ports[0];
-      runJava(code, input, (message) => port.postMessage(message)).catch(
-        async (error) => {
-          port.postMessage({
-            type: 'error',
-            text:
-              (await error?.getMessage?.()) ||
-              error?.message ||
-              'Não foi possível executar Java.',
-          });
-        },
-      );
+      runJava(code, input, files ?? {}, (message) =>
+        port.postMessage(message),
+      ).catch(async (error) => {
+        port.postMessage({
+          type: 'error',
+          text:
+            (await error?.getMessage?.()) ||
+            error?.message ||
+            'Não foi possível executar Java.',
+        });
+      });
     });
   </script>
 </html>
