@@ -23,7 +23,7 @@ npm run preview
 
 O build fica em `dist/`. Os testes compilam o site em `.test-dist/` e verificam-no com Chromium. Para usar um navegador existente, define `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`. Em CI, o workflow instala o Chromium.
 
-Em produção, `public/sw.js` regista um service worker depois do primeiro carregamento. Guarda as páginas visitadas e os recursos estáticos pequenos para leitura sem ligação, mas não guarda vídeos, áudios ou WebAssembly do Brain rot. A navegação tenta primeiro a rede para receber conteúdo novo; a cópia local só é usada quando a rede falha.
+Em produção, `public/sw.js` regista um service worker depois do primeiro carregamento. Guarda as páginas visitadas e os recursos estáticos pequenos para leitura sem ligação, mas não guarda vídeos, áudios ou WebAssembly. A navegação tenta primeiro a rede para receber conteúdo novo; a cópia local só é usada quando a rede falha.
 
 Para renderizar animações, segue [Manim no guia de contribuição](../CONTRIBUTING.md#animações-com-manim). O build normal usa os ficheiros gerados, sem Manim ou FFmpeg.
 

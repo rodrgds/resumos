@@ -6,6 +6,8 @@
 - For course content, read [CONTRIBUTING.md](CONTRIBUTING.md) and [resumos-writing](.agents/skills/resumos-writing/SKILL.md). Teach the reasoning, not instructions to press Executar or lists of output. Use the student's Moodle materials as the baseline and verify their academic year.
 - For interface changes, read [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md). Preserve the colourful course grid and FEUP accent. Use existing theme tokens and SVG icon components.
 
+- **Lesson video catalog:** `src/pages/lesson-catalog.json.ts` exports published content IDs and public URLs for the separate `resumos-videos` project. Exclude introductions, revisions, exercises, drafts and the fictional course. Keep gameplay and speech runtimes in that project.
+
 ## Content and privacy
 
 - Verify curriculum changes against SIGARRA for the correct academic year. LEIC elective groups, named CT options and MEIC named options are distinct; keep the fictional example course outside the curriculum.
@@ -21,7 +23,6 @@
 - **Runnable code, exercise runtimes or web previews:** [docs/execucao.md](docs/execucao.md) and [docs/linguagens.md](docs/linguagens.md). Keep disposable runtimes and the separate runner origin isolated from reading pages and notes. Grade code by behavior, not source matching.
 - **Reading themes and syntax:** preserve saved palette ids. Verify upstream colours and record sources/adaptations in [docs/leitura.md](docs/leitura.md). Regenerate syntax tokens with `scripts/sync-code-themes.mjs` and all Manim variants when reading palette tokens change. Fullscreen must reuse the editor and isolated output, not copy their state.
 - **Exercises, interactive demos, Typst, DOT, Mermaid or Manim:** [CONTRIBUTING.md](CONTRIBUTING.md). Let Markdown create paragraphs in multiline MDX and preserve literal inline colon notation. Render trusted exercise Markdown and graphics at build time; readers never run their compilers. Verify authored code and visuals in the browser. Distinguish automatic correctness from self-assessment.
-- **Brain rot, speech or voice assets:** [docs/brainrot.md](docs/brainrot.md) and [docs/vozes-locais.md](docs/vozes-locais.md). Keep video segments independently seekable, synthesis local, and model/reference reuse terms intact.
 
 ## Verification
 

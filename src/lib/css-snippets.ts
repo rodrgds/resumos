@@ -32,12 +32,6 @@ export const defaultSnippets: readonly CssSnippet[] = [
     css: '[data-open-ai], #ai-menu, #copy-prompt { display: none !important; }',
   },
   {
-    id: 'hide-brainrot',
-    name: 'Ocultar Brain rot',
-    enabled: false,
-    css: '[data-open-brainrot] { display: none !important; }',
-  },
-  {
     id: 'static-header',
     name: 'Cabeçalho sem seguir o scroll',
     enabled: false,

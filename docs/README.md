@@ -8,13 +8,12 @@
 - [Desenvolvimento e publicação](desenvolvimento.md): ambiente, checks e deploy.
 - [Processamento de conteúdo](conteudo.md): componentes, compilação e exemplos completos.
 - [Exemplos executáveis](execucao.md): motores, isolamento e configuração local.
+- [Catálogo de aulas para vídeos](videos.md): ligação ao projeto separado de vídeos.
 - [Linguagens por cadeira](linguagens.md): linguagens, ferramentas e limites.
 
 ## Leitura e ferramentas
 
 - [Leitura e ferramentas](leitura.md): notas, pesquisa, atalhos, IA, temas e CSS personalizado.
-- [Brain rot](brainrot.md): leitor, vozes, gravações, vídeos, privacidade e testes.
-- [Comparação das vozes](vozes-locais.md): medições e alternativas investigadas.
 
 ## Direção do projeto
 

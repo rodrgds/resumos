@@ -16,7 +16,7 @@ Preserve the user's Resumos LEIC reference: distinct course colours, the FEUP bu
 - Keep the colourful catalogue, with ordered years and semesters. Pins duplicate compact course cards at the top without replacing the grid. Returning readers skip the introduction when history or a valid pin exists.
 - Reading uses a centred article with independently adjustable page and text widths. At 1200px and above, course navigation sits left and page headings right. Below that, chapter navigation opens over the page.
 - Notes open as overlays and never resize the article. Keep margin markers away from text and use a bottom sheet on small screens.
-- Use the same header on home and reading pages. Reveal it on upward scroll or keyboard focus. Keep Chat and Brain rot directly visible on lessons, not on the homepage.
+- Use the same header on home and reading pages. Reveal it on upward scroll or keyboard focus. Keep Chat directly visible on lessons, not on the homepage.
 - Course progress means position, not completion. Keep page-section marks on desktop only. Chapter links, previous/next links and contextual printing should remain usable without a separate study dashboard.
 
 ## Controls and motion
@@ -34,12 +34,6 @@ Preserve the user's Resumos LEIC reference: distinct course colours, the FEUP bu
 - Figures have descriptive alt text. Diagram neutrals follow the palette while distinct data-series colours remain distinct. Prefer static SVG when motion adds no explanation.
 - Subject demos show topic controls and visuals; web editors belong in web-development lessons. Keep assumptions in lesson prose and controls outside indexed or annotatable text.
 - Rough Notation may mark personal passages, desktop section navigation and explicit author emphasis. Draw outside the lesson text, preserve anchors and keep ordinary link underlines.
-
-## Brain rot
-
-Keep the approved TikTok-style portrait reader, captions and topic visuals. Manual background navigation randomizes clips without seeking narration; natural playback remains sequential. Controls must fit portrait and landscape and work with keyboard and touch.
-
-Speech, recordings and personal videos stay local. Caption layout never splits a spoken sentence. Keep model-loading stages honest, heavy voices labelled and estimated timings explicit. Detailed behavior, licenses and benchmarks belong in [docs/brainrot.md](docs/brainrot.md) and [docs/vozes-locais.md](docs/vozes-locais.md), not this design brief.
 
 ## Avoid
 

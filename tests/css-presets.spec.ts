@@ -75,7 +75,7 @@ test('saved defaults are repaired before scripts without replacing custom CSS', 
     .getByRole('button', { name: 'Adicionar sugestões em falta' })
     .click();
   await expect(
-    page.getByLabel('Ocultar Brain rot', { exact: true }),
+    page.getByLabel('Cabeçalho sem seguir o scroll', { exact: true }),
   ).not.toBeChecked();
   await expect(
     page.getByLabel('Histórico personalizado', { exact: true }),
@@ -84,13 +84,16 @@ test('saved defaults are repaired before scripts without replacing custom CSS', 
     page.getByRole('button', { name: 'Adicionar sugestões em falta' }),
   ).toBeHidden();
   await page
-    .getByRole('button', { name: 'Editar Ocultar Brain rot', exact: true })
+    .getByRole('button', {
+      name: 'Editar Cabeçalho sem seguir o scroll',
+      exact: true,
+    })
     .click();
   await page.getByRole('button', { name: 'Eliminar', exact: true }).click();
   await page.reload();
   await page.getByRole('button', { name: 'Personalizar aparência' }).click();
   await expect(
-    page.getByLabel('Ocultar Brain rot', { exact: true }),
+    page.getByLabel('Cabeçalho sem seguir o scroll', { exact: true }),
   ).toHaveCount(0);
 });
 
@@ -106,7 +109,6 @@ for (const width of [1440, 390]) {
         .getByRole('button', { name: 'Personalizar aparência' })
         .click();
       for (const name of [
-        'Ocultar Brain rot',
         'Cabeçalho sem seguir o scroll',
         'Sublinhar links dos apontamentos',
         'Quebrar linhas de código',
@@ -115,7 +117,6 @@ for (const width of [1440, 390]) {
         await page.getByLabel(name, { exact: true }).check();
       }
       await page.keyboard.press('Escape');
-      await expect(page.locator('[data-open-brainrot]')).toBeHidden();
       await expect(page.locator('.site-header')).toHaveCSS(
         'position',
         'static',

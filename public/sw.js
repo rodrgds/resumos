@@ -1,4 +1,4 @@
-const CACHE_NAME = 'resumos-runtime-v1';
+const CACHE_NAME = 'resumos-runtime-v2';
 const OFFLINE_URL = '/__resumos_offline_fallback__';
 const OFFLINE_HTML = `<!doctype html>
 <html lang="pt-PT">
@@ -73,10 +73,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 function shouldSkip(url) {
-  return (
-    url.pathname.startsWith('/brainrot/') ||
-    /\.(?:mp3|mp4|wasm|webm|woff|ttf)$/i.test(url.pathname)
-  );
+  return /\.(?:mp3|mp4|wasm|webm|woff|ttf)$/i.test(url.pathname);
 }
 
 function isStaticAsset(request, url) {

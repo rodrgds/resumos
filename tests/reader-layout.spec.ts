@@ -111,18 +111,10 @@ test('shared header and direct lesson actions stay consistent', async ({
   const home = await page.locator('.site-header').innerHTML();
   await page.goto('/exemplo/');
   expect(await page.locator('.site-header').innerHTML()).toBe(home);
-  await expect(
-    page.getByRole('button', { name: 'Brain rot', exact: true }),
-  ).toBeVisible();
+  await expect(page.locator('[data-open-ai]')).toBeVisible();
+  await expect(page.locator('[data-open-brainrot]')).toHaveCount(0);
+  await expect(page.locator('#brainrot')).toHaveCount(0);
   await expect(page.locator('.page-actions a.markdown-link')).toHaveCount(0);
-  const chat = await page
-    .locator('[data-open-ai]')
-    .evaluate((el) => getComputedStyle(el).font);
-  expect(
-    await page
-      .locator('[data-open-brainrot]')
-      .evaluate((el) => getComputedStyle(el).font),
-  ).toBe(chat);
 });
 
 test('mobile reading keeps course progress without a page section strip', async ({
@@ -138,7 +130,7 @@ test('mobile reading keeps course progress without a page section strip', async 
   ).toBeVisible();
 });
 
-test('mobile page actions stay on one horizontally scrollable row', async ({
+test('mobile page actions stay on one row without widening the page', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -146,23 +138,17 @@ test('mobile page actions stay on one horizontally scrollable row', async ({
   const actions = page.locator('.page-actions');
 
   await expect(actions).toBeVisible();
-  await expect(actions.locator(':scope > button')).toHaveCount(3);
-  await expect
-    .poll(() => actions.evaluate((element) => element.scrollWidth))
-    .toBeGreaterThan(await actions.evaluate((element) => element.clientWidth));
+  const chat = actions.getByRole('button', { name: 'Perguntar ao Chat' });
+  const print = actions.getByRole('button', { name: 'Imprimir' });
+  await expect(chat).toBeVisible();
+  await expect(print).toBeVisible();
+  expect((await chat.boundingBox())!.y).toBe((await print.boundingBox())!.y);
   expect(
     await actions.evaluate((element) => element.clientHeight),
   ).toBeLessThan(90);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
-
-  await actions.evaluate((element) => {
-    element.scrollLeft = element.scrollWidth;
-  });
-  expect(
-    await actions.evaluate((element) => element.scrollLeft),
-  ).toBeGreaterThan(0);
 });
 
 test('mobile reader bars sit directly below the site header', async ({
