@@ -17,9 +17,6 @@ export function setupEditorFullscreen() {
       });
       let expanded = false;
       const inertSiblings = new Set<HTMLElement>();
-      const closeLabel = button.querySelector<HTMLElement>(
-        '.editor-close-label',
-      )!;
       button.onclick = () => {
         if (expanded) {
           close();
@@ -55,7 +52,6 @@ export function setupEditorFullscreen() {
         button.setAttribute('aria-label', 'Fechar editor expandido');
         button.title = 'Fechar editor expandido';
         button.setAttribute('aria-expanded', 'true');
-        closeLabel.hidden = false;
         root.dispatchEvent(new Event('resumos:workspace'));
         trap.activate();
       };
@@ -75,7 +71,6 @@ export function setupEditorFullscreen() {
         button.setAttribute('aria-label', 'Expandir editor');
         button.title = 'Expandir editor';
         button.setAttribute('aria-expanded', 'false');
-        closeLabel.hidden = true;
         button.focus();
       }
       workspace.addEventListener('toggle', (event) => {

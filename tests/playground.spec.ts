@@ -67,7 +67,7 @@ test('Round Robin runs the authored C program and rejects invalid quanta', async
   await expect(
     playground.getByRole('textbox', { name: 'Código c', exact: true }),
   ).toBeVisible();
-  await playground.locator('.playground-input summary').click();
+  await playground.locator('.playground-stdin summary').click();
   const input = playground.getByRole('textbox', {
     name: 'Uma entrada por linha',
     exact: true,
@@ -181,7 +181,7 @@ test('Python cannot read the lesson origin database and can be stopped', async (
     'Execução interrompida.',
   );
   await editor.fill('print(int(input()) * 2)');
-  await playground.locator('.playground-input summary').click();
+  await playground.locator('.playground-stdin summary').click();
   await playground.locator('[data-stdin]').fill('21');
   await run.click();
   await expect(run).toBeEnabled({ timeout: 45_000 });
