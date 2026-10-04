@@ -36,7 +36,7 @@ depois por data e hora dentro de cada evento.
     width: 100%,
     inset: 5pt,
     stroke: 1.5pt + accent,
-    fill: accent.lighten(92%),
+    fill: rgb("f3e9e9"),
     radius: 3pt,
   )[
     #text(fill: accent)[*2. Intervalo de dezembro*]

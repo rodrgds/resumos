@@ -297,6 +297,84 @@ test('neutral diagram labels follow the effective text color', async ({
   );
 });
 
+test('diagram text keeps contrast on tinted fills in dark mode', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/cadeiras/lbaw/sql-indices/');
+  const figure = page.locator('.typst-figure').first();
+  await expect(figure).toBeVisible();
+  const minimum = await figure.evaluate((root) => {
+    const luminance = (r: number, g: number, b: number) => {
+      const channel = (c: number) => {
+        c /= 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const parse = (value: string) => {
+      const match = value.match(/rgba?\(([^)]+)\)/);
+      if (!match) return null;
+      const parts = match[1].split(',').map((part) => Number.parseFloat(part));
+      if (parts.length < 3 || parts.some((part) => Number.isNaN(part)))
+        return null;
+      return parts as [number, number, number];
+    };
+    const svg = root.querySelector('svg')!;
+    const glyphs = [...svg.querySelectorAll('use, text')].map((node) => {
+      const box = (node as SVGGraphicsElement).getBoundingClientRect();
+      return {
+        x: box.x + box.width / 2,
+        y: box.y + box.height / 2,
+        fill: getComputedStyle(node).fill,
+        width: box.width,
+        height: box.height,
+      };
+    });
+    const shapes = [...svg.querySelectorAll('rect, path')].map((node) => {
+      const box = (node as SVGGraphicsElement).getBoundingClientRect();
+      return {
+        fill: getComputedStyle(node).fill,
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+      };
+    });
+    let checked = 0;
+    let worst = Number.POSITIVE_INFINITY;
+    for (const glyph of glyphs) {
+      if (!glyph.width && !glyph.height) continue;
+      let backing: (typeof shapes)[number] | null = null;
+      for (const shape of shapes) {
+        if (shape.width < 5 || shape.height < 5) continue;
+        if (!parse(shape.fill)) continue;
+        if (
+          glyph.x >= shape.x &&
+          glyph.x <= shape.x + shape.width &&
+          glyph.y >= shape.y &&
+          glyph.y <= shape.y + shape.height &&
+          (!backing ||
+            shape.width * shape.height < backing.width * backing.height)
+        )
+          backing = shape;
+      }
+      const foreground = parse(glyph.fill);
+      const background = parse(backing?.fill ?? 'rgb(36, 36, 39)');
+      if (!foreground || !background) continue;
+      checked += 1;
+      const light = luminance(...foreground);
+      const dark = luminance(...background);
+      const ratio =
+        (Math.max(light, dark) + 0.05) / (Math.min(light, dark) + 0.05);
+      worst = Math.min(worst, ratio);
+    }
+    return { checked, worst };
+  });
+  expect(minimum.checked).toBeGreaterThan(0);
+  expect(minimum.worst).toBeGreaterThanOrEqual(4.5);
+});
+
 test('AI menu stays next to its trigger and ChatGPT enables web search', async ({
   page,
 }) => {

@@ -7,7 +7,7 @@
   node((1, 0), [Reservar lugar], shape: rect, corner-radius: 4pt),
   node((2, 0), [`INSERT bilhete`], shape: rect, corner-radius: 4pt),
   node((3, 0), [`COMMIT`], shape: rect, corner-radius: 4pt),
-  node((1.5, 1), [`ROLLBACK`\ sem lugar ou falha], shape: rect, corner-radius: 4pt, fill: rgb("8c2d3b").lighten(80%)),
+  node((1.5, 1), [`ROLLBACK`\ sem lugar ou falha], shape: rect, corner-radius: 4pt, fill: rgb("f3e9e9")),
   edge((0, 0), (1, 0), "-|>"),
   edge((1, 0), (2, 0), "-|>"),
   edge((2, 0), (3, 0), "-|>"),

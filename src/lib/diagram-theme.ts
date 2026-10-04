@@ -1,6 +1,8 @@
 import { parseFragment, serialize } from 'parse5';
 
 // Preserve data-series colours; adapt the neutral and shared example palette.
+// Light text-backing fills must resolve to theme tokens that are dark in dark
+// mode, otherwise currentColor text turns light on a fill that stays light.
 const colors: Record<string, string> = {
   '#000': 'currentColor',
   '#000000': 'currentColor',
@@ -12,7 +14,24 @@ const colors: Record<string, string> = {
   white: 'var(--surface)',
   '#8c2d3b': 'var(--accent)',
   '#f3e9e9': 'var(--accent-soft)',
+  // Accent tints produced by lighten(): sql-indices (92%) and triggers (80%).
+  '#f6eeef': 'var(--accent-soft)',
+  '#e8d5d8': 'var(--accent-soft)',
+  '#e8dce1': 'var(--accent-soft)',
   '#28716c': 'var(--diagram-secondary)',
+  '#287a70': 'var(--diagram-secondary)',
+  // Teal-tinted text backing keeps its hue via a surface mix: light mint in
+  // light mode, dark teal-grey in dark mode.
+  '#e4efec': 'color-mix(in srgb, var(--diagram-secondary) 14%, var(--surface))',
+  // Neutral light backings.
+  '#e5e7eb': 'var(--soft)',
+  '#fff1e9': 'var(--soft)',
+  // Non-canonical node/edge brown follows the accent token.
+  '#9c4825': 'var(--accent)',
+  // Medium greys used for lines and bars follow the muted token.
+  '#9aa0a6': 'var(--muted)',
+  '#aaaaaa': 'var(--muted)',
+  '#bfbfbf': 'var(--muted)',
 };
 export function themeDiagram(svg: string) {
   const fragment = parseFragment(svg);
