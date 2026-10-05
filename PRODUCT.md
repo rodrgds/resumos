@@ -12,6 +12,8 @@ A community study-notes website for FEUP LEIC students. Readers find their cours
 
 Show the real FEUP curriculum with an honest empty state for unpublished notes. A separate fictional course demonstrates Markdown, MDX, LaTeX, Typst, DOT, Mermaid and video. Include a nuclei directory, global search, local notes, configurable shortcuts and page-context AI links. Keep the homepage free of local search and year filters.
 
+Readers can create multiple private Markdown pages per course, attach local images and reopen their pages from course navigation.
+
 ## Brand commitments
 
 The user's screenshots of resumos.leic.pt define the direction: a colourful course grid grouped by year and semester, simple course icons, and a reading-options menu. The user explicitly chose distinct course colours. Use FEUP red for site identity. This is an independent community project.

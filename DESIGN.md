@@ -15,7 +15,8 @@ Preserve the user's Resumos LEIC reference: distinct course colours, the FEUP bu
 
 - Keep the colourful catalogue, with ordered years and semesters. Pins duplicate compact course cards at the top without replacing the grid. Returning readers skip the introduction when history or a valid pin exists.
 - Reading uses a centred article with independently adjustable page and text widths. At 1200px and above, course navigation sits left and page headings right. Below that, chapter navigation opens over the page.
-- Notes open as overlays and never resize the article. Keep margin markers away from text and use a bottom sheet on small screens.
+- Lesson annotations open as overlays and never resize the article. Keep margin markers away from text and use a bottom sheet on small screens.
+- Personal course pages have their own reading area and reuse reading colours, font, size and text width. Their page navigation sits beside the editor on desktop and above it on small screens.
 - Use the same header on home and reading pages. Reveal it on upward scroll or keyboard focus. Keep Chat directly visible on lessons, not on the homepage.
 - Course progress means position, not completion. Keep page-section marks on desktop only. Chapter links, previous/next links and contextual printing should remain usable without a separate study dashboard.
 

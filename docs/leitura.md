@@ -6,7 +6,21 @@
 
 `/` ou Ctrl/⌘ K abre a pesquisa do site. Pagefind indexa apenas conteúdo público no build, sem servidor de pesquisa. Em desenvolvimento, corre `npm run build` para atualizar o índice.
 
-## Notas e destaques
+## Apontamentos pessoais
+
+O **Caderno** reúne os teus apontamentos e as anotações dos resumos. Em **Os teus apontamentos**, no topo dos conteúdos de uma cadeira, cria quantas páginas precisares. Também podes abrir o caderno e escolher outra cadeira, incluindo cadeiras sem resumos publicados.
+
+Cada página tem um título e um editor de Markdown com pré-visualização no próprio texto. Clica num bloco para editar o Markdown; ao sair, o bloco volta a mostrar títulos, listas, tabelas e fórmulas. Usa `$…$` para matemática em linha e `$$` em linhas próprias para uma fórmula destacada. Clica numa fórmula para editar o LaTeX com pré-visualização. Escape cancela essa edição. HTML e componentes MDX não são executados.
+
+**Imagem** aceita PNG, JPEG, WebP, GIF e AVIF até 10 MB por ficheiro. Também podes colar ou arrastar ficheiros para o editor. As imagens ficam em IndexedDB junto do apontamento, sem uploads. Imagens de URLs externos aparecem como texto, sem pedidos de rede. Para remover uma imagem, edita o bloco e apaga o Markdown correspondente.
+
+Os apontamentos guardam automaticamente neste navegador. Não entram na pesquisa pública, nos resumos exportados nem no Chat. **Exportar apontamento** descarrega Markdown com as imagens incorporadas; **Importar Markdown** cria uma página nova na cadeira escolhida, sem substituir páginas existentes. Se o navegador recusar a gravação, exporta antes de sair. Limpar os dados do site apaga os apontamentos e as imagens. Uma eliminação pode ser desfeita durante a visita.
+
+## Copiar fórmulas
+
+Nas lições e nos apontamentos pessoais, aproxima o rato de uma fórmula ou usa Tab para chegar a **Copiar fórmula**. No telemóvel, o botão fica visível. Copia o LaTeX original com os delimitadores Markdown, pronto a colar num apontamento. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. As fórmulas continuam a poder fazer parte de seleções e anotações.
+
+## Anotações e destaques
 
 Seleciona texto e escolhe **Destacar** ou **Comentar**. Tab chega às ações; Escape fecha-as. O marcador na margem abre a nota junto ao trecho, ou num painel inferior no telemóvel. O caderno reúne notas da página ou do site, permite voltar ao trecho, desfazer uma remoção e exportar Markdown. As notas antigas continuam em **Notas anteriores**.
 

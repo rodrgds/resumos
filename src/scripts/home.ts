@@ -25,7 +25,9 @@ for (const card of document.querySelectorAll<HTMLAnchorElement>(
 }
 
 const detail = document.querySelector<HTMLDialogElement>('#course-detail')!;
-const officialLink = detail.querySelector<HTMLAnchorElement>('.official-link')!;
+const officialLink = detail.querySelector<HTMLAnchorElement>(
+  'a:has([data-official-label])',
+)!;
 const curriculumUrl = officialLink.href;
 document.addEventListener('click', (event) => {
   const card = (event.target as Element).closest<HTMLButtonElement>(
@@ -52,6 +54,11 @@ document.addEventListener('click', (event) => {
     .dataset.officialUrl
     ? 'Ver a ficha no SIGARRA'
     : 'Ver o plano no SIGARRA';
+  const personalLink = document.querySelector<HTMLAnchorElement>(
+    '#course-personal-notes',
+  )!;
+  personalLink.href = `/caderno/?cadeira=${encodeURIComponent(card.dataset.courseId!)}`;
+  personalLink.hidden = !!card.dataset.elective && !slot;
   detail.showModal();
 });
 document
