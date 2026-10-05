@@ -29,6 +29,7 @@ import {
   splitCsvSpans,
 } from '../lib/csv-columns';
 import { runProgram } from '../lib/runners/run';
+import { preparePython } from '../lib/runners/python';
 
 const languages = {
   python,
@@ -240,6 +241,8 @@ export function setupPlaygrounds() {
         );
       };
       runButton.onclick = run;
+      if (language === 'python')
+        root.addEventListener('focusin', preparePython);
       stopButton.onclick = () => finish('Execução interrompida.');
       root.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;

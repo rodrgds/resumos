@@ -16,6 +16,8 @@ A pré-visualização web apresenta `console.log`, avisos e erros na **Consola**
 
 Cada execução recebe código e entrada num Worker descartável, sem acesso ao DOM ou às notas. Parar termina o Worker. Ficheiros criados pelo programa ficam em memória até ao fim. A execução tem limite de dois minutos e 32 mil caracteres de saída.
 
+Python prepara um intérprete ao focar um editor e prepara o seguinte enquanto o programa corre. A página partilha apenas um Worker de reserva que ainda não executou código do leitor, através de uma iframe na origem dos motores. Cada execução consome esse Worker e termina-o ao concluir ou parar; nunca se reutilizam variáveis, módulos alterados ou ficheiros de programas anteriores. Fechar a página termina também o Worker de reserva. O primeiro carregamento e as bibliotecas adicionais continuam a depender da ligação e do dispositivo.
+
 Python, Java, Haskell, Prolog e PHP usam `resumos-code.pages.dev`, porque os motores têm acesso a JavaScript ou armazenamento. Essa origem publica apenas `runners/dist/`, nunca páginas de leitura. O projeto Cloudflare `resumos-code` compila com `npm ci && npm run build:runners`. Mantém a CSP de produção; a configuração de testes troca apenas a origem autorizada do leitor.
 
 `WebPlayground` usa iframe de origem opaca, sem rede. `allow-forms` permite eventos e validação locais; CSP `form-action 'none'` continua a impedir envios. DartPad é a exceção explícita de compilação externa e só abre por escolha do leitor.

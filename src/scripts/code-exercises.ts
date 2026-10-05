@@ -8,6 +8,7 @@ import {
   type CodeTest,
 } from '../lib/code-exercise';
 import { runProgram } from '../lib/runners/run';
+import { preparePython } from '../lib/runners/python';
 import { OUTPUT_LIMIT, type RunMessage } from '../lib/runners/types';
 
 const MAX_TEST_MS = 120_000;
@@ -221,6 +222,8 @@ export function setupCodeExercises() {
       check.disabled = false;
       reset.disabled = false;
       check.onclick = () => void run();
+      if (answer.language === 'python')
+        root.addEventListener('focusin', preparePython);
       stop.onclick = () => {
         interrupt();
         status.textContent = 'Verificação interrompida.';

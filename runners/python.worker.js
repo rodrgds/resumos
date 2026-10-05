@@ -3,13 +3,18 @@ import { loadPyodide } from 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyod
 const OUTPUT_LIMIT = 32_000;
 const MAX_PLOTS = 8;
 const MAX_PLOT_BASE64_CHARS = 2 * 1024 * 1024;
+const runtime = loadPyodide();
+runtime.then(
+  () => self.postMessage({ type: 'ready' }),
+  (error) =>
+    self.postMessage({ type: 'error', text: error.message || String(error) }),
+);
 
 self.onmessage = async ({ data: { code, input, files } }) => {
   const send = (message) => self.postMessage(message);
   let globals;
   try {
-    send({ type: 'status', text: 'A carregar o motor…' });
-    const pyodide = await loadPyodide();
+    const pyodide = await runtime;
     let outputLength = 0;
     const output = (text) => {
       outputLength += text.length + 1;

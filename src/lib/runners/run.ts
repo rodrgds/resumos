@@ -1,4 +1,5 @@
 import { runIsolated } from './isolated';
+import { runPython } from './python';
 import type { RunMessage, RunRequest } from './types';
 
 export function runProgram(
@@ -6,7 +7,8 @@ export function runProgram(
   receive: (message: RunMessage) => void,
   parent: HTMLElement,
 ): () => void {
-  if (['python', 'java', 'haskell', 'prolog', 'php'].includes(request.language))
+  if (request.language === 'python') return runPython(request, receive);
+  if (['java', 'haskell', 'prolog', 'php'].includes(request.language))
     return runIsolated(request, receive, parent);
 
   // Static constructors let Vite bundle each disposable runtime.

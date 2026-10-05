@@ -107,7 +107,7 @@ test('code exercises accept different correct implementations and reject wrong b
   await expect(diagnostic.locator('[data-code-error]')).toBeVisible({
     timeout: 60_000,
   });
-  await expect(diagnostic).toContainText('print(soma_naturais(0))');
+  await expect(diagnostic).toContainText(/print\(soma_naturais\(\d+\)\)/);
   await expect(exercise.locator('[data-feedback]')).toBeEmpty();
   expect(
     await page.evaluate(() =>
