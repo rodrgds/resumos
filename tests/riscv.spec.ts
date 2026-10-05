@@ -32,8 +32,9 @@ main:
     await page.keyboard.insertText(code);
   };
   await edit(source);
-  await playground.getByText('Dados de entrada', { exact: true }).click();
+  await playground.getByLabel('Dados de entrada', { exact: true }).click();
   await playground.locator('[data-stdin]').fill('7');
+  await playground.getByLabel('Dados de entrada', { exact: true }).click();
   await run.click();
   await expect(status).toHaveText('Concluído');
   await expect(output).toHaveText('14');

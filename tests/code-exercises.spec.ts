@@ -140,6 +140,7 @@ test('stopping or editing a running program cancels validation without recording
   page,
 }) => {
   test.setTimeout(90_000);
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.goto('/exemplo/apontamentos/');
   const exercise = page.locator('#soma-corrigir');
   await exercise.locator('.exercise-disclosure > summary').click();
@@ -151,9 +152,13 @@ test('stopping or editing a running program cancels validation without recording
     name: 'Verificar código',
     exact: true,
   });
+  await expect(check).toHaveText('');
   await editor.fill('while True:\n    pass');
   await check.click();
-  await exercise.getByRole('button', { name: 'Parar', exact: true }).click();
+  const stop = exercise.getByRole('button', { name: 'Parar', exact: true });
+  await expect(stop).toBeVisible();
+  await expect(stop).toHaveText('');
+  await stop.click();
   await expect(check).toBeEnabled();
   await expect(exercise.locator('[data-code-status]')).toHaveText(
     'Verificação interrompida.',
