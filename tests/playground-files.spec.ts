@@ -1,5 +1,26 @@
 import { expect, test } from '@playwright/test';
 
+test('the authored NumPy CSV example reads its supplied data unchanged', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.goto('/cadeiras/ct-iadp/numpy/');
+  const playground = page.getByRole('region', {
+    name: 'Ler dados numéricos',
+    exact: true,
+  });
+  await playground.scrollIntoViewIfNeeded();
+  await playground
+    .getByRole('button', { name: 'Executar', exact: true })
+    .click();
+  await expect(playground.getByRole('status')).toHaveText('Concluído', {
+    timeout: 45_000,
+  });
+  await expect(playground.getByLabel('Resultado', { exact: true })).toHaveText(
+    '(2, 2)\n[6. 8.]\n',
+  );
+});
+
 test('support files are editable tabs and the main file runs with imports', async ({
   page,
 }) => {

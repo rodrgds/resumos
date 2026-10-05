@@ -42,7 +42,7 @@ O [MEIC](https://resumos.rgo.pt/meic/) inclui as 57 cadeiras com nome no [plano 
 
 O projeto Cloudflare Pages `resumos-feup` está ligado a este repositório. Pushes para `main` publicam em `https://resumos.rgo.pt`; outros branches têm previews.
 
-A configuração usa `bash scripts/cloudflare-build.sh`, pasta de saída `dist`, Node 24 e imagem de build v3. O script descarrega Typst 0.15.1, confirma o SHA-256 do arquivo oficial, instala as dependências do lockfile, verifica tipos e compila o site com a pesquisa. Não é preciso um token Cloudflare no GitHub.
+A configuração usa `bash scripts/cloudflare-build.sh`, pasta de saída `dist`, Node 24 e imagem de build v3. `.node-version` fixa Node 24 também para o projeto dos motores, que compila `runners/dist/` com `npm run build:runners`. Mantém ambos os projetos na mesma versão de Node e verifica as duas publicações quando mudares o protocolo ou os ficheiros dos motores. O script do site descarrega Typst 0.15.1, confirma o SHA-256 do arquivo oficial, instala as dependências do lockfile, verifica tipos e compila o site com a pesquisa. Não é preciso um token Cloudflare no GitHub.
 
 O workflow GitHub Actions verifica formatação, tipos, testes de navegador e build. Cloudflare compila de forma independente, por isso os checks de GitHub não bloqueiam automaticamente a publicação.
 

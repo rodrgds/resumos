@@ -2,7 +2,7 @@
 
 ## Start here
 
-- Run project commands through `devenv shell`. Read [docs/desenvolvimento.md](docs/desenvolvimento.md) for checks and publishing. Pushes to `main` deploy through Cloudflare Pages. Published code must match the built source.
+- Run project commands through `devenv shell`. Read [docs/desenvolvimento.md](docs/desenvolvimento.md) for checks and publishing. `.node-version` pins Node for both Cloudflare Pages projects. Pushes to `main` deploy the website and separate runners; verify both when changing their protocol. Published code must match the built source.
 - For course content, read [CONTRIBUTING.md](CONTRIBUTING.md) and [resumos-writing](.agents/skills/resumos-writing/SKILL.md). Teach the reasoning, not instructions to press Executar or lists of output. Use the student's Moodle materials as the baseline and verify their academic year.
 - For interface changes, read [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md). Preserve the colourful course grid and FEUP accent. Use existing theme tokens and SVG icon components.
 
