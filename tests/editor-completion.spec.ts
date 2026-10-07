@@ -17,6 +17,7 @@ for (const { palette, appearance, width } of [
       name: 'Experimentar Python',
       exact: true,
     });
+    await playground.scrollIntoViewIfNeeded();
     const editor = playground.getByRole('textbox', {
       name: 'Código python',
       exact: true,
