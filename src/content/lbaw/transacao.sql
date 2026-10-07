@@ -1,6 +1,3 @@
-CREATE TABLE sessoes(id INTEGER PRIMARY KEY,livres INTEGER CHECK(livres>=0));
-CREATE TABLE bilhetes(id INTEGER PRIMARY KEY);
-INSERT INTO sessoes VALUES(12,1);
 BEGIN;
 UPDATE sessoes SET livres=livres-1 WHERE id=12 AND livres>0;
 SELECT livres FROM sessoes;
@@ -12,4 +9,4 @@ SAVEPOINT depois_do_contador;
 INSERT INTO bilhetes VALUES(1);
 ROLLBACK TO depois_do_contador;
 COMMIT;
-SELECT livres,(SELECT COUNT(*) FROM bilhetes) FROM sessoes;
+SELECT livres, (SELECT COUNT(*) FROM bilhetes) AS bilhetes FROM sessoes;

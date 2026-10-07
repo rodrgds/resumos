@@ -21,6 +21,10 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import corrida from '../../lbaw/concorrencia.mmd?raw';
 import atomicidade from '../../lbaw/transacao.sql?raw';
+import auditarPreco from '../../lbaw/auditar-preco.sql?raw';
+import rotinas from '../../lbaw/rotinas.sql?raw';
+import precos from '../../lbaw/precos.sql?raw';
+import dadosTransacao from '../../lbaw/transacao-dados.sql?raw';
 
 Com consultas e índices a responder depressa, falta garantir que duas vendas ao mesmo tempo não quebram as regras.
 
@@ -49,12 +53,13 @@ COMMIT;
 Se o `UPDATE` afetar zero linhas, faz `ROLLBACK` e responde «esgotado». Se o `INSERT` falhar, anula também a redução dos lugares. `SAVEPOINT nome` e `ROLLBACK TO nome` permitem anular uma parte sem terminar a transação inteira. Um erro de instrução em PostgreSQL deixa normalmente a transação em estado de erro até ser anulada ou recuperada com um savepoint apropriado.
 
 <CodePlayground
-  language="sql"
-  title="Atomicidade e ponto de recuperação em SQLite"
+  language="postgresql"
+  title="Atomicidade e ponto de recuperação em PostgreSQL"
+  files={{ 'dados.sql': dadosTransacao }}
   code={atomicidade}
 />
 
-O programa mostra um contador a regressar de 0 para 1 após `ROLLBACK`. Na segunda transação, a inserção de um bilhete é anulada até ao savepoint, mas a alteração anterior confirma-se. O último resultado é `0|0`: zero lugares e zero bilhetes. Esse estado ilustra que **atomicidade não escolhe a invariante por nós**, ou seja, o agrupamento das operações tem de corresponder à regra. O motor do bloco é SQLite e não demonstra a concorrência de PostgreSQL.
+O programa mostra um contador a regressar de 0 para 1 após `ROLLBACK`. Na segunda transação, a inserção de um bilhete é anulada até ao savepoint, mas a alteração anterior confirma-se. O último resultado tem zero lugares e zero bilhetes. Esse estado ilustra que **atomicidade não escolhe a invariante por nós**, ou seja, o agrupamento das operações tem de corresponder à regra. O bloco usa uma só ligação PostgreSQL, por isso não demonstra transações concorrentes.
 
 ## Um COUNT dentro de um trigger pode falhar
 
@@ -125,22 +130,14 @@ A bloqueia a linha 1 e pede a 2; B bloqueia a 2 e pede a 1. Há um ciclo de espe
 
 `NEW` está disponível na inserção; `OLD` na eliminação; ambos na atualização. Não uses OLD num INSERT. Uma exceção no trigger pode anular a instrução; as alterações do trigger pertencem à mesma transação.
 
-```sql
-CREATE FUNCTION auditar_preco() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.preco IS DISTINCT FROM OLD.preco THEN
-    INSERT INTO historico_preco(sessao_id,preco_anterior,preco_novo)
-    VALUES (NEW.id,OLD.preco,NEW.preco);
-  END IF;
-  RETURN NEW;
-END;
-$$;
-CREATE TRIGGER preco_alterado
-AFTER UPDATE OF preco ON sessoes
-FOR EACH ROW EXECUTE FUNCTION auditar_preco();
-```
+<CodePlayground
+  language="postgresql"
+  title="Auditar alterações de preço com PL/pgSQL"
+  files={{ 'precos.sql': precos }}
+  code={auditarPreco}
+/>
 
-`UPDATE OF preco` depende das colunas mencionadas pela instrução, não de o valor ter mudado. O teste `IS DISTINCT FROM` distingue a mudança real e trata NULL de forma definida. O histórico também desaparece se a transação for anulada.
+`UPDATE OF preco` depende das colunas mencionadas pela instrução, não de o valor ter mudado. O teste `IS DISTINCT FROM` distingue a mudança real e trata NULL de forma definida. A alteração de 12,50 para 15 euros cria uma linha no histórico. A alteração para 18 euros e a sua linha de histórico desaparecem com o `ROLLBACK`, por isso o preço final continua a ser 15 e há só uma alteração confirmada.
 
 Uma transação da base de dados não anula um pagamento que já aconteceu num serviço externo. Pagamentos, emails e chamadas remotas precisam de um protocolo próprio: regista uma operação pendente e processa-a com identificação que impeça duplicados. E não mantenhas um bloqueio de linha enquanto esperas pela pessoa preencher um formulário.
 
@@ -148,17 +145,11 @@ Uma transação da base de dados não anula um pagamento que já aconteceu num s
 
 Uma rotina guardada na base de dados concentra código junto dos dados. Em PostgreSQL, uma **função** é usada numa expressão, enquanto uma **procedure** é chamada com `CALL`. Um trigger é ativado por um evento e executa uma função de trigger.
 
-```sql
-CREATE FUNCTION preco_com_taxa(p numeric) RETURNS numeric
-LANGUAGE SQL IMMUTABLE AS $$ SELECT p * 1.23 $$;
-SELECT preco_com_taxa(10);
-
-CREATE TABLE mensagens_exemplo (texto text);
-CREATE PROCEDURE registar_mensagem(p_texto text)
-LANGUAGE SQL AS $$ INSERT INTO mensagens_exemplo VALUES (p_texto) $$;
-CALL registar_mensagem('confirmado');
-SELECT texto FROM mensagens_exemplo;
-```
+<CodePlayground
+  language="postgresql"
+  title="Função numa expressão e procedure com CALL"
+  code={rotinas}
+/>
 
 O exemplo PostgreSQL dá `12.30` e uma linha `confirmado`. `CALL` não é uma forma alternativa de invocar qualquer função. Uma procedure pode ter parâmetros de saída; uma função pode produzir efeitos, por isso «função calcula, procedure altera» não é uma definição segura.
 

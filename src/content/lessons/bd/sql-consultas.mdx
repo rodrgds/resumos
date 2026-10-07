@@ -44,10 +44,10 @@ A ordem de uma tabela ou consulta não é garantida sem `ORDER BY`. `LIMIT 1` se
 Uma junção liga linhas que satisfazem `ON`. Qualifica nomes ambíguos e escreve a ligação de cada par de tabelas:
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Cada linha comprada com o seu cliente e produto"
-  code={`${loja}
-SELECT e.id AS encomenda, c.nome AS cliente,
+  files={{ 'loja.sql': loja }}
+  code={`SELECT e.id AS encomenda, c.nome AS cliente,
        p.nome AS produto, i.qtd,
        i.qtd * i.precoUnitario AS totalCentimos
 FROM Encomenda AS e
@@ -68,10 +68,10 @@ Omitir uma condição pode criar um produto cartesiano. Juntar três clientes co
 Para formar pares de encomendas do mesmo cliente, juntamos Encomenda consigo própria. Os aliases dão papéis diferentes à mesma tabela:
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Pares de encomendas do mesmo cliente"
-  code={`${loja}
-SELECT e1.id AS primeira, e2.id AS segunda
+  files={{ 'loja.sql': loja }}
+  code={`SELECT e1.id AS primeira, e2.id AS segunda
 FROM Encomenda AS e1
 JOIN Encomenda AS e2
   ON e2.idCliente = e1.idCliente AND e1.id < e2.id
@@ -85,10 +85,10 @@ A resposta é só o par 100 e 101, as duas encomendas de Ana. A condição `e1.i
 Um `INNER JOIN` elimina linhas sem correspondência. Um `LEFT JOIN` conserva todas as linhas da esquerda e preenche as colunas da direita com `NULL` quando não há correspondência.
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Conservar Mia na contagem de encomendas"
-  code={`${loja}
-SELECT c.id, c.nome, COUNT(e.id) AS encomendas
+  files={{ 'loja.sql': loja }}
+  code={`SELECT c.id, c.nome, COUNT(e.id) AS encomendas
 FROM Cliente AS c
 LEFT JOIN Encomenda AS e ON e.idCliente = c.id
 GROUP BY c.id, c.nome
@@ -137,10 +137,10 @@ Uma comparação com `NULL`, incluindo `NULL = NULL`, normalmente dá **desconhe
 `GROUP BY` reúne linhas com os mesmos valores das colunas de agrupamento. As funções de agregação calculam um resultado para cada grupo. `WHERE` filtra linhas antes do agrupamento; `HAVING` filtra grupos depois.
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Encomendas que ultrapassam 100 euros"
-  code={`${loja}
-SELECT idEncomenda, SUM(qtd * precoUnitario) / 100.0 AS euros
+  files={{ 'loja.sql': loja }}
+  code={`SELECT idEncomenda, SUM(qtd * precoUnitario) / 100.0 AS euros
 FROM Item
 GROUP BY idEncomenda
 HAVING SUM(qtd * precoUnitario) > 10000
@@ -152,19 +152,19 @@ A 100 tem 115 euros e a 101 tem 180, por isso a 102 fica de fora. `WHERE SUM(...
 `COUNT(*)` conta linhas. `COUNT(x)` conta os x não nulos; `COUNT(DISTINCT x)` conta valores distintos não nulos. `SUM`, `AVG`, `MIN` e `MAX` ignoram valores nulos. Sem linhas e sem `GROUP BY`, `COUNT` dá 0, enquanto `SUM`, `AVG`, `MIN` e `MAX` dão `NULL`. Com `GROUP BY`, uma entrada vazia não produz grupos.
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Agregações com NULL e com entrada vazia"
   code={`CREATE TABLE Valor(x INTEGER);
 INSERT INTO Valor VALUES (10), (NULL), (20);
 SELECT COUNT(*) AS linhas, COUNT(x) AS conhecidos,
        SUM(x) AS soma, AVG(x) AS media FROM Valor;
 SELECT COUNT(*) AS linhas,
-       COALESCE(CAST(SUM(x) AS TEXT), 'NULL') AS soma
+       SUM(x) AS soma
 FROM Valor WHERE 0;
 SELECT x, COUNT(*) FROM Valor WHERE 0 GROUP BY x;`}
 />
 
-A primeira resposta é `3|2|30|15.0` porque a média divide por dois valores conhecidos, não por três linhas. A segunda é `0|NULL` e a terceira não devolve linhas.
+A primeira resposta tem 3 linhas, 2 valores conhecidos, soma 30 e média 15 porque a média divide por dois valores conhecidos, não por três linhas. A segunda tem contagem 0 e soma `NULL` e a terceira não devolve linhas.
 
 SQLite permite colunas soltas numa consulta agregada, mas o valor escolhido pode não representar o grupo de forma estável. Há regras especiais para certos usos de `MIN` e `MAX`, que ainda deixam ambiguidades com empates. Escreve cada coluna da resposta no agrupamento ou numa agregação, ou formula explicitamente a escolha com uma subconsulta. Não uses essa permissividade para justificar SQL portátil.
 

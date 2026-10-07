@@ -123,12 +123,12 @@ Para prever o resultado de agregações, operações de conjuntos e funções de
 <YouTube id="MzigBKf84aY" title="CMU Database Group, Modern SQL, 2024" />
 
 <CodePlayground
-  language="sql"
+  language="postgresql"
   title="Junção, contagem e o caso NULL"
   code={consulta}
 />
 
-Este bloco corre em **SQLite**, com dados que incluem sessões sem bilhetes e um NULL que distingue `NOT IN` de `NOT EXISTS`. PostgreSQL partilha estes resultados, mas sintaxe de datas, tipos, planos e concorrência depende do motor. As linhas entre consultas não representam uma transação concorrente.
+Este bloco corre em PostgreSQL, com dados que incluem sessões sem bilhetes e um NULL que distingue `NOT IN` de `NOT EXISTS`. Cada consulta tem a sua tabela de resultados. Uma execução usa uma só ligação, por isso as consultas seguidas não representam transações concorrentes.
 
 ## Confirmar a resposta antes de otimizar
 
@@ -142,6 +142,6 @@ Na álgebra relacional clássica, seleção σ filtra tuplos e projeção π esc
 
 ## O mesmo conjunto de dados do início ao fim
 
-Usa duas sessões e três bilhetes: S1 tem um pago e um reservado; S2 não tem bilhetes; um bilhete tem `sessao_id` NULL por erro de importação. A consulta com o filtro no `ON` devolve `(S1,1)` e `(S2,0)`: S2 aparece porque o `LEFT JOIN` conserva a esquerda. Com o filtro no `WHERE`, S2 desaparece e a resposta passa a `(S1,1)`. Verifica em SQLite: a primeira forma dá `[(1, 1), (2, 0)]`, a segunda dá `[(1, 1)]`.
+Usa duas sessões e três bilhetes: S1 tem um pago e um reservado; S2 não tem bilhetes; um bilhete tem `sessao_id` NULL por erro de importação. A consulta com o filtro no `ON` devolve `(S1,1)` e `(S2,0)`: S2 aparece porque o `LEFT JOIN` conserva a esquerda. Com o filtro no `WHERE`, S2 desaparece e a resposta passa a `(S1,1)`. As tabelas de resultados mostram a primeira forma dá `[(1, 1), (2, 0)]`, a segunda dá `[(1, 1)]`.
 
 O mesmo conjunto mostra `NOT IN` contra `NOT EXISTS`: se a subconsulta inclui NULL, `2 NOT IN (1,NULL)` é desconhecido e o `WHERE` rejeita a linha, enquanto `NOT EXISTS` com correlação testa ausência de linhas. Constrói sempre dados com zero, uma e várias correspondências, mais NULL quando a coluna o permite, e calcula à mão antes de correres.

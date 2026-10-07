@@ -16,6 +16,10 @@ editorial:
   coverage: Índices compostos, parciais e por expressão, B-tree versus hash e GIN, planos, pesquisa textual, precisão, recall e sinais de ranking.
 ---
 
+import CodePlayground from '../../../components/CodePlayground.astro';
+import plano from '../../lbaw/plano.sql?raw';
+import sessoes from '../../lbaw/sessoes.sql?raw';
+import pesquisa from '../../lbaw/pesquisa.sql?raw';
 import Typst from '../../../components/Typst.astro';
 import sqlIndicesFigura from '../../lbaw/sql-indices.typ?raw';
 
@@ -61,14 +65,17 @@ Para procurar um username exato, um **Hash** usa uma função de dispersão para
 | `ORDER BY data`                 | B-tree.                     | A ordem do índice tem de satisfazer a consulta.     |
 | Lexemas de um documento         | Índice invertido, como GIN. | Precisa de representar vários termos por documento. |
 
-```sql
-CREATE TABLE contas_exemplo (id integer PRIMARY KEY, username text);
+<CodePlayground
+  language="postgresql"
+  title="Índice Hash para igualdade"
+  code={`CREATE TABLE contas_exemplo (id integer PRIMARY KEY, username text);
 CREATE INDEX contas_username_hash ON contas_exemplo USING hash(username);
 INSERT INTO contas_exemplo VALUES (1,'ana'),(2,'ana'),(3,'bruno');
 SELECT id FROM contas_exemplo WHERE username = 'ana';
-```
+`}
+/>
 
-Este excerto é **PostgreSQL**, não SQLite. Devolve os identificadores 1 e 2, sem prometer uma ordem, porque o índice Hash não exige unicidade do username. Hash não implica superioridade sobre B-tree numa igualdade. Índices ocupam espaço e são mantidos nas escritas; mede com a carga real.
+O bloco usa um índice Hash de PostgreSQL. Devolve os identificadores 1 e 2, sem prometer uma ordem, porque o índice Hash não exige unicidade do username. Hash não implica superioridade sobre B-tree numa igualdade. Índices ocupam espaço e são mantidos nas escritas; mede com a carga real.
 
 ## Carga, seletividade e organização física
 
@@ -80,11 +87,12 @@ Em PostgreSQL, `CLUSTER sessoes USING sessoes_evento_data` reordena fisicamente 
 
 ## Ler EXPLAIN sem confundir custo com tempo
 
-```sql
-EXPLAIN SELECT id, data_hora, preco
-FROM sessoes
-WHERE evento_id = 3 AND data_hora >= TIMESTAMP '2026-12-01';
-```
+<CodePlayground
+  language="postgresql"
+  title="Comparar planos antes e depois do índice"
+  files={{ 'sessoes.sql': sessoes }}
+  code={plano}
+/>
 
 | Campo ou nó      | Significado                                                                                              |
 | ---------------- | -------------------------------------------------------------------------------------------------------- |
@@ -130,22 +138,11 @@ Esse índice não garante unicidade. Se o domínio exige emails únicos sem dist
 
 Um B-tree em titulo não resolve por si só `ILIKE '%rede%'`. A pesquisa por texto procura palavras, pode normalizar formas e atribuir relevância. Em PostgreSQL, `tsvector` representa um documento normalizado e `tsquery` representa uma consulta:
 
-```sql
-CREATE TABLE artigos (
-  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  titulo text NOT NULL,
-  texto text NOT NULL,
-  pesquisa tsvector GENERATED ALWAYS AS
-    (to_tsvector('portuguese', titulo || ' ' || texto)) STORED
-);
-CREATE INDEX artigos_pesquisa ON artigos USING GIN(pesquisa);
-
-SELECT id, titulo,
-       ts_rank(pesquisa, plainto_tsquery('portuguese','redes seguras')) AS relevancia
-FROM artigos
-WHERE pesquisa @@ plainto_tsquery('portuguese','redes seguras')
-ORDER BY relevancia DESC, id;
-```
+<CodePlayground
+  language="postgresql"
+  title="Pesquisa em português com tsvector e GIN"
+  code={pesquisa}
+/>
 
 A configuração deve corresponder à língua. `plainto_tsquery` trata a entrada como texto, em vez de exigir sintaxe de operadores; para sintaxe semelhante à pesquisa web há `websearch_to_tsquery`. A correspondência é por lexemas normalizados, não por qualquer substring. Pesquisa e ordenação por relevância são decisões diferentes: `@@` filtra e `ts_rank` calcula um valor para ordenar.
 

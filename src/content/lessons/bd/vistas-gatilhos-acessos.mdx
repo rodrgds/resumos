@@ -8,6 +8,7 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import documentos from '../../bd/documentos.sql?raw';
 import loja from '../../bd/loja.sql?raw';
 
 O total de cada encomenda é uma pergunta com nome: vista. Registar cada mudança de stock é reagir a uma alteração: gatilho. Decidir quem pode ler a tabela é autorização. Três mecanismos diferentes, com regras diferentes por motor.
@@ -19,10 +20,10 @@ Uma vista dá nome a uma pergunta. Um gatilho reage a uma alteração. Uma permi
 Uma **vista virtual** guarda a definição de uma consulta, não uma cópia permanente dos seus resultados. Podemos consultá-la como uma tabela:
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Uma vista acompanha alterações dos dados"
-  code={`${loja}
-CREATE VIEW TotalEncomenda AS
+  files={{ 'loja.sql': loja }}
+  code={`CREATE VIEW TotalEncomenda AS
 SELECT idEncomenda, SUM(qtd * precoUnitario) AS total
 FROM Item GROUP BY idEncomenda;
 SELECT * FROM TotalEncomenda ORDER BY idEncomenda;
@@ -41,10 +42,10 @@ A atualização pode ser ambígua. Se uma vista mostra um total de 100 euros, es
 SQLite não permite modificar vistas diretamente. Um gatilho `INSTEAD OF` pode definir a tradução. PostgreSQL consegue atualizar automaticamente certas vistas simples; vistas com agregações e outras construções exigem outro tratamento. Não transfiras essa regra entre motores.
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Definir uma atualização sobre uma vista SQLite"
-  code={`${loja}
-CREATE VIEW NomeCliente AS SELECT id, nome FROM Cliente;
+  files={{ 'loja.sql': loja }}
+  code={`CREATE VIEW NomeCliente AS SELECT id, nome FROM Cliente;
 CREATE TRIGGER AtualizarNome
 INSTEAD OF UPDATE OF nome ON NomeCliente
 FOR EACH ROW
@@ -92,10 +93,10 @@ Em SQLite, os gatilhos são por linha, mesmo que omitas `FOR EACH ROW`. Uma inst
 Queremos registar cada mudança efetiva do stock. O valor inicial do teclado é 20.
 
 <CodePlayground
-  language="sql"
+  language="sqlite"
   title="Auditar mudanças de stock, sem registar atualizações iguais"
-  code={`${loja}
-CREATE TABLE AlteracaoStock(
+  files={{ 'loja.sql': loja }}
+  code={`CREATE TABLE AlteracaoStock(
   idProduto INTEGER, anterior INTEGER, novo INTEGER
 );
 CREATE TRIGGER AuditarStock
@@ -109,7 +110,7 @@ UPDATE Produto SET stock = stock WHERE id = 10;
 SELECT * FROM AlteracaoStock;`}
 />
 
-AlteracaoStock começa vazia e termina com uma linha, `10|20|18`: a primeira instrução escreve-a, a segunda dispara o evento mas a condição é falsa e não acrescenta outra. O `CHECK (stock >= 0)` continua a ser a forma declarativa de proibir stock negativo.
+AlteracaoStock começa vazia e termina com uma linha com produto 10, stock anterior 20 e stock novo 18: a primeira instrução escreve-a, a segunda dispara o evento mas a condição é falsa e não acrescenta outra. O `CHECK (stock >= 0)` continua a ser a forma declarativa de proibir stock negativo.
 
 Usa restrições antes de gatilhos quando exprimem a mesma regra. Um `UNIQUE` é mais claro para unicidade e uma estrangeira com cascata é mais clara para integridade referencial do que reimplementar ambos em código de gatilho.
 
@@ -127,7 +128,7 @@ A ação de um gatilho pode ativar outros gatilhos. Evita depender da ordem de g
 
 SQLite é um motor embebido, normalmente sobre um ficheiro. Não implementa utilizadores SQL, `GRANT`, `REVOKE` nem políticas RLS como PostgreSQL. A aplicação e as permissões do sistema operativo controlam o acesso. Uma vista SQLite não protege colunas contra quem consegue abrir livremente o ficheiro da base de dados.
 
-Os exemplos seguintes são **PostgreSQL**, não se executam nos blocos SQLite.
+Os exemplos seguintes usam PostgreSQL, que permite criar papéis e políticas de acesso.
 
 ## Privilégios e papéis em PostgreSQL
 
@@ -150,12 +151,21 @@ O **menor privilégio** atribui apenas as operações necessárias. Permissões 
 
 Em PostgreSQL, RLS restringe as linhas visíveis ou modificáveis, além dos privilégios de objeto. Para uma tabela `Documento(id, dono, texto)` em que dono coincide com o nome do utilizador SQL:
 
-```sql
-ALTER TABLE Documento ENABLE ROW LEVEL SECURITY;
+<CodePlayground
+  language="postgresql"
+  title="Ler apenas os documentos do papel Ana"
+  files={{ 'documentos.sql': documentos }}
+  code={`ALTER TABLE Documento ENABLE ROW LEVEL SECURITY;
 CREATE POLICY documentos_proprios ON Documento
   USING (dono = current_user)
   WITH CHECK (dono = current_user);
-```
+GRANT SELECT ON Documento TO ana;
+SET ROLE ana;
+SELECT id, dono, texto FROM Documento ORDER BY id;
+RESET ROLE;`}
+/>
+
+A tabela tem um documento de Ana e outro de Rui. `SET ROLE ana` faz a consulta com os direitos de Ana, por isso só aparece o seu documento. Executar a consulta como proprietário não provaria o filtro.
 
 `USING` filtra linhas existentes e `WITH CHECK` valida os valores novos. Esta política não concede `SELECT` ou `UPDATE`; os privilégios continuam necessários. Sem uma política aplicável, ativar RLS faz negar o acesso às linhas para utilizadores sujeitos às políticas.
 
