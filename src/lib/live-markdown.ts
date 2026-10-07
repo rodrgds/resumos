@@ -1,5 +1,6 @@
 import {
   EditorState,
+  EditorSelection,
   StateEffect,
   StateField,
   type Range,
@@ -12,28 +13,61 @@ import {
   placeholder,
   type DecorationSet,
 } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { markdown, markdownKeymap } from '@codemirror/lang-markdown';
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  temporarilySetTabFocusMode,
+} from '@codemirror/commands';
+import {
+  markdown,
+  markdownLanguage,
+  markdownKeymap,
+  insertNewlineContinueMarkupCommand,
+} from '@codemirror/lang-markdown';
+import {
+  indentUnit,
+  syntaxHighlighting,
+  bracketMatching,
+} from '@codemirror/language';
+import { languages } from '@codemirror/language-data';
+import { codeHighlightStyle } from './editor-highlight';
+import {
+  indentMarkdownList,
+  outdentMarkdownList,
+  exitMarkdownList,
+} from './markdown-commands';
 import { visit, SKIP } from 'unist-util-visit';
 import type { Root, RootContent } from 'mdast';
 import {
   parsePersonalMarkdown,
   renderPersonalBlock,
 } from './personal-markdown';
-import { addFormulaCopy } from './formula-copy';
 
 const refreshPreview = StateEffect.define<boolean>();
-interface Formula {
-  from: number;
-  to: number;
-  source: string;
-  display: boolean;
+
+function sourceBounds(state: EditorState, node: RootContent) {
+  const from = node.position!.start.offset!;
+  const to = node.position!.end.offset!;
+  if (node.type === 'inlineMath') {
+    const width = /^\$+/.exec(state.sliceDoc(from, to))![0].length;
+    return { from: from + width, to: to - width };
+  }
+  if (node.type === 'math') {
+    const first = state.doc.lineAt(from);
+    const last = state.doc.lineAt(to);
+    const body = Math.min(first.to + 1, to);
+    const closed =
+      last.number > first.number && /^\s*\${2,}\s*$/.test(last.text);
+    return { from: body, to: Math.max(body, closed ? last.from - 1 : to) };
+  }
+  return { from, to };
 }
+
 interface LiveMarkdownOptions {
   markdown: string;
   images: Map<string, string>;
   change: (markdown: string) => void;
-  editFormula: (formula: Formula, apply: (value: string) => void) => void;
   attach: (files: File[]) => void;
 }
 
@@ -64,48 +98,15 @@ export function liveMarkdown(
       );
       block.className = 'note-preview';
       block.innerHTML = this.html;
-      const from = this.node.position!.start.offset!;
-      const to = this.node.position!.end.offset!;
-      if (this.node.type === 'math' || this.node.type === 'inlineMath') {
-        const formula: Formula = {
-          from,
-          to,
-          source: this.node.value,
-          display: this.node.type === 'math',
-        };
-        const math = block.querySelector<HTMLElement>('.katex, .katex-error');
-        if (math) {
-          addFormulaCopy(math);
-          const edit = document.createElement('button');
-          edit.type = 'button';
-          edit.className = 'note-formula-edit';
-          edit.setAttribute('aria-label', 'Editar fórmula');
-          math.before(edit);
-          edit.append(math);
-          edit.addEventListener('pointerdown', (event) =>
-            event.preventDefault(),
-          );
-          edit.addEventListener('click', () =>
-            options.editFormula(formula, (value) => {
-              const insert = formula.display
-                ? `$$\n${value}\n$$`
-                : `$${value}$`;
-              view.dispatch({
-                changes: { from, to, insert },
-                selection: { anchor: from + insert.length },
-              });
-            }),
-          );
-        }
-      } else {
-        block.addEventListener('click', () => {
-          view.dispatch({
-            selection: { anchor: from },
-            effects: refreshPreview.of(true),
-          });
-          view.focus();
+      block.addEventListener('mousedown', (event) => event.preventDefault());
+      block.addEventListener('click', () => {
+        view.dispatch({
+          selection: { anchor: sourceBounds(view.state, this.node).from },
+          effects: refreshPreview.of(true),
+          scrollIntoView: true,
         });
-      }
+        view.focus();
+      });
       return block;
     }
     ignoreEvent() {
@@ -193,6 +194,15 @@ export function liveMarkdown(
           return SKIP;
         }
       }
+      if (node.type === 'math') {
+        for (
+          let n = state.doc.lineAt(from).number;
+          n <= state.doc.lineAt(to).number;
+          n++
+        )
+          line(state.doc.line(n).from, 'note-math-source');
+      }
+      if (node.type === 'inlineMath') mark(from, to, 'code');
       if (node.type === 'heading') {
         const first = node.children[0]?.position?.start.offset ?? to;
         const last = node.children.at(-1)?.position?.end.offset ?? to;
@@ -246,7 +256,7 @@ export function liveMarkdown(
       if (node.type === 'listItem') {
         const first = state.doc.lineAt(from);
         const marker = /^(\s*)([-+*]|\d+[.)])\s+(\[[ xX]\]\s+)?/.exec(
-          first.text,
+          state.sliceDoc(from, first.to),
         );
         if (marker) {
           line(from, 'note-list-line');
@@ -256,9 +266,9 @@ export function liveMarkdown(
             /^[-+*]$/.test(marker[2])
           ) {
             ranges.push(
-              Decoration.replace({ widget: new ListMarker('• ') }).range(
+              Decoration.replace({ widget: new ListMarker('•') }).range(
                 from,
-                from + marker[0].length,
+                from + marker[2].length,
               ),
             );
           } else
@@ -317,14 +327,75 @@ export function liveMarkdown(
     },
     provide: (field) => EditorView.decorations.from(field),
   });
+  function enterPreview(direction: 'up' | 'down', extend = false) {
+    return (view: EditorView) => {
+      const current = view.state.selection.main;
+      const next = view.moveVertically(current, direction === 'down');
+      let target: RootContent | undefined;
+      visit(tree, (node) => {
+        if (!['math', 'table', 'thematicBreak'].includes(node.type)) return;
+        const from = node.position!.start.offset!;
+        const to = node.position!.end.offset!;
+        const crossed =
+          direction === 'up'
+            ? current.head > to && next.head <= to
+            : current.head < from && next.head >= from;
+        if (
+          crossed &&
+          (!target ||
+            (direction === 'up'
+              ? from > target.position!.start.offset!
+              : from < target.position!.start.offset!))
+        )
+          target = node as RootContent;
+      });
+      if (!target) return false;
+      const node = target as RootContent;
+      const bounds = sourceBounds(view.state, node);
+      const head = direction === 'down' ? bounds.from : bounds.to;
+      view.dispatch({
+        selection: EditorSelection.single(extend ? current.anchor : head, head),
+        scrollIntoView: true,
+      });
+      return true;
+    };
+  }
   const view = new EditorView({
     parent,
     state: EditorState.create({
       doc: options.markdown,
       extensions: [
-        markdown(),
+        markdown({
+          base: markdownLanguage,
+          codeLanguages: languages,
+          addKeymap: false,
+        }),
+        syntaxHighlighting(codeHighlightStyle),
+        indentUnit.of('  '),
+        bracketMatching(),
         history(),
-        keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap]),
+        keymap.of([
+          {
+            key: 'ArrowUp',
+            run: enterPreview('up'),
+            shift: enterPreview('up', true),
+          },
+          {
+            key: 'ArrowDown',
+            run: enterPreview('down'),
+            shift: enterPreview('down', true),
+          },
+          { key: 'Tab', run: indentMarkdownList, shift: outdentMarkdownList },
+          { key: 'Escape', run: temporarilySetTabFocusMode },
+          { key: 'Enter', run: exitMarkdownList },
+          {
+            key: 'Enter',
+            run: insertNewlineContinueMarkupCommand({ nonTightLists: false }),
+          },
+          ...markdownKeymap.filter((binding) => binding.key !== 'Enter'),
+          ...defaultKeymap,
+          ...historyKeymap,
+        ]),
         EditorView.lineWrapping,
         preview,
         placeholder('Escreve aqui…'),
@@ -381,11 +452,36 @@ export function liveMarkdown(
       ],
     }),
   });
+  function blockInsertionPoint() {
+    const head = view.state.selection.main.head;
+    const block = tree.children.find(
+      (node) =>
+        node.position!.start.offset! <= head &&
+        node.position!.end.offset! >= head,
+    );
+    return block?.position?.end.offset ?? head;
+  }
   return {
     destroy: () => view.destroy(),
     focus: () => view.focus(),
-    insert(markdown: string) {
-      view.dispatch(view.state.replaceSelection(markdown));
+    insertFormula() {
+      const from = blockInsertionPoint();
+      const insert = '\n\n$$\n\n$$\n\n';
+      view.dispatch({
+        changes: { from, insert },
+        selection: { anchor: from + 5 },
+        scrollIntoView: true,
+        userEvent: 'input',
+      });
+      view.focus();
+    },
+    insertBlock(markdown: string) {
+      const from = blockInsertionPoint();
+      view.dispatch({
+        changes: { from, insert: markdown },
+        selection: { anchor: from + markdown.length },
+        userEvent: 'input',
+      });
     },
     refresh: () => view.dispatch({ effects: refreshPreview.of(focused) }),
   };

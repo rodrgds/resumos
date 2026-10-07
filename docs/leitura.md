@@ -10,7 +10,7 @@
 
 Nos **Conteúdos** de uma cadeira, o botão **Novo apontamento** cria uma página pessoal acima das lições. O **Caderno** reúne as páginas e as anotações. As cadeiras sem resumos também permitem criar apontamentos.
 
-O apontamento usa a mesma largura, letra e navegação das lições. Edita o título ou escreve diretamente na página. O texto mantém a formatação enquanto escreves; os sinais Markdown aparecem junto do cursor. Enter continua listas; Ctrl/⌘ Z desfaz alterações. Usa `$…$` para matemática em linha e `$$` em linhas próprias para uma fórmula destacada. Clica na fórmula para editar o LaTeX com pré-visualização. Escape cancela. HTML e componentes MDX não são executados.
+O apontamento usa a mesma largura, letra e navegação das lições. Edita o título ou escreve diretamente na página. O texto mantém a formatação enquanto escreves; os sinais Markdown aparecem junto do cursor. Enter continua listas; num item vazio, sai da lista. Tab recua um item para dentro do anterior e Shift Tab sobe um nível, incluindo os seus filhos. Ctrl/⌘ Z desfaz alterações. Escape seguido de Tab sai do editor. Usa `$…$` para matemática em linha e `$$` em linhas próprias para uma fórmula destacada. Clica na fórmula ou chega-lhe com as setas para editar o LaTeX na própria página, entre os delimitadores. Ao sair, a fórmula volta a ser desenhada. Os blocos de código usam a linguagem indicada na abertura do bloco, por exemplo `python`, para colorir a sintaxe. HTML e componentes MDX não são executados.
 
 O menu **Ações do apontamento**, ao lado do título, permite inserir imagens e fórmulas, importar, exportar e eliminar. Também podes abrir o menu de uma página nos conteúdos com o botão direito, o botão de ações ou Shift F10. A eliminação pode ser desfeita durante a visita.
 
@@ -20,7 +20,7 @@ Os apontamentos guardam automaticamente neste navegador. Não entram na pesquisa
 
 ## Copiar fórmulas
 
-Aproxima o rato de uma fórmula ou usa Tab para chegar a **Copiar fórmula**. No telemóvel, o botão fica visível. A cópia inclui o LaTeX original e os delimitadores Markdown; um aviso confirma a cópia. O botão desaparece quando afastas o rato. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. As fórmulas continuam a poder fazer parte de seleções e anotações.
+Nas lições, aproxima o rato de uma fórmula ou usa Tab para chegar a **Copiar fórmula**. No telemóvel, o botão fica visível. A cópia inclui o LaTeX original e os delimitadores Markdown; um aviso confirma a cópia. O botão desaparece quando afastas o rato. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. As fórmulas continuam a poder fazer parte de seleções e anotações. Nos apontamentos pessoais, clica para revelar o LaTeX e usa a cópia normal do editor; não há um botão sobre a fórmula.
 
 ## Anotações e destaques
 

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFile } from 'node:fs/promises';
 
 async function newNote(page: Page) {
   const empty = page.getByRole('button', {
@@ -39,6 +40,12 @@ async function noteAction(page: Page, name: string) {
     .click();
 }
 
+async function exportedMarkdown(page: Page) {
+  const download = page.waitForEvent('download');
+  await noteAction(page, 'Exportar apontamento');
+  return readFile((await (await download).path())!, 'utf8');
+}
+
 const image = {
   name: 'diagrama.png',
   mimeType: 'image/png',
@@ -67,11 +74,12 @@ for (const width of [1440, 390]) {
       page.locator('.personal-editor').getByRole('heading', { level: 1 }),
     ).toHaveText('Revisão');
     await expect(page.locator('.personal-editor strong')).toHaveText('ideia');
-    await page.getByRole('button', { name: 'Editar fórmula' }).click();
-    await page
-      .getByRole('textbox', { name: 'LaTeX da fórmula' })
-      .fill('\\frac{a}{b}');
-    await page.getByRole('button', { name: 'Aplicar fórmula' }).click();
+    await editor.locator('.katex').click();
+    await expect(editor).toContainText('$x^2$');
+    await expect(editor).toBeFocused();
+    await page.keyboard.insertText('a + ');
+    await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+    await expect(editor.locator('annotation')).toHaveText('a + x^2');
     await page.locator('#attach-note-image').setInputFiles(image);
     await expect(
       page.locator('.personal-editor').getByRole('img'),
@@ -208,29 +216,29 @@ test('published formulas copy their original LaTeX and offer a clipboard fallbac
   await expect(fallback).toBeHidden();
 });
 
-test('touch formula editing cancels without changing the source and copies usable Markdown maths', async ({
+test('touch formulas edit in place and undo restores the formula', async ({
   browser,
 }) => {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     hasTouch: true,
-    permissions: ['clipboard-read', 'clipboard-write'],
   });
   const page = await context.newPage();
-  await page.goto('/caderno/?cadeira=exemplo');
-  await newNote(page);
-  await page
-    .getByRole('textbox', { name: 'Texto do apontamento' })
-    .fill('Uma fórmula $\\frac{a}{b}$');
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('Uma fórmula $x^2$');
   await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
-  await page.getByRole('button', { name: 'Editar fórmula' }).tap();
-  await page.getByRole('textbox', { name: 'LaTeX da fórmula' }).fill('\\frac{');
-  await expect(page.locator('#note-formula-error')).toContainText('incompleta');
-  await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Copiar fórmula', exact: true }).tap();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-    '$\\frac{a}{b}$',
-  );
+  await editor.locator('.katex').tap();
+  await expect(editor).toBeFocused();
+  await expect(editor).toContainText('$x^2$');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.keyboard.insertText('a + ');
+  await editor.press('ControlOrMeta+z');
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await expect(editor.locator('annotation')).toHaveText('x^2');
+  await expect(
+    editor.getByRole('button', { name: 'Copiar fórmula', exact: true }),
+  ).toHaveCount(0);
   await context.close();
 });
 
@@ -487,6 +495,176 @@ test('typing continues lists and undo restores text without a preview switch', a
   await expect(editor).toContainText('- Segundo');
   await editor.press('ControlOrMeta+z');
   await expect(editor).not.toContainText('Segundo');
-  await editor.press('ControlOrMeta+Shift+z');
+  await editor.press('ControlOrMeta+Shift+Z');
   await expect(editor).toContainText('Segundo');
+});
+
+for (const marker of ['-', '1.', '- [ ]']) {
+  test(`lists continue through three items and indent with Tab (${marker})`, async ({
+    page,
+  }) => {
+    await page.goto('/caderno/exemplo/#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    await editor.fill(`${marker} Primeiro`);
+    await editor.press('End');
+    await editor.press('Enter');
+    await page.keyboard.insertText('Segundo');
+    await editor.press('Enter');
+    await page.keyboard.insertText('Terceiro');
+    await editor.press('Tab');
+    await expect(editor).toBeFocused();
+    await editor.press('Enter');
+    await page.keyboard.insertText('Quarto');
+    await editor.press('Shift+Tab');
+    await editor.press('Enter');
+    await editor.press('Enter');
+    await page.keyboard.insertText('Fora da lista');
+    const source = await exportedMarkdown(page);
+    const lines = source.split('\n');
+    const first = lines.findIndex((line) => line.endsWith('Primeiro'));
+    expect(lines.slice(first, first + 6)).toEqual(
+      marker === '1.'
+        ? [
+            '1. Primeiro',
+            '2. Segundo',
+            '   1. Terceiro',
+            '3. Quarto',
+            '',
+            'Fora da lista',
+          ]
+        : [
+            `${marker} Primeiro`,
+            `${marker} Segundo`,
+            `  ${marker} Terceiro`,
+            `${marker} Quarto`,
+            '',
+            'Fora da lista',
+          ],
+    );
+  });
+}
+
+test('fenced code keeps syntax colours while typing and reading', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('```python\ndef area(r):\n    return 3.14 * r ** 2\n```');
+  await editor.press('ControlOrMeta+Home');
+  await editor.press('ArrowDown');
+  const keyword = editor.getByText('def', { exact: true });
+  await expect(keyword).toBeVisible();
+  const textColour = await editor.evaluate((el) => getComputedStyle(el).color);
+  await expect(keyword).not.toHaveCSS('color', textColour);
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await expect(keyword).not.toHaveCSS('color', textColour);
+});
+
+test('formulas reveal their source in place by click and vertical arrow movement', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('Antes\n\n$$\nx^2\n$$\n\nDepois');
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await editor.locator('.katex').click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(editor).toBeFocused();
+  await expect(editor).toContainText('x^2');
+  await expect(editor).toContainText('$$');
+  await expect(
+    editor.getByRole('button', { name: 'Copiar fórmula', exact: true }),
+  ).toHaveCount(0);
+  await editor.press('ControlOrMeta+End');
+  await editor.press('Home');
+  await expect(editor.locator('.katex')).toBeVisible();
+  await editor.press('ArrowUp');
+  await editor.press('ArrowUp');
+  await expect(editor.locator('.katex')).toHaveCount(0);
+  await expect(editor).toContainText('x^2');
+  await page.keyboard.insertText(' + y');
+  await editor.press('ControlOrMeta+End');
+  await expect(editor.locator('.katex')).toBeVisible();
+});
+
+test('indenting a list carries its children and one undo restores the complete item', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  const original =
+    '- Primeiro\n- Segundo\n  - Filho\n    continuação\n- Último';
+  await editor.fill(original);
+  await editor.press('ControlOrMeta+Home');
+  await editor.press('ArrowDown');
+  await editor.press('Tab');
+  expect(await exportedMarkdown(page)).toContain(
+    '- Primeiro\n  - Segundo\n    - Filho\n      continuação\n- Último',
+  );
+  await expect(editor).toContainText('Filho');
+  await expect(editor).toContainText('continuação');
+  await editor.press('ControlOrMeta+z');
+  expect(await exportedMarkdown(page)).toContain(original);
+  await editor.press('ControlOrMeta+Shift+Z');
+  await editor.press('Shift+Tab');
+  expect(await exportedMarkdown(page)).toContain(original);
+  await editor.press('Escape');
+  await page.keyboard.press('Tab');
+  await expect(editor).not.toBeFocused();
+});
+
+test('an empty second item exits the list and inserting a formula keeps typing in the document', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('- Uma ideia');
+  await editor.press('End');
+  await editor.press('Enter');
+  await editor.press('Enter');
+  await page.keyboard.insertText('Outra ideia');
+  expect(await exportedMarkdown(page)).toContain('- Uma ideia\n\nOutra ideia');
+  await noteAction(page, 'Inserir fórmula');
+  await expect(editor).toBeFocused();
+  await page.keyboard.insertText('E=mc^2');
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await expect(editor.locator('annotation')).toHaveText('E=mc^2');
+  await editor.press('ControlOrMeta+Home');
+  await editor.press('ArrowDown');
+  await editor.press('ArrowDown');
+  await editor.press('ArrowDown');
+  await editor.press('ArrowDown');
+  await expect(editor).toContainText('E=mc^2');
+  await expect(editor.locator('.katex')).toHaveCount(0);
+});
+
+for (const delimiter of ['$', '$$']) {
+  test(`clicking an inline formula preserves its ${delimiter} delimiters`, async ({
+    page,
+  }) => {
+    await page.goto('/caderno/exemplo/#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    await editor.fill(`Antes ${delimiter}x^2${delimiter} depois`);
+    await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+    await editor.locator('.katex').click();
+    await page.keyboard.insertText('a + ');
+    await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+    await expect(editor.locator('annotation')).toHaveText('a + x^2');
+    expect(await exportedMarkdown(page)).toContain(
+      `Antes ${delimiter}a + x^2${delimiter} depois`,
+    );
+  });
+}
+
+test('Tab nests a quoted list item without moving the quote itself', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('> - Primeiro\n> - Segundo');
+  await editor.press('ControlOrMeta+End');
+  await editor.press('Tab');
+  expect(await exportedMarkdown(page)).toContain('> - Primeiro\n>   - Segundo');
+  await editor.press('Shift+Tab');
+  expect(await exportedMarkdown(page)).toContain('> - Primeiro\n> - Segundo');
 });

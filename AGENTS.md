@@ -14,7 +14,7 @@
 - Keep LEIC third-year second-semester lessons (C, CG, CPD and IA) as drafts while current FEUP source coverage is incomplete.
 - Publish through the content schema and published navigation. Drafts must stay out of routes, search, Markdown and print exports. Keep the top-level `404.html` so Cloudflare returns 404 for missing routes. Link to absolute public routes and verify fragments against built headings.
 - Root `/data/` and `/_data/` are ignored private reference material. Keep downloads and editorial reports there, never in published lessons. Bibliography belongs in course introductions.
-- Personal course pages use browser-only IndexedDB through `src/lib/personal-notes.ts`. Keep Markdown as source, image attachments local, and previews sanitized. Reuse course navigation and keep text editable in place with CodeMirror decorations. Private pages must stay out of public search, public lesson exports and Chat.
+- Personal course pages use browser-only IndexedDB through `src/lib/personal-notes.ts`. Keep Markdown as source, image attachments local, and previews sanitized. Reuse course navigation and keep text editable in place with CodeMirror decorations. Use GFM for both editing commands and preview parsing. Private pages must stay out of public search, public lesson exports and Chat.
 - Notes, annotations, reader code, exercise answers, reading history and personal recordings stay on-device. Public search and lesson exports contain published content only. Chat and sharing send only a public URL and message starter.
 - Keep lesson text and annotation anchors unchanged by navigation or visual overlays. Preserve existing browser data and user-edited CSS; retain the `?sem-css=1` recovery path.
 

@@ -1,0 +1,196 @@
+import { ChangeSet, type ChangeSpec } from '@codemirror/state';
+import { indentLess, indentMore } from '@codemirror/commands';
+import type { Command } from '@codemirror/view';
+import type { Blockquote, List, ListItem, Root } from 'mdast';
+import { visit } from 'unist-util-visit';
+import { parsePersonalMarkdown } from './personal-markdown';
+
+interface Item {
+  node: ListItem;
+  list: List;
+  parent?: Item;
+}
+
+// Move whole items, including their continuation paragraphs and child lists.
+// A fixed two-space indent is insufficient beneath an ordered marker ("10. ").
+function indentList(direction: 'in' | 'out'): Command {
+  return (view) => {
+    const { state } = view;
+    const tree = parsePersonalMarkdown(state.doc.toString());
+    const items: Item[] = [];
+    function collect(root: Root | ListItem | Blockquote, parent?: Item) {
+      for (const node of root.children) {
+        if (node.type === 'blockquote') collect(node);
+        if (node.type !== 'list') continue;
+        for (const child of node.children) {
+          const item = { node: child, list: node, parent };
+          items.push(item);
+          collect(child, item);
+        }
+      }
+    }
+    collect(tree);
+    const chosen = new Set<Item>();
+    for (const range of state.selection.ranges) {
+      const first = state.doc.lineAt(range.from).number;
+      const last = state.doc.lineAt(
+        range.empty ? range.to : range.to - 1,
+      ).number;
+      for (const item of items) {
+        const number = item.node.position!.start.line;
+        if (number >= first && number <= last) chosen.add(item);
+      }
+      if (
+        range.empty &&
+        ![...chosen].some((item) => item.node.position!.start.line === first)
+      ) {
+        const containing = items
+          .filter((item) =>
+            item.node.children.some(
+              (child) =>
+                child.type === 'paragraph' &&
+                child.position!.start.offset! <= range.from &&
+                child.position!.end.offset! >= range.to,
+            ),
+          )
+          .at(-1);
+        if (containing) chosen.add(containing);
+      }
+    }
+    if (!chosen.size)
+      return (direction === 'in' ? indentMore : indentLess)(view);
+    const roots = [...chosen].filter((item) => {
+      for (let parent = item.parent; parent; parent = parent.parent)
+        if (chosen.has(parent)) return false;
+      return true;
+    });
+    const edits: ChangeSpec[] = [];
+    for (const item of roots) {
+      const start = item.node.position!.start;
+      const base = state.doc.line(start.line);
+      const column = start.offset! - base.from;
+      let amount: number;
+      if (direction === 'out') {
+        if (!item.parent) continue;
+        const parent = item.parent.node.position!.start;
+        amount = column - (parent.offset! - state.doc.line(parent.line).from);
+      } else {
+        let index = item.list.children.indexOf(item.node);
+        while (
+          index > 0 &&
+          roots.some((root) => root.node === item.list.children[index - 1])
+        )
+          index--;
+        if (!index) continue;
+        const previous = item.list.children[index - 1].position!.start.offset!;
+        const marker = /^(?:[-+*]|\d+[.)])\s+/.exec(
+          state.sliceDoc(previous, state.doc.lineAt(previous).to),
+        );
+        if (!marker) continue;
+        amount = marker[0].length;
+      }
+      for (let n = start.line; n <= item.node.position!.end.line; n++) {
+        const line = state.doc.line(n);
+        if (!line.length) continue;
+        const quote = /^(?:\s*> ?)+/.exec(line.text)?.[0].length ?? 0;
+        const contentFrom = line.from + quote;
+        if (direction === 'in') {
+          const number =
+            n === start.line && item.list.ordered
+              ? /^\d+/.exec(state.sliceDoc(start.offset!, line.to))
+              : null;
+          if (number)
+            edits.push({
+              from: contentFrom,
+              to: start.offset! + number[0].length,
+              insert:
+                ' '.repeat(amount) +
+                state.sliceDoc(contentFrom, start.offset!) +
+                '1',
+            });
+          else edits.push({ from: contentFrom, insert: ' '.repeat(amount) });
+        } else
+          edits.push({
+            from: contentFrom,
+            to:
+              contentFrom +
+              Math.min(amount, /^ */.exec(line.text.slice(quote))![0].length),
+          });
+      }
+    }
+    if (!edits.length) return true;
+    let changes = state.changes(edits);
+    const document = changes.apply(state.doc);
+    const selection = state.selection.map(changes);
+    const renumber: ChangeSpec[] = [];
+    visit(parsePersonalMarkdown(document.toString()), 'list', (list) => {
+      if (!list.ordered) return;
+      // Keep explicitly numbered lists elsewhere in the note untouched.
+      const from = list.position!.start.offset!;
+      const to = list.position!.end.offset!;
+      if (
+        !selection.ranges.some((range) => range.from <= to && range.to >= from)
+      )
+        return;
+      const prefix = document.sliceString(document.lineAt(from).from, from);
+      const nested = prefix.replace(/^(?:\s*> ?)+/, '').length > 0;
+      let number = nested ? 1 : (list.start ?? 1);
+      for (const item of list.children) {
+        const start = item.position!.start.offset!;
+        const marker = /^\d+/.exec(
+          document.sliceString(start, document.lineAt(start).to),
+        );
+        if (marker && marker[0] !== String(number))
+          renumber.push({
+            from: start,
+            to: start + marker[0].length,
+            insert: String(number),
+          });
+        number++;
+      }
+    });
+    // Compose both edits so one undo restores the indentation and numbering.
+    const numbered = ChangeSet.of(renumber, document.length);
+    changes = changes.compose(numbered);
+    view.dispatch({
+      changes,
+      selection: state.selection.map(changes),
+      scrollIntoView: true,
+      userEvent: 'input.indent',
+    });
+    return true;
+  };
+}
+
+export const indentMarkdownList = indentList('in');
+export const outdentMarkdownList = indentList('out');
+
+// A paragraph after a list needs a blank line, otherwise CommonMark treats it
+// as a lazy continuation of the final item.
+export const exitMarkdownList: Command = (view) => {
+  const { state } = view;
+  const { main } = state.selection;
+  if (!main.empty || state.selection.ranges.length !== 1) return false;
+  const line = state.doc.lineAt(main.head);
+  if (
+    main.head !== line.to ||
+    !/^(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\]\s*)?$/.test(line.text)
+  )
+    return false;
+  let listItem = false;
+  visit(parsePersonalMarkdown(state.doc.toString()), 'listItem', (node) => {
+    if (
+      node.position!.start.offset === line.from &&
+      node.position!.end.offset === line.to
+    )
+      listItem = true;
+  });
+  if (!listItem) return false;
+  view.dispatch({
+    changes: { from: line.from, to: line.to, insert: '\n' },
+    selection: { anchor: line.from + 1 },
+    userEvent: 'input',
+    scrollIntoView: true,
+  });
+  return true;
+};

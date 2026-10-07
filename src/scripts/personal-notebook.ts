@@ -1,4 +1,3 @@
-import katex from 'katex';
 import { liveMarkdown } from '../lib/live-markdown';
 import {
   readPersonalNotes,
@@ -29,10 +28,6 @@ export async function setupPersonalNotebook() {
     );
   }).observe(status, { childList: true });
   const content = element('personal-note');
-  const formulaDialog = element<HTMLDialogElement>('note-formula-dialog');
-  const formulaInput = element<HTMLTextAreaElement>('note-formula-source');
-  const formulaError = element('note-formula-error');
-  const formulaPreview = element('note-formula-preview');
   const images = new Map<string, string>();
   const pages = new Map<string, PersonalNote>();
   let active: PersonalNote | undefined;
@@ -43,7 +38,6 @@ export async function setupPersonalNotebook() {
   let editVersion = 0;
   let timer = 0;
   let queue = Promise.resolve();
-  let applyFormula: ((source: string) => void) | undefined;
   const channel =
     typeof BroadcastChannel === 'undefined'
       ? undefined
@@ -134,14 +128,6 @@ export async function setupPersonalNotebook() {
           page.markdown = markdown;
           changed();
         },
-        editFormula: (formula, apply) => {
-          applyFormula = apply;
-          formulaInput.value = formula.source;
-          formulaPreview.dataset.display = String(formula.display);
-          formulaDialog.showModal();
-          previewFormula();
-          formulaInput.focus();
-        },
         attach: (files) => void attach(files),
       });
       status.textContent = page.revision
@@ -193,42 +179,13 @@ export async function setupPersonalNotebook() {
         page.images.push({ id, name: file.name, blob: file });
         images.set(`resumos-image:${id}`, URL.createObjectURL(file));
         const alt = file.name.replace(/[\[\]\\\n]/g, '');
-        editor.insert(`\n\n![${alt}](resumos-image:${id})\n\n`);
+        editor.insertBlock(`\n\n![${alt}](resumos-image:${id})\n\n`);
       }
       await persist();
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : savingError;
     }
   }
-  function previewFormula() {
-    try {
-      formulaPreview.innerHTML = katex.renderToString(formulaInput.value, {
-        displayMode: formulaPreview.dataset.display === 'true',
-        throwOnError: true,
-        trust: false,
-        strict: 'ignore',
-      });
-      formulaError.textContent = '';
-    } catch {
-      formulaPreview.textContent = '';
-      formulaError.textContent =
-        'A fórmula está incompleta ou contém um comando não suportado. Podes continuar a editar.';
-    }
-  }
-  formulaInput.addEventListener('input', previewFormula);
-  element<HTMLFormElement>('note-formula-form').addEventListener(
-    'submit',
-    (event) => {
-      event.preventDefault();
-      applyFormula?.(formulaInput.value);
-      formulaDialog.close();
-      applyFormula = undefined;
-      editor?.focus();
-    },
-  );
-  formulaDialog.addEventListener('close', () => {
-    applyFormula = undefined;
-  });
   title.addEventListener('input', () => {
     if (active) {
       active.title = title.value;
@@ -293,12 +250,7 @@ export async function setupPersonalNotebook() {
     },
   );
   element('add-note-formula').addEventListener('click', () => {
-    applyFormula = (source) => editor?.insert(` $${source}$ `);
-    formulaInput.value = '';
-    formulaPreview.dataset.display = 'false';
-    previewFormula();
-    formulaDialog.showModal();
-    formulaInput.focus();
+    editor?.insertFormula();
   });
   element('export-personal-note').addEventListener('click', async () => {
     if (!active) return;
@@ -385,7 +337,7 @@ export async function setupPersonalNotebook() {
     else if (page?.course === course) void show(page);
   });
   channel?.addEventListener('message', async () => {
-    if (dirty || pendingWrites || formulaDialog.open) {
+    if (dirty || pendingWrites) {
       listStatus.textContent =
         'O caderno mudou noutro separador. Exporta alterações por guardar antes de recarregar.';
       return;
