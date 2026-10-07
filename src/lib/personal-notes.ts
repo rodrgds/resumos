@@ -81,7 +81,7 @@ export async function deletePersonalNote(note: PersonalNote) {
 }
 
 export function personalNoteUrl(course: string, id?: string) {
-  return `/caderno/?cadeira=${encodeURIComponent(course)}${id ? `#${id}` : ''}`;
+  return `/caderno/${encodeURIComponent(course)}/${id ? `#${id}` : ''}`;
 }
 
 export const IMAGE_TYPES = new Set([

@@ -1,158 +1,33 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Icon from '../components/Icon.astro';
-import { courses as leic } from '../data/courses';
-import { courses as meic } from '../data/meic';
-import { ctOptions } from '../data/ct-options';
-import { getCourseGuides } from '../lib/course-content';
-import 'katex/dist/katex.min.css';
-import '../styles/personal-notes.css';
-const published = new Map(
-  (await getCourseGuides()).map((course) => [course.id, course.path]),
-);
-const courses = [
-  ...new Map(
-    [
-      ...leic.filter((course) => !course.elective),
-      ...meic,
-      ...ctOptions,
-      { id: 'exemplo', name: 'Cadeira de exemplo', acronym: 'Exemplo' },
-    ].map((course) => [course.id, course]),
-  ).values(),
-];
+import PersonalNoteLinks from '../components/PersonalNoteLinks.astro';
 ---
 
-<Layout
-  title="O teu caderno · Resumos FEUP"
-  description="Apontamentos pessoais guardados apenas neste navegador."
-  preloadReadingFonts
->
+<Layout title="Apontamentos · Resumos FEUP">
   <Fragment slot="head">
     <meta name="robots" content="noindex" />
   </Fragment>
-  <main id="conteudo" class="personal-notebook" data-pagefind-ignore>
-    <header class="personal-heading">
-      <div>
-        <h1>O teu caderno</h1>
-        <p>Só neste navegador. Só para ti. Exporta para guardar uma cópia.</p>
-      </div>
-      <a id="personal-course-link" href="/">
-        Ver resumos da cadeira <Icon name="arrow-right" size={17} />
-      </a>
-    </header>
-    <div class="personal-layout">
-      <aside class="personal-navigation" aria-label="Os teus apontamentos">
-        <label for="personal-course">Cadeira</label>
-        <select id="personal-course">
-          {courses.map((course) => (
-            <option value={course.id} data-path={published.get(course.id)}>
-              {course.acronym} · {course.name}
-            </option>
-          ))}
-        </select>
-        <button id="new-personal-note" class="personal-primary">
-          <Icon name="plus" size={18} /> Novo apontamento
-        </button>
-        <ul id="personal-page-list"></ul>
-        <button id="import-personal-note">
-          <Icon name="arrow-up-tray" size={18} /> Importar Markdown
-        </button>
-        <input
-          id="import-note-file"
-          type="file"
-          accept=".md,.markdown,text/markdown,text/plain"
-          hidden
-        />
-        <p id="personal-list-status" role="status"></p>
-      </aside>
-      <section class="personal-writing" aria-label="Apontamento">
-        <div id="personal-empty">
-          <Icon name="pencil-square" size={32} />
-          <h2>Um espaço para o que estás a aprender.</h2>
-          <p>
-            Cria um apontamento para juntar fórmulas, imagens e ideias desta
-            cadeira.
-          </p>
-        </div>
-        <div id="personal-note" hidden>
-          <label class="sr-only" for="personal-title">
-            Título do apontamento
-          </label>
-          <input
-            id="personal-title"
-            type="text"
-            placeholder="Sem título"
-            autocomplete="off"
-          />
-          <div
-            class="personal-toolbar"
-            role="group"
-            aria-label="Ferramentas do apontamento"
-          >
-            <button id="add-note-image">
-              <Icon name="photo" size={18} /> Imagem
-            </button>
-            <button id="add-note-formula">
-              <Icon name="variable" size={18} /> Fórmula
-            </button>
-            <button id="export-personal-note">
-              <Icon name="arrow-down-tray" size={18} /> Exportar apontamento
-            </button>
-            <button
-              id="delete-personal-note"
-              aria-label="Eliminar apontamento"
-              title="Eliminar apontamento"
-            >
-              <Icon name="trash" size={18} />
-            </button>
-          </div>
-          <input
-            id="attach-note-image"
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
-            multiple
-            hidden
-          />
-          <p class="personal-help">
-            Escreve em Markdown. Clica no texto ou numa fórmula para editar.
-            Cola ou arrasta imagens.
-          </p>
-          <div id="personal-editor" class="personal-editor"></div>
-          <p id="personal-save-status" role="status"></p>
-        </div>
-        <div id="personal-undo" hidden>
-          <p>Apontamento eliminado.</p>
-          <button id="undo-personal-delete">Desfazer eliminação</button>
-        </div>
-      </section>
-    </div>
+  <main id="conteudo" class="notebook-index" data-pagefind-ignore>
+    <h1>Apontamentos</h1>
+    <PersonalNoteLinks />
+    <p>Cria um apontamento nos conteúdos da tua cadeira.</p>
+    <a href="/">Ver cadeiras</a>
   </main>
-  <dialog
-    id="note-formula-dialog"
-    aria-labelledby="note-formula-title"
-    data-pagefind-ignore
-  >
-    <div class="dialog-header">
-      <h2 id="note-formula-title">Editar fórmula</h2>
-      <button class="icon-button" data-close aria-label="Cancelar fórmula">
-        <Icon name="x-mark" size={20} />
-      </button>
-    </div>
-    <form id="note-formula-form">
-      <label for="note-formula-source">LaTeX da fórmula</label>
-      <textarea id="note-formula-source" rows="4" spellcheck="false"></textarea>
-      <div
-        id="note-formula-preview"
-        aria-label="Pré-visualização da fórmula"
-      ></div>
-      <p id="note-formula-error" role="status"></p>
-      <button type="submit" class="personal-primary">
-        Aplicar fórmula
-      </button>
-    </form>
-  </dialog>
 </Layout>
 <script>
-  import { setupPersonalNotebook } from '../scripts/personal-notebook';
-  void setupPersonalNotebook();
+  // Preserve links created before notebooks shared the course navigation.
+  const course = new URLSearchParams(location.search).get('cadeira');
+  if (course && /^[\w-]+$/.test(course))
+    location.replace(`/caderno/${encodeURIComponent(course)}/${location.hash}`);
 </script>
+<style>
+  .notebook-index {
+    max-width: 720px;
+    margin: 48px auto;
+    padding: 0 24px;
+    min-height: 55vh;
+  }
+  .notebook-index p {
+    color: var(--muted);
+  }
+</style>

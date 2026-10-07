@@ -9,18 +9,25 @@ import {
   type PersonalNote,
 } from '../lib/personal-notes';
 import {
-  exportPersonalMarkdown,
+  downloadPersonalNote,
   importPersonalMarkdown,
 } from '../lib/personal-markdown';
 
 export async function setupPersonalNotebook() {
   const element = <T extends HTMLElement = HTMLElement>(id: string) =>
     document.getElementById(id) as T;
-  const course = element<HTMLSelectElement>('personal-course');
-  const title = element<HTMLInputElement>('personal-title');
+  const course = document.querySelector<HTMLElement>('[data-personal-course]')!
+    .dataset.personalCourse!;
+  const title = element<HTMLTextAreaElement>('personal-title');
   const status = element('personal-save-status');
   const listStatus = element('personal-list-status');
-  const list = element('personal-page-list');
+  new MutationObserver(() => {
+    status.toggleAttribute(
+      'data-saved',
+      status.textContent === 'Guardado neste navegador' ||
+        status.textContent === 'A guardar…',
+    );
+  }).observe(status, { childList: true });
   const content = element('personal-note');
   const formulaDialog = element<HTMLDialogElement>('note-formula-dialog');
   const formulaInput = element<HTMLTextAreaElement>('note-formula-source');
@@ -43,34 +50,12 @@ export async function setupPersonalNotebook() {
       : new BroadcastChannel('resumos-notebooks');
   const savingError =
     'Não foi possível guardar. Exporta o apontamento antes de sair.';
-  const requestedCourse = new URLSearchParams(location.search).get('cadeira');
-  if ([...course.options].some((option) => option.value === requestedCourse))
-    course.value = requestedCourse!;
-
-  function courseLink() {
-    const option = course.selectedOptions[0];
-    const link = element<HTMLAnchorElement>('personal-course-link');
-    link.href =
-      option.dataset.path ||
-      `/${course.value.startsWith('meic-') ? 'meic/' : ''}#cadeira-${course.value}`;
-  }
   function renderList() {
-    list.replaceChildren();
-    for (const page of [...pages.values()]
-      .filter((page) => page.course === course.value)
-      .sort((a, b) => a.created - b.created)) {
-      const item = document.createElement('li');
-      const link = document.createElement('a');
-      link.href = personalNoteUrl(page.course, page.id);
-      link.textContent = page.title || 'Sem título';
-      if (page.id === active?.id) link.setAttribute('aria-current', 'page');
-      link.addEventListener('click', (event) => {
-        event.preventDefault();
-        void show(page);
-      });
-      item.append(link);
-      list.append(item);
-    }
+    document.dispatchEvent(
+      new CustomEvent('personal-notes-render', {
+        detail: { pages: [...pages.values()], active: active?.id },
+      }),
+    );
   }
   function releaseImages() {
     images.forEach((url) => URL.revokeObjectURL(url));
@@ -100,6 +85,7 @@ export async function setupPersonalNotebook() {
         channel?.postMessage(page.id);
         if (active === page && !dirty)
           status.textContent = 'Guardado neste navegador';
+        renderList();
       } catch (error) {
         if (active === page) {
           dirty = true;
@@ -121,10 +107,11 @@ export async function setupPersonalNotebook() {
     status.textContent = 'A guardar…';
     clearTimeout(timer);
     timer = window.setTimeout(() => void persist(), 300);
-    renderList();
   }
   async function show(page?: PersonalNote) {
+    content.inert = true;
     await persist();
+    content.inert = false;
     if (dirty && active && page !== active) {
       listStatus.textContent =
         'Exporta o apontamento aberto antes de mudar de página.';
@@ -138,6 +125,7 @@ export async function setupPersonalNotebook() {
     releaseImages();
     if (page) {
       title.value = page.title;
+      resizeTitle();
       loadImages(page);
       editor = liveMarkdown(element('personal-editor'), {
         markdown: page.markdown,
@@ -159,9 +147,12 @@ export async function setupPersonalNotebook() {
       status.textContent = page.revision
         ? 'Guardado neste navegador'
         : 'A guardar…';
-      history.replaceState(null, '', personalNoteUrl(course.value, page.id));
-    } else history.replaceState(null, '', personalNoteUrl(course.value));
+      history.replaceState(null, '', personalNoteUrl(course, page.id));
+    } else history.replaceState(null, '', personalNoteUrl(course));
     renderList();
+    if (matchMedia('(max-width: 1199px)').matches)
+      document.querySelector<HTMLDetailsElement>('.course-sidebar')!.open =
+        false;
   }
   async function create(
     note?: Pick<PersonalNote, 'title' | 'markdown' | 'images'>,
@@ -174,7 +165,7 @@ export async function setupPersonalNotebook() {
     }
     const page: PersonalNote = {
       id: crypto.randomUUID(),
-      course: course.value,
+      course: course,
       title: '',
       markdown: '',
       images: [],
@@ -232,7 +223,7 @@ export async function setupPersonalNotebook() {
       applyFormula?.(formulaInput.value);
       formulaDialog.close();
       applyFormula = undefined;
-      title.focus();
+      editor?.focus();
     },
   );
   formulaDialog.addEventListener('close', () => {
@@ -242,23 +233,54 @@ export async function setupPersonalNotebook() {
     if (active) {
       active.title = title.value;
       changed();
+      resizeTitle();
+      renderList();
     }
+  });
+  function resizeTitle() {
+    title.style.height = 'auto';
+    title.style.height = `${title.scrollHeight}px`;
+  }
+  title.addEventListener('keydown', (event) => {
+    if (
+      event.key === 'Enter' ||
+      (event.key === 'ArrowDown' && title.selectionStart === title.value.length)
+    ) {
+      event.preventDefault();
+      editor?.focus();
+    }
+  });
+  window.addEventListener('resize', resizeTitle);
+  document.addEventListener('personal-note-action', (event) => {
+    const action = event as CustomEvent<{ id: string; action: string }>;
+    if (action.detail.id !== active?.id) return;
+    event.preventDefault();
+    element(`${action.detail.action}-personal-note`).click();
+  });
+  document.addEventListener('personal-notes-changed', () => {
+    void readPersonalNotes().then((fresh) => {
+      for (const page of fresh)
+        if (page.id !== active?.id) pages.set(page.id, page);
+      const ids = new Set(fresh.map((page) => page.id));
+      for (const id of pages.keys())
+        if (id !== active?.id && !ids.has(id)) pages.delete(id);
+      renderList();
+    });
+  });
+  element('import-empty-note').addEventListener('click', () =>
+    element<HTMLInputElement>('import-note-file').click(),
+  );
+  const menu = element('personal-actions-menu');
+  menu.addEventListener('click', (event) => {
+    if ((event.target as Element).closest('button')) menu.hidePopover();
+  });
+  menu.addEventListener('toggle', () => {
+    if (!menu.matches(':popover-open')) return;
+    const rect = element('personal-actions').getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(rect.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(rect.bottom + 4, innerHeight - menu.offsetHeight - 8))}px`;
   });
   element('new-personal-note').addEventListener('click', () => void create());
-  course.addEventListener('change', async () => {
-    const previous = active?.course;
-    await persist();
-    if (dirty && previous) {
-      course.value = previous;
-      listStatus.textContent =
-        'Exporta o apontamento aberto antes de mudar de cadeira.';
-      return;
-    }
-    courseLink();
-    await show(
-      [...pages.values()].find((page) => page.course === course.value),
-    );
-  });
   element('add-note-image').addEventListener('click', () =>
     element<HTMLInputElement>('attach-note-image').click(),
   );
@@ -284,15 +306,7 @@ export async function setupPersonalNotebook() {
     try {
       const version = editVersion;
       const page = active;
-      const markdown = await exportPersonalMarkdown(structuredClone(page));
-      const url = URL.createObjectURL(
-        new Blob([markdown], { type: 'text/markdown;charset=utf-8' }),
-      );
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${(active.title || 'apontamento').replace(/[^\p{L}\p{N}_-]/gu, '-').slice(0, 80)}.md`;
-      link.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      await downloadPersonalNote(structuredClone(page));
       // Export is the recovery path when the browser refuses persistent storage.
       if (active === page && version === editVersion) dirty = false;
     } catch {
@@ -309,9 +323,7 @@ export async function setupPersonalNotebook() {
       pages.delete(active.id);
       channel?.postMessage(active.id);
       element('personal-undo').hidden = false;
-      await show(
-        [...pages.values()].find((page) => page.course === course.value),
-      );
+      await show([...pages.values()].find((page) => page.course === course));
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : savingError;
     }
@@ -320,15 +332,21 @@ export async function setupPersonalNotebook() {
     if (!removed) return;
     await persist();
     if (dirty) return;
-    const page = removed;
-    page.revision = 0;
-    pages.set(page.id, page);
-    await show(page);
-    changed();
-    await persist();
-    if (!dirty) {
+    const page = { ...removed, revision: 0 };
+    pendingWrites++;
+    try {
+      // A restored page must be durable before navigation offers it again.
+      page.revision = await savePersonalNote(page);
+      pages.set(page.id, page);
       removed = undefined;
+      channel?.postMessage(page.id);
+      await show(page);
       element('personal-undo').hidden = true;
+      title.focus();
+    } catch {
+      listStatus.textContent = 'Não foi possível restaurar. Tenta novamente.';
+    } finally {
+      pendingWrites--;
     }
   });
   element('import-personal-note').addEventListener('click', () =>
@@ -363,7 +381,8 @@ export async function setupPersonalNotebook() {
   });
   window.addEventListener('hashchange', () => {
     const page = pages.get(location.hash.slice(1));
-    if (page?.course === course.value) void show(page);
+    if (location.hash === '#novo') void create();
+    else if (page?.course === course) void show(page);
   });
   channel?.addEventListener('message', async () => {
     if (dirty || pendingWrites || formulaDialog.open) {
@@ -392,13 +411,12 @@ export async function setupPersonalNotebook() {
     listStatus.textContent =
       'O navegador não permite guardar. Podes escrever e exportar o apontamento.';
   }
-  courseLink();
   const newPage = location.hash === '#novo';
   const linked = pages.get(location.hash.slice(1));
   await show(
-    linked?.course === course.value
+    linked?.course === course
       ? linked
-      : [...pages.values()].find((page) => page.course === course.value),
+      : [...pages.values()].find((page) => page.course === course),
   );
   if (newPage) await create();
 }

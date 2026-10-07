@@ -1,0 +1,182 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import CourseSidebar from '../../components/CourseSidebar.astro';
+import { courses as leic } from '../../data/courses';
+import { courses as meic } from '../../data/meic';
+import { ctOptions } from '../../data/ct-options';
+import { getCourseGuides, type CourseGuide } from '../../lib/course-content';
+import 'katex/dist/katex.min.css';
+import '../../styles/reading.css';
+import '../../styles/personal-notes.css';
+export async function getStaticPaths() {
+  const published = new Map(
+    (await getCourseGuides()).map((course) => [course.id, course]),
+  );
+  const courses = [
+    ...new Map(
+      [
+        ...leic.filter((course) => !course.elective),
+        ...meic,
+        ...ctOptions,
+        { id: 'exemplo', name: 'Cadeira de exemplo' },
+      ].map((course) => [course.id, course]),
+    ).values(),
+  ];
+  return courses.map((course) => ({
+    params: { course: course.id },
+    props: {
+      course: published.get(course.id) || {
+        id: course.id,
+        name: course.name,
+        path: `/${course.id.startsWith('meic-') ? 'meic/' : ''}#cadeira-${course.id}`,
+        example: false,
+        pages: [],
+        lessons: [],
+        revisions: [],
+        exercises: [],
+      },
+    },
+  }));
+}
+interface Props {
+  course: CourseGuide;
+}
+const { course } = Astro.props;
+---
+
+<Layout
+  title={`Apontamentos · ${course.name}`}
+  description="Apontamentos pessoais guardados neste navegador."
+  preloadReadingFonts
+>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex" />
+  </Fragment>
+  <div class="course-shell">
+    <aside
+      class="reader-navigation"
+      aria-label="Navegação da cadeira"
+      data-pagefind-ignore
+    >
+      <a href={course.path} class="reader-course">
+        {course.name}
+      </a>
+      <CourseSidebar course={course} />
+    </aside>
+    <main
+      id="conteudo"
+      class="course-article personal-notebook"
+      data-personal-course={course.id}
+      data-course-id={course.id}
+      data-pagefind-ignore
+    >
+      <p id="personal-list-status" role="status"></p>
+      <section id="personal-empty">
+        <h1>Apontamentos</h1>
+        <button id="new-personal-note">
+          <Icon name="plus" size={18} /> Novo apontamento
+        </button>
+        <button id="import-empty-note">
+          <Icon name="arrow-up-tray" size={18} /> Importar Markdown
+        </button>
+      </section>
+      <section id="personal-note" aria-label="Apontamento" hidden>
+        <header class="personal-title-row">
+          <h1>
+            <label class="sr-only" for="personal-title">
+              Título do apontamento
+            </label>
+            <textarea
+              id="personal-title"
+              rows="1"
+              placeholder="Sem título"
+              autocomplete="off"
+            ></textarea>
+          </h1>
+          <button
+            class="icon-button"
+            id="personal-actions"
+            popovertarget="personal-actions-menu"
+            aria-label="Ações do apontamento"
+            title="Ações do apontamento"
+          >
+            <Icon name="ellipsis-horizontal" size={20} />
+          </button>
+        </header>
+        <div id="personal-editor" class="personal-editor"></div>
+        <p id="personal-save-status" role="status"></p>
+      </section>
+      <div id="personal-undo" hidden>
+        <span>Apontamento eliminado.</span>
+        <button id="undo-personal-delete">Desfazer eliminação</button>
+      </div>
+    </main>
+  </div>
+  <div
+    id="personal-actions-menu"
+    class="note-menu"
+    popover
+    aria-label="Ações do apontamento"
+  >
+    <button id="add-note-image">
+      <Icon name="photo" size={18} /> Inserir imagem
+    </button>
+    <button id="add-note-formula">
+      <Icon name="variable" size={18} /> Inserir fórmula
+    </button>
+    <hr />
+    <button id="import-personal-note">
+      <Icon name="arrow-up-tray" size={18} /> Importar Markdown
+    </button>
+    <button id="export-personal-note">
+      <Icon name="arrow-down-tray" size={18} /> Exportar apontamento
+    </button>
+    <hr />
+    <button id="delete-personal-note">
+      <Icon name="trash" size={18} /> Eliminar apontamento
+    </button>
+    <small>Guardado apenas neste navegador.</small>
+  </div>
+  <input
+    id="import-note-file"
+    type="file"
+    accept=".md,.markdown,text/markdown,text/plain"
+    hidden
+  />
+  <input
+    id="attach-note-image"
+    type="file"
+    accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+    multiple
+    hidden
+  />
+  <dialog
+    id="note-formula-dialog"
+    aria-labelledby="note-formula-title"
+    data-pagefind-ignore
+  >
+    <div class="dialog-header">
+      <h2 id="note-formula-title">Editar fórmula</h2>
+      <button class="icon-button" data-close aria-label="Cancelar fórmula">
+        <Icon name="x-mark" size={20} />
+      </button>
+    </div>
+    <form id="note-formula-form">
+      <label class="sr-only" for="note-formula-source">
+        LaTeX da fórmula
+      </label>
+      <textarea id="note-formula-source" rows="3" spellcheck="false"></textarea>
+      <div
+        id="note-formula-preview"
+        aria-label="Pré-visualização da fórmula"
+      ></div>
+      <p id="note-formula-error" role="status"></p>
+      <button type="submit">Aplicar fórmula</button>
+    </form>
+  </dialog>
+</Layout>
+<script>
+  import { setupPersonalNotebook } from '../../scripts/personal-notebook';
+  void setupPersonalNotebook();
+</script>

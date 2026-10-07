@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import { personalNoteUrl } from '../lib/personal-notes';
 interface Props {
   course?: string;
 }
@@ -7,105 +8,51 @@ const { course } = Astro.props;
 ---
 
 <section class="personal-note-links" data-course={course} data-pagefind-ignore>
-  <h3>Os teus apontamentos</h3>
+  <div class="personal-links-heading">
+    <h3>Apontamentos</h3>
+    {course && (
+      <a
+        data-new-personal-note
+        href={`${personalNoteUrl(course)}#novo`}
+        aria-label="Novo apontamento"
+        title="Novo apontamento"
+      >
+        <Icon name="plus" size={17} />
+      </a>
+    )}
+  </div>
   <ul></ul>
-  <a
-    data-new-personal-note
-    href={
-      course
-        ? `/caderno/?cadeira=${encodeURIComponent(course)}#novo`
-        : '/caderno/'
-    }
-  >
-    <Icon name="plus" size={16} />
-    {course ? 'Novo apontamento' : 'Abrir apontamentos'}
-  </a>
   <p role="status" hidden></p>
 </section>
 <script>
-  import { personalNoteUrl, readPersonalNotes } from '../lib/personal-notes';
-  async function renderLinks() {
-    const sections = document.querySelectorAll<HTMLElement>(
-      '.personal-note-links',
-    );
-    if (!sections.length) return;
-    const current = document.querySelector<HTMLElement>(
-      '[data-reading-page][data-course-id]',
-    )?.dataset.courseId;
-    try {
-      const pages = await readPersonalNotes();
-      for (const section of sections) {
-        const course = section.dataset.course || current;
-        const link = section.querySelector<HTMLAnchorElement>(
-          '[data-new-personal-note]',
-        )!;
-        if (course) {
-          link.href = `${personalNoteUrl(course)}#novo`;
-          link.lastChild!.textContent = 'Novo apontamento';
-        }
-        const list = section.querySelector('ul')!;
-        list.replaceChildren();
-        for (const page of pages.filter(
-          (page) => !course || page.course === course,
-        )) {
-          const item = document.createElement('li');
-          const anchor = document.createElement('a');
-          anchor.href = personalNoteUrl(page.course, page.id);
-          anchor.textContent = page.title || 'Sem título';
-          item.append(anchor);
-          list.append(item);
-        }
-      }
-    } catch {
-      for (const section of sections) {
-        const notice = section.querySelector('p')!;
-        notice.hidden = false;
-        notice.textContent =
-          'Os apontamentos guardados não estão disponíveis neste navegador.';
-      }
-    }
-  }
-  void renderLinks();
-  const channel =
-    typeof BroadcastChannel === 'undefined'
-      ? undefined
-      : new BroadcastChannel('resumos-notebooks');
-  channel?.addEventListener('message', () => void renderLinks());
-  window.addEventListener('pageshow', () => void renderLinks());
-  window.addEventListener('pagehide', (event) => {
-    if (!event.persisted) channel?.close();
-  });
+  import '../scripts/personal-note-links';
 </script>
 <style>
   .personal-note-links {
     margin-bottom: 20px;
   }
-  .personal-note-links h3 {
-    font-size: 13px;
-    font-weight: 650;
-    margin: 16px 0 8px;
-    color: var(--text);
+  .personal-links-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .personal-links-heading h3 {
+    margin: 0 8px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .personal-links-heading a {
+    min-width: 36px;
+    min-height: 36px;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
   }
   .personal-note-links ul {
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 240px;
-    overflow-y: auto;
-  }
-  .personal-note-links a {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 10px 8px;
-    text-decoration: none;
-    font-size: 13px;
-    overflow-wrap: anywhere;
-  }
-  .personal-note-links a:hover {
-    background: var(--soft);
-    border-radius: 6px;
   }
   .personal-note-links p {
     font-size: 12px;

@@ -12,7 +12,7 @@ A community study-notes website for FEUP LEIC students. Readers find their cours
 
 Show the real FEUP curriculum with an honest empty state for unpublished notes. A separate fictional course demonstrates Markdown, MDX, LaTeX, Typst, DOT, Mermaid and video. Include a nuclei directory, global search, local notes, configurable shortcuts and page-context AI links. Keep the homepage free of local search and year filters.
 
-Readers can create multiple private Markdown pages per course, attach local images and reopen their pages from course navigation.
+Readers can create multiple private Markdown pages per course, attach local images and reopen them above the lessons in course navigation. Editing follows Obsidian Live Preview: the page stays formatted while Markdown syntax appears near the cursor.
 
 ## Brand commitments
 

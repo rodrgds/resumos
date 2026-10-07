@@ -1,3 +1,5 @@
+let toastTimer = 0;
+
 export function addFormulaCopy(math: HTMLElement) {
   const source = math.querySelector(
     'annotation[encoding="application/x-tex"]',
@@ -22,12 +24,21 @@ export function addFormulaCopy(math: HTMLElement) {
   button.innerHTML =
     document.querySelector<HTMLTemplateElement>('#formula-copy-icon')
       ?.innerHTML || 'Copiar';
+  button.addEventListener('pointerdown', (event) => event.preventDefault());
   button.addEventListener('click', async (event) => {
     event.stopPropagation();
     try {
       await navigator.clipboard.writeText(value);
       const status = document.querySelector('#formula-copy-status');
-      if (status) status.textContent = 'Fórmula copiada';
+      if (status) {
+        clearTimeout(toastTimer);
+        status.textContent = 'Fórmula copiada';
+        status.classList.add('is-visible');
+        toastTimer = window.setTimeout(() => {
+          status.classList.remove('is-visible');
+          status.textContent = '';
+        }, 2200);
+      }
       button.title = 'Copiado';
       window.setTimeout(() => {
         button.title = 'Copiar fórmula';

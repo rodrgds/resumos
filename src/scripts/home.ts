@@ -57,7 +57,7 @@ document.addEventListener('click', (event) => {
   const personalLink = document.querySelector<HTMLAnchorElement>(
     '#course-personal-notes',
   )!;
-  personalLink.href = `/caderno/?cadeira=${encodeURIComponent(card.dataset.courseId!)}`;
+  personalLink.href = `/caderno/${encodeURIComponent(card.dataset.courseId!)}/`;
   personalLink.hidden = !!card.dataset.elective && !slot;
   detail.showModal();
 });

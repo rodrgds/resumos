@@ -1,5 +1,43 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+
+async function newNote(page: Page) {
+  const empty = page.getByRole('button', {
+    name: 'Novo apontamento',
+    exact: true,
+  });
+  if (await empty.isVisible()) {
+    await empty.click();
+    await expect(
+      page.getByRole('textbox', { name: 'Título do apontamento' }),
+    ).toHaveValue('');
+    return;
+  }
+  const previous = page.url();
+  const sidebar = page.locator('.course-sidebar');
+  if (!(await sidebar.getAttribute('open'))) {
+    const summary = sidebar.locator('summary');
+    if (await summary.isVisible()) await summary.click();
+  }
+  await page
+    .locator('.reader-navigation')
+    .getByRole('link', { name: 'Novo apontamento', exact: true })
+    .click();
+  await expect(page).not.toHaveURL(previous);
+  await expect(page).not.toHaveURL(/#novo$/);
+  await expect(
+    page.getByRole('textbox', { name: 'Título do apontamento' }),
+  ).toHaveValue('');
+}
+async function noteAction(page: Page, name: string) {
+  await page
+    .getByRole('button', { name: 'Ações do apontamento', exact: true })
+    .click();
+  await page
+    .locator('#personal-actions-menu')
+    .getByRole('button', { name, exact: true })
+    .click();
+}
 
 const image = {
   name: 'diagrama.png',
@@ -16,9 +54,7 @@ for (const width of [1440, 390]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/caderno/?cadeira=exemplo');
-    await page
-      .getByRole('button', { name: 'Novo apontamento', exact: true })
-      .click();
+    await newNote(page);
     await page
       .getByRole('textbox', { name: 'Título do apontamento' })
       .fill('Preparação para o exame');
@@ -27,7 +63,9 @@ for (const width of [1440, 390]) {
       '# Revisão\n\nUma **ideia** com $x^2$.\n\n- Primeiro\n- Segundo\n\n| A | B |\n| --- | --- |\n| 1 | 2 |',
     );
     await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
-    await expect(page.locator('.personal-editor h1')).toHaveText('Revisão');
+    await expect(
+      page.locator('.personal-editor').getByRole('heading', { level: 1 }),
+    ).toHaveText('Revisão');
     await expect(page.locator('.personal-editor strong')).toHaveText('ideia');
     await page.getByRole('button', { name: 'Editar fórmula' }).click();
     await page
@@ -35,7 +73,9 @@ for (const width of [1440, 390]) {
       .fill('\\frac{a}{b}');
     await page.getByRole('button', { name: 'Aplicar fórmula' }).click();
     await page.locator('#attach-note-image').setInputFiles(image);
-    await expect(page.locator('.personal-editor img')).toBeVisible();
+    await expect(
+      page.locator('.personal-editor').getByRole('img'),
+    ).toBeVisible();
     await expect(page.locator('#personal-save-status')).toHaveText(
       'Guardado neste navegador',
     );
@@ -43,7 +83,9 @@ for (const width of [1440, 390]) {
     await expect(
       page.getByRole('textbox', { name: 'Título do apontamento' }),
     ).toHaveValue('Preparação para o exame');
-    await expect(page.locator('.personal-editor img')).toBeVisible();
+    await expect(
+      page.locator('.personal-editor').getByRole('img'),
+    ).toBeVisible();
     await expect(page.locator('.personal-editor .katex')).toBeVisible();
     const violations = (
       await new AxeBuilder({ page }).include('#conteudo').analyze()
@@ -66,9 +108,7 @@ test('multiple pages have independent undoable deletion and portable image backu
   page,
 }) => {
   await page.goto('/caderno/?cadeira=exemplo');
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Título do apontamento' })
     .fill('Com imagem');
@@ -77,15 +117,13 @@ test('multiple pages have independent undoable deletion and portable image backu
     'Guardado neste navegador',
   );
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Exportar apontamento' }).click();
+  await noteAction(page, 'Exportar apontamento');
   const backup = await download;
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Título do apontamento' })
     .fill('Outro');
-  await page.getByRole('button', { name: 'Eliminar apontamento' }).click();
+  await noteAction(page, 'Eliminar apontamento');
   await expect(
     page.getByRole('textbox', { name: 'Título do apontamento' }),
   ).toHaveValue('Com imagem');
@@ -97,8 +135,10 @@ test('multiple pages have independent undoable deletion and portable image backu
   await expect(
     page.getByRole('textbox', { name: 'Título do apontamento' }),
   ).toHaveValue('Com imagem');
-  await expect(page.locator('.personal-editor img')).toBeVisible();
-  await expect(page.locator('#personal-page-list a')).toHaveCount(3);
+  await expect(page.locator('.personal-editor').getByRole('img')).toBeVisible();
+  await expect(
+    page.locator('.reader-navigation .personal-page-row > a'),
+  ).toHaveCount(3);
 });
 
 test('personal Markdown cannot run HTML or fetch remote images, and failed saving stays exportable', async ({
@@ -107,9 +147,7 @@ test('personal Markdown cannot run HTML or fetch remote images, and failed savin
   const requests: string[] = [];
   page.on('request', (request) => requests.push(request.url()));
   await page.goto('/caderno/?cadeira=exemplo');
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Texto do apontamento' })
     .fill(
@@ -136,9 +174,7 @@ test('personal Markdown cannot run HTML or fetch remote images, and failed savin
     }),
   );
   await blocked.goto('/caderno/?cadeira=exemplo');
-  await blocked
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(blocked);
   await blocked
     .getByRole('textbox', { name: 'Texto do apontamento' })
     .fill('Guardar esta ideia');
@@ -146,7 +182,7 @@ test('personal Markdown cannot run HTML or fetch remote images, and failed savin
     'Não foi possível guardar',
   );
   const download = blocked.waitForEvent('download');
-  await blocked.getByRole('button', { name: 'Exportar apontamento' }).click();
+  await noteAction(blocked, 'Exportar apontamento');
   expect((await download).suggestedFilename()).toMatch(/\.md$/);
 });
 
@@ -159,6 +195,7 @@ test('published formulas copy their original LaTeX and offer a clipboard fallbac
     }),
   );
   await page.goto('/exemplo/apontamentos/');
+  await page.locator('.lesson-body .formula-unit').first().hover();
   await page
     .getByRole('button', { name: 'Copiar fórmula', exact: true })
     .first()
@@ -181,9 +218,7 @@ test('touch formula editing cancels without changing the source and copies usabl
   });
   const page = await context.newPage();
   await page.goto('/caderno/?cadeira=exemplo');
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Texto do apontamento' })
     .fill('Uma fórmula $\\frac{a}{b}$');
@@ -203,9 +238,7 @@ test('pasted and dropped image files persist, while unsupported files leave the 
   page,
 }) => {
   await page.goto('/caderno/?cadeira=exemplo');
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Texto do apontamento' })
     .fill('As minhas imagens');
@@ -247,7 +280,9 @@ test('pasted and dropped image files persist, while unsupported files leave the 
     'Escolhe uma imagem',
   );
   await page.reload();
-  await expect(page.locator('.personal-editor img')).toHaveCount(2);
+  await expect(page.locator('.personal-editor').getByRole('img')).toHaveCount(
+    2,
+  );
   await expect(page.locator('.personal-editor')).toContainText(
     'As minhas imagens',
   );
@@ -258,9 +293,7 @@ test('concurrent edits never silently overwrite another tab', async ({
   context,
 }) => {
   await page.goto('/caderno/?cadeira=exemplo');
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Texto do apontamento' })
     .fill('Original');
@@ -296,19 +329,15 @@ test('the notebook shows all courses on home and only the current course on a le
   page,
 }) => {
   await page.goto('/caderno/?cadeira=exemplo');
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Título do apontamento' })
     .fill('O meu exemplo');
   await expect(page.locator('#personal-save-status')).toHaveText(
     'Guardado neste navegador',
   );
-  await page.getByLabel('Cadeira', { exact: true }).selectOption('fp');
-  await page
-    .getByRole('button', { name: 'Novo apontamento', exact: true })
-    .click();
+  await page.goto('/caderno/fp/');
+  await newNote(page);
   await page
     .getByRole('textbox', { name: 'Título do apontamento' })
     .fill('As minhas funções');
@@ -343,4 +372,121 @@ test('the notebook shows all courses on home and only the current course on a le
       .locator('#scratchpad')
       .getByRole('link', { name: 'As minhas funções', exact: true }),
   ).toHaveCount(0);
+});
+
+test('editing a rendered word preserves its position and surrounding formatting', async ({
+  page,
+}) => {
+  await page.goto('/caderno/?cadeira=exemplo#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('Alpha **beta** gamma');
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await page.locator('.personal-editor strong').click();
+  await expect(page.locator('.personal-editor strong')).toHaveText('beta');
+  await page.locator('.personal-editor strong').dblclick();
+  await page.keyboard.insertText('delta');
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await expect(page.locator('.personal-editor')).toContainText(
+    'Alpha delta gamma',
+  );
+  await expect(page.locator('.personal-editor strong')).toHaveText('delta');
+});
+
+test('formula copying gives visible feedback and the mouse does not leave a sticky button', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/exemplo/apontamentos/');
+  const formula = page.locator('.lesson-body .formula-unit').first();
+  await formula.hover();
+  const copy = formula.getByRole('button', {
+    name: 'Copiar fórmula',
+    exact: true,
+  });
+  await copy.click();
+  await expect(page.locator('#formula-copy-status')).toHaveText(
+    'Fórmula copiada',
+  );
+  await expect(page.locator('#formula-copy-status')).toHaveCSS('opacity', '1');
+  await page.mouse.move(5, 5);
+  await expect(copy).toHaveCSS('opacity', '0');
+});
+
+test('notes use course contents, with keyboard and pointer menus and undo', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/caderno/exemplo/#novo');
+  await page
+    .getByRole('textbox', { name: 'Título do apontamento' })
+    .fill('Revisão pessoal');
+  await expect(page.locator('#personal-save-status')).toHaveText(
+    'Guardado neste navegador',
+  );
+  await expect(page.locator('#conteudo select')).toHaveCount(0);
+  await expect(
+    page
+      .locator('.reader-navigation')
+      .getByRole('link', { name: 'Apresentação', exact: true }),
+  ).toBeVisible();
+  const link = page
+    .locator('.reader-navigation')
+    .getByRole('link', { name: 'Revisão pessoal', exact: true });
+  await link.click({ button: 'right' });
+  await expect(page.locator('#note-page-menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(link).toBeFocused();
+  await link.press('Shift+F10');
+  await page.keyboard.press('Tab');
+  await expect(page.locator('#note-page-menu')).toBeHidden();
+  await expect(
+    page.getByRole('button', { name: 'Ações de Revisão pessoal' }),
+  ).toBeFocused();
+  await link.press('Shift+F10');
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.locator('#note-page-menu')).toBeHidden();
+  await expect(
+    page.getByRole('link', { name: 'Novo apontamento', exact: true }),
+  ).toBeFocused();
+  await link.press('Shift+F10');
+  await page
+    .locator('#note-page-menu')
+    .getByRole('menuitem', { name: 'Eliminar apontamento' })
+    .click();
+  await expect(link).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Desfazer eliminação', exact: true })
+    .click();
+  await expect(link).toBeVisible();
+  await page.goto('/exemplo/apontamentos/');
+  await page
+    .locator('.reader-navigation')
+    .getByRole('button', { name: 'Ações de Revisão pessoal' })
+    .click();
+  await page
+    .locator('#note-page-menu')
+    .getByRole('menuitem', { name: 'Eliminar apontamento' })
+    .click();
+  await expect(link).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Desfazer eliminação', exact: true })
+    .click();
+  await expect(link).toBeVisible();
+});
+
+test('typing continues lists and undo restores text without a preview switch', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('- Primeiro');
+  await editor.press('End');
+  await editor.press('Enter');
+  await page.keyboard.insertText('Segundo');
+  await expect(editor).toContainText('- Segundo');
+  await editor.press('ControlOrMeta+z');
+  await expect(editor).not.toContainText('Segundo');
+  await editor.press('ControlOrMeta+Shift+z');
+  await expect(editor).toContainText('Segundo');
 });

@@ -106,3 +106,15 @@ export async function importPersonalMarkdown(text: string) {
     images,
   };
 }
+
+export async function downloadPersonalNote(note: PersonalNote) {
+  const markdown = await exportPersonalMarkdown(note);
+  const url = URL.createObjectURL(
+    new Blob([markdown], { type: 'text/markdown;charset=utf-8' }),
+  );
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${(note.title || 'apontamento').replace(/[^\p{L}\p{N}_-]/gu, '-').slice(0, 80)}.md`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
