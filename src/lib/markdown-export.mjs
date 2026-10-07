@@ -110,6 +110,11 @@ export default function markdownExport() {
           converter.addRule('playground', {
             filter: (node) => node.hasAttribute('data-playground'),
             replacement: (_content, node) => {
+              const engine = {
+                sql: 'SQLite',
+                sqlite: 'SQLite',
+                postgresql: 'PostgreSQL',
+              }[node.getAttribute('data-language')];
               const tagFor = (filename) =>
                 ({
                   py: 'python',
@@ -128,20 +133,27 @@ export default function markdownExport() {
                   json: 'json',
                   csv: 'csv',
                 })[filename.split('.').pop()?.toLowerCase() || ''] || 'text';
-              return [
-                ...node.querySelectorAll(
-                  '[data-source], [data-support-source]',
-                ),
-              ]
-                .map((source) => {
-                  const filename =
-                    source.getAttribute('data-filename') || 'code';
-                  const language = source.hasAttribute('data-source')
-                    ? node.getAttribute('data-language')
-                    : tagFor(filename);
-                  return `\n\n**${filename}**\n\n\`\`\`${language}\n${source.textContent}\n\`\`\`\n\n`;
-                })
-                .join('');
+              return (
+                (engine ? `\n\n**${engine}**\n\n` : '') +
+                [
+                  ...node.querySelectorAll(
+                    '[data-source], [data-support-source]',
+                  ),
+                ]
+                  .map((source) => {
+                    const filename =
+                      source.getAttribute('data-filename') || 'code';
+                    const language = source.hasAttribute('data-source')
+                      ? ['sql', 'sqlite', 'postgresql'].includes(
+                          node.getAttribute('data-language'),
+                        )
+                        ? 'sql'
+                        : node.getAttribute('data-language')
+                      : tagFor(filename);
+                    return `\n\n**${filename}**\n\n\`\`\`${language}\n${source.textContent}\n\`\`\`\n\n`;
+                  })
+                  .join('')
+              );
             },
           });
           converter.addRule('web-code', {

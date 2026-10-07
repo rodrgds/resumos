@@ -8,7 +8,17 @@ export function runProgram(
   parent: HTMLElement,
 ): () => void {
   if (request.language === 'python') return runPython(request, receive);
-  if (['java', 'haskell', 'prolog', 'php'].includes(request.language))
+  if (
+    [
+      'java',
+      'haskell',
+      'prolog',
+      'php',
+      'sql',
+      'sqlite',
+      'postgresql',
+    ].includes(request.language)
+  )
     return runIsolated(request, receive, parent);
 
   // Static constructors let Vite bundle each disposable runtime.

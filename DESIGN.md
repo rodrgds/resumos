@@ -30,7 +30,7 @@ Preserve the user's Resumos LEIC reference: distinct course colours, the FEUP bu
 
 ## Teaching components
 
-- Executable examples use the reading palette and compact toolbars. Run is primary; supporting code may be collapsed when it is not the subject. No editor attribution footer or redundant prose announcing output.
+- Executable examples use the reading palette and compact toolbars. Run is primary; supporting code may be collapsed when it is not the subject. No editor attribution footer or redundant prose announcing output. Give file tabs and actions priority. Show a title only when its full text and the file names fit; keep the full accessible name. Do not add a separate database-engine badge.
 - Questions state correctness explicitly. Reasoning questions use clearly labelled self-assessment rather than pretending to grade prose. Printing and Markdown include authored content, never reader answers.
 - Figures have descriptive alt text. Diagram neutrals follow the palette while distinct data-series colours remain distinct. Prefer static SVG when motion adds no explanation.
 - Subject demos show topic controls and visuals; web editors belong in web-development lessons. Keep assumptions in lesson prose and controls outside indexed or annotatable text.

@@ -8,7 +8,7 @@
 
 CheerpJ 4.3 is loaded from Leaning Technologies' CDN. It is not redistributed here. This personal, open-source website uses it under its free licence: https://cheerpj.com/docs/licensing.html. Commercial or institutional deployments must review those terms.
 
-The runner has a separate origin, `resumos-code.pages.dev`, and receives only the code and explicit standard input. It must never host the reading website or its local notes.
+The runner has a separate origin, `resumos-code.pages.dev`, and receives only code, support files and declared input. It must never host the reading website or its local notes.
 
 ## Haskell and Prolog
 
@@ -36,3 +36,17 @@ Python uses Pyodide 314.0.7 from the official Pyodide distribution on jsDelivr, 
 - Source, release and package recipes: https://github.com/pyodide/pyodide/tree/314.0.7
 - Pyodide licence: Mozilla Public License 2.0, https://github.com/pyodide/pyodide/blob/314.0.7/LICENSE
 - Runtime and package licences: https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json
+
+## Databases
+
+SQLite uses sql.js 1.14.2, bundled locally with its WASM binary. sql.js is MIT licensed; SQLite is public domain. The build copies the upstream licence to `LICENSE.sql-js`.
+
+- Source and licence: https://github.com/sql-js/sql.js
+- SQLite: https://sqlite.org/copyright.html
+
+PostgreSQL uses PGlite 0.5.8, bundled with its WASM, initdb and filesystem assets. PGlite is Apache-2.0 licensed and includes PostgreSQL under the PostgreSQL licence. The build copies the package licence to `LICENSE.pglite`.
+
+- Source and licences: https://github.com/electric-sql/pglite
+- PostgreSQL: https://www.postgresql.org/about/licence/
+
+Both databases run in disposable Workers on the runner origin. Database storage is in memory. Neither runtime can access the reading origin or its private notes. Each support SQL script runs before the main script, and the frontend renders bounded positional results as text in tables. PGlite supports a single connection, not a multi-client PostgreSQL server.

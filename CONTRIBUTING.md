@@ -204,7 +204,13 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 />
 ```
 
-`code` é o ficheiro principal, o que corre, `input` fornece a entrada padrão e `title` é opcional. Para várias linhas, usa `input={"3\n10 20 30"}`; um atributo MDX entre aspas não interpreta `\n`. Consulta [linguagens e limites](docs/linguagens.md) e [execução local](docs/execucao.md) antes de escolher o motor. Verifica o programa no editor do site, além de o correr nativamente.
+`code` é o ficheiro principal, o que corre, e `title` é opcional. Declara `input` apenas quando o exemplo lê entrada padrão, ou um corpo de pedido em PHP. Omiti-lo esconde esse controlo; `input=""` oferece uma entrada inicialmente vazia. SQL e Haskell não aceitam `input`. Para várias linhas, usa `input={"3\n10 20 30"}`; um atributo MDX entre aspas não interpreta `\n`. Consulta [linguagens e limites](docs/linguagens.md) e [execução local](docs/execucao.md) antes de escolher o motor. Verifica o programa no editor do site, além de o correr nativamente.
+
+Os exemplos executam uma vez quando entram no ecrã, em fila, sem antecipar blocos fora do ecrã. Java e Haskell começam por escolha do leitor. Usa `autoRun={false}` para programas caros, efeitos que o leitor deva iniciar ou experiências que exijam escolher a entrada. Exercícios de programação ficam manuais. Editar código ou entrada antes da execução automática também a impede; voltar ao bloco nunca reexecuta a edição.
+
+Para bases de dados, usa `language="sqlite"` ou `language="postgresql"`. `sql` mantém compatibilidade com SQLite. Os ficheiros `.sql` de apoio correm pela ordem das tabs antes do principal, numa base vazia por execução. Mantém criação e povoamento nas sementes quando o principal ensina transações, para um `ROLLBACK` não anular a preparação. Cada chamada PostgreSQL executa um lote SQL com a semântica de transação implícita do motor, não uma sessão de `psql` que envia cada instrução separadamente. Não dividas scripts por ponto e vírgula, que também aparece em strings, triggers e funções.
+
+Os resultados são tabelas com nomes de colunas, `NULL` distinto de texto e uma indicação quando só se mostram as primeiras 200 linhas. As instruções SQLite de consola, como `.mode` e `.read`, pertencem à ferramenta `sqlite3`, não ao SQL deste editor. PostgreSQL usa PGlite numa só ligação; bloqueios entre clientes, replicação e extensões não incluídas precisam do ambiente da cadeira.
 
 ### Ficheiros de apoio
 

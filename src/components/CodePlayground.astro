@@ -1,7 +1,11 @@
 ---
 import Icon from './Icon.astro';
 import EditorFullscreen from './EditorFullscreen.astro';
-import type { Language } from '../lib/runners/types';
+import {
+  LANGUAGE_LABELS as labels,
+  isDatabase,
+  type Language,
+} from '../lib/runners/types';
 import { MAIN_FILENAMES, supportFiles } from '../lib/playground-files';
 import {
   detectDelimiter,
@@ -18,23 +22,23 @@ interface Props {
   files?: Record<string, string>;
   input?: string;
   title?: string;
+  autoRun?: boolean;
 }
-const { language, code, files = {}, input = '', title } = Astro.props;
+const {
+  language,
+  code,
+  files = {},
+  input,
+  title,
+  autoRun = !['java', 'haskell'].includes(language),
+} = Astro.props;
+if (input !== undefined && (isDatabase(language) || language === 'haskell'))
+  throw new Error(
+    `CodePlayground: ${labels[language]} não aceita entrada padrão.`,
+  );
 const supports = supportFiles(language, files);
 const mainFilename = MAIN_FILENAMES[language];
 const fileGroup = `playground-files-${crypto.randomUUID()}`;
-const labels = {
-  python: 'Python',
-  javascript: 'JavaScript',
-  sql: 'SQL',
-  cpp: 'C++',
-  java: 'Java',
-  c: 'C',
-  haskell: 'Haskell',
-  prolog: 'Prolog',
-  php: 'PHP',
-  riscv: 'RISC-V',
-};
 const escapeHtml = (text: string) =>
   text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 // Column colours for data files, matching the editor decorations.
@@ -60,6 +64,7 @@ const renderCsv = (content: string, filename: string) => {
     class="playground"
     data-playground
     data-language={language}
+    data-auto-run={autoRun}
     aria-label={title || `Experimentar ${labels[language]}`}
   >
     <div class="playground-toolbar" data-pagefind-ignore>
@@ -79,9 +84,11 @@ const renderCsv = (content: string, filename: string) => {
           ))}
         </fieldset>
       )}
-      <strong class="playground-title">{title || labels[language]}</strong>
+      <strong class="playground-title">
+        {title || (isDatabase(language) ? '' : labels[language])}
+      </strong>
       <div class="playground-actions">
-        {language !== 'haskell' && (
+        {input !== undefined && (
           <details class="playground-stdin">
             <summary
               aria-label={
@@ -97,10 +104,13 @@ const renderCsv = (content: string, filename: string) => {
               <label>
                 {language === 'php'
                   ? 'Disponível em php://input'
-                  : 'Uma entrada por linha'}
-                <textarea data-stdin rows="3" spellcheck="false">
-                  {input}
-                </textarea>
+                  : 'Entrada padrão'}
+                <textarea
+                  data-stdin
+                  rows="3"
+                  spellcheck="false"
+                  set:text={input}
+                ></textarea>
               </label>
             </div>
           </details>
@@ -170,7 +180,9 @@ const renderCsv = (content: string, filename: string) => {
       <div class="editor-result-pane" data-pagefind-ignore>
         <div class="editor-pane-label">Resultado</div>
         <p class="editor-empty">
-          Executa o código para ver a saída e os gráficos.
+          {isDatabase(language)
+            ? 'Executa a consulta para ver as tabelas.'
+            : 'Executa o código para ver a saída e os gráficos.'}
         </p>
         <div class="playground-result" hidden>
           <div class="playground-status" role="status"></div>

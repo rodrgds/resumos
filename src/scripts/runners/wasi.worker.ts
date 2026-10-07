@@ -90,23 +90,10 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
         timestamps: { access: date, modification: date, change: date },
       };
     }
-    // SQLite has no file import statement, so seed scripts run before main.
-    const sqlSeeds = Object.entries(files ?? {})
-      .filter(
-        ([name, content]) =>
-          typeof name === 'string' &&
-          typeof content === 'string' &&
-          name.toLowerCase().endsWith('.sql'),
-      )
-      .map(([, content]) => content as string);
-    const mainSource =
-      language === 'sql' && sqlSeeds.length > 0
-        ? [...sqlSeeds, code].join('\n')
-        : code;
     fs['/program'] = {
       path: '/program',
       mode: 'string',
-      content: mainSource,
+      content: code,
       timestamps: { access: date, modification: date, change: date },
     };
     let exitCode: number;
@@ -168,7 +155,6 @@ self.onmessage = async ({ data }: MessageEvent<RunRequest>) => {
       send({ type: 'status', text: 'A executar…' });
       const commands = {
         javascript: ['wasmedge_quickjs.wasm', ['quickjs', '/program']],
-        sql: ['sqlite.wasm', ['sqlite', '-batch', '-cmd', '.read /program']],
       } as const;
       if (!(language in commands))
         throw new Error('Esta linguagem usa um motor isolado.');

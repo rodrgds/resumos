@@ -1,4 +1,4 @@
-import type { Language } from './runners/types';
+import { isDatabase, type Language } from './runners/types';
 
 // The tab name shown for the executable program of each language. Java must
 // stay Main.java because the runner compiles that exact class.
@@ -6,6 +6,8 @@ export const MAIN_FILENAMES: Record<Language, string> = {
   python: 'main.py',
   javascript: 'main.js',
   sql: 'main.sql',
+  sqlite: 'main.sql',
+  postgresql: 'main.sql',
   cpp: 'main.cpp',
   c: 'main.c',
   java: 'Main.java',
@@ -59,6 +61,10 @@ export function supportFiles(
       throw new Error(
         `CodePlayground: o conteúdo de ${name} tem de ser texto.`,
       );
+    if (isDatabase(language) && !name.toLowerCase().endsWith('.sql'))
+      throw new Error(
+        'CodePlayground: os ficheiros de apoio SQL têm de acabar em .sql.',
+      );
     const text = content.trim();
     if (!text) throw new Error(`CodePlayground: ${name} está vazio.`);
     if (text.length > MAX_FILE_CHARS)
@@ -88,7 +94,7 @@ export function supportLanguage(
     case 'json':
       return 'javascript';
     case 'sql':
-      return 'sql';
+      return language === 'postgresql' ? 'postgresql' : 'sqlite';
     case 'cpp':
     case 'cc':
     case 'hpp':

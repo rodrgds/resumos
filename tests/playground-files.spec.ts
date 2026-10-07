@@ -90,6 +90,8 @@ test('files stay inspectable without scripts and public Markdown exports every f
     name: 'Norma do vetor',
     exact: true,
   });
+  await expect(playground.locator('pre[data-source]')).toBeVisible();
+  await expect(playground.locator('pre[data-support-source]')).toBeVisible();
   await expect(playground.locator('pre[data-source]')).toContainText(
     'from apoio import norma',
   );
@@ -100,8 +102,96 @@ test('files stay inspectable without scripts and public Markdown exports every f
   expect(markdown.ok()).toBe(true);
   const body = await markdown.text();
   expect(body).toContain('**main.py**');
+  expect(body).toContain('**SQLite**');
+  expect(body).toContain('**PostgreSQL**');
+  expect(body).not.toMatch(/```(?:sqlite|postgresql)\n/);
   expect(body).toContain('**apoio.py**');
   expect(body).toContain('from numpy.linalg import norm\n\ndef norma(vetor):');
   expect(body).toContain('from apoio import norma');
   await page.close();
+});
+
+test('loading editors keeps a visible SQL example in view before automatic execution', async ({
+  page,
+}) => {
+  let release!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/*.js', async (route) => {
+    await ready;
+    await route.continue();
+  });
+  await page.goto('/cadeiras/bd/sql-consultas/', { waitUntil: 'commit' });
+  const root = page.getByRole('region', {
+    name: 'Conservar Mia na contagem de encomendas',
+    exact: true,
+  });
+  try {
+    await root.scrollIntoViewIfNeeded();
+    await expect(
+      root.getByLabel('Ficheiro loja.sql', { exact: true }),
+    ).toBeHidden();
+  } finally {
+    release();
+  }
+  await expect(
+    root.getByRole('textbox', { name: 'Código sqlite', exact: true }),
+  ).toBeVisible();
+  await expect(root).toBeInViewport();
+  await expect(root.getByRole('status')).toHaveText('Concluído', {
+    timeout: 30_000,
+  });
+  await expect(root.getByRole('cell')).toHaveText([
+    '1',
+    'Ana',
+    '2',
+    '2',
+    'Rui',
+    '1',
+    '3',
+    'Mia',
+    '0',
+  ]);
+});
+
+test('the toolbar gives file names room and shows its title only when it fits', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/cadeiras/bd/sql-consultas/');
+  const root = page.getByRole('region', {
+    name: 'Conservar Mia na contagem de encomendas',
+    exact: true,
+  });
+  await root.scrollIntoViewIfNeeded();
+  await expect(
+    root.getByRole('textbox', { name: 'Código sqlite', exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  await expect(root.locator('.playground-dialect')).toHaveCount(0);
+  const tabs = root.locator('.playground-file-tabs');
+  await expect
+    .poll(() => tabs.evaluate((e) => e.scrollWidth <= e.clientWidth + 1))
+    .toBe(true);
+  await expect(root.locator('.playground-title')).toBeHidden();
+  await root
+    .getByRole('button', { name: 'Expandir editor', exact: true })
+    .click();
+  await expect(root.locator('.playground-title')).toBeVisible();
+  await expect(root.locator('.playground-title')).toHaveText(
+    'Conservar Mia na contagem de encomendas',
+  );
+  await root
+    .getByRole('button', { name: 'Fechar editor expandido', exact: true })
+    .click();
+  await page.setViewportSize({ width: 320, height: 844 });
+  await expect(root.locator('.playground-title')).toBeHidden();
+  for (const name of ['Expandir editor', 'Repor código', 'Executar'])
+    await expect(root.getByRole('button', { name, exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+  ).toBe(false);
 });
