@@ -41,8 +41,8 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - $K=mv^2/2$; $W_\mathrm{total}=\Delta K$.
 - $W_\mathrm{cons}=-\Delta U$; $F_x=-U'(x)$.
 - $U_g=mgy$ perto da superfície; $U_e=kx^2/2$; gravitação $U=-GMm/r$ com zero no infinito.
-- $K_i+U_i+W_\text{não\ cons}=K_f+U_f$. Energia mecânica constante apenas se esse trabalho for zero. Uma força não conservativa presente pode não fazer trabalho, como o atrito estático no rolamento ideal.
-- Equilíbrio $U'=0$. Mínimo estável, máximo instável. $U''=0$ não decide.
+- $\Delta(K+U)=W_\text{não\ cons}$. Energia mecânica constante apenas se esse trabalho for zero. Uma força não conservativa presente pode não fazer trabalho, como o atrito estático no rolamento ideal.
+- Equilíbrio $U'=0$. Mínimo estrito estável, máximo estrito instável. $U''=0$ não decide. Estados acessíveis exigem $E\ge U$; $E=U$ pode indicar inversão ou equilíbrio.
 - $P=\vec F\cdot\vec v$. Rendimento $\eta=P_\text{útil}/P_\mathrm{entrada}$.
 - Volta vertical interior: $mg+N=mv_\mathrm{topo}^2/R$. Ponto deslizante sem atrito, partida do repouso: $h_{\mathrm{min}}=5R/2$.
 
@@ -53,7 +53,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - $\vec R_\mathrm{CM}=\sum m_i\vec r_i/M$ ou $M^{-1}\int\vec r\,dm$.
 - $\vec P=M\vec V_\mathrm{CM}$ e $M\vec A_\mathrm{CM}=\sum\vec F_\mathrm{ext}$.
 - Impulso $\vec J_\mathrm{ext}=\Delta\vec P$. Conservação do momento exige impulso externo nulo na componente usada, por isso verifica direção a direção.
-- Corpos juntos: $u=(m_1v_1+m_2v_2)/(m_1+m_2)$.
+- Corpos juntos: $u=\frac{m_1v_1+m_2v_2}{m_1+m_2}$.
 - Choque elástico 1D: conserva $P$ e $K$, ou usa $u_2-u_1=v_1-v_2$ com momento. Só massas iguais trocam velocidades.
 - Pêndulo balístico: momento no impacto, energia na subida. Não conservar energia cinética através do impacto inelástico.
 
@@ -67,6 +67,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - Eixo fixo, corpo rígido: $\tau_z=I\alpha$, $L_z=I\omega$, $K_\mathrm{rot}=I\omega^2/2$, $P=\tau_z\omega$.
 - Equilíbrio rígido: $\sum\vec F=0$ e $\sum\vec\tau=0$.
 - Rolamento ideal: $v_\mathrm{CM}=R|\omega|$, $K=Mv^2/2+I_\mathrm{CM}\omega^2/2$. Descida: $a=g\sin\theta/[1+I_\mathrm{CM}/(MR^2)]$. Confirma $|f_s|\le\mu_sN$.
+- Atwood com roldana de inércia $I$, fio sem deslizamento e $m_1>m_2$: $a=\frac{(m_1-m_2)g}{m_1+m_2+I/R^2}$.
 - Pêndulo físico, pequenos ângulos: $T=2\pi\sqrt{I_O/(Mgd)}$.
 
 | Corpo de densidade uniforme e eixo    | $I$          |
@@ -82,13 +83,13 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 [Condições iniciais e regimes](/cadeiras/f1/oscilacoes/#condições-iniciais-e-fase).
 
 - Mola ideal: $\omega_0=\sqrt{k/m}$; $T=2\pi/\omega_0$.
-- $x=x_0\cos\omega_0t+(v_0/\omega_0)\sin\omega_0t$; $A^2=x_0^2+(v_0/\omega_0)^2$; $E=kA^2/2$.
+- Condições iniciais: $x=C\cos\omega_0t+D\sin\omega_0t$, com $C=x_0$ e $D=v_0/\omega_0$. Amplitude $A^2=C^2+D^2$; energia $E=kA^2/2$.
 - Pêndulo simples: $T\approx2\pi\sqrt{\ell/g}$, pequenos ângulos em radianos.
 - Amortecimento linear: $\gamma=b/(2m)$; subcrítico se $0<\gamma<\omega_0$, crítico se iguais, sobrecrítico se maior; $b=0$ dá o oscilador ideal.
 - Subcrítico: $x=Ae^{-\gamma t}\cos(\omega_dt+\phi)$, $\omega_d^2=\omega_0^2-\gamma^2$.
 - $\tau=m/b=1/(2\gamma)$; $Q=\omega_0/(2\gamma)$; meia amplitude em $\ln2/\gamma$. A amplitude é $e^{-t/(2\tau)}$ nesta convenção, que usa $\omega_a$ nas transparências para a frequência amortecida aqui chamada $\omega_d$.
 - Picos do mesmo sinal: $\delta=\ln(A_n/A_{n+1})=\gamma T_d$.
-- Força $F_0\cos\Omega t$: $A=(F_0/m)/\sqrt{(\omega_0^2-\Omega^2)^2+(2\gamma\Omega)^2}$.
+- Força $F_0\cos\Omega t$: $A=\frac{F_0/m}{\sqrt{(\omega_0^2-\Omega^2)^2+(2\gamma\Omega)^2}}$.
 - Pico de amplitude: $\Omega_\mathrm{res}=\sqrt{\omega_0^2-2\gamma^2}$ para $F_0$ constante e $0<\gamma<\omega_0/\sqrt2$.
 
 [Análise de medições](/cadeiras/f1/medir-oscilacoes/#ajustar-o-decaimento): usa amplitudes relativamente à linha de base, vários ciclos e logaritmos de razões adimensionais. Não confundir a constante de tempo da amplitude com a da energia. Para $g$ fixo, $\Delta\ell/\ell\approx2\Delta T/T$ no modelo de pêndulo simples.

@@ -13,6 +13,6 @@
   // Triângulo do trabalho com a base marcada
   line((0, 0), (4, 0), (4, 2), close: true, fill: rgb("f3e9e9"), stroke: none)
   line((4, 0), (4, 2), stroke: (dash: "dashed"))
-  content((4, -0.02), [$0,10 "m"$], anchor: "north")
+  content((4, -0.35), [$0,10 "m"$], anchor: "north")
   content((2, 0.55), [$W$])
 })
