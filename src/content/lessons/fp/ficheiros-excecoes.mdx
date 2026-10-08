@@ -9,7 +9,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-O resultado de um programa pode precisar de sobreviver ao fim da execução. Um ficheiro guarda esses dados, mas cria falhas novas: o caminho pode faltar ou o texto pode não representar o número esperado. Esta última página mostra como guardar dados e como reagir quando algo falha.
+Para guardar as notas `[12, 16]` entre execuções, podemos escrever um inteiro por linha num ficheiro. Ao lê-lo, é preciso distinguir um caminho inexistente, uma linha em branco e um número inválido. Cada caso exige uma decisão do contrato.
 
 ## Módulos e organização
 
@@ -46,7 +46,7 @@ Trabalha com dois ficheiros: `estatistica.py` define `media(valores)` e `relator
   }
 />
 
-A saída é `[12, 16]` e `14.0` porque o programa cria o ficheiro antes de o ler. Aqui as linhas são não vazias e contêm inteiros; se o formato permitir outros casos, trata-os explicitamente.
+A escrita produz duas linhas, `12` e `16`. A compreensão lê cada linha, remove a mudança de linha com `strip` e converte-a com `int`, recuperando `[12, 16]`. A média é $(12+16)/2=14$, apresentada como `14.0` pela divisão. Aqui as linhas são não vazias e contêm inteiros; se o formato permitir outros casos, trata-os explicitamente. Num ficheiro vazio, a lista seria `[]` e o cálculo da média dividiria por zero.
 
 No editor, o ficheiro existe apenas durante esta execução. Num programa local, fica no disco. `write` recebe texto, não acrescenta uma mudança de linha por si só e devolve o número de caracteres escritos.
 
@@ -77,7 +77,16 @@ Uma exceção interrompe o percurso normal e procura um tratador compatível nas
   }
 />
 
-Com `abc`, a conversão falha e a saída é `não é inteiro` seguida de `fim`. Com `12`, a saída é `24` seguida de `fim`. Um `except ValueError` não trata `ZeroDivisionError`. Escolhe o erro esperado em vez de esconder qualquer falha com `except:`.
+Para `abc`, a conversão lança `ValueError`; para `12`, devolve o inteiro 12. O percurso seguinte depende desse resultado:
+
+| Entrada | Bloco seguinte | Primeira saída |
+| ------- | -------------- | -------------- |
+| `abc`   | `except`       | não é inteiro  |
+| `12`    | `else`         | 24             |
+
+Nas duas entradas, `finally` acrescenta uma segunda linha, `fim`.
+
+Uma falha dentro de `else` não volta ao `except` associado: esse tratador cobre o corpo de `try`. Um `except ValueError` também não trata `ZeroDivisionError`. Escolhe o erro esperado em vez de esconder qualquer falha com `except:`.
 
 Alguns erros comuns são `ValueError` para um valor inadequado, `TypeError` para tipos incompatíveis, `IndexError` para índices inválidos, `KeyError` para chaves em falta e `FileNotFoundError` para um ficheiro inexistente. `raise ValueError("mensagem")` comunica uma violação do contrato. Depois de uma falha, define se a operação deve pedir novos dados, ignorar a linha, devolver um sinal ou terminar; não inventes um resultado válido.
 

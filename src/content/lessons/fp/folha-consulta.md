@@ -7,11 +7,11 @@ editorial:
   sources:
     - title: Caderno FP SofiaViP
       url: https://drive.google.com/file/d/1-2tiPzWQX8LHHWILl3z-4pShVDhP0C1m/view
-    - title: Programa de FP, SIGARRA 2025/26
-      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087
+    - title: Programa de FP, SIGARRA 2026/27
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586981
 ---
 
-Usa esta folha para escolher uma operação e conferir as suas condições, ou seja, o contrato, os limites e os erros frequentes. As ligações levam à explicação e à prática.
+As tabelas reúnem operações, condições e casos limite. As ligações levam às explicações e à prática.
 
 ## Valores e expressões
 
@@ -76,7 +76,7 @@ Uma função pura depende dos valores recebidos e não produz efeitos observáve
 | Chave de ordenação  | `sorted(registos, key=lambda r: (-r[1], r[0]))` ordena pelo segundo campo decrescente e pelo primeiro crescente.                                                                                     |
 | Devolver uma função | Uma closure conserva acesso ao âmbito envolvente. O contexto não é automaticamente uma cópia de cada valor.                                                                                          |
 
-Um iterador consumido não recomeça. `(f(x) for x in xs)` é gerador; `yield` entrega um valor e suspende; `return` termina. Usa lista para índices e vários percursos, gerador para consumo progressivo. Verifica a ordem entre filtrar e transformar.
+Um iterador consumido não recomeça. `(f(x) for x in xs)` é gerador; `yield` entrega um valor e suspende; o próximo pedido retoma depois de `yield`; `return` termina. Usa lista para índices e vários percursos, gerador para consumo progressivo. Filtrar positivos antes de elevar ao quadrado exclui negativos; filtrar os quadrados já não os exclui. A paridade de um inteiro, pelo contrário, mantém-se no seu quadrado.
 
 [Compreensões](/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas). [Geradores](/cadeiras/fp/compreensoes-geradores/#geradores-e-yield). [Map, filter e reduce](/cadeiras/fp/programacao-funcional/#map-filter-e-reduce). [Closures](/cadeiras/fp/programacao-funcional/#devolver-funções-e-âmbito-léxico).
 

@@ -38,25 +38,6 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="compreensao-pares"
-  title="Contar uma compreensão aninhada"
-  revision={1}
-  explanation="/cadeiras/fp/compreensoes-geradores/#percursos-aninhados"
-  answer={{ kind: 'number', value: 6, tolerance: 0 }}
->
-  <p>
-    Quantos pares produz{' '}
-    <code>{'[(i, j) for i in range(3) for j in range(2)]'}</code>?
-  </p>
-  <div slot="hint">{'O percurso de j reinicia para cada i.'}</div>
-  <div slot="hint-more">{'Há três valores de i e dois de j.'}</div>
-  <div slot="solution">
-    {'São 3 × 2 = 6 pares. A ordem começa (0, 0), (0, 1), (1, 0).'}
-  </div>
-  <div slot="mistakes">{'Somar os comprimentos dos percursos.'}</div>
-</Exercise>
-
-<Exercise
   id="gerador-esgotado"
   title="Prever consumo parcial"
   revision={1}
@@ -93,51 +74,30 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="iterador-memoria"
-  title="Escolher quando guardar"
-  revision={2}
-  explanation="/cadeiras/fp/compreensoes-geradores/#escolher-entre-lista-e-gerador"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Um map já consumido',
-        correct: false,
-        explanation:
-          'É um iterador esgotado, sem resultados para os novos percursos.',
-      },
-      {
-        text: 'Uma lista',
-        correct: true,
-        explanation: 'Permite índices e percursos repetidos.',
-      },
-      {
-        text: 'Um gerador único',
-        correct: false,
-        explanation: 'Pode esgotar e não permite acesso por índice.',
-      },
-    ],
-  }}
+ id="iterador-memoria"
+ title="Escolher entre guardar e recalcular"
+ revision={3}
+ explanation="/cadeiras/fp/compreensoes-geradores/#escolher-entre-lista-e-gerador"
+ answer={{kind: 'self', checklist: ['Escolhi uma lista para índice e percursos repetidos.', 'Expliquei que um gerador novo repete o cálculo.', 'Escolhi consumo progressivo para uma soma única.']}}
 >
-  <p>
-    {
-      'Tens pelo menos 11 resultados. Queres percorrê-los três vezes e consultar o elemento na posição 10. Qual resultado serve diretamente?'
-    }
-  </p>
-  <div slot="hint">
-    {'Um gerador não suporta índices e conserva um percurso.'}
-  </div>
-  <div slot="hint-more">
-    {'Uma lista conserva os valores e permite novos percursos.'}
-  </div>
-  <div slot="solution">
-    {
-      'Uma lista serve diretamente. Um gerador pode poupar memória num consumo único, mas terias de o recriar ou materializar para estas operações.'
-    }
-  </div>
-  <div slot="mistakes">
-    {'Escolher sempre gerador por ser produzido de forma adiada.'}
-  </div>
+
+Uma transformação demorada produz pelo menos 11 resultados. Queres percorrê-los
+três vezes e consultar o resultado no índice 10, sem recalcular a transformação.
+Escolhes uma lista ou um gerador? Explica por que criar outro gerador não
+satisfaz a última condição. Se só quisesses somar os resultados uma vez,
+que escolha permitiria evitar guardá-los todos?
+
+<div slot="solution">
+Uma lista guarda os resultados, permite novos percursos e acesso por índice.
+Um gerador único não permite índices nem reinicia quando esgota. Criar outro
+gerador repete a transformação, contrariando o requisito de não recalcular.
+
+Para uma soma única, `sum` pode consumir um gerador valor a valor, sem uma lista
+de todos os resultados. Isso evita essa memória intermédia, mas não elimina o
+trabalho da transformação. A entrada e o estado do gerador continuam a ocupar
+memória.
+
+</div>
 </Exercise>
 
 <Exercise
@@ -210,41 +170,24 @@ def quadrados_positivos(linhas):
 
 <Exercise
   id="efeito-na-compreensao"
-  title="Distinguir construção de efeito"
-  revision={1}
+  title="Diagnosticar uma compreensão com efeitos"
+  revision={2}
   explanation="/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas"
-  answer={{
-    kind: 'code',
-    language: 'python',
-    starter: 'def quadrados_positivos(valores):\n    return []',
-    tests: [
-      { name: 'Filtra e transforma', code: 'print(quadrados_positivos([-2, 0, 3, 4]))', output: '[9, 16]' },
-      { name: 'Entrada intacta', code: 'xs = [-2, 0, 3, 4]\nprint(quadrados_positivos(xs))\nprint(xs)', output: '[9, 16]\n[-2, 0, 3, 4]' },
-      { name: 'Vazia', code: 'print(quadrados_positivos([]))', output: '[]' },
-    ],
-  }}
+  answer={{kind: 'self', checklist: ['Previ xs como [[1, 9], [2, 9]].', 'Previ resultado como [None, None].', 'Construí listas novas e preservei a entrada na correção.']}}
 >
 
-  <div>
-    Define <code>quadrados_positivos(valores)</code> com uma compreensão que devolve os quadrados dos positivos, sem alterar a entrada. Explica porque `[linha.append(9) for linha in xs]` não serve como modelo.
-  </div>
-  <div slot="hint">
-    A expressão deve calcular um valor novo, não executar um efeito.
-  </div>
-  <div slot="hint-more">
-    Compara `[x * x for x in valores]` com `[linha.append(9) for linha in xs]`: o primeiro calcula quadrados, o segundo devolve `None` por elemento e altera cada linha de `xs`. O teste da entrada intacta distingue os dois.
-  </div>
-  <div slot="solution">
-    `[x * x for x in valores if x > 0]` calcula valores novos. `[linha.append(9) for linha in xs]` altera cada linha e produz `[None, None]`.
+Prevê `xs` e `resultado` depois deste trecho. Substitui a compreensão por uma que devolva `[[1, 9], [2, 9]]` e mantenha `xs` como `[[1], [2]]`. Justifica por que construir uma lista exterior nova não chega para preservar a entrada.
 
 ```python
-def quadrados_positivos(valores):
-    return [x * x for x in valores if x > 0]
+xs = [[1], [2]]
+resultado = [linha.append(9) for linha in xs]
 ```
 
-  </div>
-  <div slot="mistakes">
-    Usar `if ... else` na expressão e conservar quatro posições em vez de filtrar; ordenar ou alterar a lista de entrada; esquecer o `if x > 0` e incluir 0 e negativos.
-  </div>
+<div slot="hint">Segue separadamente o efeito e o retorno de cada `append`.</div>
+<div slot="solution">
+`xs` passa a `[[1, 9], [2, 9]]`, porque `linha` refere cada lista interior. Cada `append` devolve `None`, logo `resultado` é `[None, None]`. A lista exterior nova guarda os retornos dessas chamadas; não desfaz os efeitos nas linhas.
 
+Partindo novamente de `xs = [[1], [2]]`, a correção é `resultado = [linha + [9] for linha in xs]`. A concatenação cria uma lista nova por linha e não altera as listas recebidas. Com `xs = []`, o resultado é `[]`.
+
+</div>
 </Exercise>

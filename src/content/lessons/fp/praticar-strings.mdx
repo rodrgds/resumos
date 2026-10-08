@@ -1,51 +1,64 @@
 ---
 title: Praticar strings
-description: Escolher índices, interpretar fatias e filtrar texto.
+description: Interpretar fatias, diagnosticar procuras e transformar texto com um contrato.
 section: exercicios
+editorial:
+  sources:
+    - title: RE06 Strings, 2018/19, problema 3, adaptação com domínio explícito
+      url: https://github.com/samyuh/feup-fpro/blob/master/Exercises/RE06%20-%20Strings/re06_strings.pdf
 ---
 
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
-  id="indice-string"
-  title="Escolher um índice válido"
-  revision={1}
-  explanation="/cadeiras/fp/strings/#índices-e-limites"
+  id="nome-formal"
+  title="Transformar um nome completo"
+  explanation="/cadeiras/fp/strings/#texto-é-imutável"
   answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: '`s[-4]`',
-        correct: false,
-        explanation: 'É o primeiro carácter, F.',
-      },
-      { text: '`s[-1]`', correct: true, explanation: 'É o último carácter.' },
-      {
-        text: '`s[4]`',
-        correct: false,
-        explanation: 'Os índices positivos válidos vão de 0 a 3.',
-      },
+    kind: 'code',
+    language: 'python',
+    starter: 'def nome_formal(nome):\n    return ""',
+    tests: [
+      { name: 'Vários nomes', code: 'print(nome_formal("Ana Maria Silva"))', output: 'Silva, A. M.' },
+      { name: 'Espaços nas pontas e entre nomes', code: 'print(nome_formal("  Bruno   Costa  "))', output: 'Costa, B.' },
+      { name: 'Unicode e dois nomes', code: 'print(nome_formal("Álvaro Sá"))', output: 'Sá, Á.' },
     ],
   }}
 >
-  <p>
-    Para <code>s = "FEUP"</code>, qual expressão devolve "P"?
-  </p>
-  <div slot="hint">
-    O último índice positivo é <code>len(s)</code> - 1.
-  </div>
-  <div slot="hint-more">{'Os índices negativos contam a partir do fim.'}</div>
-  <div slot="solution">
-    <code>s[-1]</code> devolve P. <code>s[4]</code> fica fora da string, e{' '}
-    <code>s[-4]</code> devolve F.
-  </div>
-  <div slot="mistakes">{'Usar o comprimento como último índice.'}</div>
+
+Define `nome_formal(nome)`: recebe uma string com pelo menos dois nomes separados
+por espaços e devolve o último nome, uma vírgula e as iniciais dos anteriores.
+Cada inicial é o primeiro carácter do respetivo nome, seguido de ponto; separa
+as iniciais com um espaço. Conserva as maiúsculas e minúsculas recebidas.
+Ignora espaços adicionais. Não há partículas com tratamento especial.
+Por exemplo, `"Ana Maria Silva"` deve produzir `"Silva, A. M."`.
+
+<div slot="hint">Separa o texto com `split()` e distingue o último campo dos anteriores.</div>
+<div slot="solution">
+`split()` agrupa espaços consecutivos. `partes[-1]` é o último nome e
+`partes[:-1]` contém os nomes que fornecem iniciais. Como há pelo menos dois
+nomes, cada um destes campos existe e não está vazio.
+
+```python
+def nome_formal(nome):
+    partes = nome.split()
+    iniciais = []
+    for parte in partes[:-1]:
+        iniciais.append(parte[0] + ".")
+    return partes[-1] + ", " + " ".join(iniciais)
+```
+
+Para Ana Maria Silva, as iniciais são `["A.", "M."]`, que `join` reúne em
+`"A. M."`. O último nome conserva-se inteiro. A função constrói texto novo;
+não altera a string recebida.
+
+</div>
 </Exercise>
 
 <Exercise
   id="fatias-texto"
   title="Prever fatias"
-  revision={1}
+  revision={2}
   explanation="/cadeiras/fp/strings/#fatias"
   answer={{
     kind: 'self',
@@ -53,12 +66,15 @@ import Exercise from '../../../components/Exercise.astro';
       'Obtive bd.',
       'Obtive fedcba.',
       'Reconheci uma string vazia sem exceção.',
+      'Distingui o IndexError de s[6] dos limites ajustados nas fatias.',
     ],
   }}
 >
   <p>
     Para <code>s = "abcdef"</code>, escreve os resultados de{' '}
-    <code>s[1:5:2]</code>, <code>s[::-1]</code> e <code>s[20:]</code>.
+    <code>s[1:5:2]</code>, <code>s[::-1]</code> e <code>s[20:]</code>. Compara o
+    último caso com <code>s[6]</code>, explicando se devolve um valor ou lança
+    uma exceção.
   </p>
   <div slot="hint">{'A primeira fatia visita índices 1 e 3.'}</div>
   <div slot="hint-more">
@@ -66,7 +82,7 @@ import Exercise from '../../../components/Exercise.astro';
   </div>
   <div slot="solution">
     {
-      'Os resultados são "bd", "fedcba" e "". O índice 5 é o limite excluído; o passo -1 percorre a string ao contrário; a última fatia não causa IndexError.'
+      'Os resultados são "bd", "fedcba" e "". O índice 5 é o limite excluído; o passo -1 percorre a string ao contrário; a última fatia não causa IndexError. s[6] lança IndexError: o último índice é 5. A indexação exige uma posição existente; a fatia ajusta os limites à sequência.'
     }
   </div>
   <div slot="mistakes">
@@ -211,31 +227,4 @@ def digitos_ascii(texto):
     Aceitar todos os dígitos Unicode, ordenar os caracteres ou eliminar
     repetições.
   </div>
-</Exercise>
-
-<Exercise
-  id="fatia-limites"
-  title="Explicar os limites"
-  revision={1}
-  explanation="/cadeiras/fp/strings/#fatias"
-  answer={{ kind: 'self', checklist: ['Indiquei início incluído e fim excluído.', 'Expliquei s[4:] e s[:100].', 'Distingui fatia de índice.'] }}
->
-
-Com `s = "programar"`, explica `s[0:4]`, `s[4:]` e `s[:100]`, e porque `s[9]` falha.
-
-<div slot="hint">A fatia inclui o início e exclui o fim.</div>
-<div slot="hint-more">
-  Conta os caracteres de `"programar"`: `s[0]` é `p` e `s[3]` é `g`, por isso
-  `s[0:4]` termina em `g`. Para `s[9]`, compara 9 com `len(s) - 1`.
-</div>
-<div slot="solution">
-  `s[0:4]` vale `"prog"`; `s[4:]` vale `"ramar"`; `s[:100]` devolve a string
-  inteira porque a fatia tolera limites. `s[9]` falha porque o último índice é
-  8.
-</div>
-<div slot="mistakes">
-  Incluir o carácter do fim na fatia; esperar `IndexError` em `s[:100]` como na
-  indexação; usar `s[len(s)]` como último carácter válido.
-</div>
-
 </Exercise>

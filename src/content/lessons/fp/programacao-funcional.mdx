@@ -9,8 +9,6 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-A lição anterior mostrou como construir sequências com compreensões e como as consumir com iteradores. Esta página mostra como escrever funções que calculam um resultado sem alterar os dados de quem as chama. Uma função pura separa o cálculo dos efeitos: comparas duas chamadas pelos valores que recebem e devolvem.
-
 ## Funções livres de efeitos
 
 Uma função **pura** devolve o mesmo resultado para os mesmos argumentos e não tem efeitos observáveis fora do cálculo. Ler a hora, pedir entrada, imprimir, alterar uma lista recebida ou atualizar estado global quebra essa condição.
@@ -85,6 +83,8 @@ Segue o exemplo com `valores = [1, 2, 3, 4, 5]`:
 | `map` quadrados    | 1, 3, 5           | 1, 9, 25  |
 | `reduce` soma de 0 | 1, 9, 25          | 1, 10, 35 |
 
+Os iteradores não guardam estas listas intermédias. Quando `reduce` pede o próximo quadrado, `map` pede o próximo ímpar a `filter`, que avança na entrada até o encontrar. A tabela separa as etapas para mostrar os valores; uma chamada a `list(impares)` antes do cálculo consumiria o filtro e deixaria a redução sem termos.
+
 O valor inicial também define a resposta para a entrada vazia. Para somar, `sum` é uma alternativa direta; aqui usamos `reduce` para seguir o acumulador.
 
 A ordem importa se a operação não for associativa. `reduce(lambda a, x: a - x, [2, 3], 10)` calcula `(10 - 2) - 3`, que vale 5. Não calcula `10 - (2 - 3)`.
@@ -103,7 +103,14 @@ Uma função interior pode conservar acesso ao contexto onde foi criada. Chamamo
 
 As duas funções conservam fatores diferentes. `return multiplicar` devolve a função, sem a chamar. Depois de `multiplicador` regressar, o fator de cada contexto continua acessível.
 
-A closure consulta as associações dos nomes conservados, não tira automaticamente uma fotografia do seu valor. Criar várias lambdas sobre um único contador que continua a mudar pode fazê-las observar o mesmo valor final. Se precisares de fixar cada valor, passa-o a uma função criadora como neste exemplo, ou usa um parâmetro por defeito deliberado.
+A closure consulta as associações dos nomes conservados. Não faz uma cópia automática dos seus valores. Este contraexemplo cria três funções que consultam o mesmo nome `fator`:
+
+```python
+funcoes = [lambda x: fator * x for fator in range(1, 4)]
+print([f(10) for f in funcoes])
+```
+
+A saída é `[30, 30, 30]`. Quando chamamos as funções, o percurso já acabou e `fator` vale 3. Com `[multiplicador(fator) for fator in range(1, 4)]`, cada chamada cria um contexto próprio e a saída passa a `[10, 20, 30]`.
 
 ## Compor sem perder o contrato
 

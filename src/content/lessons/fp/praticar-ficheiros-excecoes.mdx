@@ -7,83 +7,6 @@ section: exercicios
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
-  id="ficheiro-modo"
-  title="Preservar o conteúdo existente"
-  revision={1}
-  explanation="/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros"
-  answer={{
-    kind: 'choice',
-    options: [
-      { text: 'a', correct: true, explanation: 'Acrescenta ao conteúdo.' },
-      {
-        text: 'w',
-        correct: false,
-        explanation: 'Substitui o conteúdo existente.',
-      },
-      { text: 'r', correct: false, explanation: 'Não permite escrever.' },
-    ],
-  }}
->
-  <p>
-    {
-      'Queres acrescentar uma linha no fim de um ficheiro, conservando as linhas antigas. Que modo escolhes?'
-    }
-  </p>
-  <div slot="hint">
-    {'Há um modo que escreve sem substituir o conteúdo inicial.'}
-  </div>
-  <div slot="hint-more">{'O modo w apaga o conteúdo anterior ao abrir.'}</div>
-  <div slot="solution">
-    {
-      'Escolhes a. Acrescenta no fim e cria o ficheiro se faltar. A linha nova ainda precisa do carácter de mudança de linha pretendido.'
-    }
-  </div>
-  <div slot="mistakes">{'Escolher w porque ambos são modos de escrita.'}</div>
-</Exercise>
-
-<Exercise
-  id="ficheiro-fim"
-  title="Distinguir linha vazia e fim"
-  revision={1}
-  explanation="/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Falha de codificação',
-        correct: false,
-        explanation:
-          'A falha de codificação levanta uma exceção, não usa este sinal.',
-      },
-      {
-        text: 'Fim do ficheiro',
-        correct: true,
-        explanation: 'readline não leu mais caracteres.',
-      },
-      {
-        text: 'Uma linha em branco com mudança de linha',
-        correct: false,
-        explanation: 'Essa linha teria o carácter \\n.',
-      },
-    ],
-  }}
->
-  <p>
-    Num ficheiro de texto, <code>readline()</code> devolve "". O que significa?
-  </p>
-  <div slot="hint">
-    {'Uma linha em branco contém normalmente a mudança de linha.'}
-  </div>
-  <div slot="hint-more">{'O fim não fornece caracteres.'}</div>
-  <div slot="solution">
-    {'Significa fim do ficheiro. Uma linha em branco seria normalmente "\\n".'}
-  </div>
-  <div slot="mistakes">
-    Usar <code>linha.strip()</code> == "" para concluir que não há mais linhas.
-  </div>
-</Exercise>
-
-<Exercise
   id="csv-aspas"
   title="Conservar um separador no campo"
   revision={1}
@@ -153,47 +76,41 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="assert-entrada"
-  title="Validar dados do utilizador"
-  revision={1}
-  explanation="/cadeiras/fp/ficheiros-excecoes/#asserções-e-testes"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Sim, assert executa em todos os modos',
-        correct: false,
-        explanation: 'O modo de otimização pode retirar as asserções.',
-      },
-      {
-        text: 'Sim, desde que a mensagem seja longa',
-        correct: false,
-        explanation: 'A mensagem não altera essa propriedade.',
-      },
-      {
-        text: 'Não, assert pode ser desativado',
-        correct: true,
-        explanation: 'Uma validação necessária não pode depender dele.',
-      },
-    ],
-  }}
+ id="assert-entrada"
+ title="Separar validação de asserção interna"
+ revision={2}
+ explanation="/cadeiras/fp/ficheiros-excecoes/#asserções-e-testes"
+ answer={{kind: 'self', checklist: ['Expliquei que -1 é aceite se asserções forem desativadas.', 'Usei uma condição com ValueError.', 'Validei o intervalo completo de 0 a 20.']}}
 >
-  <p>
-    Uma aplicação pode depender apenas de <code>assert</code> nota &gt;= 0 para
-    rejeitar entrada negativa?
-  </p>
-  <div slot="hint">{'Python pode executar com asserções desativadas.'}</div>
-  <div slot="hint-more">
-    {'Uma validação necessária deve continuar a funcionar nesse modo.'}
-  </div>
-  <div slot="solution">
-    Não. Usa uma condição e <code>raise</code> ou outra política de erro
-    definida pelo contrato. Reserva <code>assert</code> para hipóteses internas
-    e testes.
-  </div>
-  <div slot="mistakes">
-    {'Confundir uma asserção interna com validação garantida.'}
-  </div>
+
+Uma função recebe uma nota inteira de um utilizador. O contrato exige 0 a 20 e
+manda lançar `ValueError` fora desse intervalo. Diagnostica esta implementação
+para -1 e 21, e explica o que muda quando Python corre com asserções desativadas.
+Corrige a validação.
+
+```python
+def validar_nota(nota):
+    assert nota >= 0
+    return nota
+```
+
+<div slot="solution">
+Com asserções ativas, -1 lança `AssertionError`, que já difere do erro pedido;
+21 passa porque o limite superior não é verificado. Com asserções desativadas,
+ambos chegam ao retorno. A validação necessária deve ser explícita:
+
+```python
+def validar_nota(nota):
+    if not 0 <= nota <= 20:
+        raise ValueError("nota fora de 0 a 20")
+    return nota
+```
+
+Os extremos 0 e 20 são válidos. A condição rejeita -1 e 21 em ambos os modos.
+`assert` continua útil para hipóteses internas e testes, cujo funcionamento não
+se confunde com a validação exigida pelo contrato.
+
+</div>
 </Exercise>
 
 <Exercise
@@ -387,49 +304,34 @@ def ler_inteiros(caminho):
 
 <Exercise
   id="try-else-return"
-  title="Distinguir else de finally"
-  revision={1}
+  title="Seguir return e finally"
+  revision={2}
   explanation="/cadeiras/fp/ficheiros-excecoes/#exceções-try-except-else-e-finally"
-  answer={{
-    kind: 'code',
-    language: 'python',
-    starter: 'def converter(texto):\n    return None',
-    tests: [
-      { name: 'Válido', code: 'print(converter("12"))', output: "('ok', 12)" },
-      { name: 'Inválido', code: 'print(converter("abc"))', output: "('erro', None)" },
-    ],
-  }}
+  answer={{kind: 'self', checklist: ['Previ fim seguido de 12 na versão original.', 'Expliquei que return salta else e executa finally.', 'Movi o return para else e previ sucesso, fim e 12.']}}
 >
 
-  <div>
-    Define <code>converter(texto)</code> com `try`, `except ValueError`, `else` e `finally`: devolve o par correspondente, sem confundir o bloco que corre sempre com o que corre apenas no sucesso completo do `try`.
-  </div>
-  <div slot="hint">
-    Um `return` dentro de `try` salta o `else`, mas executa o `finally`.
-  </div>
-  <div slot="hint-more">
-    Testa `converter("12")` e `converter("abc")`: os testes verificam os pares devolvidos, não o constructo usado. Para provar o `else`, confirma à mão que um `return` dentro do `try` salta o `else` e executa o `finally`.
-  </div>
-  <div slot="solution">
-    O `else` só corre quando o `try` termina normalmente; o `finally` corre sempre. Um `return` no `try` prova a diferença.
+Prevê a saída completa. Depois move `return numero` para o fim de `else` e prevê a nova saída. Compara também a entrada `"abc"` nas duas versões.
 
 ```python
 def converter(texto):
     try:
         numero = int(texto)
+        return numero
     except ValueError:
-        return ("erro", None)
+        return None
     else:
-        return ("ok", numero)
+        print("sucesso")
     finally:
-        pass
+        print("fim")
+
+print(converter("12"))
 ```
 
-    Os testes acima verificam o comportamento (os pares devolvidos), não o constructo: uma versão sem `else`/`finally` que devolva os mesmos pares também passa. O `else`/`finally` aprende-se seguindo os caminhos da lição, não só por estes testes.
+<div slot="hint">O retorno sai da função, mas o bloco `finally` executa antes dessa saída.</div>
+<div slot="solution">
+Na versão original, o `return` dentro de `try` salta `else`. A saída é `fim` e depois `12`, porque `finally` corre antes de a função entregar o resultado ao `print` exterior.
 
-  </div>
-  <div slot="mistakes">
-    Usar `except:` sem tipo e esconder outros erros; pôr o `return` do sucesso dentro do `try` e saltar o `else` sem dar por isso; validar entradas com `assert` em vez de `try`/`except`.
-  </div>
+Movendo o retorno para depois de `print("sucesso")` no `else`, `try` acaba normalmente. A saída passa a `sucesso`, `fim` e `12`, por essa ordem. Com `"abc"`, a conversão lança `ValueError`; nas duas versões, `except` devolve `None` depois de executar `finally`. A saída é `fim` e depois `None`.
 
+</div>
 </Exercise>

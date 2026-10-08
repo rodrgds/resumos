@@ -11,7 +11,9 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 
 Uma função pode resolver um problema usando a solução de uma versão mais pequena do mesmo problema. Reduz a entrada até um caso que resolves diretamente e depois combina os resultados no regresso.
 
-## O modelo da recursão
+<span id="o-modelo-da-recursão"></span>
+
+## Fatorial e pilha de chamadas
 
 O **fatorial** de `n` é o produto dos inteiros de 1 até `n`. Por exemplo, $4!=4\times3\times2\times1=24$. Para um inteiro não negativo, $0!=1$ e $n!=n\times(n-1)!$ quando $n>0$. Esta relação dá o caso base e o passo recursivo.
 
@@ -23,15 +25,7 @@ O **fatorial** de `n` é o produto dos inteiros de 1 até `n`. Por exemplo, $4!=
   }
 />
 
-Para calcular `fatorial(4)`, ficam pendentes as multiplicações por 4, 3, 2 e 1. Quando `fatorial(0)` devolve 1, as chamadas regressam pela ordem inversa. Segue a pilha:
-
-| Profundidade | Chamada ativa | Trabalho pendente                     |
-| ------------ | ------------- | ------------------------------------- |
-| 1            | `fatorial(4)` | `4 * ...`                             |
-| 2            | `fatorial(3)` | `4 * (3 * ...)`                       |
-| 3            | `fatorial(2)` | `4 * (3 * (2 * ...))`                 |
-| 4            | `fatorial(1)` | `4 * (3 * (2 * (1 * ...)))`           |
-| 5            | `fatorial(0)` | devolve 1, depois combina 1, 2, 6, 24 |
+Para calcular `fatorial(4)`, ficam pendentes as multiplicações por 4, 3, 2 e 1. A chamada exterior espera `4 * fatorial(3)`; a seguinte espera `3 * fatorial(2)`. Assim chegamos a `4 * (3 * (2 * (1 * fatorial(0))))`. Quando o caso base devolve 1, resolvemos as multiplicações de dentro para fora:
 
 | Chamada       | Resultado que espera  | Valor devolvido |
 | ------------- | --------------------- | --------------- |
@@ -62,7 +56,16 @@ def soma_digitos(n):
 print(soma_digitos(502))
 ```
 
-O resultado é 7. A chamada soma 2 com a soma de 50; essa soma junta 0 com a soma de 5; por fim junta 5 com zero. O contrato exige um inteiro não negativo. Esta decomposição calcula o mesmo que o ciclo anterior, mas deixa a adição pendente nas chamadas.
+O resultado é 7. O contrato exige um inteiro não negativo. Podemos seguir a substituição dos resultados:
+
+```text
+soma_digitos(502) = 2 + soma_digitos(50)
+                 = 2 + (0 + soma_digitos(5))
+                 = 2 + (0 + (5 + soma_digitos(0)))
+                 = 2 + (0 + (5 + 0)) = 7
+```
+
+O prefixo 50 não é o caso base, embora o seu último dígito seja zero. Esta decomposição calcula o mesmo que o ciclo anterior, mas deixa a adição pendente nas chamadas.
 
 ## Estruturas aninhadas
 
@@ -98,6 +101,16 @@ fib(4)
     └── fib(0)
 ```
 
-`fib(2)` corre duas vezes e `fib(1)` corre três vezes, num total de 9 chamadas para devolver 3. Um ciclo que conserva os dois valores anteriores evita essa repetição.
+`fib(2)` corre duas vezes e `fib(1)` corre três vezes, num total de 9 chamadas para devolver 3. Um ciclo que conserva os dois valores anteriores evita essa repetição:
+
+```python
+def fibonacci(n):
+    a, b = 0, 1
+    for i in range(n):
+        a, b = b, a + b
+    return a
+```
+
+Para um inteiro `n` não negativo, antes da iteração `i`, `a` e `b` são os valores de Fibonacci nas posições `i` e `i + 1`. O lado direito usa os dois valores antigos antes de os substituir. Para `n = 4`, os pares passam por `(0, 1)`, `(1, 1)`, `(1, 2)`, `(2, 3)` e `(3, 5)`; devolvemos 3. Para `n = 0`, devolvemos 0 sem entrar no ciclo.
 
 A recursão não torna automaticamente um programa mais eficiente. Escolhe-a pela decomposição do problema, depois examina profundidade, trabalho repetido e criação de cópias. Por exemplo, usar `xs[1:]` em cada chamada cria sucessivas fatias; passar um índice pode evitar essas cópias.

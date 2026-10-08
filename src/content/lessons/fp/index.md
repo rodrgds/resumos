@@ -2,7 +2,11 @@
 title: Fundamentos da Programação
 description: Resolver problemas em Python, compreender o estado de um programa e escrever funções imperativas e livres de efeitos.
 editorial:
-  basedOn: 2025/26
+  basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
     - title: FP, SIGARRA 2025/26
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087
@@ -18,7 +22,10 @@ editorial:
     - Os slides de Restivo não identificam uma edição de FP. As fichas históricas RE01 a RE13 são de 2018/19 e não confirmam o calendário atual.
 ---
 
-No fim de FP, resolves problemas em Python e explicas como o programa chega ao resultado. Para isso, segues o estado das variáveis e o contrato de cada função. O percurso combina programação imperativa, onde alteras dados passo a passo, com programação livre de efeitos, onde cada função calcula um resultado sem alterar os dados de quem a chama.
+Converter uma duração, contar votos e percorrer listas aninhadas exigem decisões
+diferentes. O percurso começa com valores e instruções, passa à decomposição em
+funções e compara soluções que alteram estado com soluções livres de efeitos.
+Em cada problema, segue uma entrada pequena e verifica o contrato.
 
 ## Percurso de estudo
 
@@ -31,10 +38,14 @@ No fim de FP, resolves problemas em Python e explicas como o programa chega ao r
 7. [Recursão](/cadeiras/fp/recursao/) liga um caso base à redução do problema e segue as chamadas até ao regresso.
 8. [Compreensões e geradores](/cadeiras/fp/compreensoes-geradores/) transforma coleções com compreensões e distingue construir uma sequência de a consumir passo a passo.
 9. [Programação funcional](/cadeiras/fp/programacao-funcional/) trata funções como valores e compara soluções com `map`, `filter` e `reduce`, usando os iteradores da lição anterior.
-10. [Algoritmos e complexidade](/cadeiras/fp/algoritmos-complexidade/) aplica pesquisa e contagem de operações. É um complemento às estratégias de resolução de problemas, não um tópico autónomo nomeado na ficha de 2025/26.
+10. [Algoritmos e complexidade](/cadeiras/fp/algoritmos-complexidade/) aplica pesquisa e contagem de operações. É um complemento às estratégias de resolução de problemas, não um tópico autónomo nomeado na ficha de 2026/27.
 11. [Ficheiros, exceções e testes](/cadeiras/fp/ficheiros-excecoes/) junta persistência, tratamento de entradas inválidas, módulos e verificação.
 
-Cada lição tem exemplos resolvidos e exercícios próprios, com duas pistas, resolução e erros frequentes. Tenta resolver antes de abrir a ajuda. Nos exercícios de programação, os testes apresentados ajudam a verificar o contrato, mas não substituem a explicação da solução. A [cheat sheet](/cadeiras/fp/folha-consulta/) serve para consulta depois de estudares.
+Cada lição associa exercícios ao tema, com resolução e ajuda quando acrescenta
+um passo útil. Tenta resolver antes de abrir a solução. Nos exercícios de
+programação, os testes apresentados verificam casos do contrato; não provam a
+correção para todas as entradas nem uma restrição de estilo. A [cheat sheet](/cadeiras/fp/folha-consulta/)
+serve para consulta depois de estudares.
 
 ## Como praticar
 
@@ -51,7 +62,7 @@ A avaliação publicada é `0.4 MT1 + 0.4 MT2 + 0.2 MT3`, com recurso `1.0 ER` e
 :::details[Fontes e âmbito]
 A base oficial é o programa de FP de 2026/27: pensamento computacional, dados simples e compostos, condicionais, iteração, funções, passagem de parâmetros, recursão, ficheiros, programação livre de efeitos, funções de ordem superior, compreensões, estratégias de resolução, teste e depuração. Os resultados de aprendizagem também incluem exceções e problemas numéricos.
 
-As fichas RE01 a RE13, internas de 2018/19 e consultadas no [repositório público de FPRO](https://github.com/educorreia932/FEUP-FPRO), ajudam a escolher tipos de problemas. O [Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4883) consultado não disponibilizava materiais de ensino. Estas fontes não confirmam os enunciados nem as regras atuais.
+As fichas RE01 a RE13, internas de 2018/19 e consultadas no [repositório público de FPRO](https://github.com/samyuh/feup-fpro/tree/master/Exercises), ajudam a escolher tipos de problemas. O [Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4883) consultado não disponibilizava materiais de ensino. Estas fontes não confirmam os enunciados nem as regras atuais.
 
 Os [slides de Python 3 de André Restivo](https://arestivo.github.io/slides/?s=python) apoiam a sintaxe e os exemplos. O [Caderno FP SofiaViP](https://drive.google.com/file/d/1-2tiPzWQX8LHHWILl3z-4pShVDhP0C1m/view) é um apoio de estudante, sem valor oficial. Nenhum identifica uma edição atual de FP.
 
@@ -63,5 +74,10 @@ Bibliografia da ficha de 2026/27:
 - David Mertz, [Functional Programming in Python](https://www.oreilly.com/library/view/functional-programming-in/9781492048633/), bibliografia complementar. Não foi consultado um texto integral da edição da ficha.
 - [Documentação oficial do Python](https://docs.python.org/3/), para confirmar operações, exceções e comportamento dos iteradores.
 
-Os exemplos, exercícios e resoluções são próprios. Geradores, pesquisa binária e análise de custo são aprofundamentos sinalizados no percurso; os materiais de ensino do Moodle 2026/27 exigem autenticação e continuam por confirmar.
+Os exemplos e resoluções foram escritos para estes apontamentos. Os exercícios
+de nomes completos e produto interno adaptam problemas de RE06 e RE08, de
+2018/19, com contratos e dados próprios; a atribuição está nos conjuntos de
+prática. Geradores, pesquisa binária e análise de custo são aprofundamentos
+sinalizados no percurso; os materiais de ensino do Moodle 2026/27 exigem
+autenticação e continuam por confirmar.
 :::

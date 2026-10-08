@@ -11,8 +11,6 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 
 Para obter os quadrados dos números positivos, percorres uma coleção, selecionas valores e transformas cada selecionado. Um ciclo escreve essas decisões em vários passos; uma compreensão junta-as numa expressão que constrói outra lista.
 
-Uma compreensão constrói uma lista nova. Isso não garante ausência de efeitos: se a expressão avaliada alterar objetos existentes, a entrada pode mudar. Por exemplo, `[linha.append(9) for linha in xs]` altera cada linha de `xs` e produz `[None, None]`. Usa compreensões para calcular valores novos, não para executar efeitos.
-
 ## Compreensões de listas
 
 A forma `[expressao for x in xs if condicao]` percorre `xs`, verifica a condição e acrescenta o valor da expressão apenas nos casos aceites.
@@ -36,7 +34,7 @@ for x in valores:
         quadrados.append(x * x)
 ```
 
-A expressão compacta deve continuar legível. Se há vários estados, validações ou efeitos, um ciclo com nome para cada passo pode explicar melhor o algoritmo.
+A compreensão constrói uma lista nova, mas isso não garante ausência de efeitos. Com `xs = [[1], [2]]`, `[linha.append(9) for linha in xs]` altera `xs` para `[[1, 9], [2, 9]]` e produz `[None, None]`: cada chamada a `append` devolve `None`. Usa a expressão para calcular valores novos. Para vários estados, validações ou efeitos, um ciclo pode mostrar melhor os passos.
 
 ## Percursos aninhados
 
@@ -80,6 +78,20 @@ Uma expressão `(x * x for x in range(4))` cria um **gerador**. Produz valores q
 />
 
 `next` retira o zero. A primeira conversão em lista consome 1, 4 e 9; a segunda recebe uma sequência já esgotada. Na função `contagem`, `yield` entrega um valor e suspende a execução. O próximo pedido retoma depois dessa instrução, conservando os nomes locais. Chamar `contagem(3)` cria o gerador; o corpo só começa no primeiro pedido. `return` termina o gerador, sem produzir mais valores.
+
+Para seguir essa suspensão, considera `g = contagem(3)` e pedidos sucessivos:
+
+| Pedido     | Resultado | Estado           |
+| ---------- | --------- | ---------------- |
+| Criação    | Nenhum    | Antes do `while` |
+| 1.º `next` | 3         | `n = 3`          |
+| 2.º `next` | 2         | `n = 2`          |
+| 3.º `next` | 1         | `n = 1`          |
+| 4.º `next` | Exceção   | Terminado        |
+
+No primeiro pedido, o teste `3 > 0` permite chegar ao `yield`. Nos três pedidos que entregam um valor, o estado fica suspenso depois do `yield`, com o `n` indicado. O pedido seguinte faz `n -= 1` antes de voltar ao teste: passa por `2 > 0`, `1 > 0` e, por fim, `0 > 0`. Este último teste é falso e o quarto `next(g)` lança `StopIteration`.
+
+A atualização ocorre depois de retomar o `yield`. Suspender conserva o ponto de execução; não é voltar a chamar a função desde o início.
 
 ## Escolher entre lista e gerador
 
