@@ -1,7 +1,7 @@
 ---
 draft: true
 title: 'Praticar: Memória e cache'
-description: Exercícios originais com decisões, cálculos e pistas graduais.
+description: Endereços, transferências de cache e falsa partilha.
 section: exercicios
 order: 0
 ---
@@ -23,12 +23,6 @@ A mudança é no primeiro índice.
 
   </div>
 
-  <div slot="hint-more">
-
-Uma linha da matriz contém 256 elementos.
-
-  </div>
-
   <div slot="solution">
 
 A distância é $256\times8=2048$ bytes. Percorrer uma coluna salta esse intervalo, em vez dos 8 bytes entre elementos adjacentes de uma linha.
@@ -45,37 +39,29 @@ Não confundir uma linha da matriz com uma linha de cache.
 
 <Exercise
   id="cpd-reutilizacao-cache"
-  title="Uma matriz pequena"
+  revision={2}
+  title="Contar transferências e reutilização"
   explanation="/cadeiras/cpd/arquiteturas-memoria-cache/#percorrer-uma-matriz"
-  answer={{"kind": "choice", "options": [{"text": "Os elementos vizinhos podem continuar na cache até serem usados noutra coluna.", "correct": true, "explanation": "O salto perde localidade imediata, mas não obriga a voltar à memória principal se os dados forem retidos."}, {"text": "Percorrer colunas exige sempre oito vezes mais tráfego na memória principal.", "correct": false, "explanation": "Essa razão exige um modelo sem reutilização entre colunas."}, {"text": "A cache altera o resultado numérico do programa.", "correct": false, "explanation": "Com acessos corretos, altera o custo, não os valores calculados."}]}}
+  answer={{ kind: 'self', checklist: ["Obtive oito transferências em ambos os percursos com capacidade para a matriz.", "Expliquei a reutilização entre colunas.", "Obtive 64 transferências por colunas com capacidade para uma linha."] }}
 >
 
-Uma matriz inteira cabe na cache e não há acessos concorrentes que a expulsem. Por que o percurso por colunas pode não provocar uma nova leitura da memória principal a cada elemento?
+Uma matriz C `double a[8][8]` começa numa fronteira de 64 bytes. Cada double ocupa 8 bytes. Conta apenas as linhas de cache trazidas para ler a matriz uma vez; ignora prefetch, escritas e todos os outros dados.
+
+Com cache inicialmente vazia, totalmente associativa e capacidade para as oito linhas da matriz, quantas linhas são trazidas num percurso por linhas? E por colunas? Se a cache só puder reter uma linha, como muda o percurso por colunas?
 
   <div slot="hint">
 
-Uma falta na cache traz os vizinhos, porque a transferência é feita por linhas.
-
-  </div>
-
-  <div slot="hint-more">
-
-Pergunta se esses vizinhos ainda estarão lá na coluna seguinte.
+Segue os oito acessos da primeira coluna e pergunta o que ainda estará na cache ao começar a segunda.
 
   </div>
 
   <div slot="solution">
 
-A linha pode ser reutilizada numa coluna posterior sem voltar à memória principal. Continuam a existir custos de acesso e efeitos da organização da cache, mas não a razão universal de tráfego.
+Cada linha da matriz ocupa exatamente uma linha de cache. Por linhas, trazemos uma e usamos os seus oito valores antes de passar à seguinte: oito transferências.
+
+Com capacidade para toda a matriz, a primeira coluna traz as oito linhas. As outras colunas reutilizam-nas, sem nova transferência: oito no total. Com capacidade para uma linha, cada acesso da coluna passa a uma linha diferente e expulsa a anterior. Isso acontece nos 64 acessos, dando 64 transferências. A razão oito depende deste segundo modelo, não apenas da ordem dos índices.
 
   </div>
-
-  <div slot="mistakes">
-
-Não tomar o modelo de cache pequena como lei de todo o hardware.
-
-  </div>
-
 </Exercise>
 
 <Exercise
@@ -90,12 +76,6 @@ Duas threads incrementam contadores diferentes, colocados lado a lado na mesma l
   <div slot="hint">
 
 A unidade de coerência não é necessariamente a variável.
-
-  </div>
-
-  <div slot="hint-more">
-
-Cada escrita pode exigir obter a linha que também contém o outro contador.
 
   </div>
 

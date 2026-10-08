@@ -1,7 +1,7 @@
 ---
 draft: true
-title: Tolerância a falhas
-description: Modelos de falha, eleição, two-phase commit e primário-apoio, com as condições das suas garantias.
+title: Tolerância a falhas e consenso
+description: Eleição, two-phase commit, primário-apoio e Paxos, com modelos de falha e condições das garantias.
 section: conteudo
 order: 7
 practices:
@@ -14,9 +14,7 @@ import YouTube from '../../../components/YouTube.astro';
 import anel from '../../cpd/anel-eleicao.dot?raw';
 import sequencia from '../../cpd/sequencia-2pc.typ?raw';
 
-Depois de veres mensagens, timeouts e repetição entre processos, esta página responde a o que cada protocolo ainda garante quando uma máquina falha.
-
-Um protocolo, ou seja o conjunto de mensagens e regras que os processos seguem, precisa de dizer que falhas admite e o que ainda garante quando elas ocorrem, porque eleger um líder, confirmar uma transação e replicar um serviço são problemas diferentes.
+O servidor deixou de responder ao débito. Substituí-lo exige escolher quem coordena, recuperar o efeito da operação e conservar decisões já tomadas. Eleição, compromisso atómico e consenso resolvem problemas diferentes. Cada protocolo precisa de declarar as falhas que admite e as garantias que preserva.
 
 ## Modelos e garantias
 
@@ -46,6 +44,8 @@ Há quatro envios de eleição e três de anúncio, sete no total. Não são "qu
   source={anel}
   alt="Anel reconstruído com 2, 5 e 7; 9 está separado por ter falhado. O primeiro envio é eleição(5) de 5 para 7. Depois eleição(7) percorre 7 para 2, 2 para 5 e 5 para 7."
 />
+
+Os números nas arestas correspondem aos quatro envios de eleição da lista. A aresta de 5 para 7 é usada nos passos 1 e 4, com identificadores diferentes.
 
 ## Two-phase commit
 
@@ -79,14 +79,52 @@ A não pode escolher confirmar nem abortar apenas por timeout. Pode perguntar a 
 
 Assim, a falha do coordenador **pode** bloquear o 2PC, mas não bloqueia sempre todos os participantes. Os registos duráveis tornam a recuperação possível. Se se perderem os registos e os dados de que a garantia depende, já não estamos no modelo assumido.
 
-:::tip[Ideia-chave]
-Um participante preparado não decide sozinho por timeout, porque outra máquina pode já conhecer uma decisão de confirmar.
-:::
-
 ## Replicação primário-apoio
 
 No **primário-apoio**, um primário ordena as operações e replica o estado para um apoio. Na versão síncrona, só responde ao cliente depois de o apoio guardar a atualização exigida pelo protocolo. Isto acrescenta latência, mas permite preservar operações confirmadas se o primário falhar e o apoio sobreviver.
 
 Na versão assíncrona, pode responder antes de replicar. Se cair nesse intervalo, o apoio pode perder uma atualização que o cliente já considerava concluída. Não há uma única garantia para todas as variantes.
 
-Promover um apoio também exige impedir que o antigo primário continue a aceitar escritas, chamado **fencing**. Uma partição pode deixar ambos vivos; usar apenas timeouts pode criar dois primários. Eleição, replicação e proteção contra primários antigos precisam de regras coerentes, e o cliente pode ter de voltar a ligar-se durante a recuperação.
+Promover um apoio também exige impedir que o antigo primário continue a aceitar escritas, chamado **fencing**. Uma partição pode deixar ambos vivos; usar apenas timeouts pode criar dois primários. Eleição, replicação e proteção contra primários antigos precisam de regras coerentes, e o cliente pode ter de voltar a ligar-se durante a recuperação. Um número de época crescente pode funcionar como proteção se o destino das escritas rejeitar épocas antigas. Não basta o novo líder anunciar o número: o recurso tem de o verificar.
+
+## Consenso e Paxos
+
+No 2PC, um voto de aborto impede confirmar a transação. No **consenso**, processos propõem valores e procuram escolher um só, sem permitir duas decisões incompatíveis. As condições de validade e de progresso fazem parte da especificação. O Paxos usa propostas numeradas e maiorias para conservar um valor escolhido, mesmo quando muda o proponente.
+
+Considera três aceitantes A, B e C, com registos duráveis e falhas por paragem e recuperação. As mensagens podem atrasar-se, perder-se ou duplicar-se, mas não são corrompidas. O exemplo decide uma única posição de uma sequência de operações. Um **proponente** envia propostas, os **aceitantes** registam-nas e um **aprendiz** descobre qual foi escolhida. Um processo pode acumular estes papéis.
+
+Uma proposta é um par `(n, valor)`, com número único e ordenável. É **escolhida** quando uma maioria de aceitantes aceita essa proposta: aqui, dois dos três. A aceitação num único processo não decide o valor. A escolha pode já ter ocorrido sem o proponente a conhecer, se as respostas se perderem.
+
+O protocolo tem duas fases:
+
+1. O proponente envia `prepare(n)`. Quem promete para `n` deixa de aceitar propostas com número menor e comunica a proposta de maior número que já aceitou, se houver. A promessa e o estado aceite sobrevivem a reinícios.
+2. Depois de receber promessas de uma maioria, o proponente envia `accept(n, valor)`. Se as respostas não contiverem propostas aceites, pode usar o seu valor. Caso contrário, tem de usar o valor da proposta aceite de maior número **entre as respostas dessa maioria**. Um aceitante aceita se não prometeu entretanto para um número maior.
+
+### Recuperar uma proposta
+
+A e B aceitaram `(4, debitar 10)`, mas as respostas ao proponente perderam-se. A proposta já foi escolhida por uma maioria. C não aceitou nada. Um novo proponente pretende `debitar 20` e envia `prepare(5)` a B e C:
+
+| Aceitante | Resposta à preparação 5               | Estado após aceitar a proposta 5 |
+| --------- | ------------------------------------- | -------------------------------- |
+| B         | Promete 5; comunica `(4, debitar 10)` | `(5, debitar 10)`                |
+| C         | Promete 5; não tem proposta aceite    | `(5, debitar 10)`                |
+
+A resposta de B obriga a recuperar `debitar 10`. O proponente envia esse valor com número 5; se B e C o aceitarem, uma maioria volta a escolher o mesmo valor. A pode continuar indisponível sem permitir substituí-lo por `debitar 20`.
+
+Duas maiorias de três membros têm pelo menos um membro comum. Aqui, as maiorias `{A, B}` e `{B, C}` cruzam-se em B. Essa interseção, as promessas e a regra de recuperar a proposta aceite de maior número preservam a escolha. A interseção sozinha não basta: ignorar o valor comunicado por B destruiria a garantia.
+
+Os números distinguem propostas, não posições diferentes da sequência. As propostas 4 e 5 acima pertencem à mesma posição. Para decidir a operação seguinte, usa-se outra instância do protocolo.
+
+### Segurança e progresso
+
+Dois proponentes podem emitir preparações cada vez maiores e impedir a aceitação um do outro. Isso atrasa a decisão, mas não autoriza dois valores escolhidos na mesma instância. Um proponente estável, comunicação que acaba por progredir e uma maioria acessível permitem avançar nas condições usuais do protocolo. Um timeout não altera as regras de aceitação.
+
+Não há uma garantia geral de terminação de consenso determinístico num sistema totalmente assíncrono com uma possível falha por paragem. Este limite não diz que todas as execuções bloqueiam. Obriga a separar a segurança do protocolo das condições adicionais que permitem progresso.
+
+## Replicação por máquina de estados
+
+Para replicar uma conta, as máquinas começam com o mesmo saldo e aplicam a mesma sequência de operações determinísticas. Com saldo 100, a sequência `debitar 10`, `creditar 5` produz 90 e depois 95 em todas as réplicas. Uma instância de consenso pode escolher a operação em cada posição.
+
+Se uma réplica aprender a posição 2 antes da posição 1, espera para executar por ordem. Aprender decisões fora de ordem não permite alterar a ordem do estado. Além disso, um pedido repetido pelo cliente precisa de identificação e deduplicação: decidir a mesma operação em duas posições não a transforma automaticamente numa execução única.
+
+O determinismo também é uma hipótese. Se cada réplica consultar a sua hora ou gerar um número aleatório durante a operação, a mesma sequência pode produzir estados diferentes. Esses valores têm de fazer parte dos dados acordados ou ser tratados por uma regra comum.

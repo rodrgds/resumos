@@ -1,6 +1,6 @@
 ---
 draft: true
-title: Introdução à computação paralela
+title: Desempenho da computação paralela
 description: Processos, threads, speedup e eficiência, com medições comparáveis e limites de interpretação.
 section: conteudo
 order: 1
@@ -8,15 +8,9 @@ practices:
   - cpd/praticar-desempenho
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import barras from '../../cpd/barras-tempo.typ?raw';
+import TempoParalelo from '../../cpd/TempoParalelo.astro';
 
-No início do percurso de computação paralela, esta página responde a como medir se dividir um cálculo por vários núcleos compensou.
-
-Pensa numa fotografia no telemóvel. A imagem é um conjunto de milhões de quadradinhos coloridos; a cada quadradinho, a que chamamos píxel, podemos mudar a cor sem olhar para os outros.
-
-Um programa é a lista de instruções que diz ao computador o que fazer com cada quadradinho, e um núcleo é uma parte do processador que executa essas instruções. Com quatro núcleos, cada um pode tratar uma faixa diferente da fotografia ao mesmo tempo, desde que o cálculo de uma faixa não precise do resultado de outra. Depois medimos se a divisão compensou, comparando o tempo da lista original com o tempo da versão dividida para a mesma fotografia.
+Uma imagem tem doze milhões de píxeis. Queremos aumentar o brilho de cada um sem consultar os vizinhos. Podemos repartir os píxeis por quatro núcleos e escrever cada resultado numa posição diferente. A independência permite dividir este trabalho; a medição diz se essa divisão compensou.
 
 ## Processos, threads e núcleos
 
@@ -38,7 +32,9 @@ O **speedup** mede o ganho de velocidade. A **eficiência** compara esse ganho c
 
 No modelo ideal de trabalho fixo, sem custos adicionais e com divisão perfeita, $T_p=T_1/p$, $S_p=p$ e $E_p=1$. Medições podem apresentar speedup superior a $p$, por exemplo se a divisão fizer os dados caberem nas caches. Nesse caso, verifica também a referência, a entrada e as condições de medição.
 
-## Um cálculo completo
+<span id="um-cálculo-completo"></span>
+
+## Tempo ideal e tempo medido
 
 Uma imagem demora $T_1=12$ s num núcleo e $T_4=4$ s em quatro núcleos:
 
@@ -48,19 +44,7 @@ $$
 
 O tempo ideal seria $12/4=3$ s. A execução medida demora mais 1 s. Os tempos não permitem atribuir esse segundo só a trabalho serial ou só a sincronização. Também pode haver desequilíbrio entre fatias ou limite da largura de banda da memória.
 
-<Typst
-  source={barras}
-  format="svg"
-  alt="A referência demora 12 segundos, o ideal com quatro núcleos demora 3 e a medição demora 4. A diferença de 1 segundo não identifica a sua causa."
-/>
-
-<CodePlayground
-  language="python"
-  title="Calcular ganho e eficiência"
-  code={
-    't1, tp, p = 12.0, 4.0, 4\nspeedup = t1 / tp\neficiencia = speedup / p\nprint("speedup:", speedup)\nprint("eficiência (%):", 100 * eficiencia)'
-  }
-/>
+<TempoParalelo />
 
 Para outra entrada, $T_1=20$ s e $T_8=4$ s dão $S_8=5$ e $E_8=62{,}5\%$. Não podemos concluir que duplicar núcleos fez cair a eficiência: são problemas diferentes. Para estudar essa mudança, mede o mesmo problema com quatro e oito núcleos.
 
@@ -69,7 +53,3 @@ Para outra entrada, $T_1=20$ s e $T_8=4$ s dão $S_8=5$ e $E_8=62{,}5\%$. Não p
 Compara com uma versão sequencial eficiente. A versão paralela com uma thread pode continuar a pagar custos de gestão. Declara qual usaste como referência, mantém a dimensão da entrada e repete medições nas mesmas condições.
 
 Mais núcleos podem reduzir $T_p$ e baixar $E_p$ ao mesmo tempo. Se o objetivo é terminar mais cedo, o menor tempo pode interessar. Se o objetivo é poupar recursos, considera também a eficiência. Para explicar o ganho limitado, procura a [fração serial](/cadeiras/cpd/lei-de-amdahl/#a-lei) e os custos de comunicação, memória e sincronização.
-
-:::tip[Ideia-chave]
-Speedup e eficiência só valem para a mesma entrada e a mesma referência declarada, porque mudar a entrada ou a referência muda o que estás a comparar.
-:::

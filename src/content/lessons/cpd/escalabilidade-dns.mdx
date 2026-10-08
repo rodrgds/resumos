@@ -9,14 +9,12 @@ practices:
 ---
 
 import Typst from '../../../components/Typst.astro';
-import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
 import arvore from '../../cpd/arvore-dns.typ?raw';
-import passos from '../../cpd/passos-dns.dot?raw';
+import ResolucaoDns from '../../cpd/ResolucaoDns.astro';
+import PrazoDns from '../../cpd/PrazoDns.astro';
 
-No fim do percurso, depois de medires desempenho e de seguires mensagens e falhas, esta página responde a como suportar mais carga ou mais dados.
-
-Um único servidor pode tornar-se o limite do sistema. Escalar é conseguir suportar mais carga ou mais dados com custos aceitáveis, por isso acrescentar máquinas só ajuda se o trabalho puder ser distribuído.
+Mil clientes pedem o endereço de `www.exemplo.pt`. Se cada pedido chegar ao mesmo servidor, esse servidor concentra a carga. Podemos repartir a responsabilidade pelos nomes, manter servidores redundantes e reutilizar respostas em cache. Cada técnica resolve uma parte diferente do problema.
 
 ## Replicar, partir e guardar em cache
 
@@ -26,7 +24,7 @@ A **partição**, ou sharding, divide os dados entre grupos de máquinas. Pode d
 
 A **cache** reutiliza respostas perto de quem pergunta. Um TTL, _time to live_, limita o tempo durante o qual uma resposta pode ser reutilizada. A cache reduz consultas repetidas, mas pode manter dados antigos até expirar. Estas técnicas podem combinar-se.
 
-Se 900 de 1000 pedidos encontrarem uma resposta válida em cache, só 100 precisam do serviço de origem, neste modelo. A taxa de acerto é 90%. Isso não implica uma redução de 90% no tempo médio: precisamos também dos tempos de acerto e de falta.
+Se 900 de 1000 pedidos encontrarem uma resposta válida em cache, só 100 precisam do serviço de origem, neste modelo. A taxa de acerto é 90%. Para calcular o tempo médio também precisamos dos tempos. Com acertos de 1 ms e faltas de 21 ms no total, obtemos $0{,}9\times1+0{,}1\times21=3$ ms. São valores ilustrativos, sem filas; não uma redução de 90% no tempo. O tempo total da falta já inclui verificar a cache.
 
 ## Nomes, zonas e delegação
 
@@ -55,15 +53,16 @@ Segue a resolução entre raiz, domínio de topo e servidor autoritativo: o víd
 
 <YouTube id="uOfonONtIuk" title="How DNS Works - Computerphile" />
 
-<Dot
-  source={passos}
-  alt="O resolvedor consulta raiz, ponto pt e autoritativo de exemplo ponto pt, por esta ordem no exemplo sem cache útil. Depois guarda os registos recebidos em cache com os seus TTLs."
-/>
+<ResolucaoDns />
 
 Se outro cliente pedir o mesmo registo enquanto ele for válido, o resolvedor pode responder sem novas consultas aos servidores DNS. Ainda há mensagens entre esse cliente e o resolvedor, ou seja só uma cache no próprio cliente evita também esse percurso.
 
 ## TTL e dados antigos
 
 Um registo chega com TTL de 300 s no instante zero. Ao fim de 120 s, restam 180 s de validade; um acerto em cache não reinicia o prazo original. Se o autoritativo mudar o endereço ao fim de 60 s, a cache pode continuar a devolver o antigo até ao limite previsto, salvo mecanismos de atualização ou invalidação.
+
+<PrazoDns />
+
+Às 120 s, uma resposta retirada desta cache leva a validade restante de 180 s. A cache de outro cliente não deve transformar essa resposta numa nova validade de 300 s. Assim, a reutilização não perpetua indefinidamente o endereço antigo.
 
 TTL menor permite receber alterações mais cedo, mas aumenta consultas. TTL maior reduz consultas, mas prolonga a possibilidade de respostas antigas. Delegações e endereços podem expirar em instantes diferentes. A hierarquia e a cache aliviam carga, mas não garantem consistência instantânea nem ausência de pontos sobrecarregados.

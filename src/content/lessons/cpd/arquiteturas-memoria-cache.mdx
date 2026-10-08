@@ -12,9 +12,7 @@ import Typst from '../../../components/Typst.astro';
 import YouTube from '../../../components/YouTube.astro';
 import linha from '../../cpd/linha-cache.typ?raw';
 
-Depois de medires o ganho com speedup e eficiência, esta página responde a porque a ordem dos acessos à memória muda o tempo.
-
-Duas versões com as mesmas operações podem demorar tempos diferentes se acederem à memória por ordens diferentes. Precisamos de perceber onde os dados estão e quais são reutilizados.
+A imagem do exemplo anterior pode ser guardada como uma matriz. Tratar uma linha completa antes da seguinte acede a posições vizinhas. Tratar uma coluna de cada vez salta sobre o resto de cada linha. As operações sobre os píxeis são iguais, mas o aproveitamento da cache muda.
 
 ## Duas organizações de memória
 
@@ -34,7 +32,11 @@ Por isso, "memória partilhada" não significa "todas as threads executam a mesm
 
 A **cache** guarda cópias de dados usados pelo processador. A **localidade temporal** é reutilizar em breve o mesmo dado. A **localidade espacial** é aceder a endereços próximos. Uma linha de cache transfere vários bytes de cada vez; vamos assumir linhas de 64 bytes e `double` de 8 bytes.
 
-Uma linha alinhada contém $64/8=8$ elementos. Em C, `double a[N][N]` guarda os elementos de cada linha da matriz em posições contíguas. O endereço de `a[i][j]`, relativo ao início, é $(iN+j)\times8$ bytes. Fixar `i` e aumentar `j` avança 8 bytes; fixar `j` e aumentar `i` avança $N\times8$ bytes.
+Se o vetor começar numa fronteira de linha de cache, os seus primeiros oito elementos cabem na mesma linha: $64/8=8$. Se começar a meio de uma linha, oito elementos consecutivos podem ocupar duas linhas.
+
+Em C, `double a[N][N]` guarda os elementos de cada linha da matriz em posições contíguas. O deslocamento de `a[i][j]` relativamente ao início é $(iN+j)\times8$ bytes. Por exemplo, com $N=1024$, `a[0][1]` está a 8 bytes, mas `a[1][0]` está a 8192 bytes. O primeiro índice conta linhas completas; o segundo conta elementos dentro da linha.
+
+Fixar `i` e aumentar `j` avança 8 bytes; fixar `j` e aumentar `i` avança $N\times8$ bytes.
 
 <Typst
   source={linha}
@@ -61,7 +63,7 @@ for (long j = 0; j < N; j++)
 
 No segundo percurso, o salto é $1024\times8=8192$ bytes. Os sete elementos vizinhos ainda não foram usados. Se a linha sair da cache antes da coluna seguinte, teremos de a trazer de novo. Numa matriz pequena que caiba na cache, a reutilização pode ocorrer sem nova ida à memória principal.
 
-Por isso, não há uma regra universal de "oito vezes mais tráfego", porque essa razão descreve um modelo de leituras sem reutilização entre colunas. Caches de vários níveis, alinhamento, prefetch e política de escrita também alteram o custo.
+A razão de oito vezes mais tráfego só descreve um modelo de leituras sem reutilização entre colunas: por linhas aproveitamos oito valores de cada transferência; por colunas aproveitamos um e perdemos os sete restantes antes de voltar. Não é uma regra universal. Caches de vários níveis, alinhamento, prefetch e política de escrita também alteram o custo.
 
 Se uma medição der 1,1 s por linhas e 3,9 s por colunas, a razão é $3{,}9/1{,}1\approx3{,}55$. É um exemplo de cálculo, não uma medição destes excertos. Para medir, usa matrizes iguais, consome o resultado para evitar eliminar o trabalho e compara nas mesmas condições.
 
@@ -76,4 +78,4 @@ Compara acessos próximos com acessos que saltam entre linhas da cache: o vídeo
 
 Duas threads podem escrever em variáveis diferentes que estão na mesma linha de cache. A coerência das caches passa a linha entre núcleos para permitir as escritas. Esta **falsa partilha** pode degradar o tempo sem existir corrida de dados entre as variáveis.
 
-Por exemplo, contadores privados num vetor podem ficar lado a lado. Acumula numa variável local e escreve o resultado só no fim para reduzir as transferências. Separar os contadores por linhas também pode ajudar, mas depende do tamanho e alinhamento reais. Mais threads não resolvem um limite de largura de banda ou falsa partilha.
+Assume um vetor de contadores de 8 bytes, alinhado a 64 bytes. A thread A escreve `contadores[0]` e B escreve `contadores[1]`. São posições diferentes, mas pertencem à mesma linha. A pode precisar de recuperar a posse da linha logo depois de B escrever, mesmo sem ler o contador de B. Acumula numa variável local e escreve o resultado só no fim para reduzir as transferências. Separar os contadores por linhas também pode ajudar, mas depende do tamanho e alinhamento reais. Mais threads não resolvem um limite de largura de banda ou falsa partilha.

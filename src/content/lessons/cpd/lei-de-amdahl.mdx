@@ -8,16 +8,14 @@ practices:
   - cpd/praticar-amdahl
 ---
 
-import Typst from '../../../components/Typst.astro';
 import YouTube from '../../../components/YouTube.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import curva from '../../cpd/curva-amdahl.typ?raw';
+import CurvaAmdahl from '../../cpd/CurvaAmdahl.astro';
 
-Depois de medires o speedup e de veres o efeito da memória e da cache, esta página responde a qual é o ganho máximo quando uma parte do tempo não se divide.
+A mesma imagem que demora 12 s a processar usa 1,2 s numa fase que, neste modelo, permanece serial. Os outros 10,8 s podem dividir-se pelos núcleos. Mesmo que essa segunda fase se tornasse quase instantânea, os 1,2 s continuariam no tempo total.
 
-Um programa passa parte do tempo numa fase que não conseguimos dividir. Mesmo que a restante fase acelere muito, essa parte continua a demorar o mesmo. A lei de Amdahl calcula o limite sob esta hipótese.
+<span id="a-lei"></span>
 
-## A lei
+## Fração serial
 
 Seja $f$ a fração do **tempo sequencial de referência** que permanece serial, com $0\le f\le1$. Para a mesma entrada, supondo divisão perfeita do restante trabalho por $p$ núcleos e nenhum custo adicional:
 
@@ -26,51 +24,46 @@ T_p=T_1\left(f+\frac{1-f}{p}\right), \qquad
 S_p=\frac{1}{f+(1-f)/p}.
 $$
 
-$f$ não é a percentagem de linhas de código serial. É uma fração de tempo, ou seja: se a fase serial demora 2 s numa execução de 10 s, $f=0{,}2$. Também não é a fração serial medida depois da paralelização, porque o tempo total já mudou.
+Neste exemplo, $f=1{,}2/12=0{,}1$. É uma fração do tempo, não a percentagem de linhas de código serial. Também não é a fração serial medida depois da paralelização, porque o tempo total já mudou.
 
 A parcela serial $fT_1$ mantém-se. A parcela paralela $(1-f)T_1/p$ diminui. Para $f>0$, o teto é $S_\infty=1/f$. Se $0<f<1$, nenhum número finito de núcleos atinge exatamente esse teto. Com $f=0$, o modelo dá $S_p=p$, sem teto finito; com $f=1$, dá sempre $S_p=1$.
 
-<Typst
-  source={curva}
-  format="svg"
-  alt="Para fração serial 0,2, o speedup começa em 1 com um núcleo e aproxima-se do teto 5 à medida que p cresce, sem o atingir num número finito de núcleos."
-/>
+<CurvaAmdahl />
 
 Observa o teto imposto pela fração sequencial ao acrescentar núcleos: o vídeo seguinte mostra como o ganho estabiliza mesmo quando continuamos a juntar núcleos.
 
 <YouTube id="KfgWmQpzD74" title="Amdahl's Law in the Multicore Era" />
 
-## Um cálculo completo
+## Tempo serial e tempo paralelizável
 
-Um simulador demora 100 s: 20 s de leitura e escrita que, neste modelo, continuam seriais, e 80 s de cálculo perfeitamente divisível. Com quatro núcleos:
+Com quatro núcleos, só dividimos os 10,8 s:
 
 $$
-T_4=20+80/4=40\text{ s}, \qquad S_4=100/40=2{,}5.
+T_4=1{,}2+10{,}8/4=3{,}9\text{ s}, \qquad S_4=12/3{,}9\approx3{,}08.
 $$
 
-Com 16 núcleos, $T_{16}=20+80/16=25$ s e $S_{16}=4$. O teto é 5. Quadruplicar o hardware de quatro para 16 núcleos aumenta o speedup de 2,5 para 4, um ganho de 60%. Para ultrapassar 5 neste modelo, temos de reduzir o tempo serial ou mudar o algoritmo.
+O tempo medido de 4 s na lição de desempenho é 0,1 s maior do que estes 3,9 s ideais. Agora conhecemos a parcela serial por hipótese; a diferença restante ainda precisa de investigação.
 
-:::tip[Ideia-chave]
-Com fração serial $f>0$, o speedup tem teto $1/f$ neste modelo, por isso há alvos que nenhum número de núcleos alcança.
-:::
-
-<CodePlayground
-  language="python"
-  title="Tempo e ganho previstos"
-  code={
-    't1, f = 100.0, 0.2\nfor p in [1, 2, 4, 16]:\n    tp = t1 * (f + (1 - f) / p)\n    print(p, "núcleos:", tp, "s; speedup", round(t1 / tp, 2))'
-  }
-/>
+Com 16 núcleos, $T_{16}=1{,}2+10{,}8/16=1{,}875$ s e $S_{16}=6{,}4$. O teto é $12/1{,}2=10$. Quadruplicar os núcleos não quadruplica o speedup, porque os 1,2 s permanecem. Para ultrapassar 10 neste modelo, temos de reduzir o tempo serial ou mudar o algoritmo.
 
 ## Quantos núcleos são precisos
 
-Para exigir speedup pelo menos $s>1$, isolamos $p$:
+Para exigir speedup pelo menos $s>1$, começamos por comparar o tempo normalizado com $1/s$. O denominador é positivo, por isso podemos inverter a desigualdade:
+
+$$
+S_p\ge s\iff f+\frac{1-f}{p}\le\frac1s
+\iff \frac{1-f}{p}\le\frac1s-f.
+$$
+
+Se o lado direito for positivo, isolamos $p$:
 
 $$
 p\ge\frac{1-f}{1/s-f}.
 $$
 
-Esta expressão só permite um valor finito quando $1/s-f>0$. Para $f=0{,}2$ e $s=3$, obtemos $p\ge0{,}8/(1/3-0{,}2)=6$. Confere: $S_6=3$. Para $s=5$, o denominador é zero: o teto só é aproximado. Para $s>5$, o alvo é impossível neste modelo. Se houver solução, arredonda para cima porque o número de núcleos é inteiro.
+Esta expressão só permite um valor finito quando $1/s-f>0$. Para $f=0{,}1$ e $s=3$, obtemos $p\ge0{,}9/(1/3-0{,}1)\approx3{,}857$. São precisos quatro núcleos: $S_3=2{,}5$ fica abaixo do alvo, enquanto $S_4\approx3{,}08$ o supera. Arredondamos para cima porque o número de núcleos é inteiro.
+
+Para $s=10$, o denominador é zero: o teto só é aproximado. Para $s>10$, o alvo é impossível neste modelo.
 
 ## Hipóteses e medições
 
@@ -82,4 +75,4 @@ Amdahl mantém a entrada fixa, chamada **escala forte**. Na **escala fraca**, au
 
 Criação de threads, sincronização, comunicação e desequilíbrio podem acrescentar tempo. Podemos representá-lo por $T_p=T_1(f+(1-f)/p)+T_{extra}(p)$, desde que não contemos duas vezes o mesmo custo. A fórmula ideal não prevê todos os efeitos da cache nem substitui medições.
 
-Não assumes que toda leitura de ficheiros é serial. Usa a hipótese do enunciado ou mede a fase que efetivamente permanece sequencial.
+Não assumas que toda leitura de ficheiros é serial. Usa a hipótese do enunciado ou mede a fase que efetivamente permanece sequencial.

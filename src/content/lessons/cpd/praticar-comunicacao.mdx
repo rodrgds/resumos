@@ -1,7 +1,7 @@
 ---
 draft: true
 title: 'Praticar: Comunicação distribuída'
-description: Exercícios originais com decisões, cálculos e pistas graduais.
+description: Repetição de pedidos, enquadramento TCP, ordens e eventos.
 section: exercicios
 order: 0
 ---
@@ -23,12 +23,6 @@ Pedido e resposta podem falhar separadamente.
 
   </div>
 
-  <div slot="hint-more">
-
-A operação pode terminar antes de a resposta se perder, por isso repetir como pedido novo arrisca um segundo débito.
-
-  </div>
-
   <div slot="solution">
 
 Não pode concluir. O servidor pode ter debitado e a resposta ter-se perdido. O cliente repete com o mesmo identificador. O servidor guarda o efeito, identificador e resultado de forma atómica e durável, e devolve o resultado anterior ao reconhecer a repetição.
@@ -45,72 +39,52 @@ Não usar um identificador novo na repetição. Uma lista de identificadores só
 
 <Exercise
   id="cpd-tcp-fronteiras"
-  title="Uma escrita, duas leituras"
+  revision={2}
+  title="Reconstruir respostas num fluxo"
   explanation="/cadeiras/cpd/sistemas-distribuidos-comunicacao/#modelos-de-comunicação"
-  answer={{"kind": "choice", "options": [{"text": "É permitido: TCP entrega um fluxo; a aplicação reúne bytes até ao delimitador.", "correct": true, "explanation": "A divisão em leituras não tem de coincidir com as escritas."}, {"text": "É uma falha do TCP porque cada write tem de corresponder a um read.", "correct": false, "explanation": "TCP não oferece essa correspondência."}, {"text": "É obrigatório abandonar TCP e usar UDP.", "correct": false, "explanation": "Um protocolo sobre TCP pode definir linhas, tamanhos ou outros delimitadores."}]}}
+  answer={{ kind: 'self', checklist: ["Mantive OK como fragmento pendente após a primeira leitura.", "Entreguei OK 42 após a segunda, mantendo OK 4 pendente.", "Entreguei OK 43 após a terceira e tratei EOF prematuro como resposta incompleta."] }}
 >
 
-O servidor envia `OK 42` seguido de uma quebra de linha num único write. O cliente lê primeiro `OK ` e depois `42` e a quebra de linha. Qual é a interpretação correta?
+Um protocolo TCP termina cada resposta com `\n`. O cliente recebe, por esta ordem, os fragmentos `OK `, `42\nOK 4` e `3\n`. Não há erros de ligação.
 
-  <div slot="hint">
-
-TCP preserva bytes por ordem, não mensagens da aplicação.
-
-  </div>
-
-  <div slot="hint-more">
-
-O pedido completo termina quando chega a quebra de linha.
-
-  </div>
+Indica as respostas completas que pode entregar depois de cada leitura e os bytes que ficam pendentes. Se a ligação terminar depois da segunda leitura, que resposta ficou incompleta?
 
   <div slot="solution">
 
-As duas leituras podem formar a mesma resposta válida. O cliente acumula até à quebra de linha e trata também o caso de EOF antes de uma resposta completa.
+Depois da primeira leitura não há quebra de linha, por isso fica `OK ` pendente. Na segunda, concatenamos os bytes e obtemos `OK 42\nOK 4`: entregamos `OK 42` e conservamos `OK 4`. A terceira completa `OK 43\n`, que permite entregar `OK 43`, sem resto.
+
+Se houver EOF após a segunda leitura, `OK 42` já está completa, mas `OK 4` não. O cliente deve tratar esse fragmento como resposta incompleta segundo o protocolo. TCP conserva a ordem dos bytes; as fronteiras de `read` não definem as respostas.
 
   </div>
-
-  <div slot="mistakes">
-
-Não assumir que um read devolve uma mensagem completa.
-
-  </div>
-
 </Exercise>
 
 <Exercise
   id="cpd-ordem-causal"
-  title="Uma resposta que depende de uma mensagem"
+  revision={2}
+  title="Comparar duas ordens de entrega"
   explanation="/cadeiras/cpd/sistemas-distribuidos-comunicacao/#ordenar-mensagens"
-  answer={{"kind": "choice", "options": [{"text": "Causal exige m1 antes de m2 nos processos que entregam ambas.", "correct": true, "explanation": "A receção de m1 precedeu o envio de m2, criando uma dependência causal."}, {"text": "FIFO entre emissores distintos, por si só, exige m1 antes de m2.", "correct": false, "explanation": "FIFO preserva a ordem de cada emissor, não relações entre emissores diferentes."}, {"text": "Ordem total sem causalidade exige sempre m1 antes de m2.", "correct": false, "explanation": "Pode impor a mesma ordem invertida a todos, a menos que inclua também a condição causal."}]}}
+  answer={{ kind: 'self', checklist: ["Reconheci que FIFO por emissor não distingue os traços com uma mensagem de cada emissor.", "Rejeitei causalidade em ambos porque pelo menos um destinatário inverte a dependência.", "Aceitei ordem total no traço I e rejeitei-a no II."] }}
 >
 
-A envia m1. Depois de B entregar m1, B envia m2. Qual garantia exige que outro destinatário que entrega ambas receba logicamente m1 antes de m2?
+A envia `m1`. B entrega `m1` e depois envia `m2`. C e D são os únicos destinatários que entregam ambas. Assume uma mensagem de cada emissor e entrega fiável.
+
+No traço I, C e D entregam `m2, m1`. No traço II, C entrega `m1, m2` e D entrega `m2, m1`. Para cada traço, avalia as propriedades FIFO, causal e total. Distingue entrega à aplicação de chegada de bytes.
 
   <div slot="hint">
 
-A mensagem de B depende da receção anterior.
-
-  </div>
-
-  <div slot="hint-more">
-
-Distingue ordem por emissor, por causa e ordem comum.
+Pergunta separadamente se a ordem é por emissor, se respeita a dependência e se coincide nos destinatários.
 
   </div>
 
   <div slot="solution">
 
-A ordem causal conserva esta dependência. FIFO não basta porque os emissores são diferentes. Ordem total obriga os destinatários a concordar, mas precisa da condição causal para impor esta direção.
+FIFO só exige conservar a ordem das mensagens de cada emissor. Com uma mensagem de A e uma de B, ambos os traços satisfazem essa restrição.
+
+A causalidade exige `m1` antes de `m2`, porque B enviou `m2` depois de entregar `m1`. O traço I viola-a em C e D; o II viola-a em D. A ordem total exige a mesma ordem nos destinatários: o I cumpre-a, mesmo na direção causalmente errada; o II não.
+
+Os traços descrevem entrega à aplicação. Uma implementação causal pode receber os bytes de `m2` primeiro e reter a mensagem até poder entregar `m1`.
 
   </div>
-
-  <div slot="mistakes">
-
-Não confundir chegada dos bytes com entrega da mensagem à aplicação nem ordem total com causalidade.
-
-  </div>
-
 </Exercise>
 
 <Exercise
@@ -125,12 +99,6 @@ Um servidor de eventos tem uma única thread. Dois pedidos de débito de 10 leem
   <div slot="hint">
 
 Um pedido pode continuar num evento posterior.
-
-  </div>
-
-  <div slot="hint-more">
-
-O segundo pedido lê antes de o primeiro concluir a operação.
 
   </div>
 

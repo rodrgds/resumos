@@ -1,7 +1,7 @@
 ---
 draft: true
 title: 'Praticar: Paralelismo e OpenMP'
-description: Exercícios originais com decisões, cálculos e pistas graduais.
+description: Débito, dependências, arredondamento e caminho crítico.
 section: exercicios
 order: 0
 ---
@@ -23,12 +23,6 @@ O pipeline não conclui mais depressa do que a sua fase mais lenta.
 
   </div>
 
-  <div slot="hint-more">
-
-Distingue a primeira conclusão das conclusões seguintes em regime estável.
-
-  </div>
-
   <div slot="solution">
 
 O intervalo é 4 ms, limitado pela segunda fase. O primeiro elemento demora $1+4+2=7$ ms a atravessar as três fases. Depois do preenchimento, podem concluir-se elementos a cada 4 ms.
@@ -45,37 +39,29 @@ Não usar 7 ms como intervalo em regime estável nem 1 ms por ser a fase mais r�
 
 <Exercise
   id="cpd-dependencia-ciclo"
-  title="Uma diretiva não elimina dependências"
+  revision={2}
+  title="Seguir uma dependência entre iterações"
   explanation="/cadeiras/cpd/paralelismo-openmp/#correção-e-custo"
-  answer={{"kind": "choice", "options": [{"text": "É preciso tratar a dependência de a[i] em a[i-1] antes de distribuir o ciclo.", "correct": true, "explanation": "A iteração seguinte lê um resultado da anterior."}, {"text": "Basta colocar reduction sobre a.", "correct": false, "explanation": "Uma redução não implementa automaticamente a recorrência."}, {"text": "Basta dar um índice diferente a cada thread.", "correct": false, "explanation": "As escritas distintas não eliminam a leitura do resultado anterior."}]}}
+  answer={{ kind: 'self', checklist: ["Obtive 5, 10 e 17.", "Identifiquei a leitura de a[1] pela iteração 2 antes da escrita que a produz.", "Distingui escritas distintas de ausência de dependências."] }}
 >
 
-Queremos paralelizar `a[i] = a[i-1] + x[i]`, para índices de 1 até n-1. Qual é a análise correta antes de usar `parallel for`?
+Temos `a[0]=2` e `x=[0, 3, 5, 7]`. Para `i` de 1 a 3, o ciclo sequencial calcula `a[i] = a[i-1] + x[i]`.
+
+Calcula `a[1]`, `a[2]` e `a[3]`. Explica o problema de executar a iteração 2 antes da 1 num `parallel for`. Escrever em posições distintas basta para garantir correção?
 
   <div slot="hint">
 
-Lista leituras e escritas de uma iteração.
-
-  </div>
-
-  <div slot="hint-more">
-
-A iteração i+1 lê a posição que a iteração i escreve.
+Lista separadamente a posição lida e a posição escrita pela iteração 2.
 
   </div>
 
   <div slot="solution">
 
-Há uma dependência entre iterações. Precisamos de conservar essa ordem ou usar outro algoritmo que produza o mesmo resultado com uma estratégia paralela adequada.
+Sequencialmente, $a[1]=2+3=5$, $a[2]=5+5=10$ e $a[3]=10+7=17$. A iteração 2 precisa do novo `a[1]`, produzido pela 1. Antecipá-la pode ler um valor antigo ou ainda não inicializado.
+
+As escritas têm destinos distintos, mas cada iteração lê o destino da anterior. Um `parallel for` não conserva essa ordem. É preciso respeitar a dependência ou usar outro algoritmo, como uma estratégia adequada de somas prefixas; uma redução não resolve automaticamente esta recorrência.
 
   </div>
-
-  <div slot="mistakes">
-
-Não analisar apenas os destinos das escritas.
-
-  </div>
-
 </Exercise>
 
 <Exercise
@@ -90,12 +76,6 @@ Uma soma com `reduction(+:soma)` dá um valor ligeiramente diferente da soma seq
   <div slot="hint">
 
 A adição em vírgula flutuante envolve arredondamento.
-
-  </div>
-
-  <div slot="hint-more">
-
-Uma soma parcial muda a associação das adições.
 
   </div>
 

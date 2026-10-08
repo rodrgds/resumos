@@ -11,9 +11,7 @@ practices:
 import Typst from '../../../components/Typst.astro';
 import entrelacamento from '../../cpd/entrelecamento.typ?raw';
 
-Depois de dividires o trabalho com OpenMP e redução, esta página responde a como evitar erros quando threads partilham dados.
-
-Duas threads podem executar isoladamente uma operação correta e produzir um programa incorreto quando partilham dados, porque o resultado passa a depender da ordem entre elas. A sincronização define que acessos podem ocorrer juntos e quais têm de esperar.
+Ao somar a imagem, cada thread pode atualizar uma soma privada e combinar no fim. Se todas atualizarem diretamente o mesmo contador, os acessos passam a interferir. A sincronização precisa de proteger a operação que mantém o estado correto.
 
 ## A condição de corrida
 
@@ -30,6 +28,8 @@ No modelo simplificado de `contador++`, lemos o contador, somamos 1 e escrevemos
 Em C, uma corrida de dados provoca **comportamento indefinido**. O desenho explica um incremento perdido, não enumera os resultados permitidos pelo programa real. Obter o valor esperado em muitos ensaios não demonstra correção.
 
 ## Atomic e secção crítica
+
+Uma transferência entre `a=100` e `b=50` debita 10 de `a` e credita 10 em `b`. Entre as duas escritas, o estado é `(90, 50)`, cuja soma é 140 em vez de 150. Mesmo que cada escrita seja atómica, o par intermédio continua observável. Para conservar a soma nas leituras, protegemos a transferência inteira e as leituras do par pelo mesmo mecanismo.
 
 Uma **secção crítica** protege um conjunto de operações que não pode ser intercalado com outro acesso protegido pelo mesmo mecanismo. Em OpenMP, `critical` permite proteger um bloco. `atomic` protege uma operação suportada sobre uma posição, como um incremento; não torna um bloco inteiro atómico.
 
@@ -58,15 +58,11 @@ O segundo obtém 400000. Há uma barreira implícita no fim de `parallel for`, p
 
 Incrementos atómicos disputam a mesma posição, mas isso não prova que o programa inteiro deixe de ganhar com paralelismo. Para uma soma, [acumuladores privados com redução](/cadeiras/cpd/paralelismo-openmp/#uma-redução-em-openmp) costumam reduzir essa contenção.
 
-:::tip[Ideia-chave]
-Todos os acessos em conflito com a mesma posição precisam de proteção compatível, porque proteger só os escritores deixa leituras concorrentes sem proteção.
-:::
-
 ## Barreiras e condições
 
 Uma **barreira** impede uma thread de passar antes de todas as threads do grupo chegarem. É útil entre produzir dados e consumi-los. Não impede duas threads de escreverem no mesmo elemento durante a fase anterior; não substitui um `atomic`, uma secção crítica ou a atribuição de elementos distintos.
 
-Um **mutex** permite a uma thread entrar numa região protegida de cada vez. Uma variável de condição permite esperar por uma condição sobre o estado. Depois de acordar, verifica novamente a condição sob o mutex, normalmente num ciclo, porque o estado pode ter mudado antes de recuperares o acesso.
+Um **mutex** permite a uma thread entrar numa região protegida de cada vez. Uma variável de condição permite esperar por uma condição sobre o estado. Por exemplo, um consumidor espera enquanto a fila está vazia. Esperar liberta o mutex; ao acordar, recupera-o e testa de novo a fila. Outro consumidor pode ter retirado o elemento antes disso. A notificação permite voltar a verificar, não reserva um elemento para esta thread.
 
 ## Deadlock e ordem de bloqueios
 

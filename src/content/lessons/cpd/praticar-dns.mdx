@@ -1,7 +1,7 @@
 ---
 draft: true
 title: 'Praticar: DNS e escalabilidade'
-description: Exercícios originais com decisões, cálculos e pistas graduais.
+description: Validade da cache, resolução parcial e latência média.
 section: exercicios
 order: 0
 ---
@@ -23,12 +23,6 @@ Conta o tempo desde a resposta original.
 
   </div>
 
-  <div slot="hint-more">
-
-Passaram 75 s desde as 14:00:00.
-
-  </div>
-
   <div slot="solution">
 
 Restam $180-75=105$ s. O acerto aos 60 s não reinicia o TTL. O prazo original termina às 14:03:00.
@@ -45,37 +39,29 @@ Não contar 180 s a partir de cada leitura da cache.
 
 <Exercise
   id="cpd-dns-referral"
-  title="Quem faz a procura"
+  revision={2}
+  title="Resolver com cache parcial"
   explanation="/cadeiras/cpd/escalabilidade-dns/#uma-resolução-passo-a-passo"
-  answer={{"kind": "choice", "options": [{"text": "O resolvedor segue a referência e consulta o servidor de .pt.", "correct": true, "explanation": "A raiz fornece uma delegação; a procura continua no resolvedor."}, {"text": "A raiz procura obrigatoriamente o endereço final por todos os níveis.", "correct": false, "explanation": "No exemplo, a raiz não faz a resolução recursiva pelo resolvedor."}, {"text": "O cliente tem de consultar diretamente o autoritativo.", "correct": false, "explanation": "O cliente pediu resolução recursiva ao resolvedor."}]}}
+  answer={{ kind: 'self', checklist: ["Consultei diretamente o autoritativo conhecido de exemplo.pt.", "Expliquei por que a delegação e o endereço válidos evitam repetir raiz e .pt.", "Distingui pedido recursivo do cliente e consulta do resolvedor."] }}
 >
 
-Num pedido recursivo do cliente, o resolvedor consulta a raiz e recebe servidores de .pt. Sem resposta final em cache, quem faz a consulta seguinte no modelo da lição?
+O cliente pede ao resolvedor o registo A de `www.exemplo.pt`. A cache já tem a delegação válida de `exemplo.pt` e o endereço de um servidor autoritativo dessa zona, mas não tem o registo A. Não há CNAME e o servidor responde.
+
+Que servidor deve o resolvedor consultar? Precisa de voltar à raiz e a `.pt`? Distingue o pedido do cliente da consulta feita pelo resolvedor.
 
   <div slot="hint">
 
-Distingue o cliente do resolvedor recursivo.
-
-  </div>
-
-  <div slot="hint-more">
-
-A consulta à raiz foi uma etapa da procura do resolvedor.
+Identifica que informação falta, em vez de repetir automaticamente todos os níveis.
 
   </div>
 
   <div slot="solution">
 
-O resolvedor consulta .pt, segue a delegação para exemplo.pt e consulta o autoritativo. No exemplo simplificado são consultas iterativas; a raiz não entrega o endereço final de www.
+O resolvedor consulta o autoritativo de `exemplo.pt` conhecido em cache. Não precisa de repetir a descoberta da delegação na raiz nem em `.pt`, porque já tem essa informação válida e o endereço necessário. Recebe o registo A, guarda-o com o TTL e responde ao cliente.
+
+O cliente pediu que o resolvedor procurasse a resposta, um pedido recursivo. A cache parcial encurta as consultas do resolvedor; não obriga o cliente a procurar diretamente no autoritativo.
 
   </div>
-
-  <div slot="mistakes">
-
-Não confundir uma referência para servidores com o registo de endereço procurado.
-
-  </div>
-
 </Exercise>
 
 <Exercise
@@ -90,12 +76,6 @@ Uma cache tem 80% de acertos. Um pedido que acerta demora 1 ms e um pedido que f
   <div slot="hint">
 
 Faz a média ponderada das duas situações, porque cada uma tem o seu peso.
-
-  </div>
-
-  <div slot="hint-more">
-
-Usa 0,8 vezes o tempo de acerto e 0,2 vezes o tempo de falta.
 
   </div>
 

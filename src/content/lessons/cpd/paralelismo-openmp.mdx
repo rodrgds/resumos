@@ -10,23 +10,20 @@ practices:
 
 import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
-import pipeline from '../../cpd/pipeline.dot?raw';
+import PipelineTempo from '../../cpd/PipelineTempo.astro';
 import reducao from '../../cpd/reducao.dot?raw';
 
-Depois de calculares o limite do ganho com a fração serial, esta página responde a como dividir o trabalho e combinar os resultados com OpenMP.
-
-Antes de acrescentar uma diretiva, ou seja uma linha especial que diz ao compilador como distribuir o trabalho, precisamos de saber que partes do trabalho podem avançar juntas e que dados cada parte lê ou altera.
+Para calcular o brilho médio da imagem, cada núcleo pode somar os píxeis da sua fatia. No fim, combinamos as somas e dividimos pelo número de píxeis. As fatias são independentes; a soma final depende de todas elas. Esta análise vem antes da diretiva que distribui o ciclo.
 
 ## Tipos de paralelismo
 
 No paralelismo **funcional**, executamos tarefas diferentes, como tratar áudio e comprimir imagens. No paralelismo **de dados**, aplicamos a mesma operação a fatias diferentes, como somar partes de um vetor. Num **pipeline**, cada elemento atravessa fases; fases diferentes tratam elementos diferentes ao mesmo tempo.
 
-<Dot
-  source={pipeline}
-  alt="Num instante do pipeline, a fase 1 trata a imagem 3, a fase 2 trata a imagem 2 e a fase 3 trata a imagem 1. Cada imagem continua a atravessar as fases por ordem."
-/>
+Considera três fases dedicadas à leitura, transformação e escrita de imagens, com tempos de 2, 3 e 1 ms. Cada fase dispõe de um recurso próprio e de espaço para esperar entre fases. Ignoramos transferências. A primeira imagem termina aos 6 ms. A transformação ocupa 3 ms por imagem, por isso limita as conclusões seguintes a uma por 3 ms.
 
-O pipeline pode aumentar o número de imagens concluídas por segundo sem reduzir o tempo de uma imagem isolada. Se três fases demorarem 2, 3 e 1 ms e tiverem recursos separados, a primeira imagem demora 6 ms. Depois de preencher o pipeline, a fase mais lenta limita a uma imagem por 3 ms, ignorando transferências.
+<PipelineTempo />
+
+A segunda imagem termina aos 9 ms e a terceira aos 12 ms. A sobreposição melhora o débito, mas cada imagem ainda atravessa as três fases. Não confundas tempo de uma imagem isolada com intervalo entre conclusões.
 
 ## Dividir antes de programar
 
@@ -39,6 +36,8 @@ Se cada iteração tiver custo semelhante, uma distribuição estática costuma 
 Num modelo ideal de tarefas, o **trabalho** $W$ é a soma dos tempos de todas as tarefas numa execução sequencial. O **caminho crítico** $D$ é a maior soma de tempos numa cadeia de dependências. Mesmo com recursos ilimitados, essa cadeia tem de ser respeitada.
 
 Com $p$ unidades iguais, sem comunicação nem outros custos, o tempo não pode ser menor do que $\max(W/p,D)$. É um limite inferior, ou seja não é uma promessa de escalonamento perfeito. Por exemplo, três tarefas independentes de 2 s seguidas de uma combinação de 1 s têm $W=7$ s e $D=3$ s. Com três unidades, as três primeiras tarefas podem correr juntas e a combinação acaba aos 3 s.
+
+O limite pode não ser atingível. Três tarefas independentes e indivisíveis de 2 s em duas unidades têm $W/p=3$ s e $D=2$ s, mas precisam de 4 s: uma unidade terá de executar duas tarefas.
 
 Este modelo obriga a olhar para as dependências. Amdahl usa uma divisão mais simples entre fração serial e trabalho perfeitamente divisível.
 
@@ -84,7 +83,7 @@ Com oito uns e duas fatias de quatro, as somas privadas são 4 e 4. A combinaç�
 
 ## Correção e custo
 
-Neste programa, a soma correta é 1000000. Para valores gerais em vírgula flutuante, mudar a ordem das adições pode alterar o arredondamento: a soma paralela não tem de ser igual bit a bit à sequencial.
+Neste programa, a soma correta é 1000000. Para valores gerais em vírgula flutuante, mudar a associação das adições pode alterar o arredondamento. Em precisão binária de 64 bits, `(1e16 + -1e16) + 1` dá 1, mas `1e16 + (-1e16 + 1)` dá 0: no segundo caso, o 1 perde-se no arredondamento da soma interior. A redução pode agrupar valores noutra ordem, por isso não exige igualdade bit a bit à soma sequencial.
 
 O tempo medido inclui criar a equipa, somar e combinar, mas não inclui inicializar o vetor. Repete medições para distinguir variação de ganho, porque uma só medição confunde ruído com efeito. Comparar uma e quatro threads mede esta versão, não necessariamente o ganho face à melhor implementação sequencial.
 

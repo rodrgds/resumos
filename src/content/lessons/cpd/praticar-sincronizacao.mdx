@@ -1,7 +1,7 @@
 ---
 draft: true
 title: 'Praticar: Sincronização'
-description: Exercícios originais com decisões, cálculos e pistas graduais.
+description: Entrelaçamentos, ordem de bloqueios e invariantes partilhadas.
 section: exercicios
 order: 0
 ---
@@ -10,37 +10,29 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="cpd-barreira-corrida"
-  title="Esperar no fim não protege durante"
+  revision={2}
+  title="Localizar o conflito antes da barreira"
   explanation="/cadeiras/cpd/concorrencia-sincronizacao/#barreiras-e-condições"
-  answer={{"kind": "choice", "options": [{"text": "A barreira garante que os incrementos terminaram, mas não evita a corrida entre eles.", "correct": true, "explanation": "A exclusão ou atomicidade tem de abranger os acessos concorrentes."}, {"text": "A barreira transforma contador++ numa operação atómica.", "correct": false, "explanation": "A barreira só sincroniza a chegada ao fim da fase."}, {"text": "Uma execução com o resultado certo prova que a barreira resolveu o problema.", "correct": false, "explanation": "Comportamento indefinido pode produzir o valor esperado."}]}}
+  answer={{ kind: 'self', checklist: ["Mostrei duas leituras de zero antes das duas escritas de um.", "Expliquei que a barreira não protege os acessos anteriores.", "Propus atomic ou redução e distingui o modelo didático do comportamento indefinido de C."] }}
 >
 
-Todas as threads fazem `contador++` sem proteção. Depois encontram uma barreira, e só então a thread principal lê o contador. Qual afirmação é correta?
+Num modelo didático, `contador++` tem três passos: ler, somar 1 e escrever. A e B executam um incremento cada, com contador inicial zero. Ambas passam depois por uma barreira; a leitura final ocorre após essa fase.
+
+Constrói um entrelaçamento que termine em 1 neste modelo. A barreira evita o incremento perdido? Indica uma correção e explica por que o desenho não prevê todos os resultados de um programa C com corrida de dados.
 
   <div slot="hint">
 
-Separa os acessos durante o ciclo da leitura final.
-
-  </div>
-
-  <div slot="hint-more">
-
-Os incrementos podem intercalar-se antes da barreira.
+Separa a garantia da leitura final da proteção necessária durante as escritas.
 
   </div>
 
   <div slot="solution">
 
-A leitura final espera pelas threads, mas as escritas durante o ciclo continuam a ter uma corrida de dados. Usa uma redução ou proteção compatível para os incrementos.
+A lê 0; B lê 0; A calcula e escreve 1; B calcula e escreve 1. As duas chegam à barreira e o contador do modelo fica em 1. Esperar no fim não altera os acessos que já ocorreram.
+
+Um incremento `atomic`, usado de forma compatível por todos os acessos concorrentes, ou uma soma privada com redução evita este conflito. Em C, a versão sem proteção tem corrida de dados e comportamento indefinido. O traço ilustra uma perda de atualização; não restringe o programa real a valores 1 e 2.
 
   </div>
-
-  <div slot="mistakes">
-
-Não confundir conclusão da fase com exclusão mútua dentro da fase.
-
-  </div>
-
 </Exercise>
 
 <Exercise
@@ -55,12 +47,6 @@ A thread A adquire X e depois Y. B adquire Y e depois X. Descreve uma execução
   <div slot="hint">
 
 Intercala as primeiras aquisições.
-
-  </div>
-
-  <div slot="hint-more">
-
-A fica com X e B fica com Y antes das segundas aquisições.
 
   </div>
 
@@ -90,12 +76,6 @@ Uma transferência faz `a -= 10` e `b += 10`. Coloca-se um `atomic` em cada atua
   <div slot="hint">
 
 Entre as duas atualizações existe um estado intermédio observável.
-
-  </div>
-
-  <div slot="hint-more">
-
-Uma operação atómica só protege a posição indicada, não a transferência inteira.
 
   </div>
 

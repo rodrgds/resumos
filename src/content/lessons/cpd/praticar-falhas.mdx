@@ -1,7 +1,7 @@
 ---
 draft: true
 title: 'Praticar: Tolerância a falhas'
-description: Exercícios originais com decisões, cálculos e pistas graduais.
+description: Eleição, estados do 2PC, replicação e recuperação em Paxos.
 section: exercicios
 order: 0
 ---
@@ -23,12 +23,6 @@ Segue o identificador em cada aresta, porque contar só processos esconde aresta
 
   </div>
 
-  <div slot="hint-more">
-
-O 7 só vence quando recebe de volta o seu próprio identificador.
-
-  </div>
-
   <div slot="solution">
 
 Eleição: $2\to5$ com 2, $5\to7$ com 5, $7\to2$ com 7, $2\to5$ com 7 e $5\to7$ com 7. São cinco envios. O anúncio percorre três arestas, totalizando oito.
@@ -45,37 +39,29 @@ Não parar quando 7 substitui a mensagem: ainda precisa de ver o seu identificad
 
 <Exercise
   id="cpd-2pc-preparado"
-  title="Votar sim e depois perder contacto"
+  revision={2}
+  title="Decidir com informação incompleta"
   explanation="/cadeiras/cpd/tolerancia-falhas/#por-que-o-2pc-pode-bloquear"
-  answer={{"kind": "choice", "options": [{"text": "Espera ou procura uma decisão conhecida; só o timeout não autoriza abortar.", "correct": true, "explanation": "Outra máquina pode já conhecer uma decisão de confirmar."}, {"text": "Aborta sempre após o timeout.", "correct": false, "explanation": "Isso pode contradizer uma confirmação que outro participante já recebeu."}, {"text": "Confirma porque votar sim já é uma confirmação.", "correct": false, "explanation": "O voto é a promessa de cumprir a decisão global, não essa decisão."}]}}
+  answer={{ kind: 'self', checklist: ["Construí um histórico de confirmar e outro de abortar compatíveis com A.", "Rejeitei o aborto unilateral no estado preparado.", "Usei a decisão durável de B para permitir a confirmação de A."] }}
 >
 
-A registou preparado e votou sim no 2PC. Não recebeu decisão e não consegue contactar ninguém. O que pode fazer sem violar a atomicidade?
+A registou preparado e votou sim no 2PC. O coordenador deixa de responder antes de A receber uma decisão.
+
+Primeiro, A não consegue contactar nenhum participante. Constrói dois históricos compatíveis com o que A sabe e com decisões globais diferentes. Pode abortar só por timeout? Depois, A contacta B, que tem um registo durável de confirmar. O que muda?
 
   <div slot="hint">
 
-A sua informação é compatível com mais de uma decisão global.
-
-  </div>
-
-  <div slot="hint-more">
-
-O coordenador pode ter comunicado confirmar a B antes de falhar.
+Votar sim conserva a capacidade de cumprir uma decisão futura; não revela os votos dos outros.
 
   </div>
 
   <div slot="solution">
 
-A preserva o estado preparado e espera por informação suficiente. Timeout é ausência de resposta, não prova de abortar. Se puder contactar alguém com uma decisão definitiva, pode aprendê-la.
+Num histórico, todos votaram sim e o coordenador registou confirmar, enviando essa decisão só a B antes de falhar. Noutro, B votou não e o coordenador registou abortar, sem conseguir comunicar a A. A apenas viu o seu voto sim e a ausência de resposta, por isso não distingue os dois.
+
+Se A abortar unilateralmente no primeiro histórico, contradiz a decisão de B. Sem informação suficiente, conserva preparado e espera. Quando B comunica uma decisão durável de confirmar, assumindo processos não bizantinos e a mesma transação, A aprende a decisão e pode registá-la e aplicá-la. O timeout deixou de ser a única informação disponível.
 
   </div>
-
-  <div slot="mistakes">
-
-Não confundir voto sim com commit nem impor aborto unilateral no estado preparado.
-
-  </div>
-
 </Exercise>
 
 <Exercise
@@ -90,12 +76,6 @@ No 2PC, A e B votam sim e C vota não. O coordenador ainda está vivo. Que decis
   <div slot="hint">
 
 A regra de confirmação exige todos os votos.
-
-  </div>
-
-  <div slot="hint-more">
-
-Votos no 2PC não são uma votação por maioria.
 
   </div>
 
@@ -128,12 +108,6 @@ O apoio só conserva dados que chegou a receber e guardar.
 
   </div>
 
-  <div slot="hint-more">
-
-Compara a ordem resposta e replicação nas variantes síncrona e assíncrona.
-
-  </div>
-
   <div slot="solution">
 
 Não. Na replicação assíncrona, uma atualização já confirmada ao cliente pode faltar no apoio. Uma regra síncrona espera pela persistência exigida no apoio antes da resposta, assumindo que este sobrevive. A promoção também precisa de impedir escritas do antigo primário; não é resolvida só por replicar.
@@ -146,4 +120,29 @@ Não prometer continuidade sem interrupção ou segurança contra partições ap
 
   </div>
 
+</Exercise>
+
+<Exercise
+  id="cpd-paxos-recuperar"
+  title="Conservar um valor já escolhido"
+  explanation="/cadeiras/cpd/tolerancia-falhas/#recuperar-uma-proposta"
+  answer={{ kind: 'self', checklist: ['Identifiquei a maioria A e B que escolheu o valor 10 na proposta 6.', 'Recuperei o valor 10 a partir da resposta de B, sem propor 20.', 'Distingui aceitação individual, escolha por maioria e aprendizagem.'] }}
+>
+
+Uma instância Paxos tem três aceitantes. A e B aceitaram `(6, 10)`; C não aceitou nada. As respostas de aceitação perderam-se. Um novo proponente quer escolher 20 e obtém promessas para 7 de B e C. B comunica `(6, 10)` e C comunica que não tem proposta aceite.
+
+O valor 10 já foi escolhido? Que valor deve o proponente enviar em `accept(7, valor)`? Se apenas C responder à fase de aceitação, isso prova uma nova escolha ou a ausência da escolha anterior?
+
+  <div slot="hint">
+
+Conta a maioria que aceitou a mesma proposta e distingue o estado real da informação recebida pelo proponente.
+
+  </div>
+  <div slot="solution">
+
+A e B formam uma maioria, por isso 10 já foi escolhido na proposta 6. A perda de respostas pode impedir o proponente de aprender a escolha, mas não a desfaz.
+
+Na preparação 7, a proposta aceite de maior número nas respostas de B e C é `(6, 10)`. O novo proponente tem de enviar `accept(7, 10)`, mesmo que preferisse 20. Uma resposta de C não prova que uma maioria aceitou a proposta 7. Também não refuta a escolha anterior: falta de confirmação não é confirmação de falta.
+
+  </div>
 </Exercise>

@@ -8,16 +8,15 @@ practices:
   - cpd/praticar-comunicacao
 ---
 
-import Dot from '../../../components/Dot.astro';
-import duvida from '../../cpd/duvida-rede.dot?raw';
+import Timeout from '../../cpd/Timeout.astro';
 
-Depois de medires desempenho e de protegeres dados partilhados entre threads, esta página responde a como cooperam processos que só trocam mensagens.
-
-Num sistema distribuído, ou seja num conjunto de processos com memória própria que cooperam por mensagens, cada processo só conhece o seu estado e o que já recebeu. Uma máquina pode falhar enquanto outras continuam, uma **falha parcial**.
+Um cliente envia `debitar(10)` a um servidor. Se não receber resposta, não consegue observar diretamente o saldo nem a execução remota. Num sistema distribuído, processos com memória própria cooperam por mensagens: cada um conhece o seu estado e o que já recebeu. O servidor pode parar enquanto o cliente continua, uma **falha parcial**.
 
 ## Modelos de comunicação
 
-Na **troca de mensagens**, a aplicação envia e recebe dados explicitamente. Uma **invocação remota**, RPC, oferece uma chamada a uma operação noutro processo: serializa os argumentos, envia-os e devolve uma resposta. Um ponteiro local não tem o mesmo significado noutra máquina; os dados precisam de uma representação acordada.
+Na **troca de mensagens**, a aplicação envia e recebe dados explicitamente. Uma **invocação remota**, RPC, oferece uma chamada a uma operação noutro processo: serializa os argumentos, envia-os e devolve uma resposta.
+
+Em `debitar(10)`, uma função local representa a operação remota. É o **stub do cliente**, que codifica a operação e o valor 10. O stub do servidor descodifica-os, invoca a função e codifica o resultado. O cliente descodifica a resposta. Estes passos de serialização não transferem o espaço de endereços: um ponteiro local não tem o mesmo significado noutra máquina. Os dados precisam de uma representação acordada.
 
 O **multicast** dirige uma mensagem a um grupo. Um envio não prova que todos a receberam nem que a entregaram na mesma ordem. As garantias dependem do protocolo usado.
 
@@ -26,26 +25,19 @@ O **multicast** dirige uma mensagem a um grupo. Um envio não prova que todos a 
 | TCP        | Fluxo de bytes ordenado, com retransmissão de dados perdidos enquanto a ligação consegue progredir | Fronteiras dos pedidos, timeouts e significado das respostas |
 | UDP        | Datagramas, preservando as fronteiras de cada mensagem entregue                                    | Tratamento de perda, duplicação e reordenação                |
 
-TCP não preserva as fronteiras dos teus `write`: uma leitura pode receber parte de um pedido ou vários juntos. Define um enquadramento, como uma linha por mensagem ou um tamanho antes do conteúdo. Nem TCP nem UDP garantem que uma operação da aplicação executou só porque o envio local terminou.
+TCP não preserva as fronteiras dos teus `write`: uma leitura pode receber parte de um pedido ou vários juntos. Define um enquadramento, como uma linha por mensagem ou um tamanho antes do conteúdo. Se a resposta for `OK 42\n`, receber primeiro `OK ` não completa a resposta: o cliente acumula `42\n` e só então interpreta a linha. Se receber `OK 42\nOK 43\n` numa só leitura, tem duas respostas para separar. Nem TCP nem UDP garantem que uma operação da aplicação executou só porque o envio local terminou.
 
 ## Atraso, timeout e repetição
 
 Num modelo **síncrono**, há limites conhecidos para os tempos de comunicação e processamento. Num modelo **assíncrono**, não podemos usar um limite conhecido para concluir que um processo morreu. Um timeout cria uma suspeita, não uma prova. Também pode haver uma partição da rede que impeça processos vivos de comunicar.
 
-<Dot
-  source={duvida}
-  alt="O cliente envia um pedido e espera pela resposta. Após um timeout, não sabe se o pedido não chegou, se o servidor ainda trabalha ou se a operação terminou e a resposta se perdeu."
-/>
+<Timeout />
 
 Considera `debitar(10)`. O servidor debita 10 euros, mas a resposta perde-se. Se o cliente repetir como uma nova operação, pode debitar mais 10 euros. Já `definir_estado("pago")` é **idempotente** quanto ao estado: repetir o mesmo pedido tem o mesmo efeito que aplicá-lo uma vez. Ler a hora não altera estado, mas as respostas de duas leituras podem diferir.
 
 Uma solução para o débito usa um identificador de pedido estável. O servidor regista o identificador e o resultado e, ao receber uma repetição, devolve o resultado guardado. Para sobreviver a falhas, o registo e o efeito precisam de uma atualização atómica e durável. Guardar só em memória perde a proteção após reiniciar.
 
-**Pelo menos uma vez** permite repetições até obter resposta, podendo repetir efeitos. **No máximo uma vez** evita executar duplicados, mas não garante que o pedido execute. Nenhuma delas dá, por si só, ao cliente conhecimento do resultado após qualquer falha.
-
-:::tip[Ideia-chave]
-Um timeout cria uma suspeita, não uma prova, porque o pedido pode ter executado e só a resposta se ter perdido.
-:::
+**Pelo menos uma vez** retransmite até obter uma resposta, podendo repetir efeitos. A execução eventual exige que o serviço recupere e que a comunicação acabe por progredir; uma falha permanente não permite prometê-la. **No máximo uma vez** evita executar duplicados, mas não garante que o pedido execute. Nenhuma delas dá, por si só, ao cliente conhecimento do resultado após qualquer falha.
 
 ## Um servidor local em Go
 
@@ -116,10 +108,12 @@ Um servidor **sem estado de sessão** não precisa de recordar pedidos anteriore
 
 Um servidor iterativo trata um pedido de cada vez. Um servidor com threads ou goroutines pode tratar outros pedidos enquanto um espera por I/O, mas precisa de coordenar o estado partilhado. Um servidor baseado em eventos usa I/O não bloqueante e mantém o estado de cada pedido entre eventos. Bloquear o seu ciclo de eventos pode atrasar todos os clientes.
 
-Ter só uma thread não elimina todos os problemas de concorrência. Dois pedidos podem ler o mesmo saldo e, em eventos posteriores, gravar resultados incompatíveis. A unidade que precisa de proteção é a operação sobre o estado, não apenas cada instrução isolada.
+Ter só uma thread não elimina todos os problemas de concorrência. Dois débitos de 10 podem ler saldo 100 antes de aguardar I/O. Quando os eventos de conclusão chegam, ambos gravam 90. O saldo deveria ser 80. Não houve instruções em paralelo, mas as operações completas intercalaram-se e perdeu-se um débito. A unidade que precisa de proteção é a operação sobre o estado, não apenas cada instrução isolada.
 
 ## Ordenar mensagens
 
 A ordem **FIFO** preserva a ordem de cada emissor. A ordem **causal** respeita dependências: se B envia uma mensagem depois de receber a de A, entrega-se a de A antes da de B. A ordem **total** faz os destinatários concordarem na ordem de entrega, mesmo para mensagens independentes. Ordem total, por si só, não exige respeitar a causalidade.
+
+A envia `m1 = encomenda criada`; B recebe-a e envia `m2 = encomenda paga`. Uma terceira réplica pode receber os bytes de `m2` primeiro. A entrega causal tem de a reter até entregar `m1`. FIFO não estabelece essa relação porque A e B são emissores diferentes. Ordem total isolada poderia impor `m2, m1` a todas as réplicas; concordariam entre si, mas violariam a dependência causal.
 
 Estas propriedades não são garantias de entrega fiável. TCP ordena bytes de uma ligação; não estabelece uma ordem global entre vários emissores. Difundir uma atualização a três réplicas pode exigir confirmação, eliminação de duplicados e uma política de ordem. Se C não confirma, o coordenador sabe apenas que ainda não recebeu a confirmação, não que C morreu.
