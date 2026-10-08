@@ -5,8 +5,6 @@ section: recursos
 studyKind: revision
 ---
 
-Depois de percorreres campos, circuitos, medições, sinais e amostragem, esta página pergunta onde está cada fórmula quando precisas dela.
-
 Fixa primeiro regime, geometria, referências e unidades. Aqui, fasores são de pico; $j^2=-1$, $\omega=2\pi f$, $k=2\pi/\lambda$. Usa $k_e\simeq8{,}99\times10^9\,\mathrm{N\,m^2/C^2}$ para a constante de Coulomb, distinta do número de onda.
 
 ## Carga e campos
