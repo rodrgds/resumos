@@ -8,6 +8,8 @@ practices:
 editorial:
   basedOn: 2026/27
   sources:
+    - title: Problemas e resoluções 14, António Carvalho Brito e Carlos Bragança de Oliveira, 2022
+      url: https://moodle2627.up.pt/course/view.php?id=5341
     - title: Programa e materiais da turma, Moodle 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=5341
     - title: Python14, ficheiros e modos de acesso
@@ -20,11 +22,9 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import vendasFicheiros from '../../ct-iadp/vendas-ficheiros.csv?raw';
 
-Sabes organizar cálculos em funções e guardar valores em listas. Agora precisas de guardar esses valores depois de o programa terminar e voltar a lê-los.
+O ficheiro de vendas conserva produto, quantidade e preço depois de o programa terminar. Ao relê-lo, os caracteres `"2"` têm de passar a inteiro antes da multiplicação. Caminho, codificação e formato determinam que dados chegam ao cálculo.
 
-Um ficheiro mantém dados depois de o programa terminar. Ler transforma esses dados em objetos Python e escrever transforma objetos em texto guardado, por isso confirma o caminho, a codificação e o formato antes de interpretar os valores.
-
-## Abrir com um contexto
+## Contextos e modos de abertura
 
 ```python
 with open("vendas.txt", "r", encoding="utf-8") as ficheiro:
@@ -85,13 +85,13 @@ with open("totais.csv", "w", newline="", encoding="utf-8") as ficheiro:
 
 A escrita CSV converte os valores para texto. Ao reler, os tipos não reaparecem por magia. Define os tipos esperados e o significado de cada coluna.
 
-## O que conferir antes de calcular
+## Integridade e unidades
 
 Verifica se há cabeçalho, se cada linha tem o número de campos esperado e se a unidade é constante. Uma coluna pode guardar euros ou cêntimos; as duas contêm números, mas produzem totais diferentes por um fator de cem.
 
 Para dados grandes, percorre as linhas sem as guardar todas. Para análise tabular com filtros, junções e agregações, a próxima parte usa pandas. A regra mantém-se: primeiro compreender a tabela, depois escolher a operação.
 
-## Ler em sequência sem guardar tudo
+## Média por leitura sequencial
 
 Para calcular a média de um ficheiro com um número por linha, percorre as linhas e acumula. Não precisas de guardar a lista completa:
 
@@ -102,8 +102,35 @@ with open("valores.txt", "r", encoding="utf-8") as ficheiro:
     for linha in ficheiro:
         soma += float(linha)
         contagem += 1
+if contagem == 0:
+    raise ValueError("Sem observações")
 media = soma / contagem
 print(media)
 ```
 
-Cada iteração lê a linha seguinte. No fim, `soma` tem o total e `contagem` o número de valores. É o problema 14.01 da turma. Se os dois ficheiros tiverem comprimentos diferentes, decide a política antes de calculares: o enunciado 14.03 trata os valores em falta como zero e calcula a média do par.
+Este exemplo exige um número válido por linha, sem linhas em branco. Cada iteração lê a linha seguinte. No fim, `soma` tem o total e `contagem` o número de valores. É o problema 14.01 da turma. Se os dois ficheiros tiverem comprimentos diferentes, decide a política antes de calculares: o enunciado 14.03 trata os valores em falta como zero e calcula a média do par.
+
+## Dois ficheiros de comprimentos diferentes
+
+O problema 14.03 associa valores pela posição da linha e usa zero quando um dos ficheiros já terminou. Esta hipótese pertence ao enunciado; não é uma regra geral para dados em falta. Com valores 20 e 40 no primeiro ficheiro, e 100, 10 e 80 no segundo:
+
+| Linha | Primeiro         | Segundo | Média do par |
+| ----- | ---------------- | ------- | ------------ |
+| 1     | 20               | 100     | 60           |
+| 2     | 40               | 10      | 25           |
+| 3     | terminou, usar 0 | 80      | 40           |
+
+`zip` pararia ao terminar o ficheiro mais curto e perderia a terceira linha. `zip_longest` continua até ambos terminarem:
+
+```python
+from itertools import zip_longest
+
+with open("primeiro.txt", encoding="utf-8") as primeiro, \
+        open("segundo.txt", encoding="utf-8") as segundo, \
+        open("medias.txt", "w", encoding="utf-8") as destino:
+    for linha_a, linha_b in zip_longest(primeiro, segundo, fillvalue="0"):
+        media = (float(linha_a) + float(linha_b)) / 2
+        destino.write(f"{media}\n")
+```
+
+Os ficheiros contêm um número válido por linha, sem linhas vazias, e o destino tem um nome diferente das entradas. Cada passo lê no máximo uma linha de cada ficheiro e escreve uma média, sem guardar arrays. O resultado é 60, 25 e 40, em três linhas. Se ambos estiverem vazios, o ciclo não escreve nenhuma média.

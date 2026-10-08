@@ -1,66 +1,65 @@
 ---
 title: Praticar funções e contratos
-description: Questões próprias com pistas, soluções e resultados verificáveis.
+description: Retorno, argumentos e composição de funções com contratos explícitos.
 section: exercicios
 editorial:
   basedOn: 2026/27
   sources:
+    - title: Problemas e resoluções 13, António Carvalho Brito e Carlos Bragança de Oliveira, 2022
+      url: https://moodle2627.up.pt/course/view.php?id=5341
     - title: Materiais da turma, Moodle 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=5341
-  coverage: Exercícios próprios sobre os conceitos da lição associada.
+  coverage: Retorno, argumentos e composição de funções com contratos explícitos.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
-  revision={1}
   id="return-print"
-  title={'Distinguir saída de retorno'}
-  explanation="/cadeiras/ct-iadp/funcoes/#devolver-um-resultado-com-desconto"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: '`None`',
-        correct: true,
-        explanation: 'A função não devolveu explicitamente um valor.',
-      },
-      {
-        text: '5',
-        correct: false,
-        explanation: '5 é escrito na saída, não devolvido.',
-      },
-      {
-        text: '`"5"`',
-        correct: false,
-        explanation: 'A representação impressa não é o valor de retorno.',
-      },
-    ],
-  }}
+  revision={2}
+  title="Reutilizar o retorno de uma função"
+  explanation="/cadeiras/ct-iadp/funcoes/#retorno-e-desconto"
+  answer={{ kind: 'self', checklist: ["Previ a impressão de 7.5 e o retorno None.", "Identifiquei TypeError na soma seguinte.", "Corrigi a função para devolver o produto e separei a apresentação."] }}
 >
-  <div>
-    Uma função executa <code>{'print(5)'}</code>, sem <code>{'return'}</code>.
-    Que valor recebe resultado =<code>{'funcao()'}</code>?
-  </div>
-  <div slot="hint">Uma função pode produzir saída e ter outro retorno.</div>
-  <div slot="hint-more">
-    Sem <code>{'return'}</code> explícito, Python devolve <code>{'None'}</code>.
-  </div>
-  <div slot="solution">
-    resultado recebe <code>{'None'}</code>. A consola mostra 5 como efeito da
-    execução.
-  </div>
-  <div slot="mistakes">
-    Confundir o que aparece no ecrã com o que pode ser usado no cálculo
-    seguinte.
-  </div>
+
+```python
+def total(quantidade, preco):
+    print(quantidade * preco)
+
+resultado = total(3, 2.5)
+print(resultado + 1)
+```
+
+Explica o que é escrito antes da falha, qual o valor de `resultado` e por que falha a última linha. Corrige o programa para somar um euro ao total calculado, mantendo o cálculo separado da apresentação.
+
+<div slot="hint">
+
+Segue a saída e o valor devolvido em separado.
+
+</div>
+
+<div slot="solution">
+
+A chamada escreve `7.5`, mas chega ao fim sem `return` e devolve `None`. A última linha tenta calcular `None + 1` e causa `TypeError` antes de o `print` escrever algo.
+
+```python
+def total(quantidade, preco):
+    return quantidade * preco
+
+resultado = total(3, 2.5)
+print(resultado + 1)  # 8.5
+```
+
+Agora o chamador recebe um número que pode usar noutra expressão. A função de cálculo não precisa de escolher como o número aparece no ecrã.
+
+</div>
 </Exercise>
 
 <Exercise
   revision={1}
   id="media-contrato"
   title={'Justificar entradas inválidas'}
-  explanation="/cadeiras/ct-iadp/funcoes/#testar-um-contrato-pequeno"
+  explanation="/cadeiras/ct-iadp/funcoes/#contratos-e-validação"
   answer={{
     kind: 'self',
     checklist: [
@@ -75,7 +74,6 @@ import Exercise from '../../../components/Exercise.astro';
     zero no caso vazio altera o significado da função.
   </div>
   <div slot="hint">A média divide a soma pelo número de observações.</div>
-  <div slot="hint-more">Sem observações, o denominador seria zero.</div>
   <div slot="solution">
     Verifica a entrada e lança <code>{'ValueError'}</code> se estiver vazia.
     Para entradas válidas, devolve <code>{'sum(valores) / len(valores)'}</code>.
@@ -125,9 +123,6 @@ import Exercise from '../../../components/Exercise.astro';
     Na definição, o asterisco recolhe os argumentos; na chamada, expande
     elementos.
   </div>
-  <div slot="hint-more">
-    A função deve receber três números, não uma única lista.
-  </div>
   <div slot="solution">
     <code>{'somar(*valores)'}</code> equivale aqui a{' '}
     <code>{'somar(2, 4, 6)'}</code>. Os nomes coincidentes dentro e fora da
@@ -137,4 +132,41 @@ import Exercise from '../../../components/Exercise.astro';
     Confundir passar uma coleção com passar os seus elementos ou usar a expansão
     de argumentos por nome para uma lista.
   </div>
+</Exercise>
+
+<Exercise
+  id="vogais-vizinhas"
+  title="Compor testes sem atravessar palavras"
+  explanation="/cadeiras/ct-iadp/funcoes/#vogais-entre-consoantes"
+  answer={{ kind: 'self', checklist: ["Obtive quatro ocorrências: Tod, day, wil e mov.", "Percorri apenas posições com dois vizinhos dentro da mesma palavra.", "Usei o contrato ASCII e tratei a frase vazia com contagem zero."] }}
+>
+
+Adaptação do problema 13.01. Com `eh_vogal` e `eh_consoante` da lição, escreve uma função que conta vogais com uma consoante imediatamente antes e outra imediatamente depois, dentro da mesma palavra. A entrada contém letras ASCII e espaços; `y` é tratado como consoante.
+
+Resolve para `"Today I will go to the movies"`, `"b a t"` e a frase vazia. Explica como os limites dos ciclos impedem contar letras de palavras diferentes.
+
+<div slot="hint">
+
+Divide em palavras antes de escolher os vizinhos de uma letra.
+
+</div>
+<div slot="solution">
+
+```python
+def contar(frase):
+    total = 0
+    for palavra in frase.split():
+        for i in range(1, len(palavra) - 1):
+            if (eh_consoante(palavra[i - 1])
+                    and eh_vogal(palavra[i])
+                    and eh_consoante(palavra[i + 1])):
+                total += 1
+    return total
+```
+
+A primeira frase dá 4, pelas vogais de `Tod`, `day`, `wil` e `mov`. Em `"b a t"`, cada palavra tem uma letra, logo o intervalo interior é vazio e o resultado é 0. A frase vazia não tem palavras e também dá 0.
+
+O primeiro índice possível é 1, que tem vizinho à esquerda; o último é `len(palavra) - 2`, que tem vizinho à direita. Nenhum teste atravessa um espaço. As funções auxiliares precisam de estar definidas antes da chamada a `contar`.
+
+</div>
 </Exercise>

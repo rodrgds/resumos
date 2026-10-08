@@ -20,28 +20,22 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import vendasCsv from '../../ct-iadp/vendas.csv?raw';
 
-Tens quatro vendas com cidade, produto, quantidade e preço. Para responder quanto vendeu Braga, tens de construir a tabela e depois escolher as linhas certas. A primeira decisão é se o enunciado fala de rótulos, posições ou valores, porque é ela que determina a operação.
+Para obter as vendas de Braga com pelo menos 5 unidades, precisamos de selecionar linhas pelos seus valores. Para pedir a segunda venda, usamos uma posição; para pedir a venda identificada pelo rótulo 30, usamos esse rótulo. São critérios diferentes.
 
-## Construir uma tabela
-
-Uma **Series** é uma sequência de valores com rótulos. Um **DataFrame** é uma tabela com colunas e um índice de linhas, e cada coluna pode ter um tipo diferente. A construção detalhada, os tipos e o alinhamento por rótulos estão em [Series e DataFrames](/cadeiras/ct-iadp/series-dataframes/). Aqui usamos essa base para selecionar.
+## Importação de vendas
 
 <CodePlayground
   language="python"
-  title={'Tabela de vendas'}
+  title="Importar vendas"
   files={{ 'vendas.csv': vendasCsv }}
   code={
     'import pandas as pd\nvendas = pd.read_csv("vendas.csv", sep=";", decimal=",")\nprint(vendas.to_string(index=False))\nprint(vendas.shape)\nprint(vendas.dtypes)'
   }
 />
 
-Há quatro observações e quatro colunas, por isso `shape` é `(4, 4)`. Cada linha representa uma venda, ou seja a unidade de análise desta tabela.
+A tabela tem quatro vendas e quatro colunas. A construção de tabelas e a diferença entre Series e DataFrame estão em [Series e DataFrames](/cadeiras/ct-iadp/series-dataframes/).
 
-`vendas["quantidade"]` devolve uma Series. `vendas[["quantidade"]]` devolve um DataFrame com uma coluna, por isso a forma e as operações seguintes mudam.
-
-`pd.Series([10, 20], index=["a", "b"])` associa 10 a `a` e 20 a `b`. Os rótulos participam nas operações, ou seja a série não é apenas um array com legenda.
-
-## Inspecionar antes de transformar
+## Inspeção de tabelas
 
 | Operação     | Pergunta                                          |
 | ------------ | ------------------------------------------------- |
@@ -65,23 +59,7 @@ vendas = pd.read_csv("vendas.csv", sep=";", decimal=",")
 
 No navegador, o ficheiro `vendas.csv` está na tab ao lado do programa. Num notebook local, guarda o mesmo conteúdo em `vendas.csv` no diretório de trabalho. Exporta com `df.to_csv("resultado.csv", index=False)` se o índice não fizer parte dos dados, porque sem esse argumento pandas escreve-o como mais uma coluna.
 
-## O alinhamento usa rótulos
-
-<CodePlayground
-  language="python"
-  title={'Somar pela cidade'}
-  code={
-    'import pandas as pd\na = pd.Series([10, 20], index=["Porto", "Braga"])\nb = pd.Series([1, 2], index=["Braga", "Porto"])\nprint((a + b).sort_index().to_dict())\nc = pd.Series([3], index=["Aveiro"])\nprint(a.add(c, fill_value=0).sort_index().to_dict())'
-  }
-/>
-
-Não somamos a primeira posição à primeira posição: somamos os valores da mesma cidade, ou seja Braga 21 e Porto 12. Quando um rótulo só está num dos lados, a operação normal produz um valor em falta nesse rótulo. `fill_value=0` só é adequado aqui porque interpretamos a ausência como nenhuma quantidade para acrescentar.
-
-Usa também `s.loc[rotulo]` e `s.iloc[posicao]` numa Series. `s[0]` pode procurar o rótulo inteiro 0, por isso exemplos antigos que o usavam para a primeira posição devem escrever `s.iloc[0]`.
-
-## Tornar o índice explícito
-
-`df.set_index("codigo")` devolve uma tabela com essa coluna como índice. `reset_index()` devolve o índice para uma coluna e cria posições de zero em diante. Um índice pode ter valores repetidos, por isso verifica `df.index.is_unique` ou `df["codigo"].is_unique` quando o problema exige uma chave única, em vez de o assumir.
+O índice e o alinhamento por rótulos estão em [Series e DataFrames](/cadeiras/ct-iadp/series-dataframes/#alinhamento-por-rótulos). Aqui, `loc` usa esses rótulos para selecionar.
 
 ## Rótulos com loc, posições com iloc
 
@@ -98,7 +76,7 @@ Imagina uma tabela com índices 10, 20 e 30 e coluna `x` com 2, 4 e 6. `df.loc[2
 
 O slice de `iloc` exclui o limite final. O slice de rótulos de `loc` inclui normalmente ambos os extremos existentes.
 
-## Construir uma máscara
+## Máscaras booleanas
 
 <CodePlayground
   language="python"
@@ -110,7 +88,7 @@ O slice de `iloc` exclui o limite final. O slice de rótulos de `loc` inclui nor
 
 Só a linha 30 cumpre ambas as condições, pelo que o resultado contém pão com quantidade 5. Uma máscara deve ter a forma e os rótulos adequados à tabela, porque uma máscara construída noutra tabela pode alinhar por rótulos ou dar erro.
 
-## Combinar condições
+## Combinação de condições
 
 Em Series, usa `&` para e, `|` para ou e `~` para negar, e coloca cada comparação entre parênteses. `and` e `or` tentam obter um único valor lógico da Series e dão erro por ambiguidade.
 
@@ -121,7 +99,7 @@ mascara = df["quantidade"].between(2, 5)
 
 As duas expressões incluem os extremos 2 e 5. `df["cidade"].isin(["Porto", "Braga"])` testa pertença a um conjunto de valores.
 
-## Selecionar sem mudar os dados
+## Seleção e atribuição
 
 `df.loc[mascara, colunas]` devolve uma seleção. Para alterares a tabela original, atribui numa operação:
 
@@ -133,6 +111,6 @@ A alteração só faz sentido se zero for a correção definida no problema. Evi
 
 Quando queres uma tabela independente, usa `filtradas = df.loc[mascara].copy()`. Assim o destino da alteração fica explícito.
 
-## Selecionar um valor
+## Células com at e iat
 
 `df.at[rotulo, coluna]` procura uma célula por rótulos. `df.iat[linha, coluna]` procura-a por posições. São úteis quando esperas um escalar, ou seja não substituem uma máscara para selecionar várias linhas.

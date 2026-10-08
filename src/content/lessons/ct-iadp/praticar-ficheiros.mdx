@@ -1,70 +1,18 @@
 ---
 title: Praticar leitura de ficheiros
-description: Questões próprias com pistas, soluções e resultados verificáveis.
+description: CSV com aspas, média sequencial e ficheiros de comprimentos diferentes.
 section: exercicios
 editorial:
   basedOn: 2026/27
   sources:
+    - title: Problemas e resoluções 14, António Carvalho Brito e Carlos Bragança de Oliveira, 2022
+      url: https://moodle2627.up.pt/course/view.php?id=5341
     - title: Materiais da turma, Moodle 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=5341
-  coverage: Exercícios próprios sobre os conceitos da lição associada.
+  coverage: CSV com aspas, média sequencial e ficheiros de comprimentos diferentes.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
-
-<Exercise
-  revision={1}
-  id="csv-total"
-  title={'Interpretar quantidades e preços'}
-  explanation="/cadeiras/ct-iadp/ficheiros/#linhas-e-campos"
-  answer={{ kind: 'number', value: 6.6, tolerance: 0.001 }}
->
-  <div>
-    Um CSV tem duas vendas: 2 unidades a 1,50 euros e 3 unidades a 1,20 euros.
-    Qual é a faturação em euros?
-  </div>
-  <div slot="hint">Calcula quantidade vezes preço em cada linha.</div>
-  <div slot="hint-more">As parcelas são 3,00 e 3,60.</div>
-  <div slot="solution">
-    A faturação é 6,60 euros. Converte os campos de texto para números antes de
-    multiplicar.
-  </div>
-  <div slot="mistakes">Somar os preços unitários ou multiplicar strings.</div>
-</Exercise>
-
-<Exercise
-  revision={1}
-  id="csv-separador"
-  title={'Ler campos com aspas'}
-  explanation="/cadeiras/ct-iadp/ficheiros/#linhas-e-campos"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Identifiquei que a vírgula dentro das aspas pertence ao campo.',
-      'Escolhi `csv.reader` ou `csv.DictReader`.',
-      'Conservei a necessidade de converter os campos numéricos.',
-    ],
-  }}
->
-  <div>
-    Por que <code>{'split(",")'}</code> não é suficiente para ler uma linha CSV
-    com um nome entre aspas que contém uma vírgula?
-  </div>
-  <div slot="hint">CSV tem regras para aspas e separadores.</div>
-  <div slot="hint-more">
-    Uma separação literal não distingue a vírgula de um campo da vírgula entre
-    campos.
-  </div>
-  <div slot="solution">
-    O módulo <code>{'csv'}</code> interpreta aspas e escapes e mantém o nome num
-    único campo. Depois da leitura, os valores numéricos ainda precisam de
-    conversão.
-  </div>
-  <div slot="mistakes">
-    Afirmar que todo o CSV usa sempre vírgula ou que <code>{'DictReader'}</code>{' '}
-    devolve automaticamente números.
-  </div>
-</Exercise>
 
 <Exercise
   id="ler-csv-quantidades"
@@ -130,7 +78,7 @@ import Exercise from '../../../components/Exercise.astro';
   id="media-sequencial"
   revision={1}
   title="Calcular a média sem guardar a lista"
-  explanation="/cadeiras/ct-iadp/ficheiros/#ler-em-sequência-sem-guardar-tudo"
+  explanation="/cadeiras/ct-iadp/ficheiros/#média-por-leitura-sequencial"
   answer={{
     kind: 'code',
     language: 'python',
@@ -182,4 +130,39 @@ import Exercise from '../../../components/Exercise.astro';
     um total fixo em vez da contagem lida; esquecer o fim do ficheiro e as
     linhas em branco.
   </div>
+</Exercise>
+
+<Exercise
+  id="ficheiros-media-pares"
+  title="Continuar depois do ficheiro mais curto"
+  explanation="/cadeiras/ct-iadp/ficheiros/#dois-ficheiros-de-comprimentos-diferentes"
+  answer={{ kind: 'self', checklist: ["Obtive 60, 25 e 40 nas três linhas.", "Continuei até ambos os ficheiros terminarem, sem guardar arrays.", "Distingui fim de ficheiro, linha vazia e valor zero."] }}
+>
+
+Adaptação do problema 14.03. O primeiro ficheiro tem 20 e 40, um número por linha. O segundo tem 100, 10 e 80. Escreve o processamento sequencial que grava a média de cada par num terceiro ficheiro. Quando uma entrada já terminou, o enunciado manda usar zero.
+
+Indica o resultado e explica por que `zip` perde uma linha. Não guardes arrays. Assume linhas numéricas não vazias e um destino diferente das entradas. O que muda se o primeiro ficheiro estiver vazio?
+
+<div slot="hint">
+
+A condição de paragem depende de ambos os ficheiros, não apenas do primeiro.
+
+</div>
+<div slot="solution">
+
+```python
+from itertools import zip_longest
+
+with open("primeiro.txt", encoding="utf-8") as a, \
+        open("segundo.txt", encoding="utf-8") as b, \
+        open("medias.txt", "w", encoding="utf-8") as destino:
+    for linha_a, linha_b in zip_longest(a, b, fillvalue="0"):
+        destino.write(f"{(float(linha_a) + float(linha_b)) / 2}\n")
+```
+
+As médias são `(20 + 100)/2 = 60`, `(40 + 10)/2 = 25` e `(0 + 80)/2 = 40`. `zip` termina ao esgotar a primeira entrada e não processa 80. `zip_longest` continua com a substituição definida.
+
+Se o primeiro ficheiro estiver vazio, o resultado é 50, 5 e 40. Um zero escrito é uma observação numérica; fim de ficheiro significa que não há outra linha; uma linha vazia viola a hipótese e não deve ser confundida com nenhum deles. Só usamos zero para o fim de uma entrada porque o problema o exige.
+
+</div>
 </Exercise>

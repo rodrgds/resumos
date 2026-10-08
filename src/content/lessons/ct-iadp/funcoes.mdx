@@ -8,6 +8,8 @@ practices:
 editorial:
   basedOn: 2026/27
   sources:
+    - title: Problemas e resoluções 13, António Carvalho Brito e Carlos Bragança de Oliveira, 2022
+      url: https://moodle2627.up.pt/course/view.php?id=5341
     - title: Programa e materiais da turma, Moodle 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=5341
     - title: Módulo Moodle 41948, slides observados
@@ -22,11 +24,9 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Sabes decidir, repetir e guardar valores em coleções. Agora precisas de dar um nome a um cálculo para o reutilizares com entradas diferentes.
+O total de 3 unidades a 2,50 euros é 7,50 euros. Uma função dá um nome a esse cálculo e recebe os valores de cada compra, para o reutilizar sem copiar a multiplicação.
 
-Na definição, os nomes entre parênteses chamam-se **parâmetros**. Na chamada, os valores fornecidos chamam-se **argumentos**. O `return` devolve o resultado ao código que chamou.
-
-## Uma primeira função com dois parâmetros
+## Definição e chamada
 
 ```python
 def total_simples(quantidade, preco):
@@ -37,7 +37,7 @@ print(total_simples(3, 2.5))  # 7.5
 
 A chamada associa 3 a `quantidade` e 2.5 a `preco`. A função calcula e devolve 7.5. Depois passamos a uma versão com desconto.
 
-## Devolver um resultado com desconto
+## Retorno e desconto
 
 Vamos calcular o preço de uma compra com desconto. O desconto é uma fração entre 0 e 1. `0.10` significa 10 por cento.
 
@@ -49,7 +49,7 @@ Vamos calcular o preço de uma compra com desconto. O desconto é uma fração e
   }
 />
 
-O `return` termina a chamada e entrega o valor. Se uma função chega ao fim sem `return`, devolve `None`.
+Na chamada com desconto, o fator é `1 - 0.10 = 0.90`: pagamos 90% de 7,50 euros, ou 6,75 euros. Desconto zero mantém o total e desconto um dá zero. O `return` termina a chamada e entrega o valor. Se uma função chega ao fim sem `return`, devolve `None`.
 
 `print` mostra algo, mas não devolve esse valor. Uma função que apenas escreve 7.5 não permite somar o resultado a outra compra. Mantém o cálculo separado da apresentação quando precisas de reutilizar o valor.
 
@@ -111,7 +111,7 @@ def juntar(valor, valores=None):
 
 Agora cada chamada que omite `valores` cria uma lista nova. `def juntar(valor, valores=[]):` reutilizaria a mesma lista entre chamadas.
 
-## Ler e alterar um nome global
+## Nomes locais e globais
 
 Uma função pode ler um nome definido no módulo. Uma atribuição dentro da função cria normalmente um nome local, mesmo quando existe um global com o mesmo nome. `global` declara que a atribuição deve alterar o nome do módulo.
 
@@ -127,7 +127,7 @@ print(novo_limite(), limite)  # 20 10
 
 Se acrescentares `global limite` antes da atribuição na função, o segundo valor passa a 20. Ler um nome local antes da sua atribuição pode causar `UnboundLocalError`. Passar o limite como parâmetro e devolver o novo valor torna a dependência visível e evita depender da ordem de chamadas.
 
-## Testar um contrato pequeno
+## Contratos e validação
 
 Um contrato diz que entradas são válidas e que resultado deve ser devolvido. Para a média, vamos exigir uma sequência não vazia de números:
 
@@ -143,15 +143,15 @@ Os testes verificam uma observação, vários valores, sinais diferentes e o cas
 
 No exemplo, `raise ValueError(...)` interrompe a função e assinala uma entrada inválida. O bloco `try` executa a chamada; `except ValueError` trata esse erro; o `else` executa apenas se não houve essa exceção. `assert condicao` verifica uma expectativa e lança `AssertionError` se for falsa. É útil para conferir estes exemplos, mas pode ser desativado quando Python corre com otimização. Para validar entradas num programa que vai ser usado por outros, prefere uma condição e `raise`.
 
-## Importar um módulo
+## Imports e módulos
 
 Um módulo reúne nomes relacionados. `import math` permite usar `math.sqrt(9)`. `from math import sqrt` permite usar `sqrt(9)`. `import numpy as np` dá um nome curto ao módulo, não copia os seus dados.
 
 Não chames ao teu ficheiro `pandas.py` ou `math.py`, porque pode esconder o módulo que queres importar. Num projeto com vários ficheiros, executa o programa a partir da pasta indicada e mantém os imports reproduzíveis.
 
-## Compor duas funções pequenas
+## Composição de funções
 
-A turma pede funções que se usam umas às outras, como vogal e consoante. Primeiro define cada teste isolado. Depois compõe:
+O problema 13.01 usa funções de vogal e consoante para procurar vogais entre duas consoantes da mesma palavra. Aqui consideramos apenas as letras de `a` a `z` e as vogais `a`, `e`, `i`, `o`, `u`, sem acentos. Primeiro define cada teste isolado:
 
 ```python
 def eh_vogal(letra):
@@ -166,4 +166,24 @@ print(eh_consoante("b"))  # True
 print(eh_consoante("3"))  # False
 ```
 
-`eh_consoante` reutiliza `eh_vogal` em vez de repetir a lista de vogais. Testa cada função isolada antes de a compores. É o padrão do problema 13.01.
+`eh_consoante` reutiliza `eh_vogal` em vez de repetir a lista de vogais. Testa cada função isolada antes de a compores. Numa palavra, só as posições de 1 até `len(palavra) - 2` têm dois vizinhos. Em `"Today"`, as vogais de `"Tod"` e `"day"` satisfazem o teste; em `"go"`, nenhuma posição tem dois vizinhos. A procura deve reiniciar em cada palavra, para não ligar letras separadas por espaços.
+
+## Vogais entre consoantes
+
+Continuando o problema 13.01, usamos `eh_vogal` e `eh_consoante` para decidir sobre cada posição interior de cada palavra. A entrada contém apenas letras ASCII e espaços; cada teste recebe um carácter.
+
+```python
+def contar_vogais_entre_consoantes(frase):
+    total = 0
+    for palavra in frase.split():
+        for i in range(1, len(palavra) - 1):
+            if (eh_consoante(palavra[i - 1])
+                    and eh_vogal(palavra[i])
+                    and eh_consoante(palavra[i + 1])):
+                total += 1
+    return total
+
+print(contar_vogais_entre_consoantes("Today I will go to the movies"))  # 4
+```
+
+Os três testes usam a mesma posição `i`: vizinho esquerdo, centro e vizinho direito. As ocorrências são `Tod`, `day`, `wil` e `mov`. O `y` é consoante segundo o contrato dado, mesmo quando a sua função na palavra inglesa é outra. Palavras de uma ou duas letras têm intervalo interior vazio e não acrescentam ocorrências.

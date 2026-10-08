@@ -20,90 +20,13 @@ editorial:
       url: https://dateutil.readthedocs.io/en/stable/relativedelta.html
     - title: pandas, séries temporais
       url: https://pandas.pydata.org/docs/user_guide/timeseries.html
-    - title: pandas, texto
-      url: https://pandas.pydata.org/docs/user_guide/text.html
-    - title: pandas, categorias
-      url: https://pandas.pydata.org/docs/user_guide/categorical.html
-  coverage: Texto e categorias em pandas, calendar, time, datetime, dateutil, conversão pandas, fusos e agregação temporal.
+  coverage: calendar, time, datetime, dateutil, conversão pandas, fusos e agregação temporal.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import vendasDatas from '../../ct-iadp/vendas-datas.csv?raw';
 
-Sabes selecionar, limpar e resumir tabelas. Agora precisas de tratar datas sem confundir valores parecidos.
-
-Uma data identifica um dia. Uma data e hora pode identificar um instante. Uma duração mede um intervalo. Misturar estes conceitos produz erros, sobretudo ao somar meses ou atravessar mudanças de hora. O tratamento de texto e categorias está desenvolvido em [Texto e categorias](/cadeiras/ct-iadp/texto-categorias/).
-
-## Texto e categorias nesta página
-
-Esta secção resume o essencial. O desenvolvimento completo, com normalização, expressões regulares, categorias ordenadas e `cut`, está em [Texto e categorias](/cadeiras/ct-iadp/texto-categorias/).
-
-## Métodos de strings numa coluna
-
-<CodePlayground
-  language="python"
-  title={'Normalizar sem inventar dados'}
-  code={
-    'import pandas as pd\ncidades = pd.Series([" Porto ", "BRAGA", None, "porto"], dtype="string")\nlimpas = cidades.str.strip().str.lower()\nprint(limpas.to_list())\nprint(limpas.str.contains("port", regex=False, na=False).to_list())\nprint(limpas.value_counts(dropna=False).to_string())'
-  }
-/>
-
-As strings conhecidas ficam `porto`, `braga` e `porto`; a ausência mantém-se. `na=False` define que as linhas sem texto não são selecionadas.
-
-A propriedade `.str` aplica métodos de texto aos elementos da Series. `str.len()` calcula o comprimento e `str.split(";", expand=True)` divide campos em colunas separadas.
-
-## Texto literal e expressões regulares
-
-> Resumo: usa `regex=False` para texto literal e declara `na=False` quando ausências não devem ser selecionadas. Ver [Texto e categorias](/cadeiras/ct-iadp/texto-categorias/#procurar-texto-literal).
-
-`str.contains` pode interpretar o padrão como uma expressão regular. Um ponto numa expressão regular significa normalmente "qualquer carácter", não um ponto literal, por isso indica `regex=False` para procurar texto literal.
-
-```python
-codigos = pd.Series(["PT-001", "PT-014", "sem código"], dtype="string")
-extraidos = codigos.str.extract(r"^PT-(\d{3})$", expand=False)
-```
-
-O padrão exige o prefixo `PT-`, exatamente três algarismos e nenhum texto extra. O resultado conserva os algarismos como texto, incluindo zeros iniciais; a linha sem correspondência fica em falta.
-
-## Categorias
-
-> Resumo: declara categorias e ordem com `CategoricalDtype`. Códigos internos não são medidas. Ver [Texto e categorias](/cadeiras/ct-iadp/texto-categorias/#categorias-ordenadas).
-
-Uma coluna categórica representa valores de um conjunto de categorias. Pode reduzir repetição e permitir uma ordem explícita. Converter uma string para categoria não corrige erros ortográficos.
-
-<CodePlayground
-  language="python"
-  title={'Dar ordem às categorias'}
-  code={
-    'import pandas as pd\ntipo = pd.CategoricalDtype(categories=["baixo", "médio", "alto"], ordered=True)\nprioridades = pd.Series(["alto", "baixo", "médio", "baixo"], dtype=tipo)\nprint(prioridades.sort_values().to_list())\nprint((prioridades > "médio").to_list())'
-  }
-/>
-
-A ordem é baixo, baixo, médio, alto. `serie.cat.categories` lista categorias possíveis. `.cat.codes` mostra códigos internos, mas esses códigos não são medidas numéricas.
-
-## Converter medidas em intervalos
-
-> Resumo: declara limites e inclusão de extremos em `pd.cut`. Ver [Texto e categorias](/cadeiras/ct-iadp/texto-categorias/#converter-medidas-em-intervalos).
-
-`pd.cut` transforma números em categorias por intervalo. Declara os limites e quais dos extremos entram em cada intervalo:
-
-<CodePlayground
-  language="python"
-  title="Classificar quantidades por intervalo"
-  code={
-    'import pandas as pd\nquantidades = pd.Series([0, 9, 10, 19, 20, None])\ngrupos = pd.cut(quantidades, bins=[0, 10, 20], right=False, labels=["0–9", "10–19"])\nprint(grupos.astype("string").to_list())\nprint(grupos.isna().to_list())'
-  }
-/>
-
-Com `right=False`, os intervalos são `[0, 10)` e `[10, 20)`: 10 fica no segundo e 20 fica de fora. Os nomes dos grupos devem corresponder a estas condições.
-
-## Categorias não observadas e ausências
-
-> Resumo: combinações não observadas pedem `observed=True` ou `False` explícito. Ver [Texto e categorias](/cadeiras/ct-iadp/texto-categorias/#categorias-não-observadas-e-ausências).
-
-Uma categoria pode existir no tipo sem aparecer nos dados. Ao agrupar categorias, indica `observed=True` para considerar apenas combinações observadas ou `observed=False` quando queres também categorias definidas sem observações.
-
-Um valor fora das categorias declaradas pode transformar-se em ausência durante a conversão. Confere as strings antes e o número de nulos depois.
+Uma venda em `"03/04/2026"` precisa de uma convenção para sabermos se ocorreu em março ou abril. Depois da conversão, podemos ordenar datas e somar vendas por dia. Uma data, um instante e uma duração representam objetos diferentes, sobretudo quando atravessamos meses ou mudanças de hora.
 
 ## Tipos da biblioteca padrão
 
@@ -192,5 +115,11 @@ print(inicio + pd.Timedelta(days=1))
 print(inicio + pd.DateOffset(days=1))
 # 2026-10-25 16:00:00+00:00
 ```
+
+| Operação                   | Hora de Lisboa      | Instante UTC | Tempo decorrido |
+| -------------------------- | ------------------- | ------------ | --------------- |
+| Início                     | 24/10, 16:00, UTC+1 | 24/10, 15:00 | 0 h             |
+| Mais 24 horas              | 25/10, 15:00, UTC+0 | 25/10, 15:00 | 24 h            |
+| Mesma hora no dia seguinte | 25/10, 16:00, UTC+0 | 25/10, 16:00 | 25 h            |
 
 `Timedelta` soma 24 horas exatas. `DateOffset` conserva a hora civil do dia seguinte. É a distinção ensinada no notebook de datas da turma. Escolhe conforme o problema mede tempo decorrido ou compromisso de calendário.

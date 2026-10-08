@@ -1,36 +1,16 @@
 ---
 title: Praticar grupos e agregações
-description: Questões próprias com pistas, soluções e resultados verificáveis.
+description: Transformações por grupo, chaves ausentes e totais parciais.
 section: exercicios
 editorial:
   basedOn: 2026/27
   sources:
     - title: Materiais da turma, Moodle 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=5341
-  coverage: Exercícios próprios sobre os conceitos da lição associada.
+  coverage: Transformações por grupo, chaves ausentes e totais parciais.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
-
-<Exercise
-  revision={1}
-  id="grupo-count"
-  title={'Contar observações incompletas'}
-  explanation="/cadeiras/ct-iadp/agrupamentos/#size-count-e-múltiplas-chaves"
-  answer={{ kind: 'number', value: 2, tolerance: 0 }}
->
-  <div>
-    Um grupo tem três linhas, mas uma célula da coluna produto está em falta.
-    Quanto vale <code>{'count()'}</code> nessa coluna?
-  </div>
-  <div slot="hint">count conta valores conhecidos da coluna escolhida.</div>
-  <div slot="hint-more">Há três linhas e dois produtos conhecidos.</div>
-  <div slot="solution">
-    count vale 2. size valeria 3, porque conta linhas independentemente dessa
-    ausência.
-  </div>
-  <div slot="mistakes">Dizer que as duas funções são sempre equivalentes.</div>
-</Exercise>
 
 <Exercise
   revision={1}
@@ -65,9 +45,6 @@ import Exercise from '../../../components/Exercise.astro';
     escolha?
   </div>
   <div slot="hint">O resultado deve ter uma posição por venda.</div>
-  <div slot="hint-more">
-    <code>{'transform'}</code> conserva as linhas; agg reduz aos grupos.
-  </div>
   <div slot="solution">
     Usa <code>{'transform'}</code> e atribui o resultado a uma coluna nova.
     Depois confere que as vendas da mesma cidade recebem o mesmo total.
@@ -79,40 +56,31 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="grupo-chave-medida-ausentes"
-  revision={1}
-  title="Separar ausência da chave e da medida"
+  revision={2}
+  title="Conservar grupos e contar dados conhecidos"
   explanation="/cadeiras/ct-iadp/agrupamentos/#size-count-e-múltiplas-chaves"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Mantive um grupo para a cidade desconhecida com `dropna=False`.',
-      'Exigi pelo menos uma medida conhecida com `sum(min_count=1)`.',
-      'Obtive Porto 2, Braga sem total conhecido e cidade desconhecida 5.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ["Conservei a cidade desconhecida com dropna=False.", "Obtive Porto 2, Braga sem total conhecido e cidade desconhecida 5.", "Distingui size=2 de count=1 para as quantidades do Porto."] }}
 >
-  <div>
-    As cidades são Porto, Braga e uma cidade desconhecida. As quantidades
-    correspondentes são 2, uma quantidade ausente e 5. Escreve uma agregação que
-    conserve todas as cidades sem inventar um total zero para Braga.
-  </div>
-  <div slot="hint">
-    Um argumento trata as chaves; outro trata os valores a somar.
-  </div>
-  <div slot="hint-more">
-    <code>{'groupby(dropna=False)'}</code> conserva a chave ausente.{' '}
-    <code>{'sum(min_count=1)'}</code> exige uma medida conhecida.
-  </div>
-  <div slot="solution">
-    Usa{' '}
-    <code>
-      {'df.groupby("cidade", dropna=False)["quantidade"].sum(min_count=1)'}
-    </code>
-    . Porto soma 2, Braga continua sem total conhecido e o grupo com cidade
-    desconhecida soma 5. A política não identifica a cidade que falta.
-  </div>
-  <div slot="mistakes">
-    Preencher todas as ausências com zero ou tratar{' '}
-    <code>{'dropna=False'}</code> como uma regra sobre as quantidades.
-  </div>
+
+As linhas são `(Porto, 2)`, `(Porto, quantidade ausente)`, `(Braga, quantidade ausente)` e `(cidade desconhecida, 5)`.
+
+Escreve uma agregação que conserve todas as cidades sem inventar um total zero para Braga. Indica os totais conhecidos. Para Porto, compara `size` do grupo e `count` da coluna quantidade. O total conhecido de Porto prova que vendeu exatamente duas unidades?
+
+<div slot="hint">
+
+A ausência da chave afeta o grupo; a ausência da quantidade afeta a medida.
+
+</div>
+
+<div slot="solution">
+
+```python
+resumo = df.groupby("cidade", dropna=False)["quantidade"].sum(min_count=1)
+```
+
+`dropna=False` conserva um grupo para a chave desconhecida. `min_count=1` exige pelo menos uma quantidade conhecida. Assim, Porto soma 2, Braga fica sem total conhecido e a cidade desconhecida soma 5.
+
+Porto tem `size=2` linhas e `count=1` quantidade conhecida. O 2 é a soma conhecida, não uma garantia de faturação ou quantidade completa. A segunda venda pode acrescentar unidades. Para apresentar um total completo, precisamos de recuperar o dado em falta ou declarar que o resultado é parcial.
+
+</div>
 </Exercise>

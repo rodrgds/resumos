@@ -14,70 +14,19 @@ editorial:
       url: https://pandas.pydata.org/docs/user_guide/groupby.html
     - title: pandas, reestruturação
       url: https://pandas.pydata.org/docs/user_guide/reshaping.html
-  coverage: Reestruturar tabelas longas e largas, separar por chaves, calcular agregações, pivot_table e distinguir agg de transform.
+  coverage: Separar por chaves, agregar, transformar e filtrar grupos, e calcular tabelas dinâmicas.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
-import longaCsv from '../../ct-iadp/longa.csv?raw';
 import vendasCsv from '../../ct-iadp/vendas.csv?raw';
 import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
 
-Sabes juntar tabelas e escolher linhas. Agora precisas de passar de muitas vendas a uma linha por grupo com um resumo.
+Nas quatro vendas, as quantidades são 2 e 3 no Porto, 5 e 4 em Braga. O relatório precisa de uma linha por cidade. Agrupar reúne vendas com a mesma cidade; agregar reduz as suas quantidades a um total.
 
-Queremos o número total de unidades por cidade. Cada venda tem uma quantidade, mas o relatório precisa de uma linha por cidade. Agrupar identifica as vendas da mesma cidade. Agregar reduz essas vendas a um resultado.
+A passagem entre formatos longo e largo está em [Reestruturar tabelas](/cadeiras/ct-iadp/reestruturar-tabelas/). Aqui conservamos o formato de uma linha por venda até ao cálculo do resumo.
 
-Antes disso, a tabela precisa de ter a forma certa. Esse passo está desenvolvido em [Reestruturar tabelas](/cadeiras/ct-iadp/reestruturar-tabelas/). Aqui fica o essencial para seguires os grupos.
-
-## Longo para largo com pivot
-
-<CodePlayground
-  language="python"
-  title={'Mudar a forma'}
-  files={{ 'longa.csv': longaCsv }}
-  code={
-    'import pandas as pd\nlonga = pd.read_csv("longa.csv", sep=";")\nlarga = longa.pivot(index="cidade", columns="produto", values="quantidade")\nprint(larga.to_string())\nreconstruida = larga.reset_index().melt(id_vars="cidade", var_name="produto", value_name="quantidade")\nprint(reconstruida.sort_values(["cidade", "produto"]).to_string(index=False))'
-  }
-/>
-
-`index` escolhe os identificadores das linhas, `columns` os valores que se tornam nomes de colunas e `values` a medida de cada célula.
-
-Para `pivot`, cada par cidade-produto precisa de um único valor. Se houver duas vendas de pão no Porto, a posição tem dois candidatos e pandas lança um erro, por isso a tabela precisa primeiro de uma decisão: somar as vendas, calcular a média ou conservar outra dimensão que as distinga.
-
-## Largo para longo com melt
-
-`melt` conserva as colunas `id_vars` e transforma as restantes em pares variável-valor. `var_name` dá nome à coluna que guarda o nome antigo da medida e `value_name` à coluna que guarda o valor.
-
-```python
-larga_reset = larga.reset_index()
-longa2 = larga_reset.melt(
-    id_vars="cidade",
-    value_vars=["pão", "leite"],
-    var_name="produto",
-    value_name="quantidade",
-)
-```
-
-Cada linha inicial origina duas linhas, uma por produto. Não duplicámos observações da mesma medida: passámos a identificar a medida numa coluna. O exemplo completo, com a tabela inicial e o resultado, está em [Reestruturar tabelas](/cadeiras/ct-iadp/reestruturar-tabelas/#largo-para-longo-com-melt).
-
-## stack e unstack
-
-`stack` move um nível dos nomes de colunas para o índice de linhas. `unstack` move um nível do índice para as colunas. Isto produz ou usa um **MultiIndex**, um índice com vários níveis.
-
-```python
-serie = longa.set_index(["cidade", "produto"])["quantidade"]
-larga = serie.unstack("produto")
-```
-
-Agora o par cidade-produto identifica cada valor da Series. Ao deslocar produto para as colunas, cidade fica nas linhas.
-
-## O que não é uma reestruturação
-
-`df.T` troca linhas por colunas, mas não resolve uma chave duplicada nem calcula totais. `rename` muda nomes sem mudar a disposição. `merge` associa observações entre tabelas.
-
-Antes de escolher a operação, escreve que colunas identificam uma observação e qual é a medida. Depois confere o número de valores e uma célula concreta no resultado.
-
-## Separar, calcular e reunir
+## Agregação por cidade
 
 <CodePlayground
   language="python"
@@ -126,6 +75,15 @@ vendas["proporcao"] = vendas["quantidade"] / total_cidade
 
 No Porto, as proporções são `2/5` e `3/5`. Em Braga, `5/9` e `4/9`.
 
+| Venda    | Quantidade | Total da cidade | Proporção |
+| -------- | ---------- | --------------- | --------- |
+| 0, Porto | 2          | 5               | 2/5       |
+| 1, Porto | 3          | 5               | 3/5       |
+| 2, Braga | 5          | 9               | 5/9       |
+| 3, Braga | 4          | 9               | 4/9       |
+
+O agregado teria duas linhas, uma por cidade. A transformação tem quatro e repete o total do grupo no índice de cada venda. Dentro de cada cidade, as proporções somam 1.
+
 ## Tabela dinâmica com pivot_table
 
 ```python
@@ -142,7 +100,7 @@ Cada célula soma as quantidades de uma combinação cidade-produto. `pivot_tabl
 
 `fill_value=0` transforma uma combinação sem vendas em zero depois da agregação. Isto exige interpretar a ausência como nenhuma venda, não como quantidade desconhecida.
 
-## Filtrar grupos inteiros
+## Filtragem de grupos
 
 `groupby.filter` conserva ou remove grupos completos, consoante uma condição sobre o grupo:
 
