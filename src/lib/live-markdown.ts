@@ -23,7 +23,6 @@ import {
   markdown,
   markdownLanguage,
   markdownKeymap,
-  insertNewlineContinueMarkupCommand,
 } from '@codemirror/lang-markdown';
 import {
   indentUnit,
@@ -36,6 +35,7 @@ import {
   indentMarkdownList,
   outdentMarkdownList,
   exitMarkdownList,
+  continueMarkdownList,
 } from './markdown-commands';
 import { visit, SKIP } from 'unist-util-visit';
 import type { Root, RootContent } from 'mdast';
@@ -43,6 +43,8 @@ import {
   parsePersonalMarkdown,
   renderPersonalBlock,
 } from './personal-markdown';
+import { parseTaskPrefix } from './task-states';
+import { TaskWidget } from './task-widget';
 
 const refreshPreview = StateEffect.define<boolean>();
 
@@ -77,6 +79,12 @@ export function liveMarkdown(
 ) {
   let focused = false;
   let tree: Root = parsePersonalMarkdown(options.markdown);
+  const taskIcons = new Map(
+    Array.from(
+      document.querySelector<HTMLTemplateElement>('#note-task-icons')?.content
+        .children || [],
+    ).map((icon) => [(icon as SVGElement).dataset.taskState!, icon] as const),
+  );
   class Preview extends WidgetType {
     constructor(
       readonly node: RootContent,
@@ -170,7 +178,7 @@ export function liveMarkdown(
           state.doc.lineAt(pos).from,
         ),
       );
-    visit(tree, (node, _index, parent) => {
+    visit(tree, (node) => {
       const from = node.position?.start.offset;
       const to = node.position?.end.offset;
       if (from === undefined || to === undefined || from === to) return;
@@ -205,10 +213,9 @@ export function liveMarkdown(
       if (node.type === 'inlineMath') mark(from, to, 'code');
       if (node.type === 'heading') {
         const underline = state.doc.lineAt(to);
-        // CommonMark reads an unfinished nested '-' as a Setext underline.
-        // Keep the parent item as body text until the reader fills the child.
+        // A lone '-' is an unfinished bullet in live preview. Longer Setext
+        // underlines remain headings, and the saved Markdown stays unchanged.
         if (
-          parent?.type === 'listItem' &&
           node.depth === 2 &&
           underline.number > state.doc.lineAt(from).number &&
           /^(?:\s*>\s*)*\s*-\s*$/.test(underline.text)
@@ -265,11 +272,32 @@ export function liveMarkdown(
       }
       if (node.type === 'listItem') {
         const first = state.doc.lineAt(from);
-        const marker = /^(\s*)([-+*]|\d+[.)])\s+(\[[ xX]\]\s+)?/.exec(
-          state.sliceDoc(from, first.to),
-        );
+        const marker =
+          /^(\s*)([-+*]|\d+[.)])[ \t]+(?:\[(.)\](?:[ \t]+|$))?/.exec(
+            state.sliceDoc(from, first.to),
+          );
         if (marker) {
           line(from, 'note-list-line');
+          const task = parseTaskPrefix(state.sliceDoc(from, first.to));
+          if (task) {
+            const contentFrom = from + task.length;
+            const statusFrom = from + task.statusOffset;
+            if (!editing(from, contentFrom - 1)) {
+              ranges.push(
+                Decoration.replace({
+                  widget: new TaskWidget(
+                    task.state,
+                    statusFrom,
+                    state.sliceDoc(contentFrom, first.to),
+                    taskIcons.get(task.state),
+                  ),
+                }).range(from, contentFrom),
+              );
+            } else mark(from, contentFrom, 'span', 'note-list-marker');
+            if (task.state === '-')
+              mark(contentFrom, first.to, 's', 'note-task-canceled');
+            return;
+          }
           if (
             !editing(from, first.to) &&
             !marker[3] &&
@@ -400,7 +428,7 @@ export function liveMarkdown(
           { key: 'Enter', run: exitMarkdownList },
           {
             key: 'Enter',
-            run: insertNewlineContinueMarkupCommand({ nonTightLists: false }),
+            run: continueMarkdownList,
           },
           ...markdownKeymap.filter((binding) => binding.key !== 'Enter'),
           ...defaultKeymap,

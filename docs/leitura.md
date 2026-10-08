@@ -12,7 +12,36 @@ Nos **Conteúdos** de uma cadeira, o botão **Novo apontamento** cria uma págin
 
 O apontamento usa a mesma largura, letra e navegação das lições. Edita o título ou escreve diretamente na página. O texto mantém a formatação enquanto escreves; os sinais Markdown aparecem junto do cursor. Enter continua listas; num item vazio, sai da lista. Tab recua um item para dentro do anterior e Shift Tab sobe um nível, incluindo os seus filhos. Ctrl/⌘ Z desfaz alterações. Escape seguido de Tab sai do editor. Usa `$…$` para matemática em linha e `$$` em linhas próprias para uma fórmula destacada. Clica na fórmula ou chega-lhe com as setas para editar o LaTeX na própria página, entre os delimitadores. Ao sair, a fórmula volta a ser desenhada. Os blocos de código usam a linguagem indicada na abertura do bloco, por exemplo `python`, para colorir a sintaxe. HTML e componentes MDX não são executados.
 
-Usa `#` e `##` para títulos, ou sublinha o texto com `===` e `---`. Um `-` isolado numa sublista mantém o item anterior como texto normal, sem alterar o Markdown guardado.
+Usa `#` e `##` para títulos, ou sublinha o texto com `===` e `---`. Uma linha com um único `-` começa um item vazio, sem aumentar o texto acima nem alterar o Markdown guardado. Isto também se aplica a listas dentro de listas e citações.
+
+As checklists mostram caixas e ícones na própria página. Clica em qualquer estado para o marcar como `[x]`; clica numa caixa concluída para voltar a `[ ]`. Tab passa entre as caixas e Espaço alterna o estado. Ctrl/⌘ Z recupera o estado anterior. Ao editar o marcador, o Markdown fica visível. Enter continua a checklist com uma caixa `[ ]`; num item vazio, sai da lista ou sobe um nível.
+
+| Marcador | Estado      |
+| -------- | ----------- |
+| `- [ ]`  | Por fazer   |
+| `- [/]`  | Incompleta  |
+| `- [x]`  | Concluída   |
+| `- [-]`  | Cancelada   |
+| `- [>]`  | Encaminhada |
+| `- [<]`  | Agendada    |
+| `- [?]`  | Pergunta    |
+| `- [!]`  | Importante  |
+| `- [*]`  | Favorito    |
+| `- ["]`  | Citação     |
+| `- [l]`  | Localização |
+| `- [b]`  | Marcador    |
+| `- [i]`  | Informação  |
+| `- [S]`  | Poupança    |
+| `- [I]`  | Ideia       |
+| `- [p]`  | Vantagem    |
+| `- [c]`  | Desvantagem |
+| `- [f]`  | Fogo        |
+| `- [k]`  | Chave       |
+| `- [w]`  | Vitória     |
+| `- [u]`  | Subida      |
+| `- [d]`  | Descida     |
+
+Também aceita `[X]` como concluída e os marcadores de lista `*`, `+` e numerados. Estados desconhecidos ficam como texto literal. O estado e as edições ficam no Markdown, incluindo na exportação e depois de recarregar a página.
 
 O menu **Ações do apontamento**, ao lado do título, permite inserir imagens e fórmulas, importar, exportar e eliminar. Também podes abrir o menu de uma página nos conteúdos com o botão direito, o botão de ações ou Shift F10. A eliminação pode ser desfeita durante a visita.
 

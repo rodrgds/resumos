@@ -1,14 +1,33 @@
-import { ChangeSet, type ChangeSpec } from '@codemirror/state';
+import { ChangeSet, EditorSelection, type ChangeSpec } from '@codemirror/state';
 import { indentLess, indentMore } from '@codemirror/commands';
+import { insertNewlineContinueMarkupCommand } from '@codemirror/lang-markdown';
 import type { Command } from '@codemirror/view';
 import type { Blockquote, List, ListItem, Root } from 'mdast';
 import { visit } from 'unist-util-visit';
 import { parsePersonalMarkdown } from './personal-markdown';
+import { parseTaskPrefix, taskState } from './task-states';
 
 interface Item {
   node: ListItem;
   list: List;
   parent?: Item;
+}
+
+function listItems(tree: Root) {
+  const items: Item[] = [];
+  function collect(root: Root | ListItem | Blockquote, parent?: Item) {
+    for (const node of root.children) {
+      if (node.type === 'blockquote') collect(node);
+      if (node.type !== 'list') continue;
+      for (const child of node.children) {
+        const item = { node: child, list: node, parent };
+        items.push(item);
+        collect(child, item);
+      }
+    }
+  }
+  collect(tree);
+  return items;
 }
 
 // Move whole items, including their continuation paragraphs and child lists.
@@ -17,19 +36,7 @@ function indentList(direction: 'in' | 'out'): Command {
   return (view) => {
     const { state } = view;
     const tree = parsePersonalMarkdown(state.doc.toString());
-    const items: Item[] = [];
-    function collect(root: Root | ListItem | Blockquote, parent?: Item) {
-      for (const node of root.children) {
-        if (node.type === 'blockquote') collect(node);
-        if (node.type !== 'list') continue;
-        for (const child of node.children) {
-          const item = { node: child, list: node, parent };
-          items.push(item);
-          collect(child, item);
-        }
-      }
-    }
-    collect(tree);
+    const items = listItems(tree);
     const chosen = new Set<Item>();
     for (const range of state.selection.ranges) {
       const first = state.doc.lineAt(range.from).number;
@@ -165,6 +172,65 @@ function indentList(direction: 'in' | 'out'): Command {
 export const indentMarkdownList = indentList('in');
 export const outdentMarkdownList = indentList('out');
 
+const newline = insertNewlineContinueMarkupCommand({ nonTightLists: false });
+
+export const continueMarkdownList: Command = (view) => {
+  const { state } = view;
+  if (
+    !state.selection.ranges.some((range) => {
+      const text = state.doc
+        .lineAt(range.head)
+        .text.replace(/^(?:[ \t]*> ?)+/, '');
+      return range.empty && parseTaskPrefix(text);
+    })
+  )
+    return newline(view);
+  const tasks = listItems(parsePersonalMarkdown(state.doc.toString()));
+  const taskSelections = state.selection.ranges.map((range) => {
+    if (!range.empty) return false;
+    const line = state.doc.lineAt(range.head);
+    return tasks.some(({ node }) => {
+      const from = node.position!.start.offset!;
+      if (node.position!.start.line !== line.number) return false;
+      const prefix = parseTaskPrefix(state.sliceDoc(from, line.to));
+      return prefix && range.head >= from + prefix.length;
+    });
+  });
+  return newline({
+    state,
+    dispatch: (transaction) => {
+      const corrections: ChangeSpec[] = [];
+      transaction.newSelection.ranges.forEach((range, index) => {
+        if (!taskSelections[index] || !range.empty) return;
+        const line = transaction.newDoc.lineAt(range.head);
+        const prefix = transaction.newDoc.sliceString(line.from, range.head);
+        if (/(?:^|[\s>])(?:[-+*]|\d+[.)])[ \t]+$/.test(prefix))
+          corrections.push({ from: range.head, insert: '[ ] ' });
+      });
+      if (!corrections.length) {
+        view.dispatch(transaction);
+        return;
+      }
+      // Preserve CodeMirror's quoting, indentation and renumbering, and keep
+      // the added task marker in the same transaction for a single undo.
+      const correction = ChangeSet.of(corrections, transaction.newDoc.length);
+      view.dispatch(
+        state.update({
+          changes: transaction.changes.compose(correction),
+          selection: EditorSelection.create(
+            transaction.newSelection.ranges.map((range) =>
+              EditorSelection.cursor(correction.mapPos(range.head, 1)),
+            ),
+            transaction.newSelection.mainIndex,
+          ),
+          scrollIntoView: true,
+          userEvent: 'input',
+        }),
+      );
+    },
+  });
+};
+
 // A paragraph after a list needs a blank line, otherwise CommonMark treats it
 // as a lazy continuation of the final item.
 export const exitMarkdownList: Command = (view) => {
@@ -172,23 +238,49 @@ export const exitMarkdownList: Command = (view) => {
   const { main } = state.selection;
   if (!main.empty || state.selection.ranges.length !== 1) return false;
   const line = state.doc.lineAt(main.head);
+  const marker =
+    /^((?:[ \t]*> ?)*[ \t]*)(?:[-+*]|\d+[.)])(?:[ \t]+(?:\[(.)\][ \t]*)?)?$/.exec(
+      line.text,
+    );
   if (
     main.head !== line.to ||
-    !/^(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\]\s*)?$/.test(line.text)
+    !marker ||
+    (marker[2] !== undefined && taskState(marker[2]) === undefined)
   )
     return false;
-  let listItem = false;
-  visit(parsePersonalMarkdown(state.doc.toString()), 'listItem', (node) => {
+  const tree = parsePersonalMarkdown(state.doc.toString());
+  let protectedSource = false;
+  visit(tree, (node) => {
     if (
-      node.position!.start.offset === line.from &&
-      node.position!.end.offset === line.to
+      [
+        'code',
+        'inlineCode',
+        'math',
+        'inlineMath',
+        'html',
+        'link',
+        'image',
+        'table',
+      ].includes(node.type) &&
+      node.position!.start.offset! <= line.from &&
+      node.position!.end.offset! >= line.to
     )
-      listItem = true;
+      protectedSource = true;
   });
-  if (!listItem) return false;
+  if (protectedSource) return false;
+  const from = line.from + marker[1].length;
+  const item = listItems(tree).find(
+    ({ node }) => node.position!.start.offset === from,
+  );
+  if (item?.parent) return outdentMarkdownList(view);
+  const quoted = marker[1].includes('>');
   view.dispatch({
-    changes: { from: line.from, to: line.to, insert: '\n' },
-    selection: { anchor: line.from + 1 },
+    changes: {
+      from: quoted ? from : line.from,
+      to: line.to,
+      insert: quoted ? '' : '\n',
+    },
+    selection: { anchor: quoted ? from : line.from + 1 },
     userEvent: 'input',
     scrollIntoView: true,
   });

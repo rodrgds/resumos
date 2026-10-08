@@ -382,23 +382,33 @@ test('the notebook shows all courses on home and only the current course on a le
   ).toHaveCount(0);
 });
 
-test('editing a rendered word preserves its position and surrounding formatting', async ({
-  page,
-}) => {
-  await page.goto('/caderno/?cadeira=exemplo#novo');
-  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
-  await editor.fill('Alpha **beta** gamma');
-  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
-  await page.locator('.personal-editor strong').click();
-  await expect(page.locator('.personal-editor strong')).toHaveText('beta');
-  await page.locator('.personal-editor strong').dblclick();
-  await page.keyboard.insertText('delta');
-  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
-  await expect(page.locator('.personal-editor')).toContainText(
-    'Alpha delta gamma',
-  );
-  await expect(page.locator('.personal-editor strong')).toHaveText('delta');
-});
+for (const [name, markup, selector, expected] of [
+  ['bold', '**beta**', 'strong', '**delta**'],
+  ['italic', '*beta*', 'em', '*delta*'],
+  ['strike', '~~beta~~', 's', '~~delta~~'],
+  ['code', '`beta`', 'code', '`delta`'],
+  ['link', '[beta](https://example.com)', 'a', '[delta](https://example.com)'],
+]) {
+  test(`editing a rendered ${name} word preserves its position and surrounding formatting`, async ({
+    page,
+  }) => {
+    await page.goto('/caderno/?cadeira=exemplo#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    await editor.fill(`Alpha ${markup} gamma`);
+    await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+    const formatted = editor.locator(selector);
+    await formatted.click();
+    await expect(formatted).toHaveText('beta');
+    await formatted.dblclick();
+    await page.keyboard.insertText('delta');
+    await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+    await expect(page.locator('.personal-editor')).toContainText(
+      'Alpha delta gamma',
+    );
+    await expect(formatted).toHaveText('delta');
+    expect(await exportedMarkdown(page)).toContain(`Alpha ${expected} gamma`);
+  });
+}
 
 test('formula copying gives visible feedback and the mouse does not leave a sticky button', async ({
   page,
@@ -561,34 +571,42 @@ test('fenced code keeps syntax colours while typing and reading', async ({
   await expect(keyword).not.toHaveCSS('color', textColour);
 });
 
-test('an empty nested bullet keeps body typography while real headings stay headings', async ({
-  page,
-}) => {
-  await page.goto('/caderno/exemplo/#novo');
-  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
-  await editor.fill('Secção\n---\n\n- Título na lista\n  ---\n\n- abc\n  -');
-  const headings = editor.getByRole('heading', { level: 2 });
-  await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
-  const bodySize = await editor.evaluate(
-    (node) => getComputedStyle(node).fontSize,
-  );
-  const parent = editor.locator('.cm-line').filter({ hasText: 'abc' });
-  await expect(parent).toHaveCSS('font-size', bodySize);
-  await editor.press('ControlOrMeta+End');
-  await page.keyboard.insertText(' a');
-  await expect(parent).toHaveCSS('font-size', bodySize);
-  await editor.press('Backspace');
-  await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
-  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
-  await expect(parent).toHaveCSS('font-size', bodySize);
-  await expect(page.locator('#personal-save-status')).toHaveText(
-    'Guardado neste navegador',
-  );
-  await page.reload();
-  await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
-  await expect(parent).toHaveCSS('font-size', bodySize);
-  expect(await exportedMarkdown(page)).toContain('- abc\n  -');
-});
+for (const [name, source] of [
+  ['top-level', 'abc\n-'],
+  ['nested', '- abc\n  -'],
+  ['quoted', '> abc\n> -'],
+  ['quoted nested', '> - abc\n>   -'],
+  ['ordered nested', '1. abc\n   -'],
+]) {
+  test(`an empty ${name} bullet keeps body typography while real headings stay headings`, async ({
+    page,
+  }) => {
+    await page.goto('/caderno/exemplo/#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    await editor.fill(`Secção\n---\n\n- Título na lista\n  ---\n\n${source}`);
+    const headings = editor.getByRole('heading', { level: 2 });
+    await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
+    const bodySize = await editor.evaluate(
+      (node) => getComputedStyle(node).fontSize,
+    );
+    const parent = editor.locator('.cm-line').filter({ hasText: 'abc' });
+    await expect(parent).toHaveCSS('font-size', bodySize);
+    await editor.press('ControlOrMeta+End');
+    await page.keyboard.insertText(' a');
+    await expect(parent).toHaveCSS('font-size', bodySize);
+    await editor.press('Backspace');
+    await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
+    await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+    await expect(parent).toHaveCSS('font-size', bodySize);
+    await expect(page.locator('#personal-save-status')).toHaveText(
+      'Guardado neste navegador',
+    );
+    await page.reload();
+    await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
+    await expect(parent).toHaveCSS('font-size', bodySize);
+    expect(await exportedMarkdown(page)).toContain(source);
+  });
+}
 
 test('formulas reveal their source in place by click and vertical arrow movement', async ({
   page,
@@ -615,6 +633,159 @@ test('formulas reveal their source in place by click and vertical arrow movement
   await page.keyboard.insertText(' + y');
   await editor.press('ControlOrMeta+End');
   await expect(editor.locator('.katex')).toBeVisible();
+});
+
+test('checklists render all requested states, toggle without losing source, and undo restores alternate states', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  const source = await readFile('tests/fixtures/checklists.md', 'utf8');
+  await editor.fill(source);
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await expect(editor.getByRole('checkbox')).toHaveCount(22);
+  await expect(editor.getByRole('checkbox', { name: /: done$/ })).toBeChecked();
+  await expect(
+    editor.getByRole('checkbox', { name: /: incomplete$/ }),
+  ).toBeChecked({ indeterminate: true });
+  await expect(editor).toContainText('[z] literal marker');
+  await expect(
+    editor.getByRole('checkbox', { name: /not a task/ }),
+  ).toHaveCount(0);
+  expect(
+    (await new AxeBuilder({ page }).include('#conteudo').analyze()).violations,
+  ).toEqual([]);
+  expect(await exportedMarkdown(page)).toContain(source);
+  const fire = editor.getByRole('checkbox', { name: /: fire$/ });
+  await fire.check();
+  await expect(fire).toBeChecked();
+  expect(await exportedMarkdown(page)).toContain('- [x] fire');
+  await fire.focus();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(fire).not.toBeChecked();
+  expect(await exportedMarkdown(page)).toContain(source);
+  await fire.focus();
+  await page.keyboard.press('Space');
+  await expect(fire).toBeChecked();
+  await expect(fire).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(fire).not.toBeChecked();
+  expect(await exportedMarkdown(page)).toContain('- [ ] fire');
+  const labels = source
+    .split('\n')
+    .slice(0, 22)
+    .map((row) => /^- \[.\] (.*)$/.exec(row)![1]);
+  for (const label of labels) {
+    const box = editor.getByRole('checkbox', {
+      name: new RegExp(`: ${label}$`),
+    });
+    if (label === 'done') {
+      await box.uncheck();
+      await expect(box).not.toBeChecked();
+    } else {
+      await box.check();
+      await expect(box).toBeChecked();
+    }
+  }
+  const toggled = await exportedMarkdown(page);
+  for (const label of labels)
+    expect(toggled).toContain(`- [${label === 'done' ? ' ' : 'x'}] ${label}`);
+});
+
+test('checkbox keyboard focus moves between controls without editing the text cursor elsewhere', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  const source = '- [?] Primeiro\n- [!] Segundo\n\nTexto final';
+  await editor.fill(source);
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  const first = editor.getByRole('checkbox', { name: /: Primeiro$/ });
+  const second = editor.getByRole('checkbox', { name: /: Segundo$/ });
+  await first.focus();
+  await page.keyboard.press('Tab');
+  await expect(second).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(first).toBeFocused();
+  await page.keyboard.press('Enter');
+  expect(await exportedMarkdown(page)).toContain(source);
+});
+
+test('an empty nested alternate task outdents, then exits without swallowing its parent', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('- Pai\n  - [?] ');
+  await editor.press('End');
+  await editor.press('Enter');
+  expect(await exportedMarkdown(page)).toContain('- Pai\n- [?] ');
+  await editor.focus();
+  await editor.press('ControlOrMeta+End');
+  await editor.press('Enter');
+  await page.keyboard.insertText('Fora');
+  expect(await exportedMarkdown(page)).toContain('- Pai\n\nFora');
+});
+
+for (const [prefix, continued] of [
+  ['- [/]', '- [ ]'],
+  ['- [?]', '- [ ]'],
+  ['1. [!]', '2. [ ]'],
+  ['> - [S]', '> - [ ]'],
+]) {
+  test(`Enter continues ${prefix} as an unchecked task with one undo`, async ({
+    page,
+  }) => {
+    await page.goto('/caderno/exemplo/#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    const original = `${prefix} Primeiro`;
+    await editor.fill(original);
+    const before = await exportedMarkdown(page);
+    await editor.focus();
+    await editor.press('End');
+    await editor.press('Enter');
+    await editor.press('ControlOrMeta+z');
+    expect(await exportedMarkdown(page)).toBe(before);
+    await editor.focus();
+    await editor.press('ControlOrMeta+End');
+    await editor.press('Enter');
+    await page.keyboard.insertText('Segundo');
+    expect(await exportedMarkdown(page)).toContain(
+      `${original}\n${continued} Segundo`,
+    );
+  });
+}
+
+for (const marker of ['-', '+', '*', '1.', '- [?]']) {
+  test(`an empty ${marker} after ordinary text exits to a separate paragraph`, async ({
+    page,
+  }) => {
+    await page.goto('/caderno/exemplo/#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    await editor.fill('Texto normal');
+    await editor.press('End');
+    await editor.press('Enter');
+    await page.keyboard.insertText(`${marker} `);
+    await expect(editor.getByRole('heading')).toHaveCount(0);
+    await editor.press('Enter');
+    await page.keyboard.insertText('Fora da lista');
+    expect(await exportedMarkdown(page)).toContain(
+      'Texto normal\n\nFora da lista',
+    );
+  });
+}
+
+test('empty list-like lines inside fenced code keep their source when pressing Enter', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('```text\n- \n```');
+  await editor.locator('.cm-line').filter({ hasText: /^- $/ }).click();
+  await editor.press('End');
+  await editor.press('Enter');
+  await page.keyboard.insertText('Literal');
+  expect(await exportedMarkdown(page)).toContain('```text\n- \nLiteral\n```');
 });
 
 test('indenting a list carries its children and one undo restores the complete item', async ({
