@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import { parseFragment, type DefaultTreeAdapterMap } from 'parse5';
 import CodeExercise from './CodeExercise.astro';
 import ExerciseText from './ExerciseText.astro';
 import type { CodeAnswer } from '../lib/code-exercise';
@@ -53,9 +54,27 @@ if (
   throw new Error(
     `${id}: provide starter code and 1–12 named executable tests.`,
   );
-for (const slot of ['hint', 'hint-more', 'solution', 'mistakes']) {
-  if (!Astro.slots.has(slot)) throw new Error(`${id}: missing ${slot} slot.`);
+if (!Astro.slots.has('solution'))
+  throw new Error(`${id}: missing solution slot.`);
+function hasContent(node: DefaultTreeAdapterMap['childNode']): boolean {
+  if (node.nodeName === '#text' && 'value' in node)
+    return Boolean(node.value.trim());
+  if (!('tagName' in node)) return false;
+  if (['script', 'style', 'template'].includes(node.tagName)) return false;
+  if (
+    ['img', 'svg', 'math', 'video', 'audio', 'iframe', 'canvas'].includes(
+      node.tagName,
+    )
+  )
+    return true;
+  return node.childNodes.some(hasContent);
 }
+const [hint, hintMore, mistakes] = await Promise.all(
+  ['hint', 'hint-more', 'mistakes'].map(async (slot) => {
+    const html = (await Astro.slots.render(slot)) ?? '';
+    return parseFragment(html).childNodes.some(hasContent) ? html : '';
+  }),
+);
 const course = Astro.url.pathname.startsWith('/exemplo/')
   ? 'exemplo'
   : Astro.url.pathname.split('/')[2];
@@ -128,24 +147,6 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
               <ExerciseText text={option.explanation} />
             </template>
           ))}
-        {answer.kind !== 'code' && (
-          <div class="exercise-actions" data-enhanced hidden>
-            <button
-              type="button"
-              data-check
-              aria-label={
-                answer.kind === 'self'
-                  ? 'Comparar com a solução'
-                  : 'Verificar resposta'
-              }
-            >
-              {answer.kind === 'self' ? 'Comparar com a solução' : 'Verificar'}
-            </button>
-            <button type="button" data-clear aria-label="Limpar resposta">
-              Limpar
-            </button>
-          </div>
-        )}
         <div class="exercise-feedback-row">
           <Icon name="check-circle" class="feedback-correct" size={16} />
           <Icon
@@ -162,20 +163,55 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
         </div>
       </div>
       <div class="exercise-help">
-        <details data-help="hint">
-          <summary aria-label="Primeira pista">
-            <Icon name="chevron-right" size={16} />
-            Pista
-          </summary>
-          <slot name="hint" />
+        {answer.kind !== 'code' && (
+          <div
+            class="exercise-actions"
+            data-enhanced
+            hidden
+            data-compare-actions={answer.kind === 'self' ? '' : undefined}
+            data-pagefind-ignore
+            data-annotation-ignore
+          >
+            <button
+              type="button"
+              data-check
+              aria-label={
+                answer.kind === 'self'
+                  ? 'Comparar com a solução'
+                  : 'Verificar resposta'
+              }
+            >
+              {answer.kind === 'self' ? 'Comparar' : 'Verificar'}
+            </button>
+            <button
+              type="button"
+              data-clear
+              aria-label="Limpar resposta"
+              hidden
+            >
+              Limpar
+            </button>
+          </div>
+        )}
+
+        {(hint || hintMore) && (
           <details data-help="hint">
-            <summary>
+            <summary aria-label="Primeira pista">
               <Icon name="chevron-right" size={16} />
-              Mais uma pista
+              Pista
             </summary>
-            <slot name="hint-more" />
+            <div set:html={hint || hintMore} />
+            {hint && hintMore && (
+              <details data-help="hint">
+                <summary>
+                  <Icon name="chevron-right" size={16} />
+                  Mais uma pista
+                </summary>
+                <div set:html={hintMore} />
+              </details>
+            )}
           </details>
-        </details>
+        )}
         <details data-help="solution">
           <summary aria-label="Ver solução">
             <Icon name="chevron-right" size={16} />
@@ -207,10 +243,12 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
                 </ul>
               </div>
             )}
-            <div class="exercise-mistakes">
-              <h4>Erros frequentes</h4>
-              <slot name="mistakes" />
-            </div>
+            {mistakes && (
+              <div class="exercise-mistakes">
+                <p class="exercise-mistakes-label">Erros frequentes</p>
+                <div set:html={mistakes} />
+              </div>
+            )}
           </div>
           {answer.kind === 'self' && (
             <div
@@ -219,6 +257,7 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
               hidden
               data-pagefind-ignore
             >
+              <p class="exercise-self-label">Autoavaliação</p>
               <button type="button" data-self-check="correct">
                 A minha resposta está correta
               </button>
@@ -227,11 +266,11 @@ const course = Astro.url.pathname.startsWith('/exemplo/')
               </button>
             </div>
           )}
+          <a class="exercise-explanation" href={explanation}>
+            Voltar à explicação
+          </a>
         </details>
       </div>
-      <a class="exercise-explanation" href={explanation}>
-        Voltar à explicação
-      </a>
     </div>
   </details>
 </section>

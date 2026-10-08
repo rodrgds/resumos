@@ -52,10 +52,14 @@ export function setupCodeExercises() {
       let cancel: (() => void) | undefined;
       let runId = 0;
       const finish = () => {
+        const returnFocus = document.activeElement === stop;
         running = false;
         check.disabled = false;
+        check.hidden = false;
         reset.disabled = false;
+        reset.hidden = editor.state.doc.toString() === answer.starter;
         stop.hidden = true;
+        if (returnFocus) check.focus();
       };
       const interrupt = () => {
         runId++;
@@ -134,10 +138,14 @@ export function setupCodeExercises() {
       const run = async () => {
         if (running) return;
         const id = ++runId;
+        const moveFocus = document.activeElement === check;
         running = true;
         check.disabled = true;
+        check.hidden = true;
         reset.disabled = true;
+        reset.hidden = true;
         stop.hidden = false;
+        if (moveFocus) stop.focus();
         result.hidden = false;
         delete result.dataset.result;
         output.hidden = true;
@@ -157,6 +165,7 @@ export function setupCodeExercises() {
                   : `Teste ${index + 1}/${answer.tests.length}: «${test.name}» falhou.`;
               showDiagnostic(index, outcome);
               if (outcome.passed === undefined) return;
+              finish();
               exercise.dispatchEvent(
                 new CustomEvent('exercise-code-result', {
                   bubbles: true,
@@ -171,6 +180,7 @@ export function setupCodeExercises() {
           }
           status.textContent = `${answer.tests.length}/${answer.tests.length} testes passaram.`;
           result.dataset.result = 'correct';
+          finish();
           exercise.dispatchEvent(
             new CustomEvent('exercise-code-result', {
               bubbles: true,
@@ -184,7 +194,7 @@ export function setupCodeExercises() {
               error instanceof Error ? error.message : String(error);
           }
         } finally {
-          if (id === runId) finish();
+          if (id === runId && running) finish();
         }
       };
       const editor = new EditorView({
@@ -205,6 +215,7 @@ export function setupCodeExercises() {
               interrupt();
               status.textContent = 'Código alterado. Verifica novamente.';
             } else result.hidden = true;
+            reset.hidden = editor.state.doc.toString() === answer.starter;
             clearFeedback();
           }),
           keymap.of([
@@ -239,6 +250,7 @@ export function setupCodeExercises() {
         });
         result.hidden = true;
         clearFeedback();
+        editor.focus();
       };
       const observer = new MutationObserver(() => {
         if (root.isConnected) return;

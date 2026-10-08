@@ -97,3 +97,81 @@ test('reduced motion keeps validation feedback without celebrations or nudges', 
     ).toBe(0);
   }
 });
+
+test('optional help keeps only useful disclosures and remains readable without JavaScript', async ({
+  browser,
+  request,
+}) => {
+  const page = await browser.newPage({ javaScriptEnabled: false });
+  await page.goto('/exemplo/exercise-help/');
+  for (const name of ['Só solução', 'Ajuda vazia']) {
+    const question = page.getByRole('region', { name, exact: true });
+    await question.locator(':scope > details > summary').press('Enter');
+    await expect(
+      question.getByLabel('Primeira pista', { exact: true }),
+    ).toHaveCount(0);
+    await question.getByLabel('Ver solução', { exact: true }).press('Enter');
+    await expect(
+      question.getByText('Erros frequentes', { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      question.getByRole('link', { name: 'Voltar à explicação' }),
+    ).toHaveAttribute('href', '/exemplo/exercise-help/#comparação');
+    await expect(question).toContainText(
+      name === 'Só solução'
+        ? 'Duas parcelas iguais a 2 dão 4.'
+        : 'O dobro é 4.',
+    );
+  }
+  const second = page.getByRole('region', {
+    name: 'Uma pista e autoavaliação',
+  });
+  await second.locator(':scope > details > summary').press('Enter');
+  await second.getByLabel('Primeira pista', { exact: true }).press('Enter');
+  await expect(second).toContainText(
+    'Escreve a adição de duas parcelas iguais.',
+  );
+  const graphic = page.getByRole('region', { name: 'Pista gráfica' });
+  await graphic.locator(':scope > details > summary').press('Enter');
+  await graphic.getByLabel('Primeira pista', { exact: true }).press('Enter');
+  await expect(
+    graphic.getByRole('img', { name: 'Dois pares de pontos' }),
+  ).toBeVisible();
+  const markdown = await request.get('/exemplo/exercise-help.md');
+  expect(await markdown.text()).toContain('Duas parcelas iguais a 2 dão 4.');
+  const print = await page
+    .locator('#print-template')
+    .evaluate(
+      (element) => (element as HTMLTemplateElement).content.textContent,
+    );
+  expect(print).toContain('Calcula o dobro de 2.');
+  const solutions = await page
+    .locator('#print-template')
+    .evaluate(
+      (element) =>
+        (element as HTMLTemplateElement).content.querySelector(
+          '[data-print-solutions]',
+        )?.textContent,
+    );
+  expect(solutions).toContain('Duas parcelas iguais a 2 dão 4.');
+  await page.close();
+});
+
+test('clearing a response preserves the supporting editor file selection', async ({
+  page,
+}) => {
+  await page.goto('/cadeiras/bd/sql-consultas/');
+  const question = page.locator('#pares-encomendas-mesmo-cliente');
+  await question.locator(':scope > details > summary').click();
+  const clear = question.getByRole('button', { name: 'Limpar resposta' });
+  const file = question.getByRole('radio', { name: 'loja.sql', exact: true });
+  await file.check();
+  await expect(clear).toBeHidden();
+  const response = question.getByLabel('A tua resposta');
+  await response.fill('Uma condição entre duas encomendas.');
+  await clear.click();
+  await expect(response).toHaveValue('');
+  await expect(response).toBeFocused();
+  await expect(clear).toBeHidden();
+  await expect(file).toBeChecked();
+});

@@ -158,6 +158,7 @@ export function setupExercises() {
         progress = { ...progress, assistance };
         saveExerciseProgress(key, progress);
         showProgress();
+        solution.querySelector<HTMLElement>('summary')!.focus();
         solution.scrollIntoView({ block: 'nearest', behavior: 'instant' });
         return;
       }
@@ -176,7 +177,7 @@ export function setupExercises() {
           value <= answer.value + answer.tolerance;
       } else {
         const input = root.querySelector<HTMLInputElement>(
-          'input[type="radio"]:checked',
+          '[data-exercise-controls] input[type="radio"]:checked',
         );
         if (!input) {
           feedback.textContent = 'Escolhe uma resposta.';
@@ -203,17 +204,31 @@ export function setupExercises() {
           showProgress();
         }),
       );
-    root.querySelector('[data-clear]')?.addEventListener('click', () => {
+    const clear = root.querySelector<HTMLButtonElement>('[data-clear]');
+    const responses = root.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement
+    >(
+      '[data-exercise-controls] [data-response], [data-exercise-controls] input[type="radio"]',
+    );
+    const updateClear = () => {
+      if (!clear) return;
+      clear.hidden = ![...responses].some((input) =>
+        input instanceof HTMLInputElement && input.type === 'radio'
+          ? input.checked
+          : Boolean(input.value),
+      );
+    };
+    root.addEventListener('input', updateClear);
+    updateClear();
+    clear?.addEventListener('click', () => {
       effects.reset();
-      root
-        .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
-          '[data-response], input[type="radio"]',
-        )
-        .forEach((input) => {
-          if (input instanceof HTMLInputElement && input.type === 'radio')
-            input.checked = false;
-          else input.value = '';
-        });
+      responses.forEach((input) => {
+        if (input instanceof HTMLInputElement && input.type === 'radio')
+          input.checked = false;
+        else input.value = '';
+      });
+      updateClear();
+      responses[0]?.focus();
       delete feedback.dataset.result;
       feedback.textContent =
         assistance === 'none'

@@ -64,7 +64,7 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 ```
 
-Cada questão precisa de um `id` único na cadeira, uma ligação à explicação exata e os quatro slots do exemplo. Aumenta `revision` quando mudares o enunciado, a resposta ou o seu significado.
+Cada questão precisa de um `id` único na cadeira, uma ligação à explicação exata e do slot `solution`. `hint`, `hint-more` e `mistakes` são opcionais. Omite ajuda que não acrescenta um passo ou uma distinção útil; slots vazios, só com espaços, comentários ou elementos sem conteúdo não geram controlos nem títulos. Uma pista apenas gráfica continua disponível. Se só existir `hint-more`, aparece como a única pista. Aumenta `revision` quando mudares o enunciado, a resposta ou o seu significado. Alterar apenas a disposição da UI não muda a revisão.
 
 Em MDX, o Markdown cria os parágrafos dentro de componentes. Para texto em várias linhas, usa Markdown ou um `div`, não um `p` a envolver outro parágrafo. Um `p` com texto todo na mesma linha, como nos exemplos acima, continua válido.
 
@@ -78,6 +78,8 @@ As diretivas documentadas usam blocos. Os dois pontos dentro do texto, como em `
 | `choice` | Uma opção correta, com explicação de cada alternativa | `options` com `text`, `correct` e `explanation`           |
 | `self`   | Prova ou raciocínio que exige justificação            | `checklist` com critérios observáveis                     |
 | `code`   | Programa verificável por comportamento                | `language`, `starter`, `tests`                            |
+
+O problema e a resposta aparecem antes da ajuda. Verificar é a ação principal; na autoavaliação, Comparar abre e foca a solução. As pistas e a solução usam expansíveis nativos, acessíveis por teclado e sem JavaScript. A ligação à explicação fica dentro da solução. Limpar só aparece quando há uma resposta; no editor, Repor código só aparece após uma edição e Parar substitui Verificar durante a execução.
 
 Na autoavaliação, o leitor compara com a solução e indica se está certo ou precisa de corrigir. Não é uma classificação automática. O navegador guarda apenas resultados e ajuda consultada, nunca respostas ou código. Abrir uma pista depois da resposta não muda a ajuda atribuída àquela resposta. Enunciados, pistas e soluções continuam legíveis sem JavaScript.
 

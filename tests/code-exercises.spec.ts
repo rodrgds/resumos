@@ -4,6 +4,7 @@ test('JavaScript function exercises check outputs and preserve the input contrac
   page,
 }) => {
   test.setTimeout(120_000);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/cadeiras/ltw/javascript-dom-eventos/');
   const exercise = page.locator('#ltw-total-precos');
   await exercise.locator('.exercise-disclosure > summary').click();
@@ -29,7 +30,26 @@ test('JavaScript function exercises check outputs and preserve the input contrac
   await exercise
     .getByRole('button', { name: 'Expandir editor', exact: true })
     .click();
-  await check.click();
+  const burstBounds = await check.evaluate((button) => {
+    const anchor = button.getBoundingClientRect().toJSON();
+    return new Promise<{ anchor: typeof anchor; burst: typeof anchor }>(
+      (resolve) => {
+        const observer = new MutationObserver(() => {
+          const canvas = document.querySelector('.exercise-confetti');
+          if (!canvas) return;
+          observer.disconnect();
+          resolve({ anchor, burst: canvas.getBoundingClientRect().toJSON() });
+        });
+        observer.observe(document.body, { childList: true });
+        (button as HTMLButtonElement).click();
+      },
+    );
+  });
+  const centre = burstBounds.anchor.x + burstBounds.anchor.width / 2;
+  expect(centre).toBeGreaterThanOrEqual(burstBounds.burst.x);
+  expect(centre).toBeLessThanOrEqual(
+    burstBounds.burst.x + burstBounds.burst.width,
+  );
   await expect(exercise.locator('[data-code-status]')).toHaveText(
     /^([1-9]\d*)\/\1 testes passaram\.$/,
     { timeout: 60_000 },
@@ -152,14 +172,25 @@ test('stopping or editing a running program cancels validation without recording
     name: 'Verificar código',
     exact: true,
   });
+  const reset = exercise.getByRole('button', {
+    name: 'Repor código',
+    exact: true,
+  });
+  await expect(reset).toBeHidden();
+  const initialCode = await editor.innerText();
   await expect(check).toHaveText('');
   await editor.fill('while True:\n    pass');
-  await check.click();
+  await expect(reset).toBeVisible();
+  await check.press('Enter');
   const stop = exercise.getByRole('button', { name: 'Parar', exact: true });
   await expect(stop).toBeVisible();
+  await expect(stop).toBeFocused();
+  await expect(check).toBeHidden();
+  await expect(reset).toBeHidden();
   await expect(stop).toHaveText('');
-  await stop.click();
+  await stop.press('Enter');
   await expect(check).toBeEnabled();
+  await expect(check).toBeFocused();
   await expect(exercise.locator('[data-code-status]')).toHaveText(
     'Verificação interrompida.',
   );
@@ -170,6 +201,10 @@ test('stopping or editing a running program cancels validation without recording
     'Código alterado. Verifica novamente.',
   );
   await expect(exercise.locator('[data-feedback]')).toBeEmpty();
+  await reset.press('Enter');
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveText(initialCode);
+  await expect(reset).toBeHidden();
   await page.reload();
   await expect(exercise.locator('[data-feedback]')).toBeEmpty();
 });

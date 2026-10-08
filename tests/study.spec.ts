@@ -201,6 +201,9 @@ test('numeric answers enforce tolerance and retain help attribution across clear
     name: '3. Interpretar uma média',
   });
   await question.locator(':scope > details > summary').click();
+  await expect(
+    question.getByRole('button', { name: 'Limpar resposta' }),
+  ).toBeHidden();
   await question.getByLabel('A tua resposta').fill('3,52');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
   await expect(question.getByRole('status')).toContainText(
@@ -218,6 +221,10 @@ test('numeric answers enforce tolerance and retain help attribution across clear
   );
   await question.getByLabel('Ver solução', { exact: true }).click();
   await question.getByRole('button', { name: 'Limpar resposta' }).click();
+  await expect(
+    question.getByRole('button', { name: 'Limpar resposta' }),
+  ).toBeHidden();
+  await expect(question.getByLabel('A tua resposta')).toBeFocused();
   await question.getByLabel('A tua resposta').fill('3.5');
   await question.getByRole('button', { name: 'Verificar resposta' }).click();
   await expect(question.getByRole('status')).toContainText(
@@ -268,6 +275,10 @@ test('choice explanations and self assessment stay distinct from automatic corre
     .getByLabel('A tua resposta')
     .fill('A minha resposta privada: somar duas linhas.');
   await open.getByRole('button', { name: 'Comparar com a solução' }).click();
+  await expect(open.getByLabel('Ver solução', { exact: true })).toBeFocused();
+  await expect(
+    open.getByRole('button', { name: 'Comparar com a solução' }),
+  ).toBeHidden();
   await expect(open.getByRole('status')).toContainText(
     'Sem correção automática',
   );
@@ -436,6 +447,9 @@ test('practice controls work at narrow widths and expose accessible names', asyn
     ),
   ).toBe(true);
   await page.getByText('5. Escolher o estado certo', { exact: true }).click();
+  const self = page.getByRole('region', { name: '1. Justificar a fórmula' });
+  await self.locator(':scope > details > summary').click();
+  await self.getByLabel('Ver solução', { exact: true }).click();
   const results = await new AxeBuilder({ page }).include('main').analyze();
   expect(results.violations).toEqual([]);
 });
