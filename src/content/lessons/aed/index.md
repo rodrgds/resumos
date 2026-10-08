@@ -61,5 +61,5 @@ A bibliografia obrigatória indicada na ficha é:
 - Robert Sedgewick, _Algorithms in C++_, ISBN 0-201-35088-2.
 - Thomas H. Cormen e coautores, _Introduction to Algorithms_, 3.ª ou 4.ª edição; a ficha indica ISBN 978-0-262-53305-8.
 
-Para contratos da biblioteca, foram consultadas as secções do projeto público do padrão C++ sobre [ordenação](https://eel.is/c++draft/alg.sorting), [pesquisa binária](https://eel.is/c++draft/alg.binary.search), [invalidação em vetores](https://eel.is/c++draft/vector.modifiers) e [containers não ordenados](https://eel.is/c++draft/unord.req). Esse projeto acompanha a evolução da linguagem; os programas publicados usam apenas C++17.
+Para contratos da biblioteca, foram consultadas as secções do projeto público do padrão C++ sobre [ordenação](https://eel.is/c++draft/alg.sorting), [pesquisa binária](https://eel.is/c++draft/alg.binary.search), [invalidação em vetores](https://eel.is/c++draft/vector.modifiers), [containers associativos ordenados](https://eel.is/c++draft/associative.reqmts) e [containers não ordenados](https://eel.is/c++draft/unord.req). Esse projeto acompanha a evolução da linguagem; os programas publicados usam apenas C++17.
 :::
