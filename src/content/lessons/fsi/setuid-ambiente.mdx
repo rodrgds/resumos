@@ -1,0 +1,87 @@
+---
+title: Set-UID, ambiente e descritores
+description: Seguir a autoridade de um processo, a interpretação pela shell e os recursos herdados.
+section: laboratorios
+order: 1
+practices:
+  - fsi/praticar-setuid-ambiente
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Moodle FSI, guião da semana 4
+      url: https://moodle2627.up.pt/mod/page/view.php?id=50517
+    - title: Environment Variable and Set-UID Program Lab, Wenliang Du, copyright 2006–2016, CC BY-NC-SA 4.0
+      url: https://seedsecuritylabs.org/Labs_20.04/Software/Environment_Variable_and_SetUID/
+    - title: Linux man-pages, execve(2)
+      url: https://man7.org/linux/man-pages/man2/execve.2.html
+    - title: Linux man-pages, system(3)
+      url: https://man7.org/linux/man-pages/man3/system.3.html
+  coverage: Explicação dos mecanismos trabalhados nas Tasks 1–6, 8 e 9, com cenários próprios.
+  gaps:
+    - O ambiente SEED privilegiado não é executado pelo navegador.
+---
+
+import Dot from '../../../components/Dot.astro';
+import descritor from '../../fsi/descritor-herdado.dot?raw';
+
+Um programa de consulta pode abrir um ficheiro com autoridade que o utilizador não tem. A segurança depende de como escolhe o programa externo, interpreta os argumentos e entrega os recursos que já abriu. A mudança de UID é apenas uma parte desse percurso.
+
+## Ambiente em fork e execve
+
+As variáveis de ambiente são pares de nomes e valores disponíveis ao processo. Por exemplo, `PATH` influencia a procura de executáveis em chamadas que fazem essa procura. Não é uma lista de permissões: escolher onde procurar e poder executar são decisões diferentes.
+
+Considera um processo com `PATH=/usr/bin:/bin` e uma variável própria `MODO=consulta`:
+
+| Operação                      | Ambiente resultante                                             |
+| ----------------------------- | --------------------------------------------------------------- |
+| `fork()`                      | O filho recebe uma cópia do ambiente do pai.                    |
+| O filho muda `MODO`           | A sua cópia muda; não altera automaticamente o ambiente do pai. |
+| `execve(caminho, argv, envp)` | O novo programa recebe os pares indicados por `envp`.           |
+
+`execve` substitui o programa no mesmo processo. Não cria um filho e não escolhe automaticamente o ambiente do pai. Passar `environ` transmite o ambiente corrente; passar uma lista terminada em ponteiro nulo permite selecionar os pares. A variante com `envp=NULL` usada pelo guião é aceite em Linux, mas não é uma interface portátil para um ambiente vazio.
+
+## UID real e UID efetivo
+
+O UID real identifica normalmente o utilizador que iniciou o processo. O UID efetivo participa nas decisões de acesso. Ao executar um binário Set-UID, o sistema pode mudar o UID efetivo para o dono do executável, conservando o UID real. Por exemplo, um binário de root iniciado por um utilizador com UID 1000 pode ter UID real 1000 e efetivo 0.
+
+Isto depende das condições de execução. Montagens `nosuid`, `no_new_privs` e outras restrições podem impedir o efeito Set-UID. Também não se deve extrapolar de um binário para um script interpretado: Linux ignora Set-UID no script.
+
+O ambiente continua a exigir análise. O carregador dinâmico filtra variáveis como `LD_PRELOAD` em execução segura; isso não significa que todas as variáveis externas sejam removidas. O programa privilegiado precisa de controlar os valores que usa para decidir operações.
+
+## PATH e interpretação pela shell
+
+`system("ls")` pede a uma shell que interprete `ls`. A procura pode usar `PATH`: se uma pasta controlada pelo requerente vier primeiro, o nome pode selecionar outro executável. Fixar o formato do comando C não fixa o programa finalmente escolhido.
+
+Agora o serviço usa um caminho absoluto, mas concatena um nome de ficheiro:
+
+```c
+/* Esquema de uma chamada, não um programa completo. */
+system("/bin/cat relatorio; printf MARCA");
+```
+
+A shell interpreta o ponto e vírgula como separador. Executa a consulta e depois outra operação. A segunda operação deste exemplo só imprime uma marca; demonstra por que tratar o argumento como parte de um comando aumenta a autoridade do requerente.
+
+Com uma chamada direta a `execve`, o caminho do executável e os elementos de `argv` ficam separados. Um argumento `relatorio; printf MARCA` passa como um único nome, sem a shell o transformar em duas operações. Ainda é necessário autorizar o ficheiro, controlar opções aceites pelo executável e escolher um ambiente adequado. Retirar a shell não resolve qualquer uso perigoso de argumentos.
+
+O efeito privilegiado de `system` depende também da shell. No ambiente descrito pelo guião, `dash` baixa privilégios quando deteta a diferença de UID; o laboratório compara com outra configuração. Não se conclui que toda chamada `system` num processo Set-UID executa a operação final como root.
+
+## Descritores depois de retirar privilégios
+
+O serviço abre `relatorio` para escrita enquanto tem autoridade. O sistema concede um descritor, aqui 3. O serviço baixa depois os seus UIDs e executa outro programa. Se o descritor não foi fechado nem marcado close-on-exec, o novo programa pode herdá-lo.
+
+<Dot
+  source={descritor}
+  alt="O serviço abre o ficheiro com autoridade, obtém o descritor 3, baixa o UID e executa outro programa. O descritor permanece aberto se não tiver close-on-exec. Uma nova abertura pode ser negada, mas a escrita pelo descritor herdado continua possível."
+/>
+
+A nova abertura verifica as permissões atuais do processo. Uma escrita pelo descritor já aberto usa a referência obtida antes; baixar o UID não repete automaticamente a decisão da abertura. No guião, este caso chama-se **capability leaking**. O recurso concreto é o descritor aberto, não necessariamente uma Linux capability.
+
+Se o programa seguinte não deve receber essa autoridade, fecha o descritor antes da transferência e define close-on-exec para impedir herança por `execve`. Close-on-exec não fecha o descritor por baixar o UID nem impede o programa atual de o usar. Quando possível, retira privilégios antes de abrir o recurso, verifica erros e mantém apenas a autoridade necessária.
+
+## Evidência no LOGBOOK
+
+O Moodle da semana 4 pede as Tasks 1–6, a comparação com `system` da Task 8 e a fuga de recurso da Task 9. Usa o ambiente isolado indicado pelo docente. Os exemplos do navegador de [programação defensiva](/cadeiras/fsi/programacao-defensiva/) não reproduzem UID, processos ou permissões POSIX.
+
+Para cada observação, regista o estado anterior, a operação, o resultado e a condição que o explica. Em `PATH`, identifica o executável escolhido e os UIDs relevantes. Em injeção de comandos, distingue o argumento recebido da operação interpretada pela shell. Na fuga de descritor, identifica quando foi aberto e por que permanece utilizável. Uma captura sem esta ligação não explica o mecanismo.
+
+Segue o guião para a preparação e restauração do ambiente. A comparação que altera a shell do laboratório exige repor a configuração original no fim. Não transfiras essas alterações para o sistema de trabalho.

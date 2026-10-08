@@ -36,11 +36,8 @@ editorial:
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import pilha from '../../fsi/pilha.typ?raw';
-import pilhaoffsets from '../../fsi/pilha-offsets.typ?raw';
 import Dot from '../../../components/Dot.astro';
 import retornos from '../../fsi/retornos.dot?raw';
-
-Depois de decidir quem pode aceder a cada objeto, perguntamos como escrever código que não abre vulnerabilidades às entradas.
 
 Uma função que aceita nomes precisa de um contrato. Chama-se contrato às regras sobre que tipo de dados recebe, que tamanho admite e que faz quando a entrada é inválida. Uma entrada vinda da rede não passa a ser confiável só porque o formulário a validou no navegador, porque o atacante pode enviar o pedido diretamente.
 
@@ -107,13 +104,16 @@ Os exemplos das aulas usam um modelo Linux/x86. Num processo, código, dados est
 
 Num exemplo convencional de x86 de 32 bits com frame pointer, a pilha cresce para endereços menores. `ebp` referencia o frame; variáveis locais podem estar em offsets negativos, e o endereço de retorno em `ebp+4`. Esta disposição não vale para todos os binários, otimizações ou arquiteturas.
 
-Suponhamos que o enunciado fixa `buf` em `ebp-16`, com 12 bytes, e o endereço de retorno em `ebp+4`. A cópia da string escreve em endereços crescentes. A diferença entre os endereços é $4-(-16)=20$ bytes. O byte no índice 20 da cópia atinge o primeiro byte do endereço de retorno. O diagrama seguinte mostra esses offsets: `buf` ocupa de `ebp-16` a `ebp-4`, os bytes 16 a 19 cobrem o valor guardado de `ebp` e o índice 20 alcança o retorno.
+Suponhamos que o enunciado fixa `buf` em `ebp-16`, com 12 bytes, e o endereço de retorno em `ebp+4`. A cópia da string escreve em endereços crescentes. A diferença entre os endereços é $4-(-16)=20$ bytes. O byte no índice 20 da cópia atinge o primeiro byte do endereço de retorno. O mapa seguinte mostra esses offsets: `buf` ocupa de `ebp-16` a `ebp-5`, os bytes 16 a 19 cobrem o valor guardado de `ebp` e o índice 20 alcança o retorno.
 
-<Typst
-  source={pilhaoffsets}
-  format="svg"
-  alt="Buffer em ebp-16 com 12 bytes, valor de ebp guardado e endereço de retorno em ebp+4. O índice 20 da cópia atinge o retorno."
-/>
+| Endereços          | Índices da cópia | Objeto no modelo    |
+| ------------------ | ---------------- | ------------------- |
+| `ebp+4` a `ebp+7`  | 20 a 23          | Endereço de retorno |
+| `ebp` a `ebp+3`    | 16 a 19          | `ebp` guardado      |
+| `ebp-4` a `ebp-1`  | 12 a 15          | Espaço intermédio   |
+| `ebp-16` a `ebp-5` | 0 a 11           | Buffer de 12 bytes  |
+
+A cópia avança para endereços maiores: o índice 12 já sai do buffer e o índice 20 alcança o retorno. A pilha cresce para endereços menores ao criar frames. São dois sentidos que não devem ser confundidos.
 
 Com vinte caracteres de um byte, esse byte seria o terminador; não precisamos de copiar um endereço completo para ter uma escrita indevida.
 
@@ -139,7 +139,20 @@ Estamos a contar bytes, não letras Unicode: uma letra acentuada pode ocupar vá
 
 ## Outros erros de memória
 
-Um **use-after-free** usa uma referência depois de libertar o objeto. Um **double free** liberta-o duas vezes. Um **integer overflow** pode transformar um tamanho grande num tamanho pequeno antes da alocação. Por exemplo, com `size_t` de 32 bits e itens de 8 bytes, este cálculo reserva pouco e escreve muito quando `quantidade` é grande:
+Um overflow na **heap** ultrapassa uma alocação dinâmica. Duas chamadas consecutivas a `malloc` não garantem que os objetos sejam adjacentes, nem permitem deduzir qual objeto será corrompido. Os slides mostram alocadores com metadados e ponteiros de controlo, mas a disposição e as verificações dependem do alocador. NX não impede alterar dados ou um ponteiro de função.
+
+Um **use-after-free** usa uma referência depois de libertar o objeto. Segue o estado, sem executar o acesso inválido:
+
+| Passo                         | Estado de `p` e da memória                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| `p = malloc(8)` com sucesso   | `p` dá acesso ao objeto de 8 bytes.                                                              |
+| `free(p)`                     | O objeto deixou de estar disponível através de `p`; o valor do ponteiro pode continuar guardado. |
+| Outra alocação                | O alocador pode reutilizar a região, mas não tem de o fazer.                                     |
+| Usar `p` para ler ou escrever | O acesso é inválido, mesmo que os bytes pareçam intactos.                                        |
+
+Um **double free** tenta libertar o mesmo objeto duas vezes. Anular um ponteiro depois de libertar pode evitar o seu uso, mas não anula outras referências copiadas antes.
+
+Um **integer overflow** pode transformar um tamanho grande num tamanho pequeno antes da alocação. Por exemplo, com `size_t` de 32 bits e itens de 8 bytes, este cálculo reserva pouco e escreve muito quando `quantidade` é grande:
 
 ```c
 typedef struct { unsigned char b[8]; } item;
@@ -150,6 +163,22 @@ for (size_t i = 0; i < quantidade; i++)
 ```
 
 `quantidade` conta itens e `total` conta bytes; o ciclo copia item a item. Verifica a multiplicação antes de alocar, por exemplo rejeitando quando `quantidade > SIZE_MAX / sizeof(item)`.
+
+### Leituras fora dos limites
+
+Uma leitura indevida pode divulgar dados sem alterar memória. Considera uma mensagem com quatro bytes de conteúdo que declara ter 32. Se o servidor confia no comprimento declarado e devolve 32 bytes a partir desse conteúdo, tenta ler 28 bytes que não pertencem à mensagem. Não podemos prever quais seriam esses bytes, mas a ausência de escrita não elimina o risco de confidencialidade.
+
+Antes de usar o comprimento, compara-o com os bytes realmente disponíveis. Num vetor de comprimento `len`, um índice inteiro com sinal precisa de satisfazer `0 <= indice < len`. Só testar `indice < len` deixa passar valores negativos; usar `indice <= len` deixa passar o primeiro índice para além do fim.
+
+### Conversões de tamanho
+
+Um tamanho pode perder informação antes da verificação. Suponhamos um comprimento sem sinal de 65 540 que é guardado num campo sem sinal de 16 bits. O campo fica com $65\,540\bmod2^{16}=4$. Verificar que o campo é menor que 100 não demonstra que o conteúdo original cabe num buffer de 100 bytes.
+
+Conserva a representação do comprimento efetivamente usado e rejeita valores que não cabem no tipo de destino antes de converter. Em C, a aritmética sem sinal envolve segundo o módulo do tipo; overflow de inteiros com sinal tem regras diferentes e pode ser comportamento indefinido. As promoções de inteiros também contam: uma operação com operandos de tipo pequeno pode ser calculada em `int`. Declara os tipos antes de prever o resultado.
+
+### Injeção e reutilização de código
+
+Heap spraying coloca muitas cópias de dados numa região para aumentar a hipótese de um desvio a atingir. JIT spraying procura influenciar bytes de código gerados pelo compilador em execução. São estratégias diferentes: a primeira, por si, não transforma páginas não executáveis em código executável. Em ambos os casos ainda é necessário um caminho que viole a proteção ou desvie o fluxo. Não são efeitos garantidos de qualquer overflow.
 
 As proteções têm objetivos distintos. Um canário pode detetar algumas alterações na pilha antes do retorno. NX impede executar certas páginas de dados. ASLR dificulta prever endereços. Nenhuma destas proteções corrige o acesso fora dos limites, porque ataques que reutilizam código existente podem evitar a necessidade de executar bytes na pilha.
 
@@ -164,9 +193,7 @@ Considera só este modelo didático: x86 de 32 bits, argumentos na pilha, funç�
   alt="Quatro posições consecutivas da pilha, em endereços crescentes: etapaA, etapaB, continuação e argumento 7. O primeiro retorno consome etapaA; à entrada de etapaB, a continuação é o retorno e 7 é o primeiro argumento."
 />
 
-Segue a sequência de retornos no modelo didático, sem a esconder num bloco recolhido:
-
-:::details[Valores em cada retorno]
+Segue a sequência de retornos no modelo didático:
 
 1. O primeiro `ret` consome `etapaA` e deixa o topo em `etapaB`.
 2. A entrada de `etapaA` vê `etapaB` como endereço de retorno.
@@ -174,8 +201,6 @@ Segue a sequência de retornos no modelo didático, sem a esconder num bloco rec
 4. Quando `etapaB` retorna, a execução segue para `continuação`; o valor 7 ainda exige tratamento conforme a convenção.
 
 Não podemos acrescentar livremente argumentos às etapas anteriores: sem ajuste, esses valores ficariam no caminho dos retornos. Cadeias gerais usam instruções que ajustam a pilha e, noutras arquiteturas, preparam registos. Não extrapoles esta disposição para x86-64 ou para qualquer convenção de chamada.
-
-:::
 
 ASLR dificulta localizar código; uma fuga de endereços pode reduzir essa proteção. Verificação de integridade do fluxo de controlo e mecanismos de retorno protegido procuram restringir os destinos. A correção continua a ser remover a corrupção de memória que permite controlar o fluxo.
 
@@ -202,7 +227,7 @@ Um teste dinâmico com apenas `Ana` pode não revelar um problema que depende de
 
 ## TOCTOU
 
-Uma race condition depende de operações concorrentes ou da sua ordem. **TOCTOU** é o caso em que a condição verificada muda entre a verificação e o uso. Dois testes seguidos ao mesmo valor só protegem usos diferentes se nada puder mudar esse valor entre eles: quando o valor vive em memória partilhada que outro processo ou thread pode reescrever, ou quando cada ramo assume uma condição que o outro não garante, a segunda verificação não protege o segundo uso. O caso concreto com ficheiros vem a seguir: verificar um nome e abrir esse nome depois são duas resoluções que podem dar objetos diferentes. Valida uma vez o valor que vais usar, ou volta a validar depois de qualquer ponto onde ele possa mudar.
+Uma race condition depende da ordem de operações concorrentes. **TOCTOU** ocorre quando uma condição muda entre a verificação e o uso. Verificar um nome e abrir esse nome depois resolve a referência duas vezes: o mesmo texto pode designar objetos diferentes. Uma segunda verificação pelo nome apenas cria outro intervalo se o nome continuar mutável.
 
 1. O programa verifica as permissões do nome `relatorio`.
 2. Outro processo troca esse nome por uma ligação para outro ficheiro.

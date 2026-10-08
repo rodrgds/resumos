@@ -24,25 +24,22 @@ editorial:
 ---
 
 import Dot from '../../../components/Dot.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Mermaid from '../../../components/Mermaid.astro';
 import rede from '../../fsi/rede-segura.dot?raw';
 import tcp from '../../fsi/tcp-normal.mmd?raw';
 
-Quando o caminho entre quem envia e quem recebe não é confiável, precisamos de proteger mensagens contra observação, alteração e esgotamento de recursos.
-
-Uma rede transporta mensagens entre entidades. Uma entidade pode ser uma pessoa, conta ou processo. Essas entidades podem não confiar umas nas outras. Conforme a sua posição, um atacante pode observar tráfego, modificar o caminho ou esgotar recursos, por isso numa resposta distingue um atacante no caminho, na rede local ou apenas remoto.
+O navegador da Ana envia à loja um pedido com o cookie de sessão. Um atacante no caminho pode observar ou alterar tráfego desprotegido; um atacante apenas remoto pode enviar os seus próprios pedidos, sem necessariamente observar os da Ana. A posição do atacante determina as mensagens que controla e os recursos que consegue esgotar.
 
 ## Observação e falsificação
 
 A **escuta** procura ler tráfego. A **falsificação**, ou spoofing, apresenta uma identidade ou endereço falso. Num ataque ativo de intermediário, o atacante interceta e pode alterar a comunicação entre os extremos.
 
-| Mecanismo atacado   | Fraqueza explorada                                                             | Defesa e limite                                                                                |
-| ------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| ARP numa rede local | O atacante na mesma rede responde primeiro e associa o seu MAC ao IP do router | Controlos na rede local; um canal autenticado protege dados mesmo com caminho hostil           |
-| DNS                 | Resposta ou resolução adulterada                                               | Validação DNSSEC onde aplicável; não cifra consultas nem garante que o serviço final é honesto |
-| TCP                 | Manipulação de estado ou segmentos                                             | Validações do protocolo e transporte autenticado; um endereço IP não é prova de identidade     |
-| Aplicação sem TLS   | Conteúdo legível ou alterável no caminho                                       | TLS corretamente validado; os extremos continuam a ver o conteúdo                              |
+| Mecanismo atacado   | Fraqueza explorada                                                   | Defesa e limite                                                                                |
+| ------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| ARP numa rede local | O atacante envia associações falsas entre o IP do router e o seu MAC | Controlos na rede local; um canal autenticado protege dados mesmo com caminho hostil           |
+| DNS                 | Resposta ou resolução adulterada                                     | Validação DNSSEC onde aplicável; não cifra consultas nem garante que o serviço final é honesto |
+| TCP                 | Manipulação de estado ou segmentos                                   | Validações do protocolo e transporte autenticado; um endereço IP não é prova de identidade     |
+| Aplicação sem TLS   | Conteúdo legível ou alterável no caminho                             | TLS corretamente validado; os extremos continuam a ver o conteúdo                              |
 
 Nem todo atacante pode ver todos os pacotes, por isso numa resposta justifica que mensagens ele controla.
 
@@ -88,7 +85,7 @@ Um IDS deteta eventos suspeitos; um IPS pode bloquear. Deteção por assinatura 
 
 Um worm pode instalar um bot e integrar os sistemas numa botnet. "Worm" descreve propagação; "botnet" descreve coordenação. Não são categorias necessariamente exclusivas.
 
-Uma assinatura reconhece um padrão conhecido. Alterar representação, empacotar ou cifrar partes do código pode dificultar esse reconhecimento. Deteção comportamental observa ações, mas tem falsos positivos e depende do comportamento executado, porque o malware pode atrasar ações ou reconhecer indícios de uma sandbox, ou seja não fazer nada numa execução de teste não demonstra inocuidade.
+Uma assinatura reconhece um padrão conhecido. Alterar representação, empacotar ou cifrar partes do código pode dificultar esse reconhecimento. Deteção comportamental observa ações, mas tem falsos positivos e depende do comportamento executado. O malware pode atrasar ações ou reconhecer indícios de uma sandbox. Não fazer nada numa execução de teste não demonstra inocuidade.
 
 Numa análise defensiva, combina origem do ficheiro, análise estática, execução isolada e telemetria, sem executar amostras no ambiente de trabalho. Prevenção inclui corrigir a via de entrada, restringir privilégios e segmentar. Recuperação pode exigir isolar equipamentos, substituir credenciais e restaurar cópias verificadas; eliminar um ficheiro não garante que toda a persistência desapareceu.
 
@@ -111,18 +108,18 @@ Suponhamos pedidos de 60 bytes e respostas de 3 000 bytes, contando apenas o con
 
 ## O problema da taxa base
 
-Um IDS analisa 10 000 eventos. Há 10 ataques. Deteta 90% dos ataques e alerta em 1% dos eventos legítimos. Lê a tabela por linhas: dos 10 ataques, 9 geram alerta e 1 não; dos 9 990 eventos legítimos, cerca de 99,9 geram alerta e os restantes não. Esperamos 9 verdadeiros positivos e $0{,}01\times9\,990=99{,}9$ falsos positivos. A precisão esperada dos alertas é:
+Um IDS analisa 10 000 eventos. Há 10 ataques. Deteta 90% dos ataques e alerta em 1% dos eventos legítimos. Dos 10 ataques, 9 geram alerta e 1 não: são os verdadeiros positivos e o falso negativo esperados. Nos 9 990 eventos legítimos, esperamos $0{,}01\times9\,990=99{,}9$ falsos positivos. A precisão esperada dos alertas é:
 
 $$\frac{9}{9+99{,}9}\approx8{,}26\%.$$
 
 Uma taxa de deteção alta não implica que a maioria dos alertas seja um ataque. A raridade dos ataques afeta a interpretação.
 
-<CodePlayground
-  title="Calcular a precisão de um IDS"
-  language="python"
-  code={
-    'eventos, ataques = 10000, 10\nvp = ataques * 0.90\nfp = (eventos - ataques) * 0.01\nprint("VP esperados:", vp, "FP esperados:", fp)\nprint(f"Precisão: {100 * vp / (vp + fp):.2f}%")'
-  }
-/>
+| Classe real       | Alerta | Sem alerta |  Total |
+| ----------------- | -----: | ---------: | -----: |
+| Ataques           |      9 |          1 |     10 |
+| Eventos legítimos |   99,9 |    9 890,1 |  9 990 |
+| Total esperado    |  108,9 |    9 891,1 | 10 000 |
+
+As células fracionárias são valores esperados, não contagens observadas de um ensaio. Para a precisão lemos a coluna dos alertas: só 9 dos 108,9 alertas esperados correspondem a ataques.
 
 Para escolher uma defesa DoS, identifica o recurso esgotado. Se o acesso à Internet já está saturado, filtrar só no servidor chega tarde. Se a CPU gasta trabalho caro por pedido, limites e filas na aplicação podem ajudar, porque bloquear um IP também pode bloquear utilizadores legítimos que partilham esse endereço.

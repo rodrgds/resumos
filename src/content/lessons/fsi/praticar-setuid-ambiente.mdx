@@ -1,0 +1,79 @@
+---
+title: 'Praticar: Set-UID, ambiente e descritores'
+description: Diagnosticar seleção de executáveis, interpretação de argumentos e autoridade herdada.
+section: exercicios
+order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Moodle FSI, objetivos do guião da semana 4
+      url: https://moodle2627.up.pt/mod/page/view.php?id=50517
+  coverage: Cenários originais sobre os mecanismos das Tasks 6, 8 e 9.
+  gaps:
+    - A autoavaliação não substitui a execução e discussão do guião docente.
+---
+
+import Exercise from '../../../components/Exercise.astro';
+
+<Exercise
+  id="setuid-path-shell"
+  title="Executável fixo, argumento interpretado"
+  explanation="/cadeiras/fsi/setuid-ambiente/#path-e-interpretação-pela-shell"
+  answer={{ kind: 'self', checklist: [
+    'Distingui procura por PATH de interpretação pela shell.',
+    'Expliquei o efeito do ponto e vírgula em system e em argv.',
+    'Não tratei execve como autorização de qualquer ficheiro.',
+  ] }}
+>
+
+Um serviço usa `system("cat relatorio")`. O requerente controla a primeira pasta de `PATH`. A equipa muda para `system("/bin/cat " + nome)`, onde `nome` é texto externo. Explica que risco a alteração retira e qual permanece. Compara o argumento `relatorio; printf MARCA` nas duas chamadas seguintes: o comando concatenado para `system` e uma chamada direta a `/bin/cat` por `execve` com esse texto num único elemento de `argv`. Não assumes que a shell conserva privilégios.
+
+<div slot="hint">
+Quem escolhe o executável e quem interpreta os caracteres do argumento?
+</div>
+<div slot="solution">
+O caminho absoluto retira a procura de `cat` por `PATH`; a shell continua a interpretar o comando. Em `system`, o ponto e vírgula separa a consulta e `printf MARCA`. Em `execve`, o texto passa como um único argumento: sem shell, o ponto e vírgula não cria outra operação. Ainda são necessários autorização do objeto, controlo das opções e ambiente adequado. O UID da operação final depende também da shell e das condições de execução; não basta saber que o serviço é Set-UID.
+</div>
+</Exercise>
+
+<Exercise
+  id="setuid-descritor-herdado"
+  title="Duas formas de chegar ao mesmo ficheiro"
+  explanation="/cadeiras/fsi/setuid-ambiente/#descritores-depois-de-retirar-privilégios"
+  answer={{ kind: 'self', checklist: [
+    'Identifiquei a abertura privilegiada como origem do descritor.',
+    'Distingui nova abertura de escrita pela referência existente.',
+    'Expliquei quando close-on-exec fecha e quando não fecha.',
+  ] }}
+>
+
+Um serviço com UID efetivo 0 abre um ficheiro `0644` de root para escrita e recebe o descritor 3. Baixa todos os seus UIDs para 1000, com sucesso. Uma nova abertura para escrita é negada, mas o descritor continua válido. Assume permissões tradicionais, sem outras políticas ou restrições. Explica por que a escrita pelo descritor 3 ainda pode ocorrer. Se o serviço marcar o descritor close-on-exec, fica fechado ao baixar o UID? E após um `execve` bem-sucedido?
+
+<div slot="hint">
+Identifica o momento em que foi concedida a referência de escrita.
+</div>
+<div slot="solution">
+A abertura verificou autoridade quando o UID efetivo era 0. Baixar os UIDs não fecha o descritor nem reaplica a decisão de abertura a cada escrita. A nova abertura usa a autoridade atual e é negada, enquanto o descritor 3 conserva a referência de escrita. Close-on-exec fecha-o num `execve` bem-sucedido, não na mudança de UID. O próprio serviço ainda o pode usar antes de `execve`; se já não precisa dele, deve fechá-lo.
+</div>
+<div slot="mistakes">
+O recurso deste caso é um descritor. Retirar Linux capabilities não o fecha automaticamente.
+</div>
+</Exercise>
+
+<Exercise
+  id="ambiente-fork-exec"
+  title="Cópia do ambiente e substituição do programa"
+  explanation="/cadeiras/fsi/setuid-ambiente/#ambiente-em-fork-e-execve"
+  answer={{ kind: 'self', checklist: [
+    'Mantive o ambiente do pai independente da alteração do filho.',
+    'Usei envp como ambiente do novo programa.',
+    'Distingui criar um filho de substituir o programa no mesmo processo.',
+  ] }}
+>
+
+O pai tem `MODO=consulta` e cria um filho com `fork`. O filho muda a sua variável para `MODO=editar` e faz `execve` com uma lista `envp` que contém apenas `MODO=restrito`, terminada por ponteiro nulo. As operações têm sucesso. Que valor fica no pai? Que valor recebe o novo programa? A chamada a `execve` criou mais um processo?
+
+<div slot="solution">
+O pai mantém `MODO=consulta`: o filho alterou a sua cópia. O novo programa recebe `MODO=restrito`, escolhido em `envp`, e não o valor anterior do filho. `fork` criou o filho; `execve` substituiu o seu programa no mesmo processo. Distinguir estes momentos permite controlar o ambiente transmitido a uma operação sensível.
+</div>
+</Exercise>

@@ -28,12 +28,6 @@ Segue um pedido que não passa pela interface.
 
   </div>
 
-  <div slot="hint-more">
-
-Quem recebe o pedido tem de decidir se aquela conta pode alterar aquela pauta.
-
-  </div>
-
   <div slot="solution">
 
 Falta uma verificação de autorização eficaz no servidor. A mediação deve estar junto da operação protegida e considerar sujeito, objeto e operação. Segue o ataque: o cliente envia `POST /notas/42` sem passar pela interface; o servidor aceita porque só verifica autenticação; a correção verifica em cada pedido se aquela conta pode alterar aquela pauta. A interface pode orientar o uso, mas o cliente pode enviar o pedido diretamente.
@@ -85,39 +79,24 @@ Não atribuas o problema à ausência de autenticação: o enunciado já a forne
 </Exercise>
 
 <Exercise
-  revision={1}
+  revision={2}
   id="memoria-endereco-igual"
-  title="Duas traduções"
+  title="Traduções e partilha explícita"
   explanation="/cadeiras/fsi/sistemas-seguros/#memória-virtual-e-fronteira-do-kernel"
-  answer={{"kind": "choice", "options": [{"text": "A escrita usa a tradução de A; o mesmo endereço virtual não demonstra partilha.", "correct": true, "explanation": "É preciso conhecer os mapeamentos e permissões de cada processo."}, {"text": "A altera sempre a memória de B porque o número do endereço coincide.", "correct": false, "explanation": "Um endereço virtual não identifica sozinho uma página física global."}, {"text": "Partilha de memória é impossível em processos separados.", "correct": false, "explanation": "O sistema pode configurar mapeamentos partilhados autorizados."}]}}
+  answer={{ kind: 'self', checklist: ['Distingui número virtual de página física.', 'Usei a tradução de cada processo para prever o efeito.', 'Expliquei a condição de partilha e a necessidade de permissões.'] }}
 >
 
-A e B têm buffers no endereço virtual 0x8000. Não foi configurada partilha. A escreve nesse endereço. O que podemos concluir do número igual?
+A e B têm páginas virtuais em `0x8000`. A traduz essa página para a página física F1; B traduz para F2, distinta de F1. A escreve no deslocamento 12. B vê a alteração? Depois o sistema configura ambos para usar F1, com leitura e escrita permitidas. O que muda? Assume que não existem outras falhas nem cópias durante estas operações.
 
-  <div slot="hint">
-
-Qual tabela de páginas é usada pela escrita?
-
-  </div>
-
-  <div slot="hint-more">
-
-Endereço virtual e página física não são a mesma referência.
-
-  </div>
-
-  <div slot="solution">
-
-A usa a sua tradução. O número igual não prova que B vê a escrita. Se existisse uma página explicitamente partilhada, a análise seria diferente; precisamos do mapeamento, não só do número.
-
-  </div>
-
-  <div slot="mistakes">
-
-Não transformar isolamento normal em uma afirmação de que nenhuma forma de partilha existe.
-
-  </div>
-
+<div slot="hint">
+Segue a página física referida por cada operação.
+</div>
+<div slot="solution">
+No primeiro estado, A altera F1 no deslocamento 12; B lê F2 e não vê essa escrita. No segundo, ambos usam F1: B pode observar o byte escrito por A no mesmo deslocamento, depois da escrita. O número virtual igual não decidiu a partilha; foram os mapeamentos. Se B não tivesse leitura, mapear a página também não lhe concederia esse acesso.
+</div>
+<div slot="mistakes">
+Partilha explícita é compatível com espaços de endereços separados.
+</div>
 </Exercise>
 
 <Exercise
@@ -136,12 +115,6 @@ A operação que expõe os dados é criar processos?
 
   </div>
 
-  <div slot="hint-more">
-
-O filtro do número da chamada não identifica sozinho todos os ficheiros permitidos.
-
-  </div>
-
   <div slot="solution">
 
 Não. A leitura permitida pode alcançar a pasta montada; bloquear uma chamada diferente não limita essa autoridade. Remove a montagem desnecessária, aplica acesso mínimo e controla também os canais de saída. Namespaces, políticas e limites complementam seccomp. A fronteira continua a depender do kernel partilhado e da configuração.
@@ -157,109 +130,22 @@ Não tratar container ou seccomp como uma propriedade binária de segurança tot
 </Exercise>
 
 <Exercise
-  revision={1}
+  revision={2}
   id="tpm-medir-e-decidir"
-  title="Medição diferente"
+  title="Atualização e prova antiga"
   explanation="/cadeiras/fsi/sistemas-seguros/#arranque-verificado-medições-e-tpm"
-  answer={{"kind": "self", "checklist": ["Distingue medição de bloqueio de execução.", "Identifica política do verificador e desafio novo na atestação.", "Reconhece que uma atualização legítima pode alterar PCR."]}}
+  answer={{ kind: 'self', checklist: ['Distingui medição de bloqueio.', 'Rejeitei a prova antiga que não responde ao desafio novo.', 'Expliquei atualização da política e limites de uma medição aceite.'] }}
 >
 
-Uma atualização legítima muda as medições de arranque. O TPM regista-as, mas não existe uma política que rejeite o novo estado. É correto dizer que o TPM impediu o arranque? Que decisão pode fazer um verificador remoto?
+Uma atualização legítima muda as medições de arranque de M1 para M2. O TPM regista M2. Um servidor só aceita M1 e envia um desafio novo. O cliente entrega uma atestação antiga de M1 ligada ao desafio anterior. O TPM impediu o arranque? O servidor deve aceitar essa prova? Como tratar a atualização sem ignorar a frescura?
 
-  <div slot="hint">
-
-Registar um valor e impedir uma operação são ações distintas.
-
-  </div>
-
-  <div slot="hint-more">
-
-O verificador compara a prova atual com uma política de estados aceites.
-
-  </div>
-
-  <div slot="solution">
-
-Não. A medição regista o estado; não demonstra que o bloqueou, porque registar um valor e impedir uma operação são ações distintas. Um verificador pode validar uma atestação ligada a um desafio novo e recusar acesso se os valores não cumprem a política. A política precisa de tratar atualizações e recuperação, porque Secure Boot tem uma função diferente de verificação de componentes autorizados.
-
-  </div>
-
-  <div slot="mistakes">
-
-Não concluir que uma medição conhecida prova ausência de comprometimento futuro.
-
-  </div>
-
-</Exercise>
-
-<Exercise
-  revision={1}
-  id="android-uid-native"
-  title="Código nativo na aplicação"
-  explanation="/cadeiras/fsi/sistemas-seguros/#android-isolamento-por-aplicação"
-  answer={{"kind": "choice", "options": [{"text": "O código nativo continua dentro da fronteira da aplicação; o kernel e as políticas aplicam-se-lhe.", "correct": true, "explanation": "Mudar a linguagem não concede outro UID ou acesso livre a dados."}, {"text": "Código nativo ignora automaticamente as permissões Linux.", "correct": false, "explanation": "A fronteira aplica-se ao processo, não só a código gerido."}, {"text": "Permissão de câmara autoriza todos os ficheiros privados de outras aplicações.", "correct": false, "explanation": "A capacidade autorizada tem âmbito próprio."}]}}
->
-
-Uma aplicação Android passa uma operação de Java para uma biblioteca nativa. Sem explorar uma falha ou receber uma partilha autorizada, essa mudança dá acesso livre aos dados de outra aplicação?
-
-  <div slot="hint">
-
-Que identidade de processo executa a biblioteca?
-
-  </div>
-
-  <div slot="hint-more">
-
-UID e políticas não desaparecem quando a linguagem muda.
-
-  </div>
-
-  <div slot="solution">
-
-Não. A biblioteca continua a executar sob a identidade e as restrições da aplicação. Consentimento para uma capacidade específica não equivale a autorização para todas as outras. Uma vulnerabilidade ou configuração privilegiada precisa de análise separada.
-
-  </div>
-
-  <div slot="mistakes">
-
-Não confundir código nativo com execução privilegiada.
-
-  </div>
-
-</Exercise>
-
-<Exercise
-  revision={1}
-  id="atestar-passos"
-  title="Medir, proteger, pedir e decidir"
-  explanation="/cadeiras/fsi/sistemas-seguros/#monitor-de-referência-e-tcb"
-  answer={{"kind": "self", "checklist": ["Separa medir de bloquear.", "Liga o desafio novo à frescura da atestação.", "Explica que a decisão usa política, chaves confiáveis e atualização/recuperação."]}}
->
-
-Um servidor recebe uma atestação com medições esperadas e concede acesso. Distingue os quatro passos (medir, proteger chaves, pedir com desafio novo, decidir) e explica por que uma medição esperada não prova segurança futura.
-
-  <div slot="hint">
-
-Medir regista; decidir autoriza.
-
-  </div>
-
-  <div slot="hint-more">
-
-Sem desafio novo, uma atestação antiga pode ser repetida.
-
-  </div>
-
-  <div slot="solution">
-
-Medir regista o que arrancou; não bloqueia. Proteger chaves no TPM impede leitura fora da política. O verificador pede um desafio novo e recebe medições autenticadas ligadas a esse desafio, o que impede repetição de provas antigas. Decidir compara com a política e pode negar. Uma medição esperada descreve o arranque, não prova que o sistema nunca será comprometido depois, nem dispensa atualização e recuperação.
-
-  </div>
-
-  <div slot="mistakes">
-
-Não confundas Secure Boot, que verifica e pode recusar componentes, com Measured Boot, que regista.
-
-  </div>
-
+<div slot="hint">
+Distingue a ocorrência do arranque da autorização remota.
+</div>
+<div slot="solution">
+Registar M2 não demonstra bloqueio do arranque. O servidor rejeita a prova antiga porque não está ligada ao desafio pendente, mesmo que M1 seja um estado aceite. Para admitir a atualização, verifica-a e atualiza a política de estados aceites; pede depois uma prova nova de M2. Aceitar a medição descreve o estado medido, não garante ausência de comprometimento posterior. A recuperação e a proteção das chaves continuam necessárias.
+</div>
+<div slot="mistakes">
+Não aceitar uma prova antiga só porque contém uma medição conhecida.
+</div>
 </Exercise>

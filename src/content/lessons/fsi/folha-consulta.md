@@ -63,13 +63,21 @@ RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esque
 - Unix: escolher dono, senão grupo, senão outros. $r=4,w=2,x=1$.
 - Diretório: `x` atravessa, `r` enumera; `w+x` altera entradas, com restrições adicionais como sticky bit. Verificar todas as pastas do caminho. [Explicação](/cadeiras/fsi/controlo-acessos/).
 
+## Set-UID e ambiente
+
+- `fork` copia o ambiente; `execve` recebe o ambiente explicitamente e substitui o programa no mesmo processo.
+- Set-UID pode mudar o UID efetivo para o dono do executável; depende das condições do sistema.
+- `system` invoca uma shell: `PATH` e metacaracteres podem mudar a operação. Executável fixo, argumentos separados e ambiente controlado retiram esses mecanismos, mas não substituem autorização.
+- Baixar o UID não fecha descritores já abertos. Fechar recursos privilegiados e usar close-on-exec quando não devem ser herdados. [Explicação](/cadeiras/fsi/setuid-ambiente/).
+
 ## Código e rede
 
 - Buffer de $N$ bytes: string de até $N-1$ bytes com terminador. Medir antes de copiar; verificar overflow de tamanhos.
 - `printf`: formato externo controla interpretação; `%s` lê string, `%n` escreve a contagem em `int *`, por isso usa formato literal e tipos corretos.
 - ROP reutiliza código; NX não o impede sozinho. Pilha e argumentos dependem da convenção.
 - Canário terminador depende da cópia; aleatório depende de imprevisibilidade. Taint: source → propagação → sink; dinâmica só cobre execuções observadas.
-- TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável. Validações encadeadas com `else if` não protegem usos diferentes sem nova verificação.
+- TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável. Repetir verificações de um nome mutável não liga a verificação ao objeto usado.
+- Leituras indevidas também podem divulgar dados. Índice com sinal: `0 <= indice < len`; valida o tamanho antes de o converter para um tipo menor. Use-after-free continua inválido mesmo sem crash.
 - Canário deteta algumas corrupções; NX restringe execução; ASLR dificulta prever endereços. Não corrigem a falha de memória. [Explicação](/cadeiras/fsi/programacao-defensiva/).
 - TLS protege transporte entre os seus extremos; não protege de um extremo malicioso.
 - Firewall filtra; IDS alerta; IPS pode bloquear. Precisão $=VP/(VP+FP)$, sensibilidade $=VP/(VP+FN)$.

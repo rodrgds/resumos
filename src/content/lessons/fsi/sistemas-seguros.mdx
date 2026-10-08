@@ -35,7 +35,7 @@ import Dot from '../../../components/Dot.astro';
 import camadas from '../../fsi/camadas.dot?raw';
 import isolamento from '../../fsi/isolamento.dot?raw';
 
-Uma aplicação de notas não deve dar à conta que consulta pautas o poder de mudar utilizadores. Se essa conta for roubada, os seus privilégios determinam o que o atacante consegue fazer. Chama-se privilégio ao conjunto de operações que essa conta tem permissão para fazer. Por isso, construir um sistema seguro começa por limitar essas consequências. Esta página assume as primitivas de [criptografia](/cadeiras/fsi/criptografia/): assinaturas para verificar componentes e hashes para medir software.
+Uma aplicação de notas não deve dar à conta que consulta pautas o poder de mudar utilizadores. Se essa conta for roubada, os seus privilégios determinam o que o atacante consegue fazer. Os **privilégios** são as operações permitidas à conta. Limitá-los reduz as consequências do seu comprometimento. Esta página assume as primitivas de [criptografia](/cadeiras/fsi/criptografia/): assinaturas para verificar componentes e hashes para medir software.
 
 ## Princípios de construção
 
@@ -52,7 +52,7 @@ Começa por um caso: a conta de consulta só precisa de ler a sua pauta durante 
 | Mínimo mecanismo comum    | Reduzimos recursos partilhados que criam dependências e fugas?             |
 | Aceitação psicológica     | O caminho seguro é compreensível e utilizável?                             |
 
-Por exemplo, exigir aprovação de dois responsáveis para publicar uma pauta separa privilégios, porque pedir a mesma palavra-passe duas vezes não cria dois fatores independentes.
+Exigir aprovação de dois responsáveis para publicar uma pauta separa a autoridade de decisão. Pedir a mesma palavra-passe duas vezes à mesma pessoa não cria essa separação. Também não é autenticação multifator: essa distingue categorias de prova de identidade, e não responsáveis por uma decisão.
 
 **Isolamento** limita a comunicação e os recursos acessíveis entre componentes. Um processo separado, uma sandbox ou uma máquina virtual oferece isolamento com hipóteses diferentes. Por exemplo, dois processos com o mesmo ficheiro temporário gravável por todos continuam a comunicar por esse ficheiro. Essa comunicação pode quebrar a separação pretendida.
 
@@ -97,7 +97,16 @@ Por exemplo, um conversor que não precisa de criar processos pode ter uma polí
 
 **Secure Boot** verifica assinaturas de componentes de arranque segundo uma política de confiança, podendo recusar um componente não autorizado. **Measured Boot** regista medições criptográficas do que arrancou. Um TPM pode proteger chaves e acumular essas medições em registos PCR. Medir não é automaticamente bloquear.
 
-Num esquema de atestação, quatro passos têm papéis diferentes. Medir regista o que arrancou. Proteger chaves no TPM impede a leitura fora da política. O verificador pede um desafio novo e recebe medições autenticadas ligadas a esse desafio. Decidir compara com a política e pode negar acesso. Uma medição diferente pode levar o verificador a negar acesso; uma medição esperada não prova que o sistema nunca será comprometido depois do arranque. A decisão depende da cadeia medida, da confiança nas chaves e da política de aceitação.
+Numa atestação, segue a decisão de um servidor que só aceita determinadas medições:
+
+| Passo            | Estado ou decisão                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| Medir            | O arranque acumula medições nos PCR do TPM.                                               |
+| Proteger a chave | A chave de atestação fica sujeita à proteção e à política do TPM.                         |
+| Pedir uma prova  | O servidor envia um desafio novo; a resposta autenticada liga as medições a esse desafio. |
+| Decidir          | O servidor valida a prova e compara as medições com os estados aceites.                   |
+
+Reutilizar uma resposta antiga não satisfaz o desafio novo. Registar uma medição, por si, também não aplica a política de acesso do servidor. Uma medição diferente pode levar o verificador a negar acesso; uma medição esperada não prova que o sistema nunca será comprometido depois do arranque. A decisão depende da cadeia medida, da confiança nas chaves e da política de aceitação.
 
 Uma chave selada a determinada política de PCR pode ficar indisponível se o arranque mudar. Uma atualização legítima também pode mudar as medições, pelo que o desenho precisa de atualização e recuperação. TPM não é um antivírus nem uma garantia de que qualquer programa assinado é seguro.
 
@@ -130,4 +139,4 @@ O serviço deve verificar a autoridade do requerente sobre o objeto antes de abr
 
 Se o servidor de autorização não responde, permitir todos os acessos é uma falha aberta. Negar os acessos protegidos preserva a política de autorização, mas pode reduzir a disponibilidade. O desenho tem de explicitar a propriedade prioritária e uma recuperação segura, em vez de assumir que existe uma resposta universal para qualquer serviço.
 
-Numa resposta de teste, identifica a fronteira de confiança, o componente que decide e a condição verificada. Depois segue um pedido que tenta contornar essa decisão, porque isto é mais preciso do que enumerar princípios sem os aplicar.
+Numa resposta de teste, identifica a fronteira de confiança, o componente que decide e a condição verificada. Depois segue um pedido que tenta contornar essa decisão. Para seguir um caso de autoridade que sobrevive à mudança de UID, continua em [Set-UID e descritores](/cadeiras/fsi/setuid-ambiente/).

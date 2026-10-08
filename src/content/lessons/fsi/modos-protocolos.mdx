@@ -22,15 +22,12 @@ editorial:
 ---
 
 import Mermaid from '../../../components/Mermaid.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import dh from '../../fsi/diffie-hellman.mmd?raw';
 import cbc from '../../fsi/cbc-passos.mmd?raw';
 import dhmitm from '../../fsi/dh-intermediario.mmd?raw';
 
-Uma cifra como AES só transforma de cada vez um bloco fixo. Para uma mensagem maior precisamos de uma regra entre blocos. Para combinar um segredo sem o partilhar antes precisamos de um acordo de chaves.
-
-Uma cifra como AES só transforma de cada vez um bocado fixo de dados. A esse bocado chama-se **bloco**, e à cifra que trabalha assim chama-se **cifra de bloco**. Para proteger uma mensagem maior, dividimos a mensagem em blocos e precisamos de uma regra, o **modo de operação**, que define a relação entre blocos e os valores adicionais usados na cifragem. O XOR, ou seja a operação que compara bits e dá 1 quando são diferentes e 0 quando são iguais, é a peça que combina mensagem e sequência: $x\oplus x=0$ e $x\oplus0=x$. Por exemplo, `1010 XOR 1100 = 0110`.
+AES transforma blocos de 16 bytes. A lista de preços da loja ocupa mais do que isso: é preciso proteger vários blocos com a mesma chave. Uma **cifra de bloco** define a transformação de um bloco; não define sozinha como proteger uma mensagem inteira. Para proteger uma mensagem maior, dividimos a mensagem em blocos e precisamos de uma regra, o **modo de operação**, que define a relação entre blocos e os valores adicionais usados na cifragem. O XOR, ou seja a operação que compara bits e dá 1 quando são diferentes e 0 quando são iguais, é a peça que combina mensagem e sequência: $x\oplus x=0$ e $x\oplus0=x$. Por exemplo, `1010 XOR 1100 = 0110`.
 
 ## ECB, CBC e CTR
 
@@ -61,21 +58,24 @@ $$C_1\oplus C_2=P_1\oplus P_2,$$
 
 porque $S\oplus S=0$. Se uma mensagem é conhecida, a outra fica recuperável. Este problema aparece no one-time pad reutilizado e no CTR com contadores repetidos.
 
-<CodePlayground
-  title="Recuperar texto quando a sequência XOR se repete"
-  language="python"
-  code={
-    'p1 = b"SIM"\np2 = b"NAO"\nsequencia = bytes([23, 91, 142])\ndef xor(a, b):\n    if len(a) != len(b):\n        raise ValueError("Comprimentos diferentes")\n    return bytes(x ^ y for x, y in zip(a, b))\nc1 = xor(p1, sequencia)\nc2 = xor(p2, sequencia)\nrecuperada = xor(xor(c1, c2), p1)\nprint("XOR das cifras:", xor(c1, c2).hex())\nprint("Segunda mensagem:", recuperada.decode())'
-  }
-/>
+Para ver um byte, toma $P_1=01000001$ (A), $P_2=01000010$ (B) e $S=00110000$:
 
-`zip` junta os bytes nas mesmas posições. A verificação de comprimento impede que a operação perca os bytes finais de uma entrada mais longa. Esta simulação usa três bytes fixos para mostrar a identidade algébrica; não implementa uma cifra segura. O one-time pad só tem confidencialidade perfeita com chave uniformemente aleatória, tão longa como a mensagem, secreta e usada uma única vez.
+| Estado                      | Bits                     |
+| --------------------------- | ------------------------ |
+| $C_1=P_1\oplus S$           | `01110001`               |
+| $C_2=P_2\oplus S$           | `01110010`               |
+| $C_1\oplus C_2$             | `00000011`               |
+| $(C_1\oplus C_2)\oplus P_1$ | `01000010`, o B original |
+
+O atacante conhece a primeira mensagem e as duas cifras. A última linha recupera a segunda mensagem sem conhecer previamente $S$.
+
+Os bytes deste exemplo só mostram a identidade algébrica; não implementam uma cifra segura. O one-time pad só tem confidencialidade perfeita com chave uniformemente aleatória, tão longa como a mensagem, secreta e usada uma única vez.
 
 ## Cifragem autenticada
 
 Um MAC autentica dados, mas não os esconde. Cifrar sem autenticar pode permitir alterações controladas ou ataques através das respostas a dados inválidos. **AEAD** protege a confidencialidade do conteúdo e a integridade do conteúdo e dos dados associados, como um número de sequência. Estes dados associados não ficam cifrados.
 
-Usa construções estudadas, como AES-GCM ou ChaCha20-Poly1305, com os requisitos de nonce da construção. Para GCM, reutilizar um nonce com a mesma chave compromete a segurança. A aplicação deve rejeitar dados cuja etiqueta não verifica, antes de lhes dar significado, porque não deves desenhar uma combinação própria de cifra e hash.
+Usa construções estudadas, como AES-GCM ou ChaCha20-Poly1305, com os requisitos de nonce da construção. Para GCM, reutilizar um nonce com a mesma chave compromete a segurança. A aplicação deve rejeitar dados cuja etiqueta não verifica, antes de lhes dar significado. Usa uma construção analisada, em vez de combinar por conta própria uma cifra e um hash.
 
 AEAD não elimina automaticamente a repetição. Uma mensagem válida antiga continua a ter uma etiqueta válida, porque a etiqueta prova que alguém com a chave protegeu aquele conteúdo e dados associados. Não prova que a mensagem é nova. A frescura precisa de mecanismo próprio, conforme o protocolo: por exemplo incluir um número de sequência nos dados associados e manter estado de receção com janela que tolera reordenação legítima, ou usar um desafio fresco por operação e rejeitar respostas fora do desafio pendente.
 
@@ -90,15 +90,13 @@ Ana e Bruno publicam $p=23$ e $g=5$. Ana escolhe $a=6$ e envia $A=g^a\bmod p=8$.
   alt="Ana publica 8 e Bruno publica 19. Com os seus expoentes privados 6 e 15, ambos calculam o segredo 2. Só os valores públicos atravessam a comunicação."
 />
 
-<CodePlayground
-  title="Calcular o segredo comum de Diffie-Hellman"
-  language="python"
-  code={
-    'p, g = 23, 5\na, b = 6, 15\nA, B = pow(g, a, p), pow(g, b, p)\nprint("Públicos:", A, B)\nprint("Segredos:", pow(B, a, p), pow(A, b, p))'
-  }
-/>
+A igualdade vem de aplicar os dois expoentes à mesma base:
 
-Num protocolo real, os parâmetros e a validação dos valores recebidos têm requisitos de segurança, e uma função de derivação transforma o segredo em chaves adequadas, porque o acordo $(g^b)^a=(g^a)^b=g^{ab}$ só explica a coincidência no grupo usado.
+$$B^a=(g^b)^a=g^{ab}=(g^a)^b=A^b\pmod p.$$
+
+Ana não precisa de conhecer $b$: usa o valor público $B$ e o seu $a$. Bruno faz a operação correspondente com $A$ e $b$.
+
+Num protocolo real, os parâmetros e a validação dos valores recebidos têm requisitos de segurança, e uma função de derivação transforma o segredo em chaves adequadas. A igualdade anterior explica a coincidência dos resultados no grupo usado, não a autenticação dos participantes.
 
 **Sem autenticação**, um intermediário pode substituir A e B pelos seus valores e estabelecer um segredo com cada lado. O acordo não prova com quem falamos. No diagrama seguinte, o intermediário combina um segredo com Ana e outro segredo com Bruno; Ana e Bruno veem trocas aparentemente normais, mas partilham segredos diferentes com o intermediário.
 
@@ -111,9 +109,7 @@ Certificados e assinaturas sobre o contexto da troca, ou uma chave previamente p
 
 Chaves efémeras corretamente usadas e apagadas podem dar **sigilo futuro**: comprometer mais tarde a chave de autenticação de longo prazo não permite recuperar sessões antigas gravadas. Isso não protege uma sessão cujo próprio segredo efémero foi comprometido.
 
-Identifica o que é público e o que fica privado no acordo. Explica por que o acordo sozinho não impede um intermediário ativo.
-
-Se a troca ainda parecer abstrata, este vídeo mostra a troca de chaves passo a passo. Segue a troca de chaves e distingue segredos de sessão de chaves de longo prazo.
+O vídeo acompanha a troca de valores públicos. Compara-a com os dois diagramas: obter um segredo comum e verificar a identidade do interlocutor continuam a ser problemas diferentes.
 
 <YouTube
   id="NmM9HA2MQGI"

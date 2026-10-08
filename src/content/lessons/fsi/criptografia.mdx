@@ -22,14 +22,13 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import cadeia from '../../fsi/cadeia.typ?raw';
 
-Ana quer enviar uma mensagem ao Bruno sem que outra pessoa a leia. Chama-se confidencialidade à garantia de que só o destinatário conhece o conteúdo. Bruno também quer saber se a mensagem veio da Ana e se mudou durante o caminho. Chama-se autenticidade à prova de quem enviou e integridade à deteção de alterações. Cada objetivo pede uma primitiva diferente, isto é um mecanismo criptográfico básico com um objetivo preciso.
+Ana envia ao Bruno a lista de preços da loja. Um observador da rede não deve conseguir lê-la, e Bruno precisa de detetar alterações e verificar a origem. São objetivos distintos: confidencialidade, integridade e autenticidade. Uma **primitiva criptográfica** é um mecanismo básico, como uma cifra ou uma assinatura, que pode ser combinado num protocolo para cumprir esses objetivos.
 
 ## Escolher a primitiva
 
-Começa por três casos com a pauta da loja. Para esconder a pauta em trânsito, Ana cifra para a chave pública do Bruno. Para provar que a pauta veio da direção, a direção assina com a sua chave privada e qualquer pessoa verifica com a pública. Para detetar uma alteração acidental face a uma cópia confiável, basta comparar o hash com a referência guardada. A tabela seguinte resume quando cada mecanismo serve e o que não resolve sozinho.
+Começa por três casos com a lista de preços da loja. Para esconder a lista em trânsito, Ana cifra para a chave pública do Bruno. Para provar que a lista veio da direção, a direção assina com a sua chave privada e qualquer pessoa verifica com a pública. Para detetar uma alteração acidental face a uma cópia confiável, basta comparar o hash com a referência guardada. A tabela seguinte resume quando cada mecanismo serve e o que não resolve sozinho.
 
 | Mecanismo              | Segredo necessário                    | Propriedade principal                                            | O que não dá sozinho                                       |
 | ---------------------- | ------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -41,11 +40,17 @@ Começa por três casos com a pauta da loja. Para esconder a pauta em trânsito,
 
 Uma assinatura usa operações próprias `Sign` e `Verify`. Não se deve defini-la como "cifrar com a chave privada": isso não descreve algoritmos como EdDSA e omite a codificação segura do RSA. Se a chave privada foi roubada, verificar a assinatura não distingue o titular do ladrão. Uma assinatura pode apoiar o não repúdio, porque terceiros podem verificar a prova. A atribuição de uma ação à pessoa continua a depender da associação da chave, da sua proteção e do contexto.
 
-Uma função hash tem saída de tamanho fixo. A resistência a pré-imagem dificulta encontrar uma entrada para um resumo dado, por exemplo recuperar a pauta a partir do resumo publicado. A resistência a segunda pré-imagem dificulta encontrar outra pauta com o mesmo resumo de uma pauta dada. A resistência a colisões dificulta encontrar quaisquer duas pautas diferentes com o mesmo resumo, mesmo que o atacante escolha ambas. São problemas diferentes. Para uma saída ideal de $n$ bits, a pesquisa genérica de colisões custa aproximadamente $2^{n/2}$ tentativas, por causa do paradoxo do aniversário.
+Uma função hash tem saída de tamanho fixo. Para a lista de preços, distingue três problemas:
+
+- **Pré-imagem:** dado um resumo, encontrar alguma entrada que o produza.
+- **Segunda pré-imagem:** dada a lista original, encontrar outra lista com o mesmo resumo.
+- **Colisão:** escolher duas listas distintas que produzam o mesmo resumo, sem uma lista original imposta.
+
+Para uma saída ideal de $n$ bits, a pesquisa genérica de colisões custa aproximadamente $2^{n/2}$ tentativas, por causa do paradoxo do aniversário. Isto não torna secreto um dado com poucos valores possíveis: se a lista só pudesse ser uma de dez versões conhecidas, calcular os dez hashes permitiria comparar as hipóteses com o resumo publicado.
 
 ## Cifrar e assinar com as chaves certas
 
-Para confidencialidade, Ana cifra para a chave pública **do Bruno**, que decifra com a privada do Bruno. Para autenticidade, Ana assina com a privada **da Ana**, e Bruno verifica com a pública da Ana, ou seja trocar estes nomes troca o objetivo.
+Para confidencialidade, Ana cifra para a chave pública **do Bruno**, que decifra com a privada do Bruno. Para autenticidade, Ana assina com a privada **da Ana**, e Bruno verifica com a pública da Ana. Trocar estes nomes troca o objetivo.
 
 Em sistemas híbridos, uma chave de sessão protege os dados com uma cifra simétrica autenticada. Um mecanismo de acordo ou encapsulamento de chaves estabelece esse segredo. Isto evita usar operações de chave pública para todo o conteúdo. O acordo de chaves também precisa de autenticação, como veremos em [modos e protocolos](/cadeiras/fsi/modos-protocolos/).
 
@@ -75,13 +80,14 @@ Para $m=5$, com $0\leq m<n$, Ana calcula $c=m^e\bmod n=125\bmod33=26$. Bruno rec
 
 Para separar as identidades, Ana usa outro par: $p=5$, $q=11$, $n=55$, $\varphi(n)=40$, $e=3$, $d=27$. Neste exemplo aritmético, o representante da mensagem é 5. A operação privada dá $s=5^{27}\bmod55=25$. A operação pública verifica $25^3\bmod55=5$. O valor 25 pertence ao par da Ana, não ao do Bruno.
 
-<CodePlayground
-  title="RSA: cifrar, recuperar e verificar"
-  language="python"
-  code={
-    'mensagem = 5\ncifra = pow(mensagem, 3, 33)\nrecuperada = pow(cifra, 7, 33)\nassinatura_brinquedo = pow(mensagem, 27, 55)\nverificada = pow(assinatura_brinquedo, 3, 55)\nprint("Cifra para Bruno:", cifra, "Mensagem:", recuperada)\nprint("Operação privada da Ana:", assinatura_brinquedo)\nprint("Verificação pública:", verificada)'
-  }
-/>
+| Operação                | Chave usada      | Cálculo         | Resultado |
+| ----------------------- | ---------------- | --------------- | --------- |
+| Cifrar para Bruno       | Pública de Bruno | $5^3\bmod33$    | 26        |
+| Recuperar por Bruno     | Privada de Bruno | $26^7\bmod33$   | 5         |
+| Operação privada da Ana | Privada da Ana   | $5^{27}\bmod55$ | 25        |
+| Verificar essa operação | Pública da Ana   | $25^3\bmod55$   | 5         |
+
+O módulo 33 pertence ao par do Bruno; o módulo 55 pertence ao da Ana. A última linha é apenas a verificação aritmética deste exemplo, sem a codificação de uma assinatura segura.
 
 Os números pequenos permitem fatorizar o módulo imediatamente. Mesmo com números grandes, RSA sem codificação é determinístico e tem relações algébricas exploráveis. Esta conta demonstra o mecanismo, não a segurança de um protocolo.
 
