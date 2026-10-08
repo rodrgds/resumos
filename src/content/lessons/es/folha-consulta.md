@@ -22,7 +22,7 @@ Pares possíveis numa equipa: $n(n-1)/2$, ou seja não mede reuniões nem custo 
 
 [Velocidade](/cadeiras/es/gestao-projetos/#velocidade-e-previsão): trabalho Done por Sprint. Previsão simples: $\lceil \text{backlog}/v \rceil$. Exige unidade, capacidade e critérios comparáveis; não compares equipas por pontos.
 
-[Burndown](/cadeiras/es/gestao-projetos/#ler-um-burndown): mostra trabalho restante sob âmbito e estimativas estáveis. Desvio da linha ideal é sinal para investigar, não quantidade obrigatória a cortar. Com 40 iniciais e 26 restantes, concluiu 14. Com mais 10 entrados, concluiu 24. Burnup pode mostrar crescimento de âmbito.
+[Burndown](/cadeiras/es/gestao-projetos/#ler-um-burndown): mostra trabalho restante; para deduzir trabalho concluído, considera mudanças de âmbito e estimativas. Desvio da linha ideal é sinal para investigar, não quantidade obrigatória a cortar. Com 40 iniciais e 26 restantes, concluiu 14. Com mais 10 entrados, concluiu 24. Burnup pode mostrar crescimento de âmbito.
 
 ## Scrum e XP
 
@@ -62,7 +62,7 @@ Pares possíveis numa equipa: $n(n-1)/2$, ou seja não mede reuniões nem custo 
 [Casos de uso](/cadeiras/es/modelacao-uml/#casos-de-uso): ator é papel externo; caso produz resultado com valor; fronteira define o sistema.
 
 - Include: seta tracejada do caso que inclui para o incluído.
-- Extend: seta tracejada da extensão para o base, com condição e ponto de extensão.
+- Extend: seta tracejada da extensão para o base, num ponto de extensão. A guarda, quando indicada, determina a aplicação; pode ser omitida.
 - Generalização: triângulo vazio para o elemento geral.
 
 [Classes](/cadeiras/es/modelacao-uml/#classes-e-modelo-de-domínio): lê multiplicidade na ponta oposta. $1$, exatamente uma; $0..1$, nenhuma ou uma; $0..*$, nenhuma ou várias. Restrições temporais precisam de regras adicionais.

@@ -10,11 +10,9 @@ import UmlUseCases from '../../es/UmlUseCases.astro';
 import UmlDomain from '../../es/UmlDomain.astro';
 import UmlSequence from '../../es/UmlSequence.astro';
 
-Acordámos que reservar exige verificação atómica no servidor. Agora precisamos de desenhar esse acordo para encontrar dúvidas antes do código: quem participa, que regra impede a sobreposição e o que acontece quando a sala está ocupada.
+A reserva R de Ana ocupa a sala A das 14h às 15h. Queremos representar a quem pertence, que objetivo realiza e como o ecrã obtém confirmação. Cada diagrama escolhe uma dessas perguntas e omite pormenores que não ajudam a responder-lhe.
 
-Na aplicação de reservas, queremos responder se cada reserva pertence a um estudante e como o ecrã pede a confirmação ao servidor.
-
-Um modelo escolhe os aspetos do sistema que queremos estudar e omite os restantes. UML é uma linguagem de modelação, não um processo de desenvolvimento. Um diagrama ajuda quando responde a uma pergunta concreta e é consistente com as regras descritas.
+UML é uma linguagem de modelação, não um processo de desenvolvimento. Os modelos precisam de ser consistentes entre si e com as regras do sistema.
 
 ## Casos de uso
 
@@ -58,10 +56,6 @@ A **multiplicidade** numa ponta diz quantas instâncias dessa classe podem relac
 
 A multiplicidade não proíbe sobreposições de horários, por isso precisamos de uma restrição adicional: duas reservas confirmadas da mesma sala não se sobrepõem. Estrutura e regras complementam-se.
 
-::::tip[Ideia-chave]
-Lê a multiplicidade na ponta oposta e exprime regras temporais como restrições, porque a estrutura por si só não as captura.
-:::
-
 ## Relações entre classes
 
 Uma **associação** exprime uma relação estrutural. Uma **dependência**, normalmente tracejada, indica que um elemento usa outro e pode ser afetado pela sua alteração.
@@ -104,12 +98,14 @@ confirmar -> fork -> atualizar lista
 
 Uma decisão separa confirmação e conflito porque são resultados alternativos.
 
-Considere Confirmada com duas saídas: cancelar para Cancelada e atingir o fim para Terminada. O efeito libertar intervalo pertence só à transição de cancelamento. Uma ação de saída de Confirmada correria nas duas saídas e libertaria o intervalo também ao terminar, o que está errado.
+### Transições de uma reserva
+
+A reserva de Ana começa às 14h. Às 13h59 pode passar de Confirmada para Cancelada; às 14h o mesmo pedido é recusado. Quando chega às 15h, passa para Terminada. O efeito de cancelamento pertence à primeira transição, enquanto uma ação de saída de Confirmada correria também na passagem para Terminada.
 
 ```
-Confirmada --cancelar [agora < inicio] / libertar intervalo--> Cancelada
+Confirmada --cancelar [titular e agora < inicio] / libertar intervalo--> Cancelada
 Confirmada --atingir o fim--> Terminada
-Cancelada --cancelar novamente--> Cancelada, sem efeito novo
+Cancelada: cancelar novamente mantém o estado, sem efeito novo
 ```
 
 Uma **máquina de estados** descreve como um objeto reage a eventos. Na Reserva, podemos ter Confirmada, Cancelada e Terminada. Um cancelamento só passa de Confirmada para Cancelada se o início ainda não tiver ocorrido. A transição pode escrever-se `evento [guarda] / efeito`. Por exemplo, `cancelar [agora < início] / libertar intervalo` liga Confirmada a Cancelada. A guarda é a condição necessária; o efeito acontece quando a transição é tomada. Uma ação de saída de Confirmada ocorreria em todas as saídas desse estado, por isso não é o mesmo que o efeito específico de cancelar.

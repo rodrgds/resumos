@@ -1,6 +1,6 @@
 ---
-title: Praticar testes
-description: Fronteiras, intervalos, oráculos e distinção entre verificar e validar.
+title: Fronteiras, cobertura e oráculos
+description: Intervalos, validade, fronteiras, cobertura total com defeitos e distinção entre verificar e validar.
 section: exercicios
 order: 1
 ---
@@ -29,7 +29,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     Olha para cada limite e para os valores inteiros imediatamente ao lado.
   </div>
-  <div slot="hint-more">Inclusive significa que o próprio limite é válido.</div>
   <div slot="solution">
     29 é recusado; 30 e 31 são aceites. 119 e 120 são aceites; 121 é recusado. A
     checklist pede estes seis valores porque segue a convenção de três pontos
@@ -44,45 +43,74 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="es-intervalos-adjacentes"
-  revision={1}
-  title="Fim de uma reserva, início de outra"
+  revision={2}
+  title="Adjacência, contenção e intervalo inválido"
   explanation="/cadeiras/es/verificacao-validacao/#um-exemplo-com-intervalos"
-  answer={{"kind": "choice", "options": [{"text": "Sim, porque ambas mencionam 15h.", "correct": false, "explanation": "A primeira exclui o seu fim, por isso não ocupa o instante 15h."}, {"text": "Não, porque o fim é excluído e o início é incluído.", "correct": true, "explanation": "A condição 15 < 15 é falsa numa das desigualdades de sobreposição."}, {"text": "Depende da linguagem de programação.", "correct": false, "explanation": "A convenção foi definida no enunciado e deve orientar a implementação."}]}}
->
-  <p>Os intervalos são semiabertos. Existe uma reserva das 14h às 15h. Uma reserva das 15h às 16h sobrepõe-se?</p>
-  <div slot="hint">Aplica as duas desigualdades ao mesmo par de intervalos.</div>
-  <div slot="hint-more">Uma delas compara início da segunda reserva com fim da primeira.</div>
-  <div slot="solution">Não há sobreposição. Temos 14 < 16 verdadeiro e 15 < 15 falso, ou seja a condição exige ambos e o resultado é falso.</div>
-  <div slot="mistakes">Não uses menor ou igual para este contrato. Essa alteração faria recusar intervalos adjacentes.</div>
-</Exercise>
-
-<Exercise
-  id="es-cobertura-oraculo"
-  revision={1}
-  title="Todas as linhas, nenhum resultado"
-  explanation="/cadeiras/es/verificacao-validacao/#cobertura-e-limites"
   answer={{
     kind: 'self',
     checklist: [
-      'Distingui execução de linhas de correção do resultado.',
-      'Pedi um oráculo derivado da regra.',
-      'Propus conferir resposta e dados em cenários relevantes.',
+      'Aceitei 15h–16h por adjacência.',
+      'Recusei 14h30–15h30 e 14h30–14h45 por sobreposição.',
+      'Recusei 15h–15h por não ter início anterior ao fim.',
+      'Apliquei as duas desigualdades apenas a intervalos válidos.',
     ],
   }}
 >
   <div>
-    Um teste executa todas as linhas da regra de reservas, mas não confere
-    resposta nem estado final. Que evidência dá e o que falta?
+    A sala tem uma reserva das 14h às 15h. Os intervalos são semiabertos e uma
+    reserva válida exige início anterior ao fim. Avalia os pedidos 15h–16h,
+    14h30–15h30, 14h30–14h45 e 15h–15h. Para cada um, justifica aceitação ou
+    recusa pela validade e pela sobreposição. Ignora outras restrições de
+    duração.
   </div>
-  <div slot="hint">Cobertura diz onde o programa passou.</div>
-  <div slot="hint-more">
-    Um cálculo errado também pode executar todas as linhas.
+  <div slot="hint">
+    Aplica as duas desigualdades ao mesmo par de intervalos.
   </div>
   <div slot="solution">
-    Dá evidência de execução dessas linhas no cenário. Falta comparar o
-    comportamento com resultados esperados independentes. Para conflito,
-    verificamos recusa e ausência de nova reserva, além de casos válidos e
-    fronteiras.
+    Para 15h–16h, 14 &lt; 16 é verdadeiro mas 15 &lt; 15 é falso: aceita-se.
+    Para 14h30–15h30, ambas as desigualdades são verdadeiras: recusa-se. Para
+    14h30–14h45 também são verdadeiras, pois 14 &lt; 14,75 e 14,5 &lt; 15: estar
+    contido é uma forma de sobreposição. Para 15h–15h, a duração é zero, logo o
+    intervalo é inválido antes de testar conflitos. A condição de sobreposição
+    pressupõe intervalos válidos.
+  </div>
+  <div slot="mistakes">
+    Não uses menor ou igual para este contrato. Essa alteração faria recusar
+    intervalos adjacentes.
+  </div>
+</Exercise>
+
+<Exercise
+  id="es-cobertura-oraculo"
+  revision={2}
+  title="Cobertura total e um limite errado"
+  explanation="/cadeiras/es/verificacao-validacao/#cobertura-calculada-num-exemplo"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Segui os ramos dos testes 29, 60 e 121 e obtive 4/4.',
+      'Expliquei por que trocar > 120 por >= 120 não é detetado por esses testes.',
+      'Acrescentei o caso 120 com aceitação esperada pela especificação.',
+    ],
+  }}
+>
+  <div>
+    A regra aceita minutos inteiros entre 30 e 120 inclusive. A função recusa
+    primeiro valores menores que 30, depois valores maiores que 120, e aceita os
+    restantes. Os testes 29, 60 e 121 verificam, respetivamente, recusa,
+    aceitação e recusa. Que ramos percorrem? Detetam trocar a segunda condição
+    por minutos maiores ou iguais a 120? Propõe um caso que detete esse defeito.
+  </div>
+  <div slot="hint">
+    Compara os resultados nos limites, além dos ramos percorridos.
+  </div>
+  <div slot="solution">
+    29 percorre o primeiro ramo verdadeiro e termina. 60 percorre os dois ramos
+    falsos. 121 percorre o primeiro falso e o segundo verdadeiro. A união cobre
+    os quatro ramos, 4/4. A condição alterada devolve os mesmos resultados
+    nestas três entradas, por isso o defeito passa. O teste 120 deve esperar
+    aceitação, derivada do limite inclusivo, e falha na versão com maior ou
+    igual. Cobertura total não substitui casos derivados da especificação.
   </div>
   <div slot="mistakes">
     Não apresentes 100% de cobertura como prova de correção. Não derives a

@@ -6,9 +6,9 @@ practices:
   - es/praticar-testes
 ---
 
-Os estudantes conseguem reservar, mas um deles cancela por engano e não consegue corrigir. O sistema cumpre o documento e falha na necessidade. Esta página separa confirmar face ao escrito de confirmar face à necessidade.
+import IntervalosReserva from '../../es/IntervalosReserva.astro';
 
-Na aplicação de salas, o sistema confirma reservas segundo a regra escrita. Depois os estudantes descobrem que não podem cancelar um engano. A implementação pode estar conforme com o documento e continuar a não responder à necessidade. Precisamos de verificar, ou seja confirmar que a solução cumpre o que foi escrito, e de validar, ou seja confirmar que responde à necessidade real do estudante.
+A aplicação confirma reservas conforme a especificação, mas Ana engana-se no horário e descobre que não pode cancelar. Passar os cenários escritos não resolve uma necessidade que ficou fora do documento.
 
 ## Verificação e validação
 
@@ -37,9 +37,7 @@ Ferramentas de análise estática detetam certas classes de problemas, como cód
 
 Um **caso de teste** define entradas, condições de execução e resultados esperados para um objetivo. O **oráculo** permite decidir se o comportamento observado é aceitável, ou seja pode ser uma regra, um resultado calculado independentemente ou uma expectativa acordada.
 
-::::tip[Ideia-chave]
-Um teste só conta como evidência quando o resultado esperado vem da regra, porque derivá-lo do próprio código repete o defeito em vez de o detetar.
-:::
+O resultado esperado precisa de uma justificação independente do código sob teste. Copiar a resposta da implementação para o teste pode conservar o mesmo defeito nos dois.
 
 No caso de sobreposição, começamos com uma sala reservada das 14h às 15h. Pedimos das 14h30 às 15h30. Esperamos uma recusa e nenhuma nova reserva. Ver só uma mensagem de erro não chega se o sistema tiver criado a reserva na mesma.
 
@@ -72,11 +70,17 @@ Os **valores de fronteira** procuram diferenças junto dos limites. Testamos 29,
 
 Adotamos intervalos semiabertos: a reserva inclui o início e exclui o fim. Assim, 14h às 15h e 15h às 16h são adjacentes e não se sobrepõem.
 
+Nesta comparação avaliamos apenas a sobreposição entre intervalos com duração positiva. A regra dos 30 a 120 minutos é testada separadamente; o intervalo contido de 15 minutos serve aqui para isolar a relação temporal.
+
 Dois intervalos válidos, com inícios $i_1,i_2$ e fins $f_1,f_2$, sobrepõem-se quando
 
 $$i_1 < f_2 \quad \text{e} \quad i_2 < f_1.$$
 
 Testamos reserva anterior, seguinte, parcialmente sobreposta, totalmente contida e igual. Uma reserva 14h30 às 14h45 está contida e deve ser recusada. Uma reserva 15h às 16h não satisfaz a segunda desigualdade relativamente a 14h às 15h, porque $15 < 15$ é falso.
+
+<IntervalosReserva />
+
+Na figura, o círculo aberto exclui o fim e o círculo cheio inclui o início. As reservas adjacentes não partilham nenhum instante; a reserva contida partilha tempo mesmo sem atravessar as pontas da primeira.
 
 Também testamos duas criações concorrentes. Dois testes sequenciais não demonstram que a operação atómica impede uma corrida.
 
@@ -98,7 +102,7 @@ Com apenas o teste 60, só vemos os dois ramos falsos, por isso a cobertura de r
 
 ## Cobertura e limites
 
-Cobertura de instruções mede que instruções foram executadas. Cobertura de ramos mede que saídas de decisões foram percorridas. São medidas de execução, não medidas diretas de qualidade dos oráculos ou completude dos requisitos, por isso executar todas as linhas sem conferir resultados pode não descobrir um cálculo errado.
+Mesmo os testes 29, 60 e 121, que percorrem todos os ramos, não distinguem o limite correto `minutos > 120` do defeito `minutos >= 120`. Nenhum deles testa 120. Acrescentar esse caso, com aceitação esperada, deteta a diferença. Cobertura mede execução; as fronteiras e os oráculos continuam a vir do contrato.
 
 Testes mostram falhas em situações exercitadas e aumentam a confiança. Em geral, não provam a ausência de defeitos. A automação é útil para repetir verificações estáveis; testes instáveis precisam de diagnóstico, porque um sinal que muda sem alteração do produto deixa de orientar decisões.
 
@@ -111,7 +115,7 @@ Um registo de defeito deve permitir reproduzir.
 | Campo             | Exemplo                                             |
 | ----------------- | --------------------------------------------------- |
 | Versão e ambiente | build 1.4.2, Android 14, dados de teste salas-2026  |
-| Estado inicial    | sala A livre 14h-15h                                |
+| Estado inicial    | sala A livre 14h30-15h30                            |
 | Passos            | dois pedidos 14h30-15h30 em simultâneo              |
 | Esperado          | uma confirmação e uma recusa, uma reserva nos dados |
 | Observado         | duas confirmações, duas reservas sobrepostas        |
