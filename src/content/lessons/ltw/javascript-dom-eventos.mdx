@@ -10,12 +10,14 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import WebPlayground from '../../../components/WebPlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
+import Mermaid from '../../../components/Mermaid.astro';
+import propagacao from '../../ltw/propagacao-evento.mmd?raw';
 import arrays from '../../ltw/arrays.js?raw';
 import closures from '../../ltw/closures.js?raw';
 import tarefas from '../../ltw/tarefas.html?raw';
 import programa from '../../ltw/tarefas.js?raw';
 
-Depois do servidor, tratamos do navegador. O JavaScript calcula valores e altera a página já carregada. A linguagem define arrays, funções e objetos. O DOM é a árvore de elementos que o navegador constrói a partir do HTML. `document`, elementos e eventos são APIs do navegador. Um programa sem DOM pode correr noutro ambiente.
+Ao acrescentar uma tarefa de leitura, o JavaScript cria um item na página já carregada. O array e a função que calculam valores pertencem à linguagem; `document` e os elementos pertencem à API DOM do navegador. Por isso o cálculo de preços pode correr sem uma página, mas criar um `li` exige um documento.
 
 ## Tipos e conversões
 
@@ -53,7 +55,7 @@ Num teste booleano, `0`, `''`, `null`, `undefined`, `NaN` e `false` são falsos;
   code={arrays}
 />
 
-Segue os estados intermédios. Entrada: três livros com preços 18, 12 e 32. Após `filter` com limite 20: dois livros, Redes e SQL. Após `map` para títulos: `Redes, SQL`. O `reduce` com total inicial 0 soma 18 + 12 = 30. O array original conserva três entradas. Obténs `Redes, SQL`, `30` e `3`. Os objetos dentro de uma cópia superficial continuam partilhados; alterar `baratos[0].preco` também altera esse objeto em `livros`.
+Segue os estados intermédios. Entrada: três livros com preços 18, 25 e 12. Após `filter` com limite 20: dois livros, Redes e SQL. Após `map` para títulos: `Redes, SQL`. O `reduce` com total inicial 0 soma 18 + 12 = 30. O array original conserva três entradas. Obténs `Redes, SQL`, `30` e `3`. Os objetos dentro de uma cópia superficial continuam partilhados; alterar `baratos[0].preco` também altera esse objeto em `livros`.
 
 Uma função é um valor que pode ser passado como callback. `livros.map((livro) => livro.titulo)` recebe uma função; escrever `map(obterTitulo())` chamaria `obterTitulo` imediatamente e passaria o resultado. Numa arrow function com corpo entre chavetas, usa `return` para devolver um valor.
 
@@ -80,11 +82,21 @@ O âmbito lexical depende do local onde a função foi criada. Uma closure é um
   code={closures}
 />
 
-Acompanha cada ambiente. A primeira chamada cria um ambiente com `valor = 5` para `a`. A segunda cria outro ambiente com `valor = 0` para `b`. Cada chamada altera apenas o seu ambiente. Por isso a sequência produz `6 7 1 8`: `a` passa de 5 para 6 e depois para 7; `b` passa de 0 para 1 e depois para 8.
+Cada chamada a `criarContador` cria uma ligação de `valor`. A função devolvida conserva acesso a essa ligação. Na tabela, as colunas `a` e `b` mostram o valor guardado por cada contador:
+
+| Chamada             | Devolve | `a` | `b` |
+| ------------------- | ------- | --- | --- |
+| Criar os contadores | Nenhum  | 5   | 0   |
+| Primeiro `a()`      | 6       | 6   | 0   |
+| Segundo `a()`       | 7       | 7   | 0   |
+| `b()`               | 1       | 7   | 1   |
+| Terceiro `a()`      | 8       | 8   | 1   |
+
+A saída é `6 7 1 8`. O último incremento pertence a `a`; chamar `b` não altera o estado de `a`.
 
 Com `let`, cada iteração de um `for` pode ter uma ligação própria, útil em callbacks. Com um `var` partilhado, callbacks que correm depois do ciclo podem ler todos o valor final. Prevê o momento de execução, não apenas o lugar onde o callback foi escrito.
 
-Se a linguagem parece uma lista de truques soltos, este vídeo dá o panorama antes de seguires os exemplos. Usa como panorama da linguagem, depois segue as variáveis nos exemplos de closures e eventos.
+O vídeo apresenta a linguagem. Nos exemplos seguintes, distingue sempre o local de criação de uma função do modo como ela é chamada.
 
 <YouTube
   id="DHjqpvDnNGE"
@@ -149,13 +161,20 @@ O utilizador vê o texto literal `<b>Redes</b>`. `innerHTML` interpretaria marca
 
 ## Eventos e delegação
 
-Desenha a árvore `ul` com `li` e botão com `span`. O clique começa no `span`, que é o `target`. O evento sobe até ao `ul`, onde o listener corre, por isso `currentTarget` é o `ul`. O programa usa `closest` a partir do alvo para encontrar o botão e depois o `li`. Em captura, percorremos antepassados em direção ao alvo; em bubbling, o evento sobe do alvo pelos antepassados, quando o tipo de evento o permite.
+Considera `ul > li > button > span`. Ao clicar no `span`, ele é o `target`. O evento chega ao listener do `ul` durante a subida; nesse listener, `currentTarget` é o `ul`. O alvo conserva-se, mas o elemento do listener muda ao longo do percurso.
+
+<Mermaid
+  source={propagacao}
+  alt="O clique tem alvo no span. A captura percorre ul, li e button em direção ao alvo. Depois da fase no alvo, o bubbling passa por button, li e ul. No listener de ul, target é span e currentTarget é ul."
+/>
+
+A figura omite os antepassados exteriores ao `ul`. Na captura, o percurso aproxima-se do alvo; no bubbling, sobe pelos antepassados, quando o tipo de evento o permite. `closest` não faz parte da propagação: é a procura que o programa faz a partir do alvo para encontrar o botão e o item.
 
 `preventDefault()` impede uma ação por defeito, como submeter o formulário. Não pára a propagação. `stopPropagation()` interrompe a propagação, não a ação por defeito. Estas operações resolvem problemas diferentes.
 
 <WebPlayground html={tarefas} js={programa} />
 
-Escreve `Rever HTTP`, adiciona e remove a tarefa. O formulário cria um `li` com o texto e um botão. O listener de remoção fica no `ul`, não em cada botão: o clique sobe, `closest` identifica o botão e o programa remove o `li` correspondente, por isso a delegação também funciona para itens criados depois de registares o listener.
+A lista começa com duas tarefas. Clica no texto Remover de uma delas e observa o contador passar de 2 para 1. Escreve `Rever HTTP`, adiciona e remove essa nova tarefa. O formulário cria um `li` com o texto e um botão cujo rótulo é um `span`. O listener de remoção fica no `ul`, não em cada botão: o clique sobe, `closest` identifica o botão e o programa remove o `li` correspondente. A delegação funciona tanto nos itens iniciais como nos criados depois de registares o listener.
 
 O contador usa `children.length`, porque conta itens e não nós de texto. O texto entra por `textContent`. Experimenta escrever `<img src=x>` e confirma que aparece literalmente, sem criar uma imagem. O estado visível muda apenas no cliente; recarregar descarta esta lista.
 

@@ -60,11 +60,6 @@ de leitura.
 Idempotência diz respeito ao efeito pretendido, não à resposta.
 
 </div>
-<div slot="hint-more">
-
-Depois do primeiro <code>{"DELETE"}</code>, o recurso continua removido.
-
-</div>
 <div slot="solution">
 
 As respostas diferentes não violam idempotência: repetir a remoção conserva o estado final pretendido. <code>{"POST"}</code> pode criar de novo, por isso não é idempotente em geral. Uma pesquisa só de leitura usa <code>{"GET"}</code> e não deve alterar reservas. Um contrato adicional poderia deduplicar <code>{"POST"}</code>, mas não se presume.
@@ -116,14 +111,14 @@ Não esperar que await/fetch bloqueiem toda a página, nem confiar no catch para
 </Exercise>
 
 <Exercise
-  revision={1}
+  revision={2}
   id="ltw-origem-pesquisa"
   title="Ler uma API de outra origem"
   explanation="/cadeiras/ltw/http-ajax-json/#sop-e-cors"
-  answer={{"kind": "self", "checklist": ["Usei origem concreta e credenciais dos dois lados.", "Expliquei resposta opaca e resultado antigo."]}}
+  answer={{"kind": "self", "checklist": ["Indiquei os campos de permissão e a opção do cliente.", "Expliquei por que a resposta opaca não permite ler JSON."]}}
 >
 
-A página `https://a.example` consulta `https://api.example` com cookies. Que condições de CORS são necessárias para ler a resposta? `mode: "no-cors"` resolveria? Porque uma pesquisa antiga não deve substituir uma mais recente?
+A página `https://a.example` faz `fetch` para `https://api.example/livros`, com `GET` e sem cabeçalhos adicionais, e precisa de enviar o cookie de sessão da API. Indica a opção do cliente e os cabeçalhos da resposta necessários para ler JSON. Assume que a política do cookie permite o envio. Há preflight por causa dessa opção? `mode: "no-cors"` resolveria a leitura?
 
 <div slot="hint">
 
@@ -132,12 +127,12 @@ Credenciais exigem configuração do cliente e permissão da origem concreta.
 </div>
 <div slot="hint-more">
 
-Uma resposta opaca não permite ler o JSON. A ordem de conclusão pode divergir da ordem de envio.
+Enviar credenciais não altera, por si, o método nem acrescenta um cabeçalho que exija preflight.
 
 </div>
 <div slot="solution">
 
-O cliente usa <code>{"credentials"}</code>: <code>{"include"}</code>; o servidor permite credenciais e a origem `https://a.example` explicitamente, não \*. Regras dos cookies e eventual preflight também se aplicam. `no-cors` não desbloqueia o corpo, que fica opaco. Um contador identifica a pesquisa atual e permite ignorar respostas de pedidos antigos que acabem mais tarde.
+O cliente usa `credentials: "include"`. A resposta inclui `Access-Control-Allow-Origin: https://a.example` e `Access-Control-Allow-Credentials: true`. A origem não pode ser `*` com credenciais. Neste `GET`, não há preflight apenas por enviar cookies; a política dos cookies continua a aplicar-se, como assume o enunciado. `mode: "no-cors"` dá uma resposta opaca, cujo corpo o script não pode ler como JSON.
 
 </div>
 <div slot="mistakes">
@@ -175,6 +170,23 @@ O navegador envia <code>{"OPTIONS"}</code> com `Origin: https://a.example`, `Acc
 <div slot="mistakes">
 
 Não inferir que um erro de CORS anulou uma alteração já feita no servidor.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="ltw-pesquisas-fora-ordem"
+  title="Conservar a pesquisa mais recente"
+  explanation="/cadeiras/ltw/http-ajax-json/#json-e-fetch"
+  answer={{kind: 'self', checklist: ["Apresentei SQL e ignorei a resposta antiga, incluindo o seu erro.", "Coloquei a verificação antes de alterar lista e mensagem."]}}
+>
+
+A pesquisa 1 procura Redes. Antes de terminar, a pesquisa 2 procura SQL. A resposta 2 chega primeiro e apresenta SQL; a resposta 1 chega depois. Que deve ficar visível? Descreve um contador de pedidos que garanta esse resultado e indica o que fazer se, em vez de responder com livros, o pedido 1 falhar depois do sucesso do pedido 2.
+
+<div slot="hint">Distingue o número guardado pelo callback do número do último pedido iniciado.</div>
+<div slot="solution">
+
+SQL deve continuar visível. Incrementa um contador em cada submissão e guarda o novo valor numa variável local do callback. Antes de atualizar a lista, compara o valor local com o contador atual. Só o pedido 2 tem os números iguais. O pedido 1 deve sair sem alterar a página. Aplica a mesma condição no `catch`, antes de limpar a lista ou mostrar um erro: uma falha antiga também não deve substituir o resultado atual. Se a ordem de chegada se inverter, a resposta 1 já é antiga desde que a pesquisa 2 começou, mesmo que esta ainda esteja pendente.
 
 </div>
 </Exercise>

@@ -15,7 +15,9 @@ formulario.addEventListener('submit', (evento) => {
   const botao = document.createElement('button');
   botao.type = 'button';
   botao.dataset.acao = 'remover';
-  botao.textContent = 'Remover';
+  const rotulo = document.createElement('span');
+  rotulo.textContent = 'Remover';
+  botao.append(rotulo);
   item.append(nome, botao);
   lista.append(item);
   texto.value = '';

@@ -6,7 +6,7 @@ studyKind: revision
 order: 0
 ---
 
-Usa esta página para rever cada regra depois de estudares as lições. Cada linha resume uma condição e aponta para a explicação completa.
+As ligações levam às explicações e aos exemplos. Para prever um resultado, confirma primeiro o contexto: árvore HTML, nível da cascata, tipo da entrada, ordem dos callbacks ou nó XPath.
 
 ## HTML e CSS
 

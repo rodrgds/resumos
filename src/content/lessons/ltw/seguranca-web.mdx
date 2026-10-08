@@ -9,7 +9,7 @@ practices:
 
 import YouTube from '../../../components/YouTube.astro';
 
-Escreves um nome na pesquisa do catálogo e esse texto chega à pergunta feita à base de dados. Uma vulnerabilidade é um ponto onde dados assim mudam o programa de forma indevida. O atacante tenta provocar essa mudança. Validar a entrada, preparar o SQL e escapar a saída têm propósitos diferentes. Uma defesa correta num passo não substitui as outras.
+O título de um livro pode passar pelo pedido HTTP, pela base de dados e pelo HTML apresentado. Em cada passagem, o programa decide se o interpreta como dado ou como instrução. Preparar SQL impede que o título mude a consulta; escapar a saída impede que se torne marcação ativa. Validar formato e limites responde a outra pergunta, se o título é permitido pela aplicação.
 
 ## Injeção SQL
 
@@ -34,7 +34,7 @@ $stmt->execute([$nome]);
 
 O marcador recebe o valor como dado. A string de ataque passa a ser um nome literal e não altera a sintaxe. Mantém os valores fora do texto SQL. Para identificadores, como a coluna de ordenação, escolhe entre nomes fixos autorizados; marcadores não representam identificadores SQL.
 
-Se não vês como um nome escrito num campo pode mudar a pergunta à base de dados, este vídeo mostra o momento em que isso acontece. Identifica o ponto onde a entrada muda a sintaxe SQL e reescreve-o com marcadores.
+No vídeo, identifica a concatenação que permite à entrada mudar a sintaxe SQL. Compara-a com a consulta preparada acima.
 
 <YouTube
   id="_jKylhJtPmI"
@@ -64,7 +64,7 @@ Um pedido de alteração pode chegar de outra página e trazer credenciais envia
 
 Um token CSRF é um valor imprevisível associado à sessão. O servidor envia-o no formulário e exige-o no pedido de alteração. A página de outra origem não deve conseguir lê-lo pela política de mesma origem. O token não substitui a autenticação nem a autorização.
 
-Segue o ataque antes do código. A vítima tem sessão válida. Uma página externa contém um formulário que aponta para a ação de reserva. O navegador envia o pedido com o cookie de sessão. O servidor não distingue esse pedido de um pedido iniciado no sítio legítimo. Estes excertos pertencem, respetivamente, à página que mostra o formulário e à ação que o processa:
+Segue o ataque antes do código. A vítima tem sessão válida. Uma página externa contém um formulário que aponta para a ação de reserva. Se a política do cookie permitir o envio nesse contexto, o pedido leva a sessão da vítima. Sem verificar a origem ou um token associado ao formulário, o servidor não consegue confirmar que a ação veio do percurso legítimo. Estes excertos pertencem, respetivamente, à página que mostra o formulário e à ação que o processa:
 
 ```php
 <?php
@@ -107,7 +107,7 @@ $stmt = $db->prepare('UPDATE reserva SET quantidade = ? WHERE id = ? AND utiliza
 $stmt->execute([$quantidade, $reservaId, $_SESSION['utilizador_id']]);
 ```
 
-Compara dois utilizadores. O utilizador A edita a reserva 7, que lhe pertence. O utilizador B tenta editar a reserva 7 alterando o identificador no pedido. O identificador continua a ser entrada. O utilizador vem da sessão verificada, não de `$_POST['utilizador_id']`. A consulta restringe o registo ao dono. Confirma o efeito esperado e devolve um erro quando não existe uma reserva autorizada. Esconder um botão ou impedir uma ação em JavaScript melhora a interface, mas o atacante pode enviar o pedido diretamente.
+Compara dois utilizadores. O utilizador A edita a reserva 7, que lhe pertence. O utilizador B tenta editar a reserva 7 alterando o identificador no pedido. O utilizador vem da sessão verificada, não de `$_POST['utilizador_id']`. A consulta restringe o registo ao dono. Confirma o efeito esperado e devolve um erro quando não existe uma reserva autorizada. Esconder um botão ou impedir uma ação em JavaScript melhora a interface, mas o atacante pode enviar o pedido diretamente.
 
 ## Palavras-passe e sessão
 
@@ -115,7 +115,7 @@ Guarda um resumo próprio para palavras-passe com `password_hash`; verifica com 
 
 Salt é público e fica guardado com o resumo; não precisa de ser lembrado pelo utilizador nem enviado como segredo separado. `password_hash` cria-o automaticamente. Depois de um login válido, `password_needs_rehash` permite decidir se o resumo deve ser atualizado para os parâmetros atuais.
 
-Acompanha o registo e o login. No registo, `password_hash` cria um salt aleatório, combina-o com a palavra-passe e guarda o resumo com os parâmetros. No login, `password_verify` repete a operação com o salt guardado. Salt diferente impede comparação direta de resumos iguais e dificulta tabelas pré-calculadas. Não torna uma palavra-passe fraca resistente a tentativas. SHA-1 e SHA-256 simples são rápidos e inadequados para guardar palavras-passe, mesmo com salt manual. Limita tentativas de login e evita mensagens que revelem contas desnecessariamente.
+No registo de Ana e Rui, que escolheram a mesma palavra-passe, cada chamada a `password_hash` cria um salt aleatório. Os resumos normalmente diferem e conservam os parâmetros de verificação. No login de Ana, `password_verify` usa os parâmetros do resumo de Ana. O salt dificulta tabelas pré-calculadas e impede reconhecer palavras-passe iguais apenas comparando os resumos. Não torna uma palavra-passe fraca resistente a tentativas. SHA-1 e SHA-256 simples são rápidos e inadequados para guardar palavras-passe, mesmo com salt manual. Limita tentativas de login e evita mensagens que revelem contas desnecessariamente.
 
 Regenera o identificador de sessão ao autenticar ou mudar privilégios. Em produção, usa HTTPS e cookies `Secure`, `HttpOnly` e `SameSite` adequado. Nunca confies num identificador de sessão recebido para autorizar sem recuperar o estado e verificar a ação.
 

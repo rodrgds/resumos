@@ -22,11 +22,6 @@ Uma função obterNota devolve um inteiro de 0 a 20 ou <code>{"null"}</code> qua
 Zero é falso numa condição booleana.
 
 </div>
-<div slot="hint-more">
-
-Guarda o resultado e compara estritamente com <code>{"null"}</code>.
-
-</div>
 <div slot="solution">
 
 Usa `$nota = obterNota($id); if ($nota !== null) { /* existe */ }`. A nota zero é um resultado válido e passa esta condição. A condição original confundia um valor existente igual a zero com ausência.
@@ -95,7 +90,22 @@ Escolhe um dos dois textos conhecidos e prepara a condição de preço.
 </div>
 <div slot="solution">
 
-Depois de validar o limite, usa um mapa como `$colunas = ['titulo' => 'titulo', 'preco' => 'preco'];` e recusa uma escolha fora dele. Constrói `SELECT titulo, preco FROM livro WHERE preco <= :limite ORDER BY ` seguido apenas da coluna fixa escolhida. Prepara e executa com <code>{"['limite' => $limite]"}</code>. Um marcador representa um valor, não um identificador SQL.
+Com `$db` conectado e `$limite` já validado, a escolha de coluna pode ser feita assim:
+
+```php
+$colunas = ['titulo' => 'titulo', 'preco' => 'preco'];
+$ordem = $_GET['ordem'] ?? null;
+if (!is_string($ordem) || !isset($colunas[$ordem])) {
+    throw new InvalidArgumentException('Ordenação inválida');
+}
+$sql = 'SELECT titulo, preco FROM livro WHERE preco <= :limite ORDER BY '
+    . $colunas[$ordem];
+$stmt = $db->prepare($sql);
+$stmt->execute(['limite' => $limite]);
+$livros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+```
+
+A concatenação usa apenas um dos dois nomes fixos. `:limite` representa um valor; `ORDER BY :coluna` não transforma o valor recebido num nome de coluna. Numa ação real, trata a exceção como erro de entrada, sem expor detalhes internos.
 
 </div>
 <div slot="mistakes">
@@ -158,11 +168,6 @@ echo json_encode($filtrados);
 <div slot="hint">
 
 <code>{'array_filter'}</code> conserva as chaves da entrada.
-
-</div>
-<div slot="hint-more">
-
-SQL tinha índice 1. Um array JSON precisa de chaves consecutivas desde 0.
 
 </div>
 <div slot="solution">

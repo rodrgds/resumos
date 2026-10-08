@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import programa from '../../ltw/xml.php?raw';
 
-Depois do JSON, tratamos de XML e XPath. O XML representa dados com elementos e atributos definidos por cada formato. Cada formato pode definir o seu vocabulário. SVG, XHTML e MathML são vocabulários XML que o navegador interpreta. XPath seleciona partes dessa árvore de nós ou calcula valores a partir deles.
+O catálogo pode representar cada livro com um elemento `livro`, um atributo `id` e os filhos `titulo` e `preco`. XML permite definir esse vocabulário; XPath percorre a árvore para selecionar livros ou calcular valores. SVG, XHTML e MathML também usam vocabulários XML, com regras próprias.
 
 ## Documento bem formado
 
@@ -34,7 +34,19 @@ Depois do JSON, tratamos de XML e XPath. O XML representa dados com elementos e 
 
 Existe um único elemento raiz, `catalogo`. As etiquetas fecham pela ordem inversa à abertura, os nomes distinguem maiúsculas e os valores de atributos usam aspas. `<livro id=r1>` não é bem formado; `<Titulo>Redes</titulo>` também não. Elementos vazios podem usar `<aviso/>`.
 
-O nó raiz do documento contém o elemento `catalogo`; não são o mesmo nó. Desenha a árvore: raiz com um filho `catalogo`; cada `livro` com atributo `id` e dois elementos filhos `titulo` e `preco`; cada um com um nó de texto. Cada `livro` tem um atributo `id` e dois elementos filhos. Os valores como `Redes` são nós de texto. Mudanças de linha e indentação também podem criar nós de texto. Atributos não são filhos na árvore XPath.
+O nó raiz do documento contém o elemento `catalogo`; não são o mesmo nó. Para o primeiro livro, o percurso até ao texto do título é:
+
+```text
+Documento
+└── catalogo
+    └── livro  [atributo id="r1"]
+        ├── titulo
+        │   └── texto "Redes"
+        └── preco
+            └── texto "18"
+```
+
+A árvore omite os outros livros e os nós de texto da indentação. O atributo `id` pertence ao elemento, mas não é um filho no eixo `child` de XPath. Por isso usamos `@id` para o selecionar e `titulo/text()` para chegar ao texto Redes.
 
 `&amp;` representa `&`, e `&lt;` representa `<` em texto. Uma secção `<![CDATA[...]]>` permite texto que não é interpretado como marcação, mas não pode conter o seu próprio terminador `]]>`. Comentários não podem conter `--` no interior.
 
@@ -88,7 +100,7 @@ A primeira dá Algoritmos. A segunda primeiro filtra baratos e depois escolhe o 
 
 `//livro[1]` escolhe livros que são o primeiro `livro` entre os irmãos em cada grupo relevante. `(//livro)[1]` escolhe um único primeiro livro do conjunto global. Quando só há um `catalogo`, podem coincidir; com várias secções, a diferença torna-se visível.
 
-Os eixos explicitam a relação: `child::` é o percurso habitual, `descendant::` desce vários níveis, `ancestor::` sobe e `following-sibling::` segue irmãos. `//livro` abrevia `descendant-or-self::node()/child::livro`. Podemos combinar condições com `and`, `or` e `not`. `contains(titulo, 'Red')` procura texto contido; `starts-with` verifica prefixo; `normalize-space` remove espaços exteriores e reduz sequências de espaços. `last()` usa a última posição. `|` une conjuntos de nós. Eixos como `ancestor::`, `descendant::` e `following-sibling::` permitem explicitar relações da árvore.
+Os eixos explicitam a relação: `child::` é o percurso habitual, `descendant::` desce vários níveis, `ancestor::` sobe e `following-sibling::` segue irmãos. `//livro` abrevia `descendant-or-self::node()/child::livro`. Podemos combinar condições com `and`, `or` e `not`. `contains(titulo, 'Red')` procura texto contido; `starts-with` verifica prefixo; `normalize-space` remove espaços exteriores e reduz sequências de espaços. `last()` usa a última posição. `|` une conjuntos de nós.
 
 Com vários nós, compara existência e ausência com cuidado. Sobre `<livro><categoria>redes</categoria><categoria>web</categoria></livro>`, `categoria = 'web'` é verdadeiro, mas `categoria != 'web'` também é, porque existe uma categoria diferente. `not(categoria = 'web')` é falso porque uma das categorias é web. Para pedir "nenhuma categoria é web", usa a negação da igualdade.
 
@@ -106,7 +118,7 @@ O exemplo completo carrega XML de uma string, consulta e conta:
 
 Obténs `Redes`, `SQL` e `Total: 3`.
 
-`loadXML` constrói a árvore a partir de texto. `query` devolve nós; `evaluate` também serve para resultados escalares, como `count`. No navegador, `document.evaluate` avalia XPath sobre um documento XML ou HTML com um contexto e devolve os nós por ordem do documento. Para obter o texto dos elementos escolhidos, usamos `textContent`. Não confundas um conjunto vazio com a string vazia de um elemento existente.
+`loadXML` constrói a árvore a partir de texto. `query` devolve nós; `evaluate` também serve para resultados escalares, como `count`. No navegador, `document.evaluate` avalia XPath com um nó de contexto e um tipo de resultado pedido. Para percorrer nós por ordem do documento, pede `XPathResult.ORDERED_NODE_ITERATOR_TYPE` e lê-os com `iterateNext()` até devolver `null`. Para obter o texto dos elementos escolhidos, usa `textContent`. Não confundas um conjunto vazio com a string vazia de um elemento existente.
 
 ## Namespaces
 

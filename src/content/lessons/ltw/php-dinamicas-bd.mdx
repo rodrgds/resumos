@@ -12,7 +12,7 @@ import dados from '../../ltw/dados.php?raw';
 import sqlite from '../../ltw/sqlite.php?raw';
 import biblioteca from '../../ltw/biblioteca.sql?raw';
 
-Nesta página o servidor recebe um pedido de reserva, valida os valores, consulta a base de dados e responde com HTML ou JSON. O PHP corre no servidor a cada pedido. O cliente recebe apenas a saída. Uma variável criada num pedido não existe no seguinte.
+Ao receber `quantidade=2`, o servidor precisa de distinguir uma string válida de um parâmetro ausente, de `2x` ou de um array. O PHP faz essa verificação antes de alterar o stock. Corre a cada pedido, e o cliente recebe apenas a saída. Variáveis locais não sobrevivem ao pedido; a base de dados e a sessão conservam o estado necessário.
 
 ## Valores, strings e arrays
 
@@ -114,7 +114,7 @@ No programa PHP, a consulta tem um parâmetro `:limite`. O driver recebe o valor
 
 <CodePlayground language="php" title="Consultar preços com PDO" code={sqlite} />
 
-O programa cria uma base em memória, insere três livros e consulta preços abaixo de 20, ou seja obténs `SQL: 12` e `Redes: 18`.
+O programa cria uma base em memória, insere três livros e consulta preços abaixo de 20. Obténs `SQL: 12` e `Redes: 18`, por ordem de preço crescente.
 
 `prepare` analisa uma instrução com marcadores; `execute` fornece os valores. `fetch` obtém uma linha ou `false` quando não há mais; `fetchAll` obtém as restantes. `PDO::FETCH_ASSOC` permite aceder por nomes de colunas, e o modo de exceção torna os erros SQL explícitos.
 
@@ -143,7 +143,17 @@ try {
 }
 ```
 
-Acompanha os estados. Antes da transação, o livro tem stock 3 e não existe reserva. O `UPDATE` com `stock >= :q` reduz para 2 apenas se houver stock. O `INSERT` cria a reserva. O `commit` torna as duas alterações visíveis em conjunto. Se o `INSERT` falhar, o `rollback` repõe o stock em 3. Ler o stock antes e atualizar depois sem condição deixaria uma janela entre os passos. As restrições da base, como chaves estrangeiras, completam a validação; em SQLite, ativa `PRAGMA foreign_keys = ON` em cada conexão quando dependes delas.
+Para reservar duas unidades de um livro com stock 3, os estados dentro da transação são:
+
+| Passo                            | Stock | Reserva          |
+| -------------------------------- | ----- | ---------------- |
+| Antes da transação               | 3     | Não existe       |
+| `UPDATE`, com `:q = 2`           | 1     | Não existe ainda |
+| `INSERT`                         | 1     | Duas unidades    |
+| `commit`                         | 1     | Confirmada       |
+| Se o `INSERT` falhar, `rollback` | 3     | Não criada       |
+
+O `commit` confirma as duas alterações em conjunto. Se outro pedido tentar reservar duas unidades quando o stock já é 1, a condição `stock >= :q` falha: o `UPDATE` não altera linhas e a exceção impede o `INSERT`. Ler o stock antes e atualizar depois sem condição deixaria uma janela entre os passos. As restrições da base, como chaves estrangeiras, completam a validação; em SQLite, ativa `PRAGMA foreign_keys = ON` em cada conexão quando dependes delas.
 
 ## Páginas, ações e templates
 
