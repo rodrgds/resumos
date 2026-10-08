@@ -643,6 +643,25 @@ test('indenting a list carries its children and one undo restores the complete i
   await expect(editor).not.toBeFocused();
 });
 
+test('Arrow Up inside code moves to the preceding line instead of an earlier formula', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill(
+    '$$\n\\frac{1}{2}\n$$\n\nTexto entre a fórmula e o código.\n\n```cpp\n#include <iostream>\n\nint main() {\n\n}\n```',
+  );
+  const closing = editor.locator('.cm-line').filter({ hasText: /^}$/ });
+  await closing.click();
+  await editor.press('End');
+  await expect(editor.locator('.katex')).toBeVisible();
+  await editor.press('ArrowUp');
+  await page.keyboard.insertText('// acima');
+  expect(await exportedMarkdown(page)).toContain(
+    'int main() {\n// acima\n}\n```',
+  );
+});
+
 test('an empty second item exits the list and inserting a formula keeps typing in the document', async ({
   page,
 }) => {
