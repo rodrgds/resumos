@@ -175,3 +175,22 @@ test('clearing a response preserves the supporting editor file selection', async
   await expect(clear).toBeHidden();
   await expect(file).toBeChecked();
 });
+
+test('small numerical tolerances retain their precision in accessible and printable instructions', async ({
+  browser,
+}) => {
+  const page = await browser.newPage({ javaScriptEnabled: false });
+  await page.goto('/exemplo/exercise-help/');
+  const question = page.getByRole('region', { name: 'Converter milímetros' });
+  await question.locator(':scope > details > summary').press('Enter');
+  await expect(
+    question.getByLabel('A tua resposta'),
+  ).toHaveAccessibleDescription('±0,00000001 m');
+  const print = await page
+    .locator('#print-template')
+    .evaluate(
+      (element) => (element as HTMLTemplateElement).content.textContent,
+    );
+  expect(print).toContain('±0,00000001 m');
+  await page.close();
+});
