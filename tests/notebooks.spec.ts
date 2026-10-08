@@ -963,6 +963,10 @@ for (const [platform, startKey, endKey] of [
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/caderno/exemplo/#novo');
     const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    const documentEndKey =
+      platform === 'MacIntel' ? 'Meta+ArrowDown' : 'Control+End';
+    const documentStartKey =
+      platform === 'MacIntel' ? 'Meta+ArrowUp' : 'Control+Home';
     const body =
       'Texto suficientemente comprido para ocupar várias linhas visuais e testar o movimento até ao marcador';
     for (const [before, prefix] of [
@@ -973,14 +977,14 @@ for (const [platform, startKey, endKey] of [
     ]) {
       const source = `${before}${prefix}${body}`;
       await editor.fill(source);
-      await editor.press('ControlOrMeta+End');
+      await editor.press(documentEndKey);
       await editor.press(startKey);
       await page.keyboard.insertText('|');
       expect(await exportedMarkdown(page)).toContain(
         `${before}|${prefix}${body}`,
       );
       await editor.fill(source);
-      await editor.press('ControlOrMeta+End');
+      await editor.press(documentEndKey);
       await editor.press(startKey);
       await editor.press(startKey);
       await page.keyboard.insertText('|');
@@ -989,25 +993,25 @@ for (const [platform, startKey, endKey] of [
         `${source.slice(0, lineStart)}|${source.slice(lineStart)}`,
       );
       await editor.fill(source);
-      await editor.press('ControlOrMeta+End');
+      await editor.press(documentEndKey);
       await editor.press(`Shift+${startKey}`);
       await page.keyboard.insertText('Substituído');
       expect(await exportedMarkdown(page)).toContain(`${before}Substituído`);
       await editor.fill(source);
-      await editor.press('ControlOrMeta+End');
+      await editor.press(documentEndKey);
       await editor.press(startKey);
       await editor.press(endKey);
       await page.keyboard.insertText('|');
       expect(await exportedMarkdown(page)).toContain(`${source}|`);
       await editor.fill(source);
-      await editor.press('ControlOrMeta+End');
+      await editor.press(documentEndKey);
       await editor.press(startKey);
       await editor.press(`Shift+${endKey}`);
       await page.keyboard.insertText('Substituído');
       expect(await exportedMarkdown(page)).toContain(`${before}Substituído`);
     }
     await editor.fill('- [?] Primeiro último');
-    await editor.press('ControlOrMeta+End');
+    await editor.press(documentEndKey);
     await editor.press(
       platform === 'MacIntel'
         ? 'Alt+Shift+ArrowLeft'
@@ -1015,9 +1019,18 @@ for (const [platform, startKey, endKey] of [
     );
     await page.keyboard.insertText('Destino');
     expect(await exportedMarkdown(page)).toContain('- [?] Primeiro Destino');
+    await editor.fill('Antes\n\n- [ ] Último');
+    await editor.press(documentStartKey);
+    await editor.press(documentEndKey);
+    await page.keyboard.insertText('|');
+    expect(await exportedMarkdown(page)).toContain('Antes\n\n- [ ] Último|');
+    await editor.focus();
+    await editor.press(documentStartKey);
+    await page.keyboard.insertText('|');
+    expect(await exportedMarkdown(page)).toContain('|Antes\n\n- [ ] Último|');
     for (const source of [body, `\`\`\`md\n- [ ] ${body}\n\`\`\``]) {
       await editor.fill(source);
-      await editor.press('ControlOrMeta+End');
+      await editor.press(documentEndKey);
       if (source.startsWith('```')) {
         await editor.press('ArrowUp');
         await editor.press('End');
