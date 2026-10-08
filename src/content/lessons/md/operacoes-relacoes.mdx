@@ -9,9 +9,6 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import RelationMatrix from '../../md/RelationMatrix.astro';
 import composicao from '../../md/composicao.dot?raw';
-import CodePlayground from '../../../components/CodePlayground.astro';
-
-Se $1$ liga a $2$ e $2$ liga a $3$, então $1$ alcança $3$ em dois passos através de $2$. Esta lição define composição, potências, matrizes booleanas e fechos a partir desse encadeamento.
 
 Uma relação finita pode escrever-se como pares, desenhar-se como setas ou guardar-se numa matriz de zeros e uns. Estas representações dizem o mesmo, mas tornam visíveis aspetos diferentes. A composição procura uma ligação através de um objeto intermédio; o fecho transitivo procura qualquer sequência finita de ligações.
 
@@ -51,23 +48,16 @@ No exemplo abaixo, começa com $1R2$ e $2R3$. Falta $1R3$ para haver transitivid
 
 <RelationMatrix />
 
-## Composição com um intermediário visível
+## Composição
 
-Com $A = \{1,2\}$, $B = \{x,y\}$, $C = \{p,q\}$, sejam $R = \{(1,x),(2,y)\}$ e $S = \{(x,p),(y,p)\}$. Então $S \circ R = \{(1,p),(2,p)\}$: o par $(1,p)$ existe porque há o intermediário $x$ com $1Rx$ e $xSp$. Na matriz booleana, a célula $(1,p)$ vale 1 porque a linha 1 de $R$ e a coluna $p$ de $S$ têm um 1 na mesma posição intermédia $x$.
-
-```text
-1 → x → p
-2 → y → p
-```
-
-Lê $S \circ R$ da direita para a esquerda: primeiro $R$, depois $S$.
+Com $A=\{1,2\}$, $B=\{x,y\}$, $C=\{p\}$, sejam $R=\{(1,x),(2,y)\}$ e $S=\{(x,p),(y,p)\}$. A sequência $1RxSp$ liga 1 a $p$ através de $x$; $2RySp$ liga 2 a $p$ através de $y$. Logo, $S\circ R=\{(1,p),(2,p)\}$.
 
 <Dot
   source={composicao}
   alt="Composição S após R: 1 liga a x e 2 liga a y por R; x e y ligam a p por S; setas tracejadas de 1 e 2 para p."
 />
 
-## Composição
+As setas tracejadas são os pares obtidos; não são uma terceira relação usada como passo intermédio. A definição generaliza a procura de uma testemunha:
 
 Se $R\subseteq A\times B$ e $S\subseteq B\times C$, então:
 
@@ -112,10 +102,6 @@ Uma relação é transitiva se e só se $R^2\subseteq R$. O quadrado contém pre
 
 A interseção de duas relações transitivas é transitiva: uma cadeia de dois pares na interseção pertence a ambas, e cada uma contém o par final. A união pode falhar: $\{(1,2)\}$ e $\{(2,3)\}$ são transitivas, mas a sua união não contém $(1,3)$.
 
-## Fecho por estados sucessivos
-
-Para $R = \{(1,2),(2,3)\}$ em $\{1,2,3\}$: estado 0 é $R$; o estado 1 acrescenta $(1,3)$ por transitividade; o estado 2 já é estável. Esse conjunto estável é o menor transitivo que contém $R$: qualquer transitivo com $R$ tem de conter $(1,3)$. Para $R^*$ acrescenta ainda os três laços da identidade.
-
 ## Fechos
 
 Um **fecho** é a menor relação que contém $R$ e satisfaz a propriedade pretendida. Acrescentamos pares, não retiramos os pares iniciais.
@@ -131,6 +117,18 @@ $$
 
 $R^+$ é o fecho transitivo. $R^*$ é o fecho reflexivo e transitivo. Um ciclo pode colocar pares da diagonal em $R^+$: se $1R2$ e $2R1$, então $(1,1)\in R^2$. Não excluas automaticamente os laços do fecho transitivo.
 
+Na relação inicial da matriz interativa, $R=\{(1,2),(2,3)\}$, há só um par a acrescentar:
+
+| Estado                 | Pares presentes                           |
+| ---------------------- | ----------------------------------------- |
+| Inicial                | $(1,2)$, $(2,3)$                          |
+| Transitivo             | $(1,2)$, $(2,3)$, $(1,3)$                 |
+| Reflexivo e transitivo | Os anteriores e $(1,1)$, $(2,2)$, $(3,3)$ |
+
+No estado inicial, $1R2R3$ exige $(1,3)$, que ainda falta. Nos outros dois estados, nenhuma cadeia exige um par ausente.
+
+O segundo estado é $R^+$: é transitivo e qualquer relação transitiva que contenha $R$ tem de conter $(1,3)$. O terceiro é $R^*$. Acrescentar a diagonal conserva transitividade, porque uma passagem por um laço não exige um destino novo.
+
 Se $A$ tem $N$ elementos, basta unir $R^1,\ldots,R^N$. Um percurso mais longo repete vértices e pode encurtar-se. Para chegar do vértice a ele próprio com pelo menos uma ligação, pode ser preciso um ciclo de comprimento $N$; por isso não substituímos sempre o limite por $N-1$.
 
 ## Provar uma equivalência a partir de operações
@@ -140,17 +138,3 @@ Suponhamos que $R$ é total, $R^{-1}\subseteq R$ e $R^2\subseteq R$. **Total** s
 A inclusão $R^{-1}\subseteq R$ dá simetria: de $aRb$, temos $(b,a)\in R^{-1}$ e portanto $bRa$. $R^2\subseteq R$ dá transitividade.
 
 Para reflexividade, escolhe um $a$ arbitrário. Pela totalidade existe $b$ com $aRb$; pela simetria, $bRa$; pela transitividade, $aRa$. Assim, $R$ é uma equivalência. Sem a totalidade, $R=\emptyset$ num conjunto não vazio satisfaria as outras condições e não seria reflexiva.
-
-## Calcular um fecho
-
-O programa acrescenta os pares obrigados por cadeias de duas ligações até estabilizar, por isso termina, pois há no máximo $|A|^2$ pares.
-
-<CodePlayground
-  language="python"
-  title="Fecho transitivo"
-  code={
-    'def compor(r, s):\n    return {(a, c) for a, b in r for b2, c in s if b == b2}\n\nr = {(1, 2), (2, 3), (3, 4)}\nfecho = set(r)\nwhile True:\n    novos = compor(fecho, fecho) - fecho\n    if not novos:\n        break\n    fecho |= novos\nprint(sorted(fecho))\n'
-  }
-/>
-
-Experimenta uma relação com um ciclo e verifica que o fecho pode incluir a diagonal.

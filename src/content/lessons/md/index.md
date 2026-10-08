@@ -7,7 +7,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: MD no Moodle da FEUP, 2024/25
       url: https://moodle2425.up.pt/course/view.php?id=5100
@@ -17,9 +17,9 @@ editorial:
     - Os materiais docentes de 2026/27 não foram consultados; a base das lições continua a ser 2024/25.
 ---
 
-No fim desta cadeira vais conseguir traduzir frases para lógica, provar afirmações sobre inteiros, conjuntos, relações e grafos, e argumentar por indução. Não basta calcular o resultado. Cada passo precisa da hipótese usada e dos casos que o podem refutar.
+Em MD, uma afirmação precisa de uma prova ou de um contraexemplo. Para refutar uma consequência lógica, por exemplo, não chega tornar a conclusão falsa: as premissas têm de ser verdadeiras na mesma atribuição. Essa atenção às hipóteses acompanha depois os inteiros, relações, grafos e indução.
 
-Vamos seguir o percurso abaixo pela ordem, pois cada bloco usa a linguagem do anterior. Tenta os exercícios no fim de cada lição antes de abrir as pistas. Numa prova, escreve a hipótese usada em cada passo. A [cheat sheet](/cadeiras/md/folha-consulta/) reúne as condições dos métodos para revisão.
+O percurso começa pela linguagem das provas e aplica-a às estruturas discretas. Os exercícios estão no fim das lições correspondentes. A [cheat sheet](/cadeiras/md/folha-consulta/) reúne fórmulas e condições para consulta.
 
 ## Percurso de estudo
 
@@ -43,13 +43,11 @@ O segundo aplica as provas a estruturas discretas:
 13. [Indução e recorrências](/cadeiras/md/inducao-recorrencia/): bases, hipótese, chamadas menores e soluções de sequências.
 14. [Indução estrutural](/cadeiras/md/inducao-estrutural/): conjuntos recursivos, palavras, listas e provas de programas.
 
-Os exercícios estão no fim da lição que os explica.
-
-:::details[Fontes, anos e âmbito]
+## Fontes e âmbito
 
 A base são os materiais docentes de **MD 2024/25 no Moodle da FEUP**: as onze apresentações teóricas, as onze fichas principais, problemas adicionais, o formulário e provas com resoluções. As aulas de lógica e inteiros são de João Barbosa; as de conjuntos, relações, funções, grafos e indução são de Hugo Pacheco. As apresentações de grafos e indução disponibilizadas nessa edição mantêm **2023/24 na capa**. As restantes apresentações identificam 2024/25. O percurso inclui todos estes blocos.
 
-As explicações são escritas com palavras próprias. Os exercícios misturam problemas próprios e adaptações dos tipos pedidos nas fichas e provas, com contas e argumentos conferidos. Recorrências lineares completam o estudo de sequências e recursão. A notação segue as aulas: $0\in\mathbb N$, $\equiv_n$ para congruência e caixas de Fitch com regras de base. Os materiais Moodle exigem acesso à cadeira e não são republicados aqui.
+As explicações são escritas com palavras próprias. Os exercícios misturam problemas próprios e adaptações dos tipos pedidos nas fichas e provas, com contas e argumentos conferidos. O problema de Euclides com 1820 e 231 vem da ficha prática 6, questão 6.5(b); a prática de completude de NAND acompanha a ficha 1, questão 1.9(b). Recorrências lineares por equação característica são um complemento ao estudo docente de sequências e recursão, não uma confirmação da sua presença numa avaliação. A notação segue as aulas: $0\in\mathbb N$, $\equiv_n$ para congruência e caixas de Fitch com regras de base. Os materiais Moodle exigem acesso à cadeira e não são republicados aqui.
 
 A [ficha de 2026/27 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586983) confirma os blocos do programa e indica como bibliografia obrigatória:
 
@@ -58,8 +56,6 @@ A [ficha de 2026/27 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_
 - Edgar G. Goodaire e Michael M. Parmenter, _Discrete Mathematics with Graph Theory_.
 
 Para aprofundar grafos, indução e sequências há também o livro aberto [Discrete Mathematics: An Open Introduction, de Oscar Levin](https://discrete.openmathbooks.org/dmoi3.html), 3.ª edição. É uma referência adicional, não bibliografia adotada pela FEUP.
-
-:::
 
 :::details[Avaliação de 2026/27]
 

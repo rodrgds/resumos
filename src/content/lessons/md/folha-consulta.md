@@ -30,7 +30,7 @@ Usa esta página para rever antes de resolver exercícios. Cada linha resume um 
 
 ## Inteiros
 
-- Divisão: $a=bq+r$, $b>0$, $0\le r<b$, mesmo para $a<0$.
+- Divisão: $a=bq+r$, $b\ne0$, $0\le r<|b|$, mesmo para $a<0$.
 - Euclides: $\gcd(a,b)=\gcd(b,r)$. Bézout: $d=ua+vb$, com $u,v\in\mathbb Z$.
 - $a\equiv_n b\Longleftrightarrow n\mid(a-b)$, $n>0$. Somar e multiplicar preserva congruência.
 - Cancelar $c$: se $d=\gcd(c,n)$, de $ca\equiv_n cb$ obtemos $a\equiv_{n/d}b$. Mantém-se o módulo original se $d=1$.
@@ -45,6 +45,7 @@ Usa esta página para rever antes de resolver exercícios. Cada linha resume um 
 - $a(S\circ R)c\Longleftrightarrow\exists b(aRb\land bSc)$: primeiro $R$. $R^+$ usa passeios de comprimento positivo (sequências de ligações onde vértices e arestas podem repetir-se); $R^*=R^+\cup\operatorname{id}$.
 - Equivalência: reflexiva, simétrica e transitiva. Ordem parcial: reflexiva, antissimétrica e transitiva. Simétrica e antissimétrica podem coexistir.
 - Minimal: nenhum distinto abaixo. Mínimo: abaixo de todos. Ínfimo: maior minorante no conjunto ambiente. Definições duais para maximal, máximo e supremo.
+- Restrição de Hasse: conserva comparações entre elementos restantes e recalcula coberturas. Uma cobertura nova pode substituir um percurso que passava por elementos retirados.
 - Função: total e funcional. Injetiva: imagens iguais implicam origens iguais. Sobrejetiva: todo o contradomínio é atingido. A inversa $B\to A$ é função se e só se $f:A\to B$ é bijetiva.
 
 [Conjuntos](/cadeiras/md/conjuntos-relacoes/#provar-uma-identidade), [relações](/cadeiras/md/operacoes-relacoes/#fechos), [Hasse](/cadeiras/md/ordens-funcoes/#diagramas-de-hasse-e-elementos-especiais) e [funções](/cadeiras/md/funcoes-cardinalidade/#injetiva-sobrejetiva-e-bijetiva).
@@ -62,7 +63,7 @@ Usa esta página para rever antes de resolver exercícios. Cada linha resume um 
 
 ## Indução e recorrências
 
-- Indução simples: base, hipótese $P(n)$ e prova de $P(n+1)$. Forte: podes usar todos os casos menores já abrangidos. Se recuas $d$ unidades, confere as $d$ bases iniciais necessárias.
+- Indução simples: base, hipótese $P(n)$ e prova de $P(n+1)$. Forte: podes usar todos os casos menores já abrangidos. Se o único passo recua $d$ unidades, verifica uma base para cada resto módulo $d$ no intervalo pretendido.
 - Indução estrutural: um caso por construtor. Listas finitas: [] e $x:xs$, com hipótese sobre $xs$.
 - $a_n=ra_{n-1}+b$: $a_n=r^na_0+b\sum_{j=0}^{n-1}r^j$. Para $r=1$, $a_n=a_0+nb$.
 - $a_n=ua_{n-1}+va_{n-2}$: polinómio $t^2-ut-v$. Raízes distintas não nulas: $Ar_1^n+Br_2^n$; raiz dupla não nula $r$: $(A+Bn)r^n$. Condições iniciais determinam constantes.
