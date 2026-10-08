@@ -11,12 +11,12 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import tabuleiro from '../../da/tabuleiro.typ?raw';
 import programa from '../../da/subconjuntos.cpp?raw';
+import Dot from '../../../components/Dot.astro';
+import podas from '../../da/subconjuntos-podas.dot?raw';
 
-Depois da programação dinâmica em linguagens, esta página responde como explorar decisões sucessivas cortando continuações que já não podem dar solução.
+Com valores $[2,3,6,8]$ e alvo 10, incluir 2, 3 e 6 já ultrapassa o alvo. Como os valores restantes são positivos, nenhuma continuação pode corrigir esse ramo. O **retrocesso**, ou backtracking, constrói escolhas parciais, rejeita as impossíveis e desfaz uma decisão antes de explorar a seguinte.
 
-Pensa em escolher objetos um a um para atingir uma soma exata: cada **estado parcial**, ou seja as decisões já tomadas e a informação necessária para avaliar extensões, diz que continuações ainda são possíveis. A enumeração pode construir soluções por decisões sucessivas. Se uma solução parcial já viola uma restrição que nenhuma continuação corrige, não precisamos de completar esse ramo. O **retrocesso**, ou backtracking, explora as extensões válidas e desfaz cada decisão antes de tentar outra.
-
-A **ramificação e poda**, ou branch and bound, usa ainda um limite para o melhor valor que um ramo poderia atingir. Corta o ramo quando esse limite já não permite melhorar a melhor solução completa conhecida, o **incumbente**.
+Em otimização, a **ramificação e poda**, ou branch and bound, compara um limite para o ramo com a melhor solução completa conhecida, o **incumbente**. Uma poda só é segura se excluir todas as continuações que poderiam melhorar o resultado.
 
 ## O estado e o regresso
 
@@ -49,7 +49,14 @@ As duas são podas por impossibilidade. Precomputar somas de sufixos permite tes
 
 Com valores $[2,3,6,8]$ e $T=10$, depois de incluir 2 e 3 temos $s=5$. Incluir 6 dá 11 e é rejeitado; excluí-lo deixa apenas 8, que também ultrapassa 10 se for incluído. A solução passa por excluir 3 e 6 e incluir 8, dando $2+8=10$.
 
-A árvore com sufixos $R=[19,17,14,8]$ explica cada corte. Em $(i=2,s=5)$, incluir $6$ dá $s=11>10$ e é podado por excesso; excluir $6$ deixa $s=5$ com $R_3=8$, logo $5+8=13\ge10$ e continua. Em $(i=3,s=5)$, incluir $8$ completa $13>10$ e é podado; excluir $8$ dá $5$ com restante $0$, podado por insuficiência. O ramo que excluiu $3$ mais cedo chega a $(i=2,s=2)$ e completa com $8$. Cada poda indica soma atual, soma restante e a desigualdade violada.
+A árvore mostra o ramo depois de escolher 2 e 3. Em cada nó, $i$ é o índice seguinte, $s$ a soma escolhida e $R_i$ a soma ainda disponível. Os sufixos são $[19,17,14,8,0]$.
+
+<Dot
+  source={podas}
+  alt="Estado i=2, soma 5 e restante 14. Incluir 6 dá soma 11 e poda por excesso. Excluir 6 dá i=3, soma 5, restante 8. Incluir 8 dá 13 e poda por excesso; excluir 8 dá soma 5, restante zero, e poda por insuficiência. Nenhum ramo completa o alvo 10."
+/>
+
+Excluir 6 ainda passa ambos os testes, porque $5\le10$ e $5+8\ge10$. Os limites dizem apenas que o ramo não está excluído, não que existe solução nele. As duas folhas mostram que a única quantidade restante, 8, não permite chegar exatamente a 10. Temos de retroceder à escolha anterior de 3; o ramo que o exclui consegue completar $2+8$.
 
 Se os valores estiverem ordenados e $s<T$ mas $s+a_i>T$, nenhum elemento restante cabe. Como ainda falta valor positivo, o ramo inteiro é impossível. Esta terceira poda precisa da ordenação e da positividade. Com valores negativos, nem a poda por excesso é segura.
 

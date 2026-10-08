@@ -1,40 +1,100 @@
 ---
 title: Aproximações com garantia
-description: Algoritmos de fator 2 para cobertura e mochila, TSP métrico e cobertura de conjuntos, com contas executadas.
+description: Cobertura de vértices, mochila, TSP métrico e cobertura de conjuntos, com execução e provas das garantias.
 section: conteudo
 order: 14
 practices:
   - da/praticar-aproximacao
 ---
 
-Depois da complexidade computacional, esta página mostra como aceitar uma solução aproximada com garantia matemática.
+import Dot from '../../../components/Dot.astro';
+import cobertura from '../../da/cobertura.dot?raw';
+import passeio from '../../da/tsp-atalhos.dot?raw';
 
-Uma aproximação precisa de três partes: uma solução admissível, tempo polinomial e uma prova de que o valor fica dentro de um fator do ótimo. Uma heurística sem essa prova pode funcionar bem, mas não herda nenhuma garantia.
+Na mochila de capacidade 10 com $A=(6,12)$, $B=(5,9)$ e $C=(5,9)$, escolher por densidade devolve valor 12, embora $B+C$ dê 18. Uma solução admissível pode ficar longe do ótimo. Para aceitar uma aproximação, precisamos de limitar essa distância para todas as entradas permitidas.
 
-## Cobertura de vértices: fator 2 executado
+Para minimização com custos positivos, um fator $\rho\ge1$ garante $C\le\rho OPT$; para maximização, garante $C\ge OPT/\rho$. O algoritmo tem de produzir uma solução admissível e correr em tempo polinomial. Uma heurística sem prova não possui essa garantia.
 
-Escolhe uma aresta ainda não coberta, acrescenta os dois extremos e remove todas as arestas incidentes neles. Repete até não haver arestas.
+## Cobertura de vértices
 
-Na estrela com centro $c$ e folhas $a,b,d,e$, supõe que a primeira aresta escolhida é $ca$. A cobertura obtida é $\{c,a\}$, tamanho $2$; a ótima é $\{c\}$, tamanho $1$. O fator $2$ é atingido e a prova é geral: as arestas escolhidas formam um emparelhamento $M$, qualquer cobertura precisa de pelo menos $|M|$ vértices, e o algoritmo devolve $2|M|$.
+Uma cobertura contém pelo menos um extremo de cada aresta. Escolhe uma aresta ainda não coberta, acrescenta **os dois extremos** e retira todas as arestas incidentes neles. Repete até não haver arestas.
 
-Escolher sempre o vértice de maior grau é outra heurística e não herda esta prova.
+<Dot
+  source={cobertura}
+  alt="Estrela com centro c e folhas a, b, d e e. Os vértices c e a estão destacados por contorno duplo: são os dois extremos da aresta escolhida."
+/>
 
-## Mochila: melhor de duas opções executado
+Se escolhemos $ca$ na estrela, devolvemos $\{c,a\}$, tamanho 2. O centro $c$ sozinho cobre tudo, logo o ótimo vale 1. O fator 2 é atingido nesta instância, mas falta provar que nunca é excedido.
 
-Descarta objetos que não cabem sozinhos. Ordena os restantes por densidade, guarda o prefixo $P$ antes do primeiro objeto $j$ que não cabe, e guarda o maior valor individual $M$. Devolve o melhor dos dois.
+As arestas escolhidas formam um emparelhamento $M$: depois de escolher uma, retiramos todas as que partilham extremos com ela. Qualquer cobertura precisa de um vértice distinto para cada aresta de $M$, logo $OPT\ge |M|$. Devolvemos exatamente $2|M|$ vértices e cobrimos todas as arestas, portanto
 
-Com capacidade $10$ e objetos $A=(6,12)$, $B=(5,9)$, $C=(5,9)$, a densidade ordena $A,B,C$. O prefixo é $P=12$ e $M=12$ (objeto $A$); o melhor devolve $12$. O ótimo é $18$ com $B+C$. Temos $12 \ge 18/2$. A prova usa a relaxação fracionária: $OPT \le P+v_j \le P+M$, logo $\max(P,M) \ge OPT/2$.
+$$C=2|M|\le2OPT.$$
 
-## TSP métrico: duplicar uma MST executado
+Uma passagem pelas arestas, aceitando apenas as que ainda têm ambos os extremos fora da cobertura, implementa a regra em $O(n+m)$. Escolher o vértice de maior grau é outra heurística e não herda esta prova. Sem arestas, a cobertura vazia é ótima; a desigualdade mantém-se, embora o quociente por $OPT=0$ não esteja definido.
 
-Assume grafo completo não dirigido, pesos não negativos e desigualdade triangular. Constrói uma MST, duplica as arestas, percorre o circuito euleriano e usa atalhos para vértices já visitados.
+## Mochila: prefixo e maior objeto
 
-No quadrado de lado $1$, a MST custa $3$, o passeio duplicado custa $6$, e o circuito com atalhos custa $4$. Retirar uma aresta do ótimo dá uma árvore, por isso $c(MST) \le OPT$; duplicar dá $2OPT$ e os atalhos não aumentam o custo pela desigualdade triangular.
+Assume pesos positivos e valores não negativos. Descarta objetos que não cabem sozinhos. Ordena os restantes por densidade decrescente e leva o prefixo até ao **primeiro** objeto $j$ que não cabe. Chama $P$ ao valor desse prefixo e $M$ ao maior valor de um objeto individual. Devolve a seleção com maior valor entre ambos, sem juntar as duas seleções.
 
-No TSP geral sem essa hipótese, uma $\rho$-aproximação distinguiria ciclos hamiltonianos com custos $1$ e $\rho n+1$, o que é impossível sob $P \ne NP$.
+| Passo, com capacidade 10          | Capacidade restante | Valor           |
+| --------------------------------- | ------------------- | --------------- |
+| Levar $A=(6,12)$, densidade 2     | 4                   | $P=12$          |
+| $B=(5,9)$ não cabe, densidade 1,8 | 4                   | Parar o prefixo |
+| Melhor objeto individual          | Peso 6              | $M=12$ com $A$  |
 
-## Cobertura de conjuntos executada
+O resultado é 12. O ótimo é 18 com $B+C$, por isso esta execução satisfaz $12\ge18/2$.
 
-Dado um universo $U$ e conjuntos cuja união cobre $U$, escolhe repetidamente o conjunto com mais elementos ainda por cobrir. Com $U=\{1,2,3,4,5,6\}$, $S_1=\{1,2,3\}$, $S_2=\{4,5\}$, $S_3=\{6\}$ e $S_4=\{1,4\}$, o guloso escolhe $S_1$, depois $S_2$, depois $S_3$: três conjuntos, que é ótimo nesta instância.
+Para provar a garantia, permite frações. A solução fracionária ótima contém o prefixo e uma fração $\alpha\le1$ do primeiro objeto que não cabe. Como essa relaxação inclui todas as soluções 0-1,
 
-A garantia unitária é $H_d \le 1+\ln d$, onde $d$ é o maior tamanho. Cada elemento recém-coberto por uma escolha com $r$ novos recebe cobrança $1/r$; somar sobre uma cobertura ótima limita o total por $H_d$ vezes o ótimo. Se algum elemento não pertence a nenhum conjunto, não existe cobertura e a implementação deve parar com zero progresso.
+$$OPT\le P+\alpha v_j\le P+v_j\le P+M.$$
+
+Pelo menos um entre $P$ e $M$ vale metade da soma: $\max(P,M)\ge(P+M)/2\ge OPT/2$. Ambos correspondem a seleções válidas. Se todos os objetos cabem, o prefixo já é ótimo; se nenhum é elegível, o ótimo é zero. A ordenação custa $O(n\log n)$.
+
+A prova usa o prefixo antes do primeiro objeto omitido. Continuar a experimentar os seguintes pode melhorar o resultado, mas o limite fracionário continua a referir-se àquele prefixo, não a uma seleção arbitrária por densidade.
+
+## TSP métrico e atalhos
+
+Assume um grafo completo não dirigido, pesos não negativos e desigualdade triangular $c(u,w)\le c(u,v)+c(v,w)$. Constrói uma MST, duplica as suas arestas e percorre um circuito euleriano. Conserva a primeira visita a cada vértice e regressa ao início, usando ligações diretas para saltar visitas repetidas.
+
+No quadrado de lado 1, fixa a MST $AB,BC,CD$ e o passeio $A,B,C,D,C,B,A$:
+
+<Dot
+  source={passeio}
+  alt="Quadrado A, B, C, D. A MST usa os lados AB, BC e CD, cada um de custo 1. O atalho DA, também de custo 1, substitui o regresso D,C,B,A de custo 3."
+/>
+
+O passeio duplicado custa 6. A primeira visita dá a ordem $A,B,C,D$, e o circuito $A,B,C,D,A$ custa 4. O regresso $D,C,B,A$ foi substituído por $D,A$, custo 1 em vez de 3.
+
+Retirar uma aresta de um circuito ótimo deixa uma árvore abrangente. Como os pesos são não negativos, $c(MST)\le OPT$. Duplicar dá custo $2c(MST)\le2OPT$. Cada atalho não aumenta o custo, pela desigualdade triangular aplicada repetidamente ao trecho removido. Assim o circuito final custa no máximo $2OPT$.
+
+O custo exato depende da MST e da ordem de visita. No mesmo quadrado, a MST $AB,AD,DC$ pode produzir a ordem $A,B,D,C$; o circuito custa $2+2\sqrt2$, por atravessar as diagonais $BD$ e $CA$. Continua dentro da garantia. O algoritmo não promete encontrar o perímetro em qualquer desempate. Construir a MST domina o custo, por exemplo $O(n^2)$ com matriz; o passeio custa $O(n)$.
+
+### TSP geral
+
+Sem a hipótese métrica, não há aproximação de fator constante $\rho\ge1$ em tempo polinomial, a menos que $P=NP$. Dado um grafo com $n$ vértices, completa-o atribuindo peso 1 às arestas existentes e $\rho n+1$ às restantes.
+
+Se há ciclo hamiltoniano original, o ótimo novo é $n$, e a aproximação deve devolver custo no máximo $\rho n$. Se não há, qualquer circuito usa uma aresta nova e custa pelo menos $(\rho n+1)+(n-1)=\rho n+n$, acima daquele limiar. Comparar a saída com $\rho n$ decidiria HAM-CYCLE. A construção tem $O(n^2)$ arestas e custos de representação polinomial para $\rho$ fixo. São esses dois casos separados que tornam a redução útil.
+
+## Cobertura de conjuntos
+
+Dado um universo $U$ e uma família cuja união cobre $U$, queremos escolher o menor número de conjuntos que cubra todos os elementos. Cada conjunto tem custo 1. Em cada passo, o guloso escolhe o que contém mais elementos **ainda por cobrir**.
+
+Com $U=\{1,2,3,4,5,6\}$, $S_1=\{1,2,3\}$, $S_2=\{4,5\}$, $S_3=\{6\}$ e $S_4=\{1,4\}$:
+
+| Escolha | Novos elementos | Elementos que faltam | Cobrança por novo elemento |
+| ------- | --------------- | -------------------- | -------------------------- |
+| $S_1$   | 1, 2, 3         | 4, 5, 6              | $1/3$                      |
+| $S_2$   | 4, 5            | 6                    | $1/2$                      |
+| $S_3$   | 6               | Nenhum               | 1                          |
+
+As cobranças somam $3(1/3)+2(1/2)+1=3$, o número de conjuntos escolhidos. Aqui, $S_1$ é obrigatório para cobrir 2 e 3, $S_2$ para cobrir 5 e $S_3$ para cobrir 6. Três é, portanto, ótimo nesta instância.
+
+Em geral, seja $d\ge1$ o maior tamanho de um conjunto. Uma escolha com $r$ elementos novos cobra $1/r$ a cada um. Considera um conjunto $S$ de uma cobertura ótima: quando ainda faltam $k$ dos seus elementos, o guloso poderia escolher $S$, pelo que escolhe algum conjunto com pelo menos $k$ novos. A cobrança de cada elemento de $S$ retirado nesse passo é no máximo $1/k$.
+
+Ordenando os elementos de $S$ pela altura em que são cobertos, a cobrança total fica limitada por
+
+$$H_{|S|}=1+\frac12+\cdots+\frac1{|S|}\le H_d\le1+\ln d.$$
+
+Somar sobre os conjuntos de uma cobertura ótima conta cada elemento pelo menos uma vez. Logo o custo guloso é no máximo $H_dOPT$. A garantia é logarítmica; ter encontrado um ótimo no exemplo não a transforma em otimalidade geral.
+
+Uma implementação direta pode recalcular ganhos percorrendo todas as pertenças em cada passo. Se há $I$ pertenças e $q$ conjuntos, isso custa $O(|U|(I+q))$, um limite polinomial. Se faltam elementos e o maior ganho é zero, a família não cobre o universo e não existe solução. Para universo vazio, devolve a família vazia.

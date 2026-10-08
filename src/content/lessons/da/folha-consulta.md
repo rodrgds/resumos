@@ -6,27 +6,25 @@ studyKind: revision
 order: 1
 ---
 
-No fim do percurso, esta folha responde que algoritmo usar e quanto custa, sem repetir as provas.
-
-Nesta folha, $n=|V|$, ou seja o número de vértices, e $m=|E|$, ou seja o número de arestas, para grafos; noutras entradas, $n$ é o número de elementos. Os custos de grafos assumem listas de adjacência, salvo indicação. Segue a ligação quando precisares de derivar uma fórmula ou reconstruir uma solução.
+Em grafos, $n=|V|$ é o número de vértices e $m=|E|$ o número de arestas; noutras entradas, $n$ é o número de elementos. Os custos de grafos assumem listas de adjacência, salvo indicação. Segue a ligação quando precisares de derivar uma fórmula ou reconstruir uma solução.
 
 ## Escolher um algoritmo de grafos
 
-| Problema                          | Método                                                                           | Condição                                           | Tempo                                                    |
-| --------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
-| Menor número de arestas desde $s$ | [BFS](/cadeiras/da/grafos-percursos/#bfs-e-caminhos-sem-pesos)                   | Pesos ignorados ou iguais                          | $O(n+m)$                                                 |
-| Percurso, ciclos dirigidos        | [DFS](/cadeiras/da/grafos-percursos/#dfs-tempos-e-ciclos)                        | Aresta para cinzento deteta ciclo dirigido         | $O(n+m)$                                                 |
-| Ordenar dependências              | [Kahn/DFS](/cadeiras/da/grafos-percursos/#ordena%C3%A7%C3%A3o-topol%C3%B3gica)   | DAG; Kahn deve emitir todos                        | $O(n+m)$                                                 |
-| Componentes fortemente conexas    | [Kosaraju/Tarjan](/cadeiras/da/grafos-percursos/#componentes-fortemente-conexas) | Grafo dirigido                                     | $O(n+m)$                                                 |
-| MST                               | [Kruskal](/cadeiras/da/arvores-abrangentes/#kruskal)                             | Não dirigido; admite pesos negativos               | $O(m\log m+n)$                                           |
-| MST                               | [Prim](/cadeiras/da/arvores-abrangentes/#prim)                                   | Não dirigido; reiniciar para floresta              | $O((n+m)\log n)$ com decreaseKey, ou $O(n^2)$ com matriz |
-| Caminhos de uma origem            | [Dijkstra](/cadeiras/da/caminhos-minimos/#dijkstra)                              | Pesos não negativos                                | $O((n+m)\log n)$ com decreaseKey                         |
-| Caminhos de uma origem            | [Bellman-Ford](/cadeiras/da/caminhos-minimos/#pesos-negativos-e-bellman-ford)    | Admite negativos; deteta ciclo negativo alcançável | $O(nm)$                                                  |
-| Caminhos num DAG                  | [Ordem topológica](/cadeiras/da/caminhos-minimos/#caminhos-num-dag)              | Admite negativos, sem ciclos                       | $O(n+m)$                                                 |
-| Todos os pares                    | [Floyd-Warshall](/cadeiras/da/caminhos-minimos/#floyd-warshall)                  | Diagonal negativa denuncia ciclo negativo          | $\Theta(n^3)$                                            |
-| Todos os pares esparsos           | [Johnson](/cadeiras/da/caminhos-minimos/#johnson)                                | Sem ciclos negativos                               | $O(nm+n(n+m)\log n)$ com decreaseKey                     |
-| Fluxo máximo                      | [Edmonds-Karp](/cadeiras/da/fluxo-maximo/#ford-fulkerson-e-edmonds-karp)         | Capacidade não negativa; BFS residual              | $O(nm^2)$                                                |
-| Emparelhamento bipartido          | [Emparelhamento](/cadeiras/da/fluxo-maximo/#emparelhamento-bipartido)            | Capacidades 1; no máximo min(                      | L                                                        | ,   | R   | ) aumentos | $O(min( | L   | ,   | R   | )(n+m))$ |
+| Problema                          | Método                                                                           | Condição                                                                | Tempo                                                    |
+| --------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------- |
+| Menor número de arestas desde $s$ | [BFS](/cadeiras/da/grafos-percursos/#bfs-e-caminhos-sem-pesos)                   | Pesos ignorados ou iguais                                               | $O(n+m)$                                                 |
+| Percurso, ciclos dirigidos        | [DFS](/cadeiras/da/grafos-percursos/#dfs-tempos-e-ciclos)                        | Aresta para cinzento deteta ciclo dirigido                              | $O(n+m)$                                                 |
+| Ordenar dependências              | [Kahn/DFS](/cadeiras/da/grafos-percursos/#ordena%C3%A7%C3%A3o-topol%C3%B3gica)   | DAG; Kahn deve emitir todos                                             | $O(n+m)$                                                 |
+| Componentes fortemente conexas    | [Kosaraju/Tarjan](/cadeiras/da/grafos-percursos/#componentes-fortemente-conexas) | Grafo dirigido                                                          | $O(n+m)$                                                 |
+| MST                               | [Kruskal](/cadeiras/da/arvores-abrangentes/#kruskal)                             | Não dirigido; admite pesos negativos                                    | $O(m\log m+n)$                                           |
+| MST                               | [Prim](/cadeiras/da/arvores-abrangentes/#prim)                                   | Não dirigido; reiniciar para floresta                                   | $O((n+m)\log n)$ com decreaseKey, ou $O(n^2)$ com matriz |
+| Caminhos de uma origem            | [Dijkstra](/cadeiras/da/caminhos-minimos/#dijkstra)                              | Pesos não negativos                                                     | $O((n+m)\log n)$ com decreaseKey                         |
+| Caminhos de uma origem            | [Bellman-Ford](/cadeiras/da/caminhos-minimos/#pesos-negativos-e-bellman-ford)    | Admite negativos; deteta ciclo negativo alcançável                      | $O(nm)$                                                  |
+| Caminhos num DAG                  | [Ordem topológica](/cadeiras/da/caminhos-minimos/#caminhos-num-dag)              | Admite negativos, sem ciclos                                            | $O(n+m)$                                                 |
+| Todos os pares                    | [Floyd-Warshall](/cadeiras/da/caminhos-minimos/#floyd-warshall)                  | Diagonal negativa denuncia ciclo negativo                               | $\Theta(n^3)$                                            |
+| Todos os pares esparsos           | [Johnson](/cadeiras/da/caminhos-minimos/#johnson)                                | Sem ciclos negativos                                                    | $O(nm+n(n+m)\log n)$ com decreaseKey                     |
+| Fluxo máximo                      | [Edmonds-Karp](/cadeiras/da/fluxo-maximo/#ford-fulkerson-e-edmonds-karp)         | Capacidade não negativa; BFS residual                                   | $O(nm^2)$                                                |
+| Emparelhamento bipartido          | [Emparelhamento](/cadeiras/da/fluxo-maximo/#emparelhamento-bipartido)            | Capacidades 1; no máximo $\min(\lvert L\rvert,\lvert R\rvert)$ aumentos | $O((\min(\lvert L\rvert,\lvert R\rvert)+1)(n+m))$        |
 
 A heap com entradas duplicadas em Dijkstra pode guardar $O(m)$ pares e custar $O(n+m\log(m+1))$. Não alteres uma chave dentro da heap sem a reorganizar. MST minimiza o custo total das ligações; uma árvore de caminhos mínimos minimiza distâncias desde uma raiz.
 
@@ -87,7 +85,7 @@ Hanoi: $H(n)=2H(n-1)+1=2^n-1$, fora deste formato. Exponenciação por quadrados
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | --------------------------------- |
 | Mochila 0-1                                                                    | $F[i,w]=\max(F[i-1,w],v_i+F[i-1,w-p_i])$ se cabe; caso contrário excluir | $O(nW)$                           |
 | Trocos ilimitados                                                              | $C[i,t]=\min(C[i-1,t],1+C[i,t-c_i])$                                     | $O(nT)$                           |
-| Trocos limitados                                                               | $\min_q(q+C[i-1,t-qc_i])$, $q\le s_i$                                    | $O(nTS)$ direto                   |
+| Trocos limitados                                                               | $\min_q(q+C[i-1,t-qc_i])$, $q\le s_i$                                    | $O(nT(S+1))$ direto               |
 | Soma de subconjuntos                                                           | Excluir OU incluir a partir da linha anterior                            | $O(nT)$                           |
 | Subvetor não vazio                                                             | $E[i]=\max(A[i],E[i-1]+A[i])$; máximo sobre $i$                          | $O(n)$                            |
 | [LCS](/cadeiras/da/sequencias-dinamica/#subsequ%C3%AAncia-comum-mais-longa)    | Iguais: diagonal +1; diferentes: máximo de cima e esquerda               | $O(\lvert X\rvert\lvert Y\rvert)$ |

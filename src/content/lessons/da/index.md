@@ -14,7 +14,7 @@ editorial:
     - A ficha de 2026/27 ainda não permite confirmar o programa nem a avaliação dessa edição.
 ---
 
-No fim desta cadeira consegues escolher uma estratégia para cada problema, porque sabes provar que ela resolve o problema e contar o seu custo. DA parte das estruturas de dados e da análise de algoritmos de AED para chegar aí, ou seja cada lição mostra a técnica, um exemplo resolvido e exercícios para praticar. Uma implementação que parece funcionar num exemplo ainda precisa de uma prova e de casos que testem as suas condições.
+DA trabalha a escolha de algoritmos, a prova de correção e a análise do custo. O percurso assume programação e estruturas de dados de AED. A mochila e o subvetor máximo reaparecem com estratégias diferentes, permitindo comparar o estado mantido, o trabalho feito e as hipóteses de cada método.
 
 ## Percurso
 

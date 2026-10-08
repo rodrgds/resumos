@@ -12,9 +12,9 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import grafo from '../../da/componentes.dot?raw';
 import bfs from '../../da/bfs.cpp?raw';
 
-Depois de contar custos, esta página responde como percorrer um grafo para saber o que é alcançável a partir de uma origem.
+Num grafo dirigido com arestas $0\to1$, $0\to2$, $1\to3$, $2\to3$ e $3\to4$, há dois caminhos de 0 até 4. Ambos usam três arestas. A BFS encontra um deles mantendo uma fila; a DFS segue primeiro um ramo e usa o regresso para analisar ciclos e dependências.
 
-Pensa nas paragens de autocarro de uma cidade e nos troços que as ligam: esse mapa é um **grafo**, ou seja um conjunto de **vértices** (as paragens) ligados por **arestas** (os troços). Um **percurso** resolve a **alcançabilidade**, ou seja a pergunta "a partir da paragem $s$, a que paragens conseguimos chegar seguindo troços?". Este é um pré-requisito de AED. Em DA usamos o estado e a ordem desses percursos para detetar ciclos, ordenar dependências e decompor grafos dirigidos, cujas arestas têm um sentido.
+A ordem de visita e o estado guardado permitem depois ordenar tarefas e separar regiões onde todos os vértices se alcançam mutuamente.
 
 ## BFS e caminhos sem pesos
 
@@ -100,7 +100,20 @@ No fim de $u$, se `low[u] == index[u]`, $u$ é a raiz de uma SCC. Desempilha at�
 
 No ciclo $a\to b\to c\to a$, com índices 0, 1, 2, a aresta $c\to a$ dá `low[c]=0`, que regressa até `low[b]=0`. Só $a$ fecha a SCC.
 
-Segue a ordem $a,b,c,d,e,f$ no grafo do exemplo. Descobre $a=0$, $b=1$, $c=2$ e empilha os três. A aresta $c\to a$ usa $index[a]=0$, logo $low[c]=low[b]=low[a]=0$. Em $c\to d$, $d$ ainda é novo, por isso continua a DFS em vez de fechar. Descobre $d=3$, $e=4$; a aresta $e\to d$ dá $low[e]=3$. A aresta $e\to f$ descobre $f=5$, que fecha sozinho por não ter saída para a pilha. Depois $d$ fecha $\{d,e\}$ e $a$ fecha $\{a,b,c\}$. Se a aresta $c\to d$ fosse tratada como prova de regresso depois de $\{d,e\}$ fechar, juntaria componentes distintas; a condição de pilha impede esse erro. Usar marcas de visita sem `onStack` pode juntar componentes que já terminaram. O custo é $O(n+m)$ tempo e $O(n)$ memória auxiliar.
+Segue a DFS por $a,b,c,d,e,f$ no grafo do exemplo:
+
+| Acontecimento            | Pilha de Tarjan, da base para o topo | Efeito                                          |
+| ------------------------ | ------------------------------------ | ----------------------------------------------- |
+| Descobrir $a,b,c$        | $a,b,c$                              | Índices 0,1,2                                   |
+| Examinar $c\to a$        | $a,b,c$                              | $low[c]=0$; a chamada ainda não termina         |
+| Descobrir $d,e$          | $a,b,c,d,e$                          | Índices 3,4; $e\to d$ dá $low[e]=3$             |
+| Descobrir e terminar $f$ | $a,b,c,d,e$                          | $f$ fecha sozinho e sai da pilha                |
+| Terminar $e$ e $d$       | $a,b,c$                              | $low[d]=index[d]=3$: fecha $\{d,e\}$            |
+| Regressar por $c,b,a$    | Vazia                                | O valor 0 regressa a $b$; $a$ fecha $\{a,b,c\}$ |
+
+Ao regressar de $d$ para $c$, o valor $low[d]=3$ não reduz $low[c]=0$. A ligação só vai da primeira SCC para a segunda. Se, noutra exploração, encontrarmos um vizinho já retirado da pilha, não usamos o seu índice para reduzir `low`. Uma marca `visited` não distingue esse caso de um vértice ativo; precisamos de `onStack`.
+
+O custo é $O(n+m)$ tempo e $O(n)$ memória auxiliar.
 
 ## Testar bipartição
 
