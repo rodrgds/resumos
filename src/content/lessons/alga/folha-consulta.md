@@ -10,8 +10,6 @@ editorial:
       url: https://drive.google.com/file/d/1ZBprkJ8SuJvpFFTPqFwNNsCzJyhdJoeA/view
 ---
 
-Que fórmula ou condição usar em cada conta? Cada linha traz a ligação para a explicação.
-
 Trabalhamos sobre $\mathbb R$. $A$ é $m\times n$ e $r=\operatorname{car}(A)$ é o número de pivôs da forma em escada.
 
 ## Matrizes e determinantes
