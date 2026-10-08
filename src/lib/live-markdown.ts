@@ -170,7 +170,7 @@ export function liveMarkdown(
           state.doc.lineAt(pos).from,
         ),
       );
-    visit(tree, (node) => {
+    visit(tree, (node, _index, parent) => {
       const from = node.position?.start.offset;
       const to = node.position?.end.offset;
       if (from === undefined || to === undefined || from === to) return;
@@ -204,6 +204,16 @@ export function liveMarkdown(
       }
       if (node.type === 'inlineMath') mark(from, to, 'code');
       if (node.type === 'heading') {
+        const underline = state.doc.lineAt(to);
+        // CommonMark reads an unfinished nested '-' as a Setext underline.
+        // Keep the parent item as body text until the reader fills the child.
+        if (
+          parent?.type === 'listItem' &&
+          node.depth === 2 &&
+          underline.number > state.doc.lineAt(from).number &&
+          /^(?:\s*>\s*)*\s*-\s*$/.test(underline.text)
+        )
+          return;
         const first = node.children[0]?.position?.start.offset ?? to;
         const last = node.children.at(-1)?.position?.end.offset ?? to;
         line(from, `note-heading note-h${node.depth}`, {

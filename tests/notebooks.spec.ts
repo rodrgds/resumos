@@ -510,9 +510,10 @@ for (const marker of ['-', '1.', '- [ ]']) {
     await editor.press('Enter');
     await page.keyboard.insertText('Segundo');
     await editor.press('Enter');
-    await page.keyboard.insertText('Terceiro');
     await editor.press('Tab');
     await expect(editor).toBeFocused();
+    await expect(editor.getByRole('heading')).toHaveCount(0);
+    await page.keyboard.insertText('Terceiro');
     await editor.press('Enter');
     await page.keyboard.insertText('Quarto');
     await editor.press('Shift+Tab');
@@ -558,6 +559,35 @@ test('fenced code keeps syntax colours while typing and reading', async ({
   await expect(keyword).not.toHaveCSS('color', textColour);
   await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
   await expect(keyword).not.toHaveCSS('color', textColour);
+});
+
+test('an empty nested bullet keeps body typography while real headings stay headings', async ({
+  page,
+}) => {
+  await page.goto('/caderno/exemplo/#novo');
+  const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+  await editor.fill('Secção\n---\n\n- Título na lista\n  ---\n\n- abc\n  -');
+  const headings = editor.getByRole('heading', { level: 2 });
+  await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
+  const bodySize = await editor.evaluate(
+    (node) => getComputedStyle(node).fontSize,
+  );
+  const parent = editor.locator('.cm-line').filter({ hasText: 'abc' });
+  await expect(parent).toHaveCSS('font-size', bodySize);
+  await editor.press('ControlOrMeta+End');
+  await page.keyboard.insertText(' a');
+  await expect(parent).toHaveCSS('font-size', bodySize);
+  await editor.press('Backspace');
+  await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
+  await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+  await expect(parent).toHaveCSS('font-size', bodySize);
+  await expect(page.locator('#personal-save-status')).toHaveText(
+    'Guardado neste navegador',
+  );
+  await page.reload();
+  await expect(headings).toHaveText([/^Secção$/, /Título na lista$/]);
+  await expect(parent).toHaveCSS('font-size', bodySize);
+  expect(await exportedMarkdown(page)).toContain('- abc\n  -');
 });
 
 test('formulas reveal their source in place by click and vertical arrow movement', async ({

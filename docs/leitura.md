@@ -12,6 +12,8 @@ Nos **Conteúdos** de uma cadeira, o botão **Novo apontamento** cria uma págin
 
 O apontamento usa a mesma largura, letra e navegação das lições. Edita o título ou escreve diretamente na página. O texto mantém a formatação enquanto escreves; os sinais Markdown aparecem junto do cursor. Enter continua listas; num item vazio, sai da lista. Tab recua um item para dentro do anterior e Shift Tab sobe um nível, incluindo os seus filhos. Ctrl/⌘ Z desfaz alterações. Escape seguido de Tab sai do editor. Usa `$…$` para matemática em linha e `$$` em linhas próprias para uma fórmula destacada. Clica na fórmula ou chega-lhe com as setas para editar o LaTeX na própria página, entre os delimitadores. Ao sair, a fórmula volta a ser desenhada. Os blocos de código usam a linguagem indicada na abertura do bloco, por exemplo `python`, para colorir a sintaxe. HTML e componentes MDX não são executados.
 
+Usa `#` e `##` para títulos, ou sublinha o texto com `===` e `---`. Um `-` isolado numa sublista mantém o item anterior como texto normal, sem alterar o Markdown guardado.
+
 O menu **Ações do apontamento**, ao lado do título, permite inserir imagens e fórmulas, importar, exportar e eliminar. Também podes abrir o menu de uma página nos conteúdos com o botão direito, o botão de ações ou Shift F10. A eliminação pode ser desfeita durante a visita.
 
 Cola ou arrasta imagens para a página, ou usa **Inserir imagem**. Aceita PNG, JPEG, WebP, GIF e AVIF até 10 MB por ficheiro. As imagens ficam neste navegador, sem uploads. Imagens de URLs externos aparecem como texto, sem pedidos de rede. Para remover uma imagem, clica nela e apaga o Markdown correspondente.
