@@ -10,7 +10,7 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import maquina from '../../lc/maquina-teclado.dot?raw';
 
-O temporizador já marca o ritmo. Falta perceber que tecla o jogador carregou. Esta página mostra como ler as teclas através do controlador do teclado. O teclado produz códigos ao premir e largar teclas. O controlador i8042 do PC recebe esses bytes e coloca-os no output buffer. O teu programa lê o byte, conserva-o se for válido e só produz um evento de tecla quando o código está completo.
+Premir a seta direita produz `E0 4D`; largá-la produz `E0 CD`, no set 1 usado aqui. O i8042 recebe e disponibiliza estes bytes um de cada vez. O programa só deve produzir um evento depois de reunir o scancode completo.
 
 ## Estado do i8042
 
@@ -34,7 +34,7 @@ Nos exemplos usamos os **scancodes set 1** usados pelo ambiente do laboratório.
 
 Um scancode não é um carácter ASCII, porque a tecla que produz `0x1E` no set 1 não entrega o byte ASCII de `a`. Para obter texto, tens de interpretar layout, Shift, Caps Lock e outras teclas. Para controlar uma aplicação, podes trabalhar diretamente com eventos de tecla.
 
-Algumas teclas usam o prefixo `0xE0`. Por exemplo, a seta para a direita produz make `E0 4D` e break `E0 CD`. Duas notificações entregam os dois bytes. O prefixo não é um evento completo e não deve provocar uma ação sozinho.
+Algumas teclas usam o prefixo `0xE0`. Por exemplo, a seta para a direita produz make `E0 4D` e break `E0 CD`. No modelo do laboratório, dois atendimentos recolhem os dois bytes, sem esperar pelo segundo dentro do primeiro handler. O prefixo não é um evento completo e não deve provocar uma ação sozinho.
 
 O set 1 tem também sequências especiais mais longas, como Pause. O descodificador simples seguinte trata códigos de um byte e códigos com um prefixo E0. Uma aplicação que precise das teclas especiais deve reconhecer a sequência completa; este modelo não é um parser universal de todos os teclados.
 
@@ -90,7 +90,17 @@ break key=0x4D extended=1
 break key=0x01 extended=0
 ```
 
-Segue a sequência byte a byte. `E0` guarda o prefixo e não emite evento. `4D` junta-se ao prefixo e produz make da seta direita. O segundo `E0` guarda novo prefixo. `CD` tem bit 7 ativo, por isso produz break da mesma tecla. `81` é o break simples de Esc, sem prefixo.
+O estado persiste entre os bytes:
+
+| Byte | E0 antes | Evento                | E0 depois |
+| ---- | -------- | --------------------- | --------- |
+| `E0` | Não      | Nenhum                | Sim       |
+| `4D` | Sim      | Make da seta direita  | Não       |
+| `E0` | Não      | Nenhum                | Sim       |
+| `CD` | Sim      | Break da seta direita | Não       |
+| `81` | Não      | Break de Esc          | Não       |
+
+O bit 7 de `CD` assinala break depois de reconhecer o prefixo. O mesmo bit em `E0` faz parte do prefixo e não indica uma tecla largada.
 
 O estado do prefixo persiste entre chamadas, por isso se perderes ou descartares um byte por erro, define também uma política de recuperação do parser. Não uses um prefixo antigo para classificar um byte de uma nova sequência.
 

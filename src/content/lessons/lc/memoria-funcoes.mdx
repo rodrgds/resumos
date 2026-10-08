@@ -12,7 +12,7 @@ import Typst from '../../../components/Typst.astro';
 import stackframe from '../../lc/stack-frame.typ?raw';
 import filaCircular from '../../lc/fila-circular.typ?raw';
 
-Imagina uma função que recebe uma posição e devolve outra, e uma fila que continua a responder depois de a função terminar. Esta página explica durante quanto tempo cada dado existe e como as funções o partilham. Um endereço só é útil enquanto o objeto guardado nessa posição existe. Muitos erros de C nascem da confusão entre o nome da variável, o dado guardado e a duração desse dado.
+Uma função pode receber o endereço de uma posição e alterar as suas coordenadas. Esse endereço só permite acesso enquanto o objeto existir. Se a função devolver o endereço de uma variável local, o chamador recebe um endereço cujo objeto já deixou de existir. Distinguir âmbito, duração e propriedade evita este erro e permite construir objetos que sobrevivem a várias chamadas.
 
 ## Organização da memória
 
@@ -28,7 +28,7 @@ Um processo tem um espaço de endereçamento virtual. Uma organização habitual
 
 ## Passagem de parâmetros
 
-C passa todos os argumentos por valor, ou seja, um apontador também é um valor: a função recebe uma cópia do endereço. Desreferenciar essa cópia permite alterar o objeto original.
+C passa os argumentos por valor. Uma função que recebe um apontador recebe uma cópia do endereço; desreferenciar essa cópia permite alterar o objeto original.
 
 ```c
 #include <stdio.h>
@@ -46,15 +46,13 @@ int main(void) {
 }
 ```
 
-A saída mostra `3` e depois `9`, porque na primeira chamada apenas a cópia muda e o chamador ignora o valor devolvido. Na segunda, `*x` designa `n`.
-
 Segue os dois casos. Em `by_value(n)`, a função recebe 3, altera a sua cópia para 9 e devolve 9, mas o chamador ignora o retorno e `n` continua 3. Em `by_pointer(&n)`, a função recebe o endereço de `n`, escreve 9 através dele e o chamador lê 9 a seguir. O apontador também passa por valor: a função recebe uma cópia do endereço, mas essa cópia continua a designar o objeto do chamador.
 
 A mesma distinção explica por que `p = NULL` dentro de uma função que recebe `int *p` não põe a variável do chamador a `NULL`. Para substituir o apontador do chamador, devolve o novo apontador ou recebe o endereço desse apontador, de tipo `int **`.
 
 ## Chamada, stack frame e retorno
 
-Uma chamada precisa de guardar onde deve continuar depois do retorno, porque o processador tem de retomar o chamador. No modelo IA-32 habitual com argumentos na pilha, cada chamada cria um **stack frame**.
+Uma chamada guarda o endereço onde o chamador continuará depois do retorno. No modelo IA-32 habitual com argumentos na pilha, cada chamada cria um **stack frame**.
 
 <Typst
   source={stackframe}

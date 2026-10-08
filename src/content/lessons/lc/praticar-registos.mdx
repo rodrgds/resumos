@@ -1,6 +1,6 @@
 ---
 title: Praticar registos e polling
-description: Exercícios originais de raciocínio, com pistas e soluções completas.
+description: Substituição de campos, espaços de I/O e limites de espera por polling.
 section: exercicios
 ---
 
@@ -14,12 +14,11 @@ import Exercise from '../../../components/Exercise.astro';
   answer={{ kind: 'number', value: 203, tolerance: 0 }}
 >
   <div>
-    Um registo legível e de escrita normal vale 0xD3, ou seja tens um valor
-    concreto para ler. Os bits 4 a 2 contêm um modo. Substitui esse modo por 2
-    sem alterar os outros bits. Dá o novo byte em decimal.
+    Um registo legível e de escrita normal vale 0xD3. Os bits 4 a 2 contêm um
+    modo. Substitui esse modo por 2 sem alterar os outros bits. Dá o novo byte
+    em decimal.
   </div>
   <div slot="hint">A máscara do campo é 0x1C.</div>
-  <div slot="hint-more">Limpa 0x1C e insere 2 &lt;&lt; 2, que vale 0x08.</div>
   <div slot="solution">
     0xD3 &amp; ~0x1C conserva 0xC3. O novo campo é 0x08. O OR dá 0xCB, que vale
     203. Os bits fora de 0x1C não mudam.
@@ -81,9 +80,6 @@ import Exercise from '../../../components/Exercise.astro';
     é a espera média até à deteção, ignorando o tempo da chamada?
   </div>
   <div slot="hint">A espera varia entre aproximadamente 0 e um período.</div>
-  <div slot="hint-more">
-    A média de um intervalo uniforme de 0 a 8 é o seu ponto médio.
-  </div>
   <div slot="solution">
     A espera média é 8/2 = 4 ms. A pior espera aproxima-se de 8 ms. A hipótese
     de o evento permanecer disponível impede perder o evento antes da consulta.
@@ -96,32 +92,30 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-timeout-ibf"
-  revision={1}
-  title="Desistir de escrever sem bloquear"
+  revision={2}
+  title="Limite de tentativas de escrita"
   explanation="/cadeiras/lc/falar-com-hardware/#polling-e-timeout"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Esperei IBF a 0 com limite de tentativas.',
-      'Distingui erro de I/O e timeout.',
-      'Não escrevi com IBF ativo.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: [
+    'Obtive cinco leituras e quatro atrasos no caso de timeout.',
+    'Não escrevi com IBF ativo.',
+    'Distingui o timeout de uma falha da terceira leitura.',
+  ] }}
 >
-  <div>
-    Antes de escrever em <code>{'0x64'}</code>, o estado mantém IBF a 1 durante
-    cinco leituras espaçadas. Escreves na mesma ou desistes? O que devolve a
-    função?
-  </div>
-  <div slot="hint">O exemplo usa cinco observações e quatro atrasos.</div>
-  <div slot="hint-more">Escrever com IBF ativo perde a ordem anterior.</div>
+  Uma função permite cinco leituras de estado, com 20 ms entre tentativas,
+  sem atraso depois da última. Só escreve em `0x64` se observar IBF a 0.
+
+1. Todas as leituras têm sucesso, mas mostram IBF a 1. Quantas chamadas de leitura, atrasos e escritas ocorrem? Que resultado deve indicar a função?
+2. Num segundo ensaio, a terceira leitura falha na kernel call. Deve continuar a esperar e depois indicar timeout?
+
+  <div slot="hint">Conta os intervalos entre observações, além das observações.</div>
   <div slot="solution">
-    Desiste e devolve erro de timeout. Cinco leituras com IBF a 1 esgotam a
-    política do exemplo. Se uma leitura de estado falhar, devolve esse erro de
-    I/O em vez de timeout. Nunca escreve enquanto IBF estiver ativo.
-  </div>
-  <div slot="mistakes">
-    Esperar para sempre ou confundir timeout do dispositivo com falha da kernel
-    call.
+    No primeiro caso há cinco leituras, quatro atrasos e nenhuma escrita.
+    Os atrasos somam nominalmente 80 ms, além das chamadas e do arredondamento
+    a ticks. A função indica timeout da espera por IBF vazio.
+
+    No segundo caso termina na falha da terceira leitura e devolve o erro de I/O.
+    Houve duas esperas antes dela. Não se sabe o estado atual de IBF, pelo que
+    não se deve escrever nem apresentar essa falha como uma espera esgotada.
+
   </div>
 </Exercise>

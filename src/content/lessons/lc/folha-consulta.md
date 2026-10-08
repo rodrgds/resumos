@@ -6,7 +6,7 @@ studyKind: revision
 order: 1
 ---
 
-Usa esta folha depois de estudar as explicações, porque cada linha resume uma condição que a lição justifica.
+Esta folha reúne condições e sequências para consultar depois das lições. Os links levam às contas e aos exemplos completos.
 
 ## C e memória
 

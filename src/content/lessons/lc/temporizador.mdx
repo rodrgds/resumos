@@ -10,7 +10,7 @@ practices:
 import InteractiveDemo from '../../../components/InteractiveDemo.astro';
 import TimerDivider from '../../lc/TimerDivider.astro';
 
-O programa já reage a interrupções. Falta-lhe uma forma de dizer daqui a quanto tempo quer acordar. Esta página mostra como gerar intervalos regulares para marcar o tempo. O i8254 tem três contadores de 16 bits. Cada um recebe impulsos de um relógio de entrada e produz uma saída conforme o modo escolhido. Programas o divisor para obter a frequência que queres. No PC, a saída do contador 0 está ligada à IRQ0.
+Uma aplicação que desenha a cada dois ticks precisa de uma fonte regular de eventos. No PC, a saída do contador 0 do i8254 está ligada à IRQ0. Os três contadores de 16 bits recebem impulsos de um relógio de entrada; o divisor e o modo determinam a saída de cada um.
 
 ## Relógio, divisor e modos
 
@@ -20,7 +20,7 @@ Nos modos periódicos, um divisor $N$ determina a frequência:
 
 $$f_{out}=\frac{f_{in}}{N},\qquad T=\frac{N}{f_{in}}.$$
 
-Para 1000 Hz com quociente inteiro, o divisor é floor(1193182/1000) = 1193 e a frequência real é cerca de 1000,15 Hz. Em contagem binária, o valor carregado `0x0000` representa 65536, não um divisor zero. Os modos 2 e 3 exigem um divisor de pelo menos 2. Em BCD, o contador representa quatro algarismos decimais e o intervalo é diferente; não interpretes um valor BCD como um contador binário de 16 bits.
+Para 1000 Hz, a política de quociente inteiro escolhe $N=\lfloor1193182/1000\rfloor=1193$. Dividir o relógio por 1193 produz cerca de 1000,15 Hz. O pedido não é a frequência exata da saída. Em contagem binária, o valor carregado `0x0000` representa 65536, não um divisor zero. Os modos 2 e 3 exigem um divisor de pelo menos 2. Em BCD, o contador representa quatro algarismos decimais e o intervalo é diferente; não interpretes um valor BCD como um contador binário de 16 bits.
 
 | Modo               | Comportamento da saída                                                 |
 | ------------------ | ---------------------------------------------------------------------- |
@@ -73,7 +73,6 @@ Extrai o modo com `(status >> 1) & 7`. Os códigos 6 e 7 são alternativas de 2 
 
 ## Escolher a frequência
 
-:::details[De onde vem 60,001106 Hz]
 Para pedir 60 Hz, o divisor ideal é:
 
 $$N^*=\frac{1\,193\,182}{60}=19\,886{,}366\ldots$$
@@ -83,7 +82,6 @@ Como o divisor é inteiro, uma política habitual no laboratório usa o quocient
 $$f_{real}=\frac{1\,193\,182}{19886}\approx60{,}001106\ \text{Hz}.$$
 
 Carregam-se LSB `0xAE` e MSB `0x4D`. O período é cerca de 16,66636 ms. Uma contagem de 216000 ticks, interpretada como uma hora a 60 Hz, termina cerca de 0,0664 s antes de uma hora real neste modelo de relógio ideal.
-:::
 
 A escolha por quociente inteiro e a escolha por arredondamento ao inteiro mais próximo são políticas diferentes. Com 100 Hz, o quociente dá 11931 e cerca de 100,006873 Hz; o arredondamento dá 11932 e cerca de 99,998491 Hz. Declara qual estás a usar antes de comparar resultados.
 

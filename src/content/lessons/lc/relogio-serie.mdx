@@ -10,11 +10,11 @@ practices:
 import Typst from '../../../components/Typst.astro';
 import trama from '../../lc/trama-serie.typ?raw';
 
-Com a aplicação local a funcionar, falta trocar bytes com outro computador pela porta série. Esta página mostra como o fazer. A UART converte bytes em bits enviados pela linha e reconstrói os bytes recebidos. O programa acede a registos de oito bits. Uma sequência de bytes não se transforma automaticamente numa mensagem da aplicação: essa estrutura pertence ao protocolo da página seguinte. Em 2025/26 este capítulo é matéria extra do projeto.
+Para enviar `MOVE +5`, a aplicação prepara bytes e a UART converte-os numa sequência de bits. A UART reconstrói os bytes recebidos, mas não lhes atribui o significado de movimento nem delimita a mensagem. Essa estrutura pertence ao protocolo da página seguinte. Em 2025/26, a série é matéria extra do projeto.
 
 ## Comunicação assíncrona
 
-Em transmissão série, os bits seguem um após outro. Em comunicação assíncrona, emissor e recetor usam relógios independentes e combinam previamente a duração de cada bit, porque um start bit marca o início de cada carácter.
+Em transmissão série, os bits seguem um após outro. Em comunicação assíncrona, emissor e recetor usam relógios independentes e combinam previamente a duração de cada bit. O start bit permite ao recetor localizar o início de cada carácter e amostrar os bits seguintes com o seu relógio.
 
 Na configuração **7E1**, há sete bits de dados, paridade par e um stop bit. Somando o start bit, cada carácter ocupa dez bits. Na configuração **8N1**, há oito dados e nenhuma paridade, também dez bits no total. O número de bits úteis não é sempre o número de bits transmitidos. A taxa de bits mede bit/s; a taxa de símbolos mede baud. Nesta linha binária há um bit por símbolo, por isso os valores coincidem. Essa igualdade não vale para todas as comunicações. Em 7E1, cada carácter só transporta sete bits úteis, mesmo que a API o guarde num byte de C.
 
@@ -26,7 +26,7 @@ Na configuração **7E1**, há sete bits de dados, paridade par e um stop bit. S
 
 Em 8N1 a 9600 bit/s, o máximo ideal é $9600/10=960$ bytes de dados por segundo, ou seja, uma mensagem de 20 bytes ocupa pelo menos $200/9600\approx20{,}83$ ms, sem pausas entre caracteres nem bytes de controlo da aplicação.
 
-A paridade par faz o total de bits a 1, incluindo paridade, ser par, por isso deteta um número ímpar de inversões, mas pode não detetar duas inversões.
+A paridade par faz o total de bits a 1 nos dados e na paridade ser par. Deteta um número ímpar de inversões nesses bits, mas duas inversões conservam a paridade. Não substitui a validação de framing ou do conteúdo da mensagem.
 
 **Simplex** só comunica num sentido. **Half-duplex** comunica nos dois sentidos, mas um de cada vez. **Full-duplex** permite transmissão nos dois sentidos em simultâneo. Ter uma UART não determina sozinho o protocolo de turnos da aplicação.
 

@@ -1,6 +1,6 @@
 ---
 title: Praticar o rato
-description: Exercícios originais de raciocínio, com pistas e soluções completas.
+description: Deltas de nove bits, sincronização, gestos e confirmação de comandos PS/2.
 section: exercicios
 ---
 
@@ -17,7 +17,6 @@ import Exercise from '../../../components/Exercise.astro';
     Um pacote válido sem overflow é 08 C8 00. Quanto vale delta X em decimal?
   </div>
   <div slot="hint">O bit de sinal de X está no primeiro byte.</div>
-  <div slot="hint-more">Em 0x08, o bit 4 está a 0.</div>
   <div slot="solution">
     O sinal X é 0, por isso delta X é o byte baixo 0xC8 sem sinal, ou +200. Não
     há overflow. Um cast para <code>{'int8_t'}</code> produziria um resultado
@@ -41,9 +40,6 @@ import Exercise from '../../../components/Exercise.astro';
     <code>{'screen_y'}</code>?
   </div>
   <div slot="hint">O bit 5 de 0x28 é o sinal Y.</div>
-  <div slot="hint-more">
-    delta Y é 5 - 256 e o ecrã usa <code>{'screen_y'}</code> - delta Y.
-  </div>
   <div slot="solution">
     delta Y = -251 nas coordenadas físicas do rato. <code>{'screen_y'}</code> =
     100 - (-251) = 351. O movimento físico foi para baixo, por isso a coordenada
@@ -75,7 +71,6 @@ import Exercise from '../../../components/Exercise.astro';
     interpreta o pacote corretamente.
   </div>
   <div slot="hint">O bit 3 pode também estar ativo num byte de dados.</div>
-  <div slot="hint-more">0x18 é o segundo byte, não um novo cabeçalho.</div>
   <div slot="solution">
     Depois de aceitar 0x08, o índice é 1. 0x18 deve ocupar o byte X e 0x00 o
     byte Y. O pacote tem delta X +24, delta Y 0, sem botões. O teste de
@@ -103,15 +98,16 @@ import Exercise from '../../../components/Exercise.astro';
   }}
 >
   <div>
-    No gesto da lição, ou seja o arrasto horizontal com tolerância acumulada, o
-    botão esquerdo acabou de ser premido e os acumulados são zero. Chegam
-    movimentos (40, 3), (40, 3) e (30, -2), mantendo o botão premido. O gesto
-    deve ser reconhecido? Indica em que passo se decide.
+    Num arrasto horizontal para a direita, exige-se comprimento de pelo menos
+    100 unidades e desvio vertical acumulado absoluto no máximo 5 em todos os
+    passos. Movimento para a esquerda ou desvio excessivo invalida o candidato
+    até largar o botão. O botão esquerdo acabou de ser premido e os acumulados
+    são zero. Chegam movimentos (40, 3), (40, 3) e (30, -2), mantendo o botão
+    premido. O gesto deve ser reconhecido? Indica em que passo se decide.
   </div>
   <div slot="hint">
     A tolerância vale para o desvio acumulado em todo o candidato.
   </div>
-  <div slot="hint-more">Depois do segundo movimento, x = 80 e y = 6.</div>
   <div slot="solution">
     Não. O primeiro movimento deixa (40, 3), dentro da tolerância. O segundo
     deixa (80, 6), ultrapassa 5 e invalida o candidato. O terceiro não recupera
@@ -126,7 +122,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-reenvio-rato"
-  revision={1}
+  revision={2}
   title="Repetir o comando após reenvio"
   explanation="/cadeiras/lc/rato/#enviar-um-comando"
   answer={{
@@ -139,16 +135,21 @@ import Exercise from '../../../components/Exercise.astro';
   }}
 >
   <div>
-    Enviaste <code>{'0xF3'}</code> com ACK e o argumento recebe{' '}
-    <code>{'0xFE'}</code>. Basta repetir o argumento?
+    Enviaste <code>0xF3</code> com ACK e o argumento recebe
+    <code>0xFE</code>. Segue a regra dos slides de rato para este erro: indica
+    que bytes reenvias e quais recebem ACK. O KBC também confirma
+    <code>0xD4</code> com ACK do rato?
   </div>
   <div slot="hint">O rato pode pedir a retransmissão total.</div>
   <div slot="hint-more">O argumento sozinho não refaz o comando.</div>
   <div slot="solution">
-    Não. A política do protocolo pode exigir repetir o comando completo, com{' '}
-    <code>{'0xD4'}</code>, <code>{'0xF3'}</code> e argumento, cada um com o seu
-    ACK. Repetir só o argumento deixa o rato à espera do comando. Limita as
-    tentativas e trata <code>{'0xFC'}</code> como erro.
+    Repete o comando completo. Espera IBF vazio e envia <code>0xD4</code> ao
+    KBC, depois <code>0xF3</code> ao rato, que deve responder com ACK. Para o
+    argumento, envia outro <code>0xD4</code> e depois o argumento, com outro ACK
+    do rato. O KBC não devolve um ACK de rato por receber <code>0xD4</code>;
+    essa ordem só encaminha o byte seguinte. Limita as tentativas e trata{' '}
+    <code>0xFC</code>
+    como erro. Repetir apenas o argumento não segue a regra de recuperação dada.
   </div>
   <div slot="mistakes">
     Tratar o ACK do comando como resposta ou repetir bytes sem limite.

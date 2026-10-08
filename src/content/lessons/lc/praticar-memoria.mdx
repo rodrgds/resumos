@@ -1,6 +1,6 @@
 ---
 title: Praticar memória e funções
-description: Exercícios originais de raciocínio, com pistas e soluções completas.
+description: Duração, realocação, despacho por funções e propriedade numa fila genérica.
 section: exercicios
 ---
 
@@ -9,7 +9,7 @@ import Exercise from '../../../components/Exercise.astro';
 <Exercise
   id="lc-apontador-libertado"
   revision={2}
-  title="Quem fica com o endereço?"
+  title="Libertação e cópia de apontadores"
   explanation="/cadeiras/lc/memoria-funcoes/#passagem-de-parâmetros"
   answer={{
     kind: 'self',
@@ -65,9 +65,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     A memória pode ainda conter os mesmos bits depois do retorno.
   </div>
-  <div slot="hint-more">
-    A validade depende da existência do objeto, não dos bits antigos.
-  </div>
   <div slot="solution">
     O objeto automático deixa de existir no retorno. Desreferenciar o endereço
     devolvido é inválido, mesmo que os bits ainda mostrem 17. Devolve o inteiro
@@ -83,26 +80,33 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-despacho-funcoes"
-  revision={1}
-  title="Ler uma tabela de funções"
+  revision={2}
+  title="Despacho por tabela e índice inválido"
   explanation="/cadeiras/lc/memoria-funcoes/#apontadores-para-funções"
-  answer={{ kind: 'number', value: 11, tolerance: 0 }}
+  answer={{ kind: 'self', checklist: [
+    'Obtive 11 na chamada válida ao índice 1.',
+    'Rejeitei o índice 2 antes de aceder à tabela.',
+    'Expliquei por que um cast não adapta assinaturas de funções.',
+  ] }}
 >
-  <div>
-    Uma tabela contém primeiro <code>{'f(n)'}</code> = 3n e depois{' '}
-    <code>{'g(n)'}</code> = n + 7. Todas as funções têm tipo{' '}
-    <code>{'int(int)'}</code>. Qual é o resultado da chamada à função do índice
-    1 com argumento 4?
-  </div>
-  <div slot="hint">Os índices começam em zero.</div>
-  <div slot="hint-more">O índice 1 escolhe g, não f.</div>
+  Uma tabela `int (*table[])(int) = {f, g}` contém `f(n) = 3*n` e
+  `g(n) = n+7`. O índice vem de um byte recebido.
+
+1. Que resultado dá `table[1](4)`?
+2. O byte recebido vale 2. Que validação impede uma chamada inválida?
+3. Seria correto acrescentar uma função `void h(void)` através de um cast para `int (*)(int)`? Justifica.
+
+  <div slot="hint">Separa a escolha da entrada do contrato da função escolhida.</div>
   <div slot="solution">
-    table[1] aponta para g. A chamada passa 4 e calcula 4 + 7 = 11. O apontador
-    seleciona a função; não aplica o índice ao argumento.
-  </div>
-  <div slot="mistakes">
-    Confundir índice 1 com a primeira entrada ou somar os resultados das duas
-    funções.
+    O índice 1 escolhe `g`, que devolve `4+7=11`.
+
+    A tabela tem apenas os índices 0 e 1. Confere `index < sizeof table / sizeof table[0]`
+    antes de avaliar `table[index]`; para 2, rejeita a entrada sem chamar nenhuma função.
+
+    O cast não cria um adaptador. Chamar uma função com um tipo incompatível
+    causa comportamento indefinido. Usa funções com a assinatura declarada ou
+    uma função adaptadora com essa assinatura e um contrato de retorno definido.
+
   </div>
 </Exercise>
 
@@ -126,9 +130,6 @@ import Exercise from '../../../components/Exercise.astro';
     próximas saídas. Uma nova inserção deve ter sucesso?
   </div>
   <div slot="hint">Cada índice avança módulo 3.</div>
-  <div slot="hint-more">
-    Retirar não reorganiza o array. A próxima saída começa em out.
-  </div>
   <div slot="solution">
     Depois das três inserções, in = out = 0 e count = 3. Retirar 10 faz out = 1
     e count = 2. Inserir 40 usa a posição 0 e faz in = 1 e count = 3. As saídas
@@ -162,10 +163,6 @@ import Exercise from '../../../components/Exercise.astro';
     deliberada de memória.
   </div>
   <div slot="hint">O tamanho pedido é não nulo.</div>
-  <div slot="hint-more">
-    Na falha, <code>{'realloc'}</code> conserva a alocação original, mas a
-    atribuição substitui o seu endereço.
-  </div>
   <div slot="solution">
     O bloco antigo continua alocado. A atribuição perde o seu único endereço e
     cria uma fuga de memória. Usa <code>{'int'}</code> *<code>{'next'}</code> ={' '}
@@ -183,32 +180,33 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-posse-superficial"
-  revision={1}
-  title="Partilhar um apontador copiado"
+  revision={2}
+  title="Duração de um recurso partilhado"
   explanation="/cadeiras/lc/memoria-funcoes/#filas-e-tipos-genéricos"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Reconheci que a fila copia só o endereço.',
-      'Defini quem liberta o objeto apontado.',
-      'Evitei dupla libertação entre fila e criador.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: [
+    'Reconheci que as cópias partilham o mesmo pixmap.',
+    'Mantive o pixmap vivo enquanto algum elemento da fila o utiliza.',
+    'Atribuí uma única libertação ao módulo de recursos.',
+  ] }}
 >
-  <div>
-    Uma fila genérica guarda uma estrutura com um apontador para um pixmap. A
-    fila copia os bytes da estrutura. Quem possui o pixmap e quando se liberta?
-  </div>
-  <div slot="hint">A cópia é superficial.</div>
-  <div slot="hint-more">Copiar o endereço não copia o objeto apontado.</div>
+  O módulo de recursos possui um pixmap alocado dinamicamente. Dois elementos
+  de uma fila guardam estruturas com um apontador para esse pixmap; a fila copia
+  os bytes de cada estrutura. Os elementos usam o pixmap sem adquirir a sua propriedade.
+
+O primeiro elemento é retirado e destruído. Deve libertar o pixmap?
+Quando pode o módulo de recursos libertá-lo? Explica também por que copiar
+a estrutura não cria duas imagens independentes.
+
+  <div slot="hint">Identifica o objeto copiado e o objeto apenas referido.</div>
   <div slot="solution">
-    A fila passa a possuir uma cópia do endereço, mas o pixmap continua a ser um
-    só objeto. Define um dono: ou a fila liberta o pixmap ao remover o elemento,
-    ou o criador o conserva e a fila nunca o liberta. Sem esta regra, dois donos
-    libertam o mesmo bloco ou ninguém o liberta.
-  </div>
-  <div slot="mistakes">
-    Supor que copiar a estrutura copia o pixmap ou libertar o mesmo bloco duas
-    vezes.
+    A fila copia as estruturas, incluindo o valor do apontador. O pixmap continua
+    a ser um único objeto partilhado.
+
+    Destruir o primeiro elemento não liberta o pixmap: o segundo ainda o usa e
+    nenhum dos dois o possui. O módulo de recursos liberta-o uma única vez,
+    depois de terminar todos os seus utilizadores, incluindo os elementos ainda
+    na fila. Libertá-lo antes deixaria apontadores inválidos; libertá-lo em cada
+    elemento causaria dupla libertação.
+
   </div>
 </Exercise>

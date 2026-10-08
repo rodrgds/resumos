@@ -7,9 +7,7 @@ practices:
   - lc/praticar-protocolos
 ---
 
-A porta série entrega bytes sem dizer onde começa cada ordem do jogo. Esta página mostra como agrupar esses bytes em mensagens válidas.
-
-A UART entrega bytes. Uma aplicação precisa de saber quais formam uma mensagem, que operação representam e se chegaram válidos, ou seja, um protocolo define esse contrato nos dois lados da ligação.
+Receber os bytes de `MOVE +5` não basta para executar uma ordem. O recetor precisa de reconhecer o início, reunir os campos e validar a mensagem completa. O protocolo define estas regras para ambos os lados.
 
 ## Limites e significado das mensagens
 
@@ -23,7 +21,7 @@ Não envies a representação crua de uma `struct`, porque o compilador pode ins
 
 Vamos construir um protocolo próprio pequeno, apenas para estudar framing e recuperação. Cada frame tem um delimitador `0x7E`, um corpo e outro delimitador. O corpo contém tipo, sequência, comprimento, payload e um checksum XOR.
 
-O checksum é o XOR dos bytes do corpo anteriores a ele. É uma verificação simples, ou seja, pode detetar certas alterações, mas duas alterações compensatórias podem passar.
+O checksum é o XOR dos bytes do corpo anteriores a ele. Deteta algumas alterações, mas inverter o mesmo bit em dois bytes conserva o XOR. Um checksum igual não prova que os dados chegaram intactos.
 
 Se `0x7E` ou `0x7D` aparecer no corpo, transmite `0x7D` seguido do byte original XOR `0x20`. Assim, um delimitador nos dados torna-se `7D 5E` e um escape torna-se `7D 5D`. O recetor remove essa codificação antes de interpretar o corpo.
 
@@ -108,6 +106,18 @@ A regra de erro também faz parte do contrato. Neste formato, depois de `7D` só
 
 No fecho, confere tipo, número de campos, comprimento e checksum. Só depois publica um evento da aplicação. Não atualizes a posição com o primeiro campo antes de saber se o resto da mensagem é válido.
 
+Segue o frame anterior depois de a UART entregar cada byte. Aqui omitimos o delimitador inicial, que já colocou o parser em `BODY`:
+
+| Entrada    | Estado                   | Corpo                   | Saída               |
+| ---------- | ------------------------ | ----------------------- | ------------------- |
+| `01 07 02` | `BODY`                   | `01 07 02`              | Nenhum              |
+| `7D`       | `ESCAPED`                | `01 07 02`              | Nenhum              |
+| `5E`       | `BODY`                   | `01 07 02 7E`           | Nenhum              |
+| `05 7F`    | `BODY`                   | `01 07 02 7E 05 7F`     | Nenhum              |
+| `7E`       | `BODY`, novo corpo vazio | Corpo anterior validado | Uma mensagem aceite |
+
+O byte `5E` só representa `7E` porque o estado anterior era `ESCAPED`. O fecho é o primeiro momento em que se conhece a validade da mensagem inteira.
+
 Uma chegada fragmentada não é um erro. O handler pode receber dois bytes agora e os restantes depois. A fila e o parser conservam-nos sem bloquear à espera da mensagem completa. Um delimitador pode aparecer depois de uma mensagem danificada e permitir recomeçar.
 
 ## ACK, timeout e duplicados
@@ -133,7 +143,7 @@ Se ambos iniciarem ao mesmo tempo, define um desempate por identidade ou papel. 
 
 Numa aplicação centralizada, um computador calcula o estado e o outro envia entradas e apresenta o estado recebido. Na replicação, ambos calculam o estado. Para obter o mesmo resultado, precisam do mesmo estado inicial, das mesmas entradas na mesma ordem, dos mesmos instantes lógicos e de regras determinísticas. Receber as mesmas entradas por ordens diferentes pode produzir resultados diferentes.
 
-## Por que não enviar o framebuffer
+## Capacidade da porta série
 
 Uma imagem de 1024 por 768 a 8 bpp tem 786432 bytes. A 115200 bit/s em 8N1, a capacidade ideal é 11520 bytes/s, por isso uma imagem levaria pelo menos:
 

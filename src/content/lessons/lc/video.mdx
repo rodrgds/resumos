@@ -8,10 +8,11 @@ practices:
 ---
 
 import Typst from '../../../components/Typst.astro';
+import ApresentarFrame from '../../lc/ApresentarFrame.astro';
 import fb from '../../lc/framebuffer.typ?raw';
 import fbPadding from '../../lc/framebuffer-padding.typ?raw';
 
-Teclado e rato já geram eventos. Falta guardar a imagem que o jogador vê. Esta página mostra como guardar e mostrar a imagem do ecrã. Em modo gráfico, o ecrã representa uma matriz de píxeis. O framebuffer guarda a cor de cada píxel e o controlador de vídeo lê essa memória para apresentar a imagem. Para desenhar tens de conhecer a organização da memória e a codificação das cores.
+O píxel `(3,1)` não tem necessariamente o mesmo endereço em dois modos gráficos. A largura da imagem, os bytes por píxel e o espaço entre linhas determinam onde escrever. O framebuffer guarda as cores; o controlador de vídeo lê essa memória para apresentar a imagem.
 
 ## Modo e informação VBE
 
@@ -127,7 +128,7 @@ int main(void) {
 }
 ```
 
-O exemplo imprime `56 34 12` para dimensões pequenas fixas, em que os produtos não transbordam, porque guarda bytes sem converter uma cor RGB para campos arbitrários de um modo VBE. Uma API que aceite dimensões arbitrárias deve validar também as multiplicações.
+O exemplo guarda os 24 bits inferiores da palavra. Não converte componentes RGB para campos arbitrários de um modo VBE. As dimensões fixas são pequenas e os produtos não transbordam. Uma API que aceite dimensões arbitrárias deve validar também as multiplicações.
 
 ## Linhas, retângulos e clipping
 
@@ -171,11 +172,11 @@ Desenhar diretamente na imagem visível pode mostrar um fundo apagado ou objetos
 
 Se o controlador ler o framebuffer durante a cópia, uma parte da imagem pode ser do frame antigo e outra do novo. Isso é **tearing**. Double buffering por cópia não garante que o ecrã veja apenas frames completos.
 
+<ApresentarFrame />
+
 Com **page flipping**, ambos os buffers estão na VRAM e alteras qual é o apresentado, usando uma operação como VBE `Set Display Start`. Para evitar tearing, a mudança deve respeitar a sincronização com o refrescamento vertical. A frequência do timer da aplicação não garante que estejas sincronizado com o ecrã.
 
-:::tip[Ideia-chave]
-Compõe cada frame completo fora da imagem visível e só depois apresenta-o com sincronização vertical, porque nem a cópia nem a troca de página são instantâneas.
-:::
+Uma cópia sincronizada também tem de caber no intervalo permitido pelo modo. Uma troca de página agendada para o refrescamento evita copiar todos os píxeis nesse intervalo, se a implementação suportar essa operação.
 
 :::details[Triple buffering]
 **Triple buffering** acrescenta outro back buffer para preparar um novo frame enquanto um frame completo aguarda apresentação. Exige uma política sobre qual apresentar e o apoio da implementação. Distingue sempre tempo de simulação, ritmo de construção dos frames e ritmo de refrescamento do ecrã.

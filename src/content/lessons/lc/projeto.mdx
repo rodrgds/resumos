@@ -10,9 +10,9 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import maquina from '../../lc/maquina-jogo.dot?raw';
 
-Com teclado, rato, temporizador e vídeo a funcionar isoladamente, falta juntá-los num jogo que responde a eventos. Esta página mostra como organizar essa aplicação.
+Uma tecla P e um tick na mesma iteração podem pausar o jogo antes ou depois de avançar o contador. A aplicação precisa de uma ordem definida, além dos drivers que recolhem os dados.
 
-Uma aplicação recebe bytes, transforma-os em eventos e atualiza o estado. O desenho apresenta uma fotografia desse estado, ou seja, se separares estes passos, consegues testar o raciocínio sem precisar de reproduzir sempre o mesmo movimento na máquina virtual.
+A aplicação recebe bytes, transforma-os em eventos e atualiza o estado. O desenho apresenta uma fotografia desse estado. Separar estes passos permite reproduzir uma partida com uma sequência guardada de entradas, sem repetir o movimento na máquina virtual.
 
 ## Programação por eventos
 
@@ -44,7 +44,7 @@ Uma máquina **Mealy** associa saídas à transição, dependendo de estado e en
 
 Os dados também fazem parte do estado. Um `enum` sozinho não representa vidas, posição ou ticks acumulados. Podes usar uma `struct` com o estado e os dados comuns, ou uma tagged union para dados que só existem em algumas alternativas.
 
-## Um exemplo completo sem hardware
+## Ordem das teclas e ticks
 
 Este programa C portátil simula iterações com uma tecla e um tick cada. Implementa exatamente a máquina do diagrama: o jogo termina após três ticks ativos, porque o tick só conta em JOGO. Cada iteração aplica primeiro a tecla e depois o tick.
 
@@ -67,7 +67,6 @@ static void handle(struct game *g, struct input in) {
       break;
     case GAME:
       if (in.key == P_KEY) g->state = PAUSE;
-      else if (in.tick && ++g->active_ticks == 3) g->state = END;
       break;
     case PAUSE:
       if (in.key == P_KEY) g->state = GAME;
@@ -77,6 +76,8 @@ static void handle(struct game *g, struct input in) {
       if (in.key == ENTER) g->state = MENU;
       break;
   }
+  if (in.tick && g->state == GAME && ++g->active_ticks == 3)
+    g->state = END;
 }
 
 int main(void) {
@@ -108,13 +109,15 @@ FIM 3
 
 Cada linha permite seguir o estado depois de uma iteração. A terceira iteração prova a ordem fixa: tecla P e tick chegam juntos em JOGO e o resultado é PAUSA 1. A tecla foi aplicada primeiro e o tick foi ignorado; se o tick fosse aplicado primeiro, o contador chegaria a 2 antes da pausa. Fixa esta ordem e usa-a nos testes, na execução local e no protocolo remoto.
 
+O tick é aplicado ao estado que resulta da tecla, fora do `switch`. Assim, `ENTER` e tick em MENU iniciam JOGO e contam o primeiro tick. P e tick em PAUSA retomam JOGO e contam um tick. P e tick em JOGO entram em PAUSA e não contam. Tratar o tick apenas no ramo do estado anterior falharia nos dois primeiros casos.
+
 ## Filas, ordem e ritmo
 
 Se chegam vários bytes ou eventos antes de os tratares, usa uma fila, com limite e política de overflow. Uma variável com o último evento não guarda toda a sequência. Quando os eventos são movimentos absolutos, por vezes podes substituir uma posição antiga pela mais recente; quando são cliques ou deltas, essa substituição muda o comportamento.
 
 A ordem também muda resultados. Se `PAUSE` e `TICK` estão prontos na mesma iteração, decide qual aplicar primeiro. Num jogo com tempo limite, essa escolha determina se o último tick conta. Conserva a mesma regra em testes, execução local e protocolo remoto.
 
-Atualiza a lógica quando recebe entradas, porque desenhar a um ritmo escolhido, por exemplo a cada dois ticks de um timer de 60 Hz, evita redesenhar o ecrã inteiro por cada byte de um scancode.
+Atualiza a lógica ao receber entradas e desenha a um ritmo escolhido. Por exemplo, desenhar a cada dois ticks de um timer de 60 Hz dá 30 frames/s, sem redesenhar o ecrã inteiro por cada byte de scancode.
 
 Carrega recursos gráficos antes do ciclo e liberta-os depois. Não faças parsing de XPM ou alocações grandes em cada tick. Otimiza depois de medir: copiar linhas contíguas de um pixmap pode custar menos do que chamar uma função de desenho por píxel, mas deve preservar transparência, clipping e pitch.
 
@@ -132,7 +135,7 @@ Começa por uma observação reproduzível. "O cursor salta para a esquerda ao m
 
 Prevê antes de alterar: para um pacote `08 C8 00`, o delta correto é +200. O erro produziria -56. Simula exatamente esse pacote no descodificador. Se obténs -56, o problema está antes da atualização do cursor ou do desenho. Se obténs +200, verifica a soma, o clipping e a representação da posição.
 
-O método é sempre o mesmo, por isso reduz a entrada à menor sequência que ainda falha e formula uma hipótese sobre uma operação ou estado antes de alterar o código:
+A experiência segue estes passos:
 
 1. Reduz a entrada à menor sequência que ainda falha.
 2. Formula uma hipótese sobre uma operação ou estado.

@@ -1,6 +1,6 @@
 ---
 title: Praticar C e compilação
-description: Exercícios originais de raciocínio, com pistas e soluções completas.
+description: Promoções de bytes, comparações com sinal e dependências entre cabeçalhos e objetos.
 section: exercicios
 ---
 
@@ -14,16 +14,12 @@ import Exercise from '../../../components/Exercise.astro';
   answer={{ kind: 'number', value: 13, tolerance: 0 }}
 >
   <div>
-    Com <code>{'uint8_t'}</code> byte = 0x96, ou seja com um byte concreto,
-    quanto vale (<code>{'uint8_t'}</code>)~byte &gt;&gt; 3 em decimal? Considera{' '}
+    Com <code>uint8_t byte = 0x96</code>, quanto vale{' '}
+    <code>(uint8_t)~byte &gt;&gt; 3</code> em decimal? Considera{' '}
     <code>{'int'}</code> capaz de representar todos os valores de{' '}
     <code>{'uint8_t'}</code>.
   </div>
   <div slot="hint">O cast acontece antes do deslocamento.</div>
-  <div slot="hint-more">
-    Escreve o complemento de oito bits de 0x96 e divide-o por 8 com quociente
-    inteiro.
-  </div>
   <div slot="solution">
     0x96 tem complemento de oito bits 0x69, que vale 105. Depois do cast, a
     promoção produz um inteiro positivo. O deslocamento dá o quociente inteiro
@@ -37,39 +33,34 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-ligacao-objeto"
-  revision={1}
-  title="Localizar uma referência indefinida"
+  revision={2}
+  title="Ligação e dependências do cabeçalho"
   explanation="/cadeiras/lc/c-estruturado/#compilar-e-ligar"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Distingui declaração de definição.',
-      'Indiquei que a falha é na ligação.',
-      'Acrescentei o objeto ou biblioteca que fornece a função.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: [
+    'Distingui declaração, definição e fase de ligação.',
+    'Liguei main.o com counter.o.',
+    'Recompilei os dois objetos após a alteração do cabeçalho e voltei a ligar.',
+  ] }}
 >
-  <div>
-    <code>{'main.c'}</code> inclui <code>{'counter.h'}</code>, compila sem
-    erros, mas cc <code>{'main.o'}</code> -o demo falha com uma referência
-    indefinida a <code>{'counter_tick'}</code>. Explica a causa e corrige o
-    comando, sabendo que a definição está em <code>{'counter.o'}</code>.
-  </div>
-  <div slot="hint">Incluir um cabeçalho permite conferir a chamada.</div>
-  <div slot="hint-more">
-    O linker precisa do código objeto onde a função foi definida.
+  `main.c` e `counter.c` incluem `counter.h`. Ambos compilam sem erros,
+  mas `cc main.o -o demo` falha com uma referência indefinida a
+  `counter_tick`, definida em `counter.c`.
+
+1. Explica a causa e corrige o comando de ligação, usando `counter.o`.
+2. Depois, alteras a declaração da função em `counter.h` e adaptas a definição e a chamada. Que objetos recompilas antes de construir o novo executável? Justifica.
+
+  <div slot="hint">
+    O cabeçalho permite conferir a chamada. Que ficheiro fornece as instruções da função?
   </div>
   <div slot="solution">
-    O cabeçalho declara <code>{'counter_tick'}</code> e por isso a compilação de
-    <code>{'main.c'}</code> é possível. <code>{'main.o'}</code> conserva uma
-    referência externa. Na ligação falta
-    <code>{'counter.o'}</code>. Usa cc <code>{'main.o'}</code>{' '}
-    <code>{'counter.o'}</code> -o demo, ou liga uma biblioteca que contenha esse
-    objeto depois de <code>{'main.o'}</code>.
-  </div>
-  <div slot="mistakes">
-    Copiar a declaração para <code>{'main.c'}</code> não fornece a definição.
-    Não é uma falha de execução do Minix.
+    A inclusão do cabeçalho fornece a declaração, não a definição. `main.o`
+    conserva uma referência externa que o linker ainda precisa de resolver.
+    Usa `cc main.o counter.o -o demo`.
+
+    Após a alteração da interface, recompila `main.c` e `counter.c`, pois ambos
+    dependem de `counter.h`. Volta a ligar os dois objetos novos. Ligar um objeto
+    antigo com outro novo pode misturar chamadas e definições incompatíveis.
+
   </div>
 </Exercise>
 
@@ -94,7 +85,6 @@ import Exercise from '../../../components/Exercise.astro';
     delta &lt; width.
   </div>
   <div slot="hint">A comparação aplica as conversões aritméticas usuais.</div>
-  <div slot="hint-more">O valor convertido de -2 é 4294967294.</div>
   <div slot="solution">
     Como unsigned <code>{'int'}</code> representa valores que{' '}
     <code>{'int'}</code> não representa, delta converte-se para unsigned{' '}
@@ -105,37 +95,5 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Converter delta para unsigned antes de testar o sinal perde a possibilidade
     de detetar diretamente a posição negativa.
-  </div>
-</Exercise>
-
-<Exercise
-  id="lc-dependencia-cabecalho"
-  revision={1}
-  title="Recompilar depois de mudar um cabeçalho"
-  explanation="/cadeiras/lc/c-estruturado/#compilar-e-ligar"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Identifiquei os dois objetos dependentes do cabeçalho.',
-      'Recompilei main.o e counter.o.',
-      'Voltei a ligar antes de correr.',
-    ],
-  }}
->
-  <div>
-    Mudaste <code>{'counter.h'}</code>, que é incluído por{' '}
-    <code>{'main.c'}</code> e <code>{'counter.c'}</code>. O executável{' '}
-    <code>{'demo'}</code> já existe. Que comandos voltas a correr e porquê?
-  </div>
-  <div slot="hint">O Makefile lista o cabeçalho nas duas dependências.</div>
-  <div slot="hint-more">Um objeto antigo conserva a declaração anterior.</div>
-  <div slot="solution">
-    Recompila <code>{'main.o'}</code> e <code>{'counter.o'}</code> e volta a
-    ligar <code>{'demo'}</code>. Ambos os objetos dependem do cabeçalho, por
-    isso ligar o executável antigo com um só objeto novo pode misturar
-    interfaces diferentes.
-  </div>
-  <div slot="mistakes">
-    Recompilar só um objeto ou correr o executável antigo sem voltar a ligar.
   </div>
 </Exercise>

@@ -9,9 +9,11 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
+import gesto from '../../lc/gesto-rato.dot?raw';
 import pacote from '../../lc/pacote-rato.typ?raw';
 
-O teclado já entrega eventos de tecla. O rato entrega movimento e botões em pacotes de três bytes. Esta página mostra como interpretar esses pacotes. O rato PS/2 comunica através do i8042, como o teclado, mas usa IRQ12. O hardware entrega um byte por interrupção e só depois de reunir os três bytes podes interpretar botões e movimento.
+O pacote `28 05 FB` move o rato cinco unidades para a direita e cinco para baixo. Para chegar a estes deltas, é preciso juntar três bytes: o primeiro contém sinais e botões, os seguintes contêm os oito bits inferiores de X e Y. O rato PS/2 usa o i8042 e IRQ12; cada atendimento do laboratório recolhe um byte.
 
 ## Anatomia do pacote
 
@@ -98,7 +100,7 @@ Os comandos do rato não se escrevem diretamente na porta de comandos do KBC. Pa
 
 O rato confirma com `0xFA` cada comando e cada argumento que aceita. A exceção documentada nos slides é o comando de reenvio: quando o byte recebido é o próprio `0xFE` enviado pelo anfitrião, o rato não devolve ACK. No sentido contrário, `0xFE` como resposta do rato pede reenvio e `0xFC` assinala erro. Limita as tentativas. O ACK não é o conteúdo da resposta de um comando que devolve dados: essa resposta vem depois.
 
-Para definir taxa de amostragem, há uma sequência para `0xF3` e outra para o argumento. Cada uma usa `0xD4` e recebe o seu ACK. Se o argumento provocar pedido de reenvio, a política do protocolo pode exigir repetir o comando completo, não apenas o argumento.
+Para definir taxa de amostragem, há uma sequência para `0xF3` e outra para o argumento. Cada uma usa `0xD4` e recebe o seu ACK. Se o argumento provocar `0xFE`, a regra apresentada nos slides pede repetir o comando completo, não apenas o argumento. Os dois bytes do rato precisam novamente de encaminhamento por `0xD4` e de confirmação; o próprio `0xD4` é uma ordem ao KBC e não recebe ACK do rato.
 
 Em stream mode com reporting ativo, desativa reporting antes de enviar outros comandos para não misturar pacotes de movimento com respostas. A fase de comandos e a fase de receção de pacotes devem ter um dono claro do output buffer.
 
@@ -106,6 +108,11 @@ Em stream mode com reporting ativo, desativa reporting antes de enviar outros co
 
 Um gesto depende de uma sequência, por isso precisa de estado. Num exemplo próprio, queremos um arrasto horizontal para a direita com botão esquerdo premido, comprimento de pelo menos 100 unidades e desvio vertical absoluto no máximo 5.
 
-Começa em `WAIT_PRESS`. Na transição de botão solto para premido, passa a `DRAWING` e põe os acumulados a zero. Enquanto o botão continuar premido, soma os deltas. Se o movimento voltar para a esquerda ou o desvio ultrapassar a tolerância, passa a `INVALID` e ignora os movimentos até o botão ser largado. Só uma nova pressão inicia outro candidato. Se $x\geq100$ e $|y|\leq5$, reconhece o gesto. Largar o botão antes disso cancela-o.
+Começa em `WAIT_PRESS`. Na transição de botão solto para premido, passa a `DRAWING` e põe os acumulados a zero. Enquanto o botão continuar premido, soma os deltas. Se o movimento voltar para a esquerda ou o desvio ultrapassar a tolerância, passa a `INVALID` e ignora os movimentos até o botão ser largado. Só uma nova pressão inicia outro candidato. Se $x\geq100$ e $|y|\leq5$, reconhece o gesto uma vez e passa a `COMPLETE`, onde espera pela libertação. Largar o botão antes disso cancela-o. Neste modelo, o pacote da pressão inicia o candidato, mas não acrescenta movimento; só os seguintes, ainda com o botão premido, entram na soma.
+
+<Dot
+  source={gesto}
+  alt="A pressão inicia DRAWING com acumulados zero. Movimento para a esquerda ou desvio acumulado acima de 5 invalida o candidato. Atingir x de 100 com desvio até 5 reconhece uma vez. INVALID e COMPLETE só permitem um novo candidato depois de largar o botão."
+/>
 
 A decisão de usar desvio vertical **acumulado** é parte do enunciado. Aceitar cada pacote com $|\Delta y|\leq5$ permitiria dez pacotes de +5 e um desvio final de 50. O parser de bytes e a máquina do gesto resolvem problemas distintos: a primeira produz pacotes completos; a segunda interpreta o seu significado ao longo do tempo.

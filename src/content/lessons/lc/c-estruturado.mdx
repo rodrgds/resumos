@@ -7,34 +7,16 @@ practices:
   - lc/praticar-c
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import modulo from '../../lc/modulo-hc.typ?raw';
 
-Um driver de LC precisa de representar bytes, chamar funções do sistema e guardar estado entre eventos. Esta página mostra como organizar esse programa em C: tipos que descrevem registos, módulos que escondem estado e uma compilação que junta as partes.
-
-O programa mais pequeno desta página guarda dois números, soma-os e mostra o resultado no ecrã:
-
-```c
-#include <stdio.h>
-
-int main(void) {
-  int a = 20;
-  int b = 22;
-  printf("%d\n", a + b);
-  return 0;
-}
-```
-
-A primeira linha traz a declaração da função que mostra texto no ecrã; a definição está na biblioteca ligada ao programa. A função `main`, que é o bloco onde a execução começa, guarda 20 e 22 em `a` e `b`, ou seja, em duas variáveis, e a ordem `printf`, que apresenta texto no ecrã, mostra 42.
-
-Quando um programa cresce, dividimo-lo em módulos. Cada módulo é uma parte guardada em ficheiros separados, que depois juntamos no programa final. Para quem já programou em C++, que é a linguagem que usaste em cadeiras anteriores, começamos pelo que muda.
+Um contador de ticks precisa de um inteiro que persista entre eventos. Uma posição precisa de coordenadas que possam diminuir. Um registo do teclado precisa de oito bits. A escolha do tipo e do módulo determina como o programa representa e altera estes dados.
 
 ## De C++ para C
 
 C tem funções, estruturas, apontadores e controlo de fluxo. Não tem classes, referências de C++, sobrecarga de funções nem `new` e `delete`. Uma `struct` guarda dados; funções recebem o seu endereço para os consultar ou alterar. Para alocar memória usamos `malloc` e para a devolver usamos `free`.
 
-C e C++ partilham muita sintaxe, mas um programa aceite como C++ não é necessariamente C válido, porque C não tem classes nem sobrecarga. Por exemplo, em C escreve `struct position` se não tiveres criado um `typedef`. Uma declaração `int f(void)` diz que `f` não recebe argumentos. Usa protótipos completos, para o compilador poder conferir as chamadas.
+C e C++ partilham muita sintaxe, mas não aceitam todos os mesmos programas. Em C, escreve `struct position` se não tiveres criado um `typedef`. A declaração `int f(void)` indica que `f` não recebe argumentos. Os protótipos permitem conferir os tipos usados nas chamadas.
 
 ```c
 #include <stdbool.h>
@@ -79,14 +61,14 @@ Antes de muitas operações, C promove valores mais pequenos do que `int`. Num s
 
 Considera `uint8_t value = 0x5A`. O complemento de oito bits seria `0xA5`. Porém, `~value` opera sobre o valor promovido. Com `int` de 32 bits e representação em complemento para dois, o resultado tem os bits de `0xFFFFFFA5`. Deslocar esse valor negativo à direita depende da implementação da linguagem usada no curso. Não derives um resultado portátil a partir de um deslocamento de um inteiro negativo.
 
-Para complementar exatamente o byte, reduz o resultado a `uint8_t` antes do deslocamento, porque o deslocamento de um inteiro negativo depende da implementação:
+Para complementar exatamente o byte, reduz o resultado a `uint8_t` antes do deslocamento:
 
 ```c
 uint8_t value = 0x5A;
 uint8_t result = (uint8_t)~value >> 4;
 ```
 
-O cast produz `0xA5`, ou seja, esse valor é promovido a um `int` positivo para o deslocamento, por isso o resultado é `0x0A`, ou 10. Converter apenas no fim não corrige a operação anterior.
+O cast produz `0xA5`. Para o deslocamento, este valor promove-se a um `int` positivo. O resultado é `0x0A`, ou 10. Converter apenas no fim não corrige um deslocamento já efetuado sobre um inteiro negativo.
 
 Outro caso frequente mistura um inteiro negativo com um inteiro sem sinal:
 
@@ -96,7 +78,7 @@ unsigned int width = 10;
 bool inside = delta < width;
 ```
 
-Pelas conversões aritméticas usuais, `delta` converte-se para `unsigned int`, porque esse tipo representa valores que `int` não representa. O valor -1 passa a 4294967295, por isso o teste dá falso. Valida primeiro que `delta >= 0` e só depois compara `(unsigned int)delta < width`. Para posições com movimento negativo, mantém as contas num tipo com sinal até validares os limites.
+Na comparação, `delta` converte-se para `unsigned int`. Num sistema com este tipo de 32 bits, -1 passa a 4294967295, maior do que 10. O teste dá falso. Valida primeiro `delta >= 0` e só depois compara `(unsigned int)delta < width`. Para posições com movimento negativo, mantém as contas num tipo com sinal até validares os limites.
 
 ## Apontadores, arrays e tamanho
 
@@ -134,7 +116,7 @@ O ficheiro `.h` declara o que outros módulos podem usar. O `.c` implementa essa
 <Typst
   source={modulo}
   format="svg"
-  alt="timer.h declara a interface; timer.c inclui esse cabeçalho e implementa-a; main.c inclui o mesmo cabeçalho para chamar as funções."
+  alt="counter.h declara a interface; counter.c inclui esse cabeçalho e implementa-a; main.c inclui o mesmo cabeçalho para chamar as funções."
 />
 
 Este módulo de contador é completo e independente do Minix.
@@ -191,7 +173,7 @@ cc main.o counter.o -o demo
 ./demo
 ```
 
-Incluir `counter.h` dá a declaração, mas não acrescenta automaticamente `counter.c` ao executável, por isso o programa imprime `2` apenas quando ligas os dois objetos. Um erro de sintaxe ou de tipo aparece na compilação. Uma referência a `counter_tick` sem definição aparece na ligação.
+Incluir `counter.h` dá a declaração, mas não acrescenta `counter.c` ao executável. A ligação dos dois objetos resolve as chamadas e `./demo` imprime `2`. Um erro de sintaxe ou de tipo aparece na compilação. Uma referência a `counter_tick` sem definição aparece na ligação.
 
 Segue o diagnóstico pela fase. Se a mensagem fala de declaração em falta ou tipo incompatível, volta ao `.c` e ao cabeçalho. Se fala de referência indefinida a `counter_tick`, o problema está na linha de ligação. Compila primeiro cada fonte com `cc -c` e só depois liga com `cc main.o counter.o -o demo`. Se mudares `counter.h`, recompila os dois objetos, porque ambos dependem dele.
 

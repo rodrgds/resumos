@@ -7,11 +7,10 @@ practices:
   - lc/praticar-registos
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import registo from '../../lc/registo-byte.typ?raw';
 
-O teu programa já soma contadores e guarda posições. Agora precisa de ler um byte que chegou ao teclado e de dizer ao temporizador que ritmo deve gerar. Esta página mostra como o programa fala com um dispositivo ligado ao computador. Um controlador liga o processador a um periférico. O programa lê dados recebidos, escreve ordens e consulta o estado através de registos. Esses registos podem ter efeitos que uma variável normal não tem, porque ler pode consumir um byte.
+Ler `0x60` no i8042 pode retirar um byte recebido. Ler uma variável C limita-se a obter o valor guardado. Esta diferença importa: os registos de um controlador ligam o programa aos dados, ao estado e às ordens de um periférico, e os acessos podem alterar esse estado.
 
 ## Registos e espaços de endereçamento
 
@@ -64,7 +63,7 @@ Uma máscara tem bits a 1 nas posições que interessam. Num byte `r`, as opera�
 | Limpar os bits de `m`                        | `r & ~m`       |
 | Inverter os bits de `m`                      | `r ^ m`        |
 
-`&` combina bits, ou seja, testa posições. `&&` testa a verdade de expressões e devolve 0 ou 1. Para `r = 0x20` e `m = 0x01`, `r & m` é 0, mas `r && m` é 1, por isso o segundo teste não diz se o bit 0 está ativo.
+`&` faz AND posição a posição. `&&` testa a verdade das expressões e devolve 0 ou 1. Para `r = 0x20` e `m = 0x01`, `r & m` é 0, mas `r && m` é 1, por isso o segundo teste não diz se o bit 0 está ativo.
 
 <Typst
   source={registo}
@@ -78,7 +77,15 @@ Para substituir um campo, limpa primeiro o campo antigo e insere o novo. Se os b
 uint8_t next = (uint8_t)((r & ~0x1Cu) | (5u << 2));
 ```
 
-`0xA7 & ~0x1C` conserva `0xA3` e `5 << 2` dá `0x14`, por isso o resultado é `0xB7`. Usar apenas OR deixaria bits do modo anterior ligados. Usa valores sem sinal nas máscaras e garante que a contagem de um deslocamento é menor do que a largura do operando.
+Os três passos conservam os bits exteriores ao campo:
+
+| Passo            | Byte        | Campo 4:2 |
+| ---------------- | ----------- | --------- |
+| Registo inicial  | `1010 0111` | `001`     |
+| Limpar `0x1C`    | `1010 0011` | `000`     |
+| Inserir `5 << 2` | `1011 0111` | `101`     |
+
+O resultado é `0xB7`. Usar apenas OR deixaria bits do modo anterior ligados. Usa valores sem sinal nas máscaras e garante que a contagem de um deslocamento é menor do que a largura do operando.
 
 Esta leitura, alteração e escrita só é válida se o registo for legível e permitir essa semântica. Um registo write-only, ou com bits que se limpam ao escrever 1, exige a sequência descrita pelo dispositivo.
 

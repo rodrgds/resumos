@@ -1,6 +1,6 @@
 ---
 title: Praticar vídeo e sprites
-description: Exercícios originais de raciocínio, com pistas e soluções completas.
+description: Pitch, componentes RGB, transparência, ritmo de movimento e tearing.
 section: exercicios
 ---
 
@@ -14,14 +14,10 @@ import Exercise from '../../../components/Exercise.astro';
   answer={{ kind: 'number', value: 65, tolerance: 0, unit: 'bytes' }}
 >
   <div>
-    Uma imagem linear tem largura 8, altura 4, 24 bpp e pitch de 28 bytes, ou
-    seja há padding no fim de cada linha. Qual é o offset inicial do píxel
-    (3,2)?
+    Uma imagem linear tem largura 8, altura 4, 24 bpp e pitch de 28 bytes. Qual
+    é o offset inicial do píxel (3,2)?
   </div>
   <div slot="hint">24 bpp ocupa três bytes por píxel.</div>
-  <div slot="hint-more">
-    O início da linha é 2 × 28; depois avança três píxeis.
-  </div>
   <div slot="solution">
     Offset = 2 × 28 + 3 × 3 = 65 bytes. O píxel ocupa os bytes 65, 66 e 67; o
     início da linha seguinte continua a depender do pitch.
@@ -45,7 +41,6 @@ import Exercise from '../../../components/Exercise.astro';
     apresentação inicial?
   </div>
   <div slot="hint">Cada píxel precisa de três frames.</div>
-  <div slot="hint-more">600 × 3 frames divididos por 30 frames/s.</div>
   <div slot="solution">
     São 1800 frames e 1800/30 = 60 segundos. A velocidade média é 10 píxeis/s. O
     sinal negativo representa frames por píxel nesta convenção, não movimento na
@@ -104,7 +99,6 @@ import Exercise from '../../../components/Exercise.astro';
     entre 0 e 63?
   </div>
   <div slot="hint">Verde ocupa seis bits a partir da posição 5.</div>
-  <div slot="hint-more">Desloca cinco posições e aplica a máscara 0x3F.</div>
   <div slot="solution">
     (0xB7D4 &gt;&gt; 5) &amp; 0x3F = 62. Os campos vermelho e azul dão 22 e 20.
     Com a máscara errada 0x1F obterias 30, não 62, por isso este exemplo
@@ -119,31 +113,31 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-xpm-transparencia"
-  revision={1}
-  title="Escolher o píxel transparente"
+  revision={2}
+  title="Transparência e ordem dos sprites"
   explanation="/cadeiras/lc/video/#xpm-e-sprites"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Usei o valor definido para o recurso.',
-      'Não assumi preto como transparente.',
-      'Respeitei a ordem de desenho.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: [
+    'Obtive [1, 0, 9] depois de desenhar A.',
+    'Obtive [1, 6, 9] depois de desenhar B.',
+    'Conservei o preto visível e expliquei a diferença ao inverter a ordem.',
+  ] }}
 >
-  <div>
-    Um sprite usa um valor próprio para transparência e o fundo tem píxeis
-    pretos. Ao desenhar, saltas todos os píxeis pretos?
-  </div>
-  <div slot="hint">Transparência é um contrato do recurso.</div>
-  <div slot="hint-more">A ordem decide quem fica por cima.</div>
+  Uma linha do fundo contém `[1, 2, 3]`. Os sprites A e B cobrem as mesmas
+  três posições: A contém `[T, 0, 9]` e B contém `[T, 6, T]`.
+  `T` é o valor transparente do recurso; `0` é preto visível.
+
+Dá a linha depois de desenhar A e depois B sobre o fundo. O que muda
+se desenhares B antes de A? Explica que píxeis saltas.
+
+  <div slot="hint">Um píxel transparente conserva o valor que já estava no destino.</div>
   <div slot="solution">
-    Não. Saltas só o valor definido como transparente nesse recurso e formato.
-    Preto pode ser cor visível do fundo ou do sprite. Desenha por ordem, do
-    fundo para a frente, e só escreve os píxeis não transparentes de cada
-    sprite.
-  </div>
-  <div slot="mistakes">
-    Tratar preto como sempre transparente ou desenhar sem ordem definida.
+    A conserva a primeira posição, escreve preto na segunda e 9 na terceira:
+    `[1, 0, 9]`. B conserva a primeira e a terceira, mas substitui a segunda
+    por 6. O resultado é `[1, 6, 9]`.
+
+    Na ordem inversa, B produz `[1, 6, 3]` e A produz `[1, 0, 9]`.
+    Só saltas `T`; saltar também o preto impediria A de ocultar o 6 na segunda
+    posição. A ordem de desenho determina o sprite visível onde ambos escrevem.
+
   </div>
 </Exercise>

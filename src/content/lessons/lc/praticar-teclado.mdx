@@ -1,6 +1,6 @@
 ---
 title: Praticar o teclado
-description: Exercícios originais de raciocínio, com pistas e soluções completas.
+description: Scancodes, recuperação de prefixos e sequência de escrita do command byte.
 section: exercicios
 ---
 
@@ -21,12 +21,10 @@ import Exercise from '../../../components/Exercise.astro';
   }}
 >
   <div>
-    No modelo <code>{'set'}</code> 1 de um ou dois bytes, ou seja com prefixo E0
-    opcional, interpreta E0 4B E0 CB 81. Quantos eventos completos há e quais
-    são?
+    No modelo set 1 de um ou dois bytes, com prefixo E0 opcional, interpreta E0
+    4B E0 CB 81. Quantos eventos completos há e quais são?
   </div>
   <div slot="hint">E0 é um prefixo e não emite um evento.</div>
-  <div slot="hint-more">CB tem bit 7 ativo; CB &amp; 7F = 4B.</div>
   <div slot="solution">
     Há três eventos: make da tecla estendida 0x4B, break da mesma tecla e break
     simples da tecla Esc, 0x01. E0 CB é um único código, não dois break codes.
@@ -56,7 +54,6 @@ import Exercise from '../../../components/Exercise.astro';
     os dados porque há erro? Explica a sequência e o efeito no parser.
   </div>
   <div slot="hint">O bit 0 indica que existe um byte no output buffer.</div>
-  <div slot="hint-more">O bit 7 invalida esse byte, mas não o retira.</div>
   <div slot="solution">
     OBF e PARITY estão ativos. Lê a porta 0x60 para consumir o byte e depois
     descarta-o. Não o passes como scancode válido. Invalida também um prefixo
@@ -71,31 +68,37 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-command-byte"
-  revision={1}
-  title="Ativar teclado preservando rato"
+  revision={2}
+  title="Alteração do command byte"
   explanation="/cadeiras/lc/teclado/#command-byte-do-kbc"
-  answer={{ kind: 'number', value: 35, tolerance: 0 }}
+  answer={{ kind: 'self', checklist: [
+    'Obtive 0x23 sem alterar os restantes bits.',
+    'Escrevi o comando 0x60 na porta 0x64 e o valor na porta 0x60.',
+    'Esperei IBF a 0 antes de cada escrita.',
+  ] }}
 >
-  <div>
-    O command byte do KBC vale 0x22. Queres ativar interrupções do teclado sem
-    mudar os outros bits. Qual é o novo valor em decimal?
-  </div>
-  <div slot="hint">Ativar teclado é ligar bit 0.</div>
-  <div slot="hint-more">Combina o valor antigo com 0x01.</div>
+  Já leste o command byte do KBC e guardaste `0x22`. Queres ativar interrupções
+  do teclado, mantendo os restantes bits. A fase de comandos controla o buffer,
+  sem leituras concorrentes.
+
+Calcula o novo byte e indica as duas escritas, com porta, valor e condição
+de estado. Explica por que escrever o novo byte diretamente em `0x64` falha.
+
+  <div slot="hint">O comando que anuncia a escrita e o seu argumento usam portas diferentes.</div>
   <div slot="solution">
-    0x22 | 0x01 = 0x23, ou 35. A escrita precisa da sequência de comando 0x60 em
-    porta 0x64 e novo valor na porta 0x60, esperando IBF a 0 antes de cada
-    escrita.
-  </div>
-  <div slot="mistakes">
-    Escrever apenas 0x01 apaga outras opções. Escrever 0x23 diretamente em 0x64
-    não atualiza o command byte.
+    Ligar o bit 0 dá `0x22 | 0x01 = 0x23`. Espera IBF a 0 e escreve o comando
+    `0x60` em `0x64`. Espera novamente IBF a 0 e escreve o argumento `0x23`
+    em `0x60`. Usa um limite de espera e trata falhas de I/O em ambos os passos.
+
+    A porta `0x64` interpreta escritas como comandos do controlador. Escrever
+    ali `0x23` não fornece o argumento ao comando de alteração do command byte.
+
   </div>
 </Exercise>
 
 <Exercise
   id="lc-prefixo-perdido"
-  revision={1}
+  revision={2}
   title="Recuperar depois de um byte perdido"
   explanation="/cadeiras/lc/teclado/#make-break-e-prefixos"
   answer={{
@@ -109,11 +112,11 @@ import Exercise from '../../../components/Exercise.astro';
 >
   <div>
     O descodificador guardou <code>{'0xE0'}</code> e o byte seguinte foi
-    descartado por erro de paridade. Chega depois <code>{'0x1E'}</code>. Que
-    evento produces?
+    descartado por erro de paridade. A política descarta o prefixo parcial e
+    recomeça à espera de um novo código. Chega depois <code>{'0x1E'}</code>,
+    primeiro byte de uma nova sequência. Que evento produces?
   </div>
   <div slot="hint">O prefixo pertence à sequência interrompida.</div>
-  <div slot="hint-more">Um byte novo não completa um prefixo antigo.</div>
   <div slot="solution">
     Produz make simples da tecla <code>{'0x1E'}</code>, sem estendido. O erro
     invalida a sequência parcial e limpa o prefixo guardado. Reutilizar o{' '}

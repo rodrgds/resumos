@@ -13,7 +13,7 @@ editorial:
     - O sítio externo de guiões laboratoriais não estava acessível na revisão.
 ---
 
-No fim de LC consegues escrever um programa em C que configura um periférico, lê os seus registos e reage a eventos sem bloquear. Vamos usar Minix numa máquina virtual VirtualBox. O Minix deixa o teu programa pedir I/O ao kernel através de kernel calls. A máquina virtual fornece um PC emulado, por isso o acesso fica limitado aos dispositivos emulados e não toca nos dispositivos físicos do anfitrião. O percurso liga a representação de bytes aos periféricos do PC e depois à organização de uma aplicação que usa vários deles.
+Em LC, um programa em C configura periféricos, lê registos e reage a eventos no Minix, dentro de uma máquina virtual VirtualBox. O programa pede operações privilegiadas ao kernel. Os dispositivos emulados permitem estudar bytes, interrupções e memória de vídeo antes de os reunir numa aplicação por eventos.
 
 ## Percurso de estudo
 

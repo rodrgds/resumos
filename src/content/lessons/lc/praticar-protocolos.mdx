@@ -1,6 +1,6 @@
 ---
 title: Praticar protocolos
-description: Exercícios originais de raciocínio, com pistas e soluções completas.
+description: Escaping, duplicados, recuperação do parser e limites do checksum XOR.
 section: exercicios
 ---
 
@@ -19,7 +19,6 @@ import Exercise from '../../../components/Exercise.astro';
     na linha, com um delimitador no início e outro no fim.
   </div>
   <div slot="hint">Há seis bytes no corpo antes de escaping.</div>
-  <div slot="hint-more">O escape substitui um byte por dois.</div>
   <div slot="solution">
     O corpo cresce de seis para sete bytes. Os dois delimitadores elevam o total
     para nove. O byte 7D passa a 7D 5D; os restantes mantêm-se.
@@ -50,9 +49,6 @@ import Exercise from '../../../components/Exercise.astro';
     +16?
   </div>
   <div slot="hint">O recetor deve lembrar mensagens já aceites.</div>
-  <div slot="hint-more">
-    O reenvio é da mesma mensagem, não de uma nova operação.
-  </div>
   <div slot="solution">
     O emissor reenvia com sequência 14. O recetor reconhece o duplicado da
     mensagem aceite, volta a confirmar 14 e não aplica de novo +8. O tratamento
@@ -69,7 +65,7 @@ import Exercise from '../../../components/Exercise.astro';
   id="lc-imagem-serie"
   revision={1}
   title="Estimar um envio inviável"
-  explanation="/cadeiras/lc/protocolos/#por-que-não-enviar-o-framebuffer"
+  explanation="/cadeiras/lc/protocolos/#capacidade-da-porta-série"
   answer={{ kind: 'number', value: 80, tolerance: 0, unit: 's' }}
 >
   <div>
@@ -77,7 +73,6 @@ import Exercise from '../../../components/Exercise.astro';
     pausas. Qual é o tempo mínimo ideal para enviar uma imagem?
   </div>
   <div slot="hint">Cada byte útil ocupa dez bits.</div>
-  <div slot="hint-more">A taxa útil ideal é 11520 bytes/s.</div>
   <div slot="solution">
     O tempo é 921600/11520 = 80 segundos. Cabeçalhos e retransmissões
     aumentariam o tempo. Para uma aplicação interativa, envia alterações de
@@ -127,29 +122,35 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="lc-xor-limite"
-  revision={1}
-  title="Mostrar o limite do XOR"
+  revision={2}
+  title="Erro não detetado pelo XOR"
   explanation="/cadeiras/lc/protocolos/#um-formato-com-escaping"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Construí duas alterações que se anulam no XOR.',
-      'Mostrei que o checksum fica igual.',
-      'Propus retransmissão ou verificação mais forte.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: [
+    'Construí duas alterações do mesmo bit em bytes distintos.',
+    'Mostrei o XOR 0x7F antes e depois.',
+    'Expliquei por que um ACK e um timeout não detetam essa corrupção.',
+  ] }}
 >
-  <div>
-    O checksum XOR do corpo vale <code>{'0x7F'}</code>. Altera dois bytes do
-    corpo sem alterar o checksum. Que concluis sobre esta verificação?
-  </div>
-  <div slot="hint">XOR com o mesmo valor duas vezes anula-se.</div>
-  <div slot="hint-more">Inverte o mesmo bit em dois bytes diferentes.</div>
+  O corpo é `01 07 02 7E 05`, seguido de checksum XOR `7F`.
+  Escolhe dois bytes do payload e altera-os de modo que o checksum continue
+  a passar, sem mudar tipo, sequência ou comprimento.
+
+Mostra o corpo alterado. Se o recetor o aceitar e enviar ACK, um timeout
+com retransmissão resolve este erro? Justifica.
+
+  <div slot="hint">Inverter o mesmo bit duas vezes anula-se no XOR total.</div>
   <div slot="solution">
-    Inverte, por exemplo, o bit 0 do tipo e o bit 0 da sequência. O XOR total
-    recebe duas inversões iguais e fica igual a <code>{'0x7F'}</code>. O XOR
-    deteta certas alterações, mas duas alterações compensatórias passam. Por
-    isso o protocolo precisa de timeout, retransmissão e regras de sequência.
+    Inverte o bit 0 dos dois bytes do payload: `7E` torna-se `7F` e `05`
+    torna-se `04`. O novo corpo é `01 07 02 7F 04`.
+
+    No original, `7E XOR 05 = 7B`; no alterado, `7F XOR 04 = 7B`.
+    Com os mesmos campos anteriores, o checksum continua `7F`, apesar de o
+    payload mudar. Esta conta refere-se aos bytes do corpo depois de remover escaping.
+
+    Se o recetor aceitar a mensagem e confirmar, não há timeout que revele
+    a corrupção. Retransmissão recupera perdas ou erros detetados, mas não
+    torna esta verificação infalível. Uma verificação mais forte, como um CRC
+    adequado ao formato, pode detetar mais padrões de erro; também tem limites.
+
   </div>
-  <div slot="mistakes">Tratar o XOR como prova de integridade total.</div>
 </Exercise>
