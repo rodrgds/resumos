@@ -9,8 +9,6 @@ editorial:
       url: https://drive.google.com/file/d/1Iif82mUI9EfH6StwtnImpK0W793EoUYY/view
 ---
 
-No fim do percurso de AM II, esta folha responde a: que fórmulas e condições rever antes de resolver?
-
 Desenha o domínio. Confere regularidade, orientação e jacobiano antes de calcular.
 
 ## Curvas
@@ -42,7 +40,7 @@ $$
 J_{F\circ g}(a)=J_F(g(a))J_g(a).
 $$
 
-Se $F(x,y)=0$ e $F_y\ne0$, $y'=-F_x/F_y$. Se $F(x,y,z(x,y))=0$ e $F_z\ne0$, $z_x=-F_x/F_z$, $z_y=-F_y/F_z$. As hipóteses locais de classe $C^1$ e derivada não nula justificam a função implícita. [Cadeia](/cadeiras/am2/regra-cadeia-implicitas/#a-cadeia-geral).
+Se $F(x,y)=0$ e $F_y\ne0$, $y'=-F_x/F_y$. Se $F(x,y,z(x,y))=0$ e $F_z\ne0$, $z_x=-F_x/F_z$, $z_y=-F_y/F_z$. As hipóteses locais de classe $C^1$ e derivada não nula justificam a função implícita. [Cadeia](/cadeiras/am2/regra-cadeia-implicitas/#regra-da-cadeia-em-funções-escalares).
 
 ## Taylor e extremos
 
@@ -112,7 +110,7 @@ Stokes: $\oint_{\partial S}F\cdot dr=\iint_S\operatorname{rot}F\cdot n\,dS$, sup
 
 Uma EDP linear tem u e derivadas à primeira potência, sem produtos entre elas; os coeficientes dependem das variáveis independentes. Integrar $u_x=f(x,y)$ introduz uma função arbitrária de y, não apenas uma constante.
 
-Transporte $u_t+cu_x=0$, com $u(x,0)=g(x)$, dá $u(x,t)=g(x-ct)$. Classificação $Au_{xx}+Bu_{xy}+Cu_{yy}$: $B^2-4AC$ com $B$ o coeficiente de $u_{xy}$.
+Transporte $u_t+cu_x=0$, com $u(x,0)=g(x)$, dá $u(x,t)=g(x-ct)$. Na classificação de $Au_{xx}+Bu_{xy}+Cu_{yy}$, calcula $\Delta=B^2-4AC$: $\Delta>0$ hiperbólica, $\Delta=0$ parabólica, $\Delta<0$ elíptica. $B$ é o coeficiente completo de $u_{xy}$.
 
 Calor em $(0,L)$ com Dirichlet:
 
@@ -132,4 +130,6 @@ $$
 u=\sum\sin(n\pi x/L)(A_n\cos(n\pi ct/L)+B_n\sin(n\pi ct/L));
 $$
 
-usa os dois dados. Laplace no retângulo: modos $\sin(n\pi x/a)\sinh(n\pi y/a)$. Verifica equação, dados e domínio separadamente. [EDP](/cadeiras/am2/equacoes-diferenciais-parciais/#verificar-uma-solução).
+usa os dois dados, com $A_n=(2/L)\int_0^L f(x)\sin(n\pi x/L)\,dx$ e $B_n=(2/(n\pi c))\int_0^L g(x)\sin(n\pi x/L)\,dx$.
+
+Laplace com três lados a zero e dado em $y=b$ usa $\sin(n\pi x/a)\sinh(n\pi y/a)/\sinh(n\pi b/a)$. Neumann na base troca $\sinh$ por $\cosh$. Neumann nos lados verticais admite cossenos e o modo constante; Robin exige conferir o sinal da normal. [Condições de fronteira](/cadeiras/am2/laplace-retangulo/#robin-e-o-sinal-da-derivada). Verifica equação, dados e domínio separadamente. [EDP](/cadeiras/am2/equacoes-diferenciais-parciais/#verificar-uma-solução).

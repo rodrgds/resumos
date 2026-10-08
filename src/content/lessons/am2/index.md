@@ -21,9 +21,7 @@ editorial:
     - A ficha prática 5 confirma cobertura substancial de EDP (separação, classificação, calor, ondas e Laplace), usada como base desta revisão.
 ---
 
-No fim de AM2 vais descrever curvas no espaço, decidir se um limite existe, aproximar funções por planos e polinómios, e escolher a região, a ordem e as coordenadas de cada integral. Vais também distinguir trabalho de massa num fio, fluxo de circulação, e verificar soluções básicas de equações diferenciais parciais.
-
-Uma posição passa a depender de um parâmetro, ou seja, a ordem e a velocidade do percurso contam. Uma temperatura passa a depender de três coordenadas, por isso a primeira decisão é geométrica: qual é o domínio, que direção interessa e sobre que região estamos a somar.
+AM II estuda curvas, funções de várias variáveis e integrais sobre regiões, percursos e superfícies. Nas curvas, importa distinguir comprimento de deslocamento. Nos campos, importa escolher a direção da variação. Na integração, o domínio e a orientação decidem os limites e o sinal antes de começarmos a calcular.
 
 Precisamos das derivadas e primitivas de AM1 e dos vetores e produtos escalar e vetorial de ALGA. Quando uma conta bloquear, separa a escolha do método da execução: desenha, escreve a fórmula com os limites e só depois calcula.
 
@@ -45,7 +43,7 @@ Precisamos das derivadas e primitivas de AM1 e dos vetores e produtos escalar e 
 | [Ondas e vibração](/cadeiras/am2/ondas-vibracao/)                               | Resolver a equação das ondas com deslocamento e velocidade iniciais.                                     |
 | [Laplace no retângulo](/cadeiras/am2/laplace-retangulo/)                        | Resolver Laplace com Dirichlet, Neumann e Robin por separação.                                           |
 
-Cada capítulo termina com exercícios próprios. Tenta primeiro sem ajuda, abre a primeira pista quando não souberes como começar e usa a segunda para desbloquear a conta. A solução mostra também as condições do método. A [cheat sheet](/cadeiras/am2/folha-consulta/) serve para rever depois de compreenderes as páginas.
+Cada capítulo liga a problemas de aplicação e justificação. Tenta primeiro sem ajuda e compara o teu raciocínio com a solução; as pistas disponíveis orientam os passos em que é frequente bloquear. A solução mostra também as condições do método. A [cheat sheet](/cadeiras/am2/folha-consulta/) serve para rever depois de compreenderes as páginas.
 
 :::details[Avaliação em 2026/27]
 
@@ -63,7 +61,7 @@ A base de ensino disponível é a [coleção oficial da ocorrência de 2024/25](
 
 A bibliografia obrigatória atual é _Matemática para engenharia em Rn: diferenciação, integração e tópicos adicionais_, de José António Fonseca de Oliveira Correia, ISBN 9789899177956. A complementar inclui os apontamentos de Carlos Conceição António, _Noções sobre Geometria Analítica e Análise Matemática_, de José Augusto Trigo Barbosa, _Calculus: One and Several Variables_ de Salas, Hille e Etgen, _Problemas de integrais de linha e superfície e de séries de Fourier_ de Maria Luísa Romariz Madureira e _Advanced Engineering Mathematics_ de Erwin Kreyszig. A consulta local não inclui o livro obrigatório atual.
 
-Para completar explicações, foi usado [_Calculus Volume 3_, OpenStax](https://openstax.org/details/books/calculus-volume-3), sobretudo os capítulos 3 a 6. É um manual aberto, não a bibliografia adotada pela FEUP. O [curso 18.303 do MIT](https://ocw.mit.edu/courses/18-303-linear-partial-differential-equations-analysis-and-numerics-fall-2014/) é apoio para as ideias básicas de EDP. Os exemplos e exercícios destas páginas são originais.
+Para completar explicações, foi usado [_Calculus Volume 3_, OpenStax](https://openstax.org/details/books/calculus-volume-3), sobretudo os capítulos 3 a 6. É um manual aberto, não a bibliografia adotada pela FEUP. O [curso 18.303 do MIT](https://ocw.mit.edu/courses/18-303-linear-partial-differential-equations-analysis-and-numerics-fall-2014/) é apoio para as ideias básicas de EDP. Os exemplos são próprios; a prática de EDP inclui adaptações identificadas da ficha 5 de 2024/25.
 
 Materiais históricos de Complementos de Matemática estão preservados em [xico2001pt/feup-cmat](https://github.com/xico2001pt/feup-cmat). Os [Resumos AM II SofiaViP](https://drive.google.com/file/d/1Iif82mUI9EfH6StwtnImpK0W793EoUYY/view) foram apoio à organização da folha de consulta anterior. Nenhuma destas fontes confirma as regras de avaliação atuais.
 
