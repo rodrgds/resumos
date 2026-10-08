@@ -288,7 +288,7 @@ export function liveMarkdown(
           if (task) {
             const contentFrom = from + task.length;
             const statusFrom = from + task.statusOffset;
-            if (!editing(first.from, first.to)) {
+            if (!editing(from, contentFrom - 1)) {
               ranges.push(
                 Decoration.replace({
                   widget: new TaskWidget(
