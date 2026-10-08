@@ -14,13 +14,11 @@ import Tabs from '../../../components/Tabs.astro';
 import derivacao from '../../c/derivacao.dot?raw';
 import arvores from '../../c/arvores.typ?raw';
 
-Depois dos símbolos do léxico, esta página responde como organizar esses símbolos numa árvore que diga como se combinam.
+Com `a = 3`, `a + a * a` pode representar `3 + (3 * 3) = 12` ou `(3 + 3) * 3 = 18`. Os tokens são os mesmos; a estrutura muda o resultado. A **análise sintática** usa uma [gramática livre de contexto](/cadeiras/tc/gramaticas-livres/) para verificar a sequência e representar o agrupamento numa árvore.
 
-A análise sintática (_parsing_) recebe os símbolos do léxico e verifica se formam frases válidas da linguagem. O seu resultado é a **árvore sintática**, ou seja, o desenho que diz como os símbolos se agrupam e que as fases seguintes consomem. O caso concreto é `a + a * a`: pode ler-se de duas formas com resultados diferentes, por isso precisamos de fixar a leitura certa. A gramática que define a sintaxe é uma [gramática livre de contexto](/cadeiras/tc/gramaticas-livres/): se já dominas derivação, árvores e ambiguidade, esta página é a aplicação direta disso a um compilador.
+## Precedência e associatividade
 
-## Da gramática ingénua à gramática com precedência
-
-A gramática ingénua de expressões, $E \to E + E \mid E \times E \mid (E) \mid \text{id} \mid \text{num}$, é ambígua: `a + a * a` tem duas árvores, uma com o `+` no topo e outra com o `×` no topo, que significam cálculos diferentes. Um compilador não pode adivinhar, por isso a gramática estratifica-se por precedência, um nível por operador:
+A gramática ingénua de expressões, $E \to E + E \mid E \times E \mid (E) \mid \text{id} \mid \text{num}$, é ambígua: `a + a * a` tem duas árvores, uma com o `+` no topo e outra com o `×` no topo, que significam cálculos diferentes. Um compilador não pode adivinhar, por isso a gramática estratifica-se por precedência, níveis para grupos de operadores com a mesma precedência:
 
 $$E \to E + T \mid T, \quad T \to T \times F \mid F, \quad F \to (E) \mid \text{id} \mid \text{num}.$$
 
@@ -29,10 +27,10 @@ A expressão `a + a * a` tem agora uma única árvore, embora possa ter diferent
 <Typst
   source={arvores}
   format="svg"
-  alt="Duas árvores para a mais a vezes a: à esquerda a leitura errada com o produto no topo, à direita a leitura certa com a soma no topo e o produto no ramo direito."
+  alt="Duas árvores para a mais a vezes a: em cima a leitura sem precedência com o produto na raiz, em baixo a soma na raiz e o produto no ramo direito."
 />
 
-Só a árvore da direita respeita a precedência, com o `*` enterrado no ramo direito. É dela que sai o cálculo $(a + (a \times a))$.
+Só a árvore de baixo respeita a precedência definida, com o `*` no ramo direito. É dela que sai o cálculo $(a + (a \times a))$. Com `a = 3`, dá 12; a árvore de cima dá 18.
 
 A mesma derivação vista como grafo, da raiz para as folhas.
 
@@ -41,13 +39,13 @@ A mesma derivação vista como grafo, da raiz para as folhas.
   alt="Árvore de derivação de a mais a vezes a na gramática com precedência, com nós E, T e F até às três folhas a."
 />
 
-## Construir o analisador
+## Árvores e famílias de analisadores
 
 A árvore de derivação guarda os não terminais e a pontuação da gramática. A **árvore sintática abstrata** (AST) guarda as operações e os seus operandos, sem nós auxiliares como `E`, `T` e `F`. Os parênteses influenciam a estrutura, mas já não precisam de ser nós.
 
 Duas famílias de analisadores dominam:
 
-- **Descendentes** (_top-down_, LL): constroem a árvore da raiz para as folhas, prevendo a regra a aplicar a partir do próximo símbolo. São os que escreves à mão com mais facilidade: uma função por não terminal. Exigem gramáticas sem recursão à esquerda e com decisão local, o que muitas vezes obriga a transformar a gramática primeiro.
+- **Descendentes** (_top-down_, LL): constroem a árvore da raiz para as folhas, prevendo a regra a aplicar a partir do próximo símbolo. São os que escreves à mão com mais facilidade: uma função por não terminal. Num analisador preditivo LL(1), a recursão à esquerda impede avançar antes de voltar a chamar a mesma função. É preciso removê-la e tornar a escolha de produção decidível com um token.
 - **Ascendentes** (_bottom-up_, LR): leem os símbolos empilhando e reduzem para não terminais quando reconhecem o lado direito de uma regra. Aceitam uma classe maior de gramáticas e são os gerados por ferramentas clássicas. Ferramentas como Bison geram analisadores deste tipo.
 
 O ANTLR 4 gera analisadores descendentes com previsão adaptativa. Aceita certas regras diretamente recursivas à esquerda e transforma-as internamente, com precedência definida pela ordem das alternativas. Não é um gerador LR nem um simples analisador LL(1).
@@ -81,7 +79,7 @@ Separar instruções associadas das livres fixa a convenção na gramática: o `
   </div>
 </Tabs>
 
-## Seguir shifts e reduções
+## Shift, redução e itens LR
 
 Um analisador LR usa **shift** para consumir o próximo token e empilhá-lo; uma **redução** substitui no topo o lado direito de uma produção pelo seu não terminal. Reduzir não consome entrada. A pilha também guarda estados que, com o símbolo de avanço, escolhem a ação. LR constrói a derivação mais à direita pela ordem inversa.
 
@@ -98,7 +96,7 @@ Com `E → E + num | num`, a sequência para `num + num` pode seguir estes passo
 
 Um **item** marca com um ponto quanto de uma produção já foi reconhecido: `E → E + · num` espera `num`; `E → E + num ·` permite uma redução, se a tabela a autorizar. Em SLR, as reduções de uma produção completa usam as colunas de `FOLLOW` do seu lado esquerdo. Um conflito shift/reduce oferece as duas ações na mesma célula; um conflito reduce/reduce oferece duas reduções, porque reconhecer um lado direito no topo, por si só, não chega para escolher com segurança.
 
-## Decidir com um símbolo de avanço
+## FIRST, FOLLOW e tabela LL(1)
 
 Num analisador **LL(1)**, o primeiro L indica leitura da esquerda para a direita, o segundo uma derivação mais à esquerda, e 1 indica um símbolo de avanço. A escolha usa dois conjuntos:
 
@@ -108,8 +106,6 @@ Num analisador **LL(1)**, o primeiro L indica leitura da esquerda para a direita
 Para uma regra `A → α`, preenche-se a tabela nas colunas de `FIRST(α)` sem `ε`. Se `α` puder desaparecer, preenchem-se também as colunas de `FOLLOW(A)`. Com a gramática sem recursão à esquerda $E \to T R$, $R \to + T R \mid \epsilon$, $T \to \text{id}$, os conjuntos de previsão são $\text{FIRST}(E) = \text{FIRST}(T) = \{\text{id}\}$, $\text{FIRST}(R) = \{+, \epsilon\}$ e $\text{FOLLOW}(R) = \{\text{fim}\}$, onde `fim` representa o marcador `$`. A tabela de decisão fica assim: em $E$ com `id` aplica $E \to T R$; em $R$ com `+` aplica $R \to + T R$; em $R$ com `$` aplica $R \to \epsilon$.
 
 Análise de `id + id` (pilha à esquerda, entrada à direita), passo a passo:
-
-:::details[Ver a tabela da análise]
 
 | Pilha           | Entrada     | Decisão                         |
 | --------------- | ----------- | ------------------------------- |
@@ -121,8 +117,6 @@ Análise de `id + id` (pilha à esquerda, entrada à direita), passo a passo:
 | $R$ `$`         | `$`         | $R \to \epsilon$ (vê `$`)       |
 | `$`             | `$`         | aceite                          |
 
-:::
-
 Cada decisão usa um símbolo e nunca volta atrás: é por isso que este analisador corre em tempo linear. Se uma célula da tabela tivesse duas regras, a gramática não seria LL(1). Poderias transformá-la ou escolher um analisador com mais capacidade de previsão.
 
 ## Erros sintáticos úteis
@@ -133,6 +127,6 @@ Quando o próximo símbolo não cabe em nenhuma continuação válida, o analisa
 Define precedência e associatividade antes de usar a árvore nas fases seguintes. Podes estratificar a gramática ou usar os mecanismos do gerador. Operadores no mesmo nível de precedência podem partilhar uma regra, desde que a associatividade fique definida.
 :::
 
-## Para levar para a próxima página
+## Sintaxe e significado
 
 A árvore está correta na forma, mas ainda não se sabe se faz sentido: `a + b` com `b` por declarar é sintaticamente perfeito e semanticamente errado. A [análise semântica](/cadeiras/c/analise-semantica/) trata disso com a tabela de símbolos.

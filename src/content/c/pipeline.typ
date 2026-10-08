@@ -14,5 +14,5 @@
   node((0, 4), [Otimização]),
   edge("-|>"),
   node((0, 5), [Código objeto]),
-  node((1, 1), [Tabela de símbolos], corner-radius: 4pt),
+  node((0, 6.5), [Tabela de símbolos\ partilhada entre fases], corner-radius: 4pt),
 )

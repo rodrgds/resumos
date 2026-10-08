@@ -8,7 +8,7 @@ order: 25
 
 import Exercise from '../../../components/Exercise.astro';
 
-<Exercise id="c-curto-circuito-seguro" title="Traduzir uma guarda de divisão" explanation="/cadeiras/c/codigo-intermedio/#exemplo-while-com-condição-composta" answer={{"kind": "self", "checklist": ["Testei d antes de emitir a divisão no caminho executado.", "Liguei os dois casos falsos ao ramo r = 0.", "Usei um salto para que o ramo verdadeiro não execute também o falso."]}}>
+<Exercise id="c-curto-circuito-seguro" title="Traduzir uma guarda de divisão" explanation="/cadeiras/c/codigo-intermedio/#curto-circuito-num-ciclo" answer={{"kind": "self", "checklist": ["Testei d antes de emitir a divisão no caminho executado.", "Liguei os dois casos falsos ao ramo r = 0.", "Usei um salto para que o ramo verdadeiro não execute também o falso."]}}>
 
 Traduz if (d != 0 &amp;&amp; n / d &gt; 4) &#123; r = 1; &#125; else &#123; r = 0; &#125; para três endereços. Assume divisão inteira e avaliação da esquerda para a direita.
 
@@ -24,10 +24,21 @@ A divisão tem de estar depois do salto que sai quando d é zero.
 </div>
 <div slot="solution">
 
-Uma tradução é t1 = d != 0; if_false t1 goto L_nao; t2 = n / d; t3 = t2 &gt;
-4; if_false t3 goto L_nao; r = 1; goto L_fim; L_nao: r = 0; L_fim:. Quando d =
-0, saltamos antes da divisão, porque a guarda vem primeiro. Quando as duas condições são verdadeiras, o
-salto final evita sobrescrever r com 0.
+Uma tradução mantém a divisão apenas no caminho em que `d` não é zero:
+
+```text
+t1 = d != 0
+if_false t1 goto L_nao
+t2 = n / d
+t3 = t2 > 4
+if_false t3 goto L_nao
+r = 1
+goto L_fim
+L_nao: r = 0
+L_fim:
+```
+
+Com `d = 0`, o primeiro salto evita a divisão. Com `n = 15` e `d = 3`, o quociente é 5 e `r` recebe 1. Com `n = 12` e `d = 3`, o quociente é 4 e o segundo salto leva a `r = 0`. O `goto L_fim` impede que o ramo verdadeiro também execute o falso.
 
 </div>
 <div slot="mistakes">
@@ -69,11 +80,6 @@ Não calcules n / d antes da guarda nem deixes o ramo verdadeiro cair no falso.
 Marca cada destino de salto e a linha que segue um salto.
 
 </div>
-  <div slot="hint-more">
-
-O goto da linha 4 impede a passagem para a linha 5.
-
-</div>
   <div slot="solution">
 
 A primeira linha é líder. A linha 3 segue o salto condicional; 5 e 6 são
@@ -91,30 +97,30 @@ queda sequencial. Não desenhes uma aresta atravessando esse goto.
 </div>
 </Exercise>
 
-<Exercise id="c-vetor-deslocamento" title="Baixar um acesso ao vetor" explanation="/cadeiras/c/codigo-intermedio/#níveis-de-representação" answer={{"kind": "number", "value": 2024, "tolerance": 0, "unit": ""}}>
+<Exercise
+  id="c-vetor-deslocamento"
+  revision={2}
+  title="Calcular endereços e verificar limites"
+  explanation="/cadeiras/c/codigo-intermedio/#níveis-de-representação"
+  answer={{ kind: 'self', checklist: [
+    'Obtive 2024 sem cabeçalho e 2036 com um cabeçalho de 12 bytes.',
+    'Justifiquei base + cabeçalho + índice × tamanho do elemento.',
+    'Rejeitei v[6] num vetor com seis elementos, apesar de a fórmula produzir um endereço.',
+  ] }}
+>
 
-Um vetor sem cabeçalho começa no endereço 2000. Cada elemento ocupa 4 bytes e os índices começam em 0. Qual é o endereço de v[6]? Dá o endereço inteiro exato.
+Um vetor começa no endereço 2000 e os índices começam em 0. Cada elemento ocupa 4 bytes. Calcula o endereço de `v[6]` sem cabeçalho e com um cabeçalho de 12 bytes. Se o vetor tiver apenas seis elementos, esse acesso é válido? Distingue o cálculo do endereço da verificação de limites. Assume que não há preenchimento adicional.
 
 <div slot="hint">
 
-Calcula primeiro o deslocamento em bytes.
-
-</div>
-<div slot="hint-more">
-
-O índice 6 desloca 6 × 4 bytes, não 6 bytes.
+Localiza primeiro o elemento zero. Depois conta quantos elementos o separam do índice pedido.
 
 </div>
 <div slot="solution">
 
-O deslocamento é 6 × 4 = 24 bytes. Somamos a base: 2000 + 24 = 2024. O índice
-zero corresponde à base, por isso não acrescentamos uma unidade ao índice.
-Estas hipóteses não descrevem necessariamente um vetor Java real.
+Sem cabeçalho, o deslocamento é `6 × 4 = 24` bytes e o endereço é `2000 + 24 = 2024`. Com cabeçalho, o elemento zero está em `2000 + 12`; `v[6]` está em `2000 + 12 + 24 = 2036`. A fórmula é `base + cabeçalho + índice × tamanho`.
 
-</div>
-<div slot="mistakes">
-
-Não somes apenas o índice nem adiciones um cabeçalho que o enunciado excluiu.
+Com seis elementos, os índices válidos são 0 a 5. O índice 6 está fora do vetor nos dois modelos. Produzir um endereço aritmético não prova que exista um elemento nesse endereço, nem autoriza remover a verificação de limites.
 
 </div>
 </Exercise>

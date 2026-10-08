@@ -9,13 +9,10 @@ order: 8
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Tabs from '../../../components/Tabs.astro';
 import otimizacao from '../../c/otimizacao.typ?raw';
 
-Depois de gerar código que corre, esta página responde como o tornar mais rápido sem mudar o que ele faz.
-
-O código gerado está correto, mas repete contas e guarda valores que ninguém volta a ler. **Otimizar** é transformar o programa para correr mais rápido (ou ocupar menos espaço) sem lhe mudar o resultado que se observa de fora. Para transformar em segurança, o compilador primeiro analisa: calcula, para cada ponto do programa, factos sobre de onde veio cada valor e se ainda vai ser lido. Só depois reescreve, apoiado nesses factos.
+Em `t1 = 5; t2 = t1 + 3; x = t2`, o valor final de `x` é sempre 8. Se ninguém observar `t1` e `t2`, podemos substituir as três atribuições por `x = 8`. Uma **otimização** conserva o comportamento observável, incluindo efeitos e exceções definidos pela linguagem, e procura reduzir o custo. Pode atuar no código intermédio antes da geração final ou em representações posteriores.
 
 ## Análise de fluxo de dados
 
@@ -52,7 +49,8 @@ Pergunta para trás: de onde veio este valor? Uma definição constante que cheg
 
 A pergunta sobre liveness olha para usos futuros, mas o cálculo propaga-se **para trás**.
 
-:::details[Equações de vivacidade e de definições que alcançam]
+### Equações e direção da propagação
+
 Para um bloco `B`, `USE` contém nomes lidos antes de uma definição no bloco e `DEF` contém nomes definidos:
 
 ```text
@@ -69,11 +67,9 @@ IN[B] = união de OUT[P], para cada antecessor P
 OUT[B] = GEN[B] ∪ (IN[B] − KILL[B])
 ```
 
-:::
+Numa junção, uma variável só é uma constante conhecida se todos os caminhos possíveis concordarem no valor. Se um ramo define `x = 2` e outro `x = 7`, não podemos substituir o `x` seguinte por nenhum deles. Esta decisão sobre valores é diferente da união de definições possíveis. Nas análises de conjuntos acima, a iteração monotónica a partir do vazio acrescenta factos até estabilizar; os ciclos exigem voltar a visitar os blocos.
 
-Numa junção, uma variável só é uma constante conhecida se todos os caminhos possíveis concordarem no valor. Se um ramo define `x = 2` e outro `x = 7`, não podemos substituir o `x` seguinte por nenhum deles, porque estes conjuntos finitos crescem até estabilizar e os ciclos exigem voltar a visitar os blocos.
-
-## Exemplo: propagar e eliminar
+## Propagação, dobramento e código morto
 
 Bloco básico de entrada:
 
@@ -86,7 +82,7 @@ y = 10
 
 A análise de definições que alcançam diz que, no uso de `t1`, a única definição possível é `t1 = 5`. A **propagação de constantes** substitui: `t2 = 5 + 3`, que o **dobramento de constantes** avalia em `t2 = 8`. Propaga outra vez: `x = 8`. Agora `t1` e `t2` não têm nenhum uso restante, por isso a **eliminação de código morto** remove as duas primeiras instruções. E `y = 10`? Se `y` não está viva à saída do bloco (nenhum sucessor no grafo a lê), remove-se também.
 
-Aqui assumimos variáveis locais, expressões sem efeitos nem exceções, e apenas `x` observável à saída. Uma atribuição a uma variável morta não pode desaparecer se a expressão fizer uma chamada observável ou lançar uma exceção, porque o resultado conservado é:
+Aqui assumimos variáveis locais, expressões sem efeitos nem exceções, e apenas `x` observável à saída. Uma atribuição a uma variável morta não pode desaparecer se a expressão fizer uma chamada observável ou lançar uma exceção. Sob as hipóteses deste exemplo, o bloco reduzido é:
 
 ```
 x = 8
@@ -97,22 +93,29 @@ Neste modelo, a versão reduzida conserva o valor de `x` e não há outros efeit
 <Typst
   source={otimizacao}
   format="svg"
-  alt="Bloco antes e depois da otimização: antes quatro instruções com as três mortas riscadas, depois só x igual a 8."
+  alt="Três estados do bloco: original; constantes propagadas e somadas; só x igual a 8 depois de eliminar valores sem uso."
 />
 
-Lê o antes com as linhas riscadas: tudo o que morreu na análise sai.
+O estado intermédio ainda conserva as quatro atribuições, mas já não usa os temporários. Só então desaparecem as definições sem usos, depois de verificar que não têm efeitos. A análise de vivacidade isolada não autoriza apagar a avaliação de uma chamada.
 
-O programa abaixo aplica a mesma propagação e dobragem ao bloco de entrada.
+| Etapa                  | Instruções relevantes | Justificação                                                 |
+| ---------------------- | --------------------- | ------------------------------------------------------------ |
+| Propagar `t1`          | `t2 = 5 + 3; x = t2`  | A única definição que chega ao uso de `t1` é 5.              |
+| Dobrar e propagar `t2` | `t2 = 8; x = 8`       | A soma é constante e não pode falhar neste modelo.           |
+| Eliminar               | `x = 8`               | Os temporários já não têm usos; `y` também não é observável. |
 
-<CodePlayground
-  language="python"
-  title="Propagar e dobrar"
-  code={
-    'import re\n\nbloco = ["t1 = 5", "t2 = t1 + 3", "x = t2", "y = 10"]\nconstantes = {}\nsaida = []\nfor inst in bloco:\n    destino, expr = [p.strip() for p in inst.split("=", 1)]\n    expr = re.sub(r"[A-Za-z_][A-Za-z_0-9]*", lambda m: str(constantes.get(m.group(), m.group())), expr)\n    try:\n        valor = eval(expr, {"__builtins__": {}}, {})\n        constantes[destino] = valor\n        expr = str(valor)\n    except (NameError, SyntaxError):\n        constantes.pop(destino, None)\n    saida.append(f"{destino} = {expr}")\nvivas = {"x"}\nfinal = []\nfor inst in reversed(saida):\n    destino, expr = [p.strip() for p in inst.split("=", 1)]\n    if destino not in vivas:\n        continue\n    final.append(inst)\n    vivas.remove(destino)\n    vivas.update(re.findall(r"[A-Za-z_][A-Za-z_0-9]*", expr))\nfinal.reverse()\nprint(final)'
-  }
-/>
+### Vivacidade dentro de um bloco
 
-O exemplo limita-se a atribuições e somas de inteiros, sem efeitos laterais, num único bloco.
+Apenas `x` está viva à saída do bloco original. Percorremos as instruções de baixo para cima, retirando o destino e acrescentando os operandos lidos:
+
+| Antes da instrução | Variáveis vivas | Passo                                           |
+| ------------------ | --------------- | ----------------------------------------------- |
+| `y = 10`           | `x`             | O valor antigo de `y` não é necessário.         |
+| `x = t2`           | `t2`            | O `x` antigo é substituído; precisamos de `t2`. |
+| `t2 = t1 + 3`      | `t1`            | Precisamos do valor que alimenta a soma.        |
+| `t1 = 5`           | nenhuma         | O bloco produz os valores sem ler uma entrada.  |
+
+Numa aresta de regresso, um uso no teste da próxima iteração pode manter um valor vivo através de todo o corpo. Por isso, uma única passagem pelos blocos não basta em geral. O exercício do ciclo aplica as mesmas equações até não haver alterações.
 
 :::warning[Otimizar cedo demais esconde erros]
 Aplica as otimizações sobre código intermédio já validado e confirma cada transformação no grafo de fluxo. No projeto, depura primeiro com as otimizações desligadas: um erro no código gerado com otimizações ligadas pode estar na otimização ou no código original, e sem a versão simples não distingues.

@@ -13,9 +13,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Tabs from '../../../components/Tabs.astro';
 import ambitos from '../../c/ambitos.typ?raw';
 
-Depois da árvore da sintaxe, esta página responde se os nomes e os tipos do programa fazem sentido.
-
-A análise semântica percorre a árvore sintática e pergunta o que a gramática não consegue responder: este nome foi declarado? Neste ponto do programa, o que significa? Os tipos desta operação são compatíveis? O caso concreto é `a + b` com `b` por declarar: passa na gramática e falha no significado. O instrumento central é a **tabela de símbolos**, ou seja, o registo de cada declaração com nome, tipo, **âmbito** (o bloco onde esse nome vale) e posição.
+`a + b` pode ter a forma de uma expressão válida mesmo que `b` não esteja declarado. A **análise semântica** associa cada uso de um nome à declaração visível e verifica se os tipos permitem a operação. A **tabela de símbolos** guarda essas declarações, com nome, tipo, âmbito e posição da fonte. O âmbito determina onde cada declaração pode ser usada.
 
 ## Tabela de símbolos e âmbitos
 
@@ -31,7 +29,7 @@ Funções e parâmetros vivem no âmbito da função: os parâmetros comportam-s
 
 Lê a pilha como o analisador a vê: com o bloco aberto há duas entradas para `x` e a procura encontra primeiro a de cima; fechado o bloco, a entrada interior desaparece.
 
-## Exemplo: bloco com shadowing e erro de tipo
+## Shadowing e inicializadores
 
 Neste pseudocódigo, cada bloco admite shadowing e uma declaração só fica visível **depois** do seu inicializador. É uma regra escolhida para o exemplo, que deve ser confirmada na especificação de cada linguagem. A tabela guarda tipos e declarações; os valores abaixo servem para seguir a execução.
 
@@ -98,7 +96,7 @@ Em Java usamos nomes locais diferentes para este bloco, porque Java não permite
   language="java"
   title="Âmbitos aninhados"
   code={
-    'public class Ambitos {\n    public static void main(String[] args) {\n        int x = 3;\n        {\n            int y = x + 1;\n            System.out.println(y);\n        }\n    }\n}'
+    'public class Main {\n    public static void main(String[] args) {\n        int x = 3;\n        {\n            int y = x + 1;\n            System.out.println(y);\n        }\n    }\n}'
   }
 />
 
@@ -110,14 +108,14 @@ Na linguagem didática, só admitimos `int` e `boolean`, sem conversões implíc
 Nesta linguagem didática, para construir a tabela e encontrar erros, desenha uma coluna por âmbito, regista cada declaração quando ela entra em vigor (o inicializador usa o âmbito anterior) e verifica cada uso e cada operação contra a tabela.
 :::
 
-## Atributos e ordem de cálculo
+## Atributos herdados e sintetizados
 
-:::details[Ver atributos herdados e sintetizados]
 Uma definição dirigida pela sintaxe associa atributos aos nós e regras para os calcular. Um atributo **sintetizado** usa informação dos filhos; um atributo **herdado** recebe contexto do pai ou de irmãos, segundo as regras definidas.
 
 Na produção `E → E1 + T`, a regra `E.tipo = verificarSoma(E1.tipo, T.tipo)` sintetiza o tipo da expressão a partir dos operandos. A tabela de símbolos disponível num nó pode ser um atributo herdado: o bloco entrega o seu âmbito aos filhos antes de estes resolverem nomes. Assim, o contexto desce e os tipos sobem. A ordem de avaliação deve respeitar estas dependências; um ciclo sem regra de resolução impede este cálculo simples.
-:::
 
-## Para levar para a próxima página
+Para `x + 5`, com `x: int` no âmbito Γ, entregamos Γ ao identificador antes de o resolver. O identificador devolve `int`, o literal devolve `int` e só então o nó `+` verifica `int + int` e sintetiza `int`. Não é preciso calcular o valor de `x` para verificar o tipo.
+
+## Declarações e execução
 
 Com os nomes resolvidos e os tipos verificados, o programa faz sentido. Falta executá-lo: os [ambientes de execução](/cadeiras/c/ambientes-execucao/) explicam onde vivem as variáveis quando o programa corre.

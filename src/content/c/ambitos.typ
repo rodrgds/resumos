@@ -7,6 +7,6 @@
   node((0, 0), [`x` → 4 (bloco)]),
   edge("-|>"),
   node((0, 1), [`x` → 3 (global)]),
-  node((2, -0.8), [bloco fechado]),
-  node((2, 1), [`x` → 3 (global)]),
+  node((0, 2.2), [bloco fechado]),
+  node((0, 3), [`x` → 3 (global)]),
 )

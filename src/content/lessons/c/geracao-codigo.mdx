@@ -9,18 +9,15 @@ order: 7
 ---
 
 import Dot from '../../../components/Dot.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import interferencia from '../../c/interferencia.dot?raw';
 
-Depois do código intermédio em blocos, esta página responde como escolher as instruções reais e onde guardar cada valor.
+`t = a + 5` pode corresponder a uma instrução com imediato numa máquina de registos ou a várias instruções de pilha na JVM. A **seleção de instruções** escolhe a tradução permitida pelo alvo. O **escalonamento** decide uma ordem que preserve as dependências; a **alocação de registos** atribui armazenamento aos valores necessários nessa ordem.
 
-O código intermédio ainda não corre: cada operação precisa de instruções concretas, e os valores precisam de um lugar para viver. A geração de código faz essa passagem para a máquina alvo em três decisões encadeadas: **seleção** (que instruções cobrem cada operação), **escalonamento** (por que ordem, respeitando dependências) e **alocação de registos** (que valores vivem em registos e quais ficam em memória).
-
-## Selecionar instruções
+## Seleção de instruções
 
 A seleção cobre as operações intermédias com instruções disponíveis no alvo. Numa máquina de registos hipotética, `t = a + 5` pode usar `addi R_t, R_a, 5` se a constante couber no campo imediato. Sem essa instrução, precisamos de carregar 5 num registo e depois somar. Na JVM, usamos `iload` para `a`, uma instrução que empilhe 5, e `iadd`. A escolha depende da semântica, dos operandos admitidos e do custo do alvo; nomes iguais de operações não garantem instruções iguais.
 
-## Escalonar respeitando dependências
+## Dependências e escalonamento
 
 O escalonador pode reordenar instruções para esconder latências, mas nunca pode trocar a ordem de duas instruções com dependência leitura após escrita (RAW): a leitura tem de ver o valor já escrito. Toma este bloco:
 
@@ -55,7 +52,7 @@ Depois de inserir os acessos, o compilador volta a analisar e alocar, porque os 
 
 Com $k = 2$ registos, o triângulo $a$, $b$, $c$ não tem coloração: $a$ e $b$ ocupam os dois registos e $c$ conflita com ambos. Se $c$ for o valor usado menos vezes (fora de ciclos), é a vítima: o compilador guarda-o em memória e insere instruções de carregamento e gravação da máquina alvo. Sem $c$ no grafo, $d$ fica livre para um dos registos. A marca de círculo duplo é a decisão do alocador, não uma propriedade do programa.
 
-## Exemplo: Jasmin para `(a + b) * c`
+## Pilha de operandos e Jasmin
 
 Nos exemplos seguintes, o alvo é a JVM através do Jasmin, que usa uma **pilha de operandos**: as instruções tiram operandos da pilha e empurram o resultado. Com `a`, `b`, `c` nas variáveis locais 1, 2 e 3, e o resultado na 4:
 
@@ -81,15 +78,7 @@ Segue a pilha, inicialmente vazia. O topo fica à direita:
 
 `iadd` e `imul` consomem dois inteiros e empurram um resultado. `istore 4` retira o produto da pilha e guarda-o na variável local 4. A altura máxima é 2, por isso `.limit stack 2` chega para esta sequência no método Jasmin. O verificador da JVM verifica os tipos e as alturas da pilha nos caminhos do método e rejeita bytecode inválido antes de o executar.
 
-A simulação abaixo executa o mesmo exemplo instrução a instrução.
-
-<CodePlayground
-  language="python"
-  title="Pilha de operandos"
-  code={
-    'pilha = []\nmaxima = 0\nfor passo in ["iload a", "iload b", "iadd", "iload c", "imul", "istore x"]:\n    if passo.startswith("iload"):\n        pilha.append(passo.split()[1])\n    elif passo in ("iadd", "imul"):\n        pilha.pop()\n        pilha.pop()\n        pilha.append("t")\n    else:\n        pilha.pop()\n    maxima = max(maxima, len(pilha))\nprint(pilha, maxima)'
-  }
-/>
+Com `a = 3`, `b = 4` e `c = 2`, as duas cargas produzem `[3, 4]`; `iadd` deixa `[7]`, a carga de `c` deixa `[7, 2]` e `imul` deixa `[14]`. A gravação retira 14 e guarda-o no local 4. Este traço numérico confere o mesmo cálculo da árvore.
 
 Para `(a + b) * (c + d)`, uma sequência que calcula primeiro `a + b` e depois `c + d` chega a 3: o primeiro resultado espera enquanto se empilham `c` e `d`.
 
@@ -97,6 +86,6 @@ Para `(a + b) * (c + d)`, uma sequência que calcula primeiro `a + b` e depois `
 
 As variáveis locais e a pilha de operandos da JVM não são registos físicos do processador. `iload` copia um inteiro de um local para a pilha; `istore` faz o percurso inverso. Guardar um resultado ou um temporário num local não prova que houve derrame por falta de registos. Aqui, `istore 4` apenas guarda o resultado da expressão. Se um compilador JIT traduzir este bytecode para código nativo, a alocação de registos físicos e os eventuais derrames são decisões dessa tradução.
 
-## Para levar para a próxima página
+## Validação e otimização
 
 O código corre e está correto, por isso antes de o entregar há transformações que o tornam mais rápido sem lhe mudar o significado: a [análise e otimização](/cadeiras/c/otimizacao-codigo/).

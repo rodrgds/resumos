@@ -1,17 +1,9 @@
-#import "@preview/fletcher:0.5.8": diagram, node, edge
 #set page(width: auto, height: auto, margin: 8pt)
-#set text(size: 10pt)
-#diagram(
-  node-stroke: 1pt + rgb("8c2d3b"), node-fill: rgb("f3e9e9"), spacing: 22pt,
-  node((0, -0.8), [antes]),
-  node((0, 0), [#strike[`t1 = 5`]]),
-  edge("-|>"),
-  node((0, 1), [#strike[`t2 = t1 + 3`]]),
-  edge("-|>"),
-  node((0, 2), [`x = t2`]),
-  edge("-|>"),
-  node((0, 3), [#strike[`y = 10`]]),
-  node((2, -0.8), [depois]),
-  node((2, 2), [`x = 8`]),
-  edge((0, 2), (2, 2), "-|>", label: [propaga e dobra]),
+#set text(size: 11pt)
+#table(
+  columns: (auto,), inset: 8pt,
+  stroke: 1pt + rgb("8c2d3b"), fill: rgb("f3e9e9"),
+  [*Antes*\ `t1 = 5`\ `t2 = t1 + 3`\ `x = t2`\ `y = 10`],
+  [*Propagar e dobrar*\ `t1 = 5`\ `t2 = 8`\ `x = 8`\ `y = 10`],
+  [*Eliminar valores sem uso*\ `x = 8`],
 )

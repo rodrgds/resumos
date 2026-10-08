@@ -8,16 +8,14 @@ practices:
 order: 2
 ---
 
-import Typst from '../../../components/Typst.astro';
+import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
-import automatoLex from '../../c/automato-lex.typ?raw';
+import automatoLex from '../../c/automato-lex.dot?raw';
 
-Depois do pipeline das fases, esta página responde à primeira pergunta prática: como agrupar os caracteres do programa em símbolos.
+Em `soma12 = valor + 30;`, `soma12` é um identificador inteiro, não uma palavra seguida de um número. A **análise lexical** separa o texto fonte em tokens, cada um com categoria, texto reconhecido e posição. O texto `soma12` é o **lexema** do primeiro token; a categoria é `ID`. Guardar ambos permite resolver o nome mais tarde e apontar a sua posição num erro.
 
-O programa como o escreves — o **texto fonte** — é só uma sequência de caracteres. A análise lexical faz essa fronteira: transforma esses caracteres numa sequência de **símbolos** (_tokens_), ou seja, peças com categoria (identificador, número, operador), texto reconhecido e posição de linha e coluna. O **lexema**, que é o texto reconhecido de cada símbolo, serve para mensagens de erro e valores literais.
-
-## Especificar com expressões regulares
+## Padrões lexicais
 
 Cada categoria de símbolo descreve-se com uma [expressão regular](/cadeiras/tc/linguagens-expressoes/). Para uma linguagem pequena:
 
@@ -27,43 +25,49 @@ Cada categoria de símbolo descreve-se com uma [expressão regular](/cadeiras/tc
 
 Palavras reservadas como `if` ou `while` casam com o padrão de identificador, por isso tratam-se à parte: depois de reconhecer um identificador, consulta-se uma tabela de palavras reservadas e reclassifica-se o símbolo se for caso disso. Nesta linguagem, espaços, tabulações e comentários não produzem símbolos, mas contam linhas e colunas para os erros futuros. Noutras linguagens, a indentação ou uma mudança de linha pode ser significativa.
 
-## Reconhecer com autómatos
+## Autómatos e desempate
 
 Uma expressão regular descreve, um [autómato finito](/cadeiras/tc/automatos-finitos/) executa. Ferramentas como o flex convertem cada padrão num autómato e combinam-nos num reconhecedor único que corre sobre o texto. Quando dois padrões casam o mesmo prefixo, valem duas regras de desempate, por esta ordem:
 
 1. **Prefixo mais longo** (_maximal munch_): fica o casamento que consome mais caracteres.
 2. **Primeira regra**: em empate de comprimento, ganha o padrão listado primeiro (é assim que `if` ganha a identificador).
 
-<Typst
+<Dot
   source={automatoLex}
-  format="svg"
   alt="Autómato com estado inicial q0, transição por letra ou sublinhado para o estado final de identificador e por dígito para o estado final de inteiro, cada um com um ciclo sobre si próprio."
 />
 
-O diagrama mostra apenas identificadores e inteiros ASCII. De `q0`, uma letra ou `_` leva ao estado de identificador (moldura grossa significa estado final) e um dígito ao estado de inteiro. Os ciclos dizem para continuar a consumir enquanto o caráter for do mesmo tipo; quando chega um caráter que não casa, o símbolo fecha com tudo o que foi consumido, porque guardamos a última posição de aceitação e recuamos até ela quando não há transição.
+O diagrama mostra apenas identificadores e inteiros ASCII. De `q0`, uma letra ou `_` leva ao estado de identificador (círculo duplo significa estado final) e um dígito ao estado de inteiro. Os ciclos dizem para continuar a consumir enquanto o caráter for do mesmo tipo; quando chega um caráter que não casa, o símbolo fecha com tudo o que foi consumido, porque guardamos a última posição de aceitação e recuamos até ela quando não há transição.
 
-Identifica ambiguidades entre padrões e como o reconhecedor escolhe um símbolo: observa qual casamento vence quando dois padrões casam o mesmo texto.
+O primeiro vídeo acompanha o desempate entre padrões.
 
 <YouTube
   id="AbNVta331NE"
   title="Compilers #6: Ambiguities in Lexical Analysis"
 />
 
-Identifica ambiguidades entre padrões e como o reconhecedor escolhe um símbolo: observa como o varrimento decide onde cada símbolo começa e acaba.
+O segundo acompanha a implementação de um varrimento.
 
 <YouTube id="HxaD_trXwRE" title="Lexical Scanning in Go - Rob Pike" />
 
 ### Da expressão regular ao DFA
 
-:::details[Ver a construção por subconjuntos]
 Uma construção habitual transforma a expressão regular num autómato não determinístico (NFA), que pode ter várias transições para o mesmo caráter e transições `ε` sem consumir entrada. O **fecho-ε** de um conjunto inclui os próprios estados e todos os alcançáveis só por `ε`.
 
 A construção por subconjuntos dá um DFA: o estado inicial é o fecho-ε do inicial do NFA. Para cada caráter, seguimos todas as transições dos estados do conjunto e calculamos o fecho-ε dos destinos. Um conjunto é final se contiver algum estado final do NFA. Num léxico com várias categorias, guardamos também a prioridade dos estados finais.
 
 Por exemplo, com `q0 --ε--> q1`, `q1 --a--> q1` e `q1 --b--> q2`, sendo só `q2` final, o inicial do DFA é `{q0,q1}`. Ao ler `a`, chegamos a `{q1}`; ao ler `b`, a `{q2}`, final. Este autómato aceita `b`, `ab`, `aab`, e não aceita `a`. O conjunto vazio representa ausência de caminho. Só construímos os subconjuntos alcançáveis, embora possam existir até `2^n` com `n` estados no NFA.
-:::
 
-## Exemplo: o prefixo mais longo em ação
+| Estado do DFA | Com `a` | Com `b` | Final? |
+| ------------- | ------- | ------- | ------ |
+| `{q0,q1}`     | `{q1}`  | `{q2}`  | Não    |
+| `{q1}`        | `{q1}`  | `{q2}`  | Não    |
+| `{q2}`        | vazio   | vazio   | Sim    |
+| vazio         | vazio   | vazio   | Não    |
+
+O fecho não volta a introduzir `q0` depois de consumir um caráter. Só segue transições ε a partir dos destinos obtidos naquele passo.
+
+## Tokenização de uma atribuição
 
 Linha fonte: `soma12 = valor + 30;`. O reconhecedor avança caráter a caráter:
 
@@ -89,6 +93,6 @@ O programa abaixo reconhece identificadores e inteiros ASCII e a pontuação ind
 Dado um conjunto de padrões e uma linha de código, constrói a sequência de símbolos. Simula o autómato à mão, consumindo sempre o prefixo mais longo, e justifica cada fronteira: "para aqui porque o próximo caráter já não casa com nenhum padrão ativo".
 :::
 
-## Para levar para a próxima página
+## Tokens e sintaxe
 
 Os símbolos entram, a estrutura sai. A [análise sintática](/cadeiras/c/analise-sintatica/) pega nesta sequência e organiza-a numa árvore segundo a gramática da linguagem.

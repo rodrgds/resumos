@@ -14,15 +14,13 @@ import Tabs from '../../../components/Tabs.astro';
 import YouTube from '../../../components/YouTube.astro';
 import fluxo from '../../c/fluxo.dot?raw';
 
-Com o lugar das variáveis conhecido, esta página responde como representar o programa a meio caminho entre a árvore e a máquina.
-
-A árvore sintática ainda está longe das instruções da máquina. Entre as duas há um nível intermédio: uma **representação intermédia**, ou seja, uma escrita que explicita operações e controlo para as otimizações e a geração de código usarem. A forma clássica é o **código de três endereços**: uma atribuição típica tem a forma `destino = operando1 op operando2`, onde os três endereços são o destino e os dois operandos, que podem ser nomes ou constantes. Um **temporário** é um nome inventado para guardar um resultado a meio do cálculo; cópias, saltos, chamadas e retornos usam outras formas e nem sempre definem um.
+`x = a + b * 2` precisa de guardar o produto antes de o somar a `a`. Em **código de três endereços**, escrevemos `t1 = b * 2`, `t2 = a + t1` e `x = t2`. Os temporários `t1` e `t2` dão nomes aos resultados interiores da árvore. Uma instrução binária tem um destino e dois operandos; cópias, saltos, chamadas e retornos têm outras formas. Esta representação intermédia torna explícitas as operações e o controlo que a otimização e a geração de código vão analisar.
 
 ## Níveis de representação
 
 Uma representação de alto nível pode conservar operações como acesso a vetor ou chamada de método. Ao baixar o nível, explicitamos endereços, deslocamentos e operações simples. Por exemplo, num vetor de inteiros de 4 bytes sem cabeçalho, o endereço de `v[i]` é `base + 4 * i`. O tamanho do elemento e a disposição do vetor são hipóteses do alvo, não constantes universais.
 
-## Traduzir expressões e controlo
+## Temporários, rótulos e saltos
 
 A tradução desfaz as expressões aninhadas em passos elementares com temporários frescos (`t1`, `t2`, ...). O controlo traduz-se com **rótulos** e **saltos**: cada construção gera o teste, os saltos para os ramos e os rótulos de junção, com os nomes gerados de forma única.
 
@@ -33,7 +31,7 @@ Segue a passagem da árvore para instruções, blocos e grafo de fluxo: observa 
   title="Three-Address Code, How to Create a Compiler part 3/5, Converting AST into statement-based IR"
 />
 
-## Exemplo: `while` com condição composta
+## Curto-circuito num ciclo
 
 ```java
 while (a < b && c != 0) {
@@ -88,14 +86,34 @@ Os temporários `t1` e `t2` guardam resultados booleanos intermédios que na ár
 
 Um **bloco básico** é uma sequência de instruções que se executa sempre do início ao fim: entra-se só pela primeira instrução e sai-se só pela última. Para partir o código em blocos, marcam-se os **líderes**: a primeira instrução, cada destino de salto e cada instrução logo a seguir a um salto. Cada bloco vai de um líder até antes do líder seguinte.
 
-Numeramos os rótulos juntamente com as operações para este exemplo. Um rótulo final representa a saída, sem instrução executável. Instruções numeradas: 1 `t1 = a < b`, 2 `if_false t1 goto L_fora`, 3 `t2 = c != 0`, 4 `if_false t2 goto L_fora`, 5 `t3 = a + 1`, 6 `a = t3`, 7 `goto L_topo`, 8 `L_fora:`. Líderes: 1 (primeira), 3 (segue-se a um salto condicional), 5 (segue-se a um salto condicional), 8 (destino de salto). Blocos: B1 = {1, 2}, B2 = {3, 4}, B3 = {5, 6, 7}, B4 = {8}. O **grafo de fluxo** liga-os pelas arestas possíveis: B1 para B2 (condição verdadeira) e para B4 (saída), B2 para B3 e para B4, B3 de volta para B1.
+Numeramos as operações e incluímos uma linha final de saída para este exemplo. O rótulo final representa a saída, sem instrução executável:
+
+```text
+1  L_topo: t1 = a < b
+2  if_false t1 goto L_fora
+3  t2 = c != 0
+4  if_false t2 goto L_fora
+5  t3 = a + 1
+6  a = t3
+7  goto L_topo
+8  L_fora:
+```
+
+| Líder | Razão                                   | Bloco           |
+| ----- | --------------------------------------- | --------------- |
+| 1     | Primeira operação e destino do regresso | B1 = {1, 2}     |
+| 3     | Depois do salto condicional da linha 2  | B2 = {3, 4}     |
+| 5     | Depois do salto condicional da linha 4  | B3 = {5, 6, 7}  |
+| 8     | Destino dos dois saltos de saída        | B4 = {8}, saída |
+
+O **grafo de fluxo** liga os blocos pelas continuações possíveis. B1 segue para B2 se `a < b` for verdadeira ou para B4 se for falsa. B2 decide entre B3 e B4. B3 regressa a B1 pelo salto incondicional; não cai em B4.
 
 <Dot
   source={fluxo}
   alt="Grafo de fluxo do exemplo: B1 liga a B2 e B4, B2 liga a B3 e B4, B3 volta a B1."
 />
 
-Cada caminho do grafo descreve uma execução possível do `while`, com zero, uma ou várias iterações.
+V significa condição verdadeira e F condição falsa. Cada caminho do grafo descreve uma execução possível do `while`, com zero, uma ou várias iterações.
 
 Segue a passagem da árvore para instruções, blocos e grafo de fluxo: observa como cada líder começa um bloco e como as arestas ligam os blocos antes de aplicares a regra abaixo.
 
@@ -118,6 +136,6 @@ O programa abaixo aplica a regra dos líderes às mesmas oito instruções.
 Sublinha primeiro todos os rótulos destino e todos os saltos. Cada líder é mecânico: primeira linha, destino, depois de salto. Só depois agrupa, porque o erro típico é pôr um destino de salto a meio de um bloco.
 :::
 
-## Para levar para a próxima página
+## Blocos e instruções do alvo
 
 O programa está em blocos simples e explícitos. A [geração de código](/cadeiras/c/geracao-codigo/) escolhe instruções reais para cada bloco e decide que valores vivem em registos.
