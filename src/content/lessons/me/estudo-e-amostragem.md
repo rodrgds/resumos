@@ -10,12 +10,12 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-03'
+    date: '2026-10-08'
 ---
 
-Queres saber quanto tempo os vídeos demoram a começar na tua residência. Antes de resumir números, precisas de dizer quem foi observado, o que foi medido e o que o desenho permite concluir.
+## População, amostra e variável
 
-Imagina que queres saber quanto tempo os vídeos demoram a começar na tua residência. Durante uma semana, apontas os tempos de arranque que observas e ficas com uma lista de 30 tempos, como 2 segundos, 5 segundos e 3 segundos.
+Durante uma semana, registas 30 tempos de arranque de vídeos numa residência. Cada medição indica quantos segundos decorreram desde o pedido até ao início do vídeo, por exemplo 2, 5 ou 3 segundos. Queremos estudar todos os arranques nessa residência durante essa semana.
 
 Essa lista de 30 tempos é a **amostra**, o conjunto de casos que mediste. O conjunto de todos os arranques nessa residência no período em estudo é a **população**, o conjunto sobre o qual queres concluir.
 
@@ -29,11 +29,7 @@ Cada arranque é uma **unidade**. A **variável** é o tempo de arranque, a cara
 | Amostra         | os 30 arranques observados              |
 | População       | todos os arranques no período em estudo |
 
-Repara que a lista pode enganar: se os 30 tempos vierem todos da mesma noite com a rede congestionada, falam dessa noite, não de todas as noites. Por isso, antes de resumires a lista com uma média, ou seja, com a soma dos tempos dividida pela quantidade de tempos, pergunta a que conjunto a conclusão se refere.
-
-## População, amostra e variável
-
-A **população** reúne as unidades sobre as quais queremos concluir. A **amostra** é o conjunto observado. Uma **variável** é uma característica registada em cada unidade: tempo, sistema operativo, número de falhas.
+Se os 30 tempos vierem todos da mesma noite com a rede congestionada, a amostra pode sobrestimar os tempos do resto da semana. Antes de calcular uma média, verifica se a seleção inclui as condições sobre as quais queres concluir.
 
 Um parâmetro descreve a população, por exemplo a média $\mu$. Uma estatística é calculada a partir da amostra, por exemplo $\bar x$. A média dos tempos medidos é conhecida; a média de todos os tempos da população pode continuar desconhecida.
 
@@ -47,7 +43,7 @@ Com reposição, uma unidade pode aparecer várias vezes. Escolhas feitas indepe
 
 Sem reposição numa população finita, as escolhas são dependentes. Se a fração amostrada for pequena, um modelo independente pode ser uma aproximação razoável. Se for grande, a dependência tem de entrar no cálculo; não se aplica automaticamente uma fórmula binomial.
 
-Uma amostragem **estratificada** divide a população em grupos, como anos curriculares, e seleciona aleatoriamente dentro de cada grupo. Para estimar uma média global, os pesos dos estratos devem corresponder à população, não apenas à quantidade de respostas obtidas.
+Uma amostragem **estratificada** divide a população em grupos, como anos curriculares, e seleciona aleatoriamente dentro de cada grupo. Para estimar uma média global, os pesos dos estratos devem corresponder à população, não apenas à quantidade de respostas obtidas. Se 80% dos arranques ocorrem de dia e 20% à noite, com médias amostrais de 2 e 6 segundos, a estimativa estratificada é $0,8(2)+0,2(6)=2,8$ segundos. Recolher dez medições em cada período e fazer a média sem pesos daria 4 segundos, atribuindo metade do peso à noite.
 
 ## Observar ou intervir
 
@@ -67,7 +63,7 @@ Num desenho por blocos, agrupas unidades semelhantes e aleatorizas a condição 
 
 O emparelhamento é um caso particularmente útil: medir a mesma unidade antes e depois ou formar pares comparáveis. A análise usa as diferenças dentro dos pares. Dois grupos com o mesmo tamanho não são, só por isso, emparelhados.
 
-## Exemplo: comparar dois algoritmos
+## Comparação emparelhada de algoritmos
 
 Queremos comparar o tempo dos algoritmos A e B em tarefas de uma população definida. Selecionamos aleatoriamente 20 tarefas dessa população e executamos ambos em cada tarefa. Aleatorizamos a ordem de execução para reduzir efeitos de aquecimento da máquina.
 

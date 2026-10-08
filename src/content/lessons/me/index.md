@@ -8,7 +8,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Moodle ME 2025/26
       url: https://moodle2526.up.pt/course/view.php?id=4420
@@ -22,7 +22,7 @@ editorial:
     - Não estão disponíveis materiais Moodle de ME de 2026/27 nesta revisão.
 ---
 
-No fim desta cadeira vais conseguir descrever uma amostra sem te deixares enganar por gráficos ou médias, escolher o modelo de probabilidade certo para cada mecanismo e tirar conclusões sobre uma população com intervalos e testes, porque aprendes a escrever as condições antes de substituir números. O percurso começa na descrição, passa pela probabilidade e pelas distribuições e fecha na inferência para médias, proporções e contagens.
+Uma amostra permite descrever os casos observados. Para concluir sobre a população, precisamos também de saber como foi recolhida e quanto variam as estimativas entre amostras. O percurso liga estas duas perguntas, da descrição dos dados à inferência para médias, proporções e contagens.
 
 ## Percurso
 
@@ -38,7 +38,7 @@ O percurso termina com [inferência para proporções](/cadeiras/me/proporcoes/)
 
 Em cada problema, identifica a unidade observada, a variável, cada valor observado e o parâmetro pretendido. Escolhe o método antes de substituir números. O percurso assume somatórios, combinatória e integrais simples de cadeiras anteriores. Escreve as condições, conserva casas decimais nas contas intermédias e fecha com uma frase sobre a população e a pergunta inicial.
 
-Os exemplos executáveis em Python permitem conferir contas e experimentar gráficos. Os materiais das aulas também usam R. O software ajuda a explorar dados, mas não escolhe o modelo nem justifica as condições por ti. Nos exercícios usa a tabela ou o arredondamento solicitado no enunciado.
+As figuras acompanham as contas e permitem comparar distribuições sem executar programas. Os materiais das aulas usam R como ferramenta de apoio. O software ajuda a explorar dados, mas não escolhe o modelo nem justifica as condições por ti. Nos exercícios usa a tabela ou o arredondamento solicitado no enunciado.
 
 :::details[Ano e avaliação]
 

@@ -9,8 +9,12 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-03'
+    date: '2026-10-08'
 ---
+
+## Amostragem e desenho
+
+[Estudos](/cadeiras/me/estudo-e-amostragem/): seleção aleatória apoia generalização; atribuição aleatória apoia comparação causal. Uma amostra maior não corrige seleção voluntária. Estratos: ponderar médias pelo peso populacional. Pares: analisar diferenças e exigir independência entre pares.
 
 ## Dados e probabilidade
 
@@ -20,7 +24,7 @@ Quantis tipo 2, $0<p<1$: se np é inteiro, $q_p=(x_{(np)}+x_{(np+1)})/2$; senão
 
 [Bivariados](/cadeiras/me/dados-bivariados/): $s_{xy}=\sum(x_i-\bar x)(y_i-\bar y)/(n-1)$, $r=s_{xy}/(s_Xs_Y)$. Correlação mede associação linear; conserva os pares.
 
-[Probabilidade](/cadeiras/me/probabilidades/): $P(A\cup B)=P(A)+P(B)-P(A\cap B)$; $P(A\mid B)=P(A\cap B)/P(B)$. Independência: $P(A\cap B)=P(A)P(B)$.
+[Probabilidade](/cadeiras/me/probabilidades/): $P(A\cup B)=P(A)+P(B)-P(A\cap B)$; $P(A\mid B)=P(A\cap B)/P(B)$, com $P(B)>0$. Independência: $P(A\cap B)=P(A)P(B)$.
 
 Partição com $P(B_i)>0$: $P(A)=\sum_iP(B_i)P(A\mid B_i)$; Bayes com $P(A)>0$: $P(B_j\mid A)=P(B_j)P(A\mid B_j)/P(A)$.
 
@@ -39,6 +43,8 @@ Normal $N(\mu,\sigma^2)$: $Z=(X-\mu)/\sigma$; $\Phi(-z)=1-\Phi(z)$. Quantis crí
 Binomial → normal: $n>25$, $\min(np,n(1-p))>5$. Correção: $X\le k\to k+0,5$; $X\ge k\to k-0,5$; $X=k\to[k-0,5;k+0,5]$.
 
 ## Intervalos de confiança
+
+A confiança descreve a cobertura do procedimento entre repetições, sob o modelo. O parâmetro é fixo; os limites variam com a amostra. Não é a percentagem de observações dentro do intervalo.
 
 [Uma média](/cadeiras/me/intervalos-confianca/): estimativa ± quantil × erro padrão.
 

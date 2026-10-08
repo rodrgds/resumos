@@ -1,0 +1,535 @@
+---
+type Kind =
+  | 'caixa'
+  | 'dispersao'
+  | 'qq'
+  | 'medias'
+  | 'potencia'
+  | 'permutacoes'
+  | 'proporcoes'
+  | 'esperadas'
+  | 'caudas'
+  | 'pares';
+interface Props {
+  kind: Kind;
+}
+const { kind } = Astro.props;
+const normal = (x: number, mu: number, se: number) =>
+  Math.exp(-0.5 * ((x - mu) / se) ** 2) / (se * Math.sqrt(2 * Math.PI));
+const curve = (
+  fn: (x: number) => number,
+  lo: number,
+  hi: number,
+  top: number,
+) =>
+  Array.from({ length: 161 }, (_, i) => {
+    const x = lo + ((hi - lo) * i) / 160;
+    return `${i ? 'L' : 'M'}${(48 + (260 * i) / 160).toFixed(2)},${(210 - (150 * fn(x)) / top).toFixed(2)}`;
+  }).join(' ');
+const descriptions: Record<Kind, string> = {
+  caixa:
+    'Caixa das durações: quartis 3 e 6,5, mediana 4,5, bigodes 2 e 7, e valor afastado 18. A média 6 fica à direita da mediana.',
+  dispersao:
+    'Os quatro pares originais sobem aproximadamente em linha. Na parábola, x e menos x dão o mesmo y e correlação zero.',
+  qq: 'Num QQ de quantis populacionais, o modelo normal dá uma reta; a exponencial curva para cima na cauda direita.',
+  medias:
+    'Densidades exatas da média de observações exponenciais de média 10. Com n igual a 1, 5 e 30, o erro padrão diminui e a forma aproxima-se da normal.',
+  potencia:
+    'A região à esquerda do limite tracejado é não rejeição. A área dessa região sob a distribuição alternativa é beta. Com 256 unidades é menor do que com 64.',
+  permutacoes:
+    'As vinte atribuições dão diferenças de menos 3 a 3. Só os dois extremos atingem módulo 3, cada um com probabilidade 1/20.',
+  proporcoes:
+    'Para cinco sucessos em trinta, o intervalo mais quatro tem centro 0,2059 e limites aproximados 0,0700 e 0,3418. Wald tem centro 0,1667 e limites 0,0333 e 0,3000.',
+  esperadas:
+    'Nas categorias 1, 2 e 3, contagens observadas 60, 25 e 15 são comparadas com esperadas 50, 30 e 20.',
+  caudas:
+    'Na t com 15 graus de liberdade, o observado menos 3 está na cauda esquerda. O valor-p bilateral reúne a área à esquerda de menos 3 e à direita de 3.',
+  pares:
+    'Seis segmentos ligam o tempo A ao tempo B da mesma tarefa. As diferenças A menos B são 2, 1, 3, 2, 4 e 0 milissegundos.',
+};
+const captions: Record<Kind, string> = {
+  caixa:
+    'O ponto 18 puxa a média para a direita; não altera a posição central da mediana da mesma forma. Os bigodes acabam em observações, não nas barreiras.',
+  dispersao:
+    'A correlação descreve a associação linear. A segunda figura mostra uma relação determinística que esse coeficiente não resume.',
+  qq: 'Referência de forma, sem ruído amostral: quantis de uma normal padrão e de uma exponencial de média 1, comparados com quantis normais. Numa amostra real, espera-se alguma irregularidade.',
+  medias:
+    'Traço contínuo: densidade exata da média; tracejado: normal com a mesma média e erro padrão. A escala horizontal é igual nos três painéis. O TLC altera a aproximação da média, não a população exponencial.',
+  potencia:
+    'Traço contínuo: nula de média 100; tracejado: alternativa de média 102. A zona sombreada sob a alternativa representa beta. O limite é recalculado em cada n para manter alfa em 0,05.',
+  permutacoes:
+    'Cada barra agrupa atribuições com a mesma diferença. As duas barras assinaladas somam 2/20: o valor-p bilateral exato é 0,10.',
+  proporcoes:
+    'Mesmos dados e confiança de 95%, métodos diferentes. O ajustamento desloca o centro em direção a 0,5; não basta alargar o intervalo de Wald.',
+  esperadas:
+    'Barras preenchidas: observado; contornos tracejados: esperado sob o modelo. A maior diferença absoluta não é o único critério: cada contribuição é dividida pela contagem esperada.',
+  caudas:
+    'As duas áreas somam cerca de 0,0090. Uma alternativa à esquerda usaria só a área além de menos 3; uma alternativa à direita usaria toda a área à direita de menos 3.',
+  pares:
+    'A identidade da tarefa mantém-se em cada linha. A diferença zero também entra na amostra; contar só as melhorias mudaria o parâmetro estimado.',
+};
+const panels =
+  kind === 'medias'
+    ? [1, 5, 30]
+    : kind === 'potencia'
+      ? [64, 256]
+      : kind === 'dispersao' || kind === 'qq'
+        ? [0, 1]
+        : [0];
+const factorial = (n: number): number => (n < 2 ? 1 : n * factorial(n - 1));
+---
+
+<figure class="me-statistical-figure">
+  <div class="panels">
+    {panels.map((panel) => (
+      <svg viewBox="0 0 360 280" role="img" aria-label={descriptions[kind]}>
+        <g class="axis">
+          <path d="M48 40 V210 H318" />
+        </g>
+        {kind === 'caixa' && (
+          <>
+            <path class="axis" d="M78 110 H153 M78 98 V122 M153 98 V122" />
+            <rect class="area" x="93" y="88" width="52.5" height="44" />
+            <path class="accent" d="M115.5 88 V132" />
+            <circle class="accent" cx="318" cy="110" r="5" fill="none" />
+            <path class="secondary" d="M138 150 V172" />
+            <text x="138" y="193" text-anchor="middle">
+              média 6
+            </text>
+            {[0, 2, 3, 7, 18].map((x) => (
+              <text x={48 + 15 * x} y="233" text-anchor="middle">
+                {x}
+              </text>
+            ))}
+            <text x="115" y="65" text-anchor="middle">
+              mediana 4,5
+            </text>
+            <text x="180" y="265" text-anchor="middle">
+              Duração (s)
+            </text>
+          </>
+        )}
+        {kind === 'dispersao' && (
+          <>
+            <text x="180" y="25" text-anchor="middle">
+              {panel === 0 ? 'r ≈ 0,9648' : 'y = x²; r = 0'}
+            </text>
+            {(panel === 0
+              ? [
+                  [1, 2],
+                  [2, 4],
+                  [3, 5],
+                  [4, 9],
+                ]
+              : [
+                  [-2, 4],
+                  [-1, 1],
+                  [0, 0],
+                  [1, 1],
+                  [2, 4],
+                ]
+            ).map(([x, y]) => (
+              <circle
+                class="dot"
+                cx={panel === 0 ? 48 + 60 * x : 178 + 60 * x}
+                cy={panel === 0 ? 210 - 17 * y : 210 - 36 * y}
+                r="5"
+              />
+            ))}
+            {(panel === 0 ? [0, 1, 2, 3, 4] : [-2, -1, 0, 1, 2]).map((x) => (
+              <text
+                x={panel === 0 ? 48 + 60 * x : 178 + 60 * x}
+                y="234"
+                text-anchor="middle"
+              >
+                {x}
+              </text>
+            ))}
+            {(panel === 0 ? [0, 5, 10] : [0, 2, 4]).map((y) => (
+              <text
+                x="39"
+                y={215 - (panel === 0 ? 17 : 36) * y}
+                text-anchor="end"
+              >
+                {y}
+              </text>
+            ))}
+            <text x="330" y="215">
+              x
+            </text>
+            <text x="25" y="20">
+              y
+            </text>
+          </>
+        )}
+        {kind === 'qq' && (
+          <>
+            <text x="180" y="25" text-anchor="middle">
+              {panel === 0 ? 'Normal' : 'Exponencial'}
+            </text>
+            <path
+              class="secondary"
+              d={panel === 0 ? 'M53 204 L303 54' : 'M53 210 L303 60'}
+              stroke-dasharray="5 4"
+            />
+            {[
+              -1.644854, -1.281552, -0.841621, -0.524401, -0.253347, 0,
+              0.253347, 0.524401, 0.841621, 1.281552, 1.644854,
+            ].map((z, i) => {
+              const p = [
+                0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95,
+              ][i];
+              return (
+                <circle
+                  class="dot"
+                  cx={178 + 76 * z}
+                  cy={
+                    panel === 0 ? 129 - 45.6 * z : 210 - 50 * -Math.log(1 - p)
+                  }
+                  r="4"
+                />
+              );
+            })}
+            {[-1, 0, 1].map((z) => (
+              <text x={178 + 76 * z} y="234" text-anchor="middle">
+                {z}
+              </text>
+            ))}
+            {(panel === 0 ? [-1, 0, 1] : [0, 1, 2, 3]).map((y) => (
+              <text
+                x="39"
+                y={panel === 0 ? 134 - 45.6 * y : 215 - 50 * y}
+                text-anchor="end"
+              >
+                {y}
+              </text>
+            ))}
+            <text x="180" y="263" text-anchor="middle">
+              Quantil normal teórico
+            </text>
+          </>
+        )}
+        {kind === 'medias' && (
+          <>
+            <text x="180" y="25" text-anchor="middle">
+              n = {panel}; SE ≈{' '}
+              {(10 / Math.sqrt(panel)).toFixed(2).replace('.', ',')}
+            </text>
+            <path
+              class="accent"
+              d={curve(
+                (x) =>
+                  panel === 1
+                    ? Math.exp(-x / 10) / 10
+                    : ((panel / 10) ** panel *
+                        x ** (panel - 1) *
+                        Math.exp((-panel * x) / 10)) /
+                      factorial(panel - 1),
+                0,
+                40,
+                0.24,
+              )}
+            />
+            <path
+              class="secondary"
+              stroke-dasharray="5 4"
+              d={curve(
+                (x) => normal(x, 10, 10 / Math.sqrt(panel)),
+                0,
+                40,
+                0.24,
+              )}
+            />
+            {[0, 10, 20, 30, 40].map((x) => (
+              <text x={48 + 6.5 * x} y="234" text-anchor="middle">
+                {x}
+              </text>
+            ))}
+            {[0, 0.1, 0.2].map((y) => (
+              <text x="39" y={215 - (150 * y) / 0.24} text-anchor="end">
+                {String(y).replace('.', ',')}
+              </text>
+            ))}
+            <text x="180" y="263" text-anchor="middle">
+              Média amostral
+            </text>
+          </>
+        )}
+        {kind === 'potencia' &&
+          (() => {
+            const se = 8 / Math.sqrt(panel),
+              limit = 100 + 1.644854 * se;
+            const shade = Array.from({ length: 81 }, (_, i) => {
+              const x = 96 + ((limit - 96) * i) / 80;
+              return `${i ? 'L' : 'M'}${48 + 26 * (x - 96)},${210 - (150 * normal(x, 102, se)) / 0.85}`;
+            }).join(' ');
+            return (
+              <>
+                <text x="180" y="25" text-anchor="middle">
+                  n = {panel}; β ≈ {panel === 64 ? '0,3612' : '0,0093'}
+                </text>
+                <path
+                  class="area"
+                  d={`${shade} L${48 + 26 * (limit - 96)},210 L48,210 Z`}
+                />
+                <path
+                  class="accent"
+                  d={curve((x) => normal(x, 100, se), 96, 106, 0.85)}
+                />
+                <path
+                  class="secondary"
+                  stroke-dasharray="7 4"
+                  d={curve((x) => normal(x, 102, se), 96, 106, 0.85)}
+                />
+                <path
+                  class="axis"
+                  stroke-dasharray="3 4"
+                  d={`M${48 + 26 * (limit - 96)} 42 V210`}
+                />
+                {[96, 98, 100, 102, 104, 106].map((x) => (
+                  <text x={48 + 26 * (x - 96)} y="234" text-anchor="middle">
+                    {x}
+                  </text>
+                ))}
+                <text x="180" y="263" text-anchor="middle">
+                  Média amostral
+                </text>
+              </>
+            );
+          })()}
+        {kind === 'permutacoes' && (
+          <>
+            <text x="180" y="25" text-anchor="middle">
+              20 atribuições, 2 extremas
+            </text>
+            {[-3, -7 / 3, -5 / 3, -1, -1 / 3, 1 / 3, 1, 5 / 3, 7 / 3, 3].map(
+              (t, i) => (
+                <>
+                  <rect
+                    class={Math.abs(t) === 3 ? 'area' : 'bar'}
+                    x={178 + 40 * t - 8}
+                    y={210 - 40 * [1, 1, 2, 3, 3, 3, 3, 2, 1, 1][i]}
+                    width="16"
+                    height={40 * [1, 1, 2, 3, 3, 3, 3, 2, 1, 1][i]}
+                  />
+                </>
+              ),
+            )}
+            {[-3, -2, -1, 0, 1, 2, 3].map((t) => (
+              <text x={178 + 40 * t} y="234" text-anchor="middle">
+                {t}
+              </text>
+            ))}
+            {[0, 0.05, 0.1, 0.15].map((p) => (
+              <text x="39" y={215 - 800 * p} text-anchor="end">
+                {String(p).replace('.', ',')}
+              </text>
+            ))}
+            <text x="180" y="263" text-anchor="middle">
+              Média A menos média B
+            </text>
+          </>
+        )}
+        {kind === 'proporcoes' && (
+          <>
+            <text x="180" y="25" text-anchor="middle">
+              5 falhas em 30 peças
+            </text>
+            {[
+              [0.03331, 0.16667, 0.30003, 90],
+              [0.06997, 0.20588, 0.3418, 145],
+            ].map(([lo, c, hi, y], i) => (
+              <>
+                <path
+                  class={i === 0 ? 'secondary' : 'accent'}
+                  d={`M${48 + 650 * lo} ${y} H${48 + 650 * hi}`}
+                />
+                <circle class="dot" cx={48 + 650 * c} cy={y} r="4" />
+                <text x="180" y={y - 15} text-anchor="middle">
+                  {i === 0 ? 'Wald' : 'Mais quatro'}
+                </text>
+              </>
+            ))}
+            {[0, 0.1, 0.2, 0.3, 0.4].map((p) => (
+              <text x={48 + 650 * p} y="234" text-anchor="middle">
+                {String(p).replace('.', ',')}
+              </text>
+            ))}
+            <text x="180" y="263" text-anchor="middle">
+              Probabilidade de falha p
+            </text>
+          </>
+        )}
+        {kind === 'esperadas' && (
+          <>
+            <text x="180" y="25" text-anchor="middle">
+              Contagens por categoria
+            </text>
+            {[60, 25, 15].map((o, i) => (
+              <>
+                <rect
+                  class="bar"
+                  x={76 + 82 * i}
+                  y={210 - 2.4 * o}
+                  width="26"
+                  height={2.4 * o}
+                />
+                <rect
+                  class="secondary"
+                  fill="none"
+                  stroke-dasharray="4 3"
+                  x={105 + 82 * i}
+                  y={210 - 2.4 * [50, 30, 20][i]}
+                  width="26"
+                  height={2.4 * [50, 30, 20][i]}
+                />
+                <text x={104 + 82 * i} y="234" text-anchor="middle">
+                  {i + 1}
+                </text>
+              </>
+            ))}
+            {[0, 20, 40, 60].map((o) => (
+              <text x="39" y={215 - 2.4 * o} text-anchor="end">
+                {o}
+              </text>
+            ))}
+            <text x="180" y="263" text-anchor="middle">
+              Categoria
+            </text>
+          </>
+        )}
+        {kind === 'caudas' &&
+          (() => {
+            const density = (x: number) => 0.392353 * (1 + (x * x) / 15) ** -8;
+            return (
+              <>
+                <text x="180" y="25" text-anchor="middle">
+                  t com 15 graus
+                </text>
+                {[-1, 1].map((sign) => {
+                  const lo = sign === -1 ? -5 : 3,
+                    hi = sign === -1 ? -3 : 5;
+                  const points = Array.from({ length: 41 }, (_, i) => {
+                    const x = lo + ((hi - lo) * i) / 40;
+                    return `${i ? 'L' : 'M'}${178 + 26 * x},${210 - (150 * density(x)) / 0.4}`;
+                  }).join(' ');
+                  return (
+                    <path
+                      class="area"
+                      d={`${points} L${178 + 26 * hi},210 L${178 + 26 * lo},210 Z`}
+                    />
+                  );
+                })}
+                <path class="accent" d={curve(density, -5, 5, 0.4)} />
+                {[-3, 0, 3].map((t) => (
+                  <>
+                    <path
+                      class="axis"
+                      stroke-dasharray="4 4"
+                      d={`M${178 + 26 * t} 180 V210`}
+                    />
+                    <text x={178 + 26 * t} y="234" text-anchor="middle">
+                      {t}
+                    </text>
+                  </>
+                ))}
+                <text x="100" y="168" text-anchor="middle">
+                  observado
+                </text>
+                <text x="180" y="263" text-anchor="middle">
+                  Estatística t
+                </text>
+              </>
+            );
+          })()}
+        {kind === 'pares' && (
+          <>
+            <text x="180" y="25" text-anchor="middle">
+              A → B, dentro da tarefa
+            </text>
+            {[12, 15, 14, 13, 16, 11].map((a, i) => (
+              <>
+                <path
+                  class="secondary"
+                  d={`M100 ${210 - 22 * (a - 10)} L260 ${210 - 22 * ([10, 14, 11, 11, 12, 11][i] - 10)}`}
+                />
+                <circle class="dot" cx="100" cy={210 - 22 * (a - 10)} r="4" />
+                <circle
+                  class="dot"
+                  cx="260"
+                  cy={210 - 22 * ([10, 14, 11, 11, 12, 11][i] - 10)}
+                  r="4"
+                />
+              </>
+            ))}
+            {[10, 12, 14, 16].map((t) => (
+              <text x="39" y={215 - 22 * (t - 10)} text-anchor="end">
+                {t}
+              </text>
+            ))}
+            <text x="100" y="234" text-anchor="middle">
+              A
+            </text>
+            <text x="260" y="234" text-anchor="middle">
+              B
+            </text>
+            <text x="180" y="263" text-anchor="middle">
+              Tempo (ms), eixo vertical
+            </text>
+          </>
+        )}
+      </svg>
+    ))}
+  </div>
+  <figcaption>{captions[kind]}</figcaption>
+</figure>
+<style>
+  figure {
+    margin: 24px 0;
+  }
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 16px;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+    height: auto;
+  }
+  text {
+    fill: var(--text);
+    font-size: 16px;
+    font-family: inherit;
+  }
+  .axis {
+    fill: none;
+    stroke: var(--text);
+    stroke-width: 1.3;
+  }
+  .accent {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+  .secondary {
+    stroke: var(--diagram-secondary, var(--text));
+    stroke-width: 2;
+    fill: none;
+  }
+  .area {
+    fill: var(--accent);
+    fill-opacity: 0.2;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+  }
+  .bar,
+  .dot {
+    fill: var(--accent);
+  }
+  figcaption {
+    margin-top: 12px;
+  }
+</style>
