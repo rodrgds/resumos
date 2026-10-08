@@ -10,21 +10,21 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
     - title: Moodle PFL 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=4363
   coverage: Propriedades, condições, geração, shrinking e diferença entre teste e demonstração.
+  gaps:
+    - Materiais docentes atuais de QuickCheck ainda não recolhidos; conferência pela documentação primária e exemplos próprios.
 ---
 
-import Typst from '../../../components/Typst.astro';
-import ciclo from '../../pfl/p6ciclo.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import ciclo from '../../pfl/quickcheck.dot?raw';
 
-Depois da entrada e saída e dos parsers, esta página responde como testar uma função com uma lei para todos os casos em vez de um só exemplo.
-
-Um teste de exemplo verifica um caso: `reverse [1,2,3]` dá `[3,2,1]`. Uma **propriedade** afirma uma lei para todos os casos: inverter duas vezes devolve a lista original. O **QuickCheck** gera entradas e procura uma que viole a propriedade, ou seja a lei deve descrever o contrato da função; os geradores escolhem os casos observados.
+Um teste de exemplo verifica `reverse [1,2,3] == [3,2,1]`. Uma propriedade afirma algo sobre uma família de entradas: `reverse (reverse xs) == xs` para listas finitas. O QuickCheck gera casos e procura um que viole a afirmação. Os testes observam esses casos; a afirmação universal continua a exigir uma demonstração.
 
 ## A primeira propriedade
 
@@ -46,11 +46,11 @@ ghci> quickCheck prop_revRev
 
 A ferramenta gerou 100 listas aleatórias[^cem], que podem incluir listas vazias, comprimentos distintos, negativos e repetidos e a igualdade valeu em todas. Um teste de exemplo verifica a entrada escolhida. A propriedade permite testar outras entradas automaticamente, mas só os casos gerados foram observados.
 
-### Uma propriedade escrita do zero
+### Contrato da ordenação
 
-Escreve a propriedade antes de a correres. Para `ordenar`, exige as três partes do contrato: a saída está ordenada, tem os mesmos elementos com as mesmas multiplicidades e não perde dados. `sort xs == xs` falha logo em `[1,0]`. A idempotência `f (f xs) == f xs` passa para `f xs = []`, mas essa função perde os dados. Uma propriedade que passa pode continuar insuficiente.
+Uma função de ordenação deve produzir uma lista ordenada com os mesmos elementos e multiplicidades. Em `[2,1,2]`, devolver `[1,2]` conserva os valores distintos, mas perde uma ocorrência. Devolver `[2,1,2]` conserva tudo, mas não ordena.
 
-Para geradores, usa `forAll` com um gerador válido e `==>` para a pré-condição. Se a condição filtrar quase tudo, o QuickCheck avisa que muitos casos foram descartados. Nesse caso, gera diretamente entradas válidas em vez de filtrar entradas arbitrárias.
+A idempotência `f (f xs) == f xs` verifica outra lei. A função `f xs = []` satisfaz essa igualdade para qualquer lista finita, embora perca os dados. Precisamos de propriedades que distingam estes erros, não apenas de mais tentativas da mesma lei.
 
 ## Quando falha: o contraexemplo
 
@@ -69,12 +69,11 @@ ghci> quickCheck prop_sortId
 [1,0]
 ```
 
-O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`. O **shrinking** tenta reduzir a entrada encontrada, conservando a falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. O fluxo de trabalho é este: escreve a propriedade, vê-a falhar, lê o contraexemplo e corrige a ideia:
+O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`. O **shrinking** tenta reduzir a entrada encontrada, conservando a falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. Perante uma falha, compara o contraexemplo com o contrato antes de mudar a implementação. Neste caso, a ordenação está certa e a propriedade é que está errada. O ciclo da figura mostra esse regresso à afirmação:
 
-<Typst
+<Dot
   source={ciclo}
-  format="svg"
-  alt="Ciclo do QuickCheck: escrever a propriedade, gerar casos, correr, encolher a falha até ao contraexemplo reduzido e corrigir."
+  alt="QuickCheck gera e testa uma entrada. Um sucesso acrescenta evidência à amostra. Uma falha permite reduzir, quando há um redutor, e comparar o contraexemplo com o contrato antes de rever a propriedade ou o programa."
 />
 
 A propriedade idempotente da ordenação passa:
@@ -98,7 +97,7 @@ prop_divMod :: Integer -> Integer -> Property
 prop_divMod x y = y /= 0 ==> (x `div` y) * y + (x `mod` y) == x
 ```
 
-Os casos com `y == 0` são descartados antes de contar, por isso se a condição for demasiado rara, a ferramenta avisa que não conseguiu casos suficientes, e aí o remédio é um gerador à medida com `forAll`, ou seja construir entradas válidas em vez de descartar uma grande parte das tentativas.
+Os casos com `y == 0` são descartados e não contam como testes bem-sucedidos. Se a pré-condição for rara, a ferramenta pode desistir sem obter a amostra pedida. Um gerador que constrói entradas válidas evita gastar a maior parte das tentativas em descartes.
 
 Um gerador à medida é uma ação que produz valores com a forma que queres. Para testar que o máximo de um par ordenado é o segundo elemento, gera pares já ordenados:
 

@@ -10,13 +10,15 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
     - title: Moodle PFL 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=4363
   coverage: Ações IO, sequência, parsers determinísticos, alternativas, precedência e consumo completo da entrada.
+  gaps:
+    - Fichas atuais de I/O e parsers ainda não disponíveis; os exemplos usam o contrato determinístico dos combinadores de Hutton.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -26,9 +28,7 @@ import parser from '../../pfl/parser.hs?raw';
 import arvores from '../../pfl/p5arvores.typ?raw';
 import chamadas from '../../pfl/p5parser.dot?raw';
 
-Depois de tipos algébricos e árvores, esta página responde como um programa fala com o exterior e como ler uma expressão escrita em texto.
-
-Uma função pura não pode ler do teclado, porque o mesmo argumento deve determinar o mesmo resultado, mas a linha lida depende de uma interação. Haskell separa o cálculo puro do contacto com o mundo no tipo **`IO`**. Um valor `IO ()` é uma **ação**, uma receita que, quando executada, devolve `()`. Nem toda a ação mostra interação observável: `pure ()` devolve `()` sem ler nem escrever. O `main` do programa é uma ação composta.
+`getLine :: IO String` representa uma ação de leitura, não a string que será lida. Já `length "ana"` é um cálculo puro que vale `3`. O tipo `IO` permite sequenciar ações e passar os valores produzidos a funções puras. `IO ()` é uma ação que devolve `()`; pode imprimir, como `putStrLn`, ou não produzir interação observável, como `pure ()`.
 
 ## I/O com do
 
@@ -44,7 +44,7 @@ Neste exemplo, cada linha do `do` executa uma ação por ordem. Um bloco `do` ta
 
 ## Parsers como funções
 
-Um **parser** para valores do tipo `a` é uma função que come carateres da entrada e devolve o valor com o resto:
+Um **parser** consome um prefixo da entrada e devolve um valor e a entrada restante. Nesta representação, o construtor `P` guarda a função que faz esse trabalho:
 
 ```haskell
 newtype Parser a = P (String -> [(a, String)])
@@ -62,7 +62,19 @@ Resultado vazio significa falha. Lê dois casos antes dos combinadores.
 
 ### Ler `item` e `nat` passo a passo
 
-`parse item "abc"` devolve `[(\'a\', "bc")]`: consome um caráter e devolve o resto. `parse item ""` devolve `[]`: falha sem entrada. `pure 1` tem sempre sucesso sem consumir: `parse (pure 1) "abc"` dá `[(1, "abc")]`. `fmap` transforma o valor sem tocar no resto. `p >>= f` corre `p`, usa o valor para escolher o parser seguinte e corre-o no resto. `p +++ q` tenta `q` na entrada original quando `p` falha. Só depois destas operações isoladas vale a pena ler `many`, `token` e a gramática de expressões. Sobre esta base definem-se os **combinadores**, parsers feitos de parsers. Primeiro vem `newtype Parser`, que distingue um parser de uma função qualquer com a mesma representação. Depois vêm sequência com o `do`, alternativa com `+++` e repetição com `many`:
+`parse item "abc"` dá `[('a',"bc")]`; `parse item ""` dá `[]`. A lista vazia representa falha. Nesta página, um sucesso tem exatamente um par. Embora o tipo permita mais resultados, os combinadores seguintes assumem este contrato determinístico.
+
+Para ler `"42x"` com `nat`, seguimos os estados:
+
+| Operação                   | Valor produzido | Entrada restante             |
+| -------------------------- | --------------- | ---------------------------- |
+| Primeiro `digit`           | `'4'`           | `"2x"`                       |
+| Segundo `digit`            | `'2'`           | `"x"`                        |
+| Tentativa de outro `digit` | Falha           | A alternativa conserva `"x"` |
+| `many1 digit`              | `"42"`          | `"x"`                        |
+| `read` sobre o valor       | `42`            | `"x"`                        |
+
+`pure 1` tem sucesso sem consumir: `parse (pure 1) "abc"` dá `[(1,"abc")]`. `fmap` transforma só o valor. `p >>= f` usa o valor de `p` para escolher o parser seguinte, executado no resto. `p +++ q` tenta `q` na entrada original quando `p` falha. As definições tornam explícita essa passagem de estado:
 
 ```haskell
 import Data.Char (isDigit, isSpace)
@@ -121,7 +133,7 @@ symbol :: Char -> Parser Char
 symbol c = token (sat (== c))
 ```
 
-`Functor` aplica uma função ao resultado com `fmap`. `Applicative` fornece `pure`, sucesso sem consumir entrada, e `<*>`, sequência de um parser de funções com um parser de argumentos. `Monad` fornece `>>=`, que escolhe o parser seguinte a partir do valor acabado de ler. Aqui `return` tem o mesmo papel que `pure`, e o `do` usa `>>=`. Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta. O resultado `[(valor, resto)]` conserva a entrada por consumir, ou seja `parse nat "42x"` dá `[(42,"x")]`. A gramática seguinte compõe estes combinadores para ler expressões:
+`Functor` aplica uma função ao resultado com `fmap`. `Applicative` fornece `pure`, sucesso sem consumir entrada, e `<*>`, sequência de um parser de funções com um parser de argumentos. `Monad` fornece `>>=`, que escolhe o parser seguinte a partir do valor acabado de ler. Aqui `return` tem o mesmo papel que `pure`, e o `do` usa `>>=`. Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta. `nat` pressupõe que o número cabe em `Int`; para naturais arbitrariamente grandes, muda o resultado para `Integer`. A gramática seguinte compõe os combinadores para ler expressões:
 
 ```haskell
 expr :: Parser Int
@@ -168,7 +180,7 @@ Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` c
 
 O `+++` definido nesta página tenta `q` na entrada original quando `p` devolve `[]`. Por isso há retrocesso mesmo que `p` tenha consumido caracteres antes de falhar. Este contrato difere de parsers que guardam explicitamente se a falha aconteceu depois de consumir entrada.
 
-No parser determinístico, o resultado tem zero ou uma solução, por isso se quiseres um parser não determinístico com várias soluções, os casos `[(v,out)]` deixam de chegar: tens de combinar cada resultado possível, ou seja não mistures os dois contratos.
+Um parser não determinístico pode devolver vários pares. Nesse contrato, os casos `[(v,out)]` destas instâncias seriam incompletos: a sequência teria de combinar todos os resultados de cada etapa, em vez de escolher um só.
 
 `parse expr "2+3x"` dá `[(5,"x")]`. A alternativa também permite que `parse expr "2+"` recue para o prefixo `2` e deixe `"+"`. Uma aplicação que exige uma expressão inteira deve aceitar apenas `[(v,"")]`, depois de consumir espaços:
 

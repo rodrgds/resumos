@@ -9,7 +9,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: PFL, aula 2 e folha 1, 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=4363
@@ -22,9 +22,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import classes from '../../pfl/classes.dot?raw';
 
-Depois de avaliar expressões e ler tipos predefinidos, esta página responde como deduzir o tipo mais geral de uma função a partir do que ela usa.
-
-O tipo de uma função diz que valores podemos passar e como se relacionam com o resultado. Em `trocar :: (a,b) -> (b,a)`, `a` e `b` podem ser diferentes, ou seja em `duplicar :: a -> (a,a)` as duas posições do resultado têm o mesmo tipo. Estas letras são variáveis de tipo, não variáveis do programa.
+`trocar (x,y) = (y,x)` pode trocar um caráter e um booleano sem saber o que significam. O tipo `(a,b) -> (b,a)` conserva essa liberdade. Em `duplicar x = (x,x)`, as duas posições recebem o mesmo valor, por isso têm o mesmo tipo: `a -> (a,a)`. As letras são variáveis de tipo, distintas dos nomes `x` e `y` no programa.
 
 ## Generalidade sem operações específicas
 
@@ -68,9 +66,16 @@ Uma classe agrupa tipos com operações comuns, ou seja não é uma classe de ob
 
 ## Deduzir um tipo passo a passo
 
-### Deduzir `duas` passo a passo
+### Aplicação repetida
 
-Para `duas f x = f (f x)`, dá nomes aos desconhecidos. Supõe `x :: a` e `f :: b -> c`. A chamada interior `f x` exige `b = a` e produz `c`. A chamada exterior aplica `f` a esse resultado, por isso `c` tem de ser também `a`. Logo `f :: a -> a` e `duas :: (a -> a) -> a -> a`. Não há operações sobre os valores, por isso não nasce nenhuma restrição de classe.
+Para `duas f x = f (f x)`, começa com `x :: a` e `f :: b -> c`. As duas chamadas usam o mesmo `f`:
+
+| Aplicação | Restrição | Resultado |
+| --------- | --------- | --------- |
+| `f x`     | `b = a`   | `c`       |
+| `f (f x)` | `c = b`   | `c`       |
+
+As igualdades dão `a = b = c`. Logo `duas :: (a -> a) -> a -> a`. Não há operações sobre os valores, por isso não precisamos de uma classe. Instanciar `a` com `Int` permite usar `(+1)`; com `Bool`, permite usar `not`.
 
 ### Duas medianas com restrições diferentes
 
@@ -92,13 +97,7 @@ medianaOrd x y z = head (tail (ordenar3 x y z))
 
 `ordenar3 3 1 2` insere `1` em `[3]` para `[1,3]` e depois `2` para `[1,2,3]`. A mediana é `2`. Só usa `(<=)`, por isso só pede `Ord a`. Se calculares pela soma e pelos extremos, como `(x + y + z - minimum [x,y,z] - maximum [x,y,z])`, usas `(+)` e `(-)`, e o tipo passa a `(Ord a, Num a) => a -> a -> a -> a`. A segunda versão exclui listas de caracteres e outros tipos ordenados sem aritmética. Lê a restrição como registo das operações usadas.
 
-Considera `duasVezes f x = f (f x)`. Começamos com `x :: a`, ou seja a aplicação interior permite `f :: a -> b`. A aplicação exterior usa o mesmo `f` sobre o resultado de tipo `b`, por isso `b` tem de ser `a`. A saída também é `a`. O tipo final é:
-
-```haskell
-duasVezes :: (a -> a) -> a -> a
-```
-
-Não há operações numéricas nem comparações, por isso não há restrições de classe. Instanciar `a` com `Int` permite passar `(+1)`; instanciar com `Bool` permite passar `not`.
+A versão aritmética também depende das operações concretas do tipo. Em vírgula flutuante, o arredondamento pode perder informação: com `x=1e20`, `y=1` e `z=2`, a soma dos três arredonda para `1e20`; retirar o máximo e o mínimo já não recupera a mediana `2`. O tipo permite a operação, mas não prova a equivalência matemática para todos os valores.
 
 Agora `selecionar p xs = [x | x <- xs, p x]`. Se `xs :: [a]`, cada `x :: a`. Uma condição de compreensão tem tipo `Bool`, logo `p :: a -> Bool`. O resultado volta a ser `[a]`. Obtemos `(a -> Bool) -> [a] -> [a]`.
 
@@ -114,7 +113,7 @@ O operador `.` exige que a saída da segunda função possa entrar na primeira:
 (.) :: (b -> c) -> (a -> b) -> a -> c
 ```
 
-`length . filter even` recebe uma lista de inteiros e devolve `Int`. A restrição `Integral a` vem de `even`; `length` não inspeciona os elementos. O tipo é `Integral a => [a] -> Int`.
+`length . filter even` recebe uma lista de inteiros e devolve `Int`. A restrição `Integral a` vem de `even`; `length` não inspeciona os elementos. O tipo especializado a listas é `Integral a => [a] -> Int`.
 
 ## Números e conversões
 

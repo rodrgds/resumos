@@ -1,13 +1,13 @@
 ---
 title: Praticar Prolog
-description: Questões próprias com pistas, resolução e erros frequentes.
+description: Unificação e aritmética, modos de chamada e efeitos do corte.
 section: exercicios
 editorial:
   basedOn: 2026/27
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -35,9 +35,6 @@ import Exercise from '../../../components/Exercise.astro';
   </p>
   <div slot="hint">
     <p>Um functor pode representar uma expressão sem a executar.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Só is pede avaliação aritmética.</p>
   </div>
   <div slot="solution">
     <div>
@@ -84,9 +81,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     <p>Remove o corte e consulta max(7,5,M).</p>
   </div>
-  <div slot="hint-more">
-    <p>A primeira resposta é 7; a segunda cláusula ainda pode dar 5.</p>
-  </div>
   <div slot="solution">
     <div>
       É vermelho nesse contrato. A versão com a segunda guarda X&lt;Y mantém as
@@ -115,9 +109,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     <p>Cada posição de corte entre elementos produz uma divisão.</p>
   </div>
-  <div slot="hint-more">
-    <p>Inclui o corte antes do primeiro e depois do último.</p>
-  </div>
   <div slot="solution">
     <p>
       Há 4: <code>{'[]'}</code>+<code>{'[a,b,c]'}</code>, <code>{'[a]'}</code>+
@@ -132,31 +123,35 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="comparar-cortes"
-  revision={1}
-  title="Comparar respostas com e sem corte"
+  revision={2}
+  title="Corte e resultado já instanciado"
   explanation="/cadeiras/pfl/prolog-recursao-procura/#reconhecer-um-corte-vermelho"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Listo respostas com corte.',
-      'Listo respostas sem corte.',
-      'Classifico o corte pela diferença dos conjuntos.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Sigo a unificação com a primeira cabeça.', 'Mostro o sucesso errado com resultado 5.', 'Corrijo a segunda cláusula e verifico as três consultas.'] }}
 >
-  <div>Compara mau_max(3,5,M) com e sem corte no modo (+,+,-).</div>
-  <div slot="hint">
-    <p>Sem corte há duas respostas.</p>
+  <div>
+Considera:
+
+```prolog
+maximo(X,Y,X) :- X >= Y, !.
+maximo(_,Y,Y).
+```
+
+Segue `maximo(7,5,M)` e `maximo(7,5,5)`. Por que a primeira consulta parece correta e a segunda dá uma resposta errada? Corrige o programa para que estas consultas e `maximo(3,5,M)` tenham o comportamento de um máximo.
+
   </div>
-  <div slot="hint-more">
-    <p>A errada já existe sem corte.</p>
-  </div>
+  <div slot="hint">A cabeça é unificada antes de executar o corpo.</div>
   <div slot="solution">
-    <div>
-      Com corte: 3. Sem corte: 3 e 5. É vermelho, mas o erro precede o corte.
-    </div>
+Com saída livre, a primeira cabeça liga `M=7`, o teste passa e o corte impede a segunda cláusula. A resposta é `7`.
+
+Com resultado `5`, a primeira cabeça exige ao mesmo tempo que o primeiro e o terceiro argumentos sejam `X`. Não pode unificar `7` com `5`, por isso nem chega ao corte. A segunda cabeça unifica e aceita erradamente o resultado `5`.
+
+```prolog
+maximo(X,Y,X) :- X >= Y, !.
+maximo(X,Y,Y) :- X < Y.
+```
+
+A segunda guarda recusa `maximo(7,5,5)` e permite `maximo(3,5,M)` com `M=5`. Retirar o corte desta versão não muda as respostas para entradas numéricas conhecidas. O contrato não inclui números por resolver nos dois primeiros argumentos.
+
   </div>
-  <div slot="mistakes">
-    <div>Não definas a cor pela posição do teste.</div>
-  </div>
+  <div slot="mistakes">Um corte não protege uma cláusula que o motor nem chegou a usar.</div>
 </Exercise>

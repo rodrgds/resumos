@@ -8,7 +8,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -20,8 +20,6 @@ editorial:
   gaps:
     - Fichas Prolog e provas completas de 2026/27 ainda não recolhidas.
 ---
-
-Esta folha resume o percurso de PFL: indica que condição ou decisão rever em cada tema, com ligações para as explicações.
 
 Cada linha indica a forma a reconhecer, a condição que muda a resposta e a ligação para a explicação completa.
 

@@ -9,7 +9,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: PFL 2026/27, aulas 4 a 6 e folhas 2 e 3
       url: https://moodle2627.up.pt/course/view.php?id=4363
@@ -25,9 +25,7 @@ import programa from '../../pfl/listas.hs?raw';
 import construir from '../../pfl/construir-listas.hs?raw';
 import divisao from '../../pfl/mergesort.dot?raw';
 
-Depois de expressões, tipos e polimorfismo, esta página responde como construir e percorrer listas com recursão.
-
-Uma lista de notas como `[12, 15, 10]` é uma **lista**, ou seja uma sequência de valores do mesmo tipo entre parêntesis retos. Toda a lista é ou a lista vazia, escrita `[]`, ou um primeiro elemento seguido do resto, escrito `x:xs`. Ao primeiro elemento chamamos **cabeça** e ao resto chamamos **cauda**. Para somar, a lista vazia contribui com zero; para uma lista não vazia, somamos a cabeça ao resultado da cauda. Para construir outra lista, usamos `:` para colocar um elemento antes do resultado recursivo.
+A pauta `[12,15,10]` tem uma primeira nota, `12`, e uma cauda, `[15,10]`. Escrevemos a mesma lista como `12:[15,10]`. Toda a lista tem uma destas formas: `[]` ou `x:xs`. Para somar as notas, `[]` contribui com zero e `x:xs` contribui com `x` mais a soma de `xs`. Para construir outra lista, `:` coloca um elemento antes do resultado recursivo.
 
 ## Construir e percorrer
 
@@ -65,7 +63,9 @@ perfeito :: Integer -> Bool
 perfeito n = n > 0 && sum (divisoresProprios n) == n
 ```
 
-Para `n=12`, os candidatos aceites são `[1,2,3,4,6]`, cuja soma é `16`; por isso `perfeito 12` é `False`, porque a condição `n > 0` evita chamar perfeito a zero, já que a soma da lista vazia também é zero.
+Para `n=12`, os divisores próprios são `[1,2,3,4,6]` e somam `16`, por isso `perfeito 12` é `False`. Para `6`, os divisores `[1,2,3]` somam `6` e o resultado é `True`. A condição `n > 0` exclui zero, que de outro modo passaria porque a soma vazia é zero.
+
+Podemos reutilizar a decisão para gerar os números perfeitos até um limite: `[n | n <- [1..limite], perfeito n]`. Com limite `30`, o resultado é `[6,28]`. A compreensão exterior gera números; a interior, em `divisoresProprios`, gera os divisores de cada um.
 
 Para testar primalidade não precisamos de chegar a `n-1`. Se `n=d*k` e os dois fatores fossem maiores que a raiz quadrada de `n`, o produto seria maior que `n`. Um composto tem portanto um divisor até essa raiz. Podemos evitar erros de arredondamento usando `d*d <= n` com `Integer`:
 
@@ -94,7 +94,26 @@ Para `indices 'a' "casa"`, `zip` forma `[('c',0),('a',1),('s',2),('a',3)]` e o t
 
 Num gerador dependente, os nomes têm de ser definidos antes de usados. `[(x,y) | x <- [1..3], y <- [x..3]]` dá `[(1,1),(1,2),(1,3),(2,2),(2,3),(3,3)]`. Se trocarmos os geradores, `x` ainda não existe ao avaliar `[x..3]`.
 
-Um gerador posterior pode usar os nomes dos anteriores. O triângulo de Pascal numa linha usa esse facto: cada linha nasce da anterior por somas de pares vizinhos. Por exemplo, de `[1,3,3,1]` obténs `[1,4,6,4,1]` com `zipWith (+) ([0] ++ linha) (linha ++ [0])`. A compreensão `[(x,y) | x <- [1..3], y <- [x..3]]` mostra a mesma dependência entre geradores.
+O triângulo de Pascal também permite combinar posições correspondentes. De `[1,3,3,1]`, acrescentamos zero em pontas opostas:
+
+```text
+[0,1,3,3,1]
+[1,3,3,1,0]
+----------- somar posição a posição
+[1,4,6,4,1]
+```
+
+`zipWith (+) ([0] ++ linha) (linha ++ [0])` faz estas somas. Para construir o triângulo por coeficientes binomiais, como na folha 2, usamos geradores dependentes:
+
+```haskell
+binom :: Integer -> Integer -> Integer
+binom n k = product [1..n] `div` (product [1..k] * product [1..n-k])
+
+pascal :: Integer -> [[Integer]]
+pascal n = [[binom i k | k <- [0..i]] | i <- [0..n]]
+```
+
+O domínio é `n >= 0` e, em `binom`, `0 <= k <= n`. A linha `i` contém `i+1` coeficientes. O produto vazio é `1`, pelo que a linha zero é `[1]`. `pascal 3` dá `[[1],[1,1],[1,2,1],[1,3,3,1]]`.
 
 ### Derivar `myindex` por casos
 
@@ -120,7 +139,9 @@ replicar n x
 
 Usar apenas o caso `n == 0` faria a função divergir para `n` negativo, porque o tipo `Int -> a -> [a]` permite argumentos negativos; se queres excluí-los, precisas de o declarar como pré-condição ou de os tratar.
 
-Para eliminar repetidos conservando a primeira ocorrência, guardamos a cabeça e retiramos todas as cópias dela na cauda. Para `"abacaba"`, conservamos `a`, resta `"bcb"`, conservamos `b` e resta `"c"`. O resultado é `"abc"`. É diferente de agrupar iguais consecutivos: `"AABBBAA"` dá `["AA","BBB","AA"]`, sem fundir os dois grupos de `A`.
+Para eliminar repetidos conservando a primeira ocorrência, guardamos a cabeça e retiramos todas as suas cópias da cauda. Para `"abacaba"`, conservamos `a`, resta `"bcb"`, conservamos `b` e resta `"c"`: o resultado é `"abc"`.
+
+Agrupar iguais consecutivos resolve outra tarefa. Em `"AABBBAA"`, `takeWhile (=='A')` obtém `"AA"` e `dropWhile (=='A')` deixa `"BBBAA"`. Continuamos apenas nesse resto, obtendo `["AA","BBB","AA"]`. Os dois grupos de `A` permanecem separados porque um grupo de `B` os interrompe.
 
 Se a dúvida é como construir uma função recursiva a partir dos casos de uma lista, vê este vídeo e acompanha cada caso antes da chamada recursiva:
 

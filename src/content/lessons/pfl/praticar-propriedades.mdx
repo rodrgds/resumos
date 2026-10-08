@@ -1,13 +1,13 @@
 ---
 title: Praticar propriedades
-description: Questões próprias com pistas, resolução e erros frequentes.
+description: Contraexemplos, leis de listas e propriedades que distinguem implementações erradas.
 section: exercicios
 editorial:
   basedOn: 2026/27
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -46,12 +46,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     <p>Usa listas com um elemento distinto em cada parte.</p>
   </div>
-  <div slot="hint-more">
-    <p>
-      O lado esquerdo de <code>{'[1]'}</code>++<code>{'[2]'}</code> invertido é{' '}
-      <code>{'[2,1]'}</code>.
-    </p>
-  </div>
   <div slot="solution">
     <p>A ordem correta é reverse ys antes de reverse xs.</p>
   </div>
@@ -80,11 +74,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     <p>Experimenta uma função constante.</p>
   </div>
-  <div slot="hint-more">
-    <p>
-      A função que devolve <code>{'[]'}</code> passa a idempotência.
-    </p>
-  </div>
   <div slot="solution">
     <div>
       <code>{'f xs=[]'}</code> é idempotente mas perde os dados. Uma ordenação
@@ -100,89 +89,42 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="shrinking"
-  revision={1}
-  title="O que significa reduzir uma falha?"
-  explanation="/cadeiras/pfl/testes-quickcheck/#testar-as-partes-que-caracterizam-o-resultado"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Encontrou um contraexemplo reduzido pelas suas regras.',
-        correct: true,
-        explanation: 'Não há garantia de mínimo global.',
-      },
-      {
-        text: 'Encontrou a menor entrada possível.',
-        correct: false,
-        explanation:
-          'As reduções disponíveis podem não alcançar todos os menores casos.',
-      },
-      {
-        text: 'Provou que todas as outras entradas passam.',
-        correct: false,
-        explanation: 'Um contraexemplo não caracteriza todas as entradas.',
-      },
-    ],
-  }}
+  id="gerador-valido"
+  revision={2}
+  title="Testar uma ordenação contra implementações erradas"
+  explanation="/cadeiras/pfl/testes-quickcheck/#contrato-da-ordenação"
+  answer={{ kind: 'self', checklist: ['Gero listas de Int no intervalo dado.', 'Testo ordem e multiplicidades da saída de f.', 'Dou contraexemplos distintos para perda e falta de ordenação.'] }}
 >
   <div>
-    QuickCheck encontra uma falha pequena depois de shrinking. O que podemos
-    concluir?
-  </div>
-  <div slot="hint">
-    <p>Pensa nas entradas que a ferramenta não chegou a explorar.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Shrinking usa uma sequência de reduções disponíveis.</p>
-  </div>
-  <div slot="solution">
-    <div>
-      É uma testemunha da falha; podemos usá-la para entender o erro sem afirmar
-      que é o mínimo global.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Não transformes um procedimento de teste numa prova exaustiva.</p>
-  </div>
-</Exercise>
+Escreve `prop_ordena :: ([Int] -> [Int]) -> Property`. Gera listas com valores entre `-10` e `10`, incluindo a possibilidade de lista vazia. A propriedade deve exigir saída ordenada e os mesmos elementos com as mesmas multiplicidades.
 
-<Exercise
-  id="gerador-valido"
-  revision={1}
-  title="Gerar listas e verificar as três partes"
-  explanation="/cadeiras/pfl/testes-quickcheck/#uma-propriedade-escrita-do-zero"
-  answer={{ kind: 'self', checklist: [
-    'Gero listas com listOf e choose.',
-    'Verifico saída ordenada e mesmas contagens.',
-    'Mostro que f xs = [] passa idempotência e falha conservação.',
-  ] }}
->
-  <div>Escreve prop_sortConserva com gerador concreto e um caso errado que falha.</div>
-  <div slot="work">
+Mostra um contraexemplo para `f xs = []` e outro para `f xs = xs`. Compara com `sort`. Se o gerador for usado com `forAll`, há redução automática dos contraexemplos?
+
+  </div>
+  <div slot="hint">Testa a função recebida, não apenas a função de referência.</div>
+  <div slot="solution">
+Podemos comparar multiplicidades com uma referência independente e comparar vizinhos para a ordem:
+
 ```haskell
 import Data.List (sort)
 import Test.QuickCheck
 
 ordenada :: [Int] -> Bool
-ordenada [] = True
-ordenada [_] = True
-ordenada (a:b:rs) = a <= b && ordenada (b:rs)
+ordenada xs = and (zipWith (<=) xs (drop 1 xs))
 
-contagens :: [Int] -> [Int]
-contagens xs = [length (filter (== v) xs) | v <- [-10..10]]
-
-prop_sortConserva :: Property
-prop_sortConserva = forAll genLista verifica
-where
-genLista = listOf (choose (-10, 10))
-verifica xs = ordenada (sort xs) && contagens (sort xs) == contagens xs
-
+prop_ordena :: ([Int] -> [Int]) -> Property
+prop_ordena f = forAll genLista $ \xs ->
+  let ys = f xs
+  in ordenada ys && sort ys == sort xs
+  where
+    genLista :: Gen [Int]
+    genLista = listOf (choose (-10,10))
 ```
+
+`sort ys == sort xs` compara todas as ocorrências, incluindo valores fora do intervalo que uma implementação errada pudesse inventar. A função constante falha para `[0]`: `[]` perde esse elemento. A identidade falha para `[1,0]`: conserva os dados, mas a saída não está ordenada. `sort` satisfaz ambas as partes nos casos gerados.
+
+`forAll` não aplica automaticamente um redutor ao gerador próprio. Para reduzir estas listas, usa `forAllShrink genLista shrink`; verifica sempre que o redutor conserva as condições exigidas pelo problema. Nenhuma das duas formas prova a lei para todas as listas.
+
   </div>
-  <div slot="hint"><p>Gera a entrada em vez de filtrar entradas arbitrárias.</p></div>
-  <div slot="hint-more"><p>Compara sort xs com xs por contagens em cada valor.</p></div>
-  <div slot="solution"><div>A função errada f xs = [] passa em f (f xs) == f xs, mas falha em prop_sortConserva: para xs = [1,0], contagens (f xs) é só zeros e difere de contagens [1,0]. O gerador genLista produz listas como [1,0] sem descartar casos.</div></div>
-  <div slot="mistakes"><div>Não uses ==&gt; com condição que descarte quase tudo; gera entradas válidas.</div></div>
+  <div slot="mistakes">Idempotência passa nas duas funções erradas. Contar só valores do gerador pode ignorar uma saída inventada.</div>
 </Exercise>
-```

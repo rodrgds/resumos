@@ -9,7 +9,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -26,9 +26,7 @@ import procura from '../../pfl/procura.pl?raw';
 import simbolico from '../../pfl/simbolico.pl?raw';
 import jogo from '../../pfl/minimax.dot?raw';
 
-Depois de recolher soluções e compor estruturas, esta página responde como explorar estados, escolher jogadas e transformar expressões.
-
-Um problema de procura precisa de um estado inicial, uma relação que gera os estados seguintes e uma condição de objetivo, ou seja o programa lógico descreve os movimentos e a ordem em que os explora decide qual resposta aparece primeiro e se chega a aparecer. Os exemplos desta página são ir de `a` até `e` num pequeno grafo, escolher a melhor jogada num jogo de dois jogadores e derivar uma expressão como `x*x`.
+No grafo com arestas `a→b`, `a→c`, `b→d`, `d→e`, `c→e` e `d→a`, há dois caminhos simples de `a` até `e`. DFS segue o primeiro ramo até `[a,b,d,e]`; BFS encontra `[a,c,e]`, com menos arestas. Vamos conservar este grafo para seguir os visitados e a fila.
 
 ## Evitar ciclos sem esconder respostas
 
@@ -40,7 +38,7 @@ A primeira solução de DFS não é necessariamente a mais curta. Se `a` liga a 
 
 ### A fila BFS passo a passo
 
-Com `a` ligado a `b` e `c`, `b` a `d` e `c` a `e`, a fila evolui assim para `a` até `e`:
+Com os caminhos guardados ao contrário, a fila evolui assim:
 
 | Fila antes        | Retirado | Novos caminhos   | Fila depois         |
 | ----------------- | -------- | ---------------- | ------------------- |
@@ -48,7 +46,7 @@ Com `a` ligado a `b` e `c`, `b` a `d` e `c` a `e`, a fila evolui assim para `a` 
 | `[[b,a],[c,a]]`   | `[b,a]`  | `[d,b,a]`        | `[[c,a],[d,b,a]]`   |
 | `[[c,a],[d,b,a]]` | `[c,a]`  | `[e,c,a]`        | `[[d,b,a],[e,c,a]]` |
 
-BFS encontra `[a,c,e]` antes de esgotar caminhos mais compridos. Com custos iguais por aresta, menor profundidade equivale a menor custo. Com pesos diferentes, a fila precisa do custo acumulado.
+Depois destas três expansões, o caminho objetivo já está na fila, mas ainda não foi retirado. Expandimos `[d,b,a]`: a aresta `d→a` é excluída pelos visitados e acrescentamos `[e,d,b,a]`. A fila fica `[[e,c,a],[e,d,b,a]]`. Só agora retiramos `[e,c,a]` e devolvemos `[a,c,e]`. Distingue descobrir um candidato de o aceitar quando chega à frente da fila.
 
 ## Guardar a fronteira numa fila
 
@@ -64,13 +62,13 @@ O programa guarda cada caminho ao contrário: `[EstadoAtual,...,Inicio]`. Acresc
 
 DFS imprime `[a,b,d,e]`; BFS imprime `[a,c,e]`. Há também uma ligação de `d` para `a`, que os visitados impedem de repetir no caminho.
 
-BFS encontra um caminho com o menor número de arestas se cada passo tiver o mesmo custo e a geração dos vizinhos terminar, porque com pesos diferentes, o menor número de arestas pode custar mais; precisaríamos de ordenar a fronteira pelo custo acumulado. BFS também pode guardar muitas alternativas em memória.
+BFS explora por número de arestas, desde que cada expansão termine. Com custos iguais, o primeiro objetivo tem também menor custo. Com arestas de custo `10`, `1` e `1`, um caminho de duas arestas pode custar `2` e ser melhor que uma ligação direta de custo `10`. Para otimizar pesos, precisamos de uma estratégia que ordene pelo custo acumulado. A fila BFS pode guardar muitas alternativas em memória.
 
 ### Minimax de baixo para cima
 
-Numa raiz MAX com filhos MIN `[3,8]` e `[-2,6]`, calcula primeiro os MIN: `min(3,8) = 3` e `min(-2,6) = -2`. Depois a raiz escolhe `max(3,-2) = 3`. O valor `8` não fica disponível porque MIN escolhe `3` nesse ramo.
+Usa a árvore desenhada abaixo. Primeiro o filho MIN esquerdo garante apenas `-1`, pois escolhe o menor de `-1` e `4`. A raiz MAX passa a ter `alpha=-1`. No filho MIN direito, ler `2` estabelece `beta=2`: como `-1 < 2`, ainda não podemos podar. Lemos também `3`, o MIN fica em `2` e a raiz escolhe `2`.
 
-Para alfa-beta, supõe que MAX já tem `3` garantido e avalia o segundo filho MIN. Se esse filho já viu `-2`, nenhum valor posterior desse ramo pode superar `3` para MAX, por isso poda as restantes folhas desse ramo. O limite conhecido justifica o corte da procura, não apenas o valor final.
+Se visitarmos o ramo direito primeiro, MAX já tem `alpha=2`. No ramo esquerdo, a primeira folha `-1` estabelece `beta=-1`; agora `alpha >= beta` e a folha `4` pode ser dispensada. A decisão final continua a ser `2`. A ordem muda o trabalho, não as regras do jogo.
 
 ## Um jogo de dois jogadores
 
@@ -81,7 +79,7 @@ Em minimax, MAX escolhe o maior valor e MIN o menor. Uma folha tem um valor medi
   alt="Árvore minimax: a raiz MAX escolhe entre um nó MIN com folhas -1 e 4, que vale -1, e outro MIN com folhas 2 e 3, que vale 2. A raiz vale 2."
 />
 
-O ramo esquerdo vale `min(-1,4)=-1`; o direito vale `min(2,3)=2`; a raiz vale `max(-1,2)=2`, porque MAX escolhe o ramo direito supondo que MIN responderá com a jogada que piora o resultado de MAX, ou seja escolher a folha `4` do ramo esquerdo ignoraria a decisão do adversário.
+O ramo esquerdo vale `min(-1,4)=-1` e o direito vale `min(2,3)=2`. A raiz vale `max(-1,2)=2`. MAX escolhe o ramo direito porque MIN pode impor `-1` no ramo esquerdo; não consegue garantir a folha `4`. O modelo pressupõe dois jogadores com interesses opostos, informação completa e as jogadas da árvore disponíveis.
 
 Numa árvore de fator de ramificação `b` e profundidade `d`, explorar todos os nós exige ordem `b^d` visitas. Limitar a profundidade pede uma função de avaliação para os estados não terminais. Esses valores são estimativas, não provas de vitória.
 

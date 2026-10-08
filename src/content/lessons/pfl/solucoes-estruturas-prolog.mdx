@@ -9,7 +9,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -28,9 +28,7 @@ import listasDiferenca from '../../pfl/listas-diferenca.dot?raw';
 import programa from '../../pfl/solucoes.pl?raw';
 import sintaxe from '../../pfl/sintaxe-meta.pl?raw';
 
-Depois de listas, aritmética e corte, esta página responde como juntar todas as respostas numa lista e como compor estruturas.
-
-Uma consulta pode ter várias provas. O motor devolve uma resposta de cada vez; os predicados de recolha exploram as provas e constroem uma lista, ou seja primeiro decide se queres conservar repetições, se precisas de agrupar e o que deve acontecer quando não há respostas. O exemplo desta página são as inscrições em cadeiras: várias provas de quem está inscrito onde são juntadas numa só lista.
+Uma consulta devolve uma resposta de cada vez. Para obter uma lista, escolhemos o que recolher, se as repetições devem ficar e se precisamos de uma lista por pessoa. Vamos usar as mesmas inscrições para comparar estas decisões.
 
 ### Os três predicados sobre os mesmos factos
 
@@ -47,7 +45,7 @@ L = [pfl, lbaw, pfl].
 L = [lbaw, pfl].
 ```
 
-`findall` junta todas as provas sem agrupar. `bagof` sem quantificador agrupa pela variável livre `A`; com `A^` junta tudo. `setof` ordena e remove repetidos. Sem soluções, `findall` sucede com `[]` e os outros falham. Lê primeiro estes casos e só depois a tabela comparativa.
+Nas duas primeiras consultas, `ana` já está fixada e não há agrupamento. Na terceira, `A^` impede que as pessoas criem grupos separados; por isso as duas inscrições em `pfl` ficam na mesma lista. `setof` ordena e remove repetidos. Sem soluções, `findall` sucede com `[]` e os outros falham. Lê primeiro estes casos e só depois a tabela comparativa.
 
 ## Escolher a recolha
 
@@ -65,7 +63,7 @@ Com `inscrito(ana,pfl).`, `inscrito(ana,lbaw).`, `inscrito(bruno,pfl).` e uma se
 
 Em `bagof(C,inscrito(A,C),Cs)`, o template guarda `C`, mas `A` aparece apenas no objetivo. Obtemos `A=ana, Cs=[pfl,lbaw,pfl]` e depois `A=bruno, Cs=[pfl]`. Pedir mais respostas percorre grupos, não elementos de uma só lista.
 
-Para juntar cadeiras de todas as pessoas sem esse agrupamento, escreve `bagof(C,A^inscrito(A,C),Cs)`. O `A^` torna `A` existencial naquele objetivo.
+Para juntar cadeiras de todas as pessoas sem esse agrupamento, escreve `bagof(C,A^inscrito(A,C),Cs)`. O `A^` torna `A` existencial naquele objetivo. A enumeração precisa de terminar para produzir a lista inteira; `findall` não devolve um prefixo de uma procura infinita.
 
 <CodePlayground
   language="prolog"
@@ -75,9 +73,9 @@ Para juntar cadeiras de todas as pessoas sem esse agrupamento, escreve `bagof(C,
 
 `findall(X,fail,L)` dá `L=[]`; `bagof(X,fail,L)` falha. Um `bagof` também pode falhar dentro de uma regra e impedir os objetivos seguintes. Se o enunciado exige uma lista vazia quando não há candidatos, escolhe esse comportamento explicitamente.
 
-### Caudas abertas passo a passo
+### Caudas abertas
 
-Uma diferença `Prefixo-Cauda` representa uma lista com fim por preencher. Para juntar `[m,n|T]-T` com `[p,q|U]-U`, liga `T = [p,q|U]`. O resultado é `[m,n,p,q|U]-U`. Só `U` continua livre para fechar: `U = []` dá `[m,n,p,q]`. Ligar `T = []` antes da junção impediria acrescentar o segundo segmento.
+Uma cauda livre permite acrescentar uma continuação por unificação. A operação seguinte conserva o prefixo e liga apenas o seu fim, em vez de o percorrer de novo.
 
 ## Listas abertas e diferenças de listas
 
@@ -94,11 +92,18 @@ Para juntar `[a,b|T]-T` e `[c|U]-U`, unificamos `T` com `[c|U]`. O resultado é 
   alt="Duas diferenças de listas, [a,b|T]-T e [c|U]-U, têm caudas abertas T e U. A ligação T=[c|U] dá [a,b,c|U]-U sem copiar o prefixo. U=[] fecha a cauda e dá [a,b,c]-[]."
 />
 
-A concatenação habitual percorre a primeira lista, ou seja esta representação consegue ligar uma cauda aberta em tempo constante, sem percorrer o prefixo. A vantagem desaparece se tiveres de converter ou copiar a lista a cada operação.
+A concatenação habitual percorre a primeira lista. Com caudas abertas frescas, a ligação mostrada na figura não percorre o prefixo e custa tempo constante no modelo de unificação sem occurs check. Construir, converter ou copiar as listas tem outros custos; não os eliminamos por escrever o par com `-`.
 
 ### Da DCG à cláusula traduzida
 
-A regra `s --> [a], s, [b].` traduz-se para `s([a|R1], S) :- s(R1, R2), R2 = [b|S].` com dois argumentos de diferença de listas. A query `s([a,a,b,b], [])` consome um `a`, resolve `s` no meio e consome um `b` no fim. A alternativa vazia `s --> [].` traduz-se para `s(S, S).`. A linguagem é `a^n b^n`: comprimento par e ordem obrigatória, não apenas contagens iguais.
+Para `s --> [a], s, [b].`, a tradução é:
+
+```prolog
+s([a|R1], S) :- s(R1, R2), R2 = [b|S].
+s(S, S).                         % tradução de s --> [].
+```
+
+Os argumentos adicionais são a entrada e o resto. Em `s([a,a,b,b],[])`, a primeira chamada retira um `a`. A segunda retira outro e chama `s([b,b],R2)`. O caso vazio mantém `[b,b]` como resto; no regresso, cada chamada retira um `b`. O resto final é `[]`.
 
 ## Gramáticas com DCG
 

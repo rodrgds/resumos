@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -23,11 +23,9 @@ import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import cadeia from '../../pfl/p1substituicao.typ?raw';
 
-Esta é a primeira página do percurso de PFL: responde como um programa em Haskell calcula um resultado.
+Com `dobra x = x * 2`, a chamada `dobra 4` vale `8`. A equação relaciona o argumento com o resultado. O nome `x` representa o argumento naquela aplicação; não é uma posição de memória que vamos atualizar.
 
-Um programa em Haskell é um conjunto de **equações** que dizem quanto vale cada coisa. Por exemplo, `dobra x = x * 2` diz que dobrar um número é multiplicá-lo por dois. Cada equação tem um nome e padrões à esquerda e uma expressão à direita. Para calcular um resultado, o computador substitui cada chamada pelos argumentos concretos no corpo da equação, como simplificar uma conta no papel. A esta substituição passo a passo chama-se **avaliação**. Os nomes nunca mudam de valor depois de ligados.
-
-## Avaliar é substituir
+## Avaliação por substituição
 
 Toma esta definição:
 
@@ -48,7 +46,11 @@ somaQuadrados [] = 0
 somaQuadrados (x:xs) = x^2 + somaQuadrados xs
 ```
 
-`[Int]` é lista de inteiros. O padrão `[]` apanha a lista vazia (caso base). O padrão `(x:xs)` apanha uma lista não vazia e chama `x` à cabeça e `xs` à cauda. Segue `somaQuadrados [1,2,3]` por substituição: dá `1^2 + somaQuadrados [2,3]`, que dá `1 + (2^2 + somaQuadrados [3])`, que dá `1 + (4 + (3^2 + somaQuadrados []))`, que dá `1 + (4 + (9 + 0))`, que dá `14`. Os padrões são tentados de cima para baixo, e cada passo escolhe a primeira equação cujo padrão encaixa. Aqui são disjuntos; num caso geral antes de um caso específico, a primeira equação pode esconder a segunda. Se te perderes, escreve a cadeia de substituições no papel até ao caso base.
+`[Int]` é o tipo de listas de inteiros. O padrão `[]` corresponde à lista vazia. O padrão `(x:xs)` separa uma lista não vazia na cabeça `x` e na cauda `xs`. Em `[1,2,3]`, a segunda equação liga `x` a `1` e `xs` a `[2,3]`.
+
+A chamada seguinte recebe `[2,3]`, depois `[3]` e finalmente `[]`. Nesse ponto escolhemos a primeira equação, que devolve `0`. A figura conserva as adições pendentes e mostra como chegamos a `14`.
+
+Os padrões são tentados de cima para baixo. Aqui são disjuntos, por isso trocar as duas equações não muda o resultado. Um padrão geral como `xs` antes de `[]` aceitaria também a lista vazia e esconderia o caso base.
 
 <Typst
   source={cadeia}
@@ -86,12 +88,12 @@ Para classificar por intervalos, as três formas coincidem quando há duas alter
 ```haskell
 classe :: Int -> String
 classe n | n < 0     = "negativo"
-           | n == 0    = "zero"
-           | n < 10    = "pequeno"
-           | otherwise = "grande"
+         | n == 0    = "zero"
+         | n < 10    = "pequeno"
+         | otherwise = "grande"
 ```
 
-`classe (-2)` escolhe a primeira guarda verdadeira e dá `"negativo"`. `classe 0` falha na primeira, passa na segunda e dá `"zero"`. `classe 5` chega à terceira. Um `if` aninhado diria o mesmo, mas esconderia as fronteiras. Um padrão só distingue a forma do argumento, por isso não serve aqui sem guardas.
+`classe (-2)` escolhe a primeira guarda verdadeira e dá `"negativo"`. `classe 0` falha na primeira, passa na segunda e dá `"zero"`. `classe 5` chega à terceira. Um `if` aninhado diria o mesmo, mas esconderia as fronteiras. Padrões literais permitem separar um valor como `0`; para os intervalos desta função, as guardas evitam enumerar os valores um a um.
 
 O símbolo `_` nestes padrões é um curinga: aceita qualquer valor sem o ligar a um nome. Não é uma variável utilizável no corpo.
 
@@ -138,6 +140,6 @@ A aplicação de funções tem prioridade sobre os operadores. Com `dobra x = 2*
 
 As duas alternativas de um `if` têm de ter o mesmo tipo e o `else` é obrigatório. `if n > 0 then "positivo" else 0` falha antes da execução, porque mistura `String` e um valor numérico. Guardas permitem mais alternativas, mas não dispensam cobertura dos casos.
 
-Uma equação bem tipada pode ter um domínio limitado. `area a b c = sqrt (s*(s-a)*(s-b)*(s-c))`, com `s=(a+b+c)/2`, pressupõe lados positivos que respeitam as desigualdades do triângulo, ou seja para lados impossíveis a raiz quadrada pode receber um valor negativo. Se a entrada vem do utilizador, valida primeiro ou devolve `Maybe Double`.
+Uma equação bem tipada pode ter um domínio limitado. `area a b c = sqrt (s*(s-a)*(s-b)*(s-c))`, com `s=(a+b+c)/2`, pressupõe lados positivos que respeitam as desigualdades do triângulo. Para `1,2,4`, temos `s=3.5` e `s-c=-0.5`, pelo que o radicando é negativo. Se a entrada vem do utilizador, valida primeiro ou devolve `Maybe Double`.
 
 Para distinguir erro de tipo, erro de domínio e não terminação, verifica nesta ordem: a expressão compila, cada padrão é coberto, cada operação está definida e a recursão aproxima-se de um caso base. `head []` tem um tipo, mas falha ao pedir o resultado. `length [1..]` tem um tipo, mas não chega ao fim da lista.

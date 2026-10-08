@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -26,10 +26,9 @@ import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import emparelha from '../../pfl/p7unifica.typ?raw';
 import arvoreSLD from '../../pfl/p7sld.dot?raw';
+import retrocesso from '../../pfl/sld-retrocesso.dot?raw';
 
-Aqui começa a parte de Prolog do percurso: responde como uma pergunta ao programa obtém respostas a partir do que está escrito.
-
-Em Prolog defines relações com **factos**, que afirmam casos concretos, e **regras**, que ligam uma conclusão a condições. Uma **consulta**, ou query, pede os valores que satisfazem uma relação, ou seja o programa é uma base de conhecimento e a execução é procura com retrocesso. O exemplo desta página é a família: com factos de quem é pai de quem, perguntamos quem é avô de quem.
+Com os factos `pai(tomas,ana)` e `pai(ana,leo)`, podemos concluir que Tomás é avô de Leo. Prolog representa os casos conhecidos como **factos** e a passagem de pai a avô como uma **regra**. Uma consulta pede os valores para os quais a relação se prova.
 
 ## Factos, regras e queries
 
@@ -44,7 +43,7 @@ A última é uma regra, lida "X é avô de Z **se** X é pai de Y **e** Y é pai
 
 ### De regra a cláusula de Horn
 
-A regra `avo(X, Z) :- pai(X, Y), pai(Y, Z).` corresponde à cláusula `avo(X,Z) v -pai(X,Y) v -pai(Y,Z)`: a cabeça é verdadeira ou alguma condição é falsa. Antes de cada resolução, renomeia as variáveis da cláusula copiada, por exemplo `avo(X1, Z1) :- pai(X1, Y1), pai(Y1, Z1)`. Sem renomeação, duas utilizações da mesma regra partilhariam variáveis que deviam ser independentes. O símbolo `_` é uma variável anónima nova em cada ocorrência: `_ = _` sucede sempre, enquanto `X = X` liga as duas posições ao mesmo valor.
+A regra `avo(X, Z) :- pai(X, Y), pai(Y, Z).` corresponde à cláusula `avo(X,Z) v -pai(X,Y) v -pai(Y,Z)`: a cabeça é verdadeira ou alguma condição é falsa. Antes de cada resolução, renomeia as variáveis da cláusula copiada, por exemplo `avo(X1, Z1) :- pai(X1, Y1), pai(Y1, Z1)`. Sem renomeação, duas utilizações da mesma regra partilhariam variáveis que deviam ser independentes. O símbolo `_` é uma variável anónima nova em cada ocorrência. `par(_,_)` aceita `par(a,b)`; `par(X,X)` exige o mesmo termo nas duas posições e recusa `par(a,b)`.
 
 ## Unificação
 
@@ -54,7 +53,7 @@ Antes de procurar, o motor precisa de casar termos. **Unificar** dois termos é 
 - `pai(X, leo)` com `pai(ana, leo)` unifica com `{X/ana}`.
 - `pai(X, leo)` com `pai(tomas, ana)` falha: `leo` nunca iguala `ana`, e nenhuma substituição muda átomos.
 
-A substituição aplica-se a toda a consulta de uma vez, o que propaga cada descoberta a todos os lugares onde a variável aparece, ou seja é este mecanismo, e não atribuição, que move valores pelo programa.
+A substituição propaga-se a todas as ocorrências da variável nos objetivos restantes. Se ligamos `Y=leo` no primeiro objetivo, o segundo passa de `pai(Y,X)` a `pai(leo,X)`. Não escolhemos um novo valor independente para cada ocorrência.
 
 <Typst
   source={emparelha}
@@ -89,9 +88,24 @@ Experimenta a consulta:
 
 ### Árvore SLD com falha e alternativa
 
-Para `?- avo(tomas, N).`, renomeia a regra para `avo(X1,Z1) :- pai(X1,Y1), pai(Y1,Z1)` e unifica a cabeça com a consulta, com `{X1/tomas, Z1/N}`. O resolvente fica `pai(tomas,Y1), pai(Y1,N)`. Escolhe o objetivo mais à esquerda. `pai(tomas,Y1)` unifica com `pai(tomas,ana)`, com `{Y1/ana}`. O novo resolvente é `pai(ana,N)`, que unifica com `pai(ana,leo)`, com `{N/leo}`. Resposta: `N = leo`.
+Acrescenta à família um filho sem descendentes, antes de Ana:
 
-Se tentasses `pai(leo,rui)` no lugar errado, o ramo falharia por não haver facto `pai(rui,_)`. O motor desfaz as ligações desse ramo e retrocede ao último ponto de escolha. O diagrama `p7sld.dot` mostra as ligações entre regra, objetivo e facto; segue esta derivação no papel com os resolventes completos antes de leres o diagrama.
+```prolog
+pai(tomas, ines).
+pai(tomas, ana).
+pai(ana, leo).
+pai(leo, rui).
+avo(X,Z) :- pai(X,Y), pai(Y,Z).
+```
+
+Na consulta `avo(tomas,N)`, a regra renomeada dá o resolvente `pai(tomas,Y1), pai(Y1,N)`. O primeiro facto liga `Y1=ines`, mas o objetivo restante `pai(ines,N)` falha. O motor desfaz essa ligação e tenta o facto seguinte, que liga `Y1=ana`. Agora `pai(ana,N)` dá `N=leo`.
+
+<Dot
+  source={retrocesso}
+  alt="Na consulta avo(tomas,N), a primeira alternativa liga Y1 a ines e falha sem pai(ines,N). A segunda liga Y1 a ana e obtém N igual a leo. As alternativas partem do mesmo resolvente, sem conservar a ligação do ramo falhado."
+/>
+
+O ramo falhado não muda os factos nem fixa `Y1` para a tentativa seguinte. Conservamos a mesma consulta e mudamos apenas a alternativa escolhida. A figura anterior mostra um ramo de sucesso; este exemplo acrescenta o ponto de retrocesso que um traço completo precisa de registar.
 
 ## Negação por falha
 
@@ -102,7 +116,7 @@ Se tentasses `pai(leo,rui)` no lugar errado, o ramo falharia por não haver fact
 true.
 ```
 
-Não há facto com `rui` como pai, por isso a prova falha finitamente e a negação sucede, ou seja isto é "negação por falha", não negação lógica: o motor não prova que é falso, constata que não consegue provar que é verdade.
+Não há facto com `rui` como pai e não há regras que permitam provar esse objetivo. A tentativa falha finitamente e a negação sucede. Se acrescentarmos `pai(rui,sofia)`, a mesma negação passa a falhar: o resultado depende da base de conhecimento disponível.
 
 :::warning[Variáveis livres na negação]
 `?- \+ pai(X, leo).` responde `false`, e não "ninguém". Como `pai(ana, leo)` prova-se com `X = ana`, a negação falha, e o `X` fica por ligar. Regra prática: só nega objetivos sem variáveis por preencher, ou liga-as antes. A ordem entre gerar candidatos e negar a relação muda o resultado.
@@ -126,6 +140,6 @@ SLD resolve um objetivo positivo escolhendo uma cláusula cuja cabeça unifica e
 
 `p :- p.` antes de `p.` mostra o problema: a primeira tentativa volta a chamar `p` indefinidamente. Trocar as cláusulas permite encontrar uma primeira resposta, mas pedir todas volta a entrar no ramo infinito, ou seja não basta haver um caso base algures; a estratégia tem de conseguir chegar a ele.
 
-Uma cláusula de Horn tem no máximo um literal positivo, ou seja é a restrição da [lógica proposicional e de predicados](/cadeiras/md/logica-proposicional/) de MD que permite resolução orientada a objetivos, mas não garante terminação. Uma cláusula definida tem exatamente um, representado pela cabeça.
+Uma cláusula de Horn tem no máximo um literal positivo. Uma cláusula definida tem exatamente um, representado pela cabeça. Esta restrição permite organizar a resolução orientada a objetivos a partir da [lógica estudada em MD](/cadeiras/md/logica-proposicional/), mas não garante que a procura termine.
 
 A negação por falha também precisa de uma falha finita. Se `g` divergir, `\+ g` não confirma a negação.

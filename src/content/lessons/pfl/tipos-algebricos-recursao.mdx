@@ -10,22 +10,22 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-03'
+    date: '2026-10-08'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
     - title: Moodle PFL 2026/27
       url: https://moodle2627.up.pt/course/view.php?id=4363
   coverage: Construtores, padrões, Maybe, recursão estrutural, altura, travessias e pesquisa em árvores.
+  gaps:
+    - Fichas atuais de tipos algébricos e árvores ainda não disponíveis na recolha; a conferência técnica usa material histórico de 2022/23.
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import arvoreBST from '../../pfl/p4arvore.typ?raw';
 
-Depois de funções de ordem superior, esta página responde como definir os teus próprios tipos de dados e escrever recursão sobre eles.
-
-Os tipos predefinidos chegam para exercícios pequenos. Para modelar os teus próprios dados, defines **tipos algébricos** com `data`: enumeras os construtores e o que cada um guarda, ou seja depois as funções escolhem a equação pelo **padrão** do construtor, e a recursão segue a forma dos dados. O exemplo desta página é uma árvore binária, que ou está vazia ou é um nó com um valor e duas subárvores.
+Uma árvore binária pode estar vazia ou conter um valor e duas subárvores. Uma declaração `data` representa estas alternativas com construtores. Os padrões das funções desmontam cada alternativa e a recursão segue as subárvores.
 
 ### Sinónimos, construtores simples e `Maybe`
 
@@ -57,9 +57,9 @@ emOrdem (No x esq dir) = emOrdem esq ++ [x] ++ emOrdem dir
 
 O padrão `(No x esq dir)` desmonta o nó e dá nome às peças. A travessia em ordem lista a esquerda, depois o valor, depois a direita. O caso base `Vazia` devolve a lista vazia, e é ele que termina a recursão, como o `[]` nas listas da [primeira página](/cadeiras/pfl/haskell-expressoes-tipos/).
 
-## Exemplo completo: pesquisa binária
+## Pesquisa em árvores binárias
 
-Inserir mantém a invariância escolhida nesta página: valores menores à esquerda e duplicados à direita, com maiores ou iguais à direita. Procurar desce só para o lado certo:
+Nesta árvore de pesquisa, todos os valores da subárvore esquerda são menores que o valor do nó; todos os da direita são maiores ou iguais. A condição vale em cada nó, não apenas entre pais e filhos. `inserir` mantém esta invariância e `procura` usa-a para excluir uma subárvore:
 
 ```haskell
 inserir :: Ord a => a -> Arvore a -> Arvore a
@@ -108,7 +108,7 @@ mediaSegura xs = Just (sum xs / fromIntegral (length xs))
 
 `Nothing` é a ausência e `Just` embrulha o valor presente, ou seja `mediaSegura []` dá `Nothing` e `mediaSegura [8.0,12.0]` dá `Just 10.0`. O tipo declara os dois casos, que quem chama a função deve tratar com padrões. O compilador pode avisar se falta um caso, mas ainda permite funções parciais; usar `Maybe` não obriga, por si só, a escrever esse tratamento.
 
-[^metade]: A promessa vale quando a árvore está equilibrada: a altura cresce com o logaritmo do número de nós. Uma árvore equilibrada não precisa de ter metades exatamente iguais. Numa árvore degenerada em lista, a procura degrada-se para linear. Estruturas como `Data.Set` mantêm o equilíbrio; a função `inserir` desta página não o faz.
+[^metade]: O custo logarítmico vale quando a árvore está equilibrada: a altura cresce com o logaritmo do número de nós. Uma árvore equilibrada não precisa de ter metades exatamente iguais. Numa árvore degenerada em lista, a procura degrada-se para linear. Estruturas como `Data.Set` mantêm o equilíbrio; a função `inserir` desta página não o faz.
 
 :::tip[Desenha antes de codificar]
 Perante um tipo novo, escreve primeiro um valor concreto à mão, como o `No 3 ...` acima, e só depois as equações. Identifica em cada nó o construtor, o valor e as subárvores. Cada equação desmonta uma dessas formas.
@@ -140,10 +140,20 @@ avaliar (Produto a b) = avaliar a * avaliar b
 
 ## Justificar uma lei por indução
 
-:::details[Demonstração completa]
+Para provar `length (map f xs) = length xs`, considera listas finitas com comprimento representável em `Int` e os valores necessários à avaliação definidos. Usamos as equações de `map` e `length`.
 
-Para provar `length (map f xs) = length xs` em listas finitas, começa no caso `[]`: os dois comprimentos são zero. No passo `x:xs`, `map` produz `f x : map f xs`, cujo comprimento é `1 + length (map f xs)`. Pela hipótese de indução sobre a cauda, isso é `1 + length xs`, igual ao comprimento original. A hipótese aplica-se à estrutura menor, não à expressão que queremos provar.
+**Caso vazio:** `map f [] = []`, por isso os dois comprimentos são `0`.
 
-:::
+**Passo recursivo:** supõe que a igualdade vale para a cauda `xs`. Então:
+
+```text
+length (map f (x:xs))
+= length (f x : map f xs)       pela equação de map
+= 1 + length (map f xs)        pela equação de length
+= 1 + length xs                pela hipótese sobre xs
+= length (x:xs)                pela equação de length
+```
+
+A hipótese aplica-se à cauda menor. Não assumimos a igualdade para a lista inteira que estamos a provar. `length` não precisa de avaliar `f x`, apenas de contar a célula construída.
 
 Uma propriedade testada em exemplos reforça a confiança, mas não substitui esta prova para todas as listas finitas. A afirmação sobre `length` não pode ser avaliada numa lista infinita.
