@@ -16,15 +16,13 @@ editorial:
     - Os testes e questionários fechados não foram iniciados nem consultados como tentativas.
 ---
 
-No fim vais ler um fragmento RV32 e prever o seu custo: que endereços de cache toca, quantos ciclos de pipeline ocupa e onde o paralelismo ajuda ou bloqueia. Ou seja, vais ligar a instrução ao tempo que ela demora, porque a organização do processador e da memória decide esse tempo.
-
-Começa por [Assembly RISC-V](/cadeiras/ac/riscv-assembly/) e [Desempenho](/cadeiras/ac/desempenho/), porque tudo o resto mede instruções e ciclos. Depois segue a ordem do percurso abaixo, com um exercício previsto antes de abrires cada resolução. Guarda a [cheat sheet](/cadeiras/ac/folha-consulta/) para consulta depois de perceberes cada modelo.
+Um fragmento RV32 pode ser correto e ainda perder tempo à espera de dados, de operandos ou de um porto ocupado. AC liga as instruções à organização que as executa: caches, pipeline, múltiplas unidades, SIMD, núcleos e periféricos.
 
 ## Percurso de estudo
 
-Segue esta ordem porque cada bloco usa o anterior. RV32 fixa instruções e endereços. Desempenho fixa tempo, CPI e Amdahl. Caches fixam blocos, índices e políticas antes de qualquer conta de CPI com memória. Percurso de dados fixa sinais e estados antes da pipeline. Pipeline e predição fixam paragens e penalidades antes de ILP e Tomasulo. SIMD fixa vias e pares antes da programação por famílias. Multicore e coerência fixam redução e protocolos antes de entrada, saída e armazenamento.
+RV32 fixa instruções e endereços. Desempenho fixa tempo, CPI e Amdahl. Caches explicam blocos e políticas antes de calcular CPI com memória. Percurso de dados prepara as fases, controlos e paragens da pipeline. ILP e Tomasulo mostram como escolher operações prontas; SIMD aplica uma instrução a várias vias. Multicore, coerência e periféricos acrescentam divisão do trabalho e recursos partilhados.
 
-As fontes são as apresentações e fichas indicadas na apresentação, com anos confirmados entre 2022 e 2025, a proposta SIMD histórica de 2021 para as mnemónicas empacotadas e a especificação RV32I atual para registos e memória. A ficha SIGARRA de 2026/27 estava ativa sem programa nem avaliação quando foi consultada.
+A base são as apresentações e fichas reunidas na bibliografia abaixo, com anos confirmados entre 2022 e 2025, a proposta SIMD histórica de 2021 para as mnemónicas empacotadas e a especificação RV32I atual para registos e memória. A ficha SIGARRA de 2026/27 estava ativa sem programa nem avaliação quando foi consultada.
 
 Começa por [Assembly RISC-V](/cadeiras/ac/riscv-assembly/) e [Desempenho](/cadeiras/ac/desempenho/). Depois segue [Hierarquia e caches](/cadeiras/ac/hierarquia-cache/) e [Políticas de cache](/cadeiras/ac/politicas-cache/): separa endereços, simula cada acesso e calcula o custo da memória.
 

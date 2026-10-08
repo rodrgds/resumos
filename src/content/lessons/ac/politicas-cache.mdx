@@ -9,9 +9,7 @@ editorial:
   basedOn: 2024/25
 ---
 
-Já sabes organizar a [hierarquia em blocos](/cadeiras/ac/hierarquia-cache/) para acelerar leituras; a pergunta desta página é: o que muda na contagem de acessos quando também alteramos valores guardados na cache?
-
-Ler um valor e alterá-lo custam coisas diferentes na hierarquia. Antes de seguir acessos, fixa a política de escrita, ou seja, a regra que decide quando um valor alterado segue para a memória, a política em uma falta, o tamanho da linha e o estado inicial de cada entrada, porque cada escolha muda a contagem.
+O CPU escreve 7 no endereço 0 e volta a lê-lo. Se a cache conservar o valor novo, essa leitura pode acertar mesmo que a RAM ainda tenha o valor antigo. A política de escrita determina quando a modificação chega ao nível seguinte; a política de alocação determina o que fazer quando a escrita falha.
 
 ## Write-through e write-back
 
@@ -32,9 +30,7 @@ Em uma escrita parcial de uma linha, a alocação normalmente lê os bytes resta
 
 ## Um traço com vítimas modificadas
 
-Segue cache e RAM lado a lado. Numa cache write-back com uma linha dirty, uma falta que escolhe essa vítima escreve primeiro a linha antiga na RAM e só depois instala a nova. Uma leitura que acerta numa linha dirty devolve o valor da cache, que é mais recente do que a RAM. Uma escrita que acerta marca dirty sem tocar na RAM.
-
-Exemplo de conta inversa. Se o tempo médio de acesso é 3 ciclos, o acerto custa 1 ciclo e a penalidade de falta é 20 ciclos, então $3 = 1 + taxa \times 20$, logo a taxa é 10 por cento. Se a taxa local de L2 é 25 por cento e só um quarto dos acessos chega a L2, a taxa global é $0{,}25 \times 0{,}25 = 6{,}25$ por cento. Não mistures as duas sem multiplicar pela fração de acessos que chega ao nível.
+Uma falta com vítima dirty tem duas tarefas: conservar o bloco antigo e instalar o pedido. Segue cache e RAM lado a lado, pois uma leitura que acerta devolve o valor mais recente da cache.
 
 Cache direta WB, 2 linhas de 4 B, inicialmente inválida; operações de palavra completa. `E` escreve e `L` lê.
 
@@ -50,7 +46,9 @@ Total: duas leituras e duas escritas de linhas na memória principal. O último 
 
 O endereço de uma vítima é reconstruído com **a etiqueta antiga**, o índice da entrada e deslocamento zero. Usar a etiqueta do pedido escreveria os dados da vítima no sítio errado.
 
-Para WT/no-allocate, a primeira E0 escreve só na memória. A L0 seguinte falha e carrega a linha. Contabiliza novamente o traço, sem reutilizar os resultados do modelo WB.
+Aplica WT/no-allocate ao mesmo traço. E0 escreve na RAM sem instalar; L0 carrega a linha 0. E8 escreve na RAM e mantém na cache o bloco 0; L4 carrega a linha 4; a última L0 acerta. São duas escritas e duas leituras, tal como no total WB, mas por causas diferentes. No traço WB, a leitura final falha e provoca dois acessos; em WT, acerta.
+
+Para reconstruir a vítima no acesso L0, a etiqueta antiga é 1, o índice é 0 e cada linha tem 4 B: $(1\times2+0)\times4=8$. É nesse endereço que se descarrega 9 antes de ler 0.
 
 ## O que se pode conhecer da memória
 

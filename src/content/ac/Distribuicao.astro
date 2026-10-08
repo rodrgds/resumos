@@ -1,0 +1,129 @@
+---
+import InteractiveDemo from '../../components/InteractiveDemo.astro';
+---
+
+<InteractiveDemo label="Distribuição de uma tarefa por dez núcleos iguais">
+  <ac-distribuicao>
+    <label for="ac-quinhao">Trabalho do núcleo 1 (%)</label>
+    <input
+      id="ac-quinhao"
+      type="range"
+      min="0"
+      max="20"
+      step="0.1"
+      value="9"
+      disabled
+    />
+    <p data-result role="status">
+      Núcleo 1: 9%. Cada um dos outros nove: 10,111%. Tempo relativo: 1,0111;
+      aumento: 1,11%.
+    </p>
+    <div
+      class="bars"
+      role="img"
+      aria-label="Núcleo 1 com 9 por cento e núcleos 2 a 10 com 10,111 por cento. A divisão ideal é 10 por cento por núcleo."
+    >
+      {Array.from({ length: 10 }, (_, i) => (
+        <div class="row">
+          <span>N{i + 1}</span>
+          <div class="track">
+            <div class="bar" style={`width:${i === 0 ? 45 : 50.555555}%`}></div>
+          </div>
+        </div>
+      ))}
+    </div>
+    <p>
+      A linha tracejada marca os 10% da divisão equilibrada. A barra mais longa
+      determina o fim da tarefa.
+    </p>
+    <noscript>
+      As barras mostram a distribuição inicial, com 9% no primeiro núcleo.
+    </noscript>
+  </ac-distribuicao>
+</InteractiveDemo>
+
+<script>
+  class AcDistribuicao extends HTMLElement {
+    connectedCallback() {
+      const input = this.querySelector('input')!;
+      const result = this.querySelector<HTMLElement>('[data-result]')!;
+      const plot = this.querySelector<HTMLElement>('[role="img"]')!;
+      const bars = [...this.querySelectorAll<HTMLElement>('.bar')];
+      const format = (value: number, digits: number) =>
+        value.toLocaleString('pt-PT', { maximumFractionDigits: digits });
+      const update = () => {
+        const first = input.valueAsNumber;
+        const others = (100 - first) / 9;
+        const ratio = Math.max(first, others) / 10;
+        bars.forEach((bar, i) => {
+          bar.style.width = `${(i === 0 ? first : others) * 5}%`;
+        });
+        result.textContent = `Núcleo 1: ${format(first, 1)}%. Cada um dos outros nove: ${format(others, 3)}%. Tempo relativo: ${format(ratio, 4)}; aumento: ${format((ratio - 1) * 100, 2)}%.`;
+        plot.setAttribute(
+          'aria-label',
+          `Núcleo 1 com ${format(first, 1)} por cento e núcleos 2 a 10 com ${format(others, 3)} por cento. A divisão ideal é 10 por cento por núcleo.`,
+        );
+      };
+      input.disabled = false;
+      input.addEventListener('input', update);
+      update();
+    }
+  }
+  if (!customElements.get('ac-distribuicao'))
+    customElements.define('ac-distribuicao', AcDistribuicao);
+</script>
+
+<style>
+  ac-distribuicao {
+    display: block;
+    color: var(--text);
+  }
+  label {
+    display: block;
+    font-weight: 600;
+  }
+  input {
+    width: 100%;
+    min-height: 44px;
+    accent-color: var(--accent);
+  }
+  input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  p {
+    margin: 12px 0;
+  }
+  [data-result] {
+    font-variant-numeric: tabular-nums;
+  }
+  .bars {
+    display: grid;
+    gap: 8px;
+    margin-block: 20px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 3ch minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+  .track {
+    position: relative;
+    background: var(--page);
+    height: 18px;
+    border: 1px solid var(--line);
+  }
+  .track::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -3px;
+    bottom: -3px;
+    border-left: 2px dashed var(--text);
+  }
+  .bar {
+    height: 100%;
+    background: var(--accent);
+  }
+</style>

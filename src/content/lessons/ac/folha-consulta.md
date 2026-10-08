@@ -12,13 +12,11 @@ editorial:
       url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
-Chegaste ao fim do percurso e já percebeste cada modelo; esta página responde a uma pergunta diferente: qual é a fórmula ou a condição exata de cada caso, para consulta rápida durante a revisão?
-
-Cada linha indica a condição que decide a conta.
+Fórmulas e condições para consultar depois de resolver os exemplos das lições.
 
 ## RV32
 
-Usa esta página como índice. Cada fórmula vale nas condições da lição ligada: RV32 e endereços em [Assembly](/cadeiras/ac/riscv-assembly/); CPI e Amdahl em [Desempenho](/cadeiras/ac/desempenho/); blocos e substituição em [Hierarquia](/cadeiras/ac/hierarquia-cache/); write-through e write-back em [Políticas](/cadeiras/ac/politicas-cache/); sinais e estados em [Percurso](/cadeiras/ac/percurso-dados/); paragens e saltos em [Pipeline](/cadeiras/ac/pipeline/) e [Predição](/cadeiras/ac/predicao-saltos/); escalonamento e Tomasulo em [ILP](/cadeiras/ac/superescalar/) e [Tomasulo](/cadeiras/ac/tomasulo/); vias e pares em [SIMD](/cadeiras/ac/simd/) e [Programar](/cadeiras/ac/programar-simd/); provas e coerência em [Multicore](/cadeiras/ac/multicore-energia/) e [Coerência](/cadeiras/ac/coerencia/); transferências e discos em [E/S](/cadeiras/ac/entrada-saida/) e [Armazenamento](/cadeiras/ac/armazenamento/).
+Usa esta página como índice. Cada fórmula vale nas condições da lição ligada: RV32 e endereços em [Assembly](/cadeiras/ac/riscv-assembly/); CPI e Amdahl em [Desempenho](/cadeiras/ac/desempenho/); blocos e substituição em [Hierarquia](/cadeiras/ac/hierarquia-cache/); write-through e write-back em [Políticas](/cadeiras/ac/politicas-cache/); sinais e estados em [Percurso](/cadeiras/ac/percurso-dados/); paragens e saltos em [Pipeline](/cadeiras/ac/pipeline/) e [Predição](/cadeiras/ac/predicao-saltos/); escalonamento e Tomasulo em [ILP](/cadeiras/ac/superescalar/) e [Tomasulo](/cadeiras/ac/tomasulo/); vias e pares em [SIMD](/cadeiras/ac/simd/) e [Programar](/cadeiras/ac/programar-simd/); potência e coerência em [Multicore](/cadeiras/ac/multicore-energia/) e [Coerência](/cadeiras/ac/coerencia/); transferências e discos em [E/S](/cadeiras/ac/entrada-saida/) e [Armazenamento](/cadeiras/ac/armazenamento/).
 
 - 32 registos inteiros de 32 bits; `zero` é sempre 0. `t0…t6` e `a0…a7` podem mudar numa chamada; o chamado repõe `s0…s11`. `ra` guarda retorno; `sp` é reposto e mantém alinhamento 16 bytes.
 - Palavra 4 B: `lw/sw`. Bytes: `lb/lbu/sb`; meias palavras: `lh/lhu/sh`. `lb/lh` estendem o sinal; `lbu/lhu` preenchem com zeros. Endereço de `lw rd,k(rs1)` = `rs1+k`, em bytes. Little endian guarda byte baixo no menor endereço.
@@ -69,6 +67,7 @@ IF→ID→EX→MEM→WB. Período = máximo atraso de fase + registo, se forneci
 - Branch MEM: erro 3 ciclos; ID: erro 1, com possíveis paragens de operandos em ID. $CPI=CPI_b+bep$, erro $e=1-\text{acerto}$.
 - 1 bit prevê último resultado. Histerese 2 bits: 01+T→11,10+N→00. Saturante: 01+T→10,10+N→01. Ambos preveem N em 00/01, T em 10/11. Segue a máquina fornecida.
 - RAW: produzir antes de ler; WAR: ler antes de nova escrita; WAW: preservar última escrita. RAR não restringe. Memória exige considerar endereços.
+- Emissão de uma ALU e uma memória: duas operações de memória não emitem juntas, mesmo sem dependência.
 - Unidade: duração $L$, intervalo de início $I$; $n$ operações independentes ocupam $L+(n-1)I$ ciclos. IPC=instruções/ciclos; CPI=1/IPC.
 - Tomasulo: capturar origens V/Q, **depois** renomear destino Qi. Executar com Qj=Qk=0 e unidade livre. CDB entrega tag/valor; atualizar registo só se Qi=tag. Estação ocupa-se até difundir; confirmar em ordem exige mecanismo adicional.
 
@@ -82,7 +81,7 @@ SMUL16: dois produtos 32 bits em par físico par/seguinte; SMULX16 cruza vias. P
 
 $$\begin{aligned}E&=P\Delta t\\T_j&=T_a+P R_\theta\\P_{\rm din}&\propto\alpha C V^2f\end{aligned}$$
 
-Com $V\propto f$, $P\propto f^3$; com V fixa, $P\propto f$. Paralelo ideal: $S_n=1/(s+(1-s)/n)$. Tempo de partições iguais em rapidez depende de $\max w_i$. Redução com n participantes, sendo n uma potência de 2: $\log_2n$ rondas, além das somas locais/barreiras.
+Com $V\propto f$, $P\propto f^3$; com V fixa, $P\propto f$. Paralelo ideal: $S_n=1/(s+(1-s)/n)$. Tempo de partições iguais em rapidez depende de $\max w_i$. Redução por pares com transporte do ímpar: $\lceil\log_2n\rceil$ rondas para $n\ge1$. Incorporar o ímpar antes de reduzir pode diminuir rondas mas dar duas adições ao mesmo núcleo; conta o caminho crítico, além das somas locais/barreiras.
 
 Write-invalidate invalida a **linha inteira**. Leitura de outro dado na linha pode causar falsa partilha. Coerência por endereço não substitui ordenação/sincronização entre endereços.
 

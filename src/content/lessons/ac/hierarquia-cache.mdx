@@ -10,13 +10,11 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import exemplo from '../../ac/examples/hierarquia-cache.py?raw';
 import endereco from '../../ac/endereco-cache.typ?raw';
 
-Já sabes programar e [medir o tempo de um programa](/cadeiras/ac/desempenho/); a pergunta desta página é: se cada acesso à memória pode esperar dezenas de ciclos pela resposta, como servir a maioria dos acessos perto do processador?
+Um ciclo lê as palavras consecutivas de um vetor. Se cada acesso fosse até à DRAM, a memória principal poderia atrasar o processador dezenas de ciclos. A cache guarda blocos próximos do CPU, para que uma transferência sirva várias leituras.
 
-O processador pede um byte e a memória principal demora dezenas de ciclos a responder. Registos e SRAM, memória RAM estática, são rápidos, mas caros por bit. DRAM, memória RAM dinâmica, permite uma memória principal maior. SRAM e DRAM são voláteis, ou seja, perdem o conteúdo sem alimentação. O armazenamento conserva-o. Uma hierarquia tenta servir a maioria dos acessos perto do processador, transferindo **blocos**, também chamados linhas, entre níveis.
+Os registos e a SRAM, memória RAM estática, são rápidos mas caros por bit. A DRAM, memória RAM dinâmica, permite uma memória principal maior. Ambas são voláteis: perdem o conteúdo sem alimentação. O armazenamento conserva-o. A hierarquia combina estes níveis, transferindo blocos, também chamados linhas.
 
 ## Localidade e organização
 
@@ -42,9 +40,7 @@ $$\text{bloco} = E // 64, \quad \text{offset} = E \bmod 64, \quad \text{índice}
 
 Para `0x12345678`, bloco `0x48D159`, offset 56, índice 25 e etiqueta `0x2468A`. O início da linha é `0x12345640`. Confere sempre que índice e offset cabem nos bits previstos antes de comparar etiquetas.
 
-Exemplo fechado com organização declarada. Matriz `8x8` de palavras em ordem por linhas a partir do endereço de palavra 0, logo 64 palavras. Cache de dados diretamente mapeada com 2 linhas de 16 palavras (128 bytes no total), inicialmente vazia; palavra `w` usa a linha `(w // 16) \bmod 2`.
-
-Por linhas, cada falta traz 16 palavras seguidas: faltas nos blocos 0, 1, 2 e 3, total 4 faltas para as 64 leituras. Por colunas, a primeira coluna lê as palavras 0, 8, 16, 24, 32, 40, 48 e 56, com 4 faltas, mas cada coluna seguinte volta a falhar porque os blocos foram expulsos: 4 faltas por coluna vezes 8 colunas, total 32 faltas. A ordem dos ciclos muda a taxa de faltas mesmo com o mesmo número de leituras.
+A divisão separa três decisões: o bloco determina que bytes transferir; o índice escolhe onde procurar; a etiqueta confirma se essa posição contém o bloco pedido.
 
 Para endereços de $n$ bits, com $B=2^b$ bytes por bloco e $S=2^s$ conjuntos:
 
@@ -62,13 +58,11 @@ Uma cache direta de 2 KiB, com linhas de 64 B e endereços de 32 bits, tem 32 li
   alt="Endereço 32 bits dividido em etiqueta 21 bits 31 a 11, índice 5 bits 10 a 6 e deslocamento 6 bits 5 a 0."
 />
 
-Para `0x12345678`: deslocamento `0x38`=56; índice `(endereço >> 6) & 31`=25; etiqueta `endereço >> 11`=`0x2468A`. O início da linha é `0x12345640`.
+No desenho, os 6 bits baixos escolhem o byte, os 5 seguintes escolhem uma das 32 linhas e os 21 restantes distinguem blocos que concorrem por essa linha. Para o endereço do exemplo, $(25\times64)+56=1656$ são os 11 bits baixos. A etiqueta recupera o resto:
 
-<CodePlayground
-  language="python"
-  title="Separar endereço, índice e etiqueta"
-  code={exemplo}
-/>
+$$E=(\mathtt{0x2468A}\times32+25)\times64+56=\mathtt{0x12345678}.$$
+
+Esta reconstrução permite conferir a decomposição e, numa substituição, recuperar o endereço da linha antiga.
 
 ## Seguir uma sequência de leituras
 
@@ -110,3 +104,12 @@ A capacidade anunciada de dados é só 128 B. Para write-back, acrescenta 8 bits
 ## Endereços de uma matriz
 
 Em C, uma matriz contígua em ordem por linhas `A[R][K]` tem endereço `base + (iK+j)×tamanho`. Variar `j` percorre dados adjacentes; variar `i` salta uma linha inteira. Trocar a ordem dos ciclos pode melhorar localidade, desde que conserve dependências e significado. Processar pequenos blocos de uma matriz permite reutilizar dados antes de os expulsar, mas o bloco deve caber no nível relevante da cache.
+
+Considera `A[8][8]` de palavras de 4 B, base 0, e uma cache direta de duas linhas de 16 palavras. A palavra `(i,j)` tem número $8i+j$. O bloco é $(8i+j)//16$ e o índice é esse bloco módulo 2. A cache começa vazia em cada percurso.
+
+| Percurso    | Primeiros números de palavra | Blocos correspondentes                | Faltas em 64 leituras |
+| ----------- | ---------------------------- | ------------------------------------- | --------------------- |
+| Por linhas  | 0, 1, 2, …, 15, 16, …        | 16 referências a cada bloco, de 0 a 3 | 4                     |
+| Por colunas | 0, 8, 16, 24, 32, 40, 48, 56 | 0, 0, 1, 1, 2, 2, 3, 3                | 32                    |
+
+Por linhas, cada bloco carregado serve 16 leituras consecutivas. Por colunas, 2 expulsa 0 e 3 expulsa 1; a coluna seguinte volta aos blocos expulsos. Há quatro faltas por coluna, embora o programa leia as mesmas 64 palavras. A diferença está na ordem dos acessos.

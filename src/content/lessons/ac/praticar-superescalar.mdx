@@ -1,9 +1,12 @@
 ---
 title: Praticar ILP
-description: Questões de treino com hipóteses, pistas e resoluções justificadas.
+description: Dependências de registos e memória, recursos comuns e emissão.
 section: exercicios
 editorial:
   basedOn: 2024/25
+  sources:
+    - title: 'Ficha 3, exercício 3, modelo de recursos, exemplos próprios, 2024/25'
+      url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -27,7 +30,6 @@ import Exercise from '../../../components/Exercise.astro';
     dependências entre pares.
   </div>
   <div slot="hint">Anota conjuntos de registos lidos e escritos.</div>
-  <div slot="hint-more">I2 lê t0; I3 escreve t0.</div>
   <div slot="solution">
     I1→I2 RAW em t0; I2→I3 WAR em t0; I1→I3 WAW em t0. Ler t0 em I2 não é uma
     escrita nesse registo.
@@ -50,7 +52,6 @@ import Exercise from '../../../components/Exercise.astro';
     início 2. Quantos ciclos da primeira entrada à última saída?
   </div>
   <div slot="hint">Os inícios estão espaçados 2 ciclos.</div>
-  <div slot="hint-more">6+(5−1)×2.</div>
   <div slot="solution">
     14 ciclos, ou seja, os inícios podem ser 1,3,5,7,9 e a última saída no fim
     de 14.
@@ -95,7 +96,6 @@ import Exercise from '../../../components/Exercise.astro';
     Independência é condição necessária para ultrapassar, mas não cria o
     mecanismo.
   </div>
-  <div slot="hint-more">O enunciado fixa emissão em ordem.</div>
   <div slot="solution">
     A instrução seguinte não ultrapassa ID bloqueado. Uma reordenação estática
     válida pode colocá-la antes; sequenciamento dinâmico pode permitir execução
@@ -118,7 +118,6 @@ import Exercise from '../../../components/Exercise.astro';
     superescalar. Calcula CPI.
   </div>
   <div slot="hint">Divide ciclos por instruções.</div>
-  <div slot="hint-more">50/80.</div>
   <div slot="solution">
     CPI 0,625; IPC 1,6, porque a emissão múltipla permite concluir mais de uma
     instrução por ciclo em média.
@@ -146,7 +145,6 @@ import Exercise from '../../../components/Exercise.astro';
     externos.
   </div>
   <div slot="hint">Calcula os endereços efetivos, em bytes.</div>
-  <div slot="hint-more">100+4 e 104+0 são a mesma posição.</div>
   <div slot="solution">
     Não. O load deve observar o valor guardado pelo store no endereço 104, ou
     seja, existe RAW de memória apesar das bases terem nomes diferentes. O
@@ -161,33 +159,35 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-ilp-mem-partilhada"
-  revision={1}
-  title="Arbitrar MEM e WB comuns"
+  revision={2}
+  title="Escalonar uma conclusão comum"
   explanation="/cadeiras/ac/superescalar/#múltiplas-unidades-com-emissão-em-ordem"
   answer={{
     kind: 'self',
     checklist: [
-      'Separei unidades distintas de porto comum.',
-      'Adiei uma conclusão em conflito de porto.',
-      'Mantive emissão e conclusão em ordem.',
+      'Coloquei mul em EX nos ciclos 3 a 5 e em MEM 6.',
+      'Retive a add independente antes de MEM 7.',
+      'Usei o resultado da add em EX 7 da sub.',
     ],
   }}
 >
-  <p>
-    ALU de 1 ciclo, multiplicador de 3 ciclos e porto MEM/WB comum. Emite mul;
-    lw; add dependente dos dois. Explica onde cada um espera.
-  </p>
+  <div>
+    Traça <code>mul t0,t1,t2; add t3,t4,t5; sub t6,t3,a0</code>. IF e ID duram
+    um ciclo; a ALU dura um e mul ocupa três fases com intervalo 1. Há MEM e WB
+    comuns, uma instrução por ciclo, pela ordem do programa, e atalhos para EX.
+    Cada unidade retém a saída até passar por MEM e não aceita uma operação que
+    a substitua enquanto estiver retida. Não há faltas ou saltos. A primeira
+    instrução está em IF 1. Indica EX, MEM e WB das três e distingue espera por
+    recurso de espera por operando.
+  </div>
   <div slot="hint">
-    O mul e o lw usam unidades distintas, mas podem concluir juntos.
+    Segue primeiro a ordem de MEM, depois verifica quando cada operando pode
+    chegar a EX.
   </div>
-  <div slot="hint-more">Só um usa o porto comum por ciclo.</div>
   <div slot="solution">
-    O lw emite após o mul porque são unidades distintas. O add espera pelos dois
-    operandos. Se o fim do mul e o MEM do lw pedirem o porto comum no mesmo
-    ciclo, um espera um ciclo. O sub independente seguinte continua bloqueado
-    pela emissão em ordem.
-  </div>
-  <div slot="mistakes">
-    Assumir unidades distintas sem arbitrar o porto comum de conclusão.
+    mul: EX 3–5, MEM 6, WB 7. add: EX 4, resultado retido em 5–6, MEM 7, WB 8.
+    sub: ID 4–6, EX 7, MEM 8, WB 9. Embora add seja independente, não pode
+    concluir antes de mul. sub pode obter t3 do registo EX/MEM em EX 7, quando
+    add já avança para MEM; não precisa de esperar pelo WB 8.
   </div>
 </Exercise>

@@ -12,9 +12,7 @@ editorial:
 import Dot from '../../../components/Dot.astro';
 import tomasulo from '../../ac/tomasulo.dot?raw';
 
-Já sabes os limites do [paralelismo com emissão em ordem](/cadeiras/ac/superescalar/); a pergunta desta página é: como deixar cada operação executar mal os seus operandos fiquem prontos, mesmo que uma instrução anterior continue à espera?
-
-Uma soma pronta fica à espera porque uma multiplicação anterior ainda não tem operandos. Tomasulo permite emitir instruções em ordem e executar as que já têm os operandos, mesmo quando uma anterior espera. A renomeação distingue resultados produzidos por escritas diferentes do mesmo registo.
+Uma soma independente pode ter operandos prontos enquanto uma multiplicação anterior espera. Tomasulo mantém a emissão pela ordem do programa, mas deixa executar as operações prontas nas suas estações. A renomeação distingue resultados de escritas diferentes do mesmo registo.
 
 ## O estado de uma estação
 
@@ -39,7 +37,7 @@ V e Q descrevem alternativas para cada operando: se Qj não é zero, Vj ainda n�
 
 Ordem de eventos usada nesta página. Emissão escolhe estação livre e captura origens antes de renomear o destino. Execução começa no ciclo seguinte à emissão ou à receção do último operando. Um resultado difunde no ciclo seguinte ao fim da execução. Um CDB serve uma etiqueta por ciclo, com prioridade à instrução mais antiga.
 
-A folha de cálculo das fichas usa por vezes outro contrato e permite receber o CDB e começar no mesmo ciclo. Por isso o exercício da página de prática totaliza 8 ciclos com latências e convenções próprias. Não copies tabelas entre contratos diferentes. Compara sempre emissão, início de execução e difusão antes de discutir divergências.
+A convenção temporal faz parte do problema. Na prática associada, multiplicação e soma duram ambas dois ciclos, pelo que os resultados não competem pelo CDB e a última difusão ocorre no ciclo 8. Aqui a multiplicação dura três ciclos e cria um conflito de CDB, levando a conclusão ao ciclo 9. Antes de comparar tabelas, confere durações, início de execução e difusão.
 
 1. **Emitir:** escolher uma estação livre da classe certa. Capturar cada origem: valor se Qi=0, etiqueta se Qi≠0. Só depois atribuir a etiqueta da estação ao Qi do destino.
 2. **Executar:** iniciar quando ambos os Q são zero e a unidade admite uma nova operação. A duração e o intervalo de início seguem o enunciado.
@@ -85,13 +83,18 @@ E no banco: Qi(f0)=A2, Qi(f2)=A1. A estação identifica a versão de um valor; 
 
 ## Bloqueios e arbitragem
 
-Três bloqueios distintos. Falta de estação livre protela a emissão e as instruções seguintes esperam, porque a emissão é em ordem. Unidade ocupada retém a operação na estação mesmo com operandos prontos. Conflito no CDB mantém a estação ocupada após o fim da execução e atrasa os consumidores dessa etiqueta.
+A mesma operação pode esperar por motivos diferentes:
 
-No exemplo completo, o ciclo 4 deixa dois resultados prontos. O CDB serve M1 no ciclo 5 e A1 no ciclo 6. A estação A2 recebe primeiro `Vj = 6` e só depois `Vk = 9`. O registo `f0` não recebe o valor 6 no ciclo 5 porque `Qi(f0)` já é A2. Esta é a situação em que um resultado antigo não pode sobrescrever um destino renomeado.
+| Situação                                        | Onde espera?                                | O que permite avançar?            |
+| ----------------------------------------------- | ------------------------------------------- | --------------------------------- |
+| Nenhuma estação da classe livre                 | Na fila de emissão, bloqueando as seguintes | Libertar uma estação após difusão |
+| Estação ocupada com Qj ou Qk pendente           | Na estação, sem ocupar a unidade de cálculo | Receber o operando no CDB         |
+| Operandos prontos, unidade sem pipeline ocupada | Na estação                                  | A unidade admitir outra operação  |
+| Resultado pronto, CDB usado pela mais antiga    | Na estação, após execução                   | A próxima oportunidade no CDB     |
 
-Se não existe estação livre da classe pedida, a emissão protela. Uma estação à espera de operandos continua ocupada. Uma unidade sem pipeline pode estar ocupada mesmo que exista uma estação livre; nesse caso a operação pode ser emitida e esperar, se o modelo separar esses recursos.
+No ciclo 4 do exemplo, M1 e A1 terminam. M1 difunde no 5, mas A1 conserva o resultado e só difunde no 6. A2 ainda não pode começar no 6: recebe aí o segundo operando e executa a partir de 7. O atraso do CDB chega assim ao consumidor.
 
-Com um CDB, resultados simultâneos não podem ambos avançar. Um resultado atrasado mantém a estação ocupada. Fixa se uma estação libertada no ciclo permite emissão nesse mesmo ciclo ou apenas no seguinte; usa uma ordem de eventos coerente na tabela inteira.
+Uma estação à espera de operandos continua ocupada, mesmo com a unidade livre. Define também se uma estação libertada pode receber nova emissão no mesmo ciclo ou apenas no seguinte; aplica a mesma ordem de eventos em todo o traço.
 
 O CPI efetivo de um fragmento é ciclos totais/instruções, incluindo o início e a conclusão final. Neste exemplo é 9/3=3, apesar de haver trabalho sobreposto.
 

@@ -1,9 +1,12 @@
 ---
 title: Praticar programação SIMD
-description: Questões de treino com hipóteses, pistas e resoluções justificadas.
+description: Contadores, resto, saturação, permutações e produtos complexos.
 section: exercicios
 editorial:
   basedOn: 2024/25
+  sources:
+    - title: 'Ficha 4, exercícios 2 e 5, adaptações com casos limite, 2024/25'
+      url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -20,7 +23,6 @@ import Exercise from '../../../components/Exercise.astro';
     e no fim troca sinal com SUB8(0, contador). Que contagem devolve essa via?
   </div>
   <div slot="hint">O acumulador tem só 8 bits.</div>
-  <div slot="hint-more">−256 mod 256=0.</div>
   <div slot="solution">
     Devolve 0, embora houvesse 256 verdadeiros. Reduzir cada grupo num
     acumulador escalar mais largo evita esse wrap; outra opção exige um limite
@@ -33,20 +35,32 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-simd-dot"
-  revision={1}
-  title="Produto interno com pares"
+  revision={2}
+  title="Traduzir o produto interno e conferir largura"
   explanation="/cadeiras/ac/programar-simd/#produto-interno-de-meias-palavras"
-  answer={{ kind: 'number', value: -9, tolerance: 0 }}
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Obtive parciais −8 e −1 e total −9.',
+      'Usei duas cargas e KMDA por par, com avanço de 4 bytes.',
+      'Expliquei que aumentar o acumulador não desfaz saturação de KMDA.',
+    ],
+  }}
 >
-  <p>x=[2,−3,4,1], y=[5,6,−2,7]. Sem overflow, calcula o produto interno.</p>
-  <div slot="hint">Agrupa duas meias palavras por parcial.</div>
-  <div slot="hint-more">Primeiro 10−18; segundo −8+7.</div>
-  <div slot="solution">
-    Parciais −8 e −1; total −9. KMDA pode formar cada parcial e a soma escalar
-    reúne os dois.
+  <div>
+    Para x=[2,−3,4,1] e y=[5,6,−2,7], com elementos de 16 bits, sem overflow
+    neste vetor, descreve um ciclo SIMD que calcule o produto interno. Indica
+    cargas, parciais e avanço dos apontadores. Se um par dos dois vetores fosse
+    [−32768,−32768], bastaria alargar o acumulador após KMDA para obter a soma
+    exata?
   </div>
-  <div slot="mistakes">
-    Somar elementos antes de multiplicar ou tratar −3 como unsigned.
+
+  <div slot="solution">
+    Cada par usa lw em x e y, KMDA e uma soma escalar no acumulador. Avança os
+    dois apontadores 4 bytes. Os parciais são 2×5−3×6=−8 e 4×(−2)+1×7=−1; total
+    −9. No extremo dado, a soma de produtos é 2³¹ e KMDA já satura em 2³¹−1. Um
+    acumulador largo não recupera a unidade perdida; usa os dois produtos
+    completos de SMUL16 e soma-os com largura suficiente.
   </div>
 </Exercise>
 
@@ -75,7 +89,6 @@ import Exercise from '../../../components/Exercise.astro';
 >
   <p>Qual valor de 16 bits com sinal impede representar |x| no mesmo tipo?</p>
   <div slot="hint">O intervalo não é simétrico.</div>
-  <div slot="hint-more">Vai de −32768 a 32767.</div>
   <div slot="solution">
     −32768, porque negação modular conserva 0x8000 em vez de produzir 32768 com
     sinal. Exclui-o do contrato ou alarga a representação.
@@ -104,7 +117,6 @@ import Exercise from '../../../components/Exercise.astro';
     quatro produtos.
   </div>
   <div slot="hint">Faz dois diretos e dois cruzados.</div>
-  <div slot="hint-more">Diretos 8,−3; cruzados −2,12.</div>
   <div slot="solution">
     Real 8−(−3)=11; imaginária −2+12=10. O resultado é 11+j 10. Empacotar
     novamente só é válido se as duas partes couberem na largura pretendida.
@@ -134,7 +146,6 @@ import Exercise from '../../../components/Exercise.astro';
     grupos e bytes de resto há? Que contagem devolve?
   </div>
   <div slot="hint">A comparação é estrita, x&lt;−2.</div>
-  <div slot="hint-more">7//4=1 e 7 mod 4=3. Divide o vetor nessa posição.</div>
   <div slot="solution">
     Um grupo de 4 contém dois inferiores: −128 e −3. O resto contém −4 e −3, mas
     não −2. Total 4. Um lw extra para o resto leria um oitavo byte fora do
@@ -148,30 +159,29 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-simd-mirror8"
-  revision={1}
+  revision={2}
   title="Espelhar dois pontos por palavra"
   explanation="/cadeiras/ac/programar-simd/#coordenadas-e-números-complexos"
   answer={{
     kind: 'self',
     checklist: [
-      'Separei os dois pontos de 8 bits na palavra.',
-      'Apliquei SWAP8 dentro de cada meia palavra.',
-      'Não usei SWAP16 do caso de 16 bits.',
+      'Separei [x1,y1,x2,y2] em B0 a B3.',
+      'Obtive [2,1,4,3] com SWAP8.',
+      'Mostrei que SWAP16 troca pontos, sem trocar as coordenadas de cada um.',
     ],
   }}
 >
-  <p>
-    Explica por que mirrorSeq com coordenadas de 8 bits usa SWAP8 e não SWAP16.
-  </p>
-  <div slot="hint">Cada palavra tem dois pontos, não um.</div>
-  <div slot="hint-more">Cada meia palavra tem dois bytes a trocar.</div>
-  <div slot="solution">
-    Porque cada meia palavra contém dois valores de 8 bits do mesmo eixo lógico
-    em pontos distintos. SWAP8 troca os bytes dentro de cada meia palavra e
-    coloca cada ponto na posição espelhada. SWAP16 trocaria meias palavras
-    inteiras e seria o caso de coordenadas de 16 bits.
+  <div>
+    Dois pontos de coordenadas de 8 bits estão em memória como
+    [1,2,3,4]=[x1,y1,x2,y2], em endereços crescentes. Uma carga little endian dá
+    0x04030201. Calcula a palavra após SWAP8 e após SWAP16. Qual serve para
+    trocar x e y de cada ponto?
   </div>
-  <div slot="mistakes">
-    Aplicar o exemplo de 16 bits ao vetor de bytes sem separar os pontos.
+
+  <div slot="solution">
+    SWAP8 dá bytes [2,1,4,3], palavra 0x03040102, e espelha os dois pontos.
+    SWAP16 dá [3,4,1,2], palavra 0x02010403: troca os pontos de posição,
+    conservando x e y dentro de cada um. A granularidade da permutação tem de
+    coincidir com a largura das coordenadas.
   </div>
 </Exercise>

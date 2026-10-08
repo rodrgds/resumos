@@ -12,9 +12,7 @@ editorial:
 import Dot from '../../../components/Dot.astro';
 import dependencias from '../../ac/dependencias.dot?raw';
 
-Já sabes sobrepor instruções na [pipeline](/cadeiras/ac/pipeline/) e escolher o caminho de cada salto; a pergunta desta página é: como usar várias unidades de cálculo em simultâneo para concluir mais do que uma instrução por ciclo?
-
-Enquanto a ALU soma, o multiplicador pode estar parado sem necessidade. Uma unidade funcional pode calcular enquanto outra executa uma operação independente. Este paralelismo ao nível de instruções, ILP, encontra limites nas dependências, nos recursos e na possibilidade de escolher o trabalho pronto.
+Um multiplicador pode continuar a trabalhar enquanto a ALU calcula uma subtração independente. O **paralelismo ao nível de instruções**, ILP, aproveita esse trabalho simultâneo. O número de unidades não chega para decidir quais as operações que podem avançar: precisamos de conhecer dependências, disponibilidade dos operandos e portos partilhados.
 
 ## RAW, WAR e WAW
 
@@ -45,48 +43,41 @@ Quatro operações com $L=6,I=1$ terminam em 9 ciclos. Com $I=6$, levam 24. Se o
 
 ## Múltiplas unidades com emissão em ordem
 
-Escalonamento com recursos partilhados. ALU com 1 ciclo, multiplicador com latência 3 e intervalo 1, uma unidade de memória e um porto comum MEM/WB. Emissão de uma por ciclo, em ordem, com atalhos.
-
-```riscv
-mul t0, t1, t2
-lw t3, 0(a0)
-add t4, t0, t3
-sub t5, t6, a1
-```
-
-O `mul` ocupa execução nos ciclos 3, 4 e 5. O `lw` emite a seguir e usa MEM num ciclo em que o `mul` ainda executa, o que é permitido porque são unidades distintas. O `add` precisa de `t0` e de `t3`: só entra em EX quando ambos estiverem disponíveis, incluindo o dado do load. O `sub` independente não ultrapassa o `add` bloqueado neste modelo. Se MEM e WB forem comuns e dois resultados pedirem o porto no mesmo ciclo, o mais antigo passa e o outro espera um ciclo.
-
-Ciclo a ciclo, com emissão de uma por ciclo em ordem e atalhos para EX:
-
-| Ciclo | Emissão e ID                              | Execução e MEM                            | Justificação da espera                                                      |
-| ----- | ----------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- |
-| 1     | `mul` emite                               | Sem execução                              | Sem bloqueio                                                                |
-| 2     | `lw` emite                                | `mul` EX 1/3                              | Unidades distintas, sem conflito                                            |
-| 3     | `add` bloqueado em ID                     | `mul` EX 2/3; `lw` calcula endereço em EX | `add` espera `t0` do `mul` e `t3` do `lw`                                   |
-| 4     | `add` bloqueado em ID; `sub` retida atrás | `mul` EX 3/3; `lw` em MEM                 | `add` continua sem os dois operandos; `sub` não ultrapassa emissão em ordem |
-| 5     | `add` bloqueado em ID                     | `mul` concluído, `lw` em WB               | `t0` só fica disponível no fim de 5; `t3` segue por atalho MEM/WB           |
-| 6     | `add` entra em EX; `sub` passa a ID       | `add` EX com `t0` e `t3` por atalho       | Primeira oportunidade com ambos os operandos prontos                        |
-| 7     | `sub` entra em EX                         | ALU livre após `add`                      | `sub` esperou pela ordem de emissão, não por dados                          |
-
-Considera uma ALU de 1 ciclo e um multiplicador de 3 fases, intervalo 1, com atalhos. A emissão continua de uma instrução por ciclo e uma instrução bloqueada em ID bloqueia as seguintes.
+Usamos IF e ID de um ciclo, uma ALU de um ciclo e um multiplicador de três fases, com intervalo de início 1. Todas as instruções passam depois por MEM e WB comuns, uma por ciclo, pela ordem do programa. Há atalhos para EX, memórias I/D separadas e não há faltas. Cada unidade retém a saída até poder passar por MEM; enquanto essa saída está retida, não aceita uma operação que a substitua. Uma instrução bloqueada em ID retém as seguintes.
 
 ```riscv
 mul t0,t1,t2
-add t3,t0,t4
-sub t5,t6,a0
+lw t3,0(a0)
+add t4,t0,t3
+sub t5,t6,a1
 ```
 
-A multiplicação pode ocupar execução nos ciclos 3,4,5. O `add` precisa do produto no seu EX, logo só entra em EX 6. A `sub`, embora independente, não ultrapassa o `add` neste modelo em ordem. Reordenar para `mul;sub;add` aproveita parte dessa espera, se preservar o significado.
+A multiplicação começa EX no ciclo 3 e termina no fim de 5. O load poderia terminar o cálculo do endereço no fim de 4, mas não pode passar por MEM antes da multiplicação mais antiga. O quadro distingue essa espera estrutural da espera do `add` pelos valores.
 
-Unidades de durações distintas podem concluir no mesmo ciclo. Verifica portos de escrita, estágio MEM comum e regras de arbitragem. Em emissão e conclusão estritamente em ordem, WAR/WAW podem não causar conflitos; com conclusão fora de ordem passam a exigir tratamento.
+| Instrução | IF  | ID  | Execução                     | MEM | WB  |
+| --------- | --- | --- | ---------------------------- | --- | --- |
+| `mul`     | 1   | 2   | 3–5                          | 6   | 7   |
+| `lw`      | 2   | 3   | Endereço em 4; espera em 5–6 | 7   | 8   |
+| `add`     | 3   | 4–7 | 8                            | 9   | 10  |
+| `sub`     | 4–7 | 8   | 9                            | 10  | 11  |
+
+No ciclo 6, MEM serve a multiplicação; no 7, serve o load. O dado carregado só existe no fim de 7, pelo que o `add` pode recebê-lo em EX 8 pelo atalho MEM/WB. O produto já está disponível. A `sub` é independente, mas não ultrapassa o `add` retido em ID.
+
+A ordem `mul; sub; lw; add` pode ocupar a ALU durante a multiplicação, se conservar a semântica e não houver exceções ou efeitos externos relevantes. Ainda assim, verifica o porto MEM comum e a ordem de conclusão: ocupar uma unidade livre não garante que o tempo total diminua.
+
+Em outros modelos, o porto de escrita pode ser comum mas MEM separado, ou a conclusão pode ocorrer fora de ordem. Essas hipóteses mudam a tabela. Antes de contar, fixa quais os recursos comuns e qual a ordem imposta.
 
 ## Emissão múltipla
 
-Duas vias com limite de classes ajudam a ver o bloqueio. Supõe uma via ALU e uma via memória por ciclo. O par `add; lw` emite junto se for independente. O par `lw; add dependente` não emite junto porque o `add` precisa do dado no mesmo ciclo. O par `lw; sw` pode emitir junto se os endereços forem conhecidos como distintos. Quando o salto limita a janela, conta só as instruções úteis emissíveis.
+Um processador **superescalar** emite mais de uma instrução por ciclo. Supõe duas vias: uma ALU e uma memória. O par `add; lw` pode emitir junto se for independente; duas operações de memória não cabem nesse ciclo, mesmo com endereços distintos.
 
-Um processador **superescalar** pode emitir mais de uma instrução por ciclo. Isso não significa que qualquer par seja permitido. Pode haver limites por classe, como uma ALU e um acesso a memória, ou por número de portos e unidades.
+| Par candidato                 | Pode emitir junto neste modelo? | Motivo                                         |
+| ----------------------------- | ------------------------------- | ---------------------------------------------- |
+| `add t0,t1,t2`; `lw t3,0(a0)` | Sim                             | Uma ALU, uma memória e operandos independentes |
+| `lw t0,0(a0)`; `add t1,t0,t2` | Não                             | O `add` precisa do resultado do load           |
+| `lw t0,0(a0)`; `sw t1,0(a1)`  | Não                             | Ambos pedem a única via de memória             |
 
-Se duas instruções dependem por RAW e precisam do valor no mesmo ciclo, não se emitem juntas sem um caminho que satisfaça esse uso. Um salto pode limitar a janela útil de instruções, mesmo com unidades livres.
+A ausência de dependências não elimina limites de classe, portos ou unidades. Um salto pode ainda limitar a janela de instruções úteis disponível para formar pares.
 
 Para 100 instruções em 60 ciclos: IPC=$100/60=1,667$ e CPI=$60/100=0,6$. CPI inferior a 1 é possível em emissão múltipla. O pico de duas instruções por ciclo não garante IPC 2 em um programa real.
 

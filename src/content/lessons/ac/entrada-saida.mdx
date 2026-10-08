@@ -11,9 +11,7 @@ editorial:
 
 import YouTube from '../../../components/YouTube.astro';
 
-Já sabes [medir o custo de um programa](/cadeiras/ac/desempenho/) em tempo e ciclos; a pergunta desta página é: como troca o sistema informação com dispositivos exteriores, como um sensor ou um teclado, sem prender o processador à espera?
-
-Um sensor avisa que tem dados e o CPU tem de os ir buscar sem ficar preso a esperar. Um periférico produz, recebe ou guarda informação. O controlador faz a ponte entre o dispositivo e o sistema: expõe comandos, estado e dados, adapta protocolos e pode agrupar transferências.
+Um sensor produz um bloco de dados e o CPU precisa de o recolher antes de o buffer voltar a encher. O **controlador** expõe comandos, estado e dados e faz a ponte entre o dispositivo e o sistema. Polling, interrupções e DMA repartem de formas diferentes o trabalho de consultar, transferir e notificar.
 
 ## Interface com o controlador
 
@@ -25,7 +23,7 @@ Um barramento partilhado dá acesso alternado aos participantes. Ligações pont
 
 ## Varrimento periódico
 
-Deriva o custo antes de escolher. Se cada consulta custa $C$ ciclos e repete a cada $P$ ciclos, a fração da CPU é $C/P$. Com $C = 200$ e $P = 10{,}000$, são 2 por cento. Se o dispositivo produz um evento a cada $20{,}000$ ciclos, metade das consultas encontra trabalho. Não confundas atividade do dispositivo, fração do tempo com dados prontos, com ocupação da CPU, fração do tempo a consultar ou a servir.
+Se uma consulta custa $C$ ciclos e se repete a cada $P$ ciclos, a fração do CPU é $C/P$. Com $C=200$ e $P=10000$, são 2%. Mesmo que apenas metade das consultas encontre dados, o CPU paga todas. A atividade do dispositivo e a ocupação do CPU têm denominadores diferentes.
 
 Em polling, o CPU consulta o estado e, quando necessário, transfere dados. Um ciclo de espera ativa consulta repetidamente; um varrimento periódico executa consultas a intervalos definidos. Não são o mesmo custo.
 
@@ -33,7 +31,7 @@ Se o periférico pode receber R bytes/s e armazena blocos de B bytes, são no m�
 
 Para 16000 bits/s e blocos 400 bits: 40 blocos/s e intervalo 25 ms. Se cada consulta custa 300 ciclos num CPU a 2 GHz, a ocupação por consultas é $40\times300/(2\times10^9)=0,000006$, isto é 0,0006%. Conta separadamente a transferência se esse custo ainda não a inclui.
 
-Se a dúvida é como escolher o intervalo de consulta sem perder dados, vê este vídeo e repara em como o período se relaciona com a taxa de chegada e o tamanho do bloco.
+O vídeo acompanha a relação entre taxa de chegada, tamanho do bloco e período de consulta.
 
 <YouTube id="4nxblx4ADQ8" title="Varrimento" />
 
@@ -49,15 +47,13 @@ $$u=\frac{q_pc_p}{q_{\max}c_i}.$$
 
 Com $q_p=q_{\max}$, consulta 400 ciclos e interrupção 600, interrupções gastam menos abaixo de $u=2/3$. Isso compara custo de CPU, não prova que a latência ou capacidade sejam suficientes.
 
-Se a dúvida é quando compensa trocar consultas repetidas por uma notificação do dispositivo, vê este vídeo e repara em como o CPU retoma a tarefa depois de servir a interrupção.
+O vídeo mostra o desvio para a rotina de interrupção e a retoma da tarefa interrompida.
 
 <YouTube id="DBVVpybCXcU" title="Interrupções" />
 
 ## DMA
 
-Conta o limiar com unidades. Se preparar e concluir uma transferência custa 500 ciclos e cada byte por programa custa 4 ciclos, o DMA compensa acima de 125 bytes sem contar a sobreposição. Com blocos pequenos e frequentes, o custo fixo domina. Com blocos grandes, a taxa do dispositivo domina.
-
-Antes de ativar DMA sobre dados em cache, limpa as linhas dirty do intervalo de origem e invalida o intervalo de destino após a transferência, conforme o sentido. Sem isso, o dispositivo lê valores antigos ou a CPU lê cópias antigas após a escrita do controlador.
+Se preparar e concluir uma transferência custa 500 ciclos e transferir por programa custa 4 ciclos por byte, os custos igualam-se em $500/4=125$ bytes. Acima desse tamanho, o custo de CPU do DMA é menor neste modelo, antes de considerar contenção e sobreposição.
 
 O CPU configura origem/destino, tamanho e direção; o controlador transfere diretamente entre dispositivo e memória; uma interrupção ou outro mecanismo assinala o fim. O CPU paga preparação/finalização, mas não uma operação por palavra.
 

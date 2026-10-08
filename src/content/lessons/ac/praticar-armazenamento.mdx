@@ -1,6 +1,6 @@
 ---
 title: Praticar armazenamento
-description: Questões de treino com hipóteses, pistas e resoluções justificadas.
+description: Latência de disco, controladores, gargalos e sobreposição finita.
 section: exercicios
 editorial:
   basedOn: 2024/25
@@ -10,20 +10,22 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-disk-rotation"
-  revision={1}
-  title="Usar meia rotação"
+  revision={2}
+  title="Decompor um pedido aleatório"
   explanation="/cadeiras/ac/armazenamento/#disco-magnético"
-  answer={{ kind: 'number', value: 4.1666667, tolerance: 1e-5, unit: 'ms' }}
+  answer={{ kind: 'number', value: 8.4178666667, tolerance: 1e-5, unit: 'ms' }}
 >
-  <p>Disco 7200 RPM, posição angular uniforme. Qual espera média de rotação?</p>
-  <div slot="hint">Uma volta demora 60/7200 segundos.</div>
-  <div slot="hint-more">A média é metade de uma volta.</div>
-  <div slot="solution">
-    30/7200 s=4,1666667 ms. É a parcela média de rotação, não o tempo total de
-    pedido.
+  <div>
+    Um disco roda a 7200 RPM, com posição angular inicial uniforme. Uma leitura
+    de 8 KiB tem procura média de 4 ms, transferência de 160 MB/s decimais e
+    controlador de 0,2 ms, sem fila. Calcula o tempo médio completo do pedido em
+    ms.
   </div>
-  <div slot="mistakes">
-    Usar uma volta completa ou somar procura que não foi fornecida.
+  <div slot="hint">Converte os KiB em bytes e todas as durações para ms.</div>
+  <div slot="solution">
+    A rotação média é 30/7200 s=4,1666667 ms; a transferência é 8192/(160×10⁶)
+    s=0,0512 ms. O total é 4+4,1666667+0,0512+0,2=8,4178667 ms. A taxa anunciada
+    só fornece a parcela de transferência.
   </div>
 </Exercise>
 
@@ -39,7 +41,6 @@ import Exercise from '../../../components/Exercise.astro';
     blocos 64 KiB; sem outros limites. Qual taxa sustentada máxima?
   </div>
   <div slot="hint">Exprime cada limite na mesma unidade.</div>
-  <div slot="hint-more">CPU 50000; bus 9765,625; discos 4000.</div>
   <div slot="solution">
     Mínimo 4000 pedidos/s. Taxa útil 262,144 MB/s. O controlador não acrescenta
     limite neste enunciado.
@@ -63,7 +64,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     O primeiro cálculo só começa após a primeira transferência.
   </div>
-  <div slot="hint-more">4+3+(3−1)×4.</div>
   <div slot="solution">
     15 ms, porque DMA 0–4,4–8,8–12; CPU 4–7,8–11,12–15. São 21 ms sem
     sobreposição.
@@ -83,7 +83,6 @@ import Exercise from '../../../components/Exercise.astro';
     Qual rapidez relativa?
   </div>
   <div slot="hint">Soma as duas frações depois de as acelerar.</div>
-  <div slot="hint-more">0,4/4+0,6/2.</div>
   <div slot="solution">
     Tempo relativo 0,4; rapidez 2,5. A fórmula pressupõe partes sucessivas, sem
     sobreposição anterior.
@@ -107,7 +106,6 @@ import Exercise from '../../../components/Exercise.astro';
     Qual é o tempo total?
   </div>
   <div slot="hint">Depois do primeiro bloco, o CPU é o estágio mais lento.</div>
-  <div slot="hint-more">2+5+(3−1)×5.</div>
   <div slot="solution">
     17 ms. DMA transfere B1 em 0–2 e B2 em 2–4. O CPU processa B1 em 2–7; só
     então o primeiro buffer fica livre para DMA transferir B3 em 7–9. O CPU
@@ -121,20 +119,29 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-agregado-discos"
-  revision={1}
-  title="Dimensionar discos e controladores"
+  revision={2}
+  title="Dimensionar controladores e verificar o barramento"
   explanation="/cadeiras/ac/armazenamento/#o-recurso-que-limita-a-taxa"
-  answer={{ kind: 'number', value: 2, tolerance: 0 }}
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Obtive taxa pedida de 70 MB/s.',
+      'Distribuí sete discos por três controladores de 30 MB/s.',
+      'Identifiquei o barramento de 60 MB/s como limite final.',
+    ],
+  }}
 >
   <div>
-    Cada disco sustenta 10 MB/s e cada controlador sustenta 30 MB/s. Quantos
-    controladores são precisos para 6 discos?
+    Sete discos sustentam 10 MB/s cada. Cada controlador suporta até três discos
+    e 30 MB/s; todos usam um barramento comum de 60 MB/s. Ignora CPU e outros
+    custos. Quantos controladores permitem ligar os sete discos? Pode o sistema
+    sustentar os 70 MB/s dos discos em simultâneo?
   </div>
-  <div slot="hint">Soma primeiro a taxa agregada.</div>
-  <div slot="hint-more">60 MB/s no total.</div>
+
   <div slot="solution">
-    2 controladores. Seis discos pedem 60 MB/s agregados; um controlador com 30
-    MB/s não chega. A taxa de um disco não é a taxa do conjunto.
+    São precisos três controladores, com distribuição 3+3+1 discos. Isso dá
+    capacidade suficiente nos controladores, mas todos passam pelo barramento de
+    60 MB/s. A taxa final não excede min(70,90,60)=60 MB/s. Acrescentar outro
+    controlador não aumenta a capacidade desse barramento.
   </div>
-  <div slot="mistakes">Dimensionar pelo disco mais rápido isolado.</div>
 </Exercise>

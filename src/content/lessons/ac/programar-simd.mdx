@@ -12,9 +12,9 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import exemplo from '../../ac/examples/programar-simd.py?raw';
 
-Já conheces as [operações SIMD sobre bytes e meias palavras](/cadeiras/ac/simd/); a pergunta desta página é: como traduzir uma conta sobre muitos valores seguidos para essas operações, tratando o comprimento, o resto e os limites de cada contador?
+Para contar bytes com sinal inferiores a −2, percorre `[−128,−3,0,127,−4,−3,−2]`. O primeiro grupo de quatro produz duas ocorrências; os três bytes restantes produzem outras duas. O valor igual a −2 fica excluído porque a comparação é estrita.
 
-Contar bytes menores que um limite exige percorrer o vetor sem perder o resto nem rebentar contadores. Começa pela operação escalar, escolhe as vias, escreve o resultado por via e só depois traduz para instruções. Verifica comprimento zero, alinhamento, resto e overflow, porque um vetor com número de elementos múltiplo de 4 não é necessariamente não vazio.
+A tradução para SIMD precisa de conservar esta contagem e de não ler além dos sete bytes. Começa pela operação escalar, escolhe as vias e verifica comprimento zero, alinhamento, resto e largura do acumulador.
 
 ## Contar valores que satisfazem uma condição
 
@@ -85,11 +85,14 @@ A entrada vazia passa pelas duas verificações e retorna zero sem ler memória.
 
 ## Produto interno de meias palavras
 
-Exemplo completo com pares. Para `x = [2, -3, 4, 1]` e `y = [5, 6, -2, 7]`, KMDA forma `-8` a partir de `2x5 + (-3)x6` e `-1` a partir de `4x(-2) + 1x7`. A soma escalar reúne `-9`. Cada KMDA consome duas meias palavras de cada operando e produz um parcial de 32 bits. Dois parciais exigem depois uma soma escalar.
+Para o produto interno $\sum_i x_i y_i$, cada carga de palavra traz dois elementos de 16 bits. KMDA calcula dois produtos e soma-os num parcial de 32 bits. Mantém `x=[2,−3,4,1]` e `y=[5,6,−2,7]`:
 
-Para vetores longos, repete o padrão por blocos de 4 elementos, acumula parciais num registo escalar largo e trata o resto com cargas escalares. Não acumules parciais de 32 bits em vias de 8 bits.
+| Elementos | Produtos                         | Parcial KMDA |
+| --------- | -------------------------------- | ------------ |
+| 0 e 1     | $2\times5=10$; $(−3)\times6=−18$ | −8           |
+| 2 e 3     | $4\times(−2)=−8$; $1\times7=7$   | −1           |
 
-Para $\sum_i x_i y_i$, cada palavra carrega dois elementos de 16 bits. KMDA faz `x0×y0+x1×y1`; soma esse resultado a um acumulador escalar e avança 4 bytes. Para `x=[2,−3,4,1]`, `y=[5,6,−2,7]`, os parciais são −8 e −1; resultado −9.
+Uma soma escalar reúne $−8+(−1)=−9$. Avança os dois apontadores quatro bytes por grupo e trata um eventual elemento restante com cargas de meia palavra. O acumulador precisa de largura para o total; não guardes parciais de 32 bits em vias de 8 bits.
 
 KMDA satura no caso em que as quatro meias palavras valem −32768. Um acumulador mais largo depois da instrução não recupera o valor já saturado. Para uma soma exata nesse caso, usa os dois produtos completos de SMUL16 e acumula-os com largura suficiente. A soma de muitos parciais também pode exceder 32 bits. A ordem de redução de inteiros sem overflow conserva o resultado; para vírgula flutuante pode mudar arredondamentos.
 
@@ -109,19 +112,28 @@ Se SMUL16 produz dois produtos 32 bits, SUB16 não pode subtrair diretamente um 
 
 ## Coordenadas e números complexos
 
-Caso de 8 bits pedido na ficha. A rotina `mirrorSeq` recebe coordenadas de 8 bits com dois pontos por palavra. Cada palavra contém dois valores de x e dois de y nas vias correspondentes. `SWAP8` troca os bytes dentro de cada meia palavra e coloca cada ponto na posição espelhada. O exemplo da lição com `SWAP16` e coordenadas de 16 bits é outro caso: aí cada palavra contém um ponto.
+Na ficha, `mirrorSeq` recebe pontos de 8 bits intercalados em memória: `x1,y1,x2,y2`. Em little endian, a palavra tem vias `[B0,B1,B2,B3]=[x1,y1,x2,y2]`. SWAP8 troca bytes dentro de cada meia palavra:
 
-Para complexos, escreve os quatro produtos antes de somar. Com `a = (2, 3)` e `b = (4, -1)`, os diretos são `8` e `-3`; os cruzados são `-2` e `12`. A parte real é `8 - (-3) = 11`. A imaginária é `-2 + 12 = 10`. Só empacota o resultado se ambas as partes couberem na largura de destino.
+| Estado | B0  | B1  | B2  | B3  |
+| ------ | --- | --- | --- | --- |
+| Antes  | x1  | y1  | x2  | y2  |
+| SWAP8  | y1  | x1  | y2  | x2  |
+| SWAP16 | x2  | y2  | x1  | y1  |
 
-Uma palavra pode guardar `(H1,H0)=(y,x)`. SWAP16 troca as coordenadas numa operação; carregar/guardar continua a ter custo.
+SWAP8 espelha cada ponto trocando x e y. SWAP16 apenas troca a posição dos dois pontos neste formato. Se cada coordenada tiver 16 bits, uma palavra guarda um só ponto `(H1,H0)=(y,x)` e SWAP16 passa a ser a instrução adequada.
 
-Para complexos $a=a_r+j a_i$, $b=b_r+j b_i$:
+Para complexos, H0 guarda a parte real e H1 a imaginária. O produto é:
 
-$$\Re(ab)=a_rb_r-a_ib_i,\qquad\Im(ab)=a_rb_i+a_ib_r.$$
+$$
+\begin{aligned}
+\Re(ab)&=a_rb_r-a_ib_i,\\
+\Im(ab)&=a_rb_i+a_ib_r.
+\end{aligned}
+$$
 
-Se H0 guarda a parte real e H1 a imaginária, SMUL16 fornece os produtos diretos; SMULX16 fornece os cruzados. Subtrai os dois diretos para a parte real e soma os dois cruzados para a imaginária. Para `a=(2,3),b=(4,−1)`, o resultado é `(11,10)`.
+Com `a=(2,3)` e `b=(4,−1)`, os produtos diretos são 8 e −3; os cruzados, −2 e 12. SMUL16 fornece os diretos e SMULX16 os cruzados, em pares de registos de 32 bits. A subtração escalar $8−(−3)=11$ forma a parte real; a soma $−2+12=10$, a imaginária. Só depois empacota `(H1,H0)=(10,11)`, se ambas couberem em 16 bits com sinal.
 
-## Quando rende e quando não rende
+## Custo e limites de SIMD
 
 SIMD reduz instruções aritméticas por elemento, mas os dados têm de chegar aos registos. Replicação de constantes, permutações, alinhamento e restos têm custo. Um vetor curto pode não amortizar a preparação.
 

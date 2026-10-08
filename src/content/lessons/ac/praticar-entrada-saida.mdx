@@ -1,6 +1,6 @@
 ---
 title: Praticar entrada e saída
-description: Questões de treino com hipóteses, pistas e resoluções justificadas.
+description: Polling, interrupções, tamanho DMA e posse de buffers.
 section: exercicios
 editorial:
   basedOn: 2024/25
@@ -10,23 +10,30 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-poll-period"
-  revision={1}
-  title="Consultar a tempo"
+  revision={2}
+  title="Escolher consultas e calcular ocupação"
   explanation="/cadeiras/ac/entrada-saida/#varrimento-periódico"
-  answer={{ kind: 'number', value: 25, tolerance: 0, unit: 'ms' }}
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Obtive 40 blocos por segundo e intervalo ideal de 25 ms.',
+      'Calculei 12000 ciclos de consulta por segundo.',
+      'Obtive ocupação 0,0006% sem contar transferência ou jitter.',
+    ],
+  }}
 >
   <div>
-    Entrada 16000 bits/s, buffer de 400 bits, um bloco por consulta. Qual
-    intervalo máximo ideal de polling, sem atraso adicional?
+    Entrada de 16000 bits/s e buffer de 400 bits, removido numa consulta. Cada
+    consulta custa 300 ciclos num CPU de 2 GHz. Calcula o intervalo máximo ideal
+    e a ocupação de CPU por consultas nessa frequência. Ignora atraso adicional
+    na remoção e calcula apenas consultas, sem custo de transferência.
   </div>
-  <div slot="hint">Quantos blocos chegam por segundo?</div>
-  <div slot="hint-more">16000/400=40.</div>
+
   <div slot="solution">
-    1/40 s=25 ms. Com custo e jitter do serviço, é necessária margem para não
-    atrasar a remoção.
-  </div>
-  <div slot="mistakes">
-    Dividir bits por bytes ou responder 40 como um intervalo.
+    Chegam 16000/400=40 blocos/s. O intervalo máximo ideal é 1/40 s=25 ms. As
+    consultas gastam 40×300=12000 ciclos/s; a fração é 12000/(2×10⁹)=0,000006,
+    ou 0,0006%. O serviço real precisa de margem para a remoção, atrasos e
+    jitter.
   </div>
 </Exercise>
 
@@ -42,7 +49,6 @@ import Exercise from '../../../components/Exercise.astro';
     ocupação u iguala custos? Responde como fração, entre 0 e 1.
   </div>
   <div slot="hint">Iguala ciclos por segundo.</div>
-  <div slot="hint-more">40×400=40 u×600.</div>
   <div slot="solution">
     u=400/600=2/3. Abaixo deste valor, interrupções gastam menos ciclos no
     modelo dado.
@@ -65,7 +71,6 @@ import Exercise from '../../../components/Exercise.astro';
     cada transferência?
   </div>
   <div slot="hint">Usa a taxa agregada de 180 MB/s.</div>
-  <div slot="hint-more">B≥R×c/(0,02×f).</div>
   <div slot="solution">
     B≥180×10⁶×1600/(0,02×3×10⁹)=4800 bytes. Cada disco faz 12500
     transferências/s; os três gastam 37500×1600=60 milhões de ciclos/s, ou 2% do
@@ -108,9 +113,6 @@ import Exercise from '../../../components/Exercise.astro';
     linha WB dirty. Qual preparação é necessária?
   </div>
   <div slot="hint">A versão nova ainda pode existir só na cache.</div>
-  <div slot="hint-more">
-    DMA deve observar os dados atuais, antes de receber posse do buffer.
-  </div>
   <div slot="solution">
     Faz clean/write-back das linhas relevantes, ordena antes do arranque e
     respeita o protocolo de posse do buffer. Invalidar só descarta a cópia; não
@@ -120,24 +122,4 @@ import Exercise from '../../../components/Exercise.astro';
     Confundir validade com igualdade RAM ou tratar entrada e saída DMA da mesma
     forma.
   </div>
-</Exercise>
-
-<Exercise
-  id="ac-ocupacao-cpu"
-  revision={1}
-  title="Separar atividade e ocupação"
-  explanation="/cadeiras/ac/entrada-saida/#varrimento-periódico"
-  answer={{ kind: 'number', value: 0.02, tolerance: 1e-9 }}
->
-  <div>
-    Cada consulta custa 200 ciclos e repete a cada 10000 ciclos. Qual é a fração
-    da CPU ocupada?
-  </div>
-  <div slot="hint">Divide custo pelo período.</div>
-  <div slot="hint-more">200/10000.</div>
-  <div slot="solution">
-    0,02. É a ocupação da CPU, não a atividade do dispositivo. Mesmo que só
-    metade das consultas encontre dados, a CPU paga todas.
-  </div>
-  <div slot="mistakes">Multiplicar pela fração de consultas com dados.</div>
 </Exercise>

@@ -10,13 +10,11 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import exemplo from '../../ac/examples/simd.py?raw';
 import vias from '../../ac/simd-vias.typ?raw';
 
-Já sabes acelerar instruções umas a seguir às outras com [pipeline e ILP](/cadeiras/ac/superescalar/); a pergunta desta página é: como executar a mesma operação sobre vários dados pequenos com uma única instrução de 32 bits?
+`ADD8` soma quatro pares de bytes com uma instrução. Cada registo RV32 é dividido em quatro vias de 8 bits; `ADD16` divide-o em duas de 16 bits. **SIMD** significa uma instrução aplicada a múltiplos dados.
 
-Somar quatro bytes com quatro instruções desperdiça buscas e descodificações. Uma instrução SIMD, ou seja, uma instrução única aplicada a múltiplos dados, aplica a mesma operação a várias parcelas de dados. Neste modelo **empacotado de 32 bits**, as parcelas ocupam registos inteiros normais: quatro bytes ou duas meias palavras, ou seja, grupos de 16 bits. As instruções seguintes acrescentam operações a RV32; não usam o banco vetorial `v0…v31`.
+Este modelo empacotado usa os registos inteiros normais e as mnemónicas históricas dos materiais FEUP. Não usa o banco vetorial `v0…v31` da extensão RVV. A largura de cada via determina a interpretação, o overflow e a forma de guardar os resultados.
 
 ## Vias e interpretação
 
@@ -51,9 +49,18 @@ Os resultados são reduzidos a 16 bits por via. Escreve as duas equações antes
 
 ## Comparações e deslocamentos
 
-Exemplo de shift por via. Com bytes `[0x81, 0x02, 0xFF, 0x10]` e deslocamento aritmético de 1 por via, cada via desloca-se isolada: `0x81` dá `0xC0`, `0x02` dá `0x01`, `0xFF` dá `0xFF`, `0x10` dá `0x08`. Um shift escalar do registo inteiro misturaria bits entre vias e seria outro resultado.
+Com bytes dados pela ordem `[B0,B1,B2,B3]`, um deslocamento aritmético de 1 produz:
 
-Exemplo de mínimo com sinal. Com `a = [10, -20, 30, -40]` e `b = [5, -10, 40, -30]`, o mínimo por via dá `[5, -20, 30, -40]`. Compara via a via com a interpretação indicada. O caso `0xF0` contra 10 mostra a diferença: é menor com sinal e maior sem sinal.
+| Via | Antes, hexadecimal | Inteiro com sinal | Depois, com sinal | Padrão resultante |
+| --- | ------------------ | ----------------- | ----------------- | ----------------- |
+| B0  | `0x81`             | −127              | −64               | `0xC0`            |
+| B1  | `0x02`             | 2                 | 1                 | `0x01`            |
+| B2  | `0xFF`             | −1                | −1                | `0xFF`            |
+| B3  | `0x10`             | 16                | 8                 | `0x08`            |
+
+Cada via replica o seu próprio sinal. Um shift escalar da palavra `0x10FF0281` dá `0x087F8140`, diferente da palavra empacotada `0x08FF01C0`. Na operação escalar, bits atravessam fronteiras entre bytes.
+
+Para mínimos com sinal, `a=[10,−20,30,−40]` e `b=[5,−10,40,−30]` dão `[5,−20,30,−40]`. O padrão `0xF0` contra 10 torna a escolha de interpretação visível: −16 é menor que 10, mas 240 é maior.
 
 CMPEQ8/16 testa igualdade. SCMPLT/SCMPLE interpreta operandos com sinal; UCMPLT/UCMPLE, sem sinal. Uma comparação verdadeira produz **todos os bits 1 da via**, isto é 0xFF ou 0xFFFF; falsa produz zero.
 
@@ -63,15 +70,20 @@ Deslocamentos lógicos introduzem zeros; aritméticos replicam o sinal **em cada
 
 ## Multiplicação e pares de registos
 
-Distribuição dos produtos. Para `a = [-2, 3]` e `b = [4, 5]`, SMUL16 direto produz dois resultados de 32 bits: `-8` e `15`, um em cada registo do par. SMULX16 produz `-10` e `12`. O registo baixo do par recebe o produto da via baixa. O registo de 32 bits não contém dois produtos de 16 bits lado a lado.
+SMUL16 calcula H0×H0 e H1×H1 com sinal. Cada produto de duas meias palavras ocupa 32 bits, por isso os dois resultados exigem um par de registos. SMULX16 cruza H0×H1 e H1×H0; as variantes UMUL interpretam sem sinal.
 
-SMUL8 segue a mesma regra com quatro produtos de 16 bits em dois registos. As duas vias baixas ficam no registo par e as duas altas no registo ímpar. KMDA soma depois os dois produtos de 16 bits de cada palavra de 32 bits para formar um parcial de produto interno.
+Para `a=[−2,3]` e `b=[4,5]`, na ordem H0,H1:
 
-SMUL16 multiplica com sinal H0×H0 e H1×H1. Cada produto ocupa 32 bits, por isso dois produtos exigem um par de registos. SMULX16 cruza H0×H1 e H1×H0. UMUL16/UMULX16 interpreta sem sinal. O par físico é um registo de índice par e o seguinte; por exemplo `t3/t4` são `x28/x29`. Na notação de par `d`, os destinos são `x[2d]` e `x[2d+1]`.
+| Operação | Registo baixo do par | Registo alto do par |
+| -------- | -------------------- | ------------------- |
+| SMUL16   | $(−2)\times4=−8$     | $3\times5=15$       |
+| SMULX16  | $(−2)\times5=−10$    | $3\times4=12$       |
 
-Para `a=[−2,3]`, `b=[4,5]`, os produtos diretos são −8 e 15; os cruzados, −10 e 12. O resultado de 32 bits baixo não contém dois produtos de 16 bits. Se pretendes reconstruir vias de 16 bits, extrai/empacota a parte pretendida de **cada** produto, verificando se cabe.
+O par físico usa um registo de índice par e o seguinte, como `t3/t4`, isto é, `x28/x29`. Na notação de par `d`, os destinos são `x[2d]` e `x[2d+1]`. O registo baixo contém um produto completo, não dois produtos de 16 bits. Para voltar a empacotar, extrai a parte pretendida de cada produto e verifica se cabe.
 
-SMUL8 produz quatro produtos de 16 bits em dois registos. KMDA soma os produtos das duas meias palavras com sinal para formar um produto interno parcial de 32 bits. Se ambos os operandos forem `0x80008000`, a soma matemática seria 2³¹: KMDA satura em `0x7FFFFFFF`. Essa saturação difere do descarte modular de ADD16. Confirma os limites antes de usar o parcial como uma soma exata.
+SMUL8 produz quatro produtos de 16 bits: B0 e B1 ficam no registo baixo, B2 e B3 no alto. KMDA, por sua vez, soma os dois produtos de meias palavras e dá um parcial de 32 bits.
+
+Se ambos os operandos de KMDA forem `0x80008000`, os dois produtos valem $2^{30}$ e a soma matemática é $2^{31}$. KMDA satura em `0x7FFFFFFF`, em vez de devolver essa soma exata. Um acumulador largo usado depois não recupera a unidade já perdida.
 
 ## Empacotar, trocar e estender
 
@@ -85,10 +97,4 @@ SMUL8 produz quatro produtos de 16 bits em dois registos. KMDA soma os produtos 
 
 SWAP8 troca bytes adjacentes em cada meia palavra. SUNPKD estende bytes escolhidos com sinal para meias palavras; ZUNPKD preenche com zeros. O sufixo da variante identifica os bytes selecionados. Por exemplo, `SUNPKD820` coloca B2 em H1 e B0 em H0, estendendo cada sinal. Para `0x12FE34F0`, dá `0xFFFEFFF0`; `ZUNPKD820` dá `0x00FE00F0`. Não é um shift do registo inteiro, porque cada byte passa a ter 16 bits.
 
-<CodePlayground
-  language="python"
-  title="Conferir vias e máscara assinada"
-  code={exemplo}
-/>
-
-Este bloco calcula a semântica das vias; não monta instruções SIMD. O executável RV32 base e a ISA empacotada são interfaces de execução distintas.
+Voltando à soma inicial, as vias B0 a B3 dão `[4,22,33,44]`, palavra `0x2C211604`. A soma escalar dá `0x2C211704`, pois o carry de B0 entra em B1. Para a comparação com sinal dos bytes `[0xF0,10,127,0x80]` com 10, as máscaras são `[0xFF,0,0,0xFF]`. O resultado é uma máscara por via, não quatro contagens escalares.

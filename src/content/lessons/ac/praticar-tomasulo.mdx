@@ -1,6 +1,6 @@
 ---
 title: Praticar Tomasulo
-description: Questões de treino com hipóteses, pistas e resoluções justificadas.
+description: Captura de etiquetas, difusão, operandos e bloqueio da emissão.
 section: exercicios
 editorial:
   basedOn: 2024/25
@@ -27,7 +27,6 @@ import Exercise from '../../../components/Exercise.astro';
     depois.
   </div>
   <div slot="hint">O f0 lido é uma versão anterior ao f0 escrito.</div>
-  <div slot="hint-more">A origem deve esperar M1; o destino passa a A2.</div>
   <div slot="solution">
     Qj=M1, Qk=0, Vk=valor atual de f2; Qi(f0)=A2. Se retagássemos antes de
     capturar, A2 esperaria pelo próprio resultado.
@@ -56,9 +55,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     I3 espera pelos resultados de I1 e I2, não pelos valores iniciais de f0/f2.
   </div>
-  <div slot="hint-more">
-    I1 executa 2–3 e I2 executa 3–4. Escreve o CDB de cada uma.
-  </div>
   <div slot="solution">
     I1 difunde no ciclo 4 e I2 no 5, sem competir pelo CDB. I3 recebe o último
     operando no ciclo 5, executa nos ciclos 6 e 7 e difunde no 8. Qi(f0)=A2
@@ -72,43 +68,29 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-tomasulo-waw"
-  revision={1}
-  title="Não sobrescrever uma versão mais nova"
+  revision={2}
+  title="Seguir uma difusão para dois consumidores"
   explanation="/cadeiras/ac/tomasulo/#tabela-de-operandos-após-emitir-i3"
   answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Só estações à espera de M1 recebem 6; f0 mantém Qi=A2',
-        correct: true,
-        explanation:
-          'O destino arquitetural só aceita resultados da sua etiqueta atual.',
-      },
-      {
-        text: 'f0 recebe 6 e Qi é limpo apesar de apontar A2',
-        correct: false,
-        explanation: 'Isso perde a escrita mais nova e quebra a renomeação.',
-      },
-      {
-        text: 'O resultado 6 é descartado para todos',
-        correct: false,
-        explanation: 'A2 precisa desse resultado como origem.',
-      },
+    kind: 'self',
+    checklist: [
+      'Atualizei Vj e Qj de A2.',
+      'Conservei Qi(f0)=A2 e o valor arquitetural antigo.',
+      'Dei a uma instrução nova a etiqueta A2 para ler f0.',
     ],
   }}
 >
-  <p>M1 difunde 6, mas Qi(f0)=A2 e A2 tem Qj=M1. O que deve acontecer?</p>
-  <div slot="hint">
-    A aceitação em estações e em registos usa comparações distintas.
+  <div>
+    Antes do CDB, f0 tem valor antigo 20 e Qi(f0)=A2. A2 tem Qj=M1 e Qk=0, Vk=9.
+    M1 difunde 6. Indica Vj/Qj de A2, valor e Qi de f0, e a origem que uma
+    instrução emitida no ciclo seguinte captura ao ler f0.
   </div>
-  <div slot="hint-more">A2 espera M1; f0 espera A2.</div>
+
   <div slot="solution">
-    A2 recebe Vj=6 e Qj=0. f0 não é escrito nem tem Qi limpo, porque o valor
-    anterior arquitetural pode continuar visível internamente, mas operações
-    novas devem seguir Qi.
-  </div>
-  <div slot="mistakes">
-    Confundir não escrever o registo com perder o resultado para consumidores.
+    A2 recebe Vj=6 e Qj=0 e passa a ter os dois operandos 6 e 9. f0 mantém valor
+    20 e Qi=A2, porque M1 não é a etiqueta atual do destino. A instrução nova
+    captura a etiqueta A2, não 20 nem 6. Quando A2 difundir −3, f0 aceita-o se
+    Qi continuar A2.
   </div>
 </Exercise>
 
@@ -149,7 +131,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     Distingue esperar pela emissão de esperar em uma estação.
   </div>
-  <div slot="hint-more">I2 não cabe em M1; I3 está depois de I2 na fila.</div>
   <div slot="solution">
     I3 não é emitida enquanto I2 bloqueia a fila por falta de estação. Se I2 já
     tivesse sido emitida para outra estação, I3 poderia executar antes dela
@@ -158,36 +139,5 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Confundir emissão em ordem com execução em ordem ou atribuir uma operação a
     uma estação de classe errada.
-  </div>
-</Exercise>
-
-<Exercise
-  id="ac-tomasulo-difusao"
-  revision={1}
-  title="Não sobrescrever destino renomeado"
-  explanation="/cadeiras/ac/tomasulo/#emitir-executar-e-difundir"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Identifiquei Qi do destino antes de cada difusão.',
-      'Bloqueei a escrita antiga com Qi diferente.',
-      'Encaminhei o valor antigo para a estação consumidora.',
-    ],
-  }}
->
-  <p>
-    No exemplo com I1, I2 e I3, por que a difusão de M1 no ciclo 5 não atualiza
-    f0?
-  </p>
-  <div slot="hint">Confere Qi de f0 nesse ciclo.</div>
-  <div slot="hint-more">Qi é A2, não M1.</div>
-  <div slot="solution">
-    Porque I3 já renomeou f0 para A2. O valor de M1 segue para a estação A2 como
-    Vj, mas o registo só aceita a etiqueta que corresponde à escrita mais
-    recente. Sem esta regra, um resultado antigo destruiria um destino
-    renomeado.
-  </div>
-  <div slot="mistakes">
-    Escrever sempre o valor difundido no registo com o mesmo número.
   </div>
 </Exercise>

@@ -7,36 +7,43 @@ practices:
   - ac/praticar-coerencia
 editorial:
   basedOn: 2024/25
+  sources:
+    - title: 'Ficha 5, exercício 4, comparação de duas reduções, 2024/25'
+      url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
 import Dot from '../../../components/Dot.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import exemplo from '../../ac/examples/coerencia.py?raw';
 import coerencia from '../../ac/coerencia.dot?raw';
 
-Já sabes dividir o trabalho por [vários núcleos](/cadeiras/ac/multicore-energia/); a pergunta desta página é: como manter o resultado correto quando cada núcleo guarda cópias dos mesmos endereços na sua cache?
-
-Dois núcleos somam metades do mesmo vetor e cada um guarda a sua soma na sua cache. Em memória partilhada, vários núcleos podem aceder aos mesmos endereços. As caches privadas reduzem tráfego, mas podem guardar cópias do mesmo bloco. A execução correta exige sincronização e um protocolo que mantenha essas cópias coerentes.
+Dois núcleos guardam cópias da mesma linha. Quando um altera uma palavra, o outro não deve continuar a lê-la como se nada tivesse mudado. Um protocolo de **coerência** organiza as cópias; a sincronização coordena quando os núcleos podem consumir resultados. Estas duas tarefas são necessárias, mas distintas.
 
 ## Uma redução paralela
 
-Tabela com número ímpar de participantes. Com 10 somas iniciais, a ronda 1 combina pares e produz 5 somas. A ronda 2 combina dois pares e deixa uma soma à espera: produz 3 somas. A ronda 3 produz 2 somas. A ronda 4 produz a soma final. São 4 rondas, não 3. Em cada ronda, escreve que pares se combinam e que valor fica retido sem par.
+Para somar 100 valores, dez núcleos somam dez elementos cada um. Com valores de 0 a 99, as somas locais são `[45,145,245,345,445,545,645,745,845,945]`.
 
-O programa da página constrói as somas com `parciais = [sum(range(i*10, (i+1)*10)) for i in range(10)]`, logo começa em `[45, 145, 245, 345, 445, 545, 645, 745, 845, 945]`. A primeira ronda do ciclo `while` combina por pares: `45+145=190`, `245+345=590`, `445+545=990`, `645+745=1390`, `845+945=1790`, ficando `[190, 590, 990, 1390, 1790]`. As rondas seguintes repetem o mesmo emparelhamento até `[4950]`. Corre-o com 10 e com 8 participantes e compara o número de rondas.
+Uma redução por pares vizinhos pode transportar uma soma sem par à ronda seguinte:
 
-Para somar um vetor, cada núcleo começa por somar a sua parcela. Depois combina somas parciais por pares. Uma **barreira** faz cada participante esperar pelos restantes antes de avançar para a ronda seguinte. Assim, nenhum lê uma soma que outro ainda está a calcular.
+| Ronda | Somas ativas após combinar                      | Adições no caminho mais longo da ronda |
+| ----- | ----------------------------------------------- | -------------------------------------- |
+| Local | 45, 145, 245, 345, 445, 545, 645, 745, 845, 945 | 10 por núcleo, a partir de zero        |
+| 1     | 190, 590, 990, 1390, 1790                       | 1                                      |
+| 2     | 780, 2380, 1790                                 | 1, com 1790 transportado               |
+| 3     | 3160, 1790                                      | 1                                      |
+| 4     | 4950                                            | 1                                      |
 
-Com 8 núcleos, combinar 8 somas requer 3 rondas: 8→4→2→1. Se cada núcleo inicia o acumulador em zero e soma os 16 elementos, faz 16 adições. Assim, a fase local demora 16 tempos de adição e a árvore 3, ignorando comunicação/barreiras. Total 19, não 128/8=16.
+São quatro rondas, cada uma com uma adição por participante ativo. Uma **barreira** faz os participantes esperar pelos resultados necessários antes da ronda seguinte. Sem ela, um núcleo poderia ler a soma anterior de outro. Uma implementação deve também evitar sobrescrever um valor que outro ainda precise de ler.
 
-Com número de participantes ímpar, há uma soma que não pertence a um par. Pode passar à ronda seguinte ou ser acrescentada por um participante. Isso pode dar duas adições ao mesmo núcleo nessa ronda, por isso conta o **caminho mais longo**.
+A ficha docente usa outro emparelhamento: combina a metade baixa com a alta e incorpora a soma ímpar no núcleo 0 antes de reduzir a metade restante.
 
-<CodePlayground
-  language="python"
-  title="Redução com qualquer número de parcelas"
-  code={exemplo}
-/>
+| Transição de participantes | Somas ativas depois       | Máximo de adições num núcleo |
+| -------------------------- | ------------------------- | ---------------------------- |
+| 10 → 5                     | 590, 790, 990, 1190, 1390 | 1                            |
+| 5 → 2                      | 2970, 1980                | 2 no núcleo 0                |
+| 2 → 1                      | 4950                      | 1                            |
 
-Este bloco mostra a ordem da redução; executa sequencialmente, não mede uma máquina paralela. Uma implementação partilhada precisa de separar estados de rondas ou sincronizar antes de alterar valores que outro núcleo ainda lê.
+Aqui são três rondas, mas o caminho crítico da redução continua a ter quatro adições. Na segunda, o núcleo 0 calcula $590+1390=1980$ e depois $1980+990=2970$. Com somas locais de dez adições, ambos os esquemas dão $14t_a$, ignorando comunicação e barreiras. Não substituas o tempo pelo número de rondas sem examinar o trabalho dentro de cada uma.
+
+Com oito núcleos e 128 elementos, cada soma local usa 16 adições a partir de zero. A redução 8→4→2→1 acrescenta três tempos de adição: total $19t_a$. O vetor tem mais elementos e menos participantes, por isso não é uma comparação de rapidez para a mesma tarefa.
 
 ## Coerência não é consistência
 
@@ -59,7 +66,7 @@ Modelo do exemplo: caches WB, memória inicialmente atualizada; uma leitura exte
 
 ## Um traço de duas palavras
 
-Lê a linha inteira. No traço com palavras `(X, Y) = (5, 8)`, após `N1` escrever `X = 9`, a linha de `N1` fica `(9, 8)` dirty e a de `N2` inválida. Quando `N2` lê `Y`, recebe a linha `(9, 8)` e a leitura devolve 8. A falsa partilha invalida a linha toda mesmo sem `Y` ter mudado. Uma leitura da palavra 2 deve conservar a palavra vizinha da mesma linha, não devolver a palavra 0.
+Segue os valores de X e Y separadamente, mas validade e dirty referem-se à linha toda.
 
 Uma linha tem duas palavras `(X,Y)`, inicialmente `(5,8)`, limpa nas caches dos núcleos 1 e 2 e na memória.
 

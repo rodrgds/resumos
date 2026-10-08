@@ -7,20 +7,19 @@ practices:
   - ac/praticar-armazenamento
 editorial:
   basedOn: 2024/25
+  sources:
+    - title: 'Ficha 6, exercício 1, exemplo de cilindros, 2023/24'
+      url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
 import Typst from '../../../components/Typst.astro';
 import dma from '../../ac/dma-tempos.typ?raw';
 
-Já sabes pôr o processador a trocar informação com periféricos por [interrupções e DMA](/cadeiras/ac/entrada-saida/); a pergunta desta página é: quanto tempo demora realmente cada pedido a um dispositivo de armazenamento, e quando é que sobrepor transferências com cálculo deixa de acelerar o programa?
-
-Ler 8 KiB de um disco pode demorar 8 ms embora o disco anuncie 160 MB/s. Uma operação de entrada e saída pode ter pequena carga de CPU e ainda dominar o tempo total. Por isso distingue latência de um pedido, taxa sustentada de bytes e número de operações por segundo.
+Uma leitura aleatória de 8 KiB pode demorar mais de 8 ms num disco que transfere a 160 MB/s. A taxa anunciada não inclui, por si só, o posicionamento necessário para cada pedido. Distingue a latência de um pedido, a taxa sustentada de bytes e o número de pedidos por segundo.
 
 ## Disco magnético
 
-Ficheiro que cruza cilindros. Supõe 4 KiB por pista útil, um ficheiro de 10 KiB e início a meio de uma pista. Os primeiros 2 KiB completam a pista atual. Os 4 KiB seguintes ocupam uma pista inteira. Os últimos 4 KiB ocupam a pista seguinte, possivelmente noutro cilindro com nova procura. Conta pista a pista em vez de dividir o tamanho pela taxa.
-
-Acessos aleatórios de 4 KiB pagam procura e rotação em cada pedido. Acessos contíguos de 1 MiB pagam uma procura e amortizam a transferência. Por isso IOPS e MB/s medem limites diferentes do mesmo dispositivo.
+Acessos aleatórios pequenos podem pagar procura e rotação em cada pedido. Uma leitura contígua amortiza esses custos por muitos bytes. IOPS, operações por segundo, e MB/s exprimem limites diferentes.
 
 O prato gira; a cabeça posiciona-se na pista. Pistas à mesma distância do centro, em superfícies distintas, formam um cilindro. Cada pista contém setores.
 
@@ -30,7 +29,11 @@ Para RPM rotações/minuto, uma volta demora 60/RPM segundos. Com posição angu
 
 Uma leitura de 8 KiB a 160 MB/s leva $8192/(160\times10^6)=51,2$ μs. Com procura 4 ms, rotação 4,167 ms e controlador 0,2 ms, sem fila, total 8,418 ms. Taxa de pedidos aproximadamente 118,8/s; taxa útil cerca 0,973 MB/s. Não é 160 MB/s: latência de pequenos pedidos aleatórios domina.
 
-Leituras sequenciais amortizam posicionamento em muitos bytes. Se o problema já fornece o tempo médio incluindo rotação/controlador, não acrescentes essas parcelas outra vez.
+Se um ficheiro contíguo exceder a capacidade útil de um cilindro, pode exigir novas procuras. Por exemplo, 600 kB em cilindros de 258 kB ocupam três cilindros e duas mudanças. Com procura inicial média de 10 ms, meia rotação de 3 ms, transferência a 100 MB/s, mudanças de 4 ms e controlador de 5 ms:
+
+$$t=10+3+600000/(100\times10^6)\times1000+2\times4+5=32\ \mathrm{ms}.$$
+
+Este modelo assume colocação favorável e que as únicas procuras adicionais são as duas mudanças de cilindro. Leituras sequenciais amortizam posicionamento em muitos bytes. Se o problema já fornece o tempo médio incluindo rotação/controlador, não acrescentes essas parcelas outra vez.
 
 ## Flash e SSD
 
@@ -54,13 +57,13 @@ Exemplo: CPU 2 GHz precisa de 40000 ciclos por pedido; barramento 640 MB/s; quat
 
 Os discos limitam 4000 pedidos/s. A taxa útil é $4000\times65536=262144000$ bytes/s, ou 262,144 MB/s. Para atingir o barramento, precisaria de pelo menos 10 discos desse modelo; depois verifica controladores e outros limites.
 
+Na conversão de unidades, 800 MB/s para blocos de 16 KiB dá $800\times10^6/16384=48\,828{,}125$ blocos/s. Arredondar o bloco para 16000 B daria 50000 e mudaria o limite.
+
 Se um controlador suporta 2000 pedidos/s e todos os discos passam por ele, esse limite entra no mínimo. Se existem dois controladores independentes, só soma as capacidades quando a divisão de carga e o caminho partilhado o permitem.
 
 ## Sobreposição com dois buffers
 
-Dimensionamento agregado. Se cada disco sustenta 10 MB/s e cada controlador sustenta 30 MB/s, dois discos precisam de 20 MB/s agregados e um controlador chega. Seis discos precisam de 60 MB/s e exigem pelo menos dois controladores. Não confundas a taxa de um disco com a taxa do conjunto.
-
-Na conversão de unidades, $800$ MB/s a dividir por $16$ KiB dá $48{,}828{,}125$ blocos por segundo, não $50{,}000$. Escreve bytes por segundo a dividir por bytes por bloco, com as duas unidades na mesma base.
+Dois buffers permitem sobrepor transferência e processamento do bloco anterior. Mantém três blocos de igual tamanho, com transferência de 4 ms e cálculo de 3 ms por bloco.
 
 Com dois buffers, o dispositivo preenche um enquanto o CPU processa o outro. A taxa em regime depende do estágio mais lento, mas um trabalho finito inclui primeira transferência e último processamento.
 

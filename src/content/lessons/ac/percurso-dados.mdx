@@ -12,11 +12,9 @@ editorial:
 import Dot from '../../../components/Dot.astro';
 import datapath from '../../ac/datapath.dot?raw';
 
-Já sabes que [instruções](/cadeiras/ac/riscv-assembly/) como `lw` pedem valores à memória; a pergunta desta página é: que componentes calculam esses valores dentro do processador e quem decide o que cada um faz em cada momento?
+Em `lw t0,12(a0)`, a instrução fornece uma base e um deslocamento. O processador precisa de somá-los, ler a memória e escrever o valor obtido em `t0`. O **percurso de dados** reúne os componentes que fazem estas operações; a **unidade de controlo** seleciona as entradas e autoriza cada escrita. Um multiplexador escolhe uma origem para um sinal.
 
-Uma instrução `lw` descreve o valor pretendido, mas alguém tem de o ir buscar à memória. O **percurso de dados** contém os componentes que o calculam; a **unidade de controlo** seleciona entradas e autoriza escritas. Um multiplexador escolhe uma origem para um sinal, ou seja, não se juntam saídas de componentes diretamente.
-
-## Executar uma instrução em um ciclo
+## Ciclo único
 
 Modelo reduzido: `add/sub/and/or`, `lw`, `sw`, `beq`; memórias de instruções e dados separadas, banco de registos com duas leituras e uma escrita, ALU e gerador de imediatos. A ALU, unidade aritmética e lógica, calcula operações inteiras e endereços.
 
@@ -35,7 +33,7 @@ Em `lw t0, 12(a0)`, a ALU soma `0x1000 + 12 = 0x100C`. A memória lê 9. O multi
 
 Em `sw t1, 12(a0)`, a ALU calcula o mesmo endereço. O dado de `t1` segue para a memória. Sinais: `ALUSrc = 1`, `MemWrite = 1`, sem escrita no banco.
 
-Em `beq t0, t1, L`, a ALU subtrai para testar igualdade e o imediato forma o destino. Se a comparação for verdadeira, o PC seguinte é o destino. Só depois desta passagem é que a tabela de controlos deixa de ser uma lista para decorar.
+Em `beq t0, t1, L`, a ALU subtrai para testar igualdade e o imediato forma o destino. Se a comparação for verdadeira, o PC seguinte é o destino. Com os valores dados, `t0=9` e `t1=4`, a comparação é falsa e o PC avança 4 bytes.
 
 `RegWrite` autoriza escrita no banco; `ALUSrc` escolhe registo ou imediato como segundo operando da ALU. `MemRead/MemWrite` controlam a memória de dados. `MemtoReg` escolhe a memória em vez da ALU para retorno ao banco. `Branch` autoriza a seleção do destino se a condição for verdadeira.
 
@@ -58,9 +56,9 @@ Não somes dois componentes que funcionam em paralelo. Primeiro segue o caminho 
 
 ## Uma máquina multiciclo
 
-Conta estados por instrução. Uma sequência possível: busca, descodificação e cálculo de endereço, acesso à memória, conclusão. Um `lw` usa quatro estados. Um `add` salta o acesso à memória. Um `beq` termina após decidir o PC. O CPI resulta da mistura: se metade das instruções usa 4 estados e metade usa 3, o CPI é 3,5 sem paragens adicionais.
+Uma máquina multiciclo reparte a instrução por estados de controlo, cada um com um ciclo. No modelo seguinte, obtenção e descodificação são separadas do cálculo do endereço. Por isso `lw` usa cinco ciclos, enquanto `add` usa quatro e `beq` usa três.
 
-O período de ciclo único é o atraso do caminho mais longo, normalmente o `lw` com memória de instrução, registos, ALU, memória de dados e escrita. Na multiciclo, o período é o atraso do estado mais lento, mas cada instrução paga vários estados.
+O período passa a ser determinado pelo estado mais lento. Isso permite um relógio mais rápido, mas cada instrução paga vários períodos. Para comparar organizações, calcula CPI vezes período.
 
 A máquina multiciclo reutiliza memória e ALU em ciclos distintos, porque cada passo usa só uma parte do hardware. Registos temporários guardam a instrução (IR), dado carregado (MDR), operandos (A/B) e resultado (ALUOut). Assim, a instrução não se perde quando a memória recebe outro endereço.
 

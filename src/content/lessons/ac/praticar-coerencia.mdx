@@ -1,9 +1,12 @@
 ---
 title: Praticar coerência
-description: Questões de treino com hipóteses, pistas e resoluções justificadas.
+description: Reduções, invalidações, posição de palavra e atomicidade.
 section: exercicios
 editorial:
   basedOn: 2024/25
+  sources:
+    - title: 'Ficha 5, exercício 4, comparação de reduções, 2024/25'
+      url: https://moodle2425.up.pt/course/view.php?id=4594
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -21,7 +24,6 @@ import Exercise from '../../../components/Exercise.astro';
     barreiras/comunicação. Qual é o tempo total em unidades ta?
   </div>
   <div slot="hint">A fase local e a árvore são sucessivas.</div>
-  <div slot="hint-more">16+log₂8.</div>
   <div slot="solution">
     19 ta, porque cada ronda faz uma adição por participante ativo e o máximo de
     trabalho por núcleo na ronda é 1.
@@ -48,9 +50,6 @@ import Exercise from '../../../components/Exercise.astro';
     dirty-owner→RAM da lição, descreve eventos e valor lido.
   </div>
   <div slot="hint">Invalidar não altera o valor de Y.</div>
-  <div slot="hint-more">
-    N2 já não tem cópia válida; N1 tem a linha atualizada.
-  </div>
   <div slot="solution">
     N1 fica (9,8), dirty, N2 inválida, RAM (5,8). N2 falha; N1 fornece (9,8) e
     atualiza RAM; ambas as cópias ficam limpas. A leitura Y devolve 8.
@@ -72,7 +71,6 @@ import Exercise from '../../../components/Exercise.astro';
     linha corresponde a 0xA6B8?
   </div>
   <div slot="hint">Os 4 bits baixos são o deslocamento.</div>
-  <div slot="hint-more">Deslocamento 8 bytes; divide por 4.</div>
   <div slot="solution">
     Palavra 2. Índice de cache 3; etiqueta 0x29A. Escrever a palavra 0 dessa
     linha não muda a palavra 2.
@@ -103,7 +101,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     As escritas são ordenadas, mas cada atualização tem uma leitura anterior.
   </div>
-  <div slot="hint-more">Ambos podem ler 0 antes de qualquer um escrever.</div>
   <div slot="solution">
     Não. Uma ordem possível é N1 lê 0; N2 lê 0; N1 escreve 1; N2 escreve 1. O
     valor final é 1. A coerência conserva as escritas e a consistência
@@ -118,22 +115,30 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-reducao-impar"
-  revision={1}
-  title="Contar rondas com dez somas"
+  revision={2}
+  title="Distinguir rondas de caminho crítico"
   explanation="/cadeiras/ac/coerencia/#uma-redução-paralela"
-  answer={{ kind: 'number', value: 4, tolerance: 0 }}
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Obtive quatro rondas transportando a soma ímpar.',
+      'Obtive três rondas incorporando a soma ímpar antes de reduzir.',
+      'Contei quatro adições no caminho crítico em ambos os esquemas.',
+    ],
+  }}
 >
   <div>
-    Quantas rondas de combinação por pares são precisas para reduzir 10 somas
-    parciais a uma soma final?
+    Dez somas parciais já estão prontas. Compara dois esquemas: A combina pares
+    vizinhos e transporta a soma sem par; B combina metades e, com número ímpar,
+    acrescenta a última soma ao participante 0 antes de combinar as metades
+    restantes. Uma adição demora ta; ignora comunicação e barreiras. Indica
+    rondas e tempo da redução em cada esquema.
   </div>
-  <div slot="hint">Segue 10 para 5, 3, 2, 1.</div>
-  <div slot="hint-more">Uma soma fica retida na segunda ronda.</div>
+
   <div slot="solution">
-    4 rondas. Com número ímpar de participantes, uma soma espera um ciclo sem
-    par. Com 8 seria 3 rondas; com 10 é preciso mais uma.
-  </div>
-  <div slot="mistakes">
-    Arredondar log2 de 10 para 3 sem simular a retenção.
+    A passa por 10→5→3→2→1: quatro rondas de ta, total 4ta. B passa por
+    10→5→2→1: três rondas, mas o participante 0 executa duas adições sucessivas
+    na ronda 5→2. O caminho crítico custa (1+2+1)ta=4ta. Menos rondas não
+    garante menos tempo.
   </div>
 </Exercise>

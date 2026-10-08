@@ -14,15 +14,19 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import exemplo from '../../ac/examples/riscv-assembly.s?raw';
 import pilha from '../../ac/pilha.typ?raw';
 
-Abres aqui o percurso de AC com a pergunta que sustenta tudo o resto: como se diz ao computador, passo a passo, o que deve calcular e onde deve guardar cada resultado?
+```riscv
+lw t0, 0(a0)
+add t1, t0, t2
+sw t1, 4(a0)
+```
 
-Imagina que tens os números 2 e 3 e queres guardar a soma para usar a seguir. Um programa é uma lista de passos que o computador segue por ordem, como uma receita onde cada passo pede uma conta pequena e diz onde fica o resultado.
+Com `a0=0x1000`, uma palavra de valor 7 nesse endereço e `t2=5`, este fragmento lê 7, soma 5 e guarda 12 em `0x1004`. Os **registos** `t0` e `t1` mantêm os valores intermédios dentro do processador. A memória conserva as palavras em endereços de byte; o deslocamento 4 passa à palavra seguinte.
 
-Para fazer essa soma, o processador, ou seja, o componente que executa os passos, guarda os números em registos, ou seja, em caixas pequenas e rápidas dentro dele, e vai buscar à memória, ou seja, à fila de gavetas numeradas fora dele, os valores de que precisa. Cada gaveta tem um endereço, ou seja, o seu número nessa fila.
+Cada linha é uma instrução. A **ISA**, arquitetura do conjunto de instruções, define as operações, os registos e os seus efeitos visíveis. Duas organizações internas podem executar o mesmo programa, embora demorem tempos diferentes.
 
-Cada passo dessa lista chama-se instrução, ou seja, um pedido com formato fixo como «soma o conteúdo de duas caixas». O conjunto de instruções que um processador aceita chama-se ISA, ou seja, arquitetura do conjunto de instruções, e funciona como um contrato: o processador executa esse contrato, por isso a organização interna pode mudar sem alterar o programa. O PC, ou seja, o contador de programa, é o registo que guarda o endereço da instrução atual. Numa pipeline, a obtenção usa esse valor e só depois calcula o PC seguinte, por isso dizer próxima instrução sem essa distinção confunde o cálculo de destinos relativos ao PC. Vamos usar **RV32**, ou seja, um modelo em que cada registo guarda um número inteiro, ou seja, um número sem casas decimais, com 32 bits, cada instrução base ocupa 32 bits e a memória está numerada byte a byte, onde um byte é um grupo de 8 bits e um bit é um dígito 0 ou 1. Nas secções abaixo usamos esses passos para somar valores e para guardar e voltar a ler resultados.
+Usamos RV32: 32 registos inteiros de 32 bits e instruções base de 32 bits, sem a extensão de instruções comprimidas. O **PC** identifica o endereço da instrução em execução; um salto relativo usa o PC dessa instrução. Numa pipeline coexistem várias instruções, cada uma com o seu PC, enquanto a obtenção já procura instruções mais novas.
 
-## Os registos que interessam
+## Registos e convenção de chamadas
 
 | Nome         | Registos                   | Uso e preservação                                   |
 | ------------ | -------------------------- | --------------------------------------------------- |
@@ -38,17 +42,15 @@ Não existe `t7`. O banco de vírgula flutuante, quando disponível, usa `f0` a 
 
 ## Contas, imediatos e memória
 
-Um exemplo mínimo liga registos e memória antes de qualquer tabela.
+No fragmento inicial, as alterações de estado são:
 
-```riscv
-lw t0, 0(a0)
-add t1, t0, t2
-sw t1, 4(a0)
-```
+| Instrução      | Endereço usado     | Alteração                       |
+| -------------- | ------------------ | ------------------------------- |
+| `lw t0,0(a0)`  | `0x1000`           | `t0=7`                          |
+| `add t1,t0,t2` | Sem acesso a dados | `t1=12`                         |
+| `sw t1,4(a0)`  | `0x1004`           | A palavra de memória passa a 12 |
 
-Supõe `a0 = 0x1000`, `t2 = 5` e a palavra em `0x1000` com valor 7. O `lw` lê 7 para `t0`. O `add` calcula 12 em `t1`. O `sw` guarda 12 em `0x1004`. Segue os três valores na ordem leitura, cálculo e escrita. Quando trocares o deslocamento, recalcula o endereço em bytes antes de prever o resultado.
-
-A convenção de chamadas usa `a0` a `a7` para argumentos, `a0` e `a1` para retorno, `ra` para o endereço de retorno e `sp` alinhado a 16 bytes. `t0` a `t6` podem mudar numa chamada. `s0` a `s11` têm de ser repostos pelo chamado quando usados. Uma função que chama outra guarda `ra` e os `s` que usa antes da chamada e repõe-nos antes de retornar.
+O `add` usa o valor carregado, não o endereço `0x1000`. Já o `sw` conserva `t1` e modifica memória.
 
 `add rd,rs1,rs2` soma dois registos; `addi rd,rs1,imm` soma um imediato com sinal de 12 bits, entre −2048 e 2047. `sub`, `and`, `or`, `xor`, `slt` seguem o formato de três registos. `slt` compara com sinal; `sltu` compara sem sinal. Não há flags de comparação globais.
 

@@ -10,14 +10,10 @@ editorial:
 ---
 
 import Dot from '../../../components/Dot.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import exemplo from '../../ac/examples/predicao-saltos.py?raw';
 import histerese from '../../ac/histerese.dot?raw';
 import contador from '../../ac/contador.dot?raw';
 
-Já sabes que a [pipeline obtém uma instrução por ciclo](/cadeiras/ac/pipeline/); a pergunta desta página é: que instrução obter a seguir quando um salto ainda não se decidiu para onde vai?
-
-Um `beq`, ou seja, um salto condicional, ainda está em ID, a fase de descodificação, e a pipeline já quer obter a instrução seguinte. Um salto condicional escolhe entre `PC+4` e o destino. Enquanto o processador não conhece a decisão, pode esperar ou obter instruções de um caminho previsto. Uma previsão errada exige descartar instruções mais novas desse caminho.
+Um `beq` ainda está em ID e a pipeline precisa de escolher a próxima instrução. O salto decide entre `PC+4` e o destino. Enquanto a condição não está resolvida, o processador pode esperar ou seguir um caminho previsto. Se errar, descarta as instruções mais novas desse caminho.
 
 ## Onde se resolve o salto
 
@@ -65,11 +61,7 @@ Para dois percursos do mesmo ciclo, resultados `T T T N T T T N`, e estado inici
 
 ## Dois bits com histerese
 
-Segue previsão, resultado e estado seguinte. O modelo da apresentação usa transições `01 para 11` após T e `10 para 00` após N. Começa em `01`, prevê N.
-
-Para a sequência T, N, T, N, T, N: em `01` prevê N e erra, vai para `11`. Em `11` prevê T e erra, vai para `10`. Em `10` prevê T e acerta, vai para `11`. O padrão alternado continua a falhar metade das vezes neste ponto de partida, o que mostra por que um ciclo com período 2 é difícil para este preditor.
-
-Atualiza o estado só depois de conhecer o resultado real. A previsão usa o estado antigo. O contador saturante de 2 bits é outro modelo, com transições `01 para 10` após T. Não mistures as tabelas. Para a mesma sequência alternada a partir de `01`, o saturante também erra sempre, mas por um caminho de estados diferente.
+A máquina da apresentação e o contador saturante têm quatro estados, mas transições diferentes. Neste primeiro modelo, `01 + T` leva a `11` e `10 + N` leva a `00`. A previsão usa o estado anterior; só depois do resultado se atualiza o estado.
 
 Usa dois estados que preveem T e dois que preveem N. 00 e 11 são previsões fortes; 01 e 10 são fracas. Um resultado contrário a uma previsão forte muda-a para fraca, mas conserva a direção prevista para a próxima ocorrência. Se o resultado contrário se repetir no estado fraco, muda a direção:
 
@@ -98,10 +90,17 @@ Um contador de 0 a 3 prevê N abaixo de 2 e T a partir de 2; incrementa por T e 
 
 Para resultados alternados e alguns estados iniciais, as contagens podem divergir. Nunca substituas uma máquina de estados pela outra só porque ambas têm 2 bits.
 
-<CodePlayground
-  language="python"
-  title="Comparar transições de dois preditores"
-  code={exemplo}
-/>
+Partindo de `01`, compara a sequência alternada `T N T N T N`. Em cada célula, aparece estado anterior, previsão e estado seguinte.
+
+| Resultado real | Histerese             | Saturante           |
+| -------------- | --------------------- | ------------------- |
+| T              | `01`, N, erro, `11`   | `01`, N, erro, `10` |
+| N              | `11`, T, erro, `10`   | `10`, T, erro, `01` |
+| T              | `10`, T, acerto, `11` | `01`, N, erro, `10` |
+| N              | `11`, T, erro, `10`   | `10`, T, erro, `01` |
+| T              | `10`, T, acerto, `11` | `01`, N, erro, `10` |
+| N              | `11`, T, erro, `10`   | `10`, T, erro, `01` |
+
+A histerese erra 4 das 6 previsões, incluindo os dois erros iniciais. Depois do arranque, erra metade neste padrão. O saturante oscila entre `01` e `10` e erra as seis previsões. Uma taxa de regime não substitui a contagem da janela finita.
 
 Ao resolver um traço, escreve estado anterior, previsão, resultado, erro e estado seguinte em colunas. Só depois calcula a taxa de erro e o CPI; isso evita atualizar o estado antes de prever.

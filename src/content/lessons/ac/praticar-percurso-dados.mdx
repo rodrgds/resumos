@@ -1,6 +1,6 @@
 ---
 title: Praticar percurso de dados
-description: Questões de treino com hipóteses, pistas e resoluções justificadas.
+description: Controlos de store, destino de pipeline e custo multiciclo.
 section: exercicios
 editorial:
   basedOn: 2024/25
@@ -27,7 +27,6 @@ import Exercise from '../../../components/Exercise.astro';
     endereço/dado.
   </div>
   <div slot="hint">O imediato serve para calcular endereço.</div>
-  <div slot="hint-more">ALU soma a0+20; o valor de t1 vai para memória.</div>
   <div slot="solution">
     ALUSrc 1, ALUOp 00, MemWrite 1, MemRead 0, RegWrite 0, Branch 0; MemtoReg
     indiferente, porque o endereço é a0+20 e a palavra guardada vem de t1.
@@ -37,39 +36,30 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ac-control-rd"
-  revision={1}
-  title="Conservar o destino"
+  revision={2}
+  title="Diagnosticar uma escrita no destino errado"
   explanation="/cadeiras/ac/percurso-dados/#o-que-atravessa-uma-pipeline"
   answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Transportar rd com o load até MEM/WB',
-        correct: true,
-        explanation: 'O destino pertence ao load e acompanha a instrução.',
-      },
-      {
-        text: 'Usar rd da instrução atual em ID',
-        correct: false,
-        explanation: 'Essa instrução é mais nova e pode ter outro destino.',
-      },
-      {
-        text: 'Usar rs1 do load como destino',
-        correct: false,
-        explanation: 'rs1 é a base do endereço, não o destino.',
-      },
+    kind: 'self',
+    checklist: [
+      'Identifiquei x7 como destino do load.',
+      'Mostrei por que usar x8 da instrução em ID corrompe o estado.',
+      'Transportei rd, RegWrite e a seleção do dado até WB.',
     ],
   }}
 >
-  <p>Como deve WB escolher o registo de destino de um load em uma pipeline?</p>
-  <div slot="hint">Várias instruções ocupam fases diferentes.</div>
-  <div slot="hint-more">A instrução em ID não é o load que está em WB.</div>
-  <div slot="solution">
-    O rd deve atravessar ID/EX, EX/MEM e MEM/WB, com RegWrite e seleção do dado.
+  <div>
+    Um <code>lw x7,0(x10)</code> chega a WB com dado 9. Nesse ciclo, ID
+    descodifica <code>add x8,x11,x12</code>. O circuito usa o rd de ID para
+    escrever o dado de WB. Que registo altera indevidamente? Que informação tem
+    de atravessar os registos da pipeline para corrigir o circuito?
   </div>
-  <div slot="mistakes">
-    Guardar apenas dados e deixar o destino ligado à instrução atualmente
-    descodificada.
+
+  <div slot="solution">
+    Escreve 9 em x8, embora o load devesse escrever em x7. O destino x7 pertence
+    ao load e deve passar por ID/EX, EX/MEM e MEM/WB. RegWrite e a seleção do
+    dado de memória acompanham-no; usar os controlos de ID também aplicaria os
+    efeitos de uma instrução diferente.
   </div>
 </Exercise>
 
@@ -85,34 +75,12 @@ import Exercise from '../../../components/Exercise.astro';
     20%, 10%; período 250 ps. Calcula tempo médio por instrução.
   </div>
   <div slot="hint">Pondera ciclos e multiplica pelo período.</div>
-  <div slot="hint-more">CPI=4,2.</div>
   <div slot="solution">
-    Tmedio=4,2×250=1050 ps, por isso ciclo único 800 ps seria mais rápido para
-    esta mistura.
+    CPI=0,4×4+0,3×5+0,2×4+0,1×3=4,2. Cada ciclo custa 250 ps, logo o tempo médio
+    é 4,2×250=1050 ps. Uma organização de ciclo único com 800 ps por instrução
+    seria mais rápida para esta mistura.
   </div>
   <div slot="mistakes">
     Concluir que relógio mais rápido implica menor tempo de execução.
-  </div>
-</Exercise>
-
-<Exercise
-  id="ac-multiciclo-estados"
-  revision={1}
-  title="Contar estados por mistura"
-  explanation="/cadeiras/ac/percurso-dados/#uma-máquina-multiciclo"
-  answer={{ kind: 'number', value: 3.5, tolerance: 1e-9 }}
->
-  <div>
-    Metade das instruções usa 4 estados e metade usa 3 estados. Qual é o CPI sem
-    paragens adicionais?
-  </div>
-  <div slot="hint">Pondera pelos mesmos pesos da mistura.</div>
-  <div slot="hint-more">0,5×4+0,5×3.</div>
-  <div slot="solution">
-    3,5. Cada estado custa um ciclo; o CPI é a média ponderada dos estados por
-    classe.
-  </div>
-  <div slot="mistakes">
-    Escolher o máximo como se todas pagassem o caminho mais longo.
   </div>
 </Exercise>
