@@ -5,7 +5,7 @@
   import draw: *
   let A = (0, 0)
   let B = (3, 0)
-  let C = (0, 2.4)
+  let C = (0, 3)
   line(A, B, C, close: true, stroke: 1pt + rgb("292a30"), fill: rgb("f3e9e9"))
   for (p, nome) in ((A, [$A$]), (B, [$B$]), (C, [$C$])) {
     circle(p, radius: 0.09, fill: rgb("8c2d3b"), stroke: none)

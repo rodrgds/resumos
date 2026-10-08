@@ -13,13 +13,17 @@ import Dot from '../../../components/Dot.astro';
 import normal from './normal.typ?raw';
 import malha from './malha.dot?raw';
 
-Com a pipeline e as transformações vistas, esta página responde a de que são feitos os objetos da cena.
+Um quadrado pode ser desenhado por dois triângulos que partilham uma diagonal. Uma **malha poligonal** guarda estas faces e as relações entre os seus vértices e arestas. A geometria determina a superfície; a ordem dos vértices e as normais determinam a orientação usada no desenho e na iluminação.
 
-A maioria dos objetos 3D que vês num jogo é uma **malha poligonal**: uma coleção de triângulos colados pelas arestas que aproxima uma superfície. Modelar é escolher esses triângulos, e sombreá-los bem exige saber para onde aponta cada face. Esta página mostra a estrutura da malha e a conta mais importante sobre ela, a normal de um triângulo.
+## Vértices, índices e conectividade
 
-## A estrutura da malha
+Uma malha descreve três tipos de elementos: **vértices** (posições 3D), **arestas** (pares de vértices) e **faces** (normalmente triângulos, trios de vértices). O triângulo é a face preferida porque três pontos não colineares definem um plano. Os quatro vértices de um quadrilátero podem não ser coplanares. Uma lista de vértices e índices das faces evita repetir posições; as arestas podem ser implícitas ou guardadas para consultar vizinhos.
 
-Uma malha descreve três tipos de elementos: **vértices** (posições 3D), **arestas** (pares de vértices) e **faces** (normalmente triângulos, trios de vértices). O triângulo é a face preferida porque três pontos não colineares definem um plano, ou seja, um quadrilátero pode ficar torcido. Uma lista de vértices e índices das faces evita repetir posições; as arestas podem ser implícitas ou guardadas para consultar vizinhos. Mais triângulos pode melhorar a aproximação de uma superfície curva, com maior custo de memória e processamento.
+Por exemplo, guarda $A=(0,0,0)$, $B=(1,0,0)$, $C=(0,1,0)$ e $D=(1,1,0)$ uma única vez. As faces $ABC$ e $BDC$ partilham a aresta $BC$. Alterar a posição de B nesta lista altera as duas faces; numa lista explícita com seis posições, seria preciso atualizar as duas cópias de B.
+
+A lista de índices ainda não responde diretamente a "quais são as faces adjacentes a BC?". Uma estrutura de arestas pode guardar os dois extremos e as faces incidentes. Estruturas como a _winged-edge_ de Baumgart acrescentam ligações para percorrer as arestas vizinhas. Uma aresta de fronteira só tem uma face incidente; não é um erro numa superfície aberta.
+
+Mais triângulos pode melhorar a aproximação de uma superfície curva, com maior custo de memória e processamento.
 
 <Dot
   source={malha}
@@ -28,7 +32,7 @@ Uma malha descreve três tipos de elementos: **vértices** (posições 3D), **ar
 
 Cada face tem dois lados: a **face frontal**, que pode ser candidata a desenhar, e a **face traseira**, que normalmente se descarta. O que distingue uma da outra é a **ordem dos vértices** (_winding_): na convenção padrão de OpenGL/WebGL, a face é frontal se a projeção dos vértices na janela tiver sentido contrário aos ponteiros do relógio. Pode escolher-se o sentido oposto. O _backface culling_, quando ativado, descarta as faces traseiras antes da rasterização. Não resolve a ocultação entre faces frontais.
 
-## A normal do triângulo
+## Normal e orientação de uma face
 
 A **normal** é o vetor perpendicular à face, e é ela que diz à [iluminação](/cadeiras/cg/iluminacao-sombreamento/) quanta luz a face recebe. Para o triângulo de vértices $A$, $B$ e $C$, constrói duas arestas e faz o produto vetorial:
 
@@ -36,7 +40,7 @@ $$
 \mathbf{n} = (B - A) \times (C - A).
 $$
 
-Se os vértices forem colineares ou repetidos, o produto é zero: o triângulo é degenerado e não tem uma normal unitária. Caso contrário, segue-se a normalização $\hat{\mathbf{n}} = \mathbf{n} / \lVert \mathbf{n} \rVert$. Pela regra da mão direita, esta normal aponta para o lado de onde os vértices $A$, $B$, $C$ se veem por ordem contrária aos ponteiros do relógio, ou seja, para fora se a ordem estiver certa.
+Se os vértices forem colineares ou repetidos, o produto é zero: o triângulo é degenerado e não tem uma normal unitária. Caso contrário, segue-se a normalização $\hat{\mathbf{n}} = \mathbf{n} / \lVert \mathbf{n} \rVert$. Pela regra da mão direita, esta normal aponta para o lado de onde os vértices $A$, $B$, $C$ se veem por ordem contrária aos ponteiros do relógio, Para uma fronteira fechada, escolhemos uma ordem consistente que a faça apontar para fora.
 
 Toma $A = (0, 0, 0)$, $B = (1, 0, 0)$ e $C = (0, 1, 0)$. As arestas são $B - A = (1, 0, 0)$ e $C - A = (0, 1, 0)$, e o produto vetorial dá:
 
@@ -44,7 +48,7 @@ $$
 \mathbf{n} = (1, 0, 0) \times (0, 1, 0) = (0 \cdot 0 - 0 \cdot 1,\ 0 \cdot 0 - 1 \cdot 0,\ 1 \cdot 1 - 0 \cdot 0) = (0, 0, 1).
 $$
 
-O módulo é $1$, por isso a normal unitária é $(0, 0, 1)$: aponta para $+z$, perpendicular ao plano $xy$ onde vive o triângulo. Se trocares $B$ com $C$, a normal sai $(0, 0, -1)$ e a face passa a olhar para o outro lado. É assim que se deteta uma malha com a orientação trocada: as normais apontam para dentro do objeto em vez de para fora.
+O módulo é $1$, por isso a normal unitária é $(0, 0, 1)$: aponta para $+z$, perpendicular ao plano $xy$ onde vive o triângulo. Se trocares $B$ com $C$, a normal sai $(0, 0, -1)$ e a face passa a olhar para o outro lado. Numa fronteira fechada, inverter todas as faces troca exterior e interior. Num triângulo isolado, é preciso escolher qual lado se pretende tratar como frontal.
 
 O desenho mostra esse triângulo visto de cima: os vértices $A$, $B$ e $C$ por ordem contrária aos ponteiros do relógio, e a normal a sair da página para $+z$.
 
@@ -58,7 +62,7 @@ O desenho mostra esse triângulo visto de cima: os vértices $A$, $B$ e $C$ por 
 Na prática, pode calcular-se a normal de um vértice pela média, eventualmente ponderada por áreas ou ângulos, das normais das faces vizinhas. Normaliza o resultado. A interpolação destas normais faz uma esfera parecer arredondada em vez de facetada. Para uma aresta que deve parecer afiada, conserva normais separadas nas duas faces em vez de as misturar. Vais usar esta ideia no sombreamento de Phong.
 :::
 
-## Dos triângulos aos sólidos
+## Fronteira de um sólido
 
 Triângulos soltos não chegam para operações como furar ou unir objetos: é preciso saber o que é dentro e fora. Para delimitar um **sólido** com uma malha, a fronteira tem de ser fechada, orientável e sem autointerseções. Cada aresta pertence a duas faces e a vizinhança de cada vértice tem de formar uma superfície, sem peças que se toquem só num ponto. As condições sobre as arestas, por si só, não chegam. Representações como fronteira por faces, geometria sólida construtiva (união, interseção e diferença de primitivas) ou voxels impõem essa validade de formas diferentes. Uma malha para renderizar pode ter falhas que uma malha para imprimir em 3D não pode ter.
 

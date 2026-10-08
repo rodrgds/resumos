@@ -12,17 +12,16 @@ import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
 import pipeline from './pipeline.typ?raw';
+import Projecoes from '../../cg/Projecoes.astro';
 import etapas from './etapas.dot?raw';
 
-Começamos o percurso aqui: esta página responde a que caminho faz cada ponto da cena até aparecer no ecrã.
+Um triângulo definido por três vértices pode ocupar milhares de píxeis numa imagem. Os vértices descrevem a geometria; a rasterização encontra os fragmentos cobertos pela sua projeção. Cada fragmento transporta dados como cor e profundidade e pode ainda ser rejeitado antes de contribuir para um píxel.
 
-Quando olhas para o ecrã de um jogo, vês casas, personagens e sombras. Se aproximares muito, a imagem desfaz-se em quadradinhos minúsculos de uma só cor, e cada quadradinho desses chama-se **píxel**, ou seja, o ponto de cor mais pequeno do ecrã.
+A **pipeline de visualização** organiza esta passagem em etapas. Vamos seguir um vértice para localizar as transformações, sem confundir a sua posição de janela com a cobertura de um píxel.
 
-Para desenhar essa imagem, o computador parte da descrição da cena, que é uma lista de pontos no espaço, e cada ponto desses chama-se **vértice**, ou seja, um canto de um objeto descrito por três números. A **pipeline de visualização**, ou seja, a sequência de etapas que transforma esses pontos em píxeis, é o caminho que cada vértice percorre até ao ecrã, com uma operação bem definida em cada paragem. Cada página seguinte desenvolve uma parte deste percurso.
+## Síntese de imagem
 
-## As aplicações primeiro
-
-Computação Gráfica gera imagens a partir de modelos: videojogos, efeitos visuais, visualização científica e médica, CAD, interfaces. Todas partilham o mesmo problema, ou seja, desenhar depressa cenas descritas por geometria. A pipeline existe para resolver esse problema sempre da mesma maneira, de modo que o hardware gráfico consiga acelerar cada etapa.
+Computação Gráfica gera imagens a partir de modelos: videojogos, efeitos visuais, visualização científica e médica, CAD, interfaces. Numa pipeline de rasterização, a separação em etapas permite processar muitos vértices e fragmentos em paralelo. A geometria é uma parte da cena; materiais, luzes e câmara também são necessários para obter a imagem.
 
 ## As etapas do vértice
 
@@ -38,41 +37,44 @@ Segue um vértice desde o modelo até ao dispositivo. Neste percurso usamos a co
 
 Depois disto vem a **rasterização**, que converte a geometria projetada em fragmentos e depois em píxeis, e o teste de profundidade, que decide o que fica à frente.
 
-Lê o diagrama da esquerda para a direita e confirma cada paragem com a lista acima: se souberes dizer em que coordenadas está o vértice em cada caixa, já sabes a pipeline.
+Lê o diagrama de cima para baixo. As caixas indicam espaços de coordenadas; as setas indicam as operações que os ligam. O recorte atua ainda nas quatro componentes homogéneas.
 
 <Typst
   source={pipeline}
   format="svg"
-  alt="Diagrama linear da pipeline com sete caixas: Objeto, Mundo, Câmara, Recorte, NDC, Janela e Píxel."
+  alt="Percurso vertical: Objeto, Mundo, Câmara, Recorte, NDC, Janela e Fragmentos. Modelação, vista, projeção, recorte e divisão por w, viewport e rasterização ligam estes estados."
 />
 
-O recorte pode reduzir ou descartar a geometria. O grafo mostra o destino de cada primitiva depois da projeção: o que passa segue para a divisão e a janela, o que falha desaparece aqui.
+O recorte pode reduzir ou descartar a geometria. O grafo distingue primitivas interiores, primitivas que atravessam a fronteira e primitivas totalmente exteriores a um plano. Um vértice fora não basta para descartar um triângulo inteiro.
 
 <Dot
   source={etapas}
-  alt="Grafo da ordem das etapas: projeção leva ao recorte, que separa o que está dentro, e segue para divisão, janela e píxeis, do que está fora e é descartado."
+  alt="O recorte conserva primitivas interiores, cria interseções nas que atravessam a fronteira e descarta as totalmente exteriores a um plano. As partes conservadas seguem para divisão por w e viewport."
 />
 
 Se ainda custa ver o percurso todo de uma vez, segue um vértice desde a cena até aos píxeis neste vídeo e confirma cada paragem com a lista acima.
 
 <YouTube id="C8YtdC8mxTU" title="How do Video Game Graphics Work?" />
 
-## Quem corre cada etapa
+## CPU, GPU e shaders
 
 O processador (CPU) prepara a cena: carrega modelos, monta matrizes e envia tudo para a placa gráfica. A placa (GPU) corre as etapas em paralelo sobre milhares de vértices e fragmentos ao mesmo tempo. As etapas de transformação e de cor são programas teus, os **_shaders_**: o _shader_ de vértice corre por vértice e o _shader_ de fragmentos corre por fragmento. O resultado acumula-se no **_framebuffer_**, a memória que guarda a cor e a profundidade de cada píxel do ecrã.
 
-## Exemplo completo
+## Coordenadas de janela
 
-Um vértice sai da projeção em coordenadas de recorte $(0{,}6,\ 0{,}3,\ -0{,}4,\ 2)$. Primeiro verifica o recorte: $|0{,}6| \le 2$, $|0{,}3| \le 2$ e $|-0{,}4| \le 2$, por isso passa. A divisão por $w = 2$ dá as NDC:
+Um vértice sai da projeção em coordenadas de recorte $(0{,}6,\ 0{,}3,\ -0{,}4,\ 2)$. Primeiro verifica o recorte: $|0{,}6|\le2$, $|0{,}3|\le2$ e $|-0{,}4|\le2$. Como passa, dividimos por $w=2$:
 
 $$
-\left(\frac{0{,}6}{2},\ \frac{0{,}3}{2},\ \frac{-0{,}4}{2}\right) = (0{,}3,\ 0{,}15,\ -0{,}2).
+\left(\frac{0{,}6}{2},\ \frac{0{,}3}{2},\ \frac{-0{,}4}{2}\right)=(0{,}3,\ 0{,}15,\ -0{,}2).
 $$
 
 Todas as componentes estão em $[-1, 1]$, logo o ponto está dentro do volume visível. Numa janela de $800 \times 600$ píxeis, a transformação de viewport dá:
 
 $$
-x = (0{,}3 \times 0{,}5 + 0{,}5) \times 800 = 520, \qquad
+x = (0{,}3 \times 0{,}5 + 0{,}5) \times 800 = 520.
+$$
+
+$$
 y = (0{,}15 \times 0{,}5 + 0{,}5) \times 600 = 345.
 $$
 
@@ -80,6 +82,22 @@ Aqui a origem da janela é o canto inferior esquerdo e $y$ cresce para cima. O v
 
 Com o intervalo de profundidade padrão $[0,1]$, a NDC $z=-0{,}2$ passa a $z_{janela}=(z+1)/2=0{,}4$. É a profundidade de janela dos fragmentos que o teste de profundidade compara e que pode guardar no _depth buffer_. Um fragmento é um candidato a contribuir para um píxel; pode ainda falhar esse teste.
 
-## O que a pipeline esconde
+## Projeção ortográfica e perspética
+
+Considera a câmara na origem, a olhar para $-z$. Dois segmentos verticais de altura 2 estão a distâncias 2 e 4 da câmara. Na projeção **ortográfica**, os raios de projeção são paralelos: uma mesma escala vertical transforma ambos na mesma altura de imagem. Com escala 1/2, os dois têm altura projetada 1. A profundidade não reduz o tamanho projetado.
+
+Na projeção **perspética**, os raios passam pelo centro de projeção. Para um plano de imagem virtual em $z=-f$, com $f>0$, triângulos semelhantes dão
+
+$$
+x'=\frac{fx}{-z},\qquad y'=\frac{fy}{-z},\qquad z<0.
+$$
+
+Com $f=1$, um segmento que vai de $y=-1$ a $y=1$ em $z=-2$ projeta-se de $-1/2$ a $1/2$: altura 1. Em $z=-4$, a altura é $1/2$. Duplicar a distância reduziu a altura a metade. Esta conta descreve o plano de imagem; a matriz de projeção da API também prepara $z$ para o recorte e define os planos próximo e afastado.
+
+<Projecoes />
+
+O desenho compara as alturas projetadas, com a mesma escala em cada painel. A perspetiva altera o tamanho aparente, sem alterar as dimensões do objeto. Um ponto no plano $z=0$ não pode usar esta divisão; o recorte próximo evita projetar geometria até ao centro da câmara.
+
+## Diagnóstico por espaço de coordenadas
 
 Cada etapa tem parâmetros que vais aprender a controlar: a matriz de modelação e a câmara vivem nas [transformações geométricas](/cadeiras/cg/transformacoes-geometricas/), a luz entra na [iluminação](/cadeiras/cg/iluminacao-sombreamento/) e o fim do caminho é a [rasterização 2D](/cadeiras/cg/rasterizacao-2d/). Quando uma imagem sai errada, a pergunta útil é sempre em que etapa o número se estragou.

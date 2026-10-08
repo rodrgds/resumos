@@ -10,21 +10,20 @@ order: 4
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
+import Retalhos from '../../cg/Retalhos.astro';
 import YouTube from '../../../components/YouTube.astro';
 import bezier from './bezier.typ?raw';
 import retalho from './retalho.typ?raw';
 
-Já vimos objetos feitos de triângulos; esta página responde a como descrever contornos suaves sem os partir em triângulos.
-
-As letras no ecrã, a carroçaria de um carro e as personagens de um jogo têm contornos suaves. As **curvas e superfícies paramétricas**, ou seja, linhas e peles descritas por fórmulas que recebem um número e devolvem um ponto, descrevem essa suavidade diretamente, e só no fim se convertem em triângulos para desenhar. São a alternativa às malhas de triângulos, que aproximam o suave à força de muitos triângulos pequenos. A curva de Bézier é a porta de entrada: simples, geométrica e com um algoritmo de avaliação que se faz à mão.
+Um contorno de Bézier é definido por pontos de controlo, mas não tem de passar por todos eles. Com $P_0=(0,0)$, $P_1=(1,2)$, $P_2=(3,2)$ e $P_3=(4,0)$, o ponto a meio do parâmetro é $(2,1{,}5)$, abaixo dos controlos interiores. Vamos obter esse ponto por interpolações e usar os mesmos controlos para estudar a forma e a tangente.
 
 ## Curvas paramétricas
 
 Uma **curva paramétrica** é uma função $\mathbf{P}(t)$ que para cada $t$ num intervalo (normalmente $[0, 1]$) devolve um ponto. Uma **curva de Bézier cúbica** fica definida por quatro pontos de controlo $P_0, P_1, P_2, P_3$: a curva começa em $P_0$ e termina em $P_3$, mas em geral não passa pelos pontos de controlo interiores $P_1$ e $P_2$. Estes controlam a forma da curva. Mover $P_1$ altera a curva em todo o intervalo $0 < t < 1$, não apenas perto desse ponto; os extremos mantêm-se fixos.
 
-A avaliação faz-se pelo algoritmo de **de Casteljau**: interpolação linear repetida, ou seja, para um dado $t$ interpolas cada par de pontos adjacentes com peso $t$ e obténs menos um ponto; repetes até restar um só, que é $\mathbf{P}(t)$. Com $t = 0{,}5$ cada passo é uma média simples, ideal para fazer à mão.
+A avaliação faz-se pelo algoritmo de **de Casteljau**: interpolação linear repetida, ou seja, para um dado $t$ interpolas cada par de pontos adjacentes com peso $t$ e obténs menos um ponto; repetes até restar um só, que é $\mathbf{P}(t)$. Com $t=0{,}5$, cada passo é uma média. Com $t=1/4$, o primeiro vizinho recebe peso $3/4$ e o segundo $1/4$ em todas as rondas.
 
-## Exemplo: um ponto da curva
+## Avaliação por de Casteljau
 
 Sejam $P_0 = (0, 0)$, $P_1 = (1, 2)$, $P_2 = (3, 2)$ e $P_3 = (4, 0)$, com $t = 0{,}5$. Primeira ronda de médias:
 
@@ -57,7 +56,7 @@ O desenho marca cada ronda com rótulos: os pontos de controlo $P$, os $Q$ inter
   alt="Pontos de controlo P0 a P3 a tracejado, pontos intermédios Q0 a Q2, pontos R0 e R1 e o ponto final S em (2, 1,5)."
 />
 
-Se as rondas ainda parecem magia, segue as interpolações de de Casteljau até ao ponto da curva neste vídeo e depois volta a fazer as médias à mão.
+Para acompanhar a construção geométrica, segue as interpolações de de Casteljau até ao ponto da curva neste vídeo e depois volta a fazer as médias à mão.
 
 <YouTube id="aVwxzDHniEw" title="The Beauty of Bézier Curves" />
 
@@ -75,7 +74,7 @@ A função lerp calcula $(1-t)a+tb$ coordenada a coordenada. Para avaliar outro 
   }
 />
 
-## A forma polinomial
+## Polinómios de Bernstein
 
 O de Casteljau é geométrico, mas a mesma curva tem forma fechada, ou seja, a combinação dos pontos de controlo com os **polinómios de Bernstein** de grau 3. Para $t$ genérico:
 
@@ -83,7 +82,7 @@ $$
 \mathbf{P}(t) = (1-t)^3 P_0 + 3(1-t)^2 t\, P_1 + 3(1-t) t^2 P_2 + t^3 P_3.
 $$
 
-Em $t = 0{,}5$ os pesos são $\frac{1}{8}$, $\frac{3}{8}$, $\frac{3}{8}$ e $\frac{1}{8}$. A coordenada $x$ dá $\frac{0 + 3 + 9 + 4}{8} = 2$ e a $y$ dá $\frac{0 + 6 + 6 + 0}{8} = 1{,}5$: o mesmo $(2,\ 1{,}5)$ do algoritmo. As duas formas concordam sempre; o de Casteljau é estável para desenhar e o polinómio é direto para derivar.
+Em $t = 0{,}5$ os pesos são $\frac{1}{8}$, $\frac{3}{8}$, $\frac{3}{8}$ e $\frac{1}{8}$. A coordenada $x$ dá $\frac{0 + 3 + 9 + 4}{8} = 2$ e a $y$ dá $\frac{0 + 6 + 6 + 0}{8} = 1{,}5$: o mesmo $(2,\ 1{,}5)$ do algoritmo. As duas formas concordam sempre; de Casteljau avalia através de interpolações, sem expandir as potências, e a forma polinomial permite calcular derivadas diretamente.
 
 Se deslocares apenas $P_1$ por um vetor $\Delta$, o ponto da curva desloca-se por $3(1-t)^2t\,\Delta$. Este peso é positivo em todo o interior do intervalo e zero nos extremos. Em $t = 0{,}5$, vale $\frac{3}{8}$: subir $P_1$ uma unidade sobe o ponto da curva $\frac{3}{8}$ de unidade. A influência varia ao longo da curva, mas não é local.
 
@@ -93,6 +92,8 @@ As derivadas nos extremos de uma Bézier cúbica são $\mathbf{P}'(0)=3(P_1-P_0)
 
 Por exemplo, se $P_2=(2,1)$ e $P_3=Q_0=(3,1)$, escolhe $Q_1=(4,1)$ para $C^1$. Escolher $(5,1)$ conserva direção e sentido, logo dá $G^1$, mas duplica a derivada: deixa de ser $C^1$.
 
+### Curvas de Hermite
+
 Uma curva cúbica de **Hermite** especifica diretamente os extremos $A,B$ e as derivadas $\mathbf{a},\mathbf{b}$ nesses extremos:
 
 $$
@@ -101,14 +102,32 @@ $$
 
 A Bézier equivalente usa $P_0=A$, $P_1=A+\mathbf{a}/3$, $P_2=B-\mathbf{b}/3$ e $P_3=B$. Assim, ambas descrevem curvas cúbicas, mas recebem dados geométricos diferentes.
 
-## De curvas a superfícies
+## Retalhos bicúbicos
 
-Uma **superfície paramétrica** é $\mathbf{S}(u, v)$ com dois parâmetros: uma grelha de pontos de controlo em vez de uma fila. O **retalho de Bézier** bicúbico usa $4 \times 4$ pontos e avalia-se aplicando de Casteljau numa direção e depois na outra. Coser vários retalhos exige continuidade nas fronteiras: continuidade $C^0$ significa que os retalhos se tocam (posições coincidem na fronteira), continuidade $C^1$ exige que as primeiras derivadas coincidam, incluindo o comprimento dos vetores, com a mesma parametrização. Ter apenas a mesma direção e sentido tangente dá continuidade geométrica $G^1$, que não implica $C^1$. B-splines e NURBS permitem controlar continuidade através do grau e dos nós; não garantem suavidade em qualquer configuração. Para a cadeira, fixa a ideia central: a superfície suave nasce de pontos de controlo e só vira [malha de triângulos](/cadeiras/cg/modelacao-malhas/) na altura de desenhar.
+Uma **superfície paramétrica** $S(u,v)$ recebe dois parâmetros. Um retalho de Bézier bicúbico usa uma grelha de $4\times4$ pontos de controlo $P_{ij}$. Para avaliar $S(u,v)$, aplica de Casteljau com $u$ às quatro filas. Obténs quatro pontos intermédios; aplicar de Casteljau com $v$ a esses pontos produz um único ponto da superfície.
 
-A grelha mostra os $16$ pontos de um retalho bicúbico, com duas fronteiras destacadas: é nessa aresta que a continuidade $C^0$ ou $C^1$ se decide quando coseres o retalho seguinte.
+Numa grelha plana $P_{ij}=(i,j,0)$, com $i,j=0,1,2,3$, os pesos de Bernstein dão $S(u,v)=(3u,3v,0)$. Em $u=v=1/2$, as quatro avaliações de filas produzem $(1{,}5,j,0)$; a última avaliação dá $(1{,}5,1{,}5,0)$. A grelha de controlo descreve os dados de construção; não é, em geral, uma malha situada sobre a superfície.
+
+A grelha seguinte mostra todos os 16 controlos. As fronteiras destacadas são duas das curvas que delimitam o retalho; no exemplo plano, coincidem com as arestas do quadrado.
 
 <Typst
   source={retalho}
   format="svg"
-  alt="Grelha de 4 por 4 pontos de controlo dentro de um quadrado, com as fronteiras direita e superior destacadas. Não mostra um segundo retalho."
+  alt="Grelha de 4 por 4 pontos de controlo, com as fronteiras superior e direita destacadas."
 />
+
+### Continuidade entre retalhos
+
+Junta a fronteira $u=1$ do retalho P à fronteira $u=0$ de outro retalho Q, usando o mesmo parâmetro $v$. Uma condição suficiente para $C^0$ é $P_{3j}=Q_{0j}$ para cada $j$. Para $C^1$, com a mesma escala dos parâmetros, igualamos também as derivadas transversais:
+
+$$
+P_{3j}-P_{2j}=Q_{1j}-Q_{0j}.
+$$
+
+A igualdade tem de valer para $j=0,1,2,3$. O fator 3 das derivadas aparece dos dois lados e cancela-se. Se $P_{2j}=(2,j,0)$ e a fronteira comum for $(3,j,0)$, escolher $Q_{1j}=(4,j,0)$ dá os mesmos vetores. Escolher $(5,j,0)$ mantém o plano tangente, mas duplica a derivada transversal, por isso não dá $C^1$ com estes parâmetros.
+
+O desenho mostra as colunas junto da fronteira de dois retalhos planos. Compara as distâncias entre colunas: encontrar a mesma fronteira não basta para igualar as derivadas.
+
+<Retalhos />
+
+B-splines permitem influência local dos controlos através do grau e do vetor de nós; repetir um nó pode reduzir a continuidade. As NURBS acrescentam pesos racionais, permitindo representar, por exemplo, arcos de circunferência exatamente. Não garantem suavidade em qualquer configuração. Para desenhar um retalho numa pipeline de triângulos, amostra ou subdivide a superfície e constrói a [malha](/cadeiras/cg/modelacao-malhas/) resultante.

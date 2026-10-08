@@ -1,19 +1,19 @@
 #import "@preview/fletcher:0.5.8": diagram, node, edge
 #set page(width: auto, height: auto, margin: 8pt)
-#set text(size: 9pt)
+#set text(size: 11pt)
 #diagram(
-  node-stroke: 1pt + rgb("8c2d3b"), node-fill: rgb("f3e9e9"), spacing: 14pt,
+  node-stroke: 1pt + rgb("8c2d3b"), node-fill: rgb("f3e9e9"), spacing: 18pt,
   node((0, 0), [Objeto]),
-  edge("-|>"),
-  node((1, 0), [Mundo]),
-  edge("-|>"),
-  node((2, 0), [Câmara]),
-  edge("-|>"),
-  node((3, 0), [Recorte]),
-  edge("-|>"),
-  node((4, 0), [NDC]),
-  edge("-|>"),
-  node((5, 0), [Janela]),
-  edge("-|>"),
-  node((6, 0), [Píxel]),
+  edge("-|>", [modelação]),
+  node((0, 1), [Mundo]),
+  edge("-|>", [vista]),
+  node((0, 2), [Câmara]),
+  edge("-|>", [projeção]),
+  node((0, 3), [Recorte]),
+  edge("-|>", [recorte; divisão por $w$]),
+  node((0, 4), [NDC]),
+  edge("-|>", [viewport]),
+  node((0, 5), [Janela]),
+  edge("-|>", [rasterização]),
+  node((0, 6), [Fragmentos]),
 )

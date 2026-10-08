@@ -1,7 +1,7 @@
 #import "@preview/cetz:0.5.2": canvas, draw
 #set page(width: auto, height: auto, margin: 8pt)
-#set text(size: 9pt)
-#canvas({
+#set text(size: 11pt)
+#canvas(length: 1.4cm, {
   import draw: *
   let P = ((0, 0), (1, 2), (3, 2), (4, 0))
   let Q = ((0.5, 1), (2, 2), (3.5, 1))

@@ -9,15 +9,11 @@ order: 5
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import Tabs from '../../../components/Tabs.astro';
 import phong from './phong-vetores.typ?raw';
 
-Com a geometria da cena construída de malhas e curvas, esta página responde a que cor tem cada ponto quando a luz lhe bate.
+Uma esfera branca pode ter uma zona escura e um brilho perto da direção de reflexão da luz. A **iluminação** calcula a contribuição das fontes e do material num ponto. O **sombreamento** decide onde avaliar essa conta e o que interpolar entre avaliações. Usar o modelo de iluminação de Phong não obriga a usar sombreamento de Phong.
 
-Olha para uma esfera branca: um lado parece cinzento e há um ponto brilhante onde a lâmpada se reflete. A geometria diz onde está a superfície; a **iluminação** diz que cor ela tem em cada ponto. O modelo de iluminação combina a luz que chega, a orientação da superfície e o material do objeto. O modelo de **sombreamento** decide onde essa conta se faz, ou seja, em cada vértice ou em cada fragmento. O modelo de Phong pode ser usado tanto com Gouraud como com sombreamento de Phong.
-
-## O modelo local: Phong
+## Iluminação local de Phong
 
 A **iluminação local** só olha para as luzes diretas e ignora a luz refletida por outros objetos. O modelo de **Phong** escreve a intensidade num ponto como soma de três parcelas:
 
@@ -39,7 +35,7 @@ O desenho junta os cinco vetores no mesmo ponto da superfície: a normal para ci
   alt="Ponto da superfície com cinco setas: normal n para cima, luz l e observador v de cada lado, reflexão r simétrica da luz e halfway h entre a luz e o observador."
 />
 
-## Exemplo com números
+## Cálculo de Blinn-Phong
 
 Um ponto tem normal $\mathbf{n} = (0, 0, 1)$ com luz ambiente $I_a=1$ e luz branca direta $I_l=1$, na direção $\mathbf{l} = (0,\ 0{,}6,\ 0{,}8)$ (confirma que está normalizado: $0{,}6^2 + 0{,}8^2 = 1$). O observador está em $\mathbf{v} = (0, 0, 1)$ e o material tem $k_a = 0{,}1$, $k_d = 0{,}7$, $k_s = 0{,}5$ e $\alpha = 16$.
 
@@ -53,30 +49,22 @@ Então $\mathbf{n} \cdot \mathbf{h} \approx 0{,}9487$ e $0{,}9487^{16} \approx 0
 
 Como $0<\mathbf{n}\cdot\mathbf{h}<1$, elevar o expoente de $16$ para $64$ reduz a parcela especular neste ponto. Ambiente e difusa mantêm-se.
 
-<CodePlayground
-  language="javascript"
-  title="Blinn-Phong em JavaScript"
-  code={
-    'const n = [0, 0, 1], l = [0, 0.6, 0.8], v = [0, 0, 1];\nconst ka = 0.1, kd = 0.7, ks = 0.5, alpha = 16;\nconst dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);\nconst norm = a => { const m = Math.hypot(...a); return a.map(x => x / m); };\nconst soma = l.map((x, i) => x + v[i]);\nconst h = Math.hypot(...soma) > 0 ? norm(soma) : [0, 0, 0];\nconst iluminado = dot(n, l) > 0;\nconst ambiente = ka * 1;\nconst difusa = kd * Math.max(0, dot(n, l));\nconst especular = iluminado ? ks * Math.pow(Math.max(0, dot(n, h)), alpha) : 0;\nconsole.log("ambiente:", ambiente.toFixed(2));\nconsole.log("difusa:", difusa.toFixed(2));\nconsole.log("especular:", especular.toFixed(2));\nconsole.log("total:", (ambiente + difusa + especular).toFixed(2));'
-  }
-/>
+## Comparação da reflexão especular
 
-## Duas formas de especular
+Para os mesmos vetores do exemplo, a reflexão de Phong é
 
-Phong e Blinn-Phong diferem só na parcela especular. Compara a fórmula e o custo antes de escolheres qual implementar.
+$$
+r=2(0{,}8)(0,0,1)-(0,0{,}6,0{,}8)=(0,-0{,}6,0{,}8).
+$$
 
-<Tabs id="phong-blinn" labels={['Phong', 'Blinn-Phong']}>
-  <div slot="panel-0">
+Assim, $r\cdot v=0{,}8$ e a especular de Phong é $0{,}5\times0{,}8^{16}\approx0{,}0141$. Em Blinn-Phong, $(n\cdot h)^2=0{,}9$, por isso a parcela é $0{,}5\times0{,}9^8\approx0{,}2152$. Com o mesmo expoente, os modelos dão brilhos diferentes neste ponto.
 
-Especular com o vetor de reflexão: $k_s I_l \max(0, \mathbf{r} \cdot \mathbf{v})^{\alpha}$. Exige calcular $\mathbf{r} = 2(\mathbf{n} \cdot \mathbf{l})\mathbf{n} - \mathbf{l}$ por fragmento e a parcela anula-se quando $\mathbf{r}\cdot\mathbf{v}\le0$.
+| Modelo      | Alinhamento comparado           | Especular com expoente 16 | Total      |
+| ----------- | ------------------------------- | ------------------------- | ---------- |
+| Phong       | Reflexão $r$ com observador $v$ | $0{,}0141$                | $0{,}6741$ |
+| Blinn-Phong | Normal $n$ com bissetriz $h$    | $0{,}2152$                | $0{,}8752$ |
 
-  </div>
-  <div slot="panel-1">
-
-Especular com o halfway: $k_s I_l \max(0, \mathbf{n} \cdot \mathbf{h})^{\alpha}$, com $\mathbf{h}$ normalizado de $\mathbf{l} + \mathbf{v}$. Usa uma bissetriz em vez da reflexão perfeita. O custo depende do que já está calculado no shader e não deve ser inferido apenas pelo nome do modelo.
-
-  </div>
-</Tabs>
+O custo depende do que o shader já calcula, incluindo normalizações. Estes modelos são aproximações empíricas: escolher os coeficientes não garante conservação de energia. Não limites cada parcela antes de somar; se o formato do destino não guardar intensidades superiores a 1, a conversão final precisa de tratar esse intervalo.
 
 ## Iluminação global e sombreamento
 
@@ -90,7 +78,9 @@ $$
 
 $B_i$ é a potência que sai por unidade de área, $E_i$ a emissão própria, $\rho_i$ a refletividade difusa e $F_{ij}$ a fração da energia que sai de $i$ e chega a $j$. A reciprocidade $A_iF_{ij}=A_jF_{ji}$, com $A_i$ e $A_j$ as áreas, permite escrever o balanço nesta forma. Se $E_i=0$, $\rho_i=0{,}5$, $F_{ij}=0{,}2$ e $B_j=10$, sem outras contribuições, $B_i=1$.
 
-No **sombreamento constante**, uma cor calculada para a face cobre-a toda e revela a divisão em polígonos. Nos métodos suavizados, há duas escolhas. O sombreamento de **Gouraud** calcula a iluminação nos vértices e interpola as cores pela face: é barato, mas perde brilhos no interior dos triângulos grandes. O sombreamento de **Phong** interpola as [normais](/cadeiras/cg/modelacao-malhas/), renormaliza-as e calcula a iluminação em cada fragmento: custa mais e mostra os brilhos onde eles estão. Repara na simetria dos nomes: o modelo de Phong diz o que calcular, o sombreamento de Phong diz onde o calcular.
+### Sombreamento constante, Gouraud e Phong
+
+No **sombreamento constante**, uma cor calculada para a face cobre-a toda e revela a divisão em polígonos. Nos métodos suavizados, há duas escolhas. O sombreamento de **Gouraud** calcula a iluminação nos vértices e interpola as cores pela face: é barato, mas perde brilhos no interior dos triângulos grandes. O sombreamento de **Phong** interpola as [normais](/cadeiras/cg/modelacao-malhas/), renormaliza-as e calcula a iluminação em cada fragmento: exige mais avaliações e pode recuperar um brilho interior. O resultado continua a depender das normais e do modelo escolhido; não cria geometria curva nem elimina todos os artefactos da malha. Repara na simetria dos nomes: o modelo de Phong diz o que calcular, o sombreamento de Phong diz onde o calcular.
 
 ## Distância e refração
 

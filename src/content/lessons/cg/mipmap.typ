@@ -9,5 +9,4 @@
   content((1.5, -0.4), [256])
   content((4.15, -0.4), [128])
   content((5.675, -0.4), [64])
-  content((3.4, 2.6), [cada nível tem um quarto dos texeis, a pirâmide soma cerca de mais um terço])
 })

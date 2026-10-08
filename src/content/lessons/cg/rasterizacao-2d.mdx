@@ -14,13 +14,19 @@ import Tabs from '../../../components/Tabs.astro';
 import YouTube from '../../../components/YouTube.astro';
 import grelha from './grelha.typ?raw';
 
-Fechamos o percurso aqui: com a geometria já projetada no plano do ecrã, esta página responde a que píxeis acendem para desenhar linhas e regiões.
-
-No fim da [pipeline](/cadeiras/cg/pipeline-visualizacao/), a geometria já está achatada no plano do ecrã e falta a última conversão: decidir que píxeis acendem. A **rasterização** faz esta conversão. Os algoritmos desta página trabalham numa grelha com centros de píxel em coordenadas inteiras, uma convenção didática que difere dos centros em meias unidades de OpenGL.
+O segmento de $(0,0)$ a $(5,2)$ atravessa uma grelha, mas a sua reta contém pontos que não são centros de píxel. A **rasterização** escolhe amostras discretas para representar a geometria projetada. Aqui os centros têm coordenadas inteiras, uma convenção didática diferente dos centros em meias unidades de OpenGL.
 
 ## Linhas pelo ponto médio
 
 Desenhar o segmento de $(0, 0)$ a $(5, 2)$ parece pedir a reta $y = 0{,}4x$ com arredondamentos, mas o algoritmo do **ponto médio** (variante de Bresenham) decide cada píxel com somas inteiras. Para declive entre $0$ e $1$, avança uma coluna de cada vez e escolhe entre o píxel leste (E) e o nordeste (NE), consoante o ponto médio entre eles fica acima ou abaixo da reta. Usamos E se $d<0$ e NE se $d\ge0$, incluindo o empate. A variável de decisão começa em $d = 2\Delta y - \Delta x$ e atualiza-se com $+2\Delta y$ após E e $+2(\Delta y - \Delta x)$ após NE.
+
+Para obter a variável de decisão, escreve a reta numa forma cujo sinal indique o lado:
+
+$$
+F(x,y)=\Delta y(x-x_0)-\Delta x(y-y_0).
+$$
+
+No ponto médio $M=(x+1,y+1/2)$ entre E e NE, $F(M)>0$ significa que a reta passa acima de M. Escolhemos NE. Se $F(M)<0$, escolhemos E. Tomar $d=2F(M)$ elimina a meia unidade. Ao avançar para E, $x$ aumenta 1 e $y$ não muda, logo $d$ aumenta $2\Delta y$. Ao avançar para NE, ambos aumentam 1, logo o incremento é $2(\Delta y-\Delta x)$.
 
 Aqui $\Delta x = 5$ e $\Delta y = 2$, logo $d$ começa em $2 \times 2 - 5 = -1$. Segue os passos a partir de $(0, 0)$:
 
@@ -32,7 +38,7 @@ Aqui $\Delta x = 5$ e $\Delta y = 2$, logo $d$ começa em $2 \times 2 - 5 = -1$.
 | 4   | $1$       | NE      | $(4, 2)$ | $1 - 6 = -5$  |
 | 5   | $-5$      | E       | $(5, 2)$ | $-5 + 4 = -1$ |
 
-Os píxeis acesos são $(0, 0)$, $(1, 0)$, $(2, 1)$, $(3, 1)$, $(4, 2)$ e $(5, 2)$. Confirma com a reta: em $x = 2$, $y = 0{,}8$ arredonda para $1$; em $x = 4$, $y = 1{,}6$ arredonda para $2$. O algoritmo nunca calculou $0{,}8$ nem $1{,}6$: seguiu o sinal de $d$ com inteiros. Para outros octantes troca-se o eixo de avanço ou o sinal, mas a estrutura é a mesma.
+Os píxeis acesos são $(0, 0)$, $(1, 0)$, $(2, 1)$, $(3, 1)$, $(4, 2)$ e $(5, 2)$. Confirma com a reta: em $x = 2$, $y = 0{,}8$ arredonda para $1$; em $x = 4$, $y = 1{,}6$ arredonda para $2$. O algoritmo nunca calculou $0{,}8$ nem $1{,}6$: seguiu o sinal de $d$ com inteiros. Se $\Delta y=0$, todas as escolhas são E. Se $\Delta y=\Delta x>0$, são todas NE. Um segmento reduzido a um ponto desenha só o ponto inicial; não exige dividir por $\Delta x$.
 
 A grelha mostra o píxel inicial P0 e as cinco escolhas seguintes. Compara cada coluna com a linha da tabela: $E$ mantém a linha, $NE$ sobe uma.
 
@@ -59,7 +65,7 @@ O programa cobre o primeiro octante, com $x_1>x_0$ e $0\le\Delta y\le\Delta x$.
   }
 />
 
-## Os outros octantes
+## Octantes e sentido de avanço
 
 O caso acima é um octante; os outros sete trocam o eixo de avanço, o sentido ou ambos. A estrutura (decisão inteira, dois incrementos) é sempre a mesma.
 
@@ -85,11 +91,13 @@ Reta a descer, como de $(0, 2)$ a $(5, 0)$. Avança em $x$ mas escolhe entre E e
 
 Preencher um polígono faz-se por **varrimento** (_scanline_): para cada linha horizontal, interseta a linha com as arestas, ordena as interseções e preenche entre pares. A regra par-ímpar alterna entre exterior e interior em cada cruzamento. Pode representar concavidades e buracos, mas exige contar os cruzamentos dos vértices de forma consistente.
 
-Toma o triângulo de vértices $(1, 1)$, $(5, 1)$ e $(3, 4)$ e a linha $y = 2$. A aresta esquerda vai de $(1, 1)$ a $(3, 4)$ com declive $\Delta x / \Delta y = 2/3$, logo cruza $y = 2$ em $x = 1 + 2/3 \approx 1{,}67$. A aresta direita vai de $(5, 1)$ a $(3, 4)$ com declive $-2/3$ e cruza em $x = 5 - 2/3 \approx 4{,}33$. Preenchem-se os píxeis inteiros entre elas: $x = 2$, $3$ e $4$. Repete para cada linha e o triângulo fica sólido. Inclui uma aresta não horizontal em $y_{min}\le y<y_{max}$ e ignora as horizontais na contagem de cruzamentos. Entre duas interseções $x_L,x_R$, usa $x_L\le x<x_R$: inclui a esquerda e exclui a direita. Assim, vértices partilhados não introduzem cruzamentos duplicados.
+Toma o triângulo de vértices $(1, 1)$, $(5, 1)$ e $(3, 4)$ e a linha $y = 2$. A aresta esquerda vai de $(1, 1)$ a $(3, 4)$ com declive $\Delta x / \Delta y = 2/3$, logo cruza $y = 2$ em $x = 1 + 2/3 \approx 1{,}67$. A aresta direita vai de $(5, 1)$ a $(3, 4)$ com declive $-2/3$ e cruza em $x = 5 - 2/3 \approx 4{,}33$. Preenchem-se os píxeis inteiros entre elas: $x = 2$, $3$ e $4$. Na linha seguinte, $y=3$, as interseções são $7/3$ e $11/3$: fica apenas $x=3$. Em $y=4$, as arestas já não entram na lista ativa.
+
+Inclui uma aresta não horizontal em $y_{min}\le y<y_{max}$ e ignora as horizontais na contagem de cruzamentos. Entre duas interseções $x_L,x_R$, usa $x_L\le x<x_R$: inclui a esquerda e exclui a direita. Assim, vértices partilhados não introduzem cruzamentos duplicados.
 
 Uma **lista de arestas ativas** evita recalcular tudo em cada linha. Guarda para cada aresta a altura máxima, a interseção atual $x$ e o incremento $\Delta x/\Delta y$. Ao passar para $y+1$, soma esse incremento, retira as arestas que chegaram ao máximo, acrescenta as que começam e ordena as interseções antes de preencher.
 
-## Preencher uma imagem por difusão
+## Preenchimento por difusão
 
 O _flood fill_ parte de um píxel-semente e visita vizinhos com a mesma cor interior. Marca cada píxel ao visitá-lo para não voltar a inseri-lo. Uma pilha ou fila explícita evita depender de chamadas recursivas profundas.
 
