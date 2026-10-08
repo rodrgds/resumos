@@ -1,6 +1,6 @@
 ---
 title: Nomes, índices e espaço livre
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Bitmap, descrições abertas e níveis de índice.
 section: exercicios
 ---
 
@@ -18,7 +18,6 @@ import Exercise from '../../../components/Exercise.astro';
     Quantos MiB ocupa, sem overhead?
   </div>
   <div slot="hint">Primeiro calcula blocos, depois converte bits em bytes.</div>
-  <div slot="hint-more">2^40 / 2^12 dá 2^28 bits.</div>
   <div slot="solution">
     2^28 / 8 = 2^25 bytes = 32 MiB. Um bit não é um byte.
   </div>
@@ -63,55 +62,29 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="so-indireto"
-  revision={1}
-  title="Primeiro bloco indireto"
-  explanation="/cadeiras/so/implementacao-ficheiros/#apontadores-diretos-e-indiretos"
-  answer={{ kind: 'number', value: 12, tolerance: 0 }}
->
-  <div>
-    Um inode tem 12 apontadores diretos. Contando blocos lógicos desde zero,
-    qual é o primeiro índice que exige indireção simples?
-  </div>
-  <div slot="hint">Os primeiros índices são 0 a 11.</div>
-  <div slot="hint-more">O índice seguinte já não cabe nos 12 diretos.</div>
-  <div slot="solution">
-    É 12, porque a contagem começa em zero, por isso o décimo segundo direto tem
-    índice 11.
-  </div>
-  <div slot="mistakes">
-    Usar 13 por confundir posição ordinal com índice zero-based.
-  </div>
-</Exercise>
-
-<Exercise
   id="so-indice-journal"
-  revision={1}
-  title="Índices e falha a meio"
+  revision={2}
+  title="Blocos de índice e custo de acesso"
   explanation="/cadeiras/so/implementacao-ficheiros/#apontadores-diretos-e-indiretos"
-  answer={{ kind: 'number', value: 3, tolerance: 0 }}
+  answer={{ kind: 'self', checklist: ["Localizei as fronteiras 12 e 1036, contando desde zero.", "Contei três blocos de índice para os 1041 blocos de dados.", "Contei duas leituras de índice e uma de dados sem cache."] }}
 >
   <div>
-    Blocos de 4 KiB e apontadores de 4 bytes, com 12 diretos, um indireto
-    simples e um duplo. Um ficheiro ocupa 1041 blocos lógicos: 12 diretos, 1024
-    no simples e 5 no duplo. Quantos blocos de índice usa? Explica também o que
-    o journal recupera se a falha acontecer depois de escrever dados mas antes
-    de ligar o nome.
+
+Blocos de 4 KiB e apontadores de 4 bytes; o inode tem 12 diretos, um indireto simples e um duplo. O ficheiro usa 1041 blocos de dados completos. Calcula:
+
+1. Os primeiros índices lógicos que exigem indireção simples e dupla.
+2. Os blocos de índice usados e o espaço total de dados mais índices, sem contar o inode.
+3. As leituras para aceder ao bloco lógico 1040, com inode em RAM e nenhum índice ou dado em cache. E se ambos os índices do caminho já estivessem em cache?
+
   </div>
-  <div slot="hint">Cada bloco de índice guarda 1024 apontadores.</div>
-  <div slot="hint-more">
-    Os 5 blocos do duplo cabem num só bloco de segundo nível.
-  </div>
+  <div slot="hint">Conta dados e índices em separado.</div>
   <div slot="solution">
-    Usa 3 blocos de índice: 1 no simples, 1 de topo no duplo e 1 de segundo
-    nível para os 5 apontadores. A conta de capacidade conta só dados; os
-    índices são custo adicional. Se a falha acontecer antes de ligar o nome, há
-    blocos ocupados sem nome que os alcance: o journal recupera a consistência
-    das estruturas confirmadas, mas não garante que todo o conteúdo recente foi
-    persistido.
-  </div>
-  <div slot="mistakes">
-    Contar só blocos de dados, ou tratar o journal como cópia de segurança do
-    dispositivo.
+
+Cada bloco de índice contém `4096/4=1024` apontadores. Os diretos abrangem 0–11; o simples começa em 12 e chega a 1035; o duplo começa em 1036.
+
+Dos 1041 blocos, 12 usam diretos, 1024 usam o simples e os últimos 5 usam o duplo. Precisamos de um índice simples, um índice de topo duplo e um índice interior duplo: três blocos de índice. O espaço é `(1041+3)×4096=4276224 bytes`, ou 4176 KiB.
+
+O bloco 1040 usa o índice interior 0 do duplo e a entrada 4 desse índice. Sem cache, são duas leituras de índice e uma de dados. Com ambos os índices em cache, só é necessária a leitura do bloco de dados.
+
   </div>
 </Exercise>

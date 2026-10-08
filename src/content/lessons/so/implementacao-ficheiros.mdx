@@ -7,9 +7,11 @@ practices:
   - so/praticar-sistema-ficheiros
 ---
 
-Já viste como um pedido chega ao dispositivo. Agora dois nomes apontam para os mesmos dados e um ficheiro continua aberto depois de apagares o seu nome. Como ligam os nomes dos ficheiros aos blocos de dados guardados?
+O nome `notas.txt` identifica uma entrada de diretório. Os metadados localizam os blocos de dados, e cada abertura controla a posição de leitura. Separar estas estruturas explica por que dois nomes podem identificar o mesmo ficheiro e por que um descritor aberto continua útil depois de remover um nome.
 
-O nome `notas.txt` precisa de levar aos blocos que contêm os dados. Entre o nome e o dispositivo há diretórios, metadados, posições de leitura e estruturas de alocação. Separar essas estruturas explica como um ficheiro pode ter dois nomes e continuar aberto depois de um nome desaparecer, ou seja o nome e os dados têm tempos de vida diferentes.
+import Dot from '../../../components/Dot.astro';
+import aberturas from '../../so/aberturas.dot?raw';
+import indirecao from '../../so/indirecao.dot?raw';
 
 ## Nome, inode e abertura
 
@@ -17,11 +19,10 @@ Num sistema de ficheiros UNIX típico, uma entrada de diretório associa um nome
 
 O descritor de um processo referencia uma **descrição de ficheiro aberto**, onde estão a posição e certos flags. Esta, por sua vez, identifica o ficheiro. O modelo tem três níveis:
 
-```text
-processo: descritor 3
-        → descrição aberta: posição 120, leitura
-        → inode: tamanho, permissões, localização dos dados
-```
+<Dot
+  source={aberturas}
+  alt="fd e q, criado por dup, apontam para uma descrição aberta comum; r vem de outra open e tem posição independente. As duas descrições apontam para o mesmo inode."
+/>
 
 Duas aberturas independentes podem ter posições distintas. `dup` cria outro descritor para a mesma descrição aberta. Após `fork`, as referências herdadas também partilham essa posição.
 
@@ -73,7 +74,15 @@ Uma alocação ligada pode usar parte de cada bloco para um apontador, reduzindo
 
 ## Apontadores diretos e indiretos
 
-Desenha o inode com 12 diretos, um simples e um duplo. Os diretos apontam para dados. O simples aponta para um bloco com 1024 apontadores para dados. O duplo aponta para um bloco com 1024 apontadores para blocos de apontadores. Num esquema de inode, apontadores diretos vão aos dados; um indireto simples vai a um bloco de apontadores; um duplo vai a apontadores de blocos de apontadores. A conta de capacidade conta só dados; os blocos de índice são custo adicional.
+Um apontador direto chega a um bloco de dados. Um indireto simples chega primeiro a um bloco de apontadores; um duplo acrescenta mais um nível. Cada nível de índice ocupa espaço próprio, além dos dados que permite localizar.
+
+| Região do ficheiro | Caminho a partir do inode                            | Primeiro bloco lógico |
+| ------------------ | ---------------------------------------------------- | --------------------- |
+| 12 diretos         | Apontador → dados                                    | 0                     |
+| Indireto simples   | Apontador → índice → dados                           | 12                    |
+| Indireto duplo     | Apontador → índice de topo → índice interior → dados | 1036                  |
+
+Os limites da tabela usam as dimensões do exemplo seguinte. Contamos índices desde zero.
 
 Assumamos blocos de 4 KiB, apontadores de 4 bytes, 12 diretos, um indireto simples e um duplo. Cada bloco de índice contém $4096/4=1024$ apontadores. A capacidade de dados é:
 
@@ -84,6 +93,13 @@ $$
 Esta conta não inclui blocos de índice e assume que o tamanho do ficheiro e os endereços suportam a capacidade. O ficheiro pequeno de 10 KiB usa três blocos de dados e nenhum indireto. O espaço final não usado é $3\times4096-10240=2048$ bytes.
 
 Para aceder ao bloco lógico 12, contando desde zero, precisas do primeiro apontador do indireto simples. Ao bloco lógico 1036, precisas do primeiro caminho pelo indireto duplo, porque $12+1024=1036$ blocos anteriores cabem nas áreas anteriores. Se o inode está em RAM e índices não estão em cache, um acesso por indireto duplo pode exigir duas leituras de índice e uma de dados. Não acrescentes leituras que o enunciado diz estarem em cache.
+
+<Dot
+  source={indirecao}
+  alt="Do inode ao bloco lógico 1040: ler o índice de topo duplo, a sua entrada zero leva ao índice interior; a entrada quatro leva aos dados. Sem cache são três leituras."
+/>
+
+O caminho tem três leituras porque cada seta chega a um bloco ainda ausente da cache. O inode já está em RAM e não acrescenta uma leitura.
 
 ## Gerir espaço livre
 

@@ -7,9 +7,7 @@ practices:
   - so/praticar-paginacao
 ---
 
-Já viste como os endereços são traduzidos para a RAM. Agora o processo refere uma página ausente e o núcleo tem de escolher uma vítima. O que acontece quando uma página necessária não está na RAM?
-
-Nem todas as páginas de um processo precisam de estar na RAM ao mesmo tempo. A paginação por procura prepara uma página quando o processo a referencia. A vantagem depende de **localidade**: durante algum tempo, um programa costuma usar um conjunto relativamente pequeno de páginas, ou seja as referências próximas tendem a repetir páginas próximas.
+Um processo acede à página 4, mas as suas três molduras contêm 1, 2 e 3. Se o acesso for válido, o núcleo precisa de preparar a página 4 e escolher o que sai. A paginação por procura adia essa preparação até ao uso. Funciona bem quando há **localidade temporal**, com reutilização recente, e **espacial**, com acessos a posições próximas.
 
 ## Tratar uma falta de página
 
@@ -85,7 +83,7 @@ Converte milissegundos para nanossegundos antes de somar. Se o custo dado exclui
 
 ## Distribuir molduras
 
-Alocação igual dá o mesmo número a cada processo. Alocação proporcional pode usar o tamanho: com 60 molduras e processos de 100 e 200 páginas, uma divisão proporcional dá 20 e 40, respeitando mínimos e os ajustes de arredondamento definidos. Os tamanhos têm de comportar as quotas: o exemplo anterior com processos de 10 e 20 páginas não podia atribuir 20 e 40 molduras.
+Alocação igual dá o mesmo número a cada processo. Alocação proporcional pode usar o tamanho: com 60 molduras e processos de 100 e 200 páginas, o primeiro recebe $60\times100/300=20$ e o segundo 40. A quota não deve exceder as páginas que o processo pode usar; mínimos e arredondamentos também precisam de uma regra.
 
 Na substituição **local**, um processo só escolhe entre as suas molduras. Na **global**, pode retirar molduras que estavam atribuídas a outro. A global pode aproveitar melhor a memória livre de utilização, mas também espalhar pressão entre processos. A local limita interferência, sem garantir que cada processo tenha memória suficiente.
 
@@ -103,6 +101,6 @@ Em C, linhas de uma matriz são contíguas. Percorrer uma linha antes de passar 
 
 _Prepaging_ traz páginas antes do primeiro uso e pode evitar faltas iniciais, mas desperdiça I/O quando a previsão falha. Páginas em I/O podem precisar de ficar presas em memória para não serem substituídas a meio da transferência. Em NUMA, a memória próxima da CPU pode ser mais rápida, ligando alocação e escalonamento.
 
-Para memória do núcleo, onde as escolhas de paginação não se aplicam diretamente: **buddy** divide blocos em potências de dois e junta pares compatíveis quando ambos ficam livres. Um pedido de 21 KiB pode ocupar um bloco de 32 KiB, com 11 KiB de capacidade excedente. **Slab** guarda conjuntos de objetos do mesmo tipo para reutilização rápida, reduzindo trabalho de inicialização e fragmentação entre objetos, mas não eliminando todo o desperdício de páginas e alinhamento. Em NUMA, a proximidade entre CPU e memória entra na decisão de colocação.
+Para memória do núcleo, onde as escolhas de paginação não se aplicam diretamente: **buddy** divide blocos em potências de dois e junta pares compatíveis quando ambos ficam livres. Um pedido de 21 KiB pode ocupar um bloco de 32 KiB, com 11 KiB de capacidade excedente. **Slab** guarda conjuntos de objetos do mesmo tipo para reutilização rápida, reduzindo trabalho de inicialização e fragmentação entre objetos, mas não eliminando todo o desperdício de páginas e alinhamento. Um pedido de 21 KiB deixa 11 KiB sem uso no bloco de 32 KiB: é fragmentação interna, mesmo que os blocos livres se juntem corretamente.
 
 Compressão pode guardar várias páginas comprimidas numa moldura, evitando parte do I/O com custo de CPU. `mmap` de ficheiros também aproxima I/O da gestão de páginas: aceder ao mapeamento pode provocar uma falta, e alterações partilhadas podem precisar de sincronização com o ficheiro.

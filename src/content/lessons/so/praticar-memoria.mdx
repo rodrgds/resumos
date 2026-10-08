@@ -1,6 +1,6 @@
 ---
 title: Tradução e tabelas
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Endereços, tamanho de tabelas e custos de tradução.
 section: exercicios
 ---
 
@@ -18,7 +18,6 @@ import Exercise from '../../../components/Exercise.astro';
     moldura 7, presente e legível. Qual é o endereço físico em decimal?
   </div>
   <div slot="hint">Separa os 12 bits inferiores.</div>
-  <div slot="hint-more">O deslocamento 0x3F5 vale 1013.</div>
   <div slot="solution">
     7 × 4096 + 1013 = 29685, equivalente a 0x073F5. Traduz-se a página e
     conserva-se o deslocamento.
@@ -44,7 +43,6 @@ import Exercise from '../../../components/Exercise.astro';
     Divide o espaço virtual pela página antes de multiplicar pelo tamanho da
     entrada.
   </div>
-  <div slot="hint-more">Há 2 elevado a 20 entradas e cada uma tem 4 bytes.</div>
   <div slot="solution">
     2^20 × 4 = 2^22 bytes = 4 MiB. Esta é uma tabela linear completa, não um
     total de RAM de dados do processo.
@@ -57,66 +55,22 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-tlb-miss"
-  revision={1}
-  title="Tradução ausente na cache"
+  revision={2}
+  title="Custo de tradução e página presente"
   explanation="/cadeiras/so/memoria-virtual/#tlb-e-tempo-efetivo"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Pode ser resolvido pela tabela sem I/O de paginação',
-        correct: true,
-        explanation:
-          'A tradução pode faltar no TLB enquanto a página está na RAM.',
-      },
-      {
-        text: 'É sempre uma falta de página',
-        correct: false,
-        explanation: 'O TLB guarda traduções, não presença de todos os dados.',
-      },
-      {
-        text: 'Prova que o endereço é ilegal',
-        correct: false,
-        explanation: 'Ausência numa cache não define validade do endereço.',
-      },
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ["Separei miss do TLB de falta de página.", "Obtive 85 ns para acerto e 245 ns para miss.", "Ponderei os casos e obtive 101 ns."] }}
 >
   <div>
-    Um acesso dá miss no TLB, mas a tabela diz que a página está presente e tem
-    permissão. O que podes concluir?
-  </div>
-  <div slot="hint">Separa a cache de traduções da residência dos dados.</div>
-  <div slot="hint-more">A informação da tabela já permite obter a moldura.</div>
-  <div slot="solution">
-    É preciso obter a tradução e talvez inseri-la no TLB. Não é necessário
-    carregar a página do disco, pois já está presente.
-  </div>
-  <div slot="mistakes">
-    Somar o custo de uma falta de página a cada miss do TLB.
-  </div>
-</Exercise>
 
-<Exercise
-  id="so-traduzir-novo"
-  revision={1}
-  title="Outro tamanho de página"
-  explanation="/cadeiras/so/memoria-virtual/#paginação"
-  answer={{ kind: 'number', value: 29088, tolerance: 0, unit: 'bytes' }}
->
-  <div>
-    Páginas de 8192 bytes. O endereço virtual é 176544 e a sua página está na
-    moldura 3, presente e legível. Qual é o endereço físico em decimal?
+A consulta ao TLB demora 5 ns; cada acesso a RAM demora 80 ns. Há duas tabelas de páginas no percurso, taxa de acerto no TLB de 90%, páginas presentes e legíveis, sem outras caches. Calcula o custo de um acerto, de um miss e o tempo efetivo. O miss exige ler dados do disco?
+
   </div>
-  <div slot="hint">Separa os 13 bits inferiores.</div>
-  <div slot="hint-more">A página é 21 e o deslocamento é 4512.</div>
+  <div slot="hint">Conta separadamente as leituras das tabelas e a leitura do dado.</div>
   <div slot="solution">
-    21 × 8192 dá 172032; o deslocamento é 176544 menos 172032, ou seja 4512. O
-    físico é 3 × 8192 + 4512 = 29088. Traduz-se a página e conserva-se o
-    deslocamento.
-  </div>
-  <div slot="mistakes">
-    Multiplicar o endereço virtual inteiro pela moldura ou substituir os bits do
-    deslocamento.
+
+No acerto, a tradução vem do TLB e resta ler o dado: `5+80=85 ns`. No miss, consultamos duas tabelas e depois o dado: `5+3×80=245 ns`. A média é `0,9×85+0,1×245=101 ns`.
+
+Não há falta de página neste modelo: páginas e tabelas estão na RAM. O TLB guarda traduções, portanto faltar uma tradução nessa cache não implica I/O de paginação.
+
   </div>
 </Exercise>

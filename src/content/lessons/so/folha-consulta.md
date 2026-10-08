@@ -48,6 +48,8 @@ Para página $P=2^n$: $p=\lfloor v/P\rfloor$, $d=v\bmod P$, físico $fP+d$. O de
 
 TLB com consulta $t$, RAM $M$, acerto $h$ e tabela de um nível: $EAT=h(t+M)+(1-h)(t+2M)$, sem outras caches nem faltas. [Tradução e TLB](/cadeiras/so/memoria-virtual/#tlb-e-tempo-efetivo).
 
+Com dois níveis e sem cache de percursos, o miss custa $t+3M$: duas tabelas e o dado. Num endereço de 32 bits com páginas de 4 KiB e índices de 10 bits, os campos são índice exterior, índice interior e deslocamento de 12 bits. Só as regiões mapeadas precisam de tabelas interiores. [Exemplo completo](/cadeiras/so/memoria-virtual/#fragmentação-e-tamanho-das-tabelas).
+
 Faltas com custo completo $F$ e probabilidade $p$: $EAT=(1-p)M+pF$. Usa as mesmas unidades. FIFO retira por entrada, LRU por último acesso e OPT por uso futuro mais distante. Um acerto atualiza LRU, não a fila FIFO. FIFO pode ter anomalia de Belady. Relógio limpa bits 1 e procura um 0. [Substituição](/cadeiras/so/paginacao-procura/#fifo-opt-e-lru).
 
 Working set conta páginas distintas numa janela. Thrashing é pouca execução útil e muita paginação; aumentar processos ativos pode piorar. [Localidade](/cadeiras/so/paginacao-procura/#working-set-e-thrashing).
@@ -73,6 +75,8 @@ Pipe: ler em `fd[0]`, escrever em `fd[1]`; fechar pontas não usadas. EOF só co
 | `stat` com sucesso e caminho correto             | Campos sem dados ou consulta noutra pasta      |
 
 `open` falha com -1; descritor 0 é válido. `fopen` falha com NULL. `read` com pedido positivo: positivo bytes, 0 fim dos dados, -1 erro. Um pedido de 0 bytes pode devolver 0 sem indicar EOF. `getline` preserva o newline quando existe e precisa de `free`. `FILE *` e `int` são interfaces diferentes. POSIX inclui funções de biblioteca e chamadas de sistema; stdout transporta bytes. [API de ficheiros](/cadeiras/so/ficheiros-api/#file-e-descritor).
+
+Antes de truncar um destino de cópia, compara `st_dev` e `st_ino` obtidos com `fstat` nas aberturas. Dois nomes podem identificar o mesmo ficheiro. Numa travessia, repõe `errno` antes de cada `readdir`; um erro anterior de `fstatat` não é um erro da leitura do diretório. [Cópia e caminhos](/cadeiras/so/ficheiros-api/#so-write-parcial).
 
 Inode guarda metadados e localização; diretório associa nome a inode; descrição aberta guarda posição. `dup` partilha posição, nova `open` normalmente não. Hard link é outro nome do mesmo inode; symlink contém um caminho. `unlink` não invalida um descritor aberto. [Implementação](/cadeiras/so/implementacao-ficheiros/#nome-inode-e-abertura).
 

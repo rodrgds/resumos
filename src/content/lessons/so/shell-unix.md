@@ -7,9 +7,7 @@ practices:
   - so/praticar-shell
 ---
 
-Já vimos o que o sistema gere. Agora queres ordenar ficheiros `.c`, guardar o resultado e encadear dois comandos. Como pedimos isto ao sistema sem que a shell e os programas troquem os papéis?
-
-Abres uma janela de terminal e escreves uma linha de texto para pedir algo ao computador. A **shell** é o programa, ou seja a aplicação, que lê essa linha, separa o pedido — o comando — dos valores que o acompanham — os argumentos — e prepara as entradas e saídas, isto é de onde o programa lê dados e para onde escreve resultados, antes de o chamar. Para preveres um resultado, separa o que a shell faz do que o programa faz.
+A linha `sort -n < numeros.txt | uniq > distintos.txt` envolve três tarefas diferentes: a shell abre os ficheiros e liga os canais, `sort` ordena os números e `uniq` elimina repetições adjacentes. A **shell** interpreta comandos e argumentos e prepara a entrada e a saída dos programas. Para prever o resultado, acompanha primeiro essa preparação e depois os bytes que cada programa recebe.
 
 ## Caminhos e diretório de trabalho
 
@@ -56,6 +54,12 @@ printf '9\n2\n9\n5\n' > numeros.txt
 sort -n < numeros.txt | uniq > distintos.txt
 cat distintos.txt
 ```
+
+| Etapa              | Bytes que seguem para a etapa seguinte |
+| ------------------ | -------------------------------------- |
+| Entrada de `sort`  | `9\n2\n9\n5\n`                         |
+| Saída de `sort -n` | `2\n5\n9\n9\n`                         |
+| Saída de `uniq`    | `2\n5\n9\n`                            |
 
 A saída final é `2`, `5`, `9`, uma por linha. `sort -n` ordena numericamente e `uniq` elimina repetições adjacentes, por isso sem ordenar duas ocorrências separadas poderiam sobreviver.
 

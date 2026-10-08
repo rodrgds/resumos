@@ -7,9 +7,7 @@ practices:
   - so/praticar-io
 ---
 
-Já viste ficheiros do lado do programa e a memória. Agora um `read` pode sair da cache em nanossegundos ou esperar pelo disco em milissegundos. Como chega um pedido de leitura ao dispositivo onde os dados estão guardados?
-
-Um `read` de um ficheiro pode obter dados já em cache, ou seja numa cópia rápida guardada em memória, ou esperar que o dispositivo os transfira. A interface parece a mesma, mas o caminho e o custo são diferentes. Vamos por isso separar a organização dos dados da comunicação com o hardware.
+Duas chamadas `read` ao mesmo ficheiro podem ter custos muito diferentes. A primeira pode esperar pelo dispositivo; a seguinte pode encontrar os bytes na cache, uma cópia em memória. Acompanhar o pedido permite distinguir trabalho da CPU, transferência pelo hardware e espera pelo resultado.
 
 ## Dispositivo, partição, volume e montagem
 
@@ -77,7 +75,17 @@ Uma cache de páginas unificada permite coordenar acessos normais a ficheiros e 
 
 ## Seguir um read
 
-Segue o mesmo `read` nos dois casos. Com acerto na cache: o sistema resolve o descritor, verifica a posição, encontra a página em cache, copia os bytes e retorna. Com falha: resolve o descritor, verifica a posição, conclui que a página falta, submete I/O através do driver e do controlador, bloqueia a tarefa, trata a interrupção de conclusão, atualiza estado e acorda a tarefa. Para comparar modos bloqueante, não bloqueante e assíncrono, usa este mesmo pedido e pergunta em cada um: a chamada espera, retorna `EAGAIN` ou separa submissão de conclusão.
+Num modelo de leitura bloqueante de ficheiro regular, o pedido tem um início comum e depois dois percursos:
+
+| Etapa             | Dados já em cache                   | Dados por obter do dispositivo                                    |
+| ----------------- | ----------------------------------- | ----------------------------------------------------------------- |
+| Resolver o pedido | Descritor, posição e permissões     | Descritor, posição e permissões                                   |
+| Obter os dados    | Encontrar a página em memória       | Submeter I/O pelo driver e controlador                            |
+| Esperar           | Sem espera pelo dispositivo         | Tarefa bloqueia; outra pode usar CPU                              |
+| Concluir I/O      | Não há pedido físico novo           | Hardware conclui; núcleo atualiza a cache e torna a tarefa pronta |
+| Entregar          | Copiar os bytes e atualizar posição | Quando a tarefa volta a correr, copiar e retornar                 |
+
+Falta na cache de ficheiros e falta de página do espaço virtual são conceitos diferentes. Também não assumas que `O_NONBLOCK` faz uma leitura de ficheiro regular retornar `EAGAIN` por faltar uma página na cache. A comparação dos três modos usa canais que suportem essas semânticas, como o pipe do exercício.
 
 `read` bem-sucedido não prova que houve acesso físico ao disco. `write` bem-sucedido também não prova que os dados já sobreviveriam a uma falha de energia. A biblioteca pode ter buffers e o núcleo pode ter páginas sujas; persistência exige operações e garantias próprias, como `fsync` no descritor adequado.
 

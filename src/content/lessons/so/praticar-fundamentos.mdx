@@ -1,6 +1,6 @@
 ---
 title: Interrupções, modos e estados
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Modo de execução, bloqueio e escolha da CPU num pedido de I/O.
 section: exercicios
 ---
 
@@ -8,116 +8,26 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-modo-contexto"
-  revision={1}
-  title="Entrada no núcleo"
+  revision={2}
+  title="Modo, espera e CPU"
   explanation="/cadeiras/so/introducao-sistemas-operativos/#modo-utilizador-e-modo-núcleo"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Distingui mudança de modo e mudança de processo.',
-      'Expliquei uma chamada que volta ao mesmo processo.',
-      'Identifiquei que uma chamada pode bloquear.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ["Separei mudança de modo de troca de processo.", "Segui a transição para bloqueado e depois pronto.", "Identifiquei a decisão que ainda falta para voltar a correr."] }}
 >
   <div>
-    Um processo chama open e o ficheiro está em cache. É obrigatório trocar para
-    outro processo? Explica que mudanças são necessárias.
-  </div>
-  <div slot="hint">
-    Separa o privilégio de execução da identidade da tarefa.
-  </div>
-  <div slot="hint-more">
-    O núcleo pode executar o pedido em nome do mesmo processo e devolver-lhe o
-    controlo.
-  </div>
-  <div slot="solution">
-    É necessário entrar no núcleo para resolver o pedido protegido. Não é
-    obrigatório escolher outro processo: uma mudança de modo pode voltar ao
-    mesmo. Se a operação exigir espera, o processo pode bloquear e o escalonador
-    escolher outra tarefa.
-  </div>
-  <div slot="mistakes">
-    Dizer que cada chamada de sistema cria um processo ou provoca
-    necessariamente troca de contexto.
-  </div>
-</Exercise>
 
-<Exercise
-  id="so-fim-io"
-  revision={1}
-  title="Quando a leitura termina"
-  explanation="/cadeiras/so/introducao-sistemas-operativos/#um-pedido-que-bloqueia"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Bloqueado para pronto',
-        correct: true,
-        explanation:
-          'O evento permite executar, mas a CPU ainda tem de o escolher.',
-      },
-      {
-        text: 'Bloqueado diretamente para a correr, sempre',
-        correct: false,
-        explanation: 'A conclusão não garante atribuição imediata de CPU.',
-      },
-      {
-        text: 'Pronto para zombie',
-        correct: false,
-        explanation: 'Zombie resulta de terminação sem recolha.',
-      },
-    ],
-  }}
->
-  <div>
-    A está bloqueado numa leitura e B está a correr. Quando os dados de A ficam
-    disponíveis, qual é a transição normal de A no modelo dos estados?
-  </div>
-  <div slot="hint">Pergunta o que ainda falta para A executar.</div>
-  <div slot="hint-more">Há uma CPU que pode continuar atribuída a B.</div>
-  <div slot="solution">
-    A passa a pronto. A espera pelos dados acabou; falta o escalonador atribuir
-    CPU. Uma preempção imediata pode acontecer segundo a política, mas é outra
-    decisão.
-  </div>
-  <div slot="mistakes">
-    Confundir prontidão com execução ou bloquear quem apenas espera por CPU.
-  </div>
-</Exercise>
+A está a correr numa CPU e B está pronto. Compara dois pedidos de A: `open` de um ficheiro cujos metadados estão disponíveis sem espera e `read` bloqueante de um pipe vazio que tem um escritor aberto. Ignora sinais e erros.
 
-<Exercise
-  id="so-chamada-bloqueante"
-  revision={1}
-  title="Chamada que pode bloquear"
-  explanation="/cadeiras/so/introducao-sistemas-operativos/#modo-utilizador-e-modo-núcleo"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Distingui entrar no núcleo de trocar de processo.',
-      'Expliquei quando o processo bloqueia e quando continua.',
-      'Identifiquei quem escolhe o próximo a correr.',
-    ],
-  }}
->
-  <div>
-    Um processo chama read sobre um pipe vazio com a escrita aberta. Descreve o
-    percurso: mudança de modo, possível bloqueio e papel do escalonador.
+1. Em qual dos casos é necessário entrar no núcleo?
+2. É obrigatório trocar de processo em ambos?
+3. No segundo caso, chegam bytes enquanto B corre. Que estado passa A a ter? O evento obriga a interromper B?
+
   </div>
-  <div slot="hint">
-    O pedido entra sempre no núcleo; a espera depende dos dados.
-  </div>
-  <div slot="hint-more">
-    Sem dados e com escrita aberta, o processo bloqueia até haver dados ou EOF.
-  </div>
+  <div slot="hint">Segue separadamente o modo de execução, a identidade da tarefa e o motivo de espera.</div>
   <div slot="solution">
-    O processo muda para modo núcleo para executar o pedido. Como não há dados e
-    a escrita continua aberta, bloqueia à espera do evento. O escalonador
-    escolhe outro processo pronto. Quando chegam dados ou fecham todas as
-    escritas, o processo passa a pronto e só corre quando for escolhido.
-  </div>
-  <div slot="mistakes">
-    Dizer que bloquear equivale a terminar, ou que o processo acorda diretamente
-    para execução sem passar por pronto.
+
+Ambos os pedidos entram no núcleo para executar uma operação protegida. No primeiro, o núcleo pode devolver o resultado ao mesmo processo: mudar de modo não obriga a trocar de processo.
+
+No segundo, A fica bloqueado porque o pipe não tem dados nem EOF. O escalonador pode escolher B. Quando chegam os bytes, A passa a pronto. Falta obter CPU; a política de escalonamento decide se B é preemptado ou continua. A conclusão da I/O e a escolha da CPU são eventos diferentes.
+
   </div>
 </Exercise>

@@ -14,9 +14,9 @@ editorial:
       url: https://pages.cs.wisc.edu/~remzi/OSTEP/
 ---
 
-Imagina que o teu programa lança outro programa, espera que ele termine e guarda o resultado num ficheiro sem perder bytes quando uma escrita sai parcial. No fim vais saber fazer isto com `fork` e `exec`, proteger dados partilhados com mutexes e semáforos, traduzir endereços virtuais e prever faltas de página, e copiar bytes com a API POSIX sem perder dados em escritas parciais.
+Um processo que lança uma compilação precisa de criar um filho, escolher o programa que esse filho executa e recolher o estado de saída. Se várias compilações correm ao mesmo tempo, o sistema reparte CPU e memória entre elas. Guardar o resultado acrescenta outra obrigação: conferir quantos bytes foram realmente escritos.
 
-Precisas de saber escrever funções, ciclos, arrays e estruturas. [C avançado](/cadeiras/so/c-avancado/) revê os apontadores e o tempo de vida dos objetos antes de os usares nas chamadas de sistema. Segue depois o percurso abaixo, porque cada etapa usa a anterior: primeiro os recursos, depois os processos e por fim a memória e os ficheiros.
+Este percurso liga a programação em C à gestão desses recursos. Precisas de funções, ciclos, arrays e estruturas. [C avançado](/cadeiras/so/c-avancado/) desenvolve apontadores e tempo de vida antes das chamadas de sistema.
 
 ## Percurso de estudo
 

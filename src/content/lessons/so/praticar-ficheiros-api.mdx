@@ -1,6 +1,6 @@
 ---
 title: Leituras, linhas e caminhos
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Escritas parciais, resolução de caminhos e últimas linhas.
 section: exercicios
 ---
 
@@ -35,9 +35,11 @@ Traça primeiro um pedido de 8 bytes em que a primeira `write` devolve 3: faltam
 Guarda este programa em `copiar2.c` e compila com `cc -std=c17 -Wall -Wextra -Wpedantic copiar2.c -o copiar2`.
 
 ```c
+#define _POSIX_C_SOURCE 200809L
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 static int escrever_tudo(int fd, const char *buf, size_t n) {
@@ -68,10 +70,27 @@ int main(int argc, char *argv[]) {
         perror("open origem");
         return 1;
     }
-    int destino = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    int destino = open(argv[2], O_WRONLY | O_CREAT, 0666);
     if (destino < 0) {
         perror("open destino");
         close(origem);
+        return 1;
+    }
+    struct stat a, b;
+    if (fstat(origem, &a) < 0 || fstat(destino, &b) < 0) {
+        perror("fstat");
+        close(origem); close(destino);
+        return 1;
+    }
+    if (!S_ISREG(a.st_mode) || !S_ISREG(b.st_mode) ||
+        (a.st_dev == b.st_dev && a.st_ino == b.st_ino)) {
+        fputs("usa dois ficheiros regulares distintos\n", stderr);
+        close(origem); close(destino);
+        return 1;
+    }
+    if (ftruncate(destino, 0) < 0) {
+        perror("ftruncate");
+        close(origem); close(destino);
         return 1;
     }
     char buf[4096];
@@ -116,7 +135,7 @@ cmp entrada.txt saida.txt && echo iguais
 iguais
 ```
 
-A origem abre-se antes do destino: com origem em falta, o programa termina com estado 1 e conserva o destino existente. Com ficheiro vazio, a primeira leitura devolve 0 e o destino fica com 0 bytes. Em cada passo, o descritor da origem serve as leituras, o do destino serve as escritas completadas pelo ciclo, e o ciclo termina no EOF.
+O programa restringe esta cópia a ficheiros regulares e assume que nenhum outro processo os altera durante a operação. Compara `st_dev` e `st_ino` das aberturas antes de truncar: nomes diferentes podem ser hard links do mesmo ficheiro. O mesmo nome e um hard link da origem são rejeitados sem alterar os seus bytes. A origem abre-se antes do destino: com origem em falta, o programa termina com estado 1 e conserva o destino existente. Com ficheiro vazio, a primeira leitura devolve 0 e o destino fica com 0 bytes. Em cada passo, o descritor da origem serve as leituras, o do destino serve as escritas completadas pelo ciclo, e o ciclo termina no EOF.
 
   </div>
   <div slot="mistakes">
@@ -165,23 +184,25 @@ A origem abre-se antes do destino: com origem em falta, o programa termina com e
 
 <Exercise
   id="so-tail-curto"
-  revision={1}
-  title="Últimas linhas de um ficheiro curto"
+  revision={2}
+  title="Últimas linhas e entrada sem reposicionamento"
   explanation="/cadeiras/so/ficheiros-api/#linhas-com-getline"
-  answer={{ kind: 'number', value: 0, tolerance: 0 }}
+  answer={{ kind: 'self', checklist: ["Calculei o primeiro índice para ficheiros curtos e vazios.", "Limitei a impressão às leituras bem-sucedidas.", "Expliquei por que um pipe exige guardar as últimas linhas."] }}
 >
   <div>
-    Um ficheiro tem L=3 linhas e queres as últimas k=5. Contando índices desde
-    zero, em que índice começa a impressão no algoritmo de duas passagens?
+
+Queremos imprimir as últimas `k` linhas, com `k` positivo. Uma última sequência de bytes sem newline conta como linha.
+
+1. Num ficheiro regular, propõe um algoritmo de duas passagens e calcula o primeiro índice, contado desde zero, para `(L,k)=(3,5)`, `(8,3)` e `(0,3)`.
+2. A entrada passa a ser um pipe. Que passo deixa de funcionar e que estado precisas de guardar?
+
   </div>
-  <div slot="hint">Não pode começar antes da primeira linha.</div>
-  <div slot="hint-more">Usa max(0, L-k).</div>
+  <div slot="hint">Distingue o índice de início do número de linhas realmente lidas.</div>
   <div slot="solution">
-    Começa em 0, porque max(0, 3-5)=0. Imprime todas as três linhas e não
-    inventa cinco leituras bem-sucedidas.
-  </div>
-  <div slot="mistakes">
-    Usar um índice negativo ou voltar a imprimir o ficheiro inteiro em cada
-    iteração.
+
+Na primeira passagem, lê com `getline` até EOF e conta apenas os retornos bem-sucedidos. Reposiciona no início e, na segunda, imprime a partir de `max(0,L-k)`: os índices são 0, 5 e 0. No ficheiro vazio não há leitura bem-sucedida, portanto o índice 0 não leva a imprimir uma linha inexistente.
+
+Um pipe não permite voltar ao início. Usa uma fila circular de capacidade `k` com as últimas linhas e os seus comprimentos. Cada nova linha substitui a mais antiga quando a fila enche. No fim, imprime da mais antiga conservada para a mais recente; para a última linha sem newline, escreve exatamente o comprimento lido.
+
   </div>
 </Exercise>

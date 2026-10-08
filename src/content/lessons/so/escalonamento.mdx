@@ -7,12 +7,9 @@ practices:
   - so/praticar-escalonamento
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
-import rr from '../../so/round-robin.c?raw';
+import Cronogramas from '../../so/Cronogramas.astro';
 
-Já viste o que é um processo. Agora tens quatro compilações prontas e uma só CPU. Quando há vários processos prontos, como escolhemos qual usa a CPU?
-
-O escalonador escolhe uma tarefa pronta para usar CPU. Para comparares políticas, fixa chegadas, rajadas, desempates e custos. Sem estas hipóteses, duas linhas do tempo diferentes podem ambas cumprir a mesma política.
+Quatro compilações estão prontas e há uma só CPU. Dar primeiro serviço à mais curta reduz certas esperas; interromper uma compilação longa pode dar resposta mais cedo às restantes. O **escalonador** escolhe uma tarefa pronta. Para comparar políticas, fixamos chegadas, rajadas, desempates e custos.
 
 ## Hipóteses e métricas
 
@@ -71,23 +68,24 @@ Fins A=9, B=5, C=3. Esperas $9-0-5=4$, $5-1-3=1$ e $3-2-1=0$, média $5/3$. Ao s
 
 Round Robin dá até um **quantum** $q$ a cada tarefa e coloca no fim da fila quem ainda não terminou. Com os quatro processos do primeiro exemplo e $q=3$:
 
-```text
-0     3     6   8     11    14 15
-| P1  | P2  | P3| P4  | P1  |P4|
-```
+<Cronogramas />
 
 Os fins são 14, 6, 8 e 15; as esperas são 8, 3, 6 e 11, média 7. Segue a fila depois de cada fatia: P1 corre 0-3 e vai para o fim; P2 corre 3-6 e termina; P3 corre 6-8 e termina; P4 corre 8-11 e volta ao fim; P1 corre 11-14 e termina; P4 corre 14-15 e termina. P1 não espera apenas até à primeira fatia: volta a esperar enquanto outros correm. Os tempos de primeira resposta são 0, 3, 6 e 8. FCFS tinha 0, 6, 9 e 11, por isso Round Robin melhora aqui a resposta dos últimos, embora a espera média aumente.
 
-Este simulador C assume que todos chegam em zero. Experimenta `2` e `3` antes de comparar com as contas.
+Para comparar, mantém as mesmas rajadas e muda só o quantum para 2. O traço fica:
 
-<CodePlayground
-  language="c"
-  title="Round Robin com chegadas em zero"
-  input="3"
-  code={rr}
-/>
+| Intervalo | Processo | Efeito no fim da fatia |
+| --------- | -------- | ---------------------- |
+| 0–2       | P1       | Restam 4; volta ao fim |
+| 2–4       | P2       | Resta 1; volta ao fim  |
+| 4–6       | P3       | Termina                |
+| 6–8       | P4       | Restam 2; volta ao fim |
+| 8–10      | P1       | Restam 2; volta ao fim |
+| 10–11     | P2       | Termina                |
+| 11–13     | P4       | Termina                |
+| 13–15     | P1       | Termina                |
 
-Com 3, mostra a média 7,00; com 2, termina P1 em 15, P2 em 11, P3 em 6 e P4 em 13, média 7,50. O traço com 2 é: P1 0-2, P2 2-4, P3 4-6 e termina, P4 6-8, P1 8-10, P2 10-11 e termina, P4 11-13 e termina, P1 13-15 e termina. As esperas são 9, 8, 4 e 9, média 7,50. Escreve um inteiro entre 1 e 100 numa linha. Texto adicional como `3abc`, números fora do intervalo e linhas demasiado longas são rejeitados. Não uses este ciclo para chegadas distintas sem manter a fila e os eventos de chegada.
+P1, P2, P3 e P4 terminam em 15, 11, 6 e 13. As esperas são `15-6=9`, `11-3=8`, `6-2=4` e `13-4=9`, média 7,5. Diminuir o quantum não garante reduzir a espera média: o objetivo de resposta pode exigir outro compromisso.
 
 Um quantum muito grande aproxima o modelo de FCFS. Um quantum muito pequeno aumenta a frequência de trocas. Se cada fatia útil tiver duração $q$ e cada troca custo $c$, uma aproximação à fração útil é $q/(q+c)$, desde que existam tarefas para alternar e fatias completas.
 

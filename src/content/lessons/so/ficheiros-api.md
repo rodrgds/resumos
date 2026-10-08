@@ -7,9 +7,9 @@ practices:
   - so/praticar-ficheiros-api
 ---
 
-Já viste programas em C e a shell. Agora queres copiar bytes de um ficheiro sem duplicar nem perder dados quando o núcleo escreve menos do que pediste. Como lê e escreve um programa esses bytes?
+Queremos copiar oito bytes para a saída padrão. Se a primeira escrita entregar só três, o programa tem de conservar os cinco restantes e retomar no endereço certo. A saída padrão costuma estar ligada ao terminal, mas a shell pode ligá-la a um ficheiro ou pipe.
 
-Queremos copiar os bytes de um ficheiro para a saída padrão, o fluxo de bytes que o programa escreve no descritor 1. O terminal é o destino habitual, mas pode ser um ficheiro ou um pipe. Há duas interfaces principais: a biblioteca C, com funções como `fopen` e `fread`, que representa um ficheiro aberto com um `FILE *` e pode juntar dados num buffer, uma zona temporária de memória, e a API POSIX, o conjunto normalizado de interfaces que inclui funções de biblioteca e chamadas de sistema. As funções `open`, `read` e `write` pedem serviços ao núcleo e representam um ficheiro aberto com um número inteiro chamado **descritor**. Conhecer ambas evita misturar tipos e permite escolher o nível de controlo necessário.
+Podemos usar a biblioteca C, que representa um fluxo por `FILE *` e pode acumular bytes num buffer, ou as interfaces POSIX `open`, `read` e `write`, que usam um **descritor** inteiro. POSIX normaliza interfaces de biblioteca e de sistema. Aqui seguimos primeiro os descritores, depois as linhas e os caminhos.
 
 ## FILE e descritor
 
@@ -149,39 +149,38 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     int dfd = dirfd(d);
-    errno = 0;
+    int erro = 0;
     struct dirent *e;
-    while ((e = readdir(d)) != NULL) {
+    for (;;) {
+        errno = 0;
+        e = readdir(d);
+        if (e == NULL) {
+            if (errno != 0) { perror("readdir"); erro = 1; }
+            break;
+        }
         if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) {
-            errno = 0;
             continue;
         }
         struct stat info;
         if (fstatat(dfd, e->d_name, &info, 0) < 0) {
             perror("fstatat");
+            erro = 1;
             continue;
         }
         printf("%s: %lld bytes%s\n", e->d_name, (long long)info.st_size,
                S_ISDIR(info.st_mode) ? " [dir]" : "");
-        errno = 0;
     }
-    int erro = errno;
-    closedir(d);
-    if (erro != 0) {
-        errno = erro;
-        perror("readdir");
-        return 1;
-    }
-    return 0;
+    if (closedir(d) < 0) { perror("closedir"); erro = 1; }
+    return erro;
 }
 ```
 
 Execução observada numa pasta com `a.txt` de 4 bytes, um link simbólico para `a.txt` e uma subpasta (a ordem de `readdir` varia; aqui ordenada para leitura):
 
 ```sh
+mkdir -p demo/sub
 printf 'ola\n' > demo/a.txt
 ln -sf a.txt demo/lig.txt
-mkdir -p demo/sub
 ./listar demo | sort
 ```
 
@@ -191,7 +190,7 @@ lig.txt: 4 bytes
 sub: 64 bytes [dir]
 ```
 
-O `fstatat` sem flags segue o link e mede o destino. O tamanho em bytes de um diretório depende do sistema de ficheiros; o marcador `[dir]` vem de `S_ISDIR`. Os campos de `info` só são lidos após sucesso.
+O `fstatat` sem flags segue o link e mede o destino. O tamanho em bytes de um diretório depende do sistema de ficheiros; o marcador `[dir]` vem de `S_ISDIR`. Os campos de `info` só são lidos após sucesso. Um link pendente faz `fstatat` falhar; o programa assinala essa falha, continua a listar e termina com estado 1. O `errno` é reposto imediatamente antes de cada `readdir`, para que esse erro de metadados não seja confundido com uma falha da travessia.
 
 ## Datas e medição
 

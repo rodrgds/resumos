@@ -10,9 +10,7 @@ practices:
 import InteractiveDemo from '../../../components/InteractiveDemo.astro';
 import Traducao from '../../so/Traducao.astro';
 
-Já viste processos e threads. Agora queres perceber por que dois processos usam o mesmo endereço virtual sem colidir e quanto custa cada tradução. Como protege o sistema a memória de cada processo e traduz os seus endereços?
-
-Um programa usa endereços para encontrar instruções e dados. O sistema precisa de os colocar na RAM e impedir acessos aos dados de outros processos. A **MMU**, ou seja a unidade de gestão de memória, traduz endereços e verifica condições de proteção com informação preparada pelo núcleo.
+O pai e o filho podem usar o endereço virtual `0x1000` para dados privados diferentes. A **MMU**, unidade de gestão de memória, traduz cada acesso com o mapa do processo e verifica permissões. Seguiremos um endereço desde a separação em página e deslocamento até à moldura física, distinguindo o custo da tradução do custo de trazer dados para RAM.
 
 ## Hierarquia de memória
 
@@ -80,7 +78,19 @@ Um objeto de 10000 bytes, assumindo uma região alinhada ao início de página, 
 
 Uma tabela linear para 32 bits e páginas de 4 KiB tem $2^{20}$ entradas. Com 4 bytes por entrada, ocupa 4 MiB. Páginas maiores reduzem o número de entradas e podem melhorar o alcance do TLB, mas podem aumentar desperdício interno.
 
-Uma tabela **multinível** divide o índice para evitar uma tabela gigante sempre residente. Num exemplo de dois níveis, 10 bits escolhem a tabela interior, outros 10 escolhem a entrada e 12 são o deslocamento. Traduz um endereço concreto assim: separa os três campos, usa o primeiro para escolher a tabela interior, o segundo para ler a moldura nessa tabela e junta o deslocamento. Tabelas interiores de regiões não mapeadas não precisam de existir. Um percurso com dois níveis pode precisar de duas leituras de tabela antes da leitura do dado se não houver cache.
+Uma tabela **multinível** reparte o índice. Com 32 bits, páginas de 4 KiB e entradas de 4 bytes, um bloco de tabela guarda $4096/4=1024$ entradas, selecionadas por 10 bits. Dividimos os 20 bits de página em dois campos de 10; os 12 restantes continuam a ser o deslocamento.
+
+O endereço `0x00403F5D` decompõe-se assim:
+
+| Campo           | Cálculo                              | Valor          |
+| --------------- | ------------------------------------ | -------------- |
+| Índice exterior | $\lfloor v/2^{22}\rfloor$            | 1              |
+| Índice interior | $\lfloor v/2^{12}\rfloor \bmod 1024$ | 3              |
+| Deslocamento    | $v \bmod 4096$                       | `0xF5D` = 3933 |
+
+A entrada exterior 1 aponta para uma tabela interior. Se a entrada 3 dessa tabela indicar a moldura 7, o físico é $7\times4096+3933=32605$, ou `0x7F5D`. Os índices escolhem onde procurar a tradução; não se somam à moldura.
+
+Se só esta região de 4 MiB estiver mapeada com páginas normais, basta uma tabela exterior e uma interior: 8 KiB de tabelas, em vez dos 4 MiB da tabela linear completa. As outras entradas exteriores podem indicar regiões sem tabela. O percurso pode exigir duas leituras de tabela antes do dado quando não há TLB nem caches de percurso.
 
 Uma tabela **hashed** pesquisa por número de página virtual e identifica a tradução nas colisões. Uma tabela **invertida** guarda uma entrada por moldura física, incluindo a identidade do processo e da página. Poupa espaço para espaços virtuais enormes, mas muda o custo de pesquisa e exige representar partilhas.
 

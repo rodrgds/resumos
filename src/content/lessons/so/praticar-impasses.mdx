@@ -1,6 +1,6 @@
 ---
 title: Ciclos e segurança
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Ordem de locks, máximos de recursos e múltiplas instâncias.
 section: exercicios
 ---
 
@@ -36,54 +36,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     Mudar só um percurso e esquecer outro, ou libertar à força um mutex detido
     por outra thread.
-  </div>
-</Exercise>
-
-<Exercise
-  id="so-seguro-inseguro"
-  revision={1}
-  title="Inseguro não prova impasse"
-  explanation="/cadeiras/so/impasses/#seguro-não-significa-livre-de-espera"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Inseguro, mas não necessariamente em impasse',
-        correct: true,
-        explanation:
-          'Não há sequência garantida pelos máximos; os pedidos efetivos podem ser menores.',
-      },
-      {
-        text: 'Sempre em impasse neste instante',
-        correct: false,
-        explanation:
-          'As necessidades máximas não significam que já estão ambas bloqueadas por elas.',
-      },
-      {
-        text: 'Seguro porque existe uma unidade livre',
-        correct: false,
-        explanation:
-          'A unidade livre não chega à necessidade máxima restante de nenhum.',
-      },
-    ],
-  }}
->
-  <div>
-    Há três unidades de um recurso. A e B têm uma cada e declaram máximo de três
-    cada. A unidade livre basta para provar segurança?
-  </div>
-  <div slot="hint">Calcula Max menos Allocation para ambos.</div>
-  <div slot="hint-more">
-    Cada um ainda pode precisar de duas, mas só uma está livre.
-  </div>
-  <div slot="solution">
-    Não há primeira conclusão garantida para necessidades de duas unidades, logo
-    o estado é inseguro. Não prova impasse atual sem conhecer os pedidos e a
-    possibilidade de libertação.
-  </div>
-  <div slot="mistakes">
-    Confundir máximo futuro com pedido já bloqueado ou contar o total de
-    unidades como disponibilidade.
   </div>
 </Exercise>
 
@@ -125,48 +77,24 @@ Se concedermos o pedido, Work fica `(0,1)` e Need de P2 fica `(1,1)`. Nenhuma ne
 
 <Exercise
   id="so-ciclo-duas-instancias"
-  revision={1}
-  title="Um ciclo que não prova impasse"
+  revision={2}
+  title="Ciclo com recurso de duas instâncias"
   explanation="/cadeiras/so/impasses/#grafos-de-recursos-e-de-espera"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Pode não haver impasse, por existir uma instância livre',
-        correct: true,
-        explanation:
-          'Com múltiplas instâncias, um ciclo pode coexistir com uma conclusão possível.',
-      },
-      {
-        text: 'Há sempre impasse quando o grafo tem um ciclo',
-        correct: false,
-        explanation: 'Essa prova só vale com uma instância por recurso.',
-      },
-      {
-        text: 'Um estado inseguro prova sempre impasse atual',
-        correct: false,
-        explanation:
-          'Inseguro significa ausência de garantia, não bloqueio atual.',
-      },
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ["Desenhei atribuições e pedidos sem os confundir.", "Usei a instância livre de Y para permitir A concluir.", "Distingui o mesmo grafo com Y de instância única."] }}
 >
   <div>
-    Dois discos iguais formam um ciclo de espera entre A e B, mas existe uma
-    segunda unidade livre que permite a um deles concluir. Há impasse provado?
-    Este aprofundamento é um complemento: responde apenas quando o enunciado
-    pedir análise com múltiplas instâncias.
+
+X tem uma instância e Y tem duas, equivalentes. A detém X e pede uma unidade de Y. B detém uma unidade de Y e pede X. A segunda unidade de Y está livre. Cada tarefa conclui e liberta tudo quando obtém o que pede.
+
+Desenha o ciclo no grafo de recursos e mostra uma ordem que permita às duas concluir. Que conclusão mudaria se Y só tivesse a unidade atribuída a B?
+
   </div>
-  <div slot="hint">Conta as instâncias livres de cada recurso.</div>
-  <div slot="hint-more">
-    Uma conclusão liberta recursos e pode desfazer o ciclo.
-  </div>
+  <div slot="hint">Marca separadamente cada instância atribuída ou livre.</div>
   <div slot="solution">
-    Não há prova de impasse: um dos processos pode obter a unidade livre,
-    concluir e libertar os seus recursos. Com uma instância por recurso, o mesmo
-    ciclo provaria impasse.
-  </div>
-  <div slot="mistakes">
-    Concluir impasse a partir de qualquer ciclo, sem verificar as instâncias.
+
+As atribuições são X→A e Y→B; os pedidos são A→Y e B→X. Existe o ciclo X→A→Y→B→X, mas a segunda unidade de Y pode satisfazer A. A conclui e liberta X e Y; B obtém X e conclui. Logo não há impasse neste estado.
+
+Se Y só tivesse uma unidade, A esperaria pelo recurso de B e B pelo de A, sem recurso livre que satisfizesse um pedido. Nas hipóteses dadas, o ciclo provaria impasse.
+
   </div>
 </Exercise>

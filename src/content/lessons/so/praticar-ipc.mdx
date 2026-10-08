@@ -1,6 +1,6 @@
 ---
 title: EOF, sinais e protocolos
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Fecho de canais, janela de sinais e fim de pedidos bidirecionais.
 section: exercicios
 ---
 
@@ -8,7 +8,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-pipe-eof"
-  revision={1}
+  revision={2}
   title="A ponta que impede o fim"
   explanation="/cadeiras/so/comunicacao-processos/#pipe-leitura-e-escrita"
   answer={{
@@ -24,7 +24,8 @@ import Exercise from '../../../components/Exercise.astro';
     O filho fecha a sua escrita do <code>{'pipe'}</code> e lê em ciclo. O pai
     envia dados e faz
     <code>{'waitpid'}</code> sem fechar a escrita. Porque podem ficar ambos à
-    espera?
+    espera? Explica também o que muda numa pipeline com dois filhos se o
+    supervisor conservar uma cópia da escrita.
   </div>
   <div slot="hint">
     EOF depende de referências abertas, não da intenção de voltar a escrever.
@@ -35,7 +36,9 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="solution">
     Depois de consumir os dados, o filho vê o buffer vazio mas há uma escrita
     aberta no pai, por isso bloqueia. O pai espera pelo fim do filho. Fecha a
-    escrita antes de esperar, e fecha outras cópias que possam existir.
+    escrita antes de esperar, e fecha outras cópias que possam existir. Numa
+    pipeline, o supervisor fecha ambas as pontas após criar os filhos; conservar
+    uma escrita tem o mesmo efeito, mesmo que o produtor já terminou.
   </div>
   <div slot="mistakes">
     Achar que uma read curta prova EOF ou que só a ponta do filho importa.
@@ -101,30 +104,4 @@ O servidor esvazia o pedido e espera mais bytes porque a escrita do cliente cont
 
   </div>
   <div slot="mistakes">Usar `close` antes de receber a resposta, ou interpretar uma leitura curta como fim do pedido.</div>
-</Exercise>
-
-<Exercise
-  id="so-pipe-copia-esquecida"
-  revision={1}
-  title="Uma cópia esquecida da escrita"
-  explanation="/cadeiras/so/comunicacao-processos/#redirecionar-com-dup2"
-  answer={{kind: 'self', checklist: [
-    'Contei as quatro referências após fork.',
-    'Identifiquei a cópia da escrita conservada no supervisor.',
-    'Fechei ambas as pontas no supervisor antes de recolher.',
-  ]}}
->
-  <div>
-
-Um supervisor cria um pipe e dois filhos para `produtor | consumidor`. Cada filho fechou a ponta que não usa, mas o supervisor conservou ambas as pontas e fez `waitpid` do consumidor. Porque nunca chega EOF ao consumidor? Que fechos faltam?
-
-  </div>
-  <div slot="hint">EOF depende de todas as escritas, não só das dos filhos.</div>
-  <div slot="hint-more">Depois de fork há quatro referências: duas no supervisor e uma útil em cada filho.</div>
-  <div slot="solution">
-
-O consumidor vê o buffer vazio mas existe uma escrita aberta no supervisor, por isso bloqueia. O supervisor espera pelo fim do consumidor. O supervisor deve fechar ambas as pontas logo após lançar os filhos e só depois recolher os dois. Cada filho fecha a ponta que não usa e o supervisor não conserva nenhuma.
-
-  </div>
-  <div slot="mistakes">Contar só as pontas dos filhos, ou esperar antes de fechar as cópias do supervisor.</div>
 </Exercise>

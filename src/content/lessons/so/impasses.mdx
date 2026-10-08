@@ -10,13 +10,20 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import impasse from '../../so/impasse.dot?raw';
 
-Já viste threads a partilhar memória. Agora duas tarefas prendem dois locks por ordens opostas e param. Quando ficam as tarefas bloqueadas umas à espera das outras sem nunca avançar?
-
-A tarefa A tem o **lock** X, ou seja a posse exclusiva de um recurso que só uma tarefa usa de cada vez, e pede Y. A tarefa B tem Y e pede X. Se só libertam o lock depois de obter o outro, nenhuma avança. Temos um **impasse**, ou seja um _deadlock_.
+A tarefa A obteve o lock X e espera por Y. B obteve Y e espera por X. Cada uma conserva o primeiro lock até conseguir o segundo, por isso nenhuma consegue avançar. Este **impasse**, ou _deadlock_, depende da posse e dos pedidos atuais, não apenas de ambas usarem os mesmos recursos.
 
 ## Quatro condições
 
-No caso de A com X a pedir Y e B com Y a pedir X: a exclusão mútua é cada lock servir só uma tarefa; a retenção com espera é cada uma guardar o seu lock enquanto pede o outro; a ausência de preempção é ninguém lhes retirar o lock à força; a espera circular é A esperar por B e B esperar por A. Num modelo de recursos reutilizáveis, um impasse exige estas quatro condições em simultâneo.
+No modelo de recursos reutilizáveis, um impasse exige quatro condições em simultâneo. No exemplo dos locks:
+
+| Condição              | Onde aparece                                     |
+| --------------------- | ------------------------------------------------ |
+| Exclusão mútua        | X e Y só podem ter um dono de cada vez           |
+| Retenção com espera   | A conserva X ao pedir Y; B conserva Y ao pedir X |
+| Ausência de preempção | O protocolo não retira locks à força             |
+| Espera circular       | A espera por B e B espera por A                  |
+
+A exclusão mútua protege os dados, mas não decide uma ordem de obtenção. É essa ordem que vamos mudar.
 
 Quebrar uma destas condições evita o impasse nesse modelo. Uma ordem global dos locks quebra a espera circular: todos obtêm X antes de Y. Se B já tem Y, não pode tentar obter X segundo esse protocolo.
 
@@ -24,7 +31,7 @@ Pedir todos os recursos de uma vez quebra retenção com espera, mas pode reduzi
 
 ## Grafos de recursos e de espera
 
-Num grafo de atribuição, uma aresta processo→recurso é um pedido; recurso→processo é uma atribuição. Com uma única instância de cada recurso, um ciclo prova impasse. Com múltiplas instâncias, um ciclo pode não chegar: com dois discos iguais, A e B podem esperar um pelo outro e ainda existir uma segunda unidade livre que deixa um deles concluir e libertar recursos. Por isso um ciclo só prova impasse no modelo de instância única.
+Num grafo de atribuição, uma aresta processo→recurso é um pedido; recurso→processo é uma atribuição. Com uma única instância de cada recurso, um ciclo prova impasse. Com múltiplas instâncias, um ciclo pode não chegar. Suponhamos X com uma instância e Y com duas: A tem X e pede Y; B tem uma instância de Y e pede X. O ciclo X→A→Y→B→X existe, mas a segunda instância de Y está livre. Se A só precisa de uma, pode obtê-la, concluir e libertar X para B. Por isso um ciclo só prova impasse no modelo de instância única.
 
 <Dot
   source={impasse}
