@@ -14,8 +14,6 @@ editorial:
     - Não foi possível comparar esta página com mini-testes e critérios de correção de 2026/27.
 ---
 
-Depois de estudares o percurso, esta folha resume as distinções e os procedimentos para reveres antes dos mini-testes, com ligações para cada explicação.
-
 ## Vocabulário
 
 - UI: meios de interação. UX: perceções/respostas antes, durante e depois do uso.
@@ -40,7 +38,7 @@ Gestalt: proximidade, semelhança, continuidade, região comum e figura-fundo. R
 
 Investigar pergunta, método e síntese: entrevista para motivos, observação para comportamento, questionário para contar. Perguntas sobre acontecimentos concretos; sem perguntas duplas nem indução. Consentimento, dados mínimos e piloto do protocolo. [Explicação](/cadeiras/ipc/investigacao-utilizadores/).
 
-Investigar → necessidades → requisitos → alternativas → protótipo → avaliação → revisão. PACT: pessoas, atividades, contextos, tecnologias. Persona sintetiza padrões fundamentados; proto-persona declara hipóteses. Cenário as-is descreve o atual; to-be explora proposta. Tarefa de teste dá resultado sem ensinar cliques; wireframe mostra estrutura, wireflow liga estados e transições. Requisito de usabilidade indica público, contexto, medida e limiar. [Explicação](/cadeiras/ipc/design-centrado-utilizador/).
+Journey Map: etapas, ações, motivos, experiência e pontos de contacto, com evidência para relatos e hipóteses explícitas. Investigar → necessidades → requisitos → alternativas → protótipo → avaliação → revisão. PACT: pessoas, atividades, contextos, tecnologias. Persona sintetiza padrões fundamentados; proto-persona declara hipóteses. Cenário as-is descreve o atual; to-be explora proposta. Tarefa de teste dá resultado sem ensinar cliques; wireframe mostra estrutura, wireflow liga estados e transições. Requisito de usabilidade indica público, contexto, medida e limiar. [Explicação](/cadeiras/ipc/design-centrado-utilizador/).
 
 Affordance é possibilidade de ação; significante comunica-a; mapping liga controlo a efeito; feedback responde à ação. Heurísticas: estado, mundo real, controlo/liberdade, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação e ajuda. Justifica cada falha com tarefa, comportamento, consequência e alteração. [Explicação](/cadeiras/ipc/principios-usabilidade/).
 

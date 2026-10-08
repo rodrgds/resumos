@@ -22,7 +22,6 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import contraste from '../../ipc/escala-contraste.typ?raw';
 
 Uma tarefa pode ser rápida com rato e impossível com teclado. Uma pessoa tenta concluir a reserva só com teclado e fica presa no seletor de horário. A **acessibilidade** procura remover barreiras para pessoas com diferentes capacidades e tecnologias de apoio, como leitores de ecrã ou teclados adaptados, considerando também condições temporárias e contextuais.
@@ -45,15 +44,18 @@ Para texto, o critério AA de contraste exige normalmente 4,5:1, ou 3:1 para tex
   alt="Escala de contraste com limiar de 4,5 para texto normal e 3 para texto grande, segundo os critérios e exceções das WCAG."
 />
 
-O rácio é $(L_{\max}+0{,}05)/(L_{\min}+0{,}05)$, com luminâncias relativas. Primeiro convertemos cada cor sRGB para luz linear. Para cada canal normalizado $c$ entre 0 e 1: se $c\leq0{,}04045$, usamos $c/12{,}92$; senão usamos $((c+0{,}055)/1{,}055)^{2{,}4}$. Depois combinamos os canais: $L=0{,}2126R+0{,}7152G+0{,}0722B$. Só no fim dividimos claro por escuro.
+O rácio usa luminâncias relativas, não os valores RGB diretamente:
 
-<CodePlayground
-  title="Calcular o contraste sem arredondar o limiar"
-  language="python"
-  code={
-    'def luminancia(hexadecimal):\n    canais = [int(hexadecimal[i:i+2], 16) / 255 for i in (0, 2, 4)]\n    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4\n              for c in canais]\n    return sum(p * c for p, c in zip([0.2126, 0.7152, 0.0722], linear))\nfor cor in ["777777", "767676"]:\n    l = luminancia(cor)\n    contraste = 1.05 / (l + 0.05)\n    print(cor, f"{contraste:.4f}:1", "passa" if contraste >= 4.5 else "falha")'
-  }
-/>
+$$C=\frac{L_{\max}+0{,}05}{L_{\min}+0{,}05}.$$
+
+Para obter a luminância de uma cor sRGB:
+
+1. Divide cada canal R, G e B por 255 para obter $c$ entre 0 e 1.
+2. Converte cada canal para luz linear. Se $c\leq0{,}04045$, usa $c/12{,}92$. Nos restantes casos, usa $((c+0{,}055)/1{,}055)^{2{,}4}$.
+3. Combina os canais lineares: $L=0{,}2126R+0{,}7152G+0{,}0722B$.
+4. Coloca a luminância maior no numerador e a menor no denominador da fórmula de contraste.
+
+Para `#777777`, os três canais são $119/255\approx0{,}4667$. Como são iguais, a soma ponderada dá a mesma luminância linear, cerca de $0{,}1845$. O branco tem $L=1$, logo $C=1{,}05/(0{,}1845+0{,}05)\approx4{,}4781$.
 
 Sobre branco, `#777777` dá cerca de 4,4781:1 e falha o limiar de texto normal. `#767676` dá cerca de 4,5422:1 e passa. Não arredondamos um valor inferior a 4,5 para o declarar conforme. Aumentar apenas o peso do texto não altera as luminâncias nem o rácio; só muda o limiar se cumprir a definição de texto grande.
 
@@ -74,7 +76,7 @@ Usa elementos com semântica adequada: um botão para uma ação, um link para n
 <button type="submit">Enviar confirmação</button>
 ```
 
-O `for` liga a etiqueta ao campo; o leitor de ecrã anuncia o nome ao entrar. O `aria-describedby` acrescenta a instrução sem a misturar com o nome. Sem esta ligação, o campo seria apenas "caixa de texto".
+O `for` liga a etiqueta ao campo; o leitor de ecrã anuncia o nome ao entrar. O `aria-describedby` acrescenta a instrução sem a misturar com o nome. Sem a etiqueta associada, não podemos confiar que o campo tenha um nome adequado. O nome pode vir de outro mecanismo, como `aria-label`, pelo que é necessário inspecionar a associação efetiva.
 
 Não podemos deduzir que um botão com texto "OK" não tem nome acessível: tem esse texto como nome, mas o significado pode ser demasiado vago. Distingue uma falha técnica de associação de uma falha de clareza.
 
