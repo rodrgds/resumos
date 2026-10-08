@@ -3,6 +3,26 @@ import { expect, test } from '@playwright/test';
 test.describe('static Mermaid diagrams', () => {
   test.use({ javaScriptEnabled: false, viewport: { width: 320, height: 844 } });
 
+  test('course flowchart nodes use solid themed borders without a glow', async ({
+    page,
+  }) => {
+    await page.goto('/cadeiras/rc/acesso-ao-meio/');
+    const diagram = page.getByRole('img', { name: /^A e B sorteiam 2 e 5\./ });
+    await diagram.evaluate((element: HTMLElement) => {
+      element.style.setProperty('--surface', 'rgb(28, 28, 30)');
+      element.style.setProperty('--accent', 'rgb(172, 184, 93)');
+      element.style.color = 'rgb(216, 216, 210)';
+    });
+    const box = diagram.locator('svg rect[width][height][stroke]').first();
+    await expect(box).toHaveCSS('stroke', 'rgb(172, 184, 93)');
+    await expect(box).toHaveCSS('fill', 'rgb(28, 28, 30)');
+    await expect(box).toHaveCSS('filter', 'none');
+    await expect(diagram.locator('svg text').first()).toHaveCSS(
+      'fill',
+      'rgb(216, 216, 210)',
+    );
+  });
+
   test('render without scripts, preserve local arrows and support keyboard scrolling', async ({
     page,
   }) => {

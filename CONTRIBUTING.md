@@ -139,6 +139,8 @@ import pedido from '../../minha-cadeira/pedido.mmd?raw';
 
 O diagrama é SVG estático gerado no build, com as cores de leitura. Usa mensagens curtas e descrição alternativa. Nos diagramas largos, conserva letras legíveis e verifica a deslocação horizontal por teclado e toque. Blocos de código com Mermaid mostram apenas o código; para desenhar, usa o componente.
 
+O renderer usa o estilo `classic`, com bordas sólidas e sem gradientes ou sombras. Mantém os fundos, traços e texto ligados aos tokens da paleta de leitura.
+
 ### Fórmulas
 
 Usa `$…$` para fórmulas em linha. Para uma fórmula centrada, escreve `$$…$$` num parágrafo próprio ou coloca os delimitadores `$$` em linhas próprias. Várias fórmulas em linhas consecutivas, cada uma entre `$$`, formam blocos separados. Os delimitadores duplos dentro de uma frase continuam em linha.

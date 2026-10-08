@@ -27,8 +27,10 @@ function compile(source: string) {
         securityLevel: 'strict',
         htmlLabels: false,
         theme: 'base',
+        look: 'classic',
         fontFamily: 'Arial, sans-serif',
         themeVariables: {
+          useGradient: false,
           fontSize: '16px',
           primaryColor: '#ffffff',
           primaryTextColor: '#292a30',
