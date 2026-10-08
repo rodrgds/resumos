@@ -6,8 +6,6 @@ studyKind: revision
 order: 0
 ---
 
-Reve depressa as condições e decisões de Git, Java, testes, UML e desenho.
-
 Cada linha resume uma decisão já explicada nas lições: o que verificar antes de escolher um comando, uma coleção ou um padrão, com ligações para a explicação completa.
 
 ## Git e Gradle
@@ -30,7 +28,7 @@ Cada linha resume uma decisão já explicada nas lições: o que verificar antes
 - Não alteres campos de igualdade/hash enquanto o objeto está num `HashSet` ou é chave de `HashMap`.
 - `List` mantém sequência e duplicados; `Set` unicidade; `Map` um valor por chave. `HashSet` e `HashMap` não prometem ordem de iteração.
 - Uma vista não modificável acompanha alterações da coleção original. Uma cópia defensiva separa as coleções, mas pode partilhar elementos mutáveis.
-- Genéricos são invariantes. Define `Caixa<T>` e métodos `<E>` antes de usar wildcards. `? extends T` permite ler como `T`; `? super T` permite inserir `T`. `extends` não torna a coleção imutável.
+- Genéricos são invariantes. Declara `T` em `Caixa<T>` ou `<E>` antes do retorno de um método genérico. `? extends T` permite ler como `T`; `? super T` permite inserir `T`. `extends` não torna a coleção imutável.
 - `start()` inicia a thread; `run()` direto é uma chamada normal; `join()` espera o fim. `sleep()` não é sincronização.
 - `synchronized` coordena acessos pelo mesmo monitor. `volatile` não torna `++` atómico. Usa `while` para testar a condição de `wait()`.
 - Bytes usam streams; texto usa readers/writers e uma codificação. `try-with-resources` fecha recursos. Swing atualiza a interface na EDT.
@@ -74,6 +72,6 @@ Cada linha resume uma decisão já explicada nas lições: o que verificar antes
 
 Classes mostram estrutura; sequência mostra ordem de mensagens com `alt` para alternativas; comunicação mostra ligações e ordem numerada com `1.1` para chamadas aninhadas; estados mostram eventos, guardas e transições. Operações `getX()` iguais no código e nos diagramas. A multiplicidade num extremo conta objetos desse extremo para um objeto do outro. O losango de composição fica no todo. Uma referência Java não prova posse forte.
 
-MVC separa regras no modelo, apresentação na vista e interpretação/coordenação no controlador. Mostra o estado aceite pelo modelo, incluindo operações recusadas. Service Layer coordena casos de uso; Domain Model protege regras; Data Mapper separa persistência; Repository oferece consultas em termos do domínio. Testar uma chamada a `guardar` não prova que os dados ficaram persistidos.
+MVC separa regras no modelo, apresentação na vista e interpretação/coordenação no controlador. Mostra o estado aceite pelo modelo, incluindo operações recusadas. Service Layer coordena casos de uso; Domain Model protege regras; Data Mapper separa persistência; Repository oferece consultas em termos do domínio. `Optional.empty()` significa ausência após consulta válida, não falha de acesso. Identity Map conserva uma instância por identidade no âmbito decidido, sem garantir atomicidade. Testar uma chamada a `guardar` não prova que os dados ficaram persistidos.
 
 [UML](/cadeiras/ldts/diagramas-uml/) · [MVC](/cadeiras/ldts/mvc-projeto/) · [Arquitetura empresarial](/cadeiras/ldts/arquitetura-empresarial/)

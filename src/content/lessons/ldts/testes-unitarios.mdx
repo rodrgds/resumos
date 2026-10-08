@@ -8,17 +8,15 @@ practices:
 
 import YouTube from '../../../components/YouTube.astro';
 
-Com responsabilidades separadas pelos princípios SOLID, verifica agora automaticamente se o comportamento cumpre o contrato. A arena promete que células fora do intervalo são rejeitadas; o teste confirma essa promessa sem olhar para a condição escrita no código.
-
-Imagina uma arena dividida em células, que são as casas numeradas onde o herói pode estar. A regra que diz em que células o herói pode entrar é o contrato que vamos testar: um teste unitário, que é uma verificação automática de um comportamento pequeno, compara o resultado com essa regra. O valor esperado vem da regra da arena, não de copiar a condição do código para o teste.
+Numa arena de largura 5, as células válidas vão de 0 a 4. Um teste de `contem(5)` deve esperar `false`, mesmo que a implementação aceite esse valor por engano. O esperado vem do contrato da arena; copiar a condição do programa para o teste repetiria o erro.
 
 ## Escolher o que verificar
 
 Um teste unitário verifica uma unidade pequena através do seu comportamento observável. Pode abranger vários objetos simples que colaboram. Um teste de integração verifica a colaboração com uma fronteira real, como leitura de ficheiros. Um teste do sistema percorre a aplicação completa.
 
-Deriva os casos de partições do contrato antes de escreveres código de teste. Para `contem` com largura 5, há três partições: dentro (`0` a `4`), abaixo (`< 0`) e acima (`>= 5`). Escolhe um representante de cada, mais as fronteiras exatas `0`, `4`, `-1` e `5`. O esperado vem da regra da arena, não da condição copiada do código: isto é teste black-box. Depois de leres a implementação, acrescenta casos white-box que a estrutura sugere, como largura zero no construtor.
+Deriva os casos de partições do contrato antes de escreveres código de teste. Para `contem` com largura 5, há três partições: dentro (`0` a `4`), abaixo (`< 0`) e acima (`>= 5`). Escolhe um representante de cada, mais as fronteiras exatas `0`, `4`, `-1` e `5`. Isto é seleção black-box: usa o contrato sem depender da estrutura interna. Testar largura zero também é black-box quando o contrato do construtor a proíbe. Seleção white-box usa a implementação para procurar percursos ainda não exercitados; não muda a origem do resultado esperado.
 
-Usa casos normais, limites e inválidos. Para largura 5, as células 0 e 4 estão dentro; -1 e 5 estão fora. Uma largura zero ou negativa não representa uma arena válida e deve ser rejeitada. Este último caso pertence ao contrato de construção, não à pergunta sobre uma célula válida.
+Uma largura zero ou negativa não representa uma arena válida e deve ser rejeitada. Esta exceção pertence ao contrato de construção. Uma célula exterior, por sua vez, não exige uma exceção: `contem` responde `false`. São operações com respostas diferentes a entradas fora do domínio normal.
 
 Prepara o cenário, executa a ação e verifica o resultado, Arrange, Act, Assert. Um comportamento pode exigir várias asserções relacionadas. Por exemplo, mover deve produzir a posição certa **e** preservar a origem quando a operação promete imutabilidade.
 
@@ -183,7 +181,15 @@ Cobertura mede código executado pelos testes. Cobertura de linhas pergunta se u
 
 Imagina um teste que chama `contem(2)` e não verifica nada. Executa a linha da condição, mas aceita tanto `true` como `false`. A cobertura pode subir sem melhorar a proteção.
 
-O curto-circuito mostra outro limite da cobertura de linhas. Em `x >= 0 && x < largura`, um teste só com `x = 2` executa a linha mas nunca avalia o segundo operando a falso por causa do primeiro. Precisas de casos que façam cada condição decidir o resultado: `-1` chumba na primeira, `5` passa a primeira e chumba na segunda.
+O curto-circuito mostra outro limite da cobertura de linhas. Com largura 5, segue a avaliação de `x >= 0 && x < largura`. A primeira condição é `x >= 0`; a segunda é `x < 5`:
+
+| x   | Primeira | Segunda      | Resultado |
+| --- | -------- | ------------ | --------- |
+| -1  | false    | Não avaliada | false     |
+| 2   | true     | true         | true      |
+| 5   | true     | false        | false     |
+
+Só testar 2 executa a linha, mas não percorre as saídas falsas. Com -1, a segunda condição nem é avaliada; com 5, é ela que rejeita a célula. A tabela distingue cobertura da linha, resultados de cada condição avaliada e resultado global. Confere o critério exato do relatório antes de interpretar a percentagem.
 
 **Mutation testing** altera o programa em pequenas operações, por exemplo trocar `<` por `<=`. Um mutante é **morto** quando os testes falham com essa mudança. Se todos passam, o mutante **sobrevive**. Um mutante sem cobertura nem sequer teve esse comportamento exercitado.
 
@@ -215,4 +221,6 @@ Num ciclo de desenvolvimento guiado por testes, começa com uma exigência peque
 
 Um erro de importação não prova que o teste deteta o comportamento. E ver verde antes de existir uma implementação pode revelar que o teste não verifica o requisito.
 
-Property-based testing, nos slides e no resumo estudantil, gera muitos valores aleatórios e verifica uma propriedade em vez de exemplos fixos. É um complemento útil para descobrir fronteiras esquecidas, não matéria obrigatória enumerada na ficha atual. Num defeito já existente, tenta reproduzi-lo através da interface pública mais próxima do utilizador e conserva esse caso como regressão.
+Property-based testing gera entradas e verifica uma propriedade em vez de enumerar só exemplos fixos. Para uma posição imutável, mover à direita deve aumentar x em um e conservar y para cada entrada gerada, dentro do domínio aritmético escolhido. Um caso encontrado pode revelar uma fronteira esquecida; conserva-o como exemplo reproduzível. Este complemento não é enumerado separadamente na ficha atual.
+
+Num defeito já existente, reproduz o comportamento pela interface pública mais próxima do utilizador e conserva esse caso como regressão. O teste tem de falhar pela diferença observada, não por um erro de preparação ou importação.

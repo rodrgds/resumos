@@ -8,10 +8,10 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
+import Dot from '../../../components/Dot.astro';
+import observer from '../../ldts/observer.dot?raw';
 
-Com a estrutura melhorada por refactoring, escolhe agora que colaboração entre objetos resolve cada problema repetido do desenho. O movimento do inimigo varia, mas posição e vida continuam no inimigo: o algoritmo muda de dono sem partir o cliente.
-
-O algoritmo de movimento muda, mas o inimigo continua a ter posição e vida. Já separámos esse algoritmo através de uma interface. Um padrão, que é um nome para essa colaboração entre objetos, explica em que situações é útil e que custos introduz.
+O inimigo mantém posição e vida, mas pode patrulhar ou perseguir o herói. Separar o algoritmo numa interface permite trocar o movimento sem reescrever `Inimigo`. Strategy dá nome a essa colaboração. Cada padrão descreve um problema, os participantes que o resolvem e as consequências da escolha.
 
 Não é uma classe pronta a copiar. Para aplicar um padrão, identifica o cliente, a decisão que varia e o contrato que permite separar essa decisão.
 
@@ -68,7 +68,17 @@ public class Main {
 }
 ```
 
-A saída é `2`. O primeiro e o terceiro `tick` avançam; o segundo é tratado em Pausa e não altera o contador. A transição é definida pelos estados. Poderíamos deixá-la no contexto, desde que houvesse um responsável claro.
+A saída é `2`. Segue o estado e o contador, que são dados diferentes:
+
+| Pedido   | Antes | Depois | Passos |
+| -------- | ----- | ------ | ------ |
+| tick     | Ativo | Ativo  | 1      |
+| alternar | Ativo | Pausa  | 1      |
+| tick     | Pausa | Pausa  | 1      |
+| alternar | Pausa | Ativo  | 1      |
+| tick     | Ativo | Ativo  | 2      |
+
+O `tick` em Pausa não altera o contador. A transição é definida pelos estados; poderia ficar no contexto, desde que houvesse um responsável claro.
 
 State e Strategy podem ter estruturas parecidas. A intenção distingue-os: trocar perseguição por patrulha é Strategy; reagir de outra forma depois de entrar em Pausa é State. Um pequeno conjunto de estados também pode ser representado por uma enumeração e condições sem perder clareza.
 
@@ -95,6 +105,13 @@ Obtemos `5` e `2`. `Main` é o invocador; `Mover` o comando concreto; `Heroi` o 
 Começa pelo caso simples: um sujeito com lista de inscritos e notificação síncrona. O cliente subscreve dois observadores, altera o valor e cada um recebe `mudou(pontos)`. Sair da lista termina as notificações futuras.
 
 Na pontuação, um observador pode atualizar o texto e outro verificar uma conquista. A sequência é: alterar o valor, obter o novo estado válido e notificar os inscritos. O observador pode receber o valor, modelo **push**, ou pedir o estado ao sujeito, modelo **pull**.
+
+<Dot
+  source={observer}
+  alt="Pontuacao notifica através de Observador.mudou(int pontos). Texto da pontuação e verificador de conquista implementam o contrato. O sujeito não depende das classes concretas."
+/>
+
+Segue os dois tipos de seta. A seta contínua indica a chamada feita pelo sujeito; as tracejadas indicam que os destinatários implementam o contrato. Os objetos inscritos recebem o novo valor, mas cada um decide a sua reação.
 
 Este excerto mostra um sujeito com notificação síncrona:
 
@@ -146,7 +163,7 @@ Grupo(exterior)
 
 O interior dá `2 + 7 = 9`; o exterior dá `4 + 9 = 13`. Cada chamada usa a mesma interface `forca()`, sem testar o tipo do filho.
 
-Este programa completo imprime a força de uma árvore:
+O programa seguinte constrói essa mesma árvore. Guarda-o em `Main.java` para o executar localmente:
 
 ```java
 import java.util.Arrays;
@@ -174,14 +191,14 @@ class Grupo implements Unidade {
 
 public class Main {
     public static void main(String[] args) {
-        Unidade grupo = new Grupo(new Soldado(2),
-            new Grupo(new Soldado(3), new Soldado(4)));
+        Unidade grupo = new Grupo(new Soldado(4),
+            new Grupo(new Soldado(2), new Soldado(7)));
         System.out.println(grupo.forca());
     }
 }
 ```
 
-A saída é `9`. O parâmetro `Unidade... filhos` aceita zero ou mais argumentos, reunidos num array dentro do construtor. `Arrays.asList` permite percorrer esse array como lista; não faz uma cópia dos seus elementos.
+A saída é `13`, como na árvore anterior. Um `new Grupo()` sem filhos devolve zero porque o ciclo não soma nenhuma parcela. O parâmetro `Unidade... filhos` aceita zero ou mais argumentos, reunidos num array dentro do construtor. `Arrays.asList` permite percorrer esse array como lista; não faz uma cópia dos seus elementos.
 
 `Unidade` é o componente, `Soldado` a folha e `Grupo` o composto. Nem todas as operações têm de pertencer à interface comum: acrescentar um filho pode ficar só em `Grupo`, para não obrigar uma folha a fingir que suporta filhos.
 

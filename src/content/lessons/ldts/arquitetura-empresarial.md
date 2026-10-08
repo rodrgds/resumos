@@ -6,11 +6,7 @@ practices:
   - ldts/praticar-arquitetura
 ---
 
-Com uma ação MVC a percorrer modelo, vista e controlador, decide agora onde ficam regras, operações e dados guardados quando a aplicação cresce. Terminar a partida calcula pontos, valida o encerramento e persiste o resultado: três decisões com donos diferentes.
-
-Um pedido termina a partida e guarda o resultado: calcular a pontuação, decidir se a partida pode terminar e escrever uma linha numa base de dados são decisões diferentes. A arquitetura, que é a decisão sobre onde ficam essas responsabilidades e que contratos as ligam, separa quem coordena a operação de quem guarda o resultado.
-
-MVC organiza sobretudo a relação com a apresentação. Uma aplicação que também guarda dados precisa de separar o domínio, que são as regras e entidades do jogo, da persistência, que é a forma de guardar e ler esses dados.
+Terminar a partida 7 exige validar o estado, calcular a pontuação final e guardar o resultado. Trocar Swing por uma API não deve mudar essas regras; trocar ficheiros por SQL não deve mudar a operação. MVC organiza a apresentação. As operações da aplicação, o domínio e a persistência precisam também de contratos próprios.
 
 ## Camadas e dependências
 
@@ -54,7 +50,18 @@ class TerminarPartida {
 }
 ```
 
-Três percursos: sucesso termina e guarda; `Optional.empty()` após consulta válida devolve erro de ausência; exceção de I/O do repositório propaga-se como falha de acesso, sem fingir ausência. Em memória, `HashMap<Long, Partida>` serve para testes; em SQL, o mapper traduz linhas em `Partida` válidas.
+Compara percursos da mesma operação:
+
+| Procura                            | Terminar?                      | Apresentação                                    |
+| ---------------------------------- | ------------------------------ | ----------------------------------------------- |
+| Partida 7 em curso, com 120 pontos | Sim, termina e pede `guardar`. | `partida 7: 120 pontos`, se a escrita terminar. |
+| Consulta válida sem partida 7      | Não, não há entidade.          | Exceção de ausência.                            |
+| Falha de acesso ao armazenamento   | Não, a procura falhou.         | Erro de acesso, nunca ausência confirmada.      |
+| Partida 7 já terminada             | Não, a regra rejeita.          | Exceção de estado, sem nova escrita.            |
+
+A ausência lança `IllegalArgumentException`; a tentativa de terminar de novo lança `IllegalStateException` sem chamar `guardar`. São falhas distintas de uma consulta que não conseguiu aceder ao armazenamento.
+
+Em memória, `HashMap<Long, Partida>` pode servir de fake; em SQL, o mapper traduz linhas em entidades válidas. Os excertos mostram contratos, não uma implementação completa da persistência. Erros de acesso precisam de ser traduzidos ou declarados conforme a implementação escolhida.
 
 ```text
 chamadas em execução: Apresentacao -> TerminarPartida -> Partida, Partidas
@@ -124,7 +131,7 @@ Um **Data Transfer Object**, DTO, transporta os dados necessários numa fronteir
 
 ## Seguir um caso de uso
 
-Para terminar a partida 7, a apresentação pede `terminar(7)` ao serviço. O serviço obtém a entidade através de `Partidas`, trata a ausência com erro explícito, pede `partida.terminar()`, persiste com `guardar` e devolve um DTO com identificador e pontuação. A apresentação mostra esse resultado sem tocar nos campos internos.
+Para terminar a partida 7, a apresentação pede `terminar(7)` ao serviço. O serviço obtém a entidade através de `Partidas`, trata a ausência com erro explícito, pede `partida.terminar()`, persiste com `guardar` e devolve o texto com identificador e pontuação mostrado no excerto. Uma API poderia devolver um DTO com esses campos em vez do texto. Nos dois casos, a apresentação não altera os campos internos da entidade.
 
 Testa separadamente a regra de encerramento e a coordenação. Num teste do serviço, uma implementação em memória pode confirmar qual partida foi alterada. Um teste de integração da persistência verifica que o registo realmente sobrevive a uma nova leitura. Uma verificação de chamadas a um mock não prova essa durabilidade.
 

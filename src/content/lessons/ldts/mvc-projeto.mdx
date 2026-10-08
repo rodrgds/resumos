@@ -8,9 +8,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Com as colaborações nomeadas pelos padrões, decide agora quem interpreta a ação do utilizador, quem valida a regra e quem mostra o resultado. O botão não altera a posição diretamente: pede ao controlador, o modelo aceita ou recusa, a vista mostra o estado aceite.
-
-O utilizador pede um movimento para a direita e a célula de destino pode estar bloqueada. MVC, que é a separação entre as regras, a apresentação e a coordenação das ações, impede que o botão altere diretamente a posição: a regra decide se o movimento é válido e a interface mostra o resultado aceite.
+O herói está na célula 3 e pede um movimento que chegaria à célula 5, fora da arena. O modelo recusa; a vista tem de continuar a mostrar 3. MVC separa a regra dos limites, a interpretação do pedido e a apresentação do resultado.
 
 ## Model, View e Controller
 
@@ -34,7 +32,15 @@ Vamos usar uma arena com cinco células, de zero a quatro. O herói começa em d
   }
 />
 
-A saída é `heroi: 3`, `heroi: 3` e `heroi: 2`. A segunda tentativa procura a célula cinco, que está fora. O modelo devolve falso e mantém três. O controlador desenha a posição real, não o destino pedido.
+A saída é `heroi: 3`, `heroi: 3` e `heroi: 2`. Segue os pedidos consecutivos, sempre a partir do estado aceite anterior:
+
+| Antes | Pedido | Destino | Aceite? | Mostrado |
+| ----- | ------ | ------- | ------- | -------- |
+| 2     | +1     | 3       | Sim     | 3        |
+| 3     | +2     | 5       | Não     | 3        |
+| 3     | -1     | 2       | Sim     | 2        |
+
+A segunda tentativa devolve `false` e mantém 3. O controlador lê `getX()` depois da tentativa. Mostrar `x + deslocamento` na vista inventaria um estado que o modelo recusou.
 
 O cálculo usa `long` para que um deslocamento inteiro muito grande não faça overflow antes de verificar os limites. Só converte para `int` depois de validar um destino dentro da largura inteira.
 
@@ -79,6 +85,8 @@ VistaMemoria vista = new VistaMemoria();
 new Controlador(modelo, vista).mover(1);
 assert vista.ultimo == 4;
 ```
+
+Se executares este excerto num `main`, usa `java -ea Main` para ativar a instrução Java `assert`; sem `-ea`, a verificação não corre. Nos testes JUnit, usa `assertEquals(4, vista.ultimo)`, que não depende dessa opção.
 
 `VistaMemoria` guarda o valor de `mostrar(int x)` num campo. O modelo recusa 5 e fica em 4; o controlador errado mostraria 5 e este teste falhava. Um teste só com movimentos válidos não reconhece esse erro.
 

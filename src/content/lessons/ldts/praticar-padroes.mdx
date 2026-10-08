@@ -1,6 +1,6 @@
 ---
 title: Praticar padrões de desenho
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Aplicar padrões e analisar partilha, undo, subscrições, famílias e estado global.
 section: exercicios
 order: 0
 ---
@@ -8,87 +8,72 @@ order: 0
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
-  revision={1}
+  revision={2}
   id="padroes-composite"
-  title="Calcular uma árvore"
+  title="Percorrer uma árvore e distinguir partilha"
   explanation="/cadeiras/ldts/padroes-desenho/#composite-tratar-uma-árvore-pela-mesma-interface"
-  answer={{ kind: 'number', value: 13, tolerance: 0 }}
->
-  <div>
-    Uma folha devolve a sua força; um grupo soma a força dos filhos. O grupo
-    exterior tem uma folha de força 4 e um grupo com folhas de forças 2 e 7.
-    Qual é a força total?
-  </div>
-  <div slot="hint">
-    <div>Resolve o grupo interior antes do exterior.</div>
-  </div>
-  <div slot="hint-more">
-    <div>O interior devolve nove e é tratado como outro componente.</div>
-  </div>
-  <div slot="solution">
-    <div>
-      Desenha a árvore: exterior com folha 4 e grupo interior com 2 e 7. O grupo
-      interior devolve 2 + 7 = 9. O exterior devolve 4 + 9 = 13. O cliente chama
-      forca pela interface comum, sem testar se cada filho é folha ou grupo.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>Não contes o grupo como uma força extra além das suas folhas.</div>
-  </div>
-</Exercise>
-
-<Exercise
-  revision={1}
-  id="padroes-state-strategy"
-  title="Escolher pela intenção"
-  explanation="/cadeiras/ldts/padroes-desenho/#state-reagir-conforme-o-estado"
   answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'State',
-        correct: true,
-        explanation:
-          'O comportamento depende do estado interno e das transições.',
-      },
-      {
-        text: 'Strategy',
-        correct: false,
-        explanation:
-          'Varia algoritmos escolhidos como políticas; o foco aqui é o ciclo de estados.',
-      },
-      {
-        text: 'Adapter',
-        correct: false,
-        explanation: 'Não há uma interface incompatível a traduzir.',
-      },
+    kind: 'self',
+    checklist: [
+      'Calculei 13 e justifiquei a soma recursiva pela interface comum.',
+      'Obtive zero para um grupo vazio.',
+      'Distingui somar ocorrências de contar objetos únicos num filho partilhado.',
     ],
   }}
 >
   <div>
-    A mesma operação tick deve mover o jogo em Jogar e não o mover em Pausa. O
-    próprio ciclo do jogo transita entre essas situações. Que padrão descreve
-    mais diretamente esta intenção?
+    Uma folha devolve a sua força; um grupo soma `forca()` de cada filho. O
+    grupo exterior contém uma folha de força 4 e um grupo com folhas de forças 2
+    e 7. Calcula a força e explica o percurso. Quanto devolve um grupo vazio? Se
+    a mesma folha de força 2 aparecesse duas vezes na lista do grupo interior, o
+    algoritmo contaria essa força uma ou duas vezes? Não há ciclos.
   </div>
   <div slot="hint">
-    <div>A estrutura de delegação pode parecer semelhante em dois padrões.</div>
-  </div>
-  <div slot="hint-more">
-    <div>
-      Pergunta se estamos a trocar uma política ou a reagir ao estado do
-      contexto.
-    </div>
+    A implementação percorre entradas da lista, não um conjunto de identidades.
   </div>
   <div slot="solution">
-    <div>
-      State descreve a reação à situação atual e as transições do jogo. Strategy
-      seria uma escolha de algoritmo, como perseguição ou patrulha.
-    </div>
+    O interior devolve 2 + 7 = 9 e o exterior 4 + 9 = 13. Cada filho responde
+    pela interface `Unidade`, incluindo grupos que repetem a mesma operação nos
+    seus filhos. Um grupo vazio devolve zero, o valor inicial do acumulador.
+    Duas entradas para a mesma folha chamam `forca()` duas vezes: o interior
+    passaria a 2 + 2 + 7 = 11 e o exterior a 15. Se queremos contar unidades
+    únicas, temos de proibir a partilha ou definir outra política; Composite não
+    garante essa regra.
   </div>
-  <div slot="mistakes">
-    <div>
-      Não identifiques um padrão só pelo desenho de uma seta para uma interface.
-    </div>
+</Exercise>
+
+<Exercise
+  revision={2}
+  id="padroes-state-strategy"
+  title="Política de movimento e ciclo de estados"
+  explanation="/cadeiras/ldts/padroes-desenho/#state-reagir-conforme-o-estado"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Associei patrulha/perseguição a Strategy pela escolha de algoritmo.',
+      'Associei Ativo/Pausa a State pelas reações e transições.',
+      'Expliquei que uma interface e delegação não bastam para distinguir os padrões.',
+    ],
+  }}
+>
+  <div>
+    Um inimigo recebe na construção um algoritmo de patrulha ou perseguição. O
+    jogo, por sua vez, começa Ativo: `tick()` avança, `alternar()` entra em
+    Pausa, e `tick()` em Pausa não avança. Ambos os desenhos guardam um objeto
+    através de uma interface e delegam-lhe operações. Escolhe o padrão de cada
+    caso e justifica pela intenção. O diagrama de classes, sozinho, decide a
+    resposta?
+  </div>
+  <div slot="hint">
+    Pergunta quem escolhe a alternativa e se a mudança faz parte do ciclo de
+    vida.
+  </div>
+  <div slot="solution">
+    Patrulha/perseguição são estratégias intercambiáveis escolhidas para o
+    inimigo: Strategy. Ativo/Pausa determinam reações e transições do próprio
+    jogo: State. As estruturas podem parecer iguais, por isso uma seta para uma
+    interface não decide a intenção. Precisamos de conhecer os pedidos, as
+    transições e quem seleciona o objeto delegado.
   </div>
 </Exercise>
 
@@ -113,9 +98,8 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="solution">
     <div>
       Calcula por passos: desconto dá 1000 × 0,9 = 900, entrega soma 200, total
-      1100. O total é 1000 × 0,9 + 200 = 1100. Na ordem inversa seria (1000 +
-      200) × 0,9 = 1080. A interface comum permite composição, mas não garante
-      que as operações comutem.
+      1100. Na ordem inversa seria (1000 + 200) × 0,9 = 1080. A interface comum
+      permite composição, mas não garante que as operações comutem.
     </div>
   </div>
   <div slot="mistakes">
@@ -242,55 +226,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     O nome fábrica e a presença de new não bastam para identificar o padrão.
     Acrescentar um produto não tem o mesmo custo de acrescentar uma família.
-  </div>
-</Exercise>
-
-<Exercise
-  revision={1}
-  id="padroes-abstract-factory-cliente"
-  title="Trocar a família sem editar o cliente"
-  explanation="/cadeiras/ldts/padroes-desenho/#abstract-factory-escolher-uma-família"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Trocar new FabricaMedieval por new FabricaEspacial na montagem.',
-        correct: true,
-        explanation: 'O cliente só usa FabricaTema e produtos.',
-      },
-      {
-        text: 'Editar ArenaJogo para importar Robo e Laser.',
-        correct: false,
-        explanation: 'O cliente não deve conhecer produtos concretos.',
-      },
-      {
-        text: 'Acrescentar criarEscudo sem mudar as fábricas.',
-        correct: false,
-        explanation: 'Novo produto exige mudar contrato e fábricas.',
-      },
-    ],
-  }}
->
-  <div>
-    `ArenaJogo` recebe `FabricaTema` no construtor. Como passas de Medieval para
-    Espacial?
-  </div>
-  <div slot="hint">
-    <div>O cliente constrói-se com uma fábrica.</div>
-  </div>
-  <div slot="hint-more">
-    <div>A montagem escolhe a família concreta.</div>
-  </div>
-  <div slot="solution">
-    <div>
-      Na montagem, `new ArenaJogo(new FabricaEspacial())` em vez de `new
-      ArenaJogo(new FabricaMedieval())`. O cliente descreve `cavaleiro:4` ou
-      `robo:7` sem mudar código. Escudos exigiriam `criarEscudo` no contrato e
-      nas duas fábricas.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>Uma fábrica simples com switch não é a colaboração de famílias.</div>
   </div>
 </Exercise>
 
