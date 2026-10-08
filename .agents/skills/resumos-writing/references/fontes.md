@@ -1,93 +1,52 @@
 # Fontes e escolhas editoriais
 
-Consulta este ficheiro para comparar o tom com uma cadeira ou um guia de origem. O site tem vários autores e diferentes graus de detalhe. A skill seleciona os hábitos que ajudam a ensinar e adapta-os ao pedido de escrita simples e explícita.
+O LEIC tem vários autores e diferentes graus de desenvolvimento. Usa passagens concretas para aprender a conduzir uma explicação. A matéria, a notação e as regras de avaliação continuam a vir das fontes FEUP.
 
-## Âmbito do levantamento
+## Corpus e limites
 
-Consulta feita em 9 de setembro de 2026:
+O [código-fonte estudado](https://github.com/leic-pt/resumos-leic/tree/e8955899be9a7b449962aa1d86100bce4a091407/content) contém 317 ficheiros Markdown em 31 pastas de cadeiras e na página inicial. O levantamento de setembro de 2026 examinou títulos, entradas e passagens do corpus e leu os dez guias. A investigação de 8 de outubro leu integralmente 31 lições de 19 cadeiras, comparou 11 páginas FEUP e observou algumas páginas e figuras no navegador.
 
-- [Resumos LEIC, código-fonte](https://github.com/leic-pt/resumos-leic/tree/e8955899be9a7b449962aa1d86100bce4a091407/content): 316 páginas Markdown em 31 cadeiras e a página inicial, num total de 317. Foram revistos títulos, entradas e passagens explicativas de todas as páginas, incluindo arquivos, formulários, exercícios e páginas sem resumos. Aprofundaram-se exemplos representativos de definições, código, demonstrações e instruções. Este levantamento de estilo não é uma revisão integral da correção de todas as matérias.
-- Foram lidos integralmente os dez documentos classificados como guias, incluindo o FAQ do projeto de LP, que não está numa pasta `guides`.
-- [Documentação de contribuição](https://github.com/leic-pt/docs/tree/2771b2b1444bf4593a43e5e96955c76dd0099ca5/docs): leitura dos 15 documentos, incluindo configuração, Git, edição, submissão e as nove referências de Markdown.
+A leitura integral inclui código e blocos expansíveis no texto-fonte. Não inclui todos os PDFs ligados nem prova a correção de todas as fórmulas, programas ou figuras. A revisão remota consultada em 8 de outubro, `51b18895365fe78205061460ba2590a1b9c9dbd5`, não alterou nenhuma dessas 31 lições em relação ao commit fixado. Isto não identifica a revisão de produção.
 
-A recolha direta por HTTP foi bloqueada. A cobertura completa usa os repositórios públicos ligados pelos sites. Foram comparadas páginas publicadas de [Normalização](https://resumos.leic.pt/bd/normalization/), [Princípio do Pombal](https://resumos.leic.pt/emd/principio-pombal/), [Básicos de R](https://resumos.leic.pt/pe/guides/r-basics/) e [Aplicação Bancária](https://resumos.leic.pt/po/guide/bank/), além das páginas iniciais e de documentação acessíveis pela pesquisa. Os commits acima identificam o corpus, não uma versão de produção confirmada.
+Quando disponível, o clone local está em `data/unrelated/resumos-leic-ist/content/`. O estudo privado detalhado está em `_data/editorial/leic-estudo-2026-10-08/estudo.md`; a skill não depende da presença desse arquivo. As ligações abaixo permitem consultar diretamente as passagens.
 
-Os PDFs, livros, slides e outros destinos externos ligados pelas páginas não fazem parte desta leitura. Páginas que apenas ligam a anexos contam no levantamento, mas não fornecem evidência sobre a escrita desses anexos.
+## Calibrar com o mesmo domínio
 
-## Cobertura por cadeira
+Antes de rever uma cadeira, lê um capítulo e um exemplo desenvolvido próximo da matéria. Observa como o exemplo continua depois da abertura, a função dos títulos e a passagem que cada figura torna visível. Não copies a estrutura inteira por ser curta.
 
-Os números incluem a página de entrada de cada cadeira. As observações descrevem o material disponível, não uma regra obrigatória para cada disciplina.
+| Matéria             | Passagem                                                                                                                                                                 | Mecanismo a adaptar                                                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Bases de dados      | [SQL, compras e agregação](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/bd/0006-advanced-sql.md#L44-L93)                | Os mesmos dados respondem a perguntas sucessivas. A necessidade de filtrar grupos justifica HAVING.                                                                      |
+| Modelação           | [Modelo EA, clube](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/bd/0003-er-model.md#L165-L201)                          | Uma proposta intermédia errada revela a independência das classificações. Adaptar para a notação FEUP.                                                                   |
+| Estruturas de dados | [Dispersão, remoção](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/iaed/0017-hash-tables.md#L82-L109)                    | Seguir a mudança de estado e a procura seguinte torna visível o problema de deixar um buraco.                                                                            |
+| Otimização          | [Programação linear, conversões](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/asa/0008-programacao-linear.md#L103-L230) | Reescrever o mesmo modelo em cada transformação, explicando a equivalência.                                                                                              |
+| Álgebra             | [Espaços vetoriais](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/al/0004-espacos-vetoriais.md#L52-L120)                 | Exemplos positivos e negativos distinguem as condições de subespaço.                                                                                                     |
+| Cálculo             | [Equações exatas](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/cdi-iii/0004-equacoes-exatas.md#L51-L168)                | Testar, transformar e voltar a testar a mesma equação motiva o fator integrante.                                                                                         |
+| Matemática discreta | [Funções geradoras](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/emd/0007-funcoes-geradoras.md)                         | Um problema de moedas abre a lição; as ferramentas desenvolvidas permitem regressar-lhe no fim. Adaptar a progressão, não acrescentar matéria ao currículo por analogia. |
+| Física              | [Trabalho e energia](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/fis-i/0004-work.md#L241-L290)                         | Mudar a escala do lançamento exige reconsiderar a hipótese sobre a gravidade.                                                                                            |
+| Redes               | [Fiabilidade](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/rc/0003-transporte.md#L105-L146)                             | O ACK ambíguo cria a necessidade de distinguir retransmissões. Cada mecanismo responde a uma falha concreta.                                                             |
+| Sistemas            | [Custo das tabelas de páginas](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/so/0010-memory-management.md#L137-L170)     | A conta do espaço gasto precede a organização multinível.                                                                                                                |
+| Arquitetura         | [Forwarding](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/oc/0006-pipelines.md#L83-L114)                                | A figura localiza produção e consumo do resultado no tempo. Manter a ISA e as hipóteses FEUP.                                                                            |
+| Testes              | [Cobertura de condições](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/es/0003-code-coverage.md#L39-L104)                | O mesmo programa permite comparar critérios. A figura marca a condição não avaliada por curto-circuito.                                                                  |
+| Prolog              | [Mínimo e corte](https://github.com/leic-pt/resumos-leic/blob/e8955899be9a7b449962aa1d86100bce4a091407/content/lp/0009-prolog-corte-neg.md#L147-L187)                    | Testar a simplificação com a saída já instanciada revela uma condição escondida pela consulta mais habitual.                                                             |
 
-| Cadeira                                      | Páginas | Material observado                                                                         |
-| -------------------------------------------- | ------: | ------------------------------------------------------------------------------------------ |
-| [AL](https://resumos.leic.pt/al/)            |      10 | Definições formais acompanhadas de tradução para linguagem corrente e exemplos matriciais. |
-| [AMS](https://resumos.leic.pt/ams/)          |       2 | Conceitos de sistemas e modelos explicados com objetos e situações concretas.              |
-| [Apre](https://resumos.leic.pt/apre/)        |      15 | Necessidade de cada método, interpretação de métricas e limites dos modelos.               |
-| [ASA](https://resumos.leic.pt/asa/)          |      13 | Problemas que motivam algoritmos, passos, justificação e análise de custos.                |
-| [BD](https://resumos.leic.pt/bd/)            |       9 | Cenários reutilizados entre SQL e álgebra, tabelas que tornam as anomalias visíveis.       |
-| [CDI-I](https://resumos.leic.pt/cdi-i/)      |      18 | Definições, hipóteses, teoremas e aplicações, com graus variáveis de desenvolvimento.      |
-| [CDI-II](https://resumos.leic.pt/cdi-ii/)    |      21 | Pontes com uma dimensão, interpretação geométrica e significado da notação.                |
-| [CDI-III](https://resumos.leic.pt/cdi-iii/)  |      15 | Métodos de resolução, condições iniciais e ligações a pré-requisitos de outras cadeiras.   |
-| [CG](https://resumos.leic.pt/cg/)            |       1 | Página de entrada, sem capítulos de resumos neste corpus.                                  |
-| [Comp](https://resumos.leic.pt/comp/)        |       1 | Página de entrada, sem capítulos de resumos neste corpus.                                  |
-| [DER](https://resumos.leic.pt/der/)          |       1 | Aviso de ausência de resumos.                                                              |
-| [EMD](https://resumos.leic.pt/emd/)          |      40 | Demonstrações com passos explicados, exemplos combinatórios, arquivo e folhas de consulta. |
-| [ES](https://resumos.leic.pt/es/)            |       8 | Definições operacionais, comparações e casos concretos de testes.                          |
-| [Física I](https://resumos.leic.pt/fis-i/)   |       9 | Situação física, figura, equações, sinais, unidades e interpretação do resultado.          |
-| [Física II](https://resumos.leic.pt/fis-ii/) |      12 | Campos e equações em resumos compactos, formulários e ligações a Cálculo.                  |
-| [FP](https://resumos.leic.pt/fp/)            |       2 | Entrada e exercícios resolvidos, com justificação das respostas e código.                  |
-| [Gestão](https://resumos.leic.pt/ges/)       |       8 | Definições curtas, classificações e exemplos financeiros e organizacionais.                |
-| [IA](https://resumos.leic.pt/ia/)            |       7 | Progressão entre estratégias, problemas concretos e explicação das limitações.             |
-| [IAC](https://resumos.leic.pt/iac/)          |       7 | Diagramas de componentes, representações e execução de instruções.                         |
-| [IAED](https://resumos.leic.pt/iaed/)        |      23 | Necessidade das estruturas, exemplos em C, estado da memória e diferenças entre operações. |
-| [IEco](https://resumos.leic.pt/ieco/)        |       8 | Conceitos ligados ao quotidiano e cadeias de causa e efeito.                               |
-| [IEI](https://resumos.leic.pt/iei/)          |       1 | Página de entrada, sem capítulos de resumos neste corpus.                                  |
-| [IPM](https://resumos.leic.pt/ipm/)          |       9 | Situações de utilização, exemplos de interfaces e métodos de avaliação.                    |
-| [LP](https://resumos.leic.pt/lp/)            |      17 | Notação traduzida em palavras, provas, execução de Prolog e FAQ prático.                   |
-| [OC](https://resumos.leic.pt/oc/)            |       8 | Analogias, diagramas e cálculos para explicar memória e desempenho.                        |
-| [PE](https://resumos.leic.pt/pe/)            |      13 | Experiências concretas, significado dos parâmetros, distribuições e guias de R.            |
-| [PO](https://resumos.leic.pt/po/)            |       4 | Entrada e três guias de ferramentas, sem capítulos teóricos neste corpus.                  |
-| [RC](https://resumos.leic.pt/rc/)            |       8 | Função de cada camada, protocolos, terminologia ilustrada e código de laboratório.         |
-| [SD](https://resumos.leic.pt/sd/)            |       8 | Modelos de comunicação, sequências de eventos, condições e cenários de falha.              |
-| [SO](https://resumos.leic.pt/so/)            |      12 | Recursos do sistema, comportamento concorrente e cálculos de memória.                      |
-| [TC](https://resumos.leic.pt/tc/)            |       6 | Definições rigorosas seguidas de interpretação, exemplos e contraexemplos.                 |
+## Escolhas do projeto
 
-## Guias como referência de explicitação
+A explicação acompanha exemplos e os títulos identificam tópicos. Esta combinação é uma escolha editorial do projeto. Não implica um exemplo obrigatório na primeira frase, secções sempre do mesmo tamanho ou uma quota de figuras.
 
-| Guia                                                                                   | Aspeto útil para escrever                                                                      |
-| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [Correr .cgi localmente](https://resumos.leic.pt/bd/guides/running-cgi-files-locally/) | Mostra a pasta, o comando, o resultado e a necessidade de manter o processo aberto.            |
-| [Recordar do secundário](https://resumos.leic.pt/fis-i/guides/recap-highschool/)       | Parte de pré-requisitos em falta e termina os cálculos com uma resposta física.                |
-| [Instalação de Linux](https://resumos.leic.pt/iaed/meta/linux-setup/)                  | Separa opções de ambiente e explica como reconhecer problemas de configuração.                 |
-| [FAQ de LP](https://resumos.leic.pt/lp/projeto/faq/)                                   | Liga operações concretas às dúvidas que surgem durante um projeto.                             |
-| [Instalação de R](https://resumos.leic.pt/pe/guides/r-setup/)                          | Inclui uma verificação da instalação e distingue ambientes de execução.                        |
-| [Básicos de R](https://resumos.leic.pt/pe/guides/r-basics/)                            | Intercala código e resultados, e esclarece quando os dados originais foram alterados.          |
-| [CVS](https://resumos.leic.pt/po/guide/cvs/)                                           | Explica substituições de valores e efeitos da diretoria onde se executa o comando.             |
-| [Aplicação bancária](https://resumos.leic.pt/po/guide/bank/)                           | Explica a ordem das dependências e dá verificações intermédias concretas.                      |
-| [Kerberos](https://resumos.leic.pt/po/guide/kerberos/)                                 | Conduz até ao teste de acesso e assinala a necessidade de renovar a autenticação.              |
-| [Terminologia de redes](https://resumos.leic.pt/rc/guides/terminology/)                | Liga nomes técnicos a objetos reconhecíveis e distingue dispositivos confundidos no dia a dia. |
+As páginas longas podem desenvolver tarefas diferentes. As curtas podem omitir o exemplo necessário. Alguns originais escondem a primeira aplicação em expansíveis, dependem de slides externos ou terminam com avisos de incompletude. Mantém a explicação essencial visível e autónoma.
 
-As instruções e recomendações de ferramentas destes guias são históricas. Para novos guias, confirma os comandos e requisitos atuais na documentação oficial.
+Há erros localizados que exigem refazer os exemplos. Em dispersão, `k % M` pode colidir mesmo com menos de `M` chaves: 1 e 6 dão o mesmo resto por 5. Em normalização, as dependências do exemplo de 2FN tornam `id` uma chave; acrescentar `modelo` não produz uma chave candidata mínima. Inspira-te na progressão e verifica as contas nas fontes FEUP.
 
-## O que adaptar
+As nossas lições também têm elementos a conservar. Programação linear acompanha a oficina até ao dual; estudo de funções desenvolve um exemplo completo; avaliação de usabilidade interpreta dados de uma tarefa. Uma referência de estilo não obriga a substituir uma explicação melhor.
 
-### Calibrar com capítulos concretos
+## Guias práticos
 
-Antes de rever uma cadeira, lê um capítulo conceptual e um exemplo desenvolvido do mesmo domínio no clone local, quando disponível em `data/unrelated/resumos-leic-ist/content/`. Se faltar, usa as ligações ao commit acima. O clone consultado em 3 de outubro de 2026 corresponde ao mesmo commit `e8955899be9a7b449962aa1d86100bce4a091407`.
+Os guias seguintes ajudam a calibrar instruções, sem confirmar que as ferramentas históricas continuam atuais:
 
-- **BD, `bd/0007-normalization.md`, "Motivação: anomalias".** A tabela de contas permite apontar para a informação repetida e mostrar o efeito de inserir, atualizar ou remover uma linha. Adapta esta passagem do caso concreto para o conceito, em vez de começar pelas formas normais.
-- **IAED, `iaed/0017-hash-tables.md`, "Como Resolver Colisões?".** A pergunta nasce de uma dificuldade real: duas chaves pedem a mesma posição. O texto segue as operações sobre a figura e explica o que muda numa remoção. Usa perguntas que façam avançar a explicação e figuras com estados que o leitor consiga seguir.
-- **CDI II, `cdi-ii/0004-diferenciabilidade.md`, abertura e "o pequeno de h".** Recorda a definição em uma dimensão, identifica o obstáculo à sua generalização e transforma a expressão passo a passo. Apresenta exemplos e um caso que falha antes de continuar. É esta ponte entre conhecimento anterior e conceito novo que interessa reproduzir.
-- **EMD, `emd/0002-principio-pombal.md`, exemplo das somas consecutivas.** Antes de usar restos iguais, explica por que a diferença é divisível; depois mostra por que subtrair somas deixa um bloco consecutivo. Explica a razão da construção escolhida, além da conta final.
+- [Básicos de R](https://resumos.leic.pt/pe/guides/r-basics/): código, resultado e alteração dos dados.
+- [Correr CGI localmente](https://resumos.leic.pt/bd/guides/running-cgi-files-locally/): pasta, comando, resultado e processo que deve continuar aberto.
+- [Aplicação bancária](https://resumos.leic.pt/po/guide/bank/): ordem das dependências e verificações intermédias.
+- [FAQ de LP](https://resumos.leic.pt/lp/projeto/faq/): dúvidas concretas de execução de um projeto.
 
-Observa sobretudo como o texto responde à dúvida seguinte do aluno. Mantém a conversa natural, o exemplo ao longo de vários passos e as ligações entre ideias. Parágrafos curtos não são frases soltas: o leitor deve perceber por que uma frase leva à próxima.
-
-Esta amostra também mostra por que precisamos de verificar a matéria. Em IAED, `k % M` pode ter colisões mesmo com menos de `M` chaves: para `M=5`, 1 e 6 dão o mesmo índice. Em BD, para aplicar `CG → H` é preciso ter **C e G** no fecho, não apenas G. Inspira-te no modo de explicar e refaz as afirmações e contas com as fontes da FEUP.
-
-As páginas de entrada incluem frequentemente objetivos curriculares formais. O tom procurado vem sobretudo dos capítulos e guias que desenvolvem uma explicação. As páginas sem conteúdo não permitem inferir uma voz própria da cadeira.
-
-A recorrência de definições, exemplos trabalhados, reformulações e ligações a pré-requisitos fundamenta a skill. O uso consistente de "tu", a redução de apartes e a escolha de frases mais curtas são decisões editoriais para este projeto, não características uniformes do original.
-
-O site também contém frases longas, traduções irregulares, simplificações técnicas e afirmações dependentes do ano ou do docente. Aproveita a forma de conduzir o raciocínio, verificando cada afirmação no material da cadeira. A fluidez de uma explicação não prova que esteja correta.
-
-As [referências de containers](https://docs.leic.pt/markdown-reference/containers/) e [cores](https://docs.leic.pt/markdown-reference/text-color/) explicam como o original distingue definições, exemplos, avisos e aprofundamentos. Conserva essa função editorial usando os formatos suportados aqui. A sintaxe Gatsby, os caminhos, os comandos de build e as macros matemáticas do site de origem não são convenções deste repositório.
+Confirma comandos e APIs atuais na documentação oficial. A sintaxe Gatsby, macros, caminhos e comandos do LEIC não são convenções deste repositório. O CONTRIBUTING local é a fonte dos formatos suportados.

@@ -3,7 +3,7 @@
 ## Start here
 
 - Run project commands through `devenv shell`. Read [docs/desenvolvimento.md](docs/desenvolvimento.md) for checks and publishing. `.node-version` pins Node for both Cloudflare Pages projects. Pushes to `main` deploy the website and separate runners; verify both when changing their protocol. Published code must match the built source.
-- For course content, read [CONTRIBUTING.md](CONTRIBUTING.md) and [resumos-writing](.agents/skills/resumos-writing/SKILL.md). Teach the reasoning, not instructions to press Executar or lists of output. Use the student's Moodle materials as the baseline and verify their academic year.
+- For course content, every writing agent must read [CONTRIBUTING.md](CONTRIBUTING.md), [resumos-writing](.agents/skills/resumos-writing/SKILL.md) and its linked writing examples before editing. Follow its course-review and exercise-selection guides for whole-course work. Use the student's Moodle materials and teacher exercises as the baseline, verifying their academic year. Prefer fewer distinct, worked problems and topic headings; keep the reasoning visible.
 - For interface changes, read [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md). Preserve the colourful course grid and FEUP accent. Use existing theme tokens and SVG icon components.
 
 - **Lesson video catalog:** `src/pages/lesson-catalog.json.ts` exports published content IDs and public URLs for the separate `resumos-videos` project. Exclude introductions, revisions, exercises, drafts and the fictional course. Keep gameplay and speech runtimes in that project.
