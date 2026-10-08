@@ -7,13 +7,9 @@ practices:
   - am1/pratica-fundamentos
 ---
 
-Começamos o percurso de AM I com duas perguntas concretas. Que valores de $x$ podemos usar em $f(x)=\sqrt{x-2}/(x-3)$? E para que valor aponta $\sin x/x$ quando $x$ se aproxima de zero? A primeira fixa o domínio. A segunda pede um limite.
-
-Pensa na tabela de preços de um café: a cada número de cafés corresponde um único valor a pagar. Uma **função**, que é essa correspondência entre cada entrada e um único valor de saída, generaliza esta ideia.
-
-Nesta página vemos onde essa correspondência faz sentido, que é o chamado **domínio**, e para que valor apontam as saídas quando as entradas se aproximam de um ponto, que é o chamado **limite**. Isto permite decidir que entradas a tabela aceita e o que acontece ao preço perto de um ponto problemático da tabela.
-
 ## Domínio e composição
+
+Em $f(x)=\sqrt{x-2}/(x-3)$, a raiz exige $x\ge2$ e o denominador exige $x\ne3$. Podemos calcular $f(2)=0$ e $f(4)=\sqrt2$, mas não $f(1)$ nem $f(3)$ no conjunto dos reais. O domínio é $[2,3[\cup]3,+\infty[$.
 
 Uma função $f:D\to\mathbb R$ atribui a cada $x$ do domínio $D$ um único valor $f(x)$. A imagem é o conjunto dos valores realmente atingidos. Para encontrar o domínio de uma expressão real, impõe todas as condições ao mesmo tempo:
 
@@ -104,11 +100,15 @@ Logo o limite em $2$ é $4$, embora a expressão inicial não esteja definida em
 Com raízes, o conjugado elimina a subtração:
 
 $$
-\lim_{x\to0}\frac{\sqrt{1+x}-1}{x}
-=\lim_{x\to0}\frac{1}{\sqrt{1+x}+1}=\frac12.
+\begin{aligned}
+\frac{\sqrt{1+x}-1}{x}
+&=\frac{(\sqrt{1+x}-1)(\sqrt{1+x}+1)}{x(\sqrt{1+x}+1)}\\
+&=\frac{x}{x(\sqrt{1+x}+1)}
+=\frac1{\sqrt{1+x}+1}\qquad(x\ne0).
+\end{aligned}
 $$
 
-No infinito, divide pelo termo dominante. Por exemplo,
+O limite é $1/2$, porque a expressão final é contínua em zero. No infinito, divide pelo termo dominante. Por exemplo,
 
 $$
 \lim_{x\to+\infty}\frac{3x^2-x+1}{2x^2+4}=\frac32.

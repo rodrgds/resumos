@@ -27,7 +27,7 @@ $$
 
 $(\ln|u|)'=u'/u$ para $u\ne0$; $(\arctan u)'=u'/(1+u^2)$; $(\arcsin u)'=u'/\sqrt{1-u^2}$ para $|u|<1$. Para $u>0$, $(u^v)'=u^v(v'\ln u+vu'/u)$. [Regras](/cadeiras/am1/derivadas/#regras-básicas).
 
-Rolle exige continuidade em $[a,b]$, derivabilidade interior e $f(a)=f(b)$, para posição escalar em movimento retilíneo. Lagrange exige as duas primeiras condições e garante $f'(c)=[f(b)-f(a)]/(b-a)$. L'Hôpital exige $0/0$ ou $\infty/\infty$, derivabilidade perto do ponto, $g'\ne0$ e existência do limite de $f'/g'$. [Hipóteses](/cadeiras/am1/teoremas-valor-medio/#teorema-de-cauchy-e-regra-de-lhôpital).
+Rolle exige $a<b$, continuidade em $[a,b]$, derivabilidade interior e $f(a)=f(b)$; garante algum $c\in]a,b[$ com $f'(c)=0$. Lagrange exige as duas condições de regularidade e garante $f'(c)=[f(b)-f(a)]/(b-a)$. L'Hôpital exige $0/0$ ou $\infty/\infty$, derivabilidade perto do ponto, $g'\ne0$ e existência do limite de $f'/g'$. [Hipóteses](/cadeiras/am1/teoremas-valor-medio/#teorema-de-cauchy-e-regra-de-lhôpital).
 
 Extremos interiores deriváveis exigem $f'=0$, mas o recíproco falha. Classifica pelo sinal de $f'$ com continuidade no candidato. Inflexão exige mudança de concavidade num ponto do gráfico. Para extremos absolutos em $[a,b]$, compara candidatos e extremos. [Estudo](/cadeiras/am1/estudo-funcoes/#monotonia-e-extremos).
 
@@ -119,4 +119,4 @@ b_n=\frac1L\int_{-L}^Lf(x)\sin\frac{n\pi x}Ldx.
 \end{gathered}
 $$
 
-A série usa $a_0/2$, não $a_0$. Par anula senos; ímpar anula cossenos e constante. Com regularidade por partes, soma $[f(x^-)+f(x^+)]/2$, usando limites periódicos nos extremos. Meio intervalo exige escolher extensão. [Fourier](/cadeiras/am1/fourier/#um-período-diferente-de-dois-pi).
+A série usa $a_0/2$, não $a_0$. Par anula senos; ímpar anula cossenos e constante. Com regularidade por partes, soma $[f(x^-)+f(x^+)]/2$, usando limites periódicos nos extremos. Meio intervalo exige escolher extensão. [Fourier](/cadeiras/am1/fourier/#período-geral).
