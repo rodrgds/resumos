@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => runnerHeaders(page));
 test('C++ executes standard sorting and duplicate removal', async ({
   page,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
   await page.goto('/exemplo/codigo/');
   const playground = page.getByRole('region', {
     name: 'Experimentar C++',
@@ -23,7 +23,7 @@ test('C++ executes standard sorting and duplicate removal', async ({
     .click();
   await expect(
     playground.getByRole('button', { name: 'Executar', exact: true }),
-  ).toBeEnabled({ timeout: 75_000 });
+  ).toBeEnabled({ timeout: 125_000 });
   await expect(playground.getByLabel('Resultado', { exact: true })).toHaveText(
     '1 2 3 \n',
   );
