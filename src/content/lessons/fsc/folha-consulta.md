@@ -6,8 +6,6 @@ studyKind: revision
 order: 99
 ---
 
-No fim do percurso, esta página responde a onde rever fórmulas, condições e erros frequentes antes de resolver exercícios.
-
 Usa-a como índice de consulta: cada linha resume uma regra e aponta para a lição que a explica.
 
 ## Representação

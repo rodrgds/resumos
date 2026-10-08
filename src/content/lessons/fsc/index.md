@@ -3,7 +3,7 @@ title: Fundamentos de Sistemas Computacionais
 description: Representação digital, lógica, memórias, programação RISC-V e construção de um CPU.
 ---
 
-No fim de FSC consegues ler um conjunto de bits de várias maneiras, porque sabes que representações existem e que contrato cada uma exige. Também consegues escrever um programa RISC-V e explicar como o CPU o executa, ciclo a ciclo. O percurso abaixo ordena esses passos: primeiro os números e o texto, depois os circuitos que calculam, por fim o computador que corre programas.
+O padrão `11111111` representa 255 sem sinal e -1 em complemento para dois com oito bits. FSC liga estas interpretações aos circuitos que calculam e ao CPU que executa programas. O percurso começa nas representações, passa pela lógica e pela memória e chega a RISC-V e à execução de instruções.
 
 ## Percurso de estudo
 
@@ -13,7 +13,7 @@ Nos circuitos, passa de [expressões booleanas](/cadeiras/fsc/algebra-boole-port
 
 A parte do computador cobre [organização e memória RISC-V](/cadeiras/fsc/legv8-registos-memoria/), [instruções e codificação](/cadeiras/fsc/legv8-instrucoes/), [programação](/cadeiras/fsc/programacao-riscv/), [procedimentos e pilha](/cadeiras/fsc/procedimentos-pilha/), [CPU uniciclo](/cadeiras/fsc/datapath-controlo/), [CPU multiciclo](/cadeiras/fsc/cpu-multiciclo/) e [desempenho](/cadeiras/fsc/desempenho/). A [cheat sheet](/cadeiras/fsc/folha-consulta/) reúne as fórmulas e condições para revisão.
 
-Cada capítulo termina com exercícios originais com pistas, resolução e erros frequentes. Nos capítulos de CPU, segue os registos internos por estado; nos de programação, segue registos e memória por iteração antes de preveres a saída. Faz primeiro a tentativa, consulta uma pista quando faltar um passo e compara depois o raciocínio com a resolução. Nos programas, altera os dados e prevê a saída antes de executar.
+Os exercícios pedem cálculos, projetos e diagnósticos, com resolução justificada e pistas quando ajudam a escolher um passo. Nos capítulos de CPU, segue os registos internos por estado; nos de programação, segue registos e memória por iteração. Faz primeiro a tentativa e compara depois o raciocínio com a resolução. Nos programas, altera os dados e prevê a saída antes de executar.
 
 :::details[Avaliação e âmbito da edição]
 

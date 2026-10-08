@@ -7,8 +7,6 @@ practices:
   - fsc/praticar-maquinas-estados
 ---
 
-Depois de guardar bits em elementos de memória no instante certo, esta página responde a como organizar decisões que dependem do que já aconteceu.
-
 Uma máquina de estados finita, FSM, guarda apenas a parte do passado necessária para decidir o comportamento seguinte. Para reconhecer se um número binário é múltiplo de 3, não precisamos de guardar todos os bits recebidos: chega guardar o resto da divisão por 3.
 
 ## Moore e Mealy
@@ -64,7 +62,25 @@ $$z=\overline q_1\overline q_0.$$
 
 Cada termo de D vem de uma linha cuja próxima saída do flip-flop é 1. As equações dão `00` para o estado inválido, como escolhido. O circuito tem lógica combinatória para D e dois flip-flops que atualizam juntos.
 
-Em one-hot, com bits $h_0,h_1,h_2$ para R0,R1,R2 e invariante de exatamente um bit a 1, as transições $r^+=(2r+b)\bmod3$ dão $h_0^+=h_0\overline b+h_1b$, $h_1^+=h_0b+h_2\overline b$, $h_2^+=h_1\overline b+h_2b$. Cada equação é OR de dois AND de duas entradas. Estas equações valem sob o invariante; sem lógica adicional, `000` ficaria em `000`. O reset assíncrono estabelece $h_0=1,h_1=h_2=0$. Para recuperar de um estado inválido, define $val=(h_0\overline h_1\overline h_2+\overline h_0h_1\overline h_2+\overline h_0\overline h_1h_2)$ e $inv=\overline{val}$. Usa $h_0^+=normal_0+inv$, $h_1^+=normal_1\cdot\overline{inv}$, $h_2^+=normal_2\cdot\overline{inv}$, de modo que qualquer código inválido regressa a R0 no flanco seguinte. Sem esta lógica adicional, `000` ficaria em `000`; o projeto base apoia-se no reset e no invariante.
+Em one-hot usamos um bit por estado: $h_0,h_1,h_2$ representam R0,R1,R2, com exatamente um bit a 1. A escrita `h0 h1 h2` dá R0=`100`, R1=`010`, R2=`001`. Para obter o próximo bit de cada estado, reúne as setas que chegam a esse estado:
+
+$$normal_0=h_0\overline b+h_1b,$$
+$$normal_1=h_0b+h_2\overline b,$$
+$$normal_2=h_1\overline b+h_2b.$$
+
+Por exemplo, R0 recebe uma seta de R0 com b=0 e outra de R1 com b=1. São os dois produtos de $normal_0$. Cada equação é uma OR de duas AND de duas entradas.
+
+Estas equações só garantem a máquina pretendida nos códigos válidos. `000` ficaria em `000`, porque todos os produtos valem 0. O reset estabelece `100`. Se exigirmos recuperação de qualquer código inválido, precisamos também de verificar o invariante:
+
+$$val=h_0\overline h_1\overline h_2+\overline h_0h_1\overline h_2+\overline h_0\overline h_1h_2.$$
+
+Com $inv=\overline{val}$, escolhemos
+
+$$h_0^+=normal_0+inv,$$
+$$h_1^+=normal_1\,val,$$
+$$h_2^+=normal_2\,val.$$
+
+Se val=1, conservamos as transições normais. Se val=0, os próximos bits são `100`, mesmo num código com vários bits a 1. O custo desta recuperação é adicional ao das três equações base; one-hot não elimina estados inválidos.
 
 ## Reconhecer padrões e produzir um impulso
 
@@ -115,16 +131,6 @@ Duas máquinas podem coordenar-se por handshake de quatro fases, com dados, `val
 | 4     | D estável      | 0     | 1   | emissor fecha pedido        |
 | 5     | livre          | 0     | 0   | recetor fecha confirmação   |
 
-O emissor só muda D depois de ver `ack=1` e só baixa `valid` depois disso; o recetor só baixa `ack` depois de ver `valid=0`. Mudar D logo após pôr `valid=1` corrompe a transferência.
-
-import Handshake from '../../../components/Typst.astro';
-import handshake from '../../fsc/handshake-cronograma.typ?raw';
-
-<Handshake
-  source={handshake}
-  format="svg"
-  alt="Handshake de quatro fases: dados estáveis enquanto valid sobe, ack sobe, valid desce e ack desce."
-/>
-Um impulso de um ciclo pode ser perdido se o recetor não o observar.
+Neste protocolo conservamos D até ao fim da confirmação. O emissor baixa `valid` depois de ver `ack=1`; o recetor baixa `ack` depois de ver `valid=0`. Só então se prepara a transferência seguinte. Mudar D logo após pôr `valid=1` pode fazer o recetor aceitar outra palavra. A confirmação também permite esperar pelo recetor: um impulso de um ciclo sem confirmação pode ser perdido se ele não o observar.
 
 Entre relógios diferentes, entradas podem violar setup/hold e provocar metastabilidade. O modelo de FSM assume entradas amostradas válidas. A implementação exige sincronização apropriada; sincronizar bits independentes não garante uma palavra de dados coerente.

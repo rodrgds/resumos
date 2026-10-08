@@ -80,14 +80,14 @@ Não escrevas o imediato S como um único campo à esquerda de rs1.
 </Exercise>
 
 <Exercise
-  revision={1}
+  revision={2}
   id="fsc-rv32-branch-pc"
   title="Destino relativo ao branch"
   explanation="/cadeiras/fsc/legv8-instrucoes/#saltos"
-  answer={{"kind": "self", "checklist": ["Deslocamento -16 bytes.", "imm[4:1]=1000, relativo ao PC do branch."]}}
+  answer={{"kind": "self", "checklist": ["Deslocamento -16 bytes e campos B 1,111111,1000,1.", "Código FE6288E3 para beq x5,x6.", "Destino relativo ao PC da instrução; se não tomado, PC=00400034."]}}
 >
 
-Um beq em 0x00400030 salta para 0x00400020. Qual o deslocamento em bytes e qual o valor do campo imm[4:1]?
+`beq x5,x6,alvo` está em 0x00400030 e alvo em 0x00400020. Determina o deslocamento em bytes, os quatro campos de imediato B e o código hexadecimal. Usa opcode=`1100011` e funct3=`000`. Indica o PC seguinte se a comparação for falsa.
 
   <div slot="hint">
 
@@ -103,7 +103,13 @@ O deslocamento é -16, representado em 13 bits com bit 0 implícito.
 
   <div slot="solution">
 
-d=-16. Em 13 bits, -16 é `1 1111 1111 0000`, pelo que imm[4:1]=1000. O destino não é calculado relativamente a PC+4. Também não se divide por 4: os campos representam um deslocamento em múltiplos de 2 bytes.
+O deslocamento é `0x00400020-0x00400030=-16` bytes. Em 13 bits, -16 é `1 1111 1111 0000`. Assim imm[12]=1, imm[10:5]=111111, imm[4:1]=1000 e imm[11]=1. Com rs2=x6 e rs1=x5, a palavra é:
+
+```text
+1 | 111111 | 00110 | 00101 | 000 | 1000 | 1 | 1100011
+```
+
+O código é `0xFE6288E3`. Se x5 e x6 diferirem, PC passa a `0x00400034`. Se forem iguais, vai para `0x00400020`. O deslocamento é relativo ao PC do branch; os campos omitem apenas o bit 0, não dois bits.
 
   </div>
 
@@ -167,12 +173,6 @@ O alvo usa o ra antigo e limpa o bit 0.
 
   </div>
 
-  <div slot="hint-more">
-
-A escrita de retorno não muda retroativamente a fonte lida.
-
-  </div>
-
   <div slot="solution">
 
 O alvo é 0x00400080, depois de limpar o bit 0 de 0x00400081. ra passa a 0x00400024, PC da instrução+4. O novo ra não é a base do salto. O alvo está alinhado a 4 neste exemplo.
@@ -218,42 +218,6 @@ O bit 0 é 0; os bits 10:1 acabam em 10.
   <div slot="mistakes">
 
 Não confundas a ordem dos campos J com a ordem natural dos bits do deslocamento, porque o formato espalha imm pela instrução. O retorno não é o destino do salto.
-
-  </div>
-
-</Exercise>
-
-<Exercise
-  revision={1}
-  id="fsc-branch-menos8"
-  title="Branch de −8"
-  explanation="/cadeiras/fsc/legv8-instrucoes/#codificar-passo-a-passo"
-  answer={{ "kind": "self", "checklist": ["Distribuíste os bits pelos campos B", "Respeitaste o bit implícito"] }}
->
-
-Codifica um branch de −8 e identifica os campos B.
-
-  <div slot="hint">
-
-Divide −8 por 2 na distribuição e conserva o sinal.
-
-  </div>
-
-  <div slot="hint-more">
-
-imm[12]=1,imm[11]=1,imm[10:5]=111111,imm[4:1]=1100, bit 0 implícito.
-
-  </div>
-
-  <div slot="solution">
-
-O deslocamento é em bytes e par.
-
-  </div>
-
-  <div slot="mistakes">
-
-Não coloques −8 num campo contínuo de 12 bits.
 
   </div>
 

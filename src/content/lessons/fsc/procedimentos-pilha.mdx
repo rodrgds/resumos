@@ -7,9 +7,7 @@ practices:
   - fsc/praticar-procedimentos-pilha
 ---
 
-Depois de traduzir condições e ciclos para assembly, esta página responde a como chamar rotinas e voltar sem perder dados.
-
-Uma **rotina**, ou seja, um bloco de instruções com nome que pode ser chamado e depois devolve o controlo a quem chamou, deve dizer quais os argumentos, qual o resultado e o que conserva. A convenção de chamadas permite combinar rotinas escritas separadamente: o chamador sabe que valores podem mudar e o chamado sabe quais tem de repor.
+Chamar uma rotina exige guardar um endereço de retorno e acordar onde seguem os argumentos e o resultado. A convenção de chamadas também distingue os registos que a rotina pode alterar dos que tem de repor. Assim, o chamador pode continuar a execução sem conhecer todas as instruções da rotina chamada.
 
 ## Chamar e voltar
 
@@ -75,11 +73,17 @@ Para contar carateres alfanuméricos, a rotina percorre a string com o apontador
   title="Contar alfanuméricos com auxiliar em ciclo"
 />
 
-O programa completo testa `"A7"` e imprime 2. Traçado: s0 aponta para `A`, chama a auxiliar com a0=65 e obtém 1, s1 passa a 1; s0 avança; a0=55 dá 1, s1 passa a 2; `0x00` termina e a0 recebe s1=2. s0 e s1 sobrevivem a cada `jal` porque `is_alnum`, como callee, não altera registos s: usa só a0 e t1. Em separado, `conta_alnum`, também como callee, guardou no seu frame e repõe no fim os valores de s0/s1 do `main`. a0 e t0 mudam livremente na auxiliar, por serem caller-saved.
+O programa completo testa `"A7"` e imprime 2:
+
+| Byte em s0 | a0 antes da auxiliar | a0 depois                | s1 depois | Passo seguinte             |
+| ---------- | -------------------- | ------------------------ | --------- | -------------------------- |
+| `A`        | 65                   | 1                        | 1         | Avançar s0 um byte         |
+| `7`        | 55                   | 1                        | 2         | Avançar s0 um byte         |
+| `00`       | Não há chamada       | 2, resultado da contagem | 2         | Restaurar o frame e voltar |
+
+s0 e s1 sobrevivem a cada `jal` porque `is_alnum` respeita os registos callee-saved; esta implementação usa apenas a0 e t1. Por sua vez, `conta_alnum` guardou no seu frame os valores de s0 e s1 recebidos de `main` e repõe-nos no fim. Preservar o estado do ciclo e preservar o estado do chamador são obrigações em níveis diferentes.
 
 ## Chamadas dentro de ciclos e recursão
-
-Numa rotina que percorre uma string e chama `is_alnum` para cada byte, o apontador e o contador têm de sobreviver à chamada. Podem ficar em s0 e s1, desde que a rotina preserve os valores antigos de ambos no seu frame. Guardar o apontador em t0 e assumir que a auxiliar não o altera viola o contrato caller-saved.
 
 Cada chamada recursiva necessita do seu próprio frame para os argumentos ou resultados parciais que ainda vai usar. Não guardes o estado de todas as chamadas numa única variável global. Define primeiro o caso base para que a recursão termine; depois verifica que cada caminho tem um epílogo correto.
 

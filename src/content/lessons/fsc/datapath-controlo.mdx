@@ -7,9 +7,7 @@ practices:
   - fsc/praticar-datapath-controlo
 ---
 
-Depois de escrever programas com rotinas e chamadas, esta página responde a como o hardware executa cada instrução num só ciclo.
-
-Uma instrução especifica o efeito; o **datapath**, ou seja, o conjunto de caminhos que os dados percorrem, oferece os trajetos para o executar; o **controlo**, ou seja, o circuito que escolhe esses trajetos, decide qual usar. Vamos construir um CPU didático de 32 bits para `add`, `sub`, `and`, `or`, `lw`, `sw` e `beq`. Este subconjunto não implementa todas as instruções usadas nos programas RARS.
+`lw x5,12(x8)` exige calcular um endereço, ler memória e escrever x5. `sw x5,12(x8)` calcula o mesmo endereço, mas escreve memória. O datapath contém os caminhos dos dados; o controlo escolhe as fontes e habilita a escrita adequada. O CPU didático de 32 bits desta lição suporta `add`, `sub`, `and`, `or`, `lw`, `sw` e `beq`, um subconjunto das instruções usadas nos programas RARS.
 
 ## Caminho dos dados
 
@@ -42,7 +40,9 @@ Uma soma separada calcula PC+4. Outra calcula PC+d para o branch. `PCSrc=Branch 
 | sw     | 0        | 1      | 0       | 1        | X        | 0      | 00    |
 | beq    | 0        | 0      | 0       | 0        | X        | 1      | 01    |
 
-Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2 e ALUSrc=1 escolhe o imediato. MemRead habilita a leitura de dados; Branch identifica beq. RegWrite e MemWrite habilitam alterações de estado. MemtoReg escolhe dados da memória se 1 e resultado da ALU se 0. X significa que o valor não influencia o efeito: em sw e beq não se escreve um registo, pelo que a seleção do writeback é irrelevante. Branch=1 marca beq; a decisão final é `PCSrc=Branch AND Zero`. Com Zero=0, o PC avança 4; com Zero=1, salta para PC+d. Não ponhas X numa habilitação de escrita que tem de estar a 0.
+Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2; ALUSrc=1 escolhe o imediato. MemRead habilita a leitura de dados. MemtoReg escolhe o dado da memória se 1 e o resultado da ALU se 0. RegWrite e MemWrite autorizam alterações de estado, por isso têm de estar a 0 quando a instrução não escreve nesse destino.
+
+X significa que a seleção não influencia o efeito. Em sw e beq, RegWrite=0 impede a escrita no banco, pelo que MemtoReg é irrelevante. Isto permite marcar o MUX com X, mas não a habilitação de escrita. Branch=1 identifica beq; `PCSrc=Branch AND Zero` decide se o salto é tomado.
 
 ALUOp=`00` pede soma; `01` pede subtração para a comparação; `10` usa f3 e f7 da instrução R. Neste modelo, ALUControl é `0000` para AND, `0001` para OR, `0010` para ADD e `0110` para SUB. ALUOp e ALUControl são sinais diferentes.
 
@@ -60,7 +60,7 @@ MemRead=1 lê 42. MemtoReg=1 coloca 42 na entrada de escrita; RegWrite=1 guarda-
 
 Num `sw x5,12(x8)`, a mesma soma calcula o endereço, mas o dado de escrita vem da segunda leitura do banco, x5. RegWrite=0 evita alterar registos; MemWrite=1 altera memória.
 
-Num `beq x5,x6,d`, a ALU subtrai x6 a x5. Zero=1 significa igualdade. Se x5=x6 e d=-8, o novo PC é o PC do branch menos 8; se diferirem, é PC+4. A ALU usada para comparar não está a calcular o destino: esse caminho usa o somador do PC.
+No branch, a ALU usada para comparar não calcula o destino: esse caminho usa o somador do PC. Os dois resultados precisam de estar disponíveis no mesmo ciclo.
 
 ## Falhas e extensões
 
