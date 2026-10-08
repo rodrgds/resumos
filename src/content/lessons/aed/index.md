@@ -14,7 +14,7 @@ editorial:
       url: https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/
 ---
 
-No fim desta cadeira vais justificar se um algoritmo calcula o resultado pedido, vais escolher a estrutura que oferece as operações necessárias e vais contar tempo e memória em função da entrada. Ou seja, vais decidir com provas e custos, porque o enunciado e os limites mandam na solução. Os exemplos usam C++17, por isso precisas de funções, classes, referências, apontadores e memória dinâmica de [Programação](/cadeiras/p/).
+Encontrar um máximo, retirar o pedido mais antigo e visitar as cidades alcançáveis exigem operações diferentes. AED estuda como provar esses algoritmos e escolher representações com custos adequados à dimensão da entrada. Os exemplos usam C++17, por isso precisas de funções, classes, referências, apontadores e memória dinâmica de [Programação](/cadeiras/p/).
 
 Se a sintaxe dos vetores ou das referências ainda te prende, começa pelos [fundamentos de C++ para AED](/cadeiras/aed/fundamentos-cpp/). Depois segue o percurso pela ordem, porque cada capítulo usa os contratos e as contagens dos anteriores. O programa atual é o de 2026/27. Os materiais posteriores de 2025/26 servem para ver profundidade e tipos de exercícios, e o exame-modelo de 2024/25 para tipos de raciocínio; nenhum deles confirma as regras de avaliação atuais.
 
@@ -51,7 +51,7 @@ Para obter frequência, não podes exceder 25% de faltas às aulas teórico-prá
 :::details[Fontes e âmbito]
 O programa de referência é a [ficha preenchida de AED da LEIC, ocorrência 586989, 2026/27](https://sigarra.up.pt/feup/pt/UCURR_GERAL.FICHA_UC_VIEW?pv_ocorrencia_id=586989). As ferramentas indicadas são GCC com C++17, VSCode e Mooshak.
 
-A base docente é a [página pública de Ana Paula Tomás e Pedro Ribeiro, 2026/27](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2627/). Em 2 de outubro de 2026 estavam disponíveis quatro apresentações, da introdução à pesquisa, e as duas primeiras aulas práticas. Para os tópicos posteriores, o percurso foi cruzado com as quinze apresentações e as fichas práticas públicas de [2025/26](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/), mantendo o âmbito confirmado no programa atual. O [exame-modelo público de 2024/25](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2425/exam_sample_questions.pdf) ajudou a identificar tipos de raciocínio; os exercícios destas páginas são originais.
+A base docente é a [página pública de Ana Paula Tomás e Pedro Ribeiro, 2026/27](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2627/). Em 2 de outubro de 2026 estavam disponíveis quatro apresentações, da introdução à pesquisa, e as duas primeiras aulas práticas. Para os tópicos posteriores, o percurso foi cruzado com as quinze apresentações e as fichas práticas públicas de [2025/26](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/), mantendo o âmbito confirmado no programa atual. O [exame-modelo público de 2024/25](https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2425/exam_sample_questions.pdf) ajudou a identificar tipos de raciocínio; as questões destas páginas usam exemplos próprios, exceto as adaptações docentes identificadas nos seus metadados.
 
 O Moodle de 2025/26 e alguns exames ou soluções protegidos não estiveram acessíveis e não são apresentados como materiais revistos. Os [Resumos AED de SofiaViP](https://drive.google.com/file/d/1oFfndRpq_F8MQeffoU4_rRBn-04pZiCY/view) são um suplemento histórico de estudante, sem uma edição atual identificada.
 

@@ -8,9 +8,8 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import Estados from '../../aed/Estados.astro';
 import Dot from '../../../components/Dot.astro';
-
-Depois de organizares valores em árvores e heaps, esta página responde como percorrer uma rede de ligações para visitar todos os pontos e medir distâncias.
 
 Imagina um mapa de cidades ligadas por estradas: cada cidade é um **vértice** e cada estrada é uma **aresta**, ou seja, uma ligação entre dois vértices. O conjunto das cidades e das estradas é um **grafo**, que se escreve $G=(V,E)$, com $V$ o conjunto de vértices e $E$ o das arestas. Em grafos dirigidos, `u->v` não implica `v->u`; em grafos não dirigidos, uma aresta liga os dois sentidos. Um grafo simples não tem laços nem arestas paralelas. Indica quais destas condições assumes antes de contares graus ou detetares ciclos.
 
@@ -30,7 +29,7 @@ Nos custos seguintes, usamos `V` e `E` também para as quantidades $|V|$ e $|E|$
 
 Numa matriz de adjacência, guarda uma posição para cada par de vértices. Memória $\Theta(V^2)$; testar ou alterar uma aresta custa $O(1)$, mas enumerar os vizinhos de um vértice custa $\Theta(V)$. Uma matriz booleana não representa diretamente multiplicidades.
 
-Numa lista de adjacência, cada vértice guarda os vizinhos existentes. No grafo do exemplo, com arestas `0-1,0-2,1-3,2-3,3-4`, as listas são `0:[1,2]`, `1:[0,3]`, `2:[0,3]`, `3:[1,2,4]`, `4:[3]` e `5:[]`; a matriz tem 1 nessas posições e 0 nas restantes. O mesmo grafo ocupa $\Theta(V+E)$ em listas e $\Theta(V^2)$ em matriz. Memória $\Theta(V+E)$; um grafo não dirigido guarda cada aresta nas duas listas. Enumerar vizinhos custa $\Theta(\deg(u))$; testar ou remover uma aresta numa lista simples pode exigir um percurso desses vizinhos. Num grafo dirigido, as listas de saída não dão imediatamente todas as arestas de entrada.
+Numa lista de adjacência, cada vértice guarda os vizinhos existentes. No grafo do exemplo, com arestas `0-1,0-2,1-3,2-3,3-4`, as listas são `0:[1,2]`, `1:[0,3]`, `2:[0,3]`, `3:[1,2,4]`, `4:[3]` e `5:[]`; a matriz tem 1 nessas posições e 0 nas restantes. A memória das listas é $\Theta(V+E)$; um grafo não dirigido guarda cada aresta nas duas listas. Enumerar vizinhos custa $\Theta(\deg(u))$; testar ou remover uma aresta numa lista simples pode exigir um percurso desses vizinhos. Num grafo dirigido, as listas de saída não dão imediatamente todas as arestas de entrada.
 
 Um percurso que visita todos os vértices e todas as listas custa $\Theta(V+E)$. Com matriz, custa $\Theta(V^2)$. Estas expressões incluem vértices isolados: dizer apenas $O(E)$ não cobre um grafo sem arestas.
 
@@ -53,7 +52,33 @@ A pesquisa em largura, BFS, usa uma fila. A origem tem distância zero; ao desco
   alt="Grafo não dirigido: 0 liga a 1 e 2; ambos ligam a 3; 3 liga a 4; 5 está isolado."
 />
 
-Partindo de 0 e examinando vizinhos pela ordem das listas, a BFS descobre `0,1,2,3,4`; 5 fica inacessível. A fila evolui como `[0]`, `[1,2]`, `[2,3]`, `[3]`, `[4]` e `[]`, com distâncias `0,1,1,2,3` e pai de 3 igual a 1. Marca na inserção: sem isso, 3 entraria duas vezes por 1 e 2. As camadas são `{0}`, `{1,2}` e `{3}`, depois `{4}`. O pai de 3 é 1 porque 1 é processado antes de 2; existe também um caminho mínimo por 2.
+Partindo de 0, a BFS descobre `0,1,2,3,4`; 5 fica inacessível. As camadas são `{0}`, `{1,2}`, `{3}` e `{4}`. O pai de 3 é 1 porque 1 é processado antes de 2; existe também um caminho mínimo por 2.
+
+<Estados
+  caption="A frente da fila está à esquerda. As distâncias são fixadas na inserção, antes de retirar o vértice da fila."
+  steps={[
+    {
+      label: 'Processar 0',
+      values: ['fila: 1, 2', 'dist[1] = 1', 'dist[2] = 1'],
+      note: 'Ambos são descobertos a partir da origem.',
+    },
+    {
+      label: 'Processar 1',
+      values: ['fila: 2, 3', 'dist[3] = 2', 'pai[3] = 1'],
+      note: '1 descobre 3.',
+    },
+    {
+      label: 'Processar 2',
+      values: ['fila: 3'],
+      note: '3 já tem distância: não volta a entrar na fila.',
+    },
+    {
+      label: 'Processar 3 e depois 4',
+      values: ['fila: vazia', 'dist[4] = 3', 'dist[5] = -1'],
+      note: '5 é isolado. -1 indica ausência de caminho, não uma distância.',
+    },
+  ]}
+/>
 
 <CodePlayground
   language="cpp"
@@ -77,7 +102,7 @@ O argumento exige arestas com o mesmo custo. Com `A->B` de peso 10, `A->C` de pe
 
 Tempo $O(V+E)$ com listas; vetores de distância, pais e visitados ocupam $O(V)$, e a fila também pode atingir $O(V)$. DFS recursiva pode ter profundidade $O(V)$, mesmo num grafo esparso.
 
-### Bipartição e grelhas (fichas 09 e 10)
+## Bipartição e grelhas
 
 Para bipartição, colore a origem com 0 e cada vizinho com a cor oposta durante a BFS; um conflito de cores prova um ciclo ímpar. Numa grelha, a fila guarda pares `(linha,coluna)` e verifica fronteiras e obstáculos antes de inserir. Começar com várias origens a distância zero dá a distância à origem mais próxima, como na nuvem de cinza do exercício AED070 (2025/26).
 

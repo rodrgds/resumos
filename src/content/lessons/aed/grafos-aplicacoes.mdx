@@ -7,11 +7,13 @@ practices:
   - aed/praticar-grafos-aplicacoes
 ---
 
+import Estados from '../../aed/Estados.astro';
+
+import Dot from '../../../components/Dot.astro';
+
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Depois de percorreres um grafo com DFS e BFS, esta página responde como detetar ciclos, ordenar dependências e localizar os pontos críticos da rede.
-
-Uma pesquisa DFS, ou seja, a exploração que parte de um vértice e segue cada vizinho em profundidade, regista mais do que um conjunto de visitados: o estado de cada chamada, ou seja, se está ainda ativa ou já terminou, a ordem de descoberta, ou seja, quando cada vértice aparece pela primeira vez, e as ligações entre subárvores. Com esse registo consegues detetar ciclos, ordenar dependências e identificar pontos críticos.
+Uma DFS regista a descoberta e o fim de cada chamada. Uma aresta para uma chamada ainda ativa fecha um ciclo dirigido; uma aresta para uma chamada terminada pode apenas ligar dois ramos. Para distinguir os casos, guardamos mais informação do que um conjunto de visitados.
 
 ## Ciclos dirigidos e não dirigidos
 
@@ -25,7 +27,7 @@ Num grafo não dirigido, a aresta de regresso ao pai existe na lista e não é, 
 
 Uma ordem topológica é uma sequência de todos os vértices tal que, para cada aresta `u->v`, `u` aparece antes de `v`. Existe exatamente quando o grafo dirigido é acíclico, um DAG.
 
-Na DFS de um DAG, uma aresta `u->v` não pode apontar para cinzento. Classifica cada aresta na DFS dirigida: árvore para branco, trás para cinzento, avanço para preto descendente e cruzamento para preto de outro ramo. Só a aresta para cinzento prova ciclo. Se aponta para branco, a chamada de `v` termina antes de `u`; se aponta para preto, `v` já terminou. Logo ordenar por tempos de saída decrescentes coloca `u` antes de `v`. Deteta ciclos antes de apresentares a sequência como uma ordem válida.
+Na DFS de um DAG, uma aresta `u->v` não pode apontar para cinzento. As arestas para branco são de árvore; as que chegam a cinzento são de trás. Para preto, distingue avanço, se o destino é descendente, de cruzamento, se não é. A cor preta sozinha não separa estes dois casos. Se aponta para branco, a chamada de `v` termina antes de `u`; se aponta para preto, `v` já terminou. Logo ordenar por tempos de saída decrescentes coloca `u` antes de `v`. Deteta ciclos antes de apresentares a sequência como uma ordem válida.
 
 O algoritmo de **Kahn** guarda os graus de entrada e uma fila dos vértices de grau zero. Retira um deles, acrescenta-o à ordem e reduz o grau de entrada dos seus destinos, colocando os que chegam a zero na fila. O invariante diz que o grau restante conta arestas vindas de vértices ainda não retirados. Um vértice de grau zero não tem predecessor restante e pode ser escolhido com segurança.
 
@@ -38,6 +40,15 @@ Ambas as abordagens custam $O(V+E)$ e espaço auxiliar $O(V)$. Para escolheres s
 Em grafos não dirigidos, uma componente conexa é um conjunto máximo de vértices ligados por caminhos. Num grafo dirigido, uma **componente fortemente conexa**, SCC, é um conjunto máximo em que cada par é alcançável nos dois sentidos. A componente fraca ignora os sentidos das arestas e pode juntar várias SCC.
 
 Contrair cada SCC a um vértice produz um DAG: desenha cada SCC como um nó e conserva uma aresta entre SCC distintas; um ciclo entre componentes permitiria alcançar todas nos dois sentidos e obrigaria a juntá-las numa só. Vértices isolados são componentes individuais.
+
+<Dot
+  source={
+    'digraph G { rankdir=LR; node [shape=box]; a[label="SCC: 0, 1"]; b[label="SCC: 2, 3"]; c[label="SCC: 4"]; a->b[label="1 para 2"]; b->c[label="3 para 4"]; }'
+  }
+  alt="Contração do grafo do exemplo: a componente de 0 e 1 aponta para a de 2 e 3, que aponta para a de 4. Não há arestas de regresso entre componentes."
+/>
+
+No exemplo do programa abaixo, `0` e `1` alcançam-se mutuamente, tal como `2` e `3`. A aresta `1->2` liga componentes, mas não há caminho de regresso. É essa diferença que o desenho conserva depois da contração.
 
 ## Tarjan e a pilha de componentes
 
@@ -60,6 +71,27 @@ Considera as arestas `0->1`, `1->0`, `0->2` e `2->1`. Começa a DFS em 0 e visit
 1. Descobrimos 0 e 1, com `disc[0]=0` e `disc[1]=1`. A aresta `1->0` faz `low[1]=0`. A chamada de 1 termina, mas 1 fica na pilha de componentes porque `low[1]!=disc[1]`. Neste momento, 1 é preto, não cinzento.
 2. Descobrimos 2, com `disc[2]=low[2]=2`. Ao examinar `2->1`, sabemos que 1 ainda está na pilha de componentes. Fazemos `low[2]=min(2,disc[1])=1`. Por isso, 2 também fica na pilha quando a sua chamada termina.
 3. No fim da chamada de 0, `low[0]=disc[0]=0`. Retiramos 2, 1 e 0, obtendo uma única SCC, `{0,1,2}`.
+
+<Estados
+  caption="As pilhas estão escritas do fundo para o topo. A pilha de componentes conserva vértices cuja chamada já terminou."
+  steps={[
+    {
+      label: 'Termina a chamada de 1',
+      values: ['chamadas: 0', 'componentes: 0, 1'],
+      note: '1 alcança 0 e espera que a componente seja fechada.',
+    },
+    {
+      label: 'Descobre 2 e examina 2 para 1',
+      values: ['chamadas: 0, 2', 'componentes: 0, 1, 2'],
+      note: '1 já não está nas chamadas, mas continua nas componentes: low[2] passa a 1.',
+    },
+    {
+      label: 'Termina a chamada de 0',
+      values: ['chamadas: vazia', 'componentes: vazia'],
+      note: '0 fecha a SCC e retira 2, 1 e 0 da pilha de componentes.',
+    },
+  ]}
+/>
 
 Se verificasses apenas «cinzento» no segundo passo, ignorarias `2->1` e retirarias 2 como uma componente isolada. Isso seria errado: 0 chega a 2 diretamente e 2 regressa a 0 por `2->1->0`. A pilha de componentes conserva precisamente a ligação que a pilha de chamadas já não mostra.
 
@@ -89,6 +121,6 @@ Para um filho DFS `v` de `u`:
 
 A desigualdade das pontes é estrita. Com `low[v]==disc[u]`, existe uma ligação de retorno a `u` e a aresta não é ponte; retirar o próprio `u` ainda pode separar o ramo, justificando a igualdade para articulação.
 
-No triângulo `0-1-2-0`, acrescenta `1-3` e `3-4`, e um vértice isolado 5. Com DFS a partir de 0 por ordem crescente e contador incrementado a cada descoberta, `disc=[0,1,2,3,4,5]` e `low=[0,0,0,3,4,5]`; os retornos do triângulo baixam `low[2]` e `low[1]` para 0. Assim `low[4]=4>disc[3]=3` marca a ponte `3-4` e `low[3]=3>disc[1]=1` marca a ponte `1-3`; as desigualdades alargadas `low[4]>=disc[3]` e `low[3]>=disc[1]` marcam 3 e 1 como articulações. A raiz 0 tem um só filho DFS e não é articulação. As arestas do triângulo não são pontes. `1-3` e `3-4` são pontes; 1 e 3 são articulações. Se a DFS começa em 0, a raiz tem só um filho DFS, embora tenha dois vizinhos, e não é articulação. Uma aresta paralela entre 3 e 4 faria essa ligação deixar de ser ponte.
+No triângulo `0-1-2-0`, acrescenta `1-3` e `3-4`, e um vértice isolado 5. Com DFS a partir de 0 por ordem crescente e contador incrementado a cada descoberta, `disc=[0,1,2,3,4,5]` e `low=[0,0,0,3,4,5]`; os retornos do triângulo baixam `low[2]` e `low[1]` para 0. Assim `low[4]=4>disc[3]=3` marca a ponte `3-4` e `low[3]=3>disc[1]=1` marca a ponte `1-3`; as desigualdades alargadas `low[4]>=disc[3]` e `low[3]>=disc[1]` marcam 3 e 1 como articulações. A raiz 0 tem um só filho DFS e não é articulação. As arestas do triângulo têm caminhos alternativos e não são pontes. Uma aresta paralela entre 3 e 4 faria essa ligação deixar de ser ponte.
 
 Mantém identificadores de arestas para suportares paralelas e recomeça DFS em cada vértice ainda não descoberto. Tempo $O(V+E)$, espaço auxiliar $O(V)$. Para verificares uma implementação em grafos pequenos, remove cada aresta ou vértice, conta componentes de novo e compara com as condições `low`; essa referência lenta testa a definição diretamente.

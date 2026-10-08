@@ -8,14 +8,15 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import Estados from '../../aed/Estados.astro';
 
-Depois de saberes [pesquisar valores num vetor](/cadeiras/aed/pesquisa-ordenacao/), esta página responde como pôr esses valores por ordem para acelerar as pesquisas seguintes.
+Ordenar `[6,2,5,1]` produz `[1,2,5,6]`: a saída respeita a comparação crescente e conserva os mesmos elementos. Se só procuras o máximo, basta um percurso. Se vais fazer muitas pesquisas binárias, o custo de ordenar pode compensar.
 
-Ordenar transforma uma sequência numa sequência que respeita um comparador, ou seja, a regra que decide qual de dois elementos vem primeiro, e contém exatamente os mesmos elementos. Se só procuras um mínimo, não precisas de ordenar. Se vais fazer muitas pesquisas, juntar conjuntos ou agrupar chaves, a ordem pode compensar o custo inicial.
+A regra que decide qual de dois elementos vem primeiro chama-se **comparador**. Para registos com a mesma chave, importa também saber se a ordenação conserva a sua ordem inicial.
 
 ## Ordenações elementares
 
-Uma ordenação é **estável** quando conserva a ordem relativa de elementos com chaves equivalentes. Esta definição é necessária já aqui: a seleção troca elementos distantes e perde empates, enquanto a inserção e a bubble, feitas com deslocações e trocas só de elementos estritamente fora de ordem, os conservam. A secção própria mais abaixo retoma a definição com comparadores.
+Uma ordenação é **estável** quando conserva a ordem relativa de elementos com chaves equivalentes. A seleção pode trocar elementos distantes e inverter empates. A inserção e a bubble conservam-nos quando deslocam ou trocam apenas elementos estritamente fora de ordem.
 
 Na **seleção**, antes de tratares a posição `i`, o prefixo `[0,i)` contém os `i` menores elementos nas posições finais. Procura o mínimo no sufixo e troca-o com `v[i]`. Faz $n(n-1)/2$ comparações em qualquer entrada, ou seja, $\Theta(n^2)$, mas apenas $O(n)$ trocas. Não é estável: em `[2A,2B,1]`, a primeira troca produz `[1,2B,2A]`.
 
@@ -28,6 +29,27 @@ Na **bubble sort**, compara vizinhos e troca quando estão invertidos. Uma passa
 Divide `[l,r)` em `[l,m)` e `[m,r)`, ordena cada metade e intercala-as. Durante a intercalação, o prefixo auxiliar já escrito contém os menores elementos da entrada da junção, por ordem; `i` e `j` apontam para o primeiro elemento não consumido de cada metade. O menor dos dois candidatos é o menor de todos os elementos restantes, porque cada metade está ordenada. Escrevê-lo preserva o invariante. Quando uma metade acaba, copia a outra.
 
 Traça `[6,2,5,1]`: as metades ordenam para `[2,6]` e `[1,5]`. O merge escolhe 1, depois 2, depois 5 e copia 6. Faz três comparações nesta junção; as duas junções inferiores fizeram uma cada, dando cinco no total.
+
+<Estados
+  caption="Na junção só comparamos as frentes ainda disponíveis. Copiar o último 6 não exige outra comparação de chaves."
+  steps={[
+    {
+      label: 'Metades ordenadas',
+      values: ['2, 6', '1, 5'],
+      note: '1 é menor que 2, por isso sai da metade direita.',
+    },
+    {
+      label: 'Depois de escrever 1',
+      values: ['2, 6', '5', 'saída: 1'],
+      note: '2 é menor que 5, depois 5 é menor que 6.',
+    },
+    {
+      label: 'Junção concluída',
+      values: ['1', '2', '5', '6'],
+      note: 'Três comparações nesta junção; cinco no mergesort completo de quatro valores.',
+    },
+  ]}
+/>
 
 <CodePlayground
   language="cpp"
@@ -55,7 +77,7 @@ O esquema de Hoare aproxima dois índices e troca pares fora da região pretendi
 
 ## Estabilidade e comparação válida
 
-Uma ordenação é **estável** se preserva a ordem relativa dos elementos cuja chave é equivalente. Ao ordenares registos primeiro pelo nome e depois pela nota com uma ordenação estável, os empates de nota continuam por nome. Podes obter a mesma ordem final com um comparador que inclua ambos os critérios.
+Ao ordenares registos primeiro pelo nome e depois pela nota com uma ordenação estável, os empates de nota continuam por nome. Podes obter a mesma ordem final com um comparador que inclua ambos os critérios.
 
 O comparador de C++ deve definir uma **ordem fraca estrita**: `comp(x,x)` é falso; a relação é transitiva; a equivalência definida por nem `comp(a,b)` nem `comp(b,a)` também é transitiva. `<=` não serve. Subtrair duas chaves para decidir a ordem pode causar overflow, por isso compara-as diretamente. Não uses uma tolerância de ponto flutuante que torne a equivalência não transitiva.
 
@@ -67,9 +89,9 @@ O comparador de C++ deve definir uma **ordem fraca estrita**: `comp(x,x)` é fal
 Para `n` chaves distintas, uma ordenação por comparações tem de distinguir `n!` permutações. A árvore de decisões binária precisa de pelo menos `n!` folhas, logo altura pelo menos $\lceil\log_2(n!)\rceil=\Omega(n\log n)$. É um limite de pior caso no modelo de comparação, não um limite para qualquer algoritmo com informação sobre as chaves.
 :::
 
-**Counting sort** usa chaves inteiras em `[0,k)`. Conta frequências, calcula prefixos das contagens e coloca cada elemento na sua posição. Para preservares empates, percorre a entrada da direita para a esquerda e reduz a posição final disponível da respetiva chave. Para `[(2,A),(1,B),(2,C),(0,D)]`, a saída é `[(0,D),(1,B),(2,A),(2,C)]`. Traço com `k=3`: frequências `[1,1,2]` e posições iniciais por chave `[0,1,2]`. Percorre da direita para a esquerda: `(0,D)` ocupa 0; `(2,C)` ocupa 3; `(1,B)` ocupa 1; `(2,A)` ocupa 2. Escrever da direita preserva `A` antes de `C`. Reconstruir só frequências ordena números, mas perde os outros campos dos registos.
+**Counting sort** usa chaves inteiras em `[0,k)`. Conta frequências, calcula prefixos das contagens e coloca cada elemento na sua posição. Para preservares empates, percorre a entrada da direita para a esquerda e reduz a posição final disponível da respetiva chave. Para `[(2,A),(1,B),(2,C),(0,D)]`, a saída é `[(0,D),(1,B),(2,A),(2,C)]`. Com `k=3`, as frequências são `[1,1,2]`. As somas acumuladas `[1,2,4]` indicam as fronteiras depois de cada grupo de chaves. Subtrair um à fronteira dá a última posição livre dessa chave. Depois de escrever um registo, reduz a fronteira. Percorre da direita para a esquerda: `(0,D)` ocupa 0; `(2,C)` ocupa 3; `(1,B)` ocupa 1; `(2,A)` ocupa 2. Escrever da direita preserva `A` antes de `C`. Reconstruir só frequências ordena números, mas perde os outros campos dos registos.
 
-O tempo é $\Theta(n+k)$ e o espaço auxiliar da versão estável é $\Theta(n+k)$. Um intervalo enorme de chaves pode tornar esta escolha pior que comparar. **Radix sort** por dígitos do menos significativo para o mais significativo exige uma ordenação estável em cada passagem; cada passagem tem de ser estável para não desfazer a anterior.
+O tempo é $\Theta(n+k)$ e o espaço auxiliar da versão estável é $\Theta(n+k)$. Um intervalo enorme de chaves pode tornar esta escolha pior que comparar. **Radix sort** por dígitos do menos significativo para o mais significativo exige uma ordenação estável em cada passagem; isso conserva a ordem dos dígitos já processados.
 Com `[170,45,75,90,2]` e base 10, os dígitos das unidades são `[0,5,5,0,2]` e a passagem estável dá `[170,90,2,45,75]`, com dígitos `[0,0,2,5,5]`.
 Na passagem das dezenas, os dígitos são `[7,9,0,4,7]` e a passagem estável dá `[2,45,170,75,90]`, com dígitos `[0,4,7,7,9]`.
 Na passagem das centenas, os dígitos são `[0,0,1,0,0]` e a passagem estável dá `[2,45,75,90,170]`, com dígitos `[0,0,0,0,1]`. Depois de `d` passagens, a ordem dos `d` dígitos processados está correta; o custo é $\Theta(d(n+b))$ com base `b`. Chaves negativas e comprimentos diferentes exigem uma representação e uma política explícitas.

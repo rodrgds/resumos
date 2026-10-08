@@ -8,18 +8,19 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import Estados from '../../aed/Estados.astro';
 
-Depois de separares as operações de uma estrutura da sua representação, esta página responde como guardar uma sequência quando as inserções e retiradas acontecem nas pontas.
-
-O objeto desta página é triplo: uma lista ligada, ou seja, uma cadeia de nós onde cada nó guarda um valor e a ligação para o seguinte; uma pilha, ou seja, uma estrutura que só mexe no elemento mais recente; e uma fila, ou seja, uma estrutura que retira pela ordem de chegada.
-
-A escolha entre vetor, lista, pilha e fila depende das operações que o algoritmo precisa. Não escolhas uma estrutura apenas porque permite guardar todos os valores.
+Com os valores `[4,7,2]`, uma pilha retira 2 primeiro e uma fila retira 4. Uma lista permite ainda procurar e alterar posições interiores. A escolha depende dessas operações, não apenas de conseguir guardar os três valores.
 
 ## Lista simplesmente ligada
 
 Cada nó guarda um valor e a ligação para o seguinte. Para inserires à frente, cria o novo nó com a ligação antiga e só depois altera `primeiro`. Para retirares a frente, guarda o nó antigo, avança `primeiro` e liberta o nó guardado. Estas operações custam $O(1)$.
 
-Para removeres um valor no meio, precisas de alterar a ligação que chega ao nó. Segue o par `anterior` e `vítima`: com `[5,3,5,8]` e remoção de 5, `ligacao` aponta primeiro para `primeiro`; encontra 5, liga ao sucessor e volta a examinar a mesma ligação sem avançar. Depois percorre 3, encontra o segundo 5 e repete. Avançar logo após apagar saltaria um 5 seguido de outro 5. Para a posição `k`, percorre `k` ligações a partir de `primeiro`; `k=0` altera `primeiro`, `k=tamanho-1` exige o penúltimo e a remoção do último continua linear mesmo com apontador para o fim. Um apontador para essa ligação trata a cabeça e o interior com o mesmo código. No programa, `ligacao` aponta para `primeiro` ou para o campo `seguinte` de um nó anterior. Se apagares o nó atual, a ligação passa a apontar para o sucessor e deve voltar a ser examinada, porque avançar logo saltaria dois valores iguais consecutivos.
+Para removeres um nó, altera a ligação que chega a ele antes de o libertares. Em `[5,3,5,8]`, remover todos os 5 começa pela cabeça: `primeiro` passa para o nó 3. A próxima remoção muda `3.seguinte` para o nó 8. O resultado é `[3,8]`.
+
+No programa, `ligacao` é um apontador para essa ligação de entrada, seja `primeiro` ou o campo `seguinte` de um nó. Depois de apagar, volta a examinar a mesma ligação. Em `[5,5,3]`, a primeira remoção deixa outro 5 na cabeça; avançar de imediato saltaria esse segundo nó. Só avança quando o nó atual é conservado.
+
+Para remover a posição `k`, começa em `&primeiro` e avança `k` ligações, com `0<=k<tamanho`. A posição zero altera a cabeça; a última exige chegar ao penúltimo nó. Ter um apontador para o fim não torna essa procura constante numa lista simples.
 
 <CodePlayground
   language="cpp"
@@ -39,7 +40,7 @@ Numa lista circular com sentinela, o vazio tem as duas ligações da sentinela p
 
 ## Deque, pilha e fila
 
-Um **deque** permite inserir e retirar em ambas as extremidades. Não implica permitir inserções interiores eficientes. Um deque de array circular guarda um índice de início, um tamanho e uma capacidade. A posição lógica `i` corresponde a `(inicio+i)%capacidade`. Com capacidade 5, `inicio=3` e `[a,b,c]` nas posições físicas `3,4,0`, retirar a frente avança `inicio` para 4 e inserir `d` escreve na física 1. O percurso lógico `0,1,2` visita as físicas `4,0,1` após as operações. Nunca divides por capacidade zero: reserva antes do primeiro resto. Nunca calcules o resto por capacidade zero; reservar capacidade faz parte do contrato.
+Um **deque** permite inserir e retirar em ambas as extremidades. Não implica permitir inserções interiores eficientes. Um deque de array circular guarda um índice de início, um tamanho e uma capacidade. A posição lógica `i` corresponde a `(inicio+i)%capacidade`. Com capacidade 5, `inicio=3` e `[a,b,c]` nas posições físicas `3,4,0`, retirar a frente avança `inicio` para 4 e inserir `d` escreve na física 1. O percurso lógico `0,1,2` visita as físicas `4,0,1` após as operações. Reserva capacidade positiva antes de calcular o resto.
 
 Uma **pilha** é LIFO: o último a entrar é o primeiro a sair. Num vetor, `push_back`, `back` e `pop_back` servem para a pilha. Uma **fila** é FIFO: entra no fim e sai pela frente. Num deque, `push_back`, `front` e `pop_front` evitam deslocar todos os elementos. `top`, `front` e `pop` exigem não vazio na biblioteca.
 
@@ -52,11 +53,32 @@ A pilha modela tarefas suspensas, desfazer operações e percursos em profundida
 
 ## Fila com duas pilhas
 
-A pilha `entrada` recebe as inserções. A pilha `saida` tem no topo o elemento mais antigo. O programa de exemplo desta página usa já esta fila de duas pilhas; lê primeiro a secção da lista e depois esta secção antes de correres o código completo. Se `saida` estiver vazia, transfere todos os elementos de `entrada` para ela: a inversão põe o mais antigo no topo. Se ainda estiver vazia, a fila está vazia.
+A pilha `entrada` recebe as inserções. A pilha `saida` tem no topo o elemento mais antigo. A classe `Fila` do programa implementa estas duas pilhas com vetores. Se `saida` estiver vazia, transfere todos os elementos de `entrada` para ela: a inversão põe o mais antigo no topo. Se ainda estiver vazia, a fila está vazia.
 
 :::tip[Ideia-chave]
 O invariante diz que a sequência da fila é `saida` do topo para o fundo, seguida de `entrada` do fundo para o topo. Só transfere quando `saida` está vazia, porque inserir 8 quando `saida` ainda contém 5 não deve pôr 8 por cima de 5.
 :::
+
+<Estados
+  caption="Os valores de cada pilha estão escritos do fundo para o topo. O topo de saída é o próximo a retirar."
+  steps={[
+    {
+      label: 'Inserir 3 e 5',
+      values: ['entrada: 3, 5', 'saída: vazia'],
+      note: 'Para retirar, transfere 5 e depois 3 para saída.',
+    },
+    {
+      label: 'Retirar 3 e inserir 8',
+      values: ['entrada: 8', 'saída: 5'],
+      note: 'Conserva 8 na entrada. A retirada seguinte devolve 5 sem transferência.',
+    },
+    {
+      label: 'Retirar 8',
+      values: ['entrada: vazia', 'saída: vazia'],
+      note: 'Só agora transfere 8, porque saída ficou vazia. Saídas: 3, 5, 8.',
+    },
+  ]}
+/>
 
 Uma retirada isolada pode mover `n` elementos e custar $\Theta(n)$. Ao longo de `m` operações, cada elemento entra em `entrada`, sai dela, entra em `saida` e sai dela no máximo uma vez por cada etapa. Assim, o número total de operações nas pilhas é $O(m)$, e o custo amortizado por operação da fila é $O(1)$. Se as pilhas são vetores dinâmicos, inclui também o seu custo amortizado de crescimento.
 

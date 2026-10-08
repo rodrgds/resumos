@@ -11,8 +11,6 @@ editorial:
       url: https://www.dcc.fc.up.pt/~pribeiro/aulas/aed2526/
 ---
 
-No fim do percurso, esta página responde o que rever antes do exame quando já sabes onde estão as provas e os exemplos.
-
 `n` é o número de elementos, `h` a altura em arestas, `k` a amplitude das chaves de counting sort e `V,E` os números de vértices e arestas. Os custos de comparação e hashing são constantes apenas quando a dimensão das chaves o permite. Usa esta página para rever condições e custos; as provas ficam nos capítulos.
 
 ## Provar e contar

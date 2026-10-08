@@ -7,7 +7,7 @@ practices:
   - aed/praticar-arvores-pesquisa
 ---
 
-Depois de medires altura e profundidade em [árvores binárias](/cadeiras/aed/arvores-binarias/), esta página responde como manter os valores ordenados dentro da árvore para pesquisar sem percorrer tudo.
+import Dot from '../../../components/Dot.astro';
 
 Numa **árvore binária de pesquisa**, ou BST, todas as chaves da subárvore esquerda são menores que a chave do nó e todas as da direita são maiores. Esta página usa chaves únicas. Outra política pode guardar um contador por chave, mas tem de ajustar inserção, remoção e tamanho.
 
@@ -37,7 +37,16 @@ Primeiro procura a chave. Se faltar, a árvore mantém-se. No nó encontrado, h�
 2. **Um filho:** substitui essa ligação pelo único filho e liberta o nó antigo. A subárvore continua dentro dos limites herdados.
 3. **Dois filhos:** encontra o sucessor, o mínimo da subárvore direita. Copia a sua chave, e o respetivo valor se existir, para o nó a remover; depois remove o sucessor da subárvore direita. Esse sucessor não tem filho esquerdo, pelo que a segunda remoção cai num caso simples.
 
-Na árvore anterior, remover 8 com sucessor substitui a raiz por 10 e elimina a antiga folha 10. Quando o sucessor tem filho direito, a religação fica visível: para removeres 3 numa árvore onde o sucessor 6 tem filho direito 7, copia 6 para o lugar de 3 e liga o antigo pai de 6 ao nó 7. Sem esta ligação, a subárvore 7 perde-se. O código repete a remoção simples sobre a direita, que é o passo que trata esse filho. A em-ordem torna-se `[1,3,6,10,12,14]`. Se usares o predecessor, o máximo da esquerda, a forma final pode diferir e continuar correta. Explicita a escolha num exercício de traço.
+Na árvore construída com `[8,3,12,1,6,10,14]`, remover 8 substitui a raiz por 10, o mínimo da direita. A antiga folha 10 sai da esquerda de 12 e a em-ordem fica `[1,3,6,10,12,14]`.
+
+Para ver o caso em que o sucessor tem filho, considera outra árvore: raiz 3, filho esquerdo 1 e filho direito 8; 8 tem filho esquerdo 6, e 6 tem filho direito 7. Ao remover 3, copia 6 para a raiz e substitui `8.esquerdo` por 7. A em-ordem final é `[1,6,7,8]`. Apagar o antigo 6 sem religar 7 perderia uma subárvore. Se usares o predecessor, o máximo da esquerda, a forma final pode diferir e continuar correta.
+
+<Dot
+  source={
+    'digraph G { node [shape=circle]; subgraph cluster_a { label="Antes: remover 3"; a3[label="3"]; a1[label="1"]; a8[label="8"]; a6[label="6"]; a7[label="7"]; a3->a1[label="esq."]; a3->a8[label="dir."]; a8->a6[label="esq."]; a6->a7[label="dir."]; } subgraph cluster_b { label="Depois: raiz 6"; b6[label="6"]; b1[label="1"]; b8[label="8"]; b7[label="7"]; b6->b1[label="esq."]; b6->b8[label="dir."]; b8->b7[label="esq."]; } }'
+  }
+  alt="Antes, raiz 3 com filhos 1 e 8; 8 tem filho esquerdo 6 e 6 tem filho direito 7. Depois, raiz 6 com filhos 1 e 8, e 7 à esquerda de 8. O filho do sucessor permanece na árvore."
+/>
 
 O sucessor é maior que todas as chaves da esquerda e não é maior que qualquer outra chave da direita. Por isso a substituição conserva a ordem global. O caminho para achar o sucessor e remover o nó continua limitado pela altura: tempo $O(h+1)$, não $O(h^2)$.
 
@@ -49,6 +58,6 @@ O sucessor de uma chave tem dois casos: se existir subárvore direita, é o seu 
 
 Para enumerares chaves num intervalo, descarta subárvores fora dos limites e visita em-ordem as restantes. Numa árvore equilibrada, uma consulta por intervalo com `k` resultados pode custar $O(\log n+k)$. Fazer um percurso completo e filtrar custa $O(n)$ e perde essa vantagem quando `k` é pequeno.
 
-`std::set` representa um conjunto ordenado e `std::map` associa um valor a cada chave. Na ficha 08 (2025/26), `multiset` conta ocorrências com `count`, `erase(valor)` apaga todas e `erase(find(valor))` apaga uma só. `map.find(chave)` consulta sem inserir, ao contrário de `map[chave]`. `lower_bound(x)` devolve o primeiro `>=x`, incluindo `end()` na ausência; a diferença entre os dois limites conta repetidos. A equivalência é definida pelo comparador, não obrigatoriamente por `operator==`. Pesquisa, inserção e remoção por chave têm custo logarítmico. `map[key]` insere um valor por omissão se a chave faltar; `find` consulta sem inserir. Não atribuas ao padrão uma espécie concreta de árvore: o contrato garante comportamento e custos.
+`std::set` representa um conjunto ordenado e `std::map` associa um valor a cada chave. Na ficha 08 (2025/26), `multiset` conta ocorrências com `count`, `erase(valor)` apaga todas e `erase(find(valor))` apaga uma só. `map.find(chave)` consulta sem inserir, ao contrário de `map[chave]`. `lower_bound(x)` devolve o primeiro `>=x`, incluindo `end()` na ausência; percorrer o intervalo entre os dois limites permite contar repetidos. Ao contrário de um vetor, os iteradores de `multiset` não admitem subtração; esse percurso custa tempo proporcional ao número de ocorrências. A equivalência é definida pelo comparador, não obrigatoriamente por `operator==`. Pesquisa, inserção e remoção por chave têm custo logarítmico. Não atribuas ao padrão uma espécie concreta de árvore: o contrato garante comportamento e custos.
 
 A comparação de chaves e a cópia dos valores contam. Com strings compridas, a análise de uma consulta pode incluir o custo de cada comparação.
