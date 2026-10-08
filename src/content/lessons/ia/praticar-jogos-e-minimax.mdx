@@ -1,119 +1,72 @@
 ---
 draft: true
 title: Praticar jogos e Minimax
-description: Aplicar os conceitos a novos casos e justificar as decisões.
+description: Propagar Minimax, comparar ordens de corte e investigar exploração em UCT.
 section: exercicios
 ---
 
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
-  id="ia-minimax-valor"
-  title="Propagar o adversário"
-  revision={1}
-  explanation="/cadeiras/ia/jogos-e-minimax/#minimax-numa-árvore-pequena"
-  answer={{
-  "kind": "number",
-  "value": 4,
-  "tolerance": 0
-}}
->
-
-A raiz é MAX. O filho A é MIN com folhas 4 e 7; o filho B é MIN com folhas 5 e 2. Quanto vale a raiz?
-
-  <div slot="hint">
-
-Cada filho escolhe o pior resultado para MAX.
-
-  </div>
-  <div slot="hint-more">
-
-A devolve min(4,7) e B devolve min(5,2).
-
-  </div>
-  <div slot="solution">
-
-A vale 4, B vale 2 e a raiz vale max(4,2)=4. A jogada é A. O valor 7 não pode ser garantido contra MIN.
-
-  </div>
-  <div slot="mistakes">
-
-Maximizar também nos filhos de MIN ou escolher a maior folha da árvore.
-
-  </div>
-</Exercise>
-
-<Exercise
   id="ia-alfa-beta-ordem"
-  title="Localizar a folha poupada"
-  revision={1}
+  title="Propagar valores e comparar cortes"
+  revision={2}
   explanation="/cadeiras/ia/jogos-e-minimax/#cortes-alfa-beta"
   answer={{
-  "kind": "self",
-  "checklist": [
-    "Propaguei 4 de A para o alfa da raiz.",
-    "Avaliei 5 e 2 em B antes do corte.",
-    "Cortei apenas a folha 9."
-  ]
-}}
+    kind: 'self',
+    checklist: ["Calculei A=4, B=2 e raiz=4.", "Na ordem 5,2,9, só poupei a folha 9.", "Na ordem 2,5,9, poupei 5 e 9 sem alterar o valor da raiz."],
+  }}
 >
 
-Na árvore anterior, acrescenta uma terceira folha 9 em B. Percorre A antes de B e as folhas de B pela ordem 5, 2, 9. Que folhas são avaliadas e cortadas?
+Uma árvore tem raiz MAX e dois filhos MIN. A tem folhas 4 e 7; B tem folhas 5, 2 e 9. Os valores são utilidades de MAX.
+
+1. Calcula o valor Minimax e a jogada escolhida.
+2. Percorre A antes de B, com as folhas pela ordem indicada. Escreve os limites usados em B e indica as folhas poupadas por alfa-beta.
+3. Repete com as folhas de B pela ordem 2, 5, 9. O valor da raiz muda?
 
   <div slot="hint">
 
-B recebe alfa 4.
+MAX já tem uma alternativa de valor 4 quando começa a explorar B.
 
   </div>
-  <div slot="hint-more">
 
-Depois de 5, beta é 5; depois de 2, beta é 2.
-
-  </div>
   <div slot="solution">
 
-Avaliam-se 4 e 7 em A; a raiz passa alfa 4. Em B, lê-se 5 e ainda não se corta, pois 4 < 5. Depois de ler 2, beta=2 e alfa≥beta. Corta-se 9. A raiz mantém valor 4.
+A devolve $\min(4,7)=4$ e B devolve $\min(5,2,9)=2$. MAX escolhe A com valor 4.
 
-  </div>
-  <div slot="mistakes">
+Depois de visitar A, a raiz tem $\alpha=4$. B recebe esse limite. Ao ler 5, atualiza $\beta=5$ e não corta, pois $4<5$. Ao ler 2, fica $\beta=2$ e $\alpha\ge\beta$: dispensa 9.
 
-Cortar 5 antes de a avaliar ou mudar a ordem das folhas sem recalcular os limites.
+Com a ordem 2,5,9, a primeira folha de B já dá $\beta=2$. Corta as outras duas folhas. A ordem melhora a poupança, mas a raiz continua a escolher A com valor 4. A folha que causa o corte foi avaliada; só se poupam as seguintes.
 
   </div>
 </Exercise>
 
 <Exercise
   id="ia-uct-selecao"
-  title="Equilibrar taxa e exploração"
-  revision={1}
-  explanation="/cadeiras/ia/jogos-e-minimax/#monte-carlo-quando-a-árvore-é-gigante"
+  title="Investigar a exploração em UCT"
+  revision={2}
+  explanation="/cadeiras/ia/jogos-e-minimax/#pesquisa-em-árvore-monte-carlo"
   answer={{
-  "kind": "number",
-  "value": 1.5427536283,
-  "tolerance": 0.001
-}}
+    kind: 'self',
+    checklist: ["Obtive aproximadamente 1,472 para A e 1,973 para B.", "Escolhi B com exploração e A com c=0.", "Distingui pontuação UCT de probabilidade."],
+  }}
 >
 
-No exemplo MCTS da lição, A tem 4 vitórias em 6 visitas e o pai tem 10 visitas. Calcula U(A) com c=√2 e logaritmo natural. Dá o valor com três casas decimais.
+Um nó tem 7 visitas. O filho A tem 4 vitórias em 6 visitas e B tem 0 vitórias em 1 visita. Usa $U_i=w_i/n_i+c\sqrt{\ln N/n_i}$, com $c=\sqrt2$ e logaritmo natural.
+
+Calcula as duas pontuações com três casas decimais e indica o filho selecionado. Compara com a escolha se $c=0$. Explica por que uma pontuação UCT pode ser maior que 1.
 
   <div slot="hint">
 
-Soma a taxa de vitórias e o termo de exploração.
+O filho menos visitado recebe o maior bónus de exploração.
 
   </div>
-  <div slot="hint-more">
 
-Calcula 4/6 + √(2 ln(10)/6).
-
-  </div>
   <div slot="solution">
 
-U(A)≈0,666667+0,876087=1,542754, ou 1,543. O valor pode ultrapassar 1 porque é uma pontuação de seleção, não uma probabilidade.
+$U_A=4/6+\sqrt{2\ln(7)/6}\approx1{,}472$ e $U_B=\sqrt{2\ln(7)}\approx1{,}973$. Seleciona B, apesar da sua taxa observada ser inferior: tem poucas visitas e o termo de exploração é maior.
 
-  </div>
-  <div slot="mistakes">
-
-Usar logaritmo de base 2 ou interpretar U como uma probabilidade de vitória.
+Com $c=0$, só contam as taxas 4/6 e 0; escolhe A. UCT soma uma taxa de vitórias a um bónus de exploração. É uma pontuação para ordenar escolhas, não uma probabilidade.
 
   </div>
 </Exercise>

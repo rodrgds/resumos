@@ -9,14 +9,11 @@ order: 1
 ---
 
 import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
 import ciclo from '../../ia/ciclo-agente.typ?raw';
 
-Esta é a primeira página do percurso e responde a como descrever um programa que observa o que o rodeia e escolhe o que fazer a seguir.
+Um aspirador desloca-se entre duas salas, A e B. Os sensores indicam a sala atual e se o chão está sujo; as rodas e o aspirador permitem mudar de sala e limpar.
 
-Pensa num pequeno aspirador robot que anda entre duas salas, A e B, a limpar o chão. Em cada momento vê em que sala está e se o chão está sujo, e depois escolhe entre aspirar e mudar de sala.
-
-Em inteligência artificial chamamos agente a esse decisor, ou seja, ao programa ou à máquina que observa o que o rodeia e escolhe o que fazer a seguir. Chamamos ambiente ao que o rodeia, ou seja, às duas salas e à sujidade; chamamos sensores à forma como observa, ou seja, neste caso um detetor de sala e de sujidade; e chamamos atuadores à forma como age, ou seja, as rodas e o aspirador. Quase todos os programas desta cadeira são agentes neste sentido, e o que muda entre eles é como decidem a próxima ação. Os sensores e os atuadores podem ser peças físicas ou simples leituras e comandos de software, por isso ser agente não exige aprender nem garante decidir bem.
+O **agente** escolhe uma ação a partir do que observa. As salas e a sujidade constituem o **ambiente**. Os sensores fornecem informação ao agente e os atuadores executam as suas ações. Esta separação também se aplica a software: ler uma mensagem pode ser uma observação e movê-la para a pasta de spam uma ação. Ser agente não exige aprender nem garante decidir bem.
 
 ## Perceções, ações e a função do agente
 
@@ -71,34 +68,22 @@ O agente **baseado em objetivos** guarda estado (o que já viu e fez) e um objet
 
 O agente **baseado em utilidade** vai além do objetivo binário e mede qualidade: limpar em 4 ações é melhor que em 40, e gastar pouca bateria é melhor que gastar muita. A **função de utilidade** dá um número aos resultados. Sob incerteza, o agente compara a utilidade esperada das ações, ponderando os resultados possíveis pelas suas probabilidades. Isto permite compromissos, como aceitar uma sala 95 por cento limpa para poupar metade da bateria. Um **agente que aprende** melhora o seu modelo ou a sua decisão com experiência. A aprendizagem pode existir em qualquer uma destas arquiteturas.
 
-<Tabs
-  id="arquiteturas-aspirador"
-  labels={['Reativo', 'Objetivos', 'Utilidade']}
->
-  <div slot="panel-0">
-    O reativo limpa as duas salas com quatro regras e sem memória. Escolhe-o
-    quando a perceção atual chega para decidir e cada ação é barata. No
-    aspirador, vagueia depois de limpar porque nenhuma regra reconhece o
-    trabalho feito.
-  </div>
-  <div slot="panel-1">
-    O baseado em objetivos guarda o que já viu e para quando as duas salas estão
-    limpas. Escolhe-o quando há um estado final claro e vale a pena pesquisar a
-    sequência até lá. É a arquitetura das páginas de pesquisa.
-  </div>
-  <div slot="panel-2">
-    O baseado em utilidade compara custos: 3 ações contra 40, bateria gasta
-    contra bateria poupada. Escolhe-o quando há compromissos entre qualidade e
-    custo, como aceitar 95 por cento limpo por metade da energia.
-  </div>
-</Tabs>
-
-:::tip[Como escolher em teste]
+:::tip[História e estado interno]
 Caracteriza o ambiente sob as hipóteses do enunciado. Se a decisão exige distinguir histórias com a mesma perceção atual, as regras do reflexo simples não chegam. Um estado interno pode resolver isso; um objetivo pede decidir como o atingir, e a utilidade permite comparar resultados com qualidade e custo diferentes.
 :::
 
-## Exemplo: a tabela decide, o objetivo termina
+## Estado interno e paragem
 
-Segue o reativo da tabela a partir de (A, sujo, B sujo). Em A sujo aspira; perceção (A, limpo), vai para B; B sujo, aspira; (B, limpo), volta a A; (A, limpo), vai a B. Três ações que levam ao objetivo e depois movimentos repetidos entre salas limpas, porque nenhuma regra reconhece "trabalho feito".
+Segue o reflexo simples da tabela, começando em A com ambas as salas sujas:
+
+| Passo | Perceção   | Ação       | Efeito               |
+| ----- | ---------- | ---------- | -------------------- |
+| 1     | (A, sujo)  | `Aspirar`  | A fica limpa         |
+| 2     | (A, limpo) | `Direita`  | Chega a B            |
+| 3     | (B, sujo)  | `Aspirar`  | Ambas ficam limpas   |
+| 4     | (B, limpo) | `Esquerda` | Volta a A            |
+| 5     | (A, limpo) | `Direita`  | Repete os movimentos |
+
+Ao passo 3 o objetivo já foi atingido, mas a perceção não indica que A está limpa. A mesma perceção `(B, limpo)` também pode ocorrer antes de visitar A. A memória distingue essas histórias, assumindo que a sujidade não reaparece.
 
 O baseado em objetivos com estado inicial (A, ambas sujas) e objetivo "A limpa e B limpa" gera a sequência `Aspirar, Direita, Aspirar` e termina. Três ações e paragem. A paragem exige reconhecer o objetivo. Um reflexo com modelo também consegue parar, sem calcular esta sequência antecipadamente.

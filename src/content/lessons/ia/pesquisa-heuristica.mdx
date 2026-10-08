@@ -15,21 +15,11 @@ import grelha from '../../ia/grelha-astar.typ?raw';
 import programa from '../../ia/astar.py?raw';
 import apoio from '../../ia/astar_apoio.py?raw';
 
-Depois da pesquisa sem pistas, esta página responde a como chegar ao objetivo mais depressa com uma estimativa do que falta.
+Numa grelha, a distância em linha reta até ao objetivo pode ser pequena mesmo quando uma parede obriga a dar a volta. Uma **heurística** $h(n)$ estima o custo que ainda falta a partir do estado $n$. A pesquisa usa essa estimativa para ordenar caminhos, mas as garantias dependem de como a estimativa se relaciona com o custo real.
 
-Pensa numa grelha 4 por 4 com início num canto, objetivo no canto oposto e três casas bloqueadas, onde cada passo nas quatro direções custa 1. Em IA chamamos heurística a essa estimativa do custo que falta de cada casa até ao objetivo, ou seja, a um número que diz que casas parecem mais promissoras antes de as visitar.
+## Distância de Manhattan
 
-## O exemplo da grelha
-
-Grelha 4 por 4, com coordenadas (linha, coluna) de 0 a 3. Início em (0, 0), objetivo em (3, 3), movimentos nas quatro direções com custo 1. Casas bloqueadas: (1, 1), (1, 2) e (2, 1). As casas livres e a heurística de Manhattan $h(r, c) = (3 - r) + (3 - c)$ são:
-
-| Casa  | h   | Casa  | h   | Casa  | h   |
-| ----- | --- | ----- | --- | ----- | --- |
-| (0,0) | 6   | (0,1) | 5   | (0,2) | 4   |
-| (0,3) | 3   | (1,0) | 5   | (1,3) | 2   |
-| (2,0) | 4   | (2,2) | 2   | (2,3) | 1   |
-| (3,0) | 3   | (3,1) | 2   | (3,2) | 1   |
-| (3,3) | 0   |       |     |       |     |
+Grelha 4 por 4, com coordenadas (linha, coluna) de 0 a 3. Início em (0, 0), objetivo em (3, 3), movimentos nas quatro direções com custo 1. Casas bloqueadas: (1, 1), (1, 2) e (2, 1). A heurística de Manhattan $h(r,c)=(3-r)+(3-c)$ conta as descidas e as direitas que faltam, ignorando os obstáculos. A figura mostra o valor em cada casa livre.
 
 Há dois caminhos ótimos com 6 passos: por cima, (0,0), (0,1), (0,2), (0,3), (1,3), (2,3), (3,3); e por baixo, (0,0), (1,0), (2,0), (3,0), (3,1), (3,2), (3,3). Confirma que nenhum caminho tem 5 passos: são precisas pelo menos 3 descidas e 3 direitas, e os bloqueios não permitem atalhos na diagonal.
 
@@ -52,7 +42,7 @@ O A\* sobre esta grelha ordena a fronteira por $f$, depois por $g$ e, por fim, p
 
 O programa segue a ordem calculada na secção de A\* e termina com custo 6.
 
-## Gulosa: rápida e sem garantias
+## Pesquisa gulosa
 
 A pesquisa **gulosa** expande sempre o nó com menor $h$, ignorando o custo já pago. Do início, empata entre (0,1) e (1,0), ambos com $h = 5$. Supõe que escolhe (0,1), depois (0,2), (0,3), (1,3), (2,3) e o objetivo, sempre a descer o $h$. Aqui acerta no ótimo por sorte do desempate.
 
@@ -60,7 +50,7 @@ A gulosa guarda uma fronteira, por isso não fica presa só porque um vizinho te
 
 Vê um contraexemplo com arestas dirigidas: S para A custa 1, A para G custa 10, S para B custa 2 e B para G custa 2. Usa $h(A)=0$, $h(B)=2$, $h(G)=0$. A gulosa visita A e depois G, com custo 11. O caminho S, B, G custa 4. Mesmo uma heurística admissível não torna a gulosa ótima, porque ela ignora $g$.
 
-## A\*: o melhor dos dois
+## A\* e custo estimado
 
 O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real já pago do início até $n$. Junta o cuidado do custo uniforme com a direção da heurística. Segue os primeiros passos na grelha, com o desempate do código:
 
@@ -71,7 +61,7 @@ O **A\*** ordena os nós por $f(n) = g(n) + h(n)$, onde $g(n)$ é o custo real j
 5. Expande (2,0) com f 6: gera (3,0) com g 3, h 3, f 6.
 6. Expande (0,3) com f 6: gera (1,3) com g 4, h 2, f 6.
 
-Repara no padrão: todos os nós expandidos têm f 6, que é o custo ótimo. O A\* continua a expandir a fronteira com f 6 até gerar o objetivo (3,3) com g 6, h 0, f 6.
+Repara no padrão: todos os nós expandidos têm f 6, que é o custo ótimo. O A\* continua a expandir a fronteira com f 6 até retirar o objetivo (3,3) com g 6, h 0, f 6. Gerá-lo ainda não é a condição de paragem.
 
 Se existisse uma solução de custo menor, um nó do seu caminho ainda na fronteira teria $f$ no máximo igual a esse custo, porque $h$ não sobrestima o que falta. Esse nó sairia antes do objetivo de custo 6. O argumento exige manter os caminhos mais baratos para os estados. Não basta dizer que a fronteira tem valores maiores: é preciso justificar que não se perdeu uma alternativa melhor.
 

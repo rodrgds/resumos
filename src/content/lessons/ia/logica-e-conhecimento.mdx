@@ -12,9 +12,9 @@ import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import prova from '../../ia/prova-acima.dot?raw';
 
-Depois de pesquisar caminhos e escolher estados, esta página responde a como guardar factos e regras para tirar conclusões novas.
+Sabemos que o bloco a está sobre b e que b está sobre a mesa. Queremos concluir que a está acima da mesa, sem guardar essa conclusão como facto inicial.
 
-Pensa em blocos empilhados sobre uma mesa, com três regras e um objetivo que vamos provar das duas maneiras. Em IA chamamos representação do conhecimento a guardar factos e regras numa base de conhecimento, ou seja, em frases como «o bloco a está sobre o bloco b», e chamamos inferência ao processo de derivar conclusões novas a partir dela, ou seja, a obter frases como «o bloco a está acima da mesa» sem as ter escrito à mão.
+Uma **base de conhecimento** guarda factos e regras numa linguagem formal. A **inferência** deriva conclusões a partir dessa base. As regras precisam de representar a relação pretendida: estar diretamente sobre um objeto e estar acima dele não significam o mesmo.
 
 ## Proposições, predicados e inferência
 
@@ -24,7 +24,7 @@ A lógica de primeira ordem acrescenta objetos, predicados e quantificadores. $B
 
 A base **implica logicamente** uma conclusão quando ela é verdadeira em todos os modelos que satisfazem a base. Um método de inferência é **correto** se só deriva conclusões implicadas pela base e **completo** se deriva todas as conclusões implicadas no fragmento que trata. Os encadeamentos desta página usam regras definidas, uma forma de cláusula de Horn com premissas positivas e uma conclusão positiva. Não são um procedimento completo para toda a lógica de primeira ordem.
 
-## A base de exemplo
+## Factos e regras sobre blocos
 
 Factos sobre blocos: $Bloco(a)$, $Bloco(b)$, $Sobre(a, b)$ e $Sobre(b, mesa)$. Regras com variáveis (lê $x$, $y$ e $z$ como "para todos"):
 
@@ -42,7 +42,7 @@ O encadeamento para a frente parte dos factos e aplica regras até derivar o obj
 2. R1 com $x = b$, $y = mesa$, a partir de $Sobre(b, mesa)$: deriva $Acima(b, mesa)$.
 3. R2 com $x = a$, $y = b$, $z = mesa$, a partir de 1 e 2: deriva $Acima(a, mesa)$. Objetivo provado.
 
-Cada passo instancia as variáveis com objetos concretos e só dispara quando as premissas já estão na base. É o modo dos sistemas que reagem a dados novos: chega um facto, disparam as regras, a base cresce. O risco é derivar muito que não interessa ao objetivo.
+Cada passo instancia as variáveis com objetos concretos e só dispara quando as premissas já estão na base. É o modo dos sistemas que reagem a dados novos: chega um facto, disparam as regras, a base cresce. Ao aplicar também R3, obteríamos $PrecisaDe(b,a)$ e $PrecisaDe(mesa,b)$. São conclusões permitidas pela base, mas não ajudam a provar este objetivo.
 
 <Dot
   source={prova}
@@ -59,7 +59,7 @@ O código seguinte trata R1 e R2 e repete as regras até não acrescentar factos
   }
 />
 
-Confirma o resultado na saída: os dois passos de R1 e depois o passo de R2 que prova o objetivo.
+Na primeira ronda, R1 acrescenta as duas relações diretas. Na segunda, R2 junta-as. A terceira não acrescenta nada e confirma o ponto fixo. Com estes objetos e relações há um número finito de factos possíveis, por isso o processo termina; regras que criam novos termos exigiriam outra análise.
 
 ## Encadeamento para trás
 
@@ -75,10 +75,6 @@ Repara na escolha do passo 2: $y = b$ não caiu do céu, é o único objeto que 
 
 :::details[Ver a prova por resolução]
 A resolução trabalha com cláusulas e deriva a cláusula vazia a partir da base mais o objetivo negado. Instancia R2 com $x = a$ e $z = mesa$: $\lnot Acima(a, y) \lor \lnot Acima(y, mesa) \lor Acima(a, mesa)$. Passo 1: resolve com o facto $Acima(a, b)$ e obtém $\lnot Acima(b, mesa) \lor Acima(a, mesa)$. Passo 2: resolve com o facto $Acima(b, mesa)$ e obtém $Acima(a, mesa)$, que contradiz o objetivo negado. Por fim, resolve-se $Acima(a,mesa)$ com $\lnot Acima(a,mesa)$ e obtém-se a **cláusula vazia**, a contradição. Os dois factos $Acima(a,b)$ e $Acima(b,mesa)$ já tinham sido derivados por R1; não são factos iniciais da base.
-:::
-
-:::details[O papel de R3 no exemplo]
-R3 nunca foi usada na prova, e está no exemplo de propósito. O encadeamento para a frente com R3 derivaria $PrecisaDe(b, a)$ e $PrecisaDe(mesa, b)$, conclusões verdadeiras mas inúteis para este objetivo. É a demonstração viva do defeito do encadeamento para a frente: deriva tudo o que as regras permitem, não só o que precisas.
 :::
 
 ## Sistemas periciais e limites

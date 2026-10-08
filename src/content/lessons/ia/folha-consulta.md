@@ -38,7 +38,7 @@ $g$ é custo percorrido; $h$ estima o restante; $h^*$ é custo mínimo restante.
 - $h=0$ dá UCS; $\max(h_1,h_2)$ preserva admissibilidade. A soma pode sobrestimar.
 - Com ramificação finita, BFS e aprofundamento iterativo são completos. DFS com visitados é completa em grafos finitos. Em espaços infinitos, UCS/A* precisam de condições adicionais, como custos de ação pelo menos $\varepsilon>0$.
 
-Numa árvore, $b$ é ramificação, $d$ profundidade do objetivo mais superficial e $m$ profundidade máxima: BFS $O(b^d)$ em tempo/memória; DFS $O(b^m)$ em tempo e $O(bm)$ em memória; aprofundamento iterativo $O(b^d)$ em tempo e $O(bd)$ em memória, para $b>1$. Visitados acrescentam memória no grafo.
+Numa árvore, $b$ é ramificação, $d$ profundidade do objetivo mais superficial e $m$ profundidade máxima: BFS em árvore $O(b^{d+1})$ em tempo/memória com teste ao retirar e geração de todos os filhos, ou $O(b^d)$ com teste na geração; DFS $O(b^m)$ em tempo e $O(bm)$ em memória; aprofundamento iterativo $O(b^d)$ em tempo e $O(bd)$ em memória, para $b>1$. Visitados acrescentam memória no grafo.
 
 ## Jogos e otimização
 

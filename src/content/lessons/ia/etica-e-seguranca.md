@@ -8,17 +8,15 @@ practices:
 order: 10
 ---
 
-Depois de construir classificadores, pesquisas e otimizadores, esta página responde a o que pode correr mal quando esses decisores saem do caderno.
+Um filtro de candidaturas pode repetir padrões discriminatórios dos dados de treino. Um aspirador recompensado pela quantidade de sujidade recolhida pode aumentar a pontuação espalhando sujidade e recolhendo-a de novo, se tiver essa possibilidade. Avaliar um sistema exige examinar os dados, as conclusões e o objetivo que orienta as ações.
 
-Pensa no filtro de spam das 20 mensagens treinado em currículos históricos e no aspirador das duas salas com ordem de recolher sujidade: o primeiro repete quem foi contratado no passado e o segundo pode espalhar sujidade para a voltar a recolher. Os limites estão nas conclusões, nos dados e nos objetivos.
-
-## Imitar não é compreender
+## Teste de Turing e limites da inferência
 
 O **teste de Turing** substitui a pergunta "as máquinas pensam?" por um jogo de imitação em conversa escrita. Avalia se um interrogador distingue as respostas de uma máquina das de uma pessoa, nas condições do teste. O resultado não demonstra consciência, compreensão nem correção factual, por isso a relação entre comportamento e compreensão continua a ser uma questão filosófica. Quando usares assistentes de escrita ou de código, lembra-te de que a fluência do texto não garante a verdade do conteúdo.
 
-## O viés entra pelos dados
+## Viés e avaliação por grupo
 
-Um classificador aprende o que os dados mostram, incluindo os preconceitos lá dentro. O filtro de spam da página de [incerteza](/cadeiras/ia/incerteza-e-bayes/) com 20 mensagens é inofensivo, mas o mesmo Naive Bayes treinado em currículos históricos aprende quem foi contratado no passado e repete o padrão, incluindo discriminação por género ou origem. Um classificador de imagens treinado apenas com pinguins em jardins zoológicos pode usar o fundo como pista e falhar com pinguins na neve. É uma mudança da distribuição dos dados; pode exigir dados mais representativos e alterações no modelo. O exemplo numérico dos animais usava atributos, não imagens.
+Um classificador aprende o que os dados mostram, incluindo os preconceitos lá dentro. O Naive Bayes usado para [classificar mensagens](/cadeiras/ia/incerteza-e-bayes/) também poderia classificar candidaturas. Se a etiqueta de treino for "foi contratado", o modelo aprende a reproduzir decisões históricas, que podem incluir discriminação por género ou origem. Isso não demonstra que esteja a medir a adequação à função. Um classificador de imagens treinado apenas com pinguins em jardins zoológicos pode usar o fundo como pista e falhar com pinguins na neve. É uma mudança da distribuição dos dados; pode exigir dados mais representativos e alterações no modelo. O exemplo numérico dos animais usava atributos, não imagens.
 
 Daqui saem duas obrigações práticas: auditar os dados antes de treinar (quem está representado, quem falta) e avaliar por grupo, não só no global. A matriz de confusão por grupo mostra o que a exatidão global esconde: 95 por cento de exatidão pode resultar de 100 por cento num grupo com 90 pessoas e 50 por cento noutro com 10. Para avaliar um filtro de candidaturas, compara também falsos positivos e falsos negativos por grupo e o custo dos erros.
 

@@ -11,19 +11,28 @@ order: 9
 import CodePlayground from '../../../components/CodePlayground.astro';
 import KmeansDiagram from '../../ia/KmeansDiagram.astro';
 
-Depois de aprender com exemplos com resposta certa, esta página responde a como partir dados sem respostas em grupos de pontos parecidos.
+Os pontos A(1,1), B(1,2), C(2,1), D(5,4), E(6,5) e F(5,5) não trazem etiquetas de classe. Queremos dividi-los em dois grupos pela proximidade. O **agrupamento** procura esta estrutura nos dados, sem uma resposta correta fornecida no treino.
 
-Pensa em seis pontos do plano para partir em dois grupos. Em IA chamamos aprendizagem não supervisionada a descobrir estrutura só a partir dos dados, ou seja, sem nenhuma etiqueta com a resposta, chamamos agrupamento a partir os pontos em grupos de pontos parecidos, ou seja, a pôr os pontos próximos no mesmo grupo, e chamamos k-means ao algoritmo que repete atribuir cada ponto ao centro mais próximo e recalcular cada centro como a média do seu grupo.
-
-## O algoritmo em três linhas
+## Atribuição e atualização no k-means
 
 Escolhe $k$ (aqui 2) e $k$ centroides iniciais, um por grupo. Depois repete: atribui cada ponto ao centroide mais próximo e recalcula cada centroide como a média dos pontos do seu grupo. Com um critério definido, como atribuições estáveis ou deslocamento dos centroides abaixo de uma tolerância, termina. Para distâncias euclidianas ao quadrado, minimiza localmente $J=\sum_i \|x_i-\mu_{c_i}\|^2$, onde $c_i$ é o grupo do ponto $x_i$. Os pontos ficam nas mesmas coordenadas; só muda a sua atribuição aos grupos e a posição dos centroides.
 
-## Duas iterações à mão
+## Centroides e convergência
 
 Pontos: A(1, 1), B(1, 2), C(2, 1), D(5, 4), E(6, 5), F(5, 5). Centroides iniciais $\mu_1 = (1, 1)$ e $\mu_2 = (5, 5)$. Usa distância euclidiana ao quadrado, que dá a mesma ordem sem raízes.
 
-Iteração 1. Distâncias a $\mu_1$ e $\mu_2$: A dá 0 contra 32; B dá 1 contra 25; C dá 1 contra 25; D dá 25 contra 1; E dá 41 contra 1; F dá 32 contra 0. Grupos: \{A, B, C\} e \{D, E, F\}. Novos centroides: $\mu_1 = (4/3, 4/3)$ e $\mu_2 = (16/3, 14/3)$, ou seja, cerca de (1,33, 1,33) e (5,33, 4,67).
+Na primeira atribuição, as distâncias ao quadrado são:
+
+| Ponto | A $(1,1)$ | A $(5,5)$ | Grupo |
+| ----- | --------- | --------- | ----- |
+| A     | 0         | 32        | 1     |
+| B     | 1         | 25        | 1     |
+| C     | 1         | 25        | 1     |
+| D     | 25        | 1         | 2     |
+| E     | 41        | 1         | 2     |
+| F     | 32        | 0         | 2     |
+
+Recalculamos cada coordenada separadamente. No grupo 1, a primeira média é $(1+1+2)/3$ e a segunda $(1+2+1)/3$, dando $\mu_1=(4/3,4/3)$. No grupo 2, obtemos $\mu_2=((5+6+5)/3,(4+5+5)/3)=(16/3,14/3)$. A média não tem de coincidir com um ponto observado.
 
 Iteração 2. Calculamos novamente as distâncias **ao quadrado**, agora com os centroides novos. Por exemplo, para C(2, 1) e $\mu_2$:
 
@@ -54,7 +63,7 @@ Os grupos repetem-se: \{A, B, C\} e \{D, E, F\}, com dispersão interna total $J
 
 O código faz exatamente duas iterações para acompanhar a conta. Neste exemplo, os grupos não mudam na segunda. Empates vão para o primeiro centroide; se surgisse um grupo vazio, seria preciso definir uma regra, como conservar o centroide anterior ou reiniciá-lo.
 
-## Quando resulta e quando não resulta
+## Escala, inicialização e limites
 
 O k-means resulta quando os grupos são mais ou menos esféricos e de tamanho parecido, como os dois cantos do exemplo. Exige que digas o $k$ à partida e é sensível aos centroides iniciais: começar com os dois centroides no mesmo canto pode produzir um mau agrupamento ou um grupo vazio. A inicialização k-means++ procura centroides iniciais afastados, mas também não garante o ótimo global. Repete com vários arranques e fica com o de menor dispersão interna.
 

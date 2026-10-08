@@ -9,16 +9,13 @@ order: 5
 ---
 
 import Typst from '../../../components/Typst.astro';
-import Tabs from '../../../components/Tabs.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import paisagem from '../../ia/paisagem-aptidao.typ?raw';
 
-Depois de pesquisar caminhos até ao objetivo, esta página responde a como escolher um bom estado final quando o caminho até lá não interessa.
+Nas 4 rainhas, queremos colocar quatro rainhas sem ataques entre elas. A configuração final interessa; a sequência usada para a construir não faz parte da resposta. A **pesquisa local** parte de uma configuração e modifica-a através dos seus vizinhos, comparando os valores de uma função objetivo.
 
-Pensa num tabuleiro 4 por 4 com uma rainha por coluna, como em horários e escalas onde só a configuração final conta. Em IA chamamos pesquisa local ao método que modifica uma configuração através da sua vizinhança, ou seja, do conjunto de estados que mudam a linha de exatamente uma coluna, e avalia cada configuração com uma função objetivo, ou seja, aqui o número de pares de rainhas que se atacam, onde 0 é solução.
-
-## O exemplo das 4 rainhas
+## Configurações e ataques
 
 Tabuleiro 4 por 4 com uma rainha por coluna, representado pelo vetor das linhas, como [1, 4, 2, 3] (coluna 1 na linha 1, coluna 2 na linha 4, e por aí fora). A função de avaliação conta **pares de rainhas que se atacam** (mesma linha ou mesma diagonal): 0 é solução, e queremos minimizar. Vizinhos são os estados que mudam a linha de exatamente uma coluna, 12 vizinhos por estado.
 
@@ -48,39 +45,17 @@ A subida executável abaixo repete a regra estrita e só se move para valor meno
 
 De [1, 4, 2, 1] o único vizinho com 1 ataque é [1, 4, 2, 3], e de lá nenhum vizinho desce a 0.
 
-## Sair da armadilha
+## Arrefecimento, reinício e evolução
 
 O **arrefecimento simulado** sorteia um vizinho e aceita melhorias. Numa minimização, uma deterioração $\Delta = f(\text{vizinho}) - f(\text{atual}) > 0$ é aceite com probabilidade $e^{-\Delta/T}$, para temperatura $T>0$. No início, uma temperatura alta permite explorar; ao diminuir $T$, torna-se menos provável aceitar perdas. Um programa com tempo finito não garante o ótimo global.
 
 Passar de 1 para 3 ataques dá $\Delta=2$. Com $T=2$, a probabilidade é $e^{-1} \approx 0{,}368$; com $T=0{,}5$, é $e^{-4} \approx 0{,}018$. Aceitar piorar temporariamente permite sair do mínimo local.
 
-O **reinício aleatório** sorteia um estado novo quando prende e recomeça a subida. É simples e surpreendentemente eficaz quando os ótimos locais são muitos mas baratos de escalar.
+O **reinício aleatório** sorteia um estado novo e recomeça a subida. Cada arranque dá outra oportunidade de alcançar uma solução, mas não garante que ela apareça num número finito de tentativas.
 
 Os **algoritmos evolutivos** mantêm uma população de estados e aplicam **seleção** (os melhores reproduzem-se), **cruzamento** (filhos combinam partes de dois pais) e **mutação** (troca aleatória de um gene). Uma mutação no estado preso, por exemplo trocar a coluna 1 de 1 para 3, produz [3, 4, 2, 3] com 3 ataques: pior no imediato, mas noutra região do espaço, onde a subida seguinte pode encontrar outro caminho. A mutação pode introduzir diversidade, mas não garante melhorar nem conservar diversidade na população.
 
 Um cruzamento de um ponto depois da segunda coluna, entre [1, 4, 2, 3] e [3, 1, 4, 2], produz [1, 4, 4, 2] e [3, 1, 2, 3]. O primeiro tem 2 ataques e o segundo tem 4: pais bons não garantem filhos melhores. Em seleção por torneio, sorteiam-se candidatos e escolhe-se o melhor. Numa roleta, usa uma aptidão não negativa que aumente quando os ataques diminuem, por exemplo $1/(1+f)$. Usar o número de ataques diretamente favoreceria os piores estados.
-
-<Tabs
-  id="saidas-otimo-local"
-  labels={['Arrefecimento', 'Reinício', 'Evolução']}
->
-  <div slot="panel-0">
-    O arrefecimento simulado aceita vizinhos piores com probabilidade que cai
-    com a temperatura. Na paisagem acima, permite subir temporariamente a
-    contagem de ataques e procurar outro vale.
-  </div>
-  <div slot="panel-1">
-    O reinício aleatório sorteia um estado novo quando prende e recomeça a
-    subida. Resulta bem quando os vales são muitos mas cada subida é barata:
-    cada tentativa custa pouco e uma delas cai perto do ótimo global.
-  </div>
-  <div slot="panel-2">
-    A evolução mantém vários estados em paralelo e mistura-os por cruzamento e
-    mutação. A diversidade da população faz o papel dos saltos aleatórios: podem
-    surgir candidatos noutras regiões, mas a população também pode perder
-    diversidade.
-  </div>
-</Tabs>
 
 :::tip[Justificar a paragem]
 Para seguir a subida da colina ou justificar a sua paragem, conta sempre todos os pares (para 4 rainhas são 6) e escreve os valores dos vizinhos antes de escolher. A justificação do ótimo local é uma frase com números: "vale 1 e nenhum dos 12 vizinhos é melhor".
@@ -90,12 +65,12 @@ Se a dúvida é como seleção, cruzamento e mutação transformam uma populaç�
 
 <YouTube id="uQj5UNhCPuo" title="Genetic Algorithms Explained By Example" />
 
-## As rainhas como restrições
+## Satisfação de restrições
 
 Podemos representar o mesmo problema como um **problema de satisfação de restrições** (CSP). É uma forma complementar de modelar pesquisa: cada variável $Q_c$ indica a linha da rainha na coluna $c$, com domínio $\{1,2,3,4\}$. Para quaisquer colunas distintas $i,j$, exige-se $Q_i \ne Q_j$ e $|Q_i-Q_j| \ne |i-j|$. Uma solução satisfaz todas as restrições, sem precisar de uma função de custo.
 
 No **retrocesso**, atribuímos uma variável, rejeitamos conflitos com as atribuições anteriores e voltamos atrás quando não há valor possível. Se fixarmos $Q_1=2$, a verificação antecipada (_forward checking_) retira de $Q_2$ as linhas 1, 2 e 3; resta 4. Para $Q_3$ restam 1 e 3; para $Q_4$ restam 1, 3 e 4. Escolher a variável não atribuída com menos valores restantes chama-se MRV e leva a $Q_2$. Cada ramo precisa dos seus domínios: ao recuar, repõem-se os valores removidos. Satisfazer restrições par a par ainda não prova que exista uma atribuição completa.
 
-## O limite teórico
+## Complexidade e garantias
 
 Estes métodos aproximados existem porque os problemas exatos são difíceis: muitas otimizações combinatórias são NP-difíceis, e a exaustão não escala, como recorda a página de [complexidade](/cadeiras/tc/complexidade/). A pesquisa local troca a garantia de otimalidade por velocidade e boas soluções na prática, e a escolha entre subida, arrefecimento e evolução depende do formato dos ótimos locais do teu problema.

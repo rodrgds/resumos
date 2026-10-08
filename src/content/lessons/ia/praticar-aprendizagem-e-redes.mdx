@@ -1,7 +1,7 @@
 ---
 draft: true
 title: Praticar aprendizagem e redes
-description: Aplicar os conceitos a novos casos e justificar as decisões.
+description: Interpretar métricas, separar validação e teste e acompanhar atualizações de aprendizagem.
 section: exercicios
 ---
 
@@ -26,11 +26,6 @@ Com a classe positiva dada, um teste tem VP=8, FP=2, FN=4 e VN=6. Qual é a prec
 Entre as previsões positivas, conta as que eram positivas de facto.
 
   </div>
-  <div slot="hint-more">
-
-O denominador da precisão é VP+FP.
-
-  </div>
   <div slot="solution">
 
 A precisão é 8/(8+2)=0,8. A sensibilidade seria 8/(8+4)=2/3 e a exatidão (8+6)/20=0,7.
@@ -45,51 +40,30 @@ Dividir por todos os exemplos ou confundir precisão com sensibilidade.
 
 <Exercise
   id="ia-validacao-selecao"
-  title="Escolher sem contaminar o teste"
-  revision={1}
+  title="Diagnosticar fuga de informação"
+  revision={2}
   explanation="/cadeiras/ia/aprendizagem-e-redes/#seleção-de-modelos-e-generalização"
   answer={{
-  "kind": "choice",
-  "options": [
-    {
-      "text": "Escolher pela métrica do teste e repetir até melhorar.",
-      "correct": false,
-      "explanation": "Cada escolha passa informação do teste para a seleção do modelo."
-    },
-    {
-      "text": "Escolher pela validação, voltar a treinar e avaliar o teste no fim.",
-      "correct": true,
-      "explanation": "A seleção fica separada da estimativa final de desempenho."
-    },
-    {
-      "text": "Normalizar com todos os dados antes de dividir.",
-      "correct": false,
-      "explanation": "A média do teste passa a influenciar a transformação do treino."
-    }
-  ]
-}}
+    kind: 'self',
+    checklist: ["Ajustei a normalização só no treino de cada partição.", "Escolhi a profundidade pela média de validação, sem usar o teste.", "Usei 60 exemplos para treino e 20 para validação por partição.", "Voltei a treinar nos 80 exemplos antes de testar nos 20 reservados."],
+  }}
 >
 
-Queres escolher a profundidade de uma árvore e medir a generalização. Que procedimento mantém o teste separado?
+Uma equipa tem 100 exemplos independentes e três profundidades candidatas para uma árvore. Normaliza os 100 exemplos, reserva 20 para teste e faz validação cruzada com quatro partições nos outros 80. Escolhe a profundidade pelo teste e publica o modelo intermédio da partição com melhor resultado.
+
+Identifica os erros do protocolo e propõe uma sequência que separe transformação dos dados, escolha da profundidade, treino final e teste. Quantos exemplos entram no treino e na validação de cada partição?
 
   <div slot="hint">
 
-Os hiperparâmetros são escolhas que também se adaptam aos dados.
+Há escolhas aprendidas tanto no pré-processamento como na seleção da árvore.
 
   </div>
-  <div slot="hint-more">
 
-Usa validação cruzada dentro da parte de treino.
-
-  </div>
   <div slot="solution">
 
-Escolhe pela validação, ajusta novamente o modelo no conjunto reservado para treino e só depois avalia o teste. Ajusta normalização ou outras transformações em cada treino, sem consultar validação nem teste.
+Normalizar os 100 exemplos transmite informação do teste à preparação dos dados. A transformação deve ser ajustada nos 60 exemplos de treino de cada partição e aplicada aos 20 de validação. Para cada profundidade, comparam-se as médias das quatro validações; o teste não escolhe a profundidade.
 
-  </div>
-  <div slot="mistakes">
-
-Escolher o melhor modelo intermédio de uma partição ou usar o teste como validação repetida.
+Depois da escolha, ajusta-se novamente a preparação e a árvore nos 80 exemplos. Esse é o modelo final, não o melhor modelo intermédio de uma partição. Avalia-se uma vez nos 20 reservados para teste. A separação por grupos ou tempo precisaria de outro protocolo se os exemplos não fossem independentes.
 
   </div>
 </Exercise>
@@ -98,7 +72,7 @@ Escolher o melhor modelo intermédio de uma partição ou usar o teste como vali
   id="ia-perceptron-atualizar"
   title="Corrigir uma previsão errada"
   revision={1}
-  explanation="/cadeiras/ia/aprendizagem-e-redes/#um-perceptrão-em-duas-épocas"
+  explanation="/cadeiras/ia/aprendizagem-e-redes/#treino-do-perceptrão"
   answer={{
   "kind": "self",
   "checklist": [
@@ -137,7 +111,7 @@ Aplicar a atualização no sentido positivo ou esquecer o viés.
   id="ia-backprop-pesos"
   title="Calcular antes de atualizar"
   revision={1}
-  explanation="/cadeiras/ia/aprendizagem-e-redes/#de-um-neurónio-a-uma-rede"
+  explanation="/cadeiras/ia/aprendizagem-e-redes/#redes-multicamada-e-retropropagação"
   answer={{
   "kind": "self",
   "checklist": [
@@ -148,16 +122,11 @@ Aplicar a atualização no sentido positivo ou esquecer o viés.
 }}
 >
 
-Na rede 2-1-1 da lição, alguém atualiza wo para 0,5642 e só depois calcula δh com esse peso novo. Por que o procedimento diverge do passo de gradiente descrito? Que peso escondido fica inalterado?
+Uma rede 2-1-1 usa sigmoides, entrada $x=(1,0)$ e alvo 1. Antes da passagem para a frente, os pesos escondidos são $(0{,}5,-0{,}5)$, o peso de saída é $w_o=0{,}5$ e os dois vieses são zero. Alguém atualiza $w_o$ para 0,5642 e só depois calcula $\delta_h=\delta_o w_o a_h(1-a_h)$ com esse peso novo e as ativações antigas. Por que o procedimento diverge de um passo de gradiente calculado sobre o mesmo erro? Que peso escondido fica inalterado?
 
   <div slot="hint">
 
 A retropropagação deriva o erro da passagem para a frente anterior.
-
-  </div>
-  <div slot="hint-more">
-
-A derivada da saída relativamente ao escondido usa o wo que produziu aquela saída.
 
   </div>
   <div slot="solution">
@@ -174,51 +143,28 @@ Confundir a ordem de cálculo das derivadas com uma atualização imediata de ca
 
 <Exercise
   id="ia-rnn-memoria"
-  title="Reconhecer uma recorrência"
-  revision={1}
+  title="Seguir o estado de uma recorrência"
+  revision={2}
   explanation="/cadeiras/ia/aprendizagem-e-redes/#sequências-e-redes-recorrentes"
   answer={{
-  "kind": "choice",
-  "options": [
-    {
-      "text": "O estado anterior participa no cálculo e os parâmetros repetem-se nas posições.",
-      "correct": true,
-      "explanation": "Essa ligação permite acumular contexto da sequência."
-    },
-    {
-      "text": "Cada posição tem obrigatoriamente pesos diferentes.",
-      "correct": false,
-      "explanation": "Uma RNN reutiliza os parâmetros ao longo da sequência."
-    },
-    {
-      "text": "RNN é sinónimo de aprendizagem por reforço.",
-      "correct": false,
-      "explanation": "É uma arquitetura, que pode ser treinada com vários tipos de objetivo."
-    }
-  ]
-}}
+    kind: 'self',
+    checklist: ["Obtive 0,762 e 0,642 para a sequência (1,0).", "Obtive 0 e 0,762 para a sequência (0,1).", "Expliquei a dependência do passado e a sua remoção com coeficiente zero."],
+  }}
 >
 
-Que propriedade distingue a RNN apresentada de uma MLP aplicada isoladamente a cada posição?
+Uma RNN escalar usa $h_t=\tanh(x_t+h_{t-1})$, com $h_0=0$. Calcula os dois estados para a sequência (1,0) e para a sequência (0,1), com três casas decimais. Os estados finais coincidem? O que muda se o coeficiente de $h_{t-1}$ passar a zero?
 
   <div slot="hint">
 
-Olha para o termo que contém h da posição anterior.
+Calcula h1 antes de substituir na expressão de h2.
 
   </div>
-  <div slot="hint-more">
 
-Wx e Wh não mudam de nome quando t avança.
-
-  </div>
   <div slot="solution">
 
-A recorrência usa h anterior e parâmetros partilhados. Reordenar uma sequência pode mudar os estados e a saída. A memória da arquitetura não implica recompensa ou Q-learning.
+Para (1,0), $h_1=\tanh(1)\approx0{,}762$ e $h_2=\tanh(0+0{,}762)\approx0{,}642$. Para (0,1), $h_1=0$ e $h_2=\tanh(1)\approx0{,}762$.
 
-  </div>
-  <div slot="mistakes">
-
-Confundir estado escondido da RNN com a função heurística h de A\*.
+A ordem altera o estado final porque a segunda posição recebe o estado da primeira. Os parâmetros são os mesmos nas duas posições. Com coeficiente recorrente zero, $h_t=\tanh(x_t)$: cada posição passa a depender apenas da sua entrada atual. Os estados finais destas duas sequências continuam diferentes porque as últimas entradas diferem, mas já não transportam informação das primeiras.
 
   </div>
 </Exercise>
@@ -227,7 +173,7 @@ Confundir estado escondido da RNN com a função heurística h de A\*.
   id="ia-q-learning-passo"
   title="Atualizar um retorno descontado"
   revision={1}
-  explanation="/cadeiras/ia/aprendizagem-e-redes/#aprender-por-tentativa-reforço"
+  explanation="/cadeiras/ia/aprendizagem-e-redes/#aprendizagem-por-reforço"
   answer={{
   "kind": "number",
   "value": 4.3,

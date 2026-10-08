@@ -12,17 +12,15 @@ import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import puzzle from '../../ia/puzzle8.dot?raw';
 
-Depois do agente e do ambiente, esta página responde a como encontrar a sequência de ações até ao objetivo sem nenhuma pista sobre a direção.
+No 8-puzzle, cada jogada desliza uma peça vizinha para a casa vazia de um tabuleiro 3 por 3. Queremos transformar uma disposição inicial na disposição objetivo.
 
-Pensa num tabuleiro 3 por 3 com 8 peças numeradas e uma casa vazia, onde cada jogada desliza uma peça vizinha para a casa vazia. Há uma disposição inicial baralhada e uma disposição objetivo arrumada, e queres a sequência de jogadas que liga uma à outra.
-
-Em IA chamamos estado a cada disposição das peças, ou seja, a uma forma concreta de o tabuleiro estar. Chamamos pesquisa ao processo de experimentar sequências de jogadas até encontrar uma que chegue ao objetivo. Chamamos pesquisa não informada (ou cega) à pesquisa que avança sem nenhuma pista sobre que direção parece mais promissora, ou seja, que escolhe a ordem de visita sem estimar o que falta. Uma solução é um caminho dessa sequência, e o seu custo é a soma dos custos das jogadas.
+Cada disposição é um **estado**. Uma **solução** é uma sequência de ações que atinge o objetivo; o seu custo soma os custos das ações. A pesquisa **não informada** escolhe a ordem de exploração sem estimar a distância que ainda falta. Pode usar os custos já pagos, como faz a pesquisa de custo uniforme.
 
 ## Espaço de estados
 
 Um problema de pesquisa tem: estado inicial, ações possíveis em cada estado, modelo de transição (para onde cada ação leva), teste de objetivo e custo de cada ação. O conjunto de todos os estados alcançáveis forma o **espaço de estados**, e a pesquisa constrói uma **árvore de pesquisa** sobre ele, que pode repetir estados do espaço quando há vários caminhos para o mesmo sítio.
 
-O exemplo desta página é um fragmento do 8-puzzle (tabuleiro 3 por 3 com 8 peças e uma casa vazia, onde cada ação desliza uma peça vizinha para a casa vazia). Parte do estado S, com a casa vazia no centro, e considera os quatro sucessores do início e os filhos de dois desses sucessores:
+Partimos de S, com a casa vazia no centro. O fragmento mostra os quatro sucessores de S e os filhos de A e B que não regressam imediatamente a S:
 
 - S: `1 2 3 / 4 _ 6 / 7 5 8`, vazia no centro.
 - A (cima): `1 _ 3 / 4 2 6 / 7 5 8`.
@@ -69,18 +67,29 @@ Dizer que a profundidade "é mais rápida". Ela expande menos nós quando o obje
 
 Quando as ações têm custos diferentes, a largura deixa de garantir o caminho mais barato. A pesquisa de **custo uniforme** expande sempre o nó com menor custo acumulado $g$ desde o início, que é a largura quando cada ação custa 1. Com custos não negativos num grafo finito, é ótima se aceitar um caminho mais barato para um estado já descoberto e testar o objetivo ao retirar o nó de menor custo. Gerar um objetivo não basta: pode estar na fronteira outro caminho mais barato. Num espaço infinito, a completude exige condições adicionais, como ramificação finita e custos de ação pelo menos $\varepsilon > 0$.
 
-O **aprofundamento iterativo** combina o melhor dos dois: corre profundidades limitadas com limite 0, 1, 2, e por aí fora. Cada iteração revisita os níveis de cima (trabalho repetido), mas em árvores com fator de ramificação alto esse custo extra é pequeno face ao último nível, e a memória é a da profundidade. Quando cada ação custa o mesmo, encontra o caminho mais curto como a largura.
+O **aprofundamento iterativo** repete a pesquisa em profundidade com limites crescentes: corre profundidades limitadas com limite 0, 1, 2, e por aí fora. Cada iteração revisita os níveis de cima (trabalho repetido), mas em árvores com fator de ramificação alto esse custo extra é pequeno face ao último nível, e a memória é a da profundidade. Quando cada ação custa o mesmo, encontra o caminho mais curto como a largura.
 
-## Exemplo: contar expansões no fragmento
+## Fronteira e ordem de visita
 
-No fragmento acima, com o objetivo B2 a distância 2 pelo ramo B:
+Na BFS, com teste ao retirar, a fila muda assim. A frente fica à esquerda; as folhas do fragmento não têm sucessores.
 
-- Largura, testando ao retirar: oito expansões, pela ordem S, A, B, C, D, A1, A2, B1. B2 é gerado na terceira e reconhecido depois da oitava. Custo 2.
-- Profundidade no fragmento, primeiro sucessor primeiro: S, A, A1, A2, B, B1; a seguir retira B2 e para. No problema completo pode explorar muitos outros estados antes de voltar a B.
-- Custo uniforme com custo 1 por ação: coincide com a largura neste fragmento. Se a ação S para B custasse 5 e as outras 1, expandiria A, C e D (custo 1) antes de B (custo 5), e o caminho S, B, B2 custaria 6. No fragmento não há outra solução, por isso continua a ser ótimo; seria preciso acrescentar outro caminho para mudar a escolha final.
+| Nó retirado | Fila após a expansão |
+| ----------- | -------------------- |
+| S           | A, B, C, D           |
+| A           | B, C, D, A1, A2      |
+| B           | C, D, A1, A2, B1, B2 |
+| C           | D, A1, A2, B1, B2    |
+| D           | A1, A2, B1, B2       |
+| A1          | A2, B1, B2           |
+| A2          | B1, B2               |
+| B1          | B2                   |
+
+B2 é retirado a seguir e reconhecido sem expansão. Se o teste acontecesse na geração, pararíamos na linha de B. Na DFS, a ordem de expansão seria S, A, A1, A2, B, B1, antes de reconhecer B2. Este traço vale para o fragmento, não para os sucessores omitidos do tabuleiro completo.
+
+Se apenas S para B passasse a custar 5, a BFS manteria a ordem, mas já não ordenaria por custo. UCS exploraria os caminhos de custo 1 e 2 antes de retirar B com custo 5. A única solução do fragmento continuaria a ser S, B, B2, agora com custo 6. Acrescentar outra solução mais barata é que poderia mudar o caminho devolvido.
 
 ## Custo e memória
 
-Numa árvore, $b$ é o máximo de sucessores por nó, $d$ a profundidade do objetivo mais superficial e $m$ a profundidade máxima. Com teste de objetivo ao retirar, BFS usa tempo e memória $O(b^d)$; DFS usa tempo $O(b^m)$ e memória $O(bm)$; aprofundamento iterativo usa tempo $O(b^d)$ e memória $O(bd)$, para $b > 1$. Guardar todos os visitados num grafo acrescenta memória, até $O(|V|)$ para $|V|$ estados alcançáveis.
+Numa árvore, $b$ é o máximo de sucessores por nó, $d$ a profundidade do objetivo mais superficial e $m$ a profundidade máxima. Na BFS em árvore que gera todos os filhos e testa o objetivo ao retirar, podem ser gerados nós de profundidade $d+1$ antes de retirar o objetivo: o limite em tempo e memória é $O(b^{d+1})$. Com teste na geração, é $O(b^d)$. DFS usa tempo $O(b^m)$ e memória $O(bm)$; aprofundamento iterativo usa tempo $O(b^d)$ e memória $O(bd)$, para $b > 1$. Guardar todos os visitados num grafo acrescenta memória, até $O(|V|)$ para $|V|$ estados alcançáveis.
 
 Uma estratégia é **completa** se encontra uma solução quando existe, sob as hipóteses indicadas. É **ótima** se devolve uma solução de custo mínimo. Largura e aprofundamento iterativo são completos com ramificação finita e ótimos quando as ações têm o mesmo custo positivo. A [pesquisa heurística](/cadeiras/ia/pesquisa-heuristica/) usa uma estimativa do custo restante para ordenar a fronteira.
