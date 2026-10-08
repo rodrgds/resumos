@@ -43,6 +43,8 @@ As checklists mostram caixas e ícones na própria página. Clica em qualquer es
 
 Também aceita `[X]` como concluída e os marcadores de lista `*`, `+` e numerados. Estados desconhecidos ficam como texto literal. O estado e as edições ficam no Markdown, incluindo na exportação e depois de recarregar a página.
 
+Numa linha de lista ou checklist, ⌘ ← no Mac ou Home no Windows/Linux leva o cursor ao marcador, mesmo que o texto ocupe várias linhas visuais. Uma segunda pressão leva ao início absoluto da linha, incluindo os espaços e as citações. ⌘ → ou End leva ao fim da linha Markdown. Shift seleciona até ao mesmo ponto. Os atalhos de palavras continuam a ser Option ←/→ no Mac e Ctrl ←/→ no Windows/Linux; Ctrl Home/End, ou ⌘ ↑/↓ no Mac, leva ao início/fim do documento. Prosa, código e linhas de continuação conservam os movimentos habituais do editor.
+
 O menu **Ações do apontamento**, ao lado do título, permite inserir imagens e fórmulas, importar, exportar e eliminar. Também podes abrir o menu de uma página nos conteúdos com o botão direito, o botão de ações ou Shift F10. A eliminação pode ser desfeita durante a visita.
 
 Cola ou arrasta imagens para a página, ou usa **Inserir imagem**. Aceita PNG, JPEG, WebP, GIF e AVIF até 10 MB por ficheiro. As imagens ficam neste navegador, sem uploads. Imagens de URLs externos aparecem como texto, sem pedidos de rede. Para remover uma imagem, clica nela e apaga o Markdown correspondente.

@@ -36,6 +36,7 @@ import {
   outdentMarkdownList,
   exitMarkdownList,
   continueMarkdownList,
+  moveToListBoundary,
 } from './markdown-commands';
 import { visit, SKIP } from 'unist-util-visit';
 import type { Root, RootContent } from 'mdast';
@@ -429,6 +430,26 @@ export function liveMarkdown(
             shift: enterPreview('down', true),
           },
           { key: 'Tab', run: indentMarkdownList, shift: outdentMarkdownList },
+          {
+            key: 'Home',
+            run: moveToListBoundary('start'),
+            shift: moveToListBoundary('start', true),
+          },
+          {
+            mac: 'Cmd-ArrowLeft',
+            run: moveToListBoundary('start'),
+            shift: moveToListBoundary('start', true),
+          },
+          {
+            key: 'End',
+            run: moveToListBoundary('end'),
+            shift: moveToListBoundary('end', true),
+          },
+          {
+            mac: 'Cmd-ArrowRight',
+            run: moveToListBoundary('end'),
+            shift: moveToListBoundary('end', true),
+          },
           { key: 'Escape', run: temporarilySetTabFocusMode },
           { key: 'Enter', run: exitMarkdownList },
           {

@@ -949,6 +949,89 @@ for (const delimiter of ['$', '$$']) {
   });
 }
 
+for (const [platform, startKey, endKey] of [
+  ['MacIntel', 'Meta+ArrowLeft', 'Meta+ArrowRight'],
+  ['Win32', 'Home', 'End'],
+  ['Linux x86_64', 'Home', 'End'],
+]) {
+  test(`line boundary keys reach list markers across wrapped text (${platform})`, async ({
+    page,
+  }) => {
+    await page.addInitScript((platform) => {
+      Object.defineProperty(navigator, 'platform', { get: () => platform });
+    }, platform);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/caderno/exemplo/#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    const body =
+      'Texto suficientemente comprido para ocupar várias linhas visuais e testar o movimento até ao marcador';
+    for (const [before, prefix] of [
+      ['', '- '],
+      ['', '- [?] '],
+      ['- Pai\n  ', '- [ ] '],
+      ['> ', '1. [!] '],
+    ]) {
+      const source = `${before}${prefix}${body}`;
+      await editor.fill(source);
+      await editor.press('ControlOrMeta+End');
+      await editor.press(startKey);
+      await page.keyboard.insertText('|');
+      expect(await exportedMarkdown(page)).toContain(
+        `${before}|${prefix}${body}`,
+      );
+      await editor.fill(source);
+      await editor.press('ControlOrMeta+End');
+      await editor.press(startKey);
+      await editor.press(startKey);
+      await page.keyboard.insertText('|');
+      const lineStart = source.lastIndexOf('\n') + 1;
+      expect(await exportedMarkdown(page)).toContain(
+        `${source.slice(0, lineStart)}|${source.slice(lineStart)}`,
+      );
+      await editor.fill(source);
+      await editor.press('ControlOrMeta+End');
+      await editor.press(`Shift+${startKey}`);
+      await page.keyboard.insertText('Substituído');
+      expect(await exportedMarkdown(page)).toContain(`${before}Substituído`);
+      await editor.fill(source);
+      await editor.press('ControlOrMeta+End');
+      await editor.press(startKey);
+      await editor.press(endKey);
+      await page.keyboard.insertText('|');
+      expect(await exportedMarkdown(page)).toContain(`${source}|`);
+      await editor.fill(source);
+      await editor.press('ControlOrMeta+End');
+      await editor.press(startKey);
+      await editor.press(`Shift+${endKey}`);
+      await page.keyboard.insertText('Substituído');
+      expect(await exportedMarkdown(page)).toContain(`${before}Substituído`);
+    }
+    await editor.fill('- [?] Primeiro último');
+    await editor.press('ControlOrMeta+End');
+    await editor.press(
+      platform === 'MacIntel'
+        ? 'Alt+Shift+ArrowLeft'
+        : 'Control+Shift+ArrowLeft',
+    );
+    await page.keyboard.insertText('Destino');
+    expect(await exportedMarkdown(page)).toContain('- [?] Primeiro Destino');
+    for (const source of [body, `\`\`\`md\n- [ ] ${body}\n\`\`\``]) {
+      await editor.fill(source);
+      await editor.press('ControlOrMeta+End');
+      if (source.startsWith('```')) {
+        await editor.press('ArrowUp');
+        await editor.press('End');
+      }
+      await editor.press(startKey);
+      await page.keyboard.insertText('|');
+      const exported = await exportedMarkdown(page);
+      expect(exported.replace('|', '')).toContain(source);
+      expect(exported).not.toContain(`|${body}`);
+      expect(exported).not.toContain('\n|- [ ]');
+    }
+  });
+}
+
 test('Tab nests a quoted list item without moving the quote itself', async ({
   page,
 }) => {
