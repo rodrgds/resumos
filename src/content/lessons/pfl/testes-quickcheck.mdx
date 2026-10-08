@@ -46,11 +46,13 @@ ghci> quickCheck prop_revRev
 
 A ferramenta gerou 100 listas aleatórias[^cem], que podem incluir listas vazias, comprimentos distintos, negativos e repetidos e a igualdade valeu em todas. Um teste de exemplo verifica a entrada escolhida. A propriedade permite testar outras entradas automaticamente, mas só os casos gerados foram observados.
 
+<span id="testar-as-partes-que-caracterizam-o-resultado"></span>
+
 ### Contrato da ordenação
 
 Uma função de ordenação deve produzir uma lista ordenada com os mesmos elementos e multiplicidades. Em `[2,1,2]`, devolver `[1,2]` conserva os valores distintos, mas perde uma ocorrência. Devolver `[2,1,2]` conserva tudo, mas não ordena.
 
-A idempotência `f (f xs) == f xs` verifica outra lei. A função `f xs = []` satisfaz essa igualdade para qualquer lista finita, embora perca os dados. Precisamos de propriedades que distingam estes erros, não apenas de mais tentativas da mesma lei.
+A idempotência `f (f xs) == f xs` verifica outra lei. A função `f xs = []` satisfaz essa igualdade para qualquer lista finita, embora perca os dados. Para caracterizar a ordenação, testa a ordem e a conservação das multiplicidades. Quando tens uma implementação de referência independente, podes comparar os resultados.
 
 ## Quando falha: o contraexemplo
 
@@ -69,7 +71,7 @@ ghci> quickCheck prop_sortId
 [1,0]
 ```
 
-O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`. O **shrinking** tenta reduzir a entrada encontrada, conservando a falha. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. Perante uma falha, compara o contraexemplo com o contrato antes de mudar a implementação. Neste caso, a ordenação está certa e a propriedade é que está errada. O ciclo da figura mostra esse regresso à afirmação:
+O QuickCheck responde que a propriedade é falsificável e mostra a testemunha: `[1,0]`. O **shrinking** tenta reduzir a entrada encontrada, conservando a falha. As reduções disponíveis não garantem o mínimo global. O número de testes varia de corrida para corrida; a lista curta fora de ordem é o essencial. Perante uma falha, compara o contraexemplo com o contrato antes de mudar a implementação. Neste caso, a ordenação está certa e a propriedade é que está errada:
 
 <Dot
   source={ciclo}
@@ -114,19 +116,13 @@ prop_maxDireita = forAll parOrdenado $ \(x, y) -> max x y == y
 
 Geramos dois inteiros e colocamos o menor primeiro. Todas as tentativas produzem um par válido. O `forAll` usa esses pares para testar a propriedade. `suchThat` é outra possibilidade, mas repete tentativas até satisfazer a condição; uma condição impossível ou muito rara pode impedir a geração de terminar. `forAll` não reduz automaticamente entradas de um gerador próprio. Usa `forAllShrink` e um redutor que preserve a condição quando precisares desse comportamento.
 
+O mesmo princípio aplica-se a `insert x xs`: se o contrato pressupõe `xs` ordenada, podes ordenar a lista gerada antes de testar a inserção. Assim, cada tentativa exercita uma entrada válida.
+
 :::tip[De onde vêm as propriedades]
 Boas fontes: leis algébricas (`x + 0 == x`), idempotência (`sort (sort xs) == sort xs`), inversas (`reverse (reverse xs) == xs`) e modelos de referência (a tua função dá o mesmo que a versão lenta e óbvia). Começa por escrever o que a função deve conservar ou produzir, incluindo os casos limite.
 :::
 
 [^cem]: Os 100 casos são a omissão da ferramenta; podes pedir mais com argumentos de configuração.
-
-## Testar as partes que caracterizam o resultado
-
-A idempotência `sort (sort xs) == sort xs` não caracteriza uma ordenação correta. Uma função que devolve sempre `[]` também satisfaz essa lei. Para conferir um algoritmo de ordenação, testa a ordem, a conservação dos elementos com multiplicidades e, quando tens uma referência independente, a igualdade com o resultado dessa referência.
-
-Uma propriedade de `insert x xs` que pressupõe `xs` ordenada deve gerar listas ordenadas ou formular essa pré-condição, ou seja não escondas uma condição rara atrás de muitas implicações descartadas. Um gerador construtivo, como ordenar a lista antes de testar a inserção, produz entradas válidas mais vezes.
-
-O shrinking procura um contraexemplo menor segundo as reduções disponíveis. Não promete o mínimo global entre todas as entradas possíveis. A ausência de falhas em 100 casos também não é uma demonstração para todas as listas.
 
 ## Um contraexemplo que cabe no papel
 
