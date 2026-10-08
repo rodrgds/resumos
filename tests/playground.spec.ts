@@ -33,7 +33,10 @@ test('C++ executes standard sorting and duplicate removal', async ({
 test('Round Robin runs the authored C program and rejects invalid quanta', async ({
   page,
 }) => {
-  test.setTimeout(180_000);
+  const invalidQuanta = ['3abc', '999999999999999999999999999999'];
+  const runTimeout = 75_000;
+  // Each input recompiles C in a fresh Worker, with its own execution deadline.
+  test.setTimeout(30_000 + (1 + invalidQuanta.length) * runTimeout);
   await page.goto('/cadeiras/so/escalonamento/');
   const playground = page.getByRole('region', {
     name: 'Round Robin com chegadas em zero',
@@ -52,15 +55,15 @@ test('Round Robin runs the authored C program and rejects invalid quanta', async
   const output = playground.getByLabel('Resultado', { exact: true });
   await input.fill('3');
   await run.click();
-  await expect(run).toBeEnabled({ timeout: 75_000 });
+  await expect(run).toBeEnabled({ timeout: runTimeout });
   await expect(playground.getByRole('status')).toHaveText('Concluído');
   await expect(output).toHaveText(
     'P1: fim=14 espera=8\nP2: fim=6 espera=3\nP3: fim=8 espera=6\nP4: fim=15 espera=11\nEspera media: 7.00\n',
   );
-  for (const invalid of ['3abc', '999999999999999999999999999999']) {
+  for (const invalid of invalidQuanta) {
     await input.fill(invalid);
     await run.click();
-    await expect(run).toBeEnabled({ timeout: 75_000 });
+    await expect(run).toBeEnabled({ timeout: runTimeout });
     await expect(output).toHaveText('Usa um quantum inteiro entre 1 e 100.\n');
     await expect(playground.getByRole('status')).toHaveText(
       'Terminou com erro (1)',
