@@ -8,11 +8,9 @@ practices:
 
 import Dot from '../../../components/Dot.astro';
 
-Uma expressão mostra blocos de palavras; uma máquina mostra o efeito de cada símbolo. Esta página mostra as duas conversões sem mudar a linguagem: Thompson, de expressões para autómatos, e eliminação de estados, no sentido inverso.
+A expressão $(a+b)^*a$ descreve palavras terminadas em $a$. Uma máquina equivalente tem de aceitar $a$ e $ba$, mas rejeitar $\varepsilon$ e $ab$. A construção de Thompson permite obter essa máquina seguindo a estrutura da expressão.
 
-Uma expressão regular e um autómato finito podem descrever a mesma linguagem. Converte entre as duas formas para escolher a descrição que facilita cada tarefa: uma expressão mostra blocos de palavras; uma máquina mostra o efeito de cada símbolo.
-
-Usa a [precedência das expressões](/cadeiras/tc/linguagens-expressoes/#expressões-regulares) e o [fecho-ε](/cadeiras/tc/automatos-nao-deterministas/#transições-ε-e-fecho-ε).
+No sentido inverso, a eliminação de estados resume percursos por expressões. Usa a [precedência das expressões](/cadeiras/tc/linguagens-expressoes/#expressões-regulares) e o [fecho-ε](/cadeiras/tc/automatos-nao-deterministas/#transições-ε-e-fecho-ε).
 
 ## Expressão para ε-NFA: Thompson
 
@@ -34,7 +32,7 @@ Para $E^*$, acrescenta entrada e saída novas e quatro arestas vazias: da entrad
 
 Para $a^*$: entrada $s$, saída $f$, fragmento interior $p \xrightarrow{a} q$, com $s \xrightarrow{\varepsilon} p$, $s \xrightarrow{\varepsilon} f$, $q \xrightarrow{\varepsilon} p$ e $q \xrightarrow{\varepsilon} f$. O caminho direto $s \to f$ aceita $\varepsilon$; o ciclo aceita $a$, $aa$ e continua.
 
-Para $ab$: fragmento de $a$ com $p \xrightarrow{a} q$, fragmento de $b$ com $r \xrightarrow{b} t$, mais $q \xrightarrow{\varepsilon} r$. Um percurso completo lê primeiro $a$ e depois $b$. Sem essa aresta intermédia, a máquina aceitaria $a$ ou $b$ isolados, o que estaria errado.
+Para $ab$: fragmento de $a$ com $p \xrightarrow{a} q$, fragmento de $b$ com $r \xrightarrow{b} t$, mais $q \xrightarrow{\varepsilon} r$. Um percurso completo lê primeiro $a$ e depois $b$. Sem essa aresta intermédia, nenhum percurso vai da entrada do primeiro fragmento à saída do segundo. A concatenação não aceita palavra alguma.
 
 Para $a+b$: entrada nova $s$ com $s \xrightarrow{\varepsilon} p$ e $s \xrightarrow{\varepsilon} r$; saídas $q,t$ com $q \xrightarrow{\varepsilon} f$ e $t \xrightarrow{\varepsilon} f$. Cada percurso escolhe um ramo e só um.
 
@@ -94,7 +92,22 @@ Considera estados $p$ inicial e $q,r$ finais, com $p \xrightarrow{a} p$, $p \xri
 
 Elimina $r$ primeiro: como $r$ tem ciclos $a,b$ e não tem saída para $p,q,s,f$ além de $f$, a aresta $q \to f$ ganha a parcela $b(a+b)^*$, que representa sair de $q$ para $r$ e ficar lá um tempo arbitrário antes de terminar. As restantes arestas entre $s,p,q,f$ mantêm-se.
 
-Elimina depois $p$ e $q$ pela fórmula $R_{ij}+R_{ik}(R_{kk})^*R_{kj}$, usando sempre os rótulos anteriores à eliminação de cada estado. O rótulo final $R_{sf}$ descreve as palavras que chegam a $q$ sem passar por $r$ mais as que passam por $r$: aceita $b$, $bb$, $bab$ e rejeita $\varepsilon$, $a$ e $aba$ sem $b$ que alcance um final. Testa cada palavra no autómato original antes de confiar na expressão.
+Depois de retirar $r$, temos $R_{qf}=\varepsilon+b(a+b)^*$. O $\varepsilon$ conserva a possibilidade de terminar em $q$, sem passar por $r$.
+
+Ao eliminar $p$, só há uma entrada de $s$ para $p$ e uma de $q$ para $p$. As saídas de $p$ levam a $q$. Por isso surgem:
+
+$$
+R_{sq}=\varepsilon a^*b\equiv a^*b,
+\qquad R_{qq}=aa^*b.
+$$
+
+O novo ciclo em $q$ lê um $a$ para regressar a $p$, mais zero ou mais $a$ no ciclo de $p$, e um $b$ para voltar a $q$. Eliminar $q$ dá a expressão final:
+
+$$
+R_{sf}=a^*b(aa^*b)^*(\varepsilon+b(a+b)^*).
+$$
+
+A primeira parte chega pela primeira vez a $q$. A estrela permite regressar a $q$ através de $p$; o último fator permite terminar ali ou entrar no final absorvente $r$. $b$, $bb$ e $bab$ são aceites. $\varepsilon$, $a$ e $aba$ são rejeitadas, pois nenhuma termina num final. Estes testes conferem a conta; a fórmula de eliminação justifica a equivalência para todas as palavras.
 
 ## Caminhos com estados intermédios limitados
 

@@ -8,11 +8,9 @@ practices:
 
 import Dot from '../../../components/Dot.astro';
 
-Depois de esgotar o que as máquinas finitas conseguem recordar, o percurso precisa de descrever palavras com partes relacionadas: esta página responde como gerar palavras com regras de substituição.
+A regra $S\to aSb$ acrescenta um $a$ à esquerda e um $b$ à direita, deixando $S$ no meio para repetir a operação. Com uma regra de paragem $S\to\varepsilon$, obtemos $ab$, $aabb$ e blocos maiores com as mesmas contagens.
 
-Uma **gramática livre de contexto**, CFG, gera palavras por substituição. Cada **regra** troca uma **variável**, um símbolo auxiliar ainda por substituir, por uma sequência de variáveis e **terminais**. Os terminais são as letras finais da palavra. A substituição não depende do que está à volta, e por isso a gramática se chama livre de contexto. Com $S\to aSb$, acrescentas um $a$ no início e um $b$ no fim e repetes o mesmo problema no meio. Assim relates partes distantes da palavra sem reservar um estado para cada comprimento.
-
-Usa [concatenação e palavra vazia](/cadeiras/tc/linguagens-expressoes/#alfabetos-e-palavras). Uma regra substituirá um símbolo auxiliar por uma sequência.
+Uma **gramática livre de contexto**, CFG, usa regras para substituir variáveis como $S$ por sequências. Os terminais, aqui $a$ e $b$, ficam na palavra final. A substituição de $S$ não depende dos símbolos à sua volta.
 
 ## Definição e derivações
 
@@ -72,7 +70,9 @@ $$
 
 A regra $SS$ junta dois blocos equilibrados. As regras $aSb$ e $bSa$ envolvem um par equilibrado à volta de outro bloco equilibrado. As bases cobrem os pares de comprimento 2 e a palavra vazia.
 
-Prova por indução no comprimento que só gera palavras equilibradas: cada regra conserva a diferença entre o número de $a$ e de $b$. Para a outra inclusão, usa indução no comprimento de $w$ equilibrada não vazia. Se $w$ começa e termina em símbolos diferentes, escreve $w=aub$ ou $w=bua$ com $u$ equilibrada e aplica $aSb$ ou $bSa$. Se começa e termina no mesmo símbolo, a diferença entre contagens começa em $1$ ou $-1$ e termina em $0$, por isso anula-se numa posição interior e $w$ parte-se em dois blocos equilibrados não vazios; aplica-se $SS$. Para $abba$:
+Para provar que só gera palavras equilibradas, faz indução na árvore de derivação. A base vazia está equilibrada; envolver uma palavra equilibrada acrescenta um símbolo de cada tipo, e $SS$ soma duas diferenças nulas.
+
+Para a outra inclusão, usa indução no comprimento de $w$ equilibrada não vazia. Se $w$ começa e termina em símbolos diferentes, escreve $w=aub$ ou $w=bua$ com $u$ equilibrada e aplica $aSb$ ou $bSa$. Se começa e termina no mesmo símbolo, a diferença entre contagens vale $1$ ou $-1$ depois da primeira letra e tem o sinal oposto antes da última. Como varia uma unidade por letra, anula-se numa posição interior e $w$ parte-se em dois blocos equilibrados não vazios; aplica-se $SS$. Para $abba$:
 
 $$
 S \Rightarrow SS \Rightarrow abS \Rightarrow abba.
@@ -86,7 +86,9 @@ $$
 S \to aS \mid aSc \mid B, \qquad B \to bB \mid bBc \mid \varepsilon.
 $$
 
-Cada $aSc$ acrescenta um $a$ à esquerda e um $c$ à direita; cada $aS$ acrescenta um $a$ sem $c$. Depois de chegar a $B$, cada $bBc$ acrescenta um $b$ e um $c$, e cada $bB$ acrescenta um $b$ sem $c$. Por isso toda a forma sentencial mantém a ordem $a^*Bc^*$ e depois $a^*b^*c^*$. Se $S \Rightarrow^* a^pBc^q$ então $p \ge q$, e se $B \Rightarrow^* b^rc^s$ então $r \ge s$. Logo a palavra final é $a^pb^rc^{q+s}$ com $p+r \ge q+s$. Isto prova que só gera palavras com $i+j \ge k$.
+Cada $aSc$ acrescenta um $a$ à esquerda e um $c$ à direita; cada $aS$ acrescenta um $a$ sem $c$. Depois de chegar a $B$, cada $bBc$ acrescenta um $b$ e um $c$, e cada $bB$ acrescenta um $b$ sem $c$. Antes de mudar para $B$, a forma sentencial é $a^*Sc^*$. Depois é $a^*b^*Bc^*$; ao eliminar $B$, fica $a^*b^*c^*$. Se $S \Rightarrow^* a^pBc^q$ então $p \ge q$, e se $B \Rightarrow^* b^rc^s$ então $r \ge s$.
+
+Logo a palavra final é $a^pb^rc^{q+s}$ com $p+r \ge q+s$. Isto prova que só gera palavras com $i+j \ge k$.
 
 Para a outra inclusão, seja $i+j \ge k$. Escolhe $q=\min(i,k)$ e $s=k-q$. Então $q \le i$ e $s \le j$. Gera $i-q$ letras $a$ com $aS$, depois $q$ pares com $aSc$, depois $j-s$ letras $b$ com $bB$, depois $s$ pares com $bBc$. Todas as palavras pretendidas são geradas.
 
@@ -125,11 +127,16 @@ Uma gramática é **ambígua** se alguma palavra terminal tem duas árvores sint
 A gramática $E\to E+E\mid E*E\mid a$ é ambígua. A palavra $a+a*a$ pode separar-se na raiz pelo $+$ ou pelo $*$:
 
 <Dot
-  source={`digraph { node [shape=plaintext]; subgraph cluster_left { label="a + (a * a)"; l0 [label="E"]; l1 [label="E"]; lp [label="+"]; l2 [label="E"]; la [label="a"]; l3 [label="E"]; lm [label="*"]; l4 [label="E"]; lb [label="a"]; lc [label="a"]; l0->{l1 lp l2}; l1->la; l2->{l3 lm l4}; l3->lb; l4->lc; } subgraph cluster_right { label="(a + a) * a"; r0 [label="E"]; r1 [label="E"]; rm [label="*"]; r2 [label="E"]; r3 [label="E"]; rp [label="+"]; r4 [label="E"]; ra [label="a"]; rb [label="a"]; rc [label="a"]; r0->{r1 rm r2}; r1->{r3 rp r4}; r3->ra; r4->rb; r2->rc; } }`}
-  alt="Duas árvores para a mesma palavra a+a*a. À esquerda a raiz usa soma, ficando a multiplicação no ramo direito. À direita a raiz usa multiplicação, ficando a soma no ramo esquerdo."
+  source={`digraph { graph [ordering=out, nodesep=0.12, ranksep=0.22]; node [shape=plaintext, width=0, height=0]; l0 [label="E"]; l1 [label="E"]; lp [label="+"]; l2 [label="E"]; la [label="a"]; l3 [label="E"]; lm [label="*"]; l4 [label="E"]; lb [label="a"]; lc [label="a"]; l0->l1; l0->lp; l0->l2; l1->la; l2->l3; l2->lm; l2->l4; l3->lb; l4->lc; }`}
+  alt="Primeira árvore de a+a*a: E usa E+E na raiz; o E da direita usa E*E. A leitura é a+(a*a)."
 />
 
-Repara nas duas leituras: à esquerda a raiz soma $a$ com $(a*a)$; à direita multiplica $(a+a)$ por $a$. As duas derivações mais à esquerda começam por regras diferentes:
+<Dot
+  source={`digraph { graph [ordering=out, nodesep=0.12, ranksep=0.22]; node [shape=plaintext, width=0, height=0]; r0 [label="E"]; r1 [label="E"]; rm [label="*"]; r2 [label="E"]; r3 [label="E"]; rp [label="+"]; r4 [label="E"]; ra [label="a"]; rb [label="a"]; rc [label="a"]; r0->r1; r0->rm; r0->r2; r1->r3; r1->rp; r1->r4; r3->ra; r4->rb; r2->rc; }`}
+  alt="Segunda árvore de a+a*a: E usa E*E na raiz; o E da esquerda usa E+E. A leitura é (a+a)*a."
+/>
+
+Na primeira árvore, a raiz soma $a$ com $(a*a)$; na segunda, multiplica $(a+a)$ por $a$. As duas derivações mais à esquerda começam por regras diferentes:
 
 $$
 E\Rightarrow E+E\Rightarrow a+E\Rightarrow a+E*E\Rightarrow a+a*E\Rightarrow a+a*a,

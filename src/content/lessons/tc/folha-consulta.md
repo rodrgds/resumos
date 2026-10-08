@@ -5,9 +5,7 @@ section: recursos
 studyKind: revision
 ---
 
-Depois de estudar cada tema nas lições, usa esta página para rever depressa condições e procedimentos antes de resolver exercícios. Não substitui os exemplos completos.
-
-Cada tabela reúne o que há a conferir num tema e aponta para a explicação completa, por isso usa-a para confirmar uma condição, não para aprender o tema pela primeira vez.
+Consulta as condições e os procedimentos abaixo depois de trabalhar os exemplos das lições. As ligações levam às construções e provas completas.
 
 ## Palavras e expressões
 

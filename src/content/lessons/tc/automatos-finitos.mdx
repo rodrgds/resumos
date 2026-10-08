@@ -9,11 +9,9 @@ practices:
 import Dot from '../../../components/Dot.astro';
 import DfaTrace from '../../tc/DfaTrace.astro';
 
-Para saber se uma palavra termina em $ab$, não precisas de a guardar toda. Chega registar o sufixo útil do que já leste. Esta página mostra como escolher esses resumos, como construir o DFA e como provar que ele está correto.
+Para saber se uma palavra termina em $ab$, chega guardar o sufixo útil do prefixo lido. Depois de $baa$, interessa o último $a$; depois de $baab$, interessa $ab$. Um **autómato finito** guarda esse resumo num estado.
 
-Para saber se uma palavra termina em $ab$, não precisas de guardar a palavra toda: chega saber se o que já leste termina em $a$, em $ab$, ou em nenhum desses casos. Um **autómato finito** é uma máquina que guarda essa informação num **estado**, que é o resumo do que já foi lido.
-
-Recorda [palavras e linguagens](/cadeiras/tc/linguagens-expressoes/#alfabetos-e-palavras). Uma função associa a cada entrada um único resultado; aqui, a entrada é o par estado/símbolo.
+A [expressão $(a+b)^*ab$](/cadeiras/tc/linguagens-expressoes/#descrever-uma-condição) descreve a mesma condição por blocos. Aqui vamos construir a máquina que a verifica letra a letra.
 
 ## DFA: definição e leitura
 
@@ -46,9 +44,11 @@ Vamos reconhecer $L=\{w\in\{a,b\}^*\mid w\text{ termina em }ab\}$. Escolhe:
 Em $q_1$, outro $a$ mantém o sufixo útil $a$. Em $q_2$, um $b$ transforma o sufixo $ab$ em $abb$, que já não termina em $ab$ nem em $a$.
 
 <Dot
-  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; q2 [shape=doublecircle]; s->q0; q0->q0 [label="b"]; q0->q1 [label="a"]; q1->q1 [label="a"]; q1->q2 [label="b"]; q2->q1 [label="a"]; q2->q0 [label="b"]; }`}
+  source={`digraph { rankdir=TB; graph [ranksep=0.35]; node [shape=circle]; s [shape=point]; q2 [shape=doublecircle]; s->q0; q0->q0 [label="b"]; q0->q1 [label="a"]; q1->q1 [label="a"]; q1->q2 [dir=both, label="b ↓\na ↑"]; q2->q0 [label="b"]; }`}
   alt="DFA para palavras terminadas em ab. q0 é inicial, q2 é final; um a leva sempre a q1, e um b em q1 leva a q2."
 />
+
+A ligação entre $q_1$ e $q_2$ lê $b$ no sentido descendente e $a$ no ascendente.
 
 A palavra $baab$ segue $q_0,q_0,q_1,q_1,q_2$, pelo que é aceite. $aba$ passa em $q_2$, mas termina em $q_1$ e é rejeitada. $\varepsilon$ termina no estado inicial, que não é final.
 
@@ -129,7 +129,13 @@ $$
 
 $110$ representa $6$ e segue $r_0,r_1,r_0,r_0$, terminando no resto zero. Nesta convenção, zeros iniciais são permitidos e $\varepsilon$ representa zero. Se o enunciado exigir representação não vazia a começar em $1$, acrescenta um novo estado inicial não final e um poço para entradas que comecem em $0$. Não mudes a linguagem sem explicitar essa condição.
 
-Se a entrada for um número binário lido **ao contrário**, a letra seguinte já não duplica o prefixo acumulado. Uma via sistemática é construir o DFA para a interpretação normal, inverter a linguagem e determinizar. Outra é guardar o resto acumulado e o peso da próxima posição módulo o divisor; ambos têm finitas possibilidades. Não reutilizes a recorrência $2v+b$ sem conferir qual ponta representa o bit menos significativo.
+Se a entrada for um número binário lido **ao contrário**, a letra seguinte já não duplica o prefixo acumulado. Uma via sistemática é construir o DFA para a interpretação normal, inverter a linguagem e determinizar. Outra é guardar o resto acumulado e o peso da próxima posição módulo o divisor; ambos têm finitas possibilidades. Por exemplo, ao ler do bit menos significativo para o mais significativo, guarda $(r,t)$: $r$ é o resto do valor acumulado e $t$ é o peso da posição seguinte módulo 5. Começa em $(0,1)$ e, por um bit $b$, atualiza
+
+$$
+(r,t)\longmapsto((r+bt)\bmod5,\;2t\bmod5).
+$$
+
+Os pesos possíveis são $1,2,4,3$, repetindo esse ciclo. A palavra $101$ dá $(0,1),(1,2),(1,4),(0,3)$ e representa $1+0+4=5$. Para exigir entrada não vazia ou um bit mais significativo igual a 1, trata também essas condições. Não reutilizes a recorrência $2v+b$ sem conferir qual ponta representa o bit menos significativo.
 
 ## Combinar duas condições
 

@@ -6,11 +6,9 @@ practices:
   - tc/praticar-cfl
 ---
 
-Depois de gerar palavras com gramáticas e de as reconhecer com pilha, esta página mostra como limpar as regras e como testar a pertença com uma tabela. Primeiro simplificamos a gramática; depois usamos a forma normal de Chomsky e o algoritmo CYK.
+Em $S\to AB$, se $A$ puder desaparecer, $B$ também tem de poder gerar sozinho uma palavra a partir do início. Apagar $A\to\varepsilon$ sem acrescentar $S\to B$ perderia essa possibilidade.
 
-Uma CFG pode trazer produções incómodas: formas de apagar símbolos, cadeias de substituições entre variáveis e símbolos que nunca chegam a uma palavra terminal. Algumas dessas produções são essenciais e têm de ser substituídas por regras equivalentes, não apenas apagadas. Vamos reorganizá-la numa forma que permite decidir a pertença com uma tabela. Depois vemos os limites desta classe.
-
-Usa [produções e derivações](/cadeiras/tc/gramaticas-livres/#definição-e-derivações). Distingue variáveis, que ainda podes substituir, de terminais, que ficam na palavra.
+A simplificação substitui o efeito das regras que elimina. Depois, a forma normal de Chomsky organiza as [produções de CFG](/cadeiras/tc/gramaticas-livres/#definição-e-derivações) para calcular a pertença numa tabela.
 
 ## Variáveis anuláveis, unitárias e inúteis
 
@@ -28,11 +26,29 @@ Uma ordem segura para a simplificação completa é: eliminar produções vazias
 
 ### Simplificação acompanhada numa gramática
 
-Considera $S \to AB \mid a$, $A \to b \mid \varepsilon$, $B \to C$, $C \to cC \mid c$, mais $D \to d$ inalcançável. Anuláveis: $A$ é anulável por $A \to \varepsilon$. Eliminar vazias dá $S \to AB \mid B \mid a$ (a segunda vem de apagar $A$), $A \to b$. Unitárias: $B \to C$ copia as produções de $C$, ficando $B \to cC \mid c$. Geradoras: $S,A,B,C,D$ derivam palavras terminais, por isso nenhuma sai nesta etapa. Alcançáveis de $S$: $S,A,B,C$; remove $D \to d$. Testa $bc$: $S \Rightarrow AB \Rightarrow bB \Rightarrow bc$ aceita. Testa $c$: $S \Rightarrow B \Rightarrow c$ aceita.
+Considera a gramática
+
+$$
+S\to AB\mid a,\quad A\to b\mid\varepsilon,\quad
+B\to C,\quad C\to cC\mid c,\quad D\to d.
+$$
+
+1. Só $A$ é anulável. Em $S\to AB$, omitir $A$ cria $S\to B$. Retira depois $A\to\varepsilon$.
+2. Agora há as unitárias $S\to B$ e $B\to C$. A cadeia chega de $S$ a $C$, pelo que copiamos $cC$ e $c$ para **ambos** $S$ e $B$, e retiramos as duas unitárias.
+3. Todas as variáveis são geradoras, mas $D$ é inacessível a partir de $S$ e sai.
+
+O resultado completo é:
+
+$$
+S\to AB\mid a\mid cC\mid c,\quad A\to b,\quad
+B\to cC\mid c,\quad C\to cC\mid c.
+$$
+
+$bc$ continua a derivar por $S\Rightarrow AB\Rightarrow bB\Rightarrow bc$. A palavra $c$, que antes dependia de apagar $A$, deriva agora diretamente por $S\Rightarrow c$. A linguagem mantém-se $(\varepsilon+b)cc^*+a$.
 
 ### Intercalação de uma CFL com uma regular
 
-Se $L$ é CFL e $R$ é regular, a intercalação $inter(L,R)$ é CFL. Toma um PDA $P$ para $L$ e um DFA $D$ para $R$. Constrói um PDA cujo estado é $(p,q)$: ao ler uma letra, escolhe avançar $P$ mantendo $q$, ou avançar $D$ mantendo $p$ e a pilha. Transições vazias de $P$ mantêm $q$. Aceita quando $p$ é final em $P$, $q$ é final em $D$ e a entrada foi consumida. Cada letra é atribuída a uma das duas palavras, preservando a ordem interna de cada uma. Isto generaliza a construção para intercalação regular/regular, onde dois DFA chegam; aqui a pilha de $P$ acompanha apenas as letras atribuídas a $L$.
+Se $L$ é CFL e $R$ é regular, a intercalação $inter(L,R)$ é CFL. Toma um PDA $P$ por estado final para $L$ e um DFA $D$ para $R$. Usa um fundo novo, que a simulação de $P$ não retira, para permitir ler letras de $R$ mesmo depois de a pilha simulada ficar vazia. Constrói um PDA cujo estado é $(p,q)$: ao ler uma letra, escolhe avançar $P$ mantendo $q$, ou avançar $D$ mantendo $p$ e a pilha. Transições vazias de $P$ mantêm $q$. Aceita quando $p$ é final em $P$, $q$ é final em $D$ e a entrada foi consumida. Cada letra é atribuída a uma das duas palavras, preservando a ordem interna de cada uma. Isto generaliza a construção para intercalação regular/regular, onde dois DFA chegam; aqui a pilha de $P$ acompanha apenas as letras atribuídas a $L$.
 
 ## Forma normal de Chomsky
 
@@ -50,7 +66,6 @@ Divide os lados direitos compridos: $A\to BCD$ torna-se $A\to BX$, $X\to CD$, co
 
 ### Conversão completa
 
-:::details[Ver a conversão de S para aSb passo a passo]
 Parte de $S\to aSb\mid\varepsilon$. Introduz $A\to a$, $B\to b$, ficando $S\to ASB\mid\varepsilon$. O início $S$ é anulável e aparece à direita; cria um início novo $S_0$ para preservar $\varepsilon$.
 
 Eliminando a ocorrência anulável de $S$ no meio, tens $S\to ASB\mid AB$. Copia estas regras para $S_0$ para eliminar $S_0\to S$, e conserva $S_0\to\varepsilon$. Finalmente, divide $ASB$ com $C\to SB$:
@@ -65,7 +80,6 @@ A&\to a,\qquad B\to b.
 $$
 
 $S_0$ não aparece à direita. Para $aabb$, a derivação é $S_0\Rightarrow AC\Rightarrow aC\Rightarrow aSB\Rightarrow aABB\Rightarrow aaBB\Rightarrow aabB\Rightarrow aabb$. A base $AB$ dá um par, e $AC$ acrescenta outro par à volta.
-:::
 
 ## CYK: decidir a pertença
 
@@ -79,14 +93,20 @@ $$
 
 Para intervalos maiores, tenta todos os cortes $k$ entre $i$ e $j$. Se $A\to BC$, $B\in T[i,k]$ e $C\in T[k+1,j]$, acrescenta $A$ a $T[i,j]$. Preenche por comprimento crescente, porque cada decisão depende de intervalos menores.
 
-Com a CNF anterior e $aabb$, obténs:
+Com a CNF anterior e $aabb$, obténs a tabela abaixo por comprimento crescente. Os índices $[i,j]$ identificam as posições da subpalavra na entrada:
 
-| Comprimento | Subpalavras da esquerda para a direita | Conjuntos                             |
-| ----------- | -------------------------------------- | ------------------------------------- |
-| 1           | $a$, $a$, $b$, $b$                     | $\{A\}$, $\{A\}$, $\{B\}$, $\{B\}$    |
-| 2           | $aa$, $ab$, $bb$                       | $\emptyset$, $\{S_0,S\}$, $\emptyset$ |
-| 3           | $aab$, $abb$                           | $\emptyset$, $\{C\}$                  |
-| 4           | $aabb$                                 | $\{S_0,S\}$                           |
+| Intervalo e palavra | Variáveis   |
+| ------------------- | ----------- |
+| $[1,1]: a$          | $\{A\}$     |
+| $[2,2]: a$          | $\{A\}$     |
+| $[3,3]: b$          | $\{B\}$     |
+| $[4,4]: b$          | $\{B\}$     |
+| $[1,2]: aa$         | $\emptyset$ |
+| $[2,3]: ab$         | $\{S_0,S\}$ |
+| $[3,4]: bb$         | $\emptyset$ |
+| $[1,3]: aab$        | $\emptyset$ |
+| $[2,4]: abb$        | $\{C\}$     |
+| $[1,4]: aabb$       | $\{S_0,S\}$ |
 
 Em $abb$, o corte $ab\mid b$ usa $C\to SB$. Em $aabb$, o corte $a\mid abb$ usa $S_0\to AC$. Como $S_0\in T[1,4]$, a palavra pertence à linguagem.
 

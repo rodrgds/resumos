@@ -19,10 +19,10 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Revisão editorial dos Resumos FEUP
-    date: '2026-10-03'
+    date: '2026-10-08'
 ---
 
-No fim deste percurso vais conseguir transformar uma condição sobre dados numa pergunta de pertença, ou seja, decidir se uma palavra $w$ pertence à linguagem das entradas válidas. Vais construir máquinas com diferentes memórias, porque cada memória resolve um tipo de condição. E vais provar quando um modelo não chega, por isso cada construção traz a sua justificação.
+Uma linguagem especifica quais as entradas válidas. Para aceitar palavras terminadas em $ab$, basta guardar um sufixo curto. Para comparar $a^nb^n$, é preciso recordar uma quantidade sem limite fixado. O percurso constrói esses modelos, justifica as suas respostas e prova onde cada memória deixa de chegar.
 
 ## Percurso de estudo
 
@@ -37,7 +37,7 @@ No fim deste percurso vais conseguir transformar uma condição sobre dados numa
 9. [Máquinas de Turing e decidibilidade](/cadeiras/tc/turing-decidibilidade/): programar a fita, justificar terminação e distinguir reconhecimento de decisão.
 10. [Complexidade](/cadeiras/tc/complexidade/): introdução ao custo dos algoritmos, certificados e reduções polinomiais.
 
-Cada lição termina com exercícios de dificuldade crescente, com pistas, resolução e erros frequentes. Alguns enunciados são originais; outros são adaptações próximas das folhas práticas e do segundo teste de 2023/24, e estão assinalados como tal nas páginas de prática. A [Cheat sheet](/cadeiras/tc/folha-consulta/) reúne condições e procedimentos para consulta depois de estudar.
+Cada lição liga a problemas de construção, cálculo e prova, com resolução justificada e pistas quando ajudam a escolher um passo. Alguns enunciados são originais; outros são adaptações próximas das folhas práticas e do segundo teste de 2023/24, e estão assinalados como tal nas páginas de prática. A [Cheat sheet](/cadeiras/tc/folha-consulta/) reúne condições e procedimentos para consulta depois de estudar.
 
 Para cada construção, escreve primeiro o que cada estado ou variável significa. Depois segue uma palavra aceite, uma rejeitada e a palavra vazia. Por fim, justifica por que todas as entradas recebem a resposta certa. Para uma prova negativa pelo lema da repetição, distingue o que tu escolhes do que tens de cobrir em qualquer decomposição.
 
@@ -48,13 +48,13 @@ A base é o [Moodle de TC de 2024/25](https://moodle2425.up.pt/course/view.php?i
 
 O [segundo teste resolvido](https://moodle2425.up.pt/mod/resource/view.php?id=194400) identifica 13 de junho de 2024, apesar de estar nesse Moodle. Serve para reconhecer tipos de perguntas, como classificar gramáticas, seguir PDA e interpretar tabelas de Turing. Os exercícios destas páginas têm resoluções próprias. Alguns enunciados adaptam tipos de perguntas desse teste e das folhas práticas; cada página de prática distingue exercícios originais de adaptações.
 
-A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586988), consultada em 3 de outubro de 2026, confirma TC no segundo semestre, com 6 ECTS, mas ainda não apresenta programa nem avaliação. O percurso segue os materiais disponíveis de 2024/25.
+A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586988), consultada em 8 de outubro de 2026, confirma TC no segundo semestre, com 6 ECTS, mas ainda não apresenta programa nem avaliação. O percurso segue os materiais disponíveis de 2024/25.
 
 A [ficha preenchida de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560095) inclui os mesmos modelos e propriedades. A página de complexidade desenvolve a ligação a computabilidade e custo dos algoritmos; o programa listado centra-se em linguagens formais e introdução às máquinas de Turing. Trata a página de complexidade como extensão: estuda-a depois das máquinas de Turing e não infiras a profundidade da avaliação a partir desta extensão.
 :::
 
 :::details[Avaliação: regras de 2025/26]
-A ocorrência de 2026/27 ainda não publica regras. A ficha de **2025/26**, consultada em 3 de outubro de 2026, indica dois testes escritos de 50% cada, mínimo de 6 valores em cada teste, frequência de pelo menos 75% das TP e exame de recurso com peso de 100%. Estas regras pertencem a essa ocorrência. Confirma as regras da tua edição no SIGARRA e no Moodle antes da prova; os materiais fornecidos não confirmam o regime de 2026/27.
+A ocorrência de 2026/27 ainda não publica regras. A ficha de **2025/26**, consultada em 3 de outubro de 2026, indicava dois testes escritos de 50% cada, mínimo de 6 valores em cada teste, frequência de pelo menos 75% das TP e exame de recurso com peso de 100%. Estas regras pertencem a essa ocorrência; a nova consulta de 8 de outubro não permitiu verificá-las. Confirma as regras da tua edição no SIGARRA e no Moodle antes da prova; os materiais fornecidos não confirmam o regime de 2026/27.
 :::
 
 :::details[Fontes e bibliografia]

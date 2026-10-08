@@ -8,11 +8,9 @@ practices:
 
 import Dot from '../../../components/Dot.astro';
 
-Para reconhecer $a^nb^n$ sem fixar um limite, guarda um marcador por cada $a$ e retira um por cada $b$. Os estados controlam a ordem dos blocos e uma **pilha** guarda a contagem. Esta página mostra esse modelo, os dois critérios de aceitação e as conversões com gramáticas.
+Para reconhecer $a^nb^n$, guarda um marcador por cada $a$ e retira um por cada $b$. Os estados controlam a ordem dos blocos. A **pilha** guarda os marcadores, com o último a entrar no topo e a ser o primeiro a sair.
 
-Para reconhecer $a^nb^n$, guarda um marcador por cada $a$ e retira um por cada $b$: os estados controlam a ordem dos blocos e uma **pilha**, onde o último símbolo colocado é o primeiro a sair, guarda a contagem sem limite previamente fixado. Um **autómato de pilha**, PDA, é a máquina que junta esses estados a essa pilha.
-
-Usa [escolhas não determinísticas](/cadeiras/tc/automatos-nao-deterministas/#aceitação-é-existência-de-um-percurso) e [derivações de CFG](/cadeiras/tc/gramaticas-livres/#definição-e-derivações).
+Um **autómato de pilha**, PDA, combina essa memória com [escolhas não determinísticas](/cadeiras/tc/automatos-nao-deterministas/#aceitação-é-existência-de-um-percurso). Vamos seguir $aabb$ e relacionar a computação com a [gramática $S\to aSb\mid\varepsilon$](/cadeiras/tc/gramaticas-livres/#definição-e-derivações).
 
 ## O modelo
 
@@ -59,7 +57,7 @@ Reconhece $\{a^nb^n\mid n\ge0\}$ por estado final. Usa $q_0$ para ler $a$, $q_1$
 As restantes transições não existem. $q_f$ não tem saídas. O estado $q_0$ pode aceitar $\varepsilon$, mas a mesma transição feita com entrada restante não aceita.
 
 <Dot
-  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; qf [shape=doublecircle]; s->q0; q0->q0 [label="a,Z/AZ\na,A/AA"]; q0->q1 [label="b,A/ε"]; q1->q1 [label="b,A/ε"]; q0->qf [label="ε,Z/Z"]; q1->qf [label="ε,Z/Z"]; }`}
+  source={`digraph { rankdir=TB; graph [ranksep=0.35]; node [shape=circle]; s [shape=point]; qf [shape=doublecircle]; s->q0; q0->q0 [label="a,Z/AZ\na,A/AA"]; q0->q1 [label="b,A/ε"]; q1->q1 [label="b,A/ε"]; q0->qf [label="ε,Z/Z"]; q1->qf [label="ε,Z/Z"]; }`}
   alt="PDA para a elevado a n seguido de b elevado a n. q0 empilha A por a; o primeiro b passa a q1; q1 retira A por b. Com Z no topo pode chegar ao final qf."
 />
 
@@ -107,7 +105,18 @@ Esta equivalência não se aplica sem alterações às convenções determiníst
 
 ### Conversões de critério com transições concretas
 
-De pilha vazia para estado final, com fundo novo $\bot$. Supõe um PDA com $\delta(q_0,a,Z_0)=\{(q_0,AZ_0)\}$ por pilha vazia. A máquina nova tem início $p_0$, fundo $\bot$, transição $(p_0,\varepsilon,\bot) \to (q_0,Z_0\bot)$ e, para o estado simulado $q$ que expõe $\bot$, transição $(q,\varepsilon,\bot) \to (p_f,\varepsilon)$. Só o ramo que esvaziou a pilha simulada chega a $p_f$ com a entrada consumida. Para $a$ aceite por pilha vazia, a nova máquina lê $a$, expõe $\bot$ e aceita em $p_f$; para $aa$ rejeitada, nenhum ramo expõe $\bot$ no fim da entrada.
+Toma uma máquina por pilha vazia que só tem $\delta(q_0,a,Z_0)=\{(q_1,\varepsilon)\}$. Ela aceita exatamente $\{a\}$: lê $a$ e retira $Z_0$. Não há outras transições.
+
+Na máquina por estado final, acrescenta fundo $\bot$, início $p_0$ e único final $p_f$. Usa $\delta(p_0,\varepsilon,\bot)=\{(q_0,Z_0\bot)\}$, conserva a transição antiga e, para cada estado simulado $q$, acrescenta $\delta(q,\varepsilon,\bot)=\{(p_f,\bot)\}$. O final não tem saídas.
+
+Para $a$:
+
+$$
+(p_0,a,\bot)\vdash(q_0,a,Z_0\bot)
+\vdash(q_1,\varepsilon,\bot)\vdash(p_f,\varepsilon,\bot).
+$$
+
+Para $aa$, o mesmo percurso termina em $(p_f,a,\bot)$. A entrada restante impede aceitar. O fundo novo distingue esvaziar a pilha simulada de esvaziar toda a pilha da máquina nova.
 
 De estado final para pilha vazia, com fundo novo $\bot$ e estado de limpeza $p_e$. De cada antigo final $f$, acrescenta $(f,\varepsilon,X) \to (p_e,\varepsilon)$ para todo o $X$ da pilha, e em $p_e$ retira todos os símbolos até $\bot$ inclusive. Se a máquina antiga aceita $aabb$ em $q_f$ com pilha $Z$, a nova consome $aabb$, passa a $p_e$ e esvazia $Z\bot$. Se chega a $q_f$ com entrada restante, $p_e$ não consegue consumir essa entrada e o ramo falha.
 
@@ -161,7 +170,7 @@ A variável $[pXq]$ gera as palavras que levam de $p$ a $q$ removendo o $X$ do t
 
 - $S \to [pZ_0p] \mid [pZ_0q]$;
 - empilhar $Z_0\to AZ_0$ por $a$ de $p$ para $p$ dá, para todos $s,t$ em $\{p,q\}$: $[pZ_0t] \to a[pAs][sZ_0t]$, ou seja as quatro produções com $t=p,q$ e $s=p,q$;
-- empilhar $A\to AA$ por $a$ de $p$ para $p$ dá, para todos $s,t$ em $\{p,q\}$: $[pAt] \to a[pAs][sAt]$, ou seja as oito produções com $t=p,q$ e $s=p,q$;
+- empilhar $A\to AA$ por $a$ de $p$ para $p$ dá, para todos $s,t$ em $\{p,q\}$: $[pAt] \to a[pAs][sAt]$, ou seja as quatro produções com $t=p,q$ e $s=p,q$;
 - $[pAq] \to b$ e $[qAq] \to b$, pelas duas transições que retiram $A$ lendo $b$;
 - $[qZ_0q] \to \varepsilon$, pela transição que esvazia o fundo.
 
