@@ -11,9 +11,7 @@ import Typst from '../../../components/Typst.astro';
 import pipeline from '../../bd/pipeline-algebra.typ?raw';
 import SelectionDemo from '../../bd/SelectionDemo.astro';
 
-Quem comprou no dia 5 de janeiro? Filtra as encomendas desse dia, liga-as aos clientes e projeta os nomes. Cada passo recebe relações e devolve uma relação.
-
-A álgebra relacional descreve uma pergunta como uma composição de operações. Cada operador recebe relações e devolve uma relação, por isso o resultado de um passo pode entrar no seguinte. Nesta página usamos a álgebra clássica, com **conjuntos**, sem duplicados e sem ordem de linhas.
+Para saber quem comprou em 5 de janeiro, filtramos Encomenda pela data, ligamos o resultado a Cliente e escolhemos os atributos da resposta. A **álgebra relacional** compõe essas operações: cada uma recebe relações e devolve uma relação. Usamos aqui a álgebra clássica, com conjuntos, sem duplicados e sem ordem de tuplos.
 
 ## Os operadores essenciais
 
@@ -33,7 +31,7 @@ $$
 
 A **renomeação** $\rho$ altera o nome de uma relação ou dos seus atributos, conservando os valores. Escrevemos, por exemplo, $\rho_{C(idCliente,nome,email)}(Cliente)$. A ordem indicada corresponde à dos atributos na notação do esquema original. Outras convenções de renomeação são possíveis; explicita a usada.
 
-Na pequena demonstração seguinte, experimenta o limite de preço com e sem projeção do nome. Os preços estão em euros nesta demonstração.
+Na demonstração, a seleção usa `preço ≥ limite`, com preços em euros. Acrescentámos um segundo produto chamado Rato, de id 13 e preço 30, para observar duplicados. Com limite 30, vê os ids 10, 12 e 13; baixa para 25 e projeta o nome. Entram quatro produtos, mas a projeção só tem três tuplos porque os dois Ratos dão o mesmo nome.
 
 <SelectionDemo />
 
@@ -112,15 +110,15 @@ $E_5$ tem uma linha:
 | --- | ---------- | --------- |
 | 100 | 2026-01-05 | 1         |
 
-$E_5\bowtie C$ acrescenta o cliente:
+$E_5\bowtie C$ acrescenta os atributos de Cliente, incluindo email:
 
-| id  | data       | idCliente | nome |
-| --- | ---------- | --------- | ---- |
-| 100 | 2026-01-05 | 1         | Ana  |
+| id  | data       | idCliente | nome | email            |
+| --- | ---------- | --------- | ---- | ---------------- |
+| 100 | 2026-01-05 | 1         | Ana  | ana@example.test |
 
 A projeção final devolve o conjunto com um tuplo, `{Ana}`. Se Ana tivesse duas encomendas nesse dia, a projeção continuaria a mostrá-la uma vez. Para identificar pessoas, conserva o id.
 
-Cada expressão destas corresponde a uma **árvore**: as folhas são relações e cada nó interior é um operador aplicado aos resultados dos filhos. O diagrama acima é uma cadeia, uma árvore em que cada operador tem um único filho que também é operador. Desenhar a árvore ajuda a localizar onde uma seleção pode descer ou uma projeção pode subir, como na secção de equivalências.
+A expressão também pode ser desenhada como uma **árvore**: as folhas são relações e cada nó interior é um operador. A junção tem dois filhos, a seleção de Encomenda e a relação C; a projeção tem um filho, a junção. O diagrama acima acompanha o fluxo principal dos resultados, sem desenhar a entrada C em separado. Ao transformar uma árvore, conserva todas as entradas e as colunas de que os operadores precisam.
 
 ## Clientes sem encomendas
 
@@ -160,7 +158,16 @@ $$
 R\div S=Candidatos-\pi_X(Faltas).
 $$
 
-O produto enumera pares que deveriam existir. A diferença encontra os que faltam. A projeção identifica candidatos com pelo menos uma falta; a diferença final retira-os.
+O produto enumera pares que deveriam existir. A diferença encontra os que faltam:
+
+| Candidato | Produto exigido | Está em Comprou? |
+| --------- | --------------- | ---------------- |
+| 1         | 10              | sim              |
+| 1         | 11              | sim              |
+| 2         | 10              | não, falta       |
+| 2         | 11              | sim              |
+
+Só falta `(2,10)`. Projetar o cliente dessa falta dá `{2}`. Retirá-lo dos candidatos `{1,2}` deixa `{1}`, a resposta. Não basta filtrar compras do produto 10 ou 11: isso também aceitaria o cliente 2, que só cumpriu um dos requisitos.
 
 Se S estiver vazia, não falta nenhum requisito e a divisão devolve $\pi_X(R)$. Repara no universo dos candidatos: um cliente que não aparece em Comprou não pertence à projeção inicial. Se quisermos todos os clientes, incluindo os sem compras quando não há requisitos, usamos Cliente como universo e a mesma ideia de retirar faltas. A [divisão em SQL](/cadeiras/bd/sql-subconsultas/#perguntas-com-todos) explicita esta escolha.
 

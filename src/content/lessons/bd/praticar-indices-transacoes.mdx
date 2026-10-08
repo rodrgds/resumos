@@ -9,7 +9,7 @@ import Exercise from '../../../components/Exercise.astro';
 <Exercise
   id="indice-cliente-data"
   title="Escolher a ordem de um índice"
-  explanation="/cadeiras/bd/indices-transacoes/#escolher-pelas-perguntas"
+  explanation="/cadeiras/bd/indices-transacoes/#índices-compostos"
   answer={{
     kind: 'self',
     checklist: [
@@ -21,8 +21,7 @@ import Exercise from '../../../components/Exercise.astro';
   <div>
     A consulta frequente é <code>{'WHERE'}</code> idCliente=7 AND data BETWEEN
     duas datas. Compara os índices (idCliente,data) e (data,idCliente), sem
-    assumir distribuições adicionais, porque a ordem das colunas decide o
-    intervalo percorrido.
+    assumir distribuições adicionais. Justifica o efeito da ordem das colunas.
   </div>
   <div slot="hint">
     Um índice composto ordena primeiro pela primeira coluna.
@@ -118,45 +117,33 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="plano-search-cobertura"
-  title="Ler o plano antes e depois do índice"
+  revision={1}
+  title="Interpretar um plano observado"
   explanation="/cadeiras/bd/indices-transacoes/#ler-um-plano"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'SCAN antes e SCAN depois, porque a tabela é pequena.',
-        correct: false,
-        explanation:
-          'O plano registado depois do índice é SEARCH com o índice, mesmo com três encomendas.',
-      },
-      {
-        text: 'SCAN antes e SEARCH com o índice composto depois.',
-        correct: true,
-        explanation:
-          'Sem índice o plano percorre Encomenda; com o índice procura por cliente e data sem percorrer tudo.',
-      },
-      {
-        text: 'SEARCH antes e SCAN depois, porque o índice atrasa a leitura.',
-        correct: false,
-        explanation:
-          'Sem índice não há estrutura para procurar; o SCAN aparece antes, não depois.',
-      },
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ["Identifiquei o percurso completo e a procura pelo índice.", "Expliquei o prefixo e a cobertura.", "Distingui plano escolhido de medição de tempo."] }}
 >
   <div>
-    A consulta filtra Encomenda por idCliente e data. Que planos esperas antes e
-    depois de criar o índice (idCliente, data)?
+
+Para `SELECT id,data FROM Encomenda WHERE idCliente=1 AND data>='2026-01-01'`, foram observados estes planos SQLite:
+
+```text
+Antes:  SCAN Encomenda
+Depois: SEARCH Encomenda USING COVERING INDEX idx_encomenda_cliente_data
+        (idCliente=? AND data>?)
+```
+
+O índice foi criado em `(idCliente,data)`; id é `INTEGER PRIMARY KEY`. Explica a procura e a palavra COVERING. Estes planos provam que a segunda consulta é mais rápida para qualquer volume de dados?
+
   </div>
-  <div slot="hint">Sem estrutura de acesso, o motor percorre a tabela.</div>
-  <div slot="hint-more">O plano nomeia o índice usado na procura.</div>
+
+  <div slot="hint">O plano diz onde procurar e se é necessário recuperar colunas na tabela.</div>
+  <div slot="hint-more">Nos índices desta tabela com rowid, o id também está disponível como identificador da linha.</div>
   <div slot="solution">
-    Antes: SCAN Encomenda. Depois: SEARCH com o índice composto por cliente e
-    data. O tamanho pequeno não impediu o uso do índice neste plano; noutras
-    distribuições, o otimizador pode escolher de outra forma.
+
+Antes, o motor percorre Encomenda e testa o filtro. Depois, fixa idCliente no prefixo do índice e percorre o intervalo de data. COVERING indica que os valores pedidos podem ser obtidos no índice: data é parte da chave de pesquisa e id é o rowid desta tabela.
+
+Os planos não medem tempo. A escolha depende de dados, estatísticas, versão e consultas concorrentes. É necessário medir com uma carga representativa para comparar desempenho; um índice também custa espaço e manutenção nas escritas.
+
   </div>
-  <div slot="mistakes">
-    Não leias SCAN como erro nem SEARCH como garantia de rapidez. O plano diz
-    como, não quanto custa em absoluto.
-  </div>
+  <div slot="mistakes">SCAN não é sempre um erro. Uma consulta que devolve quase toda a tabela pode justificar um percurso completo.</div>
 </Exercise>

@@ -1,5 +1,5 @@
 ---
-title: 'Bases de Dados: guia da cadeira'
+title: Bases de Dados
 description: Percurso de estudo, materiais, bibliografia e avaliação de Bases de Dados.
 section: conteudo
 order: 0
@@ -10,11 +10,11 @@ editorial:
     - Os materiais docentes disponíveis são do Moodle de 2025/26; não foi comparado o Moodle de 2026/27.
 ---
 
-Uma aplicação de uma loja precisa de guardar clientes, produtos e encomendas. Se repetir o nome de cada cliente em todas as compras, uma mudança de nome pode deixar dados contraditórios. Se guardar uma lista de produtos numa só célula, perguntar quantos ratos vendeu torna-se difícil. No fim destas páginas vais saber escolher os factos a guardar, relacioná-los sem repetições e formular essas perguntas em SQL, porque cada tema liga a decisão de desenho ao exemplo resolvido e ao exercício correspondente.
+Uma aplicação de uma loja precisa de guardar clientes, produtos e encomendas. Se repetir o nome de cada cliente em todas as compras, uma mudança de nome pode deixar dados contraditórios. Se guardar uma lista de produtos numa só célula, perguntar quantos ratos vendeu torna-se difícil. O percurso acompanha esta loja: representa os factos em UML, traduz-os para relações, verifica dependências e formula consultas em SQL.
 
 ## Percurso de estudo
 
-As páginas seguem uma sequência de decisões. Cada tema tem exemplos resolvidos e exercícios próprios com pistas, resolução e erros frequentes.
+As páginas seguem uma sequência de decisões. Os exercícios pedem modelação, cálculo, diagnóstico ou consultas completas, com soluções justificadas.
 
 1. [Fundamentos](/cadeiras/bd/fundamentos/) distingue dados, esquema, instância e SGBD.
 2. [Modelo conceptual em UML](/cadeiras/bd/modelo-conceptual-uml/) representa classes, associações, multiplicidades e especializações. [Mapeamento relacional](/cadeiras/bd/mapeamento-relacional/) traduz o desenho e identifica as regras que uma simples chave estrangeira não garante.
@@ -40,7 +40,7 @@ Antes de escrever SQL, define o que representa uma linha da resposta. "Uma linha
 
 Confere a resposta com poucos dados que conheças. Acrescenta um cliente sem compras, duas pessoas com o mesmo nome, um `NULL`, um empate ou uma tabela vazia. Estes casos distinguem uma consulta correta de outra que apenas acertou na primeira amostra. Nos problemas de normalização, usa as dependências do domínio, não coincidências nos dados apresentados.
 
-:::details[Avaliação: pesos, mínimos e frequência]
+:::details[Avaliação de 2026/27]
 
 A [ficha oficial de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586990), consultada em 3 de outubro de 2026, indica:
 
@@ -53,7 +53,7 @@ Estes pesos diferem dos materiais de 2025/26, que indicavam 20%, 30% e 50%, com 
 
 :::
 
-:::details[Materiais e bibliografia: base de ensino, fichas e bibliografia]
+:::details[Materiais e bibliografia]
 
 A base de ensino é o [Moodle de BD de 2025/26](https://moodle2526.up.pt/course/view.php?id=3996): plano de aulas, apresentações teóricas, fichas práticas e respetivas soluções. O plano inclui explicitamente CTEs e recursão, segurança e autorização, além dos tópicos do programa. Alguns ficheiros reutilizados têm anos anteriores no nome ou no conteúdo, em particular a teoria de desenho relacional de 2023/2024 e as fichas DDL de 2023, 2024 e 2025. A sua presença no Moodle de 2025/26 não altera esses anos de origem.
 

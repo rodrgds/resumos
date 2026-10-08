@@ -10,9 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-Totais por encomenda e depois por cliente são dois passos com nome numa só instrução. Números de 1 a 5 e descendentes de uma categoria nascem de outro mecanismo: produzir linhas a partir das já obtidas, até não haver novidade.
-
-Uma **CTE**, _common table expression_, dá nome a um resultado dentro de uma instrução SQL. Ajuda a dividir uma pergunta em etapas sem criar uma vista permanente. Uma CTE recursiva produz linhas a partir de linhas já obtidas.
+Para calcular o total de Ana, primeiro somamos as linhas de cada encomenda e depois somamos as suas encomendas. Uma **CTE**, _common table expression_, dá nome a um resultado dentro de uma instrução SQL. O nome permite usar esse passo no seguinte sem criar uma vista permanente. Uma CTE recursiva acrescenta outro mecanismo: produzir linhas a partir das já obtidas.
 
 ## WITH: dar nome a um passo
 
@@ -56,14 +54,14 @@ A parte inicial produz 1. O passo lê 1 e produz 2, depois 3, 4 e 5. Ao ler 5, `
 
 Os estados da recursão:
 
-| Iteração | Lê  | Produz | Acumulado     |
-| -------- | --- | ------ | ------------- |
-| 0        | —   | 1      | 1             |
-| 1        | 1   | 2      | 1, 2          |
-| 2        | 2   | 3      | 1, 2, 3       |
-| 3        | 3   | 4      | 1, 2, 3, 4    |
-| 4        | 4   | 5      | 1, 2, 3, 4, 5 |
-| 5        | 5   | —      | 1, 2, 3, 4, 5 |
+| Iteração | Lê      | Produz  | Acumulado     |
+| -------- | ------- | ------- | ------------- |
+| 0        | nenhuma | 1       | 1             |
+| 1        | 1       | 2       | 1, 2          |
+| 2        | 2       | 3       | 1, 2, 3       |
+| 3        | 3       | 4       | 1, 2, 3, 4    |
+| 4        | 4       | 5       | 1, 2, 3, 4, 5 |
+| 5        | 5       | nenhuma | 1, 2, 3, 4, 5 |
 
 Não contes com um suposto limite fixo de profundidade para tornar uma consulta correta. Escreve uma condição de terminação e, quando necessário, um limite de trabalho compatível com a pergunta. Os limites e restrições dependem do motor.
 
@@ -93,7 +91,18 @@ SELECT id, nome, profundidade FROM Descendente
 ORDER BY profundidade, id;`}
 />
 
-A resposta é Informática/0, Periféricos/1, Monitores/1 e Teclados/2, porque a condição `c.idMae = d.id` segue filhos; inverter os papéis seguiria ascendentes. Casa não é alcançada.
+A condição `c.idMae = d.id` procura filhos dos nós já alcançados. Os níveis da resposta tornam visíveis esses passos:
+
+```text
+Informática (1), profundidade 0
+├── Periféricos (2), profundidade 1
+│   └── Teclados (3), profundidade 2
+└── Monitores (4), profundidade 1
+
+Casa (5): outra raiz, não alcançada
+```
+
+A saída é ordenada por profundidade e id, não pela disposição desta árvore. Inverter a condição para `c.id = d.idMae` seguiria ascendentes; nesse caso teríamos de conservar `idMae` na CTE para o usar no passo seguinte.
 
 O exemplo assume uma hierarquia sem ciclos. A estrangeira verifica que a mãe existe, mas permite criar um ciclo entre categorias. A validação da estrutura é uma regra adicional.
 
@@ -120,7 +129,7 @@ O resultado é 1, 2, 3 e 4. Voltar ao nó 1 não introduz um novo tuplo. `UNION 
 
 Se acrescentarmos profundidade, `(1,0)` e `(1,3)` são tuplos diferentes. `UNION` já não elimina esse retorno apenas por ter o mesmo id. Para listar caminhos ou distâncias, precisamos de outra estratégia, como impedir a repetição de nós no caminho e limitar a exploração. A escolha das colunas faz parte da prova de terminação.
 
-## Só os divisores precisam de recursão
+## Divisores e distribuição de mandatos
 
 No método de D'Hondt, cada lista compete com os quocientes votos/1, votos/2 e assim por diante, até ao número de mandatos M. Os M lugares vão para os M maiores quocientes. Com 4 mandatos e votos A=100, B=60, C=40, os quocientes são:
 
@@ -155,7 +164,7 @@ SELECT lista, COUNT(*) AS mandatos
 FROM Top GROUP BY lista ORDER BY lista;`}
 />
 
-A resposta é A com 2, B com 1 e C com 1. O `ORDER BY q DESC, lista` inclui uma regra de desempate explícita: em caso de quocientes iguais, vence a lista com nome menor. Sem esse segundo critério, a escolha entre empatados ficaria indefinida. A agregação final conta lugares, não votos: cada ocorrência de uma lista nos 4 primeiros quocientes vale um mandato.
+A resposta é A com 2, B com 1 e C com 1. Usamos neste exercício a regra de desempate pelo nome da lista, apenas para definir o resultado SQL. Não é uma descrição da regra eleitoral legal. O `ORDER BY q DESC, lista` aplica essa convenção: em caso de quocientes iguais, vence a lista com nome menor. Sem esse segundo critério, a escolha entre empatados ficaria indefinida. A agregação final conta lugares, não votos: cada ocorrência de uma lista nos 4 primeiros quocientes vale um mandato.
 
 ## Limites de SQLite
 

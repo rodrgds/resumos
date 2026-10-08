@@ -45,6 +45,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="ternaria-chave-par"
+  revision={1}
   title="A chave de uma associação ternária"
   explanation="/cadeiras/bd/mapeamento-relacional/#associações-n-árias"
   answer={{
@@ -56,10 +57,10 @@ import Exercise from '../../../components/Exercise.astro';
   }}
 >
   <div>
-    Para cada par Produto/Projeto existe no máximo um fornecedor. Um fornecedor
-    pode servir vários pares. Na relação Fornecimento(fornecedor, produto,
-    projeto, quantidade), qual é a candidata, assumindo que não há outras
-    dependências?
+    Cada par Produto/Projeto tem no máximo um registo de fornecimento, com um
+    fornecedor e uma quantidade. Um fornecedor pode servir vários pares. Na
+    relação Fornecimento(fornecedor, produto, projeto, quantidade), qual é a
+    candidata, assumindo que não há outras dependências?
   </div>
   <div slot="hint">
     A regra determina fornecedor a partir de produto e projeto.
@@ -83,37 +84,29 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="quiosque-traducao-completa"
-  title="Traduzir o quiosque e testar com dados"
-  explanation="/cadeiras/bd/mapeamento-relacional/#traduzir-o-quiosque-por-etapas"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Escrevi as quatro relações com chaves primárias.',
-      'Pus as três estrangeiras com `NOT NULL` justificado.',
-      'Testei uma linha permitida e duas recusadas.',
-    ],
-  }}
+  revision={1}
+  title="Chave composta e restrições que ficam por garantir"
+  explanation="/cadeiras/bd/mapeamento-relacional/#conversão-completa-da-loja"
+  answer={{ kind: 'self', checklist: ["Escrevi as quatro relações e as três referências.", "Justifiquei a chave composta de Item.", "Identifiquei o mínimo que as chaves não garantem.", "Conservei a unicidade do par ao acrescentar um id artificial."] }}
 >
   <div>
-    Traduz o modelo do quiosque em relações com chaves e estrangeiras. Indica
-    que regra cada restrição garante e que mínimo continua por validar.
+
+Uma encomenda tem id, data, exatamente um cliente e pelo menos um produto. Cliente e Produto têm id e nome; Produto tem preço atual. Cada par encomenda/produto ocorre uma vez, com quantidade e preço acordado.
+
+Traduz para relações com chaves e estrangeiras. O que acontece ao inserir uma encomenda sem Items? Se Item ganhar um id artificial, que restrição deve continuar a existir?
+
   </div>
-  <div slot="hint">
-    A estrangeira do cliente fica no lado muitos e é obrigatória.
-  </div>
-  <div slot="hint-more">
-    O par compra/produto precisa de impedir repetições na mesma compra.
-  </div>
+
+  <div slot="hint">Uma coluna em Cliente não consegue guardar todas as encomendas desse cliente.</div>
+  <div slot="hint-more">Compara identificar a linha por um id novo com impedir duas linhas do mesmo par.</div>
   <div slot="solution">
-    Cliente(id, nome), Produto(id, nome, precoAtual), Compra(id, data,
-    idCliente) com FK obrigatória para Cliente, e Linha(idCompra, idProduto,
-    qtd) com PK no par e duas FKs obrigatórias. A compra 7 de Rui com duas
-    linhas é permitida. Uma linha com compra 99 é recusada pela estrangeira.
-    Duas linhas do mesmo par são recusadas pela chave. Uma compra sem linhas
-    passa nas chaves; o mínimo de um produto exige validação transacional.
+
+Usa `Cliente(id,nome)`, `Produto(id,nome,precoAtual)`, `Encomenda(id,data,idCliente)` e `Item(idEncomenda,idProduto,qtd,precoUnitario)`. As três primeiras têm chave id. Item tem chave `(idEncomenda,idProduto)`: a encomenda sozinha admite vários produtos; o produto sozinho admite várias encomendas.
+
+`Encomenda.idCliente` referencia Cliente e é obrigatório. As duas colunas da chave de Item referenciam Encomenda e Produto e também são obrigatórias. Uma encomenda sem Items não viola essas restrições: não há nenhuma linha filha inválida. É preciso validar o mínimo ao confirmar uma encomenda e ao remover a última linha.
+
+Com `Item(id,...)`, a chave id não impede dois ids para o mesmo par. Conserva `UNIQUE(idEncomenda,idProduto)` e a obrigatoriedade das duas colunas.
+
   </div>
-  <div slot="mistakes">
-    Não declares a chave de Linha só em idCompra: perderias o produto. Uma FK
-    não impõe mínimos no lado referenciado.
-  </div>
+  <div slot="mistakes">Um id artificial não substitui as unicidades do domínio. Uma estrangeira só verifica referências existentes nas linhas filhas.</div>
 </Exercise>

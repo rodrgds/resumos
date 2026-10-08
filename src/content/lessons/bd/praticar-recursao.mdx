@@ -61,8 +61,9 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 
 <Exercise
   id="dhondt-divisores-recursivos"
+  revision={1}
   title="Só os divisores precisam de recursão"
-  explanation="/cadeiras/bd/sql-recursao/#só-os-divisores-precisam-de-recursão"
+  explanation="/cadeiras/bd/sql-recursao/#divisores-e-distribuição-de-mandatos"
   answer={{
     kind: 'self',
     checklist: [
@@ -74,7 +75,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 >
   <div>
     Três listas têm 100, 60 e 40 votos e há 4 mandatos. Escreve a consulta de
-    D'Hondt que gera os divisores recursivamente e distribui os mandatos. A
+    D'Hondt que gera os divisores recursivamente e distribui os mandatos. Para este problema, desempata quocientes pelo nome da lista, em ordem crescente. A
     execução apresenta o resultado; confere cada quociente do top 4.
   </div>
   <div slot="work">
@@ -86,7 +87,24 @@ import CodePlayground from '../../../components/CodePlayground.astro';
       autoRun={false}
       language="sqlite"
       title="Completar a distribuição de D'Hondt"
-      code={`WITH RECURSIVE Divisor(k) AS (
+      code={`WITH Voto(lista, votos) AS (
+  VALUES ('A', 100), ('B', 60), ('C', 40)
+)
+-- Acrescenta divisores, quocientes e seleção dos lugares.
+SELECT * FROM Voto ORDER BY lista;`}
+    />
+  </div>
+  <div slot="hint">
+    Cada lista compete com votos/1, votos/2, votos/3 e votos/4.
+  </div>
+  <div slot="hint-more">
+    Os lugares vão para os 4 maiores quocientes; cada ocorrência vale um
+    mandato.
+  </div>
+  <div slot="solution">
+
+```sql
+WITH RECURSIVE Divisor(k) AS (
   SELECT 1
   UNION ALL
   SELECT k + 1 FROM Divisor WHERE k < 4
@@ -103,22 +121,15 @@ Top AS (
   ORDER BY q DESC, lista LIMIT 4
 )
 SELECT lista, COUNT(*) AS mandatos
-FROM Top GROUP BY lista ORDER BY lista;`}
-    />
-  </div>
-  <div slot="hint">
-    Cada lista compete com votos/1, votos/2, votos/3 e votos/4.
-  </div>
-  <div slot="hint-more">
-    Os lugares vão para os 4 maiores quocientes; cada ocorrência vale um
-    mandato.
-  </div>
-  <div slot="solution">
+FROM Top GROUP BY lista ORDER BY lista;
+```
+
     O top 4 é 100 de A, 60 de B, 50 de A e 40 de C, por isso A fica com 2, B com
     1 e C com 1. Só a CTE Divisor é recursiva; quocientes, seleção e contagem
     são operações comuns. O segundo critério de ordenação resolve empates de
     quociente de forma explícita. Sem ele, a escolha entre empatados ficaria
     indefinida.
+
   </div>
   <div slot="mistakes">
     Não tornes a agregação recursiva. Não contes votos quando a pergunta pede

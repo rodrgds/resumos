@@ -10,62 +10,50 @@ import loja from '../../bd/loja.sql?raw';
 
 <Exercise
   id="count-left-mia"
-  title="Contar correspondências, não linhas artificiais"
-  explanation="/cadeiras/bd/sql-consultas/#junções-externas-e-clientes-sem-compras"
-  revision={2}
-  answer={{ kind: 'number', value: 1, tolerance: 0 }}
+  revision={3}
+  title="Diagnosticar duas contagens de encomendas"
+  explanation="/cadeiras/bd/sql-consultas/#multiplicação-de-linhas-e-contagens"
+  answer={{ kind: 'self', checklist: ["Previ Ana 2, Rui 1 e Mia 1 no primeiro SQL.", "Expliquei o zero de Mia com COUNT(e.id).", "Previ Ana 3 e Rui 1 após a junção a Item.", "Corrigi a multiplicação e preservei clientes sem compras."] }}
 >
   <div>
-    Cliente <code>{'LEFT JOIN'}</code> Encomenda devolve para Mia uma linha com
-    <code>{'e.id'}</code> = <code>{'NULL'}</code>. Quanto dá{' '}
-    <code>{'COUNT(*)'}</code> para o grupo de Mia? A expressão que conta
-    encomendas corretamente está explicada na resolução.
-  </div>
-  <div slot="hint">
-    <code>{'LEFT JOIN'}</code> conserva uma linha da esquerda mesmo sem
-    correspondência.
-  </div>
-  <div slot="hint-more">
-    <code>{'COUNT(x)'}</code> ignora x nulo.
-  </div>
-  <div slot="solution">
-    <code>{'COUNT(*)'}</code> dá 1 porque conta a linha produzida.{' '}
-    <code>{'COUNT(e.id)'}</code> dá 0, pois id é não nulo em encomendas reais e{' '}
-    <code>{'NULL'}</code> apenas nesta linha sem correspondência. Com{' '}
-    <code>{'INNER JOIN'}</code>, Mia não teria grupo, em vez de ter uma contagem
-    zero.
-  </div>
-  <div slot="mistakes">
-    Não substituas <code>{'COUNT(e.id)'}</code> por{' '}
-    <code>{'COUNT(COALESCE(e.id,0))'}</code>; isso volta a contar a linha
-    artificial.
-  </div>
-</Exercise>
 
-<Exercise
-  id="join-multiplica-encomendas"
-  title="Uma encomenda com duas linhas"
-  explanation="/cadeiras/bd/sql-consultas/#não-contar-depois-de-multiplicar-sem-verificar"
-  revision={2}
-  answer={{ kind: 'number', value: 3, tolerance: 0 }}
->
-  <div>
-    Ana tem a encomenda 100 com duas linhas e a 101 com uma. Depois de juntar
-    Cliente, Encomenda e Item, quanto dá <code>{'COUNT(e.id)'}</code>? A forma
-    de contar encomendas está explicada na resolução.
+Cliente contém Ana (1), Rui (2) e Mia (3). Encomenda contém 100 e 101 de Ana e 102 de Rui. Item tem duas linhas na 100, uma na 101 e uma na 102.
+
+Prevê estas duas consultas e corrige-as para contar encomendas de todos os clientes, incluindo zero para Mia:
+
+```sql
+SELECT c.id, COUNT(*) AS n
+FROM Cliente AS c LEFT JOIN Encomenda AS e ON e.idCliente = c.id
+GROUP BY c.id;
+
+SELECT c.id, COUNT(e.id) AS n
+FROM Cliente AS c JOIN Encomenda AS e ON e.idCliente = c.id
+JOIN Item AS i ON i.idEncomenda = e.id
+GROUP BY c.id;
+```
+
   </div>
-  <div slot="hint">Enumera uma linha do resultado por Item.</div>
-  <div slot="hint-more">A 100 aparece duas vezes, a 101 uma.</div>
+
+  <div slot="hint">Enumera as linhas que chegam a cada agrupamento.</div>
+  <div slot="hint-more">Mia gera uma linha artificial na primeira consulta; a encomenda 100 gera duas linhas na segunda.</div>
   <div slot="solution">
-    <code>{'COUNT(e.id)'}</code> dá 3. Para contar encomendas nesse resultado,
-    usa <code>{'COUNT(DISTINCT\n    e.id)'}</code>, que dá 2. Também podes
-    evitar a junção a Item se ela não for necessária. Agrupa por id do cliente,
-    não apenas nome, para não fundir pessoas diferentes.
+
+A primeira devolve `(1,2),(2,1),(3,1)`. `COUNT(*)` conta a linha artificial de Mia. Trocar por `COUNT(e.id)` dá zero para Mia, porque e.id é nulo apenas quando não existe correspondência.
+
+A segunda devolve `(1,3),(2,1)`: conta a 100 duas vezes e não cria grupo para Mia. Se Item não é necessário, retira essa junção e usa a primeira consulta corrigida. Se precisas de o conservar, usa duas junções externas e conta ids distintos:
+
+```sql
+SELECT c.id, COUNT(DISTINCT e.id) AS n
+FROM Cliente AS c
+LEFT JOIN Encomenda AS e ON e.idCliente = c.id
+LEFT JOIN Item AS i ON i.idEncomenda = e.id
+GROUP BY c.id ORDER BY c.id;
+```
+
+A resposta corrigida é `(1,2),(2,1),(3,0)`.
+
   </div>
-  <div slot="mistakes">
-    <code>{'DISTINCT'}</code> no <code>{'SELECT'}</code> exterior não corrige
-    automaticamente uma contagem já calculada sobre linhas multiplicadas.
-  </div>
+  <div slot="mistakes">DISTINCT no SELECT exterior não corrige uma contagem já calculada. COUNT de COALESCE(e.id,0) voltaria a contar a linha de Mia.</div>
 </Exercise>
 
 <Exercise
@@ -109,6 +97,7 @@ import loja from '../../bd/loja.sql?raw';
 
 <Exercise
   id="pares-encomendas-mesmo-cliente"
+  revision={1}
   title="Pares sem repetição na mesma tabela"
   explanation="/cadeiras/bd/sql-consultas/#pares-sem-repetição-na-mesma-tabela"
   answer={{
@@ -137,7 +126,7 @@ import loja from '../../bd/loja.sql?raw';
       code={`SELECT e1.id AS primeira, e2.id AS segunda
 FROM Encomenda AS e1
 JOIN Encomenda AS e2
-  ON e2.idCliente = e1.idCliente AND e1.id < e2.id
+  ON 0 -- Substitui pela condição que define cada par.
 ORDER BY primeira, segunda;`}
     />
   </div>
@@ -162,6 +151,7 @@ ORDER BY primeira, segunda;`}
 
 <Exercise
   id="total-por-cliente-left"
+  revision={1}
   title="Totais por cliente, incluindo quem não comprou"
   explanation="/cadeiras/bd/sql-consultas/#junções-externas-e-clientes-sem-compras"
   answer={{
@@ -187,12 +177,8 @@ ORDER BY primeira, segunda;`}
       language="sqlite"
       title="Completar os totais por cliente"
       files={{ 'loja.sql': loja }}
-      code={`SELECT c.id, c.nome, COALESCE(SUM(i.qtd * i.precoUnitario), 0) / 100.0 AS euros
-FROM Cliente AS c
-LEFT JOIN Encomenda AS e ON e.idCliente = c.id
-LEFT JOIN Item AS i ON i.idEncomenda = e.id
-GROUP BY c.id, c.nome
-ORDER BY c.id;`}
+      code={`-- Completa as junções e a expressão do total.
+SELECT c.id, c.nome FROM Cliente AS c ORDER BY c.id;`}
     />
   </div>
   <div slot="hint">
@@ -203,11 +189,22 @@ ORDER BY c.id;`}
     apresentação.
   </div>
   <div slot="solution">
+
+```sql
+SELECT c.id, c.nome,
+       COALESCE(SUM(i.qtd * i.precoUnitario), 0) / 100.0 AS euros
+FROM Cliente AS c
+LEFT JOIN Encomenda AS e ON e.idCliente = c.id
+LEFT JOIN Item AS i ON i.idEncomenda = e.id
+GROUP BY c.id, c.nome ORDER BY c.id;
+```
+
     Ana soma 11500 + 18000 = 29500 cêntimos, Rui soma 7500 e Mia soma{' '}
     <code>{'NULL'}</code>, apresentado como 0. O agrupamento por id evita fundir
     pessoas com o mesmo nome. Se o filtro de datas fosse para{' '}
     <code>{'WHERE'}</code>, Mia desapareceria; no <code>{'ON'}</code>,
     conserva-se a linha sem correspondência.
+
   </div>
   <div slot="mistakes">
     Não contes encomendas quando a pergunta pede euros. Não filtres a tabela da

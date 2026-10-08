@@ -12,9 +12,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import estrela from '../../bd/estrela.typ?raw';
 import loja from '../../bd/loja.sql?raw';
 
-Registar uma venda mexe em poucas linhas de hoje. Comparar as vendas de três anos lê milhões de linhas para devolver uma. O padrão de acesso decide o desenho: tabelas operacionais para o dia a dia, factos e dimensões para análise, documentos para catálogos irregulares.
-
-Registar uma venda e comparar as vendas de vários anos são tarefas diferentes. A primeira precisa de atualizar poucos factos, ou seja, poucas linhas que registam o que aconteceu, sem quebrar regras. A segunda pode ler milhões desses factos históricos para produzir poucas agregações. O padrão de acesso ajuda a escolher o desenho e o sistema.
+Reservar dois teclados exige atualizar o stock e guardar uma venda sem quebrar referências. Comparar vendas de vários anos exige percorrer factos históricos e agregá-los por produto, cliente ou tempo. Essas tarefas têm padrões de acesso diferentes. Vamos seguir as vendas da loja desde as linhas operacionais até ao desenho analítico, antes de comparar outros modelos de dados.
 
 ## OLTP e armazém de dados
 
@@ -26,7 +24,7 @@ Um **armazém de dados**, ou _data warehouse_, integra dados para análise. É o
 
 O armazém pode receber dados periodicamente, ficando atrasado em relação ao sistema operacional. Essa latência pode ser aceitável num relatório mensal e inaceitável para decidir se ainda há uma unidade em stock.
 
-## Primeiro escolhe o grão
+## Grão e dimensões
 
 O **grão** diz o que representa uma linha da tabela de factos. Para a loja, escolhemos **um produto numa encomenda**. A linha da encomenda 100/produto 10 guarda quantidade 2 e valor 9000 cêntimos.
 
@@ -46,7 +44,17 @@ Quantidade vendida e valor da venda são aditivos no grão escolhido, desde que 
 
 Um saldo de conta num certo dia é **semiaditivo**: pode somar-se entre contas na mesma data, mas somar saldos diários não dá o saldo do mês. Uma percentagem é normalmente **não aditiva**. Para a margem média, pode ser necessário somar receitas e custos e depois calcular a razão, em vez de fazer a média de percentagens com pesos diferentes.
 
-O preço médio por unidade da loja é `SUM(valor) / SUM(qtd)`, não a média simples dos preços das linhas, porque as linhas têm quantidades diferentes e contribuem com pesos diferentes.
+As quatro linhas da loja dão medidas com o mesmo grão:
+
+| Encomenda/produto | Quantidade | Preço por unidade, cêntimos | Valor, cêntimos |
+| ----------------- | ---------- | --------------------------- | --------------- |
+| 100/10            | 2          | 4500                        | 9000            |
+| 100/11            | 1          | 2500                        | 2500            |
+| 101/12            | 1          | 18000                       | 18000           |
+| 102/11            | 3          | 2500                        | 7500            |
+| Total             | 7          | não se soma                 | 37000           |
+
+O preço médio por unidade é `SUM(valor) / SUM(qtd)`: 37000/7 cêntimos, cerca de 52,86 euros. A média simples dos quatro preços daria 68,75 euros, atribuindo o mesmo peso à venda de uma unidade e à de três. O grão determina o que cada soma e média significa.
 
 ## Estrela, floco de neve e constelação
 
@@ -99,7 +107,16 @@ Janeiro tem 7 unidades e 370 euros, ou seja, o preço médio por unidade é $370
 
 Em motores com estas extensões, `GROUP BY ROLLUP(ano, categoria)` produz agrupamentos por `(ano,categoria)`, por `ano` e o total geral. `CUBE(ano,categoria)` inclui também o agrupamento apenas por `categoria`, ou seja, todos os subconjuntos de dimensões. SQLite não implementa estes comandos; podemos construir os níveis com consultas e `UNION ALL`.
 
-Na loja, que só tem vendas em janeiro, o drill-down mostra o mês com 370 euros e o roll-up acrescenta o total geral com o mesmo valor, marcado com `NULL` no mês. Esse `NULL` significa subtotal, não mês desconhecido.
+Para comparar `ROLLUP` e `CUBE`, imagina que agregámos as vendas por ano e categoria. Os dois operadores escolhem níveis diferentes:
+
+| Nível de agrupamento        | ROLLUP(ano, categoria) | CUBE(ano, categoria) |
+| --------------------------- | ---------------------- | -------------------- |
+| Ano e categoria             | sim                    | sim                  |
+| Só ano                      | sim                    | sim                  |
+| Só categoria, juntando anos | não                    | sim                  |
+| Total geral                 | sim                    | sim                  |
+
+`ROLLUP` retira atributos da direita para a esquerda, conservando prefixos. `CUBE` inclui todos os subconjuntos. Nenhum inventa detalhe que os factos não guardam.
 
 Nos resultados de OLAP, um `NULL` que marca um subtotal não deve ser confundido com um valor desconhecido da dimensão. Motores que suportam `GROUPING` permitem distinguir essas situações.
 
@@ -137,7 +154,7 @@ Estes excertos são para **mongosh**, numa coleção de exemplo, e não para o m
   "_id": 10,
   "nome": "Teclado",
   "preco": 45,
-  "categorias": ["periférico", "entrada"],
+  "categorias": ["periferico", "entrada"],
   "detalhes": { "layout": "PT" }
 }
 ```
@@ -162,6 +179,15 @@ A operação altera apenas o campo layout. Substituir o documento inteiro é uma
 
 Para valores distintos de um campo, `db.produtos.distinct('categorias')` devolve cada categoria uma vez. Para contar documentos que satisfazem um filtro, `db.produtos.countDocuments({ preco: { $gt: 30 } })` conta os documentos correspondentes; não é uma estimativa do tamanho da coleção.
 
+Nos exemplos seguintes, o catálogo tem apenas estes dois documentos:
+
+| \_id | nome    | preco, euros | categorias          |
+| ---- | ------- | ------------ | ------------------- |
+| 10   | Teclado | 45           | entrada, periferico |
+| 11   | Rato    | 25           | periferico          |
+
+Os valores de `categorias` são arrays de strings. O teclado pertence a dois grupos; o rato, a um. Por isso, contar elementos após `$unwind` pode dar um total diferente de contar documentos.
+
 ## Pipelines de agregação
 
 Um pipeline passa documentos por etapas. `$match` filtra, `$project` escolhe ou calcula campos, `$unwind` transforma um array em linhas, `$group` agrega, `$sort` ordena e `$limit` limita a resposta.
@@ -176,7 +202,7 @@ db.produtos.aggregate([
 
 Cada produto contribui uma vez por elemento do array. Um teclado com duas categorias contribui para dois grupos. Arrays com elementos repetidos exigem decidir se queremos contar ocorrências ou produtos distintos; `$unwind` não elimina repetições.
 
-Depois de `$unwind`, o teclado do exemplo dá dois documentos: um com `categorias: "periférico"` e outro com `categorias: "entrada"`. Os restantes campos mantêm-se em ambos. `$group` recebe estes documentos separados e acrescenta 1 à contagem de cada categoria; não altera o produto guardado na coleção.
+Depois de `$unwind`, o teclado do exemplo dá dois documentos: um com `categorias: "periferico"` e outro com `categorias: "entrada"`. Os restantes campos mantêm-se em ambos. `$group` recebe estes documentos separados e acrescenta 1 à contagem de cada categoria; não altera o produto guardado na coleção.
 
 Etapa a etapa, com o teclado e o rato:
 
@@ -249,7 +275,7 @@ A resposta tem um documento com um array por saída. Com o teclado e o rato:
 
 Os dois subpipelines recebem os mesmos documentos de entrada e são independentes: a saída de um não serve de entrada ao outro. A média é (45+25)/2. Cada etapa de um `$facet` está limitada a 100 megabytes e o documento final ao limite BSON de 16 megabytes, por isso esta técnica serve resumos, não despejos integrais.
 
-## Escolher sem slogans
+## Escolha do modelo de dados
 
 Para vendas com referências e regras transacionais entre entidades, o relacional é uma escolha natural. Para análise histórica, um desenho multidimensional permite agregações bem definidas. Para catálogos com atributos aninhados e acessos por documento, um modelo de documentos pode simplificar certas leituras.
 

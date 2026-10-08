@@ -10,15 +10,47 @@ import loja from '../../bd/loja.sql?raw';
 
 <Exercise
   id="trigger-update-igual"
-  title="Evento não significa mudança"
-  explanation="/cadeiras/bd/vistas-gatilhos-acessos/#gatilhos-evento-condição-e-ação"
-  answer={{"kind": "self", "checklist": ["Distingui ocorrência do evento e execução da ação.", "Avaliei a condição com os dois valores."]}}
+  revision={1}
+  title="Auditar só mudanças efetivas de stock"
+  explanation="/cadeiras/bd/vistas-gatilhos-acessos/#um-registo-de-alterações"
+  answer={{ kind: 'self', checklist: ["Escrevi um gatilho por linha com OLD e NEW.", "Excluí atualizações sem mudança.", "Previ duas linhas de auditoria e nenhuma da atualização repetida."] }}
 >
-  <p>Um gatilho AFTER <code>{"UPDATE OF"}</code> stock ON Produto tem WHEN OLD.stock &lt;> NEW.stock. O stock é 20. Executamos <code>{"UPDATE"}</code> Produto SET stock=stock <code>{"WHERE"}</code> id=10. A ação corre?</p>
-  <div slot="hint">O evento depende da coluna mencionada; a ação também depende do WHEN.</div>
-  <div slot="hint-more">OLD.stock e NEW.stock têm ambos 20.</div>
-  <div slot="solution">O evento <code>{"UPDATE OF"}</code> stock ocorre porque a coluna aparece na instrução. A condição 20 &lt;> 20 é falsa, por isso a ação não corre. Se omitíssemos WHEN, a ação correria. Num <code>{"UPDATE"}</code> com várias linhas, SQLite avalia o gatilho por linha.</div>
-  <div slot="mistakes">Não afirmes que <code>{"UPDATE OF"}</code> só dispara quando o valor muda. Se a coluna permitir <code>{"NULL"}</code>, &lt;> também exige analisar desconhecidos.</div>
+  <div>
+
+Produto(id,stock) contém (10,20) e (11,50), com stock inteiro obrigatório. AlteracaoStock(idProduto,anterior,novo) começa vazia. Escreve um gatilho SQLite que registe cada mudança efetiva de stock.
+
+Prevê a auditoria depois de executar, pela ordem indicada:
+
+```sql
+UPDATE Produto SET stock=stock-2;
+UPDATE Produto SET stock=stock WHERE id=10;
+```
+
+A primeira instrução executa a ação do gatilho uma vez ou duas? Justifica.
+
+  </div>
+
+  <div slot="hint">O evento pode mencionar stock mesmo quando o valor se mantém.</div>
+  <div slot="hint-more">Cada linha atualizada tem os seus próprios OLD.stock e NEW.stock.</div>
+  <div slot="solution">
+
+Uma solução é:
+
+```sql
+CREATE TRIGGER AuditarStock
+AFTER UPDATE OF stock ON Produto
+FOR EACH ROW WHEN OLD.stock <> NEW.stock
+BEGIN
+  INSERT INTO AlteracaoStock VALUES (NEW.id, OLD.stock, NEW.stock);
+END;
+```
+
+A primeira instrução altera duas linhas e regista `(10,20,18)` e `(11,50,48)`. SQLite avalia o gatilho por linha, logo a ação corre duas vezes. A segunda menciona stock, mas OLD.stock e NEW.stock valem ambos 18; a condição é falsa e não há outra linha de auditoria.
+
+O enunciado exige stock obrigatório, por isso a comparação não tem o caso desconhecido de NULL. Se esse contrato mudar, é preciso rever a condição.
+
+  </div>
+  <div slot="mistakes">Sem WHEN, a segunda instrução também seria registada. A auditoria não proíbe stock negativo; essa regra pertence a uma restrição CHECK do produto.</div>
 </Exercise>
 
 <Exercise
@@ -61,6 +93,7 @@ import loja from '../../bd/loja.sql?raw';
 
 <Exercise
   id="vista-total-propaga"
+  revision={1}
   title="A vista acompanha a tabela base"
   explanation="/cadeiras/bd/vistas-gatilhos-acessos/#vistas-perguntas-com-nome"
   answer={{
@@ -87,20 +120,29 @@ import loja from '../../bd/loja.sql?raw';
       language="sqlite"
       title="Completar a vista de totais"
       files={{ 'loja.sql': loja }}
-      code={`CREATE VIEW TotalEncomenda AS
-SELECT idEncomenda, SUM(qtd * precoUnitario) AS total
-FROM Item GROUP BY idEncomenda;
-SELECT * FROM TotalEncomenda ORDER BY idEncomenda;
+      code={`-- Define TotalEncomenda antes da alteração e consulta-a.
 UPDATE Item SET qtd = 3 WHERE idEncomenda = 100 AND idProduto = 10;
-SELECT * FROM TotalEncomenda ORDER BY idEncomenda;`}
+-- Consulta novamente a vista para observar a mudança.
+SELECT idEncomenda, idProduto, qtd FROM Item ORDER BY idEncomenda, idProduto;`}
     />
   </div>
   <div slot="hint">Recalcula o total da 100 com a nova quantidade.</div>
   <div slot="hint-more">As outras encomendas não mudam.</div>
   <div slot="solution">
+
+```sql
+CREATE VIEW TotalEncomenda AS
+SELECT idEncomenda, SUM(qtd * precoUnitario) AS total
+FROM Item GROUP BY idEncomenda;
+SELECT * FROM TotalEncomenda ORDER BY idEncomenda;
+UPDATE Item SET qtd = 3 WHERE idEncomenda = 100 AND idProduto = 10;
+SELECT * FROM TotalEncomenda ORDER BY idEncomenda;
+```
+
     Os totais passam a 16000, 18000 e 7500. A vista recalcula sobre Item em cada
     consulta, por isso a alteração da base reflete-se sem redefinir a vista. Não
     fizemos `UPDATE` da vista: alterámos Item.
+
   </div>
   <div slot="mistakes">
     Não esperes que a vista conserve o total antigo. Uma vista virtual não

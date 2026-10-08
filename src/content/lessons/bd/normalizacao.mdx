@@ -7,11 +7,16 @@ practices:
   - bd/praticar-normalizacao
 ---
 
-A tabela Venda repete o nome do produto em cada linha comprada. Mudar o nome obriga a corrigir várias linhas; apagar a última venda apaga o produto. As dependências funcionais dizem que valores obrigam a repetir que valores. É por elas que se detetam estas repetições.
+Duas vendas do produto 11 guardam o nome em cada encomenda:
 
-Uma tabela de vendas pode guardar o nome do produto em cada linha comprada. Se esse nome mudar, precisamos de corrigir várias linhas, ou seja, a mesma informação vive em vários sítios. Se apagarmos a última venda, podemos perder o único registo do produto. A **normalização** usa as dependências entre atributos, ou seja, que valores obrigam a repetir que valores, para reconhecer estas repetições e separar factos.
+| Encomenda | Nome copiado |
+| --------- | ------------ |
+| 100       | Rato         |
+| 102       | Rato         |
 
-Nem toda a repetição visível é uma anomalia. O preço atual e o preço acordado numa venda têm significados diferentes. Mesmo que ambos sejam 45 euros hoje, atualizar o primeiro não deve atualizar o segundo.
+Estas linhas da loja repetem o nome do produto 11. Mudar «Rato» para «Rato sem fios» exige corrigir ambas. Se esta fosse a única tabela de produtos, apagar as duas vendas apagaria também o nome. A **normalização** usa dependências entre atributos para identificar estas anomalias e separar factos.
+
+O preço atual e o preço acordado numa venda são factos diferentes. Mesmo que coincidam hoje, mudar o primeiro não deve reescrever o segundo.
 
 ## Dependências funcionais
 
@@ -55,7 +60,7 @@ Para calcular $(AB)^+$, aplica as DFs por rondas:
 
 | Ronda | DF usada  | Fecho   |
 | ----- | --------- | ------- |
-| 0     | —         | $AB$    |
+| 0     | nenhuma   | $AB$    |
 | 1     | $AB\to C$ | $ABC$   |
 | 2     | $C\to D$  | $ABCD$  |
 | 3     | $D\to E$  | $ABCDE$ |
@@ -74,7 +79,7 @@ Um atributo é **primo** se pertence a pelo menos uma chave candidata, não apen
 
 Por exemplo, em $S(A,B,C)$ com $AB\to C$ e $C\to B$, temos duas candidatas: $AB$ e $AC$. Ambas determinam o esquema; $A$, $B$ e $C$ isolados não. Todos os atributos são primos, mesmo que escolhamos $AB$ como primária.
 
-## As formas, por ordem
+## Formas normais
 
 A **1.ª forma normal**, 1FN, usa valores atómicos dentro dos domínios escolhidos, sem grupos repetidos de atributos. Guardar `produto1`, `produto2` e `produto3` limita artificialmente uma encomenda. Guardar uma lista de ids numa célula dificulta referências e operações relacionais. Uma relação Item resolve estes problemas.
 
@@ -104,13 +109,28 @@ Agora considera $S(A,B,C)$ com $AB\to C$ e $C\to B$. As candidatas são $AB$ e $
 
 Precisamos de considerar as DFs implicadas, não apenas uma lista arbitrária de setas. Para BCNF, verificar os determinantes das DFs de uma base equivalente é suficiente quando o determinante de cada DF não trivial dessa base é superchave. Depois de decompor, a base original tem de ser projetada sobre cada esquema.
 
-## As anomalias da loja
+## Dependência parcial e anomalias
 
 Imagina `Venda(idEncomenda, idProduto, nomeProduto, qtd)` com candidata `(idEncomenda, idProduto)` e `idProduto → nomeProduto`.
 
-O nome depende de parte da candidata, violando 2FN. Cada compra volta a guardar o nome. Uma alteração exige várias atualizações; um produto ainda sem compras não tem um lugar independente; apagar a última compra apaga também a informação do nome.
+Nos dados de abertura, `(100,11)` determina quantidade 1 e `(102,11)` determina quantidade 3. Já o produto 11 determina Rato nas duas linhas. O nome depende só de uma parte da candidata, violando 2FN. Cada compra volta a guardar o nome. Uma alteração exige várias atualizações; um produto ainda sem compras não tem um lugar independente; apagar a última compra apaga também a informação do nome.
 
-A decomposição `Produto(idProduto, nomeProduto)` e `Item(idEncomenda, idProduto, qtd)` separa as propriedades do produto das propriedades da compra. A página de [decomposição](/cadeiras/bd/decomposicao/) explica por que esta separação não inventa combinações ao reconstruir os dados.
+As projeções separam as propriedades do produto das propriedades da compra:
+
+`Produto(idProduto, nomeProduto)`:
+
+| idProduto | nomeProduto |
+| --------- | ----------- |
+| 11        | Rato        |
+
+`Item(idEncomenda, idProduto, qtd)`:
+
+| idEncomenda | idProduto | qtd |
+| ----------- | --------- | --- |
+| 100         | 11        | 1   |
+| 102         | 11        | 3   |
+
+O nome tem agora um único lugar para mudar. As quantidades continuam ligadas a cada encomenda. A página de [decomposição](/cadeiras/bd/decomposicao/) explica por que esta separação não inventa combinações ao reconstruir os dados.
 
 ## Cobertura mínima
 

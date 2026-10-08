@@ -10,9 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
-Uma linha da resposta pode ser um produto, uma encomenda ou um cliente. Se a pergunta pede clientes e a consulta conta linhas de compra, a resposta sai errada. Antes do código, decide o que representa cada linha.
-
-Uma consulta declara a resposta que queremos, deixando o SGBD escolher como a obter. Antes do código, define o que representa uma linha: um produto, uma encomenda ou um cliente. Esta decisão evita que uma junção transforme uma contagem de clientes numa contagem de compras.
+A encomenda 100 tem duas linhas de compra. Contar essas linhas dá 2, mas contar encomendas dá 1. Antes de escrever SQL, define o que representa uma linha da resposta. A consulta declara esse resultado; o SGBD escolhe como o obter.
 
 ## SELECT e filtros
 
@@ -23,7 +21,7 @@ WHERE precoCentimos > 3000
 ORDER BY precoCentimos DESC, id;
 ```
 
-Este excerto usa a loja. `WHERE` filtra linhas e a lista de `SELECT` calcula as colunas da resposta, ou seja, podemos filtrar uma coluna que não aparece no resultado.
+A resposta contém Monitor/180 euros e Teclado/45 euros, nesta ordem. `WHERE` testa o preço em cêntimos; a lista de `SELECT` divide-o para mostrar euros. Uma coluna usada no filtro não tem de aparecer no resultado.
 
 `AS` atribui um nome ao resultado de uma expressão. Um alias de tabela, como `Produto AS p`, abrevia referências e permite usar a mesma tabela com papéis diferentes. Não altera os dados nem o nome permanente da tabela.
 
@@ -57,7 +55,7 @@ JOIN Produto AS p ON p.id = i.idProduto
 ORDER BY e.id, p.id;`}
 />
 
-Uma linha da resposta é uma linha de Item, não uma encomenda nem um cliente, por isso omitir uma condição pode criar um produto cartesiano.
+A resposta tem quatro linhas: duas da encomenda 100, uma da 101 e uma da 102. Cada linha corresponde a um Item. Ana aparece três vezes porque comprou três pares encomenda/produto, não porque sejam três clientes.
 
 Omitir uma condição pode criar um produto cartesiano. Juntar três clientes com três encomendas sem condição produz nove pares, incluindo associações falsas. `NATURAL JOIN` não é uma correção automática: Cliente e Encomenda têm ambos `id`, com significados distintos.
 
@@ -147,7 +145,15 @@ HAVING SUM(qtd * precoUnitario) > 10000
 ORDER BY idEncomenda;`}
 />
 
-A 100 tem 115 euros e a 101 tem 180, por isso a 102 fica de fora. `WHERE SUM(...) > ...` não é a forma de filtrar o total de um grupo.
+Os quatro Items formam três grupos. A soma calcula o valor de cada encomenda; só depois `HAVING` testa o total:
+
+| Encomenda | Valores das linhas, em cêntimos | Total | Total > 10000 |
+| --------- | ------------------------------- | ----- | ------------- |
+| 100       | 9000 + 2500                     | 11500 | sim           |
+| 101       | 18000                           | 18000 | sim           |
+| 102       | 7500                            | 7500  | não           |
+
+A resposta contém 100/115 euros e 101/180 euros. Um filtro sobre o preço de cada linha antes da soma faria outra pergunta. `WHERE SUM(...) > ...` não filtra o total de um grupo.
 
 `COUNT(*)` conta linhas. `COUNT(x)` conta os x não nulos; `COUNT(DISTINCT x)` conta valores distintos não nulos. `SUM`, `AVG`, `MIN` e `MAX` ignoram valores nulos. Sem linhas e sem `GROUP BY`, `COUNT` dá 0, enquanto `SUM`, `AVG`, `MIN` e `MAX` dão `NULL`. Com `GROUP BY`, uma entrada vazia não produz grupos.
 
@@ -168,7 +174,7 @@ A primeira resposta tem 3 linhas, 2 valores conhecidos, soma 30 e média 15 porq
 
 SQLite permite colunas soltas numa consulta agregada, mas o valor escolhido pode não representar o grupo de forma estável. Há regras especiais para certos usos de `MIN` e `MAX`, que ainda deixam ambiguidades com empates. Escreve cada coluna da resposta no agrupamento ou numa agregação, ou formula explicitamente a escolha com uma subconsulta. Não uses essa permissividade para justificar SQL portátil.
 
-## Não contar depois de multiplicar sem verificar
+## Multiplicação de linhas e contagens
 
 Se juntarmos Cliente, Encomenda e Item, a encomenda 100 aparece duas vezes porque tem dois produtos. `COUNT(e.id)` passa a contar linhas compradas, dando 3 para Ana. Para contar encomendas nesse resultado, usa `COUNT(DISTINCT e.id)`; para somar valores de encomendas já agregados, evita uma junção que volte a multiplicá-los.
 

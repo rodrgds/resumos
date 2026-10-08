@@ -5,9 +5,9 @@ section: conteudo
 order: 1
 ---
 
-Ana fez duas encomendas e o nome dela aparece nas duas. Se corrigirmos o nome num sítio e nos esquecermos do outro, a base de dados passa a contradizer-se. Um sistema de gestão de bases de dados guarda cada facto uma vez e controla quem lê e escreve ao mesmo tempo. Para isso, separa a estrutura dos dados do seu conteúdo: o esquema fixa as regras, a instância guarda os valores de agora.
+Ana fez duas encomendas. Se o nome dela estiver copiado nas duas, corrigir só uma deixa os dados contraditórios. Separar Cliente de Encomenda permite alterar o nome num único lugar. Essa separação é uma decisão de desenho; o sistema não a faz por nós.
 
-Guardar uma encomenda num ficheiro é possível. O problema aparece quando dois programas a alteram ao mesmo tempo, quando uma falha interrompe uma escrita ou quando precisamos de ligar a encomenda a um cliente. Um **sistema de gestão de bases de dados**, ou SGBD, é o programa que guarda esses dados e controla as operações sobre eles. SQLite, PostgreSQL e MongoDB são exemplos de SGBDs.
+Um **sistema de gestão de bases de dados**, ou SGBD, guarda dados e controla operações sobre eles. Além de os conservar, verifica restrições, coordena acessos concorrentes e oferece mecanismos de recuperação após falhas. SQLite, PostgreSQL e MongoDB são exemplos de SGBDs.
 
 ## Dados, esquema e instância
 

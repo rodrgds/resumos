@@ -43,7 +43,7 @@ Pode haver 3FN sem BCNF: $AB\to C$, $C\to B$, candidatas AB e AC. C não é supe
 | BCNF               | Pela violação $X\to Y$, separa $X\cup Y$ e $R-(Y-X)$; projeta e repete.                                          |
 | Síntese 3FN        | Cobertura mínima, relação por DF, retira esquemas contidos e acrescenta candidata se nenhuma relação a contiver. |
 
-BCNF garante decomposição sem perda pelo algoritmo, mas pode perder preservação. Cobertura mínima: separa direitas, reduz esquerdas, retira DFs redundantes. Para testar redundância de uma DF, retira-a antes do fecho. No chase, mostra os tableaux sucessivos: cada unificação muda símbolos até estabilizar. [Decomposição](/cadeiras/bd/decomposicao/#decompor-até-bcnf).
+O algoritmo de decomposição BCNF garante junção sem perda, mas pode perder preservação. Cobertura mínima: separa direitas, reduz esquerdas, retira DFs redundantes. Para testar redundância de uma DF, retira-a antes do fecho. No chase, mostra os tableaux sucessivos: cada unificação muda símbolos até estabilizar. [Decomposição](/cadeiras/bd/decomposicao/#decompor-até-bcnf).
 
 ## Álgebra relacional
 
@@ -68,7 +68,7 @@ Divisão: candidatos $\pi_X(R)$; faltas $(\pi_X(R)\times S)-R$; retira candidato
 - `CHECK` rejeita falso, não desconhecido. Usa `NOT NULL` para obrigatoriedade.
 - `UNIQUE` permite vários `NULL`. Em primárias textuais/compostas comuns, declara `NOT NULL` explicitamente.
 - `INTEGER` é afinidade em tabelas comuns; `VARCHAR(20)` não limita comprimento. `STRICT` tem outro contrato.
-- `INTEGER PRIMARY KEY` omisso atribui max+1 e pode reutilizar o maior apagado. `AUTOINCREMENT` proíbe reutilização, com custo de `sqlite_sequence`.
+- Na atribuição automática habitual, `INTEGER PRIMARY KEY` usa um id superior ao maior presente e pode reutilizar ids apagados. `AUTOINCREMENT` proíbe reutilização, com custo de `sqlite_sequence`.
 - `5 / 2 = 2`; usa operando real para divisão real.
 - `WHERE` filtra linhas; `HAVING` filtra grupos. Não agregues depois de uma junção sem conferir a multiplicação de linhas.
 - `COUNT(*)` conta linhas; `COUNT(x)` ignora nulos; `COUNT(DISTINCT x)` ignora nulos e repetições.
@@ -83,7 +83,7 @@ Divisão: candidatos $\pi_X(R)$; faltas $(\pi_X(R)\times S)-R$; retira candidato
 
 ## CTEs, vistas, gatilhos e acessos
 
-CTE dura uma instrução. Recursão tem parte inicial, passo e prova de terminação. `UNION` elimina tuplos completos, não apenas o id; acrescentar profundidade pode impedir a eliminação de ciclos. D'Hondt: recursão só gera divisores 1..M; quocientes por produto cartesiano; top M com desempate explícito. [Recursão](/cadeiras/bd/sql-recursao/#só-os-divisores-precisam-de-recursão).
+CTE dura uma instrução. Recursão tem parte inicial, passo e prova de terminação. `UNION` elimina tuplos completos, não apenas o id; acrescentar profundidade pode impedir a eliminação de ciclos. D'Hondt: recursão só gera divisores 1..M; quocientes por produto cartesiano; top M com desempate explícito. [Recursão](/cadeiras/bd/sql-recursao/#divisores-e-distribuição-de-mandatos).
 
 Vista virtual guarda uma pergunta; materializada guarda resultados. SQLite atualiza vistas através de `INSTEAD OF`, não automaticamente. Gatilhos SQLite são por linha: INSERT tem NEW, DELETE tem OLD, UPDATE tem ambos. `UPDATE OF` não prova mudança de valor. Prefere restrições declarativas. [Vistas e gatilhos](/cadeiras/bd/vistas-gatilhos-acessos/#gatilhos-evento-condição-e-ação).
 
@@ -91,7 +91,7 @@ SQLite não tem `GRANT`/`REVOKE`/RLS. PostgreSQL separa privilégios, papéis e 
 
 ## Índices e transações
 
-Índice não único acelera acesso, sem impor unicidade. Um composto ordena pela ordem das colunas; igualdade no prefixo e intervalo no seguinte são um padrão útil. Mais índices aumentam custo de escrita. Confere plano e distribuição. [Índices](/cadeiras/bd/indices-transacoes/#escolher-pelas-perguntas).
+Índice não único acelera acesso, sem impor unicidade. Um composto ordena pela ordem das colunas; igualdade no prefixo e intervalo no seguinte são um padrão útil. Mais índices aumentam custo de escrita. Confere plano e distribuição. [Índices](/cadeiras/bd/indices-transacoes/#índices-compostos).
 
 ACID: atomicidade, consistência, isolamento, durabilidade. `COMMIT` confirma; `ROLLBACK` desfaz a transação; `ROLLBACK TO` regressa ao savepoint. Um erro SQLite pode desfazer só a instrução. Confere linhas afetadas e trata o erro antes de confirmar. [Transações](/cadeiras/bd/indices-transacoes/#um-erro-não-faz-sempre-rollback-de-tudo).
 
@@ -111,6 +111,6 @@ Grafo: conflito é mesmo item e pelo menos uma escrita; aresta da operação ant
 
 Define o grão antes das medidas. Factos ligam dimensões. Não somes saldos ao longo do tempo nem faças médias de percentagens sem pesos. Estrela tem dimensões diretas; floco normaliza dimensões; constelação partilha dimensões entre factos.
 
-OLAP: roll-up agrega; drill-down detalha; slice fixa; dice restringe subconjuntos; pivot muda eixos. ROLLUP usa prefixos, CUBE todos os subconjuntos; não são comandos SQLite. [Armazéns](/cadeiras/bd/armazens-dados-nosql/#primeiro-escolhe-o-grão).
+OLAP: roll-up agrega; drill-down detalha; slice fixa; dice restringe subconjuntos; pivot muda eixos. ROLLUP usa prefixos, CUBE todos os subconjuntos; não são comandos SQLite. [Armazéns](/cadeiras/bd/armazens-dados-nosql/#grão-e-dimensões).
 
 NoSQL inclui chave-valor, documentos, famílias de colunas e grafos. Esquema flexível não dispensa validação; NoSQL não exclui ACID. `distinct` devolve valores distintos; `countDocuments` conta documentos de um filtro. `$lookup` junta correspondências num array; `$facet` corre subpipelines independentes sobre a mesma entrada e devolve um documento com um array por saída. CAP trata consistência linearizável e disponibilidade **durante uma partição**, não a consistência de invariantes de ACID. Replicar copia; particionar distribui subconjuntos. [NoSQL](/cadeiras/bd/armazens-dados-nosql/#replicação-partição-e-cap).

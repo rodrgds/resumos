@@ -8,10 +8,10 @@ practices:
 ---
 
 import Manim from '../../../components/Manim.astro';
+import Dot from '../../../components/Dot.astro';
+import precedencias from '../../bd/precedencias.dot?raw';
 
-Duas reservas correm ao mesmo tempo sobre o stock 10. Cada uma lê 10 e escreve 9. Venderam-se duas unidades e só uma foi retirada. O isolamento define o que cada transação pode observar quando correm juntas.
-
-Duas transações podem ser corretas isoladamente e produzir um estado errado quando intercaladas, ou seja, isolamento define o que cada uma pode observar e que resultados concorrentes são permitidos.
+Duas reservas leem stock 10 e cada aplicação escreve 9. Foram vendidas duas unidades, mas só uma foi retirada. As operações de cada reserva podem estar corretas isoladamente e falhar quando intercaladas. O **isolamento** define o que uma transação pode observar e como pode interferir com as outras.
 
 ## Escalonamentos seriais e serializáveis
 
@@ -65,7 +65,14 @@ No grafo, cada nó é uma transação. Desenha $T_i\to T_j$ se uma operação de
 
 Considera `r1(X), r2(X), w1(X), w2(X)`. A leitura de T1 antes da escrita de T2 dá T1→T2. A leitura de T2 antes da escrita de T1 dá T2→T1. Há um ciclo, logo não é serializável por conflitos.
 
-Com valores, T1 soma 10 a B depois de ler A, e T2 soma 10 a A depois de ler B, ambas a partir de A=B=100:
+<Dot
+  source={precedencias}
+  alt="Grafo com duas transações e um ciclo. r1(X) antes de w2(X) impõe T1 antes de T2; r2(X) antes de w1(X) impõe T2 antes de T1."
+/>
+
+Uma execução serial teria de colocar T1 antes de T2 e T2 antes de T1 ao mesmo tempo. Não existe essa ordem. A escrita w1 antes de w2 reforça T1→T2, sem criar um nó novo.
+
+Com valores, T1 escreve em B o valor lido de A mais 10, e T2 escreve em A o valor lido de B mais 10, ambas a partir de A=B=100:
 
 | Passo | T1            | T2            |
 | ----- | ------------- | ------------- |
@@ -104,6 +111,14 @@ Na animação, T1 e T2 mantêm o snapshot com `Ana = sim` e `Rui = sim`, mesmo q
   title="Duas saídas decididas sobre o mesmo snapshot"
   description="T1 e T2 leem Ana e Rui de serviço. T1 retira Ana e confirma; T2 retira Rui com base no snapshot inicial e também confirma. Ficam zero pessoas. Na execução serial, T1 sai primeiro e T2 vê apenas Rui de serviço, por isso recusa a segunda saída e conserva uma pessoa."
 />
+
+A regra pode ser seguida sem reproduzir a animação:
+
+| Execução            | Depois da primeira decisão | Segunda decisão                       | Estado final       |
+| ------------------- | -------------------------- | ------------------------------------- | ------------------ |
+| Snapshot partilhado | T1 retira Ana; Rui fica    | T2 ainda vê duas pessoas e retira Rui | ninguém de serviço |
+| Serial T1, T2       | T1 retira Ana; Rui fica    | T2 vê só Rui e recusa a saída         | Rui de serviço     |
+| Serial T2, T1       | T2 retira Rui; Ana fica    | T1 vê só Ana e recusa a saída         | Ana de serviço     |
 
 Não houve leitura suja. Nenhuma transação sobrepôs a escrita da outra. Ainda assim, qualquer ordem serial correta faria a segunda ver só uma pessoa e recusar a saída. Esta anomalia, **write skew**, mostra por que isolamento por snapshot não equivale a serializabilidade.
 

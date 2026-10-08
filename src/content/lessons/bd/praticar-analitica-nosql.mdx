@@ -34,6 +34,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="mongo-facet-duas-dimensoes"
+  revision={1}
   title="Duas agregações sobre a mesma entrada"
   explanation="/cadeiras/bd/armazens-dados-nosql/#pipelines-de-agregação"
   answer={{
@@ -49,7 +50,7 @@ import Exercise from '../../../components/Exercise.astro';
     Três produtos têm categorias [entrada,periferico], [periferico] e
     [visualizacao], com preços 45, 25 e 180. Um `$facet` calcula `porCategoria`
     com unwind e `sortByCount`, e `precoMedio` com a média dos preços. Descreve
-    o documento de resposta e os dois valores.
+    o documento de resposta, com a média arredondada a duas casas decimais. A soma das contagens é igual ao número de produtos? E se uma categoria aparecer duas vezes no mesmo array?
   </div>
   <div slot="hint">
     Cada subpipeline recebe os três documentos originais.
@@ -71,7 +72,7 @@ import Exercise from '../../../components/Exercise.astro';
 }
 ```
 
-    A média é (45+25+180)/3. Os subpipelines são independentes: a saída de um não alimenta o outro. A soma das contagens é 4, porque conta associações documento/categoria, não os três documentos.
+    A média exata é (45+25+180)/3 = 83,333…; 83,33 é o arredondamento pedido, não um arredondamento automático de `$avg`. A ordem entre as categorias com contagem 1 não está garantida. Os subpipelines são independentes: a saída de um não alimenta o outro. A soma das contagens é 4, porque conta associações documento/categoria, não os três documentos. Uma categoria repetida num array voltaria a contar; para contar produtos distintos por categoria, elimina repetições do par id/categoria antes de agregar.
 
   </div>
   <div slot="mistakes">
@@ -81,42 +82,8 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="mongo-unwind-categorias"
-  title="Uma linha por elemento do array"
-  explanation="/cadeiras/bd/armazens-dados-nosql/#pipelines-de-agregação"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Calculei 1 e 2.',
-      'Expliquei o novo grão e o efeito de repetições.',
-    ],
-  }}
->
-  <div>
-    Dois documentos têm categorias [entrada,periferico] e [periferico]. Um
-    pipeline faz unwind de categorias e group por categoria com sum 1. Quais as
-    contagens e por que a soma é maior que o número de documentos?
-  </div>
-  <div slot="hint">Unwind produz um documento intermédio por elemento.</div>
-  <div slot="hint-more">
-    O primeiro contribui para dois grupos; o segundo para um.
-  </div>
-  <div slot="solution">
-    Entrada tem contagem 1 e periferico tem 2. A soma é 3, apesar de existirem
-    dois documentos originais, porque contamos associações documento/categoria.
-    O primeiro documento contribui duas vezes, em grupos diferentes. Se o array
-    tivesse periferico repetido, unwind produziria também essa repetição; para
-    contar documentos distintos por categoria, seria necessário eliminá-la pelo
-    identificador.
-  </div>
-  <div slot="mistakes">
-    Não assumes que group volta automaticamente ao grão de documento. Cada etapa
-    altera o conjunto e possivelmente o grão.
-  </div>
-</Exercise>
-
-<Exercise
   id="mongo-lookup-array"
+  revision={1}
   title="A junção devolve sempre um array"
   explanation="/cadeiras/bd/armazens-dados-nosql/#pipelines-de-agregação"
   answer={{
@@ -129,7 +96,7 @@ import Exercise from '../../../components/Exercise.astro';
   }}
 >
   <div>
-    Um `$lookup` junta encomendas a clientes por idCliente. Descreve o campo
+    Clientes contém apenas `{ _id: 1, nome: "Ana" }`. Encomendas contém `{ _id: 100, idCliente: 1 }` e `{ _id: 103, idCliente: 99 }`. Um `$lookup` usa localField idCliente, foreignField _id e as cliente. Descreve o campo
     cliente da encomenda 100 e de uma encomenda com cliente 99 inexistente.
   </div>
   <div slot="hint">
