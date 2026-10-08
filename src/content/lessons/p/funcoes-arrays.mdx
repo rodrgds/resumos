@@ -9,9 +9,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-O programa das notas já mistura leitura, validação e contagem na mesma função. Esta página separa essa operação numa função com contrato: o que recebe, o que devolve e o que exige.
-
-Uma função dá nome a uma operação. Essa separação distingue o que o chamador precisa de saber da forma como a operação é realizada. Para a usares bem, lê o contrato: os parâmetros declarados na função, o resultado, as alterações e as condições de entrada.
+Uma função de contagem pode receber as notas já lidas e devolver um total, sem tratar a entrada nem imprimir. O seu contrato indica que dados recebe, se os pode alterar e que resultado devolve. Separar estas decisões permite testar a contagem sem fornecer dados pelo teclado.
 
 ## Parâmetros e argumentos
 
@@ -60,7 +58,7 @@ Segue o programa linha a linha. `n` começa em `4`. `incrementar_copia(n)` cria 
 
 `const T&` impede alterações através dessa referência; não torna constantes todas as outras formas de acesso ao objeto. Evitar uma cópia de um `int` raramente justifica uma referência. Retornar um `std::string` por valor é seguro e permite ao compilador evitar cópias; retornar uma referência a uma variável local deixa acesso a um objeto que já morreu.
 
-## Uma ponte para endereços
+## Parâmetros apontadores
 
 A próxima secção passa arrays como `const int* valores`. Lê assim: `valores` guarda o endereço do primeiro inteiro e `valores[i]` acede ao elemento nessa posição. Ainda não precisas de aritmética de apontadores; a página [Apontadores e memória](/cadeiras/p/apontadores-memoria/#endereço-de-e-dereferenciação) explica-a depois com objetos e setas.
 
@@ -86,7 +84,15 @@ Saída:
 0
 ```
 
-O contrato de `soma` exige `n` elementos válidos e soma representável em `int`. Na segunda chamada, o intervalo contém `-2` e `7`, por isso soma `5`. Na chamada vazia, o ciclo não desreferencia o apontador.
+O contrato de `soma` exige `n` elementos válidos e que todas as somas parciais caibam em `int`. Na segunda chamada, o intervalo contém `-2` e `7`, por isso soma `5`. Na chamada vazia, o ciclo não desreferencia o apontador.
+
+| Intervalo                   | Índices originais | Evolução de `total` |
+| --------------------------- | ----------------- | ------------------- |
+| Array completo              | 0, 1, 2, 3        | 0 → 4 → 2 → 9 → 10  |
+| Dois valores a partir de -2 | 1, 2              | 0 → -2 → 5          |
+| Vazio                       | nenhum            | 0                   |
+
+O índice `i` é relativo ao início recebido. Na segunda chamada, `valores[0]` dentro da função é o `-2` que está no índice 1 do array do chamador.
 
 `sizeof(valores)` dentro desta função mede o apontador, não o array do chamador. Para um tamanho fixo com interface que o conserva, usa `std::array<T, N>`. Para tamanho variável, usa `std::vector<T>`. Um `std::vector<int>` guarda uma sequência de inteiros; `std::vector<int> v{4, -2, 7}` cria três elementos. A página [Templates e STL](/cadeiras/p/templates-stl/#vector-o-array-que-cresce) desenvolve esta coleção.
 
@@ -158,8 +164,6 @@ Arrays de `char` comparados com `==` não comparam o texto, comparam endereços 
 
 Uma função recursiva chama-se a si própria. Precisa de um caso base e de uma medida que diminua até esse caso. A soma recursiva de `1` até `n` pode usar `soma(0) = 0` e `soma(n) = n + soma(n - 1)` para `n > 0`. O contrato exige `n >= 0` e uma soma representável no tipo escolhido. Se não tratares `0`, podes criar chamadas sem fim.
 
-:::details[Ver a expansão de soma(3)]
-
 Para `n = 3`, a descida constrói chamadas e a subida combina resultados:
 
 | Passo  | Chamada                 | Resultado |
@@ -173,6 +177,5 @@ Para `n = 3`, a descida constrói chamadas e a subida combina resultados:
 | subir  | `3 + 3`                 | 6         |
 
 A descida reduz `n` e a subida combina os resultados. Uma entrada negativa nunca se aproxima do caso base.
-:::
 
 Cada chamada conserva os seus parâmetros e variáveis locais. Um grande número de chamadas pode esgotar a pilha. Quando um ciclo resolve o mesmo problema com um acumulador, não precisas de recursão. Usa-a quando a decomposição do problema a torna clara, não como substituição automática de qualquer ciclo.

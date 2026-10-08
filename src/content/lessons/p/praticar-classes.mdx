@@ -2,13 +2,17 @@
 title: Praticar classes e invariantes
 description: Exercícios próprios com pistas, soluções e erros frequentes.
 section: exercicios
+editorial:
+  sources:
+    - title: FEUP_PROG, P03 time_of_day e P08 Date, suplemento estudantil sem ano identificado
+      url: https://github.com/sarasazevedo/FEUP_PROG
 ---
 
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="relogio-fronteira"
-  revision={1}
+  revision={2}
   title="Preservar o estado quando há erro"
   explanation="/cadeiras/p/classes-objetos/#encapsulamento"
   answer={{
@@ -17,22 +21,20 @@ import Exercise from '../../../components/Exercise.astro';
       'Converti 23:55 para 1435 minutos.',
       'Obtive 0:5 depois do avanço.',
       'Justifiquei que a exceção deixa o estado intacto.',
+      'Mostrei uma chamada ao setter que viola o invariante.',
     ],
   }}
 >
   <div>
     No Relogio da lição, cria-se <code>Relogio r(23, 55)</code>. Chama-se{' '}
     <code>r.avancar(10)</code> e depois tenta-se <code>r.avancar(-1)</code>,
-    apanhando a exceção. Qual é o estado final e porquê?
+    apanhando a exceção. Qual é o estado final e porquê? Considera depois
+    acrescentar <code>void set_minutos(int n) &#123; minutos_ = n; &#125;</code>
+    à interface pública. Dá uma chamada que viole o invariante e explica por que
+    tornar o campo privado não basta se esse método existir.
   </div>
   <div slot="hint">
     <p>Segue os minutos desde a meia-noite e repara onde está a validação.</p>
-  </div>
-  <div slot="hint-more">
-    <div>
-      1435 + 10 passa a 5 após o resto por 1440; a segunda chamada lança antes
-      de atribuir.
-    </div>
   </div>
   <div slot="solution">
     <div>
@@ -41,7 +43,10 @@ import Exercise from '../../../components/Exercise.astro';
       avanço atravessa a meia-noite. O segundo não altera o objeto porque testa
       o argumento antes da atribuição. O invariante continua válido e a falha
       conserva o estado anterior. A impressão é <code>0:5</code>, sem zero à
-      esquerda.
+      esquerda. Um <code>r.set_minutos(-1)</code> introduziria um estado
+      inválido por um método público. O encapsulamento depende de todos os
+      caminhos de escrita conservarem o invariante, não apenas do acesso privado
+      aos campos.
     </div>
   </div>
   <div slot="mistakes">
@@ -77,9 +82,6 @@ import Exercise from '../../../components/Exercise.astro';
       construtor.
     </p>
   </div>
-  <div slot="hint-more">
-    <p>A destruição faz a ordem inversa da construção.</p>
-  </div>
   <div slot="solution">
     <div>
       Constrói primeiro <code>primeiro_</code>, depois <code>segundo_</code> e
@@ -92,51 +94,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="mistakes">
     <div>
       Não inicializes um membro a partir de outro que ainda não foi construído.
-    </div>
-  </div>
-</Exercise>
-
-<Exercise
-  id="interface-preserva-invariante"
-  revision={1}
-  title="Recusar estados sem sentido na interface"
-  explanation="/cadeiras/p/classes-objetos/#encapsulamento"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Identifiquei que minutos_ nunca pode ser escrito diretamente.',
-      'Expliquei por que a validação vem antes da atribuição.',
-      'Distingui representação interna de horas e minutos do chamador.',
-    ],
-  }}
->
-  <div>
-    Porque é que o Relogio guarda só <code>minutos_</code> e rejeita{' '}
-    <code>Relogio(25, 0)</code> e <code>avancar(-1)</code>? Explica o que
-    aconteceria se existisse um método <code>set_minutos(int)</code> sem
-    validação.
-  </div>
-  <div slot="hint">
-    <p>Procura todos os caminhos que escrevem em minutos_.</p>
-  </div>
-  <div slot="hint-more">
-    <div>
-      Um acesso direto contornaria as verificações do construtor e de avancar.
-    </div>
-  </div>
-  <div slot="solution">
-    <div>
-      O construtor e <code>avancar</code> são os únicos caminhos de escrita e
-      ambos validam antes de atribuir. Um <code>set_minutos</code> sem validação
-      permitiria <code>-1</code> ou <code>1500</code>, partindo o invariante{' '}
-      <code>0 &lt;= minutos_ &lt; 1440</code>. Guardar só <code>minutos_</code>{' '}
-      evita três representações inconsistentes da mesma hora.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>
-      Getters para cada campo não são encapsulamento. A fronteira está em
-      recusar estados inválidos.
     </div>
   </div>
 </Exercise>

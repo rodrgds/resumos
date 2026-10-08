@@ -7,11 +7,9 @@ practices:
   - p/praticar-organizacao
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
 
-O programa das notas cabe num ficheiro. Um projeto com testes, imagem e comandos precisa de vários. Esta página separa uma operação em três ficheiros e junta as peças num executável.
-
-Um programa com vários ficheiros precisa de declarar interfaces: as listas do que cada ficheiro oferece. Depois é preciso ligar as implementações certas: juntar as peças depois de compiladas. Separar ficheiros não chega; cada operação deve perceber-se sem conhecer todos os detalhes das restantes.
+Uma declaração de `dobro` permite compilar a chamada sem mostrar o seu corpo. A definição pode ficar noutro ficheiro, mas precisa de entrar na ligação para formar o executável. Vamos seguir esses dois percursos separados até se juntarem.
 
 ## Cabeçalhos e implementação
 
@@ -62,6 +60,15 @@ g++ main.o dobro.o -o exemplo
 ./exemplo
 ```
 
+<Dot
+  source={
+    'digraph build { rankdir=TB; node [shape=box]; h [label="dobro.hpp"]; main [label="main.cpp"]; dobro [label="dobro.cpp"]; mo [label="main.o"]; d [label="dobro.o"]; exe [label="exemplo"]; h -> main [label="include"]; h -> dobro [label="include"]; main -> mo [label="compilar"]; dobro -> d [label="compilar"]; mo -> exe [label="ligar"]; d -> exe [label="ligar"]; }'
+  }
+  alt="O cabeçalho dobro.hpp é incluído em main.cpp e dobro.cpp. Cada fonte compila num ficheiro objeto. A ligação reúne main.o e dobro.o no executável exemplo."
+/>
+
+O cabeçalho entra nos dois percursos, mas não produz sozinho a definição compilada de `dobro`. Se faltar o ramo de `dobro.o`, a ligação fica com uma chamada por resolver.
+
 Também podes compilar e ligar de uma vez com `g++ -std=c++17 main.cpp dobro.cpp -o exemplo`. Compilar só `main.cpp` encontra a declaração, mas a ligação falha por faltar a definição de `dobro`. O erro típico é `undefined reference to 'dobro(double)'`: a compilação passou, a ligação não encontrou o código.
 
 Uma definição não `inline` de função colocada num cabeçalho incluído por vários `.cpp` pode criar múltiplas definições na ligação. Coloca a implementação num `.cpp`, ou usa a regra adequada para funções `inline` e templates. Não incluas ficheiros `.cpp` para resolver um erro de ligação; acrescenta-os ao alvo de compilação.
@@ -101,11 +108,6 @@ cmake --build build
 Lê a primeira mensagem relevante, porque um erro de sintaxe pode causar muitas mensagens seguintes. Um erro de ligação não se resolve na entrada do programa, pois a execução ainda não começou.
 
 ## Usar o depurador
-
-:::tip[Ideia-chave]
-
-Localiza a fase pelo sintoma: declaração em falta é compilação, definição em falta é ligação, estado errado é execução. Corrige a fase certa antes de mudares o resto.
-:::
 
 Compila com `-g -O0` ou seleciona Debug no CLion. Para o erro de remoção com dois negativos consecutivos, coloca um breakpoint na linha do `erase` e corre com `{-1, -2}`. Observa o iterador devolvido: aponta para `-2`, que ainda precisa de análise. Se o código avançar outra vez sem ler esse elemento, `-2` sobrevive por engano. Compara argumentos e variáveis com o que o contrato exige.
 

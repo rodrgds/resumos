@@ -1,7 +1,11 @@
 ---
 title: Praticar contentores e algoritmos
-description: Exercícios próprios com pistas, soluções e erros frequentes.
+description: Intervalos, compactação, capacidade, remoção, comparadores e consulta sem inserção.
 section: exercicios
+editorial:
+  sources:
+    - title: FEUP_PROG, P11 iterators, adaptação de um enunciado preservado num suplemento estudantil sem ano identificado
+      url: https://github.com/sarasazevedo/FEUP_PROG/blob/839678b4abd28c6676986ee5cdf0db945fc3a9a1/P11/iterators.cpp
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -9,56 +13,93 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 
 <Exercise
   id="unique-tamanho"
-  revision={1}
-  title="Fim lógico e tamanho real"
+  revision={2}
+  title="Repetidos adjacentes e fim lógico"
   explanation="/cadeiras/p/templates-stl/#algoritmos-sort-e-find"
   answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Tamanho 6; intervalo lógico com 3 valores.',
-        correct: true,
-        explanation: 'unique não altera o tamanho do contentor.',
-      },
-      {
-        text: 'Tamanho 3; intervalo lógico com 3 valores.',
-        correct: false,
-        explanation: 'Falta erase para destruir os elementos finais.',
-      },
-      {
-        text: 'Tamanho 6; intervalo lógico com 6 valores.',
-        correct: false,
-        explanation:
-          'unique devolve o novo fim depois dos três valores conservados.',
-      },
+    kind: 'self',
+    checklist: [
+      'Obtive tamanho físico 6 e prefixo lógico 1, 2, 1, 4 na primeira versão.',
+      'Obtive tamanho físico 6 e prefixo lógico 1, 2, 4 depois de ordenar.',
+      'Escrevi erase para reduzir o tamanho e não atribuí valores fixos à cauda.',
     ],
   }}
 >
-  <div>
-    Num vector com <code>1, 1, 2, 2, 2, 4</code>, chama-se apenas{' '}
-    <code>auto fim = std::unique(v.begin(), v.end());</code>. Qual é o tamanho
-    de v e quantos valores estão no intervalo até fim?
-  </div>
+  O vetor começa com <code>1, 1, 2, 1, 1, 4</code>. Executa-se apenas
+  <code>auto fim = std::unique(v.begin(), v.end());</code>. Indica o tamanho de{' '}
+  <code>v</code> e o conteúdo de <code>[v.begin(), fim)</code>. Repete o
+  raciocínio partindo dos mesmos dados, mas ordenando antes de
+  <code>unique</code>. Em cada versão, como se elimina a cauda física?
   <div slot="hint">
-    <p>Lembra-te de que unique compacta sem destruir os elementos finais.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Os valores distintos adjacentes são 1, 2 e 4.</p>
+    A primeira versão tem dois grupos de valores 1 separados pelo 2.
   </div>
   <div slot="solution">
-    <div>
-      O tamanho continua <code>6</code> e o intervalo{' '}
-      <code>[v.begin(), fim)</code> tem <code>3</code> valores:{' '}
-      <code>1, 2, 4</code>. Os valores depois de fim não fazem parte do
-      resultado lógico. <code>v.erase(fim, v.end())</code> reduz o tamanho para
-      3.
-    </div>
+    Sem ordenar, os grupos adjacentes são <code>1, 1</code>, <code>2</code>,
+    <code>1, 1</code> e <code>4</code>. O prefixo lógico fica
+    <code>1, 2, 1, 4</code>, com quatro elementos; o tamanho físico continua 6.
+    Depois de ordenar os dados originais, temos <code>1, 1, 1, 1, 2, 4</code>.
+    <code>unique</code> deixa o prefixo <code>1, 2, 4</code>, mas continua sem
+    reduzir o tamanho. Em ambas, <code>v.erase(fim, v.end())</code> destrói a
+    cauda e ajusta o tamanho ao prefixo. Os valores da cauda antes de
+    <code>erase</code> são válidos, mas não especificados.
   </div>
-  <div slot="mistakes">
-    <div>
-      Não atribuas um conteúdo fixo ao resto do intervalo depois do novo fim
-      lógico.
-    </div>
+</Exercise>
+
+<Exercise
+  id="substituir-intervalo-generico"
+  title="Um percurso para vector e list"
+  explanation="/cadeiras/p/templates-stl/#iteradores"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Percorri [inicio, fim) com !=, * e ++, sem ler fim.',
+      'Obtive 2 substituições e a sequência 2, 9, 9, 4 no caso dado.',
+      'Tratei o intervalo vazio e não usei aritmética indisponível numa list.',
+    ],
+  }}
+>
+  Escreve uma função template que substitua por <code>novo</code> cada valor
+  igual a <code>antigo</code> no intervalo válido <code>[inicio, fim)</code> e
+  devolva o número de substituições. Deve servir tanto os iteradores de um
+  <code>vector&lt;int&gt;</code> como os de uma <code>list&lt;int&gt;</code>.
+  Os elementos admitem comparação e atribuição; <code>antigo</code> e
+  <code>novo</code> são recebidos por valor para não dependerem de elementos
+  que a função possa alterar.
+
+```cpp
+template <typename It, typename T>
+std::size_t substituir(It inicio, It fim, T antigo, T novo);
+```
+
+Testa a sequência <code>2, 3, 3, 4</code>, substituindo 3 por 9, e um
+intervalo vazio. Justifica por que <code>it + 1</code> limitaria o conjunto
+de iteradores aceites. O enunciado adapta o problema de iteradores P11 do
+suplemento FEUP_PROG.
+
+  <div slot="hint">O algoritmo só precisa de comparar posições, ler o elemento e avançar.</div>
+  <div slot="solution">
+
+```cpp
+// Inclui <cstddef> para std::size_t.
+template <typename It, typename T>
+std::size_t substituir(It inicio, It fim, T antigo, T novo) {
+    std::size_t total = 0;
+    for (auto it = inicio; it != fim; ++it) {
+        if (*it == antigo) {
+            *it = novo;
+            ++total;
+        }
+    }
+    return total;
+}
+```
+
+    Com <code>2, 3, 3, 4</code>, as duas posições com 3 passam a 9, dando
+    <code>2, 9, 9, 4</code> e resultado 2. No vazio, a condição é logo falsa e
+    o resultado é zero. Uma <code>list</code> permite <code>++it</code>, mas
+    não <code>it + 1</code>. Não há inserção nem remoção, por isso este percurso
+    não invalida os iteradores de nenhuma das duas coleções.
+
   </div>
 </Exercise>
 
@@ -84,11 +125,6 @@ import CodePlayground from '../../../components/CodePlayground.astro';
   </div>
   <div slot="hint">
     <p>Testa o comparador com dois valores iguais.</p>
-  </div>
-  <div slot="hint-more">
-    <p>
-      Uma relação estrita exige que <code>{'comp(x, x)'}</code> seja falso.
-    </p>
   </div>
   <div slot="solution">
     <div>
@@ -136,9 +172,6 @@ import CodePlayground from '../../../components/CodePlayground.astro';
   </div>
   <div slot="hint">
     <p>Consulta o tamanho depois de reserve, não só a capacidade.</p>
-  </div>
-  <div slot="hint-more">
-    <p>resize altera o número de elementos existentes.</p>
   </div>
   <div slot="solution">
     <div>
@@ -209,7 +242,7 @@ void remover_negativos(std::vector<int>& valores) {
     <code>erase</code> devolve <code>end()</code> e o ciclo termina sem o ler.
     Cada remoção pode deslocar o resto do vetor; no pior caso, esta versão tem
     custo quadrático no número de elementos. A combinação
-    <code>remove_if</code> e <code>erase</code> da <code>{"li"}</code>ção permite uma passagem
+    <code>remove_if</code> e <code>erase</code> da lição permite uma passagem
     linear.
 
   </div>
@@ -235,13 +268,12 @@ void remover_negativos(std::vector<int>& valores) {
   }}
 >
   <div>
-    Um <code>map&lt;string, int&gt;</code> tem <code>azul: 3</code> e{' '}
-    <code>verde: 2</code>. Queres saber se existe <code>branco</code> sem
-    alterar o mapa. Compara <code>frequencias["branco"]</code> com{' '}
+    Compara duas cópias independentes do mesmo mapa, para a primeira consulta
+    não alterar a entrada da segunda. Um <code>map&lt;string, int&gt;</code> tem{' '}
+    <code>azul: 3</code> e <code>verde: 2</code>. Queres saber se existe{' '}
+    <code>branco</code> sem alterar o mapa. Compara{' '}
+    <code>frequencias["branco"]</code> com{' '}
     <code>frequencias.find("branco")</code>.
-  </div>
-  <div slot="hint">
-    <p>O primeiro cria a chave quando ela falta.</p>
   </div>
   <div slot="hint-more">
     <div>Compara o tamanho antes e depois de cada forma.</div>
@@ -252,12 +284,6 @@ void remover_negativos(std::vector<int>& valores) {
       tamanho passa a 3. <code>find("branco") == end()</code> responde que a
       chave falta e o tamanho continua 2. Usa <code>operator[]</code> para
       contar e <code>find</code> para consultar.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>
-      Não uses <code>operator[]</code> numa função que recebe o mapa por
-      referência constante. Nem compila para esse efeito.
     </div>
   </div>
 </Exercise>

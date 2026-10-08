@@ -11,15 +11,13 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import uniqueErase from '../../p/unique-erase.typ?raw';
 
-A função `soma` só trata inteiros e a pilha do exemplo guarda texto. Esta página generaliza as duas: primeiro com o contentor `vector`, depois com operações que servem vários tipos.
-
-Quando precisas da mesma operação para inteiros, reais ou objetos, descreve-a com um parâmetro de tipo, ou seja, com um espaço a preencher pelo tipo concreto. O compilador cria as versões necessárias e verifica se cada tipo concreto permite as operações usadas.
-
-A biblioteca padrão combina contentores, iteradores e algoritmos: o contentor guarda os valores, os iteradores delimitam o intervalo e o algoritmo opera nesse intervalo.
+`maior(3, 8)` compara inteiros; `maior(2.5, 1.5)` compara reais. Um parâmetro de tipo permite escrever o mesmo corpo para ambos. A biblioteca padrão usa esta ideia para combinar contentores que guardam valores, iteradores que delimitam intervalos e algoritmos que trabalham nesses intervalos.
 
 ## Funções template
 
 `template <typename T>` introduz um parâmetro de tipo. `typename` e `class` são equivalentes nesta declaração simples. Na chamada `maior(3, 8)`, o compilador deduz `T = int`; em `maior(2.5, 1.5)`, deduz `double`.
+
+O exemplo combina uma função e uma classe template. A pilha guarda os dados num `vector`: `push_back` acrescenta no fim, `back` consulta o último, `pop_back` remove-o e `empty` testa o vazio. A retirada verifica o vazio antes de usar `back`.
 
 Programa completo para compilar localmente:
 
@@ -69,15 +67,11 @@ O corpo de `maior` exige que `a < b` seja válido. `maior(3, 2.5)` não deduz um
 
 Um template não elimina requisitos dos tipos. `maior(objeto1, objeto2)` só funciona se esse tipo oferecer a comparação necessária. As definições dos templates têm de estar disponíveis quando o compilador as instancia. Por isso, ficam habitualmente no cabeçalho, ao contrário de funções não template cuja implementação pode ficar num `.cpp` separado.
 
-## Primeiro o vector, depois a pilha genérica
-
-A `Pilha` abaixo usa `push_back`, `back`, `pop_back` e `empty`. Estas são operações de `vector`: acrescentar no fim, consultar o último, remover o último e testar se está vazio. A secção seguinte explica o custo e os limites de cada uma; lê-a antes de reutilizares a pilha com outro tipo.
-
 ## Classes template
 
 `Pilha<std::string>` e `Pilha<int>` são tipos distintos. Cada instância conserva a mesma disciplina, último a entrar, primeiro a sair, mas guarda valores de outro tipo. A retirada do exemplo copia o último valor antes de o remover e lança uma exceção se a pilha está vazia. Exige, portanto, um tipo copiável. Um tipo só com movimento precisaria de outra retirada, que devolvesse por movimento em vez de copiar.
 
-O parâmetro de tipo e a interface definem os requisitos. Uma versão para valores de propriedade exclusiva precisaria de movimento na retirada e numa inserção adequada. Não escrevas "aceita qualquer tipo" sem verificar as operações exigidas.
+Segue a pilha: depois das inserções contém `primeira, segunda`. A primeira retirada devolve `segunda` e deixa `primeira`; a seguinte devolve `primeira` e deixa o vetor vazio. Uma terceira retirada lançaria uma exceção, em vez de consultar um elemento inexistente.
 
 ## vector: o array que cresce
 
@@ -164,17 +158,9 @@ Saída:
 9
 ```
 
-:::tip[Ideia-chave]
-
-`unique` e `remove_if` compactam e devolvem um novo fim lógico; só `erase` reduz o tamanho. Usa sempre o par compactar-e-apagar.
-:::
-
 Depois de ordenar, `unique` compacta valores iguais **adjacentes** e devolve o novo fim lógico sem mudar o tamanho. O primeiro `erase` destrói o resto; o segundo remove os pares filtrados por `remove_if`.
 
-:::details[Os dois fins após unique]
-
 O fim lógico fica antes do sexto elemento, mas `end()` continua depois do sétimo. Os `?` são valores válidos não especificados, não posições vazias. Só `erase` reduz o tamanho de `7` para `5`.
-:::
 
 <Typst
   source={uniqueErase}
@@ -184,14 +170,14 @@ O fim lógico fica antes do sexto elemento, mas `end()` continua depois do séti
 
 `find` percorre até encontrar um valor ou chegar ao fim. `count_if` conta os que satisfazem um predicado. `accumulate`, de `<numeric>`, começa no valor inicial recebido; esse valor também influencia o tipo do acumulador. Para somar `double`, usa `0.0` quando queres acumulação real.
 
-Uma **lambda**, como `[](int x) { return x % 2 == 0; }`, cria uma operação sem lhe dar um nome separado. Lê `[]` como a lista de capturas: vazia aqui, `[limite]` copia uma variável e `[&limite]` referencia-a. Uma captura por referência não prolonga a vida do objeto capturado. No exemplo abaixo, a lambda decide que elementos são pares; `remove_if` desloca os restantes para o início.
+Uma **lambda**, como `[](int x) { return x % 2 == 0; }`, cria uma operação sem lhe dar um nome separado. Lê `[]` como a lista de capturas: vazia aqui, `[limite]` copia uma variável e `[&limite]` referencia-a. Uma captura por referência não prolonga a vida do objeto capturado. No programa de filtragem acima, a lambda decide que elementos são pares; `remove_if` desloca os restantes para o início.
 
 ## Comparadores e pesquisa ordenada
 
 Um comparador de ordenação deve representar "vem antes", com uma relação estrita consistente. Para qualquer `x`, `comp(x, x)` tem de ser falso. `a <= b` não serve como comparador de `sort`, porque dá verdadeiro para valores iguais. Para desempatar objetos, compara primeiro o critério principal e depois o secundário:
 
 ```cpp
-// Excerto: ordena por nota e desempatata por identificador.
+// Excerto: ordena por nota e desempata por identificador.
 struct Registo { int nota; int id; };
 bool antes(const Registo& a, const Registo& b) {
     if (a.nota != b.nota) return a.nota < b.nota;
@@ -199,6 +185,6 @@ bool antes(const Registo& a, const Registo& b) {
 }
 ```
 
-Com `{10:2, 10:1, 9:3}`, a ordem é `9:3`, `10:1`, `10:2`. Só verificar `comp(x, x) == false` não prova transitividade; prova apenas o caso mais simples. `lower_bound` encontra a primeira posição que não vem antes do valor procurado. Num vetor `{1, 3, 5, 7}`, procurar `5` devolve a posição `2`.
+Com `{10:2, 10:1, 9:3}`, a ordem é `9:3`, `10:1`, `10:2`. Só verificar `comp(x, x) == false` não prova transitividade; prova apenas o caso mais simples. Num vetor `{1, 3, 5, 7}`, `lower_bound` de `5` devolve a posição `2`. Procurar `4` devolve a mesma posição, que contém `5`: encontrar uma posição de inserção não prova que o valor existe. Confirma `it != v.end()` antes de ler `*it` e compara o valor encontrado com o procurado.
 
 `sort` não garante a ordem anterior entre elementos equivalentes. `stable_sort` conserva-a. `lower_bound` encontra a primeira posição que não vem antes do valor procurado. O intervalo tem de estar particionado de acordo com esse critério, normalmente ordenado pelo mesmo comparador. Procurar por pesquisa binária num vetor arbitrário não satisfaz essa condição.

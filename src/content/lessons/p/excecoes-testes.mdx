@@ -9,9 +9,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Uma linha inválida pode ser ignorada e o programa continua. Uma divisão por zero dentro de `calcular` não tem valor para devolver. Esta página distingue os dois casos: erro esperado tratado no local e falha propagada até quem sabe tratar.
-
-Uma função pode não conseguir cumprir o seu contrato. Uma exceção abandona essa operação e procura um chamador que saiba tratar a falha. Os testes verificam o comportamento esperado e os sanitizers vigiam o programa enquanto ele corre. Nenhum substitui os restantes.
+O leitor de notas rejeita uma linha inválida e continua na seguinte. Já `dividir(12.0, 0.0)` não pode cumprir um contrato que exige um denominador diferente de zero. Vamos propagar essa falha ao chamador com uma exceção e seguir a limpeza dos objetos pelo caminho. Testes e sanitizers ajudam depois a verificar resultados e acessos à memória.
 
 ## Lançar e apanhar
 
@@ -95,7 +93,9 @@ Saída:
 4 casos passaram
 ```
 
-Primeiro confirma a falha com o intervalo fechado. Com a condição errada `minimo < x && x < maximo`, a entrada `{1, 2, 3}` com limites `1` e `3` conta apenas `2`: devolve `1` em vez de `3`. O segundo caso separa valores imediatamente antes, nos limites e imediatamente depois. Só `0`, `1`, `19` e `20` contam. O terceiro verifica o intervalo reduzido a um valor e repetidos. Estes resultados vêm do enunciado, não de repetir o mesmo algoritmo no teste.
+Os quatro testes exploram decisões diferentes. O primeiro verifica o vazio. O segundo separa valores imediatamente antes, nos limites e imediatamente depois: só `0`, `1`, `19` e `20` contam. O terceiro usa um intervalo reduzido a um valor e conta cada ocorrência de `7`. O quarto inverte os limites e espera zero. Estes resultados vêm do contrato, não de repetir o algoritmo no teste.
+
+Para confirmar a falha de uma implementação com intervalo aberto, usa `{1, 2, 3}` com limites `1` e `3`. A condição errada `minimo < x && x < maximo` conta apenas `2`: devolve `1` em vez de `3`. Este caso permite ver exatamente que elementos foram excluídos por engano.
 
 `assert` interrompe se a condição falha, mas pode desaparecer com `NDEBUG`. Por isso, não ponhas lá operações de que o programa depende nem validação de dados externos em produção.
 
@@ -103,7 +103,7 @@ Primeiro confirma a falha com o intervalo fechado. Com a condição errada `mini
 
 Começa por um caso pequeno que possas resolver à mão. Depois procura as fronteiras do contrato: vazio, um elemento, primeiro e último índice, repetidos, valores negativos, valor máximo permitido e falha prevista. Para cópia, altera a cópia e confirma que o original conserva o estado; para propriedade, verifica que cada recurso é libertado uma única vez.
 
-Não precisas de todas as combinações. Precisas de casos que distinguem erros plausíveis. Testar apenas `{1, 2, 3}` não distingue um intervalo aberto de um fechado se nenhum valor coincide com os limites.
+Não precisas de todas as combinações. Precisas de casos que distinguem erros plausíveis. Testar apenas `{1, 2, 3}` com limites `0` e `20` não distingue um intervalo aberto de um fechado, porque todos os valores são interiores.
 
 ## Sanitizers
 
@@ -116,7 +116,7 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic -g -O1 -fsanitize=address,undefined -fno
 
 AddressSanitizer deteta muitos acessos fora de memória válida e usos depois de libertar. UndefinedBehaviorSanitizer deteta certas operações inválidas, como alguns overflows com sinal. O suporte e a deteção de fugas dependem da plataforma. Só analisam os caminhos executados e não garantem ausência de erros. Não estão ativos nos exemplos do navegador.
 
-Uma mensagem do sanitizer aponta a operação inválida com a cadeia de chamadas. Um relatório típico indica o tipo (`heap-use-after-free` ou `index out of bounds`), o ficheiro e a linha da operação, e a pilha até `main`. Lê a primeira falha e reduz a entrada, porque um programa com saída certa pode ter comportamento indefinido. Só os caminhos executados são observados.
+Uma mensagem do sanitizer aponta a operação inválida com a cadeia de chamadas. Um relatório típico indica o tipo (`heap-use-after-free` ou `index out of bounds`), o ficheiro e a linha da operação, e a pilha até `main`. Lê a primeira falha e reduz a entrada, porque um programa com saída certa pode ter comportamento indefinido. A primeira falha pode invalidar o raciocínio sobre erros que aparecem depois dela.
 
 ## Documentar com comentários
 

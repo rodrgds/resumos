@@ -22,14 +22,11 @@ import Exercise from '../../../components/Exercise.astro';
 >
   <div>
     Uma classe possui um array dinâmico de dois inteiros. A cópia gerada pelo
-    compilador copia só o apontador, e o destrutor usa <code>delete[]</code>
-    []. Explica o que corre mal e duas políticas válidas para o tipo.
+    compilador copia só o apontador, e o destrutor usa <code>delete[]</code>.
+    Explica o que corre mal e duas políticas válidas para o tipo.
   </div>
   <div slot="hint">
     <p>Segue quem julga ser dono do mesmo array depois da cópia.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Os dois objetos acreditam ser donos do mesmo endereço.</p>
   </div>
   <div slot="solution">
     <div>
@@ -51,40 +48,41 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="movimento-estado"
-  revision={1}
-  title="Ler o contrato do objeto movido"
+  revision={2}
+  title="Operações válidas depois do movimento"
   explanation="/cadeiras/p/copia-propriedade/#movimento-não-é-uma-cópia-profunda"
-  answer={{ kind: 'number', value: 0, tolerance: 0 }}
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Indiquei a.size() igual a zero e b.size() igual a três no Buffer.',
+      'Distingui consultar o tamanho de aceder a um elemento.',
+      'Não pressupus que um vector movido fica vazio.',
+    ],
+  }}
 >
-  <div>
-    No Buffer da lição, <code>Buffer a(3); Buffer b = std::move(a);</code>.
-    Quanto devolve <code>a.size()</code>?
-  </div>
+  No <code>Buffer</code> da lição, executa-se
+  <code>Buffer a(3); Buffer b = std::move(a);</code>. Indica os tamanhos finais
+  e se <code>a.at(0)</code> pode devolver um inteiro. Noutro programa, move-se
+  um <code>std::vector&lt;int&gt; v</code>. É válido consultar{' '}
+  <code>v.size()</code>? E chamar <code>v.front()</code>
+  sem verificar nada? Justifica usando o contrato de cada tipo.
   <div slot="hint">
-    <p>Consulta o construtor de movimento do Buffer.</p>
-  </div>
-  <div slot="hint-more">
-    <p>std::exchange transfere o tamanho antigo e coloca zero em a.</p>
+    Um objeto válido não garante a existência de um primeiro elemento.
   </div>
   <div slot="solution">
-    <div>
-      Devolve <code>0</code>. O contrato concreto deixa a origem vazia.{' '}
-      <code>b.size()</code> é <code>3</code> e possui o array original. Este
-      resultado vem da implementação e contrato do Buffer; não se generaliza a
-      todos os tipos da biblioteca.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>
-      std::move permite selecionar movimento; não garante sozinho qualquer
-      estado final.
-    </div>
+    O construtor de movimento do <code>Buffer</code> põe o tamanho de
+    <code>a</code> a zero e transfere os três elementos para <code>b</code>.
+    <code>a.at(0)</code> lança <code>out_of_range</code> porque não existe
+    índice válido. No vetor movido, o estado é válido mas não se promete que
+    fique vazio. <code>size()</code> é uma consulta válida; antes de
+    <code>front()</code>, confirma <code>!v.empty()</code>.
+    <code>std::move</code> sozinho não impõe estas garantias.
   </div>
 </Exercise>
 
 <Exercise
   id="atribuicao-destino-ocupado"
-  revision={1}
+  revision={2}
   title="Atribuir sem perder o recurso anterior"
   explanation="/cadeiras/p/copia-propriedade/#atribuir-sem-perder-o-recurso-anterior"
   answer={{
@@ -97,25 +95,22 @@ import Exercise from '../../../components/Exercise.astro';
   }}
 >
   <div>
-    Um <code>Buffer c(0)</code> recebe <code>c = b</code>, onde <code>b</code>{' '}
-    tem dois inteiros. Descreve os três momentos: preparar a cópia, trocar e
-    destruir o antigo. Explica o que aconteceria se a reserva da cópia falhasse
-    em cada alternativa.
+    Um <code>Buffer c(3)</code> contém <code>2, 3, 5</code> e recebe
+    <code>c = b</code>, onde <code>b</code> contém <code>9, 6</code>. Descreve
+    os três momentos: preparar a cópia, trocar e destruir o antigo. Explica o
+    que aconteceria se a reserva da cópia falhasse em cada alternativa.
   </div>
   <div slot="hint">
     <p>Segue quem é dono de cada array em cada momento.</p>
-  </div>
-  <div slot="hint-more">
-    <div>Com copy-and-swap, a exceção sai antes de tocares no destino.</div>
   </div>
   <div slot="solution">
     <div>
       Primeiro constrói-se <code>copia(b)</code> com recurso próprio. Depois a
       troca entrega esse recurso a <code>c</code>. No fim, o recurso antigo de{' '}
       <code>c</code> morre com <code>copia</code>. Se a reserva falhar na
-      preparação, <code>c</code> continua intacto. Na alternativa de libertar
-      primeiro, a falha deixaria <code>c</code> sem recurso e sem valor
-      anterior.
+      preparação, <code>c</code> continua com os três valores{' '}
+      <code>2, 3, 5</code>. Na alternativa de libertar primeiro, a falha
+      deixaria <code>c</code> sem recurso e sem valor anterior.
     </div>
   </div>
   <div slot="mistakes">

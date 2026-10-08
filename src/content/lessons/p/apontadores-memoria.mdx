@@ -10,9 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 
-A função `soma` recebe o endereço do primeiro elemento e lê a partir dele. Esta página explica o que esse endereço permite fazer, e o que continua por responder: se o objeto ainda existe e quem o deve destruir.
-
-Um apontador guarda o endereço de um objeto. Conhecer o endereço permite aceder ao objeto, mas não diz se ele ainda existe nem quem o deve destruir. Tens de responder a essas perguntas separadamente.
+A função `soma` recebe um endereço e um tamanho. O endereço localiza o primeiro inteiro, mas não informa quantos elementos existem nem quem gere a sua memória. Para cada acesso, precisamos de confirmar limites e duração de vida; para cada recurso dinâmico, precisamos de identificar o dono.
 
 ## Endereço de e dereferenciação
 
@@ -102,7 +100,7 @@ while (primeiro != nullptr) {
 }
 ```
 
-Se fizeres `delete primeiro` antes de ler `seguinte`, perdes o endereço do resto da lista. A ordem é: guardar o seguinte, libertar o atual, avançar.
+Depois de `delete primeiro`, ler `primeiro->seguinte` é um acesso a um objeto que já morreu, com comportamento indefinido. Guarda o endereço seguinte enquanto o nó ainda vive. Depois liberta o atual e avança.
 
 ## Pilha, área livre e duração de vida
 
@@ -172,15 +170,15 @@ Saída:
 true 7 7
 ```
 
-:::tip[Ideia-chave]
-
-Desenha objetos, valores e setas em separado. Em cada atribuição, pergunta se mudaste o apontador ou o objeto apontado; em cada destruição, marca todos os aliases como pendentes.
-:::
-
 Depois do movimento, `primeiro` está vazio e `segundo` é o dono. O inteiro não mudou de endereço e `observador` ainda é válido. Quando `segundo` morre, qualquer observador que sobreviva fica pendente.
 
 `std::shared_ptr` permite vários donos e destrói o objeto quando termina a última propriedade forte. Tem custo de gestão e não resolve ciclos de propriedade fortes. Usa-o quando o modelo realmente exige propriedade partilhada, não para evitar decidir quem é o dono. `std::weak_ptr` permite observar essa propriedade sem a prolongar.
 
-## Ler a memória em palavras
+<Dot
+  source={
+    'digraph movimento { rankdir=TB; node [shape=box]; primeiro [label="primeiro: vazio"]; segundo [label="segundo: dono"]; observador [label="observador"]; objeto [label="inteiro: 7"]; primeiro -> segundo [style=invis]; primeiro -> observador [style=invis]; {rank=same; segundo; observador;} segundo -> objeto [label="possui"]; observador -> objeto [label="observa"]; }'
+  }
+  alt="Depois do movimento, primeiro está vazio. Segundo é o único dono do inteiro 7. Observador continua a apontar para esse mesmo inteiro, sem o possuir."
+/>
 
-Esta forma de raciocinar continua necessária com smart pointers: a gestão automática evita fugas, mas um observador ainda pode durar mais que o dono.
+A seta do observador mantém-se, mas não participa na destruição. Se `segundo.reset()` destruir o inteiro, o observador fica pendente mesmo que continue a guardar o mesmo endereço.

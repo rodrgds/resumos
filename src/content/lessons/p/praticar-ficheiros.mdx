@@ -28,12 +28,6 @@ import Exercise from '../../../components/Exercise.astro';
   <div slot="hint">
     <p>Lembra-te de que eof descreve uma tentativa anterior.</p>
   </div>
-  <div slot="hint-more">
-    <div>
-      A leitura do último registo pode acabar antes de tentar ler para além
-      dele.
-    </div>
-  </div>
   <div slot="solution">
     <div>
       Depois do registo válido, ainda pode faltar a tentativa que deteta o fim.
@@ -44,62 +38,11 @@ import Exercise from '../../../components/Exercise.astro';
       valida cada linha.
     </div>
   </div>
-  <div slot="mistakes">
-    <p>Verificar eof não substitui confirmar se todos os campos foram lidos.</p>
-  </div>
-</Exercise>
-
-<Exercise
-  id="registo-extra"
-  revision={1}
-  title="Validar o formato completo"
-  explanation="/cadeiras/p/ficheiros/#separar-linhas-e-registos"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Não, há conteúdo adicional depois do inteiro.',
-        correct: true,
-        explanation: 'abc fica por consumir e forma um token extra.',
-      },
-      {
-        text: 'Sim, a nota 12 está no intervalo.',
-        correct: false,
-        explanation: 'O intervalo é só uma das condições do formato.',
-      },
-      {
-        text: 'Sim, qualquer texto depois do número é comentário.',
-        correct: false,
-        explanation: 'O formato não definiu comentários.',
-      },
-    ],
-  }}
->
-  <div>
-    O leitor por linhas recebe <code>Eva 12abc</code>. A leitura de nome e
-    inteiro pode obter Eva e 12. A linha deve ser aceite?
-  </div>
-  <div slot="hint">
-    <p>O contrato permite só nome, inteiro e espaços finais.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Depois de ler 12, ficam os caracteres abc.</p>
-  </div>
-  <div slot="solution">
-    <div>
-      Não. O token extra <code>abc</code> viola o formato. O teste de conteúdo
-      adicional rejeita a linha. Uma conversão parcial de um campo não significa
-      que o registo inteiro é válido.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Não confundas um prefixo numérico válido com uma linha válida.</p>
-  </div>
 </Exercise>
 
 <Exercise
   id="validar-registo-funcao"
-  revision={1}
+  revision={2}
   title="Escrever a validação em três passos"
   explanation="/cadeiras/p/ficheiros/#separar-linhas-e-registos"
   answer={{
@@ -107,34 +50,45 @@ import Exercise from '../../../components/Exercise.astro';
     checklist: [
       'Separei ler, detetar sobra e confirmar intervalo.',
       'Rejeitei Ana sem nota, Eva 12abc e linha vazia.',
-      'Aceitei apenas nome, inteiro e espaços finais.',
+      'Aceitei espaços iniciais e finais, mas rejeitei conteúdo extra e notas fora do intervalo.',
     ],
   }}
 >
   <div>
     Escreve <code>bool registo_valido(const std::string&amp; linha)</code> que
-    aceita só linhas com nome e inteiro de 0 a 20, sem conteúdo extra. Testa com{' '}
-    <code>Ana 15</code>, <code>Ana</code>, <code>Eva 12abc</code> e linha vazia.
+    aceita só linhas com um nome sem espaços e um inteiro de 0 a 20, sem conteúdo extra.
+    São permitidos espaços iniciais e finais. Testa <code>Ana 15</code>,
+    <code>Ana</code>, <code>Eva 12abc</code>, a linha vazia, <code>Rui 20   </code>
+    e <code>Eva 21</code>. Justifica cada rejeição e confirma que um erro numa linha
+    não impede a leitura da seguinte.
   </div>
   <div slot="hint">
-    <p>Usa um istringstream por linha e três variáveis booleanas.</p>
-  </div>
-  <div slot="hint-more">
-    <div>A linha Eva 12abc lê 12 mas deixa abc por consumir.</div>
+    <p>Trata separadamente campos em falta, conteúdo extra e nota fora do intervalo.</p>
   </div>
   <div slot="solution">
-    <div>
       <code>Ana 15</code> dá <code>leu</code> verdadeiro, <code>sobra</code>{' '}
       falso e intervalo verdadeiro: válida. <code>Ana</code> falha em{' '}
       <code>leu</code>. <code>Eva 12abc</code> tem <code>sobra</code>{' '}
       verdadeira. A vazia falha em <code>leu</code>. A condição final é{' '}
       <code>leu &amp;&amp; !sobra &amp;&amp; intervalo</code>.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>
-      Não reutilizes o mesmo fluxo entre linhas. Uma falha contamina as leituras
-      seguintes.
-    </div>
+      <code>Rui 20   </code> é válido porque só sobram espaços; <code>Eva 21</code>
+      é inválido pelo intervalo. Uma implementação completa é:
+
+```cpp
+#include <sstream>
+#include <string>
+
+bool registo_valido(const std::string& linha) {
+    std::istringstream entrada(linha);
+    std::string nome, extra;
+    int nota = 0;
+    if (!(entrada >> nome >> nota)) return false;
+    if (entrada >> extra) return false;
+    return 0 <= nota && nota <= 20;
+}
+```
+
+      Cada chamada constrói outro fluxo, por isso uma falha não contamina a linha seguinte.
+
   </div>
 </Exercise>
