@@ -6,8 +6,6 @@ order: 8
 studyKind: revision
 ---
 
-Depois de estudares o percurso desde a descrição do movimento até às oscilações, esta página reúne as fórmulas e as condições para verificares sinais antes de substituir números.
-
 Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substituir números, porque o sinal decide o resultado. Os exemplos usam $g=9{,}81\ \mathrm{m/s^2}$.
 
 ## Cinemática
