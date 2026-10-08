@@ -36,6 +36,7 @@ import {
   outdentMarkdownList,
   exitMarkdownList,
   continueMarkdownList,
+  moveToListBoundary,
 } from './markdown-commands';
 import { visit, SKIP } from 'unist-util-visit';
 import type { Root, RootContent } from 'mdast';
@@ -140,6 +141,7 @@ export function liveMarkdown(
   }
   function decorations(state: EditorState) {
     const ranges: Range<Decoration>[] = [];
+    const listEnds: number[] = [];
     const text = state.doc.toString();
     const editing = (from: number, to: number) =>
       focused &&
@@ -182,6 +184,8 @@ export function liveMarkdown(
       const from = node.position?.start.offset;
       const to = node.position?.end.offset;
       if (from === undefined || to === undefined || from === to) return;
+      while (listEnds.length && listEnds.at(-1)! <= from) listEnds.pop();
+      if (node.type === 'list') listEnds.push(to);
       const active = editing(from, to);
       if (
         ['math', 'inlineMath', 'image', 'table', 'thematicBreak'].includes(
@@ -277,12 +281,14 @@ export function liveMarkdown(
             state.sliceDoc(from, first.to),
           );
         if (marker) {
-          line(from, 'note-list-line');
+          line(from, 'note-list-line', {
+            style: `--note-list-depth: ${listEnds.length - 1}`,
+          });
           const task = parseTaskPrefix(state.sliceDoc(from, first.to));
           if (task) {
             const contentFrom = from + task.length;
             const statusFrom = from + task.statusOffset;
-            if (!editing(from, contentFrom - 1)) {
+            if (!editing(first.from, first.to)) {
               ranges.push(
                 Decoration.replace({
                   widget: new TaskWidget(
@@ -424,6 +430,26 @@ export function liveMarkdown(
             shift: enterPreview('down', true),
           },
           { key: 'Tab', run: indentMarkdownList, shift: outdentMarkdownList },
+          {
+            key: 'Home',
+            run: moveToListBoundary('start'),
+            shift: moveToListBoundary('start', true),
+          },
+          {
+            mac: 'Cmd-ArrowLeft',
+            run: moveToListBoundary('start'),
+            shift: moveToListBoundary('start', true),
+          },
+          {
+            key: 'End',
+            run: moveToListBoundary('end'),
+            shift: moveToListBoundary('end', true),
+          },
+          {
+            mac: 'Cmd-ArrowRight',
+            run: moveToListBoundary('end'),
+            shift: moveToListBoundary('end', true),
+          },
           { key: 'Escape', run: temporarilySetTabFocusMode },
           { key: 'Enter', run: exitMarkdownList },
           {

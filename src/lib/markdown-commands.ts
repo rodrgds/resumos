@@ -30,6 +30,46 @@ function listItems(tree: Root) {
   return items;
 }
 
+// A wrapped item still has one Markdown marker. Reach that marker directly,
+// then toggle to the absolute line start to access indentation and quote syntax.
+export function moveToListBoundary(
+  side: 'start' | 'end',
+  extend = false,
+): Command {
+  return (view) => {
+    const { state } = view;
+    const items = listItems(parsePersonalMarkdown(state.doc.toString()));
+    const starts = state.selection.ranges.map((range) => {
+      const line = state.doc.lineAt(range.head);
+      return items.find(
+        (item) => item.node.position!.start.line === line.number,
+      )?.node.position!.start.offset;
+    });
+    // Let the native command handle prose, code, continuation lines, and mixed selections.
+    if (starts.some((start) => start === undefined)) return false;
+    view.dispatch({
+      selection: EditorSelection.create(
+        state.selection.ranges.map((range, index) => {
+          const line = state.doc.lineAt(range.head);
+          const head =
+            side === 'end'
+              ? line.to
+              : range.head === starts[index]
+                ? line.from
+                : starts[index]!;
+          return extend
+            ? EditorSelection.range(range.anchor, head)
+            : EditorSelection.cursor(head, side === 'end' ? -1 : 1);
+        }),
+        state.selection.mainIndex,
+      ),
+      scrollIntoView: true,
+      userEvent: 'select',
+    });
+    return true;
+  };
+}
+
 // Move whole items, including their continuation paragraphs and child lists.
 // A fixed two-space indent is insufficient beneath an ordered marker ("10. ").
 function indentList(direction: 'in' | 'out'): Command {

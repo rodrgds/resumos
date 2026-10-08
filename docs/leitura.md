@@ -14,7 +14,7 @@ O apontamento usa a mesma largura, letra e navegação das lições. Edita o tí
 
 Usa `#` e `##` para títulos, ou sublinha o texto com `===` e `---`. Uma linha com um único `-` começa um item vazio, sem aumentar o texto acima nem alterar o Markdown guardado. Isto também se aplica a listas dentro de listas e citações.
 
-As checklists mostram caixas e ícones na própria página. Clica em qualquer estado para o marcar como `[x]`; clica numa caixa concluída para voltar a `[ ]`. Tab passa entre as caixas e Espaço alterna o estado. Ctrl/⌘ Z recupera o estado anterior. Ao editar o marcador, o Markdown fica visível. Enter continua a checklist com uma caixa `[ ]`; num item vazio, sai da lista ou sobe um nível.
+As checklists mostram caixas e ícones na própria página. Clica em qualquer estado para o marcar como `[x]`; clica numa caixa concluída para voltar a `[ ]`. Tab passa entre as caixas e Espaço alterna o estado. Ctrl/⌘ Z recupera o estado anterior. Com o cursor em qualquer ponto da linha, aparece o marcador Markdown para o poderes editar. Ao sair da linha, volta a caixa ou o ícone. Enter continua a checklist com uma caixa `[ ]`; num item vazio, sai da lista ou sobe um nível. Listas e checklists têm um recuo visual de duas vezes o tamanho da letra por nível, além dos espaços do Markdown.
 
 | Marcador | Estado      |
 | -------- | ----------- |
@@ -42,6 +42,8 @@ As checklists mostram caixas e ícones na própria página. Clica em qualquer es
 | `- [d]`  | Descida     |
 
 Também aceita `[X]` como concluída e os marcadores de lista `*`, `+` e numerados. Estados desconhecidos ficam como texto literal. O estado e as edições ficam no Markdown, incluindo na exportação e depois de recarregar a página.
+
+Numa linha de lista ou checklist, ⌘ ← no Mac ou Home no Windows/Linux leva o cursor ao marcador, mesmo que o texto ocupe várias linhas visuais. Uma segunda pressão leva ao início absoluto da linha, incluindo os espaços e as citações. ⌘ → ou End leva ao fim da linha Markdown. Shift seleciona até ao mesmo ponto. Os atalhos de palavras continuam a ser Option ←/→ no Mac e Ctrl ←/→ no Windows/Linux; Ctrl Home/End, ou ⌘ ↑/↓ no Mac, leva ao início/fim do documento. Prosa, código e linhas de continuação conservam os movimentos habituais do editor.
 
 O menu **Ações do apontamento**, ao lado do título, permite inserir imagens e fórmulas, importar, exportar e eliminar. Também podes abrir o menu de uma página nos conteúdos com o botão direito, o botão de ações ou Shift F10. A eliminação pode ser desfeita durante a visita.
 
