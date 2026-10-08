@@ -14,7 +14,7 @@ O apontamento usa a mesma largura, letra e navegação das lições. Edita o tí
 
 Usa `#` e `##` para títulos, ou sublinha o texto com `===` e `---`. Uma linha com um único `-` começa um item vazio, sem aumentar o texto acima nem alterar o Markdown guardado. Isto também se aplica a listas dentro de listas e citações.
 
-As checklists mostram caixas e ícones na própria página. Clica em qualquer estado para o marcar como `[x]`; clica numa caixa concluída para voltar a `[ ]`. Tab passa entre as caixas e Espaço alterna o estado. Ctrl/⌘ Z recupera o estado anterior. Ao editar o marcador, o Markdown fica visível. Enter continua a checklist com uma caixa `[ ]`; num item vazio, sai da lista ou sobe um nível.
+As checklists mostram caixas e ícones na própria página. Clica em qualquer estado para o marcar como `[x]`; clica numa caixa concluída para voltar a `[ ]`. Tab passa entre as caixas e Espaço alterna o estado. Ctrl/⌘ Z recupera o estado anterior. Com o cursor em qualquer ponto da linha, aparece o marcador Markdown para o poderes editar. Ao sair da linha, volta a caixa ou o ícone. Enter continua a checklist com uma caixa `[ ]`; num item vazio, sai da lista ou sobe um nível. Listas e checklists têm um recuo visual de duas vezes o tamanho da letra por nível, além dos espaços do Markdown.
 
 | Marcador | Estado      |
 | -------- | ----------- |

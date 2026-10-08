@@ -1,6 +1,39 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
+
+async function expectListIndent(
+  editor: Locator,
+  parent: string,
+  child: string,
+) {
+  const positions = await editor.evaluate(
+    (element, names) => {
+      const position = (text: string) => {
+        const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          const start = node.textContent!.indexOf(text);
+          if (start < 0) continue;
+          const range = document.createRange();
+          range.setStart(node, start);
+          range.setEnd(node, start + text.length);
+          return range.getBoundingClientRect().left;
+        }
+        throw new Error(`Missing list text: ${text}`);
+      };
+      return {
+        parent: position(names[0]),
+        child: position(names[1]),
+        fontSize: parseFloat(getComputedStyle(element).fontSize),
+      };
+    },
+    [parent, child],
+  );
+  expect(positions.child - positions.parent).toBeGreaterThanOrEqual(
+    positions.fontSize * 1.75,
+  );
+}
 
 async function newNote(page: Page) {
   const empty = page.getByRole('button', {
@@ -524,6 +557,7 @@ for (const marker of ['-', '1.', '- [ ]']) {
     await expect(editor).toBeFocused();
     await expect(editor.getByRole('heading')).toHaveCount(0);
     await page.keyboard.insertText('Terceiro');
+    await expectListIndent(editor, 'Segundo', 'Terceiro');
     await editor.press('Enter');
     await page.keyboard.insertText('Quarto');
     await editor.press('Shift+Tab');
@@ -691,6 +725,45 @@ test('checklists render all requested states, toggle without losing source, and 
   for (const label of labels)
     expect(toggled).toContain(`- [${label === 'done' ? ' ' : 'x'}] ${label}`);
 });
+
+for (const prefix of ['- [ ]', '- [?]', '  - [!]', '> - [/]', '1. [S]']) {
+  test(`the active checklist line reveals its editable marker (${prefix})`, async ({
+    page,
+  }) => {
+    await page.goto('/caderno/exemplo/#novo');
+    const editor = page.getByRole('textbox', { name: 'Texto do apontamento' });
+    const source = `- [x] Pai\n${prefix} Segundo\n\nFinal`;
+    await editor.fill(source);
+    await editor.press('ControlOrMeta+End');
+    await editor.press('ArrowUp');
+    await editor.press('ArrowUp');
+    await editor.press('End');
+    const row = editor.locator('.cm-line').filter({ hasText: 'Segundo' });
+    await expect(row).toContainText(`${prefix} Segundo`);
+    await expect(row.getByRole('checkbox')).toHaveCount(0);
+    await expect(
+      editor.getByRole('checkbox', { name: /: Pai$/ }),
+    ).toBeChecked();
+    // Reach the marker from the end without relying on hidden prefix widths.
+    await editor.press('End');
+    for (let n = 0; n < 'Segundo'.length + 2; n++)
+      await editor.press('ArrowLeft');
+    await editor.press('Shift+ArrowLeft');
+    await page.keyboard.insertText('f');
+    await editor.press('ControlOrMeta+End');
+    await expect(
+      row.getByRole('checkbox', { name: /: Segundo$/ }),
+    ).toBeVisible();
+    const changed = source.replace(prefix, prefix.replace(/\[.\]/, '[f]'));
+    expect(await exportedMarkdown(page)).toContain(changed);
+    await row.click();
+    await editor.press('End');
+    await expect(row).toContainText('[f] Segundo');
+    await expect(row.getByRole('checkbox')).toHaveCount(0);
+    await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
+    await expect(row.getByRole('checkbox')).toBeVisible();
+  });
+}
 
 test('checkbox keyboard focus moves between controls without editing the text cursor elsewhere', async ({
   page,
@@ -884,6 +957,7 @@ test('Tab nests a quoted list item without moving the quote itself', async ({
   await editor.fill('> - Primeiro\n> - Segundo');
   await editor.press('ControlOrMeta+End');
   await editor.press('Tab');
+  await expectListIndent(editor, 'Primeiro', 'Segundo');
   expect(await exportedMarkdown(page)).toContain('> - Primeiro\n>   - Segundo');
   await editor.press('Shift+Tab');
   expect(await exportedMarkdown(page)).toContain('> - Primeiro\n> - Segundo');
