@@ -7,7 +7,7 @@ practices:
 editorial:
   basedOn: 2026/27
   sources:
-    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+    - title: LBAW 2026/27, Database Indexes, Triggers and Transactions, lecture 4
       url: https://moodle2627.up.pt/course/view.php?id=4222
     - title: Ficha LBAW 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
@@ -23,9 +23,7 @@ import pesquisa from '../../lbaw/pesquisa.sql?raw';
 import Typst from '../../../components/Typst.astro';
 import sqlIndicesFigura from '../../lbaw/sql-indices.typ?raw';
 
-Já sabes ir buscar respostas com consultas; esta página pergunta como responder depressa quando as tabelas crescem.
-
-Um **índice** guarda uma estrutura adicional para encontrar linhas. Cada leitura pode ganhar com essa estrutura, mas as escritas também precisam de a manter. Escolhe o índice a partir da consulta, dos dados e do plano, ou seja, da estratégia que o PostgreSQL escolhe para executar a consulta, nunca a partir de uma lista de colunas «importantes».
+Com 100 mil sessões, a loja procura frequentemente as datas de um evento. Um **índice** guarda uma estrutura adicional para localizar candidatos sem percorrer necessariamente toda a tabela. As escritas também têm de o manter. A consulta, a distribuição dos dados e o plano de execução determinam se esse custo compensa.
 
 ## Igualdade, intervalo e ordem
 
@@ -144,7 +142,11 @@ Um B-tree em titulo não resolve por si só `ILIKE '%rede%'`. A pesquisa por tex
   code={pesquisa}
 />
 
-A configuração deve corresponder à língua. `plainto_tsquery` trata a entrada como texto, em vez de exigir sintaxe de operadores; para sintaxe semelhante à pesquisa web há `websearch_to_tsquery`. A correspondência é por lexemas normalizados, não por qualquer substring. Pesquisa e ordenação por relevância são decisões diferentes: `@@` filtra e `ts_rank` calcula um valor para ordenar.
+A configuração deve corresponder à língua. `plainto_tsquery` trata a entrada como texto, em vez de exigir sintaxe de operadores; para sintaxe semelhante à pesquisa web há `websearch_to_tsquery`. O exemplo junta título e descrição, com peso A no título e B na descrição. `COALESCE` impede que uma descrição nula anule a composição do documento. Uma coluna gerada mantém o vetor coerente com estes campos; se usasses uma coluna preenchida por trigger, todas as alterações relevantes teriam de o atualizar.
+
+Antes do `UPDATE`, a consulta devolve «Noite de Fado» e «Encontro de música». O primeiro tem «fado» no título e recebe maior relevância com estes pesos. «Teatro à tarde» começa com descrição nula e não corresponde; depois de receber «Oficina de fado.», aparece na segunda consulta. Não é preciso atualizar o vetor manualmente.
+
+A correspondência é por lexemas normalizados, não por qualquer substring. Pesquisa e ordenação por relevância são decisões diferentes: `@@` filtra e `ts_rank` calcula um valor para ordenar.
 
 **Precisão** é a fração dos resultados devolvidos que são relevantes; **cobertura**, ou recall, é a fração dos resultados relevantes que foram devolvidos. Encontrar 6 documentos relevantes entre 10 resultados dá precisão 0,6. Se existiam 12 relevantes no corpus, o recall é 0,5. Um filtro muito restrito pode aumentar a primeira e diminuir a segunda.
 
@@ -162,6 +164,13 @@ Antes de calcular posições, o conjunto de candidatos deve respeitar as permiss
 
 ## Da carga ao plano comentado
 
-Descreve a carga antes de propores índices: tabela `sessoes` com 100 mil linhas a crescer 100 por dia; consulta frequente que filtra `evento_id` e intervalo de `data_hora` 50 vezes por dia; poucas escritas concorrentes. O índice `(evento_id, data_hora)` fixa o grupo do evento e percorre o intervalo já ordenado. Regista a decisão como em A6: relação, atributos, tipo B-tree, cardinalidade, clustering e justificação.
+Para A6, liga a decisão à carga. Neste exemplo próprio, `sessoes` tem 100 mil linhas, cresce 100 por dia e recebe 50 pesquisas diárias por evento e intervalo de datas, com poucas escritas concorrentes.
 
-Lê o plano assim: `cost=a..b` são unidades do planeador até à primeira e última linha, não milissegundos; `rows` e `width` são estimativas; `loops` multiplica o custo do nó. Se o planeador escolhe `Seq Scan` numa tabela pequena ou pouco seletiva, compara `EXPLAIN ANALYZE` com dados representativos depois de `ANALYZE`. Para pesquisa textual, o documento é título mais corpo normalizado em lexemas; o peso A do título e B do corpo decide a ordem, e `@@` filtra enquanto `ts_rank` ordena.
+| Decisão                                  | Justificação                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| B-tree em `(evento_id, data_hora)`       | A igualdade fixa o grupo e o intervalo percorre datas dentro dele.                   |
+| Comparar planos e medições               | O número de linhas do evento e o intervalo escolhido determinam a seletividade.      |
+| Avaliar clustering separadamente         | Só compensa se a proximidade das linhas ajudar a carga e justificar a reorganização. |
+| Documento textual com título e descrição | É o conteúdo que a pesquisa de eventos promete encontrar.                            |
+
+Regista relação, atributos, tipo, cardinalidade dos dados e justificação. Para o documento textual, identifica também língua, campos, pesos e atualização do vetor. Um índice que responde à pesquisa de datas não cobre automaticamente texto ou todas as outras operações da aplicação.

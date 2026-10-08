@@ -212,14 +212,36 @@ Uma FK opcional em sessoes pode representar a associação, mas por si só não 
 </Exercise>
 <Exercise
   id="notacao-compacta"
-  revision={1}
-  title="Ler a notação compacta de A5"
+  revision={2}
+  title="Traduzir notação compacta para DDL"
   explanation="/cadeiras/lbaw/esquema-relacional/#notação-compacta-schema-e-passagem-a-sql"
-  answer={{ kind: 'self', checklist: ['Traduzo UK, NN, CK e setas.', 'Escrevo o CREATE TABLE correspondente.', 'Indico o schema e o search_path.'] }}
+  answer={{ kind: 'self', checklist: ['Traduzo referência, NN, UK e CK.', 'Declaro PK e não gero a FK.', 'Coloco as tabelas no schema criado.'] }}
 >
-  <div>Traduz `bilhetes(id, sessao_id -> sessoes NN, codigo UK NN)` para SQL e indica o schema do grupo.</div>
-  <div slot="hint"><p>Cada marca vira uma restrição.</p></div>
-  <div slot="hint-more"><p>NN acumula com a referência.</p></div>
-  <div slot="solution"><div>`sessao_id INTEGER NOT NULL REFERENCES sessoes(id)`, `codigo TEXT NOT NULL UNIQUE`, e `SET search_path TO lbawXXg` com o schema do grupo.</div></div>
-  <div slot="mistakes"><p>Não acrescentes IDENTITY à chave estrangeira.</p></div>
+  <div>
+
+Assume `sessoes(id INTEGER PRIMARY KEY)` no schema do grupo. Na notação compacta, `id` é a PK de `bilhetes(id, sessao_id -> sessoes NN, codigo UK NN, estado NN CK estado IN Estados)`, com `Estados = {reservado, pago, cancelado}`. Escreve o DDL PostgreSQL, incluindo a seleção do schema. Usa `lbawXXg` apenas como nome ilustrativo.
+
+  </div>
+  <div slot="hint">
+
+Traduz cada marca separadamente e depois combina as restrições da coluna.
+
+  </div>
+  <div slot="solution">
+
+```sql
+CREATE SCHEMA lbawXXg;
+SET search_path TO lbawXXg;
+-- A tabela sessoes é criada neste schema antes de bilhetes.
+CREATE TABLE bilhetes (
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  sessao_id INTEGER NOT NULL REFERENCES sessoes(id),
+  codigo TEXT NOT NULL UNIQUE,
+  estado TEXT NOT NULL CHECK (estado IN ('reservado', 'pago', 'cancelado'))
+);
+```
+
+`NN` impede NULL, `UK` impede códigos repetidos e `CK` restringe o domínio. A FK refere uma sessão existente, por isso não recebe IDENTITY. A PK gera uma identidade própria para cada bilhete, permitindo vários bilhetes da mesma sessão.
+
+  </div>
 </Exercise>

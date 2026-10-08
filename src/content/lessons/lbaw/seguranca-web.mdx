@@ -21,9 +21,7 @@ editorial:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import seguranca from '../../lbaw/seguranca.php?raw';
 
-Com a aplicação a responder a pedidos, esta página pergunta como impedir que entradas maliciosas corrompam dados ou sessões.
-
-Escreve o teu email no formulário de login e esse texto viaja do navegador, ou seja, o programa que mostra as páginas, até à base de dados, onde é lido e interpretado. Para cada pedido que altera dados, a aplicação verifica quem pede (identidade), se pode pedir (autorização), se o pedido é válido e se a base de dados fica íntegra. A validação do formulário no navegador pode ser contornada, por isso a defesa tem de existir no servidor, ou seja, o programa que responde aos pedidos, e no lugar em que os dados são interpretados.
+O email recebido no login é texto controlado pelo cliente. Se a aplicação o concatenar numa consulta, esse texto pode passar a ser sintaxe SQL. A defesa depende de onde a entrada é interpretada. Nos pedidos sobre bilhetes, é preciso verificar também quem pede e se pode operar sobre aquele objeto. A validação no navegador pode ser contornada.
 
 ## SQL injection: separar código de valores
 
@@ -114,6 +112,6 @@ São mecanismos diferentes: uma consulta parametrizada não impede alguém de co
 
 ## Um pedido ao bilhete alheio, camada a camada
 
-Segue `GET /bilhetes/900` do comprador 7 quando o bilhete é do 8: a consulta parametrizada encontra a linha sem injeção; o HTML escapa o título sem XSS; o token CSRF nem entra aqui porque é leitura; a decisão que falta é a autorização sobre o objeto, com `Gate::authorize('view', $bilhete)` no servidor. Esconder o link na vista não impede o pedido direto.
+O comprador 7 pede `GET /bilhetes/900`, mas o bilhete pertence ao comprador 8. A consulta parametrizada encontra a linha sem injeção. A codificação do título impede que texto se torne HTML ativo. Mesmo com ambas as defesas, devolver o bilhete exporia dados de outra pessoa.
 
-Para escritas, recebe o identificador do comprador da sessão autenticada, nunca do campo `utilizador_id` do formulário. `$fillable` limita que atributos entram por atribuição em massa; quem pode operar sobre que objeto decide-se na policy. Um token CSRF válido não autoriza ninguém: prova que o pedido veio do formulário da sessão, não que a pessoa pode mexer naquele recurso.
+A autorização testa a identidade 7 contra o proprietário 8 e recusa a leitura antes de gerar a representação. Para este pedido de leitura, um token CSRF não substitui a decisão sobre o objeto. Numa escrita, um token válido também não concede permissões; pode ser obtido e enviado por uma pessoa autenticada que tenta operar sobre um bilhete alheio.

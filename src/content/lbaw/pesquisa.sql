@@ -1,19 +1,28 @@
-CREATE TABLE artigos (
+CREATE TABLE eventos (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   titulo text NOT NULL,
-  texto text NOT NULL,
-  pesquisa tsvector GENERATED ALWAYS AS
-    (to_tsvector('portuguese', titulo || ' ' || texto)) STORED
+  descricao text,
+  pesquisa tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('portuguese', titulo), 'A') ||
+    setweight(to_tsvector('portuguese', coalesce(descricao, '')), 'B')
+  ) STORED
 );
-CREATE INDEX artigos_pesquisa ON artigos USING GIN(pesquisa);
+CREATE INDEX eventos_pesquisa ON eventos USING GIN(pesquisa);
 
-INSERT INTO artigos (titulo, texto) VALUES
-  ('Redes seguras', 'Proteger as redes com autenticação.'),
-  ('Segurança em redes', 'Configurar redes seguras.'),
-  ('Bases de dados', 'Modelar tabelas e escrever consultas.');
+INSERT INTO eventos (titulo, descricao) VALUES
+  ('Noite de Fado', 'Concerto na sala principal.'),
+  ('Encontro de música', 'Uma noite dedicada ao fado.'),
+  ('Teatro à tarde', NULL);
 
 SELECT id, titulo,
-       ts_rank(pesquisa, plainto_tsquery('portuguese','redes seguras')) AS relevancia
-FROM artigos
-WHERE pesquisa @@ plainto_tsquery('portuguese','redes seguras')
+       ts_rank(pesquisa, plainto_tsquery('portuguese', 'fado')) AS relevancia
+FROM eventos
+WHERE pesquisa @@ plainto_tsquery('portuguese', 'fado')
 ORDER BY relevancia DESC, id;
+
+-- A coluna gerada acompanha a alteração, sem atualização manual do vetor.
+UPDATE eventos SET descricao = 'Oficina de fado.' WHERE id = 3;
+SELECT id, titulo
+FROM eventos
+WHERE pesquisa @@ plainto_tsquery('portuguese', 'fado')
+ORDER BY id;

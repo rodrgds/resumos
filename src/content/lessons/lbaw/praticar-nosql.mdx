@@ -13,58 +13,6 @@ editorial:
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
-  id="historico"
-  revision={1}
-  title="Duplicação com significado"
-  explanation="/cadeiras/lbaw/nosql/#documento-embebido-ou-referência"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Não. Pode representar um snapshot histórico.',
-        correct: true,
-        explanation:
-          'O preço comprado não deve seguir o preço atual do produto.',
-      },
-      {
-        text: 'Sim, todo o dado repetido deve ser eliminado.',
-        correct: false,
-        explanation: 'Perderias o valor histórico.',
-      },
-      {
-        text: 'Não, porque documentos nunca têm regras.',
-        correct: false,
-        explanation: 'Continuam a exigir validação e invariantes.',
-      },
-    ],
-  }}
->
-  <div>
-    Guardar o preço de compra na linha da encomenda é necessariamente
-    redundância errada?
-  </div>
-  <div slot="hint">
-    <p>O preço atual e o preço contratado têm significados diferentes.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Uma atualização do produto não deve reescrever a compra.</p>
-  </div>
-  <div slot="solution">
-    <div>
-      Pode ser o desenho correto: a linha regista o valor contratual. Duplicar
-      um atributo que deve continuar sempre atual exige outra estratégia de
-      sincronização.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>
-      Não classifiques os dados só pelo nome da coluna sem olhar para o
-      significado.
-    </div>
-  </div>
-</Exercise>
-
-<Exercise
   id="atomicidade-nosql"
   revision={1}
   title="Verificar a unidade garantida"
@@ -112,86 +60,29 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="cap"
-  revision={1}
-  title="Delimitar o teorema"
-  explanation="/cadeiras/lbaw/nosql/#cap-uma-escolha-durante-uma-partição"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Não. O conflito é entre as garantias definidas de consistência e disponibilidade durante uma partição.',
-        correct: true,
-        explanation: 'As definições e o modelo são essenciais.',
-      },
-      {
-        text: 'Sim, perder partições é sempre uma opção de implementação.',
-        correct: false,
-        explanation:
-          'Uma falha de comunicação não desaparece por opção de API.',
-      },
-      {
-        text: 'Sim, consistência é exatamente o C de ACID.',
-        correct: false,
-        explanation: 'Os termos usam contratos distintos.',
-      },
-    ],
-  }}
->
-  <div>
-    CAP significa escolher quaisquer duas propriedades em todas as situações?
-  </div>
-  <div slot="hint">
-    <p>Pergunta em que condição aparece a impossibilidade.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Os grupos de nós não conseguem comunicar.</p>
-  </div>
-  <div slot="solution">
-    <div>
-      Durante uma partição não se garantem simultaneamente consistência forte e
-      disponibilidade no modelo. Não é uma etiqueta universal para qualquer
-      desempenho ou qualidade de dados.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <div>
-      Não confundas disponibilidade no modelo, percentagem de uptime e ausência
-      de falhas.
-    </div>
-  </div>
-</Exercise>
-<Exercise
   id="embutir-referenciar"
-  revision={1}
-  title="Decidir entre embeber e referenciar"
-  explanation="/cadeiras/lbaw/nosql/#decidir-com-leituras-escritas-e-crescimento"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Comparo leituras e escritas.',
-      'Avalio tamanho e crescimento.',
-      'Defino atomicidade e validação.',
-    ],
-  }}
+  revision={2}
+  title="Compra embebida e reserva distribuída"
+  explanation="/cadeiras/lbaw/nosql/#documento-embebido-ou-referência"
+  answer={{ kind: 'self', checklist: ['Justifico unidade de leitura e crescimento limitado.', 'Distingo preço histórico de dados atuais.', 'Não deduzo atomicidade entre compra e capacidade.', 'Aplico CAP ao caso de partição.'] }}
 >
   <div>
-    Para a encomenda E12 lida inteira e raramente alterada, escolhe embeber ou
-    referenciar as linhas e justifica com operação, crescimento e garantias.
+
+A compra C12 tem dois bilhetes e o limite por compra é dez. É normalmente lida inteira e raramente alterada; cada bilhete conserva o preço contratado. Decide se embeber os bilhetes é razoável. A capacidade de S12 fica noutro documento: atualizar C12 atomicamente garante a reserva? Por fim, duas réplicas de S12, cada uma com um lugar livre, deixam de comunicar. Podem ambas aceitar uma reserva mantendo consistência forte e disponibilidade no modelo CAP?
+
   </div>
   <div slot="hint">
-    <p>O preço da linha é histórico.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Lista pequena e limitada favorece embeber.</p>
+
+Separa o documento lido, a invariante entre documentos e a comunicação entre réplicas.
+
   </div>
   <div slot="solution">
-    <div>
-      Embeber: uma leitura traz tudo e a escrita é atómica; o preço contratado
-      não segue o produto. Uma lista ilimitada de compras exigiria referenciar.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Formato não é garantia: verifica sistema e versão.</p>
+
+Embeber é razoável para esta leitura conjunta e lista limitada. O preço contratado é histórico e não deve acompanhar alterações do preço atual de S12. Os dois bilhetes não justificam embeber também todas as compras ilimitadas de U7.
+
+Atomicidade de C12 não garante atualização conjunta com o documento de capacidade. A reserva exige o contrato adequado do sistema, como transação multidocumento e coordenação de escritores.
+
+Durante a partição, aceitar independentemente em ambos os lados pode confirmar dois bilhetes para um lugar. Preservar consistência forte exige que alguma operação não receba a resposta de sucesso independente, por exemplo recusando-a ou esperando por coordenação. Isso sacrifica disponibilidade no modelo. Convergir mais tarde não apaga a incompatibilidade dos dois sucessos já prometidos.
+
   </div>
 </Exercise>

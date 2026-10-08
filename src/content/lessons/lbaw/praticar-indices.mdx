@@ -105,89 +105,6 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="ordem-indice"
-  revision={1}
-  title="Igualdade antes do intervalo"
-  explanation="/cadeiras/lbaw/sql-indices/#igualdade-intervalo-e-ordem"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Fixo o prefixo por igualdade.',
-      'Limito o intervalo na segunda coluna.',
-      'Não prometo a escolha do plano.',
-    ],
-  }}
->
-  <div>
-    Qual é a justificação de (<code>{'evento_id'}</code>,
-    <code>{'data_hora'}</code>) para <code>{'WHERE'}</code>{' '}
-    <code>{'evento_id'}</code>=3 AND
-    <code>{'data_hora'}</code>&gt;=...?
-  </div>
-  <div slot="hint">
-    <p>O índice ordena primeiro por evento.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Dentro desse evento as datas estão ordenadas.</p>
-  </div>
-  <div slot="solution">
-    <div>
-      A igualdade fixa um grupo contíguo e o intervalo limita a região de datas
-      desse grupo. O planeador ainda compara custos e pode escolher outra
-      estratégia.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Um índice adequado não é uma garantia de Index Scan.</p>
-  </div>
-</Exercise>
-
-<Exercise
-  id="seqscan"
-  revision={1}
-  title="Um índice não escolhido"
-  explanation="/cadeiras/lbaw/sql-indices/#ler-explain-sem-confundir-custo-com-tempo"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Não. Pode ser o plano estimado mais barato.',
-        correct: true,
-        explanation:
-          'Tabelas pequenas e filtros pouco seletivos podem justificar varrimento.',
-      },
-      {
-        text: 'Sim, um índice força sempre Index Scan.',
-        correct: false,
-        explanation: 'O planeador escolhe pela estimativa de custo.',
-      },
-      {
-        text: 'Sim, porque todos os índices aceleram qualquer consulta.',
-        correct: false,
-        explanation: 'Têm condições e custos de uso.',
-      },
-    ],
-  }}
->
-  <p>Depois de criar um índice, Seq Scan prova que a criação falhou?</p>
-  <div slot="hint">
-    <p>Compara procurar muitas linhas por índice com ler a tabela.</p>
-  </div>
-  <div slot="hint-more">
-    <p>As estatísticas e a seletividade entram na decisão.</p>
-  </div>
-  <div slot="solution">
-    <div>
-      Não prova falha. Confirma a definição do índice, a consulta, os dados e
-      estatísticas; compara EXPLAIN ANALYZE em ambiente de teste.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Não declares corrupção só por não aparecer o nome do índice.</p>
-  </div>
-</Exercise>
-
-<Exercise
   id="recall"
   revision={1}
   title="Calcular cobertura da pesquisa"
@@ -213,35 +130,28 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 <Exercise
   id="escolher-indice-carga"
-  revision={1}
-  title="Escolher um índice a partir da carga"
+  revision={2}
+  title="Índice, seletividade e carga de escrita"
   explanation="/cadeiras/lbaw/sql-indices/#da-carga-ao-plano-comentado"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Descrevo consulta, frequência e volume.',
-      'Proponho colunas, ordem e tipo.',
-      'Prevejo quando o plano ignoraria o índice.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Proponho B-tree com evento antes da data.', 'Calculo as duas seletividades.', 'Justifico comparação de planos e custo de escrita.'] }}
 >
   <div>
-    Para 100 mil sessões e 50 pesquisas diárias por evento e intervalo de datas,
-    propõe o índice e diz quando o planeador preferiria varrimento.
+
+Há 100 mil sessões e 50 pesquisas diárias por evento e intervalo de datas, ordenadas por data. A pesquisa A devolve 100 linhas; B devolve 80 mil. Propõe um índice, calcula as seletividades e explica por que a existência do índice não obriga ao seu uso. Que custo muda se houver muitas inserções?
+
   </div>
   <div slot="hint">
-    <p>Igualdade primeiro, intervalo depois.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Seletividade e estatísticas decidem.</p>
+
+Distingue ordem das chaves, fração de linhas devolvidas e custo de manter a estrutura.
+
   </div>
   <div slot="solution">
-    <div>
-      `(evento_id, data_hora)` B-tree; tabela pequena ou filtro pouco seletivo
-      pode ficar em `Seq Scan` mesmo com o índice criado.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Igualdade não implica hash: compara planos e considera clustering.</p>
+
+`CREATE INDEX sessoes_evento_data ON sessoes(evento_id, data_hora);` cria um B-tree. A igualdade no evento fixa um grupo contíguo e o intervalo limita as datas desse grupo. A consulta continua a precisar de `ORDER BY data_hora`.
+
+A devolve `100 / 100000 = 0,1%`; B devolve `80000 / 100000 = 80%`. A pode beneficiar do índice; B pode justificar um varrimento porque lê grande parte da tabela. Compara estimativas e medições, sem prometer um plano específico.
+
+Cada inserção acrescenta manutenção do índice, espaço e trabalho. Mais escritas tornam esse custo mais relevante, mas não invalidam automaticamente a necessidade da pesquisa. A decisão deve medir a carga conjunta.
+
   </div>
 </Exercise>

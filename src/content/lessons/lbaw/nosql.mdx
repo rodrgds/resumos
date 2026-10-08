@@ -16,16 +16,14 @@ editorial:
     - O plano confirma o tópico, mas os slides desta aula ainda não estavam publicados em 1 de outubro. A explicação usa documentação primária.
 ---
 
-Depois do percurso relacional, das tabelas às consultas e aos índices, esta página pergunta quando outro modelo de armazenamento serve melhor.
-
-Um **modelo relacional** liga tabelas por chaves e permite junções. Outros modelos organizam dados segundo padrões diferentes. **NoSQL** reúne várias famílias de sistemas, ou seja, não é uma garantia de ausência de esquema, ausência de SQL ou maior velocidade.
+Uma compra pode ser lida como um documento com os bilhetes adquiridos, ou reconstruída a partir de tabelas ligadas por chaves. A escolha depende das operações e garantias necessárias. **NoSQL** reúne famílias de sistemas com organizações diferentes; o nome não garante ausência de esquema, maior velocidade ou um contrato único de transações.
 
 ## Escolher a estrutura pela operação
 
 | Modelo              | Organização                                                   | Operação típica                                |
 | ------------------- | ------------------------------------------------------------- | ---------------------------------------------- |
 | Chave-valor         | Valor encontrado por chave.                                   | Procurar uma sessão por identificador.         |
-| Documentos          | Registos com campos e estruturas aninhadas.                   | Obter uma encomenda com as suas linhas.        |
+| Documentos          | Registos com campos e estruturas aninhadas.                   | Obter uma compra com os seus bilhetes.         |
 | Famílias de colunas | Linhas e colunas organizadas para padrões de acesso próprios. | Ler séries por chave e intervalo.              |
 | Grafos              | Nós e relações com propriedades.                              | Percorrer ligações entre pessoas ou entidades. |
 
@@ -33,17 +31,22 @@ Um grafo é útil quando relações e percursos são centrais. Isso não torna t
 
 ## Documento embebido ou referência
 
-Uma encomenda pode guardar as linhas num documento:
+Uma compra da Loja de Bilhetes pode guardar os bilhetes num documento:
 
 ```json
 {
-  "id": "E12",
+  "id": "C12",
   "comprador": "U7",
-  "linhas": [{ "produto": "P3", "quantidade": 2, "preco_unitario": 10 }]
+  "bilhetes": [
+    { "codigo": "B1", "sessao": "S12", "preco_compra": 10 },
+    { "codigo": "B2", "sessao": "S12", "preco_compra": 10 }
+  ]
 }
 ```
 
-As linhas são normalmente lidas com a encomenda e o preço é o da compra. Guardar esse preço é um **snapshot histórico** intencional, por isso não deve mudar quando o produto sobe de preço. Duplicar o email atual do comprador em todas as encomendas tem outro custo, porque uma alteração pode exigir atualizar muitos documentos.
+Os bilhetes são lidos com a compra C12. O preço de cada bilhete é o contratado, não o preço atual da sessão. Guardá-lo é um **snapshot histórico** intencional: uma subida do preço de S12 não altera os 20 euros desta compra. Duplicar o email atual de U7 em todas as compras é diferente, pois mudar esse email exigiria sincronizar vários documentos.
+
+Se a compra tem poucos bilhetes, um limite explícito e é normalmente lida inteira, embeber pode ser adequado. Se cada bilhete muda frequentemente de estado por uma operação independente, compara esse custo com o de guardar referências. Não estendas esta decisão a uma lista ilimitada de todas as compras de U7.
 
 **Embeber** aproxima dados lidos em conjunto e pode permitir uma operação atómica sobre um documento. **Referenciar** evita certas repetições e dá identidade independente, mas pode exigir consultas adicionais ou junções suportadas pelo sistema. Considera tamanho e crescimento: uma lista sem limite de todas as compras de uma pessoa não é uma boa escolha só porque pode ser embebida.
 
@@ -61,6 +64,8 @@ Para impedir duas reservas do mesmo lugar, especifica unicidade, coordenação e
 
 No teorema CAP, **consistência** refere-se ao contrato de consistência forte usado no modelo, normalmente explicado como linearizabilidade, não à letra C de ACID. **Disponibilidade** exige resposta de cada nó não falhado a cada pedido no modelo. Uma **partição** impede comunicação entre grupos de nós.
 
+Imagina duas réplicas de S12 separadas por uma falha de rede. Ambas começam com um lugar livre. Se cada lado aceitar uma reserva, podem confirmar duas compras incompatíveis com a capacidade. Preservar a consistência forte pode exigir recusar ou esperar por coordenação num dos lados, deixando de satisfazer disponibilidade no modelo.
+
 Durante essa partição, não se pode garantir simultaneamente a consistência e a disponibilidade assim definidas. Um grupo pode recusar uma operação para não aceitar um estado incompatível, ou responder com informação que ainda não foi coordenada. Não é uma regra genérica «escolhe sempre duas de três», independente de falhas e da operação.
 
 **Consistência eventual** significa que réplicas convergem sob condições como cessarem atualizações e a comunicação recuperar. Não significa que uma leitura imediatamente depois de uma escrita veja sempre essa escrita. Para uma reserva, esse detalhe pode mudar a correção da operação.
@@ -68,9 +73,3 @@ Durante essa partição, não se pode garantir simultaneamente a consistência e
 ## Justificar uma escolha
 
 Uma resposta completa identifica as consultas principais, as invariantes, a unidade de atualização, o volume e crescimento dos dados e as garantias necessárias, e só depois compara soluções. «NoSQL é mais escalável» não explica como distribui os dados nem que custo aceita.
-
-## Decidir com leituras, escritas e crescimento
-
-Toma a encomenda E12 com três linhas: é lida inteira em cada consulta do cliente, raramente muda depois de paga e o preço da linha é o preço contratado. Embebida num documento, uma leitura traz tudo e uma escrita no documento é atómica; referenciada, evita duplicar o email atual mas paga uma consulta extra por encomenda. Como a lista de linhas por encomenda é pequena e limitada, embeber é razoável. Uma lista sem limite de todas as compras de uma pessoa não deve ser embebida só porque a sintaxe permite.
-
-Para CAP, imagina dois grupos de nós sem comunicação e uma reserva do último lugar em cada lado. Para manter consistência forte, um lado tem de recusar; para manter disponibilidade total, ambos aceitam e divergem. A escolha só existe durante a partição e para as garantias definidas no modelo. Consistência eventual promete convergência quando as atualizações param e a comunicação recupera, não que a leitura seguinte veja a escrita.

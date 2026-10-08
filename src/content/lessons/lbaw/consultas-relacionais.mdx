@@ -20,9 +20,7 @@ import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import consulta from '../../lbaw/consultas.sql?raw';
 
-Com as tabelas criadas, a pergunta passa a ser como ir buscar respostas aos dados guardados.
-
-Uma **consulta**, ou seja, uma pergunta às tabelas escrita em SQL, a linguagem de pedidos à base de dados, responde sobre linhas. Antes de escreveres o SQL, fixa o significado de cada linha do resultado e os casos sem correspondência: «uma linha por sessão, mesmo sem bilhetes» exige uma **junção**, ou seja, uma forma de combinar linhas de duas tabelas, diferente da que conta «uma linha por bilhete vendido».
+A Loja de Bilhetes quer mostrar uma linha por sessão, incluindo as que ainda não venderam bilhetes. Antes do SQL, fixa o significado da linha e o resultado esperado quando não há correspondências. Uma consulta que lista bilhetes vendidos responde a outra pergunta, mesmo que use as mesmas tabelas.
 
 ## Ordem lógica e repetidos
 
@@ -142,6 +140,13 @@ Na álgebra relacional clássica, seleção σ filtra tuplos e projeção π esc
 
 ## O mesmo conjunto de dados do início ao fim
 
-Usa duas sessões e três bilhetes: S1 tem um pago e um reservado; S2 não tem bilhetes; um bilhete tem `sessao_id` NULL por erro de importação. A consulta com o filtro no `ON` devolve `(S1,1)` e `(S2,0)`: S2 aparece porque o `LEFT JOIN` conserva a esquerda. Com o filtro no `WHERE`, S2 desaparece e a resposta passa a `(S1,1)`. As tabelas de resultados mostram a primeira forma dá `[(1, 1), (2, 0)]`, a segunda dá `[(1, 1)]`.
+O bloco PostgreSQL anterior usa três sessões. S1 tem um bilhete pago e outro cancelado; S2 não tem bilhetes; S3 só tem um cancelado. As tabelas auxiliares omitem deliberadamente as FKs para isolar o comportamento das junções e de NULL, sem representar todo o esquema da loja.
 
-O mesmo conjunto mostra `NOT IN` contra `NOT EXISTS`: se a subconsulta inclui NULL, `2 NOT IN (1,NULL)` é desconhecido e o `WHERE` rejeita a linha, enquanto `NOT EXISTS` com correlação testa ausência de linhas. Constrói sempre dados com zero, uma e várias correspondências, mais NULL quando a coluna o permite, e calcula à mão antes de correres.
+| Operação                        | S1  | S2              | S3              |
+| ------------------------------- | --- | --------------- | --------------- |
+| Filtro pago no ON e COUNT(b.id) | 1   | 0               | 0               |
+| Filtro pago no WHERE            | 1   | Linha eliminada | Linha eliminada |
+
+S3 distingue "tem bilhetes" de "tem correspondências pagas". Ao filtrar no ON, o bilhete cancelado não corresponde e a junção conserva a sessão com colunas de bilhete a NULL. Ao filtrar no WHERE, a sua única linha é rejeitada, tal como a linha exterior de S2.
+
+A expressão isolada `2 NOT IN (1,NULL)` é desconhecida e rejeita a linha. O `NOT EXISTS` correlacionado encontra ausência de bilhetes em S2 e aceita-a. Este NULL pertence à lista da expressão de teste, não a um bilhete inserido pelo programa.

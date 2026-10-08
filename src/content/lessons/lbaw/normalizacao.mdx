@@ -19,9 +19,12 @@ editorial:
 import Dot from '../../../components/Dot.astro';
 import dependencias from '../../lbaw/dependencias.dot?raw';
 
-Com as tabelas definidas a partir do modelo, esta página pergunta se alguma tabela repete a mesma informação em várias linhas.
+| Bilhete | Sessão | Evento | Título atual  |
+| ------- | ------ | ------ | ------------- |
+| B1      | S12    | E3     | Noite de Fado |
+| B2      | S12    | E3     | Noite de Fado |
 
-Uma **chave**, ou seja, a coluna ou colunas que identificam cada linha sem duplicados, não elimina toda a repetição. Se guardarmos o gabinete de um docente em cada matrícula, mudar de gabinete exige alterar muitas linhas. A **normalização** usa regras do domínio para encontrar essas repetições e decompor tabelas, ou seja, não deduz uma regra só porque coincide nos dados atuais.
+Se o título do evento mudar, é preciso corrigir as duas linhas. Escolher `Bilhete` como chave não elimina essa repetição. A **normalização** usa dependências funcionais para separar factos, como fizemos ao guardar o título em `eventos`. As regras vêm do domínio, não apenas das coincidências nos dados atuais. Para acompanhar o cálculo de fechos e formas normais, usamos a seguir uma relação de matrículas com dependências explícitas.
 
 ## Dependência funcional e fecho
 
@@ -81,7 +84,7 @@ docente(docente, sala)    chave: docente
 
 Em cada relação, os determinantes das dependências não triviais são chaves, sob estas regras. As três estão em BCNF. Se uma UC puder ter vários docentes, `uc → docente` deixa de valer e esta solução tem de mudar. Normaliza a partir das regras reais, não de uma relação que gostarias de ter.
 
-## Sem perda não significa sem dependências perdidas
+## Decomposição sem perda e preservação de dependências
 
 Uma decomposição é **sem perda** quando juntar as projeções recupera exatamente a relação original, sem fabricar combinações. Para uma decomposição binária `R1,R2`, sob dependências funcionais, basta que os atributos comuns determinem todos os atributos de R1 ou de R2. Este critério também é necessário neste contexto.
 
@@ -91,8 +94,6 @@ A decomposição **preserva dependências** se as regras projetadas nas relaçõ
 
 Contraexemplo: em `R(A,B,C)`, sejam `AB → C` e `C → B`. As chaves candidatas são AB e AC. `C → B` satisfaz 3FN porque B é primo, mas viola BCNF porque C não determina A. Decompomos em `CB` e `AC`: é sem perda porque C determina CB. Porém, `AB → C` não fica preservada.
 
-:::details[Ver dados que cada tabela aceita isoladamente]
-
 ```text
 CB: (c1,b1), (c2,b1)
 AC: (a1,c1), (a1,c2)
@@ -100,7 +101,7 @@ AC: (a1,c1), (a1,c2)
 
 A junção produz `(a1,b1,c1)` e `(a1,b1,c2)`, violando `AB → C`. Para impedir isto precisamos de coordenação entre tabelas, ou de uma decomposição que preserve a regra. BCNF reduz certas anomalias adicionais, mas nem sempre conserva todas as dependências; uma síntese em 3FN pode ser preferível quando essa conservação é essencial.
 
-:::
+Sem perda descreve a reconstrução de dados originalmente válidos. Preservação descreve a possibilidade de impedir novas escritas inválidas por verificações locais.
 
 ## Resolver uma pergunta de normalização
 
@@ -110,14 +111,10 @@ A junção produz `(a1,b1,c1)` e `(a1,b1,c2)`, violando `AB → C`. Para impedir
 4. Mostra uma dependência concreta que viola a forma, quando existe.
 5. Decompõe e justifica separadamente ausência de perda e preservação de dependências.
 
-Dizer apenas «tem uma chave primária, portanto está normalizada» não demonstra nenhuma forma normal. Identifica as dependências e justifica BCNF, porque é preciso apresentar as tabelas e a verificação.
+Dizer «tem uma chave primária, portanto está normalizada» não demonstra uma forma normal. No exemplo das matrículas, a verificação depende das regras `uc → docente` e `docente → sala`, não da presença de uma PK artificial.
 
 ## Desnormalização é uma decisão de custo
 
 Depois de normalizar, pode haver uma leitura frequente cujo custo justifica guardar um valor derivado. Um total de bilhetes pagos por sessão evita contar sempre todas as linhas, mas precisa de ser atualizado em cada compra, cancelamento ou correção. Se um desses caminhos o esquecer, o total deixa de representar os dados.
 
 Esta **desnormalização** troca certas leituras por mais armazenamento e coordenação nas escritas. Mede a carga antes e depois. Não é uma garantia automática de maior velocidade, nem uma razão para omitir as dependências e as invariantes do desenho. Um preço histórico da compra tem outro significado que o preço atual; guardá-lo não é duplicar o mesmo facto.
-
-## Dois passos separados: projetar e juntar
-
-Para decidir preservação, projeta cada dependência nas novas tabelas e pergunta se consegues verificar a regra sem juntar. No contraexemplo `R(A,B,C)` com `AB -> C` e `C -> B`, a decomposição em `CB` e `AC` é sem perda porque `C` determina `CB`, mas `AB -> C` deixa de ser verificável: nenhuma tabela contém `A` e `B` juntos. Duas tabelas localmente válidas, `CB` com `(c1,b1),(c2,b1)` e `AC` com `(a1,c1),(a1,c2)`, juntam-se em `(a1,b1,c1)` e `(a1,b1,c2)`, que violam `AB -> C`. Sem perda fala de projetar dados válidos e rejuntar; preservação fala de impedir novas escritas inválidas sem junção.

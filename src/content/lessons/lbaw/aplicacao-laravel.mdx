@@ -24,9 +24,7 @@ import Tabs from '../../../components/Tabs.astro';
 import ambito from '../../lbaw/ambito.php?raw';
 import pedido from '../../lbaw/pedido-laravel.mmd?raw';
 
-Com os pedidos e respostas HTTP explicados, esta página responde como organizar o código que trata cada pedido.
-
-Com a base de dados a guardar e a proteger os dados, falta a aplicação que os mostra e os altera. O Laravel organiza essa aplicação em peças com papéis fixos: a **rota** recebe o pedido HTTP, o **controlador** executa a lógica, o **modelo** fala com a tabela e a **vista** gera o HTML. O **middleware**, ou seja, o filtro que trata o pedido antes do controlador, a autorização e outros serviços podem participar no percurso, por isso nem todas as respostas usam uma vista HTML.
+Um `GET /sessoes` precisa de escolher uma operação, consultar sessões e produzir uma resposta. No Laravel, a rota encaminha o pedido, o controlador coordena a operação, o modelo representa dados e relações e a vista produz HTML. Middleware, policies e serviços participam quando a operação exige autenticação, autorização ou regras de negócio.
 
 ## O recurso Sessões de ponta a ponta
 
@@ -267,6 +265,13 @@ Uma atualização feita em vários modelos pode precisar de `DB::transaction(...
 
 ## Onde cada falha aparece no percurso
 
-Segue um `POST /sessoes` com lotação 0 por um utilizador sem permissão: o middleware `auth` recusa quem não entrou; a policy recusa quem não gere sessões com 403; a validação recusa lotação 0 e devolve o formulário com erros e valores antigos; só depois a base de dados aplicaria `CHECK`. Cada camada protege a sua decisão e nenhuma substitui as outras.
+Os caminhos abaixo partem de `POST /sessoes` num formulário web. Cada recusa interrompe o percurso; o mesmo pedido não atravessa todas as falhas.
 
-Adapta o esquema português com nomes de tabela explícitos, porque a pluralização do Eloquent não adivinha `sessoes`. Os excertos pressupõem `Request`, `Gate` e modelos importados; a migração de exemplo omite os `CHECK` de propósito, que ficam no SQL de PostgreSQL. O bloco PHP executável isola só a regra "inteiro a partir de 1": não reproduz a conversão de texto HTTP nem todas as regras do validador.
+| Condição                                  | Camada que recusa         | Resultado                                                               |
+| ----------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| Sem login                                 | Middleware `auth`         | Redirecionamento para iniciar sessão.                                   |
+| Com login, sem permissão de criar         | Policy chamada por `Gate` | 403, antes da validação e da escrita.                                   |
+| Autorizado, lotação 0                     | Validação `min:1`         | Regresso ao formulário com erros e valores preservados.                 |
+| Autorizado, evento eliminado após validar | FK na base de dados       | Escrita recusada; a aplicação traduz a falha conhecida sem mostrar SQL. |
+
+Num cliente que espera JSON, autenticação e validação podem devolver 401 e 422 em vez de redirecionar. O contrato da resposta precisa de declarar essa diferença.

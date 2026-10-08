@@ -13,53 +13,6 @@ editorial:
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
-  id="sql-param"
-  revision={1}
-  title="Separar valor de sintaxe"
-  explanation="/cadeiras/lbaw/seguranca-web/#sql-injection-separar-código-de-valores"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Parâmetro de uma consulta preparada.',
-        correct: true,
-        explanation: 'Separa o valor da sintaxe SQL.',
-      },
-      {
-        text: 'htmlspecialchars.',
-        correct: false,
-        explanation: 'Codifica texto para HTML, não parametriza SQL.',
-      },
-      {
-        text: 'Token CSRF.',
-        correct: false,
-        explanation: 'Protege outro mecanismo de ataque.',
-      },
-    ],
-  }}
->
-  <div>
-    Qual é a defesa principal para um email usado como valor numa consulta SQL?
-  </div>
-  <div slot="hint">
-    <p>Observa o destino onde o valor é interpretado.</p>
-  </div>
-  <div slot="hint-more">
-    <p>O email ocupa uma posição de valor SQL.</p>
-  </div>
-  <div slot="solution">
-    <div>
-      Uma consulta preparada com parâmetros trata o email como dado.
-      Identificadores, como colunas escolhidas, precisam de outra abordagem com
-      opções autorizadas.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Não transportes uma defesa de um contexto para outro.</p>
-  </div>
-</Exercise>
-
-<Exercise
   id="csrf"
   revision={1}
   title="Atacar sem ler a resposta"
@@ -192,36 +145,32 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 <Exercise
   id="corrigir-excerto"
-  revision={1}
-  title="Atacar e corrigir um excerto curto"
+  revision={2}
+  title="Distinguir injeção e acesso alheio"
   explanation="/cadeiras/lbaw/seguranca-web/#um-pedido-ao-bilhete-alheio-camada-a-camada"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Identifico entrada, interpretação e efeito.',
-      'Aplico a defesa do contexto.',
-      'Verifico autorização sobre o objeto.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Mostro como a entrada altera a sintaxe SQL.', 'Uso parâmetros para valores.', 'Recuso bilhete alheio por autorização.'] }}
 >
   <div>
-    Dado `$sql = "SELECT ... '" . $email . "'"` e `GET /bilhetes/900` sem
-    verificação, diz o ataque, o efeito e a correção de cada um.
+
+O login constrói a consulta abaixo por concatenação. Separadamente, `GET /bilhetes/900` carrega e mostra o bilhete 900 a qualquer comprador autenticado, embora pertença ao comprador 8. O atacante é o comprador 7. Explica entrada, efeito e correção de cada falha. HTTPS e um token CSRF válido resolvem alguma delas?
+
+```php
+$sql = "SELECT id FROM utilizadores WHERE email = '" . $email . "'";
+```
+
   </div>
   <div slot="hint">
-    <p>Um é sintaxe, o outro é permissão.</p>
-  </div>
-  <div slot="hint-more">
-    <p>Parâmetro e policy resolvem coisas diferentes.</p>
+
+Identifica qual interpretador ou regra é contornado em cada caminho.
+
   </div>
   <div slot="solution">
-    <div>
-      Email com apóstrofo vira sintaxe: usa consulta parametrizada. Bilhete
-      alheio sem Gate: verifica a policy no servidor; CSRF e XSS não cobrem
-      isto.
-    </div>
-  </div>
-  <div slot="mistakes">
-    <p>Não troques defesas entre contextos.</p>
+
+Com email `' OR '1'='1`, a consulta passa a terminar em `WHERE email = '' OR '1'='1'`, uma condição verdadeira para todas as linhas. Usa uma consulta preparada com um parâmetro `:email`, para o valor nunca se tornar sintaxe.
+
+O pedido de 7 ao bilhete de 8 pode ter SQL perfeitamente parametrizado e continuar a expor dados. Verifica no servidor uma policy sobre a operação `view` e o bilhete carregado, recusando o acesso de 7.
+
+HTTPS protege o transporte. O token CSRF trata pedidos induzidos com credenciais automáticas. Nenhum substitui parâmetros SQL ou autorização sobre o objeto.
+
   </div>
 </Exercise>

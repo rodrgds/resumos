@@ -7,7 +7,7 @@ practices:
 editorial:
   basedOn: 2026/27
   sources:
-    - title: LBAW 2026/27, apresentação e slides de requisitos, arquitetura de informação e especificação da base de dados
+    - title: LBAW 2026/27, Database Indexes, Triggers and Transactions, lecture 4
       url: https://moodle2627.up.pt/course/view.php?id=4222
     - title: Ficha LBAW 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587001
@@ -20,17 +20,16 @@ import Mermaid from '../../../components/Mermaid.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import corrida from '../../lbaw/concorrencia.mmd?raw';
+import coordenada from '../../lbaw/compra-coordenada.mmd?raw';
 import atomicidade from '../../lbaw/transacao.sql?raw';
 import auditarPreco from '../../lbaw/auditar-preco.sql?raw';
 import rotinas from '../../lbaw/rotinas.sql?raw';
 import precos from '../../lbaw/precos.sql?raw';
 import dadosTransacao from '../../lbaw/transacao-dados.sql?raw';
 
-Com consultas e índices a responder depressa, falta garantir que duas vendas ao mesmo tempo não quebram as regras.
+A sessão S12 tem um lugar livre e dois compradores tentam reservá-lo. Cada compra precisa de reduzir a capacidade e criar o bilhete em conjunto. Uma **transação** agrupa essas operações; um **trigger** executa uma rotina em resposta a uma alteração. Nenhum dos dois, sozinho, coordena automaticamente as duas compras.
 
-Uma **transação** é um grupo de operações que só produz efeito em conjunto, e um **trigger** é um procedimento que corre em resposta a uma operação. Nenhum dos dois garante, sozinho, que duas vendas concorrentes preservam uma regra que compara várias linhas. Para vender o último lugar, tens de escolher também como as compras se coordenam.
-
-Neste capítulo, a tabela `sessoes` recebe uma coluna `livres` que não existia no esquema base: é uma extensão deliberada para estudar concorrência. Inicializa `livres` com o valor de `lotacao` e mantém a invariante de que `livres` iguala `lotacao` menos bilhetes ativos. Se algum caminho escrever bilhetes sem atualizar `livres` na mesma transação, a invariante quebra.
+Para estudar essa coordenação, acrescentamos `livres` a `sessoes`. Inicialmente vale `lotacao`; depois deve ser igual a `lotacao` menos a quantidade de bilhetes ativos, reservados ou pagos. Todos os caminhos de compra, cancelamento e alteração de lotação têm de manter essa invariante na mesma transação.
 
 ## ACID e o que cada letra promete
 
@@ -92,6 +91,11 @@ RETURNING id, livres;
 ```
 
 A primeira compra bloqueia e altera a linha. A segunda espera. Se a primeira confirmar, o PostgreSQL volta a avaliar a condição sobre a versão atual da linha: livres já é zero, logo a segunda não altera nenhuma linha. Se a primeira anular, a segunda pode reservar esse lugar. O `RETURNING` permite distinguir esses resultados.
+
+<Mermaid
+  source={coordenada}
+  alt="A reserva o último lugar e mantém o bloqueio. B espera. Após A confirmar contador e bilhete, B reavalia livres maior que zero, altera zero linhas e não cria um bilhete."
+/>
 
 O esquema pode ter `CHECK (livres BETWEEN 0 AND lotacao)`, mas o contador só coincide com os bilhetes se **todas** as compras, cancelamentos e alterações de lotação seguirem o mesmo protocolo. Criar um bilhete por outro caminho sem diminuir livres quebra a regra. A inserção e o contador pertencem à mesma transação; alterações diretas exigem permissões limitadas ou uma operação central na base de dados.
 
@@ -155,8 +159,10 @@ O exemplo PostgreSQL dá `12.30` e uma linha `confirmado`. `CALL` não é uma fo
 
 Uma rotina pode reduzir viagens entre aplicação e base de dados e centralizar uma operação. Tem custos de testes, manutenção e dependência do dialeto ou linguagem, como PL/pgSQL. Não concluas que será sempre mais rápida nem que o código será reutilizável noutro SGBD. Procedures podem controlar transações apenas nas condições admitidas pelo PostgreSQL; colocar `COMMIT` numa função não o torna válido.
 
-## Compra coordenada passo a passo e identificadores
+## Identificadores gerados e sessão da base de dados
 
-Segue a compra com `livres=1`: A corre `UPDATE ... WHERE livres > 0 RETURNING`, bloqueia a linha e reserva; B espera pelo bloqueio. A insere o bilhete na mesma transação e confirma. B volta a avaliar a condição sobre a versão confirmada, altera zero linhas e não insere bilhete. Se A anulasse, B reservaria. Verifica sempre as linhas afetadas pelo `RETURNING` antes de inserir.
+`INSERT ... RETURNING id` devolve o identificador da linha que acabaste de criar. Evita procurar `MAX(id)`, que pode corresponder à inserção de outra ligação.
 
-Gera o identificador da sessão com `GENERATED ALWAYS AS IDENTITY` e lê o valor da tua própria inserção com `currval('sessoes_id_seq')`: `currval` devolve o último valor obtido na sessão atual, por isso outra sessão a inserir em paralelo não o altera. Escolhe o isolamento por transação e justifica: `READ COMMITTED` com `UPDATE` condicionado coordena o contador; `REPEATABLE READ` dá snapshot estável mas não dispensa coordenação de escrita; `SERIALIZABLE` pode abortar e exige repetir a transação completa.
+Uma coluna `GENERATED ALWAYS AS IDENTITY` usa uma sequência. Depois de essa ligação obter um valor da sequência, `currval('sessoes_id_seq')` devolve o último valor que ela própria obteve. Outra ligação não muda esse resultado. Antes de existir uma chamada nessa ligação, `currval` dá erro. A sessão da base de dados é aqui a ligação, não a sessão de um evento nem o cookie HTTP.
+
+Uma sequência pode consumir números mesmo quando a transação é anulada. Os identificadores devem ser únicos, mas não se deve exigir que sejam consecutivos.
