@@ -30,8 +30,8 @@ function listItems(tree: Root) {
   return items;
 }
 
-// A wrapped item still has one Markdown marker. Reach that marker directly,
-// then toggle to the absolute line start to access indentation and quote syntax.
+// Reach the item text directly, even when it wraps. A repeat reaches the
+// absolute line start so indentation, list markers, and quote syntax remain editable.
 export function moveToListBoundary(
   side: 'start' | 'end',
   extend = false,
@@ -41,9 +41,15 @@ export function moveToListBoundary(
     const items = listItems(parsePersonalMarkdown(state.doc.toString()));
     const starts = state.selection.ranges.map((range) => {
       const line = state.doc.lineAt(range.head);
-      return items.find(
+      const start = items.find(
         (item) => item.node.position!.start.line === line.number,
       )?.node.position!.start.offset;
+      if (start === undefined) return;
+      const source = state.sliceDoc(start, line.to);
+      const prefix = /^(?:[-+*]|\d+[.)])(?:[ \t]+|$)/.exec(source);
+      return (
+        start + (parseTaskPrefix(source)?.length ?? prefix?.[0].length ?? 0)
+      );
     });
     // Let the native command handle prose, code, continuation lines, and mixed selections.
     if (starts.some((start) => start === undefined)) return false;

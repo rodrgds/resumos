@@ -727,7 +727,7 @@ test('checklists render all requested states, toggle without losing source, and 
 });
 
 for (const prefix of ['- [ ]', '- [?]', '  - [!]', '> - [/]', '1. [S]']) {
-  test(`the active checklist line reveals its editable marker (${prefix})`, async ({
+  test(`checklist source appears when the caret enters its marker (${prefix})`, async ({
     page,
   }) => {
     await page.goto('/caderno/exemplo/#novo');
@@ -739,15 +739,27 @@ for (const prefix of ['- [ ]', '- [?]', '  - [!]', '> - [/]', '1. [S]']) {
     await editor.press('ArrowUp');
     await editor.press('End');
     const row = editor.locator('.cm-line').filter({ hasText: 'Segundo' });
-    await expect(row).toContainText(`${prefix} Segundo`);
-    await expect(row.getByRole('checkbox')).toHaveCount(0);
+    await expect(row.getByRole('checkbox')).toBeVisible();
+    await expect(row).not.toContainText(prefix.trim());
     await expect(
       editor.getByRole('checkbox', { name: /: Pai$/ }),
     ).toBeChecked();
-    // Reach the marker from the end without relying on hidden prefix widths.
-    await editor.press('End');
-    for (let n = 0; n < 'Segundo'.length + 2; n++)
-      await editor.press('ArrowLeft');
+    await editor.press('Home');
+    await expect(row.getByRole('checkbox')).toBeVisible();
+    await editor.press('ArrowLeft');
+    await expect(row).toContainText(`${prefix} Segundo`);
+    await expect(row.getByRole('checkbox')).toHaveCount(0);
+    await page.keyboard.insertText('|');
+    expect(await exportedMarkdown(page)).toContain(
+      source.replace(' Segundo', '| Segundo'),
+    );
+    await editor.focus();
+    await editor.press('ControlOrMeta+z');
+    await editor.press('ArrowRight');
+    await expect(row.getByRole('checkbox')).toBeVisible();
+    await editor.press('ArrowLeft');
+    await expect(row.getByRole('checkbox')).toHaveCount(0);
+    await editor.press('ArrowLeft');
     await editor.press('Shift+ArrowLeft');
     await page.keyboard.insertText('f');
     await editor.press('ControlOrMeta+End');
@@ -758,6 +770,10 @@ for (const prefix of ['- [ ]', '- [?]', '  - [!]', '> - [/]', '1. [S]']) {
     expect(await exportedMarkdown(page)).toContain(changed);
     await row.click();
     await editor.press('End');
+    await expect(row.getByRole('checkbox')).toBeVisible();
+    await editor.press('Home');
+    await expect(row.getByRole('checkbox')).toBeVisible();
+    await editor.press('ArrowLeft');
     await expect(row).toContainText('[f] Segundo');
     await expect(row.getByRole('checkbox')).toHaveCount(0);
     await page.getByRole('textbox', { name: 'Título do apontamento' }).click();
@@ -954,7 +970,7 @@ for (const [platform, startKey, endKey] of [
   ['Win32', 'Home', 'End'],
   ['Linux x86_64', 'Home', 'End'],
 ]) {
-  test(`line boundary keys reach list markers across wrapped text (${platform})`, async ({
+  test(`line boundary keys reach item text across wrapped text (${platform})`, async ({
     page,
   }) => {
     await page.addInitScript((platform) => {
@@ -971,6 +987,10 @@ for (const [platform, startKey, endKey] of [
       'Texto suficientemente comprido para ocupar várias linhas visuais e testar o movimento até ao marcador';
     for (const [before, prefix] of [
       ['', '- '],
+      ['', '-   '],
+      ['', '* [x] '],
+      ['', '+ [/] '],
+      ['', '10) [!] '],
       ['', '- [?] '],
       ['- Pai\n  ', '- [ ] '],
       ['> ', '1. [!] '],
@@ -981,7 +1001,7 @@ for (const [platform, startKey, endKey] of [
       await editor.press(startKey);
       await page.keyboard.insertText('|');
       expect(await exportedMarkdown(page)).toContain(
-        `${before}|${prefix}${body}`,
+        `${before}${prefix}|${body}`,
       );
       await editor.fill(source);
       await editor.press(documentEndKey);
@@ -996,7 +1016,9 @@ for (const [platform, startKey, endKey] of [
       await editor.press(documentEndKey);
       await editor.press(`Shift+${startKey}`);
       await page.keyboard.insertText('Substituído');
-      expect(await exportedMarkdown(page)).toContain(`${before}Substituído`);
+      expect(await exportedMarkdown(page)).toContain(
+        `${before}${prefix}Substituído`,
+      );
       await editor.fill(source);
       await editor.press(documentEndKey);
       await editor.press(startKey);
@@ -1008,7 +1030,9 @@ for (const [platform, startKey, endKey] of [
       await editor.press(startKey);
       await editor.press(`Shift+${endKey}`);
       await page.keyboard.insertText('Substituído');
-      expect(await exportedMarkdown(page)).toContain(`${before}Substituído`);
+      expect(await exportedMarkdown(page)).toContain(
+        `${before}${prefix}Substituído`,
+      );
     }
     await editor.fill('- [?] Primeiro último');
     await editor.press(documentEndKey);
