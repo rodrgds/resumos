@@ -1,5 +1,26 @@
 import { expect, test } from '@playwright/test';
 
+test('long lesson titles keep pagination links and arrows inside a narrow viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('/cadeiras/fp/segundo/');
+  const navigation = page.getByRole('navigation', {
+    name: 'Continuar a leitura',
+  });
+  await navigation.scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.fonts.ready);
+  const outside = await navigation.evaluate((root) =>
+    [...root.querySelectorAll('*')].some((element) => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.width > 0 && (bounds.left < 0 || bounds.right > innerWidth);
+    }),
+  );
+  expect(outside).toBe(false);
+  await navigation.getByRole('link', { name: /^Seguinte/ }).click();
+  await expect(page).toHaveURL('/cadeiras/fp/titulo-longo/');
+});
+
 for (const width of [1440, 390]) {
   test(`opening notes preserves reading position and measure at ${width}px`, async ({
     page,
