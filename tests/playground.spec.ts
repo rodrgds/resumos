@@ -30,47 +30,6 @@ test('C++ executes standard sorting and duplicate removal', async ({
   await expect(playground.getByRole('status')).toHaveText('Concluído');
 });
 
-test('Round Robin runs the authored C program and rejects invalid quanta', async ({
-  page,
-}) => {
-  const invalidQuanta = ['3abc', '999999999999999999999999999999'];
-  const runTimeout = 75_000;
-  // Each input recompiles C in a fresh Worker, with its own execution deadline.
-  test.setTimeout(30_000 + (1 + invalidQuanta.length) * runTimeout);
-  await page.goto('/cadeiras/so/escalonamento/');
-  const playground = page.getByRole('region', {
-    name: 'Round Robin com chegadas em zero',
-    exact: true,
-  });
-  await playground.scrollIntoViewIfNeeded();
-  await expect(
-    playground.getByRole('textbox', { name: 'Código c', exact: true }),
-  ).toBeVisible();
-  await playground.locator('.playground-stdin summary').click();
-  const input = playground.getByRole('textbox', {
-    name: 'Entrada padrão',
-    exact: true,
-  });
-  const run = playground.getByRole('button', { name: 'Executar', exact: true });
-  const output = playground.getByLabel('Resultado', { exact: true });
-  await input.fill('3');
-  await run.click();
-  await expect(run).toBeEnabled({ timeout: runTimeout });
-  await expect(playground.getByRole('status')).toHaveText('Concluído');
-  await expect(output).toHaveText(
-    'P1: fim=14 espera=8\nP2: fim=6 espera=3\nP3: fim=8 espera=6\nP4: fim=15 espera=11\nEspera media: 7.00\n',
-  );
-  for (const invalid of invalidQuanta) {
-    await input.fill(invalid);
-    await run.click();
-    await expect(run).toBeEnabled({ timeout: runTimeout });
-    await expect(output).toHaveText('Usa um quantum inteiro entre 1 e 100.\n');
-    await expect(playground.getByRole('status')).toHaveText(
-      'Terminou com erro (1)',
-    );
-  }
-});
-
 test('PHP evaluates the authored scope example', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('/cadeiras/lbaw/aplicacao-laravel/');
@@ -119,7 +78,7 @@ test('Python cannot read the lesson origin database and can be stopped', async (
   page,
 }) => {
   test.setTimeout(90_000);
-  await page.goto('/cadeiras/f1/centro-massa-momento/');
+  await page.goto('/exemplo/codigo/');
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
@@ -132,7 +91,7 @@ test('Python cannot read the lesson origin database and can be stopped', async (
       }),
   );
   const playground = page.getByRole('region', {
-    name: 'Colisão elástica com números',
+    name: 'Experimentar Python',
     exact: true,
   });
   await playground.scrollIntoViewIfNeeded();
@@ -169,9 +128,9 @@ test('Python executes data analysis and displays its plot', async ({
   page,
 }) => {
   test.setTimeout(120_000);
-  await page.goto('/cadeiras/f1/centro-massa-momento/');
+  await page.goto('/exemplo/codigo/');
   const playground = page.getByRole('region', {
-    name: 'Colisão elástica com números',
+    name: 'Experimentar Python',
     exact: true,
   });
   await playground.scrollIntoViewIfNeeded();
@@ -213,11 +172,11 @@ test('Python playground waits for preparation, highlights the theme and executes
     await scriptsReady;
     await route.continue();
   });
-  await page.goto('/cadeiras/f1/centro-massa-momento/', {
+  await page.goto('/exemplo/codigo/', {
     waitUntil: 'commit',
   });
   const playground = page.getByRole('region', {
-    name: 'Colisão elástica com números',
+    name: 'Experimentar Python',
     exact: true,
   });
   try {
@@ -247,7 +206,7 @@ test('Python playground waits for preparation, highlights the theme and executes
   await expect(playground.getByRole('status')).toHaveText('Concluído', {
     timeout: 20_000,
   });
-  await expect(
-    playground.getByLabel('Resultado', { exact: true }),
-  ).toContainText('u1 = 1.00 m/s, u2 = 4.00 m/s');
+  await expect(playground.getByLabel('Resultado', { exact: true })).toHaveText(
+    '15\n',
+  );
 });

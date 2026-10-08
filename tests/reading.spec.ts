@@ -215,26 +215,30 @@ test.describe('course diagrams without JavaScript', () => {
     {
       route: '/cadeiras/f2/circuitos-reativos/',
       curve: '[data-f2-rc] [data-curve]',
-      x: 112,
-      y: 45.3002924855,
+      timeFraction: 0.2,
+      value: 0.864664716763,
+      reference: 'charge',
     },
     {
       route: '/cadeiras/f2/fourier/',
       curve: '[data-f2-fourier] [data-wave]',
-      x: 123.75,
-      y: 43.791543674,
+      timeFraction: 0.25,
+      value: 1.103474272104,
+      reference: 'square',
     },
     {
       route: '/cadeiras/f2/frequencia-amostragem/',
       curve: '[data-f2-sampling] [data-original]',
-      x: 54.5,
-      y: 151.14496766,
+      timeFraction: 0.05,
+      value: -0.587785252292,
+      reference: 'sample',
     },
     {
       route: '/cadeiras/f2/frequencia-amostragem/',
       curve: '[data-f2-sampling] [data-alias]',
-      x: 54.5,
-      y: 68.85503234,
+      timeFraction: 0.05,
+      value: 0.587785252292,
+      reference: 'sample',
     },
   ]) {
     test(`initial physics curve matches the chosen values: ${sample.curve}`, async ({
@@ -243,8 +247,28 @@ test.describe('course diagrams without JavaScript', () => {
       await page.goto(sample.route);
       const curve = page.locator(sample.curve);
       await expect(curve).not.toHaveAttribute('d', '');
-      const point = await curve.evaluate((element, targetX) => {
+      const point = await curve.evaluate((element, sample) => {
         const path = element as SVGPathElement;
+        const svg = path.ownerSVGElement!;
+        const axes = svg.querySelector('path')!;
+        const bounds = axes.getBBox();
+        const zeroY = axes.getPointAtLength(axes.getTotalLength()).y;
+        // The drawn axes and reference marks define the coordinate frame.
+        // Physical expectations stay unchanged when the plot is resized.
+        const unit =
+          sample.reference === 'charge'
+            ? bounds.height
+            : sample.reference === 'square'
+              ? svg
+                  .querySelector<SVGPathElement>('path[stroke-dasharray]')!
+                  .getBBox().height / 2
+              : zeroY -
+                Number(
+                  svg
+                    .querySelector('[data-samples] circle')!
+                    .getAttribute('cy'),
+                );
+        const targetX = bounds.x + bounds.width * sample.timeFraction;
         let low = 0;
         let high = path.getTotalLength();
         for (let step = 0; step < 40; step++) {
@@ -253,10 +277,10 @@ test.describe('course diagrams without JavaScript', () => {
           else high = middle;
         }
         const value = path.getPointAtLength((low + high) / 2);
-        return [value.x, value.y];
-      }, sample.x);
-      expect(point[0]).toBeCloseTo(sample.x, 2);
-      expect(Math.abs(point[1] - sample.y)).toBeLessThan(0.08);
+        return [(value.x - bounds.x) / bounds.width, (zeroY - value.y) / unit];
+      }, sample);
+      expect(point[0]).toBeCloseTo(sample.timeFraction, 5);
+      expect(Math.abs(point[1] - sample.value)).toBeLessThan(0.002);
     });
   }
 
@@ -266,18 +290,20 @@ test.describe('course diagrams without JavaScript', () => {
     await page.goto('/cadeiras/f2/frequencia-amostragem/');
     const samples = page.locator('[data-f2-sampling] [data-samples] circle');
     await expect(samples).toHaveCount(11);
-    const points = await samples.evaluateAll((elements) =>
-      elements.map((element) => [
-        Number(element.getAttribute('cx')),
-        Number(element.getAttribute('cy')),
-      ]),
-    );
+    const points = await samples.evaluateAll((elements) => {
+      const svg = (elements[0] as SVGCircleElement).ownerSVGElement!;
+      const axes = svg.querySelector('path')!;
+      const bounds = axes.getBBox();
+      const zeroY = axes.getPointAtLength(axes.getTotalLength()).y;
+      const unit = zeroY - Number(elements[0].getAttribute('cy'));
+      return elements.map((element) => [
+        (Number(element.getAttribute('cx')) - bounds.x) / bounds.width,
+        (zeroY - Number(element.getAttribute('cy'))) / unit,
+      ]);
+    });
     for (let n = 0; n <= 10; n++) {
-      expect(points[n][0]).toBeCloseTo(35 + 39 * n, 3);
-      expect(points[n][1]).toBeCloseTo(
-        110 - 70 * Math.cos((2 * Math.PI * 3 * n) / 10),
-        3,
-      );
+      expect(points[n][0]).toBeCloseTo(n / 10, 5);
+      expect(points[n][1]).toBeCloseTo(Math.cos((2 * Math.PI * 3 * n) / 10), 5);
     }
   });
 });

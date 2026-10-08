@@ -481,28 +481,27 @@ test('blocked storage does not prevent answering or opening a solution', async (
 test('code notation remains formatted in choices, feedback and self-assessment', async ({
   page,
 }) => {
-  await page.goto('/cadeiras/fp/funcoes/');
-  const choice = page.locator('#return-print');
+  await page.goto('/exemplo/exercise-help/');
+  const choice = page.getByRole('region', { name: 'Ajuda vazia', exact: true });
   await choice.locator(':scope > details > summary').click();
-  await expect(choice.locator('label code')).toHaveText('None');
-  await choice.getByLabel('A string "6"', { exact: true }).check();
+  await expect(choice.locator('label code')).toHaveText('4');
+  await choice.getByLabel('Cinco', { exact: true }).check();
   await choice.getByRole('button', { name: 'Verificar resposta' }).click();
-  await expect(choice.getByRole('status').locator('code')).toHaveText('print');
+  await expect(choice.getByRole('status').locator('code')).toHaveText('2 + 2');
   await expect(choice.getByRole('status')).not.toContainText('`');
-  await page.goto('/cadeiras/ct-iadp/ficheiros/');
-  const question = page.locator('#csv-separador');
+  const question = page.getByRole('region', {
+    name: 'Uma pista e autoavaliação',
+  });
   await question.locator(':scope > details > summary').click();
   await expect(question.locator('.exercise-prompt code')).toHaveText(
-    'split(",")',
+    '2 + 2 = 2 * 2',
   );
-  await question
-    .getByLabel('A tua resposta')
-    .fill('As aspas protegem a vírgula do campo.');
+  await question.getByLabel('A tua resposta').fill('As duas operações dão 4.');
   await question
     .getByRole('button', { name: 'Comparar com a solução' })
     .click();
   await expect(question.locator('.exercise-checklist code')).toHaveText([
-    'csv.reader',
-    'csv.DictReader',
+    '2 + 2',
+    '2 * 2',
   ]);
 });
