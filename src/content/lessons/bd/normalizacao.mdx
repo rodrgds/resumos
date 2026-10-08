@@ -7,26 +7,36 @@ practices:
   - bd/praticar-normalizacao
 ---
 
-Duas vendas do produto 11 guardam o nome em cada encomenda:
+Duas vendas do produto 11 guardam o seu nome atual em cada encomenda. Na coluna Venda, cada triplo indica, por esta ordem, a encomenda, o produto e a quantidade:
 
-| Encomenda | Nome copiado |
-| --------- | ------------ |
-| 100       | Rato         |
-| 102       | Rato         |
+| Venda        | Nome atual |
+| ------------ | ---------- |
+| (100, 11, 1) | Rato       |
+| (102, 11, 3) | Rato       |
 
-Estas linhas da loja repetem o nome do produto 11. Mudar «Rato» para «Rato sem fios» exige corrigir ambas. Se esta fosse a única tabela de produtos, apagar as duas vendas apagaria também o nome. A **normalização** usa dependências entre atributos para identificar estas anomalias e separar factos.
+Mudar «Rato» para «Rato sem fios» exige corrigir as duas linhas. Se esta fosse a única tabela onde guardamos produtos, apagar as duas vendas apagaria também o nome do produto 11.
 
-O preço atual e o preço acordado numa venda são factos diferentes. Mesmo que coincidam hoje, mudar o primeiro não deve reescrever o segundo.
+A **normalização** usa dependências entre atributos para identificar estas anomalias e separar factos. Podemos guardar o nome uma só vez, numa relação de produtos, e manter a quantidade de cada compra nas linhas da encomenda.
 
 ## Dependências funcionais
 
-Uma **dependência funcional**, abreviada DF ou FD nos slides, tem a forma $X\to Y$, onde $X$ e $Y$ são conjuntos de atributos. Em todas as instâncias válidas, se dois tuplos concordarem em $X$, têm de concordar em $Y$.
+Assumimos que cada produto tem um único nome atual. Assim, o produto 11 tem de se chamar Rato nas duas linhas, apesar de aparecer em encomendas diferentes. Escrevemos esta regra como:
 
-Em `Produto(id, nome, precoCentimos)`, `id → nome, precoCentimos` é uma regra do domínio. `nome → id` não é válida se nomes repetidos forem permitidos, porque uma amostra com três nomes diferentes não prova essa dependência. Uma amostra com dois produtos de nome igual e ids distintos pode refutá-la.
+$$
+\text{idProduto}\to\text{nomeProduto}.
+$$
 
-A dependência é **trivial** se $Y\subseteq X$. `id, nome → nome` não impõe uma regra nova. Uma dependência não trivial pode ter alguns atributos à direita que também estão à esquerda; esses atributos não contribuem para a restrição.
+Esta é uma **dependência funcional**, abreviada DF ou FD nos slides. Duas linhas com o mesmo idProduto têm de ter o mesmo nomeProduto. A coluna do produto pode repetir-se: o 11 aparece duas vezes na tabela. A dependência não torna o determinante único, nem obriga as linhas a concordar nos restantes atributos. As quantidades são 1 e 3, por isso `idProduto → qtd` é falsa já nestes dados.
 
-Uma DF não afirma que só existe um tuplo com esse $X$. Podem existir vários, desde que concordem em $Y$. `idEncomenda → idCliente` admite vários produtos na mesma encomenda.
+Em geral, $X\to Y$ significa que duas linhas iguais nos atributos de $X$ têm de ser iguais nos de $Y$. $X$ e $Y$ podem ser conjuntos de atributos. A regra deve valer em todas as instâncias válidas, incluindo dados futuros. A tabela ilustra a regra sobre o nome, mas a justificação vem da condição de um único nome atual por produto.
+
+A dependência inversa exige outra condição. Se produtos diferentes puderem chamar-se Rato, `nomeProduto → idProduto` não vale. Nomes distintos numa amostra não provam essa dependência; dois produtos de igual nome e ids diferentes refutam-na.
+
+## Dependências triviais
+
+`idProduto, nomeProduto → nomeProduto` é uma dependência **trivial**. O lado direito já está incluído no esquerdo: $Y\subseteq X$. Duas linhas iguais no produto e no nome têm necessariamente o mesmo nome, sem precisarmos de impor outra regra ao domínio.
+
+Em `idProduto → idProduto, nomeProduto`, a dependência completa não é trivial, mas só `idProduto → nomeProduto` acrescenta uma restrição. O atributo idProduto à direita pode ser retirado sem mudar o significado.
 
 ## Inferir dependências
 
@@ -38,7 +48,7 @@ Os axiomas de Armstrong permitem obter todas as DFs implicadas por um conjunto i
 
 A justaposição representa união de conjuntos, não multiplicação. Por exemplo, $AB$ significa $\{A,B\}$.
 
-Podemos separar e reunir atributos **à direita**: $A\to BC$ equivale a $A\to B$ e $A\to C$. Não podemos separar automaticamente a esquerda: $AB\to C$ não implica $A\to C$ nem $B\to C$. Na loja, o par encomenda/produto determina a quantidade; cada atributo isolado não a determina.
+Podemos separar e reunir atributos **à direita**: $A\to BC$ equivale a $A\to B$ e $A\to C$. Não podemos separar automaticamente a esquerda: $AB\to C$ não implica $A\to C$ nem $B\to C$. Na loja, assumimos uma única linha por par encomenda/produto, logo esse par determina a quantidade. As duas vendas da abertura mostram por que não podemos concluir que o produto sozinho a determina: o produto 11 tem quantidades diferentes. A quantidade também pode variar entre os produtos de uma mesma encomenda, por isso o id da encomenda sozinho não chega.
 
 ## Fecho de um conjunto de atributos
 
@@ -111,7 +121,7 @@ Precisamos de considerar as DFs implicadas, não apenas uma lista arbitrária de
 
 ## Dependência parcial e anomalias
 
-Imagina `Venda(idEncomenda, idProduto, nomeProduto, qtd)` com candidata `(idEncomenda, idProduto)` e `idProduto → nomeProduto`.
+Retomamos as duas vendas da abertura no esquema `Venda(idEncomenda, idProduto, nomeProduto, qtd)`. Admitimos uma linha por par encomenda/produto e que cada produto tem um único nome atual. O par `(idEncomenda, idProduto)` é candidato a chave: determina o nome e a quantidade, enquanto nenhum dos ids isolados determina a venda completa.
 
 Nos dados de abertura, `(100,11)` determina quantidade 1 e `(102,11)` determina quantidade 3. Já o produto 11 determina Rato nas duas linhas. O nome depende só de uma parte da candidata, violando 2FN. Cada compra volta a guardar o nome. Uma alteração exige várias atualizações; um produto ainda sem compras não tem um lugar independente; apagar a última compra apaga também a informação do nome.
 
@@ -131,6 +141,8 @@ As projeções separam as propriedades do produto das propriedades da compra:
 | 102         | 11        | 3   |
 
 O nome tem agora um único lugar para mudar. As quantidades continuam ligadas a cada encomenda. A página de [decomposição](/cadeiras/bd/decomposicao/) explica por que esta separação não inventa combinações ao reconstruir os dados.
+
+O preço exige a mesma atenção ao significado do atributo. O preço atual depende do produto; o preço acordado numa venda pertence à linha da encomenda. Mesmo que coincidam hoje, mudar o primeiro não deve reescrever o segundo. Uma coincidência de preços entre vendas também não prova `idProduto → precoPago`.
 
 ## Cobertura mínima
 

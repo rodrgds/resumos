@@ -1,11 +1,15 @@
 ---
 title: Praticar dependências e formas normais
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Fechos, formas normais e cobertura mínima, com adaptações dos materiais docentes e soluções justificadas.
 section: exercicios
 editorial:
   basedOn: 2025/26
   sources:
     - title: Michel Ferreira, Relational Design Theory II, exemplo de fechos reutilizado no Moodle de 2025/26
+      url: https://moodle2526.up.pt/course/view.php?id=3996
+    - title: Michel Ferreira, Relational Design Theory I, dependências do exemplo de fecho adaptadas para testar uma cobertura
+      url: https://moodle2526.up.pt/course/view.php?id=3996
+    - title: Michel Ferreira, Relational Design Theory IV, relação Bookings adaptada para comparar hipóteses do domínio
       url: https://moodle2526.up.pt/course/view.php?id=3996
 ---
 
@@ -13,7 +17,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="fecho-ab-cinco"
-  revision={1}
+  revision={2}
   title="Fechos, candidata e atributos obrigatórios"
   explanation="/cadeiras/bd/normalizacao/#fecho-de-um-conjunto-de-atributos"
   answer={{ kind: 'self', checklist: ["Calculei os fechos de AB e AF por passos.", "Distingui superchave de candidata.", "Provei que AF é a única candidata."] }}
@@ -25,14 +29,11 @@ Em R(A,B,C,D,E,F), temos AB → C, AD → E, B → D e AF → B. Calcula `(AB)+`
   </div>
 
   <div slot="hint">Um atributo que nunca aparece à direita não pode ser produzido pelo cálculo do fecho.</div>
-  <div slot="hint-more">A e F têm de estar em qualquer candidata. Verifica se juntos chegam a todos os atributos.</div>
   <div slot="solution">
 
 Partindo de AB, obtemos C por AB → C e D por B → D. Com AD obtemos E. O resultado é ABCDE; não chega a F, logo AB não é superchave.
 
 Partindo de AF, obtemos B por AF → B, C por AB → C, D por B → D e E por AD → E. O resultado é ABCDEF, logo AF é superchave. A e F nunca aparecem à direita: qualquer superchave tem de os conter. Como AF já chega, é a única candidata. Retirar qualquer um deles impede o fecho completo.
-
-O esquema e as DFs adaptam o exemplo dos slides docentes RDT II.
 
   </div>
   <div slot="mistakes">Não uses AF → B ao contrário para obter F. Contar os atributos do fecho não demonstra a minimalidade de uma candidata.</div>
@@ -40,72 +41,73 @@ O esquema e as DFs adaptam o exemplo dos slides docentes RDT II.
 
 <Exercise
   id="formas-c-primo"
-  revision={1}
-  title="3FN não implica BCNF"
+  revision={2}
+  title="Regras de exibição e formas normais"
   explanation="/cadeiras/bd/normalizacao/#classificar-uma-relação"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Encontrei AB e AC e provei minimalidade.',
-      'Usei a exceção de atributo primo da 3FN.',
-      'Mostrei por que C não é superchave.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ["Encontrei as candidatas nas duas hipóteses.", "Distingui 3FN de BCNF quando cidade é primo.", "Identifiquei a dependência parcial quando a segunda regra deixa de valer."] }}
 >
   <div>
-    R(A,B,C) tem AB → C e C → B. Encontra todas as candidatas e a forma normal
-    mais alta, assumindo 1FN.
+
+Exibicao(filme, cinema, cidade) guarda os cinemas onde cada filme está em exibição. Cada cinema pertence a uma cidade. Inicialmente, um filme só pode estar num cinema de cada cidade. As DFs dadas são `cinema → cidade` e `filme, cidade → cinema`, e não assumimos outras regras além das que se deduzem destas. A relação está em 1FN.
+
+Encontra todas as candidatas e a forma normal mais alta. Depois, a distribuidora permite o mesmo filme em dois cinemas da mesma cidade: a segunda DF deixa de valer, mas a primeira mantém-se. Volta a determinar as candidatas e a forma normal. Explica por que a conclusão muda sem acrescentar ou retirar atributos.
+
   </div>
-  <div slot="hint">
-    Calcula os fechos de AB e AC, depois os de cada atributo isolado.
-  </div>
-  <div slot="hint-more">
-    Ambas as candidatas incluem A. Verifica se B é primo antes de classificar C
-    → B.
-  </div>
+  <div slot="hint">O filme nunca aparece à direita. Experimenta completá-lo com cinema e com cidade nas duas hipóteses.</div>
   <div slot="solution">
-    AB+ = ABC e AC+ = ABC, enquanto A+ = A, B+ = B e C+ = BC. As candidatas são
-    AB e AC, pois A não se obtém de nenhuma DF e essas são as extensões mínimas
-    que chegam ao esquema completo. Todos os atributos são primos. C → B não
-    viola 3FN porque B é primo, mas viola BCNF porque C não é superchave. A
-    forma mais alta é 3FN.
-  </div>
-  <div slot="mistakes">
-    Primo significa pertencer a alguma candidata. Considerar só a primária AB
-    faria perder a justificação correta para C.
+
+Com as duas regras, `(filme, cinema)+` obtém cidade e `(filme, cidade)+` obtém cinema. Filme sozinho não obtém os restantes atributos; cinema e cidade não permitem obter filme. As candidatas são, portanto, filme/cinema e filme/cidade. Todos os atributos são primos.
+
+`cinema → cidade` não viola 3FN porque cidade pertence a uma candidata. Viola BCNF: o fecho de cinema é apenas cinema/cidade, sem filme. A outra DF tem uma candidata à esquerda. A relação está em 3FN, mas não em BCNF.
+
+Quando resta apenas `cinema → cidade`, filme/cidade já não determina cinema. A única candidata é filme/cinema, porque ambos os atributos têm de estar na chave e juntos obtêm cidade. Cidade deixa de ser primo. Depende de cinema, que é parte própria da candidata composta: há uma dependência parcial de um atributo não primo. Falha 2FN, logo a forma mais alta é 1FN.
+
+As formas normais dependem das regras do domínio e das candidatas que delas resultam, não apenas dos nomes das colunas.
+
   </div>
 </Exercise>
 
 <Exercise
   id="cobertura-minima-redundancia"
-  title="Retirar uma seta sem mudar o significado"
+  revision={2}
+  title="Redundância e atributos dispensáveis"
   explanation="/cadeiras/bd/normalizacao/#cobertura-mínima"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Apresentei um conjunto equivalente mínimo.',
-      'Justifiquei cada redução com dependências.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ["Separei as direitas e retirei AB → E com uma prova de fecho.", "Rejeitei a redução de BC → AD para C → AD.", "Verifiquei equivalência e minimalidade do conjunto final."] }}
 >
   <div>
-    Obtém uma cobertura mínima de A → BC, B → C e AB → D. Justifica as reduções.
+
+Em R(A,B,C,D,E,F), são dadas `AB → C`, `BC → AD`, `D → E`, `CF → B` e `AB → E`.
+
+Uma colega propõe retirar `AB → E` e substituir `BC → AD` por `C → AD`, argumentando que C permite obter B por `CF → B`. Decide separadamente se cada alteração é válida e obtém uma cobertura mínima das DFs originais. Justifica as remoções com fechos calculados no conjunto apropriado.
+
   </div>
-  <div slot="hint">Separa as direitas antes de procurar redundância.</div>
-  <div slot="hint-more">
-    A determina B; por isso pode usar AB → D. A → C também segue da
-    transitividade.
-  </div>
+  <div slot="hint">Uma DF só pode ser aplicada quando tens todos os atributos à esquerda. Ao testar redundância, retira primeiro a DF que estás a avaliar.</div>
   <div slot="solution">
-    Uma cobertura mínima é A → B, B → C e A → D. Primeiro separamos A → BC. Em
-    AB → D, B é dispensável porque A permite obter B e depois D. A → C é
-    redundante por A → B e B → C, por isso retiramo-la. Nenhuma das três setas
-    finais se obtém das outras. As direitas têm um atributo e as esquerdas não
-    têm atributos dispensáveis.
-  </div>
-  <div slot="mistakes">
-    Não separes AB → D em A → D e B → D sem prova. Para retirar uma DF inteira,
-    calcula o fecho sem ela.
+
+Sem `AB → E`, começamos em AB, obtemos C por `AB → C`, D por `BC → AD` e E por `D → E`. Logo, a primeira remoção é válida.
+
+A segunda alteração não é válida: `C+ = C` no conjunto original. `CF → B` precisa também de F, que não está no fecho. Não podemos obter A nem D só a partir de C. Substituir a esquerda acrescentaria regras que não eram implicadas pelo conjunto original.
+
+Depois de separar `BC → AD`, uma cobertura mínima é:
+
+- `AB → C`;
+- `BC → A`;
+- `BC → D`;
+- `D → E`;
+- `CF → B`.
+
+Nas esquerdas compostas, os atributos isolados A, B, C e F têm fechos de um só atributo, por isso nenhum deles permite dispensar o outro. Para conferir a redundância das DFs inteiras, retiramos uma de cada vez:
+
+| DF retirada | Fecho | Falta |
+| ----------- | ----- | ----- |
+| AB → C      | AB    | C     |
+| BC → A      | BCDE  | A     |
+| BC → D      | ABC   | D     |
+| D → E       | D     | E     |
+| CF → B      | CF    | B     |
+
+Nenhuma seta final se obtém das restantes. As direitas têm um só atributo, as esquerdas não têm atributos dispensáveis e a única DF retirada já foi demonstrada a partir das que ficaram.
+
   </div>
 </Exercise>
 
@@ -127,15 +129,11 @@ O esquema e as DFs adaptam o exemplo dos slides docentes RDT II.
     normal mais alta, assumindo 1FN.
   </div>
   <div slot="hint">Que atributos nunca aparecem à direita?</div>
-  <div slot="hint-more">A determina o esquema; a chave tem um só atributo.</div>
   <div slot="solution">
     A+ = ABCD, por isso A é superchave. A nunca aparece à direita, logo todas as
     chaves o incluem, e A sozinho chega: é a única candidata. B, C e D são não
     primos. A relação está em 2FN porque a chave tem um só atributo e não há
     dependências parciais. Falha 3FN por B → C: B não é superchave e C não é
     primo. A forma mais alta é 2FN.
-  </div>
-  <div slot="mistakes">
-    Não declares B candidata por B determinar C e D. Sem A, B nunca alcança A.
   </div>
 </Exercise>
