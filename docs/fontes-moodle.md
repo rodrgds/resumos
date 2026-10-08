@@ -1,8 +1,27 @@
 # Fontes dos Moodles
 
-Recolha autenticada de 1 de outubro de 2026 dos Moodles de 2024/25, 2025/26 e 2026/27, pelo Brave e pelo serviço móvel autorizado localmente. O [inventário público](fontes-moodle.json) regista origens, estados, tamanhos e SHA-256 sem nomes de estudantes, respostas, notas ou submissões. Os inventários completos de cada ano ficam em `/_data/references/`, ignorados pelo Git. Tokens de acesso ficam apenas neste computador.
+Referências de 2026/27 renovadas em 8 de outubro de 2026 com o cliente do moodle-dl existente. A API confirmou o ano letivo dos seis cursos. A recolha inicial de 1 de outubro dos três anos mantém-se no [inventário público](fontes-moodle.json). Ficheiros, páginas e inventários completos ficam privados em `/_data/`; tokens permanecem apenas neste computador.
 
-## Materiais de 2026/27 guardados
+## Renovação de 8 de outubro de 2026
+
+| Curso      | Ligações verificadas | Novos | Alterados | Duplicados | Sem alteração | Indisponíveis |
+| ---------- | -------------------: | ----: | --------: | ---------: | ------------: | ------------: |
+| FSI        |                    7 |     3 |         0 |          0 |             4 |             0 |
+| IPC        |                   11 |     4 |         0 |          1 |             6 |             0 |
+| LBAW       |                    5 |     1 |         1 |          0 |             3 |             0 |
+| PFL        |                   10 |     0 |         0 |          0 |            10 |             0 |
+| RC         |                   21 |     4 |         0 |          1 |            16 |             0 |
+| CT, Python |                  115 |     2 |         0 |          0 |           113 |             0 |
+
+Foram feitos 170 pedidos, correspondentes a 169 ligações de ficheiros normalizadas e 155 hashes distintos. Há 14 PDFs novos e um PDF alterado. Duas ligações têm bytes já guardados, incluindo `penguin.gif` no ZIP do laboratório de RC. Os 116 PDFs ligados têm cabeçalho válido; os 47 ZIPs ligados passaram o CRC, com 98 membros lidos e sujeitos a SHA-256. Estes números contam ligações, incluindo cópias entre módulos, não fontes independentes.
+
+Foram também renovadas 23 páginas de ensino, três delas novas. Os tamanhos declarados foram comparados quando disponíveis, e os hashes foram confirmados nos ficheiros locais. A versão anterior da introdução de LBAW foi preservada. O JSON público regista URL sem credenciais, módulo, estado, tamanho, hash e delta por ficheiro.
+
+As 34 lições de Python mantêm os mesmos IDs; as 111 ligações de ficheiros já conhecidas foram revalidadas. A descoberta de novas ligações internas e a renovação das 47 imagens de slides ficaram por concluir, pois o percurso de lições do moodle-dl consulta tentativas e notas. Não foi usado. Ligações externas foram inventariadas, incluindo três modelos Canva novos em IPC, sem nova aquisição nesses serviços. Não foram consultados fóruns, alunos, notas ou entregas nem iniciados questionários.
+
+Inventário da renovação: `/_data/editorial/revisao-2026-10-08/moodle-api/verified-downloads.json`. Relatório e caminhos por curso: `/_data/editorial/revisao-2026-10-08/moodle-refresh.md`. Novos originais e páginas ficam em `/_data/<curso>/moodle-2026-27/refresh-2026-10-08/`.
+
+## Coleção de 2026/27 em 1 de outubro
 
 | Curso                                          | PDFs soltos | ZIPs | Imagens de slides | Páginas de ensino |
 | ---------------------------------------------- | ----------: | ---: | ----------------: | ----------------: |
@@ -21,7 +40,7 @@ As páginas locais registam o plano e as ligações visíveis, sem reproduzir f�
 
 [Moodle](https://moodle2627.up.pt/course/view.php?id=5341), [SIGARRA 2026/2027](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=590452). Coleção local privada: `/_data/ct-iadp/moodle-2026-27/`.
 
-Foram observados 34 módulos: Python 00 a 14, Jupyter PD00, seis bibliotecas de PD01 e pandas PD02 a PD13. As 111 ligações únicas para ficheiros foram guardadas. O JSON público identifica o estado por recurso e módulo; o inventário privado conserva o URL exato, nome original, SHA-256 e aliases. FAQ e calendário docente foram exportados e consultados.
+Foram observados 34 módulos: Python 00 a 14, Jupyter PD00, seis bibliotecas de PD01 e pandas PD02 a PD13. As 111 ligações únicas para ficheiros foram guardadas e revalidadas em 8 de outubro. Dois novos PDFs, Como utilizar o Jupyter Notebook e All slides, foram também guardados. O JSON público identifica o estado por recurso e módulo; o inventário privado conserva o URL exato, nome original, SHA-256 e aliases. FAQ e calendário docente foram exportados e consultados.
 
 - Quiz global, quiz do supermercado e exame final com condições de acesso; nenhuma tentativa iniciada.
 - Os vídeos Panopto foram identificados pelas ligações das lições, sem descarregar gravações.
@@ -31,38 +50,38 @@ Foram observados 34 módulos: Python 00 a 14, Jupyter PD00, seis bibliotecas de 
 
 [Moodle](https://moodle2627.up.pt/course/view.php?id=4735), [SIGARRA 2026/2027](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586999). Coleção local privada: `/_data/fsi/moodle-2026-27/`.
 
-- Apenas quatro PDFs publicados na data da recolha; os planos descrevem matéria posterior ainda sem slides.
+- Seis PDFs de slides e o novo guião da semana 4 disponíveis em 8 de outubro; os sete PDFs foram guardados e verificados.
 - Provas e soluções atuais não publicadas entre os recursos visíveis.
 
 ## Interação Pessoa Computador
 
 [Moodle](https://moodle2627.up.pt/course/view.php?id=5159). Coleção local privada: `/_data/ipc/moodle-2026-27/`.
 
-- Apenas as três primeiras aulas teóricas e duas aulas práticas publicadas, além de apresentação e projeto.
+- Quatro aulas teóricas e três práticas disponíveis em 8 de outubro, além de apresentação, projeto, guião de entrevista e modelo de Journey Map. Os onze PDFs foram verificados.
 - Provas e soluções atuais não publicadas entre os recursos visíveis.
 
 ## Laboratório de Bases de Dados e Aplicações Web
 
 [Moodle](https://moodle2627.up.pt/course/view.php?id=4222). Coleção local privada: `/_data/lbaw/moodle-2026-27/`.
 
-- Quatro conjuntos de slides publicados; o plano atual inclui tópicos posteriores ainda sem slides.
+- Cinco PDFs de slides disponíveis em 8 de outubro, incluindo índices. A introdução foi substituída por bytes diferentes; ambas as versões ficam privadas. Lecture #4 e Lab #3 acrescentam duas páginas de ensino.
 - Teste individual e respetivas soluções ainda não publicados.
 
 ## Programação Funcional e em Lógica
 
 [Moodle](https://moodle2627.up.pt/course/view.php?id=4363). Coleção local privada: `/_data/pfl/moodle-2026-27/`.
 
-- Os dez PDFs disponíveis cobrem a parte funcional inicial; materiais posteriores e parte lógica ainda não publicados.
+- Os dez PDFs da parte funcional foram revalidados em 8 de outubro, sem mudança de hash. Materiais posteriores e parte lógica não aparecem entre os recursos visíveis.
 - Provas e soluções atuais não publicadas entre os recursos visíveis.
 
 ## Redes de Computadores
 
 [Moodle](https://moodle2627.up.pt/course/view.php?id=4941). Coleção local privada: `/_data/rc/moodle-2026-27/`.
 
-O ficheiro `penguin.gif`, recurso 33734, já está no ZIP oficial do laboratório e foi verificado por tamanho e SHA-256. Não foi necessário repetir o download separado.
+O ficheiro `penguin.gif`, recurso 33734, já está no ZIP oficial do laboratório e foi verificado por tamanho e SHA-256. O download separado foi agora verificado de novo; os bytes continuam iguais aos do membro do ZIP.
 
 - Os exemplos de exame são de 2020 e 2022; não são provas da avaliação de 2026/2027.
-- Slides posteriores aos três primeiros conjuntos ainda não publicados.
+- Quatro conjuntos de slides disponíveis em 8 de outubro, incluindo Delay-Models, além de problemas em português e inglês e resolução docente dos problemas 1, 5 e 9.
 - Questionários não iniciados; formulários de entrega e classificações excluídos.
 
 ## Materiais de 2024/25 guardados
