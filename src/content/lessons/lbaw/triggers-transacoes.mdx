@@ -20,7 +20,6 @@ import Mermaid from '../../../components/Mermaid.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import corrida from '../../lbaw/concorrencia.mmd?raw';
-import coordenada from '../../lbaw/compra-coordenada.mmd?raw';
 import atomicidade from '../../lbaw/transacao.sql?raw';
 import auditarPreco from '../../lbaw/auditar-preco.sql?raw';
 import rotinas from '../../lbaw/rotinas.sql?raw';
@@ -92,10 +91,14 @@ RETURNING id, livres;
 
 A primeira compra bloqueia e altera a linha. A segunda espera. Se a primeira confirmar, o PostgreSQL volta a avaliar a condição sobre a versão atual da linha: livres já é zero, logo a segunda não altera nenhuma linha. Se a primeira anular, a segunda pode reservar esse lugar. O `RETURNING` permite distinguir esses resultados.
 
-<Mermaid
-  source={coordenada}
-  alt="A reserva o último lugar e mantém o bloqueio. B espera. Após A confirmar contador e bilhete, B reavalia livres maior que zero, altera zero linhas e não cria um bilhete."
-/>
+| Compra A                                    | Compra B                                                                    |
+| ------------------------------------------- | --------------------------------------------------------------------------- |
+| Reserva o último lugar e mantém o bloqueio. | Ainda não tentou reservar.                                                  |
+| Continua com o bloqueio.                    | Tenta reservar e fica à espera.                                             |
+| Insere o bilhete e confirma a transação.    | Continua à espera da decisão de A.                                          |
+| Liberta o bloqueio.                         | Reavalia a condição: já não há lugares. Não altera linhas nem cria bilhete. |
+
+O tempo avança de cima para baixo. A espera impede B de tomar uma decisão com o contador anterior. Só depois da confirmação de A é que B conclui a sua tentativa.
 
 O esquema pode ter `CHECK (livres BETWEEN 0 AND lotacao)`, mas o contador só coincide com os bilhetes se **todas** as compras, cancelamentos e alterações de lotação seguirem o mesmo protocolo. Criar um bilhete por outro caminho sem diminuir livres quebra a regra. A inserção e o contador pertencem à mesma transação; alterações diretas exigem permissões limitadas ou uma operação central na base de dados.
 
