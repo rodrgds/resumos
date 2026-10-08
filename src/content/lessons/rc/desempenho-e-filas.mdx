@@ -7,19 +7,24 @@ practices:
   - rc/praticar-desempenho
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
+    - title: Delay Models, slides disponibilizados no Moodle 2026/27
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33682
+    - title: Problemas docentes, filas e dimensionamento
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33691
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
     - title: Problemas interativos de Kurose e Ross
       url: https://gaia.cs.umass.edu/kurose_ross/interactive/
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Filas from '../../rc/Filas.astro';
 
-Uma ligação rápida pode responder devagar porque os pacotes esperam. Esta página separa transmissão, propagação e espera, e usa a lei de Little e filas M/M/1 e M/D/1 para calcular atrasos.
-
-Uma ligação rápida pode responder devagar. O **débito**, ou seja, a quantidade de bits por segundo que a ligação coloca no cabo, limita a quantidade por segundo, e a **latência**, ou seja, o tempo até à resposta, soma transmissão, propagação, processamento e espera. Separa primeiro estas parcelas.
+Um pacote de 1500 bytes precisa de 1,2 ms para entrar numa ligação de 10 Mbit/s. Pode esperar muito mais do que isso pela sua vez. O débito mede bits por segundo; o atraso mede quanto tempo o pacote demora. Aumentar o primeiro não elimina propagação nem espera.
 
 ## Atraso de um salto
 
@@ -49,9 +54,17 @@ $\lambda$ é a taxa efetiva de entradas e $T$ o tempo médio no sistema. É uma 
 
 Se chegam 200 pacotes/s e cada pacote passa em média 30 ms no sistema, $N=200\times0{,}03=6$ pacotes. Se a fila admite perdas, a taxa admitida pode diferir da taxa oferecida.
 
-## Chegadas Poisson em poucas linhas
+<span id="chegadas-poisson-em-poucas-linhas"></span>
 
-Antes de aplicares fórmulas de filas, fixa o modelo de chegadas. Num processo Poisson de taxa $\lambda$, o número de chegadas num intervalo $t$ segue $P(A(t)=k)=e^{-\lambda t}(\lambda t)^k/k!$. Intervalos sem sobreposição são independentes e o tempo entre chegadas é exponencial de média $1/\lambda$. A notação de Kendall resume o modelo: M/M/1 indica chegadas Poisson, serviço exponencial e um servidor; M/D/1 indica serviço constante; M/G/1 indica serviço geral. A secção seguinte usa estas hipóteses; os pormenores de capacidade finita e serviço geral estão na página de modelos.
+## Chegadas Poisson
+
+Um processo Poisson de taxa $\lambda$ modela chegadas aleatórias. O número $A(t)$ de chegadas num intervalo de duração $t$ satisfaz:
+
+$$P(A(t)=k)=e^{-\lambda t}\frac{(\lambda t)^k}{k!}.$$
+
+A taxa $\lambda=20$ pacotes/s não significa que chegue um pacote exatamente a cada 50 ms. Num intervalo de 0,1 s, a contagem média é $\lambda t=2$, mas a probabilidade de zero chegadas é $e^{-2}\approx0,1353$. A probabilidade de pelo menos uma é $1-e^{-2}\approx0,8647$.
+
+As contagens em intervalos sem sobreposição são independentes. Os tempos entre chegadas são exponenciais, de média $1/\lambda$. Uma sequência regularmente espaçada com a mesma taxa não tem essas propriedades. A notação de Kendall distingue o processo de chegada, o tempo de serviço e o número de servidores; as letras do modelo seguinte fixam hipóteses diferentes para chegada e serviço.
 
 ## M/M/1: hipóteses e fórmulas
 
@@ -66,6 +79,16 @@ $T$ e $N$ incluem o serviço; $T_q$ e $N_q$ contam só a fila. Assim, $T=T_q+1/\
 
 Se multiplicares $\lambda$ e $\mu$ por dez, a carga e $N$ mantêm-se, mas os tempos dividem-se por dez. Se aumentares só $\lambda$ até $\mu$, as médias divergem. Uma fila real finita perde pacotes em vez de guardar uma quantidade infinita.
 
+### Equilíbrio dos estados
+
+O estado $n$ conta pacotes no sistema, incluindo serviço. Uma chegada faz passar de $n$ a $n+1$ à taxa $\lambda$; uma conclusão faz passar de $n+1$ a $n$ à taxa $\mu$. Em equilíbrio:
+
+$$\lambda p_n=\mu p_{n+1}\quad\Rightarrow\quad p_{n+1}=\rho p_n.$$
+
+Assim $p_n=\rho^n p_0$. A normalização exige $\sum_{n=0}^{\infty}p_n=p_0/(1-\rho)=1$, logo $p_0=1-\rho$. É aqui que precisamos de $\rho<1$: sem essa condição, a soma geométrica não pode dar uma distribuição estacionária.
+
+No exemplo de carga 0,8, $p_0=0,2$ e $p_1=0,16$. O servidor pode estar livre 20% do tempo e ainda haver espera: chegadas aleatórias não se distribuem uniformemente pelos instantes livres. Numa D/D/1 com serviço constante e chegadas regularmente espaçadas por um intervalo maior que o serviço, um sistema inicialmente vazio não acumula espera.
+
 ## M/D/1 não é M/M/1
 
 Com chegadas Poisson, serviço **constante**, um servidor e fila FIFO ilimitada sem preempção, usa M/D/1. As médias exigem $\rho<1$:
@@ -74,26 +97,23 @@ $$T_q=\frac{\rho}{2\mu(1-\rho)},\qquad T=T_q+\frac1\mu.$$
 
 Nos números anteriores, $T_q=16$ ms e $T=24$ ms. A mesma carga não determina o mesmo atraso: a variabilidade do serviço conta. Para M/G/1 com a mesma disciplina FIFO, serviços independentes e identicamente distribuídos, independentes das chegadas, a fórmula de Pollaczek-Khinchine usa o segundo momento finito do serviço, $T_q=\lambda E[S^2]/(2(1-\rho))$. Não é uma fórmula universal para qualquer disciplina de fila.
 
+## Multiplexagem estatística e capacidade reservada
+
+Retoma os pacotes de 1000 bytes numa ligação de 1 Mbit/s, agora com duas fontes Poisson independentes de 40 pacotes/s cada e comprimentos exponenciais independentes. Juntar os fluxos dá $\lambda=80$ pacotes/s. A ligação comum serve a $\mu=125$ pacotes/s.
+
+Se reservarmos metade da capacidade para cada fonte, cada fila recebe 40 pacotes/s e serve a 62,5 pacotes/s. A carga é igual nas duas opções, $\rho=0,64$, mas os tempos de serviço não são iguais:
+
+| Organização                              | Serviço médio | Tempo médio no sistema |
+| ---------------------------------------- | ------------- | ---------------------- |
+| Fila comum, capacidade inteira           | 8 ms          | $1/(125-80)=22,22$ ms  |
+| Uma fila por fonte, metade da capacidade | 16 ms         | $1/(62,5-40)=44,44$ ms |
+
+Quando uma fonte fica sem dados, a fila comum permite à outra aproveitar toda a ligação. A reserva mantém capacidade indisponível para a outra fonte mesmo quando não é usada. Esta comparação corresponde ao modelo de partilha dos slides; a conta de TDM trata a capacidade atribuída como serviço a débito reduzido, sem modelar separadamente a fase das ranhuras.
+
 ## Experimentar a carga
 
-:::tip[Ideia-chave]
-Antes de aplicares uma fórmula, escreve o modelo, confirma $\rho<1$ e decide se o pedido inclui serviço, porque isso evita mais erros do que decorar $1/(\mu-\lambda)$.
-:::
-
-A simulação abaixo calcula **médias teóricas**, não gera tráfego nem prevê uma rede concreta. Assume $\mu=100$ pacotes/s e permite mudar $\lambda$. Observa a diferença entre tempo de serviço e tempo de fila.
+O gráfico calcula **médias teóricas**. Mantém o exemplo de $\mu=125$ pacotes/s, serviço médio de 8 ms, e permite mudar a carga. O marcador começa em 80%. Compara a espera M/M/1 e M/D/1 na mesma carga; os valores de sistema somam também os 8 ms de serviço.
 
 <Filas />
 
-<CodePlayground
-  language="python"
-  title="Conferir as médias e a lei de Little"
-  code={`lam, mu = 100, 125
-rho = lam / mu
-T = 1 / (mu - lam)
-Tq = T - 1 / mu
-print(f"Carga: {rho:.2f}")
-print(f"Sistema: {T*1000:.1f} ms; fila: {Tq*1000:.1f} ms")
-print(f"N: {lam*T:.1f}; Nq: {lam*Tq:.1f}")`}
-/>
-
-Antes de aplicar uma fórmula, escreve o modelo, verifica a estabilidade e identifica se o resultado pedido inclui o serviço.
+Aproximar $\rho$ de 1 aumenta muito a espera: a 90% de carga, M/M/1 dá 72 ms em fila; a 99%, dá 792 ms. Os 8 ms de serviço não mudam. A folga média de capacidade não impede chegadas próximas de acumularem pacotes.

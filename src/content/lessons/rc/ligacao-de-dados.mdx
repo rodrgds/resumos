@@ -7,7 +7,15 @@ practices:
   - rc/praticar-ligacao
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
+    - title: Lab 1, especificação e API 2026/2027
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33719
+    - title: Lab 1, testes funcionais da demonstração
+      url: https://moodle2627.up.pt/mod/page/view.php?id=33741
     - title: Ligação de dados, slides no Moodle atual
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33681
     - title: Programa RC, SIGARRA 2026/27
@@ -16,17 +24,16 @@ editorial:
       url: https://www.rfc-editor.org/rfc/rfc1662.html
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import JanelaArq from '../../rc/JanelaArq.astro';
 import CrcRegistos from '../../rc/CrcRegistos.astro';
 import stopAndWait from '../../rc/stop-and-wait.dot?raw';
 
-Dois aparelhos vizinhos trocam tramas curtas e pedem de novo o que chega mal. Esta página mostra como delimitar cada trama, verificar erros e recuperar perdas com janelas e retransmissões.
+Uma trama transporta um pacote entre equipamentos vizinhos. O recetor precisa de identificar onde começa e acaba e de verificar se deteta erros. Ethernet descarta tramas com erros detetados; outros protocolos acrescentam confirmações, **ACK**, e recuperação por retransmissão, **ARQ**. Delimitar, detetar e recuperar são operações diferentes.
 
-Dois aparelhos vizinhos trocam mensagens curtas por um cabo ou por rádio. A cada mensagem dessas chamamos **trama**, e ela precisa de limites claros e de verificação de erros. A **camada de ligação** é a parte da rede que trata dessa conversa entre vizinhos: delimita cada trama e verifica erros. Alguns protocolos, ou seja, regras de formato e resposta, acrescentam confirmações e retransmissões: pedir de novo o que chegou mal chama-se **ARQ**, e cada confirmação chama-se **ACK**. A Ethernet, a tecnologia comum das redes locais com fios, deteta erros mas não faz essa retransmissão.
+<span id="delimitar-sem-confundir-dados-com-controlo"></span>
 
-## Delimitar sem confundir dados com controlo
+## Delimitação e stuffing
 
 Uma trama pode indicar comprimento, usar delimitadores especiais ou assinalar limites na codificação física. Com flag de início e fim, os dados nunca podem parecer flags.
 
@@ -63,24 +70,6 @@ Um circuito pode fazer a mesma divisão enquanto os bits chegam. Cada **registo*
 Na geração, entram a mensagem e três zeros. No fim, os registos contêm `001`. Na verificação, entra a palavra recebida completa, mensagem seguida do CRC, sem acrescentar zeros. Altera um bit da trama e acompanha o resto. O circuito começa sempre a zero; esta demo mostra a divisão dos slides, sem as convenções adicionais de CRC usadas por protocolos concretos.
 
 <CrcRegistos />
-
-O código repete a divisão e verifica uma trama com um bit alterado:
-
-<CodePlayground language="python" title="Gerar e verificar um CRC" code={`def resto(bits, gerador):
-    valor = int(bits, 2)
-    g = int(gerador, 2)
-    while valor.bit_length() >= g.bit_length():
-        valor ^= g << (valor.bit_length() - g.bit_length())
-    return valor
-
-dados, gerador = "1101", "1011"
-r = len(gerador) - 1
-crc = format(resto(dados + "0" \* r, gerador), f"0{r}b")
-trama = dados + crc
-print("CRC:", crc, "Trama:", trama)
-print("Resto recebido:", resto(trama, gerador))
-corrompida = format(int(trama, 2) ^ 4, f"0{len(trama)}b")
-print("Com um erro:", resto(corrompida, gerador))`} />
 
 **Resto zero não prova ausência de erro.** Um erro múltiplo do gerador passa despercebido. Uma **rajada** vai do primeiro ao último bit alterado, incluindo bits corretos intermédios. Um CRC de grau $r$ com termo constante 1 deteta rajadas até $r$; outras garantias dependem do polinómio e do comprimento. A aproximação $2^{-r}$ exige um modelo de erros adequado.
 
@@ -125,13 +114,16 @@ Uma janela de $W$ tramas permite várias em trânsito. Sob estas mesmas hipótes
 | Memória no recetor        | Menor                                  | Maior, reordena antes de entregar |
 | Limite usual com $m$ bits | $W\le2^m-1$                            | $W\le2^{m-1}$ para janelas iguais |
 
-:::tip[Ideia-chave]
-Com $m$ bits, limita Go-Back-N a $2^m-1$ e Selective Repeat a $2^{m-1}$, porque a numeração tem de distinguir tramas novas de duplicados.
-:::
-
 **Traço.** O emissor envia 0, 1, 2 e 3. A trama 1 perde-se. Em Go-Back-N, o recetor entrega 0 e descarta 2 e 3. O emissor retransmite 1, 2 e 3 quando o protocolo o determinar. Em Selective Repeat, o recetor guarda 2 e 3 e, ao chegar 1, pode entregar 1, 2 e 3 por ordem.
 
-Os limites de janela evitam confundir uma trama antiga com uma nova após a volta da numeração. Com dois bits, a numeração tem quatro valores; uma janela Selective Repeat igual nas duas pontas não deve exceder dois. Com janela três, uma repetição antiga de 0 chegaria com a nova ronda de 0 ainda ambígua; com janela dois, há sempre um número livre que separa passado e presente. É uma restrição do protocolo e da ambiguidade de duplicados, não do tamanho de memória disponível.
+Com dois bits, os números são 0, 1, 2 e 3. Considera Selective Repeat com janela três. O emissor envia 0, 1 e 2; o recetor entrega-os e avança, mas todas as confirmações se perdem.
+
+| Ponta   | Janela após a perda dos ACKs | Estado                                              |
+| ------- | ---------------------------- | --------------------------------------------------- |
+| Emissor | 0, 1, 2                      | Ainda espera confirmação, pode repetir 0            |
+| Recetor | 3, 0, 1                      | Já entregou 0, 1 e 2, aceita números da janela nova |
+
+Uma repetição de 0 pertence à janela atual do recetor e pode parecer dados novos. O emissor **não avançou**; foi o recetor que avançou antes de as confirmações chegarem. Com janela dois, depois de entregar 0 e 1, o recetor espera 2 e 3, que não se sobrepõem à janela antiga. A condição $2W\le2^m$ separa as duas janelas. Pressupõe ainda que tramas antigas não sobrevivem indefinidamente a várias voltas da numeração.
 
 ## Resolver traços
 
@@ -184,7 +176,7 @@ Dados: $R=4$ Mbit/s, $L=4000$ bits de dados por trama, propagação num sentido 
 
 Agora compara duas codificações corretoras **FEC**. Acrescentam redundância para corrigir certos erros sem pedir outra transmissão. Uma acrescenta 10% de bits e deixa FER 0,08. Outra acrescenta 30% e deixa FER 0,03. Estas FER são dados do problema depois da correção. Mantém a janela 32 e os 4000 bits úteis.
 
-:::details[Ver comparação das codificações]
+### Débito útil com FEC
 
 | Codificação     | Bits transmitidos | $t_f$  | Utilização $U$ | Fração útil | Débito útil     |
 | --------------- | ----------------- | ------ | -------------- | ----------- | --------------- |
@@ -192,9 +184,7 @@ Agora compara duas codificações corretoras **FEC**. Acrescentam redundância p
 | Mais 10%        | 4400              | 1,1 ms | 0,320317       | $4000/4400$ | 1,164787 Mbit/s |
 | Mais 30%        | 5200              | 1,3 ms | 0,398342       | $4000/5200$ | 1,225666 Mbit/s |
 
-Em cada linha, recalcula $a$ com o novo tempo e usa $D_{\text{útil}}=RU\times L_{dados}/L_{transmitido}$. A redundância ocupa a ligação e aumenta cada trama. A segunda codificação ganha nestes dados, por isso não é regra universal.
-
-:::
+Em cada linha, recalcula $a$ com o novo tempo e usa $D_{\text{útil}}=RU\times L_{dados}/L_{transmitido}$. A redundância ocupa a ligação e aumenta cada trama. A segunda codificação ganha nestes dados; com outras FER residuais, a ordem pode mudar.
 
 Se uma trama tem FER $p_e$ e são permitidas no máximo duas tentativas independentes, a probabilidade de entrega é $1-p_e^2$. Isto mede sucesso até ao limite, não utilização nem débito. «Uma retransmissão» permite duas tentativas, a original e a repetição.
 
@@ -202,9 +192,27 @@ Se uma trama tem FER $p_e$ e são permitidas no máximo duas tentativas independ
 
 O CRC da teoria divide por XOR e deteta erros. O Lab 1 atual usa outro mecanismo, o BCC: BCC1 é `A XOR C` sobre endereço e controlo, BCC2 é o XOR de todos os bytes de dados, e o recetor confirma a igualdade.
 
-O byte stuffing da porta série escapa `7E` como `7D 5E` e `7D` como `7D 5D`, calculado depois do BCC. A configuração atual usa leitura bloqueante com `VMIN=1` e `VTIME=0`, sem `O_NONBLOCK`.
+O byte stuffing da porta série escapa `7E` como `7D 5E` e `7D` como `7D 5D`, calculado depois do BCC. O código-base abre a porta com `O_NONBLOCK` durante a configuração e depois retira essa flag. A leitura passa a bloqueante, com `VMIN=1` e `VTIME=0`; não existe um timeout de leitura de 0,1 s nessa configuração.
 
-A API atual é `llOpenTx`, `llOpenRx`, `llSend`, `llReceive`, `llCloseTx` e `llCloseRx`; a API antiga `llopen`, `llwrite`, `llread` e `llclose` pertence a documentos de 2024/2025 e não deve ser usada. O relatório de eficiência arquivado indica 2025/2026 e também não descreve a edição atual.
+A API atual é `llOpenTx`, `llOpenRx`, `llSend`, `llReceive`, `llCloseTx` e `llCloseRx`; a API `llopen`, `llwrite`, `llread` e `llclose` aparece num documento complementar com outra interface, não no código-base de 2026/27. O relatório de eficiência arquivado indica 2025/2026 e também não descreve a edição atual.
+
+### Estado da receção no Lab 1
+
+Para abrir a ligação, uma SET do emissor usa os bytes `7E 03 03 00 7E`: flag, endereço, controlo, BCC1=`03 XOR 03`, flag. A UA correspondente usa `7E 03 07 04 7E`. O recetor não deve procurar apenas os cinco bytes numa leitura: a biblioteca lê byte a byte e pode receber flags repetidas ou uma trama incompleta.
+
+| Byte aceite | Estado acumulado     | Próximo campo esperado |
+| ----------- | -------------------- | ---------------------- |
+| `7E`        | Início reconhecido   | Endereço               |
+| `03`        | Endereço guardado    | Controlo               |
+| `03`        | SET reconhecida      | BCC1                   |
+| `00`        | Cabeçalho verificado | Flag final             |
+| `7E`        | SET completa         | Pode responder UA      |
+
+Se o BCC1 estiver errado, ignora a trama sem agir sobre um controlo não verificado. O temporizador do emissor recupera a ausência de UA. Se a SET chegar de novo porque a UA se perdeu, o protocolo deve voltar a responder, permitindo que as duas pontas completem a abertura.
+
+Durante a transferência, a ligação transporta tanto START e END como pacotes de dados da aplicação em tramas I. Não interpreta nomes, tamanhos ou campos da aplicação. Um duplicado pode voltar a receber RR, mas os seus dados não podem voltar a ser entregues.
+
+Para testar, compara o ficheiro recebido com o original, depois introduz perdas em cada sentido. Cortar apenas Rx→Tx permite observar ACKs perdidos e duplicados: o ficheiro final deve continuar igual. Sem recetor, o emissor deve terminar por falha ao esgotar o limite configurado, em vez de ficar a tentar indefinidamente. O guião atual também pede testes com ruído e interrupção temporária. A emulação ajuda a testar o protocolo, mas a demonstração docente usa portas série reais.
 
 | Passo       | CRC da lição          | BCC do Lab 1                      |
 | ----------- | --------------------- | --------------------------------- |

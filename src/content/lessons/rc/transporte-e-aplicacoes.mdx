@@ -7,6 +7,10 @@ practices:
   - rc/praticar-transporte
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
@@ -20,13 +24,10 @@ editorial:
 
 import Typst from '../../../components/Typst.astro';
 import Manim from '../../../components/Manim.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import aperto from '../../rc/handshake.typ?raw';
 
-Os pacotes chegam ao computador certo, mas falta distinguir as conversas dentro dele. Esta página mostra como portas, números de sequência e janelas entregam um fluxo ordenado e como o emissor reage a perdas.
-
-Quando dois programas conversam pela rede, é preciso distinguir as conversas dentro do mesmo computador. O transporte entrega dados entre **processos**, ou seja, entre programas em execução, e as **portas**, números que identificam cada conversa, distinguem serviços. Uma ligação TCP é identificada por IP e portas das duas pontas. Um servidor na porta 80 mantém muitas ligações, porque os pares remotos diferem.
+Dois clientes podem comunicar com a porta 80 do mesmo servidor. TCP distingue as ligações pelo conjunto IP e porta de origem, IP e porta de destino. As **portas** permitem entregar dados ao socket correspondente dentro do terminal; não identificam globalmente um programa.
 
 ## UDP e TCP
 
@@ -78,7 +79,7 @@ Com $W$ **bytes** de janela efetiva e RTT de $T$ segundos, o limite ideal por ja
 
 No TCP clássico, **slow start** aumenta a janela por ACK, aproximadamente duplicando-a por RTT quando cada segmento é confirmado e há dados suficientes. Ao atingir `ssthresh`, **congestion avoidance** aumenta aproximadamente um MSS por RTT, crescimento aditivo.
 
-Na variante Reno usada em muitos exercícios, três ACKs duplicados desencadeiam fast retransmit e fast recovery: define-se `ssthresh=max(FlightSize/2,2 MSS)`, retransmite-se o segmento em falta e a janela passa por `ssthresh+3 MSS` antes de regressar a `ssthresh` em ACK novo. Um timeout volta a uma janela de perda pequena e reinicia slow start. Por exemplo, com 12 MSS em voo, o limiar cai para 6 MSS; no timeout, cai para 1 MSS. Não reduzas a janela para o mesmo valor em qualquer tipo de perda.
+Na variante Reno usada em muitos exercícios, três ACKs duplicados desencadeiam fast retransmit e fast recovery: define-se `ssthresh=max(FlightSize/2,2 MSS)`, retransmite-se o segmento em falta e a janela passa por `ssthresh+3 MSS` antes de regressar a `ssthresh` em ACK novo. Um timeout volta a uma janela de perda pequena e reinicia slow start. Por exemplo, com 12 MSS em voo, o limiar cai para 6 MSS. Após três ACKs duplicados, `cwnd` passa temporariamente a 9 MSS e regressa a 6 MSS quando chega o ACK de recuperação. Num timeout, é **a janela `cwnd`**, não o limiar, que cai para 1 MSS no modelo clássico. Não reduzas a janela para o mesmo valor em qualquer tipo de perda.
 
 **Traço simplificado.** Janela inicial 1 MSS, limiar 8 MSS, ACK por segmento, sem perdas: por rondas, 1, 2, 4, 8, 9, 10. Se o exercício definir outra janela inicial, delayed ACKs ou outra variante, usa essas condições. TCP atual não usa necessariamente este traço nem uma janela inicial de um segmento.
 
@@ -91,22 +92,7 @@ Para associar cada mudança da janela TCP ao evento que a provoca, vê esta aula
   title="Jim Kurose: TCP Congestion Control, aula 3.7"
 />
 
-<CodePlayground
-  language="python"
-  title="Comparar limites de débito por janela e ligação"
-  code={`janela_bytes = 64_000
-rtt = 0.08
-ligacao_bits_s = 5_000_000
-limite_janela = 8*janela_bytes/rtt
-print(f"Janela: {limite_janela/1e6:.1f} Mbit/s")
-print(f"Limite conjunto: {min(limite_janela, ligacao_bits_s)/1e6:.1f} Mbit/s")`}
-/>
-
 ## Ler uma captura
-
-:::tip[Ideia-chave]
-Um ACK cumulativo confirma tudo até à primeira lacuna, ou seja, nunca ultrapassa bytes em falta.
-:::
 
 No Wireshark, segue um fluxo TCP e regista sequência, ACK, comprimento dos dados, flags e janela. A apresentação pode usar números relativos, distintos dos valores brutos. Se dois segmentos se perderem, desenha os bytes em falta antes de prever confirmações. A aplicação só recebe uma sequência contínua, mesmo que a captura já mostre segmentos posteriores.
 

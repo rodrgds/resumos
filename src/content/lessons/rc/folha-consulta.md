@@ -6,12 +6,14 @@ studyKind: revision
 order: 0
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   coverage: Consulta compacta dos tópicos das onze lições. As derivações e resoluções estão nas lições.
 ---
 
-No fim do percurso de RC, esta página reúne as fórmulas para rever antes de resolver problemas.
-
-Cada linha traz a conta, a expressão e a condição em que vale; as derivações e os exemplos estão nas onze lições.
+Escolhe primeiro o modelo e a fronteira do sistema. As fórmulas abaixo servem para consulta; as lições ligadas mostram as contas e as condições de aplicação.
 
 ## Unidades, canal e erros
 
@@ -46,6 +48,8 @@ Não apliques estas expressões fora do modelo. [Contas e traços](/cadeiras/rc/
 
 ## CRC e ARQ
 
+Comparação de modelos de multiplexagem, m fluxos Poisson independentes e comprimentos exponenciais: fila comum $T=1/(\mu-\lambda)$; m parcelas iguais de capacidade $T=m/(\mu-\lambda)$. A mesma carga não fixa o mesmo atraso. [Explicação](/cadeiras/rc/desempenho-e-filas/#multiplexagem-estatística-e-capacidade-reservada).
+
 CRC: gerador de grau r, acrescentar r zeros, dividir por XOR, colocar resto. Resto zero significa **nenhum erro foi detetado**; não garante ausência de erro. Distância mínima d deteta até d−1 erros. Bit stuffing: zero depois de cinco uns entre flags, incluindo CRC.
 
 RR(n): próximo esperado n. REJ(n): repetir desde n em Go-Back-N; SREJ(n): repetir apenas n em Selective Repeat. GBN descarta fora de ordem; SR guarda dentro da janela. Com m bits: $W_{GBN}\le2^m-1$, $W_{SR}\le2^{m-1}$ para janelas iguais. ACK perdido não autoriza entregar duplicados. [Explicação](/cadeiras/rc/ligacao-de-dados/).
@@ -66,7 +70,9 @@ M/M/1 estável: tempo ocioso $p_0=1-\rho$, $P(N\ge k)=\rho^k$ no sistema; para k
 
 M/M/1/B, B capacidade total: $p_n=(1-\rho)\rho^n/(1-\rho^{B+1})$; se $\rho=1$, $p_n=1/(B+1)$. Bloqueio $p_B$, $\lambda_e=\lambda(1-p_B)$, $N=\sum n p_n$, $T=N/\lambda_e$.
 
-Jackson aberto: $\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}$. Resolve taxas, confirma $\lambda_i/\mu_i<1$ em cada nó, soma N dos nós e divide pela taxa externa para o tempo global. RTO atualiza RTTVAR antes de SRTT, com mínimo recomendado de 1 s. [Filas básicas](/cadeiras/rc/desempenho-e-filas/) e [modelos adicionais](/cadeiras/rc/modelos-filas/).
+Filas em série: a saída de uma M/D/1 não é Poisson; conservar comprimentos entre saltos pode correlacionar chegadas e serviços. Kleinrock aproxima a independência com mistura de tráfego. [Condições](/cadeiras/rc/modelos-filas/#filas-em-série-e-independência).
+
+Jackson aberto: $\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}$. Resolve taxas, confirma $\lambda_i/\mu_i<1$ em cada nó, soma N dos nós e divide pela taxa externa para o tempo global. [Filas básicas](/cadeiras/rc/desempenho-e-filas/) e [modelos adicionais](/cadeiras/rc/modelos-filas/).
 
 ## Acesso e LAN
 
@@ -86,7 +92,7 @@ Dijkstra: fixa a menor distância provisória e relaxa vizinhos. Distance vector
 
 ## TCP e aplicações
 
-TCP numera bytes; ACK cumulativo indica próximo esperado. SYN e FIN consomem 1; ACK sem dados não. Janela efetiva em bytes $\min(rwnd,cwnd)$; bytes novos descontam pendentes. 8 MSS só são oito segmentos com segmentos de MSS bytes. Limite por janela W bytes: $8W/RTT$ bit/s. Fluxo protege recetor; congestionamento protege rede. Slow start aproximadamente duplica por RTT; congestion avoidance cresce aproximadamente 1 MSS por RTT, segundo o modelo.
+RTO: atualiza RTTVAR antes de SRTT e usa a margem de variação, com mínimo recomendado de 1 s na RFC6298. TCP numera bytes; ACK cumulativo indica próximo esperado. SYN e FIN consomem 1; ACK sem dados não. Janela efetiva em bytes $\min(rwnd,cwnd)$; bytes novos descontam pendentes. 8 MSS só são oito segmentos com segmentos de MSS bytes. Limite por janela W bytes: $8W/RTT$ bit/s. Fluxo protege recetor; congestionamento protege rede. Reno clássico com 12 MSS em voo: ssthresh=6 MSS; três ACKs duplicados dão cwnd temporária 9 MSS e retorno a 6 no ACK de recuperação; timeout dá cwnd=1 MSS, mantendo o limiar 6. Slow start aproximadamente duplica por RTT; congestion avoidance cresce aproximadamente 1 MSS por RTT, segundo o modelo.
 
 DNS: A/AAAA endereços, MX correio, CNAME alias, NS autoritativos, PTR inverso. UDP e TCP 53. HTTP/1.1 delimita cabeçalhos por CRLF; ligação persistente evita nova abertura; não confundir com HTTP/3. FTP: controlo TCP 21 e dados separados. SMTP envia correio; POP3/IMAP acedem à caixa. TCP não preserva fronteiras de chamadas send/recv.
 

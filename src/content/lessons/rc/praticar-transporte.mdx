@@ -1,10 +1,14 @@
 ---
 title: Praticar bytes e janela TCP
-description: Exercícios próprios com contas, traços, pistas e soluções.
+description: Bytes, confirmações, limites de janela e recuperação em Reno.
 section: exercicios
 editorial:
   basedOn: 2026/27
-  coverage: Exercícios próprios sobre os tópicos da lição associada.
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
+  coverage: Bytes, confirmações, limites de janela e recuperação em Reno.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -75,105 +79,49 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="rc-tcp-fases"
-  title={'Seguir crescimento simplificado'}
-  explanation="/cadeiras/rc/transporte-e-aplicacoes/#slow-start-aimd-e-perdas"
-  answer={{ kind: 'number', value: 9, tolerance: 0, unit: 'MSS' }}
->
-  <p>
-    {
-      'Slow start inicia em 1 MSS; ssthresh 8 MSS; ACK por segmento e um valor por RTT. Qual a janela na ronda seguinte àquela com 8 MSS?'
-    }
-  </p>
-  <p slot="hint">{'Ao chegar ao limiar, muda o crescimento.'}</p>
-  <p slot="hint-more">
-    {'Congestion avoidance cresce aproximadamente 1 MSS por RTT.'}
-  </p>
-  <p slot="solution">
-    {'9 MSS, neste modelo simplificado. O traço 1,2,4,8 passa a 9,10.'}
-  </p>
-  <p slot="mistakes">{'Continuar a duplicar acima do limiar.'}</p>
-</Exercise>
-
-<Exercise
   id="rc-tcp-fluxo"
-  title={'Distinguir janelas'}
+  revision={2}
+  title="Relacionar bytes em voo e segmentos"
   explanation="/cadeiras/rc/transporte-e-aplicacoes/#fluxo-e-congestionamento"
-  answer={{ kind: 'number', value: 4000, tolerance: 0, unit: 'bytes' }}
+  answer={{ kind: 'self', checklist: ['Desconto os bytes pendentes da menor janela.', 'Divido pelos 500 bytes reais, não pelo MSS.', 'Limito a zero o espaço após diminuir rwnd.'] }}
 >
-  <p>
-    {
-      'O recetor anuncia 10000 bytes; o cwnd é 40000 bytes; há 6000 bytes pendentes. Quantos bytes novos cabem no limite simplificado?'
-    }
-  </p>
-  <p slot="hint">{'Primeiro escolhe min(rwnd, cwnd).'}</p>
-  <p slot="hint-more">{'Limite 10000; subtrai os 6000 pendentes.'}</p>
-  <p slot="solution">
-    {'4000 bytes novos. O recetor é a limitação neste estado.'}
-  </p>
-  <p slot="mistakes">{'Usar cwnd sozinho ou esquecer bytes já em trânsito.'}</p>
+  <div>
+
+O recetor anuncia rwnd=10000 bytes, cwnd=40000 bytes e há 6000 bytes enviados ainda não confirmados. O MSS é 1000 bytes, mas os novos segmentos levarão apenas 500 bytes cada. Quantos bytes novos e quantos desses segmentos cabem? Se rwnd passar a 4000 sem chegarem ACKs novos, quantos bytes novos podem ser enviados no mesmo modelo?
+
+  </div>
+  <div slot="hint">A janela limita bytes, não um número fixo de segmentos.</div>
+  <div slot="hint-more">Aplica max(0,min(rwnd,cwnd)−FlightSize).</div>
+  <div slot="solution">
+
+O limite inicial é min(10000,40000)=10000 bytes. Restam 10000−6000=4000 bytes, ou oito segmentos de 500 bytes. MSS é o máximo, não o tamanho obrigatório de cada segmento.
+
+Com rwnd=4000 e 6000 bytes em voo, o espaço calculado é max(0,4000−6000)=0. O emissor não envia dados novos nesse estado; os bytes já enviados não desaparecem por a janela ter diminuído.
+
+  </div>
+  <div slot="mistakes">Usar cwnd sozinho ou devolver um número negativo de bytes.</div>
 </Exercise>
 
 <Exercise
   id="rc-tcp-recuperacao"
-  title="Distinguir timeout e ACKs duplicados"
+  revision={2}
+  title="Calcular duas respostas à perda em Reno"
   explanation="/cadeiras/rc/transporte-e-aplicacoes/#slow-start-aimd-e-perdas"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Os três ACKs duplicados permitem fast retransmit sem esperar pelo timeout.',
-      'Reno usa fast recovery após os ACKs duplicados, reduzindo o limiar.',
-      'Um timeout volta a uma janela de perda pequena e a slow start.',
-      'A perda observada não prova por si só que houve congestionamento.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Calculo ssthresh=6 MSS nos dois cenários.', 'Distingo cwnd temporária de 9 MSS e retorno a 6 MSS.', 'No timeout, reduzo cwnd a 1 MSS sem reduzir ssthresh a 1.', 'Associo as fases ao evento correto.'] }}
 >
   <div>
-    Compara duas perdas no TCP Reno clássico. Na primeira, chegam três ACKs
-    duplicados; na segunda, não há confirmações que permitam essa recuperação e
-    expira o timeout. Explica como o emissor inicia a recuperação e como muda o
-    crescimento da janela. A perda pode resultar de um erro do canal.
-  </div>
-  <div slot="hint">
-    Os eventos dão quantidades diferentes de informação ao emissor.
-  </div>
-  <div slot="hint-more">
-    ACKs duplicados mostram que segmentos posteriores chegaram; um timeout não
-    dá essa indicação. Distingue fast recovery de slow start.
-  </div>
-  <div slot="solution">
-    Com três ACKs duplicados, Reno retransmite rapidamente o segmento em falta e
-    entra em fast recovery, reduzindo o limiar para cerca de metade dos dados em
-    voo, sujeito ao mínimo do algoritmo. Num timeout, retransmite, reduz a
-    janela a uma janela de perda pequena e recomeça slow start. Não trata as
-    duas perdas com a mesma alteração de janela. Estes sinais indicam falha de
-    entrega, mas não distinguem sempre congestionamento de erros do canal.
-  </div>
-  <div slot="mistakes">
-    Esperar pelo timeout mesmo quando há fast retransmit, aplicar a mesma janela
-    nos dois casos, ou atribuir qualquer perda a congestionamento.
-  </div>
-</Exercise>
 
-<Exercise
-  id="rc-tcp-mss-pequenos"
-  title={'Contar segmentos numa janela em bytes'}
-  explanation="/cadeiras/rc/transporte-e-aplicacoes/#fluxo-e-congestionamento"
-  answer={{ kind: 'number', value: 16, tolerance: 0, unit: 'segmentos' }}
->
-  <p>
-    {
-      'Janela efetiva de 8000 bytes, MSS 1000 bytes, mas a aplicação envia segmentos de 500 bytes. Quantos segmentos cabem na janela?'
-    }
-  </p>
-  <p slot="hint">{'A janela mede bytes, não segmentos.'}</p>
-  <p slot="hint-more">{'Divide 8000 por 500.'}</p>
+TCP Reno clássico tem 12 MSS em voo e cwnd=12 MSS. Compara dois cenários independentes: recebe três ACKs duplicados; expira o timeout sem essa informação. Indica ssthresh e cwnd imediatamente após cada evento, o valor de cwnd depois do ACK de recuperação no primeiro caso e a fase de crescimento seguinte. Usa janela de perda 1 MSS e ignora ACKs duplicados adicionais. A perda pode ser erro de canal.
+
+  </div>
+  <div slot="hint">Calcula primeiro o limiar a partir de FlightSize.</div>
+  <div slot="hint-more">A inflação temporária de três MSS só pertence ao fast recovery deste modelo.</div>
   <div slot="solution">
-    {
-      '16 segmentos de 500 bytes. Oito MSS em bytes dariam oito segmentos só se todos levassem 1000 bytes.'
-    }
+
+Nos dois casos, ssthresh=max(12/2,2)=6 MSS. Com três ACKs duplicados, Reno inicia fast retransmit e fast recovery: retransmite o segmento em falta e cwnd passa temporariamente a 6+3=9 MSS. Quando chega o ACK que confirma a recuperação considerada, cwnd regressa a 6 MSS e segue congestion avoidance.
+
+No timeout, retransmite e cwnd passa a 1 MSS, conservando ssthresh=6 MSS; recomeça slow start. O limiar e a janela são variáveis diferentes. A reação recupera uma falha de entrega, mas os eventos não provam por si só que a causa foi congestionamento.
+
   </div>
-  <div slot="mistakes">
-    {'Responder oito por confundir MSS com tamanho real.'}
-  </div>
+  <div slot="mistakes">Tratar limiar como janela ou aplicar slow start após qualquer tipo de perda.</div>
 </Exercise>

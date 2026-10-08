@@ -1,54 +1,91 @@
 ---
 import InteractiveDemo from '../../components/InteractiveDemo.astro';
+const serviceRate = 125;
+const initialLoad = 80;
+const queueMs = (load: number) =>
+  (load / 100 / (serviceRate * (1 - load / 100))) * 1000;
+const x = (load: number) => 48 + (load / 100) * 220;
+const y = (ms: number) => 220 - (ms / 800) * 170;
+const curve = (factor: number) =>
+  Array.from(
+    { length: 100 },
+    (_, load) =>
+      `${load === 0 ? 'M' : 'L'}${x(load)},${y(queueMs(load) / factor)}`,
+  ).join(' ');
 ---
 
 <InteractiveDemo label="Comparar o tempo médio em fila">
   <div data-queue-demo>
     <label for="rc-queue-load">
-      Carga ρ: <output data-load>60%</output>
+      Carga ρ: <output data-load>80%</output>
       <input
         id="rc-queue-load"
         type="range"
-        min="10"
+        min="0"
         max="99"
-        value="60"
+        value={initialLoad}
         step="1"
+        disabled
       />
     </label>
-    <p data-rates>λ = 60 pacotes/s; serviço médio = 10 ms.</p>
-    <svg
-      viewBox="0 0 440 150"
-      role="img"
-      aria-label="Tempos médios em fila, numa escala de zero a mil milissegundos"
+    <p data-rates>λ = 100 pacotes/s; serviço médio = 8 ms.</p>
+    <div
+      class="chart"
+      tabindex="0"
+      aria-label="Gráfico deslocável na horizontal"
     >
-      <text x="0" y="20">
-        M/M/1
-      </text>
-      <rect data-mm x="85" y="3" width="4.8" height="25" />
-      <text data-mm-value x="85" y="48">
-        15,0 ms
-      </text>
-      <text x="0" y="81">
-        M/D/1
-      </text>
-      <rect data-md x="85" y="64" width="2.4" height="25" />
-      <text data-md-value x="85" y="109">
-        7,5 ms
-      </text>
-      <line x1="85" y1="125" x2="405" y2="125" />
-      <text x="85" y="145">
-        0
-      </text>
-      <text x="245" y="145" text-anchor="middle">
-        500
-      </text>
-      <text x="405" y="145" text-anchor="end">
-        1000 ms
-      </text>
-    </svg>
+      <svg
+        viewBox="0 0 300 285"
+        role="img"
+        aria-label="Espera média em função da carga, com serviço médio de 8 ms. M/M/1 tem o dobro da espera M/D/1 e ambas crescem muito perto de carga um."
+      >
+        <text x="48" y="22">
+          Tempo médio em fila (ms)
+        </text>
+        {[0, 200, 400, 600, 800].map((ms) => (
+          <g>
+            <line class="grid" x1="48" y1={y(ms)} x2="268" y2={y(ms)} />
+            <text x="39" y={y(ms) + 5} text-anchor="end">
+              {ms}
+            </text>
+          </g>
+        ))}
+        <path class="mm" d={curve(1)} />
+        <path class="md" d={curve(2)} />
+        <line
+          data-marker
+          class="marker"
+          x1={x(initialLoad)}
+          y1="50"
+          x2={x(initialLoad)}
+          y2="220"
+        />
+        <text x="72" y="55">
+          M/M/1: traço contínuo
+        </text>
+        <text x="72" y="77">
+          M/D/1: tracejado
+        </text>
+        {[0, 25, 50, 75, 100].map((load) => (
+          <text x={x(load)} y="245" text-anchor="middle">
+            {load}%
+          </text>
+        ))}
+        <text x="158" y="275" text-anchor="middle">
+          Carga ρ
+        </text>
+      </svg>
+    </div>
     <p data-result role="status">
-      M/M/1: fila 15,0 ms, sistema 25,0 ms. M/D/1: fila 7,5 ms, sistema 17,5 ms.
+      M/M/1: fila 32,0 ms, sistema 40,0 ms. M/D/1: fila 16,0 ms, sistema 24,0
+      ms.
     </p>
+    <noscript>
+      <p>
+        O gráfico e os valores de carga 80% continuam disponíveis. Ativa
+        JavaScript para mover o marcador.
+      </p>
+    </noscript>
   </div>
 </InteractiveDemo>
 
@@ -57,6 +94,8 @@ import InteractiveDemo from '../../components/InteractiveDemo.astro';
     .querySelectorAll<HTMLElement>('[data-queue-demo]')
     .forEach((root) => {
       const slider = root.querySelector('input')!;
+      const serviceRate = 125;
+      const serviceMs = 1000 / serviceRate;
       const number = (value: number) =>
         value.toLocaleString('pt-PT', {
           minimumFractionDigits: 1,
@@ -65,29 +104,37 @@ import InteractiveDemo from '../../components/InteractiveDemo.astro';
       const update = () => {
         const load = Number(slider.value);
         const rho = load / 100;
-        const service = 10;
-        const mm = (rho / (100 * (1 - rho))) * 1000;
+        const mm = (rho / (serviceRate * (1 - rho))) * 1000;
         const md = mm / 2;
+        const markerX = String(48 + rho * 220);
         root.querySelector('output')!.textContent = `${load}%`;
         root.querySelector('[data-rates]')!.textContent =
-          `λ = ${load} pacotes/s; serviço médio = ${service} ms.`;
-        root
-          .querySelector('[data-mm]')!
-          .setAttribute('width', String((320 * mm) / 1000));
-        root
-          .querySelector('[data-md]')!
-          .setAttribute('width', String((320 * md) / 1000));
-        root.querySelector('[data-mm-value]')!.textContent = `${number(mm)} ms`;
-        root.querySelector('[data-md-value]')!.textContent = `${number(md)} ms`;
+          `λ = ${number(rho * serviceRate)} pacotes/s; serviço médio = ${serviceMs} ms.`;
+        const marker = root.querySelector('[data-marker]')!;
+        marker.setAttribute('x1', markerX);
+        marker.setAttribute('x2', markerX);
         root.querySelector('[data-result]')!.textContent =
-          `M/M/1: fila ${number(mm)} ms, sistema ${number(mm + service)} ms. M/D/1: fila ${number(md)} ms, sistema ${number(md + service)} ms.`;
+          `M/M/1: fila ${number(mm)} ms, sistema ${number(mm + serviceMs)} ms. M/D/1: fila ${number(md)} ms, sistema ${number(md + serviceMs)} ms.`;
       };
+      slider.disabled = false;
       slider.addEventListener('input', update);
       update();
     });
 </script>
-
 <style>
+  .chart {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .chart:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .chart svg {
+    min-width: 280px;
+    max-width: 400px;
+    margin-inline: auto;
+  }
   label {
     display: block;
     font-weight: 600;
@@ -109,18 +156,25 @@ import InteractiveDemo from '../../components/InteractiveDemo.astro';
   }
   text {
     fill: var(--text);
-    font:
-      14px 'Manrope Variable',
-      sans-serif;
+    font: 14px var(--body-font, sans-serif);
   }
-  line {
+  .grid {
     stroke: var(--line);
   }
-  [data-mm] {
-    fill: var(--accent);
+  path {
+    fill: none;
+    stroke-width: 2.5;
   }
-  [data-md] {
-    fill: var(--muted);
+  .mm {
+    stroke: var(--accent);
+  }
+  .md {
+    stroke: var(--text);
+    stroke-dasharray: 6 4;
+  }
+  .marker {
+    stroke: var(--muted);
+    stroke-dasharray: 2 3;
   }
   input:focus-visible {
     outline: 2px solid var(--accent);

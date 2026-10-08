@@ -1,10 +1,17 @@
 ---
 title: Praticar subnetting e fragmentação
-description: Exercícios próprios com contas, traços, pistas e soluções.
+description: VLSM, crescimento, fragmentação, escolha de rotas e tradução NAT.
 section: exercicios
 editorial:
   basedOn: 2026/27
-  coverage: Exercícios próprios sobre os tópicos da lição associada.
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
+  sources:
+    - title: Problemas docentes, VLSM e crescimento, adaptação do problema 9
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33691
+  coverage: VLSM, crescimento, fragmentação, escolha de rotas e tradução NAT.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -105,44 +112,6 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="rc-hosts26"
-  title={'Contar hosts'}
-  explanation="/cadeiras/rc/camada-de-rede/#ipv4-e-prefixos"
-  answer={{ kind: 'number', value: 62, tolerance: 0 }}
->
-  <p>
-    {
-      'Numa sub-rede IPv4 usual /26, reservando rede e broadcast, quantos hosts são utilizáveis?'
-    }
-  </p>
-  <p slot="hint">{'Sobram 6 bits, ou seja, calcula 2^6−2.'}</p>
-  <p slot="hint-more">{'2^6−2.'}</p>
-  <p slot="solution">
-    {
-      '64 endereços menos rede e broadcast dão 62. Isto não é regra universal para /31 ou /32.'
-    }
-  </p>
-  <p slot="mistakes">
-    {'Responder 26 ou aplicar a mesma regra a todos os prefixos.'}
-  </p>
-</Exercise>
-
-<Exercise
-  id="rc-rede77"
-  title={'Encontrar o início do bloco'}
-  explanation="/cadeiras/rc/camada-de-rede/#ipv4-e-prefixos"
-  answer={{ kind: 'number', value: 64, tolerance: 0 }}
->
-  <p>{'192.0.2.77/26: qual o último octeto do endereço de rede?'}</p>
-  <p slot="hint">{'Blocos de 64 endereços.'}</p>
-  <p slot="hint-more">{'77 está entre 64 e 127.'}</p>
-  <p slot="solution">
-    {'A rede é 192.0.2.64/26. AND do último octeto 77 com 192 dá 64.'}
-  </p>
-  <p slot="mistakes">{'Arredondar para o bloco seguinte.'}</p>
-</Exercise>
-
-<Exercise
   id="rc-rota-especifica"
   title={'Escolher uma rota'}
   explanation="/cadeiras/rc/camada-de-rede/#longest-prefix-match"
@@ -187,42 +156,32 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rc-fragmentos"
-  title={'Contar fragmentos'}
+  revision={2}
+  title="Preencher a tabela de fragmentação"
   explanation="/cadeiras/rc/camada-de-rede/#cabeçalho-e-fragmentação-ipv4"
-  answer={{ kind: 'number', value: 3, tolerance: 0 }}
+  answer={{ kind: 'self', checklist: ['Desconto o cabeçalho antes de repartir os dados.', 'Uso múltiplos de oito nos fragmentos não finais.', 'Calculo offsets da carga original.', 'Respeito DF e adapto o tamanho na origem.'] }}
 >
-  <p>
-    {
-      'Datagrama IPv4 de 4000 bytes incluindo 20 de cabeçalho, MTU 1500, sem opções, DF=0. Quantos fragmentos são necessários?'
-    }
-  </p>
-  <p slot="hint">
-    {'Os 3980 bytes de dados são repartidos; cada fragmento leva cabeçalho.'}
-  </p>
-  <p slot="hint-more">{'Cada fragmento completo leva 1480 bytes de dados.'}</p>
-  <p slot="solution">
-    {'1480+1480+1020=3980: três fragmentos, comprimentos 1500,1500,1040.'}
-  </p>
-  <p slot="mistakes">
-    {'Dividir os 4000 bytes sem descontar e repor os cabeçalhos.'}
-  </p>
-</Exercise>
+  <div>
 
-<Exercise
-  id="rc-offset"
-  title={'Calcular offset'}
-  explanation="/cadeiras/rc/camada-de-rede/#cabeçalho-e-fragmentação-ipv4"
-  answer={{ kind: 'number', value: 370, tolerance: 0 }}
->
-  <p>{'No cenário anterior, qual o offset do terceiro fragmento?'}</p>
-  <p slot="hint">{'O offset mede dados anteriores, em blocos de 8 bytes.'}</p>
-  <p slot="hint-more">{'Antes do terceiro estão 2960 bytes de dados.'}</p>
-  <p slot="solution">
-    {
-      '2960/8=370. Os cabeçalhos dos outros fragmentos não contam para este offset.'
-    }
-  </p>
-  <p slot="mistakes">{'Usar 3000/8 ou o comprimento do terceiro fragmento.'}</p>
+Um datagrama IPv4 tem 4000 bytes, incluindo 20 de cabeçalho sem opções. A MTU é 1500 e DF=0. Faz a tabela dos fragmentos com bytes de dados, comprimento total, offset e MF. Identifica o que a origem deve fazer para voltar a enviar o mesmo conteúdo se DF=1 e receber uma indicação de MTU 1500.
+
+  </div>
+  <div slot="hint">A MTU inclui o cabeçalho de cada fragmento.</div>
+  <div slot="hint-more">O offset mede quantos blocos de oito bytes de dados precedem o fragmento.</div>
+  <div slot="solution">
+
+Restam 3980 bytes de dados. Cada fragmento não final pode transportar $8\lfloor(1500-20)/8\rfloor=1480$ bytes.
+
+| Fragmento | Dados | Total | Offset | MF  |
+| --------- | ----- | ----- | ------ | --- |
+| 1         | 1480  | 1500  | 0      | 1   |
+| 2         | 1480  | 1500  | 185    | 1   |
+| 3         | 1020  | 1040  | 370    | 0   |
+
+O terceiro offset é $(1480+1480)/8=370$, sem contar os cabeçalhos. Cada fragmento recebe cabeçalho e conserva a identificação necessária à reconstituição no destino. Com DF=1, o router não pode fragmentar: descarta e informa a origem por ICMP, quando possível. A origem deve enviar pacotes menores compatíveis com a MTU; não basta reenviar os mesmos 4000 bytes sem alteração.
+
+  </div>
+  <div slot="mistakes">Contar cabeçalhos no offset ou fragmentar apesar de DF=1.</div>
 </Exercise>
 
 <Exercise
@@ -303,20 +262,47 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="rc-prefixo-binario"
-  title={'Confirmar rede em binário'}
-  explanation="/cadeiras/rc/camada-de-rede/#ipv4-e-prefixos"
-  answer={{ kind: 'number', value: 191, tolerance: 0 }}
+  id="rc-vlsm-crescimento"
+  title="Reorganizar uma rede depois do crescimento"
+  explanation="/cadeiras/rc/camada-de-rede/#crescimento-das-sub-redes"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Alinho os blocos sem sobreposição.',
+      'Mostro que quatro sub-redes passariam a exigir 288 endereços.',
+      'Proponho uma divisão de A que cabe no /24.',
+      'Conto uma interface de gateway por nova sub-rede.',
+    ],
+  }}
 >
-  <p>{'192.0.2.190/26: qual o último octeto do broadcast da sub-rede?'}</p>
-  <p slot="hint">{'Blocos de 64: 190 está entre 128 e 191.'}</p>
-  <p slot="hint-more">{'Rede .128; broadcast soma 63.'}</p>
+  <div>
+    Adaptação do problema 9 docente. Em 192.0.2.0/24, A tem 72 computadores, B
+    tem 35, C tem 20 e D tem 18. Cada sub-rede precisa também de um gateway. A
+    ocupa .0/25, B .128/26, C .192/27 e D .224/27. D cresce para 34
+    computadores. Explica por que não pode apenas alargar a sua máscara e propõe
+    uma distribuição dentro do mesmo /24. Podes dividir A em duas sub-redes,
+    reconfigurar hosts e usar encaminhamento entre elas.
+  </div>
+  <div slot="hint">Conta blocos inteiros, não apenas computadores.</div>
+  <div slot="hint-more">
+    A pode dividir os seus 72 computadores entre um /26 e um /27.
+  </div>
   <div slot="solution">
-    {
-      'A rede é 192.0.2.128/26 e o broadcast é .191. Em binário, 190 é 10111110 e a máscara 11000000 dá rede 10000000.'
-    }
+    <div>
+      Com uma sub-rede por departamento, seriam precisos 128+64+32+64=288
+      endereços, mais que os 256 disponíveis. O /26 que contém .224 começa em
+      .192 e sobrepõe-se a C. Alterar só a máscara de D não resolve.
+    </div>
+    <div>
+      Uma distribuição válida é A1=.0/26 com 60 computadores e um gateway;
+      D=.64/26 com 34 e um gateway; B=.128/26 com 35 e um gateway; C=.192/27 com
+      20 e um gateway; A2=.224/27 com 12 e um gateway. Cada /26 dá 62 hosts e
+      cada /27 dá 30. Os blocos estão alinhados e não se sobrepõem. A passa a
+      ter duas sub-redes, exigindo endereços, gateways e rotas coerentes com a
+      nova distribuição.
+    </div>
   </div>
   <div slot="mistakes">
-    {'Arredondar para o bloco seguinte ou esquecer o broadcast.'}
+    Criar .224/26 como se fosse um início válido ou esquecer os gateways.
   </div>
 </Exercise>

@@ -1,10 +1,19 @@
 ---
 title: Praticar CRC e ARQ
-description: Exercícios próprios com contas, traços, pistas e soluções.
+description: CRC, janelas, perda de confirmações, BCC e redundância.
 section: exercicios
 editorial:
   basedOn: 2026/27
-  coverage: Exercícios próprios sobre os tópicos da lição associada.
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
+  sources:
+    - title: Problemas docentes, problema 1, adaptação
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33691
+    - title: Resolução docente do problema 1
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33693
+  coverage: CRC, janelas, perda de confirmações, BCC e redundância.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -33,61 +42,54 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rc-crc-zero"
-  title={'Interpretar uma verificação'}
+  revision={2}
+  title="Construir um erro que passa despercebido"
   explanation="/cadeiras/rc/ligacao-de-dados/#paridade-checksum-e-crc"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Não foi detetado erro pelo CRC.',
-        correct: true,
-        explanation: 'Certos padrões de erro são múltiplos do gerador.',
-      },
-      {
-        text: 'A trama não contém nenhum erro.',
-        correct: false,
-        explanation: 'Resto zero não prova integridade absoluta.',
-      },
-      {
-        text: 'O CRC corrigiu todos os bits errados.',
-        correct: false,
-        explanation: 'Este mecanismo deteta, não corrige automaticamente.',
-      },
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Obtenho 1100010 por XOR.', 'Justifico resto zero pela divisibilidade do padrão de erro.', 'Distingo aceitação de ausência de erro.'] }}
 >
-  <p>{'O recetor obtém resto CRC zero. Que conclusão é válida?'}</p>
-  <p slot="hint">{'Distingue deteção de prova de ausência de erro.'}</p>
-  <p slot="hint-more">
-    {'Um erro múltiplo do gerador mantém a divisibilidade.'}
-  </p>
-  <p slot="solution">
-    {'A verificação aceita a trama, mas existem padrões de erro não detetados.'}
-  </p>
-  <p slot="mistakes">
-    {'Interpretar deteção probabilística como garantia absoluta.'}
-  </p>
+  <div>
+
+A palavra válida `1101001` usa gerador `1011`. Durante a transmissão, um padrão de erro `0001011` altera por XOR os bits correspondentes. Obtém a palavra recebida e o resto da divisão pelo gerador. Explica por que o CRC aceita dados alterados.
+
+  </div>
+  <div slot="hint">O erro também é um polinómio binário.</div>
+  <div slot="hint-more">A soma módulo 2 de dois múltiplos do gerador continua a ser múltiplo.</div>
+  <div slot="solution">
+
+O XOR dá `1100010`. O padrão `0001011` é o próprio gerador alinhado aos quatro bits finais, logo é divisível por `1011`. A palavra original e o erro têm resto zero, por isso a sua soma módulo 2 também tem resto zero. O recetor aceita a palavra, embora três bits tenham mudado. O CRC garante deteção de certos padrões, não integridade absoluta.
+
+  </div>
+  <div slot="mistakes">Concluir que o CRC corrigiu os bits ou que resto zero prova que não mudaram.</div>
 </Exercise>
 
 <Exercise
   id="rc-saw-eficiencia"
-  title={'Calcular utilização Stop-and-Wait'}
+  revision={2}
+  title="Dimensionar uma janela com perdas de RR"
   explanation="/cadeiras/rc/ligacao-de-dados/#eficiência-sem-perdas"
-  answer={{ kind: 'number', value: 0.1, tolerance: 1e-6 }}
+  answer={{ kind: 'self', checklist: ['Converto bytes e a propagação por km.', 'Distingo utilização de débito.', 'Aplico o limite GBN ao dimensionamento.', 'Comparo o instante do RR com o esgotamento da janela.'] }}
 >
-  <p>
-    {
-      'Trama demora 2 ms a transmitir; propagação por sentido 9 ms; ACK e processamento desprezáveis. Qual a utilização?'
-    }
-  </p>
-  <p slot="hint">{'O ciclo inclui a viagem de ida e volta.'}</p>
-  <p slot="hint-more">{'2/(2+2 ×9).'}</p>
-  <p slot="solution">
-    {'2/20=0,1. A ligação transmite dados 10% do tempo sob estas hipóteses.'}
-  </p>
-  <p slot="mistakes">
-    {'Contar apenas uma propagação ou confundir utilização com bit/s.'}
-  </p>
+  <div>
+
+Adaptação do problema 1 da ficha docente. Uma ligação full-duplex de 2048 kbit/s tem distância de 300 km, propagação de 5 μs/km e tramas de 256 bytes. Dados só num sentido, RR imediatos e de duração desprezável, processamento desprezável e sem perdas de dados.
+
+1. Calcula utilização e débito de tramas em Stop-and-Wait.
+2. Calcula a janela mínima para transmissão contínua e o mínimo de bits de sequência em Go-Back-N.
+3. Com numeração módulo 8 e janela máxima, quantos RR consecutivos podem perder-se antes do primeiro RR recebido, sem haver uma pausa? Assume arranque com janela livre e ignora timeouts.
+
+  </div>
+  <div slot="hint">Desenha primeiro o ciclo da primeira trama e o regresso do RR.</div>
+  <div slot="hint-more">A origem termina a sétima transmissão em 7 ms; cada RR consecutivo chega 1 ms depois do anterior.</div>
+  <div slot="solution">
+
+A transmissão demora $256\times8/(2048\times10^3)=1$ ms. A propagação num sentido é $300\times5=1500$ μs, ou 1,5 ms. O primeiro RR chega em $1+2\times1,5=4$ ms. Stop-and-Wait usa um quarto do ciclo, $U=0,25$, e transmite $2048\times0,25=512$ kbit/s de tramas. Não foi fornecida uma fração de payload para calcular o débito da aplicação.
+
+A janela mínima é $\lceil4/1\rceil=4$. GBN exige $2^m-1\ge4$: dois bits só permitem três tramas; três bits permitem sete.
+
+Com $W=7$, a origem esgota a janela em 7 ms. Se perder $k$ RR iniciais, o primeiro recebido chega em $4+k$ ms. Para não parar, $4+k\le7$, logo podem perder-se três. O RR da quarta trama confirma cumulativamente as quatro primeiras. No caso limite, assume-se que uma confirmação disponível no instante 7 ms permite continuar nesse mesmo instante.
+
+  </div>
+  <div slot="mistakes">Contar só uma propagação ou tratar cada RR como confirmação exclusivamente individual.</div>
 </Exercise>
 
 <Exercise
@@ -145,49 +147,6 @@ import Exercise from '../../../components/Exercise.astro';
     comparar utilização sem descontar os bits de FEC, ou usar o limite de janela
     Go-Back-N.
   </div>
-</Exercise>
-
-<Exercise
-  id="rc-duas-tentativas"
-  title="Interpretar uma retransmissão permitida"
-  explanation="/cadeiras/rc/ligacao-de-dados/#combinar-ber-janela-e-redundância"
-  answer={{ kind: 'number', value: 0.91, tolerance: 0.000001 }}
->
-  <div>
-    Cada tentativa falha com probabilidade 0,3, independentemente das restantes.
-    Permite-se no máximo uma retransmissão. Qual a probabilidade de entregar a
-    trama, em valor entre 0 e 1?
-  </div>
-  <p slot="hint">Contam a tentativa original e uma repetição.</p>
-  <p slot="hint-more">A única forma de não entregar é falhar nas duas.</p>
-  <div slot="solution">
-    1−0,3²=0,91. A entrega pode ocorrer logo na primeira ou depois da falha
-    inicial. Esta probabilidade não é um débito nem inclui o custo temporal das
-    duas tentativas.
-  </div>
-  <div slot="mistakes">
-    Contar apenas uma tentativa, somar 0,7+0,7, ou interpretar o resultado como
-    utilização da ligação.
-  </div>
-</Exercise>
-
-<Exercise
-  id="rc-sr-janela"
-  title={'Limitar a janela'}
-  explanation="/cadeiras/rc/ligacao-de-dados/#go-back-n-e-selective-repeat"
-  answer={{ kind: 'number', value: 4, tolerance: 0 }}
->
-  <p>
-    {
-      'Selective Repeat com 3 bits de sequência e janelas iguais nas duas pontas. Qual o máximo usual de tramas por janela?'
-    }
-  </p>
-  <p slot="hint">{'A numeração tem 8 valores.'}</p>
-  <p slot="hint-more">
-    {'A janela não deve exceder metade do espaço para impedir ambiguidade.'}
-  </p>
-  <p slot="solution">{'2^(3−1)=4 tramas. Go-Back-N teria outro limite, 7.'}</p>
-  <p slot="mistakes">{'Usar 2^3−1 para Selective Repeat.'}</p>
 </Exercise>
 
 <Exercise
@@ -261,80 +220,48 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rc-stuffing-traco"
-  title="Escapar bytes especiais"
-  explanation="/cadeiras/rc/ligacao-de-dados/#delimitar-sem-confundir-dados-com-controlo"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: '7D 5E, 01, 7D 5D.',
-        correct: true,
-        explanation: 'Cada byte especial é precedido de escape.',
-      },
-      {
-        text: '7E, 01, 7D.',
-        correct: false,
-        explanation: 'Os bytes de controlo não podem viajar sem escape.',
-      },
-      {
-        text: '7D 5E, 01.',
-        correct: false,
-        explanation: 'Falta escapar o segundo byte especial.',
-      },
-    ],
-  }}
+  revision={2}
+  title="Calcular BCC antes de escapar bytes"
+  explanation="/cadeiras/rc/ligacao-de-dados/#do-crc-da-teoria-ao-bcc-do-laboratório"
+  answer={{ kind: 'self', checklist: ['Calculo BCC2=02 sobre dados originais.', 'Obtenho seis bytes depois do stuffing.', 'Faço destuffing antes da verificação.'] }}
 >
   <div>
-    Dados com bytes 7E, 01 e 7D atravessam byte stuffing com flag 7E e escape
-    7D. Que sequência viaja no canal?
+
+No protocolo do Lab 1, os dados são os bytes hexadecimais `7E 01 7D`. BCC2 é o XOR dos bytes originais. O stuffing substitui `7E` por `7D 5E` e `7D` por `7D 5D`; outros bytes não mudam. Calcula BCC2, escreve a sequência de dados e BCC2 após stuffing, sem flags nem cabeçalho, e descreve a ordem de operações no recetor. Quantos bytes ocupa esta sequência?
+
   </div>
-  <p slot="hint">Aplica a regra a cada byte especial isoladamente.</p>
-  <div slot="hint-more">7E viaja como 7D 5E; 7D viaja como 7D 5D.</div>
+  <div slot="hint">O BCC também pode precisar de escape, mas é calculado antes dessa transformação.</div>
+  <div slot="hint-more">Acrescenta BCC2 aos dados antes de procurar bytes 7E e 7D.</div>
   <div slot="solution">
-    7D 5E, 01, 7D 5D. O recetor remove o escape antes de verificar o BCC.
+
+BCC2=`7E XOR 01 XOR 7D = 02`. Antes do stuffing temos `7E 01 7D 02`. Depois temos `7D 5E 01 7D 5D 02`, seis bytes. Dois bytes especiais ganharam um byte de escape cada; o BCC2 não precisa de escape neste exemplo.
+
+O recetor faz destuffing e recupera `7E 01 7D 02`. Recalcula o XOR sobre os três bytes de dados e compara com o BCC2 recebido. Calcular sobre os seis bytes do canal protegeria outra sequência e não aplicaria o algoritmo especificado.
+
   </div>
-  <div slot="mistakes">
-    Escapar só a flag ou esquecer o escape do próprio byte de escape.
-  </div>
+  <div slot="mistakes">Escapar só a flag, calcular BCC sobre bytes já escapados ou incluir os delimitadores na sequência pedida.</div>
 </Exercise>
 
 <Exercise
   id="rc-sr-ambiguidade"
-  title="Ver a ambiguidade de Selective Repeat"
+  revision={2}
+  title="Seguir as duas janelas de Selective Repeat"
   explanation="/cadeiras/rc/ligacao-de-dados/#go-back-n-e-selective-repeat"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Pode confundir uma repetição antiga de 0 com a nova ronda de 0.',
-        correct: true,
-        explanation: 'Não sobra número livre para separar passado e presente.',
-      },
-      {
-        text: 'Fica sempre seguro, porque há quatro números.',
-        correct: false,
-        explanation:
-          'Quatro números não chegam para janela três nas duas pontas.',
-      },
-      {
-        text: 'O problema é só falta de memória no recetor.',
-        correct: false,
-        explanation: 'A restrição é de ambiguidade de numeração.',
-      },
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Mantenho a janela do emissor após perder todos os ACKs.', 'Avanço a janela do recetor.', 'Identifico a sobreposição no caso W=3.', 'Mostro janelas disjuntas no caso W=2.'] }}
 >
   <div>
-    Com dois bits de sequência e janela três em Selective Repeat, todas as
-    confirmações de uma ronda perdem-se. Por que a janela é demasiado grande?
+
+Selective Repeat usa dois bits de sequência e janela três em ambas as pontas. O emissor envia 0, 1 e 2; o recetor recebe e entrega todas, mas todas as confirmações se perdem. Indica a janela de cada ponta. Se o emissor repetir 0, explica a ambiguidade. Repete o raciocínio com janela dois e envio inicial de 0 e 1.
+
   </div>
-  <p slot="hint">Conta quantos números ficam por usar.</p>
-  <div slot="hint-more">
-    Janela três ocupa três dos quatro valores; resta um.
-  </div>
+  <div slot="hint">Uma ponta avança ao entregar; a outra precisa de receber confirmação.</div>
+  <div slot="hint-more">Os números são módulo quatro. Depois de 2 vem 3 e depois 0.</div>
   <div slot="solution">
-    O emissor avança e reutiliza 0 sem conseguir distinguir a repetição antiga
-    da trama nova. Com janela dois, essa confusão desaparece.
+
+O emissor mantém 0, 1 e 2 pendentes, pois não recebeu confirmações. O recetor já espera 3, 0 e 1. A repetição antiga de 0 pertence a essa janela e pode ser aceite como dados novos. É o recetor que avançou antes do emissor, não o contrário.
+
+Com janela dois, o emissor mantém 0 e 1 pendentes e o recetor espera 2 e 3. As janelas não se sobrepõem, pelo que a repetição de 0 é identificada como antiga. A condição é $2W\le4$, assumindo que duplicados não sobrevivem a várias voltas da numeração.
+
   </div>
-  <div slot="mistakes">Aplicar o limite de Go-Back-N a Selective Repeat.</div>
+  <div slot="mistakes">Fazer o emissor avançar sem receber confirmações.</div>
 </Exercise>

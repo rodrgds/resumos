@@ -7,7 +7,15 @@ practices:
   - rc/praticar-ip
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
+    - title: Problemas docentes, problema 9, adaptação com endereços de documentação
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33691
+    - title: Resolução docente do problema 9
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33693
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
     - title: RFC4632, CIDR
@@ -20,13 +28,10 @@ editorial:
       url: https://www.rfc-editor.org/rfc/rfc8200.html
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
 import topologia from '../../rc/vlsm.dot?raw';
 
-As tramas circulam dentro de cada rede; os pacotes precisam de atravessar várias redes. Esta página mostra como endereçar sub-redes, escolher rotas e atravessar NAT e limites de MTU.
-
-Quando um pacote sai da tua rede para outra, é preciso escolher o caminho entre redes. O **IP**, o protocolo que liga redes entre si, entrega esses pacotes, a que chamamos **datagramas**, sem garantir fiabilidade. O **encaminhamento por pacote**, ou seja, a escolha da saída de cada datagrama pela tabela do router, decide salto a salto; os protocolos de routing constroem e atualizam essa tabela.
+Um host `192.0.2.77/26` precisa de decidir se entrega diretamente ao destino ou envia ao gateway. Primeiro encontra a sua rede pelo prefixo. Os routers seguintes consultam o IP de destino para escolher cada saída; os protocolos de routing constroem as tabelas usadas nessas decisões.
 
 ## IPv4 e prefixos
 
@@ -35,18 +40,6 @@ Um endereço IPv4 tem 32 bits. O prefixo `/p` indica bits de rede; os restantes 
 **Exemplo.** `192.0.2.77/26` tem máscara `255.255.255.192`. Em binário, o último octeto é `01001101` e a máscara é `11000000`; o AND dá `01000000`, ou 64. Os blocos começam em 0, 64, 128 e 192. O endereço pertence a `192.0.2.64/26`, com broadcast `.127` e intervalos usuais de hosts `.65` a `.126`, total de 62.
 
 A fórmula $2^{32-p}-2$ vale para sub-redes usuais que reservam rede e broadcast. **Não é universal:** `/31` pode usar os dois endereços ponto a ponto e `/32` é um só endereço. As classes A, B e C não substituem o CIDR do enunciado.
-
-<CodePlayground
-  language="python"
-  title="Conferir rede, máscara e extremos"
-  code={`from ipaddress import ip_interface
-interface = ip_interface("192.0.2.77/26")
-rede = interface.network
-hosts = list(rede.hosts())
-print("Rede:", rede, "Máscara:", rede.netmask)
-print("Broadcast:", rede.broadcast_address)
-print("Hosts:", hosts[0], "até", hosts[-1], "total", len(hosts))`}
-/>
 
 ## VLSM e agregação
 
@@ -62,13 +55,24 @@ O bloco `.224/27` sobra. Cada bloco tem tamanho potência de dois e início alin
 
 Na **agregação**, vários prefixos contíguos e alinhados podem ser anunciados por um prefixo mais curto. `192.0.2.0/25` e `192.0.2.128/25` agregam em `192.0.2.0/24`. Agregar blocos não contíguos pode anunciar destinos que não eram pretendidos.
 
+### Crescimento das sub-redes
+
+Adaptação do problema 9 e da resolução docente, com endereços de exemplo. Divide `192.0.2.0/24` por quatro departamentos com 72, 35, 20 e 18 computadores. Admitimos uma interface de gateway por sub-rede, já dentro da capacidade indicada abaixo.
+
+| Departamento | Computadores | Rede             | Máscara           | Hosts utilizáveis |
+| ------------ | ------------ | ---------------- | ----------------- | ----------------- |
+| A            | 72           | `192.0.2.0/25`   | `255.255.255.128` | 126               |
+| B            | 35           | `192.0.2.128/26` | `255.255.255.192` | 62                |
+| C            | 20           | `192.0.2.192/27` | `255.255.255.224` | 30                |
+| D            | 18           | `192.0.2.224/27` | `255.255.255.224` | 30                |
+
+Os quatro blocos ocupam os 256 endereços. Se D crescer para 34 computadores, precisa de `/26`, mas não pode simplesmente alargar `.224/27`: um `/26` não começa em .224 e a região `.192/26` contém C. Reorganizar os endereços exige preservar também os outros departamentos.
+
+Uma alternativa é dividir A em duas sub-redes. Reserva `.0/26` para 60 computadores de A e um gateway; `.224/27` para os restantes 12 e outro gateway. Usa `.64/26` para D, conserva B em `.128/26` e C em `.192/27`. A passa a precisar de encaminhamento entre as suas duas sub-redes e de reconfiguração dos hosts. Somar computadores dá 161 após o crescimento, mas somar os blocos necessários com uma rede por departamento dá 288 endereços. A necessidade resulta do alinhamento e das potências de dois, não só da soma de hosts.
+
 ## Longest prefix match
 
 O router escolhe, entre as rotas que correspondem ao destino, a de **prefixo mais longo**. A rota por omissão `/0` corresponde a tudo, mas perde para qualquer correspondência mais específica.
-
-:::tip[Ideia-chave]
-Entre rotas que correspondem ao destino, escolhe sempre o prefixo mais longo, porque a rota por omissão `/0` perde para qualquer correspondência mais específica.
-:::
 
 Com `/0` por G0, `10.0.0.0/8` por G1 e `10.2.0.0/16` por G2, o destino `10.2.3.4` sai por G2 e `10.9.1.1` sai por G1.
 

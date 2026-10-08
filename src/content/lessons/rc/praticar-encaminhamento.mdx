@@ -1,37 +1,46 @@
 ---
 title: Praticar caminhos e convergência
-description: Exercícios próprios com contas, traços, pistas e soluções.
+description: Caminhos mínimos, próximos saltos e propagação de anúncios.
 section: exercicios
 editorial:
   basedOn: 2026/27
-  coverage: Exercícios próprios sobre os tópicos da lição associada.
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
+  coverage: Caminhos mínimos, próximos saltos e propagação de anúncios.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rc-dijkstra"
-  title={'Somar o caminho mínimo'}
+  revision={2}
+  title="Construir caminhos e próximos saltos"
   explanation="/cadeiras/rc/algoritmos-encaminhamento/#link-state-e-dijkstra"
-  answer={{ kind: 'number', value: 4, tolerance: 0 }}
+  answer={{ kind: 'self', checklist: ['Fixo pela menor distância provisória.', 'Relaxo C por B e D por C.', 'Distingo predecessor de próximo salto.'] }}
 >
-  <p>
-    {
-      'Grafo não dirigido: AB 2, AC 5, BC 1, BD 4, CD 1. Qual o custo mínimo de A para D?'
-    }
-  </p>
-  <p slot="hint">
-    {'Experimenta passar por B e C, porque a ligação direta é cara.'}
-  </p>
-  <p slot="hint-more">{'A-B-C-D soma 2+1+1.'}</p>
-  <p slot="solution">
-    {
-      'Custo 4. A-B-D custa 6 e A-C-D também 6. O próximo salto de A para D é B.'
-    }
-  </p>
-  <p slot="mistakes">
-    {'Escolher a ligação direta a C sem atualizar a sua distância via B.'}
-  </p>
+  <div>
+
+Grafo não dirigido: AB custa 2, AC 5, BC 1, BD 4 e CD 1. Executa Dijkstra a partir de A, mostrando os nós fixados, distâncias provisórias e predecessores. Entrega custo, caminho e próximo salto de A para cada outro nó. Explica por que escolher primeiro a ligação direta A–C não dá o melhor caminho para C.
+
+  </div>
+  <div slot="hint">O custo até a um vizinho inclui o caminho que já percorreste.</div>
+  <div slot="hint-more">Depois de B, C tem custo 2+1 e D tem 2+4.</div>
+  <div slot="solution">
+
+Depois de fixar A, B tem distância 2 via A, C tem 5 via A e D está a infinito. Fixa B: C melhora para 3 via B e D para 6 via B. Fixa C: D melhora para 4 via C. Fixa D, terminando.
+
+| Destino | Custo | Caminho | Próximo salto |
+| ------- | ----- | ------- | ------------- |
+| B       | 2     | A–B     | B             |
+| C       | 3     | A–B–C   | B             |
+| D       | 4     | A–B–C–D | B             |
+
+A ligação A–C custa 5, enquanto A–B–C custa 3. Uma distância provisória pode melhorar antes de o nó ser fixado. O predecessor de D é C, mas o próximo salto de A para D é B.
+
+  </div>
+  <div slot="mistakes">Fixar pela ordem das letras ou confundir C, predecessor de D, com o próximo salto de A.</div>
 </Exercise>
 
 <Exercise
@@ -98,105 +107,27 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="rc-poison"
-  title={'Limites de poison reverse'}
-  explanation="/cadeiras/rc/algoritmos-encaminhamento/#falhas-ciclos-e-count-to-infinity"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Não; reduz alguns ciclos, mas não resolve todos os ciclos maiores.',
-        correct: true,
-        explanation: 'Ciclos com três ou mais nós podem continuar a ocorrer.',
-      },
-      {
-        text: 'Sim, por definição.',
-        correct: false,
-        explanation:
-          'A informação distribuída pode continuar incoerente durante a convergência.',
-      },
-      {
-        text: 'Não tem qualquer efeito.',
-        correct: false,
-        explanation:
-          'Pode impedir a reintrodução de uma rota por um vizinho que a aprendeu do próprio nó.',
-      },
-    ],
-  }}
->
-  <p>
-    {'Poison reverse elimina todos os ciclos num protocolo distance vector?'}
-  </p>
-  <p slot="hint">{'Pensa em A-B-C-A.'}</p>
-  <p slot="hint-more">{'A informação pode voltar por outro vizinho.'}</p>
-  <p slot="solution">
-    {
-      'Não elimina todos os ciclos. Distingue o objetivo do mecanismo de uma garantia universal.'
-    }
-  </p>
-  <p slot="mistakes">
-    {'Generalizar o caso de dois routers para qualquer topologia.'}
-  </p>
-</Exercise>
-
-<Exercise
   id="rc-dv-rondas"
-  title="Usar apenas os anúncios da ronda anterior"
+  revision={2}
+  title="Seguir rondas e anúncios após uma falha"
   explanation="/cadeiras/rc/algoritmos-encaminhamento/#distance-vector-e-bellman-ford"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Inicialmente A só conhece B com custo 1, além de si próprio.',
-      'Na primeira ronda A aprende C com custo 2, mas D continua a infinito.',
-      'Na segunda ronda A aprende D com custo 3 através de B.',
-      'Cada atualização usa os anúncios existentes antes de começar a ronda.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Uso apenas vetores da ronda anterior.', 'Obtenho C=2 na primeira ronda e D=3 na segunda.', 'Anuncio infinito ao vizinho usado como próximo salto.', 'Distingo a proteção do ciclo de dois nós de uma garantia geral.'] }}
 >
   <div>
-    Numa cadeia não dirigida A–B–C–D, cada ligação custa 1. O distance vector
-    começa com custo zero a si próprio, 1 aos vizinhos diretos e infinito aos
-    restantes. As rondas são síncronas. Indica as distâncias de A a C e a D
-    depois da primeira e da segunda rondas, e o próximo salto para D quando
-    passa a ser conhecido.
-  </div>
-  <p slot="hint">No início, B conhece C, mas ainda não conhece D.</p>
-  <div slot="hint-more">
-    B aprende D através de C na primeira ronda. A só pode usar esse anúncio na
-    segunda ronda.
-  </div>
-  <div slot="solution">
-    Primeira ronda: A chega a C com custo 2 e ainda não conhece D. Segunda:
-    mantém C com custo 2 e chega a D com custo 3, usando B como próximo salto.
-    Propagar uma atualização de C para B e imediatamente de B para A na mesma
-    ronda permitiria a notícia atravessar dois saltos, contrariando a regra
-    dada.
-  </div>
-  <div slot="mistakes">
-    Usar um valor acabado de calcular na mesma ronda, ou indicar D em vez do
-    vizinho B como próximo salto de A.
-  </div>
-</Exercise>
 
-<Exercise
-  id="rc-dijkstra-novo"
-  title={'Somar outro caminho mínimo'}
-  explanation="/cadeiras/rc/algoritmos-encaminhamento/#link-state-e-dijkstra"
-  answer={{ kind: 'number', value: 5, tolerance: 0 }}
->
-  <p>
-    {
-      'Grafo não dirigido: PQ 1, PR 4, QR 2, QS 5, RS 2. Qual o custo mínimo de P para S?'
-    }
-  </p>
-  <p slot="hint">{'Compara P-Q-R-S com P-Q-S.'}</p>
-  <p slot="hint-more">{'P-Q-R-S soma 1+2+2.'}</p>
+Numa cadeia não dirigida A–B–C–D, cada ligação custa 1. Inicialmente cada router conhece custo zero a si, 1 aos vizinhos e infinito aos restantes. Em rondas síncronas, indica as distâncias de A a C e D após as duas primeiras rondas e o próximo salto para D.
+
+Depois de convergir, A chega a D via B. Usando poison reverse, que distância a D anuncia A a B? Justifica por que esse anúncio não é uma rota alternativa para B se a ligação B–C falhar.
+
+  </div>
+  <div slot="hint">Ronda síncrona e atualização imediata são modelos diferentes.</div>
+  <div slot="hint-more">A depende de B para chegar a D.</div>
   <div slot="solution">
-    {
-      'Custo 5 por P-Q-R-S. P-Q-S custa 6 e P-R-S custa 6. O próximo salto de P para S é Q.'
-    }
+
+Na primeira ronda A aprende C com custo 2, mas D continua a infinito: B ainda não conhecia D no início da ronda. Na segunda A aprende D com custo 3, via B. Cada atualização usa o vetor anterior, sem propagar resultados novos na mesma ronda.
+
+A anuncia infinito para D a B, porque a sua rota para D foi aprendida através de B. Sem essa indicação, B poderia interpretar a rota antiga de A como alternativa à ligação que falhou, criando um ciclo A–B. Poison reverse impede esta reintrodução pelo mesmo vizinho; não garante eliminar todos os ciclos em topologias maiores.
+
   </div>
-  <div slot="mistakes">
-    {'Escolher a ligação direta a R sem relaxar via Q.'}
-  </div>
+  <div slot="mistakes">Anunciar a B distância 3 como se fosse uma alternativa independente.</div>
 </Exercise>

@@ -1,0 +1,124 @@
+---
+const bits = [1, 0, 1, 1];
+const symbolWidth = 80;
+const start = 90;
+const amplitude = 17;
+const wave = (kind: 'ask' | 'fsk' | 'psk', center: number) => {
+  let phase = 0;
+  return bits
+    .map((bit, symbol) => {
+      const cycles = kind === 'fsk' ? bit + 1 : 2;
+      const offset = kind === 'psk' ? bit * Math.PI : phase;
+      const scale = kind === 'ask' ? bit : 1;
+      const points = Array.from({ length: 81 }, (_, i) => {
+        const t = i / 80;
+        const x = start + (symbol + t) * symbolWidth;
+        const y =
+          center -
+          scale * amplitude * Math.sin(offset + t * cycles * 2 * Math.PI);
+        return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+      }).join(' ');
+      phase += cycles * 2 * Math.PI;
+      return points;
+    })
+    .join(' ');
+};
+---
+
+<figure>
+  <div
+    class="scroll"
+    tabindex="0"
+    aria-label="Sinais para os bits 1, 0, 1, 1, deslocável na horizontal"
+  >
+    <svg
+      viewBox="0 0 430 290"
+      role="img"
+      aria-labelledby="rc-mod-title rc-mod-desc"
+    >
+      <title id="rc-mod-title">A mesma sequência em três modulações</title>
+      <desc id="rc-mod-desc">
+        Quatro intervalos de símbolo representam 1, 0, 1, 1. ASK liga ou desliga
+        a amplitude; FSK usa duas ou uma oscilações por símbolo; PSK troca a
+        fase em 180 graus para o bit 1.
+      </desc>
+      {bits.map((bit, i) => (
+        <text x={start + (i + 0.5) * symbolWidth} y="22" text-anchor="middle">
+          {bit}
+        </text>
+      ))}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <line
+          class="boundary"
+          x1={start + i * symbolWidth}
+          y1="30"
+          x2={start + i * symbolWidth}
+          y2="255"
+        />
+      ))}
+      {(['ask', 'fsk', 'psk'] as const).map((kind, i) => (
+        <g>
+          <text x="12" y={65 + i * 85}>
+            {kind.toUpperCase()}
+          </text>
+          <line
+            class="axis"
+            x1={start}
+            y1={60 + i * 85}
+            x2="410"
+            y2={60 + i * 85}
+          />
+          <path d={wave(kind, 60 + i * 85)} />
+        </g>
+      ))}
+      <text x="250" y="281" text-anchor="middle">
+        Tempo, um bit por símbolo neste exemplo
+      </text>
+    </svg>
+  </div>
+  <figcaption>
+    As linhas verticais marcam os mesmos intervalos de símbolo. Em ASK, o zero
+    fica sem portadora; em FSK, tem menor frequência; em PSK, conserva a
+    frequência e muda a fase. São convenções deste desenho.
+  </figcaption>
+</figure>
+<style>
+  figure {
+    margin: 24px 0;
+  }
+  .scroll {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    min-width: 400px;
+    height: auto;
+  }
+  text {
+    fill: var(--text);
+    font: 14px var(--body-font, sans-serif);
+  }
+  .axis {
+    stroke: var(--line);
+  }
+  .boundary {
+    stroke: var(--muted);
+    stroke-dasharray: 2 4;
+  }
+  path {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  figcaption {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.9em;
+  }
+  .scroll:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+</style>

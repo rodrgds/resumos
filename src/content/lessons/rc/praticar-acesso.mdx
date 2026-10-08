@@ -1,31 +1,45 @@
 ---
 title: Praticar partilha do canal
-description: Exercícios próprios com contas, traços, pistas e soluções.
+description: Intervalos vulneráveis, carga, deteção de colisões e backoff.
 section: exercicios
 editorial:
   basedOn: 2026/27
-  coverage: Exercícios próprios sobre os tópicos da lição associada.
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
+  coverage: Intervalos vulneráveis, carga, deteção de colisões e backoff.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rc-aloha-max"
-  title={'Localizar o máximo'}
+  revision={2}
+  title="Comparar cargas e o intervalo vulnerável"
   explanation="/cadeiras/rc/acesso-ao-meio/#aloha-puro-e-com-ranhuras"
-  answer={{ kind: 'number', value: 1, tolerance: 0 }}
+  answer={{ kind: 'self', checklist: ['Relaciono os expoentes com 2T e T.', 'Calculo e comparo as quatro entregas.', 'Derivo para localizar os máximos.', 'Distingo tentativas de entregas e de estabilidade.'] }}
 >
-  <p>
-    {
-      'No modelo Poisson de ALOHA com ranhuras, a que G se atinge o máximo de S?'
-    }
-  </p>
-  <p slot="hint">{'S=Gexp(−G).'}</p>
-  <p slot="hint-more">{'A derivada é exp(−G)(1−G).'}</p>
-  <p slot="solution">
-    {'A derivada anula-se em G=1. O débito máximo é 1/e≈0,368.'}
-  </p>
-  <p slot="mistakes">{'Confundir G do máximo com o próprio débito máximo.'}</p>
+  <div>
+
+No modelo ALOHA com tentativas agregadas Poisson, tramas iguais e colisões destrutivas sem captura, compara o débito normalizado para G=0,5 e G=1 nos casos puro e com ranhuras. Justifica o expoente em cada fórmula pela duração do intervalo vulnerável. Encontra a carga que maximiza cada curva e explica por que aumentar as tentativas além dela pode reduzir as entregas.
+
+  </div>
+  <div slot="hint">Calcula a probabilidade de nenhuma tentativa no intervalo vulnerável.</div>
+  <div slot="hint-more">G é o número médio de tentativas por tempo de trama.</div>
+  <div slot="solution">
+
+Em ALOHA puro, uma trama colide com inícios num intervalo de duração 2T, pelo que a probabilidade de nenhuma tentativa concorrente é $e^{-2G}$ e $S=Ge^{-2G}$. Com ranhuras sincronizadas, o intervalo é T e $S=Ge^{-G}$.
+
+| G   | Puro    | Com ranhuras |
+| --- | ------- | ------------ |
+| 0,5 | 0,18394 | 0,30327      |
+| 1   | 0,13534 | 0,36788      |
+
+As derivadas são $e^{-2G}(1-2G)$ e $e^{-G}(1-G)$. Os máximos ocorrem em G=0,5 e G=1, com débitos $1/(2e)$ e $1/e$. No puro, duplicar G de 0,5 para 1 já reduz o sucesso. G inclui retransmissões, não só novas tramas; muitas tentativas podem aumentar colisões sem aumentar dados entregues. O máximo da curva não prova estabilidade das filas.
+
+  </div>
+  <div slot="mistakes">Tratar G como débito útil ou aplicar estas curvas diretamente ao Wi-Fi.</div>
 </Exercise>
 
 <Exercise
@@ -52,86 +66,23 @@ import Exercise from '../../../components/Exercise.astro';
 </Exercise>
 
 <Exercise
-  id="rc-full-duplex"
-  title={'Reconhecer a ausência de colisões'}
-  explanation="/cadeiras/rc/acesso-ao-meio/#csmacd-e-tamanho-mínimo"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Podem transmitir sem colisão nessas ligações.',
-        correct: true,
-        explanation:
-          'Os sentidos são separados e não há meio half-duplex partilhado.',
-      },
-      {
-        text: 'Aplicam CSMA/CD e uma das tramas colide.',
-        correct: false,
-        explanation: 'CSMA/CD não é usado em Ethernet full-duplex.',
-      },
-      {
-        text: 'B espera sempre pelo fim da trama de A.',
-        correct: false,
-        explanation: 'As ligações permitem transmissão simultânea.',
-      },
-    ],
-  }}
->
-  <p>
-    {
-      'A e B ligam a portas diferentes de um comutador. As ligações são full-duplex. Se ambos transmitem simultaneamente?'
-    }
-  </p>
-  <p slot="hint">{'Confirma o modo de cada ligação.'}</p>
-  <p slot="hint-more">{'Um comutador não é um concentrador half-duplex.'}</p>
-  <p slot="solution">
-    {
-      'Ambos podem transmitir. As saídas podem ter filas por contenção de destino, mas isso não é uma colisão Ethernet.'
-    }
-  </p>
-  <p slot="mistakes">
-    {'Confundir concorrência numa fila de saída com colisão física.'}
-  </p>
-</Exercise>
-
-<Exercise
   id="rc-ca-contagem"
-  title={'Seguir o backoff'}
+  revision={2}
+  title="Congelar e retomar o backoff"
   explanation="/cadeiras/rc/acesso-ao-meio/#csmaca-ack-e-estações-escondidas"
-  answer={{ kind: 'number', value: 4, tolerance: 0, unit: 'ranhuras' }}
+  answer={{ kind: 'self', checklist: ['Mantenho B em 4 durante a ocupação.', 'Desconto apenas ranhuras livres.', 'Congelo outra vez em 2, sem reiniciar.'] }}
 >
-  <p>
-    {
-      'A sorteia 3 ranhuras e B sorteia 7. A começa a transmitir primeiro. Quanto resta ao contador de B, assumindo contagem simultânea até A transmitir?'
-    }
-  </p>
-  <p slot="hint">{'B congela o contador durante a ocupação.'}</p>
-  <p slot="hint-more">{'Antes de A transmitir, ambos descontaram 3.'}</p>
-  <p slot="solution">
-    {
-      '7−3=4 ranhuras. B retoma depois da troca e do intervalo de canal livre exigido.'
-    }
-  </p>
-  <p slot="mistakes">
-    {'Reiniciar de 7 ou continuar a descontar durante a transmissão.'}
-  </p>
-</Exercise>
+  <div>
 
-<Exercise
-  id="rc-aloha-novo"
-  title={'Comparar ALOHA com outra carga'}
-  explanation="/cadeiras/rc/acesso-ao-meio/#aloha-puro-e-com-ranhuras"
-  answer={{ kind: 'number', value: 0.3595, tolerance: 0.001 }}
->
-  <p>{'Com G=0,8, qual o débito S de ALOHA com ranhuras?'}</p>
-  <p slot="hint">{'Usa S=Gexp(−G).'}</p>
-  <p slot="hint-more">{'0,8 ×exp(−0,8).'}</p>
+Duas estações contam simultaneamente backoff num canal livre: A começa em 3 e B em 7. Ao chegar a zero, A transmite; o ACK chega corretamente. Indica o contador de B durante a trama e o ACK, depois de duas ranhuras livres após o intervalo obrigatório, e o que aconteceria se outra estação começasse a transmitir nesse momento. Não há colisões neste traço.
+
+  </div>
+  <div slot="hint">Conta apenas ranhuras em que o protocolo permite diminuir o contador.</div>
+  <div slot="hint-more">O intervalo obrigatório não é parte das ranhuras do contador.</div>
   <div slot="solution">
-    {
-      'S≈0,3595. Em ALOHA puro daria 0,8 ×exp(−1,6)≈0,1615: a ranhura reduz a vulnerabilidade para metade.'
-    }
+
+As primeiras três ranhuras deixam A em zero e B em 4. B congela em 4 durante a trama e o ACK. Depois do intervalo obrigatório, duas ranhuras livres deixam B em 2. Se outra estação ocupar o canal, B volta a congelar em 2 e retoma só após a nova troca e o intervalo de canal livre exigido. Não sorteia outro valor apenas porque alguém ocupou o canal.
+
   </div>
-  <div slot="mistakes">
-    {'Aplicar o expoente de ALOHA puro ao caso com ranhuras.'}
-  </div>
+  <div slot="mistakes">Continuar a contar durante o ACK ou voltar ao sorteio original.</div>
 </Exercise>

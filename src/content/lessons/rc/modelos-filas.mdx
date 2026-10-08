@@ -7,30 +7,36 @@ practices:
   - rc/praticar-modelos-filas
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
+    - title: Delay Models, slides disponibilizados no Moodle 2026/27
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33682
+    - title: Problemas docentes, problemas 5 a 8
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33691
+    - title: Resolução docente dos problemas 1, 5 e 9
+      url: https://moodle2627.up.pt/mod/resource/view.php?id=33693
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
 ---
 
-import CodePlayground from '../../../components/CodePlayground.astro';
+import Dot from '../../../components/Dot.astro';
 
-A página anterior mediu atrasos com espera ilimitada. Aqui a memória é limitada e as filas ligam-se em rede. Primeiro equilibra estados, depois aplica Little à taxa admitida e só no fim trata redes com retornos.
-
-Uma interface real tem memória limitada, por isso distingue taxa **oferecida** de taxa **admitida**: quando o sistema enche, o pacote novo pode ser descartado.
+Uma interface com espaço total para dois pacotes rejeita uma chegada quando já há um pacote em transmissão e outro à espera. A taxa **oferecida** conta também essa chegada; a taxa **admitida** só conta os pacotes que entram. Esta diferença muda a aplicação da lei de Little.
 
 ## Poisson e serviço
 
-Num processo Poisson de taxa $\lambda$, o número de chegadas num intervalo $t$ tem distribuição:
+A [contagem Poisson e os tempos entre chegadas](/cadeiras/rc/desempenho-e-filas/#chegadas-poisson) já permitem calcular silêncio: $P(A(t)=0)=e^{-\lambda t}$. A taxa média não impõe intervalos fixos entre pacotes.
 
-$$P(A(t)=k)=e^{-\lambda t}\frac{(\lambda t)^k}{k!}.$$
+Duas fontes Poisson **independentes**, de 20 e 30 pacotes/s, formam um processo Poisson de 50 pacotes/s quando se juntam. Se cada chegada desse agregado escolher uma saída com probabilidade 0,4, independentemente das outras, essa saída recebe um processo Poisson de 20 pacotes/s e a outra de 30. Somar fluxos dependentes ou escolher uma saída conforme o estado das filas não garante estas propriedades.
 
-Intervalos sem sobreposição têm contagens independentes e o tempo entre chegadas é exponencial com média $1/\lambda$. Não significa espaçamento exato por essa média.
+A letra M em M/M/1 refere-se a processos sem memória: o tempo decorrido não altera a distribuição do tempo restante. O primeiro M descreve as chegadas; o segundo descreve o **serviço**. Alterar só os comprimentos de pacotes para constantes muda M/M/1 para M/D/1, mantendo a hipótese Poisson à entrada. As distribuições seguintes precisam de ser escolhidas pelas duas condições, não apenas pela taxa média.
 
-Para $\lambda=20$ pacotes/s e intervalo de 0,1 s, o número médio é 2. A probabilidade de zero chegadas é $e^{-2}\approx0{,}1353$. A de pelo menos uma é $1-e^{-2}\approx0{,}8647$.
+<span id="mm1b-define-a-capacidade"></span>
 
-A notação de Kendall **M/M/1** indica chegadas Poisson, tempos de serviço exponenciais e um servidor. A letra M significa _Markovian_. A propriedade sem memória significa que o tempo já decorrido não altera a distribuição do tempo até à próxima chegada ou até ao fim do serviço. Em M/D/1, o serviço é constante; em M/G/1, tem distribuição geral. As hipóteses sobre **tempo de serviço** são distintas das hipóteses sobre chegada.
-
-## M/M/1/B: define a capacidade
+## M/M/1/B e bloqueio
 
 Nesta página, **B é a capacidade total do sistema**, incluindo serviço. Se um enunciado usar B só para espera, substitui por B+1. Confirma a convenção antes de usares fórmulas.
 
@@ -44,26 +50,25 @@ A taxa admitida é $\lambda_e=\lambda(1-p_B)$. Calcula o número médio como $N=
 
 **Exemplo.** $\lambda=\mu=10$ pacotes/s e B=2. Os três estados têm probabilidade 1/3. Bloqueio 1/3, taxa admitida $20/3$, N=1. Então $T=1/(20/3)=0{,}15$ s. O serviço médio é 0,1 s; a espera média é 0,05 s. Usar $N/\lambda$ daria 0,1 s e ignoraria que um terço das entradas foi rejeitado.
 
-<CodePlayground
-  language="python"
-  title="Calcular bloqueio e tempo dos pacotes admitidos"
-  code={`lam, mu, B = 10.0, 10.0, 2
-rho = lam / mu
-pesos = [rho**n for n in range(B+1)]
-p = [peso/sum(pesos) for peso in pesos]
-lam_efetiva = lam*(1-p[B])
-N = sum(n*p[n] for n in range(B+1))
-print("Probabilidades:", [round(x,4) for x in p])
-print(f"Bloqueio: {p[B]:.4f}")
-print(f"Taxa admitida: {lam_efetiva:.4f} pacotes/s")
-print(f"Tempo no sistema: {N/lam_efetiva:.4f} s")`}
-/>
-
-:::tip[Ideia-chave]
-Na fila finita, aplica Little à taxa admitida $\lambda_e=\lambda(1-p_B)$, porque a oferecida conta pacotes rejeitados.
-:::
-
 Ao contrário de M/M/1 com capacidade infinita, a fila finita admite uma distribuição estacionária mesmo com $\lambda\ge\mu$. O excesso de procura aparece como bloqueio. Isso não torna a taxa oferecida integralmente atendida.
+
+## Dimensionamento de buffers
+
+Adaptação do problema 5 e da resolução docente. Uma saída de 256 kbit/s recebe pacotes com comprimento exponencial médio de 4000 bits e chegadas Poisson. Com tráfego oferecido de 192 kbit/s, $\mu=256000/4000=64$ pacotes/s, $\lambda=192000/4000=48$ e $\rho=0,75$. Na fila ilimitada, $T=1/(64-48)=62,5$ ms, dos quais 15,625 ms são serviço.
+
+Mantendo capacidade e tráfego em bits/s, duplicar o comprimento médio divide ambas as taxas de pacotes por dois. A carga mantém-se, mas T duplica para 125 ms. Reduzir o comprimento para metade dá T=31,25 ms. Fixar a taxa de pacotes, em vez do tráfego em bits/s, seria outro problema.
+
+Com capacidade total B=24 pacotes, passamos a M/M/1/B:
+
+| Tráfego oferecido | Carga oferecida | Probabilidade de bloqueio                        |
+| ----------------- | --------------- | ------------------------------------------------ |
+| 192 kbit/s        | 0,75            | $0,25(0,75)^{24}/(1-(0,75)^{25})\approx0,0251\%$ |
+| 256 kbit/s        | 1               | $1/25=4\%$                                       |
+| 320 kbit/s        | 1,25            | $\approx20,076\%$                                |
+
+A carga aqui é a razão **oferecida**, não a fração efetiva de ocupação do servidor da fila finita. Mesmo com mais buffers, no último caso o bloqueio tende a $1-1/1,25=20\%$: o canal não consegue servir todo o tráfego sustentado.
+
+O bloqueio depende de $\rho$ e B. Se mantivermos tráfego em bits/s e B em pacotes, mudar o comprimento não muda $\rho$ nem o bloqueio deste modelo. Porém, altera a memória em bytes necessária para o mesmo número de pacotes. Com memória física fixa em bytes, B também pode mudar; não podemos então concluir que a perda fica igual.
 
 ## Inferir a ligação a partir do tempo ocioso
 
@@ -93,6 +98,16 @@ Como $E[S^2]=Var(S)+E[S]^2$, maior variância pode aumentar a espera mesmo mante
 
 **Exemplo.** $E[S]=0{,}01$ s, variância $0{,}0001$ s² e $\lambda=50$. Então $\rho=0{,}5$, $E[S^2]=0{,}0002$ s² e $T_q=0{,}01$ s. O tempo total é 0,02 s. Quadrados de tempos usam s²; somar uma variância a uma média sem elevar esta ao quadrado não faz sentido.
 
+## Filas em série e independência
+
+Duas ligações em série não tornam automaticamente a segunda fila M/M/1. Se a primeira transmitir pacotes de comprimento constante em $s_1$ segundos, as suas saídas ficam separadas por pelo menos $s_1$. Não são Poisson, que permite chegadas arbitrariamente próximas.
+
+Com segunda ligação mais rápida, serviço $s_2\le s_1$, propagação constante e sem outro tráfego, cada pacote termina antes de o próximo chegar. A segunda fila não acumula espera, apesar de a primeira poder ter espera M/D/1. Somar duas fórmulas M/D/1 inventaria uma chegada Poisson que a segunda não tem.
+
+Com comprimentos variáveis conservados entre saltos, um pacote longo exige serviço longo em ambos. As chegadas e os serviços na segunda fila podem estar relacionados. A **aproximação de independência de Kleinrock** permite modelar cada ligação por M/M/1 quando a mistura de vários fluxos torna essa dependência menos importante. É uma aproximação, usada nos slides para redes com mistura de tráfego, não uma consequência apenas de $\lambda<\mu$.
+
+As taxas de cada ligação somam os fluxos dos percursos que a atravessam. Calcula $N$ por ligação e soma-os; para obter o tempo médio na rede, divide essa soma pela taxa de pacotes que **entram do exterior**. Contar cada salto como uma nova entrada externa reduziria artificialmente o atraso.
+
 ## Redes abertas de Jackson
 
 Uma rede aberta tem chegadas externas, várias filas e saídas. Nos modelos de Jackson usados aqui, as chegadas externas são Poisson, cada nó tem um servidor com serviço exponencial, independente dos restantes processos, o encaminhamento tem probabilidades fixas e as filas têm capacidade infinita. Todos os nós precisam de carga inferior a um.
@@ -102,6 +117,11 @@ Desenha primeiro entradas externas, visitas e saídas de cada nó. Só depois es
 $$\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}.$$
 
 Resolve estas equações **antes** de usares fórmulas de filas, porque a taxa interna pode exceder a externa quando há visitas repetidas.
+
+<Dot
+  source={`digraph { rankdir=TB; node [shape=box]; entrada [label="Entrada externa\\n40 pacotes/s"]; A [label="A\\nServiço 100/s"]; B [label="B\\nServiço 80/s"]; saida [label="Saída externa"]; entrada -> A; A -> B [label="1/2"]; B -> A [label="1/4"]; A -> saida [label="1/2"]; B -> saida [label="3/4"]; }`}
+  alt="Entram 40 pacotes por segundo em A. Metade das saídas de A segue para B, a outra metade sai. Um quarto das saídas de B volta a A, os restantes três quartos saem."
+/>
 
 **Exemplo com retorno.** Entram 40 pacotes/s em A. Metade vai depois para B; um quarto das saídas de B regressa a A, o resto sai. Assim $\lambda_A=40+0{,}25\lambda_B$ e $\lambda_B=0{,}5\lambda_A$. Logo $\lambda_A=40/0{,}875\approx45{,}714$ e $\lambda_B\approx22{,}857$.
 

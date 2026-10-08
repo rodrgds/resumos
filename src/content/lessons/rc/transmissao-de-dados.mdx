@@ -7,6 +7,10 @@ practices:
   - rc/praticar-transmissao
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
     - title: Nível físico, slides no Moodle atual
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33680
@@ -14,15 +18,13 @@ editorial:
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
 ---
 
-import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
-import ondas from '../../rc/modulacoes.typ?raw';
+import Modulacoes from '../../rc/Modulacoes.astro';
 
-Os pacotes atravessam redes, mas no cabo viajam sinais que se degradam. Esta página mostra como representar bits nesses sinais e que limites impõem a banda e o ruído.
+Para enviar `00`, `01`, `10` e `11`, um emissor pode usar quatro níveis de tensão. Cada **símbolo** representa dois bits. O recetor precisa de distinguir os níveis depois de o canal atenuar e deformar o sinal e de o ruído se somar a ele. Acrescentar níveis permite representar mais bits por símbolo, mas reduz a separação entre valores que o recetor tem de reconhecer.
 
-A mensagem é feita de zeros e uns, a que chamamos **bits**. Para os transportar usamos um **sinal**, ou seja, uma tensão ou onda que representa esses bits, e que chega sempre um pouco degradado. O **recetor**, o aparelho que recebe, observa então atenuação (perda de força), distorção, interferência e ruído. Usar mais níveis representa mais bits por símbolo, mas exige distinguir valores mais próximos.
+<span id="grandezas-que-não-são-iguais"></span>
 
-## Grandezas que não são iguais
+## Banda, símbolos e débito
 
 A **largura de banda** $B$, em Hz, mede frequências disponíveis. O **débito binário** $R$, em bit/s, mede bits por segundo. O **ritmo de símbolos** $R_s$, em baud, mede símbolos por segundo. Com $M$ símbolos distintos, cada símbolo representa $\log_2 M$ bits quando $M$ é potência de dois. Sem sobrecarga:
 
@@ -40,11 +42,7 @@ Em **banda base**, codifica-se diretamente a sequência de bits em níveis ou tr
 
 Um canal **passa-banda** transporta uma faixa em torno de uma frequência portadora $f_c$, em vez de frequências desde zero. A **modulação** adapta o sinal a essa faixa: altera amplitude em ASK, frequência em FSK e fase em PSK. QAM combina amplitude e fase.
 
-<Typst
-  source={ondas}
-  format="svg"
-  alt="ASK altera a amplitude, FSK a frequência e PSK a fase para representar a sequência 1, 0, 1, 1."
-/>
+<Modulacoes />
 
 **Simplex** permite uma direção; **half-duplex** permite ambas, à vez; **full-duplex** permite ambas simultaneamente. Esta distinção explica por que uma Ethernet comutada full-duplex não usa deteção de colisões.
 
@@ -88,26 +86,9 @@ $$C=B\log_2(1+SNR).$$
 
 São limites sob modelos definidos, por isso nenhuma modulação prática garante atingi-los. Quando o enunciado impõe ambos, calcula Nyquist e Shannon e fica com o menor: aumentar a constelação sobe Nyquist, mas não ultrapassa o teto do ruído.
 
-:::tip[Ideia-chave]
-Quando um enunciado impõe Nyquist e Shannon, calcula ambos e fica com o menor, porque aumentar $M$ não ultrapassa o limite do ruído.
-:::
-
 **Exemplo.** $B=4000$ Hz, $M=16$, SNR de 20 dB. Nyquist dá $2\times4000\times4=32000$ bit/s. Shannon dá $4000\log_2(101)\approx26633$ bit/s. O menor limite é cerca de 26,6 kbit/s.
 
-<CodePlayground
-  language="python"
-  title="Comparar os limites do canal"
-  code={`from math import log2
-B, M, snr_db = 4000, 16, 20
-snr = 10 ** (snr_db / 10)
-nyquist = 2 * B * log2(M)
-shannon = B * log2(1 + snr)
-print(f"Nyquist: {nyquist:.0f} bit/s")
-print(f"Shannon: {shannon:.0f} bit/s")
-print(f"Menor: {min(nyquist, shannon):.0f} bit/s")`}
-/>
-
-Não compares tecnologias com hipóteses diferentes usando apenas estes números. Uma previsão de 31 kbit/s para um canal particular não explica, por si só, um modem de 56 kbit/s: este usa outra configuração do canal.
+Neste canal, Shannon é a restrição mais baixa. Aumentar apenas o número de símbolos não permite ultrapassar 26,6 kbit/s. Para os 32 kbit/s de Nyquist serem compatíveis com Shannon, seria necessária uma SNR linear de pelo menos $2^{32000/4000}-1=255$, cerca de 24,1 dB. Respeitar ambos os limites é necessário neste modelo; não prova que uma implementação concreta atinja esse débito.
 
 ## De erros de bit a erros de trama
 
@@ -119,7 +100,7 @@ Para $Lp\ll1$, $F\approx Lp$. Se os erros chegam em rajadas, a independência n�
 
 Com $p=10^{-5}$ e $L=10000$, $F\approx0{,}09516$. Se tentativas independentes repetirem a mesma trama $k$ vezes, a probabilidade de pelo menos uma chegada correta é $1-F^k$, e não $(1-F)^k$, que exige que todas sejam corretas.
 
-Aumentar a potência do sinal mantendo o ruído fixo aumenta SNR. Aumentar a banda mantendo potência e densidade espectral de ruído fixas aumenta também a potência de ruído. Antes de comparar capacidades, verifica quais as grandezas mantidas constantes.
+Uma trama maior aproveita melhor um cabeçalho fixo, mas oferece mais posições onde pode ocorrer um erro. Nos mesmos dados, duplicar $L$ para 20000 dá $F=1-(1-10^{-5})^{20000}\approx0{,}18127$. Não se duplica exatamente a FER, e o modelo deixa de valer se os erros forem correlacionados.
 
 ## Potência absoluta e propagação rádio
 

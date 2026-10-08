@@ -1,36 +1,17 @@
 ---
 title: Praticar comutação e endereços
-description: Exercícios próprios com contas, traços, pistas e soluções.
+description: Aprendizagem MAC, filtragem, mudança de porta e ciclos.
 section: exercicios
 editorial:
   basedOn: 2026/27
-  coverage: Exercícios próprios sobre os tópicos da lição associada.
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
+  coverage: Aprendizagem MAC, filtragem, mudança de porta e ciclos.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
-
-<Exercise
-  id="rc-aprender-mac"
-  title={'Começar com tabela vazia'}
-  explanation="/cadeiras/rc/redes-locais/#aprendizagem-e-reenvio"
-  answer={{ kind: 'number', value: 3, tolerance: 0, unit: 'portas' }}
->
-  <p>
-    {
-      'Um comutador tem 4 portas, todas na mesma VLAN. A entra na 1 e envia a B, destino desconhecido. Por quantas portas sai a trama?'
-    }
-  </p>
-  <p slot="hint">
-    {'Inunda todas exceto a entrada, porque o destino é desconhecido.'}
-  </p>
-  <p slot="hint-more">{'A origem é aprendida, mas o destino ainda não.'}</p>
-  <p slot="solution">
-    {
-      'Sai por 2,3 e 4. Aprende MAC de A→porta 1; não aprende B pela indicação do destino.'
-    }
-  </p>
-  <p slot="mistakes">{'Aprender o destino em vez da origem.'}</p>
-</Exercise>
 
 <Exercise
   id="rc-mesma-porta"
@@ -148,31 +129,24 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rc-traco-mac-completo"
-  title={'Seguir quatro tramas'}
+  revision={2}
+  title="Aprender endereços e reaprender uma mudança"
   explanation="/cadeiras/rc/redes-locais/#aprendizagem-e-reenvio"
-  answer={{
-    kind: 'self',
-    checklist: [
-      'Aprendo a origem em cada trama, mesmo com destino desconhecido.',
-      'Inundo só quando o destino é desconhecido.',
-      'Filtro quando o destino está na porta de entrada.',
-    ],
-  }}
+  answer={{ kind: 'self', checklist: ['Aprendo a origem mesmo com destino desconhecido.', 'Inundo apenas as outras portas da VLAN.', 'Atualizo D para a porta 2 quando recebo uma trama dessa origem.'] }}
 >
   <div>
-    Comutador de quatro portas, tabela vazia. Chegam A→C, C→A, D→A e A→D, com A,
-    C e D nas portas 1, 3 e 4. Indica o que é aprendido e por que portas sai
-    cada trama.
+
+Um comutador de quatro portas, todas na mesma VLAN, começa com tabela vazia. A, C e D estão nas portas 1, 3 e 4. Chegam A→C, C→A, D→A e A→D. Indica aprendizagem e saídas por trama. Depois D muda fisicamente para a porta 2 e envia a C. Indica a atualização e a saída da trama seguinte de A para D. Não há expiração de entradas neste intervalo.
+
   </div>
-  <p slot="hint">A primeira trama aprende A sem conhecer C.</p>
-  <div slot="hint-more">
-    Depois das três primeiras, a tabela conhece A, C e D.
-  </div>
+  <div slot="hint">Em cada linha, aprende primeiro a origem e só depois consulta o destino.</div>
+  <div slot="hint-more">A nova trama de D substitui a localização antiga.</div>
   <div slot="solution">
-    A→C aprende A:1 e inunda 2, 3, 4. C→A aprende C:3 e sai só em 1. D→A aprende
-    D:4 e sai só em 1. A→D sai só em 4, pois D já é conhecido noutra porta.
+
+A→C aprende A:1 e inunda 2, 3, 4. C→A aprende C:3 e sai em 1. D→A aprende D:4 e sai em 1. A→D atualiza A:1 e sai em 4.
+
+Quando D envia pela porta 2, a origem da trama atualiza D:2; C já é conhecido e a trama sai em 3. A→D passa então a sair em 2. O comutador não aprende a localização de C só por C aparecer como destino. A atualização pela origem permite acompanhar a mudança sem esperar pelo envelhecimento da entrada antiga.
+
   </div>
-  <div slot="mistakes">
-    Aprender o destino em vez da origem ou inundar destinos conhecidos.
-  </div>
+  <div slot="mistakes">Aprender destinos ou manter D na porta 4 até expirar a entrada.</div>
 </Exercise>

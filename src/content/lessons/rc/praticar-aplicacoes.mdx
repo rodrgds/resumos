@@ -1,55 +1,17 @@
 ---
 title: Praticar aplicações e distribuição
-description: Exercícios próprios com contas, traços, pistas e soluções.
+description: Cache, HTTP persistente, leitura TCP, FTP e distribuição P2P.
 section: exercicios
 editorial:
   basedOn: 2026/27
-  coverage: Exercícios próprios sobre os tópicos da lição associada.
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
+  coverage: Cache, HTTP persistente, leitura TCP, FTP e distribuição P2P.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
-
-<Exercise
-  id="rc-dns-mx"
-  title={'Escolher um registo'}
-  explanation="/cadeiras/rc/aplicacoes/#dns-nomes-e-registos"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'MX.',
-        correct: true,
-        explanation: 'Identifica servidores de correio e preferências.',
-      },
-      {
-        text: 'PTR.',
-        correct: false,
-        explanation: 'É usado na resolução inversa de endereços.',
-      },
-      {
-        text: 'CNAME sempre.',
-        correct: false,
-        explanation: 'Pode haver aliases, mas o registo de correio é MX.',
-      },
-    ],
-  }}
->
-  <p>
-    {
-      'Um servidor precisa de descobrir para onde entregar correio dirigido a um domínio. Que registo DNS consulta?'
-    }
-  </p>
-  <p slot="hint">{'O registo depende da função, ou seja, correio pede MX.'}</p>
-  <p slot="hint-more">{'MX significa Mail Exchange.'}</p>
-  <p slot="solution">
-    {
-      'Procura MX do domínio, depois resolve os nomes dos servidores conforme necessário.'
-    }
-  </p>
-  <p slot="mistakes">
-    {'Usar só A ou AAAA sem consultar o destino do correio.'}
-  </p>
-</Exercise>
 
 <Exercise
   id="rc-http-rtt"
@@ -149,78 +111,62 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="rc-cache-sequencia"
-  title={'Poupar mensagens com cache'}
-  explanation="/cadeiras/rc/aplicacoes/#uma-página-do-nome-ao-conteúdo"
-  answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'Nenhuma mensagem DNS, TCP ou HTTP sai do terminal.',
-        correct: true,
-        explanation: 'O objeto válido em cache dispensa a sequência.',
-      },
-      {
-        text: 'Sai sempre DNS, TCP e pedido HTTP.',
-        correct: false,
-        explanation: 'A cache válida elimina essa comunicação.',
-      },
-      {
-        text: 'Sai DNS, mas nunca TCP.',
-        correct: false,
-        explanation: 'Sem pedido não há razão para resolver o nome.',
-      },
-    ],
-  }}
+  revision={2}
+  title="Seguir DNS e cache antes de pedir HTTP"
+  explanation="/cadeiras/rc/aplicacoes/#dns-tcp-e-http-no-mesmo-pedido"
+  answer={{ kind: 'self', checklist: ['No objeto fresco dispenso mensagens.', 'Distingo cache DNS de cache HTTP.', 'Explico pedido condicional e 304.', 'Ordeno resolução, abertura TCP e pedido HTTP.'] }}
 >
-  <p>
-    {
-      'Um objeto HTTP está válido na cache do navegador. Que mensagens de rede são precisas para o voltar a mostrar?'
-    }
-  </p>
-  <p slot="hint">{'Verifica a validade antes de qualquer ligação.'}</p>
-  <p slot="hint-more">{'Cache válida dispensa nome, ligação e pedido.'}</p>
+  <div>
+
+O navegador pede http://exemplo.test/dados em HTTP/1.1. Compara três casos: objeto fresco na cache do navegador; objeto expirado, registo A válido no resolver e nenhuma ligação TCP aberta; sem objeto, sem registo no resolver e nenhuma ligação TCP aberta. Descreve as mensagens necessárias, incluindo o significado de uma resposta 304. Para o último caso, assume que o resolver segue referências da raiz até ao servidor autoritativo.
+
+  </div>
+  <div slot="hint">Localiza primeiro o dado em cache e verifica se está válido.</div>
+  <div slot="hint-more">Um registo DNS não contém o objeto HTTP.</div>
   <div slot="solution">
-    {
-      'Nenhuma. Com validação expirada, seria preciso revalidar com pedido condicional e eventual 304.'
-    }
+
+Com objeto fresco, o navegador pode servi-lo diretamente sem DNS, TCP ou HTTP na rede. Com objeto expirado, usa o endereço em cache no resolver, evitando consultas à hierarquia. Se possuir um validador, abre TCP e envia um pedido condicional. Uma resposta 304 permite reutilizar o corpo guardado; não contém de novo o objeto. Sem validador, pode ser necessário um pedido normal e uma resposta com corpo.
+
+No terceiro caso, o cliente pergunta ao resolver. Este consulta raiz, TLD e autoritativo conforme as referências, obtém A e devolve o endereço ao cliente. Depois o navegador abre TCP e envia o pedido HTTP. DNS resolve nomes; não fornece o MAC remoto nem os bytes de /dados. A cache em cada etapa elimina operações diferentes.
+
   </div>
-  <div slot="mistakes">
-    {'Dizer que a cache só elimina etapas intermédias.'}
-  </div>
+  <div slot="mistakes">Enviar DNS só por rotina quando o objeto já pode ser mostrado localmente.</div>
 </Exercise>
 
 <Exercise
-  id="rc-ftp-modos"
-  title={'Distinguir FTP ativo e passivo'}
+  id="rc-ftp-firewall"
+  title="Diagnosticar a ligação de dados FTP"
   explanation="/cadeiras/rc/aplicacoes/#ftp-e-sockets"
   answer={{
-    kind: 'choice',
-    options: [
-      {
-        text: 'No ativo o servidor liga-se ao cliente; no passivo o cliente liga-se ao servidor.',
-        correct: true,
-        explanation: 'O sentido da ligação de dados muda.',
-      },
-      {
-        text: 'Ambos usam só a ligação de controlo para dados.',
-        correct: false,
-        explanation: 'FTP separa controlo em TCP 21 e dados.',
-      },
-      {
-        text: 'O modo passivo cifra credenciais por definição.',
-        correct: false,
-        explanation: 'FTP clássico não cifra; SFTP é outro protocolo.',
-      },
+    kind: 'self',
+    checklist: [
+      'Distingo controlo de dados.',
+      'Localizo a ligação bloqueada no modo ativo.',
+      'Justifico o modo passivo sem prometer contornar toda a firewall.',
     ],
   }}
 >
-  <p>{'Quem inicia a ligação de dados em cada modo de FTP?'}</p>
-  <p slot="hint">{'A ligação de controlo fica em TCP 21.'}</p>
-  <p slot="hint-more">{'No passivo o cliente usa a porta anunciada.'}</p>
-  <div slot="solution">
-    {
-      'Ativo: servidor inicia dados para o cliente. Passivo: cliente liga-se à porta anunciada pelo servidor.'
-    }
+  <div>
+    Um cliente abre TCP 21 e autentica-se num servidor FTP clássico. A firewall
+    do cliente permite ligações iniciadas por ele, mas bloqueia novas ligações
+    iniciadas pelo servidor. O download em modo ativo falha. Explica por que a
+    autenticação pode funcionar e os dados falhar, e como o modo passivo muda o
+    sentido da ligação de dados. Assume que a porta anunciada pelo servidor é
+    permitida para ligações de saída do cliente.
   </div>
-  <div slot="mistakes">{'Trocar os sentidos ou confundir FTP com SFTP.'}</div>
+  <div slot="hint">FTP usa ligações distintas para controlo e dados.</div>
+  <div slot="hint-more">
+    No modo ativo, a ligação de dados é iniciada pelo servidor.
+  </div>
+  <div slot="solution">
+    A ligação de controlo foi iniciada pelo cliente e é permitida. No ativo, o
+    servidor tenta abrir outra ligação para o cliente, que a firewall bloqueia.
+    No passivo, o servidor anuncia uma porta e o cliente inicia a ligação de
+    dados para ela. Pelas regras dadas, essa ligação é permitida. Isto não cifra
+    credenciais nem garante sucesso com qualquer configuração de firewall.
+  </div>
+  <div slot="mistakes">
+    Supor que autenticação confirma a ligação de dados ou que passivo significa
+    cifrado.
+  </div>
 </Exercise>

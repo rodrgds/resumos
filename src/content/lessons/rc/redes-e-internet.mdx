@@ -7,6 +7,10 @@ practices:
   - rc/praticar-redes
 editorial:
   basedOn: 2026/27
+  review:
+    edition: 2026/27
+    reviewer: Codex
+    date: '2026-10-08'
   sources:
     - title: Introdução, slides no Moodle atual
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33678
@@ -17,15 +21,12 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
-import CodePlayground from '../../../components/CodePlayground.astro';
 import caminho from '../../rc/caminho-pacote.typ?raw';
 import cronologia from '../../rc/store-and-forward.typ?raw';
 
-Uma mensagem atravessa a rede partida em pacotes, cada um a saltar de equipamento em equipamento. Esta página mostra por que a rede funciona assim e que peças decidem o caminho de cada pacote.
+Um portátil pede um ficheiro a um servidor. Os dados seguem em **pacotes**, que os routers encaminham entre redes. O portátil pode usar TCP para recuperar perdas, mas o serviço IP que transporta os pacotes não garante chegada, ordem ou ausência de duplicados.
 
-Quando envias uma mensagem, ela não viaja inteira por um fio só teu até ao destino. É partida em pedaços chamados **pacotes**, e cada pacote salta de equipamento em equipamento até chegar. Esta página explica por que a rede funciona assim, que peças a compõem e como se organizam.
-
-Um **protocolo** define o formato das mensagens, a ordem dos campos e o que fazer ao recebê-las. Um **serviço** é o que uma parte da rede oferece à parte de cima. Cada **camada** é um andar da organização da rede e serve a camada seguinte. O IP, o protocolo que liga redes entre si, oferece esse transporte sem garantir chegada, ordem ou ausência de duplicados.
+Um **protocolo** define as mensagens e as ações de quem as troca. Um **serviço** descreve o que uma camada oferece à seguinte. TCP oferece um fluxo ordenado à aplicação; para o implementar, troca segmentos e confirmações com o TCP do outro terminal. Esta distinção separa aquilo que a aplicação recebe do mecanismo que o fornece.
 
 Um **bit** é um 0 ou 1, e um **byte** são 8 bits. Aqui usamos kbit/s e Mbit/s decimais, ou seja, $10^3$ e $10^6$ bits por segundo.
 
@@ -33,21 +34,19 @@ Um **bit** é um 0 ou 1, e um **byte** são 8 bits. Aqui usamos kbit/s e Mbit/s 
 
 Na **comutação de circuitos**, reservas capacidade antes de transmitir. FDM reserva bandas de frequência e TDM reserva intervalos de tempo. A reserva dá débito previsível, mas fica ocupada mesmo quando a origem não envia.
 
-Na **comutação de pacotes**, os fluxos partilham capacidade conforme a necessidade. Um **router** liga redes e escolhe o caminho de cada pacote. Recebe um pacote, escolhe a saída e espera que fique livre. Esta **multiplexagem estatística** aproveita pausas, porque há mais fluxos do que capacidade simultânea. Mas pode criar filas e perdas quando a procura excede o serviço.
+Na **comutação de pacotes**, os fluxos partilham capacidade conforme a necessidade. Um **router** liga redes e escolhe o caminho de cada pacote. Recebe um pacote, escolhe a saída e espera que fique livre. Na **multiplexagem estatística**, a capacidade da saída não fica reservada a um fluxo. Quando um fica sem dados, outro pode usá-la. Mas pode criar filas e perdas quando a procura excede o serviço.
 
 Uma rede de pacotes pode usar **datagramas**, com decisão de encaminhamento por pacote, ou **circuitos virtuais**, com estado de ligação no caminho. IP usa datagramas. Uma ligação TCP entre aplicações não transforma a rede IP numa rede de circuitos virtuais.
 
-## Um pacote não atravessa tudo ao mesmo tempo
+<span id="um-pacote-não-atravessa-tudo-ao-mesmo-tempo"></span>
+
+## Store-and-forward e segmentação
 
 Em **store-and-forward**, um equipamento só começa a enviar um pacote depois de o receber inteiro. Para $N$ pacotes iguais de $L$ bits, através de $H$ ligações iguais de débito $R$, sem propagação, filas ou processamento:
 
 $$T = (H+N-1)\frac{L}{R}.$$
 
 O primeiro pacote ocupa $H$ tempos de transmissão. Os restantes chegam espaçados de $L/R$, porque as ligações trabalham em paralelo.
-
-:::tip[Ideia-chave]
-Conta $H+N-1$ intervalos, ou seja, o primeiro atravessa $H$ ligações e cada pacote seguinte acrescenta um.
-:::
 
 **Exemplo.** Divide 3 Mbit em três pacotes de 1 Mbit. Há duas ligações de 1 Mbit/s. O primeiro chega em 2 s, o segundo em 3 s e o terceiro em **4 s**. Sem divisão, o pacote único demoraria 6 s. Com mais cabeçalhos ou pacotes menores, muda a quantidade transmitida.
 
@@ -60,17 +59,6 @@ Conta $H+N-1$ intervalos, ou seja, o primeiro atravessa $H$ ligações e cada pa
 Cada bloco mostra a transmissão completa de um pacote numa ligação. Entre 1 e 2 s, a origem envia P2 enquanto o router envia P1, porque já o recebeu inteiro. Esta **sobreposição entre ligações** mantém o store-and-forward: nenhuma segunda transmissão começa antes de terminar a primeira.
 
 Neste modelo, cada transmissão demora $L/R=1$ s. O primeiro pacote precisa de $H=2$ intervalos para atravessar as duas ligações. Cada um dos $N-1=2$ pacotes restantes acrescenta um intervalo até à última chegada. Por isso, contamos $H+N-1=2+3-1=4$ intervalos, e não $H\times N=6$ transmissões feitas uma de cada vez.
-
-<CodePlayground
-  language="python"
-  title="Instantes de chegada numa cadeia"
-  code={`pacotes = 3
-ligacoes = 2
-bits = 1_000_000
-debito = 1_000_000
-for i in range(1, pacotes + 1):
-    print(i, (ligacoes + i - 1) * bits / debito, "s")`}
-/>
 
 Para um circuito com capacidade de 1 Mbit/s, estabelecimento de 0,5 s e propagação desprezável, a mensagem demoraria $0{,}5+3=3{,}5$ s. O circuito ganha neste exemplo isolado. Isso não prova que aproveite melhor uma rede com muitos utilizadores intermitentes.
 
@@ -90,11 +78,11 @@ O modelo OSI separa ainda sessão e apresentação entre aplicação e transport
 
 No **encapsulamento**, o TCP acrescenta o seu cabeçalho aos dados, o IP envolve o segmento e a Ethernet envolve o pacote com verificação de erros. O destino desfaz estas etapas. Um router retira a trama, processa IP e constrói outra para a ligação seguinte. O cabeçalho de ligação muda por salto; os IP de origem e destino mantêm-se, salvo traduções como NAT.
 
-| Ponto do percurso | O que muda                                                      | O que se mantém                      |
-| ----------------- | --------------------------------------------------------------- | ------------------------------------ |
-| Host origem       | Cria segmento, pacote e trama                                   | Dados da aplicação                   |
-| Router            | Retira a trama, baixa TTL, refaz checksum IPv4, cria nova trama | IP de origem e destino, conteúdo TCP |
-| Host destino      | Retira trama, pacote e segmento                                 | Ordem de entrega à aplicação         |
+| Ponto do percurso | O que muda                                                      | O que se mantém                                       |
+| ----------------- | --------------------------------------------------------------- | ----------------------------------------------------- |
+| Host origem       | Cria segmento, pacote e trama                                   | Dados da aplicação                                    |
+| Router            | Retira a trama, baixa TTL, refaz checksum IPv4, cria nova trama | IP de origem e destino, conteúdo TCP                  |
+| Host destino      | Retira trama, pacote e segmento                                 | Dados, entregues por ordem se o transporte o garantir |
 
 <Typst
   source={caminho}
@@ -102,8 +90,12 @@ No **encapsulamento**, o TCP acrescenta o seu cabeçalho aos dados, o IP envolve
   alt="Um pacote percorre o portátil, o router de acesso, o núcleo, a rede de destino e o servidor."
 />
 
-## Descrever uma rede num exame
+<span id="descrever-uma-rede-num-exame"></span>
+
+## Equipamentos e topologias
 
 Identifica terminais, ligações e equipamentos. Um **concentrador** repete sinais, um **comutador** encaminha tramas e um **router** encaminha pacotes IP. Um aparelho doméstico pode combinar os três sem tornar iguais estas funções.
+
+Uma ligação Bluetooth entre o portátil e um periférico é uma rede pessoal, PAN. A rede local de uma casa ou edifício é uma LAN; redes de âmbito metropolitano e alargado são designadas MAN e WAN. Estas designações descrevem o âmbito, não garantem um débito ou um protocolo. A Internet interliga redes de vários âmbitos.
 
 Distingue **topologia física** de **topologia lógica**, ou seja, cabos de percursos permitidos. Uma VLAN pode separar duas redes lógicas no mesmo comutador. Distingue também **débito da ligação** de **débito útil**, porque o segundo conta só dados entregues à aplicação.
