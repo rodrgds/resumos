@@ -73,7 +73,7 @@ Antes de entregar:
 - Refaz contas, confirma hipóteses e verifica exemplos contra as fontes. Executa o código alterado no ambiente adequado e no componente do site quando for executável.
 - Relê a sequência inteira. O leitor deve conseguir refazer o exemplo e reconhecer quando o método se aplica. Conserva explicações corretas que já cumpram esse objetivo.
 - Verifica referências a títulos, associações de exercícios e revisões de respostas. Mantém ids quando o significado se mantém; incrementa `revision` quando muda.
-- Inspeciona visuais e interações no navegador, em largura móvel e nos dois temas. Confirma rótulos, teclado, movimento reduzido e contas do estado inicial. Uma validação automática não substitui essa observação.
+- Inspeciona visuais e interações no navegador, a 320 px e em desktop, nos dois temas. Confirma rótulos, teclado, movimento reduzido e contas do estado inicial, incluindo conteúdo cortado dentro da figura. Uma validação automática não substitui essa observação.
 - Entrega ao autor o que mudou, as fontes consultadas e os limites de verificação. O build confirma a integração; não prova a qualidade pedagógica.
 
 Para guias práticos, mostra o resultado pretendido, a pasta ou ferramenta onde agir, o comando e a forma de reconhecer sucesso. Separa alternativas de ambiente antes dos passos e coloca avisos junto da ação relevante.

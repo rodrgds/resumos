@@ -55,4 +55,6 @@ Ao simplificar uma demo existente, retira controlos sem função pedagógica, ag
 
 Resolve cada questão revista sem consultar a solução e confronta ambos os resultados. Verifica que as hipóteses bastam e que nenhuma resposta depende de adivinhar a intenção. Confirma o traço ou as contas do visual com um caso conhecido e um caso limite relevante.
 
-No navegador, lê uma questão como aluno, pede ajuda e verifica uma resposta certa e uma errada. Numa demo, altera o parâmetro e confirma o significado da mudança. Revê a disposição em telemóvel e nos dois temas. Não uses contagem de exercícios, palavras ou visuais como prova de melhoria.
+No navegador, lê uma questão como aluno, pede ajuda e verifica uma resposta certa e uma errada. Numa demo, altera o parâmetro e confirma o significado da mudança. Revê a disposição a 320 px e em desktop, nos dois temas. Não uses contagem de exercícios, palavras ou visuais como prova de melhoria.
+
+Confere o interior de cada figura, não apenas a largura da página. Um contentor com deslocação pode esconder o segundo caso ou um ramo inteiro sem fazer a página transbordar. Faz caber as relações de um diagrama pequeno: encurta rótulos repetidos, reparte linhas ou muda a disposição, mantendo letras legíveis. Para tabelas extensas ou diagramas que precisem de deslocação, percorre-os até ao fim com teclado e toque e confirma que o texto explica como ler a parte inicialmente oculta. Depois de corrigir, inspeciona a nova compilação.
