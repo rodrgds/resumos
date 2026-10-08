@@ -8,6 +8,12 @@ $$
 \int_0^1 x\,dx = \frac{1}{2}
 $$
 
+$$N=\lambda T.$$
+
+Delimitadores duplos no texto: $$a+b$$ continuam em linha.
+
+$x+y$
+
 <!-- prettier-ignore -->
 ```javascript
 function greet(name) {

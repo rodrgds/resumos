@@ -6,13 +6,19 @@ import markdownExport from './src/lib/markdown-export.mjs';
 import remarkDirective from 'remark-directive';
 import remarkContainers from './src/lib/remark-containers.mjs';
 import remarkMath from 'remark-math';
+import remarkDisplayMath from './src/lib/remark-display-math.mjs';
 import rehypeDisclosures from './src/lib/rehype-disclosures.mjs';
 import rehypeKatex from 'rehype-katex';
 import { codeTheme } from './src/lib/code-theme.mjs';
 import { transformerRenderWhitespace } from '@shikijs/transformers';
 
 const content = {
-  remarkPlugins: [remarkMath, remarkDirective, remarkContainers],
+  remarkPlugins: [
+    remarkMath,
+    remarkDisplayMath,
+    remarkDirective,
+    remarkContainers,
+  ],
   rehypePlugins: [rehypeKatex, rehypeDisclosures],
   remarkRehype: {
     footnoteLabel: 'Notas de rodapé',

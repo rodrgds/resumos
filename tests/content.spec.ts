@@ -97,8 +97,18 @@ test('Markdown and MDX render LaTeX alongside semantic Typst and SVG', async ({
     'Primeiro ponto',
     'Segundo ponto',
   ]);
-  await expect(page.locator('.katex')).toHaveCount(3);
-  await expect(page.locator('.katex-display')).toHaveCount(1);
+  await expect(page.locator('.katex')).toHaveCount(9);
+  const blocks = page.locator('.katex-display');
+  await expect(blocks).toHaveCount(4);
+  await page.evaluate(() => document.fonts.ready);
+  for (const block of await blocks.all()) {
+    const outer = (await block.boundingBox())!;
+    const inner = (await block.locator('.katex-html').boundingBox())!;
+    expect(
+      Math.abs(inner.x + inner.width / 2 - outer.x - outer.width / 2),
+    ).toBeLessThan(2);
+  }
+  await expect(page.locator('p .katex-display')).toHaveCount(0);
   await expect(page.locator('.typst-content math')).toHaveCount(1);
   await expect(
     page.getByRole('img', { name: 'Uma entrada transforma-se numa saída.' }),
