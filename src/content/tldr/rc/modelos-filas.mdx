@@ -1,0 +1,57 @@
+import Dot from '../../../components/Dot.astro';
+
+## Processos e fronteiras
+
+Fontes Poisson independentes somam taxas. Escolher cada saída com probabilidade fixa, independentemente entre chegadas, separa o fluxo em processos Poisson. Dependência ou escolhas conforme a fila não garantem estas propriedades.
+
+O primeiro M de M/M/1 descreve chegadas; o segundo, serviço. Serviço constante muda para M/D/1. A taxa média isolada não determina o modelo.
+
+## M/M/1/B
+
+Chegadas Poisson de taxa $\lambda$, serviço exponencial independente de taxa $\mu$, um servidor e capacidade total **B incluindo serviço**. Se B contar apenas espera no enunciado, a capacidade total é B+1. Define $\rho=\lambda/\mu$.
+
+$$p_n=\frac{(1-\rho)\rho^n}{1-\rho^{B+1}},\quad 0\le n\le B,\quad\rho\ne1.$$
+
+Para $\rho=1$, $p_n=1/(B+1)$. A capacidade finita permite equilíbrio mesmo com $\rho\ge1$, à custa de bloquear chegadas.
+
+1. Bloqueio: $p_B$, pois chegadas Poisson observam a distribuição estacionária.
+2. Taxa admitida: $\lambda_e=\lambda(1-p_B)$.
+3. Número médio: $N=\sum_{n=0}^{B}np_n$.
+4. Little para admitidos: $T=N/\lambda_e$. Com FIFO, $T_q=T-1/\mu$ e $N_q=N-(1-p_0)$.
+
+Com $\lambda=\mu=10$ pacotes/s e B=2: bloqueio 1/3, $\lambda_e=20/3$, N=1, T=150 ms e espera 50 ms. Dividir por taxa oferecida contaria rejeitados.
+
+## Dimensionamento e limites
+
+- Para capacidade $C$ bit/s e comprimento médio $\bar L$ bits, $\mu=C/\bar L$. Tráfego oferecido $A$ bit/s dá $\lambda=A/\bar L$.
+- Mantendo C e A, mudar comprimento conserva carga e bloqueio com B fixo em pacotes, mas altera tempos e memória em bytes. Com memória fixa em bytes, B pode mudar.
+- Para $\rho>1$, ao aumentar B, bloqueio tende a $1-1/\rho$. Mais memória não elimina sobrecarga sustentada.
+- Numa M/M/1 ilimitada estável, ociosidade $1-\rho$ e $P(N\ge k)=\rho^k$. Para $k\ge1$ em espera, $P(N_q\ge k)=\rho^{k+1}$.
+- Com serviço constante $s$, FIFO sem preempção e capacidade total B, a espera de um admitido não excede $(B-1)s$. É limite, não média; M/M/1/B não descreve esse serviço constante.
+
+## M/G/1
+
+Chegadas Poisson, serviços iid independentes das chegadas, um servidor, FIFO ilimitada sem preempção, $\rho=\lambda E[S]<1$ e segundo momento finito:
+
+$$T_q=\frac{\lambda E[S^2]}{2(1-\rho)},\qquad T=T_q+E[S].$$
+
+$E[S^2]=Var(S)+E[S]^2$, em s². Serviço constante dá $E[S^2]=E[S]^2$; exponencial dá $2E[S]^2$. Maior variância pode aumentar espera à mesma carga.
+
+Filas em série não criam automaticamente chegadas Poisson na segunda. Com serviços constantes $s_2\le s_1$, propagação constante e sem outro tráfego, as saídas da primeira estão separadas por pelo menos $s_1$ e a segunda não acumula espera. A independência de Kleinrock é uma aproximação para tráfego misturado.
+
+## Redes abertas de Jackson
+
+Chegadas externas Poisson, um servidor exponencial independente por nó, capacidades infinitas, encaminhamento com probabilidades fixas e carga menor que um em todos os nós.
+
+$$\lambda_i=\gamma_i+\sum_j\lambda_jp_{ji}.$$
+
+$\gamma_i$ é taxa externa; $p_{ji}$ é probabilidade de ir de j a i. Resolve taxas totais, incluindo retornos, antes de calcular médias por nó.
+
+<Dot
+  source={`digraph { rankdir=TB; node [shape=box]; entrada [label="Entrada externa\\n40 pacotes/s"]; A [label="A\\nServiço 100/s"]; B [label="B\\nServiço 80/s"]; saida [label="Saída externa"]; entrada -> A; A -> B [label="1/2"]; B -> A [label="1/4"]; A -> saida [label="1/2"]; B -> saida [label="3/4"]; }`}
+  alt="Entram 40/s em A; metade segue a B. De B, um quarto volta a A. As restantes saídas deixam a rede."
+/>
+
+Aqui $\lambda_A=40+\lambda_B/4$, $\lambda_B=\lambda_A/2$, dando 45,714 e 22,857 pacotes/s. Para $\mu_A=100$, $\mu_B=80$, calcula $T_i=1/(\mu_i-\lambda_i)$, depois $N=\sum_i\lambda_iT_i\approx1,2421$. O tempo por pacote externo é $N/40\approx31,05$ ms. Somar tempos por visita ignora visitas opcionais ou repetidas.
+
+[Modelos e dimensionamento](/cadeiras/rc/modelos-filas/#mm1b-e-bloqueio).

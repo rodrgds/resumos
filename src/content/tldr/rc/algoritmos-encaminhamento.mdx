@@ -1,0 +1,56 @@
+import Dot from '../../../components/Dot.astro';
+
+## Link state e Dijkstra
+
+Link state divulga custos de ligações, permitindo construir o grafo. Dijkstra exige **custos não negativos**.
+
+1. Origem a zero, restantes a infinito.
+2. Fixa o nó não fixado de menor distância provisória.
+3. Relaxa vizinhos: compara distância atual com distância do fixado mais custo da ligação.
+4. Repete e recupera caminhos pelos predecessores. O próximo salto é o primeiro nó depois da origem.
+
+<Dot
+  source={`graph { rankdir=LR; node [shape=circle]; A -- B [label="2"]; A -- C [label="5"]; B -- C [label="1"]; B -- D [label="4"]; C -- D [label="1"]; }`}
+  alt="AB custa 2, AC 5, BC 1, BD 4 e CD 1. A-B-C-D custa 4."
+/>
+
+| Nó acabado de fixar | Distância B | Distância C | Distância D |
+| ------------------- | ----------- | ----------- | ----------- |
+| A                   | 2           | 5           | Infinito    |
+| B                   | 2           | 3           | 6           |
+| C                   | 2           | 3           | 4           |
+| D                   | 2           | 3           | 4           |
+
+De A a D: custo 4, caminho A-B-C-D, próximo salto B. C é predecessor de D. Em empates, pode haver vários caminhos mínimos; segue o desempate dado.
+
+## Distance vector
+
+Cada router conhece custos locais e anúncios dos vizinhos:
+
+$$D_x(y)=\min_v\{c(x,v)+D_v(y)\}.$$
+
+$v$ percorre vizinhos. Guarda o vizinho que minimiza a soma. Se X-A custa 2 e A anuncia 7 para Z, via A custa 9; X-B=5 e anúncio 1 dão 6 via B.
+
+Em **rondas síncronas**, todas as atualizações usam vetores da ronda anterior. Usar imediatamente um resultado novo corresponde a outro modelo. Inicialização habitual: zero a si, custo local aos vizinhos, infinito aos restantes.
+
+## Falhas e convergência
+
+Em Z-A-B, custos 1, A anuncia 1 e B anuncia 2 via A. Após falhar Z-A, um anúncio antigo de B pode levar A a escolher 3 via B; B passa a 4 via A, depois A a 5. É count to infinity, sem caminho real.
+
+- Split horizon não anuncia por uma interface rotas aprendidas nessa interface.
+- Poison reverse anuncia essas rotas com infinito.
+- Triggered updates divulgam alterações sem esperar pelo período.
+
+Estas técnicas ajudam; poison reverse não elimina todos os ciclos de três ou mais routers. TTL/Hop Limit limita pacotes em ciclos, sem resolver convergência das tabelas.
+
+## Protocolos e objetivos
+
+| Protocolo | Método                                              | Âmbito                                             |
+| --------- | --------------------------------------------------- | -------------------------------------------------- |
+| RIP       | Vetor de distâncias, saltos; 16 é infinito          | Dentro de sistema autónomo                         |
+| OSPF      | Estado de ligações, caminhos mínimos, áreas         | Dentro de sistema autónomo                         |
+| BGP       | Vetor de caminhos de sistemas autónomos e políticas | Entre sistemas autónomos, com distribuição interna |
+
+Um sistema autónomo partilha administração e política. O custo definido pelo problema não é necessariamente atraso ou capacidade. Com custo $1/R$, dois enlaces de 4 Mbit/s somam 0,5; um direto de 3 Mbit/s custa 1/3 e vence, apesar de ter menor bottleneck. Minimizar soma dos inversos não maximiza o menor débito.
+
+[Traços de falha e convergência](/cadeiras/rc/algoritmos-encaminhamento/#falhas-ciclos-e-count-to-infinity).

@@ -1,0 +1,61 @@
+import Typst from '../../../components/Typst.astro';
+import Manim from '../../../components/Manim.astro';
+import aperto from '../../rc/handshake.typ?raw';
+
+## UDP e TCP
+
+Portas entregam dados a sockets no terminal. Uma ligação TCP distingue-se por IP e porta de origem, IP e porta de destino.
+
+| Transporte | Entrega                                                                         |
+| ---------- | ------------------------------------------------------------------------------- |
+| UDP        | Datagramas, cabeçalho de 8 bytes; sem abertura, garantia de chegada ou ordem    |
+| TCP        | Fluxo de bytes ordenado e fiável enquanto a ligação funciona, com retransmissão |
+
+TCP não preserva fronteiras de `send`; uma leitura pode dividir ou juntar envios. A aplicação delimita mensagens. Falha persistente termina a ligação e é comunicada. UDP não garante baixa latência; DNS pode usar TCP e HTTP/3 usa QUIC sobre UDP.
+
+## Sequência e ACK
+
+TCP numera **bytes**. Um segmento em 1000 com 300 bytes ocupa 1000 a 1299; o próximo começa em 1300. ACK 1300 confirma todos os anteriores e indica o próximo esperado. SYN e FIN consomem um número cada; ACK simples não consome.
+
+<Typst
+  source={aperto}
+  format="svg"
+  alt="Cliente envia SYN seq=100; servidor envia SYN-ACK seq=500, ACK=101; cliente envia ACK seq=101, ACK=501."
+/>
+
+O primeiro byte do cliente é 101. Enviar 200 e depois 100 bytes faz os segmentos começar em 101 e 301 e terminar com ACK 401. Cada direção tem numeração própria. FIN fecha uma direção; TIME-WAIT ajuda com segmentos atrasados e confirmação final.
+
+<Manim
+  animation="rc-ack-cumulativo"
+  title="ACK cumulativo e lacunas"
+  description="Após receber 1000–1299, o ACK é 1300. Chegar 1600–1899 não permite ultrapassar a falta de 1300–1599. Quando essa lacuna chega, o ACK avança para 1900. Os extremos dos intervalos estão incluídos."
+/>
+
+SACK negociado identifica blocos fora de ordem sem mudar o ACK cumulativo. A aplicação só recebe a sequência contínua.
+
+## RTT e retransmissão
+
+SRTT estima RTT; RTTVAR estima variação; RTO define timeout. A RFC6298 atualiza primeiro RTTVAR com peso 1/4, depois SRTT com 1/8:
+
+$$RTO=SRTT+\max(G,4RTTVAR),$$
+
+com G a granularidade do relógio e mínimo recomendado de 1 s. Karn ignora amostras retransmitidas quando não se distingue qual envio produziu o ACK. Timeout aumenta a espera antes de tentar novamente; ACKs duplicados podem permitir recuperação rápida.
+
+## Janelas e congestionamento
+
+`rwnd` protege o recetor; `cwnd` protege a rede. No modelo simplificado:
+
+$$Bytes_{novos}=\max(0,\min(rwnd,cwnd)-FlightSize).$$
+
+Com janela efetiva W bytes e RTT T segundos, limite ideal $8W/T$ bit/s, também limitado pelo bottleneck. W=64000 e T=0,08 dão 6,4 Mbit/s. MSS é máximo de dados por segmento, não o tamanho obrigatório.
+
+No TCP clássico com ACK por segmento e dados suficientes, slow start duplica aproximadamente `cwnd` por RTT; ao atingir `ssthresh`, congestion avoidance cresce aproximadamente 1 MSS por RTT. Com janela inicial 1 e limiar 8 MSS, o traço ideal é 1, 2, 4, 8, 9, 10.
+
+| Evento em Reno clássico, 12 MSS em voo | `ssthresh` | `cwnd`                                                        |
+| -------------------------------------- | ---------- | ------------------------------------------------------------- |
+| Três ACKs duplicados                   | 6 MSS      | 9 MSS temporários em fast recovery; 6 após ACK de recuperação |
+| Timeout                                | 6 MSS      | 1 MSS, reinicia slow start                                    |
+
+Em geral, o limiar passa a $\max(FlightSize/2,2\,MSS)$. Não reduzas limiar e janela ao mesmo valor indiscriminadamente. Outras variantes, delayed ACKs e janelas iniciais mudam o traço. AIMD combina aumento aditivo e redução multiplicativa; perda não prova congestionamento, e ECN pode sinalizá-lo sem descartar.
+
+[Traços de janela e perda](/cadeiras/rc/transporte-e-aplicacoes/#slow-start-aimd-e-perdas).

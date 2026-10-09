@@ -1,0 +1,65 @@
+import Dot from '../../../components/Dot.astro';
+import stopAndWait from '../../rc/stop-and-wait.dot?raw';
+
+## Delimitação e deteção de erros
+
+- Byte stuffing escapa bytes especiais segundo o protocolo. HDLC insere um zero após cinco uns consecutivos entre flags, incluindo o CRC.
+- Forma primeiro o conteúdo protegido, depois aplica stuffing. No recetor, retira stuffing antes de verificar. Conta escapes e cabeçalhos no comprimento transmitido.
+- Paridade simples deteta alterações em número ímpar. CRC divide polinómios binários por XOR, sem transportes.
+
+Para mensagem $D$ e gerador $G$ de grau $r$, acrescenta $r$ zeros, divide por $G$ e substitui os zeros pelo resto de $r$ bits. `1101` com `1011` dá resto `001` e palavra `1101001`.
+
+Resto zero pode esconder um erro múltiplo de $G$. Com termo constante 1, um CRC de grau $r$ deteta rajadas até $r$ bits. Outras garantias dependem do gerador e comprimento. Um código de distância mínima $d$ deteta até $d-1$ alterações e pode corrigir até $\lfloor(d-1)/2\rfloor$ com descodificação apropriada; um verificador CRC não faz automaticamente essa correção.
+
+## Stop-and-Wait e janelas
+
+O emissor espera confirmação e repete no timeout. O bit alternado impede entregar duplicados. Aqui **RR(n)** indica a próxima trama esperada: recebe I(0), entrega uma vez e responde RR(1). Se RR(1) se perder, a repetição I(0) recebe outro RR(1), sem nova entrega.
+
+<Dot
+  source={stopAndWait}
+  alt="Emissor alterna I(0) e I(1) apenas ao receber RR(1) e RR(0), respetivamente. Um timeout repete a mesma trama."
+/>
+
+| Propriedade            | Go-Back-N                              | Selective Repeat                          |
+| ---------------------- | -------------------------------------- | ----------------------------------------- |
+| Fora de ordem          | Habitualmente descarta                 | Guarda dentro da janela                   |
+| Recuperação            | Repete a falta e posteriores pendentes | Repete só as faltas                       |
+| Confirmação            | Cumulativa                             | Individual ou seletiva, conforme variante |
+| Janela usual, $m$ bits | $W\le2^m-1$                            | $W\le2^{m-1}$ com janelas iguais          |
+
+SR precisa de $2W\le2^m$ para separar janela antiga e nova, assumindo que duplicados não sobrevivem a várias voltas. Com perda de 1 em 0, 1, 2, 3, GBN descarta 2 e 3; SR guarda-os e entrega por ordem quando recebe 1.
+
+Na variante da lição, REJ(n) pede n e posteriores pendentes; SREJ(n) só n; RR(n) confirma o bloco até n−1. Piggybacking leva confirmações em dados da direção contrária. Num traço, separa chegada, confirmação e entrega e segue a máquina de estados do enunciado.
+
+## Eficiência e débito útil
+
+Sem perdas nem processamento, com $t_f=L/R$, propagação num sentido $t_p$ e ACK de duração $t_a$:
+
+$$U_{SW}=\frac{t_f}{t_f+2t_p+t_a},\qquad U_0=\min\left(1,\frac{Wt_f}{t_f+2t_p+t_a}\right).$$
+
+$L$ inclui todos os bits transmitidos. Com ACK desprezável, define $a=t_p/t_f$. Nos modelos simplificados de erros independentes de trama $p_e$:
+
+$$U_{SW}=\frac{1-p_e}{1+2a},\qquad E_{SR}=(1-p_e)\min\left(1,\frac{W}{1+2a}\right).$$
+
+SW pressupõe ciclos de tentativa iguais. SR mede entregas úteis normalizadas, não ocupação física. Para GBN:
+
+$$
+U_{GBN}=\begin{cases}
+\frac{1-p_e}{1+2ap_e},&W\ge1+2a,\\
+\frac{W(1-p_e)}{(1+2a)(1-p_e+Wp_e)},&W<1+2a.
+\end{cases}
+$$
+
+Calcula tempo e janela, depois FER, finalmente $D_{\text{útil}}=RU\,L_{dados}/L_{transmitido}$. Acrescentar FEC exige recalcular $t_f$, $a$ e fração útil; usa a FER residual fornecida. As fórmulas não abrangem todos os timeouts, perdas de ACK ou erros correlacionados.
+
+Com $a=2$, $W=5$ e $p_e=0,1$, SW dá 0,18, SR 0,9 e GBN cerca de 0,6429. O número médio de tentativas independentes é $1/(1-p_e)$.
+
+ARQ por salto recupera localmente; de extremo a extremo pode repetir trabalho anterior. No modelo ideal de $K$ saltos iguais de capacidade $C$ e perdas independentes $p$, os limites são $C(1-p)$ e $C(1-p)^K$, respetivamente. Não são uma previsão de TCP real.
+
+## BCC no Lab 1
+
+BCC1 é `A XOR C`; BCC2 é XOR dos bytes originais de dados. Depois escapa `7E` como `7D 5E` e `7D` como `7D 5D`. Para `7E 01 7D`, BCC2 é `02`, e o conteúdo escapado é `7D 5E 01 7D 5D 02`.
+
+A API 2026/27 usa `llOpenTx`, `llOpenRx`, `llSend`, `llReceive`, `llCloseTx`, `llCloseRx`. A leitura configurada com `VMIN=1`, `VTIME=0` é bloqueante. Reconhece SET byte a byte e só responde UA após validar BCC1 e flag final. Uma SET repetida precisa de nova UA; uma trama I repetida pode receber RR, mas não voltar a entregar dados. A ligação não interpreta START, END ou nomes da aplicação.
+
+[Combinar janela, BER e FEC](/cadeiras/rc/ligacao-de-dados/#combinar-ber-janela-e-redundância). [Máquina de receção do laboratório](/cadeiras/rc/ligacao-de-dados/#estado-da-receção-no-lab-1).

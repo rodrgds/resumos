@@ -1,0 +1,47 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import paragem from '../../rc/contencao.mmd?raw';
+
+## ALOHA
+
+Modelo com tramas iguais de duração $T$, tentativas agregadas Poisson, colisões destrutivas sem captura e sincronização no caso com ranhuras. $G$ conta tentativas por tempo de trama, incluindo retransmissões; $S$ conta entregas nesse intervalo.
+
+| Variante            | Intervalo vulnerável | Débito normalizado | Máximo                          |
+| ------------------- | -------------------- | ------------------ | ------------------------------- |
+| Puro, início livre  | $2T$                 | $Ge^{-2G}$         | $1/(2e)\approx0,184$ em $G=0,5$ |
+| Com ranhuras de $T$ | $T$                  | $Ge^{-G}$          | $1/e\approx0,368$ em $G=1$      |
+
+No puro, colidem inícios até $T$ antes ou depois. Com ranhuras, só se começa nas fronteiras. Mais tentativas além do máximo reduzem entregas. O máximo não prova estabilidade das filas nem se aplica automaticamente a Wi-Fi.
+
+## CSMA e colisões
+
+CSMA escuta antes de enviar. A propagação permite que outra estação ainda ouça silêncio e comece, criando colisão.
+
+- **1-persistente:** transmite logo que o meio fica livre; várias estações à espera podem arrancar juntas.
+- **Não persistente:** se ocupado, espera aleatoriamente antes de voltar a escutar.
+- **p-persistente:** com meio livre e ranhuras, transmite com probabilidade $p$; adia uma ranhura com $1-p$.
+
+Em CSMA/CD, Ethernet partilhada half-duplex deteta colisão, sinaliza e interrompe. Para continuar a transmitir durante a propagação de ida e volta:
+
+$$L_{min}/R\ge2t_p.$$
+
+A 10 Mbit/s com $t_p=20$ μs, o modelo exige 400 bits. O mínimo Ethernet de 64 bytes, de MAC destino a FCS, tem parâmetros próprios. Não mistures os dois cálculos.
+
+Binary exponential backoff sorteia um número de slot times, ampliando o intervalo após colisões. No Ethernet clássico, o expoente limita-se a 10 e abandona-se após 16 tentativas. **Ethernet comutada full-duplex não usa CSMA/CD.**
+
+## Wi-Fi e CSMA/CA
+
+A estação normalmente não deteta colisão no recetor enquanto envia. Sem ACK, tanto pode ter falhado a trama como a confirmação.
+
+1. Espera o intervalo exigido de meio livre.
+2. Conta backoff em ranhuras livres; congela quando ocupado.
+3. A zero, transmite. O ACK segue após SIFS, mais curto que a espera dos concorrentes.
+4. Os restantes retomam o contador após o novo intervalo livre, sem o reiniciar só por outra estação ter enviado.
+
+<Mermaid
+  source={paragem}
+  alt="A e B começam em 2 e 5. A transmite após duas ranhuras; B congela em 3 durante trama e ACK e retoma depois da espera obrigatória."
+/>
+
+Estações **escondidas** alcançam o mesmo recetor mas não se ouvem. RTS/CTS e NAV podem anunciar reserva, com sobrecarga, sem eliminar todas as colisões. Uma estação **exposta** adia uma transmissão que poderia coexistir. Canal livre localmente não prova recetor livre.
+
+[Colisões e contenção](/cadeiras/rc/acesso-ao-meio/#csmaca-ack-e-estações-escondidas).
