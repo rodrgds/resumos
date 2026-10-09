@@ -1,0 +1,57 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+## Linhas, grupos e repetidos
+
+Fixa primeiro o significado de uma linha do resultado. A ordem lógica útil é `FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT`; o plano físico pode executar de outra forma.
+
+- `WHERE` filtra linhas; `HAVING` filtra grupos.
+- SQL conserva repetidos. `DISTINCT` elimina linhas iguais da projeção, mas não corrige uma junção errada.
+- `UNION` elimina repetidos; `UNION ALL` conserva-os.
+- Seleção e projeção da álgebra relacional correspondem aproximadamente a filtros e escolha de colunas. A projeção clássica elimina repetidos e não usa a semântica de NULL de SQL.
+
+## NULL e agregação
+
+`NULL` significa informação ausente. `x = NULL` dá desconhecido; usa `IS NULL`. **WHERE só conserva verdadeiro**, enquanto CHECK também aceita desconhecido.
+
+| Expressão                   | Resultado    |
+| --------------------------- | ------------ |
+| `TRUE AND NULL`             | Desconhecido |
+| `FALSE AND NULL`            | Falso        |
+| `TRUE OR NULL`              | Verdadeiro   |
+| `FALSE OR NULL`, `NOT NULL` | Desconhecido |
+
+`COUNT(*)` conta linhas; `COUNT(coluna)` conta valores não nulos. SUM, AVG, MIN e MAX ignoram NULL; SUM sem valores dá NULL. `COALESCE(SUM(preco),0)` escolhe interpretar a ausência como zero.
+
+## Conservar linhas sem correspondência
+
+Aqui S1 tem um pago e um cancelado; S2 não tem bilhetes; S3 só tem um cancelado. As CTEs são dados mínimos para isolar a consulta.
+
+<CodePlayground
+  language="postgresql"
+  title="Contar pagos sem perder sessões"
+  code={`WITH sessoes(id) AS (VALUES (1),(2),(3)),
+bilhetes(id,sessao_id,estado) AS (
+  VALUES (10,1,'pago'),(11,1,'cancelado'),(12,3,'cancelado')
+)
+SELECT s.id, COUNT(b.id) AS pagos
+FROM sessoes s
+LEFT JOIN bilhetes b
+  ON b.sessao_id = s.id AND b.estado = 'pago'
+GROUP BY s.id ORDER BY s.id;`}
+/>
+
+Resultado: `(1,1)`, `(2,0)`, `(3,0)`. O filtro no ON escolhe correspondências; LEFT JOIN conserva as outras sessões. Mover o filtro de estado para WHERE elimina S2 e S3. `COUNT(*)` contaria a linha exterior como um.
+
+## Existência e quantificação
+
+- `EXISTS` testa existência de linhas. `NOT EXISTS` correlacionado exprime ausência de correspondências.
+- `2 NOT IN (1,NULL)` é desconhecido. Uma subconsulta nullable pode provocar esta armadilha; `NOT EXISTS` com a correlação correta evita-a.
+- "Comprou em todas as sessões" traduz-se em "não existe sessão para a qual não existe compra". Sem sessões, aceita por vacuidade; acrescenta EXISTS se exigires alguma sessão.
+
+## Janelas e resultados intermédios
+
+`SUM(preco) OVER (PARTITION BY sessao_id)` mantém cada venda e acrescenta o total da sessão: duas vendas de 8 e 12 continuam em duas linhas, ambas com total 20. `GROUP BY` reduz a uma linha por grupo. `ROW_NUMBER` numera segundo a ordenação da janela.
+
+Uma CTE `WITH nome AS (...)` nomeia um resultado intermédio; não promete materialização nem melhoria de desempenho.
+
+[Quantificação e consultas completas](/cadeiras/lbaw/consultas-relacionais/#exists-not-in-e-todos).

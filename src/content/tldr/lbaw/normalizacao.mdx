@@ -1,0 +1,51 @@
+import Dot from '../../../components/Dot.astro';
+import dependencias from '../../lbaw/dependencias.dot?raw';
+
+## Dependências, fechos e chaves
+
+**$X\to Y$** exige que quaisquer duas linhas válidas iguais em X sejam iguais em Y. Vem das regras do domínio; uma amostra pode refutar uma dependência, mas não provar que vale em todos os dados futuros. É trivial se $Y\subseteq X$.
+
+Armstrong permite reflexividade, aumento e transitividade. O **fecho $X^+$** começa em X e acrescenta atributos pelas dependências até estabilizar.
+
+- X é **superchave** se $X^+$ contém todos os atributos.
+- É **chave candidata** se, além disso, nenhum subconjunto próprio é superchave.
+- Um atributo é **primo** se pertence a alguma chave candidata, não apenas à primária escolhida.
+
+Em `R(aluno, uc, docente, sala)`, só com `uc → docente` e `docente → sala`, `uc⁺` não contém aluno. A única chave candidata é `(aluno,uc)`.
+
+<Dot
+  source={dependencias}
+  alt="Aluno e UC identificam matrícula; UC determina docente, e docente determina sala."
+/>
+
+## Formas normais
+
+Considera todas as dependências inferidas das regras declaradas.
+
+| Forma | Condição                                                                                  |
+| ----- | ----------------------------------------------------------------------------------------- |
+| 1FN   | Cada posição guarda um valor do domínio, sem grupos repetidos que escondam várias linhas. |
+| 2FN   | 1FN e nenhum atributo não primo depende de parte própria de uma chave candidata.          |
+| 3FN   | Para cada DF não trivial $X\to A$, X é superchave ou A é primo.                           |
+| BCNF  | Para cada DF não trivial $X\to Y$, X é superchave.                                        |
+
+No exemplo, `uc → docente` viola 2FN. A decomposição `matricula(aluno,uc)`, `uc(uc,docente)`, `docente(docente,sala)` fica em BCNF sob as regras dadas.
+
+## Sem perda e preservação
+
+- **Sem perda:** juntar as projeções de uma relação válida recupera exatamente os tuplos originais, sem combinações espúrias.
+- Numa decomposição binária sob DFs, a condição necessária e suficiente é a interseção determinar todos os atributos de uma das relações.
+- **Preserva dependências:** as DFs projetadas permitem impor as regras originais sem junção.
+
+Em `R(A,B,C)` com `AB → C` e `C → B`, as chaves são AB e AC. Está em 3FN porque B é primo, mas não em BCNF porque C não é superchave. Separar CB e AC é sem perda, mas não preserva `AB → C`: regras locais podem aceitar `(c1,b1),(c2,b1)` em CB e `(a1,c1),(a1,c2)` em AC, cuja junção viola essa DF.
+
+## Procedimento
+
+1. Declara atributos e DFs autorizadas.
+2. Calcula todas as chaves e atributos primos.
+3. Identifica a DF que viola a forma pedida.
+4. Decompõe e justifica ausência de perda e preservação separadamente.
+
+Uma PK artificial não elimina anomalias de atualização, inserção ou eliminação. Desnormalização exige medir o benefício e manter dados derivados em todos os caminhos de escrita. Um preço histórico e um preço atual representam factos diferentes.
+
+[Decomposição completa](/cadeiras/lbaw/normalizacao/#decomposição-sem-perda-e-preservação-de-dependências).

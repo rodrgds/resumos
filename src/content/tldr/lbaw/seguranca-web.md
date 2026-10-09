@@ -1,0 +1,46 @@
+## Defesa pelo contexto
+
+| Falha                                           | Defesa principal                                                     |
+| ----------------------------------------------- | -------------------------------------------------------------------- |
+| Entrada torna-se sintaxe SQL                    | Parâmetros preparados para valores.                                  |
+| Texto torna-se código da página, XSS            | Codificação pelo contexto ou sanitização de HTML permitido.          |
+| Pedido induzido usa cookie da vítima, CSRF      | Token imprevisível validado no servidor, com defesas complementares. |
+| Comprador acede ao bilhete alheio               | Autorização sobre pessoa, operação e objeto.                         |
+| Identificador anterior ao login é reaproveitado | Regeneração da sessão após autenticação.                             |
+| Hashes de palavras-passe ficam expostos         | Hash próprio para palavras-passe, com parâmetros adequados.          |
+
+Cada mecanismo trata uma falha diferente. HTTPS protege o transporte; validação no cliente pode ser contornada.
+
+## SQL injection
+
+```php
+$stmt = $pdo->prepare('SELECT id FROM utilizadores WHERE email = :email');
+$stmt->execute(['email' => $email]);
+```
+
+O email permanece um valor, mesmo contendo apóstrofos. Parâmetros não representam nomes de coluna ou palavras-chave: ordenação escolhida pelo cliente exige mapear opções para uma lista autorizada. ORM não protege SQL raw concatenado. Limita privilégios da conta da aplicação.
+
+## XSS e contexto de saída
+
+XSS pode ser refletido, persistido ou criado por inserção insegura no DOM.
+
+- Em texto HTML, usa `htmlspecialchars(..., ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')` ou `{{ ... }}` de Blade.
+- No DOM, `textContent` conserva texto; `innerHTML` interpreta HTML.
+- JavaScript, CSS e URLs exigem tratamento próprio. Em URLs, valida também o esquema, recusando `javascript:`.
+- Se permitires HTML formatado, usa sanitização mantida com lista restrita de elementos e atributos; retirar só script não chega.
+
+CSP complementa estas defesas. HttpOnly impede leitura direta do cookie, mas um XSS pode executar ações com a sessão.
+
+## CSRF e autorização
+
+CSRF não precisa de ler resposta ou cookie. Basta induzir uma alteração com credenciais enviadas pelo navegador. Nos formulários Laravel, usa `@csrf` com middleware que verifica o token. Não coloques o token em URLs. SameSite e verificação de origem complementam; POST e CORS não substituem a proteção. XSS na origem legítima pode contorná-la.
+
+O comprador 7 não pode consultar o bilhete 900 de 8 só por estar autenticado. Verifica policy antes de gerar a resposta, em rotas, API, downloads e lotes. Esconder o link e tornar ids difíceis não autoriza. Para "comprar para mim", obtém identidade da sessão autenticada, não de `utilizador_id` recebido. `$fillable` não é uma policy.
+
+## Palavras-passe e sessões
+
+Usa Argon2id ou bcrypt através de API mantida; SHA-256 simples é demasiado rápido. Hash não permite desencriptar; cifragem recupera o original com chave.
+
+`password_hash` guarda salt e parâmetros no formato; `password_verify` verifica. Comparar diretamente um hash novo com o antigo falha porque salts podem diferir. Regenera sessão no login, usa mensagens genéricas, limita tentativas e aplica expiração e uso único a tokens de recuperação.
+
+[Análise de um acesso ao bilhete alheio](/cadeiras/lbaw/seguranca-web/#um-pedido-ao-bilhete-alheio-camada-a-camada).

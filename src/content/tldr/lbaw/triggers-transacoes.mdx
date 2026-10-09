@@ -1,0 +1,60 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import corrida from '../../lbaw/concorrencia.mmd?raw';
+
+## Transação e invariante
+
+**Atomicidade** confirma ou anula a unidade de trabalho inteira. Consistência depende das restrições e protocolo corretos; isolamento coordena efeitos concorrentes; durabilidade conserva confirmações segundo as garantias do sistema.
+
+Reservar capacidade e inserir bilhete têm de pertencer à mesma transação. O contador `livres` deve coincidir com lotação menos bilhetes ativos em **todos** os caminhos de compra, cancelamento e alteração de lotação.
+
+```sql
+BEGIN;
+UPDATE sessoes SET livres = livres - 1
+WHERE id = 12 AND livres > 0 RETURNING id, livres;
+-- Só inserir bilhete se o UPDATE devolveu uma linha.
+-- Se devolveu zero, anular e responder "esgotado".
+-- Inserir o bilhete antes de COMMIT.
+```
+
+Este é um protocolo a completar pela aplicação, não um script que confirma uma compra sozinho. Se a inserção falhar, ROLLBACK anula também o decremento. ROLLBACK TO SAVEPOINT só anula trabalho posterior ao ponto; colocar o ponto entre contador e bilhete pode deixar uma invariante quebrada.
+
+## Corrida pelo último lugar
+
+Um trigger que conta bilhetes pode ver zero em duas transações, permitindo ambas inserir:
+
+<Mermaid
+  source={corrida}
+  alt="A e B contam zero antes de verem a compra da outra; ambas inserem e confirmam, excedendo um lugar."
+/>
+
+No **Read Committed de PostgreSQL**, o UPDATE condicional da mesma linha bloqueia o concorrente. Depois do COMMIT de A, B reavalia `livres > 0` na versão atual e altera zero linhas. Se A anular, B pode reservar.
+
+Alternativa: todos os escritores bloqueiam a sessão com `SELECT ... FOR UPDATE` antes de contar. Em Read Committed, conta numa instrução posterior à obtenção do bloqueio, com snapshot atualizado.
+
+## Isolamento e conflitos
+
+| Nível PostgreSQL | Garantia relevante                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------- |
+| Read Uncommitted | Implementado como Read Committed.                                                        |
+| Read Committed   | Snapshot por instrução; vê as próprias alterações e confirmações anteriores ao snapshot. |
+| Repeatable Read  | Snapshot estável; impede também phantoms em PostgreSQL, mas pode admitir write skew.     |
+| Serializable     | Efeitos compatíveis com uma ordem serial; pode abortar e exigir repetição completa.      |
+
+Dirty read lê não confirmado; non-repeatable read encontra valor diferente numa releitura; phantom muda linhas do predicado. Write skew altera linhas distintas com base numa condição comum, como dois médicos retirarem simultaneamente os seus turnos.
+
+Um **deadlock** é um ciclo de espera, não qualquer espera. Ordena a aquisição de recursos, encurta transações e prepara repetição segura das abortadas.
+
+## Triggers e rotinas
+
+- BEFORE pode alterar NEW; devolver NULL num trigger por linha pode suprimir a operação.
+- AFTER continua na transação, antes de COMMIT; o retorno por linha é ignorado.
+- INSTEAD OF substitui a operação, por exemplo numa vista.
+- ROW dispara por linha; STATEMENT por instrução, mesmo sem linhas afetadas.
+
+NEW existe em INSERT, OLD em DELETE, ambos em UPDATE. `UPDATE OF preco` testa colunas mencionadas; `IS DISTINCT FROM` testa mudança real, incluindo NULL.
+
+Função participa numa expressão; procedure usa CALL; trigger executa uma função de trigger. Funções também podem alterar dados. Controlo transacional em procedures depende do contexto permitido.
+
+Usa `INSERT ... RETURNING id`, nunca MAX(id). `currval` é local à ligação após obter um valor da sequência. Sequências podem deixar lacunas após rollback. Emails e pagamentos externos precisam de protocolo próprio, pois ROLLBACK da base não os anula.
+
+[Coordenação completa da reserva](/cadeiras/lbaw/triggers-transacoes/#coordenar-a-alteração-da-mesma-linha).

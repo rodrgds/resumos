@@ -1,0 +1,46 @@
+import Typst from '../../../components/Typst.astro';
+import bilhetes from '../../lbaw/modelo-bilhete.typ?raw';
+
+## Classes, associações e multiplicidades
+
+O **modelo conceptual** especifica objetos, atributos, associações e restrições do domínio, antes de escolher tabelas e tipos SQL. Cada atributo deve suportar um requisito ou regra.
+
+A multiplicidade junto de uma classe conta objetos dessa classe para **um objeto do lado oposto**. Lê sempre os dois sentidos:
+
+| Associação                     | Leitura                                                              |
+| ------------------------------ | -------------------------------------------------------------------- |
+| Evento `1`, Sessão `1..*`      | Cada sessão tem um evento; cada evento tem pelo menos uma sessão.    |
+| Utilizador `1`, Bilhete `0..*` | Cada bilhete tem um utilizador; um utilizador pode não ter bilhetes. |
+| Sessão `1`, Bilhete `0..*`     | Cada bilhete tem uma sessão; uma sessão pode não ter bilhetes.       |
+
+Navegabilidade UML e direção de chave estrangeira são informações diferentes.
+
+## Identidade da ligação
+
+Uma ligação N:N com atributos pode usar uma classe de associação ou uma entidade associativa. Decide se o mesmo par admite várias ocorrências.
+
+<Typst
+  source={bilhetes}
+  format="svg"
+  alt="U7 tem dois bilhetes distintos, B1 pago e B2 reservado, para a mesma sessão S12."
+/>
+
+**Bilhete tem identidade própria:** B1 e B2 ligam o mesmo utilizador à mesma sessão. O par utilizador-sessão não pode ser chave única neste domínio. Uma classe de associação UML formal qualifica a associação; a entidade Bilhete do exemplo tem duas associações próprias.
+
+## Subtipos e ciclo de vida
+
+- **Total:** todo o objeto do supertipo pertence a algum subtipo. **Partial:** pode não pertencer a nenhum.
+- **Disjoint:** não pode pertencer simultaneamente a subtipos. **Overlapping:** pode pertencer a vários.
+- Totalidade e disjunção são independentes. Comprador ou administrador, admitindo ambos e exigindo algum, é total e overlapping.
+- **Composição** implica pertença forte e restrições de ciclo de vida. Uma FK não basta para a justificar; bilhetes históricos podem ter de sobreviver à desativação de uma conta.
+- Uma associação reflexiva precisa de papéis, como seguidor e seguido, e de restrições explícitas sobre autorreferência.
+
+## Restrições além do desenho
+
+Escreve unicidade do email, capacidade máxima e transições de estado como regras testáveis. "Criar a sessão no futuro" não proíbe conservar sessões passadas no histórico.
+
+Uma FK obrigatória de Sessão para Evento garante evento para cada sessão, mas **não garante uma sessão para cada evento**. O mínimo inverso exige coordenação adicional.
+
+OCL pode precisar uma regra: `context Bilhete inv: self.estado = 'cancelado' implies self.ocupaLugar = false`. O diagrama e a expressão especificam a regra; a implementação ainda tem de a executar.
+
+[Mapeamento e limites das multiplicidades](/cadeiras/lbaw/modelo-conceptual/#o-que-o-modelo-não-garante-sozinho).

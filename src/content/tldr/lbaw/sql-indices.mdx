@@ -1,0 +1,53 @@
+import Typst from '../../../components/Typst.astro';
+import indice from '../../lbaw/sql-indices.typ?raw';
+
+## Escolher pela consulta e pela carga
+
+Um índice localiza candidatos e custa espaço e manutenção nas escritas. Considera frequência, volume, distribuição, seletividade e concorrência.
+
+| Estrutura | Operações relevantes em PostgreSQL                                               |
+| --------- | -------------------------------------------------------------------------------- |
+| B-tree    | Igualdade, intervalos e certas ordenações.                                       |
+| Hash      | Igualdade; não fornece intervalo ou ordem. Colisões exigem verificar candidatos. |
+| GIN       | Índice invertido para vários termos por documento, entre outros usos.            |
+
+Para `WHERE evento_id = 3 AND data_hora >= inicio AND data_hora < fim ORDER BY data_hora`, considera:
+
+```sql
+CREATE INDEX sessoes_evento_data ON sessoes(evento_id, data_hora);
+```
+
+A igualdade na primeira coluna fixa o grupo; o intervalo limita as datas dentro dele. Inverter as colunas muda a região percorrida. Uma consulta só pela segunda coluna pode usar o índice, com eficiência dependente de dados e versão. O resultado só tem ordem garantida com ORDER BY.
+
+<Typst
+  source={indice}
+  format="svg"
+  alt="O índice agrupa por evento e ordena por data; dezembro do evento 3 inclui o início de dezembro e exclui o início de janeiro."
+/>
+
+## Ler e medir o plano
+
+- `cost=a..b` são custos estimados do planeador, não ms; `rows` estima linhas e `width` bytes por linha.
+- Seq Scan percorre a tabela; Index Scan procura candidatos e linhas; Bitmap Heap Scan lê páginas dos candidatos; Sort ordena.
+- **EXPLAIN ANALYZE executa** a instrução. Tempos e linhas num nó repetido são médias por execução; confere `loops`.
+- Atualiza estatísticas com ANALYZE após alterações relevantes. Compara estimativas e realidade numa carga representativa.
+
+Devolver 100 de 100 mil linhas tem seletividade 0,1%; devolver 80 mil tem 80%. O segundo caso pode favorecer Seq Scan mesmo havendo índice. `CLUSTER` reorganiza fisicamente uma vez e não mantém a ordem nas escritas futuras.
+
+PK e UNIQUE criam índices; FKs não criam automaticamente índices nas colunas que referenciam.
+
+## Parcial, expressão e texto
+
+Um índice parcial contém apenas linhas do seu predicado; a consulta precisa de permitir ao planeador provar esse predicado. Um índice por `lower(email)` apoia essa expressão, mas só garante unicidade se for UNIQUE.
+
+B-tree de título não resolve automaticamente `ILIKE '%rede%'`. Para texto:
+
+1. `tsvector` representa lexemas do documento; `tsquery` representa a pesquisa, na língua adequada.
+2. `@@` filtra correspondências; `ts_rank` calcula relevância. GIN pode apoiar a correspondência.
+3. Combina campos com pesos, trata NULL com COALESCE e mantém o vetor atualizado por coluna gerada ou protocolo equivalente.
+
+Precisão é relevantes devolvidos / devolvidos. Recall é relevantes devolvidos / relevantes existentes. Com 6 relevantes entre 10 resultados e 12 no corpus: precisão 0,6; recall 0,5.
+
+Sinais dependentes da consulta usam os termos; qualidade ou popularidade podem ser pré-calculadas e atualizadas. **Filtra permissões antes de apresentar e ordenar candidatos.** Facetas refinam o conjunto, sem substituir autorização.
+
+[Planos e pesquisa textual](/cadeiras/lbaw/sql-indices/#ler-explain-sem-confundir-custo-com-tempo).

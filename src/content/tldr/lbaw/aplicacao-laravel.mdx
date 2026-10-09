@@ -1,0 +1,66 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import pedido from '../../lbaw/pedido-laravel.mmd?raw';
+
+## Percurso e responsabilidades
+
+O navegador apresenta a página; Nginx ou Apache recebe HTTP; PHP/Laravel executa a aplicação; PostgreSQL guarda os dados. O servidor pode devolver ficheiros estáticos sem executar a aplicação.
+
+<Mermaid
+  source={pedido}
+  alt="Rota escolhe controlador, que consulta modelo e passa dados à vista; a resposta HTML regressa ao navegador."
+/>
+
+| Peça             | Responsabilidade                                       |
+| ---------------- | ------------------------------------------------------ |
+| Rota             | Método e endereço escolhem a operação.                 |
+| Middleware       | Verificações transversais, como autenticação e CSRF.   |
+| Controlador      | Coordena o caso de uso e a resposta.                   |
+| Policy ou Gate   | Autoriza pessoa, operação e objeto.                    |
+| Modelo e serviço | Dados, relações e regras de negócio.                   |
+| Vista Blade      | Produz representação HTML; uma API pode devolver JSON. |
+
+Autenticação identifica; autorização permite operar; validação testa formato e domínio. `auth` não concede acesso a qualquer bilhete.
+
+## Criar uma sessão
+
+```php
+// Excerto de controlador, com Gate e Sessao importados.
+Gate::authorize('create', Sessao::class);
+$dados = $request->validate([
+    'evento_id' => 'required|exists:eventos,id',
+    'data_hora' => 'required|date|after:now',
+    'preco' => 'required|numeric|min:0',
+    'lotacao' => 'required|integer|min:1',
+]);
+Sessao::create($dados);
+return redirect('/sessoes', 303);
+```
+
+Pressupõe policy associada e modelo configurado. O formulário usa `@csrf`, `@error` e `old(...)`. Validação devolve campos validados, sem os tornar seguros para todos os destinos.
+
+| Falha                              | Recusa                                                             |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| Sem login                          | auth, normalmente redirecionando o formulário.                     |
+| Sem permissão                      | Policy, 403.                                                       |
+| Lotação zero                       | Validação, erros e valores preservados; normalmente 422 para JSON. |
+| Evento eliminado depois de validar | FK ainda recusa a escrita.                                         |
+
+A validação amigável não substitui FK, CHECK ou coordenação concorrente. `DB::transaction(...)` agrupa escritas, mas não resolve sozinho a corrida de capacidade.
+
+## Modelo, migração e vista
+
+Migrações versionam o esquema. Mantém CHECKs de preço e lotação em PostgreSQL. Configura `$table = 'sessoes'`; pluralização inglesa não garante os nomes portugueses. Declara `$timestamps = false` se o esquema não tiver esses campos.
+
+`$fillable` limita atribuição em massa, **não autoriza pessoas**. `belongsTo(Evento::class)` representa a relação da sessão com evento. Na vista, `{{ ... }}` escapa texto HTML; `{!! ... !!}` imprime sem essa proteção.
+
+N+1 pode fazer uma consulta de 40 sessões e mais 40 pelos eventos: 41 consultas. `Sessao::with('evento')->get()` agrupa o carregamento antecipado. Mede consultas e transferência antes de antecipar todas as relações.
+
+## Login, PHP e ambiente
+
+`Auth::attempt` recebe a palavra-passe em claro para verificar o hash; regenera a sessão após sucesso. Adapta provider e modelo se o esquema usar `palavra_passe_hash` em vez de `password`.
+
+Variáveis de funções PHP são locais. `global` liga à global; arrow functions capturam por valor; closures usam `use ($x)` ou `use (&$x)`. Com `$taxa=3`, criar `fn($n) => $n+$taxa` e depois mudar taxa para 8 conserva 3 na captura.
+
+Imagem Docker é a base para criar contentores; contentor é uma instância; volume conserva dados além da camada descartável. Recriar um contentor não equivale a apagar o volume.
+
+[Modelo, vista e controlo de acesso](/cadeiras/lbaw/aplicacao-laravel/#separar-responsabilidades-no-pedido).

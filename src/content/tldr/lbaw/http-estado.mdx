@@ -1,0 +1,60 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import ciclo from '../../lbaw/http.mmd?raw';
+
+## URL, pedido e resposta
+
+Em `https://loja.example:443/sessoes/12?idioma=pt#preco`, esquema, host e porta definem a origem. Caminho e query chegam no alvo HTTP; **o fragmento fica no cliente**. O caminho não tem de ser um ficheiro.
+
+Um pedido contém método, alvo, cabeçalhos e eventualmente corpo. `Accept` indica representações aceites; `Content-Type` descreve o corpo enviado. Cabeçalhos e campos do cliente precisam de validação.
+
+## Semântica dos métodos
+
+**Seguro** não pretende alterar estado. **Idempotente** tem o mesmo efeito pretendido ao repetir, sem exigir respostas iguais.
+
+| Método      | Seguro | Idempotente               |
+| ----------- | ------ | ------------------------- |
+| GET, HEAD   | Sim    | Sim                       |
+| PUT, DELETE | Não    | Sim                       |
+| POST, PATCH | Não    | Não garantido pelo método |
+
+DELETE pode responder 204 e depois 404 mantendo o efeito idempotente. GET que apaga conta viola a semântica e pode ser acionado por pré-carregamento ou crawler.
+
+| Código        | Decisão                                                                 |
+| ------------- | ----------------------------------------------------------------------- |
+| 200, 201, 204 | Sucesso, criação, sucesso sem corpo, respetivamente.                    |
+| 303           | Consultar outro endereço por GET, indicado em Location.                 |
+| 304           | Cache validada, sem corpo completo.                                     |
+| 400, 422      | Pedido inválido; 422 pode descrever conteúdo semanticamente inválido.   |
+| 401, 403      | Autenticação válida necessária com desafio adequado; operação recusada. |
+| 404, 409      | Ausência ou existência ocultada; conflito de estado.                    |
+| 500           | Falha interna, sem expor detalhes técnicos.                             |
+
+## Sessão e cookies
+
+HTTP não exige memória de interações anteriores. A aplicação pode guardar sessão no servidor e enviar um identificador opaco em cookie.
+
+<Mermaid
+  source={ciclo}
+  alt="Navegador envia cookie; servidor verifica sessão e autorização, consulta dados e devolve resposta."
+/>
+
+- Secure restringe transporte; HttpOnly impede leitura do cookie por JavaScript, mas não ações de XSS com a sessão.
+- SameSite limita certos envios entre sites e complementa proteção CSRF.
+- Path, domínio e expiração delimitam envio, sem conceder autorização.
+- Regenera o identificador após login; termina a sessão no servidor ao sair.
+
+## Compra repetida e cache
+
+`POST /compras` cria; `303 Location: /compras/1043` leva a GET de confirmação. Recarregar faz GET. **303 não elimina duplicados de rede:** guarda um identificador de operação único por comprador atomicamente com a compra. Repetição com mesmos dados devolve o resultado; mesmos identificador e dados diferentes dão conflito.
+
+`no-store` pede ausência de armazenamento. `no-cache` permite guardar, mas exige validar antes de reutilizar. ETag com If-None-Match permite 304; cache não dispensa permissões.
+
+## Origem, CORS e REST
+
+CORS autoriza certas leituras de respostas entre origens no navegador, por vezes após preflight OPTIONS. Não autentica, não limita clientes fora do navegador e não impede por si só CSRF. HTTPS protege transporte.
+
+REST exige, entre outras condições, interface uniforme e pedidos sem contexto de sessão guardado no servidor. Estado dos recursos pode estar na base de dados. Uma aplicação com sessão pode usar HTTP corretamente sem cumprir REST estritamente.
+
+Especifica método, caminho, parâmetros, permissões, códigos, tipo e estrutura do corpo, incluindo falhas. AJAX pode receber HTML ou JSON conforme esse contrato.
+
+[Diálogo completo de compra](/cadeiras/lbaw/http-estado/#um-diálogo-completo-comprar-sem-duplicar).
