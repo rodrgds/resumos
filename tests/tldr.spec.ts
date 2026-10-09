@@ -3,6 +3,27 @@ import { expect, test } from '@playwright/test';
 const full = '/cadeiras/fp/primeiro/';
 const short = `${full}tldr/`;
 
+test('reader actions stay visible together on a narrow screen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('/cadeiras/md/conjuntos-relacoes/tldr/');
+  await expect(
+    page.getByRole('button', { name: 'Imprimir', exact: true }),
+  ).toBeVisible();
+  const actions = page.locator('.page-actions');
+  const toolbar = await actions.boundingBox();
+  for (const control of await actions
+    .locator(':scope > button:visible, :scope > [role="switch"]')
+    .all()) {
+    const box = await control.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(toolbar!.x);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(
+      toolbar!.x + toolbar!.width,
+    );
+  }
+});
+
 test('TLDR choice persists through navigation while direct explanations remain complete', async ({
   page,
 }) => {
