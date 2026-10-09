@@ -104,6 +104,18 @@ export function checkProof(
         { line: 0, message: 'Usa até 250 linhas e 30 000 caracteres.' },
       ],
     };
+  if (premises.length > 100 || premises.join('').length > 30000) {
+    return {
+      valid: false,
+      lines: 0,
+      diagnostics: [
+        {
+          line: 0,
+          message: 'Usa até 100 premissas e 30 000 caracteres no enunciado.',
+        },
+      ],
+    };
+  }
   let allowed: Formula[], target: Formula;
   try {
     allowed = premises.map(parseFormula);

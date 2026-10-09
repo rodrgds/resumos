@@ -5,6 +5,7 @@ interface Preset {
   premises: string[];
   goal: string;
   source: string;
+  free?: boolean;
 }
 for (const root of document.querySelectorAll<HTMLElement>('[data-proof-lab]')) {
   const presets: Preset[] = JSON.parse(root.dataset.presets!);
@@ -12,9 +13,24 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-proof-lab]')) {
   const reset = root.querySelector<HTMLButtonElement>('[data-proof-reset]')!;
   const result = root.querySelector<HTMLElement>('[data-proof-result]')!;
   const statement = root.querySelector<HTMLElement>('[data-proof-statement]')!;
+  const free = root.querySelector<HTMLElement>('[data-proof-free]')!;
+  const premises = root.querySelector<HTMLTextAreaElement>(
+    '[data-proof-premises]',
+  )!;
+  const goal = root.querySelector<HTMLInputElement>('[data-proof-goal]')!;
+  const verify = root.querySelector<HTMLButtonElement>('[data-proof-check]')!;
   let preset = presets[0];
   const check = () => {
-    const checked = checkProof(editor.getValue(), preset.premises, preset.goal);
+    const checked = checkProof(
+      editor.getValue(),
+      preset.free
+        ? premises.value
+            .split('\n')
+            .map((value) => value.trim())
+            .filter(Boolean)
+        : preset.premises,
+      preset.free ? goal.value : preset.goal,
+    );
     result.replaceChildren();
     const summary = document.createElement('p');
     summary.textContent = checked.valid
@@ -31,18 +47,24 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-proof-lab]')) {
       result.append(list);
     }
   };
+  const changed = () => {
+    reset.hidden =
+      editor.getValue() === preset.source &&
+      (!preset.free ||
+        (premises.value === preset.premises.join('\n') &&
+          goal.value === preset.goal));
+    result.textContent = 'Prova alterada. Verifica para atualizar o resultado.';
+  };
   const editor = mountFormalEditor(
     root.querySelector<HTMLElement>('[data-formal-source]')!,
     {
       onRun: check,
-      onChange: (value) => {
-        reset.hidden = value === preset.source;
-        result.textContent =
-          'Prova alterada. Verifica para atualizar o resultado.';
-      },
+      onChange: changed,
     },
   );
   const restore = () => {
+    premises.value = preset.premises.join('\n');
+    goal.value = preset.goal;
     editor.setValue(preset.source);
     reset.hidden = true;
     result.textContent =
@@ -50,6 +72,8 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-proof-lab]')) {
   };
   select.addEventListener('change', () => {
     preset = presets[Number(select.value)];
+    free.hidden = !preset.free;
+    statement.hidden = Boolean(preset.free);
     statement.textContent = `Premissas: ${preset.premises.join(', ')}. Conclusão: ${preset.goal}.`;
     restore();
   });
@@ -57,5 +81,9 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-proof-lab]')) {
     restore();
     editor.focus();
   });
-  root.querySelector('[data-proof-check]')!.addEventListener('click', check);
+  premises.addEventListener('input', changed);
+  goal.addEventListener('input', changed);
+  verify.addEventListener('click', check);
+  for (const control of [select, reset, verify, premises, goal])
+    control.disabled = false;
 }

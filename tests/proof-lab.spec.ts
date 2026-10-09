@@ -113,3 +113,30 @@ test('proof editor verifies reader edits and an exercise at mobile width', async
     true,
   );
 });
+
+test('free proof checks the reader assignment and rejects an undeclared premise', async ({
+  page,
+}) => {
+  await page.goto('/cadeiras/md/provas-proposicionais/');
+  const lab = page.getByRole('group', {
+    name: 'Laboratório de dedução proposicional',
+  });
+  await lab
+    .getByLabel('Escolher dedução')
+    .selectOption({ label: 'Prova livre' });
+  const premises = lab.getByLabel('Premissas da prova livre');
+  await premises.fill('a & b');
+  await lab.getByLabel('Conclusão da prova livre').fill('b');
+  await lab
+    .getByRole('textbox', { name: 'Prova em notação de Fitch' })
+    .filter({ visible: true })
+    .fill('1 a & b; premissa\n2 b; ∧E, 1');
+  await lab.getByRole('button', { name: 'Verificar', exact: true }).click();
+  await expect(lab.getByRole('status')).toContainText('Prova válida');
+  await premises.fill('a');
+  await expect(lab.getByRole('status')).toContainText('Prova alterada');
+  await lab.getByRole('button', { name: 'Verificar', exact: true }).click();
+  await expect(lab.getByRole('status')).toContainText(
+    'Linha 1: Só podes usar premissas do enunciado',
+  );
+});
