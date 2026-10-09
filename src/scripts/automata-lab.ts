@@ -1,5 +1,7 @@
 import {
   compare,
+  isAcceptor,
+  isNondeterministic,
   execute,
   limits,
   validate,
@@ -21,7 +23,13 @@ const escape = (value: string) =>
         c
       ]!,
   );
-const modelNames = { dfa: 'DFA', moore: 'Moore', mealy: 'Mealy' };
+const modelNames = {
+  dfa: 'DFA',
+  moore: 'Moore',
+  mealy: 'Mealy',
+  nfa: 'NFA',
+  'epsilon-nfa': 'ε-NFA',
+};
 
 function setup(root: HTMLElement) {
   if (root.dataset.initialized) return;
@@ -40,6 +48,12 @@ function setup(root: HTMLElement) {
   input.value = presets[preset].input;
   const stateName = (id: string) =>
     machine.states.find((s) => s.id === id)?.name ?? id;
+  const stateSet = (ids: string[]) =>
+    ids.length ? `{${ids.map(stateName).join(', ')}}` : '∅';
+  const transitionSymbols = () =>
+    machine.model === 'epsilon-nfa'
+      ? [...machine.alphabet, 'ε']
+      : machine.alphabet;
   const button = (action: string) =>
     element<HTMLButtonElement>(`[data-action="${action}"]`);
   const options = (selected: string) =>
@@ -84,8 +98,13 @@ function setup(root: HTMLElement) {
         y: center + radius * Math.sin(angle),
       };
     });
-    const current = execution?.rows[position]?.state ?? machine.initial;
-    const active = execution?.rows[position]?.transition;
+    const row = execution?.rows[position];
+    const current = row?.states ?? [row?.state ?? machine.initial];
+    const active =
+      row?.transitions ??
+      (row?.transition === null || row?.transition === undefined
+        ? []
+        : [row.transition]);
     const edges = new Map<
       string,
       { from: string; to: string; labels: string[]; active: boolean }
@@ -101,7 +120,7 @@ function setup(root: HTMLElement) {
       edge.labels.push(
         t.symbol + (machine.model === 'mealy' ? '/' + t.output : ''),
       );
-      edge.active ||= index === active;
+      edge.active ||= active.includes(index);
       edges.set(key, edge);
     });
     const paths = [...edges.values()]
@@ -153,28 +172,44 @@ function setup(root: HTMLElement) {
     const nodes = states
       .map((state, i) => {
         const { x, y } = positions[i];
-        return `<g data-diagram-state="${i}" tabindex="0" role="button" aria-label="Editar estado ${escape(state.name)}" class="automata-node ${state.id === current ? 'is-current' : ''}"><circle cx="${x}" cy="${y}" r="${nodeRadius}"/>${machine.model === 'dfa' && state.final ? `<circle cx="${x}" cy="${y}" r="${nodeRadius - 5}"/>` : ''}<text x="${x}" y="${y + (machine.model === 'moore' ? -3 : 5)}" text-anchor="middle">${escape(state.name)}</text>${machine.model === 'moore' ? `<text x="${x}" y="${y + 16}" text-anchor="middle">/${escape(state.output)}</text>` : ''}${state.id === machine.initial ? `<path d="M ${x - nodeRadius - 32} ${y} L ${x - nodeRadius - 5} ${y}" marker-end="url(#${marker})"/><text x="${x - nodeRadius - 32}" y="${y - 8}">início</text>` : ''}</g>`;
+        return `<g data-diagram-state="${i}" tabindex="0" role="button" aria-label="Editar estado ${escape(state.name)}" class="automata-node ${current.includes(state.id) ? 'is-current' : ''}"><circle cx="${x}" cy="${y}" r="${nodeRadius}"/>${isAcceptor(machine.model) && state.final ? `<circle cx="${x}" cy="${y}" r="${nodeRadius - 5}"/>` : ''}<text x="${x}" y="${y + (machine.model === 'moore' ? -3 : 5)}" text-anchor="middle">${escape(state.name)}</text>${machine.model === 'moore' ? `<text x="${x}" y="${y + 16}" text-anchor="middle">/${escape(state.output)}</text>` : ''}${state.id === machine.initial ? `<path d="M ${x - nodeRadius - 32} ${y} L ${x - nodeRadius - 5} ${y}" marker-end="url(#${marker})"/><text x="${x - nodeRadius - 32}" y="${y - 8}">início</text>` : ''}</g>`;
       })
       .join('');
     element('[data-diagram]').innerHTML =
-      `<svg viewBox="0 0 ${size} ${size}" style="width:${size}px;min-width:${compact ? 0 : size}px;max-width:${compact ? '100%' : 'none'}" role="group" aria-label="Diagrama editável da máquina. Estado atual: ${escape(stateName(current))}."><defs><marker id="${marker}" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z"/></marker></defs>${paths}${nodes}</svg>`;
+      `<svg viewBox="0 0 ${size} ${size}" style="width:${size}px;min-width:${compact ? 0 : size}px;max-width:${compact ? '100%' : 'none'}" role="group" aria-label="Diagrama editável da máquina. Estado atual: ${escape(isNondeterministic(machine.model) ? stateSet(current) : stateName(current[0]))}."><defs><marker id="${marker}" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z"/></marker></defs>${paths}${nodes}</svg>`;
   }
   const marker = `automata-arrow-${crypto.randomUUID()}`;
 
   function editor() {
     alphabet.value = machine.alphabet.join(' ');
     element('[data-editor]').innerHTML =
-      `<div class="automata-table"><table><caption>Estados, ${modelNames[machine.model]}</caption><thead><tr><th>Nome</th><th>Inicial</th>${machine.model === 'dfa' ? '<th>Final</th>' : machine.model === 'moore' ? '<th>Saída</th>' : ''}<th>Remover</th></tr></thead><tbody>${machine.states.map((s, i) => `<tr><td><input data-state="${i}" data-field="name" aria-label="Nome do estado ${i + 1}" maxlength="16" value="${escape(s.name)}"/></td><td><input type="radio" name="initial-${marker}" data-state="${i}" data-field="initial" aria-label="${escape(s.name)} inicial" ${s.id === machine.initial ? 'checked' : ''}/></td>${machine.model === 'dfa' ? `<td><input type="checkbox" data-state="${i}" data-field="final" aria-label="${escape(s.name)} final" ${s.final ? 'checked' : ''}/></td>` : machine.model === 'moore' ? `<td><input data-state="${i}" data-field="output" aria-label="Saída de ${escape(s.name)}" maxlength="12" value="${escape(s.output)}"/></td>` : ''}<td><button type="button" data-action="remove-state" data-index="${i}" aria-label="Remover estado ${escape(s.name)}">Remover</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-action="add-state" ${machine.states.length >= limits.states ? 'disabled' : ''}>Adicionar estado</button><div class="automata-table"><table><caption>Transições</caption><thead><tr><th>Origem</th><th>Símbolo</th><th>Destino</th>${machine.model === 'mealy' ? '<th>Saída</th>' : ''}<th>Remover</th></tr></thead><tbody>${machine.transitions.map((t, i) => `<tr><td><select data-transition="${i}" data-field="from" aria-label="Origem da transição ${i + 1}">${options(t.from)}</select></td><td><select data-transition="${i}" data-field="symbol" aria-label="Símbolo da transição ${i + 1}"><option value="" ${!machine.alphabet.includes(t.symbol) ? 'selected' : ''}>Escolher</option>${machine.alphabet.map((s) => `<option ${s === t.symbol ? 'selected' : ''} value="${escape(s)}">${escape(s)}</option>`).join('')}</select></td><td><select data-transition="${i}" data-field="to" aria-label="Destino da transição ${i + 1}">${options(t.to)}</select></td>${machine.model === 'mealy' ? `<td><input data-transition="${i}" data-field="output" aria-label="Saída da transição ${i + 1}" maxlength="12" value="${escape(t.output)}"/></td>` : ''}<td><button type="button" data-action="remove-transition" data-index="${i}" aria-label="Remover transição ${i + 1}">Remover</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-action="add-transition" ${!machine.states.length || machine.transitions.length >= limits.transitions ? 'disabled' : ''}>Adicionar transição</button>`;
+      `<div class="automata-table"><table><caption>Estados, ${modelNames[machine.model]}</caption><thead><tr><th>Nome</th><th>Inicial</th>${isAcceptor(machine.model) ? '<th>Final</th>' : machine.model === 'moore' ? '<th>Saída</th>' : ''}<th>Remover</th></tr></thead><tbody>${machine.states.map((s, i) => `<tr><td><input data-state="${i}" data-field="name" aria-label="Nome do estado ${i + 1}" maxlength="16" value="${escape(s.name)}"/></td><td><input type="radio" name="initial-${marker}" data-state="${i}" data-field="initial" aria-label="${escape(s.name)} inicial" ${s.id === machine.initial ? 'checked' : ''}/></td>${isAcceptor(machine.model) ? `<td><input type="checkbox" data-state="${i}" data-field="final" aria-label="${escape(s.name)} final" ${s.final ? 'checked' : ''}/></td>` : machine.model === 'moore' ? `<td><input data-state="${i}" data-field="output" aria-label="Saída de ${escape(s.name)}" maxlength="12" value="${escape(s.output)}"/></td>` : ''}<td><button type="button" data-action="remove-state" data-index="${i}" aria-label="Remover estado ${escape(s.name)}">Remover</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-action="add-state" ${machine.states.length >= limits.states ? 'disabled' : ''}>Adicionar estado</button><div class="automata-table"><table><caption>Transições</caption><thead><tr><th>Origem</th><th>Símbolo</th><th>Destino</th>${machine.model === 'mealy' ? '<th>Saída</th>' : ''}<th>Remover</th></tr></thead><tbody>${machine.transitions
+        .map(
+          (t, i) =>
+            `<tr><td><select data-transition="${i}" data-field="from" aria-label="Origem da transição ${i + 1}">${options(t.from)}</select></td><td><select data-transition="${i}" data-field="symbol" aria-label="Símbolo da transição ${i + 1}"><option value="" ${!transitionSymbols().includes(t.symbol) ? 'selected' : ''}>Escolher</option>${transitionSymbols()
+              .map(
+                (s) =>
+                  `<option ${s === t.symbol ? 'selected' : ''} value="${escape(s)}">${escape(s)}</option>`,
+              )
+              .join(
+                '',
+              )}</select></td><td><select data-transition="${i}" data-field="to" aria-label="Destino da transição ${i + 1}">${options(t.to)}</select></td>${machine.model === 'mealy' ? `<td><input data-transition="${i}" data-field="output" aria-label="Saída da transição ${i + 1}" maxlength="12" value="${escape(t.output)}"/></td>` : ''}<td><button type="button" data-action="remove-transition" data-index="${i}" aria-label="Remover transição ${i + 1}">Remover</button></td></tr>`,
+        )
+        .join(
+          '',
+        )}</tbody></table></div><button type="button" data-action="add-transition" ${!machine.states.length || machine.transitions.length >= limits.transitions ? 'disabled' : ''}>Adicionar transição</button>`;
   }
 
   function renderExecution() {
     diagram();
     const rows = execution?.rows.slice(0, position + 1) ?? [];
     const complete = execution && position === execution.rows.length - 1;
+    const nondeterministic = isNondeterministic(machine.model);
+    const epsilon = machine.model === 'epsilon-nfa';
     element('[data-result]').textContent = !execution
       ? 'Pronta para executar.'
-      : `${complete ? (machine.model === 'dfa' ? (execution.accepted ? 'Palavra aceite.' : 'Palavra rejeitada.') : 'Entrada consumida.') : `Passo ${position} de ${execution.rows.length - 1}.`} Estado ${stateName(rows[rows.length - 1].state)}.${
-          machine.model !== 'dfa'
+      : `${complete ? (isAcceptor(machine.model) ? (execution.accepted ? 'Palavra aceite.' : 'Palavra rejeitada.') : 'Entrada consumida.') : `Passo ${position} de ${execution.rows.length - 1}.`} ${nondeterministic ? `Estados ativos ${stateSet(rows[rows.length - 1].states!)}.` : `Estado ${stateName(rows[rows.length - 1].state)}.`}${
+          !isAcceptor(machine.model)
             ? ` Saídas: ${
                 rows
                   .map((r) => r.output)
@@ -184,7 +219,7 @@ function setup(root: HTMLElement) {
             : ''
         }`;
     element('[data-trace]').innerHTML = rows.length
-      ? `<table><caption>Percurso da execução</caption><thead><tr><th>Passo</th><th>Entrada</th><th>Estado</th>${machine.model !== 'dfa' ? '<th>Saída</th>' : ''}</tr></thead><tbody>${rows.map((row, i) => `<tr ${i === position ? 'aria-current="step"' : ''}><td>${i}</td><td>${i ? escape(row.symbol) : 'ε (início)'}</td><td>${escape(stateName(row.state))}</td>${machine.model !== 'dfa' ? `<td>${escape(row.output) || 'nenhuma'}</td>` : ''}</tr>`).join('')}</tbody></table>`
+      ? `<table><caption>${nondeterministic ? 'Conjuntos após cada símbolo consumido' : 'Percurso da execução'}</caption><thead><tr><th>Passo</th><th>Entrada</th>${epsilon ? '<th>Destinos diretos</th>' : ''}<th>${epsilon ? 'Fecho-ε, estados ativos' : nondeterministic ? 'Estados ativos' : 'Estado'}</th>${!isAcceptor(machine.model) ? '<th>Saída</th>' : ''}</tr></thead><tbody>${rows.map((row, i) => `<tr ${i === position ? 'aria-current="step"' : ''}><td>${i}</td><td>${i ? escape(row.symbol) : 'ε (início)'}</td>${epsilon ? `<td>${escape(stateSet(row.destinations!))}</td>` : ''}<td>${escape(nondeterministic ? stateSet(row.states!) : stateName(row.state))}</td>${!isAcceptor(machine.model) ? `<td>${escape(row.output) || 'nenhuma'}</td>` : ''}</tr>`).join('')}</tbody></table>`
       : '';
     button('step').disabled = validate(machine).length > 0 || !!complete;
   }
@@ -210,7 +245,9 @@ function setup(root: HTMLElement) {
         ? 'Moore: saída inicial e uma saída após cada flanco, n + 1 saídas para n bits.'
         : machine.model === 'mealy'
           ? 'Mealy: uma saída por bit, calculada com o estado anterior ao flanco e esse bit.'
-          : 'DFA: aceita se terminar num estado final, marcado com círculo duplo.';
+          : isNondeterministic(machine.model)
+            ? `${modelNames[machine.model]}: segue todos os estados ativos. Aceita se, depois de consumir toda a palavra, algum for final (círculo duplo).${machine.model === 'epsilon-nfa' ? ' ε não consome entrada; calcula-se o fecho no início e após cada símbolo.' : ' Uma transição em falta elimina apenas esse ramo.'}`
+            : 'DFA: aceita se terminar num estado final, marcado com círculo duplo.';
     element('[data-task]').hidden = !exercise;
     element('[data-task]').textContent =
       exercise && preset ? presets[preset].task : '';
@@ -219,6 +256,13 @@ function setup(root: HTMLElement) {
     element('[data-solution]').hidden = !exercise;
     element('[data-verification]').hidden = true;
     renderExecution();
+    if (!errors.length && isNondeterministic(machine.model)) {
+      execution = execute(machine, '');
+      diagram();
+      element('[data-result]').textContent =
+        `Pronta para executar. Estados iniciais ativos ${stateSet(execution.rows[0].states!)}.`;
+      execution = null;
+    }
   }
 
   root.addEventListener('change', (event) => {
