@@ -1,0 +1,179 @@
+---
+import FormalSource from './FormalSource.astro';
+import Icon from './Icon.astro';
+import {
+  pdaPresets,
+  type PdaPreset,
+  type PdaPresetId,
+} from '../lib/pda/presets';
+import { parsePda, PdaSearch } from '../lib/pda/machine';
+import '../styles/formal-lab.css';
+import '../styles/pda-lab.css';
+interface Props {
+  preset?: PdaPresetId;
+  examples?: PdaPresetId[];
+}
+const {
+  preset = 'equal-count',
+  examples = ['equal-count', 'even-palindrome'],
+} = Astro.props;
+const initial: PdaPreset = pdaPresets[preset];
+const result = new PdaSearch(
+  parsePda(initial.source, initial.acceptance),
+  initial.word,
+).run();
+---
+
+<section
+  class="formal-lab pda-lab"
+  data-pda-lab
+  data-preset={preset}
+  role="group"
+  aria-label="Laboratório de autómatos de pilha"
+  data-annotation-ignore
+  data-pagefind-ignore
+>
+  <div class="formal-toolbar">
+    <label>
+      Máquina
+      <select data-preset aria-label="Máquina" disabled>
+        {examples.map((id) => (
+          <option value={id} selected={id === preset}>
+            {pdaPresets[id].title}
+          </option>
+        ))}
+        <option value="blank">Criar PDA</option>
+      </select>
+    </label>
+    <button
+      data-action="restore"
+      type="button"
+      disabled
+      aria-label="Repor exemplo"
+      title="Repor exemplo"
+    >
+      <Icon name="arrow-path" size={18} />
+    </button>
+  </div>
+  <div
+    class="pda-diagram"
+    data-diagram
+    tabindex="0"
+    role="region"
+    aria-label="Diagrama do PDA, com deslocação horizontal"
+  ></div>
+  <details data-editor-details>
+    <summary>Editar estados e transições</summary>
+    <p class="formal-help">
+      Declara os estados, os alfabetos da entrada e da pilha, o início e os
+      finais. Cada transição tem a forma{' '}
+      <code>origem entrada topo -&gt; destino substituição</code>. ε na entrada
+      não lê uma letra; ε na substituição retira o topo. Não há transições com a
+      pilha vazia.
+    </p>
+    <FormalSource label="Descrição do PDA" source={initial.source} rows={11} />
+  </details>
+  <div class="formal-toolbar pda-inputs">
+    <label>
+      Aceitação
+      <select data-acceptance aria-label="Aceitação" disabled>
+        <option value="final" selected={initial.acceptance === 'final'}>
+          Estado final
+        </option>
+        <option value="empty" selected={initial.acceptance === 'empty'}>
+          Pilha vazia
+        </option>
+      </select>
+    </label>
+    <label>
+      Entrada, vazia para ε
+      <input
+        data-word
+        value={initial.word}
+        maxlength="160"
+        spellcheck="false"
+        autocomplete="off"
+      />
+    </label>
+  </div>
+  <p class="formal-help">
+    O topo da pilha está à esquerda. Aceitar exige consumir toda a entrada.
+    Mudar o critério não converte a máquina.
+  </p>
+  <div class="formal-actions">
+    <button type="button" data-action="run" data-primary disabled>
+      Executar
+    </button>
+    <button type="button" data-action="step" disabled>
+      Passo
+    </button>
+    <button type="button" data-action="reset" disabled>
+      Reiniciar
+    </button>
+    <button type="button" data-action="verify" disabled>
+      Verificar exemplos
+    </button>
+  </div>
+  <p data-status role="status" aria-live="polite">
+    {result.kind === 'accepted' ? 'Palavra aceite.' : 'Palavra rejeitada.'}
+  </p>
+  <div data-frontier hidden>
+    <label>
+      Ramo para observar<select data-branch></select>
+    </label>
+    <p class="formal-help" data-frontier-summary></p>
+  </div>
+  <p class="pda-caption" data-trace-label>
+    Percurso aceitante
+  </p>
+  <div class="pda-table" data-trace>
+    <table>
+      <thead>
+        <tr>
+          <th>Passo</th>
+          <th>Estado</th>
+          <th>Por ler</th>
+          <th>Pilha, topo à esquerda</th>
+        </tr>
+      </thead>
+      <tbody>
+        {result.trace.map((row, i) => (
+          <tr>
+            <td>{i}</td>
+            <td>{row.state}</td>
+            <td>
+              {Array.from(initial.word).slice(row.position).join('') || 'ε'}
+            </td>
+            <td>{row.stack || 'ε'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <div data-current class="pda-current" hidden>
+    <p data-current-description></p>
+    <div data-stack aria-label="Pilha atual"></div>
+  </div>
+  <p data-tests-status role="status" aria-live="polite"></p>
+  <div class="pda-table" data-tests></div>
+  <details class="formal-help">
+    <summary>Limites da pesquisa</summary>
+    <p>
+      A pesquisa segue todos os ramos por níveis, até 128 transições por ramo,
+      96 símbolos na pilha e 5 000 configurações distintas. Um ramo aceitante
+      basta para aceitar. Só se rejeita quando todos os ramos terminam sem
+      aceitar. Atingir um limite deixa o resultado por decidir, mesmo que os
+      ramos já observados não aceitem. Configurações repetidas são exploradas
+      uma vez.
+    </p>
+  </details>
+  <noscript>
+    <p>
+      A edição e a simulação precisam de JavaScript. O percurso acima
+      corresponde à máquina inicial.
+    </p>
+  </noscript>
+</section>
+<script>
+  import '../scripts/pda-lab';
+</script>
