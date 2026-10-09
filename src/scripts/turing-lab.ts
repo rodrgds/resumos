@@ -26,6 +26,11 @@ function setup(root: HTMLElement) {
   input.value = presets.blocks.input;
   const button = (action: string) =>
     el<HTMLButtonElement>(`[data-action="${action}"]`);
+  const tapeWindow = el('[data-tape]');
+  const centerTape = () => {
+    tapeWindow.scrollLeft =
+      (tapeWindow.scrollWidth - tapeWindow.clientWidth) / 2;
+  };
   const options = (items: string[], selected: string) =>
     (items.includes(selected)
       ? ''
@@ -53,9 +58,7 @@ function setup(root: HTMLElement) {
       const p = head + i - 4;
       return `<div class="turing-cell" ${p === head ? `aria-current="true" aria-label="Cabeça na célula ${p}"` : ''}><small>${p}</small><strong>${escape(tape.get(p) ?? 'B')}</strong></div>`;
     }).join('');
-    const tapeWindow = el('[data-tape]');
-    tapeWindow.scrollLeft =
-      (tapeWindow.scrollWidth - tapeWindow.clientWidth) / 2;
+    centerTape();
     el('[data-configuration]').textContent =
       `Estado ${current?.state ?? machine.initial}. Cabeça na posição ${head}. Passos: ${current?.steps ?? 0}.`;
     const state = current?.state ?? machine.initial;
@@ -202,8 +205,9 @@ function setup(root: HTMLElement) {
       machine.transitions.splice(Number(target.dataset.index), 1);
     refresh(action !== 'reset');
   });
-  refresh();
   el('[data-lab-ui]').hidden = false;
+  refresh();
+  new ResizeObserver(centerTape).observe(tapeWindow);
 }
 const init = () =>
   document.querySelectorAll<HTMLElement>('[data-turing-lab]').forEach(setup);

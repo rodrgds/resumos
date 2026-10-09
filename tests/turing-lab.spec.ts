@@ -1,4 +1,24 @@
 import { expect, test } from '@playwright/test';
+test('the tape starts with its head centered on a narrow screen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto('/cadeiras/tc/turing-decidibilidade/');
+  const tape = page.locator('[data-turing-lab] [data-tape]');
+  await expect(tape).toBeVisible();
+  const centerOffset = () =>
+    tape.evaluate((element) => {
+      const window = element.getBoundingClientRect();
+      const head = element
+        .querySelector('[aria-current]')!
+        .getBoundingClientRect();
+      return Math.abs(head.x + head.width / 2 - window.x - window.width / 2);
+    });
+  await expect.poll(centerOffset).toBeLessThan(3);
+  await page.setViewportSize({ width: 390, height: 800 });
+  await expect.poll(centerOffset).toBeLessThan(3);
+});
+
 test('reader can step, change a rule, reset and run custom machines', async ({
   page,
 }) => {
@@ -16,7 +36,7 @@ test('reader can step, change a rule, reset and run custom machines', async ({
   await expect(lab.locator('[data-result]')).toHaveText(
     'Pronta para executar.',
   );
-  await lab.locator('summary').click();
+  await lab.getByText('Editar estados e transições', { exact: true }).click();
   await lab
     .getByLabel('Move da transição 1', { exact: true })
     .selectOption('L');
