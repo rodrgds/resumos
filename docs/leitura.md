@@ -97,7 +97,7 @@ Com Vim ativo, `/` pesquisa a página atual; Enter vai ao resultado e `n`/`N` re
 
 ## Perguntar ao Chat
 
-O menu abre ChatGPT, Claude, Perplexity ou Grok com os URLs públicos da página e do Markdown e um pedido para os ler. Gemini usa copiar e abrir; se a cópia falhar, aparece texto para copiar manualmente. Os links dos fornecedores podem mudar, pois não são uma API estável. Não se enviam conteúdo da página ou notas privadas, nem se usam chaves de API. Em localhost usa-se o endereço público configurado em `astro.config.mjs`.
+O menu abre ChatGPT, Claude, Perplexity ou Grok com os URLs públicos da página e do Markdown e um pedido para os ler. Gemini e DeepSeek usam copiar e abrir; se a cópia falhar, aparece texto para copiar manualmente. Os links dos fornecedores podem mudar, pois não são uma API estável. Não se enviam conteúdo da página ou notas privadas, nem se usam chaves de API. Em localhost usa-se o endereço público configurado em `astro.config.mjs`.
 
 ## Aparência e navegação
 

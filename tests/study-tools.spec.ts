@@ -75,26 +75,61 @@ test('AI links ask providers to read the page URL and offer a copy fallback', as
   await expect(
     page.getByRole('link', { name: 'Grok', exact: true }),
   ).toHaveAttribute('href', /^https:\/\/grok\.com\/\?q=/);
-  await expect(
-    page.locator('[data-provider="gemini"] .provider-icon'),
-  ).toBeVisible();
-  await expect(page.getByRole('link', { name: /Gemini/ })).toHaveAttribute(
-    'href',
-    'https://gemini.google.com/app',
-  );
   await expect(page.locator('#ai-menu details, #copy-prompt')).toHaveCount(0);
   await expect(page.locator('#ai-status')).toBeHidden();
-  await page.getByRole('link', { name: /Gemini/ }).click();
-  await expect(
-    page.getByRole('textbox', { name: 'Mensagem para copiar' }),
-  ).toBeFocused();
-  await expect(page.locator('#ai-prompt')).toHaveValue(
-    /https:\/\/resumos.rgo.pt\/exemplo\/diagramas\//,
-  );
-  await expect(page.locator('#ai-prompt')).not.toHaveValue(/Fletcher/);
-  await expect(page.locator('#ai-status')).toContainText(
-    'Copia a mensagem abaixo',
-  );
+  for (const [provider, destination] of [
+    ['Gemini', 'https://gemini.google.com/app'],
+    ['DeepSeek', 'https://chat.deepseek.com/'],
+  ]) {
+    const link = page.getByRole('link', { name: new RegExp(provider) });
+    await expect(link).toHaveAttribute('href', destination);
+    await expect(link.locator('.provider-icon')).toBeVisible();
+    await link.click();
+    await expect(
+      page.getByRole('textbox', { name: 'Mensagem para copiar' }),
+    ).toBeFocused();
+    await expect(page.locator('#ai-prompt')).toHaveValue(
+      /https:\/\/resumos.rgo.pt\/exemplo\/diagramas\//,
+    );
+    await expect(page.locator('#ai-prompt')).not.toHaveValue(/Fletcher/);
+    await expect(page.locator('#ai-status')).toContainText(
+      'Copia a mensagem abaixo',
+    );
+  }
+});
+
+test('copy-and-open providers copy the public lesson links and open their chat', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/exemplo/diagramas/?private=example#diagrama');
+  await page.getByRole('button', { name: 'Perguntar ao Chat' }).click();
+  for (const [provider, destination] of [
+    ['Gemini', 'https://gemini.google.com/app'],
+    ['DeepSeek', 'https://chat.deepseek.com/'],
+  ]) {
+    await context.route(destination, (route) =>
+      route.fulfill({ body: '<html><title>Chat</title></html>' }),
+    );
+    await page.evaluate(() => navigator.clipboard.writeText(''));
+    const popupPromise = page.waitForEvent('popup');
+    await page.getByRole('link', { name: new RegExp(provider) }).click();
+    const popup = await popupPromise;
+    await expect(popup).toHaveURL(destination);
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toContain('https://resumos.rgo.pt/exemplo/diagramas.md');
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toContain('https://resumos.rgo.pt/exemplo/diagramas/');
+    expect(copied).not.toContain('private=example');
+    expect(copied).not.toContain('#diagrama');
+    await expect(page.locator('#ai-status')).toContainText('Pergunta copiada');
+    await expect(
+      page.getByRole('textbox', { name: 'Mensagem para copiar' }),
+    ).toBeHidden();
+    await popup.close();
+  }
 });
 
 test('mock course renders diagrams and only loads YouTube on request', async ({

@@ -36,8 +36,8 @@ menu
   });
 
 menu
-  .querySelector('[data-provider="gemini"]')!
-  .addEventListener('click', copyPrompt);
+  .querySelectorAll('[data-copy-prompt]')
+  .forEach((link) => link.addEventListener('click', copyPrompt));
 
 const trigger = document.querySelector<HTMLElement>('[data-open-ai]')!;
 let cleanup: (() => void) | undefined;
