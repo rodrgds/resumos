@@ -443,6 +443,44 @@ for (const [name, markup, selector, expected] of [
   });
 }
 
+for (const { name, viewport, hasTouch } of [
+  { name: 'phone', viewport: { width: 390, height: 844 }, hasTouch: true },
+  {
+    name: 'phone in landscape',
+    viewport: { width: 844, height: 390 },
+    hasTouch: true,
+  },
+  {
+    name: 'narrow window',
+    viewport: { width: 390, height: 844 },
+    hasTouch: false,
+  },
+]) {
+  test(`formula copy controls stay hidden on a ${name}`, async ({
+    browser,
+  }) => {
+    const page = await browser.newPage({ viewport, hasTouch });
+    try {
+      await page.goto('/exemplo/apontamentos/');
+      for (const selector of [
+        '.formula-unit:not(.formula-display)',
+        '.formula-display',
+      ]) {
+        const formula = page.locator(`.lesson-body ${selector}`).first();
+        await expect(formula.locator('.katex')).toBeVisible();
+        const copy = formula.getByRole('button', {
+          name: 'Copiar fórmula',
+          includeHidden: true,
+        });
+        await expect(copy).toHaveCount(1);
+        await expect(copy).toBeHidden();
+      }
+    } finally {
+      await page.close();
+    }
+  });
+}
+
 test('formula copying gives visible feedback and the mouse does not leave a sticky button', async ({
   page,
   context,

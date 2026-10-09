@@ -53,7 +53,7 @@ Os apontamentos guardam automaticamente neste navegador. Não entram na pesquisa
 
 ## Copiar fórmulas
 
-Nas lições, aproxima o rato de uma fórmula ou usa Tab para chegar a **Copiar fórmula**. No telemóvel, o botão fica visível. A cópia inclui o LaTeX original e os delimitadores Markdown; um aviso confirma a cópia. O botão desaparece quando afastas o rato. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. As fórmulas continuam a poder fazer parte de seleções e anotações. Nos apontamentos pessoais, clica para revelar o LaTeX e usa a cópia normal do editor; não há um botão sobre a fórmula.
+Nas lições, aproxima o rato de uma fórmula ou usa Tab para chegar a **Copiar fórmula**. Em ecrãs pequenos ou dispositivos tácteis, os botões ficam ocultos para não interromper a leitura. A cópia inclui o LaTeX original e os delimitadores Markdown; um aviso confirma a cópia. O botão desaparece quando afastas o rato. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. As fórmulas continuam a poder fazer parte de seleções e anotações. Nos apontamentos pessoais, clica para revelar o LaTeX e usa a cópia normal do editor; não há um botão sobre a fórmula.
 
 ## Anotações e destaques
 
