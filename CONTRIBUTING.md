@@ -220,7 +220,7 @@ import ProofLab from '../../../components/ProofLab.astro';
 
 O verificador aceita dedução natural proposicional clássica em notação de Fitch, com $\neg$, $\land$, $\lor$, $\to$ e $\bot$. Confere cada regra e o âmbito das caixas, exigindo a conclusão sem hipóteses abertas. As regras disponíveis estão na ajuda do componente; `¬E` significa eliminação da dupla negação. Não verifica quantificadores nem regras derivadas. Sem JavaScript, a prova inicial continua visível, mas não é verificada. O componente ainda não recebe exemplos próprios por props.
 
-`AutomataLab` permite editar e seguir DFA, Moore e Mealy determinísticos completos. Escolhe o exemplo inicial com `preset` e limita o seletor ao tema com `examples`, incluindo sempre o exemplo inicial:
+`AutomataLab` permite editar e seguir DFA, NFA, NFA com transições ε, Moore e Mealy. DFA, Moore e Mealy são determinísticos e completos. Escolhe o exemplo inicial com `preset` e limita o seletor ao tema com `examples`, incluindo sempre o exemplo inicial:
 
 ```mdx
 import AutomataLab from '../../../components/AutomataLab.astro';
@@ -228,9 +228,9 @@ import AutomataLab from '../../../components/AutomataLab.astro';
 <AutomataLab preset="suffix-ab" examples={['suffix-ab']} />
 ```
 
-Os identificadores disponíveis são `suffix-ab`, `modulo-three`, `modulo-five` e `overlap-eleven`. Os dois exemplos de resto são Moore; o último é Mealy. O editor admite até 12 estados, 8 símbolos no alfabeto e 128 símbolos de entrada. Moore inclui a saída do estado inicial, mesmo para a entrada vazia; Mealy produz uma saída por transição.
+Os identificadores disponíveis são `suffix-ab`, `modulo-three`, `modulo-five`, `overlap-eleven`, `nfa-suffix-01`, `nfa-third-last`, `epsilon-a-star-b-star` e `epsilon-ends-b`. `modulo-three` e `modulo-five` são Moore; `overlap-eleven` é Mealy. O editor admite até 12 estados, 8 símbolos no alfabeto e 128 símbolos de entrada. Moore inclui a saída do estado inicial, mesmo para a entrada vazia; Mealy produz uma saída por transição. Também admite NFA e NFA com transições ε, incluindo transições parciais e vários destinos para o mesmo símbolo. O fecho-ε aplica-se antes e depois de cada símbolo consumido.
 
-Em Resolver exercício, Verificar máquina compara com a referência por exploração de todos os pares de estados alcançáveis. Para DFA, compara aceitação; para Moore e Mealy, compara as sequências de saída. Esta verificação é exata para máquinas completas do mesmo modelo e alfabeto, incluindo a entrada vazia, e dá uma palavra testemunha quando diferem. Os exemplos de entrada mostrados não são a base da prova de equivalência. Não há simulação de NFA, PDA ou máquinas de Turing. Sem JavaScript, o laboratório não desenha a máquina, por isso inclui o diagrama ou a tabela na lição.
+Em Resolver exercício, Verificar máquina compara com a referência por exploração de todos os pares de estados alcançáveis. Para DFA, compara aceitação; para Moore e Mealy, compara as sequências de saída. Esta verificação é exata para máquinas completas do mesmo modelo e alfabeto, incluindo a entrada vazia, e dá uma palavra testemunha quando diferem. Para NFA, compara pares de subconjuntos alcançáveis, com um máximo de 10 000 pares. Se atingir esse limite, apresenta um resultado inconclusivo, sem declarar equivalência. Os exemplos de entrada mostrados não são a base da prova de equivalência. Não há simulação de PDA ou máquinas de Turing. Sem JavaScript, o laboratório não desenha a máquina, por isso inclui o diagrama ou a tabela na lição.
 
 `GrammarLab` recebe uma lista não vazia de gramáticas. Define o nome, as produções, a palavra inicial e os casos públicos:
 
