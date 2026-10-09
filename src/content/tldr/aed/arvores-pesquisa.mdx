@@ -1,0 +1,43 @@
+import Dot from '../../../components/Dot.astro';
+
+## Ordem global e pesquisa
+
+Numa **BST com chaves únicas**, todas as chaves da esquerda de um nó são menores e todas as da direita são maiores.
+
+- A condição aplica-se à subárvore inteira. Raiz 20, esquerda 8 e direita de 8 igual a 25 é inválida, apesar das comparações locais.
+- Valida com limites **abertos** herdados dos antepassados. Evita `x-1` e `x+1`, sujeitos a overflow.
+- Em-ordem produz chaves crescentes. Para procurar, compara com o nó atual e segue só o lado possível; chegar ao vazio prova ausência.
+- Inserir segue a pesquisa até um filho vazio. Encontrar igualdade não altera o conjunto. Mínimo segue filhos esquerdos; máximo segue direitos.
+
+Operações custam $O(h+1)$: logarítmicas com equilíbrio, lineares numa cadeia. Inserção crescente pode criar altura `n-1`; altura esperada logarítmica pressupõe ordem uniformemente aleatória de chaves distintas.
+
+## Remoção
+
+| Filhos do nó encontrado | Operação                                                                   |
+| ----------------------- | -------------------------------------------------------------------------- |
+| Nenhum                  | Substitui a ligação de entrada por vazio e liberta o nó                    |
+| Um                      | Substitui a ligação pelo único filho e liberta o nó                        |
+| Dois                    | Copia chave e valor do sucessor, mínimo da direita, e remove esse sucessor |
+
+O sucessor não tem filho esquerdo, mas pode ter direito: **religa esse filho** antes de libertar o sucessor. Atualiza também o apontador da raiz quando a remoção o exigir. Se a chave faltar, conserva a árvore.
+
+<Dot
+  source={
+    'digraph G { node [shape=circle]; subgraph cluster_a { label="Remover 3"; a3[label="3"]; a1[label="1"]; a8[label="8"]; a6[label="6"]; a7[label="7"]; a3->a1[label="esq."]; a3->a8[label="dir."]; a8->a6[label="esq."]; a6->a7[label="dir."]; } subgraph cluster_b { label="Resultado"; b6[label="6"]; b1[label="1"]; b8[label="8"]; b7[label="7"]; b6->b1[label="esq."]; b6->b8[label="dir."]; b8->b7[label="esq."]; } }'
+  }
+  alt="Remover raiz 3 copia o sucessor 6 para a raiz e liga o seu filho direito 7 à esquerda de 8. O nó 1 permanece à esquerda da raiz."
+/>
+
+Em-ordem final `[1,6,7,8]`. Procurar e retirar o sucessor custa $O(h+1)$.
+
+## Sucessor, intervalos e biblioteca
+
+- Sucessor: mínimo da direita, se existir; senão, primeiro antepassado cujo ramo esquerdo contém a chave. Pode não existir. Predecessor é simétrico.
+- Numa árvore equilibrada, enumerar `k` chaves num intervalo com poda custa $O(\log n+k)$; percorrer tudo e filtrar custa $O(n)$.
+- `set` e `map` têm pesquisa, inserção e remoção por chave logarítmicas. `find` consulta sem inserir; `map[chave]` cria valor por omissão se faltar.
+- `multiset` admite repetidos. `erase(valor)` apaga todos; `erase(it)` apaga um, com iterador válido. Contar ou apagar `m` ocorrências custa $O(\log n+m)$.
+- `lower_bound(x)` procura o primeiro `>=x`; `upper_bound(x)`, o primeiro `>x`. Podem devolver `end()`. Iteradores de árvores não se subtraem como os de um vetor.
+
+Equivalência depende do comparador. Multiplicidades por nó exigem adaptar remoção e tamanho. Inclui o custo das comparações, por exemplo de strings.
+
+[Remoção e contratos completos](/cadeiras/aed/arvores-pesquisa/).

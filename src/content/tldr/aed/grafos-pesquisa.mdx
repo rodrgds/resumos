@@ -1,0 +1,57 @@
+import Dot from '../../../components/Dot.astro';
+
+## Grafos e representação
+
+Um grafo $G=(V,E)$ contém vértices e arestas. Num dirigido, `u->v` não implica `v->u`; num não dirigido, a ligação vale nos dois sentidos. Simples significa sem laços nem arestas paralelas.
+
+- O comprimento de um caminho conta arestas; com pesos, o custo soma-os. A distância mínima depende desse contrato.
+- Num não dirigido, a soma dos graus é $2|E|$, contando cada laço duas vezes. Num dirigido, as somas dos graus de entrada e de saída valem ambas $|E|$.
+- Completo simples não dirigido tem $n(n-1)/2$ arestas; uma clique é um subgrafo completo.
+- Árvore não dirigida é conexa e acíclica, com `n-1` arestas para `n>=1`. Floresta é um conjunto de árvores, incluindo isolados.
+- Bipartido permite dois conjuntos com cada aresta entre conjuntos distintos. Um quadrado é bipartido; um triângulo não.
+
+Nos custos, `V` e `E` representam também os números de vértices e arestas.
+
+| Representação | Memória       | Testar aresta                   | Enumerar vizinhos de `u` | Percurso completo |
+| ------------- | ------------- | ------------------------------- | ------------------------ | ----------------- |
+| Matriz        | $\Theta(V^2)$ | $O(1)$                          | $\Theta(V)$              | $\Theta(V^2)$     |
+| Listas        | $\Theta(V+E)$ | $O(\deg(u))$ numa lista simples | $\Theta(\deg(u))$        | $\Theta(V+E)$     |
+
+Um não dirigido guarda a aresta nas duas listas. Os custos incluem vértices isolados: `O(E)` sozinho não cobre um grafo sem arestas.
+
+## DFS
+
+Marca o vértice **antes** de explorar vizinhos ainda não marcados. A pilha de chamadas guarda o caminho de tarefas suspensas. A DFS visita exatamente os alcançáveis da origem.
+
+- Para todo o grafo, começa nova DFS em cada vértice ainda não visitado, formando uma floresta.
+- Num não dirigido, cada raiz conta uma componente conexa; num dirigido, não conta necessariamente uma componente forte.
+- A ordem depende da origem e dos vizinhos. Uma pilha iterativa simples pode diferir da ordem recursiva; tempos de entrada/saída exigem guardar também o próximo vizinho.
+- Pilha recursiva pode ocupar $O(V)$ e exceder os limites de execução.
+
+## BFS e caminhos mínimos
+
+1. Inicializa a origem válida com distância zero e coloca-a na fila.
+2. Retira `u`; para cada vizinho desconhecido `v`, define `dist[v]=dist[u]+1`, `pai[v]=u` e insere-o.
+3. Marca **na inserção**, evitando descobertas repetidas.
+
+A fila processa distâncias não decrescentes, logo a primeira descoberta dá o **menor número de arestas**. Para mínimos por custo, as arestas têm de ter o mesmo custo positivo; pesos diferentes exigem outro método.
+
+<Dot
+  source={'graph G { node [shape=circle]; 0--1; 0--2; 1--3; 2--3; 3--4; 5; }'}
+  alt="0 liga a 1 e 2, ambos ligam a 3, que liga a 4; 5 está isolado."
+/>
+
+Com origem 0 e vizinhos crescentes, camadas `{0}`, `{1,2}`, `{3}`, `{4}`. Distâncias `[0,1,1,2,3,ausente]`; um caminho mínimo é `0,1,3,4`. Há também um por 2. Antes de reconstruir seguindo pais, verifica que o destino é alcançável.
+
+Tempo $O(V+E)$ em listas, espaço auxiliar $O(V)$ para distâncias, pais e fila.
+
+## Bipartição e estados implícitos
+
+- Para bipartição, atribui cores alternadas em BFS em **todas as componentes**. Aresta entre cores iguais revela ciclo ímpar.
+- Em grelhas, verifica limites e obstáculos antes de inserir vizinhos. O estado pode exigir posição mais chave, orientação ou recurso; visitados devem distinguir o estado completo.
+- BFS com várias origens começa com todas a distância zero e dá distância à mais próxima numa única execução.
+- Num não dirigido conexo, diâmetro é a maior distância mínima entre pares. BFS de todas as origens custa $O(V(V+E))$; em desconexos, fixa a convenção.
+
+A árvore de pais fornece um caminho mínimo por destino, sem representar todos nem garantir qualquer desempate lexicográfico.
+
+[Traços e implementação de DFS/BFS](/cadeiras/aed/grafos-pesquisa/).

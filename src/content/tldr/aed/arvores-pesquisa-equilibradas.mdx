@@ -1,0 +1,64 @@
+import Manim from '../../../components/Manim.astro';
+
+## Rotações
+
+Uma rotação altera um número constante de ligações e preserva a em-ordem. Na rotação à direita, `y`, filho esquerdo de `z`, sobe; a subárvore `B` entre as suas chaves passa de `y.right` para `z.left`.
+
+<Manim
+  animation="aed-rotacao-avl"
+  title="Rodar conservando a ordem"
+  description="y sobe e z desce. A subárvore B, com chaves entre y e z, passa para a esquerda de z. A sequência em-ordem A, y, B, z, C mantém-se."
+/>
+
+A rotação à esquerda é simétrica. Custo $O(1)$; atualiza primeiro altura/tamanho da antiga raiz, depois da nova, e religa o resultado ao pai ou à raiz da árvore.
+
+## AVL
+
+Com altura de vazio `-1`, cada nó satisfaz
+
+$$b=h_{esq}-h_{dir}\in\{-1,0,1\}.$$
+
+Não exige igual número de nós nos dois lados. Depois de inserir como numa BST, sobe atualizando alturas e corrige o primeiro desequilíbrio:
+
+| Nó desequilibrado | Ramo pesado       | Correção                         |
+| ----------------- | ----------------- | -------------------------------- |
+| `b=2`             | Esquerda-esquerda | Direita no nó                    |
+| `b=2`             | Esquerda-direita  | Esquerda no filho, direita no nó |
+| `b=-2`            | Direita-direita   | Esquerda no nó                   |
+| `b=-2`            | Direita-esquerda  | Direita no filho, esquerda no nó |
+
+Inserir `30,10,20` dá fatores 2 em 30 e -1 em 10. Roda à esquerda em 10 e à direita em 30: raiz 20, filhos 10 e 30, mesma em-ordem.
+
+- Na inserção, a reparação recupera a altura anterior; os antepassados precisam de alturas atualizadas, sem outra reparação.
+- Na **remoção**, verifica todos os antepassados, pois a altura pode continuar a diminuir. Decide pelo fator do filho, não pela chave apagada. Com `b=2` e filho de fator zero ou positivo, usa direita simples; com fator negativo, dupla. O caso direito é simétrico.
+
+O mínimo de nós numa AVL de altura `h` satisfaz
+
+$$N(-1)=0,\quad N(0)=1,\quad N(h)=1+N(h-1)+N(h-2).$$
+
+Cresce exponencialmente com `h`, portanto a altura e as operações de pesquisa, inserção e remoção são $O(\log(n+1))$. Por exemplo, `N(4)=12`, sem exigir os 31 nós de uma árvore perfeita.
+
+## Vermelho-pretas
+
+São BST com estes invariantes:
+
+- Raiz preta e folhas vazias `NIL` pretas.
+- Nó vermelho não tem filho vermelho.
+- Todos os caminhos de um nó até `NIL` têm o mesmo número de nós pretos.
+
+A **altura preta** `b` exclui o nó inicial e inclui `NIL`. Uma subárvore tem pelo menos $2^b-1$ nós internos. Sem vermelhos consecutivos, $h\le2\log_2(n+1)$: operações logarítmicas, com equilíbrio menos restrito que AVL.
+
+Na inserção, coloca o novo nó vermelho como numa BST:
+
+| Situação                                       | Reparação                                                     |
+| ---------------------------------------------- | ------------------------------------------------------------- |
+| Pai preto                                      | Sem conflito                                                  |
+| Pai e tio vermelhos                            | Pai/tio pretos, avô vermelho; conflito pode subir             |
+| Pai vermelho, tio preto, configuração exterior | Roda no avô e troca cores de pai/avô                          |
+| Pai vermelho, tio preto, configuração interior | Roda no pai para ficar exterior; depois trata o caso anterior |
+
+No fim, pinta a raiz de preto. Os casos são simétricos; a cor do tio é indispensável à decisão.
+
+A remoção vermelho-preta é apenas enquadramento nesta lição, seguindo a lacuna de detalhe da fonte de 2025/26. Retirar um preto pode diminuir a contagem num ramo e exigir reparações; não uses estas notas como receita completa.
+
+[Provas e implementação AVL](/cadeiras/aed/arvores-pesquisa-equilibradas/).

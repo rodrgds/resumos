@@ -1,0 +1,84 @@
+import Estados from '../../aed/Estados.astro';
+
+## Contrato e prova
+
+- O **contrato** fixa pré-condições e pós-condições, incluindo vazio, índices e empates.
+- Um **invariante** vale à entrada de cada iteração. Prova inicialização, manutenção e que, à saída, implica a pós-condição.
+- Isto dá correção parcial. Acrescenta uma quantidade inteira não negativa que diminui até à paragem para provar terminação e **correção total**.
+
+Para a primeira posição do máximo num vetor **não vazio**:
+
+```text
+melhor = 0
+para i = 1, ..., n-1:
+    se v[i] > v[melhor]: melhor = i
+devolver melhor
+```
+
+Antes da iteração `i`, `melhor` é a primeira posição do máximo em `[0,i)`. O prefixo inicial contém só a posição 0; uma igualdade conserva o primeiro empate; na saída, `i=n`. `n-i` diminui em cada passo. Em `[6,9,9,2]`, a resposta é 1; trocar `>` por `>=` daria 2. Faz exatamente `n-1` comparações.
+
+## Contagens e limites
+
+O modelo assume inteiros de dimensão fixa e acesso a arrays constantes. Copiar `n` elementos custa $\Theta(n)$; comparar strings pode depender do seu comprimento.
+
+| Trabalho                                 | Contagem                   | Ordem            |
+| ---------------------------------------- | -------------------------- | ---------------- |
+| Dois ciclos lineares consecutivos        | `2n`                       | $\Theta(n)$      |
+| Dois ciclos de `n` encaixados            | `n²`                       | $\Theta(n^2)$    |
+| Interior de comprimentos `1,…,n`         | $n(n+1)/2$                 | $\Theta(n^2)$    |
+| Duplicar `i` até `n`                     | Cerca de $\log_2 n$ passos | $\Theta(\log n)$ |
+| Duplicar `i`, com interior de `i` passos | $1+2+4+\cdots<2n$          | $\Theta(n)$      |
+
+Para funções eventualmente não negativas:
+
+- $T\in O(f)$ se existem $c>0,n_0$ tais que $T(n)\le cf(n)$ para todo $n\ge n_0$.
+- $T\in\Omega(f)$ é o limite inferior análogo; $\Theta(f)$ exige ambos.
+- $3n^2+7n+4\in\Theta(n^2)$. $O$ não significa pior caso: identifica o caso analisado.
+
+$$1\prec\log n\prec n\prec n\log n\prec n^2\prec2^n\prec n!.$$
+
+## Recorrências, espaço e amortização
+
+Com casos base de custo constante:
+
+| Recorrência              | Custo             |
+| ------------------------ | ----------------- |
+| $T(n)=2T(n/2)+\Theta(n)$ | $\Theta(n\log n)$ |
+| $T(n)=2T(n/2)+\Theta(1)$ | $\Theta(n)$       |
+| $T(n)=T(n/2)+\Theta(1)$  | $\Theta(\log n)$  |
+| $T(n)=T(n-1)+\Theta(n)$  | $\Theta(n^2)$     |
+
+- A pilha recursiva ocupa $O(h)$ com profundidade `h`. Chamadas consecutivas não mantêm duas subárvores completas simultaneamente. Um auxiliar de `n` posições mais pilha logarítmica ocupa $O(n)$.
+- Pior caso maximiza o custo entre entradas da mesma dimensão. Caso médio exige distribuição; custo esperado pode decorrer de escolhas aleatórias do algoritmo.
+- **Amortizado** limita uma sequência sem supor entradas aleatórias. Duplicar a capacidade de um vetor faz menos de `2n` cópias em `n` inserções: $O(1)$ amortizado, embora uma inserção possa custar $\Theta(n)$ e invalidar referências.
+
+## Prefixos, janelas e Kadane
+
+Para somas num vetor fixo, define $p[0]=0$, $p[i+1]=p[i]+v[i]$:
+
+$$\sum_{i=l}^{r-1}v[i]=p[r]-p[l],\qquad 0\le l\le r\le n.$$
+
+Construção $\Theta(n)$, consulta $\Theta(1)$ e `q` consultas $\Theta(n+q)$. Alterar o vetor invalida os prefixos.
+
+<Estados
+  caption="Os prefixos guardam somas antes de cada fronteira."
+  steps={[
+    {
+      label: 'Vetor',
+      values: ['4', '-2', '7', '1'],
+      note: '[1,3) contém -2 e 7.',
+    },
+    {
+      label: 'Prefixos',
+      values: ['0', '4', '2', '9', '10'],
+      note: 'p[3]-p[1]=9-4=5.',
+    },
+  ]}
+/>
+
+- Numa janela de tamanho `K`, com `1<=K<=N`, retira a contribuição que sai e acrescenta a que entra. Contar valores `>=T` em todas as janelas custa $\Theta(N)$; «pelo menos metade» testa `2*dentro>=K`, incluindo `K` ímpar.
+- **Kadane**, para intervalo contíguo não vazio: inicia `atual=melhor=v[0]`; para cada `x`, faz `atual=max(x,atual+x)` e `melhor=max(melhor,atual)`. `atual` é a melhor soma que termina aqui. Tempo $O(n)$, espaço $O(1)$, com somas representáveis.
+
+Em `[-3,5,-2,4,-8,6]`, `atual` é `-3,5,3,7,-1,6` e a resposta é 7. Só negativos dão o maior elemento; zero só entra se o contrato permitir intervalo vazio. Entrada vazia não tem intervalo não vazio.
+
+[Provas e aplicações completas](/cadeiras/aed/complexidade-invariantes/).

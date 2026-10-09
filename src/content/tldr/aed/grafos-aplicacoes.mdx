@@ -1,0 +1,74 @@
+import Estados from '../../aed/Estados.astro';
+
+## Ciclos e ordem topológica
+
+- Na DFS **dirigida**, branco é não descoberto, cinzento é chamada ativa e preto é chamada terminada. Uma aresta para cinzento fecha um ciclo; para preto não prova ciclo.
+- Na DFS **não dirigida**, ignora a aresta usada para chegar do pai. Com paralelas, identifica arestas e ignora só essa, não todos os vizinhos iguais ao pai.
+- Repete DFS em todos os vértices para cobrir componentes desligadas. Reconstrói um ciclo dirigido pelos pais até ao antepassado cinzento.
+
+Uma **ordem topológica** inclui todos os vértices e coloca `u` antes de `v` para cada `u->v`. Existe exatamente num grafo dirigido acíclico, DAG.
+
+| Método | Procedimento                                                      | Deteção de falha                  |
+| ------ | ----------------------------------------------------------------- | --------------------------------- |
+| DFS    | Ordena por saída decrescente                                      | Rejeita se detetar ciclo          |
+| Kahn   | Retira vértices de grau de entrada zero; reduz graus dos destinos | Se retirar menos de `V`, há ciclo |
+
+Kahn mantém graus das arestas vindas de vértices ainda presentes. Para `0->2,1->2,2->3,1->4`, `[0,1,2,4,3]` é válida; acrescentar `3->1` cria ciclo. Pode haver várias ordens. Min-heap escolhe o menor disponível, acrescentando custo logarítmico nas operações de prioridade.
+
+Ambos custam $O(V+E)$ em listas e espaço auxiliar $O(V)$.
+
+## Componentes fortes e Tarjan
+
+Uma **SCC** é um conjunto máximo em que todos os pares se alcançam nos dois sentidos. Componente fraca ignora os sentidos. Contrair SCCs produz um DAG; um ciclo entre componentes obrigaria a uni-las.
+
+Tarjan guarda descoberta `disc[u]`, `low[u]` e uma pilha de vértices ainda sem SCC atribuída:
+
+1. Ao descobrir `u`, define `disc[u]=low[u]` e empilha-o.
+2. Para filho DFS `v`, depois da chamada faz `low[u]=min(low[u],low[v])`.
+3. Para destino já descoberto **ainda na pilha de componentes**, faz `low[u]=min(low[u],disc[v])`. Ignora destinos de SCCs já terminadas.
+4. Se `low[u]==disc[u]`, retira da pilha até incluir `u`: esses vértices formam uma SCC.
+
+A pilha de componentes **não é a pilha de chamadas**. Uma chamada terminada pode ainda esperar pela sua SCC.
+
+<Estados
+  caption="Arestas 0 para 1, 1 para 0, 0 para 2 e 2 para 1. As pilhas vão do fundo para o topo."
+  steps={[
+    {
+      label: 'Termina chamada de 1',
+      values: ['chamadas: 0', 'componentes: 0, 1'],
+      note: 'low[1]=0; 1 continua à espera da SCC.',
+    },
+    {
+      label: '2 examina aresta para 1',
+      values: ['chamadas: 0, 2', 'componentes: 0, 1, 2'],
+      note: '1 está nas componentes: low[2]=disc[1]=1.',
+    },
+    {
+      label: 'Termina chamada de 0',
+      values: ['SCC: 0, 1, 2'],
+      note: 'low[0]=disc[0]=0 fecha a componente.',
+    },
+  ]}
+/>
+
+Usar só «cinzento» ignoraria `2->1` e separaria 2 incorretamente. A atualização para um destino já descoberto usa `disc[v]`, não indiscriminadamente `low[v]`. Tarjan completo custa $O(V+E)$ e auxiliar $O(V)$.
+
+## Pontes e articulações
+
+Agora o grafo é **não dirigido**. Ponte é aresta cuja remoção aumenta o número de componentes; articulação é vértice cuja remoção, com as suas arestas, faz o mesmo.
+
+Inicializa `low[u]=disc[u]`. Filho DFS contribui com `low[v]`; uma aresta para descoberto, exceto a de entrada, contribui com `disc[v]`. `low` identifica o antepassado mais antigo alcançável pela subárvore usando arestas de árvore e uma de retorno.
+
+| Objeto                         | Condição                                                           |
+| ------------------------------ | ------------------------------------------------------------------ |
+| Aresta de árvore `u-v` é ponte | `low[v]>disc[u]`                                                   |
+| `u` não raiz é articulação     | Algum filho DFS tem `low[v]>=disc[u]`                              |
+| Raiz é articulação             | Pelo menos dois filhos **na árvore DFS**, não apenas dois vizinhos |
+
+A igualdade permite retorno a `u`, evitando ponte; retirar o próprio `u` ainda pode separar o ramo.
+
+No triângulo `0-1-2-0` com `1-3,3-4`, DFS desde 0 e vizinhos crescentes dá `disc=[0,1,2,3,4]`, `low=[0,0,0,3,4]`. Pontes `1-3,3-4`; articulações 1 e 3. A raiz 0 tem só um filho DFS. Outra aresta paralela `3-4` elimina essa ponte.
+
+Usa identificadores de arestas com paralelas e inicia DFS em todos os não descobertos. Tempo $O(V+E)$, auxiliar $O(V)$. Em grafos pequenos, remover cada candidato e recontar componentes é uma referência independente para verificar os critérios.
+
+[Low-link e conetividade em detalhe](/cadeiras/aed/grafos-aplicacoes/).
