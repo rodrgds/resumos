@@ -98,6 +98,77 @@ test('reduced motion keeps validation feedback without celebrations or nudges', 
   }
 });
 
+test('an unanswered exercise keeps its actions beside the answer', async ({
+  page,
+}) => {
+  await page.goto('/cadeiras/rc/ligacao-de-dados/');
+  const question = page.getByRole('region', {
+    name: 'Recuperar uma confirmação perdida',
+  });
+  await question.locator(':scope > details > summary').click();
+  const response = await question.getByLabel('A tua resposta').boundingBox();
+  const action = await question
+    .getByRole('button', { name: 'Comparar com a solução' })
+    .boundingBox();
+  // One normal spacing step, without an empty feedback row between them.
+  expect(action!.y - response!.y - response!.height).toBeLessThanOrEqual(24);
+});
+
+test('self-assessment confirms the choice beside the reader and celebrates only a fresh success', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/exemplo/apontamentos/');
+  const question = page.getByRole('region', {
+    name: '1. Justificar a fórmula',
+  });
+  await question.locator(':scope > details > summary').click();
+  await question.getByLabel('Ver solução', { exact: true }).click();
+  const correct = question.getByRole('button', {
+    name: 'A minha resposta está correta',
+  });
+  await correct.scrollIntoViewIfNeeded();
+  const celebrated = await correct.evaluate(async (button) => {
+    (button as HTMLButtonElement).click();
+    // The celebration must survive layout and scroll anchoring, not just exist in the click task.
+    for (let frame = 0; frame < 3; frame++) {
+      await new Promise(requestAnimationFrame);
+    }
+    const canvas =
+      document.querySelector<HTMLCanvasElement>('.exercise-confetti');
+    return !!canvas
+      ?.getContext('2d')
+      ?.getImageData(0, 0, canvas.width, canvas.height)
+      .data.some((value, index) => index % 4 === 3 && value > 0);
+  });
+  expect(celebrated).toBe(true);
+  await expect(correct).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page.getByText('Assinalada como correta.', { exact: true }),
+  ).toBeVisible();
+  await expect(question.getByRole('status')).toContainText('autoavaliação');
+  await expect(page.locator('.exercise-confetti')).toHaveCount(0);
+  await correct.click();
+  await expect(page.locator('.exercise-confetti')).toHaveCount(0);
+  await page.reload();
+  await question.locator(':scope > details > summary').click();
+  await question.getByLabel('Ver solução', { exact: true }).click();
+  await expect(correct).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page.getByText('Assinalada como correta.', { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator('.exercise-confetti')).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await question.getByRole('button', { name: 'Rever resposta' }).click();
+  await correct.click();
+  await expect(correct).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page.getByText('Assinalada como correta.', { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('.exercise-confetti')).toHaveCount(0);
+});
+
 test('optional help keeps only useful disclosures and remains readable without JavaScript', async ({
   browser,
   request,

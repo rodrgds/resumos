@@ -29,6 +29,11 @@ test('CRC register trace agrees with the teacher examples and detects altered fr
   await expect(demo.getByRole('status')).toContainText(
     'Resto: 000. Nenhum erro detetado.',
   );
+  await next.click();
+  await expect(demo.getByRole('img')).toHaveAccessibleName(/Registos: 001/);
+  await expect(
+    demo.getByRole('button', { name: 'Alterar bit 2', exact: true }),
+  ).toHaveAttribute('aria-current', 'step');
   await demo
     .getByRole('button', { name: 'Alterar bit 1', exact: true })
     .press('Space');

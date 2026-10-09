@@ -5,7 +5,10 @@ import {
   type Assistance,
   type ExerciseProgress,
 } from '../lib/exercise-progress';
-import { createExerciseFeedback } from '../lib/exercise-feedback';
+import {
+  createExerciseFeedback,
+  showExerciseNotice,
+} from '../lib/exercise-feedback';
 
 type Answer =
   | { kind: 'self' }
@@ -28,6 +31,8 @@ export function setupExercises() {
     });
     const help = [...root.querySelectorAll<HTMLDetailsElement>('[data-help]')];
     let progress = readExerciseProgress(key);
+    const selfChecks =
+      root.querySelectorAll<HTMLButtonElement>('[data-self-check]');
     let assistance: Assistance = progress?.assistance || 'none';
     const assistanceLabel = (level = assistance) =>
       level === 'solution'
@@ -36,6 +41,12 @@ export function setupExercises() {
           ? 'com pistas'
           : 'sem ajuda';
     const showProgress = () => {
+      selfChecks.forEach((button) => {
+        button.setAttribute(
+          'aria-pressed',
+          String(progress?.result === `self-${button.dataset.selfCheck}`),
+        );
+      });
       if (!progress) return;
       if (!progress.result) {
         delete feedback.dataset.result;
@@ -48,17 +59,17 @@ export function setupExercises() {
         (result === 'attempted' || result === 'self-checked') &&
         answer.kind === 'self'
       ) {
-        feedback.textContent =
-          'Sem correção automática. Compara com a solução e indica se a tua resposta está correta.';
+        delete feedback.dataset.result;
+        feedback.textContent = '';
         return;
       }
       const label =
         result === 'correct'
           ? 'Resposta correta'
           : result === 'self-correct'
-            ? 'Resposta correta segundo a tua avaliação'
+            ? 'Resposta correta (autoavaliação)'
             : result === 'self-incorrect'
-              ? 'Resposta incorreta segundo a tua avaliação'
+              ? 'Resposta a rever (autoavaliação)'
               : 'Resposta incorreta';
       feedback.textContent = `${label}, ${assistanceLabel(progress.resultAssistance ?? progress.assistance)}.`;
     };
@@ -191,19 +202,34 @@ export function setupExercises() {
       }
       showResult(correct, explanation);
     });
-    root
-      .querySelectorAll<HTMLButtonElement>('[data-self-check]')
-      .forEach((button) =>
-        button.addEventListener('click', () => {
-          readHelp();
-          save(
-            button.dataset.selfCheck === 'incorrect'
-              ? 'self-incorrect'
-              : 'self-correct',
+    selfChecks.forEach((button) =>
+      button.addEventListener('click', () => {
+        const correct = button.dataset.selfCheck === 'correct';
+        const result = correct ? 'self-correct' : 'self-incorrect';
+        const changed = progress?.result !== result;
+        readHelp();
+        save(result);
+        showProgress();
+        if (changed) {
+          showExerciseNotice(
+            correct ? 'Assinalada como correta.' : 'Marcada para rever.',
           );
-          showProgress();
-        }),
-      );
+          effects.reset();
+          if (correct) {
+            // Let the new status settle scroll anchoring before placing the burst.
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                if (
+                  progress?.result === 'self-correct' &&
+                  button.getClientRects().length
+                )
+                  effects.play({ correct: true, trigger: button });
+              });
+            });
+          }
+        }
+      }),
+    );
     const clear = root.querySelector<HTMLButtonElement>('[data-clear]');
     const responses = root.querySelectorAll<
       HTMLInputElement | HTMLTextAreaElement

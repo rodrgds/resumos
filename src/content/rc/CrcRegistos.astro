@@ -1,5 +1,6 @@
 ---
 import InteractiveDemo from '../../components/InteractiveDemo.astro';
+import Icon from '../../components/Icon.astro';
 import { calculateCrc, crcCircuit } from './crc';
 
 const initial = calculateCrc('1101', '1011');
@@ -9,10 +10,11 @@ const initial = calculateCrc('1101', '1011');
   <div data-crc-demo>
     <form class="parameters">
       <div>
-        <label for="rc-crc-message">Mensagem (bits)</label>
+        <label for="rc-crc-message">Mensagem</label>
         <input
           id="rc-crc-message"
           name="message"
+          aria-label="Mensagem (bits)"
           type="text"
           value={initial.message}
           inputmode="numeric"
@@ -23,10 +25,11 @@ const initial = calculateCrc('1101', '1011');
         />
       </div>
       <div>
-        <label for="rc-crc-generator">Gerador (bits)</label>
+        <label for="rc-crc-generator">Gerador</label>
         <input
           id="rc-crc-generator"
           name="generator"
+          aria-label="Gerador (bits)"
           type="text"
           value={initial.generator}
           inputmode="numeric"
@@ -36,14 +39,10 @@ const initial = calculateCrc('1101', '1011');
           disabled
         />
       </div>
-      <button type="submit" disabled>
-        Calcular CRC
+      <button type="submit" aria-label="Calcular CRC" disabled>
+        Calcular
       </button>
     </form>
-    <p class="small" id="rc-crc-limits">
-      Até 32 bits de mensagem. Gerador de 2 a 9 bits, começando e terminando em
-      1.
-    </p>
     <p id="rc-crc-error" role="alert" hidden></p>
     <noscript>
       <p>
@@ -56,12 +55,7 @@ const initial = calculateCrc('1101', '1011');
         <strong>CRC: {initial.crc}</strong>
         <span>Trama: {initial.frame}</span>
       </p>
-      <p class="small" data-polynomial>
-        G(x) = {initial.polynomial}. Grau {initial.degree}, {initial.degree}{' '}
-        registos.
-      </p>
-      <fieldset>
-        <legend>Acompanhar o cálculo</legend>
+      <fieldset aria-label="Modo de cálculo">
         <label>
           <input
             type="radio"
@@ -78,20 +72,22 @@ const initial = calculateCrc('1101', '1011');
         </label>
       </fieldset>
       <div data-received hidden>
-        <p class="small">Altera bits da trama recebida. O gerador mantém-se.</p>
+        <p class="small">Trama recebida: altera um bit para simular um erro.</p>
         <div
           class="received"
           role="group"
           aria-label="Bits da trama recebida"
         ></div>
       </div>
-      <p data-stream-label>
-        Entrada: mensagem seguida de {initial.degree} zeros.
-      </p>
-      <div class="stream" aria-label="Bits de entrada" data-stream>
-        {Array.from(initial.input, (bit, index) => (
-          <span data-current={index === 0 ? '' : undefined}>{bit}</span>
-        ))}
+      <div class="bitstream" data-bitstream>
+        <span class="small" data-stream-label>
+          Mensagem + {initial.degree} zeros
+        </span>
+        <div class="stream" aria-label="Bits de entrada" data-stream>
+          {Array.from(initial.input, (bit, index) => (
+            <span data-current={index === 0 ? '' : undefined}>{bit}</span>
+          ))}
+        </div>
       </div>
       <div
         class="circuit"
@@ -101,30 +97,46 @@ const initial = calculateCrc('1101', '1011');
         set:html={crcCircuit(initial.generator, '000', '1')}
       />
       <div class="steps">
-        <button type="button" data-previous disabled>
-          Passo anterior
+        <button
+          type="button"
+          data-previous
+          aria-label="Passo anterior"
+          title="Passo anterior"
+          disabled
+        >
+          <Icon name="chevron-left" size={20} />
         </button>
-        <label for="rc-crc-step">
-          Passo do cálculo
-          <input
-            id="rc-crc-step"
-            type="range"
-            min="0"
-            max={initial.input.length}
-            value="0"
-            disabled
-          />
-        </label>
-        <button type="button" data-next disabled>
-          Próximo bit
+        <input
+          id="rc-crc-step"
+          aria-label="Passo do cálculo"
+          type="range"
+          min="0"
+          max={initial.input.length}
+          value="0"
+          disabled
+        />
+        <button
+          type="button"
+          data-next
+          aria-label="Próximo bit"
+          title="Próximo bit"
+          disabled
+        >
+          <Icon name="chevron-right" size={20} />
         </button>
       </div>
-      <p data-step-description>
+      <p class="small" data-step-description>
         Passo 0/{initial.input.length}. Os registos começam a zero.
       </p>
       <p class="small" data-detection hidden></p>
       <details>
-        <summary>Todos os passos</summary>
+        <summary>
+          <Icon name="chevron-right" size={16} /> Todos os passos
+        </summary>
+        <p class="small" data-polynomial>
+          G(x) = {initial.polynomial}. Grau {initial.degree}, {initial.degree}{' '}
+          registos.
+        </p>
         <div
           class="trace"
           tabindex="0"
@@ -154,6 +166,10 @@ const initial = calculateCrc('1101', '1011');
             </tbody>
           </table>
         </div>
+        <p class="small" id="rc-crc-limits">
+          Até 32 bits de mensagem. Gerador de 2 a 9 bits, começando e terminando
+          em 1.
+        </p>
       </details>
     </div>
   </div>
@@ -200,14 +216,17 @@ const initial = calculateCrc('1101', '1011');
       );
       previous.disabled = step === 0;
       next.disabled = step === input.length;
-      Array.from(stream.children).forEach((bit, index) => {
-        bit.toggleAttribute('data-current', index === step);
-        bit.toggleAttribute('data-read', index < step);
+      [stream, receivedButtons].forEach((sequence) => {
+        Array.from(sequence.children).forEach((bit, index) => {
+          bit.toggleAttribute('data-current', index === step);
+          bit.toggleAttribute('data-read', index < step);
+          bit.setAttribute('aria-current', index === step ? 'step' : 'false');
+        });
       });
       const current = trace[step - 1];
       root.querySelector('[data-step-description]')!.textContent = current
-        ? `Passo ${step}/${input.length}. Entrou ${current.input}. Antes: ${current.before}. O retorno era ${current.feedback}; ${current.feedback ? 'aplicámos XOR nas ligações do gerador' : 'deslocámos os bits sem alterar as ligações XOR'}. Depois: ${current.after}.`
-        : `Passo 0/${input.length}. Os registos começam a zero. O primeiro bit entra à direita, em C0.`;
+        ? `Passo ${step}/${input.length}: ${current.before} → ${current.after}. Entrou ${current.input}; retorno ${current.feedback}, ${current.feedback ? 'com XOR nas ligações do gerador' : 'só deslocamento'}.`
+        : `Passo 0/${input.length}. Registos a zero; o primeiro bit entra em C₀.`;
     };
 
     const showCalculation = () => {
@@ -221,11 +240,13 @@ const initial = calculateCrc('1101', '1011');
         ? `Resto: ${remainder}. ${detected ? 'Erro detetado.' : 'Nenhum erro detetado.'}`
         : `CRC: ${model.crc}`;
       const word = document.createElement('span');
-      word.textContent = `${verifying ? 'Recebida' : 'Trama'}: ${verifying ? frame : model.frame}`;
-      result.append(value, word);
+      word.textContent = `Trama: ${model.frame}`;
+      result.append(value);
+      if (!verifying) result.append(word);
       root.querySelector('[data-polynomial]')!.textContent =
         `G(x) = ${model.polynomial}. Grau ${model.degree}, ${model.degree} ${model.degree === 1 ? 'registo' : 'registos'}.`;
       received.hidden = !verifying;
+      root.querySelector<HTMLElement>('[data-bitstream]')!.hidden = verifying;
       receivedButtons.replaceChildren(
         ...Array.from(frame, (bit, index) => {
           const button = document.createElement('button');
@@ -248,9 +269,8 @@ const initial = calculateCrc('1101', '1011');
           return button;
         }),
       );
-      root.querySelector('[data-stream-label]')!.textContent = verifying
-        ? 'Entrada: trama recebida, incluindo os bits de CRC.'
-        : `Entrada: mensagem seguida de ${model.degree} zeros.`;
+      root.querySelector('[data-stream-label]')!.textContent =
+        `Mensagem + ${model.degree} zeros`;
       stream.replaceChildren(
         ...Array.from(input, (bit) => {
           const cell = document.createElement('span');
@@ -337,22 +357,21 @@ const initial = calculateCrc('1101', '1011');
 
 <style>
   .parameters {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
     align-items: end;
-    flex-wrap: wrap;
     gap: 12px;
   }
   .parameters > div {
-    flex: 1 1 150px;
     min-width: 0;
   }
-  label,
-  legend {
+  label {
     font-weight: 600;
   }
   .parameters label {
     display: block;
     margin-bottom: 6px;
+    font-size: 13px;
   }
   input[type='text'],
   [data-crc-demo] :global(button) {
@@ -370,6 +389,9 @@ const initial = calculateCrc('1101', '1011');
   }
   [data-crc-demo] :global(button) {
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   button[type='submit'] {
     background: var(--accent);
@@ -392,7 +414,7 @@ const initial = calculateCrc('1101', '1011');
     border-color: var(--accent);
     border-style: dashed;
   }
-  p {
+  [data-crc-demo] p {
     margin: 12px 0;
     overflow-wrap: anywhere;
   }
@@ -400,11 +422,11 @@ const initial = calculateCrc('1101', '1011');
     font-size: 13px;
     color: var(--muted);
   }
-  .result {
+  [data-crc-demo] .result {
     display: flex;
     flex-wrap: wrap;
     gap: 8px 24px;
-    margin-block: 20px 8px;
+    margin-block: 16px 4px;
   }
   .result :global(span) {
     font-family: var(--code-font, monospace);
@@ -412,14 +434,11 @@ const initial = calculateCrc('1101', '1011');
   }
   fieldset {
     padding: 0;
-    margin: 20px 0 0;
+    margin: 4px 0 12px;
     border: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 4px 20px;
-  }
-  legend {
-    margin-bottom: 4px;
   }
   fieldset label {
     display: flex;
@@ -427,10 +446,17 @@ const initial = calculateCrc('1101', '1011');
     min-height: 44px;
     gap: 8px;
     font-weight: 400;
+    font-size: 13px;
   }
   input[type='radio'],
   input[type='range'] {
     accent-color: var(--accent);
+  }
+  .bitstream {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
   }
   .stream,
   .received {
@@ -451,7 +477,8 @@ const initial = calculateCrc('1101', '1011');
     border: 2px solid var(--accent);
     font-weight: 700;
   }
-  .stream :global([data-read]) {
+  .stream :global([data-read]),
+  .received :global([data-read]) {
     background: var(--soft);
   }
   .received :global(button) {
@@ -462,6 +489,10 @@ const initial = calculateCrc('1101', '1011');
     border: 2px dashed var(--accent);
     font-weight: 700;
   }
+  .received :global([data-current]) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
   .circuit,
   .trace {
     max-width: 100%;
@@ -469,7 +500,7 @@ const initial = calculateCrc('1101', '1011');
     scrollbar-color: var(--muted) var(--surface);
   }
   .circuit {
-    margin-block: 16px;
+    margin-block: 12px;
   }
   .circuit :global(svg) {
     display: block;
@@ -477,15 +508,9 @@ const initial = calculateCrc('1101', '1011');
   }
   .steps {
     display: grid;
-    grid-template-columns: auto minmax(120px, 1fr) auto;
-    align-items: end;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
     gap: 12px;
-  }
-  .steps label {
-    display: flex;
-    flex: 1 1 140px;
-    flex-direction: column;
-    font-size: 13px;
   }
   input[type='range'] {
     min-height: 44px;
@@ -493,13 +518,24 @@ const initial = calculateCrc('1101', '1011');
     margin: 0;
   }
   details {
-    margin-top: 16px;
+    margin-top: 12px;
     border-top: 1px solid var(--line);
   }
   summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     min-height: 44px;
-    padding-block: 12px;
     cursor: pointer;
+    list-style: none;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  details[open] > summary svg {
+    transform: rotate(90deg);
   }
   table {
     width: 100%;
@@ -525,12 +561,11 @@ const initial = calculateCrc('1101', '1011');
     display: none !important;
   }
   @media (max-width: 480px) {
-    .steps {
+    .parameters {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .steps label {
+    .parameters button {
       grid-column: 1 / -1;
-      grid-row: 1;
     }
   }
 </style>

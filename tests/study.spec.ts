@@ -268,9 +268,7 @@ test('choice explanations and self assessment stay distinct from automatic corre
   await expect(choice.getByRole('status')).toContainText('Resposta correta');
   const open = page.getByRole('region', { name: '1. Justificar a fórmula' });
   await open.locator(':scope > details > summary').click();
-  await expect(open.getByRole('status')).toContainText(
-    'Sem correção automática',
-  );
+  await expect(open.getByRole('status')).toBeHidden();
   await open
     .getByLabel('A tua resposta')
     .fill('A minha resposta privada: somar duas linhas.');
@@ -279,28 +277,27 @@ test('choice explanations and self assessment stay distinct from automatic corre
   await expect(
     open.getByRole('button', { name: 'Comparar com a solução' }),
   ).toBeHidden();
-  await expect(open.getByRole('status')).toContainText(
-    'Sem correção automática',
-  );
+  await expect(open.getByRole('status')).toBeHidden();
+  await expect(open.locator('.exercise-feedback-row')).toBeHidden();
   await expect(open.locator('[data-help="solution"]')).toHaveAttribute(
     'open',
     '',
   );
-  await open.getByRole('button', { name: 'Preciso de corrigir' }).click();
+  await open.getByRole('button', { name: 'Rever resposta' }).click();
   await expect(open.getByRole('status')).toContainText(
-    'Resposta incorreta segundo a tua avaliação',
+    'Resposta a rever (autoavaliação)',
   );
   await page.reload();
   await open.locator(':scope > details > summary').click();
   await expect(open.getByRole('status')).toContainText(
-    'Resposta incorreta segundo a tua avaliação',
+    'Resposta a rever (autoavaliação)',
   );
   await open.getByLabel('Ver solução', { exact: true }).click();
   await open
     .getByRole('button', { name: 'A minha resposta está correta' })
     .click();
   await expect(open.getByRole('status')).toContainText(
-    'Resposta correta segundo a tua avaliação, após consultar a solução',
+    'Resposta correta (autoavaliação), após consultar a solução',
   );
   const saved = await page.evaluate(() =>
     localStorage.getItem('resumos-exercise-progress'),

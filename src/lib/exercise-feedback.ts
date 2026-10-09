@@ -4,6 +4,29 @@ const BURST_WIDTH = 220;
 const BURST_HEIGHT = 160;
 const COLOUR_TOKENS = ['--accent', '--diagram-secondary'];
 
+let notice: HTMLElement | undefined;
+let noticeTimer: number | undefined;
+
+function dismissNotice() {
+  notice?.remove();
+  notice = undefined;
+  window.clearTimeout(noticeTimer);
+}
+
+/** Visual confirmation; the exercise's persistent status announces the result. */
+export function showExerciseNotice(message: string) {
+  dismissNotice();
+  notice = document.createElement('div');
+  notice.className = 'exercise-notice';
+  notice.setAttribute('aria-hidden', 'true');
+  notice.textContent = message;
+  document.body.append(notice);
+  noticeTimer = window.setTimeout(dismissNotice, 3500);
+}
+
+document.addEventListener('astro:before-swap', dismissNotice);
+window.addEventListener('pagehide', dismissNotice);
+
 interface FeedbackOptions {
   correct: boolean;
   trigger?: HTMLElement | null;
