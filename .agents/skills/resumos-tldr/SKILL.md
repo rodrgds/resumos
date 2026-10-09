@@ -47,6 +47,8 @@ Escreve em `src/content/tldr/<cadeira>/<slug>.md` ou `.mdx`, com o mesmo identif
 
 O modo TLDR destina-se às lições das secções `conteudo` e `laboratorios`, com `studyKind: lesson`. Apresentações, páginas só de exercícios, guias, recursos, cheat sheets e a cadeira fictícia não recebem uma segunda versão. Um resumo nunca publica uma lição em rascunho. Mantém os créditos no original e as notas de revisão no arquivo privado `_data/`.
 
+Ao alterar conceitos, condições, exemplos ou o âmbito de uma lição, revê também o seu TLDR. Uma lição nova dentro deste âmbito recebe uma síntese própria. Alterações de apresentação sem efeito no conteúdo não exigem reescrever a síntese.
+
 Usa ligações absolutas para a explicação completa, com fragmentos conferidos nos títulos. O contrato de rotas, preferências e impressão está em [docs/leitura.md](../../../docs/leitura.md); a sintaxe de componentes está em [CONTRIBUTING.md](../../../CONTRIBUTING.md).
 
 ## Rever a entrega
