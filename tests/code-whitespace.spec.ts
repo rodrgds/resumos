@@ -1,5 +1,40 @@
 import { expect, test } from '@playwright/test';
 
+test('imported snippets preserve source and theme without JavaScript', async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    javaScriptEnabled: false,
+  });
+  const page = await context.newPage();
+  await page.goto('/_content-test/');
+  const code = page.locator('[data-shared-code-fixture] pre');
+  await expect(code).toBeVisible();
+  const copied = await code.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element.querySelector('code')!);
+    const selection = getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    return selection.toString();
+  });
+  expect(copied).toBe(
+    'function describe(value) {\n\treturn value < 3 ? `<${value}>` : "maior";\n}',
+  );
+  await expect(code.locator('.tab')).toHaveCount(1);
+  await page.locator('html').evaluate((element) => {
+    element.style.setProperty('--code-token-keyword', 'rgb(123, 45, 67)');
+  });
+  await expect(code.getByText('return', { exact: true })).toHaveCSS(
+    'color',
+    'rgb(123, 45, 67)',
+  );
+  await expect(code.locator('script')).toHaveCount(0);
+  await context.close();
+});
+
 test('static and editable whitespace marks do not change copied or executed code', async ({
   page,
 }) => {

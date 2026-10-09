@@ -39,7 +39,7 @@ Usa PT-PT e os termos da lição. Destaca apenas o termo ou a condição que se 
 
 Conserva um visual quando se lê mais depressa do que a explicação que substitui. Uma tabela de estados, um gráfico com região identificada, uma árvore ou um cronograma podem ser o centro do resumo.
 
-Reutiliza figuras e componentes existentes. Escolhe Manim quando ver a ordem da mudança é a parte importante e mantém uma descrição que permita compreender o resultado sem reproduzir o vídeo. Um laboratório editável só merece ficar se experimentar um valor ajudar à consulta; em páginas dominadas por controlos, prefere um caso preenchido ou a figura essencial com ligação ao laboratório completo.
+Reutiliza figuras, componentes e fontes dos exemplos existentes. Antes de copiar um bloco, segue [Partilhar figuras e exemplos](../../../CONTRIBUTING.md#partilhar-figuras-e-exemplos): as duas versões importam a mesma definição; o texto de cada versão continua independente. Escolhe Manim quando ver a ordem da mudança é a parte importante e mantém uma descrição que permita compreender o resultado sem reproduzir o vídeo. Um laboratório editável só merece ficar se experimentar um valor ajudar à consulta; em páginas dominadas por controlos, prefere um caso preenchido ou a figura essencial com ligação ao laboratório completo.
 
 Um pequeno bloco de código deve ter entrada e efeito claros. Mantém o editor executável quando correr ou alterar esse bloco for a operação que se está a recordar. Não copies todos os visuais ou editores da lição por estarem disponíveis. Também não transformes uma cadeira visual numa parede de bullets.
 

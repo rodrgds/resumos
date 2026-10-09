@@ -9,8 +9,7 @@ import remarkMath from 'remark-math';
 import remarkDisplayMath from './src/lib/remark-display-math.mjs';
 import rehypeDisclosures from './src/lib/rehype-disclosures.mjs';
 import rehypeKatex from 'rehype-katex';
-import { codeTheme } from './src/lib/code-theme.mjs';
-import { transformerRenderWhitespace } from '@shikijs/transformers';
+import { codeShikiConfig } from './src/lib/code-theme.mjs';
 
 const content = {
   remarkPlugins: [
@@ -56,22 +55,7 @@ export default defineConfig({
   ],
   markdown: {
     processor: unified(content),
-    shikiConfig: {
-      theme: codeTheme,
-      transformers: [
-        transformerRenderWhitespace(),
-        {
-          name: 'preserve-selection-colour',
-          span(node) {
-            const style = node.properties.style;
-            if (typeof style !== 'string') return;
-            const colour = style.match(/(?:^|;)\s*color:\s*([^;]+)/)?.[1];
-            if (colour)
-              node.properties.style = `${style};--code-selected-text:${colour}`;
-          },
-        },
-      ],
-    },
+    shikiConfig: codeShikiConfig,
   },
   devToolbar: { enabled: false },
 });

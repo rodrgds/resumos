@@ -60,6 +60,8 @@ Escolhe o visual pela relação que falta ver: posição, ligação, variação,
 
 Mostra apenas controlos da matéria necessários a essa pergunta. Coloca as hipóteses na explicação, conserva um estado inicial informativo e evita repetir título, legenda e instrução. Um editor só se justifica quando alterar ou executar código ensina o conceito. Usa os componentes existentes antes de criar outro.
 
+Se uma figura, algoritmo ou exemplo também aparece no TLDR ou noutra lição, importa a mesma fonte em vez de manter cópias. Segue [Partilhar figuras e exemplos](../../../CONTRIBUTING.md#partilhar-figuras-e-exemplos) para a localização e os componentes de apresentação.
+
 Mantém o primeiro exemplo essencial visível. Expansíveis servem para uma resolução alternativa, demonstração extensa ou aprofundamento depois de a explicação estar completa. Não uses caixas e separadores para fragmentar cada parágrafo.
 
 ## Fontes, autoria e verificação

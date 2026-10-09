@@ -1,4 +1,5 @@
 import { createCssVariablesTheme } from 'shiki';
+import { transformerRenderWhitespace } from '@shikijs/transformers';
 
 export const codeTheme = createCssVariablesTheme({ variablePrefix: '--code-' });
 codeTheme.tokenColors = [
@@ -32,3 +33,20 @@ codeTheme.tokenColors = [
     settings: { foreground: `var(--code-token-${key})` },
   })),
 ];
+
+export const codeShikiConfig = {
+  theme: codeTheme,
+  transformers: [
+    transformerRenderWhitespace(),
+    {
+      name: 'preserve-selection-colour',
+      span(node) {
+        const style = node.properties.style;
+        if (typeof style !== 'string') return;
+        const colour = style.match(/(?:^|;)\s*color:\s*([^;]+)/)?.[1];
+        if (colour)
+          node.properties.style = `${style};--code-selected-text:${colour}`;
+      },
+    },
+  ],
+};

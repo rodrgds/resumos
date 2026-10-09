@@ -1,0 +1,6 @@
+WITH RECURSIVE Numero(n) AS (
+SELECT 1
+UNION ALL
+SELECT n + 1 FROM Numero WHERE n < 5
+)
+SELECT n FROM Numero ORDER BY n;

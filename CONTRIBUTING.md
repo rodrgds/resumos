@@ -36,6 +36,28 @@ O build rejeita sínteses sem uma lição correspondente e sínteses de apresent
 
 Escreve uma explicação muito mais curta, com as condições essenciais e os visuais necessários à compreensão. Não copies a lição inteira nem substituas o texto por um inventário de títulos. Os links para aprofundar devem apontar para o URL completo e o fragmento exato. O TLDR tem a sua própria navegação por títulos, em `/cadeiras/<cadeira>/<pagina>/tldr/`.
 
+### Partilhar figuras e exemplos
+
+Quando as duas versões mostram a mesma figura, programa ou demonstração, mantém a definição num único ficheiro em `src/content/<cadeira>/`. Importa-o nas duas páginas. O diagrama da regra da cadeia, por exemplo, vem sempre de `src/content/am2/cadeia.dot`; repetir `<Dot source={cadeia} ... />` apenas coloca essa figura na página.
+
+- Diagramas usam o mesmo `.dot`, `.typ` ou `.mmd` com `?raw`.
+- Demos e laboratórios usam o mesmo componente `.astro` e os seus presets. Manim usa o mesmo identificador de cena.
+- Código partilhado fica em `src/content/<cadeira>/examples/`, com a extensão da linguagem. Importa-o com `?raw` para `CodePlayground` ou `CodeSnippet`, que apresenta código estático com a mesma sintaxe dos blocos Markdown.
+
+```mdx
+import CodeSnippet from '../../../components/CodeSnippet.astro';
+import CodePlayground from '../../../components/CodePlayground.astro';
+import somaDigitos from '../../fp/examples/soma-digitos.py?raw';
+
+<CodeSnippet language="python" code={somaDigitos} />
+
+<CodePlayground language="python" input="123" code={somaDigitos} />
+```
+
+Escolhe uma das apresentações em cada contexto. Se os exemplos partilham um algoritmo mas usam chamadas diferentes, importa a implementação e compõe `code` com essas chamadas, sem esconder o algoritmo numa tab auxiliar. Não recortes código por números de linha, que deixam de apontar para o trecho certo quando o ficheiro muda.
+
+O texto explicativo, as legendas e a seleção de exemplos podem diferir. Um exemplo curto com outra entrada ou objetivo pode ter fonte própria; mudar apenas nomes de variáveis ou formatação não justifica copiar a implementação. Procura primeiro a fonte existente antes de criar outra.
+
 ## Cheat sheets e âmbito
 
 Uma folha de consulta reúne fórmulas, condições, procedimentos e erros frequentes, com links para as explicações. Usa `studyKind: revision` e `section: recursos`. Aparece como Cheat sheet, fora da sequência de leitura.
