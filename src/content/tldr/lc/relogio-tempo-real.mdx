@@ -1,0 +1,55 @@
+import Typst from '../../../components/Typst.astro';
+import leitura from '../../lc/rtc-leitura.typ?raw';
+
+## Registos e formatos
+
+O RTC mantém data e hora com alimentação própria; o timer mede intervalos. Seleciona o índice em `0x70` e transfere dados em `0x71`, preservando a política de NMI. Protege seleção e transferência de acessos concorrentes.
+
+| Índice                 | Conteúdo                                         |
+| ---------------------- | ------------------------------------------------ |
+| `00`, `02`, `04`       | Segundos, minutos, horas                         |
+| `01`, `03`, `05`       | Alarme                                           |
+| `07`, `08`, `09`       | Dia, mês, ano                                    |
+| `0A`, `0B`, `0C`, `0D` | Atualização/taxa, configuração, causas, validade |
+
+No registo B, **DM**, bit 2, vale 1 para binário e 0 para BCD; bit 1 vale 1 para 24 horas e 0 para 12 horas.
+
+BCD válido guarda dois algarismos, cada nibble entre 0 e 9:
+
+$$decimal=10(value\gg4)+(value\mathbin{\&}\texttt{0x0F}).$$
+
+`0x59` BCD dá 59; `0x3B` binário já dá 59. Em 12 horas, retira primeiro o bit 7 de PM. Converte 12 AM para 0, 12 PM para 12 e 9 PM para 21. Não reconfigures o formato apenas para facilitar a leitura.
+
+## Leitura coerente
+
+<Typst
+  source={leitura}
+  format="svg"
+  alt="Segundos antigos e minutos novos podem formar 07:33:59 durante a passagem de 07:32:59 para 07:33:00."
+/>
+
+Campos individualmente válidos podem pertencer a atualizações diferentes. UIP, bit 7 de A, assinala atualização; observá-lo a 0 uma vez não protege contra suspensão do processo.
+
+1. Espera UIP=0 com limite.
+2. Lê todos os campos e a configuração; rejeita se UIP estiver ativo no fim.
+3. Repete desde UIP=0 e aceita apenas duas fotografias consecutivas iguais, sem atualização assinalada.
+
+A estratégia pressupõe acessos curtos e ausência de reconfiguração concorrente. Alternativamente, lê após a interrupção de fim de atualização, dentro do tempo disponível. SET de B inibe atualizações para **escrever**, alterando o funcionamento do RTC.
+
+## Eventos na IRQ8
+
+| Causa              | Ativação em B | Flag em C |
+| ------------------ | ------------- | --------- |
+| Periódica          | PIE, bit 6    | PF, bit 6 |
+| Alarme             | AIE, bit 5    | AF, bit 5 |
+| Fim de atualização | UIE, bit 4    | UF, bit 4 |
+
+**Ler C limpa as causas**. Guarda esse byte e testa flags com `if` independentes; C=`0xD0` contém IRQF, PF e UF. Flags podem aparecer mesmo com a respetiva geração de IRQ desativada; considera a configuração.
+
+Para RS entre 3 e 15 em A, a taxa periódica é $32768/2^{RS-1}$ Hz. RS=6 dá 1024 Hz; não extrapoles para códigos especiais 0, 1 e 2.
+
+Um campo de alarme com os dois bits superiores a 1 aceita qualquer valor. Hora/minuto indiferentes e segundo 0 coincidem a cada minuto. VRT, bit 7 de D, a 0 põe em dúvida a validade da hora.
+
+Altera apenas os bits necessários, preserva formatos e repõe configurações. No fim, desativa as causas no RTC e remove a subscrição Minix.
+
+[Leitura coerente e respetivas hipóteses](/cadeiras/lc/relogio-tempo-real/#ler-uma-hora-coerente).

@@ -1,0 +1,51 @@
+import Dot from '../../../components/Dot.astro';
+import maquina from '../../lc/maquina-jogo.dot?raw';
+
+## Eventos e responsabilidades
+
+1. O driver lê registos e recolhe dados.
+2. O descodificador monta scancodes, pacotes e mensagens completos.
+3. A aplicação atualiza o estado.
+4. O módulo gráfico desenha uma fotografia desse estado.
+
+Um byte E0 não é ainda um evento de tecla. O driver não decide se um clique inicia o jogo; a aplicação não precisa de saber a porta do controlador.
+
+No ciclo Minix, recebe, atende todas as máscaras e **consome os eventos produzidos antes de voltar a bloquear**. Uma variável com o último evento pode perder a sequência; usa filas com limite e política de overflow. Substituir posições absolutas antigas pode ser aceitável, mas descartar cliques ou deltas altera o efeito.
+
+## Máquina e ordem dos eventos
+
+<Dot
+  source={maquina}
+  alt="MENU inicia JOGO com Enter; P alterna JOGO e PAUSA; Esc na pausa regressa ao menu; três ticks ativos levam a FIM."
+/>
+
+O estado inclui dados, como posição e ticks, além do `enum`. Mealy associa saídas a estado e entrada na transição; Moore associa-as ao estado.
+
+Na máquina da lição, aplica **primeiro a tecla e depois o tick ao estado resultante**:
+
+| Estado anterior e entradas | Resultado                          |
+| -------------------------- | ---------------------------------- |
+| MENU, Enter e tick         | Inicia JOGO, conta o primeiro tick |
+| JOGO com 1 tick, P e tick  | PAUSA com 1 tick                   |
+| PAUSA com 1 tick, P e tick | JOGO com 2 ticks                   |
+
+O tick só conta em JOGO e o terceiro tick ativo termina a partida. Se aplicasses o tick antes de P em JOGO, o contador subiria antes da pausa. Usa a mesma ordem em execução, testes e protocolo remoto.
+
+Desenha a um ritmo independente das entradas. A cada dois ticks de 60 Hz obténs 30 frames/s. Carrega XPM e aloca recursos antes do ciclo; mede antes de otimizar, conservando transparência, clipping e pitch.
+
+## Recursos e diagnóstico
+
+A inicialização tem um caminho inverso. Se falhar após subscrever timer/teclado e alocar pixmaps, limpa apenas os recursos obtidos, respeitando dependências. O modo só precisa de reposição se foi alterado. Na saída, para novas entradas, repõe configurações, remove subscrições e liberta buffers.
+
+Para depurar:
+
+1. Conserva a menor sequência que reproduz o erro.
+2. Formula uma hipótese sobre uma operação.
+3. Prevê valores que distinguem causas.
+4. Altera uma causa e repete a mesma entrada.
+
+Se o cursor salta à esquerda, `08 C8 00` distingue delta PS/2 correto, +200, de `int8_t` incorreto, -56. Se o parser der +200, investiga soma, clipping e desenho; se der -56, corrige a descodificação.
+
+Observa valores nas fronteiras entre módulos. Prints alteram carga e tempo; desaparecer com logging não prova correção. Conserva a sequência como caso de regressão e verifica um caso vizinho.
+
+[Simulação C da ordem de eventos](/cadeiras/lc/projeto/#ordem-das-teclas-e-ticks).

@@ -1,0 +1,46 @@
+import Typst from '../../../components/Typst.astro';
+import padding from '../../lc/framebuffer-padding.typ?raw';
+
+## VBE e mapeamento
+
+A VBE consulta e seleciona modos pela BIOS `INT 0x10`, através do apoio Minix. AX usa `0x4F00` para controlador, `0x4F01` para informação de modo, `0x4F02` para seleção e `0x4F07` para início da imagem apresentada.
+
+Para modo `0x105` linear, BX=`0x4105`: bit 14 pede framebuffer linear. Confere o sucesso da chamada Minix e AX=`0x004F` da VBE. Informação devolvida à BIOS exige memória acessível pela interface, não um apontador virtual arbitrário.
+
+Guarda resolução, bpp, **pitch**, modelo de cor, campos RGB e `PhysBasePtr`. Obtém permissão com `sys_privctl` e mapeia com `vm_map_phys`. Um cast ao endereço físico não cria o mapeamento. Valida `pitch * height`; na saída ou falha parcial, liberta recursos adquiridos e repõe o modo.
+
+## Endereço e cor
+
+Para píxeis que ocupam um número inteiro de bytes:
+
+$$B=\left\lceil\frac{bpp}{8}\right\rceil,\qquad offset(x,y)=y\cdot pitch+xB.$$
+
+Exige $0\leq x<width$ e $0\leq y<height$. Pitch inclui eventual padding entre linhas.
+
+<Typst
+  source={padding}
+  format="svg"
+  alt="Em 24 bpp e pitch 14, a segunda linha começa no byte 14; o píxel (3,1) ocupa os bytes 23 a 25."
+/>
+
+Com largura 4, 24 bpp e pitch 14, `(3,1)` começa em $14+3\cdot3=23$, não em 21. Em 24 bpp, escrever `uint32_t` pisaria o píxel seguinte.
+
+- **Indexado:** o píxel seleciona uma entrada da paleta.
+- **Direct color:** componentes ocupam campos da palavra. Com tamanho $s$ e posição $p$, extrai `(color >> p) & (2^s - 1)`.
+- RGB565 usa R em 11 com cinco bits, G em 5 com seis, B em 0 com cinco. `(31,0,15)` dá `0xF80F`; little-endian guarda `0F F8`.
+
+Cada componente varia módulo a largura do seu próprio campo, não do píxel completo. No padrão da lição, RGB565 inicial `(30,62,29)`, passo 3, linha 1 e coluna 2 dão `(4,1,6)` e `0x2026`.
+
+## Clipping e sprites
+
+Um retângulo usa $[x,x+w)\times[y,y+h)$. Depois de validar a origem, rejeita limites com `w <= screen_width - x` e `h <= screen_height - y`, evitando overflow na soma. Define se rejeitas ou recortas figuras parciais. Copia linhas respeitando o pitch da origem e do destino.
+
+XPM contém cabeçalho, definições de cores e linhas; `xpm_load` produz o pixmap. Confere falha e carrega uma vez por recurso. Um sprite junta imagem e posição; salta só o valor transparente definido. Preto pode ser visível, e a ordem de desenho decide sobreposição.
+
+A 30 frames/s, três píxeis/frame dão 90 píxeis/s. Na convenção do laboratório, `speed=-3` significa um píxel a cada três frames, ou 10 píxeis/s. Limita o último passo à distância restante.
+
+## Apresentação
+
+Double buffering compõe o frame completo antes de copiar para VRAM, mas **não garante ausência de tearing**: a leitura do ecrã pode coincidir com a cópia. Page flipping escolhe outra página em VRAM e também precisa de sincronização vertical. O timer da aplicação não garante essa sincronização.
+
+[Comparação visual de apresentação](/cadeiras/lc/video/#double-buffering-e-tearing).

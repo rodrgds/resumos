@@ -1,0 +1,51 @@
+import Typst from '../../../components/Typst.astro';
+import modulo from '../../lc/modulo-hc.typ?raw';
+
+## Tipos e conversões
+
+- C passa argumentos **por valor**. Uma `struct` recebida por valor é uma cópia; um apontador permite alterar o objeto apontado.
+- `<stdint.h>` fornece larguras fixas, como `uint8_t` e `uint32_t`. `size_t` representa tamanhos de objetos. O tamanho de `int` depende da implementação.
+- `printf` exige tipos compatíveis com o formato: `%d` para `int`, `%u` para `unsigned int`, `%zu` para `size_t`, `%p` para `void *`. Usa `<inttypes.h>` e `PRIu32` para `uint32_t`.
+- Inteiros pequenos sofrem promoções antes das operações. Se `int` representa todos os valores de `uint8_t`, o byte promove-se para `int`.
+
+```c
+uint8_t value = 0x5A;
+uint8_t result = (uint8_t)~value >> 4; /* 0xA5 >> 4 = 10 */
+```
+
+O cast reduz o complemento a oito bits **antes** do deslocamento. Deslocar um inteiro negativo à direita depende da implementação usada no curso.
+
+Ao comparar `int delta = -1` com `unsigned int width = 10`, `delta` converte-se para unsigned e o teste `delta < width` dá falso. Para testar os limites, usa `delta >= 0 && (unsigned int)delta < width`.
+
+## Arrays, apontadores e strings
+
+- `&x` obtém um endereço; `*p` acede ao objeto. `p + 1` avança o tamanho do tipo apontado.
+- `sizeof array` mede o array completo; `sizeof pointer` mede o apontador. Um parâmetro `int values[]` é ajustado para `int *values`: passa também o comprimento.
+- Um apontador imediatamente após o fim pode controlar um ciclo, mas não pode ser desreferenciado.
+- `char name[] = "LC"` ocupa três bytes, incluindo `\0`; `strlen(name)` dá 2. Um literal de string não deve ser alterado.
+- Dados de hardware não são strings. `%s` e `strlen` exigem um terminador dentro do objeto; reserva espaço para ele ao copiar texto.
+
+## Módulos e construção
+
+<Typst
+  source={modulo}
+  format="svg"
+  alt="O cabeçalho declara a interface, incluída pela implementação e pelo chamador."
+/>
+
+- O `.h` declara a interface e tem include guards; o `.c` inclui esse cabeçalho e define as operações.
+- `static` numa variável de ficheiro limita a visibilidade ao módulo e conserva o objeto durante o programa. Uma global partilhada tem declaração `extern` no cabeçalho e uma única definição.
+- A construção segue pré-processamento, compilação, assembly e ligação. Incluir um cabeçalho não liga a implementação.
+
+```sh
+cc -std=c11 -Wall -Wextra -Wpedantic -c main.c counter.c
+cc main.o counter.o -o demo
+ar rcs libcounter.a counter.o
+cc main.o -L. -lcounter -o demo
+```
+
+Uma referência indefinida é um problema de ligação. Com linkers que processam arquivos por ordem, a biblioteca vem depois dos objetos que a usam. Se `counter.h` mudar, recompila ambos os objetos. Make regista essas dependências; as receitas começam com tabulação.
+
+Documenta pré-condições, resultado e propriedade da memória. Revê o diff antes de guardar alterações; um patch exige uma base compatível.
+
+[Compilação e ligação completas](/cadeiras/lc/c-estruturado/#compilar-e-ligar).

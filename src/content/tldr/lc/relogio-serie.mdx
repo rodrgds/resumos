@@ -1,0 +1,58 @@
+import Typst from '../../../components/Typst.astro';
+import trama from '../../lc/trama-serie.typ?raw';
+
+## Trama e débito
+
+A UART converte bytes em bits e reconstrói os recebidos. Os relógios são independentes; os dois lados acordam taxa e formato. O protocolo da aplicação delimita mensagens. Em 2025/26, série é matéria extra do projeto.
+
+<Typst
+  source={trama}
+  format="svg"
+  alt="7E1 ocupa dez bits: start, sete dados, paridade par e stop."
+/>
+
+- **8N1** tem start, oito dados e stop: dez bits por byte. **7E1** tem sete dados, paridade par e stop, também dez bits.
+- A 9600 bit/s em 8N1, débito ideal de 960 bytes/s; vinte bytes demoram pelo menos 20,83 ms.
+- Paridade deteta um número ímpar de inversões nos dados/paridade, mas não todas as corrupções.
+- Simplex comunica num sentido; half-duplex alterna sentidos; full-duplex permite ambos simultaneamente. Nesta linha binária, baud e bit/s coincidem, o que não é uma regra universal.
+
+## Registos e DLAB
+
+COM1 usa base `0x3F8`, IRQ4; COM2 usa `0x2F8`, IRQ3. Offsets relativos à base:
+
+| Offset  | Registo                          |
+| ------- | -------------------------------- |
+| 0       | RBR na leitura, THR na escrita   |
+| 1       | IER, causas ativas               |
+| 2       | IIR na leitura, FCR na escrita   |
+| 3, 4    | LCR, formato; MCR, modem         |
+| 5, 6, 7 | LSR, estado; MSR, modem; scratch |
+
+**DLAB**, bit 7 de LCR, a 1 transforma offsets 0 e 1 em DLL e DLM. Limpa-o antes de transmitir ou receber dados.
+
+No modelo clássico, $bitrate=115200/D$, com divisor representável e não nulo. Para 9600 bit/s em 7E1: escreve LCR `0x9A`, DLL `0x0C`, DLM `0x00` e finalmente LCR `0x1A`. 8N1 usa LCR `0x03` sem DLAB.
+
+## Estado e interrupções
+
+- LSR bit 0 indica dado recebido; bits 1:4 indicam overrun, paridade, framing e break.
+- **Bit 5** indica THR vazio, pronto para outro byte. **Bit 6** indica THR e registo de deslocamento vazios, útil para garantir fim físico antes de fechar.
+- Guarda LSR antes de decidir: leituras podem limpar flags. Limita polling e distingue timeout, erro UART e falha Minix.
+- IER bits 0:3 ativam receção, THR vazio, estado de receção e modem. Ativar IER e subscrever IRQ são passos distintos.
+
+No IIR, **bit 0 a 1 significa ausência de pendência**. Só se for 0 interpreta `IIR & 0x0E`:
+
+| Valor      | Causa                            |
+| ---------- | -------------------------------- |
+| `06`       | Estado da linha                  |
+| `04`, `0C` | Dados recebidos, timeout da FIFO |
+| `02`, `00` | THR vazio, estado de modem       |
+
+Atende e volta a consultar IIR até não haver causas, com uma política que evite monopolizar o ciclo. `C4`, `C2`, `C1` pedem receção, transmissão e paragem; `C1` não é uma causa de modem.
+
+## FIFOs e filas
+
+A FIFO 16550 de 16 bytes absorve atrasos curtos. FCR ativa/limpa FIFOs e escolhe limiares 1, 4, 8 ou 14. Um limiar alto reduz interrupções, mas pode aumentar espera; o timeout trata mensagens pequenas.
+
+Transfere bytes para filas de software com política de overflow. A fila só ajuda quando o handler corre. Na transmissão, inicia o primeiro byte após inatividade e desativa interrupções inúteis quando a fila esvaziar. Ao sair, repõe parâmetros e remove causas/subscrições ativadas.
+
+[Atendimento da UART](/cadeiras/lc/relogio-serie/#ier-e-iir).

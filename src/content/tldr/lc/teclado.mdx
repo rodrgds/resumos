@@ -1,0 +1,51 @@
+import Dot from '../../../components/Dot.astro';
+import maquina from '../../lc/maquina-teclado.dot?raw';
+
+## Estado e scancodes
+
+Lê estado em `0x64` e dados em `0x60`. Teclado e rato partilham a porta de dados, pelo que as rotinas precisam de coordenar o consumo.
+
+| Bit de estado         | Significado a 1                  |
+| --------------------- | -------------------------------- |
+| 7, PARITY; 6, TIMEOUT | Byte com erro                    |
+| 5, AUX                | Byte do rato                     |
+| 1, IBF                | Não escrever, input buffer cheio |
+| 0, OBF                | Há byte no output buffer         |
+
+Se OBF estiver ativo, consome o byte mesmo com erro e descarta-o. Em polling, distingue a origem por AUX. No laboratório, subscreve IRQ1 com a política exclusiva e reativação previstas.
+
+No **set 1**, muitas teclas têm make ao premir e break com bit 7 ligado ao largar. Esc usa `01` e `81`. Scancode não é ASCII; texto exige interpretação do layout e modificadores.
+
+## Prefixos e eventos completos
+
+<Dot
+  source={maquina}
+  alt="E0 guarda um prefixo; o byte seguinte completa o evento e limpa o estado de prefixo."
+/>
+
+`E0 4D E0 CD 81` produz três eventos: make da seta direita, break da seta direita e break de Esc. `E0` não emite evento, apesar de ter o bit 7 a 1.
+
+- Conserva o prefixo entre atendimentos. O handler recolhe um byte e regressa; não espera pelo seguinte.
+- O descodificador monta o código; a aplicação age apenas sobre o evento completo.
+- Se um byte se perder por erro, invalida o prefixo parcial segundo a política de recuperação.
+- O modelo de um byte ou prefixo E0 não cobre sequências especiais como Pause.
+- Make repetido pode significar tecla mantida. Uma ação única por pressão exige detetar a transição de solta para premida.
+
+## Command byte
+
+O command byte configura o KBC e é diferente do estado. Bits 0 e 1 ativam interrupções de teclado e rato; bits 4 e 5 desativam as respetivas interfaces.
+
+| Operação | Sequência                                                                                       |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| Ler      | Esperar IBF=0, escrever `0x20` em `0x64`, esperar OBF, ler `0x60`                               |
+| Escrever | Esperar IBF=0, escrever comando `0x60` em `0x64`, esperar IBF=0, escrever o novo byte em `0x60` |
+
+Para ativar apenas IRQ do teclado, usa `old | 0x01`. Com `old = 0x22`, o novo valor é `0x23`; escrevê-lo diretamente em `0x64` não fornece o argumento correto.
+
+Scancodes e respostas usam o mesmo buffer. A fase de comandos controla quem o lê. Desativar apenas IRQ não impede novos scancodes; uma estratégia pode desativar temporariamente a interface, tratar pendentes e repor o estado anterior. Limita esperas e trata erros.
+
+## Inatividade
+
+Um limite de 3 s a 60 Hz corresponde a 180 ticks desde a última atividade válida. Define se um byte válido ou apenas uma tecla completa reinicia o contador. Fixa também a ordem quando tecla e timer chegam juntos, pois pode decidir o resultado no limite.
+
+[Descodificador C completo](/cadeiras/lc/teclado/#descodificador-por-estados).

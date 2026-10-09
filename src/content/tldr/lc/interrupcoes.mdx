@@ -1,0 +1,51 @@
+import Dot from '../../../components/Dot.astro';
+import caminho from '../../lc/caminho-irq.dot?raw';
+
+## IRQ, vetor e atendimento
+
+<Dot
+  source={caminho}
+  alt="A IRQ do dispositivo passa pelo PIC e pelo atendimento do kernel, que notifica o processo Minix."
+/>
+
+- A **IRQ** identifica a linha física; o **vetor** seleciona a rotina na tabela de interrupções. Não são o mesmo número.
+- O PIC clássico tem dois controladores em cascata pela IRQ2. Na sua máscara, bit a 1 bloqueia a linha.
+- IRQs globais usuais: timer 0, teclado 1, COM2 3, COM1 4, RTC 8 e rato 12.
+- O kernel trata a interrupção física, EOI e retorno. O teu `timer_ih` ou `kbc_ih` corre no processo quando o ciclo recebe a notificação e o chama.
+
+Num único ciclo de receção, os handlers C são chamados sequencialmente. `volatile` não substitui sincronização. Um handler recolhe dados; a aplicação interpreta-os. Não esperes pelos restantes bytes de um pacote dentro do primeiro atendimento.
+
+## Hook e subscrição
+
+Antes de `sys_irqsetpolicy(irq, policy, &hook)`, guarda o bit pedido. À entrada, `hook` escolhe esse bit; à saída contém o identificador usado nas kernel calls seguintes.
+
+```c
+const unsigned bit = 2;
+int hook = bit;
+uint32_t mask = 1u << bit; /* 0x04, mesmo para IRQ12 */
+```
+
+- Escolhe bits distintos que caibam no campo de notificações.
+- `IRQ_REENABLE` autoriza reativação pela rotina genérica; sem essa política, o processo chama `sys_irqenable` quando estiver pronto.
+- `IRQ_EXCLUSIVE` impede outro driver de disputar a subscrição, relevante para teclado e rato.
+- Confere erros na configuração e ativação. Se a ativação falhar, remove a política já obtida.
+
+## Receção e despacho
+
+1. `driver_receive` bloqueia à espera de mensagem.
+2. Confere `is_ipc_notify(ipc_status)` e origem `HARDWARE` antes de interpretar `m_notify`.
+3. Testa **todas** as máscaras ativas com `if` independentes.
+4. Processa os eventos e volta à receção.
+
+```c
+if (pending & timer_mask) timer_ih();
+if (pending & keyboard_mask) keyboard_ih();
+```
+
+Com máscaras `0x01` e `0x08`, `pending = 0x09` exige ambos os atendimentos. `else if` perderia o segundo. Define a ordem da aplicação quando tecla e timeout chegam juntos.
+
+Um bit assinala um pedido, **não conta interrupções**. Pedidos podem ser agrupados enquanto o processo está ocupado. Contar um tick por notificação serve aos pequenos ciclos do laboratório, mas pode perder tempo sob carga.
+
+Ao sair, repõe configurações, desativa e remove subscrições adquiridas, incluindo falhas parciais. Se faltam eventos, verifica dispositivo, ativação, máscara e quem consome o buffer.
+
+[Ciclo completo Minix](/cadeiras/lc/interrupcoes/#ciclo-completo-com-timer).

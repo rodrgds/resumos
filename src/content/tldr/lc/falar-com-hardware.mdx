@@ -1,0 +1,57 @@
+import Typst from '../../../components/Typst.astro';
+import registo from '../../lc/registo-byte.typ?raw';
+
+## Registos e acesso
+
+Registos de dados, estado e controlo podem partilhar endereço, com funções diferentes na leitura e na escrita. Um acesso pode alterar o dispositivo.
+
+| Acesso            | Endereços                 | Operações                                           |
+| ----------------- | ------------------------- | --------------------------------------------------- |
+| Port-mapped I/O   | Espaço de portas separado | `IN`/`OUT` em x86, através de kernel calls Minix    |
+| Memory-mapped I/O | Espaço de memória         | Acesso à região virtual mapeada, como o framebuffer |
+
+No i8042, ler `0x64` consulta estado e escrever envia um comando. Ler `0x60` retira dados do output buffer; escrever envia um byte pelo input buffer. Input/output referem-se ao controlador.
+
+Os drivers Minix correm em espaço de utilizador com permissões próprias. `sys_inb` escreve num objeto de **32 bits**, mesmo para uma leitura de byte:
+
+```c
+uint32_t raw;
+int result = sys_inb(port, &raw);
+if (result != OK) return result;
+*value = (uint8_t)raw; /* value aponta para um uint8_t válido */
+```
+
+Este excerto exige Minix/LCF. Fazer cast ao endereço de um `uint8_t` não cria espaço para a escrita de 32 bits. Um cast ao endereço físico da VRAM também não cria o mapeamento virtual nem as permissões.
+
+## Máscaras e campos
+
+<Typst
+  source={registo}
+  format="svg"
+  alt="0x20 isola o bit 5 e 0x01 isola o bit 0 de um byte."
+/>
+
+| Operação sobre registo `r` e máscara `m` | Expressão                   |
+| ---------------------------------------- | --------------------------- |
+| Algum bit ativo                          | `(r & m) != 0`              |
+| Todos ativos                             | `(r & m) == m`              |
+| Ligar, limpar ou inverter                | `r \| m`, `r & ~m`, `r ^ m` |
+
+`&` opera bit a bit; `&&` devolve a verdade lógica. Para substituir o campo 4:2 por 5, limpa `0x1C` antes de inserir:
+
+```c
+uint8_t next = (uint8_t)((r & ~0x1Cu) | (5u << 2));
+```
+
+Com `r = 0xA7`, obténs `0xB7`. Usa máscaras sem sinal, valida a largura do campo e deslocamentos menores do que a largura do operando. A sequência leitura/alteração/escrita exige um registo legível de escrita normal; bits que se limpam ao escrever 1 exigem outra regra.
+
+## Polling e limites
+
+- Antes de ler dados do i8042, espera **OBF = 1**; antes de escrever, espera **IBF = 0**.
+- Se OBF estiver ativo e houver erro de paridade/timeout, consome o byte de `0x60` e descarta-o. Deixá-lo no buffer pode bloquear novas entregas.
+- Define limite de tentativas, atraso e resultado de falha. Cinco observações separadas por 20 ms têm quatro atrasos, cerca de 80 ms, além das chamadas e arredondamento a ticks.
+- Com consultas a cada período $P$, um evento que permanece disponível espera aproximadamente entre 0 e $P$. Se a chegada for uniforme, a média é $P/2$.
+
+Polling pode servir para uma resposta curta esperada; interrupções permitem bloquear à espera de eventos. Decide pela carga, latência admissível e capacidade do buffer.
+
+[Polling com timeout](/cadeiras/lc/falar-com-hardware/#polling-e-timeout).

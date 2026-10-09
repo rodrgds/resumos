@@ -1,0 +1,48 @@
+import Typst from '../../../components/Typst.astro';
+import fila from '../../lc/fila-circular.typ?raw';
+
+## Duração e passagem de parâmetros
+
+**Âmbito** indica onde um nome é visível; **duração** indica quando o objeto existe.
+
+| Objeto                 | Duração                             |
+| ---------------------- | ----------------------------------- |
+| Automático de um bloco | Até sair do bloco                   |
+| Global ou `static`     | Execução do programa                |
+| Alocação dinâmica      | De `malloc` bem-sucedido até `free` |
+
+C passa argumentos por valor. `*p = 9` pode alterar o objeto do chamador, mas `p = NULL` altera apenas a cópia local do apontador. Para substituir o apontador do chamador, devolve o novo valor ou recebe `int **`.
+
+Uma chamada conserva o endereço de retorno e o contexto exigido pela convenção. O stack frame IA-32 dos exemplos pode guardar argumentos e locais; a linguagem C não exige essa disposição. Argumentos podem ir em registos e o frame pointer pode ser omitido.
+
+Nunca devolvas o endereço de um objeto automático. O objeto deixa de existir no retorno, mesmo que um teste ainda leia os mesmos bits. Devolve o resultado por valor, numa `struct`, ou escreve em armazenamento do chamador.
+
+## Alocação e propriedade
+
+- `malloc(n * sizeof *p)` devolve memória não inicializada ou `NULL`. Valida o produto contra overflow, a falha e os dados antes de os ler.
+- Define quem possui cada objeto e quem o liberta, **exatamente uma vez**. Copiar um apontador não cria outro objeto.
+- Depois de `free`, os apontadores que designavam o objeto têm valor indeterminado. Atribuir `NULL` a um deles não corrige outros aliases.
+- Para `realloc` com tamanho não nulo, guarda o resultado num temporário. Na falha, o bloco antigo continua válido; no sucesso, usa o endereço devolvido e invalida os apontadores anteriores, incluindo os de elementos. Trata tamanho zero separadamente.
+- Uma falha parcial exige libertar recursos já obtidos; não publiques um objeto incompleto.
+
+Uma `struct` pode conter padding. Uma `union` partilha armazenamento entre alternativas e precisa de uma etiqueta que identifique a ativa. Não envies estruturas cruas num protocolo: serializa campos com larguras e ordem de bytes definidas.
+
+## Fila circular
+
+<Typst
+  source={fila}
+  format="svg"
+  alt="A fila guarda D, B e C fisicamente, mas retira B, C e D a partir do índice de saída."
+/>
+
+Com capacidade $C>0$, conserva `in`, `out` e `count`. Avança cada índice módulo $C$; `count = 0` significa vazio e `count = C` significa cheio. `in == out` pode ocorrer nos dois casos.
+
+Uma fila genérica com `void *`, tamanho de elemento e `memcpy` copia bytes. O chamador fornece armazenamento suficiente; a cópia de elementos com apontadores é superficial. Realocar o array não reorganiza automaticamente uma fila que atravessou o fim.
+
+## Funções e interfaces
+
+- `int (*operation)(int)` aponta para uma função; `int *operation(int)` declara uma função que devolve apontador. Valida índices de tabelas e conserva assinaturas compatíveis; um cast não adapta uma função.
+- Um tipo incompleto, como `struct sprite;`, permite uma interface opaca com criação, uso e destruição.
+- Funções com `...` exigem um contrato de contagem e tipos. Usa `va_start`, `va_arg` e `va_end`; `float` promove-se para `double` e inteiros pequenos normalmente para `int`.
+
+[Alocação, aliases e realocação](/cadeiras/lc/memoria-funcoes/#alocação-e-propriedade).
