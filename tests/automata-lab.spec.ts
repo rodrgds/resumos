@@ -147,7 +147,7 @@ test('build a DFA through native controls and run it on the keyboard', async ({
   await lab.getByLabel('Nome do estado 2', { exact: true }).fill('prefixo');
   await page.keyboard.press('Tab');
   await expect(
-    lab.getByLabel('prefixo inicial', { exact: true }),
+    lab.getByLabel('prefixo final', { exact: true }),
   ).toBeFocused();
   await lab
     .getByRole('combobox', { name: 'Máquina', exact: true })
