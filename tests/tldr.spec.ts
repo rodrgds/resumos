@@ -3,17 +3,23 @@ import { expect, test } from '@playwright/test';
 const full = '/cadeiras/fp/primeiro/';
 const short = `${full}tldr/`;
 
-test('math-heavy TLDR keeps the page within a narrow viewport', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 320, height: 800 });
-  await page.goto('/cadeiras/me/proporcoes/tldr/');
-  await page.evaluate(() => document.fonts.ready);
-  await expect(page.locator('.lesson-body .katex').first()).toBeVisible();
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(320);
-});
+for (const lesson of [
+  'me/proporcoes',
+  'bd/algebra-relacional',
+  'fsc/datapath-controlo',
+]) {
+  test(`${lesson} TLDR keeps the page within a narrow viewport`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.goto(`/cadeiras/${lesson}/tldr/`);
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator('.lesson-body')).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(320);
+  });
+}
 
 test('reader actions stay visible together on a narrow screen', async ({
   page,
