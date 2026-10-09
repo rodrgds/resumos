@@ -1,0 +1,52 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
+
+## Índices
+
+Um **índice** relaciona valores de pesquisa com a localização das linhas. Pode acelerar igualdade, intervalos, junções e ordenação, sem mudar o resultado lógico. A chave de pesquisa não precisa de identificar uma linha; um índice comum não impõe unicidade.
+
+- Numa árvore equilibrada, localizar a primeira correspondência tem custo aproximadamente logarítmico no número de entradas; ainda falta percorrer e recuperar correspondências.
+- Um índice composto `(idCliente, data)` ordena primeiro por cliente, depois por data. Igualdade no cliente permite procurar um intervalo de datas nesse bloco. Procurar só por data não beneficia do mesmo prefixo.
+- SQLite usa índices de árvore e não cria automaticamente um índice para cada estrangeira.
+- Um índice **cobridor** contém os valores pedidos e pode evitar visitas adicionais à tabela. Índices comuns SQLite também guardam o rowid.
+
+<CodePlayground
+  language="sqlite"
+  title="Conferir a procura pelo índice composto"
+  files={{ 'loja.sql': loja }}
+  code={`CREATE INDEX idx_encomenda_cliente_data
+ON Encomenda(idCliente, data);
+EXPLAIN QUERY PLAN
+SELECT id, data FROM Encomenda
+WHERE idCliente = 1 AND data >= '2026-01-01';`}
+/>
+
+Observa `SCAN`, `SEARCH`, `COVERING` e o índice escolhido. Um plano mostra o método, **não prova uma melhoria de tempo para qualquer volume**.
+
+Índices ocupam espaço e acrescentam manutenção às escritas. Se o filtro devolver quase tudo, um percurso completo pode ser melhor. Escolhe com base nas consultas, distribuições e carga; `ANALYZE` recolhe estatísticas em SQLite.
+
+## Transações e ACID
+
+Uma **transação** agrupa operações numa unidade de confirmação ou recuperação.
+
+| Propriedade  | Garantia                                                                          |
+| ------------ | --------------------------------------------------------------------------------- |
+| Atomicidade  | As alterações confirmam-se em conjunto ou desfazem-se.                            |
+| Consistência | O código e as restrições levam um estado válido a outro válido.                   |
+| Isolamento   | Define observação e interferência entre transações.                               |
+| Durabilidade | Alterações confirmadas sobrevivem às falhas abrangidas pelo motor e configuração. |
+
+Atomicidade não corrige uma operação de domínio errada. Uma transferência exige débito e crédito, contas existentes e condições satisfeitas. `UPDATE` de uma conta inexistente altera zero linhas sem erro automático; verifica quantas foram afetadas.
+
+## Confirmação e recuperação
+
+- `BEGIN` inicia; `COMMIT` confirma; `ROLLBACK` desfaz a transação. Fora de uma transação explícita, SQLite usa transações implícitas.
+- `SAVEPOINT s` marca um ponto; `ROLLBACK TO s` desfaz o trabalho posterior; `RELEASE s` retira o marcador. Libertar um marcador interior não confirma a transação exterior.
+
+Com valor inicial 10, soma 5, cria o savepoint e multiplica por 2. Depois de `ROLLBACK TO`, volta a 15; o `COMMIT` exterior confirma 15.
+
+Um erro **não implica sempre rollback de tudo**. Em SQLite, a violação habitual de `CHECK` aborta a instrução e mantém anteriores alterações da transação. PostgreSQL normalmente deixa a transação abortada até rollback ou recuperação por savepoint. Trata o erro antes de confirmar.
+
+Mantém transações curtas. Journaling/WAL ajudam à recuperação, mas não substituem backups para perdas fora das garantias do sistema.
+
+[Rollback e tratamento de erros](/cadeiras/bd/indices-transacoes/#um-erro-não-faz-sempre-rollback-de-tudo).

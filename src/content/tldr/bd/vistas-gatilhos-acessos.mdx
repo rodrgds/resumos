@@ -1,0 +1,66 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
+
+## Vistas
+
+Uma **vista virtual** guarda uma consulta, não uma cópia permanente dos resultados. Alterar a tabela base muda a resposta da vista. Uma **materializada** guarda resultados e exige atualização; PostgreSQL tem esse mecanismo nativo, SQLite não tem o mesmo comando.
+
+Uma vista agregada não define automaticamente como traduzir alterações: pedir total 120 não diz quais as linhas de compra a mudar.
+
+- SQLite precisa de gatilhos `INSTEAD OF` para escrever através de vistas.
+- PostgreSQL atualiza automaticamente certas vistas simples. `WITH CHECK OPTION` pode exigir que os valores continuem a satisfazer o filtro da vista.
+
+## Gatilhos
+
+Um **gatilho** reage a um evento `INSERT`, `UPDATE` ou `DELETE`, testa opcionalmente `WHEN` e executa uma ação. Em SQLite é por linha: alterar dez linhas pode dispará-lo dez vezes.
+
+| Momento/evento | Significado ou valores disponíveis             |
+| -------------- | ---------------------------------------------- |
+| `BEFORE`       | Antes da alteração da linha.                   |
+| `AFTER`        | Depois da alteração.                           |
+| `INSTEAD OF`   | Substitui uma operação sobre uma vista SQLite. |
+| `INSERT`       | Disponibiliza `NEW`.                           |
+| `DELETE`       | Disponibiliza `OLD`.                           |
+| `UPDATE`       | Disponibiliza `OLD` e `NEW`.                   |
+
+`UPDATE OF stock` reage à presença da coluna na instrução, mesmo que o valor não mude. A condição seguinte evita auditorias sem mudança, dado que stock é obrigatório:
+
+<CodePlayground
+  language="sqlite"
+  title="Registar apenas mudanças efetivas"
+  files={{ 'loja.sql': loja }}
+  code={`CREATE TABLE AlteracaoStock(idProduto INTEGER, anterior INTEGER, novo INTEGER);
+CREATE TRIGGER AuditarStock
+AFTER UPDATE OF stock ON Produto
+FOR EACH ROW WHEN OLD.stock <> NEW.stock
+BEGIN
+  INSERT INTO AlteracaoStock VALUES (NEW.id, OLD.stock, NEW.stock);
+END;
+UPDATE Produto SET stock = stock - 2 WHERE id = 10;
+UPDATE Produto SET stock = stock WHERE id = 10;
+SELECT * FROM AlteracaoStock;`}
+/>
+
+Fica uma linha: produto 10, anterior 20, novo 18. A segunda instrução tem o evento, mas não satisfaz a condição.
+
+Prefere `CHECK`, `UNIQUE` e estrangeiras quando exprimem a regra. Um limite de encomendas precisa de cobrir inserções e mudanças de cliente; um mínimo exige considerar eliminações. Evita ciclos e depender de uma ordem de gatilhos não garantida.
+
+Em SQLite, `RAISE(ABORT, ...)` desfaz a instrução, sem necessariamente terminar toda a transação; `RAISE(ROLLBACK, ...)` também termina a transação ativa.
+
+## Identidade e privilégios
+
+**Autenticação** confirma identidade; **autorização** decide operações permitidas. Aplica o menor privilégio.
+
+SQLite não tem utilizadores SQL, `GRANT`, `REVOKE` ou RLS como PostgreSQL. A aplicação e as permissões do ficheiro controlam acesso. Uma vista não protege colunas de quem pode abrir livremente a base de dados.
+
+Em **PostgreSQL**, papéis reúnem privilégios; `GRANT` concede e `REVOKE` retira. Revogar uma concessão não elimina outras vias de acesso herdadas ou concedidas diretamente.
+
+## Segurança por linha e parâmetros
+
+- Em PostgreSQL, **RLS** limita linhas além dos privilégios de objeto. `USING` filtra linhas existentes; `WITH CHECK` valida valores novos. A política não concede `SELECT` ou `UPDATE`.
+- Sem política aplicável, RLS nega linhas aos papéis sujeitos a ela. Superutilizadores e `BYPASSRLS` contornam-na; o proprietário normalmente também, salvo `FORCE ROW LEVEL SECURITY`.
+- `current_user` identifica a conta SQL, não os utilizadores de uma aplicação que partilhem essa conta.
+
+Consultas parametrizadas enviam **código e valores separadamente** ao driver. `WHERE email = ?` não é substituição manual de texto. Colunas de ordenação e `ASC`/`DESC` devem vir de opções conhecidas, pois normalmente não são valores parametrizáveis.
+
+[Políticas RLS e teste com outro papel](/cadeiras/bd/vistas-gatilhos-acessos/#segurança-por-linha).

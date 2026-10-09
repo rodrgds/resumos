@@ -1,0 +1,44 @@
+import Typst from '../../../components/Typst.astro';
+import esquema from '../../bd/esquema-relacional.typ?raw';
+
+## Relações e chaves
+
+Cada classe origina uma relação com atributos simples. Uma **superchave** identifica um tuplo; uma **candidata** é mínima por inclusão. Escolher uma primária não elimina as candidatas alternativas.
+
+Uma **estrangeira** referencia uma chave candidata. Numa referência composta, todas as colunas têm de corresponder ao mesmo tuplo alvo. `UNIQUE(email)` com emails desconhecidos permitidos não torna email uma chave candidata conceptual.
+
+## Associações
+
+| Associação         | Tradução habitual                       | Condições                                                      |
+| ------------------ | --------------------------------------- | -------------------------------------------------------------- |
+| Um para muitos     | Estrangeira no lado muitos              | `NOT NULL` se cada objeto desse lado tem de participar.        |
+| Um para um         | Estrangeira com `UNIQUE`                | `NOT NULL` exige participação do lado que guarda a referência. |
+| Muitos para muitos | Relação própria com as duas referências | O par é chave se cada ligação ocorre uma vez.                  |
+
+<Typst
+  source={esquema}
+  format="svg"
+  alt="Encomenda referencia Cliente. Item tem chave composta encomenda/produto e estrangeiras para Encomenda e Produto."
+/>
+
+`Item(idEncomenda, idProduto, qtd, precoUnitario)` guarda os factos do par. Se acrescentares um id artificial, mantém `UNIQUE(idEncomenda, idProduto)` enquanto a regra continuar válida.
+
+Uma estrangeira garante a existência do alvo, **não a participação de todos os alvos**. Mesmo com referências obrigatórias em Item, uma encomenda pode ter zero linhas. Exigir pelo menos um produto precisa de validação nas inserções e na remoção da última linha, considerando os estados intermédios da transação.
+
+## Papéis, qualificadores e associações n-árias
+
+- Uma associação reflexiva usa referências à própria relação com papéis distintos. Para amizades não orientadas, duas estrangeiras e `idPessoaA < idPessoaB` conservam cada par uma vez e excluem autorreferência.
+- Um número local a um clube dá a chave `(idClube, numeroMembro)`. `UNIQUE(idClube, idPessoa)` só se acrescenta se cada pessoa puder ter uma inscrição por clube.
+- Uma ternária origina uma relação com três estrangeiras. Se todos os máximos forem muitos, o triplo identifica a ligação. Se Produto/Projeto determinar um único fornecedor, esse par pode ser candidata; não escolhas automaticamente o triplo.
+
+## Generalizações
+
+| Estratégia             | Representação e cuidado                                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Uma relação por classe | A chave de cada subclasse também referencia a superclasse. Admite sobreposição; completude e disjunção exigem outras regras.                              |
+| Uma por tipo concreto  | Repete os atributos herdados. No caso completo e disjunto, só guarda os tipos concretos; unicidade global entre tabelas não resulta das primárias locais. |
+| Uma relação única      | Guarda todos os atributos. Um discriminador único serve tipos disjuntos; sobreposição precisa de indicadores ou representação equivalente.                |
+
+Composição pode justificar cascata na eliminação, conforme o ciclo de vida escolhido. Um atributo derivado pode ser calculado numa consulta; se for armazenado, precisa de uma regra de sincronização.
+
+[Comparação das estratégias de generalização](/cadeiras/bd/mapeamento-relacional/#traduzir-generalizações).

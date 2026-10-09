@@ -1,0 +1,81 @@
+import Typst from '../../../components/Typst.astro';
+import estrela from '../../bd/estrela.typ?raw';
+
+## OLTP, grão e dimensões
+
+**OLTP** suporta operações atuais com transações curtas e integridade. Um **armazém de dados** integra fontes, assuntos e histórico para análise; pode ter latência de carregamento. "Não volátil" significa relativamente estável, não impossível de corrigir.
+
+O **grão** define uma linha do facto. Na loja, é um produto numa encomenda. A tabela de factos guarda medidas e referências a dimensões, como produto, tempo e cliente.
+
+<Typst
+  source={estrela}
+  format="svg"
+  alt="FactoVenda, no grão encomenda/produto, guarda quantidade e valor e referencia dimensões Tempo, Produto e Cliente."
+/>
+
+Não mistura totais de encomenda com linhas de produto. Para analisar a cidade do cliente na altura da venda, conserva versões históricas, em vez de substituir todos os valores antigos pela cidade atual.
+
+## Medidas e esquemas
+
+| Medida      | Agregação válida                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| Aditiva     | Quantidade ou valor de vendas podem somar-se nas dimensões, com unidades compatíveis.     |
+| Semiaditiva | Saldos somam-se entre contas na mesma data, mas não entre dias para obter o saldo mensal. |
+| Não aditiva | Percentagens e razões precisam de cálculo próprio, frequentemente a partir dos totais.    |
+
+Nas quatro linhas da loja, há 7 unidades e 37000 cêntimos vendidos. O preço médio por unidade é $37000/7$ cêntimos, cerca de 52,86 euros. A média simples dos quatro preços, 68,75 euros, dá pesos errados às quantidades.
+
+- **Estrela:** factos ligados diretamente a dimensões, frequentemente desnormalizadas.
+- **Floco de neve:** normaliza parte das dimensões, reduzindo repetições e acrescentando junções.
+- **Constelação:** factos diferentes partilham dimensões. Agrega cada facto ao nível comum antes de juntar, para evitar multiplicar medidas.
+
+**ETL** extrai, transforma e carrega. Reconcilia ids entre fontes, converte unidades e define histórico antes de somar. Um **data mart** foca um assunto ou grupo; é dependente se deriva de um armazém central, independente se recolhe fontes próprias.
+
+## OLAP
+
+| Operação     | Efeito                                      |
+| ------------ | ------------------------------------------- |
+| Roll-up      | Agrega detalhe, como dias em meses.         |
+| Drill-down   | Desce ao detalhe existente.                 |
+| Slice        | Fixa uma dimensão.                          |
+| Dice         | Seleciona subconjuntos em várias dimensões. |
+| Pivot        | Muda a disposição dos eixos.                |
+| Drill-across | Compara factos por dimensões compatíveis.   |
+
+`ROLLUP(ano, categoria)` agrega pelos dois, só ano e total. `CUBE` acrescenta só categoria, incluindo todos os subconjuntos. SQLite não implementa estes comandos; podem construir-se níveis com `UNION ALL`. Nos motores que oferecem `GROUPING`, distingue nulos de subtotal de valores desconhecidos.
+
+## Modelos NoSQL e distribuição
+
+| Família             | Dados e acesso                                               |
+| ------------------- | ------------------------------------------------------------ |
+| Chave-valor         | Acesso ao valor pela chave, como sessões e caches.           |
+| Documentos          | Objetos com campos e arrays, consultáveis pelo conteúdo.     |
+| Famílias de colunas | Linhas por chave com colunas flexíveis e acesso distribuído. |
+| Grafos              | Nós e arestas para percursos e relações.                     |
+
+Famílias de colunas não são o mesmo que armazenamento colunar analítico. NoSQL não implica ausência de validação ou de transações ACID; as garantias dependem do produto e da operação.
+
+**Replicação** guarda cópias; **sharding** divide dados por chave. Uma distribuição desigual pode concentrar carga.
+
+Durante uma partição de rede, **CAP** impede garantir simultaneamente consistência linearizável e disponibilidade para todas as operações no modelo do teorema. A consistência CAP não é a consistência de invariantes de ACID. A consistência eventual procura convergência quando cessam alterações e a comunicação permite propagá-las; precisa de regras para conflitos. BASE descreve uma orientação, não uma garantia única.
+
+## MongoDB
+
+Estes comandos são para **mongosh**, não para SQLite:
+
+```javascript
+db.produtos
+  .find({ preco: { $gt: 30 } }, { _id: 0, nome: 1, preco: 1 })
+  .sort({ preco: -1, nome: 1 });
+```
+
+Filtra preço acima de 30 e devolve nome/preço por ordem decrescente. A projeção de inclusão só admite a exceção de exclusão de `_id`. `"detalhes.layout"` acede a um campo aninhado; `{ categorias: "entrada" }` testa um elemento do array.
+
+- `$set` muda campos; `$inc` incrementa. `updateOne` altera no máximo um documento; `updateMany` altera todos os correspondentes. Substituir o documento inteiro pode apagar campos omitidos.
+- `distinct` devolve valores distintos; `countDocuments` conta documentos do filtro. Um filtro por `null` pode incluir campos ausentes.
+
+Num pipeline, `$match` filtra, `$project` escolhe/calcula, `$unwind` cria uma saída por elemento do array, `$group` agrega e `$sort` ordena. Teclado com duas categorias e Rato com uma geram três ocorrências: não são três produtos. Elementos repetidos também contam, salvo deduplicação explícita.
+
+`$lookup` acrescenta correspondências **num array**; sem correspondência, fica vazio e a linha exterior mantém-se. `$facet` executa subpipelines independentes sobre a mesma entrada e devolve um documento com um array por saída.
+
+[Exemplos de pipelines e contagens](/cadeiras/bd/armazens-dados-nosql/#pipelines-de-agregação).

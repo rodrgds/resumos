@@ -1,0 +1,54 @@
+import Manim from '../../../components/Manim.astro';
+import Dot from '../../../components/Dot.astro';
+import precedencias from '../../bd/precedencias.dot?raw';
+
+## Escalonamentos e anomalias
+
+Um **escalonamento** intercala operações, respeitando a ordem interna das transações. É **serial** quando uma termina antes da seguinte; é **serializável** quando equivale a alguma ordem serial, mesmo intercalado.
+
+| Anomalia              | O que acontece                                                                  |
+| --------------------- | ------------------------------------------------------------------------------- |
+| Atualização perdida   | Duas transações leem 10 e ambas escrevem 9; duas vendas só reduzem uma unidade. |
+| Leitura suja          | Lê uma alteração de outra transação ainda não confirmada.                       |
+| Leitura não repetível | A mesma linha tem outro valor numa leitura posterior, após commit alheio.       |
+| Fantasma              | Muda o conjunto de linhas que satisfaz o predicado entre consultas.             |
+
+Uma atualização relativa `SET stock = stock - 1 WHERE stock >= 1`, conferindo as linhas afetadas, evita aquele padrão de ler-calcular-escrever no cliente. Regras entre várias linhas ainda precisam de proteção própria.
+
+## Serializabilidade por conflitos
+
+Operações de transações diferentes conflitam quando usam o mesmo item e pelo menos uma escreve. No grafo, coloca $T_i\to T_j$ quando a operação de $T_i$ vem antes da conflitante de $T_j$.
+
+**O grafo é acíclico se e só se o escalonamento é serializável por conflitos.** Uma ordem topológica fornece a execução serial equivalente por conflitos.
+
+<Dot
+  source={precedencias}
+  alt="r1(X) antes de w2(X) dá T1 para T2; r2(X) antes de w1(X) dá T2 para T1. O ciclo impede serialização por conflitos."
+/>
+
+`r1(X), r2(X), w1(X), w2(X)` tem esse ciclo. Já `r1(X), w1(X), r2(X), w2(X)` só exige T1 antes de T2. O critério trata equivalência por conflitos, mais restrita que outras equivalências por observações.
+
+## Bloqueios, snapshots e write skew
+
+- No **bloqueio em duas fases**, adquire bloqueios e depois liberta-os, sem adquirir novos após a primeira libertação. Sob as hipóteses do protocolo, garante serializabilidade por conflitos.
+- Pode haver deadlock: T1 segura A e espera B; T2 segura B e espera A. Após aborto, repete a transação inteira com novas leituras.
+- **MVCC** mantém versões para snapshots coerentes. Um snapshot estável não garante serializabilidade.
+
+<Manim
+  animation="bd-write-skew"
+  title="Write skew numa regra conjunta"
+  description="Ana e Rui estão de serviço. Duas transações veem ambos no mesmo snapshot e retiram pessoas diferentes, deixando zero. Em qualquer ordem serial correta, a segunda vê apenas uma pessoa e recusa a saída. Este modelo não simula SQLite."
+/>
+
+O **write skew** viola uma regra entre linhas sem leitura suja ou escrita sobreposta. Protege o conjunto relevante com serialização ou isolamento serializável e repetição após conflito; bloquear só a linha alterada pode não bastar.
+
+## Níveis e motores
+
+Os mínimos tradicionais SQL proíbem leituras sujas em Read committed; proíbem também leituras não repetíveis em Repeatable read; Serializable também proíbe fantasmas e garante serializabilidade. Um motor pode oferecer mais que esses mínimos.
+
+- **PostgreSQL:** Read committed usa normalmente um snapshot por instrução. Repeatable read mantém snapshot e impede os fantasmas descritos, mas pode permitir write skew. Serializable pode abortar por conflito de serialização; repete toda a transação.
+- **SQLite:** há um escritor de cada vez. Em WAL, leitores mantêm snapshots enquanto outro escreve. Promover uma leitura antiga a escrita pode falhar com `SQLITE_BUSY_SNAPSHOT`; termina e repete. `BEGIN IMMEDIATE` obtém cedo a capacidade de escrita.
+
+O isolamento habitual SQLite impede leituras não confirmadas entre ligações; cache partilhada com `read_uncommitted` é uma exceção específica. Um editor com uma só ligação não demonstra concorrência entre duas.
+
+[Garantias concretas dos motores](/cadeiras/bd/concorrencia/#postgresql).

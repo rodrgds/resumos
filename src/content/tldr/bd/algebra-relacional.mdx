@@ -1,0 +1,55 @@
+import Typst from '../../../components/Typst.astro';
+import pipeline from '../../bd/pipeline-algebra.typ?raw';
+
+## Operações sobre relações
+
+A álgebra clássica usa **conjuntos**, sem duplicados nem ordem de tuplos. Cada operador devolve uma relação.
+
+| Operação              | Resultado                                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| Seleção $\sigma_p(R)$ | Tuplos que satisfazem $p$, conservando os atributos.                                     |
+| Projeção $\pi_X(R)$   | Atributos $X$, eliminando tuplos repetidos.                                              |
+| Produto $R\times S$   | Todas as combinações de tuplos, com nomes desambiguados. Para $m$ e $n$ tuplos, dá $mn$. |
+| Renomeação $\rho$     | Novos nomes de relação ou atributos, sem mudar valores.                                  |
+| União $R\cup S$       | Tuplos presentes em pelo menos um lado.                                                  |
+| Interseção $R\cap S$  | Tuplos presentes em ambos.                                                               |
+| Diferença $R-S$       | Tuplos de $R$ ausentes de $S$. A ordem dos lados importa.                                |
+
+União, interseção e diferença exigem esquemas compatíveis. $R\cap S=R-(R-S)$. A projeção generalizada admite expressões, como preço/100 para euros; a clássica só escolhe atributos existentes.
+
+## Junções e agregação
+
+- A **teta-junção** $R\bowtie_p S$ é $\sigma_p(R\times S)$; uma equijunção usa igualdades.
+- A **natural** impõe igualdade em **todos os nomes comuns** e conserva uma cópia desses atributos. Sem nomes comuns, dá produto cartesiano.
+- A **semijunção** conserva apenas os tuplos do lado esquerdo com correspondência, sem acrescentar colunas da direita.
+- A agregação é uma extensão. $\gamma_{idCliente;\operatorname{count}(*)\to n}(Encomenda)$ conta encomendas por cliente, mas não cria grupos para clientes sem encomendas.
+
+`Cliente(id, nome)` e `Encomenda(id, idCliente)` não se ligam naturalmente pelo cliente: o nome comum `id` compara identidades diferentes. Usa `Cliente.id = Encomenda.idCliente` ou renomeia.
+
+<Typst
+  source={pipeline}
+  format="svg"
+  alt="Filtrar encomendas pela data, juntar ao Cliente com id renomeado para idCliente e projetar nome dá Ana."
+/>
+
+## Ausência e divisão
+
+Para clientes sem encomendas, parte de todos os ids e retira os compradores. Renomeia `idCliente` para `id` antes da diferença. Filtrar encomendas existentes não encontra quem nunca encomendou.
+
+Para $R(X,Y)$ e requisitos $S(Y)$, a **divisão** devolve os $X$ ligados a todos os $Y$ exigidos:
+
+$$
+C=\pi_X(R),\qquad F=(C\times S)-R,\qquad R\div S=C-\pi_X(F).
+$$
+
+$F$ contém pares em falta. Com compras $(1,10),(1,11),(2,11)$ e requisitos $10,11$, falta $(2,10)$, logo só 1 passa.
+
+Se $S$ estiver vazio, devolve $\pi_X(R)$. Para incluir também candidatos que não aparecem em $R$, usa a relação de candidatos como universo. "Comprou algo diferente de rato" não significa "nunca comprou rato".
+
+## Equivalências
+
+$\sigma_{p\land q}(R)=\sigma_p(\sigma_q(R))$. Um filtro que só usa atributos de um lado pode ser antecipado antes da junção. Ao antecipar projeções, conserva os atributos da condição e da resposta.
+
+Estas transformações não prometem uma ordem física de execução. `NULL` e junções externas não obedecem automaticamente às mesmas identidades.
+
+[Construção da divisão](/cadeiras/bd/algebra-relacional/#divisão-perguntas-com-todos).

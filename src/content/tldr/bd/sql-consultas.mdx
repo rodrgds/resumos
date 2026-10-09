@@ -1,0 +1,59 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
+
+## SELECT, duplicados e ordem
+
+- `FROM` e junções definem as linhas; `WHERE` filtra-as; `SELECT` escolhe ou calcula colunas.
+- SQL conserva duplicados por omissão. `DISTINCT` elimina repetições da **combinação completa** escolhida. Nomes iguais não identificam a mesma pessoa.
+- Só `ORDER BY` garante ordem. Para escolher exatamente uma linha entre empates, define desempate; para obter todos os máximos, não uses apenas `LIMIT 1`.
+- `BETWEEN` inclui limites; em `LIKE`, `%` aceita qualquer sequência e `_` um carácter. O tratamento de maiúsculas depende do motor e da collation.
+- `AND` tem precedência sobre `OR`. Usa parênteses para explicitar os grupos.
+
+## Junções e cardinalidade
+
+`JOIN ... ON` conserva correspondências. `LEFT JOIN` conserva todas as linhas da esquerda, com `NULL` à direita quando não há correspondência. Uma condição no `ON` escolhe correspondências; no `WHERE`, filtra o resultado.
+
+<CodePlayground
+  language="sqlite"
+  title="Contar encomendas, incluindo clientes sem compras"
+  files={{ 'loja.sql': loja }}
+  code={`SELECT c.id, c.nome, COUNT(e.id) AS encomendas
+FROM Cliente AS c
+LEFT JOIN Encomenda AS e ON e.idCliente = c.id
+GROUP BY c.id, c.nome
+ORDER BY c.id;`}
+/>
+
+A resposta é Ana/2, Rui/1, Mia/0. `COUNT(*)` daria 1 para Mia, contando a linha artificial. Para contar numa data e preservar clientes sem compras, acrescenta o filtro da data ao `ON`, não ao `WHERE`.
+
+- Uma junção a Item multiplica encomendas pelo número de produtos. Ana passa a ter três linhas de compra; contar encomendas nesse resultado exige `COUNT(DISTINCT e.id)`.
+- Agrupa por chave para não fundir pessoas com o mesmo nome.
+- Numa autojunção para pares sem repetição, usa aliases e `e1.id < e2.id`, além da condição de mesmo cliente. Exclui autorreferência e a ordem inversa.
+- `NATURAL JOIN` liga todos os nomes comuns, mesmo que tenham significados diferentes.
+
+## NULL
+
+Comparações com `NULL`, incluindo `NULL = NULL`, dão normalmente **desconhecido**. `WHERE` só aceita verdadeiro. Usa `IS NULL` e `IS NOT NULL`.
+
+| Expressão                     | Resultado    |
+| ----------------------------- | ------------ |
+| `NOT desconhecido`            | desconhecido |
+| `falso AND desconhecido`      | falso        |
+| `verdadeiro AND desconhecido` | desconhecido |
+| `verdadeiro OR desconhecido`  | verdadeiro   |
+| `falso OR desconhecido`       | desconhecido |
+
+`COALESCE(x, alternativa)` escolhe o primeiro não nulo. Um desconhecido só deve tornar-se zero quando essa interpretação for correta.
+
+## Agregação
+
+`WHERE` filtra antes dos grupos; `HAVING` filtra depois. Para encomendas acima de 100 euros, agrupa Item por `idEncomenda` e usa `HAVING SUM(qtd * precoUnitario) > 10000`, com preços em cêntimos.
+
+- `COUNT(*)` conta linhas; `COUNT(x)` conta valores não nulos; `COUNT(DISTINCT x)` conta distintos não nulos.
+- `SUM`, `AVG`, `MIN` e `MAX` ignoram nulos. A média de 10, `NULL`, 20 é 15.
+- Sem linhas e sem `GROUP BY`, a agregação dá uma linha: `COUNT` é 0 e as restantes são `NULL`. Com agrupamento, não há grupos nem linhas.
+- Colunas da resposta devem estar no agrupamento ou numa agregação apropriada. A permissividade de SQLite para colunas soltas não garante resultados estáveis ou portáveis.
+
+`CASE` calcula por condições e dá `NULL` sem `ELSE` quando nenhuma corresponde. Datas textuais ISO válidas e uniformes podem ordenar-se lexicograficamente; durações exigem funções de data, não subtração de textos.
+
+[Exemplos de filtros e agregação](/cadeiras/bd/sql-consultas/#group-by-e-having).

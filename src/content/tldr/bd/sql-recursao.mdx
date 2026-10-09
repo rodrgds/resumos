@@ -1,0 +1,57 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+## CTEs
+
+`WITH` dá nome a um resultado dentro de uma instrução. Uma CTE pode usar outra definida antes; o nome deixa de existir no fim da instrução. Não garante materialização nem melhor desempenho.
+
+Para médias ou somas em vários níveis, define primeiro o grão intermédio: totais por encomenda, depois totais por cliente. Somar diretamente linhas multiplicadas por outra junção pode duplicar valores.
+
+## Parte inicial e passo recursivo
+
+Uma CTE recursiva tem uma parte inicial e um passo que produz linhas a partir das anteriores. Ambos devolvem o mesmo número de colunas com significados compatíveis.
+
+```sql
+WITH RECURSIVE Numero(n) AS (
+  SELECT 1
+  UNION ALL
+  SELECT n + 1 FROM Numero WHERE n < 5
+)
+SELECT n FROM Numero ORDER BY n;
+```
+
+Produz 1 a 5. O filtro testa o valor **anterior**: `n <= 5` produziria também 6. A terminação tem de resultar da consulta, não de um suposto limite fixo do motor.
+
+## Hierarquias e grafos
+
+Numa hierarquia com `Categoria(id, idMae)`, começa na raiz e junta filhos por `c.idMae = d.id`. A raiz tem profundidade 0; cada filho recebe a profundidade anterior mais 1. A estrangeira verifica a existência da mãe, mas não proíbe ciclos.
+
+<CodePlayground
+  language="sqlite"
+  title="Nós alcançáveis, mesmo com um ciclo"
+  files={{
+    'grafo.sql': `CREATE TABLE Aresta(origem INTEGER NOT NULL,
+  destino INTEGER NOT NULL, PRIMARY KEY(origem, destino));
+INSERT INTO Aresta VALUES (1,2), (2,3), (3,1), (2,4);`,
+  }}
+  code={`WITH RECURSIVE Alcancavel(id) AS (
+  SELECT 1
+  UNION
+  SELECT a.destino FROM Aresta AS a
+  JOIN Alcancavel AS r ON a.origem = r.id
+)
+SELECT id FROM Alcancavel ORDER BY id;`}
+/>
+
+A resposta é 1, 2, 3, 4. `UNION` elimina o retorno a um id já obtido. `UNION ALL` seguiria o ciclo sem parar.
+
+**A deduplicação compara o tuplo inteiro.** Se guardares profundidade, `(1,0)` e `(1,3)` são distintos: `UNION` deixa de garantir terminação nesse ciclo. Para caminhos, controla os nós já visitados no caminho e limita a exploração conforme a pergunta.
+
+## Divisores e D'Hondt
+
+Para $M$ mandatos, gera divisores 1 a $M$, cruza cada lista com esses divisores, calcula votos/divisor e seleciona os $M$ maiores quocientes. Só a geração dos divisores precisa de recursão.
+
+Com votos A=100, B=60, C=40 e quatro mandatos, os maiores quocientes são 100/A, 60/B, 50/A e 40/C. A recebe 2 lugares; B e C recebem 1. Usa divisão real e define desempates. O desempate por nome no exemplo da lição é uma convenção do exercício, não a regra eleitoral legal.
+
+Em SQLite, o passo recursivo tem restrições próprias e não aceita agregações ou funções de janela. Agrega no resultado exterior quando essa for a estrutura adequada.
+
+[Hierarquia e passos da recursão](/cadeiras/bd/sql-recursao/#percorrer-uma-hierarquia).

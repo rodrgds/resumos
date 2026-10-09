@@ -1,0 +1,58 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import loja from '../../bd/loja.sql?raw';
+
+## Existência, pertença e ausência
+
+- `EXISTS` é verdadeiro se a subconsulta tiver alguma linha. Os valores do `SELECT` interior não interessam; costuma usar-se `SELECT 1`.
+- Uma subconsulta **correlacionada** depende da linha exterior. Para compras de um cliente, conserva `e.idCliente = c.id`; omiti-lo transforma a condição numa existência global.
+- `NOT EXISTS` exprime ausência de correspondências. "Há uma compra de outro cliente" não significa "este cliente nunca comprou".
+- `IN` testa pertença a uma coluna de resultados, sem multiplicar a linha exterior pelas correspondências.
+
+Com candidatos 1, 2, 3 e registos 1, `NULL`, `NOT IN` não devolve nenhum candidato: para 2 e 3, a comparação com `NULL` deixa a não pertença desconhecida. `NOT EXISTS` correlacionado por igualdade devolve 2 e 3.
+
+`NOT IN` é adequado quando os valores interiores e exteriores relevantes são garantidamente não nulos. Filtrar só os nulos interiores não decide o significado de um nulo exterior.
+
+## Valores, tabelas e máximos
+
+Uma subconsulta **escalar** deve devolver uma coluna e um valor unívoco. Várias linhas dão erro em PostgreSQL; SQLite escolhe a primeira, o que pode esconder um erro. Uma tabela derivada em `FROM` permite agregar primeiro por encomenda e depois calcular a média dos totais.
+
+Para todos os máximos conhecidos, usa `preco = (SELECT MAX(preco) FROM Oferta)`. Conserva empates e exclui nulos. A formulação "não existe preço maior" precisa também de excluir o preço nulo exterior.
+
+## Conjuntos e quantificadores
+
+`UNION`, `INTERSECT` e `EXCEPT` eliminam duplicados; `UNION ALL` conserva ocorrências. As consultas precisam do mesmo número de colunas, com significados e tipos compatíveis. SQLite não oferece `INTERSECT ALL` ou `EXCEPT ALL`.
+
+Para valores não nulos:
+
+- `x > ANY(S)` equivale a existir `s < x`. Com $S$ vazio, é falso.
+- `x > ALL(S)` equivale a não existir `s >= x`. Com $S$ vazio, é verdadeiro.
+
+SQLite não implementa `ANY` e `ALL`. As reescritas anteriores exigem valores não nulos; substituir `ALL` por uma comparação com `MAX` perde o caso vazio.
+
+## Perguntas com todos
+
+"Comprou todos os requisitos" significa **não existir um requisito sem compra**. Define também o universo dos candidatos.
+
+<CodePlayground
+  language="sqlite"
+  title="Ausência de um produto exigido em falta"
+  files={{ 'loja.sql': loja }}
+  code={`CREATE TABLE Exigido(idProduto INTEGER PRIMARY KEY REFERENCES Produto(id));
+INSERT INTO Exigido VALUES (10), (11);
+SELECT c.id, c.nome FROM Cliente AS c
+WHERE NOT EXISTS (
+  SELECT 1 FROM Exigido AS x
+  WHERE NOT EXISTS (
+    SELECT 1 FROM Encomenda AS e
+    JOIN Item AS i ON i.idEncomenda = e.id
+    WHERE e.idCliente = c.id AND i.idProduto = x.idProduto
+  )
+)
+ORDER BY c.id;`}
+/>
+
+Só Ana comprou os produtos 10 e 11. Compras repetidas não mudam a existência. Se Exigido estiver vazio, passam **todos os clientes, incluindo Mia**, porque não há faltas. Exigir alguma compra é uma condição adicional.
+
+Uma solução por contagem tem de contar requisitos distintos comprados, limitar-se ao conjunto exigido e conservar candidatos sem compras no caso vazio.
+
+[Quantificação universal e casos limite](/cadeiras/bd/sql-subconsultas/#perguntas-com-todos).
