@@ -1,0 +1,38 @@
+import Dot from '../../../components/Dot.astro';
+import descritor from '../../fsi/descritor-herdado.dot?raw';
+
+## Ambiente e identidade
+
+| Operação                      | Efeito                                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `fork()`                      | Cria um filho com cópia do ambiente; alterações no filho não mudam automaticamente o pai. |
+| `execve(caminho, argv, envp)` | Substitui o programa no mesmo processo e transmite o ambiente indicado em `envp`.         |
+| Executar um binário Set-UID   | Pode mudar o UID efetivo para o dono, conservando o UID real.                             |
+
+O UID real identifica normalmente quem iniciou o processo; o efetivo participa nas decisões de acesso. `nosuid`, `no_new_privs` e outras restrições podem impedir o efeito Set-UID. Linux ignora-o em scripts interpretados.
+
+Passar `environ` a `execve` transmite o ambiente corrente. Uma lista de pares terminada por ponteiro nulo permite selecionar os valores. `envp=NULL` é aceite em Linux, mas não é uma forma portátil de transmitir ambiente vazio.
+
+O carregador filtra certas variáveis, como `LD_PRELOAD`, em execução segura. O programa continua responsável pelas outras entradas externas que usa.
+
+## PATH e shell
+
+- `system("ls")` invoca uma shell; `PATH` pode selecionar um executável numa pasta controlada pelo requerente.
+- Um caminho absoluto fixa o executável, mas a shell continua a interpretar caracteres. Em `system("/bin/cat relatorio; printf MARCA")`, o `;` separa duas operações.
+- Na chamada direta a `execve`, `relatorio; printf MARCA` num elemento de `argv` é um único argumento. Não cria outra operação por interpretação da shell.
+- Ainda tens de autorizar o ficheiro, limitar opções e controlar o ambiente. O UID final de uma chamada por shell depende também da shell; algumas baixam privilégios.
+
+## Autoridade dos descritores
+
+<Dot
+  source={descritor}
+  alt="Abrir com privilégio concede o descritor 3; baixar UID não o fecha. Sem close-on-exec, o novo programa pode herdá-lo e escrever, mesmo quando uma nova abertura é negada."
+/>
+
+Uma abertura verifica a autoridade nesse momento. Baixar o UID não reaplica automaticamente essa decisão às escritas pelo descritor existente. Esta fuga de recurso é chamada capability leaking, sem implicar uma Linux capability.
+
+Fecha descritores desnecessários antes de transferir controlo. **Close-on-exec** fecha no `execve` bem-sucedido, não ao baixar UID; o programa atual ainda pode usar o descritor antes disso. Quando possível, baixa privilégios antes de abrir recursos e verifica os erros.
+
+No LOGBOOK, regista estado, operação, resultado e mecanismo. O navegador não reproduz processos e permissões POSIX; o guião exige o ambiente isolado docente e reposição da configuração alterada.
+
+[Seguir a fuga de autoridade](/cadeiras/fsi/setuid-ambiente/#descritores-depois-de-retirar-privilégios).

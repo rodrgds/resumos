@@ -1,0 +1,68 @@
+import Dot from '../../../components/Dot.astro';
+import retornos from '../../fsi/retornos.dot?raw';
+
+## Contratos e interpretação
+
+Valida no servidor tipo, tamanho, intervalo e significado. O cliente pode enviar pedidos sem passar pelo formulário. Prefere conjuntos permitidos a listas de padrões proibidos, mas não confundas validação com separação entre dados e instruções.
+
+- SQL usa parâmetros para valores; HTML exige codificação apropriada ao contexto.
+- `printf(entrada)` deixa dados controlar o formato. Usa `printf("%s", entrada)` para uma string válida.
+- `%s` lê uma string por ponteiro; `%d` recebe `int`; `%n`, sem modificador de comprimento, recebe `int *` e guarda a contagem já impressa. `printf("abc%n!", &n)` guarda 3, não imprime `n`.
+
+Formato fixo não demonstra validade do ponteiro, tamanho nem segurança noutro contexto.
+
+## Limites e tempo de vida
+
+Um buffer de $b$ bytes guarda uma string de até $b-1$ bytes mais o nulo. Copiar 12 letras e o terminador para 8 bytes excede a capacidade em cinco bytes. O comportamento é indefinido; não se deduz a vítima da ordem das declarações.
+
+Para `nome` que já é uma string válida terminada em nulo, esta função rejeita entradas que não cabem:
+
+```c
+static int copiar_nome(char buf[8], const char *nome) {
+    size_t n = strlen(nome);
+    if (n >= 8) return 0;
+    memcpy(buf, nome, n + 1);
+    return 1;
+}
+```
+
+Requer `<string.h>` e destino com pelo menos oito bytes. `sizeof buf` dentro desta função mediria um ponteiro, porque o parâmetro de array é ajustado para ponteiro. Conta bytes, não letras Unicode. Para um bloco binário, recebe comprimento explícito em vez de usar `strlen` sem garantir nulo acessível. `strncpy` pode não terminar a string e truncar identificadores distintos para o mesmo valor.
+
+| Erro                     | Condição e defesa                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Overflow na heap         | Escrita ultrapassa uma alocação. Alocações consecutivas não garantem adjacência.                                    |
+| Use-after-free           | A referência usa um objeto já libertado, mesmo sem crash. Copiar o ponteiro não prolonga a vida.                    |
+| Double free              | O mesmo objeto é libertado duas vezes. Anular um ponteiro não anula aliases.                                        |
+| Integer overflow         | O tamanho envolve antes de alocar. Rejeita `quantidade > SIZE_MAX / sizeof(item)` antes da multiplicação sem sinal. |
+| Leitura fora dos limites | Pode divulgar dados sem escrever. Com índice com sinal, exige `0 <= indice && indice < len`.                        |
+
+Valida comprimento contra bytes disponíveis e representabilidade **antes** de converter: 65 540 num campo sem sinal de 16 bits torna-se 4. Aritmética sem sinal envolve; overflow com sinal pode ser indefinido.
+
+## Pilha e reutilização de código
+
+Num modelo x86 de 32 bits com frame pointer, a pilha cresce para endereços menores. Se o enunciado fixa buffer de 12 bytes em `ebp-16` e retorno em `ebp+4`, o índice 12 sai do buffer e o índice 20 atinge o retorno. A cópia avança para endereços maiores. Little-endian põe `0x11223344` como `44 33 22 11` em endereços crescentes. Os offsets dependem da disposição dada.
+
+**ROP** encadeia trechos existentes, gadgets, pelo controlo de desvios como `ret`.
+
+<Dot
+  source={retornos}
+  alt="No modelo x86 de 32 bits sem ajuste dos argumentos, ret consome etapaA. Esta vê etapaB como retorno; etapaB vê continuação como retorno e 7 como primeiro argumento."
+/>
+
+Este percurso assume argumentos na pilha, ausência de canário/rearranjo e funções que não retiram os argumentos. Não se extrapola para x86-64 nem se intercalam argumentos sem ajuste.
+
+## Mitigações e análise
+
+- Canários detetam certas escritas que os atravessam e alteram. Um nulo só interrompe primitivas de texto pertinentes; cópias binárias transportam-no. Uma fuga pode revelar um canário aleatório.
+- NX impede executar páginas não executáveis, mas não corrupção de dados nem reutilização de código. ASLR dificulta prever endereços; fugas podem reduzi-lo.
+- Heap spraying repete dados; JIT spraying influencia código gerado. Ainda precisam de um caminho de desvio e não anulam todas as proteções.
+- Taint acompanha sources externas até sinks sensíveis, incluindo propagação por cópias. Sanitização só vale para a condição exigida pelo sink.
+- Análise estática aproxima caminhos e pode gerar falsos positivos ou omissões; dinâmica observa apenas caminhos executados. Nenhuma prova automaticamente ausência de falhas.
+
+## TOCTOU
+
+Verificar um nome e abri-lo depois permite trocar o objeto entre operações. Quando a API permite, abre com restrições, verifica pelo descritor e usa esse mesmo descritor. Repetir a verificação pelo nome cria outro intervalo. Verificar e atualizar um saldo exige atomicidade ou isolamento transacional adequado; um mutex local não coordena outros servidores.
+
+Atualiza dependências com verificação de compatibilidade, versão e comportamento. As mitigações não substituem eliminar o acesso inválido.
+
+[Contratos e modelos de memória](/cadeiras/fsi/programacao-defensiva/#corrigir-a-cópia).

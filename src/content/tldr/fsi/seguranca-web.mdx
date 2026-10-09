@@ -1,0 +1,68 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import sessao from '../../fsi/sessao-web.mmd?raw';
+
+## Origem, site e autorização
+
+Uma origem é **esquema, host e porta efetiva**. Caminhos distintos podem ter a mesma origem; mudar para HTTP, outro subdomínio ou porta 8443 muda-a. SameSite usa regras de site, incluindo domínio registável e esquema: dois subdomínios podem ser same-site e cross-origin.
+
+A política da mesma origem restringe leituras entre origens, não todos os pedidos. CORS concede determinadas leituras; não substitui autorização no servidor nem impede todos os clientes de construir pedidos.
+
+## Sessões e autenticação
+
+<Mermaid
+  source={sessao}
+  alt="Login cria sessão e entrega cookie. O pedido devolve o cookie; o servidor procura a sessão e ainda precisa de autorizar a operação concreta."
+/>
+
+Usa identificadores imprevisíveis, fora de URLs e logs. Renova após login, expira e invalida no servidor. Apagar só o cookie não invalida uma cópia roubada.
+
+| Atributo       | Efeito e limite                                                                       |
+| -------------- | ------------------------------------------------------------------------------------- |
+| `Secure`       | Restringe envio a transporte seguro, com exceções de desenvolvimento do navegador.    |
+| `HttpOnly`     | Impede leitura pelas APIs JavaScript; XSS ainda pode executar ações com a sessão.     |
+| `SameSite=Lax` | Restringe envio cross-site, mas pode permitir navegações de topo com métodos seguros. |
+
+Palavras-passe exigem função de derivação adequada, como Argon2id, com sal distinto e custo apropriado. O sal pode ser público. Hash rápido e cifra reversível não cumprem o objetivo. MFA combina categorias independentes; duas palavras-passe são o mesmo fator. Protege também a recuperação.
+
+Um MAC de mensagem antiga não prova presença atual. Desafio-resposta precisa de nonce novo, prova ligada a identidade, papéis e contexto, aceitação só do desafio pendente e invalidação após uso.
+
+## Biometria
+
+No modelo de tentativas de autenticação:
+
+$$FAR=\frac{\text{impostores aceites}}{\text{tentativas de impostores}},\quad FRR=\frac{\text{legítimos rejeitados}}{\text{tentativas legítimas}}.$$
+
+Oito aceitações em 10 000 tentativas de impostores dão FAR de 0,08%; vinte rejeições em 500 legítimas dão FRR de 4%. FAR não é a fração de aceitações pertencente a impostores. Um limiar mais exigente tende a reduzir FAR e aumentar FRR. Declara o ensaio e distingue erros de comparação FMR/FNMR dos erros do sistema. Biometria exposta não é um segredo facilmente substituível.
+
+## XSS, CSP e SRI
+
+XSS refletido devolve entrada na resposta; armazenado guarda-a antes de atingir outra pessoa; DOM coloca dados num ponto que os interpreta como marcação/código.
+
+Para texto num elemento HTML, usa codificação desse contexto; no DOM, `textContent` insere texto e `innerHTML` interpreta marcação. JavaScript, CSS, URLs e HTML rico exigem tratamento próprio.
+
+```http
+Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.example; object-src 'none'
+```
+
+Nesta política isolada, scripts externos da própria origem ou do CDN são permitidos; outra origem e script inline sem nonce/hash autorizado são bloqueados. `script-src` substitui o fallback de `default-src`. Report-Only só relata. CSP complementa a correção do XSS.
+
+SRI compara bytes com o digest esperado em `integrity`, como `sha384-` seguido de Base64. Recursos cross-origin exigem CORS adequado. Passar CSP não basta se SRI falha; hash correto não autoriza origem proibida pela CSP dada. SRI perde a hipótese de confiança se o atacante também trocar HTML e hash; não prova que o original é benigno.
+
+## SQL, CSRF e objetos
+
+Parâmetros mantêm valores separados da estrutura SQL:
+
+```python
+# db é uma ligação sqlite3; entrada é texto externo.
+linhas = db.execute(
+    "SELECT nome FROM clientes WHERE nome = ?", (entrada,)
+).fetchall()
+```
+
+A entrada `' OR '1'='1` é pesquisada literalmente. Para nomes de colunas/tabelas ou direção de ordenação, mapeia opções permitidas para fragmentos fixos; parâmetros representam valores.
+
+**CSRF** induz uma operação pelo navegador autenticado, sem precisar de ler resposta. Não alteres estado com GET. Usa método adequado e defesa da framework, como token ligado à sessão e validação de origem aplicável. Só mudar para POST não basta; SameSite é complementar e XSS pode contornar defesas na origem legítima.
+
+`GET /faturas/42` exige autorização daquela conta sobre **a fatura 42**. UUID, sessão válida e link escondido não decidem essa permissão. Testa objeto próprio permitido e objeto alheio negado. SQL parametrizado, HTTPS e atributos de cookie protegem condições diferentes.
+
+[Diagnosticar cada falha Web](/cadeiras/fsi/seguranca-web/#autorização-por-objeto).

@@ -1,0 +1,54 @@
+import Dot from '../../../components/Dot.astro';
+import fluxos from '../../fsi/fluxos-seguranca.dot?raw';
+
+## Representar a autorização
+
+**Autenticar** identifica a entidade; **autorizar** decide se pode executar uma operação sobre um objeto concreto.
+
+- A matriz de acessos tem sujeitos nas linhas, objetos nas colunas e operações permitidas nas células.
+- Uma ACL guarda a lista de permissões junto do objeto.
+- Uma capacidade é uma referência protegida contra falsificação que concede operações sobre um objeto. As Linux capabilities repartem privilégios de root por operação e são outro conceito.
+
+| Política | Quem decide                                                |
+| -------- | ---------------------------------------------------------- |
+| DAC      | O dono pode conceder parte dos acessos.                    |
+| MAC      | A política central limita as decisões, mesmo do dono.      |
+| RBAC     | Permissões pertencem a papéis atribuídos aos utilizadores. |
+
+Retirar um papel não remove automaticamente uma autorização dada por ACL ou por outro caminho.
+
+## Confidencialidade e integridade
+
+As regras seguintes assumem as restantes permissões satisfeitas e níveis ordenados.
+
+| Modelo               | Propriedade       | Leitura proibida                         | Escrita proibida      |
+| -------------------- | ----------------- | ---------------------------------------- | --------------------- |
+| Bell-LaPadula básico | Confidencialidade | Acima do nível do sujeito, no read up    | Abaixo, no write down |
+| Biba estrito         | Integridade       | Abaixo do nível do sujeito, no read down | Acima, no write up    |
+
+<Dot
+  source={fluxos}
+  alt="Sujeito Alto e objeto Baixo. Ler leva dados do objeto para o sujeito: permitido em Bell-LaPadula e negado em Biba estrito. Escrever leva dados do sujeito para o objeto: negado em Bell-LaPadula e permitido em Biba estrito."
+/>
+
+Bell-LaPadula impede copiar segredos para baixo, mas não protege integridade. Biba evita contaminação por dados menos confiáveis, mas não protege segredo. Desclassificação exige um procedimento confiável fora da regra básica de Bell-LaPadula.
+
+## Permissões Unix
+
+Assume bits tradicionais, sem ACL adicionais nem privilégios especiais. Seleciona **um trio**: dono, senão grupo, senão outros. Se o dono não tem `r`, não se tenta o trio dos outros.
+
+| Bit   | Ficheiro regular | Diretório                 |
+| ----- | ---------------- | ------------------------- |
+| `r=4` | Ler conteúdo     | Enumerar nomes            |
+| `w=2` | Alterar conteúdo | Com `x`, alterar entradas |
+| `x=1` | Executar         | Procurar e atravessar     |
+
+`640` é `rw-r-----`; `750` é `rwxr-x---`. Ler um ficheiro exige também atravessar os diretórios do caminho.
+
+Com pasta `750` e ficheiro `640`, um membro do grupo pode ler, mas não escrever conteúdo. Se a pasta passar a `770`, pode remover o nome do ficheiro, mesmo sem `w` no ficheiro, na ausência de sticky bit e outras restrições. Remover um nome altera o diretório; outros nomes ou descritores podem manter o objeto acessível.
+
+## Revogação
+
+Retirar permissões não desfaz cópias já feitas nem retira automaticamente a autoridade de descritores abertos. Especifica qual referência se verifica e quando. Baixar UID também não fecha um descritor.
+
+[Aplicar as regras Unix](/cadeiras/fsi/controlo-acessos/#exemplo-resolvido).

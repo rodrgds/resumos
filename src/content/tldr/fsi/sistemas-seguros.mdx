@@ -1,0 +1,56 @@
+import Dot from '../../../components/Dot.astro';
+import isolamento from '../../fsi/isolamento.dot?raw';
+
+## Princípios de construção
+
+| Princípio                | Condição a procurar                                                    |
+| ------------------------ | ---------------------------------------------------------------------- |
+| Privilégio mínimo        | Só autoridade necessária, pelo tempo necessário.                       |
+| Negar por defeito        | Sem autorização explícita, negar o pedido.                             |
+| Mediação completa        | Todos os acessos relevantes passam pela decisão.                       |
+| Simplicidade             | Mecanismo pequeno e compreensível para análise.                        |
+| Desenho aberto           | Proteção depende de segredos como chaves, não de esconder o algoritmo. |
+| Separação de privilégios | Operação crítica exige condições independentes.                        |
+| Mínimo mecanismo comum   | Menos partilha que crie dependências e fugas.                          |
+| Aceitação psicológica    | O caminho seguro é compreensível e utilizável.                         |
+
+Aprovação por dois responsáveis separa autoridade. Repetir a palavra-passe não cria outra autoridade nem outro fator de autenticação.
+
+Um **monitor de referência** medeia acessos, resiste a alterações não autorizadas e permite análise. A **TCB** reúne componentes de cujo funcionamento correto depende a proteção. Reduzi-la reduz o que precisa de ser analisado.
+
+Esconder um botão não medeia `POST /notas/42`: autoriza sujeito, objeto e operação no servidor. No **confused deputy**, um serviço usa a sua autoridade para satisfazer um pedido que o requerente não poderia fazer. Verifica a autoridade do requerente ou usa uma capacidade limitada ao objeto autorizado.
+
+## Memória virtual e kernel
+
+Tabelas de páginas traduzem endereços virtuais e atribuem permissões. `0x4000` em dois processos pode designar páginas físicas distintas; partilha explícita pode fazê-los aceder à mesma página.
+
+Modo utilizador não pode exercer livremente autoridade do kernel. Chamadas de sistema são transições controladas; o kernel ainda valida ponteiros, tamanhos e permissões. Páginas de kernel mapeadas com acesso supervisor não são legíveis pelo utilizador. KPTI separa tabelas para reduzir certas exposições, mas a disposição depende da arquitetura/configuração.
+
+## Fronteiras de isolamento
+
+<Dot
+  source={isolamento}
+  alt="Containers típicos partilham o kernel do anfitrião. A máquina virtual tem kernel convidado e depende do hipervisor, com outra fronteira de proteção."
+/>
+
+- **Android** usa normalmente UID por aplicação e permissões Linux, incluindo código nativo. SELinux acrescenta MAC e seccomp restringe chamadas. Permissão para câmara não concede dados privados de outra aplicação.
+- **Namespaces** separam vistas de recursos; **cgroups** contabilizam e limitam CPU/memória; capabilities e políticas limitam autoridade.
+- **Seccomp-BPF** filtra número, arquitetura e argumentos disponíveis de chamadas. Não interpreta livremente o conteúdo dos ponteiros, como o texto de um caminho.
+
+Bloquear criação de processos não impede ler uma pasta privada montada. Restringe também ficheiros, montagens, rede e recursos. Container privilegiado ou acesso ao runtime pode anular a separação; container típico continua dependente do kernel partilhado.
+
+## Arranque e TPM
+
+- Secure Boot verifica assinaturas segundo a política e pode bloquear componentes não autorizados.
+- Measured Boot regista medições; medir não equivale a bloquear.
+- TPM protege chaves e acumula medições em PCR. Uma chave selada à política dos PCR pode ficar indisponível após uma atualização legítima.
+
+Numa atestação, o verificador envia desafio novo, valida a prova autenticada ligada ao desafio e compara medições com estados aceites. Uma prova antiga não serve ao desafio novo. Medição esperada não garante ausência de comprometimento posterior. Planeia atualização da política e recuperação.
+
+## Defesa e falha
+
+Defesa em profundidade combina controlos com falhas diferentes. Autorização limita consultas; cifragem protege armazenamento; cópias permitem recuperação. Duas verificações da mesma condição errada não são independentes.
+
+Se o autorizador falha, permitir tudo é falha aberta. Negar preserva autorização e pode reduzir disponibilidade. Explicita a propriedade prioritária e a recuperação segura.
+
+[Comparar fronteiras de isolamento](/cadeiras/fsi/sistemas-seguros/#containers-máquinas-virtuais-e-seccomp).

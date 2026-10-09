@@ -1,0 +1,64 @@
+import Dot from '../../../components/Dot.astro';
+import rede from '../../fsi/rede-segura.dot?raw';
+
+## Posição do atacante e canais
+
+Um atacante no caminho pode observar/alterar tráfego desprotegido; um atacante apenas remoto não vê necessariamente pacotes alheios. Declara que mensagens controla.
+
+| Caso                                              | Defesa e limite                                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| ARP falso associa IP do router ao MAC do atacante | Controlos locais e canal autenticado; a defesa depende da posição na rede local.            |
+| DNS adulterado                                    | DNSSEC valida dados onde aplicável; não cifra consultas nem garante honestidade do serviço. |
+| TCP manipulado                                    | Validações do protocolo e transporte autenticado; IP não prova identidade.                  |
+| HTTP legível/alterável no caminho                 | TLS validado protege trânsito entre os seus extremos.                                       |
+
+TLS autentica o handshake, estabelece chaves de sessão e protege registos. O handshake TCP não faz essa autenticação. HTTPS protege caminho HTTP, cabeçalhos e corpo, mas pode expor IPs, tamanhos, tempos e nome do servidor conforme DNS/handshake.
+
+<Dot
+  source={rede}
+  alt="TLS do navegador termina no proxy, que pode ler o HTTP. Outro canal TLS protege proxy a servidor. Quem controla o proxy controla um extremo de ambos os canais."
+/>
+
+SSH exige validar a chave do servidor. IPsec protege ao nível IP; em modo túnel encapsula o pacote IP noutro. VPN não concede automaticamente autorização na aplicação. Nenhum destes canais corrige XSS ou acesso indevido por um extremo autorizado.
+
+## Firewall, IDS e IPS
+
+Uma regra de firewall especifica direção, origem, destino, protocolo, porta e estado quando aplicável. Confirma ordem e decisão por defeito.
+
+1. Permitir TCP de saída para 443, novo ou estabelecido.
+2. Permitir entrada só de conexões estabelecidas.
+3. Negar o resto.
+
+Um SYN inicial externo é negado; ACK sem conexão conhecida também. O bit ACK sozinho não demonstra estado estabelecido. Permitir HTTPS não impede ataques em pedidos HTTPS válidos.
+
+Filtros sem estado usam campos do pacote; com estado acompanham conexões; proxies podem aplicar regras da aplicação. IDS deteta; IPS pode bloquear. Assinaturas reconhecem padrões conhecidos; anomalias comparam com um modelo. Ambos podem ter falsos positivos e negativos.
+
+## Taxa base e precisão
+
+Com $A$ ataques, $L$ eventos legítimos, sensibilidade $s$ e taxa falsa positiva $f$:
+
+$$VP=sA,\quad FP=fL,\quad \mathrm{precisão}=\frac{VP}{VP+FP}.$$
+
+Em 10 000 eventos com dez ataques, $s=0{,}9$ e $f=0{,}01$, esperamos nove alertas verdadeiros e 99,9 falsos. A precisão é $9/108{,}9\approx8{,}26\%$. São valores esperados, não contagens observadas. Alta deteção não garante maioria de alertas corretos quando ataques são raros.
+
+## Malware e recuperação
+
+- Vírus replica-se através de hospedeiro; worm propaga-se autonomamente.
+- Cavalo de Troia apresenta-se como desejável e executa ações ocultas; ransomware procura impedir acesso e extorquir.
+- Bot é um componente comprometido controlável; botnet coordena bots. Um worm pode instalar bots, portanto categorias não são exclusivas.
+
+Inatividade numa sandbox não prova inocuidade: podem faltar tempo ou condições. Combina origem, análise estática, execução isolada e telemetria. Corrigir a via de entrada não elimina necessariamente persistência instalada; recuperação pode exigir isolamento, restauro verificado e troca de credenciais comprometidas.
+
+## Negação de serviço
+
+DoS esgota disponibilidade; DDoS usa origens distribuídas. SYN flood ocupa estado de conexões incompletas. SYN cookies reduzem estado antes de completar o handshake, mas não todos os limites de capacidade.
+
+Em reflexão, pedidos com IP falsificado da vítima fazem terceiros responder-lhe. Há amplificação quando a resposta é maior:
+
+$$F=\frac{\text{bytes de resposta}}{\text{bytes de pedido}}.$$
+
+Pedidos de 60 bytes e respostas de 3 000 dão $F=50$: 2 Mbit/s de pedidos podem gerar 100 Mbit/s de respostas, ignorando cabeçalhos/perdas e assumindo capacidade dos refletores.
+
+Identifica o recurso esgotado. Se a ligação já está saturada, filtrar no servidor chega tarde; trabalho caro por pedido exige limites/filas adequados. Bloquear um IP pode afetar utilizadores que o partilham.
+
+[Interpretar alertas](/cadeiras/fsi/seguranca-redes/#o-problema-da-taxa-base).

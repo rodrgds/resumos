@@ -1,0 +1,63 @@
+import Typst from '../../../components/Typst.astro';
+import cadeia from '../../fsi/cadeia.typ?raw';
+
+## Primitivas e chaves
+
+| Mecanismo              | Objetivo e limite                                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| Cifra simétrica        | Chave partilhada protege confidencialidade; cifrar sozinho não garante autenticidade nem frescura.       |
+| Cifra de chave pública | Cifra com a pública do destinatário; só a privada correspondente decifra. Não identifica o remetente.    |
+| Hash criptográfico     | Compara com uma referência confiável. Se o atacante troca mensagem e hash, a comparação não autentica.   |
+| MAC                    | Chave partilhada dá integridade e autenticidade entre os seus detentores; não dá prova pública do autor. |
+| Assinatura             | `Sign` com a privada do autor; `Verify` com a pública confiável. Não esconde o conteúdo.                 |
+
+Uma assinatura não é definida como "cifrar com a privada". Atribuí-la à pessoa exige associação correta da chave e proteção da privada; uma chave roubada também permite assinar.
+
+Num sistema híbrido, acordo ou encapsulamento estabelece uma chave de sessão para proteger os dados com cifra simétrica autenticada. O estabelecimento precisa de autenticação.
+
+## Hash e cifras clássicas
+
+- **Pré-imagem:** dado o hash, encontrar uma entrada correspondente.
+- **Segunda pré-imagem:** dada uma entrada, encontrar outra com o mesmo hash.
+- **Colisão:** escolher duas entradas distintas com o mesmo hash. Para saída ideal de $n$ bits, pesquisa genérica custa cerca de $2^{n/2}$ tentativas.
+- Um hash não esconde entradas de baixa entropia: dez possibilidades conhecidas podem ser calculadas e comparadas.
+
+César usa $y=(x+k)\bmod26$ para maiúsculas ASCII `A=0` até `Z=25`; recupera com $x=(y-k)\bmod26$. `ZEBRA` com $k=3$ dá `CHEUD`. Há só 26 deslocamentos. Substituição monoalfabética tem $26!$ chaves, mas conserva padrões e frequências. Ambas são cifras de estudo.
+
+## RSA de brinquedo
+
+$u\equiv v\pmod n$ significa que $u-v$ é múltiplo de $n$. O inverso de $e$ módulo $t$ existe se e só se $\gcd(e,t)=1$.
+
+Para primos distintos $p,q$:
+
+$$n=pq,\quad \varphi(n)=(p-1)(q-1),\quad ed\equiv1\pmod{\varphi(n)}.$$
+
+A pública é $(n,e)$; a privada inclui $d$. Para inteiro $0\le m<n$:
+
+$$c=m^e\bmod n,\qquad m=c^d\bmod n.$$
+
+Com $p=3,q=11,e=3,d=7$, temos $n=33$, $\varphi(n)=20$, $m=5$, $c=26$ e $26^7\bmod33=5$. Isto é aritmética sem codificação, **insegura para uso real**. RSA real usa esquemas como OAEP e PSS.
+
+## Distribuição e conservação de chaves
+
+Com $N$ entidades e uma chave simétrica por par, partilhada nos dois sentidos:
+
+$$K=\frac{N(N-1)}2.$$
+
+Seis entidades precisam de 15 chaves; acrescentar a sétima exige seis novas. Com KDC adicional, cada entidade partilha uma chave duradoura com o centro: são $N$ dessas ligações, excluindo chaves de sessão e internas. O KDC distribui segredos de sessão protegidos pelas chaves duradouras, mas concentra confiança e dependência.
+
+Gera, distribui autenticamente, protege, limita uso e revoga chaves. Rotação não desfaz exposições antigas. Sal de palavra-passe e nonce não são, em geral, segredos; os requisitos dependem da construção.
+
+## Certificados e revogação
+
+<Typst
+  source={cadeia}
+  format="svg"
+  alt="Raiz instalada como âncora de confiança assina a intermédia, que assina o certificado do servidor. A autoassinatura não estabelece confiança na raiz."
+/>
+
+Para aceitar um certificado, verifica cadeia, datas, **nome esperado**, restrições, usos e estado/revogação segundo a política. Um certificado válido de outra loja não serve; um certificado não prova que o serviço é honesto.
+
+Uma CRL assinada lista certificados revogados no seu âmbito. Confirma emissor, assinatura, âmbito e atualidade, incluindo `thisUpdate` e `nextUpdate`. A série só identifica o certificado com o emissor. Datas válidas não anulam revogação; ausência numa CRL antiga não prova aceitação. Define o que fazer se o estado exigido não puder ser obtido.
+
+[Contas RSA e verificações completas](/cadeiras/fsi/criptografia/#rsa-de-brinquedo).

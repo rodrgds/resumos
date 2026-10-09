@@ -1,0 +1,49 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import dhmitm from '../../fsi/dh-intermediario.mmd?raw';
+
+## Modos de cifra
+
+AES transforma blocos de 16 bytes; o modo define como proteger uma mensagem. XOR satisfaz $x\oplus x=0$ e $x\oplus0=x$.
+
+| Modo | Regra                                    | Requisito e limite                                                              |
+| ---- | ---------------------------------------- | ------------------------------------------------------------------------------- |
+| ECB  | $C_i=E_K(P_i)$                           | Blocos iguais sob a mesma chave dão cifras iguais, revelando padrões.           |
+| CBC  | $C_i=E_K(P_i\oplus C_{i-1})$, $C_0=IV$   | IV imprevisível e blocos completos; não autentica sozinho.                      |
+| CTR  | $C_i=P_i\oplus E_K(\mathrm{contador}_i)$ | Nenhum bloco de contador pode repetir sob a mesma chave; não autentica sozinho. |
+
+$P_i$ é um bloco em claro, $C_i$ a cifra, $K$ a chave e $E_K$ a cifra de bloco. Em CBC, decifra com $P_i=D_K(C_i)\oplus C_{i-1}$: o primeiro usa IV, os seguintes a cifra anterior.
+
+PKCS#7, com blocos de 16 bytes, acrescenta $k$ bytes de valor $k$: 14 bytes recebem `02 02`; 16 recebem dezasseis bytes de valor 16. Ao remover, valida $1\le k\le16$ e todos os últimos $k$ bytes. Preenchimento não autentica. CTR usa só os bytes necessários, sem este preenchimento.
+
+## Reutilização e autenticidade
+
+Se $C_1=P_1\oplus S$ e $C_2=P_2\oplus S$:
+
+$$C_1\oplus C_2=P_1\oplus P_2,\qquad P_2=C_2\oplus C_1\oplus P_1.$$
+
+Conhecer uma mensagem e as duas cifras permite recuperar a outra. Em CTR, inícios diferentes não bastam se os intervalos se sobrepõem, como `10,11,12,13` e `12,13,14`. Impede também repetição por overflow.
+
+O one-time pad só tem confidencialidade perfeita com chave uniforme, secreta, tão longa como a mensagem e usada uma única vez.
+
+**AEAD** protege confidencialidade do conteúdo e integridade do conteúdo e dados associados. Estes últimos ficam visíveis. Usa construções analisadas, como AES-GCM ou ChaCha20-Poly1305, e cumpre os requisitos de nonce. Em GCM, repeti-lo com a mesma chave compromete segurança. Rejeita etiquetas inválidas antes de interpretar o conteúdo.
+
+Uma mensagem antiga pode manter etiqueta válida. Contra replay, autentica sequência ou desafio e mantém estado para rejeitar repetições, tolerando a reordenação prevista pelo protocolo.
+
+## Diffie-Hellman e autenticação
+
+Com parâmetros públicos $p,g$, Ana escolhe expoente privado $a$ e envia $A=g^a\bmod p$; Bruno escolhe $b$ e envia $B=g^b\bmod p$. Ambos obtêm:
+
+$$B^a\equiv A^b\equiv g^{ab}\pmod p.$$
+
+Exemplo inseguro de estudo: $p=23,g=5,a=6,b=15$ dá $A=8,B=19$ e segredo 2. Um protocolo real valida parâmetros/valores e deriva chaves adequadas a partir do segredo.
+
+<Mermaid
+  source={dhmitm}
+  alt="Sem autenticação, um intermediário substitui valores públicos e estabelece um segredo com Ana e outro com Bruno, retransmitindo as mensagens."
+/>
+
+DH sozinho não prova a identidade. Autentica a troca e o seu contexto com assinaturas/certificados ou segredo prévio, conforme um protocolo analisado.
+
+Chaves efémeras corretamente usadas e apagadas podem dar **sigilo futuro**: roubar mais tarde a chave de autenticação duradoura não revela sessões antigas gravadas. Não protege o segredo efémero da própria sessão se este foi comprometido.
+
+[Seguir CBC e DH](/cadeiras/fsi/modos-protocolos/#ecb-cbc-e-ctr).
