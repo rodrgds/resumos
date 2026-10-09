@@ -230,7 +230,29 @@ import AutomataLab from '../../../components/AutomataLab.astro';
 
 Os identificadores disponíveis são `suffix-ab`, `modulo-three`, `modulo-five`, `overlap-eleven`, `nfa-suffix-01`, `nfa-third-last`, `epsilon-a-star-b-star` e `epsilon-ends-b`. `modulo-three` e `modulo-five` são Moore; `overlap-eleven` é Mealy. O editor admite até 12 estados, 8 símbolos no alfabeto e 128 símbolos de entrada. Moore inclui a saída do estado inicial, mesmo para a entrada vazia; Mealy produz uma saída por transição. Também admite NFA e NFA com transições ε, incluindo transições parciais e vários destinos para o mesmo símbolo. O fecho-ε aplica-se antes e depois de cada símbolo consumido.
 
-Em Resolver exercício, Verificar máquina compara com a referência por exploração de todos os pares de estados alcançáveis. Para DFA, compara aceitação; para Moore e Mealy, compara as sequências de saída. Esta verificação é exata para máquinas completas do mesmo modelo e alfabeto, incluindo a entrada vazia, e dá uma palavra testemunha quando diferem. Para NFA, compara pares de subconjuntos alcançáveis, com um máximo de 10 000 pares. Se atingir esse limite, apresenta um resultado inconclusivo, sem declarar equivalência. Os exemplos de entrada mostrados não são a base da prova de equivalência. Não há simulação de PDA ou máquinas de Turing. Sem JavaScript, o laboratório não desenha a máquina, por isso inclui o diagrama ou a tabela na lição.
+Em Resolver exercício, Verificar máquina compara com a referência por exploração de todos os pares de estados alcançáveis. Para DFA, compara aceitação; para Moore e Mealy, compara as sequências de saída. Esta verificação é exata para máquinas completas do mesmo modelo e alfabeto, incluindo a entrada vazia, e dá uma palavra testemunha quando diferem. Para NFA, compara pares de subconjuntos alcançáveis, com um máximo de 10 000 pares. Se atingir esse limite, apresenta um resultado inconclusivo, sem declarar equivalência. Os exemplos de entrada mostrados não são a base da prova de equivalência. Sem JavaScript, o laboratório não desenha a máquina, por isso inclui o diagrama ou a tabela na lição.
+
+`PdaLab` permite editar autómatos de pilha não determinísticos, seguir os ramos da pesquisa e observar a pilha:
+
+```mdx
+import PdaLab from '../../../components/PdaLab.astro';
+
+<PdaLab preset="equal-count" examples={['equal-count', 'even-palindrome']} />
+```
+
+Os exemplos são `equal-count` ($a^n b^n$), `double-count` ($a^n b^{2n}$) e `even-palindrome`. Inclui o `preset` na lista `examples`. A descrição declara estados, alfabetos, estado e símbolo inicial da pilha, finais e regras `origem entrada topo -> destino substituição`. O topo fica à esquerda; cada regra substitui um símbolo concreto do topo. ε na entrada não consome um símbolo; ε na substituição retira o topo. Não há transições a partir de uma pilha vazia.
+
+A aceitação por estado final ou pilha vazia exige sempre consumir toda a entrada. Mudar o seletor não converte a máquina para preservar a linguagem. A pesquisa por níveis visita cada configuração uma vez e aceita se encontrar um ramo aceitante. Rejeita apenas quando esgota a pesquisa; atingir 128 transições por ramo, 96 símbolos na pilha ou 5 000 configurações deixa o resultado inconclusivo. A entrada admite 80 símbolos. Verificar exemplos testa casos finitos, sem provar equivalência. Sem JavaScript, fica o percurso do exemplo inicial.
+
+`TuringLab` permite editar uma máquina de Turing determinística de uma fita bilateral, com alfabetos, estados, transições, cabeça e células visíveis:
+
+```mdx
+import TuringLab from '../../../components/TuringLab.astro';
+
+<TuringLab />
+```
+
+O componente oferece exemplos fixos de $a^n b^n$, incremento binário e percurso de brancos, além de uma máquina vazia. Ainda não recebe exemplos por props. `B` é o branco, fora do alfabeto de entrada; os movimentos são `L` e `R`. Um estado final aceita e não tem saídas; a falta de uma transição rejeita. A execução para com resultado inconclusivo aos 2 000 passos ou ao tentar sair das posições −256 a 256. Esse limite não prova que a máquina nunca termina. O editor admite 16 estados, 128 regras e 128 símbolos de entrada. A janela acompanha a cabeça e mostra nove células, sem confundir a janela com o tamanho da fita. Inclui a tabela ou um percurso estático na lição para impressão e leitura sem JavaScript.
 
 `GrammarLab` recebe uma lista não vazia de gramáticas. Define o nome, as produções, a palavra inicial e os casos públicos:
 
