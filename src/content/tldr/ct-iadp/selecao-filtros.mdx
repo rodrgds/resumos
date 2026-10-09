@@ -1,0 +1,36 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import vendas from '../../ct-iadp/vendas.csv?raw';
+
+## Ler e inspecionar
+
+`pd.read_csv("vendas.csv", sep=";", decimal=",")` distingue separador de campos de separador decimal. `dtype={"codigo": "string"}` conserva códigos como texto. `usecols` seleciona colunas; confere formatos ao interpretar datas.
+
+`head`, `tail`, `shape`, `columns`, `index` e `dtypes` permitem conferir a tabela. `info()` apresenta tipos e contagens não nulas, devolvendo `None`. `to_csv(..., index=False)` omite o índice da exportação.
+
+## Rótulos e posições
+
+| Seleção               | Expressão        | Limites                             |
+| --------------------- | ---------------- | ----------------------------------- |
+| Linha com rótulo 20   | `df.loc[20]`     | Procura o rótulo                    |
+| Segunda linha         | `df.iloc[1]`     | Conta posições desde zero           |
+| Primeiras duas linhas | `df.iloc[:2]`    | Exclui posição 2                    |
+| Rótulos 10 até 20     | `df.loc[10:20]`  | Inclui ambos os extremos existentes |
+| Célula por rótulos    | `df.at[20, "x"]` | Seleção escalar                     |
+| Célula por posições   | `df.iat[1, 0]`   | Seleção escalar                     |
+
+`df["x"]` é uma Series; `df[["x"]]` um DataFrame.
+
+## Máscaras e atribuição
+
+<CodePlayground
+  language="python"
+  title="Filtrar Braga"
+  files={{ 'vendas.csv': vendas }}
+  code={
+    'import pandas as pd\ndf = pd.read_csv("vendas.csv", sep=";", decimal=",")\nm = (df["cidade"] == "Braga") & (df["quantidade"] >= 5)\nprint(df.loc[m, ["produto", "quantidade"]].to_string(index=False))'
+  }
+/>
+
+O resultado tem pão com quantidade 5. Em Series, combina comparações entre parênteses com `&`, `|` e `~`; `and` e `or` dão ambiguidade. `between(2, 5)` inclui ambos os extremos por defeito; `isin(lista)` testa pertença.
+
+Uma máscara deve corresponder à forma e aos rótulos da tabela. Para alterar o original, usa uma atribuição única: `df.loc[m, "quantidade"] = valor`. Evita atribuição encadeada como `df[m]["quantidade"] = valor`. Para trabalhar numa tabela independente, usa `df.loc[m].copy()`.

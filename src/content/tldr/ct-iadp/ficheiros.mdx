@@ -1,0 +1,37 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import vendas from '../../ct-iadp/vendas-ficheiros.csv?raw';
+
+## Abertura e leitura
+
+`with open(caminho, encoding="utf-8") as f:` fecha o ficheiro ao sair, mesmo perante exceções. Caminhos relativos partem do diretório de trabalho.
+
+| Modo | Efeito                            |
+| ---- | --------------------------------- |
+| `r`  | Lê um ficheiro existente          |
+| `w`  | Cria ou substitui todo o conteúdo |
+| `a`  | Acrescenta ao fim                 |
+| `x`  | Cria, falhando se já existir      |
+| `rb` | Lê bytes                          |
+
+`read()` lê tudo; `read(n)` lê até `n` caracteres em texto ou bytes em binário. `readline()` devolve `""` no fim; uma linha vazia pode ser `"\n"`. Iterar o ficheiro permite processar sem guardar todas as linhas. `write` não acrescenta uma mudança de linha automaticamente.
+
+## CSV e conversões
+
+<CodePlayground
+  language="python"
+  title="Somar vendas do CSV"
+  files={{ 'vendas.csv': vendas }}
+  code={
+    'import csv\nwith open("vendas.csv", newline="", encoding="utf-8") as f:\n    total = sum(int(l["quantidade"]) * float(l["preco"]) for l in csv.DictReader(f))\nprint(f"{total:.2f} euros")'
+  }
+/>
+
+A saída é `6.60 euros`. `DictReader` usa o cabeçalho, mas cada campo continua texto. O módulo `csv` trata separadores dentro de campos entre aspas; `split(",")` não. Usa `delimiter=";"` se necessário e `newline=""` para o módulo tratar as mudanças de linha.
+
+Confere campos, tipos e unidades. Antes de converter um campo vazio, define a representação de ausência. Ao escrever com `csv.writer`, os números passam a texto e os tipos terão de ser recuperados na leitura.
+
+## Processamento sequencial
+
+Para a média, acumula soma e contagem por linha e divide só se a contagem for positiva. O denominador conta observações válidas, segundo a política definida para linhas vazias.
+
+`zip` termina no ficheiro mais curto. `zip_longest(a, b, fillvalue="0")` continua até ambos acabarem. No problema que manda usar zero após o fim de uma entrada, os pares `(20, 100)`, `(40, 10)` e `(0, 80)` dão médias 60, 25 e 40. Esta substituição por zero pertence ao enunciado, não é uma regra geral para dados em falta. O destino deve ser diferente das entradas.

@@ -1,0 +1,39 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import vendas from '../../ct-iadp/vendas-completa.csv?raw';
+import precos from '../../ct-iadp/precos-completa.csv?raw';
+
+## Contrato de uma análise
+
+Cada linha é uma venda, com identificador conhecido e único, cidade, produto e quantidade positiva. O catálogo tem um preço conhecido e não negativo por produto. Quantidades negativas exigiriam outra regra, como devoluções.
+
+1. Importa com separadores, tipos e unidades explícitos.
+2. Valida identificadores, colunas essenciais e unicidade do catálogo.
+3. Faz junção à esquerda muitos-para-um; confere linhas e preços sem correspondência.
+4. Calcula quantidade vezes preço e agrega por cidade.
+5. Confere a conservação dos totais e interpreta a unidade do resultado.
+
+## Relatório reproduzível
+
+<CodePlayground
+  language="python"
+  title="Relacionar e agregar vendas"
+  files={{ 'vendas.csv': vendas, 'precos.csv': precos }}
+  code={
+    'import pandas as pd\nv = pd.read_csv("vendas.csv", sep=";")\np = pd.read_csv("precos.csv", sep=";", decimal=",")\nif v[["venda", "cidade", "produto", "quantidade"]].isna().any().any() or not v["venda"].is_unique or not (v["quantidade"] > 0).all():\n    raise ValueError("Vendas inválidas")\nif p[["produto", "preco"]].isna().any().any() or not p["produto"].is_unique or not (p["preco"] >= 0).all():\n    raise ValueError("Catálogo inválido")\nd = v.merge(p, on="produto", how="left", validate="many_to_one")\nif len(d) != len(v) or d["preco"].isna().any():\n    raise ValueError("Junção incompleta")\nd["total"] = d["quantidade"] * d["preco"]\nr = d.groupby("cidade", as_index=False).agg(unidades=("quantidade", "sum"), faturacao=("total", "sum"))\nr["preco_medio"] = r["faturacao"] / r["unidades"]\nprint(r.round(4).to_string(index=False))\nprint("Total:", round(d["total"].sum(), 2))'
+  }
+/>
+
+| Cidade | Unidades | Faturação, euros | Preço médio, euros/unidade |
+| ------ | -------- | ---------------- | -------------------------- |
+| Braga  | 9        | 15,50            | 1,7222                     |
+| Porto  | 5        | 6,60             | 1,3200                     |
+
+O total é 22,10 euros para 14 unidades. O preço médio global é `22,10 / 14 = 1,5786` euros por unidade, sem calcular a média simples das médias das cidades.
+
+## Auditar o processamento
+
+- Duplicar A no catálogo duplicaria as suas duas vendas: sete unidades e 10,50 euros adicionais. A junção sem validação teria seis linhas e faturação de 32,60 euros.
+- Um produto sem preço deve ficar detetável na junção à esquerda. Preencher com zero inventaria uma venda gratuita; uma junção interna esconderia a venda.
+- Confere a soma da faturação antes e depois de agrupar, com tolerância adequada ao `float`. Isto deteta perdas ou duplicações, sem provar que os preços reais estão corretos.
+
+[Análise completa e alterações ao catálogo](/cadeiras/ct-iadp/analise-completa/).

@@ -1,0 +1,51 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import Typst from '../../../components/Typst.astro';
+import eixos from '../../ct-iadp/numpy-eixos.typ?raw';
+
+## Arrays, tipos e forma
+
+Um array tem elementos de um tipo comum. `ndim` conta dimensões, `shape` dá os seus tamanhos e `size` conta elementos. Um array `(2, 3)` de `float64` guarda seis elementos de oito bytes, ou 48 bytes de dados, sem contar o objeto.
+
+- `np.array([1, 2.5])` promove os elementos a reais. Atribuir 2.5 a um array inteiro não promove automaticamente o tipo.
+- Inteiros de tamanho fixo podem transbordar. `astype(float)` converte; `itemsize` e `nbytes` medem bytes por elemento e dos dados.
+- `zeros` e `ones` preenchem uma forma; `empty` não inicializa valores úteis. `eye(n)` cria a identidade.
+- `arange` exclui o extremo final; `linspace` escolhe um número de pontos, normalmente incluindo os dois extremos.
+- `genfromtxt` lê dados numéricos com separador e cabeçalho explícitos. Confere forma e ausências depois da leitura.
+
+## Operações e eixos
+
+<CodePlayground
+  language="python"
+  title="Reduzir o eixo certo"
+  code={
+    'import numpy as np\na = np.array([[2, 3, 4], [5, 1, 2]])\nprint(a.sum(axis=0))\nprint(a.sum(axis=1))'
+  }
+/>
+
+Lojas em linhas, produtos em colunas: `axis=0` reduz lojas e dá `[7, 4, 6]`, forma `(3,)`; `axis=1` reduz produtos e dá `[9, 8]`, forma `(2,)`. Sem `keepdims`, o eixo reduzido desaparece.
+
+<Typst
+  source={eixos}
+  format="svg"
+  alt="Na matriz de duas lojas e três produtos, axis=0 soma verticalmente para [7, 4, 6]; axis=1 soma horizontalmente para [9, 8]."
+/>
+
+`a[1, 0]` é 5; `a[:, 1]` é a coluna `[3, 1]`. Comparações produzem máscaras, como `a[a >= 4]`.
+
+`*` opera elemento a elemento. `@` calcula produto escalar de vetores de igual comprimento ou produto matricial de `(m, k)` por `(k, n)`, dando `(m, n)`. Para `A @ x = b`, usa `np.linalg.solve(A, b)`, exigindo uma matriz quadrada não singular.
+
+## Broadcasting e alteração
+
+As dimensões, comparadas da direita para a esquerda, devem ser iguais ou uma delas ser 1. `(2, 3) * (3,)` aplica preços por coluna. Um fator por linha precisa de `(2, 1)`, não `(2,)`.
+
+`reshape` conserva o número de elementos; `reshape(-1, 2)` deduz uma dimensão. `.T` transpõe uma matriz 2D. `flatten` copia para uma dimensão; `ravel` pode devolver uma vista.
+
+Um slice básico pode partilhar dados: `parte = a[:2]` e alterar `parte` pode alterar `a`. `.copy()` separa-os; seleção por máscara ou índices avançados produz cópia. Para alterar o original, escreve `a[mascara] = valor`.
+
+## Reduções e aleatoriedade
+
+- `mean`, `sum`, `min` e `max` reduzem valores; `argmin` e `argmax` dão posições, sem eixo no array achatado. `cumsum` e `cumprod` calculam prefixos, achatando se omitires o eixo.
+- NumPy usa `ddof=0` em `var` e `std`; usa `ddof=1` para a convenção amostral. Funções `nan...` exprimem a decisão de ignorar NaN.
+- `sqrt` real exige valores não negativos e `log` valores positivos. `isfinite` exclui NaN e infinitos.
+- `rng = np.random.default_rng(12)` fixa o estado inicial. A mesma versão e sequência de chamadas reproduzem a simulação, sem garantir frequências exatas.
+- `rng.random(n)` dá uniformes em `[0, 1)`; `integers(1, 7, size=n)` dá 1 a 6; `normal(mu, sigma, size=n)` usa média e desvio padrão indicados. `permutation` cria outra sequência; `shuffle` altera a fornecida.

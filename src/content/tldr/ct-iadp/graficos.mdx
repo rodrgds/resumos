@@ -1,0 +1,50 @@
+import Typst from '../../../components/Typst.astro';
+import unidades from '../../ct-iadp/unidades-cidade.typ?raw';
+
+## Escolher pela pergunta
+
+| Pergunta                          | Gráfico          | Unidade visual                 |
+| --------------------------------- | ---------------- | ------------------------------ |
+| Comparar cidades                  | Barras           | Uma barra por categoria        |
+| Seguir evolução temporal          | Linha            | Pontos em datas ordenadas      |
+| Ver a distribuição de quantidades | Histograma       | Frequência por intervalo       |
+| Relacionar quantidade e total     | Dispersão        | Um ponto por venda             |
+| Comparar dispersão e mediana      | Caixa de bigodes | Quartis e observações extremas |
+
+<Typst
+  source={unidades}
+  format="svg"
+  alt="Barras com origem zero: Porto tem cinco unidades, Braga nove; a razão dos comprimentos é 1,8."
+/>
+
+Braga tem 9 unidades, Porto 5, uma diferença de 4. São unidades somadas, não números de vendas. Nas barras, uma origem em zero conserva a proporcionalidade dos comprimentos; começar em 4 exageraria a diferença.
+
+## Figura, dados e eixos
+
+```python
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+barras = ax.bar(["Porto", "Braga"], [5, 9])
+ax.bar_label(barras)
+ax.set_xlabel("Cidade")
+ax.set_ylabel("Unidades vendidas")
+fig.tight_layout()
+plt.show()
+```
+
+`Figure` é a figura e `Axes` o gráfico onde chamas `bar`, `plot`, `hist` ou `scatter`. Métodos pandas como `totais.plot.bar()` devolvem um `Axes`. Uma legenda identifica séries; os eixos precisam de nomes e unidades. `savefig(..., bbox_inches="tight")` exporta após definir o layout.
+
+## Limites e interpretação
+
+- Histograma não é gráfico de categorias. Para `[2, 3, 5, 4, 3, 2]` e limites `[0, 2, 4, 6]`, as frequências são 0, 4 e 2. Os extremos direitos ficam excluídos, salvo o último, que inclui 6.
+- Linhas exigem ordem temporal. Um dia sem observação não é automaticamente zero; define como representar falhas.
+- Associação num gráfico de dispersão não prova causalidade. Se total é quantidade vezes preço, parte da relação vem dessa definição.
+- Barras e áreas empilhadas mostram somas de componentes. Comparar segmentos sem uma origem comum pode ser difícil.
+- Na caixa habitual de Matplotlib, a caixa cobre Q1 a Q3 e os bigodes alcançam observações até 1,5 amplitudes interquartis para além da caixa. Pontos exteriores não são necessariamente erros.
+- KDE estima densidade, não contagens; probabilidades são áreas e a largura de banda altera o alisamento. Um gráfico circular exige valores não negativos e total positivo.
+
+## Janelas móveis
+
+`pd.Series([2., 4., 6.]).rolling(3).mean()` dá duas ausências e 4. A janela completa ainda não existe nas primeiras posições. Uma janela de 20 deixa inicialmente 19 ausências por defeito.
+
+Uma banda de média móvel mais ou menos dois desvios descreve dispersão local. Não é automaticamente um intervalo de confiança nem uma previsão. `cumsum` acumula incrementos; uma trajetória simulada não representa vendas medidas.

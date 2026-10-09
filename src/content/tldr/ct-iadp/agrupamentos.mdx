@@ -1,0 +1,44 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import vendas from '../../ct-iadp/vendas.csv?raw';
+
+## Agregar, transformar ou filtrar
+
+| Método      | Resultado                                |
+| ----------- | ---------------------------------------- |
+| `agg`       | Um resumo por grupo                      |
+| `transform` | Um valor associado a cada linha original |
+| `filter`    | Conserva ou remove grupos completos      |
+
+`groupby("cidade")` reúne linhas com a mesma chave; várias chaves criam grupos por combinação. `as_index=False` conserva as chaves como colunas do resumo.
+
+<CodePlayground
+  language="python"
+  title="Resumo por cidade"
+  files={{ 'vendas.csv': vendas }}
+  code={
+    'import pandas as pd\nv = pd.read_csv("vendas.csv", sep=";", decimal=",")\nv["total"] = v["quantidade"] * v["preco"]\nr = v.groupby("cidade", as_index=False).agg(unidades=("quantidade", "sum"), faturacao=("total", "sum"), vendas=("produto", "size"))\nprint(r.round(2).to_string(index=False))'
+  }
+/>
+
+Porto tem 5 unidades, 6,60 euros e duas vendas; Braga tem 9 unidades, 15,50 euros e duas vendas. Calcula quantidade vezes preço antes de somar faturação. Os totais dos grupos devem conservar os totais de entrada.
+
+## Contar e conservar ausências
+
+- `size` conta linhas; `count` conta valores conhecidos de uma coluna.
+- `groupby(..., dropna=False)` conserva chaves ausentes como grupo. Por defeito, podem ficar excluídas.
+- `.sum(min_count=1)` exige pelo menos um valor conhecido, evitando zero num grupo totalmente ausente. Um total dos valores conhecidos pode continuar incompleto.
+
+## Proporções e grupos completos
+
+```python
+total = v.groupby("cidade")["quantidade"].transform("sum")
+v["proporcao"] = v["quantidade"] / total
+```
+
+A transformação mantém quatro linhas e repete o total da cidade: 5 no Porto, 9 em Braga. As proporções são `2/5`, `3/5`, `5/9` e `4/9`; exigem denominadores não nulos e dados adequados à interpretação.
+
+`v.groupby("cidade").filter(lambda g: g["quantidade"].sum() >= 9)` conserva as duas vendas de Braga. O teste é sobre o grupo, não sobre cada venda.
+
+## Tabela dinâmica
+
+`v.pivot_table(index="cidade", columns="produto", values="quantidade", aggfunc="sum")` soma por cidade-produto e admite pares repetidos. A agregação por defeito é média, por isso declara a pretendida. `fill_value=0` só é adequado quando uma combinação ausente significa nenhuma venda, sem esconder quantidades desconhecidas.

@@ -1,0 +1,31 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+## Colunas e alinhamento
+
+- `df["total"] = df["quantidade"] * df["preco"]` calcula por linha, alinhando índices. Um escalar preenche todas as linhas; uma Series alinha rótulos.
+- `assign(total=...)` devolve outra tabela. `rename(columns={...})` muda nomes e `drop(columns=[...])` remove colunas, devolvendo outra tabela por defeito.
+- `insert(posicao, nome, valores)` altera a tabela e devolve `None`; uma lista deve ter o comprimento das linhas. `pop(nome)` remove e devolve a Series; `del df[nome]` remove sem devolver.
+- `df[["b", "a"]]` reordena colunas. `drop(index=[rotulo])` remove linhas por rótulo; `reindex(rotulos)` escolhe rótulos e ordem, criando ausências para os inexistentes.
+
+## Correspondências e funções
+
+`serie.map(dicionario)` cria ausências para valores sem correspondência. `serie.apply(f)` chama `f` por valor; `df.apply(f, axis=1)` chama por linha e `axis=0` por coluna. Prefere operações vetorizadas quando já exprimem o cálculo.
+
+## Ausência não é zero
+
+<CodePlayground
+  language="python"
+  title="Média conhecida e preenchida"
+  code={
+    'import pandas as pd\ns = pd.Series([2, None, 6], dtype="Float64")\nprint(s.isna().to_list())\nprint(s.mean())\nprint(round(s.fillna(0).mean(), 4))\nvazia = pd.Series([None, None], dtype="Float64")\ntotal = vazia.sum(min_count=1)\nprint("em falta (pd.NA)" if pd.isna(total) else total)'
+  }
+/>
+
+A máscara é `[False, True, False]`. A média conhecida é 4; preencher com zero muda-a para `8/3`, cerca de 2,6667. Na última soma não há qualquer valor conhecido: `min_count=1` conserva a ausência. A impressão direta de `pd.NA` seria `<NA>`, que significa valor em falta.
+
+- Usa `isna` ou `notna`, nunca igualdade com NaN. `None`, NaN, `pd.NA` e `NaT` representam ausência conforme o tipo.
+- `dropna(subset=[...])` remove observações; `fillna` introduz valores segundo uma hipótese. Preencher pela média reduz artificialmente a dispersão.
+- `ffill` e `bfill` exigem uma ordem e uma continuidade justificadas. Não propagues preços entre produtos.
+- Um `pd.NA` isolado não tem um valor lógico definido. Decide o destino das condições incertas antes de filtrar.
+
+`duplicated(subset=["id"])` verifica repetições de uma chave. Duas linhas com os mesmos valores podem ser duas vendas reais: só elimina duplicados segundo a identidade da observação e confere os totais antes e depois.

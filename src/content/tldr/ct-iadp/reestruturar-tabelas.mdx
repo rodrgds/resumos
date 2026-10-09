@@ -1,0 +1,38 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import longa from '../../ct-iadp/longa.csv?raw';
+
+## Formatos longo e largo
+
+No formato **longo**, produto é um valor numa coluna e quantidade a medida noutra. No **largo**, cada produto tem uma coluna. Define os identificadores e a medida antes de mudar a forma.
+
+<CodePlayground
+  language="python"
+  title="Deslocar produto para as colunas"
+  files={{ 'longa.csv': longa }}
+  code={
+    'import pandas as pd\nl = pd.read_csv("longa.csv", sep=";")\nr = l.pivot(index="cidade", columns="produto", values="quantidade")\nprint(r.to_string())'
+  }
+/>
+
+| Cidade, índice | leite | pão |
+| -------------- | ----- | --- |
+| Braga          | 1     | 5   |
+| Porto          | 3     | 2   |
+
+A observação `(Braga, pão, 5)` passa para a célula Braga-pão. Há duas linhas e duas colunas de medidas, conservando o total 11.
+
+## Escolher a operação
+
+- `pivot(index=..., columns=..., values=...)` exige um único valor por par de identificadores. Repetições dão erro; usa `pivot_table` com agregação explícita se queres reunir vendas.
+- `melt` conserva `id_vars` e converte as colunas `value_vars` em pares variável-valor.
+- `stack` move um nível das colunas para o índice; `unstack` move um nível do índice para colunas. Podem criar ou usar um MultiIndex.
+- `.T` só troca linhas e colunas. `rename` muda nomes e `merge` relaciona tabelas, sem substituir estas operações.
+
+```python
+l2 = r.reset_index().melt(
+    id_vars="cidade", value_vars=["pão", "leite"],
+    var_name="produto", value_name="quantidade",
+)
+```
+
+Cada cidade origina duas linhas, logo quatro no total. Uma célula ausente continua a representar uma medida desconhecida ou combinação não observada segundo o contexto; não a substituas por zero automaticamente. Confere uma célula, o número de medidas e os totais após reestruturar.

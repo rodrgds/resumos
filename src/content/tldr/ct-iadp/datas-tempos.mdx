@@ -1,0 +1,48 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+## Datas, instantes e durações
+
+| Objeto ou operação                | Significado                                |
+| --------------------------------- | ------------------------------------------ |
+| `date` / `datetime`               | Data civil / data e hora                   |
+| `timedelta`                       | Duração em dias, segundos e microssegundos |
+| `strptime` / `strftime`           | Ler texto / formatar segundo um padrão     |
+| `calendar.weekday`                | Segunda-feira é zero                       |
+| `time.gmtime` / `localtime`       | Segundos desde a época em UTC / hora local |
+| `calendar.timegm` / `time.mktime` | Conversão inversa UTC / local              |
+
+`%d/%m/%Y %H:%M` lê dia, mês, ano, hora e minutos. Para uma duração completa, usa `total_seconds()`; `.seconds` só guarda a parte restante após contabilizar dias. Mede duração de código com `perf_counter`, pois o relógio civil pode ser ajustado.
+
+## Calendário não é duração fixa
+
+<CodePlayground
+  language="python"
+  title="Comparar dias e meses"
+  code={
+    'from datetime import date, timedelta\nfrom dateutil.relativedelta import relativedelta\nd = date(2026, 1, 31)\nprint(d + timedelta(days=30))\nprint(d + relativedelta(months=1))'
+  }
+/>
+
+As datas são 2 de março e 28 de fevereiro. `months=1` acrescenta um mês, ajustando ao último dia válido; `month=1` define janeiro. Repetir incrementos pode perder o dia original, pelo que somar um mês duas vezes pode diferir de somar dois de uma vez.
+
+Num calendário mensal, zeros de `monthdayscalendar` são dias fora do mês. `itermonthdates` devolve datas completas e requer filtrar o mês quando necessário.
+
+## Conversão e agregação pandas
+
+- `pd.to_datetime(s, format="%d/%m/%Y", errors="coerce")` resolve a convenção dia-mês e transforma datas inválidas em `NaT`, sem as corrigir. Conta essas ausências antes de remover linhas.
+- `.dt.year`, `.dt.month` e `.dt.dayofweek` extraem componentes; `.dt.strftime` devolve texto.
+- Depois de definir um índice temporal ordenado, `resample("D").sum(min_count=1)` agrega dias, conservando ausência nos intervalos sem valores conhecidos.
+- `rolling(3)` usa três observações, não necessariamente três dias. `date_range(..., freq="D")` cria dias; `Period(..., freq="M")` representa um mês inteiro.
+
+## Fusos e dia civil
+
+Uma hora sem fuso, naive, não determina um instante mundial. `tz_localize` interpreta a hora local; `tz_convert` muda a representação do mesmo instante e exige fuso já definido. Para offsets conhecidos, `to_datetime(..., utc=True)` normaliza para UTC.
+
+Em Lisboa, a partir de 24/10/2026 às 16:00:
+
+| Incremento              | Hora em 25/10 | Tempo decorrido |
+| ----------------------- | ------------- | --------------- |
+| `pd.Timedelta(days=1)`  | 15:00, UTC+0  | 24 horas        |
+| `pd.DateOffset(days=1)` | 16:00, UTC+0  | 25 horas        |
+
+Escolhe duração para medir tempo decorrido e incremento civil para manter a hora de um compromisso. Horas locais ambíguas ou inexistentes nas mudanças de hora exigem uma política própria.

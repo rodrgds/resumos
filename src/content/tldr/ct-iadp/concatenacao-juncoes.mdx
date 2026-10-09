@@ -1,0 +1,37 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import vendas from '../../ct-iadp/vendas-codigos.csv?raw';
+import precos from '../../ct-iadp/precos.csv?raw';
+
+## Concatenar ou relacionar
+
+| Pedido                   | Operação                    | Alinhamento        |
+| ------------------------ | --------------------------- | ------------------ |
+| Acrescentar vendas       | `pd.concat([a, b], axis=0)` | Colunas pelo nome  |
+| Acrescentar colunas      | `pd.concat([a, b], axis=1)` | Linhas pelo índice |
+| Associar preços a vendas | `a.merge(b, on="codigo")`   | Chave declarada    |
+
+`ignore_index=True` cria posições consecutivas. Colunas ou índices sem correspondência geram ausências; `join="inner"` conserva apenas o eixo comum. `keys` conserva a origem num MultiIndex e `verify_integrity=True` rejeita repetições no eixo concatenado, não numa coluna de identificadores. Usa `concat`, pois `DataFrame.append` foi removido.
+
+## Junção e cardinalidade
+
+<CodePlayground
+  language="python"
+  title="Conservar vendas sem preço"
+  files={{ 'vendas.csv': vendas, 'precos.csv': precos }}
+  code={
+    'import pandas as pd\nv = pd.read_csv("vendas.csv", sep=";")\np = pd.read_csv("precos.csv", sep=";", decimal=",")\nr = v.merge(p, on="codigo", how="left", validate="many_to_one", indicator=True)\nprint("vendas:", len(r))\nprint("sem preço:", r["preco"].isna().sum())'
+  }
+/>
+
+Ficam quatro vendas e uma sem preço, do produto C. `many_to_one` exige uma chave única no catálogo; várias vendas podem ter essa chave. `indicator` distingue `both`, `left_only` e `right_only` quando aplicável.
+
+| `how`            | Chaves conservadas                 |
+| ---------------- | ---------------------------------- |
+| `inner`          | Com correspondência nos dois lados |
+| `left` / `right` | Todas as do lado indicado          |
+| `outer`          | Todas as de ambos os lados         |
+| `cross`          | Todos os pares, sem chave          |
+
+Duas linhas de A à esquerda e três à direita produzem **seis pares**. Isto pode duplicar unidades e faturação mesmo com preços iguais. `validate` também aceita `one_to_one` e `one_to_many`; confere linhas, ausências e totais.
+
+`left_on` e `right_on` permitem nomes de chave diferentes; `suffixes` distingue colunas homónimas. `join` relaciona pelo índice, por exemplo `v.join(p.set_index("codigo"), on="codigo")`. pandas pode relacionar chaves nulas entre si, ao contrário do comportamento habitual de `NULL` em SQL.
