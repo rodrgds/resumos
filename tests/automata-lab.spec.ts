@@ -42,6 +42,21 @@ test('Moore emits the reset output before the output after each clock', () => {
   ]);
 });
 
+test('Moore modulo five preserves the invariant through both input symbols', () => {
+  const result = execute(presets['modulo-five'].machine, '1010');
+  expect(result.rows.map((row) => row.state)).toEqual([
+    'R0',
+    'R1',
+    'R2',
+    'R0',
+    'R0',
+  ]);
+  expect(result.outputs).toEqual(['1', '0', '0', '1', '1']);
+  expect(
+    compare(repairMachine('modulo-five'), presets['modulo-five'].machine),
+  ).toEqual({ equivalent: false, witness: '1001' });
+});
+
 test('Mealy emits on transitions and retains overlapping detections', () => {
   const machine = presets['overlap-eleven'].machine;
   expect(execute(machine, '').outputs).toEqual([]);
@@ -83,7 +98,12 @@ function renamed(machine: Machine): Machine {
 }
 
 test('product comparison ignores graph labels and returns a real shortest witness', () => {
-  for (const id of ['suffix-ab', 'modulo-three', 'overlap-eleven'] as const) {
+  for (const id of [
+    'suffix-ab',
+    'modulo-three',
+    'modulo-five',
+    'overlap-eleven',
+  ] as const) {
     const reference = presets[id].machine;
     expect(compare(renamed(reference), reference).equivalent).toBe(true);
     const altered = repairMachine(id);
@@ -146,9 +166,7 @@ test('build a DFA through native controls and run it on the keyboard', async ({
   ).toBeFocused();
   await lab.getByLabel('Nome do estado 2', { exact: true }).fill('prefixo');
   await page.keyboard.press('Tab');
-  await expect(
-    lab.getByLabel('prefixo final', { exact: true }),
-  ).toBeFocused();
+  await expect(lab.getByLabel('prefixo final', { exact: true })).toBeFocused();
   await lab
     .getByRole('combobox', { name: 'Máquina', exact: true })
     .selectOption('blank-dfa');
@@ -208,7 +226,7 @@ test('repair exercise checks equivalence and yields a witness before repair', as
   );
 });
 
-test('FSC simulator keeps Moore initial output distinct from Mealy output', async ({
+test('FSC exercises distinguish Moore and Mealy and grade a machine built from zero', async ({
   page,
 }) => {
   await page.goto('/cadeiras/fsc/maquinas-estados/');
@@ -224,5 +242,48 @@ test('FSC simulator keeps Moore initial output distinct from Mealy output', asyn
     .getByRole('combobox', { name: 'Máquina', exact: true })
     .selectOption('overlap-eleven');
   await lab.getByRole('button', { name: 'Executar', exact: true }).click();
-  await expect(lab.locator('[data-result]')).toContainText('Saídas: 0 · 1 · 1');
+  await expect(lab.locator('[data-result]')).toContainText(
+    'Saídas: 0 · 1 · 1 · 0 · 0 · 1',
+  );
+  await lab
+    .getByRole('combobox', { name: 'Máquina', exact: true })
+    .selectOption('modulo-five');
+  await lab.getByRole('button', { name: 'Executar', exact: true }).click();
+  await expect(lab.locator('[data-result]')).toContainText(
+    'Saídas: 1 · 0 · 0 · 1 · 1',
+  );
+  await lab.getByRole('button', { name: 'Resolver exercício' }).click();
+  await lab.getByRole('button', { name: 'Construir do zero' }).click();
+  await expect(
+    lab.getByRole('button', { name: 'Verificar máquina' }),
+  ).toBeDisabled();
+  await lab.getByLabel('Saída de q0', { exact: true }).fill('1');
+  for (let i = 0; i < 4; i++)
+    await lab
+      .getByRole('button', { name: 'Adicionar estado', exact: true })
+      .click();
+  for (let i = 0; i < 10; i++)
+    await lab
+      .getByRole('button', { name: 'Adicionar transição', exact: true })
+      .click();
+  const destinations = [
+    'q0',
+    'q1',
+    'q2',
+    'q3',
+    'q4',
+    'q0',
+    'q1',
+    'q2',
+    'q3',
+    'q4',
+  ];
+  for (let index = 0; index < destinations.length; index++)
+    await lab
+      .getByLabel(`Destino da transição ${index + 1}`, { exact: true })
+      .selectOption(destinations[index]);
+  await lab.getByRole('button', { name: 'Verificar máquina' }).click();
+  await expect(lab.locator('[data-verification]')).toContainText(
+    'Equivalência confirmada para todas as entradas',
+  );
 });

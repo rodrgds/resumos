@@ -1,5 +1,6 @@
 import type { Machine, Model } from './machine';
-export type PresetId = 'suffix-ab' | 'modulo-three' | 'overlap-eleven';
+export type PresetId =
+  'suffix-ab' | 'modulo-three' | 'modulo-five' | 'overlap-eleven';
 export interface Preset {
   title: string;
   input: string;
@@ -60,9 +61,39 @@ export const presets: Record<PresetId, Preset> = {
       ],
     },
   },
+  'modulo-five': {
+    title: 'Moore: resto módulo 5',
+    input: '1010',
+    task: 'Constrói ou corrige uma Moore que produz 1 exatamente quando o prefixo binário é múltiplo de 5. O prefixo vazio vale zero.',
+    cases: ['', '0', '1', '101', '1010', '1001', '1111'],
+    machine: {
+      model: 'moore',
+      alphabet: ['0', '1'],
+      initial: 'R0',
+      states: [
+        state('R0', false, '1'),
+        state('R1'),
+        state('R2'),
+        state('R3'),
+        state('R4'),
+      ],
+      transitions: [
+        transition('R0', '0', 'R0'),
+        transition('R0', '1', 'R1'),
+        transition('R1', '0', 'R2'),
+        transition('R1', '1', 'R3'),
+        transition('R2', '0', 'R4'),
+        transition('R2', '1', 'R0'),
+        transition('R3', '0', 'R1'),
+        transition('R3', '1', 'R2'),
+        transition('R4', '0', 'R3'),
+        transition('R4', '1', 'R4'),
+      ],
+    },
+  },
   'overlap-eleven': {
     title: 'Mealy: detetar 11 com sobreposição',
-    input: '111',
+    input: '111011',
     task: 'Corrige a Mealy para produzir 1 em cada bit que completa 11, incluindo ocorrências sobrepostas.',
     cases: ['', '0', '1', '11', '111', '11011'],
     machine: {

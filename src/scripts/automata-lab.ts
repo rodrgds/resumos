@@ -212,6 +212,7 @@ function setup(root: HTMLElement) {
     element('[data-task]').textContent =
       exercise && preset ? presets[preset].task : '';
     button('verify').hidden = !exercise;
+    button('start-exercise').hidden = !exercise;
     element('[data-solution]').hidden = !exercise;
     element('[data-verification]').hidden = true;
     renderExecution();
@@ -357,6 +358,11 @@ function setup(root: HTMLElement) {
     if (action === 'exercise' && preset) {
       machine = repairMachine(preset);
       exercise = true;
+    }
+    if (action === 'start-exercise' && preset) {
+      machine = blankMachine(presets[preset].machine.model);
+      machine.alphabet = [...presets[preset].machine.alphabet];
+      element<HTMLDetailsElement>('.automata-editor').open = true;
     }
     if (action === 'add-state' && machine.states.length < limits.states) {
       let id: string;

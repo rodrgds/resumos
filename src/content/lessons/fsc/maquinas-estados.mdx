@@ -5,6 +5,11 @@ section: conteudo
 order: 11
 practices:
   - fsc/praticar-maquinas-estados
+editorial:
+  basedOn: '2024/25'
+  sources:
+    - title: 'Circuitos sequenciais, Pedro C. Diniz, outono de 2024'
+      url: 'https://moodle2425.up.pt/mod/resource/view.php?id=61771'
 ---
 
 Uma máquina de estados finita, FSM, guarda apenas a parte do passado necessária para decidir o comportamento seguinte. Para reconhecer se um número binário é múltiplo de 3, não precisamos de guardar todos os bits recebidos: chega guardar o resto da divisão por 3.
@@ -33,20 +38,29 @@ import Dot from '../../../components/Dot.astro';
 import AutomataLab from '../../../components/AutomataLab.astro';
 import fsm from '../../fsc/fsm-resto.dot?raw';
 
+:::details[Diagrama da Moore]
+
 <Dot
   source={fsm}
   alt="Moore de divisibilidade por três: R0 tem saída 1; R1 e R2 têm saída 0. Cada seta segue o novo resto de 2r+b."
 />
 
+:::
+
 Ao ler `110`, passamos R0 → R1 → R0 → R0. O número é 6, múltiplo de 3. Ao ler `101`, passamos R0 → R1 → R2 → R2: 5 deixa resto 2. A saída observada depois de cada flanco corresponde ao prefixo já recebido.
 
-### Construir e experimentar a máquina
+### Laboratório de máquinas
 
-No laboratório, cada passo corresponde a um flanco com o bit indicado. A saída de R0 antes de receber bits aparece no passo 0. Altera uma transição ou uma saída e compara o percurso de `110` com o da tabela. Em **Resolver exercício**, corrige a máquina apresentada e verifica se tem o mesmo comportamento da referência para todas as entradas.
+No laboratório, cada passo corresponde a um flanco com o bit indicado. A saída de R0 antes de receber bits aparece no passo 0. Altera a saída de R0 para 0 e executa a entrada vazia: o erro já é observável antes do primeiro bit. Repõe o exemplo e segue `110`; o percurso R0,R1,R0,R0 deve produzir 1,0,1,1, incluindo a saída inicial.
 
-O seletor também inclui uma Mealy que deteta `11`. Em `111`, deve produzir `0,1,1`: depois da primeira deteção, o último `1` fica guardado para permitir a seguinte. A saída pertence à transição a partir do estado anterior, enquanto na Moore se observa a saída do novo estado depois do flanco.
+Em **Resolver exercício**, recebe uma máquina com um erro. Corrige-a ou usa **Construir do zero** para criar a tua solução. **Verificar máquina** compara as saídas para todas as entradas: explora os pares de estados alcançáveis com a referência e mostra uma palavra testemunha se encontrar uma diferença. Os exemplos apresentados ajudam a localizar o erro; são a exploração completa dos pares, e não esses exemplos isolados, que decide a equivalência. Esta comparação é entre máquinas do mesmo modelo e alfabeto, não entre Moore e Mealy.
 
-<AutomataLab preset="modulo-three" />
+<AutomataLab
+  preset="modulo-three"
+  examples={['modulo-three', 'modulo-five', 'overlap-eleven']}
+/>
+
+O seletor inclui também os exercícios do resto módulo 5 e da deteção Mealy de `11`. Para o resto módulo 5, escolhe essa máquina e usa **Resolver exercício** seguido de **Construir do zero**. O estado após cada prefixo deve representar o seu resto. Com `1010`, que representa 10, visita R1,R2,R0,R0 depois dos flancos; as saídas são 0,0,1,1, além do 1 inicial. A [prática do capítulo](/cadeiras/fsc/praticar-maquinas-estados/) pede a tabela e a justificação desse significado.
 
 ## Síntese com flip-flops D
 
@@ -107,6 +121,21 @@ Uma Moore completa para esse caso tem esta tabela. A saída indicada é a do est
 Partindo de A, `10101` dá B,C,D,C,D. Observamos 0,0,1,0,1 depois dos flancos. Em D, um novo 0 já completa o prefixo `10`, por isso a transição vai para C. É esta informação conservada que permite a sobreposição.
 
 Para produzir um impulso de um ciclo quando um botão fica 1, usa estados Espera, Impulso e Libertação. Espera entra em Impulso quando x=1; Impulso passa a Libertação se x ainda for 1, ou Espera se já for 0; Libertação conserva enquanto x=1. A saída só é 1 em Impulso. Sem Libertação, uma entrada longa pode provocar vários impulsos.
+
+### Mealy e sobreposição
+
+Para detetar `11`, basta recordar se o bit anterior era 1. Usa A para bit anterior 0, incluindo o reset, e B para bit anterior 1. A saída é 1 só quando o estado anterior é B e a entrada atual é 1:
+
+| Estado anterior | Entrada 0, destino/saída | Entrada 1, destino/saída |
+| --------------- | ------------------------ | ------------------------ |
+| A               | A/0                      | B/0                      |
+| B               | A/0                      | B/1                      |
+
+Em B, um novo 1 deteta um par e conserva B. Por isso, `111` produz 0,1,1: o segundo bit completa o primeiro par e o terceiro completa outro par com o segundo. Se a deteção voltasse a A, a segunda ocorrência perder-se-ia.
+
+No [laboratório](#laboratório-de-máquinas), escolhe **Mealy: detetar 11 com sobreposição** e segue `111011`. Antes dos flancos, os estados são A,B,B,B,A,B; as saídas da amostra são 0,1,1,0,0,1. O estado indicado na linha de cada passo é o destino da transição, mas a saída usa o estado anterior e o bit dessa linha. Não uses o novo estado B para atribuir 1 ao primeiro bit: ainda não havia um 1 anterior.
+
+Com um flip-flop q que guarda esse bit anterior, as equações são $q^+=b$ e $z=qb$. A entrada b pode mudar z entre flancos. O simulador mostra amostras de entradas estáveis; não modela atrasos, glitches nem metastabilidade. Uma saída registada depois do flanco exigiria um registo de saída e uma especificação temporal própria.
 
 ## Minimização e comunicação
 
