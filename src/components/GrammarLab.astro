@@ -1,10 +1,15 @@
 ---
 import FormalSource from './FormalSource.astro';
 import Icon from './Icon.astro';
+import { parseGrammar, recognize } from '../lib/grammar';
+import type { GrammarPreset } from '../lib/grammar-lab-types';
 import '../styles/formal-lab.css';
 import '../styles/grammar-lab.css';
 
-const presets = [
+interface Props {
+  presets?: GrammarPreset[];
+}
+const defaults: GrammarPreset[] = [
   {
     name: 'Blocos aⁿbⁿ',
     source: 'S -> a S b | ε',
@@ -34,8 +39,21 @@ const presets = [
       'ε -> aceita\nabb -> aceita\naabbbb -> aceita\naaabbbbbb -> aceita\nab -> rejeita\nbba -> rejeita',
     task: 'Corrige a produção para gerar aⁿb²ⁿ, com n ≥ 0. Cada a precisa de dois b, conservando os blocos.',
     solution: 'S -> a S b b | ε',
+    solutionExplanation:
+      'Cada aplicação recursiva acrescenta um a e dois b. A alternativa ε termina a derivação e inclui n = 0.',
   },
 ];
+const { presets = defaults } = Astro.props;
+if (!presets.length)
+  throw new Error('GrammarLab precisa de pelo menos uma gramática.');
+const initial = presets[0];
+const initialResult = recognize(parseGrammar(initial.source), initial.word);
+const initialStatus =
+  initialResult.kind === 'accepted'
+    ? 'Palavra aceite.'
+    : initialResult.kind === 'rejected'
+      ? 'Palavra rejeitada. Não existe uma derivação nesta gramática.'
+      : initialResult.message;
 ---
 
 <section
@@ -66,7 +84,9 @@ const presets = [
       <Icon name="arrow-path" size={18} />
     </button>
   </div>
-  <p data-task hidden></p>
+  <p data-task hidden={!initial.task}>
+    {initial.task}
+  </p>
   <FormalSource
     label="Produções da gramática"
     source={presets[0].source}
@@ -90,7 +110,7 @@ const presets = [
   </div>
   <div class="formal-result">
     <p role="status" data-status>
-      Palavra aceite. S ⇒ aSb ⇒ aaSbb ⇒ aabb.
+      {initialStatus}
     </p>
     <div
       data-tree
@@ -126,12 +146,11 @@ const presets = [
       pedida.
     </p>
   </details>
-  <details class="formal-help" data-solution hidden>
+  <details class="formal-help" data-solution hidden={!initial.solution}>
     <summary>Solução do exercício</summary>
-    <pre><code data-solution-source></code></pre>
-    <p>
-      Cada aplicação recursiva acrescenta um a e dois b. A alternativa ε termina
-      a derivação e inclui n = 0.
+    <pre><code data-solution-source>{initial.solution}</code></pre>
+    <p data-solution-explanation hidden={!initial.solutionExplanation}>
+      {initial.solutionExplanation}
     </p>
   </details>
   <details class="formal-help">

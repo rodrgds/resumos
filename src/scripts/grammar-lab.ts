@@ -5,15 +5,7 @@ import {
   leftmostDerivation,
   type ParseTree,
 } from '../lib/grammar';
-
-interface Preset {
-  name: string;
-  source: string;
-  word: string;
-  tests: string;
-  task?: string;
-  solution?: string;
-}
+import type { GrammarPreset } from '../lib/grammar-lab-types';
 
 function renderTree(root: HTMLElement, tree: ParseTree) {
   const namespace = 'http://www.w3.org/2000/svg';
@@ -85,7 +77,7 @@ export function setupGrammarLabs() {
       root.dataset.ready = 'true';
       const get = <T extends HTMLElement>(selector: string) =>
         root.querySelector<T>(selector)!;
-      const presets: Preset[] = JSON.parse(root.dataset.presets!);
+      const presets: GrammarPreset[] = JSON.parse(root.dataset.presets!);
       const selector = get<HTMLSelectElement>('[data-preset]');
       const word = get<HTMLInputElement>('[data-word]');
       const tests = get<HTMLTextAreaElement>('[data-tests]');
@@ -221,6 +213,9 @@ export function setupGrammarLabs() {
         solution.hidden = !preset.solution;
         solution.open = false;
         get('[data-solution-source]').textContent = preset.solution || '';
+        const explanation = get('[data-solution-explanation]');
+        explanation.textContent = preset.solutionExplanation || '';
+        explanation.hidden = !preset.solutionExplanation;
         clearTests();
         run();
       }
