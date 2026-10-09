@@ -1,0 +1,76 @@
+## Valores, funções e arrays
+
+PHP executa no servidor a cada pedido; o cliente recebe a saída. Variáveis locais não persistem entre pedidos. Base de dados e sessão guardam estado.
+
+- Variáveis começam por `$`; `.` concatena. `===` compara valor e tipo; `==` admite conversões. `strlen` conta bytes.
+- Para um resultado entre 0 e 20 ou `null`, usa `$nota !== null`. `if ($nota)` e `empty` também rejeitam o zero válido. `strpos` exige `!== false`, porque pode devolver a posição 0.
+- Arrays são mapas ordenados. `isset` é falso para ausência ou `null`; `array_key_exists` distingue chave presente com valor `null`.
+- `sort` renumera chaves; `asort` conserva-as; `ksort` ordena pelas chaves. `array_filter` conserva chaves: usa `array_values` antes de emitir uma lista JSON com índices consecutivos.
+- Funções têm âmbito próprio; arrays passam habitualmente por valor, `&` permite referência. Duas variáveis podem referir o mesmo objeto.
+
+`declare(strict_types=1)` controla argumentos escalares nas chamadas feitas pelo ficheiro. Não valida HTTP. `?int` admite inteiro ou `null`; `throw` interrompe o percurso, `catch` trata e `finally` finaliza. Classes usam `$this` para o objeto; membros `static` pertencem à classe. `private`, `protected` e `public` limitam acesso; interfaces declaram contratos.
+
+## Entrada HTTP
+
+| Origem              | Leitura                                 |
+| ------------------- | --------------------------------------- |
+| Query string        | `$_GET`                                 |
+| Corpo de formulário | `$_POST`                                |
+| Corpo JSON          | `php://input`, seguido de `json_decode` |
+| Método              | `$_SERVER['REQUEST_METHOD']`            |
+
+Um parâmetro pode faltar ou ser um array, como `quantidade[]=2`. Exige o método correto, verifica `is_string`, valida o inteiro completo e os limites, depois converte para o tipo do domínio. `intval('2x')` dá 2 e perde o lixo; não substitui validar. Usa inteiros em cêntimos para dinheiro exato.
+
+## PDO e consultas
+
+```php
+$stmt = $db->prepare(
+    'SELECT titulo, preco FROM livro WHERE preco < :limite ORDER BY preco'
+);
+$stmt->execute(['limite' => 20]);
+$livros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+```
+
+Com preços 18, 25 e 12, devolve SQL a 12 e Redes a 18, nessa ordem. `fetch` devolve uma linha ou `false`; `fetchAll` devolve as restantes.
+
+**Marcadores representam valores**, nunca nomes de colunas ou palavras-chave. Para ordenação escolhida pelo cliente, mapeia a entrada para nomes fixos autorizados. Preparar impede injeção; `%` e `_` continuam a ser padrões em `LIKE`.
+
+Uma base SQLite em memória desaparece; uma base em ficheiro pode persistir, com caminho estável e fora da raiz pública. Ativa `PRAGMA foreign_keys = ON` em cada conexão quando dependes dessas restrições.
+
+## Transações e stock
+
+1. Inicia a transação.
+2. Reduz stock num `UPDATE` condicionado por `stock >= :q` e confirma que alterou a linha esperada.
+3. Insere a reserva.
+4. Faz `commit` apenas depois dos dois passos; se algum falhar, faz `rollback`.
+
+Stock 3, reserva de 2: o `UPDATE` deixa 1; se a inserção falhar, o rollback recupera 3. Ler stock e atualizá-lo depois sem condição deixa uma janela para pedidos concorrentes. A transação não substitui autorização nem validação.
+
+## Templates e redirecionamento
+
+A página consulta e apresenta; a ação valida e altera; o template produz HTML com dados já calculados. `require_once` inclui uma dependência uma vez; `__DIR__` resolve relativamente ao ficheiro atual.
+
+Para texto HTML, escapa ao apresentar:
+
+```php
+<?= htmlspecialchars($titulo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
+```
+
+O texto `<SQL>` aparece literalmente. Este escape não serve automaticamente para JavaScript, CSS ou semântica de URLs.
+
+Depois de um POST bem-sucedido, antes de enviar saída:
+
+```php
+header('Location: /reservas/', true, 303);
+exit;
+```
+
+O cliente segue por GET; atualizar a confirmação não repete POST. `header` não termina PHP, por isso precisa de `exit`.
+
+## Sessão e autenticação
+
+`session_start()` recupera estado no servidor através do identificador transportado habitualmente num cookie. Guarda palavras-passe com `password_hash`; verifica com `password_verify`. Regenera o identificador após autenticar e configura `Secure`, `HttpOnly` e `SameSite` adequadamente.
+
+Autenticação identifica; autorização confirma a permissão sobre o registo em cada ação. O utilizador autorizado vem da sessão verificada, nunca de um campo hidden. No logout, limpa estado, destrói a sessão e remove o cookie quando aplicável.
+
+[Reserva transacional completa](/cadeiras/ltw/php-dinamicas-bd/#alterar-dados-de-forma-consistente).

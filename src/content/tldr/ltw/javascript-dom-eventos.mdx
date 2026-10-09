@@ -1,0 +1,77 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import propagacao from '../../ltw/propagacao-evento.mmd?raw';
+
+## Valores e conversões
+
+- `const` impede reatribuir a ligação, mas permite alterar o objeto referido. `let` permite reatribuição; ambos têm âmbito de bloco. `var` tem âmbito de função.
+- `'8' + 1` dá a string `'81'`; `'8' - 1` dá 7. `===` compara sem conversão implícita. Objetos com conteúdo igual podem ter referências diferentes: `[1] === [1]` é falso.
+- `Number('8x')` dá `NaN`; `parseInt('8x', 10)` dá 8. Para uma entrada inteira completa, rejeita vazio, converte, verifica `Number.isInteger` e os limites.
+- `0`, `''`, `null`, `undefined`, `NaN` e `false` são falsos num teste booleano; arrays e objetos vazios são verdadeiros. `||` substitui valores falsos; `??` só substitui `null` e `undefined`.
+
+## Arrays e callbacks
+
+| Operação                        | Efeito                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `map`, `filter`                 | Novo array com valores transformados ou selecionados                   |
+| `reduce`                        | Acumula um resultado; fornece valor inicial para admitir entrada vazia |
+| `forEach`                       | Executa efeitos e devolve `undefined`                                  |
+| `slice`, spread `[...a]`        | Cópia superficial                                                      |
+| `splice`, `push`, `pop`, `sort` | Alteram o array                                                        |
+
+`for...of` percorre valores; `for...in` percorre nomes de propriedades. Uma função é um valor: `map(obterTitulo)` passa a função; `map(obterTitulo())` chama-a imediatamente. Uma arrow com corpo entre chavetas precisa de `return` para devolver.
+
+```js
+const precos = [8, 25, 3];
+const ordenados = [...precos].sort((a, b) => a - b);
+console.log(ordenados); // [3, 8, 25]
+console.log(precos); // [8, 25, 3]
+```
+
+Sem comparador, `sort` compara texto e daria `[25, 3, 8]`. Uma cópia superficial separa arrays, mas conserva referências aos objetos interiores. Alterar `b[0].n` pode também mudar `a[0].n`.
+
+## Closures, this e protótipos
+
+Uma **closure** conserva acesso ao ambiente lexical onde a função foi criada.
+
+```js
+function contador(inicio) {
+  let n = inicio;
+  return () => ++n;
+}
+const a = contador(5),
+  b = contador(0);
+console.log(a(), a(), b(), a()); // 6 7 1 8
+```
+
+Cada chamada a `contador` cria um `n` independente. `let` num ciclo permite ligações por iteração; callbacks sobre um `var` partilhado podem ler todos o valor final.
+
+- Num método normal chamado como `livro.nome()`, `this` refere o recetor. Separar `const f = livro.nome` perde essa associação; em modo estrito, `f()` tem `this` indefinido. `f.call(livro)` chama com recetor; `f.bind(livro)` cria uma função ligada.
+- Uma arrow herda `this` lexicalmente. Não recebe automaticamente o objeto onde foi guardada.
+- A procura de propriedades continua na cadeia de protótipos. Métodos normais de `class Livro` ficam em `Livro.prototype`; propriedades criadas no construtor ficam na instância. `extends` liga herança; membros `static` pertencem à classe.
+
+## DOM
+
+`querySelector` devolve o primeiro elemento ou `null`; `querySelectorAll` dá uma NodeList estática. `children` é uma coleção viva de elementos; `childNodes` inclui texto e comentários.
+
+- `closest` começa no próprio elemento e procura antepassados. `classList` altera classes; `dataset.id` lê `data-id`; `input.value` lê o valor atual, que pode diferir do atributo inicial.
+- `createElement` cria; `append` insere; `replaceChildren` substitui filhos; `remove` retira. Inserir um nó existente move-o. `cloneNode(true)` copia a árvore, mas não listeners de `addEventListener`.
+- `textContent` apresenta texto literal. `innerHTML` interpreta marcação e é perigoso com entrada não confiável.
+
+## Eventos e delegação
+
+<Mermaid
+  source={propagacao}
+  alt="O clique tem target no span. A captura desce por ul, li e button; o bubbling sobe de novo até ul. No listener de ul, currentTarget é ul."
+/>
+
+`target` identifica onde o evento começou; `currentTarget` é o elemento cujo listener está a correr. Num listener do `ul`, usa `target.closest(...)` para encontrar o botão, confirma que pertence à lista e remove o `li` correspondente. A **delegação** abrange itens criados depois.
+
+`preventDefault` cancela a ação nativa, não a propagação. `stopPropagation` interrompe a propagação, não a ação nativa.
+
+## Carregamento e temporizadores
+
+Scripts clássicos com `defer` correm depois da análise do documento, antes de `DOMContentLoaded`, pela ordem declarada. `async` corre quando o download acaba, sem essa garantia; módulos são deferidos por defeito.
+
+`setTimeout` define um atraso mínimo, não um instante exato. O código corrente termina antes dos callbacks agendados. `clearTimeout` e `clearInterval` cancelam temporizadores.
+
+[Laboratório de tarefas e eventos](/cadeiras/ltw/javascript-dom-eventos/#eventos-e-delegação).

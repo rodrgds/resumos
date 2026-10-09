@@ -1,0 +1,78 @@
+import Typst from '../../../components/Typst.astro';
+import modeloCaixa from '../../ltw/modelo-caixa.typ?raw';
+
+## Seletores
+
+Uma regra associa um seletor a declarações `propriedade: valor`. A folha externa é ligada por `link` no `head`.
+
+| Seletor                                                | Escolhe                                                   |
+| ------------------------------------------------------ | --------------------------------------------------------- |
+| `p.ativo`                                              | O próprio `p` com classe `ativo`                          |
+| `p .ativo`                                             | Descendentes de `p` com essa classe                       |
+| `.livro > p`                                           | Filhos diretos `p`                                        |
+| `h2 + p`, `h2 ~ p`                                     | Irmão `p` imediatamente seguinte, ou todos os posteriores |
+| `p:first-child`                                        | `p` que é o primeiro elemento filho                       |
+| `p:first-of-type`                                      | Primeiro `p` entre os irmãos                              |
+| `li:nth-child(2n)`                                     | `li` em posição par entre todos os elementos filhos       |
+| `[href^="https"]`, `[href$=".pdf"]`, `[href*="livro"]` | Início, fim ou parte do atributo                          |
+| `input:checked`, `a:focus-visible`                     | Estado do elemento                                        |
+| `p::before`                                            | Pseudo-elemento, normalmente com `content`                |
+
+Posições começam em 1 e contam elementos, não texto. A vírgula separa alternativas. `:not` exclui, `:is` reúne alternativas e `:has` testa uma relação com outros elementos. `&` representa o seletor exterior em regras aninhadas.
+
+## Cascata e herança
+
+1. Confirma que as declarações atingem o elemento.
+2. Compara origem, importância e camadas antes da especificidade.
+3. No mesmo nível, compara `(IDs, classes/atributos/pseudo-classes, elementos/pseudo-elementos)` da esquerda para a direita.
+4. Se empatarem, ganha a declaração posterior.
+
+`(1,1,3)` ganha a `(1,1,0)`; dez classes não vencem um ID. `*` e combinadores não contam. `:where` tem especificidade zero; `:is`, `:not` e `:has` usam a maior dos seus argumentos.
+
+- Estilos em linha vencem regras normais da folha do autor. `!important` altera importância, não especificidade.
+- Para declarações normais, camadas posteriores vencem anteriores; regras sem camada vencem as com camada. A ordem das camadas inverte-se nas importantes.
+- Uma declaração direta no filho vence um valor herdado. `color` costuma herdar; margem, padding e borda não.
+- `inherit` usa o valor do pai; `initial` usa o inicial da propriedade; `unset` herda nas propriedades herdadas e usa o inicial nas restantes.
+
+## Caixa e unidades
+
+<Typst
+  source={modeloCaixa}
+  format="svg"
+  alt="Com width de 240px, padding de 12px, borda de 2px e margem de 10px por lado: content-box ocupa 288px; border-box ocupa 260px e tem conteúdo de 212px. Margem fica sempre fora de width."
+/>
+
+Em `content-box`, `width` mede conteúdo. Em `border-box`, inclui padding e borda, mas exclui margem. Para a caixa da figura:
+
+$$
+\begin{aligned}
+W_{\text{content-box}} &= 240+24+4+20=288\text{ px},\\
+W_{\text{border-box}} &= 240+20=260\text{ px}.
+\end{aligned}
+$$
+
+- Quatro valores de `padding` seguem cima, direita, baixo, esquerda; dois dão vertical e horizontal.
+- Margens verticais positivas de blocos em fluxo normal podem colapsar: 16px e 24px dão 24px, não 40px. Padding não colapsa.
+- `rem` usa a letra da raiz. `em` em `font-size` usa a letra do pai; nas outras propriedades usa a do próprio elemento. Percentagens dependem da propriedade; `vw` e `vh` usam o viewport.
+- `max-width` limita uma largura flexível; `overflow: auto` permite deslocar o conteúdo que não cabe.
+
+## Fluxo e posicionamento
+
+| Valor      | Efeito habitual                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| `static`   | Fluxo normal, sem deslocação por `top`/`left`                                                    |
+| `relative` | Desloca o desenho e conserva o lugar original                                                    |
+| `absolute` | Sai do fluxo; usa uma caixa de referência, frequentemente o antepassado posicionado mais próximo |
+| `fixed`    | Sai do fluxo e usa normalmente o viewport                                                        |
+| `sticky`   | Mantém-se no fluxo e prende-se ao limite definido durante o scroll                               |
+
+Um antepassado transformado também pode criar a referência, incluindo para `fixed`. `z-index` compara dentro de contextos de empilhamento. `display: none` retira a caixa; `visibility: hidden` conserva espaço. `transform` muda o desenho sem reservar outro lugar.
+
+## Flexbox e grid
+
+- Flexbox organiza principalmente num eixo. `justify-content` alinha no eixo principal; `align-items` no transversal. `flex: 1 1 200px` dá crescimento, redução e base, não largura fixa.
+- Grid define linhas e colunas. `grid-column: 1 / 3` ocupa duas colunas. `gap` separa itens; `minmax(0, 1fr)` permite reduzir uma coluna abaixo do mínimo automático do conteúdo.
+- Num cartão flex em coluna, `margin-top: auto` no botão absorve espaço livre e alinha botões no fundo de cartões com a mesma altura.
+- Media queries adaptam ao ambiente. Testa texto longo, zoom e largura pequena; uma query não elimina uma largura mínima excessiva.
+
+[Catálogo responsivo](/cadeiras/ltw/css-estilo-layout/#flexbox-e-grid).

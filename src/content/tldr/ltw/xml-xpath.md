@@ -1,0 +1,63 @@
+## Boa formação, validade e árvore
+
+XML permite definir vocabulários de elementos e atributos. Um documento **bem formado** tem raiz única, aninhamento correto, nomes sensíveis a maiúsculas e atributos entre aspas. `&amp;` e `&lt;` representam caracteres reservados.
+
+**Válido** significa que também cumpre um contrato, como DTD ou XSD. Uma DTD com `(titulo, preco)` exige essa ordem; `#PCDATA` admite texto, sem obrigar `preco` a ser numérico. Boa formação não garante validade, regras de negócio ou segurança. Não atives entidades externas arbitrárias em XML não confiável.
+
+```text
+Documento
+└── catalogo
+    └── livro [atributo id="r1"]
+        ├── titulo
+        │   └── texto "Redes"
+        └── preco
+            └── texto "18"
+```
+
+O nó documento não é o elemento `catalogo`. Atributos pertencem ao elemento, mas não são filhos no eixo `child`; texto e elemento também são nós distintos.
+
+## Caminhos XPath 1.0
+
+Um caminho seleciona por etapas a partir do nó de contexto. `/` inicial fixa a raiz do documento; `/` entre passos percorre filhos; `//` permite descendentes a várias profundidades. `.` é o contexto, `..` o pai, `@` escolhe atributos e `*` elementos com qualquer nome.
+
+Considera três livros: Redes a 18, Algoritmos a 25 e SQL a 12, com IDs `r1`, `a1` e `s1`.
+
+| Expressão                                   | Resultado            |
+| ------------------------------------------- | -------------------- |
+| `/catalogo/livro`                           | Três elementos livro |
+| `/catalogo/livro[preco < 20]/titulo/text()` | Textos Redes e SQL   |
+| `/catalogo/livro[preco < 20]/@id`           | Atributos r1 e s1    |
+| `count(/catalogo/livro)`                    | 3                    |
+| `sum(/catalogo/livro/preco)`                | 55                   |
+
+Escolhe o livro antes de filtrar por `preco`, que é seu filho; selecionar `titulo` sem `text()` devolve elementos, não diretamente nós de texto.
+
+## Predicados e posição
+
+Predicados `[]` filtram os candidatos do passo atual; as posições começam em 1.
+
+- `livro[preco < 20][1]` filtra baratos e escolhe o primeiro restante.
+- `livro[1][preco < 20]` escolhe o primeiro livro e só depois testa o preço. Se custar 30, o resultado é vazio, mesmo havendo outro barato.
+- `//livro[1]` escolhe o primeiro livro entre irmãos em cada grupo relevante. `(//livro)[1]` escolhe apenas o primeiro do conjunto global.
+- Com categorias `web` e `redes`, `categoria = 'web'` e `categoria != 'web'` são ambas verdadeiras: existe um nó que satisfaz cada comparação. Para exigir que nenhuma seja web, usa `not(categoria = 'web')`.
+
+`child`, `descendant`, `ancestor` e `following-sibling` explicitam relações. `and`, `or` e `not` combinam condições; `contains`, `starts-with` e `normalize-space` tratam texto; `last()` usa a última posição; `|` une conjuntos de nós.
+
+## Namespaces e execução
+
+Um nome expandido combina URI de namespace e nome local; o prefixo é apenas uma abreviatura. `xmlns="urn:biblioteca"` aplica o namespace aos elementos sem prefixo, mas não automaticamente aos atributos sem prefixo.
+
+Em XPath 1.0, nomes sem prefixo procuram o namespace vazio. Para o catálogo com namespace por defeito:
+
+```php
+$xpath->registerNamespace('b', 'urn:biblioteca');
+$livros = $xpath->query('/b:catalogo/b:livro');
+```
+
+O prefixo da consulta pode diferir do usado no documento, desde que aponte para o mesmo URI. O URI identifica, não obriga a descarregar recursos.
+
+PHP `loadXML` constrói a árvore; `query` devolve nós; `evaluate` também devolve escalares. No navegador, `document.evaluate` recebe contexto e tipo de resultado; `iterateNext()` percorre o iterador até `null`.
+
+XPath seleciona; XSLT transforma; XQuery consulta e constrói; XSL-FO descreve formatação. SVG é um vocabulário XML.
+
+[Predicados completos e exercícios](/cadeiras/ltw/xml-xpath/#predicados-e-posição).

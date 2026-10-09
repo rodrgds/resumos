@@ -1,0 +1,95 @@
+import Mermaid from '../../../components/Mermaid.astro';
+import cors from '../../ltw/cors.mmd?raw';
+
+## URL e mensagens
+
+Uma **origem** é `(esquema, host, porta)`. Caminhos diferentes podem ter a mesma origem; HTTP e HTTPS no mesmo host têm origens diferentes. O fragmento `#reserva` fica no navegador; caminho e query seguem no pedido.
+
+Em HTTP/1.1, pedido e resposta têm linha inicial, cabeçalhos, linha vazia e corpo quando aplicável. Versões posteriores mantêm estes conceitos com outra codificação.
+
+- `Host` identifica o servidor pedido; `Accept` indica formatos aceites pelo cliente.
+- `Content-Type` descreve o corpo efetivo; `Content-Length` conta bytes.
+- Formulários usam habitualmente `application/x-www-form-urlencoded`; uploads usam `multipart/form-data`; JSON usa `application/json`. O formato enviado e o esperado têm de coincidir.
+
+## Métodos e estados
+
+Um método **seguro** não pede alteração do estado da aplicação. **Idempotente** significa que repetir o pedido tem o mesmo efeito pretendido que fazê-lo uma vez, mesmo com respostas diferentes.
+
+| Método    | Uso habitual                              | Seguro | Idempotente   |
+| --------- | ----------------------------------------- | ------ | ------------- |
+| GET, HEAD | Representação; HEAD sem corpo             | Sim    | Sim           |
+| POST      | Processar dados                           | Não    | Não, em geral |
+| PUT       | Criar ou substituir no endereço escolhido | Não    | Sim           |
+| DELETE    | Remover a associação do recurso           | Não    | Sim           |
+| PATCH     | Alteração parcial                         | Não    | Depende       |
+| OPTIONS   | Opções de comunicação                     | Sim    | Sim           |
+
+DELETE pode devolver 204 e depois 404 sem perder idempotência. Dois POST podem criar duas reservas. GET não deve apagar dados. REST organiza recursos e operações por interface uniforme; devolver JSON não basta para ser REST.
+
+| Estado        | Significado                                                           |
+| ------------- | --------------------------------------------------------------------- |
+| 200, 201, 204 | Sucesso, criação, sucesso sem corpo                                   |
+| 303           | Consultar outro destino, normalmente por GET                          |
+| 304           | Reutilizar representação em cache, sem novo corpo                     |
+| 400, 401, 403 | Pedido inválido, credenciais inválidas ou ausentes, operação recusada |
+| 404, 405, 500 | Recurso não encontrado, método não permitido, erro interno            |
+
+Em 405, `Allow` indica métodos admitidos.
+
+## Cookies e cache
+
+`Set-Cookie` pertence à resposta; `Cookie` transporta valores em pedidos posteriores sujeitos às suas políticas. HTTP não conserva automaticamente a identidade. Um identificador de sessão permite recuperar estado no servidor; o cookie continua a ser entrada do cliente.
+
+- `HttpOnly` impede leitura do cookie por JavaScript, não o seu envio pelo navegador.
+- `ETag: "v1"` permite ao cliente enviar `If-None-Match: "v1"`; se a representação continuar válida, recebe 304.
+- `no-store` pede que não guardem a resposta. `no-cache` permite guardar, mas exige revalidação. Respostas privadas não devem ir para caches partilhadas indevidamente.
+
+## Promessas e fetch
+
+`async` devolve uma Promise; `await` suspende essa função, sem bloquear todo o navegador. Reações a promessas cumpridas ou rejeitadas correm como microtarefas depois do código corrente e antes da tarefa seguinte.
+
+```js
+console.log('A');
+Promise.resolve().then(() => console.log('B'));
+console.log('C'); // saída: A, C, B
+```
+
+Um cálculo síncrono pesado continua a bloquear. `Promise.all` agrega resultados e rejeita se uma promessa rejeitar; as operações têm de ser iniciadas antes de esperar individualmente para serem concorrentes.
+
+JSON admite objetos, arrays, strings com aspas duplas, números, booleanos e `null`, sem comentários ou vírgulas finais. `JSON.stringify` codifica; `JSON.parse` descodifica. Não uses `eval`.
+
+```js
+async function obterLivros(termo) {
+  const query = new URLSearchParams({ q: termo });
+  const resposta = await fetch('/api/livros?' + query);
+  if (!resposta.ok) throw new Error('HTTP ' + resposta.status);
+  return resposta.json();
+}
+```
+
+O chamador trata a promessa com `await` e `try/catch`, ou `.catch`. `fetch` não rejeita automaticamente por 404 ou 500: testa `ok`, que cobre 200 a 299. Rede e descodificação podem falhar. Um 200 com HTML não satisfaz `json()`.
+
+Ajax atualiza parte da página sem navegar. Respostas podem chegar fora de ordem: numera pedidos e compara o número local com o último iniciado **antes de alterar resultados ou erros**. Uma resposta antiga não deve substituir a pesquisa atual. `AbortController` pode cancelar o pedido anterior.
+
+## SOP e CORS
+
+SOP restringe leitura por scripts entre origens; não bloqueia todos os envios. CORS declara quais as origens que podem ler a resposta e não substitui autenticação, autorização ou CSRF.
+
+<Mermaid
+  source={cors}
+  alt="Quando é necessário preflight, OPTIONS pede autorização da origem, método e cabeçalhos. Depois segue POST. A resposta ao POST também precisa de autorizar a leitura pela origem."
+/>
+
+- Um GET sem cabeçalhos adicionais pode dispensar preflight. POST com `Content-Type: application/json` exige-o normalmente.
+- OPTIONS envia `Origin`, `Access-Control-Request-Method` e cabeçalhos pretendidos. A resposta permite origem, método e cabeçalhos; a resposta real também precisa de `Access-Control-Allow-Origin`.
+- Se o pedido real já alterou dados, uma falha de CORS na leitura não anula essa alteração.
+- Com credenciais entre origens, usa `credentials: 'include'`, origem concreta e `Access-Control-Allow-Credentials: true`. Cookies continuam sujeitos às suas políticas; credenciais, por si, não exigem preflight.
+- `mode: 'no-cors'` produz resposta opaca e não permite ler JSON.
+
+## Arquiteturas no navegador
+
+MPA navega entre documentos; SPA atualiza sobretudo no cliente. SSR produz HTML no servidor; CSR constrói-o no cliente. Estas distinções são independentes. PWA pode acrescentar instalação, service worker e funcionamento offline.
+
+`localStorage` guarda strings por origem entre sessões; `sessionStorage` separa também por separador e sessão. Não seguem automaticamente nos pedidos. Workers executam sem acesso direto ao DOM; service workers podem intercetar pedidos das páginas que controlam.
+
+[Pesquisas concorrentes e aplicação completa](/cadeiras/ltw/http-ajax-json/#json-e-fetch).
