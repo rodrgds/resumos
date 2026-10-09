@@ -3,14 +3,14 @@ import type { GrammarPreset } from '../../lib/grammar-lab-types';
 /** Casos públicos de exploração, sem pretender provar equivalência de CFG. */
 export const expressionGrouping = [
   {
-    name: 'Soma à esquerda, produto primeiro',
+    name: 'Soma à esquerda',
     source: 'E -> E + T | T\nT -> T * F | F\nF -> a | ( E )',
     word: 'a+a+a',
     tests:
       'a -> aceita\na+a*a -> aceita\n(a+a)*a -> aceita\na+a+a -> aceita\na+ -> rejeita\n*a -> rejeita\nε -> rejeita',
   },
   {
-    name: 'Soma à direita, produto primeiro',
+    name: 'Soma à direita',
     source: 'E -> T + E | T\nT -> T * F | F\nF -> a | ( E )',
     word: 'a+a+a',
     tests:
@@ -20,7 +20,7 @@ export const expressionGrouping = [
 
 export const strictExcess = [
   {
-    name: 'Exercício: mais a do que b',
+    name: 'Excedente de a',
     source: 'S -> a S b | A\nA -> a A | ε',
     word: 'ab',
     tests:
