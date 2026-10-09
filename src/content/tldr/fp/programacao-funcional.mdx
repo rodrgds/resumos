@@ -1,0 +1,46 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+## Pureza e ordem superior
+
+- Uma função **pura** devolve o mesmo resultado para os mesmos argumentos e não tem efeitos observáveis fora do cálculo. Entrada, impressão, hora, mutação dos argumentos e alterações globais quebram esse contrato.
+- Alterar um acumulador local não prova um efeito no chamador. Um requisito sem atribuições nem mutação é mais restrito do que pureza.
+- Funções são valores: `quadrado` passa a função; `quadrado(3)` passa o resultado. Uma função de **ordem superior** recebe ou devolve funções.
+- `lambda x: x * x` cria uma função de uma expressão. Um **predicado** decide se um valor satisfaz uma condição.
+
+Para ordenar `(nome, nota)` por nota decrescente e nome crescente, usa `key=lambda aluno: (-aluno[1], aluno[0])`. `sorted` devolve outra lista e é estável: chaves iguais conservam a ordem relativa original.
+
+## Map, filter e reduce
+
+| Operação           | Regra                                                |
+| ------------------ | ---------------------------------------------------- |
+| `filter(p, xs)`    | Conserva entradas em que `p` dá um valor verdadeiro  |
+| `map(f, xs)`       | Transforma cada entrada com `f`                      |
+| `reduce(f, xs, z)` | Acumula da esquerda para a direita, começando em `z` |
+
+<CodePlayground
+  language="python"
+  title="Filtrar, transformar e acumular"
+  code={
+    'from functools import reduce\n\nxs = [1, 2, 3, 4, 5]\nimpares = filter(lambda x: x % 2 != 0, xs)\nquadrados = map(lambda x: x * x, impares)\nprint(reduce(lambda a, x: a + x, quadrados, 0))\nprint(xs)'
+  }
+/>
+
+A seleção dá 1, 3, 5; a transformação dá 1, 9, 25; o acumulador passa por 0, 1, 10, 35. A saída é `35` e a lista original, intacta.
+
+- Em Python 3, `map` e `filter` devolvem **iteradores**. Consumir `list(impares)` antes da redução esgota o filtro.
+- Com inicial `z` e entradas `a, b`, a redução calcula `f(f(z, a), b)`. A ordem importa: `(10 - 2) - 3` dá 5.
+- A entrada vazia devolve o inicial. Sem inicial, o primeiro elemento inicia o acumulador e o vazio lança `TypeError`. Para somar, `sum` é uma alternativa direta.
+- Filtrar positivos antes de elevar ao quadrado rejeita negativos; fazê-lo depois aceita os seus quadrados positivos.
+
+## Closures e composição
+
+```python
+def multiplicador(fator):
+    return lambda x: fator * x
+
+print(multiplicador(2)(5))  # 10
+```
+
+A **closure** conserva acesso ao contexto léxico onde foi criada. Não copia automaticamente valores: `[lambda x: fator * x for fator in range(1, 4)]` consulta o mesmo `fator` e, depois do percurso, todas multiplicam por 3. `[multiplicador(fator) for fator in range(1, 4)]` cria contextos distintos.
+
+Compor `f` e `g` significa calcular `f(g(x))`. O resultado de `g` tem de satisfazer o contrato de entrada de `f`. A ordem altera o resultado: para 3, quadrado após incremento dá 16; incremento após quadrado dá 10.

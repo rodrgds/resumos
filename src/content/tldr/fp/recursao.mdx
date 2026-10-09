@@ -1,0 +1,59 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+
+## Caso base, redução e retorno
+
+Uma função recursiva usa a solução de uma versão mais pequena do problema.
+
+1. Define um **caso base** resolvido diretamente.
+2. Reduz a entrada numa medida que avança para esse caso.
+3. Combina e devolve o resultado da chamada recursiva.
+
+Para inteiro $n\geq0$, $0!=1$ e $n!=n(n-1)!$ quando $n>0$.
+
+```python
+def fatorial(n):
+    if n < 0:
+        raise ValueError("n deve ser não negativo")
+    if n == 0:
+        return 1
+    return n * fatorial(n - 1)
+
+print(fatorial(4))  # 24
+```
+
+`4 * (3 * (2 * (1 * fatorial(0))))` deixa multiplicações pendentes. A **pilha de chamadas** conserva parâmetros e trabalho pendente; os retornos resolvem-nos de dentro para fora. Esquecer o `return` exterior pode produzir `None`.
+
+## Terminação e custo
+
+- Ter um caso base não basta: cada chamada tem de se aproximar dele. `fatorial(n)` chamar `fatorial(n)` não reduz nada.
+- Nos dígitos de um inteiro não negativo, `n % 10` é o último dígito e `n // 10` é o prefixo. A base é `n == 0`, não um dígito zero: `soma_digitos(502)` soma `2 + 0 + 5 = 7`.
+- Com entrada -1, `-1 // 10` continua -1. Essa redução não termina; valida a pré-condição ou normaliza com `abs`.
+- Python limita a profundidade e não elimina chamadas em posição terminal. Uma recursão matematicamente terminante pode lançar `RecursionError`.
+
+## Estruturas aninhadas
+
+Contrato: números e listas finitas **sem referências cíclicas**. Um número soma-se diretamente; uma lista exige outra chamada; a lista vazia soma zero.
+
+<CodePlayground
+  language="python"
+  title="Somar por níveis"
+  code={
+    'def soma_aninhada(xs):\n    total = 0\n    for x in xs:\n        if isinstance(x, list):\n            total += soma_aninhada(x)\n        else:\n            total += x\n    return total\n\nprint(soma_aninhada([2, [3, [], [4]], 1]))\nprint(soma_aninhada([]))'
+  }
+/>
+
+As saídas são `10` e `0`. A função percorre sublistas sem alterar a entrada; uma lista que se contém a si própria viola a redução estrutural.
+
+## Trabalho repetido
+
+A recursão direta de Fibonacci repete subproblemas: para `fib(4)`, `fib(2)` corre duas vezes. Um ciclo conserva só os dois valores anteriores:
+
+```python
+def fibonacci(n):
+    a, b = 0, 1
+    for i in range(n):
+        a, b = b, a + b
+    return a
+```
+
+Para inteiro não negativo `n`, devolve 0 em `n = 0` e 3 em `n = 4`. Escolhe recursão pela estrutura; verifica profundidade, repetição e cópias, como fatias `xs[1:]` criadas em cada chamada.
