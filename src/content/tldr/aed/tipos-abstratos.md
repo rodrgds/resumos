@@ -34,7 +34,7 @@ Com `size()==capacity()`, `push_back` bem-sucedido realoca. Guarda o índice e o
 
 ## Composição e verificação
 
-- `n` inserções em `set` custam $O(n\log n)`. Consultas hash esperadas constantes dão custo esperado linear sob hipóteses de hashing, sem garantia de pior caso linear.
+- `n` inserções em `set` custam $O(n\log n)$. Consultas hash esperadas constantes dão custo esperado linear sob hipóteses de hashing, sem garantia de pior caso linear.
 - Passar uma estrutura por valor pode custar mais que o trabalho interno. Usa referência constante para leitura sem cópia.
 
 Confere invariantes após alterações e casos limite. Compara com referência independente em entradas pequenas; testes finitos não provam correção geral. Verifica overflow, memória e profundidade recursiva.
