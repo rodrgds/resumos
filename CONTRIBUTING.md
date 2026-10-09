@@ -198,6 +198,53 @@ Cria um componente em `src/content/<cadeira>/`, envolvido em `InteractiveDemo.as
 
 Mostra controlos da matéria, não a implementação web. Explica as hipóteses na lição e conserva um visual útil sem JavaScript. O desenho e os valores iniciais devem corresponder aos controlos, com as mesmas contas usadas na interação. Dá nomes aos controlos, trata entradas inválidas e usa os tokens do tema. Prefere SVG para figuras simples; uma biblioteca só se justifica quando a experiência precisa dela. Verifica contas, teclado, movimento reduzido, claro/escuro e 320 px.
 
+### Laboratórios de provas, autómatos e gramáticas
+
+Usa estes editores quando alterar uma prova, máquina ou gramática ajuda a investigar a matéria. Conserva na lição o enunciado, as hipóteses e uma resolução ou figura estática: a interação não substitui o conteúdo para impressão, Markdown e leitura sem JavaScript. As verificações correm no navegador; as edições e respostas não são enviadas nem guardadas para outra visita.
+
+`ProofLab` oferece exemplos fixos de dedução e um modo Prova livre para o leitor definir premissas e conclusão:
+
+```mdx
+import ProofLab from '../../../components/ProofLab.astro';
+
+<ProofLab />
+```
+
+O verificador aceita dedução natural proposicional clássica em notação de Fitch, com $\neg$, $\land$, $\lor$, $\to$ e $\bot$. Confere cada regra e o âmbito das caixas, exigindo a conclusão sem hipóteses abertas. As regras disponíveis estão na ajuda do componente; `¬E` significa eliminação da dupla negação. Não verifica quantificadores nem regras derivadas. Sem JavaScript, a prova inicial continua visível, mas não é verificada. O componente ainda não recebe exemplos próprios por props.
+
+`AutomataLab` permite editar e seguir DFA, Moore e Mealy determinísticos completos. Escolhe o exemplo inicial com `preset` e limita o seletor ao tema com `examples`, incluindo sempre o exemplo inicial:
+
+```mdx
+import AutomataLab from '../../../components/AutomataLab.astro';
+
+<AutomataLab preset="suffix-ab" examples={['suffix-ab']} />
+```
+
+Os identificadores disponíveis são `suffix-ab`, `modulo-three`, `modulo-five` e `overlap-eleven`. Os dois exemplos de resto são Moore; o último é Mealy. O editor admite até 12 estados, 8 símbolos no alfabeto e 128 símbolos de entrada. Moore inclui a saída do estado inicial, mesmo para a entrada vazia; Mealy produz uma saída por transição.
+
+Em Resolver exercício, Verificar máquina compara com a referência por exploração de todos os pares de estados alcançáveis. Para DFA, compara aceitação; para Moore e Mealy, compara as sequências de saída. Esta verificação é exata para máquinas completas do mesmo modelo e alfabeto, incluindo a entrada vazia, e dá uma palavra testemunha quando diferem. Os exemplos de entrada mostrados não são a base da prova de equivalência. Não há simulação de NFA, PDA ou máquinas de Turing. Sem JavaScript, o laboratório não desenha a máquina, por isso inclui o diagrama ou a tabela na lição.
+
+`GrammarLab` recebe uma lista não vazia de gramáticas. Define o nome, as produções, a palavra inicial e os casos públicos:
+
+```mdx
+import GrammarLab from '../../../components/GrammarLab.astro';
+
+<GrammarLab
+  presets={[
+    {
+      name: 'Pares de a e b',
+      source: 'S -> a S b | ε',
+      word: 'aabb',
+      tests: 'ε -> aceita\nab -> aceita\naab -> rejeita',
+    },
+  ]}
+/>
+```
+
+Para listas maiores, importa dados de `src/content/<cadeira>/`; o tipo `GrammarPreset` está em `src/lib/grammar-lab-types.ts`. `task`, `solution` e `solutionExplanation` são opcionais. Usa nomes curtos para o seletor e conserva a justificação da solução na lição ou no exercício associado.
+
+A primeira variável é a inicial. O editor aceita produções compactas ou espaçadas, variáveis com nomes, recursão à esquerda e $\varepsilon$. A ajuda explica terminais entre aspas e a sintaxe dos casos. O reconhecimento admite palavras até 80 símbolos e gramáticas até 32 variáveis e 80 alternativas; atingir um limite de cálculo não significa rejeição. Para uma palavra aceite, mostra uma árvore possível e a derivação mais à esquerda. Passar os casos finitos não prova equivalência de linguagens nem ausência de ambiguidade. Sem JavaScript, ficam visíveis as produções, a palavra, o resultado inicial e a solução configurada, mas a árvore e a derivação interativas não são desenhadas.
+
 ## Código que o leitor pode executar
 
 ```mdx
