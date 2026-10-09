@@ -155,6 +155,8 @@ O renderer usa o estilo `classic`, com bordas sólidas e sem gradientes ou sombr
 
 Usa `$…$` para fórmulas em linha. Para uma fórmula centrada, escreve `$$…$$` num parágrafo próprio ou coloca os delimitadores `$$` em linhas próprias. Várias fórmulas em linhas consecutivas, cada uma entre `$$`, formam blocos separados. Os delimitadores duplos dentro de uma frase continuam em linha.
 
+Em MDX, põe desigualdades como `$0<p<1$` dentro de matemática ou código: um `<` solto pode ser interpretado como uma tag. Nas tabelas GFM, escapa barras verticais mesmo dentro de código, por exemplo `a \| b`. Em fórmulas nas células, usa `\lvert x\rvert` ou `\vert` em vez de barras literais. Confere as células e as fórmulas na página construída; uma tabela partida pode compilar sem erro.
+
 ### Notas de rodapé e caixas
 
 ```md
