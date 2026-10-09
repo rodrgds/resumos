@@ -4,6 +4,7 @@
 
 - Run project commands through `devenv shell`. Read [docs/desenvolvimento.md](docs/desenvolvimento.md) for checks and publishing. `.node-version` pins Node for both Cloudflare Pages projects. Pushes to `main` deploy the website and separate runners; verify both when changing their protocol. Published code must match the built source.
 - For course content, every writing agent must read [CONTRIBUTING.md](CONTRIBUTING.md), [resumos-writing](.agents/skills/resumos-writing/SKILL.md) and its linked writing examples before editing. Follow its course-review and exercise-selection guides for whole-course work. Use the student's Moodle materials and teacher exercises as the baseline, verifying their academic year. Prefer fewer distinct, worked problems and topic headings; keep the reasoning visible.
+- For TLDR lesson variants, also read [resumos-tldr](.agents/skills/resumos-tldr/SKILL.md) and its examples. Author each summary separately, retaining essential conditions and useful visuals; keep full lessons as the source of explanation.
 - For Moodle material updates, use [resumos-moodle](.agents/skills/resumos-moodle/SKILL.md) to refresh teaching files, verify versions and record source gaps.
 - For interface changes, read [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md). Preserve the colourful course grid and FEUP accent. Use existing theme tokens and SVG icon components.
 

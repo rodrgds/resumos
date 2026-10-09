@@ -48,7 +48,7 @@ Prefere frases curtas ligadas pelo raciocínio. Cada "porque" deve justificar, c
 
 Explica o passo em vez de o qualificar como óbvio, simples ou trivial. "Dependência trivial" continua a ser o nome técnico da matéria. Proximidade não exige saudações, piadas, elogios ou entusiasmo. Usa pontos e vírgulas, sem travessões.
 
-O fim da página pode ser o resultado do exemplo ou a última distinção necessária. Acrescenta uma síntese apenas quando permite comparar ou consultar algo que está disperso. A folha de consulta concentra fórmulas e condições, com ligações; a lição mantém o raciocínio. Um futuro modo TLDR não é motivo para comprimir todas as explicações.
+O fim da página pode ser o resultado do exemplo ou a última distinção necessária. Acrescenta uma síntese apenas quando permite comparar ou consultar algo que está disperso. A folha de consulta concentra fórmulas e condições, com ligações; a lição mantém o raciocínio. Para a versão curta de cada lição, segue [resumos-tldr](../resumos-tldr/SKILL.md); a existência desse modo não é motivo para comprimir a explicação completa.
 
 ## Prática e visuais
 
