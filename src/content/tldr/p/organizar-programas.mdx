@@ -1,0 +1,67 @@
+import Dot from '../../../components/Dot.astro';
+
+## Interface, compilação e ligação
+
+O cabeçalho declara a interface; o `.cpp` define a operação. Uma guarda de inclusão evita repetir o conteúdo do cabeçalho na mesma unidade de tradução.
+
+```cpp
+// dobro.hpp, dentro da guarda de inclusão:
+double dobro(double valor);
+
+// dobro.cpp, que inclui dobro.hpp:
+double dobro(double valor) { return 2.0 * valor; }
+
+// main.cpp, que inclui dobro.hpp:
+// dobro(4.0) devolve 8.
+```
+
+Cada `.cpp`, após os `#include`, forma uma unidade de tradução e compila num ficheiro objeto. A ligação reúne objetos e resolve chamadas.
+
+<Dot
+  source={
+    'digraph build { rankdir=TB; node [shape=box]; h [label="dobro.hpp"]; main [label="main.cpp"]; dobro [label="dobro.cpp"]; mo [label="main.o"]; d [label="dobro.o"]; exe [label="exemplo"]; h -> main [label="include"]; h -> dobro [label="include"]; main -> mo [label="compilar"]; dobro -> d [label="compilar"]; mo -> exe [label="ligar"]; d -> exe [label="ligar"]; }'
+  }
+  alt="O cabeçalho entra nas duas fontes. Cada fonte compila num objeto; a ligação junta os dois no executável."
+/>
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic main.cpp dobro.cpp -o exemplo
+./exemplo
+```
+
+Incluir o cabeçalho não fornece a definição compilada. Se omitires `dobro.cpp`, a ligação falha. Se definires `dobro(int)` em vez de `dobro(double)`, crias outra sobrecarga e continuas sem a definição esperada.
+
+Não incluas `.cpp` para reparar a ligação; acrescenta-o ao alvo. Uma função não `inline` definida num cabeçalho usado por vários `.cpp` pode causar múltiplas definições. Templates e funções `inline` seguem regras próprias.
+
+## CMake e fases do erro
+
+```cmake
+add_executable(exemplo main.cpp dobro.cpp)
+target_compile_features(exemplo PRIVATE cxx_std_17)
+set_target_properties(exemplo PROPERTIES CXX_EXTENSIONS OFF)
+```
+
+Num `CMakeLists.txt` com `cmake_minimum_required` e `project`, configura com `cmake -S . -B build` e compila com `cmake --build build`. Não edites ficheiros gerados. No CLion, confirma toolchain e alvo; a localização do executável depende do gerador e configuração.
+
+| Sintoma                   | Fase e primeira verificação                            |
+| ------------------------- | ------------------------------------------------------ |
+| Nome ou tipo desconhecido | Compilação: declaração, include, namespace, assinatura |
+| Referência não definida   | Ligação: definição e fonte incluída no alvo            |
+| Símbolo repetido          | Ligação: definições duplicadas                         |
+| Resultado errado          | Execução: contrato, entrada e estado                   |
+| Falha de memória          | Execução: limites, vida e propriedade                  |
+
+Lê a primeira mensagem relevante. Um erro de ligação ocorre antes de o programa executar.
+
+## Depuração
+
+1. Reduz a entrada a um caso pequeno com resultado conhecido.
+2. Compila com `-g -O0` ou seleciona Debug. Coloca um breakpoint antes da primeira divergência.
+3. Observa argumentos, estado e pilha de chamadas; distingue endereço de conteúdo apontado.
+4. Corrige a causa, repete o caso e acrescenta um teste que a detete. Depois verifica fronteiras próximas.
+
+**Step into** entra na chamada; **step over** executa-a sem entrar; **step out** termina a chamada atual.
+
+Se a remoção de negativos falha com `{-1, -2}`, o resultado correto é vazio. Depois de `erase`, o iterador devolvido aponta para `-2`; avançar novamente salta a sua análise. Casos só com positivos não revelam essa causa.
+
+[Compilação separada passo a passo](/cadeiras/p/organizar-programas/#compilação-e-ligação).

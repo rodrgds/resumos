@@ -1,0 +1,71 @@
+import Dot from '../../../components/Dot.astro';
+
+## Endereços e aliases
+
+- `&a` obtém o endereço de `a`; `int* p` declara um apontador; `*p` acede ao objeto apontado.
+- `p = &b` muda o destino; `*p = 7` altera o objeto. Copiar um apontador copia o endereço, não o objeto.
+- `nullptr` representa ausência. Pode ser testado, mas não desreferenciado. Inicializa apontadores antes de os usar.
+
+```cpp
+int a = 3, b = 8;
+int* p = &a;
+int* q = p;
+*q += 2;
+p = &b;
+*p -= 1;  // a = 5, b = 7, *q = 5
+```
+
+<Dot
+  source={
+    'digraph aliases { rankdir=LR; node [shape=box]; p [label="p"]; q [label="q"]; a [label="a = 5"]; b [label="b = 7"]; p -> b; q -> a; }'
+  }
+  alt="Estado final: p aponta para b, com valor 7; q aponta para a, com valor 5."
+/>
+
+| Tipo               | Mudar endereço | Alterar objeto por esse acesso |
+| ------------------ | -------------- | ------------------------------ |
+| `int*`             | Sim            | Sim                            |
+| `const int*`       | Sim            | Não                            |
+| `int* const`       | Não            | Sim                            |
+| `const int* const` | Não            | Não                            |
+
+`const int*` não torna constante um original modificável. Alterar um objeto originalmente constante removendo `const` tem comportamento indefinido.
+
+## Limites e duração de vida
+
+`p + i` avança `i` elementos, e `p[i]` equivale a `*(p + i)`. A aritmética tem de permanecer no mesmo array, incluindo a posição imediatamente depois do fim. Essa posição marca o intervalo `[inicio, fim)` e nunca se desreferencia. A diferença de apontadores desse array mede elementos.
+
+Um objeto automático morre ao sair do bloco. Um objeto dinâmico vive até à destruição pelo dono. Destruir o apontador local não destrói o objeto dinâmico; devolver o endereço de uma variável local deixa um apontador **pendente**.
+
+`p->campo` equivale a `(*p).campo`. Nós ligados são percorridos por `seguinte`, não por `p + 1`. Para libertar uma lista sem ciclos, cujos nós foram criados separadamente com `new`, guarda o seguinte enquanto o atual ainda vive:
+
+```cpp
+while (atual != nullptr) {
+    No* seguinte = atual->seguinte;
+    delete atual;
+    atual = seguinte;
+}
+```
+
+## Reserva e propriedade
+
+- `new T(...)` combina com `delete`; `new T[n]` combina com `delete[]`. Trocar as formas tem comportamento indefinido. `new` normal lança `std::bad_alloc` se falhar.
+- `new int[n]{}` inicializa a zero. Valida o tamanho; um array vazio não admite indexação.
+- Não uses `delete` em objetos automáticos. `delete nullptr` é válido e não faz nada.
+- Perder o único acesso dono causa fuga. Libertar duas vezes ou aceder depois de libertar tem comportamento indefinido.
+- Depois de `delete p`, todos os aliases ficam pendentes. `p = nullptr` só corrige esse nome.
+
+**RAII** liga a libertação à vida de um objeto dono. Os donos automáticos libertam recursos na saída normal e quando uma exceção atravessa o âmbito. `vector` e `string` já gerem memória.
+
+```cpp
+auto primeiro = std::make_unique<int>(7);
+int* observador = primeiro.get();
+auto segundo = std::move(primeiro);
+// primeiro está vazio; segundo possui o inteiro; *observador ainda vale 7.
+```
+
+`unique_ptr` representa propriedade exclusiva, proíbe cópia e permite movimento. `get()` só observa. Quando `segundo` destrói o inteiro, o observador fica pendente.
+
+`shared_ptr` destrói quando desaparece o último dono forte, mas ciclos fortes podem impedir essa destruição. `weak_ptr` observa sem prolongar a propriedade. Escolhe partilha apenas quando o modelo a exige.
+
+[Exemplo de transferência de propriedade](/cadeiras/p/apontadores-memoria/#o-essencial-de-raii-e-smart-pointers).

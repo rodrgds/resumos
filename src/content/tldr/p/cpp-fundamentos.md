@@ -1,0 +1,52 @@
+## Tipos e expressões
+
+- `int`, `double`, `char` e `bool` representam inteiros, valores aproximados, unidades de carácter e valores lógicos. Inicializa antes de ler.
+- `auto` deduz o tipo em compilação; esse tipo continua fixo. `const` impede alterações por esse acesso.
+- `int n{3.7};` é rejeitado por perder informação; `int n = 3.7;` guarda `3`.
+- Os tamanhos dos tipos dependem da implementação. `sizeof(T)` mede bytes; `char` não representa necessariamente uma letra Unicode completa.
+
+```cpp
+int a = 7, b = 2;
+double x = a / b;                       // 3.0
+double y = static_cast<double>(a) / b;  // 3.5
+```
+
+A divisão é calculada pelos tipos dos operandos, antes da atribuição. A divisão inteira trunca em direção a zero: `-7 / 2 == -3` e `-7 % 2 == -1`. Divisão inteira por zero e overflow com sinal têm comportamento indefinido. Resultados `double` podem precisar de comparação com tolerância.
+
+## Condições e ciclos
+
+- `=` atribui; `==` compara. Para um intervalo escreve `0 <= nota && nota <= 20`, nunca `0 <= nota <= 20`.
+- `&&` e `||` usam curto-circuito. Em `n != 0 && soma / n > 10`, a divisão só ocorre se `n` não for zero.
+- `switch` seleciona um caso inteiro; `break` ou `return` impedem continuar no seguinte. `default` trata os restantes valores.
+- `while` testa antes e pode executar zero vezes; `do ... while` executa pelo menos uma vez. `for` reúne inicialização, condição e avanço.
+
+```cpp
+int total = 0;
+for (int i = 0; i < 4; ++i) total += i;  // 0 + 1 + 2 + 3 = 6
+```
+
+Antes de cada iteração, `total` soma os índices anteriores a `i`. Este **invariante** explica o resultado quando `i` chega a `4`. Usar `i <= 4` incluiria `4`, índice inválido num array de quatro elementos.
+
+O âmbito determina onde o nome é visível; a duração de vida determina quando o objeto existe. `i` só é visível no `for`; objetos locais automáticos são destruídos ao sair do bloco.
+
+## Entrada, saída e compilação
+
+`std::cout << valor` escreve; `std::cin >> valor` tenta extrair pelo tipo do destino. Confirma a leitura antes de usar o valor e valida depois o domínio:
+
+```cpp
+int nota = 0;
+if (!(std::cin >> nota) || nota < 0 || nota > 20) {
+    // Entrada ausente, conversão falhada ou nota fora do intervalo.
+}
+```
+
+Um fluxo numa condição é falso com `failbit` ou `badbit`. `eofbit` isolado não invalida uma leitura bem-sucedida. `>>` lê texto até ao espaço; `getline` lê a linha, incluindo espaços interiores.
+
+Um programa começa em `int main()`. Chegar ao seu fim equivale a `return 0;`. Compila novamente depois de alterar a fonte:
+
+```sh
+g++ -std=c++17 -Wall -Wextra -Wpedantic notas.cpp -o notas
+./notas
+```
+
+[Exemplo de contagem com validação](/cadeiras/p/cpp-fundamentos/#escolha-iteração-e-âmbito).

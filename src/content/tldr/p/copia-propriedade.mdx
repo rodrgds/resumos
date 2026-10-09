@@ -1,0 +1,72 @@
+import Dot from '../../../components/Dot.astro';
+
+## Construção, atribuição e independência
+
+| Expressão  | Operação                                               |
+| ---------- | ------------------------------------------------------ |
+| `T b = a;` | Constrói `b` com `T(const T&)`                         |
+| `b = a;`   | Substitui o estado de `b` com `T& operator=(const T&)` |
+
+A cópia gerada copia bases e membros. Um `vector` gere a cópia dos seus elementos; um apontador cru só copia o endereço.
+
+- Uma **cópia superficial** duplica a representação, incluindo endereços. Dois apontadores donos com destrutores que libertam o mesmo recurso causam dupla libertação.
+- Uma **cópia profunda** cria recursos independentes e copia o conteúdo. Partilhar pode ser correto, mas exige uma política explícita, como `shared_ptr`.
+
+<Dot
+  source={
+    'digraph copia { rankdir=TB; node [shape=box]; a [label="a: dono"]; b [label="b: copia"]; x [label="array de a\n4, 6"]; y [label="array de b\n9, 6"]; a -> x; b -> y; }'
+  }
+  alt="Após cópia profunda e alteração de b, a possui 4 e 6; b possui outro array com 9 e 6."
+/>
+
+No `Buffer` da lição, a cópia reserva `outro.tamanho_` inteiros e copia-os. `unique_ptr<int[]>` liberta o array. Alterar `b.at(0)` para `9` deixa `a.at(0)` igual a `4`.
+
+## Atribuição segura
+
+**Copy-and-swap** prepara uma cópia completa antes de substituir o estado do destino:
+
+```cpp
+Buffer& operator=(const Buffer& outro) {
+    if (this == &outro) return *this;
+    Buffer copia(outro);
+    trocar(copia);  // troca tamanho e propriedade sem lançar
+    return *this;
+}
+```
+
+| Momento        | Destino `c` | Temporário               |
+| -------------- | ----------- | ------------------------ |
+| Antes          | `2, 3, 5`   | Não existe               |
+| Preparar cópia | `2, 3, 5`   | `9, 6`                   |
+| Trocar         | `9, 6`      | `2, 3, 5`                |
+| Sair           | `9, 6`      | Destrói o recurso antigo |
+
+Se a reserva falhar, o destino continua intacto: **garantia forte**. Libertar primeiro e copiar depois perde o estado anterior e pode ler memória já libertada na autoatribuição. Testar `this == &outro` resolve a autoatribuição, mas sozinho não dá segurança perante falhas de reserva.
+
+Devolve `*this` por referência para permitir `a = b = c`, nunca uma referência ao temporário.
+
+## Movimento e estado da origem
+
+`std::move` permite selecionar uma operação de movimento; não transfere recursos sozinho. No `Buffer`, o construtor de movimento transfere o dono e põe o tamanho da origem a zero:
+
+```cpp
+Buffer(Buffer&& outro) noexcept
+    : tamanho_(std::exchange(outro.tamanho_, 0)),
+      dados_(std::move(outro.dados_)) {}
+```
+
+Com `Buffer b(2); Buffer d = std::move(b);`, `b.size()` dá `0` e `d.size()` dá `2`. `b.at(0)` lança porque não existe elemento. A atribuição por movimento da lição deteta autoatribuição e conserva o objeto nesse caso.
+
+Um `string` ou `vector` movido fica válido, mas o estado não é geralmente especificado. Podes consultar `size()` e `empty()`, destruir ou atribuir outro valor. `front()` exige confirmar que há elementos. Não generalizes o estado vazio deste `Buffer` a todos os tipos.
+
+`noexcept` promete não propagar exceções e ajuda coleções a escolher movimento na realocação.
+
+## Regras de três, cinco e zero
+
+- **Três:** ao gerir recursos manualmente, revê destrutor, construção de cópia e atribuição de cópia.
+- **Cinco:** acrescenta construção e atribuição de movimento. Operações podem ser geradas, definidas ou proibidas com `= delete`.
+- **Zero:** prefere membros que já gerem recursos, como `vector`, evitando operações especiais próprias.
+
+Um tipo de valor pede cópias independentes; propriedade exclusiva pede cópia proibida e movimento permitido.
+
+[Implementação completa de Buffer](/cadeiras/p/copia-propriedade/#um-buffer-com-propriedade-exclusiva).
