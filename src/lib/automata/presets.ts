@@ -22,7 +22,7 @@ const transition = (
 ) => ({ from, symbol, to, output });
 export const presets: Record<PresetId, Preset> = {
   'suffix-ab': {
-    title: 'DFA: palavras terminadas em ab',
+    title: 'DFA: termina em ab',
     input: 'baab',
     task: 'Corrige a máquina para aceitar exatamente as palavras terminadas em ab.',
     cases: ['', 'ab', 'aba', 'aab', 'abb', 'abab'],
@@ -92,7 +92,7 @@ export const presets: Record<PresetId, Preset> = {
     },
   },
   'overlap-eleven': {
-    title: 'Mealy: detetar 11 com sobreposição',
+    title: 'Mealy: detetar 11',
     input: '111011',
     task: 'Corrige a Mealy para produzir 1 em cada bit que completa 11, incluindo ocorrências sobrepostas.',
     cases: ['', '0', '1', '11', '111', '11011'],

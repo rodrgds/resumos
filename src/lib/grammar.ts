@@ -223,14 +223,17 @@ export function recognize(grammar: Grammar, word: string): Recognition {
   }
 }
 
-export function leftmostDerivation(tree: ParseTree): string[] {
+export function leftmostDerivation(tree: ParseTree): {
+  steps: string[];
+  complete: boolean;
+} {
   const frontier = [tree];
   const steps = [tree.symbol];
   for (let i = 0; i < 500; i++) {
     const index = frontier.findIndex((node) => !node.terminal);
-    if (index === -1) return steps;
+    if (index === -1) return { steps, complete: true };
     frontier.splice(index, 1, ...frontier[index].children);
     steps.push(frontier.map((node) => node.symbol).join('') || 'ε');
   }
-  return steps;
+  return { steps, complete: frontier.every((node) => node.terminal) };
 }

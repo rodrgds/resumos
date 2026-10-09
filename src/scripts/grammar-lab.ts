@@ -17,9 +17,7 @@ function renderTree(root: HTMLElement, tree: ParseTree) {
   let maxDepth = 0;
   function layout(branch: ParseTree, depth: number, parent?: number): number {
     if (nodes.length >= 500 || depth > 100)
-      throw new Error(
-        'Árvore demasiado grande para desenhar. Consulta a derivação.',
-      );
+      throw new Error('Árvore demasiado grande para desenhar.');
     const index = nodes.length;
     nodes.push({ tree: branch, x: 0, y: 24 + depth * 48, parent });
     maxDepth = Math.max(depth, maxDepth);
@@ -35,7 +33,13 @@ function renderTree(root: HTMLElement, tree: ParseTree) {
     return nodes[index].x;
   }
   layout(tree, 0);
-  const width = Math.max(220, leaves * 44 + 4);
+  const spacing = Math.max(
+    44,
+    ...nodes.map(({ tree }) => tree.symbol.length * 9 + 16),
+  );
+  for (const node of nodes)
+    node.x = spacing / 2 + ((node.x - 24) / 44) * spacing;
+  const width = Math.max(220, leaves * spacing + 4);
   const height = (maxDepth + 1) * 48;
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   svg.setAttribute('width', String(width));
@@ -120,13 +124,15 @@ export function setupGrammarLabs() {
           }
           status.textContent = 'Palavra aceite.';
           const steps = get('[data-steps]');
+          const trace = leftmostDerivation(result.tree);
           steps.replaceChildren(
-            ...leftmostDerivation(result.tree).map((value) => {
+            ...trace.steps.map((value) => {
               const item = document.createElement('li');
               item.textContent = value;
               return item;
             }),
           );
+          get('[data-partial-derivation]').hidden = trace.complete;
           derivation.hidden = false;
           try {
             renderTree(tree, result.tree);
@@ -191,7 +197,7 @@ export function setupGrammarLabs() {
               entry.expected ? 'Aceite' : 'Rejeitada',
               outcome.kind === 'limit'
                 ? 'Limite atingido'
-                : `${accepted ? 'Aceite' : 'Rejeitada'}${pass ? '' : ' · falhou'}`,
+                : `${accepted ? 'Aceite' : 'Rejeitada'}${pass ? '' : '\nFalhou'}`,
             ])
               row.insertCell().textContent = text;
           }

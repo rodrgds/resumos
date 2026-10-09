@@ -1,4 +1,5 @@
 import { EditorView, keymap } from '@codemirror/view';
+import { Prec } from '@codemirror/state';
 import { editorSetup } from './editor-setup';
 
 /** The same editing and Vim shortcuts as runnable code, without a runtime. */
@@ -20,15 +21,17 @@ export function mountFormalEditor(
           root.dataset.label || fallback.getAttribute('aria-label')!,
         spellcheck: 'false',
       }),
-      keymap.of([
-        {
-          key: 'Mod-Enter',
-          run: () => {
-            options.onRun?.();
-            return true;
+      Prec.highest(
+        keymap.of([
+          {
+            key: 'Mod-Enter',
+            run: () => {
+              options.onRun?.();
+              return true;
+            },
           },
-        },
-      ]),
+        ]),
+      ),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) options.onChange?.(update.state.doc.toString());
       }),

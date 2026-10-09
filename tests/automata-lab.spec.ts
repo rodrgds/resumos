@@ -152,7 +152,9 @@ test('build a DFA through native controls and run it on the keyboard', async ({
     name: 'Laboratório de autómatos',
     exact: true,
   });
-  const graph = lab.locator('svg');
+  const graph = lab.getByRole('group', {
+    name: /Diagrama editável da máquina/,
+  });
   const graphWidth = (await graph.boundingBox())!.width;
   const canvasWidth = (await lab.locator('[data-diagram]').boundingBox())!
     .width;
@@ -189,7 +191,7 @@ test('build a DFA through native controls and run it on the keyboard', async ({
   await expect(lab.locator('[data-result]')).toContainText('Passo 1 de 2');
   await page.keyboard.press('Enter');
   await expect(lab.locator('[data-result]')).toContainText('Palavra aceite');
-  await expect(lab.locator('svg')).toHaveAccessibleName(/Estado atual: q1/);
+  await expect(graph).toHaveAccessibleName(/Estado atual: q1/);
   await expect(lab.locator('[data-trace] tbody tr')).toHaveCount(3);
   expect(
     await page.evaluate(
@@ -229,6 +231,7 @@ test('repair exercise checks equivalence and yields a witness before repair', as
 test('FSC exercises distinguish Moore and Mealy and grade a machine built from zero', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.goto('/cadeiras/fsc/maquinas-estados/');
   const lab = page.getByRole('group', {
     name: 'Laboratório de autómatos',
@@ -237,6 +240,14 @@ test('FSC exercises distinguish Moore and Mealy and grade a machine built from z
   await lab.getByRole('button', { name: 'Executar', exact: true }).click();
   await expect(lab.locator('[data-result]')).toContainText(
     'Saídas: 1 · 0 · 1 · 1',
+  );
+  const traceBounds = (await lab.locator('[data-trace]').boundingBox())!;
+  const outputBounds = (await lab
+    .locator('[data-trace] th')
+    .last()
+    .boundingBox())!;
+  expect(outputBounds.x + outputBounds.width).toBeLessThanOrEqual(
+    traceBounds.x + traceBounds.width + 1,
   );
   await lab
     .getByRole('combobox', { name: 'Máquina', exact: true })

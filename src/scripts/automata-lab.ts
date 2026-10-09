@@ -197,17 +197,20 @@ function setup(root: HTMLElement) {
     element('[data-validation]').textContent = errors.length
       ? errors.slice(0, 6).join(' ') +
         (errors.length > 6 ? ` Mais ${errors.length - 6} erros.` : '')
-      : 'Máquina determinista completa.';
+      : '';
+    element('[data-validation]').hidden = !errors.length;
     button('run').disabled = errors.length > 0;
     button('verify').disabled = errors.length > 0;
     button('exercise').disabled = !preset;
-    button('restore').textContent = preset ? 'Repor exemplo' : 'Limpar máquina';
+    const restoreLabel = preset ? 'Repor exemplo' : 'Limpar máquina';
+    button('restore').setAttribute('aria-label', restoreLabel);
+    button('restore').title = restoreLabel;
     element('[data-convention]').textContent =
       machine.model === 'moore'
-        ? 'Moore: saída do estado inicial no passo 0 e do novo estado depois de cada flanco. n bits produzem n + 1 saídas.'
+        ? 'Moore: saída inicial e uma saída após cada flanco, n + 1 saídas para n bits.'
         : machine.model === 'mealy'
-          ? 'Mealy: cada passo amostra um símbolo. A saída da transição usa o estado anterior e esse símbolo. n bits produzem n saídas.'
-          : 'DFA: a palavra é aceite se o estado após consumir toda a entrada for final. Um círculo duplo marca um estado final.';
+          ? 'Mealy: uma saída por bit, calculada com o estado anterior ao flanco e esse bit.'
+          : 'DFA: aceita se terminar num estado final, marcado com círculo duplo.';
     element('[data-task]').hidden = !exercise;
     element('[data-task]').textContent =
       exercise && preset ? presets[preset].task : '';

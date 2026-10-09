@@ -42,7 +42,8 @@ test.describe('course diagrams without JavaScript', () => {
     await page.setViewportSize({ width: 320, height: 844 });
     await page.goto('/cadeiras/tc/automatos-finitos/');
     const sizes = await page
-      .locator('[data-tc-dfa] svg text')
+      .getByRole('img', { name: /^DFA para palavras terminadas em ab\./ })
+      .locator('svg text')
       .evaluateAll((labels) =>
         labels.map((label) => {
           const matrix = (label as SVGTextElement).getScreenCTM()!;

@@ -15,12 +15,10 @@ test('CFG recognition handles recursive rules, epsilon and unreachable cycles', 
   const result = recognize(grammar, 'aabb');
   expect(result.kind).toBe('accepted');
   if (result.kind === 'accepted')
-    expect(leftmostDerivation(result.tree)).toEqual([
-      'S',
-      'aSb',
-      'aaSbb',
-      'aabb',
-    ]);
+    expect(leftmostDerivation(result.tree)).toEqual({
+      complete: true,
+      steps: ['S', 'aSb', 'aaSbb', 'aabb'],
+    });
 
   for (const source of ['S -> SS | a | ε', 'S -> A A\nA -> A | a | ε']) {
     const nullable = parseGrammar(source);
@@ -49,7 +47,7 @@ test('CFG witnesses preserve precedence and support quoted terminals and named v
     expect(
       result.tree.children[2].children.map((child) => child.symbol),
     ).toEqual(['Term', '*', 'Atom']);
-    expect(leftmostDerivation(result.tree).at(-1)).toBe('a+a*a');
+    expect(leftmostDerivation(result.tree).steps.at(-1)).toBe('a+a*a');
   }
   expect(recognize(grammar, 'a+*a').kind).toBe('rejected');
   expect(recognize(parseGrammar('S -> "A| B"'), 'A| B').kind).toBe('accepted');
@@ -61,12 +59,27 @@ test('CFG witnesses preserve precedence and support quoted terminals and named v
   );
 });
 
+test('large nullable witnesses report a partial derivation instead of claiming completion', () => {
+  const grammar = parseGrammar(
+    `S -> ${Array(32).fill('A').join(' ')}\nA -> ${Array(32).fill('B').join(' ')}\nB -> ε`,
+  );
+  const result = recognize(grammar, '');
+  expect(result.kind).toBe('accepted');
+  if (result.kind === 'accepted') {
+    const derivation = leftmostDerivation(result.tree);
+    expect(derivation.complete).toBe(false);
+    expect(derivation.steps.at(-1)).not.toBe('ε');
+  }
+});
+
 test('readers edit grammars, run their tests and see an actual derivation on mobile', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   await page.goto('/cadeiras/tc/gramaticas-livres/');
-  const lab = page.getByRole('group', { name: 'Laboratório de gramáticas' });
+  const lab = page
+    .getByRole('group', { name: 'Laboratório de gramáticas' })
+    .last();
   await lab.scrollIntoViewIfNeeded();
   const source = lab.getByRole('textbox', { name: 'Produções da gramática' });
   await expect(
@@ -74,31 +87,28 @@ test('readers edit grammars, run their tests and see an actual derivation on mob
   ).toBeEnabled();
   await expect(lab.getByRole('status').first()).toHaveText('Palavra aceite.');
   await expect(lab.getByRole('img')).toBeVisible();
-  await lab.getByLabel('Palavra', { exact: true }).fill('aab');
+  await lab.getByLabel('Palavra', { exact: true }).fill('ba');
   await expect(lab.getByRole('img')).toBeHidden();
   await lab.getByRole('button', { name: 'Testar palavra' }).click();
   await expect(lab.getByRole('status').first()).toContainText(
     'Palavra rejeitada',
   );
-  await lab
-    .getByRole('combobox', { name: 'Escolher gramática' })
-    .selectOption('3');
   await lab.getByText('Testes', { exact: true }).click();
   await lab.getByRole('button', { name: 'Executar testes' }).click();
   await expect(lab.locator('[data-test-status]')).toContainText(
-    '2 de 6 testes passaram',
+    '7 de 10 testes passaram',
   );
-  await source.fill('S -> a S b b | ε');
+  await source.fill('S -> a S b | A\nA -> a A | a');
   await expect(lab.locator('[data-test-results]')).toBeEmpty();
   await lab.getByRole('button', { name: 'Executar testes' }).click();
   await expect(lab.locator('[data-test-status]')).toHaveText(
-    '6 de 6 testes passaram.',
+    '10 de 10 testes passaram.',
   );
-  await lab.getByLabel('Palavra', { exact: true }).fill('aabbbb');
+  await lab.getByLabel('Palavra', { exact: true }).fill('aaab');
   await source.press('ControlOrMeta+Enter');
   await expect(lab.getByRole('status').first()).toHaveText('Palavra aceite.');
   await lab.getByText('Derivação mais à esquerda', { exact: true }).click();
-  await expect(lab.locator('[data-steps] li').last()).toHaveText('aabbbb');
+  await expect(lab.locator('[data-steps] li').last()).toHaveText('aaab');
   await source.fill('S -> A');
   await source.press('ControlOrMeta+Enter');
   await expect(lab.getByRole('status').first()).toContainText(
