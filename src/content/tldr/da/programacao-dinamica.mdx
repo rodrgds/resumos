@@ -1,0 +1,69 @@
+import Typst from '../../../components/Typst.astro';
+import tabela from '../../da/mochila-tabela.typ?raw';
+
+## Estado, recorrência e ordem
+
+Programação dinâmica guarda respostas a subproblemas repetidos. Define o significado de cada estado, bases, alternativas e ordem de dependências. Se é pedida a solução, guarda também decisões para reconstruir.
+
+Memoização calcula e guarda estados à primeira visita. Tabulação preenche numa ordem definida. O custo conta estados vezes trabalho por estado, mais inicialização e reconstrução.
+
+## Mochila 0-1
+
+$F[i,w]$ é o valor máximo usando os primeiros $i$ objetos com capacidade $w$, sem exigir enchimento. Pesos $p_i$ são inteiros positivos e valores $v_i$ não negativos.
+
+$$
+F[i,w]=\begin{cases}
+F[i-1,w],&p_i>w,\\
+\max(F[i-1,w],v_i+F[i-1,w-p_i]),&p_i\le w.
+\end{cases}
+$$
+
+$F[0,w]=F[i,0]=0$. A linha anterior impede repetir o objeto.
+
+<Typst
+  source={tabela}
+  format="svg"
+  alt="Tabela para objetos de peso/valor (2,3), (3,4), (4,5), (5,8) e capacidade 7. O ótimo final vale 11."
+/>
+
+Na última célula, excluir o objeto de peso 5 dá 9; incluí-lo dá $8+F[3,2]=11$. Reconstrói de trás para a frente: se a linha anterior já dá o valor, podes excluir; caso contrário inclui e reduz a capacidade. Aqui escolhes os objetos de pesos 5 e 2.
+
+Tempo e tabela: $\Theta(nW)$; reconstrução: $O(n)$. Para só o valor, usa $O(W)$ espaço e capacidades **decrescentes**. Crescentes reutilizariam o objeto: com um único peso 2, valor 3 e capacidade 4, dariam incorretamente 6.
+
+O custo é **pseudopolinomial**: $W$ tem apenas $O(\log(W+1))$ bits, mas a tabela tem $W+1$ colunas.
+
+## Trocos e soma exata
+
+Para moedas inteiras positivas, $C[i,t]$ é o mínimo de moedas que paga exatamente $t$ com as primeiras $i$ denominações. Bases: $C[i,0]=0$ e $C[0,t]=\infty$ se $t>0$.
+
+Com stock ilimitado:
+
+$$C[i,t]=\min(C[i-1,t],1+C[i,t-c_i]),$$
+
+omitindo a segunda alternativa se $t<c_i$. A mesma linha permite repetir a moeda. Tempo $O(nT)$ e espaço $O(nT)$, ou $O(T)$ para o valor. Infinito significa impossível.
+
+Com stock $s_i$:
+
+$$C[i,t]=\min_{0\le q\le\min(s_i,\lfloor t/c_i\rfloor)}\big(q+C[i-1,t-qc_i]\big).$$
+
+Guardar $q$ permite reconstruir. A versão direta custa $O(nT(S+1))$, para stock máximo $S$. Moedas 1,3,4 com stocks 2,2,1 pagam 6 com $3+3$, duas moedas.
+
+Para subconjuntos de inteiros não negativos, $B[i,t]$ indica existência de soma $t$ nos primeiros $i$:
+
+$$B[i,t]=B[i-1,t]\lor(t\ge a_i\land B[i-1,t-a_i]).$$
+
+Só $B[0,0]$ começa verdadeiro. Tempo $O(nT)$; reconstrução por incluir/excluir.
+
+## Subvetor, DAG e combinações
+
+Kadane guarda a melhor soma **não vazia terminada em $i$**:
+
+$$E[0]=A[0],\qquad E[i]=\max(A[i],E[i-1]+A[i]).$$
+
+A resposta é $\max_iE[i]$. Em `[-4,3,-1,5,-6,2]`, $E=(-4,3,2,7,1,3)$, máximo 7. Guarda o início quando reinicias e os extremos quando melhora o global. Tempo $O(n)$, espaço $O(1)$; só negativos devolvem o maior elemento.
+
+Num DAG com destino $t$, fixa $D[t]=0$ e, em ordem topológica inversa, $D[u]=\min_{u\to v}(w(u,v)+D[v])$ para $u\ne t$. Sem caminho fica infinito. Custo $O(n+m)$.
+
+Para $0\le k\le n$, $\binom nk=\binom{n-1}{k-1}+\binom{n-1}k$, com bordas 1 e valores fora do triângulo zero. São $O(nk)$ operações; numa linha, atualiza índices decrescentes. Inteiros grandes mudam o custo por operação.
+
+[Derivação e reconstrução completas](/cadeiras/da/programacao-dinamica/).

@@ -1,0 +1,53 @@
+import Manim from '../../../components/Manim.astro';
+
+## Relaxação e escolha do algoritmo
+
+Inicializa $d[s]=0$ e os outros valores a $+\infty$. Para uma aresta $u\to v$ de peso $w$, com $d[u]$ finito, se $d[u]+w<d[v]$, atualiza $d[v]$ e `pai[v]=u`. Um valor finito é o custo de um caminho encontrado, um limite superior para a distância mínima.
+
+Reconstrói o caminho seguindo pais do destino até à origem e invertendo a ordem. Um destino inalcançável não tem caminho; a origem tem o caminho de zero arestas.
+
+| Situação                                           | Método                                  | Tempo, com $n$ vértices e $m$ arestas |
+| -------------------------------------------------- | --------------------------------------- | ------------------------------------- |
+| Pesos não negativos, uma origem                    | Dijkstra com heap e `decreaseKey`       | $O((n+m)\log n)$                      |
+| Pesos negativos, uma origem                        | Bellman-Ford                            | $O(nm)$                               |
+| DAG, mesmo com pesos negativos                     | Ordem topológica e relaxação das saídas | $O(n+m)$                              |
+| Todos os pares, matriz                             | Floyd-Warshall                          | $\Theta(n^3)$                         |
+| Todos os pares, grafo esparso sem ciclos negativos | Johnson com heaps binárias              | $O(nm+n(n+m)\log n)$                  |
+
+## Dijkstra e Bellman-Ford
+
+**Dijkstra** fixa o vértice não definitivo com menor distância provisória e relaxa as suas saídas. Os pesos não negativos garantem que um caminho ainda não processado não pode baixar essa distância.
+
+Com entradas repetidas numa heap, ignora pares cuja distância já ficou antiga. Essa variante pode guardar $O(m)$ entradas e custa $O(n+m\log(m+1))$. Com matriz e escolha linear, o custo é $O(n^2)$.
+
+<Manim
+  animation="da-aresta-negativa"
+  title="Uma aresta negativa invalida a escolha"
+  description="Com s para a de peso 2, s para b de peso 5 e b para a de peso -4, Dijkstra fixa a em 2, mas o caminho por b custa 1. Não é necessário um ciclo negativo para a regra falhar."
+/>
+
+**Bellman-Ford** relaxa todas as arestas até $n-1$ vezes; pode parar se uma passagem não alterar nada. Sem ciclos negativos alcançáveis, um caminho mínimo simples usa no máximo $n-1$ arestas.
+
+Uma passagem adicional com melhoria a partir de um vértice alcançável deteta um ciclo negativo alcançável. O ciclo e todos os destinos que alcança não têm distância mínima finita. Um ciclo inalcançável da origem não afeta essa origem. A memória auxiliar é $O(n)$.
+
+## Floyd-Warshall
+
+$D^{(k)}[i,j]$ admite apenas $1,\ldots,k$ como vértices intermédios. Inicializa infinito, diagonal zero e o mínimo dos pesos de arestas paralelas, preservando autoarestas negativas.
+
+$$
+D^{(k)}[i,j]=\min\left(D^{(k-1)}[i,j],D^{(k-1)}[i,k]+D^{(k-1)}[k,j]\right).
+$$
+
+O ciclo de $k$ é o **exterior**. Sem ciclos negativos, atualiza a mesma matriz; evita somas com infinito. Espaço: $\Theta(n^2)$.
+
+Guarda o primeiro passo `next[i][j]`; numa melhoria por $k$, usa `next[i][k]`. Se $D[k,k]<0$, todos os pares que conseguem chegar a $k$ e sair para o destino são afetados por ciclo negativo.
+
+## Johnson
+
+1. Acrescenta uma origem com arestas zero para todos. Bellman-Ford dá potenciais $h(v)$ ou deteta um ciclo negativo.
+2. Repondera com $w'(u,v)=w(u,v)+h(u)-h(v)\ge0$.
+3. Corre Dijkstra de cada origem e recupera $\delta(s,t)=\delta'(s,t)-h(s)+h(t)$.
+
+Os potenciais internos cancelam-se num caminho. A alteração depende apenas dos extremos, conservando a ordem dos custos. Somar uma constante a todas as arestas não tem essa propriedade. Guardar todas as respostas exige $\Theta(n^2)$ espaço.
+
+[Execuções e reconstrução completas](/cadeiras/da/caminhos-minimos/).

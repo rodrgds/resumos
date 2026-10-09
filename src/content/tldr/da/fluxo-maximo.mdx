@@ -1,0 +1,49 @@
+import InteractiveDemo from '../../../components/InteractiveDemo.astro';
+import FlowDemo from '../../da/FlowDemo.astro';
+
+## Fluxo e rede residual
+
+Numa rede dirigida com origem $s\ne t$, cada aresta respeita $0\le f(u,v)\le c(u,v)$. Nos vértices intermédios, entrada e saída são iguais. O valor do fluxo é a saída **líquida** de $s$, igual à entrada líquida em $t$.
+
+Para cada aresta original, guarda uma residual direta de capacidade $c-f$ e uma inversa de capacidade $f$. Usar a inversa cancela fluxo original. Arestas originais de sentidos opostos e paralelas exigem pares residuais separados.
+
+Um caminho aumentante usa apenas capacidades residuais positivas. O aumento é o gargalo:
+
+$$\Delta=\min_{e\in P}c_f(e).$$
+
+Subtrai $\Delta$ em cada residual usada e acrescenta-o à inversa. O valor aumenta $\Delta$, preservando conservação.
+
+<InteractiveDemo label="Aumentos e cancelamento de fluxo">
+  <FlowDemo />
+</InteractiveDemo>
+
+Na sequência, o caminho $s,b,a,t$ cancela uma unidade de $a\to b$ e permite passar de valor 4 a 5. Só usar arestas originais impediria essa correção.
+
+## Método, custo e certificado
+
+| Método         | Escolha do caminho                      | Garantia                                                                                                                    |
+| -------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Ford-Fulkerson | Qualquer caminho aumentante             | Com capacidades inteiras, no máximo $\lvert f^*\rvert$ aumentos; procura linear dá o limite habitual $O(m\lvert f^*\rvert)$ |
+| Edmonds-Karp   | BFS, mínimo número de arestas residuais | $O(nm)$ aumentos; limite habitual $O(nm^2)$ na parte relevante da rede                                                      |
+
+$n$ é o número de vértices e $m$ o de arestas. A representação usa $O(n+m)$ espaço. Inclui inicialização e a procura final sem caminho quando o fluxo máximo é zero. Ford-Fulkerson depende do valor numérico das capacidades; com irracionais e escolhas inadequadas pode não terminar. Edmonds-Karp não escolhe maior gargalo nem menor custo ponderado.
+
+Um corte $(S,T)$, com $s\in S$ e $t\in T$, tem capacidade
+
+$$c(S,T)=\sum_{u\in S,v\in T}c(u,v).$$
+
+Conta só o sentido de $S$ para $T$. Qualquer fluxo tem $|f|\le c(S,T)$. Quando não há caminho aumentante, os alcançáveis de $s$ na residual definem $S$: as saídas originais estão saturadas e as entradas têm fluxo zero. Assim $|f|=c(S,T)$, certificando fluxo máximo e corte mínimo.
+
+## Emparelhamento e atribuições
+
+Para um grafo bipartido $L\cup R$, cria $s\to L\to R\to t$, com capacidade 1 em todas as arestas. As compatibilidades com fluxo 1 dão um emparelhamento máximo. A integridade das capacidades conserva fluxo inteiro.
+
+- **Máximo** tem maior cardinalidade; maximal apenas não permite acrescentar uma aresta sem reorganizar as atuais.
+- Caminhos residuais podem cancelar um par e criar outros dois.
+- Com BFS, o custo é $O((\min(|L|,|R|)+1)(n+m))$, incluindo a procura final. Construir a rede custa $O(n+m)$.
+
+Para revisores com limites $b_i$ e artigos com mínimos $r_j$, usa capacidades $b_i$, 1 e $r_j$ em $s\to i\to j\to t$. Existe atribuição completa se e só se o máximo é $\sum_jr_j$, saturando cada artigo. Capacidade total suficiente não garante compatibilidades suficientes.
+
+Impor exatamente os mínimos é equivalente a pelo menos neste modelo, pois podemos retirar excessos. Para testar ausências, recalcula a rede; testar todos os conjuntos de $K$ ausentes exige $\binom qK$ redes, polinomial para $K$ fixo, potencialmente exponencial se $K$ faz parte da entrada.
+
+[Execução e certificados completos](/cadeiras/da/fluxo-maximo/).

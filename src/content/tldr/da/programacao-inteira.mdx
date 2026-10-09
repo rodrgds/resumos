@@ -1,0 +1,53 @@
+import Typst from '../../../components/Typst.astro';
+import corte from '../../da/inteira-corte.typ?raw';
+
+## Domínios e relaxação
+
+ILP acrescenta variáveis inteiras a um modelo linear. Uma binária $x_i\in\{0,1\}$ representa uma escolha. Na mochila, maximiza $\sum v_ix_i$ com $\sum w_ix_i\le W$.
+
+Para atribuições, $\sum_i x_{ij}=1$ exige uma pessoa por tarefa e $\sum_jx_{ij}\le b_i$ limita a carga. Compatibilidades excluem variáveis ou fixam-nas a zero. Para ativação, $\sum_jx_{ij}\le M_iy_i$, com $y_i$ binária e $M_i$ um limite válido e apertado.
+
+Retirar integridade alarga a região: o ótimo LP é **limite superior em maximização** e inferior em minimização. Se o ótimo LP já satisfaz todos os domínios inteiros, é ótimo no ILP. Arredondar coordenadas não garante admissibilidade nem otimalidade.
+
+## Branch and bound
+
+Com limites finitos para as variáveis, resolve em cada nó a relaxação com as restrições herdadas. Para maximização:
+
+1. Poda se a relaxação é inviável.
+2. Poda se o limite superior não supera o incumbente inteiro, quando basta um ótimo.
+3. Se a solução LP é inteira, atualiza o incumbente e fecha o nó.
+4. Se $x_j=a$ é fracionária, divide em $x_j\le\lfloor a\rfloor$ e $x_j\ge\lceil a\rceil$.
+
+Todos os valores inteiros pertencem a um dos ramos; o ponto fracionário atual não pertence a nenhum. Para minimização inverte a direção dos limites. Para listar todos os ótimos conserva empates. Uma relaxação ilimitada exige análise própria. O pior caso continua exponencial.
+
+## Cortes válidos
+
+Um corte conserva **todos os pontos inteiros admissíveis** e elimina o ponto fracionário atual.
+
+No modelo $\max x+y$, com $2x+y\le4$, $x+2y\le4$ e $x,y\ge0$ inteiros, o ótimo LP é $(4/3,4/3)$, valor $8/3$. Somar restrições dá $3(x+y)\le8$; como $x+y$ é inteiro, segue $x+y\le2$.
+
+<Typst
+  source={corte}
+  format="svg"
+  alt="O corte x+y≤2 retira o ótimo fracionário (4/3,4/3) e conserva todos os pontos inteiros admissíveis, incluindo (2,0), (1,1) e (0,2)."
+/>
+
+Uma solução inteira de valor 2 e esse limite certificam o ótimo. Arredondar o **limite** para baixo é válido se o objetivo é inteiro em todas as soluções inteiras, sem arredondar a solução LP.
+
+Numa linha puramente inteira e não negativa
+
+$$x_B+\sum_ja_jx_j=b,$$
+
+com $b$ fracionário, o corte de Gomory é
+
+$$\sum_j\{a_j\}x_j\ge\{b\},\qquad\{r\}=r-\lfloor r\rfloor.$$
+
+O inteiro $x_B+\sum_j\lfloor a_j\rfloor x_j$ é no máximo $\lfloor b\rfloor$; subtrair da equação justifica o corte. A parte fracionária de $-1/3$ é $2/3$. Esta fórmula não se aplica diretamente a variáveis contínuas.
+
+## Integridade e dificuldade
+
+Capacidades inteiras em fluxo permitem métodos especializados que preservam um ótimo inteiro. Coeficientes inteiros num LP geral não bastam, como mostra o ótimo fracionário anterior.
+
+Uma cláusula $x\lor\neg y\lor z$ pode ser escrita $x+(1-y)+z\ge1$, com variáveis binárias. A transformação polinomial de SAT mostra que a viabilidade ILP geral já contém problemas difíceis.
+
+[Ramificação e cortes completos](/cadeiras/da/programacao-inteira/).

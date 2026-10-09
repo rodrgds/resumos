@@ -1,0 +1,63 @@
+import Typst from '../../../components/Typst.astro';
+import regiao from '../../da/lp-regiao.typ?raw';
+
+## Modelo e região admissível
+
+LP otimiza uma função linear sob restrições lineares, com variáveis **reais**. Frações são admissíveis; exigir quantidades inteiras muda o problema.
+
+A oficina maximiza $3x+2y$ sujeito a $x+y\le4$, $x\le2$, $y\le3$ e $x,y\ge0$.
+
+<Typst
+  source={regiao}
+  format="svg"
+  alt="Região admissível com vértices (0,0), (2,0), (2,2), (1,3), (0,3). O ótimo de 3x+2y é 10 em (2,2)."
+/>
+
+A região é convexa. Em forma standard, se há ótimo finito, existe um ótimo num vértice; uma face inteira pode também ser ótima. Uma região ilimitada pode ter mínimo finito: em $x\ge1,y\ge0$, minimizar $x+y$ dá 1, enquanto maximizar é ilimitado.
+
+## Forma standard e folgas
+
+Usamos $\max c^Tx$, com $Ax\le b$ e $x\ge0$. $A$ contém coeficientes das restrições, $b$ limites e $c$ coeficientes do objetivo.
+
+- Minimizar equivale a maximizar o objetivo negado.
+- Multiplicar uma desigualdade por $-1$ inverte o sentido.
+- Uma igualdade dá duas desigualdades opostas.
+- Variável livre: $x_j=x_j^+-x_j^-$, ambas não negativas.
+
+Acrescentar folgas dá $s=b-Ax\ge0$. Se $b\ge0$, fixar as não básicas $x=0$ dá uma base inicial admissível com folgas básicas. Os conjuntos básica/não básica mudam nos pivôs.
+
+## Simplex
+
+Num dicionário de maximização, escolhe uma não básica de coeficiente positivo no objetivo para entrar. A variável que sai é a que chega primeiro a zero: menor razão entre valor da básica e **coeficiente positivo que limita o aumento**. Ignora linhas que não o limitam.
+
+1. Isola a variável que entra na linha da que sai.
+2. Substitui nas outras linhas e no objetivo.
+3. Repete enquanto existir coeficiente positivo no objetivo.
+
+Na oficina, fazer $x$ entrar dá razões 4 e 2: sai $s_2$, com $x=2$. Depois entra $y$, com razões 2 e 3: sai $s_1$ e obtém-se $x=y=2$.
+
+$$z=10-s_2-2s_1.$$
+
+Como as não básicas são não negativas, o valor não supera 10. Se nenhuma linha limita uma entrada que melhora o objetivo, este é ilimitado nessa direção.
+
+Pivôs degenerados podem não melhorar o valor e certas regras podem ciclar. Bland escolhe o menor índice elegível para entrar e o menor índice em empates de saída, evitando ciclos. Simplex tem pior caso exponencial; LP racional admite outros algoritmos polinomiais.
+
+## Fase I e dualidade
+
+Uma folga inicial negativa indica uma base inválida, não necessariamente um LP inviável. A fase I usa artificiais e minimiza a quantidade artificial necessária. Mínimo positivo prova inviabilidade; mínimo zero permite retirar artificiais e iniciar fase II com o objetivo original.
+
+Ao primal standard corresponde
+
+$$\min b^Ty,\qquad A^Ty\ge c,\qquad y\ge0.$$
+
+Para primal e dual admissíveis:
+
+$$c^Tx\le y^TAx\le y^Tb.$$
+
+É a dualidade fraca. **Objetivos iguais certificam ambos os ótimos**. A dualidade forte garante igualdade quando há ótimo finito nas condições usuais.
+
+Na oficina, o dual $(y_1,y_2,y_3)=(2,1,0)$ vale $4\cdot2+2\cdot1+3\cdot0=10$, igual ao primal $(2,2)$. Folga complementar: recurso com folga positiva tem preço zero; variável primal positiva exige igualdade na restrição dual correspondente.
+
+Confere a solução em todas as restrições e nas unidades originais. O solver não corrige regras omitidas do modelo.
+
+[Pivôs e certificados completos](/cadeiras/da/programacao-linear/).

@@ -1,0 +1,49 @@
+import Dot from '../../../components/Dot.astro';
+import grafo from '../../da/componentes.dot?raw';
+
+## BFS e DFS
+
+Com listas de adjacência, $n$ vértices e $m$ arestas, BFS e DFS custam $O(n+m)$ tempo e $O(n)$ memória auxiliar.
+
+- **BFS** usa uma fila. Marca ao inserir, atribui $d[v]=d[u]+1$ e guarda o pai na primeira descoberta. Obtém o mínimo número de arestas a partir da origem, para grafos sem pesos. Distância desconhecida não é zero.
+- **DFS** segue um ramo e regressa por chamadas ou pilha. Para cobrir todo o grafo, reinicia em cada vértice não visitado. A profundidade pode chegar a $n$.
+- Na DFS dirigida, branco significa novo, cinzento chamada ativa e preto chamada terminada. Uma aresta para cinzento prova um ciclo; para preto não o prova.
+- Na DFS não dirigida, a aresta inversa da usada para chegar não conta como ciclo. Com paralelas, distingue a aresta pelo identificador.
+
+Os intervalos entre descoberta e término na DFS são disjuntos ou encaixados; a contenção identifica ancestralidade na floresta de chamadas.
+
+## Ordem topológica e bipartição
+
+Uma ordem topológica põe $u$ antes de $v$ para cada $u\to v$. Existe **se e só se** o grafo dirigido não tem ciclos, um DAG.
+
+Kahn começa com todos os graus de entrada zero, emite um vértice e reduz os graus dos sucessores. Se emitir menos de $n$, há ciclo: a ordem parcial não é uma solução. Alternativamente, inverte os términos de DFS depois de excluir ciclos. Ambas as versões habituais custam $O(n+m)$; podem existir várias ordens válidas.
+
+Num grafo não dirigido, testa bipartição por BFS em **cada componente**, dando cores opostas a vizinhos. Uma aresta com cores iguais revela um ciclo ímpar. O grafo é bipartido exatamente quando não possui ciclos ímpares.
+
+## Componentes fortemente conexas
+
+Uma SCC é um conjunto **maximal** onde todos os vértices se alcançam mutuamente. Maximal não significa de maior tamanho. Contrair as SCC dá um DAG, a condensação.
+
+<Dot
+  source={grafo}
+  alt="Ciclo a,b,c ligado por c para d ao ciclo d,e, que liga por e para f. As SCC são a,b,c; d,e; e f isoladamente."
+/>
+
+A ligação $c\to d$ não funde as SCC, pois falta um caminho de regresso.
+
+**Kosaraju**, em $O(n+m)$:
+
+1. Faz DFS completa em $G$ e guarda términos.
+2. Inverte todas as arestas para obter $G^T$.
+3. Faz DFS em $G^T$ por término decrescente da primeira passagem. Cada árvore nova é uma SCC.
+
+**Tarjan** usa uma DFS, índices de descoberta, `low` e uma pilha de vértices ainda sem SCC fechada:
+
+- Descobre $u$, inicializa `low[u]=index[u]` e empilha-o.
+- Para um vizinho novo $v$, explora-o e atualiza com `low[v]`.
+- Para $v$ já na pilha, atualiza com `index[v]`. Se saiu da pilha, ignora-o para este efeito.
+- Se `low[u]==index[u]`, desempilha até $u$, incluindo-o: é uma SCC.
+
+A pilha de Tarjan difere da pilha de chamadas. Um vértice cuja chamada terminou pode continuar na pilha de Tarjan. Tempo $O(n+m)$ e espaço auxiliar $O(n)$.
+
+[Traços e invariantes completos](/cadeiras/da/grafos-percursos/).

@@ -1,0 +1,60 @@
+import Dot from '../../../components/Dot.astro';
+import passeio from '../../da/tsp-atalhos.dot?raw';
+
+## Fator de aproximação
+
+Uma aproximação devolve uma solução **admissível** em tempo polinomial e possui garantia para todas as entradas permitidas. Para custos positivos e fator $\rho\ge1$:
+
+- Minimização: $C\le\rho OPT$.
+- Maximização: $C\ge OPT/\rho$.
+
+Uma heurística sem prova não herda uma garantia por funcionar num exemplo.
+
+## Cobertura de vértices e mochila
+
+Para cobertura de vértices, escolhe uma aresta ainda não coberta, acrescenta **os dois extremos** e retira as arestas incidentes. As arestas escolhidas formam um emparelhamento $M$. Qualquer cobertura precisa de um extremo distinto para cada uma, logo
+
+$$C=2|M|\le2OPT.$$
+
+Uma passagem pelas arestas dá $O(n+m)$. Numa estrela, escolher o centro e uma folha dá 2, embora o centro sozinho dê 1. Escolher apenas o vértice de maior grau é outra regra, sem esta prova. Sem arestas, a cobertura vazia é ótima.
+
+Para a mochila 0-1, assume pesos positivos e valores não negativos:
+
+1. Descarta objetos que não cabem sozinhos e ordena por densidade decrescente.
+2. Forma o prefixo até ao **primeiro objeto que não cabe**, com valor $P$.
+3. Compara-o com o objeto individual de maior valor $M$ e devolve a melhor seleção, sem as juntar.
+
+A relaxação fracionária dá $OPT\le P+\alpha v_j\le P+M$, logo
+
+$$\max(P,M)\ge OPT/2.$$
+
+Custo $O(n\log n)$. Se todos cabem, o prefixo é ótimo; se nenhum cabe, o ótimo é zero. A prova do limite refere-se ao prefixo antes do primeiro omitido, não a uma seleção arbitrária que salta objetos.
+
+## TSP métrico
+
+Exige grafo **completo, não dirigido**, pesos não negativos e desigualdade triangular $c(u,w)\le c(u,v)+c(v,w)$.
+
+1. Constrói uma MST e duplica as suas arestas.
+2. Percorre o circuito euleriano.
+3. Salta visitas repetidas, conservando a primeira visita a cada vértice e o regresso ao início.
+
+<Dot
+  source={passeio}
+  alt="Quadrado A,B,C,D: MST AB,BC,CD de custo 3. O regresso D,C,B,A de custo 3 é substituído pela aresta DA de custo 1."
+/>
+
+Retirar uma aresta do circuito ótimo deixa uma árvore, por isso $c(MST)\le OPT$. Duplicar custa no máximo $2OPT$; a desigualdade triangular garante que os atalhos não aumentam o custo. A MST com matriz domina em $O(n^2)$, seguida de passeio $O(n)$.
+
+Outra ordem de visita pode dar outro custo dentro da garantia. No TSP geral, uma aproximação de fator constante implicaria $P=NP$: transforma arestas existentes em custo 1 e ausentes em $\rho n+1$. Um ciclo hamiltoniano original permite saída no máximo $\rho n$; sem ele, todo o circuito custa mais.
+
+## Cobertura de conjuntos
+
+Para universo $U$ coberto pela família, com custo 1 por conjunto, escolhe sempre o conjunto com mais elementos **ainda não cobertos**.
+
+Uma escolha que cobre $r$ novos cobra $1/r$ a cada um. Para um conjunto ótimo com $k$ elementos ainda por cobrir, o guloso cobre pelo menos $k$ novos nessa etapa. A cobrança total dos elementos de um conjunto de tamanho $d$ é no máximo
+
+$$H_d=1+\frac12+\cdots+\frac1d\le1+\ln d.$$
+
+Se $d$ é o maior tamanho, somar sobre uma cobertura ótima dá $C\le H_dOPT$. Recalcular ganhos diretamente custa $O(|U|(I+q))$, com $I$ pertenças e $q$ conjuntos. Se faltam elementos e nenhum ganho é positivo, a família não cobre $U$. Universo vazio tem solução vazia.
+
+[Provas e execuções completas](/cadeiras/da/aproximacao-garantias/).

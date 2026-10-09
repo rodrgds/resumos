@@ -1,0 +1,60 @@
+import Dot from '../../../components/Dot.astro';
+import podas from '../../da/subconjuntos-podas.dot?raw';
+
+## Estado parcial e podas
+
+Retrocesso constrói uma escolha, explora-a e desfaz as alterações antes do ramo seguinte. O estado deve conter tudo o que determina as continuações. Parar na primeira solução encontra uma; contar todas exige continuar.
+
+Para soma exata com valores **estritamente positivos**, alvo $T\ge0$, soma parcial $s$ e soma restante $R_i$:
+
+- $s>T$ exclui o ramo por excesso.
+- $s+R_i<T$ exclui-o por insuficiência.
+- Se os restantes estão ordenados e $s<T<s+a_i$, nenhum cabe: exclui o ramo.
+
+Somas de sufixos tornam os dois primeiros testes $O(1)$. Passar nos testes não prova existência.
+
+<Dot
+  source={podas}
+  alt="Com alvo 10 e soma parcial 5, incluir 6 ou 8 ultrapassa o alvo; excluir ambos deixa soma 5 sem restantes. O ramo inteiro falha."
+/>
+
+A solução para `[2,3,6,8]` é $2+8$, exigindo desfazer a escolha de 3. Com negativos, a poda por excesso falha: $7+(-3)=4$. Pior caso $O(2^n)$ nós e memória $O(n)$.
+
+Numa DFS de labirinto fixo para encontrar uma saída, podes marcar casas permanentemente. Para enumerar caminhos simples, as marcas pertencem ao caminho atual e precisam de ser desfeitas.
+
+## Rainhas e coloração
+
+Uma rainha por coluna: rejeita linha ocupada ou diagonal ocupada. Diagonais são identificadas por $r-c$ e $r+c$; duas rainhas atacam-se diagonalmente se $|r_1-r_2|=|c_1-c_2|$. Marcas dão teste constante e espaço $O(n)$. Há até $n!$ permutações de linhas antes da poda diagonal.
+
+Para $k$ cores, experimenta em cada vértice cores diferentes das dos vizinhos já coloridos. Ordenar por grau ou saturação pode acelerar, sem provar que o primeiro resultado usa o mínimo.
+
+## Vivacidade, webs e registos
+
+Um valor está vivo se ainda pode ser lido antes de nova definição. Para instrução $u$:
+
+$$out[u]=\bigcup_{v\in succ(u)}in[v],\qquad in[u]=use[u]\cup(out[u]\setminus def[u]).$$
+
+Itera de conjuntos vazios até estabilizar; com ciclos, uma passagem pode não chegar. Em `x=x+1`, `x` pertence a `use` e `def`.
+
+Uma **web** junta intervalos da mesma variável ligados por sobreposição, incluindo transitiva. Vidas separadas podem ter webs distintas. Não inventes pontos entre o mínimo e máximo de uma lista de vivacidade.
+
+O grafo de interferências liga webs que precisam de coexistir. Um operando cuja última leitura ocorre numa instrução pode ceder o registo ao resultado dessa instrução, se a máquina permitir. Em `a=1; b=2; c=a+b; ret c`, duas cores chegam.
+
+Remove e empilha vértices com **grau atual menor que $k$**; ao recolocar após colorir o resto, há uma cor livre. Se nenhum satisfaz a condição, não provaste impossibilidade: um ciclo de quatro vértices admite duas cores apesar de grau 2. Spill transfere uma web para memória; splitting divide-a, preservando valores entre partes.
+
+## Branch and bound
+
+O incumbente é uma solução completa conhecida. Um limite do ramo deve ser otimista para **todas** as continuações:
+
+| Objetivo  | Limite do ramo | Poda para obter um ótimo |
+| --------- | -------------- | ------------------------ |
+| Maximizar | Superior $U$   | $U\le$ valor incumbente  |
+| Minimizar | Inferior $L$   | $L\ge$ valor incumbente  |
+
+Para enumerar todos os ótimos, conserva empates. A mochila fracionária fornece limite superior válido à 0-1; outro guloso inteiro fornece uma solução, não necessariamente um limite superior.
+
+No TSP dirigido, inclui sempre o regresso na folha. Um limite inferior soma ao custo parcial as menores saídas permitidas do último vértice e dos não visitados. Permitir destinos repetidos relaxa restrições e mantém o limite. Pesos negativos invalidam a poda baseada só no custo parcial.
+
+DFS reduz memória; melhor-limite pode reduzir nós. O pior caso continua exponencial.
+
+[Podas, registos e limites completos](/cadeiras/da/retrocesso-ramificacao/).
