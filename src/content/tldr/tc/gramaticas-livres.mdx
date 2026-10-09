@@ -1,0 +1,63 @@
+import GrammarLab from '../../../components/GrammarLab.astro';
+import { expressionGrouping } from '../../tc/grammar-activities';
+
+## CFG e derivações
+
+Uma **CFG** $G=(V,\Sigma,P,S)$ tem variáveis finitas $V$, terminais $\Sigma$ disjuntos de $V$, produções finitas $P$ e início $S\in V$. Cada produção é $A\to\alpha$, com uma única variável à esquerda e $\alpha\in(V\cup\Sigma)^*$.
+
+- $xAy\Rightarrow x\alpha y$ substitui uma ocorrência de $A$, sem depender do contexto. $\Rightarrow^*$ permite zero ou mais passos.
+- $L(G)=\{w\in\Sigma^*\mid S\Rightarrow^*w\}$ só contém resultados terminais. $aaSbb$ é uma forma sentencial, não uma palavra terminal.
+- Para provar $L(G)=L$, mostra que as regras não geram palavras extra e que geram **todas** as palavras pretendidas.
+
+## Construções
+
+| Linguagem            | Produções                                 |
+| -------------------- | ----------------------------------------- |
+| $a^nb^n$, $n\ge0$    | $S\to aSb\mid\varepsilon$                 |
+| $a^nb^{2n}$, $n\ge0$ | $S\to aSbb\mid\varepsilon$                |
+| $a^nb^m$, $n>m\ge0$  | $S\to aSb\mid A$; $A\to aA\mid a$         |
+| Palíndromos binários | $S\to0S0\mid1S1\mid0\mid1\mid\varepsilon$ |
+
+Para $a^nb^{2n}$, cada passo recursivo acrescenta um $a$ e dois $b$, mantendo ordem e proporção. Para gerar qualquer palavra pretendida, aplica a recursão exatamente $n$ vezes e termina em ε.
+
+Igualdade de contagens **em qualquer ordem** precisa também de concatenar blocos equilibrados: $S\to SS\mid aSb\mid bSa\mid\varepsilon$ gera essa linguagem. Por exemplo, $abba$ resulta de juntar $ab$ com $ba$.
+
+## Árvores e ambiguidade
+
+- Uma árvore sintática regista a produção usada em cada variável. As folhas, da esquerda para a direita, dão a palavra.
+- Uma gramática é **ambígua** se alguma palavra tem duas árvores distintas, ou duas derivações mais à esquerda distintas.
+- Expandir à esquerda e à direita a mesma árvore não prova ambiguidade.
+- $E\to E+E\mid E*E\mid a$ permite interpretar $a+a*a$ como $a+(a*a)$ ou $(a+a)*a$.
+
+Para precedência de $*$ sobre $+$ e associatividade à esquerda:
+
+$$
+\begin{aligned}
+E&\to E+T\mid T,\\
+T&\to T*F\mid F,\\
+F&\to a\mid(E).
+\end{aligned}
+$$
+
+Compara a árvore de $a+a+a$ nas duas gramáticas: a recursão à esquerda agrupa $(a+a)+a$; à direita, $a+(a+a)$. Aceitar as mesmas palavras não implica dar as mesmas árvores.
+
+<GrammarLab presets={expressionGrouping} />
+
+Uma árvore mostrada não prova ausência de outras. Ambiguidade é propriedade da gramática; outra CFG pode gerar a mesma linguagem sem ambiguidade. Não existe decisor geral de ambiguidade de CFG.
+
+## Hierarquia e conversão de DFA
+
+| Tipo                    | Restrição                                                       |
+| ----------------------- | --------------------------------------------------------------- |
+| 3, regular              | Todas as regras lineares à direita ou todas à esquerda          |
+| 2, livre de contexto    | Uma variável no lado esquerdo                                   |
+| 1, sensível ao contexto | Lado esquerdo contém variável e a regra não diminui comprimento |
+| 0, sem restrições       | Lado esquerdo contém pelo menos uma variável                    |
+
+No tipo 3, as regras são $A\to wB$ ou $A\to w$, todas à direita, ou $A\to Bw$ ou $A\to w$, todas à esquerda, com $w\in\Sigma^*$. Não mistures as duas orientações. No tipo 1, admite-se $S\to\varepsilon$ se $S$ não aparece à direita.
+
+Classifica pelas restrições de **todas** as regras. Uma gramática de tipo 2 pode gerar uma linguagem regular: $S\to SS\mid a$ gera $aa^*$.
+
+De um DFA, cria uma variável $A_q$ por estado: cada transição $q\xrightarrow{a}r$ dá $A_q\to aA_r$; cada final $f$ dá $A_f\to\varepsilon$. O início corresponde ao estado inicial. Logo toda a regular é CFL, mas a inclusão é estrita, como mostra $a^nb^n$.
+
+[Construções com desigualdades e provas](/cadeiras/tc/gramaticas-livres/#construir-uma-gramática-e-provar-a-linguagem).

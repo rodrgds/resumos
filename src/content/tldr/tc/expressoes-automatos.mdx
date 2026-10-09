@@ -1,0 +1,47 @@
+import Dot from '../../../components/Dot.astro';
+
+## Thompson: expressão para ε-NFA
+
+Cada fragmento tem uma entrada e uma saída; a saída é o único final do fragmento completo.
+
+| Expressão     | Construção                                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------------- |
+| $a$           | Dois estados ligados por $a$                                                                       |
+| $\varepsilon$ | Dois estados ligados por ε                                                                         |
+| $\emptyset$   | Dois estados sem ligação                                                                           |
+| $EF$          | Liga a saída de $E$ à entrada de $F$ por ε                                                         |
+| $E+F$         | Entrada nova escolhe um dos fragmentos por ε; ambas as saídas ligam à saída nova                   |
+| $E^*$         | Entrada nova permite entrar no fragmento ou saltá-lo; a saída do fragmento permite repetir ou sair |
+
+Na estrela, o caminho que salta o fragmento aceita $\varepsilon$. Em $(a+b)^*a$, podes saltar a estrela, mas tens de ler o último $a$. Aceita $a$ e $ba$, rejeita $\varepsilon$ e $ab$.
+
+A construção não precisa de ser mínima. A correção segue por indução estrutural, mostrando que cada composição realiza a operação da expressão.
+
+## Eliminação de estados: autómato para expressão
+
+1. Acrescenta início $s$, com ε para o antigo início, e final único $f$, com ε de cada antigo final. Isto preserva a palavra vazia se o antigo início era final.
+2. Usa expressões nas arestas. Junta arestas paralelas por união; uma aresta ausente tem rótulo $\emptyset$.
+3. Para eliminar $k$, atualiza todos os pares restantes com os rótulos **anteriores à ronda**:
+
+$$
+R'_{ij}=R_{ij}+R_{ik}(R_{kk})^*R_{kj}.
+$$
+
+4. Retira $k$ e repete. Quando só ficam $s,f$, lê $R_{sf}$.
+
+A parcela nova entra em $k$, repete o ciclo zero ou mais vezes e sai. O rótulo antigo conserva os caminhos que não passam por $k$.
+
+<Dot
+  source={`digraph { rankdir=LR; node [shape=circle]; s [shape=point]; q [shape=doublecircle]; s->p; p->p [label="a"]; p->q [label="b"]; q->q [label="c"]; }`}
+  alt="Autómato com ciclo a no início p, aresta b para o final q e ciclo c em q. Reconhece a estrela, b, c estrela."
+/>
+
+Nesta máquina, eliminar $p$ cria $s\to q$ com $a^*b$; eliminar $q$ dá $a^*bc^*$. A ordem pode mudar o texto da expressão, mas não a linguagem.
+
+## Equivalência e complemento
+
+- Expressões regulares, DFA, NFA e ε-NFA descrevem a mesma classe de linguagens.
+- Para complementar uma expressão, converte para ε-NFA, determiniza, completa o DFA, troca finais e converte para expressão.
+- Para comparar expressões, compara os DFA equivalentes pelo produto. Testes podem revelar uma diferença, mas não provar equivalência geral.
+
+[Eliminação com retorno e vários finais](/cadeiras/tc/expressoes-automatos/#eliminação-completa-com-retorno-e-dois-finais).
