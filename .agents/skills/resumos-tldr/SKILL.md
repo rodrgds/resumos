@@ -31,6 +31,8 @@ Usa bullets curtos para factos paralelos, números para procedimentos e tabelas 
 
 Uma fórmula não substitui a definição das suas grandezas. Mantém quantificadores, desigualdades estritas, direção das implicações, casos de igualdade, convenções e complexidade associada ao algoritmo e ao modelo de entrada corretos. Distingue condição necessária de suficiente, exemplo de prova e testes de equivalência.
 
+Põe fórmulas compridas num bloco próprio, com frações ou linhas alinhadas quando isso facilitar a leitura. Confere a 320 px: a expressão pode precisar de deslocação horizontal dentro do bloco, mas não deve alargar a página.
+
 Usa PT-PT e os termos da lição. Destaca apenas o termo ou a condição que se procura. Acrescenta uma ligação à secção completa quando o leitor possa precisar de reconstruir uma demonstração ou um cálculo, com texto que nomeie esse conteúdo. A ligação não substitui a regra essencial que o TLDR tem de dizer.
 
 ## Visuais e código
