@@ -1,0 +1,39 @@
+import Dot from '../../../components/Dot.astro';
+import mux from '../../fsc/mux21.dot?raw';
+
+## Seleção e codificação
+
+Um MUX 2:1 escolhe $I_0$ com $S=0$ e $I_1$ com $S=1$:
+
+$$Y=\overline S I_0+SI_1.$$
+
+<Dot
+  source={mux}
+  alt="Duas AND recebem I0 com S negado e I1 com S; a OR combina os ramos do MUX."
+/>
+
+Um MUX de $2^k$ entradas usa $k$ bits de seleção, independentemente da largura de cada dado. Para implementar uma função, fixa as variáveis de seleção e liga a cada entrada o cofator restante.
+
+- Um **descodificador** de k bits ativa uma de $2^k$ saídas; enable desativa todas. Uma função SOP pode fazer OR das saídas dos seus mintermos.
+- Um **demultiplexador** encaminha o dado à saída escolhida.
+- Um **codificador** indica o índice da entrada ativa. Se várias puderem estar ativas, exige prioridade. `valid` distingue nenhuma entrada ativa da entrada 0 ativa.
+
+## Comparação e soma
+
+Igualdade entre palavras é $Eq=\prod_i\overline{A_i\oplus B_i}$. Na ordem sem sinal decide o primeiro bit diferente a partir do MSB. Só se as partes altas forem iguais comparas as baixas. Com sinal, distingue primeiro os sinais.
+
+Um somador completo recebe dois bits e carry de entrada:
+
+$$S=A\oplus B\oplus C_i,\qquad C_{i+1}=AB+AC_i+BC_i.$$
+
+No **ripple-carry**, cada carry alimenta a posição seguinte, do LSB para o MSB. `1011+0110` dá palavra `0001` e carry final 1, ou `10001` completo.
+
+Para somar/subtrair com controlo M, usa $B_i\oplus M$ e $C_0=M$. M=0 dá $A+B$; M=1 dá $A+\overline B+1=A-B$.
+
+## Caminho crítico
+
+Somam-se atrasos dos módulos em série em cada percurso entrada-saída; entre percursos paralelos, escolhe-se o **máximo**. Quatro etapas de carry de 2 ns e uma soma final de 3 ns dão 11 ns no percurso que atravessa todas.
+
+Com $G_i=A_iB_i$ e $P_i=A_i\oplus B_i$, $C_{i+1}=G_i+P_iC_i$. Expandir permite carries em paralelo, com mais lógica; o ganho depende dos atrasos reais. Um multiplicador soma produtos parciais alinhados pelo peso.
+
+[Implementar por seleção](/cadeiras/fsc/circuitos-combinatorios/#implementar-uma-função-por-seleção).

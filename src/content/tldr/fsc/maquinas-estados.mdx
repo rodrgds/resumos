@@ -1,0 +1,55 @@
+import Dot from '../../../components/Dot.astro';
+import fsm from '../../fsc/fsm-resto.dot?raw';
+
+## Moore e Mealy
+
+Uma FSM guarda a informação do passado necessária para decidir o comportamento seguinte. O próximo estado depende do estado e da entrada.
+
+| Modelo | Saída                        | Diagrama              |
+| ------ | ---------------------------- | --------------------- |
+| Moore  | Estado atual                 | Saída no estado       |
+| Mealy  | Estado atual e entrada atual | Entrada/saída na seta |
+
+A saída Mealy pode mudar **entre flancos**. Não é automaticamente uma saída registada.
+
+## Resto módulo 3
+
+Ao receber b depois de um prefixo de resto r:
+
+$$r^+=(2r+b)\bmod3.$$
+
+<Dot
+  source={fsm}
+  alt="Moore com restos R0,R1,R2. Só R0 tem saída 1; cada transição calcula 2r+b módulo 3."
+/>
+
+O reset é R0, com saída 1. O prefixo vazio representa zero; exigir pelo menos um bit requer estado adicional. `110` percorre R0,R1,R0,R0 e representa 6.
+
+Codifica R0=00, R1=01, R2=10 e recuperação 11→00. Para bits $q_1,q_0$:
+
+$$D_1=\overline q_1q_0\overline b+q_1\overline q_0b,$$
+$$D_0=\overline q_1\overline q_0b+q_1\overline q_0\overline b,\qquad z=\overline q_1\overline q_0.$$
+
+Com N estados, codificação binária mínima usa $\lceil\log_2N\rceil$ flip-flops; **one-hot** usa N, com exatamente um bit a 1. Reset e recuperação devem estabelecer um código válido. Equações só verificadas nos códigos válidos não garantem recuperação de `000` ou de vários bits ativos.
+
+## Padrões e impulsos
+
+Para deteção com sobreposição, conserva o sufixo que já pode iniciar o padrão seguinte. `10101` contém duas ocorrências de `101`; após detetar, o último 1 continua útil.
+
+Na Mealy de `11`, q guarda o bit anterior, com reset q=0:
+
+$$q^+=b,\qquad z=qb.$$
+
+Amostrando com b estável **antes do flanco**, `111011` produz 0,1,1,0,0,1. Usar o novo q atribuiria uma deteção incorreta ao primeiro bit.
+
+Para um impulso único quando um botão fica 1, usa Espera→Impulso→Libertação. Só Impulso tem saída 1; Libertação espera que o botão volte a 0 antes de permitir outro impulso.
+
+## Minimização e handshake
+
+Na Moore, agrupa estados pela saída. Divide um grupo quando a mesma entrada conduz a grupos diferentes; repete até estabilizar. Mesma saída atual não basta para fundir estados.
+
+No handshake de quatro fases, o emissor fixa D e depois sobe `valid`. O recetor sobe `ack`; o emissor baixa `valid`; o recetor baixa `ack`. Conserva D até ao fim da confirmação e só então inicia outra transferência.
+
+Entre relógios diferentes, setup/hold podem falhar e provocar metastabilidade. A FSM abstrata assume entradas válidas; sincronizar bits separadamente não garante uma palavra coerente.
+
+[Síntese e codificação one-hot](/cadeiras/fsc/maquinas-estados/#síntese-com-flip-flops-d). [Laboratório de máquinas](/cadeiras/fsc/maquinas-estados/#laboratório-de-máquinas).

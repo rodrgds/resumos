@@ -1,0 +1,40 @@
+import Typst from '../../../components/Typst.astro';
+import flipflop from '../../fsc/flipflop-d.typ?raw';
+
+## Captura de estado
+
+Um **latch D** acompanha D enquanto está habilitado; um **flip-flop D** amostra D apenas no flanco ativo. Entre flancos, Q conserva-se.
+
+No latch SR de NOR, S=1 coloca Q=1, R=1 coloca Q=0 e S=R=0 conserva. S=R=1 é proibido no uso normal, pois não garante o estado ao libertar.
+
+$$Q_D^+=D,\qquad Q_T^+=Q\oplus T,\qquad T=Q\oplus Q^+.$$
+
+$Q^+$ é o estado depois do flanco. Todos os flip-flops calculam a partir do **estado antigo** e atualizam em conjunto, após clock-to-Q. Com $D_A=B,D_B=A$ e AB=10, os flancos produzem 01,10,01.
+
+<Typst
+  source={flipflop}
+  format="svg"
+  alt="Flip-flop D com enable; o triângulo do relógio indica captura no flanco de subida."
+/>
+
+## Enable, reset e registos
+
+Com enable E, $Q^+=ED+\overline EQ$. Reset síncrono atua no flanco; assíncrono atua assim que fica ativo. Confirma polaridade e prioridade sobre enable.
+
+Um registo de w bits tem w flip-flops com relógio comum. No deslocamento $Q^+=[Q_2,Q_1,Q_0,x]$, entra x pelo LSB. Um banco de N registos de w bits guarda Nw bits; cada endereço precisa de $\lceil\log_2N\rceil$ bits.
+
+Num contador binário crescente com enable, $T_0=E$ e $T_i=E\prod_{j=0}^{i-1}Q_j$. Para módulo N, usa $\lceil\log_2N\rceil$ flip-flops e faz N−1 voltar a 0 quando habilitado. Define também os códigos inválidos.
+
+## Temporização
+
+D deve estar estável durante setup antes do flanco e hold depois. Sem skew:
+
+$$T_{clk}\ge t_{cq,max}+t_{comb,max}+t_{setup},$$
+
+$$t_{cq,min}+t_{comb,min}\ge t_{hold}.$$
+
+Setup usa o **percurso mais lento**; hold, o **mais rápido**. Aumentar o período não corrige automaticamente hold.
+
+Com clock-to-Q máximo de 1 ns, lógica combinatória máxima de 6 ns e setup de 1 ns, o período mínimo é 8 ns e $f_{max}=1/T_{clk}=125$ MHz. O duty cycle é a fração em nível alto, não a frequência.
+
+[Contas de setup e hold](/cadeiras/fsc/circuitos-sequenciais/#setup-hold-e-caminho-crítico).

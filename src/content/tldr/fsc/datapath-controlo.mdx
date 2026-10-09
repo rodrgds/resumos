@@ -1,0 +1,45 @@
+import Dot from '../../../components/Dot.astro';
+import cpu from '../../fsc/cpu-uniciclo.dot?raw';
+
+## Datapath uniciclo
+
+O modelo didático suporta `add,sub,and,or,lw,sw,beq`. Cada instrução termina num período; a mais lenta determina o relógio.
+
+<Dot
+  source={cpu}
+  alt="PC lê instrução; registos e imediato alimentam ALU; ALU ou memória fornecem o valor escrito no banco."
+/>
+
+A ALU recebe rs1 e escolhe rs2 ou imediato. O resultado serve de dado para R ou de endereço para lw/sw. Um MUX de writeback escolhe resultado da ALU ou conteúdo da memória.
+
+O PC seguinte é PC+4 ou **PC da instrução+d**. Para beq, `PCSrc=Branch AND Zero`: a ALU compara por subtração enquanto um somador separado calcula o alvo. d já está em bytes.
+
+## Sinais de controlo
+
+| Classe | RegWrite | ALUSrc | MemRead | MemWrite | MemtoReg | Branch | ALUOp |
+| ------ | -------- | ------ | ------- | -------- | -------- | ------ | ----- |
+| R      | 1        | 0      | 0       | 0        | 0        | 0      | 10    |
+| lw     | 1        | 1      | 1       | 0        | 1        | 0      | 00    |
+| sw     | 0        | 1      | 0       | 1        | X        | 0      | 00    |
+| beq    | 0        | 0      | 0       | 0        | X        | 1      | 01    |
+
+ALUSrc=1 escolhe imediato; MemtoReg=1 escolhe memória. X é indiferente porque RegWrite=0 impede escrita, mas uma habilitação de escrita não pode ser arbitrária.
+
+ALUOp=00 pede ADD, 01 pede SUB para comparar e 10 consulta f3/f7. **ALUOp não é ALUControl**, que neste modelo codifica AND=0000, OR=0001, ADD=0010 e SUB=0110.
+
+## Efeitos e diagnóstico
+
+`lw x5,12(x8)`, com x8=`0x10010000` e memória contendo 42 no destino, calcula `0x1001000C` e escreve **42** em x5 no flanco. `sw` usa a mesma soma, mas escreve o dado da segunda leitura do banco.
+
+- MemtoReg preso em 0 faz lw escrever endereço. Um teste deve usar conteúdo diferente do endereço.
+- Segunda leitura presa em 0 pode afetar R, sw e beq; lw não usa essa leitura.
+- PCSrc preso em 0 só é detetado por um branch que deveria ser tomado.
+- RegWrite preso em 0 afeta R e lw; não impede necessariamente sw e beq.
+
+`addi` reutiliza os caminhos com ALUSrc=1, ALUOp=00, MemtoReg=0 e RegWrite=1. `jalr` exige caminhos para PC+4 no writeback e destino da ALU com bit 0 limpo.
+
+## Período
+
+O load normalmente percorre instrução→banco→ALU→memória→setup. Soma atrasos em série e inclui MUX se tiverem atraso atribuído. CPI=1 não garante execução mais rápida se o período for longo.
+
+[Seguir um load completo](/cadeiras/fsc/datapath-controlo/#seguir-um-load-completo).

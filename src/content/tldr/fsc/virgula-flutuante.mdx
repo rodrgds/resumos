@@ -1,0 +1,58 @@
+import Typst from '../../../components/Typst.astro';
+import floatFields from '../../fsc/float-32bits.typ?raw';
+
+## Vírgula fixa
+
+Na convenção **Qm.n**, m inclui o sinal, n conta os bits fracionários e a largura é m+n. O código inteiro X em C2 representa:
+
+$$x=X2^{-n},\quad \Delta=2^{-n},\quad x\in[-2^{m-1},2^{m-1}-2^{-n}].$$
+
+Escolhe n pelo passo e m pelo intervalo. Q4.4 usa 8 bits, passo 1/16 e intervalo −8…7,9375. Para −2,75, X=−44 e o código é `D4`.
+
+- **Soma:** alinha escalas antes de somar códigos. Com a mesma escala, Z=X+Y, verificando overflow.
+- **Produto:** XY tem escala $2^{-2n}$. Para voltar à escala original, divide por $2^n$, com intermédio suficientemente largo.
+- **Divisão:** $Z=X2^n/Y$, com Y≠0, numerador alargado e arredondamento definido.
+
+Em Q4.4, $24\times(-12)=-288$; depois dividir por 16 dá −18, valor −1,125. O intermédio não cabe em 8 bits, embora o resultado caiba. Shift aritmético de negativos arredonda para baixo, podendo diferir de truncar para zero.
+
+## Campos de vírgula flutuante
+
+| Formato  | Sinal | Expoente | Fração | Bias |
+| -------- | ----- | -------- | ------ | ---- |
+| binary32 | 1     | 8        | 23     | 127  |
+| binary64 | 1     | 11       | 52     | 1023 |
+| bfloat16 | 1     | 8        | 7      | 127  |
+
+E e F são os inteiros sem sinal dos campos; p é a largura da fração e $E_{max}$ o expoente todo a 1.
+
+| Campos           | Valor                                |
+| ---------------- | ------------------------------------ |
+| $0<E<E_{max}$    | Normal: $(-1)^s(1+F/2^p)2^{E-bias}$  |
+| E=0, F≠0         | Subnormal: $(-1)^s(F/2^p)2^{1-bias}$ |
+| E=0, F=0         | +0 ou −0                             |
+| $E=E_{max}$, F=0 | Infinito com sinal                   |
+| $E=E_{max}$, F≠0 | NaN                                  |
+
+O 1 implícito existe **só nos normais**. Binary32 tem 24 bits de precisão nos normais. Bfloat16 tem menos precisão, apesar da mesma largura de expoente; não se inferem todas as regras IEEE 754 apenas desta disposição.
+
+## Codificação e espaçamento
+
+$-13{,}25=-1{,}10101_2\times2^3$ dá s=1, E=130 e fração `10101` seguida de 18 zeros, hexadecimal `0xC1540000`.
+
+<Typst
+  source={floatFields}
+  format="svg"
+  alt="Binary32 de menos 13,25 com sinal 1, expoente 10000010 e fração 10101 seguida de dezoito zeros."
+/>
+
+Em binary32, o menor normal positivo é $2^{-126}$, o menor subnormal é $2^{-149}$ e o maior finito é $(2-2^{-23})2^{127}$. Nos normais em $[2^e,2^{e+1})$, o passo é $2^{e-23}$; nos subnormais, $2^{-149}$.
+
+## Operações e arredondamento
+
+Para somar/subtrair, **alinha expoentes**, opera os significandos, normaliza e arredonda no fim. Para multiplicar, faz XOR dos sinais, soma expoentes reais e multiplica significandos, voltando a normalizar.
+
+No modo mais próximo, os empates escolhem o significando com último bit conservado 0. Em binary32, $2^{24}+1$ arredonda para $2^{24}$: o passo local é 2. Assim, $(2^{24}+1)-2^{24}=0$, mas $2^{24}+(1-2^{24})=1$. A adição não é associativa em geral.
+
+Overflow pode dar infinito; valores demasiado pequenos podem tornar-se subnormais ou zero. Uma conversão para menor precisão pode arredondar mesmo dentro do intervalo.
+
+[Operações e empates](/cadeiras/fsc/virgula-flutuante/#somar-e-subtrair).

@@ -1,0 +1,51 @@
+import Dot from '../../../components/Dot.astro';
+import states from '../../fsc/cpu-estados.dot?raw';
+
+## Recursos partilhados
+
+O CPU multiciclo divide cada instrução em etapas e reutiliza uma ALU e uma memória de código/dados. Os registos internos conservam resultados:
+
+| Registo | Valor conservado          |
+| ------- | ------------------------- |
+| IR      | Instrução                 |
+| MDR     | Dado lido da memória      |
+| A, B    | Fontes lidas do banco     |
+| ALUOut  | Resultado anterior da ALU |
+
+Uma saída combinatória atual não é o valor já guardado. O writeback de lw usa MDR; o branch usa o alvo previamente guardado em ALUOut enquanto a ALU compara A e B.
+
+## Estados e ciclos
+
+<Dot
+  source={states}
+  alt="Fetch 0 e decode 1 comuns. Load segue 2,3,4; store 2,5; R 6,7; beq 8. Todos regressam a fetch."
+/>
+
+| Classe | Depois de fetch/decode                    | Ciclos totais |
+| ------ | ----------------------------------------- | ------------- |
+| lw     | Endereço, leitura para MDR, escrita de rd | 5             |
+| sw     | Endereço, escrita de B na memória         | 4             |
+| R      | ALU sobre A/B, escrita de rd              | 4             |
+| beq    | Comparação e escrita condicional do PC    | 3             |
+
+beq demora três ciclos tanto tomado como não tomado. IRWrite ativa-se **só no fetch**, evitando substituir a instrução pelo dado de um load.
+
+IorD escolhe PC ou ALUOut como endereço da memória. ALUSrcA escolhe PC ou A; ALUSrcB escolhe B, 4 ou imediato. MemtoReg escolhe ALUOut ou MDR para writeback. PCSource escolhe a saída atual da ALU ou ALUOut.
+
+$$\text{escreve PC}=PCWrite+(PCWriteCond\cdot Zero).$$
+
+As habilitações não necessárias ficam a 0; registos internos sem enable podem capturar noutros ciclos, por isso usa cada resultado enquanto ainda está disponível.
+
+## PC do branch
+
+A ISA calcula alvo **PCinst+d**. O fetch já avançou PC em 4. Neste modelo, decode soma **d−4 ao PC avançado**; outra implementação pode conservar PCinst e somar-lhe d diretamente.
+
+Para branch em `0x00400010`, d=−8 e PC avançado=`0x00400014`, o alvo é `0x00400014−12=0x00400008`. Somar só d daria um erro de quatro bytes. A compensação é desta organização, não uma alteração ao imediato da ISA.
+
+## Tempo de execução
+
+Conta as instruções máquina **realmente executadas**, incluindo testes finais, inicialização e expansões de pseudo-instruções. Instruções saltadas não contam.
+
+Três iterações contendo apenas lw, add, sub e beq custam $3(5+4+4+3)=48$ ciclos. O tempo é ciclos×período. Com o mesmo N, CPI de 1 para 4 e período reduzido a um terço dão razão de tempos 4/3, uma execução mais lenta.
+
+[Estados e sinais completos](/cadeiras/fsc/cpu-multiciclo/#estados-e-caminhos).

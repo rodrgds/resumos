@@ -1,0 +1,46 @@
+import Dot from '../../../components/Dot.astro';
+import mem from '../../fsc/memoria-bancos.dot?raw';
+
+## Tecnologias e controlo
+
+| Memória | Armazenamento e propriedade                                |
+| ------- | ---------------------------------------------------------- |
+| SRAM    | Circuito estável enquanto alimentado; volátil              |
+| DRAM    | Carga num condensador; volátil, requer refresh             |
+| ROM     | Conteúdo fixo ou alterado por procedimento especial        |
+| Flash   | Não volátil, reprogramável, apagamento habitual por blocos |
+
+EPROM apaga por UV; EEPROM eletricamente. Reprogramação pode ter limites de escrita. Acesso aleatório seleciona um endereço; CAM pesquisa conteúdo; acesso sequencial impõe ordem.
+
+`CS` seleciona o chip, `OE` habilita a saída e `WE` a escrita. Confirma se são ativos a 0 ou a 1. **Z** significa alta impedância, sem conduzir o barramento, não um valor guardado. Não permitas dois chips a conduzir dados diferentes simultaneamente.
+
+## Capacidade e bancos
+
+Um chip $2^a\times w$ tem a linhas de endereço, w de dados e $2^aw$ bits. $4\mathrm K\times8$ guarda 4 KiB; $4\mathrm K\times16$, 8 KiB.
+
+Com a bits de endereço, endereçamento ao byte dá $2^a$ bytes; à word dá $2^a$ words. A largura do barramento de dados não muda, por si só, a unidade endereçada.
+
+Para obter $8\mathrm K\times16$ com chips $4\mathrm K\times8$, usa dois chips em paralelo por banco e dois bancos, total **quatro chips**. A0…A11 vão a todos; A12 seleciona o banco.
+
+<Dot
+  source={mem}
+  alt="Dois bancos selecionados por A12; cada banco contém dois chips 4K por 8 para as metades do dado de 16 bits."
+/>
+
+Alargar a palavra partilha endereço e controlos. Aprofundar exige seleção entre bancos. Intercalar pares/ímpares usa A0 como seletor, em vez do bit alto.
+
+## Descodificação e aliases
+
+Para 4 KiB em `0x8000..0x8FFF`, A0…A11 selecionam a posição interna e:
+
+$$CS=A_{15}\overline A_{14}\overline A_{13}\overline A_{12}.$$
+
+Se só descodificares A15, os outros três bits altos são ignorados. `0x8123` e `0x9123` acedem à mesma posição `0x123`: são **aliases**, não armazenamento adicional.
+
+Em leitura, espera o tempo de acesso após endereço/controlo estáveis. Em escrita, conserva endereço e dado durante a janela exigida pelo chip; o datasheet define os flancos e tempos.
+
+## Verificação de erros
+
+Paridade deteta um número ímpar de inversões, mas pode falhar com duas e não identifica o bit a corrigir. SECDED corrige um erro de um bit e deteta dois, no modelo do código. Distingue capacidade útil dos bits físicos de redundância.
+
+[Mapa de endereços](/cadeiras/fsc/memorias/#mapa-de-endereços).
