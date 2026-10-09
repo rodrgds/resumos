@@ -95,6 +95,14 @@ Com o cursor num título recolhível, Espaço ou Enter abre e fecha o bloco. Num
 
 Com Vim ativo, `/` pesquisa a página atual; Enter vai ao resultado e `n`/`N` repetem a pesquisa. Escape cancela-a sem desligar Vim; depois, `n` volta a abrir o caderno. Ctrl/⌘ K mantém a pesquisa global. O cursor preserva o texto, as seleções e as anotações; a pesquisa não é guardada nem enviada.
 
+## TLDR
+
+Nas lições com uma versão curta, **TLDR** alterna entre a explicação completa e uma síntese escrita separadamente. Cada versão tem o seu URL, títulos de secção, anotações e posição de leitura. A impressão usa a versão aberta. No TLDR, o Chat recebe só o URL público dessa versão, sem apontamentos pessoais.
+
+A escolha fica neste navegador e aplica-se aos links dos conteúdos e à navegação anterior/seguinte. Uma lição sem síntese continua a abrir completa. Abrir diretamente o URL completo, incluindo um fragmento ou uma ligação à explicação, conserva essa versão. Não há redirecionamentos por preferência. O botão funciona também sem JavaScript, mas nesse caso não guarda a escolha.
+
+As sínteses não duplicam as entradas da pesquisa, do catálogo de vídeos ou das exportações Markdown e `/llms.txt`.
+
 ## Perguntar ao Chat
 
 O menu abre ChatGPT, Claude, Perplexity ou Grok com os URLs públicos da página e do Markdown e um pedido para os ler. Gemini e DeepSeek usam copiar e abrir; se a cópia falhar, aparece texto para copiar manualmente. Os links dos fornecedores podem mudar, pois não são uma API estável. Não se enviam conteúdo da página ou notas privadas, nem se usam chaves de API. Em localhost usa-se o endereço público configurado em `astro.config.mjs`.

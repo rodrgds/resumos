@@ -1,0 +1,29 @@
+---
+import { render } from 'astro:content';
+import { getCourseGuides, lessonPath } from '../../lib/course-content';
+import { getPublicTldr } from '../../lib/tldr-content';
+import LessonLayout from '../../layouts/Lesson.astro';
+
+export async function getStaticPaths() {
+  const [courses, summaries] = await Promise.all([
+    getCourseGuides(),
+    getPublicTldr(),
+  ]);
+  return summaries.map((summary) => {
+    const course = courses.find(
+      (course) => course.id === summary.id.split('/')[0],
+    )!;
+    const entry = course.pages.find((entry) => entry.id === summary.id)!;
+    return {
+      params: { path: lessonPath(course, entry).slice(1, -1) },
+      props: { course, entry, summary },
+    };
+  });
+}
+const { course, entry, summary } = Astro.props;
+const { Content, headings } = await render(summary);
+---
+
+<LessonLayout course={course} entry={entry} headings={headings} hasTldr tldr>
+  <Content />
+</LessonLayout>

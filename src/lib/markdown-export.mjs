@@ -36,7 +36,8 @@ export default function markdownExport() {
           '',
         ];
         for (const page of pages) {
-          if (page.pathname.startsWith('_')) continue;
+          if (page.pathname.startsWith('_') || /\/tldr\/?$/.test(page.pathname))
+            continue;
           const path = page.pathname.replace(/^\/|\/$/g, '');
           if (path === '404') continue;
           const document = parse(

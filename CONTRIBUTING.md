@@ -28,6 +28,14 @@ Escreve em português simples, com palavras próprias. Explica os passos e as co
 
 Liga entre páginas por rotas absolutas, como `/cadeiras/fp/funcoes/`. Confirma os fragmentos nos títulos da página construída.
 
+## Versões TLDR
+
+Guarda a síntese em `src/content/tldr/<cadeira>/<pagina>.md` ou `.mdx`, com o mesmo caminho relativo da lição. Não acrescentes frontmatter: o título e a descrição vêm da lição. Usa os mesmos componentes, fórmulas e figuras do restante conteúdo; os imports de componentes continuam em `../../../components/`.
+
+O build rejeita sínteses sem uma lição correspondente e sínteses de apresentações, revisões, exercícios, guias, recursos ou páginas da cadeira fictícia. Só aceita lições com `studyKind: lesson` e `section: conteudo` ou `laboratorios`. Uma síntese de uma lição com `draft: true` permanece privada.
+
+Escreve uma explicação muito mais curta, com as condições essenciais e os visuais necessários à compreensão. Não copies a lição inteira nem substituas o texto por um inventário de títulos. Os links para aprofundar devem apontar para o URL completo e o fragmento exato. O TLDR tem a sua própria navegação por títulos, em `/cadeiras/<cadeira>/<pagina>/tldr/`.
+
 ## Cheat sheets e âmbito
 
 Uma folha de consulta reúne fórmulas, condições, procedimentos e erros frequentes, com links para as explicações. Usa `studyKind: revision` e `section: recursos`. Aparece como Cheat sheet, fora da sequência de leitura.

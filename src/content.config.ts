@@ -49,4 +49,20 @@ const lessons = defineCollection({
     editorial: editorial.optional(),
   }),
 });
-export const collections = { lessons };
+const tldr = defineCollection({
+  loader: glob({
+    pattern: [
+      'src/content/tldr/**/[^_]*.{md,mdx}',
+      ...(process.env.RESUMOS_TEST_CONTENT === '1'
+        ? ['tests/fixtures/tldr/**/[^_]*.{md,mdx}']
+        : []),
+    ],
+    base: '.',
+    generateId: ({ entry }) =>
+      entry
+        .replace(/^(src\/content\/tldr|tests\/fixtures\/tldr)\//, '')
+        .replace(/\.(md|mdx)$/, ''),
+  }),
+  schema: z.object({}).strict(),
+});
+export const collections = { lessons, tldr };

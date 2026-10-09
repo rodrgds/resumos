@@ -14,17 +14,21 @@ import preferences from '../scripts/preferences.ts?raw';
 import { build } from 'esbuild';
 import { resolve } from 'node:path';
 import { getReadingPages } from '../lib/reading-pages';
+import { getTldrPaths } from '../lib/tldr-content';
 import { courses } from '../data/courses';
 interface Props {
   title?: string;
   description?: string;
   preloadReadingFonts?: boolean;
+  markdown?: boolean;
 }
 const {
   title = 'Resumos LEIC · FEUP',
   description = 'Um lugar para os apontamentos de LEIC da FEUP. Encontra as cadeiras por ano e semestre e ajuda a construir os primeiros resumos.',
   preloadReadingFonts = false,
+  markdown = true,
 } = Astro.props;
+const tldrPaths = await getTldrPaths();
 const enableOffline =
   import.meta.env.PROD && process.env.RESUMOS_TEST_CONTENT !== '1';
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
@@ -86,19 +90,21 @@ const snippets = await build({
         />
       </>
     )}
-    <link
-      rel="alternate"
-      type="text/markdown"
-      title="Markdown"
-      href={
-        new URL(
-          Astro.url.pathname === '/'
-            ? '/index.md'
-            : Astro.url.pathname.replace(/\/$/, '') + '.md',
-          Astro.site,
-        ).href
-      }
-    />
+    {markdown && (
+      <link
+        rel="alternate"
+        type="text/markdown"
+        title="Markdown"
+        href={
+          new URL(
+            Astro.url.pathname === '/'
+              ? '/index.md'
+              : Astro.url.pathname.replace(/\/$/, '') + '.md',
+            Astro.site,
+          ).href
+        }
+      />
+    )}
     <title>{title}</title>
     <script
       is:inline
@@ -130,6 +136,12 @@ const snippets = await build({
     <script is:inline set:html={code}></script>
   </head>
   <body>
+    <script
+      is:inline
+      type="application/json"
+      id="tldr-paths"
+      set:html={JSON.stringify(tldrPaths).replaceAll('<', '\\u003c')}
+    ></script>
     <!-- After Astro's head styles, before any visible content. -->
     <script is:inline set:html={snippets.outputFiles[0].text}></script>
     {enableOffline && <script is:inline>
@@ -154,3 +166,7 @@ const snippets = await build({
     <script src="../scripts/code-whitespace.ts"></script>
   </body>
 </html>
+
+<script>
+  import '../scripts/tldr';
+</script>

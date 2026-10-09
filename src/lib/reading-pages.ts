@@ -1,7 +1,9 @@
+import { getTldrPaths } from './tldr-content';
 import { getCourseGuides, lessonPath } from './course-content';
 
 export async function getReadingPages() {
-  return (await getCourseGuides()).flatMap((course) => {
+  const tldrPaths = await getTldrPaths();
+  const pages = (await getCourseGuides()).flatMap((course) => {
     const entries = [
       ...(course.introduction ? [course.introduction] : []),
       ...course.pages,
@@ -20,4 +22,10 @@ export async function getReadingPages() {
           : undefined,
     }));
   });
+  return pages.flatMap((page) => [
+    page,
+    ...(tldrPaths[page.path]
+      ? [{ ...page, path: tldrPaths[page.path], title: `${page.title} · TLDR` }]
+      : []),
+  ]);
 }

@@ -3,11 +3,15 @@ import Icon from './Icon.astro';
 import PersonalNoteLinks from './PersonalNoteLinks.astro';
 import TableOfContents from './TableOfContents.astro';
 import type { MarkdownHeading } from 'astro';
+import { getTldrPaths } from '../lib/tldr-content';
 import { lessonPath, type CourseGuide } from '../lib/course-content';
 interface Props {
   course: CourseGuide;
   headings?: MarkdownHeading[];
 }
+const tldrPaths = await getTldrPaths();
+const navigationPath = (path: string) =>
+  Astro.url.pathname.endsWith('/tldr/') ? tldrPaths[path] || path : path;
 const { course, headings = [] } = Astro.props;
 ---
 
@@ -24,23 +28,27 @@ const { course, headings = [] } = Astro.props;
         <a
           class="course-overview"
           href={course.path}
-          aria-current={Astro.url.pathname === course.path ? 'page' : undefined}
+          aria-current={
+            Astro.url.pathname.replace(/\/tldr\/$/, '/') === course.path
+              ? 'page'
+              : undefined
+          }
         >
           <span class="chapter-number" aria-hidden="true">
             00
           </span>
           <span>Apresentação</span>
         </a>
-        {Astro.url.pathname === course.path && headings.length > 0 && (
-          <TableOfContents headings={headings} />
-        )}
+        {Astro.url.pathname.replace(/\/tldr\/$/, '/') === course.path &&
+          headings.length > 0 && <TableOfContents headings={headings} />}
         <ul>
           {course.lessons.map((lesson, index) => (
             <li>
               <a
-                href={lessonPath(course, lesson)}
+                href={navigationPath(lessonPath(course, lesson))}
                 aria-current={
-                  Astro.url.pathname === lessonPath(course, lesson)
+                  Astro.url.pathname.replace(/\/tldr\/$/, '/') ===
+                  lessonPath(course, lesson)
                     ? 'page'
                     : undefined
                 }
@@ -50,7 +58,8 @@ const { course, headings = [] } = Astro.props;
                 </span>
                 <span>{lesson.data.title}</span>
               </a>
-              {Astro.url.pathname === lessonPath(course, lesson) &&
+              {Astro.url.pathname.replace(/\/tldr\/$/, '/') ===
+                lessonPath(course, lesson) &&
                 headings.length > 0 && <TableOfContents headings={headings} />}
             </li>
           ))}
@@ -62,7 +71,8 @@ const { course, headings = [] } = Astro.props;
                 <a
                   href={lessonPath(course, page)}
                   aria-current={
-                    Astro.url.pathname === lessonPath(course, page)
+                    Astro.url.pathname.replace(/\/tldr\/$/, '/') ===
+                    lessonPath(course, page)
                       ? 'page'
                       : undefined
                   }
@@ -72,7 +82,8 @@ const { course, headings = [] } = Astro.props;
                     ? 'Cheat sheet'
                     : page.data.title}
                 </a>
-                {Astro.url.pathname === lessonPath(course, page) &&
+                {Astro.url.pathname.replace(/\/tldr\/$/, '/') ===
+                  lessonPath(course, page) &&
                   headings.length > 0 && (
                     <TableOfContents headings={headings} />
                   )}

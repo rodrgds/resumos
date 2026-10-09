@@ -1,4 +1,5 @@
 ---
+import { getTldrPaths } from '../lib/tldr-content';
 import type { MarkdownHeading } from 'astro';
 import Layout from './Layout.astro';
 import Prose from '../components/Prose.astro';
@@ -23,14 +24,25 @@ interface Props {
   course: CourseGuide;
   entry?: Lesson;
   headings?: MarkdownHeading[];
+  hasTldr?: boolean;
+  tldr?: boolean;
 }
-const { course, entry, headings = [] } = Astro.props;
+const {
+  course,
+  entry,
+  headings = [],
+  hasTldr = false,
+  tldr = false,
+} = Astro.props;
+const tldrPaths = await getTldrPaths();
+const navigationPath = (path: string) =>
+  tldr ? tldrPaths[path] || path : path;
 const title =
   entry?.data.studyKind === 'revision'
     ? 'Cheat sheet'
     : entry?.data.title || course.name;
 const content = await Astro.slots.render('default');
-const practices = await Astro.slots.render('practices');
+const practices = (await Astro.slots.render('practices')) || '';
 const hasExercises = !!practices.trim();
 const description =
   entry?.data.description || `Apontamentos de ${course.name}.`;
@@ -46,7 +58,8 @@ const next =
 ---
 
 <Layout
-  title={`${title} · ${course.name}`}
+  title={`${title}${tldr ? ' · TLDR' : ''} · ${course.name}`}
+  markdown={!tldr}
   description={description}
   preloadReadingFonts
 >
@@ -99,15 +112,27 @@ const next =
         'course-article',
         { 'revision-sheet': entry?.data.studyKind === 'revision' },
       ]}
-      data-pagefind-body
+      data-pagefind-body={tldr ? undefined : true}
+      data-pagefind-ignore={tldr ? true : undefined}
       data-reading-page
       data-course-id={course.id}
     >
       <header class="lesson-heading">
         <h1>{title}</h1>
+        {tldr && <p class="lesson-variant">TLDR</p>}
         <p>{description}</p>
       </header>
-      <PageActions hasExercises={hasExercises} />
+      <PageActions
+        hasExercises={hasExercises}
+        tldr={tldr}
+        tldrUrl={
+          hasTldr && entry
+            ? tldr
+              ? lessonPath(course, entry)
+              : `${lessonPath(course, entry)}tldr/`
+            : undefined
+        }
+      />
       <div class="lesson-body" data-annotatable>
         <Prose>
           <Fragment set:html={content} />
@@ -131,7 +156,11 @@ const next =
         data-pagefind-ignore
       >
         {index >= 0 && (
-          <a href={previous ? lessonPath(course, previous) : course.path}>
+          <a
+            href={navigationPath(
+              previous ? lessonPath(course, previous) : course.path,
+            )}
+          >
             <Icon name="arrow-left" size={17} />
             <span>
               <small>Anterior</small>
@@ -140,7 +169,10 @@ const next =
           </a>
         )}
         {next && (
-          <a class="next-lesson" href={lessonPath(course, next)}>
+          <a
+            class="next-lesson"
+            href={navigationPath(lessonPath(course, next))}
+          >
             <span>
               <small>Seguinte</small>
               {next.data.title}
@@ -161,7 +193,7 @@ const next =
       </aside>
     )}
   </div>
-  <PrintPage title={title} course={course.name}>
+  <PrintPage title={tldr ? `${title} · TLDR` : title} course={course.name}>
     <section data-print-entry={entry?.id || `${course.id}/index`}>
       <Fragment set:html={content} />
     </section>
