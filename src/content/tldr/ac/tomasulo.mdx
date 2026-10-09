@@ -1,0 +1,54 @@
+import Dot from '../../../components/Dot.astro';
+import tomasulo from '../../ac/tomasulo.dot?raw';
+
+## Estações e etiquetas
+
+Tomasulo emite pela ordem do programa e permite executar operações prontas fora de ordem. Etiquetas distinguem versões de um registo e eliminam WAR/WAW; RAW continua a esperar pelo produtor.
+
+<Dot
+  source={tomasulo}
+  alt="Estações guardam operações e operandos; unidades calculam; o CDB difunde etiqueta e valor a todos os consumidores."
+/>
+
+| Campo         | Significado                                                   |
+| ------------- | ------------------------------------------------------------- |
+| Busy, Op      | Ocupação e operação da estação                                |
+| Vj/Vk         | Valores disponíveis dos operandos                             |
+| Qj/Qk         | Produtores pendentes; zero significa operando pronto          |
+| Qi do registo | Última operação emitida que o deve atualizar; zero se nenhuma |
+
+Se Q não é zero, o valor antigo em V ou no registo não serve como operando.
+
+## Emissão, execução e CDB
+
+1. Escolhe estação livre da classe correta. Captura **origens antes de renomear o destino**: valor se Qi=0, etiqueta caso contrário. Depois põe a nova etiqueta no Qi do destino.
+2. Executa quando Qj=Qk=0 e a unidade admite outra operação.
+3. Difunde `(etiqueta,valor)` no CDB. Consumidores dessa etiqueta recebem V e zeram Q. O registo só aceita se o seu Qi ainda corresponder. Liberta a estação após difusão.
+
+A leitura e escrita do mesmo registo exige esta ordem, para não criar uma espera pelo próprio resultado.
+
+No modelo da lição, EX começa no ciclo seguinte à emissão/receção do último operando; CDB no seguinte ao fim de EX. Há um CDB por ciclo, com prioridade à instrução mais antiga.
+
+## Traço e bloqueios
+
+```text
+I1: f0 = f2 * f4
+I2: f2 = f6 + f8
+I3: f0 = f0 - f2
+```
+
+Com `f2=2, f4=3, f6=4, f8=5`, multiplicação de 3 ciclos, soma/subtração de 2, unidades sem pipeline, M1 e A1/A2:
+
+| Operação | Emissão | EX  | CDB         |
+| -------- | ------- | --- | ----------- |
+| I1       | 1       | 2–4 | 5, valor 6  |
+| I2       | 2       | 3–4 | 6, valor 9  |
+| I3       | 3       | 7–8 | 9, valor −3 |
+
+- I3 captura Qj=M1 e Qk=A1; Qi(f0)=A2. M1 alimenta A2, mas **não sobrescreve f0**, porque já não é a etiqueta atual.
+- I2 espera pelo CDB ocupado no ciclo 5. I3 recebe o último operando no 6 e só executa no 7.
+- Estação cheia bloqueia a emissão e as seguintes. Estação com operandos pendentes continua ocupada, mesmo com unidade livre.
+- Distingue espera por estação, operando, unidade e CDB. Define quando uma estação libertada pode ser reutilizada.
+- Acessos à memória exigem ordenar stores/endereço. O algoritmo básico não garante commit em ordem nem recuperação de especulação; essas propriedades exigem mecanismos como reorder buffer.
+
+[Estado completo por ciclo](/cadeiras/ac/tomasulo/#um-exemplo-completo).

@@ -1,0 +1,48 @@
+import Typst from '../../../components/Typst.astro';
+import vias from '../../ac/simd-vias.typ?raw';
+
+## Vias empacotadas
+
+Modelo histórico FEUP com registos inteiros **RV32**, quatro bytes ou duas meias palavras. Não é o banco `v0…v31` de RVV. B0 e H0 são as vias baixas.
+
+<Typst
+  source={vias}
+  format="svg"
+  alt="Quatro vias de 8 bits: cada soma combina bytes de igual índice, sem carry entre vias."
+/>
+
+- SIMD aplica uma instrução a vários dados. Núcleos independentes são MIMD e podem executar SIMD internamente. SISD tem um fluxo de instruções/dados; MISD, vários de instruções sobre um de dados.
+- ADD8/16 e SUB8/16 conservam os bits baixos de **cada via**, sem carry para a vizinha. `[250,2]+[10,20]` dá bytes `[4,22]`, não `[4,23]`. Não é saturação.
+
+## Operações por via
+
+| Instrução | H1          | H0          |
+| --------- | ----------- | ----------- |
+| STAS16    | `a.H1+b.H1` | `a.H0−b.H0` |
+| STSA16    | `a.H1−b.H1` | `a.H0+b.H0` |
+| CRAS16    | `a.H1+b.H0` | `a.H0−b.H1` |
+| CRSA16    | `a.H1−b.H0` | `a.H0+b.H1` |
+
+- Resultados reduzem-se a 16 bits por via. Escreve as equações antes de montar hexadecimal.
+- CMPEQ testa igualdade; SCMPLT/SCMPLE comparam com sinal e UCMPLT/UCMPLE sem sinal. Verdadeiro dá **todos os bits 1 da via**; falso, zero.
+- Byte `0xF0` é −16 com sinal e 240 sem sinal. Contra 10, SCMPLT8 é verdadeiro e UCMPLT8 falso.
+- Shifts lógicos preenchem zeros; aritméticos replicam **o sinal de cada via**. Posições usam 3 bits para 8 bits e 4 para 16 bits. Shift escalar mistura bits entre vias.
+
+## Produtos e empacotamento
+
+- SMUL16 produz H0×H0 no registo baixo do par e H1×H1 no alto, com sinal e **32 bits por produto**. SMULX16 cruza os índices; UMUL usa valores sem sinal.
+- O par físico começa num índice par, seguido do próximo: `x28/x29`. Na notação de par d, destinos `x[2d]`, `x[2d+1]`.
+- SMUL8 produz quatro produtos de 16 bits, B0/B1 no registo baixo e B2/B3 no alto.
+- KMDA soma dois produtos de meias palavras num parcial de 32 bits. Com todas as vias −32768, a soma $2^{31}$ satura em `0x7FFFFFFF`. Um acumulador largo posterior não recupera o valor perdido.
+
+| Instrução | Resultado `(H1,H0)` |
+| --------- | ------------------- |
+| PKBB16    | `(a.H0,b.H0)`       |
+| PKTT16    | `(a.H1,b.H1)`       |
+| PKBT16    | `(a.H0,b.H1)`       |
+| PKTB16    | `(a.H1,b.H0)`       |
+| SWAP16    | `(a.H0,a.H1)`       |
+
+SWAP8 troca bytes adjacentes em cada meia palavra. SUNPKD estende bytes selecionados com sinal; ZUNPKD, com zeros. `SUNPKD820` coloca B2 em H1 e B0 em H0: `0x12FE34F0` dá `0xFFFEFFF0`; a variante Z dá `0x00FE00F0`.
+
+[Operações, máscaras e pares de registos](/cadeiras/ac/simd/).

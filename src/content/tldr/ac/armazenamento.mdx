@@ -1,0 +1,45 @@
+import Typst from '../../../components/Typst.astro';
+import dma from '../../ac/dma-tempos.typ?raw';
+
+## Latência de disco
+
+$$t_{\rm pedido}=t_{\rm fila}+t_{\rm procura}+t_{\text{rotação}}+t_{\text{transferência}}+t_{\rm controlador}.$$
+
+- A RPM rotações/minuto, volta completa demora $60/RPM$ s. Com posição angular uniforme, rotação média é **meia volta**, $30/RPM$ s.
+- Transferir B bytes à taxa R bytes/s demora $B/R$. Pequenos pedidos aleatórios pagam posicionamento por pedido; sequenciais amortizam esse custo.
+- 8 KiB, 160 MB/s, 7200 RPM, procura 4 ms e controlador 0,2 ms, sem fila: $4+4{,}1667+0{,}0512+0{,}2\approx8{,}418$ ms. A taxa anunciada só cobre transferência.
+- Pistas de mesmo raio em superfícies distintas formam um cilindro. Ficheiro que ocupa três cilindros paga duas mudanças adicionais no modelo favorável da lição. Não repitas custos já incluídos numa média fornecida.
+
+## Flash e unidades
+
+- Flash conserva dados sem alimentação. NOR permite leitura aleatória fina; NAND lê/escreve páginas e apaga blocos maiores.
+- Controlador remapeia páginas, distribui desgaste e recupera blocos. SSD remove procura/rotação mecânicas, mas conserva custos de gestão, controlador e transferência.
+- MB=$10^6$ B; MiB=$2^{20}$ B; KiB=1024 B. Converte bloco e taxa para bytes antes de dividir.
+
+## Limite de taxa
+
+Converte todos os recursos para pedidos/s e toma o **mínimo**: CPU $f/c$, barramento $R/B$, discos e controladores. Soma capacidades apenas quando caminhos e distribuição permitem simultaneidade.
+
+CPU 2 GHz, 40000 ciclos/pedido, bus 640 MB/s, quatro discos de 1000 pedidos/s e blocos de 64 KiB:
+
+$$q\le\min(50000,9765{,}625,4000)=4000\ \text{pedidos/s}.$$
+
+Taxa útil máxima $4000\times65536=262{,}144$ MB/s. Acrescentar discos não elimina limites de bus/controlador.
+
+## Sobreposição finita
+
+Dois buffers, $n\ge1$ blocos, durações constantes de transferência $t_D$ e cálculo $t_C$, recursos independentes e preparação incluída:
+
+$$T_n=t_D+t_C+(n-1)\max(t_D,t_C).$$
+
+<Typst
+  source={dma}
+  format="svg"
+  alt="Três transferências de 4 ms sobrepõem cálculo de 3 ms. O primeiro cálculo começa aos 4 ms e o último termina aos 15 ms."
+/>
+
+- Com 3 blocos, 4 ms de transferência e 3 de cálculo: 15 ms, contra 21 sem sobreposição. Não omitas enchimento e cálculo final.
+- CPU mais lento pode reter um buffer e obrigar DMA a esperar. Mais buffers não ultrapassam a taxa dos recursos; contenção de memória pode invalidar o modelo ideal.
+- CPU/I/O sequenciais: 40%/60%, acelerados 4/2 vezes, deixam tempo relativo $0{,}4/4+0{,}6/2=0{,}4$, rapidez 2,5. Com sobreposição, mede o caminho crítico, sem somar tempos simultâneos.
+
+[Pedidos de disco e dois buffers](/cadeiras/ac/armazenamento/).

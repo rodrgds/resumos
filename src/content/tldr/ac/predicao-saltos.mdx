@@ -1,0 +1,42 @@
+import Dot from '../../../components/Dot.astro';
+import histerese from '../../ac/histerese.dot?raw';
+
+## Penalidade de controlo
+
+Modelo de cinco fases, sem conflitos de operandos: redirecionar o PC em MEM custa 3 ciclos por erro; em ID, 1 ciclo. Conta a fase do **redirecionamento**, não apenas da comparação.
+
+$$CPI=CPI_{\rm sem\ erros}+bep.$$
+
+$b$ é a fração de branches, $e$ a probabilidade de erro e $p$ a penalidade em ciclos. Com base 1, 20% branches, 90% acertos e $p=3$, dá $CPI=1{,}06$. Esperar sempre paga a penalidade em todos os branches; prever paga nos erros.
+
+## Operandos em ID
+
+- Antecipar a comparação pode reduzir controlo e aumentar paragens de dados.
+- `add; beq` dependente precisa de uma paragem com atalho EX/MEM para o comparador ID. Forwarding apenas para EX não basta.
+- `lw; beq` dependente precisa de duas paragens com MEM/WB para ID e WB-primeiro/ID-depois. Eventual erro de predição acrescenta a penalidade de controlo.
+
+## Estado do preditor
+
+- A BHT associa história a bits do PC, excluindo alinhamento. Branches diferentes podem partilhar uma entrada. Prevê **direção**; uma BTB pode fornecer o alvo.
+- Um bit prevê o último resultado e atualiza para o resultado real. Com estado inicial T e `TTTNTTTN`, erra nas posições 4, 5 e 8: três erros. Em regime repetido, são dois por percurso.
+- Em qualquer traço: escreve estado anterior, previsão, resultado, erro e estado seguinte. **Prevê antes de atualizar.**
+
+## Dois bits
+
+00/01 preveem N e 10/11 preveem T. As duas máquinas seguintes têm transições diferentes:
+
+| Estado | Histerese com N | Histerese com T | Saturante com N | Saturante com T |
+| ------ | --------------- | --------------- | --------------- | --------------- |
+| 00     | 00              | 01              | 00              | 01              |
+| 01     | 00              | 11              | 00              | 10              |
+| 10     | 00              | 11              | 01              | 11              |
+| 11     | 10              | 11              | 10              | 11              |
+
+<Dot
+  source={histerese}
+  alt="Histerese: erro enfraquece uma previsão forte; novo erro muda para a previsão forte oposta. Um acerto reforça a direção atual."
+/>
+
+O contador saturante incrementa com T e decrementa com N, limitado a 0–3. Partindo de 01, `TNTNTN` dá **4 erros na histerese e 6 no saturante**. Estado inicial e janela finita são necessários para contar; não substituas a contagem por uma taxa de regime.
+
+[Dependências e traços dos preditores](/cadeiras/ac/predicao-saltos/).

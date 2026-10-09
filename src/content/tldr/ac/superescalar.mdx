@@ -1,0 +1,42 @@
+import Dot from '../../../components/Dot.astro';
+import dependencias from '../../ac/dependencias.dot?raw';
+
+## Dependências
+
+| Tipo | Restrição                                     |
+| ---- | --------------------------------------------- |
+| RAW  | Ler o valor produzido pela escrita anterior   |
+| WAR  | Não sobrescrever antes da leitura anterior    |
+| WAW  | Fazer prevalecer a última escrita do programa |
+| RAR  | Duas leituras não impõem ordem de resultados  |
+
+<Dot
+  source={dependencias}
+  alt="RAW leva t0 de I1 para I2; WAR conserva a leitura de I2 antes da escrita I3; WAW ordena escritas no mesmo destino."
+/>
+
+- Renomeação elimina WAR/WAW de registos, mas **RAW exige o valor**.
+- Memória depende dos endereços efetivos. Bases diferentes podem designar o mesmo endereço; se forem desconhecidos, não assumes independência.
+
+## Latência e recursos
+
+Para $n$ operações independentes, duração de execução $L$ e intervalo entre inícios $I$:
+
+$$C=L+(n-1)I.$$
+
+Quatro operações de seis ciclos com $I=1$ levam nove ciclos; com $I=6$, levam 24. Confere se a latência indicada inclui o ciclo inicial.
+
+- Múltiplas unidades não implicam execução ou emissão fora de ordem.
+- Emissão em ordem: instrução bloqueada em ID retém as seguintes, mesmo independentes.
+- Confere fases das unidades, intervalo de início, retenção de resultados, portos MEM/WB, ordem de passagem e caminhos de forwarding.
+- No modelo da lição, MEM/WB são comuns e seguem a ordem do programa. Um resultado pronto pode esperar pelo porto e manter a unidade ocupada.
+
+## Emissão múltipla e sequenciamento
+
+- **Superescalar** emite mais de uma instrução por ciclo. Com uma via ALU e uma memória, `add; lw` independentes podem emitir juntos. Duas operações de memória não cabem; `lw; add` dependente também não.
+- $IPC=N/C$ e $CPI=C/N=1/IPC$. 100 instruções em 60 ciclos dão IPC 1,667 e CPI 0,6. O pico de emissão não é o débito garantido.
+- Sequenciamento dinâmico escolhe instruções prontas numa janela. Tomasulo emite em ordem para estações, mas pode executar fora de ordem.
+- Execução, difusão e **commit** são eventos diferentes. Reorder buffer permite confirmação em ordem, recuperação de especulação e exceções precisas.
+- Desenrolar ciclos aumenta independência, código e pressão de registos/cache. Reordenar conserva memória, efeitos externos e semântica, incluindo arredondamentos de vírgula flutuante.
+
+[Traços com unidades e portos comuns](/cadeiras/ac/superescalar/#múltiplas-unidades-com-emissão-em-ordem).

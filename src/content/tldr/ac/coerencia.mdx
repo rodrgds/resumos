@@ -1,0 +1,40 @@
+import Dot from '../../../components/Dot.astro';
+import coerencia from '../../ac/coerencia.dot?raw';
+
+## Redução paralela
+
+- Soma local e combinação são fases sucessivas. Barreiras esperam pelos resultados necessários; evita sobrescrever valores ainda usados por outros participantes.
+- Oito núcleos somam 16 elementos cada um **a partir de zero**: 16 adições locais e redução `8→4→2→1` de três adições no caminho crítico. Total $19t_a$, ignorando comunicação/barreiras.
+- Dez parciais: pares vizinhos dão `10→5→3→2→1`, quatro rondas. Combinar metades e incorporar o ímpar pode dar `10→5→2→1`, mas a ronda intermédia faz duas adições sucessivas num núcleo. Ambos custam $4t_a$ na redução.
+
+Menos rondas não garante menor tempo: conta trabalho no **caminho crítico**.
+
+## Coerência, consistência e atomicidade
+
+- **Coerência** organiza cópias e escritas da mesma posição. **Consistência** define ordenações observáveis entre posições diferentes.
+- Ver `pronto=1` não garante, em qualquer modelo, observar uma escrita anterior em `dados`. Usa a sincronização exigida pelo modelo de memória.
+- Coerência não torna ler/somar/escrever indivisível. Dois núcleos podem ler 0 e ambos guardar 1. Usa incremento atómico ou exclusão mútua; uma barreira isolada não resolve atomicidade.
+
+## Invalidação da linha
+
+Snooping observa transações do interligador. Write-invalidate obtém autorização de escrita e invalida outras cópias; write-update difunde dados novos.
+
+<Dot
+  source={coerencia}
+  alt="Escrita de N1 torna a sua linha dirty e invalida N2. Na leitura seguinte, o proprietário fornece a linha atualizada."
+/>
+
+Modelo da lição: uma leitura externa de linha dirty faz o proprietário fornecer a linha **e atualizar RAM**, deixando cópias limpas. Outros protocolos podem não atualizar RAM imediatamente.
+
+| Operação       | N1                   | N2                        | RAM     |
+| -------------- | -------------------- | ------------------------- | ------- |
+| Inicial        | `(X,Y)=(5,8)`, limpa | `(5,8)`, limpa            | `(5,8)` |
+| N1 escreve X=9 | `(9,8)`, dirty       | Inválida                  | `(5,8)` |
+| N2 lê Y        | `(9,8)`, limpa       | `(9,8)`, limpa, devolve 8 | `(9,8)` |
+
+- Validade/dirty e transferências abrangem a **linha inteira**; escrita numa palavra conserva as restantes.
+- Partilha verdadeira usa o dado modificado pelo outro núcleo. **Falsa partilha** sofre invalidações por palavras diferentes da mesma linha. Separar dados em linhas pode reduzir tráfego, atendendo ao alinhamento e espaço.
+- Falta após invalidação é de coerência, não apenas conflito de índice.
+- Distingue índice da cache e posição da palavra. Em 4 linhas de 16 B, palavras de 4 B, `0xA6B8` tem índice 3 e palavra 2; uma escrita na palavra 0 não altera esse valor.
+
+[Reduções e traço completo de coerência](/cadeiras/ac/coerencia/).

@@ -1,0 +1,40 @@
+import Dot from '../../../components/Dot.astro';
+import datapath from '../../ac/datapath.dot?raw';
+
+## Percurso e controlo
+
+O **percurso de dados** opera sobre valores; o **controlo** seleciona origens nos multiplexadores e autoriza escritas. Modelo reduzido com operações R, `lw`, `sw`, `beq`, memórias I/D separadas e banco de duas leituras/uma escrita:
+
+<Dot
+  source={datapath}
+  alt="Registos e imediato alimentam a ALU. O controlo seleciona o retorno ALU ou memória e o próximo PC."
+/>
+
+| Instrução | ALUSrc | MemtoReg | RegWrite | MemRead | MemWrite | Branch | ALUOp |
+| --------- | ------ | -------- | -------- | ------- | -------- | ------ | ----- |
+| R         | 0      | 0        | 1        | 0       | 0        | 0      | 10    |
+| `lw`      | 1      | 1        | 1        | 1       | 0        | 0      | 00    |
+| `sw`      | 1      | X        | 0        | 0       | 1        | 0      | 00    |
+| `beq`     | 0      | X        | 0        | 0       | 0        | 1      | 01    |
+
+- `ALUSrc=1` escolhe o imediato; `MemtoReg=1`, o dado da memória. X é indiferente apenas porque a instrução não escreve registos.
+- ALUOp 00 pede soma, 01 subtração para igualdade, 10 descodificação de `funct3/funct7`.
+- `lw t0,12(a0)` lê a palavra em `a0+12` para `t0`; `sw t1,12(a0)` guarda **o valor de t1** nesse endereço.
+- `beq` escolhe o alvo se `Branch AND Zero`. O alvo usa o **PC da instrução** mais o deslocamento B reconstruído; caso contrário avança para `PC+4`.
+
+## Ciclo único e multiciclo
+
+- Em ciclo único, o período acomoda o caminho combinacional mais lento. Soma atrasos em série, não componentes em paralelo. No exemplo de load, $200+100+150+250+100=800$ ps.
+- Multiciclo reutiliza recursos em instantes distintos e guarda IR, MDR, operandos A/B e ALUOut. O período acomoda o estado mais lento.
+- No modelo da lição: R usa 4 ciclos; load 5; store 4; branch 3. A mistura determina $CPI=\sum_i p_iCPI_i$.
+- Com frações 40%, 30%, 20%, 10%, $CPI=4{,}2$. A 250 ps, são 1050 ps/instrução. Compara **CPI × período**.
+- Se IF já avançou o PC, guarda o PC original ou compensa o avanço para calcular o alvo do branch.
+
+## Registos de pipeline
+
+- IF/ID transporta instrução e PC; ID/EX acrescenta operandos, imediato, registos e controlos EX/M/WB.
+- EX/MEM transporta resultado ALU, dado do store, destino e controlos M/WB; MEM/WB, dado lido, resultado ALU, destino e controlos WB.
+- `rd`, `RegWrite` e seleção do retorno acompanham **a instrução até WB**. Usar o destino da instrução atualmente em ID escreve no registo errado.
+- Uma bolha desativa escritas, como `RegWrite` e `MemWrite`. Dados antigos sem controlo ativo não alteram estado.
+
+[Estados e comparação das organizações](/cadeiras/ac/percurso-dados/).

@@ -1,0 +1,57 @@
+import Typst from '../../../components/Typst.astro';
+import pilha from '../../ac/pilha.typ?raw';
+
+## RV32 e registos
+
+Modelo RV32 com 32 registos inteiros de 32 bits e instruções base de 32 bits, sem extensão comprimida. A ISA define efeitos visíveis; a organização interna determina como e em quanto tempo os executa.
+
+| Registos             | Convenção                                      |
+| -------------------- | ---------------------------------------------- |
+| `zero`/`x0`          | Sempre zero; ignora escritas                   |
+| `ra`/`x1`, `sp`/`x2` | Retorno e pilha; repor `sp` ao retornar        |
+| `t0` a `t6`          | Temporários, não preservados pelo chamado      |
+| `a0` a `a7`          | Argumentos; `a0/a1` também retornam resultados |
+| `s0` a `s11`         | O chamado preserva os que altera               |
+| `gp`, `tp`           | Reservados pela convenção                      |
+
+Não existe `t7`. Registos `f0` a `f31`, quando disponíveis, pertencem a outro banco.
+
+## Valores e memória
+
+- Endereços e deslocamentos são de **byte**. `lw rd,12(rs1)` lê quatro bytes em `rs1+12`; `sw rs2,12(rs1)` escreve o valor de `rs2`. `vetor[i]` de palavras está em `base+4i`.
+- `lb/lh` leem 1/2 B e estendem o sinal; `lbu/lhu` preenchem com zeros. `sb/sh/sw` guardam os 1/2/4 B baixos. `ld/sd` são RV64.
+- Em little endian, `0x12345678` ocupa `78 56 34 12` do endereço menor para o maior. Palavra naturalmente alinhada tem endereço múltiplo de 4.
+- `addi` usa imediato com sinal de 12 bits, de −2048 a 2047. Soma mantém os 32 bits baixos, sem exceção de overflow.
+- `slt/blt/bge` interpretam com sinal; as variantes `sltu/bltu/bgeu`, sem sinal. Não há flags globais de comparação.
+- `srli` preenche com zeros; `srai`, com o bit de sinal. Deslocamento imediato vai de 0 a 31. Para −3, `srai` por 1 dá −2; `div` por 2 dá −1, pois arredonda para zero. `div` requer a extensão M.
+
+## Codificação e saltos
+
+| Formato | Campos do bit 31 ao 0                            |
+| ------- | ------------------------------------------------ |
+| R       | `funct7 rs2 rs1 funct3 rd opcode`                |
+| I       | `imm[11:0] rs1 funct3 rd opcode`                 |
+| S       | `imm[11:5] rs2 rs1 funct3 imm[4:0] opcode`       |
+| B       | `imm[12,10:5] rs2 rs1 funct3 imm[4:1,11] opcode` |
+| U       | `imm[31:12] rd opcode`                           |
+| J       | `imm[20,10:1,11,19:12] rd opcode`                |
+
+- `opcode`, `rd`, `funct3`, `rs1`, `rs2` têm 7, 5, 3, 5, 5 bits. Codifica o imediato negativo na largura do campo.
+- B/J têm bit zero implícito. Reconstrói o deslocamento **com sinal em bytes** e soma ao PC da própria instrução. De `0x100` para `0x0F0`, deslocamento −16.
+- `jal` guarda `PC+4`; `jalr` guarda `PC+4` e salta para `(rs1+imm)&~1`. `ret` equivale a `jalr zero,0(ra)`. Sem salto, avança 4 B.
+- Conta pseudoinstruções **depois da expansão**. `li/la/call` podem produzir várias instruções.
+- Para `lui/addi`, compensa o imediato baixo negativo: `0x12345ABC` exige `lui t0,0x12346` e `addi t0,t0,-1348`.
+
+## Chamadas
+
+O chamador guarda temporários necessários após chamar. O chamado guarda/repõe os `s` alterados e protege `ra` se chamar outra função. A pilha cresce para endereços menores e mantém alinhamento de 16 B.
+
+<Typst
+  source={pilha}
+  format="svg"
+  alt="Frame de 16 bytes com s0 em 0(sp) e ra em 12(sp), restaurados antes de repor sp e retornar."
+/>
+
+`ecall` usa a interface do ambiente de execução. Os serviços de impressão do simulador não são I/O universal de RV32.
+
+[Codificação e exemplo de chamada](/cadeiras/ac/riscv-assembly/).
