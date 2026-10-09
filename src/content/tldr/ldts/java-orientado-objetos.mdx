@@ -1,0 +1,61 @@
+import Dot from '../../../components/Dot.astro';
+import referencias from '../../ldts/referencias-java.dot?raw';
+
+## Valores, referências e contratos
+
+- `javac Main.java` compila para bytecode; `java Main` executa na JVM. Compilar exige um JDK. O ponto de entrada é `public static void main(String[] args)`.
+- Primitivos guardam valores; variáveis de referência guardam referências ou `null`. Java passa argumentos **por valor**, incluindo o valor da referência. Atribuir uma referência não copia o objeto.
+- `final` impede reatribuir a variável; não torna o objeto imutável. `static` pertence à classe e não dispõe de `this`.
+- `5 / 2` dá `2`; `5 / 2.0` dá `2.5`. Um cast posterior não recupera a fração. `String` é um objeto imutável; `char` é uma unidade UTF-16, não necessariamente um carácter completo.
+
+<Dot
+  source={referencias}
+  alt="equipa e outra apontam para a mesma lista. Acrescentar Rita pelo parâmetro nomes altera essa lista. Reatribuir nomes a uma lista com Luis muda só o parâmetro; equipa e outra continuam a ver Ana e Rita."
+/>
+
+O construtor estabelece os **invariantes**; os métodos conservam-nos. Para vida entre 0 e 100, uma operação de dano deve validar o argumento e impedir vida negativa. Acrescentar setters a campos privados não garante encapsulamento.
+
+## Igualdade e estado exposto
+
+- `==` compara identidade de objetos. `equals` compara a igualdade escolhida pelo tipo; por defeito, também usa identidade.
+- `equals` é reflexivo, simétrico, transitivo e consistente enquanto o estado relevante não muda; `objeto.equals(null)` é falso.
+- Objetos iguais têm o mesmo `hashCode`; hashes iguais não obrigam a igualdade. Redefine ambos e evita alterar campos usados no hash enquanto o objeto pertence a um `HashSet` ou é chave de `HashMap`.
+- Uma cópia defensiva cria outra coleção exterior. Uma vista não modificável bloqueia alterações por essa vista, mas acompanha alterações da origem. Ambas podem partilhar elementos mutáveis.
+
+Se prometes um snapshot de nomes, copia a lista recebida no construtor e devolve uma cópia não modificável. Uma vista da lista original não protege contra o chamador que conserva essa lista.
+
+## Herança e composição
+
+Uma interface define operações; uma classe abstrata pode juntar contrato, estado e implementação. Java permite estender uma classe e implementar várias interfaces. Herança exige substituição pelo contrato; composição guarda um colaborador e delega-lhe uma tarefa.
+
+- **Overriding** escolhe a implementação conforme o objeto em execução.
+- **Overloading** escolhe a assinatura na compilação pelos tipos declarados. Com `Animal a = new Gato()`, `visitar(a)` escolhe `visitar(Animal)`; a chamada interna `a.falar()` usa a redefinição de `Gato`.
+- Uma interface funcional tem uma operação abstrata. Uma lambda fornece essa implementação, por exemplo `() -> executar()` para `Runnable`.
+
+## Coleções e genéricos
+
+| Contrato   | Escolha e custo relevante                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `List<E>`  | Sequência com duplicados. `ArrayList` acede por índice em tempo constante; acrescentar no fim é constante amortizado, alterar o meio é linear. |
+| `Set<E>`   | Valores sem duplicados lógicos.                                                                                                                |
+| `Map<K,V>` | Uma associação por chave; uma chave igual substitui o valor.                                                                                   |
+| `Queue<E>` | Retira elementos segundo uma política.                                                                                                         |
+
+`HashSet` e `HashMap` têm operações básicas esperadas constantes com boa distribuição de hashes; não prometem ordem. Durante iteração, usa remoção suportada pelo iterador em vez de alterar diretamente a coleção.
+
+Genéricos são **invariantes**: `List<Integer>` não é `List<Number>`. Usa wrappers, não primitivos; unboxing de `null` lança `NullPointerException`.
+
+```java
+static <T> void copiar(java.util.List<? extends T> origem,
+                      java.util.List<? super T> destino) {
+    for (T valor : origem) destino.add(valor);
+}
+```
+
+O método pressupõe listas não nulas e diferentes, com destino que permite acrescentar. A origem produz `T`; o destino aceita `T`. Copiar `[2, 3]` de `List<Integer>` para `List<Number>` com `[1.5]` dá `[1.5, 2, 3]`. `extends` não significa imutabilidade. `List<?>` não permite inserir valores não nulos de um tipo arbitrário. O apagamento impede `instanceof Caixa<Integer>`.
+
+## Exceções e recursos
+
+`throw` lança; `throws` declara propagação. Exceções verificadas, como `IOException`, exigem tratamento ou declaração; `RuntimeException` não. Não escondas falhas continuando com estado inválido. `try-with-resources` fecha recursos; garbage collection não substitui esse fecho.
+
+[Exemplos completos de Java](/cadeiras/ldts/java-orientado-objetos/).

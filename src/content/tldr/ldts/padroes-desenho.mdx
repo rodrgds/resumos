@@ -1,0 +1,68 @@
+import Dot from '../../../components/Dot.astro';
+import observer from '../../ldts/observer.dot?raw';
+
+## Algoritmo, estado e pedido
+
+Um padrão descreve uma colaboração com problema e consequências. Identifica o cliente, a decisão que varia e o contrato antes de escolher o nome.
+
+| Necessidade                              | Participantes e decisão                                                                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Trocar patrulha por perseguição          | **Strategy:** `Inimigo` delega em `Movimento`; cliente ou configuração escolhe o algoritmo. O contexto não testa a classe concreta.                    |
+| Alterar reações em Jogar e Pausa         | **State:** `Jogo` delega no estado atual; as operações podem provocar transições. A intenção é o ciclo de vida, mesmo que a estrutura pareça Strategy. |
+| Guardar, enfileirar ou desfazer uma ação | **Command:** invocador chama um objeto pedido; o comando conhece recetor e dados da operação.                                                          |
+
+Em State, `tick` ativo, pausa, `tick` pausado, retoma e `tick` ativo dão dois avanços. A pausa não incrementa o contador.
+
+Para undo, guarda o estado anterior: partir de 3, pedir `+3` e ficar limitado a 4 não é invertido por `-3`, que daria 1. Restaura 3. O exemplo pressupõe que nada altera o recetor entretanto; desfaz históricos por ordem inversa. Efeitos externos podem não ter inversão exata.
+
+## Notificações e árvores
+
+**Observer** permite ao sujeito notificar inscritos pelo contrato comum, sem depender das classes concretas. Altera primeiro para um estado válido, depois notifica. Push envia o valor; pull permite ao observador consultar o sujeito.
+
+<Dot
+  source={observer}
+  alt="Pontuacao notifica Observador.mudou(pontos). Texto e conquista implementam o contrato e decidem a sua reação; o sujeito não depende dessas classes concretas."
+/>
+
+Define subscrição, remoção e tratamento de falhas. No exemplo síncrono, percorrer uma cópia da lista conserva os destinatários da notificação atual: se A remove B durante o callback, B ainda recebe a atual, mas não a seguinte. O exemplo usa uma thread e callbacks que não voltam a alterar a pontuação. Subscrições esquecidas mantêm referências e eventos.
+
+**Composite** trata folhas e grupos pela mesma interface. Uma folha devolve a força; um grupo soma recursivamente os filhos:
+
+```text
+Grupo
++- Soldado(4)
++- Grupo
+   +- Soldado(2)
+   +- Soldado(7)
+```
+
+O grupo interior dá 9; o exterior dá 13; um grupo vazio dá 0. A operação de acrescentar filhos pode ficar só no grupo. Partilha pode contar a mesma folha várias vezes; ciclos podem causar recursão sem fim. Composite não é a relação de posse da composição UML.
+
+## Criação de produtos
+
+- **Factory Method:** subclasses do criador redefinem a operação de criação. `Combatente.atacar()` usa `Arma`; `Guerreiro.criarArma()` fornece espada e `Mago.criarArma()` feitiço. Um `switch` numa fábrica estática não demonstra esta colaboração.
+- **Abstract Factory:** um objeto fábrica fornece uma família. `FabricaTema` cria inimigos e armas; o cliente depende das interfaces dos produtos. Trocar Medieval por Espacial troca a família.
+- Acrescentar uma família exige outra fábrica e produtos; acrescentar `criarEscudo()` exige mudar o contrato e todas as fábricas. Reutilizar produtos é uma decisão separada. Evita chamar métodos redefiníveis no construtor da base.
+
+## Adaptar ou acrescentar comportamento
+
+**Adapter** traduz uma interface existente para o contrato do cliente. **Decorator** envolve um objeto, conserva a interface e acrescenta comportamento.
+
+```java
+interface Preco { int centimos(); }
+class ComEntrega implements Preco {
+    private final Preco base;
+    ComEntrega(Preco base) { this.base = base; }
+    public int centimos() { return base.centimos() + 250; }
+}
+```
+
+Um adapter de 12 euros inteiros para cêntimos fornece 1200; o decorator acima fornece 1450. Define unidades e erros na adaptação. Decorators podem acumular taxas e a ordem pode importar: descontar 10% de 1000 e depois somar 200 dá 1100; descontar depois da entrega dá 1080.
+
+## Instância global
+
+**Singleton** restringe a instância e oferece acesso global. Inicialização antecipada da classe protege a criação em Java, mas não torna os campos mutáveis seguros entre threads. Estado global também pode contaminar testes.
+
+Se só precisas de partilhar uma configuração nesta execução, cria-a uma vez na montagem e injeta-a. Uma instância usada pela aplicação não exige proibir outras pelo tipo.
+
+[Participantes e programas completos](/cadeiras/ldts/padroes-desenho/).
