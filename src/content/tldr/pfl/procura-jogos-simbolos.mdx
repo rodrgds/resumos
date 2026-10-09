@@ -1,0 +1,43 @@
+import Dot from '../../../components/Dot.astro';
+import jogo from '../../pfl/minimax.dot?raw';
+
+## DFS, BFS e ciclos
+
+- **DFS** explora um ramo em profundidade antes das alternativas. A ordem das cláusulas afeta o primeiro caminho e um ramo infinito pode impedir respostas posteriores.
+- Visitados do **caminho atual** impedem ciclos nesse caminho. Um estado pode continuar a pertencer a outro caminho válido.
+- Num grafo finito, estados conhecidos e geração finita de vizinhos, acrescentar apenas estados ainda não visitados limita o comprimento de cada caminho.
+- **BFS** retira o caminho mais antigo da fila, verifica o objetivo e acrescenta as extensões no fim. Com expansão que termina, explora por número de arestas; o primeiro objetivo tem menor custo quando as arestas têm custos iguais.
+
+No grafo `a→b`, `a→c`, `b→d`, `d→e`, `c→e`, `d→a`, DFS encontra `[a,b,d,e]`; BFS encontra `[a,c,e]`. A ligação `d→a` é excluída pelos visitados. Com pesos diferentes, menos arestas não garante menor custo.
+
+Uma fila de caminhos invertidos começa em `[[a]]`. Após expandir `a`, `b` e `c`, fica `[[d,b,a],[e,c,a]]`. O objetivo está descoberto, mas só é aceite quando retirado da frente, depois de expandir `d`. Inverte-se então `[e,c,a]` para `[a,c,e]`. A fila pode ocupar muita memória.
+
+## Minimax e alfa-beta
+
+As folhas têm valores do ponto de vista de MAX. MAX escolhe o maior; MIN escolhe o menor. O modelo pressupõe dois jogadores com interesses opostos e informação completa, numa árvore finita de jogadas.
+
+<Dot
+  source={jogo}
+  alt="A raiz MAX tem dois filhos MIN. O esquerdo tem folhas -1 e 4, valendo -1; o direito tem 2 e 3, valendo 2. MAX escolhe 2."
+/>
+
+Calcula de baixo para cima: `min(-1,4)=-1`, `min(2,3)=2`, e `max(-1,2)=2`. MAX não pode escolher a folha `4`, porque MIN controla essa escolha.
+
+- Com ramificação $b$ e profundidade $d$, visitar toda a árvore custa $O(b^d)$ para $b>1$. Um limite de profundidade usa estimativas nos estados não terminais, não provas de vitória.
+- `alpha` é um limite inferior garantido a MAX; `beta` é um limite superior garantido a MIN. Quando `alpha >= beta`, o resto do ramo não melhora a decisão do antepassado.
+- A ordem das jogadas altera a quantidade de poda, mas conserva o valor minimax nas mesmas condições. Na figura, visitar o ramo direito primeiro dá `alpha=2`; ler `-1` no esquerdo dá `beta=-1`, permitindo dispensar a folha `4`.
+
+## Transformação simbólica
+
+Um termo `produto(var(x),var(x))` guarda uma expressão, não pede a multiplicação com `is`. Derivar desmonta os construtores e constrói outro termo.
+
+```prolog
+derivar(soma(A,B), X, soma(DA,DB)) :-
+    derivar(A,X,DA), derivar(B,X,DB).
+```
+
+A regra do produto constrói `DA*B + A*DB`, conservando as expressões originais. Uma variável deriva para um relativamente a si própria e para zero relativamente a outra. Derivar `x*x` pode produzir `1*x+x*1`: derivação e simplificação são fases distintas.
+
+Exige nomes de variáveis instanciados e árvores finitas dos construtores suportados. A recursão termina ao passar para subexpressões menores. Reescritas em ambas as direções podem criar ciclos; escolhe uma direção de simplificação e uma medida de progresso.
+
+[Minimax e poda](/cadeiras/pfl/procura-jogos-simbolos/#minimax-e-poda-alfa-beta).

@@ -1,0 +1,63 @@
+import Dot from '../../../components/Dot.astro';
+import labirinto from '../../pfl/p8labirinto.dot?raw';
+
+## Listas, relações e aritmética
+
+```prolog
+soma([], 0).
+soma([H|T], S) :- soma(T,R), S is H+R.
+```
+
+Em `soma(+ListaDeNumeros,-Total)`, a lista é finita e os elementos são números conhecidos. `soma([1,2,3],S)` dá `S=6`; `soma([1,X],6)` não resolve `X`, pois chega a `is` com um operando livre.
+
+| Operação    | Contrato                                                                       |
+| ----------- | ------------------------------------------------------------------------------ |
+| `X = 2+3`   | Unifica `X` com o termo `+(2,3)`.                                              |
+| `X is 2+3`  | Avalia o lado direito e unifica com `5`.                                       |
+| `5 =:= 2+3` | Avalia ambos os lados e compara números.                                       |
+| `X == Y`    | Testa identidade atual dos termos sem ligar variáveis.                         |
+| `X \= Y`    | Testa se não podem unificar agora; duas variáveis livres fazem o teste falhar. |
+
+Os operandos de `is` e das comparações aritméticas têm de estar conhecidos. `5 == 5.0` falha: inteiro e flutuante são termos diferentes. Uma restrição adiada como `dif/2` tem outro contrato; confirma a disponibilidade no motor usado.
+
+```prolog
+juntar([], Ys, Ys).
+juntar([X|Xs], Ys, [X|Zs]) :- juntar(Xs,Ys,Zs).
+```
+
+`juntar([a],[b],Z)` constrói `[a,b]`; `juntar(X,Y,[a,b])` dá três divisões, incluindo prefixo e sufixo vazios. Uma relação pode funcionar em vários sentidos; `is` não oferece essa reversibilidade. `member(a,[a,b,a])` tem duas provas, uma por ocorrência.
+
+## Acumuladores e terminação
+
+Uma soma com acumulador usa `B is A+X` antes de recursar na cauda. A medida é o comprimento restante, que diminui numa lista finita de números. O acumulador altera a ordem do trabalho, não dispensa o modo esperado nem garante terminação com listas livres.
+
+## Corte e conjunto de respostas
+
+```prolog
+maximo(X,Y,X) :- X >= Y, !.
+maximo(X,Y,Y) :- X < Y.
+```
+
+- `!` elimina escolhas criadas desde a entrada naquele predicado e as suas cláusulas alternativas. Os objetivos à direita ainda podem ter alternativas.
+- Um corte é **verde** se removê-lo conserva as respostas lógicas no contrato considerado; é **vermelho** se as altera.
+- Este máximo é verde para entradas numéricas conhecidas. Ambas as cláusulas têm testes e `maximo(7,5,5)` falha.
+- Se a segunda cláusula fosse apenas `maximo(_,Y,Y)`, remover o corte acrescentaria respostas e o corte seria vermelho. Além disso, `maximo(7,5,5)` poderia saltar a primeira cabeça e dar uma resposta errada.
+
+A posição depois de um teste não basta para classificar o corte. Compara respostas com e sem corte e confere também saídas já instanciadas.
+
+## Procura com visitados
+
+<Dot
+  source={labirinto}
+  alt="a liga a b, que liga a c e d; c e d ligam a e. A ordem dos factos faz explorar c antes de d."
+/>
+
+Para procurar um caminho, gera um vizinho `Y`, exige `\+ member(Y,Visitados)` e recursa com `[Y|Visitados]`. Começa com o início já visitado. Neste grafo, DFS encontra `[a,b,c,e]` e depois `[a,b,d,e]`.
+
+Com estados conhecidos num grafo finito e geração de vizinhos que termina, cada passo acrescenta um estado novo ao caminho, limitando o seu comprimento. A ordem dos factos decide qual caminho aparece primeiro, não qual é mais curto.
+
+`findall(T,G,L)` recolhe uma instância de `T` por prova de `G`, conservando repetições. Sem provas dá `[]`; para devolver a lista completa, a enumeração tem de terminar.
+
+O navegador usa SWI-Prolog; a cadeira usa SICStus. `write/1` e `nl/0` são formas de escrita portáteis; bibliotecas e extensões precisam de conferência.
+
+[Modos, aritmética e cortes](/cadeiras/pfl/prolog-recursao-procura/#modos-de-chamada-e-is).

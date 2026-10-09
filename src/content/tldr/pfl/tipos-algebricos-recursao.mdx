@@ -1,0 +1,59 @@
+import Typst from '../../../components/Typst.astro';
+import arvoreBST from '../../pfl/p4arvore.typ?raw';
+
+## Tipos, construtores e padrões
+
+- `type Ponto = (Double,Double)` é um sinónimo. `data Dia = Seg | Ter` cria um tipo novo com alternativas próprias.
+- `Maybe a` distingue `Nothing` de `Just x`. Uma média de lista vazia pode dar `Nothing`; quem recebe o resultado deve tratar ambos os casos. O tipo, sozinho, não impede padrões incompletos.
+- O nome do tipo aparece nas assinaturas; os construtores aparecem nos valores e padrões. `deriving (Eq,Show)` gera operações a partir dos campos; num tipo parametrizado, a igualdade requer igualdade dos elementos.
+
+```haskell
+data Arvore a = Vazia | No a (Arvore a) (Arvore a)
+
+emOrdem :: Arvore a -> [a]
+emOrdem Vazia = []
+emOrdem (No x esq dir) = emOrdem esq ++ [x] ++ emOrdem dir
+```
+
+`No :: a -> Arvore a -> Arvore a -> Arvore a`. A recursão estrutural trata cada construtor e recorre nas subárvores. Termina para árvores finitas quando os cálculos usados também terminam.
+
+## Árvore binária de pesquisa
+
+A invariância vale **em cada nó**: todos os valores da esquerda são menores que o valor do nó; todos os da direita são maiores ou iguais. Não basta comparar pais com filhos.
+
+- Inserir um menor continua à esquerda; um maior ou igual continua à direita; inserir em `Vazia` cria uma folha.
+- Procurar compara primeiro pela igualdade, depois escolhe uma subárvore pela ordem. Chegar a `Vazia` dá `False`.
+- A travessia em ordem é ordenada quando esta invariância vale. Não é uma propriedade de qualquer árvore binária.
+
+<Typst
+  source={arvoreBST}
+  format="svg"
+  alt="Após inserir 3,1,4,1,5, o 3 está na raiz; à esquerda há 1 com outro 1 à direita; à direita há 4 com 5 à direita."
+/>
+
+A figura tem travessia `[1,1,3,4,5]`. O duplicado foi inserido à direita do primeiro `1`. A procura custa $O(h)$ comparações para altura $h$: $O(\log n)$ numa árvore equilibrada, $O(n)$ numa árvore degenerada. A inserção apresentada não mantém equilíbrio.
+
+## Medidas e expressões
+
+Com altura de `Vazia` igual a zero:
+
+```haskell
+altura :: Arvore a -> Int
+altura Vazia = 0
+altura (No _ e d) = 1 + max (altura e) (altura d)
+```
+
+Uma folha tem altura um. Contar nós usa `0` no vazio e `1 + tamanho e + tamanho d` no nó.
+
+`data Expr = Valor Integer | Soma Expr Expr | Produto Expr Expr` representa uma árvore sintática. Avaliar `Soma (Valor 2) (Produto (Valor 3) (Valor 4))` dá `14`: o agrupamento está na árvore, não é decidido durante a avaliação.
+
+## Indução estrutural
+
+Para provar uma lei sobre listas finitas:
+
+1. Prova o caso `[]` pelas equações.
+2. Assume a lei para a cauda `xs` e prova-a para `x:xs`.
+
+Em `length (map f xs) == length xs`, o passo reduz a `1 + length (map f xs) == 1 + length xs`. A hipótese sobre a cauda fecha a prova. Pressupõe comprimento representável em `Int` e estrutura definida; `length` não exige avaliar `f x`. Testar exemplos não substitui a prova.
+
+[Prova por indução](/cadeiras/pfl/tipos-algebricos-recursao/#justificar-uma-lei-por-indução).

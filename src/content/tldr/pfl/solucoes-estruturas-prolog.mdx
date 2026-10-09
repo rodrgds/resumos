@@ -1,0 +1,71 @@
+import Dot from '../../../components/Dot.astro';
+import listasDiferenca from '../../pfl/listas-diferenca.dot?raw';
+
+## Recolha de soluções
+
+| Predicado        | Repetições e ordem                     | Variáveis livres em `G` | Sem soluções     |
+| ---------------- | -------------------------------------- | ----------------------- | ---------------- |
+| `findall(T,G,L)` | Conserva a enumeração e repetições.    | Não agrupam.            | Sucede com `[]`. |
+| `bagof(T,G,L)`   | Conserva repetições em cada grupo.     | Criam grupos.           | Falha.           |
+| `setof(T,G,L)`   | Ordena por termos e elimina repetidos. | Criam grupos.           | Falha.           |
+
+`T` é o template recolhido por prova de `G`. Variáveis de `G` ausentes de `T` criam grupos em `bagof/setof`, salvo quantificação existencial com `^`.
+
+Com `inscrito(ana,pfl). inscrito(ana,lbaw). inscrito(bruno,pfl).`:
+
+- `bagof(C,inscrito(A,C),L)` dá `A=ana,L=[pfl,lbaw]` e depois `A=bruno,L=[pfl]`.
+- `bagof(C,A^inscrito(A,C),L)` dá `[pfl,lbaw,pfl]`, sem agrupar por pessoa.
+- `setof(C,A^inscrito(A,C),L)` dá `[lbaw,pfl]`.
+
+A recolha completa exige que a enumeração termine. `findall` não fornece um prefixo de uma procura infinita; as ligações interiores não se tornam respostas exteriores para variáveis livres.
+
+## Diferenças de listas
+
+`[a,b|T]-T` representa um prefixo e a sua cauda aberta. Com caudas frescas e livres:
+
+```prolog
+juntar_dl(A-B, B-C, A-C).
+```
+
+<Dot
+  source={listasDiferenca}
+  alt="Ligar T=[c|U] junta [a,b|T]-T e [c|U]-U em [a,b,c|U]-U. U=[] fecha a lista."
+/>
+
+A ligação custa tempo constante no modelo de unificação sem occurs check, sem percorrer o prefixo. Construir ou copiar listas continua a ter custo. Reutilizar caudas com a própria estrutura pode criar ciclos.
+
+## DCG e consumo
+
+```prolog
+s --> [a], s, [b].
+s --> [].
+```
+
+A tradução acrescenta entrada e resto: `s([a|R1],S) :- s(R1,R2), R2=[b|S].` e `s(S,S).`
+
+`phrase(s,[a,a,b,b])` sucede; `phrase(s,[a,b,a,b])` falha. A gramática exige todos os `a` antes dos `b`, em igual quantidade. `phrase/2` exige consumo completo; `phrase/3` permite resto. Recursão à esquerda pode divergir antes de consumir, e ordem das cláusulas e modo continuam a importar.
+
+## Objetivos, termos e operadores
+
+- `call(P,X)` acrescenta um argumento ao objetivo representado por `P`. `maplist(P,L)` prova `P` para cada elemento; `maplist(P,Entrada,Saida)` relaciona pares de elementos através de um predicado binário.
+- `Termo =.. [tarefa,treino,1]` constrói `tarefa(treino,1)`; só `call(Termo)` tenta executar o objetivo. `=..` não enumera todos os termos com as duas pontas livres.
+- `op/3` muda a leitura da sintaxe, não cria uma operação. Prioridade menor liga mais fortemente; parênteses dão prioridade zero ao grupo.
+
+| Tipo de operador | Associação na mesma prioridade                                    |
+| ---------------- | ----------------------------------------------------------------- |
+| `fx`, `fy`       | Prefixos: `fx` impede repetição direta; `fy` permite `op (op a)`. |
+| `xfx`            | Infixo sem associação de cadeias.                                 |
+| `xfy`            | Infixo à direita: `a op (b op c)`.                                |
+| `yfx`            | Infixo à esquerda: `(a op b) op c`.                               |
+
+`x` exige prioridade estritamente menor no argumento; `y` permite igualdade. Usa `write_canonical/1` para conferir a estrutura.
+
+## Efeitos e eficiência
+
+Um ciclo dirigido pela falha enumera, imprime e chama `fail`; uma segunda cláusula vazia permite sucesso quando terminam as alternativas. A impressão **não é desfeita pelo retrocesso**. A enumeração e cada objetivo aplicado têm de terminar; objetivos com várias provas podem repetir impressões.
+
+`keysort/2` ordena pares `Chave-Valor` pela chave, conserva duplicados e a ordem dos empates. `sort/2` compara termos completos e elimina repetidos.
+
+A indexação poupa tentativas de cláusulas sem alterar respostas lógicas. O modelo clássico do primeiro argumento não descreve todos os motores: SWI tem indexação JIT. Afirmações de eficiência precisam de motor, versão e modo de chamada.
+
+[Recolha e agrupamento](/cadeiras/pfl/solucoes-estruturas-prolog/#quando-aparece-um-grupo-por-pessoa).

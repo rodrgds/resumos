@@ -1,0 +1,67 @@
+import Typst from '../../../components/Typst.astro';
+import arvores from '../../pfl/p5arvores.typ?raw';
+
+## Ações e valores em IO
+
+`getLine :: IO String` é uma ação, não uma string. `putStrLn :: String -> IO ()` cria uma ação de impressão. `IO ()` também pode não produzir interação observável, como `pure ()`.
+
+```haskell
+main :: IO ()
+main = do
+  linha <- getLine
+  let n = length linha
+  print n
+  putStrLn "fim"
+```
+
+`<-` liga o resultado de uma ação; `let` nomeia um cálculo puro. As ações são sequenciadas por ordem. `return n` cria uma ação que devolve `n`, mas não interrompe o bloco. `length getLine` tem um erro de tipo.
+
+## Contrato de um parser
+
+```haskell
+newtype Parser a = P (String -> [(a,String)])
+```
+
+Um parser lê um prefixo e devolve o valor e o resto. Nesta lição, `[]` é falha e `[(v,resto)]` é o único sucesso. O tipo permite vários pares, mas as instâncias e combinadores apresentados **pressupõem determinismo**.
+
+| Operação            | Comportamento                                                           |
+| ------------------- | ----------------------------------------------------------------------- |
+| `item`              | Lê um caráter: `"abc"` dá `[('a',"bc")]`; entrada vazia falha.          |
+| `pure v`            | Devolve `v` sem consumir entrada.                                       |
+| `fmap f p`          | Transforma o valor, conservando o resto.                                |
+| `p >>= f`           | Passa o valor a `f` e executa o parser seguinte no resto.               |
+| `p +++ q`           | Se `p` falhar, tenta `q` na entrada original; prefere o sucesso de `p`. |
+| `many p`, `many1 p` | Leem zero ou mais, ou uma ou mais ocorrências.                          |
+| `token p`           | Ignora espaços à volta de `p`.                                          |
+
+`parse nat "42x"` lê `4`, depois `2`, e dá `[(42,"x")]`. `nat :: Parser Int` pressupõe que o valor cabe em `Int`.
+
+## Precedência, associatividade e progresso
+
+A gramática é `expr = term '+' expr | term`, `term = factor '*' term | factor`, e `factor = '(' expr ')' | nat`.
+
+<Typst
+  source={arvores}
+  format="svg"
+  alt="Em 2+3*4, o produto 3*4 fica abaixo da soma; em (2+3)*4, a soma 2+3 fica abaixo do produto."
+/>
+
+- `term` agrupa produtos antes de `expr` os somar. `2+3*4` dá `14`; `(2+3)*4` dá `20`.
+- A recursão à direita associa à direita. Se o operador fosse subtração, `8-3-1` daria `8-(3-1)=6`; acumular à esquerda daria `4`.
+- Recursão à esquerda direta chama novamente o parser sem consumir e pode divergir.
+- `many p` exige que **cada sucesso consuma entrada**. `many (pure 1)` não progride.
+
+## Validar toda a entrada
+
+Sucesso de um prefixo não valida a entrada inteira. `parse expr "2+3x"` deixa `"x"`; `"2+"` pode recuar para o prefixo `2` e deixar `"+"`.
+
+```haskell
+completa :: Parser a -> String -> Maybe a
+completa p texto = case parse (token p) texto of
+  [(valor, "")] -> Just valor
+  _ -> Nothing
+```
+
+Aceita `" 2+3*4 "` com `Just 14`; rejeita `"2+"`, `"2+3x"` e `"(2+3"`. Este retrocesso é o contrato de `+++` desta lição; outras bibliotecas distinguem falha antes e depois do consumo.
+
+[Implementação dos combinadores](/cadeiras/pfl/entrada-saida-parsers/#parsers-como-funções).

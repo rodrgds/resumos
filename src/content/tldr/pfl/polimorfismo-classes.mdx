@@ -1,0 +1,52 @@
+import Dot from '../../../components/Dot.astro';
+import classes from '../../pfl/classes.dot?raw';
+
+## Polimorfismo e restrições
+
+- Uma variável de tipo representa qualquer tipo compatível. `trocar (x,y) = (y,x)` tem tipo `(a,b) -> (b,a)`; `duplicar x = (x,x)` tem tipo `a -> (a,a)`.
+- Uma lista exige elementos do mesmo tipo; um par pode combinar tipos. A assinatura `[a] -> a` não garante que uma função trate `[]`.
+- Uma classe declara operações disponíveis num tipo. A restrição `Eq a =>` permite comparar valores de tipo `a`; não cria uma classe de objetos.
+
+| Operação                         | Restrição                                              |
+| -------------------------------- | ------------------------------------------------------ |
+| `==`, `/=`, `elem`               | `Eq`                                                   |
+| `<`, `>=`, `compare`             | `Ord`, que exige `Eq`                                  |
+| `show`, `read`                   | `Show`, `Read`; `read` pode falhar com texto inválido. |
+| `+`, `-`, `*`, literais inteiros | `Num`                                                  |
+| `div`, `mod`, `quot`, `rem`      | `Integral`                                             |
+| `/`, literais fracionários       | `Fractional`                                           |
+| `sqrt`, `sin`, `exp`             | `Floating`                                             |
+
+<Dot
+  source={classes}
+  alt="Ord exige Eq; Real exige Ord e Num; Integral exige Real e Enum; Fractional exige Num; Floating exige Fractional. Show está separada."
+/>
+
+Nos GHC atuais, `Num` **não exige `Eq`**. Somar e eliminar repetidos pode exigir `(Num a, Eq a)`, sem uma restrição redundante quando uma classe já implica a outra.
+
+## Inferir o tipo mais geral
+
+1. Dá variáveis de tipo aos argumentos.
+2. Iguala tipos impostos por padrões, listas e aplicações.
+3. Acrescenta as classes pedidas pelas operações e retira restrições redundantes.
+
+Em `duas f x = f (f x)`, se `x :: a`, `f x` tem de voltar a entrar em `f`. Logo `f :: a -> a` e `duas :: (a -> a) -> a -> a`.
+
+```haskell
+contem :: Eq a => a -> [a] -> Bool
+contem x xs = x `elem` xs
+
+media :: Fractional a => a -> a -> a
+media x y = (x+y)/2
+```
+
+Ordenar três valores por comparações e escolher o central exige apenas `Ord a`. A fórmula `x+y+z-minimum [x,y,z]-maximum [x,y,z]` exige também `Num a` e pode perder precisão em vírgula flutuante.
+
+## Setas e conversões
+
+- `a -> b -> c` significa `a -> (b -> c)`. Já `(a -> b) -> a -> b` recebe uma função como argumento.
+- `(.) :: (b -> c) -> (a -> b) -> a -> c` exige que a saída da função à direita entre na função à esquerda.
+- `length xs :: Int`; para dividir por esse comprimento usa `fromIntegral (length xs)`. A conversão numérica não é automática.
+- Para divisor não nulo, `div/mod` arredondam para baixo e `quot/rem` truncam para zero. Com `-7` e `3`, dão `(-3,2)` e `(-2,-1)`. Não mistures o quociente de um par com o resto do outro.
+
+[Dedução por restrições](/cadeiras/pfl/polimorfismo-classes/#deduzir-um-tipo-passo-a-passo).

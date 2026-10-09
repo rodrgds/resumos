@@ -1,0 +1,45 @@
+import Dot from '../../../components/Dot.astro';
+import ciclo from '../../pfl/quickcheck.dot?raw';
+
+## Propriedades e contraexemplos
+
+Uma propriedade descreve uma família de entradas. QuickCheck gera casos e procura uma violação. Passar os casos gerados **não prova a afirmação universal**.
+
+```haskell
+import Test.QuickCheck
+
+prop_revRev :: [Int] -> Bool
+prop_revRev xs = reverse (reverse xs) == xs
+-- No GHCi: quickCheck prop_revRev
+```
+
+Os tipos concretos indicam o que gerar. A omissão é 100 testes; a distribuição depende da instância `Arbitrary` e do parâmetro de tamanho.
+
+<Dot
+  source={ciclo}
+  alt="QuickCheck gera uma entrada e testa-a. Se falhar, tenta reduzir o contraexemplo e permite compará-lo com o contrato antes de corrigir a propriedade ou o programa."
+/>
+
+O shrinking conserva a falha enquanto tenta reduzir a entrada; não garante o menor contraexemplo global. Confere primeiro se a propriedade corresponde ao contrato: `sort xs == xs` falha em `[1,0]`, embora `sort` esteja correta.
+
+## Caracterizar o resultado
+
+- Ordenação exige saída ordenada **e os mesmos elementos com as mesmas multiplicidades**. `[2,1,2]` não pode tornar-se `[1,2]`.
+- Idempotência, `f (f xs) == f xs`, não basta: `f xs = []` também a satisfaz.
+- Inversas e modelos de referência independentes ajudam a formular leis. Para listas finitas, `reverse (xs ++ ys) == reverse ys ++ reverse xs` troca a ordem das partes; `[1]` e `[2]` refutam a versão sem troca.
+
+## Condições e geradores
+
+```haskell
+prop_divMod :: Integer -> Integer -> Property
+prop_divMod x y = y /= 0 ==> (x `div` y)*y + x `mod` y == x
+```
+
+`==>` descarta entradas que não satisfazem a pré-condição. Esses descartes não contam como sucessos; uma condição rara pode fazer a ferramenta desistir sem a amostra pedida.
+
+- Um gerador que constrói entradas válidas evita descartes. Para uma inserção que exige lista ordenada, ordena a lista gerada antes de a testar.
+- `suchThat` repete tentativas; uma condição impossível ou rara pode impedir a geração de terminar.
+- `forAll` não reduz automaticamente entradas de um gerador próprio. Usa `forAllShrink` com um redutor que conserve a pré-condição.
+- Declara o domínio: `length` exige listas finitas; propriedades de aritmética exata podem usar `Integer` para evitar overflow de `Int`.
+
+[Contrato da ordenação](/cadeiras/pfl/testes-quickcheck/#contrato-da-ordenação).

@@ -1,0 +1,54 @@
+import Dot from '../../../components/Dot.astro';
+import retrocesso from '../../pfl/sld-retrocesso.dot?raw';
+
+## Termos, factos e regras
+
+```prolog
+pai(tomas, ines).
+pai(tomas, ana).
+pai(ana, leo).
+avo(X,Z) :- pai(X,Y), pai(Y,Z).
+```
+
+Um facto declara um caso conhecido. A regra diz que `X` é avô de `Z` se existe um `Y` com ambas as relações `pai`. A vírgula é conjunção; uma consulta procura substituições que provem o objetivo.
+
+- Maiúsculas iniciam variáveis; minúsculas iniciam átomos. Cada `_` é uma variável anónima nova.
+- Um termo é uma variável, constante ou estrutura. Functor e aridade têm de coincidir: `pessoa(ana)` não unifica com `pessoa(ana,20)`.
+- Um termo ground não tem variáveis. O universo de Herbrand reúne os termos ground construídos com os símbolos do programa.
+- Uma cláusula de Horn tem no máximo um literal positivo; uma cláusula definida tem exatamente um, a cabeça da regra. `H :- A,B` corresponde a `H ∨ ¬A ∨ ¬B`.
+
+## Unificação e occurs check
+
+Unificar é obter uma substituição que torne os termos iguais, procurando a mais geral. As ligações propagam-se a **todas as ocorrências** da variável.
+
+| Termos                     | Resultado                                              |
+| -------------------------- | ------------------------------------------------------ |
+| `par(X,f(X))` e `par(a,Y)` | `X=a`, `Y=f(a)`.                                       |
+| `par(X,X)` e `par(a,b)`    | Falha: a primeira ligação exige depois `a=b`.          |
+| `par(_,_)` e `par(a,b)`    | Sucesso: as duas variáveis anónimas são independentes. |
+
+Em termos finitos de Herbrand, `X=f(X)` falha pelo **occurs check**. O `=/2` de SWI-Prolog aceita em geral árvores racionais cíclicas; `unify_with_occurs_check/2` rejeita a criação desse ciclo. Não confundas o contrato da implementação com a unificação teórica de termos finitos.
+
+## Resolução SLD e retrocesso
+
+1. Copia a cláusula com variáveis frescas, independentes de outras utilizações.
+2. Unifica a cabeça com o objetivo escolhido e substitui-o pelo corpo.
+3. Propaga as substituições aos objetivos restantes. Lista de objetivos vazia significa sucesso.
+4. Ao falhar ou pedir mais respostas, retrocede ao último ponto com alternativas e desfaz as ligações desse ramo.
+
+Prolog escolhe normalmente o objetivo mais à esquerda, tenta cláusulas de cima para baixo e explora em profundidade.
+
+<Dot
+  source={retrocesso}
+  alt="avo(tomas,N) tenta primeiro Y=ines e falha em pai(ines,N). Desfaz essa ligação, tenta Y=ana e obtém N=leo."
+/>
+
+A ordem afeta o que é encontrado: com `p :- p.` antes de `p.`, um ramo infinito impede chegar ao facto. Trocar as cláusulas permite uma primeira resposta, mas pedir todas volta ao ramo infinito.
+
+## Negação por falha
+
+`\+ G` sucede se a tentativa de provar `G` **falhar finitamente**. Se `G` divergir, a negação também não termina; ausência de prova não é uma prova lógica de falsidade.
+
+Com `pai(ana,leo)`, `\+ pai(X,leo)` falha porque existe uma prova, e não enumera pessoas que não são pais. Gera e liga candidatos antes de negar. O resultado depende da base disponível e pode mudar quando se acrescentam factos.
+
+[Traços de resolução](/cadeiras/pfl/logica-unificacao-prolog/#resolução-sld-passo-a-passo).

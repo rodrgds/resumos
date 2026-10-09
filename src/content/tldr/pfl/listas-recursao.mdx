@@ -1,0 +1,72 @@
+import Dot from '../../../components/Dot.astro';
+import divisao from '../../pfl/mergesort.dot?raw';
+
+## Construção, índices e compreensões
+
+- `x:xs` acrescenta uma cabeça em tempo constante. `xs ++ ys` percorre `xs`, com custo linear no seu comprimento.
+- `head` e `tail` exigem lista não vazia. `xs !! i` exige índice válido a partir de zero. `take n` e `drop n`, para `n <= 0`, dão `[]` e a lista original.
+- `zip` para na lista mais curta; `length` e `reverse` precisam de listas finitas para produzir o resultado completo.
+- Numa compreensão, o primeiro gerador é o exterior. `[(x,y) | x <- [1,2], y <- [4,5]]` dá `[(1,4),(1,5),(2,4),(2,5)]`. Um gerador dependente só pode usar nomes já ligados.
+
+```haskell
+indices :: Eq a => a -> [a] -> [Int]
+indices valor xs = [i | (x,i) <- zip xs [0..], x == valor]
+-- indices 'a' "casa" = [1,3]
+```
+
+A enumeração `[0..]` não impede a terminação para `xs` finita, porque `zip` para ao acabar `xs`.
+
+## Domínio e progresso da recursão
+
+Identifica casos base e uma medida que diminui. Uma cauda é menor numa lista finita; um contador positivo aproxima-se de zero. Para tratar negativos, `replicar n x` pode devolver `[]` quando `n <= 0`.
+
+```haskell
+intercalar :: a -> [a] -> [a]
+intercalar _ [] = []
+intercalar _ [x] = [x]
+intercalar s (x:xs) = x:s:intercalar s xs
+-- intercalar '-' "rt" = "r-t"
+```
+
+O caso de um elemento impede o separador final. Eliminar repetidos conservando a primeira ocorrência difere de agrupar iguais consecutivos: `"AABBBAA"` forma `["AA","BBB","AA"]`, conservando os dois grupos de `A`.
+
+- Um número perfeito é **positivo** e igual à soma dos divisores próprios positivos. `6` tem `[1,2,3]`; `12` tem `[1,2,3,4,6]` e não é perfeito.
+- Para testar primalidade com `Integer`, exige `n > 1` e procura divisores `d` enquanto `d*d <= n`. Só termina com sucesso quando `d*d > n`, para não saltar a raiz de um quadrado perfeito. São $O(\sqrt n)$ candidatos, sem contar o custo da aritmética de inteiros grandes.
+- Em Pascal, a linha seguinte é `zipWith (+) (0:linha) (linha ++ [0])`. A linha `[1,3,3,1]` produz `[1,4,6,4,1]`.
+
+## Ordenação
+
+| Método     | Condição e custo para uma lista finita de $n$ elementos                  |
+| ---------- | ------------------------------------------------------------------------ |
+| Inserção   | Insere a cabeça na cauda já ordenada. Pior caso $O(n^2)$.                |
+| Merge sort | Divide em partes menores, ordena e junta listas ordenadas. $O(n\log n)$. |
+
+<Dot
+  source={divisao}
+  alt="Merge sort divide 4,1,3,1 em duas metades, ordena-as para 1,4 e 1,3 e junta em 1,1,3,4."
+/>
+
+Ao juntar, retira apenas a cabeça escolhida e conserva a outra. Ao dividir, trata zero e um elemento antes da recursão, garantindo partes estritamente menores. Ambos os métodos devem conservar todas as ocorrências.
+
+## Posições e permutações
+
+```haskell
+posicoes :: a -> [a] -> [[a]]
+posicoes x [] = [[x]]
+posicoes x (y:ys) = (x:y:ys) : map (y:) (posicoes x ys)
+
+permutar :: [a] -> [[a]]
+permutar [] = [[]]
+permutar (x:xs) = concatMap (posicoes x) (permutar xs)
+```
+
+`permutar [] = [[]]` representa uma possibilidade vazia onde inserir. Há $n!$ resultados para $n$ ocorrências, mesmo com valores repetidos: `permutar "aa"` devolve `"aa"` duas vezes. Imprimir todos exige $O(n\,n!)$ operações de visita aos elementos.
+
+## Conversão binária
+
+- Para bits do mais para o menos significativo, usa `foldl (\n b -> 2*n+b) 0`. `[1,0,1,1]` dá acumuladores `0,1,2,5,11`. Exige bits `0` ou `1`.
+- Para um inteiro positivo, divide por dois até zero, recolhe restos e inverte-os. `10` produz restos `[0,1,0,1]`, logo bits `[1,0,1,0]`.
+- Define a representação de zero, aqui `[0]`, e rejeita negativos ou escolhe outra codificação. `(-1) div 2 == -1` impede o progresso desta recursão.
+- A ficha pede `Int -> [Int]` com domínio não negativo. O contrato alternativo `Integer -> Maybe [Integer]` devolve `Nothing` nos negativos, sem impor limites de `Int`.
+
+[Conversão e contratos completos](/cadeiras/pfl/listas-recursao/#converter-inteiro-para-bits).
