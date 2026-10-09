@@ -1,0 +1,53 @@
+import InteractiveDemo from '../../../components/InteractiveDemo.astro';
+import Traducao from '../../so/Traducao.astro';
+
+## Endereços e alocação
+
+A **MMU** traduz endereços virtuais com o mapa do processo e verifica permissões. Dois virtuais iguais podem identificar dados privados diferentes; páginas partilhadas podem aparecer em virtuais distintos. Dimensão do espaço virtual não é RAM atribuída.
+
+- Registos, caches de dados, RAM e armazenamento têm capacidades e latências diferentes. Cache de dados guarda conteúdo; TLB guarda traduções.
+- Com base $b$ e limite $L$, o virtual $v$ é válido se $0\leq v<L$; traduz para $b+v$. O limite é exclusivo.
+- Na alocação contígua, **first-fit** escolhe o primeiro buraco suficiente, **best-fit** o menor suficiente e **worst-fit** o maior. Atualiza os buracos depois de cada pedido.
+- **Fragmentação externa** impede obter uma região contígua apesar de haver espaço total. **Interna** é capacidade atribuída mas não usada.
+- Na segmentação, cada segmento tem base, limite e permissões; o endereço inclui segmento e deslocamento. Tamanhos variáveis permitem fragmentação externa.
+
+## Paginação
+
+Páginas virtuais e molduras físicas têm o mesmo tamanho $P=2^n$ bytes. Para um virtual $v$, página $p$, deslocamento $d$ e moldura $f$:
+
+$$
+p=\lfloor v/P\rfloor,\quad d=v\bmod P,\quad f=\operatorname{tabela}[p],\quad a=fP+d.
+$$
+
+O deslocamento **não muda**. Com endereços de $m$ bits, usa $n$ bits para o deslocamento e $m-n$ para a página.
+
+Com $P=4096$, `0x1A3F5` tem página `0x1A` e deslocamento `0x3F5`. Se presente e legível na moldura 7, traduz para `0x073F5`, ou $7\times4096+1013=29685$.
+
+<InteractiveDemo label="Traduzir um endereço virtual por paginação">
+  <Traducao />
+</InteractiveDemo>
+
+A demo usa 64 bytes virtuais. Com página de 16 bytes e virtual 45, $p=2$, $d=13$ e moldura 5 dão físico 93. Não simula caches nem custos de falta.
+
+## Tabelas e desperdício
+
+- Uma região alinhada de $S$ bytes usa $\lceil S/P\rceil$ páginas; a capacidade não usada é $\lceil S/P\rceil P-S$. Para 10000 bytes e páginas de 4096, são três páginas e 2288 bytes excedentes.
+- Uma tabela linear completa ocupa $2^{m-n}$ entradas vezes o tamanho de cada entrada. Com 32 bits, páginas de 4 KiB e entradas de 4 bytes, são **4 MiB**.
+- No modelo multinível com estas dimensões, cada bloco de tabela guarda 1024 entradas. O endereço divide-se em **10 bits exteriores, 10 interiores e 12 de deslocamento**. Só é preciso criar tabelas interiores para regiões mapeadas.
+- Uma tabela hashed procura por página virtual e trata colisões. Uma invertida guarda uma entrada por moldura física e identifica processo e página.
+
+## TLB, presença e permissões
+
+Um **miss do TLB** exige procurar a tradução, mas não implica falta de página. Uma página pode estar mapeada e ausente, presente mas sem permissão, ou fora do espaço válido. Confere o significado de `valid` e `present` no modelo.
+
+Com consulta ao TLB de $t$, acesso a RAM de $M$, taxa de acerto $h$, tabela de um nível e sem outras caches nem faltas:
+
+$$
+EAT=h(t+M)+(1-h)(t+2M).
+$$
+
+Para $t=5$ ns, $M=80$ ns e $h=0{,}95$, o resultado é 89 ns. Com duas leituras de tabela num miss, este custa $t+3M$. Não contes novamente custos já incluídos no enunciado.
+
+O alcance aproximado é entradas do TLB vezes tamanho de página. ASIDs distinguem espaços; sem identificação adequada pode ser preciso invalidar traduções na troca de contexto. Partilha de código pode ser só de leitura; dados privados podem usar copy-on-write.
+
+[Decomposição e exemplo de tabela multinível](/cadeiras/so/memoria-virtual/#fragmentação-e-tamanho-das-tabelas).

@@ -1,0 +1,70 @@
+import Dot from '../../../components/Dot.astro';
+import aberturas from '../../so/aberturas.dot?raw';
+import indirecao from '../../so/indirecao.dot?raw';
+
+## Nomes, inodes e aberturas
+
+Uma entrada de diretório associa **nome a inode**. O inode guarda metadados e localização dos dados. Um descritor referencia uma descrição aberta, que guarda posição e certos flags.
+
+<Dot
+  source={aberturas}
+  alt="fd e o seu dup partilham descrição aberta e posição; uma segunda open tem posição independente. Ambas chegam ao mesmo inode."
+/>
+
+- `dup` e descritores herdados por `fork` partilham posição. Em `abcdef`, ler dois bytes por `fd` e depois pelo seu `dup` dá `ab` e `cd`; outra `open` começaria em `ab`.
+- Um **hard link** acrescenta um nome para o mesmo inode, normalmente no mesmo sistema de ficheiros. Um **link simbólico** guarda um caminho e pode atravessar sistemas ou ficar pendente.
+- `unlink` remove um nome; uma abertura existente continua a funcionar. Recuperar espaço exige que deixem de existir as referências necessárias.
+- Locks consultivos exigem cooperação; não impedem toda a I/O de programas que os ignoram.
+
+## Acesso e proteção
+
+- Acesso sequencial segue a posição; direto calcula um deslocamento. Registos de 80 bytes, desde o byte zero, colocam o índice 7 no byte 560.
+- Um índice por chave localiza um registo lógico. Índices de alocação localizam os blocos que guardam bytes: são estruturas diferentes.
+- Num diretório UNIX, leitura lista nomes, execução atravessa nomes conhecidos e escrita permite alterar entradas, sujeita a outras regras. Apagar um nome depende do diretório, não só da escrita no ficheiro; o sticky bit pode restringir.
+- Travessias com links precisam de uma regra para evitar ciclos. Diretórios e ACLs organizam nomes e proteção.
+
+## Alocação de blocos
+
+| Método   | Localização e custo principal                                                |
+| -------- | ---------------------------------------------------------------------------- |
+| Contíguo | Início mais índice lógico; crescimento sofre com falta de contiguidade       |
+| Extents  | Procurar o intervalo contíguo que contém o bloco                             |
+| Ligado   | Seguir cadeia; acesso aleatório pode percorrer muitos blocos                 |
+| FAT      | Cadeia representada numa tabela que pode estar em cache                      |
+| Indexado | Consultar apontadores; permite acesso direto com blocos de índice adicionais |
+
+Com bloco de $B$ bytes, o byte lógico $v$ tem índice $\lfloor v/B\rfloor$ e deslocamento $v\bmod B$. Num ficheiro contíguo com início físico 20 e $B=512$, o byte 1300 está no bloco físico 22, deslocamento 276.
+
+## Indireção e leituras
+
+Com blocos de 4096 bytes e apontadores de 4 bytes, um índice guarda $4096/4=1024$ apontadores. Com 12 diretos, um simples e um duplo:
+
+| Região  | Índices lógicos, desde zero | Leituras sem cache, com inode em RAM |
+| ------- | --------------------------- | ------------------------------------ |
+| Diretos | 0 a 11                      | Um bloco de dados                    |
+| Simples | 12 a 1035                   | Um índice e dados                    |
+| Duplo   | Desde 1036                  | Dois índices e dados                 |
+
+<Dot
+  source={indirecao}
+  alt="O bloco lógico 1040 usa entrada zero do índice duplo e entrada quatro do interior. Com inode em RAM e sem cache, são duas leituras de índice e uma de dados."
+/>
+
+A capacidade de dados é $(12+1024+1024^2)\times4096=4299210752$ bytes, **sem contar índices**, assumindo campos que a suportem. Um ficheiro de 1041 blocos completos usa três blocos de índice: simples, topo duplo e interior duplo. Se índices já estiverem em cache, não contes novamente as suas leituras.
+
+## Espaço livre e recuperação
+
+Um bitmap usa um bit por bloco, com convenção de livre/ocupado definida. Para 1 TiB e blocos de 4 KiB:
+
+$$
+N=2^{40}/2^{12}=2^{28},\qquad N/8=2^{25}\text{ bytes}=32\text{ MiB}.
+$$
+
+Blocos maiores reduzem certos metadados mas podem aumentar fragmentação interna. Lista livre, grupos de apontadores ou início e comprimento de regiões são outras representações.
+
+- Superbloco, diretórios, inodes e espaço livre são persistentes; montagens, aberturas e caches também têm estruturas em RAM.
+- `fflush` entrega buffers C ao sistema; não garante persistência. `fsync` sincroniza o ficheiro; criar ou renomear pode também exigir sincronizar o diretório. Confere erros de escrita, fecho e sincronização.
+- Journaling regista alterações antes de as aplicar e recupera segundo transações confirmadas. Consistência de metadados não garante persistência de todo o conteúdo recente.
+- Copy-on-write escreve novos blocos antes de mudar referências. Um snapshot no mesmo dispositivo não protege contra perda desse dispositivo.
+
+[Apontadores e capacidade dos índices](/cadeiras/so/implementacao-ficheiros/#apontadores-diretos-e-indiretos).

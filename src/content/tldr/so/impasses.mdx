@@ -1,0 +1,50 @@
+import Dot from '../../../components/Dot.astro';
+import impasse from '../../so/impasse.dot?raw';
+
+## Condições e prevenção
+
+Um **impasse** envolve tarefas que não avançam porque esperam por recursos umas das outras. No modelo de recursos reutilizáveis, exige em simultâneo:
+
+- **Exclusão mútua:** o recurso só admite um dono.
+- **Retenção com espera:** uma tarefa conserva recursos enquanto pede outros.
+- **Ausência de preempção:** o protocolo não retira esses recursos à força.
+- **Espera circular:** há um ciclo de dependências.
+
+Prevenção quebra uma condição. Uma **ordem global de locks**, em todos os caminhos, quebra espera circular. Pedir tudo de uma vez quebra retenção com espera.
+
+## Grafos e instâncias
+
+No grafo de atribuição, processo→recurso indica pedido e recurso→processo indica atribuição.
+
+<Dot
+  source={impasse}
+  alt="X pertence a A, que pede Y; Y pertence a B, que pede X. Com uma instância de cada lock, nenhuma tarefa avança."
+/>
+
+- Com **uma instância por recurso**, um ciclo prova impasse.
+- Com várias instâncias, o ciclo pode não bastar: uma unidade livre de Y permite A concluir e libertar X para B.
+- Num grafo de espera para locks de uma instância, A→B indica que A espera por um lock de B. Regista posse e pedidos atuais.
+
+## Estado seguro e banqueiro
+
+Um estado **seguro** tem uma ordem de conclusão para todos, mesmo com as necessidades máximas declaradas. Pode haver espera. **Inseguro** significa perder essa garantia, sem provar impasse.
+
+1. Calcula `Need = Max - Allocation` e inicia `Work = Available`.
+2. Escolhe um processo ainda não concluído com `Need <= Work` **em cada componente**.
+3. Simula a conclusão com `Work += Allocation` e regista o processo.
+4. Repete até incluir todos, provando segurança, ou ficar sem candidato, dando estado inseguro.
+
+O banqueiro só concede pedidos dentro da necessidade e disponibilidade **que deixem um estado seguro**. Na conclusão simulada soma a atribuição, não o máximo.
+
+## Deteção e outros problemas
+
+| Estratégia ou problema | Distinção                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| Evitação               | Analisar pedidos para conservar segurança                                              |
+| Deteção e recuperação  | Procurar impasses e terminar tarefas ou retirar recursos recuperáveis com consistência |
+| Inanição               | Uma tarefa não recebe serviço, enquanto outras avançam                                 |
+| Livelock               | Há mudanças ou tentativas, mas não progresso útil                                      |
+
+Timeouts exigem libertação e reversão adequadas. Espera longa ou pouco consumo de CPU não prova impasse.
+
+[Exemplo de segurança e máximos](/cadeiras/so/impasses/#seguro-não-significa-livre-de-espera).

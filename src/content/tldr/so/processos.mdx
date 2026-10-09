@@ -1,0 +1,52 @@
+import Dot from '../../../components/Dot.astro';
+import ciclo from '../../lessons/so/ciclo-processo.dot?raw';
+
+## Estado e memória
+
+Um **processo** é uma execução com PID e estado próprios. O PCB guarda informação de gestão, como registos, memória, descritores e escalonamento; o espaço de endereçamento contém código e dados do programa.
+
+<Dot
+  source={ciclo}
+  alt="Pronto recebe CPU e corre; ao esperar por um evento bloqueia, depois volta a pronto. Terminar deixa um zombie até à recolha."
+/>
+
+- Um **zombie** terminou e já não executa; conserva o registo de saída para recolha.
+- Um **órfão** tem o pai terminado e pode ainda estar vivo. Pode ser adotado por outro processo.
+- Endereços virtuais iguais em processos distintos não provam partilha física. O espaço virtual também não mede RAM atribuída.
+
+## fork e árvore de processos
+
+| Retorno de `fork()` | Significado             |
+| ------------------- | ----------------------- |
+| `-1`                | Falha, sem filho criado |
+| `0`                 | Execução no filho       |
+| PID do filho        | Execução no pai         |
+
+Pai e filho continuam depois da chamada, com dados privados logicamente separados. Copy-on-write pode partilhar molduras até à primeira escrita. Se `x=4` antes de `fork` e só o filho escreve 9, o pai conserva 4, mesmo depois de `waitpid`.
+
+- Desenha uma bifurcação para **cada processo que chega a cada fork**.
+- Se todos executam $n$ forks sucessivos bem-sucedidos, existem $2^n$ processos, incluindo o inicial.
+- Se cada filho sai imediatamente num ciclo de três forks, só o pai continua: são quatro processos criados no total.
+- Num processo multithread, o filho só conserva a thread chamadora e pode herdar locks. Até `exec`, restringe-se às funções seguras nesse contexto, as async-signal-safe.
+
+## exec e descritores
+
+`exec` substitui a imagem do programa no processo atual, mantendo o PID. **Não retorna em caso de sucesso**.
+
+- `execlp` recebe argumentos individuais; `execvp` recebe um vetor terminado por `NULL`. Ambos procuram no `PATH`.
+- `"ls -l"` não é analisado como comando de shell. Nome e argumentos precisam de estar separados.
+- Descritores herdados por `fork` partilham as mesmas descrições abertas e posições. Sobrevivem a `exec`, salvo se marcados para fechar, como com `FD_CLOEXEC`.
+
+## Recolha, saída e ordem
+
+1. Cria todos os trabalhadores e guarda cada PID com a tarefa correspondente.
+2. Só depois espera por cada um com `waitpid(pid, &estado, 0)`, repetindo se falhar com `EINTR`.
+3. Testa `WIFEXITED` antes de `WEXITSTATUS`, ou `WIFSIGNALED` antes de `WTERMSIG`.
+4. Avança para a etapa dependente apenas depois de confirmar o sucesso de todos.
+
+Esperar dentro do ciclo de criação serializa o trabalho. `waitpid` só permite ao pai continuar depois da terminação do filho escolhido; não controla a ordem em que os filhos terminam nem copia as suas variáveis privadas. `sleep` não prova sincronização.
+
+- `exit` trata buffers e funções de limpeza; `_exit` termina sem essa limpeza da biblioteca. Depois de uma falha de `exec` no filho, `_exit(127)` evita continuar o código do pai e repetir limpezas herdadas.
+- Descarrega saída pendente com `fflush` antes de `fork` para evitar buffers copiados e impressos duas vezes. Uma mudança de linha não garante descarga quando stdout está redirecionado.
+
+[Programa de criação e recolha de trabalhadores](/cadeiras/so/processos/#criar-vários-trabalhadores).

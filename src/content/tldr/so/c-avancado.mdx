@@ -1,0 +1,64 @@
+import CodePlayground from '../../../components/CodePlayground.astro';
+import memoria from '../../so/memoria.c?raw';
+
+## Compilação e bibliotecas
+
+Pré-processamento expande includes e macros; compilação gera assembly; montagem produz objetos; ligação resolve referências entre objetos e bibliotecas.
+
+- `gcc -E` termina no pré-processamento; `-S` gera assembly; `-c` gera objeto **sem ligar**.
+- Um `.h` declara a interface. Incluir o cabeçalho não fornece a implementação; uma definição em falta pode só causar erro na ligação.
+- `ar rcs libvetor.a vetor.o` cria o arquivo estático. Liga o cliente com `-L. -lvetor`, colocando a biblioteca depois dos objetos que usam os símbolos.
+- Em Linux, uma biblioteca partilhada usa objeto `-fPIC` e ligação `-shared`. `-L` controla pesquisa na ligação; o carregador também precisa de encontrar a `.so` em execução.
+- `-g` fornece informação de depuração; avisos não substituem correção.
+
+## Apontadores e arrays
+
+`&x` obtém o endereço; `*p` acede ao objeto. C passa **todos os argumentos por valor**, incluindo apontadores: a cópia do endereço permite alterar o objeto, mas reatribuir essa cópia não muda o apontador do chamador.
+
+```c
+int x = 5, y = 3;
+int *p = &x, *q = p;
+p = &y;
+*q = 9;  /* x passa a 9; q ainda aponta para x */
+```
+
+- `p+1` avança um elemento do tipo apontado; `a[i]` equivale a `*(a+i)` para índice válido.
+- O apontador logo a seguir ao array pode ser limite, mas não pode ser desreferenciado.
+- `sizeof a / sizeof a[0]` só conta elementos se `a` ainda for array nesse âmbito. Um parâmetro `int a[]` ajusta-se para apontador; passa o comprimento.
+- `void *` pode guardar um endereço de objeto, mas não admite desreferência nem aritmética em C17.
+
+## Tempo de vida e propriedade
+
+Um objeto automático deixa de existir ao sair do seu âmbito. Devolver `&local` não prolonga essa vida; usá-lo depois tem comportamento indefinido, sem saída ou falha garantida.
+
+- `malloc` reserva bytes sem inicializar; `calloc` põe os bytes a zero. Confere `NULL` e define quem chama `free`.
+- Devolver uma estrutura por valor evita uma reserva, mas copiar campos apontador só copia endereços, não os blocos apontados.
+- Depois de `free`, não acedas ao bloco. Pôr um apontador a `NULL` não corrige outros aliases.
+- Em `realloc`, guarda primeiro o retorno num temporário. Com tamanho positivo, a falha conserva o bloco antigo; o sucesso invalida o endereço antigo. Verifica overflow em tamanho vezes `sizeof`.
+
+<CodePlayground
+  language="c"
+  title="Reservar, copiar e libertar"
+  code={memoria}
+/>
+
+O exemplo dá `original=4 copia=9`: há dois blocos, não dois apontadores para o mesmo inteiro.
+
+## Strings e argumentos
+
+- Strings terminam em `\0`; `"ola"` exige quatro bytes. `strlen` conta bytes antes do terminador, não capacidade. `sizeof` de apontador mede o apontador.
+- `strcmp` devolve zero para igualdade e apenas o sinal importa nos outros casos. `strcpy` e `strcat` exigem espaço suficiente; concatenar pede `strlen(a)+strlen(b)+1`, sem overflow.
+- `strtok` modifica o buffer. Para `tolower`, converte um `char` potencialmente negativo para `unsigned char`.
+- `argc` inclui o nome de invocação e `argv[argc]` é `NULL`. Os argumentos são strings; confere a quantidade antes de os ler.
+- Para validar inteiros, põe `errno=0`, chama `strtol` e rejeita `ERANGE`, ausência de dígitos ou texto restante. Antes de converter para `int`, confere `INT_MIN` e `INT_MAX`.
+- Num máximo que admite negativos, inicializa pelo primeiro valor validado, não por zero.
+
+## Listas e contratos
+
+A cabeça de uma lista vazia é `NULL`. Inserir 5 e depois 2 dá `2 → 5 → NULL`; retirar devolve 2 e deixa `5 → NULL`.
+
+- Uma função que muda a cabeça recebe `struct no **` para escrever no apontador do chamador.
+- Guarda o nó seguinte **antes de libertar** o atual. Copiar a cabeça partilha nós; não cria outra lista.
+- Define se a lista também é dona dos objetos apontados por cada nó. A API deve declarar retorno, falhas e obrigações de libertação.
+
+[Inserção e remoção de nós](/cadeiras/so/c-avancado/#objetos-compostos-e-listas).
