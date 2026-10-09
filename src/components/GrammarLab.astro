@@ -1,0 +1,171 @@
+---
+import FormalSource from './FormalSource.astro';
+import Icon from './Icon.astro';
+import '../styles/formal-lab.css';
+import '../styles/grammar-lab.css';
+
+const presets = [
+  {
+    name: 'Blocos aⁿbⁿ',
+    source: 'S -> a S b | ε',
+    word: 'aabb',
+    tests:
+      'ε -> aceita\nab -> aceita\naabb -> aceita\naaabbb -> aceita\naab -> rejeita\nba -> rejeita',
+  },
+  {
+    name: 'Parênteses equilibrados',
+    source: 'S -> ( S ) S | ε',
+    word: '(())',
+    tests:
+      'ε -> aceita\n() -> aceita\n(()) -> aceita\n()() -> aceita\n(() -> rejeita\n)( -> rejeita',
+  },
+  {
+    name: 'Expressões com precedência',
+    source: 'E -> E + T | T\nT -> T * F | F\nF -> ( E ) | a',
+    word: 'a+a*a',
+    tests:
+      'a -> aceita\na+a*a -> aceita\n(a+a)*a -> aceita\na+ -> rejeita\n*a -> rejeita\nε -> rejeita',
+  },
+  {
+    name: 'Exercício: blocos aⁿb²ⁿ',
+    source: 'S -> a S b | ε',
+    word: 'abb',
+    tests:
+      'ε -> aceita\nabb -> aceita\naabbbb -> aceita\naaabbbbbb -> aceita\nab -> rejeita\nbba -> rejeita',
+    task: 'Corrige a produção para gerar aⁿb²ⁿ, com n ≥ 0. Cada a precisa de dois b, conservando os blocos.',
+    solution: 'S -> a S b b | ε',
+  },
+];
+---
+
+<section
+  class="formal-lab grammar-lab"
+  data-grammar-lab
+  data-presets={JSON.stringify(presets)}
+  role="group"
+  aria-label="Laboratório de gramáticas"
+  data-annotation-ignore
+  data-pagefind-ignore
+>
+  <div class="formal-toolbar">
+    <label>
+      Gramática
+      <select data-preset aria-label="Escolher gramática" disabled>
+        {presets.map((preset, index) => (
+          <option value={index}>{preset.name}</option>
+        ))}
+      </select>
+    </label>
+    <button
+      type="button"
+      data-reset
+      disabled
+      aria-label="Repor gramática"
+      title="Repor gramática"
+    >
+      <Icon name="arrow-path" size={18} />
+    </button>
+  </div>
+  <p data-task hidden></p>
+  <FormalSource
+    label="Produções da gramática"
+    source={presets[0].source}
+    rows={3}
+  />
+  <div class="grammar-input">
+    <label>
+      Palavra{' '}
+      <input
+        data-word
+        type="text"
+        value={presets[0].word}
+        spellcheck="false"
+        autocomplete="off"
+        maxlength="160"
+      />
+    </label>
+    <button type="button" data-run data-primary disabled>
+      <Icon name="play" size={18} /> Testar palavra
+    </button>
+  </div>
+  <div class="formal-result">
+    <p role="status" data-status>
+      Palavra aceite. S ⇒ aSb ⇒ aaSbb ⇒ aabb.
+    </p>
+    <div
+      data-tree
+      class="grammar-tree"
+      tabindex="0"
+      aria-label="Árvore sintática"
+      hidden
+    ></div>
+    <details data-derivation hidden>
+      <summary>Derivação mais à esquerda</summary>
+      <ol data-steps></ol>
+    </details>
+  </div>
+  <details class="formal-help">
+    <summary>Testes</summary>
+    <label>
+      Uma palavra e o resultado esperado por linha
+      <textarea
+        data-tests
+        rows="6"
+        spellcheck="false"
+        aria-label="Casos de teste"
+        set:text={presets[0].tests}
+      ></textarea>
+    </label>
+    <button type="button" data-test disabled>
+      Executar testes
+    </button>
+    <p data-test-status role="status"></p>
+    <div data-test-results class="grammar-test-results"></div>
+    <p>
+      Passar estes casos não prova que a gramática gera toda e só a linguagem
+      pedida.
+    </p>
+  </details>
+  <details class="formal-help" data-solution hidden>
+    <summary>Solução do exercício</summary>
+    <pre><code data-solution-source></code></pre>
+    <p>
+      Cada aplicação recursiva acrescenta um a e dois b. A alternativa ε termina
+      a derivação e inclui n = 0.
+    </p>
+  </details>
+  <details class="formal-help">
+    <summary>Sintaxe</summary>
+    <p>
+      Uma produção por linha, com <code>-></code> ou <code>→</code>. Separa
+      alternativas com <code>|</code> e usa <code>ε</code> para a palavra vazia.
+      A primeira variável é a inicial.
+    </p>
+    <p>
+      As variáveis começam por maiúscula e precisam de uma produção. Os outros
+      caracteres são terminais; usa aspas, como <code>"A"</code>, para um
+      terminal maiúsculo. Os espaços entre símbolos são ignorados.
+    </p>
+    <p>
+      A palavra em branco representa ε. O editor aceita recursão à esquerda e
+      mostra uma árvore possível, sem decidir se a gramática é ambígua.
+    </p>
+  </details>
+  <noscript>
+    <p>Ativa JavaScript para editar a gramática e testar outras palavras.</p>
+  </noscript>
+</section>
+<script>
+  const observer = new IntersectionObserver(
+    async (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      const { setupGrammarLabs } = await import('../scripts/grammar-lab');
+      setupGrammarLabs();
+    },
+    { rootMargin: '200px' },
+  );
+  document
+    .querySelectorAll('[data-grammar-lab]')
+    .forEach((element) => observer.observe(element));
+</script>
