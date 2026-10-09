@@ -1,0 +1,56 @@
+## Igualdade
+
+As regras proposicionais continuam disponíveis. Acrescentam-se igualdade e quantificadores.
+
+- $=I$ dá $t=t$ para qualquer termo.
+- $=E$ substitui iguais por iguais numa fórmula, sem captura. De $a=b,P(a)$ obténs $P(b)$.
+- De $a=b$ obténs $f(a)=f(b)$. A direção inversa exige injetividade de $f$.
+
+## Regras dos quantificadores
+
+| Regra       | Operação                                                           | Condição                                                                                       |
+| ----------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| $\forall E$ | De $\forall x\varphi$, obter $\varphi[x\mapsto t]$                 | $t$ livre para $x$                                                                             |
+| $\exists I$ | De $\varphi[x\mapsto t]$, obter $\exists x\varphi$                 | Substituição admissível; $t$ é testemunha                                                      |
+| $\forall I$ | Provar $\varphi(u)$ e generalizar                                  | $u$ nova e arbitrária, sem dependência de premissas ou hipóteses abertas que a tornem especial |
+| $\exists E$ | Abrir $\varphi(u)$ para testemunha nova, deduzir $\theta$ e fechar | $u$ não ocorre na conclusão exterior nem nas hipóteses exteriores de que depende               |
+
+Instancia a **fórmula inteira**: de $\forall x(P(x)\to Q(x))$ obténs $P(t)\to Q(t)$, não $Q(t)$ sozinho.
+
+Para concluir $\exists x(P(x)\land Q(x))$, as duas propriedades têm de valer para a mesma testemunha. $P(a),Q(b)$ não chegam sem uma ligação como $a=b$.
+
+## Testemunha e objeto arbitrário
+
+Uma testemunha de $\exists xP(x)$ tem uma propriedade especial. Não pode servir como objeto arbitrário para concluir $\forall xP(x)$.
+
+Uma prova que transporta uma testemunha:
+
+```text
+1  ∀x(P(x) → Q(x))     premissa
+2  ∃xP(x)              premissa
+3  | u, P(u)           testemunha nova e hipótese
+4  | P(u) → Q(u)       ∀E, 1
+5  | Q(u)              →E, 4, 3
+6  | ∃xQ(x)            ∃I, 5
+7  ∃xQ(x)              ∃E, 2, 3 a 6
+```
+
+A linha 6 remove a referência à testemunha antes de sair da caixa. $Q(u)$ não poderia sair diretamente.
+
+Para provar um universal, abre uma variável arbitrária e obtém a propriedade a partir de premissas gerais. De $P(a)$ para uma constante particular não podes concluir $\forall xP(x)$.
+
+## Negação e revisão de provas
+
+Semanticamente, $\neg\forall xP(x)\Leftrightarrow\exists x\neg P(x)$. Numa dedução com regras de base, justifica cada direção. Para obter $\neg\forall xP(x)$ de uma testemunha de $\neg P$, assume o universal, instancia-o nessa testemunha e deriva $F$.
+
+Ao rever Fitch, confere:
+
+1. Todas as linhas citadas estão acessíveis na caixa atual.
+2. $\forall E$ e $\exists I$ substituem apenas ocorrências livres, sem captura.
+3. $\forall I$ usa um objeto arbitrário, sem hipóteses especiais ainda abertas.
+4. $\exists E$ cita a existência e a caixa inteira; a testemunha não sai na conclusão.
+5. As caixas fecham na ordem correta e a fórmula final tem só as dependências permitidas.
+
+A DN clássica de primeira ordem é correta e completa: $\Gamma\vdash\varphi$ se e só se $\Gamma\models\varphi$. Testar uma estrutura finita não prova uma consequência em todas as estruturas.
+
+[Provas quantificadas com caixas encaixadas](/cadeiras/md/provas-primeira-ordem/).
