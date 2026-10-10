@@ -1,6 +1,7 @@
 import { anchorSelection } from '../lib/text-anchors';
 import type { TextAnchor } from '../lib/annotations';
 import { copyFormula } from '../lib/formula-copy';
+import { copySelectionWithMath } from '../lib/selection-copy';
 
 export function setupSelection(
   root: HTMLElement | null,
@@ -35,6 +36,10 @@ export function setupSelection(
     paintFormulas();
   };
   if (!root) return hide;
+
+  document.addEventListener('copy', (event) =>
+    copySelectionWithMath(event, formulas),
+  );
 
   function formulaBlock(formula: HTMLElement) {
     return formula.closest<HTMLElement>('.katex-display') || formula;

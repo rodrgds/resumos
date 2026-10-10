@@ -1,5 +1,67 @@
 import { expect, test } from '@playwright/test';
 
+test('native copy keeps formulas once, in order, within selected text and the whole page', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/cadeiras/alga/ortogonalidade/tldr/');
+  await page
+    .locator('.lesson-body li')
+    .first()
+    .evaluate((item) => {
+      const range = new Range();
+      range.selectNodeContents(item);
+      getSelection()!.removeAllRanges();
+      getSelection()!.addRange(range);
+    });
+  await page.keyboard.press('ControlOrMeta+c');
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(
+      'Uma família é ortogonal se $u_i\\cdot u_j=0$ para $i\\ne j$. Se todos os vetores forem não nulos, é independente.',
+    );
+  const richCopy = await page.evaluate(async () => {
+    const [item] = await navigator.clipboard.read();
+    const html = await (await item.getType('text/html')).text();
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    return {
+      text: document.body.textContent,
+      bold: document.querySelector('strong')?.textContent,
+    };
+  });
+  expect(richCopy.bold).toBe('ortogonal');
+  expect(richCopy.text).toContain('$u_i\\cdot u_j=0$ para $i\\ne j$');
+  await page
+    .locator('.lesson-body li')
+    .first()
+    .evaluate((item) => {
+      const range = new Range();
+      range.setStart(item.firstChild!, 4);
+      range.setEnd(item.querySelectorAll('.katex')[1], 1);
+      getSelection()!.removeAllRanges();
+      getSelection()!.addRange(range);
+    });
+  await page.keyboard.press('ControlOrMeta+c');
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('família é ortogonal se $u_i\\cdot u_j=0$ para $i\\ne j$');
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('ControlOrMeta+c');
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).not.toContain('A cópia automática não está disponível.');
+  expect(copied.match(/\$u_i\\cdot u_j=0\$/g)).toHaveLength(1);
+  expect(copied).toContain(
+    '$$\nu_1=v_1,\\qquad\nu_j=v_j-\\sum_{i=1}^{j-1}\\frac{v_j\\cdot u_i}{u_i\\cdot u_i}u_i.\n$$',
+  );
+  expect(copied.indexOf('Para uma família independente')).toBeLessThan(
+    copied.indexOf('$$\nu_1='),
+  );
+  expect(copied.indexOf('$$\nu_1=')).toBeLessThan(
+    copied.indexOf('Retira as projeções'),
+  );
+});
+
 for (const javaScriptEnabled of [false, true]) {
   test(`standalone lesson formulas stay centered with JavaScript ${javaScriptEnabled ? 'enabled' : 'disabled'}`, async ({
     browser,

@@ -57,6 +57,8 @@ Nas lições, clica numa fórmula para abrir **Destacar**, **Comentar** e **Copi
 
 **Copiar** inclui o LaTeX original e os delimitadores Markdown; um aviso confirma a cópia. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. Nos exercícios, as fórmulas permitem copiar; as anotações pertencem ao texto da lição. Nos apontamentos pessoais, clica para revelar o LaTeX e usa a cópia normal do editor.
 
+A cópia normal do navegador também inclui as fórmulas em LaTeX quando a seleção atravessa texto e fórmulas ou abrange a página inteira. Cada fórmula aparece uma vez, no lugar original, com `$…$` para fórmulas em linha e `$$…$$` para blocos.
+
 ## Anotações e destaques
 
 Seleciona texto e escolhe **Destacar** ou **Comentar**. Tab chega às ações; Escape fecha-as. O marcador na margem abre a nota junto ao trecho, ou num painel inferior no telemóvel. O caderno reúne notas da página ou do site, permite voltar ao trecho, desfazer uma remoção e exportar Markdown. As notas antigas continuam em **Notas anteriores**.

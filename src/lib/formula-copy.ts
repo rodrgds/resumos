@@ -1,13 +1,16 @@
 let toastTimer = 0;
 
-export async function copyFormula(math: HTMLElement) {
+export function formulaMarkdown(math: Element) {
   const source = math.querySelector(
     'annotation[encoding="application/x-tex"]',
   )?.textContent;
-  if (!source) return;
-  const value = math.closest('.katex-display')
-    ? `$$\n${source}\n$$`
-    : `$${source}$`;
+  if (!source) return '';
+  return math.closest('.katex-display') ? `$$\n${source}\n$$` : `$${source}$`;
+}
+
+export async function copyFormula(math: HTMLElement) {
+  const value = formulaMarkdown(math);
+  if (!value) return;
   try {
     await navigator.clipboard.writeText(value);
     const status = document.querySelector('#formula-copy-status');
