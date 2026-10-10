@@ -69,6 +69,30 @@ test('Python and its downloaded NumPy package run in a fresh interpreter offline
   expect(second.output).toBe('False\n9\n');
 });
 
+test('runner reloads offline at the canonical URL used by Cloudflare Pages', async ({
+  page,
+  context,
+}) => {
+  let offline = false;
+  await context.route('http://127.0.0.1:4324/worker', async (route) => {
+    if (offline) return route.abort('internetdisconnected');
+    await route.fulfill({
+      response: await route.fetch({
+        url: 'http://127.0.0.1:4324/worker.html',
+      }),
+    });
+  });
+  await page.goto('http://127.0.0.1:4324/worker');
+  await expect(page).toHaveURL('http://127.0.0.1:4324/worker');
+  await execute(page, 'sqlite', 'SELECT 1;');
+  offline = true;
+  await context.setOffline(true);
+  await page.reload();
+  expect(
+    (await execute(page, 'sqlite', 'SELECT 42 AS answer;')).tables,
+  ).toEqual([expect.objectContaining({ columns: ['answer'], rows: [['42']] })]);
+});
+
 test('activating a new runner cache preserves unrelated browser data', async ({
   page,
 }) => {

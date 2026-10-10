@@ -21,7 +21,7 @@ const handleAsset = self.runtimeAssetCache({
   matches: (url) =>
     !url.search &&
     (url.origin === self.location.origin
-      ? localAssets.has(url.pathname)
+      ? localAssets.has(url.pathname) || localAssets.has(`${url.pathname}.html`)
       : externalPaths.some((path) => url.href.startsWith(path)) ||
         externalFiles.has(url.href)),
 });
@@ -30,7 +30,28 @@ self.addEventListener('install', (event) => {
     caches
       .open(CACHE_NAME)
       .then((cache) =>
-        cache.addAll(['/worker.html', '/java.html', '/cache.js']),
+        Promise.all(
+          ['/worker.html', '/java.html', '/cache.js'].map(async (path) => {
+            const response = await fetch(path);
+            if (!response.ok) return;
+            const body = await response.blob();
+            const headers = new Headers(response.headers);
+            headers.delete('content-encoding');
+            headers.delete('content-length');
+            headers.set('x-resumos-bytes', String(body.size));
+            headers.set('x-resumos-cached-at', String(Date.now()));
+            // Pages redirects .html to extensionless URLs. Store both, without
+            // the redirected response flag, so either navigation works offline.
+            const paths = path.endsWith('.html')
+              ? [path, path.slice(0, -5)]
+              : [path];
+            await Promise.all(
+              paths.map((key) =>
+                cache.put(key, new Response(body, { headers })),
+              ),
+            );
+          }),
+        ),
       )
       .catch(() => {})
       .then(() => self.skipWaiting()),
