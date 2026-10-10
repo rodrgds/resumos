@@ -17,6 +17,16 @@ test('keeps a visited lesson available offline', async ({ page, context }) => {
 
   await expect(page).toHaveURL(new RegExp(`${lessonPath}$`));
   await expect(page.locator('h1')).toContainText('Limites');
+  await expect(page.locator('.katex').first()).toBeVisible();
+  const mathFonts = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return ['KaTeX_Main', 'KaTeX_Math'].map((family) =>
+      [...document.fonts].some(
+        (font) => font.family === family && font.status === 'loaded',
+      ),
+    );
+  });
+  expect(mathFonts).toEqual([true, true]);
 });
 
 test('shows a small fallback for an unvisited offline page', async ({

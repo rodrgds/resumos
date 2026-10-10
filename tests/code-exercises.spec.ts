@@ -73,87 +73,93 @@ test('JavaScript function exercises check outputs and preserve the input contrac
   );
 });
 
-test('code exercises accept different correct implementations and reject wrong behavior', async ({
-  page,
-}) => {
-  test.setTimeout(180_000);
-  await page.goto('/exemplo/apontamentos/');
-  const exercise = page.locator('#soma-corrigir');
-  await exercise.locator('.exercise-disclosure > summary').click();
-  const editor = exercise.getByRole('textbox', {
-    name: 'Código python',
-    exact: true,
-  });
-  const check = exercise.getByRole('button', {
-    name: 'Verificar código',
-    exact: true,
-  });
-  await editor.fill('def soma_naturais(n):\n    return 10');
-  await check.click();
-  await expect(exercise.getByLabel('Diagnóstico dos testes')).toContainText(
-    'print(soma_naturais(0))',
-    { timeout: 60_000 },
-  );
-  const diagnostic = exercise.getByLabel('Diagnóstico dos testes');
-  await expect(
-    diagnostic.getByText('Esperado:', { exact: true }),
-  ).toBeVisible();
-  await expect(diagnostic.locator('[data-code-obtained]')).toHaveText('10');
-  const colors = await diagnostic
-    .locator('.code-test-source pre code *')
-    .evaluateAll(
-      (tokens) =>
-        new Set(tokens.map((token) => getComputedStyle(token).color)).size,
+test.describe('exercise feedback when an uncached engine fails', () => {
+  // This case deliberately blocks an engine download after earlier submissions.
+  // A cached engine should keep working through that network failure.
+  test.use({ serviceWorkers: 'block' });
+
+  test('code exercises accept different correct implementations and reject wrong behavior', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    await page.goto('/exemplo/apontamentos/');
+    const exercise = page.locator('#soma-corrigir');
+    await exercise.locator('.exercise-disclosure > summary').click();
+    const editor = exercise.getByRole('textbox', {
+      name: 'Código python',
+      exact: true,
+    });
+    const check = exercise.getByRole('button', {
+      name: 'Verificar código',
+      exact: true,
+    });
+    await editor.fill('def soma_naturais(n):\n    return 10');
+    await check.click();
+    await expect(exercise.getByLabel('Diagnóstico dos testes')).toContainText(
+      'print(soma_naturais(0))',
+      { timeout: 60_000 },
     );
-  expect(colors).toBeGreaterThan(1);
-  await expect(exercise.locator('[data-code-status]')).toContainText(
-    'Teste 1/4',
-  );
-  await expect(exercise.locator('[data-feedback]')).toContainText(
-    'Resposta incorreta',
-  );
-  await editor.fill('def soma_naturais(n):\n    return sum(range(1, n + 1))');
-  await check.click();
-  await expect(exercise.locator('[data-code-status]')).toHaveText(
-    '4/4 testes passaram.',
-    { timeout: 90_000 },
-  );
-  await expect(exercise.locator('[data-feedback]')).toContainText('correta');
-  const progressBeforeEngineError = await page.evaluate(() =>
-    localStorage.getItem('resumos-exercise-progress'),
-  );
-  await page.route('**/python.worker.js', (route) => route.abort('failed'));
-  await check.click();
-  await expect(diagnostic.locator('[data-code-error]')).toBeVisible({
-    timeout: 60_000,
-  });
-  await expect(diagnostic).toContainText(/print\(soma_naturais\(\d+\)\)/);
-  await expect(exercise.locator('[data-feedback]')).toBeEmpty();
-  expect(
-    await page.evaluate(() =>
+    const diagnostic = exercise.getByLabel('Diagnóstico dos testes');
+    await expect(
+      diagnostic.getByText('Esperado:', { exact: true }),
+    ).toBeVisible();
+    await expect(diagnostic.locator('[data-code-obtained]')).toHaveText('10');
+    const colors = await diagnostic
+      .locator('.code-test-source pre code *')
+      .evaluateAll(
+        (tokens) =>
+          new Set(tokens.map((token) => getComputedStyle(token).color)).size,
+      );
+    expect(colors).toBeGreaterThan(1);
+    await expect(exercise.locator('[data-code-status]')).toContainText(
+      'Teste 1/4',
+    );
+    await expect(exercise.locator('[data-feedback]')).toContainText(
+      'Resposta incorreta',
+    );
+    await editor.fill('def soma_naturais(n):\n    return sum(range(1, n + 1))');
+    await check.click();
+    await expect(exercise.locator('[data-code-status]')).toHaveText(
+      '4/4 testes passaram.',
+      { timeout: 90_000 },
+    );
+    await expect(exercise.locator('[data-feedback]')).toContainText('correta');
+    const progressBeforeEngineError = await page.evaluate(() =>
       localStorage.getItem('resumos-exercise-progress'),
-    ),
-  ).toBe(progressBeforeEngineError);
-  await page.unroute('**/python.worker.js');
-  await editor.fill(
-    '# private-reader-code\ndef soma_naturais(n):\n    return n * (n + 1) // 2',
-  );
-  await check.click();
-  await expect(exercise.locator('[data-code-status]')).toHaveText(
-    '4/4 testes passaram.',
-    { timeout: 90_000 },
-  );
-  const print = await page
-    .locator('#print-template')
-    .evaluate(
-      (template) => (template as HTMLTemplateElement).content.textContent,
     );
-  expect(print).toContain('print(soma_naturais(20))');
-  expect(print).not.toContain('private-reader-code');
-  await page.reload();
-  await exercise.locator('.exercise-disclosure > summary').click();
-  await expect(editor).not.toContainText('n * (n + 1)');
-  await expect(exercise.locator('[data-feedback]')).toContainText('correta');
+    await page.route('**/python.worker.js', (route) => route.abort('failed'));
+    await check.click();
+    await expect(diagnostic.locator('[data-code-error]')).toBeVisible({
+      timeout: 60_000,
+    });
+    await expect(diagnostic).toContainText(/print\(soma_naturais\(\d+\)\)/);
+    await expect(exercise.locator('[data-feedback]')).toBeEmpty();
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem('resumos-exercise-progress'),
+      ),
+    ).toBe(progressBeforeEngineError);
+    await page.unroute('**/python.worker.js');
+    await editor.fill(
+      '# private-reader-code\ndef soma_naturais(n):\n    return n * (n + 1) // 2',
+    );
+    await check.click();
+    await expect(exercise.locator('[data-code-status]')).toHaveText(
+      '4/4 testes passaram.',
+      { timeout: 90_000 },
+    );
+    const print = await page
+      .locator('#print-template')
+      .evaluate(
+        (template) => (template as HTMLTemplateElement).content.textContent,
+      );
+    expect(print).toContain('print(soma_naturais(20))');
+    expect(print).not.toContain('private-reader-code');
+    await page.reload();
+    await exercise.locator('.exercise-disclosure > summary').click();
+    await expect(editor).not.toContainText('n * (n + 1)');
+    await expect(exercise.locator('[data-feedback]')).toContainText('correta');
+  });
 });
 
 test('stopping or editing a running program cancels validation without recording success', async ({

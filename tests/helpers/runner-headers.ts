@@ -18,7 +18,8 @@ export async function runnerHeaders(page: Page) {
   headers['Content-Security-Policy'] = headers[
     'Content-Security-Policy'
   ].replace(/frame-ancestors [^;]+/, 'frame-ancestors http://127.0.0.1:4322');
-  await page.route('http://127.0.0.1:4324/**', async (route) => {
+  // Context routing also applies to network requests made by the runtime cache worker.
+  await page.context().route('http://127.0.0.1:4324/**', async (route) => {
     const response = await route.fetch();
     await route.fulfill({
       response,

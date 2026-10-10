@@ -14,7 +14,7 @@ self.onmessage = async ({ data: { code } }) => {
       { ConsoleStdout, File, OpenFile, PreopenDirectory, WASI },
       { DyLDBrowserHost, main },
     ] = await Promise.all([
-      import('https://esm.sh/gh/haskell-wasm/browser_wasi_shim'),
+      import('https://esm.sh/gh/haskell-wasm/browser_wasi_shim@2f86b49'),
       import('https://cdn.jsdelivr.net/gh/haskell-wasm/ghc-in-browser@c57d8b6e37737d662aed05cab88f867918307053/dyld.mjs'),
     ]);
     const rootfs = new PreopenDirectory('/', []);

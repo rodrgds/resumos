@@ -12,7 +12,7 @@ The runner has a separate origin, `resumos-code.pages.dev`, and receives only co
 
 ## Haskell and Prolog
 
-Haskell loads the GHC in Browser image from https://github.com/haskell-wasm/ghc-in-browser, revision c57d8b6e37737d662aed05cab88f867918307053. The adapter follows that project's browser startup example. Its GHC source and build tooling are maintained at https://gitlab.haskell.org/ghc/ghc and https://gitlab.haskell.org/ghc/ghc-wasm-meta. GHC licensing: https://www.haskell.org/ghc/license.html.
+Haskell loads the GHC in Browser image from https://github.com/haskell-wasm/ghc-in-browser, revision c57d8b6e37737d662aed05cab88f867918307053. The adapter follows that project's browser startup example, with browser_wasi_shim pinned to revision 2f86b49 through esm.sh. Its GHC source and build tooling are maintained at https://gitlab.haskell.org/ghc/ghc and https://gitlab.haskell.org/ghc/ghc-wasm-meta. GHC licensing: https://www.haskell.org/ghc/license.html.
 
 Prolog loads the SWI-Prolog team's `swipl-wasm` 8.1.2 package from jsDelivr. Source, build tooling and BSD licence: https://github.com/SWI-Prolog/npm-swipl-wasm.
 

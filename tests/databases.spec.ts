@@ -241,9 +241,10 @@ test('explicit standard input and PHP request bodies reach their program and res
 
 test('a database engine download failure releases the editor for a fresh retry', async ({
   page,
+  context,
 }) => {
   test.setTimeout(90_000);
-  await page.route('**/pglite/pglite.wasm', (route) => route.abort());
+  await context.route('**/pglite/pglite.wasm', (route) => route.abort());
   await page.goto('/exemplo/databases/');
   const root = page.getByRole('region', {
     name: 'PostgreSQL com dados editáveis',
@@ -254,7 +255,7 @@ test('a database engine download failure releases the editor for a fresh retry',
   await run.click();
   await expect(run).toBeEnabled({ timeout: 60_000 });
   await expect(root.getByRole('status')).toContainText('main.sql:');
-  await page.unroute('**/pglite/pglite.wasm');
+  await context.unroute('**/pglite/pglite.wasm');
   await run.click();
   await expect(run).toBeEnabled({ timeout: 60_000 });
   await expect(root.getByRole('status')).toHaveText('Concluído');

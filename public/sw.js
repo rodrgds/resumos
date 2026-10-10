@@ -1,3 +1,19 @@
+importScripts('/runtime-cache.js');
+const WASI_CACHE_NAME = 'resumos-wasi-v1';
+const handleRuntime = self.runtimeAssetCache({
+  name: WASI_CACHE_NAME,
+  maxBytes: 96 * 1024 * 1024,
+  matches: (url) =>
+    url.origin === 'https://runno.dev' &&
+    !url.search &&
+    [
+      '/langs/wasmedge_quickjs.wasm',
+      '/langs/clang-fs.tar.gz',
+      '/langs/clang.wasm',
+      '/langs/wasm-ld.wasm',
+    ].includes(url.pathname),
+});
+
 const CACHE_NAME = 'resumos-runtime-v2';
 const OFFLINE_URL = '/__resumos_offline_fallback__';
 const OFFLINE_HTML = `<!doctype html>
@@ -48,7 +64,9 @@ self.addEventListener('activate', (event) => {
         Promise.all(
           keys
             .filter(
-              (key) => key.startsWith('resumos-runtime-') && key !== CACHE_NAME,
+              (key) =>
+                (key.startsWith('resumos-runtime-') && key !== CACHE_NAME) ||
+                (key.startsWith('resumos-wasi-') && key !== WASI_CACHE_NAME),
             )
             .map((key) => caches.delete(key)),
         ),
@@ -59,6 +77,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (handleRuntime(event)) return;
   const request = event.request;
   if (request.method !== 'GET') return;
 
@@ -93,7 +112,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 function shouldSkip(url) {
-  return /\.(?:mp3|mp4|wasm|webm|woff|ttf)$/i.test(url.pathname);
+  return /\.(?:mp3|mp4|wasm|webm)$/i.test(url.pathname);
 }
 
 function isStaticAsset(request, url) {

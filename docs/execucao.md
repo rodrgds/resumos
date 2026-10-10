@@ -28,11 +28,19 @@ PostgreSQL recebe as sementes e o principal em lotes separados. Um lote com vár
 
 Cada execução recebe código, ficheiros de apoio e entrada declarada num Worker descartável, sem acesso ao DOM ou às notas. Parar termina o Worker. Ficheiros criados pelo programa ficam em memória até ao fim. A execução tem limite de dois minutos e 32 mil caracteres de saída.
 
-Python prepara um intérprete ao focar um editor e prepara o seguinte enquanto o programa corre. A página partilha apenas um Worker de reserva que ainda não executou código do leitor, através de uma iframe na origem dos motores. Cada execução consome esse Worker e termina-o ao concluir ou parar; nunca se reutilizam variáveis, módulos alterados ou ficheiros de programas anteriores. Fechar a página termina também o Worker de reserva. O primeiro carregamento e as bibliotecas adicionais continuam a depender da ligação e do dispositivo.
+Python prepara um intérprete ao focar um editor e prepara o seguinte enquanto o programa corre. A página partilha apenas um Worker de reserva que ainda não executou código do leitor, através de uma iframe na origem dos motores. Cada execução consome esse Worker e termina-o ao concluir ou parar; nunca se reutilizam variáveis, módulos alterados ou ficheiros de programas anteriores. Fechar a página termina também o Worker de reserva. A primeira utilização de cada motor ou biblioteca precisa de ligação; os ficheiros descarregados ficam em cache local para execuções seguintes.
 
 Python, Java, Haskell, Prolog, PHP, SQLite e PostgreSQL usam `resumos-code.pages.dev`, porque os motores têm acesso a JavaScript ou armazenamento. Essa origem publica apenas `runners/dist/`, nunca páginas de leitura. O projeto Cloudflare `resumos-code` compila com `npm ci && npm run build:runners`. Mantém a CSP de produção; a configuração de testes troca apenas a origem autorizada do leitor.
 
 `WebPlayground` usa iframe de origem opaca, sem rede. `allow-forms` permite eventos e validação locais; CSP `form-action 'none'` continua a impedir envios. DartPad é a exceção explícita de compilação externa e só abre por escolha do leitor.
+
+## Cache local dos motores
+
+O leitor guarda os binários WASI de C/C++ e JavaScript num cache próprio, até 96 MiB. A origem isolada guarda os ficheiros dos motores, incluindo WebAssembly, arquivos do compilador e pacotes Python já usados, até 192 MiB. O carregamento é por utilização, sem descarregar todos os motores ao abrir uma lição. A resposta chega ao programa antes de terminar a escrita em disco.
+
+Cada cache conserva até 160 recursos e elimina primeiro os mais antigos quando falta espaço. Os recursos são revalidados após sete dias, com a cópia guardada como alternativa sem rede. O build dos motores gera um identificador a partir dos ficheiros publicados; uma nova versão elimina apenas o cache anterior dos motores. Notas, código, entradas, saídas, ficheiros criados pelo programa e bases de dados não entram neste cache. Cada execução continua a usar um Worker e um sistema de ficheiros novos.
+
+Só entram respostas completas e legíveis de URLs autorizados. Pedidos parciais e respostas opacas continuam a depender do cache HTTP do navegador. Java e Haskell podem precisar de recursos adicionais ao executar programas diferentes; bibliotecas Python ainda não usadas precisam de ligação. O navegador pode remover o cache por falta de espaço, e as restrições de armazenamento em iframes podem impedir a persistência. Nesses casos, a execução online continua disponível.
 
 ## Testar localmente
 

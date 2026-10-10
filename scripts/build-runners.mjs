@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto';
 import { build } from 'esbuild';
 import { builtinModules } from 'node:module';
-import { cp, mkdir, readdir, rm } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, writeFile, rm } from 'node:fs/promises';
 
 const outdir = 'runners/dist';
 await rm(outdir, { recursive: true, force: true });
@@ -13,6 +14,7 @@ for (const file of await readdir('runners', { withFileTypes: true })) {
       'sqlite.worker.js',
       'postgresql.worker.js',
       'sql-results.js',
+      'sw.js',
     ].includes(file.name)
   ) {
     await cp(`runners/${file.name}`, `${outdir}/${file.name}`);
@@ -48,4 +50,27 @@ await cp('node_modules/sql.js/LICENSE', `${outdir}/LICENSE.sql-js`);
 await cp(
   'node_modules/@electric-sql/pglite/LICENSE',
   `${outdir}/LICENSE.pglite`,
+);
+
+// A change to any runner or dependency creates a fresh cache namespace.
+await cp('public/runtime-cache.js', `${outdir}/runtime-cache.js`);
+const assets = (await readdir(outdir, { recursive: true, withFileTypes: true }))
+  .filter((entry) => entry.isFile())
+  .map((entry) => `${entry.parentPath}/${entry.name}`)
+  .sort();
+const fingerprint = createHash('sha256');
+for (const file of assets) {
+  fingerprint.update(file.slice(outdir.length));
+  fingerprint.update(await readFile(file));
+}
+const serviceWorker = await readFile('runners/sw.js', 'utf8');
+fingerprint.update(serviceWorker);
+await writeFile(
+  `${outdir}/sw.js`,
+  serviceWorker
+    .replace('__BUILD_ID__', fingerprint.digest('hex').slice(0, 16))
+    .replace(
+      "['__LOCAL_ASSETS__']",
+      JSON.stringify(assets.map((file) => file.slice(outdir.length))),
+    ),
 );
