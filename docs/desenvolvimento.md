@@ -25,7 +25,9 @@ O build fica em `dist/`. Os testes compilam o site em `.test-dist/` e verificam-
 
 No mesmo checkout, corre `check` e os builds sequencialmente. Partilham o cache de conteúdo do Astro; executar `check` durante o build dos testes pode retirar as lições de teste desse cache.
 
-Em produção, `public/sw.js` regista um service worker depois do primeiro carregamento. Guarda as páginas visitadas e os recursos estáticos pequenos para leitura sem ligação, mas não guarda vídeos, áudios ou WebAssembly. A navegação tenta primeiro a rede para receber conteúdo novo; a cópia local só é usada quando a rede falha.
+Em produção, `public/sw.js` regista um service worker depois do primeiro carregamento. Guarda as páginas visitadas e os recursos estáticos pequenos para leitura sem ligação, mas não guarda vídeos, áudios ou WebAssembly. A navegação tenta primeiro a rede para receber conteúdo novo; a cópia local só é usada quando a rede falha. A resposta chega ao leitor sem esperar pela escrita em cache. `waitUntil` mantém essa escrita ativa em segundo plano, e navigation preload antecipa o pedido enquanto o worker arranca.
+
+O prefetch do Astro prepara links ao pousar o rato ou focar com o teclado e respeita ligações lentas e poupança de dados. Os catálogos embebidos guardam cada página uma vez; `reading-catalog.ts` reconstrói os links TLDR e o histórico. Os limites em `tests/loading.spec.ts` verificam os bytes de arranque, do catálogo e do JavaScript de uma lição com Python. `mergeCommonChunks: false` em `astro.config.mjs` impede que helpers partilhados carreguem o renderizador Markdown em lições que não o usam. A análise de visitas carrega depois do evento `load`, sem bloquear os controlos ou o restauro da posição de leitura.
 
 Para renderizar animações, segue [Manim no guia de contribuição](../CONTRIBUTING.md#animações-com-manim). O build normal descarrega os bundles publicados que faltam e usa os ficheiros gerados, sem Manim ou FFmpeg. GitHub Actions gera cenas novas ou alteradas e conserva cada render por fingerprint. `MANIM_RELEASE_URL` permite usar um espelho HTTP dos bundles para builds locais.
 

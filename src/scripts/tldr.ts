@@ -1,7 +1,7 @@
+import { readTldrPaths } from '../lib/reading-catalog';
+
 const key = 'resumos-reading-variant';
-const paths: Record<string, string> = JSON.parse(
-  document.getElementById('tldr-paths')?.textContent || '{}',
-);
+const paths = readTldrPaths();
 const reverse = Object.fromEntries(
   Object.entries(paths).map(([full, short]) => [short, full]),
 );

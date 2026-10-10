@@ -4,6 +4,8 @@
 
 ## Editor
 
+Os exemplos carregam o suporte de sintaxe apenas para as linguagens dos seus ficheiros. As bibliotecas de linguagens que não aparecem na lição ficam fora do carregamento.
+
 O editor realça as outras ocorrências do texto selecionado. Pousar o cursor numa palavra não realça as ocorrências. Ctrl D ou ⌘ D seleciona a palavra e acrescenta a próxima ocorrência; escreve para alterar todas as seleções. Alt + clique acrescenta um cursor. Ctrl/⌘ Alt ↑ ou ↓ acrescenta um cursor na linha anterior ou seguinte. Tab indenta e Shift Tab retira indentação; Escape seguido de Tab sai do editor. Ctrl/⌘ Z desfaz a edição conjunta.
 
 Com **Navegação Vim** ativa, os editores usam os modos normal, inserção e visual do Vim, com movimentos, operadores, pesquisa e undo. `i` entra em inserção e Escape regressa ao modo normal. A preferência aplica-se também aos editores já abertos, sem apagar código. A leitura da lição continua a ser só de leitura.

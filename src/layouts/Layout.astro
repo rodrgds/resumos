@@ -4,6 +4,7 @@ import '@fontsource-variable/source-serif-4';
 import manropeFont from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
 import sourceSerifFont from '@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2?url';
 import '../styles/global.css';
+import 'virtual:reading-themes.css';
 import '../styles/tools.css';
 import '../styles/fonts.css';
 import '../styles/code.css';
@@ -16,6 +17,7 @@ import { resolve } from 'node:path';
 import { getReadingPages } from '../lib/reading-pages';
 import { getTldrPaths } from '../lib/tldr-content';
 import { courses } from '../data/courses';
+import { readingThemes } from '../data/reading-themes';
 interface Props {
   title?: string;
   description?: string;
@@ -36,7 +38,7 @@ const readingPages =
   Astro.url.pathname === '/' ? await getReadingPages() : undefined;
 const bundled = await build({
   stdin: {
-    contents: preferences,
+    contents: `${preferences}\nsetupPreferences(${JSON.stringify(readingThemes.map(({ id, name, family, variant }) => ({ id, name, family, variant })))});`,
     loader: 'ts',
     resolveDir: resolve('src/scripts'),
   },
@@ -72,24 +74,13 @@ const snippets = await build({
     <meta property="og:url" content={canonicalUrl.href} />
     <link rel="canonical" href={canonicalUrl.href} />
     <link rel="icon" type="image/webp" href="/logos/feup-color-favicon.webp" />
-    {preloadReadingFonts && (
-      <>
-        <link
-          rel="preload"
-          as="font"
-          type="font/woff2"
-          href={manropeFont}
-          crossorigin
-        />
-        <link
-          rel="preload"
-          as="font"
-          type="font/woff2"
-          href={sourceSerifFont}
-          crossorigin
-        />
-      </>
-    )}
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href={manropeFont}
+      crossorigin
+    />
     {markdown && (
       <link
         rel="alternate"
@@ -106,13 +97,16 @@ const snippets = await build({
       />
     )}
     <title>{title}</title>
+    <slot name="head" />
     <script
       is:inline
-      defer
-      src="https://cool.rgo.pt/script.js"
-      data-website-id="54076e00-3901-4561-8cf8-886881349434"
+      type="application/json"
+      id="tldr-paths"
+      set:html={JSON.stringify(Object.keys(tldrPaths)).replaceAll(
+        '<',
+        '\\u003c',
+      )}
     ></script>
-    <slot name="head" />
     {readingPages && (
       <>
         <script
@@ -134,14 +128,19 @@ const snippets = await build({
       </>
     )}
     <script is:inline set:html={code}></script>
+    {preloadReadingFonts && <script is:inline define:vars={{ sourceSerifFont }}>
+      if (document.documentElement.dataset.font === 'serif') {
+        const font = document.createElement('link');
+        font.rel = 'preload';
+        font.as = 'font';
+        font.type = 'font/woff2';
+        font.href = sourceSerifFont;
+        font.crossOrigin = '';
+        document.head.append(font);
+      }
+    </script>}
   </head>
   <body>
-    <script
-      is:inline
-      type="application/json"
-      id="tldr-paths"
-      set:html={JSON.stringify(tldrPaths).replaceAll('<', '\\u003c')}
-    ></script>
     <!-- After Astro's head styles, before any visible content. -->
     <script is:inline set:html={snippets.outputFiles[0].text}></script>
     {enableOffline && <script is:inline>
@@ -169,4 +168,15 @@ const snippets = await build({
 
 <script>
   import '../scripts/tldr';
+
+  // Analytics must not hold DOMContentLoaded or reading-position restoration.
+  const loadAnalytics = () => {
+    const script = document.createElement('script');
+    script.src = 'https://cool.rgo.pt/script.js';
+    script.async = true;
+    script.dataset.websiteId = '54076e00-3901-4561-8cf8-886881349434';
+    document.head.append(script);
+  };
+  if (document.readyState === 'complete') loadAnalytics();
+  else window.addEventListener('load', loadAnalytics, { once: true });
 </script>

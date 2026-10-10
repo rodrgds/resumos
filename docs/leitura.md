@@ -127,6 +127,8 @@ O build gera `.md` de cada página pública e `/llms.txt`, sem notas ou rascunho
 
 ## Personalização local
 
+As preferências guardadas aplicam-se antes de pintar a página. `reading-theme-styles.ts` transforma as paletas e as cores de sintaxe em CSS partilhado, com cache; o script de arranque guarda apenas opções e atributos. Alterar tema não requer novos pedidos de rede. Os preloads de fontes respeitam a fonte de leitura escolhida.
+
 Em **CSS personalizado**, guardar e ativar são ações separadas. Podes editar, desativar ou eliminar snippets. **Adicionar sugestões em falta** repõe sugestões desativadas sem substituir edições. Tudo fica em `resumos-css-snippets`, só neste navegador.
 
 Código desloca-se horizontalmente por defeito. A sugestão **Quebrar linhas de código** ajusta blocos estáticos e editores à largura disponível sem alterar o programa. Seleções conservam as cores da sintaxe; pontos de espaços e tabulações não entram no texto copiado.

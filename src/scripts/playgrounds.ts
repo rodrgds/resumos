@@ -7,16 +7,6 @@ import {
 import type { Range } from '@codemirror/state';
 import { editorSetup, editorLanguage } from '../lib/editor-setup';
 import { keymap } from '@codemirror/view';
-import { python } from '@codemirror/lang-python';
-import { javascript } from '@codemirror/lang-javascript';
-import { sql, SQLite, PostgreSQL } from '@codemirror/lang-sql';
-import { cpp } from '@codemirror/lang-cpp';
-import { StreamLanguage } from '@codemirror/language';
-import { haskell } from '@codemirror/legacy-modes/mode/haskell';
-import { php } from '@codemirror/lang-php';
-import { java } from '@codemirror/lang-java';
-import { prolog } from 'codemirror-lang-prolog';
-import { assembly } from '@codincod/codemirror-lang-assembly';
 import {
   OUTPUT_LIMIT,
   type Language,
@@ -34,18 +24,32 @@ import { renderSqlTable } from '../lib/sql-table';
 import { preparePython } from '../lib/runners/python';
 
 const languages = {
-  python,
-  javascript,
-  sql: () => sql({ dialect: SQLite }),
-  sqlite: () => sql({ dialect: SQLite }),
-  postgresql: () => sql({ dialect: PostgreSQL }),
-  cpp,
-  java,
-  c: cpp,
-  haskell: () => StreamLanguage.define(haskell),
-  prolog,
-  riscv: assembly,
-  php,
+  python: async () => (await import('@codemirror/lang-python')).python(),
+  javascript: async () =>
+    (await import('@codemirror/lang-javascript')).javascript(),
+  sql: async () => {
+    const { sql, SQLite } = await import('@codemirror/lang-sql');
+    return sql({ dialect: SQLite });
+  },
+  sqlite: async () => languages.sql(),
+  postgresql: async () => {
+    const { sql, PostgreSQL } = await import('@codemirror/lang-sql');
+    return sql({ dialect: PostgreSQL });
+  },
+  cpp: async () => (await import('@codemirror/lang-cpp')).cpp(),
+  java: async () => (await import('@codemirror/lang-java')).java(),
+  c: async () => languages.cpp(),
+  haskell: async () => {
+    const [{ StreamLanguage }, { haskell }] = await Promise.all([
+      import('@codemirror/language'),
+      import('@codemirror/legacy-modes/mode/haskell'),
+    ]);
+    return StreamLanguage.define(haskell);
+  },
+  prolog: async () => (await import('codemirror-lang-prolog')).prolog(),
+  riscv: async () =>
+    (await import('@codincod/codemirror-lang-assembly')).assembly(),
+  php: async () => (await import('@codemirror/lang-php')).php(),
 };
 const MAX_RUN_MS = 120_000;
 const MAX_PLOTS = 8;
@@ -139,7 +143,7 @@ function fitToolbarTitle(root: HTMLElement) {
 export function setupPlaygrounds() {
   document
     .querySelectorAll<HTMLElement>('[data-playground]')
-    .forEach((root) => {
+    .forEach(async (root) => {
       if (root.dataset.ready) return;
       root.dataset.ready = 'true';
       const language = root.dataset.language as Language;
@@ -231,13 +235,15 @@ export function setupPlaygrounds() {
           );
         if (message.type === 'error') finish(message.text);
       };
+      const modes = await Promise.all(
+        filenames.map(async (filename, index) => {
+          const mode =
+            index === 0 ? language : supportLanguage(language, filename);
+          return mode ? editorLanguage(await languages[mode]()) : [];
+        }),
+      );
       const editors = panes.map((pane, index) => {
         const csv = index > 0 && isCsvFilename(filenames[index]);
-        const mode = csv
-          ? null
-          : index === 0
-            ? language
-            : (supportLanguage(language, filenames[index]) ?? null);
         return new EditorView({
           doc: originals[index],
           parent: pane.querySelector('[data-editor], [data-support-editor]')!,
@@ -246,7 +252,7 @@ export function setupPlaygrounds() {
             EditorView.updateListener.of((update) => {
               if (update.docChanged) edited();
             }),
-            ...(mode ? [editorLanguage(languages[mode]())] : []),
+            modes[index],
             ...(csv ? [csvColumns(filenames[index])] : []),
             EditorView.contentAttributes.of({
               'aria-label':

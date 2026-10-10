@@ -53,6 +53,7 @@ self.addEventListener('activate', (event) => {
             .map((key) => caches.delete(key)),
         ),
       )
+      .then(() => self.registration.navigationPreload?.enable())
       .then(() => self.clients.claim()),
   );
 });
@@ -65,11 +66,30 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin || shouldSkip(url)) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+    let writing;
+    const response = networkFirst(request, event.preloadResponse).then(
+      (value) => {
+        // Clone before handing the stream to the browser, which may lock it immediately.
+        writing = cacheResponse(request, value);
+        return value;
+      },
+    );
+    event.respondWith(response);
+    event.waitUntil(response.then(() => writing));
     return;
   }
 
-  if (isStaticAsset(request, url)) event.respondWith(cacheFirst(request));
+  if (isStaticAsset(request, url)) {
+    let writing;
+    const response = readCache(request).then(async (cached) => {
+      if (cached) return cached;
+      const value = await fetch(request);
+      writing = cacheResponse(request, value);
+      return value;
+    });
+    event.respondWith(response);
+    event.waitUntil(response.then(() => writing).catch(() => {}));
+  }
 });
 
 function shouldSkip(url) {
@@ -95,17 +115,19 @@ async function readCache(request) {
 async function cacheResponse(request, response) {
   if (!response.ok) return;
   try {
+    const copy = response.clone();
     const cache = await caches.open(CACHE_NAME);
-    await cache.put(request, response.clone());
+    await cache.put(request, copy);
   } catch {
     // Private browsing and full storage must not break online reading.
   }
 }
 
-async function networkFirst(request) {
-  let response;
+async function networkFirst(request, preloadResponse) {
   try {
-    response = await fetch(request);
+    return (
+      (await preloadResponse?.catch(() => undefined)) || (await fetch(request))
+    );
   } catch {
     return (
       (await readCache(request)) ||
@@ -114,15 +136,4 @@ async function networkFirst(request) {
       })
     );
   }
-  await cacheResponse(request, response);
-  return response;
-}
-
-async function cacheFirst(request) {
-  const cached = await readCache(request);
-  if (cached) return cached;
-
-  const response = await fetch(request);
-  await cacheResponse(request, response);
-  return response;
 }

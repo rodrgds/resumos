@@ -10,6 +10,7 @@ import remarkDisplayMath from './src/lib/remark-display-math.mjs';
 import rehypeDisclosures from './src/lib/rehype-disclosures.mjs';
 import rehypeKatex from 'rehype-katex';
 import { codeShikiConfig } from './src/lib/code-theme.mjs';
+import { readingThemeStyles } from './src/lib/reading-theme-styles';
 
 const content = {
   remarkPlugins: [
@@ -28,7 +29,31 @@ const content = {
 export default defineConfig({
   site: 'https://resumos.rgo.pt',
   cacheDir: './.astro/cache/',
-  vite: { cacheDir: './.astro/vite/' },
+  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+  vite: {
+    cacheDir: './.astro/vite/',
+    build: {
+      rolldownOptions: {
+        experimental: {
+          // Merging a shared helper into personal-markdown makes code lessons
+          // download the entire Markdown renderer to initialize their grammar.
+          chunkOptimization: { mergeCommonChunks: false },
+        },
+      },
+    },
+    plugins: [
+      {
+        name: 'reading-theme-styles',
+        resolveId(id) {
+          if (id === 'virtual:reading-themes.css')
+            return '\0reading-themes.css';
+        },
+        load(id) {
+          if (id === '\0reading-themes.css') return readingThemeStyles();
+        },
+      },
+    ],
+  },
   integrations: [
     mdx(),
     markdownExport(),

@@ -2,15 +2,9 @@ import { readSemesterPins, SEMESTER_PIN_KEY } from '../lib/pinned-semesters';
 import { readingHistory } from '../lib/reading-history';
 import { CT_CHOICE_KEY, readCTChoices } from '../lib/ct-choices';
 import { ctOptions, type CTGroupId } from '../data/ct-options';
+import { readReadingPages } from '../lib/reading-catalog';
 
-const readingPages = document.querySelector('#reading-pages');
-const publishedPaths = new Set(
-  readingPages
-    ? (JSON.parse(readingPages.textContent!) as { path: string }[]).map(
-        (page) => page.path,
-      )
-    : [],
-);
+const publishedPaths = new Set(readReadingPages().map((page) => page.path));
 function resumeCourse(card: HTMLAnchorElement) {
   const root = card.dataset.courseRoot!;
   const latest = readingHistory().find(
