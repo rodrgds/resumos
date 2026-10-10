@@ -9,6 +9,7 @@ import remarkMath from 'remark-math';
 import remarkDisplayMath from './src/lib/remark-display-math.mjs';
 import rehypeDisclosures from './src/lib/rehype-disclosures.mjs';
 import rehypeKatex from 'rehype-katex';
+import rehypeMathLayout from './src/lib/rehype-math-layout.mjs';
 import { codeShikiConfig } from './src/lib/code-theme.mjs';
 import { readingThemeStyles } from './src/lib/reading-theme-styles';
 
@@ -19,7 +20,7 @@ const content = {
     remarkDirective,
     remarkContainers,
   ],
-  rehypePlugins: [rehypeKatex, rehypeDisclosures],
+  rehypePlugins: [rehypeKatex, rehypeMathLayout, rehypeDisclosures],
   remarkRehype: {
     footnoteLabel: 'Notas de rodapé',
     footnoteBackLabel: 'Voltar à referência',

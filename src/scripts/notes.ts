@@ -87,7 +87,7 @@ export function setupNotes() {
       for (const span of spans) {
         const formula = mathElement(span);
         if (formula)
-          formula.setAttribute(
+          (formula.closest('.katex-display') || formula).setAttribute(
             'data-math-highlight',
             id === active ? 'active' : 'saved',
           );
@@ -403,7 +403,7 @@ export function setupNotes() {
   root?.addEventListener('click', (event) => {
     if (
       !window.getSelection()?.isCollapsed ||
-      (event.target as Element).closest('a, button')
+      (event.target as Element).closest('a, button, .katex')
     )
       return;
     for (const [id, spans] of ranges) {

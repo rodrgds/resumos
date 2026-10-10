@@ -236,14 +236,14 @@ test('published formulas copy their original LaTeX and offer a clipboard fallbac
     }),
   );
   await page.goto('/exemplo/apontamentos/');
-  await page.locator('.lesson-body .formula-unit').first().hover();
+  await page.locator('.lesson-body .katex').first().click();
   await page
     .getByRole('button', { name: 'Copiar fórmula', exact: true })
     .first()
     .click();
   const fallback = page.getByRole('textbox', { name: 'Fórmula para copiar' });
   await expect(fallback).toBeVisible();
-  await expect(fallback).toHaveValue(/^\$[\s\S]+\$$/);
+  await expect(fallback).toHaveValue('$n$');
   await expect(fallback).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(fallback).toBeHidden();
@@ -456,24 +456,28 @@ for (const { name, viewport, hasTouch } of [
     hasTouch: false,
   },
 ]) {
-  test(`formula copy controls stay hidden on a ${name}`, async ({
-    browser,
-  }) => {
+  test(`formula actions open on demand on a ${name}`, async ({ browser }) => {
     const page = await browser.newPage({ viewport, hasTouch });
     try {
       await page.goto('/exemplo/apontamentos/');
       for (const selector of [
-        '.formula-unit:not(.formula-display)',
-        '.formula-display',
+        '.lesson-body p .katex',
+        '.lesson-body .katex-display .katex',
       ]) {
-        const formula = page.locator(`.lesson-body ${selector}`).first();
-        await expect(formula.locator('.katex')).toBeVisible();
-        const copy = formula.getByRole('button', {
-          name: 'Copiar fórmula',
-          includeHidden: true,
-        });
-        await expect(copy).toHaveCount(1);
-        await expect(copy).toBeHidden();
+        const formula = page.locator(selector).first();
+        const actions = page.getByRole('group', { name: 'Anotar seleção' });
+        await expect(actions).toBeHidden();
+        await formula.click();
+        await expect(
+          actions.getByRole('button', { name: 'Copiar fórmula' }),
+        ).toBeVisible();
+        expect(await page.evaluate(() => getSelection()!.isCollapsed)).toBe(
+          true,
+        );
+        const box = (await actions.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+        await page.keyboard.press('Escape');
       }
     } finally {
       await page.close();
@@ -481,15 +485,15 @@ for (const { name, viewport, hasTouch } of [
   });
 }
 
-test('formula copying gives visible feedback and the mouse does not leave a sticky button', async ({
+test('formula copying gives visible feedback and dismisses the actions', async ({
   page,
   context,
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/exemplo/apontamentos/');
-  const formula = page.locator('.lesson-body .formula-unit').first();
-  await formula.hover();
-  const copy = formula.getByRole('button', {
+  const formula = page.locator('.lesson-body .katex').first();
+  await formula.click();
+  const copy = page.getByRole('button', {
     name: 'Copiar fórmula',
     exact: true,
   });
@@ -498,8 +502,27 @@ test('formula copying gives visible feedback and the mouse does not leave a stic
     'Fórmula copiada',
   );
   await expect(page.locator('#formula-copy-status')).toHaveCSS('opacity', '1');
-  await page.mouse.move(5, 5);
-  await expect(copy).toHaveCSS('opacity', '0');
+  await expect(
+    page.getByRole('group', { name: 'Anotar seleção' }),
+  ).toBeHidden();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('$n$');
+  const display = page.locator('.lesson-body .katex-display .katex').first();
+  await display.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Tab');
+  await expect(
+    page.getByRole('button', { name: 'Destacar', exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(copy).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('$$\n\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}\n$$');
+  await expect(display).toBeFocused();
 });
 
 test('notes use course contents, with keyboard and pointer menus and undo', async ({

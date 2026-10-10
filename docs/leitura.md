@@ -53,7 +53,9 @@ Os apontamentos guardam automaticamente neste navegador. Não entram na pesquisa
 
 ## Copiar fórmulas
 
-Nas lições, aproxima o rato de uma fórmula ou usa Tab para chegar a **Copiar fórmula**. Em ecrãs pequenos ou dispositivos tácteis, os botões ficam ocultos para não interromper a leitura. A cópia inclui o LaTeX original e os delimitadores Markdown; um aviso confirma a cópia. O botão desaparece quando afastas o rato. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. As fórmulas continuam a poder fazer parte de seleções e anotações. Nos apontamentos pessoais, clica para revelar o LaTeX e usa a cópia normal do editor; não há um botão sobre a fórmula.
+Nas lições, clica numa fórmula para abrir **Destacar**, **Comentar** e **Copiar**. Com o teclado, usa Tab para chegar à fórmula e Enter ou Espaço para abrir as ações. Escape fecha o menu. Nas fórmulas destacadas, o realce e a área clicável abrangem o bloco inteiro, incluindo o espaço à volta. Os caracteres não são selecionados; seleções que atravessam fórmulas usam o mesmo realce inteiro. As fórmulas destacadas podem quebrar linha nos pontos permitidos pelo KaTeX, mantendo o tamanho de leitura.
+
+**Copiar** inclui o LaTeX original e os delimitadores Markdown; um aviso confirma a cópia. Se o navegador bloquear a área de transferência, aparece uma caixa para copiar manualmente. Nos exercícios, as fórmulas permitem copiar; as anotações pertencem ao texto da lição. Nos apontamentos pessoais, clica para revelar o LaTeX e usa a cópia normal do editor.
 
 ## Anotações e destaques
 

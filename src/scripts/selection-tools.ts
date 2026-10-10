@@ -1,14 +1,25 @@
 import { anchorSelection } from '../lib/text-anchors';
 import type { TextAnchor } from '../lib/annotations';
+import { copyFormula } from '../lib/formula-copy';
 
 export function setupSelection(
   root: HTMLElement | null,
   onSelect: (anchor: TextAnchor, action: 'highlight' | 'comment') => void,
 ) {
   const toolbar = document.querySelector<HTMLElement>('#selection-actions')!;
+  const copy = toolbar.querySelector<HTMLButtonElement>(
+    '#copy-formula-selection',
+  )!;
+  const formulas = [
+    ...document.querySelectorAll<HTMLElement>(
+      '.lesson-body .katex, .lesson-practice .katex',
+    ),
+  ];
+  let activeFormula: HTMLElement | null = null;
   let pending: TextAnchor | null = null;
   let range: Range | null = null;
   let pointerDown = false;
+  let pointerStart = { x: 0, y: 0 };
   // An outside press dismisses the popup at once. Until a selection update
   // arrives, the old selection may still look intact (its collapse can land
   // after pointerup), so showing from it would resurrect the popup until
@@ -19,12 +30,84 @@ export function setupSelection(
     toolbar.hidden = true;
     pending = null;
     range = null;
+    activeFormula = null;
+    copy.hidden = true;
+    paintFormulas();
   };
   if (!root) return hide;
 
+  function formulaBlock(formula: HTMLElement) {
+    return formula.closest<HTMLElement>('.katex-display') || formula;
+  }
+
+  // Keep the DOM and text anchors intact. Only the formula's box is painted,
+  // including when a native selection starts or ends outside the article.
+  function paintFormulas() {
+    const selection = window.getSelection();
+    for (const formula of formulas) {
+      let selected = formula === activeFormula;
+      if (selection && !selection.isCollapsed) {
+        for (let i = 0; i < selection.rangeCount; i++)
+          selected ||= selection.getRangeAt(i).intersectsNode(formula);
+      }
+      formula.toggleAttribute('data-formula-selected', selected);
+    }
+  }
+
+  function activateFormula(formula: HTMLElement) {
+    clearTimeout(timer);
+    window.getSelection()?.removeAllRanges();
+    activeFormula = formula;
+    range = new Range();
+    range.selectNode(formula);
+    pending = anchorSelection(root!, range);
+    for (const action of ['highlight', 'comment'])
+      toolbar.querySelector<HTMLElement>(`#${action}-selection`)!.hidden =
+        !pending;
+    copy.hidden = false;
+    toolbar.hidden = false;
+    paintFormulas();
+    position();
+  }
+  for (const formula of formulas) {
+    formula.tabIndex = 0;
+    formula.setAttribute('role', 'button');
+    formula.setAttribute(
+      'aria-label',
+      `Ações da fórmula: ${formula.querySelector('annotation')?.textContent || ''}`,
+    );
+    formulaBlock(formula).addEventListener('click', (event) => {
+      // A drag across the formula belongs to the surrounding text selection.
+      if (
+        event.detail &&
+        Math.hypot(
+          event.clientX - pointerStart.x,
+          event.clientY - pointerStart.y,
+        ) > 5
+      )
+        return;
+      event.stopPropagation();
+      activateFormula(formula);
+    });
+    formula.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      activateFormula(formula);
+    });
+  }
+  copy.addEventListener('click', () => {
+    if (!activeFormula) return;
+    const formula = activeFormula;
+    hide();
+    formula.focus({ preventScroll: true });
+    void copyFormula(formula);
+  });
+
   function position() {
     if (!range || toolbar.hidden) return;
-    const rect = range.getBoundingClientRect();
+    const rect = activeFormula
+      ? formulaBlock(activeFormula).getBoundingClientRect()
+      : range.getBoundingClientRect();
     const viewport = window.visualViewport;
     const left = viewport?.offsetLeft || 0;
     const top = viewport?.offsetTop || 0;
@@ -43,6 +126,7 @@ export function setupSelection(
   function capture() {
     if (pointerDown || toolbar.contains(document.activeElement)) return;
     const selection = window.getSelection();
+    if (activeFormula && selection?.isCollapsed) return;
     if (
       !selection ||
       selection.isCollapsed ||
@@ -58,13 +142,29 @@ export function setupSelection(
       hide();
       return;
     }
+    const selectedFormula = formulas.find(
+      (formula) =>
+        candidate.intersectsNode(formula) &&
+        anchor.exact ===
+          `$${formula.querySelector('annotation[encoding="application/x-tex"]')?.textContent}$`,
+    );
+    if (selectedFormula) {
+      activateFormula(selectedFormula);
+      return;
+    }
     pending = anchor;
+    activeFormula = null;
+    copy.hidden = true;
+    for (const action of ['highlight', 'comment'])
+      toolbar.querySelector<HTMLElement>(`#${action}-selection`)!.hidden =
+        false;
     range = candidate.cloneRange();
     toolbar.hidden = false;
     position();
   }
   document.addEventListener('selectionchange', () => {
     clearTimeout(timer);
+    paintFormulas();
     // A genuine selection update re-arms showing; the debounce decides.
     dismissedByPress = false;
     timer = window.setTimeout(capture, 180);
@@ -72,6 +172,7 @@ export function setupSelection(
   document.addEventListener('pointerdown', (event) => {
     if (toolbar.contains(event.target as Node)) return;
     pointerDown = true;
+    pointerStart = { x: event.clientX, y: event.clientY };
     dismissedByPress = true;
     hide();
   });
@@ -112,8 +213,10 @@ export function setupSelection(
     if (toolbar.hidden) return;
     if (event.key === 'Escape') {
       const hadFocus = toolbar.contains(document.activeElement);
+      const formula = activeFormula;
       hide();
-      if (hadFocus) {
+      if (formula) formula.focus({ preventScroll: true });
+      else if (hadFocus) {
         root!.tabIndex = -1;
         root!.focus({ preventScroll: true });
       }
@@ -126,7 +229,9 @@ export function setupSelection(
     ) {
       event.preventDefault();
       document
-        .querySelector<HTMLButtonElement>('#highlight-selection')!
+        .querySelector<HTMLButtonElement>(
+          '#selection-actions button:not([hidden])',
+        )!
         .focus({ preventScroll: true });
     }
   });
