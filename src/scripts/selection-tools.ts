@@ -38,7 +38,7 @@ export function setupSelection(
   if (!root) return hide;
 
   document.addEventListener('copy', (event) =>
-    copySelectionWithMath(event, formulas),
+    copySelectionWithMath(event, formulas, activeFormula),
   );
 
   function formulaBlock(formula: HTMLElement) {

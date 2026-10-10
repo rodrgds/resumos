@@ -508,9 +508,21 @@ test('formula copying gives visible feedback and dismisses the actions', async (
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe('$n$');
+  await page.evaluate(() => navigator.clipboard.writeText('before shortcut'));
+  await formula.click();
+  await page.keyboard.press('ControlOrMeta+c');
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('$n$');
+  await expect(copy).toBeVisible();
+  expect(await page.evaluate(() => getSelection()!.isCollapsed)).toBe(true);
   const display = page.locator('.lesson-body .katex-display .katex').first();
   await display.focus();
   await page.keyboard.press('Enter');
+  await page.keyboard.press('ControlOrMeta+c');
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('$$\n\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}\n$$');
   await page.keyboard.press('Tab');
   await expect(
     page.getByRole('button', { name: 'Destacar', exact: true }),

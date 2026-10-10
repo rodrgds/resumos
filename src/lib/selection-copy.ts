@@ -5,18 +5,24 @@ import { formulaMarkdown } from './formula-copy';
 export function copySelectionWithMath(
   event: ClipboardEvent,
   formulas: HTMLElement[],
+  activeFormula: HTMLElement | null,
 ) {
   const selection = window.getSelection();
   if (
     event.defaultPrevented ||
     !event.clipboardData ||
     !selection ||
-    selection.isCollapsed ||
     document.activeElement?.closest(
       'input, textarea, [contenteditable], .cm-editor',
     )
   )
     return;
+  if (selection.isCollapsed) {
+    if (!activeFormula) return;
+    event.clipboardData.setData('text/plain', formulaMarkdown(activeFormula));
+    event.preventDefault();
+    return;
+  }
   const ranges = Array.from({ length: selection.rangeCount }, (_, i) =>
     selection.getRangeAt(i).cloneRange(),
   );
