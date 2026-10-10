@@ -56,8 +56,7 @@ export function setupCodeExercises() {
         running = false;
         check.disabled = false;
         check.hidden = false;
-        reset.disabled = false;
-        reset.hidden = editor.state.doc.toString() === answer.starter;
+        reset.disabled = editor.state.doc.toString() === answer.starter;
         stop.hidden = true;
         if (returnFocus) check.focus();
       };
@@ -143,7 +142,6 @@ export function setupCodeExercises() {
         check.disabled = true;
         check.hidden = true;
         reset.disabled = true;
-        reset.hidden = true;
         stop.hidden = false;
         if (moveFocus) stop.focus();
         result.hidden = false;
@@ -215,7 +213,7 @@ export function setupCodeExercises() {
               interrupt();
               status.textContent = 'Código alterado. Verifica novamente.';
             } else result.hidden = true;
-            reset.hidden = editor.state.doc.toString() === answer.starter;
+            reset.disabled = editor.state.doc.toString() === answer.starter;
             clearFeedback();
           }),
           keymap.of([
@@ -231,7 +229,6 @@ export function setupCodeExercises() {
       });
       source.hidden = true;
       check.disabled = false;
-      reset.disabled = false;
       check.onclick = () => void run();
       if (answer.language === 'python')
         root.addEventListener('focusin', preparePython);

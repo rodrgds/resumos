@@ -38,7 +38,7 @@ async function printPage() {
   window.print();
 }
 if (button) {
-  button.hidden = false;
+  button.disabled = false;
   button.addEventListener('click', () => {
     if (dialog) dialog.showModal();
     else printPage();

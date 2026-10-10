@@ -127,8 +127,13 @@ test('loading editors keeps a visible SQL example in view before automatic execu
     name: 'Conservar Mia na contagem de encomendas',
     exact: true,
   });
+  const tabs = root.getByRole('group', { name: 'Ficheiros do exemplo' });
+  let initialTabs;
   try {
     await root.scrollIntoViewIfNeeded();
+    await expect(tabs).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    initialTabs = await tabs.boundingBox();
     await expect(
       root.getByLabel('Ficheiro loja.sql', { exact: true }),
     ).toBeHidden();
@@ -138,6 +143,9 @@ test('loading editors keeps a visible SQL example in view before automatic execu
   await expect(
     root.getByRole('textbox', { name: 'Código sqlite', exact: true }),
   ).toBeVisible();
+  const loadedTabs = await tabs.boundingBox();
+  expect(loadedTabs!.width).toBe(initialTabs!.width);
+  expect(loadedTabs!.height).toBe(initialTabs!.height);
   await expect(root).toBeInViewport();
   await expect(root.getByRole('status')).toHaveText('Concluído', {
     timeout: 30_000,

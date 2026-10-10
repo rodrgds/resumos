@@ -46,11 +46,19 @@ test('TLDR choice persists through navigation while direct explanations remain c
   page,
 }) => {
   await page.goto(full);
+  const description = await page.locator('.lesson-heading p').textContent();
+  await page.evaluate(() => document.fonts.ready);
+  const heading = await page.locator('.lesson-heading').boundingBox();
   const toggle = page.getByRole('switch', { name: 'TLDR' });
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await toggle.focus();
   await page.keyboard.press('Space');
   await expect(page).toHaveURL(short);
+  await expect(page.locator('.lesson-heading p')).toHaveText(description!);
+  await page.evaluate(() => document.fonts.ready);
+  expect((await page.locator('.lesson-heading').boundingBox())!.height).toBe(
+    heading!.height,
+  );
   await expect(page.getByRole('switch', { name: 'TLDR' })).toHaveAttribute(
     'aria-checked',
     'true',

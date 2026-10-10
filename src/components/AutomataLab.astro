@@ -3,6 +3,8 @@ import '../styles/formal-lab.css';
 import '../styles/automata-lab.css';
 import Icon from './Icon.astro';
 import { presets, type PresetId } from '../lib/automata/presets';
+import { execute, isNondeterministic } from '../lib/automata/machine';
+import { machineConvention, renderAutomataDiagram } from '../lib/automata/view';
 interface Props {
   preset?: PresetId;
   examples?: PresetId[];
@@ -10,6 +12,13 @@ interface Props {
 const { preset = 'suffix-ab', examples = Object.keys(presets) as PresetId[] } =
   Astro.props;
 const models = [...new Set(examples.map((id) => presets[id].machine.model))];
+const initial = presets[preset];
+const row = isNondeterministic(initial.machine.model)
+  ? execute(initial.machine, '').rows[0]
+  : undefined;
+const result = row?.states
+  ? `Pronta para executar. Estados iniciais ativos {${row.states.map((id) => initial.machine.states.find((state) => state.id === id)?.name ?? id).join(', ')}}.`
+  : 'Pronta para executar.';
 ---
 
 <div
@@ -21,7 +30,7 @@ const models = [...new Set(examples.map((id) => presets[id].machine.model))];
   data-annotation-ignore
   data-pagefind-ignore
 >
-  <div data-lab-ui hidden>
+  <div data-lab-ui inert>
     <div class="formal-toolbar">
       <label>
         Máquina
@@ -60,7 +69,9 @@ const models = [...new Set(examples.map((id) => presets[id].machine.model))];
         Resolver exercício
       </button>
     </div>
-    <p class="formal-help" data-convention></p>
+    <p class="formal-help" data-convention>
+      {machineConvention(initial.machine.model)}
+    </p>
     <p data-task hidden></p>
     <div
       class="automata-canvas"
@@ -68,7 +79,12 @@ const models = [...new Set(examples.map((id) => presets[id].machine.model))];
       tabindex="0"
       role="region"
       aria-label="Diagrama da máquina, com deslocação horizontal quando necessário"
-    ></div>
+      set:html={renderAutomataDiagram(
+        initial.machine,
+        `automata-arrow-${crypto.randomUUID()}`,
+        row,
+      )}
+    />
     <details class="automata-editor">
       <summary>Editar estados e transições</summary>
       <label class="automata-alphabet">
@@ -81,7 +97,7 @@ const models = [...new Set(examples.map((id) => presets[id].machine.model))];
         resultados ficam neste dispositivo durante esta visita.
       </p>
     </details>
-    <p class="formal-help" data-validation></p>
+    <p class="formal-help" data-validation hidden></p>
     <div class="formal-toolbar">
       <label>
         Entrada, vazia para ε{' '}
@@ -90,6 +106,7 @@ const models = [...new Set(examples.map((id) => presets[id].machine.model))];
           maxlength="256"
           autocomplete="off"
           spellcheck="false"
+          value={initial.input}
         />
       </label>
       <div class="formal-actions">
@@ -110,7 +127,9 @@ const models = [...new Set(examples.map((id) => presets[id].machine.model))];
         </button>
       </div>
     </div>
-    <p class="formal-result" role="status" aria-live="polite" data-result></p>
+    <p class="formal-result" role="status" aria-live="polite" data-result>
+      {result}
+    </p>
     <div class="automata-table" data-trace></div>
     <p
       class="formal-result"

@@ -6,14 +6,7 @@ import {
   type Configuration,
 } from '../lib/turing/machine';
 import { presets } from '../lib/turing/presets';
-const escape = (s: string) =>
-  s.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
-        c
-      ]!,
-  );
+import { escape, turingView } from '../lib/turing/view';
 function setup(root: HTMLElement) {
   if (root.dataset.initialized) return;
   root.dataset.initialized = 'true';
@@ -51,27 +44,12 @@ function setup(root: HTMLElement) {
       `<div class="turing-table" tabindex="0" role="region" aria-label="Estados, deslocação horizontal"><table><caption>Estados</caption><thead><tr><th>Nome</th><th>Inicial</th><th>Final</th><th>Remover</th></tr></thead><tbody>${machine.states.map((s, i) => `<tr><td><input data-state="${i}" data-field="name" value="${escape(s)}" maxlength="16" aria-label="Nome do estado ${i + 1}"/></td><td><input type="radio" name="${radioName}" data-state="${i}" data-field="initial" ${s === machine.initial ? 'checked' : ''} aria-label="${escape(s)} inicial"/></td><td><input type="checkbox" data-state="${i}" data-field="final" ${machine.finals.includes(s) ? 'checked' : ''} aria-label="${escape(s)} final"/></td><td><button type="button" data-action="remove-state" data-index="${i}" aria-label="Remover estado ${escape(s)}">Remover</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-action="add-state" ${machine.states.length >= limits.states ? 'disabled' : ''}>Adicionar estado</button><div class="turing-table" tabindex="0" role="region" aria-label="Transições, deslocação horizontal"><table><caption>Transições, lê / escreve / move</caption><thead><tr><th>Origem</th><th>Lê</th><th>Destino</th><th>Escreve</th><th>Move</th><th>Remover</th></tr></thead><tbody>${machine.transitions.map((t, i) => `<tr>${(['from', 'read', 'to', 'write', 'move'] as const).map((field) => `<td><select data-transition="${i}" data-field="${field}" aria-label="${{ from: 'Origem', read: 'Lê', to: 'Destino', write: 'Escreve', move: 'Move' }[field]} da transição ${i + 1}">${options(field === 'from' || field === 'to' ? machine.states : field === 'move' ? ['L', 'R'] : machine.tapeAlphabet, t[field])}</select></td>`).join('')}<td><button type="button" data-action="remove-transition" data-index="${i}" aria-label="Remover transição ${i + 1}">Remover</button></td></tr>`).join('')}</tbody></table></div><button type="button" data-action="add-transition" ${machine.transitions.length >= limits.transitions || !machine.states.length ? 'disabled' : ''}>Adicionar transição</button>`;
   }
   function render() {
-    const head = current?.head ?? 0;
-    const tape =
-      current?.tape ?? new Map([...input.value].map((s, i) => [i, s]));
-    el('[data-tape]').innerHTML = Array.from({ length: 9 }, (_, i) => {
-      const p = head + i - 4;
-      return `<div class="turing-cell" ${p === head ? `aria-current="true" aria-label="Cabeça na célula ${p}"` : ''}><small>${p}</small><strong>${escape(tape.get(p) ?? 'B')}</strong></div>`;
-    }).join('');
+    const view = turingView(machine, input.value, current);
+    el('[data-tape]').innerHTML = view.tape;
     centerTape();
-    el('[data-configuration]').textContent =
-      `Estado ${current?.state ?? machine.initial}. Cabeça na posição ${head}. Passos: ${current?.steps ?? 0}.`;
-    const state = current?.state ?? machine.initial;
-    const read = tape.get(head) ?? 'B';
-    const ruleIndex = machine.transitions.findIndex(
-      (t) => t.from === state && t.read === read,
-    );
-    const rule = machine.transitions[ruleIndex];
-    el('[data-rule]').textContent = machine.finals.includes(state)
-      ? 'Estado final, sem saídas.'
-      : rule
-        ? `Próxima transição: δ(${state}, ${read}) = (${rule.to}, ${rule.write}, ${rule.move}).`
-        : `Sem transição para (${state}, ${read}).`;
+    el('[data-configuration]').textContent = view.configuration;
+    el('[data-rule]').textContent = view.rule;
+    el('[data-result]').textContent = view.result;
     root
       .querySelectorAll<HTMLElement>('[data-transition]')
       .forEach((control) => {
@@ -79,19 +57,10 @@ function setup(root: HTMLElement) {
           .closest('tr')
           ?.classList.toggle(
             'is-current',
-            Number(control.dataset.transition) === ruleIndex &&
-              !machine.finals.includes(state),
+            Number(control.dataset.transition) === view.ruleIndex &&
+              !machine.finals.includes(view.state),
           );
       });
-    const labels = {
-      running: 'Em execução.',
-      accepted: 'Palavra aceite.',
-      rejected: 'Palavra rejeitada.',
-      inconclusive: 'Resultado inconclusivo.',
-    };
-    el('[data-result]').textContent = current
-      ? `${labels[current.status]} ${current.reason}`
-      : 'Pronta para executar.';
     const errors = validate(machine);
     el('[data-errors]').textContent = errors.join(' ');
     el('[data-errors]').hidden = !errors.length;
@@ -205,8 +174,8 @@ function setup(root: HTMLElement) {
       machine.transitions.splice(Number(target.dataset.index), 1);
     refresh(action !== 'reset');
   });
-  el('[data-lab-ui]').hidden = false;
   refresh();
+  el('[data-lab-ui]').inert = false;
   new ResizeObserver(centerTape).observe(tapeWindow);
 }
 const init = () =>

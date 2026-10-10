@@ -182,17 +182,22 @@ test('stopping or editing a running program cancels validation without recording
     name: 'Repor código',
     exact: true,
   });
-  await expect(reset).toBeHidden();
+  await expect(reset).toBeVisible();
+  await expect(reset).toBeDisabled();
+  const expand = exercise.getByRole('button', { name: 'Expandir editor' });
+  const initialActions = await expand.boundingBox();
   const initialCode = await editor.innerText();
   await expect(check).toHaveText('');
   await editor.fill('while True:\n    pass');
-  await expect(reset).toBeVisible();
+  await expect(reset).toBeEnabled();
+  expect((await expand.boundingBox())!.x).toBe(initialActions!.x);
   await check.press('Enter');
   const stop = exercise.getByRole('button', { name: 'Parar', exact: true });
   await expect(stop).toBeVisible();
   await expect(stop).toBeFocused();
   await expect(check).toBeHidden();
-  await expect(reset).toBeHidden();
+  await expect(reset).toBeDisabled();
+  expect((await expand.boundingBox())!.x).toBe(initialActions!.x);
   await expect(stop).toHaveText('');
   await stop.press('Enter');
   await expect(check).toBeEnabled();
@@ -210,7 +215,7 @@ test('stopping or editing a running program cancels validation without recording
   await reset.press('Enter');
   await expect(editor).toBeFocused();
   await expect(editor).toHaveText(initialCode);
-  await expect(reset).toBeHidden();
+  await expect(reset).toBeDisabled();
   await page.reload();
   await expect(exercise.locator('[data-feedback]')).toBeEmpty();
 });

@@ -148,6 +148,9 @@ export function setupPlaygrounds() {
       root.dataset.ready = 'true';
       const language = root.dataset.language as Language;
       const panes = [...root.querySelectorAll<HTMLElement>('[data-file-pane]')];
+      panes.forEach((pane, index) => {
+        pane.hidden = index !== 0;
+      });
       const sources = panes.map((pane) =>
         pane.querySelector<HTMLElement>(
           '[data-source], [data-support-source]',
@@ -157,7 +160,9 @@ export function setupPlaygrounds() {
       const filenames = sources.map(
         (source) => source.getAttribute('data-filename') || 'ficheiro',
       );
-      const tabs = root.querySelector<HTMLElement>('.playground-file-tabs');
+      const tabs = root.querySelector<HTMLFieldSetElement>(
+        '.playground-file-tabs',
+      );
       const runButton = root.querySelector<HTMLButtonElement>('[data-run]')!;
       const resetButton =
         root.querySelector<HTMLButtonElement>('[data-reset]')!;
@@ -180,13 +185,16 @@ export function setupPlaygrounds() {
       let cancel: (() => void) | undefined;
       let timer: ReturnType<typeof setTimeout>;
       const finish = (message: string) => {
+        const returnFocus = document.activeElement === stopButton;
         cancel?.();
         cancel = undefined;
         clearTimeout(timer);
         releaseAutoRun?.();
         releaseAutoRun = undefined;
         runButton.disabled = false;
+        runButton.hidden = false;
         stopButton.hidden = true;
+        if (returnFocus) runButton.focus();
         status.textContent =
           message +
           (message && version !== executedVersion
@@ -283,7 +291,7 @@ export function setupPlaygrounds() {
         editors[selected].requestMeasure();
       };
       if (tabs) {
-        tabs.hidden = false;
+        tabs.disabled = false;
         tabs.addEventListener('change', () => {
           const selected = Number(
             tabs.querySelector<HTMLInputElement>('input:checked')!.value,
@@ -294,6 +302,7 @@ export function setupPlaygrounds() {
       }
       const run = () => {
         if (cancel) return;
+        const moveFocus = document.activeElement === runButton;
         interacted = true;
         executedVersion = version;
         result.hidden = false;
@@ -302,7 +311,9 @@ export function setupPlaygrounds() {
         tables.replaceChildren();
         status.textContent = 'A carregar o motor…';
         runButton.disabled = true;
+        runButton.hidden = true;
         stopButton.hidden = false;
+        if (moveFocus) stopButton.focus();
         const files: Record<string, string> = {};
         editors.forEach((editor, index) => {
           if (index > 0) files[filenames[index]] = editor.state.doc.toString();

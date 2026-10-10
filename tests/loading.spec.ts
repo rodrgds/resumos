@@ -1,5 +1,100 @@
 import { expect, test } from '@playwright/test';
 
+for (const width of [390, 1440]) {
+  for (const [path, selector, ready] of [
+    [
+      '/cadeiras/tc/automatos-finitos/',
+      '[data-automata-lab]',
+      '[data-action="run"]:enabled',
+    ],
+    [
+      '/cadeiras/tc/automatos-nao-deterministas/',
+      '[data-automata-lab]',
+      '[data-action="run"]:enabled',
+    ],
+    [
+      '/cadeiras/tc/turing-decidibilidade/',
+      '[data-turing-lab]',
+      '[data-action="run"]:enabled',
+    ],
+  ]) {
+    test(`interactive content reserves its initial layout on ${path} at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      let release!: () => void;
+      const waiting = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await page.route('**/*.js', async (route) => {
+        await waiting;
+        await route.continue();
+      });
+      try {
+        await page.goto(path, { waitUntil: 'commit' });
+        const root = page.locator(selector).first();
+        await expect(root).toBeVisible();
+        await page.evaluate(() => document.fonts.ready);
+        await expect(root.locator('[data-action="run"]')).toBeVisible({
+          timeout: 1500,
+        });
+        const before = (await root.boundingBox())!;
+        release();
+        await page.waitForLoadState('domcontentloaded');
+        await expect(root.locator(ready)).toBeVisible();
+        const after = (await root.boundingBox())!;
+        expect(Math.abs(after.height - before.height)).toBeLessThan(1);
+      } finally {
+        release();
+        await page.unrouteAll({ behavior: 'wait' });
+      }
+    });
+  }
+}
+
+for (const width of [390, 1440]) {
+  test(`lesson actions keep their first-paint layout at ${width}px while scripts load`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/*.js', async (route) => {
+      await waiting;
+      await route.continue();
+    });
+    try {
+      await page.goto('/cadeiras/fsi/principios-seguranca/', {
+        waitUntil: 'commit',
+      });
+      const actions = page.locator('.page-actions');
+      await expect(actions).toHaveCSS('display', 'flex');
+      await page.evaluate(() => document.fonts.ready);
+      const print = page.getByRole('button', { name: 'Imprimir', exact: true });
+      await expect(print).toBeVisible({ timeout: 1500 });
+      const before = await actions
+        .locator(':scope > button, :scope > a')
+        .evaluateAll((elements) =>
+          elements.map((element) => element.getBoundingClientRect().toJSON()),
+        );
+      release();
+      await page.waitForLoadState('domcontentloaded');
+      await expect(print).toBeEnabled();
+      const after = await actions
+        .locator(':scope > button, :scope > a')
+        .evaluateAll((elements) =>
+          elements.map((element) => element.getBoundingClientRect().toJSON()),
+        );
+      expect(after).toEqual(before);
+    } finally {
+      release();
+      await page.unrouteAll({ behavior: 'wait' });
+    }
+  });
+}
+
 test('a slow analytics server cannot delay appearance controls', async ({
   page,
 }) => {
