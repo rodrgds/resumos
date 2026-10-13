@@ -34,6 +34,8 @@ $Q=\int\rho_VdV$, $I=\int\vec J\cdot d\vec A$, $\partial_t\rho_V=-\nabla\cdot\ve
 
 [Capacidade](/cadeiras/f2/potencial-capacidade/#capacidade): $C=q/u$, esfera isolada $C=4\pi\varepsilon_0R$, placas $C=\varepsilon A/d$ desprezando bordos. Paralelo: $C_{\rm eq}=\sum C_i$; série: $1/C_{\rm eq}=\sum1/C_i$, com nós intermédios neutros. $W_C=Cu^2/2$.
 
+[Limites de tensão em série](/cadeiras/f2/potencial-capacidade/#tensões-máximas-em-série), com nós intermédios neutros: $q_{\max}=\min_k(C_kU_{k,\max})$ e $U_{\max}=q_{\max}\sum_k1/C_k$. Não somes automaticamente as tensões nominais.
+
 [Magnetismo e Faraday](/cadeiras/f2/magnetismo-inducao/#lei-de-faraday-e-lenz): fio infinito $B=\mu_0I/(2\pi r)$, bobina longa $B\simeq\mu_0nI$. $d\vec F=I\,d\vec\ell\times\vec B$, $\vec m=NIA\hat n$, $\vec\tau=\vec m\times\vec B$. $\Phi_B=\int\vec B\cdot d\vec A$, $\mathcal E=-N\,d\Phi_B/dt$. Lenz contraria a variação do fluxo. Transformador ideal: $|U_2/U_1|=N_2/N_1$, $|I_2/I_1|=N_1/N_2$.
 
 ## Ondas e condução
@@ -46,7 +48,7 @@ $Q=\int\rho_VdV$, $I=\int\vec J\cdot d\vec A$, $\partial_t\rho_V=-\nabla\cdot\ve
 
 ## Redes e transitórios
 
-[Kirchhoff](/cadeiras/f2/circuitos-resistivos/#leis-de-kirchhoff): $\sum i=0$, $\sum u=0$ no modelo concentrado. Convenção passiva $p=ui$. Resistores série somam $R$; paralelo soma $1/R$. Divisor sem carga $u_2=U_sR_2/(R_1+R_2)$.
+[Kirchhoff](/cadeiras/f2/circuitos-resistivos/#leis-de-kirchhoff): $\sum i=0$, $\sum u=0$ no modelo concentrado. Convenção passiva $p=ui$. Resistores série somam $R$; paralelo soma $1/R$. Divisor sem carga $u_2=U_sR_2/(R_1+R_2)$. Limites de potência por resistor: em série, $I_{\max}^2=\min_k(P_{k,\max}/R_k)$; em paralelo, $U_{\max}^2=\min_k(P_{k,\max}R_k)$.
 
 [Thévenin](/cadeiras/f2/circuitos-resistivos/#thévenin-e-norton): $U_{\rm Th}$ em aberto; anular fontes independentes dá $R_{\rm Th}$. Tensão ideal vira curto, corrente ideal vira aberto. $I_N=U_{\rm Th}/R_{\rm Th}$. Carga: $I_L=U_{\rm Th}/(R_{\rm Th}+R_L)$. Máxima potência resistiva em $R_L=R_{\rm Th}>0$: $P_{\max}=U_{\rm Th}^2/(4R_{\rm Th})$. Os $50\%$ de eficiência pertencem ao equivalente, não necessariamente à rede original.
 

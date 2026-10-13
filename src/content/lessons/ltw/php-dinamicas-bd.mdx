@@ -11,6 +11,8 @@ import redirecionar from '../../ltw/examples/redirecionar.php?raw';
 import CodeSnippet from '../../../components/CodeSnippet.astro';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import ambitoCapturas from '../../ltw/examples/ambito-capturas.php?raw';
+import foreachReferencia from '../../ltw/examples/foreach-referencia.php?raw';
 import dados from '../../ltw/dados.php?raw';
 import sqlite from '../../ltw/sqlite.php?raw';
 import biblioteca from '../../ltw/biblioteca.sql?raw';
@@ -121,7 +123,9 @@ O programa cria uma base em memória, insere três livros e consulta preços aba
 
 `prepare` analisa uma instrução com marcadores; `execute` fornece os valores. `fetch` obtém uma linha ou `false` quando não há mais; `fetchAll` obtém as restantes. `PDO::FETCH_ASSOC` permite aceder por nomes de colunas, e o modo de exceção torna os erros SQL explícitos.
 
+:::warning[Um marcador representa um valor, não uma coluna]
 Uma consulta preparada não permite substituir nomes de tabelas, colunas ou palavras-chave por marcadores. Se o cliente escolhe a ordenação, mapeia a entrada para uma lista de nomes fixos. `LIKE` continua a dar significado a `%` e `_` dentro de um parâmetro: preparar evita injeção SQL, não transforma os padrões de `LIKE` em pesquisas literais.
+:::
 
 Para persistir entre pedidos, usa uma base em ficheiro e um caminho estável, por exemplo `new PDO('sqlite:' . __DIR__ . '/../database/biblioteca.db')`. O processo do servidor precisa de permissão para aceder à base; não a coloques numa pasta pública que permita o download.
 
@@ -160,7 +164,9 @@ O `commit` confirma as duas alterações em conjunto. Se outro pedido tentar res
 
 ## Páginas, ações e templates
 
-Uma página consulta e apresenta. Uma ação recebe entrada, valida, altera dados e redireciona. O template produz HTML a partir de dados já calculados. Coloca a conexão e as consultas numa camada própria, para não repetir SQL nos templates. Os delimitadores permitem alternar entre PHP e HTML. O texto fora deles é enviado diretamente; `<?= ... ?>` escreve o valor da expressão. Este exemplo completo recebe os dados numa lista antes de começar a saída:
+Uma página consulta e apresenta. Uma ação recebe entrada, valida, altera dados e redireciona. O template produz HTML a partir de dados já calculados. Coloca a conexão e as consultas numa camada própria, para não repetir SQL nos templates.
+
+Os delimitadores permitem alternar entre PHP e HTML. O texto fora deles é enviado diretamente; `<?= ... ?>` escreve o valor da expressão. Este exemplo completo recebe os dados numa lista antes de começar a saída:
 
 ```php
 <?php
@@ -210,3 +216,40 @@ if ($utilizador && password_verify($palavraPasse, $utilizador['password_hash']))
 Segue dois pedidos. No login, o servidor verifica a palavra-passe, regenera o identificador para combater fixação de sessão e guarda `utilizador_id` no estado do servidor. No pedido seguinte, o navegador envia apenas o identificador no cookie, e o servidor recupera o utilizador a partir dele. Regenerar o identificador após autenticar é obrigatório nesse percurso. Configura cookies com `HttpOnly`, `Secure` em HTTPS e uma política `SameSite` adequada. Usa um destino fixo ou validado; não confies cegamente no `Referer` recebido.
 
 Autenticar identifica o utilizador. Autorizar verifica o que ele pode fazer. Uma ação de edição deve confirmar a sessão e a propriedade do registo, mesmo que o botão só apareça para o dono. No logout, limpa `$_SESSION`, destrói a sessão e remove o cookie quando aplicável. A [segurança web](/cadeiras/ltw/seguranca-web/) explica as defesas que completam estas ações.
+
+## Âmbito global e captura de uma variável
+
+Uma função nomeada não recebe automaticamente as variáveis globais. Em `precoLocal`, a `$taxa` definida no corpo é local e vale 1; a global começa em 2. `global $taxa` em `mudarTaxa` liga o nome local à variável global, permitindo alterá-la.
+
+Uma closure explicita o que conserva do ambiente. `use ($taxa)` captura o valor quando a função é criada. `use (&$taxa)` conserva uma referência à variável. Depois de mudar a global para 5, essas duas funções já não usam a mesma taxa:
+
+<CodePlayground
+  language="php"
+  title="Local, global e duas capturas"
+  code={ambitoCapturas}
+/>
+
+| Expressão           | Resultado | Taxa usada                  |
+| ------------------- | --------- | --------------------------- |
+| `precoLocal(10)`    | 11        | Local, 1                    |
+| `$fixa(10)`         | 12        | Capturada por valor, 2      |
+| `$atual(10)`        | 15        | Variável referida, agora 5  |
+| `$taxa` no ficheiro | 5         | Global alterada pela função |
+
+Os nomes iguais não juntam âmbitos diferentes. Sem a declaração local nem `global`, ler `$taxa` numa função nomeada não a iria procurar no ficheiro exterior: no PHP 8 gera um aviso de variável indefinida. Os exemplos históricos podem mostrar um aviso menos grave em versões anteriores; não uses essa leitura como passagem de argumentos.
+
+`$_POST`, `$_GET` e `$_SESSION` são superglobais e estão acessíveis dentro de funções sem `global`. Isso não transforma as variáveis habituais em superglobais. Para uma função de cálculo, passar a taxa como argumento torna a dependência visível na chamada e evita alterar estado global.
+
+## Terminar uma referência de foreach
+
+O `&` em `foreach ($notas as &$nota)` permite alterar cada posição do array. No fim do ciclo, `$nota` continua ligada à última posição visitada. O fim das chavetas não termina essa referência:
+
+<CodePlayground
+  language="php"
+  title="A última nota depois do ciclo"
+  code={foreachReferencia}
+/>
+
+No primeiro percurso, incrementar dá `[13,16,19]`, mas `$nota = 0` altera a última posição e a saída passa a `[13,16,0]`. No segundo, `unset($nota)` desfaz a ligação antes dessa atribuição. O array conserva `[13,16,19]`; o novo `$nota` é uma variável independente.
+
+`unset` aqui remove o nome que ficou como referência, não o último elemento do array. Para só ler notas, usa `foreach ($notas as $nota)` sem `&`. Se precisas de as transformar sem esse vínculo posterior, podes atribuir por índice ou criar outra lista com `array_map`. Não deixes uma referência pendente que o código seguinte possa alterar sem intenção.

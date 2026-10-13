@@ -4,7 +4,7 @@
 - **Commit:** alteração compreensível; **branch:** linha separada; **merge:** integração de linhas; **tag:** identificação de um estado, frequentemente publicado.
 - Um pedido de integração explica mudança, razão, efeitos e evidência. Ausência de conflitos textuais não garante compatibilidade de comportamento.
 
-Uma alteração de limite de 120 para 180 minutos exige acompanhar requisito, regra, mensagens, testes de fronteira, documentação e entrega. Integra passos pequenos para descobrir incompatibilidades cedo.
+- Uma alteração de limite de 120 para 180 minutos exige acompanhar requisito, regra, mensagens, testes de fronteira, documentação e entrega. Integra passos pequenos para descobrir incompatibilidades cedo.
 
 ## CI, entrega e implantação
 
@@ -17,7 +17,7 @@ Uma alteração de limite de 120 para 180 minutos exige acompanhar requisito, re
 
 Um pipeline verde prova apenas os checks executados na revisão e ambiente indicados. Um artefacto construído não é uma versão já em uso nem demonstra validação de necessidades omitidas.
 
-O plano de recuperação inclui **dados, compatibilidade e migrações**. Repor o executável antigo pode falhar se a versão nova tiver escrito dados num formato incompatível.
+- O plano de recuperação inclui **dados, compatibilidade e migrações**. Repor o executável antigo pode falhar se a versão nova tiver escrito dados num formato incompatível.
 
 ## Manutenção e legado
 

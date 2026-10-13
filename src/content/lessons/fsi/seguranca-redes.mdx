@@ -45,7 +45,7 @@ Nem todo atacante pode ver todos os pacotes, por isso numa resposta justifica qu
 
 ## TLS, SSH e IPsec
 
-TLS protege o canal entre os extremos que terminam TLS. Num handshake autenticado, segue quatro passos: o cliente anuncia versões e mecanismos; o servidor escolhe, apresenta o certificado e prova a posse da chave; ambos estabelecem chaves de sessão; depois protegem registos com cifragem autenticada. Nota que este handshake é do TLS, não do TCP: completar o TCP não autentica ninguém. TLS 1.3 tem diferenças relevantes face ao TLS antigo, incluindo a seleção de mecanismos criptográficos.
+TLS protege o canal entre os extremos que terminam TLS. Num handshake autenticado, segue quatro passos: o cliente anuncia versões e mecanismos; o servidor escolhe, apresenta o certificado e prova a posse da chave; ambos estabelecem chaves de sessão; depois protegem registos com cifragem autenticada. Este handshake é do TLS, não do TCP, por isso completar o TCP não autentica ninguém. TLS 1.3 tem diferenças relevantes face ao TLS antigo, incluindo a seleção de mecanismos criptográficos.
 
 HTTPS é HTTP transportado por TLS. Protege o conteúdo HTTP, incluindo caminho, cabeçalhos e corpo, durante o transporte. Um observador ainda pode conhecer endereços IP, tamanhos e tempos; o nome do servidor pode ficar visível por DNS ou por mecanismos do handshake, conforme a configuração. Por isso, HTTPS não esconde dados do servidor nem corrige XSS ou uma autorização em falta.
 
@@ -54,13 +54,21 @@ HTTPS é HTTP transportado por TLS. Protege o conteúdo HTTP, incluindo caminho,
   alt="O navegador fala por TLS com um proxy. O proxy termina esse canal e pode ler o HTTP. Um segundo canal TLS protege o caminho do proxy ao servidor, com outra fronteira de confiança."
 />
 
-SSH oferece um canal autenticado para acesso remoto e outros serviços. A validação da chave do servidor é necessária para evitar um intermediário. IPsec protege tráfego ao nível IP; em modo transporte protege a comunicação dos extremos, e em modo túnel encapsula um pacote IP num novo pacote. Uma VPN não torna uma aplicação interna automaticamente autorizada para todos os clientes.
+No HTTPS habitual, o cliente verifica o certificado do servidor, mas o servidor não pede um certificado de cliente. Essa autenticação assimétrica não significa cifragem numa única direção: o canal protege dados enviados nos dois sentidos. O login da aplicação pode identificar o utilizador depois do handshake. TLS também admite certificados de cliente e mecanismos com segredo prévio; a descrição com certificado do servidor não abrange todas as configurações.
+
+O **Handshake** estabelece parâmetros e material criptográfico e autentica conforme a configuração. O **Record** protege os dados transportados com as chaves estabelecidas. Não confundas a apresentação de uma chave pública com o envio de uma chave de sessão em claro; no TLS 1.3 com certificados, a assinatura autentica a troca, e o acordo de chaves fornece o segredo a partir do qual se derivam chaves.
+
+SSH oferece um canal autenticado para acesso remoto e outros serviços. A validação da chave do servidor é necessária para evitar um intermediário. A autenticação do utilizador pode usar chave pública autorizada, palavra-passe ou outros mecanismos permitidos pelo servidor. Uma chave registada é frequente em conjuntos conhecidos de utilizadores; SSH também admite certificados, pelo que não exige sempre uma CA nem proíbe PKI.
+
+IPsec protege tráfego ao nível IP. Com ESP e cifragem em modo transporte, protege-se a carga do pacote, conservando o cabeçalho IP exterior; em modo túnel, o pacote IP original, incluindo o seu cabeçalho, fica dentro de um novo pacote, cujo cabeçalho exterior continua necessário ao encaminhamento. As garantias dependem de ESP/AH, modo e política. Autenticar tráfego numa associação não elimina toda falsificação de IP noutras partes da rede.
+
+No modelo comum de HTTPS sobre TCP, a ordem é IP, TCP, TLS e HTTP; IPsec atua no nível IP, abaixo de TCP. IPsec não interpreta automaticamente permissões como «esta conta pode ler esta fatura». Uma VPN não torna uma aplicação interna automaticamente autorizada para todos os clientes.
 
 ## Firewalls e deteção
 
 Uma firewall aplica uma política sobre tráfego. Um filtro sem estado decide com campos do pacote; um filtro com estado acompanha conexões; um proxy pode aplicar regras da aplicação. Aceitar qualquer pacote com o bit ACK não prova que pertence a uma conexão permitida.
 
-Uma regra deve dizer direção, origem, destino, protocolo, porta e, quando existe, estado. Depois verifica a ordem das regras e a decisão por defeito. Por exemplo:
+Uma regra deve dizer direção, origem, destino, protocolo, porta e, quando existe, estado; depois verifica-se a ordem das regras e a decisão por defeito, como neste caso:
 
 1. aceitar TCP de saída para porta 443 com estado novo ou estabelecido;
 2. aceitar TCP de entrada só com estado estabelecido;

@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -18,18 +18,20 @@ editorial:
       url: https://moodle2627.up.pt/course/view.php?id=4363
   coverage: Construtores, padrões, Maybe, recursão estrutural, altura, travessias e pesquisa em árvores.
   gaps:
-    - Fichas atuais de tipos algébricos e árvores ainda não disponíveis na recolha; a conferência técnica usa material histórico de 2022/23.
+    - Fichas atuais de tipos algébricos e árvores ainda não disponíveis na recolha; aplicações conferidas também numa exportação estudantil de 2025/26, sem a tratar como critério da edição atual.
 ---
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
+import substExpr from '../../pfl/examples/subst-expr.hs?raw';
+import binRosa from '../../pfl/examples/bin-rosa.hs?raw';
 import arvoreBST from '../../pfl/p4arvore.typ?raw';
 
 Uma árvore binária pode estar vazia ou conter um valor e duas subárvores. Uma declaração `data` representa estas alternativas com construtores. Os padrões das funções desmontam cada alternativa e a recursão segue as subárvores.
 
-### Sinónimos, construtores simples e `Maybe`
+### `Maybe` antes da árvore
 
-Antes da árvore, fixa três ideias. `type Ponto = (Double, Double)` só dá outro nome a um tipo existente. `data Dia = Seg | Ter` cria um tipo novo com construtores próprios. `Maybe a` cria um tipo novo com ausência ou presença:
+Uma média sobre uma lista vazia não tem valor. `Maybe a` representa essa ausência com `Nothing` ou a presença com `Just x`:
 
 ```haskell
 segura :: Double -> Double -> Maybe Double
@@ -37,7 +39,7 @@ segura _ 0 = Nothing
 segura x y = Just (x / y)
 ```
 
-`segura 5 0` dá `Nothing`. `segura 5 2` dá `Just 2.5`. Quem recebe um `Maybe` tem de tratar os dois construtores com padrões ou `case`. Só depois desta distinção vale a pena ler a árvore, que combina recursão com vários construtores.
+`segura 5 0` dá `Nothing`. `segura 5 2` dá `Just 2.5`. Quem recebe um `Maybe` tem de tratar os dois construtores com padrões ou `case`.
 
 ## data e padrões
 
@@ -76,7 +78,7 @@ procura x (No y esq dir)
   | otherwise = procura x dir
 ```
 
-Constrói a árvore inserindo `3, 1, 4, 1, 5` por ordem em `Vazia`. O `3` abre a raiz. O `1` vai para a esquerda. O `4` vai para a direita. O segundo `1` é igual, por isso cai no `otherwise` e vai para a direita do primeiro `1`. O `5` vai para a direita do `4`.
+Constrói a árvore inserindo `3, 1, 4, 1, 5` por ordem em `Vazia`: o `3` abre a raiz, o `1` vai para a esquerda e o `4` para a direita; o segundo `1` é igual ao primeiro, por isso cai no `otherwise` e vai para a direita dele, e o `5` vai para a direita do `4`.
 
 <Typst
   source={arvoreBST}
@@ -84,9 +86,7 @@ Constrói a árvore inserindo `3, 1, 4, 1, 5` por ordem em `Vazia`. O `3` abre a
   alt="Árvore binária após inserir 3, 1, 4, 1 e 5: o 3 na raiz, o 1 à esquerda com o segundo 1 à sua direita, o 4 à direita com o 5 à sua direita."
 />
 
-A travessia em ordem devolve `[1,1,3,4,5]`: a invariância garante que a travessia sai ordenada, incluindo o duplicado.
-
-Agora `procura 4`: compara com `3`, desce à direita, compara com `4`, encontra, `True`. E `procura 2`: compara com `3`, desce à esquerda, compara com o primeiro `1`, desce à direita, compara com o segundo `1`, volta a descer à direita e encontra `Vazia`: `False`. Cada comparação escolhe uma subárvore, por isso o número de comparações depende da altura da árvore[^metade].
+A travessia em ordem devolve `[1,1,3,4,5]`, pois a invariância garante saída ordenada mesmo com o duplicado. A procura segue a mesma invariância: `procura 4` compara com `3`, desce à direita e encontra `4`; `procura 2` desce à esquerda de `3`, compara com o primeiro `1`, desce à sua direita, compara com o segundo `1` e chega a `Vazia`, dando `False`. Cada comparação escolhe uma subárvore, por isso o número de comparações depende da altura da árvore[^metade].
 
 <CodePlayground
   language="haskell"
@@ -106,7 +106,7 @@ mediaSegura [] = Nothing
 mediaSegura xs = Just (sum xs / fromIntegral (length xs))
 ```
 
-`Nothing` é a ausência e `Just` embrulha o valor presente, ou seja `mediaSegura []` dá `Nothing` e `mediaSegura [8.0,12.0]` dá `Just 10.0`. O tipo declara os dois casos, que quem chama a função deve tratar com padrões. O compilador pode avisar se falta um caso, mas ainda permite funções parciais; usar `Maybe` não obriga, por si só, a escrever esse tratamento.
+`Nothing` é a ausência e `Just` embrulha o valor presente. O compilador pode avisar se falta um caso, mas ainda permite funções parciais; usar `Maybe` não obriga, por si só, a esse tratamento.
 
 [^metade]: O custo logarítmico vale quando a árvore está equilibrada: a altura cresce com o logaritmo do número de nós. Uma árvore equilibrada não precisa de ter metades exatamente iguais. Numa árvore degenerada em lista, a procura degrada-se para linear. Estruturas como `Data.Set` mantêm o equilíbrio; a função `inserir` desta página não o faz.
 
@@ -120,7 +120,7 @@ Perante um tipo novo, escreve primeiro um valor concreto à mão, como o `No 3 .
 
 O nome do tipo aparece nas assinaturas; o nome do construtor aparece nos valores e padrões. Em `data Arvore a = Vazia | No a (Arvore a) (Arvore a)`, `No` tem tipo `a -> Arvore a -> Arvore a -> Arvore a`. A função construtora também pode ser parcialmente aplicada.
 
-O esquema de recursão segue os componentes recursivos. Para contar nós, o caso vazio dá zero e o nó dá `1 + tamanho esq + tamanho dir`. Para altura, com vazio de altura zero, o nó dá `1 + max (altura esq) (altura dir)`. Numa folha, as duas subárvores vazias têm altura zero, dando altura um. Indica a convenção: outra definição pode dar altura menos um à árvore vazia.
+O esquema de recursão segue os componentes recursivos: para contar nós, o caso vazio dá zero e o nó dá `1 + tamanho esq + tamanho dir`; para a altura, com vazio de altura zero, o nó dá `1 + max (altura esq) (altura dir)`. Numa folha, as duas subárvores vazias têm altura zero, dando altura um; indica a convenção, pois outra definição pode dar altura menos um à árvore vazia.
 
 ## Uma árvore de expressões
 
@@ -136,7 +136,7 @@ avaliar (Produto a b) = avaliar a * avaliar b
 
 `Soma (Valor 2) (Produto (Valor 3) (Valor 4))` representa `2+3*4`. Avaliamos as folhas para `2`, `3`, `4`, o produto para `12` e a soma para `14`, porque a precedência já está na estrutura; `avaliar` não decide que operador tem prioridade.
 
-`deriving (Eq,Show)` pede ao compilador implementações baseadas nos construtores e campos. Num tipo parametrizado, comparar duas `Arvore a` requer também `Eq a`. `Maybe` e `Either` são outros tipos algébricos: o primeiro distingue ausência de valor; `Either erro valor` permite ainda explicar por que o cálculo falhou.
+`deriving (Eq,Show)` pede ao compilador implementações baseadas nos construtores e campos; num tipo parametrizado, comparar duas `Arvore a` requer também `Eq a`. `Either erro valor` é outro tipo algébrico que permite explicar por que o cálculo falhou.
 
 ## Justificar uma lei por indução
 
@@ -154,6 +154,56 @@ length (map f (x:xs))
 = length (x:xs)                pela equação de length
 ```
 
-A hipótese aplica-se à cauda menor. Não assumimos a igualdade para a lista inteira que estamos a provar. `length` não precisa de avaliar `f x`, apenas de contar a célula construída.
+A hipótese aplica-se à cauda menor, sem assumir a igualdade para a lista inteira em prova; `length` não precisa de avaliar `f x`, apenas de contar a célula construída.
 
 Uma propriedade testada em exemplos reforça a confiança, mas não substitui esta prova para todas as listas finitas. A afirmação sobre `length` não pode ser avaliada numa lista infinita.
+
+## Substituir variáveis conservando a expressão
+
+Avaliar uma expressão e construir outra expressão são tarefas diferentes. Nesta variante, acrescentamos folhas com nomes de variáveis:
+
+```haskell
+data ExprVar = Const Integer | Var String
+             | Add ExprVar ExprVar | Mult ExprVar ExprVar
+  deriving (Eq, Show)
+```
+
+Um ambiente `[(String,Integer)]` liga nomes a valores. Substituir com `[("x",4)]` em `Mult (Var "x") (Add (Var "z") (Const 2))` troca apenas a folha de x:
+
+| Parte              | Resultado da substituição                          |
+| ------------------ | -------------------------------------------------- |
+| `Var "x"`          | `Const 4`                                          |
+| `Var "z"`          | `Var "z"`, porque não há ligação                   |
+| `Const 2`          | `Const 2`                                          |
+| Nó `Add` ou `Mult` | Mesmo construtor, com os dois filhos transformados |
+
+A resposta é `Mult (Const 4) (Add (Var "z") (Const 2))`. Não calculamos o produto nem inventamos zero para a variável ausente. `lookup` devolve `Maybe Integer`; `Nothing` conserva a variável e `Just n` constrói uma constante. Se o ambiente tiver um nome repetido, `lookup` usa a primeira ocorrência; decide esta política antes de escrever o resultado.
+
+## Converter uma árvore para outro tipo
+
+Uma árvore binária não vazia pode ter folhas com valores ou ramos com dois filhos e um valor. Uma árvore rosa guarda uma lista de filhos:
+
+```haskell
+data Bin a = Folha a | Ramo (Bin a) a (Bin a)
+data Rosa a = Rosa a [Rosa a]
+
+paraRosa :: Bin a -> Rosa a
+paraRosa (Folha x) = Rosa x []
+paraRosa (Ramo e x d) = Rosa x [paraRosa e, paraRosa d]
+```
+
+A folha torna-se um nó sem filhos. O ramo conserva o valor e coloca as duas conversões na ordem esquerda, direita. Não é uma travessia que achata a árvore: cada ramo continua a guardar os seus filhos. O tipo não exige `Ord`, `Eq` nem `Num`, porque a conversão não compara nem calcula valores.
+
+<CodePlayground
+  language="haskell"
+  title="Substituir folhas e converter árvores"
+  code={
+    substExpr +
+    '\n' +
+    binRosa +
+    '\n' +
+    'main :: IO ()\nmain = do\n  print (subst [("x",4)] (Mult (Var "x") (Add (Var "z") (Const 2))))\n  print (subst [("x",4),("x",9)] (Var "x"))\n  print (paraRosa (Ramo (Folha \'a\') \'b\' (Ramo (Folha \'c\') \'d\' (Folha \'e\'))))\n'
+  }
+/>
+
+Nos dois algoritmos, cada chamada recursiva recebe uma subexpressão ou uma subárvore própria. Essa é a medida de progresso em entradas finitas. Para a substituição, com m entradas no ambiente e n nós na expressão, procurar cada variável com `lookup` pode exigir ordem `n*m` comparações no pior caso; a conversão visita cada nó uma vez.

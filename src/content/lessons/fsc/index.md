@@ -44,6 +44,6 @@ A [ficha de FSC de 2024/25](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_v
 
 O livro de apoio é David A. Patterson e John L. Hennessy, _Computer Organization and Design RISC-V Edition_, 2.ª edição, 2020, ISBN 9780128203316. A [página da editora](https://shop.elsevier.com/books/computer-organization-and-design-risc-v-edition/patterson/978-0-12-820331-6) identifica a edição; não foi usada uma cópia integral local correspondente.
 
-Para confirmar pormenores da arquitetura e da execução: [especificação RISC-V](https://docs.riscv.org/reference/isa/unpriv/rv32.html), [convenção de chamadas RISC-V](https://riscv-non-isa.github.io/riscv-elf-psabi-doc/) e [serviços do RARS](https://github.com/TheThirdOne/rars/wiki/Environment-Calls). Os programas desta cadeira usam o ambiente RARS em RV32. As contas, esquemas e exercícios apresentados são originais.
+Para confirmar pormenores da arquitetura e da execução: [especificação RISC-V](https://docs.riscv.org/reference/isa/unpriv/rv32.html), [convenção de chamadas RISC-V](https://riscv-non-isa.github.io/riscv-elf-psabi-doc/) e [serviços do RARS](https://github.com/TheThirdOne/rars/wiki/Environment-Calls). Os programas desta cadeira usam o ambiente RARS em RV32. As contas e os esquemas são próprios. Os exercícios incluem problemas originais e adaptações identificadas nos seus metadados.
 
 :::

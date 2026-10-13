@@ -5,7 +5,7 @@ order: 0
 editorial:
   basedOn: 2025/26
   gaps:
-    - A ficha de 2026/27 arquivada em 2 de outubro não tem programa preenchido; as regras desse ano não estão confirmadas.
+    - A ficha de 2026/27 consultada em 13 de outubro ainda não publica o programa nem as regras de avaliação.
     - Nem todas as referências externas e vídeos do Moodle têm texto integral disponível.
 ---
 
@@ -21,7 +21,7 @@ As páginas usam exemplos próprios de uma aplicação de reserva de salas. Os e
 
 ::::details[Avaliação e ano de referência: pesos, fórmula e regras de 2025/26]
 
-A base destes apontamentos é o Moodle de **2025/26**, com aulas datadas da primavera de 2026, e a [ficha SIGARRA dessa ocorrência](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560102). Alguns materiais reutilizam páginas de anos anteriores. As regras gerais de Scrum abaixo seguem o Scrum Guide de 2020; quadros, estimativas e ferramentas apresentados nas aulas são escolhas do projeto, não novas regras obrigatórias do framework. A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586995), no arquivo consultado de 2 de outubro de 2026, não apresenta programa. Estes apontamentos não confirmam as regras do novo ano.
+A base destes apontamentos é o Moodle de **2025/26**, com aulas datadas da primavera de 2026, e a [ficha SIGARRA dessa ocorrência](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560102). Alguns materiais reutilizam páginas de anos anteriores. As regras gerais de Scrum abaixo seguem o Scrum Guide de 2020; quadros, estimativas e ferramentas apresentados nas aulas são escolhas do projeto, não novas regras obrigatórias do framework. A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586995), consultada a 13 de outubro de 2026, ainda não apresenta programa. Estes apontamentos não confirmam as regras do novo ano.
 
 Em 2025/26, a avaliação era distribuída, sem exame final:
 
@@ -40,6 +40,8 @@ A fórmula publicada era $CF = \operatorname{round}(0{,}15PA + 0{,}60TP + 0{,}25
 O [Moodle de ES 2025/26](https://moodle2526.up.pt/course/view.php?id=4440) é a base docente: introdução e história, processos e RUP, Agile e Scrum, requisitos, simulação Scrum, verificação e validação, XP, arquitetura, padrões Scrum, construção, evolução, retrospetivas, desenvolvimento assistido por IA e apresentação de produtos. As referências externas incompletas não foram tratadas como material integral. Exemplos de projetos de alunos servem para observar artefactos, sem substituir o programa docente.
 
 Origem temporal dos materiais reutilizados: Processos com capa 2024/25 e rodapés 2025/26; Arquitetura com páginas ASSO 2023/24; Padrões Scrum com rodapés 2024/25 e Guide 2017; Construção com capa 2025/26 e secção de retrospetivas com capa 2024/25; Pitch adaptado de ES 2022/23; Mike Cohn de 6 de junho de 2014; projetos Top6 de 2023/24 com releases de maio de 2024; dashboard de 2025/26. As regras de Scrum seguem o Guide 2020 salvo indicação de prática local.
+
+Os [materiais antigos de ES no Accio](https://accio.pt/feup/L:EIC/engenharia-de-software/L.EIC017) incluem um exemplo de teste de 2022/23 e uma tentativa de Moodle de 7 de junho de 2024, partilhada por um estudante. O exemplo de 2022/23 avisa que os slides mudaram no ano seguinte. Estes enunciados ajudam a treinar distinções entre processos, requisitos, modelos e testes; não confirmam o formato nem as regras de avaliação atuais. Não foi encontrada uma prova de 2025/26 neste conjunto. As questões novas mantêm enunciados e cenários próprios.
 
 A ficha indica:
 

@@ -28,6 +28,8 @@ editorial:
       url: https://codeql.github.com/docs/codeql-language-guides/analyzing-data-flow-in-cpp/
     - title: 'LLVM, DataFlowSanitizer'
       url: https://clang.llvm.org/docs/DataFlowSanitizer.html
+    - title: Clang, Control Flow Integrity
+      url: https://clang.llvm.org/docs/ControlFlowIntegrity.html
   coverage: 'Format strings, memória e ROP, canários, taint, cópia segura, TOCTOU e mitigações.'
   gaps:
     - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
@@ -60,9 +62,9 @@ Em `printf(formato, ...)`, o primeiro argumento descreve como interpretar os seg
 | `%n`          | `int *`, sem modificador de comprimento              | Guarda nesse endereço a contagem de caracteres já impressos |
 | `%%`          | Nenhum                                               | Imprime o caráter `%`                                       |
 
-`%n` não imprime o inteiro apontado. É uma escrita. Argumentos ausentes, tipos incompatíveis ou ponteiros inválidos produzem comportamento indefinido; não permitem prever uma saída portátil. Por exemplo, não executes `%s` com um ponteiro nulo para tentar obter um resultado garantido.
+`%n` não imprime o inteiro apontado: é uma escrita. Argumentos ausentes, tipos incompatíveis ou ponteiros inválidos produzem comportamento indefinido; não permitem prever uma saída portátil. Por exemplo, não executes `%s` com um ponteiro nulo para tentar obter um resultado garantido.
 
-O seguinte programa usa apenas formatos literais e argumentos válidos. O `%` da entrada é dado, não um especificador. No segundo `printf`, `%n` guarda 3 antes de serem impressos `!` e a mudança de linha.
+No programa seguinte só há formatos literais e argumentos válidos: o `%` da entrada é dado, não um especificador, e no segundo `printf` o `%n` guarda 3 antes de serem impressos `!` e a mudança de linha.
 
 <CodePlayground
   title="Distinguir texto, formato e contagem"
@@ -90,7 +92,7 @@ void saudar(const char *nome) {
 }
 ```
 
-É comportamento indefinido. Pode corromper dados, falhar ou permitir desvio de execução, dependendo da disposição da memória e das proteções, por isso não deduzas da ordem das declarações qual variável será alterada.
+Isto é comportamento indefinido: pode corromper dados, falhar ou permitir desvio de execução, conforme a disposição da memória e as proteções, por isso não deduzas da ordem das declarações qual variável será alterada.
 
 <Typst
   source={pilha}
@@ -104,7 +106,7 @@ Os exemplos das aulas usam um modelo Linux/x86. Num processo, código, dados est
 
 Num exemplo convencional de x86 de 32 bits com frame pointer, a pilha cresce para endereços menores. `ebp` referencia o frame; variáveis locais podem estar em offsets negativos, e o endereço de retorno em `ebp+4`. Esta disposição não vale para todos os binários, otimizações ou arquiteturas.
 
-Suponhamos que o enunciado fixa `buf` em `ebp-16`, com 12 bytes, e o endereço de retorno em `ebp+4`. A cópia da string escreve em endereços crescentes. A diferença entre os endereços é $4-(-16)=20$ bytes. O byte no índice 20 da cópia atinge o primeiro byte do endereço de retorno. O mapa seguinte mostra esses offsets: `buf` ocupa de `ebp-16` a `ebp-5`, os bytes 16 a 19 cobrem o valor guardado de `ebp` e o índice 20 alcança o retorno.
+Suponhamos que o enunciado fixa `buf` em `ebp-16`, com 12 bytes, e o endereço de retorno em `ebp+4`. A cópia da string escreve em endereços crescentes. A diferença entre os endereços é $4-(-16)=20$ bytes. O byte no índice 20 da cópia atinge o primeiro byte do endereço de retorno; no mapa seguinte, `buf` ocupa de `ebp-16` a `ebp-5`, os bytes 16 a 19 cobrem o valor guardado de `ebp` e o índice 20 alcança o retorno.
 
 | Endereços          | Índices da cópia | Objeto no modelo    |
 | ------------------ | ---------------- | ------------------- |
@@ -113,13 +115,13 @@ Suponhamos que o enunciado fixa `buf` em `ebp-16`, com 12 bytes, e o endereço d
 | `ebp-4` a `ebp-1`  | 12 a 15          | Espaço intermédio   |
 | `ebp-16` a `ebp-5` | 0 a 11           | Buffer de 12 bytes  |
 
-A cópia avança para endereços maiores: o índice 12 já sai do buffer e o índice 20 alcança o retorno. A pilha cresce para endereços menores ao criar frames. São dois sentidos que não devem ser confundidos.
+A cópia avança para endereços maiores: o índice 12 já sai do buffer e o índice 20 alcança o retorno. A pilha cresce para endereços menores ao criar frames, por isso não confundas os dois sentidos.
 
 Com vinte caracteres de um byte, esse byte seria o terminador; não precisamos de copiar um endereço completo para ter uma escrita indevida.
 
 A little-endian, o inteiro de 32 bits `0x11223344` ocupa, em endereços crescentes, os bytes `44 33 22 11`. A ordem dos bytes é diferente da direção em que a pilha cresce, por isso distingue endianness, offsets e sentido da cópia antes de analisar um desenho.
 
-Este exemplo analisa uma disposição dada. Não executa código injetado nem pressupõe que o programa real terá esses offsets. Linguagens com verificação de memória reduzem estas classes de erro, mas bibliotecas nativas e componentes inferiores continuam a precisar de análise.
+Este exemplo analisa uma disposição dada, sem executar código injetado nem pressupor que o programa real terá esses offsets. Linguagens com verificação de memória reduzem estas classes de erro, mas bibliotecas nativas e componentes inferiores continuam a precisar de análise.
 
 ## Corrigir a cópia
 
@@ -186,7 +188,7 @@ As proteções têm objetivos distintos. Um canário pode detetar algumas altera
 
 NX impede executar páginas marcadas como não executáveis. Não impede executar instruções que já pertencem a páginas de código. **Return-oriented programming**, ou ROP, encadeia pequenos trechos existentes, chamados _gadgets_, usando desvios como `ret`. Reutilizar funções completas é um caso mais simples para seguir a ideia de controlo por endereços de retorno.
 
-Considera só este modelo didático: x86 de 32 bits, argumentos na pilha, funções que não retiram os argumentos ao retornar, sem canário nem rearranjo da pilha. Queremos visitar `etapaA()` e depois `etapaB(7)`. Os nomes são símbolos, não endereços de um programa explorável.
+Neste modelo didático (x86 de 32 bits, argumentos na pilha, funções que não retiram os argumentos ao retornar, sem canário nem rearranjo da pilha), queremos visitar `etapaA()` e depois `etapaB(7)`; os nomes são símbolos, não endereços de um programa explorável.
 
 <Dot
   source={retornos}
@@ -203,6 +205,8 @@ Segue a sequência de retornos no modelo didático:
 Não podemos acrescentar livremente argumentos às etapas anteriores: sem ajuste, esses valores ficariam no caminho dos retornos. Cadeias gerais usam instruções que ajustam a pilha e, noutras arquiteturas, preparam registos. Não extrapoles esta disposição para x86-64 ou para qualquer convenção de chamada.
 
 ASLR dificulta localizar código; uma fuga de endereços pode reduzir essa proteção. Verificação de integridade do fluxo de controlo e mecanismos de retorno protegido procuram restringir os destinos. A correção continua a ser remover a corrupção de memória que permite controlar o fluxo.
+
+**Control-Flow Integrity**, ou CFI, verifica em execução se certos desvios seguem destinos admitidos pelo modelo de fluxo de controlo. Não é uma verificação de todos os índices ou comprimentos. Se um acesso fora dos limites corrompe apenas dados, sem violar um desvio verificado, pode continuar a escapar a CFI. O conjunto de destinos, os desvios cobertos e a precisão da política determinam o limite da proteção. Distingue-o de [SFI e interposição de chamadas](/cadeiras/fsi/sistemas-seguros/#interposição-e-isolamento-por-software).
 
 ## Canários: o que está a ser verificado?
 
@@ -229,9 +233,15 @@ Um teste dinâmico com apenas `Ana` pode não revelar um problema que depende de
 
 Uma race condition depende da ordem de operações concorrentes. **TOCTOU** ocorre quando uma condição muda entre a verificação e o uso. Verificar um nome e abrir esse nome depois resolve a referência duas vezes: o mesmo texto pode designar objetos diferentes. Uma segunda verificação pelo nome apenas cria outro intervalo se o nome continuar mutável.
 
-1. O programa verifica as permissões do nome `relatorio`.
-2. Outro processo troca esse nome por uma ligação para outro ficheiro.
-3. O programa abre novamente o nome e usa outro objeto.
+Assume que outro processo pode alterar a entrada de diretório `relatorio`. A e B são ficheiros diferentes, e só A foi autorizado:
+
+| Momento | Programa                          | Outro processo                      | Objeto referido |
+| ------- | --------------------------------- | ----------------------------------- | --------------- |
+| 1       | Verifica `relatorio` e autoriza A | Não altera o nome                   | A               |
+| 2       | Ainda não abriu o ficheiro        | Troca o nome por uma ligação para B | B               |
+| 3       | Abre `relatorio` e usa B          | Não precisa de outra alteração      | B               |
+
+O texto do nome ficou igual. A identidade do objeto mudou entre a verificação e a abertura.
 
 Quando o sistema permite, abre com as restrições adequadas, verifica o objeto pelo descritor e usa esse mesmo descritor. Para uma atualização de saldo, verificar e alterar deve ser uma operação atómica ou uma transação com isolamento adequado. Um mutex numa única aplicação não coordena automaticamente outros processos ou servidores.
 

@@ -43,7 +43,7 @@ main = do
   putStrLn ("Ola, " ++ nome ++ "!")
 ```
 
-Neste exemplo, cada linha do `do` executa uma ação por ordem. Um bloco `do` também pode conter definições puras com `let`. A seta `<-` corre a ação e dá nome ao resultado: `nome` fica com a string lida. Sem seta, como em `putStrLn`, o resultado é ignorado. `"Ola, " ++ nome ++ "!"` calcula uma string pura, e `putStrLn` cria a ação que a imprime. A seta liga o resultado de uma ação; não marca todos os efeitos do bloco. Separa os cálculos em funções puras e usa o bloco `do` para ligar as ações aos seus resultados.
+Neste exemplo, cada linha do `do` executa uma ação por ordem, e o bloco também pode conter definições puras com `let`. A seta `<-` corre a ação e dá nome ao resultado, por isso `nome` fica com a string lida; sem seta, como em `putStrLn`, o resultado é ignorado. `"Ola, " ++ nome ++ "!"` calcula uma string pura e `putStrLn` cria a ação que a imprime, ou seja a seta liga o resultado de uma ação sem marcar todos os efeitos do bloco. Separa os cálculos em funções puras e usa o bloco `do` para ligar as ações aos seus resultados.
 
 ## Parsers como funções
 
@@ -60,8 +60,6 @@ item = P (\inp -> case inp of
                    []     -> []
                    (c:cs) -> [(c, cs)])
 ```
-
-Resultado vazio significa falha. Lê dois casos antes dos combinadores.
 
 ### Ler `item` e `nat` passo a passo
 
@@ -136,7 +134,7 @@ symbol :: Char -> Parser Char
 symbol c = token (sat (== c))
 ```
 
-`Functor` aplica uma função ao resultado com `fmap`. `Applicative` fornece `pure`, sucesso sem consumir entrada, e `<*>`, sequência de um parser de funções com um parser de argumentos. `Monad` fornece `>>=`, que escolhe o parser seguinte a partir do valor acabado de ler. Aqui `return` tem o mesmo papel que `pure`, e o `do` usa `>>=`. Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta. `nat` pressupõe que o número cabe em `Int`; para naturais arbitrariamente grandes, muda o resultado para `Integer`. A gramática seguinte compõe os combinadores para ler expressões:
+`Functor` aplica uma função ao resultado com `fmap`. `Applicative` fornece `pure`, sucesso sem consumir entrada, e `<*>`, sequência de um parser de funções com um parser de argumentos. `Monad` fornece `>>=`, que escolhe o parser seguinte a partir do valor acabado de ler, com `return` no mesmo papel que `pure` e o `do` assente em `>>=`. Cada combinador faz uma coisa pequena: `sat` testa um caráter, `many` repete zero ou mais vezes, `token` ignora espaços à volta. `nat` pressupõe que o número cabe em `Int`; para naturais arbitrariamente grandes, muda o resultado para `Integer`. A gramática seguinte compõe os combinadores para ler expressões:
 
 ```haskell
 expr :: Parser Int
@@ -171,7 +169,7 @@ A precedência vive na estrutura: `expr` soma `term`s e `term` multiplica `facto
   alt="Grafo de chamadas do parser: expr chama term e a si própria; term chama factor e a si próprio; factor chama expr e nat; nat usa many1 e digit."
 />
 
-Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`; o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`; dá `[(14, "")]`. E `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro. O exemplo corrido usa também `completa`, definida já a seguir:
+Avalia `parse expr "2+3*4"`: o `term` lê `2` e para no `+`, e o `expr` soma `2` com o `expr` de `"3*4"`, que multiplica `3` por `4`, dando `[(14, "")]`; `parse expr "(2+3)*4"` dá `[(20, "")]`, com os parênteses a forçar a soma primeiro.
 
 <CodePlayground
   language="haskell"
@@ -191,7 +189,9 @@ Um parser não determinístico pode devolver vários pares. Nesse contrato, os c
 
 `completa expr " 2 + 3*4 "` dá `Just 14`; `"2+"`, `"2+3x"` e `"(2+3"` dão `Nothing`, porque sucesso do prefixo não valida todo o ficheiro.
 
+:::warning[Sucesso sem consumo não permite repetir]
 `many p` exige que `p` consuma entrada em cada sucesso. Se `p` for `pure 1`, o parser pode repetir para sempre sem avançar. É a condição de progresso correspondente ao caso recursivo de uma lista.
+:::
 
 ## Precedência e associatividade
 

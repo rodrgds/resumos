@@ -16,7 +16,7 @@ Um teste unitário verifica uma unidade pequena através do seu comportamento ob
 
 Deriva os casos de partições do contrato antes de escreveres código de teste. Para `contem` com largura 5, há três partições: dentro (`0` a `4`), abaixo (`< 0`) e acima (`>= 5`). Escolhe um representante de cada, mais as fronteiras exatas `0`, `4`, `-1` e `5`. Isto é seleção black-box: usa o contrato sem depender da estrutura interna. Testar largura zero também é black-box quando o contrato do construtor a proíbe. Seleção white-box usa a implementação para procurar percursos ainda não exercitados; não muda a origem do resultado esperado.
 
-Uma largura zero ou negativa não representa uma arena válida e deve ser rejeitada. Esta exceção pertence ao contrato de construção. Uma célula exterior, por sua vez, não exige uma exceção: `contem` responde `false`. São operações com respostas diferentes a entradas fora do domínio normal.
+Uma largura zero ou negativa não representa uma arena válida e deve ser rejeitada, e esta exceção pertence ao contrato de construção; uma célula exterior, por sua vez, não exige uma exceção, pois `contem` responde `false` a entradas fora do domínio normal da operação.
 
 Prepara o cenário, executa a ação e verifica o resultado, Arrange, Act, Assert. Um comportamento pode exigir várias asserções relacionadas. Por exemplo, mover deve produzir a posição certa **e** preservar a origem quando a operação promete imutabilidade.
 
@@ -80,11 +80,9 @@ Corre `./gradlew test`. Os testes parametrizados fazem uma execução por argume
 
 Para valores de vírgula flutuante, uma tolerância adequada evita exigir igualdade bit a bit a um cálculo aproximado. Para objetos, `assertEquals` usa igualdade lógica; `assertSame` exige identidade.
 
-Este vídeo mostra testes com JUnit 5:
+Este vídeo mostra testes com JUnit 5, distinguindo em cada caso a preparação, a ação e a asserção:
 
 <YouTube id="6uSnF6IuWIw" title="JUnit 5 Tutorial, Marco Codes" />
-
-Em JUnit, distingue a preparação, a ação e a asserção.
 
 ## Independência dos testes
 
@@ -166,14 +164,12 @@ Verifica interações quando são parte do contrato, como enviar o resultado à 
 
 Um **spy** envolve um objeto real e, por defeito, executa os seus métodos. `when(spy.metodo())` também pode executar o método durante a configuração. `doReturn(valor).when(spy).metodo()` evita essa execução quando precisas de substituir a resposta. Um spy não elimina a necessidade de perceber os efeitos do objeto real.
 
-Este vídeo mostra substitutos com Mockito:
+Este vídeo mostra substitutos com Mockito, identificando a dependência substituída e a interação que faz parte do comportamento pretendido:
 
 <YouTube
   id="xXO8ft-tsrY"
   title="Mocks, Stubs and Spies with Mockito, Aneesh Mistry"
 />
-
-Em Mockito, identifica a dependência substituída e explica por que a interação que verificas faz parte do comportamento pretendido.
 
 ## Cobertura e mutation testing
 
@@ -193,7 +189,15 @@ Só testar 2 executa a linha, mas não percorre as saídas falsas. Com -1, a seg
 
 **Mutation testing** altera o programa em pequenas operações, por exemplo trocar `<` por `<=`. Um mutante é **morto** quando os testes falham com essa mudança. Se todos passam, o mutante **sobrevive**. Um mutante sem cobertura nem sequer teve esse comportamento exercitado.
 
-No nosso `Limite`, trocar `x < largura` por `x <= largura` faz `contem(5)` passar de falso a verdadeiro. O teste exterior com `5` mata esse mutante. Testar só `2` e `6` não distingue as duas condições.
+No nosso `Limite`, o mutante troca `x < largura` por `x <= largura`. Com largura 5 e a condição inferior `x >= 0` mantida:
+
+| x   | Contrato e original | Mutante | Distingue? |
+| --- | ------------------- | ------- | ---------- |
+| 2   | `true`              | `true`  | Não        |
+| 5   | `false`             | `true`  | Sim        |
+| 6   | `false`             | `false` | Não        |
+
+O teste exterior com `5` mata esse mutante porque espera `false`. Testar só `2` e `6` não distingue as condições, mesmo com asserções.
 
 Um mutante sobrevivente pode indicar uma falta nos testes, mas também pode ser **equivalente**, sem mudança observável dentro do domínio válido. Analisa o efeito antes de acrescentar uma asserção sem relação com o contrato.
 

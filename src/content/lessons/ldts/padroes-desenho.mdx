@@ -4,12 +4,20 @@ description: Os dez padrões do programa, escolhidos pelo problema e pelas suas 
 order: 8
 practices:
   - ldts/praticar-padroes
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Problemas históricos de LDTS/LPOO, arquivo Accio, com exemplos adaptados
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-desenho-e-teste-de-software/L.EIC014
+  gaps:
+    - Não confirma o formato ou os critérios das provas da edição atual.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import Dot from '../../../components/Dot.astro';
 import observer from '../../ldts/observer.dot?raw';
+import precoDelegado from '../../ldts/examples/preco-delegado.java?raw';
 
 O inimigo mantém posição e vida, mas pode patrulhar ou perseguir o herói. Separar o algoritmo numa interface permite trocar o movimento sem reescrever `Inimigo`. Strategy dá nome a essa colaboração. Cada padrão descreve um problema, os participantes que o resolvem e as consequências da escolha.
 
@@ -78,7 +86,7 @@ A saída é `2`. Segue o estado e o contador, que são dados diferentes:
 | alternar | Pausa | Ativo  | 1      |
 | tick     | Ativo | Ativo  | 2      |
 
-O `tick` em Pausa não altera o contador. A transição é definida pelos estados; poderia ficar no contexto, desde que houvesse um responsável claro.
+O `tick` em Pausa não altera o contador, e a transição é definida pelos estados; poderia ficar no contexto, desde que houvesse um responsável claro.
 
 State e Strategy podem ter estruturas parecidas. A intenção distingue-os: trocar perseguição por patrulha é Strategy; reagir de outra forma depois de entrar em Pausa é State. Um pequeno conjunto de estados também pode ser representado por uma enumeração e condições sem perder clareza.
 
@@ -96,15 +104,15 @@ Para desfazer um movimento, precisamos do estado anterior. Fazer o movimento inv
   }
 />
 
-Obtemos `5` e `2`. `Main` é o invocador; `Mover` o comando concreto; `Heroi` o recetor. Este exemplo supõe que nada altera o herói entre executar e desfazer. Num histórico, desfaz os comandos por ordem inversa. Um pedido com efeitos externos, como enviar uma mensagem, pode não ter inversão exata; o padrão não garante undo automaticamente.
+Obtemos `5` e `2`: `Main` é o invocador, `Mover` o comando concreto e `Heroi` o recetor. Este exemplo supõe que nada altera o herói entre executar e desfazer; num histórico, desfaz os comandos por ordem inversa. Um pedido com efeitos externos, como enviar uma mensagem, pode não ter inversão exata, pois o padrão não garante undo automaticamente.
 
 ## Observer: notificar interessados
 
 **Observer** permite que um sujeito notifique vários observadores através de um contrato. O sujeito não conhece as classes concretas que reagem. Cada interessado subscreve e deve poder deixar de subscrever.
 
-Começa pelo caso simples: um sujeito com lista de inscritos e notificação síncrona. O cliente subscreve dois observadores, altera o valor e cada um recebe `mudou(pontos)`. Sair da lista termina as notificações futuras.
+Começa pelo caso simples, um sujeito com lista de inscritos e notificação síncrona: o cliente subscreve dois observadores, altera o valor e cada um recebe `mudou(pontos)`; sair da lista termina as notificações futuras.
 
-Na pontuação, um observador pode atualizar o texto e outro verificar uma conquista. A sequência é: alterar o valor, obter o novo estado válido e notificar os inscritos. O observador pode receber o valor, modelo **push**, ou pedir o estado ao sujeito, modelo **pull**.
+Na pontuação, um observador atualiza o texto e outro verifica uma conquista, seguindo a sequência alterar o valor, obter o novo estado válido e notificar os inscritos; o observador pode receber o valor (modelo **push**) ou pedir o estado ao sujeito (modelo **pull**).
 
 <Dot
   source={observer}
@@ -271,7 +279,7 @@ interface Arma {
 }
 ```
 
-A implementação concreta fornece ambos os métodos. Juntando contrato, produtos, fábricas e cliente, cada programa completo desta página corre no seu próprio `Main.java`. Guarda este como `Main.java` e corre-o localmente:
+O exemplo seguinte junta contrato, produtos, fábricas e cliente num programa completo; guarda-o como `Main.java` e corre-o localmente:
 
 ```java
 interface Inimigo {
@@ -354,6 +362,22 @@ Neste exemplo, o cliente precisa de um preço em cêntimos. A biblioteca antiga 
 Obtemos `1200` e `1450`. O adapter permite usar a classe antiga sem a alterar. O decorator aceita qualquer `Preco`, incluindo outro decorator. Se aplicares duas entregas, cobras duas taxas; a composição não valida sozinha se essa combinação tem sentido.
 
 Num adapter real, define também erros, unidades e conversões que podem perder informação. Num decorator, a ordem pode mudar o resultado: aplicar 10% de desconto antes ou depois de acrescentar 250 cêntimos não produz sempre o mesmo total. A interface comum não torna as operações comutativas.
+
+### Delegação e preço atual
+
+Guardar uma referência ao objeto envolvido é diferente de guardar o resultado de uma consulta. Se `ComEntrega.centimos()` chama `base.centimos()` em cada pedido, uma mudança no preço base aparece no próximo pedido. Calcular o total só no construtor guardaria um snapshot e poderia quebrar esse contrato.
+
+No programa seguinte, a entrega acrescenta 200 cêntimos e o desconto reduz em 10% o total que recebe. Os preços usados dão resultados inteiros exatos; para outros valores, a divisão inteira arredondaria para baixo e essa política precisaria de fazer parte da regra.
+
+<CodePlayground
+  language="java"
+  title="Consultar novamente o objeto envolvido"
+  code={precoDelegado}
+/>
+
+As saídas são `1080`, `720` e `740`. Primeiro, o total com entrega e depois desconto é $(1000+200)\times0{,}9=1080$. Ao mudar a mesma base para 600, a cadeia existente passa a dar $(600+200)\times0{,}9=720$. Na última linha, o desconto fica por dentro da entrega: $600\times0{,}9+200=740$.
+
+Não reconstruímos os decorators para obter 720: continuam a consultar o objeto a que estavam ligados. Também não notificámos observadores; a alteração aparece porque houve uma nova consulta. Se a interface incluir operações de alteração, define quais são delegadas e quais pertencem ao wrapper. O padrão não decide sozinho entre estado partilhado e cópia.
 
 ## Singleton: uma instância com acesso global
 

@@ -11,11 +11,11 @@ import compilacaoSeparada from '../../p/compilacao-separada.dot?raw';
 
 import Dot from '../../../components/Dot.astro';
 
-Uma declaração de `dobro` permite compilar a chamada sem mostrar o seu corpo. A definição pode ficar noutro ficheiro, mas precisa de entrar na ligação para formar o executável. Vamos seguir esses dois percursos separados até se juntarem.
+Uma declaração de `dobro` permite compilar a chamada sem mostrar o seu corpo. A definição pode ficar noutro ficheiro, mas precisa de entrar na ligação para formar o executável; esta página segue esses dois percursos separados até se juntarem.
 
 ## Cabeçalhos e implementação
 
-Vamos separar uma função que duplica um valor real. Cria estes três ficheiros na mesma pasta.
+Para separar uma função que duplica um valor real, cria estes três ficheiros na mesma pasta.
 
 `dobro.hpp` declara a interface. A guarda impede repetir o conteúdo do cabeçalho na mesma unidade de tradução.
 
@@ -28,7 +28,7 @@ double dobro(double valor);
 #endif
 ```
 
-`dobro.cpp` define a operação e inclui o próprio cabeçalho, por isso o compilador deteta muitas divergências entre declaração e definição. Mas incluir o cabeçalho não garante tudo: se o cabeçalho declara `double dobro(double);` e o ficheiro define `double dobro(int v)`, estás a declarar outra sobrecarga. A definição esperada continua em falta e a ligação falha. Mantém declaração e definição com a mesma assinatura.
+`dobro.cpp` define a operação e inclui o próprio cabeçalho, por isso o compilador deteta muitas divergências entre declaração e definição, mas não garante tudo: se o cabeçalho declara `double dobro(double);` e o ficheiro define `double dobro(int v)`, estás a declarar outra sobrecarga e a definição esperada continua em falta, por isso a ligação falha. Mantém declaração e definição com a mesma assinatura.
 
 ```cpp
 #include "dobro.hpp"
@@ -38,7 +38,7 @@ double dobro(double valor) {
 }
 ```
 
-`main.cpp` usa a interface sem reproduzir a implementação.
+`main.cpp` usa a interface sem reproduzir a implementação:
 
 ```cpp
 #include "dobro.hpp"
@@ -53,7 +53,7 @@ Este programa escreve `8`. A saída continua igual se reorganizares a implementa
 
 ## Compilação e ligação
 
-Cada `.cpp`, depois do pré-processamento dos seus `#include`, forma uma **unidade de tradução**. A compilação produz ficheiros objeto; a ligação reúne-os e resolve as referências entre eles. Neste exemplo há duas unidades: `dobro.cpp` com a definição e `main.cpp` com a chamada. Cada uma compila sozinha; só a ligação as junta.
+Cada `.cpp`, depois do pré-processamento dos seus `#include`, forma uma **unidade de tradução**. A compilação produz ficheiros objeto; a ligação reúne-os e resolve as referências entre eles. Neste exemplo há duas unidades, `dobro.cpp` com a definição e `main.cpp` com a chamada, e cada uma compila sozinha; só a ligação as junta.
 
 ```sh
 g++ -std=c++17 -Wall -Wextra -Wpedantic -c dobro.cpp -o dobro.o
@@ -67,7 +67,7 @@ g++ main.o dobro.o -o exemplo
   alt="O cabeçalho dobro.hpp é incluído em main.cpp e dobro.cpp. Cada fonte compila num ficheiro objeto. A ligação reúne main.o e dobro.o no executável exemplo."
 />
 
-O cabeçalho entra nos dois percursos, mas não produz sozinho a definição compilada de `dobro`. Se faltar o ramo de `dobro.o`, a ligação fica com uma chamada por resolver.
+O cabeçalho entra nos dois percursos, mas não produz sozinho a definição compilada de `dobro`, por isso se faltar o ramo de `dobro.o` a ligação fica com uma chamada por resolver.
 
 Também podes compilar e ligar de uma vez com `g++ -std=c++17 main.cpp dobro.cpp -o exemplo`. Compilar só `main.cpp` encontra a declaração, mas a ligação falha por faltar a definição de `dobro`. O erro típico é `undefined reference to 'dobro(double)'`: a compilação passou, a ligação não encontrou o código.
 
@@ -109,12 +109,12 @@ Lê a primeira mensagem relevante, porque um erro de sintaxe pode causar muitas 
 
 ## Usar o depurador
 
-Compila com `-g -O0` ou seleciona Debug no CLion. Para o erro de remoção com dois negativos consecutivos, coloca um breakpoint na linha do `erase` e corre com `{-1, -2}`. Observa o iterador devolvido: aponta para `-2`, que ainda precisa de análise. Se o código avançar outra vez sem ler esse elemento, `-2` sobrevive por engano. Compara argumentos e variáveis com o que o contrato exige.
+Compila com `-g -O0` ou seleciona Debug no CLion. Para o erro de remoção com dois negativos consecutivos, coloca um breakpoint na linha do `erase` e corre com `{-1, -2}`, observando o iterador devolvido, que aponta para `-2`, ainda por analisar; se o código avançar outra vez sem ler esse elemento, `-2` sobrevive por engano. Compara argumentos e variáveis com o que o contrato exige.
 
 **Step into** entra na função chamada; **step over** executa-a sem abrir o seu corpo; **step out** termina a chamada atual. A pilha de chamadas mostra como chegaste à linha. Ao seguir apontadores, distingue o valor do endereço do conteúdo apontado e confirma que o objeto ainda vive.
 
 ## Um procedimento para corrigir erros
 
-Primeiro, reduz o problema a uma entrada pequena com saída conhecida. Depois identifica a primeira operação em que o estado diverge do esperado. Corrige essa operação, volta a correr a mesma entrada e acrescenta um caso que detete a causa. Só então testa fronteiras próximas.
+Primeiro, reduz o problema a uma entrada pequena com saída conhecida; depois identifica a primeira operação em que o estado diverge do esperado. Corrige essa operação, volta a correr a mesma entrada e acrescenta um caso que detete a causa, e só então testa fronteiras próximas.
 
-Se uma função remove negativos mas perde também o elemento seguinte, segue dois negativos consecutivos. Esse caso revela se o iterador é avançado indevidamente depois de `erase`. Dez testes com positivos não esclarecem esse erro. Usa avisos, sanitizers e testes em conjunto, cada um procura falhas diferentes.
+Se uma função remove negativos mas perde também o elemento seguinte, segue dois negativos consecutivos, pois esse caso revela se o iterador é avançado indevidamente depois de `erase`; dez testes com positivos não esclarecem esse erro. Usa avisos, sanitizers e testes em conjunto, pois cada um procura falhas diferentes.

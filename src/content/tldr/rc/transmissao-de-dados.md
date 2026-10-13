@@ -6,7 +6,7 @@
 - Modulação altera amplitude em ASK, frequência em FSK, fase em PSK; QAM combina amplitude e fase. Não confundir com codificação de linha.
 - 4B/5B transforma quatro bits em cinco: 80 Mbit/s úteis exigem 100 Mbit/s antes de outras sobrecargas.
 
-Simplex permite uma direção; half-duplex, ambas à vez; full-duplex, ambas simultaneamente. FDM separa frequências, TDM intervalos, WDM comprimentos de onda. TDM síncrona pode reservar intervalos vazios.
+Simplex permite uma direção; half-duplex, ambas à vez; full-duplex, ambas simultaneamente. FDM separa frequências, TDM intervalos e WDM comprimentos de onda; TDM síncrona pode reservar intervalos vazios.
 
 ## Canal e limites
 

@@ -7,6 +7,8 @@ editorial:
   sources:
     - title: Física II, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586991
+    - title: Arquivo de provas de Física II, Accio, incluindo janeiro e fevereiro de 2022
+      url: https://accio.pt/feup/L:EIC/fisica-ii/L.EIC013
     - title: Materiais teóricos e teórico-práticos de Física II, Moodle 2025/26
       url: https://moodle2526.up.pt/mod/resource/view.php?id=135878
     - title: Jaime E. Villate, Eletricidade, Magnetismo e Circuitos, 3.ª edição, 2019
@@ -41,7 +43,7 @@ Precisas de vetores, produto escalar e vetorial, derivadas, integrais, números 
 14. [Fourier](/cadeiras/f2/fourier/): harmónicos e transformadas.
 15. [Resposta em frequência e amostragem](/cadeiras/f2/frequencia-amostragem/): filtros, banda e aliasing.
 
-Os exercícios no fim de cada página têm enunciado e solução justificada. Há pistas quando ajudam a escolher o método ou a ultrapassar um passo. Resolve-os antes de abrir a ajuda. Alguns problemas retomam estruturas ou valores dos materiais docentes, com a origem identificada. Por exemplo, o exemplo de referenciais em carga e campo usa os valores do mini-teste A, e um exercício de fasores usa amplitude e fase da TP9 com outra frequência. As folhas TP orientam a seleção de problemas; não são uma previsão das provas atuais. A [cheat sheet](/cadeiras/f2/folha-consulta/) reúne relações e condições para consulta depois de estudar.
+Os exercícios no fim de cada página têm enunciado e solução justificada. Há pistas quando ajudam a escolher o método ou a ultrapassar um passo. Resolve-os antes de abrir a ajuda. Alguns problemas retomam estruturas ou valores dos materiais docentes, com a origem identificada. Por exemplo, o exemplo de referenciais em carga e campo usa os valores do mini-teste A, e um exercício de fasores usa amplitude e fase da TP9 com outra frequência. Os problemas de limites dos componentes e fluxo não uniforme recuperam decisões das provas de 2021/22 com dados próprios. As folhas TP orientam a seleção de problemas; não são uma previsão das provas atuais. A [cheat sheet](/cadeiras/f2/folha-consulta/) reúne relações e condições para consulta depois de estudar.
 
 ## Como resolver problemas
 
@@ -87,7 +89,7 @@ Os textos, exemplos, exercícios e diagramas destas páginas foram escritos para
 
 :::details[Vídeos e simulações]
 
-Os vídeos recomendados pelos materiais de 2025/26 estão nas lições onde se vê o conceito: [Fluxo e circulação](/cadeiras/f2/equacoes-maxwell/#fluxo-e-circulação) para divergência e rotacional, [Fasores e impedância](/cadeiras/f2/regime-sinusoidal/#fasores-e-impedância) para amplitude e fase, e [Montar e medir](/cadeiras/f2/laboratorio/#montar-e-medir) para a preparação dos instrumentos. São recursos opcionais dessa edição, sem revisão integral aqui.
+Os vídeos recomendados pelos materiais de 2025/26 estão nas lições onde se vê o conceito: [Fluxo e circulação](/cadeiras/f2/equacoes-maxwell/#fluxo-e-circulação) para divergência e rotacional, [Fasores e impedância](/cadeiras/f2/regime-sinusoidal/#fasores-e-impedância) para amplitude e fase, e [Montar e medir](/cadeiras/f2/laboratorio/#montar-e-medir) para componentes, placa de protótipos e topologia de circuitos. São recursos opcionais dessa edição, sem revisão integral aqui.
 
 Para experimentar circuitos, o [kit de circuitos DC da PhET](https://phet.colorado.edu/en/simulations/circuit-construction-kit-dc) permite comparar ligações em série e paralelo. A [visualização de Faraday do MIT](https://web.mit.edu/8.02t/www/802TEAL3D/visualizations/faraday/index.htm) ajuda a seguir a relação entre campo variável e campo induzido. Usa os modelos interativos nas lições para RC, harmónicos e aliasing antes de passar a montagens reais.
 

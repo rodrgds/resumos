@@ -4,6 +4,13 @@ description: Valores e referências, contratos, composição, igualdade, coleç�
 order: 2
 practices:
   - ldts/praticar-java
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Problemas históricos de LDTS/LPOO, arquivo Accio, com exemplos adaptados
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-desenho-e-teste-de-software/L.EIC014
+  gaps:
+    - Não confirma o formato ou os critérios das provas da edição atual.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
@@ -32,6 +39,22 @@ Literais como `3`, `3L`, `2.5`, `'A'`, `"cima"` e `true` têm tipos próprios. E
 
 Uma variável local tem de receber um valor antes de ser lida; o compilador não inventa um valor inicial. Os arrays têm tamanho fixo e índices de zero a `length - 1`. As coleções permitem representar grupos que crescem e diminuem.
 
+### Promoção e overflow inteiro
+
+Um `byte` representa inteiros de -128 a 127. Em `b + 1`, Java promove os operandos para `int`, por isso o resultado dessa expressão é um `int`. Atribuir esse resultado a um `byte` exige uma conversão explícita quando não se trata de uma constante representável conhecida pelo compilador.
+
+```java
+byte b = 127;
+int soma = b + 1;       // 128, sem alterar b
+b++;                   // -128, depois da conversão de volta para byte
+b += 1;                // -127
+System.out.println(soma + " " + b);
+```
+
+A saída é `128 -127`. `++` e a atribuição composta incluem a conversão de volta ao tipo da variável. A soma não escolhe automaticamente um tipo maior para a guardar; ao reduzir a `byte`, conserva os oito bits menos significativos. Já `b = b + 1` não compila neste exemplo: a soma é `int` e a atribuição simples não faz essa redução implicitamente.
+
+O mesmo cuidado vale para `int`: operações inteiras podem fazer overflow sem lançar uma exceção. Em `(long) x + deslocamento`, a conversão vem antes da soma; em `(long) (x + deslocamento)`, a soma ainda pode ter transbordado em `int`. Escolhe o tipo e a política de erro pelo intervalo do contrato, como no [movimento de MVC](/cadeiras/ldts/mvc-projeto/#seguir-uma-ação-completa).
+
 ## Valores e referências
 
 Uma variável primitiva guarda o valor. Uma variável de tipo de referência guarda uma referência para um objeto, ou `null`. Atribuir uma referência não copia o objeto.
@@ -44,7 +67,7 @@ Uma variável primitiva guarda o valor. Uma variável de tipo de referência gua
   }
 />
 
-A saída é `[Ana, Rita]` e `true`. Java passa argumentos **por valor**, incluindo o valor de uma referência. O parâmetro e a variável do chamador começam a apontar para o mesmo objeto; `add` altera esse objeto. Atribuir uma lista nova ao parâmetro muda apenas a referência local.
+A saída é `[Ana, Rita]` e `true`, pois Java passa argumentos **por valor**, incluindo o valor de uma referência: o parâmetro e a variável do chamador começam a apontar para o mesmo objeto e `add` altera esse objeto, enquanto atribuir uma lista nova ao parâmetro muda apenas a referência local.
 
 <Dot
   source={referencias}
@@ -83,9 +106,15 @@ Para objetos, `==` compara identidade, ou seja, se são o mesmo objeto. `equals`
 
 `equals` deve ser reflexivo, simétrico, transitivo e consistente enquanto o estado relevante não muda. Para um objeto não nulo, `equals(null)` deve ser falso. Se dois objetos são iguais, **têm de ter o mesmo `hashCode`**. O inverso não é exigido, porque dois valores diferentes podem colidir.
 
-Por isso redefinimos os dois métodos. Um `HashSet` usa o hash para escolher onde procurar e depois a igualdade para distinguir valores. Se o hash dependesse da identidade, posições iguais poderiam ir para grupos diferentes.
+Por isso redefinimos os dois métodos: um `HashSet` usa o hash para escolher onde procurar e depois a igualdade para distinguir valores, pelo que, se o hash dependesse da identidade, posições iguais poderiam ir para grupos diferentes.
 
 Evita alterar campos usados em `equals` e `hashCode` enquanto o objeto é uma chave de `HashMap` ou um elemento de `HashSet`. Pode deixar de ser encontrado no grupo em que foi colocado. Um tipo imutável evita esta mudança.
+
+### A assinatura de equals
+
+`public boolean equals(Object outro)` redefine o método de `Object`. Um método `boolean equals(Posicao outra)` é uma **sobrecarga**, mesmo que compare corretamente as coordenadas. Uma chamada com argumento declarado `Posicao` pode escolhê-la, enquanto uma chamada através de `Object` continua a usar a operação herdada.
+
+Por isso um teste `a.equals(b)` com ambas as variáveis declaradas `Posicao` pode esconder uma assinatura errada. Verifica também a operação do contrato `Object`, por exemplo `a.equals((Object) b)`, e o uso numa coleção. Colocar `@Override` no método deteta este erro na compilação. Depois mantém o contrato de igualdade e o `hashCode` correspondente; corrigir a assinatura não torna válida uma comparação que esquece uma coordenada.
 
 ## Herança, interfaces e composição
 
@@ -123,6 +152,21 @@ No jogo, os comandos pendentes precisam de conservar uma ordem; as células visi
 `ArrayList` dá acesso por índice em tempo constante e acrescenta no fim em tempo constante amortizado. Inserir ou remover no meio desloca elementos, com custo linear no número de elementos. `HashSet` e `HashMap` têm operações básicas com custo esperado constante quando os hashes se distribuem bem; não prometem ordem de iteração.
 
 Um `Map` substitui o valor quando inseres uma chave igual à existente. Usa `containsKey` quando tens de distinguir ausência de um valor `null`. Um `for-each` usa um iterador; remover diretamente da coleção durante a iteração pode provocar `ConcurrentModificationException`. Se o contrato o permitir, usa `Iterator.remove()` ou constrói uma coleção do resultado.
+
+### Ordem e unicidade num TreeSet
+
+Um `TreeSet` mantém ordem natural, definida por `Comparable.compareTo`, ou a ordem de um `Comparator` fornecido na construção. Para as operações do conjunto, dois elementos são equivalentes quando a comparação dá **zero**. As operações básicas têm custo $O(\log n)$ para $n$ elementos.
+
+Se as posições `(2,1)` e `(2,9)` se comparam só por x, a segunda inserção é recusada: a comparação dá zero, embora `equals` por ambas as coordenadas dê falso. Para guardar posições distintas em ordem, compara primeiro x e, em empate, y. Assim, zero coincide com igualdade por coordenadas.
+
+```java
+int comparar(Posicao a, Posicao b) {
+    int porX = Integer.compare(a.getX(), b.getX());
+    return porX != 0 ? porX : Integer.compare(a.getY(), b.getY());
+}
+```
+
+Este excerto pressupõe getters de inteiros nas posições. `Integer.compare` evita o overflow que `a.getX() - b.getX()` poderia sofrer. Um `TreeSet` com comparação incoerente com `equals` tem comportamento definido, mas não cumpre o contrato geral de `Set`. Não alteres os campos que determinam a ordem enquanto o objeto pertence ao conjunto, pelo mesmo motivo que protege as chaves de hash.
 
 ## Proteger uma coleção
 
@@ -165,7 +209,9 @@ static <E> E primeiro(java.util.List<E> l) { return l.get(0); }
 
 `<E>` antes do retorno declara o parâmetro do método. O compilador infere `E` a partir do argumento: `primeiro(Arrays.asList("a", "b"))` infere `E = String`.
 
-Pacotes organizam tipos relacionados e controlam visibilidade: classes do mesmo pacote veem membros sem modificador. `super(...)` chama o construtor da base e `super.metodo()` a sua implementação; usa-o quando a subclasse precisa de reaproveitar construção ou comportamento da base em vez de o duplicar.
+Pacotes organizam tipos relacionados e controlam visibilidade: classes do mesmo pacote veem membros sem modificador.
+
+`super(...)` chama o construtor da base e `super.metodo()` a sua implementação; usa-o quando a subclasse precisa de reaproveitar construção ou comportamento da base em vez de o duplicar.
 
 ## Genéricos e wildcards
 

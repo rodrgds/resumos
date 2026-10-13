@@ -8,6 +8,7 @@ editorial:
   coverage: Modelação UML, modelo relacional, dependências e decomposição, SQLite, álgebra, consultas e recursão, segurança, vistas, gatilhos, índices, transações, NoSQL e OLAP.
   gaps:
     - Os materiais docentes disponíveis são do Moodle de 2025/26; não foi comparado o Moodle de 2026/27.
+    - As provas históricas consultadas não permitem confirmar a avaliação de 2024/25 ou 2025/26.
 ---
 
 Uma aplicação de uma loja precisa de guardar clientes, produtos e encomendas. Se repetir o nome de cada cliente em todas as compras, uma mudança de nome pode deixar dados contraditórios. Se guardar uma lista de produtos numa só célula, perguntar quantos ratos vendeu torna-se difícil. O percurso acompanha esta loja: representa os factos em UML, traduz-os para relações, verifica dependências e formula consultas em SQL.
@@ -63,6 +64,8 @@ A bibliografia da ficha atual é:
 
 - Obrigatória: Jeffrey D. Ullman e Jennifer Widom, _A First Course in Database Systems_, ISBN 978-0-13-600-637-4. A ficha identifica a obra pelo nome de Ullman; as apresentações usam a 3.ª edição, em especial os capítulos 2 a 4 e 6 a 8.
 - Complementar: Raghu Ramakrishnan e Johannes Gehrke, _Database Management Systems_, ISBN 0-07-116898-2, capítulos 18 a 20.
+
+Como prática histórica adicional, foram consultadas as contribuições estudantis do Accio com as versões A e B do teste SQL de 11 de dezembro de 2023, que o documento identifica no Moodle de 2023/24, e as questões de álgebra e síntese de uma contribuição identificada como Exame 2022/23. Estas cópias incluem respostas de estudantes, algumas erradas, e não são resoluções docentes: as adaptações destas páginas têm dados próprios e soluções verificadas separadamente.
 
 Como apoio, foram consultadas as [apresentações abertas de André Restivo](https://github.com/arestivo/slides), o material SQL adicional do Moodle e a documentação dos motores: [SQLite](https://www.sqlite.org/docs.html), [isolamento em PostgreSQL](https://www.postgresql.org/docs/current/transaction-iso.html), [autorização em PostgreSQL](https://www.postgresql.org/docs/current/ddl-priv.html) e [consultas MongoDB](https://www.mongodb.com/docs/manual/crud/). Estas fontes completam a explicação e esclarecem diferenças entre sistemas; não substituem os materiais docentes.
 

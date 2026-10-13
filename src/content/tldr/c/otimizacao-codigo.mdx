@@ -1,0 +1,40 @@
+import Typst from '../../../components/Typst.astro';
+import otimizacao from '../../c/otimizacao.typ?raw';
+
+## Factos e ponto fixo
+
+A análise combina entradas/saídas dos blocos e repete até estabilizar. Na vivacidade, USE lê antes de definir e DEF guarda os destinos:
+
+```text
+OUT[B] = união de IN[S], para os sucessores S
+IN[B] = USE[B] ∪ (OUT[B] − DEF[B])
+```
+
+Propaga para trás, começando no vazio salvo observáveis na saída. Em x=x+1, o x antigo pertence a USE.
+
+Definições que alcançam propagam para a frente:
+
+```text
+IN[B] = união de OUT[P], para os antecessores P
+OUT[B] = GEN[B] ∪ (IN[B] − KILL[B])
+```
+
+GEN conserva definições até à saída; KILL remove as substituídas do mesmo nome. Um ciclo exige revisitar blocos. Uma constante só se propaga se os caminhos concordarem no valor; duas definições diferentes podem concordar.
+
+## Transformações e efeitos
+
+Propaga constantes, dobra operações constantes e só depois elimina definições que ficaram sem uso. Com locais, operações sem efeitos/exceções e só x observável, `t1=5; t2=t1+3; x=t2; y=10` reduz a x=8.
+
+<Typst
+  source={otimizacao}
+  format="svg"
+  alt="Bloco original, constantes propagadas e resultado x=8 após eliminar definições sem uso."
+/>
+
+Valor morto não implica operação dispensável: preserva chamadas, memória observável e exceções. Depura primeiro sem otimizações para distinguir erros de tradução e transformação.
+
+## Definição-uso e webs
+
+Liga d a u quando há um caminho sem redefinição desse nome. Agrupa ligações transitivas numa web. Uma redefinição posterior pode separar vidas do mesmo nome; definições de ramos que alcançam um uso comum ficam ligadas.
+
+Webs identificam valores; vivacidade identifica interferências; alocação escolhe armazenamento. Vidas separadas podem reutilizar registos. Contar definições ou webs não determina sozinho o número de cores. [Cálculos completos](/cadeiras/c/otimizacao-codigo/).

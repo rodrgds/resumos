@@ -22,6 +22,8 @@ Em `[1,3,3,3,8]`, os limites de 3 são 1 e 4: há `4-1=3` ocorrências. Parar nu
 
 Com iteradores apenas de avanço, comparações logarítmicas podem exigir avanços lineares; num `set`, usa `set.lower_bound`.
 
+Consultas «diferentes de `x`» devolvem `n-(upper-lower)`. Ausência dá `n`; não desreferencies fronteiras. Preparação e `q` consultas custam $O(n\log n+q\log(n+1))$ com comparações constantes. Com strings de comprimento até `M`, cada pesquisa pode custar $O(M\log(n+1))$.
+
 ## Pesquisa binária da resposta
 
 Exige predicado **falso antes da fronteira e verdadeiro a partir dela**.

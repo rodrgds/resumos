@@ -29,7 +29,7 @@ Num calendário mensal, zeros de `monthdayscalendar` são dias fora do mês. `it
 
 ## Conversão e agregação pandas
 
-- `pd.to_datetime(s, format="%d/%m/%Y", errors="coerce")` resolve a convenção dia-mês e transforma datas inválidas em `NaT`, sem as corrigir. Conta essas ausências antes de remover linhas.
+- `pd.to_datetime(s, format="%d/%m/%Y", errors="coerce")` resolve a convenção dia-mês e transforma datas inválidas em `NaT`, sem as corrigir. Conta essas ausências e conserva o valor das vendas excluídas do resumo temporal: remover uma data também remove a sua observação.
 - `.dt.year`, `.dt.month` e `.dt.dayofweek` extraem componentes; `.dt.strftime` devolve texto.
 - Depois de definir um índice temporal ordenado, `resample("D").sum(min_count=1)` agrega dias, conservando ausência nos intervalos sem valores conhecidos.
 - `rolling(3)` usa três observações, não necessariamente três dias. `date_range(..., freq="D")` cria dias; `Period(..., freq="M")` representa um mês inteiro.
@@ -46,3 +46,7 @@ Em Lisboa, a partir de 24/10/2026 às 16:00:
 | `pd.DateOffset(days=1)` | 16:00, UTC+0  | 25 horas        |
 
 Escolhe duração para medir tempo decorrido e incremento civil para manter a hora de um compromisso. Horas locais ambíguas ou inexistentes nas mudanças de hora exigem uma política própria.
+
+## Janela temporal
+
+`rolling(3, min_periods=3)` exige três valores conhecidos. `rolling("3D", min_periods=1, closed="right")` usa valores em `(instante - 3 dias, instante]`, num índice temporal ordenado. Para valores 2, 4 e 12 nos dias 1, 2 e 5, a última média é 6 por observações e 12 por tempo; o dia 2 está excluído da última janela temporal. Uma observação basta ao segundo cálculo, sem provar cobertura diária completa. [Comparação](/cadeiras/ct-iadp/datas-tempos/#janela-por-observações-ou-por-tempo).

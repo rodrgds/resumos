@@ -24,6 +24,8 @@ Transforma uma normal por $n'\propto(M_{3\times3}^{-1})^{\mathsf T}n$ quando a p
 
 Na projeção perspética, $x\prime=fx/(-z)$ e $y\prime=fy/(-z)$ com a câmara a olhar para $-z$ e $z<0$; na ortográfica, o tamanho não depende da profundidade. Vê [projeções](/cadeiras/cg/pipeline-visualizacao/#projeção-ortográfica-e-perspética).
 
+Para construir uma base de vista a partir de C, alvo A e subida u0, exige A≠C e subida não paralela à frente: $f=\operatorname{normalize}(A-C)$, $r=\operatorname{normalize}(f\times u_0)$, $u=r\times f$. As coordenadas são $(r\cdot(P-C),u\cdot(P-C),-f\cdot(P-C))$. Confere C na origem e A no eixo z negativo. Vê [base da câmara](/cadeiras/cg/transformacoes-geometricas/#construir-a-base-da-câmara).
+
 ## Iluminação, sombras e sombreamento
 
 No modelo **local** de Phong, uma forma útil por canal é $I=k_aI_a+f(d)I_l\{k_d\max(0,n\cdot l)+k_s\max(0,r\cdot v)^q\}$. Os vetores $n,l,r,v$ têm norma 1, $l$ aponta do ponto para a luz e $r=2(n\cdot l)n-l$ reflete a direção incidente. Inclui a componente especular apenas na face iluminada. $q$ maior concentra o brilho; $f(d)$ modela atenuação se a luz for pontual. A reflexão difusa depende de $n\cdot l$; a especular depende também do observador. Vê [modelo de Phong](/cadeiras/cg/iluminacao-sombreamento/#iluminação-local-de-phong) e [especularidade](/cadeiras/cg/iluminacao-sombreamento/#comparação-da-reflexão-especular).
@@ -32,15 +34,21 @@ No modelo **local** de Phong, uma forma útil por canal é $I=k_aI_a+f(d)I_l\{k_
 
 Iluminação **global** considera luz refletida ou transmitida por outras superfícies. No _ray tracing_, lança raios da câmara, escolhe a interseção visível mais próxima e pode gerar raios secundários para sombra, reflexão e refração; isto não torna automaticamente a luz difusa global. Em radiosidade, as trocas entre superfícies difusas são descritas por fatores de forma. Se usares Snell, $n_1\sin\theta_1=n_2\sin\theta_2$, com ângulos medidos face à normal e índices dos dois meios. Vê [distância e refração](/cadeiras/cg/iluminacao-sombreamento/#distância-e-refração).
 
+As radiosidades desconhecidas são resolvidas em simultâneo: $B_i=E_i+\rho_i\sum_jF_{ij}B_j$. Reciprocidade exige $A_iF_{ij}=A_jF_{ji}$, sem exigir Fij=Fji para áreas diferentes. Dois retalhos que devolvem luz um ao outro não ficam resolvidos por uma única reflexão. Vê [troca entre retalhos](/cadeiras/cg/iluminacao-sombreamento/#resolver-a-troca-entre-retalhos).
+
 ## Cor, texturas e visibilidade
 
 RGB combina luz por **adição**; CMY descreve componentes subtrativas numa aproximação de impressão. Matiz, saturação e valor são uma representação útil para editar cor, mas não substituem modelos físicos ou percetivos completos. A iluminação soma-se em RGB linear, depois de descodificar sRGB. Em filtragem bilinear, os centros dos texeis de uma dimensão $N$ estão em $(i+0{,}5)/N$: usa $uN-0{,}5$ para encontrar vizinhos e pesos. Uma textura 2D associa coordenadas $(u,v)$ à superfície; _bump mapping_ altera a normal usada na luz, **não** a geometria nem a silhueta. Filtragem e amostragem determinam o detalhe visível. Vê [cor](/cadeiras/cg/cor-texturas-visibilidade/#rgb-cmy-e-hsv) e [texturas](/cadeiras/cg/cor-texturas-visibilidade/#texturas).
 
 **Back-face culling** descarta faces orientadas para trás na convenção de orientação definida, mas não resolve ocultação entre faces frontais. Em espaço de imagem, o _z-buffer_ compara fragmentos por píxel; _ray casting_ procura a interseção mais próxima ao longo de um raio; métodos de ordenação ou subdivisão exigem hipóteses adicionais sobre os objetos. Transparência precisa de tratamento próprio: um teste de profundidade simples não compõe corretamente várias camadas transparentes. Vê [visibilidade](/cadeiras/cg/cor-texturas-visibilidade/#visibilidade).
 
+Para interpolação suave de um atributo a, usa pesos baricêntricos λ da imagem e w de recorte: $a(P)=(\sum_i\lambda_i a_i/w_i)/(\sum_i\lambda_i/w_i)$. w iguais e não nulos recuperam a interpolação direta. Interpolar UV na superfície precede a filtragem de texeis; a profundidade já em janela interpola-se linearmente por λ. Vê [correção pela perspetiva](/cadeiras/cg/cor-texturas-visibilidade/#interpolação-corrigida-pela-perspetiva).
+
 ## Malhas e sólidos
 
 Numa malha triangular, a normal geométrica é proporcional a $(p_1-p_0)\times(p_2-p_0)$; inverter a ordem dos vértices inverte a normal. Guardar conectividade permite encontrar faces e arestas vizinhas. Uma malha fechada não é necessariamente um sólido válido: verifica orientação consistente, interseções, fronteira e topologia. Para um poliedro convexo simples, $V-E+F=2$; a igualdade por si só não prova validade. Vê [estrutura da malha](/cadeiras/cg/modelacao-malhas/#vértices-índices-e-conectividade), [normal](/cadeiras/cg/modelacao-malhas/#normal-e-orientação-de-uma-face) e [sólidos](/cadeiras/cg/modelacao-malhas/#fronteira-de-um-sólido).
+
+Uma reflexão pode inverter a ordem projetada das faces: a escala diag(−1,1,1) troca a orientação de um triângulo no plano xy visto de +z. Inverter índices ou ajustar a convenção frontal pode conservar o lado pretendido; mudar só a normal do shader não altera culling. Vê [reflexão e orientação](/cadeiras/cg/modelacao-malhas/#reflexão-e-orientação-projetada).
 
 ## Curvas e superfícies
 

@@ -18,7 +18,7 @@ A precedência é $\neg$, $\land$, $\lor$, $\to$. A implicação associa à dire
 
 ## Atribuições e consequência
 
-Uma atribuição escolhe um valor para cada variável. Para $n$ variáveis distintas há $2^n$ atribuições, mesmo que ocorram repetidas.
+Uma atribuição escolhe um valor para cada variável. Para $n$ variáveis distintas há $2^n$ atribuições, mesmo que alguma se repita na fórmula.
 
 | Classificação | Atribuições em que é verdadeira |
 | ------------- | ------------------------------- |
@@ -30,6 +30,8 @@ Uma atribuição escolhe um valor para cada variável. Para $n$ variáveis disti
 $\Gamma\models\varphi$ exige que **toda atribuição que satisfaz todas as premissas** satisfaça a conclusão. Um contraexemplo torna todas as premissas verdadeiras e a conclusão falsa. Para $p\to q,q\models p$, serve $p=F,q=T$.
 
 Premissas insatisfazíveis implicam semanticamente qualquer conclusão. Para $\Gamma$ finito, testa a insatisfazibilidade de $(\bigwedge_{\psi\in\Gamma}\psi)\land\neg\varphi$.
+
+Se $\Gamma\models\theta$ e $\Gamma\subseteq\Sigma$, então $\Sigma\models\theta$: acrescentar premissas reduz as atribuições relevantes. Retirar premissas ou intersectar dois conjuntos que implicam $\theta$ pode perder a consequência. $\{p\}$ e $\{q\}$ implicam $p\lor q$, mas a sua interseção vazia não implica.
 
 ## Equivalências
 

@@ -8,9 +8,13 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import listenerHtml from '../../ltw/examples/listener-identidade.html?raw';
+import listenerJs from '../../ltw/examples/listener-identidade.js?raw';
 import WebPlayground from '../../../components/WebPlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import Mermaid from '../../../components/Mermaid.astro';
+import Dot from '../../../components/Dot.astro';
+import moverNo from '../../ltw/mover-no-dom.dot?raw';
 import propagacao from '../../ltw/propagacao-evento.mmd?raw';
 import arrays from '../../ltw/arrays.js?raw';
 import closures from '../../ltw/closures.js?raw';
@@ -55,7 +59,7 @@ Num teste booleano, `0`, `''`, `null`, `undefined`, `NaN` e `false` são falsos;
   code={arrays}
 />
 
-Segue os estados intermédios. Entrada: três livros com preços 18, 25 e 12. Após `filter` com limite 20: dois livros, Redes e SQL. Após `map` para títulos: `Redes, SQL`. O `reduce` com total inicial 0 soma 18 + 12 = 30. O array original conserva três entradas. Obténs `Redes, SQL`, `30` e `3`. Os objetos dentro de uma cópia superficial continuam partilhados; alterar `baratos[0].preco` também altera esse objeto em `livros`.
+Segue os estados intermédios: à entrada, três livros com preços 18, 25 e 12; após o `filter` com limite 20, dois livros, Redes e SQL; após o `map` para títulos, `Redes, SQL`. O `reduce` com total inicial 0 soma 18 + 12 = 30, e o array original conserva três entradas, por isso obténs `Redes, SQL`, `30` e `3`. Os objetos dentro de uma cópia superficial continuam partilhados; alterar `baratos[0].preco` também altera esse objeto em `livros`.
 
 Uma função é um valor que pode ser passado como callback. `livros.map((livro) => livro.titulo)` recebe uma função; escrever `map(obterTitulo())` chamaria `obterTitulo` imediatamente e passaria o resultado. Numa arrow function com corpo entre chavetas, usa `return` para devolver um valor.
 
@@ -147,7 +151,9 @@ Procura a propriedade por etapas. `titulo` pertence à instância, por isso enco
 
 `querySelector` devolve o primeiro elemento ou `null`; `querySelectorAll` devolve uma NodeList estática. `children` contém elementos; `childNodes` inclui também texto e comentários. Por isso, espaços e mudanças de linha podem alterar `childNodes` sem acrescentar elementos.
 
-Para percorrer elementos, usa `parentElement`, `firstElementChild` e `nextElementSibling`. `closest(seletor)` começa no próprio elemento e procura um antepassado correspondente. `classList` altera classes; `dataset.id` lê `data-id`. Uma propriedade como `input.value` representa o valor atual, que pode diferir do atributo inicial escrito no HTML. `children` é uma coleção viva: acompanha inserções e remoções. Uma NodeList de `querySelectorAll` conserva a seleção feita naquele momento. Para usar `map` numa NodeList, cria primeiro um array com `Array.from(nos)` ou `[...nos]`.
+Para percorrer elementos, usa `parentElement`, `firstElementChild` e `nextElementSibling`. `closest(seletor)` começa no próprio elemento e procura um antepassado correspondente. `classList` altera classes; `dataset.id` lê `data-id`. Uma propriedade como `input.value` representa o valor atual, que pode diferir do atributo inicial escrito no HTML.
+
+`children` é uma coleção viva: acompanha inserções e remoções. Uma NodeList de `querySelectorAll` conserva a seleção feita naquele momento. Para usar `map` numa NodeList, cria primeiro um array com `Array.from(nos)` ou `[...nos]`.
 
 ```js
 const item = document.createElement('li');
@@ -155,7 +161,21 @@ item.textContent = '<b>Redes</b>';
 lista.append(item);
 ```
 
-O utilizador vê o texto literal `<b>Redes</b>`. `innerHTML` interpretaria marcação. Para dados do utilizador, `textContent` evita misturar dados com HTML. Inserir um nó que já está no documento move-o para o novo pai, sem o copiar. `cloneNode(true)` cria outra árvore, mas não copia listeners registados com `addEventListener`; evita também duplicar IDs.
+O utilizador vê o texto literal `<b>Redes</b>`. `innerHTML` interpretaria marcação. Para dados do utilizador, `textContent` evita misturar dados com HTML.
+
+Inserir um nó existente move-o para o novo pai, sem o copiar:
+
+<Dot
+  source={moverNo}
+  alt="Antes, origem contém li Redes e destino está vazio. Depois de destino.append(item), origem fica vazia e destino contém o mesmo li Redes."
+/>
+
+| Operação                               | Nó em `origem` | Em `destino`                        | Listeners do item                           |
+| -------------------------------------- | -------------- | ----------------------------------- | ------------------------------------------- |
+| `destino.append(item)`                 | Retirado       | O mesmo objeto                      | Conservados                                 |
+| `destino.append(item.cloneNode(true))` | Permanece      | Outro objeto, descendentes copiados | A cópia não recebe os de `addEventListener` |
+
+Ao clonar, evita duplicar IDs. Os listeners dos antepassados não acompanham o nó: os eventos futuros propagam-se pela nova árvore.
 
 `append` acrescenta nós; `replaceChildren` substitui todos os filhos; `remove` retira o nó. Mudar `style` aplica declarações em linha; mudar uma classe permite manter o aspeto no CSS.
 
@@ -185,3 +205,28 @@ Um script clássico com `defer` executa depois da análise do documento e antes 
 `setTimeout(callback, atraso)` agenda um callback para não correr antes do atraso, mas não garante um instante exato. `setInterval` repete; usa `clearTimeout` ou `clearInterval` para cancelar. O JavaScript corrente termina antes dos callbacks agendados, tema que continuamos em [HTTP e Ajax](/cadeiras/ltw/http-ajax-json/#promessas-e-ordem-de-execução).
 
 Um `<template>` guarda conteúdo inerte em `template.content`, que podes clonar com `cloneNode(true)` e inserir depois de preencher dados com destinos seguros. Shadow DOM cria uma árvore encapsulada para um componente, separando grande parte dos estilos e estrutura do documento exterior. Não é uma fronteira de segurança para guardar segredos.
+
+## Guardar a função que foi registada
+
+`bind` cria uma função nova com um recetor fixo. Isso resolve o `this` de um método passado como listener, mas duas chamadas a `bind` não devolvem o mesmo objeto função:
+
+```js
+const callback = leitor.contar.bind(leitor);
+botao.addEventListener('click', callback);
+// Outra função, mesmo com o mesmo método e recetor:
+botao.removeEventListener('click', leitor.contar.bind(leitor));
+```
+
+A remoção acima não encontra a função registada. Guarda o callback e passa essa mesma referência:
+
+```js
+botao.removeEventListener('click', callback);
+```
+
+O tipo de evento e a opção de captura também precisam de coincidir. Um listener registado com captura `true` não é o mesmo registo que um com captura `false`; não confundas esta opção com impedir propagação. Uma arrow criada novamente também seria outra função, mesmo tendo o mesmo corpo.
+
+<WebPlayground html={listenerHtml} js={listenerJs} />
+
+Carrega em Contar leitura: a contagem passa a 1. Pede a remoção com outro `bind` e conta de novo: passa a 2, porque o listener continua presente. Depois remove o callback guardado e tenta contar: fica em 2. O método continua a pertencer ao objeto leitor; foi o registo do listener que deixou de chamar a função.
+
+Esta identidade também permite evitar duplicados: voltar a adicionar a mesma combinação de evento, callback e captura não cria outra chamada para o mesmo evento. Criar outro `bind` e registá-lo acrescentaria um segundo callback distinto. Decide quando criar a função e conserva-a durante o período em que precisas de a remover.

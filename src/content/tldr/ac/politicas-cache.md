@@ -28,6 +28,18 @@ $$CPI=CPI_{\rm base}+m_Ip_I+r\,m_Dp_D.$$
 - Base 1,2, faltas I 1%, D 4%, $r=0{,}30$ e penalidades 80 ciclos dão $CPI=2{,}96$.
 - Cache unificada tem $1+r$ acessos por instrução neste modelo: espera $(1+r)mp$. Vítimas dirty podem acrescentar custo ponderado pela sua frequência.
 
+## Inverter a medida
+
+Cache unificada, uma obtenção e no máximo um acesso a dados por instrução, sem sobreposição:
+
+$$r=\frac{CPI_{\rm espera}}{mp}-1.$$
+
+$r$ é a fração de loads/stores, $m$ a taxa por acesso e $p$ a penalidade adicional em ciclos. Usa **esperas**, não o CPI total. A 2 GHz, 50 ns são 100 ciclos; com m=9% e 12 ciclos de espera, r=1/3. O modelo exige $0\le r\le1$; 8 ciclos seriam incompatíveis, pois só a obtenção já custa 9.
+
+Se acertos são nove vezes as faltas, $h=9m$ e $h+m=1$: m=10%, não 1/9.
+
+[Mistura e denominadores](/cadeiras/ac/politicas-cache/#recuperar-a-mistura-a-partir-das-esperas).
+
 ## Dois níveis
 
 $$
@@ -41,3 +53,12 @@ $$
 - Converte ns em ciclos pela frequência antes de calcular CPI. Não contes duas vezes a procura inicial nem a mesma penalidade.
 
 [Traço de escritas e níveis de cache](/cadeiras/ac/politicas-cache/).
+
+## Tráfego de escritas entre níveis
+
+- WB envia modificações na descarga de vítimas dirty, não em cada escrita. Taxas de faltas não revelam quantas vítimas são dirty; define também se há flush final.
+- Uma descarga L1 WB que acerta em L2 WT **ainda escreve na RAM**. Conta carregamentos e descargas separadamente.
+- L1 com uma linha de 16 B, L2 com quatro linhas iguais, inicialmente vazias: E0=7 e E64=9, escritas parciais com leitura prévia, descargas completas e sem flush, dão duas leituras e uma escrita na RAM. RAM fica 7 em 0 e 0 em 64; L1 tem 9 em 64, dirty.
+- $m_1m_{2,l}$ conta faltas de leitura nos dois níveis com os denominadores indicados; não determina automaticamente tráfego WB/WT.
+
+[Traço completo entre caches e RAM](/cadeiras/ac/politicas-cache/#tráfego-entre-níveis-com-write-back).

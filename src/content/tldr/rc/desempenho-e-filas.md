@@ -34,10 +34,14 @@ Em M/M/1, $p_n=(1-\rho)\rho^n$; o servidor está ocupado uma fração $\rho$ do 
 
 $$T_q=\frac{\rho}{2\mu(1-\rho)},\qquad T=T_q+1/\mu.$$
 
-Com $\mu=125$ e $\lambda=100$ pacotes/s, carga 0,8: M/M/1 dá 32 ms de fila e 40 ms no sistema; M/D/1 dá 16 e 24 ms. A variabilidade do serviço altera a espera.
+Em M/M/1 estável, sistema vazio tem probabilidade $p_0=1-\rho$; **nenhum pacote em espera** permite serviço em curso, logo $P(N_q=0)=p_0+p_1=1-\rho^2$. Com carga 0,8, dão 20% e 36%, respetivamente.
+
+Com serviço constante e agregado periódico de intervalo maior que o serviço, partindo vazio, não há espera nem perdas. Fontes individualmente periódicas podem chegar juntas: a mesma taxa média agregada não garante essa conclusão nem autoriza fórmulas Poisson.
+
+Com $\mu=125$ e $\lambda=100$ pacotes/s, carga 0,8, M/M/1 dá 32 ms de fila e 40 ms no sistema, enquanto M/D/1 dá 16 e 24 ms; a variabilidade do serviço altera a espera.
 
 Escalar ambas as taxas pelo mesmo fator mantém carga e números médios, mas divide os tempos pelo fator. Aproximar $\lambda$ de $\mu$ faz divergir as médias dos modelos ilimitados.
 
-Duas fontes Poisson independentes de 40 pacotes/s, com pacotes exponenciais de média 1000 bytes, numa ligação comum de 1 Mbit/s dão $T=22,22$ ms. Reservar 0,5 Mbit/s a cada fonte dá 44,44 ms por fila, à mesma carga 0,64: a capacidade reservada fica indisponível para a outra fonte.
+Duas fontes Poisson independentes de 40 pacotes/s, com pacotes exponenciais de média 1000 bytes, numa ligação comum de 1 Mbit/s dão $T=22,22$ ms. Reservar 0,5 Mbit/s a cada fonte dá 44,44 ms por fila à mesma carga 0,64, pois a capacidade reservada fica indisponível para a outra fonte.
 
 [Hipóteses e dedução das médias](/cadeiras/rc/desempenho-e-filas/#mm1-hipóteses-e-fórmulas).

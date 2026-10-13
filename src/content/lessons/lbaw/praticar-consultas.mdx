@@ -190,3 +190,48 @@ e 3.
 
   </div>
 </Exercise>
+
+<Exercise
+  id="agregar-duas-relacoes"
+  revision={1}
+  title="Encontrar a receita que a junção duplicou"
+  explanation="/cadeiras/lbaw/consultas-relacionais/#duas-relações-podem-multiplicar-a-mesma-venda"
+  answer={{ kind: 'self', checklist: ['Obtenho seis ocorrências e receita 56 na junção errada de S1.', 'Explico por que SUM DISTINCT daria 20 em vez de 28.', 'Agrego bilhetes e etiquetas separadamente e conservo as três sessões.'] }}
+>
+  <div>
+
+Há sessões 1, 2 e 3. S1 tem três bilhetes pagos, de 8, 8 e 12 euros, e duas etiquetas. S2 não tem bilhetes e tem uma etiqueta. S3 tem um bilhete pago de 5 euros e nenhuma etiqueta. As etiquetas de cada sessão são distintas.
+
+Uma consulta faz LEFT JOIN das sessões aos bilhetes pagos e outro LEFT JOIN às etiquetas; depois agrupa por sessão e calcula `COUNT(b.id)` e `SUM(b.preco)`. Que quantidade e receita obtém para S1? `SUM(DISTINCT b.preco)` corrige a receita? Escreve a consulta que devolve uma linha por sessão com pagos, receita e quantidade de etiquetas. Usa `bilhetes(id, sessao_id, preco, estado)` e `etiquetas(sessao_id, nome)`.
+
+  </div>
+  <div slot="hint">
+
+Antes de somar, conta as combinações de cada bilhete com as etiquetas.
+
+  </div>
+  <div slot="solution">
+
+Cada um dos três bilhetes aparece duas vezes. A consulta obtém seis ocorrências e `2 × (8+8+12) = 56` euros. `SUM(DISTINCT b.preco)` soma apenas 8 e 12: dá 20 e elimina uma compra legítima. A receita certa é 28.
+
+```sql
+WITH pagos AS (
+  SELECT sessao_id, COUNT(*) AS quantidade, SUM(preco) AS receita
+  FROM bilhetes WHERE estado = 'pago' GROUP BY sessao_id
+), tags AS (
+  SELECT sessao_id, COUNT(*) AS quantidade
+  FROM etiquetas GROUP BY sessao_id
+)
+SELECT s.id, COALESCE(p.quantidade,0) AS pagos,
+       COALESCE(p.receita,0) AS receita,
+       COALESCE(t.quantidade,0) AS etiquetas
+FROM sessoes s
+LEFT JOIN pagos p ON p.sessao_id = s.id
+LEFT JOIN tags t ON t.sessao_id = s.id
+ORDER BY s.id;
+```
+
+Os resultados `(id, pagos, receita, etiquetas)` são `(1,3,28,2)`, `(2,0,0,1)` e `(3,1,5,0)`. Cada CTE tem no máximo uma linha por sessão. As junções exteriores preservam S2 e S3; o zero é a interpretação da ausência adotada por este relatório.
+
+  </div>
+</Exercise>

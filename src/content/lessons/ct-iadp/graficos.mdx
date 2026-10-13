@@ -16,8 +16,12 @@ editorial:
       url: https://matplotlib.org/stable/tutorials/pyplot.html
     - title: pandas, tutoriais introdutórios
       url: https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html
+    - title: Matplotlib, caixa de bigodes e posição das observações
+      url: https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.boxplot.html
   coverage: Escolher barras, linhas, histogramas e dispersão, com eixos, unidades e comparação correta.
 ---
+
+import caixaVendas from '../../ct-iadp/examples/caixa-vendas.py?raw';
 
 import Typst from '../../../components/Typst.astro';
 import unidadesCidade from '../../ct-iadp/unidades-cidade.typ?raw';
@@ -25,7 +29,7 @@ import unidadesCidade from '../../ct-iadp/unidades-cidade.typ?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import vendasCsv from '../../ct-iadp/vendas.csv?raw';
 
-Braga vendeu 9 unidades e Porto 5. Uma comparação por cidade pede barras; uma evolução diária pede datas ordenadas. Antes de desenhar, identifica o que representa cada ponto ou barra e a operação que produziu os valores.
+Braga vendeu 9 unidades e Porto 5. Uma comparação por cidade pede barras, enquanto uma evolução diária pede datas ordenadas. Antes de desenhar, identifica o que representa cada ponto ou barra e a operação que produziu os valores.
 
 ## Tipos de gráficos
 
@@ -37,7 +41,7 @@ Braga vendeu 9 unidades e Porto 5. Uma comparação por cidade pede barras; uma 
 | Quantidade e total estão relacionados? | Dispersão        | Um ponto por observação                   |
 | Como varia a quantidade por cidade?    | Caixa de bigodes | Mediana e dispersão, conforme a convenção |
 
-Num gráfico de barras, cada barra representa uma categoria. Num histograma, cada barra representa um intervalo de valores. Mudar os intervalos pode mudar a impressão da distribuição, por isso indica como os escolheste.
+Num gráfico de barras, cada barra representa uma categoria, enquanto num histograma cada barra representa um intervalo de valores. Mudar os intervalos pode mudar a impressão da distribuição, por isso indica como os escolheste.
 
 ## Figura e eixos
 
@@ -64,7 +68,7 @@ O gráfico estático usa o zero como origem para que os comprimentos sejam propo
 
 ## Linhas e intervalos
 
-Ordena as datas antes de desenhar uma linha. Uma linha liga pontos e sugere uma evolução entre eles; não transformes categorias sem ordem numa curva.
+Ordena as datas antes de desenhar uma linha. Uma linha liga pontos e sugere uma evolução entre eles, por isso não transformes categorias sem ordem numa curva.
 
 ```python
 fig, ax = plt.subplots()
@@ -94,7 +98,7 @@ ax.set_xlabel("Quantidade")
 ax.set_ylabel("Total, euros")
 ```
 
-`scatter` põe um ponto por venda. Uma associação entre duas variáveis não prova uma causa. Se total é quantidade vezes preço, parte da associação vem da própria definição.
+`scatter` põe um ponto por venda. Uma associação entre duas variáveis não prova uma causa, e se total é quantidade vezes preço, parte da associação vem da própria definição.
 
 ## Vários gráficos e exportação
 
@@ -104,7 +108,7 @@ ax.set_ylabel("Total, euros")
 
 ## Gráficos de pandas
 
-Uma Series ou DataFrame tem métodos `.plot` que usam normalmente Matplotlib. Para a Series `totais`, `totais.plot.bar()` desenha uma barra por cidade. `df.plot(x="data", y="total")` escolhe as colunas dos dois eixos. O objeto devolvido é um `Axes`, que podes usar para rótulos e unidades.
+Uma Series ou DataFrame tem métodos `.plot` que usam normalmente Matplotlib. Para a Series `totais`, `totais.plot.bar()` desenha uma barra por cidade, enquanto `df.plot(x="data", y="total")` escolhe as colunas dos dois eixos. O objeto devolvido é um `Axes`, que podes usar para rótulos e unidades.
 
 | Método                                    | Resultado                       | Condição de leitura                            |
 | ----------------------------------------- | ------------------------------- | ---------------------------------------------- |
@@ -117,11 +121,34 @@ Uma Series ou DataFrame tem métodos `.plot` que usam normalmente Matplotlib. Pa
 | `.plot.pie()`                             | Frações de um total             | Usa valores não negativos e um total positivo  |
 | `.plot.kde()`                             | Densidade estimada              | Exige SciPy e depende do alisamento            |
 
-Num gráfico empilhado, o topo da última série representa a soma das componentes. Para comparar uma componente entre categorias, a posição sem origem comum pode dificultar a leitura; barras lado a lado podem ser mais adequadas.
+Num gráfico empilhado, o topo da última série representa a soma das componentes. Para comparar uma componente entre categorias, a posição sem origem comum pode dificultar a leitura, por isso barras lado a lado podem ser mais adequadas.
 
 Na caixa de bigodes habitual de Matplotlib, a caixa vai do primeiro ao terceiro quartil e a linha interior marca a mediana. Os bigodes alcançam observações dentro de 1,5 vezes a amplitude interquartil para além da caixa. Pontos exteriores são observações fora desses limites, não necessariamente erros. Confere a convenção do exercício.
 
 Uma estimativa KDE desenha uma densidade suave a partir das observações. A altura não é uma contagem e a probabilidade corresponde a uma área sob a curva. A escolha da largura de banda muda o alisamento. Com poucas observações, não interpretes cada pico como um grupo real.
+
+## Ler uma caixa de bigodes
+
+As nove vendas têm quantidades `2, 3, 3, 4, 4, 5, 5, 6, 20`, já ordenadas. Com interpolação linear, Q1 é 3, a mediana é 4 e Q3 é 5. A **amplitude interquartil** é `5 - 3 = 2` unidades por venda. É a largura numérica da caixa, não a distância entre mínimo e máximo.
+
+Para `whis=1.5`, calculamos os limites `3 - 1,5 × 2 = 0` e `5 + 1,5 × 2 = 8`. Os bigodes terminam nas observações mais extremas dentro desses limites: 2 e 6. Não terminam em 0 e 8, porque esses valores não foram observados.
+
+| Parte do gráfico | Valor, unidades por venda |
+| ---------------- | ------------------------- |
+| Bigode inferior  | 2                         |
+| Q1               | 3                         |
+| Mediana          | 4                         |
+| Q3               | 5                         |
+| Bigode superior  | 6                         |
+| Ponto exterior   | 20                        |
+
+<CodePlayground
+  language="python"
+  title="Conferir a caixa e os bigodes"
+  code={caixaVendas}
+/>
+
+O ponto 20 é uma venda fora dos limites desta convenção. Pode ser uma compra grande válida: o gráfico não demonstra um erro de recolha e não autoriza apagá-la. Para conferir a sua influência, a média das nove vendas é `52/9`, cerca de 5,78; sem essa venda seria `32/8 = 4`. As duas médias descrevem conjuntos diferentes. Mantém a observação até existir uma razão independente para a corrigir ou excluir.
 
 ## Acumular e desenhar uma janela móvel
 
@@ -138,7 +165,7 @@ print(valores.rolling(3).mean().to_list())
 
 As duas primeiras posições ficam em falta porque a janela ainda não está cheia. O mesmo acontece com a janela de 20 de vinte observações: as primeiras 19 posições ficam em falta por defeito.
 
-`cumsum()` substitui cada posição pela soma até essa posição. Se os valores forem 2, 3 e 4, o resultado acumulado é 2, 5 e 9. Nos exemplos com valores aleatórios dos notebooks, isto transforma incrementos numa trajetória acumulada. Não são vendas medidas.
+`cumsum()` substitui cada posição pela soma até essa posição. Se os valores forem 2, 3 e 4, o resultado acumulado é 2, 5 e 9. Nos exemplos com valores aleatórios dos notebooks, isto transforma incrementos numa trajetória acumulada, sem serem vendas medidas.
 
 Uma semente torna a sequência aleatória reproduzível no mesmo gerador. `rng = np.random.default_rng(123456)` cria um gerador explícito; os seus resultados não precisam de coincidir com os de `np.random.seed`, que usa outra interface. Uma distribuição uniforme de `random` e uma normal de `standard_normal` também representam hipóteses diferentes.
 
@@ -155,4 +182,4 @@ ax.fill_between(
 )
 ```
 
-Com a janela inteira exigida por defeito, os primeiros 19 resultados da média de 20 observações ficam em falta. A banda entre média e dois desvios de cada lado descreve dispersão local; não é automaticamente um intervalo de confiança para a média nem uma previsão garantida.
+Com a janela inteira exigida por defeito, os primeiros 19 resultados da média de 20 observações ficam em falta. A banda entre média e dois desvios de cada lado descreve dispersão local, sem ser automaticamente um intervalo de confiança para a média nem uma previsão garantida.

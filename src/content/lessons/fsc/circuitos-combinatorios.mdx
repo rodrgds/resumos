@@ -11,9 +11,11 @@ Um multiplexador escolhe um dado, um descodificador ativa uma linha e um somador
 
 ## Multiplexador e descodificador
 
-Um multiplexador 2:1 seleciona $I_0$ quando $S=0$ e $I_1$ quando $S=1$:
+Um multiplexador 2:1 seleciona $I_0$ quando $S=0$ e $I_1$ quando $S=1$, com
 
-$$Y=\overline S I_0+S I_1.$$
+$$Y=\overline S I_0+S I_1,$$
+
+onde o primeiro termo cobre $S=0$ e o segundo cobre $S=1$:
 
 import Dot from '../../../components/Dot.astro';
 import mux from '../../fsc/mux21.dot?raw';
@@ -23,15 +25,15 @@ import mux from '../../fsc/mux21.dot?raw';
   alt="MUX 2:1: S negado e I0 entram numa AND; S e I1 noutra; uma OR combina as saídas."
 />
 
-Um MUX com $2^k$ entradas precisa de $k$ bits de seleção. Se os dados forem palavras de 32 bits, há 32 seleções paralelas com os mesmos bits de seleção. Um MUX 8:1 de palavras precisa de 3 bits de seleção, não de 32.
+Um MUX com $2^k$ entradas precisa de $k$ bits de seleção. Se os dados forem palavras de 32 bits, há 32 seleções paralelas com os mesmos bits de seleção, por isso um MUX 8:1 de palavras precisa de 3 bits de seleção, não de 32.
 
-Um descodificador de $k$ entradas ativa uma entre $2^k$ saídas. Num 2:4 ativo a 1, $D_0=\overline A\overline B$, $D_1=\overline AB$, $D_2=A\overline B$ e $D_3=AB$. Um enable $E$ multiplica estas expressões. $E=0$ desativa todas as saídas; $E=1$ permite a seleção normal. Aqui $A$ é o bit mais significativo da seleção. Se as saídas forem ativas a 0, a linha selecionada fica 0 e as restantes 1.
+Um descodificador de $k$ entradas ativa uma entre $2^k$ saídas. Num 2:4 ativo a 1, $D_0=\overline A\overline B$, $D_1=\overline AB$, $D_2=A\overline B$ e $D_3=AB$; um enable $E$ multiplica estas expressões, com $E=0$ a desativar todas as saídas e $E=1$ a permitir a seleção normal. Aqui $A$ é o bit mais significativo da seleção; se as saídas forem ativas a 0, a linha selecionada fica 0 e as restantes 1.
 
 Um demultiplexador encaminha um dado para a saída selecionada; pode ser construído aplicando o dado ao enable de um descodificador. Um codificador faz a operação inversa de indicar o índice de uma entrada ativa. Se várias entradas puderem estar ativas, define prioridade e um sinal `valid`: o código `00` sozinho não distingue a entrada 0 ativa de nenhuma entrada ativa.
 
 ## Implementar uma função por seleção
 
-Para $F=\Sigma m(1,3,5,6,7)$, usa um MUX 4:1 com seleção $AB$. Nas quatro combinações de $AB$, a saída em função de $C$ é:
+Para $F=\Sigma m(1,3,5,6,7)$, usa um MUX 4:1 com seleção $AB$. Nas quatro combinações de $AB$, a saída em função de $C$ é a seguinte:
 
 | $AB$ | $F$ se $C=0$ | $F$ se $C=1$ | Entrada do MUX |
 | ---- | ------------ | ------------ | -------------- |
@@ -48,15 +50,17 @@ Para construir um MUX 4:1 com MUX 2:1, usa $S_0$ no primeiro nível e $S_1$ no s
 
 A igualdade entre palavras é o AND das igualdades bit a bit: $Eq=\prod_i\overline{A_i\oplus B_i}$. Para a ordem sem sinal, o primeiro bit diferente a partir do MSB decide.
 
-Em duas partes, alta $H$ e baixa $L$, temos
+Em duas partes, alta $H$ e baixa $L$, com
 
-$$A>B=(A_H>B_H)+Eq_H(A_L>B_L).$$
+$$A>B=(A_H>B_H)+Eq_H(A_L>B_L),$$
+
+onde a parte baixa só decide quando as partes altas são iguais.
 
 Por exemplo, `1010` é maior que `1001`: as partes altas `10` são iguais, então comparamos `10` com `01`. Num comparador com sinal, começa por distinguir os sinais, porque dois códigos com sinais diferentes não seguem a ordem sem sinal.
 
 ## Somador completo
 
-Um meio somador calcula $S=A\oplus B$ e $C=AB$. Um somador completo recebe ainda o carry $C_i$:
+Um meio somador calcula $S=A\oplus B$ e $C=AB$. Um somador completo recebe ainda o carry $C_i$, com
 
 $$S=A\oplus B\oplus C_i,\qquad C_{i+1}=AB+AC_i+BC_i.$$
 
@@ -71,7 +75,7 @@ $$S=A\oplus B\oplus C_i,\qquad C_{i+1}=AB+AC_i+BC_i.$$
 | 110     | 0   | 1         |
 | 111     | 1   | 1         |
 
-Ligando o carry de cada posição à seguinte construímos um somador ripple-carry. Para $1011+0110$, com carry inicial 0, seguimos do LSB para o MSB:
+Ligando o carry de cada posição à seguinte construímos um somador ripple-carry. Para $1011+0110$, com carry inicial 0, seguimos do LSB para o MSB na tabela seguinte:
 
 | Posição | $A_i$ | $B_i$ | Carry de entrada | Soma | Carry de saída |
 | ------- | ----- | ----- | ---------------- | ---- | -------------- |
@@ -80,11 +84,11 @@ Ligando o carry de cada posição à seguinte construímos um somador ripple-car
 | 2       | 0     | 1     | 1                | 0    | 1              |
 | 3       | 1     | 0     | 1                | 0    | 1              |
 
-Lê os bits de soma em ordem inversa à das linhas: `0001`. Acrescentando o carry final à esquerda, o resultado completo é `10001`, ou 17. Cada carry de saída alimenta a linha seguinte, por isso o atraso pode acumular-se ao longo da palavra.
+Lê os bits de soma em ordem inversa à das linhas: `0001`. Acrescentando o carry final à esquerda, o resultado completo é `10001`, ou 17; cada carry de saída alimenta a linha seguinte, por isso o atraso pode acumular-se ao longo da palavra.
 
 ## Somar, subtrair e acelerar
 
-Um controlo $M$ permite usar o mesmo somador: aplica $B_i\oplus M$ a cada entrada e usa $C_0=M$. Com $M=0$, calcula $A+B$; com $M=1$, calcula $A+\overline B+1=A-B$.
+Um controlo $M$ permite usar o mesmo somador: aplica $B_i\oplus M$ a cada entrada e usa $C_0=M$. Com $M=0$, calcula $A+B$, e com $M=1$, calcula $A+\overline B+1=A-B$.
 
 No ripple-carry, o caminho crítico pode atravessar todos os carries. Definindo $G_i=A_iB_i$ e $P_i=A_i\oplus B_i$, temos $C_{i+1}=G_i+P_iC_i$. Expandir estas equações permite calcular carries em paralelo, com mais lógica. O ganho depende do circuito e dos atrasos, não apenas do número de portas.
 

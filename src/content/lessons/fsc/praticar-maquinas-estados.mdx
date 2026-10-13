@@ -3,6 +3,10 @@ title: 'Praticar: FSM e controladores'
 description: 'Exercícios originais com pistas e resolução.'
 section: exercicios
 order: 0
+editorial:
+  sources:
+    - title: 'Recurso global, 1 de fevereiro de 2024, questão 24'
+      url: 'https://moodle2425.up.pt/mod/resource/view.php?id=131749'
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -142,11 +146,11 @@ Comparar apenas a saída atual não prova equivalência de estados, porque dois 
 </Exercise>
 
 <Exercise
-  revision={1}
+  revision={2}
   id="fsc-fsm-handshake"
   title="Dados recebidos antes de mudar"
   explanation="/cadeiras/fsc/maquinas-estados/#minimização-e-comunicação"
-  answer={{"kind": "self", "checklist": ["Sequência valid1, ack1, valid0, ack0.", "Mantém os dados até à aceitação."]}}
+  answer={{"kind": "self", "checklist": ["Sequência valid1, ack1, valid0, ack0.", "Mantém os dados até ack voltar a 0, conforme o protocolo da lição."]}}
 >
 
 Num handshake valid/ack de quatro fases, o emissor pode mudar os dados assim que põe valid=1? Dá a sequência correta.
@@ -165,7 +169,7 @@ O recetor confirma a aceitação com ack.
 
   <div slot="solution">
 
-O emissor prepara dados e ativa valid, conservando os dados até observar ack=1. Depois baixa valid; o recetor baixa ack; só então pode iniciar a transferência seguinte segundo este protocolo. Mudar antes de ack pode fazer o recetor aceitar outra palavra. Um impulso curto sem confirmação pode perder-se.
+O emissor prepara dados e ativa valid. O recetor aceita-os e sobe ack; o emissor observa ack=1 e baixa valid; o recetor observa valid=0 e baixa ack. Neste protocolo, os dados ficam estáveis durante toda a confirmação, até ack voltar a 0. Só então pode prepará-los para a transferência seguinte. Mudar antes de ack pode fazer o recetor aceitar outra palavra. Um impulso curto sem confirmação pode perder-se.
 
   </div>
 
@@ -251,4 +255,39 @@ Pôr tudo a 0 não é R0 válido.
 
   </div>
 
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="fsc-fsm-soma-modulos"
+  title="O último endereço e o maior módulo"
+  explanation="/cadeiras/fsc/maquinas-estados/#controlar-uma-soma-em-memória"
+  answer={{kind: 'self', checklist: ['Dimensionei contador de 6 bits e acumulador unsigned de 38 bits.', 'Tratei o módulo de −2^31 como magnitude unsigned e alarguei com zeros.', 'Somei 64 posições depois do flanco de inicialização e parei depois da posição 63.']}}
+>
+
+Uma memória de leitura combinatória contém 64 words de 32 bits em complemento para dois. Os dados não mudam durante a operação e todos os caminhos estabilizam antes do flanco seguinte. Projeta um datapath com um único somador e um controlador Moore para somar os módulos de todos os valores, sem overflow.
+
+Indica as larguras do endereço, do bloco de módulo e do acumulador, incluindo o pior caso. Define o flanco de arranque, a atualização no último endereço e quando done fica ativo. Reset prepara outra operação; start não inicia nova operação no estado Concluído. O que teria de mudar se a memória só entregasse o dado um ciclo depois de receber o endereço?
+
+  <div slot="hint">
+
+O menor negativo de 32 bits não tem simétrico positivo na mesma representação. Separa a magnitude sem sinal da interpretação C2.
+
+  </div>
+  <div slot="solution">
+
+O contador tem 6 bits. O bloco de módulo conserva o dado positivo ou calcula o complemento para dois se for negativo, produzindo uma magnitude sem sinal de 32 bits. O módulo de $-2^{31}$ é $2^{31}$, código `0x80000000`, que é válido nessa interpretação. Alarga a magnitude com zeros para a entrada do somador.
+
+O máximo da soma é $64\times2^{31}=2^{37}$. Precisas de 38 bits **sem sinal**, porque o máximo de 37 bits é $2^{37}-1$. O somador e o acumulador têm 38 bits; um resultado com sinal exigiria mais um bit.
+
+Em Espera, os controlos inicializam S=0 e i=0 em cada flanco; start=1 decide a passagem para Soma. Cada flanco em Soma captura S mais o módulo do dado no endereço antigo e incrementa i. Se o i antigo for 63, acrescenta essa última word, o contador volta a 0 e a máquina entra em Concluído. São 64 flancos de soma depois do arranque. done é 1 só em Concluído e o acumulador fica desabilitado nesse estado. Reset volta a Espera.
+
+Com memória síncrona de latência de um ciclo, não podes consumir no mesmo ciclo o dado do endereço acabado de lançar. Acrescenta uma fase de pedido e outra de consumo, ou registos que conservem o endereço e a validade do dado. O novo traço tem de respeitar essa latência; não se mantém automaticamente o custo de 64 ciclos.
+
+  </div>
+  <div slot="mistakes">
+
+O estado seguinte é decidido pelo i antigo. Se esperares por mais um flanco para sair quando i já for 0, voltas a somar a primeira posição. Testar i=63 não deve impedir a soma da própria posição 63.
+
+  </div>
 </Exercise>

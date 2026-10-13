@@ -1,0 +1,60 @@
+import Typst from '../../../components/Typst.astro';
+import bezier from '../../lessons/cg/bezier.typ?raw';
+import Retalhos from '../../cg/Retalhos.astro';
+
+## Bézier cúbica e avaliação
+
+Quatro controlos $P_0,\ldots,P_3$ definem uma curva em $t\in[0,1]$. Interpola os extremos, mas não necessariamente os controlos interiores. Mover P1 influencia todo o interior do intervalo.
+
+De Casteljau interpola **vizinhos** por $(1-t)A+tB$, com o mesmo t em todas as rondas: quatro pontos, três, dois, um. Para $(0,0),(1,2),(3,2),(4,0)$ em $t=1/2$:
+
+| Ronda   | Pontos                  |
+| ------- | ----------------------- |
+| Q       | $(1/2,1),(2,2),(7/2,1)$ |
+| R       | $(5/4,3/2),(11/4,3/2)$  |
+| Final S | $(2,3/2)$               |
+
+<Typst
+  source={bezier}
+  format="svg"
+  alt="Controlos P, rondas Q e R, e ponto S. Cada ronda interpola vizinhos e reduz o número de pontos."
+/>
+
+As duas metades subdivididas usam $P_0,Q_0,R_0,S$ e $S,R_1,Q_2,P_3$.
+
+$$
+P(t)=(1-t)^3P_0+3(1-t)^2tP_1+3(1-t)t^2P_2+t^3P_3.
+$$
+
+Em t=1/2, os pesos são 1/8, 3/8, 3/8 e 1/8. Mover P1 por Δ desloca a curva por $3(1-t)^2t\,\Delta$, sem mudar os extremos.
+
+## Tangentes e Hermite
+
+$$
+P'(0)=3(P_1-P_0),\qquad P'(1)=3(P_3-P_2).
+$$
+
+Para juntar com Q, com a mesma escala de parâmetros: C0 exige $P_3=Q_0$; C1 exige também $P_3-P_2=Q_1-Q_0$. G1 conserva direção e sentido das tangentes regulares, podendo mudar o módulo. Derivadas $(3,0)$ e $(6,0)$ dão G1, mas não C1.
+
+Hermite especifica extremos A,B e derivadas a,b. A Bézier equivalente tem controlos $A,A+a/3,B-b/3,B$. A base de Hermite é:
+
+$$
+H(t)=(2t^3-3t^2+1)A+(-2t^3+3t^2)B+(t^3-2t^2+t)a+(t^3-t^2)b.
+$$
+
+## Retalhos bicúbicos
+
+Uma grelha de 4×4 controlos define S(u,v). Avalia as quatro filas em u, depois os quatro resultados em v. Para $P_{ij}=(i,j,0)$, obténs $(3u,3v,0)$, e no meio $(3/2,3/2,0)$. A grelha de controlo não é, em geral, uma malha sobre a superfície.
+
+Na junção u=1 de P com u=0 de Q, usando o mesmo v, condições suficientes são:
+
+$$
+P_{3j}=Q_{0j}\quad(C^0),\qquad
+P_{3j}-P_{2j}=Q_{1j}-Q_{0j}\quad(C^1),
+$$
+
+para todos os j, com a mesma escala paramétrica. Fronteira comum não garante derivadas iguais.
+
+<Retalhos />
+
+B-splines dão influência local dependente do grau e dos nós; repetir nós pode reduzir continuidade. NURBS acrescentam pesos racionais e podem representar arcos exatamente. Para rasterizar, amostra ou subdivide a superfície numa malha. [Contas completas](/cadeiras/cg/curvas-superficies/#avaliação-por-de-casteljau).

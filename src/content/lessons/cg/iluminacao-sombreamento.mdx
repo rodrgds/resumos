@@ -9,9 +9,16 @@ order: 5
 ---
 
 import Typst from '../../../components/Typst.astro';
+import Bracket from '../../../components/Bracket.astro';
 import phong from './phong-vetores.typ?raw';
 
-Uma esfera branca pode ter uma zona escura e um brilho perto da direção de reflexão da luz. A **iluminação** calcula a contribuição das fontes e do material num ponto. O **sombreamento** decide onde avaliar essa conta e o que interpolar entre avaliações. Usar o modelo de iluminação de Phong não obriga a usar sombreamento de Phong.
+Uma esfera branca pode ter uma zona escura e um brilho perto da direção de reflexão da luz.
+
+<Bracket label="Ideia-chave">
+
+A **iluminação** calcula a contribuição das fontes e do material num ponto, enquanto o **sombreamento** decide onde avaliar essa conta e o que interpolar entre avaliações. Usar o modelo de iluminação de Phong não obriga a usar sombreamento de Phong.
+
+</Bracket>
 
 ## Iluminação local de Phong
 
@@ -21,9 +28,9 @@ $$
 I = k_a I_a + k_d I_l \max(0, \mathbf{n} \cdot \mathbf{l}) + k_s I_l \max(0, \mathbf{r} \cdot \mathbf{v})^{\alpha}.
 $$
 
-Cada símbolo tem um papel. $I_a$ é a luz **ambiente**, uma aproximação constante de luz indireta, não uma simulação dos seus caminhos; $k_a$ controla a reflexão ambiente do material. $I_l$ é a intensidade da fonte. A parcela **difusa** usa o cosseno entre a normal $\mathbf{n}$ e a direção da luz $\mathbf{l}$: faces de frente para a luz recebem mais, e $k_d$ controla a reflexão difusa do material. A parcela **especular** cria o brilho: depende do alinhamento entre a direção de reflexão perfeita $\mathbf{r}$ e o observador $\mathbf{v}$, elevado ao expoente $\alpha$ (**brilho** ou _shininess_), com $k_s$ a controlar a força. Quanto maior $\alpha$, mais pequeno e nítido o reflexo.
+Cada símbolo tem um papel: $I_a$ é a luz **ambiente**, uma aproximação constante de luz indireta, não uma simulação dos seus caminhos, e $k_a$ controla a reflexão ambiente do material. $I_l$ é a intensidade da fonte. A parcela **difusa** usa o cosseno entre a normal $\mathbf{n}$ e a direção da luz $\mathbf{l}$, pois faces de frente para a luz recebem mais, e $k_d$ controla a reflexão difusa do material. A parcela **especular** cria o brilho e depende do alinhamento entre a direção de reflexão perfeita $\mathbf{r}$ e o observador $\mathbf{v}$, elevado ao expoente $\alpha$ (**brilho** ou _shininess_), com $k_s$ a controlar a força; quanto maior $\alpha$, mais pequeno e nítido o reflexo.
 
-Calculamos cada canal de cor separadamente. Os vetores têm norma 1 e estão todos no mesmo espaço: $\mathbf{n}$ aponta para fora da superfície, $\mathbf{l}$ do ponto para a luz e $\mathbf{v}$ do ponto para o observador. A reflexão é $\mathbf{r}=2(\mathbf{n}\cdot\mathbf{l})\mathbf{n}-\mathbf{l}$. Numa superfície de um só lado, se $\mathbf{n}\cdot\mathbf{l}\le0$, anulam-se as parcelas difusa e especular dessa fonte. A fórmula acima assume a face iluminada e não inclui atenuação com a distância.
+Calculamos cada canal de cor separadamente, com vetores de norma 1 e todos no mesmo espaço: $\mathbf{n}$ aponta para fora da superfície, $\mathbf{l}$ do ponto para a luz e $\mathbf{v}$ do ponto para o observador. A reflexão é $\mathbf{r}=2(\mathbf{n}\cdot\mathbf{l})\mathbf{n}-\mathbf{l}$. Numa superfície de um só lado, se $\mathbf{n}\cdot\mathbf{l}\le0$, anulam-se as parcelas difusa e especular dessa fonte. A fórmula acima assume a face iluminada e não inclui atenuação com a distância.
 
 A variante **Blinn-Phong** troca o vetor de reflexão pelo **vetor halfway** $\mathbf{h}$, a bissetriz entre $\mathbf{l}$ e $\mathbf{v}$: a parcela especular passa a $k_s I_l \max(0, \mathbf{n} \cdot \mathbf{h})^{\alpha}$. Normaliza $\mathbf{l}+\mathbf{v}$ para obter $\mathbf{h}$; se essa soma for zero, o vetor não está definido. Os expoentes de Phong e Blinn-Phong não produzem o mesmo tamanho de brilho com o mesmo valor.
 
@@ -37,9 +44,9 @@ O desenho junta os cinco vetores no mesmo ponto da superfície: a normal para ci
 
 ## Cálculo de Blinn-Phong
 
-Um ponto tem normal $\mathbf{n} = (0, 0, 1)$ com luz ambiente $I_a=1$ e luz branca direta $I_l=1$, na direção $\mathbf{l} = (0,\ 0{,}6,\ 0{,}8)$ (confirma que está normalizado: $0{,}6^2 + 0{,}8^2 = 1$). O observador está em $\mathbf{v} = (0, 0, 1)$ e o material tem $k_a = 0{,}1$, $k_d = 0{,}7$, $k_s = 0{,}5$ e $\alpha = 16$.
+Um ponto tem normal $\mathbf{n} = (0, 0, 1)$ com luz ambiente $I_a=1$ e luz branca direta $I_l=1$ na direção $\mathbf{l} = (0,\ 0{,}6,\ 0{,}8)$; confirma que está normalizado, pois $0{,}6^2 + 0{,}8^2 = 1$. O observador está em $\mathbf{v} = (0, 0, 1)$ e o material tem $k_a = 0{,}1$, $k_d = 0{,}7$, $k_s = 0{,}5$ e $\alpha = 16$.
 
-Ambiente: $0{,}1 \times 1 = 0{,}1$. Difusa: $\mathbf{n} \cdot \mathbf{l} = 0{,}8$, logo $0{,}7 \times 0{,}8 = 0{,}56$. Para a especular, o halfway é a soma normalizada de $\mathbf{l}$ com $\mathbf{v}$:
+A parcela ambiente vale $0{,}1 \times 1 = 0{,}1$ e a difusa vale $0{,}7 \times 0{,}8 = 0{,}56$, pois $\mathbf{n} \cdot \mathbf{l} = 0{,}8$. Para a especular, o halfway é a soma normalizada de $\mathbf{l}$ com $\mathbf{v}$:
 
 $$
 \mathbf{h} = \frac{(0,\ 0{,}6,\ 1{,}8)}{\lVert (0,\ 0{,}6,\ 1{,}8) \rVert} = \frac{(0,\ 0{,}6,\ 1{,}8)}{1{,}8974} \approx (0,\ 0{,}3162,\ 0{,}9487).
@@ -47,7 +54,7 @@ $$
 
 Então $\mathbf{n} \cdot \mathbf{h} \approx 0{,}9487$ e $0{,}9487^{16} \approx 0{,}43$, o que dá $0{,}5 \times 0{,}43 \approx 0{,}22$. O total é $0{,}1 + 0{,}56 + 0{,}22 = 0{,}88$: um ponto bem iluminado com um brilho moderado. Se o observador se movesse, só a parcela especular mudava, porque ambiente e difusa não dependem de $\mathbf{v}$.
 
-Como $0<\mathbf{n}\cdot\mathbf{h}<1$, elevar o expoente de $16$ para $64$ reduz a parcela especular neste ponto. Ambiente e difusa mantêm-se.
+Como $0<\mathbf{n}\cdot\mathbf{h}<1$, elevar o expoente de $16$ para $64$ reduz a parcela especular neste ponto, enquanto ambiente e difusa se mantêm.
 
 ## Comparação da reflexão especular
 
@@ -57,18 +64,18 @@ $$
 r=2(0{,}8)(0,0,1)-(0,0{,}6,0{,}8)=(0,-0{,}6,0{,}8).
 $$
 
-Assim, $r\cdot v=0{,}8$ e a especular de Phong é $0{,}5\times0{,}8^{16}\approx0{,}0141$. Em Blinn-Phong, $(n\cdot h)^2=0{,}9$, por isso a parcela é $0{,}5\times0{,}9^8\approx0{,}2152$. Com o mesmo expoente, os modelos dão brilhos diferentes neste ponto.
+Assim, $r\cdot v=0{,}8$ e a especular de Phong é $0{,}5\times0{,}8^{16}\approx0{,}0141$, enquanto em Blinn-Phong $(n\cdot h)^2=0{,}9$, por isso a parcela é $0{,}5\times0{,}9^8\approx0{,}2152$. Com o mesmo expoente, os modelos dão brilhos diferentes neste ponto.
 
 | Modelo      | Alinhamento comparado           | Especular com expoente 16 | Total      |
 | ----------- | ------------------------------- | ------------------------- | ---------- |
 | Phong       | Reflexão $r$ com observador $v$ | $0{,}0141$                | $0{,}6741$ |
 | Blinn-Phong | Normal $n$ com bissetriz $h$    | $0{,}2152$                | $0{,}8752$ |
 
-O custo depende do que o shader já calcula, incluindo normalizações. Estes modelos são aproximações empíricas: escolher os coeficientes não garante conservação de energia. Não limites cada parcela antes de somar; se o formato do destino não guardar intensidades superiores a 1, a conversão final precisa de tratar esse intervalo.
+O custo depende do que o shader já calcula, incluindo normalizações. Estes modelos são aproximações empíricas, por isso escolher os coeficientes não garante conservação de energia. Não limites cada parcela antes de somar; se o formato do destino não guardar intensidades superiores a 1, a conversão final precisa de tratar esse intervalo.
 
 ## Iluminação global e sombreamento
 
-A **iluminação global** inclui luz refletida ou transmitida por outras superfícies. No _ray tracing_ clássico, lança-se um raio da câmara, procura-se a interseção mais próxima e podem lançar-se raios secundários de reflexão, refração e sombra. Este esquema não inclui automaticamente todos os caminhos difusos. Uma sombra também pode ser calculada juntamente com um modelo local; não prova, por si só, que há iluminação global.
+A **iluminação global** inclui luz refletida ou transmitida por outras superfícies. No _ray tracing_ clássico, lança-se um raio da câmara e procura-se a interseção mais próxima; a partir dela podem lançar-se raios secundários de reflexão, refração e sombra. Este esquema não inclui automaticamente todos os caminhos difusos. Uma sombra também pode ser calculada juntamente com um modelo local e não prova, por si só, que há iluminação global.
 
 Na **radiosidade**, divide-se a cena em retalhos difusos e calcula-se a troca de energia entre eles, por isso o resultado pode ser reutilizado ao mover apenas a câmara. Para cada retalho $i$:
 
@@ -76,14 +83,31 @@ $$
 B_i=E_i+\rho_i\sum_j F_{ij}B_j.
 $$
 
-$B_i$ é a potência que sai por unidade de área, $E_i$ a emissão própria, $\rho_i$ a refletividade difusa e $F_{ij}$ a fração da energia que sai de $i$ e chega a $j$. A reciprocidade $A_iF_{ij}=A_jF_{ji}$, com $A_i$ e $A_j$ as áreas, permite escrever o balanço nesta forma. Se $E_i=0$, $\rho_i=0{,}5$, $F_{ij}=0{,}2$ e $B_j=10$, sem outras contribuições, $B_i=1$.
+$B_i$ é a potência que sai por unidade de área, $E_i$ a emissão própria, $\rho_i$ a refletividade difusa e $F_{ij}$ a fração da energia que sai de $i$ e chega a $j$. A reciprocidade $A_iF_{ij}=A_jF_{ji}$, com $A_i$ e $A_j$ as áreas, permite escrever o balanço nesta forma; se $E_i=0$, $\rho_i=0{,}5$, $F_{ij}=0{,}2$ e $B_j=10$, sem outras contribuições, $B_i=1$.
+
+### Resolver a troca entre retalhos
+
+Quando dois retalhos refletem luz um para o outro, as duas radiosidades são desconhecidas e têm de satisfazer os balanços em simultâneo. Considera dois retalhos difusos com áreas iguais, $F_{12}=F_{21}=1/2$, sem autoexposição, e refletividades $\rho_1=\rho_2=1/2$. O primeiro emite $E_1=1$ W/m² e o segundo não emite, $E_2=0$. O restante ambiente é negro, não emite e não devolve energia aos retalhos, por isso as suas contribuições são zero.
+
+$$
+\begin{cases}
+B_1=1+\frac14 B_2,\\
+B_2=\frac14 B_1.
+\end{cases}
+$$
+
+Substituir a segunda equação na primeira dá $B_1=1+B_1/16$, logo $(15/16)B_1=1$ e $B_1=16/15$ W/m². Depois $B_2=4/15$ W/m². O primeiro retalho sai com radiosidade superior à emissão própria porque também reflete a luz que regressa do segundo; isso não cria energia.
+
+Uma conta de uma única reflexão daria $B_1=1$ e $B_2=1/4$, mas deixaria o primeiro balanço por satisfazer: $1+(1/4)(1/4)=17/16$, diferente de 1. A solução simultânea inclui as trocas sucessivas. Podemos conferir substituindo os resultados nos dois balanços: $1+(1/4)(4/15)=16/15$ e $(1/4)(16/15)=4/15$.
+
+Mover só a câmara não altera este sistema. Alterar emissão ou refletividade exige resolver de novo os balanços; alterar a geometria ou a ocultação entre retalhos pode mudar os fatores de forma. Para áreas diferentes, aplica $A_1F_{12}=A_2F_{21}$: reciprocidade não significa fatores numericamente iguais.
 
 ### Sombreamento constante, Gouraud e Phong
 
-No **sombreamento constante**, uma cor calculada para a face cobre-a toda e revela a divisão em polígonos. Nos métodos suavizados, há duas escolhas. O sombreamento de **Gouraud** calcula a iluminação nos vértices e interpola as cores pela face: é barato, mas perde brilhos no interior dos triângulos grandes. O sombreamento de **Phong** interpola as [normais](/cadeiras/cg/modelacao-malhas/), renormaliza-as e calcula a iluminação em cada fragmento: exige mais avaliações e pode recuperar um brilho interior. O resultado continua a depender das normais e do modelo escolhido; não cria geometria curva nem elimina todos os artefactos da malha. Repara na simetria dos nomes: o modelo de Phong diz o que calcular, o sombreamento de Phong diz onde o calcular.
+No **sombreamento constante**, uma cor calculada para a face cobre-a toda e revela a divisão em polígonos. Nos métodos suavizados há duas escolhas. O sombreamento de **Gouraud** calcula a iluminação nos vértices e interpola as cores pela face; é barato, mas perde brilhos no interior dos triângulos grandes. O sombreamento de **Phong** interpola as [normais](/cadeiras/cg/modelacao-malhas/), renormaliza-as e calcula a iluminação em cada fragmento; exige mais avaliações, mas pode recuperar um brilho interior. O resultado continua a depender das normais e do modelo escolhido, pois não cria geometria curva nem elimina todos os artefactos da malha. Repara na simetria dos nomes: o modelo de Phong diz o que calcular, o sombreamento de Phong diz onde o calcular.
 
 ## Distância e refração
 
-Para uma fonte pontual, pode multiplicar-se a iluminação direta por $f(d)=1/d^2$, onde $d>0$ é a distância à fonte. Duplicar $d$ reduz essa contribuição a um quarto; não altera a parcela ambiente deste modelo. Uma atenuação empírica frequente é $1/(a+bd+cd^2)$, com coeficientes escolhidos para a cena, sem a confundir com uma lei física universal.
+Para uma fonte pontual, pode multiplicar-se a iluminação direta por $f(d)=1/d^2$, onde $d>0$ é a distância à fonte. Duplicar $d$ reduz essa contribuição a um quarto, sem alterar a parcela ambiente deste modelo. Uma atenuação empírica frequente é $1/(a+bd+cd^2)$, com coeficientes escolhidos para a cena, sem a confundir com uma lei física universal.
 
-A refração muda a direção da luz ao atravessar dois meios. A lei de Snell é $\eta_1\sin\theta_1=\eta_2\sin\theta_2$: $\eta_1,\eta_2$ são índices de refração e os ângulos medem-se em relação à normal. De ar para vidro, com índices $1$ e $1{,}5$ e incidência de $30°$, obtemos $\sin\theta_2=1/3$, ou $\theta_2\approx19{,}47°$. Do meio de maior índice para o de menor índice, um valor calculado de $\sin\theta_2>1$ indica reflexão interna total, sem raio refratado.
+A refração muda a direção da luz ao atravessar dois meios, e a lei de Snell é $\eta_1\sin\theta_1=\eta_2\sin\theta_2$, onde $\eta_1,\eta_2$ são índices de refração e os ângulos medem-se em relação à normal. De ar para vidro, com índices $1$ e $1{,}5$ e incidência de $30°$, obtemos $\sin\theta_2=1/3$, ou $\theta_2\approx19{,}47°$. Do meio de maior índice para o de menor índice, um valor calculado de $\sin\theta_2>1$ indica reflexão interna total, sem raio refratado.

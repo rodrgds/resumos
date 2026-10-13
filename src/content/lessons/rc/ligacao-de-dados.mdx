@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Lab 1, especificação e API 2026/2027
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33719
@@ -29,7 +29,7 @@ import JanelaArq from '../../rc/JanelaArq.astro';
 import CrcRegistos from '../../rc/CrcRegistos.astro';
 import stopAndWait from '../../rc/stop-and-wait.dot?raw';
 
-Uma trama transporta um pacote entre equipamentos vizinhos. O recetor precisa de identificar onde começa e acaba e de verificar se deteta erros. Ethernet descarta tramas com erros detetados; outros protocolos acrescentam confirmações, **ACK**, e recuperação por retransmissão, **ARQ**. Delimitar, detetar e recuperar são operações diferentes.
+Uma trama transporta um pacote entre equipamentos vizinhos. O recetor precisa de identificar onde começa e acaba e de verificar se deteta erros; delimitar, detetar e recuperar são operações diferentes. Ethernet descarta tramas com erros detetados, enquanto outros protocolos acrescentam confirmações, **ACK**, e recuperação por retransmissão, **ARQ**.
 
 <span id="delimitar-sem-confundir-dados-com-controlo"></span>
 
@@ -37,13 +37,13 @@ Uma trama transporta um pacote entre equipamentos vizinhos. O recetor precisa de
 
 Uma trama pode indicar comprimento, usar delimitadores especiais ou assinalar limites na codificação física. Com flag de início e fim, os dados nunca podem parecer flags.
 
-No **byte stuffing**, precede bytes especiais com escape e transforma-os segundo a regra do protocolo. No **bit stuffing** de HDLC, o emissor insere um zero depois de cinco uns consecutivos entre flags, incluindo o CRC. O recetor remove esse zero. O stuffing acontece depois de formar o conteúdo protegido e sai antes de o verificares.
+No **byte stuffing**, precede bytes especiais com escape e transforma-os segundo a regra do protocolo. No **bit stuffing** de HDLC, o emissor insere um zero depois de cinco uns consecutivos entre flags, incluindo o CRC, e o recetor remove esse zero. O stuffing acontece depois de formar o conteúdo protegido e sai antes de o verificares.
 
 Não uses diretamente a dimensão do ficheiro para calcular o tempo de transmissão: inclui cabeçalhos, controlo de erros e escapes. Num byte stuffing, a sobrecarga depende dos bytes efetivamente presentes, não de uma percentagem universal.
 
 ## Paridade, checksum e CRC
 
-A paridade simples deteta qualquer número ímpar de alterações, mas falha com dois. Uma checksum soma unidades segundo um algoritmo. Um **CRC** interpreta bits como coeficientes de um polinómio binário e divide módulo 2, ou seja, somar e subtrair são XOR sem transportes.
+A paridade simples deteta qualquer número ímpar de alterações, mas falha com dois. Uma checksum soma unidades segundo um algoritmo. Um **CRC** interpreta bits como coeficientes de um polinómio binário e divide módulo 2, isto é, somar e subtrair são XOR sem transportes.
 
 Para gerador $G$ de grau $r$, acrescenta $r$ zeros à mensagem $D$, divide $D\,2^r$ por $G$ e coloca o resto de $r$ bits no fim. $D\,2^r$ representa deslocar os bits da mensagem $r$ posições para a esquerda, não multiplicar números numa divisão decimal. A palavra transmitida fica divisível por $G$.
 
@@ -65,17 +65,17 @@ O resto já tem menos de quatro bits significativos, por isso a divisão termina
 
 ### Calcular bit a bit com registos
 
-Um circuito pode fazer a mesma divisão enquanto os bits chegam. Cada **registo** guarda um bit do resto. Os bits entram à direita, em `C0`, e avançam para a esquerda a cada passo. O bit que sai de `C2` volta às ligações XOR. Para `1011`, ou seja, $x^3+x+1$, há XOR à entrada de `C1` e de `C0`. Se o retorno for 0, o XOR mantém o bit; se for 1, troca-o.
+Um circuito pode fazer a mesma divisão enquanto os bits chegam. Cada **registo** guarda um bit do resto; os bits entram à direita, em `C0`, e avançam para a esquerda a cada passo, enquanto o bit que sai de `C2` volta às ligações XOR. Para `1011`, isto é, $x^3+x+1$, há XOR à entrada de `C1` e de `C0`; se o retorno for 0, o XOR mantém o bit, e se for 1, troca-o.
 
-Na geração, entram a mensagem e três zeros. No fim, os registos contêm `001`. Na verificação, entra a palavra recebida completa, mensagem seguida do CRC, sem acrescentar zeros. Altera um bit da trama e acompanha o resto. O circuito começa sempre a zero; esta demo mostra a divisão dos slides, sem as convenções adicionais de CRC usadas por protocolos concretos.
+Na geração, entram a mensagem e três zeros, e no fim os registos contêm `001`. Na verificação, entra a palavra recebida completa, mensagem seguida do CRC, sem acrescentar zeros; altera um bit da trama e acompanha o resto. O circuito começa sempre a zero; esta demo mostra a divisão dos slides, sem as convenções adicionais de CRC usadas por protocolos concretos.
 
 <CrcRegistos />
 
 **Resto zero não prova ausência de erro.** Um erro múltiplo do gerador passa despercebido. Uma **rajada** vai do primeiro ao último bit alterado, incluindo bits corretos intermédios. Um CRC de grau $r$ com termo constante 1 deteta rajadas até $r$; outras garantias dependem do polinómio e do comprimento. A aproximação $2^{-r}$ exige um modelo de erros adequado.
 
-A **distância mínima** de um código é a menor distância de Hamming entre duas palavras válidas, ou seja, o menor número de bits diferentes. Um código de distância d deteta até d−1 alterações e, com descodificação apropriada, pode corrigir até $\lfloor(d-1)/2\rfloor$ alterações. Isto não significa que qualquer verificador CRC faça essa correção.
+A **distância mínima** de um código é a menor distância de Hamming entre duas palavras válidas, isto é, o menor número de bits diferentes. Um código de distância d deteta até d−1 alterações e, com descodificação apropriada, pode corrigir até $\lfloor(d-1)/2\rfloor$ alterações; isto não significa que qualquer verificador CRC faça essa correção.
 
-Na paridade bidimensional, há verificações por linha e coluna. Um erro isolado pode ser localizado na interseção das verificações que falham. Quatro erros nos cantos de um retângulo mantêm as paridades e podem passar despercebidos. O exemplo mostra por que adicionar verificações não garante detetar todos os padrões.
+Na paridade bidimensional, há verificações por linha e coluna. Um erro isolado pode ser localizado na interseção das verificações que falham, mas quatro erros nos cantos de um retângulo mantêm as paridades e podem passar despercebidos.
 
 A deteção não corrige a trama. O recetor descarta-a ou pede uma retransmissão conforme o protocolo.
 
@@ -123,13 +123,30 @@ Com dois bits, os números são 0, 1, 2 e 3. Considera Selective Repeat com jane
 | Emissor | 0, 1, 2                      | Ainda espera confirmação, pode repetir 0            |
 | Recetor | 3, 0, 1                      | Já entregou 0, 1 e 2, aceita números da janela nova |
 
-Uma repetição de 0 pertence à janela atual do recetor e pode parecer dados novos. O emissor **não avançou**; foi o recetor que avançou antes de as confirmações chegarem. Com janela dois, depois de entregar 0 e 1, o recetor espera 2 e 3, que não se sobrepõem à janela antiga. A condição $2W\le2^m$ separa as duas janelas. Pressupõe ainda que tramas antigas não sobrevivem indefinidamente a várias voltas da numeração.
+Uma repetição de 0 pertence à janela atual do recetor e pode parecer dados novos. O emissor **não avançou**; foi o recetor que avançou antes de as confirmações chegarem. Com janela dois, depois de entregar 0 e 1, o recetor espera 2 e 3, que não se sobrepõem à janela antiga, e a condição $2W\le2^m$ separa as duas janelas. Pressupõe ainda que tramas antigas não sobrevivem indefinidamente a várias voltas da numeração.
 
 ## Resolver traços
 
 Regista após cada evento: base da janela, próximo a enviar, pendentes, próxima esperada e dados entregues. Distingue **chegar**, **ser confirmado** e **ser entregue**, porque um duplicado pode ser confirmado sem ser entregue.
 
 Calcula o tempo de timeout a partir da transmissão e do caminho do ACK, com a margem definida no enunciado. Um temporizador demasiado curto cria retransmissões inúteis; um demasiado longo atrasa a recuperação. Quando o enunciado inclui perdas probabilísticas, usa as hipóteses dadas, em vez de multiplicar uma eficiência sem perdas por um fator arbitrário.
+
+### Terminar uma transferência finita
+
+A eficiência anterior descreve um fluxo prolongado. Num bloco curto, o arranque, a última janela incompleta e o instante pedido fazem diferença: receber o último bit não é receber o último ACK.
+
+Considera dez tramas iguais, janela de três, transmissão de 2 ms por trama e propagação de 4 ms por sentido. Não há perdas, processamento nem duração de ACK; cada trama recebe confirmação imediata, cumulativa. O primeiro ACK chega em $2+2\times4=10$ ms, depois chegam os seguintes espaçados de 2 ms. Os timeouts não expiram.
+
+| Tramas, numeradas pela ordem de envio | Inícios no emissor | Fins no recetor | ACKs no emissor |
+| ------------------------------------- | ------------------ | --------------- | --------------- |
+| 1, 2, 3                               | 0, 2, 4 ms         | 6, 8, 10 ms     | 10, 12, 14 ms   |
+| 4, 5, 6                               | 10, 12, 14 ms      | 16, 18, 20 ms   | 20, 22, 24 ms   |
+| 7, 8, 9                               | 20, 22, 24 ms      | 26, 28, 30 ms   | 30, 32, 34 ms   |
+| 10                                    | 30 ms              | 36 ms           | 40 ms           |
+
+Entre 6 e 10 ms, o emissor espera porque já tem três tramas pendentes. À chegada de cada ACK, liberta uma posição e envia a próxima. A décima começa aos 30 ms, termina de sair aos 32, chega inteira aos **36 ms** e fica confirmada aos **40 ms**.
+
+A utilização prolongada seria $3\times2/10=0,6$. Dividir os vinte milissegundos de transmissão por 0,6 daria 33,33 ms, que não corresponde a nenhum dos dois instantes finais. Para um bloco finito, segue as transmissões e confirmações, incluindo a última janela.
 
 ## A variante RR, REJ e SREJ
 
@@ -192,7 +209,7 @@ Se uma trama tem FER $p_e$ e são permitidas no máximo duas tentativas independ
 
 O CRC da teoria divide por XOR e deteta erros. O Lab 1 atual usa outro mecanismo, o BCC: BCC1 é `A XOR C` sobre endereço e controlo, BCC2 é o XOR de todos os bytes de dados, e o recetor confirma a igualdade.
 
-O byte stuffing da porta série escapa `7E` como `7D 5E` e `7D` como `7D 5D`, calculado depois do BCC. O código-base abre a porta com `O_NONBLOCK` durante a configuração e depois retira essa flag. A leitura passa a bloqueante, com `VMIN=1` e `VTIME=0`; não existe um timeout de leitura de 0,1 s nessa configuração.
+O byte stuffing da porta série escapa `7E` como `7D 5E` e `7D` como `7D 5D`, calculado depois do BCC. O código-base abre a porta com `O_NONBLOCK` durante a configuração e depois retira essa flag; a leitura passa a bloqueante, com `VMIN=1` e `VTIME=0`, por isso não existe um timeout de leitura de 0,1 s nessa configuração.
 
 A API atual é `llOpenTx`, `llOpenRx`, `llSend`, `llReceive`, `llCloseTx` e `llCloseRx`; a API `llopen`, `llwrite`, `llread` e `llclose` aparece num documento complementar com outra interface, não no código-base de 2026/27. O relatório de eficiência arquivado indica 2025/2026 e também não descreve a edição atual.
 
@@ -210,9 +227,9 @@ Para abrir a ligação, uma SET do emissor usa os bytes `7E 03 03 00 7E`: flag, 
 
 Se o BCC1 estiver errado, ignora a trama sem agir sobre um controlo não verificado. O temporizador do emissor recupera a ausência de UA. Se a SET chegar de novo porque a UA se perdeu, o protocolo deve voltar a responder, permitindo que as duas pontas completem a abertura.
 
-Durante a transferência, a ligação transporta tanto START e END como pacotes de dados da aplicação em tramas I. Não interpreta nomes, tamanhos ou campos da aplicação. Um duplicado pode voltar a receber RR, mas os seus dados não podem voltar a ser entregues.
+Durante a transferência, a ligação transporta tanto START e END como pacotes de dados da aplicação em tramas I, sem interpretar nomes, tamanhos ou campos da aplicação. Um duplicado pode voltar a receber RR, mas os seus dados não podem voltar a ser entregues.
 
-Para testar, compara o ficheiro recebido com o original, depois introduz perdas em cada sentido. Cortar apenas Rx→Tx permite observar ACKs perdidos e duplicados: o ficheiro final deve continuar igual. Sem recetor, o emissor deve terminar por falha ao esgotar o limite configurado, em vez de ficar a tentar indefinidamente. O guião atual também pede testes com ruído e interrupção temporária. A emulação ajuda a testar o protocolo, mas a demonstração docente usa portas série reais.
+Para testar, compara o ficheiro recebido com o original e depois introduz perdas em cada sentido. Cortar apenas Rx→Tx permite observar ACKs perdidos e duplicados, e o ficheiro final deve continuar igual. Sem recetor, o emissor deve terminar por falha ao esgotar o limite configurado, em vez de ficar a tentar indefinidamente. O guião atual também pede testes com ruído e interrupção temporária; a emulação ajuda a testar o protocolo, mas a demonstração docente usa portas série reais.
 
 | Passo       | CRC da lição          | BCC do Lab 1                      |
 | ----------- | --------------------- | --------------------------------- |

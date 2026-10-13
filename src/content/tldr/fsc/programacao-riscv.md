@@ -14,6 +14,10 @@ Para inverter, lê ambas as words antes de escrever, troca e aproxima os apontad
 
 Uma string ASCII terminada em zero percorre-se com `lbu`, avançando **1 byte**. O terminador não conta. Dígitos estão entre `'0'` e `'9'`; o valor é c−48. Testa letras nos intervalos A…Z e a…z separadamente, pois A…z inclui pontuação. Esta classificação não é Unicode.
 
+### Conversão decimal
+
+Cada dígito ASCII válido dá $d=c-48$ e atualiza $v^+=10v+d$. Define o caso vazio. Para resultado sem sinal de 32 bits, rejeita **antes** da multiplicação se v>429496729, ou se v=429496729 e d>5; as comparações são sem sinal. `4294967295` cabe, `4294967296` não. [Limite e cálculo](/cadeiras/fsc/programacao-riscv/#converter-decimal-sem-overflow).
+
 ## Máscaras e palavras
 
 | Operação no bit k | Expressão                   |

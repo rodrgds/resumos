@@ -7,8 +7,8 @@ practices:
   - bd/praticar-algebra
 ---
 
-import Typst from '../../../components/Typst.astro';
-import pipeline from '../../bd/pipeline-algebra.typ?raw';
+import Dot from '../../../components/Dot.astro';
+import arvoreConsulta from '../../bd/arvore-consulta.dot?raw';
 import SelectionDemo from '../../bd/SelectionDemo.astro';
 
 Para saber quem comprou em 5 de janeiro, filtramos Encomenda pela data, ligamos o resultado a Cliente e escolhemos os atributos da resposta. A **álgebra relacional** compõe essas operações: cada uma recebe relações e devolve uma relação. Usamos aqui a álgebra clássica, com conjuntos, sem duplicados e sem ordem de tuplos.
@@ -96,10 +96,11 @@ $$
 Resposta=\pi_{nome}(E_5\bowtie C).
 $$
 
-<Typst
-  source={pipeline}
-  format="svg"
-  alt="Encomenda passa por seleção da data, junção pelo idCliente com Cliente renomeado para C e projeção do nome, dando Ana."
+Lê a árvore de baixo para cima. A junção recebe as encomendas filtradas e os clientes com o id renomeado.
+
+<Dot
+  source={arvoreConsulta}
+  alt="Encomenda filtrada pela data 2026-01-05 e Cliente com id renomeado para idCliente chegam à junção natural. A projeção do nome devolve Ana."
 />
 
 As tabelas intermédias, com os dados da loja:
@@ -118,7 +119,7 @@ $E_5\bowtie C$ acrescenta os atributos de Cliente, incluindo email:
 
 A projeção final devolve o conjunto com um tuplo, `{Ana}`. Se Ana tivesse duas encomendas nesse dia, a projeção continuaria a mostrá-la uma vez. Para identificar pessoas, conserva o id.
 
-A expressão também pode ser desenhada como uma **árvore**: as folhas são relações e cada nó interior é um operador. A junção tem dois filhos, a seleção de Encomenda e a relação C; a projeção tem um filho, a junção. O diagrama acima acompanha o fluxo principal dos resultados, sem desenhar a entrada C em separado. Ao transformar uma árvore, conserva todas as entradas e as colunas de que os operadores precisam.
+As folhas da **árvore** são relações e cada nó interior é um operador. A seleção e a renomeação recebem uma relação cada; a junção recebe duas. Ao transformar a árvore, conserva todas as entradas e as colunas de que os operadores precisam.
 
 ## Clientes sem encomendas
 
@@ -176,5 +177,16 @@ Se S estiver vazia, não falta nenhum requisito e a divisão devolve $\pi_X(R)$.
 Podemos separar uma seleção conjuntiva: $\sigma_{p\land q}(R)=\sigma_p(\sigma_q(R))$. Se p só usa atributos de R, podemos aplicar essa seleção antes de juntar R com S. Isso pode reduzir o número de tuplos intermédios sem mudar a resposta.
 
 A projeção também pode reduzir atributos antes de uma junção, mas tem de conservar os usados pela condição e os necessários ao resultado. Se retirarmos `idCliente` antes de ligar as encomendas aos clientes, perdemos a ligação.
+
+Por exemplo, para $R(A,B)$ e $S(B,C)$:
+
+$$
+\pi_{A,C}(R\bowtie\sigma_{B=1}(S))=
+\pi_A(\sigma_{B=1}(R))\times\pi_C(\sigma_{B=1}(S)).
+$$
+
+À esquerda, a junção obriga também B de R a ser 1. À direita, os dois lados já foram filtrados por esse mesmo valor, por isso todas as combinações concordam em B e podemos retirá-lo antes do produto.
+
+Retirar B de R **antes do filtro**, usando $\pi_{A,C}(\pi_A(R)\times\sigma_{B=1}(S))$, perde a obrigação. Com $R=\{(3,4)\}$ e $S=\{(1,2)\}$, as expressões corretas devolvem vazio, mas esta última devolve $(3,2)$. Já não existe B do lado de R para comparar. Antecipar a projeção exige conferir filtros além das colunas da junção.
 
 Estas equivalências explicam transformações de um otimizador. Não determinam a ordem física exata que o SGBD seguirá. Junções externas e a lógica de `NULL` exigem cuidados adicionais; não lhes apliques automaticamente todas as identidades da álgebra clássica.

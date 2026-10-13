@@ -44,7 +44,7 @@ As figuras acompanham as contas e permitem comparar distribuições sem executar
 
 O material de referência é de **2025/26**. A [ficha SIGARRA de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586998), consultada a 3 de outubro de 2026, confirma a cadeira, mas ainda não apresenta programa nem avaliação. Confirma as regras nos avisos atuais da equipa docente. As regras de avaliação de 2025/26 não devem ser usadas para planear 2026/27.
 
-As questões-modelo T1 e T2 ilustram tipos de pergunta. Não são provas completas de anos anteriores.
+As questões-modelo T1 e T2 ilustram tipos de pergunta. Não são provas completas de anos anteriores. Os apontamentos também consideram provas antigas e reconstruções enviadas por estudantes, incluindo um Teste II datado de 9 de junho de 2026. São úteis para treinar decisões, mas não confirmam o formato da avaliação atual; uma resposta proposta pode estar errada. Não rejeitar uma hipótese de igualdade continua a não demonstrar igualdade.
 
 :::
 
@@ -53,6 +53,8 @@ As questões-modelo T1 e T2 ilustram tipos de pergunta. Não são provas complet
 A base principal foi a [página de ME no Moodle 2025/26](https://moodle2526.up.pt/course/view.php?id=4420): 14 aulas teóricas, sete folhas de exercícios com soluções e versões em inglês, notas de estatística descritiva, dois conjuntos de questões-modelo, formulários, tabelas e dois ficheiros de dados. O Moodle requer acesso institucional; esses documentos não são republicados aqui.
 
 O programa e a avaliação foram conferidos na [ficha SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560105). A bibliografia obrigatória dessa ficha é _Estatística: Apontamentos de Apoio às Aulas_, de A. Miguel Gomes e José F. Oliveira (2018), e _Estatística_, de Rui Campos Guimarães e José António Sarsfield Cabral, 2.ª edição (2011). A bibliografia complementar inclui _Modern Mathematical Statistics with Applications_, de Jay L. Devore, _Introduction to Statistical Investigations_, de Nathan Tintle e colaboradores (2015), e _Introductory Statistics_, de Thomas H. Wonnacott. Estes manuais não estavam disponíveis em texto integral para esta revisão.
+
+Para a comparação de medianas foi consultada a [documentação do teste de Mood em SciPy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_test.html), incluindo as convenções de empates e correção de continuidade.
 
 Para os programas, foi consultada a [documentação oficial de SciPy](https://docs.scipy.org/doc/scipy/reference/stats.html). Os quantis amostrais seguem a convenção tipo 2 das aulas. Os quantis críticos são definidos pela cauda direita. Os ajustamentos para proporções são aproximados; o nome Wilson usado em alguns documentos das aulas não identifica o intervalo de Wilson score, que tem outra fórmula.
 

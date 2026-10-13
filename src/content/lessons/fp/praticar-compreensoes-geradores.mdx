@@ -2,6 +2,12 @@
 title: Praticar compreensões e geradores
 description: Filtrar percursos aninhados e prever o consumo de iteradores.
 section: exercicios
+editorial:
+  sources:
+    - title: PE04, 2020/21, questão 4, pares de intervalos adaptados a reservas semiabertas
+      url: https://drive.google.com/file/d/1fnUDY9MY5TaOryCOyuUPH9hB1Ctv3oGZ/view
+    - title: PE04, 2019/20, questão 4, gerador adaptado com sobreposições e ordem explícita
+      url: https://drive.google.com/file/d/1dy8m_UQuuQiehJYwDxl1npw_zwl--nYK/view
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -188,6 +194,100 @@ resultado = [linha.append(9) for linha in xs]
 `xs` passa a `[[1, 9], [2, 9]]`, porque `linha` refere cada lista interior. Cada `append` devolve `None`, logo `resultado` é `[None, None]`. A lista exterior nova guarda os retornos dessas chamadas; não desfaz os efeitos nas linhas.
 
 Partindo novamente de `xs = [[1], [2]]`, a correção é `resultado = [linha + [9] for linha in xs]`. A concatenação cria uma lista nova por linha e não altera as listas recebidas. Com `xs = []`, o resultado é `[]`.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="reservas-conflitos"
+  title="Comparar reservas sem duplicar pares"
+  explanation="/cadeiras/fp/compreensoes-geradores/#pares-de-posições-e-fronteiras"
+  answer={{
+    kind: 'code',
+    language: 'python',
+    starter: 'def conflitos(reservas):\n    return []',
+    tests: [
+      { name: 'Contactos e sobreposições', code: 'print(conflitos([(9, 11), (11, 12), (10, 12), (8, 9)]))', output: '[(0, 2), (1, 2)]' },
+      { name: 'Inclusão e intervalos iguais', code: 'print(conflitos([(0, 5), (1, 2), (0, 5)]))', output: '[(0, 1), (0, 2), (1, 2)]' },
+      { name: 'Nenhum par possível', code: 'print(conflitos([]), conflitos([(0, 1)]))', output: '[] []' },
+      { name: 'Entrada intacta e ordem dos índices', code: 'xs = [(5, 7), (0, 2), (1, 6)]\nprint(conflitos(xs))\nprint(xs)', output: '[(0, 2), (1, 2)]\n[(5, 7), (0, 2), (1, 6)]' },
+    ],
+  }}
+>
+
+Define `conflitos(reservas)`: cada reserva é um par de inteiros `(inicio, fim)`,
+com `inicio < fim`, que ocupa o intervalo semiaberto $[inicio,fim[$. Devolve
+uma lista dos pares de índices `(i, j)` de reservas que partilham tempo, com
+`i < j`, por ordem lexicográfica. Uma saída às 11 permite outra entrada às 11.
+Não ordenes nem alteres a lista recebida. Constrói uma compreensão e justifica
+a desigualdade usada para decidir o conflito.
+
+<div slot="hint">A zona comum começa no maior início e acaba no menor fim.</div>
+<div slot="solution">
+O maior início tem de ficar antes do menor fim. Na igualdade, os intervalos
+apenas se tocam e o extremo final está excluído. Os percursos com `j > i`
+visitam cada par uma vez, já na ordem pedida.
+
+```python
+def conflitos(reservas):
+    return [
+        (i, j)
+        for i in range(len(reservas))
+        for j in range(i + 1, len(reservas))
+        if max(reservas[i][0], reservas[j][0])
+           < min(reservas[i][1], reservas[j][1])
+    ]
+```
+
+Na primeira entrada, 0 e 1 tocam-se às 11 sem conflito. A reserva 2 partilha
+$[10,11[$ com 0 e $[11,12[$ com 1. A reserva 3 só toca 0 às 9.
+Na segunda, a inclusão total também conta como conflito. Ordenar as reservas
+alteraria o significado dos índices; usar `<=` contaria contactos indevidos.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="gerar-intervalos"
+  title="Produzir um percurso a pedido"
+  explanation="/cadeiras/fp/compreensoes-geradores/#gerar-valores-de-vários-intervalos"
+  answer={{
+    kind: 'code',
+    language: 'python',
+    starter: 'def expandir_intervalos(intervalos):\n    yield 0',
+    tests: [
+      { name: 'Extremos, repetição e negativos', code: 'print(list(expandir_intervalos([(-1, 1), (1, 1), (4, 5)])))', output: '[-1, 0, 1, 1, 4, 5]' },
+      { name: 'Percurso vazio', code: 'print(list(expandir_intervalos([])))', output: '[]' },
+      { name: 'Consumo parcial e esgotamento', code: 'g = expandir_intervalos([(2, 3), (7, 7)])\nprint(next(g))\nprint(list(g))\nprint(list(g))', output: '2\n[3, 7]\n[]' },
+      { name: 'Percurso sem reordenar nem alterar a entrada', code: 'xs = [(3, 3), (0, 1)]\nprint(list(expandir_intervalos(xs)))\nprint(xs)', output: '[3, 0, 1]\n[(3, 3), (0, 1)]' },
+    ],
+  }}
+>
+
+Define o gerador `expandir_intervalos(intervalos)`: recebe uma lista de pares
+inteiros `(inicio, fim)` com `inicio <= fim`. Produz cada inteiro desses
+intervalos, incluindo ambos os extremos, pela ordem dos pares e em ordem
+crescente dentro de cada par. Conserva repetições entre intervalos e não altera
+a entrada. Usa `yield`, sem construir uma lista de todos os inteiros.
+Os testes verificam o percurso e o consumo; o uso de memória também exige
+conferir a solução.
+
+<div slot="solution">
+
+```python
+def expandir_intervalos(intervalos):
+    for inicio, fim in intervalos:
+        for valor in range(inicio, fim + 1):
+            yield valor
+```
+
+`range` não guarda todos os inteiros, e o `yield` suspende o percurso interior
+em cada valor. Ao retomar, continua nesse intervalo; ao terminá-lo, avança
+para o par seguinte. O limite `fim + 1` inclui o extremo final.
+Depois de consumir 2 no terceiro teste, ficam 3 e 7; a conversão em lista
+esgota-os, pelo que a segunda dá `[]`. Devolver uma lista em vez de um
+iterador faria `next(g)` falhar. Um intervalo de um valor e a lista exterior
+vazia não exigem casos especiais neste percurso.
 
 </div>
 </Exercise>

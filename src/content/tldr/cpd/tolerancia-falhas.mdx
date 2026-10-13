@@ -1,0 +1,40 @@
+import Typst from '../../../components/Typst.astro';
+import sequencia from '../../cpd/sequencia-2pc.typ?raw';
+
+## Falhas, segurança e progresso
+
+Crash-stop para definitivamente; crash-recovery reinicia com o estado durável; bizantina admite comportamento arbitrário. Os protocolos simples do percurso assumem paragens, sem processos maliciosos.
+
+Segurança impede decisões inválidas; progresso exige terminar. Ficar bloqueado pode preservar segurança.
+
+## Eleição e replicação
+
+Anel didático: identificadores únicos, um iniciador, ligações fiáveis e sem nova falha. Substitui candidato menor, reencaminha maior; receber o próprio identifica o vencedor. Anúncio percorre o anel. Para 2→5→7→2, iniciador 5: quatro envios de eleição e três de anúncio. Falhas exigem reconstruir o anel; partições/eleições simultâneas precisam de outras regras.
+
+Primário-apoio síncrono replica/persiste como exigido antes da resposta, conservando atualizações confirmadas se o apoio sobreviver. Assíncrono pode perder uma atualização já confirmada. Promover exige fencing: o recurso tem de rejeitar escritas de épocas antigas; timeout sozinho não impede dois primários vivos.
+
+## Two-phase commit
+
+1. Coordenador envia preparar; participante regista duravelmente preparado antes de votar sim. Sim compromete a esperar, sem confirmar.
+2. Todos sim permitem confirmar; um não ou falta de votos no prazo permite abortar. Coordenador regista a decisão antes de a enviar. Participantes registam/aplicam e confirmam receção.
+
+<Typst
+  source={sequencia}
+  format="svg"
+  alt="Preparação, votos sim e decisão durável antes do envio. Participante preparado sem decisão conhecida pode bloquear."
+/>
+
+Preparado sem decisão não aborta só por timeout: tanto confirmar como abortar podem ser compatíveis com a informação local. Consulta decisão definitiva de outro participante ou espera por recuperação/informação suficiente. A falha do coordenador pode bloquear, sem bloquear sempre todos. 2PC não torna escritas simultâneas no tempo nem substitui concorrência local.
+
+## Paxos e máquina de estados
+
+Na mesma instância, proposta(n,valor) é escolhida quando uma maioria a aceita, mesmo que respostas se percam. Aceitação individual, escolha e aprendizagem são distintas.
+
+- Prepare(n): maioria promete não aceitar número menor e comunica a maior proposta já aceite. Estado prometido/aceite é durável.
+- Accept: usa o valor da proposta aceite de maior número nas respostas dessa maioria; se nenhuma existe, pode escolher o seu. Aceitante rejeita se entretanto prometeu número maior.
+
+A/B aceitam (4,10), depois B/C prometem 5: B comunica (4,10), obrigando a propor (5,10). Interseção de maiorias **e** recuperação do valor preservam a escolha. Números diferentes não são posições diferentes da sequência.
+
+Proponentes podem impedir o progresso com números crescentes sem quebrar segurança. Proponente estável, maioria acessível e comunicação que progrida permitem avançar nas condições usuais; não há terminação determinística universal no modelo totalmente assíncrono com possível paragem.
+
+Máquinas de estados exigem mesmo estado inicial, mesma sequência e operações determinísticas. Aprende posição 2 antes da 1? Espera para executar por ordem. Consenso não deduplica automaticamente o mesmo pedido em posições diferentes; hora/aleatoriedade precisam de dados acordados ou regra comum. [Recuperação em Paxos](/cadeiras/cpd/tolerancia-falhas/#recuperar-uma-proposta).

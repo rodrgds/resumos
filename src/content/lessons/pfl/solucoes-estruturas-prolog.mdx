@@ -31,7 +31,7 @@ import listasDiferenca from '../../pfl/listas-diferenca.dot?raw';
 import programa from '../../pfl/solucoes.pl?raw';
 import sintaxe from '../../pfl/sintaxe-meta.pl?raw';
 
-Uma consulta devolve uma resposta de cada vez. Para obter uma lista, escolhemos o que recolher, se as repetições devem ficar e se precisamos de uma lista por pessoa. Vamos usar as mesmas inscrições para comparar estas decisões.
+Uma consulta devolve uma resposta de cada vez; para obter uma lista, escolhemos o que recolher, se as repetições devem ficar e se precisamos de uma lista por pessoa. As inscrições seguintes servem para comparar estas decisões.
 
 ### Os três predicados sobre os mesmos factos
 
@@ -48,7 +48,7 @@ L = [pfl, lbaw, pfl].
 L = [lbaw, pfl].
 ```
 
-Nas duas primeiras consultas, `ana` já está fixada e não há agrupamento. Na terceira, `A^` impede que as pessoas criem grupos separados; por isso as duas inscrições em `pfl` ficam na mesma lista. `setof` ordena e remove repetidos. Sem soluções, `findall` sucede com `[]` e os outros falham. Lê primeiro estes casos e só depois a tabela comparativa.
+Nas duas primeiras consultas, `ana` já está fixada e não há agrupamento; na terceira, `A^` impede que as pessoas criem grupos separados, por isso as duas inscrições em `pfl` ficam na mesma lista. `setof` ordena e remove repetidos, e sem soluções `findall` sucede com `[]` enquanto os outros falham.
 
 ## Escolher a recolha
 
@@ -60,7 +60,7 @@ Nas duas primeiras consultas, `ana` já está fixada e não há agrupamento. Na 
 
 O template `T` é o que guardamos de cada prova de `G`. Uma variável que aparece em `G` mas não em `T` é livre para efeitos de agrupamento, salvo quando a quantificamos com `^`. As ligações usadas dentro de `findall` não ficam como uma solução exterior para essas variáveis.
 
-Com `inscrito(ana,pfl).`, `inscrito(ana,lbaw).`, `inscrito(bruno,pfl).` e uma segunda ocorrência de `inscrito(ana,pfl).`, `findall(C,inscrito(ana,C),L)` dá `[pfl,lbaw,pfl]`. As duas provas para `pfl` continuam presentes. `setof` dá `[lbaw,pfl]`, ordenado e sem repetidos.
+Com `inscrito(ana,pfl).`, `inscrito(ana,lbaw).`, `inscrito(bruno,pfl).` e uma segunda ocorrência de `inscrito(ana,pfl).`, `findall(C,inscrito(ana,C),L)` dá `[pfl,lbaw,pfl]`, pois as duas provas para `pfl` continuam presentes; `setof` dá `[lbaw,pfl]`, ordenado e sem repetidos.
 
 ## Quando aparece um grupo por pessoa
 
@@ -76,17 +76,13 @@ Para juntar cadeiras de todas as pessoas sem esse agrupamento, escreve `bagof(C,
 
 `findall(X,fail,L)` dá `L=[]`; `bagof(X,fail,L)` falha. Um `bagof` também pode falhar dentro de uma regra e impedir os objetivos seguintes. Se o enunciado exige uma lista vazia quando não há candidatos, escolhe esse comportamento explicitamente.
 
-### Caudas abertas
-
-Uma cauda livre permite acrescentar uma continuação por unificação. A operação seguinte conserva o prefixo e liga apenas o seu fim, em vez de o percorrer de novo.
-
 ## Listas abertas e diferenças de listas
 
 `[a,b|T]` é uma lista aberta quando `T` ainda não tem valor. Não é uma lista finita terminada em `[]`; preencher `T` acrescenta a continuação sem copiar o prefixo. Uma diferença de listas representa o par entre a lista completa e a sua cauda ainda por preencher, por exemplo `[a,b|T]-T`.
 
 <CodeSnippet language="prolog" code={juntarListasDiferenca} />
 
-Para juntar `[a,b|T]-T` e `[c|U]-U`, unificamos `T` com `[c|U]`. O resultado é `[a,b,c|U]-U`. Para fechar a lista, unificamos `U=[]`. O exemplo supõe caudas abertas frescas e listas construídas segundo este contrato, porque reutilizar uma cauda com a própria estrutura pode criar um ciclo.
+Para juntar `[a,b|T]-T` e `[c|U]-U`, unificamos `T` com `[c|U]` e obtemos `[a,b,c|U]-U`; para fechar a lista, unificamos `U=[]`. O exemplo supõe caudas abertas frescas e listas construídas segundo este contrato, porque reutilizar uma cauda com a própria estrutura pode criar um ciclo.
 
 <Dot
   source={listasDiferenca}
@@ -104,18 +100,18 @@ s([a|R1], S) :- s(R1, R2), R2 = [b|S].
 s(S, S).                         % tradução de s --> [].
 ```
 
-Os argumentos adicionais são a entrada e o resto. Em `s([a,a,b,b],[])`, a primeira chamada retira um `a`. A segunda retira outro e chama `s([b,b],R2)`. O caso vazio mantém `[b,b]` como resto; no regresso, cada chamada retira um `b`. O resto final é `[]`.
+Os argumentos adicionais são a entrada e o resto: em `s([a,a,b,b],[])`, a primeira chamada retira um `a` e a segunda retira outro antes de chamar `s([b,b],R2)`. O caso vazio mantém `[b,b]` como resto e, no regresso, cada chamada retira um `b`, deixando o resto final `[]`.
 
 ## Gramáticas com DCG
 
 Uma DCG descreve uma sequência de tokens. `-->` é traduzido em predicados que passam a entrada e a entrada restante, aproveitando o mesmo princípio das diferenças de listas:
 
 ```prolog
-sequencia --> [a], sequencia, [b].
-sequencia --> [].
+s --> [a], s, [b].
+s --> [].
 ```
 
-`phrase(sequencia,[a,a,b,b])` sucede: consumimos dois `a`, escolhemos a alternativa vazia e consumimos dois `b` no regresso. `phrase(sequencia,[a,b,a,b])` falha; esta gramática reconhece todos os `a` antes de todos os `b`, em igual quantidade. `phrase/2` exige o consumo completo; `phrase/3` permite observar o resto.
+`phrase(s,[a,a,b,b])` sucede: consumimos dois `a`, escolhemos a alternativa vazia e consumimos dois `b` no regresso. `phrase(s,[a,b,a,b])` falha; esta gramática reconhece todos os `a` antes de todos os `b`, em igual quantidade. `phrase/2` exige o consumo completo; `phrase/3` permite observar o resto.
 
 Recursão à esquerda pode entrar num ciclo antes de consumir um token. A ordem das alternativas e o modo de chamada continuam a afetar a procura. O facto de a escrita parecer uma gramática não elimina as regras de execução de Prolog.
 
@@ -139,7 +135,7 @@ Nas letras do tipo, `f` marca o operador; `x` exige um argumento de prioridade *
 | `xfy` | Infixo.           | Associa à direita: `a op (b op c)`.      |
 | `yfx` | Infixo.           | Associa à esquerda: `(a op b) op c`.     |
 
-Com `liga` declarado `xfy`, `a liga b liga c` é `liga(a,liga(b,c))`. Se o mudássemos para `yfx`, seria `liga(liga(a,b),c)`. Usa `write_canonical/1` para ver a estrutura sem a escrita de operadores. As declarações devem aparecer antes dos termos que as usam.
+Com `liga` declarado `xfy`, `a liga b liga c` é `liga(a,liga(b,c))`, enquanto com `yfx` seria `liga(liga(a,b),c)`. Usa `write_canonical/1` para ver a estrutura sem a escrita de operadores; as declarações devem aparecer antes dos termos que as usam.
 
 ## Construir termos e executar objetivos
 
@@ -150,7 +146,7 @@ tarefa(treino,1) =.. [tarefa,treino,1].
 Termo =.. [tarefa,treino,1].
 ```
 
-A segunda unificação constrói `Termo=tarefa(treino,1)`. Não executa a tarefa. `call(Termo)` é outra operação: tenta provar o objetivo com esse nome e argumentos. Para construir um termo, precisamos de um nome válido conhecido e de uma lista própria; com as duas pontas livres, `=..` não enumera todos os termos.
+A segunda unificação constrói `Termo=tarefa(treino,1)` sem executar a tarefa; só `call(Termo)` tenta provar o objetivo com esse nome e argumentos. Para construir um termo, precisamos de um nome válido conhecido e de uma lista própria, pois com as duas pontas livres `=..` não enumera todos os termos.
 
 Unificar e desmontar termos difere de **produzir efeitos**, como imprimir ou alterar a base de conhecimento. Uma impressão permanece no ecrã quando o motor retrocede; não é anulada como uma ligação de variável. Essa diferença explica o caráter extra-lógico de operações de entrada e saída.
 
@@ -167,7 +163,7 @@ imprimir_tarefas(F) :-
 imprimir_tarefas(_).
 ```
 
-Este **ciclo dirigido pela falha** pressupõe uma enumeração finita e que `F` termina. Uma tarefa para a qual `F` falhe é saltada; se `F` tiver várias soluções, haverá várias impressões. A ordem segue a enumeração de `tarefa/2`, não uma ordenação automática. A cláusula final não faz outra impressão.
+Este **ciclo dirigido pela falha** pressupõe uma enumeração finita e que `F` termina. Uma tarefa para a qual `F` falhe é saltada, e se `F` tiver várias soluções haverá várias impressões. A ordem segue a enumeração de `tarefa/2`, não uma ordenação automática. A cláusula final não faz outra impressão.
 
 Se o objetivo é ordenar, recolhe primeiro pares `Chave-Valor`. `keysort/2` ordena pela chave, conserva pares repetidos e conserva a ordem original entre chaves iguais. `sort/2` também compara o valor e elimina duplicados, por isso trocar um pelo outro pode mudar a resposta.
 

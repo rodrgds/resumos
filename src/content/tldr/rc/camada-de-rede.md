@@ -1,8 +1,10 @@
 ## Prefixos e VLSM
 
-IPv4 tem 32 bits. `/p` fixa p bits de rede; máscara com p uns seguida de zeros. `IP AND máscara` dá a rede.
+IPv4 tem 32 bits; `/p` fixa p bits de rede e a máscara tem p uns seguida de zeros. `IP AND máscara` dá a rede.
 
 `192.0.2.77/26` tem máscara `255.255.255.192`, rede `.64`, broadcast `.127` e hosts `.65` a `.126`. Em sub-redes usuais, $2^{32-p}-2$ hosts; `/31` pode usar ambos em ponto a ponto e `/32` representa um endereço.
+
+Esses hosts são interfaces: um `/26` com um gateway admite 61 computadores, ou 60 se reservar também um IP de gestão. «Terminais adicionais» desconta ainda os já presentes. As portas de um comutador não precisam de um IP cada para comutar tramas.
 
 Para VLSM, ordena necessidades da maior para a menor, inclui interfaces de gateway, escolhe blocos potência de dois e alinha o início. Em `198.51.100.0/24`:
 
@@ -12,7 +14,7 @@ Para VLSM, ordena necessidades da maior para a menor, inclui interfaces de gatew
 | 50            | `.128/26` | `.129` a `.190` |
 | 20            | `.192/27` | `.193` a `.222` |
 
-Sobra `.224/27`. Um `/26` não começa em `.130` ou `.224`. Crescimento pode exigir redistribuir redes, mesmo que a soma dos hosts caiba no bloco original.
+Sobra `.224/27`. Um `/26` não começa em `.130` ou `.224`; crescimento pode exigir redistribuir redes, mesmo que a soma dos hosts caiba no bloco original.
 
 Agrega apenas blocos contíguos e alinhados com a mesma saída pretendida. Dois `/25` de `.0` e `.128` formam `/24`; um prefixo demasiado curto pode anunciar destinos indevidos.
 

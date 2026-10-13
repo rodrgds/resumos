@@ -4,6 +4,12 @@ title: Praticar a análise sintática
 description: Exercícios próprios com pistas e resolução explicada.
 section: exercicios
 order: 22
+editorial:
+  sources:
+    - title: 'Teste 1, 23/4/2026, transformações e conjuntos de previsão'
+      url: https://accio.pt/uploads/contributions/GCpohUGcAs.pdf
+  gaps:
+    - Fonte histórica de apoio; não confirma o enunciado ou a profundidade da edição de 2026/27.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -118,4 +124,64 @@ Não consumas o + durante a redução nem reduzas o num final isoladamente quand
 a regra escolhida é E→E+num.
 
 </div>
+</Exercise>
+
+<Exercise
+  id="c-transformar-previsao"
+  revision={1}
+  title="Transformar antes de prever"
+  explanation="/cadeiras/c/analise-sintatica/#recursão-à-esquerda-e-prefixos-comuns"
+  answer={{kind: 'self', checklist: ['Removi a recursão à esquerda de Ações e fatorizei read id.', 'Usei o FOLLOW para a cauda vazia, sem aceitar qualquer token.', 'Rejeitei read id from no fim por faltar id e preservei a sequência das ações.']}}
+>
+
+Considera Ações inicial e os tokens read, write, from e id distintos:
+
+```text
+Ações -> Ações Ação | ε
+Ação -> read id | read id from id | write id
+```
+
+Identifica os dois obstáculos a uma previsão com um token e transforma a gramática. Dá FIRST e FOLLOW da cauda nova e descreve a decisão do analisador depois de read id. Segue `read id from id write id` e explica a rejeição de `read id from` no fim. Problema próprio a partir do tipo de transformação pedido no teste de 23/4/2026, questão 1.
+
+  <div slot="hint">
+
+A cauda pode desaparecer antes da próxima ação ou do fim; isso não autoriza ignorar from incompleto.
+
+  </div>
+  <div slot="solution">
+
+Ações tem recursão à esquerda. As alternativas read partilham dois tokens antes de diferirem. Uma transformação é:
+
+```text
+Ações -> Ação Ações | ε
+Ação -> read id Cauda | write id
+Cauda -> from id | ε
+```
+
+`FIRST(Cauda)={from,ε}`; `FOLLOW(Cauda)={read,write,$}`. Depois de read id, ver from escolhe Cauda→from id; ver read, write ou `$` escolhe ε; qualquer outro token é erro. A alternativa vazia de Ações usa apenas `$`.
+
+Na entrada dada, a primeira ação lê read,id,from,id e a segunda lê write,id; o analisador chega a `$` e aceita. Em read id from, escolhe a alternativa de from, mas a exigência seguinte é id e encontra `$`: rejeita. A remoção da recursão não muda a ordem da lista de ações que a AST deve guardar.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="c-first-sequencia-anulavel"
+  revision={1}
+  title="A primeira letra pode vir do terceiro símbolo"
+  explanation="/cadeiras/c/analise-sintatica/#first-de-uma-sequência-e-propagação-de-follow"
+  answer={{kind: 'self', checklist: ['Obtive FIRST(S)={a,b,c} sem ε.', 'Propaguei b,c para FOLLOW(A), c para FOLLOW(B) e $ para FOLLOW(C).', 'Escolhi as regras vazias ao ver c e rejeitei ε.']}}
+>
+
+S é inicial, com `S -> A B C`, `A -> a | ε`, `B -> b | ε` e `C -> c`. Calcula FIRST e FOLLOW dos quatro não terminais e as células LL(1) que usam uma produção vazia. Explica a aceitação de c e a rejeição da entrada vazia. O problema próprio treina a propagação por sequências do teste de 23/4/2026, questão 2.
+
+  <div slot="solution">
+
+`FIRST(A)={a,ε}`, `FIRST(B)={b,ε}`, `FIRST(C)={c}` e `FIRST(S)={a,b,c}`. A e B podem desaparecer, mas C não, logo S não é anulável.
+
+`FOLLOW(S)={$}`. Depois de A está BC, cujo FIRST sem ε é `{b,c}`, e BC não desaparece: `FOLLOW(A)={b,c}`. `FOLLOW(B)={c}`; C recebe FOLLOW(S), ficando `FOLLOW(C)={$}`. FOLLOW não contém ε.
+
+As células vazias são M[A,b]=A→ε, M[A,c]=A→ε e M[B,c]=B→ε. Para c, S expande ABC, A e B desaparecem sem ler e C consome c. Para ε, a tabela de S na coluna `$` é erro, porque a produção ABC exige c.
+
+  </div>
 </Exercise>

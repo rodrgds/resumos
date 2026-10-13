@@ -1,0 +1,37 @@
+import Typst from '../../../components/Typst.astro';
+import arvore from '../../cpd/arvore-dns.typ?raw';
+
+## Replicação, partição e cache
+
+| Técnica    | Ganho possível                       | Custo ou limite                                                           |
+| ---------- | ------------------------------------ | ------------------------------------------------------------------------- |
+| Replicação | Leituras e disponibilidade           | Atualização/coerência das cópias; réplica atrasada pode ler dados antigos |
+| Partição   | Distribui dados e escritas           | Operações entre partições; chave muito popular pode saturar uma           |
+| Cache      | Reutiliza respostas perto do cliente | Validade limitada, possível dado antigo até expirar                       |
+
+Taxa de acerto não é redução igual de latência. Com 90% de acertos a 1 ms e faltas a 21 ms **no total**, média=0,9×1+0,1×21=3 ms. Não acrescentes outra vez o custo da cache na falta; filas estão fora deste modelo.
+
+## DNS e delegação
+
+Domínios organizam a árvore; zona é a parte administrada pelos autoritativos, excluindo subárvores delegadas. Resolvedor recursivo procura em nome do cliente e mantém cache. Vários autoritativos oferecem redundância; anycast anuncia o mesmo endereço em vários locais.
+
+<Typst
+  source={arvore}
+  format="svg"
+  alt="Árvore DNS da raiz a .pt e exemplo.pt, com referências até ao autoritativo e cache no resolvedor."
+/>
+
+Sem cache útil, sem CNAME e omitindo consultas adicionais por endereços de servidores:
+
+1. Cliente pede o registo A ao resolvedor recursivo.
+2. Resolvedor consulta raiz e recebe referência para .pt.
+3. Consulta .pt e recebe delegação para exemplo.pt.
+4. Consulta autoritativo e recebe A/TTL; responde ao cliente e guarda registos relevantes pelos respetivos prazos.
+
+As consultas do resolvedor seguem referências iterativamente. Raiz/TLD não devolvem automaticamente o A final. Delegação e endereço válidos em cache podem permitir começar no autoritativo, sem repetir os níveis superiores.
+
+## TTL
+
+Registo recebido no instante 0 com TTL 300 s tem 180 s restantes aos 120 s. Acerto não reinicia o prazo; outro cliente deve receber a validade restante, sem criar novos 300 s. Alteração aos 60 s pode ficar invisível nessa cache até expirar.
+
+TTL menor permite alterações mais cedo, com mais consultas; maior reutiliza mais e pode prolongar dados antigos. Registos diferentes expiram em instantes diferentes. Cache do resolvedor ainda exige mensagens com o cliente; só cache no próprio cliente evita também esse percurso. Hierarquia/cache aliviam carga, sem garantir consistência instantânea. [Validade e resolução](/cadeiras/cpd/escalabilidade-dns/#ttl-e-dados-antigos).

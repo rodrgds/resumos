@@ -7,7 +7,7 @@ Uma thread tem a sua pilha de chamadas e pode partilhar objetos com outras threa
 - `contador++` lê, soma e escreve. Se duas threads lerem 0 antes de escrever, ambas podem escrever 1, perdendo um incremento.
 - `synchronized` protege secções pelo **mesmo monitor** e estabelece visibilidade entre libertação e aquisição desse monitor. Locks distintos não protegem um campo partilhado entre si.
 
-Um método de instância sincronizado usa `this`; um método estático usa o objeto `Class`. Incrementar e consultar o contador exigem coordenação coerente. `volatile` dá garantias de visibilidade, mas não torna `valor++` atómico; para um contador isolado, `AtomicInteger.incrementAndGet()` é uma alternativa.
+Um método de instância sincronizado usa `this`; um método estático usa o objeto `Class`, pelo que incrementar e consultar o contador exigem uma coordenação coerente. `volatile` dá garantias de visibilidade, mas não torna `valor++` atómico; para um contador isolado, `AtomicInteger.incrementAndGet()` é uma alternativa.
 
 ## Espera e notificação
 

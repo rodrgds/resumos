@@ -4,10 +4,21 @@ description: Configurações, critérios de aceitação, construções para cont
 order: 7
 practices:
   - tc/praticar-pilha
+editorial:
+  basedOn: 2024/25
+  sources:
+    - title: 'Materiais de TC no Moodle de 2024/25'
+      url: https://moodle2425.up.pt/mod/resource/view.php?id=186298
+    - title: 'Teste 2, 11/6/2025, enunciado histórico'
+      url: https://accio.pt/uploads/contributions/jWmq9JAIMuQ.pdf
+  gaps:
+    - Os enunciados históricos não confirmam a profundidade ou o formato da avaliação de 2026/27.
 ---
 
 import PdaLab from '../../../components/PdaLab.astro';
+import pilhaRamos from '../../tc/pilha-ramos.dot?raw';
 import Dot from '../../../components/Dot.astro';
+import YouTube from '../../../components/YouTube.astro';
 
 Para reconhecer $a^nb^n$, guarda um marcador por cada $a$ e retira um por cada $b$. Os estados controlam a ordem dos blocos. A **pilha** guarda os marcadores, com o último a entrar no topo e a ser o primeiro a sair.
 
@@ -36,7 +47,7 @@ $$
 (q,aw,X\beta)\vdash(p,w,\alpha\beta).
 $$
 
-O que está abaixo do topo não interfere na escolha da transição. $\vdash^*$ representa zero ou mais passos.
+O que está abaixo do topo não interfere na escolha da transição, e $\vdash^*$ representa zero ou mais passos.
 
 Na aceitação por **estado final**, exige $(q_0,w,Z_0)\vdash^*(f,\varepsilon,\gamma)$ para algum $f\in F$. A pilha pode conservar símbolos. Na aceitação por **pilha vazia**, exige $(q_0,w,Z_0)\vdash^*(q,\varepsilon,\varepsilon)$, sem condição sobre $q$.
 
@@ -55,7 +66,7 @@ Reconhece $\{a^nb^n\mid n\ge0\}$ por estado final. Usa $q_0$ para ler $a$, $q_1$
 | $q_0$  | $\varepsilon$ | $Z$  | $q_f$   | $Z$           |
 | $q_1$  | $\varepsilon$ | $Z$  | $q_f$   | $Z$           |
 
-As restantes transições não existem. $q_f$ não tem saídas. O estado $q_0$ pode aceitar $\varepsilon$, mas a mesma transição feita com entrada restante não aceita.
+As restantes transições não existem; em particular, $q_f$ não tem saídas. O estado $q_0$ pode aceitar $\varepsilon$ pela transição vazia, mas essa transição não aceita quando resta entrada por consumir.
 
 <Dot
   source={`digraph { rankdir=TB; graph [ranksep=0.35]; node [shape=circle]; s [shape=point]; qf [shape=doublecircle]; s->q0; q0->q0 [label="a,Z/AZ\na,A/AA"]; q0->q1 [label="b,A/ε"]; q1->q1 [label="b,A/ε"]; q0->qf [label="ε,Z/Z"]; q1->qf [label="ε,Z/Z"]; }`}
@@ -82,6 +93,10 @@ Segue $aabb$ por passos e compara com $aab$ ou $aba$. A fronteira conserva as co
 
 <PdaLab preset="equal-count" examples={['equal-count', 'even-palindrome']} />
 
+O vídeo de Rodrigo Dias complementa o estudo de autómatos de pilha e linguagens livres de contexto:
+
+<YouTube id="XeM_tBKMu9k" title="Aprende PDAs/Autómatos de Pilha - CFLs" />
+
 ## Contagens dentro de um intervalo
 
 Para $\{a^nb^m\mid n\le m\le2n\}$, cada $a$ pode corresponder a um ou dois $b$. Um PDA escolhe empilhar um ou dois marcadores por $a$ e depois retira um por cada $b$. Com topo $X$, as escolhas são $a,X/AX$ e $a,X/AAX$. A mudança para a fase dos $b$ impede voltar a ler $a$.
@@ -89,6 +104,25 @@ Para $\{a^nb^m\mid n\le m\le2n\}$, cada $a$ pode corresponder a um ou dois $b$. 
 Na palavra $aabbb$, um ramo empilha um marcador pelo primeiro $a$ e dois pelo segundo. A pilha fica $AAAZ$, que os três $b$ esvaziam até ao fundo. Em $aaabb$, todos os ramos têm pelo menos três marcadores, por isso dois $b$ nunca chegam. Em $aabbbbb$, todos têm no máximo quatro, pelo que cinco $b$ não podem ser lidos.
 
 A CFG correspondente é $S\to aSb\mid aSbb\mid\varepsilon$. Com $n$ passos recursivos, escolhes $n$ contribuições de um ou dois $b$, dando qualquer total entre $n$ e $2n$. Para $aabbb$, podes derivar $S\Rightarrow aSb\Rightarrow aaSbbb\Rightarrow aabbb$.
+
+## Escolher uma fase e conservar a escolha
+
+Comparar a quantidade de letras não determina quais podem aparecer na segunda fase. Considera um PDA por estado final, com início $p$, pilha inicial $Z$ e único final $f$, sem saídas. Em $p$, cada $a$ empilha um $A$. O primeiro $b$ passa para $q$, que só retira marcadores com $b$; o primeiro $c$ passa para $r$, que só os retira com $c$.
+
+<Dot
+  source={pilhaRamos}
+  alt="PDA com início p: cada a empilha A. Um b passa para q, que só lê b; um c passa para r, que só lê c. Ambos retiram um A por letra e chegam a f por ε com Z exposto. p não tem saída vazia para f."
+/>
+
+Não existem outras transições. $q$ e $r$ podem chegar a $f$ por $\varepsilon$ com $Z$ no topo, conservando esse fundo. A linguagem é
+
+$$
+\{a^nb^n\mid n\ge1\}\ \cup\ \{a^nc^n\mid n\ge1\}.
+$$
+
+Em $aabc$, depois dos dois $a$ a pilha é $AAZ$. O $b$ retira um marcador e escolhe $q$, ficando $(q,c,AZ)$. Não há transição por $c$ em $q$, por isso rejeita, embora existam dois símbolos depois dos dois $a$. Já $aabb$ e $aacc$ chegam ao final com entrada consumida e apenas $Z$ na pilha.
+
+A palavra vazia é rejeitada: $p$ não é final e não tem transição vazia para $f$. Isso explica $n\ge1$. Se fundirmos $q,r$ numa fase que permite tanto $b$ como $c$ a cada remoção, obtemos outra linguagem, $\{a^nu\mid n\ge1,\ u\in\{b,c\}^n\}$. Essa versão aceita $aabc$. Escolher um ramo uma vez é diferente de escolher a letra de cada passo.
 
 ## Escolhas que a pilha não resolve
 
@@ -123,7 +157,7 @@ $$
 
 Para $aa$, o mesmo percurso termina em $(p_f,a,\bot)$. A entrada restante impede aceitar. O fundo novo distingue esvaziar a pilha simulada de esvaziar toda a pilha da máquina nova.
 
-De estado final para pilha vazia, com fundo novo $\bot$ e estado de limpeza $p_e$. De cada antigo final $f$, acrescenta $(f,\varepsilon,X) \to (p_e,\varepsilon)$ para todo o $X$ da pilha, e em $p_e$ retira todos os símbolos até $\bot$ inclusive. Se a máquina antiga aceita $aabb$ em $q_f$ com pilha $Z$, a nova consome $aabb$, passa a $p_e$ e esvazia $Z\bot$. Se chega a $q_f$ com entrada restante, $p_e$ não consegue consumir essa entrada e o ramo falha.
+De estado final para pilha vazia, usa um fundo novo $\bot$ e um estado de limpeza $p_e$. De cada antigo final $f$, acrescenta $(f,\varepsilon,X) \to (p_e,\varepsilon)$ para todo o $X$ da pilha, e em $p_e$ retira todos os símbolos até $\bot$ inclusive. Se a máquina antiga aceita $aabb$ em $q_f$ com pilha $Z$, a nova consome $aabb$, passa a $p_e$ e esvazia $Z\bot$. Se chega a $q_f$ com entrada restante, $p_e$ não consegue consumir essa entrada e o ramo falha.
 
 ## De CFG para PDA
 

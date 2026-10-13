@@ -1,7 +1,11 @@
 ---
 title: Praticar vistas, gatilhos e acessos
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Vistas, auditoria, compatibilidade e stock, com diagnóstico e soluções justificadas.
 section: exercicios
+editorial:
+  sources:
+    - title: Ficha docente SQL Triggers, oficina, alíneas a e c, reutilizada no Moodle de 2025/26
+      url: https://moodle2526.up.pt/course/view.php?id=3996
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -138,6 +142,33 @@ SELECT * FROM TotalEncomenda ORDER BY idEncomenda;
     Os totais passam a 16000, 18000 e 7500. A vista recalcula sobre Item em cada
     consulta, por isso a alteração da base reflete-se sem redefinir a vista. Não
     fizemos `UPDATE` da vista: alterámos Item.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="trigger-compatibilidade-stock"
+  title="Validar o par e debitar só utilizações aceites"
+  explanation="/cadeiras/bd/vistas-gatilhos-acessos/#validar-compatibilidade-e-reservar-stock"
+  answer={{ kind: 'self', checklist: ['Separei validação BEFORE de débito AFTER.', 'Previ rejeição por incompatibilidade e por stock sem alteração dos dados.', 'Distingui rollback de um lote e de instruções anteriores.', 'Calculei disponibilidade e débito ao alterar uma reserva existente.'] }}
+>
+  <div>
+
+Peca contém `(1,5)` e `(2,8)`, em formato id/stock. Compativel contém apenas `(1,10)` e `(2,20)`, em formato peça/modelo. Uso(id,peca,modelo,qtd) começa vazio. Usa o esquema e os dois gatilhos do exemplo da lição, com estrangeiras ativas, quantidade positiva e stocks inteiros.
+
+1. Insere `(100,1,10,2)`, depois tenta `(101,1,20,1)` e `(102,1,10,4)` em instruções separadas. Prevê usos e stocks depois de apanhar os erros.
+2. Recomeça com os dados iniciais. Uma só instrução insere `(100,1,10,2)` e `(101,1,10,4)`. O que fica guardado se o segundo tuplo causar `ABORT`?
+3. Na situação da alínea 1, pretende-se alterar a quantidade do uso 100 de 2 para 4. Qual é a disponibilidade para esse uso e qual o stock final? Os gatilhos só de inserção chegam para implementar a alteração?
+
+  </div>
+  <div slot="hint">O stock guardado já exclui as unidades da reserva antiga.</div>
+  <div slot="solution">
+
+Na primeira alínea, o uso 100 é aceite e o stock da peça 1 passa a 3. O uso 101 é incompatível com o modelo 20. O 102 pede quatro unidades quando só existem três disponíveis. Ambos são recusados sem débito, ficando só o uso 100, stock 3 na peça 1 e stock 8 na peça 2.
+
+Na segunda alínea, a primeira linha do lote debita duas unidades, mas a segunda falha por stock insuficiente. `ABORT` desfaz toda essa instrução, incluindo a primeira linha e o seu débito. Uso fica vazio e os stocks regressam a 5 e 8. Isso não contradiz a primeira alínea: ali, o uso aceite pertencia a uma instrução anterior.
+
+Na terceira alínea, o uso 100 pode dispor das três unidades livres mais as duas que já reservou, total 5. Mudar a quantidade para 4 consome mais duas unidades, ficando stock 1. Os dois gatilhos não tratam UPDATE: é preciso validar o novo estado e aplicar `OLD.qtd - NEW.qtd` à mesma peça. Se mudar de peça, as unidades antigas voltam apenas à peça antiga e a disponibilidade da nova calcula-se separadamente.
 
   </div>
 </Exercise>

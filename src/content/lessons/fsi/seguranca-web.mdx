@@ -26,6 +26,16 @@ editorial:
       url: https://www.w3.org/TR/CSP3/
     - title: 'W3C, Subresource Integrity'
       url: https://www.w3.org/TR/sri/
+    - title: XS-Leaks, eventos de erro
+      url: https://xsleaks.dev/docs/attacks/error-events/
+    - title: FIDO U2F, visão geral de 2017
+      url: https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-overview-v1.2-ps-20170411.html
+    - title: MDN, CORS e preflight
+      url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
+    - title: MDN, postMessage
+      url: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+    - title: MDN, Fetch metadata
+      url: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Fetch_metadata
   coverage: 'Origem, sessões, autenticação e biometria, CSP/SRI, XSS, SQL, CSRF e autorização.'
   gaps:
     - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
@@ -46,7 +56,17 @@ Uma origem é o trio esquema, host e porta efetiva. `https://loja.example/a` e `
 
 A política da mesma origem restringe, entre outras coisas, a leitura de respostas por código de outra origem. Não proíbe todos os pedidos: um formulário pode enviar certos pedidos a outra origem, por isso esta política não elimina CSRF. CORS permite ao servidor conceder determinadas leituras entre origens; não substitui a autorização do servidor.
 
+Um preflight CORS consulta permissões antes de certos pedidos, conforme método, cabeçalhos e outros requisitos do navegador. Não pergunta se a operação tem efeitos no servidor: um pedido que dispensa preflight pode alterar estado se o servidor o implementar assim. O servidor mantém a responsabilidade pela autorização e proteção CSRF.
+
+Frames de origens diferentes têm acesso ao DOM restringido, mas podem comunicar por `postMessage`. O recetor valida a origem, o remetente esperado e a estrutura da mensagem antes de agir. Um frame pode ter a mesma origem do pai; incorporar um frame não o torna automaticamente uma fronteira isolada de outra origem.
+
 "Site", usado por SameSite, agrupa origens segundo regras de domínio registável e esquema. Dois subdomínios podem ser same-site e continuar cross-origin. Não uses os dois termos como sinónimos.
+
+### XS-Leaks: observar sem ler a resposta
+
+A política da mesma origem não esconde todos os efeitos de um recurso. Suponhamos que um endereço de outro site devolve uma imagem válida quando a pessoa tem sessão e uma página HTML quando não tem. Se o navegador envia o cookie relevante e permite incorporar o recurso como imagem, a página atacante pode distinguir o evento de carregamento do evento de erro. Não lê o HTML nem executa código na origem da vítima; infere um estado através do resultado observável.
+
+Este caso é um **XS-Leak**, uma fuga entre sites. Difere de XSS, que executa código no contexto da aplicação, e de CSRF, que induz uma operação não escolhida pela vítima. Bloquear a leitura do corpo não elimina o sinal de carregamento. A explorabilidade depende das regras de cookies, incorporação e isolamento do navegador. A defesa deve retirar o sinal sensível ou impedir a incorporação nesse contexto, usando as políticas adequadas; cifrar o transporte não remove o sinal.
 
 ## Sessões e cookies
 
@@ -76,11 +96,17 @@ Set-Cookie: sessao=<valor-aleatorio>; Secure; HttpOnly; SameSite=Lax; Path=/
 
 Não coloques o identificador em URLs ou logs. Usa os mecanismos da framework e verifica a política de expiração e logout. Um cookie previsível como `abc123` não é um exemplo de segredo adequado.
 
+O servidor define atributos como SameSite na resposta `Set-Cookie`; o navegador aplica-os ao decidir o envio. Já cabeçalhos `Sec-Fetch-*` descrevem o contexto do pedido e são produzidos pelo navegador. O servidor pode usá-los como informação adicional para recusar contextos indevidos. Não substituem autenticação ou autorização: clientes fora do navegador podem construir os próprios cabeçalhos.
+
 ## Autenticação e palavras-passe
 
 Armazena palavras-passe com uma função de derivação adequada, como Argon2id, e um sal distinto por entrada. O sal pode ser público. Com sais distintos, a mesma palavra-passe não produz a mesma referência em contas diferentes; o atacante não pode reutilizar uma única tabela pré-computada para todos os sais. O custo da função dificulta tentativas offline. Cifra reversível e hash rápido simples não cumprem este objetivo.
 
 Limites de tentativas e fatores adicionais protegem outros riscos. Duas palavras-passe continuam no mesmo fator, algo que sabes. Autenticação multifator combina categorias independentes, como um segredo e um dispositivo. Um processo de recuperação fraco pode contornar a proteção do login.
+
+Um sal não evita que a pessoa reutilize a mesma palavra-passe noutro serviço. Se o atacante a descobrir num serviço, pode experimentar essa palavra-passe em outro, mesmo que os sais sejam diferentes. Evitar reutilização e proteger a recuperação responde a esse risco; sal e custo da função protegem o armazenamento.
+
+**U2F**, Universal 2nd Factor, usa um autenticador que protege uma chave privada e responde criptograficamente a um desafio ligado ao serviço. O servidor verifica com a chave pública registada. Não é outro nome para duas palavras-passe ou para qualquer MFA: a ligação ao serviço distingue-o de códigos que o utilizador pode entregar a uma página de phishing. A proteção depende também da validação da origem pelo cliente e da recuperação da conta.
 
 ## Autenticar uma entidade agora
 
@@ -97,13 +123,18 @@ Uma comparação biométrica não é igualdade exata: ruído e variação exigem
 Neste modelo de tentativas de autenticação:
 
 $$
-FAR=\frac{\text{tentativas de impostores aceites}}{\text{tentativas de impostores}},\qquad
+FAR=\frac{\text{tentativas de impostores aceites}}{\text{tentativas de impostores}}.
+$$
+
+$$
 FRR=\frac{\text{tentativas legítimas rejeitadas}}{\text{tentativas legítimas}}.
 $$
 
 Em 10 000 tentativas de impostores, oito são aceites: FAR de 0,08%. Em 500 tentativas legítimas, vinte são rejeitadas: FRR de 4%. Estas taxas não dizem que 0,08% de todas as aceitações são impostores; essa proporção também depende da frequência de impostores.
 
 FMR e FNMR descrevem erros de comparação; FAR e FRR podem descrever o sistema de autenticação completo. A definição e o protocolo de ensaio têm de acompanhar os números. Resistência a apresentações falsas, como uma fotografia, também exige avaliação própria. Uma característica biométrica não é um segredo facilmente substituível depois de exposto; protege modelos biométricos e prevê alternativas de acesso.
+
+Não há uma regra geral que obrigue FAR e FRR a serem iguais. Um controlo de acesso a um laboratório e o desbloqueio de um dispositivo pessoal podem atribuir custos diferentes à aceitação indevida e à rejeição legítima. O ponto de igualdade é uma referência de comparação, não automaticamente o limiar adequado ao sistema.
 
 ## XSS e o contexto de saída
 
@@ -122,7 +153,7 @@ Um cookie HttpOnly não torna um XSS inofensivo. O código malicioso pode pedir 
 
 ## Ler uma política CSP
 
-A política CSP é um controlo adicional do navegador. Considera esta resposta da origem `https://loja.example`, sem outras políticas:
+A política CSP é um controlo adicional do navegador; a resposta seguinte, da origem `https://loja.example` e sem outras políticas, mostra como a ler:
 
 <CodeSnippet language="http" code={politicaCsp} />
 

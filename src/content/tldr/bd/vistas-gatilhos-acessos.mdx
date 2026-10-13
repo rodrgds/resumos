@@ -5,9 +5,7 @@ import loja from '../../bd/loja.sql?raw';
 
 ## Vistas
 
-Uma **vista virtual** guarda uma consulta, não uma cópia permanente dos resultados. Alterar a tabela base muda a resposta da vista. Uma **materializada** guarda resultados e exige atualização; PostgreSQL tem esse mecanismo nativo, SQLite não tem o mesmo comando.
-
-Uma vista agregada não define automaticamente como traduzir alterações: pedir total 120 não diz quais as linhas de compra a mudar.
+Uma **vista virtual** guarda uma consulta, não uma cópia permanente dos resultados, por isso alterar a tabela base muda a sua resposta. Uma **materializada** guarda resultados e exige atualização; PostgreSQL tem esse mecanismo nativo, SQLite não tem o mesmo comando. A definição da vista também não diz como traduzir alterações: pedir total 120 não indica quais as linhas de compra a mudar.
 
 - SQLite precisa de gatilhos `INSTEAD OF` para escrever através de vistas.
 - PostgreSQL atualiza automaticamente certas vistas simples. `WITH CHECK OPTION` pode exigir que os valores continuem a satisfazer o filtro da vista.
@@ -39,6 +37,12 @@ Fica uma linha: produto 10, anterior 20, novo 18. A segunda instrução tem o ev
 Prefere `CHECK`, `UNIQUE` e estrangeiras quando exprimem a regra. Um limite de encomendas precisa de cobrir inserções e mudanças de cliente; um mínimo exige considerar eliminações. Evita ciclos e depender de uma ordem de gatilhos não garantida.
 
 Em SQLite, `RAISE(ABORT, ...)` desfaz a instrução, sem necessariamente terminar toda a transação; `RAISE(ROLLBACK, ...)` também termina a transação ativa.
+
+## Validação e stock
+
+Uma estrangeira por participante não garante compatibilidade do par. Para uma inserção, `BEFORE` pode rejeitar incompatibilidade ou stock insuficiente com `RAISE(ABORT,...)`; `AFTER` debita o uso aceite. Um erro num lote desfaz também os efeitos dos gatilhos das linhas anteriores desse lote.
+
+Ao alterar a quantidade da mesma peça, a disponibilidade é `stock + OLD.qtd` e a variação final é `OLD.qtd - NEW.qtd`. Ao mudar de peça, devolve à antiga e valida/debita a nova. Remover uma reserva pode devolver stock; apagar histórico de consumo não o devolve por si só. Gatilhos apenas de inserção não cobrem essas operações.
 
 ## Identidade e privilégios
 

@@ -1,0 +1,33 @@
+import Typst from '../../../components/Typst.astro';
+import linha from '../../cpd/linha-cache.typ?raw';
+
+## Organização e localidade
+
+Memória partilhada permite acesso ao mesmo espaço de endereços; memória distribuída exige mensagens entre nós. NUMA torna o custo dependente da localização de dados e threads. SIMD aplica uma instrução a vários elementos; MIMD permite sequências diferentes. Threads podem também usar instruções vetoriais.
+
+Localidade temporal reutiliza o mesmo dado; espacial usa endereços próximos. Assumindo linha de cache de 64 bytes e double de 8, cabem oito elementos se alinhados; sem esse alinhamento, oito elementos podem ocupar duas linhas.
+
+Em C, `a[i][j]` numa matriz N×N tem deslocamento $(iN+j)8$. Aumentar j avança 8 bytes; aumentar i avança 8N. Com N=1024, o salto por coluna é 8192 bytes.
+
+<Typst
+  source={linha}
+  format="svg"
+  alt="Elementos vizinhos cabem na mesma linha de cache; o percurso por colunas salta entre linhas. A reutilização depende de as linhas permanecerem na cache."
+/>
+
+Para uma matriz 8×8 alinhada, cache vazia totalmente associativa, contando apenas leituras e sem prefetch/escritas/outros dados:
+
+| Capacidade                 | Por linhas       | Por colunas       |
+| -------------------------- | ---------------- | ----------------- |
+| Toda a matriz, oito linhas | 8 transferências | 8 transferências  |
+| Uma linha                  | 8 transferências | 64 transferências |
+
+A razão oito depende do segundo modelo, sem ser uma regra universal.
+
+## Produto de matrizes e partilha
+
+Com C inicialmente a zero e separado de A/B só de leitura, ijk calcula `c[i][j] += a[i][k]*b[k][j]`, lendo B por coluna. Trocar para ikj permite guardar a[i][k] e percorrer B/C por linhas. Cada célula conserva as contribuições de k; pôr C a zero dentro de k apagaria as anteriores.
+
+Repartir i atribui linhas distintas de C. Repartir k cria acumulações nas mesmas células e exige outra combinação. Localidade melhor não promete speedup fixo. [Estados do produto](/cadeiras/cpd/arquiteturas-memoria-cache/#ordem-dos-ciclos-num-produto-de-matrizes).
+
+Falsa partilha: escritas em variáveis distintas na mesma linha transferem posse entre caches, podendo degradar desempenho sem corrida de dados. Acumula localmente e escreve no fim, ou separa/alinha contadores segundo a máquina. Mede para confirmar a causa.

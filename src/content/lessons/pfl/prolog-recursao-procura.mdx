@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -23,6 +23,7 @@ editorial:
 
 import Dot from '../../../components/Dot.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
+import quantificadores from '../../pfl/examples/quantificadores.pl?raw';
 import Tabs from '../../../components/Tabs.astro';
 import labirinto from '../../pfl/p8labirinto.dot?raw';
 
@@ -37,34 +38,34 @@ soma([], 0).
 soma([H|T], S) :- soma(T, R), S is H + R.
 ```
 
-Cada chamada usa variáveis frescas. A consulta `soma([1,2,3],S)` espera o resultado `R1` de `soma([2,3],R1)`; esta espera `R2` de `soma([3],R2)`, que espera `R3` de `soma([],R3)`. O caso base liga `R3=0`. No regresso calculamos `R2 is 3+0`, `R1 is 2+3` e `S is 1+5`, obtendo `S=6`. O **`is`** avalia o lado direito como expressão aritmética e unifica com a esquerda, ou seja sem ele, `S = H + R` ligaria `S` à expressão por avaliar, não ao número. Todas as variáveis do lado direito têm de estar ligadas quando ele corre; para comparar resultados numéricos, usa `=:=`.
+Cada chamada usa variáveis frescas. A consulta `soma([1,2,3],S)` espera o resultado `R1` de `soma([2,3],R1)`; esta espera `R2` de `soma([3],R2)`, que espera `R3` de `soma([],R3)`. O caso base liga `R3=0`. No regresso calculamos `R2 is 3+0`, `R1 is 2+3` e `S is 1+5`, obtendo `S=6`. O **`is`** avalia o lado direito como expressão aritmética e unifica com a esquerda, pelo que sem ele `S = H + R` ligaria `S` à expressão por avaliar em vez do número. Todas as variáveis do lado direito têm de estar ligadas quando ele corre; para comparar resultados numéricos, usa `=:=`.
 
 ## Corte e findall
 
 Por omissão, o Prolog explora todas as alternativas ao pedir mais soluções. O **corte**, `!`, poda: descarta escolhas criadas desde a entrada no predicado até ao corte e as cláusulas alternativas desse predicado. Objetivos à direita ainda podem ter várias soluções.
 
 ```prolog
-max(X, Y, X) :- X >= Y, !.
-max(X, Y, Y) :- X < Y.
+maximo(X, Y, X) :- X >= Y, !.
+maximo(X, Y, Y) :- X < Y.
 ```
 
-Com o corte, `max(3, 5, M)` usa a primeira cláusula, falha no teste, e o corte nunca chega a correr; a segunda dá `M = 5`. Com `max(7, 5, M)`, o teste passa, o corte elimina a segunda cláusula, e `M = 7` sem deixar alternativa pendente. Este corte é verde nesse contrato, ou seja retirá-lo não acrescenta uma resposta lógica. Um corte que mude respostas é vermelho.
+Com o corte, `maximo(3, 5, M)` usa a primeira cláusula, falha no teste, e o corte nunca chega a correr; a segunda dá `M = 5`. Com `maximo(7, 5, M)`, o teste passa, o corte elimina a segunda cláusula, e `M = 7` sem deixar alternativa pendente. Este corte é verde nesse contrato, ou seja retirá-lo não acrescenta uma resposta lógica. Um corte que mude respostas é vermelho.
 
 Contrasta com um corte vermelho, que decide antes de testar:
 
 ```prolog
-mau_max(X, Y, X) :- !.
-mau_max(X, Y, Y) :- X < Y.
+mau_maximo(X, Y, X) :- !.
+mau_maximo(X, Y, Y) :- X < Y.
 ```
 
-A query `?- mau_max(3, 5, M).` responde `M = 3`, que está errado. Compara os conjuntos de respostas no modo `(+,+,-)`:
+A query `?- mau_maximo(3, 5, M).` responde `M = 3`, que está errado. Compara os conjuntos de respostas no modo `(+,+,-)`:
 
 | Programa  | Respostas para `(3,5,M)` |
 | --------- | ------------------------ |
 | Com corte | `M = 3`                  |
 | Sem corte | `M = 3` e `M = 5`        |
 
-O corte é vermelho porque altera o conjunto de respostas. Mas a resposta errada `3` já existe sem corte, pela primeira cláusula. Não há teste depois desse corte para discutir posição: a primeira cláusula decide sem comparar. No `max` verde, retirar o corte não acrescenta respostas lógicas nesse contrato. A posição do teste, por si só, não define a cor do corte.
+O corte é vermelho porque altera o conjunto de respostas, mas a resposta errada `3` já existe sem corte, pela primeira cláusula, que decide sem comparar. A posição do teste, por si só, não define a cor do corte; no `maximo` verde, retirar o corte não acrescenta respostas lógicas nesse contrato.
 
 Para juntar **todas** as respostas numa lista em vez de as pedir uma a uma, usa `findall`:
 
@@ -96,13 +97,11 @@ A query `?- caminho(a, e, [a], C).` faz **procura em profundidade**: de `a` vai 
   alt="Labirinto de a até e: a liga a b; b liga a c e a d; c e d ligam a e. A descoberta segue a ordem 1 a 5."
 />
 
-Experimenta a soma e o máximo:
-
 <CodePlayground
   language="prolog"
   title="soma e máximo no navegador"
   code={
-    'soma([], 0).\nsoma([H|T], S) :- soma(T, R), S is H + R.\n\nmax(X, Y, X) :- X >= Y, !.\nmax(X, Y, Y) :- X < Y.\n\nmain :- soma([1,2,3], S), write(S), nl, max(7, 5, M), write(M), nl.'
+    'soma([], 0).\nsoma([H|T], S) :- soma(T, R), S is H + R.\n\nmaximo(X, Y, X) :- X >= Y, !.\nmaximo(X, Y, Y) :- X < Y.\n\nmain :- soma([1,2,3], S), write(S), nl, maximo(7, 5, M), write(M), nl.'
   }
 />
 
@@ -110,7 +109,7 @@ No grafo finito, cada passo visita um estado novo no caminho, por isso não pode
 
 ## SICStus na aula, SWI em casa
 
-O Prolog da cadeira é o SICStus; o do navegador destas páginas é o SWI. A sintaxe base das cláusulas é comum, mas os predicados de biblioteca e de escrita diferem. Para escrita portátil, usa `write/1` e `nl/0`. Alguns exemplos no navegador usam `writeln/1`, identificado aqui como a forma SWI; não assumes que todas as bibliotecas se carregam da mesma maneira. O que muda é o ambiente:
+O Prolog da cadeira é o SICStus e o do navegador destas páginas é o SWI; a sintaxe base das cláusulas é comum, mas os predicados de biblioteca e de escrita diferem. Para escrita portátil, usa `write/1` e `nl/0`. Alguns exemplos no navegador usam `writeln/1`, identificado aqui como a forma SWI; não assumes que todas as bibliotecas se carregam da mesma maneira. O que muda é o ambiente:
 
 <Tabs id="sicstus-swi" labels={['SICStus (aula)', 'SWI e SWISH (casa)']}>
   <div slot="panel-0">
@@ -157,7 +156,7 @@ Uma desigualdade por não unificação, `X \= Y`, falha se os termos puderem ser
 
 ### Modos de chamada e `is`
 
-Documenta cada predicado com o modo, por exemplo `soma(+ListaDeNumeros, -Total)`. Com saída livre, `soma([1,2,3],S)` calcula `S=6`. Com saída instanciada, `soma([1,2,3],6)` confirma e `soma([1,2,3],5)` falha. `soma([1,X],6)` não resolve uma equação para `X`: chega a `is` com um operando desconhecido e produz um erro de instanciação. Os modos indicam como usar o predicado, mas não são declarações de tipo verificadas pelo motor.
+Documenta cada predicado com o modo, por exemplo `soma(+ListaDeNumeros, -Total)`: com saída livre, `soma([1,2,3],S)` calcula `S=6`, e com saída instanciada, `soma([1,2,3],6)` confirma enquanto `soma([1,2,3],5)` falha. `soma([1,X],6)` não resolve uma equação para `X`, pois chega a `is` com um operando desconhecido e produz um erro de instanciação. Os modos indicam como usar o predicado, mas não são declarações de tipo verificadas pelo motor.
 
 ## Acumuladores e terminação
 
@@ -169,10 +168,56 @@ soma_acc([],A,A).
 soma_acc([X|Xs],A,S) :- B is A+X, soma_acc(Xs,B,S).
 ```
 
-Com uma lista finita de números, o comprimento da lista diminui até zero. Com uma lista livre, este programa pode tentar gerar listas e acabar numa expressão aritmética com uma variável desconhecida. Documenta o modo esperado, por exemplo `soma_acc(+ListaDeNumeros,-Total)`.
+Com uma lista finita de números, o comprimento da lista diminui até zero; com uma lista livre, este programa pode tentar gerar listas e acabar numa expressão aritmética com uma variável desconhecida. Documenta o modo esperado, por exemplo `soma_acc(+ListaDeNumeros,-Total)`.
 
 ## Reconhecer um corte vermelho
 
-Se a segunda cláusula de `max` fosse apenas `max(_,Y,Y)`, retirar o corte permitiria também devolver `Y` quando `X` fosse maior. O corte corrigiria a escolha naquele modo, mas alteraria as respostas lógicas: seria vermelho. Há ainda um contraexemplo com resultado já preenchido: `max(7,5,5)` pode saltar a primeira cabeça e ter sucesso na segunda. A versão desta página conserva a guarda `X < Y` e recusa essa resposta errada.
+Se a segunda cláusula de `maximo` fosse apenas `maximo(_,Y,Y)`, retirar o corte permitiria também devolver `Y` quando `X` fosse maior. O corte corrigiria a escolha naquele modo, mas alteraria as respostas lógicas: seria vermelho. Há ainda um contraexemplo com resultado já preenchido: `maximo(7,5,5)` pode saltar a primeira cabeça e ter sucesso na segunda. A versão desta página conserva a guarda `X < Y` e recusa essa resposta errada.
 
 Usa cortes depois de conhecer o conjunto de respostas sem eles. Desenha que escolhas cada corte elimina, verifica objetivos à direita e testa resultados já instanciados. A aparência de determinismo numa só consulta não prova correção nos restantes modos.
+
+## Negar a existência de um irmão
+
+Suponhamos uma base finita que regista as crianças Ana, Bruno e Rui uma vez em `crianca/1`. Tomás é pai de Ana e Bruno; Inês é mãe apenas de Ana; José e Maria são os pais de Rui. Nesta base, Ana e Bruno têm um irmão por partilharem Tomás, mesmo não tendo ambos os pais em comum.
+
+Para procurar crianças sem irmãos, gera primeiro uma criança e só depois pergunta se existe **algum** progenitor partilhado com outra:
+
+```prolog
+sem_irmaos(P) :-
+    crianca(P),
+    \+ (progenitor(M,P), progenitor(M,O), O \= P).
+```
+
+Com `P=ana`, o objetivo negado encontra `M=tomas, O=bruno`, por isso falha. Com `P=rui`, nenhum dos dois progenitores tem outra criança registada e a negação sucede. O resultado depende da completude destes registos, não é uma conclusão sobre familiares que a base desconhece.
+
+Mover `progenitor(M,P)` para fora da negação mudaria a pergunta para «existe um progenitor sem outra criança». Inês faria Ana passar, apesar de ter Bruno como irmão. Rui poderia ainda aparecer duas vezes, uma por cada progenitor. `crianca/1` fornece um candidato único; as provas internas da negação não acrescentam respostas para esse candidato.
+
+## Exigir existência em cada elemento da lista
+
+Um utilizador pode ver um vídeo seu ou de alguém que segue. «Pode ver todos os vídeos pedidos» exige verificar **cada id pedido**, incluindo que esse vídeo existe:
+
+```prolog
+pode_ver(U,V) :- video(V,D), (D=U ; segue(U,D)).
+todos_visiveis(U,Vs) :- utilizador(U), todos(U,Vs).
+todos(_,[]).
+todos(U,[V|Vs]) :- pode_ver(U,V), todos(U,Vs).
+```
+
+O contrato usa um utilizador conhecido e uma lista própria finita de ids instanciados; cada vídeo tem um proprietário único. Uma lista vazia passa para um utilizador registado. Um vídeo ausente faz falhar `video/2`, e um proprietário não seguido faz falhar a permissão. A recursão só continua depois de validar a cabeça.
+
+Contrasta com procurar uma violação apenas entre vídeos existentes:
+
+```prolog
+incompleto(U,Vs) :-
+    \+ (member(V,Vs), video(V,D), \+ (D=U ; segue(U,D))).
+```
+
+Para `[99]`, sem `video(99,_)`, o objetivo interior falha **antes** de testar a permissão. A negação exterior sucede e aceita erradamente o pedido. O id desapareceu da procura de contraexemplos; não foi validado. Se preferires uma dupla negação para «todos», o contraexemplo deve incluir tanto ausência como falta de permissão.
+
+<CodePlayground
+  language="prolog"
+  title="Candidatos, negação e vídeos ausentes"
+  code={quantificadores}
+/>
+
+A base do exemplo dá `[rui]`, aceita os vídeos 10 e 11 para Ana, recusa 99 no predicado completo e mostra a aceitação errada pelo incompleto. Usa `write/1` e `nl/0`, formas comuns a SWI e SICStus; a execução no navegador é SWI.

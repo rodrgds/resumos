@@ -101,7 +101,7 @@ CREATE TABLE bilhetes (
 );
 ```
 
-Algumas restrições são locais: o email único vira `UNIQUE`, a lotação positiva vira `CHECK`, o estado limitado aos três valores vira `CHECK` com a lista. `GENERATED ALWAYS AS IDENTITY` gera os identificadores; `PRIMARY KEY` acrescenta unicidade e obrigatoriedade. A FK continua a ser um inteiro normal, sem gerar novos identificadores. `SERIAL` é a alternativa antiga, ainda suportada. A exigência de pelo menos uma sessão por evento e o limite total de bilhetes ainda não são garantidos por este SQL. Repara que `descricao` aceita nulos e `titulo` não: um evento sem descrição ainda se vende, um evento sem título não se apresenta.
+Algumas restrições são locais: o email único vira `UNIQUE`, a lotação positiva vira `CHECK` e o estado limitado aos três valores vira `CHECK` com a lista; `GENERATED ALWAYS AS IDENTITY` gera os identificadores, enquanto `PRIMARY KEY` acrescenta unicidade e obrigatoriedade. A FK continua a ser um inteiro normal, sem gerar novos identificadores, e `SERIAL` é a alternativa antiga, ainda suportada. A exigência de pelo menos uma sessão por evento e o limite total de bilhetes ainda não são garantidos por este SQL; `descricao` aceita nulos e `titulo` não, pois um evento sem descrição ainda se vende, mas um evento sem título não se apresenta.
 
 ## Uma violação de chave estrangeira explicada
 
@@ -112,9 +112,7 @@ INSERT INTO bilhetes (utilizador_id, sessao_id, codigo, estado)
 VALUES (1, 999, 'B-0001', 'reservado');
 ```
 
-O PostgreSQL recusa com erro de violação de chave estrangeira: a sessão 999 não está na tabela `sessoes`, por isso o bilhete ficaria a apontar para o vazio. Esta recusa é a integridade referencial a funcionar. Sem a chave estrangeira, a inserção passava e a aplicação mostrava um bilhete para uma sessão fantasma, com erro só na página de confirmação, longe da causa.
-
-A mesma proteção vale ao apagar: não consegues apagar um evento que ainda tem sessões, porque as sessões ficariam órfãs. Decide por tabela o comportamento, apagar em cascata ou bloquear, em vez de descobrires a meio do projeto.
+O PostgreSQL recusa com erro de violação de chave estrangeira, pois a sessão 999 não está na tabela `sessoes` e o bilhete ficaria a apontar para o vazio; esta recusa é a integridade referencial a funcionar. Sem a chave estrangeira, a inserção passava e a aplicação mostrava um bilhete para uma sessão fantasma, com erro só na página de confirmação, longe da causa. A mesma proteção vale ao apagar: não consegues apagar um evento que ainda tem sessões, porque as sessões ficariam órfãs, por isso decide por tabela o comportamento, apagar em cascata ou bloquear, em vez de descobrires a meio do projeto.
 
 <Dot
   source={
@@ -180,3 +178,31 @@ A validação do esquema continua com [dependências funcionais e normalização
 A5 documenta cada relação em notação compacta antes do DDL. Lê `bilhetes(id, utilizador_id -> utilizadores NN, sessao_id -> sessoes NN, codigo UK NN, estado NN CK estado IN Estados)`: cada `->` é uma chave estrangeira, `UK` é unicidade, `NN` é obrigatório, `CK` é verificação e `Estados` é o domínio dos três valores. Traduz cada marca para SQL: `NN` vira `NOT NULL`, `UK` vira `UNIQUE`, `CK` vira `CHECK`, `->` vira `REFERENCES`.
 
 Em PostgreSQL, uma base de dados contém schemas e cada schema contém tabelas. O `search_path` diz em que schema o servidor procura tabelas sem prefixo. No servidor da faculdade, o schema `public` é partilhado: cria o schema do grupo com `CREATE SCHEMA lbawXXg` e começa os scripts com `SET search_path TO lbawXXg`, para não criar tabelas no schema partilhado.
+
+## Uma referência a um par
+
+Numa extensão da loja com lugares numerados, o lugar 90 pertence a S12 e o lugar 91 a S13. Um bilhete que guarda `lugar_id=90` e `sessao_id=13` mistura referências existentes, mas descreve uma combinação impossível. Duas FKs independentes só verificariam que 90 e 13 existem.
+
+Uma **chave estrangeira composta** verifica que o par existe na mesma linha da relação referida:
+
+```sql
+CREATE TABLE lugares (
+  id INTEGER PRIMARY KEY,
+  sessao_id INTEGER NOT NULL REFERENCES sessoes(id),
+  numero TEXT NOT NULL,
+  UNIQUE (sessao_id, numero),
+  UNIQUE (id, sessao_id)
+);
+CREATE TABLE bilhetes_com_lugar (
+  id INTEGER PRIMARY KEY,
+  lugar_id INTEGER NOT NULL,
+  sessao_id INTEGER NOT NULL,
+  FOREIGN KEY (lugar_id, sessao_id) REFERENCES lugares(id, sessao_id)
+);
+```
+
+`UNIQUE(sessao_id, numero)` impede dois lugares A1 na mesma sessão, mas permite A1 em sessões diferentes. `UNIQUE(id, sessao_id)` é redundante quanto à unicidade, pois id já é PK, mas fornece a chave declarada que esta FK composta referencia. O par `(90,12)` passa; `(90,13)` é recusado.
+
+Os dois `NOT NULL` também fazem parte da regra. Com o comportamento predefinido `MATCH SIMPLE`, uma FK composta não exige correspondência quando algum componente é NULL. Para um bilhete que exige lugar e sessão, não deixes essa saída aberta. Se não precisas de guardar a sessão no bilhete, referir só o lugar e obter a sessão por junção evita duplicar essa informação. O exemplo mostra como garantir coerência quando ambos os campos têm de ficar guardados.
+
+Esta regra cabe numa FK, por isso não precisa de um trigger que consulte os lugares. Usa primeiro as restrições declarativas que exprimem a invariante. A atribuição exclusiva de um lugar a bilhetes ativos é outra regra e exigiria uma restrição própria; este esquema só verifica a pertença do lugar à sessão.

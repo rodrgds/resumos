@@ -32,7 +32,7 @@ Não uses `while (!entrada.eof())`: `eof()` relata que uma operação anterior e
 | `bad()`  | Falha grave de I/O                                 |
 | `eof()`  | Uma operação encontrou o fim                       |
 
-Estados podem coexistir. Depois de uma falha, `clear()` limpa os indicadores, mas também tens de consumir ou corrigir a entrada problemática para haver progresso. `ignore(..., '\n')` pode descartar o resto da linha.
+Estados podem coexistir, por isso depois de uma falha, `clear()` limpa os indicadores, mas também tens de consumir ou corrigir a entrada problemática para haver progresso. `ignore(..., '\n')` pode descartar o resto da linha.
 
 ## Validar um registo por linha
 

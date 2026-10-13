@@ -6,9 +6,16 @@ section: conteudo
 practices:
   - c/praticar-analise-sintatica
 order: 3
+editorial:
+  sources:
+    - title: 'Teste 1, 23/4/2026, transformações e conjuntos de previsão'
+      url: https://accio.pt/uploads/contributions/GCpohUGcAs.pdf
+  gaps:
+    - Fonte histórica de apoio; não confirma o enunciado ou a profundidade da edição de 2026/27.
 ---
 
 import Typst from '../../../components/Typst.astro';
+import YouTube from '../../../components/YouTube.astro';
 import Dot from '../../../components/Dot.astro';
 import Tabs from '../../../components/Tabs.astro';
 import derivacao from '../../c/derivacao.dot?raw';
@@ -30,9 +37,7 @@ A expressão `a + a * a` tem agora uma única árvore, embora possa ter diferent
   alt="Duas árvores para a mais a vezes a: em cima a leitura sem precedência com o produto na raiz, em baixo a soma na raiz e o produto no ramo direito."
 />
 
-Só a árvore de baixo respeita a precedência definida, com o `*` no ramo direito. É dela que sai o cálculo $(a + (a \times a))$. Com `a = 3`, dá 12; a árvore de cima dá 18.
-
-A mesma derivação vista como grafo, da raiz para as folhas.
+Só a árvore de baixo respeita a precedência definida, com o `*` no ramo direito. É dela que sai o cálculo $(a + (a \times a))$: com `a = 3`, dá 12, enquanto a árvore de cima dá 18. A mesma derivação aparece a seguir como grafo, da raiz para as folhas.
 
 <Dot
   source={derivacao}
@@ -43,9 +48,20 @@ A mesma derivação vista como grafo, da raiz para as folhas.
 
 A árvore de derivação guarda os não terminais e a pontuação da gramática. A **árvore sintática abstrata** (AST) guarda as operações e os seus operandos, sem nós auxiliares como `E`, `T` e `F`. Os parênteses influenciam a estrutura, mas já não precisam de ser nós.
 
+:::warning[Duas derivações não bastam para provar ambiguidade]
+Podemos expandir primeiro um ramo ou outro e obter a mesma árvore. A ambiguidade exige duas árvores de derivação distintas para a mesma sequência de tokens. Para `a + a * a`, a gramática com precedência fixa a árvore, mesmo que a ordem de expansão dos ramos varie.
+:::
+
+Para rever o pré-requisito de linguagens e gramáticas livres de contexto, podes acompanhar o vídeo seguinte. A distinção entre árvore de derivação e AST mantém-se na explicação acima.
+
+<YouTube
+  id="N_9wsDt-lBw"
+  title="Linguagens e Gramáticas Independentes de Contexto"
+/>
+
 Duas famílias de analisadores dominam:
 
-- **Descendentes** (_top-down_, LL): constroem a árvore da raiz para as folhas, prevendo a regra a aplicar a partir do próximo símbolo. São os que escreves à mão com mais facilidade: uma função por não terminal. Num analisador preditivo LL(1), a recursão à esquerda impede avançar antes de voltar a chamar a mesma função. É preciso removê-la e tornar a escolha de produção decidível com um token.
+- **Descendentes** (_top-down_, LL): constroem a árvore da raiz para as folhas, prevendo a regra a aplicar a partir do próximo símbolo. São os que escreves à mão com mais facilidade: uma função por não terminal. Num analisador preditivo LL(1), a recursão à esquerda faz a função chamar-se a si própria antes de consumir qualquer símbolo, por isso nunca avança. É preciso removê-la e tornar a escolha de produção decidível com um token.
 - **Ascendentes** (_bottom-up_, LR): leem os símbolos empilhando e reduzem para não terminais quando reconhecem o lado direito de uma regra. Aceitam uma classe maior de gramáticas e são os gerados por ferramentas clássicas. Ferramentas como Bison geram analisadores deste tipo.
 
 O ANTLR 4 gera analisadores descendentes com previsão adaptativa. Aceita certas regras diretamente recursivas à esquerda e transforma-as internamente, com precedência definida pela ordem das alternativas. Não é um gerador LR nem um simples analisador LL(1).
@@ -96,6 +112,49 @@ Com `E → E + num | num`, a sequência para `num + num` pode seguir estes passo
 
 Um **item** marca com um ponto quanto de uma produção já foi reconhecido: `E → E + · num` espera `num`; `E → E + num ·` permite uma redução, se a tabela a autorizar. Em SLR, as reduções de uma produção completa usam as colunas de `FOLLOW` do seu lado esquerdo. Um conflito shift/reduce oferece as duas ações na mesma célula; um conflito reduce/reduce oferece duas reduções, porque reconhecer um lado direito no topo, por si só, não chega para escolher com segurança.
 
+## Recursão à esquerda e prefixos comuns
+
+Retirar recursão à esquerda e fatorizar alternativas resolve problemas diferentes. Na gramática seguinte, Lista chama-se antes de ler uma instrução; as duas alternativas de declaração começam pelos mesmos tokens:
+
+```text
+Lista -> Lista Inst | ε
+Inst -> let id = num ; | let id ; | print id ;
+```
+
+Um analisador descendente ingénuo entra em Lista outra vez sem consumir entrada. Podemos usar `Lista -> Inst Lista | ε`, ou uma função que lê instruções num ciclo. A linguagem continua a ser uma sequência, possivelmente vazia, de instruções.
+
+Já em Inst, ver `let` não distingue as duas declarações. Fatoriza o prefixo comum e adia a escolha até ao token que realmente difere:
+
+```text
+Lista -> Inst Lista | ε
+Inst -> let id Cauda | print id ;
+Cauda -> = num ; | ;
+```
+
+Depois de consumir `let id`, `=` escolhe a declaração inicializada e `;` a sem inicializador. O pseudocódigo usa `match`, que exige o token indicado e avança, e `next`, o token seguinte:
+
+```text
+inst():
+  se next = let:
+    match(let); match(id)
+    se next = =:
+      match(=); match(num); match(;)
+    senão se next = ;:
+      match(;)
+    senão: erro
+  senão se next = print:
+    match(print); match(id); match(;)
+  senão: erro
+
+lista():
+  enquanto next pertence a {let, print}: inst()
+  se next não é $: erro
+```
+
+`let id = num ; print id ;` executa duas chamadas de inst e termina no marcador `$`. Em `let id = ;`, a escolha de Cauda foi possível, mas `match(num)` falha: fatorizar não torna válidas entradas incompletas. A alternativa vazia de Lista só pode ser tomada ao ver o fim, porque esse é o seu FOLLOW nesta gramática inicial.
+
+Transformar a gramática preserva as palavras, mas não escolhe sozinho a construção da AST. Para operadores associativos à esquerda, uma função com um ciclo deve acumular a árvore à esquerda. Construir sempre o operando restante como filho direito mudaria, por exemplo, a interpretação das subtrações.
+
 ## FIRST, FOLLOW e tabela LL(1)
 
 Num analisador **LL(1)**, o primeiro L indica leitura da esquerda para a direita, o segundo uma derivação mais à esquerda, e 1 indica um símbolo de avanço. A escolha usa dois conjuntos:
@@ -118,6 +177,32 @@ Análise de `id + id` (pilha à esquerda, entrada à direita), passo a passo:
 | `$`             | `$`         | aceite                          |
 
 Cada decisão usa um símbolo e nunca volta atrás: é por isso que este analisador corre em tempo linear. Se uma célula da tabela tivesse duas regras, a gramática não seria LL(1). Poderias transformá-la ou escolher um analisador com mais capacidade de previsão.
+
+### FIRST de uma sequência e propagação de FOLLOW
+
+Não basta olhar para o primeiro nome do lado direito. Se ele puder desaparecer, o token inicial pode vir do seguinte. Considera S inicial:
+
+```text
+S -> A B C
+A -> a | ε
+B -> b | ε
+C -> c
+```
+
+A pode começar por a ou desaparecer. Nesse segundo caso, B pode começar por b ou também desaparecer, deixando C começar por c. Por isso `FIRST(ABC) = {a,b,c}`. Não inclui ε: C não desaparece. Em geral, avança pela sequência enquanto os símbolos forem anuláveis; só inclui ε se todos forem anuláveis.
+
+Para FOLLOW, examina a sequência **depois** de cada ocorrência. Depois de A está BC. Acrescenta `FIRST(BC) − {ε} = {b,c}` a FOLLOW(A). Como BC não desaparece, não transfere o FOLLOW de S para A. Depois de B está C, logo FOLLOW(B) recebe c. C está no fim, pelo que recebe FOLLOW(S):
+
+| Não terminal | FIRST   | FOLLOW |
+| ------------ | ------- | ------ |
+| S            | a, b, c | $      |
+| A            | a, ε    | b, c   |
+| B            | b, ε    | c      |
+| C            | c       | $      |
+
+Assim, ao ver c, o analisador pode escolher A→ε e depois B→ε, sem consumir c nesses passos. C é que o consome. Ao ver `$` no início, S não tem produção válida e rejeita a entrada vazia.
+
+Se a sequência depois de uma ocorrência for toda anulável, transfere também o FOLLOW do lado esquerdo. Repete a propagação até nenhum conjunto mudar, porque uma regra pode receber informação através de outras regras. O cálculo usa todas as ocorrências do não terminal, não apenas a primeira encontrada.
 
 ## Erros sintáticos úteis
 

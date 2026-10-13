@@ -1,0 +1,42 @@
+import Typst from '../../../components/Typst.astro';
+import normal from '../../lessons/cg/normal.typ?raw';
+
+## Malha e conectividade
+
+- Vértices guardam posições; arestas ligam pares; faces triangulares usam três índices. Três pontos não colineares definem um plano; um quadrilátero pode não ser plano.
+- Partilhar posições evita atualizar cópias. Arestas e estruturas como winged-edge permitem percorrer vizinhos; uma aresta de fronteira com uma face incidente é válida numa superfície aberta.
+- Mais triângulos aproximam melhor curvas, com maior custo de memória e processamento.
+
+## Normal, orientação e reflexão
+
+$$
+n=(B-A)\times(C-A),\qquad \hat n=n/\lVert n\rVert.
+$$
+
+Exige triângulo não degenerado. Trocar B e C inverte a normal. Com pontos repetidos ou colineares, n é zero e não se normaliza.
+
+<Typst
+  source={normal}
+  format="svg"
+  alt="Triângulo ABC em ordem contrária aos ponteiros do relógio, com normal +z a sair da página."
+/>
+
+- Normais de vértice podem resultar de médias ponderadas das faces, seguidas de normalização. Numa aresta afiada, conserva normais separadas.
+- A face frontal padrão de OpenGL/WebGL usa ordem contrária aos ponteiros do relógio **em coordenadas de janela**. Culling, quando ativado, elimina a orientação escolhida, sem resolver ocultação entre faces frontais.
+- Espelhar x em $A=(0,0,0)$, $B=(1,0,0)$, $C=(0,1,0)$ inverte a ordem na projeção ortográfica xy: a normal geométrica passa de +z para −z. Para conservar o lado frontal, pode inverter-se a ordem de dois índices ou ajustar-se a convenção da instância. Mudar só a normal do shader não altera culling. [Reflexão e diagnóstico](/cadeiras/cg/modelacao-malhas/#reflexão-e-orientação-projetada).
+
+## Sólidos e representações
+
+Uma fronteira de sólido exige fecho, orientação coerente, ausência de autointerseções e vizinhanças de vértices que formem uma superfície. Duas faces por aresta não bastam para validar toda a malha.
+
+Para poliedro convexo fechado, $V-E+F=2$. Cubo: $8-12+6=2$; com faces trianguladas: $8-18+12=2$. Euler não prova validade e não tem este valor para todas as topologias.
+
+| Representação   | O que guarda ou constrói                                                |
+| --------------- | ----------------------------------------------------------------------- |
+| B-rep           | Faces e conectividade da fronteira                                      |
+| CSG             | Árvore de primitivas e operações; furar A com B usa $A\setminus B$      |
+| Varrimento      | Forma deslocada numa trajetória; extrusão precisa de tampas para fechar |
+| Voxels / octree | Células ocupadas; octree divide em oito para concentrar detalhe         |
+| BSP             | Divisão do espaço por planos, incluindo orientações arbitrárias         |
+
+São escolhas de representação, sem garantia automática de um sólido válido.

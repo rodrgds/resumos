@@ -13,24 +13,24 @@ import Dot from '../../../components/Dot.astro';
 import normal from './normal.typ?raw';
 import malha from './malha.dot?raw';
 
-Um quadrado pode ser desenhado por dois triângulos que partilham uma diagonal. Uma **malha poligonal** guarda estas faces e as relações entre os seus vértices e arestas. A geometria determina a superfície; a ordem dos vértices e as normais determinam a orientação usada no desenho e na iluminação.
+Um quadrado pode ser desenhado por dois triângulos que partilham uma diagonal. Uma **malha poligonal** guarda estas faces e as relações entre os seus vértices e arestas; a geometria determina a superfície, enquanto a ordem dos vértices e as normais determinam a orientação usada no desenho e na iluminação.
 
 ## Vértices, índices e conectividade
 
-Uma malha descreve três tipos de elementos: **vértices** (posições 3D), **arestas** (pares de vértices) e **faces** (normalmente triângulos, trios de vértices). O triângulo é a face preferida porque três pontos não colineares definem um plano. Os quatro vértices de um quadrilátero podem não ser coplanares. Uma lista de vértices e índices das faces evita repetir posições; as arestas podem ser implícitas ou guardadas para consultar vizinhos.
+Uma malha descreve três tipos de elementos: **vértices** (posições 3D), **arestas** (pares de vértices) e **faces** (normalmente triângulos, trios de vértices). O triângulo é a face preferida porque três pontos não colineares definem um plano, enquanto os quatro vértices de um quadrilátero podem não ser coplanares. Uma lista de vértices e índices das faces evita repetir posições; as arestas podem ser implícitas ou guardadas para consultar vizinhos.
 
-Por exemplo, guarda $A=(0,0,0)$, $B=(1,0,0)$, $C=(0,1,0)$ e $D=(1,1,0)$ uma única vez. As faces $ABC$ e $BDC$ partilham a aresta $BC$. Alterar a posição de B nesta lista altera as duas faces; numa lista explícita com seis posições, seria preciso atualizar as duas cópias de B.
+Por exemplo, guarda $A=(0,0,0)$, $B=(1,0,0)$, $C=(0,1,0)$ e $D=(1,1,0)$ uma única vez, com as faces $ABC$ e $BDC$ a partilhar a aresta $BC$. Alterar a posição de B nesta lista altera as duas faces; numa lista explícita com seis posições, seria preciso atualizar as duas cópias de B.
 
-A lista de índices ainda não responde diretamente a "quais são as faces adjacentes a BC?". Uma estrutura de arestas pode guardar os dois extremos e as faces incidentes. Estruturas como a _winged-edge_ de Baumgart acrescentam ligações para percorrer as arestas vizinhas. Uma aresta de fronteira só tem uma face incidente; não é um erro numa superfície aberta.
+A lista de índices ainda não responde diretamente a "quais são as faces adjacentes a BC?". Uma estrutura de arestas pode guardar os dois extremos e as faces incidentes, e estruturas como a _winged-edge_ de Baumgart acrescentam ligações para percorrer as arestas vizinhas. Uma aresta de fronteira só tem uma face incidente; não é um erro numa superfície aberta.
 
-Mais triângulos pode melhorar a aproximação de uma superfície curva, com maior custo de memória e processamento.
+Mais triângulos aproximam melhor uma superfície curva, pois cada face plana cobre uma porção menor, mas pagam-se com maior custo de memória e processamento.
 
 <Dot
   source={malha}
   alt="Grafo da estrutura da malha: a malha divide-se em vértices com posições 3D, arestas como pares de vértices e faces como trios de vértices."
 />
 
-Cada face tem dois lados: a **face frontal**, que pode ser candidata a desenhar, e a **face traseira**, que normalmente se descarta. O que distingue uma da outra é a **ordem dos vértices** (_winding_): na convenção padrão de OpenGL/WebGL, a face é frontal se a projeção dos vértices na janela tiver sentido contrário aos ponteiros do relógio. Pode escolher-se o sentido oposto. O _backface culling_, quando ativado, descarta as faces traseiras antes da rasterização. Não resolve a ocultação entre faces frontais.
+Cada face tem dois lados: a **face frontal**, que pode ser candidata a desenhar, e a **face traseira**, que normalmente se descarta. O que distingue uma da outra é a **ordem dos vértices** (_winding_): na convenção padrão de OpenGL/WebGL, a face é frontal se a projeção dos vértices na janela tiver sentido contrário aos ponteiros do relógio, embora se possa escolher o sentido oposto. O _backface culling_, quando ativado, descarta as faces traseiras antes da rasterização, mas não resolve a ocultação entre faces frontais.
 
 ## Normal e orientação de uma face
 
@@ -40,7 +40,7 @@ $$
 \mathbf{n} = (B - A) \times (C - A).
 $$
 
-Se os vértices forem colineares ou repetidos, o produto é zero: o triângulo é degenerado e não tem uma normal unitária. Caso contrário, segue-se a normalização $\hat{\mathbf{n}} = \mathbf{n} / \lVert \mathbf{n} \rVert$. Pela regra da mão direita, esta normal aponta para o lado de onde os vértices $A$, $B$, $C$ se veem por ordem contrária aos ponteiros do relógio, Para uma fronteira fechada, escolhemos uma ordem consistente que a faça apontar para fora.
+Se os vértices forem colineares ou repetidos, o produto é zero e o triângulo é degenerado, sem uma normal unitária. Caso contrário, segue-se a normalização $\hat{\mathbf{n}} = \mathbf{n} / \lVert \mathbf{n} \rVert$; pela regra da mão direita, esta normal aponta para o lado de onde os vértices $A$, $B$, $C$ se veem por ordem contrária aos ponteiros do relógio. Para uma fronteira fechada, escolhemos uma ordem consistente que a faça apontar para fora.
 
 Toma $A = (0, 0, 0)$, $B = (1, 0, 0)$ e $C = (0, 1, 0)$. As arestas são $B - A = (1, 0, 0)$ e $C - A = (0, 1, 0)$, e o produto vetorial dá:
 
@@ -48,7 +48,7 @@ $$
 \mathbf{n} = (1, 0, 0) \times (0, 1, 0) = (0 \cdot 0 - 0 \cdot 1,\ 0 \cdot 0 - 1 \cdot 0,\ 1 \cdot 1 - 0 \cdot 0) = (0, 0, 1).
 $$
 
-O módulo é $1$, por isso a normal unitária é $(0, 0, 1)$: aponta para $+z$, perpendicular ao plano $xy$ onde vive o triângulo. Se trocares $B$ com $C$, a normal sai $(0, 0, -1)$ e a face passa a olhar para o outro lado. Numa fronteira fechada, inverter todas as faces troca exterior e interior. Num triângulo isolado, é preciso escolher qual lado se pretende tratar como frontal.
+O módulo é $1$, por isso a normal unitária é $(0, 0, 1)$: aponta para $+z$, perpendicular ao plano $xy$ onde vive o triângulo. Se trocares $B$ com $C$, a normal sai $(0, 0, -1)$ e a face passa a olhar para o outro lado. Numa fronteira fechada, inverter todas as faces troca exterior e interior; num triângulo isolado, é preciso escolher qual lado se pretende tratar como frontal.
 
 O desenho mostra esse triângulo visto de cima: os vértices $A$, $B$ e $C$ por ordem contrária aos ponteiros do relógio, e a normal a sair da página para $+z$.
 
@@ -62,16 +62,32 @@ O desenho mostra esse triângulo visto de cima: os vértices $A$, $B$ e $C$ por 
 Na prática, pode calcular-se a normal de um vértice pela média, eventualmente ponderada por áreas ou ângulos, das normais das faces vizinhas. Normaliza o resultado. A interpolação destas normais faz uma esfera parecer arredondada em vez de facetada. Para uma aresta que deve parecer afiada, conserva normais separadas nas duas faces em vez de as misturar. Vais usar esta ideia no sombreamento de Phong.
 :::
 
+## Reflexão e orientação projetada
+
+Uma escala negativa pode espelhar uma malha e inverter a ordem projetada das faces. Considera o triângulo anterior visto de $+z$, com projeção ortográfica $x'=x$, $y'=y$, origem inferior esquerda e faces frontais definidas por ordem contrária aos ponteiros do relógio. Aplica $L=\operatorname{diag}(-1,1,1)$:
+
+| Vértice | Antes     | Depois da reflexão |
+| ------- | --------- | ------------------ |
+| A       | $(0,0,0)$ | $(0,0,0)$          |
+| B       | $(1,0,0)$ | $(-1,0,0)$         |
+| C       | $(0,1,0)$ | $(0,1,0)$          |
+
+Antes, $(B-A)\times(C-A)=(0,0,1)$; depois, $(B'-A')\times(C'-A')=(0,0,-1)$. A ordem A, B, C passou de contrária aos ponteiros do relógio para a ordem dos ponteiros do relógio nesta projeção. Com descarte de faces traseiras ativo, o triângulo refletido deixa de ser desenhado desse lado, apesar de continuar dentro do enquadramento.
+
+Se a intenção é conservar esse lado como frontal, pode inverter-se a ordem de dois índices da face ou ajustar-se a convenção de face frontal para a instância refletida. Alterar só a normal fornecida ao shader muda a iluminação, mas não muda o teste de orientação projetada. Mantém os índices e as normais coerentes com o lado que queres representar.
+
+Não confundas uma reflexão com uma rotação: esta escala tem determinante $-1$ e inverte a orientação; uma rotação própria tem determinante $+1$. A conclusão sobre o culling aqui usa a câmara e a projeção dadas, pois a API testa a orientação em coordenadas de janela.
+
 ## Fronteira de um sólido
 
-Triângulos soltos não chegam para operações como furar ou unir objetos: é preciso saber o que é dentro e fora. Para delimitar um **sólido** com uma malha, a fronteira tem de ser fechada, orientável e sem autointerseções. Cada aresta pertence a duas faces e a vizinhança de cada vértice tem de formar uma superfície, sem peças que se toquem só num ponto. As condições sobre as arestas, por si só, não chegam. Representações como fronteira por faces, geometria sólida construtiva (união, interseção e diferença de primitivas) ou voxels impõem essa validade de formas diferentes. Uma malha para renderizar pode ter falhas que uma malha para imprimir em 3D não pode ter.
+Triângulos soltos não chegam para operações como furar ou unir objetos, pois é preciso saber o que é dentro e fora. Para delimitar um **sólido** com uma malha, a fronteira tem de ser fechada, orientável e sem autointerseções; cada aresta pertence a duas faces e a vizinhança de cada vértice tem de formar uma superfície, sem peças que se toquem só num ponto. As condições sobre as arestas, por si só, não chegam. Representações como fronteira por faces, geometria sólida construtiva (união, interseção e diferença de primitivas) ou voxels impõem essa validade de formas diferentes. Uma malha para renderizar pode ter falhas que uma malha para imprimir em 3D não pode ter.
 
 ### Verificar a fronteira
 
-Para um poliedro convexo fechado, $V-E+F=2$, onde $V$ conta vértices, $E$ arestas e $F$ faces. Um cubo tem $8-12+6=2$. Se dividirmos cada face quadrada em dois triângulos, acrescentamos seis diagonais e passamos a $8-18+12=2$. A igualdade é um controlo de topologia, não prova a ausência de autointerseções. Uma fronteira com um túnel tem outra característica de Euler; não uses a fórmula do poliedro convexo em todas as malhas.
+Para um poliedro convexo fechado, $V-E+F=2$, onde $V$ conta vértices, $E$ arestas e $F$ faces. Um cubo tem $8-12+6=2$, e se dividirmos cada face quadrada em dois triângulos acrescentamos seis diagonais e passamos a $8-18+12=2$. A igualdade é um controlo de topologia, não prova a ausência de autointerseções; uma fronteira com um túnel tem outra característica de Euler, por isso não uses a fórmula do poliedro convexo em todas as malhas.
 
 ### Escolher uma representação
 
 Uma representação pela fronteira, ou B-rep, guarda as faces e a sua conectividade. Na geometria sólida construtiva, ou CSG, uma árvore guarda primitivas e operações booleanas. Para furar um bloco $A$ com um cilindro $B$, usa a diferença $A\setminus B$, não a união.
 
-O varrimento desloca uma forma ao longo de uma trajetória. Uma extrusão reta de um disco cria um cilindro; para obter um sólido fechado, é preciso incluir as tampas. Voxels representam células ocupadas numa grelha 3D. Uma octree subdivide uma célula em oito, permitindo concentrar detalhe na fronteira. Uma árvore BSP divide o espaço por planos que podem ter qualquer orientação. São representações diferentes, não garantias automáticas de validade geométrica.
+O varrimento desloca uma forma ao longo de uma trajetória, e uma extrusão reta de um disco cria um cilindro; para obter um sólido fechado, é preciso incluir as tampas. Voxels representam células ocupadas numa grelha 3D, e uma octree subdivide uma célula em oito, permitindo concentrar detalhe na fronteira. Uma árvore BSP divide o espaço por planos que podem ter qualquer orientação. São representações diferentes, não garantias automáticas de validade geométrica.

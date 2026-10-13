@@ -1,0 +1,43 @@
+import Typst from '../../../components/Typst.astro';
+import pipeline from '../../lessons/cg/pipeline.typ?raw';
+import Projecoes from '../../cg/Projecoes.astro';
+
+## Espaços e operações
+
+Convenção deste percurso: vetores coluna, câmara a olhar para −z, recorte padrão OpenGL/WebGL $-w\le x,y,z\le w$ e NDC em $[-1,1]$.
+
+<Typst
+  source={pipeline}
+  format="svg"
+  alt="Objeto, mundo, câmara, recorte, NDC, janela e fragmentos. Modelação, vista, projeção, recorte antes da divisão por w, viewport e rasterização ligam os estados."
+/>
+
+- Modelação coloca o objeto no mundo; vista expressa o mundo na câmara; projeção produz quatro coordenadas de recorte.
+- Recorta **primitivas antes de dividir por w**. Um segmento ou triângulo com vértices exteriores pode conservar uma parte, criando interseções na fronteira. Um vértice exterior não basta para descartar toda a primitiva.
+- Divide por w para obter NDC; viewport dá coordenadas contínuas de janela. A rasterização determina cobertura e produz fragmentos. Um fragmento pode falhar o teste de profundidade e não contribuir para o píxel.
+- CPU prepara e envia a cena; shaders de vértice e fragmentos programam transformações e contribuições de cor na GPU. O framebuffer guarda resultados de cor e profundidade.
+
+## Janela e profundidade
+
+Para viewport de origem inferior esquerda $(x_0,y_0)$ e dimensão $W\times H$:
+
+$$
+x_j=x_0+\frac{x_{NDC}+1}{2}W,\qquad
+y_j=y_0+\frac{y_{NDC}+1}{2}H.
+$$
+
+Em recorte, $(0{,}6,0{,}3,-0{,}4,2)$ passa os seis planos; dividido por 2 dá $(0{,}3,0{,}15,-0{,}2)$. Com origem $(0,0)$ e $800\times600$, fica em $(520,345)$. Profundidade padrão de janela: $z_j=(z_{NDC}+1)/2=0{,}4$. Não é uma distância euclidiana nem uma garantia de cobertura.
+
+## Projeções
+
+Com plano de imagem virtual em $z=-f$, $f>0$:
+
+$$
+x'=fx/(-z),\qquad y'=fy/(-z),\qquad z<0.
+$$
+
+Duplicar a distância reduz a altura aparente a metade, sem mudar a geometria. Na ortográfica, uma escala fixa conserva a altura projetada independentemente da profundidade.
+
+<Projecoes />
+
+O centro da câmara, $z=0$, não admite a divisão. Os planos de recorte e o viewport ainda têm de ser considerados depois destas contas no plano de imagem. [Etapas e exemplo completo](/cadeiras/cg/pipeline-visualizacao/#as-etapas-do-vértice).

@@ -6,7 +6,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: FP, SIGARRA 2025/26
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560087
@@ -19,6 +19,7 @@ editorial:
   gaps:
     - A ficha pública de 2026/27 está preenchida com programa, bibliografia, avaliação e ligação ao Moodle. Os materiais de ensino do Moodle 2026/27 exigem autenticação e não foram consultados.
     - O Moodle 2024/25 acessível, curso 4883, não disponibiliza ficheiros de ensino nos módulos consultados.
+    - Não foram encontrados exames de 2024/25 ou 2025/26 no arquivo consultado. As provas PE01 a PE04 mais recentes disponíveis identificam 2020/21 no próprio documento.
     - Os slides de Restivo não identificam uma edição de FP. As fichas históricas RE01 a RE13 são de 2018/19 e não confirmam o calendário atual.
 ---
 
@@ -74,10 +75,15 @@ Bibliografia da ficha de 2026/27:
 - David Mertz, [Functional Programming in Python](https://www.oreilly.com/library/view/functional-programming-in/9781492048633/), bibliografia complementar. Não foi consultado um texto integral da edição da ficha.
 - [Documentação oficial do Python](https://docs.python.org/3/), para confirmar operações, exceções e comportamento dos iteradores.
 
+As provas práticas históricas disponíveis no [arquivo Accio de FP](https://accio.pt/feup/L:EIC/fundamentos-da-programacao/L.EIC003) identificam 2018/19, 2019/20 e 2020/21 nos próprios documentos. Ajudam a escolher prática de construção de programas, combinação de coleções, recursão e geradores. Não confirmam a avaliação atual; não havia provas de 2024/25 ou 2025/26 nesse arquivo.
+
 Os exemplos e resoluções foram escritos para estes apontamentos. Os exercícios
-de nomes completos e produto interno adaptam problemas de RE06 e RE08, de
-2018/19, com contratos e dados próprios; a atribuição está nos conjuntos de
-prática. Geradores, pesquisa binária e análise de custo são aprofundamentos
+de nomes completos, produto interno e árvores de expressões adaptam problemas
+de RE06, RE08 e RE10, de 2018/19. A conversão de base, a contagem recursiva,
+os pares de reservas e o gerador de intervalos adaptam objetivos das provas
+históricas, com domínios, convenções e casos próprios. A atribuição está nos
+conjuntos de prática. A procura de soma exata e a condição sobre caixas e
+peças são problemas próprios. Geradores, pesquisa binária e análise de custo são aprofundamentos
 sinalizados no percurso; os materiais de ensino do Moodle 2026/27 exigem
 autenticação e continuam por confirmar.
 :::

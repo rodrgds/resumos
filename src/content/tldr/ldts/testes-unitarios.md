@@ -51,6 +51,14 @@ Cobertura mede código executado, não a força das asserções. Um teste sem as
 
 Para `x >= 0 && x < 5`, `-1` não avalia a segunda condição; `2` torna ambas verdadeiras; `5` torna a segunda falsa. Cobertura de linhas, branches e condições responde a perguntas diferentes.
 
-**Mutation testing** introduz pequenas mudanças. Um mutante é morto quando os testes falham, sobrevivente quando passam. Trocar `< 5` por `<= 5` é distinguido por `x = 5`, não por 2 ou 6. Um sobrevivente pode ser equivalente no domínio válido; analisa-o antes de adicionar testes.
+**Mutation testing** introduz pequenas mudanças. Um mutante é morto quando os testes falham, sobrevivente quando passam. Mantendo `x >= 0`:
+
+| x   | Original: `< 5` | Mutante: `<= 5` |
+| --- | --------------- | --------------- |
+| 2   | `true`          | `true`          |
+| 5   | `false`         | `true`          |
+| 6   | `false`         | `false`         |
+
+`x = 5` distingue as versões; 2 e 6 não. Um sobrevivente pode ser equivalente no domínio válido; analisa-o antes de adicionar testes.
 
 No ciclo TDD, observa primeiro uma falha pelo requisito, implementa e só depois refatora. Uma falha de importação não demonstra proteção. Property-based testing verifica propriedades em entradas geradas; conserva casos que revelem erros como regressões reproduzíveis. Testes finitos não provam correção geral.

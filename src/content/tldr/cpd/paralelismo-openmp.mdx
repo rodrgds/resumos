@@ -1,0 +1,41 @@
+import Dot from '../../../components/Dot.astro';
+import reducao from '../../cpd/reducao.dot?raw';
+
+## Divisão do trabalho
+
+Funcional: tarefas diferentes. De dados: mesma operação em fatias. Pipeline: fases sobrepostas em elementos diferentes, com recursos separados. Para fases de 2, 3 e 1 ms, primeira imagem termina aos 6 ms e seguintes aos 9 e 12; intervalo limitado pela fase de 3 ms, sem transferências. Débito e latência são medidas distintas.
+
+Identifica dependências, divisão, comunicação e sincronização. Granularidade muito pequena pode tornar a coordenação dominante. Distribuição estática tem pouco custo para iterações semelhantes; dinâmica pode equilibrar custos variáveis, pagando atribuição durante a execução.
+
+Com equipa efetiva de três threads, static com bloco 2 distribui 0–9 em blocos (0,1), (2,3), (4,5), (6,7), (8,9), para threads 0,1,2,0,1: contagens 4,4,2. Blocos consecutivos não significam um intervalo único por thread. Static sem tamanho explícito não garante esse mapeamento; dynamic depende das conclusões. Contagem não mede tempo se os custos diferirem. [Blocos e condições](/cadeiras/cpd/paralelismo-openmp/#distribuição-estática-por-blocos).
+
+Trabalho W soma todas as tarefas; caminho crítico D é a maior soma numa cadeia dependente. No ideal:
+
+$$
+T_p\ge\max(W/p,D).
+$$
+
+O limite não promete ser atingível: três tarefas indivisíveis de 2 s em duas unidades precisam de 4 s, apesar de W/p=3 s.
+
+## Redução e dados privados
+
+OpenMP usa memória partilhada e compilador com suporte local; o motor C do navegador não oferece OpenMP. `parallel for` cria uma equipa e divide iterações; índice de ciclo privado, entradas partilhadas só de leitura e `reduction(+:soma)` combinam acumuladores privados no fim.
+
+<Dot
+  source={reducao}
+  alt="Duas somas privadas de quatro uns combinam-se para produzir oito. Atomic faria oito atualizações à mesma posição."
+/>
+
+| Cláusula     | Efeito para um escalar C                                        |
+| ------------ | --------------------------------------------------------------- |
+| private      | Cópia separada; não herda o valor exterior                      |
+| firstprivate | Inicializa a cópia com o valor anterior; não combina resultados |
+| reduction    | Inicializa segundo o operador e combina cópias com o original   |
+
+Para máximo de entrada não vazia, começa o original em v[0] e usa `reduction(max:maximo)`: `{-5,-2,-8,-1}` dá −1. Começar em zero inventa um máximo; firstprivate deixa o exterior por atualizar; ler um int private indeterminado é incorreto. [Programa e diagnóstico](/cadeiras/cpd/paralelismo-openmp/#cópias-privadas-e-combinação-do-resultado).
+
+## Correção e medição
+
+Redução não resolve a recorrência `a[i]=a[i-1]+x[i]`, que lê o resultado anterior. Soma em vírgula flutuante pode mudar com a associação: `(1e16 + -1e16) + 1` dá 1, `1e16 + (-1e16 + 1)` dá 0. Compara com tolerância justificada, investigando diferenças grandes.
+
+Mede equipa, cálculo e combinação com fronteiras declaradas; uma versus quatro threads não equivale sempre à melhor referência sequencial. Repete medições. Tempo menor e eficiência maior não são o mesmo objetivo.

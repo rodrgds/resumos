@@ -15,6 +15,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - $\vec v=d\vec r/dt$, $\vec a=d\vec v/dt$. Rapidez $v=|\vec v|$. Em 1D usa $v_x$ com sinal; $v$ é o módulo.
 - Aceleração constante: $v_x=v_0+at$, $x=x_0+v_0t+at^2/2$, $v_x^2=v_0^2+2a\Delta x$.
 - Separação: $a(v)=dv/dt$; $a(x)=v\,dv/dx$. Verifica soluções excluídas por divisões.
+- Para $a_x(v_x)$ sem zeros no trecho, $\Delta x=\int_{v_{x0}}^{v_{xf}}v_x/a_x(v_x)\,dv_x$.
 - Curvatura: $\vec a=\dot v\hat t+(v^2/\rho)\hat n$. Para $v\ne0$, $a_t=\vec v\cdot\vec a/v$ e $\rho=v^2/a_n$ se $a_n>0$.
 - Circunferência: $v=R|\omega|$, $a_n=R\omega^2$; em movimento uniforme $|\omega|=2\pi/T=2\pi f$. $R\alpha$ usa o sentido angular positivo; $a_t=dv/dt$ usa o sentido da velocidade.
 - Projétil sem resistência: $x=x_0+v_0\cos\theta\,t$, $y=y_0+v_0\sin\theta\,t-gt^2/2$. Alcance $v_0^2\sin2\theta/g$ só para alturas inicial e final iguais.
@@ -84,6 +85,7 @@ Usa SI. Fixa sistema, referencial, eixos e condições iniciais antes de substit
 - Condições iniciais: $x=C\cos\omega_0t+D\sin\omega_0t$, com $C=x_0$ e $D=v_0/\omega_0$. Amplitude $A^2=C^2+D^2$; energia $E=kA^2/2$.
 - Pêndulo simples: $T\approx2\pi\sqrt{\ell/g}$, pequenos ângulos em radianos.
 - Amortecimento linear: $\gamma=b/(2m)$; subcrítico se $0<\gamma<\omega_0$, crítico se iguais, sobrecrítico se maior; $b=0$ dá o oscilador ideal.
+- Condições iniciais subcríticas: $x=e^{-\gamma t}[x_0\cos\omega_dt+(v_0+\gamma x_0)\sin\omega_dt/\omega_d]$.
 - Subcrítico: $x=Ae^{-\gamma t}\cos(\omega_dt+\phi)$, $\omega_d^2=\omega_0^2-\gamma^2$.
 - $\tau=m/b=1/(2\gamma)$; $Q=\omega_0/(2\gamma)$; meia amplitude em $\ln2/\gamma$. A amplitude é $e^{-t/(2\tau)}$ nesta convenção, que usa $\omega_a$ nas transparências para a frequência amortecida aqui chamada $\omega_d$.
 - Picos do mesmo sinal: $\delta=\ln(A_n/A_{n+1})=\gamma T_d$.

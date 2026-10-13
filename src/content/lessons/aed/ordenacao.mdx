@@ -9,6 +9,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Estados from '../../aed/Estados.astro';
+import YouTube from '../../../components/YouTube.astro';
 
 Ordenar `[6,2,5,1]` produz `[1,2,5,6]`: a saída respeita a comparação crescente e conserva os mesmos elementos. Se só procuras o máximo, basta um percurso. Se vais fazer muitas pesquisas binárias, o custo de ordenar pode compensar.
 
@@ -63,6 +64,21 @@ Na igualdade, o programa escolhe o elemento da esquerda e preserva a estabilidad
 
 A recorrência é $T(n)=2T(n/2)+\Theta(n)$, logo $\Theta(n\log n)$ em melhor, médio e pior caso nesta implementação. O auxiliar ocupa $\Theta(n)$ e a pilha $O(\log n)$. Criar um novo vetor por chamada aumenta alocações, mas não obriga a manter o trabalho de todos os níveis em memória ao mesmo tempo.
 
+## Mergesort em listas ligadas
+
+Numa lista simplesmente ligada não tens acesso direto ao meio, mas podes encontrá-lo por um percurso. [Separar e intercalar por ligações](/cadeiras/aed/listas-pilhas-filas/#separar-e-intercalar-por-ligações) permite ordenar sem copiar valores nem criar nós auxiliares:
+
+1. Com zero ou um nó, termina.
+2. Separa os primeiros `n/2` nós dos restantes numa lista inicialmente vazia.
+3. Ordena recursivamente as duas listas.
+4. Intercala-as, escolhendo a esquerda no empate e esvaziando a lista temporária.
+
+Em `[4A,1B,4C,2D,4E]`, a primeira separação cria `[4A,1B]` e `[4C,2D,4E]`. As chamadas devolvem `[1B,4A]` e `[2D,4C,4E]`; a junção dá `[1B,2D,4A,4C,4E]`. Todos os nós da metade esquerda precediam os da direita na entrada. Por isso escolher a esquerda numa igualdade, juntamente com a estabilidade de cada chamada, conserva `4A,4C,4E` nessa ordem.
+
+Separar custa $\Theta(n)$ neste nível e intercalar custa $O(n)$; a recorrência é $T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+\Theta(n)$, dando $\Theta(n\log n)$. Há $O(\log n)$ chamadas suspensas, com um número constante de apontadores por chamada. O auxiliar é, portanto, $O(\log n)$, sem o vetor de $O(n)$ usado na versão anterior. A lista temporária é um objeto com cabeça e tamanho, não uma cópia de metade dos nós.
+
+`std::sort` exige iteradores de acesso direto e não serve para `std::list`. O método `lista.sort()` permite ordenar uma `std::list` com estabilidade e $O(n\log n)$ comparações. Ordenar uma lista com seleção por percursos repetidos, movendo o máximo do prefixo para o fim, também é possível, mas soma $n+(n-1)+\cdots+2$ visitas e custa $\Theta(n^2)$.
+
 ## Quicksort e partição
 
 No esquema de Lomuto, para um intervalo não vazio `[l,r)`, escolhe `p=v[r-1]`. Percorre `j=l..r-2` e mantém `[l,i)` com valores menores que `p` e `[i,j)` com valores maiores ou iguais. Se `v[j]<p`, troca com `v[i]` e avança `i`. No fim, troca o pivô com `v[i]`. O pivô fica na posição final; resolve `[l,i)` e `[i+1,r)`.
@@ -92,9 +108,17 @@ Para `n` chaves distintas, uma ordenação por comparações tem de distinguir `
 **Counting sort** usa chaves inteiras em `[0,k)`. Conta frequências, calcula prefixos das contagens e coloca cada elemento na sua posição. Para preservares empates, percorre a entrada da direita para a esquerda e reduz a posição final disponível da respetiva chave. Para `[(2,A),(1,B),(2,C),(0,D)]`, a saída é `[(0,D),(1,B),(2,A),(2,C)]`. Com `k=3`, as frequências são `[1,1,2]`. As somas acumuladas `[1,2,4]` indicam as fronteiras depois de cada grupo de chaves. Subtrair um à fronteira dá a última posição livre dessa chave. Depois de escrever um registo, reduz a fronteira. Percorre da direita para a esquerda: `(0,D)` ocupa 0; `(2,C)` ocupa 3; `(1,B)` ocupa 1; `(2,A)` ocupa 2. Escrever da direita preserva `A` antes de `C`. Reconstruir só frequências ordena números, mas perde os outros campos dos registos.
 
 O tempo é $\Theta(n+k)$ e o espaço auxiliar da versão estável é $\Theta(n+k)$. Um intervalo enorme de chaves pode tornar esta escolha pior que comparar. **Radix sort** por dígitos do menos significativo para o mais significativo exige uma ordenação estável em cada passagem; isso conserva a ordem dos dígitos já processados.
-Com `[170,45,75,90,2]` e base 10, os dígitos das unidades são `[0,5,5,0,2]` e a passagem estável dá `[170,90,2,45,75]`, com dígitos `[0,0,2,5,5]`.
-Na passagem das dezenas, os dígitos são `[7,9,0,4,7]` e a passagem estável dá `[2,45,170,75,90]`, com dígitos `[0,4,7,7,9]`.
-Na passagem das centenas, os dígitos são `[0,0,1,0,0]` e a passagem estável dá `[2,45,75,90,170]`, com dígitos `[0,0,0,0,1]`. Depois de `d` passagens, a ordem dos `d` dígitos processados está correta; o custo é $\Theta(d(n+b))$ com base `b`. Chaves negativas e comprimentos diferentes exigem uma representação e uma política explícitas.
+Com `[170,45,75,90,2]` e base 10, cada passagem lê a sequência produzida pela anterior:
+
+| Dígito   | Entrada            | Dígitos lidos | Saída estável      |
+| -------- | ------------------ | ------------- | ------------------ |
+| Unidades | `[170,45,75,90,2]` | `[0,5,5,0,2]` | `[170,90,2,45,75]` |
+| Dezenas  | `[170,90,2,45,75]` | `[7,9,0,4,7]` | `[2,45,170,75,90]` |
+| Centenas | `[2,45,170,75,90]` | `[0,0,1,0,0]` | `[2,45,75,90,170]` |
+
+Nas dezenas, 170 e 75 têm o mesmo dígito 7. A estabilidade conserva 170 antes de 75, mantendo a ordem das unidades, 0 antes de 5. Nas centenas, os valores com dígito 0 conservam a ordem dos dois dígitos inferiores.
+
+Depois de `d` passagens, a ordem dos `d` dígitos processados está correta; o custo é $\Theta(d(n+b))$ com base `b`. Chaves negativas e comprimentos diferentes exigem uma representação e uma política explícitas.
 
 | Algoritmo          | Melhor            | Pior              | Auxiliar habitual          | Estável nesta versão? |
 | ------------------ | ----------------- | ----------------- | -------------------------- | --------------------- |
@@ -103,3 +127,10 @@ Na passagem das centenas, os dígitos são `[0,0,1,0,0]` e a passagem estável d
 | Bubble com paragem | $\Theta(n)$       | $\Theta(n^2)$     | $O(1)$                     | sim                   |
 | Mergesort em vetor | $\Theta(n\log n)$ | $\Theta(n\log n)$ | $O(n)$                     | sim                   |
 | Quicksort Lomuto   | $\Theta(n\log n)$ | $\Theta(n^2)$     | $O(n)$ na recursão ingénua | não                   |
+
+Para uma visão geral de merge, quicksort e bubble sort, podes consultar Rodrigo Dias:
+
+<YouTube
+  id="HKLRBNuL4DA"
+  title="Algoritmos de Ordenação 101 (Merge, Quick, Bubble, ...)"
+/>

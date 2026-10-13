@@ -38,7 +38,7 @@ A heap com entradas duplicadas em Dijkstra pode guardar $O(m)$ pares e custar $O
 - **Bellman-Ford:** até $n-1$ passagens; uma passagem adicional com melhoria a partir de origem alcançável denuncia ciclo negativo.
 - **Fluxo:** capacidade direta residual $c-f$, inversa $f$. Aumentar pelo menor residual do caminho. Sem caminho residual, alcançáveis de $s$ dão corte mínimo.
 
-O valor do fluxo é saída líquida de $s$. A capacidade de um corte soma só as arestas de $S$ para $T$. Um fluxo e um corte com o mesmo valor certificam otimalidade.
+O valor do fluxo é saída líquida de $s$. A capacidade de um corte soma só as arestas de $S$ para $T$. Um fluxo e um corte com o mesmo valor certificam otimalidade. Não provam unicidade: fluxos máximos ou cortes mínimos diferentes podem atingir o mesmo valor.
 
 ## Caminhos e transformações
 
@@ -65,7 +65,7 @@ $k$ é o ciclo exterior. Guarda `next[i][j]` para reconstruir. Se um ciclo negat
 | [Retrocesso](/cadeiras/da/retrocesso-ramificacao/)                                                    | Nenhuma continuação válida no ramo podado                        | Excesso com positivos, restrições de rainhas                     |
 | [Branch and bound](/cadeiras/da/retrocesso-ramificacao/#branch-and-bound-dire%C3%A7%C3%A3o-do-limite) | Limite otimista para todas as continuações                       | Relaxação fracionária ou LP                                      |
 
-Para maximizar: incumbente é limite inferior, nó tem limite superior; podar $U\le L$ para um ótimo. Para minimizar: incumbente é limite superior, nó tem limite inferior; podar quando este não melhora o incumbente. Para listar todos os ótimos, conservar empates.
+Para maximizar: incumbente é limite inferior, nó tem limite superior; podar $U\le L$ para um ótimo. Para minimizar: incumbente é limite superior, nó tem limite inferior; podar quando este não melhora o incumbente. Para listar todos os ótimos, conservar empates. Em carga de caixas com ordem fixa e pesos positivos até W, levar o maior prefixo que cabe minimiza o número de camiões; o avanço das fronteiras prova a regra em tempo linear.
 
 ## Recorrências de custo
 
@@ -78,6 +78,8 @@ Para maximizar: incumbente é limite inferior, nó tem limite superior; podar $U
 | $\Omega(n^{\log_ba+\varepsilon})$ e $af(n/b)\le cf(n)$, $c<1$ | $\Theta(f(n))$              |
 
 Hanoi: $H(n)=2H(n-1)+1=2^n-1$, fora deste formato. Exponenciação por quadrados: uma chamada de expoente metade, $O(\log(k+1))$ multiplicações. Máscaras com somas recalculadas: $\Theta(n2^n)$; recursão binária com totais incrementais: $\Theta(2^n)$ antes de cópias. TSP dirigido com origem fixa: $(n-1)!$ ordens candidatas, custo direto $\Theta(n!)$.
+
+Coloração com n vértices e k cores rotuladas: $k^n$ atribuições, não $k!$. Uma clique de k prova que k cores são necessárias; uma coloração de k prova que chegam.
 
 ## Estados de programação dinâmica
 
@@ -116,7 +118,7 @@ Inicializar transições diretas e $\varepsilon$ na diagonal; união até aos es
 | TSP: duplicar MST e atalhar                                | $C\le2OPT$    | Completo, não dirigido, pesos não negativos, desigualdade triangular |
 | Cobertura de conjuntos por maior ganho                     | $C\le H_dOPT$ | Custos unitários e universo coberto pela família                     |
 
-Um PTAS é polinomial na entrada para precisão fixa; um FPTAS também é polinomial em $1/\varepsilon$. Heurística não implica garantia.
+Um PTAS é polinomial na entrada para precisão fixa; um FPTAS também é polinomial em $1/\varepsilon$. Heurística não implica garantia. Adicionar M a cada aresta de um TSP com n cidades soma nM a todos os circuitos e conserva os ótimos, mas altera as razões: $C+nM\le2(OPT+nM)$ só dá $C\le2OPT+nM$.
 
 ## LP e ILP
 

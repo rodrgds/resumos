@@ -6,6 +6,12 @@ section: conteudo
 practices:
   - c/praticar-geracao-codigo
 order: 7
+editorial:
+  sources:
+    - title: 'Tree Tilling using Dynamic Programming, apresentação docente, 2018'
+      url: https://drive.google.com/file/d/165MX5bv_FYbooDFeJE8wIQG1uN1RGvcc/view
+  gaps:
+    - Fonte histórica de apoio; não confirma o enunciado ou a profundidade da edição de 2026/27.
 ---
 
 import Dot from '../../../components/Dot.astro';
@@ -16,6 +22,30 @@ import interferencia from '../../c/interferencia.dot?raw';
 ## Seleção de instruções
 
 A seleção cobre as operações intermédias com instruções disponíveis no alvo. Numa máquina de registos hipotética, `t = a + 5` pode usar `addi R_t, R_a, 5` se a constante couber no campo imediato. Sem essa instrução, precisamos de carregar 5 num registo e depois somar. Na JVM, usamos `iload` para `a`, uma instrução que empilhe 5, e `iadd`. A escolha depende da semântica, dos operandos admitidos e do custo do alvo; nomes iguais de operações não garantem instruções iguais.
+
+### Cobrir a árvore pelo custo completo
+
+Escolher a instrução mais barata na raiz pode deixar operações caras nos filhos. Considera inteiros exatos, operações sem efeitos e uma máquina hipotética. As folhas a,b,c já estão em registos, com custo zero de carregamento:
+
+| Padrão coberto  | Instrução           | Custo |
+| --------------- | ------------------- | ----- |
+| ADD(x,y)        | ADD                 | 1     |
+| MUL(x,y)        | MUL                 | 2     |
+| ADD(MUL(x,y),z) | MADD, calcula x×y+z | 2     |
+
+Para `a*b+c`, ADD parece mais barata que MADD se olharmos só para 1 contra 2. Mas ADD deixa a multiplicação por cobrir: o custo é 1+2=3. MADD cobre o ADD e o MUL juntos, com custo 2.
+
+Calcula de baixo para cima. Para cada padrão que casa na raiz, soma o custo da instrução aos melhores custos dos subproblemas que ficaram na fronteira do padrão. Escolhe o menor total. Não somes outra vez operações já cobertas pela instrução composta:
+
+| Subárvore       | Alternativas              | Melhor custo |
+| --------------- | ------------------------- | ------------ |
+| a, b, c         | Operandos em registos     | 0            |
+| MUL(a,b)        | MUL                       | 2            |
+| ADD(MUL(a,b),c) | ADD: 1+2+0; MADD: 2+0+0+0 | 2            |
+
+Esta programação dinâmica guarda o melhor custo de cada subárvore para o reutilizar na decisão do pai. Em alvos com diferentes classes de registos ou formas de operandos, o estado inclui também a forma do resultado exigida; custo zero aqui só vale para as folhas já disponíveis.
+
+O padrão tem de preservar a semântica. Uma instrução de multiplicação-soma com arredondamento único em vírgula flutuante pode dar outro resultado que duas operações com arredondamentos separados. O nosso custo hipotético não autoriza substituir uma pela outra nesse caso.
 
 ## Dependências e escalonamento
 
@@ -78,14 +108,16 @@ Segue a pilha, inicialmente vazia. O topo fica à direita:
 
 `iadd` e `imul` consomem dois inteiros e empurram um resultado. `istore 4` retira o produto da pilha e guarda-o na variável local 4. A altura máxima é 2, por isso `.limit stack 2` chega para esta sequência no método Jasmin. O verificador da JVM verifica os tipos e as alturas da pilha nos caminhos do método e rejeita bytecode inválido antes de o executar.
 
-Com `a = 3`, `b = 4` e `c = 2`, as duas cargas produzem `[3, 4]`; `iadd` deixa `[7]`, a carga de `c` deixa `[7, 2]` e `imul` deixa `[14]`. A gravação retira 14 e guarda-o no local 4. Este traço numérico confere o mesmo cálculo da árvore.
-
-Para `(a + b) * (c + d)`, uma sequência que calcula primeiro `a + b` e depois `c + d` chega a 3: o primeiro resultado espera enquanto se empilham `c` e `d`.
+Com `a = 3`, `b = 4` e `c = 2`, as duas cargas produzem `[3, 4]`; `iadd` deixa `[7]`, a carga de `c` deixa `[7, 2]` e `imul` deixa `[14]`. A gravação retira 14 e guarda-o no local 4, e este traço numérico confere o mesmo cálculo da árvore. A altura depende da expressão: para `(a + b) * (c + d)`, calcular primeiro `a + b` e depois `c + d` chega a 3, porque o primeiro resultado espera enquanto se empilham `c` e `d`.
 
 `.limit locals 5` cobre os índices 0 a 4 deste exemplo, se o método não usar mais locais. Em cada ponto de junção do controlo, os caminhos de entrada precisam de alturas iguais e tipos compatíveis. `long` e `double` ocupam duas unidades da pilha; a contagem por elementos aqui vale porque só usamos `int`.
+
+:::warning[Mais capacidade não corrige uma junção inválida]
+Se um caminho chega a um rótulo com `[int]` e outro com `[]`, aumentar `.limit stack` não cria o operando em falta. Um `istore` nesse rótulo exige um inteiro nos dois caminhos. O limite indica capacidade; a verificação dos caminhos garante que cada instrução recebe os operandos necessários.
+:::
 
 As variáveis locais e a pilha de operandos da JVM não são registos físicos do processador. `iload` copia um inteiro de um local para a pilha; `istore` faz o percurso inverso. Guardar um resultado ou um temporário num local não prova que houve derrame por falta de registos. Aqui, `istore 4` apenas guarda o resultado da expressão. Se um compilador JIT traduzir este bytecode para código nativo, a alocação de registos físicos e os eventuais derrames são decisões dessa tradução.
 
 ## Validação e otimização
 
-O código corre e está correto, por isso antes de o entregar há transformações que o tornam mais rápido sem lhe mudar o significado: a [análise e otimização](/cadeiras/c/otimizacao-codigo/).
+Com instruções escolhidas e registos atribuídos, o código corre; antes de o entregar, há transformações que o tornam mais rápido sem lhe mudar o significado: a [análise e otimização](/cadeiras/c/otimizacao-codigo/).

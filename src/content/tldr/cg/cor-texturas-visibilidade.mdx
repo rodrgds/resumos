@@ -1,0 +1,43 @@
+import Typst from '../../../components/Typst.astro';
+import sombra from '../../cg/sombra-visibilidade.typ?raw';
+
+## Cor e luz
+
+- RGB é aditivo; CMY subtrativo aproximado: C=1−R, M=1−G, YCMY=1−B. CMYK real depende de tintas, papel e perfil.
+- Soma e filtra luz em RGB **linear**, após descodificar sRGB. Com primárias sRGB, luminância relativa $Y=0{,}2126R+0{,}7152G+0{,}0722B$ usa canais lineares. Cinzento sRGB 0,5 dá linear/Y≈0,2140.
+- HSV: $V=\max(R,G,B)$; $S=(V-\min(R,G,B))/V$ se V>0. No preto, V=S=0; quando S=0 o matiz não distingue cores. V não é luminância.
+- CIE XYZ: $x=X/(X+Y+Z)$, $y=Y/(X+Y+Z)$ retiram escala luminosa, com soma positiva. Primárias delimitam um gamut, sem cobrir todas as cores visíveis.
+
+## UV, interpolação e amostragem
+
+UV localiza a amostra na textura; texel é um elemento dessa imagem. Com dimensão N, nearest usa $\lfloor uN\rfloor$ no interior. Bilinear considera centros $(i+1/2)/N$: calcula s=uN−1/2, t=vN−1/2, vizinhos e partes fracionárias fx,fy.
+
+$$
+a(1-f_x)(1-f_y)+bf_x(1-f_y)+c(1-f_x)f_y+df_xf_y.
+$$
+
+Para UV=(0,37;0,62) e N=256, s=94,22 e t=158,22. Valores lineares 100,150,200,250 dão 133, enquanto nearest lê 100. As bordas exigem política de repetição ou limitação.
+
+Os pesos baricêntricos λi da imagem somam 1 e são não negativos no interior. Um atributo suave, como u, usa w de **recorte**:
+
+$$
+u(P)=\frac{\sum_i\lambda_i u_i/w_i}{\sum_i\lambda_i/w_i}.
+$$
+
+Com λ=(1/2,1/4,1/4), w=(1,2,4), u=(0,1,0), obténs 2/11, em vez do 1/4 direto. w iguais e não nulos cancelam-se. Depois de interpolar UV, ainda falta amostrar texeis; esta correção não é filtragem bilinear. A profundidade **já em janela** interpola-se linearmente pelos pesos da imagem. [Exemplo geométrico](/cadeiras/cg/cor-texturas-visibilidade/#interpolação-corrigida-pela-perspetiva).
+
+Mipmaps reduzem minificação/aliasing; cada nível tem um quarto dos texeis do anterior. A soma tende a 4/3 da imagem inicial, acréscimo de um terço; numa 4×4 completa são 16+4+1=21 texeis. Bump altera normais, sem mudar geometria ou silhueta; texturas procedurais calculam valores a partir das coordenadas.
+
+## Visibilidade e sombra
+
+- Z-buffer padrão: profundidade [0,1], limpa a 1, LESS passa apenas se o fragmento for menor e escreve se permitido. 0,7→0,35→0,5 deixa 0,35; empate falha com LESS e passa com LEQUAL.
+- Opacos com profundidades distintas não dependem da ordem de desenho. Transparência precisa de compor camadas.
+- Culling rejeita orientação; ray casting procura interseção mais próxima; pintor pode exigir dividir faces cruzadas ou com ordem cíclica.
+
+<Typst
+  source={sombra}
+  format="svg"
+  alt="A câmara vê P, mas um obstáculo bloqueia o caminho da luz até P."
+/>
+
+Shadow mapping compara profundidades na **mesma vista, projeção e intervalo da luz**. Sombra se $z_f>z_m+b$. Com mapa 0,42 e bias 0,005, 0,424 fica iluminado e 0,43 em sombra. Bias excessivo afasta/apaga sombras; um raio de sombra testa obstáculos antes da fonte. A sombra retira luz direta dessa fonte, sem apagar automaticamente ambiente ou outros caminhos.

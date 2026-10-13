@@ -19,7 +19,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Revisão editorial dos Resumos FEUP
-    date: '2026-10-08'
+    date: '2026-10-13'
 ---
 
 Uma linguagem especifica quais as entradas válidas. Para aceitar palavras terminadas em $ab$, basta guardar um sufixo curto. Para comparar $a^nb^n$, é preciso recordar uma quantidade sem limite fixado. O percurso constrói esses modelos, justifica as suas respostas e prova onde cada memória deixa de chegar.
@@ -37,7 +37,7 @@ Uma linguagem especifica quais as entradas válidas. Para aceitar palavras termi
 9. [Máquinas de Turing e decidibilidade](/cadeiras/tc/turing-decidibilidade/): programar a fita, justificar terminação e distinguir reconhecimento de decisão.
 10. [Complexidade](/cadeiras/tc/complexidade/): introdução ao custo dos algoritmos, certificados e reduções polinomiais.
 
-Cada lição liga a problemas de construção, cálculo e prova, com resolução justificada e pistas quando ajudam a escolher um passo. Alguns enunciados são originais; outros são adaptações próximas das folhas práticas e do segundo teste de 2023/24, e estão assinalados como tal nas páginas de prática. A [Cheat sheet](/cadeiras/tc/folha-consulta/) reúne condições e procedimentos para consulta depois de estudar.
+Cada lição liga a problemas de construção, cálculo e prova, com resolução justificada e pistas quando ajudam a escolher um passo. Alguns enunciados são originais; outros adaptam folhas práticas e testes de 2022/23, 2023/24 e 2024/25, e estão assinalados como tal nas páginas de prática. A [Cheat sheet](/cadeiras/tc/folha-consulta/) reúne condições e procedimentos para consulta depois de estudar.
 
 Para cada construção, escreve primeiro o que cada estado ou variável significa. Depois segue uma palavra aceite, uma rejeitada e a palavra vazia. Por fim, justifica por que todas as entradas recebem a resposta certa. Para uma prova negativa pelo lema da repetição, distingue o que tu escolhes do que tens de cobrir em qualquer decomposição.
 
@@ -48,7 +48,9 @@ A base é o [Moodle de TC de 2024/25](https://moodle2425.up.pt/course/view.php?i
 
 O [segundo teste resolvido](https://moodle2425.up.pt/mod/resource/view.php?id=194400) identifica 13 de junho de 2024, apesar de estar nesse Moodle. Serve para reconhecer tipos de perguntas, como classificar gramáticas, seguir PDA e interpretar tabelas de Turing. Os exercícios destas páginas têm resoluções próprias. Alguns enunciados adaptam tipos de perguntas desse teste e das folhas práticas; cada página de prática distingue exercícios originais de adaptações.
 
-A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586988), consultada em 8 de outubro de 2026, confirma TC no segundo semestre, com 6 ECTS, mas ainda não apresenta programa nem avaliação. O percurso segue os materiais disponíveis de 2024/25.
+A [ficha de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586988), consultada novamente em 13 de outubro de 2026, confirma TC no segundo semestre, com 6 ECTS, mas ainda não apresenta programa nem avaliação. O percurso segue os materiais disponíveis de 2024/25.
+
+O arquivo do Accio acrescenta o [primeiro teste de 24/3/2023](https://accio.pt/uploads/contributions/enLIDa50ayM.pdf), de 2022/23, que admite conversão por derivadas, e uma cópia do [segundo teste de 11/6/2025](https://accio.pt/uploads/contributions/jWmq9JAIMuQ.pdf), identificado por dentro como 2024/25. Este último motiva problemas de escolha de ramos em PDA, testemunhas para o lema de CFL e compactação de fita. As respostas assinaladas nessa cópia não substituem as provas e cálculos das resoluções. Estes enunciados não confirmam a avaliação de 2026/27.
 
 A [ficha preenchida de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560095) inclui os mesmos modelos e propriedades. A página de complexidade desenvolve a ligação a computabilidade e custo dos algoritmos; o programa listado centra-se em linguagens formais e introdução às máquinas de Turing. Trata a página de complexidade como extensão: estuda-a depois das máquinas de Turing e não infiras a profundidade da avaliação a partir desta extensão.
 :::

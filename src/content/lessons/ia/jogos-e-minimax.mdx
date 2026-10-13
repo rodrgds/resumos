@@ -6,6 +6,13 @@ section: conteudo
 practices:
   - ia/praticar-jogos-e-minimax
 order: 4
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Programa oficial de IA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560114
+    - title: Exame IART 2018/19, Luís Paulo Reis e Ana Paula Rocha, 17 de junho de 2019
+      url: https://accio.pt/feup/L:EIC/inteligencia-artificial/L.EIC029
 ---
 
 import Dot from '../../../components/Dot.astro';
@@ -17,9 +24,9 @@ Considera um jogo de dois jogadores com turnos alternados, regras determinístic
 
 ## Valor Minimax
 
-Árvore com raiz MAX, dois filhos MIN (A e B) e duas folhas em cada: A tem folhas 3 e 5, B tem folhas 2 e 9. Os valores são a utilidade para o jogador MAX.
+Árvore com raiz MAX, dois filhos MIN (A e B) e duas folhas em cada: A tem folhas 3 e 5, B tem folhas 2 e 9, e os valores são a utilidade para o jogador MAX.
 
-Propaga de baixo para cima. O nó A é MIN e escolhe o mínimo dos filhos: $\min(3, 5) = 3$. O nó B é MIN: $\min(2, 9) = 2$. A raiz é MAX e escolhe o máximo: $\max(3, 2) = 3$. A jogada ótima é ir para A, com valor garantido 3: mesmo com o adversário a responder o pior, garantes 3. A folha 9 não aumenta o valor de B: MIN pode impor 2. Ainda assim, o Minimax completo lê as duas folhas para calcular o mínimo; alfa-beta pode dispensar a leitura de 9 usando a alternativa já conhecida em A. O Minimax completo usa utilidades de estados terminais; com limite de profundidade, usa nas folhas de corte uma função de avaliação, ou seja, uma estimativa da utilidade sem chegar ao fim do jogo, e já não garante a melhor jogada do jogo completo.
+Propaga de baixo para cima: o nó A é MIN e escolhe o mínimo dos filhos, $\min(3, 5) = 3$, enquanto o nó B, também MIN, fica com $\min(2, 9) = 2$; a raiz é MAX e escolhe $\max(3, 2) = 3$. A jogada ótima é ir para A, com valor garantido 3 mesmo com o adversário a responder o pior, pois a folha 9 não aumenta o valor de B quando MIN pode impor 2. Repara que o Minimax completo lê as duas folhas para calcular o mínimo, enquanto o alfa-beta pode dispensar a leitura de 9 graças à alternativa já conhecida em A. O Minimax completo usa utilidades de estados terminais; com limite de profundidade, usa nas folhas de corte uma função de avaliação, ou seja, uma estimativa da utilidade sem chegar ao fim do jogo, e já não garante a melhor jogada do jogo completo.
 
 ## Cortes alfa-beta
 
@@ -31,7 +38,7 @@ O **alfa** ($\alpha$) é um limite inferior que MAX já consegue obter pelas alt
 4. Nó B (MIN): primeira folha 2. Como $2 \le \alpha$, o MAX já tem 3 garantido noutro ramo e nunca deixaria o jogo vir para aqui. **Corte**: a folha 9 não é avaliada. B devolve 2.
 5. Raiz: $\max(3, 2) = 3$.
 
-Uma folha poupada em quatro, mesmo resultado do Minimax completo. Com ordenação ideal, o tempo pode passar de $O(b^m)$ para $O(b^{m/2})$, para ramificação $b$ e profundidade $m$. Isso permite aproximadamente duplicar a profundidade no mesmo orçamento. No pior caso não há essa redução. A ordem dos filhos decide tudo: se as folhas de B viessem como 9 e depois 2, a condição de corte só se verificava depois de ler 2, quando já não restavam folhas para poupar.
+Poupa-se uma folha em quatro, com o mesmo resultado do Minimax completo. Com ordenação ideal, o tempo pode passar de $O(b^m)$ para $O(b^{m/2})$, para ramificação $b$ e profundidade $m$. Isso permite aproximadamente duplicar a profundidade no mesmo orçamento, mas no pior caso não há essa redução, pois a ordem dos filhos decide tudo: se as folhas de B viessem como 9 e depois 2, a condição de corte só se verificava depois de ler 2, quando já não restavam folhas para poupar.
 
 <Dot
   source={minimax}
@@ -48,8 +55,6 @@ O Minimax com alfa-beta sobre esta árvore, executável abaixo, escreve o alfa e
   }
 />
 
-A saída mostra o corte em B e o valor final 3: só o 9 é poupado.
-
 Se a dúvida é que ramos o alfa-beta permite cortar, segue os valores da árvore e identifica os ramos cortados neste vídeo:
 
 <YouTube
@@ -61,14 +66,33 @@ Se a dúvida é que ramos o alfa-beta permite cortar, segue os valores da árvor
 Cortar no sítio errado por trocar alfa com beta. Regra curta: o MAX atualiza o alfa e corta quando o valor atinge o beta; o MIN atualiza o beta e corta quando o valor desce ao alfa. Escreve os dois valores em cada nó visitado e só corta quando $\alpha \ge \beta$ com números concretos.
 :::
 
+## Valor exato ou limite depois de um corte
+
+Um nó cortado pode devolver um limite suficiente para a decisão, sem conhecer o seu valor Minimax exato. Num nó MAX, observar uma folha 9 prova que o valor é pelo menos 9; outra folha ainda não lida poderia valer 12. Num nó MIN, observar 2 prova que o valor é no máximo 2.
+
+Considera raiz MAX com filhos MIN A e B. A tem folhas 4 e 7. B tem dois filhos MAX: C tem folhas 6 e 8, e D tem folhas 9 e 1. Visitamos da esquerda para a direita:
+
+| Passagem            | Informação disponível      | Consequência          |
+| ------------------- | -------------------------- | --------------------- |
+| A completo          | mínimo de 4 e 7 é 4        | Raiz guarda alfa 4    |
+| C completo          | máximo de 6 e 8 é 8        | B guarda beta 8       |
+| Primeira folha de D | D vale pelo menos 9        | Alfa de D chega a 9   |
+| Corte em D          | alfa 9 ≥ beta 8            | A folha 1 não é lida  |
+| B                   | mínimo de 8 e um valor ≥ 9 | B vale exatamente 8   |
+| Raiz                | máximo de 4 e 8            | Escolhe B com valor 8 |
+
+O retorno 9 de D, numa implementação que devolve o melhor valor visto, é um **limite inferior**. Não é uma avaliação completa de D. Se a folha cortada mudasse de 1 para 12, D passaria a valer 12, mas B continuaria a escolher C, com 8. Esse é o motivo por que o corte preserva a decisão da raiz.
+
+Ao apresentar uma árvore parcialmente explorada, escreve `D ≥ 9` quando só tens essa garantia. A folha que dispara o corte foi avaliada; as seguintes são as que poupas. A distinção entre valor e limite aparece também no pedido de valores dos nós do exame de 2018/19.
+
 ## Pesquisa em árvore Monte Carlo
 
 No Go ou no xadrez com limite de tempo, a árvore completa não cabe em lado nenhum. O MCTS constrói estatísticas por amostragem em quatro fases repetidas: **seleção** (desce pela árvore guardada escolhendo filhos com bom equilíbrio entre vitórias e poucas visitas), **expansão** (acrescenta um filho novo), **simulação** (joga segundo uma política de simulação, por exemplo aleatória, até ao fim) e **retropropagação** (atualiza visitas e vitórias em todos os nós do caminho).
 
-Um exemplo mínimo: a raiz tem 10 visitas; o filho A foi visitado 6 vezes com 4 vitórias, o filho B 4 vezes com 1 vitória. Para tornar a escolha concreta, usa a regra UCT:
+Um exemplo mínimo: a raiz tem 10 visitas, o filho A foi visitado 6 vezes com 4 vitórias e o filho B 4 vezes com 1 vitória; para tornar a escolha concreta, usa a regra UCT:
 
 $$
 U_i = \frac{w_i}{n_i} + c\sqrt{\frac{\ln N}{n_i}}.
 $$
 
-$w_i$ conta vitórias, $n_i$ visitas ao filho, $N$ visitas ao pai e $c$ regula exploração. Com $c=\sqrt{2}$, A tem $U_A \approx 1{,}543$ e B tem $U_B \approx 1{,}323$, por isso selecionamos A. O segundo termo favorece filhos pouco visitados; um filho sem visitas é experimentado antes de aplicar a divisão. Nos nós do adversário, as estatísticas devem refletir o objetivo desse jogador, por exemplo usando vitórias do jogador que escolhe ali, em vez de maximizar sempre as vitórias de MAX. Ao fim de milhares de iterações, o filho com mais visitas é a jogada escolhida. Não há garantia de jogada ótima com um orçamento finito. Mais simulações melhoram a estimativa em condições adequadas, mas o resultado depende da política de seleção e de simulação.
+$w_i$ conta vitórias, $n_i$ visitas ao filho, $N$ visitas ao pai e $c$ regula exploração. Com $c=\sqrt{2}$, A tem $U_A \approx 1{,}543$ e B tem $U_B \approx 1{,}323$, por isso selecionamos A. O segundo termo favorece filhos pouco visitados; um filho sem visitas é experimentado antes de aplicar a divisão. Nos nós do adversário, as estatísticas devem refletir o objetivo desse jogador, por exemplo usando vitórias do jogador que escolhe ali, em vez de maximizar sempre as vitórias de MAX. Ao fim de milhares de iterações, o filho com mais visitas é a jogada escolhida, sem garantia de jogada ótima com um orçamento finito. Mais simulações melhoram a estimativa em condições adequadas, mas o resultado depende da política de seleção e de simulação.

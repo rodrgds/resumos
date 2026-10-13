@@ -14,9 +14,7 @@ A questão decisiva é onde confirmar a reserva de Ana: o telemóvel apresenta o
 
 ## Requisitos que orientam a arquitetura
 
-Um **requisito arquiteturalmente significativo** influencia a estrutura ou uma decisão difícil de alterar. Suportar vários dispositivos, manter dados coerentes ou funcionar sem rede pode exigir decisões distintas.
-
-Para a aplicação, precisamos de impedir reservas simultâneas sobrepostas. Uma verificação no ecrã não chega, porque outro dispositivo pode reservar depois dessa verificação, por isso colocamos a decisão final no servidor, que controla os dados e confirma ou recusa numa operação atómica.
+Um **requisito arquiteturalmente significativo** influencia a estrutura ou uma decisão difícil de alterar: suportar vários dispositivos, manter dados coerentes ou funcionar sem rede pode exigir decisões distintas. Para a aplicação, precisamos de impedir reservas simultâneas sobrepostas, e uma verificação no ecrã não chega, porque outro dispositivo pode reservar depois dessa verificação; por isso colocamos a decisão final no servidor, que controla os dados e confirma ou recusa numa operação atómica.
 
 A arquitetura não fica automaticamente correta por usar um padrão conhecido. Precisamos de a avaliar nos cenários críticos. Um protótipo vertical que cria uma reserva desde o ecrã até aos dados pode revelar riscos de integração antes de construir todos os ecrãs.
 
@@ -45,6 +43,14 @@ Uma arquitetura pode usar vários estilos. A aplicação pode ser cliente-servid
 Numa arquitetura de camadas estrita, uma camada usa a seguinte. Numa versão relaxada, pode usar camadas inferiores não adjacentes. O atalho pode reduzir passos, mas aumenta as dependências que precisamos de justificar.
 
 Um repositório arquitetural partilhado por subsistemas não é exatamente o mesmo conceito que uma classe Repository que encapsula acesso a dados numa aplicação.
+
+### Um fluxo de processamento e uma interface interativa
+
+Para importar horários de vários ficheiros, podemos decompor o processamento em ler registos, normalizar datas, rejeitar linhas inválidas e agrupar horários por sala. Cada etapa recebe um formato e produz o formato acordado para a seguinte. **Pipes and filters** torna visíveis estas transformações e permite testar ou substituir uma etapa sem redesenhar todas.
+
+Não significa que o fluxo seja automaticamente adequado a qualquer parte da aplicação. O ecrã de pesquisa reage a escolhas, apresenta um estado e permite voltar atrás; separar modelo, vista e controlo da interação pode ser mais útil aí. O mesmo sistema pode ter uma interface MVC e um importador pipes and filters, implantados numa organização cliente-servidor.
+
+Antes de ligar os filtros, definimos o contrato entre etapas: formato das datas, fuso horário e tratamento das linhas rejeitadas. Se um filtro produz datas locais e o seguinte as interpreta como UTC, o fluxo pode estar bem desenhado e produzir horários errados. O padrão organiza responsabilidades; os contratos e os cenários dão evidência da correção.
 
 ## Vistas e UML
 
@@ -83,9 +89,7 @@ Numa aplicação Flutter com **MVVM**, Model-View-ViewModel, a View apresenta o 
 
 Reutilizar pode envolver funções, bibliotecas, componentes, frameworks, serviços ou sistemas completos. Avalia adequação funcional, interfaces, qualidade, licença, suporte, atualizações e custo de integração.
 
-Uma biblioteca resolve um problema que a aplicação chama. Um framework organiza parte da execução e chama o código da aplicação nos pontos previstos, uma forma de inversão de controlo.
-
-Para autenticação, uma solução mantida pode reduzir erros de implementação. Continuamos responsáveis pela configuração, autorização e tratamento de falhas. Para regras específicas das salas, precisamos de conservar o conhecimento do domínio, mesmo que usemos componentes existentes.
+Uma biblioteca resolve um problema que a aplicação chama, enquanto um framework organiza parte da execução e chama o código da aplicação nos pontos previstos, uma forma de inversão de controlo. Para autenticação, uma solução mantida pode reduzir erros de implementação, mas continuamos responsáveis pela configuração, autorização e tratamento de falhas; para regras específicas das salas, precisamos de conservar o conhecimento do domínio, mesmo que usemos componentes existentes.
 
 ## Desenho detalhado e decisão justificada
 
@@ -102,6 +106,4 @@ Regista uma decisão com contexto, alternativas, escolha e consequências.
 | Escolha       | criarSeLivre atómica no servidor                    |
 | Consequências | Regra preservada; ecrã precisa de tratar o conflito |
 
-Se trocarmos o armazenamento mantendo o contrato, podemos limitar a alteração ao Acesso a dados. A nova implementação precisa de conservar atomicidade, resultados e falhas acordados, além de esconder os nomes das tabelas. Se a interface só tivesse consultar e guardar, a troca não chegaria: a fronteira errada obriga a rever o contrato.
-
-Mudanças arquiteturais podem ser graduais ou grandes. Não há uma regra de que todo o erro arquitetural exija reescrever o sistema.
+Se trocarmos o armazenamento mantendo o contrato, podemos limitar a alteração ao Acesso a dados, desde que a nova implementação conserve atomicidade, resultados e falhas acordados, além de esconder os nomes das tabelas; se a interface só tivesse consultar e guardar, a troca não chegaria, pois a fronteira errada obriga a rever o contrato. Mudanças arquiteturais podem ser graduais ou grandes, e não há uma regra de que todo o erro arquitetural exija reescrever o sistema.

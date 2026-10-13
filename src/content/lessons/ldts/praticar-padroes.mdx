@@ -3,6 +3,13 @@ title: Praticar padrões de desenho
 description: Aplicar padrões e analisar partilha, undo, subscrições, famílias e estado global.
 section: exercicios
 order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Problemas históricos de LDTS/LPOO, arquivo Accio, com exemplos adaptados
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-desenho-e-teste-de-software/L.EIC014
+  gaps:
+    - Não confirma o formato ou os critérios das provas da edição atual.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -270,4 +277,26 @@ import Exercise from '../../../components/Exercise.astro';
     Guardar a referência num campo static final não torna imutável o objeto
     referido nem assegura exclusão entre operações.
   </div>
+</Exercise>
+
+<Exercise
+  id="padroes-decorator-base-mutavel"
+  revision={1}
+  title="A mesma cadeia depois de mudar a base"
+  explanation="/cadeiras/ldts/padroes-desenho/#delegação-e-preço-atual"
+  answer={{ kind: 'self', checklist: ['Calculei 1080 antes da alteração e 720 depois, na cadeia existente.', 'Obtive 740 para desconto antes da entrega.', 'Distingui delegação em cada consulta de snapshot calculado no construtor e de notificação automática.'] }}
+>
+
+Um preço base B começa em 1000 cêntimos. Um decorator E acrescenta 200 cêntimos ao consultar o objeto envolvido; outro D devolve 90% do preço que consulta. Usamos somente os valores dados, que não exigem arredondamento, e uma única thread.
+
+Construímos `total = D(E(B))` e consultamos. Depois mudamos **o mesmo B** para 600 e voltamos a consultar a cadeia já construída. Calcula os dois valores e compara o segundo com `E(D(B))`. Uma implementação de E guarda o total calculado no construtor e nunca volta a consultar B: cumpre o contrato dado? A alteração de B, por si só, avisa uma vista que já mostrou o preço?
+
+<div slot="solution">
+O primeiro total é (1000 + 200) × 0,9 = 1080. Depois, a mesma cadeia consulta B novamente e dá (600 + 200) × 0,9 = 720. Na ordem E(D(B)), dá 600 × 0,9 + 200 = 740.
+
+Se E guarda apenas 1200 no construtor, D continuará a ler esse valor e dará 1080 depois da alteração, quebrando o contrato de preço atual. E deve delegar a consulta quando centimos() é chamado. Isto não é uma regra de que todos os decorators tenham base mutável: é o comportamento exigido aqui.
+
+A alteração de B não avisa a vista por si só. O novo valor aparece numa consulta posterior; uma atualização automática da vista precisa de uma colaboração de eventos ou notificações adequada. Partilhar uma referência e receber uma notificação são mecanismos diferentes.
+
+</div>
 </Exercise>

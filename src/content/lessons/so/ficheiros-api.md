@@ -9,7 +9,7 @@ practices:
 
 Queremos copiar oito bytes para a saída padrão. Se a primeira escrita entregar só três, o programa tem de conservar os cinco restantes e retomar no endereço certo. A saída padrão costuma estar ligada ao terminal, mas a shell pode ligá-la a um ficheiro ou pipe.
 
-Podemos usar a biblioteca C, que representa um fluxo por `FILE *` e pode acumular bytes num buffer, ou as interfaces POSIX `open`, `read` e `write`, que usam um **descritor** inteiro. POSIX normaliza interfaces de biblioteca e de sistema. Aqui seguimos primeiro os descritores, depois as linhas e os caminhos.
+Podemos usar a biblioteca C, que representa um fluxo por `FILE *` e pode acumular bytes num buffer, ou as interfaces POSIX `open`, `read` e `write`, que usam um **descritor** inteiro. POSIX normaliza interfaces de biblioteca e de sistema.
 
 ## FILE e descritor
 
@@ -79,6 +79,16 @@ Numa abertura de ficheiro regular, a posição começa normalmente em zero. Cada
 Duas chamadas independentes a `open` sobre o mesmo ficheiro podem coexistir e têm posições independentes. Já `dup` e os descritores herdados por `fork` referem a mesma **descrição de ficheiro aberto** e partilham a posição. Fecha o que deixas de usar para evitar perder descritores, não porque seja proibido abrir o nome novamente.
 
 Na biblioteca, `rewind(fp)` volta ao início e limpa indicadores de erro e EOF. `fseek` permite reposicionamento com retorno que deves verificar. Pipes e terminais não se comportam como ficheiros regulares reposicionáveis.
+
+## Reposicionar por bytes
+
+`lseek(fd, deslocamento, origem)` define a posição e devolve a nova posição absoluta. `SEEK_SET` parte do início, `SEEK_CUR` da posição atual e `SEEK_END` do tamanho lógico. Num ficheiro de cinco bytes `abcde`, `lseek(fd, -2, SEEK_END)` coloca a posição em 3; uma leitura de um byte entrega `d` e avança para 4.
+
+EOF não é um carácter guardado no fim. Na posição 5, uma leitura com pedido positivo devolve 0. Para inverter os bytes, começa na posição `tamanho-1`, lê e escreve um byte, depois reposiciona em `tamanho-2`. A leitura também avança a posição, por isso repetir apenas `lseek(fd, -1, SEEK_CUR)` pode reler sempre o mesmo byte. Guarda o índice que pretendes visitar, do último até zero.
+
+Usa `off_t` para posições e testa `(off_t)-1` como erro. Um ficheiro vazio não tem último byte. Um ficheiro regular pode admitir posições além do seu fim; só reposicionar não aumenta o tamanho. Uma escrita posterior pode criar uma região esparsa, cujas leituras dão bytes zero. Pipes não admitem esse reposicionamento.
+
+Esta inversão é de **bytes**. Inverter os bytes de um carácter UTF-8 com vários bytes não preserva o texto. Um programa que promete inverter caracteres precisa de tratar a codificação.
 
 ## Linhas com getline
 

@@ -34,6 +34,17 @@ Para $f:A\to B,g:B\to C$, $(g\circ f)(a)=g(f(a))$. Aplica primeiro $f$.
 - Se $g\circ f$ é sobrejetiva, $g$ é sobrejetiva. Isso não obriga $f(A)=B$.
 - Para bijeções, $(g\circ f)^{-1}=f^{-1}\circ g^{-1}$.
 
+## Fibras e quociente
+
+Para uma função total $f:A\to B$, $R=f^{-1}\circ f$ é sempre equivalência:
+
+$$
+aRb\Longleftrightarrow f(a)=f(b),\qquad
+[a]_R=\{x\in A:f(x)=f(a)\}.
+$$
+
+As classes são as fibras não vazias. $[a]_R\mapsto f(a)$ é bijeção de $A/R$ para $f(A)$; no caso finito, $|A/R|=|f(A)|$. Já $\operatorname{dom}(R)=\operatorname{rng}(R)=A$. Conta pares da relação por $|R|=\sum_{X\in A/R}|X|^2$ quando $A$ é finito.
+
 ## Cardinalidade
 
 Dois conjuntos têm a mesma cardinalidade se existe uma bijeção entre eles.

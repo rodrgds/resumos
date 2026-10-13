@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
@@ -23,17 +23,18 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
+import Bracket from '../../../components/Bracket.astro';
 import Manim from '../../../components/Manim.astro';
 import YouTube from '../../../components/YouTube.astro';
 import aperto from '../../rc/handshake.typ?raw';
 
-Dois clientes podem comunicar com a porta 80 do mesmo servidor. TCP distingue as ligações pelo conjunto IP e porta de origem, IP e porta de destino. As **portas** permitem entregar dados ao socket correspondente dentro do terminal; não identificam globalmente um programa.
+Dois clientes podem comunicar com a porta 80 do mesmo servidor, pois TCP distingue as ligações pelo conjunto IP e porta de origem, IP e porta de destino. As **portas** permitem entregar dados ao socket correspondente dentro do terminal e não identificam globalmente um programa.
 
 ## UDP e TCP
 
 UDP acrescenta um cabeçalho de 8 bytes com portas, comprimento e checksum. Não estabelece ligação, não garante entrega ou ordem, e preserva limites dos datagramas. A aplicação pode acrescentar os mecanismos de que precise.
 
-TCP oferece fluxo de bytes fiável e ordenado enquanto a ligação funciona: recupera perdas com retransmissões, mas uma falha persistente termina a ligação e é comunicada à aplicação. Não preserva fronteiras de `send`: dois envios podem chegar numa leitura e um envio pode exigir várias leituras. Delimita as tuas mensagens por comprimento ou outra regra.
+TCP oferece fluxo de bytes fiável e ordenado enquanto a ligação funciona, recuperando perdas com retransmissões; uma falha persistente termina a ligação e é comunicada à aplicação. Não preserva fronteiras de `send`: dois envios podem chegar numa leitura e um envio pode exigir várias leituras, por isso delimita as tuas mensagens por comprimento ou outra regra.
 
 Escolher UDP não garante baixa latência, tal como usar TCP não garante um débito fixo. DNS pode usar UDP ou TCP; HTTP/3 usa QUIC sobre UDP. A escolha deve considerar o protocolo concreto, os mecanismos acima do transporte e o modelo do exercício.
 
@@ -49,9 +50,9 @@ A abertura normal tem SYN, SYN-ACK e ACK:
   alt="Cliente envia SYN sequência 100; servidor responde SYN-ACK sequência 500 confirmação 101; cliente confirma com sequência 101 e confirmação 501."
 />
 
-Depois deste exemplo, o primeiro byte do cliente tem número 101. Se enviar 200 bytes e depois 100, os segmentos começam em 101 e 301; após ambos, o servidor confirma 401. A numeração do servidor é independente.
+Depois deste exemplo, o primeiro byte do cliente tem número 101. Se enviar 200 bytes e depois 100, os segmentos começam em 101 e 301, e após ambos o servidor confirma 401; a numeração do servidor é independente.
 
-**Perda.** Chegam bytes 1000–1299 e 1600–1899, mas faltam 1300–1599. O ACK cumulativo continua em 1300. Quando chegam os bytes em falta, pode avançar para 1900. SACK, se negociado, permite indicar blocos recebidos fora de ordem sem alterar o significado do ACK cumulativo. Os intervalos incluem os dois extremos: 1000–1299 contém 300 bytes. ACK 1300 refere-se ao **próximo** byte esperado, que ainda não foi recebido.
+**Perda.** Chegam bytes 1000–1299 e 1600–1899, mas faltam 1300–1599, por isso o ACK cumulativo continua em 1300. Quando chegam os bytes em falta, pode avançar para 1900. SACK, se negociado, permite indicar blocos recebidos fora de ordem sem alterar o significado do ACK cumulativo. Os intervalos incluem os dois extremos (1000–1299 contém 300 bytes); ACK 1300 refere-se ao **próximo** byte esperado, que ainda não foi recebido.
 
 <Manim
   animation="rc-ack-cumulativo"
@@ -63,13 +64,27 @@ O fecho usa FIN em cada direção e respetivas confirmações. Um lado pode term
 
 ## Timeout e estimativa de RTT
 
-O tempo de ida e volta varia. Um temporizador muito curto retransmite dados ainda em trânsito; um muito longo demora a recuperar perdas. Uma estimativa suavizada usa amostras de RTT e uma medida de variação. **SRTT** é a estimativa suavizada do RTT, **RTTVAR** mede a sua variação e **RTO** é o tempo até à retransmissão. Pela RFC6298, atualiza primeiro RTTVAR e depois SRTT, com pesos 1/4 e 1/8, e usa $RTO=SRTT+\max(G,4RTTVAR)$ com mínimo recomendado de 1 s. Amostras de segmentos retransmitidos seguem o algoritmo de Karn: ignoram-se quando a ambiguidade permanece.
+O tempo de ida e volta varia: um temporizador muito curto retransmite dados ainda em trânsito e um muito longo demora a recuperar perdas. Uma estimativa suavizada usa amostras de RTT e uma medida de variação. **SRTT** é a estimativa suavizada do RTT, **RTTVAR** mede a sua variação e **RTO** é o tempo até à retransmissão. Pela RFC6298, atualiza primeiro RTTVAR e depois SRTT, com pesos 1/4 e 1/8, e usa $RTO=SRTT+\max(G,4RTTVAR)$ com mínimo recomendado de 1 s. Amostras de segmentos retransmitidos seguem o algoritmo de Karn: ignoram-se quando a ambiguidade permanece.
+
+Sejam $S$ a SRTT anterior e $V$ a RTTVAR anterior. Com amostra nova $R'$, calcula primeiro a variação $V'$, usando a **média anterior** no desvio absoluto:
+
+$$V'=\frac34V+\frac14\lvert S-R'\rvert.$$
+
+Só depois atualiza a média para $S'$:
+
+$$S'=\frac78S+\frac18R'.$$
+
+Por exemplo, SRTT=100 ms, RTTVAR=20 ms e amostra 140 ms dão RTTVAR nova $15+10=25$ ms e SRTT nova $87,5+17,5=105$ ms. Com granularidade G=1 ms, a expressão dá RTO=205 ms; aplicando o mínimo recomendado, usa-se 1 s. Se o exercício indicar outro mínimo, aplica essa condição explicitamente.
 
 Não uses indiscriminadamente uma amostra de uma transmissão repetida: pode ser impossível distinguir a que envio corresponde o ACK, problema tratado pelo algoritmo de Karn. Expirar o timeout aumenta a espera antes de tentar de novo. ACKs duplicados podem desencadear retransmissão rápida sem esperar pelo timeout, conforme a variante.
 
 ## Fluxo e congestionamento
 
-O **controlo de fluxo** protege o recetor e usa `rwnd`. O **controlo de congestionamento** protege a rede e usa `cwnd`. De forma simplificada, os dados em voo não excedem $\min(rwnd,cwnd)$. Os bytes novos permitidos são $\max(0,\min(rwnd,cwnd)-FlightSize)$.
+<Bracket label="Ideia-chave">
+
+O **controlo de fluxo** protege o recetor e usa `rwnd`; o **controlo de congestionamento** protege a rede e usa `cwnd`. A menor janela limita os dados em voo no modelo simplificado, mas parte desse espaço pode estar ocupada por bytes enviados e ainda não confirmados, `FlightSize`. Os bytes **novos** permitidos são $\max(0,\min(rwnd,cwnd)-FlightSize)$.
+
+</Bracket>
 
 Com $W$ **bytes** de janela efetiva e RTT de $T$ segundos, o limite ideal por janela é $8W/T$ bit/s. O débito também não excede o bottleneck do caminho. Para W=64000 bytes e RTT=0,08 s, obténs 6,4 Mbit/s. Se a ligação limitar a 5 Mbit/s, o menor limite passa a 5 Mbit/s.
 
@@ -85,7 +100,7 @@ Na variante Reno usada em muitos exercícios, três ACKs duplicados desencadeiam
 
 A combinação de aumento aditivo e redução multiplicativa é **AIMD**. Perdas podem resultar de congestionamento ou de erros do canal. A resposta à perda não identifica sempre a causa real; ECN permite sinalizar congestionamento sem depender só de descartar pacotes.
 
-Para associar cada mudança da janela TCP ao evento que a provoca, vê esta aula e repara em que acontecimento (ACK novo, ACK duplicado ou timeout) faz a janela crescer, cair para metade ou recomeçar em baixo.
+A aula seguinte associa cada mudança da janela TCP ao evento que a provoca; repara em que acontecimento (ACK novo, ACK duplicado ou timeout) faz a janela crescer, cair para metade ou recomeçar em baixo.
 
 <YouTube
   id="cIHiSR4j3g4"
@@ -94,6 +109,6 @@ Para associar cada mudança da janela TCP ao evento que a provoca, vê esta aula
 
 ## Ler uma captura
 
-No Wireshark, segue um fluxo TCP e regista sequência, ACK, comprimento dos dados, flags e janela. A apresentação pode usar números relativos, distintos dos valores brutos. Se dois segmentos se perderem, desenha os bytes em falta antes de prever confirmações. A aplicação só recebe uma sequência contínua, mesmo que a captura já mostre segmentos posteriores.
+No Wireshark, segue um fluxo TCP e regista sequência, ACK, comprimento dos dados, flags e janela. A apresentação pode usar números relativos, distintos dos valores brutos; se dois segmentos se perderem, desenha os bytes em falta antes de prever confirmações. A aplicação só recebe uma sequência contínua, mesmo que a captura já mostre segmentos posteriores.
 
 Para praticar, usa um traço de TCP disponibilizado para estudo ou uma captura tua autorizada e compara com o [percurso das aplicações](/cadeiras/rc/aplicacoes/).

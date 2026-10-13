@@ -2,6 +2,13 @@
 title: Praticar registos e polling
 description: Substituição de campos, espaços de I/O e limites de espera por polling.
 section: exercicios
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Provas e guiões históricos de LC, adaptações com hipóteses explícitas
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-computadores/L.EIC018
+  gaps:
+    - Não confirma matéria ou critérios de avaliação de 2026/27.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -118,4 +125,48 @@ import Exercise from '../../../components/Exercise.astro';
     não se deve escrever nem apresentar essa falha como uma espera esgotada.
 
   </div>
+</Exercise>
+
+<Exercise
+  id="lc-l3223-contrato"
+  revision={1}
+  title="A porta lida não devolve a configuração"
+  explanation="/cadeiras/lc/falar-com-hardware/#um-endereço-não-garante-um-registo-legível"
+  answer={{ kind: 'self', checklist: ['Construí 0x51 para timer 1, alarme e milissegundos, com reservados zero.', 'Escrevi 0xF4 e 0x01 nessa ordem na porta 0x21.', 'Distingui estado lido e controlo escrito e não usei a fórmula do divisor i8254.'] }}
+>
+
+Usa a especificação do dispositivo fictício L3223 apresentada na lição. Queremos um alarme no timer 1 depois de 500 ms. O índice do timer ocupa 7:6, alarme é o bit 4 e o código de milissegundos é 1 nos bits 1:0. Os restantes bits têm de ser zero.
+
+Ler 0x23 devolveu estado 0x07. Um colega propõe preservar esse valor, acrescentar os bits do alarme por OR e calcular a contagem por TIMER_FREQ / 500. Constrói a palavra correta e a sequência de portas/bytes. Explica os dois erros da proposta.
+
+<div slot="solution">
+A palavra é `(1 << 6) | (1 << 4) | 1`, ou `0x51`. Escrevemos 0x51 em 0x23; a contagem 500 é 0x01F4, por isso escrevemos primeiro 0xF4 e depois 0x01 na mesma porta 0x21.
+
+O valor 0x07 lido é estado, não a configuração anterior. Preservá-lo por OR acrescentaria bits reservados e o código de unidade 3, inválido na especificação dada. O controlo é construído do contrato com os reservados zero.
+
+O L3223 recebe a contagem na unidade configurada: 500 milissegundos. Não recebe um divisor do relógio de entrada do i8254; essa fórmula e a convenção especial de zero não se transferem só por ambos se chamarem timers.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="lc-irq-causa-partilhada"
+  revision={1}
+  title="Uma IRQ, dois timers com pedido"
+  explanation="/cadeiras/lc/falar-com-hardware/#um-endereço-não-garante-um-registo-legível"
+  answer={{ kind: 'self', checklist: ['Usei 0x80 como máscara do bit de notificação pedido 7, sem confundir com IRQ 10.', 'Identifiquei pedidos dos timers 0 e 2 no estado 0x05.', 'Não anunciei o alarme do timer 1 e não inventei uma escrita de limpeza não especificada.'] }}
+>
+
+Os três timers do L3223 partilham IRQ 10. Pediste o bit de notificação Minix 7 e conservaste esse número antes de sys_irqsetpolicy. Recebeste uma notificação de hardware com interrupts igual a 0x80. Uma leitura bem-sucedida de 0x23 devolve 0x05: os bits 0, 1 e 2 indicam pedidos dos timers 0, 1 e 2.
+
+Que máscara valida a notificação? Que timers têm pedido? Podes concluir que o alarme do timer 1 expirou? A especificação não diz como limpar esses flags; escrever 0x05 em 0x23 é uma limpeza justificada?
+
+<div slot="solution">
+A máscara da notificação é `1u << 7`, ou `0x80`. A IRQ física 10 identifica a linha subscrita, não o bit que este processo pediu. O registo do dispositivo é outra máscara: 0x05 ativa os bits 0 e 2. Há pedidos desses timers, sem o bit do timer 1.
+
+Não podemos concluir que o alarme de 1 expirou só porque a IRQ partilhada notificou. Verificamos a causa correspondente ao objetivo e tratamos as restantes segundo a política da aplicação.
+
+Escrever 0x05 em 0x23 configura o dispositivo; não há uma operação de limpeza definida por essa informação. Não a inventamos. O exemplo interpreta causas e máscaras, sem afirmar que executou I/O ou que conhece todos os detalhes de reconhecimento do periférico fictício.
+
+</div>
 </Exercise>

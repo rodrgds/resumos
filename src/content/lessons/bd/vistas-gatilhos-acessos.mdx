@@ -9,6 +9,8 @@ practices:
 
 import auditarStock from '../../bd/examples/auditar-stock.sql?raw';
 
+import pecas from '../../bd/examples/pecas.sql?raw';
+import reservarPecas from '../../bd/examples/reservar-pecas.sql?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import documentos from '../../bd/documentos.sql?raw';
 import loja from '../../bd/loja.sql?raw';
@@ -110,6 +112,37 @@ Em SQLite, `RAISE(ABORT, 'mensagem')` num gatilho rejeita a instrução e desfaz
 Um limite de no máximo cinco encomendas por cliente, por exemplo, requer verificar inserções **e mudanças de cliente** em encomendas existentes. Um gatilho só de inserção deixa uma segunda via para violar a regra. Para mínimos, pensa também nas eliminações. O mecanismo não substitui a análise de todas as operações.
 
 A ação de um gatilho pode ativar outros gatilhos. Evita depender da ordem de gatilhos que o motor não garante e considera ciclos. Se alterares a própria linha num gatilho `BEFORE`, o resultado pode ter comportamento indefinido em SQLite; usa restrições, rejeição ou um desenho `AFTER` bem definido.
+
+## Validar compatibilidade e reservar stock
+
+Uma oficina tem peças que só servem certos modelos. Ao registar duas unidades de uma peça numa reparação, queremos confirmar a compatibilidade e o stock antes de reduzir a quantidade disponível. Uma estrangeira para Peca e outra para Modelo garantem que ambos existem, mas não que o par é compatível.
+
+O exemplo reduz a reparação a `Uso(id,peca,modelo,qtd)`. A peça 1 tem stock 5 e só é compatível com o modelo 10. Quantidades e stocks são inteiros e quantidade tem de ser positiva. Esta operação ensina a inserção, com dois gatilhos:
+
+<CodePlayground
+  language="sqlite"
+  title="Validar uma utilização e debitar stock"
+  files={{ 'pecas.sql': pecas }}
+  code={reservarPecas}
+/>
+
+`ValidarUso` corre antes da inserção. A primeira procura testa o par completo, não apenas a existência da peça. A segunda compara a quantidade pedida com o stock disponível. Se alguma falhar, `RAISE(ABORT,...)` rejeita a instrução. `DebitarUso` só atua depois de a linha ser inserida. O uso 100 fica guardado e o stock da peça 1 passa de 5 para 3; a peça 2 mantém 8.
+
+Se uma inserção de várias linhas aceitar uma primeira linha e falhar na seguinte, `ABORT` desfaz a instrução inteira, incluindo os débitos dos gatilhos já executados nessa instrução. Não conserva a primeira linha desse lote. Inserções anteriores feitas noutras instruções da transação continuam sujeitas à distinção de [rollback da instrução e da transação](/cadeiras/bd/indices-transacoes/#um-erro-não-faz-sempre-rollback-de-tudo).
+
+### Alterações e eliminações
+
+Estes dois gatilhos implementam só a inserção. Permitir `UPDATE` ou `DELETE` em Uso exige definir também os seguintes efeitos:
+
+| Operação                 | Validação e alteração de stock                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Mudar só a quantidade    | Para a mesma peça, a disponibilidade para o novo uso é `stock + OLD.qtd`. Depois, o stock varia por `OLD.qtd - NEW.qtd`. |
+| Mudar a peça ou o modelo | Confirma o novo par. Ao mudar de peça, devolve `OLD.qtd` à antiga e debita `NEW.qtd` da nova.                            |
+| Remover um uso           | Devolve `OLD.qtd` à peça antiga, se a remoção significar cancelar a reserva.                                             |
+
+Com stock 3 depois do uso de duas unidades, mudar esse uso para quatro unidades precisa apenas de duas unidades adicionais. Comparar quatro diretamente com stock 3 recusaria uma alteração possível. Se a peça mudar, as unidades da peça antiga não aumentam o stock disponível da nova.
+
+A política de eliminação depende do significado do registo. Apagar um histórico de peças já consumidas não devolve peças fisicamente ao armazém; cancelar uma reserva ainda não consumida pode devolvê-las. Decide esse significado antes de escrever o gatilho. Alterar a relação Compativel também pode invalidar usos existentes e precisa de uma política própria.
 
 ## Autenticação e autorização
 

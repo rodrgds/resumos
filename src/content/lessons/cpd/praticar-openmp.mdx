@@ -38,6 +38,30 @@ Não usar 7 ms como intervalo em regime estável nem 1 ms por ser a fase mais r�
 </Exercise>
 
 <Exercise
+  id="cpd-static-blocos"
+  revision={1}
+  title="A última volta não tem um bloco completo"
+  explanation="/cadeiras/cpd/paralelismo-openmp/#distribuição-estática-por-blocos"
+  answer={{ kind: 'self', checklist: ['Atribuí blocos 0,1,2,3,4 às threads 0,1,2,3,0.', 'Obtive contagens 5,3,3,3, sem inventar a iteração 14.', 'Distingui o mapeamento com bloco explícito de static sem tamanho e de dynamic.'] }}
+>
+
+Uma equipa efetiva de quatro threads executa as iterações de 0 a 13 com `schedule(static,3)`. Lista os blocos e os seus donos e conta as iterações por thread. A thread com mais iterações tem necessariamente o maior tempo? Poderias usar o mesmo mapeamento sem saber o tamanho do bloco?
+
+<div slot="hint">
+
+Forma blocos consecutivos de três e volta à thread 0 depois da thread 3. O último bloco pode ser menor.
+
+</div>
+<div slot="solution">
+
+Os blocos são 0–2 para a thread 0, 3–5 para a 1, 6–8 para a 2, 9–11 para a 3 e 12–13 de novo para a 0. As contagens são 5, 3, 3 e 3, somando 14. Não há iteração 14 para completar o último bloco.
+
+Sem custos iguais por iteração, a contagem não determina qual thread termina mais tarde. `schedule(static)` sem bloco explícito não garante este mapeamento; `dynamic` depende da disponibilidade durante a execução. Também não basta pedir quatro threads se a equipa efetiva for diferente da assumida no enunciado.
+
+</div>
+</Exercise>
+
+<Exercise
   id="cpd-dependencia-ciclo"
   revision={2}
   title="Seguir uma dependência entre iterações"
@@ -122,4 +146,30 @@ $W=2+5+3+1=11$ s. As cadeias A, C, F e B, F demoram ambas 6 s, logo $D=6$ s. O l
 Não usar só W/2, porque as dependências impõem outro limite. Um limite inferior, em geral, não garante que haja um escalonamento que o atinja.
 
   </div>
+</Exercise>
+
+<Exercise
+  id="cpd-private-maximo"
+  revision={1}
+  title="Inicializar não é combinar"
+  explanation="/cadeiras/cpd/paralelismo-openmp/#cópias-privadas-e-combinação-do-resultado"
+  answer={{ kind: 'self', checklist: ['Expliquei que private não copia a inicialização de -100 e que ler a cópia indeterminada é incorreto.', 'Mostrei que firstprivate inicializa, mas deixa o máximo exterior em -100.', 'Propus reduction(max:maximo) com inicialização num valor da entrada não vazia e obtive -1.'] }}
+>
+
+Um programa C usa `int maximo = -100`, o vetor `{-5,-2,-8,-1}` e um `parallel for private(maximo)` cujo corpo faz `if (v[i] > maximo) maximo = v[i]`. No fim imprime maximo fora da região. Não há outras alterações de v.
+
+Por que não basta a inicialização exterior? Trocar private por firstprivate resolve o máximo global? Propõe uma solução com redução que funcione também para um vetor não vazio só de negativos e indica o resultado.
+
+<div slot="hint">
+
+Separa a cópia da entrada para cada thread da devolução dos resultados ao fim.
+
+</div>
+<div slot="solution">
+
+O maximo privado não herda −100; o teste pode ler um valor indeterminado, pelo que não há um resultado numérico válido a prever para essa versão. `firstprivate(maximo)` dá −100 a cada cópia, mas não combina as cópias: o maximo exterior continua −100.
+
+Inicializa `maximo=v[0]` numa entrada não vazia e usa `reduction(max:maximo)`, como no programa da lição. O máximo deste vetor é −1. Começar o resultado original em zero daria zero, porque a redução combina também esse candidato exterior, que é maior que todos os dados. Deixar apenas shared reintroduziria atualizações sem proteção; uma barreira final não substitui a combinação.
+
+</div>
 </Exercise>

@@ -6,6 +6,8 @@
 
 ## Ensaio
 
+Adapta a entrada ao público: explica a grandeza e a unidade a quem desconhece o ensaio; mostra a conta e prepara o método para o júri. Conserva os dados, a referência dos 5% e as condições nas duas explicações. Pede ao público que reconstrua a comparação e o seu limite.
+
 - Cronometra a apresentação completa, incluindo transições entre oradores. Uma fala de 5 min 40 s mais 35 s de transições ocupa **6 min 15 s**.
 - Se o limite for seis minutos, corta pelo menos 15 s e deixa margem. Simplifica repetições ou transições, conserva condições essenciais e volta a ensaiar.
 - Ajusta volume para ser ouvido, entoação para assinalar ideias, ritmo e pausas para acompanhar resultados. Olha para o público e não escondas a figura.

@@ -18,7 +18,7 @@ $\forall x$ percorre **todos os objetos do domínio**; $\exists x$ exige pelo me
 O universal restringe por implicação; o existencial exige as propriedades por conjunção. $\exists x(E(x)\to L(x))$ pode ser verdadeira só por existir um não estudante.
 
 - $\forall x\exists y\,R(x,y)$ permite que $y$ dependa de $x$.
-- $\exists y\forall x\,R(x,y)$ exige um único $y$ comum. Implica a primeira, mas a recíproca falha.
+- $\exists y\forall x\,R(x,y)$ exige um mesmo $y$ para todos os $x$, não que esse $y$ seja único. Implica a primeira, mas a recíproca falha.
 - Podes trocar universais entre si e existenciais entre si. Quantificadores diferentes não se trocam em geral.
 
 Em $\mathbb N$, $\forall x\exists y(x<y)$ vale com $y=x+1$. Nenhum $y$ serve para $\forall x(x<y)$, pois $x=y$ refuta-o.

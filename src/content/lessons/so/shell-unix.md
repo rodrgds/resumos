@@ -86,17 +86,15 @@ tail -n 3 dados.txt
 
 `comando &` inicia um job sem a shell esperar pelo seu fim antes de apresentar outro prompt. O processo não fica automaticamente independente do terminal nem imune ao logout, porque continuas ligado à mesma sessão.
 
-`jobs` mostra jobs da shell e `ps` consulta processos do sistema.
+`jobs` mostra os jobs da shell e `ps` consulta os processos do sistema; `ps -A | wc -l` é apenas uma aproximação ao seu número, porque pode incluir um cabeçalho, os próprios programas da pipeline e alterações ocorridas enquanto os dados são recolhidos.
 
 `Ctrl+C` costuma enviar `SIGINT` ao grupo em primeiro plano. `Ctrl+Z` costuma enviar `SIGTSTP` e `fg` retoma um job em primeiro plano. `kill` envia sinais, ou seja não significa sempre matar. Para pedires terminação, começa normalmente com `SIGTERM`, porque `SIGKILL` não permite limpeza pelo programa.
-
-`ps -A | wc -l` é apenas uma aproximação ao número de processos, porque pode incluir um cabeçalho, os próprios programas da pipeline e alterações ocorridas enquanto os dados são recolhidos.
 
 ## Manual, permissões e arquivo
 
 `man 2 open` consulta uma chamada de sistema; `man 3 fopen` consulta uma função de biblioteca. `SYNOPSIS` mostra cabeçalhos e tipos. `RETURN VALUE` e `ERRORS` dizem como reconhecer falhas. `command -v gcc` mostra o comando que a shell encontra.
 
-`chmod 640 ficheiro` dá leitura e escrita ao dono, leitura ao grupo e nada aos restantes. O equivalente simbólico é `chmod u=rw,go-rwx,g+r ficheiro`. Os dígitos são combinações de 4 para leitura, 2 para escrita e 1 para execução. Numa linha como `-rw-r-----`, o primeiro carácter indica ficheiro regular e os nove seguintes dão as permissões de dono, grupo e outros. Num diretório, execução permite atravessar nomes; leitura permite listar entradas. Apagar uma entrada depende das permissões do diretório que a contém.
+`chmod 640 ficheiro` dá leitura e escrita ao dono, leitura ao grupo e nada aos restantes. O equivalente simbólico é `chmod u=rw,go-rwx,g+r ficheiro`. Os dígitos são combinações de 4 para leitura, 2 para escrita e 1 para execução. Numa linha como `-rw-r-----`, o primeiro carácter indica ficheiro regular e os nove seguintes dão as permissões de dono, grupo e outros. Num diretório, execução permite atravessar nomes; leitura permite listar entradas. Apagar uma entrada depende das permissões do diretório que a contém. A data habitual de `ls -l` é a última modificação, não a criação do ficheiro.
 
 ```sh
 tar -czf treino.tar.gz treino

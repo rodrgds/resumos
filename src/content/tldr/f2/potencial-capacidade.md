@@ -34,4 +34,13 @@ $$
 
 Em série, $2$ e $3\,\mathrm{\mu F}$ a $10\,\mathrm V$ dão $C_{\rm eq}=1{,}2\,\mathrm{\mu F}$, carga $12\,\mathrm{\mu C}$ e tensões $6$ e $4\,\mathrm V$.
 
-Ao afastar placas, decide primeiro se a fonte mantém $u$ ou se o isolamento conserva $q$. [Ver associações e energia](/cadeiras/f2/potencial-capacidade/#associações-e-energia).
+Ao passar de $d$ para $2d$, com área e dielétrico fixos e bordos desprezados, $C$ passa a $C/2$:
+
+| Montagem           | Conserva | Tensão final | Energia final |
+| ------------------ | -------- | ------------ | ------------- |
+| Armaduras isoladas | $q$      | $2u$         | $2W_C$        |
+| Fonte ideal ligada | $u$      | $u$          | $W_C/2$       |
+
+O balanço inclui trabalho mecânico e, no segundo caso, troca de energia com a fonte. [Ver associações e energia](/cadeiras/f2/potencial-capacidade/#associações-e-energia).
+
+Para limites de tensão em série com nós intermédios neutros, usa primeiro $q_{\max}=\min_k(C_kU_{k,\max})$ e depois $U_{\max}=q_{\max}\sum_k1/C_k$. Somar diretamente tensões nominais só seria válido se todas fossem atingidas com a mesma carga. [Ver limites por componente](/cadeiras/f2/potencial-capacidade/#tensões-máximas-em-série).

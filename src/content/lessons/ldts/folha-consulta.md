@@ -23,8 +23,11 @@ Cada linha resume uma decisão já explicada nas lições: o que verificar antes
 ## Java e estado
 
 - Java passa argumentos por valor, incluindo referências. Alterar o objeto pode afetar o chamador; reatribuir o parâmetro não muda a variável do chamador.
+- Em aritmética inteira, escolhe o tipo antes da operação: `(long) x + d` evita o overflow da soma em `int`; converter depois não o recupera. `byte++` converte de volta e pode passar de 127 a -128.
 - `final` impede reatribuição, não garante imutabilidade do objeto.
 - Para objetos, `==` compara identidade; `equals` representa igualdade lógica. Objetos iguais têm o mesmo hash; hashes iguais não provam igualdade.
+- `equals(Object)` redefine; `equals(TipoConcreto)` sobrecarrega e pode falhar através de `Object` ou coleções. Usa `@Override`.
+- `TreeSet` usa comparação zero para duplicados; mantém comparação coerente com `equals`. Ordenar por x e depois y preserva posições distintas; subtrair inteiros para comparar pode fazer overflow.
 - Não alteres campos de igualdade/hash enquanto o objeto está num `HashSet` ou é chave de `HashMap`.
 - `List` mantém sequência e duplicados; `Set` unicidade; `Map` um valor por chave. `HashSet` e `HashMap` não prometem ordem de iteração.
 - Uma vista não modificável acompanha alterações da coleção original. Uma cópia defensiva separa as coleções, mas pode partilhar elementos mutáveis.

@@ -8,6 +8,7 @@ practices:
 ---
 
 import WebPlayground from '../../../components/WebPlayground.astro';
+import Bracket from '../../../components/Bracket.astro';
 import Typst from '../../../components/Typst.astro';
 import modeloCaixa from '../../ltw/modelo-caixa.typ?raw';
 import catalogo from '../../ltw/catalogo.html?raw';
@@ -40,11 +41,17 @@ Desenha a árvore antes de responder. Uma `section` contém `h2`, `p` e `p` como
 
 `[href^="https://"]` testa o início de um atributo; `[href$=".pdf"]` testa o fim; `[href*="livro"]` procura uma parte. `[class~="livro"]` procura uma palavra numa lista separada por espaços, enquanto `[lang|="pt"]` aceita `pt` ou um valor que comece por `pt-`. `p.ativo` seleciona o próprio parágrafo com a classe; `p .ativo` seleciona um descendente. Uma pseudo-classe, como `:checked`, testa um elemento; um pseudo-elemento, como `::before`, representa uma parte gerada, normalmente com `content`.
 
-`:not(.esgotado)` exclui uma condição; `:is(.livro, .revista)` reúne alternativas; `.livro:has(button)` escolhe o elemento pela existência de um descendente que corresponde. Em seletores aninhados, `&` representa o seletor exterior. Para uma pergunta de seleção, desenha os pais e irmãos antes de contar especificidade.
+`:not(.esgotado)` exclui uma condição; `:is(.livro, .revista)` reúne alternativas; `.livro:has(button)` escolhe o elemento pela existência de um descendente que corresponde. Em seletores aninhados, `&` representa o seletor exterior; numa pergunta de seleção, desenha pais e irmãos antes de contar especificidade.
 
 ## Cascata e herança
 
-A especificidade só decide entre declarações que já estão no mesmo nível da cascata. Primeiro contam origem e importância, e a ordem das camadas quando existem; depois a especificidade; por fim, a posição no código. Aqui vamos comparar declarações normais do autor, sem camadas:
+<Bracket label="Ideia-chave">
+
+A especificidade só decide entre declarações que já estão no mesmo nível da cascata. Primeiro contam origem e importância, e a ordem das camadas quando existem; depois a especificidade; por fim, a posição no código.
+
+</Bracket>
+
+Aqui vamos comparar declarações normais do autor, sem camadas:
 
 ```css
 #catalogo .preco {
@@ -113,7 +120,9 @@ Um bloco participa normalmente numa sequência vertical. Um elemento inline part
 | `fixed`    | Sai do fluxo e, no caso habitual, usa o viewport                                                           |
 | `sticky`   | Permanece no fluxo e fica preso ao limite definido durante o scroll                                        |
 
-Se o botão Reservar tiver `position: relative; top: 8px`, aparece 8px abaixo do seu lugar, mas os elementos seguintes conservam as posições. Se tiver `position: absolute; bottom: 0` num cartão com `position: relative`, fica no fundo desse cartão e deixa de reservar espaço no fluxo. O texto pode então ficar por baixo do botão. Um antepassado transformado também pode estabelecer essa referência, incluindo para `fixed`. `z-index` compara níveis dentro de contextos de empilhamento; um filho não salta arbitrariamente acima de um contexto exterior. Para texto à volta de uma imagem usa `float: left` na imagem e `clear: both` no bloco que deve recomeçar abaixo. Para grelhas e alinhamento, usa flexbox ou grid.
+Se o botão Reservar tiver `position: relative; top: 8px`, aparece 8px abaixo do seu lugar, mas os elementos seguintes conservam as posições. Se tiver `position: absolute; bottom: 0` num cartão com `position: relative`, fica no fundo desse cartão e deixa de reservar espaço no fluxo. O texto pode então ficar por baixo do botão. Um antepassado transformado também pode estabelecer essa referência, incluindo para `fixed`. `z-index` compara níveis dentro de contextos de empilhamento; um filho não salta arbitrariamente acima de um contexto exterior.
+
+Para texto à volta de uma imagem, usa `float: left` na imagem e `clear: both` no bloco que deve recomeçar abaixo; para grelhas e alinhamento, usa flexbox ou grid.
 
 ## Flexbox e grid
 
@@ -149,4 +158,35 @@ button:hover {
 }
 ```
 
-Uma custom property participa na cascata e costuma herdar. `transform` muda o desenho da caixa sem reservar um novo lugar no fluxo. `transition` interpola uma alteração de propriedade; não inicia por si uma sequência repetida. Testa o layout com textos longos, zoom e largura pequena. Uma media query responde ao ambiente, mas não corrige uma largura mínima que já não cabe.
+Uma custom property participa na cascata e costuma herdar. `transform` muda o desenho da caixa sem reservar um novo lugar no fluxo. `transition` interpola uma alteração de propriedade; não inicia por si uma sequência repetida.
+
+Testa o layout com textos longos, zoom e largura pequena; uma media query responde ao ambiente, mas não corrige uma largura mínima que já não cabe.
+
+## Repartir o espaço com fr
+
+Uma grelha tem 720px de largura de **conteúdo**, sem padding nem borda, e três colunas: 120px, uma fração e duas frações. Os dois intervalos entre colunas medem 30px cada:
+
+```css
+.grelha {
+  display: grid;
+  width: 720px;
+  grid-template-columns: 120px minmax(0, 1fr) minmax(0, 2fr);
+  gap: 30px;
+}
+```
+
+Primeiro retiramos o que não é repartido: a coluna fixa e os dois gaps. Restam `720 - 120 - 2×30 = 540px`. As frações somam 3, por isso uma unidade vale `540 / 3 = 180px`.
+
+| Parte       | Largura |
+| ----------- | ------- |
+| Coluna fixa | 120px   |
+| `1fr`       | 180px   |
+| `2fr`       | 360px   |
+| Dois gaps   | 60px    |
+| Total       | 720px   |
+
+Não dividas a largura inteira por três: `fr` reparte o espaço que sobra. Com conteúdo de 480px e as restantes medidas iguais, sobram 300px e as colunas fracionárias passam a 100px e 200px.
+
+`minmax(0, ...)` fixa em zero o mínimo dos dois tracks flexíveis neste cálculo. Com o mínimo automático de um simples `1fr`, um conteúdo longo pode impor uma largura maior e mudar a distribuição; os itens também precisam de tratamento para não transbordarem. O exemplo de largura fixa serve para calcular, não para substituir o layout responsivo do catálogo.
+
+Um item com `grid-column: 2 / 4` atravessa as colunas 2 e 3 e o gap entre elas. No caso de 720px, ocupa `180 + 30 + 360 = 570px`. As linhas delimitam o intervalo; o espaço entre os tracks faz parte do item que os atravessa.

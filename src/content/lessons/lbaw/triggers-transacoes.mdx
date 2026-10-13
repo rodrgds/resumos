@@ -18,6 +18,9 @@ editorial:
 
 import Mermaid from '../../../components/Mermaid.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
+import cancelarReserva from '../../lbaw/cancelar-reserva.sql?raw';
+import dadosCancelamento from '../../lbaw/cancelamento-dados.sql?raw';
+
 import YouTube from '../../../components/YouTube.astro';
 import corrida from '../../lbaw/concorrencia.mmd?raw';
 import atomicidade from '../../lbaw/transacao.sql?raw';
@@ -117,7 +120,7 @@ Uma **dirty read** lê uma alteração não confirmada. Uma **non-repeatable rea
 
 No exemplo de dois médicos de serviço, ambos leem que há dois e cada um retira o seu próprio turno. Um snapshot estável não basta para impedir que fiquem zero. Serializable pode detetar o conflito e exigir uma nova tentativa. Ao receber um erro de serialização, repete a transação completa com um novo snapshot, não só a última instrução.
 
-Para seguir execuções concorrentes e identificar as anomalias e as garantias de cada nível de isolamento, vê a aula seguinte com a pergunta «que leituras consegue cada transação ver?» na cabeça. Pausa em cada entrelaçamento e decide se o resultado final seria possível numa execução sequencial.
+Para seguir execuções concorrentes e identificar as anomalias e as garantias de cada nível de isolamento, pergunta «que leituras consegue cada transação ver?»: pausa em cada entrelaçamento e decide se o resultado final seria possível numa execução sequencial.
 
 <YouTube
   id="4y656idl8ZU"
@@ -166,6 +169,36 @@ Uma rotina pode reduzir viagens entre aplicação e base de dados e centralizar 
 
 `INSERT ... RETURNING id` devolve o identificador da linha que acabaste de criar. Evita procurar `MAX(id)`, que pode corresponder à inserção de outra ligação.
 
-Uma coluna `GENERATED ALWAYS AS IDENTITY` usa uma sequência. Depois de essa ligação obter um valor da sequência, `currval('sessoes_id_seq')` devolve o último valor que ela própria obteve. Outra ligação não muda esse resultado. Antes de existir uma chamada nessa ligação, `currval` dá erro. A sessão da base de dados é aqui a ligação, não a sessão de um evento nem o cookie HTTP.
+Uma coluna `GENERATED ALWAYS AS IDENTITY` usa uma sequência; depois de essa ligação obter um valor, `currval('sessoes_id_seq')` devolve o último valor que ela própria obteve, sem que outra ligação mude esse resultado. Antes de existir uma chamada nessa ligação, `currval` dá erro. A sessão da base de dados é aqui a ligação, não a sessão de um evento nem o cookie HTTP.
 
 Uma sequência pode consumir números mesmo quando a transação é anulada. Os identificadores devem ser únicos, mas não se deve exigir que sejam consecutivos.
+
+## Cancelar sem libertar duas vezes
+
+Retomemos a regra de cancelamento: só um bilhete reservado pode ser cancelado pelo seu comprador, e a transição liberta exatamente um lugar. Ler o estado, somar um lugar e só depois atualizar o bilhete permite que duas tentativas usem a mesma leitura antiga.
+
+Liga a alteração do contador às linhas que **acabaram de mudar de estado**:
+
+<CodePlayground
+  language="postgresql"
+  title="Cancelamento condicionado e capacidade"
+  files={{ 'dados.sql': dadosCancelamento }}
+  code={cancelarReserva + '\n' + cancelarReserva}
+/>
+
+A CTE `cancelado` faz o `UPDATE` do bilhete apenas se id, comprador e estado coincidirem; o `RETURNING` fornece a sessão dessa transição. O `UPDATE` exterior usa esse resultado para libertar o lugar. É uma única instrução PostgreSQL: se falhar uma restrição no contador, a alteração do bilhete também é anulada.
+
+O bloco executa a mesma instrução duas vezes na mesma base. Na primeira tentativa, S12 passa de zero para um lugar livre. A segunda já não encontra o estado reservado, logo não liberta outro lugar. Um bilhete pago ou de outra pessoa também não satisfaz o predicado. Não interpretes zero linhas como diagnóstico único: pode significar ausência, falta de permissão ou estado incompatível; a aplicação decide a resposta sem revelar dados alheios.
+
+No Read Committed, duas tentativas sobre o mesmo bilhete disputam a mesma linha. Depois de a primeira confirmar, a segunda reavalia o predicado e já não encontra reservado. Todos os caminhos de compra, cancelamento e alteração de capacidade continuam a precisar do mesmo protocolo de invariantes e de uma ordem consistente de bloqueios. Cada execução do editor prepara uma base nova; as duas tentativas dentro deste bloco partilham a base dessa execução. O entrelaçamento exige duas ligações num servidor.
+
+## Contar ativações num UPDATE em lote
+
+Suponhamos um trigger `AFTER UPDATE FOR EACH ROW` e outro `AFTER UPDATE FOR EACH STATEMENT` sobre preços. A instrução `UPDATE precos SET preco=preco WHERE id<=2` encontra duas linhas. O primeiro dispara duas vezes e o segundo uma, mesmo que o valor de cada preço fique igual.
+
+| Instrução                       | Por linha | Por instrução |
+| ------------------------------- | --------- | ------------- |
+| UPDATE que encontra duas linhas | 2         | 1             |
+| UPDATE que não encontra nenhuma | 0         | 1             |
+
+Encontrar uma linha para atualizar e mudar efetivamente o seu valor são condições diferentes. Para só auditar mudanças reais, conserva o teste `NEW.preco IS DISTINCT FROM OLD.preco` no corpo do trigger ou uma condição adequada. A linha pode ser processada sem o trigger inserir qualquer registo no histórico.

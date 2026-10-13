@@ -1,0 +1,51 @@
+import Typst from '../../../components/Typst.astro';
+import phong from '../../lessons/cg/phong-vetores.typ?raw';
+
+## Phong e Blinn-Phong
+
+Iluminação calcula a contribuição num ponto; sombreamento escolhe onde calcular e o que interpolar. O modelo de Phong não obriga ao sombreamento de Phong.
+
+Vetores unitários no mesmo espaço: n para fora, l do ponto para a luz, v para o observador. Reflexão: $r=2(n\cdot l)n-l$. Por canal, sem atenuação e com a face iluminada:
+
+$$
+I=k_aI_a+k_dI_l\max(0,n\cdot l)+k_sI_l\max(0,r\cdot v)^\alpha.
+$$
+
+- Ambiente aproxima luz indireta por uma constante. Difusa depende de n e l; especular depende também do observador.
+- Numa superfície de um lado, $n\cdot l\le0$ anula **difusa e especular dessa fonte**, conservando a aproximação ambiente.
+- Blinn-Phong usa $h=(l+v)/\lVert l+v\rVert$ e $(n\cdot h)^\alpha$ na especular. A soma nula não define h. Expoentes iguais nos dois modelos não dão o mesmo brilho.
+- Maior expoente concentra o brilho. Os coeficientes empíricos não garantem conservação de energia; soma antes de tratar o intervalo do formato de saída.
+
+<Typst
+  source={phong}
+  format="svg"
+  alt="Normal n, luz l, observador v, reflexão r e halfway h no mesmo ponto."
+/>
+
+Para $n=v=(0,0,1)$, $l=(0,0{,}6,0{,}8)$, $I_a=I_l=1$, $k_a=0{,}1$, $k_d=0{,}7$, $k_s=0{,}5$ e α=16: ambiente 0,1, difusa 0,56. Phong tem especular $0{,}5(0{,}8)^{16}\approx0{,}0141$ e total 0,6741; Blinn tem $0{,}5(0{,}9)^8\approx0{,}2152$ e total 0,8752.
+
+## Onde calcular
+
+| Sombreamento | Operação                                              | Limite                                                      |
+| ------------ | ----------------------------------------------------- | ----------------------------------------------------------- |
+| Constante    | Uma cor por face                                      | Mostra a divisão em polígonos                               |
+| Gouraud      | Luz nos vértices, interpolação de cores               | Pode perder brilho interior se todos os vértices o perderem |
+| Phong        | Interpola normais, renormaliza, ilumina por fragmento | Não cria geometria curva nem remove todos os artefactos     |
+
+## Luz global e radiosidade
+
+Ray tracing clássico escolhe a interseção mais próxima e pode lançar raios de reflexão, refração e sombra; não cobre automaticamente todos os caminhos difusos. Uma sombra com modelo local não prova iluminação global.
+
+Radiosidade troca energia entre retalhos difusos:
+
+$$
+B_i=E_i+\rho_i\sum_jF_{ij}B_j,\qquad A_iF_{ij}=A_jF_{ji}.
+$$
+
+B e E medem W/m². Fij é a fração que sai de i e chega a j; reciprocidade não implica Fij=Fji se as áreas diferirem. Dois balanços $B_1=1+B_2/4$, $B_2=B_1/4$ dão $B_1=16/15$, $B_2=4/15$ W/m², incluindo luz devolvida. Uma reflexão só não satisfaz ambos. Mover apenas a câmara conserva a solução; geometria, emissão ou refletividade podem exigir novo cálculo. [Sistema e hipóteses](/cadeiras/cg/iluminacao-sombreamento/#resolver-a-troca-entre-retalhos).
+
+## Distância e refração
+
+Fonte pontual: atenuação direta $1/d^2$, d>0; duplicar d reduz a contribuição a um quarto. A forma empírica $1/(a+bd+cd^2)$ depende da cena. Ambiente não sofre essa atenuação neste modelo.
+
+Snell: $\eta_1\sin\theta_1=\eta_2\sin\theta_2$, ângulos à normal. Ar→vidro, índices 1 e 1,5, incidência 30°: θ2≈19,47°. Do maior para o menor índice, seno transmitido >1 indica reflexão interna total.

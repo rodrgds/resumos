@@ -24,7 +24,7 @@ Um **artefacto** é um resultado; uma **atividade** produz ou altera resultados;
 
 **Planeamento preditivo** antecipa atividades e acompanha desvios. **Planeamento adaptativo** detalha o trabalho incrementalmente com feedback. Ambos têm objetivos, planos e documentação. A escolha depende da estabilidade dos requisitos, risco, acesso a utilizadores e conformidade.
 
-Uma migração com data fixa pode ter marcos planeados, enquanto uma API incerta exige uma experiência inicial com pergunta, prazo e critério de decisão.
+- Uma migração com data fixa pode ter marcos planeados, enquanto uma API incerta exige uma experiência inicial com pergunta, prazo e critério de decisão.
 
 ## RUP
 
@@ -36,6 +36,8 @@ O **RUP** é iterativo e incremental, orientado por casos de uso e centrado na a
 | Elaboração, Elaboration  | Estabilizar arquitetura e reduzir riscos principais |
 | Construção, Construction | Desenvolver e testar incrementos                    |
 | Transição, Transition    | Colocar em uso, apoiar e recolher feedback          |
+
+A **fase** indica momento e objetivo predominante; a **disciplina** indica tipo de trabalho. Priorizar casos de uso é requisitos, mesmo na elaboração. Identificar atores pode começar na conceção e continuar na elaboração.
 
 Cada fase pode conter várias iterações. As disciplinas atravessam as fases: implementar e testar um protótipo de concorrência na elaboração serve para avaliar a arquitetura.
 

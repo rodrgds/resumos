@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
@@ -20,8 +20,9 @@ import Typst from '../../../components/Typst.astro';
 import Dot from '../../../components/Dot.astro';
 import vlans from '../../rc/vlan.typ?raw';
 import estrela from '../../rc/comutador.dot?raw';
+import arvore from '../../rc/spanning-tree.dot?raw';
 
-A envia uma trama a B através de um comutador. O equipamento consulta o endereço MAC de destino para escolher a porta de saída e aprende onde está A pelo MAC de origem. O IP do pacote encapsulado não participa nesta decisão de comutação.
+A envia uma trama a B através de um comutador. O equipamento consulta o endereço MAC de destino para escolher a porta de saída e aprende onde está A pelo MAC de origem; o IP do pacote encapsulado não participa nesta decisão de comutação.
 
 ## Aprendizagem e reenvio
 
@@ -45,7 +46,7 @@ A tabela tem envelhecimento. Uma estação que muda de porta pode ser reaprendid
 | D→C   | D:4     | Conhecido na porta 3   | Envia só para 3 |
 | C→D   | C:3     | Conhecido na porta 4   | Envia só para 4 |
 
-A última trama sai pela porta 4, onde a trama anterior ensinou a localização de D. Para haver filtragem na entrada, C e D teriam de estar no mesmo segmento ligado a uma só porta. A topologia em estrela desenhada aqui não tem esse caso. Aprender a origem e consultar o destino são duas operações distintas.
+A última trama sai pela porta 4, onde a trama anterior ensinou a localização de D. Para haver filtragem na entrada, C e D teriam de estar no mesmo segmento ligado a uma só porta; a topologia em estrela desenhada aqui não tem esse caso. Aprender a origem e consultar o destino são duas operações distintas.
 
 <Dot
   source={estrela}
@@ -54,9 +55,9 @@ A última trama sai pela porta 4, onde a trama anterior ensinou a localização 
 
 ## Ethernet e domínios
 
-Uma trama Ethernet inclui MAC de destino e origem, tipo ou comprimento, dados e FCS. O **FCS** é a verificação CRC no fim. Deteta erros e leva a descartar a trama; a retransmissão fiável, se necessária, fica noutro protocolo.
+Uma trama Ethernet inclui MAC de destino e origem, tipo ou comprimento, dados e FCS. O **FCS** é a verificação CRC no fim; deteta erros e leva a descartar a trama, enquanto a retransmissão fiável, se necessária, fica noutro protocolo.
 
-Um **domínio de colisão** partilha um meio half-duplex. Um concentrador liga as estações ao mesmo domínio. Num comutador, cada porta separa esse domínio; em full-duplex não há colisões nesse enlace. Um **domínio de broadcast** é o conjunto alcançado por uma trama broadcast. Um comutador sem separação em VLANs não o divide. Um router separa redes de ligação e não reenvia simplesmente o broadcast Ethernet recebido.
+Um **domínio de colisão** partilha um meio half-duplex. Um concentrador liga as estações ao mesmo domínio; num comutador, cada porta separa esse domínio, e em full-duplex não há colisões nesse enlace. Um **domínio de broadcast** é o conjunto alcançado por uma trama broadcast; um comutador sem separação em VLANs não o divide, e um router separa redes de ligação sem reenviar simplesmente o broadcast Ethernet recebido.
 
 O tempo de transmissão pode incluir mais do que os bytes de dados. Quando pedido, conta preâmbulo, delimitador, trama e intervalo entre tramas. Identifica se o enunciado conta o intervalo como tempo ocupado ou apenas como espera antes da seguinte.
 
@@ -74,11 +75,24 @@ A e B na VLAN 10 podem trocar tramas. A e C em VLANs diferentes precisam de enca
 
 ## Ciclos e spanning tree
 
-Ligações redundantes criam ciclos físicos. Um broadcast pode circular e multiplicar-se, porque Ethernet não tem TTL como IP. A aprendizagem MAC também pode oscilar.
+Ligações redundantes criam ciclos físicos. Um broadcast pode circular e multiplicar-se, porque Ethernet não tem TTL como IP, e a aprendizagem MAC também pode oscilar.
 
 **Spanning Tree** escolhe uma topologia lógica sem ciclos. Os equipamentos elegem a raiz pelo menor identificador, depois o menor custo até à raiz, e desempatam por menor identificador de ponte e de porta. As portas redundantes deixam de encaminhar. Não memorizes «desliga o cabo mais caro»: o algoritmo usa identificadores, custos e desempates.
 
-Num triângulo A-B-C, é possível manter as três ligações físicas e permitir encaminhamento em apenas duas. O caminho ativo pode deixar de ser o caminho fisicamente mais curto para certos pares; a prioridade é impedir ciclos.
+Num triângulo A-B-C, é possível manter as três ligações físicas e permitir encaminhamento em apenas duas. O caminho ativo pode deixar de ser o caminho fisicamente mais curto para certos pares, pois a prioridade é impedir ciclos.
+
+### Escolher portas num triângulo
+
+Supõe identificadores A=1, B=2 e C=3, custos iguais a 1 em todas as ligações e uma ligação por par. A é a raiz pelo menor identificador. B e C escolhem a ligação direta a A como **porta raiz**, porque custa 1, enquanto o percurso pelo outro custaria 2.
+
+Na ligação B–C, ambos anunciam custo 1 até A. O empate escolhe B pelo menor identificador como lado designado; a porta de C voltada para B fica bloqueada para dados. As ligações A–B e A–C continuam ativas, e B–C mantém-se física mas não transporta tramas de dados de ponta a ponta.
+
+<Dot
+  source={arvore}
+  alt="Triângulo com A, raiz de identificador 1, ligado a B de identificador 2 e C de identificador 3. Todos os custos são 1. A–B e A–C encaminham; B–C está tracejada porque a porta de C é bloqueada para dados."
+/>
+
+Entre B e C, os dados passam agora por A, com custo 2, embora exista uma ligação física de custo 1. STP escolhe uma árvore ligada à raiz e resolve papéis de portas; não calcula o caminho mínimo individual para todos os pares nem a árvore de menor soma de custos.
 
 ## Wi-Fi: associação e mobilidade
 

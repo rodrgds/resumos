@@ -35,6 +35,8 @@ Para refutar $\Gamma\models\varphi$, descreve uma estrutura completa e, se neces
 
 Uma verdade nos naturais não é automaticamente lógica. $\forall x\exists y(x<y)$ vale na interpretação habitual de $<$ em $\mathbb N$, mas $\forall x\exists yR(x,y)$ falha num domínio de um objeto com $R=\emptyset$.
 
+Uma validade de primeira ordem pode não ser uma tautologia proposicional. $(a=b\land b=c)\to a=c$ vale pela igualdade; a abstração $(p\land q)\to r$ admite $p=q=T,r=F$, que não corresponde a objetos com essas igualdades.
+
 ## Equivalências quantificadas
 
 $$

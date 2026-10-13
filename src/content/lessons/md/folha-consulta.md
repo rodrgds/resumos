@@ -12,6 +12,7 @@ Usa esta página para rever antes de resolver exercícios. Cada linha resume um 
 - $p\to q\Leftrightarrow\neg p\lor q\Leftrightarrow\neg q\to\neg p$. Só é falsa com $p=T,q=F$.
 - De Morgan: $\neg(p\land q)\Leftrightarrow\neg p\lor\neg q$; $\neg(p\lor q)\Leftrightarrow\neg p\land\neg q$.
 - Refutar $\Gamma\models\varphi$: uma atribuição ou estrutura torna **todas** as premissas verdadeiras e a conclusão falsa.
+- Monotonia: $\Gamma\models\theta$ e $\Gamma\subseteq\Sigma$ implicam $\Sigma\models\theta$. Retirar premissas pode perder a consequência.
 - FND: uma conjunção por linha verdadeira. FNC: uma disjunção por linha falsa. Literais têm sinais que fazem a conjunção verdadeira ou a cláusula falsa nessa linha.
 - Fitch: para $\varphi\to\psi$, assume $\varphi$ e obtém $\psi$; para $\neg\varphi$, assume $\varphi$ e obtém F. Em $\lor E$, os dois casos terminam na mesma conclusão. Uma caixa fechada deixa de estar acessível.
 
@@ -35,6 +36,7 @@ Usa esta página para rever antes de resolver exercícios. Cada linha resume um 
 - $a\equiv_n b\Longleftrightarrow n\mid(a-b)$, $n>0$. Somar e multiplicar preserva congruência.
 - Cancelar $c$: se $d=\gcd(c,n)$, de $ca\equiv_n cb$ obtemos $a\equiv_{n/d}b$. Mantém-se o módulo original se $d=1$.
 - $ax\equiv_n b$ tem solução se e só se $d=\gcd(a,n)$ divide $b$. Resolve módulo $n/d$ e levanta para as $d$ classes módulo $n$.
+- $ax+by=c$, com $a,b>0$: há solução inteira se e só se $d=\gcd(a,b)$ divide $c$. De $(x_0,y_0)$ obtêm-se todas por $x=x_0+(b/d)t$, $y=y_0-(a/d)t$, $t\in\mathbb Z$. Para naturais, impõe também não negatividade.
 - Fermat: $a^{p-1}\equiv_p1$ exige $p$ primo e $p\nmid a$.
 
 [Euclides e Bézout](/cadeiras/md/inteiros-congruencias/#identidade-de-bézout) e [congruências](/cadeiras/md/inteiros-congruencias/#resolver-congruências-lineares).
@@ -46,7 +48,10 @@ Usa esta página para rever antes de resolver exercícios. Cada linha resume um 
 - Equivalência: reflexiva, simétrica e transitiva. Ordem parcial: reflexiva, antissimétrica e transitiva. Simétrica e antissimétrica podem coexistir.
 - Minimal: nenhum distinto abaixo. Mínimo: abaixo de todos. Ínfimo: maior minorante no conjunto ambiente. Definições duais para maximal, máximo e supremo.
 - Restrição de Hasse: conserva comparações entre elementos restantes e recalcula coberturas. Uma cobertura nova pode substituir um percurso que passava por elementos retirados.
+- $\mathcal P(A\setminus B)$ inclui sempre $\emptyset$; $\mathcal P(A)\setminus\mathcal P(B)$ nunca o inclui. Não transportes diferença pelo conjunto das partes.
 - Função: total e funcional. Injetiva: imagens iguais implicam origens iguais. Sobrejetiva: todo o contradomínio é atingido. A inversa $B\to A$ é função se e só se $f:A\to B$ é bijetiva.
+
+- Para função total $f$, $R=f^{-1}\circ f$ é equivalência de ter a mesma imagem. As classes são fibras não vazias; $|A/R|=|f(A)|$ no caso finito, mas $\operatorname{dom}(R)=\operatorname{rng}(R)=A$.
 
 [Conjuntos](/cadeiras/md/conjuntos-relacoes/#provar-uma-identidade), [relações](/cadeiras/md/operacoes-relacoes/#fechos), [Hasse](/cadeiras/md/ordens-funcoes/#diagramas-de-hasse-e-elementos-especiais) e [funções](/cadeiras/md/funcoes-cardinalidade/#injetiva-sobrejetiva-e-bijetiva).
 

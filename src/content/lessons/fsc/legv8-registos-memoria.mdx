@@ -7,7 +7,9 @@ practices:
   - fsc/praticar-legv8-registos-memoria
 ---
 
-O CPU lê a instrução no endereço indicado pelo PC, identifica a operação e os operandos, executa-a e escolhe o endereço seguinte. Esta sequência é fetch, decode e execute. O PC é um registo que permite localizar a instrução, não contém o seu código.
+import YouTube from '../../../components/YouTube.astro';
+
+O CPU lê a instrução no endereço indicado pelo PC, identifica a operação e os operandos, executa-a e escolhe o endereço seguinte. Esta sequência é fetch, decode e execute; o PC é um registo que permite localizar a instrução e não contém o seu código.
 
 ## Programa e arquitetura
 
@@ -15,11 +17,11 @@ A ISA, arquitetura do conjunto de instruções, define as instruções e os efei
 
 Um compilador traduz código de alto nível; um assembler converte assembly em código máquina. O linker resolve ligações entre módulos e símbolos. O loader coloca o programa em memória e prepara a execução. Uma etiqueta não é um registo: é um nome que o assembler associa a uma posição.
 
-RISC-V usa uma organização load/store: a aritmética opera sobre registos; loads e stores transferem entre registos e memória. Uma instrução como `add` não soma diretamente duas posições de memória. RISC favorece operações simples e regulares; CISC inclui operações mais complexas. Esta distinção não decide, por si só, qual computador executa um programa mais depressa.
+RISC-V usa uma organização load/store: a aritmética opera sobre registos, enquanto loads e stores transferem entre registos e memória. Uma instrução como `add` não soma diretamente duas posições de memória; RISC favorece operações simples e regulares, e CISC inclui operações mais complexas. Esta distinção não decide, por si só, qual computador executa um programa mais depressa.
 
 ## Registos de RV32
 
-RV32 tem 32 registos inteiros, `x0` a `x31`, de 32 bits. `x0`, também chamado `zero`, lê sempre 0. Uma tentativa de escrever nele descarta o resultado. O PC é separado destes registos.
+RV32 tem 32 registos inteiros, `x0` a `x31`, de 32 bits. `x0`, também chamado `zero`, lê sempre 0, e uma tentativa de escrever nele descarta o resultado; o PC é separado destes registos.
 
 Os nomes `t0`, `a0` ou `sp` são aliases, não registos adicionais. Alguns são:
 
@@ -37,9 +39,9 @@ Um registo guarda bits. Uma instrução pode tratá-los como número com sinal, 
 
 ## Endereços e little endian
 
-A memória é endereçada ao byte. Uma word tem 4 bytes, uma halfword 2 e um byte 1. Com 32 bits de endereço há $2^{32}$ endereços possíveis, 4 GiB de espaço de endereçamento; isto não obriga um simulador ou computador a ter toda essa RAM.
+A memória é endereçada ao byte. Uma word tem 4 bytes, uma halfword 2 e um byte 1; com 32 bits de endereço há $2^{32}$ endereços possíveis, 4 GiB de espaço de endereçamento, o que não obriga um simulador ou computador a ter toda essa RAM.
 
-No ambiente RARS usado aqui, a memória é little endian: o byte menos significativo fica no menor endereço. A ISA RISC-V é invariante no endereço do byte; o EEI define a ordem dos bytes. Não assumes little endian em qualquer sistema RISC-V. Guardar `0x12345678` a partir de `0x1000` dá:
+No ambiente RARS usado aqui, a memória é little endian: o byte menos significativo fica no menor endereço. A ISA RISC-V é invariante no endereço do byte, enquanto o EEI define a ordem dos bytes, por isso não assumes little endian em qualquer sistema RISC-V. Guardar `0x12345678` a partir de `0x1000` dá:
 
 | Endereço | Byte |
 | -------- | ---- |
@@ -48,7 +50,7 @@ No ambiente RARS usado aqui, a memória é little endian: o byte menos significa
 | 0x1002   | 34   |
 | 0x1003   | 12   |
 
-A ordem dos bits dentro do registo não se inverte. Um `lw` a partir de `0x1000` reconstrói a mesma palavra. Um `sb` altera só um byte. Acesso naturalmente alinhado significa endereço múltiplo de 4 para words e de 2 para halfwords. Usa estes alinhamentos nos programas; o tratamento de acessos desalinhados depende do ambiente.
+A ordem dos bits dentro do registo não se inverte. Um `lw` a partir de `0x1000` reconstrói a mesma palavra e um `sb` altera só um byte; acesso naturalmente alinhado significa endereço múltiplo de 4 para words e de 2 para halfwords. Usa estes alinhamentos nos programas, pois o tratamento de acessos desalinhados depende do ambiente.
 
 Num vetor de words com base B, `v[i]` fica em $B+4i$. Retomamos os valores `7,-3,10,0`, agora guardados com `.word` em `0x10010000`:
 
@@ -59,7 +61,7 @@ Num vetor de words com base B, `v[i]` fica em $B+4i$. Retomamos os valores `7,-3
 | 2      | 8                     | `0x10010008` | 10    |
 | 3      | 12                    | `0x1001000C` | 0     |
 
-`lw t2,8(t1)` com t1=B lê o terceiro elemento, 10. A ISA define endereçamento ao byte; o RARS escolhe esta base para `.data` e fornece os serviços `ecall`. Confundir o índice 3 com um deslocamento de 3 bytes seleciona outro endereço e pode desalinhá-lo.
+`lw t2,8(t1)` com t1=B lê o terceiro elemento, 10. A ISA define endereçamento ao byte, enquanto o RARS escolhe esta base para `.data` e fornece os serviços `ecall`; confundir o índice 3 com um deslocamento de 3 bytes seleciona outro endereço e pode desalinhá-lo.
 
 ## Secções e diretivas
 
@@ -73,7 +75,7 @@ Num vetor de words com base B, `v[i]` fica em $B+4i$. Retomamos os valores `7,-3
 | `.space n`       | Reserva n bytes                    |
 | `.align n`       | Alinha na fronteira de $2^n$ bytes |
 
-Assim `.align 2` alinha words, não em fronteiras de 2 bytes. Uma diretiva orienta o assembler e não é executada pelo CPU. `la t0, vetor` obtém o endereço; `lw t1,0(t0)` lê o conteúdo. Copiar o endereço não copia o elemento.
+Assim `.align 2` alinha words, não em fronteiras de 2 bytes. Uma diretiva orienta o assembler e não é executada pelo CPU; `la t0, vetor` obtém o endereço, enquanto `lw t1,0(t0)` lê o conteúdo. Copiar o endereço não copia o elemento.
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import memCode from '../../fsc/memoria-rv32.s?raw';
@@ -85,3 +87,7 @@ import memCode from '../../fsc/memoria-rv32.s?raw';
 />
 
 `main` é a etiqueta de entrada destes programas. Os serviços `ecall` usam a0 para o valor e a7 para o número do serviço: 1 imprime um inteiro, 11 um carácter e 10 termina. Estas chamadas pertencem ao RARS. No exemplo, `lb` estende o sinal de `0x80` e `lbu` acrescenta zeros, por isso o mesmo byte produz valores diferentes.
+
+Para uma introdução em vídeo a assembly RISC-V, podes consultar Rodrigo Dias:
+
+<YouTube id="t6v9ypgskDc" title="Aprende RISC-V Assembly em 30 minutos" />

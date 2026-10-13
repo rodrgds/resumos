@@ -9,7 +9,7 @@
 | Interrupções | Conserva estado, serve a notificação e retoma a tarefa        |
 | DMA          | Configura transferência dispositivo/memória e trata conclusão |
 
-Polling em espera ativa e consultas periódicas têm custos diferentes. Prioridades, máscaras e aninhamento determinam o serviço de interrupções.
+Polling em espera ativa e consultas periódicas têm custos diferentes; em interrupções, prioridades, máscaras e aninhamento determinam o serviço.
 
 ## Polling e interrupções
 
@@ -21,6 +21,16 @@ Polling em espera ativa e consultas periódicas têm custos diferentes. Priorida
 $$u=\frac{q_pc_p}{q_{\max}c_i}.$$
 
 Com frequências iguais, consulta 400 ciclos e interrupção 600, igualdade em $u=2/3$. Custo menor não garante latência ou capacidade suficiente.
+
+## Latência de uma mensagem
+
+Modelo **sem sobreposição**, B bytes e R bytes/s:
+
+$$t(B)=t_{\rm fixo}+B/R.$$
+
+O custo fixo inclui envio, ligação e receção. A rede de maior taxa pode perder em mensagens curtas. Para custos fixos 462/623 μs e taxas 1,125/10 MB/s decimais, igualar os tempos dá B≈204,085 bytes: A ganha até 204 bytes inteiros, B a partir de 205. Só soma parcelas sucessivas; com sobreposição, segue o caminho crítico.
+
+[Limiar e unidades da comunicação](/cadeiras/ac/entrada-saida/#latência-de-comunicação-e-tamanho-da-mensagem).
 
 ## Custo de DMA
 

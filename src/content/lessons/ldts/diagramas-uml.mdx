@@ -4,6 +4,13 @@ description: Ler e relacionar classes, sequências, comunicação e estados sem 
 order: 6
 practices:
   - ldts/praticar-uml
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Problemas históricos de LDTS/LPOO, arquivo Accio, com exemplos adaptados
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-desenho-e-teste-de-software/L.EIC014
+  gaps:
+    - Não confirma o formato ou os critérios das provas da edição atual.
 ---
 
 import UmlDiagram from '../../ldts/UmlDiagram.astro';
@@ -35,6 +42,21 @@ Na composição, o modelo associa o ciclo de vida da parte ao todo: eliminar o t
 
 Uma referência num campo Java não prova composição. Usa associação quando não estás a afirmar posse forte. Também não assumes navegação nas duas direções apenas porque a linha não mostra uma seta; o desenho pode deixar essa informação por especificar.
 
+### Traduzir relações para Java
+
+Uma classe `Equipa` pode especializar `Grupo` e realizar a interface `Participante`. Em Java, a base vem depois de `extends` e as interfaces depois de `implements`:
+
+```java
+class Equipa extends Grupo implements Participante {
+    private final java.util.Set<Membro> membros =
+        new java.util.HashSet<Membro>();
+}
+```
+
+O excerto pressupõe que `Grupo`, `Participante` e `Membro` existem e que os métodos exigidos já são herdados ou implementados. Uma classe só estende uma classe, mas pode implementar várias interfaces, separadas por vírgulas. Escrever `implements Participante extends Grupo` troca a ordem da gramática e não compila.
+
+O campo `membros` pode representar uma associação navegável para zero ou mais membros, sem duplicados lógicos. O conjunto precisa da igualdade adequada de `Membro`. Uma multiplicidade mínima de um também precisaria de validação na construção e nas remoções; Java não a impõe por declarar um campo. O campo e o `final` na referência também não provam composição UML ou imutabilidade do conjunto.
+
 ## Multiplicidades
 
 A multiplicidade num extremo diz quantos objetos desse extremo podem relacionar-se com **um objeto do outro extremo**. `1` é exatamente um; `0..1`, opcional; `0..*` ou `*`, zero ou mais; `1..*`, pelo menos um.
@@ -55,7 +77,7 @@ Uma seta de chamada síncrona usa uma ponta preenchida; uma mensagem assíncrona
 
 <UmlDiagram kind="sequence" />
 
-O modelo começa na posição 2. O controlador pede `mover(1)`, onde o argumento é um deslocamento. O modelo aceita, passa para a posição 3 e devolve `true`. Depois o controlador lê a posição e pede à vista `mostrar(3)`. A vista mostra o resultado que o modelo aceitou, não a posição apenas pedida pelo utilizador.
+O modelo começa na posição 2; o controlador pede `mover(1)`, onde o argumento é um deslocamento. O modelo aceita, passa para a posição 3 e devolve `true`; depois o controlador lê a posição e pede à vista `mostrar(3)`, que mostra o resultado aceite pelo modelo, não apenas a posição pedida pelo utilizador.
 
 Uma mensagem para o próprio objeto representa uma chamada interna. Uma criação inicia a linha de vida do novo participante; uma destruição termina-a com uma cruz.
 
@@ -97,6 +119,21 @@ Uma transição pode ter a forma `evento [guarda] / efeito`. Em `mover [célula 
 `entry` é uma ação ao entrar num estado e `exit` ao sair. Uma transição externa para o mesmo estado volta a executar saída e entrada; uma reação interna pode tratar o evento sem sair do estado. Esta diferença importa se a entrada reinicia um temporizador.
 
 Estados compostos agrupam uma máquina interna. Por exemplo, Jogar pode conter Normal e Invencível. Não confundas esse agrupamento com uma subclasse Java: o diagrama descreve comportamento permitido, não exige uma implementação específica.
+
+### Regiões ortogonais
+
+Um estado composto pode conter regiões ortogonais, cada uma com o seu estado ativo. Podemos separar o estado da partida, Ativo ou Pausa, do áudio, Audível ou Mudo. Se as duas dimensões forem independentes, as quatro configurações são permitidas:
+
+| Partida | Áudio   |
+| ------- | ------- |
+| Ativo   | Audível |
+| Ativo   | Mudo    |
+| Pausa   | Audível |
+| Pausa   | Mudo    |
+
+Representar duas regiões evita criar quatro nomes de estado que repitam as mesmas regras. Com n dimensões binárias independentes, um modelo plano pode precisar de $2^n$ combinações. As regiões reduzem a repetição do desenho; não fazem desaparecer as combinações nem implicam criar uma thread Java por região.
+
+Também podem existir várias transições com o mesmo evento e a mesma origem, distinguidas por guardas. Em Menu, `começar [dados válidos]` pode levar a Jogar e `começar [dados inválidos]` pode apresentar um erro e manter Menu. Define condições que se excluem quando precisas de uma escolha determinada; não assumes que duas transições concorrentes serão escolhidas pela ordem em que as desenhaste.
 
 ## Conferir o desenho com o contrato
 

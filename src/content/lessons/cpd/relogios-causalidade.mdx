@@ -1,0 +1,90 @@
+---
+draft: true
+title: Relógios e causalidade
+description: Estimar tempo com atrasos limitados e comparar eventos com relógios de Lamport e vetoriais.
+section: conteudo
+order: 7
+practices:
+  - cpd/praticar-relogios
+editorial:
+  sources:
+    - title: Pedro F. Souto, Clock Synchronization, 5 de abril de 2019
+      url: https://accio.pt/feup/L:EIC/computacao-paralela-e-distribuida/L.EIC028
+    - title: Pedro F. Souto, Lamport Logical Clock and Clock Vectors, 12 de abril de 2019
+      url: https://accio.pt/feup/L:EIC/computacao-paralela-e-distribuida/L.EIC028
+    - title: Leslie Lamport, Time, Clocks, and the Ordering of Events in a Distributed System, 1978
+      url: https://lamport.azurewebsites.net/pubs/time-clocks.pdf
+  gaps:
+    - As fontes docentes são históricas; a profundidade exigida em 2026/27 não foi confirmada.
+---
+
+import Dot from '../../../components/Dot.astro';
+import eventos from '../../cpd/relogios.dot?raw';
+
+P envia um pedido e Q responde depois de o receber. Há uma dependência entre esses eventos, mesmo sem relógios físicos sincronizados. Já duas ações locais em processos diferentes podem não ter ligação causal. Um relógio físico estima tempo; um relógio lógico ajuda a ordenar eventos segundo o modelo de comunicação.
+
+## Tempo físico e atraso limitado
+
+Um emissor envia o valor 1000 ms do seu relógio. Assume que esse relógio avança à mesma taxa que o tempo real durante o envio, que o atraso está entre 10 e 30 ms e que o processamento da mensagem é desprezável. Na receção, o relógio do emissor estará entre 1010 e 1030 ms. Somar 10 assume o menor atraso; somar 30 assume o maior. Sem conhecer o atraso real, o ponto médio minimiza o pior erro:
+
+$$
+\widehat T=1000+\frac{10+30}{2}=1020\text{ ms},\qquad
+\varepsilon=\frac{30-10}{2}=10\text{ ms}.
+$$
+
+Para uma estimativa x dentro de $[1010,1030]$, o maior erro possível é $\max(x-1010,1030-x)$. No ponto médio, as duas distâncias são iguais. Aproximar x de um extremo aumenta a distância ao outro; fora do intervalo o pior erro é ainda maior.
+
+O erro ±10 ms é um limite nas hipóteses dadas, não uma probabilidade nem uma garantia de sincronização permanente. Deriva dos relógios, processamento ou atrasos fora dos limites alterariam a análise. Num sistema assíncrono sem limite conhecido de atraso, esta conta não produz um limite finito universal.
+
+## Relação aconteceu antes
+
+Escrevemos $e\to f$ quando e pode influenciar causalmente f no modelo:
+
+1. A ordem local de eventos num processo estabelece a relação.
+2. O envio de uma mensagem acontece antes da sua receção.
+3. A relação é transitiva: $e\to f$ e $f\to g$ dão $e\to g$.
+
+Dois eventos diferentes são **concorrentes** quando não existe relação em nenhum sentido. Isso não significa que ocorreram no mesmo instante físico. A relação depende das comunicações modeladas; esconder uma comunicação e depois inferir independência pode dar uma conclusão errada.
+
+## Relógios de Lamport
+
+Cada processo começa com contador L igual a zero. Antes de um evento local ou de envio, incrementa L; a mensagem transporta o valor do envio. Na receção de uma mensagem com timestamp t, atribui ao evento $L=\max(L,t)+1$. O incremento faz parte da marcação, não é outro evento separado.
+
+Estas regras garantem $e\to f\Rightarrow L(e)<L(f)$. A implicação inversa não vale: números crescentes em processos diferentes não provam uma mensagem ou uma cadeia causal. Um empate entre timestamps também não cria uma ordem causal. Pode escolher-se uma ordem total por $(L,\text{id do processo})$, mas o desempate entre eventos independentes é uma convenção, não uma nova dependência.
+
+## Um traço com dois processos
+
+P faz e1 e envia m em e2. Q faz f1, recebe m em f2 e envia uma resposta em f3. P recebe essa resposta em e3. As ordens locais são e1, e2, e3 em P e f1, f2, f3 em Q; não há outras mensagens. Os contadores começam em zero.
+
+| Evento           | Atualização de Lamport | Timestamp |
+| ---------------- | ---------------------- | --------- |
+| e1, local em P   | 0 + 1                  | 1         |
+| f1, local em Q   | 0 + 1                  | 1         |
+| e2, envio de P   | 1 + 1                  | 2         |
+| f2, receção em Q | max(1, 2) + 1          | 3         |
+| f3, envio de Q   | 3 + 1                  | 4         |
+| e3, receção em P | max(2, 4) + 1          | 5         |
+
+e2 acontece antes de f2 e, por transitividade, antes de e3. Mas $L(f1)=1<L(e2)=2$ não prova $f1\to e2$: não há caminho que leve informação de f1 até ao envio e2. A ordem das linhas da tabela organiza o cálculo; não acrescenta mensagens nem relações entre processos.
+
+## Relógios vetoriais
+
+Com um conjunto fixo de dois processos, cada relógio tem componentes na ordem (P,Q), inicialmente (0,0). Em eventos locais e envios, incrementa a sua componente. A mensagem leva uma cópia do vetor. Na receção, faz o máximo componente a componente entre o vetor local e o recebido e depois incrementa a componente do destinatário. Nesta convenção, contamos todos os eventos do traço, não apenas mensagens multicast.
+
+| Evento | Vetor                             |
+| ------ | --------------------------------- |
+| e1     | (1,0)                             |
+| f1     | (0,1)                             |
+| e2     | (2,0)                             |
+| f2     | max((0,1), (2,0)) + (0,1) = (2,2) |
+| f3     | (2,3)                             |
+| e3     | max((2,0), (2,3)) + (1,0) = (3,3) |
+
+Define $V<W$ se todas as componentes de V são menores ou iguais às de W e pelo menos uma é estritamente menor. Para eventos distintos marcados por estas regras, $e\to f$ equivale a $V(e)<V(f)$. Os vetores (0,1) de f1 e (2,0) de e2 são incomparáveis: cada um é maior numa componente. Isso identifica a concorrência que os escalares de Lamport não revelaram.
+
+<Dot
+  source={eventos}
+  alt="P segue e1, e2 e e3; Q segue f1, f2 e f3. A mensagem liga e2 a f2 e a resposta liga f3 a e3. Cada caixa mostra o timestamp escalar e o vetor correspondente."
+/>
+
+As setas verticais seguem a ordem local; m é o pedido e r a resposta. Mostram os caminhos usados na comparação causal. A altura das caixas não mede duração física. Com n processos fixos, o vetor tem n componentes, enquanto Lamport usa um escalar. Timestamps não garantem entrega fiável, não escolhem automaticamente quando entregar mensagens e não substituem um protocolo de consenso.

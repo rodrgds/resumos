@@ -9,6 +9,8 @@ practices:
 
 import divisaoProdutos from '../../bd/examples/divisao-produtos.sql?raw';
 
+import votacao from '../../bd/examples/votacao.sql?raw';
+import totaisVotacao from '../../bd/examples/totais-votacao.sql?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import loja from '../../bd/loja.sql?raw';
 
@@ -183,6 +185,32 @@ O teste interior procura uma compra para um par cliente/produto. O teste exterio
 Experimenta apagar as linhas de Exigido no bloco. Todos os clientes, incluindo Mia, passam, porque não há requisito por cumprir. Isto é a verdade vacuamente satisfeita de uma condição universal. Se o enunciado também exigir pelo menos uma compra, acrescenta um `EXISTS` independente.
 
 Uma solução por contagem pode comparar a quantidade de produtos exigidos distintos comprados com a quantidade de requisitos. Tem de contar apenas produtos do conjunto Exigido, eliminar repetições e preservar clientes sem compras quando Exigido estiver vazio. Contar todas as linhas de Item falha se um produto aparecer em várias encomendas ou se forem comprados produtos que não eram exigidos.
+
+## Comparar totais em todos os grupos
+
+“Lista A teve mais votos que B em todos os municípios” exige primeiro somar votos por município e lista. Comparar freguesia a freguesia faria outra pergunta. Usa os dados reduzidos abaixo, com uma linha por freguesia/lista, e assume que cada lista tem um registo em todas as freguesias. `NULL` significa que a contagem é desconhecida, não zero.
+
+| Distrito | Município | Total A      | Total B | A supera B?           |
+| -------- | --------- | ------------ | ------- | --------------------- |
+| Norte    | 10        | 9            | 8       | sim                   |
+| Norte    | 11        | 1            | 0       | sim                   |
+| Sul      | 20        | 4            | 4       | não, empate           |
+| Este     | 30        | desconhecido | 2       | não se pode confirmar |
+
+O Norte passa, apesar de A perder numa das freguesias do município 10. O pedido compara os totais municipais. O Sul falha pelo empate e o Este não tem informação suficiente para provar a condição.
+
+<CodePlayground
+  language="sqlite"
+  title="Superar outra lista em todos os municípios"
+  files={{ 'votacao.sql': votacao }}
+  code={totaisVotacao}
+/>
+
+`Totais` só conserva grupos sem contagens desconhecidas: `COUNT(v.votos) = COUNT(*)`. Como `SUM` ignora nulos, somar um grupo com um número e um `NULL` produziria um total parcial e não o total conhecido de todos os votos.
+
+Para cada município, o `NOT EXISTS` interior pergunta se falta uma comparação verdadeira entre A e B. Reprova um empate, um total desconhecido e um resultado em falta. Um simples teste `a.votos <= b.votos` numa junção interior perderia casos sem um dos resultados, ou com comparação desconhecida.
+
+A condição do `HAVING` verifica os registos presentes, não descobre freguesias omitidas. Se o contrato não garantir um registo de cada lista por freguesia, compara também com o universo de freguesias esperado. Um distrito sem municípios passa a condição universal; acrescenta uma condição de existência se o pedido exigir pelo menos um.
 
 ## Escrever sem perder o quantificador
 

@@ -140,3 +140,13 @@ editorial:
 - Schema: base de dados contém schemas; `search_path` escolhe o schema ativo. Cria `CREATE SCHEMA lbawXXg` e `SET search_path TO lbawXXg`.
 - Sequências: `IDENTITY` gera identificadores; `RETURNING id` lê o id da inserção; `currval` lê o último valor obtido pela ligação atual. Exige utilização prévia da sequência nessa ligação; números consumidos não são recuperados por ROLLBACK.
 - A6: cada transação declara e justifica o isolamento; população em script separado da criação.
+
+## Referências, agregados e integração
+
+- **FK composta:** exige o par na mesma linha referida. Duas FKs independentes não garantem pertença entre componentes. NOT NULL é necessário em ambos se forem obrigatórios; MATCH SIMPLE dispensa correspondência quando algum é NULL. Confere o efeito de eliminar a linha referida.
+- **Duas relações 1:N:** a junção multiplica ocorrências antes de somar. Agrega cada relação por sessão antes de as juntar. SUM DISTINCT elimina preços iguais de compras legítimas; não é uma correção geral.
+- **Cancelamento:** liga libertação de capacidade ao RETURNING da transição reservada para cancelada do comprador autenticado. Repetição não produz transição; uma falha do contador anula a instrução inteira.
+- **Trigger em lote:** ROW dispara por linha processada, mesmo se o valor ficar igual; STATEMENT dispara também com zero linhas. O teste de mudança real pode impedir a ação sem impedir a ativação.
+- **Protótipo vertical:** demonstra uma história através de interface, HTTP, autorização, regra e persistência. Verifica recarregamento, repetição e pedido direto de outra pessoa. Não confundir sucesso visual com escrita confirmada.
+
+[Referência a um par](/cadeiras/lbaw/esquema-relacional/#uma-referência-a-um-par), [agregação sem multiplicação](/cadeiras/lbaw/consultas-relacionais/#duas-relações-podem-multiplicar-a-mesma-venda), [cancelamento](/cadeiras/lbaw/triggers-transacoes/#cancelar-sem-libertar-duas-vezes) e [protótipo vertical](/cadeiras/lbaw/aplicacao-laravel/#validar-uma-funcionalidade-num-protótipo-vertical).

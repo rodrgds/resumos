@@ -7,8 +7,10 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
+    - title: Cópia do exame de recurso de 2023/24, pergunta 12, partilhada por estudantes
+      url: https://accio.pt/feup/L:EIC/redes-de-computadores/L.EIC025
     - title: Problemas docentes, problema 1, adaptação
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33691
     - title: Resolução docente do problema 1
@@ -31,11 +33,26 @@ import Exercise from '../../../components/Exercise.astro';
     }
   </p>
   <p slot="hint">{'Acrescenta três zeros antes de dividires.'}</p>
-  <p slot="solution">
-    {
-      'O resto é 101, que vale 5. Transmite 10101101. A divisão da palavra completa produz resto zero.'
-    }
-  </p>
+  <div slot="solution">
+
+O gerador tem grau três, por isso começamos por `10101000`. Em cada passo, alinhamos os primeiros uns:
+
+```text
+  10101000
+⊕ 10110000
+= 00011000
+⊕ 00010110
+= 00001110
+⊕ 00001011
+= 00000101
+```
+
+O resto tem menos de quatro bits significativos, logo terminamos. Com três bits, é `101`, que vale 5 em decimal. Substituímos os três zeros finais pelo resto e transmitimos `10101101`; a divisão desta palavra completa por `1011` dá resto zero.
+
+  </div>
+  <div slot="hint-more">
+    Alinha o primeiro 1 do gerador com o primeiro 1 ainda presente no dividendo.
+  </div>
 </Exercise>
 
 <Exercise
@@ -143,28 +160,64 @@ Com $W=7$, a origem esgota a janela em 7 ms. Se perder $k$ RR iniciais, o primei
 
 <Exercise
   id="rc-gbn-traco"
-  title={'Recuperar uma perda'}
+  revision={2}
+  title="Distinguir guardar, confirmar e entregar"
   explanation="/cadeiras/rc/ligacao-de-dados/#go-back-n-e-selective-repeat"
   answer={{
     kind: 'self',
     checklist: [
-      'Go-Back-N descarta 2 e 3 e retransmite desde 1 conforme o protocolo.',
-      'Selective Repeat guarda 2 e 3 e repete 1.',
-      'A aplicação recebe os dados por ordem uma única vez.',
+      'Go-Back-N descarta 2 e 3 e continua à espera de 1.',
+      'Selective Repeat guarda 2 e 3 sem as entregar antes de 1.',
+      'Depois da chegada de 1, distingo RR(2) em GBN de RR(4) em SR.',
     ],
   }}
 >
-  <p>
-    {
-      'Emissor envia 0,1,2,3; perde-se 1. Descreve receção e recuperação em Go-Back-N e Selective Repeat.'
-    }
-  </p>
+  <div>
+    Emissor e recetor começam na trama 0. O emissor envia 0, 1, 2 e 3,
+    perdendo-se 1. Ambos os protocolos usam três bits de sequência e janela
+    de transmissão quatro; Selective Repeat usa também janela de receção quatro.
+    RR(n) confirma tudo até n−1. Go-Back-N descarta fora de ordem; Selective
+    Repeat guarda dentro da janela. Não há outras perdas nem timeouts prematuros.
+
+    Indica quais tramas foram entregues e quais ficaram guardadas depois de
+    chegarem 0, 2 e 3. Quando a retransmissão de 1 chegar, qual RR cumulativo
+    pode cada recetor enviar? Que dados precisam ainda de repetição em cada
+    protocolo?
+
+  </div>
   <p slot="hint">{'Separa chegada e entrega.'}</p>
-  <p slot="solution">
-    {
-      'Go-Back-N entrega 0 e descarta 2 e 3; a recuperação retransmite 1 e posteriores pendentes. Selective Repeat guarda 2 e 3 e, depois de 1, entrega 1,2,3.'
-    }
-  </p>
+  <div slot="solution">
+
+Em ambos, 0 é entregue e permite RR(1). Depois, Go-Back-N descarta 2 e 3, por isso só entregou 0 e não guardou dados posteriores. Selective Repeat também só entregou 0, mas conserva 2 e 3 à espera da lacuna.
+
+Quando chega 1, Go-Back-N entrega-a e envia RR(2): ainda precisa de receber novamente 2 e 3. Selective Repeat entrega 1, 2 e 3 por ordem e pode enviar RR(4), sem repetir 2 nem 3. Receção fora de ordem não é entrega fora de ordem; RR(4) é possível porque o intervalo 0 a 3 ficou completo.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="rc-arq-bloco-finito"
+  title="Calcular o instante do último ACK"
+  explanation="/cadeiras/rc/ligacao-de-dados/#terminar-uma-transferência-finita"
+  answer={{ kind: 'self', checklist: ['Divido o bloco em treze tramas.', 'Respeito sete tramas pendentes e os instantes dos ACKs.', 'Distingo 178 ms de chegada de 228 ms de confirmação.'] }}
+>
+  <div>
+
+Adaptação da pergunta 12 do exame de recurso de 2023/24. Go-Back-N usa três bits de sequência, janela máxima, tramas de 200 bytes e uma ligação de 400 kbit/s. A propagação demora 50 ms por sentido. O bloco tem 20800 bits, sem cabeçalhos nem outra sobrecarga. Não há perdas, processamento ou duração de ACK; cada trama é confirmada imediatamente e os timeouts não expiram.
+
+A primeira transmissão começa em t=0. Calcula quando chega ao recetor o último bit do bloco e quando o emissor recebe a sua confirmação. Mostra o calendário das transmissões; um débito médio não basta para esta transferência finita.
+
+  </div>
+  <div slot="hint">Determina a duração de uma trama e o regresso do primeiro ACK antes de distribuir as restantes.</div>
+  <div slot="solution">
+
+São $20800/1600=13$ tramas. Cada uma demora $1600/400000=4$ ms e a janela GBN é $2^3-1=7$. O primeiro ACK chega em $4+2\times50=104$ ms.
+
+As primeiras sete tramas começam em 0, 4, 8, 12, 16, 20 e 24 ms. Aos 28 ms, o emissor já ocupou a janela inteira e espera. Os ACKs chegam em 104, 108, 112, 116, 120, 124 e 128 ms, libertando posições sucessivas.
+
+As seis tramas restantes começam em 104, 108, 112, 116, 120 e 124 ms. A última acaba de sair aos 128 ms, chega inteira aos $128+50=178$ ms e o seu ACK chega aos $178+50=228$ ms. A confirmação da sétima trama, recebida aos 128 ms, não é ainda a confirmação do bloco inteiro.
+
+  </div>
 </Exercise>
 
 <Exercise

@@ -23,12 +23,12 @@ $A^*$ concatena zero ou mais palavras de $A$; $A^+$ exige pelo menos uma. O comp
 
 As bases são $\emptyset$, $\varepsilon$ e cada símbolo. $E+F$ representa união, $EF$ concatenação e $E^*$ estrela. A precedência é estrela, concatenação, união; $E^+=EE^*$.
 
-| Condição sobre $\{a,b\}$                 | Expressão                 |
-| ---------------------------------------- | ------------------------- |
-| Exatamente dois $b$                      | $a^*ba^*ba^*$             |
-| Contém $ab$                              | $(a+b)^*ab(a+b)^*$        |
-| Termina em $ab$                          | $(a+b)^*ab$               |
-| Não contém $bb$, incluindo $\varepsilon$ | $(a+ba)^*(\varepsilon+b)$ |
+| Condição sobre $\{a,b\}$                     | Expressão                              |
+| -------------------------------------------- | -------------------------------------- |
+| Exatamente dois $b$                          | $a^*ba^*ba^*$                          |
+| Contém $ab$                                  | $(a+b)^*ab(a+b)^*$                     |
+| Termina em $ab$                              | $(a+b)^*ab$                            |
+| Símbolos alternados, sem iguais consecutivos | $(\varepsilon+b)(ab)^*(\varepsilon+a)$ |
 
 $E\equiv F$ significa igualdade de linguagens. União é comutativa e idempotente; concatenação é associativa e distributiva sobre união. Vale $E\varepsilon\equiv E$, $E\emptyset\equiv\emptyset$ e $(E^*)^*\equiv E^*$. Porém, $(a+b)^*$ contém $ab$, enquanto $a^*+b^*$ não contém.
 

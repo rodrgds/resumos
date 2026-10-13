@@ -37,11 +37,15 @@ int soma(const int* valores, std::size_t n) {
 // soma(nullptr, 0) dá 0, sem leitura pelo apontador.
 ```
 
-`std::size_t` é sem sinal. Numa contagem descendente, evita `size() - 1` no vazio e a condição `i >= 0`. Usa `i = size()`, testa `i > 0` e lê a posição `i - 1`.
+`std::size_t` é sem sinal, por isso numa contagem descendente evita `size() - 1` no vazio e a condição `i >= 0`. Usa `i = size()`, testa `i > 0` e lê a posição `i - 1`.
 
 `for (int x : v)` copia cada elemento; `for (int& x : v)` permite alterá-lo. Um apontador isolado não fornece o tamanho para este percurso. `std::array<T, N>` conserva tamanho fixo; `std::vector<T>` gere tamanho variável.
 
 Em `int matriz[2][3]`, a última dimensão é contígua. O parâmetro `const int matriz[][3]` precisa da dimensão interior para localizar linhas; não equivale a `int**`.
+
+Num array de saída, distingue capacidade reservada do prefixo válido devolvido pela função. Para conservar todas as ocorrências repetidas pela ordem original, cada índice procura outro índice diferente com igual valor, incluindo à esquerda. Em `4,9,4,2,9,7`, a saída é `4,9,4,9`, com tamanho 4. A versão de ciclos custa `O(n²)`; exige entrada válida, destino suficiente e sem sobreposição, e não acede aos apontadores no vazio.
+
+[Contrato e percurso do filtro](/cadeiras/p/funcoes-arrays/#arrays-de-entrada-e-de-saída).
 
 ## Tipos compostos e texto
 
@@ -52,6 +56,10 @@ Uma `struct` reúne campos; `p.x` acede ao campo. Tem acesso público por defeit
 - `find` devolve posição ou `npos`; `substr` extrai uma parte. Em `"azul,verde"`, a vírgula está em `4`, e `substr(5)` dá `"verde"`.
 - Depois de ler um número com `>>`, descarta o resto dessa linha antes do `getline`. `std::ws` também elimina espaços iniciais e linhas vazias, o que muda o formato aceite.
 - A string de C `"Ana"` precisa de quatro posições, incluindo `\0`. `strlen` exige terminador válido; `strcpy` não verifica capacidade. `==` entre arrays convertidos em apontadores compara endereços; `strcmp` compara texto.
+
+Para a diferença simétrica das 26 letras básicas, marca a presença em cada texto, juntando maiúscula/minúscula e ignorando outros caracteres. Copia alfabeticamente apenas as letras presentes num dos textos. Frequências diferentes não incluem uma letra presente nos dois. O destino precisa de 27 posições, sem sobreposição; escreve `\0` mesmo no vazio. O número devolvido não conta o terminador. A implementação da lição exige strings de C válidas com até 1000 unidades.
+
+[Presença de letras em dois textos](/cadeiras/p/funcoes-arrays/#presença-de-letras-em-dois-textos).
 
 ## Recursão
 

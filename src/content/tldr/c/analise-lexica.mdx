@@ -1,0 +1,29 @@
+import Dot from '../../../components/Dot.astro';
+import automatoLex from '../../c/automato-lex.dot?raw';
+
+## Token, lexema e posição
+
+Um token tem categoria, texto reconhecido e posição. Em soma12, a categoria é ID e o lexema é soma12. Os padrões do exemplo são ASCII:
+
+- ID: `[a-zA-Z_][a-zA-Z0-9_]*`;
+- inteiro: `[0-9]+`;
+- pontuação: literais como `=`, `+`, `*`, `(`, `)` e `;`.
+
+Reservadas podem reclassificar um ID completo. Espaços e comentários omitidos ainda contam para posições; outra linguagem pode tornar mudanças de linha significativas.
+
+## Prefixo mais longo e desempate
+
+No flex, escolhe primeiro o padrão que consome mais caracteres; só no empate ganha a primeira regra. if2 é um ID, mesmo que if seja reservado. == ganha a dois tokens = se existir um padrão para os dois caracteres.
+
+<Dot
+  source={automatoLex}
+  alt="Reconhecedor ASCII: letra ou sublinhado inicia identificador; dígito inicia inteiro; os ciclos prolongam o token."
+/>
+
+Guarda a última posição de aceitação. Ao bloquear, fecha esse prefixo e reinicia a máquina para o próximo token. Com os padrões dados, 42q separa NUM(42),ID(q); café bloqueia no é, que não pertence ao padrão ASCII.
+
+## Construção e limites
+
+De expressão regular para NFA, depois subconjuntos: inicia no fecho-ε; por cada caráter, une destinos e fecha por ε. Guarda a prioridade dos finais. Não acrescentes novamente o início a cada letra. Só construímos conjuntos alcançáveis, até 2^n para n estados.
+
+`soma12 = valor + 30;` produz ID(soma12),=,ID(valor),+,NUM(30),;. O léxico classifica; a sintaxe decide se a sequência tem forma válida. [Programa e fronteiras](/cadeiras/c/analise-lexica/#tokenização-de-uma-atribuição).

@@ -29,6 +29,8 @@ $O$ limita por cima, $\Omega$ por baixo e $\Theta$ pelos dois lados. Identifica 
 | prefixos e `q` consultas de soma                | $\Theta(n+q)$; consulta $p[r]-p[l]$            |
 | janela deslizante de tamanho `k` e `N` posições | $\Theta(N)$; retira `a[i-1]`, junta `a[i+k-1]` |
 
+Para a primeira janela máxima de comprimento fixo `k`, atualiza a soma retirando a posição antiga e juntando a nova, escolhendo só melhorias estritas. Invariante inclui soma atual, máximo e primeiro início. Deslizar custa $\Theta(n)$; recalcular custa $\Theta(k(n-k+1))$. `k=n` é uma única janela, não um caso quadrático.
+
 [Provas, recorrências e espaço](/cadeiras/aed/complexidade-invariantes/).
 
 ## Pesquisa e ordenação
@@ -54,13 +56,19 @@ TAD define comportamento; representação define campos e custos. Vetor: acesso 
 
 **Pilha:** LIFO. **Fila:** FIFO. **Deque:** ambas as extremidades. Fila com duas pilhas transfere só quando a saída está vazia: retirada isolada $O(n)$, custo amortizado $O(1)$. Pilha monótona: cada índice entra e sai no máximo uma vez. [TADs](/cadeiras/aed/tipos-abstratos/), [ligações e amortização](/cadeiras/aed/listas-pilhas-filas/).
 
+Separar listas exige destino distinto e vazio, cortar a ligação e atualizar tamanhos. Intercalar listas ordenadas escolhe a esquerda no empate, liga o sufixo e esvazia a origem direita. Pior caso $O(a+b)$, auxiliar $O(1)$; mergesort de listas usa $\Theta(n\log n)$ de tempo e $O(\log n)$ de pilha, sem vetor de nós.
+
 Orientação: $(q_x-p_x)(r_y-p_y)-(q_y-p_y)(r_x-p_x)$; positivo = esquerda. Graham ordena em $O(n\log n)$ e constrói com pilha em $O(n)$. Duplicados, colinearidade e limites aritméticos exigem política explícita. Ponto em polígono convexo com `c` vértices: $O(\log c)$, com vértices extremos únicos em ordem anti-horária; nos raios extremos, testa o segmento. [Envolvente](/cadeiras/aed/envolvente-convexa/).
 
 ## Árvores
 
 Altura do vazio `-1`, folha `0`; $h=1+\max(h_e,h_d)$. Pré: raiz-esq-dir; em: esq-raiz-dir; pós: esq-dir-raiz. Percurso $\Theta(n)$, pilha $O(h+1)$. Completa enche o último nível da esquerda; perfeita enche todos. [Árvores binárias](/cadeiras/aed/arvores-binarias/).
 
+Perfeição exige ambas as subárvores perfeitas e alturas iguais; devolve as propriedades junto da altura em pós-ordem para tempo linear. Contar nós com dois filhos soma as contagens dos filhos e um quando ambas as ligações existem.
+
 BST: **toda** a esquerda menor e **toda** a direita maior, com política de duplicados. Pesquisa, inserção e remoção $O(h+1)$; pior $O(n)$. Dois filhos: substitui pelo mínimo da direita ou máximo da esquerda, retirando a ocorrência antiga. Em-ordem dá ordem crescente. [BST](/cadeiras/aed/arvores-pesquisa/).
+
+A inserção crescente numa BST cria altura `n-1`; inserir medianas antes dos descendentes minimiza-a. O mínimo pode ter filho direito e não ser folha.
 
 AVL: $b=h_e-h_d\in\{-1,0,1\}$. LL: direita; RR: esquerda; LR: esquerda no filho, direita na raiz; RL: simétrico. Remoção pode reparar vários antepassados. $N(h)=1+N(h-1)+N(h-2)$ implica $h=O(\log n)$.
 
@@ -72,6 +80,8 @@ Hash: igualdade implica mesmo hash; colisão não implica igualdade. Encadeament
 
 Heap: forma completa + pai prioritário. Zero-based: filhos `2i+1,2i+2`; pai `(i-1)/2`, para `i>0`. Extremo $O(1)$; inserir/retirar $O(\log(n+1))$; construir de baixo para cima $\Theta(n)$. Desce pelo filho mais prioritário. Não oferece pesquisa arbitrária logarítmica. Top-k maiores usa min-heap de capacidade `k`. [Heaps](/cadeiras/aed/filas-prioridade-heaps/).
 
+Numa max-heap o mínimo pode ser uma folha acima do nível mais profundo. Prioridade com índice conhecido repara-se subindo se aumentar, descendo se diminuir: $O(\log n)$; localizar uma chave antes pode custar $O(n)$.
+
 ## Grafos
 
 Listas: memória e percurso $O(V+E)$. Matriz: memória e percurso completo $O(V^2)$, teste de aresta $O(1)$. DFS usa pilha; BFS usa fila e encontra distâncias mínimas em número de arestas. Marca na descoberta. Recomeça para componentes desconexas. [Representações e caminhos](/cadeiras/aed/grafos-pesquisa/).
@@ -80,5 +90,7 @@ Listas: memória e percurso $O(V+E)$. Matriz: memória e percurso completo $O(V^
 - Topológica: `u` antes de `v` para toda `u->v`; existe só em DAG. DFS inverte pós-ordem; Kahn retira grau zero e exige `V` retirados.
 - SCC: alcançabilidade nos dois sentidos. Tarjan usa pilha de ainda não atribuídos, que é diferente da pilha de chamadas. Fecha quando `low[u]=disc[u]`.
 - Ponte `u-v`: `low[v]>disc[u]`. Articulação não raiz: algum filho com `low[v]>=disc[u]`. Raiz: pelo menos dois filhos DFS.
+
+Ordem topológica única: Kahn tem uma só escolha de grau zero em cada passo. Arestas de componente não dirigida: soma graus dos alcançados e divide por dois. Outros vértices até raio `d`: BFS, exclui a origem e não expande a camada `d`; reinicia o estado entre chamadas.
 
 Estas aplicações custam $O(V+E)$ com listas e espaço auxiliar $O(V)$. [Ciclos e conetividade](/cadeiras/aed/grafos-aplicacoes/).

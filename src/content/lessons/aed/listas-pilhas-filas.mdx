@@ -8,6 +8,8 @@ practices:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import listaIntercalar from '../../aed/examples/lista-intercalar.cpp?raw';
+
 import Estados from '../../aed/Estados.astro';
 
 Com os valores `[4,7,2]`, uma pilha retira 2 primeiro e uma fila retira 4. Uma lista permite ainda procurar e alterar posições interiores. A escolha depende dessas operações, não apenas de conseguir guardar os três valores.
@@ -31,6 +33,37 @@ Para remover a posição `k`, começa em `&primeiro` e avança `k` ligações, c
 />
 
 A cópia está desativada porque os nós têm um único proprietário, e o destrutor liberta-os de forma iterativa. Os apontadores para nós apagados deixam de ser válidos. Pesquisar e percorrer custam $\Theta(n)$ no pior caso. Retirar o último exige chegar ao penúltimo, mesmo que exista um apontador para o último, ou seja, alterar a ligação custa constante mas encontrar a ligação nem sempre custa constante.
+
+## Separar e intercalar por ligações
+
+Separar uma lista não exige copiar os valores. Em `[4A,1B,4C,2D,4E]`, conservar os primeiros dois nós deixa `[4A,1B]` na origem e `[4C,2D,4E]` noutra lista. As letras identificam ocorrências, mesmo quando a chave é igual.
+
+Fixa o contrato de `separar(resto,k)`: `resto` é uma lista distinta, inicialmente vazia; `k<=0` transfere tudo; `k>=tamanho` conserva tudo na origem. Com `0<k<tamanho`, avança até à posição `k-1`, guarda o seu sucessor como cabeça de `resto` e corta a ligação escrevendo `nullptr`. Atualiza os dois tamanhos. Sem o corte, as listas continuariam a possuir uma cadeia comum, e os seus destrutores poderiam libertar o mesmo nó duas vezes.
+
+O caso interior custa $\Theta(k)$ para encontrar o corte e espaço $O(1)$. Os casos extremos custam $O(1)$ porque o tamanho já está guardado. Se `resto` tivesse nós, sobrescrever a sua cabeça perderia esses nós; a pré-condição de vazio impede essa fuga. A mesma lista não pode ser origem e destino.
+
+Para **intercalar duas listas já ordenadas**, guarda uma frente em cada lista e uma ligação para o fim da saída. Escolhe a menor frente, avança apenas essa frente e liga o nó escolhido à saída. No empate, escolhe a lista esquerda para preservar a ordem inicial entre ocorrências. Quando uma lista acaba, liga o sufixo da outra de uma só vez. A origem direita fica vazia, porque os seus nós passaram a pertencer à lista de saída.
+
+| Frentes disponíveis     | Nó escolhido   | Prefixo da saída   |
+| ----------------------- | -------------- | ------------------ |
+| `[1B,4A]`, `[2D,4C,4E]` | `1B`           | `[1B]`             |
+| `[4A]`, `[2D,4C,4E]`    | `2D`           | `[1B,2D]`          |
+| `[4A]`, `[4C,4E]`       | `4A`, empate   | `[1B,2D,4A]`       |
+| `[]`, `[4C,4E]`         | ligar o sufixo | `[1B,2D,4A,4C,4E]` |
+
+O invariante conserva um prefixo ordenado com os menores nós já escolhidos; as duas frentes iniciam as cadeias ainda por consumir. Guardar o sucessor antes de alterar uma ligação permite avançar sem perder os restantes nós. Não se cria nem apaga nenhum nó durante a separação ou a intercalação.
+
+Com comprimentos `a` e `b`, a intercalação faz no máximo `a+b-1` comparações se ambas forem não vazias. Nesse caso, o pior custo é $\Theta(a+b)$, com auxiliar $O(1)$. Se uma lista estiver vazia, basta ligar a cadeia da outra, em $O(1)$.
+
+Não é limitado por $O(\min(a,b))$: para `a=1` e `b=m`, põe `[m+1]` à esquerda e `[1,…,m]` à direita. Consomes os `m` nós da direita embora o menor comprimento seja sempre 1. Por exemplo, `[100]` contra `[1,…,99]` exige 99 comparações. Ligar o sufixo custa constante, mas uma lista curta pode não acabar cedo.
+
+<CodePlayground
+  language="cpp"
+  title="Separar, ordenar e intercalar sem copiar nós"
+  code={listaIntercalar}
+/>
+
+O programa primeiro mostra `[4A,1B]` e `[4C,2D,4E]`, depois ordena cada parte e intercala. A saída final é `1B 2D 4A 4C 4E`, tamanho 5; a outra lista tem tamanho 0. `No*& escolhido` é uma referência ao apontador da frente escolhida, permitindo avançar essa frente. `No** fim` refere a cabeça de saída ou o campo `seguinte` do último nó escrito. O método `ordenar` compõe estas operações no [mergesort de listas](/cadeiras/aed/ordenacao/#mergesort-em-listas-ligadas). As comparações do tipo `T` têm de definir uma ordem válida e não lançar exceções neste exemplo.
 
 ## Lista dupla e circular
 

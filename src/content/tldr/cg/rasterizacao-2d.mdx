@@ -1,0 +1,41 @@
+import Typst from '../../../components/Typst.astro';
+import grelha from '../../lessons/cg/grelha.typ?raw';
+
+## Ponto médio para linhas
+
+Convenção didática: centros de píxel inteiros. No primeiro octante, $\Delta x>0$ e $0\le\Delta y\le\Delta x$, avança em x e escolhe E ou NE pelo ponto médio entre ambos:
+
+$$
+F(x,y)=\Delta y(x-x_0)-\Delta x(y-y_0),\qquad d=2F(x+1,y+1/2).
+$$
+
+Inicialmente $d=2\Delta y-\Delta x$. E se $d<0$; **NE se $d\ge0$**, incluindo empate.
+
+| Escolha | Novo píxel  | Incremento de d        |
+| ------- | ----------- | ---------------------- |
+| E       | $(x+1,y)$   | $2\Delta y$            |
+| NE      | $(x+1,y+1)$ | $2(\Delta y-\Delta x)$ |
+
+De (0,0) a (5,2), d inicial −1; escolhas E, NE, E, NE, E dão (0,0), (1,0), (2,1), (3,1), (4,2), (5,2).
+
+<Typst
+  source={grelha}
+  format="svg"
+  alt="Seis píxeis escolhidos entre (0,0) e (5,2), com as decisões E ou NE marcadas."
+/>
+
+Δy=0 dá só E; Δy=Δx dá só NE. Um segmento reduzido a ponto desenha apenas esse ponto, sem divisão por Δx. Para declive íngreme, troca x/y; para declives negativos, espelha e desfaz o espelho no resultado. De (0,0) a (2,−5), usa x′=−y, y′=x para chegar ao primeiro octante e volta com x=y′, y=−x′. [Derivação e estados](/cadeiras/cg/rasterizacao-2d/#linhas-pelo-ponto-médio).
+
+## Varrimento par-ímpar
+
+Em cada linha horizontal, interseta arestas, ordena cruzamentos e preenche entre pares consecutivos. Cada cruzamento alterna interior/exterior, permitindo concavidades e buracos.
+
+- Aresta não horizontal ativa em $y_{min}\le y<y_{max}$; ignora horizontais na contagem. A regra evita duplicar cruzamentos em vértices partilhados.
+- Entre xL e xR, preenche $x_L\le x<x_R$. Cruzamentos 1, 4, 6, 8 dão píxeis 1, 2, 3 e 6, 7, sem preencher o intervalo exterior.
+- A lista de arestas ativas guarda altura máxima, interseção x e incremento Δx/Δy. Na linha seguinte, atualiza x, remove arestas terminadas, acrescenta as que começam e ordena antes de emparelhar.
+
+No triângulo (1,1), (5,1), (3,4), y=2 cruza em 5/3 e 13/3: pinta x=2, 3, 4. Em y=3, cruzamentos 7/3 e 11/3 dão só x=3; em y=4 as arestas já não estão ativas.
+
+## Difusão e conectividade
+
+Flood fill parte de uma semente e visita vizinhos com a cor interior. Marca ao visitar para não repetir; pilha/fila explícita evita recursão profunda. Conectividade 4 usa cima, baixo, esquerda e direita; conectividade 8 acrescenta diagonais. Píxeis que só se tocam num canto podem formar regiões diferentes em 4 e uma só em 8. A conectividade e um contorno com falhas podem permitir fuga do preenchimento.

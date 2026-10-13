@@ -39,7 +39,9 @@ A [Cheat sheet](/cadeiras/p/folha-consulta/) serve para rever regras e condiçõ
 
 Prevê a saída antes de correr um programa. Se houver apontadores, desenha objetos e setas; se houver ciclos, acompanha índice e acumulador; se houver classes, identifica o invariante. Depois compara a execução com a previsão e muda um caso de fronteira.
 
-Os exercícios no fim das lições são próprios. Pedem leitura de código, decisão sobre contratos e escrita de funções. As respostas em C++ usam autoavaliação, por isso compara o comportamento e o raciocínio com a solução. Resolve primeiro sem abrir as pistas. Num projeto, aplica a mesma sequência a uma operação pequena de cada vez: contrato, implementação, teste e integração.
+Os exercícios no fim das lições usam casos próprios e adaptações atribuídas de enunciados antigos. Pedem leitura de código, decisão sobre contratos e escrita de funções. As respostas em C++ usam autoavaliação, por isso compara o comportamento e o raciocínio com a solução. Resolve primeiro sem abrir as pistas. Num projeto, aplica a mesma sequência a uma operação pequena de cada vez: contrato, implementação, teste e integração.
+
+Confere também a assinatura e as ferramentas permitidas: alguns enunciados arquivados exigem arrays C e proíbem contentores ou funções da biblioteca. Um programa pode dar a saída certa e incumprir essa restrição. O filtro de repetidos e a comparação de letras mostram como resolver os respetivos contratos com ciclos e arrays.
 
 :::details[Programa e avaliação]
 
@@ -55,6 +57,8 @@ Para esta edição, a referência de escrita é C++17. Vens de Fundamentos de Pr
 A [página de Stroustrup](https://www.stroustrup.com/4th.html) disponibiliza prefácio, índice e exercícios da quarta edição, orientada a C++11. Usa-a como referência de desenho; as regras de linguagem destas páginas seguem C++17. O arquivo estudantil local _FEUP_PROG_ acrescentou exemplos de tipos de exercícios sobre funções, arrays, strings, memória, classes, herança e STL. Os problemas de relógio e iteradores inspiram a prática, com contratos próprios e atribuição nos conjuntos correspondentes. As resoluções estudantis podem conter erros, por isso os programas destas páginas foram escritos e verificados separadamente.
 
 Os [Resumos de Programação de SofiaViP](https://drive.google.com/file/d/1tGxsf5qYJZxWgZgGnUcAc2juFPSrEPUo/view) são um suplemento histórico sem ano letivo identificado. Os exemplos destas páginas foram escritos e verificados separadamente; quando um suplemento diverge, vale a ficha e o comportamento confirmado no compilador. A página acessível do [Moodle de 2024/25](https://moodle2425.up.pt/course/view.php?id=4881) contém informação e apoio, sem ficheiros de ensino descarregáveis.
+
+O [arquivo de Programação no Accio](https://accio.pt/feup/L:EIC/programacao/L.EIC009) inclui revisões de tentativas das provas práticas de **2023/24**, identificadas pelo curso e pelas datas de março, maio e junho de 2024. Foram contribuídas por estudantes; a exportação posterior não muda o ano letivo. Os casos de arrays de saída, conjuntos de letras e síntese de notas adaptam os contratos desses enunciados com dados próprios. O desempate por nome e o comportamento no vazio são explícitos nos nossos exemplos. As provas antigas não confirmam regras ou matéria de avaliação de 2026/27.
 
 As regras de linguagem foram confrontadas com o [rascunho público do padrão C++](https://eel.is/c++draft/), restringindo os exemplos a C++17, e as decisões de propriedade com as [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines). Compilação, avisos e sanitizers seguem a [documentação de GCC](https://gcc.gnu.org/onlinedocs/gcc/) e a organização do build segue a [documentação de CMake](https://cmake.org/cmake/help/latest/guide/tutorial/index.html).
 :::

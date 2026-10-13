@@ -35,6 +35,14 @@ Para 252 e 198, os restos são $54,36,18,0$ e $18=4\cdot252-5\cdot198$.
 
 São primos entre si quando o mdc é 1. Uma combinação linear igual a 1 prova coprimalidade, inclusive para expressões com um parâmetro inteiro.
 
+Para $a,b>0$ e $d=\gcd(a,b)$, $ax+by=c$ tem solução inteira se e só se $d\mid c$. A partir de uma solução $(x_0,y_0)$, todas são
+
+$$
+x=x_0+\frac bd t,\qquad y=y_0-\frac ad t,\qquad t\in\mathbb Z.
+$$
+
+Bézout não garante coeficientes naturais. Para exigir naturais, impõe $x,y\ge0$ ao parâmetro. $18x+30y=6$ tem solução $(2,-1)$, mas nenhuma não negativa.
+
 ## Congruência, inversos e cancelamento
 
 Para $m>0$, $a\equiv_m b$ significa $m\mid(a-b)$, ou igual resto módulo $m$. Podes somar, subtrair e multiplicar congruências do mesmo módulo.

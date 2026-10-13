@@ -22,6 +22,8 @@ Esta folha reúne condições e sequências para consultar depois das lições. 
 | Biblioteca estática             | `ar rcs libname.a a.o`; ligar objetos antes da biblioteca                         |
 | Apontador para função           | `int (*f)(int)`, assinatura compatível                                            |
 
+Com char 1/1, short 2/2 e int 4/4 em tamanho/alinhamento, a struct com char[10], int e short ocupa 20 bytes; a union ocupa 12. As contas dependem da ABI, não apenas da largura dos endereços. [Layout explicado](/cadeiras/lc/memoria-funcoes/#calcular-o-tamanho-com-alinhamento).
+
 [Tipos e compilação](/cadeiras/lc/c-estruturado/), [memória e funções](/cadeiras/lc/memoria-funcoes/).
 
 ## Registos e interrupções
@@ -36,6 +38,8 @@ Esta folha reúne condições e sequências para consultar depois das lições. 
 | Vários bits pendentes   | `if` independentes, sem `else if`          |
 
 Portas de timer, i8042 e UART pertencem ao espaço de I/O. Framebuffer é memória mapeada. No PIC, máscara a 1 bloqueia IRQ; na notificação Minix, bit a 1 indica pedido. Guardar bit pedido antes de `sys_irqsetpolicy`; usar hook devolvido nas restantes kernel calls. Receber, conferir notificação, origem HARDWARE e máscara. Limpar recursos também após falha parcial.
+
+Ler e escrever a mesma porta pode aceder a registos diferentes. No L3223 fictício, 0x23 lê estado e escreve controlo; reservados ficam zero. Timer 1, alarme e milissegundos dão 0x51, sem preservar o estado lido por OR. [Contrato e sequência](/cadeiras/lc/falar-com-hardware/#um-endereço-não-garante-um-registo-legível).
 
 [Registos](/cadeiras/lc/falar-com-hardware/#testar-e-alterar-campos), [hooks](/cadeiras/lc/interrupcoes/#hook-e-máscara-de-notificação).
 

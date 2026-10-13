@@ -8,6 +8,7 @@ practices:
 ---
 
 import Dot from '../../../components/Dot.astro';
+import Bracket from '../../../components/Bracket.astro';
 import ciclo from './ciclo-processo.dot?raw';
 
 Uma shell que lança três compilações cria três **processos**, execuções com identidade e estado próprios. Cada um pode correr o mesmo compilador, com argumentos e dados diferentes. O PID distingue as execuções; o espaço de endereçamento separa os dados privados. Dois processos podem apresentar o mesmo endereço virtual sem esse número designar a mesma variável física.
@@ -41,7 +42,11 @@ if (pid == 0) x = 9;
 
 Este é um excerto, assumindo `fork` bem-sucedido. O filho tem `x == 9`; o pai conserva `x == 4`. A cópia costuma ser implementada com _copy-on-write_: as páginas físicas podem ser partilhadas inicialmente e copiadas quando alguém escreve. A semântica dos dados privados continua a ser a de memórias separadas.
 
-Os descritores herdados referem as mesmas descrições abertas, por isso uma leitura do pai pode avançar a posição que o filho observa. É partilha de estado do núcleo, não partilha automática de todas as variáveis C.
+<Bracket label="Ideia-chave">
+
+Depois de `fork`, os dados privados continuam logicamente separados, mas os descritores herdados referem as mesmas descrições abertas. Uma leitura do pai pode avançar a posição que o filho observa. É partilha de estado do núcleo, não partilha automática de todas as variáveis C.
+
+</Bracket>
 
 ## Contar processos pela árvore
 
@@ -115,15 +120,13 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-`./executar printf 'ola\n'` escreve `ola` e depois `estado=0`. O `waitpid` impõe que o pai só imprime depois do fim do filho. Repara em `execvp(argv[1], argv + 1)`: `argv[1]` é o nome do comando e `argv + 1` é o vetor de argumentos do novo programa, a começar nesse nome e terminado por `NULL`. Para um nome inexistente, `execvp` falha, o filho termina com 127 e o pai mostra esse estado. O filho não deve continuar o código da shell depois da falha. O estado bruto exige macros: confirma `WIFEXITED` antes de ler `WEXITSTATUS` e `WIFSIGNALED` antes de ler `WTERMSIG`.
+`./executar printf 'ola\n'` escreve `ola` e depois `estado=0`. O `waitpid` impõe que o pai só imprime depois do fim do filho. Repara em `execvp(argv[1], argv + 1)`: `argv[1]` é o nome do comando e `argv + 1` é o vetor de argumentos do novo programa, a começar nesse nome e terminado por `NULL`. Para um nome inexistente, `execvp` falha, o filho termina com 127 e o pai mostra esse estado. O filho não deve continuar o código da shell depois da falha.
 
 `return` de uma função auxiliar só retorna dessa função. `exit` termina o processo, executa funções registadas com `atexit` e trata buffers stdio. `_exit` termina sem essa limpeza da biblioteca, por isso no filho que falhou antes de `exec` usa `_exit` para evitar repetir limpezas e descarregar buffers herdados do pai.
 
 ## Buffers e ordem observável
 
-Um `printf("antes")` sem descarga antes de `fork` pode deixar bytes num buffer que será copiado. Se pai e filho terminarem com `exit`, ambos podem descarregar a cópia. Usa `fflush` antes de criar o filho quando tens saída pendente, ou prepara o programa para não a duplicar.
-
-Uma mudança de linha não garante descarga em todas as situações: num terminal, stdout costuma ter buffer por linha; redirecionado para ficheiro, costuma ter buffer por blocos.
+Um `printf("antes")` sem descarga antes de `fork` pode deixar bytes num buffer que será copiado; se pai e filho terminarem com `exit`, ambos podem descarregar a cópia, por isso usa `fflush` antes de criar o filho quando tens saída pendente. Uma mudança de linha não garante descarga em todas as situações: num terminal, stdout costuma ter buffer por linha, mas redirecionado para ficheiro costuma ter buffer por blocos.
 
 Duas linhas impressas por processos concorrentes não têm ordem garantida só porque aparecem nessa ordem no código de ramos diferentes. Para impores ordem, precisas de uma relação como esperar pelo fim do filho ou receber uma mensagem dele. Um `sleep` só atrasa, ou seja não prova sincronização.
 

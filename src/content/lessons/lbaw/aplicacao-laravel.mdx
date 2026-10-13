@@ -100,7 +100,7 @@ class SessaoController extends Controller
 
 O método `validate` é o ponto a fixar: se os dados cumprirem as regras, devolve os campos validados. Não os sanitiza para todos os destinos. Se falharem num formulário web, interrompe e redireciona com os erros; um pedido que espera JSON recebe normalmente 422. A regra `exists:eventos,id` repete na aplicação a chave estrangeira da base de dados, para dar erro amigável antes do erro técnico. A regra `after:now` valida a criação de uma sessão futura. Sessões antigas continuam a existir no histórico.
 
-Antes do exemplo, associa `SessaoPolicy` ao modelo. O seu método `create` recebe o utilizador autenticado e permite apenas os papéis que podem gerir sessões. `Gate` é a facade `Illuminate\Support\Facades\Gate`; recusa com 403 quando a policy não permite. O formulário usa `@csrf` e apresenta os erros com `@error` e os valores anteriores com `old(...)`.
+Este exemplo pressupõe `SessaoPolicy` associada ao modelo: o seu método `create` recebe o utilizador autenticado e permite apenas os papéis que podem gerir sessões. `Gate` é a facade `Illuminate\Support\Facades\Gate` e recusa com 403 quando a policy não permite; o formulário usa `@csrf` e apresenta os erros com `@error` e os valores anteriores com `old(...)`.
 
 ## Migração e modelo
 
@@ -142,7 +142,7 @@ Com um utilizador autorizado a criar sessões, preenche o formulário de nova se
 
 Se a autorização e a validação passassem, o `create` inseria a sessão e o redirecionamento voltava à lista. Se dois compradores disputarem o último lugar, a validação anterior à compra pode estar desatualizada. O [protocolo de concorrência](/cadeiras/lbaw/triggers-transacoes/) decide qual compra pode confirmar.
 
-O bloco seguinte isola a condição «inteiro positivo», ou seja, usa um inteiro PHP onde um formulário HTTP enviaria texto, que o validador Laravel também precisa de interpretar:
+Para isolar a condição «inteiro positivo», o bloco usa um inteiro PHP onde um formulário HTTP enviaria texto, que o validador Laravel também precisa de interpretar:
 
 <CodePlayground
   language="php"
@@ -159,7 +159,7 @@ Num formulário Laravel, o erro é apresentado junto ao campo. O bloco não repr
   alt="Num GET de sessões, a rota escolhe o controlador. Este obtém dados pelo modelo, pede à vista que gere HTML e devolve a resposta ao navegador. Uma nova ação no navegador pode iniciar outro pedido."
 />
 
-Esta sequência mostra a página da lista. A vista gera HTML no servidor; o navegador recebe esse HTML e decide quando enviar outro pedido.
+Na sequência da página da lista, a vista gera HTML no servidor; o navegador recebe esse HTML e decide quando enviar outro pedido.
 
 ## Entrar e proteger rotas
 
@@ -275,3 +275,24 @@ Os caminhos abaixo partem de `POST /sessoes` num formulário web. Cada recusa in
 | Autorizado, evento eliminado após validar | FK na base de dados       | Escrita recusada; a aplicação traduz a falha conhecida sem mostrar SQL. |
 
 Num cliente que espera JSON, autenticação e validação podem devolver 401 e 422 em vez de redirecionar. O contrato da resposta precisa de declarar essa diferença.
+
+## Validar uma funcionalidade num protótipo vertical
+
+Um **protótipo vertical** implementa um percurso através de todas as camadas. Uma lista desenhada com dados fixos pode validar a disposição da interface, mas não demonstra que a aplicação consulta, autoriza ou altera os dados. A8 serve para experimentar a arquitetura com funcionalidades do projeto; as histórias obrigatórias vêm dos requisitos e checklists da edição atual.
+
+Para a história de cancelar uma reserva, liga os artefactos ao mesmo comportamento:
+
+| Artefacto | Decisão que chega à implementação                                        |
+| --------- | ------------------------------------------------------------------------ |
+| A2        | O comprador cancela uma reserva sua e liberta um lugar uma única vez.    |
+| A3        | O bilhete mostra a ação; sucesso e recusa têm estados reconhecíveis.     |
+| A4 e A5   | Bilhete tem comprador, sessão e estado, com referências válidas.         |
+| A6        | Transição e capacidade são atómicas, com isolamento justificado.         |
+| A7        | Método, caminho, permissões, parâmetros e respostas estão especificados. |
+| A8        | Interface, controlador, autorização e PostgreSQL executam esse percurso. |
+
+Um contrato possível usa `POST /bilhetes/{id}/cancelamento`. Num formulário web, a ação processa e redireciona para uma página de resultado, preservando os dados necessários em caso de erro. Uma operação AJAX pode devolver JSON e códigos de falha, desde que isso conste do contrato e o cliente os interprete. Não devolvas um redirecionamento para HTML a um cliente que espera sempre o JSON de um bilhete.
+
+Para verificar o percurso, começa com uma reserva de U7 e zero lugares livres. Entra como U7, cancela e confirma na interface e nos dados que o estado mudou e há um lugar livre. Recarrega: a alteração deve persistir. Repete: não deve libertar outro lugar. Com U8, um pedido direto ao mesmo endereço deve ser recusado, mesmo que o botão nem exista na sua página.
+
+Depois verifica uma sessão esgotada, uma falha técnica e o retorno ao formulário. Uma mensagem de sucesso isolada não prova a escrita, e uma consulta bem-sucedida não prova autorização. Este é um percurso didático; não substitui as restantes histórias exigidas para o protótipo nem a verificação do produto no ambiente indicado pela cadeira.

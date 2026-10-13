@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Problemas docentes, problema 9, adaptação com endereços de documentação
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33691
@@ -31,15 +31,17 @@ editorial:
 import Dot from '../../../components/Dot.astro';
 import topologia from '../../rc/vlsm.dot?raw';
 
-Um host `192.0.2.77/26` precisa de decidir se entrega diretamente ao destino ou envia ao gateway. Primeiro encontra a sua rede pelo prefixo. Os routers seguintes consultam o IP de destino para escolher cada saída; os protocolos de routing constroem as tabelas usadas nessas decisões.
+Um host `192.0.2.77/26` precisa de decidir se entrega diretamente ao destino ou envia ao gateway; primeiro encontra a sua rede pelo prefixo. Os routers seguintes consultam o IP de destino para escolher cada saída, enquanto os protocolos de routing constroem as tabelas usadas nessas decisões.
 
 ## IPv4 e prefixos
 
-Um endereço IPv4 tem 32 bits. O prefixo `/p` indica bits de rede; os restantes $32-p$ identificam posições. A máscara tem $p$ uns seguidos de zeros. Faz AND entre endereço e máscara para obteres a rede.
+Um endereço IPv4 tem 32 bits. O prefixo `/p` indica bits de rede e os restantes $32-p$ identificam posições; a máscara tem $p$ uns seguidos de zeros. Faz AND entre endereço e máscara para obteres a rede.
 
 **Exemplo.** `192.0.2.77/26` tem máscara `255.255.255.192`. Em binário, o último octeto é `01001101` e a máscara é `11000000`; o AND dá `01000000`, ou 64. Os blocos começam em 0, 64, 128 e 192. O endereço pertence a `192.0.2.64/26`, com broadcast `.127` e intervalos usuais de hosts `.65` a `.126`, total de 62.
 
 A fórmula $2^{32-p}-2$ vale para sub-redes usuais que reservam rede e broadcast. **Não é universal:** `/31` pode usar os dois endereços ponto a ponto e `/32` é um só endereço. As classes A, B e C não substituem o CIDR do enunciado.
+
+Os 62 endereços utilizáveis contam **interfaces**, incluindo a do router. Com um gateway e nenhum outro equipamento que precise de IP, cabem 61 computadores nessa LAN `/26`. Um comutador de camada 2 não precisa de um endereço IP por porta para reenviar tramas; se reservarmos um IP de gestão na mesma sub-rede, sobra menos um para computadores. Distingue «hosts utilizáveis», «terminais» e «terminais adicionais» num problema de dimensionamento.
 
 ## VLSM e agregação
 
@@ -51,7 +53,7 @@ Para dividir `198.51.100.0/24` em grupos que precisem de 100, 50 e 20 hosts, com
 | 50          | /26     | 198.51.100.128–191 | .129–.190    |
 | 20          | /27     | 198.51.100.192–223 | .193–.222    |
 
-O bloco `.224/27` sobra. Cada bloco tem tamanho potência de dois e início alinhado. Não podes começar um `/26` em `.130` só porque há espaço disponível.
+O bloco `.224/27` sobra. Cada bloco tem tamanho potência de dois e início alinhado, por isso não podes começar um `/26` em `.130` só porque há espaço disponível.
 
 Na **agregação**, vários prefixos contíguos e alinhados podem ser anunciados por um prefixo mais curto. `192.0.2.0/25` e `192.0.2.128/25` agregam em `192.0.2.0/24`. Agregar blocos não contíguos pode anunciar destinos que não eram pretendidos.
 
@@ -66,9 +68,9 @@ Adaptação do problema 9 e da resolução docente, com endereços de exemplo. D
 | C            | 20           | `192.0.2.192/27` | `255.255.255.224` | 30                |
 | D            | 18           | `192.0.2.224/27` | `255.255.255.224` | 30                |
 
-Os quatro blocos ocupam os 256 endereços. Se D crescer para 34 computadores, precisa de `/26`, mas não pode simplesmente alargar `.224/27`: um `/26` não começa em .224 e a região `.192/26` contém C. Reorganizar os endereços exige preservar também os outros departamentos.
+Os quatro blocos ocupam os 256 endereços. Se D crescer para 34 computadores, precisa de `/26`, mas não pode simplesmente alargar `.224/27`, pois um `/26` não começa em .224 e a região `.192/26` contém C; reorganizar os endereços exige preservar também os outros departamentos.
 
-Uma alternativa é dividir A em duas sub-redes. Reserva `.0/26` para 60 computadores de A e um gateway; `.224/27` para os restantes 12 e outro gateway. Usa `.64/26` para D, conserva B em `.128/26` e C em `.192/27`. A passa a precisar de encaminhamento entre as suas duas sub-redes e de reconfiguração dos hosts. Somar computadores dá 161 após o crescimento, mas somar os blocos necessários com uma rede por departamento dá 288 endereços. A necessidade resulta do alinhamento e das potências de dois, não só da soma de hosts.
+Uma alternativa é dividir A em duas sub-redes: reserva `.0/26` para 60 computadores de A e um gateway, `.224/27` para os restantes 12 e outro gateway, `.64/26` para D, e conserva B em `.128/26` e C em `.192/27`. A passa a precisar de encaminhamento entre as suas duas sub-redes e de reconfiguração dos hosts. Somar computadores dá 161 após o crescimento, mas somar os blocos necessários com uma rede por departamento dá 288 endereços; a necessidade resulta do alinhamento e das potências de dois, não só da soma de hosts.
 
 ## Longest prefix match
 
@@ -87,7 +89,7 @@ Divide `172.20.8.0/24` para a topologia seguinte. A LAN A precisa de 80 endereç
   alt="LAN A ligada a R1, ligação ponto a ponto entre R1 e R2, e LAN B ligada a R2. A rede disponível é 172.20.8.0/24."
 />
 
-Começa pela maior necessidade, reserva rede e broadcast nas LANs, e alinha cada bloco. 80 não cabem num `/26`, que só dá 62 hosts; 30 cabem exatamente num `/27`.
+Começa pela maior necessidade, reserva rede e broadcast nas LANs, e alinha cada bloco. 80 não cabem num `/26`, que só dá 62 hosts, enquanto 30 cabem exatamente num `/27`.
 
 | Segmento | Rede              | Máscara           | Hosts disponíveis | Broadcast |
 | -------- | ----------------- | ----------------- | ----------------- | --------- |
@@ -107,7 +109,7 @@ A tabela de R1, sem rota por defeito, precisa de conhecer as três redes:
 
 R2 tem as duas primeiras redes locais correspondentes, LAN B e ligação. Para chegar a `172.20.8.0/25`, usa o próximo salto `172.20.8.161`. As rotas diretamente ligadas são normalmente instaladas a partir da configuração das interfaces; a rota remota precisa de configuração estática ou aprendizagem por routing.
 
-Um host `172.20.8.20/25` envia para `172.20.8.130` através do gateway `.1`. Na LAN A, resolve por ARP o MAC de `.1`. R1 encaminha por `.162`; R2 entrega na LAN B, resolvendo o MAC de `.130`. Sem NAT, os IP de origem e destino mantêm-se, o TTL diminui em cada router e os endereços de ligação mudam por salto.
+Um host `172.20.8.20/25` envia para `172.20.8.130` através do gateway `.1`. Na LAN A, resolve por ARP o MAC de `.1`; R1 encaminha por `.162` e R2 entrega na LAN B, resolvendo o MAC de `.130`. Sem NAT, os IP de origem e destino mantêm-se, o TTL diminui em cada router e os endereços de ligação mudam por salto.
 
 Para reduzir uma tabela por agregação, verifica alinhamento e próximo salto comum. Dois `/27`, `.128/27` e `.160/27`, podem formar `.128/26` se todos esses destinos tiverem a mesma saída pretendida. `.0/27` e `.64/27` não são dois blocos adjacentes; resumir ambos com `/25` inclui outras redes. Menos linhas não justifica anunciar destinos incorretos.
 
@@ -121,9 +123,9 @@ Para reduzir uma tabela por agregação, verifica alinhamento e próximo salto c
 
 ## Cabeçalho e fragmentação IPv4
 
-O cabeçalho inclui origem, destino, comprimento, protocolo superior, TTL e campos de fragmentação. O TTL diminui nos routers e impede circulação indefinida. A checksum IPv4 protege o cabeçalho, não toda a carga útil.
+O cabeçalho inclui origem, destino, comprimento, protocolo superior, TTL e campos de fragmentação. O TTL diminui nos routers e impede circulação indefinida, enquanto a checksum IPv4 protege o cabeçalho, não toda a carga útil.
 
-A **MTU** é o maior pacote IP que a ligação leva sem fragmentar. Se exceder a MTU e a fragmentação for permitida, cada fragmento recebe cabeçalho. O offset conta blocos de **8 bytes** da carga original; exceto o último, a carga é múltipla de oito. O destino reconstitui por identificação e campos de fragmentação.
+A **MTU** é o maior pacote IP que a ligação leva sem fragmentar. Se exceder a MTU e a fragmentação for permitida, cada fragmento recebe cabeçalho; o offset conta blocos de **8 bytes** da carga original e, exceto o último, a carga é múltipla de oito. O destino reconstitui por identificação e campos de fragmentação.
 
 **Exemplo.** Datagrama de 4000 bytes, incluindo cabeçalho de 20, MTU 1500, sem opções e DF=0. Há 3980 bytes de dados. Cada fragmento completo leva 1480 bytes de dados.
 
@@ -146,6 +148,6 @@ NAT altera endereços; NAPT/PAT pode alterar também portas e manter uma tabela 
 
 Ligações iniciadas do exterior podem exigir uma associação estática, encaminhamento de portas ou outro mecanismo. NAT não substitui uma política de firewall.
 
-IPv6 usa 128 bits, notação hexadecimal e compressão de um único trecho de zeros com `::`. O cabeçalho base tem 40 bytes, não inclui checksum, e usa Hop Limit. Routers IPv6 não fragmentam. Se o pacote não couber na MTU da saída, descartam-no e enviam à origem ICMPv6 _Packet Too Big_, indicando a MTU. A origem pode reduzir os pacotes ou usar um cabeçalho de fragmentação. Neighbor Discovery, baseado em ICMPv6, substitui funções do ARP. IPv6 usa multicast em funções em que IPv4 usava broadcast.
+IPv6 usa 128 bits, notação hexadecimal e compressão de um único trecho de zeros com `::`. O cabeçalho base tem 40 bytes, não inclui checksum e usa Hop Limit. Routers IPv6 não fragmentam; se o pacote não couber na MTU da saída, descartam-no e enviam à origem ICMPv6 _Packet Too Big_, indicando a MTU. A origem pode reduzir os pacotes ou usar um cabeçalho de fragmentação. Neighbor Discovery, baseado em ICMPv6, substitui funções do ARP, e IPv6 usa multicast em funções em que IPv4 usava broadcast.
 
 Quando comparares IPv4 e IPv6, identifica os mecanismos, em vez de assumir que mudar a dimensão do endereço garante segurança ou elimina toda a configuração.

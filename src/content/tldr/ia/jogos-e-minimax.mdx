@@ -1,0 +1,33 @@
+import Dot from '../../../components/Dot.astro';
+import minimax from '../../ia/minimax.dot?raw';
+
+## Minimax e alfa-beta
+
+Modelo: jogo finito, determinístico, dois jogadores alternados, soma zero e informação perfeita. Utilidades medem MAX; MIN minimiza. Minimax completo usa terminais; folhas cortadas por profundidade usam avaliação heurística e retiram a garantia do jogo completo.
+
+<Dot
+  source={minimax}
+  alt="MAX escolhe entre MIN A com 3/5 e MIN B com 2/9. A vale 3; visitar 2 em B permite dispensar 9."
+/>
+
+A raiz vale $\max(\min(3,5),\min(2,9))=3$. Na ordem indicada, lê 3 e 5; a raiz guarda alfa 3. B lê 2 e dispensa 9.
+
+- MAX atualiza **alfa**, limite inferior; MIN atualiza **beta**, limite superior. Recebem limites dos antecessores.
+- Corta quando $\alpha\ge\beta$. A folha que provoca o corte foi avaliada; poupam-se as seguintes.
+- A ordem altera trabalho, mantendo a decisão. Pior caso $O(b^m)$; ordem ideal pode chegar a $O(b^{m/2})$.
+
+## Limites nos nós cortados
+
+Um MAX que viu 9 pode garantir valor **pelo menos 9**; um MIN que viu 2 garante **no máximo 2**. O valor devolvido num corte pode ser um limite, não o Minimax exato do nó.
+
+Se MIN B tem C=8 e D≥9, B vale exatamente 8 mesmo sem conhecer D por completo. Trocar uma folha cortada de D por 12 pode mudar D e continuar sem alterar B ou a raiz. [Traço com valores e limites](/cadeiras/ia/jogos-e-minimax/#valor-exato-ou-limite-depois-de-um-corte).
+
+## MCTS e UCT
+
+Repete seleção, expansão, simulação e retropropagação de estatísticas. UCT equilibra taxa de vitórias e exploração:
+
+$$
+U_i=\frac{w_i}{n_i}+c\sqrt{\frac{\ln N}{n_i}}.
+$$
+
+$w_i$ são vitórias, $n_i$ visitas do filho, $N$ visitas do pai. Filhos sem visitas são experimentados antes de dividir; as estatísticas respeitam o jogador que escolhe nesse nó. A pontuação pode ultrapassar 1, pois não é uma probabilidade. A escolha final costuma usar o filho mais visitado; um orçamento finito não garante a jogada ótima.

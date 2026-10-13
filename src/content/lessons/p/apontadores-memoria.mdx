@@ -11,6 +11,7 @@ import apontadoresAliases from '../../p/apontadores-aliases.dot?raw';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Dot from '../../../components/Dot.astro';
+import Bracket from '../../../components/Bracket.astro';
 
 A função `soma` recebe um endereço e um tamanho. O endereço localiza o primeiro inteiro, mas não informa quantos elementos existem nem quem gere a sua memória. Para cada acesso, precisamos de confirmar limites e duração de vida; para cada recurso dinâmico, precisamos de identificar o dono.
 
@@ -32,7 +33,7 @@ Saída:
 5 7 5
 ```
 
-Segue as atribuições por ordem. No início, `p` e `q` apontam para `a`, por isso `*q += 2` altera `a` de `3` para `5`. Depois, `p = &b` muda apenas a seta de `p`; `q` continua em `a`. Finalmente `*p -= 1` altera `b` de `8` para `7`. Os dois apontadores são objetos distintos, mesmo quando guardam o mesmo endereço. O diagrama abaixo mostra o estado final; durante a execução, ambas as setas começaram em `a`.
+No início, `p` e `q` apontam para `a`, por isso `*q += 2` altera `a` de `3` para `5`; depois, `p = &b` muda apenas a seta de `p` enquanto `q` continua em `a`, e `*p -= 1` altera `b` de `8` para `7`. Os dois apontadores são objetos distintos mesmo quando guardam o mesmo endereço; o diagrama mostra o estado final, depois de ambas as setas terem começado em `a`.
 
 <Dot
   source={apontadoresAliases}
@@ -52,7 +53,7 @@ Dois acessos ao mesmo objeto são **aliases**. Uma cópia de apontador copia um 
 | `int* const p`       | Não                    | Sim                                   |
 | `const int* const p` | Não                    | Não                                   |
 
-Lê cada declaração do `*` para o nome. Em `const int* p`, o `int` é constante por esse acesso: podes mudar a seta, mas não `*p`. Em `int* const p`, a seta é fixa: podes alterar `*p`, mas não `p`. `const int* p` não torna necessariamente constante o objeto. Se o original não é `const`, outro acesso modificável pode alterá-lo. Já retirar `const` para modificar um objeto originalmente constante tem comportamento indefinido.
+Lê cada declaração do `*` para o nome. Em `const int* p`, o `int` é constante por esse acesso: podes mudar a seta, mas não `*p`. Em `int* const p`, a seta é fixa: podes alterar `*p`, mas não `p`. `const int* p` não torna necessariamente constante o objeto: se o original não é `const`, outro acesso modificável pode alterá-lo, mas retirar `const` para modificar um objeto originalmente constante tem comportamento indefinido.
 
 ## Apontadores e arrays
 
@@ -65,7 +66,7 @@ int* inicio = v;
 int* fim = v + 4;
 ```
 
-`*(inicio + 2)` vale `30`. `fim` é a posição imediatamente depois do array, válida para marcar o fim de um intervalo. Não é um elemento e não se desreferencia. Avançar para além dessa posição também sai dos limites permitidos. Subtrair dois apontadores para elementos do mesmo array, ou para a posição depois do fim, dá a distância em elementos.
+`*(inicio + 2)` vale `30`. `fim` é a posição imediatamente depois do array: válida para marcar o fim de um intervalo, mas não é um elemento e não se desreferencia; avançar para além dela também sai dos limites permitidos. Subtrair dois apontadores para elementos do mesmo array, ou para a posição depois do fim, dá a distância em elementos.
 
 A aritmética de apontadores não serve para saltar entre objetos independentes. O intervalo habitual é `[inicio, fim)`: inclui o início e exclui o fim. A página [Templates e STL](/cadeiras/p/templates-stl/#iteradores) usa esta convenção nos algoritmos.
 
@@ -87,7 +88,7 @@ Saída:
 1 2 3
 ```
 
-O percurso lê `1`, segue `seguinte` até ao segundo e ao terceiro, e para porque o último guarda `nullptr`. A condição impede a leitura por um apontador nulo.
+O percurso lê `1`, segue `seguinte` até ao segundo e ao terceiro, e para porque o último guarda `nullptr`; a condição impede a leitura por um apontador nulo.
 
 Os três objetos são locais e mantêm-se vivos durante o percurso. Os campos são observadores: não destroem os nós. Não uses `delete` nestes endereços, porque os objetos não foram criados com `new`. Se os nós fossem dinâmicos, a destruição teria de guardar o seguinte antes de libertar o atual:
 
@@ -100,7 +101,7 @@ while (primeiro != nullptr) {
 }
 ```
 
-Depois de `delete primeiro`, ler `primeiro->seguinte` é um acesso a um objeto que já morreu, com comportamento indefinido. Guarda o endereço seguinte enquanto o nó ainda vive. Depois liberta o atual e avança.
+Depois de `delete primeiro`, ler `primeiro->seguinte` seria um acesso a um objeto que já morreu, com comportamento indefinido; por isso guarda o endereço seguinte enquanto o nó ainda vive, liberta o atual e avança.
 
 ## Pilha, área livre e duração de vida
 
@@ -111,7 +112,11 @@ Uma variável local normal tem **duração automática**, ou seja, é destruída
 A implementação costuma guardar objetos automáticos na pilha (_stack_) e objetos dinâmicos na área livre (_heap_). A norma descreve apenas durações de armazenamento.
 :::
 
-Um apontador local e o objeto dinâmico para o qual aponta têm vidas diferentes. Ao sair da função, destruir o apontador não destrói um objeto criado com `new`. Retornar o endereço de uma variável local também não prolonga a vida dessa variável.
+<Bracket label="Ideia-chave">
+
+Um apontador local e o objeto para o qual aponta têm vidas diferentes. Destruir um apontador cru não destrói um objeto criado com `new`; conservar o endereço de uma variável local não prolonga a vida dessa variável. A validade do acesso depende de o objeto continuar vivo, não de ainda existir uma seta para ele.
+
+</Bracket>
 
 ```cpp
 // Código incorreto para análise. Não executar.
@@ -142,13 +147,15 @@ Saída:
 Soma: 10
 ```
 
-O tamanho é limitado para evitar uma reserva descontrolada. A soma usa `long long`, que representa `500500`, a soma máxima deste exemplo, mesmo num sistema com `int` de 16 bits. `new int[n]{}` inicializa os elementos a zero. O ciclo substitui-os por `1`, `2`, `3` e `4`, somando `10`. Para `n = 0`, a soma é `0` e `delete[]` continua válido. O endereço de um array vazio não autoriza qualquer indexação.
+O tamanho é limitado para evitar uma reserva descontrolada e a soma usa `long long`, que representa `500500`, a soma máxima deste exemplo, mesmo num sistema com `int` de 16 bits. `new int[n]{}` inicializa os elementos a zero e o ciclo substitui-os por `1`, `2`, `3` e `4`, somando `10`. Para `n = 0`, a soma é `0` e `delete[]` continua válido, mas o endereço de um array vazio não autoriza qualquer indexação.
 
 ## Fugas de memória e double-free
 
 Há fuga quando um recurso reservado deixa de ter uma forma válida de ser libertado. Sobrescrever o único apontador dono perde essa possibilidade. Libertar duas vezes o mesmo objeto causa _double-free_; aceder depois da libertação é _use-after-free_. Ambos têm comportamento indefinido.
 
-Depois de `delete p`, todos os aliases do objeto ficam pendentes. Fazer `p = nullptr` evita um uso posterior por esse nome e permite `delete p` sem efeito. Não corrige os outros aliases, não deteta automaticamente o erro e não torna a desreferenciação nula segura. `delete nullptr` é válido; `*nullptr` não é.
+:::warning[Pôr um apontador a nulo não repara os outros]
+Depois de `delete p`, todos os aliases do objeto ficam pendentes. Fazer `p = nullptr` evita conservar o endereço antigo nesse nome e permite `delete p` sem efeito. Não corrige os outros aliases, não deteta automaticamente o erro e não torna a desreferenciação nula segura. `delete nullptr` é válido; desreferenciar um apontador nulo não é.
+:::
 
 ## O essencial de RAII e smart pointers
 

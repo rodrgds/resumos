@@ -10,7 +10,7 @@ editorial:
       url: https://moodle2526.up.pt/course/view.php?id=4355
   gaps:
     - A ficha SIGARRA de 2026/27 não continha programa e avaliação na consulta de 3 de outubro de 2026.
-    - O sítio externo de guiões laboratoriais não estava acessível na revisão.
+    - A cópia adquirida dos guiões identifica LCOM 2026; não confirma instruções da edição 2026/27.
 ---
 
 Em LC, um programa em C configura periféricos, lê registos e reage a eventos no Minix, dentro de uma máquina virtual VirtualBox. O programa pede operações privilegiadas ao kernel. Os dispositivos emulados permitem estudar bytes, interrupções e memória de vídeo antes de os reunir numa aplicação por eventos.
@@ -43,6 +43,8 @@ A ficha permite usar notas de projeto superiores a 10 obtidas em 2023/24 ou 2024
 
 :::details[Materiais e bibliografia]
 A base de estudo é o [Moodle de LC de 2025/26](https://moodle2526.up.pt/course/view.php?id=4355), com materiais docentes sobre C, Minix, timer, interrupções, teclado, rato, eventos, vídeo, XPM, sprites, RTC, UART e protocolos. Inclui o guião de introdução a C e a aula de construção de aplicações. Várias apresentações reutilizadas têm datas de 2024 ou 2025 e exemplos de laboratórios de anos anteriores; esses exemplos explicam mecanismos, não fixam entregas nem regras da edição atual.
+
+O arquivo do Accio contém uma cópia completa dos guiões **LCOM 2026**, com carimbo de impressão `09/06/26`. Essa identificação é compatível com 2025/26, sem a transformar em material de 2026/27. Os testes adquiridos têm datas explícitas de 4 de abril, 29 de abril e 27 de junho de 2025; os exercícios desta revisão adaptam objetivos desses documentos com dados próprios, sem prever uma prova futura. O dispositivo L3223 vem do PP1 de 2020 e é fictício: serve para praticar a interpretação de um contrato diferente.
 
 Os vídeos de preparação e _Weekly tips_ estão no mesmo Moodle, junto dos materiais a que se referem. Usa-os para acompanhar operações e ferramentas do laboratório, conservando os PDFs e o guião da tua edição como referência para parâmetros e requisitos. O acesso pode exigir autenticação da U.Porto.
 

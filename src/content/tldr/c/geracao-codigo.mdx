@@ -1,0 +1,27 @@
+import Dot from '../../../components/Dot.astro';
+import interferencia from '../../c/interferencia.dot?raw';
+
+## Seleção e custo
+
+Uma instrução só serve se o alvo admitir os operandos e preservar a semântica. Verifica intervalos de imediatos. Para cobrir uma árvore, soma o custo do padrão ao dos subproblemas na sua fronteira; não conta outra vez nós já cobertos.
+
+No alvo hipotético, ADD custa 1, MUL custa 2 e MADD cobre ADD(MUL(x,y),z) com custo 2. Para `a*b+c`, ADD deixa o MUL por cobrir e o total é 3; MADD custa 2. Para `(a*b)+(c*d)`, calcula o MUL direito com custo 2 e usa MADD com custo 2: o total é 4, contra 5 com operações separadas. As folhas já estão em registos. Em vírgula flutuante, uma fusão com arredondamento único pode mudar o resultado.
+
+## Ordem e armazenamento
+
+RAW exige escrever antes de ler; WAR conserva o valor que uma leitura anterior precisa; WAW conserva a escrita final. Memória, chamadas e efeitos podem criar mais dependências. Escalonar depende ainda de latências/recursos do alvo.
+
+Um grafo de interferência liga valores vivos ao mesmo tempo. Vizinhos exigem registos diferentes; k registos são k cores.
+
+<Dot
+  source={interferencia}
+  alt="Triângulo a,b,c exige três cores; d liga apenas a c. O círculo duplo marca a vítima de derrame escolhida."
+/>
+
+Derrame guarda em memória e acrescenta cargas/gravações; volta a analisar, pois elas também precisam de registos.
+
+## JVM e Jasmin
+
+iload empilha um local, operações inteiras consomem dois operandos e produzem um, istore retira e guarda. A altura máxima determina `.limit stack`; locais e pilha não são registos físicos.
+
+`(a+b)*(c+d)` pode atingir altura 3. Long/double ocupam duas unidades. Numa junção, alturas têm de coincidir e tipos ser compatíveis; aumentar o limite não corrige um caminho vazio quando istore exige int. [Instruções e traço](/cadeiras/c/geracao-codigo/).

@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Programa de PFL 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587002
@@ -21,10 +21,12 @@ editorial:
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
+import intervaloPrimos from '../../pfl/examples/intervalo-primos.hs?raw';
 import Tabs from '../../../components/Tabs.astro';
 import YouTube from '../../../components/YouTube.astro';
 import media from '../../pfl/media.hs?raw';
 import pipeline from '../../pfl/p3pipeline.typ?raw';
+import Bracket from '../../../components/Bracket.astro';
 
 `soma 5` pode ser usada como uma função que acrescenta cinco ao próximo argumento. Isto acontece porque `soma :: Int -> Int -> Int` recebe um inteiro e devolve uma função `Int -> Int`. Esta forma de representar vários argumentos chama-se **currying**. Uma função de **ordem superior** recebe ou devolve uma função; `map`, por exemplo, recebe a transformação a aplicar a cada elemento.
 
@@ -54,13 +56,9 @@ foldr  :: (a -> b -> b) -> b -> [a] -> b
 
 `map` transforma cada elemento, `filter` conserva os que passam no teste e `foldr` substitui a estrutura da lista por aplicações de uma operação, associadas à direita. A associação não obriga a avaliar primeiro a cauda. `sum` é `foldr (+) 0` e `length` é `foldr (\_ n -> n + 1) 0`. Quando o problema for "transformar cada um", "ficar só com alguns" ou "resumir tudo", começa por estas antes de escreveres recursão à mão.
 
-### `Maybe` e `case` antes da média
-
-`Maybe a` tem dois construtores: `Nothing` para ausência e `Just x` para presença. A expressão `case` escolhe a equação pelo construtor, como os padrões das funções. A página de tipos algébricos desenvolve este tipo; aqui basta este contrato para ler a média.
-
 ## Média das aprovações
 
-Dada uma pauta, queremos calcular a média das notas de aprovação. As notas podem ter parte decimal, por isso usamos `[Double]`. O resultado é `Maybe Double`, porque uma pauta sem aprovações não tem essa média.
+Dada uma pauta, queremos calcular a média das notas de aprovação. As notas podem ter parte decimal, por isso usamos `[Double]`. O resultado é `Maybe Double`, porque uma pauta sem aprovações não tem essa média; `Maybe a` tem dois construtores, `Nothing` para ausência e `Just x` para presença, e a expressão `case` escolhe a equação pelo construtor, como os padrões das funções.
 
 ```haskell
 mediaAprovados :: [Double] -> Maybe Double
@@ -69,9 +67,7 @@ mediaAprovados notas = case filter (>= 9.5) notas of
   xs -> Just (sum xs / fromIntegral (length xs))
 ```
 
-Em `[8,12,6,15,10]`, `filter` conserva `[12,15,10]`. A soma é `37` e o comprimento é `3`, dando `Just 12.333333333333334`, porque a soma já é `Double` e só precisamos de converter o comprimento, que é `Int`. Com `[2,7]`, o filtro produz `[]` e o resultado é `Nothing`.
-
-Podes usar `where` para dar nome a etapas intermédias. Nesta versão usamos `case` para tratar as duas formas do resultado do filtro.
+Em `[8,12,6,15,10]`, `filter` conserva `[12,15,10]`. A soma é `37` e o comprimento é `3`, dando `Just 12.333333333333334`, porque a soma já é `Double` e só precisamos de converter o comprimento, que é `Int`. Com `[2,7]`, o filtro produz `[]` e o resultado é `Nothing`. Podes usar `where` para dar nome a etapas intermédias, enquanto esta versão usa `case` para tratar as duas formas do resultado do filtro.
 
 <Typst
   source={pipeline}
@@ -184,4 +180,28 @@ Haskell só exige um resultado intermédio quando precisa dele. `take 3 [1..]` p
 
 `foldl` pode acumular uma cadeia de expressões por avaliar. `foldl'` de `Data.List` força o acumulador a cada passo até à forma normal fraca. É útil para somas grandes, mas não força necessariamente o interior de uma árvore ou de um tuplo. Distingue associatividade da operação, ordem de avaliação e custo em memória.
 
-A igualdade de resultados num fold finito depende da operação e do valor inicial. A terminação de um fold infinito depende ainda de quanto resultado essa operação exige.
+<Bracket label="Ideia-chave">
+
+A igualdade de resultados num fold finito depende da operação e do valor inicial. A terminação de um fold infinito depende ainda de quanto resultado essa operação exige. Associar à direita não significa começar por avaliar o fim da lista: em `False && resto`, o resultado já está decidido sem pedir `resto`.
+
+</Bracket>
+
+## Contar um intervalo numa lista infinita ordenada
+
+Queremos os primos entre 10 e 30, incluindo as fronteiras. A lista de primos está em ordem crescente. Primeiro retiramos os que são menores que 10; depois conservamos só o prefixo até 30:
+
+```haskell
+intervalo inicio fim = takeWhile (<= fim) . dropWhile (< inicio)
+```
+
+O resultado é `[11,13,17,19,23,29]`, com seis elementos. `dropWhile` chega ao primeiro primo admissível, 11. `takeWhile` para ao observar 31; pela ordenação, nenhum dos primos posteriores pode voltar ao intervalo. Assim, `length` só percorre a lista finita que acabou de ser delimitada.
+
+<CodePlayground
+  language="haskell"
+  title="Delimitar antes de contar os primos"
+  code={intervaloPrimos}
+/>
+
+`length (filter (\p -> 10 <= p && p <= 30) primos)` não termina: depois de 29, o filtro continua a procurar para sempre outro elemento que passe. Mesmo produzindo os seis elementos iniciais corretos, não consegue devolver o fim da lista. `take 30` também responderia a outra pergunta: conta posições, não valores.
+
+A ordenação é uma hipótese essencial. Numa lista arbitrária, parar no primeiro valor acima de 30 poderia perder um valor menor que aparecesse depois. Numa entrada infinita, precisamos também de alcançar a fronteira de paragem em passos finitos; uma lista infinita de 20 não a tem. Para listas finitas ordenadas, o fim da própria lista também permite terminar.

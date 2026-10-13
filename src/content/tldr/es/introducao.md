@@ -5,7 +5,7 @@
 - **Qualidade:** satisfazer as necessidades nas condições de uso previstas, incluindo funcionalidade, desempenho, fiabilidade, segurança, usabilidade e manutenção.
 - **Custo do ciclo de vida:** desenvolvimento, operação, correção e evolução. Poupar na implementação pode aumentar o suporte; abstrações sem necessidade também custam manutenção.
 
-Uma confirmação imediata no ecrã não tem qualidade se o servidor recusar depois a reserva. Mede o desempenho do comportamento correto.
+- Uma confirmação imediata no ecrã não tem qualidade se o servidor recusar depois a reserva; mede o desempenho do comportamento correto.
 
 ## Complexidade e coordenação
 

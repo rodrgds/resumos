@@ -14,6 +14,17 @@ $$
 - O denominador normaliza o fator vertical para valer 1 no topo.
 - Para $a=b=1$, $f=1$, $B_n=4/(n\pi)$ nos ímpares e zero nos pares. Os cantos superiores têm dados incompatíveis, 0 e 1; a solução não se prolonga continuamente a esses cantos. Os dados aplicam-se aos lados abertos.
 
+## Dados na base e no topo
+
+Com base $g$, topo $f$ e lados verticais a zero, expande ambos em senos com coeficientes $G_n$ e $F_n$. Usa $u=\sum Y_n(y)\sin(\omega_nx)$, onde
+
+$$
+Y_n(y)=G_n\frac{\sinh(\omega_n(b-y))}{\sinh(\omega_nb)}
++F_n\frac{\sinh(\omega_ny)}{\sinh(\omega_nb)}.
+$$
+
+O primeiro fator vale 1 na base e 0 no topo; o segundo faz o contrário. A linearidade permite somar as soluções dos dois problemas.
+
 ## Neumann e modo constante
 
 Se os lados verticais continuam a zero mas a base passa a $u_y(x,0)=0$, troca o fator vertical por
@@ -23,6 +34,13 @@ $$
 $$
 
 A derivada é zero na base; os coeficientes de senos do mesmo dado superior não mudam.
+
+Para os mesmos lados verticais a zero:
+
+| Base    | Escolha em $y$ antes de normalizar no topo |
+| ------- | ------------------------------------------ |
+| $u=0$   | $\sinh(\omega_n y)$                        |
+| $u_y=0$ | $\cosh(\omega_n y)$                        |
 
 Se os lados verticais forem isolados, $u_x(0,y)=u_x(a,y)=0$, usa cossenos e inclui $n=0$. Para $u(x,0)=x$, $u(x,b)=0$:
 

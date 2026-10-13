@@ -69,6 +69,4 @@ Queremos comparar o tempo dos algoritmos A e B em tarefas de uma população def
 
 A unidade do par é uma tarefa. A variável de análise é $D=T_A-T_B$: um valor positivo favorece B. Existem 20 diferenças, não 40 observações independentes. A variação entre tarefas fica parcialmente removida pela comparação dentro de cada tarefa.
 
-Se A fosse executado nas tarefas pequenas e B nas grandes, o tamanho da tarefa seria um fator perturbador. Se usássemos 20 tarefas diferentes para cada algoritmo, teríamos dois grupos independentes, com outra fórmula para o erro padrão.
-
-No relatório, descreve a população de tarefas, a seleção e as condições de execução. Uma diferença de tempos numa única máquina não justifica uma conclusão sobre todos os equipamentos possíveis.
+Se A fosse executado nas tarefas pequenas e B nas grandes, o tamanho da tarefa seria um fator perturbador; se usássemos 20 tarefas diferentes para cada algoritmo, teríamos dois grupos independentes, com outra fórmula para o erro padrão. No relatório, descreve a população de tarefas, a seleção e as condições de execução, pois uma diferença de tempos numa única máquina não justifica uma conclusão sobre todos os equipamentos possíveis.

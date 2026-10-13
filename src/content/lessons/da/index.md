@@ -49,6 +49,7 @@ O primeiro projeto de 2025/26 trata a atribuição de revisores a artigos atrav�
 
 - [Ficha SIGARRA de 2025/26](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560101), programa, bibliografia e avaliação.
 - [Moodle de DA 2025/26](https://moodle2526.up.pt/course/view.php?id=5334), requer autenticação. Foram consultadas as apresentações das aulas 1 a 10, as fichas TP1 a TP10, os projetos e os testes de 2026. As apresentações identificam Pedro C. Diniz e copyright de 2026. Os exemplos e as resoluções destas páginas foram escritos de novo.
+- [Arquivo de DA no Accio](https://accio.pt/feup/L:EIC/desenho-de-algoritmos/L.EIC016), provas e apontamentos históricos. As provas identificadas como Spring 2025 foram conferidas com as cópias do Moodle; o arquivo inclui ainda materiais de CAL de 2020/21. Estes últimos são complementos históricos, não uma confirmação do programa atual.
 - Thomas H. Cormen e outros, _Introduction to Algorithms_, bibliografia obrigatória indicada na ficha. É a referência para as provas de grafos, programação dinâmica, reduções e otimização.
 
 O arquivo do Moodle inclui vídeos de apoio, mas a revisão destas páginas assenta nos documentos escritos. Não se presume que todos os vídeos foram vistos. A [ocorrência de 2026/27](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586994) ainda não tem informação suficiente para confirmar a equivalência do programa ou da avaliação.

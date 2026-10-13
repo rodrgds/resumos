@@ -7,13 +7,15 @@ practices:
   - fsc/praticar-procedimentos-pilha
 ---
 
-Chamar uma rotina exige guardar um endereço de retorno e acordar onde seguem os argumentos e o resultado. A convenção de chamadas também distingue os registos que a rotina pode alterar dos que tem de repor. Assim, o chamador pode continuar a execução sem conhecer todas as instruções da rotina chamada.
+import YouTube from '../../../components/YouTube.astro';
+
+Chamar uma rotina exige guardar um endereço de retorno e acordar onde seguem os argumentos e o resultado. A convenção de chamadas também distingue os registos que a rotina pode alterar dos que tem de repor, para que o chamador possa continuar a execução sem conhecer todas as instruções da rotina chamada.
 
 ## Chamar e voltar
 
 `jal ra,rotina` coloca o endereço da instrução seguinte em ra e muda o PC. `ret` equivale a `jalr zero,0(ra)`, por isso volta sem criar um novo endereço de retorno.
 
-Se a chamada estiver em `0x00400020`, ra recebe `0x00400024`. Uma rotina leaf não chama outras rotinas e pode usar esse ra diretamente para voltar. Uma non-leaf faz outra chamada que **sobrescreve ra**. Tem de preservar o retorno para o seu próprio chamador antes dessa chamada. Isto não contradiz ra ser caller-saved: é precisamente porque a chamada interior pode alterá-lo que a non-leaf guarda o valor de que ainda precisa.
+Se a chamada estiver em `0x00400020`, ra recebe `0x00400024`. Uma rotina leaf não chama outras rotinas e pode usar esse ra diretamente para voltar, enquanto uma non-leaf faz outra chamada que **sobrescreve ra** e tem de preservar o retorno para o seu próprio chamador antes dessa chamada. Isto não contradiz ra ser caller-saved: é precisamente porque a chamada interior pode alterá-lo que a non-leaf guarda o valor de que ainda precisa.
 
 ## Quem conserva o quê
 
@@ -39,7 +41,7 @@ Reserva primeiro, escreve depois; restaura os valores guardados e liberta exatam
 
 ## Exemplo non-leaf
 
-Queremos $f(x)=2(x+1)$. `dobro` é uma leaf que devolve $2x$. `mais_um_dobro` calcula x+1, chama dobro e devolve o resultado. Guarda ra porque a chamada interior o altera, e guarda s0 porque o usa.
+Queremos $f(x)=2(x+1)$. `dobro` é uma leaf que devolve $2x$; `mais_um_dobro` calcula x+1, chama dobro e devolve o resultado. Guarda ra porque a chamada interior o altera, e guarda s0 porque o usa.
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import callCode from '../../fsc/procedimentos.s?raw';
@@ -51,13 +53,16 @@ import cicloCode from '../../fsc/conta-alnum-ciclo.s?raw';
   title="Chamada non-leaf com preservação"
 />
 
-Ao entrar na non-leaf, o frame fica:
+Se $S$ é o sp recebido, reservar 16 bytes põe sp em $S-16$. Os offsets são relativos ao **novo sp**:
 
-| Offset relativo ao sp reservado | Conteúdo         |
-| ------------------------------- | ---------------- |
-| 12                              | ra recebido      |
-| 8                               | s0 recebido, 99  |
-| 0 a 7                           | Espaço não usado |
+| Endereço       | Offset no frame | Conteúdo                     |
+| -------------- | --------------- | ---------------------------- |
+| $S$            | Fora do frame   | Limite superior; sp recebido |
+| $S-4$          | 12(sp)          | Word com ra recebido         |
+| $S-8$          | 8(sp)           | Word com s0 recebido, 99     |
+| $S-16$ a $S-9$ | 0 a 7           | Espaço não usado             |
+
+O frame ocupa os 16 bytes de $S-16$ a $S-1$. Descer sp reserva endereços; não guarda automaticamente os registos.
 
 A rotina coloca 8 em s0 e passa esse valor em a0. A chamada a dobro modifica ra e produz o resultado em a0. O epílogo restaura s0 e ra sem alterar a0, liberta os 16 bytes e volta. Guardar ra **depois** do jal preservaria o retorno interior, não o retorno correto.
 
@@ -83,8 +88,29 @@ O programa completo testa `"A7"` e imprime 2:
 
 s0 e s1 sobrevivem a cada `jal` porque `is_alnum` respeita os registos callee-saved; esta implementação usa apenas a0 e t1. Por sua vez, `conta_alnum` guardou no seu frame os valores de s0 e s1 recebidos de `main` e repõe-nos no fim. Preservar o estado do ciclo e preservar o estado do chamador são obrigações em níveis diferentes.
 
+## Validar com saída antecipada
+
+Contar alfanuméricos percorre todo o texto. Para saber se **todos** os bytes são alfanuméricos, basta encontrar um que não seja: nesse caso devolvemos 0 imediatamente. Só devolvemos 1 quando chegamos ao terminador sem encontrar um erro.
+
+Adotamos um contrato explícito: a0 recebe o endereço de uma string ASCII terminada em zero, com memória válida até esse terminador. A auxiliar `is_alnum` recebe um byte em a0 e devolve exatamente 0 ou 1, respeitando a ABI. A string vazia devolve 1, pois não contém nenhum byte inválido. Se a aplicação exigir pelo menos um carácter, deve rejeitar o terminador inicial num teste separado.
+
+Antes de cada leitura, s0 aponta para o próximo byte e todos os anteriores já passaram na auxiliar. Não precisamos de um contador. Precisamos de conservar s0 entre chamadas, preservar o s0 recebido e guardar o retorno exterior em ra.
+
+import CodeSnippet from '../../../components/CodeSnippet.astro';
+import validaCode from '../../fsc/validar-alnum.s?raw';
+
+<CodeSnippet language="riscv" code={validaCode} />
+
+O trecho define apenas a rotina; a auxiliar tem o contrato indicado acima. Em `A7`, chama-a com 65 e 55, depois encontra zero e devolve 1. Em `A-7`, chama-a com 65 e 45; a segunda chamada devolve 0 e o programa sai sem ler o `7`. A string vazia termina sem chamadas à auxiliar.
+
+Os ramos de sucesso e de erro passam pelo mesmo epílogo. Assim ambos restauram s0, ra e sp, sem substituir o resultado em a0. Guardar o apontador apenas em a0 perderia esse endereço na primeira chamada, porque a0 passa a conter o resultado da auxiliar.
+
 ## Chamadas dentro de ciclos e recursão
 
 Cada chamada recursiva necessita do seu próprio frame para os argumentos ou resultados parciais que ainda vai usar. Não guardes o estado de todas as chamadas numa única variável global. Define primeiro o caso base para que a recursão termine; depois verifica que cada caminho tem um epílogo correto.
 
 Os `ecall` de impressão e saída pertencem ao ambiente RARS: a7=1 imprime o inteiro de a0, a7=11 imprime um carácter e a7=10 termina. Não substituem a convenção de chamadas entre rotinas e não são serviços portáveis para qualquer sistema operativo.
+
+Para retomar a relação entre a pilha e sp, podes consultar Rodrigo Dias:
+
+<YouTube id="X0CYxBFVQh4" title="Percebe a Stack e Stack Pointer em RISC-V" />

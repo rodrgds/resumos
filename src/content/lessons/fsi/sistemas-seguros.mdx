@@ -26,12 +26,15 @@ editorial:
       url: https://docs.docker.com/engine/security/
     - title: 'Microsoft, Secure Boot, Trusted Boot e Measured Boot'
       url: https://learn.microsoft.com/en-us/windows/security/operating-system-security/system-security/secure-the-windows-10-boot-process
+    - title: Linux man-pages, seccomp(2)
+      url: https://man7.org/linux/man-pages/man2/seccomp.2.html
   coverage: 'Privilégio mínimo, memória e isolamento, Android, containers, seccomp, TPM e mediação.'
   gaps:
     - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
 ---
 
 import Dot from '../../../components/Dot.astro';
+import Bracket from '../../../components/Bracket.astro';
 import camadas from '../../fsi/camadas.dot?raw';
 import isolamento from '../../fsi/isolamento.dot?raw';
 
@@ -39,7 +42,7 @@ Uma aplicação de notas não deve dar à conta que consulta pautas o poder de m
 
 ## Princípios de construção
 
-Começa por um caso: a conta de consulta só precisa de ler a sua pauta durante o semestre. Privilégio mínimo pergunta se retiramos a escrita e o acesso depois do prazo. Negar por defeito pergunta se um pedido novo é recusado sem regra explícita. Mediação completa pergunta se existe algum caminho que contorna a verificação. Os princípios de Saltzer e Schroeder ajudam a avaliar um desenho:
+A conta de consulta só precisa de ler a sua pauta durante o semestre: privilégio mínimo pergunta se retiramos a escrita e o acesso depois do prazo; negar por defeito pergunta se um pedido novo é recusado sem regra explícita; mediação completa pergunta se existe algum caminho que contorna a verificação. Os princípios de Saltzer e Schroeder ajudam a avaliar um desenho:
 
 | Princípio                 | Pergunta a fazer                                                           |
 | ------------------------- | -------------------------------------------------------------------------- |
@@ -84,6 +87,8 @@ Permissões pedidas no manifesto e consentimento do utilizador regulam capacidad
 
 Um container Linux típico partilha o kernel do anfitrião. Namespaces separam vistas de recursos, por exemplo cada container vê os seus próprios processos. Cgroups contabilizam e limitam recursos, por exemplo memória e CPU. As Linux capabilities e políticas de acesso limitam autoridade, por exemplo retirar o poder de montar sistemas de ficheiros. Uma máquina virtual tem o seu próprio kernel convidado e comunica com hardware virtual através do hipervisor. Ambas dependem de componentes privilegiados e de configuração correta.
 
+Um hipervisor de tipo 1 executa diretamente sobre o hardware; um de tipo 2 depende de um sistema anfitrião. Esta classificação descreve a organização, não garante ausência de vulnerabilidades ou canais laterais. O isolamento de uma VM continua a depender do hipervisor e dos dispositivos expostos.
+
 <Dot
   source={isolamento}
   alt="Dois containers usam o mesmo kernel do anfitrião. Numa máquina virtual, aplicações usam um kernel convidado, que depende do hipervisor. As duas estruturas têm fronteiras distintas."
@@ -92,6 +97,12 @@ Um container Linux típico partilha o kernel do anfitrião. Namespaces separam v
 **Seccomp-BPF** permite decidir sobre chamadas de sistema usando o número, arquitetura e argumentos disponíveis ao filtro. Pode devolver erro, terminar o processo ou aplicar outras ações previstas. Não interpreta livremente o conteúdo dos ponteiros fornecidos: uma regra sobre o número da chamada não verifica o texto de um caminho.
 
 Por exemplo, um conversor que não precisa de criar processos pode ter uma política que bloqueia essa chamada. Se uma vulnerabilidade tentar usá-la, o filtro limita esse caminho. Ainda são necessários limites de ficheiros, memória, rede e acesso, porque seccomp reduz superfície exposta do kernel e sozinho não é uma sandbox completa. Um container privilegiado, um volume sensível montado ou acesso ao controlo do runtime pode anular a separação pretendida.
+
+### Interposição e isolamento por software
+
+**System Call Interposition**, ou SCI, medeia chamadas de sistema para observar ou limitar operações. O filtro seccomp é um exemplo. A decisão de negar uma chamada pode limitar efeitos de código comprometido, mas não verifica automaticamente todas as leituras e escritas que esse código faz dentro da sua memória.
+
+**Software Fault Isolation**, ou SFI, restringe código de um domínio, por exemplo instrumentando acessos e desvios para os manter na região permitida. Atua na execução do código, em vez de depender apenas de filtrar chamadas ao kernel. SCI e SFI podem complementar-se: manter um acesso em determinada região não autoriza abrir qualquer ficheiro, e negar uma chamada não torna válido um acesso fora dos limites de um buffer.
 
 ## Arranque verificado, medições e TPM
 
@@ -125,7 +136,11 @@ Duas verificações que usam a mesma condição errada não são duas defesas in
 
 Um **monitor de referência** é o modelo de um mecanismo que decide acessos entre sujeitos e objetos. Tem de mediar os acessos relevantes, resistir a alterações não autorizadas e ser suficientemente simples para permitir análise. O código e componentes de que a proteção depende formam a **base de computação confiável**, ou TCB.
 
+<Bracket label="Ideia-chave">
+
 "Confiável" aqui significa que a segurança depende de o componente funcionar corretamente. Não é um elogio nem uma prova de que foi verificado. Reduzir a TCB reduz o que precisamos de analisar.
+
+</Bracket>
 
 Suponhamos que a interface esconde o botão "Alterar nota", mas o servidor aceita `POST /notas/42` de qualquer conta. O botão não é um monitor eficaz, porque o atacante envia o pedido diretamente. A verificação pertence ao servidor, junto da operação protegida.
 

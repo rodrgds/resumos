@@ -56,6 +56,7 @@ As apresentações de Silberschatz identificam a 10.ª edição, de 2018; `os252
 - Kernighan e Pike, _The Practice of Programming_, para programação e tratamento de erros.
 - Arpaci-Dusseau e Arpaci-Dusseau, [_Operating Systems: Three Easy Pieces_](https://pages.cs.wisc.edu/~remzi/OSTEP/), complemento para virtualização, concorrência e persistência.
 - [Linux man-pages](https://man7.org/linux/man-pages/), referência de argumentos, retornos e erros das funções. Consulta `SYNOPSIS` para saber os cabeçalhos necessários.
+- [Documentação do VFS no núcleo Linux](https://docs.kernel.org/filesystems/vfs.html), para a interface comum e o encaminhamento para cada sistema de ficheiros.
 - Documentação do núcleo Linux sobre [CFS](https://docs.kernel.org/scheduler/sched-design-CFS.html) e [EEVDF](https://docs.kernel.org/scheduler/sched-eevdf.html), para distinguir os modelos estudados da evolução do escalonador real.
 
 As explicações e os exercícios foram escritos para estas páginas. Os resumos históricos SofiaViP são referências complementares, não a autoridade para a avaliação atual. As notas de erros orientaram os casos de prática, mas afirmações sobre APIs foram conferidas com a sua documentação: abrir um ficheiro duas vezes é permitido, e cada abertura pode ter uma posição independente.

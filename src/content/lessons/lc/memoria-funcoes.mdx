@@ -5,6 +5,13 @@ section: conteudo
 order: 2
 practices:
   - lc/praticar-memoria
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Provas e guiões históricos de LC, adaptações com hipóteses explícitas
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-computadores/L.EIC018
+  gaps:
+    - Não confirma matéria ou critérios de avaliação de 2026/27.
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
@@ -118,6 +125,29 @@ struct event {
 Se `kind == MOVE_EVENT`, interpreta `data.move`. Não uses `data.key` para descobrir automaticamente a alternativa. Esta estrutura chama-se **tagged union** e evita reservar os dados de todos os eventos ao mesmo tempo.
 
 Uma estrutura de um protocolo ou da BIOS pode exigir uma disposição exata. Nesses casos, o apoio da cadeira usa estruturas empacotadas. Isso pode criar campos desalinhados e é dependente do compilador. Não envies uma `struct` C crua pela UART: padding, endianness e tamanhos podem mudar. Serializa cada campo num formato definido.
+
+### Calcular o tamanho com alinhamento
+
+Suponhamos uma ABI em que `char` tem tamanho e alinhamento 1, `short` tem tamanho e alinhamento 2, e `int` tem tamanho e alinhamento 4. São hipóteses explícitas do exemplo; dizer apenas «máquina de 32 bits» não fixa todas as regras de C.
+
+```c
+struct separados { char texto[10]; int numero; short codigo; };
+union alternativas { char texto[10]; int numero; short codigo; };
+```
+
+Na estrutura, o array ocupa os offsets 0 a 9. O inteiro precisa de começar num múltiplo de 4, por isso ficam dois bytes de padding e `numero` começa em 12. Depois dos seus quatro bytes, `codigo` começa em 16 e termina em 17. O alinhamento da estrutura é 4; o tamanho tem de permitir que o objeto seguinte num array comece também alinhado. Dois bytes finais levam o total a **20**.
+
+| Campo ou espaço         | Offset | Bytes |
+| ----------------------- | -----: | ----: |
+| texto                   |      0 |    10 |
+| Padding antes de numero |     10 |     2 |
+| numero                  |     12 |     4 |
+| codigo                  |     16 |     2 |
+| Padding final           |     18 |     2 |
+
+Na union, as alternativas começam no offset 0 e partilham armazenamento. A maior exige 10 bytes, mas o alinhamento é 4: arredondar o tamanho para um múltiplo de 4 dá **12**, não 10 nem a soma 16. Três unions num array ocupam 36 bytes; três estruturas ocupam 60.
+
+Confere a ABI concreta com `sizeof`, `_Alignof` e `offsetof`, de `<stddef.h>`. Não uses este cálculo para serializar diretamente uma estrutura ou adivinhar o formato de um registo: o contrato externo pode exigir outra disposição.
 
 ## Filas e tipos genéricos
 

@@ -6,6 +6,12 @@ section: conteudo
 practices:
   - c/praticar-codigo-intermedio
 order: 6
+editorial:
+  sources:
+    - title: 'Segundo teste, 3/6/2024, dominadores'
+      url: https://accio.pt/uploads/contributions/RGSPYVA7VWA.pdf
+  gaps:
+    - Fonte histórica de apoio; não confirma o enunciado ou a profundidade da edição de 2026/27.
 ---
 
 import Dot from '../../../components/Dot.astro';
@@ -80,7 +86,11 @@ Os dois lados avaliam-se sempre e o `&&` vira uma operação sobre booleanos. Ma
   </div>
 </Tabs>
 
-Os temporários `t1` e `t2` guardam resultados booleanos intermédios que na árvore estavam escondidos dentro da condição.
+Os temporários `t1` e `t2` guardam resultados booleanos intermédios que na árvore estavam escondidos dentro da condição; no grafo, cada teste vive no seu próprio bloco para que um salto possa sair a meio da condição.
+
+:::warning[O mesmo booleano final pode esconder uma execução errada]
+Em `d != 0 && n / d > 2`, com `d = 0`, o curto-circuito dá falso sem executar a divisão. Calcular primeiro os dois operandos tentaria dividir por zero. Preservar a condição exige preservar também quais operações se executam e em que ordem, não apenas o resultado quando ambas terminam.
+:::
 
 ## Blocos básicos e grafo de fluxo
 
@@ -106,16 +116,14 @@ Numeramos as operações e incluímos uma linha final de saída para este exempl
 | 5     | Depois do salto condicional da linha 4  | B3 = {5, 6, 7}  |
 | 8     | Destino dos dois saltos de saída        | B4 = {8}, saída |
 
-O **grafo de fluxo** liga os blocos pelas continuações possíveis. B1 segue para B2 se `a < b` for verdadeira ou para B4 se for falsa. B2 decide entre B3 e B4. B3 regressa a B1 pelo salto incondicional; não cai em B4.
+O **grafo de fluxo** liga os blocos pelas continuações possíveis. B1 segue para B2 se `a < b` for verdadeira ou para B4 se for falsa; B2 decide entre B3 e B4, enquanto B3 regressa a B1 pelo salto incondicional sem cair em B4. Nas arestas, V significa condição verdadeira e F condição falsa, por isso cada caminho do grafo descreve uma execução possível do `while`, com zero, uma ou várias iterações.
 
 <Dot
   source={fluxo}
   alt="Grafo de fluxo do exemplo: B1 liga a B2 e B4, B2 liga a B3 e B4, B3 volta a B1."
 />
 
-V significa condição verdadeira e F condição falsa. Cada caminho do grafo descreve uma execução possível do `while`, com zero, uma ou várias iterações.
-
-Segue a passagem da árvore para instruções, blocos e grafo de fluxo: observa como cada líder começa um bloco e como as arestas ligam os blocos antes de aplicares a regra abaixo.
+O segundo vídeo segue a partição em blocos e a construção do grafo: observa como cada líder começa um bloco e como as arestas ligam os blocos antes de aplicares a regra abaixo.
 
 <YouTube
   id="EPbQ3nKXMSY"
@@ -135,6 +143,33 @@ O programa abaixo aplica a regra dos líderes às mesmas oito instruções.
 :::tip[Como partir sem errar]
 Sublinha primeiro todos os rótulos destino e todos os saltos. Cada líder é mecânico: primeira linha, destino, depois de salto. Só depois agrupa, porque o erro típico é pôr um destino de salto a meio de um bloco.
 :::
+
+## Dominância e ciclos naturais
+
+Um bloco d **domina** um bloco b quando todos os caminhos desde a entrada até b passam por d. Cada bloco domina-se a si próprio. A definição fala de caminhos do grafo, não da posição vertical no desenho nem de uma execução escolhida.
+
+Retira primeiro blocos inacessíveis. Para a entrada e, fixa `DOM[e] = {e}`. Nos restantes blocos, combina os dominadores dos antecessores por interseção:
+
+```text
+DOM[b] = {b} ∪ interseção de DOM[p], para cada antecessor p
+```
+
+Começa os restantes conjuntos com todos os blocos alcançáveis e repete até estabilizar. A interseção exige que um dominador esteja presente em **todos** os caminhos de entrada; usar união aceitaria blocos que aparecem apenas num ramo.
+
+No grafo do while anterior, B1 é a entrada; B1 vai a B2 ou B4, B2 vai a B3 ou B4, e B3 regressa a B1. Os conjuntos são:
+
+| Bloco | Dominadores | Dominador imediato |
+| ----- | ----------- | ------------------ |
+| B1    | B1          | Nenhum             |
+| B2    | B1, B2      | B1                 |
+| B3    | B1, B2, B3  | B2                 |
+| B4    | B1, B4      | B1                 |
+
+B2 domina B3 porque não há outro caminho para o corpo. Não domina B4: o caminho B1→B4 sai antes do segundo teste. O **dominador imediato** é o dominador estrito mais próximo; estas relações formam uma árvore com B1 na raiz.
+
+Uma aresta n→h é uma aresta de regresso para um **ciclo natural** quando h domina n. Aqui B3→B1 satisfaz a condição. Para encontrar o ciclo, começa com cabeçalho B1 e origem B3, e segue antecessores a partir de B3 até chegar ao cabeçalho, sem continuar para fora dele. Obténs B1, B2 e B3. B4 é saída, não pertence ao ciclo.
+
+Ciclos com várias entradas podem não ter um único cabeçalho dominante. Uma seta que aponta para cima no desenho, por si só, não prova esta condição. A dominância ajuda também a justificar se uma definição está num ponto que todas as execuções de um uso têm de atravessar.
 
 ## Blocos e instruções do alvo
 

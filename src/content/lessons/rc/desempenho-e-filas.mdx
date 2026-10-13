@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Delay Models, slides disponibilizados no Moodle 2026/27
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33682
@@ -23,18 +23,19 @@ editorial:
 ---
 
 import Filas from '../../rc/Filas.astro';
+import Bracket from '../../../components/Bracket.astro';
 
-Um pacote de 1500 bytes precisa de 1,2 ms para entrar numa ligação de 10 Mbit/s. Pode esperar muito mais do que isso pela sua vez. O débito mede bits por segundo; o atraso mede quanto tempo o pacote demora. Aumentar o primeiro não elimina propagação nem espera.
+Um pacote de 1500 bytes precisa de 1,2 ms para entrar numa ligação de 10 Mbit/s, mas pode esperar muito mais do que isso pela sua vez. O débito mede bits por segundo e o atraso mede quanto tempo o pacote demora; aumentar o primeiro não elimina propagação nem espera.
 
 ## Atraso de um salto
 
 $$d=d_{proc}+d_{fila}+\frac{L}{R}+\frac{D}{v}.$$
 
-$d_{proc}$ mede processamento e $d_{fila}$ mede espera pela saída. $L$ é o comprimento do pacote, $R$ o débito da ligação, $D$ a distância e $v$ a velocidade de propagação. $L/R$ é o tempo de **transmissão**, até sair o último bit. $D/v$ é o tempo de **propagação**, até um bit atravessar a distância. Usa bits e bit/s na primeira fração, metros e m/s na segunda.
+$d_{proc}$ mede processamento e $d_{fila}$ mede espera pela saída; $L$ é o comprimento do pacote, $R$ o débito da ligação, $D$ a distância e $v$ a velocidade de propagação. $L/R$ é o tempo de **transmissão**, até sair o último bit, e $D/v$ é o tempo de **propagação**, até um bit atravessar a distância. Usa bits e bit/s na primeira fração, metros e m/s na segunda.
 
 **Exemplo.** Pacote de 1500 bytes, ligação de 10 Mbit/s, distância de 100 km e velocidade $2\times10^8$ m/s. Transmissão $12000/10^7=1{,}2$ ms; propagação $10^5/(2\times10^8)=0{,}5$ ms. Sem fila nem processamento, o último bit chega em 1,7 ms.
 
-Com três ligações store-and-forward de 10, 20 e 5 Mbit/s, a transmissão de um pacote soma $1{,}2+0{,}6+2{,}4=4{,}2$ ms. Acrescenta a propagação de **cada** ligação. Para muitos pacotes, existe paralelismo; não multipliques o atraso do primeiro pelo número de pacotes.
+Com três ligações store-and-forward de 10, 20 e 5 Mbit/s, a transmissão de um pacote soma $1{,}2+0{,}6+2{,}4=4{,}2$ ms; acrescenta a propagação de **cada** ligação. Para muitos pacotes, existe paralelismo, por isso não multipliques o atraso do primeiro pelo número de pacotes.
 
 ## Débito e bits em trânsito
 
@@ -50,7 +51,11 @@ Num sistema estável, a média presente $N$ satisfaz:
 
 $$N=\lambda T.$$
 
-$\lambda$ é a taxa efetiva de entradas e $T$ o tempo médio no sistema. É uma relação entre médias, por isso não exige Poisson. Aplica a mesma fronteira a tudo: **fila** exclui serviço, **sistema** inclui-o.
+<Bracket label="Ideia-chave">
+
+Em $N=\lambda T$, as três médias referem-se à **mesma fronteira**: fila exclui serviço, sistema inclui-o. $\lambda$ conta os pacotes que entram nessa fronteira, $T$ o tempo que lá passam e $N$ quantos lá estão. Little não exige Poisson; se houver rejeições antes da entrada, usa a taxa admitida, não a oferecida.
+
+</Bracket>
 
 Se chegam 200 pacotes/s e cada pacote passa em média 30 ms no sistema, $N=200\times0{,}03=6$ pacotes. Se a fila admite perdas, a taxa admitida pode diferir da taxa oferecida.
 
@@ -64,7 +69,7 @@ $$P(A(t)=k)=e^{-\lambda t}\frac{(\lambda t)^k}{k!}.$$
 
 A taxa $\lambda=20$ pacotes/s não significa que chegue um pacote exatamente a cada 50 ms. Num intervalo de 0,1 s, a contagem média é $\lambda t=2$, mas a probabilidade de zero chegadas é $e^{-2}\approx0,1353$. A probabilidade de pelo menos uma é $1-e^{-2}\approx0,8647$.
 
-As contagens em intervalos sem sobreposição são independentes. Os tempos entre chegadas são exponenciais, de média $1/\lambda$. Uma sequência regularmente espaçada com a mesma taxa não tem essas propriedades. A notação de Kendall distingue o processo de chegada, o tempo de serviço e o número de servidores; as letras do modelo seguinte fixam hipóteses diferentes para chegada e serviço.
+As contagens em intervalos sem sobreposição são independentes e os tempos entre chegadas são exponenciais, de média $1/\lambda$. Uma sequência regularmente espaçada com a mesma taxa não tem essas propriedades. A notação de Kendall distingue o processo de chegada, o tempo de serviço e o número de servidores; as letras do modelo seguinte fixam hipóteses diferentes para chegada e serviço.
 
 ## M/M/1: hipóteses e fórmulas
 
@@ -73,21 +78,37 @@ O modelo assume chegadas Poisson de taxa $\lambda$, serviço exponencial de taxa
 $$T=\frac1{\mu-\lambda},\qquad T_q=\frac{\rho}{\mu-\lambda},$$
 $$N=\frac{\rho}{1-\rho},\qquad N_q=\frac{\rho^2}{1-\rho}.$$
 
-$T$ e $N$ incluem o serviço; $T_q$ e $N_q$ contam só a fila. Assim, $T=T_q+1/\mu$ e $N=N_q+\rho$. O servidor está ocupado uma fração $\rho$ do tempo; $P(N_{sistema}=n)=(1-\rho)\rho^n$.
+$T$ e $N$ incluem o serviço; $T_q$ e $N_q$ contam só a fila, logo $T=T_q+1/\mu$ e $N=N_q+\rho$. O servidor está ocupado uma fração $\rho$ do tempo; $P(N_{sistema}=n)=(1-\rho)\rho^n$.
 
 **Exemplo.** Comprimento médio de 1000 bytes e ligação de 1 Mbit/s dão serviço médio de 8 ms, logo $\mu=125$ pacotes/s. Para $\lambda=100$, $\rho=0{,}8$, $T=40$ ms, $T_q=32$ ms, $N=4$ e $N_q=3{,}2$. O comprimento precisa de variar de forma compatível com o serviço exponencial para este modelo ser literal.
 
-Se multiplicares $\lambda$ e $\mu$ por dez, a carga e $N$ mantêm-se, mas os tempos dividem-se por dez. Se aumentares só $\lambda$ até $\mu$, as médias divergem. Uma fila real finita perde pacotes em vez de guardar uma quantidade infinita.
+Se multiplicares $\lambda$ e $\mu$ por dez, a carga e $N$ mantêm-se mas os tempos dividem-se por dez. Se aumentares só $\lambda$ até $\mu$, as médias divergem. Uma fila real finita perde pacotes em vez de guardar uma quantidade infinita.
 
 ### Equilíbrio dos estados
 
-O estado $n$ conta pacotes no sistema, incluindo serviço. Uma chegada faz passar de $n$ a $n+1$ à taxa $\lambda$; uma conclusão faz passar de $n+1$ a $n$ à taxa $\mu$. Em equilíbrio:
+O estado $n$ conta pacotes no sistema, incluindo serviço. Uma chegada faz passar de $n$ a $n+1$ à taxa $\lambda$ e uma conclusão faz passar de $n+1$ a $n$ à taxa $\mu$; em equilíbrio:
 
 $$\lambda p_n=\mu p_{n+1}\quad\Rightarrow\quad p_{n+1}=\rho p_n.$$
 
-Assim $p_n=\rho^n p_0$. A normalização exige $\sum_{n=0}^{\infty}p_n=p_0/(1-\rho)=1$, logo $p_0=1-\rho$. É aqui que precisamos de $\rho<1$: sem essa condição, a soma geométrica não pode dar uma distribuição estacionária.
+Assim $p_n=\rho^n p_0$. A normalização exige $\sum_{n=0}^{\infty}p_n=p_0/(1-\rho)=1$, logo $p_0=1-\rho$. É aqui que precisamos de $\rho<1$, pois sem essa condição a soma geométrica não pode dar uma distribuição estacionária.
 
 No exemplo de carga 0,8, $p_0=0,2$ e $p_1=0,16$. O servidor pode estar livre 20% do tempo e ainda haver espera: chegadas aleatórias não se distribuem uniformemente pelos instantes livres. Numa D/D/1 com serviço constante e chegadas regularmente espaçadas por um intervalo maior que o serviço, um sistema inicialmente vazio não acumula espera.
+
+### Fila vazia e servidor ocioso
+
+Com nenhum pacote à espera, o servidor pode estar ocioso **ou** a transmitir um único pacote. Em M/M/1 estável:
+
+$$P(N_q=0)=p_0+p_1=1-\rho^2.$$
+
+Para $\rho=0,8$, o sistema inteiro está vazio com probabilidade 0,2, mas a fila de espera está vazia com probabilidade $0,2+0,16=0,36$. A palavra «fila» pode designar informalmente todo o sistema num enunciado; indica sempre se a contagem inclui serviço antes de escolher $p_0$.
+
+### Chegadas periódicas e perdas
+
+Um pacote de 1000 bytes demora 4 ms numa ligação de 2 Mbit/s. Se o agregado chegar exatamente a cada 5 ms, o serviço termina antes da chegada seguinte. Partindo vazio, não há espera nem perdas, mesmo com capacidade total para apenas um pacote.
+
+A taxa é 200 pacotes/s e a carga 0,8. Com a mesma taxa média, mas chegadas Poisson e serviço exponencial, uma M/M/1/B de capacidade total um tem estados 0 e 1. O bloqueio é $p_1=\rho/(1+\rho)=4/9$, cerca de 44,44%. Não se pode transferir esse valor para as chegadas periódicas.
+
+A regularidade precisa de valer para o **agregado**. Quatro fontes que enviem cada uma a cada 20 ms podem estar alinhadas e entregar quatro pacotes simultaneamente. Com um lugar total, só um entra em cada grupo e três perdem-se, embora a taxa agregada continue a ser 200 pacotes/s. Média e carga iguais não fixam a distribuição das chegadas.
 
 ## M/D/1 não é M/M/1
 
@@ -108,7 +129,7 @@ Se reservarmos metade da capacidade para cada fonte, cada fila recebe 40 pacotes
 | Fila comum, capacidade inteira           | 8 ms          | $1/(125-80)=22,22$ ms  |
 | Uma fila por fonte, metade da capacidade | 16 ms         | $1/(62,5-40)=44,44$ ms |
 
-Quando uma fonte fica sem dados, a fila comum permite à outra aproveitar toda a ligação. A reserva mantém capacidade indisponível para a outra fonte mesmo quando não é usada. Esta comparação corresponde ao modelo de partilha dos slides; a conta de TDM trata a capacidade atribuída como serviço a débito reduzido, sem modelar separadamente a fase das ranhuras.
+Quando uma fonte fica sem dados, a fila comum permite à outra aproveitar toda a ligação, enquanto a reserva mantém capacidade indisponível para a outra fonte mesmo quando não é usada. Esta comparação corresponde ao modelo de partilha dos slides; a conta de TDM trata a capacidade atribuída como serviço a débito reduzido, sem modelar separadamente a fase das ranhuras.
 
 ## Experimentar a carga
 

@@ -77,3 +77,25 @@ O pai tem `MODO=consulta` e cria um filho com `fork`. O filho muda a sua variáv
 O pai mantém `MODO=consulta`: o filho alterou a sua cópia. O novo programa recebe `MODO=restrito`, escolhido em `envp`, e não o valor anterior do filho. `fork` criou o filho; `execve` substituiu o seu programa no mesmo processo. Distinguir estes momentos permite controlar o ambiente transmitido a uma operação sensível.
 </div>
 </Exercise>
+
+<Exercise
+  revision={1}
+  id="uid-guardado-duas-reducoes"
+  title="Redução temporária ou permanente"
+  explanation="/cadeiras/fsi/setuid-ambiente/#uid-guardado-e-redução-de-privilégios"
+  answer={{ kind: 'self', checklist: [
+    'Segui os três UIDs em cada alternativa independente.',
+    'Justifiquei a recuperação apenas na alternativa com UID 0 guardado.',
+    'Separei perda de autoridade de mudança de UID e fecho de descritores.',
+  ] }}
+>
+
+Em Linux com glibc atual, duas alternativas partem de UIDs real 1000, efetivo 0 e guardado 0. A faz `seteuid(1000)`; B, com `CAP_SETUID`, faz `setuid(1000)`. Estas chamadas têm sucesso. Depois não há Linux capabilities nem outra autoridade que permita recuperar root. Indica os três UIDs resultantes e decide se `seteuid(0)` pode ter sucesso em cada alternativa. Um descritor aberto para escrita antes da redução fica automaticamente fechado?
+
+<div slot="hint">
+A regra de seteuid permite ao processo sem privilégio selecionar o UID real, efetivo ou guardado.
+</div>
+<div slot="solution">
+A fica com real 1000, efetivo 1000 e guardado 0. Pode voltar a efetivo 0 por `seteuid(0)`, usando o guardado. B fica com os três a 1000: nas hipóteses dadas, 0 já não é uma escolha autorizada e a recuperação falha. Nenhuma das mudanças fecha automaticamente o descritor. A capacidade de mudar UIDs e a referência a um ficheiro já aberto são autoridades distintas; para retirar a segunda, fecha o recurso ou controla a sua transferência.
+</div>
+</Exercise>

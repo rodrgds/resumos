@@ -44,33 +44,36 @@ Não resolve o erro trocar para comparação unsigned; isso muda a ordem matemá
 </Exercise>
 
 <Exercise
-  revision={1}
+  revision={2}
   id="fsc-rv32-str-digit"
-  title="Converter dígitos ASCII"
-  explanation="/cadeiras/fsc/programacao-riscv/#texto-ascii"
-  answer={{"kind": "self", "checklist": ["Acumulador 2,20,204.", "Valida dígitos e define a política de overflow."]}}
+  title="Converter dígitos sem dar a volta"
+  explanation="/cadeiras/fsc/programacao-riscv/#converter-decimal-sem-overflow"
+  answer={{kind: 'self', checklist: ['Usei v seguinte=10v+(c−48), depois de validar o byte.', 'Rejeitei antes da conta se v>429496729, ou se v=429496729 e d>5.', 'Aceitei 4294967295 e rejeitei 4294967296; vazio e byte inválido são erros.']}}
 >
 
-Para uma string ASCII de dígitos terminada em zero, dá a atualização do acumulador decimal em cada carácter. Segue "204" e diz que validação falta se aceitarmos texto arbitrário.
+Uma rotina converte uma string ASCII terminada em zero num inteiro sem sinal de 32 bits. O resultado deve ser exato; vazio, bytes que não sejam dígitos e overflow são erros. A memória da string é válida até ao terminador.
+
+Dá a atualização do acumulador e segue `204`. Deriva um teste que rejeite overflow **antes** de multiplicar por 10, usando o máximo $2^{32}-1$. Aplica-o ao último dígito de `4294967295` e `4294967296`. Explica por que testar só depois de guardar 32 bits não basta.
 
   <div slot="hint">
 
-Ao acrescentar um dígito, deslocas o valor decimal por uma casa.
+Escreve o máximo como 10 vezes um quociente mais um resto. Compara o acumulador com o quociente antes de o alterar.
 
   </div>
-
   <div slot="solution">
 
-Começando em 0: com 2 dá 2, com 0 dá 20, com 4 dá 204. Primeiro valida 48≤c≤57 e termina no byte zero. Para entradas longas é preciso decidir e detetar overflow do acumulador. Ler até zero não prova que todos os bytes anteriores eram dígitos.
+Depois de confirmar $48\le c\le57$, calcula $d=c-48$ e atualiza $v^+=10v+d$. Com v inicial zero, `204` dá 2, 20 e 204. Se o primeiro byte for zero, rejeita vazio; se algum byte não for dígito, rejeita antes de o usar.
+
+O máximo é $4294967295=10\times429496729+5$. Se v>429496729, qualquer próximo dígito transborda. Se v=429496729, só d≤5 cabe. Se v for menor, todos os dígitos 0…9 cabem. As comparações são sem sinal.
+
+No último passo das duas entradas, v=429496729. Com d=5, o resultado é exatamente o máximo; com d=6, rejeita antes da conta. Se calculasse primeiro em 32 bits, $4294967296=2^{32}$ ficaria 0, ocultando o overflow. É preciso também um estado ou teste inicial para distinguir a string vazia da string `0`, que é válida.
 
   </div>
-
   <div slot="mistakes">
 
-Não somes códigos ASCII diretamente ao valor numérico, porque o dígito é c−48.
+Não uses comparações com sinal para o acumulador unsigned nem assumas que um resultado pequeno depois de `mul` prova que a operação coube.
 
   </div>
-
 </Exercise>
 
 <Exercise

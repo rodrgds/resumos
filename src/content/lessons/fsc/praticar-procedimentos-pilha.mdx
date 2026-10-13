@@ -3,9 +3,15 @@ title: 'Praticar: Chamadas e pilha'
 description: 'Exercícios originais com pistas e resolução.'
 section: exercicios
 order: 0
+editorial:
+  sources:
+    - title: 'Teste 2, 24 de janeiro de 2025, questão 17'
+      url: 'https://moodle2425.up.pt/mod/resource/view.php?id=129190'
 ---
 
 import Exercise from '../../../components/Exercise.astro';
+import CodeSnippet from '../../../components/CodeSnippet.astro';
+import validaCode from '../../fsc/validar-alnum.s?raw';
 
 <Exercise
   revision={1}
@@ -143,4 +149,37 @@ Uma variável global única não conserva estados distintos de chamadas simultan
 
   </div>
 
+</Exercise>
+
+<Exercise
+  revision={1}
+  id="fsc-rv32-valida-alnum"
+  title="Rejeitar sem perder o retorno"
+  explanation="/cadeiras/fsc/procedimentos-pilha/#validar-com-saída-antecipada"
+  answer={{kind: 'self', checklist: ['Testei o zero antes da auxiliar e aceitei vazio segundo o contrato.', 'Rejeitei no primeiro byte inválido, sem ler os restantes.', 'Preservei apontador, ra e s0 recebido, e restaurei sp nos dois resultados.']}}
+>
+
+Escreve uma rotina RV32 que recebe em a0 o endereço de uma string ASCII terminada em zero, válida em memória até esse terminador. Deve devolver 1 se todos os bytes antes de zero forem alfanuméricos e 0 caso contrário. A string vazia devolve 1. Usa a auxiliar `is_alnum`, que recebe um byte em a0, devolve exatamente 0 ou 1 e pode alterar qualquer registo caller-saved, cumprindo a ABI. Não implementes a auxiliar.
+
+Faz a rotina sair ao encontrar o primeiro byte inválido. Segue `A7`, `A-7` e a string vazia, indicando quantas vezes chama a auxiliar e como repõe o estado do chamador.
+
+  <div slot="hint">
+
+O apontador tem de sobreviver à chamada, mas a0 muda de endereço para byte e depois para resultado. Decide onde guardar cada valor vivo.
+
+  </div>
+  <div slot="solution">
+
+Antes de cada leitura, todos os bytes anteriores passaram na auxiliar. Conservamos o apontador em s0 e guardamos o s0 recebido e ra num frame de 16 bytes. Uma solução é:
+
+<CodeSnippet language="riscv" code={validaCode} />
+
+`A7` faz duas chamadas, com 65 e 55, e devolve 1 ao encontrar o zero. `A-7` faz duas chamadas, com 65 e 45; a segunda devolve 0 e a rotina volta sem ler o terceiro byte. Vazio não faz chamadas e devolve 1. Todos os caminhos passam por `valida_fim`, que repõe s0, ra e sp sem alterar o resultado em a0. Não precisamos de preservar o byte depois da chamada: só interessa o resultado devolvido.
+
+  </div>
+  <div slot="mistakes">
+
+Testar a0 depois de `jal` testa o resultado da auxiliar, não o byte original. Guardar o apontador num t sem o preservar permite que a auxiliar o destrua.
+
+  </div>
 </Exercise>

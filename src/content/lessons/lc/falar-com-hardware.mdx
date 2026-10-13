@@ -5,10 +5,20 @@ section: conteudo
 order: 3
 practices:
   - lc/praticar-registos
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Provas e guiões históricos de LC, adaptações com hipóteses explícitas
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-computadores/L.EIC018
+  gaps:
+    - Não confirma matéria ou critérios de avaliação de 2026/27.
 ---
 
 import alterarCampoRegisto from '../../lc/examples/alterar-campo-registo.c?raw';
+import planoL3223 from '../../lc/examples/plano-l3223.c?raw';
+import CodePlayground from '../../../components/CodePlayground.astro';
 import CodeSnippet from '../../../components/CodeSnippet.astro';
+import YouTube from '../../../components/YouTube.astro';
 
 import Typst from '../../../components/Typst.astro';
 import registo from '../../lc/registo-byte.typ?raw';
@@ -35,6 +45,12 @@ As portas do timer, do i8042 e da UART são port-mapped I/O. O framebuffer é me
 Um processo normal não pode executar qualquer operação de hardware, porque o sistema limita o acesso para proteger os outros processos. No Minix, os drivers são processos em espaço de utilizador com permissões próprias. O programa de LC usa **kernel calls** para pedir operações privilegiadas ao microkernel, por exemplo `sys_inb` e `sys_outb`.
 
 Uma máquina virtual fornece um PC emulado. O Minix acede ao hardware da máquina virtual, não recebe por isso acesso livre aos dispositivos físicos do computador anfitrião. O código dos laboratórios depende da imagem Minix e das bibliotecas de apoio fornecidas para LC.
+
+:::details[VirtualBox com Linux, como complemento]
+Este vídeo de Rodrigo Dias apresenta Linux numa VM VirtualBox em Windows, **não a instalação de Minix nem as bibliotecas Minix/LCF**. Para preparar o laboratório, segue a imagem e as instruções da tua edição de LC.
+
+<YouTube id="LgP0r2_0ujk" title="Usa Linux (VM) no Windows com VirtualBox" />
+:::
 
 `sys_inb` escreve o resultado numa variável de 32 bits, mesmo quando lê apenas um byte. Passar o endereço de um `uint8_t` através de um cast não aumenta o objeto: permitiria escrever para lá do seu fim. Esta função completa faz a adaptação segura no ambiente Minix/LCF:
 
@@ -90,6 +106,32 @@ O resultado é `0xB7`. Usar apenas OR deixaria bits do modo anterior ligados. Us
 
 Esta leitura, alteração e escrita só é válida se o registo for legível e permitir essa semântica. Um registo write-only, ou com bits que se limpam ao escrever 1, exige a sequência descrita pelo dispositivo.
 
+## Um endereço não garante um registo legível
+
+O PP1 de 2020 descreve um dispositivo **fictício**, L3223, para testar a leitura de uma especificação nova. Tem três timers e difere do i8254: as portas `0x20`, `0x21` e `0x22` recebem contagens; escrever `0x23` configura, mas ler `0x23` consulta estado. Os bits lidos não são uma cópia da configuração que podemos preservar com read-modify-write.
+
+A palavra escrita usa bits 7:6 para escolher timer 0, 1 ou 2, bit 4 para alarme e bits 1:0 para a unidade: 0 é microssegundo, 1 milissegundo e 2 segundo. Os restantes bits devem ser zero. Em alarme, timer 2 e milissegundos dão `(2 << 6) | (1 << 4) | 1`, ou **0x91**.
+
+Para uma contagem de 1000, que cabe em 16 bits, a sequência é:
+
+| Operação | Porta | Valor | Significado                      |
+| -------- | ----- | ----- | -------------------------------- |
+| Escrever | 0x23  | 0x91  | Timer 2, alarme, milissegundos   |
+| Escrever | 0x22  | 0xE8  | Byte menos significativo de 1000 |
+| Escrever | 0x22  | 0x03  | Byte mais significativo de 1000  |
+
+Esta contagem representa 1000 ms, ou um segundo; não se calcula `TIMER_FREQ / intervalo`. Essa fórmula pertence a outro dispositivo e a outro significado da contagem.
+
+O exemplo seguinte apenas constrói e imprime o plano de escritas. Não executa I/O, nem demonstra que um timer real disparou. Define para esta aplicação intervalos de 1 a 65535, timers 0 a 2 e os três códigos de unidade; não atribui ao valor zero a convenção de 65536 do i8254.
+
+<CodePlayground
+  language="c"
+  title="Construir a sequência a partir da especificação"
+  code={planoL3223}
+/>
+
+Se o estado lido em 0x23 for 0x05, há pedidos dos timers 0 e 2, pelos bits 0 e 2. Isto é estado do dispositivo, diferente da máscara da notificação Minix. A IRQ partilhada avisa que é preciso consultar a causa; não escolhe sozinha qual timer originou o pedido. Não inventes uma escrita para limpar flags quando a especificação não define essa operação.
+
 ## Polling e timeout
 
 Em **polling**, o programa consulta o estado até a condição ser satisfeita, porque ainda não recebeu nenhuma notificação. Antes de ler o output buffer do i8042, espera `OBF = 1`. Antes de escrever uma ordem, espera `IBF = 0`. São condições diferentes.
@@ -125,4 +167,4 @@ Polling não implica sempre espera ativa sem corpo, porque o programa pode consu
 
 Polling evita o custo de configurar e receber interrupções, por isso pode servir para uma operação curta e esperada, como obter uma resposta a um comando. Interrupções permitem bloquear à espera de eventos pouco frequentes. A escolha depende da frequência dos eventos, do tempo de resposta permitido, da capacidade do buffer e do custo de cada consulta ou atendimento.
 
-Não concluas que uma das opções é sempre mais rápida. A próxima página separa o pedido de interrupção do dispositivo, o atendimento no kernel e a notificação recebida pelo programa.
+Não concluas que uma das opções é sempre mais rápida: o pedido de interrupção do dispositivo, o atendimento no kernel e a notificação recebida pelo programa são etapas distintas, explicadas em [Interrupções](/cadeiras/lc/interrupcoes/).

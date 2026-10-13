@@ -15,19 +15,38 @@ $P_i$ é um bloco em claro, $C_i$ a cifra, $K$ a chave e $E_K$ a cifra de bloco.
 
 PKCS#7, com blocos de 16 bytes, acrescenta $k$ bytes de valor $k$: 14 bytes recebem `02 02`; 16 recebem dezasseis bytes de valor 16. Ao remover, valida $1\le k\le16$ e todos os últimos $k$ bytes. Preenchimento não autentica. CTR usa só os bytes necessários, sem este preenchimento.
 
+Em CTR sem autenticação, aplicar máscara $\Delta$ à cifra aplica a mesma máscara ao texto em claro. Alterar dois bits muda esses dois bits, sem propagação aos outros blocos. Confidencialidade não garante integridade.
+
 ## Reutilização e autenticidade
 
 Se $C_1=P_1\oplus S$ e $C_2=P_2\oplus S$:
 
-$$C_1\oplus C_2=P_1\oplus P_2,\qquad P_2=C_2\oplus C_1\oplus P_1.$$
+$$C_1\oplus C_2=P_1\oplus P_2.$$
 
-Conhecer uma mensagem e as duas cifras permite recuperar a outra. Em CTR, inícios diferentes não bastam se os intervalos se sobrepõem, como `10,11,12,13` e `12,13,14`. Impede também repetição por overflow.
+Conhecendo $P_1$, recupera-se:
+
+$$P_2=C_2\oplus C_1\oplus P_1.$$
+
+Conhecer uma mensagem e as duas cifras permite recuperar a outra. Em CTR, inícios diferentes não bastam se os intervalos se sobrepõem, como `10,11,12,13` e `12,13,14`; impede também repetição por overflow.
 
 O one-time pad só tem confidencialidade perfeita com chave uniforme, secreta, tão longa como a mensagem e usada uma única vez.
 
 **AEAD** protege confidencialidade do conteúdo e integridade do conteúdo e dados associados. Estes últimos ficam visíveis. Usa construções analisadas, como AES-GCM ou ChaCha20-Poly1305, e cumpre os requisitos de nonce. Em GCM, repeti-lo com a mesma chave compromete segurança. Rejeita etiquetas inválidas antes de interpretar o conteúdo.
 
-Uma mensagem antiga pode manter etiqueta válida. Contra replay, autentica sequência ou desafio e mantém estado para rejeitar repetições, tolerando a reordenação prevista pelo protocolo.
+Contra replay, autentica sequência ou desafio e mantém estado para rejeitar repetições, tolerando a reordenação prevista pelo protocolo. A unicidade e o efeito devem ficar ligados atomicamente.
+
+| Receção da mesma mensagem | Etiqueta | Estado do id | Decisão                     |
+| ------------------------- | -------- | ------------ | --------------------------- |
+| Primeira                  | Válida   | Novo         | Executar e registar uma vez |
+| Repetição                 | Válida   | Usado        | Não executar novamente      |
+
+## Cifra e MAC
+
+- Encrypt-then-MAC autentica a cifra: $c=E_{K_E}(m)$ e $t=M_{K_M}(c)$. Verifica antes de decifrar.
+- MAC-then-Encrypt cifra mensagem e etiqueta: $t=M_{K_M}(m)$ e $c=E_{K_E}(m\Vert t)$. Precisa de decifrar para obter a etiqueta.
+- Encrypt-and-MAC envia cifra e MAC do texto em claro separadamente.
+
+Segurança exige construção analisada, chaves e contexto apropriados. Enviar só MAC não envia a mensagem; divulgar a chave MAC permite criar etiquetas falsas.
 
 ## Diffie-Hellman e autenticação
 

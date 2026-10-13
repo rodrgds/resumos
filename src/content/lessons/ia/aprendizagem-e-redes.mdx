@@ -6,15 +6,28 @@ section: conteudo
 practices:
   - ia/praticar-aprendizagem-e-redes
 order: 8
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Programa oficial de IA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560114
+    - title: Contribuição intitulada Teste 2 2025/26, ano interno não confirmado
+      url: https://accio.pt/feup/L:EIC/inteligencia-artificial/L.EIC029
+    - title: Ficha de exercícios 8, Aprendizagem Computacional, 2018/19
+      url: https://accio.pt/feup/L:EIC/inteligencia-artificial/L.EIC029
+    - title: scikit-learn, árvores de decisão
+      url: https://scikit-learn.org/stable/modules/tree.html
 ---
 
 import Typst from '../../../components/Typst.astro';
+import Bracket from '../../../components/Bracket.astro';
 import Dot from '../../../components/Dot.astro';
 import gradiente from '../../ia/retropropagacao.dot?raw';
 import CodePlayground from '../../../components/CodePlayground.astro';
 import YouTube from '../../../components/YouTube.astro';
 import arvore from '../../ia/arvore-decisao.typ?raw';
 import perceptrao from '../../ia/perceptrao.typ?raw';
+import fronteira from '../../ia/fronteira-perceptrao.typ?raw';
 
 Para prever se um animal é ave ou mamífero, podemos aprender uma regra a partir de exemplos descritos por atributos e acompanhados da classe correta. Isto é **aprendizagem supervisionada**. O modelo ajusta-se aos dados de treino; acertar nesses dados não prova que classifique bem animais novos.
 
@@ -24,7 +37,7 @@ Usamos um conjunto didático de doze animais, sem o tratar como amostra represen
 
 ## Árvore de decisão com entropia
 
-Uma **árvore de decisão** pergunta atributos por ordem e classifica na folha. Nesta variante, a pergunta de cada nó maximiza o ganho de informação, calculado com a **entropia** $H = -\sum_i p_i \log_2 p_i$. $p_i$ é a proporção da classe $i$ no nó, e convencionamos $0\log_2 0=0$. Há outros critérios, como a impureza de Gini $1-\sum_i p_i^2$. Na raiz há 6 aves e 6 mamíferos. Para duas classes, a entropia é máxima quando ambas têm proporção 1/2. Os dois termos da soma são iguais:
+Uma **árvore de decisão** pergunta atributos por ordem e classifica na folha; nesta variante, a pergunta de cada nó maximiza o ganho de informação, calculado com a **entropia** $H = -\sum_i p_i \log_2 p_i$, onde $p_i$ é a proporção da classe $i$ no nó e se convenciona $0\log_2 0=0$. Há outros critérios, como a impureza de Gini $1-\sum_i p_i^2$. Na raiz há 6 aves e 6 mamíferos, por isso a entropia é máxima para duas classes, com os dois termos da soma iguais:
 
 $$
 \begin{aligned}
@@ -33,9 +46,9 @@ H&=-2(0{,}5\log_2 0{,}5)\\
 \end{aligned}
 $$
 
-Testa o atributo penas. O ramo "tem penas" tem 6 aves e 0 mamíferos ($H = 0$); o ramo "sem penas" tem 0 aves e 6 mamíferos ($H = 0$). A entropia ponderada depois da pergunta é 0, por isso o **ganho de informação** é $1 - 0 = 1$ bit, o máximo possível.
+Ao testar o atributo penas, o ramo "tem penas" tem 6 aves e 0 mamíferos ($H = 0$), e o ramo "sem penas" tem 0 aves e 6 mamíferos ($H = 0$). A entropia ponderada depois da pergunta é 0, por isso o **ganho de informação** é $1 - 0 = 1$ bit, o máximo possível.
 
-Compara com o atributo voa: o ramo "voa" tem 3 aves e 1 mamífero ($H \approx 0{,}81$), o ramo "não voa" tem 3 aves e 5 mamíferos ($H \approx 0{,}95$). O primeiro recebe 4 dos 12 exemplos e o segundo recebe 8, por isso a média ponderada é:
+Compara com o atributo voa: o ramo "voa" tem 3 aves e 1 mamífero ($H \approx 0{,}81$), o ramo "não voa" tem 3 aves e 5 mamíferos ($H \approx 0{,}95$). O primeiro recebe 4 dos 12 exemplos e o segundo recebe 8; a média ponderada é:
 
 $$
 \begin{aligned}
@@ -44,7 +57,7 @@ H_{\text{depois}}&=\tfrac13(0{,}81)+\tfrac23(0{,}95)\\
 \end{aligned}
 $$
 
-O ganho é cerca de $1-0{,}91=0{,}09$ bits. A árvore pergunta penas primeiro e classifica tudo corretamente nos dados de treino com profundidade 1.
+O ganho é cerca de $1-0{,}91=0{,}09$ bits, por isso a árvore pergunta penas primeiro e classifica tudo corretamente nos dados de treino com profundidade 1.
 
 A lição não é que penas seja sempre a resposta, é o método: calcula a entropia antes e depois de cada atributo candidato e escolhe o maior ganho. Árvores demasiado fundas decoram o treino e falham no novo (**sobreajuste**); limita-se a profundidade ou exige-se um mínimo de exemplos por folha.
 
@@ -64,36 +77,56 @@ O código pesa a entropia de cada ramo pela fração de exemplos que chegam a el
   }
 />
 
-O ganho de "voa" é cerca de 0,093 bits. O atributo "penas" separa todas as classes no treino, mas este acerto não mede ainda a generalização.
+O atributo "penas" separa todas as classes no treino, mas este acerto não mede ainda a generalização.
 
 Se a dúvida é como a entropia mede a incerteza antes e depois de separar os dados por um atributo, acompanha a entropia antes e depois de cada divisão neste vídeo:
 
 <YouTube id="YtebGVx-Fxw" title="Entropy Clearly Explained (StatQuest)" />
 
+## Separar um atributo numérico
+
+Uma árvore pode perguntar se um valor está abaixo de um **limiar**, em vez de criar um ramo por valor. Com valores `1, 2, 3, 4` e classes `não, não, sim, sim`, a raiz tem entropia 1 bit. Os limiares entre valores consecutivos são 1,5, 2,5 e 3,5.
+
+No limiar 2,5, a pergunta `x ≤ 2,5` separa dois não de dois sim. Os dois ramos ficam puros: entropia ponderada zero e ganho 1 bit. No limiar 1,5, só o primeiro não fica à esquerda; à direita há um não e dois sim, com entropia cerca de 0,9183. A média ponderada é `1/4 × 0 + 3/4 × 0,9183 ≈ 0,6887`, por isso o ganho é apenas 0,3113 bits.
+
+Escolhemos o limiar pelos dados de treino e pelo critério definido, sem olhar para as classes do teste. A regra usa uma desigualdade concreta: um valor novo 2,5 vai para o ramo esquerdo. A posição dos limites e o ramo de igualdade fazem parte da previsão; interpreta um mapa de regiões seguindo todas as perguntas até à folha.
+
 ## Matriz de confusão
 
-Para avaliar um classificador, conta acertos e erros por classe na **matriz de confusão**. Testa a regra ingénua "voa, logo é ave" em 6 animais (pardal, águia e pinguim aves; morcego, cão e golfinho mamíferos):
+Para avaliar um classificador, conta acertos e erros por classe na **matriz de confusão**, testando a regra ingénua "voa, logo é ave" em 6 animais (pardal, águia e pinguim aves; morcego, cão e golfinho mamíferos):
 
 | Real \ Previsto | Ave               | Mamífero          |
 | --------------- | ----------------- | ----------------- |
 | Ave             | 2 (pardal, águia) | 1 (pinguim)       |
 | Mamífero        | 1 (morcego)       | 2 (cão, golfinho) |
 
-Considera "ave" a classe positiva. Exatidão: 4 em 6. O pinguim é um **falso negativo** (ave prevista mamífero) e o morcego um **falso positivo** (mamífero previsto ave). Se 95 por cento dos animais fossem mamíferos, prever sempre mamífero dava 95 por cento de exatidão sem encontrar nenhuma ave.
+Considera "ave" a classe positiva, com exatidão de 4 em 6: o pinguim é um **falso negativo** (ave prevista mamífero) e o morcego um **falso positivo** (mamífero previsto ave). Se 95 por cento dos animais fossem mamíferos, prever sempre mamífero dava 95 por cento de exatidão sem encontrar nenhuma ave.
 
 Com $VP=2$, $VN=2$, $FP=1$ e $FN=1$, a **precisão** $VP/(VP+FP)$ é $2/3$: entre os animais previstos como aves, dois em três são aves. A **sensibilidade** (_recall_) $VP/(VP+FN)$ também é $2/3$: encontra duas das três aves. Para abreviar, escreve P para precisão e R para sensibilidade. A medida $F_1=2PR/(P+R)$ combina ambas e vale $2/3$. Quando um denominador é zero, tens de explicitar a convenção usada.
 
 ## Seleção de modelos e generalização
 
-O **treino** ajusta pesos ou constrói a árvore. A **validação** escolhe hiperparâmetros, como a profundidade máxima. O **teste** estima o desempenho final depois dessas escolhas. Consultar repetidamente o teste para escolher o modelo transmite informação do teste ao treino e torna a estimativa otimista.
+O **treino** ajusta pesos ou constrói a árvore, a **validação** escolhe hiperparâmetros como a profundidade máxima, e o **teste** estima o desempenho final depois dessas escolhas. Consultar repetidamente o teste para escolher o modelo transmite informação do teste ao treino e torna a estimativa otimista.
 
 Com 100 exemplos, podemos reservar 20 para teste e fazer validação cruzada com 4 partições nos outros 80. Para cada profundidade candidata, treinamos quatro modelos, cada um em 60 exemplos e validado nos 20 restantes. Comparamos a média da métrica nos quatro conjuntos de validação, escolhemos a profundidade e voltamos a treinar nos 80. Só então avaliamos uma vez nos 20 de teste. Não escolhemos simplesmente o melhor dos quatro modelos intermédios.
 
-Qualquer transformação aprendida dos dados, como normalizar pela média e desvio-padrão, ajusta-se apenas no treino de cada partição. Dados da mesma pessoa ou de momentos futuros exigem uma separação que respeite grupos ou tempo. Um conjunto de treino tão pequeno e artificial como o dos animais serve para aprender as contas, não para comparar modelos de forma fiável.
+:::warning[A normalização também aprende com os dados]
+Qualquer transformação aprendida dos dados, como normalizar pela média e desvio-padrão, ajusta-se apenas no treino de cada partição. Mesmo sem usar etiquetas, calcular essas estatísticas com a validação ou o teste deixa entrar informação reservada. Aplica-lhes a transformação ajustada no treino, sem a recalcular com eles.
+:::
+
+Dados da mesma pessoa ou de momentos futuros exigem uma separação que respeite grupos ou tempo. Um conjunto de treino tão pequeno e artificial como o dos animais serve para aprender as contas, não para comparar modelos de forma fiável.
+
+## Aplicar a normalização aprendida
+
+O atributo de treino tem valores 10 e 20. Usando a convenção populacional para esta transformação, a média é 15 e o desvio-padrão é 5. A transformação aprendida é $z=(x-15)/5$: o treino passa a −1 e 1, e um valor de teste 30 passa a 3.
+
+Recalcular a média com o teste incluído daria 20; o desvio-padrão passaria a $\sqrt{200/3}$, cerca de 8,165. O valor 30 passaria a cerca de 1,225, mas a própria preparação do treino já dependeria de um exemplo reservado para a avaliação. Isso é fuga de informação mesmo sem consultar a sua classe.
+
+Ajusta a transformação no treino e guarda os seus parâmetros para transformar validação, teste e novos exemplos. Na validação cruzada, cada partição aprende a sua transformação com o respetivo treino. Um atributo constante exige uma convenção para evitar divisão por zero, em vez de inventar um desvio-padrão observado.
 
 ## Treino do perceptrão
 
-O **perceptrão** é o neurónio original: soma pesos vezes entradas mais viés, e devolve uma classe conforme o sinal. Treina-se corrigindo erros: para alvo $t\in\{-1,+1\}$, atualiza $w \leftarrow w+\eta t x$ e $b \leftarrow b+\eta t$, apenas quando a previsão está errada. $\eta>0$ é a taxa de aprendizagem, $w$ os pesos e $b$ o viés. Uma **época** é uma passagem por todos os exemplos. Segue o treino com taxa 1, pesos a zeros e viés a zero, nos pontos $x_1 = (1, 0)$ da classe +1, $x_2 = (0, 1)$ da classe -1 e $x_3 = (2, 1)$ da classe +1:
+O **perceptrão** é o neurónio original: soma pesos vezes entradas mais viés, e devolve uma classe conforme o sinal. Treina-se corrigindo erros: para alvo $t\in\{-1,+1\}$, atualiza $w \leftarrow w+\eta t x$ e $b \leftarrow b+\eta t$ apenas quando a previsão está errada, onde $\eta>0$ é a taxa de aprendizagem, $w$ os pesos e $b$ o viés. Uma **época** é uma passagem por todos os exemplos. Segue o treino com taxa 1, pesos a zeros e viés a zero, nos pontos $x_1 = (1, 0)$ da classe +1, $x_2 = (0, 1)$ da classe -1 e $x_3 = (2, 1)$ da classe +1:
 
 - Época 1, $x_1$: saída $0 \ge 0$, prevê +1, correto. Sem alteração.
 - Época 1, $x_2$: saída $0$, prevê +1, mas é -1. Atualiza: pesos $(0, 0) - (0, 1) = (0, -1)$, viés $-1$.
@@ -102,7 +135,17 @@ O **perceptrão** é o neurónio original: soma pesos vezes entradas mais viés,
 - Época 2, $x_2$: saída $0$, prevê +1, mas é -1. Atualiza: pesos $(2, 0) - (0, 1) = (2, -1)$, viés $-1$.
 - Época 2, $x_3$: saída $(2)(2) + (-1)(1) - 1 = 2 \ge 0$, prevê +1, correto.
 
-Pesos finais $(2, -1)$ com viés $-1$: confirma os três pontos, $x_1$ dá 1, $x_2$ dá $-2$, $x_3$ dá 2, todos do lado certo.
+Com os pesos finais $(2, -1)$ e viés $-1$, confirma os três pontos: $x_1$ dá 1, $x_2$ dá $-2$ e $x_3$ dá 2, todos do lado certo.
+
+No plano dos atributos, chama $u,v$ às coordenadas. A soma é $z=2u-v-1$; a fronteira é $v=2u-1$. Abaixo, $z>0$ e a previsão é +1; acima, $z<0$ e a previsão é −1. Na reta, a convenção do código prevê +1.
+
+<Typst
+  source={fronteira}
+  format="svg"
+  alt="Fronteira v igual a 2u menos 1. x1 em (1,0) e x3 em (2,1), positivos, ficam abaixo; x2 em (0,1), negativo, fica acima. Círculos representam positivos e um quadrado o negativo."
+/>
+
+A figura seguinte mostra a mesma decisão como circuito de contribuições ponderadas.
 
 <Typst
   source={perceptrao}
@@ -120,7 +163,7 @@ O código usa a mesma ordem dos exemplos e prevê +1 quando a soma é zero:
   }
 />
 
-Com dados linearmente separáveis, o perceptrão pode encontrar uma fronteira que os separa, porque um único neurónio chega quando uma reta separa as classes. Não consegue representar XOR com um único neurónio.
+Com dados linearmente separáveis, o perceptrão pode encontrar uma fronteira que os separa, pois um único neurónio chega quando uma reta separa as classes; com um único neurónio, não consegue representar XOR.
 
 ## Redes multicamada e retropropagação
 
@@ -151,7 +194,13 @@ $$
 \end{aligned}
 $$
 
-O gradiente do peso de saída é $\partial E/\partial w_o=\delta_oa_h$, cerca de −0,0642. O gradiente do seu viés é $\partial E/\partial b_o=\delta_o$, cerca de −0,1032. No escondido, usamos $\delta_h=\delta_ow_oa_h(1-a_h)$ e obtemos cerca de −0,0121, **usando o peso antigo** $w_o=0{,}5$. Calculamos todos os gradientes antes de atualizar qualquer parâmetro, pois são derivadas do mesmo erro com os mesmos pesos.
+O gradiente do peso de saída é $\partial E/\partial w_o=\delta_oa_h$, cerca de −0,0642. O gradiente do seu viés é $\partial E/\partial b_o=\delta_o$, cerca de −0,1032. No escondido, usamos $\delta_h=\delta_ow_oa_h(1-a_h)$ e obtemos cerca de −0,0121, **usando o peso antigo** $w_o=0{,}5$.
+
+<Bracket label="Ideia-chave">
+
+Calculamos todos os gradientes antes de atualizar qualquer parâmetro, pois são derivadas do mesmo erro com os mesmos pesos. Retropropagar calcula derivadas; atualizar os pesos é um passo posterior. Misturar o peso de saída novo com ativações antigas já não deriva a passagem para a frente que acabámos de calcular.
+
+</Bracket>
 
 Com a regra $\theta \leftarrow \theta - \eta\,\partial E/\partial\theta$ e $\eta=1$, obtemos $w_o \approx 0{,}5642$, $b_o \approx 0{,}1032$, $w_{h1} \approx 0{,}5121$ e $b_h \approx 0{,}0121$. O peso $w_{h2}$ continua em $-0{,}5$, porque o seu gradiente é $\delta_h x_2=0$.
 
@@ -164,11 +213,44 @@ Um **grafo computacional** representa as operações e as suas dependências. Um
   alt="Grafo do exemplo 2-1-1, de cima para baixo: entrada (1,0), soma escondida 0,5, ativação 0,622, soma de saída 0,311, previsão 0,577 e erro 0,089. A retropropagação percorre estas dependências no sentido inverso."
 />
 
-O desenho mostra a passagem com os pesos antigos. Na direção inversa, cada aresta acrescenta a derivada da operação que liga os dois valores; os pesos só mudam depois de calcular o conjunto de gradientes.
+O desenho mostra a passagem com os pesos antigos; na direção inversa, cada aresta acrescenta a derivada da operação que liga os dois valores, e os pesos só mudam depois de calcular o conjunto de gradientes.
 
 Se a dúvida é como pesos e ativações definem uma fronteira de decisão, observa como cada camada transforma o espaço neste vídeo:
 
 <YouTube id="aircAruvnKk" title="But what is a neural network? (3Blue1Brown)" />
+
+## Parâmetros e saídas de várias classes
+
+Numa camada totalmente ligada, cada neurónio tem um peso por entrada e um viés. Com $n$ entradas e $m$ neurónios, há $nm+m=(n+1)m$ parâmetros treináveis. A entrada não acrescenta um viés por si própria. Uma rede 4-2-3, sem partilha de pesos, tem:
+
+| Camada                      | Pesos     | Vieses | Total |
+| --------------------------- | --------- | ------ | ----- |
+| 4 entradas para 2 neurónios | 4 × 2 = 8 | 2      | 10    |
+| 2 ativações para 3 saídas   | 2 × 3 = 6 | 3      | 9     |
+| Rede                        | 14        | 5      | 19    |
+
+Mudar a taxa de aprendizagem não acrescenta um peso: é um **hiperparâmetro** que controla o treino, não um parâmetro ajustado pela retropropagação.
+
+Para três classes mutuamente exclusivas, a saída pode converter três valores reais, os **logits** $z_i$, em probabilidades do modelo usando softmax:
+
+$$
+p_i=\frac{e^{z_i}}{\sum_j e^{z_j}}.
+$$
+
+Com logits `(ln 2, 0, 0)`, os numeradores são 2, 1 e 1. A saída é `(1/2, 1/4, 1/4)` e somar dá 1. A maior probabilidade está na primeira classe, mas isso não prova que a previsão esteja certa nem que as probabilidades estejam calibradas.
+
+Subtrair o mesmo número a todos os logits conserva a saída, porque o fator comum cancela na fração. Subtrair o máximo evita exponenciais desnecessariamente grandes:
+
+```python
+from math import exp, log
+z = [log(2), 0, 0]
+maior = max(z)
+pesos = [exp(v - maior) for v in z]
+probabilidades = [v / sum(pesos) for v in pesos]
+print(probabilidades)  # [0.5, 0.25, 0.25]
+```
+
+Se várias etiquetas puderem ser verdadeiras ao mesmo tempo, três sigmoides independentes podem representar três decisões binárias e já não têm de somar 1. Para uma classe positiva em classificação binária, uma sigmoide pode bastar. A escolha da saída depende do contrato da tarefa, não apenas do número de neurónios.
 
 ## Sequências e redes recorrentes
 

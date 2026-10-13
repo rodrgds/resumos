@@ -3,12 +3,13 @@ draft: true
 title: Tolerância a falhas e consenso
 description: Eleição, two-phase commit, primário-apoio e Paxos, com modelos de falha e condições das garantias.
 section: conteudo
-order: 7
+order: 8
 practices:
   - cpd/praticar-falhas
 ---
 
 import Dot from '../../../components/Dot.astro';
+import Bracket from '../../../components/Bracket.astro';
 import Typst from '../../../components/Typst.astro';
 import YouTube from '../../../components/YouTube.astro';
 import anel from '../../cpd/anel-eleicao.dot?raw';
@@ -55,7 +56,7 @@ Na fase de preparação, o coordenador envia `preparar`. Cada participante verif
 
 Na segunda fase, o coordenador confirma só depois de obter todos os votos sim. Se recebe um não, ou o prazo termina antes de recolher todos os votos, pode decidir abortar. Regista duravelmente a decisão antes de a enviar. Os participantes registam e aplicam a decisão; as confirmações de receção permitem concluir a coordenação.
 
-Segue preparar, votar e confirmar e identifica onde uma falha pode bloquear participantes: o vídeo seguinte percorre essas trocas de mensagens e o ponto em que um participante fica sem decisão conhecida.
+Segue preparar, votar e confirmar e repara no ponto em que um participante preparado fica sem decisão conhecida.
 
 <YouTube
   id="sZVCpjuVUL8"
@@ -70,10 +71,14 @@ Segue preparar, votar e confirmar e identifica onde uma falha pode bloquear part
 
 ## Por que o 2PC pode bloquear
 
-A votou sim e não recebeu a decisão. Há duas execuções compatíveis com aquilo que A sabe:
+A votou sim e não recebeu a decisão. As duas execuções seguintes deixam A com a mesma informação, mas exigem decisões diferentes:
 
-- B votou sim, o coordenador registou confirmar e comunicou a B antes de falhar.
-- B votou não, o coordenador registou abortar e falhou antes de comunicar a A.
+| O que aconteceu                | Execução que confirma          | Execução que aborta            |
+| ------------------------------ | ------------------------------ | ------------------------------ |
+| Voto de B                      | Sim                            | Não                            |
+| Registo durável do coordenador | Confirmar                      | Abortar                        |
+| Antes da falha do coordenador  | B recebe confirmar             | A não recebe a decisão         |
+| O que A sabe                   | Votou sim; não recebeu decisão | Votou sim; não recebeu decisão |
 
 A não pode escolher confirmar nem abortar apenas por timeout. Pode perguntar a outro participante; se este conhece uma decisão definitiva, aprende-a. Se todos os participantes acessíveis estão preparados e ninguém sabe a decisão, têm de esperar pela recuperação ou por acesso a informação suficiente.
 
@@ -111,7 +116,13 @@ A e B aceitaram `(4, debitar 10)`, mas as respostas ao proponente perderam-se. A
 
 A resposta de B obriga a recuperar `debitar 10`. O proponente envia esse valor com número 5; se B e C o aceitarem, uma maioria volta a escolher o mesmo valor. A pode continuar indisponível sem permitir substituí-lo por `debitar 20`.
 
-Duas maiorias de três membros têm pelo menos um membro comum. Aqui, as maiorias `{A, B}` e `{B, C}` cruzam-se em B. Essa interseção, as promessas e a regra de recuperar a proposta aceite de maior número preservam a escolha. A interseção sozinha não basta: ignorar o valor comunicado por B destruiria a garantia.
+Duas maiorias de três membros têm pelo menos um membro comum.
+
+<Bracket label="Ideia-chave">
+
+As maiorias `{A, B}` e `{B, C}` cruzam-se em B. Essa interseção, as promessas e a regra de recuperar a proposta aceite de maior número preservam a escolha. A interseção sozinha não basta: ignorar o valor comunicado por B destruiria a garantia.
+
+</Bracket>
 
 Os números distinguem propostas, não posições diferentes da sequência. As propostas 4 e 5 acima pertencem à mesma posição. Para decidir a operação seguinte, usa-se outra instância do protocolo.
 

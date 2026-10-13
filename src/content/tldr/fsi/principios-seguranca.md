@@ -10,6 +10,8 @@
 
 - Um **ativo** tem valor; uma **ameaça** é uma causa potencial de dano; uma **vulnerabilidade** é a fraqueza que o permite.
 - O **vetor** é o caminho de exploração. Um **controlo** reduz a probabilidade ou as consequências.
+- Zero-day refere-se ao estado de conhecimento/correção da vulnerabilidade; zero-click à ausência de interação da vítima. Não são sinónimos.
+- Ataques à cadeia de fornecimento comprometem componentes ou distribuição confiados. Uma assinatura de atualização não prova que o conteúdo era benigno antes de ser assinado.
 - Exemplo: notas são o ativo; escrita não autorizada é a ameaça; aceitar qualquer sessão é a fraqueza; o pedido ao endpoint é o vetor. Autorizar a conta sobre aquela pauta, no servidor, atua nessa fraqueza.
 
 ## Risco e perda esperada

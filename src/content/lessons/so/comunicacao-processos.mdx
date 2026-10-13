@@ -84,9 +84,19 @@ int main(void) {
 }
 ```
 
-A saída é `dados do pai`. Não enviamos o terminador zero: o filho escreve a quantidade realmente lida. Conta os descritores depois de `fork`: o pai e o filho herdam as duas pontas, por isso há quatro referências abertas. O pai fecha a leitura e conserva a escrita; o filho fecha a escrita e conserva a leitura. O pai fecha a escrita **antes** de esperar, porque o filho precisa desse fecho para sair do ciclo. Qualquer cópia esquecida da ponta de escrita adia o EOF.
+A saída é `dados do pai`. Não enviamos o terminador zero, porque o filho escreve a quantidade realmente lida.
+
+Conta os descritores depois de `fork`: o pai e o filho herdam as duas pontas, por isso há quatro referências abertas. O pai fecha a leitura e conserva a escrita; o filho fecha a escrita e conserva a leitura. O pai fecha a escrita **antes** de esperar, porque o filho precisa desse fecho para sair do ciclo. Qualquer cópia esquecida da ponta de escrita adia o EOF.
 
 Pipes são fluxos, não caixas de mensagens. Uma escrita pode ser entregue em várias leituras. Escritas até `PIPE_BUF` têm uma garantia de não entrelaçamento com outras escritas no pipe, mas isso não obriga `read` a devolver uma mensagem inteira. Dois sentidos independentes precisam de dois pipes ou de um socket bidirecional.
+
+## Criar o canal antes de fork
+
+O canal tem de existir antes de ser herdado. Se primeiro fizeres `fork` e depois cada processo chamar `pipe(fd)`, obténs dois pipes distintos. Até podem receber os mesmos números de descritor, como 3 e 4, porque esses números só identificam posições nas tabelas locais de cada processo.
+
+No filho que fecha a escrita do seu próprio pipe, a leitura encontra o canal vazio e sem escritores, por isso devolve EOF. No pai que fecha a leitura do outro pipe, uma tentativa de escrita não tem leitor: pode terminar com `SIGPIPE`, ou falhar com `EPIPE` se o sinal for ignorado. O pai não está a escrever no canal do filho.
+
+A ordem correta é criar **um** pipe, verificar sucesso, criar o filho e fechar as pontas desnecessárias em cada processo. A mesma distinção entre número local e objeto do núcleo explica por que `dup` e duas chamadas independentes a `open` têm efeitos diferentes.
 
 ## Redirecionar com dup2
 
@@ -117,7 +127,9 @@ No segundo terminal, `printf 'ola\n' > canal` permite que a leitura avance. Quan
 
 `socketpair(AF_UNIX, SOCK_STREAM, 0, fd)` cria dois descritores bidirecionais locais. Cada processo pode ler e escrever na ponta que conserva. `SOCK_STREAM` continua a exigir um protocolo de mensagens: por exemplo linhas, um comprimento prefixado ou uma quantidade fixa de bytes. Não imprimas um buffer com `%s` sem garantir `\0`.
 
-Num protocolo pedido/resposta sobre fluxo, define primeiro as fronteiras: linhas terminadas por newline, comprimento prefixado ou tamanho fixo. Depois define o fim do pedido. Uma combinação comum é o servidor ler até EOF antes de responder. O cliente que conserva a ponta aberta para receber a resposta precisa de terminar apenas a escrita com `shutdown(fd, SHUT_WR)`. O servidor esvazia os dados pendentes e depois vê EOF, mas ainda pode responder no sentido inverso. `close` fecharia também a leitura do cliente. Se ambos enviarem mensagens grandes sem ler, os buffers podem encher e ambos bloquear; define a ordem de troca ou trata os dois sentidos em simultâneo.
+Num protocolo pedido/resposta sobre fluxo, define primeiro as fronteiras: linhas terminadas por newline, comprimento prefixado ou tamanho fixo. Depois define o fim do pedido; uma combinação comum é o servidor ler até EOF antes de responder.
+
+O cliente que conserva a ponta aberta para receber a resposta precisa de terminar apenas a escrita com `shutdown(fd, SHUT_WR)`. O servidor esvazia os dados pendentes e depois vê EOF, mas ainda pode responder no sentido inverso; `close` fecharia também a leitura do cliente. Se ambos enviarem mensagens grandes sem ler, os buffers podem encher e ambos bloquear, por isso define a ordem de troca ou trata os dois sentidos em simultâneo.
 
 Sockets `AF_UNIX` também podem ser identificados por um endereço local; `AF_INET` permite comunicação por rede. Pai e filho são uma forma simples de distribuir descritores, não uma restrição geral a todos os sockets ou a toda a memória partilhada.
 
@@ -125,9 +137,7 @@ Sockets `AF_UNIX` também podem ser identificados por um endereço local; `AF_IN
 
 Um sinal notifica um evento, como pedido de terminação ou alteração de configuração. `kill` envia o sinal, sujeito a permissões. Usa nomes como `SIGINT`, `SIGTERM`, `SIGHUP` e `SIGUSR1`, não números dependentes do sistema. `SIGKILL` e `SIGSTOP` não podem ser capturados nem ignorados.
 
-Um tratador pode interromper código que já está dentro de `printf` ou `malloc`. Voltar a chamar essas funções no tratador não é seguro, por isso guarda uma indicação do tipo `volatile sig_atomic_t` e faz o trabalho no fluxo normal.
-
-Este tipo permite a indicação simples, ou seja não torna qualquer estrutura partilhada segura.
+Um tratador pode interromper código que já está dentro de `printf` ou `malloc`, por isso voltar a chamar essas funções no tratador não é seguro; guarda uma indicação do tipo `volatile sig_atomic_t` e faz o trabalho no fluxo normal. Este tipo permite a indicação simples, mas não torna qualquer estrutura partilhada segura.
 
 O programa seguinte espera por `SIGUSR1` sem a janela entre testar a condição e adormecer. Guarda-o como `sinal.c` e compila no terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic sinal.c -o sinal`.
 

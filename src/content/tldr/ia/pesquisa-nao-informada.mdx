@@ -1,0 +1,39 @@
+import Dot from '../../../components/Dot.astro';
+import puzzle from '../../ia/puzzle8.dot?raw';
+
+## Problema e fronteira
+
+Define estado inicial, ações/transições, teste de objetivo e custos. Um estado pode aparecer em vários nós da árvore de pesquisa. **Gerar** cria um sucessor; **expandir** gera os sucessores do nó; a fronteira guarda o que falta explorar.
+
+| Método                   | Escolha                              | Condições relevantes                                        |
+| ------------------------ | ------------------------------------ | ----------------------------------------------------------- |
+| BFS                      | Fila, distância em arestas crescente | Custo mínimo com ações de custo igual positivo              |
+| DFS                      | Pilha/recursão, ramo mais profundo   | Completa em grafo finito com visitados; sem ótimo geral     |
+| UCS                      | Menor custo acumulado $g$            | Grafo finito, custos não negativos, conservar melhorias     |
+| Aprofundamento iterativo | DFS limitada a 0,1,2,…               | Ramificação finita; ótimo com ações de custo igual positivo |
+
+Na UCS, testa o objetivo **ao retirar** o menor custo. Gerar G com custo 5 não basta se S→A→G custa 3. Em espaços infinitos, ramificação finita e custos pelo menos $\varepsilon>0$ dão condições de completude adicionais.
+
+## Ordem e contagem
+
+<Dot
+  source={puzzle}
+  alt="Fragmento S com filhos A,B,C,D; A tem A1,A2; B tem B1 e o objetivo B2. Caminho S,B,B2 com duas ações."
+/>
+
+No fragmento, folhas sem sucessores: BFS gera B2 na expansão 3 (S,A,B); com teste ao retirar, expande 8 nós antes de reconhecer B2. DFS visita S,A,A1,A2,B,B1 antes de reconhecer B2. Isto não descreve os sucessores omitidos do puzzle completo.
+
+Marcar visitados na inserção evita duplicados em BFS. Na UCS, descobrir um estado não fixa definitivamente o seu custo: outro caminho pode melhorá-lo.
+
+## Tempo e memória
+
+Árvore com ramificação $b>1$, objetivo mais superficial a profundidade $d$, máxima $m$:
+
+| Método                                      | Tempo        | Memória      |
+| ------------------------------------------- | ------------ | ------------ |
+| BFS, teste ao retirar/gerar todos os filhos | $O(b^{d+1})$ | $O(b^{d+1})$ |
+| BFS, teste na geração                       | $O(b^d)$     | $O(b^d)$     |
+| DFS                                         | $O(b^m)$     | $O(bm)$      |
+| Aprofundamento iterativo                    | $O(b^d)$     | $O(bd)$      |
+
+Guardar todos os visitados num grafo acrescenta até $O(|V|)$ memória. Completude e otimalidade são garantias distintas; a ordem de DFS pode encontrar depressa um objetivo caro.

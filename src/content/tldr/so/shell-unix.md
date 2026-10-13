@@ -43,6 +43,6 @@ sort -n < numeros.txt | uniq > distintos.txt
 
 `man 2 open` consulta a interface de sistema; `man 3 fopen` a biblioteca. Confere assinatura, retorno e erros.
 
-Os bits 4, 2 e 1 representam leitura, escrita e execução. `chmod 640` dá `rw-` ao dono, `r--` ao grupo e `---` aos restantes. Num diretório, leitura lista nomes e execução atravessa-os; remover entradas depende desse diretório.
+Os bits 4, 2 e 1 representam leitura, escrita e execução. `chmod 640` dá `rw-` ao dono, `r--` ao grupo e `---` aos restantes. Num diretório, leitura lista nomes e execução atravessa-os; remover entradas depende desse diretório. A data habitual de `ls -l` é a última modificação, não a criação.
 
 [Exemplo completo de pipeline e redirecionamentos](/cadeiras/so/shell-unix/#três-canais-e-redirecionamento).

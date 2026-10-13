@@ -3,6 +3,10 @@ title: 'Praticar: CPU uniciclo'
 description: 'Exercícios originais com pistas e resolução.'
 section: exercicios
 order: 0
+editorial:
+  sources:
+    - title: 'Teste 2, 24 de janeiro de 2025, questão 18'
+      url: 'https://moodle2425.up.pt/mod/resource/view.php?id=129190'
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -110,39 +114,40 @@ Uma execução sem diferença observável não prova que o MUX funciona.
 </Exercise>
 
 <Exercise
-  revision={1}
+  revision={2}
   id="fsc-cpu-addi-extension"
   title="Uma instrução e o caminho necessário"
-  explanation="/cadeiras/fsc/datapath-controlo/#falhas-e-extensões"
-  answer={{"kind": "self", "checklist": ["addi reutiliza o datapath com imediato e writeback ALU.", "jalr exige caminhos adicionais para retorno e alvo."]}}
+  explanation="/cadeiras/fsc/datapath-controlo/#acrescentar-jalr"
+  answer={{kind: 'self', checklist: ['addi reutiliza o datapath com imediato e writeback ALU.', 'jalr recebe caminhos PC+4→rd e ALU com bit 0 limpo→PC.', 'Defini os novos MUX, os controlos e a compatibilidade com R, lw, sw e beq.', 'O exemplo usa ra antigo e produz PC=00400080, ra=00400024.']}}
 >
 
-O CPU suporta R,lw,sw,beq. Para acrescentar addi, são necessários novos recursos de datapath? Indica o controlo. Compara com jalr.
+O CPU uniciclo suporta R,lw,sw,beq. Para acrescentar addi, são necessários novos recursos de datapath? Indica o controlo.
+
+Depois projeta a extensão para jalr. Conserva o MUX MemtoReg e acrescenta um MUX de writeback controlado por Link, com 0 para o caminho antigo e 1 para PC+4. Acrescenta outro MUX antes de PC, controlado por JumpReg, com 0 para o caminho antigo e 1 para o alvo da ALU. Indica as ligações, o tratamento do bit 0, todos os controlos necessários em jalr e como conservas as quatro classes anteriores.
+
+Segue `jalr ra,0(ra)` em PC=`0x00400020`, com ra antigo=`0x00400081`. Supõe destinos alinhados a 4 depois de limpar o bit 0 e não acrescentes tratamento de exceções.
 
   <div slot="hint">
 
-addi combina uma seleção já usada no load com writeback já usado em R.
+addi combina o imediato do load com o writeback das operações R. jalr precisa de dois valores diferentes no mesmo flanco.
 
   </div>
-
-  <div slot="hint-more">
-
-jalr precisa também de escrever PC+4 e escolher outro destino de PC.
-
-  </div>
-
   <div slot="solution">
 
-addi reutiliza banco, imediato, ALU e MUX: RegWrite=1,ALUSrc=1,ALUOp=00,MemtoReg=0,MemRead=MemWrite=Branch=0. Precisa de nova descodificação, mas não de novo caminho de dados. jalr precisa de caminho de PC+4 para rd e de destino calculado pela ALU com bit 0 limpo. Sem esses caminhos, não se implementa só mudando sinais.
+addi usa RegWrite=1, ALUSrc=1, ALUOp=00, MemtoReg=0, MemRead=MemWrite=Branch=0 e Link=JumpReg=0. Precisa de nova descodificação, mas não de novo caminho de dados.
+
+Em jalr, a ALU soma rs1 antigo ao imediato I estendido com sinal: ALUSrc=1 e ALUOp=00. Liga PC+4 à entrada 1 do novo MUX de writeback e escolhe Link=1, RegWrite=1. Liga a saída da ALU à entrada 1 do novo MUX de PC, com o bit 0 dessa entrada fixo a 0; escolhe JumpReg=1. MemRead=MemWrite=Branch=0. MemtoReg e o PCSrc antigo são X porque os novos MUX ignoram as suas saídas. ImmGen deve fornecer I e o controlo reconhecer opcode `1100111`, funct3 `000`.
+
+Nas quatro classes antigas, Link=JumpReg=0 deixa MemtoReg e PCSrc funcionar como antes. Não precisamos de outra ALU: o somador PC+4 produz o retorno em paralelo com o cálculo do alvo.
+
+No exemplo, a ALU usa ra antigo e produz `0x00400081`; PC recebe `0x00400080` e ra recebe `0x00400024`. Os dois destinos capturam no mesmo flanco. Limpar bit 0 não garante por si só o alinhamento a 4; essa validade é uma hipótese do enunciado.
 
   </div>
-
   <div slot="mistakes">
 
-Não confundas uma nova instrução com a obrigação de criar sempre uma nova ALU, porque addi reutiliza caminhos que já existem.
+Encaminhar a ALU para o PC sem acrescentar PC+4 ao writeback deixa o salto sem o retorno correto. Em `rd=rs1`, a fonte continua a ser o valor antigo.
 
   </div>
-
 </Exercise>
 
 <Exercise

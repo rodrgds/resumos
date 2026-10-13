@@ -1,0 +1,30 @@
+import Timeout from '../../cpd/Timeout.astro';
+
+## Mensagens e chamadas
+
+Processos com memória própria comunicam por mensagens. Falha parcial permite um processo parar enquanto outros continuam. RPC serializa operação/argumentos no stub cliente, transmite, descodifica/invoca no servidor e devolve resposta. Um ponteiro local não transfere o espaço de endereços.
+
+| Transporte | Garantia                                               | Responsabilidade da aplicação                         |
+| ---------- | ------------------------------------------------------ | ----------------------------------------------------- |
+| TCP        | Fluxo de bytes ordenado enquanto a ligação progride    | Enquadrar mensagens, prazos e significado da resposta |
+| UDP        | Datagramas com fronteiras preservadas quando entregues | Perda, duplicação e reordenação                       |
+
+TCP não conserva fronteiras de write/read: `OK ` pode ser só parte de `OK 42\n`; `OK 42\nOK 43\n` contém duas respostas. Acumula até ao delimitador e conserva o resto. Envio local concluído não prova execução remota.
+
+## Timeout e repetição
+
+<Timeout />
+
+Síncrono tem limites temporais conhecidos; assíncrono não fornece um limite conhecido que prove paragem. Timeout suspeita atraso, falha ou partição. O débito pode já ter ocorrido com resposta perdida.
+
+- Idempotência conserva o efeito ao repetir o mesmo pedido, sem exigir resposta idêntica: ler a hora pode devolver valores diferentes.
+- Débito não idempotente exige identificador estável e deduplicação. Efeito, identificador e resultado precisam de atualização atómica e durável para sobreviver a reinícios.
+- Pelo menos uma vez pode repetir efeitos; execução eventual depende de recuperação e comunicação que progrida. No máximo uma vez evita duplicados, sem garantir execução nem conhecimento do resultado após qualquer falha.
+
+## Servidores e ordens
+
+Sem estado de sessão não significa sem base de dados. Estado de sessão guarda contexto e precisa de recuperação/replicação. Servidor iterativo trata um pedido de cada vez; threads/goroutines permitem espera concorrente; eventos mantêm estado entre operações não bloqueantes. Bloquear o ciclo de eventos atrasa clientes.
+
+Uma thread não elimina corrida lógica: dois débitos leem 100, aguardam I/O e ambos gravam 90. Protege a operação completa para obter 80. Canal Go liga goroutines do mesmo programa, não máquinas; num canal sem buffer envio espera pela receção.
+
+FIFO conserva ordem por emissor. Causal conserva dependências entre emissores; total impõe a mesma ordem aos destinatários. Se B envia m2 após entregar m1 de A, causal exige m1 antes de m2; FIFO não basta. Ordem total isolada pode impor m2,m1 a todos, sem causalidade. Bytes recebidos podem esperar antes de entrega à aplicação. Nenhuma destas ordens, sozinha, garante entrega fiável. [Ordens e traços](/cadeiras/cpd/sistemas-distribuidos-comunicacao/#ordenar-mensagens).

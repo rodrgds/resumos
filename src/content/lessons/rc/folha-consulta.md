@@ -9,7 +9,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   coverage: Consulta compacta dos tópicos das onze lições. As derivações e resoluções estão nas lições.
 ---
 
@@ -46,6 +46,8 @@ Go-Back-N com erros independentes e ACK desprezável: se $W\ge1+2a$, $U=(1-p_e)/
 
 Não apliques estas expressões fora do modelo. [Contas e traços](/cadeiras/rc/ligacao-de-dados/).
 
+Bloco finito ARQ: respeita a janela de pendentes e cada ACK. Depois de acabar a última transmissão, soma uma propagação para a chegada ou duas para a confirmação, com ACK desprezável. O débito prolongado pode não dar o tempo exato do bloco. [Calendário](/cadeiras/rc/ligacao-de-dados/#terminar-uma-transferência-finita).
+
 ## CRC e ARQ
 
 Comparação de modelos de multiplexagem, m fluxos Poisson independentes e comprimentos exponenciais: fila comum $T=1/(\mu-\lambda)$; m parcelas iguais de capacidade $T=m/(\mu-\lambda)$. A mesma carga não fixa o mesmo atraso. [Explicação](/cadeiras/rc/desempenho-e-filas/#multiplexagem-estatística-e-capacidade-reservada).
@@ -66,9 +68,13 @@ Little: $N=\lambda T$, mesma fronteira e taxa efetiva. Carga $\rho=\lambda/\mu$.
 
 Serviços independentes das chegadas e entre si, FIFO e sem preempção. $T=T_q+E[S]$. Em M/M/1: $N=\rho/(1-\rho)$, $N_q=\rho^2/(1-\rho)$. Poisson num intervalo t: $P(k)=e^{-\lambda t}(\lambda t)^k/k!$.
 
+Em M/M/1 estável, servidor ocioso dá $P(N=0)=1-\rho$; nenhum pacote em espera dá $P(N_q=0)=1-\rho^2$. Com chegadas agregadas periódicas e serviço constante mais curto que o intervalo, partindo vazio, não há espera nem perdas. Fontes periódicas alinhadas podem criar grupos e perdas à mesma taxa média.
+
 M/M/1 estável: tempo ocioso $p_0=1-\rho$, $P(N\ge k)=\rho^k$ no sistema; para k≥1, $P(N_q\ge k)=\rho^{k+1}$ na fila. Serviço constante, FIFO e capacidade total B: espera de um admitido limitada por $(B-1)/\mu$. [Exemplos](/cadeiras/rc/modelos-filas/#inferir-a-ligação-a-partir-do-tempo-ocioso).
 
 M/M/1/B, B capacidade total: $p_n=(1-\rho)\rho^n/(1-\rho^{B+1})$; se $\rho=1$, $p_n=1/(B+1)$. Bloqueio $p_B$, $\lambda_e=\lambda(1-p_B)$, $N=\sum n p_n$, $T=N/\lambda_e$.
+
+Um lugar de espera além do serviço dá B=2, não B=1. Define essa convenção antes de calcular perdas.
 
 Filas em série: a saída de uma M/D/1 não é Poisson; conservar comprimentos entre saltos pode correlacionar chegadas e serviços. Kleinrock aproxima a independência com mistura de tráfego. [Condições](/cadeiras/rc/modelos-filas/#filas-em-série-e-independência).
 
@@ -86,6 +92,8 @@ Comutador aprende MAC **de origem**. Destino desconhecido: inunda mesma VLAN, ex
 
 IPv4/p: $2^{32-p}$ endereços; hosts usuais menos 2, com exceções /31 ponto a ponto e /32. Rede = IP AND máscara. VLSM: maiores primeiro, blocos alinhados. Longest prefix match: maior prefixo que corresponda; /0 é a rota por omissão.
 
+Hosts utilizáveis contam interfaces: desconta gateway e gestão para obter computadores; desconta ainda os já presentes para obter terminais adicionais. Uma porta de comutador não consome automaticamente um IP.
+
 ARP resolve IP do próximo salto para MAC local. Router muda trama por salto; IP dos extremos normalmente mantém-se sem NAT. IPv4 fragmenta se permitido: dados de fragmentos não finais múltiplos de 8 bytes; offset em blocos de 8 da carga original; cada fragmento tem cabeçalho. IPv6 usa 128 bits, não tem checksum no cabeçalho base e routers não fragmentam.
 
 Dijkstra: fixa a menor distância provisória e relaxa vizinhos. Distance vector: $D_x(y)=\min_v(c(x,v)+D_v(y))$. Regista próximo salto e rondas; soma de custos não é bottleneck. [IP](/cadeiras/rc/camada-de-rede/) e [routing](/cadeiras/rc/algoritmos-encaminhamento/).
@@ -95,5 +103,7 @@ Dijkstra: fixa a menor distância provisória e relaxa vizinhos. Distance vector
 RTO: atualiza RTTVAR antes de SRTT e usa a margem de variação, com mínimo recomendado de 1 s na RFC6298. TCP numera bytes; ACK cumulativo indica próximo esperado. SYN e FIN consomem 1; ACK sem dados não. Janela efetiva em bytes $\min(rwnd,cwnd)$; bytes novos descontam pendentes. 8 MSS só são oito segmentos com segmentos de MSS bytes. Limite por janela W bytes: $8W/RTT$ bit/s. Fluxo protege recetor; congestionamento protege rede. Reno clássico com 12 MSS em voo: ssthresh=6 MSS; três ACKs duplicados dão cwnd temporária 9 MSS e retorno a 6 no ACK de recuperação; timeout dá cwnd=1 MSS, mantendo o limiar 6. Slow start aproximadamente duplica por RTT; congestion avoidance cresce aproximadamente 1 MSS por RTT, segundo o modelo.
 
 DNS: A/AAAA endereços, MX correio, CNAME alias, NS autoritativos, PTR inverso. UDP e TCP 53. HTTP/1.1 delimita cabeçalhos por CRLF; ligação persistente evita nova abertura; não confundir com HTTP/3. FTP: controlo TCP 21 e dados separados. SMTP envia correio; POP3/IMAP acedem à caixa. TCP não preserva fronteiras de chamadas send/recv.
+
+SMTP `DATA`: linha `.` com CRLF termina conteúdo; dot-stuffing duplica o ponto inicial de cada linha de conteúdo e o recetor remove-o. A ligação TCP pode continuar. [Delimitação](/cadeiras/rc/aplicacoes/#delimitar-os-dados-em-smtp).
 
 Distribuição: $D_{CS}\ge\max(NF/u_s,F/d_{min})$; $D_{P2P}\ge\max(F/u_s,F/d_{min},NF/(u_s+\sum u_i))$. Limites inferiores sob o modelo ideal. [TCP](/cadeiras/rc/transporte-e-aplicacoes/) e [aplicações](/cadeiras/rc/aplicacoes/).

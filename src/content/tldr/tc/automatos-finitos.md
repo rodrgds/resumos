@@ -18,7 +18,7 @@ Para reconhecer palavras terminadas em $ab$, guarda o sufixo útil do prefixo li
 
 $baab$ segue $q_0,q_0,q_1,q_1,q_2$ e aceita. $aba$ passa por $q_2$, mas termina em $q_1$ e rejeita.
 
-Para provar a construção, mostra por **indução nos prefixos** que o estado conserva o significado indicado. Depois mostra que o critério final equivale à condição da linguagem, nas duas direções. Testar algumas palavras apenas ajuda a encontrar erros.
+Para provar a construção, mostra por **indução nos prefixos** que cada estado conserva o significado indicado e que o critério final equivale à condição da linguagem nas duas direções; testar palavras apenas ajuda a encontrar erros.
 
 [Construção e editor do DFA](/cadeiras/tc/automatos-finitos/#construir-e-testar-o-dfa).
 

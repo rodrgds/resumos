@@ -48,9 +48,7 @@ Totais: FIFO 5, LRU 6 e OPT 5. No último passo de OPT, qualquer página que já
 
 **OPT** retira a página cuja próxima utilização está mais longe no futuro, ou que não volta a ser usada. Na referência 4 do exemplo, os próximos usos de 2, 1 e 3 são os passos 6, 7 e 8. Retiramos 3. OPT serve como referência mínima para a sequência conhecida; o sistema não conhece em geral o futuro.
 
-**LRU** retira a página cujo último acesso está mais longe no passado, ou seja mede localidade temporal: o que foi usado há pouco tende a voltar. Na referência 4, 2 foi usada no passo 2, 3 no passo 3 e 1 no passo 4. Retiramos 2. A localidade espacial, usar páginas vizinhas, explica por que a ordem de percurso de uma matriz importa, mas não muda esta escolha. A implementação exata pode usar tempos de último acesso ou uma lista atualizada em cada referência, com custo de manutenção.
-
-Não confundas FIFO com LRU: no primeiro, a idade vem da entrada; no segundo, do último acesso.
+**LRU** retira a página cujo último acesso está mais longe no passado, ou seja mede localidade temporal: o que foi usado há pouco tende a voltar. Na referência 4, 2 foi usada no passo 2, 3 no passo 3 e 1 no passo 4. Retiramos 2. A localidade espacial, usar páginas vizinhas, explica por que a ordem de percurso de uma matriz importa, mas não muda esta escolha. A implementação exata pode usar tempos de último acesso ou uma lista atualizada em cada referência, com custo de manutenção. Para não confundir as duas políticas, repara que no FIFO a idade vem da entrada, enquanto no LRU vem do último acesso.
 
 ## Anomalia de Belady e aproximações
 
@@ -61,6 +59,34 @@ No **relógio**, as molduras formam um anel e uma ponteira procura uma vítima. 
 Traça o relógio com ponteira em A e bits A=1, B=0, C=1: examina A, limpa para 0 e avança; examina B com 0, escolhe B como vítima e avança a ponteira para C. Não escolhe A só por ser a primeira. É preciso saber onde começa a ponteira e como cada acesso põe o bit a 1. Para matrizes, fixa as hipóteses antes de contar: dimensões, ordem de percurso, tamanho de página e número de molduras. Sem elas, duas contagens diferentes podem parecer contraditórias.
 
 A segunda oportunidade melhorada considera referência e sujidade: uma página `(0,0)` não recente e limpa é uma boa vítima; `(0,1)` exige escrita. LFU retira a menos referenciada e MFU a mais referenciada, mas contagens históricas podem representar mal a localidade atual. Pools de molduras livres e escrita antecipada de páginas sujas podem reduzir o trabalho no momento da falta.
+
+## Recência, frequência e sujidade
+
+A informação disponível determina que políticas consegues aplicar. FIFO precisa da ordem de carregamento; LRU da ordem dos últimos acessos; LFU de contagens de acessos, com uma regra de desempate. O bit de referência `R` só diz se houve acesso desde a última limpeza, não a idade exata nem o número de acessos.
+
+**NRU**, _Not Recently Used_, agrupa páginas por `(R,M)`, onde `M` é o bit de modificação, e escolhe da primeira classe não vazia nesta ordem:
+
+| Classe | `(R,M)` | Interpretação                  |
+| ------ | ------- | ------------------------------ |
+| 0      | `(0,0)` | Sem referência recente e limpa |
+| 1      | `(0,1)` | Sem referência recente e suja  |
+| 2      | `(1,0)` | Referenciada e limpa           |
+| 3      | `(1,1)` | Referenciada e suja            |
+
+O sistema limpa periodicamente `R` para observar uma nova janela. Se houver várias páginas na mesma classe, é preciso um desempate; NRU não seleciona automaticamente a de menor timestamp. Relógio e segunda oportunidade melhorada também usam bits, mas o seu percurso de procura faz parte da regra: não são substitutos da classificação NRU.
+
+## Contar faltas numa matriz
+
+Considera uma matriz C `int a[4][4]`, com inteiros de 4 bytes, início alinhado e páginas de 16 bytes. Cada linha ocupa exatamente uma página. O processo tem **duas molduras para a matriz**, inicialmente vazias, usa LRU e não há referências a outros dados neste modelo.
+
+| Percurso                                | Páginas referenciadas             | Faltas |
+| --------------------------------------- | --------------------------------- | ------ |
+| Linhas, índice da coluna varia primeiro | `0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3` | 4      |
+| Colunas, índice da linha varia primeiro | `0,1,2,3,0,1,2,3,0,1,2,3,0,1,2,3` | 16     |
+
+Por linhas, a primeira escrita carrega a página; as três seguintes acertam nela. Por colunas, quando voltamos à página 0 já acedemos a 1, 2 e 3. Duas molduras não conservam as quatro páginas, por isso todas as referências faltam.
+
+Com quatro molduras, os dois percursos dariam quatro faltas iniciais. O ganho não resulta só de mudar o ciclo: depende de páginas, alinhamento, número de molduras e referências concorrentes. Estes tamanhos pequenos são um modelo de exercício, não os tamanhos de página usuais de um computador.
 
 ## Quanto custa uma pequena taxa de faltas
 
@@ -91,7 +117,11 @@ Na substituição **local**, um processo só escolhe entre as suas molduras. Na 
 
 O **working set** numa janela de $\Delta$ referências é o conjunto de páginas usadas nessa janela. Para as últimas referências `2,1,3,2,4`, o conjunto é `{1,2,3,4}` e o tamanho é 4, não 5.
 
-Se os processos ativos precisam em conjunto de mais molduras do que as disponíveis, podem retirar e voltar a carregar páginas continuamente. Este **thrashing** faz o sistema passar muito tempo em paginação e pouco em trabalho útil. A CPU pode ficar menos utilizada enquanto espera pelo disco. Acrescentar processos por causa dessa baixa utilização pode piorar a pressão.
+Se os processos ativos precisam em conjunto de mais molduras do que as disponíveis, podem retirar e voltar a carregar páginas continuamente. Este **thrashing** faz o sistema passar muito tempo em paginação e pouco em trabalho útil.
+
+:::warning[CPU pouco ocupada não significa falta de processos]
+Durante thrashing, a CPU pode ficar menos utilizada enquanto espera pelo disco. Acrescentar processos pode aumentar a pressão sobre a RAM e provocar mais faltas. Confere a frequência de faltas e o tempo de paginação antes de aumentar o trabalho ativo.
+:::
 
 Reduzir o número de processos ativos, dar mais molduras aos conjuntos de trabalho ou controlar a frequência de faltas pode recuperar progresso. A frequência de faltas mede diretamente quando um processo precisa de mais ou menos molduras. A janela do working set é uma aproximação: curta de mais perde parte da localidade; longa de mais junta localidades antigas.
 

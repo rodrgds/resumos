@@ -9,7 +9,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Rodrigo
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: PFL 2026/27, aulas 4 a 6 e folhas 2 e 3
       url: https://moodle2627.up.pt/course/view.php?id=4363
@@ -22,6 +22,7 @@ import permutacoes from '../../pfl/examples/permutacoes.hs?raw';
 import CodeSnippet from '../../../components/CodeSnippet.astro';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import gruposRelacao from '../../pfl/examples/grupos-relacao.hs?raw';
 import Dot from '../../../components/Dot.astro';
 import YouTube from '../../../components/YouTube.astro';
 import programa from '../../pfl/listas.hs?raw';
@@ -82,7 +83,11 @@ primo n = n > 1 && testar 2
       | otherwise = testar (d+1)
 ```
 
-`primo 49` chega a `d=7`, testa o divisor e dá `False`, porque o teste de paragem tem de usar `>`: com `>=`, saltaríamos precisamente o divisor de um quadrado perfeito. O custo deste método é de ordem raiz quadrada de `n`, contando candidatos, não o custo de multiplicar inteiros grandes.
+:::warning[Testar também a raiz exata]
+`primo 49` chega a `d=7`, testa o divisor e dá `False`, porque o teste de paragem tem de usar `>`: com `>=`, saltaríamos precisamente o divisor de um quadrado perfeito.
+:::
+
+O custo deste método é de ordem raiz quadrada de `n`, contando candidatos, não o custo de multiplicar inteiros grandes.
 
 ## Relacionar posições com zip
 
@@ -190,11 +195,11 @@ intercalar _ [x] = [x]
 intercalar s (x:xs) = x:s:intercalar s xs
 ```
 
-A última equação só é usada quando há pelo menos dois elementos, porque os casos anteriores já trataram zero e um. Conservamos a cabeça e pomos o separador antes do resto.
+A última equação só é usada quando há pelo menos dois elementos, porque os casos anteriores já trataram zero e um.
 
 ### As funções usadas em `permutar`
 
-`permutar` usa duas funções que a página seguinte estuda a fundo. Lê aqui apenas o contrato necessário:
+`permutar` usa `map` e `concatMap`, que a página seguinte estuda a fundo; aqui basta o contrato:
 
 ```haskell
 map :: (a -> b) -> [a] -> [b]
@@ -264,3 +269,30 @@ O contrato deste exemplo é binário sem sinal: um argumento negativo dá `Nothi
 />
 
 As escolhas para zero e negativos são parte do contrato, não consequências impostas pelo tipo `Integer`.
+
+## Agrupar comparando com o início do grupo
+
+Em `"AABBBAA"`, os iguais consecutivos formam `["AA","BBB","AA"]`. Podemos passar a comparação como argumento, sem exigir `Eq a` no tipo da função. A comparação é que decide o que significa pertencer ao mesmo grupo:
+
+```haskell
+agruparPor :: (a -> a -> Bool) -> [a] -> [[a]]
+agruparPor _ [] = []
+agruparPor rel (x:xs) = (x:iguais) : agruparPor rel resto
+  where
+    (iguais, resto) = span (rel x) xs
+```
+
+`span p xs` separa o maior prefixo em que `p` é verdadeiro e o resto, como `takeWhile` e `dropWhile` juntos. O primeiro elemento `x` entra sempre no seu grupo. Comparar cada elemento seguinte com **esse mesmo x** identifica a fronteira; o resto começa um grupo novo.
+
+Uma relação arbitrária pode não ser transitiva. Com `rel x y = abs (x-y) <= 1` em `[0,1,2]`, `0` aceita `1`, mas recusa `2`. O resultado é `[[0,1],[2]]`. Comparar cada elemento com o vizinho anterior daria um só grupo, pois `1` aceita `2`: seria outro contrato.
+
+<CodePlayground
+  language="haskell"
+  title="Grupos por igualdade e proximidade"
+  code={
+    gruposRelacao +
+    '\nmain :: IO ()\nmain = do\n  print (agruparPor (==) "AABBBAA")\n  print (agruparPor (\\x y -> abs (x-y) <= 1) [0,1,2 :: Integer])\n  print (agruparPor (==) ([] :: [Int]))\n'
+  }
+/>
+
+No caso não vazio, retiramos pelo menos a cabeça. Mesmo que a relação recuse todos os elementos seguintes, a recursão recebe uma lista menor. Para terminar a lista inteira de grupos, a entrada tem de ser finita e cada comparação tem de terminar. A função não ordena nem procura iguais depois da primeira falha.

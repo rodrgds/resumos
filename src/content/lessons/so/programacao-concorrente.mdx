@@ -8,6 +8,7 @@ practices:
 ---
 
 import consumidorCondicao from '../../so/examples/consumidor-condicao.c?raw';
+import Bracket from '../../../components/Bracket.astro';
 import CodeSnippet from '../../../components/CodeSnippet.astro';
 
 Duas threads contam linhas de ficheiros diferentes e somam os resultados num contador comum. Cada thread tem a sua execução, mas ambas acedem à memória do processo. Se lerem o mesmo total e escreverem separadamente os novos valores, uma atualização pode perder-se. A coordenação tem de proteger toda a operação que deve ser indivisível.
@@ -16,7 +17,13 @@ Duas threads contam linhas de ficheiros diferentes e somam os resultados num con
 
 Uma thread tem registos, contador de programa e pilha próprios. As threads do processo partilham o espaço de endereçamento, incluindo globais e heap, e os descritores. Uma variável automática pode ser acedida por outra thread se lhe passarmos um apontador válido; estar numa pilha não garante privacidade.
 
-`pthread_create` inicia uma função com assinatura `void *f(void *)`. O argumento precisa de continuar vivo enquanto a thread o usa. Para passar um índice e um nome a cada thread, define uma `struct` com esses campos, guarda um vetor de estruturas vivo até aos joins e passa `&tarefa[i]` a cada thread. Passar a todas o endereço da mesma variável de um ciclo permite que leiam o índice errado. Se o ciclo a altera enquanto uma thread a lê, há ainda uma data race, com comportamento indefinido em C. `pthread_join` espera pela terminação de uma thread e permite recolher o seu retorno com um `malloc` ou um valor estático por thread. Não termina as outras threads e não devolve um apontador para a pilha da thread.
+`pthread_create` inicia uma função com assinatura `void *f(void *)`, e o argumento precisa de continuar vivo enquanto a thread o usa. Para passar um índice e um nome a cada thread, define uma `struct` com esses campos, guarda um vetor de estruturas vivo até aos joins e passa `&tarefa[i]` a cada thread.
+
+Passar a todas o endereço da mesma variável de um ciclo permite que leiam o índice errado; se o ciclo a altera enquanto uma thread a lê, há ainda uma data race, com comportamento indefinido em C.
+
+`pthread_join` espera pela terminação de uma thread e permite recolher o seu retorno, por exemplo um apontador para um bloco obtido com `malloc` ou para um objeto estático por thread. O retorno não pode apontar para um objeto automático cuja vida acabou com a thread.
+
+Retornar da função inicial da thread equivale a terminar essa thread com `pthread_exit`. Já `exit` termina o processo inteiro, incluindo as restantes threads; retornar de `main` tem esse efeito. Os joins do exemplo conservam o processo vivo até todos os resultados estarem prontos.
 
 O programa seguinte passa uma estrutura distinta a cada thread e recolhe o retorno de cada uma com `pthread_join`. Guarda-o em `fios.c` e compila num terminal UNIX com `cc -std=c17 -Wall -Wextra -Wpedantic fios.c -pthread -o fios`.
 
@@ -98,9 +105,7 @@ Num modelo de ler, calcular e escrever, o contador começa em 5:
 | 5     | Escreve 6             |                       | 6       |
 | 6     |                       | Escreve 4             | 4       |
 
-A execução serial daria 5. Este entrelaçamento dá 4; inverter as duas escritas daria 6. É um exemplo para explicar a corrida. Em C, acessos concorrentes incompatíveis a um objeto não atómico, sem sincronização, constituem **data race** e têm comportamento indefinido. Não podes afirmar que o programa C real só terá os resultados 4, 5 ou 6.
-
-`volatile` não resolve esta corrida, porque impede certas otimizações dos acessos mas não cria uma operação atómica nem uma relação de sincronização entre threads.
+A execução serial daria 5. Este entrelaçamento dá 4; inverter as duas escritas daria 6. É um exemplo para explicar a corrida. Em C, acessos concorrentes incompatíveis a um objeto não atómico, sem sincronização, constituem **data race** e têm comportamento indefinido, por isso não podes afirmar que o programa C real só terá os resultados 4, 5 ou 6. Declarar o contador como `volatile` não resolve esta corrida, porque impede certas otimizações dos acessos mas não cria uma operação atómica nem uma relação de sincronização entre threads.
 
 ## Secção crítica e propriedades
 
@@ -169,7 +174,9 @@ int main(void) {
 }
 ```
 
-A saída é 20000. Todos os incrementos usam o mesmo mutex. A leitura final acontece depois dos dois joins, quando já não há escritores. Pthreads devolve o código de erro diretamente em muitas funções; não o interpretes como `errno`. Usa `strerror(erro)`, como no programa.
+A saída é 20000, porque todos os incrementos usam o mesmo mutex; a leitura final acontece depois dos dois joins, quando já não há escritores.
+
+Pthreads devolve o código de erro diretamente em muitas funções, por isso não o interpretes como `errno`; usa `strerror(erro)`, como no programa.
 
 Obter o mutex uma vez para todo o ciclo também daria o total correto, mas cada thread faria o seu trabalho inteiro sem a outra entrar. Obter por incremento permite entrelaçamento fino e custa mais operações de sincronização. A granularidade deve seguir o que precisa de ser indivisível, não a regra de pôr sempre o menor número de linhas possível.
 
@@ -181,7 +188,9 @@ Um semáforo iniciado em 3 limita a três utilizadores de um recurso. Iniciado e
 
 Numa fila limitada a $N$ itens, um protocolo com semáforos começa com `vazios=N`, `cheios=0` e exclusão mútua sobre os índices. O produtor obtém um vazio, obtém o mutex, insere, liberta o mutex e anuncia um cheio. O consumidor obtém um cheio, obtém o mutex, retira, liberta o mutex e anuncia um vazio.
 
-A ordem importa. Se um produtor obtiver primeiro o mutex e depois esperar por um vazio numa fila cheia, bloqueia mantendo o mutex. O consumidor que poderia criar espaço não consegue obtê-lo. Esperar por disponibilidade antes de entrar na secção crítica evita esse ciclo. Os contadores de permissões não dispensam proteger a atualização dos índices quando há vários produtores ou consumidores.
+:::warning[Não esperes mantendo o lock de quem cria espaço]
+Se um produtor obtiver primeiro o mutex e depois esperar por um vazio numa fila cheia, bloqueia mantendo o mutex. O consumidor que poderia criar espaço não consegue obtê-lo. Neste protocolo com semáforos, esperar por disponibilidade antes da secção crítica evita esse ciclo. Os contadores não dispensam proteger os índices quando há vários produtores ou consumidores.
+:::
 
 ## Esperar por uma condição
 
@@ -202,11 +211,35 @@ O produtor faz o simétrico: espera enquanto `quantidade == CAPACIDADE`, insere 
 | Produtor liberta; consumidor reobtém | 1, se ninguém retirou entretanto | Consumidor                        |
 | Consumidor volta ao teste do `while` | Confere de novo                  | Consumidor                        |
 
-O sinal permite deixar a espera; os dados e o mutex determinam se a retirada já pode acontecer.
+<Bracket label="Ideia-chave">
 
-O teste precisa de `while`, porque pode haver despertares espúrios ou outra thread pode consumir o item antes de esta obter o mutex. `signal` não transfere imediatamente a CPU nem entrega o mutex ao consumidor.
+O sinal permite deixar a espera; não reserva um item. São os dados, testados com o mutex obtido, que determinam se a retirada pode acontecer. Usa `while`, porque pode haver despertares espúrios ou outra thread pode consumir o item antes de esta obter o mutex. `signal` não transfere imediatamente a CPU nem entrega o mutex ao consumidor.
+
+</Bracket>
 
 Para vários consumidores, define também como termina a produção. Uma flag `terminado`, sob o mesmo mutex, permite esperar enquanto a fila está vazia **e** não terminou, e sair quando vazia e terminada. Nesse fim, um `broadcast` acorda os consumidores que precisam de observar a mudança.
+
+## Monitores com retoma imediata e diferida
+
+Nos monitores clássicos com **retoma imediata**, ou semântica de Hoare, um `signal` entrega o monitor à tarefa que esperava; a tarefa que sinalizou fica suspensa. Se o sinalizador tornou o predicado verdadeiro imediatamente antes do sinal, a tarefa acordada observa esse estado antes de outra operação do monitor o alterar.
+
+Na **retoma diferida**, associada a Mesa, o sinalizador continua. A tarefa acordada só executa depois de voltar a obter exclusão mútua, e o predicado pode entretanto ter mudado. Pthreads segue esta disciplina de reavaliação e admite ainda despertares espúrios: conserva o `while` em torno de `pthread_cond_wait`.
+
+Um exercício que usa `if (v == 0) wait(cond)` pode assumir retoma imediata num monitor abstrato. Não traduzas essa conclusão para Pthreads sem rever as hipóteses. A disciplina de sinalização e o predicado protegido fazem parte da solução, não apenas a palavra `monitor`.
+
+## Leitores e escritores
+
+Vários leitores podem consultar um objeto sem o alterar, mas um escritor precisa de excluir tanto outros escritores como leitores. A condição de segurança permite vários leitores **ou** um escritor, nunca ambos ao mesmo tempo.
+
+Num protocolo com preferência pelos leitores, um novo leitor pode juntar-se enquanto já existem leitores ativos. Se chegam leitores continuamente, o conjunto pode nunca ficar vazio e um escritor ficar em inanição, embora os leitores avancem. Bloquear novos leitores quando há um escritor à espera impede esse entrelaçamento; dar preferência estrita a uma fila contínua de escritores pode criar o problema simétrico.
+
+| Estado                                    | Novo leitor    | Novo escritor       |
+| ----------------------------------------- | -------------- | ------------------- |
+| Sem participantes                         | Pode entrar    | Pode entrar sozinho |
+| Leitores ativos, preferência por leitores | Pode juntar-se | Espera todos saírem |
+| Escritor ativo                            | Espera         | Espera              |
+
+Um mutex exclusivo para todas as consultas garante segurança, mas perde a simultaneidade entre leitores. Um read-write lock permite essa simultaneidade, porém a política de admissão e a justiça dependem do contrato. Não concluas espera limitada só por usar um lock de leitores/escritores. Este problema e a distinção entre monitores são úteis para interpretar fichas e provas históricas; a prática Pthreads atual continua a exigir mutex e predicado reavaliado.
 
 ## Porque um sinal pode não bastar
 

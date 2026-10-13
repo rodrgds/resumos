@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Introdução, slides no Moodle atual
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33678
@@ -21,22 +21,29 @@ editorial:
 ---
 
 import Typst from '../../../components/Typst.astro';
+import Bracket from '../../../components/Bracket.astro';
 import caminho from '../../rc/caminho-pacote.typ?raw';
 import cronologia from '../../rc/store-and-forward.typ?raw';
 
 Um portátil pede um ficheiro a um servidor. Os dados seguem em **pacotes**, que os routers encaminham entre redes. O portátil pode usar TCP para recuperar perdas, mas o serviço IP que transporta os pacotes não garante chegada, ordem ou ausência de duplicados.
 
-Um **protocolo** define as mensagens e as ações de quem as troca. Um **serviço** descreve o que uma camada oferece à seguinte. TCP oferece um fluxo ordenado à aplicação; para o implementar, troca segmentos e confirmações com o TCP do outro terminal. Esta distinção separa aquilo que a aplicação recebe do mecanismo que o fornece.
+<Bracket label="Ideia-chave">
 
-Um **bit** é um 0 ou 1, e um **byte** são 8 bits. Aqui usamos kbit/s e Mbit/s decimais, ou seja, $10^3$ e $10^6$ bits por segundo.
+Um **serviço** é o que uma camada oferece à seguinte; um **protocolo** define as mensagens e as ações entre entidades da mesma camada em equipamentos diferentes. TCP oferece um fluxo ordenado à aplicação e implementa esse serviço trocando segmentos e confirmações com o TCP do outro terminal. A aplicação usa o serviço, não precisa de produzir os ACK do protocolo TCP.
+
+</Bracket>
+
+Um **bit** é um 0 ou 1, e um **byte** são 8 bits. Aqui usamos kbit/s e Mbit/s decimais; $10^3$ e $10^6$ bits por segundo.
 
 ## Circuitos e pacotes
 
 Na **comutação de circuitos**, reservas capacidade antes de transmitir. FDM reserva bandas de frequência e TDM reserva intervalos de tempo. A reserva dá débito previsível, mas fica ocupada mesmo quando a origem não envia.
 
-Na **comutação de pacotes**, os fluxos partilham capacidade conforme a necessidade. Um **router** liga redes e escolhe o caminho de cada pacote. Recebe um pacote, escolhe a saída e espera que fique livre. Na **multiplexagem estatística**, a capacidade da saída não fica reservada a um fluxo. Quando um fica sem dados, outro pode usá-la. Mas pode criar filas e perdas quando a procura excede o serviço.
+Na **comutação de pacotes**, os fluxos partilham capacidade conforme a necessidade. Um **router** liga redes e escolhe o caminho de cada pacote; recebe um pacote, escolhe a saída e espera que fique livre. Na **multiplexagem estatística**, a capacidade da saída não fica reservada a um fluxo, por isso quando um fica sem dados outro pode usá-la; em compensação, pode criar filas e perdas quando a procura excede o serviço.
 
 Uma rede de pacotes pode usar **datagramas**, com decisão de encaminhamento por pacote, ou **circuitos virtuais**, com estado de ligação no caminho. IP usa datagramas. Uma ligação TCP entre aplicações não transforma a rede IP numa rede de circuitos virtuais.
+
+Num circuito virtual, a tabela pode associar `(porta de entrada, identificador do circuito)` a `(porta de saída, novo identificador)`. A associação `(1, 12) → (3, 22)` manda um pacote que entra na porta 1 com identificador 12 sair na porta 3 com identificador 22. A consulta é exata e os identificadores podem mudar por ligação. No IPv4 por datagramas, o router consulta o endereço de destino por prefixo. Um circuito virtual também não implica, por si só, capacidade reservada: isso depende do serviço estabelecido.
 
 <span id="um-pacote-não-atravessa-tudo-ao-mesmo-tempo"></span>
 
@@ -56,13 +63,13 @@ O primeiro pacote ocupa $H$ tempos de transmissão. Os restantes chegam espaçad
   alt="Origem para router: P1 de 0 a 1 s, P2 de 1 a 2 s e P3 de 2 a 3 s. Router para destino: P1 de 1 a 2 s, P2 de 2 a 3 s e P3 de 3 a 4 s."
 />
 
-Cada bloco mostra a transmissão completa de um pacote numa ligação. Entre 1 e 2 s, a origem envia P2 enquanto o router envia P1, porque já o recebeu inteiro. Esta **sobreposição entre ligações** mantém o store-and-forward: nenhuma segunda transmissão começa antes de terminar a primeira.
+Cada bloco mostra a transmissão completa de um pacote numa ligação. Entre 1 e 2 s, a origem envia P2 enquanto o router envia P1, porque já o recebeu inteiro; esta **sobreposição entre ligações** mantém o store-and-forward, pois nenhuma segunda transmissão começa antes de terminar a primeira.
 
-Neste modelo, cada transmissão demora $L/R=1$ s. O primeiro pacote precisa de $H=2$ intervalos para atravessar as duas ligações. Cada um dos $N-1=2$ pacotes restantes acrescenta um intervalo até à última chegada. Por isso, contamos $H+N-1=2+3-1=4$ intervalos, e não $H\times N=6$ transmissões feitas uma de cada vez.
+Neste modelo, cada transmissão demora $L/R=1$ s. O primeiro pacote precisa de $H=2$ intervalos para atravessar as duas ligações e cada um dos $N-1=2$ pacotes restantes acrescenta um intervalo até à última chegada; por isso, contamos $H+N-1=2+3-1=4$ intervalos, e não $H\times N=6$ transmissões feitas uma de cada vez.
 
 Para um circuito com capacidade de 1 Mbit/s, estabelecimento de 0,5 s e propagação desprezável, a mensagem demoraria $0{,}5+3=3{,}5$ s. O circuito ganha neste exemplo isolado. Isso não prova que aproveite melhor uma rede com muitos utilizadores intermitentes.
 
-Se os débitos forem diferentes, desenha início e fim de cada transmissão, porque a expressão acima exige ligações iguais. A transmissão seguinte começa quando o pacote já chegou inteiro **e** a saída está livre. Usa o mais tardio desses dois instantes.
+Se os débitos forem diferentes, desenha início e fim de cada transmissão, porque a expressão acima exige ligações iguais. A transmissão seguinte começa quando o pacote já chegou inteiro **e** a saída está livre; usa o mais tardio desses dois instantes.
 
 ## Camadas, unidades e endereços
 
@@ -94,8 +101,8 @@ No **encapsulamento**, o TCP acrescenta o seu cabeçalho aos dados, o IP envolve
 
 ## Equipamentos e topologias
 
-Identifica terminais, ligações e equipamentos. Um **concentrador** repete sinais, um **comutador** encaminha tramas e um **router** encaminha pacotes IP. Um aparelho doméstico pode combinar os três sem tornar iguais estas funções.
+Terminais, ligações e equipamentos distinguem-se pela função. Um **concentrador** repete sinais, um **comutador** encaminha tramas e um **router** encaminha pacotes IP; um aparelho doméstico pode combinar os três sem tornar iguais estas funções.
 
 Uma ligação Bluetooth entre o portátil e um periférico é uma rede pessoal, PAN. A rede local de uma casa ou edifício é uma LAN; redes de âmbito metropolitano e alargado são designadas MAN e WAN. Estas designações descrevem o âmbito, não garantem um débito ou um protocolo. A Internet interliga redes de vários âmbitos.
 
-Distingue **topologia física** de **topologia lógica**, ou seja, cabos de percursos permitidos. Uma VLAN pode separar duas redes lógicas no mesmo comutador. Distingue também **débito da ligação** de **débito útil**, porque o segundo conta só dados entregues à aplicação.
+Distingue **topologia física** de **topologia lógica**, isto é, cabos de percursos permitidos; uma VLAN pode separar duas redes lógicas no mesmo comutador. Distingue também **débito da ligação** de **débito útil**, porque o segundo conta só dados entregues à aplicação.

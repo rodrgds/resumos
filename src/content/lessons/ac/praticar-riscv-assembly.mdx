@@ -4,6 +4,11 @@ description: Extensão de sinal, codificação, chamadas e endereços RV32.
 section: exercicios
 editorial:
   basedOn: 2024/25
+  sources:
+    - title: Capturas de recurso partilhadas no Accio, questões 1 e 4, ano interno não identificado
+      url: https://accio.pt/uploads/contributions/OwveQEdBgdI.pdf
+    - title: Capturas de primeiro teste partilhadas no Accio, questão 4, ano interno não identificado
+      url: https://accio.pt/uploads/contributions/k0FmTfjBrF0.pdf
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -184,5 +189,82 @@ import Exercise from '../../../components/Exercise.astro';
   </div>
   <div slot="mistakes">
     Somar deslocamentos como contagem de palavras em vez de bytes.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-fp-media-dupla"
+  revision={1}
+  title="Conservar a precisão e o tamanho dos elementos"
+  explanation="/cadeiras/ac/riscv-assembly/#vírgula-flutuante-e-conversões"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Usei flw e avanço de 4 bytes para os elementos simples.',
+      'Converti cada elemento para dupla antes de fadd.d.',
+      'Converti a contagem inteira para dupla antes de fdiv.d.',
+      'Converti o resultado para simples, em vez de copiar bits.',
+      'Obtive média 3,0 e expliquei a pré-condição de comprimento positivo.',
+    ],
+  }}
+>
+  <div>
+    Uma rotina recebe em a0 a base alinhada de um vetor de números finitos de
+    precisão simples e em a1 o seu comprimento positivo. Deve acumular e dividir
+    em dupla, sem overflow, e retornar a média de todos os elementos em fa0, com
+    precisão simples. Para [1,5; 2,5; 5,0], indica as instruções que inicializam
+    a soma, carregam e convertem cada elemento, somam, convertem o divisor,
+    dividem e preparam o retorno. Um colega propõe trocar flw por fld, avançar
+    oito bytes e usar fmv.d para converter. Explica os erros.
+  </div>
+  <div slot="hint">
+    Distingue o formato guardado em memória do formato dos cálculos.
+  </div>
+  <div slot="solution">
+    Inicializa com <code>fcvt.d.w fa0,zero</code>. Conserva a1 para o divisor e
+    usa outro registo inteiro para controlar o ciclo. Cada elemento usa
+    <code>flw ft0,0(a0)</code>, <code>fcvt.d.s ft1,ft0</code> e
+    <code>fadd.d fa0,fa0,ft1</code>; avança a0 quatro bytes e decrementa a
+    contagem do ciclo. A soma é 9,0. No fim,
+    <code>fcvt.d.w ft2,a1</code> cria 3,0,
+    <code>fdiv.d fa0,fa0,ft2</code> dá 3,0 e<code>fcvt.s.d fa0,fa0</code>{' '}
+    prepara o retorno simples. fld e avanço de oito bytes tratariam pares de
+    elementos simples como se fossem valores duplos. fmv.d copia um valor já
+    duplo, não converte o formato simples. Se o comprimento pudesse ser zero, a
+    rotina precisaria de definir e tratar esse caso antes de carregar e dividir.
+  </div>
+</Exercise>
+
+<Exercise
+  id="ac-recursao-pico"
+  revision={1}
+  title="Contar frames ativos, incluindo o caso base"
+  explanation="/cadeiras/ac/riscv-assembly/#profundidade-da-pilha-na-recursão"
+  answer={{
+    kind: 'self',
+    checklist: [
+      'Contei cinco frames simultâneos e pico de 80 bytes.',
+      'Incluí o frame reservado pelo caso base.',
+      'Distingui 40 bytes úteis de 80 bytes reservados.',
+      'Expliquei por que chamadas sucessivas usam um pico de 16 bytes.',
+    ],
+  }}
+>
+  <div>
+    A rotina soma_recursiva da lição recebe n=5 e reserva um frame de 16 bytes
+    antes de testar n=1; guarda duas palavras em cada frame. Partindo de
+    sp=4096, qual é o menor valor de sp? Quantos bytes estão reservados nesse
+    instante e quantos contêm os registos guardados? Compara com cinco chamadas
+    não recursivas que usem esse mesmo frame e retornem antes da chamada
+    seguinte. Assume pilha suficiente, inicialmente alinhada, sem outros frames
+    a contar.
+  </div>
+  <div slot="solution">
+    Há frames de n=5,4,3,2,1, todos ativos antes do primeiro retorno. O menor sp
+    é 4096−5×16=4016. Estão reservados 80 bytes, dos quais 5×2×4=40 bytes
+    guardam os registos. Os restantes mantêm o tamanho alinhado dos frames. No
+    caso não recursivo, cada retorno repõe sp=4096 antes da próxima chamada; o
+    menor sp é 4080 e o pico é apenas 16 bytes. O número total de chamadas é
+    igual, mas o tempo de vida dos frames é diferente.
   </div>
 </Exercise>

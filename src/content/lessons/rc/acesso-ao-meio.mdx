@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Programa RC, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587003
@@ -23,11 +23,27 @@ import YouTube from '../../../components/YouTube.astro';
 import janela from '../../rc/vulneravel.typ?raw';
 import paragem from '../../rc/contencao.mmd?raw';
 
-A e B têm dados para enviar no mesmo meio. Se começarem juntos, as transmissões podem impedir a receção uma da outra. O protocolo de acesso decide quando transmitir e como tentar de novo. Escutar reduz colisões, mas não as elimina: B pode ouvir silêncio antes de o sinal de A chegar.
+A e B têm dados para enviar no mesmo meio. Se começarem juntos, as transmissões podem impedir a receção uma da outra; o protocolo de acesso decide quando transmitir e como tentar de novo. Escutar reduz colisões, mas não as elimina, pois B pode ouvir silêncio antes de o sinal de A chegar.
+
+## Partição, contenção e turnos
+
+Os protocolos diferem na forma de atribuir o meio:
+
+| Classe                            | Como se obtém acesso                                            | Quando uma estação fica sem dados      |
+| --------------------------------- | --------------------------------------------------------------- | -------------------------------------- |
+| Partição, como TDM/FDM            | Reserva de tempo ou frequência                                  | A parcela reservada pode ficar sem uso |
+| Acesso aleatório, como ALOHA/CSMA | As estações disputam o meio segundo regras de envio e repetição | Outras podem aproveitar o meio livre   |
+| Turnos, como polling/token        | Uma autorização escolhe quem transmite                          | A autorização pode passar à seguinte   |
+
+No **polling**, um coordenador pergunta ou autoriza cada estação por vez. Há mensagens de controlo e tempo até voltar a cada estação; falhar o coordenador pode impedir o acesso.
+
+Num protocolo com **token**, a autorização circula entre estações. Só quem a possui transmite, segundo o limite definido pelo protocolo. Uma estação sem dados passa-a adiante. É preciso gerir perda ou duplicação do token; sem limites ao tempo durante o qual alguém o retém, não há garantia de espera curta para os outros.
+
+Partilhar por turnos reduz a disputa entre estações, mas consome tempo de controlo mesmo quando há pouco tráfego. Não atribuas os máximos de ALOHA às outras classes: cada uma usa um mecanismo e um modelo diferentes.
 
 ## ALOHA puro e com ranhuras
 
-No **ALOHA puro**, transmite assim que há dados. Uma trama de duração $T$ colide com outra que comece até $T$ antes do seu início ou até $T$ depois: a primeira ainda ocupa o canal, a segunda começa antes de a trama atual terminar. O intervalo vulnerável soma $2T$. No **ALOHA com ranhuras**, só começa na fronteira de ranhura $T$; a vulnerabilidade cai para uma ranhura.
+No **ALOHA puro**, transmite assim que há dados. Uma trama de duração $T$ colide com outra que comece até $T$ antes do seu início ou até $T$ depois, pois a primeira ainda ocupa o canal e a segunda começa antes de a trama atual terminar; o intervalo vulnerável soma $2T$. No **ALOHA com ranhuras**, só começa na fronteira de ranhura $T$; a vulnerabilidade cai para uma ranhura.
 
 <Typst
   source={janela}
@@ -35,7 +51,7 @@ No **ALOHA puro**, transmite assim que há dados. Uma trama de duração $T$ col
   alt="ALOHA puro tem intervalo vulnerável de dois tempos de trama; ALOHA com ranhuras restringe o início às fronteiras e reduz esse intervalo a um tempo de trama."
 />
 
-O modelo seguinte usa tramas iguais, tentativas agregadas Poisson e colisões destrutivas sem captura. Com ranhuras, as chegadas respeitam a sincronização. $G$ conta tentativas por tempo de trama, incluindo retransmissões:
+O modelo seguinte usa tramas iguais, tentativas agregadas Poisson e colisões destrutivas sem captura, e com ranhuras as chegadas respeitam a sincronização. $G$ conta tentativas por tempo de trama, incluindo retransmissões:
 
 $$S_{puro}=Ge^{-2G},\qquad S_{ranhuras}=Ge^{-G}.$$
 
@@ -49,7 +65,7 @@ As tentativas Poisson são uma hipótese ou aproximação, não uma consequênci
 
 ## CSMA e persistência
 
-**Carrier Sense Multiple Access** escuta antes de enviar. Ainda pode colidir: A começa e B, antes de chegar o sinal, também vê silêncio. Quanto menor a propagação face à trama, mais útil é a escuta.
+**Carrier Sense Multiple Access** escuta antes de enviar, mas ainda pode colidir, pois A começa e B, antes de chegar o sinal, também vê silêncio. Quanto menor a propagação face à trama, mais útil é a escuta.
 
 - **1-persistente:** se livre, transmite; se ocupado, continua a escutar e transmite assim que liberta. Várias estações à espera podem arrancar juntas.
 - **Não persistente:** se ocupado, espera um tempo aleatório antes de escutar novamente. Reduz arranques simultâneos, mas pode deixar o canal livre durante a espera.
@@ -57,7 +73,7 @@ As tentativas Poisson são uma hipótese ou aproximação, não uma consequênci
 
 Não transportes as fórmulas de ALOHA diretamente para CSMA. O comportamento depende também da propagação e da regra de persistência.
 
-Para comparar acesso partilhado, carga e atraso de propagação, vê esta aula e repara em como a escuta reduz colisões quando a propagação é curta face à trama, e onde deixa de chegar.
+A aula seguinte compara acesso partilhado, carga e atraso de propagação; repara em como a escuta reduz colisões quando a propagação é curta face à trama e onde deixa de chegar.
 
 <YouTube
   id="X2cLpzFRMT4"
@@ -66,7 +82,7 @@ Para comparar acesso partilhado, carga e atraso de propagação, vê esta aula e
 
 ## CSMA/CD e tamanho mínimo
 
-Na Ethernet partilhada **half-duplex**, o emissor deteta a colisão, envia o sinal de colisão e interrompe. Depois tenta de novo com espera aleatória.
+Na Ethernet partilhada **half-duplex**, o emissor deteta a colisão, envia o sinal de colisão e interrompe, tentando depois de novo com espera aleatória.
 
 Para detetar a colisão mais distante enquanto ainda transmite, o tempo de transmissão mínimo deve ser pelo menos a propagação de ida e volta:
 
@@ -74,7 +90,7 @@ $$L_{min}/R\ge2t_p.$$
 
 A 10 Mbit/s com $t_p=20$ microsegundos, o modelo exige pelo menos 400 bits, ou 50 bytes. A Ethernet define outros parâmetros e um mínimo de trama de 64 bytes, do endereço de destino ao FCS, sem contar preâmbulo. Aplica os valores do enunciado, em vez de misturar um cálculo ideal com parâmetros de outra variante.
 
-No **binary exponential backoff**, após a colisão de número $k$, sorteia-se um inteiro num intervalo de tamanho aproximadamente $2^k$, até ao limite do protocolo, e espera-se esse número de slot times. No algoritmo Ethernet clássico, o expoente é limitado a 10 e a transmissão é abandonada depois de 16 tentativas. A escolha aleatória reduz a probabilidade de repetir a mesma colisão; não garante ausência dela.
+No **binary exponential backoff**, após a colisão de número $k$, sorteia-se um inteiro num intervalo de tamanho aproximadamente $2^k$, até ao limite do protocolo, e espera-se esse número de slot times. No algoritmo Ethernet clássico, o expoente é limitado a 10 e a transmissão é abandonada depois de 16 tentativas; a escolha aleatória reduz a probabilidade de repetir a mesma colisão, sem garantir ausência dela.
 
 **Ethernet comutada full-duplex não usa CSMA/CD:** cada ligação ponto a ponto pode transportar simultaneamente nos dois sentidos, sem um meio de colisão partilhado. «Cabo usa CD» é uma regra errada para a Ethernet atual.
 
@@ -84,13 +100,13 @@ No Wi-Fi, uma estação normalmente não deteta colisão no recetor enquanto tra
 
 No mecanismo básico de contenção, espera-se o intervalo apropriado de canal livre e conta-se um **backoff** em ranhuras. O contador congela quando o meio fica ocupado e retoma após o intervalo exigido. Quem tem o contador a zero transmite. O ACK segue após um intervalo mais curto, SIFS, dando prioridade à confirmação sobre novos concorrentes.
 
-**Exemplo.** A sorteia 2 e B sorteia 5. Ao fim de duas ranhuras, A transmite e B congela em 3. B espera pela trama, ACK e novo intervalo de canal livre antes de retomar as três ranhuras. Se ambos chegarem a zero juntos, podem colidir.
+**Exemplo.** A sorteia 2 e B sorteia 5. Ao fim de duas ranhuras, A transmite e B congela em 3; B espera pela trama, ACK e novo intervalo de canal livre antes de retomar as três ranhuras. Se ambos chegarem a zero juntos, podem colidir.
 
 <Mermaid
   source={paragem}
   alt="A e B sorteiam 2 e 5. Após duas ranhuras, A transmite e B congela em 3. Depois da trama, do ACK e da espera de canal livre, B conta as três ranhuras restantes antes de transmitir."
 />
 
-Duas estações são **escondidas** quando ambas alcançam o ponto de acesso, mas não se ouvem entre si. Escutar não resolve esta situação. RTS/CTS pode reservar o meio com mensagens curtas; o NAV avisa durante quanto tempo a troca ocupa o canal. Acrescenta sobrecarga e não elimina todas as colisões. Uma estação **exposta** pode adiar uma transmissão que seria compatível com outra, porque observa tráfego que não interfere com o seu recetor.
+Duas estações são **escondidas** quando ambas alcançam o ponto de acesso mas não se ouvem entre si, por isso escutar não resolve esta situação. RTS/CTS pode reservar o meio com mensagens curtas; o NAV avisa durante quanto tempo a troca ocupa o canal. Acrescenta sobrecarga e não elimina todas as colisões. Uma estação **exposta** pode adiar uma transmissão que seria compatível com outra, porque observa tráfego que não interfere com o seu recetor.
 
-Para comparar protocolos, escreve o que cada um sabe: canal livre local, colisão detetada, ACK recebido ou reserva anunciada. Uma observação local não prova que o recetor esteja livre.
+Para comparar protocolos, escreve o que cada um sabe: canal livre local, colisão detetada, ACK recebido ou reserva anunciada, pois uma observação local não prova que o recetor esteja livre.

@@ -1,0 +1,38 @@
+import Dot from '../../../components/Dot.astro';
+import eventos from '../../cpd/relogios.dot?raw';
+
+## Tempo físico e erro
+
+Mensagem envia timestamp T, atraso conhecido em [dmin,dmax], processamento desprezável e relógio emissor à taxa real durante o envio. Na receção, o tempo do emissor está em [T+dmin,T+dmax]. A estimativa que minimiza o pior erro é:
+
+$$
+\widehat T=T+\frac{d_{min}+d_{max}}{2},\qquad
+\varepsilon=\frac{d_{max}-d_{min}}{2}.
+$$
+
+Com T=1000 ms e atraso de 10 a 30 ms: estimativa 1020 ms, erro máximo 10 ms. Escolher um extremo aumenta o pior erro para 20 ms. É um limite nas hipóteses dadas, sem probabilidade ou garantia permanente; deriva/processamento/atrasos fora do modelo mudam-no.
+
+## Causalidade e Lamport
+
+A relação e→f vem da ordem local, envio antes da receção e transitividade. Eventos diferentes sem caminho em nenhum sentido são concorrentes, sem exigir simultaneidade física.
+
+Lamport começa em zero: incrementa antes de evento local/envio; receção de t usa $L=\max(L,t)+1$. Garante $e\to f\Rightarrow L(e)<L(f)$, mas a inversa é falsa. A ordem total por (L,id) desempata eventos independentes por convenção, sem criar causalidade.
+
+## Vetores
+
+Com n processos fixos, um vetor de n componentes começa em zero. Cada evento local/envio incrementa a componente própria; receção faz máximos componente a componente com a mensagem e incrementa a componente do destinatário. Neste modelo contamos todos os eventos, não apenas multicasts.
+
+$$
+V<W\iff (\forall i:\ V_i\le W_i)\ \land\ (\exists j:\ V_j<W_j).
+$$
+
+Para eventos distintos modelados, $e\to f$ equivale a $V(e)<V(f)$. Vetores incomparáveis identificam concorrência.
+
+<Dot
+  source={eventos}
+  alt="Traço de P e Q: eventos locais, envio, receção e resposta, com timestamps de Lamport e vetoriais."
+/>
+
+No traço, f1 tem L=1 e vetor (0,1); e2 tem L=2 e vetor (2,0). Apesar do escalar menor, são concorrentes. A resposta recebida em e3 incorpora o vetor de f3 e fica (3,3). A altura do esquema não mede duração.
+
+Comunicações ocultas invalidam inferências sobre a relação modelada. Timestamps não garantem fiabilidade, entrega causal automática ou consenso. [Contas do traço](/cadeiras/cpd/relogios-causalidade/#um-traço-com-dois-processos).

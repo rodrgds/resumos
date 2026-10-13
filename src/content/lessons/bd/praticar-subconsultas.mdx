@@ -1,7 +1,11 @@
 ---
 title: Praticar subconsultas e quantificadores
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: Ausências, máximos e comparações universais, incluindo dados desconhecidos e soluções justificadas.
 section: exercicios
+editorial:
+  sources:
+    - title: Comparação universal de totais, adaptação da versão A do teste SQL de 11 de dezembro de 2023, disponível como contribuição estudantil
+      url: https://accio.pt/uploads/contributions/4uh8btIeexU.pdf
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -153,5 +157,50 @@ ORDER BY id;
   <div slot="mistakes">
     LIMIT 1 perde um dos máximos. <code>{"NOT EXISTS"}</code> de um preço maior, sem excluir o
     preço exterior <code>{"NULL"}</code>, aceitaria a linha 4. Não fixes o valor 30 na consulta.
+  </div>
+</Exercise>
+
+<Exercise
+  id="todos-municipios-totais-conhecidos"
+  title="Todos os municípios, com empate e falta de dados"
+  explanation="/cadeiras/bd/sql-subconsultas/#comparar-totais-em-todos-os-grupos"
+  answer={{ kind: 'self', checklist: ['Agreguei por município e lista antes de comparar.', 'Obtive só o Norte e rejeitei empate e desconhecido.', 'Expliquei a falta de um resultado e o caso sem municípios.'] }}
+>
+  <div>
+
+Usa o esquema e os dados de votação do [exemplo da lição](/cadeiras/bd/sql-subconsultas/#comparar-totais-em-todos-os-grupos). Cada lista tem um registo por freguesia; um `NULL` torna o total dessa lista desconhecido. Escreve SQL que devolva distritos onde A supera estritamente B em todos os municípios. Não aceites uma comparação desconhecida.
+
+Confere Norte, Sul e Este. Depois retira o resultado de B da freguesia 110. Uma solução que junta apenas resultados presentes e procura `A <= B` continua correta? Como se comporta a condição universal num distrito sem municípios?
+
+  </div>
+  <div slot="hint">Procura um município sem uma comparação verdadeira, em vez de procurar apenas comparações falsas.</div>
+  <div slot="solution">
+
+```sql
+WITH Totais AS (
+  SELECT f.idMunicipio, v.lista, SUM(v.votos) AS votos
+  FROM Freguesia AS f JOIN Voto AS v ON v.idFreguesia = f.id
+  GROUP BY f.idMunicipio, v.lista
+  HAVING COUNT(v.votos) = COUNT(*)
+)
+SELECT d.id, d.nome FROM Distrito AS d
+WHERE NOT EXISTS (
+  SELECT 1 FROM Municipio AS m
+  WHERE m.idDistrito = d.id AND NOT EXISTS (
+    SELECT 1 FROM Totais AS a JOIN Totais AS b
+      ON b.idMunicipio = a.idMunicipio
+    WHERE a.idMunicipio = m.id AND a.lista = 'A' AND b.lista = 'B'
+      AND a.votos > b.votos
+  )
+)
+ORDER BY d.id;
+```
+
+O Norte passa: 9>8 no município 10 e 1>0 no 11. O Sul falha por 4=4 no 20. No Este, a contagem de A é desconhecida e não entra em Totais, logo falta uma comparação verdadeira no 30.
+
+Retirar B da única freguesia do município 11 elimina o seu grupo em Totais. A comparação interior já não existe e o Norte passa a falhar. A solução que só procura `A <= B` numa junção interior ignoraria esse município, aceitando-o indevidamente. Num município com várias freguesias, uma omissão parcial exige ainda conferir o conjunto de registos esperado; `COUNT(v.votos)=COUNT(*)` apenas valida os presentes.
+
+Sem municípios, não existe contraexemplo e o distrito passa. Para exigir participação, acrescenta `EXISTS (SELECT 1 FROM Municipio AS m WHERE m.idDistrito=d.id)`.
+
   </div>
 </Exercise>

@@ -9,7 +9,7 @@ practices:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Para obter os quadrados dos números positivos, percorres uma coleção, selecionas valores e transformas cada selecionado. Um ciclo escreve essas decisões em vários passos; uma compreensão junta-as numa expressão que constrói outra lista.
+Para obter os quadrados dos números positivos, percorres uma coleção, selecionas valores e transformas cada selecionado. Um ciclo escreve essas decisões em vários passos, enquanto uma compreensão junta-as numa expressão que constrói outra lista.
 
 ## Compreensões de listas
 
@@ -23,7 +23,7 @@ A forma `[expressao for x in xs if condicao]` percorre `xs`, verifica a condiç�
   }
 />
 
-O filtro retira -2 e 0 e a transformação calcula 9 e 16, por isso o resultado tem duas posições. Na expressão `a if condicao else b`, o resultado é `a` quando a condição é verdadeira, ou `b` caso contrário. Este `if ... else` escolhe o valor de cada elemento e não filtra entradas, por isso o último exemplo conserva quatro posições.
+O filtro retira -2 e 0 e a transformação calcula 9 e 16, por isso o resultado tem duas posições. Na expressão `a if condicao else b`, o resultado é `a` quando a condição é verdadeira e `b` caso contrário; este `if ... else` escolhe o valor de cada elemento sem filtrar entradas, por isso o último exemplo conserva quatro posições.
 
 A compreensão equivale a este ciclo:
 
@@ -46,9 +46,29 @@ plana = [valor for linha in matriz for valor in linha]
 print(plana)
 ```
 
-A saída é `[1, 2, 3, 4]`. Este código remove um nível de listas, não qualquer profundidade. Para estruturas com profundidade variável, usa a decomposição recursiva da lição anterior.
+A saída é `[1, 2, 3, 4]`. Este código remove um nível de listas, não qualquer profundidade. Para estruturas com profundidade variável, usa a decomposição recursiva da [lição de recursão](/cadeiras/fp/recursao/#estruturas-aninhadas).
 
 Também podes criar conjuntos com `{x * x for x in valores}` e dicionários com `{nome: len(nome) for nome in nomes}`. Um conjunto elimina resultados repetidos. Num dicionário, uma chave repetida fica com o último valor produzido.
+
+## Pares de posições e fronteiras
+
+Para comparar reservas duas a duas, percorremos `i` e só depois `j > i`.
+Assim não comparamos uma reserva consigo própria nem repetimos o par ao
+contrário. Para três posições, os pares são `(0, 1)`, `(0, 2)` e `(1, 2)`.
+
+Uma reserva `(inicio, fim)` pode ocupar o intervalo semiaberto
+$[inicio,fim[$: inclui o início e exclui o fim. Exigimos `inicio < fim`.
+Duas reservas têm uma parte comum quando o maior início é estritamente
+menor que o menor fim:
+
+```python
+max(inicio_a, inicio_b) < min(fim_a, fim_b)
+```
+
+As reservas `(9, 11)` e `(11, 12)` apenas se tocam e são compatíveis.
+Com `(10, 12)`, a primeira partilha o intervalo $[10,11[$ e há conflito.
+Se ambos os extremos fossem incluídos, o contacto num extremo já contaria
+como interseção. A desigualdade depende desta convenção, não só dos números.
 
 ## Iteráveis e iteradores
 
@@ -63,11 +83,11 @@ print(list(it))
 print(list(it))
 ```
 
-A saída é `1`, depois `[2]` e depois `[]`. Esta diferença explica o comportamento de `map`, `filter` e dos geradores, usados na próxima lição.
+A saída é `1`, depois `[2]` e depois `[]`; esta diferença de comportamento reaparece em `map`, `filter` e nos geradores.
 
 ## Geradores e yield
 
-Uma expressão `(x * x for x in range(4))` cria um **gerador**. Produz valores quando são pedidos em vez de guardar logo uma lista. É um aprofundamento do modelo de iteração usado pelas compreensões.
+Uma expressão `(x * x for x in range(4))` cria um **gerador**, que produz valores quando são pedidos em vez de guardar logo uma lista.
 
 <CodePlayground
   language="python"
@@ -77,7 +97,7 @@ Uma expressão `(x * x for x in range(4))` cria um **gerador**. Produz valores q
   }
 />
 
-`next` retira o zero. A primeira conversão em lista consome 1, 4 e 9; a segunda recebe uma sequência já esgotada. Na função `contagem`, `yield` entrega um valor e suspende a execução. O próximo pedido retoma depois dessa instrução, conservando os nomes locais. Chamar `contagem(3)` cria o gerador; o corpo só começa no primeiro pedido. `return` termina o gerador, sem produzir mais valores.
+`next` retira o zero e a primeira conversão em lista consome 1, 4 e 9, pelo que a segunda recebe uma sequência já esgotada. Na função `contagem`, `yield` entrega um valor e suspende a execução; o próximo pedido retoma depois dessa instrução, conservando os nomes locais. Chamar `contagem(3)` cria o gerador, mas o corpo só começa no primeiro pedido, e `return` termina o gerador sem produzir mais valores.
 
 Para seguir essa suspensão, considera `g = contagem(3)`. Ao criar o gerador, o corpo ainda não correu. A tabela acompanha os pedidos seguintes; a última coluna mostra o valor local de `n` quando suspende ou termina:
 
@@ -88,9 +108,32 @@ Para seguir essa suspensão, considera `g = contagem(3)`. Ao criar o gerador, o 
 | 3.º `next` | 1       | 1   |
 | 4.º `next` | Exceção | 0   |
 
-No primeiro pedido, o teste `3 > 0` permite chegar ao `yield`. Nos três pedidos que entregam um valor, o estado fica suspenso depois do `yield`, com o `n` indicado. O pedido seguinte faz `n -= 1` antes de voltar ao teste: passa por `2 > 0`, `1 > 0` e, por fim, `0 > 0`. Este último teste é falso e o quarto `next(g)` lança `StopIteration`.
+No primeiro pedido, o teste `3 > 0` permite chegar ao `yield`; nos três pedidos que entregam um valor, o estado fica suspenso depois do `yield` com o `n` indicado. O pedido seguinte faz `n -= 1` antes de voltar ao teste, passando por `2 > 0` e `1 > 0` até `0 > 0`, que é falso e faz o quarto `next(g)` lançar `StopIteration`.
 
 A atualização ocorre depois de retomar o `yield`. Suspender conserva o ponto de execução; não é voltar a chamar a função desde o início.
+
+## Gerar valores de vários intervalos
+
+Uma lista de intervalos inteiros inclusivos, como `[(2, 3), (7, 7)]`, pode
+representar o percurso 2, 3, 7 sem guardar todos os valores. Um gerador percorre
+cada par e suspende a cada inteiro:
+
+```python
+def expandir_intervalos(intervalos):
+    for inicio, fim in intervalos:
+        for valor in range(inicio, fim + 1):
+            yield valor
+```
+
+O contrato exige `inicio <= fim` em cada par. `fim + 1` conserva o extremo
+final e um intervalo de um só valor produz esse valor uma vez. A lista exterior
+pode estar vazia, caso em que o gerador termina sem produzir valores. Segue a
+ordem recebida; se os intervalos se sobrepuserem, os valores repetem-se.
+O primeiro `next` de `expandir_intervalos([(2, 3), (7, 7)])` produz 2;
+converter o resto em lista dá `[3, 7]`.
+
+Os intervalos deste exemplo incluem os dois extremos. Não confundas essa
+representação com as reservas semiabertas da secção anterior.
 
 ## Escolher entre lista e gerador
 

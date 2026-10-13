@@ -29,9 +29,7 @@ Em polling, o CPU consulta o estado e, quando necessário, transfere dados. Um c
 
 Se o periférico pode receber R bytes/s e armazena blocos de B bytes, são no máximo $q=R/B$ blocos/s. Com um só bloco de armazenamento, o intervalo de consulta não pode exceder $B/R$ no modelo ideal; atraso do serviço também deve caber na margem disponível.
 
-Para 16000 bits/s e blocos 400 bits: 40 blocos/s e intervalo 25 ms. Se cada consulta custa 300 ciclos num CPU a 2 GHz, a ocupação por consultas é $40\times300/(2\times10^9)=0,000006$, isto é 0,0006%. Conta separadamente a transferência se esse custo ainda não a inclui.
-
-O vídeo acompanha a relação entre taxa de chegada, tamanho do bloco e período de consulta.
+Para 16000 bits/s e blocos 400 bits: 40 blocos/s e intervalo 25 ms. Se cada consulta custa 300 ciclos num CPU a 2 GHz, a ocupação por consultas é $40\times300/(2\times10^9)=0,000006$, isto é 0,0006%. Conta separadamente a transferência se esse custo ainda não a inclui. O vídeo acompanha a relação entre taxa de chegada, tamanho do bloco e período de consulta.
 
 <YouTube id="4nxblx4ADQ8" title="Varrimento" />
 
@@ -45,11 +43,36 @@ Se polling custa $q_pc_p$ ciclos/s e interrupções custam $u q_{max}c_i$, o pon
 
 $$u=\frac{q_pc_p}{q_{\max}c_i}.$$
 
-Com $q_p=q_{\max}$, consulta 400 ciclos e interrupção 600, interrupções gastam menos abaixo de $u=2/3$. Isso compara custo de CPU, não prova que a latência ou capacidade sejam suficientes.
-
-O vídeo mostra o desvio para a rotina de interrupção e a retoma da tarefa interrompida.
+Com $q_p=q_{\max}$, consulta 400 ciclos e interrupção 600, interrupções gastam menos abaixo de $u=2/3$. Isso compara custo de CPU, não prova que a latência ou capacidade sejam suficientes. O vídeo mostra o desvio para a rotina de interrupção e a retoma da tarefa interrompida.
 
 <YouTube id="DBVVpybCXcU" title="Interrupções" />
+
+## Latência de comunicação e tamanho da mensagem
+
+Uma ligação com maior taxa pode ter maior custo fixo por mensagem. Num modelo sem sobreposição, o tempo completo de uma mensagem de $B$ bytes é:
+
+$$t(B)=t_{\rm envio}+t_{\rm ligação}+t_{\rm receção}+\frac{B}{R}.$$
+
+$R$ mede bytes por segundo; as outras parcelas são atrasos, não taxas. Compara duas redes do mesmo modelo docente, com unidades decimais:
+
+| Parcela              | Rede A     | Rede B  |
+| -------------------- | ---------- | ------- |
+| Taxa de transmissão  | 1,125 MB/s | 10 MB/s |
+| Envio por software   | 200 μs     | 207 μs  |
+| Ligação              | 21 μs      | 56 μs   |
+| Receção por software | 241 μs     | 360 μs  |
+
+Os custos fixos somam 462 μs em A e 623 μs em B. Cada byte demora $8/9$ μs em A e 0,1 μs em B. Para 250 bytes, os tempos são aproximadamente 684,22 μs e 648 μs: B termina primeiro apesar do custo fixo maior.
+
+Para saber onde muda a escolha, iguala os tempos, todos em μs:
+
+$$462+\frac89B=623+0,1B.$$
+
+A diferença fixa é 161 μs; cada byte reduz a vantagem de A em $8/9-0,1=71/90$ μs. Logo:
+
+$$B=\frac{161\times90}{71}\approx204,085\ \text{bytes}.$$
+
+Para tamanhos inteiros, A é mais rápida até 204 bytes e B a partir de 205. Esse limiar depende destes custos e do modelo sem sobreposição; não é uma propriedade universal de redes rápidas. Se envio, transferência e receção se sobrepuserem, segue o caminho crítico em vez de somar todos os tempos.
 
 ## DMA
 

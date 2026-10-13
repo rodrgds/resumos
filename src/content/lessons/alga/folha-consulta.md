@@ -50,7 +50,7 @@ $$
 U\oplus V\iff U\cap V=\{0\}.
 $$
 
-Para completar uma base, acrescenta vetores fora do espaço já gerado. [Bases](/cadeiras/alga/espacos-vetoriais/).
+Para completar uma base, acrescenta vetores fora do espaço já gerado. Para demonstrar a fórmula da soma, completa uma base da interseção em cada espaço e prova a independência da família conjunta antes de contar. [Bases](/cadeiras/alga/espacos-vetoriais/).
 
 ## Produtos e ortogonalidade
 
@@ -100,5 +100,7 @@ AP=PD,\quad A^k=PD^kP^{-1}.
 $$
 
 Vetor próprio **não nulo**; $P$ invertível com colunas próprias na ordem de $D$. Potências: $k$ inteiro não negativo, ou negativo se $A$ invertível. Constante de $p_A$: $\det A$; coeficiente dominante: $(-1)^n$. Diagonaliza em $\mathbb R$ se houver $n$ vetores próprios reais independentes. Para cada raiz: $1\leq m_g\leq m_a$; exige $m_g=m_a$ e todas as raízes reais. Valores distintos bastam, mas não são necessários. [Diagonalização](/cadeiras/alga/valores-proprios/).
+
+Uma base própria com os valores associados determina a lei: decompõe o argumento e multiplica cada parcela. Se $A$ diagonaliza, $A^2$ diagonaliza na mesma base, com valores ao quadrado; o recíproco é falso.
 
 Simétrica (âmbito opcional): $Q^TAQ=D$, com $Q$ ortogonal. Forma quadrática $X^TAX+\ell^TX+k=0$: metade do coeficiente cruzado fora da diagonal; centro resolve $2Ah+\ell=0$; diagonaliza ortogonalmente e analisa também termos lineares e constante. [Cónicas e quádricas](/cadeiras/alga/conicas-quadricas/).

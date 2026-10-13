@@ -10,7 +10,7 @@ practices:
 import CodePlayground from '../../../components/CodePlayground.astro';
 import memoria from '../../so/memoria.c?raw';
 
-Dois apontadores podem dar acesso ao mesmo objeto, mas mudar um deles não muda o outro. E guardar um endereço não prolonga a vida do objeto. Estas distinções aparecem tanto numa biblioteca de vetores como nos argumentos que passamos a uma thread. Começamos por separar a construção do executável da memória usada quando ele corre.
+Dois apontadores podem dar acesso ao mesmo objeto, mas mudar um deles não muda o outro; guardar um endereço também não prolonga a vida do objeto. Estas distinções aparecem tanto numa biblioteca de vetores como nos argumentos que passamos a uma thread.
 
 ## Do ficheiro fonte ao executável
 
@@ -26,6 +26,12 @@ gcc programa.o -o programa
 `-c` não liga. Se o programa usa uma função declarada mas sem definição disponível, a compilação do objeto pode passar e a ligação falhar com `undefined reference`. Um cabeçalho descreve a interface; incluir um `.h` não fornece automaticamente a implementação.
 
 No terminal Linux, um ponto de partida é `gcc -std=c17 -Wall -Wextra -Wpedantic -g programa.c -o programa`. `-g` acrescenta informação para depuração, ou seja não corrige o programa. `-Wall` não ativa literalmente todos os avisos. Lê-os e corrige a causa. No debugger, põe um breakpoint em `main` e usa `next` e `step` para acompanhar linhas e entrar em funções.
+
+### Diagnosticar a fase do erro
+
+Uma chamada a `sqrt` sem uma declaração visível pode produzir `implicit declaration of function`. A primeira correção é incluir `<math.h>` e confirmar que a interface fica visível. Se a compilação do objeto passa mas a ligação diz `undefined reference to sqrt`, falta a definição na ligação: num ambiente Linux que separa a biblioteca matemática, põe `-lm` depois do objeto que a usa.
+
+São problemas diferentes. Acrescentar `-lm` não ensina ao compilador os tipos da função; incluir o cabeçalho não fornece o seu código binário. Um cabeçalho próprio também tem de ser incluído antes da chamada ou fornecer uma declaração equivalente.
 
 ## Programa e processo
 
@@ -91,7 +97,7 @@ Uma string C termina em `\0`. Para guardar `"ola"`, precisas de quatro bytes. `s
 
 `strcmp(a, b)` devolve zero se forem iguais, negativo se `a` vier antes de `b` e positivo no caso contrário. Não exijas exatamente `-1` ou `1`. `strcpy` e `strcat` exigem espaço suficiente no destino. Para concatenar duas strings, a reserva precisa de `strlen(a) + strlen(b) + 1` bytes, depois de verificar overflow.
 
-`strtok` modifica o buffer e mantém estado entre chamadas. Se precisares de conservar o original, faz uma cópia que possas alterar. `strsep` é uma extensão comum de UNIX, não parte de C17. Ao usar `tolower`, converte primeiro para `unsigned char` se o valor vier de um `char` que pode ser negativo.
+`strtok` modifica o buffer e mantém estado entre chamadas. Se precisares de conservar o original, faz uma cópia que possas alterar. O argumento de delimitadores é um **conjunto de caracteres**, não uma substring: `" ,"` separa tanto em espaço como em vírgula. `strtok` ignora sequências de delimitadores; `strsep` também pode devolver tokens vazios, que o programa tem de conservar ou ignorar segundo o contrato. `strsep` é uma extensão comum de UNIX, não parte de C17. Ao usar `tolower`, converte primeiro para `unsigned char` se o valor vier de um `char` que pode ser negativo.
 
 Uma `struct` reúne campos num objeto. A atribuição de estruturas copia os campos, incluindo apenas os endereços de campos apontador. Duas estruturas que copiem o mesmo apontador ainda podem partilhar o mesmo bloco. Para objetos pequenos, devolver uma estrutura por valor evita uma reserva dinâmica e simplifica a propriedade.
 

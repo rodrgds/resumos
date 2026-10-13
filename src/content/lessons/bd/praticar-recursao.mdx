@@ -1,7 +1,13 @@
 ---
 title: Praticar CTEs e recursão
-description: Exercícios próprios com pistas, resolução e erros frequentes.
+description: CTEs, contagens em níveis diferentes, máximos por grupo e recursão, com soluções justificadas.
 section: exercicios
+editorial:
+  sources:
+    - title: CTEs, exemplo docente de vencedoras municipais no Moodle de 2025/26; contagens em dois níveis adaptadas do teste SQL de 11 de dezembro de 2023, versão A
+      url: https://moodle2526.up.pt/course/view.php?id=3996
+    - title: Teste SQL de 11 de dezembro de 2023, versão A, contribuição estudantil
+      url: https://accio.pt/uploads/contributions/4uh8btIeexU.pdf
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -127,5 +133,85 @@ FROM Top GROUP BY lista ORDER BY lista;
   <div slot="mistakes">
     Não tornes a agregação recursiva. Não contes votos quando a pergunta pede
     lugares nos maiores quocientes.
+  </div>
+</Exercise>
+
+<Exercise
+  id="cte-contagens-dois-niveis"
+  title="Comparar freguesias com municípios"
+  explanation="/cadeiras/bd/sql-recursao/#comparar-contagens-de-níveis-diferentes"
+  answer={{ kind: 'self', checklist: ['Calculei contagens separadas nos dois níveis.', 'Obtive apenas o município 10 com duas freguesias.', 'Conservei municípios sem freguesias na contagem do distrito.'] }}
+>
+  <div>
+
+Municipio(id,idDistrito) contém `(10,1),(11,1),(20,2),(30,3)`. Freguesia(id,idMunicipio) contém `(100,10),(101,10),(110,11),(200,20),(300,30)`.
+
+Escreve SQL para os ids dos municípios com mais de uma freguesia e com tantas freguesias como municípios tem o seu distrito. Devolve também o número de freguesias. Depois insere o município `(12,1)`, sem freguesias. Como muda a resposta? Por que uma contagem de municípios após a junção a Freguesia pode estar errada?
+
+  </div>
+  <div slot="hint">Uma CTE tem uma linha por município; a outra, uma por distrito.</div>
+  <div slot="solution">
+
+```sql
+WITH PorMunicipio AS (
+  SELECT m.id, m.idDistrito, COUNT(f.id) AS nFreguesias
+  FROM Municipio AS m LEFT JOIN Freguesia AS f ON f.idMunicipio = m.id
+  GROUP BY m.id, m.idDistrito
+), PorDistrito AS (
+  SELECT idDistrito, COUNT(*) AS nMunicipios
+  FROM Municipio GROUP BY idDistrito
+)
+SELECT m.id, m.nFreguesias
+FROM PorMunicipio AS m JOIN PorDistrito AS d ON d.idDistrito = m.idDistrito
+WHERE m.nFreguesias > 1 AND m.nFreguesias = d.nMunicipios
+ORDER BY m.id;
+```
+
+Inicialmente, o distrito 1 tem dois municípios e o município 10 tem duas freguesias, por isso a resposta é `(10,2)`. Os municípios 20 e 30 têm uma freguesia e não ultrapassam o limite.
+
+Com o município 12, o distrito 1 passa a ter três municípios. Nenhum dos seus municípios tem três freguesias, logo a resposta fica vazia. O novo município conta mesmo sem freguesias. Uma junção anterior a Freguesia omitiria esse município se fosse interior e repetiria o município 10 duas vezes; `COUNT(*)` nessa junção contaria linhas de freguesias, não municípios.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="cte-vencedores-por-municipio"
+  title="Um máximo por município, com empates"
+  explanation="/cadeiras/bd/sql-recursao/#máximos-dentro-de-cada-grupo"
+  answer={{ kind: 'self', checklist: ['Calculei o máximo de cada município por correlação.', 'Conservei as duas listas empatadas no município 20.', 'Distingui concorrentes por tipo e id, sem fundir nomes.'] }}
+>
+  <div>
+
+Resultado(municipio,tipo,idLista,nome,votos) contém:
+
+| município | tipo         | idLista | nome  | votos |
+| --------- | ------------ | ------- | ----- | ----- |
+| 10        | partido      | 7       | União | 9     |
+| 10        | independente | 7       | União | 8     |
+| 11        | partido      | 7       | União | 1     |
+| 11        | independente | 7       | União | 0     |
+| 20        | partido      | 7       | União | 4     |
+| 20        | independente | 7       | União | 4     |
+
+Todos os totais são conhecidos e há uma linha por concorrente/município. Escreve SQL para as vencedoras em cada município, conservando empates e os campos da tabela. Uma subconsulta de máximo global ou `LIMIT 1` exterior resolve a pergunta? Depois de reunir fontes por `UNION ALL`, podes agrupar apenas por idLista ou nome?
+
+  </div>
+  <div slot="hint">O mesmo id em origens diferentes identifica concorrentes diferentes.</div>
+  <div slot="solution">
+
+```sql
+SELECT r.municipio, r.tipo, r.idLista, r.nome, r.votos
+FROM Resultado AS r
+WHERE r.votos = (
+  SELECT MAX(outro.votos) FROM Resultado AS outro
+  WHERE outro.municipio = r.municipio
+)
+ORDER BY r.municipio, r.tipo, r.idLista;
+```
+
+No município 10 vence partido/7 com 9; no 11, partido/7 com 1; no 20 ficam independente/7 e partido/7, ambas com 4. O máximo global seria 9 e perderia os municípios 11 e 20. Um `LIMIT 1` exterior conservaria apenas uma linha de toda a resposta.
+
+Agrupar só por 7 ou pelo nome União funde concorrentes distintos. A identidade é `(tipo,idLista)`, além do município quando agregamos votos por local. O nome não substitui essa chave. `UNION ALL` reúne linhas, mas não reconcilia identidades nem decide empates.
+
   </div>
 </Exercise>

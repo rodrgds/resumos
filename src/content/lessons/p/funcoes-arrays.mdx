@@ -5,9 +5,15 @@ section: conteudo
 order: 2
 practices:
   - p/praticar-funcoes
+editorial:
+  sources:
+    - title: P1 prático de 2023/24, arquivo Accio, adaptações de arrays de saída e conjuntos de letras com dados próprios
+      url: https://accio.pt/feup/L:EIC/programacao/L.EIC009
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import filtrarRepetidos from '../../p/examples/filtrar-repetidos.cpp?raw';
+import diferencaLetras from '../../p/examples/diferenca-letras.cpp?raw';
 
 Uma função de contagem pode receber as notas já lidas e devolver um total, sem tratar a entrada nem imprimir. O seu contrato indica que dados recebe, se os pode alterar e que resultado devolve. Separar estas decisões permite testar a contagem sem fornecer dados pelo teclado.
 
@@ -26,7 +32,7 @@ int maximo(int a, int b) {
 }
 ```
 
-O operador condicional `condicao ? a : b` escolhe `a` se a condição é verdadeira e `b` caso contrário. Aqui `4 > 9` é falso, por isso `maximo(4, 9)` devolve `9`. Repara que `return` termina a chamada sem imprimir; o chamador decide se guarda, calcula ou imprime. Uma função `void` não devolve valor.
+O operador condicional `condicao ? a : b` escolhe `a` se a condição é verdadeira e `b` caso contrário. Aqui `4 > 9` é falso, por isso `maximo(4, 9)` devolve `9`; `return` termina a chamada sem imprimir, por isso o chamador decide se guarda, calcula ou imprime. Uma função `void` não devolve valor.
 
 Uma **sobrecarga** usa o mesmo nome com listas de parâmetros diferentes. O compilador escolhe pela chamada; o tipo de retorno, por si só, não distingue duas sobrecargas. Argumentos por defeito permitem omitir os últimos argumentos, por exemplo `void imprimir(int n, char separador = ' ');`. O valor por defeito tem de estar visível no ponto da chamada. Não o repitas na definição se já o declaraste num cabeçalho.
 
@@ -47,7 +53,7 @@ Saída:
 5 9
 ```
 
-Segue o programa linha a linha. `n` começa em `4`. `incrementar_copia(n)` cria um parâmetro independente com o valor `4`; incrementar esse parâmetro não toca em `n`, que continua `4`. `incrementar(n)` recebe uma referência ao original e deixa `n` com `5`. `comprimento("Ana Maria")` conta 9 unidades: 3 de `Ana`, 1 espaço e 5 de `Maria`. Uma referência é um nome alternativo para um objeto. Tem de ser inicializada e nunca muda de destino. Atribuir à referência altera o objeto referido.
+`n` começa em `4`. `incrementar_copia(n)` cria um parâmetro independente com o valor `4`; incrementar esse parâmetro não toca em `n`, que continua `4`. `incrementar(n)` recebe uma referência ao original e deixa `n` com `5`. `comprimento("Ana Maria")` conta 9 unidades: 3 de `Ana`, 1 espaço e 5 de `Maria`. Uma referência é um nome alternativo para um objeto. Tem de ser inicializada e nunca muda de destino. Atribuir à referência altera o objeto referido.
 
 | Parâmetro         | O que a função recebe          | Uso habitual                           |
 | ----------------- | ------------------------------ | -------------------------------------- |
@@ -60,7 +66,7 @@ Segue o programa linha a linha. `n` começa em `4`. `incrementar_copia(n)` cria 
 
 ## Parâmetros apontadores
 
-A próxima secção passa arrays como `const int* valores`. Lê assim: `valores` guarda o endereço do primeiro inteiro e `valores[i]` acede ao elemento nessa posição. Ainda não precisas de aritmética de apontadores; a página [Apontadores e memória](/cadeiras/p/apontadores-memoria/#endereço-de-e-dereferenciação) explica-a depois com objetos e setas.
+A secção seguinte passa arrays como `const int* valores`, que se lê assim: `valores` guarda o endereço do primeiro inteiro e `valores[i]` acede ao elemento nessa posição. Ainda não precisas de aritmética de apontadores, que a página [Apontadores e memória](/cadeiras/p/apontadores-memoria/#endereço-de-e-dereferenciação) explica depois com objetos e setas.
 
 ## Arrays C e dimensões
 
@@ -112,9 +118,41 @@ int soma_matriz(const int matriz[][3], int linhas) {
 
 Com `{{1, 2, 3}, {4, 5, 6}}`, a soma é `21`. Uma função que recebe `const int matriz[][3]` precisa de conhecer a dimensão interior para avançar entre linhas. Isto não equivale a `int**`: um apontador para linhas de três inteiros e um apontador para apontadores têm representações e tipos diferentes.
 
-## Structs e tipos compostos
+## Arrays de entrada e de saída
 
-Uma `struct` reúne campos que descrevem um valor, por exemplo um ponto.
+Uma função pode escrever o resultado num array reservado pelo chamador e devolver quantas posições ficaram válidas. O tamanho físico e o número de resultados são diferentes: se há espaço para seis inteiros mas só quatro foram escritos, só essas quatro posições pertencem à saída.
+
+Vamos conservar todas as ocorrências dos valores repetidos, pela ordem original. Em `4, 9, 4, 2, 9, 7`, o resultado é `4, 9, 4, 9`, não apenas os valores distintos `4, 9`. A ocorrência final de 4 também conta, mesmo sem outro 4 depois dela: existe uma ocorrência anterior.
+
+O contrato exige `n >= 0`, uma entrada com `n` elementos e uma saída com capacidade para pelo menos `n`. Os arrays não se sobrepõem e a origem fica intacta. Para `n == 0`, a função não lê nem escreve, por isso aceita apontadores nulos. Neste algoritmo, usamos só ciclos e arrays, como num enunciado que não permite contentores ou funções da biblioteca.
+
+<CodePlayground
+  language="cpp"
+  title="Conservar todas as ocorrências repetidas"
+  code={filtrarRepetidos}
+/>
+
+Saída:
+
+```text
+4: 4 9 4 9
+0
+```
+
+Para cada índice `i`, procuramos um índice diferente `j` com o mesmo valor. Não basta comparar o elemento consigo próprio, nem procurar só à sua direita. Ao encontrar uma correspondência, copiamos `entrada[i]` uma única vez para `saida[usados]` e avançamos `usados`.
+
+| `i` | Valor | Existe noutra posição? | Prefixo de saída |
+| --- | ----: | ---------------------- | ---------------- |
+| 0   |     4 | Sim, em 2              | 4                |
+| 1   |     9 | Sim, em 4              | 4, 9             |
+| 2   |     4 | Sim, em 0              | 4, 9, 4          |
+| 3   |     2 | Não                    | 4, 9, 4          |
+| 4   |     9 | Sim, em 1              | 4, 9, 4, 9       |
+| 5   |     7 | Não                    | 4, 9, 4, 9       |
+
+Antes da iteração `i`, o prefixo de `saida` com índices em `[0, usados)` contém exatamente as ocorrências que passaram o critério nos índices anteriores. Percorrer `i` por ordem conserva a ordem de entrada. O pior caso faz uma procura linear para cada elemento, com custo quadrático em `n`; a memória adicional da função é constante, além do destino recebido. A capacidade disponível não inicializa a cauda nem a transforma em resultados. O chamador usa o número devolvido para a percorrer.
+
+## Structs e tipos compostos
 
 ```cpp
 // Excerto: tipo e acesso aos seus campos.
@@ -125,7 +163,7 @@ struct Ponto {
 Ponto p{2.0, 3.0};
 ```
 
-`p.x` vale `2.0`. `Ponto` é um tipo; `p` é um objeto desse tipo. O compilador pode introduzir **padding**, bytes entre campos ou no fim para alinhar os objetos. Por isso, `sizeof(Ponto)` não deve ser deduzido somando tamanhos de campos. Não graves a memória bruta de uma struct como formato portátil de ficheiro.
+A `struct` reúne campos que descrevem um valor: `Ponto` é um tipo, `p` é um objeto desse tipo e `p.x` vale `2.0`. O compilador pode introduzir **padding**, bytes entre campos ou no fim para alinhar os objetos. Por isso, `sizeof(Ponto)` não deve ser deduzido somando tamanhos de campos. Não graves a memória bruta de uma struct como formato portátil de ficheiro.
 
 `struct` e `class` permitem membros e métodos. A diferença sintática central é o acesso por defeito: público na `struct`, privado na `class`. Uma enumeração com âmbito, como `enum class Estado { livre, ocupado };`, cria valores nomeados e evita confundir um estado com um inteiro qualquer.
 
@@ -160,9 +198,36 @@ Uma string de C é uma sequência de `char` terminada por `\0`. O array `char no
 
 Arrays de `char` comparados com `==` não comparam o texto, comparam endereços depois da conversão para apontadores. Usa `std::string`, ou `std::strcmp` quando o contrato pede strings de C válidas. `strcpy` não verifica o tamanho do destino. Reservar só três posições para copiar `"Ana"` é insuficiente.
 
+### Presença de letras em dois textos
+
+Agora queremos as letras que aparecem num dos textos, mas não nos dois. Trata-se da **diferença simétrica** dos conjuntos de letras. Contar repetições ou retirar caracteres na ordem em que aparecem responderia a outra pergunta.
+
+O alfabeto deste exemplo tem as 26 letras de `a` a `z`; a maiúscula correspondente conta como a mesma letra. Espaços, números e pontuação são ignorados. Não estamos a tratar todo o texto Unicode. As duas entradas são strings de C válidas, não nulas, com até 1000 unidades `char`. O destino não se sobrepõe às entradas e tem pelo menos 27 posições: uma por letra possível e outra para `\0`.
+
+Guardamos duas tabelas de presença, inicialmente falsas. Depois de ler um texto, `em_a[i]` diz se a letra de índice `i` apareceu pelo menos uma vez. Marcar novamente a mesma posição não muda o conjunto. `indice_letra` procura em dois alfabetos explícitos, sem depender de subtrair códigos dos caracteres nem de chamar uma função da biblioteca.
+
+<CodePlayground
+  language="cpp"
+  title="Comparar conjuntos de letras"
+  code={diferencaLetras}
+/>
+
+Saída:
+
+```text
+2 [ad]
+0 []
+```
+
+Em `"ac AB!"`, ficam presentes `a, b, c`; em `"B-cd"`, `b, c, d`. As letras b e c aparecem nos dois e são excluídas. A condição `em_a[i] != em_b[i]` é verdadeira só para a e d. Percorrer a tabela do índice 0 ao 25 escreve o resultado alfabeticamente, uma vez por letra, sem ordenar o texto original.
+
+No segundo caso, `"abAB"` repete letras que `"ba"` contém uma vez, mas os conjuntos são iguais. A saída é vazia e continua a precisar de `saida[0] = '\0'`. O número devolvido conta letras, sem incluir o terminador. No maior resultado, escrevemos 26 letras e o terminador na posição 26; reservar só 26 posições falharia precisamente nesse caso.
+
+A procura de cada unidade percorre no máximo 26 posições do alfabeto, comparando maiúscula e minúscula. No fim, percorremos as 26 presenças. Com este alfabeto fixo, o tempo é linear no comprimento total dos textos e a memória adicional é constante. O algoritmo não usa `string`, `set`, `sort` nem `tolower`; o `main` apenas usa `cout` para mostrar o resultado. As ferramentas permitidas fazem parte do enunciado, além do resultado esperado.
+
 ## Recursão e progresso
 
-Uma função recursiva chama-se a si própria. Precisa de um caso base e de uma medida que diminua até esse caso. A soma recursiva de `1` até `n` pode usar `soma(0) = 0` e `soma(n) = n + soma(n - 1)` para `n > 0`. O contrato exige `n >= 0` e uma soma representável no tipo escolhido. Se não tratares `0`, podes criar chamadas sem fim.
+Uma função recursiva chama-se a si própria e precisa de um caso base com uma medida que diminua até esse caso. A soma recursiva de `1` até `n` pode usar `soma(0) = 0` e `soma(n) = n + soma(n - 1)` para `n > 0`. O contrato exige `n >= 0` e uma soma representável no tipo escolhido. Se não tratares `0`, podes criar chamadas sem fim.
 
 Para `n = 3`, a descida constrói chamadas e a subida combina resultados:
 

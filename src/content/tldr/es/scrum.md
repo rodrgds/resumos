@@ -8,7 +8,7 @@
 | Developers       | Plano do Sprint, incremento utilizável, qualidade e adaptação diária |
 | Scrum Master     | Compreensão/aplicação de Scrum, eficácia e remoção de impedimentos   |
 
-A equipa é autogerida e reúne as competências necessárias. O Product Owner não impõe sozinho a quantidade de trabalho; o Scrum Master não distribui todas as tarefas como chefe de projeto.
+- A equipa é autogerida e reúne as competências necessárias. O Product Owner não impõe sozinho a quantidade de trabalho; o Scrum Master não distribui todas as tarefas como chefe de projeto.
 
 ## Artefactos e compromissos
 
@@ -39,6 +39,6 @@ O Sprint contém estes eventos; o seguinte começa logo após o anterior. Nos Sp
 - Trabalho incompleto volta ao Product Backlog para reconsideração; não conta como incremento nem transita automaticamente. Só o Product Owner pode cancelar um Sprint se o objetivo ficar obsoleto.
 - **Small Items:** resultados úteis pequenos; **Yesterday's Weather:** previsão pelo trabalho recente Done; **Swarming:** ajudar a concluir um item; **Stable Teams:** preservar conhecimento; **Information Radiator:** estado e bloqueios visíveis; **Testable Improvements:** melhorias com resultado observável.
 
-Um padrão liga problema recorrente, contexto, forças, solução e consequências. A lei de Conway chama a atenção para a relação entre comunicação da equipa e desenho do sistema, sem impor uma correspondência inevitável.
+- Um padrão liga problema recorrente, contexto, forças, solução e consequências. A lei de Conway chama a atenção para a relação entre comunicação da equipa e desenho do sistema, sem impor uma correspondência inevitável.
 
 [Exemplo de Sprint acompanhado](/cadeiras/es/scrum/#um-sprint-acompanhado-do-início-ao-fim).

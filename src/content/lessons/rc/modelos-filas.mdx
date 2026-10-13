@@ -10,7 +10,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Delay Models, slides disponibilizados no Moodle 2026/27
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33682
@@ -23,16 +23,17 @@ editorial:
 ---
 
 import redeFilas from '../../rc/rede-filas.dot?raw';
+import estadosFinitos from '../../rc/fila-finita-estados.dot?raw';
 
 import Dot from '../../../components/Dot.astro';
 
-Uma interface com espaço total para dois pacotes rejeita uma chegada quando já há um pacote em transmissão e outro à espera. A taxa **oferecida** conta também essa chegada; a taxa **admitida** só conta os pacotes que entram. Esta diferença muda a aplicação da lei de Little.
+Uma interface com espaço total para dois pacotes rejeita uma chegada quando já há um pacote em transmissão e outro à espera. A taxa **oferecida** conta também essa chegada, enquanto a taxa **admitida** só conta os pacotes que entram; esta diferença muda a aplicação da lei de Little.
 
 ## Poisson e serviço
 
 A [contagem Poisson e os tempos entre chegadas](/cadeiras/rc/desempenho-e-filas/#chegadas-poisson) já permitem calcular silêncio: $P(A(t)=0)=e^{-\lambda t}$. A taxa média não impõe intervalos fixos entre pacotes.
 
-Duas fontes Poisson **independentes**, de 20 e 30 pacotes/s, formam um processo Poisson de 50 pacotes/s quando se juntam. Se cada chegada desse agregado escolher uma saída com probabilidade 0,4, independentemente das outras, essa saída recebe um processo Poisson de 20 pacotes/s e a outra de 30. Somar fluxos dependentes ou escolher uma saída conforme o estado das filas não garante estas propriedades.
+Duas fontes Poisson **independentes**, de 20 e 30 pacotes/s, formam um processo Poisson de 50 pacotes/s quando se juntam. Se cada chegada desse agregado escolher uma saída com probabilidade 0,4, independentemente das outras, essa saída recebe um processo Poisson de 20 pacotes/s e a outra de 30; somar fluxos dependentes ou escolher uma saída conforme o estado das filas não garante estas propriedades.
 
 A letra M em M/M/1 refere-se a processos sem memória: o tempo decorrido não altera a distribuição do tempo restante. O primeiro M descreve as chegadas; o segundo descreve o **serviço**. Alterar só os comprimentos de pacotes para constantes muda M/M/1 para M/D/1, mantendo a hipótese Poisson à entrada. As distribuições seguintes precisam de ser escolhidas pelas duas condições, não apenas pela taxa média.
 
@@ -42,7 +43,9 @@ A letra M em M/M/1 refere-se a processos sem memória: o tempo decorrido não al
 
 Nesta página, **B é a capacidade total do sistema**, incluindo serviço. Se um enunciado usar B só para espera, substitui por B+1. Confirma a convenção antes de usares fórmulas.
 
-Em equilíbrio, cada fronteira entre estados n−1 e n equilibra subidas e descidas: $\lambda p_{n-1}=\mu p_n$. Daqui resulta $p_n=\rho^n p_0$, e $p_0$ sai da normalização da soma até B. Com $\rho=\lambda/\mu$, existem estados 0 até B. Para $\rho\ne1$:
+Por exemplo, com $\rho=0,75$, «um buffer» como um lugar total dá $B=1$ e bloqueio $0,75/(1+0,75)\approx42,86\%$. Se significar um lugar de espera além do servidor, $B=2$ e o bloqueio é $0,75^2/(1+0,75+0,75^2)\approx24,32\%$. Não resolves a ambiguidade do enunciado escolhendo uma das fórmulas sem declarar a interpretação.
+
+Em equilíbrio, cada fronteira entre estados n−1 e n equilibra subidas e descidas ($\lambda p_{n-1}=\mu p_n$), daqui resulta $p_n=\rho^n p_0$ e $p_0$ sai da normalização da soma até B. Com $\rho=\lambda/\mu$, existem estados 0 até B. Para $\rho\ne1$:
 
 $$p_n=\frac{(1-\rho)\rho^n}{1-\rho^{B+1}}.$$
 
@@ -50,7 +53,14 @@ Para $\rho=1$, todos os estados têm probabilidade $1/(B+1)$. A probabilidade de
 
 A taxa admitida é $\lambda_e=\lambda(1-p_B)$. Calcula o número médio como $N=\sum_{n=0}^B n p_n$ e aplica Little aos pacotes admitidos: $T=N/\lambda_e$. Se pedirem só fila, subtrai do número médio a probabilidade de o servidor estar ocupado, $1-p_0$, e do tempo médio o serviço $1/\mu$.
 
-**Exemplo.** $\lambda=\mu=10$ pacotes/s e B=2. Os três estados têm probabilidade 1/3. Bloqueio 1/3, taxa admitida $20/3$, N=1. Então $T=1/(20/3)=0{,}15$ s. O serviço médio é 0,1 s; a espera média é 0,05 s. Usar $N/\lambda$ daria 0,1 s e ignoraria que um terço das entradas foi rejeitado.
+**Exemplo.** $\lambda=\mu=10$ pacotes/s e B=2. O estado conta todos os pacotes no sistema, incluindo o que está em serviço.
+
+<Dot
+  source={estadosFinitos}
+  alt="Estados 0, 1 e 2, capacidade total dois. Chegadas admitidas aumentam o estado; serviço concluído diminui-o. Uma chegada em 2 é rejeitada sem mudar o estado."
+/>
+
+Os três estados têm probabilidade 1/3; bloqueio 1/3, taxa admitida $20/3$, N=1, então $T=1/(20/3)=0{,}15$ s. O serviço médio é 0,1 s e a espera média é 0,05 s. Usar $N/\lambda$ daria 0,1 s e ignoraria que um terço das entradas foi rejeitado.
 
 Ao contrário de M/M/1 com capacidade infinita, a fila finita admite uma distribuição estacionária mesmo com $\lambda\ge\mu$. O excesso de procura aparece como bloqueio. Isso não torna a taxa oferecida integralmente atendida.
 
@@ -70,7 +80,7 @@ Com capacidade total B=24 pacotes, passamos a M/M/1/B:
 
 A carga aqui é a razão **oferecida**, não a fração efetiva de ocupação do servidor da fila finita. Mesmo com mais buffers, no último caso o bloqueio tende a $1-1/1,25=20\%$: o canal não consegue servir todo o tráfego sustentado.
 
-O bloqueio depende de $\rho$ e B. Se mantivermos tráfego em bits/s e B em pacotes, mudar o comprimento não muda $\rho$ nem o bloqueio deste modelo. Porém, altera a memória em bytes necessária para o mesmo número de pacotes. Com memória física fixa em bytes, B também pode mudar; não podemos então concluir que a perda fica igual.
+O bloqueio depende de $\rho$ e B. Se mantivermos tráfego em bits/s e B em pacotes, mudar o comprimento não muda $\rho$ nem o bloqueio deste modelo, mas altera a memória em bytes necessária para o mesmo número de pacotes. Com memória física fixa em bytes, B também pode mudar, por isso não podemos então concluir que a perda fica igual.
 
 ## Inferir a ligação a partir do tempo ocioso
 
@@ -86,13 +96,13 @@ M/M/1 dá $T=1/(450-360)=11{,}111$ ms e $T_q=8{,}889$ ms. Se apenas o serviço p
 
 ## Espera limitada com serviço constante
 
-Imagina serviço constante $s=1/450$ s e capacidade total de quatro pacotes, **incluindo serviço**, FIFO sem preempção. Um admitido encontra no máximo três à frente. A fila fica limitada por $3s=6{,}667$ ms. É um limite superior, não a espera média.
+Imagina serviço constante $s=1/450$ s e capacidade total de quatro pacotes, **incluindo serviço**, FIFO sem preempção. Um admitido encontra no máximo três à frente, por isso a fila fica limitada por $3s=6{,}667$ ms. É um limite superior, não a espera média.
 
 Se os quatro lugares forem apenas de espera, a capacidade total é cinco e o limite muda. A distribuição estacionária de M/M/1/B não se aplica automaticamente à fila M/D/1/B: mudar o serviço muda o modelo.
 
 ## M/G/1 e variância do serviço
 
-Seja $S$ o tempo de serviço. $E[S]$ é a média, $Var(S)$ a variância e $E[S^2]$ a média do quadrado. O tempo residual médio que uma chegada encontra é $R=\lambda E[S^2]/2$: cada serviço contribui com metade do seu quadrado, porque serviços longos são mais prováveis de estar em curso. Com Poisson, serviços iid independentes das chegadas, um servidor, FIFO ilimitada sem preempção e $\rho=\lambda E[S]<1$:
+Seja $S$ o tempo de serviço. $E[S]$ é a média, $Var(S)$ a variância e $E[S^2]$ a média do quadrado. O tempo residual médio que uma chegada encontra é $R=\lambda E[S^2]/2$, pois cada serviço contribui com metade do seu quadrado, porque serviços longos são mais prováveis de estar em curso. Com Poisson, serviços iid independentes das chegadas, um servidor, FIFO ilimitada sem preempção e $\rho=\lambda E[S]<1$:
 
 $$T_q=\frac{\lambda E[S^2]}{2(1-\rho)},\qquad T=T_q+E[S].$$
 
@@ -125,7 +135,7 @@ Resolve estas equações **antes** de usares fórmulas de filas, porque a taxa i
   alt="Entram 40 pacotes por segundo em A. Metade das saídas de A segue para B, a outra metade sai. Um quarto das saídas de B volta a A, os restantes três quartos saem."
 />
 
-**Exemplo com retorno.** Entram 40 pacotes/s em A. Metade vai depois para B; um quarto das saídas de B regressa a A, o resto sai. Assim $\lambda_A=40+0{,}25\lambda_B$ e $\lambda_B=0{,}5\lambda_A$. Logo $\lambda_A=40/0{,}875\approx45{,}714$ e $\lambda_B\approx22{,}857$.
+**Exemplo.** Entram 40 pacotes/s em A. Metade vai depois para B; um quarto das saídas de B regressa a A e o resto sai. Assim $\lambda_A=40+0{,}25\lambda_B$ e $\lambda_B=0{,}5\lambda_A$, logo $\lambda_A=40/0{,}875\approx45{,}714$ e $\lambda_B\approx22{,}857$.
 
 Se $\mu_A=100$ e $\mu_B=80$, os tempos por visita são $T_A=1/(100-\lambda_A)\approx0{,}01842$ s e $T_B\approx0{,}0175$ s. O número médio de pacotes em toda a rede é $N=\lambda_AT_A+\lambda_BT_B\approx1{,}2421$. Por Little na fronteira externa, o tempo médio por pacote externo é $N/40\approx0{,}03105$ s. Somar simplesmente $T_A+T_B$ seria errado, porque nem todos visitam B e alguns regressam.
 

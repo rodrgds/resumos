@@ -17,6 +17,8 @@ editorial:
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
+import duasRelacoes from '../../lbaw/duas-relacoes.sql?raw';
+
 import YouTube from '../../../components/YouTube.astro';
 import consulta from '../../lbaw/consultas.sql?raw';
 
@@ -116,7 +118,7 @@ FROM vendas;
 
 Uma sessão com dois bilhetes de 10 euros continua a ter duas linhas, ambas com total_sessao=20. Com `GROUP BY sessao_id`, teríamos uma linha por sessão. Uma CTE, `WITH nome AS (...)`, dá nome a um resultado intermédio e ajuda a decompor a pergunta; não é uma promessa de materialização nem de melhor desempenho.
 
-Para prever o resultado de agregações, operações de conjuntos e funções de janela, vê a aula seguinte com a pergunta «que linhas existem antes e depois de cada operação?» na cabeça. Pausa antes de cada resultado, escreve as linhas que esperas e só depois confirma.
+Para prever o resultado de agregações, operações de conjuntos e funções de janela, pergunta «que linhas existem antes e depois de cada operação?»: pausa antes de cada resultado, escreve as linhas que esperas e só depois confirma.
 
 <YouTube id="MzigBKf84aY" title="CMU Database Group, Modern SQL, 2024" />
 
@@ -150,3 +152,30 @@ O bloco PostgreSQL anterior usa três sessões. S1 tem um bilhete pago e outro c
 S3 distingue "tem bilhetes" de "tem correspondências pagas". Ao filtrar no ON, o bilhete cancelado não corresponde e a junção conserva a sessão com colunas de bilhete a NULL. Ao filtrar no WHERE, a sua única linha é rejeitada, tal como a linha exterior de S2.
 
 A expressão isolada `2 NOT IN (1,NULL)` é desconhecida e rejeita a linha. O `NOT EXISTS` correlacionado encontra ausência de bilhetes em S2 e aceita-a. Este NULL pertence à lista da expressão de teste, não a um bilhete inserido pelo programa.
+
+## Duas relações podem multiplicar a mesma venda
+
+S12 tem dois bilhetes pagos de 20 euros e três etiquetas: fado, Porto e noite. Uma junção dos bilhetes com as etiquetas produz uma linha para cada par bilhete-etiqueta:
+
+| Bilhete | Preço | Etiqueta |
+| ------- | ----- | -------- |
+| B1      | 20    | fado     |
+| B1      | 20    | Porto    |
+| B1      | 20    | noite    |
+| B2      | 20    | fado     |
+| B2      | 20    | Porto    |
+| B2      | 20    | noite    |
+
+Somar o preço depois desta junção dá 120 euros, embora só tenham sido vendidos 40. `COUNT(b.id)` também conta seis ocorrências, não dois bilhetes. As condições de junção podem estar todas corretas: a multiplicação resulta de combinar duas relações de um para muitos.
+
+`COUNT(DISTINCT b.id)` recupera a quantidade de bilhetes neste caso. Mas `SUM(DISTINCT b.preco)` dá 20 e perde a segunda compra legítima ao mesmo preço. A identidade do bilhete e o valor do preço são coisas diferentes.
+
+Para obter uma linha por sessão com quantidade paga, receita e número de etiquetas, agrega **cada relação antes de as juntar**. Cada resultado intermédio fica com no máximo uma linha por sessão; juntar esses resultados já não repete as vendas.
+
+<CodePlayground
+  language="postgresql"
+  title="Contar vendas e etiquetas sem multiplicar preços"
+  code={duasRelacoes}
+/>
+
+A primeira consulta mostra a multiplicação. A segunda devolve S12 com dois pagos, receita 40 e três etiquetas; S13 com zeros; e S14 com um pago de 8 euros, mesmo sem etiquetas. `COALESCE` atribui zero à ausência de grupo neste relatório. Se só queres testar se existe uma etiqueta, `EXISTS` pode filtrar sem acrescentar linhas à relação de vendas.

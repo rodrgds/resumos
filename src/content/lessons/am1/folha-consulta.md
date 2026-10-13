@@ -4,11 +4,13 @@ description: Fórmulas e condições de diferenciação, séries, integração, 
 section: recursos
 studyKind: revision
 editorial:
-  basedOn: 2026/27
+  basedOn: 2024/25
   sources:
+    - title: Fichas e provas de AM I, coleção SIGARRA 2024/25
+      url: https://sigarra.up.pt/feup/pt/conteudos_geral.ver?pct_pag_id=249640&pct_parametros=pv_ocorrencia_id=541866
     - title: Resumos AM SofiaViP
       url: https://drive.google.com/file/d/15hBdUfPVPdZ8exFLuA_LYStff61YH2td/view
-    - title: Programa de AM I, SIGARRA 2026/27
+    - title: Ficha atual de AM I, SIGARRA 2026/27
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587960
   coverage: Fórmulas e condições dos blocos desenvolvidos nas lições, incluindo Taylor, Laplace e Fourier.
 ---
@@ -23,6 +25,12 @@ $$
 (u/v)'=\frac{u'v-uv'}{v^2}\ (v\ne0)\\
 (f\circ u)'=f'(u)u'.
 \end{gathered}
+$$
+
+Para $y=f(u)$ com $f,u$ duas vezes deriváveis,
+
+$$
+y''=f''(u)(u')^2+f'(u)u''.
 $$
 
 $(\ln|u|)'=u'/u$ para $u\ne0$; $(\arctan u)'=u'/(1+u^2)$; $(\arcsin u)'=u'/\sqrt{1-u^2}$ para $|u|<1$. Para $u>0$, $(u^v)'=u^v(v'\ln u+vu'/u)$. [Regras](/cadeiras/am1/derivadas/#regras-básicas).
@@ -72,7 +80,9 @@ na última fórmula com $f$ contínua. Muda os limites numa substituição defin
 
 Fração racional: divide se necessário e inclui todas as potências dos fatores repetidos. Seno/cosseno com potência ímpar: guarda um fator para substituir; ambos pares: lineariza. $t=\tan(x/2)$ racionaliza funções racionais de seno e cosseno. [Escolha](/cadeiras/am1/primitivas-avancadas/#frações-racionais).
 
-Área: $\int|f-g|$. Volume: $\int A$; arandelas $\pi\int(R^2-r^2)$; cascas $2\pi\int\rho H$ sem sobreposição. Polar: $\frac12\int r^2d\theta$, com percurso único. Raios são distâncias ao eixo. [Geometria](/cadeiras/am1/volumes-polares/#secções-transversais-discos-e-arandelas).
+Simetria: $\int_0^a f(x)dx=\int_0^a f(a-x)dx$ para $f$ contínua e $a>0$. Uma identidade $\int_c^x f=G$ exige $f=G\prime$ e $G(c)=0$.
+
+Área: $\int|f-g|$. Volume: $\int A$; arandelas $\pi\int(R^2-r^2)$; cascas $2\pi\int\rho H$ sem sobreposição. Polar: $\frac12\int r^2d\theta$, com percurso único. Raios são distâncias ao eixo. Se a faixa contém o eixo, $r=0$ e $R$ é a maior distância às suas extremidades; divide onde essa extremidade muda. [Geometria](/cadeiras/am1/volumes-polares/#secções-transversais-discos-e-arandelas).
 
 ## Impróprios e hiperbólicas
 

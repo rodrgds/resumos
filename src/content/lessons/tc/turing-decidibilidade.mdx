@@ -4,10 +4,20 @@ description: Transições e configurações, programação da fita, máquinas eq
 order: 9
 practices:
   - tc/praticar-turing
+editorial:
+  basedOn: 2024/25
+  sources:
+    - title: 'Materiais de TC no Moodle de 2024/25'
+      url: https://moodle2425.up.pt/mod/resource/view.php?id=192378
+    - title: 'Teste 2, 11/6/2025, enunciado histórico'
+      url: https://accio.pt/uploads/contributions/jWmq9JAIMuQ.pdf
+  gaps:
+    - Os enunciados históricos não confirmam a profundidade ou o formato da avaliação de 2026/27.
 ---
 
 import Typst from '../../../components/Typst.astro';
 import TuringLab from '../../../components/TuringLab.astro';
+import YouTube from '../../../components/YouTube.astro';
 import transicaoFita from '../../tc/transicao-fita.typ?raw';
 
 Uma **máquina de Turing** pode voltar a uma célula da fita e alterar o símbolo que lá guardou. Para comparar dois blocos, marca um símbolo em cada um e regressa ao primeiro bloco para repetir. A cabeça indica a célula que a máquina lê em cada passo.
@@ -24,7 +34,9 @@ $$
 \delta(q,X)=(p,Y,D),\qquad D\in\{L,R\},
 $$
 
-manda escrever $Y$ no lugar de $X$, mudar para $p$ e mover a cabeça uma célula à esquerda ou à direita. Uma transição não definida termina a computação. Adota finais sem saídas: parar num final aceita; parar fora de $F$ rejeita. Outra convenção comum usa estados explícitos de aceitação e rejeição. Ambas descrevem os mesmos algoritmos.
+manda escrever $Y$ no lugar de $X$, mudar para $p$ e mover a cabeça uma célula à esquerda ou à direita. Uma transição não definida termina a computação. Adota finais sem saídas: parar num final aceita; parar fora de $F$ rejeita.
+
+Outra convenção comum usa estados explícitos de aceitação e rejeição; ambas descrevem os mesmos algoritmos.
 
 Uma configuração $\alpha q\beta$ coloca $q$ imediatamente antes da célula sob a cabeça. Em $01q_2X1$, a fita representada é $01X1$ e a cabeça lê $X$. Brancos fora da região mostrada ficam implícitos.
 
@@ -36,9 +48,13 @@ Se $\delta(q,X)=(p,Y,R)$, então $\alpha qX\beta\vdash\alpha Yp\beta$. Se o movi
   alt="De 01q₂X1 para 01Yp1: escreve Y sobre X e move a cabeça para o último 1. Os estados ficam fora da fita."
 />
 
+O vídeo de Rodrigo Dias apresenta o modelo de máquina de Turing:
+
+<YouTube id="6UXbe7S9z8Y" title="Introdução a Máquinas de Turing" />
+
 ## Uma máquina que decide aⁿbⁿ
 
-Vamos marcar um $a$ com $X$ e um $b$ correspondente com $Y$, voltando ao início de cada ronda. Ao não encontrar mais $a$, verificamos que só restam $Y$ e branco.
+A máquina marca um $a$ com $X$ e um $b$ correspondente com $Y$, voltando ao início de cada ronda. Quando já não encontra $a$, verifica que só restam $Y$ e branco.
 
 Os estados são $q_0$ para escolher o próximo $a$, $q_1$ para procurar um $b$, $q_2$ para regressar ao marcador $X$ da ronda, $q_3$ para verificar o fim, e $q_f$ final.
 
@@ -100,7 +116,9 @@ e a máquina para sem transição definida, logo rejeita. Para $\varepsilon$, a 
 
 ## Comparar extremos e vários blocos
 
-Para palíndromos sobre $\{0,1\}$, guarda no estado a primeira letra não marcada e risca-a. Vai até à última letra não marcada e verifica se é igual. Se for, risca-a também e regressa à esquerda; caso contrário, rejeita. Quando não restam letras, aceita. Se restar uma única letra no centro, aceita sem procurar um par. Para $01110$, as rondas retiram $0$ com $0$, depois $1$ com $1$, ficando o $1$ central. Cada ronda retira uma ou duas letras, provando terminação.
+Para palíndromos sobre $\{0,1\}$, guarda no estado a primeira letra não marcada e risca-a. Vai até à última letra não marcada e verifica se é igual; se for, risca-a também e regressa à esquerda, e caso contrário rejeita. Quando não restam letras, aceita, e se restar uma única letra no centro aceita sem procurar um par.
+
+Para $01110$, as rondas retiram $0$ com $0$, depois $1$ com $1$, ficando o $1$ central. Cada ronda retira uma ou duas letras, provando terminação.
 
 Para $\{a^nb^na^n\mid n\ge0\}$, verifica primeiro o formato dos três blocos. Em cada ronda, marca um $a$ no primeiro bloco, um $b$ no segundo e um $a$ no terceiro, com marcadores diferentes que conservem a origem. Se um bloco acabar antes de outro, rejeita. Se todos acabarem ao mesmo tempo, aceita. Em $aabbaa$, duas rondas chegam; em $aabba$, a segunda ronda não encontra o último $a$. A fita permite voltar a comparar uma terceira contagem, que uma única pilha não consegue tratar desta forma. Esta linguagem é decidível, mas não livre de contexto.
 
@@ -124,6 +142,39 @@ Para complemento para dois num comprimento fixo, percorre da direita até ao pri
 
 Técnicas úteis incluem guardar um símbolo no estado, marcar símbolos já tratados e dividir o algoritmo em subrotinas com estados de entrada e saída. Várias pistas na mesma fita podem usar símbolos-tuplo, como $(a,\text{marcado})$. Isso aumenta o alfabeto finito, sem criar outro tipo de memória.
 
+### Compactar a fita sem deixar intervalos vazios
+
+Para remover todos os $Y$ de uma entrada sobre $\{X,Y\}$, apagar cada $Y$ onde o encontramos deixaria brancos entre os $X$. O resultado pedido é um bloco contínuo $X^k$, a partir da primeira célula original, com $k$ igual à quantidade inicial de $X$.
+
+Usa cinco estados de trabalho e o final $f$, sem saídas. $B$ é branco. Cada célula da tabela dá estado seguinte, símbolo escrito e movimento:
+
+| Estado                        | $X$        | $Y$       | $B$        |
+| ----------------------------- | ---------- | --------- | ---------- |
+| $s$, início                   | $(s,X,R)$  | $(g,Y,R)$ | $(f,B,R)$  |
+| $g$, procurar outro $X$       | $(m,Y,L)$  | $(g,Y,R)$ | $(c,B,L)$  |
+| $m$, regressar ao intervalo   | $(w,X,R)$  | $(m,Y,L)$ | $(w,B,R)$  |
+| $w$, preencher o primeiro $Y$ | Indefinida | $(s,X,R)$ | Indefinida |
+| $c$, limpar os $Y$ finais     | $(f,X,L)$  | $(c,B,L)$ | $(f,B,L)$  |
+
+$s$ atravessa o prefixo de $X$ já compacto. Ao encontrar um $Y$, $g$ procura o próximo $X$. Se o encontrar, troca esse $X$ por $Y$ e regressa em $m$, conservando os $Y$. Ao encontrar o $X$ que limita o prefixo, ou o branco à esquerda, move uma célula à direita para $w$. Essa célula ainda é o primeiro $Y$ do intervalo; $w$ troca-o por $X$.
+
+Uma ronda desloca um $X$ para a primeira posição livre do prefixo. A quantidade de $X$ diminui temporariamente em $g$ e recupera em $w$. Só a ronda completa conserva essa quantidade. Apagar os $Y$ durante o regresso em $m$ impediria $w$ de encontrar o símbolo que deve substituir.
+
+Para $YXYX$, a primeira ronda é:
+
+| Estado | Índice da cabeça | Fita entre as células 0 e 3 |
+| ------ | ---------------- | --------------------------- |
+| $s$    | 0                | $YXYX$                      |
+| $g$    | 1                | $YXYX$                      |
+| $m$    | 0                | $YYYX$                      |
+| $m$    | -1, branco       | $YYYX$                      |
+| $w$    | 0                | $YYYX$                      |
+| $s$    | 1                | $XYYX$                      |
+
+Os índices começam em zero e os estados ficam fora da fita. A ronda seguinte deixa $XXYY$ e retoma $s$ na célula 2. Já não há outro $X$, por isso $g$ chega ao branco e $c$ apaga os dois $Y$ finais. Termina com $XX$ nas células 0 e 1, brancos nas restantes, estado $f$ e cabeça na célula 0.
+
+Cada ronda completa aumenta o prefixo compacto em um $X$, e há apenas finitos $X$ na entrada. As varreduras percorrem a região finita original e a limpeza termina ao chegar ao prefixo ou ao branco esquerdo. Se a entrada só tiver $Y$, a limpeza deixa tudo branco; se for vazia ou já só tiver $X$, $s$ chega diretamente ao final. A máquina termina em todas as entradas. Aceitar aqui assinala a conclusão do cálculo, não uma seleção das palavras que já estavam compactas.
+
 ## Variantes com o mesmo poder
 
 Máquinas com várias fitas não reconhecem mais linguagens que máquinas com uma fita. Uma fita pode codificar as várias fitas e marcar a posição de cada cabeça. Para simular um passo, varre a codificação, encontra os símbolos sob as cabeças e atualiza-os. Pode levar mais passos, mas mantém o resultado.
@@ -136,9 +187,14 @@ A tese de Church-Turing identifica os procedimentos efetivos com o que estas má
 
 ## Reconhecível e decidível
 
-Uma linguagem é **reconhecível**, ou recursivamente enumerável, se existe uma TM que aceita exatamente as suas palavras. Para entradas fora da linguagem, pode rejeitar ou correr para sempre.
+Uma linguagem é **reconhecível**, ou recursivamente enumerável, se existe uma TM que aceita exatamente as suas palavras. É **decidível**, ou recursiva, se existe uma TM que termina em todas as entradas e responde corretamente.
 
-É **decidível**, ou recursiva, se existe uma TM que termina em todas as entradas e responde corretamente. A máquina de marcação de $a^nb^n$ é um decisor, porque a sua prova de terminação abrange também as palavras rejeitadas.
+| Máquina para $L$ | Se $w\in L$      | Se $w\notin L$                                  |
+| ---------------- | ---------------- | ----------------------------------------------- |
+| Reconhecedor     | Termina e aceita | Pode terminar e rejeitar, ou correr para sempre |
+| Decisor          | Termina e aceita | Termina e rejeita                               |
+
+A máquina de marcação de $a^nb^n$ é um decisor, porque a sua prova de terminação abrange também as palavras rejeitadas. Reconhecer exige aceitar cada palavra de $L$ após finitos passos, não apenas evitar aceitar palavras erradas.
 
 Todas as decidíveis são reconhecíveis. Nem todas as reconhecíveis são decidíveis. Dar mais tempo a uma simulação não resolve esta diferença: não conseguir prever se ela vai parar é precisamente parte do problema.
 
@@ -152,7 +208,7 @@ A linguagem $A_{TM}=\{\langle M,w\rangle\mid M\text{ aceita }w\}$ é reconhecív
 
 ## O problema da paragem
 
-Define $HALT=\{\langle M,w\rangle\mid M\text{ para em }w\}$. É reconhecível, pois podes simular e aceitar quando a simulação parar. É indecidível.
+Define $HALT=\{\langle M,w\rangle\mid M\text{ para em }w\}$. É reconhecível, pois podes simular e aceitar quando a simulação parar, mas é indecidível.
 
 Supõe que existe um decisor $H$ para $HALT$. Constrói $D$ que, ao receber $\langle M\rangle$, consulta $H(\langle M,\langle M\rangle\rangle)$. Se $H$ disser que $M$ para, $D$ entra num ciclo infinito. Se disser que não para, $D$ termina.
 

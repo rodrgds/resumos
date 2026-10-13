@@ -6,6 +6,12 @@ section: conteudo
 practices:
   - c/praticar-otimizacao-codigo
 order: 8
+editorial:
+  sources:
+    - title: 'Segundo teste, 3/6/2024, cadeias definição-uso e webs'
+      url: https://accio.pt/uploads/contributions/RGSPYVA7VWA.pdf
+  gaps:
+    - Fonte histórica de apoio; não confirma o enunciado ou a profundidade da edição de 2026/27.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -31,7 +37,7 @@ x = t2       # x viva à saída (lê-se fora)
 y = 10       # y morta à saída (ninguém lê)
 ```
 
-Pergunta para a frente: este valor ainda vai ser lido? `y` não, por isso a linha 4 pode sair.
+A pergunta olha para usos futuros: este valor ainda vai ser lido? O cálculo da vivacidade propaga essa necessidade para trás, dos usos para as definições. Aqui `y` não será lida; sendo uma atribuição local de uma constante, sem efeitos nem exceções, a linha 4 pode sair.
 
   </div>
   <div slot="panel-1">
@@ -42,16 +48,14 @@ t2 = t1 + 3  # chega a t2 = t1 + 3 ao uso na linha 3? sim, única
 x = t2       # chega ao fim? sim, via x
 ```
 
-Pergunta para trás: de onde veio este valor? Uma definição constante que chega a todos os caminhos permite substituir o nome por essa constante. Uma única definição, por si só, não prova que o valor é constante nem que repetir a expressão é seguro.
+A pergunta procura a origem do valor: que definição chegou a este uso? O cálculo propaga as definições para a frente, até aos pontos onde podem ser usadas. Um valor constante conhecido em todos os caminhos permite substituir o nome por essa constante. Uma única definição, por si só, não prova que o valor é constante nem que repetir a expressão é seguro.
 
   </div>
 </Tabs>
 
-A pergunta sobre liveness olha para usos futuros, mas o cálculo propaga-se **para trás**.
-
 ### Equações e direção da propagação
 
-Para um bloco `B`, `USE` contém nomes lidos antes de uma definição no bloco e `DEF` contém nomes definidos:
+A vivacidade pergunta sobre usos futuros, por isso o cálculo propaga-se **para trás**. Para um bloco `B`, `USE` contém nomes lidos antes de uma definição no bloco e `DEF` contém nomes definidos:
 
 ```text
 OUT[B] = união de IN[S], para cada sucessor S
@@ -88,7 +92,7 @@ Aqui assumimos variáveis locais, expressões sem efeitos nem exceções, e apen
 x = 8
 ```
 
-Neste modelo, a versão reduzida conserva o valor de `x` e não há outros efeitos observáveis. Num compilador real, também é preciso preservar chamadas, escrita em memória observável e exceções, segundo as regras da linguagem.
+O bloco reduzido conserva o valor observável de `x`; num compilador real, a mesma eliminação teria ainda de preservar chamadas, escrita em memória observável e exceções, segundo as regras da linguagem.
 
 <Typst
   source={otimizacao}
@@ -116,6 +120,25 @@ Apenas `x` está viva à saída do bloco original. Percorremos as instruções d
 | `t1 = 5`           | nenhuma         | O bloco produz os valores sem ler uma entrada.  |
 
 Numa aresta de regresso, um uso no teste da próxima iteração pode manter um valor vivo através de todo o corpo. Por isso, uma única passagem pelos blocos não basta em geral. O exercício do ciclo aplica as mesmas equações até não haver alterações.
+
+## Definições, usos e webs
+
+Duas atribuições ao mesmo nome podem produzir valores com vidas independentes. Uma **cadeia definição-uso** liga uma definição d a um uso u se existe um caminho de d até u sem outra definição desse nome pelo meio. As definições que alcançam fornecem essas possibilidades.
+
+```text
+1  x = 1
+2  print(x)
+3  x = 9
+4  print(x)
+```
+
+A definição 1 chega ao uso 2; a definição 3 chega ao uso 4. A definição 1 não chega a 4, porque 3 a substitui. Não basta ligar todos os usos ao mesmo identificador x.
+
+Uma **web** agrupa definições e usos ligados por estas cadeias, incluindo ligações transitivas. Aqui há duas webs: `{def1,uso2}` e `{def3,uso4}`. O alocador pode tratar os dois valores separadamente. Podem reutilizar o mesmo registo se as suas vidas não interferirem; separar webs não obriga a registos diferentes.
+
+Numa junção, os caminhos podem unir as webs. Se um ramo define x na linha 1, outro define x na linha 3 e ambos chegam ao mesmo `print(x)` na linha 4, há cadeias def1→uso4 e def3→uso4. O uso comum liga as duas definições numa só web. O código de entrada da junção precisa de disponibilizar o valor escolhido no local esperado, mesmo que cada ramo o tenha produzido de outra forma.
+
+Distingue três perguntas: que definição pode chegar ao uso; que valores estão vivos ao mesmo tempo; e onde guardar cada valor. As cadeias ajudam a formar os nós, a vivacidade ajuda a encontrar interferências e a alocação escolhe registos ou derrames. Uma web com duas definições pode ainda ter uma constante conhecida se ambas escreverem o mesmo valor, como no exemplo anterior de propagação.
 
 :::warning[Otimizar cedo demais esconde erros]
 Aplica as otimizações sobre código intermédio já validado e confirma cada transformação no grafo de fluxo. No projeto, depura primeiro com as otimizações desligadas: um erro no código gerado com otimizações ligadas pode estar na otimização ou no código original, e sem a versão simples não distingues.

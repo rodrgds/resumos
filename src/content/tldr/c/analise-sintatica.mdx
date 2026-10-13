@@ -1,0 +1,34 @@
+import Typst from '../../../components/Typst.astro';
+import arvores from '../../c/arvores.typ?raw';
+
+## Estrutura da expressão
+
+Uma CFG organiza tokens. Precedência separa níveis; recursão à esquerda pode fixar associatividade à esquerda. A AST conserva operações/operandos e o agrupamento, sem os não terminais auxiliares nem parênteses como nós.
+
+<Typst
+  source={arvores}
+  format="svg"
+  alt="Duas árvores de a+a*a: produto na raiz dá18 com a=3; soma na raiz e produto no ramo direito dá12."
+/>
+
+Ambiguidade exige duas árvores para os mesmos tokens; ordens de expansão diferentes da mesma árvore não chegam.
+
+## Previsão descendente
+
+- LL(1) lê da esquerda para a direita e escolhe uma derivação mais à esquerda com um token de avanço.
+- Remove recursão à esquerda antes da descida ingénua. Fatoriza prefixos comuns para adiar a escolha até ao token distinto.
+- `Lista -> Lista Inst | ε` pode tornar-se `Lista -> Inst Lista | ε`; uma função iterativa lê instruções pela ordem fonte.
+- Transformar palavras aceites não conserva automaticamente a forma da AST: monta operadores à esquerda quando esse é o contrato.
+- ANTLR4 usa previsão adaptativa e transforma certas regras diretamente recursivas à esquerda; não é um gerador LR nem um LL(1) simples.
+
+## FIRST, FOLLOW e tabela
+
+FIRST(α) reúne os terminais iniciais possíveis. Continua pela sequência enquanto cada símbolo puder desaparecer; inclui ε só se todos puderem. FOLLOW(A) reúne o que pode vir depois de A, incluindo `$` quando pode terminar; nunca ε.
+
+Para A→α, usa FIRST(α) sem ε; se α for anulável, usa também FOLLOW(A). Duas regras numa célula impedem LL(1). Em S→ABC com A→a|ε,B→b|ε,C→c, `FIRST(S)={a,b,c}`, `FOLLOW(A)={b,c}`, `FOLLOW(B)={c}`; ε é rejeitada.
+
+## Redução e erros
+
+LR faz shift para ler tokens e redução para substituir um corpo por um não terminal, sem consumir entrada. Itens marcam o ponto reconhecido; avanço/tabela autorizam a redução. Conflitos podem oferecer shift/reduce ou duas reduções.
+
+Para recuperar, sincroniza em delimitadores seguros e conserva token recebido, esperado e posição. A convenção do else mais próximo deve ficar explícita na gramática. [Construções e traços](/cadeiras/c/analise-sintatica/).

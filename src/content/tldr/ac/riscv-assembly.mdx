@@ -25,6 +25,16 @@ Não existe `t7`. Registos `f0` a `f31`, quando disponíveis, pertencem a outro 
 - `slt/blt/bge` interpretam com sinal; as variantes `sltu/bltu/bgeu`, sem sinal. Não há flags globais de comparação.
 - `srli` preenche com zeros; `srai`, com o bit de sinal. Deslocamento imediato vai de 0 a 31. Para −3, `srai` por 1 dá −2; `div` por 2 dá −1, pois arredonda para zero. `div` requer a extensão M.
 
+## Vírgula flutuante
+
+- F usa precisão simples, 32 bits; D acrescenta dupla, 64 bits, mesmo com registos inteiros RV32. `.s/.d` identificam a precisão dos cálculos.
+- `flw/fsw` transferem quatro bytes; não convertem inteiros. `fcvt.s.w` converte inteiro com sinal para simples. `flt.s` devolve 0/1 num registo **inteiro**.
+- Acumular em dupla dados simples: `flw`, `fcvt.d.s`, `fadd.d`; avança **4 bytes**, mantendo o formato em memória. Converte o divisor inteiro com `fcvt.d.w`, divide com `fdiv.d` e retorna simples com `fcvt.s.d`.
+- `fmv` copia; não substitui `fcvt`. Aumentar a precisão dos cálculos não torna exata qualquer soma.
+- Numa média filtrada, conta só valores incluídos. Para `[1,5; −2,0; 4,5; 0,0]`, excluindo negativos: soma 6,0, contagem 3, média 2,0. Zero entra. Comprimento zero e contagem final zero precisam de tratamento antes de carregar/dividir.
+
+[Conversões e traço da média](/cadeiras/ac/riscv-assembly/#vírgula-flutuante-e-conversões).
+
 ## Codificação e saltos
 
 | Formato | Campos do bit 31 ao 0                            |
@@ -55,3 +65,12 @@ O chamador guarda temporários necessários após chamar. O chamado guarda/repõ
 `ecall` usa a interface do ambiente de execução. Os serviços de impressão do simulador não são I/O universal de RV32.
 
 [Codificação e exemplo de chamada](/cadeiras/ac/riscv-assembly/).
+
+## Recursão e frames ativos
+
+- Pico de pilha conta **frames simultâneos**, incluindo o caso base se reservar antes do teste.
+- Na soma recursiva da lição, `1 ≤ n ≤ 65535`, frame 16 B por chamada, caso base n=1: para n=5, são 80 B reservados, embora só 40 B guardem ra/s0. Exige pilha suficiente.
+- Cada chamada tem outro sp, logo `12(sp)` designa posições distintas. Retorno repõe s0, ra e sp.
+- Cinco chamadas que retornem antes da próxima reutilizam um frame: pico 16 B. Número total de chamadas não determina o pico.
+
+[Rotina e evolução de sp](/cadeiras/ac/riscv-assembly/#profundidade-da-pilha-na-recursão).

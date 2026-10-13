@@ -26,7 +26,7 @@ Por exemplo, $f(x)=x^2$ com $x\ge0$ é estritamente crescente, logo injetiva, co
 
 ## Trigonometria e funções inversas
 
-Nos cálculos diferenciais usamos **radianos**. Uma volta mede $2\pi$ radianos. O ponto da circunferência unitária correspondente ao ângulo $x$ é $(\cos x,\sin x)$, por isso
+Nos cálculos diferenciais usamos **radianos**, e uma volta mede $2\pi$ radianos. O ponto da circunferência unitária correspondente ao ângulo $x$ é $(\cos x,\sin x)$, por isso
 
 $$
 \sin^2x+\cos^2x=1,\qquad \tan x=\frac{\sin x}{\cos x}.
@@ -81,6 +81,14 @@ $$
 
 A escolha de $\delta$ depende de $\varepsilon$, não de $x$, e funciona para todos os pontos dessa vizinhança. Isto prova o limite pela definição.
 
+Numa função não linear, pode sobrar um fator que ainda depende de $x$. Para provar $x^2\to4$ quando $x\to2$, fatoramos $|x^2-4|=|x-2||x+2|$. Se impusermos primeiro $|x-2|<1$, temos $1<x<3$ e $|x+2|<5$. A escolha
+
+$$
+\delta=\min\{1,\varepsilon/5\}
+$$
+
+garante essa cota e também $|x-2|<\varepsilon/5$. Logo $|x^2-4|<5|x-2|<\varepsilon$. Não podemos escolher $\delta$ em função do próprio $x$: o mesmo $\delta$ tem de servir para todos os pontos da vizinhança.
+
 O limite pela esquerda usa $x<a$; o limite pela direita usa $x>a$. Se há domínio dos dois lados, o limite existe e é finito se e só se ambos os limites laterais existem e são iguais. Para $f(x)=|x|/x$, os limites em zero são $-1$ e $1$. O limite bilateral não existe.
 
 Um limite infinito descreve crescimento sem limite, não um número para substituir numa conta. Por exemplo, $1/x^2\to+\infty$ quando $x\to0$, mas $1/x$ tende para $-\infty$ pela esquerda e $+\infty$ pela direita.
@@ -100,12 +108,14 @@ Logo o limite em $2$ é $4$, embora a expressão inicial não esteja definida em
 Com raízes, o conjugado elimina a subtração:
 
 $$
-\begin{aligned}
 \frac{\sqrt{1+x}-1}{x}
-&=\frac{(\sqrt{1+x}-1)(\sqrt{1+x}+1)}{x(\sqrt{1+x}+1)}\\
-&=\frac{x}{x(\sqrt{1+x}+1)}
-=\frac1{\sqrt{1+x}+1}\qquad(x\ne0).
-\end{aligned}
+=\frac{(\sqrt{1+x}-1)(\sqrt{1+x}+1)}{x(\sqrt{1+x}+1)}.
+$$
+
+O produto no numerador é $(1+x)-1=x$. Para $x\ne0$, cancelamos esse fator:
+
+$$
+\frac{x}{x(\sqrt{1+x}+1)}=\frac1{\sqrt{1+x}+1}.
 $$
 
 O limite é $1/2$, porque a expressão final é contínua em zero. No infinito, divide pelo termo dominante. Por exemplo,

@@ -14,7 +14,8 @@
 
 Em **MoSCoW**, Must é indispensável ao âmbito; Should é importante mas adiável; Could depende da capacidade; Won't fica fora do âmbito acordado, sem excluir trabalho futuro.
 
-Um requisito deve ser claro, consistente, necessário, viável e suficientemente completo. Para desempenho, define operação, dados, ambiente, carga, medida e limite. Exemplo: com 200 utilizadores simultâneos, pelo menos 95% das consultas respondem corretamente em até dois segundos. Em 1000 consultas, pelo menos 950 cumprem; falhas contam como incumprimento. Uma média inferior a dois segundos não garante este critério.
+- Um requisito deve ser claro, consistente, necessário, viável e suficientemente completo. Para desempenho, define operação, dados, ambiente, carga, medida e limite.
+- Exemplo: com 200 utilizadores simultâneos, pelo menos 95% das consultas respondem corretamente em até dois segundos. Em 1000 consultas, pelo menos 950 cumprem; falhas contam como incumprimento. Uma média inferior a dois segundos não garante este critério.
 
 ## Histórias e aceitação
 

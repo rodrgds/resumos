@@ -23,7 +23,7 @@ HTTP/1.1 usa linha inicial, cabeçalhos terminados por CRLF, linha vazia e corpo
 
 HTTPS usa TLS. HTTP/2 tem enquadramento binário e multiplexagem sobre TCP; HTTP/3 usa QUIC. O formato textual descrito é de HTTP/1.x.
 
-Sem caches nem ligação aberta, HTTP/1.1 segue resolução DNS, abertura TCP, pedido HTTP e resposta. Cache DNS elimina consultas à hierarquia; objeto fresco pode eliminar toda a sequência. ARP resolve MAC local, não IP do servidor.
+Sem caches nem ligação aberta, HTTP/1.1 segue resolução DNS, abertura TCP, pedido HTTP e resposta. Cache DNS elimina consultas à hierarquia e objeto fresco pode eliminar toda a sequência; ARP resolve MAC local, não IP do servidor.
 
 ## FTP, sockets e correio
 
@@ -34,6 +34,8 @@ Cliente TCP: socket, connect, send, recv. Servidor: socket, bind, listen, accept
 `recv(4096)` pode devolver menos bytes e não corresponde a uma mensagem. Acumula segundo a delimitação da aplicação; `sendall` tenta enviar todos, sem garantir processamento remoto.
 
 SMTP envia correio e procura MX do domínio destinatário. POP3 e IMAP permitem acesso à caixa; IMAP mantém pastas e estado no servidor. MIME descreve tipos, anexos e codificações. Portas clássicas: SMTP 25, submissão 587, POP3 110, IMAP 143; TLS implícito usa outras.
+
+Em SMTP com `DATA`, após 354, o conteúdo termina numa linha com apenas `.` e fins CRLF. Linhas de conteúdo iniciadas por ponto recebem outro, removido no recetor: `.` viaja como `..`. Não fecha TCP para delimitar a mensagem. A resposta 250 confirma aceitação pelo servidor, não leitura pelo destinatário.
 
 ## Distribuição
 

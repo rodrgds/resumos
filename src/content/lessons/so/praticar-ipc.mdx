@@ -105,3 +105,30 @@ O servidor esvazia o pedido e espera mais bytes porque a escrita do cliente cont
   </div>
   <div slot="mistakes">Usar `close` antes de receber a resposta, ou interpretar uma leitura curta como fim do pedido.</div>
 </Exercise>
+
+<Exercise
+  id="so-pipe-criacao"
+  title="Descritores iguais, canais distintos"
+  explanation="/cadeiras/so/comunicacao-processos/#criar-o-canal-antes-de-fork"
+  answer={{ kind: 'self', checklist: [
+    'Identifiquei dois pipes distintos criados depois do fork.',
+    'Previ EOF no filho e ausência de leitor no canal do pai.',
+    'Criei o canal antes do fork e conservei ciclos de transferência.'
+  ] }}
+>
+  <div>
+
+Um programa faz primeiro `fork`. Depois, pai e filho chamam separadamente `pipe(fd)` e ambos recebem os números 3 e 4. O filho fecha `fd[1]` e lê de `fd[0]`; o pai fecha `fd[0]` e tenta escrever em `fd[1]`. Os canais estão inicialmente vazios e não há outras referências. Assume sucesso na criação.
+
+Estão a comunicar? Que acontece à leitura do filho e à escrita do pai? Corrige a ordem de criação. Na versão corrigida, o pai envia 18 bytes e o filho faz apenas uma leitura com capacidade 7: pode concluir que recebeu todo o pedido?
+
+  </div>
+  <div slot="hint">Identifica o objeto do núcleo referido por cada número, não apenas o número.</div>
+  <div slot="solution">
+
+Não comunicam: cada chamada cria outro canal. O filho fechou o único escritor do seu canal vazio, portanto recebe 0, EOF. O pai fechou o único leitor do seu canal; a escrita gera `SIGPIPE` e, se o sinal não o terminar, falha com `EPIPE`. Os mesmos números nas duas tabelas locais não representam necessariamente o mesmo objeto.
+
+Cria um pipe antes de `fork`, verifica sucesso e só depois separa as pontas entre pai e filho. Na versão corrigida, uma leitura de capacidade 7 recebe no máximo 7 dos 18 bytes e pode receber menos. O filho precisa de ler em ciclo até EOF; o pai completa as escritas e fecha a escrita antes de esperar pela terminação. Uma leitura curta não marca o fim de uma mensagem.
+
+  </div>
+</Exercise>

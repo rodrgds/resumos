@@ -7,23 +7,25 @@ practices:
   - fsc/praticar-circuitos-sequenciais
 ---
 
-Um registo pode continuar a mostrar 7 depois de a entrada mudar para 9. Guarda estado, que só será atualizado no instante permitido. Num circuito sequencial, a lógica combinatória usa as entradas e o estado atual para calcular o próximo estado; os elementos de memória capturam esse resultado.
+import Bracket from '../../../components/Bracket.astro';
+
+Um registo pode continuar a mostrar 7 depois de a entrada mudar para 9, pois guarda estado que só será atualizado no instante permitido. Num circuito sequencial, a lógica combinatória usa as entradas e o estado atual para calcular o próximo estado, e os elementos de memória capturam esse resultado.
 
 ## Latch e flip-flop
 
-Um latch SR com portas NOR usa $S$ para colocar $Q=1$ e $R$ para colocar $Q=0$. Com $S=R=0$ conserva o estado. $S=R=1$ força as duas saídas a 0 e, ao libertá-las, não garante o estado esperado. Essa combinação é proibida no uso normal. Um latch D evita-a internamente e, quando está habilitado, acompanha o valor de D.
+Um latch SR com portas NOR usa $S$ para colocar $Q=1$ e $R$ para colocar $Q=0$. Com $S=R=0$ conserva o estado, enquanto $S=R=1$ força as duas saídas a 0 e, ao libertá-las, não garante o estado esperado; essa combinação é proibida no uso normal. Um latch D evita-a internamente e, quando está habilitado, acompanha o valor de D.
 
-Um flip-flop D disparado na subida do relógio só amostra D nesse flanco. Entre flancos conserva Q. Um flip-flop T conserva se $T=0$ e troca o valor se $T=1$:
+Um flip-flop D disparado na subida do relógio só amostra D nesse flanco e conserva Q entre flancos. Um flip-flop T conserva se $T=0$ e troca o valor se $T=1$, com
 
 $$Q^+_D=D,\qquad Q^+_T=Q\oplus T.$$
 
-O sobrescrito $+$ designa o estado depois do flanco, não uma soma. Um relógio tem período $T_{clk}$ e frequência $f=1/T_{clk}$. Um relógio de 100 MHz tem período 10 ns. O duty cycle indica a fração do período em nível alto; não determina a frequência sozinho.
+O sobrescrito $+$ designa o estado depois do flanco, não uma soma. Um relógio tem período $T_{clk}$ e frequência $f=1/T_{clk}$, por isso um relógio de 100 MHz tem período 10 ns; o duty cycle indica a fração do período em nível alto e não determina a frequência sozinho.
 
 Para projetar com T, calcula $T=Q\oplus Q^+$: se o bit atual e o pretendido forem iguais, usa T=0; se diferirem, usa T=1. Com D, liga diretamente o bit pretendido. A mesma tabela de próximo estado pode, por isso, originar circuitos diferentes conforme o tipo de flip-flop.
 
 ## Cronograma: latch contra flip-flop
 
-Cada linha mostra o estado depois da estabilização. Em t0, enable/clk sobe; em t1, mantém-se alto. Em t2, desce primeiro e só depois D passa para 1, já com o latch fechado. As duas últimas colunas mostram Q no latch e no flip-flop (FF):
+Cada linha mostra o estado depois da estabilização. Em t0, enable/clk sobe, e em t1 mantém-se alto; em t2, desce primeiro e só depois D passa para 1, já com o latch fechado. As duas últimas colunas mostram Q no latch e no flip-flop (FF):
 
 | t   | D   | Latch | FF  |
 | --- | --- | ----- | --- |
@@ -31,17 +33,17 @@ Cada linha mostra o estado depois da estabilização. Em t0, enable/clk sobe; em
 | t1  | 0   | 0     | 1   |
 | t2  | 1   | 0     | 1   |
 
-Na subida em t0, ambos capturam 1. Quando D muda para 0 ainda com enable alto, o latch segue para 0, mas o flip-flop conserva o 1 amostrado no flanco. Em t2, o latch fechado conserva 0 e o flip-flop não amostra na descida. É esta janela de amostragem que distingue os dois elementos.
+Na subida em t0, ambos capturam 1. Quando D muda para 0 ainda com enable alto, o latch segue para 0, mas o flip-flop conserva o 1 amostrado no flanco; em t2, o latch fechado conserva 0 e o flip-flop não amostra na descida. É esta janela de amostragem que distingue os dois elementos.
 
 ## Enable e reset
 
-Um registo com enable carrega D se $E=1$ e conserva se $E=0$. Podemos escrever $Q^+=ED+\overline E Q$ bit a bit. Um reset síncrono só atua no flanco; um reset assíncrono atua assim que fica ativo, mesmo entre flancos.
+Um registo com enable carrega D se $E=1$ e conserva se $E=0$, ou seja, $Q^+=ED+\overline E Q$ bit a bit. Um reset síncrono só atua no flanco, enquanto um reset assíncrono atua assim que fica ativo, mesmo entre flancos.
 
 Se o reset tiver prioridade sobre o enable, a regra é: reset ativo dá 0; caso contrário, enable ativo carrega D; nos restantes casos conserva. O símbolo ou o enunciado deve indicar a polaridade e a prioridade. Não suponhas que `reset=1` é ativo se houver uma bolha na entrada.
 
 ## Todos leem o estado antigo
 
-Considera dois flip-flops com $D_A=B$ e $D_B=A\oplus x$, inicialmente $AB=00$. Para entradas amostradas $x=1,0,1,1$, calculamos $D_AD_B$ a partir do estado antigo $AB$. No flanco $n$, esse resultado passa a ser o estado seguinte $A^+B^+$:
+Considera dois flip-flops com $D_A=B$ e $D_B=A\oplus x$, inicialmente $AB=00$. Para entradas amostradas $x=1,0,1,1$, calculamos $D_AD_B$ a partir do estado antigo $AB$; no flanco $n$, esse resultado passa a ser o estado seguinte $A^+B^+$:
 
 | $n$ | $AB$ | $x$ | $A^+B^+$ |
 | --- | ---- | --- | -------- |
@@ -50,7 +52,13 @@ Considera dois flip-flops com $D_A=B$ e $D_B=A\oplus x$, inicialmente $AB=00$. P
 | 3   | 10   | 1   | 00       |
 | 4   | 00   | 1   | 01       |
 
-No segundo flanco, $D_B$ usa o **A antigo**, 0. Atualizar A primeiro e usar esse novo A para B daria um circuito diferente. Para desenhar uma forma de onda, marca os flancos, lê as entradas imediatamente antes de cada um e atualiza todas as saídas em conjunto, após o atraso clock-to-Q.
+<Bracket label="Ideia-chave">
+
+No segundo flanco, $D_B$ usa o **A antigo**, 0; atualizar A primeiro e usar esse novo A para B daria um circuito diferente. Todos os D são calculados a partir do mesmo estado antigo, e os flip-flops capturam-nos no mesmo flanco.
+
+</Bracket>
+
+Para desenhar uma forma de onda, marca os flancos, lê as entradas imediatamente antes de cada um e atualiza todas as saídas em conjunto, após o atraso clock-to-Q.
 
 import Typst from '../../../components/Typst.astro';
 import flipflop from '../../fsc/flipflop-d.typ?raw';
@@ -65,22 +73,26 @@ O símbolo representa um único elemento de memória, enquanto o circuito de doi
 
 ## Registos, deslocamento e banco de registos
 
-Um registo de $w$ bits tem $w$ flip-flops com o mesmo relógio. Num registo de deslocamento de quatro bits, $Q^+=[Q_2,Q_1,Q_0,x]$ desloca para a esquerda e entra x pelo LSB. Partindo de `0000`, as entradas `1,0,1` produzem `0001,0010,0101`.
+Um registo de $w$ bits tem $w$ flip-flops com o mesmo relógio. Num registo de deslocamento de quatro bits, $Q^+=[Q_2,Q_1,Q_0,x]$ desloca para a esquerda e entra x pelo LSB, por isso partindo de `0000`, as entradas `1,0,1` produzem `0001,0010,0101`.
 
 Um banco de $N$ registos de $w$ bits guarda $Nw$ bits. Um descodificador escolhe o registo a escrever e multiplexadores escolhem os registos a ler. Para 32 registos de 32 bits, cada endereço de registo usa 5 bits. Duas portas de leitura permitem ler dois registos ao mesmo tempo, sem duplicar o estado guardado.
 
 ## Contadores
 
-Num contador binário crescente com enable E, $T_0=E$ e $T_i=E\prod_{j=0}^{i-1}Q_j$. Um bit troca quando todos os menos significativos vão gerar carry. Para um contador módulo 6, os estados são 0 a 5: quando o estado antigo é 5 e E=1, o próximo é 0. A comparação com 6 faria aparecer um estado extra.
+Num contador binário crescente com enable E, $T_0=E$ e $T_i=E\prod_{j=0}^{i-1}Q_j$; um bit troca quando todos os menos significativos vão gerar carry. Para um contador módulo 6, os estados são 0 a 5: quando o estado antigo é 5 e E=1, o próximo é 0. A comparação com 6 faria aparecer um estado extra.
 
 Usa $\lceil\log_2N\rceil$ flip-flops para módulo N e define o destino dos códigos não usados. Por exemplo, em módulo 6, os estados 6 e 7 podem recuperar para 0. Essa escolha deve entrar nas equações.
 
 ## Setup, hold e caminho crítico
 
-D deve estar estável durante $t_{setup}$ antes do flanco e $t_{hold}$ depois. Q só muda após $t_{cq}$. Sem skew, o período entre dois registos tem de satisfazer
+D deve estar estável durante $t_{setup}$ antes do flanco e $t_{hold}$ depois, enquanto Q só muda após $t_{cq}$. Sem skew, o período entre dois registos tem de satisfazer
 
 $$T_{clk}\ge t_{cq,max}+t_{comb,max}+t_{setup}.$$
 
-A restrição de hold é diferente e usa o caminho mais curto: $t_{cq,min}+t_{comb,min}\ge t_{hold}$. Aumentar o período ajuda setup, mas não resolve automaticamente hold. Calcula setup com máximos e hold com mínimos, em contas separadas.
+A restrição de hold é diferente e usa o caminho mais curto: $t_{cq,min}+t_{comb,min}\ge t_{hold}$.
 
-Com $t_{cq,max}=1$ ns, caminho combinatório de 6 ns e setup de 1 ns, o período mínimo é 8 ns, frequência máxima 125 MHz neste modelo. Se o caminho mais curto chegar em 0,3 ns e hold exigir 0,5 ns, é necessário aumentar o atraso desse caminho. Não somes o caminho mais longo e o mais curto na mesma conta.
+:::warning[Um relógio mais lento não corrige hold]
+Aumentar o período dá mais tempo ao caminho mais lento para cumprir setup, mas não atrasa a chegada mais rápida depois do flanco. Calcula setup com máximos e hold com mínimos, em contas separadas.
+:::
+
+Com $t_{cq,max}=1$ ns, caminho combinatório de 6 ns e setup de 1 ns, o período mínimo é 8 ns, com frequência máxima 125 MHz neste modelo. Se o caminho mais curto chegar em 0,3 ns e hold exigir 0,5 ns, é necessário aumentar o atraso desse caminho; não somes o caminho mais longo e o mais curto na mesma conta.

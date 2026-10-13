@@ -30,9 +30,7 @@ Em uma escrita parcial de uma linha, a alocação normalmente lê os bytes resta
 
 ## Um traço com vítimas modificadas
 
-Uma falta com vítima dirty tem duas tarefas: conservar o bloco antigo e instalar o pedido. Segue cache e RAM lado a lado, pois uma leitura que acerta devolve o valor mais recente da cache.
-
-Cache direta WB, 2 linhas de 4 B, inicialmente inválida; operações de palavra completa. `E` escreve e `L` lê.
+Uma falta com vítima dirty tem duas tarefas: conservar o bloco antigo e instalar o pedido. Segue cache e RAM lado a lado, pois uma leitura que acerta devolve o valor mais recente da cache. O traço usa cache direta WB com 2 linhas de 4 B, inicialmente inválida, e operações de palavra completa, com `E` a escrever e `L` a ler.
 
 | Operação | Índice, etiqueta | Eventos no nível seguinte                   | Estado relevante depois           |
 | -------- | ---------------- | ------------------------------------------- | --------------------------------- |
@@ -76,6 +74,24 @@ $$CPI=1,2+0,01\times80+0,30\times0,04\times80=2,96.$$
 
 Para uma cache unificada, o número médio de acessos é $1+r$: $CPI_{\rm prot}=(1+r)mp$. Instruções que realizem vários acessos exigem a sua contagem real. Penalidades dirty podem ser uma parcela adicional, ponderada pela frequência dessas vítimas.
 
+## Recuperar a mistura a partir das esperas
+
+A equação também permite obter uma grandeza que não foi medida diretamente. Num CPU de 2 GHz, uma falta que acrescenta 50 ns custa 100 ciclos, porque cada ciclo demora 0,5 ns. Suponhamos uma cache unificada com taxa de falta 9% **por acesso** e 12 ciclos de espera por instrução. Cada instrução faz uma obtenção e, se for load/store, mais um acesso a dados.
+
+Se $r$ é a fração de loads/stores, as esperas são:
+
+$$12=(1+r)\times0,09\times100.$$
+
+Divide primeiro pela espera média de um acesso:
+
+$$1+r=\frac{12}{9}=\frac43.$$
+
+A obtenção obrigatória explica o primeiro acesso. Subtraí-la dá $r=1/3$, ou 33,33% de instruções com acesso a dados. Se fossem caches I/D separadas e os 12 ciclos contassem **apenas dados**, não haveria esse 1: o denominador e a equação seriam outros.
+
+Neste modelo, $0\le r\le1$. Um resultado fora desse intervalo indica que os dados não cabem nas hipóteses, por exemplo várias operações de memória por instrução ou custos de escrita não incluídos. Também é necessário conhecer só a parcela de esperas, não usar o CPI total como se toda a execução fosse protelamento.
+
+Se a fonte dá uma razão entre acertos e faltas, transforma-a antes de calcular. Acertos nove vezes mais frequentes que faltas significam $h=9m$ e $h+m=1$, logo $m=1/10$. A taxa de falta não é $1/9$: essa razão tem acertos no denominador.
+
 ## Vários níveis de cache
 
 Uma falta em L1 consulta L2. **Taxa local de L2** é a fração dessas consultas que falha. **Taxa global de L2** é a fração de todos os pedidos originais que chega à memória. Se há um pedido por instrução, $m_{2,g}=m_1m_{2,l}$.
@@ -89,3 +105,21 @@ $$TMAM=t_1+m_1(t_2+m_{2,l}p_{\rm RAM}).$$
 Exemplo: $t_1=1$ ciclo, $m_1=0,10$, $t_2=8$ ciclos, $m_{2,l}=0,20$, RAM 80 ciclos adicionais. O TMAM é $1+0,10(8+0,20\times80)=3,4$ ciclos. A taxa global que chega à RAM é 2%, não 20%.
 
 Para CPI de CPU a 4 GHz, base 1, faltas L1 de 2% **por instrução**, consulta L2 de 5 ns e faltas RAM globais 0,5% com 100 ns adicionais: $p_2=20,p_R=400$ ciclos. Logo $CPI=1+0,02\times20+0,005\times400=3,4$. Sem L2 seria $1+0,02\times400=9$. A rapidez relativa é $9/3,4=2,647$, se $N$ e a frequência forem iguais.
+
+## Tráfego entre níveis com write-back
+
+Uma falta em L1 e uma escrita na RAM são eventos diferentes. Em WB, uma escrita pode falhar para carregar uma linha e só enviar a modificação mais tarde, ao substituir a vítima. Saber a taxa de faltas não basta para contar descargas: é preciso saber quantas vítimas válidas estão dirty e se há flush final.
+
+Segue duas escritas de palavra, `E0=7` e `E64=9`, com estas hipóteses: L1 direta WB/allocate de **uma linha de 16 B**; L2 direta WT de quatro linhas de 16 B; ambas vazias. Escritas parciais em L1 leem a linha antes de a alterar. Cada descarga de L1 entrega a linha inteira a L2; L2 envia essa escrita inteira à RAM. Não há buffers nem flush final. A memória em ambos os endereços começa a zero.
+
+| Passo | Pedido                                                       | Efeito na RAM                                 |
+| ----- | ------------------------------------------------------------ | --------------------------------------------- |
+| 1     | E0 falha em L1; L1 pede a linha 0 a L2, que também falha     | Leitura da linha 0                            |
+| 2     | L1 modifica a palavra 0 para 7                               | Nenhum; L1 fica dirty                         |
+| 3     | E64 falha em L1; a vítima 0 é descarregada para L2           | L2 acerta e, por WT, escreve a linha 0 na RAM |
+| 4     | L1 pede a linha 64; L2 falha e substitui a sua linha 0 limpa | Leitura da linha 64                           |
+| 5     | L1 modifica a palavra 64 para 9                              | Nenhum; L1 fica dirty                         |
+
+São **duas leituras e uma escrita de linha** na RAM. A descarga da vítima atravessou L2 num acerto, mas gerou escrita porque L2 é WT. A RAM termina com 7 no endereço 0 e ainda 0 no endereço 64; o CPU lê 9 nesse último por acerto em L1. Um flush final acrescentaria outra escrita de linha na RAM, segundo as mesmas regras.
+
+A taxa global $m_1m_{2,l}$ conta pedidos de leitura que faltam nos dois níveis quando essas taxas usam os respetivos denominadores. Não a apliques a todas as escritas WB: segue carregamentos, descargas e alocação de cada nível separadamente.

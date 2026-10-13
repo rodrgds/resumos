@@ -26,6 +26,8 @@ Para divisibilidade, torna explícito o múltiplo. Se $5^k-1=4q$, então $5^{k+1
 
 Uma definição recursiva precisa de bases e de argumentos que diminuam. Para provar propriedades, usa as mesmas divisões em casos e a hipótese nos argumentos menores. A indução forte permite usar $n/2$ ou $n-1$, quando a definição os pede.
 
+Em grafos, constrói a passagem entre os tamanhos. Para $C_{2n}$ bipartido, a base é $C_4$. Num ciclo de $2n+2$ vértices, substitui $u-x-y-v$ por $uv$, aplica a hipótese ao ciclo menor e repõe $x,y$ com cores alternadas. Retirar um só vértice daria um ciclo ímpar, fora da hipótese.
+
 ## Recorrências
 
 Uma recorrência precisa das condições iniciais. A conjetura obtida de primeiros termos deve ser verificada nas bases e substituída na recorrência.

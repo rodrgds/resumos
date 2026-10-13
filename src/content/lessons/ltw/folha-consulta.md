@@ -38,3 +38,10 @@ As ligações levam às explicações e aos exemplos. Para prever um resultado, 
 - [Capturas](/cadeiras/ltw/expressoes-regulares/#capturas-e-referências): grupo 0 é tudo; `\1` exige repetição da captura. Lookaround testa sem consumir. Formato de data não prova data existente.
 - [XML](/cadeiras/ltw/xml-xpath/#boa-formação-e-validade): boa formação = sintaxe; validade = contrato. Namespace é URI, não prefixo. Por defeito afeta elementos, não atributos sem prefixo.
 - [XPath](/cadeiras/ltw/xml-xpath/#predicados-e-posição): `/` parte da raiz do documento; `//` desce a descendentes; `@` escolhe atributos; `text()` escolhe texto; cada `[condição]` filtra o passo anterior. Posições começam em 1. `//livro[1]` escolhe o primeiro `livro` de cada grupo de irmãos; `(//livro)[1]` escolhe o primeiro do conjunto global. Em XPath 1.0, `x != 'a'` exige algum x diferente; `not(x = 'a')` exige que nenhum seja igual.
+
+## Seguir estado e identidade
+
+- [Âmbito PHP](/cadeiras/ltw/php-dinamicas-bd/#âmbito-global-e-captura-de-uma-variável): uma função nomeada precisa de argumento ou acesso explícito à global. `use ($x)` captura valor; `use (&$x)` conserva referência. Globais do pedido não são persistência entre pedidos.
+- [Referência de foreach](/cadeiras/ltw/php-dinamicas-bd/#terminar-uma-referência-de-foreach): o nome usado com `&` continua ligado à última posição. Desfaz com `unset($nome)` antes de reutilizar, sem apagar o elemento do array.
+- [Callback registado](/cadeiras/ltw/javascript-dom-eventos/#guardar-a-função-que-foi-registada): cada `bind` cria uma função nova. Para remover, conserva callback e usa o mesmo tipo/captura. Repetir a adição da mesma combinação não duplica o listener.
+- [Frações de grelha](/cadeiras/ltw/css-estilo-layout/#repartir-o-espaço-com-fr): desconta tracks fixos e gaps, depois divide o resto pela soma das fr. Um item que atravessa tracks inclui os gaps interiores; mínimos de conteúdo podem mudar a distribuição.

@@ -24,9 +24,7 @@ Memória partilhada também não implica custo uniforme, porque numa máquina **
 
 ## Instruções e dados
 
-A organização da memória é uma escolha diferente da organização das instruções. Em **SIMD**, uma instrução aplica a mesma operação a vários elementos, como uma adição vetorial. Em **MIMD**, unidades diferentes podem seguir sequências de instruções diferentes. As threads num processador multicore usam este segundo modelo e também podem executar instruções vetoriais internamente.
-
-Por isso, "memória partilhada" não significa "todas as threads executam a mesma instrução", e paralelizar com threads não é o mesmo que vetorizar.
+A organização da memória é uma escolha diferente da organização das instruções. Em **SIMD**, uma instrução aplica a mesma operação a vários elementos, como uma adição vetorial. Em **MIMD**, unidades diferentes podem seguir sequências de instruções diferentes. As threads num processador multicore usam este segundo modelo e também podem executar instruções vetoriais internamente. Por isso, "memória partilhada" não significa "todas as threads executam a mesma instrução", e paralelizar com threads não é o mesmo que vetorizar.
 
 ## Localidade e linhas de cache
 
@@ -34,9 +32,7 @@ A **cache** guarda cópias de dados usados pelo processador. A **localidade temp
 
 Se o vetor começar numa fronteira de linha de cache, os seus primeiros oito elementos cabem na mesma linha: $64/8=8$. Se começar a meio de uma linha, oito elementos consecutivos podem ocupar duas linhas.
 
-Em C, `double a[N][N]` guarda os elementos de cada linha da matriz em posições contíguas. O deslocamento de `a[i][j]` relativamente ao início é $(iN+j)\times8$ bytes. Por exemplo, com $N=1024$, `a[0][1]` está a 8 bytes, mas `a[1][0]` está a 8192 bytes. O primeiro índice conta linhas completas; o segundo conta elementos dentro da linha.
-
-Fixar `i` e aumentar `j` avança 8 bytes; fixar `j` e aumentar `i` avança $N\times8$ bytes.
+Em C, `double a[N][N]` guarda os elementos de cada linha da matriz em posições contíguas. O deslocamento de `a[i][j]` relativamente ao início é $(iN+j)\times8$ bytes. Por exemplo, com $N=1024$, `a[0][1]` está a 8 bytes, mas `a[1][0]` está a 8192 bytes. O primeiro índice conta linhas completas; o segundo conta elementos dentro da linha, pelo que fixar `i` e aumentar `j` avança 8 bytes enquanto fixar `j` e aumentar `i` avança $N\times8$ bytes.
 
 <Typst
   source={linha}
@@ -63,16 +59,51 @@ for (long j = 0; j < N; j++)
 
 No segundo percurso, o salto é $1024\times8=8192$ bytes. Os sete elementos vizinhos ainda não foram usados. Se a linha sair da cache antes da coluna seguinte, teremos de a trazer de novo. Numa matriz pequena que caiba na cache, a reutilização pode ocorrer sem nova ida à memória principal.
 
-A razão de oito vezes mais tráfego só descreve um modelo de leituras sem reutilização entre colunas: por linhas aproveitamos oito valores de cada transferência; por colunas aproveitamos um e perdemos os sete restantes antes de voltar. Não é uma regra universal. Caches de vários níveis, alinhamento, prefetch e política de escrita também alteram o custo.
+Podemos isolar a reutilização numa matriz `double a[8][8]`, alinhada a 64 bytes. Cada linha da matriz ocupa uma linha de cache. Contamos apenas as transferências para ler os 64 valores, com cache inicialmente vazia e totalmente associativa, sem prefetch, escritas nem outros dados:
+
+| Capacidade da cache             | Por linhas       | Por colunas       |
+| ------------------------------- | ---------------- | ----------------- |
+| Oito linhas, cabe toda a matriz | 8 transferências | 8 transferências  |
+| Uma linha                       | 8 transferências | 64 transferências |
+
+Quando toda a matriz cabe, a primeira coluna traz as oito linhas e as seguintes reutilizam-nas. Com uma linha de cache, cada acesso por colunas expulsa a anterior; por linhas aproveitamos os oito valores antes de avançar. A razão de oito vezes mais tráfego pertence ao segundo caso, não é uma regra universal. Caches de vários níveis, alinhamento, prefetch e política de escrita também alteram o custo.
 
 Se uma medição der 1,1 s por linhas e 3,9 s por colunas, a razão é $3{,}9/1{,}1\approx3{,}55$. É um exemplo de cálculo, não uma medição destes excertos. Para medir, usa matrizes iguais, consome o resultado para evitar eliminar o trabalho e compara nas mesmas condições.
 
-Compara acessos próximos com acessos que saltam entre linhas da cache: o vídeo seguinte mostra como a ordem dos acessos muda o aproveitamento de cada linha trazida para a cache.
+Compara acessos próximos com acessos que saltam entre linhas da cache e repara como a ordem dos acessos muda o aproveitamento de cada linha trazida para a cache.
 
 <YouTube
   id="4YeRe60KWTc"
   title="Storage Hierarchy, Caching, and Locality, Princeton COS 217"
 />
+
+## Ordem dos ciclos num produto de matrizes
+
+Para matrizes quadradas $A,B$ de dimensão N, $C_{ij}=\sum_k A_{ik}B_{kj}$. Em C, com linhas contíguas, o percurso i, j, k lê a linha i de A, mas salta pela coluna j de B. Estes excertos exigem C inicialmente a zero, entradas A e B só de leitura e armazenamento de C separado das entradas:
+
+```c
+for (long i = 0; i < N; i++)
+    for (long j = 0; j < N; j++)
+        for (long k = 0; k < N; k++)
+            c[i][j] += a[i][k] * b[k][j];
+```
+
+Podemos trocar os ciclos interiores e reutilizar $A_{ik}$ ao percorrer j:
+
+```c
+for (long i = 0; i < N; i++)
+    for (long k = 0; k < N; k++) {
+        double aik = a[i][k];
+        for (long j = 0; j < N; j++)
+            c[i][j] += aik * b[k][j];
+    }
+```
+
+Agora B e C avançam por linhas contíguas no ciclo interior. Para N=1024 e doubles de 8 bytes, o salto entre valores sucessivos de B passa de 8192 bytes no primeiro percurso para 8 no segundo. Isso melhora a oportunidade de localidade espacial, sem prometer uma razão fixa de tempos. A dimensão, as caches e o compilador continuam a importar.
+
+Para $A=\begin{bmatrix}1&2\\3&4\end{bmatrix}$ e $B=\begin{bmatrix}5&6\\7&8\end{bmatrix}$, ambos dão $C=\begin{bmatrix}19&22\\43&50\end{bmatrix}$. No segundo percurso, a primeira linha de C começa em (0,0), recebe (5,6) para k=0 e depois (14,16) para k=1, chegando a (19,22). Inicializar C dentro do ciclo k apagaria as contribuições anteriores.
+
+Dividir o ciclo exterior i entre threads atribui linhas distintas de C, sem dependência entre essas linhas nas hipóteses dadas. Dividir k faz threads diferentes acumularem nas mesmas células: exige outra combinação e não fica correto só por trocar a diretiva. Falsa partilha entre linhas adjacentes ainda pode afetar desempenho, embora as escritas sejam em células distintas.
 
 ## Falsa partilha
 

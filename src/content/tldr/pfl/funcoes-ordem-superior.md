@@ -2,7 +2,7 @@
 
 - `soma :: Int -> Int -> Int` recebe um inteiro e devolve uma função. `soma 5` é aplicação parcial; se `soma x y = x+y`, `(soma 5) 3` dá `8`.
 - Uma função de ordem superior recebe ou devolve funções. `\x -> x*2` é uma lambda; `(*2)` é a secção equivalente.
-- `(>=9.5)` testa o argumento contra `9.5`. Para subtrair dois usa `subtract 2` ou `\x -> x-2`; `(-2)` é um número negativo.
+- `(>= 9.5)` testa o argumento contra `9.5`. Para subtrair dois usa `subtract 2` ou `\x -> x-2`; `(-2)` é um número negativo.
 - `(f . g) x = f (g x)`. `sum . map (^2) . filter even` em `[1,2,3,4]` passa por `[2,4]`, `[4,16]` e dá `20`.
 
 ## Escolher a operação sobre listas
@@ -43,3 +43,11 @@ A inversão com `foldl (flip (:)) []` é linear no comprimento de uma lista fini
 Para uma média, filtra primeiro e trata `[]` com `Nothing`. No caso não vazio, `Just (sum xs / fromIntegral (length xs))` evita confundir a ausência de média com `0/0`.
 
 [Derivação dos folds e preguiça](/cadeiras/pfl/funcoes-ordem-superior/#derivar-um-fold).
+
+## Intervalo numa lista infinita
+
+Numa lista ordenada, `takeWhile (<=fim) . dropWhile (<inicio)` delimita pelos **valores**. Contar primos de 10 a 30 dá seis: `[11,13,17,19,23,29]`; a fronteira de paragem é 31.
+
+`length (filter (\p -> 10<=p && p<=30) primos)` não termina, pois o filtro continua a procurar depois do último resultado. `take 30` conta posições. A ordenação justifica parar no primeiro valor acima do limite; é preciso alcançar essa fronteira em passos finitos ou terminar a entrada. Uma repetição infinita de 20 não permite contar assim.
+
+[Delimitação e condições](/cadeiras/pfl/funcoes-ordem-superior/#contar-um-intervalo-numa-lista-infinita-ordenada).

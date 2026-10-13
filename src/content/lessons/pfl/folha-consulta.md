@@ -104,3 +104,14 @@ Na árvore SLD: renomeia variáveis da cláusula, unifica a cabeça, propaga a s
 DFS não garante o caminho mais curto. BFS garante menor número de arestas com custos iguais e expansão finita. Minimax escolhe máximo ou mínimo conforme o jogador; não tira o máximo de todas as folhas. [Unificação](/cadeiras/pfl/logica-unificacao-prolog/), [controlo](/cadeiras/pfl/prolog-recursao-procura/), [soluções](/cadeiras/pfl/solucoes-estruturas-prolog/) e [procura](/cadeiras/pfl/procura-jogos-simbolos/).
 
 SICStus/SWI: `write/1` e `nl/0` são portáteis. `writeln/1`, `max_list/2` e `min_list/2` são notas SWI. Em SICStus, carrega `library(lists)` e usa comparação numérica explícita.
+
+## Aplicar a estrutura e as condições
+
+- **Agrupar por relação:** fixa o primeiro elemento e usa `span (rel primeiro)` na cauda. Não confundir com comparar vizinhos quando a relação não é transitiva.
+- **Contar intervalo infinito:** numa lista ordenada, delimita com `dropWhile (<inicio)` e `takeWhile (<=fim)` antes de `length`. É preciso alcançar um valor acima do limite em passos finitos; filtrar sem fronteira não produz o fim.
+- **Substituir variáveis:** caso por construtor, consulta ambiente com `lookup`, conserva variáveis ausentes e os operadores. Não avaliar nem preencher com zero por omissão.
+- **Mudar de tipo recursivo:** transforma cada componente e conserva a ordem dos filhos. `Folha x` vira `Rosa x []`; `Ramo e x d` vira `Rosa x [conversao e,conversao d]`.
+- **Negar irmãos:** candidato único antes da negação; progenitor e outro filho dentro do objetivo negado. Caso contrário, negas apenas irmãos por um progenitor escolhido.
+- **Todos os ids:** valida existência e permissão de cada cabeça. Uma busca de violações restrita a objetos existentes pode ignorar ids desconhecidos.
+
+[Agrupar](/cadeiras/pfl/listas-recursao/#agrupar-comparando-com-o-início-do-grupo), [intervalos](/cadeiras/pfl/funcoes-ordem-superior/#contar-um-intervalo-numa-lista-infinita-ordenada), [transformações](/cadeiras/pfl/tipos-algebricos-recursao/#substituir-variáveis-conservando-a-expressão) e [quantificação em Prolog](/cadeiras/pfl/prolog-recursao-procura/#exigir-existência-em-cada-elemento-da-lista).

@@ -6,7 +6,19 @@ section: conteudo
 practices:
   - ia/praticar-incerteza-e-bayes
 order: 7
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Programa oficial de IA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560114
+    - title: Contribuição intitulada Teste 2 2025/26, ano interno não confirmado
+      url: https://accio.pt/feup/L:EIC/inteligencia-artificial/L.EIC029
+    - title: Berkeley CS188, efeitos comuns e independência
+      url: https://inst.eecs.berkeley.edu/~cs188/textbook/bayes-nets/d-separation.html
 ---
+
+import Dot from '../../../components/Dot.astro';
+import causas from '../../ia/causas-alarme.dot?raw';
 
 import Typst from '../../../components/Typst.astro';
 import CodePlayground from '../../../components/CodePlayground.astro';
@@ -17,19 +29,19 @@ Numa caixa de 20 mensagens, "grátis" aparece em mensagens de spam e em mensagen
 
 ## Condicionar e somar casos
 
-Para eventos $A$ e $B$, com $P(B)>0$, a probabilidade condicional é $P(A \mid B)=P(A \cap B)/P(B)$. Ou seja, restringimos o universo aos casos em que $B$ acontece. A regra do produto dá $P(A \cap B)=P(A \mid B)P(B)$.
+Para eventos $A$ e $B$, com $P(B)>0$, a probabilidade condicional é $P(A \mid B)=P(A \cap B)/P(B)$; ou seja, restringimos o universo aos casos em que $B$ acontece, e a regra do produto dá $P(A \cap B)=P(A \mid B)P(B)$.
 
-$A$ e $B$ são **independentes** quando $P(A \cap B)=P(A)P(B)$. Independência condicional dada uma classe $C$ é outra hipótese: dentro de cada classe, $P(A,B\mid C)=P(A\mid C)P(B\mid C)$. Não implica que os eventos sejam independentes no conjunto todo.
+$A$ e $B$ são **independentes** quando $P(A \cap B)=P(A)P(B)$. Independência condicional dada uma classe $C$ é outra hipótese: dentro de cada classe, $P(A,B\mid C)=P(A\mid C)P(B\mid C)$, o que não implica independência no conjunto todo.
 
 ## Bayes num filtro de spam
 
-Caixa com 20 mensagens: 8 spam e 12 normais (ham). A palavra "grátis" aparece em 6 das 8 spam e em 2 das 12 normais. Define $S$ como "é spam" e $G$ como "contém grátis":
+A caixa tem 20 mensagens, 8 de spam e 12 normais (ham), e a palavra "grátis" aparece em 6 das 8 de spam e em 2 das 12 normais. Define $S$ como "é spam" e $G$ como "contém grátis":
 
 - $P(S) = 8/20 = 0{,}4$ e $P(\lnot S) = 0{,}6$.
 - $P(G \mid S) = 6/8 = 0{,}75$ e $P(G \mid \lnot S) = 2/12 \approx 0{,}167$.
 - $P(G) = 8/20 = 0{,}4$, porque 8 das 20 mensagens contêm a palavra. Também se obtém pela probabilidade total: $P(G\mid S)P(S)+P(G\mid\lnot S)P(\lnot S)=0{,}75\times0{,}4+(2/12)\times0{,}6=0{,}4$.
 
-A pergunta que interessa é a inversa: chegada uma mensagem com "grátis", qual a probabilidade de ser spam? A regra de Bayes responde:
+A pergunta que interessa é a inversa: chegada uma mensagem com "grátis", qual a probabilidade de ser spam, e a regra de Bayes responde:
 
 $$
 P(S \mid G) = \frac{P(G \mid S)\,P(S)}{P(G)} = \frac{0{,}75 \times 0{,}4}{0{,}4} = 0{,}75.
@@ -61,7 +73,7 @@ Junta a palavra "prémio": aparece em 4 das 8 spam e em 1 das 12 normais. Para c
 
 Normaliza: $0{,}15 / (0{,}15 + 0{,}0083) \approx 0{,}947$. Com limiar 0,5, o modelo classifica a mensagem como spam. Os 94,7 por cento são uma probabilidade **do modelo**, não uma frequência conjunta confirmada nestas 20 mensagens. A hipótese exige independência em ambas as classes. Se as palavras dependerem uma da outra dentro da classe, o produto pode exagerar a evidência; uma boa classificação não garante probabilidades bem calibradas.
 
-No modelo binário completo, cada palavra pode estar presente ou ausente. Uma ausência usa $P(\lnot G\mid S)=1-P(G\mid S)$. Uma contagem zero anularia um produto; a suavização de Laplace acrescenta uma pseudocontagem a cada resultado. Por exemplo, para presença/ausência de "prémio" nas 8 spam, estima-se $(4+1)/(8+2)=0{,}5$.
+No modelo binário completo, cada palavra pode estar presente ou ausente, e uma ausência usa $P(\lnot G\mid S)=1-P(G\mid S)$. Uma contagem zero anularia um produto, por isso a suavização de Laplace acrescenta uma pseudocontagem a cada resultado; por exemplo, para presença/ausência de "prémio" nas 8 spam, estima-se $(4+1)/(8+2)=0{,}5$.
 
 <CodePlayground
   language="python"
@@ -70,8 +82,6 @@ No modelo binário completo, cada palavra pode estar presente ou ausente. Uma au
     'p_s = 8 / 20\nprint("uma palavra:", round(p_s * (6 / 8) / (8 / 20), 3))\nnum_s = p_s * (6 / 8) * (4 / 8)\nnum_h = (1 - p_s) * (2 / 12) * (1 / 12)\nprint("duas palavras:", round(num_s / (num_s + num_h), 3))'
   }
 />
-
-A normalização divide cada peso pela soma dos pesos das duas classes, por isso as probabilidades finais somam 1.
 
 :::tip[Organizar uma conta]
 Para calcular $P(\text{classe} \mid \text{evidência})$ a partir de contagens, conta os totais, escreve as condicionais a partir das contagens, aplica Bayes, e normaliza dividindo pela soma das hipóteses. Verifica no fim que as probabilidades das classes somam 1.
@@ -95,6 +105,36 @@ porque as probabilidades de presença e ausência de "prémio" somam 1. A infer�
   format="svg"
   alt="Rede Bayesiana ingénua do spam: o nó Spam no topo com uma seta para a palavra grátis e outra para a palavra prémio."
 />
+
+## Duas explicações para um alarme
+
+A estrutura $A \to B \leftarrow C$ tem um **efeito comum**, também chamado colisor. Aqui A é uma avaria, C é um teste do alarme e B indica que o alarme tocou. A e C são independentes, com $P(A)=1/4$ e $P(C)=1/5$. O alarme toca se existir pelo menos uma das duas causas: $B=A\lor C$, sem falhas nem falsos alarmes neste modelo.
+
+<Dot
+  source={causas}
+  alt="A e C têm setas para B: avaria e teste são causas alternativas do alarme."
+/>
+
+A conjunta fatoriza-se como $P(A,C,B)=P(A)P(C)P(B\mid A,C)$. Enumerar as quatro combinações das causas mostra o que acontece ao observar B:
+
+| Avaria A | Teste C | Probabilidade | Alarme B |
+| -------- | ------- | ------------- | -------- |
+| sim      | sim     | 1/20          | sim      |
+| sim      | não     | 1/5           | sim      |
+| não      | sim     | 3/20          | sim      |
+| não      | não     | 3/5           | não      |
+
+O alarme tem probabilidade `1/20 + 1/5 + 3/20 = 2/5`. Ao ouvir o alarme, a probabilidade de avaria passa de 1/4 para:
+
+$$
+P(A\mid B)=\frac{1/4}{2/5}=\frac58.
+$$
+
+Se descobrirmos também que estava a decorrer um teste, o alarme já fica explicado por C. Como A e C eram independentes e C garante B, $P(A\mid B,C)=P(A\mid C)=1/4$. Se, pelo contrário, sabemos que não havia teste, então neste modelo só a avaria pode explicar B: $P(A\mid B,\lnot C)=1$.
+
+A e C eram independentes antes da evidência, mas deixam de o ser depois de condicionar no alarme. Por exemplo, $P(A,C\mid B)=1/8$, enquanto $P(A\mid B)P(C\mid B)=(5/8)(1/2)=5/16$. A independência não é uma propriedade que possas transportar para qualquer conjunto condicionado.
+
+Esta é uma conta sobre hipóteses explícitas. Uma rede com um colisor **permite** que a observação do efeito crie dependência; o valor e o sentido da alteração dependem das tabelas condicionais. Apagar uma variável não tem um efeito numérico universal dedutível só das setas. Para eliminar uma variável oculta mantendo a distribuição, soma sobre os seus valores.
 
 ## Associação e causalidade
 

@@ -13,6 +13,21 @@ import Dot from '../../../components/Dot.astro';
 import aberturas from '../../so/aberturas.dot?raw';
 import indirecao from '../../so/indirecao.dot?raw';
 
+## VFS e sistemas de ficheiros
+
+Um programa pode abrir `/home/notas.txt` num volume ext4 e `/media/usb/notas.txt` num volume FAT usando a mesma função `open`. A camada **VFS**, ou _Virtual File System_, fornece a interface comum e encaminha a operação para a implementação responsável pelo caminho ou pela abertura.
+
+| Etapa                  | O que decide                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| Aplicação              | Pede `open`, `read`, `write` ou `stat` com os seus argumentos                  |
+| VFS                    | Resolve o caminho e as montagens, identifica o objeto e seleciona as operações |
+| Implementação concreta | Localiza os metadados e blocos segundo o formato desse sistema de ficheiros    |
+| Subsistema de I/O      | Satisfaz o pedido com cache ou comunica com o dispositivo                      |
+
+VFS não é um formato adicional que substitui ext4 ou FAT no disco. Também não obriga todas as implementações a ter a mesma organização: FAT pode usar uma cadeia de blocos, enquanto outro sistema usa índices ou extents. A aplicação mantém a interface, mas pode encontrar capacidades, limites e custos diferentes. Um sistema remoto pode ainda satisfazer a operação através da rede.
+
+O conteúdo de um ficheiro regular é uma sequência de bytes definida pela aplicação que o escreve. O sistema de ficheiros organiza nomes, metadados e armazenamento; mudar de ext4 para FAT não transforma por si um texto em imagem.
+
 ## Nome, inode e abertura
 
 Num sistema de ficheiros UNIX típico, uma entrada de diretório associa um nome a um identificador de **inode**. O inode guarda tipo, permissões, dono, tamanho, tempos e informação para localizar os dados. O nome pertence à entrada de diretório, não é necessariamente um campo do inode.
@@ -58,7 +73,7 @@ A pesquisa num diretório pode usar uma lista linear, com comparação de nomes,
 
 ## Métodos de alocação
 
-Cada método responde à mesma pergunta: dado o bloco lógico `i`, onde está o bloco físico. A alocação contígua soma ao início; extents procuram o intervalo; a ligada e a FAT seguem cadeias; a indexada consulta um índice. Só depois compara vantagens e limites na tabela.
+Cada método responde à mesma pergunta: dado o bloco lógico `i`, onde está o bloco físico. A alocação contígua soma ao início; extents procuram o intervalo; a ligada e a FAT seguem cadeias; a indexada consulta um índice.
 
 | Método   | Localizar bloco lógico $i$            | Vantagem                           | Limitação                                     |
 | -------- | ------------------------------------- | ---------------------------------- | --------------------------------------------- |

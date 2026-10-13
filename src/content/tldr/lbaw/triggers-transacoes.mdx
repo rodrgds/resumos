@@ -58,3 +58,18 @@ Função participa numa expressão; procedure usa CALL; trigger executa uma fun�
 Usa `INSERT ... RETURNING id`, nunca MAX(id). `currval` é local à ligação após obter um valor da sequência. Sequências podem deixar lacunas após rollback. Emails e pagamentos externos precisam de protocolo próprio, pois ROLLBACK da base não os anula.
 
 [Coordenação completa da reserva](/cadeiras/lbaw/triggers-transacoes/#coordenar-a-alteração-da-mesma-linha).
+
+## Cancelamento e UPDATE em lote
+
+Para libertar capacidade uma vez, condiciona a transição ao bilhete reservado do comprador autenticado. O RETURNING dessa alteração fornece as sessões ao UPDATE do contador, na mesma instrução. Repetir não encontra reservado e não liberta outro lugar. Se falhar o contador, anula-se também a transição. Zero linhas não distingue sozinho ausência, recusa de dono ou estado incompatível.
+
+Com dois triggers AFTER UPDATE, um por linha e outro por instrução:
+
+| Linhas encontradas | ROW | STATEMENT |
+| ------------------ | --- | --------- |
+| 3                  | 3   | 1         |
+| 0                  | 0   | 1         |
+
+`SET preco=preco` pode disparar ROW sem mudar o valor. `IS DISTINCT FROM` no corpo permite auditar só mudanças reais; ativação e ação do trigger são decisões diferentes.
+
+[Cancelamento atómico](/cadeiras/lbaw/triggers-transacoes/#cancelar-sem-libertar-duas-vezes) e [ativações em lote](/cadeiras/lbaw/triggers-transacoes/#contar-ativações-num-update-em-lote).

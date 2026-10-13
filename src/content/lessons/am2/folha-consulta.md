@@ -13,7 +13,7 @@ Desenha o domínio. Confere regularidade, orientação e jacobiano antes de calc
 
 ## Curvas
 
-Para uma parametrização regular $\mathbf r(t)$ de classe $C^2$, $v=\|\mathbf r'\|$, $\mathbf T=\mathbf r'/v$, $L=\int_a^bv\,dt$, $s(t)=\int_a^t v$. Se $\mathbf T'\ne0$, $\mathbf N=\mathbf T'/\|\mathbf T'\|$ e $\mathbf B=\mathbf T\times\mathbf N$. A aceleração decompõe-se em $\mathbf a=v'\mathbf T+v^2\kappa\mathbf N$.
+Para uma parametrização regular $\mathbf r(t)$ de classe $C^2$, $v=\|\mathbf r'\|$, $\mathbf T=\mathbf r'/v$, $L=\int_a^bv\,dt$, $s(t)=\int_a^t v$. Se $\mathbf T'\ne0$, $\mathbf N=\mathbf T'/\|\mathbf T'\|$ e $\mathbf B=\mathbf T\times\mathbf N$. A aceleração decompõe-se em $\mathbf a=v'\mathbf T+v^2\kappa\mathbf N$. Quando $v$ varia, usa $v'=\mathbf r'\cdot\mathbf r''/v$ e normaliza $\mathbf r''-v'\mathbf T$ para obter $\mathbf N$, se essa parcela não for nula.
 
 $$
 \kappa=\frac{\|\mathbf T'\|}{v}
@@ -25,7 +25,7 @@ No plano, $\kappa=|x'y''-y'x''|/(x'^2+y'^2)^{3/2}$. Num gráfico, $\kappa=|f''|/
 
 ## Limites e diferenciabilidade
 
-Dois caminhos com limites diferentes refutam um limite. Concordarem em retas não prova existência. Procura uma estimativa $|f-L|\le C\|x-a\|^\alpha$, com $\alpha>0$, válida em todas as direções. Em polares, controla o ângulo uniformemente. Continuidade exige limite igual ao valor definido. [Limites](/cadeiras/am2/limites-continuidade/#provar-um-limite-com-uma-estimativa).
+Dois caminhos com limites diferentes refutam um limite. Concordarem em retas ou em ambos os limites iterados não prova existência. Procura uma estimativa $|f-L|\le C\|x-a\|^\alpha$, com $\alpha>0$, válida em todas as direções. Em polares, controla o ângulo uniformemente. Continuidade exige limite igual ao valor definido. [Limites](/cadeiras/am2/limites-continuidade/#provar-um-limite-com-uma-estimativa).
 
 Se $f$ é diferenciável, $df=\nabla f\cdot h$ e $f(a+h)=f(a)+df+o(\|h\|)$. Parciais contínuas perto do ponto são uma condição suficiente; parciais existentes só no ponto não bastam.
 
@@ -59,7 +59,7 @@ Para $f\in C^2$, o resto é $o(h^2+k^2)$. Num candidato interior diferenciável,
 | $D<0$             | Sela            |
 | $D=0$             | Inconclusivo    |
 
-Para extremos absolutos, inclui fronteira e pontos não diferenciáveis. Continuidade num compacto garante existência. Com $f,g\in C^1$ e sobre $g=0$ regular, resolve $\nabla f=\lambda\nabla g$ e a restrição; verifica separadamente pontos com $\nabla g=0$. Compara todos os valores. [Extremos](/cadeiras/am2/taylor-extremos/#extremos-absolutos-e-fronteira).
+Para extremos absolutos, inclui fronteira e pontos não diferenciáveis. Continuidade num compacto garante existência. Com $f,g\in C^1$ e sobre $g=0$ regular, resolve $\nabla f=\lambda\nabla g$ e a restrição; verifica separadamente pontos com $\nabla g=0$. Não dividas por coordenadas sem tratar o caso zero; em restrições ilimitadas, verifica se a função é limitada e atinge os extremos. Compara todos os valores. [Extremos](/cadeiras/am2/taylor-extremos/#extremos-absolutos-e-fronteira).
 
 ## Integrais múltiplos
 
@@ -91,7 +91,7 @@ $$
 \qquad A=\tfrac12\oint(x\,dy-y\,dx).
 $$
 
-Fluxo plano exterior é $\oint P\,dy-Q\,dx=\iint(P_x+Q_y)\,dA$. Fronteira interior de um buraco usa sentido horário. [Green](/cadeiras/am2/integrais-linha/#teorema-de-green).
+A área também é $\oint x\,dy=-\oint y\,dx$ com orientação positiva. Fluxo plano exterior é $\oint P\,dy-Q\,dx=\iint(P_x+Q_y)\,dA$. Fronteira interior de um buraco usa sentido horário. [Green](/cadeiras/am2/integrais-linha/#teorema-de-green).
 
 ## Superfície, divergência e Stokes
 
@@ -132,4 +132,4 @@ $$
 
 usa os dois dados, com $A_n=(2/L)\int_0^L f(x)\sin(n\pi x/L)\,dx$ e $B_n=(2/(n\pi c))\int_0^L g(x)\sin(n\pi x/L)\,dx$.
 
-Laplace com três lados a zero e dado em $y=b$ usa $\sin(n\pi x/a)\sinh(n\pi y/a)/\sinh(n\pi b/a)$. Neumann na base troca $\sinh$ por $\cosh$. Neumann nos lados verticais admite cossenos e o modo constante; Robin exige conferir o sinal da normal. [Condições de fronteira](/cadeiras/am2/laplace-retangulo/#robin-e-o-sinal-da-derivada). Verifica equação, dados e domínio separadamente. [EDP](/cadeiras/am2/equacoes-diferenciais-parciais/#verificar-uma-solução).
+Laplace com base e topo não nulos resolve-se somando os problemas de cada lado, com fatores $\sinh(\omega_n(b-y))/\sinh(\omega_nb)$ e $\sinh(\omega_ny)/\sinh(\omega_nb)$, respetivamente. Com três lados a zero e dado em $y=b$ usa $\sin(n\pi x/a)\sinh(n\pi y/a)/\sinh(n\pi b/a)$. Neumann na base troca $\sinh$ por $\cosh$. Neumann nos lados verticais admite cossenos e o modo constante; Robin exige conferir o sinal da normal. [Condições de fronteira](/cadeiras/am2/laplace-retangulo/#robin-e-o-sinal-da-derivada). Verifica equação, dados e domínio separadamente. [EDP](/cadeiras/am2/equacoes-diferenciais-parciais/#verificar-uma-solução).

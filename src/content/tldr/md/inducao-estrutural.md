@@ -58,6 +58,8 @@ reverse (reverse (x:xs))
 
 A segunda passagem usa o lema; a terceira usa a hipótese de indução. A base dá `reverse (reverse []) = []`.
 
+Em `interleave x (y:ys) = y:x:interleave x ys`, cada passo acrescenta duas posições. Para provar `length (interleave x ys) = 2 * length ys`, a base é zero; o passo dá `2 + length (interleave x ys) = 2 + 2 * length ys` pela hipótese na cauda. Repetições de valores continuam a contar como posições distintas.
+
 ## Correção de uma ordenação
 
 Para `sort (x:xs) = insert x (sort xs)`, prova primeiro que `insert` conserva a ordenação de uma lista ordenada, assumindo uma ordem total nos elementos. Depois usa esse lema e a hipótese sobre `sort xs`.

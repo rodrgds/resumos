@@ -15,6 +15,8 @@ editorial:
 - `=` atribui; `==` compara. Um intervalo exige `min <= x && x <= max`, não `min <= x <= max`. `&&` e `||` usam curto-circuito. Inicializa antes de ler e confirma o sucesso de `cin`. [Entrada e controlo](/cadeiras/p/cpp-fundamentos/#entrada-e-saída-com-iostream).
 - `T` passa por valor; `T&` dá acesso modificável; `const T&` evita a cópia e restringe esse acesso; `T*` pode ser nulo. Uma referência não muda de destino. Parâmetros são os nomes na função; argumentos são as expressões na chamada. Sobrecargas não se distinguem só pelo retorno. [Funções](/cadeiras/p/funcoes-arrays/#valor-referência-e-const).
 - Um array C tem índices de `0` a `N-1`. Num parâmetro, ajusta-se para apontador e precisa de tamanho separado. `sizeof` do parâmetro não mede o array original. Uma string de C exige `\0`, logo `n+1` posições para `n` unidades de texto. [Arrays e texto](/cadeiras/p/funcoes-arrays/#arrays-c-e-dimensões).
+- Array de saída: capacidade e prefixo válido são diferentes; devolve quantos elementos escreveste. Para conservar ocorrências repetidas, procura outro índice igual antes ou depois, sem eliminar repetições nem mudar a ordem. [Filtro](/cadeiras/p/funcoes-arrays/#arrays-de-entrada-e-de-saída).
+- Diferença simétrica de letras: presença em exatamente um texto, não diferença de frequências. Duas tabelas de 26 presenças permitem escrever alfabeticamente; reserva 27 posições e termina com `\0`, incluindo no vazio. Confere alfabeto, entradas válidas e ausência de sobreposição. [Letras](/cadeiras/p/funcoes-arrays/#presença-de-letras-em-dois-textos).
 
 ## Memória e propriedade
 
@@ -43,6 +45,7 @@ editorial:
 - `vector` oferece índice constante e inserção no fim amortizada constante. `list` permite remoção constante com posição conhecida, mas procura linear. `map` e `set` ordenam chaves e oferecem procura logarítmica. `unordered_map` procura em tempo médio constante, sem ordem fixa. [Escolha](/cadeiras/p/templates-stl/#escolher-um-contentor).
 - `reserve` muda capacidade; `resize` muda tamanho. Uma realocação de `vector` invalida todos os acessos aos elementos. `erase` invalida na posição e depois; usa o iterador devolvido para continuar. Não desreferencies `end()`. [Invalidação](/cadeiras/p/templates-stl/#invalidação-de-iteradores).
 - `sort` exige acesso aleatório e um comparador estrito, com `comp(x, x) == false`. Essa condição é necessária, mas não prova transitividade. `unique` remove repetidos adjacentes do intervalo lógico; `remove_if` compacta; ambos precisam de `erase` para reduzir o contentor. Pesquisa binária exige a ordenação adequada. `map[chave]` pode inserir; `find` consulta sem inserir. [Algoritmos](/cadeiras/p/templates-stl/#algoritmos-sort-e-find).
+- Para ordenar médias, cria um resumo por chave num vetor e explicita o desempate. A média das médias dá peso igual a cada grupo; juntar todos os valores muda os pesos. Calcula antes de formatar e define o vazio. [Agregação](/cadeiras/p/templates-stl/#agregar-por-chave-e-ordenar-pelo-resultado).
 
 ## Erros, ficheiros e build
 

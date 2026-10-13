@@ -19,7 +19,7 @@ As regulares são fechadas para união, interseção, diferença, complemento, c
 | $L_1\subseteq L_2$? | Testa vazio de $L_1\setminus L_2$                                         |
 | $L_1=L_2$?          | No produto, procura um par alcançável com exatamente uma componente final |
 
-Se o último teste encontra esse par, os rótulos do percurso dão uma palavra distinguidora. Pesquisa em largura encontra uma das mais curtas. Se não há tal par, as linguagens são iguais. Um ciclo ε isolado não garante infinitude; usar DFA evita essa confusão.
+Se o último teste encontra esse par, os rótulos do percurso dão uma palavra distinguidora, e a pesquisa em largura encontra uma das mais curtas; se não há tal par, as linguagens são iguais. Para a infinitude, usa o DFA: um ciclo só de ε num NFA não garante palavras arbitrariamente compridas.
 
 ## Minimização
 

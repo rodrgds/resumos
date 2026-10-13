@@ -289,3 +289,61 @@ Inserir sempre o bilhete, mesmo quando o <code>{"UPDATE"}</code> altera zero lin
 
   </div>
 </Exercise>
+
+<Exercise
+  id="cancelar-uma-vez"
+  revision={1}
+  title="Ligar a capacidade à transição que aconteceu"
+  explanation="/cadeiras/lbaw/triggers-transacoes/#cancelar-sem-libertar-duas-vezes"
+  answer={{ kind: 'self', checklist: ['Condiciono a mudança a bilhete reservado do comprador autenticado.', 'Uso RETURNING para libertar apenas a sessão do bilhete alterado.', 'Conservo zero alterações na repetição e anulo tudo se o contador falhar.'] }}
+>
+  <div>
+
+S12 tem lotação 2 e zero lugares livres. O bilhete 1043 de U7 está reservado; o bilhete 1044 de U8 está pago. Cada um ocupa um lugar. Só o comprador pode cancelar o seu bilhete reservado. Escreve uma instrução PostgreSQL que cancele 1043 em nome de U7 e liberte um lugar. Explica o resultado da primeira execução, da repetição e de uma falha do UPDATE do contador. Não uses uma leitura anterior do estado como autorização para libertar capacidade.
+
+  </div>
+  <div slot="hint">
+
+O RETURNING do primeiro UPDATE pode alimentar o segundo numa CTE.
+
+  </div>
+  <div slot="solution">
+
+```sql
+WITH cancelado AS (
+  UPDATE bilhetes SET estado = 'cancelado'
+  WHERE id = 1043 AND utilizador_id = 7 AND estado = 'reservado'
+  RETURNING sessao_id
+)
+UPDATE sessoes s SET livres = s.livres + 1
+FROM cancelado c WHERE s.id = c.sessao_id
+RETURNING s.id, s.livres;
+```
+
+Na primeira execução, uma linha muda para cancelado e fornece S12. O contador passa para 1. Na repetição, o bilhete já não satisfaz reservado; a CTE fica vazia e o contador não muda. O bilhete pago de U8 continua pago. O identificador 7 deve vir da identidade autenticada, não de um campo do formulário.
+
+Se o UPDATE exterior falhar uma restrição, a instrução inteira falha e o bilhete não fica cancelado sem libertar capacidade. Dentro de uma transação maior, a aplicação tem ainda de tratar o erro e anular ou recuperar essa transação. Ler reservado antes e incrementar sempre o contador permitiria libertar duas vezes.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="trigger-lote-sem-mudanca"
+  revision={1}
+  title="Contar ativações e registos de auditoria"
+  explanation="/cadeiras/lbaw/triggers-transacoes/#contar-ativações-num-update-em-lote"
+  answer={{ kind: 'self', checklist: ['Conto três ativações por linha e duas por instrução.', 'Distingui processar a linha de alterar o preço.', 'Obtenho zero registos de auditoria com o teste de mudança real.'] }}
+>
+  <div>
+
+Uma tabela `precos` contém ids 1, 2 e 3. Tem dois triggers AFTER UPDATE: R por linha e S por instrução. R só insere auditoria se `NEW.preco IS DISTINCT FROM OLD.preco`. Executas `UPDATE precos SET preco=preco WHERE id<=3` e depois `UPDATE precos SET preco=preco WHERE id=99`, sem outras operações. Quantas vezes dispara R? E S? Quantos registos de auditoria são inseridos por R?
+
+  </div>
+  <div slot="solution">
+
+O primeiro UPDATE processa três linhas: R dispara três vezes e S uma. O segundo não encontra nenhuma linha: R não dispara e S dispara uma vez. Totais: R três, S duas.
+
+Nenhum preço mudou, por isso a condição de R é falsa nas três ativações e não se insere auditoria. O teste no corpo não impede a ativação do trigger; impede a ação de inserir. Zero linhas afetadas também não impede um trigger por instrução.
+
+  </div>
+</Exercise>

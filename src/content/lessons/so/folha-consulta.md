@@ -62,6 +62,10 @@ Impasse exige exclusão mútua, retenção com espera, ausência de preempção 
 
 Pipe: ler em `fd[0]`, escrever em `fd[1]`; fechar pontas não usadas. EOF só com buffer vazio e todas as escritas fechadas. `dup2` prepara stdin/stdout antes de exec. Fluxos não preservam fronteiras de mensagens. Sinais tradicionais podem fundir-se; tratadores não devem chamar arbitrariamente stdio ou malloc. `SIGKILL` e `SIGSTOP` não são capturáveis. [IPC](/cadeiras/so/comunicacao-processos/#pipe-leitura-e-escrita).
 
+NRU ordena classes `(R,M)` por `(0,0)`, `(0,1)`, `(1,0)`, `(1,1)`; empates precisam de regra. FIFO usa entrada, LRU último acesso e LFU contagem. Por linhas, uma matriz pode reutilizar páginas; contagens exatas exigem alinhamento, tamanho de página e molduras. [Contas e bits](/cadeiras/so/paginacao-procura/#recência-frequência-e-sujidade).
+
+Cria o canal antes de `fork`: duas chamadas posteriores a `pipe` criam objetos distintos, mesmo com números de descritor iguais. Retoma imediata de um monitor entrega-o à tarefa sinalizada; Pthreads usa reaquisição e reavaliação com `while`. `pthread_exit` termina uma thread; `exit` termina o processo. [Threads](/cadeiras/so/programacao-concorrente/#o-que-uma-thread-partilha).
+
 ## C, ficheiros e I/O
 
 | Verificação                                      | Erro evitado                                   |
@@ -74,11 +78,11 @@ Pipe: ler em `fd[0]`, escrever em `fd[1]`; fechar pontas não usadas. EOF só co
 | Ciclo de `write` com restante                    | Perda ou duplicação numa escrita parcial       |
 | `stat` com sucesso e caminho correto             | Campos sem dados ou consulta noutra pasta      |
 
-`open` falha com -1; descritor 0 é válido. `fopen` falha com NULL. `read` com pedido positivo: positivo bytes, 0 fim dos dados, -1 erro. Um pedido de 0 bytes pode devolver 0 sem indicar EOF. `getline` preserva o newline quando existe e precisa de `free`. `FILE *` e `int` são interfaces diferentes. POSIX inclui funções de biblioteca e chamadas de sistema; stdout transporta bytes. [API de ficheiros](/cadeiras/so/ficheiros-api/#file-e-descritor).
+`open` falha com -1; descritor 0 é válido. `fopen` falha com NULL. `read` com pedido positivo: positivo bytes, 0 fim dos dados, -1 erro. Um pedido de 0 bytes pode devolver 0 sem indicar EOF. `getline` preserva o newline quando existe e precisa de `free`. `lseek` devolve a posição absoluta; `read` avança-a, e EOF não é um byte do ficheiro. `FILE *` e `int` são interfaces diferentes. POSIX inclui funções de biblioteca e chamadas de sistema; stdout transporta bytes. [API de ficheiros](/cadeiras/so/ficheiros-api/#file-e-descritor).
 
-Antes de truncar um destino de cópia, compara `st_dev` e `st_ino` obtidos com `fstat` nas aberturas. Dois nomes podem identificar o mesmo ficheiro. Numa travessia, repõe `errno` antes de cada `readdir`; um erro anterior de `fstatat` não é um erro da leitura do diretório. [Cópia e caminhos](/cadeiras/so/ficheiros-api/#so-write-parcial).
+Antes de truncar um destino de cópia, compara `st_dev` e `st_ino` obtidos com `fstat` nas aberturas. Dois nomes podem identificar o mesmo ficheiro. Numa travessia, repõe `errno` antes de cada `readdir`; um erro anterior de `fstatat` não é um erro da leitura do diretório. [Cópia e caminhos](/cadeiras/so/ficheiros-api/#ler-e-escrever-todos-os-bytes).
 
-Inode guarda metadados e localização; diretório associa nome a inode; descrição aberta guarda posição. `dup` partilha posição, nova `open` normalmente não. Hard link é outro nome do mesmo inode; symlink contém um caminho. `unlink` não invalida um descritor aberto. [Implementação](/cadeiras/so/implementacao-ficheiros/#nome-inode-e-abertura).
+VFS fornece a interface comum para sistemas de ficheiros diferentes; não define um formato em disco. Inode guarda metadados e localização; diretório associa nome a inode; descrição aberta guarda posição. `dup` partilha posição, nova `open` normalmente não. Hard link é outro nome do mesmo inode; symlink contém um caminho. `unlink` não invalida um descritor aberto. [Implementação](/cadeiras/so/implementacao-ficheiros/#nome-inode-e-abertura).
 
 Bitmap: volume/bloco dá número de bits; divide por 8 para bytes. Bloco de índice contém bloco/apontador entradas. Contíguo favorece acesso direto; ligado exige seguir cadeia; indexado exige índices. Journaling ajuda consistência, não substitui backup. [Alocação](/cadeiras/so/implementacao-ficheiros/#métodos-de-alocação).
 

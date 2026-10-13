@@ -31,15 +31,29 @@ Identifica tarefas e dependências. Decide como dividir os dados, quando comunic
 
 Se cada iteração tiver custo semelhante, uma distribuição estática costuma ter pouco custo. Se os custos variarem muito, uma distribuição dinâmica pode equilibrar melhor a carga, pagando pela atribuição de trabalho durante a execução. Mede, porque equilíbrio perfeito também não garante ganho se a memória já estiver saturada.
 
+### Distribuição estática por blocos
+
+Em `schedule(static,2)`, cada bloco contém duas iterações consecutivas, salvo o último se não couber completo. Os blocos são atribuídos ciclicamente pelo número da thread. Com uma equipa efetiva de três threads e iterações 0 a 9:
+
+| Bloco | Iterações | Thread |
+| ----- | --------- | ------ |
+| 0     | 0, 1      | 0      |
+| 1     | 2, 3      | 1      |
+| 2     | 4, 5      | 2      |
+| 3     | 6, 7      | 0      |
+| 4     | 8, 9      | 1      |
+
+As contagens são 4, 4 e 2. Não há dez iterações em cada thread: a diretiva divide o trabalho do ciclo. A thread 0 não recebe necessariamente um único intervalo contíguo, porque volta a receber blocos depois das restantes.
+
+Sem tamanho de bloco explícito, `schedule(static)` divide aproximadamente de forma equilibrada, mas não fixa na especificação o mesmo mapeamento deste exemplo. Em `dynamic`, threads pedem novos blocos conforme concluem trabalho, pelo que não podes prever o dono de cada iteração só pelo seu índice. Contar iterações também não mede tempo quando os custos diferem. A equipa efetiva deve ser confirmada antes de usar uma contagem que assume três threads.
+
 ## Trabalho e caminho crítico
 
 Num modelo ideal de tarefas, o **trabalho** $W$ é a soma dos tempos de todas as tarefas numa execução sequencial. O **caminho crítico** $D$ é a maior soma de tempos numa cadeia de dependências. Mesmo com recursos ilimitados, essa cadeia tem de ser respeitada.
 
 Com $p$ unidades iguais, sem comunicação nem outros custos, o tempo não pode ser menor do que $\max(W/p,D)$. É um limite inferior, ou seja não é uma promessa de escalonamento perfeito. Por exemplo, três tarefas independentes de 2 s seguidas de uma combinação de 1 s têm $W=7$ s e $D=3$ s. Com três unidades, as três primeiras tarefas podem correr juntas e a combinação acaba aos 3 s.
 
-O limite pode não ser atingível. Três tarefas independentes e indivisíveis de 2 s em duas unidades têm $W/p=3$ s e $D=2$ s, mas precisam de 4 s: uma unidade terá de executar duas tarefas.
-
-Este modelo obriga a olhar para as dependências. Amdahl usa uma divisão mais simples entre fração serial e trabalho perfeitamente divisível.
+O limite pode não ser atingível. Três tarefas independentes e indivisíveis de 2 s em duas unidades têm $W/p=3$ s e $D=2$ s, mas precisam de 4 s: uma unidade terá de executar duas tarefas. Este modelo obriga a olhar para as dependências, enquanto Amdahl usa uma divisão mais simples entre fração serial e trabalho perfeitamente divisível.
 
 ## Uma redução em OpenMP
 
@@ -72,7 +86,7 @@ OMP_NUM_THREADS=4 ./soma
 
 `parallel for` cria uma equipa e distribui as iterações. `i` é privado a cada thread; `v` é partilhado e só lido. `default(none)` obriga a declarar o tratamento dos dados que precisam dessa decisão. A cláusula `reduction(+:soma)` dá a cada thread uma soma privada, inicialmente zero, e combina-as no fim. Sem a redução, as atualizações de `soma` criariam uma corrida de dados.
 
-Com oito uns e duas fatias de quatro, as somas privadas são 4 e 4. A combinação produz 8. Não há uma atualização partilhada por cada elemento. Identifica que iterações podem correr em paralelo e como os resultados são combinados: o vídeo seguinte mostra essa distribuição do trabalho e a combinação final.
+Com oito uns e duas fatias de quatro, as somas privadas são 4 e 4. A combinação produz 8. Não há uma atualização partilhada por cada elemento. Identifica que iterações correm em paralelo e como os resultados se combinam na distribuição do trabalho e na combinação final.
 
 <YouTube id="cMWGeJyrc9w" title="Introduction to OpenMP: 02 part 1 Module 1" />
 
@@ -80,6 +94,30 @@ Com oito uns e duas fatias de quatro, as somas privadas são 4 e 4. A combinaç�
   source={reducao}
   alt="Duas threads somam quatro uns cada uma numa variável privada. A redução combina 4 mais 4 para obter 8. A alternativa atomic atualiza oito vezes o mesmo contador."
 />
+
+## Cópias privadas e combinação do resultado
+
+`private` cria uma cópia separada da variável. Para um escalar C como `int maximo`, não herda o valor inicial que escreveste antes da região: ler essa cópia antes de a inicializar usa um valor indeterminado. `firstprivate` copia o valor inicial para cada tarefa que a referencia, mas não combina os resultados no fim. Inicialização e combinação são decisões diferentes.
+
+Para procurar o máximo de `{-5,-2,-8,-1}`, inicializar o resultado global a zero inventaria um candidato maior que todos os valores. Usa um elemento da entrada não vazia. Este programa completo usa uma redução max:
+
+```c
+#include <stdio.h>
+
+int main(void) {
+    int v[] = {-5, -2, -8, -1};
+    int maximo = v[0];
+    #pragma omp parallel for default(none) shared(v) reduction(max:maximo)
+    for (int i = 0; i < 4; i++)
+        if (v[i] > maximo) maximo = v[i];
+    printf("%d\n", maximo);
+    return 0;
+}
+```
+
+Com um compilador que suporte OpenMP, `gcc -O2 -fopenmp maximo.c -o maximo` e `OMP_NUM_THREADS=4 ./maximo` dão −1. A redução inicializa as cópias privadas segundo o operador max e combina-as com o valor original no fim; não é uma cópia de v[0] para todas as threads. O programa exige entrada não vazia, só lê v e não permite outra thread escrever nesses dados durante a região.
+
+Trocar a redução por `firstprivate(maximo)` inicializaria cada cópia a −5, mas o `printf` continuaria a ler o maximo exterior, ainda −5. Trocar por `private(maximo)` seria pior, porque o teste poderia ler a cópia indeterminada. Tornar maximo apenas `shared` permitiria atualizações concorrentes sem proteção. Uma barreira no fim espera pelas threads, mas não resolve inicialização, combinação nem corridas dentro da região.
 
 ## Correção e custo
 

@@ -10,6 +10,7 @@ editorial:
 ---
 
 import pipelineDependencia from '../../ac/examples/pipeline-dependencia.s?raw';
+import Bracket from '../../../components/Bracket.astro';
 import CodeSnippet from '../../../components/CodeSnippet.astro';
 
 import Typst from '../../../components/Typst.astro';
@@ -43,6 +44,27 @@ $$T_{\rm pipeline}=(5+19)\times250=6000\ \mathrm{ps}.$$
 
 Em ciclo único, as 20 instruções ocupam $20\times800=16000$ ps. A rapidez relativa do conjunto é $16000/6000\approx2,667$. A latência individual aumentou, mas o conjunto termina mais cedo porque as fases se sobrepõem.
 
+## Dividir uma fase e pagar os registos
+
+Acelerar uma fase só reduz o período quando diminui o maior atraso. Se IF, EX e MEM demoram 200 ps, reduzir EX para 150 ps deixa o período em 200 ps: as outras duas continuam a limitá-lo.
+
+Para atrasos `[300,400,350,500,100]` ps, MEM limita a pipeline a 500 ps. Se for possível dividir MEM em duas fases de 250 ps, passam a existir seis fases e ID, de 400 ps, determina o novo período. Não continues a usar cinco fases depois da divisão.
+
+Os registos entre fases também introduzem atraso. Usa $\tau$ para o custo comum por fase, incluindo os tempos exigidos para guardar e disponibilizar os sinais. Se esse custo não estiver já incluído nos atrasos:
+
+$$T=\max_i t_i+\tau.$$
+
+Com $\tau=150$ ps, compara sequências independentes, sem paragens:
+
+| Organização  | Fases | Período | Uma instrução | Dez instruções |
+| ------------ | ----- | ------- | ------------- | -------------- |
+| Original     | 5     | 650 ps  | 3250 ps       | 9100 ps        |
+| MEM dividida | 6     | 550 ps  | 3300 ps       | 8250 ps        |
+
+A versão dividida tem débito em regime de uma instrução a cada 550 ps, mas demora mais a completar uma instrução isolada. Para dez, o enchimento adicional já compensa: $14\times650=9100$ ps contra $15\times550=8250$ ps. O custo do registo entra **uma vez no período**, e cada instrução paga tantos períodos quantas as fases. Somá-lo uma única vez à latência total perderia os restantes registos.
+
+Esta comparação ideal conserva dependências e penalidades. Numa implementação real, deslocar o instante em que um load ou branch produz informação pode alterar paragens; a redução do período, sozinha, não determina o ganho.
+
 ## Conflitos estruturais e de dados
 
 Um **conflito estrutural** existe quando operações simultâneas requerem um recurso que não as suporta. Uma única memória com um porto não pode servir IF e um load em MEM no mesmo ciclo. Para resolver isso, bloqueia IF ou disponibiliza recursos separados. Inserir um NOP também requer obter uma instrução, logo não cria um segundo porto.
@@ -65,7 +87,11 @@ O comparador de forwarding verifica RegWrite, destino diferente de zero e iguald
 
 <CodeSnippet language="riscv" code={pipelineDependencia} />
 
-O load só obtém o dado no fim de MEM. O EX do `add` no mesmo ciclo precisaria dele antes de existir, por isso há uma paragem mesmo com atalhos completos para EX:
+<Bracket label="Ideia-chave">
+
+O load só obtém o dado no fim de MEM. O EX do `add` no mesmo ciclo precisaria dele antes de existir, por isso há uma paragem mesmo com atalhos completos para EX.
+
+</Bracket>
 
 <Typst
   source={bolha}
@@ -83,7 +109,7 @@ Sem forwarding, e com escrita WB na primeira metade e leitura ID na segunda meta
 
 ## Contar e reduzir paragens
 
-Traço finito completo com duas iterações. Fragmento repetido, com forwarding completo para EX e memórias I/D separadas:
+Traço finito completo com duas iterações de um fragmento repetido, com forwarding completo para EX e memórias I/D separadas:
 
 ```riscv
 add a0, t0, a1

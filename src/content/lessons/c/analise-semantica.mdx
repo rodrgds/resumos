@@ -6,6 +6,12 @@ section: conteudo
 practices:
   - c/praticar-analise-semantica
 order: 4
+editorial:
+  sources:
+    - title: 'Teste 1, 23/4/2026, tabela de símbolos e sobrecarga'
+      url: https://accio.pt/uploads/contributions/GCpohUGcAs.pdf
+  gaps:
+    - Fonte histórica de apoio; não confirma o enunciado ou a profundidade da edição de 2026/27.
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -27,7 +33,11 @@ Funções e parâmetros vivem no âmbito da função: os parâmetros comportam-s
   alt="Pilha de âmbitos com o x do bloco por cima do x global enquanto o bloco está aberto, e só o x global depois de o bloco fechar."
 />
 
-Lê a pilha como o analisador a vê: com o bloco aberto há duas entradas para `x` e a procura encontra primeiro a de cima; fechado o bloco, a entrada interior desaparece.
+Com o bloco aberto há duas declarações de `x` e a procura encontra primeiro a interior. Fechado o bloco, a procura volta a encontrar a declaração exterior. Os números 3 e 4 da figura ajudam a seguir os valores na execução; não são os dados de que o analisador precisa para resolver o nome.
+
+:::note[Tabela de símbolos não é memória de execução]
+A tabela associa um uso de `x` a uma declaração e ao seu tipo. O registo de ativação guarda o valor de uma chamada em execução. Uma função recursiva tem uma declaração do parâmetro `n`, mas cada chamada pode ter um valor diferente para esse parâmetro.
+:::
 
 ## Shadowing e inicializadores
 
@@ -90,7 +100,9 @@ A declaração morreu com o bloco que a continha. O uso seguinte encontra só os
   </div>
 </Tabs>
 
+:::warning[O inicializador depende da linguagem]
 Em Java usamos nomes locais diferentes para este bloco, porque Java não permite esta redeclaração de `x` local num bloco aninhado. O `y` interior lê o `x` do bloco do método, que é um âmbito exterior, não global. Além disso, o âmbito de uma variável local Java inclui o seu inicializador: `int z = z + 1` não lê automaticamente uma declaração exterior e falha por falta de inicialização. Não transfiras as regras do pseudocódigo para Java ou para o projeto sem as confirmar.
+:::
 
 <CodePlayground
   language="java"
@@ -107,6 +119,40 @@ Na linguagem didática, só admitimos `int` e `boolean`, sem conversões implíc
 :::tip[Como seguir os âmbitos]
 Nesta linguagem didática, para construir a tabela e encontrar erros, desenha uma coluna por âmbito, regista cada declaração quando ela entra em vigor (o inicializador usa o âmbito anterior) e verifica cada uso e cada operação contra a tabela.
 :::
+
+## Resolução de sobrecargas
+
+Uma tabela pode guardar várias funções com o mesmo nome. Nesse caso, encontrar o nome não termina a verificação: é preciso comparar os tipos dos argumentos com as assinaturas candidatas.
+
+Este exemplo usa **C++**, que permite as conversões numéricas indicadas. Não altera a regra anterior da linguagem didática sem conversões:
+
+```cpp
+#include <iostream>
+int escolhe(int a, int b) { return a + b; }
+double escolhe(double a, int b) { return a + b; }
+
+int main() {
+    double origem = 1.5;
+    int valor = 10;
+    {
+        double valor = origem;
+        double resultado = escolhe(valor, 2);
+        std::cout << resultado << '\n';
+    }
+    std::cout << escolhe(valor, 3) << '\n';
+}
+```
+
+O âmbito global guarda duas entradas para escolhe: `(int,int) -> int` e `(double,int) -> double`. O âmbito de main guarda origem:double e valor:int. O bloco interior guarda outro valor:double e resultado:double; fechar esse bloco volta a expor o valor:int de main.
+
+| Chamada           | Tipos dos argumentos | Assinatura escolhida | Resultado |
+| ----------------- | -------------------- | -------------------- | --------- |
+| No bloco interior | double, int          | escolhe(double,int)  | 3,5       |
+| Depois do bloco   | int, int             | escolhe(int,int)     | 13        |
+
+Nos dois casos existe uma candidata que corresponde exatamente aos argumentos. A outra exigiria uma conversão no primeiro argumento e perde neste exemplo. Primeiro resolvemos **qual declaração de valor está visível**, depois calculamos o seu tipo e só então escolhemos a assinatura. Não escolhemos a sobrecarga pelo conteúdo numérico nem só pelo tipo da variável que recebe o resultado.
+
+O tipo de retorno, sozinho, não distingue duas sobrecargas C++ com parâmetros iguais. A linguagem define ainda regras para conversões e casos ambíguos; uma tabela que apenas substitui a entrada antiga de escolhe pela nova perderia informação necessária para resolver estas chamadas.
 
 ## Atributos herdados e sintetizados
 

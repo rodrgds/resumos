@@ -31,6 +31,10 @@ Numa não homogénea, $y=y_h+y_p$.
 
 Em $y''+y=\sin x$, seno e cosseno já pertencem à homogénea. Usa $y_p=x(A\cos x+B\sin x)$. Substituir dá $A=-1/2$, $B=0$, logo $y_p=-x\cos x/2$.
 
+Para um polinómio de grau $n$, inclui todos os coeficientes até ao termo constante no candidato. Numa soma de termos independentes, soma as particulares e acrescenta a homogénea uma única vez.
+
+Se a exponencial corresponde a uma raiz de multiplicidade $m$, usa o fator $x^m$. Em $y''-2y'+y=e^x$, a raiz $1$ é dupla: $xe^x$ ainda pertence à homogénea, e a particular é $x^2e^x/2$.
+
 ## Variação dos parâmetros
 
 Normaliza primeiro: $ay''+by'+cy=f$ passa a $y''+py'+qy=g$, com $g=f/a$.

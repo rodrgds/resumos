@@ -12,7 +12,9 @@
 | Simple design e system metaphor         | Estrutura e descrição comuns adequadas às necessidades presentes              |
 | Sustainable pace                        | Ritmo que preserve atenção e qualidade                                        |
 
-Scrum organiza responsabilidades, artefactos e eventos; XP explicita práticas técnicas. Podem combinar-se, mas não são sinónimos.
+- Scrum organiza responsabilidades, artefactos e eventos; XP explicita práticas técnicas. Podem combinar-se, mas não são sinónimos.
+
+No **Planning Game**, o cliente explica valor e prioridades; a equipa estima e esclarece consequências técnicas. Histórias de 5, 3 e 4 pontos não cabem todas numa previsão de oito: negociar âmbito/data não é baixar estimativas. Capacidade observada apoia uma previsão, não garante entrega.
 
 ## TDD
 

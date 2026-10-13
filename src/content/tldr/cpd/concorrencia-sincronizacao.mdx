@@ -1,0 +1,32 @@
+import Typst from '../../../components/Typst.astro';
+import entrelacamento from '../../cpd/entrelecamento.typ?raw';
+
+## Corridas
+
+Condição de corrida: comportamento depende da ordem relativa das tarefas. Corrida de dados: acessos concorrentes à mesma posição, pelo menos um escreve, sem sincronização exigida. Em C, tem comportamento indefinido; ensaios com resultado correto não provam segurança.
+
+<Typst
+  source={entrelacamento}
+  format="svg"
+  alt="Duas threads leem zero e ambas escrevem um, perdendo um incremento no modelo didático."
+/>
+
+O entrelaçamento do desenho ilustra o incremento perdido. Não limita os resultados de um programa C real com corrida aos valores 1 e 2.
+
+## Proteção do estado
+
+| Mecanismo        | Garantia e limite                                                      |
+| ---------------- | ---------------------------------------------------------------------- |
+| atomic           | Operação suportada numa posição; não torna um bloco inteiro atómico    |
+| critical / mutex | Exclui acessos protegidos pelo mesmo mecanismo                         |
+| Barreira         | Espera por todos no fim de uma fase; não protege conflitos dentro dela |
+
+Na transferência a-=10, b+=10, dois atomic deixam observar o débito sem o crédito. A invariante a+b exige proteger **as duas atualizações e as leituras do par** com o mesmo mecanismo.
+
+Num parallel for, a barreira implícita final permite ler o contador após todos terminarem; não corrige as escritas anteriores. Todos os acessos simultâneos em conflito precisam de proteção compatível. Acumuladores privados com redução podem reduzir contenção numa soma.
+
+## Espera e progresso
+
+Um consumidor espera **enquanto** a fila estiver vazia. A espera por condição liberta o mutex; ao acordar, recupera-o e testa de novo. A notificação não reserva um elemento, porque outro consumidor pode tê-lo retirado.
+
+Deadlock: A tem X e espera Y; B tem Y e espera X. Impor X antes de Y a todos elimina esse ciclo: quem espera por X ainda não tem Y. Liberta bloqueios em todos os caminhos. Ordem comum não resolve todas as causas de bloqueio; conservar estado válido e permitir progresso são garantias distintas. [Ordem de bloqueios](/cadeiras/cpd/concorrencia-sincronizacao/#deadlock-e-ordem-de-bloqueios).

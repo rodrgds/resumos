@@ -50,3 +50,9 @@ $$
 Bombeia $v$ e $x$ **com o mesmo expoente**; uma pode ser vazia, mas não ambas. A zona curta pode estar em qualquer posição. O lema é necessário, não suficiente.
 
 Para provar que $a^nb^nc^n$ não é CFL, escolhe $s=a^pb^pc^p$ e considera qualquer corte válido. A zona $vwx$ não pode incluir simultaneamente $a$ e $c$, pois teria de atravessar os $p$ símbolos $b$. Com $i=0$, retiras pelo menos um símbolo e deixas um tipo extremo intacto. As três contagens deixam de ser iguais, contradizendo o lema.
+
+## Escolha da testemunha
+
+Para $K=\{a^nb^nz\mid z\in\{a,b\}^n,n\ge0\}$, $a^pb^{2p}$ é uma candidata fraca: com p≥3, bombear o último a e os dois primeiros b dá $a^{p-1+i}b^{2(p-1+i)}\in K$ para todo i≥0. Isso invalida essa prova, sem provar K CFL.
+
+Usa $a^{2p}b^{2p}a^{2p}$. A zona curta não toca nos dois extremos. Depois de retirar v,x, uma palavra $a^jb^ka^\ell$ só poderia pertencer a K se $k\ge j$ e $k+\ell=2j$, porque o bloco final tem comprimento j e pode começar com b. Se o primeiro bloco não muda, a segunda condição falha; se muda, as duas condições tornam-se incompatíveis. [Cortes e prova completa](/cadeiras/tc/propriedades-livres/#separar-a-zona-curta-dos-extremos).

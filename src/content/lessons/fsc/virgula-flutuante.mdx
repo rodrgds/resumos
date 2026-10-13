@@ -8,11 +8,11 @@ practices:
   - fsc/praticar-virgula-fixa
 ---
 
-Guardar o inteiro 26 e interpretá-lo em unidades de $1/8$ dá $26/8=3{,}25$. Nenhum bit da palavra assinala a vírgula: essa escala faz parte do acordo entre o circuito e o programa. Na vírgula fixa, o passo é constante. Na vírgula flutuante, um expoente guardado com o significando altera a escala e o espaçamento entre valores.
+Guardar o inteiro 26 e interpretá-lo em unidades de $1/8$ dá $26/8=3{,}25$. Nenhum bit da palavra assinala a vírgula, pois essa escala faz parte do acordo entre o circuito e o programa; na vírgula fixa, o passo é constante, enquanto na vírgula flutuante um expoente guardado com o significando altera a escala e o espaçamento entre valores.
 
 ## Convenção Qm.n
 
-Usamos $Qm.n$ com $m$ bits para a parte inteira **incluindo o sinal**, e $n$ bits fracionários. A largura total é $N=m+n$. O inteiro $X$ está em complemento para dois e representa
+Usamos $Qm.n$ com $m$ bits para a parte inteira **incluindo o sinal** e $n$ bits fracionários; a largura total é $N=m+n$. O inteiro $X$ está em complemento para dois e representa
 
 $$x=X\,2^{-n}.$$
 
@@ -22,31 +22,31 @@ Para codificar $-2{,}75$ em $Q4.4$, calcula $X=-2{,}75\times16=-44$. Em 8 bits, 
 
 ## Escolher um formato
 
-Queremos medir valores entre $-20$ e $+20$ com passo não superior a $0{,}01$. Precisamos de $2^{-n}\le0{,}01$: $n=7$ dá $1/128\approx0{,}0078125$. Para o intervalo, $m=5$ só chega a menos de 16; $m=6$ chega a menos de 32. Portanto $Q6.7$, com 13 bits, satisfaz ambas as condições.
+Queremos medir valores entre $-20$ e $+20$ com passo não superior a $0{,}01$. Precisamos de $2^{-n}\le0{,}01$: $n=7$ dá $1/128\approx0{,}0078125$. Para o intervalo, $m=5$ só chega a menos de 16, enquanto $m=6$ chega a menos de 32, portanto $Q6.7$, com 13 bits, satisfaz ambas as condições.
 
 Se a palavra disponível só tiver 12 bits, não podemos manter essas duas escolhas. Temos de reduzir o intervalo, aceitar um passo maior ou aumentar a largura, porque a precisão e o intervalo competem pelos bits.
 
-Um valor não múltiplo da resolução exige arredondamento ou truncatura. Em $Q4.4$, $0{,}1\times16=1{,}6$. Arredondar para o inteiro mais próximo dá $X=2$ e valor $0{,}125$; truncar para zero dá $X=1$ e valor $0{,}0625$. Indica a política usada.
+Um valor não múltiplo da resolução exige arredondamento ou truncatura. Em $Q4.4$, $0{,}1\times16=1{,}6$: arredondar para o inteiro mais próximo dá $X=2$ e valor $0{,}125$, enquanto truncar para zero dá $X=1$ e valor $0{,}0625$. Indica a política usada.
 
 ## Adição e mudança de escala
 
-Com a mesma escala, somamos os inteiros: $x+y=(X+Y)2^{-n}$. Em $Q4.4$, $1{,}5$ é 24 e $-0{,}75$ é $-12$. A soma 12 representa $0{,}75$. O teste de overflow é o da palavra inteira com sinal.
+Com a mesma escala, somamos os inteiros: $x+y=(X+Y)2^{-n}$. Em $Q4.4$, $1{,}5$ é 24 e $-0{,}75$ é $-12$, por isso a soma 12 representa $0{,}75$; o teste de overflow é o da palavra inteira com sinal.
 
 Se as escalas diferirem, alinha-as primeiro. Converter de $Q4.4$ para $Q4.6$ exige multiplicar o código por $2^2$, acrescentando dois bits fracionários. Converter no sentido inverso perde bits e pode exigir arredondamento. Um deslocamento à direita aritmético de negativos arredonda para baixo; não equivale sempre a truncar para zero.
 
-Por exemplo, soma 1,5 guardado com quatro bits fracionários a 0,25 guardado com seis. Os códigos são 24 e 16. Na escala de seis bits, o primeiro passa a $24\times4=96$. Agora $96+16=112$ representa $112/64=1{,}75$. Somar diretamente 24+16 misturaria unidades diferentes.
+Por exemplo, soma 1,5 guardado com quatro bits fracionários a 0,25 guardado com seis. Os códigos são 24 e 16; na escala de seis bits, o primeiro passa a $24\times4=96$. Agora $96+16=112$ representa $112/64=1{,}75$, enquanto somar diretamente 24+16 misturaria unidades diferentes.
 
 ## Multiplicação e divisão
 
-Se $x=X2^{-n}$ e $y=Y2^{-n}$, o produto inteiro $XY$ tem escala $2^{-2n}$. Para voltar à escala inicial, calcula $XY/2^n$. Usa largura suficiente para o produto intermédio.
+Se $x=X2^{-n}$ e $y=Y2^{-n}$, o produto inteiro $XY$ tem escala $2^{-2n}$. Para voltar à escala inicial, calcula $XY/2^n$ com largura suficiente para o produto intermédio.
 
 Em $Q4.4$, $1{,}5\times(-0{,}75)$ usa $24\times(-12)=-288$. Dividindo por 16 obtemos $-18$, que representa $-1{,}125$. O produto $-288$ não cabe em 8 bits, embora o resultado final caiba. Fazer a multiplicação já em 8 bits destruiria o resultado.
 
-Para obter $x/y$ na escala $2^{-n}$, calcula
+Para obter $x/y$ na escala $2^{-n}$, com $y\ne0$, calcula com numerador alargado e arredondamento definido
 
 $$Z=\frac{X\,2^n}{Y},\quad y\ne0,$$
 
-com arredondamento definido e numerador alargado. $1{,}5/0{,}75$ dá $(24\times16)/12=32$, ou seja, 2.
+como em $1{,}5/0{,}75$, que dá $(24\times16)/12=32$, ou seja, 2.
 
 Com escalas $n_1,n_2$ nas entradas e $n_3$ no resultado, o produto requer um deslocamento de $n_1+n_2-n_3$ posições à direita, se esse valor for não negativo. Separar a escala da largura evita confundir overflow com perda de precisão.
 
@@ -60,15 +60,15 @@ O sinal $s$ vale 0 para positivo e 1 para negativo. A tabela indica o número de
 | binary64 | 1         | 11           | 52         | 1023 |
 | bfloat16 | 1         | 8            | 7          | 127  |
 
-Aqui $E$ e $F$ são os inteiros sem sinal lidos dos respetivos campos. $E_{\max}$ é o valor com todos os bits do expoente a 1, 255 em binary32. O bias é a constante subtraída a $E$, e $p$ é o número de bits da fração.
+Aqui $E$ e $F$ são os inteiros sem sinal lidos dos respetivos campos; $E_{\max}$ é o valor com todos os bits do expoente a 1, 255 em binary32. O bias é a constante subtraída a $E$, e $p$ é o número de bits da fração.
 
-Se $0<E<E_{\max}$, o número é normal:
+Se $0<E<E_{\max}$, o número é normal, com
 
 $$x=(-1)^s\left(1+\frac{F}{2^p}\right)2^{E-\mathrm{bias}},$$
 
-O 1 antes da vírgula é implícito. Assim binary32 tem 24 bits de precisão no significando dos normais.
+onde o 1 antes da vírgula é implícito; assim binary32 tem 24 bits de precisão no significando dos normais.
 
-Se $E=0$, não há esse 1:
+Se $E=0$, não há esse 1, com
 
 $$x=(-1)^s\frac{F}{2^p}2^{1-\mathrm{bias}}.$$
 
@@ -78,7 +78,7 @@ Binary32 e binary64 são formatos IEEE 754. Bfloat16 usa a disposição indicada
 
 ## Codificar um valor
 
-Codifica $-13{,}25$ em binary32. O módulo é $1101{,}01_2=1{,}10101_2\times2^3$. Portanto $s=1$, $E=3+127=130=10000010_2$ e a fração é `10101` seguida de 18 zeros:
+Codifica $-13{,}25$ em binary32. O módulo é $1101{,}01_2=1{,}10101_2\times2^3$, portanto $s=1$, $E=3+127=130=10000010_2$ e a fração é `10101` seguida de 18 zeros:
 
 ```text
 1 | 10000010 | 10101000000000000000000
@@ -103,7 +103,7 @@ No intervalo $[2^e,2^{e+1})$, os normais binary32 têm espaçamento $2^{e-23}$. 
 
 ## Somar e subtrair
 
-Para somar $5{,}5+1{,}25$, escreve $1{,}011_2\times2^2$ e $1{,}01_2\times2^0$. Os bits só podem ser somados por coluna quando têm os mesmos pesos. Conserva o expoente 2 e desloca o segundo significando duas posições à direita:
+Para somar $5{,}5+1{,}25$, escreve $1{,}011_2\times2^2$ e $1{,}01_2\times2^0$. Os bits só podem ser somados por coluna quando têm os mesmos pesos, por isso conserva o expoente 2 e desloca o segundo significando duas posições à direita:
 
 ```text
    1,0110 × 2²       5,5
@@ -114,11 +114,11 @@ Para somar $5{,}5+1{,}25$, escreve $1{,}011_2\times2^2$ e $1{,}01_2\times2^0$. O
 
 O zero acrescentado ao primeiro significando só completa a coluna. O resultado já está normalizado, pois o significando está entre 1 e 2.
 
-Subtrair usa o mesmo alinhamento. Por exemplo $5{,}5-5{,}25$ dá $(1{,}011-1{,}0101)\times2^2=0{,}0001\times2^2=1\times2^{-2}=0{,}25$. Depois de uma quase anulação, pode ser preciso normalizar deslocando para a esquerda.
+Subtrair usa o mesmo alinhamento: $5{,}5-5{,}25$ dá $(1{,}011-1{,}0101)\times2^2=0{,}0001\times2^2=1\times2^{-2}=0{,}25$. Depois de uma quase anulação, pode ser preciso normalizar deslocando para a esquerda.
 
 No formato finito, conserva bits adicionais durante a conta e arredonda no fim. O modo usual é o mais próximo, com empates para o significando cujo último bit conservado é par. Truncar sempre não implementa esta regra.
 
-Um modelo pequeno com três bits de fração ajuda a ver um empate. Entre 1 e 2, os números avançam de 1/8 em 1/8. O valor $1+1/16=1{,}0001_2$ fica a meio de `1,000` e `1,001`: escolhemos `1,000`, cujo último bit é 0. Já $1+3/16=1{,}0011_2$ fica a meio de `1,001` e `1,010`: escolhemos `1,010`. Empate para par pode arredondar para cima ou para baixo. Este modelo serve apenas para explicar a regra; binary32 conserva 23 bits de fração.
+Um modelo pequeno com três bits de fração ajuda a ver um empate. Entre 1 e 2, os números avançam de 1/8 em 1/8; o valor $1+1/16=1{,}0001_2$ fica a meio de `1,000` e `1,001`, por isso escolhemos `1,000`, cujo último bit é 0. Já $1+3/16=1{,}0011_2$ fica a meio de `1,001` e `1,010`, por isso escolhemos `1,010`. Empate para par pode arredondar para cima ou para baixo; este modelo serve apenas para explicar a regra, pois binary32 conserva 23 bits de fração.
 
 ## Multiplicar e perder precisão
 

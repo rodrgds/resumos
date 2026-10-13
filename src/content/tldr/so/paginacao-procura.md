@@ -32,6 +32,14 @@ As primeiras cargas contam como faltas. Regista o estado após cada referência,
 - No relógio com ponteira em A e bits A=1, B=0, C=1, limpa A e escolhe B; a ponteira fica em C. Um acesso põe o bit a 1.
 - A segunda oportunidade melhorada também considera sujidade. LFU e MFU usam frequências, que podem descrever mal a localidade atual.
 
+## Informação e localidade
+
+NRU escolhe da primeira classe `(R,M)` não vazia: `(0,0)`, `(0,1)`, `(1,0)`, `(1,1)`. `R` assinala referência desde a última limpeza; `M` assinala modificação. Não é uma ordenação por timestamp. LFU precisa de contagens e de desempate; LRU precisa de recência.
+
+Para `int a[4][4]`, inteiros de 4 bytes, páginas de 16 bytes, início alinhado e duas molduras vazias com LRU, cada linha ocupa uma página. Percorrer por linhas dá 4 faltas; por colunas dá 16. Com quatro molduras, ambos dariam 4. As hipóteses de página e residência determinam a conta.
+
+[Contagem numa matriz](/cadeiras/so/paginacao-procura/#contar-faltas-numa-matriz).
+
 ## Custo e distribuição
 
 Com probabilidade de falta $p$, acesso normal $M$ e serviço completo $F$ **incluindo o acesso repetido**:

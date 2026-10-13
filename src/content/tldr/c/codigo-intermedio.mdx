@@ -1,0 +1,29 @@
+import Dot from '../../../components/Dot.astro';
+import fluxo from '../../c/fluxo.dot?raw';
+
+## Operações e controlo
+
+Três endereços explicitam resultados interiores: `t1=b*2; t2=a+t1; x=t2`. Usa temporários/rótulos frescos. Acessos a vetor dependem do alvo: sem cabeçalho, elementos de 4 bytes e índice zero dão `base+4*i`; produzir endereço não valida o limite.
+
+Curto-circuito preserva quais operações executam. Em `d!=0 && n/d>4`, salta para o ramo falso antes da divisão quando d=0. Não calcules ambos os operandos para depois juntar booleanos.
+
+## Blocos e grafo
+
+Líderes: primeira instrução, cada destino de salto e cada instrução depois de salto. Cada bloco vai até antes do líder seguinte. Arestas representam saltos e quedas possíveis; goto não cai no bloco seguinte.
+
+<Dot
+  source={fluxo}
+  alt="While com dois testes: B1 vai a B2 ou B4, B2 vai a B3 ou B4 e B3 regressa a B1."
+/>
+
+## Dominância
+
+D domina B se **todos** os caminhos desde a entrada até B passam por D. Remove inacessíveis, fixa `DOM(entrada)={entrada}` e inicializa os outros com todos os alcançáveis:
+
+```text
+DOM[B] = {B} ∪ interseção de DOM[P], para os antecessores P
+```
+
+Repete até estabilizar. No grafo, `DOM(B3)={B1,B2,B3}`, mas `DOM(B4)={B1,B4}`: a saída direta B1→B4 evita B2.
+
+O dominador imediato é o estrito mais próximo. N→H é aresta de regresso de um ciclo natural se H domina N. B3→B1 dá ciclo `{B1,B2,B3}`; B4 é saída. Segue antecessores da origem até ao cabeçalho sem continuar para fora. A direção visual da seta não decide dominância. [Partição e análise](/cadeiras/c/codigo-intermedio/).

@@ -16,6 +16,8 @@ editorial:
       url: https://datatracker.ietf.org/doc/html/rfc5116
     - title: 'Computerphile, Diffie-Hellman'
       url: https://www.youtube.com/watch?v=NmM9HA2MQGI
+    - title: RFC 7366, Encrypt-then-MAC
+      url: https://datatracker.ietf.org/doc/html/rfc7366
   coverage: 'ECB, CBC, CTR, AEAD, repetição e acordo de chaves com Diffie-Hellman.'
   gaps:
     - Não foi possível comparar esta página com provas e critérios de correção de 2026/27.
@@ -26,8 +28,9 @@ import YouTube from '../../../components/YouTube.astro';
 import dh from '../../fsi/diffie-hellman.mmd?raw';
 import cbc from '../../fsi/cbc-passos.mmd?raw';
 import dhmitm from '../../fsi/dh-intermediario.mmd?raw';
+import repeticao from '../../fsi/aead-repeticao.mmd?raw';
 
-AES transforma blocos de 16 bytes. A lista de preços da loja ocupa mais do que isso: é preciso proteger vários blocos com a mesma chave. Uma **cifra de bloco** define a transformação de um bloco; não define sozinha como proteger uma mensagem inteira. Para proteger uma mensagem maior, dividimos a mensagem em blocos e precisamos de uma regra, o **modo de operação**, que define a relação entre blocos e os valores adicionais usados na cifragem. O XOR, ou seja a operação que compara bits e dá 1 quando são diferentes e 0 quando são iguais, é a peça que combina mensagem e sequência: $x\oplus x=0$ e $x\oplus0=x$. Por exemplo, `1010 XOR 1100 = 0110`.
+AES transforma blocos de 16 bytes. A lista de preços da loja ocupa mais do que isso: é preciso proteger vários blocos com a mesma chave. Uma **cifra de bloco** define a transformação de um bloco; não define sozinha como proteger uma mensagem inteira. Para proteger uma mensagem maior, dividimos a mensagem em blocos e precisamos de uma regra, o **modo de operação**, que define a relação entre blocos e os valores adicionais usados na cifragem. O XOR compara bits e dá 1 quando são diferentes e 0 quando são iguais: $x\oplus x=0$ e $x\oplus0=x$; por exemplo, `1010 XOR 1100 = 0110`.
 
 ## ECB, CBC e CTR
 
@@ -39,7 +42,7 @@ AES transforma blocos de 16 bytes. A lista de preços da loja ocupa mais do que 
 
 Em ECB, cada bloco cifra de forma independente. Uma mensagem de blocos `A A B A` dá um padrão `X X Y X`. Um observador não precisa de descobrir A para reconhecer repetições, por isso "usar AES" sem dizer o modo não responde a este problema.
 
-Em CBC, $C_i=E_K(P_i\oplus C_{i-1})$, com $C_0=IV$. Aqui $P_i$ é um bloco de texto em claro, $C_i$ um bloco cifrado e $K$ a chave. Com dois blocos: primeiro calcula-se $X_1=P_1\oplus IV$ e $C_1=E_K(X_1)$; depois $X_2=P_2\oplus C_1$ e $C_2=E_K(X_2)$. Para decifrar, inverte-se cada passo: $P_1=D_K(C_1)\oplus IV$ e $P_2=D_K(C_2)\oplus C_1$. O diagrama seguinte segue esses dois blocos.
+Em CBC, $C_i=E_K(P_i\oplus C_{i-1})$, com $C_0=IV$. Aqui $P_i$ é um bloco de texto em claro, $C_i$ um bloco cifrado e $K$ a chave. Com dois blocos: primeiro calcula-se $X_1=P_1\oplus IV$ e $C_1=E_K(X_1)$; depois $X_2=P_2\oplus C_1$ e $C_2=E_K(X_2)$. Para decifrar, inverte-se cada passo: $P_1=D_K(C_1)\oplus IV$ e $P_2=D_K(C_2)\oplus C_1$, como mostra o diagrama seguinte com estes dois blocos.
 
 <Mermaid
   source={cbc}
@@ -48,7 +51,19 @@ Em CBC, $C_i=E_K(P_i\oplus C_{i-1})$, com $C_0=IV$. Aqui $P_i$ é um bloco de te
 
 Em CTR, $C_i=P_i\oplus E_K(\text{contador}_i)$. O IV de CBC e os contadores de CTR têm requisitos distintos. Em CTR, evita repetir qualquer bloco de contador, inclusive entre mensagens: inícios diferentes ainda podem gerar sequências sobrepostas.
 
-CBC convencional recebe blocos completos. Com preenchimento PKCS#7 e blocos de 16 bytes, uma mensagem de 14 bytes recebe dois bytes `02 02`. Uma de 16 bytes recebe um bloco completo de dezasseis bytes de valor 16, para distinguir preenchimento de dados. Ao remover, o recetor lê o último byte $k$ e verifica que os últimos $k$ bytes valem todos $k$; se algum difere, rejeita em vez de remover. O preenchimento não autentica a mensagem. CTR pode usar apenas os bytes necessários do último bloco e não precisa deste preenchimento.
+CBC convencional recebe blocos completos. Com preenchimento PKCS#7 e blocos de 16 bytes, uma mensagem de 14 bytes recebe dois bytes `02 02`. Uma de 16 bytes recebe um bloco completo de dezasseis bytes de valor 16, para distinguir preenchimento de dados. Ao remover, o recetor lê o último byte $k$, exige $1\le k\le16$ e pelo menos $k$ bytes disponíveis, e verifica que os últimos $k$ bytes valem todos $k$. Se alguma condição falha, rejeita em vez de remover. O preenchimento não autentica a mensagem. CTR pode usar apenas os bytes necessários do último bloco e não precisa deste preenchimento.
+
+### Alterar bits sem conhecer a chave
+
+Em CTR sem autenticação, alterar um bit de $C_i$ altera exatamente o bit correspondente de $P_i$. O contador e a sequência cifrada mantêm-se. Se o atacante aplica uma máscara $\Delta$, o recetor obtém:
+
+$$C'_i=C_i\oplus\Delta.$$
+
+Ao retirar a mesma sequência $S_i$, fica:
+
+$$P'_i=P_i\oplus\Delta.$$
+
+Com $P_i=01000001$ e máscara `00000011`, os dois bits finais mudam e o resultado é `01000010`. Não há propagação automática aos restantes blocos. Confidencialidade não impede esta alteração; uma etiqueta de autenticação válida é uma condição adicional. AES real tem blocos de 128 bits, ou 16 bytes; um bloco menor num exercício representa apenas um modelo para seguir o XOR.
 
 ## Reutilizar uma sequência de XOR
 
@@ -79,9 +94,30 @@ Usa construções estudadas, como AES-GCM ou ChaCha20-Poly1305, com os requisito
 
 AEAD não elimina automaticamente a repetição. Uma mensagem válida antiga continua a ter uma etiqueta válida, porque a etiqueta prova que alguém com a chave protegeu aquele conteúdo e dados associados. Não prova que a mensagem é nova. A frescura precisa de mecanismo próprio, conforme o protocolo: por exemplo incluir um número de sequência nos dados associados e manter estado de receção com janela que tolera reordenação legítima, ou usar um desafio fresco por operação e rejeitar respostas fora do desafio pendente.
 
+No esquema, o identificador 7 está autenticado com a mensagem. O atacante só copia os bytes; a segunda receção é recusada pelo estado da aplicação, não por uma falha da etiqueta.
+
+<Mermaid
+  source={repeticao}
+  alt="O recetor aceita a mensagem AEAD com id 7. O atacante reenvia os mesmos bytes: a etiqueta continua válida, mas o id usado impede uma segunda execução."
+/>
+
+A verificação de unicidade e o efeito têm de ficar ligados atomicamente. Caso contrário, dois pedidos concorrentes podem observar o identificador como novo antes de qualquer um o registar. Este exemplo não define um protocolo completo.
+
+### Ordem entre cifragem e MAC
+
+Os nomes indicam que dados se autenticam e quando. Escrevemos $E$ para cifragem, $M$ para MAC e $\Vert$ para concatenação; $K_E$ e $K_M$ têm funções separadas.
+
+- **Encrypt-then-MAC:** calcula $c=E_{K_E}(m)$, depois $t=M_{K_M}(c)$, e envia $(c,t)$.
+- **MAC-then-Encrypt:** calcula $t=M_{K_M}(m)$, depois $c=E_{K_E}(m\Vert t)$, e envia $c$.
+- **Encrypt-and-MAC:** calcula separadamente $c=E_{K_E}(m)$ e $t=M_{K_M}(m)$, e envia $(c,t)$.
+
+No primeiro caso, o recetor pode verificar a etiqueta antes de decifrar. No segundo, precisa de decifrar para chegar à etiqueta. Se diferenças de resposta revelarem erros de preenchimento antes da autenticação, essa ordem pode criar um oráculo: o atacante aprende algo pelas respostas a cifras alteradas. No terceiro, um MAC sobre o texto em claro pode revelar relações que a cifra pretendia esconder.
+
+Estes esquemas distinguem composições, não provam segurança de qualquer implementação. É preciso proteger também IV/nonce e contexto conforme a construção, separar chaves e cumprir os requisitos das primitivas. Usar AEAD analisada evita inventar esse protocolo. Enviar só uma etiqueta MAC não envia a mensagem; enviar a chave MAC em claro permite ao observador criar etiquetas para mensagens alteradas.
+
 ## Diffie-Hellman em números pequenos
 
-Usamos a [aritmética modular](/cadeiras/fsi/criptografia/#aritmética-modular). Os números são pequenos para permitir refazer as contas. Não são parâmetros seguros.
+A conta usa a [aritmética modular](/cadeiras/fsi/criptografia/#aritmética-modular), com números pequenos para permitir refazer as contas; não são parâmetros seguros.
 
 Ana e Bruno publicam $p=23$ e $g=5$. Ana escolhe $a=6$ e envia $A=g^a\bmod p=8$. Bruno escolhe $b=15$ e envia $B=g^b\bmod p=19$. Ana calcula $B^a\bmod p=2$ e Bruno calcula $A^b\bmod p=2$.
 

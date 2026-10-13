@@ -36,7 +36,7 @@ Uma base de dados é a coleção organizada de dados; o SGBD é o software que a
 
 O SGBD mantém dados persistentes, oferece uma linguagem de consulta e verifica as restrições declaradas. Controla acessos concorrentes e recupera após falhas segundo as garantias do motor e da configuração. Pode criar índices e escolher uma forma de executar uma consulta.
 
-A aplicação continua responsável por definir corretamente as regras. Se não declararmos que a quantidade é positiva, o SGBD não deduz essa intenção a partir do nome `qtd`, porque o nome não é uma restrição. Se debitarmos dinheiro sem o creditar noutra conta, uma transação isolada pode executar essa operação errada sem interferência, por isso integridade técnica e correção do domínio exigem um desenho explícito.
+A aplicação continua responsável por definir corretamente as regras. Se não declararmos que a quantidade é positiva, o SGBD não deduz essa intenção a partir do nome `qtd`, porque o nome não é uma restrição. Se debitarmos dinheiro sem o creditar noutra conta, o SGBD executa essa operação errada sem interferência, desde que respeite as restrições declaradas. Integridade técnica e correção do domínio exigem por isso um desenho explícito.
 
 ## Três níveis de desenho
 

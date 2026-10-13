@@ -7,7 +7,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: Delay Models, modelos de filas
       url: https://moodle2627.up.pt/mod/resource/view.php?id=33682
@@ -156,24 +156,65 @@ Little dá $T=1,5/9=1/6$ s, cerca de 166,67 ms. Inclui 83,33 ms de serviço e 83
 
 <Exercise
   id="rc-jackson-taxas"
-  title={'Resolver uma rede com retorno'}
+  revision={2}
+  title="Calcular visitas, estabilidade e atraso global"
   explanation="/cadeiras/rc/modelos-filas/#redes-abertas-de-jackson"
   answer={{
-    kind: 'number',
-    value: 26.666666666666668,
-    tolerance: 0.001,
-    unit: 'pacotes/s',
+    kind: 'self',
+    checklist: ['Resolvo as taxas totais de A e B.', 'Verifico a estabilidade de ambos os nós.', 'Aplico Little na fronteira externa, usando 20 pacotes/s.'],
   }}
 >
-  <p>
-    {
-      'Taxa externa 20 para A. Metade das saídas de A vai a B; metade das saídas de B regressa a A. Qual a taxa total de A em pacotes/s?'
-    }
-  </p>
-  <p slot="hint">{'Escreve λA=20+0,5λB e λB=0,5λA.'}</p>
-  <p slot="solution">
-    {'0,75λA=20, logo λA=26,6667 pacotes/s. B tem 13,3333.'}
-  </p>
+  <div>
+    Uma rede aberta de Jackson recebe chegadas externas Poisson de 20 pacotes/s
+    em A. Metade das saídas de A vai para B, a outra metade deixa a rede.
+    Metade das saídas de B regressa a A, a outra metade deixa a rede. As
+    escolhas são independentes. Cada nó tem um servidor exponencial
+    independente, FIFO e capacidade infinita: A serve 40 pacotes/s, B serve 30.
+
+    Calcula as taxas totais de ambos os nós, verifica a estabilidade e obtém o
+    tempo médio que um pacote externo passa na rede, incluindo todas as visitas.
+    Explica por que não basta somar os tempos médios de uma visita a A e B.
+
+  </div>
+  <div slot="hint">Os retornos contam como visitas adicionais, mas não como entradas externas na rede.</div>
+  <div slot="solution">
+
+As equações são $\lambda_A=20+\lambda_B/2$ e $\lambda_B=\lambda_A/2$. Daqui $3\lambda_A/4=20$, logo $\lambda_A=80/3$ e $\lambda_B=40/3$ pacotes/s. Ambas são inferiores às respetivas taxas de serviço.
+
+Em A, $T_A=1/(40-80/3)=0,075$ s e $N_A=\lambda_AT_A=2$. Em B, $T_B=1/(30-40/3)=0,06$ s e $N_B=0,8$.
+
+Há em média $N=2+0,8=2,8$ pacotes na rede. Little na fronteira externa dá $T=2,8/20=0,14$ s, ou 140 ms. Somar 75+60=135 ms conta uma visita a cada nó, mas alguns pacotes não visitam B e outros regressam. As taxas totais já incluem essas visitas; a taxa externa conta cada pacote uma só vez.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="rc-chegadas-fases"
+  title="Comparar chegadas desfasadas e em grupo"
+  explanation="/cadeiras/rc/desempenho-e-filas/#chegadas-periódicas-e-perdas"
+  answer={{ kind: 'self', checklist: ['Uso dois lugares totais quando existe um de espera.', 'No agregado desfasado, o serviço termina antes da próxima chegada.', 'No agregado alinhado, admito dois e rejeito dois por grupo.', 'Distingo os dois modelos aleatórios conforme a convenção de buffer.'] }}
+>
+  <div>
+
+Uma ligação de 2 Mbit/s transmite pacotes de 1000 bytes. O servidor FIFO começa vazio, tem espaço para um pacote em serviço e outro à espera, e não sofre interrupções. Quatro fontes enviam cada uma um pacote a cada 20 ms.
+
+1. As fases são 0, 5, 10 e 15 ms. Calcula serviço, carga agregada, espera e perdas.
+2. As quatro fontes passam a enviar juntas aos 0, 20, 40 ms, e assim sucessivamente. Quantos pacotes entram e se perdem por grupo? Quais as esperas dos admitidos? As chegadas simultâneas são processadas por ordem fixa, iniciando o serviço do primeiro imediatamente.
+3. Agora substitui o agregado por chegadas Poisson e comprimentos exponenciais, mantendo as médias. Calcula o bloqueio M/M/1/B. Que resultado daria interpretar «um buffer» como apenas um lugar total?
+
+  </div>
+  <div slot="hint">Uma distribuição estacionária não substitui o calendário das chegadas determinísticas.</div>
+  <div slot="solution">
+
+O serviço constante é $8000/2000000=4$ ms. Chegam em média $4/0,02=200$ pacotes/s, a capacidade é 250 pacotes/s e a carga oferecida é 0,8.
+
+Com fases distintas, o agregado chega a cada 5 ms. Cada serviço termina 1 ms antes da próxima chegada, por isso não há espera nem perda.
+
+Com fases alinhadas, o primeiro começa a ser servido e o segundo ocupa a espera. Os outros dois são rejeitados: perda de 50% por grupo. Os admitidos esperam 0 e 4 ms e terminam aos 4 e 8 ms depois do início do grupo. O sistema volta a ficar vazio antes dos 20 ms. A carga oferecida é igual, mas só metade dos pacotes é admitida.
+
+No modelo aleatório, há dois lugares totais, $B=2$. Os pesos estacionários são $1$, $0,8$ e $0,64$, pelo que $p_2=0,64/2,44\approx26,23\%$. Com apenas um lugar total, seria $B=1$ e $p_1=0,8/1,8\approx44,44\%$. Nenhum destes valores é a perda dos dois calendários anteriores.
+
+  </div>
 </Exercise>
 
 <Exercise

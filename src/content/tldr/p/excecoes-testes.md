@@ -13,7 +13,7 @@ try {
 
 - Apanha por referência constante para evitar cópia e slicing. Coloca tratadores específicos antes dos gerais; `throw;` dentro do tratador relança.
 - No **desenrolamento da pilha**, objetos automáticos já construídos morrem na ordem inversa. Um apontador cru local não liberta automaticamente a memória reservada com `new`.
-- Se a construção não termina, o destrutor do objeto completo não corre, mas os membros e bases construídos são limpos. Se um construtor delegante já completou o destino e lança depois, o objeto completo é destruído.
+- Se a construção não termina, o destrutor do objeto completo não corre, mas os membros e bases construídos são limpos; se um construtor delegante já completou o destino e lança depois, o objeto completo é destruído.
 - Destrutores devem libertar sem propagar exceções. Uma segunda exceção a sair durante o desenrolamento termina o programa. Violar `noexcept` também termina.
 
 Usa donos RAII como membros para proteger recursos, incluindo durante a construção. Uma falha previsível de entrada pode ser tratada por estado de erro; exceções servem quando a operação falha e o tratamento pertence a outro nível.

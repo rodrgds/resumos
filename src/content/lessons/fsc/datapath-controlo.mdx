@@ -7,11 +7,13 @@ practices:
   - fsc/praticar-datapath-controlo
 ---
 
-`lw x5,12(x8)` exige calcular um endereço, ler memória e escrever x5. `sw x5,12(x8)` calcula o mesmo endereço, mas escreve memória. O datapath contém os caminhos dos dados; o controlo escolhe as fontes e habilita a escrita adequada. O CPU didático de 32 bits desta lição suporta `add`, `sub`, `and`, `or`, `lw`, `sw` e `beq`, um subconjunto das instruções usadas nos programas RARS.
+import Bracket from '../../../components/Bracket.astro';
+
+`lw x5,12(x8)` exige calcular um endereço, ler memória e escrever x5, enquanto `sw x5,12(x8)` calcula o mesmo endereço, mas escreve memória. O datapath contém os caminhos dos dados e o controlo escolhe as fontes e habilita a escrita adequada; o CPU didático de 32 bits desta lição suporta `add`, `sub`, `and`, `or`, `lw`, `sw` e `beq`, um subconjunto das instruções usadas nos programas RARS.
 
 ## Caminho dos dados
 
-O PC endereça a memória de instruções. Os campos rs1 e rs2 escolhem duas leituras do banco de registos; rd escolhe uma possível escrita. O gerador de imediatos reconstrói e estende o imediato segundo o formato da instrução.
+O PC endereça a memória de instruções. Os campos rs1 e rs2 escolhem duas leituras do banco de registos, enquanto rd escolhe uma possível escrita; o gerador de imediatos reconstrói e estende o imediato segundo o formato da instrução.
 
 A ALU recebe sempre o primeiro operando do banco. O segundo vem de um MUX: registo rs2 para operações R e comparação, ou imediato para calcular endereços de memória. O resultado da ALU pode ir diretamente para escrita num registo ou servir de endereço da memória de dados.
 
@@ -24,7 +26,7 @@ import pcNext from '../../fsc/cpu-proximo-pc.dot?raw';
   alt="CPU uniciclo: PC lê a instrução, registos e imediato alimentam a ALU; o resultado da ALU ou da memória regressa ao banco."
 />
 
-Uma soma separada calcula PC+4. Outra calcula PC+d para o branch. `PCSrc=Branch AND Zero` escolhe o destino de branch quando a instrução é beq e a comparação indica igualdade. O d já está em bytes, com o bit 0 implícito reconstruído; não o multipliques novamente por 4.
+Uma soma separada calcula PC+4 e outra calcula PC+d para o branch. `PCSrc=Branch AND Zero` escolhe o destino de branch quando a instrução é beq e a comparação indica igualdade; o d já está em bytes, com o bit 0 implícito reconstruído, por isso não o multipliques novamente por 4.
 
 <Dot
   source={pcNext}
@@ -40,9 +42,15 @@ Uma soma separada calcula PC+4. Outra calcula PC+d para o branch. `PCSrc=Branch 
 | sw     | 0        | 1      | 0       | 1        | X        | 0      | 00    |
 | beq    | 0        | 0      | 0       | 0        | X        | 1      | 01    |
 
-Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2; ALUSrc=1 escolhe o imediato. MemRead habilita a leitura de dados. MemtoReg escolhe o dado da memória se 1 e o resultado da ALU se 0. RegWrite e MemWrite autorizam alterações de estado, por isso têm de estar a 0 quando a instrução não escreve nesse destino.
+Um sinal de controlo é um bit, ou um pequeno código, produzido a partir da instrução. ALUSrc=0 escolhe rs2, enquanto ALUSrc=1 escolhe o imediato; MemRead habilita a leitura de dados. MemtoReg escolhe o dado da memória se 1 e o resultado da ALU se 0; RegWrite e MemWrite autorizam alterações de estado, por isso têm de estar a 0 quando a instrução não escreve nesse destino.
 
-X significa que a seleção não influencia o efeito. Em sw e beq, RegWrite=0 impede a escrita no banco, pelo que MemtoReg é irrelevante. Isto permite marcar o MUX com X, mas não a habilitação de escrita. Branch=1 identifica beq; `PCSrc=Branch AND Zero` decide se o salto é tomado.
+<Bracket label="Ideia-chave">
+
+Selecionar um valor num MUX não é escrevê-lo num registo. Em sw e beq, RegWrite=0 impede a escrita no banco, pelo que MemtoReg é irrelevante e pode ser X. A habilitação de escrita não pode ser arbitrária: é ela que autoriza a alteração de estado.
+
+</Bracket>
+
+Branch=1 identifica beq; `PCSrc=Branch AND Zero` decide se o salto é tomado.
 
 ALUOp=`00` pede soma; `01` pede subtração para a comparação; `10` usa f3 e f7 da instrução R. Neste modelo, ALUControl é `0000` para AND, `0001` para OR, `0010` para ADD e `0110` para SUB. ALUOp e ALUControl são sinais diferentes.
 
@@ -50,11 +58,11 @@ O campo que ocuparia rs2 numa instrução I contém bits do imediato. O banco po
 
 ## Tomado e não tomado
 
-Segue `beq x5,x6,-8` em PC=`0x00400010`. A ALU subtrai x6 a x5 e produz Zero. Se x5=x6, `PCSrc=1` e o PC seguinte é `0x00400008`; se diferirem, `PCSrc=0` e segue `0x00400014`. Um teste só com branches falsos nunca exercita o caminho de salto.
+Segue `beq x5,x6,-8` em PC=`0x00400010`. A ALU subtrai x6 a x5 e produz Zero; se x5=x6, `PCSrc=1` e o PC seguinte é `0x00400008`, enquanto se diferirem, `PCSrc=0` e segue `0x00400014`. Um teste só com branches falsos nunca exercita o caminho de salto.
 
 ## Seguir um load completo
 
-Suponhamos `lw x5,12(x8)` em PC=`0x00400020`, x8=`0x10010000`, e memória em `0x1001000C` contendo 42. O fetch lê a instrução. O banco entrega x8; o gerador entrega 12. ALUSrc=1 faz a ALU somar e produzir `0x1001000C`.
+Suponhamos `lw x5,12(x8)` em PC=`0x00400020`, x8=`0x10010000`, e memória em `0x1001000C` contendo 42. O fetch lê a instrução; o banco entrega x8 e o gerador entrega 12. ALUSrc=1 faz a ALU somar e produzir `0x1001000C`.
 
 MemRead=1 lê 42. MemtoReg=1 coloca 42 na entrada de escrita; RegWrite=1 guarda-o em x5 no flanco. Branch=0 seleciona `0x00400024` como PC seguinte. O resultado escrito é **42**, não o endereço calculado.
 
@@ -69,6 +77,31 @@ Se MemtoReg ficar preso em 0, um load escreve o endereço em vez do conteúdo. P
 Se RegWrite ficar em 0, operações R e loads deixam de escrever. Stores e branches ainda podem funcionar. Se o bit alto de ALUOp ficar em 0, instruções R passam a pedir ADD: add ainda pode estar correto, mas sub, and e or precisam de testes que produzam resultados diferentes da soma.
 
 `addi` pode reutilizar o datapath: ALUSrc=1, ALUOp=00, MemtoReg=0, RegWrite=1. `jalr` exige mais: escrever PC+4, escolher um destino calculado pela ALU e limpar o seu bit 0. Não chega mudar uma linha da tabela se o caminho físico ainda não existe.
+
+## Acrescentar jalr
+
+`jalr rd,d(rs1)` faz duas escritas no mesmo flanco: coloca PC+4 em rd e coloca o destino calculado a partir de rs1 no PC. A ALU existente pode somar rs1 ao imediato I estendido com sinal. Falta encaminhar os dois resultados para os destinos corretos.
+
+Uma opção conserva o MUX MemtoReg e acrescenta dois MUX de 32 bits:
+
+1. Na entrada de escrita do banco, um novo MUX escolhe a saída de MemtoReg quando `Link=0`, ou PC+4 quando `Link=1`.
+2. Na entrada do PC, outro MUX escolhe a saída do MUX PCSrc habitual quando `JumpReg=0`, ou o resultado da ALU com bit 0 limpo quando `JumpReg=1`.
+
+Limpar o bit 0 não precisa de uma segunda operação da ALU: liga o bit inferior dessa entrada do MUX a 0 e os outros 31 à saída da ALU. O somador PC+4 que já existe fornece o retorno enquanto a ALU calcula o alvo.
+
+| Controlo em jalr          | Valor   | Efeito                                  |
+| ------------------------- | ------- | --------------------------------------- |
+| ALUSrc, ALUOp             | 1, 00   | Soma rs1 ao imediato I                  |
+| RegWrite, Link            | 1, 1    | Escreve PC+4 em rd                      |
+| JumpReg                   | 1       | Encaminha o alvo da ALU para PC         |
+| MemRead, MemWrite, Branch | 0, 0, 0 | Não lê nem escreve dados, nem testa beq |
+| MemtoReg                  | X       | A sua saída é ignorada por Link=1       |
+
+Nesta organização, `Link=JumpReg=0` nas instruções anteriores conserva os seus caminhos. Em jalr, PCSrc também é irrelevante para o PC, porque JumpReg escolhe a outra entrada. O descodificador deve reconhecer opcode `1100111` e funct3 `000`, e ImmGen deve produzir o imediato I. Estes nomes de sinais são uma escolha deste circuito, não campos da ISA.
+
+Para `jalr ra,0(ra)` em PC=`0x00400020`, com ra antigo=`0x00400081`, a ALU produz `0x00400081`. O novo MUX do PC recebe `0x00400080`; o novo MUX do banco recebe `0x00400024`. As leituras usam o estado antigo, por isso escrever ra no mesmo flanco não altera a base usada para o salto.
+
+Sem instruções comprimidas, limpar só o bit 0 não garante alinhamento a 4: um alvo terminado em `10` binário continua desalinhado. Neste modelo didático consideramos destinos válidos; implementar exceções exige também a lógica de deteção e tratamento.
 
 ## Um ciclo e o seu custo
 

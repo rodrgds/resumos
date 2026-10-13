@@ -31,6 +31,8 @@ dup2(fd[0], STDIN_FILENO);
 
 Cada filho fecha as pontas desnecessárias. O supervisor fecha ambas e só depois recolhe os filhos. Conservar uma escrita impede EOF; esperar pelo produtor antes de lançar o consumidor pode bloquear quando o buffer enche.
 
+Cria o pipe **antes de `fork`** para o filho herdar o mesmo canal. Se cada processo chamar `pipe` depois do fork, terá um canal próprio, mesmo que os números dos descritores coincidam. O filho que fecha a sua escrita pode ver EOF sem receber bytes; o pai que fecha a sua leitura pode obter `SIGPIPE` ou `EPIPE`.
+
 ## FIFOs e sockets
 
 - `mkfifo` cria um nome, não um ficheiro regular onde os bytes persistem. Em modo bloqueante, abertura para leitura espera por escritor e abertura para escrita espera por leitor.

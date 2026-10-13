@@ -95,11 +95,24 @@ Escolhe uma convenção para ausência, como `None`, e não a uses como índice.
 
 [Recursão](/cadeiras/fp/recursao/#o-modelo-da-recursão). [Pesquisas](/cadeiras/fp/algoritmos-complexidade/#pesquisa-linear-e-pesquisa-binária). [Custo](/cadeiras/fp/algoritmos-complexidade/#contar-operações).
 
+## Construções para combinar
+
+- Ao extrair dígitos com divisões por uma base inteira `b >= 2`, os restos vêm do menos significativo para o mais significativo. Para apresentar texto, inverte essa ordem e representa zero por `"0"`. Um inteiro invertido não conserva zeros à esquerda.
+- Uma chamada recursiva pode devolver frequências. Soma as contagens da mesma chave para combinar ramos, em vez de as substituir. Numa árvore de expressões, avalia ambos os operandos e aplica o operador exterior na ordem recebida.
+- Ao explorar subconjuntos de preços positivos, retira a primeira posição nos ramos escolher e ignorar; só escolher reduz o alvo. Alvo zero é sucesso, negativo é falha. O número de posições garante terminação, mas podem existir $2^n$ escolhas.
+- `any` procura um verdadeiro; `all` procura um falso. `any([])` é `False` e `all([])` é `True`. Cada peça existir em alguma caixa difere de existir uma caixa com todas as peças. Percursos interiores repetidos exigem coleções reutilizáveis.
+- Para pares de posições distintos, usa `j > i`. Reservas semiabertas $[a,b[$ e $[c,d[$, com início menor que fim, conflituam se `max(a, c) < min(b, d)`; um contacto no extremo não conta.
+- Para gerar intervalos inteiros inclusivos, percorre cada par com `range(inicio, fim + 1)` e `yield valor`. Exige `inicio <= fim`; conserva a ordem e as repetições sem guardar todos os inteiros.
+
+[Dígitos e bases](/cadeiras/fp/condicoes-ciclos/#construir-um-número-a-partir-dos-dígitos). [Resultados recursivos](/cadeiras/fp/recursao/#combinar-resultados-recursivos). [Árvores de expressões](/cadeiras/fp/recursao/#expressões-como-árvores). [Any e all](/cadeiras/fp/programacao-funcional/#any-all-e-condições-sobre-coleções). [Fronteiras](/cadeiras/fp/compreensoes-geradores/#pares-de-posições-e-fronteiras).
+
 ## Ficheiros, falhas e verificação
 
 `with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair. `"w"` substitui o conteúdo; `"a"` acrescenta; `"x"` exige um ficheiro novo. Caminhos relativos partem da pasta de trabalho. `readline()` devolve `""` no fim; uma linha em branco é normalmente `"\n"`. Para CSV, usa `csv` e `newline=""`.
 
 `except Tipo` trata a falha esperada; `else` corre apenas se o `try` terminar normalmente, sem `return`, `break` ou `continue`; `finally` corre sempre na saída. `raise` comunica a falha ao chamador. Não escondas qualquer defeito com um tratador indiscriminado. `assert` verifica hipóteses internas e pode ser desativado. Entradas inválidas precisam de validação explícita.
+
+Os tratadores são escolhidos por ordem de compatibilidade. `FileNotFoundError` também é um `OSError`: coloca o tratador específico antes do geral. Uma falha sem tratador compatível propaga-se ao chamador.
 
 Calcula o resultado esperado antes de executar. Testa limites, vazio, repetições e entradas inválidas conforme o contrato. Para uma falha, reduz a entrada e encontra a primeira instrução cujo estado diverge do esperado.
 

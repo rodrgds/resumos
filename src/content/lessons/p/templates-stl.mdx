@@ -5,11 +5,16 @@ section: conteudo
 order: 7
 practices:
   - p/praticar-stl
+editorial:
+  sources:
+    - title: P2 prático de 2023/24, arquivo Accio, adaptação da síntese de notas com dados e desempate próprios
+      url: https://accio.pt/feup/L:EIC/programacao/L.EIC009
 ---
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Typst from '../../../components/Typst.astro';
 import uniqueErase from '../../p/unique-erase.typ?raw';
+import mediasEstudantes from '../../p/examples/medias-estudantes.cpp?raw';
 
 `maior(3, 8)` compara inteiros; `maior(2.5, 1.5)` compara reais. Um parâmetro de tipo permite escrever o mesmo corpo para ambos. A biblioteca padrão usa esta ideia para combinar contentores que guardam valores, iteradores que delimitam intervalos e algoritmos que trabalham nesses intervalos.
 
@@ -17,7 +22,7 @@ import uniqueErase from '../../p/unique-erase.typ?raw';
 
 `template <typename T>` introduz um parâmetro de tipo. `typename` e `class` são equivalentes nesta declaração simples. Na chamada `maior(3, 8)`, o compilador deduz `T = int`; em `maior(2.5, 1.5)`, deduz `double`.
 
-O exemplo combina uma função e uma classe template. A pilha guarda os dados num `vector`: `push_back` acrescenta no fim, `back` consulta o último, `pop_back` remove-o e `empty` testa o vazio. A retirada verifica o vazio antes de usar `back`.
+O exemplo combina uma função e uma classe template; a pilha guarda os dados num `vector`, onde `push_back` acrescenta no fim, `back` consulta o último, `pop_back` remove-o e `empty` testa o vazio. A retirada verifica o vazio antes de usar `back`.
 
 Programa completo para compilar localmente:
 
@@ -65,19 +70,19 @@ true
 
 O corpo de `maior` exige que `a < b` seja válido. `maior(3, 2.5)` não deduz um único `T`, porque os argumentos têm tipos diferentes; escreve `maior<double>(3, 2.5)` para escolher `double`.
 
-Um template não elimina requisitos dos tipos. `maior(objeto1, objeto2)` só funciona se esse tipo oferecer a comparação necessária. As definições dos templates têm de estar disponíveis quando o compilador as instancia. Por isso, ficam habitualmente no cabeçalho, ao contrário de funções não template cuja implementação pode ficar num `.cpp` separado.
+Um template não elimina requisitos dos tipos. `maior(objeto1, objeto2)` só funciona se esse tipo oferecer a comparação necessária. As definições dos templates têm de estar disponíveis quando o compilador as instancia, por isso ficam habitualmente no cabeçalho, ao contrário de funções não template cuja implementação pode ficar num `.cpp` separado.
 
 ## Classes template
 
 `Pilha<std::string>` e `Pilha<int>` são tipos distintos. Cada instância conserva a mesma disciplina, último a entrar, primeiro a sair, mas guarda valores de outro tipo. A retirada do exemplo copia o último valor antes de o remover e lança uma exceção se a pilha está vazia. Exige, portanto, um tipo copiável. Um tipo só com movimento precisaria de outra retirada, que devolvesse por movimento em vez de copiar.
 
-Segue a pilha: depois das inserções contém `primeira, segunda`. A primeira retirada devolve `segunda` e deixa `primeira`; a seguinte devolve `primeira` e deixa o vetor vazio. Uma terceira retirada lançaria uma exceção, em vez de consultar um elemento inexistente.
+Depois das inserções, a pilha contém `primeira, segunda`; a primeira retirada devolve `segunda` e deixa `primeira`, a seguinte devolve `primeira` e deixa o vetor vazio. Uma terceira retirada lançaria uma exceção, em vez de consultar um elemento inexistente.
 
 ## vector: o array que cresce
 
 `std::vector<T>` tem armazenamento contíguo, tamanho variável e acesso por índice. `size()` conta elementos vivos; `capacity()` conta quantos podem caber sem nova reserva. `reserve(n)` pode aumentar capacidade, mas não cria elementos. `resize(n)` muda o tamanho, construindo ou destruindo elementos.
 
-`v[i]` exige `i < v.size()` e não verifica o limite. `v.at(i)` verifica e lança `std::out_of_range`. `front`, `back` e `pop_back` exigem um vetor não vazio. Reservar capacidade para dez elementos não permite escrever `v[9]` se o tamanho ainda é zero. Depois de `reserve(3)`, o tamanho continua `0` e a capacidade passa a pelo menos `3`; depois de `resize(3)`, existem os índices `0`, `1` e `2`.
+`v[i]` exige `i < v.size()` e não verifica o limite, enquanto `v.at(i)` verifica e lança `std::out_of_range`; `front`, `back` e `pop_back` exigem um vetor não vazio. Reservar capacidade para dez elementos não permite escrever `v[9]` se o tamanho ainda é zero. Depois de `reserve(3)`, o tamanho continua `0` e a capacidade passa a pelo menos `3`; depois de `resize(3)`, existem os índices `0`, `1` e `2`.
 
 `push_back` tem custo amortizado constante: algumas inserções são mais caras porque realocam e transferem os elementos. Inserir ou remover no meio desloca elementos e custa linear no número deslocado. A gestão automática de memória não elimina os custos das operações.
 
@@ -116,7 +121,7 @@ vermelho: 1
 true 3
 ```
 
-`frequencias[palavra]` insere a chave a zero se ela ainda não existe. Serve para contar, mas surpreende numa simples consulta. Usa `find` quando queres consultar sem inserir. Cada elemento de um `map` é um `pair<const Key, Valor>`: `par.first` é a chave e `par.second` é a contagem.
+`frequencias[palavra]` insere a chave a zero se ela ainda não existe; serve para contar, mas surpreende numa simples consulta, por isso usa `find` quando queres consultar sem inserir. Cada elemento de um `map` é um `pair<const Key, Valor>`: `par.first` é a chave e `par.second` é a contagem.
 
 `map` percorre as chaves pela ordem do comparador. `set` guarda apenas as chaves, sem o segundo valor, e ignora inserções repetidas de uma chave equivalente. `unordered_map` não oferece ordem de percurso fixa.
 
@@ -158,9 +163,7 @@ Saída:
 9
 ```
 
-Depois de ordenar, `unique` compacta valores iguais **adjacentes** e devolve o novo fim lógico sem mudar o tamanho. O primeiro `erase` destrói o resto; o segundo remove os pares filtrados por `remove_if`.
-
-O fim lógico fica antes do sexto elemento, mas `end()` continua depois do sétimo. Os `?` são valores válidos não especificados, não posições vazias. Só `erase` reduz o tamanho de `7` para `5`.
+Depois de ordenar, `unique` compacta valores iguais **adjacentes** e devolve o novo fim lógico sem mudar o tamanho. O primeiro `erase` destrói o resto e o segundo remove os pares filtrados por `remove_if`. O fim lógico fica antes do sexto elemento enquanto `end()` continua depois do sétimo; os `?` são valores válidos não especificados, não posições vazias, e só `erase` reduz o tamanho de `7` para `5`.
 
 <Typst
   source={uniqueErase}
@@ -185,6 +188,35 @@ bool antes(const Registo& a, const Registo& b) {
 }
 ```
 
-Com `{10:2, 10:1, 9:3}`, a ordem é `9:3`, `10:1`, `10:2`. Só verificar `comp(x, x) == false` não prova transitividade; prova apenas o caso mais simples. Num vetor `{1, 3, 5, 7}`, `lower_bound` de `5` devolve a posição `2`. Procurar `4` devolve a mesma posição, que contém `5`: encontrar uma posição de inserção não prova que o valor existe. Confirma `it != v.end()` antes de ler `*it` e compara o valor encontrado com o procurado.
+Com `{10:2, 10:1, 9:3}`, a ordem é `9:3`, `10:1`, `10:2`. Só verificar `comp(x, x) == false` não prova transitividade; prova apenas o caso mais simples. Num vetor `{1, 3, 5, 7}`, `lower_bound` de `5` devolve a posição `2`, e procurar `4` devolve a mesma posição, que contém `5`; encontrar uma posição de inserção não prova que o valor existe, por isso confirma `it != v.end()` antes de ler `*it` e compara o valor encontrado com o procurado.
 
 `sort` não garante a ordem anterior entre elementos equivalentes. `stable_sort` conserva-a. `lower_bound` encontra a primeira posição que não vem antes do valor procurado. O intervalo tem de estar particionado de acordo com esse critério, normalmente ordenado pelo mesmo comparador. Procurar por pesquisa binária num vetor arbitrário não satisfaz essa condição.
+
+## Agregar por chave e ordenar pelo resultado
+
+Um `map<string, list<int>>` liga cada estudante às suas notas e percorre os nomes pela ordem das chaves. Se o relatório pede ordem decrescente de média, esse percurso não chega. Calculamos um resumo por estudante e ordenamos os resumos pelo critério pedido, conservando o mapa original.
+
+Cada lista contém entre 1 e 1000 notas inteiras de 0 a 20. O resultado usa a média de cada estudante e, no fim, a **média das médias**, dando o mesmo peso a cada estudante. Para o mapa vazio, escrevemos `Sem estudantes`. Estes contratos evitam dividir pelo tamanho de uma lista vazia ou pelo número zero de estudantes.
+
+<CodePlayground
+  language="cpp"
+  title="Ordenar médias sem perder estudantes empatados"
+  code={mediasEstudantes}
+/>
+
+Saída:
+
+```text
+Ana 15.00
+Carla 15.00
+Bruno 12.00
+Global 14.00
+```
+
+Ana tem `(10 + 20) / 2 = 15`, Bruno tem `12 / 1 = 12` e Carla tem `(13 + 17) / 2 = 15`. A soma começa em `double`, por isso a divisão não perde a parte fracionária. O vetor guarda os três pares nome/média, incluindo os dois com média 15. Um `map<double, string>` usaria a média como chave única e perderia um dos estudantes empatados.
+
+O comparador põe a maior média primeiro e desempata por nome crescente. Comparar com `>` mantém a relação estrita; usar `>=` daria verdadeiro para um objeto comparado consigo próprio. O desempate por nome é uma escolha explícita deste exemplo, não uma consequência de `sort` nem uma regra atribuída à prova antiga.
+
+No fim, `(15 + 12 + 15) / 3 = 14`. Juntar todas as notas daria `72 / 5 = 14,4`: nesse cálculo, os estudantes com duas notas pesariam o dobro do que tem uma. O denominador e o peso de cada grupo vêm do contrato, não do contentor escolhido.
+
+`fixed` com `setprecision(2)` formata a impressão com duas casas decimais; não arredonda as médias guardadas antes de ordenar ou calcular o total. Se duas médias diferentes aparecerem iguais no ecrã, a ordem continua a usar os valores calculados. Para `m` estudantes e `g` notas no total, a agregação percorre as `g` notas e a ordenação faz `O(m log m)` comparações; o vetor adicional guarda `m` resumos.

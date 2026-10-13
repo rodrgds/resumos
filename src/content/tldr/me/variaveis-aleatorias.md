@@ -13,6 +13,14 @@ $$P(a<X\le b)=F_X(b)-F_X(a),\qquad P(a\le X\le b)=F_X(b)-F_X(a^-).$$
 
 Um salto da acumulada em x vale $P(X=x)$. Num modelo discreto, incluir uma fronteira pode mudar a resposta; com densidade, pontos isolados não alteram a área.
 
+Se X toma $-1,0,2$ com probabilidades $0,2;0,5;0,3$:
+
+| Pergunta                 | Valor |
+| ------------------------ | ----- |
+| $P(X<0)=F_X(0^-)$        | $0,2$ |
+| $P(X\le0)=F_X(0)$        | $0,7$ |
+| $P(X=0)=F_X(0)-F_X(0^-)$ | $0,5$ |
+
 Para $f_X(x)=cx$ em $0<x<2$ e zero fora, $\int_0^2cx\,dx=1$ dá $c=1/2$. No interior, $F_X(x)=x^2/4$ e a mediana é $\sqrt2$, não o ponto médio do suporte.
 
 ## Momentos e transformações

@@ -6,7 +6,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   gaps:
     - O Moodle específico de Projeto UP de 2026/27 não foi consultado; os materiais recolhidos são do metacurso Projeto FE/UP.
 ---
@@ -42,10 +42,12 @@ A frequência exige participação no projeto e presença em pelo menos 75% das 
 
 O programa e a avaliação atuais vêm da ficha oficial acima. Os materiais de apoio foram recolhidos no [metacurso Projeto FE/UP de 2024/25](https://moodle2425.up.pt/course/view.php?id=6550): recursos informáticos, aprendizagem eficaz, tecnologias educativas, comunicação em engenharia, comunicação visual, apresentação oral, sustentabilidade e segurança. Os nomes dos ficheiros de apresentação e segurança identificam versões de 2022 e 2023 reutilizadas nessa edição; o alojamento não prova uma nova autoria em 2024/25. As grelhas históricas orientam as explicações, sem confirmar os pesos atuais. Os materiais do Moodle específico de Projeto UP de 2026/27 não foram consultados nesta revisão.
 
+A apresentação de sustentabilidade de Ana Carla Madeira indica 20 de setembro de 2024 na capa, apesar do nome do ficheiro começar por 20240918. As técnicas de apresentação e os critérios históricos sustentam a adaptação ao público e a coerência entre método, dados e conclusão. O formulário entre pares, cujo nome identifica 2012/13, ajuda a discutir contribuições observáveis; as suas escalas e regras não substituem a ficha atual. Os novos casos de revisão dos dados e de horas de iluminação são exemplos didáticos próprios.
+
 A bibliografia obrigatória indicada na ficha atual é _Presentation Skills for Students_, de Joan van Emden e Lucinda Becker; _The Visual Display of Quantitative Information_, de Edward R. Tufte; e _How to Write Dissertations and Project Reports_, de Kathleen McMillan e Jonathan Weyers. Consulta as edições e o acesso na biblioteca através da ficha.
 
 O guia da Biblioteca FEUP [Relatórios em Engenharia](https://feup.libguides.com/releng) desenvolve pesquisa, avaliação de fontes, estrutura e citação. A versão consultada contém referências à edição 2025/26 e atualizações de 2026; estas datas não confirmam instruções da turma atual. Como apoio à pesquisa, usa os serviços da biblioteca FEUP e o catálogo ligado na ficha oficial. O [diretório de serviços da FEUP](https://sigarra.up.pt/feup/pt/uni_geral.nivel_list?pv_nivel_id=4) identifica os responsáveis pelo apoio académico, biblioteca e comunicação. Para serviços informáticos, parte do [portal UPdigital](https://www.up.pt/it).
 
-A [página de procedimentos de segurança](https://sigarra.up.pt/feup/pt/WEB_BASE.GERA_PAGINA?P_pagina=21511) foi consultada em 8 de outubro de 2026. Consulta os contactos e instruções do teu espaço em [Segurança na FEUP](https://www.fe.up.pt/emergencia). A [Agenda 2030 das Nações Unidas](https://sdgs.un.org/goals) apresenta os ODS e as respetivas metas, incluindo a [eficiência energética](https://sdgs.un.org/goals/goal7).
+A [página atual de Segurança da FEUP](https://www.up.pt/feup/pt/sobre-a-feup/vida-no-campus/seguranca/), consultada em 13 de outubro de 2026, confirma o contacto do vigilante e, numa emergência médica, a chamada direta para o 112 antes do alerta interno. Consulta os contactos e instruções do teu espaço em [Segurança na FEUP](https://www.fe.up.pt/emergencia). A [Agenda 2030 das Nações Unidas](https://sdgs.un.org/goals) apresenta os ODS e as respetivas metas, incluindo a [eficiência energética](https://sdgs.un.org/goals/goal7).
 
 :::

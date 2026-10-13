@@ -243,3 +243,46 @@ CREATE TABLE bilhetes (
 
   </div>
 </Exercise>
+
+<Exercise
+  id="referencia-par-membro"
+  revision={1}
+  title="Verificar o autor e o grupo juntos"
+  explanation="/cadeiras/lbaw/esquema-relacional/#uma-referência-a-um-par"
+  answer={{ kind: 'self', checklist: ['Mostro que duas referências independentes aceitam o par errado.', 'Declaro PK composta da pertença e FK composta obrigatória no post.', 'Identifico o bloqueio à eliminação da pertença referida.'] }}
+>
+  <div>
+
+Uma aplicação tem utilizadores 7 e 8, grupos 2 e 3 e pertenças `(utilizador_id, grupo_id)` iguais a `(7,2)` e `(8,3)`. A regra exige que a pertença do autor ao grupo continue registada enquanto houver posts desse autor nesse grupo. `posts` guarda id, autor_id e grupo_id. Duas FKs independentes para utilizadores e grupos recusam um post de 7 no grupo 3? Escreve uma restrição que garanta a combinação e diz o que acontece ao apagar `(7,2)` depois de existir um post de 7 no grupo 2.
+
+  </div>
+  <div slot="hint">
+
+A existência de cada componente não prova a existência da combinação.
+
+  </div>
+  <div slot="solution">
+
+As duas FKs aceitam 7 e 3 separadamente, embora `(7,3)` não seja uma pertença. Uma solução usa a pertença como relação referida:
+
+```sql
+CREATE TABLE membros (
+  utilizador_id INTEGER NOT NULL REFERENCES utilizadores(id),
+  grupo_id INTEGER NOT NULL REFERENCES grupos(id),
+  PRIMARY KEY (utilizador_id, grupo_id)
+);
+CREATE TABLE posts (
+  id INTEGER PRIMARY KEY,
+  autor_id INTEGER NOT NULL,
+  grupo_id INTEGER NOT NULL,
+  FOREIGN KEY (autor_id, grupo_id)
+    REFERENCES membros(utilizador_id, grupo_id)
+);
+```
+
+A PK composta fornece a unicidade do par; a FK exige esse mesmo par, na mesma ordem, e os dois NOT NULL impedem escapar por um componente ausente. `(7,3)` é recusado; `(7,2)` passa.
+
+Com a ação predefinida, apagar a pertença `(7,2)` é recusado enquanto o post a referir. Isso cumpre a regra dada. Se a regra real só exigir pertença **no momento de publicar**, esta restrição é mais forte: impediria sair do grupo conservando os posts. É preciso decidir o ciclo de vida, por exemplo conservar uma pertença histórica inativa e controlar a autorização de novas publicações, em vez de escolher CASCADE e apagar os posts sem justificação.
+
+  </div>
+</Exercise>

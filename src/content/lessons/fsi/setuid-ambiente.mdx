@@ -16,6 +16,10 @@ editorial:
       url: https://man7.org/linux/man-pages/man2/execve.2.html
     - title: Linux man-pages, system(3)
       url: https://man7.org/linux/man-pages/man3/system.3.html
+    - title: Linux man-pages, setuid(2)
+      url: https://man7.org/linux/man-pages/man2/setuid.2.html
+    - title: Linux man-pages, seteuid(2)
+      url: https://man7.org/linux/man-pages/man2/seteuid.2.html
   coverage: Explicação dos mecanismos trabalhados nas Tasks 1–6, 8 e 9, com cenários próprios.
   gaps:
     - O ambiente SEED privilegiado não é executado pelo navegador.
@@ -47,6 +51,22 @@ O UID real identifica normalmente o utilizador que iniciou o processo. O UID efe
 Isto depende das condições de execução. Montagens `nosuid`, `no_new_privs` e outras restrições podem impedir o efeito Set-UID. Também não se deve extrapolar de um binário para um script interpretado: Linux ignora Set-UID no script.
 
 O ambiente continua a exigir análise. O carregador dinâmico filtra variáveis como `LD_PRELOAD` em execução segura; isso não significa que todas as variáveis externas sejam removidas. O programa privilegiado precisa de controlar os valores que usa para decidir operações.
+
+### UID guardado e redução de privilégios
+
+O **UID guardado**, ou saved set-user-ID, permite certas mudanças posteriores do UID efetivo. Em Linux com glibc atual, `seteuid(u)` muda apenas o efetivo, preservando o real e o guardado. Já `setuid(u)`, quando o processo tem a autoridade `CAP_SETUID`, muda os três. Sem essa autoridade, `setuid` não tem o mesmo efeito geral: as mudanças permitidas dependem dos UIDs atuais.
+
+Segue duas alternativas independentes, ambas a partir de um binário Set-UID de root iniciado pelo utilizador 1000. As chamadas indicadas têm sucesso, e não há outra autoridade que permita mudar UIDs:
+
+| Estado                                  | Real | Efetivo | Guardado |
+| --------------------------------------- | ---: | ------: | -------: |
+| Inicial                                 | 1000 |       0 |        0 |
+| Após `seteuid(1000)`                    | 1000 |    1000 |        0 |
+| Após `setuid(1000)` a partir do inicial | 1000 |    1000 |     1000 |
+
+Na primeira alternativa, `seteuid(0)` pode recuperar o efetivo 0 porque este continua guardado. Na segunda, essa chamada já não é permitida apenas pelos UIDs: o 0 deixou de ser real, efetivo ou guardado. Uma redução temporária não cumpre um pedido de abandono permanente de privilégios.
+
+Verifica sempre o resultado das chamadas, mesmo a partir de root. Analisa separadamente grupos, Linux capabilities e recursos já abertos. Mudar os três UIDs não fecha descritores, como veremos a seguir.
 
 ## PATH e interpretação pela shell
 

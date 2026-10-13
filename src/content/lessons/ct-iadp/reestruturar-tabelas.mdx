@@ -17,8 +17,9 @@ editorial:
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import longaCsv from '../../ct-iadp/longa.csv?raw';
+import Bracket from '../../../components/Bracket.astro';
 
-Tens quatro vendas com cidade, produto e quantidade. Para um relatório por cidade, precisas de uma linha por cidade. Para comparar produtos lado a lado, precisas de uma coluna por produto. Reestruturar muda a disposição sem mudar o significado dos valores.
+Tens quatro vendas com cidade, produto e quantidade. Para um relatório por cidade, precisas de uma linha por cidade, enquanto para comparar produtos lado a lado precisas de uma coluna por produto. Reestruturar muda a disposição sem mudar o significado dos valores.
 
 | Cidade | Produto | Quantidade |
 | ------ | ------- | ---------- |
@@ -27,7 +28,7 @@ Tens quatro vendas com cidade, produto e quantidade. Para um relatório por cida
 | Braga  | pão     | 5          |
 | Braga  | leite   | 1          |
 
-No formato **longo**, uma coluna identifica o produto e outra guarda a quantidade. No formato **largo**, cada produto é uma coluna. Antes de escolheres a operação, escreve que colunas identificam uma observação e qual é a medida.
+No formato **longo**, uma coluna identifica o produto e outra guarda a quantidade, enquanto no formato **largo** cada produto é uma coluna. Antes de escolheres a operação, escreve que colunas identificam uma observação e qual é a medida.
 
 ## Longo para largo com pivot
 
@@ -49,7 +50,11 @@ No formato **longo**, uma coluna identifica o produto e outra guarda a quantidad
 
 Segue a quantidade 5: a linha longa `(Braga, pão, 5)` passa à interseção da linha Braga com a coluna pão. O produto deixa de ser um valor repetido numa coluna e passa a identificar a coluna da medida. O total de quantidades continua a ser `2 + 3 + 5 + 1 = 11`. Estes dados têm leite em Braga, enquanto a tabela geral do percurso tem arroz.
 
-Para `pivot`, cada par cidade-produto precisa de um único valor. Se houver duas vendas de pão no Porto, a posição tem dois candidatos e pandas lança um erro. Decide primeiro: somar as vendas, calcular a média ou conservar outra dimensão que as distinga.
+<Bracket label="Ideia-chave">
+
+`pivot` muda a posição dos valores, não decide como os combinar. Cada par cidade-produto precisa de um único valor, mesmo que duas vendas tenham quantidades iguais. Para somar ou calcular a média, usa uma agregação explícita; para conservar as duas vendas, mantém um identificador que as distinga.
+
+</Bracket>
 
 ## Largo para longo com melt
 
@@ -62,11 +67,11 @@ Para `pivot`, cada par cidade-produto precisa de um único valor. Se houver duas
   }
 />
 
-`melt` conserva as colunas `id_vars` e transforma as restantes em pares variável-valor. `var_name` dá nome à coluna com o nome antigo da medida. `value_name` dá nome à coluna com o valor. Cada linha inicial origina duas linhas, uma por produto. O resultado tem quatro linhas.
+`melt` conserva as colunas `id_vars` e transforma as restantes em pares variável-valor. `var_name` dá nome à coluna com o nome antigo da medida e `value_name` dá nome à coluna com o valor. Cada linha inicial origina duas linhas, uma por produto, e o resultado tem quatro linhas.
 
 ## stack e unstack
 
-`stack` move um nível dos nomes de colunas para o índice de linhas. `unstack` move um nível do índice para as colunas. Isto produz ou usa um **MultiIndex**, um índice com vários níveis.
+`stack` move um nível dos nomes de colunas para o índice de linhas e `unstack` move um nível do índice para as colunas. Isto produz ou usa um **MultiIndex**, um índice com vários níveis.
 
 ```python
 serie = longa.set_index(["cidade", "produto"])["quantidade"]
@@ -77,4 +82,4 @@ Agora o par cidade-produto identifica cada valor da Series. Ao deslocar produto 
 
 ## O que não é uma reestruturação
 
-`df.T` troca linhas por colunas, mas não resolve uma chave duplicada nem calcula totais. `rename` muda nomes sem mudar a disposição. `merge` associa observações entre tabelas. Depois de reestruturares, confere o número de valores e uma célula concreta no resultado.
+`df.T` troca linhas por colunas, mas não resolve uma chave duplicada nem calcula totais. `rename` muda nomes sem mudar a disposição e `merge` associa observações entre tabelas. Depois de reestruturares, confere o número de valores e uma célula concreta no resultado.

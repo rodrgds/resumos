@@ -42,6 +42,8 @@ Journey Map: etapas, ações, motivos, experiência e pontos de contacto, com ev
 
 Affordance é possibilidade de ação; significante comunica-a; mapping liga controlo a efeito; feedback responde à ação. Heurísticas: estado, mundo real, controlo/liberdade, consistência, prevenção, reconhecimento, eficiência, minimalismo, recuperação e ajuda. Justifica cada falha com tarefa, comportamento, consequência e alteração. [Explicação](/cadeiras/ipc/principios-usabilidade/).
 
+Ideação: esboçar individualmente e em paralelo antes de discutir e selecionar; Crazy 8 gera oito ideias distintas em oito minutos. Selecionar exige necessidades e hipóteses, não só votos.
+
 Horizontal: amplo e pouco profundo. Vertical: restrito e profundo. Fidelidade é outro eixo. Wizard of Oz simula comportamento; não prova o algoritmo real. [Explicação](/cadeiras/ipc/prototipagem/).
 
 ## Escolher e analisar uma avaliação
@@ -57,10 +59,12 @@ Horizontal: amplo e pouco profundo. Vertical: restrito e profundo. Fidelidade é
 Protocolo mínimo: tarefa verificável, critério de sucesso, ajuda permitida, limite de tempo e registo. Walkthrough: objetivo do passo, ação disponível, relação ação/objetivo e progresso depois da ação. Formativa melhora desenho; sumativa avalia resultados. Definir sucesso, ajuda e limite de tempo antes do teste. Não contar interrupção como tempo de conclusão. [Explicação](/cadeiras/ipc/avaliacao-usabilidade/).
 
 - Atitudinal: o que dizem/sentem. Comportamental: o que fazem. Qualitativo/quantitativo é outro eixo.
+- No projeto de 2026/27: comparar redesenho com funcionalidade original, ou duas alternativas para uma função nova. Manter objetivo e condições comparáveis.
 - Entre participantes: pessoas diferentes por condição. Intra: as mesmas; controlar aprendizagem/ordem. Independente é condição; dependente é medida.
 - Média e mediana não são iguais; declarar falhas e dispersão. Correlação não prova causalidade.
 - Ética: consentimento informado, saída sem penalização, proteção dos dados e riscos proporcionados; pseudonimização não garante anonimato.
 - SUS padrão: ímpares $r_i-1$, pares $5-r_i$; somar e multiplicar por 2,5. Índice de 0 a 100, não percentagem de sucesso.
+- IC face a requisito: usar intervalo do parâmetro pedido. Para média inferior a 60 s, intervalo todo abaixo sustenta cumprimento; todo acima, incumprimento; atravessar ou tocar o limiar não sustenta a desigualdade estrita.
 - Valor-p não é probabilidade de a hipótese nula ser verdadeira; ausência de significância não prova igualdade. Emparelhado: analisar diferenças por pessoa; IC da diferença média com $t$ e $s_d$. [Explicação](/cadeiras/ipc/estudos-utilizadores/).
 
 ## Acessibilidade e ajuda

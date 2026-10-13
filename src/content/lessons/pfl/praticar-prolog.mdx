@@ -78,11 +78,11 @@ import Exercise from '../../../components/Exercise.astro';
   }}
 >
   <div>
-    Um máximo tem a primeira regra max(X,Y,X) :- X&gt;=Y, !. e uma segunda sem
-    guarda max(_,Y,Y). O corte é verde em max(+,+,-)?
+    Um máximo tem a primeira regra maximo(X,Y,X) :- X&gt;=Y, !. e uma segunda
+    sem guarda maximo(_,Y,Y). O corte é verde em maximo(+,+,-)?
   </div>
   <div slot="hint">
-    <p>Remove o corte e consulta max(7,5,M).</p>
+    <p>Remove o corte e consulta maximo(7,5,M).</p>
   </div>
   <div slot="solution">
     <div>
@@ -154,4 +154,61 @@ A segunda guarda recusa `maximo(7,5,5)` e permite `maximo(3,5,M)` com `M=5`. Ret
 
   </div>
   <div slot="mistakes">Um corte não protege uma cláusula que o motor nem chegou a usar.</div>
+</Exercise>
+
+<Exercise
+  id="negacao-progenitor-comum"
+  revision={1}
+  title="Colocar o progenitor dentro da negação"
+  explanation="/cadeiras/pfl/prolog-recursao-procura/#negar-a-existência-de-um-irmão"
+  answer={{ kind: 'self', checklist: ['Mostro a resposta errada ana pela alternativa ines.', 'Obtenho rui uma só vez na versão corrigida.', 'Nego a existência de qualquer progenitor partilhado.'] }}
+>
+  <div>
+
+A base da lição tem `crianca(ana)`, `crianca(bruno)` e `crianca(rui)`, um facto por criança. Tomás é progenitor de Ana e Bruno; Inês apenas de Ana; José e Maria apenas de Rui. Analisa `mau(P) :- progenitor(M,P), \+ (progenitor(M,O), O \= P).`. Calcula todas as respostas na ordem destes factos e corrige-o para enumerar cada criança sem irmãos no máximo uma vez. Os registos desta base finita são completos para estas três crianças.
+
+  </div>
+  <div slot="solution">
+
+A primeira tentativa de Ana por Tomás encontra Bruno e falha. A tentativa por Inês não encontra outra criança e aceita Ana erradamente. Rui passa por José e volta a passar por Maria. As respostas são `[ana,rui,rui]`.
+
+```prolog
+sem_irmaos(P) :-
+    crianca(P),
+    \+ (progenitor(M,P), progenitor(M,O), O \= P).
+```
+
+A correção enumera `[rui]`: Ana e Bruno têm um progenitor comum. P fica instanciado antes da negação, e M e O só procuram uma testemunha interior. A pergunta é «não existe qualquer progenitor partilhado», em vez de «existe um progenitor sem outra criança».
+
+Um corte colocado depois de gerar o primeiro P eliminaria candidatos posteriores; não corrige a posição dos quantificadores.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="todos-ids-existem"
+  revision={1}
+  title="Não deixar desaparecer um id desconhecido"
+  explanation="/cadeiras/pfl/prolog-recursao-procura/#exigir-existência-em-cada-elemento-da-lista"
+  answer={{ kind: 'self', checklist: ['Recuso 99 mesmo quando não aparece em video/2.', 'Valido o utilizador e cada cabeça antes de recursar.', 'Aceito lista vazia apenas no âmbito de um utilizador registado.'] }}
+>
+  <div>
+
+Na base da lição, Ana pode ver 10 e 11, mas não 12. Não existe vídeo 99. O predicado `incompleto` procura uma violação apenas entre os vídeos existentes. Calcula as respostas para `[10,11]`, `[12]`, `[99]` e `[]`. Define uma versão recursiva que exige utilizador registado e existência e permissão de todos os vídeos pedidos, sem `findall`, `bagof` ou `setof`.
+
+  </div>
+  <div slot="solution">
+
+O incompleto aceita `[10,11]`, recusa `[12]`, aceita erradamente `[99]` e aceita `[]`. Com 99, `video(99,D)` falha antes de testar acesso, logo não há violação que faça a negação exterior falhar.
+
+```prolog
+pode_ver(U,V) :- video(V,D), (D=U ; segue(U,D)).
+todos_visiveis(U,Vs) :- utilizador(U), todos(U,Vs).
+todos(_,[]).
+todos(U,[V|Vs]) :- pode_ver(U,V), todos(U,Vs).
+```
+
+A versão completa aceita a primeira lista, recusa 12 e 99 e aceita a lista vazia para Ana. Um utilizador ausente falha mesmo com lista vazia. A cabeça tem de existir e passar antes de verificar a cauda; listas finitas de ids instanciados e a base finita garantem este percurso de terminação.
+
+  </div>
 </Exercise>

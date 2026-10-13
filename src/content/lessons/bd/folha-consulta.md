@@ -43,6 +43,8 @@ Pode haver 3FN sem BCNF: $AB\to C$, $C\to B$, candidatas AB e AC. C não é supe
 | BCNF               | Pela violação $X\to Y$, separa $X\cup Y$ e $R-(Y-X)$; projeta e repete.                                          |
 | Síntese 3FN        | Cobertura mínima, relação por DF, retira esquemas contidos e acrescenta candidata se nenhuma relação a contiver. |
 
+A síntese tem de cobrir todos os atributos, incluindo os ausentes das DFs, e conter uma candidata. Recuperar uma coluna sem conservar as suas combinações não garante junção sem perda.
+
 O algoritmo de decomposição BCNF garante junção sem perda, mas pode perder preservação. Cobertura mínima: separa direitas, reduz esquerdas, retira DFs redundantes. Para testar redundância de uma DF, retira-a antes do fecho. No chase, mostra os tableaux sucessivos: cada unificação muda símbolos até estabilizar. [Decomposição](/cadeiras/bd/decomposicao/#decompor-até-bcnf).
 
 ## Álgebra relacional
@@ -85,7 +87,11 @@ Divisão: candidatos $\pi_X(R)$; faltas $(\pi_X(R)\times S)-R$; retira candidato
 
 CTE dura uma instrução. Recursão tem parte inicial, passo e prova de terminação. `UNION` elimina tuplos completos, não apenas o id; acrescentar profundidade pode impedir a eliminação de ciclos. D'Hondt: recursão só gera divisores 1..M; quocientes por produto cartesiano; top M com desempate explícito. [Recursão](/cadeiras/bd/sql-recursao/#divisores-e-distribuição-de-mandatos).
 
+Contagens em níveis diferentes usam agregações separadas antes da junção. Máximos por grupo exigem correlação pelo grupo; `LIMIT 1` global não escolhe um máximo de cada grupo. Ao reunir origens, conserva `(tipo,id)` como identidade. Para A superar B em todos os grupos, procura um grupo sem comparação verdadeira, incluindo empate, desconhecido e resultado ausente. [CTEs](/cadeiras/bd/sql-recursao/#comparar-contagens-de-níveis-diferentes).
+
 Vista virtual guarda uma pergunta; materializada guarda resultados. SQLite atualiza vistas através de `INSTEAD OF`, não automaticamente. Gatilhos SQLite são por linha: INSERT tem NEW, DELETE tem OLD, UPDATE tem ambos. `UPDATE OF` não prova mudança de valor. Prefere restrições declarativas. [Vistas e gatilhos](/cadeiras/bd/vistas-gatilhos-acessos/#gatilhos-evento-condição-e-ação).
+
+Validar compatibilidade e stock pode exigir `BEFORE`; debitar a inserção aceite usa `AFTER`. `ABORT` desfaz o lote inteiro e os seus gatilhos. Na mudança de quantidade da mesma reserva, usa disponibilidade `stock + OLD.qtd` e variação `OLD.qtd - NEW.qtd`. Gatilhos de inserção não tratam alterações e eliminações. [Stock](/cadeiras/bd/vistas-gatilhos-acessos/#validar-compatibilidade-e-reservar-stock).
 
 SQLite não tem `GRANT`/`REVOKE`/RLS. PostgreSQL separa privilégios, papéis e políticas por linha. RLS não concede privilégios; proprietário, superutilizador e `BYPASSRLS` têm regras de exceção. Parâmetros separam dados de código. [Acessos](/cadeiras/bd/vistas-gatilhos-acessos/#autenticação-e-autorização).
 

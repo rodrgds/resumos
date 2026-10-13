@@ -15,6 +15,9 @@ editorial:
 ---
 
 import Exercise from '../../../components/Exercise.astro';
+import CodeSnippet from '../../../components/CodeSnippet.astro';
+import substExpr from '../../pfl/examples/subst-expr.hs?raw';
+import binRosa from '../../pfl/examples/bin-rosa.hs?raw';
 
 <Exercise
   id="altura"
@@ -142,4 +145,52 @@ A travessia dá `[1,2,3,3]`. Procurar `4` passa pela raiz `3`, pelo `3` à direi
 
   </div>
   <div slot="mistakes">Uma igualdade segue para a direita pela convenção desta função; não significa eliminar o duplicado.</div>
+</Exercise>
+
+<Exercise
+  id="subst-preserva-variavel"
+  revision={1}
+  title="Substituir sem inventar valores"
+  explanation="/cadeiras/pfl/tipos-algebricos-recursao/#substituir-variáveis-conservando-a-expressão"
+  answer={{ kind: 'self', checklist: ['Trato os quatro construtores de ExprVar.', 'Conservo y porque não existe no ambiente.', 'Uso a primeira ligação de x e conservo a estrutura.'] }}
+>
+  <div>
+
+Com `ExprVar` da lição, define `subst` para substituir variáveis pelo ambiente, conservando as ausentes. Calcula a aplicação com ambiente `[("x",7),("x",9)]` e expressão `Mult (Add (Var "x") (Const 2)) (Var "y")`. O resultado é um número? Justifica a política para o nome repetido.
+
+  </div>
+  <div slot="solution">
+
+A função tem um caso por construtor:
+
+<CodeSnippet language="haskell" code={substExpr} />
+
+`lookup "x"` encontra a primeira ligação, 7. Não encontra y, que permanece uma variável. A resposta é `Mult (Add (Const 7) (Const 2)) (Var "y")`, uma expressão, não um número. Nem a soma 7+2 é calculada por `subst`: a tarefa conserva os construtores e transforma as folhas.
+
+A recursão trata os dois filhos de cada operação. Uma versão que só trate `Const` deixa os restantes padrões sem resposta; uma que substitua uma variável ausente por zero muda o significado da expressão.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="binaria-para-rosa"
+  revision={1}
+  title="Conservar ramos ao mudar de representação"
+  explanation="/cadeiras/pfl/tipos-algebricos-recursao/#converter-uma-árvore-para-outro-tipo"
+  answer={{ kind: 'self', checklist: ['Transformo Folha em Rosa sem filhos.', 'Conservo esquerda e direita nessa ordem.', 'Não acrescento restrições de classe que a função não usa.'] }}
+>
+  <div>
+
+Usa `Bin a` e `Rosa a` da lição. Define `paraRosa` e converte `Ramo (Folha 'a') 'b' (Ramo (Folha 'c') 'd' (Folha 'e'))`. Indica os filhos de b e d. São necessárias restrições `Ord a` ou `Eq a`? A função também pode devolver qualquer árvore rosa como conversão de uma binária?
+
+  </div>
+  <div slot="solution">
+
+<CodeSnippet language="haskell" code={binRosa} />
+
+A resposta é `Rosa 'b' [Rosa 'a' [], Rosa 'd' [Rosa 'c' [], Rosa 'e' []]]`. Os filhos de b são a e d, nessa ordem; os de d são c e e. As folhas têm listas de filhos vazias. A função transporta valores sem os comparar, por isso não precisa de classes.
+
+Esta imagem da conversão só contém nós com zero ou dois filhos. O tipo `Rosa a` permite também um ou três filhos, que nenhuma entrada deste tipo `Bin a` produz. Converter estruturas não implica que os dois tipos sejam isomorfos.
+
+  </div>
 </Exercise>

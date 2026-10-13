@@ -18,6 +18,8 @@ A **variação relativa** divide a diferença pela referência. Com referência 
 - Planeia a partir do prazo, respeitando dependências: dados e figura verificados antes dos diapositivos; diapositivos completos antes do ensaio.
 - Cada tarefa precisa de responsável, prazo e resultado que outro membro consiga usar. Reserva tempo para integração e revisão conjunta.
 - Regista decisões, próximos passos e bloqueios antes do prazo. A divisão por secções não dispensa compreender o trabalho completo.
+- Uma correção dos dados exige validar a origem, conservar registos e atualizar contas, figuras e conclusões no relatório, poster e diapositivos. Confere também os ficheiros exportados.
+- Se, noutro ensaio, A passa a 0,82 J e B fica em 0,84 J, a diferença é 0,02 J e cerca de 2,44% face a A. Um poster com os antigos 5% ainda não está integrado.
 - Dá feedback com comportamento observado, efeito e mudança proposta. Fundamenta a avaliação entre pares em contribuições verificáveis, não no tempo de fala.
 
 [Contas e planeamento completos](/cadeiras/pup/aprendizagem-equipa/#comparar-números).

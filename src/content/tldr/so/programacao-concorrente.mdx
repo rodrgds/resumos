@@ -7,6 +7,7 @@ Threads têm registos e pilhas próprios, mas partilham espaço de endereçament
 
 - `pthread_create` chama uma função `void *f(void *)`. Passa estruturas distintas por thread, vivas e sem alterações concorrentes até aos joins.
 - `pthread_join` espera pela thread e recolhe o retorno. Não devolvas um apontador para a pilha da thread; usa um bloco reservado com dono definido ou outro objeto ainda vivo.
+- Retornar da função inicial ou chamar `pthread_exit` termina essa thread. `exit` e o retorno de `main` terminam o processo inteiro, incluindo as outras threads.
 - Leitura e escrita concorrentes incompatíveis num objeto C não atómico, sem sincronização, são uma **data race**, com comportamento indefinido. Não há uma lista garantida de resultados possíveis.
 - `volatile` não cria atomicidade nem sincronização. Protege também leituras enquanto houver escritores.
 
@@ -53,5 +54,12 @@ Excerto de consumidor, assumindo sucesso das operações e dados protegidos pelo
 - O produtor espera enquanto cheio, insere e sinaliza `nao_vazio`; mantém $0\leq quantidade\leq CAPACIDADE$.
 - Para terminar vários consumidores, protege uma flag de fim pelo mesmo mutex, espera enquanto vazio e não terminado e usa `broadcast` para todos observarem o fim.
 - Sinalizar apenas na transição vazio→não vazio pode deixar vários consumidores adormecidos apesar de haver itens. O protocolo precisa de atender ao número de consumidores.
+
+## Monitores e leitores/escritores
+
+- Retoma imediata, Hoare, entrega o monitor à tarefa sinalizada. Retoma diferida, Mesa, deixa o sinalizador continuar; a tarefa acordada reavalia o predicado. Pthreads exige `while` e admite despertares espúrios.
+- Leitores/escritores permite vários leitores ou um escritor exclusivo. Preferência por leitores pode deixar um escritor em inanição; preferência estrita por escritores pode prejudicar leitores. Segurança não prova justiça.
+
+[Semânticas dos monitores](/cadeiras/so/programacao-concorrente/#monitores-com-retoma-imediata-e-diferida).
 
 [Fila e eventos durante cond_wait](/cadeiras/so/programacao-concorrente/#esperar-por-uma-condição).

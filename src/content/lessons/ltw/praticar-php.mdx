@@ -181,3 +181,86 @@ Não presumir que filtrar renumera a lista, nem testar a posição com if sem co
 
 </div>
 </Exercise>
+
+<Exercise
+  id="ltw-global-captura-pedido"
+  revision={1}
+  title="Distinguir captura de estado global"
+  explanation="/cadeiras/ltw/php-dinamicas-bd/#âmbito-global-e-captura-de-uma-variável"
+  answer={{ kind: 'self', checklist: ['Obtive 0 3 3 e distingui as duas capturas.', 'Identifiquei global como acesso à variável exterior.', 'Expliquei por que um novo pedido não recupera este total sem persistência.'] }}
+>
+  <div>
+
+Prevê os três valores escritos. O ficheiro é executado desde o início em cada pedido e não usa sessão, ficheiro nem base de dados. Um novo pedido começa no total 3?
+
+```php
+<?php
+$total = 0;
+function somar(int $valor): void {
+    global $total;
+    $total += $valor;
+}
+$antes = function () use ($total) { return $total; };
+$agora = function () use (&$total) { return $total; };
+somar(3);
+echo $antes(), ' ', $agora(), ' ', $total;
+```
+
+Refatora o cálculo para uma função que receba total e valor e devolva a soma, sem alterar uma global. Indica a atribuição que atualiza o total no chamador.
+
+  </div>
+  <div slot="solution">
+
+A saída é `0 3 3`. `somar` liga o nome local à global e deixa-a em 3. A closure `antes` conservou 0 na criação; `agora` refere a variável agora igual a 3. A terceira leitura é da mesma global.
+
+Um novo pedido volta a executar `$total = 0` e não recupera o valor anterior. A global é estado do programa desse pedido, não estado persistente do utilizador.
+
+```php
+function somado(int $total, int $valor): int {
+    return $total + $valor;
+}
+$total = somado($total, 3);
+```
+
+A função só calcula. A atribuição no chamador torna explícito que valor é atualizado. Nem uma variável com o mesmo nome numa função nem uma captura por valor criam acesso automático à global.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="ltw-foreach-vinculo"
+  revision={1}
+  title="Um percurso de leitura que altera a última posição"
+  explanation="/cadeiras/ltw/php-dinamicas-bd/#terminar-uma-referência-de-foreach"
+  answer={{ kind: 'self', checklist: ['Obtive [4,8,8] e segui a referência à última posição.', 'Coloquei unset depois do ciclo por referência.', 'Conservei [4,8,12] na leitura corrigida.'] }}
+>
+  <div>
+
+Prevê o array escrito e explica por que o segundo ciclo o altera, apesar de não ter `&` na sua declaração. Corrige o programa para conservar todos os valores duplicados pelo primeiro ciclo.
+
+```php
+<?php
+$valores = [2, 4, 6];
+foreach ($valores as &$valor) {
+    $valor *= 2;
+}
+foreach ($valores as $valor) {
+    // Apenas pretendemos percorrer os valores.
+}
+echo json_encode($valores);
+```
+
+  </div>
+  <div slot="hint">
+
+O segundo ciclo também atribui valores ao nome que recebe cada elemento.
+
+  </div>
+  <div slot="solution">
+
+Depois do primeiro ciclo, o array é `[4,8,12]`, e `$valor` continua a referir a sua última posição. No segundo, atribuir 4 a esse nome deixa o último elemento em 4; atribuir 8 deixa-o em 8. A última iteração lê essa posição já alterada, que vale 8. A saída é `[4,8,8]`.
+
+Coloca `unset($valor);` imediatamente depois do primeiro ciclo. O segundo passa então a usar uma variável independente e conserva `[4,8,12]`. Usar outro nome no segundo ciclo evitaria esta alteração concreta, mas deixaria a referência pendente para o código posterior. Não apagues `$valores[2]`: o objetivo é terminar o vínculo, não perder uma nota.
+
+  </div>
+</Exercise>

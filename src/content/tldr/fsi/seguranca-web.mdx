@@ -10,12 +10,18 @@ Uma origem é **esquema, host e porta efetiva**. Caminhos distintos podem ter a 
 
 A política da mesma origem restringe leituras entre origens, não todos os pedidos. CORS concede determinadas leituras; não substitui autorização no servidor nem impede todos os clientes de construir pedidos.
 
+**XS-Leaks** inferem dados por sinais como `load`/`error`, sem ler o corpo. Imagem com sessão e HTML sem sessão podem revelar o estado se cookies e incorporação o permitirem. SOP e HTTPS não eliminam esse sinal; impede a incorporação relevante ou retira a diferença observável.
+
+Preflight CORS depende do pedido, não de ausência de efeitos no servidor. Frames cross-origin têm acesso ao DOM restringido, mas podem comunicar por `postMessage`, validando origem, remetente e dados.
+
 ## Sessões e autenticação
 
 <Mermaid
   source={sessao}
   alt="Login cria sessão e entrega cookie. O pedido devolve o cookie; o servidor procura a sessão e ainda precisa de autorizar a operação concreta."
 />
+
+SameSite é definido pelo servidor em `Set-Cookie` e aplicado pelo navegador. `Sec-Fetch-*` é produzido pelo navegador no pedido; ajuda a avaliar contexto, mas não autoriza objetos.
 
 Usa identificadores imprevisíveis, fora de URLs e logs. Renova após login, expira e invalida no servidor. Apagar só o cookie não invalida uma cópia roubada.
 
@@ -27,15 +33,21 @@ Usa identificadores imprevisíveis, fora de URLs e logs. Renova após login, exp
 
 Palavras-passe exigem função de derivação adequada, como Argon2id, com sal distinto e custo apropriado. O sal pode ser público. Hash rápido e cifra reversível não cumprem o objetivo. MFA combina categorias independentes; duas palavras-passe são o mesmo fator. Protege também a recuperação.
 
+Sal não impede reutilização da palavra-passe noutro serviço. U2F usa chave privada num autenticador e resposta a desafio ligada ao serviço, verificada pela pública registada; não é sinónimo de qualquer MFA.
+
 Um MAC de mensagem antiga não prova presença atual. Desafio-resposta precisa de nonce novo, prova ligada a identidade, papéis e contexto, aceitação só do desafio pendente e invalidação após uso.
 
 ## Biometria
 
 No modelo de tentativas de autenticação:
 
-$$FAR=\frac{\text{impostores aceites}}{\text{tentativas de impostores}},\quad FRR=\frac{\text{legítimos rejeitados}}{\text{tentativas legítimas}}.$$
+$$FAR=\frac{\text{impostores aceites}}{\text{tentativas de impostores}}.$$
+
+$$FRR=\frac{\text{legítimos rejeitados}}{\text{tentativas legítimas}}.$$
 
 Oito aceitações em 10 000 tentativas de impostores dão FAR de 0,08%; vinte rejeições em 500 legítimas dão FRR de 4%. FAR não é a fração de aceitações pertencente a impostores. Um limiar mais exigente tende a reduzir FAR e aumentar FRR. Declara o ensaio e distingue erros de comparação FMR/FNMR dos erros do sistema. Biometria exposta não é um segredo facilmente substituível.
+
+FAR igual a FRR é uma referência de comparação, não uma regra de escolha do limiar: os custos de cada erro e o contexto podem ser diferentes.
 
 ## XSS, CSP e SRI
 

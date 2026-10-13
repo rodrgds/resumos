@@ -2,9 +2,16 @@
 title: Praticar indução estrutural
 description: Conjuntos gerados, comprimento de map e os dois requisitos de uma ordenação.
 section: exercicios
+editorial:
+  basedOn: 2024/25
+  sources:
+    - title: Aula de indução, provas de programas, Moodle MD 2024/25
+      url: https://moodle2425.up.pt/mod/resource/view.php?id=109486
 ---
 
 import Exercise from '../../../components/Exercise.astro';
+import CodeSnippet from '../../../components/CodeSnippet.astro';
+import insertionSort from '../../md/examples/insertion-sort.hs?raw';
 
 <Exercise
   id="md-recursivo-menor-conjunto"
@@ -92,13 +99,24 @@ Não precisas de f ser injetiva. Valores repetidos continuam a ocupar posições
 
 <Exercise
   id="md-insertion-sort-prova"
-  revision={1}
+  revision={2}
   title="Justificar uma ordenação"
   explanation="/cadeiras/md/inducao-estrutural/#provar-que-uma-ordenação-ordena"
-  answer={{"kind": "self", "checklist": ["Exigi que insert preserve ordenação quando recebe uma lista ordenada.", "Exigi que acrescente exatamente uma ocorrência do elemento.", "Usei ambas as propriedades no passo estrutural de sort."]}}
+  answer={{"kind": "self", "checklist": ["Exigi que insert preserve ordenação quando recebe uma lista ordenada.", "Provei o lema das contagens nos dois ramos de insert.", "Usei o lema na prova das contagens de sort e distingui-a da ordenação."]}}
 >
 
-Numa ordenação por inserção, $\operatorname{sort}([])=[]$ e $\operatorname{sort}(x:xs)=\operatorname{insert}(x,\operatorname{sort}(xs))$. Que duas propriedades de insert são necessárias para provar que `sort` devolve uma lista ordenada com os mesmos elementos e multiplicidades?
+Considera esta ordenação por inserção, sobre listas finitas cujos elementos têm uma ordem total:
+
+<CodeSnippet language="haskell" code={insertionSort} />
+
+Prova por indução nas listas que, para cada valor $v$,
+
+$$
+\operatorname{conta}_v(\operatorname{insert}(x,ys))
+=\operatorname{conta}_v(ys)+\mathbf 1_{v=x},
+$$
+
+com $\operatorname{conta}_v([])=0$ e $\operatorname{conta}_v(y:ys)=\mathbf 1_{v=y}+\operatorname{conta}_v(ys)$. O indicador é 1 quando a igualdade é verdadeira e 0 quando é falsa. Usa depois esse lema para provar que `sort` conserva todas as multiplicidades. Que outra propriedade falta para concluir a correção da ordenação?
 
 <div slot="hint">
 
@@ -108,7 +126,26 @@ Ordenada não significa necessariamente uma permutação da entrada.
 
 <div slot="solution">
 
-Os lemas são: se $ys$ está ordenada, $\operatorname{insert}(x,ys)$ está ordenada; e, para cada valor $v$, a sua multiplicidade no resultado é a de $ys$ mais 1 se $v=x$, ou mais 0 caso contrário. Base: [] está ordenada e conserva as multiplicidades vazias. Passo: pela hipótese, `sort xs` está ordenada e conserva xs. O primeiro lema prova ordenação após inserir x; o segundo repõe exatamente a ocorrência de $x$ que foi separada: a contagem de $x$ em $\operatorname{sort}(xs)$ mais 1 iguala a contagem em $x:xs$, e as restantes ficam iguais.
+O lema das contagens prova-se por indução em $ys$, com $x,v$ arbitrários. Na base, `insert x [] = [x]`, que tem $\mathbf 1_{v=x}$ ocorrências de $v$.
+
+No passo $ys=y:zs$:
+
+- Se $x\le y$, `insert x (y:zs) = x:y:zs`. A contagem é $\mathbf 1_{v=x}+\mathbf 1_{v=y}+\operatorname{conta}_v(zs)$, a contagem de $ys$ mais $\mathbf 1_{v=x}$.
+- Se $x>y$, o resultado é `y : insert x zs`. A hipótese para a cauda dá $\mathbf 1_{v=y}+\operatorname{conta}_v(zs)+\mathbf 1_{v=x}$, o mesmo valor pedido.
+
+Para `sort`, a base devolve `[]` e conserva todas as contagens. No passo, usando o lema e depois a hipótese para `xs`:
+
+$$
+\begin{aligned}
+\operatorname{conta}_v(\operatorname{sort}(x:xs))
+&=\operatorname{conta}_v(\operatorname{insert}(x,\operatorname{sort}(xs)))\\
+&=\operatorname{conta}_v(\operatorname{sort}(xs))+\mathbf 1_{v=x}\\
+&=\operatorname{conta}_v(xs)+\mathbf 1_{v=x}\\
+&=\operatorname{conta}_v(x:xs).
+\end{aligned}
+$$
+
+Falta ainda provar que a saída está ordenada. Isso usa o lema de que `insert` conserva a ordenação quando a lista recebida está ordenada. Conservar contagens não distingue `sort` da função identidade, que também conserva todos os elementos mas pode deixar a lista desordenada.
 
 </div>
 

@@ -77,3 +77,5 @@ Uma proporção: $z=(\hat p-p_0)/\sqrt{p_0(1-p_0)/n}$, verificar $np_0,n(1-p_0)\
 [Aleatorização](/cadeiras/me/aleatorizacao/): respeitar desenho e permutabilidade; contar resultados pelo menos tão extremos, incluindo empates e atribuição observada.
 
 [Qui-quadrado](/cadeiras/me/qui-quadrado/): $Q=\sum(O-E)^2/E$, cauda direita, unidades independentes e esperadas pelo menos 5. Ajustamento: $E_i=np_i$, graus $k-1$ para modelo fixo. Independência/homogeneidade: $E_{ij}=O_{i\cdot}O_{\cdot j}/n$, graus $(r-1)(c-1)$. Usar contagens, não percentagens.
+
+[Medianas de Mood](/cadeiras/me/qui-quadrado/#comparar-medianas-por-uma-tabela-de-contagens): classificar cada grupo face à mesma mediana global, definir empates e aplicar o teste à tabela de contagens. Não compara médias nem estima a distância entre medianas.

@@ -24,6 +24,12 @@ Se oito bytes dão retorno 3, a tentativa seguinte começa em `buf+3` e pede 5. 
 - Cada `open` independente tem a sua posição. `dup` e descritores herdados por `fork` partilham a descrição aberta e a posição.
 - `lseek(fd, 0, SEEK_SET)` volta ao início de um ficheiro reposicionável e falha com `(off_t)-1`. Pipes não permitem essa operação.
 
+## Reposicionamento
+
+`lseek` devolve a nova posição absoluta ou `(off_t)-1`. `SEEK_SET`, `SEEK_CUR` e `SEEK_END` partem do início, posição atual e tamanho lógico; usa `off_t`.
+
+Num ficheiro `abcde`, `lseek(fd, -2, SEEK_END)` põe a posição em 3; ler um byte dá `d` e avança para 4. Para inverter bytes, visita índices de `tamanho-1` até zero, reposicionando antes de cada leitura. Repetir apenas um recuo de um byte pode reler o mesmo byte porque `read` avança. EOF é retorno 0, não um carácter. Inverter bytes não preserva caracteres UTF-8.
+
 ## Linhas e pesquisa
 
 `getline` é POSIX. Recebe um buffer que pode reservar ou aumentar; o retorno inclui newline, se existir, e exclui o terminador zero. Liberta o buffer no fim e distingue retorno `-1` por EOF de erro.

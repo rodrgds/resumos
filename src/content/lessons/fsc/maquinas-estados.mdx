@@ -10,9 +10,11 @@ editorial:
   sources:
     - title: 'Circuitos sequenciais, Pedro C. Diniz, outono de 2024'
       url: 'https://moodle2425.up.pt/mod/resource/view.php?id=61771'
+    - title: 'Recurso global, 1 de fevereiro de 2024, questão 24'
+      url: 'https://moodle2425.up.pt/mod/resource/view.php?id=131749'
 ---
 
-Uma máquina de estados finita, FSM, guarda apenas a parte do passado necessária para decidir o comportamento seguinte. Para reconhecer se um número binário é múltiplo de 3, não precisamos de guardar todos os bits recebidos: chega guardar o resto da divisão por 3.
+Uma máquina de estados finita, FSM, guarda apenas a parte do passado necessária para decidir o comportamento seguinte. Para reconhecer se um número binário é múltiplo de 3, não precisamos de guardar todos os bits recebidos, pois chega guardar o resto da divisão por 3.
 
 ## Moore e Mealy
 
@@ -22,7 +24,7 @@ Num diagrama Moore, escreve a saída dentro do estado e a condição na seta. Nu
 
 ## Resto de uma sequência binária
 
-Se o prefixo lido vale $v$ e chega um bit $b$, o novo valor é $2v+b$. Para o resto $r$ módulo 3:
+Se o prefixo lido vale $v$ e chega um bit $b$, o novo valor é $2v+b$. Para o resto $r$ módulo 3, com
 
 $$r^+=(2r+b)\bmod3.$$
 
@@ -47,7 +49,7 @@ import fsm from '../../fsc/fsm-resto.dot?raw';
 
 :::
 
-Ao ler `110`, passamos R0 → R1 → R0 → R0. O número é 6, múltiplo de 3. Ao ler `101`, passamos R0 → R1 → R2 → R2: 5 deixa resto 2. A saída observada depois de cada flanco corresponde ao prefixo já recebido.
+Ao ler `110`, passamos R0 → R1 → R0 → R0, e o número é 6, múltiplo de 3. Ao ler `101`, passamos R0 → R1 → R2 → R2: 5 deixa resto 2; a saída observada depois de cada flanco corresponde ao prefixo já recebido.
 
 ### Laboratório de máquinas
 
@@ -66,7 +68,7 @@ O seletor inclui também os exercícios do resto módulo 5 e da deteção Mealy 
 
 Codifica R0=`00`, R1=`01`, R2=`10`. São necessários dois flip-flops, porque $\lceil\log_2 3\rceil=2$. Escolhe recuperação de `11` para `00`, com saída 0.
 
-A tabela anterior, expandida para bits $q_1,q_0,b$ com próximo estado $n_1n_0$, dá:
+A tabela anterior, expandida para bits $q_1,q_0,b$ com próximo estado $n_1n_0$, dá o seguinte, onde cada linha com próximo bit 1 gera um termo do produto:
 
 | $q_1q_0$     | $b=0\to n_1n_0$ | $b=1\to n_1n_0$ |
 | ------------ | --------------- | --------------- |
@@ -74,8 +76,6 @@ A tabela anterior, expandida para bits $q_1,q_0,b$ com próximo estado $n_1n_0$,
 | 01 pronto R1 | 10              | 00              |
 | 10 pronto R2 | 01              | 10              |
 | 11 inválido  | 00              | 00              |
-
-Cada linha com próximo bit 1 gera um termo do produto. Da tabela completa obtém-se:
 
 $$D_1=\overline q_1q_0\overline b+q_1\overline q_0b,$$
 
@@ -107,9 +107,9 @@ Se val=1, conservamos as transições normais. Se val=0, os próximos bits são 
 
 ## Reconhecer padrões e produzir um impulso
 
-Para detetar `101` com sobreposição, os estados distinguem os prefixos já reconhecidos: nenhum, `1`, `10` e deteção `101`. Depois de detetar, o último `1` já pode iniciar outra ocorrência. Em `10101`, há duas deteções. Voltar incondicionalmente ao estado inicial perderia a segunda.
+Para detetar `101` com sobreposição, os estados distinguem os prefixos já reconhecidos: nenhum, `1`, `10` e deteção `101`. Depois de detetar, o último `1` já pode iniciar outra ocorrência, por isso em `10101` há duas deteções; voltar incondicionalmente ao estado inicial perderia a segunda.
 
-Uma Moore completa para esse caso tem esta tabela. A saída indicada é a do estado atual, e só D deteta o padrão:
+Uma Moore completa para esse caso tem esta tabela, onde a saída indicada é a do estado atual e só D deteta o padrão:
 
 | Estado | Prefixo útil                  | Saída | Próximo com 0 | Próximo com 1 |
 | ------ | ----------------------------- | ----- | ------------- | ------------- |
@@ -118,13 +118,13 @@ Uma Moore completa para esse caso tem esta tabela. A saída indicada é a do est
 | C      | `10`                          | 0     | A             | D             |
 | D      | Deteção `101`, termina em `1` | 1     | C             | B             |
 
-Partindo de A, `10101` dá B,C,D,C,D. Observamos 0,0,1,0,1 depois dos flancos. Em D, um novo 0 já completa o prefixo `10`, por isso a transição vai para C. É esta informação conservada que permite a sobreposição.
+Partindo de A, `10101` dá B,C,D,C,D. Observamos 0,0,1,0,1 depois dos flancos; em D, um novo 0 já completa o prefixo `10`, por isso a transição vai para C. É esta informação conservada que permite a sobreposição.
 
 Para produzir um impulso de um ciclo quando um botão fica 1, usa estados Espera, Impulso e Libertação. Espera entra em Impulso quando x=1; Impulso passa a Libertação se x ainda for 1, ou Espera se já for 0; Libertação conserva enquanto x=1. A saída só é 1 em Impulso. Sem Libertação, uma entrada longa pode provocar vários impulsos.
 
 ### Mealy e sobreposição
 
-Para detetar `11`, basta recordar se o bit anterior era 1. Usa A para bit anterior 0, incluindo o reset, e B para bit anterior 1. A saída é 1 só quando o estado anterior é B e a entrada atual é 1:
+Para detetar `11`, basta recordar se o bit anterior era 1. Usa A para bit anterior 0, incluindo o reset, e B para bit anterior 1; a saída é 1 só quando o estado anterior é B e a entrada atual é 1:
 
 | Estado anterior | Entrada 0, destino/saída | Entrada 1, destino/saída |
 | --------------- | ------------------------ | ------------------------ |
@@ -136,6 +136,36 @@ Em B, um novo 1 deteta um par e conserva B. Por isso, `111` produz 0,1,1: o segu
 No [laboratório](#laboratório-de-máquinas), escolhe **Mealy: detetar 11** e segue `111011`. Antes dos flancos, os estados são A,B,B,B,A,B; as saídas da amostra são 0,1,1,0,0,1. O estado indicado na linha de cada passo é o destino da transição, mas a saída usa o estado anterior e o bit dessa linha. Não uses o novo estado B para atribuir 1 ao primeiro bit: ainda não havia um 1 anterior.
 
 Com um flip-flop q que guarda esse bit anterior, as equações são $q^+=b$ e $z=qb$. A entrada b pode mudar z entre flancos. O simulador mostra amostras de entradas estáveis; não modela atrasos, glitches nem metastabilidade. Uma saída registada depois do flanco exigiria um registo de saída e uma especificação temporal própria.
+
+## Controlar uma soma em memória
+
+Um controlador pode coordenar um contador de endereços e um acumulador sem executar instruções. Considera uma memória de 64 words com sinal de 32 bits, leitura combinatória e dados que não mudam durante o cálculo. Queremos somar os **módulos** dos 64 valores. Supomos que cada leitura, cálculo do módulo e soma estabilizam antes do flanco seguinte.
+
+Usa um contador i de 6 bits para endereçar a memória. Se o bit de sinal do dado for 0, conserva-o; se for 1, calcula o complemento para dois. Interpreta a saída deste bloco como magnitude **sem sinal**: para `0x80000000`, o módulo é $2^{31}$ e continua a ter o padrão `0x80000000`. Não cabe como inteiro positivo com sinal de 32 bits, mas cabe numa magnitude sem sinal de 32 bits.
+
+Antes de somar ao acumulador, alarga a magnitude com zeros. O pior caso são 64 valores iguais a $-2^{31}$:
+
+$$S_{max}=64\times2^{31}=2^{37}.$$
+
+Um acumulador sem sinal de 37 bits só chega a $2^{37}-1$. São necessários **38 bits** para garantir o resultado exato. O somador e o registo do acumulador têm essa largura; os endereços continuam a ter 6 bits.
+
+Uma Moore com Espera, Soma e Concluído controla o percurso:
+
+| Estado                  | Ação no flanco seguinte                        | Próximo estado |
+| ----------------------- | ---------------------------------------------- | -------------- |
+| Espera, start=0         | S←0, i←0                                       | Espera         |
+| Espera, start=1         | S←0, i←0                                       | Soma           |
+| Soma, i diferente de 63 | S←S+módulo(Mem[i]), i←i+1                      | Soma           |
+| Soma, i=63              | Acrescenta o último módulo; contador volta a 0 | Concluído      |
+| Concluído               | Conserva o resultado                           | Concluído      |
+
+`done=1` só em Concluído; o reset coloca o controlador em Espera. Neste contrato, reset prepara uma nova operação. Não o confundas com um controlador que aceite start novamente em Concluído.
+
+Os controlos da Moore dependem só do estado: Espera inicializa os registos em cada flanco; Soma habilita a soma e o contador; Concluído conserva. start e a comparação i=63 só decidem o próximo estado.
+
+O flanco de arranque inicializa, mas ainda não soma. Os **64 flancos seguintes** somam as posições 0 a 63. No último, soma-se o dado do endereço antigo 63, o contador volta a 0 e entra-se em Concluído. A habilitação da soma desliga-se nesse novo estado. Se o contador voltasse a 0 e a soma continuasse habilitada, os mesmos dados seriam somados de novo.
+
+Com memória síncrona de latência de um ciclo, este traço deixa de servir: é preciso lançar o endereço num ciclo e usar o dado no seguinte, ou acrescentar registos e estados. A largura da memória, a capacidade, a latência de leitura e a largura do resultado são decisões distintas.
 
 ## Minimização e comunicação
 
@@ -159,7 +189,7 @@ A máquina reduzida tem quatro estados: A, B, C e H, que representa D/E. A vai p
 
 :::
 
-Duas máquinas podem coordenar-se por handshake de quatro fases, com dados, `valid` e `ack` no tempo:
+Duas máquinas podem coordenar-se por handshake de quatro fases, com dados, `valid` e `ack` no tempo, segundo a tabela seguinte:
 
 | Passo | Dados          | valid | ack | Regra                       |
 | ----- | -------------- | ----- | --- | --------------------------- |

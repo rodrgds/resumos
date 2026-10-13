@@ -8,7 +8,7 @@ import Exercise from '../../../components/Exercise.astro';
 
 <Exercise
   id="so-write-parcial"
-  revision={1}
+  revision={2}
   title="Uma escrita incompleta"
   explanation="/cadeiras/so/ficheiros-api/#ler-e-escrever-todos-os-bytes"
   answer={{
@@ -17,12 +17,18 @@ import Exercise from '../../../components/Exercise.astro';
       'Retomei no endereço buf + 3.',
       'Pedi os cinco bytes restantes.',
       'Conservei a interpretação de erro com sinal.',
+      'Rejeitei o mesmo par st_dev e st_ino antes de truncar.',
+      'Completei as transferências em ciclo, tratei erros e fechei os descritores.',
     ],
   }}
 >
   <div>
     Tens oito bytes em buf. A primeira write devolve 3. Indica o endereço e a
-    quantidade da próxima tentativa e explica por que não repetes os oito.
+    quantidade da próxima tentativa e explica por que não repetes os oito. Depois
+    implementa uma cópia entre dois ficheiros regulares, com origem e destino
+    recebidos como argumentos. Completa escritas parciais, trata erros e rejeita
+    dois nomes do mesmo ficheiro antes de truncar o destino. Assume que nenhum
+    outro processo altera os ficheiros durante a cópia. Usa o terminal UNIX.
   </div>
   <div slot="hint">A quantidade devolvida conta o prefixo já enviado.</div>
   <div slot="hint-more">
@@ -203,6 +209,63 @@ Queremos imprimir as últimas `k` linhas, com `k` positivo. Uma última sequênc
 Na primeira passagem, lê com `getline` até EOF e conta apenas os retornos bem-sucedidos. Reposiciona no início e, na segunda, imprime a partir de `max(0,L-k)`: os índices são 0, 5 e 0. No ficheiro vazio não há leitura bem-sucedida, portanto o índice 0 não leva a imprimir uma linha inexistente.
 
 Um pipe não permite voltar ao início. Usa uma fila circular de capacidade `k` com as últimas linhas e os seus comprimentos. Cada nova linha substitui a mais antiga quando a fila enche. No fim, imprime da mais antiga conservada para a mais recente; para a última linha sem newline, escreve exatamente o comprimento lido.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="so-fread-quantidade"
+  title="A última leitura não enche o buffer"
+  explanation="/cadeiras/so/ficheiros-api/#file-e-descritor"
+  answer={{ kind: 'self', checklist: [
+    'Obtive leituras de 4, 4, 1 e depois 0 bytes.',
+    'Escrevi apenas n bytes e obtive os nove bytes originais.',
+    'Distingui fim de ficheiro de erro de leitura.'
+  ] }}
+>
+  <div>
+
+Um ficheiro regular contém exatamente os nove bytes `abcdefghi`, sem newline. O programa lê com `fread(buffer, 1, 4, origem)` e, para cada retorno positivo `n`, faz `fwrite(buffer, 1, 4, destino)`. Assume leituras sem erro, escritas completas e ficheiro sem alterações concorrentes.
+
+Indica os retornos das leituras e os bytes escritos no destino. Corrige a quantidade passada a `fwrite`. Depois deixa de assumir que não há erros: que indicadores consultas quando `fread` devolve menos do que pediste?
+
+  </div>
+  <div slot="hint">Na última leitura, só o primeiro byte do buffer é substituído.</div>
+  <div slot="solution">
+
+As leituras devolvem 4, 4, 1 e 0. Os buffers que chegam à escrita contêm `abcd`, `efgh` e `ifgh`: o último `i` substitui `e`, mas os outros três bytes conservam o que lá estava. O programa escreve `abcdefghifgh`, 12 bytes, em vez dos nove pedidos.
+
+Usa `fwrite(buffer, 1, n, destino)` e verifica que o retorno é `n`. Assim escreves `abcd`, `efgh` e `i`, obtendo `abcdefghi`. `n` tem tipo `size_t` porque `fread` conta elementos; aqui cada elemento tem um byte. Não uses `%s` para transferir o buffer, que não recebeu terminador zero.
+
+Uma leitura curta exige consultar `ferror(origem)` para detetar erro e `feof(origem)` para reconhecer fim. O ciclo ainda pode ter recebido bytes úteis antes dessa condição. Verifica também erros da saída, incluindo a descarga final do buffer.
+
+  </div>
+</Exercise>
+
+<Exercise
+  id="so-inverter-bytes"
+  title="O recuo que relê o mesmo byte"
+  explanation="/cadeiras/so/ficheiros-api/#reposicionar-por-bytes"
+  answer={{ kind: 'self', checklist: [
+    'Localizei c na posição 2 e o avanço da leitura para 3.',
+    'Mostrei que recuar um byte a partir de 3 relê c.',
+    'Visitei explicitamente as posições 2, 1 e 0 e tratei o ficheiro vazio.'
+  ] }}
+>
+  <div>
+
+O ficheiro contém os três bytes `abc`. Queres imprimi-los por ordem inversa. Pões a posição no fim e repetes três vezes: `lseek(fd, -1, SEEK_CUR)`, leitura de um byte e escrita desse byte na saída. Assume sucesso e leituras de um byte.
+
+Que saída obténs? Dá a sequência correta de posições para obter `cba` e explica o caso vazio. Inverter assim os bytes de qualquer texto UTF-8 preservaria os caracteres?
+
+  </div>
+  <div slot="solution">
+
+Obténs `ccc`. A posição inicial é 3; o recuo põe-na em 2, mas a leitura de `c` volta a avançá-la para 3. Cada repetição volta ao mesmo byte.
+
+Guarda o tamanho num `off_t` e visita os índices 2, 1 e 0 com `lseek(fd, indice, SEEK_SET)` antes de cada leitura. Um ciclo que começa com `pos=tamanho`, continua enquanto `pos > 0` e decrementa `pos` antes de a usar evita tentar uma posição negativa no caso vazio. Confere reposicionamento, leitura e escrita no programa completo.
+
+A inversão é de bytes. Um carácter UTF-8 pode ter vários bytes cuja ordem interna é necessária, portanto esta operação não é uma inversão geral de caracteres.
 
   </div>
 </Exercise>

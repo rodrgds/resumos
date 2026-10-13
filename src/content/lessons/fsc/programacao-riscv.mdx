@@ -7,7 +7,7 @@ practices:
   - fsc/praticar-programacao-riscv
 ---
 
-Para guardar o menor de dois números, o programa compara os registos, salta para o ramo escolhido e copia o valor para o destino. Assembly torna explícitas estas operações e os endereços de memória. Um mapa dos registos e uma condição sobre o estado de cada ciclo ajudam a verificar a tradução.
+Para guardar o menor de dois números, o programa compara os registos, salta para o ramo escolhido e copia o valor para o destino. Assembly torna explícitas estas operações e os endereços de memória, por isso um mapa dos registos e uma condição sobre o estado de cada ciclo ajudam a verificar a tradução.
 
 ## Condições e ciclos
 
@@ -28,7 +28,7 @@ Um `while` testa antes do corpo, podendo executar zero vezes. Um `do...while` te
 
 ## Somar um vetor
 
-Queremos somar quatro words `7,-3,10,0`. Usamos t0 como apontador, t1 como número de elementos por ler e t2 como soma. No início de cada iteração, t2 é a soma dos elementos já lidos, e t0 aponta para o próximo.
+Queremos somar quatro words `7,-3,10,0`. Usamos t0 como apontador, t1 como número de elementos por ler e t2 como soma; no início de cada iteração, t2 é a soma dos elementos já lidos e t0 aponta para o próximo.
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import sumCode from '../../fsc/soma-vetor.s?raw';
@@ -43,7 +43,7 @@ import textCode from '../../fsc/texto-ascii.s?raw';
 
 Aqui os valores e o resultado cabem em RV32 com sinal. Para outros dados, `add` continua a guardar apenas os 32 bits inferiores; se precisares da soma matemática exata, tens de detetar overflow ou usar uma representação mais larga. O comprimento é um inteiro não negativo e nunca excede os elementos disponíveis.
 
-Em cada passagem, `lw t3,0(t0)` lê um elemento, `add t2,t2,t3` acumula, o apontador t0 avança 4 bytes e o contador t1 diminui. Quando t1 é zero, o programa salta para `done` antes de ler memória, por isso o caso vazio imprime 0 sem acessos inválidos. Este exemplo corre em `main` e termina com `ecall`; não é uma rotina com retorno em a0. Para o tornar rotina, recebe base em a0 e comprimento em a1 e devolve a soma em a0, sem `ecall`.
+Em cada passagem, `lw t3,0(t0)` lê um elemento, `add t2,t2,t3` acumula, o apontador t0 avança 4 bytes e o contador t1 diminui. Quando t1 é zero, o programa salta para `done` antes de ler memória, por isso o caso vazio imprime 0 sem acessos inválidos; este exemplo corre em `main` e termina com `ecall`, não sendo uma rotina com retorno em a0. Para o tornar rotina, recebe base em a0 e comprimento em a1 e devolve a soma em a0, sem `ecall`.
 
 Traçado com `[7,-3,10,0]`, t0=base, t1=por ler, t2=soma, t3=elemento:
 
@@ -54,7 +54,7 @@ Traçado com `[7,-3,10,0]`, t0=base, t1=por ler, t2=soma, t3=elemento:
 | 3        | base+8  | 2        | 4        | 10  | 14        |
 | 4        | base+12 | 1        | 14       | 0   | 14        |
 
-Para procurar o máximo, um vetor vazio precisa de contrato próprio, como devolver um sinal de erro. Num vetor não vazio, inicializa o máximo com o **primeiro elemento**, não com zero. Caso contrário, `[-8,-3]` daria incorretamente 0. Depois percorre os restantes com comparação com sinal.
+Para procurar o máximo, um vetor vazio precisa de contrato próprio, como devolver um sinal de erro. Num vetor não vazio, inicializa o máximo com o **primeiro elemento**, não com zero, pois caso contrário `[-8,-3]` daria incorretamente 0; depois percorre os restantes com comparação com sinal.
 
 Para inverter um vetor, usa apontadores para a primeira e última word. Lê ambos os valores antes de escrever qualquer um, troca-os e aproxima os apontadores por 4 bytes. Termina quando se encontram ou cruzam. O caso ímpar deixa o elemento central no lugar.
 
@@ -74,7 +74,7 @@ A rotina recebe a base em a0 e o comprimento em a1. Se houver menos de dois elem
 
 ## Texto ASCII
 
-Uma string `.asciz` termina num byte zero. `lbu` lê um byte, e o apontador avança 1. O terminador não conta no comprimento. Para reconhecer um dígito, testa `'0'<=c<='9'`; se for verdadeiro, o valor é c−48.
+Uma string `.asciz` termina num byte zero. `lbu` lê um byte e o apontador avança 1; o terminador não conta no comprimento. Para reconhecer um dígito, testa `'0'<=c<='9'`; se for verdadeiro, o valor é c−48.
 
 Para uma letra, testa separadamente os intervalos `A` a `Z` e `a` a `z`. Não basta o intervalo de `A` a `z`, porque inclui pontuação entre as maiúsculas e minúsculas.
 
@@ -86,6 +86,22 @@ Para uma letra, testa separadamente os intervalos `A` a `Z` e `a` a `z`. Não ba
 
 A classificação conta só letras e dígitos ASCII: em `A-7_z!`, conta A, 7 e z, dando 3. O traço, o underscore e a exclamação ficam excluídos. Não é uma rotina Unicode.
 
+### Converter decimal sem overflow
+
+Para converter uma string ASCII de dígitos num inteiro, começa com acumulador $v=0$. Cada novo dígito $d=c-48$ ocupa a casa das unidades, deslocando as anteriores:
+
+$$v^+=10v+d.$$
+
+Em `204`, os estados do acumulador são 2, 20 e 204. Testa primeiro se o byte é zero ou se está entre 48 e 57; o terminador fecha a conversão e um byte fora do intervalo torna a entrada inválida. O contrato deve decidir se uma string vazia representa zero ou é rejeitada.
+
+Para um resultado sem sinal de 32 bits, o máximo é $M=2^{32}-1=4294967295$. Antes da multiplicação, divide esse limite em quociente e resto por 10:
+
+$$M=10\times429496729+5.$$
+
+Rejeita se $v>429496729$, ou se $v=429496729$ e $d>5$. Nos restantes casos, $10v+d$ cabe. Usa comparações sem sinal; a constante grande precisa de `li` e de um registo, não cabe no imediato de `addi`.
+
+A entrada `4294967295` chega ao último passo com v=429496729 e d=5, por isso é aceite. `4294967296` falha com o mesmo v e d=6 **antes** de alterar o acumulador. Testar só depois de `mul` e `add` não basta: essas instruções conservam 32 bits e podem produzir um valor pequeno depois de perder os bits altos.
+
 ## Máscaras e deslocamentos
 
 Para testar o bit k, calcula `x & (1 << k)`. Para o limpar, faz AND com a máscara complementar. Para o colocar a 1, faz OR. XOR troca-o. Um AND com 1 obtém o bit menos significativo.
@@ -94,7 +110,7 @@ Contar bits 1 por deslocamento usa `srli` até a palavra ficar zero. Com `srai`,
 
 ## Soma de várias palavras
 
-Um inteiro de 64 bits pode ser guardado em duas words, baixa e alta. Soma primeiro as baixas e obtém carry se a soma sem sinal for **menor** que uma das entradas. Depois soma as altas e o carry:
+Um inteiro de 64 bits pode ser guardado em duas words, baixa e alta. Soma primeiro as baixas e obtém carry se a soma sem sinal for **menor** que uma das entradas; depois soma as altas e o carry, com
 
 $$L=(A_L+B_L)\bmod2^{32},\quad c=[L<A_L],\quad H=(A_H+B_H+c)\bmod2^{32}.$$
 

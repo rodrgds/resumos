@@ -14,7 +14,7 @@ A **Review** inspeciona produto e orienta backlog; a **Retrospective** melhora p
 4. **Decide ações:** poucas experiências realizáveis.
 5. **Fecha e acompanha:** responsáveis, capacidade reservada e momento de avaliação.
 
-Perguntar «porquê?» ajuda a explorar causas, mas não prova a última hipótese. Uma escala de satisfação mede perceções, não qualidade objetiva do produto.
+- Perguntar «porquê?» ajuda a explorar causas, mas não prova a última hipótese. Uma escala de satisfação mede perceções, não qualidade objetiva do produto.
 
 ## Experiência verificável
 

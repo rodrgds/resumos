@@ -43,6 +43,8 @@ Privilégio mínimo, negar por defeito, mediação completa, simplicidade, desen
 
 - César, só A a Z: $y=(x+k)\bmod26$, recuperação com $-k$. Tem 26 deslocamentos; não protege dados reais.
 - Inverso modular: $ed\equiv1\pmod n$ existe se $e$ e $n$ são coprimos.
+- Aleatoriedade depende do gerador. 256 escolhas uniformes dão oito bits de entropia, mesmo em strings de 128 bits. Bits de segurança descrevem trabalho do ataque, não tamanho da representação.
+- RSA determinístico permite comparar cifras de hipóteses conhecidas; na assinatura crua, escolher $s$ e calcular $m=s^e\bmod n$ cria um par aceite sem privada.
 - Chaves por par: $N(N-1)/2$. Com KDC, $N$ chaves duradouras entidade-centro no modelo simplificado; sessões à parte.
 - CRL identifica revogações no seu âmbito. Verificar emissor, assinatura, atualidade e âmbito; ausência numa lista antiga não prova validade.
 
@@ -50,6 +52,7 @@ RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esque
 
 - ECB revela repetições. CBC exige IV imprevisível e blocos completos; decifra com $P_i=D_K(C_i)\oplus C_{i-1}$, com $C_0=IV$. PKCS#7 acrescenta um bloco de preenchimento quando o tamanho já é múltiplo do bloco; na remoção, confirma todos os $k$ bytes. CTR exige não repetir nenhum bloco de contador sob a mesma chave, mesmo entre mensagens, porque a reutilização revela o XOR dos textos em claro.
 - Se reutilizas a sequência XOR: $C_1\oplus C_2=P_1\oplus P_2$.
+- CTR sem autenticação: uma máscara aplicada à cifra muda os mesmos bits em claro. Encrypt-then-MAC autentica a cifra antes de decifrar; MAC-then-Encrypt cifra texto e etiqueta.
 - AEAD dá confidencialidade e integridade; não dá proteção automática contra repetição.
 - DH: $A=g^a$, $B=g^b$, segredo $B^a=A^b$ no grupo. Sem autenticação permite intermediário ativo.
 - Chaves efémeras podem dar sigilo futuro quando as condições do protocolo se cumprem. [Explicação](/cadeiras/fsi/modos-protocolos/).
@@ -58,6 +61,7 @@ RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esque
 
 - Autenticação identifica; autorização decide sujeito, objeto e operação.
 - ACL: permissões junto do objeto, como uma coluna da matriz. Capacidade: referência protegida que o sujeito apresenta; não é o mesmo que uma Linux capability.
+- ABAC avalia atributos validados de sujeito, objeto, operação e contexto; papel correto pode não bastar.
 - Bell-LaPadula básico, confidencialidade: não ler acima, não escrever abaixo.
 - Biba estrito, integridade: não ler abaixo, não escrever acima.
 - Unix: escolher dono, senão grupo, senão outros. $r=4,w=2,x=1$.
@@ -68,6 +72,7 @@ RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esque
 - `fork` copia o ambiente; `execve` recebe o ambiente explicitamente e substitui o programa no mesmo processo.
 - Set-UID pode mudar o UID efetivo para o dono do executável; depende das condições do sistema.
 - `system` invoca uma shell: `PATH` e metacaracteres podem mudar a operação. Executável fixo, argumentos separados e ambiente controlado retiram esses mecanismos, mas não substituem autorização.
+- Em Linux/glibc atual, `seteuid` conserva o UID guardado; `setuid` com `CAP_SETUID` muda real, efetivo e guardado. Uma redução temporária pode permitir recuperar privilégios.
 - Baixar o UID não fecha descritores já abertos. Fechar recursos privilegiados e usar close-on-exec quando não devem ser herdados. [Explicação](/cadeiras/fsi/setuid-ambiente/).
 
 ## Código e rede
@@ -79,7 +84,9 @@ RSA sem codificação é apenas a operação matemática $m^e \bmod n$. Os esque
 - TOCTOU: verificar e usar o mesmo objeto, não resolver novamente um nome mutável. Repetir verificações de um nome mutável não liga a verificação ao objeto usado.
 - Leituras indevidas também podem divulgar dados. Índice com sinal: `0 <= indice < len`; valida o tamanho antes de o converter para um tipo menor. Use-after-free continua inválido mesmo sem crash.
 - Canário deteta algumas corrupções; NX restringe execução; ASLR dificulta prever endereços. Não corrigem a falha de memória. [Explicação](/cadeiras/fsi/programacao-defensiva/).
+- CFI restringe desvios cobertos, não todos os acessos a memória. SCI medeia chamadas; SFI restringe código ao domínio permitido.
 - TLS protege transporte entre os seus extremos; não protege de um extremo malicioso.
+- Handshake TLS estabelece material/parâmetros; Record protege dados. No HTTPS habitual, só o servidor é autenticado por certificado, mas a proteção funciona nos dois sentidos.
 - Firewall filtra; IDS alerta; IPS pode bloquear. Precisão $=VP/(VP+FP)$, sensibilidade $=VP/(VP+FN)$.
 - Amplificação $=$ bytes de resposta / bytes de pedido. Defesa DoS depende do recurso esgotado. [Explicação](/cadeiras/fsi/seguranca-redes/).
 
@@ -100,6 +107,8 @@ Origem = esquema + host + porta. SOP restringe leitura, não todos os pedidos. C
 
 Secure restringe transporte; HttpOnly restringe leitura do cookie por JS; SameSite restringe envio conforme o contexto. Nenhum destes atributos torna XSS seguro. [Explicação](/cadeiras/fsi/seguranca-web/).
 
+- XS-Leaks inferem estado por efeitos observáveis, como eventos de imagem, mesmo sem ler o corpo. HTTPS e SOP não retiram automaticamente esse sinal.
+- U2F usa autenticador com chave privada e desafio ligado ao serviço. Sal não impede reutilizar uma palavra-passe entre serviços; igualdade FAR/FRR não é uma regra geral de escolha de limiar.
 - Autenticação de entidade exige prova ligada à interação atual; MAC antigo sozinho não prova presença. Desafio novo, contexto e invalidação.
 - FAR = impostores aceites / tentativas de impostores. FRR = legítimos rejeitados / tentativas legítimas. Declarar protocolo e denominadores.
 - CSP restringe recursos e execução; Report-Only só relata. SRI compara bytes com hash confiável; não torna código benigno nem contorna CSP. [Explicação](/cadeiras/fsi/seguranca-web/).

@@ -7,7 +7,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Codex
-    date: '2026-10-08'
+    date: '2026-10-13'
   sources:
     - title: MD no Moodle da FEUP, 2024/25
       url: https://moodle2425.up.pt/course/view.php?id=5100
@@ -47,7 +47,7 @@ O segundo aplica as provas a estruturas discretas:
 
 A base são os materiais docentes de **MD 2024/25 no Moodle da FEUP**: as onze apresentações teóricas, as onze fichas principais, problemas adicionais, o formulário e provas com resoluções. As aulas de lógica e inteiros são de João Barbosa; as de conjuntos, relações, funções, grafos e indução são de Hugo Pacheco. As apresentações de grafos e indução disponibilizadas nessa edição mantêm **2023/24 na capa**. As restantes apresentações identificam 2024/25. O percurso inclui todos estes blocos.
 
-As explicações são escritas com palavras próprias. Os exercícios misturam problemas próprios e adaptações dos tipos pedidos nas fichas e provas, com contas e argumentos conferidos. O problema de Euclides com 1820 e 231 vem da ficha prática 6, questão 6.5(b); a prática de completude de NAND acompanha a ficha 1, questão 1.9(b). Recorrências lineares por equação característica são um complemento ao estudo docente de sequências e recursão, não uma confirmação da sua presença numa avaliação. A notação segue as aulas: $0\in\mathbb N$, $\equiv_n$ para congruência e caixas de Fitch com regras de base. Os materiais Moodle exigem acesso à cadeira e não são republicados aqui.
+As explicações são escritas com palavras próprias. Os exercícios misturam problemas próprios e adaptações dos tipos pedidos nas fichas e provas, com contas e argumentos conferidos. O problema de Euclides com 1820 e 231 vem da ficha prática 6, questão 6.5(b); a prática de completude de NAND acompanha a ficha 1, questão 1.9(b). A revisão inclui também as provas de 21 de janeiro e 5 de fevereiro de 2025, além de problemas históricos compatíveis com este programa. A prática das fibras de funções adapta a relação $f^{-1}\circ f$ do teste de 15 de janeiro de 2024, questão 4, e do recurso de 5 de fevereiro de 2025, questão 1(b). A prática sobre a diferença de conjuntos das partes parte da questão 2 desse recurso; a combinação com 36, 20 e 400 retoma a questão 2 do teste de janeiro de 2025, acrescentando a procura de todas as soluções. O exemplo de `interleave` desenvolve a questão 6 desse teste. As datas foram conferidas nos documentos, não inferidas da sua localização no Moodle. Recorrências lineares por equação característica são um complemento ao estudo docente de sequências e recursão, não uma confirmação da sua presença numa avaliação. A notação segue as aulas: $0\in\mathbb N$, $\equiv_n$ para congruência e caixas de Fitch com regras de base. Os materiais Moodle exigem acesso à cadeira e não são republicados aqui.
 
 A [ficha de 2026/27 no SIGARRA](https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=586983) confirma os blocos do programa e indica como bibliografia obrigatória:
 

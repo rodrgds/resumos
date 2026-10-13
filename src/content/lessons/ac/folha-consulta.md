@@ -24,6 +24,9 @@ Usa esta página como índice. Cada fórmula vale nas condições da lição lig
 - `jal` guarda PC+4; `jalr` salta para `(base+imm)&~1`. Branch usa PC da própria instrução + deslocamento com sinal em bytes. `blt/bge` com sinal; `bltu/bgeu` sem sinal.
 - R: `funct7 rs2 rs1 funct3 rd opcode`; larguras 7,5,5,3,5,7. I: `imm12 rs1 funct3 rd opcode`. S divide imediato em bits 11:5 e 4:0; B reordena imediato e omite bit 0.
 
+- F/D: `.s` simples 32 bits, `.d` dupla 64 bits. `flw` copia quatro bytes; `fcvt` converte. Simples em memória, cálculo duplo: `flw → fcvt.d.s → fadd.d`, mantendo avanço de 4 B; divisor inteiro exige `fcvt.d.w`, retorno simples `fcvt.s.d`.
+- Pico de pilha = frames ativos × tamanho reservado, se iguais. Inclui o caso base quando reserva antes de testar; chamadas que retornam antes da próxima reutilizam o frame. [Recursão](/cadeiras/ac/riscv-assembly/#profundidade-da-pilha-na-recursão).
+
 ## Desempenho
 
 $$\begin{aligned}T&=N\,CPI/f\\CPI&=\sum_i p_iCPI_i\\S&=T_{\rm antes}/T_{\rm depois}\end{aligned}$$
@@ -58,7 +61,11 @@ $$TMAM=t_1+m_1(t_2+m_{2,l}p_R).$$
 
 Penalidades adicionais, faltas sem sobreposição e esperas ainda não incluídas no CPI de base.
 
+Para cache unificada, uma obtenção e fração $r$ com um acesso a dados: $r=CPI_{\rm espera}/(mp)-1$, com $0\le r\le1$. Converte a penalidade para ciclos. Acertos $k$ vezes mais frequentes que faltas dão $m=1/(k+1)$, não $1/k$.
+
 ## Pipeline e ILP
+
+Dividir uma fase muda $k$ e pode mudar penalidades. Compara latência $kT$, tempo finito e débito, incluindo custo de registos.
 
 IF→ID→EX→MEM→WB. Período = máximo atraso de fase + registo, se fornecido. $N$ instruções, $k$ fases: ciclos $N+k-1+B$.
 
@@ -89,6 +96,7 @@ Write-invalidate invalida a **linha inteira**. Leitura de outro dado na linha po
 
 - Polling: consultas/s × ciclos/consulta / frequência = fração CPU. Intervalo máximo ideal de um buffer $B/R$, sem margem de serviço.
 - Interrupções: eventos/s × ciclos/evento / frequência. DMA: $u=(R/B)c/f$; usa taxa agregada e custo setup+fim. Saída exige clean de dirty se não há coerência; entrada precisa evitar cópias antigas e write-back posterior.
+- Mensagem sem sobreposição: custo de envio + ligação + receção + $B/R$. Compara curvas por tamanho, não apenas taxas. [Comunicação](/cadeiras/ac/entrada-saida/#latência-de-comunicação-e-tamanho-da-mensagem).
 - HDD: fila + procura + rotação + transferência + controlador. Rotação média $30/RPM$ segundos. Transferência $B/R$.
 - Taxa máxima = mínimo dos limites CPU, bus, controladores, discos, na mesma unidade. MB=10⁶B; MiB=2²⁰B; KiB=1024 B.
 - Dois buffers e estágios independentes, $n\ge1$, incluindo enchimento e esvaziamento:

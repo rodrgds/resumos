@@ -95,3 +95,11 @@ As classes $C_j$ formam uma partição; a evidência deve ter probabilidade posi
 [Explicação](/cadeiras/ia/etica-e-seguranca/)
 
 Imitação não prova consciência nem correção. Avalia dados e erros por grupo; aproxima a recompensa do objetivo real; limita ações e acessos; verifica se a revisão humana permite corrigir decisões. Uma mitigação precisa de avaliação observável.
+
+## Aplicações e condições
+
+- Num nó MAX cortado, o melhor valor visto pode ser apenas um limite inferior; num MIN, um limite superior. A raiz pode ter decisão exata sem todos os nós terem valor exato. [Limites de alfa-beta](/cadeiras/ia/jogos-e-minimax/#valor-exato-ou-limite-depois-de-um-corte).
+- Uma rota com cada cliente uma vez exige uma permutação. Trocas preservam-na; cruzamento de um ponto pode repetir e perder clientes. Conta também os segmentos das fábricas inicial e final. [Representação](/cadeiras/ia/otimizacao-e-evolucao/#uma-rota-como-permutação).
+- Um colisor A→B←C permite dependência entre as causas ao observar o efeito. As probabilidades e a direção da alteração exigem as tabelas; apagar uma causa não substitui marginalizá-la. [Alarme](/cadeiras/ia/incerteza-e-bayes/#duas-explicações-para-um-alarme).
+- Um limiar numérico escolhe dois ramos; o ganho usa a média ponderada das entropias e a igualdade fica num ramo declarado. [Árvore](/cadeiras/ia/aprendizagem-e-redes/#separar-um-atributo-numérico).
+- Camada densa n→m com viés: (n+1)m parâmetros. Softmax normaliza logits para classes exclusivas; subtrair o máximo conserva probabilidades. Multietiqueta pode usar sigmoides independentes. [Saídas](/cadeiras/ia/aprendizagem-e-redes/#parâmetros-e-saídas-de-várias-classes).

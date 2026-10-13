@@ -12,12 +12,14 @@ editorial:
       url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=587961
     - title: Materiais de AM II, SIGARRA 2024/25
       url: https://sigarra.up.pt/feup/pt/conteudos_geral.ver?pct_pag_id=249640&pct_parametros=pv_ocorrencia_id=541872
+    - title: Matemática para Engenharia em Rn, José A.F.O. Correia e Carlos Conceição António, edição de 2025
+      url: https://accio.pt/uploads/contributions/vmyTzjJW80.pdf
     - title: Calculus Volume 3, OpenStax
       url: https://openstax.org/details/books/calculus-volume-3
   coverage: Percurso do programa atual, com exemplos próprios, prática por tema e introdução a EDP lineares.
   gaps:
     - O Moodle de AM II de 2024/25 está indisponível para estudantes.
-    - Faltam as aulas teóricas 12 e 13 e os materiais de 2026/27; a correspondência com o ensino atual fica por confirmar.
+    - O programa de 2026/27 foi confirmado no SIGARRA; faltam as aulas teóricas 12 e 13 da coleção histórica e os materiais docentes da edição atual.
     - A ficha prática 5 confirma cobertura substancial de EDP (separação, classificação, calor, ondas e Laplace), usada como base desta revisão.
 ---
 
@@ -27,21 +29,21 @@ Precisamos das derivadas e primitivas de AM1 e dos vetores e produtos escalar e 
 
 ## Percurso de estudo
 
-| Tema                                                                            | O que deves conseguir fazer                                                                              |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [Curvas paramétricas](/cadeiras/am2/curvas-parametricas/)                       | Encontrar velocidade, triedro, planos, comprimento, curvatura e centro de curvatura.                     |
-| [Limites e continuidade](/cadeiras/am2/limites-continuidade/)                   | Descrever domínios e níveis, reconhecer quádricas e provar ou refutar um limite.                         |
-| [Derivadas e gradiente](/cadeiras/am2/derivadas-gradiente/)                     | Distinguir parciais, derivadas direcionais e diferenciabilidade; usar jacobianas e diferenciais.         |
-| [Cadeia e funções implícitas](/cadeiras/am2/regra-cadeia-implicitas/)           | Derivar composições e equações sem isolar a variável dependente.                                         |
-| [Taylor e extremos](/cadeiras/am2/taylor-extremos/)                             | Construir aproximações, classificar candidatos e comparar extremos livres e condicionados.               |
-| [Integrais duplos](/cadeiras/am2/integrais-duplos/)                             | Descrever uma região nas duas ordens, trocar a ordem com partição e usar polares, jacobianos e momentos. |
-| [Integrais de linha e Green](/cadeiras/am2/integrais-linha/)                    | Distinguir comprimento de deslocamento, encontrar potenciais e conferir orientação.                      |
-| [Integrais triplos](/cadeiras/am2/integrais-triplos/)                           | Projetar sólidos, trocar a ordem, converter cilíndricas em cartesianas e escolher coordenadas.           |
-| [Superfícies e fluxo](/cadeiras/am2/superficies-fluxo/)                         | Justificar o elemento de área, calcular fluxos e escolher entre cálculo direto, divergência e Stokes.    |
-| [Equações diferenciais parciais](/cadeiras/am2/equacoes-diferenciais-parciais/) | Classificar, separar variáveis e verificar soluções com dados iniciais e de fronteira.                   |
-| [Calor e séries de Fourier](/cadeiras/am2/calor-series-fourier/)                | Resolver o calor com Dirichlet e Neumann por séries de senos e cossenos.                                 |
-| [Ondas e vibração](/cadeiras/am2/ondas-vibracao/)                               | Resolver a equação das ondas com deslocamento e velocidade iniciais.                                     |
-| [Laplace no retângulo](/cadeiras/am2/laplace-retangulo/)                        | Resolver Laplace com Dirichlet, Neumann e Robin por separação.                                           |
+| Tema                                                                            | O que deves conseguir fazer                                                                                         |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [Curvas paramétricas](/cadeiras/am2/curvas-parametricas/)                       | Encontrar velocidade, triedro, planos, comprimento, curvatura e centro de curvatura, incluindo velocidade variável. |
+| [Limites e continuidade](/cadeiras/am2/limites-continuidade/)                   | Descrever domínios e níveis, reconhecer quádricas e distinguir limite conjunto, iterados e provas por estimativa.   |
+| [Derivadas e gradiente](/cadeiras/am2/derivadas-gradiente/)                     | Distinguir parciais, derivadas direcionais e diferenciabilidade; usar jacobianas e diferenciais.                    |
+| [Cadeia e funções implícitas](/cadeiras/am2/regra-cadeia-implicitas/)           | Derivar composições e equações sem isolar a variável dependente.                                                    |
+| [Taylor e extremos](/cadeiras/am2/taylor-extremos/)                             | Construir aproximações, classificar candidatos e comparar extremos livres e condicionados.                          |
+| [Integrais duplos](/cadeiras/am2/integrais-duplos/)                             | Descrever uma região nas duas ordens, trocar a ordem com partição e usar polares, jacobianos e momentos.            |
+| [Integrais de linha e Green](/cadeiras/am2/integrais-linha/)                    | Distinguir comprimento de deslocamento, encontrar potenciais e conferir orientação.                                 |
+| [Integrais triplos](/cadeiras/am2/integrais-triplos/)                           | Projetar sólidos, trocar a ordem e converter domínio, função e jacobiano entre coordenadas.                         |
+| [Superfícies e fluxo](/cadeiras/am2/superficies-fluxo/)                         | Justificar o elemento de área, calcular fluxos e escolher entre cálculo direto, divergência e Stokes.               |
+| [Equações diferenciais parciais](/cadeiras/am2/equacoes-diferenciais-parciais/) | Classificar, separar variáveis e verificar soluções com dados iniciais e de fronteira.                              |
+| [Calor e séries de Fourier](/cadeiras/am2/calor-series-fourier/)                | Resolver o calor com Dirichlet e Neumann por séries de senos e cossenos.                                            |
+| [Ondas e vibração](/cadeiras/am2/ondas-vibracao/)                               | Resolver a equação das ondas com deslocamento e velocidade iniciais.                                                |
+| [Laplace no retângulo](/cadeiras/am2/laplace-retangulo/)                        | Resolver Laplace com Dirichlet, Neumann e Robin, incluindo sobreposição de dados em lados distintos.                |
 
 Cada capítulo liga a problemas de aplicação e justificação. Tenta primeiro sem ajuda e compara o teu raciocínio com a solução; as pistas disponíveis orientam os passos em que é frequente bloquear. A solução mostra também as condições do método. A [cheat sheet](/cadeiras/am2/folha-consulta/) serve para rever depois de compreenderes as páginas.
 

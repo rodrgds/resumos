@@ -92,3 +92,12 @@ TM: lê, escreve e desloca a cabeça. Em $\alpha q\beta$, a cabeça lê o primei
 Redução $A\le_m B$: função total computável que preserva sim/não. Para provar $B$ indecidível, reduz a ele um $A$ já indecidível. Não confundas simular por um limite finito com decidir paragem sem limite.
 
 P: decidir em tempo polinomial. NP: certificado de tamanho polinomial verificável em tempo polinomial. $P\subseteq NP$; $P=NP$ continua em aberto. NP-completo significa estar em NP e ser NP-difícil. Para provar dificuldade de $B$, reduz $A\le_p B$ com $A$ já NP-completo. O tamanho de um inteiro em binário cresce como $\log N$, não como $N$. [Complexidade](/cadeiras/tc/complexidade/).
+
+## Continuações, fases e resultados
+
+- **Derivada:** $D_a(E)$ descreve o que pode seguir-se depois de a. Em EF, acrescenta $D_a(F)$ à parcela $D_a(E)F$ só quando E aceita ε. O estado-expressão é final se aceita ε.
+- **Fases de PDA:** escolher uma fase só de b ou só de c dá uma união de blocos homogéneos. Permitir ambas em cada passo dá misturas, mesmo com a mesma contagem.
+- **Testemunha CFL:** verifica o significado de blocos livres. Um corte que bombeia toda a candidata basta para impedir aquela contradição; não prova a linguagem CFL.
+- **Fita compacta:** conserva o número de X por ronda completa de deslocação; apagar Y durante o regresso pode impedir a escrita. Justifica também terminação, região do resultado e posição da cabeça.
+
+[Derivadas](/cadeiras/tc/expressoes-automatos/#derivadas-de-expressões), [escolha de fase](/cadeiras/tc/automatos-pilha/#escolher-uma-fase-e-conservar-a-escolha), [testemunha e cortes](/cadeiras/tc/propriedades-livres/#a-palavra-escolhida-pode-admitir-uma-repetição), [compactação](/cadeiras/tc/turing-decidibilidade/#compactar-a-fita-sem-deixar-intervalos-vazios).

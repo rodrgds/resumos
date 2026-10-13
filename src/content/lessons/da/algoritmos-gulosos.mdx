@@ -32,6 +32,16 @@ A ordenação custa $O(n\log n)$ e a passagem custa $O(n)$. Se a entrada já est
 
 Escolher o início mais cedo falha com $[0,10)$, $[1,2)$ e $[2,3)$: escolhe uma atividade em vez de duas. Escolher a duração mais curta também não possui esta prova. Se cada atividade tiver um **valor** diferente e o objetivo for somar valores, já não queremos maximizar a quantidade; pode ser necessária programação dinâmica.
 
+## Carga em ordem e blocos contíguos
+
+Uma sequência de caixas com pesos $[6,4,5,5]$ tem de ser carregada nessa ordem em camiões de capacidade 10. Só um camião recebe caixas de cada vez. Enchemos o primeiro com $6+4$ e o segundo com $5+5$: dois camiões. Mandar o primeiro embora depois do 6 não ajuda; deixa três blocos $[6]$, $[4,5]$ e $[5]$.
+
+Assumimos $0<p_i\le W$ para cada caixa, capacidade $W$ igual em todos os camiões e nenhuma possibilidade de reordenar ou repartir caixas. A regra coloca no camião atual o maior **prefixo do que falta** cuja soma cabe. Quando a próxima caixa já não cabe, abre outro camião. Uma passagem custa $\Theta(n)$ e guarda apenas a carga atual e o número de camiões, além das fronteiras se forem pedidas.
+
+A prova acompanha a fronteira de cada bloco. Seja $g_j$ a última caixa carregada pelos primeiros $j$ camiões gulosos e $o_j$ a última de qualquer outra solução válida. O primeiro bloco guloso é o maior prefixo que cabe, logo $g_1\ge o_1$. Supondo $g_{j-1}\ge o_{j-1}$, há dois casos. Se $g_{j-1}\ge o_j$, o guloso já passou essa fronteira. Caso contrário, as caixas de $g_{j-1}+1$ até $o_j$ são um sufixo do bloco $j$ da outra solução. Como os pesos são positivos, esse sufixo também cabe num camião. O guloso coloca pelo menos essas caixas e fica $g_j\ge o_j$.
+
+Assim, se uma solução acaba em $q$ camiões, $o_q=n$ e o guloso também já acabou até ao camião $q$. A regra minimiza o número de camiões. A ordenação das caixas é parte da prova: se pudermos reordenar $[6,6,4,4]$, dois camiões com $6+4$ chegam, enquanto a regra sobre essa ordem usa três.
+
 ## Mochila fracionária
 
 Aqui cada objeto é divisível. Com peso $w_i>0$, valor $v_i\ge0$ e fração $x_i\in[0,1]$, queremos maximizar $\sum_i v_i x_i$ sujeito a $\sum_i w_i x_i\le W$. A densidade $v_i/w_i$ é o valor por unidade de peso.
@@ -42,7 +52,17 @@ Com $A=(6,12)$, $B=(5,9)$, $C=(5,9)$ e capacidade 10, levamos $A$ inteiro e $4/5
 
 A prova troca **peso**, não objetos inteiros. Se uma solução leva peso de um objeto menos denso enquanto ainda pode levar mais do mais denso, troca uma quantidade $\varepsilon$ do primeiro para o segundo. A capacidade mantém-se e o valor não diminui. Repetindo, existe uma solução ótima que enche primeiro os objetos mais densos. A ordenação dá $O(n\log n)$ tempo.
 
-Na mochila 0-1, a troca fracionária é proibida. Se apenas $k$ objetos têm peso excecional e os restantes $n-k$ partilham o mesmo peso, com $k$ constante, enumera os $2^k$ subconjuntos excecionais e completa cada resto escolhendo os regulares de maior valor que cabem após ordenar, em tempo polinomial. O fator $2^k$ é constante quando $k$ é fixo; o total é $O(2^k\cdot n\log n)$. Se o resto exigisse DP com tabela em $W$, o total seria apenas pseudopolinomial em $W$, não polinomial no tamanho binário. No mesmo exemplo, o guloso leva $A$ e fica com valor 12; levar $B$ e $C$ dá 18. A hipótese de divisibilidade era necessária.
+Na mochila 0-1, a troca fracionária é proibida: no mesmo exemplo, o guloso leva $A$ e fica com valor 12, enquanto levar $B$ e $C$ dá 18. A hipótese de divisibilidade era necessária.
+
+### Poucas exceções numa mochila 0-1
+
+Na mochila 0-1, assume pesos positivos e valores não negativos. Se apenas $k$ objetos têm peso excecional e os restantes $n-k$ partilham o mesmo peso $w$, enumera os $2^k$ subconjuntos excecionais. Rejeita os que excedem $W$ e completa cada um com os regulares de maior valor que cabem.
+
+Ordena os regulares por valor decrescente **uma vez** e guarda somas de prefixos. Para capacidade restante $R$, cabem $q=\min(n-k,\lfloor R/w\rfloor)$ objetos. A soma dos primeiros $q$ valores dá em $O(1)$ a melhor conclusão desse ramo: trocar um escolhido por outro de maior valor conserva o peso e não piora o resultado. Com leitura da entrada e até $k$ operações por subconjunto, o custo é $O(n\log(n+1)+2^k(k+1))$. Para $k$ fixo, o fator exponencial é constante.
+
+Se os regulares tiverem **valor igual**, mas pesos diferentes, a escolha muda: ordena-os por peso crescente e leva o maior prefixo que cabe. Qualquer seleção de $q$ objetos pesa pelo menos tanto como os $q$ mais leves. Encontrar o maior prefixo pelas somas acumuladas custa $O(\log(n+1))$ por ramo, por pesquisa binária. O total é $O(n\log(n+1)+2^k(k+\log(n+1)))$.
+
+Quando peso e valor dos regulares são ambos iguais, já não há ordenação: calcula diretamente quantos cabem. A pesquisa pode custar $O(2^k(k+1))$ **depois de ler e confirmar os $n$ objetos**; o custo total inclui $\Omega(n)$. Uma tabela em $W$ não é necessária nestes casos. Se outra parte regular exigisse DP em capacidade binária, o resultado poderia ser apenas pseudopolinomial.
 
 ## Trocos e condições do sistema
 

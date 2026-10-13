@@ -52,13 +52,13 @@ Rui: 12
 Total: 27
 ```
 
-O programa cria `notas.txt` na pasta de trabalho e corre localmente, porque o executor do navegador não cria ficheiros. Fecha a escrita antes de leres e verifica `close()`, pois o destrutor fecha mas não trata um erro final de escrita.
+O programa cria `notas.txt` na pasta de trabalho e corre localmente, porque o executor do navegador não cria ficheiros; fecha a escrita antes de leres e verifica `close()`, pois o destrutor fecha mas não trata um erro final de escrita.
 
-O leitor acima demonstra leitura por tokens num ficheiro conhecido. Para dados externos, a leitura por linhas seguinte distingue um registo incompleto do fim normal. Cada linha é validada em três passos: ler nome e nota, confirmar que não sobra texto e confirmar o intervalo.
+A leitura por tokens acima serve um ficheiro conhecido; para dados externos, ler por linhas distingue um registo incompleto do fim normal, validando cada linha em três passos: ler nome e nota, confirmar que não sobra texto e confirmar o intervalo.
 
 ## Ler sem antecipar o fim
 
-O ciclo `while (entrada >> nome >> nota)` só entra no corpo depois de ler os dois campos. `eof()` indica que uma operação anterior encontrou o fim; não prevê se a próxima leitura vai resultar. Por isso, `while (!entrada.eof())` pode repetir o último registo ou usar dados incompletos.
+O ciclo `while (entrada >> nome >> nota)` só entra no corpo depois de ler os dois campos; `eof()` indica que uma operação anterior encontrou o fim e não prevê se a próxima leitura vai resultar, por isso `while (!entrada.eof())` pode repetir o último registo ou usar dados incompletos.
 
 Os fluxos conservam estado. `fail()` sinaliza falha de uma operação ou conversão; `bad()` sinaliza uma falha grave de I/O; `eof()` indica encontro do fim. Estes estados podem coexistir. Depois de uma falha, novas leituras não prosseguem normalmente até limpar o estado com `clear()` e tratar a entrada problemática. Limpar o estado sem consumir ou corrigir a causa pode criar um ciclo sem progresso.
 
@@ -84,7 +84,7 @@ Linha 3 invalida
 Rui: 20
 ```
 
-Segue cada entrada do exemplo. `Ana 15` lê nome e `15`, sem sobra e dentro do intervalo: válida. `Eva 21` lê nome e `21`, sem sobra, mas fora do intervalo: inválida. `Leo 12 lixo` lê `12` e ainda encontra `lixo`: inválida. `Eva 12abc` lê `12` e deixa `abc` por consumir: inválida. Uma linha vazia falha logo na primeira leitura.
+No exemplo, `Ana 15` lê nome e `15`, sem sobra e dentro do intervalo: válida; `Eva 21` lê nome e `21`, sem sobra, mas fora do intervalo: inválida; `Leo 12 lixo` lê `12` e ainda encontra `lixo`: inválida; `Eva 12abc` lê `12` e deixa `abc` por consumir: inválida. Uma linha vazia falha logo na primeira leitura.
 
 | Entrada     | `leu` | `sobra` | `nota` | Decisão  |
 | ----------- | ----- | ------- | ------ | -------- |
@@ -93,7 +93,7 @@ Segue cada entrada do exemplo. `Ana 15` lê nome e `15`, sem sobra e dentro do i
 | `Eva 12abc` | sim   | sim     | 12     | inválida |
 | vazia       | não   | não     | 0      | inválida |
 
-Cada iteração cria um fluxo novo para a linha. Uma falha de conversão não contamina a seguinte. Se o formato permitisse nomes com espaços, teria de usar outra separação, por exemplo um delimitador, e definir como esse delimitador pode aparecer nos campos. Depois de uma falha de conversão no fluxo principal, limpa o estado e consome a entrada problemática antes de continuar:
+Cada iteração cria um fluxo novo para a linha, por isso uma falha de conversão não contamina a seguinte. Se o formato permitisse nomes com espaços, teria de usar outra separação, por exemplo um delimitador, e definir como esse delimitador pode aparecer nos campos. Depois de uma falha de conversão no fluxo principal, limpa o estado e consome a entrada problemática antes de continuar:
 
 ```cpp
 // Excerto: recupera de uma leitura falhada.
@@ -102,12 +102,10 @@ entrada.clear();
 entrada.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 ```
 
-Limpar sem consumir a causa repete a mesma falha.
-
 ## Binário não é memória bruta portátil
 
 `std::ios::binary` evita transformações de texto próprias da plataforma. Não define por si só um formato de dados. Escrever os bytes de uma struct depende do padding, da ordem dos bytes e da representação dos tipos. Um formato portátil especifica tamanhos, ordem dos bytes e codificação, ou usa uma biblioteca que trate essas decisões.
 
 ## Caso resolvido: fim depois de um nome
 
-Imagina a linha `Ana`, sem nota. `getline` resulta porque leu uma linha. A extração do nome resulta, mas a da nota falha, por isso `leu` é falso e o programa rejeita o registo sem usar o valor anterior de `nota`. Num ficheiro vazio, `getline` falha antes do corpo do ciclo e não existe registo a validar. Os dois casos chegam ao fim dos dados, mas têm significados diferentes: registo incompleto contra ausência de registo.
+Com a linha `Ana`, sem nota, `getline` resulta porque leu uma linha; a extração do nome resulta, mas a da nota falha, por isso `leu` é falso e o programa rejeita o registo sem usar o valor anterior de `nota`. Num ficheiro vazio, `getline` falha antes do corpo do ciclo e não existe registo a validar; os dois casos chegam ao fim dos dados com significados diferentes: registo incompleto contra ausência de registo.

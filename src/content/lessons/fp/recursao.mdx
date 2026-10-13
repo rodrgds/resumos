@@ -14,7 +14,7 @@ import CodeSnippet from '../../../components/CodeSnippet.astro';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 
-Uma função pode resolver um problema usando a solução de uma versão mais pequena do mesmo problema. Reduz a entrada até um caso que resolves diretamente e depois combina os resultados no regresso.
+Uma função pode resolver um problema usando a solução de uma versão mais pequena do mesmo problema: reduz a entrada até um caso que resolves diretamente e depois combina os resultados no regresso.
 
 <span id="o-modelo-da-recursão"></span>
 
@@ -30,7 +30,7 @@ O **fatorial** de `n` é o produto dos inteiros de 1 até `n`. Por exemplo, $4!=
   }
 />
 
-Para calcular `fatorial(4)`, ficam pendentes as multiplicações por 4, 3, 2 e 1. A chamada exterior espera `4 * fatorial(3)`; a seguinte espera `3 * fatorial(2)`. Assim chegamos a `4 * (3 * (2 * (1 * fatorial(0))))`. Quando o caso base devolve 1, resolvemos as multiplicações de dentro para fora:
+Para calcular `fatorial(4)`, ficam pendentes as multiplicações por 4, 3, 2 e 1: a chamada exterior espera `4 * fatorial(3)` e a seguinte espera `3 * fatorial(2)`, até chegarmos a `4 * (3 * (2 * (1 * fatorial(0))))`. Quando o caso base devolve 1, resolvemos as multiplicações de dentro para fora:
 
 | Chamada       | Resultado que espera  | Valor devolvido |
 | ------------- | --------------------- | --------------- |
@@ -61,7 +61,7 @@ def soma_digitos(n):
 print(soma_digitos(502))
 ```
 
-O resultado é 7. O contrato exige um inteiro não negativo. Podemos seguir a substituição dos resultados:
+O resultado é 7; o contrato exige um inteiro não negativo. Segue a substituição dos resultados:
 
 ```text
 soma_digitos(502) = 2 + soma_digitos(50)
@@ -70,11 +70,11 @@ soma_digitos(502) = 2 + soma_digitos(50)
                  = 2 + (0 + (5 + 0)) = 7
 ```
 
-O prefixo 50 não é o caso base, embora o seu último dígito seja zero. Esta decomposição calcula o mesmo que o ciclo anterior, mas deixa a adição pendente nas chamadas.
+O prefixo 50 não é o caso base, embora o seu último dígito seja zero. Esta decomposição calcula o mesmo que o [ciclo de soma de dígitos](/cadeiras/fp/condicoes-ciclos/#ciclos-while-e-terminação), mas deixa a adição pendente nas chamadas.
 
 ## Estruturas aninhadas
 
-A recursão é útil quando os dados também são recursivos. Uma lista pode conter números ou outras listas com a mesma regra. Queremos somar todos os números, por mais níveis que existam.
+A recursão é útil quando os dados também são recursivos: uma lista pode conter números ou outras listas com a mesma regra, e queremos somar todos os números por mais níveis que existam.
 
 <CodePlayground
   language="python"
@@ -85,6 +85,71 @@ A recursão é útil quando os dados também são recursivos. Uma lista pode con
 A lista vazia tem soma zero. Um número soma-se diretamente; uma lista exige outra chamada. Para `[2, [3, [], [4]], 1]`, a soma interior vale $3+0+4=7$ e a exterior vale $2+7+1=10$.
 
 O contrato aceita apenas números e listas finitas sem referências cíclicas. Uma lista que contém a si própria não satisfaz a redução estrutural. `isinstance(elemento, list)` devolve `True` quando o elemento é uma lista. Assim o programa decide se deve tratar um número ou percorrer outra lista.
+
+## Combinar resultados recursivos
+
+A chamada interior pode devolver uma coleção em vez de um número. Para contar
+strings numa lista aninhada, cada folha contribui com uma ocorrência; cada
+sublista devolve um dicionário de frequências. A chamada exterior soma as
+contagens das mesmas chaves, em vez de substituir o resultado anterior.
+
+Com `['azul', ['verde', 'azul'], [], 'verde']`, a sublista central devolve
+`{'verde': 1, 'azul': 1}`. Ao juntá-la à primeira ocorrência de azul, obtemos
+`{'azul': 2, 'verde': 1}`; a lista vazia não acrescenta chaves e a última
+folha leva verde a 2. A solução de [contar por níveis](/cadeiras/fp/recursao/#exercicios)
+desenvolve esta combinação. O domínio continua a exigir listas finitas sem
+referências cíclicas, agora com strings nas folhas.
+
+## Expressões como árvores
+
+Uma expressão pode ser um inteiro ou um tuplo `(esquerda, operador, direita)`,
+onde os dois operandos seguem a mesma regra. Em `((8, '-', 3), '*', (2, '+', 1))`,
+o tuplo exterior representa uma multiplicação, não uma lista de instruções a
+executar da esquerda para a direita.
+
+| Parte                           | Valor |
+| ------------------------------- | ----- |
+| Operando esquerdo `(8, '-', 3)` | 5     |
+| Operando direito `(2, '+', 1)`  | 3     |
+| Multiplicação exterior          | 15    |
+
+Para avaliar, um inteiro é o caso base. Num tuplo, avalia primeiro os dois
+operandos recursivamente e aplica o operador exterior aos valores devolvidos.
+A ordem dos operandos importa na subtração: trocar 8 e 3 produziria -5.
+A medida que diminui é o tamanho da subárvore tratada, pois cada chamada
+recebe um operando próprio. O contrato aceita árvores finitas e apenas os
+operadores `+`, `-` e `*`; não exige analisar uma string como `"8 - 3"`.
+
+## Explorar escolhas com recursão
+
+Uma redução pode abrir várias escolhas. Para decidir se alguns preços somam
+exatamente um alvo, o primeiro preço tem dois destinos: usamos essa posição,
+reduzindo o alvo, ou ignoramo-la, mantendo o alvo. Nos dois ramos, já não
+podemos voltar a escolher essa posição. Isto é uma procura por tentativas,
+ou **backtracking**.
+
+Com preços `[6, 4, 3]` e alvo 7, escolher sempre o maior começa com 6 e deixa
+1, que não conseguimos formar. Ignorar o 6 permite escolher 4 e 3. Falhar
+num ramo não demonstra que todos os restantes falhem.
+
+```text
+Preços [6, 4, 3], alvo 7
+Escolher 6: restam [4, 3], alvo 1. Falha.
+Ignorar 6: restam [4, 3], alvo 7.
+  Escolher 4: restam [3], alvo 3.
+    Escolher 3: alvo 0. Sucesso.
+```
+
+Assumimos preços inteiros estritamente positivos, alvo inteiro não negativo
+e cada posição disponível uma vez. Alvo zero é sucesso com a escolha vazia;
+sem preços e com alvo positivo é falha. Um alvo negativo também é falha,
+porque preços positivos não o podem corrigir. A medida de terminação é o
+número de posições ainda disponíveis, menor em ambos os ramos.
+
+Uma função combina os dois resultados com `or` e só precisa do segundo ramo
+se o primeiro falhar. No pior caso pode explorar muitas escolhas, até
+$2^n$ subconjuntos para `n` posições. O problema não passa a ser eficiente
+só por a medida diminuir; distinguir terminação de custo continua necessário.
 
 ## Evitar trabalho repetido
 
@@ -104,7 +169,7 @@ fib(4)
     └── fib(0)
 ```
 
-`fib(2)` corre duas vezes e `fib(1)` corre três vezes, num total de 9 chamadas para devolver 3. Um ciclo que conserva os dois valores anteriores evita essa repetição:
+`fib(2)` corre duas vezes e `fib(1)` corre três vezes, num total de 9 chamadas para devolver 3; um ciclo que conserva os dois valores anteriores evita essa repetição:
 
 <CodeSnippet language="python" code={fibonacciIterativo} />
 

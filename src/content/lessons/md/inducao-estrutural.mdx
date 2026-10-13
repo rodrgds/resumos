@@ -6,6 +6,9 @@ practices:
   - md/praticar-inducao-estrutural
 ---
 
+import CodeSnippet from '../../../components/CodeSnippet.astro';
+import insertionSort from '../../md/examples/insertion-sort.hs?raw';
+
 Na indução sobre naturais, o passo constrói $n+1$ a partir de $n$. Na **indução estrutural**, seguimos os construtores do objeto: uma palavra pode nascer de outra palavra, uma lista pode nascer de uma cabeça e uma cauda, uma expressão pode nascer de duas subexpressões.
 
 Uma definição indutiva descreve os objetos obtidos por um número finito de aplicações das regras. Não inclui objetos adicionais só porque não foram explicitamente proibidos.
@@ -23,9 +26,7 @@ Para $S\subseteq\{3n:n\in\mathbb N^+\}$, fazemos indução estrutural:
 - Base: $3=3\cdot1$ é um múltiplo positivo de 3.
 - Construtor: se $x=3a$ e $y=3b$ com $a,b>0$, então $x+y=3(a+b)$, também múltiplo positivo de 3.
 
-Isto prova que as regras nunca produzem outro tipo de valor. Ainda falta a inclusão inversa. Por indução no natural positivo $n$, $3\cdot1\in S$ e, se $3n\in S$, então $3(n+1)=3n+3\in S$.
-
-Mostrar que todos os elementos construídos têm uma propriedade não prova que todos os objetos com essa propriedade podem construir-se, por isso verifica as duas direções numa igualdade de conjuntos.
+Isto prova que as regras nunca produzem outro tipo de valor, mas ainda falta a inclusão inversa. Por indução no natural positivo $n$, $3\cdot1\in S$ e, se $3n\in S$, então $3(n+1)=3n+3\in S$; mostrar que todos os elementos construídos têm uma propriedade não prova que todos os objetos com essa propriedade se constroem, por isso verifica as duas direções numa igualdade de conjuntos.
 
 ## Palavras e invariantes
 
@@ -39,17 +40,13 @@ Uma propriedade que se conserva em cada construção chama-se **invariante**. Po
 
 ## Parênteses equilibrados
 
-Se as regras são $()\in E$, $x\in E\Rightarrow(x)\in E$ e $x,y\in E\Rightarrow xy\in E$, todas as expressões têm igual número de aberturas e fechos.
-
-Podemos provar uma propriedade mais forte: em cada prefixo, o número de fechos não excede o de aberturas. Define o saldo como aberturas menos fechos.
+Se as regras são $()\in E$, $x\in E\Rightarrow(x)\in E$ e $x,y\in E\Rightarrow xy\in E$, todas as expressões têm igual número de aberturas e fechos, mas podemos provar uma propriedade mais forte: em cada prefixo, o número de fechos não excede o de aberturas. Define o saldo como aberturas menos fechos.
 
 - Em `()`, os prefixos têm saldos 0, 1 e 0.
 - Em $(x)$, o primeiro parêntese acrescenta 1 ao saldo de cada prefixo de $x$. O último fecha a abertura exterior.
 - Em $xy$, um prefixo fica em $x$ ou atravessa $x$ e entra em $y$. No segundo caso, o saldo total de $x$ é zero e o saldo restante é o do prefixo de $y$.
 
-Contagens totais iguais não chegam para esta propriedade: `)(` tem uma abertura e um fecho, mas o seu primeiro prefixo já tem saldo negativo.
-
-Seguimos o saldo após consumir $n$ símbolos de cada palavra. $n=0$ corresponde ao prefixo vazio; uma célula vazia indica que a palavra já terminou.
+Contagens totais iguais não chegam para esta propriedade: `)(` tem uma abertura e um fecho, mas o seu primeiro prefixo já tem saldo negativo. Para ver a diferença, seguimos o saldo após consumir $n$ símbolos de cada palavra. $n=0$ corresponde ao prefixo vazio; uma célula vazia indica que a palavra já terminou.
 
 | $n$ | Saldo de `(())` | Saldo de `)(` |
 | --- | --------------- | ------------- |
@@ -110,11 +107,33 @@ length ((x:xs) ++ ys)
 
 Nomear a equação usada em cada passagem permite conferir a prova sem executar o programa.
 
+## Uma função acrescenta dois elementos por passo
+
+Considere-se uma função que coloca um separador depois de cada elemento da lista:
+
+```haskell
+interleave x [] = []
+interleave x (y:ys) = y : x : interleave x ys
+```
+
+`interleave 0 [2,3]` dá `[2,0,3,0]`. O separador também aparece depois do último elemento. Queremos provar `length (interleave x ys) = 2 * length ys` para todas as listas finitas, com `x` arbitrário.
+
+A base dá `length [] = 2 * length []`, isto é, `0 = 0`. No passo, toma uma cabeça `y` e uma cauda `ys`. A hipótese só fornece a igualdade para essa cauda:
+
+```text
+length (interleave x (y:ys))
+= length (y : x : interleave x ys)  definição de interleave
+= 1 + 1 + length (interleave x ys)  duas aplicações de length
+= 2 + 2 * length ys                hipótese de indução
+= 2 * (1 + length ys)              distributividade
+= 2 * length (y:ys)                definição de length
+```
+
+A chamada recursiva recebe apenas `ys`; é aí que a hipótese se aplica. Mesmo quando `x=y`, foram acrescentadas duas posições, não uma: listas conservam repetições.
+
 ## Associatividade da concatenação
 
-Para `(xs ++ ys) ++ zs = xs ++ (ys ++ zs)`, induzimos em `xs`, com `ys,zs` arbitrárias.
-
-Na base, ambos os lados reduzem a `ys ++ zs`. No passo:
+Para `(xs ++ ys) ++ zs = xs ++ (ys ++ zs)`, induzimos em `xs`, com `ys,zs` arbitrárias. Na base, ambos os lados reduzem a `ys ++ zs`; no passo:
 
 ```text
 ((x:xs) ++ ys) ++ zs
@@ -183,20 +202,31 @@ A igualdade permite juntar duas travessias numa. A prova explica por que a trans
 
 Considere-se a ordenação por inserção de elementos com uma ordem total:
 
-```haskell
-insert x [] = [x]
-insert x (y:ys)
-  | x <= y = x:y:ys
-  | otherwise = y : insert x ys
-
-sort [] = []
-sort (x:xs) = insert x (sort xs)
-```
+<CodeSnippet language="haskell" code={insertionSort} />
 
 Para provar que `sort xs` está ordenada, primeiro provamos o lema: inserir `x` numa lista ordenada conserva a ordenação.
 
 A lista vazia produz `[x]`, ordenada. Para `y:ys` ordenada, se `x <= y`, o resultado começa em `x,y` e conserva a cauda. Se `x > y`, aplicamos a hipótese à inserção na cauda. Os valores de `ys` são todos pelo menos `y`, e o novo valor `x` também é maior que `y`; logo, a cabeça `y` continua antes de uma cauda ordenada.
 
 Na prova de `sort`, a base é vazia. No passo, a hipótese garante que `sort xs` está ordenada, e o lema garante que `insert x (sort xs)` também está.
+
+### Conservação das multiplicidades
+
+Para um valor $v$, seja $\operatorname{conta}_v(xs)$ o número de ocorrências de $v$ na lista. Vale $\operatorname{conta}_v([])=0$ e
+
+$$
+\operatorname{conta}_v(y:ys)=\mathbf 1_{v=y}+\operatorname{conta}_v(ys),
+$$
+
+onde $\mathbf 1_{v=y}$ é 1 se $v=y$ e 0 no caso contrário. Queremos provar o lema
+
+$$
+\operatorname{conta}_v(\operatorname{insert}(x,ys))
+=\operatorname{conta}_v(ys)+\mathbf 1_{v=x}.
+$$
+
+Fazemos indução em $ys$, com $x,v$ arbitrários. A base dá a lista $[x]$, com exatamente $\mathbf 1_{v=x}$ ocorrências. No passo $ys=y:zs$, se $x\le y$, a saída é $x:y:zs$ e contamos $\mathbf 1_{v=x}+\mathbf 1_{v=y}+\operatorname{conta}_v(zs)$. Se $x>y$, a saída é $y:\operatorname{insert}(x,zs)$; pela hipótese, a contagem é $\mathbf 1_{v=y}+\operatorname{conta}_v(zs)+\mathbf 1_{v=x}$. Ambas são a contagem original mais a ocorrência inserida.
+
+Na indução sobre `sort`, a base conserva zero ocorrências. No passo, o lema acrescenta exatamente a ocorrência da cabeça $x$ às contagens de `sort xs`, que pela hipótese são as de `xs`. Assim, a contagem final coincide com a de `x:xs` para todo o $v$.
 
 Ordenação não é toda a correção: a função que devolve sempre `[]` também devolve uma lista ordenada. Para provar que é uma ordenação do conteúdo original, precisamos ainda de mostrar que conserva os elementos e as suas multiplicidades.

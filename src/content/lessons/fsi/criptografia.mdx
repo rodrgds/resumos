@@ -28,7 +28,7 @@ Ana envia ao Bruno a lista de preços da loja. Um observador da rede não deve c
 
 ## Escolher a primitiva
 
-Começa por três casos com a lista de preços da loja. Para esconder a lista em trânsito, Ana cifra para a chave pública do Bruno. Para provar que a lista veio da direção, a direção assina com a sua chave privada e qualquer pessoa verifica com a pública. Para detetar uma alteração acidental face a uma cópia confiável, basta comparar o hash com a referência guardada. A tabela seguinte resume quando cada mecanismo serve e o que não resolve sozinho.
+A lista de preços da loja mostra quando cada mecanismo serve. Para esconder a lista em trânsito, Ana cifra para a chave pública do Bruno; para provar que a lista veio da direção, a direção assina com a sua chave privada e qualquer pessoa verifica com a pública; para detetar uma alteração acidental face a uma cópia confiável, basta comparar o hash com a referência guardada. A tabela seguinte resume cada caso e o que não resolve sozinho.
 
 | Mecanismo              | Segredo necessário                    | Propriedade principal                                            | O que não dá sozinho                                       |
 | ---------------------- | ------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -48,6 +48,8 @@ Uma função hash tem saída de tamanho fixo. Para a lista de preços, distingue
 
 Para uma saída ideal de $n$ bits, a pesquisa genérica de colisões custa aproximadamente $2^{n/2}$ tentativas, por causa do paradoxo do aniversário. Isto não torna secreto um dado com poucos valores possíveis: se a lista só pudesse ser uma de dez versões conhecidas, calcular os dez hashes permitiria comparar as hipóteses com o resumo publicado.
 
+Colisões existem necessariamente quando há mais entradas possíveis do que resumos: uma saída de $n$ bits só admite $2^n$ valores. Isso não fornece um método eficiente para encontrar duas entradas concretas. Existência de colisões e resistência computacional a encontrá-las são afirmações diferentes.
+
 ## Cifrar e assinar com as chaves certas
 
 Para confidencialidade, Ana cifra para a chave pública **do Bruno**, que decifra com a privada do Bruno. Para autenticidade, Ana assina com a privada **da Ana**, e Bruno verifica com a pública da Ana. Trocar estes nomes troca o objetivo.
@@ -56,11 +58,21 @@ Em sistemas híbridos, uma chave de sessão protege os dados com uma cifra simé
 
 ## Cifras clássicas e espaço de chaves
 
-A cifra de César desloca cada letra num alfabeto. Vamos usar só as 26 maiúsculas ASCII, com `A=0`, `B=1`, até `Z=25`, e manter espaços e pontuação. Com deslocamento $k=3$, `ZEBRA` passa a `CHEUD`. Depois de Z voltamos a A.
+A cifra de César desloca cada letra num alfabeto. Vamos usar só as 26 maiúsculas ASCII, com `A=0`, `B=1`, até `Z=25`, e manter espaços e pontuação. Com deslocamento $k=3$, `ZEBRA` passa a `CHEUD`, voltando a A depois de Z.
 
 Se $x$ é o número da letra, ciframos com $y=(x+k)\bmod26$ e recuperamos com $x=(y-k)\bmod26$. O símbolo $\bmod$ dá o resto não negativo da divisão pelo módulo. Por exemplo, $28\bmod26=2$, a letra C. O deslocamento é a chave.
 
 Só há 26 deslocamentos distintos, incluindo zero. Experimentar todos permite reconhecer uma mensagem legível. Numa substituição monoalfabética, cada letra recebe outra letra distinta: há $26! = 26\times25\times\cdots\times1$ permutações, mas as repetições e frequências do texto continuam a dar informação. Um espaço de chaves grande, sozinho, não demonstra segurança. Estas cifras servem para estudar ideias, não para proteger dados atuais.
+
+## Aleatoriedade e bits de segurança
+
+A segurança depende de como se gera uma chave, não de a string resultante parecer complicada. Um gerador que devolve sempre `tYs90a` tem um único resultado possível, mesmo misturando maiúsculas, minúsculas e números. Uma amostra isolada não permite ordenar a entropia dos geradores que produziram `tYs90a`, `Banan4` e `YYYZZZ`.
+
+Se uma chave de 128 bits é escolhida uniformemente entre todos os valores, há $2^{128}$ hipóteses. Se o gerador escolhe uniformemente entre apenas 256 dessas strings, há oito bits de entropia, porque $256=2^8$. Escrever cada resultado em 128 bits não acrescenta escolhas ao gerador. Chaves exigem geração criptograficamente adequada; datas, contadores e geradores previsíveis não são substitutos.
+
+**Bits de segurança** descrevem a ordem do trabalho do melhor ataque considerado: $b$ bits corresponde aproximadamente a $2^b$ operações no modelo. Não é necessariamente o tamanho da chave, da mensagem ou do módulo. Por exemplo, um hash ideal com saída de 256 bits tem resistência genérica a colisões da ordem de 128 bits. As hipóteses sobre ataques, recursos e algoritmo fazem parte desta estimativa.
+
+O princípio de **Kerckhoffs** pede que o sistema continue protegido mesmo que o adversário conheça o seu desenho, desde que os segredos necessários, como a chave, se mantenham protegidos. Esconder o algoritmo não compensa uma chave previsível.
 
 ## Aritmética modular
 
@@ -72,7 +84,7 @@ Podemos reduzir os resultados intermédios de uma potência. Por exemplo, $26^2\
 
 ## RSA de brinquedo
 
-Vamos calcular apenas RSA sem codificação, para compreender a aritmética. **Este esquema não é seguro para uso real.** Os esquemas reais de cifragem e assinatura acrescentam construções como OAEP e PSS.
+A conta seguinte usa RSA sem codificação, só para compreender a aritmética. **Este esquema não é seguro para uso real.** Os esquemas reais de cifragem e assinatura acrescentam construções como OAEP e PSS.
 
 Bruno escolhe os primos $p=3$ e $q=11$. Então $n=pq=33$ e $\varphi(n)=(p-1)(q-1)=20$. A função $\varphi$ conta os inteiros de 1 até $n-1$ coprimos com $n$; esta fórmula usa dois primos distintos. Escolhe $e=3$, coprimo com 20, e $d=7$, porque $ed=21\equiv1\pmod{20}$. A chave pública é $(n,e)$ e a privada inclui $d$.
 
@@ -90,6 +102,18 @@ Para separar as identidades, Ana usa outro par: $p=5$, $q=11$, $n=55$, $\varphi(
 O módulo 33 pertence ao par do Bruno; o módulo 55 pertence ao da Ana. A última linha é apenas a verificação aritmética deste exemplo, sem a codificação de uma assinatura segura.
 
 Os números pequenos permitem fatorizar o módulo imediatamente. Mesmo com números grandes, RSA sem codificação é determinístico e tem relações algébricas exploráveis. Esta conta demonstra o mecanismo, não a segurança de um protocolo.
+
+### Dois ataques ao RSA sem codificação
+
+Se a mensagem só pode ser 4 ou 5 e a pública é $(n=33,e=3)$, qualquer observador calcula as duas hipóteses:
+
+$$4^3\bmod33=31.$$
+
+$$5^3\bmod33=26.$$
+
+Observar 26 identifica a mensagem 5 sem obter a privada. O problema é a cifragem determinística, não apenas a fatorização fácil destes números. Um esquema seguro usa a aleatoriedade e a codificação da construção, como OAEP.
+
+Na assinatura aritmética sem codificação, também há uma falsificação escolhida pelo atacante. Escolhe $s=2$ e calcula publicamente $m=s^e\bmod n=8$. O verificador aceita $(m=8,s=2)$ porque essa é exatamente a sua igualdade de verificação. O atacante não assinou uma mensagem arbitrária previamente imposta, mas construiu um par aceite sem conhecer $d$, o que já viola a segurança de uma assinatura. PSS tem uma codificação própria, não esta regra sobre inteiros crus.
 
 ## Gestão de chaves
 

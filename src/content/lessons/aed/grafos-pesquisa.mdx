@@ -7,6 +7,8 @@ practices:
   - aed/praticar-grafos-pesquisa
 ---
 
+import grafoContagens from '../../aed/examples/grafo-contagens.cpp?raw';
+
 import grafoPesquisa from '../../aed/grafo-pesquisa.dot?raw';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
@@ -34,6 +36,8 @@ Numa matriz de adjacência, guarda uma posição para cada par de vértices. Mem
 Numa lista de adjacência, cada vértice guarda os vizinhos existentes. No grafo do exemplo, com arestas `0-1,0-2,1-3,2-3,3-4`, as listas são `0:[1,2]`, `1:[0,3]`, `2:[0,3]`, `3:[1,2,4]`, `4:[3]` e `5:[]`; a matriz tem 1 nessas posições e 0 nas restantes. A memória das listas é $\Theta(V+E)$; um grafo não dirigido guarda cada aresta nas duas listas. Enumerar vizinhos custa $\Theta(\deg(u))$; testar ou remover uma aresta numa lista simples pode exigir um percurso desses vizinhos. Num grafo dirigido, as listas de saída não dão imediatamente todas as arestas de entrada.
 
 Um percurso que visita todos os vértices e todas as listas custa $\Theta(V+E)$. Com matriz, custa $\Theta(V^2)$. Estas expressões incluem vértices isolados: dizer apenas $O(E)$ não cobre um grafo sem arestas.
+
+Com `V=10000` e `E=10000`, o grafo é esparso: há apenas uma quantidade linear de arestas, contra quase cinquenta milhões de pares não dirigidos possíveis. A matriz reserva cem milhões de células, enquanto as listas guardam dez mil cabeças e vinte mil entradas de vizinhos. Num grafo denso, tanto listas como matriz podem exigir $\Theta(V^2)$ de memória e de percurso. A vantagem assintótica das listas depende da densidade; remover uma aresta dada por dois vértices favorece a matriz, pois não precisa de procurar o destino numa lista.
 
 ## DFS e a floresta de pesquisa
 
@@ -104,13 +108,31 @@ O argumento exige arestas com o mesmo custo. Com `A->B` de peso 10, `A->C` de pe
 
 Tempo $O(V+E)$ com listas; vetores de distância, pais e visitados ocupam $O(V)$, e a fila também pode atingir $O(V)$. DFS recursiva pode ter profundidade $O(V)$, mesmo num grafo esparso.
 
+## Contar arestas e vizinhos próximos
+
+Numa componente não dirigida, contar apenas as descobertas DFS conta arestas da árvore de pesquisa, não todas as arestas da componente. Um triângulo descobre dois vértices novos a partir da raiz, mas tem três arestas. Soma antes os comprimentos das listas de todos os vértices alcançados e divide por dois: cada aresta aparece nas duas extremidades.
+
+Para contar outros vértices a distância no máximo `d` da origem, usa BFS. Marca a origem com zero, mas não a acrescentes à contagem. Cada vizinho descoberto recebe a distância do pai mais um e conta uma vez. Quando retiras um vértice à distância `d`, não explores os seus vizinhos: ficariam para lá do limite. Com `d<=0`, o resultado é zero, porque a origem está excluída.
+
+<CodePlayground
+  language="cpp"
+  title="Contar numa componente e limitar a BFS"
+  code={grafoContagens}
+/>
+
+O grafo tem um triângulo `0-1-2-0` e a aresta `2-3`, outra componente `4-5` e o isolado 6. As contagens de arestas são 4, 1 e 0. Desde 0, os raios 0, 1, 2 e 99 contêm respetivamente 0, 2, 3 e 3 outros vértices. Os raios grandes não incluem componentes inacessíveis.
+
+As duas funções criam visitados ou distâncias de novo, pelo que chamadas consecutivas não misturam resultados. Com listas, o limite geral é $O(V+E)$, incluindo inicializar o vetor de tamanho `V`; podar a BFS poupa a exploração para lá do raio, mas não elimina essa inicialização. A DFS conta toda a componente, e a pilha pode atingir $O(V)$. Este programa exige origem válida, destinos válidos e grafo simples não dirigido com listas simétricas.
+
 ## Bipartição e grelhas
 
 Para bipartição, colore a origem com 0 e cada vizinho com a cor oposta durante a BFS; um conflito de cores prova um ciclo ímpar. Numa grelha, a fila guarda pares `(linha,coluna)` e verifica fronteiras e obstáculos antes de inserir. Começar com várias origens a distância zero dá a distância à origem mais próxima, como na nuvem de cinza do exercício AED070 (2025/26).
 
 ## Caminhos, diâmetro e grafos implícitos
 
-A árvore de pais de BFS fornece um caminho mínimo por destino, não todos os caminhos mínimos. No exercício AED069 (2025/26), o desempate compara caminhos a partir do destino e equivale a escolher sempre o menor predecessor; é um contrato particular desse enunciado, não uma regra geral de ordem lexicográfica a partir da origem. A distância de uma origem a si própria é zero. Num grafo não dirigido conexo, o diâmetro é a maior distância mínima entre pares. Repetir BFS de cada origem calcula-o em $O(V(V+E))$; num grafo desconexo tens de definir se consideras diâmetro infinito, por componente, ou se o problema exclui esse caso.
+A árvore de pais de BFS fornece um caminho mínimo por destino, não todos os caminhos mínimos. No exercício AED069 (2025/26), o desempate compara caminhos a partir do destino e equivale a escolher sempre o menor predecessor; é um contrato particular desse enunciado, não uma regra geral de ordem lexicográfica a partir da origem.
+
+A distância de uma origem a si própria é zero. Num grafo não dirigido conexo, o diâmetro é a maior distância mínima entre pares, e repetir BFS de cada origem calcula-o em $O(V(V+E))$; num grafo desconexo tens de definir se consideras diâmetro infinito, por componente, ou se o problema exclui esse caso.
 
 Numa grelha, os vértices podem ser posições livres e os vizinhos podem ser calculados a partir dos quatro movimentos, sem construir todas as listas. Verifica fronteiras e obstáculos antes de descobrires uma posição. Se o estado inclui uma chave recolhida, orientação ou outro recurso, só a posição não chega: visitados e distância devem identificar o estado completo.
 

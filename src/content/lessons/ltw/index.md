@@ -13,7 +13,7 @@ editorial:
   review:
     edition: 2026/27
     reviewer: Revisão editorial dos Resumos FEUP
-    date: '2026-10-08'
+    date: '2026-10-13'
   coverage: Programa da ficha de 2025/26 e sequência pública de aulas do docente, com exemplos e exercícios próprios.
   gaps:
     - Programa e avaliação de 2026/27 por confirmar.
@@ -59,9 +59,12 @@ A [página do docente](https://pages.up.pt/~up353972/page/courses/ltw/) divide o
 :::
 
 :::details[Materiais e bibliografia]
-O [Moodle de 2025/26](https://moodle2526.up.pt/course/view.php?id=4015) remete para a página de André Restivo, com slides e propostas práticas. Os slides nem sempre identificam o ano de produção. XML e XPath mantêm-se no percurso porque constam da ficha de 2025/26, embora não apareçam no calendário público mais recente do docente. As explicações e soluções destas páginas foram escritas de novo.
+O [Moodle de 2025/26](https://moodle2526.up.pt/course/view.php?id=4015) remete para a página de André Restivo, com slides e propostas práticas. Os slides nem sempre identificam o ano de produção. As notas e slides ligados pelo arquivo incluem versões históricas; exemplos antigos podem usar APIs ou opções que exigem confirmação no ambiente atual. XML e XPath mantêm-se no percurso porque constam da ficha de 2025/26, embora não apareçam no calendário público mais recente do docente. As explicações e soluções destas páginas foram escritas de novo.
 
 - [Slides e exercícios de André Restivo](https://pages.up.pt/~up353972/page/courses/ltw/). Segue a sequência de aulas e consulta o enunciado original de cada prática.
+- [Common Mistakes in the Exam, LTW 2023, no arquivo Accio](https://accio.pt/feup/L:EIC/linguagens-e-tecnologias-web/L.EIC019). O documento destaca âmbito PHP, callbacks e frações de grelha; orienta aplicações próprias sem confirmar o formato atual do exame.
+- [Âmbito de variáveis PHP](https://www.php.net/manual/en/language.variables.scope.php), [capturas em funções anónimas](https://www.php.net/manual/en/functions.anonymous.php) e [referências em foreach](https://www.php.net/manual/en/control-structures.foreach.php).
+- [Remoção de listeners](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener), incluindo identidade da função e opção de captura.
 - [Exemplo Chinook do docente](https://github.com/arestivo/chinook). Observa a separação entre páginas, templates, ações e base de dados. Código de demonstração antigo pode usar práticas que precisam de correção, incluindo SHA-1 para palavras-passe.
 - Elizabeth Castro e Bruce Hyslop, _HTML5 & CSS3: Visual QuickStart Guide_, 2011, ISBN 0-321-71961-1.
 - David Flanagan, _JavaScript: The Definitive Guide_, 2011, ISBN 0-596-80552-7.

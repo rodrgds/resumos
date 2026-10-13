@@ -8,10 +8,12 @@ practices:
 ---
 
 import maximoInvariante from '../../aed/examples/maximo-invariante.txt?raw';
+import Bracket from '../../../components/Bracket.astro';
 import CodeSnippet from '../../../components/CodeSnippet.astro';
 
 import CodePlayground from '../../../components/CodePlayground.astro';
 import Estados from '../../aed/Estados.astro';
+import YouTube from '../../../components/YouTube.astro';
 
 Em `[6,9,9,2]`, a nota máxima é 9, mas há duas posições possíveis. Se o pedido for a primeira ocorrência, a resposta é 1, com índices a partir de zero. Um algoritmo tem de fixar estes empates antes de podermos provar que está correto.
 
@@ -25,7 +27,11 @@ Considera este pseudocódigo, que devolve a primeira posição do máximo num ve
 
 <CodeSnippet language="text" code={maximoInvariante} />
 
+<Bracket label="Ideia-chave">
+
 À entrada de cada iteração, o **invariante** é: `melhor` é a primeira posição do máximo de `v[0..i)`. A notação `[0,i)` inclui 0 e exclui `i`.
+
+</Bracket>
 
 1. **Inicialização:** antes da primeira iteração, `i=1`. O prefixo só contém `v[0]`, e `melhor=0` satisfaz a propriedade.
 2. **Manutenção:** se `v[i]` for maior, a posição `i` é o novo máximo. Se for menor ou igual, manter a posição antiga conserva o máximo e o primeiro empate. Depois de aumentar `i`, a propriedade vale para o prefixo seguinte.
@@ -75,6 +81,10 @@ Para funções não negativas a partir de certa dimensão:
 
 Para $T(n)=3n^2+7n+4$, com $n\ge1$, temos $3n^2\le T(n)\le14n^2$. Logo $T(n)\in\Theta(n^2)$. Também pertence a $O(n^3)$, mas esse limite informa menos. E $O$ não significa «pior caso»: podes dar um limite superior para o melhor caso, o caso médio ou o pior caso, desde que indiques qual analisaste.
 
+Se pedirem a relação mais apertada entre duas funções, tenta primeiro $\Theta$. Por exemplo, $6n^2+5\in\Theta(n^2)$: para $n\ge1$, basta escolher constantes 6 e 11, pois $6n^2\le6n^2+5\le11n^2$. O facto de a função exceder $n^2$ não refuta $O(n^2)$; o limite permite uma constante multiplicativa.
+
+Já $n\log_2n\in O(n^2)$, mas não em $\Theta(n^2)$. O quociente $\log_2n/n$ tende a zero. Para qualquer constante positiva `c` que proposes como limite inferior, esse quociente acaba por ficar abaixo de `c`. Portanto não existe um limite inferior quadrático que valha para todas as dimensões suficientemente grandes. Um limite superior isolado não prova uma ordem apertada.
+
 A notação $\sum$ indica uma soma dos termos nos limites escritos. Por exemplo, $\sum_{i=1}^{n}i=1+2+\cdots+n$. $\log_2 n$ é o expoente que dá `n` como potência de 2; conta aproximadamente quantas divisões por dois reduzem `n` até um. $n!$ é o produto $1\cdot2\cdots n$.
 
 A ordem de crescimento habitual é
@@ -82,6 +92,10 @@ A ordem de crescimento habitual é
 $$1\prec\log n\prec n\prec n\log n\prec n^2\prec n^3\prec2^n\prec n!.$$
 
 A base do logaritmo muda apenas uma constante. Uma medição de 0,4 s com dimensão `n` sugere cerca de 1,6 s ao duplicar `n` num algoritmo quadrático, se a parcela quadrática dominar e as condições forem semelhantes. É uma estimativa, não uma garantia sobre outra máquina ou outra distribuição de dados.
+
+O vídeo de Rodrigo Dias complementa o estudo de invariantes e análise assintótica.
+
+<YouTube id="CFzDGAprNF0" title="Invariantes e Análise Assintótica 101" />
 
 ## Recorrências e espaço
 
@@ -165,6 +179,24 @@ int validas(const std::vector<int>& a, int k, int t) {
 ```
 
 Multiplicar por dois evita divisão inteira no teste «pelo menos metade», incluindo `K` ímpar.
+
+## Máximo de uma janela fixa
+
+A maior soma de **exatamente `k` elementos consecutivos** é outro contrato. Com `[4,-1,3,-2,5,-3]` e `k=3`, as somas são `6,0,6,0`; a primeira janela máxima começa em 0. Kadane permite comprimentos diferentes, pelo que não resolve este pedido sem alteração.
+
+Assume `1<=k<=n` e somas representáveis. Soma primeiro `[0,k)`, iniciando `c=s` nessa soma e `p=0`. Começa `j=1`; enquanto `j<=n-k`, faz:
+
+```cpp
+c = c - x[j - 1] + x[j + k - 1];
+if (c > s) { s = c; p = j; }
+++j;
+```
+
+No teste do ciclo, `c` é a soma da janela que começa em `j-1`; `s` é a maior soma entre as janelas com inícios em `[0,j)`, e `p` é o primeiro desses inícios que atinge `s`. Dizer só que `s` é um máximo não explica por que a atualização de `c` calcula a janela seguinte.
+
+Inicialmente, `j=1` e só a janela de início 0 foi processada. Na manutenção, subtrair `x[j-1]` retira a posição antiga e somar `x[j+k-1]` acrescenta a nova. O teste estrito conserva o primeiro empate, e incrementar `j` volta a pôr `c` na janela de início `j-1`. Na saída, `j=n-k+1`, por isso foram consideradas todas as `n-k+1` janelas. Essa quantidade menos `j` diminui até zero e prova terminação.
+
+Recalcular cada janela custa $\Theta(k(n-k+1))$. Deslizar custa $\Theta(k+n-k)=\Theta(n)$, com espaço auxiliar $O(1)$. Com `k` fixo, as duas versões são lineares; com `k=\lfloor n/2\rfloor`, recalcular passa a quadrático e deslizar continua linear. Com `k=n`, existe uma única janela: até a versão que recalcula é linear. A hipótese `k<=n/2`, usada nalguns enunciados, permite simplificar o primeiro custo para $\Theta(nk)$; sem ela, mantém `n-k+1`.
 
 ## Melhor soma contígua
 

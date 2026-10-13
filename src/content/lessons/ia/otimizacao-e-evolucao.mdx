@@ -6,6 +6,13 @@ section: conteudo
 practices:
   - ia/praticar-otimizacao-e-evolucao
 order: 5
+editorial:
+  basedOn: 2025/26
+  sources:
+    - title: Programa oficial de IA 2025/26
+      url: https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=560114
+    - title: Exame IART 2018/19, Luís Paulo Reis e Ana Paula Rocha, 17 de junho de 2019
+      url: https://accio.pt/feup/L:EIC/inteligencia-artificial/L.EIC029
 ---
 
 import Typst from '../../../components/Typst.astro';
@@ -19,11 +26,11 @@ Nas 4 rainhas, queremos colocar quatro rainhas sem ataques entre elas. A configu
 
 Tabuleiro 4 por 4 com uma rainha por coluna, representado pelo vetor das linhas, como [1, 4, 2, 3] (coluna 1 na linha 1, coluna 2 na linha 4, e por aí fora). A função de avaliação conta **pares de rainhas que se atacam** (mesma linha ou mesma diagonal): 0 é solução, e queremos minimizar. Vizinhos são os estados que mudam a linha de exatamente uma coluna, 12 vizinhos por estado.
 
-Confirma a conta no estado inicial [1, 4, 2, 1]: os pares são (1,1)-(2,4), (1,1)-(3,2), (1,1)-(4,1), (2,4)-(3,2), (2,4)-(4,1) e (3,2)-(4,1). Atacam-se (1,1)-(4,1) pela linha e (3,2)-(4,1) pela diagonal. Total: 2 ataques.
+Confirma a conta no estado inicial [1, 4, 2, 1]: os pares são (1,1)-(2,4), (1,1)-(3,2), (1,1)-(4,1), (2,4)-(3,2), (2,4)-(4,1) e (3,2)-(4,1). Atacam-se (1,1)-(4,1) pela linha e (3,2)-(4,1) pela diagonal, num total de 2 ataques.
 
 ## Subida da colina e o ótimo local
 
-A **subida da colina** (hill climbing) repete: avalia os 12 vizinhos e move-se para o melhor; se nenhum for melhor, para. Passo 1 a partir de [1, 4, 2, 1]: um dos melhores vizinhos é [1, 4, 2, 3], com 1 ataque (só o par (3,2)-(4,3) se ataca na diagonal; confirma os outros cinco pares). Desce de 2 para 1 e move-se.
+A **subida da colina** (hill climbing) repete: avalia os 12 vizinhos e move-se para o melhor, parando se nenhum for melhor. No passo 1, a partir de [1, 4, 2, 1], um dos melhores vizinhos é [1, 4, 2, 3], com 1 ataque (só o par (3,2)-(4,3) se ataca na diagonal; confirma os outros cinco pares), por isso desce de 2 para 1 e move-se.
 
 Passo 2 a partir de [1, 4, 2, 3]: os 12 vizinhos valem 1, 2, 3 ou 4. Os vizinhos que mudam a coluna 1 valem 2, 3 e 3; os da coluna 2 valem 4, 3 e 3; os da coluna 3, usando as linhas 1, 3 e 4, valem 1, 3 e 2; os da coluna 4 valem 2, 2 e 2. Nenhum é melhor que 1. A subida para aqui: estado com 1 ataque onde tudo à volta empata ou é pior. É um **ótimo local**, e a subida da colina, que só aceita melhorias estritas, nunca mais sai dele. A configuração [3, 1, 4, 2] tem 0 ataques: nenhuma linha se repete e nenhum par tem a diferença de linhas igual à diferença de colunas. O estado preso é um mínimo local não estrito, porque tem um vizinho com o mesmo valor 1. Esse patamar basta para parar a variante que exige melhoria estrita.
 
@@ -33,7 +40,7 @@ Passo 2 a partir de [1, 4, 2, 3]: os 12 vizinhos valem 1, 2, 3 ou 4. Os vizinhos
   alt="Paisagem de aptidão esquemática, sem correspondência com um tabuleiro concreto: um vale com 1 ataque que é ótimo local e um vale com 0 ataques que é o ótimo global, separados por uma subida."
 />
 
-A subida executável abaixo repete a regra estrita e só se move para valor menor:
+A subida executável abaixo repete a regra estrita, movendo-se apenas para valor menor:
 
 <CodePlayground
   language="python"
@@ -51,7 +58,7 @@ O **arrefecimento simulado** sorteia um vizinho e aceita melhorias. Numa minimiz
 
 Passar de 1 para 3 ataques dá $\Delta=2$. Com $T=2$, a probabilidade é $e^{-1} \approx 0{,}368$; com $T=0{,}5$, é $e^{-4} \approx 0{,}018$. Aceitar piorar temporariamente permite sair do mínimo local.
 
-O **reinício aleatório** sorteia um estado novo e recomeça a subida. Cada arranque dá outra oportunidade de alcançar uma solução, mas não garante que ela apareça num número finito de tentativas.
+O **reinício aleatório** sorteia um estado novo e recomeça a subida; cada arranque dá outra oportunidade de alcançar uma solução, sem garantir que ela apareça num número finito de tentativas.
 
 Os **algoritmos evolutivos** mantêm uma população de estados e aplicam **seleção** (os melhores reproduzem-se), **cruzamento** (filhos combinam partes de dois pais) e **mutação** (troca aleatória de um gene). Uma mutação no estado preso, por exemplo trocar a coluna 1 de 1 para 3, produz [3, 4, 2, 3] com 3 ataques: pior no imediato, mas noutra região do espaço, onde a subida seguinte pode encontrar outro caminho. A mutação pode introduzir diversidade, mas não garante melhorar nem conservar diversidade na população.
 
@@ -64,6 +71,32 @@ Para seguir a subida da colina ou justificar a sua paragem, conta sempre todos o
 Se a dúvida é como seleção, cruzamento e mutação transformam uma população ao longo das gerações, acompanha uma população passo a passo neste vídeo:
 
 <YouTube id="uQj5UNhCPuo" title="Genetic Algorithms Explained By Example" />
+
+## Uma rota como permutação
+
+Uma rota sai da fábrica F0 na posição 0, visita os clientes P, Q e R nas posições 2, 4 e 8, e termina na fábrica F1 na posição 10. As posições estão numa linha, em quilómetros. A solução é uma **permutação dos clientes**; as fábricas ficam nos extremos e não entram nos genes que trocamos.
+
+Para a rota `[P,R,Q]`, a distância é:
+
+$$
+|0-2|+|2-8|+|8-4|+|4-10|=2+6+4+6=18\text{ km}.
+$$
+
+Uma vizinhança pode trocar duas posições. Ao trocar R e Q obtemos `[P,Q,R]`, com `2 + 2 + 4 + 2 = 10 km`. Só mudámos a ordem; cada cliente continua a aparecer uma vez. Nesta instância, 10 km é também um limite inferior, porque qualquer percurso de 0 até 10 tem distância pelo menos 10. A rota atinge esse limite, por isso aqui prova-se o ótimo global, além da melhoria local.
+
+```python
+posicoes = {"P": 2, "Q": 4, "R": 8}
+def distancia(rota):
+    percurso = [0] + [posicoes[c] for c in rota] + [10]
+    return sum(abs(a - b) for a, b in zip(percurso, percurso[1:]))
+
+print(distancia(["P", "R", "Q"]))  # 18
+print(distancia(["P", "Q", "R"]))  # 10
+```
+
+O código calcula a distância; o contrato da rota exige ainda que os clientes sejam exatamente P, Q e R, sem repetições. Uma mutação por troca preserva essa propriedade. O cruzamento de um ponto usado nas rainhas pode violá-la: entre `[P,Q,R]` e `[R,P,Q]`, conservar o primeiro gene do primeiro pai e o sufixo do segundo dá `[P,P,Q]`, repetindo P e perdendo R. É preciso um operador que preserve permutações ou uma reparação definida.
+
+A representação e a vizinhança fazem parte do algoritmo aplicado. Nos exercícios históricos de rotas, sair e chegar a fábricas diferentes também muda o custo: não feches automaticamente a rota para a fábrica inicial.
 
 ## Satisfação de restrições
 

@@ -3,6 +3,13 @@ title: Praticar Java e objetos
 description: Referências partilhadas, igualdade, cópia defensiva, wildcards e despacho de métodos.
 section: exercicios
 order: 0
+editorial:
+  basedOn: 2026/27
+  sources:
+    - title: Problemas históricos de LDTS/LPOO, arquivo Accio, com exemplos adaptados
+      url: https://accio.pt/feup/L:EIC/laboratorio-de-desenho-e-teste-de-software/L.EIC014
+  gaps:
+    - Não confirma o formato ou os critérios das provas da edição atual.
 ---
 
 import Exercise from '../../../components/Exercise.astro';
@@ -248,4 +255,102 @@ Prevê a linha escrita e explica como Java escolhe cada método.
   <div slot="mistakes">
     O tipo concreto do objeto não faz Java reconsiderar automaticamente todas as sobrecargas na execução.
   </div>
+</Exercise>
+
+<Exercise
+  id="java-byte-promocao"
+  revision={1}
+  title="O cálculo cabe em int, o campo é byte"
+  explanation="/cadeiras/ldts/java-orientado-objetos/#promoção-e-overflow-inteiro"
+  answer={{ kind: 'self', checklist: ['Obtive 128 para soma e -127 para b.', 'Distingui promoção para int de conversão implícita em ++ e +=.', 'Expliquei por que a atribuição simples b = b + 1 não compila e o cast não recupera capacidade.'] }}
+>
+
+Considera este corpo de `main`:
+
+```java
+byte b = 127;
+int soma = b + 1;
+b++;
+b += 1;
+System.out.println(soma + " " + b);
+```
+
+Prevê a saída. Se substituirmos `b++` por `b = b + 1`, o programa compila? E por `b = (byte) (b + 1)`? Justifica cada caso pelos tipos e pelo intervalo de `byte`.
+
+<div slot="solution">
+A saída é `128 -127`. A soma inicial promove b para int, calcula 128 e não altera b. O incremento calcula o novo valor e converte-o de volta para byte: 127 passa a -128. A atribuição composta seguinte passa a -127.
+
+`b = b + 1` não compila porque o resultado é int e a atribuição simples não autoriza essa redução implicitamente. Com o cast explícito, compila e volta a obter -128 nesse passo, terminando também em -127. O cast conserva os oito bits menos significativos; não aumenta a capacidade do byte nem lança uma exceção por este overflow.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="java-equals-assinatura"
+  revision={1}
+  title="Um teste de igualdade que só passa com um tipo"
+  explanation="/cadeiras/ldts/java-orientado-objetos/#a-assinatura-de-equals"
+  answer={{ kind: 'self', checklist: ['Obtive true na primeira chamada e false na segunda.', 'Identifiquei a sobrecarga equals(Posicao), sem redefinir equals(Object).', 'Corrigi a assinatura e indiquei teste através de Object e hash compatível.'] }}
+>
+
+O tipo seguinte pretende comparar posições pela coordenada x:
+
+```java
+final class Posicao {
+    private final int x;
+    Posicao(int x) { this.x = x; }
+    public boolean equals(Posicao outra) {
+        return outra != null && x == outra.x;
+    }
+    @Override public int hashCode() { return x; }
+}
+```
+
+Duas posições `a` e `b` são criadas separadamente com x igual a 7. Prevê `a.equals(b)` e `a.equals((Object) b)`. Diagnostica o erro e escreve a redefinição correta. Que verificação evitaria aceitar a versão original só porque o primeiro resultado é verdadeiro?
+
+<div slot="solution">
+A primeira chamada dá true: a compilação escolhe a sobrecarga equals(Posicao). A segunda dá false: o argumento tem tipo Object, seleciona equals(Object) herdado, que compara identidade; os objetos são distintos. O hash igual não obriga essa igualdade.
+
+A redefinição correta é:
+
+```java
+@Override
+public boolean equals(Object outra) {
+    if (this == outra) return true;
+    if (!(outra instanceof Posicao)) return false;
+    Posicao p = (Posicao) outra;
+    return x == p.x;
+}
+```
+
+O tipo é final, a coordenada é imutável e o hash x é compatível com esta igualdade. Testa a operação também com argumento declarado Object, objetos diferentes e null; numa coleção hash, verifica que duas posições de x igual contam uma vez. Colocar @Override na assinatura errada faz o compilador recusá-la antes dos testes.
+
+</div>
+</Exercise>
+
+<Exercise
+  id="java-treeset-coordenadas"
+  revision={1}
+  title="Duas posições distintas, uma entrada"
+  explanation="/cadeiras/ldts/java-orientado-objetos/#ordem-e-unicidade-num-treeset"
+  answer={{ kind: 'self', checklist: ['Obtive false na inserção de (2,9) e tamanho 2 depois das três tentativas.', 'Relacionei comparação zero com equivalência no TreeSet.', 'Comparei x e depois y, sem subtração sujeita a overflow, coerente com equals.'] }}
+>
+
+`Posicao` é imutável e redefine corretamente `equals` e `hashCode` pelas duas coordenadas inteiras x e y. Um `TreeSet<Posicao>` recebe um comparator que compara **só x**. Inserimos, nesta ordem, `(2,1)`, `(2,9)` e `(1,5)`.
+
+Que resultado dá a segunda chamada a `add`? Qual é o tamanho e que posição com x igual a 2 fica guardada? Escreve um comparator que preserve todas as posições distintas e as ordene por x e depois y. Por que `a.getX() - b.getX()` não é uma alternativa segura para todos os inteiros?
+
+<div slot="solution">
+A segunda inserção dá false: comparar (2,1) e (2,9) só por x dá zero. O conjunto guarda a primeira, (2,1), e depois aceita (1,5), ficando com tamanho 2. Não consultou o equals para decidir que (2,9) era distinto.
+
+```java
+Comparator<Posicao> ordem = (a, b) -> {
+    int porX = Integer.compare(a.getX(), b.getX());
+    return porX != 0 ? porX : Integer.compare(a.getY(), b.getY());
+};
+```
+
+Com essa ordem, fica (1,5), (2,1), (2,9). A comparação só dá zero quando ambas as coordenadas coincidem, de acordo com equals. Subtrair pode fazer overflow e trocar o sinal: `Integer.MIN_VALUE - 1` produz um valor positivo em int, embora o primeiro operando seja menor. Integer.compare determina a ordem sem essa subtração.
+
+</div>
 </Exercise>
