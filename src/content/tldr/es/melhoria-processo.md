@@ -20,7 +20,7 @@ A **Review** inspeciona produto e orienta backlog; a **Retrospective** melhora p
 
 Para esperas de 2, 2, 3, 4 e 4 dias até à primeira revisão, a média e a mediana são três dias. Pedidos grandes e conhecimento concentrado podem ser causas diferentes.
 
-Uma ação concreta: **no próximo Sprint, preparar pedidos pequenos por comportamento e reservar revisão diária em par; comparar a espera até à primeira revisão**. Indica responsável ou acordo de equipa, prazo e medida. **SMART** significa específico, mensurável, realizável, relevante e delimitado no tempo.
+Uma ação concreta: **no próximo Sprint, preparar pedidos pequenos por comportamento e reservar revisão diária em par; comparar a espera até à primeira revisão**. Leva a ação como cartão ao planeamento, com responsável ou acordo de equipa, prazo e medida. **SMART** significa específico, mensurável, realizável, relevante e delimitado no tempo.
 
 Depois, esperas de 0, 1, 1, 2 e 2 dias dão mediana um. É evidência compatível com melhoria, mas não prova que a divisão dos pedidos causou toda a diferença: compara tamanho, volume, disponibilidade e tipo de trabalho.
 

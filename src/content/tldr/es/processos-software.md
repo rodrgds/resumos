@@ -28,7 +28,7 @@ Um **artefacto** é um resultado; uma **atividade** produz ou altera resultados;
 
 ## RUP
 
-O **RUP** é iterativo e incremental, orientado por casos de uso e centrado na arquitetura.
+O **RUP** é iterativo e incremental, orientado por casos de uso e centrado na arquitetura. Foi desenvolvido com a UML; os casos conduzem do requisito ao teste porque cada caso descreve uma interação com resultado observável.
 
 | Fase                     | Objetivo dominante                                  |
 | ------------------------ | --------------------------------------------------- |

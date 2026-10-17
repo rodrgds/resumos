@@ -28,6 +28,9 @@ Para impedir reservas sobrepostas da mesma sala:
 3. Testa duas tentativas concorrentes: espera uma confirmação, uma recusa e uma só reserva guardada.
 4. Regista a razão da decisão. Uma verificação apenas no ecrã pode ficar desatualizada antes da gravação.
 
-Um teste passado dá evidência para o cenário executado, não uma prova de todos os comportamentos. A crise do software e a conferência NATO de 1968 ajudaram a consolidar a disciplina; modularidade, modelação, métodos ágeis e integração contínua tratam dificuldades diferentes.
+Um teste passado dá evidência para o cenário executado, não uma prova de todos os comportamentos.
+
+- **«No Silver Bullet»** (Brooks, 1986): sem técnica isolada que dê, por si só, ganhos de uma ordem de magnitude na década seguinte; distingue dificuldade essencial de acidental e admite ganhos acumulados.
+- **História:** a crise do software e a conferência NATO de 1968 consolidaram a disciplina; modularidade, modelação, métodos ágeis e integração contínua tratam dificuldades diferentes.
 
 [Explicação da concorrência e da evidência](/cadeiras/es/introducao/#do-problema-à-evidência).

@@ -10,7 +10,7 @@
 1. **Elicita:** descobre necessidades com entrevistas, observação, questionários, brainstorming e protótipos. Distingue uma solução pedida, como um mapa 3D, da necessidade que a justifica.
 2. **Analisa:** resolve omissões e conflitos, avalia viabilidade e prioridade.
 3. **Especifica:** regista o acordo em requisitos, histórias, modelos, glossário e critérios.
-4. **Valida:** confirma com stakeholders que o acordo representa as necessidades. Pode acontecer antes de existir software.
+4. **Valida:** confirma com stakeholders que o acordo representa as necessidades. Pode acontecer antes de existir software; corrigir um erro de requisitos após a entrega pode custar muito mais.
 
 Em **MoSCoW**, Must é indispensável ao âmbito; Should é importante mas adiável; Could depende da capacidade; Won't fica fora do âmbito acordado, sem excluir trabalho futuro.
 

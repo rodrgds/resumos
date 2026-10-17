@@ -21,6 +21,8 @@ Um pipeline verde prova apenas os checks executados na revisão e ambiente indic
 
 ## Manutenção e legado
 
+Em sistemas por medida, manter costuma custar mais do que desenvolver; estas decisões pesam no orçamento total.
+
 | Tipo       | Motivo e exemplo                                                          |
 | ---------- | ------------------------------------------------------------------------- |
 | Corretiva  | Corrigir defeito, como reservas duplicadas                                |

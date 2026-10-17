@@ -11,11 +11,11 @@ editorial:
 
 Uma aplicação de salas acompanha as decisões desta cadeira: descobrir necessidades, escrever regras, modelar, escolher responsabilidades e obter evidência de qualidade. Os exemplos são próprios; as regras docentes e a avaliação referem-se à edição identificada abaixo.
 
-Começa pelos [fundamentos](/cadeiras/es/introducao/) e pelos [processos](/cadeiras/es/processos-software/). Os [requisitos](/cadeiras/es/requisitos-uml/) explicam histórias e aceitação, usados depois em [Scrum](/cadeiras/es/scrum/) e na [gestão de projetos](/cadeiras/es/gestao-projetos/). Os [modelos UML](/cadeiras/es/modelacao-uml/) descrevem o acordo e a [arquitetura](/cadeiras/es/arquitetura-desenho/) distribui as responsabilidades.
+Começa pelos [fundamentos](/cadeiras/es/introducao/) e pelos [processos](/cadeiras/es/processos-software/). O [Scrum](/cadeiras/es/scrum/) organiza o trabalho, com estimativas e quadros do projeto, e os [requisitos](/cadeiras/es/requisitos-uml/) explicam histórias e aceitação. Os [modelos UML](/cadeiras/es/modelacao-uml/) descrevem o acordo e a [gestão de projetos](/cadeiras/es/gestao-projetos/) estima, prevê e acompanha o plano.
 
 ## Percurso de estudo
 
-A segunda parte trata da evidência e da mudança: [verificação e validação](/cadeiras/es/verificacao-validacao/), [práticas de XP](/cadeiras/es/xp/), [construção e evolução](/cadeiras/es/construcao-evolucao/) e [melhoria do processo](/cadeiras/es/melhoria-processo/). Termina com a [documentação e demonstração do projeto](/cadeiras/es/projeto/). A [cheat sheet](/cadeiras/es/folha-consulta/) reúne condições e distinções para rever depois de estudar.
+A segunda parte trata da evidência e da mudança: [verificação e validação](/cadeiras/es/verificacao-validacao/), [práticas de XP](/cadeiras/es/xp/) e [arquitetura](/cadeiras/es/arquitetura-desenho/), que usa as vistas UML para distribuir responsabilidades. Seguem-se os [padrões de trabalho em equipa](/cadeiras/es/padroes-scrum/), a [construção e evolução](/cadeiras/es/construcao-evolucao/) e a [melhoria do processo](/cadeiras/es/melhoria-processo/). Termina com a [documentação e demonstração do projeto](/cadeiras/es/projeto/). A [cheat sheet](/cadeiras/es/folha-consulta/) reúne condições e distinções para rever depois de estudar.
 
 As páginas usam exemplos próprios de uma aplicação de reserva de salas. Os exercícios no fim de cada tema pedem classificações, modelos, cálculos e decisões justificadas. Antes de abrir a solução, escreve a tua resposta e tenta encontrar um caso que a possa contradizer.
 

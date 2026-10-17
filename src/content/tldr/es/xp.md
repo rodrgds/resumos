@@ -24,7 +24,7 @@ No **Planning Game**, o cliente explica valor e prioridades; a equipa estima e e
 
 Para duração válida de 30 a 120 minutos inclusive, um teste de 29 deve esperar recusa pela regra acordada. Um erro de importação antes de chamar a função não demonstra red. Depois de implementar a fronteira inferior, verifica também 30, 120 e 121.
 
-TDD ajuda a clarificar interfaces e obter feedback. Não descobre todos os requisitos nem substitui integração, revisão e validação com utilizadores.
+TDD ajuda a clarificar interfaces e obter feedback. Não descobre todos os requisitos nem substitui integração, revisão e validação com utilizadores. Uma história conta-se como terminada quando os testes de aceitação acordados passam, mantidas as restantes condições de Done; passar esses testes não prova, por si só, todos os requisitos.
 
 ## Refactoring e desenho simples
 

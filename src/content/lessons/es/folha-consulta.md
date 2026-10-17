@@ -6,100 +6,133 @@ studyKind: revision
 order: 1
 ---
 
-## Processo e gestão
+## Processo e planeamento
 
-| Distingue                                                                               | Critério                                                                   |
-| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| [Atividade e artefacto](/cadeiras/es/processos-software/#atividades-e-artefactos)       | A atividade produz ou altera; o artefacto é o resultado                    |
-| [Iteração e incremento](/cadeiras/es/processos-software/#iterativo-e-incremental)       | Iterar revê; incrementar acrescenta capacidade                             |
-| [RUP](/cadeiras/es/processos-software/#rup)                                             | Conceção, elaboração, construção e transição; disciplinas atravessam fases |
-| [Preditivo e ágil](/cadeiras/es/processos-software/#planeamento-preditivo-e-adaptativo) | Diferem no detalhe e momento do planeamento; ambos podem receber feedback  |
-| [Esforço e duração](/cadeiras/es/introducao/#esforço-não-é-duração)                     | Pessoa-dias não se convertem livremente em dias de calendário              |
+- **[Atividade / artefacto](/cadeiras/es/processos-software/#atividades-e-artefactos):** trabalho realizado / resultado produzido.
+- **[Iteração / incremento](/cadeiras/es/processos-software/#iterativo-e-incremental):** rever uma solução / acrescentar capacidade utilizável.
+- **[Preditivo / adaptativo](/cadeiras/es/processos-software/#planeamento-preditivo-e-adaptativo):** detalhe antecipado / detalhe crescente com feedback. Ambos têm planos.
+- **[Monitorizar / controlar](/cadeiras/es/gestao-projetos/#âmbito-tarefas-e-dependências):** observar o trabalho / agir sobre a observação.
+- **Marco:** ponto de verificação de um resultado.
+- **[Esforço / duração](/cadeiras/es/introducao/#esforço-não-é-duração):** trabalho em pessoa-dias / tempo de calendário.
+- **Comunicação:** $n(n-1)/2$ pares possíveis entre $n$ pessoas. Não conta reuniões nem horas.
+- **RUP:** iterativo, incremental, orientado por casos de uso e centrado na arquitetura. As disciplinas atravessam as fases.
 
-Pares possíveis numa equipa: $n(n-1)/2$, ou seja, não mede reuniões nem custo real.
+| [Fase RUP](/cadeiras/es/processos-software/#rup) | Objetivo dominante                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------ |
+| Conceção                                         | Delimitar visão, âmbito, viabilidade e riscos                      |
+| Elaboração                                       | Avaliar arquitetura e reduzir riscos; pode incluir código e testes |
+| Construção                                       | Desenvolver e testar incrementos                                   |
+| Transição                                        | Colocar em uso, apoiar e recolher feedback                         |
 
-[Caminho crítico](/cadeiras/es/gestao-projetos/#âmbito-tarefas-e-dependências): maior duração entre caminhos de dependências, sob recursos e hipóteses do plano.
+**Valores ágeis:** indivíduos/interações sobre processos/ferramentas; software em funcionamento sobre documentação extensa; colaboração sobre negociação de contratos; resposta à mudança sobre seguir um plano. Os itens da direita também têm valor.
 
-[Velocidade](/cadeiras/es/gestao-projetos/#velocidade-e-previsão): trabalho Done por Sprint. Previsão simples: $\lceil \text{backlog}/v \rceil$. Exige unidade, capacidade e critérios comparáveis; não compares equipas por pontos.
+## Scrum e padrões
 
-[Burndown](/cadeiras/es/gestao-projetos/#ler-um-burndown): mostra trabalho restante; para deduzir trabalho concluído, considera mudanças de âmbito e estimativas. Desvio da linha ideal é sinal para investigar, não quantidade obrigatória a cortar. Com 40 iniciais e 26 restantes, concluiu 14. Com mais 10 entrados, concluiu 24. Burnup pode mostrar crescimento de âmbito.
+| [Artefacto](/cadeiras/es/scrum/#artefactos-e-objetivos) | Conteúdo                               | Compromisso        |
+| ------------------------------------------------------- | -------------------------------------- | ------------------ |
+| Product Backlog                                         | Trabalho ordenado e evolutivo          | Product Goal       |
+| Sprint Backlog                                          | Objetivo, itens e plano dos Developers | Sprint Goal        |
+| Increment                                               | Passo utilizável                       | Definition of Done |
 
-## Scrum e XP
+- **Product Owner:** valor e backlog; não impõe sozinho a quantidade de trabalho do Sprint.
+- **Developers:** plano, incremento e qualidade; equipa autogerida com as competências necessárias.
+- **Scrum Master:** compreensão de Scrum e eficácia; promove a remoção de impedimentos.
+- **Pilares:** transparência, inspeção, adaptação. **Valores:** compromisso, foco, abertura, respeito, coragem. A confiança é destacada nos materiais, sem ser um sexto valor do Guide.
 
-| Conceito        | Lembra                                               |
-| --------------- | ---------------------------------------------------- |
-| Product Backlog | Trabalho ordenado; compromisso Product Goal          |
-| Sprint Backlog  | Sprint Goal, itens escolhidos e plano dos Developers |
-| Increment       | Utilizável e conforme à Definition of Done           |
-| Product Owner   | Valor e gestão do backlog                            |
-| Developers      | Plano, qualidade e incremento                        |
-| Scrum Master    | Compreensão de Scrum e eficácia da equipa            |
-| Review          | Produto e futuro do backlog                          |
-| Retrospective   | Processo, qualidade e colaboração                    |
+| Evento        | Finalidade                                               | Limite num Sprint de um mês |
+| ------------- | -------------------------------------------------------- | --------------------------- |
+| Planning      | Porquê, o quê, como                                      | 8 h                         |
+| Daily         | Adaptar o plano para o Sprint Goal                       | 15 min                      |
+| Review        | Inspecionar resultado e adaptar produto com stakeholders | 4 h                         |
+| Retrospective | Melhorar processo e colaboração                          | 3 h                         |
 
-[Scrum](/cadeiras/es/scrum/#artefactos-e-objetivos): Sprint de um mês ou menos; Daily de 15 minutos. Critérios da história e Definition of Done complementam-se. Definition of Ready é uma prática adicional.
-
-[XP](/cadeiras/es/xp/#valores-e-práticas): feedback técnico, TDD, integração, refactoring, pares, entregas pequenas, desenho simples e ritmo sustentável.
-
-[TDD](/cadeiras/es/xp/#tdd): teste falha pelo comportamento pretendido, implementação passa, refactoring preserva resultados. Erro de preparação não prova o caso.
-
-[Refactoring](/cadeiras/es/xp/#refactoring): muda estrutura, preserva comportamento observável. Mudar um limite funcional exige outro requisito e outra expectativa.
+- **Sprint:** duração fixa, até um mês. Nos mais curtos, Planning, Review e Retrospective costumam ser menores; Daily mantém 15 min.
+- **Done:** critérios específicos da história e qualidade comum satisfeitos. Pode haver entrega antes da Review. Ready e Accepted são convenções complementares.
+- **Mudanças:** Developers e Product Owner renegociam âmbito, preservando objetivo e qualidade. Trabalho incompleto volta ao backlog; só o PO pode cancelar por objetivo obsoleto.
+- **Refinamento:** esclarecer, dividir e estimar itens; não é evento formal adicional.
+- **[Padrões](/cadeiras/es/padroes-scrum/):** Stable Teams conserva conhecimento; Small Items divide por resultado útil; Yesterday's Weather usa trabalho recente; Swarming concentra ajuda; Information Radiator mostra estado; Testable Improvements exige resultado observável.
 
 ## Requisitos e modelos
 
-[Engenharia de requisitos](/cadeiras/es/requisitos-uml/#análise-especificação-e-validação): elicitar, analisar, especificar e validar; gerir mudanças ao longo do processo.
+| [Tipo de requisito](/cadeiras/es/requisitos-uml/#tipos-de-requisitos) | Pergunta                                                       |
+| --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Funcional                                                             | Que função ou comportamento?                                   |
+| Não funcional                                                         | Que qualidade ou restrição?                                    |
+| De domínio                                                            | Que regra vem do contexto? Pode ser funcional ou não funcional |
 
-| Tipo          | Pergunta                                                       |
-| ------------- | -------------------------------------------------------------- |
-| Funcional     | Que função ou comportamento deve existir?                      |
-| Não funcional | Que qualidade ou restrição tem de ser respeitada?              |
-| De domínio    | Que regra vem do contexto? Pode ser funcional ou não funcional |
+- **Engenharia de requisitos:** elicitar → analisar → especificar → validar; gerir mudanças. Validação pode preceder o software.
+- **Verificável:** operação, dados, ambiente, carga, medida e limite. “95% em até 2 s” exige 950 sucessos em 1000 consultas, se falhas contam como incumprimento; a média não basta.
+- **[História](/cadeiras/es/requisitos-uml/#histórias-de-utilizador):** quem, objetivo e razão. Três C: card, conversation, confirmation. INVEST: independente, negociável, com valor, estimável, pequena, testável.
+- **[Aceitação / BDD](/cadeiras/es/requisitos-uml/#critérios-de-aceitação):** Dado contexto, Quando ação, Então resultado, incluindo estado final e recusas. Testes acordados não dispensam Done nem provam todos os requisitos.
+- **[Rastreabilidade](/cadeiras/es/requisitos-uml/#protótipos-e-mudanças):** necessidade → requisito → desenho → teste. Requirements creep aumenta âmbito sem avaliar consequências.
 
-[Histórias](/cadeiras/es/requisitos-uml/#histórias-de-utilizador): quem, objetivo e razão. Card, conversation, confirmation. INVEST: independente, negociável, com valor, estimável, pequena e testável.
+| [UML](/cadeiras/es/modelacao-uml/) | Regra de leitura                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| Ator / caso de uso                 | Papel externo / resultado observável com valor; a fronteira define o sistema               |
+| Include                            | Tracejado do caso base para o incluído; incorpora comportamento                            |
+| Extend                             | Tracejado da extensão para o base; base com significado sozinho; não indica ordem temporal |
+| Generalização                      | Triângulo vazio aponta para o geral; especialização tratável como esse conceito            |
+| Multiplicidade                     | Lê na ponta oposta: $1$, $0..1$, $0..*$; não impede sobreposição temporal                  |
+| Composição                         | Losango cheio no todo; uma parte tem no máximo um todo composto de cada vez                |
+| Sequência                          | Tempo desce; síncrona espera, assíncrona continua; alt, opt, loop                          |
+| Atividades                         | Decisão/junção para alternativas; fork/join para concorrência                              |
+| Estados                            | `evento [guarda] / efeito`; efeito na transição tomada, ação de saída ao sair do estado    |
 
-[Aceitação](/cadeiras/es/requisitos-uml/#critérios-de-aceitação): Dado contexto, Quando ação, Então resultado. Inclui estado final e casos de recusa.
+Na composição, apagar o todo destrói as partes que ainda lhe pertencem. Uma referência não implica composição: Sala não pertence ao ciclo de vida de Reserva.
 
-[Casos de uso](/cadeiras/es/modelacao-uml/#casos-de-uso): ator é papel externo; caso produz resultado com valor; fronteira define o sistema.
+## Gestão: caminho, risco, estimativas
 
-- Include: seta tracejada do caso que inclui para o incluído.
-- Extend: seta tracejada da extensão para o base, num ponto de extensão. A guarda, quando indicada, determina a aplicação; pode ser omitida.
-- Generalização: triângulo vazio para o elemento geral.
+- **[Caminho crítico](/cadeiras/es/gestao-projetos/#âmbito-tarefas-e-dependências):** caminho de maior duração na rede, sob as hipóteses de recursos do plano. Recursos partilhados podem impedir sobreposição.
+- **[Risco](/cadeiras/es/gestao-projetos/#riscos-e-reservas):** possibilidade incerta; regista causa, consequência, sinais, resposta e responsável. Exposição $pI$, com probabilidade $p$ e impacto $I$, não prevê o atraso efetivo.
+- **[Estimativa](/cadeiras/es/gestao-projetos/#estimar):** previsão com âmbito, hipóteses e incerteza. Pontos medem tamanho relativo; tarefas podem usar horas, sem conversão fixa. Planning poker discute diferenças, não calcula apenas a média.
 
-[Classes](/cadeiras/es/modelacao-uml/#classes-e-modelo-de-domínio): lê multiplicidade na ponta oposta. $1$, exatamente uma; $0..1$, nenhuma ou uma; $0..*$, nenhuma ou várias. Restrições temporais precisam de regras adicionais.
+**[Velocidade](/cadeiras/es/gestao-projetos/#velocidade-e-previsão):** trabalho Done por iteração. Para backlog $B$ em pontos e $v>0$ em pontos/Sprint:
 
-[Composição](/cadeiras/es/modelacao-uml/#relações-entre-classes): losango cheio no todo, propriedade forte e ciclo de vida das partes. Referência não implica composição.
+$$N=\left\lceil\frac{B}{v}\right\rceil\text{ Sprints}.$$
 
-[Sequência](/cadeiras/es/modelacao-uml/#sequência-e-colaboração): tempo desce; mensagens ligam participantes; alt, alternativas; opt, opção; loop, repetição. Guardas dizem quando acontece.
+- Exige capacidade, âmbito, estimativas e critérios comparáveis; não compara produtividade entre equipas.
+- 18, 22 e 20 pontos dão média 20; 100 pontos sugerem 5 Sprints, ou 5 a 6 pelos extremos observados. Não é garantia nem intervalo estatístico.
 
-[Atividades e estados](/cadeiras/es/modelacao-uml/#atividades-e-estados): decisão escolhe caminhos; fork e join tratam concorrência. Estado é situação de um objeto, não um ecrã. Transição: `evento [guarda] / efeito`.
+| [Gráfico / limite](/cadeiras/es/gestao-projetos/#ler-um-burndown) | Interpretação                                                              |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Burndown                                                          | Trabalho restante; linha ideal é referência, não lei                       |
+| 40 iniciais → 26 restantes                                        | 14 concluídos, se âmbito e estimativas se mantêm                           |
+| Entraram mais 10                                                  | $40+10-26=24$ concluídos, sem outras mudanças                              |
+| Burnup                                                            | Separa trabalho concluído de âmbito total                                  |
+| [WIP](/cadeiras/es/gestao-projetos/#trabalho-em-curso)            | Trabalho começado e incompleto; limite depende de bloqueios e competências |
+
+No modelo de quatro itens de três dias, sem dependências nem custo de alternância, WIP 1 antecipa o primeiro resultado (dia 3 em vez de 9); ambos acabam no dia 12. Não prova um limite ideal universal.
 
 ## Arquitetura
 
-[Vistas 4+1](/cadeiras/es/arquitetura-desenho/#vistas-e-uml): lógica, implementação, processo e implantação, relacionadas por cenários.
+- **[4+1](/cadeiras/es/arquitetura-desenho/#vistas-e-uml):** lógica, implementação, processo, implantação; casos de uso relacionam e avaliam as quatro vistas.
+- **Elementos:** pacote agrupa; componente oferece interfaces; artefacto é peça concreta; nó é recurso de execução. Módulo não é máquina.
+- **[Coesão / acoplamento / ocultação](/cadeiras/es/arquitetura-desenho/#coesão-acoplamento-e-ocultação):** responsabilidades relacionadas / dependências entre módulos / decisões mutáveis atrás de contrato.
+- **[Estilos](/cadeiras/es/arquitetura-desenho/#estilos-e-padrões):** camadas, cliente-servidor, MVC, pipes and filters, repositório. Podem coexistir; não substituem contratos.
+- **Concorrência:** `criarSeLivre` atómica confirma ou recusa. `consultar` + `guardar` permite duas leituras de livre antes da gravação.
+- **Biblioteca / framework:** aplicação chama / é chamada por inversão de controlo. Avalia interfaces, qualidade, licença, suporte e integração.
+- **Decisão:** contexto, alternativas, escolha, consequências.
 
-Pacote agrupa elementos. Componente encapsula comportamento e interfaces. Artefacto é uma peça concreta. Nó é recurso de execução.
+## Qualidade, XP e evolução
 
-[Desenho](/cadeiras/es/arquitetura-desenho/#coesão-acoplamento-e-ocultação): responsabilidades coesas, dependências explícitas e decisões variáveis escondidas por contratos. Uma interface tem de permitir preservar as regras.
+| [Distingue](/cadeiras/es/verificacao-validacao/) | Critério                                                                |
+| ------------------------------------------------ | ----------------------------------------------------------------------- |
+| Verificação / validação                          | Conforme à especificação / adequada à necessidade                       |
+| Estático / dinâmico                              | Analisar representação / executar sistema ou modelo                     |
+| Caixa preta / branca                             | Derivar da especificação / da estrutura interna                         |
+| Unidade / integração / sistema / aceitação       | Unidade isolada / interação / sistema completo / critérios de aceitação |
+| Severidade / prioridade                          | Impacto da falha / urgência de resolução                                |
 
-[Estilos](/cadeiras/es/arquitetura-desenho/#estilos-e-padrões): camadas, cliente-servidor, MVC, pipes and filters e repositório respondem a preocupações diferentes e podem combinar-se.
-
-## Qualidade e evolução
-
-| Distingue                                                                                         | Critério                                                    |
-| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| [Verificação e validação](/cadeiras/es/verificacao-validacao/#verificação-e-validação)            | Conforme à especificação e adequado à necessidade           |
-| Estático e dinâmico                                                                               | Analisar representação e executar                           |
-| [Caixa preta e branca](/cadeiras/es/verificacao-validacao/#caixa-preta-e-caixa-branca)            | Derivar da especificação e da estrutura interna             |
-| [Unidade, integração, sistema, aceitação](/cadeiras/es/verificacao-validacao/#níveis-e-objetivos) | Unidade, interação, sistema completo e decisão de aceitação |
-| [Severidade e prioridade](/cadeiras/es/verificacao-validacao/#defeitos-e-regressão)               | Impacto e urgência                                          |
-| [Delivery e deployment](/cadeiras/es/construcao-evolucao/#entrega-e-implantação)                  | Preparar entrega e implantar automaticamente                |
-
-[Caso de teste](/cadeiras/es/verificacao-validacao/#caso-de-teste-e-oráculo): estado inicial, entradas, condições e resultados esperados. Oráculo independente da implementação. Cobertura mede execução, não prova correção. Fronteiras de 30 a 120 usam três pontos por limite: 29, 30, 31 e 119, 120, 121.
-
-[Intervalos semiabertos](/cadeiras/es/verificacao-validacao/#um-exemplo-com-intervalos): com início anterior ao fim em ambos os intervalos, há sobreposição se $i_1<f_2$ e $i_2<f_1$. Intervalos adjacentes não se sobrepõem.
-
-[Manutenção](/cadeiras/es/construcao-evolucao/#manutenção): corretiva, defeitos; adaptativa, ambiente; perfetiva, capacidade; preventiva, problemas futuros.
-
-[Retrospetiva](/cadeiras/es/melhoria-processo/#cinco-passos): preparar, reunir dados, interpretar, escolher ações e acompanhar. Uma melhoria precisa de ação, prazo e evidência.
-
-[Projeto](/cadeiras/es/projeto/#relatório-de-desenvolvimento): documenta para a próxima equipa. Um [protótipo vertical](/cadeiras/es/projeto/#um-protótipo-vertical) atravessa partes da solução; uma demonstração identifica versão, cenário e limitações.
+- **Caso de teste:** estado inicial, entradas, condições e resultados esperados. **Oráculo:** justifica a expectativa independentemente da implementação. **Script:** concretiza passos.
+- **Fronteiras inteiras de 30 a 120:** 29, 30, 31, 119, 120, 121. Recusa 29 e 121; adapta o passo para outra precisão.
+- **[Intervalos](/cadeiras/es/verificacao-validacao/#um-exemplo-com-intervalos):** para $i_1<f_1$ e $i_2<f_2$, os semiabertos sobrepõem-se se $i_1<f_2$ e $i_2<f_1$. Adjacentes não se sobrepõem.
+- **Cobertura:** mede execução, não correção do oráculo nem ausência de defeitos. Testes sequenciais não exercitam corridas; um substituto com sucesso fixo não prova integração.
+- **Defeito:** versão/ambiente, estado inicial, passos, esperado, observado.
+- **[TDD](/cadeiras/es/xp/#tdd):** falha pelo comportamento esperado → passa → refactoring com nova verificação. Erro de preparação não demonstra red.
+- **[Refactoring](/cadeiras/es/xp/#refactoring):** muda estrutura, preserva comportamento observável. Mudar um limite funcional exige outro requisito.
+- **[Planning game](/cadeiras/es/xp/#prioridade-estimativa-e-compromisso):** cliente prioriza por valor, equipa estima; negocia âmbito/data, não baixa números para caber.
+- **Par:** driver escreve, navigator acompanha decisões; trocam papéis. **CI:** integração frequente com feedback automatizado.
+- **[Delivery / deployment](/cadeiras/es/construcao-evolucao/#entrega-e-implantação):** manter entregável com decisão de implantação / implantar automaticamente após os critérios. Recuperação inclui dados e migrações.
+- **[Manutenção](/cadeiras/es/construcao-evolucao/#manutenção):** corretiva, defeito; adaptativa, ambiente; perfetiva, capacidade; preventiva, risco futuro. Classifica pelo motivo, não pelo tamanho da alteração.
+- **[Retrospetiva](/cadeiras/es/melhoria-processo/#cinco-passos):** preparar → reunir dados → interpretar → escolher ações → acompanhar. Define responsável, prazo e medida; antes/depois não prova causalidade.
+- **[Projeto](/cadeiras/es/projeto/#relatório-de-desenvolvimento):** liga visão, requisitos, modelos, arquitetura, testes, gestão e aprendizagem. Demonstra estado inicial, sucesso, estado final, recusa e limites. Protótipo vertical atravessa partes reais; ecrãs fictícios não provam integração.
