@@ -1,7 +1,8 @@
 ## Recuperação e espaçamento
 
-- Responde sem consultar a uma definição, uma aplicação e um caso em que o método falha. Depois confere os passos e corrige o erro.
-- Repete a tentativa noutro dia e alterna problemas que exigem decisões diferentes. Reconhecer uma solução não prova que consigas reconstruí-la.
+- Escreve três perguntas (definição, aplicação e caso de falha); responde sem consultar e só depois corrige.
+- Repete noutro dia e alterna decisões diferentes. Reconhecer a solução não prova que a reconstróis.
+- Escreve unidades e referência antes de cada conta.
 
 ## Diferenças e percentagens
 
@@ -11,15 +12,14 @@
 | De 0,84 J para 0,80 J | Menos 0,04 J; menos cerca de 4,76% em relação a 0,84 J |
 | De 40% para 50%       | Mais 10 pontos percentuais; aumento relativo de 25%    |
 
-A **variação relativa** divide a diferença pela referência. Com referência zero, não está definida. Um aumento relativo de 10% sobre uma taxa de 40% daria 44%, não 50%.
+A **variação relativa** divide a diferença pela referência; com referência zero, não está definida. Um aumento relativo de 10% sobre 40% dá 44%, não 50%.
 
 ## Planeamento e feedback
 
-- Planeia a partir do prazo, respeitando dependências: dados e figura verificados antes dos diapositivos; diapositivos completos antes do ensaio.
-- Cada tarefa precisa de responsável, prazo e resultado que outro membro consiga usar. Reserva tempo para integração e revisão conjunta.
-- Regista decisões, próximos passos e bloqueios antes do prazo. A divisão por secções não dispensa compreender o trabalho completo.
-- Uma correção dos dados exige validar a origem, conservar registos e atualizar contas, figuras e conclusões no relatório, poster e diapositivos. Confere também os ficheiros exportados.
-- Se, noutro ensaio, A passa a 0,82 J e B fica em 0,84 J, a diferença é 0,02 J e cerca de 2,44% face a A. Um poster com os antigos 5% ainda não está integrado.
-- Dá feedback com comportamento observado, efeito e mudança proposta. Fundamenta a avaliação entre pares em contribuições verificáveis, não no tempo de fala.
+- Parte do prazo e recua. Apresentação na sexta: ensaio na quinta, diapositivos prontos na quarta e figura verificada na terça.
+- Cada tarefa tem responsável, prazo e resultado que outro membro consiga usar. Reserva tempo para integração.
+- Uma correção dos dados exige validar a origem e atualizar contas, figuras e conclusões no relatório, no poster e nos diapositivos, incluindo exportados. Com A a 0,82 J e B a 0,84 J, a diferença passa a 0,02 J, cerca de 2,44% face a A.
+- Feedback: comportamento observado, efeito e mudança proposta, com contribuições verificáveis.
+- Em 2026/27, a primeira ronda inter-pares é na semana 6 ou 7 e a segunda na 10 ou 11, conforme a turma. O LogBook reúne datas, decisões e contribuições para fundamentar a avaliação.
 
 [Contas e planeamento completos](/cadeiras/pup/aprendizagem-equipa/#comparar-números).

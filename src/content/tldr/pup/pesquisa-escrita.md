@@ -1,29 +1,28 @@
 ## Consulta bibliográfica
 
-Define a pergunta e as condições antes de procurar. Para sensores, energia por medição e amostragem:
+Define pergunta e condições antes de procurar:
 
 ```text
 sensor AND "energy per measurement"
 AND ("sampling interval" OR "sampling rate")
 ```
 
-- `AND` combina conceitos; `OR` junta alternativas; aspas procuram a frase exata.
-- `NOT` pode excluir resultados úteis. Confirma a sintaxe de truncatura na base utilizada.
-- Sem resultados, alarga um bloco, por exemplo a `energy OR power`, distinguindo depois energia de potência.
-- Regista base, data, expressão e razão das alterações para repetir a pesquisa.
+- `AND` combina conceitos; `OR` junta sinónimos; aspas fixam a frase exata.
+- `NOT` pode excluir resultados úteis. Confirma a truncatura na ajuda da base.
+- Sem resultados, alarga um bloco (por exemplo, `energy OR power`) e distingue depois energia de potência.
+- Regista base, data, expressão e razão de cada alteração.
 
 ## Fonte e evidência
 
-- Uma fonte **primária** apresenta estudo ou dados originais; uma secundária interpreta outros trabalhos. Segue a revisão até ao original quando precisas das condições de medição.
-- Confere autoria, data, método, amostra, incerteza, interesses e limitações. Recência e posição no motor de pesquisa não garantem adequação.
-- Compara função, carga e condições equivalentes. Energia por leitura não determina consumo por hora sem frequência de leituras e consumo entre elas.
+- **Primária** apresenta o estudo original; secundária interpreta outros trabalhos. Segue até ao original quando precisas das condições.
+- Confere autoria, data, método, amostra, incerteza, interesses e limites. Recência e posição no Google não garantem adequação.
+- Compara função, carga e condições equivalentes. Sem frequência de leituras e consumo entre elas, energia por leitura não dá consumo por hora.
 
 ## Citação e escrita
 
-- A citação direta identifica palavras alheias; a **paráfrase** usa estrutura e palavras próprias e também cita a origem. Trocar sinónimos não basta.
-- Coloca a citação junto da afirmação e a referência completa na bibliografia. Preserva valores, condições e limites da fonte.
-- "Nas condições do ensaio, cada leitura exigiu 0,8 J, com amostragem de um minuto" não permite concluir "gasta sempre 0,8 J".
-- Distingue medição, inferência e condição não testada. Confirma referências sugeridas por IA e as instruções de utilização da tua edição.
-- Um relatório de semelhanças assinala correspondências; não decide sozinho se houve plágio.
+- Citação direta identifica palavras alheias; **paráfrase** usa palavras próprias e também cita a origem. Trocar sinónimos não basta.
+- Cita junto da afirmação; referência completa na bibliografia. Em 2026/27 usa o estilo Chicago. Preserva valores, condições e limites.
+- «0,8 J por leitura com amostragem de um minuto» não permite concluir «gasta sempre 0,8 J».
+- Distingue medição, inferência e condição não testada. Confirma referências sugeridas por IA.
 
 [Avaliar fontes e preservar a afirmação](/cadeiras/pup/pesquisa-escrita/#avaliar-uma-fonte).

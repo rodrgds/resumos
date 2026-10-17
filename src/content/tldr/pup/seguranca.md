@@ -1,6 +1,6 @@
 ## Planta e sinalização
 
-Antes de usar o espaço, localiza a tua posição, saídas, percursos alternativos, alarme e ponto de reunião. Confirma contactos e procedimentos na sinalização local e em [Segurança na FEUP](https://www.fe.up.pt/emergencia).
+Antes de usar o espaço, localiza posição, saídas, percursos alternativos, alarme e ponto de reunião. Confirma contactos na sinalização local e em [Segurança na FEUP](https://www.fe.up.pt/emergencia).
 
 | Sinal                                       | Significado                        |
 | ------------------------------------------- | ---------------------------------- |
@@ -10,19 +10,19 @@ Antes de usar o espaço, localiza a tua posição, saídas, percursos alternativ
 | Círculo azul                                | Obrigação                          |
 | Círculo com borda vermelha e barra diagonal | Proibição                          |
 
-Lê também o pictograma. Localizar um equipamento não significa ter formação para o usar.
+Lê o pictograma. Localizar um equipamento não é ter formação para o usar.
 
 ## Alerta
 
-- Afasta-te do perigo. Comunica edifício, piso ou sala, incidente observado e pessoas afetadas, distinguindo observação de incerteza. Não te aproximes para completar detalhes.
-- Numa emergência médica, liga diretamente **112**, responde ao operador e depois avisa o vigilante da FEUP, por **#115** na rede interna ou **912 233 377**. Outra pessoa pode avisá-lo enquanto fazes a chamada; não aguardes socorro interno para ligar.
-- Perante fumo ou incêndio, dá o alarme pelo botão manual alcançável em segurança ou pelos contactos internos indicados. Segue as instruções locais.
+- Afasta-te do perigo. Comunica onde, o quê e quem, distinguindo observação de incerteza.
+- Emergência médica: **112** primeiro, depois o vigilante (**#115** interno ou **912 233 377**). Outra pessoa pode avisar enquanto ligas.
+- Fumo ou incêndio: botão manual alcançável em segurança ou contactos internos. Segue as instruções locais.
 
 ## Evacuação e prevenção
 
-- Interrompe a atividade, deixa os objetos e segue um percurso sinalizado seguro. Não uses elevadores numa evacuação por incêndio.
-- Se a saída estiver bloqueada, segue alternativa segura e instruções locais. Comunica necessidades de apoio.
-- Permanece no ponto de reunião, mantém acessos livres e aguarda autorização para regressar. Informa a equipa sobre alguém em falta; não voltes para procurar.
-- Mantém vias livres, cumpre proteção e procedimentos e reporta condições inseguras. Nos simulacros, comunica obstáculos observados.
+- Interrompe a atividade, deixa os objetos e segue um percurso seguro. Em incêndio, não uses elevadores.
+- Se a saída estiver bloqueada, segue uma alternativa segura sem atravessar o perigo. Se faltar alguém, informa a equipa de segurança em vez de regressares ao edifício.
+- No ponto de reunião, mantém acessos livres e aguarda autorização.
+- Mantém vias livres e reporta condições inseguras. Nos simulacros, comunica obstáculos.
 
 [Procedimentos completos](/cadeiras/pup/seguranca/#dar-o-alerta).
