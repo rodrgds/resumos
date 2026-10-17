@@ -1,10 +1,3 @@
-import somaAninhada from '../../fp/examples/soma-aninhada.py?raw';
-
-import fibonacciIterativo from '../../fp/examples/fibonacci-iterativo.py?raw';
-import CodeSnippet from '../../../components/CodeSnippet.astro';
-
-import CodePlayground from '../../../components/CodePlayground.astro';
-
 ## Caso base, redução e retorno
 
 Uma função recursiva usa a solução de uma versão mais pequena do problema.
@@ -26,7 +19,8 @@ def fatorial(n):
 print(fatorial(4))  # 24
 ```
 
-`4 * (3 * (2 * (1 * fatorial(0))))` deixa multiplicações pendentes. A **pilha de chamadas** conserva parâmetros e trabalho pendente; os retornos resolvem-nos de dentro para fora. Esquecer o `return` exterior pode produzir `None`.
+- `4 * (3 * (2 * (1 * fatorial(0))))` deixa multiplicações pendentes: a **pilha de chamadas** conserva parâmetros e trabalho pendente, resolvidos de dentro para fora.
+- Esquecer o `return` exterior pode produzir `None`.
 
 ## Terminação e custo
 
@@ -35,38 +29,36 @@ print(fatorial(4))  # 24
 - Com entrada -1, `-1 // 10` continua -1. Essa redução não termina; valida a pré-condição ou normaliza com `abs`.
 - Python limita a profundidade e não elimina chamadas em posição terminal. Uma recursão matematicamente terminante pode lançar `RecursionError`.
 
-## Estruturas aninhadas
+## Estruturas aninhadas e resultados compostos
 
-Contrato: números e listas finitas **sem referências cíclicas**. Um número soma-se diretamente; uma lista exige outra chamada; a lista vazia soma zero.
+Contrato: números e listas finitas **sem referências cíclicas**. Uma lista que se contém a si própria viola a redução estrutural.
 
-<CodePlayground
-  language="python"
-  title="Somar por níveis"
-  code={somaAninhada}
-/>
+```python
+def soma_aninhada(xs):
+    total = 0
+    for elemento in xs:
+        if isinstance(elemento, list):
+            total += soma_aninhada(elemento)
+        else:
+            total += elemento
+    return total
+```
 
-As saídas são `10` e `0`. A função percorre sublistas sem alterar a entrada; uma lista que se contém a si própria viola a redução estrutural.
+- A lista vazia soma zero; um número soma-se diretamente; uma lista exige outra chamada. `isinstance(elemento, list)` decide o ramo.
+- Se a chamada interior devolve frequências, soma cada contagem à da mesma chave no resultado exterior; substituir o dicionário perde ocorrências de ramos anteriores. Uma sublista vazia contribui com `{}`.
+- Uma expressão é um inteiro ou `(esquerda, operador, direita)`, com operandos da mesma forma e operador em `+`, `-` e `*`. Avalia ambos os operandos e aplica o operador exterior na ordem recebida; `((8, '-', 3), '*', (2, '+', 1))` dá $5\times3=15$.
 
-## Combinar coleções e avaliar árvores
+[Combinar resultados](/cadeiras/fp/recursao/#combinar-resultados-recursivos). [Expressões como árvores](/cadeiras/fp/recursao/#expressões-como-árvores).
 
-- Se uma chamada interior devolve frequências, soma cada contagem à da mesma chave no resultado exterior. Substituir o dicionário perde ocorrências de ramos anteriores; uma sublista vazia contribui com `{}`.
-- Uma expressão é um inteiro ou `(esquerda, operador, direita)`, com operandos da mesma forma e operador em `+`, `-`, `*`. O inteiro devolve-se diretamente; o tuplo exige avaliar ambos os operandos e aplicar o operador exterior na ordem recebida.
-- `((8, '-', 3), '*', (2, '+', 1))` dá $5\times3=15$. A redução segue subárvores próprias de uma árvore finita; não é uma leitura sequencial de texto.
+## Explorar escolhas e evitar repetição
 
-## Explorar escolhas
+Para somar exatamente um alvo com preços inteiros positivos:
 
-Para somar exatamente um alvo com preços inteiros positivos, cada posição
-é escolhida ou ignorada. Ambos os ramos retiram essa posição; só o primeiro
-subtrai o seu preço ao alvo. Combina-os com `or`.
+1. Cada posição é escolhida ou ignorada.
+2. Ambos os ramos retiram essa posição; só o primeiro subtrai o seu preço ao alvo.
+3. Combina-os com `or`.
 
-- Alvo zero permite a escolha vazia. Alvo negativo, ou preços esgotados com alvo positivo, é falha.
+- Alvo zero permite a escolha vazia; alvo negativo, ou preços esgotados com alvo positivo, é falha.
 - `[6, 4, 3]` forma 7 com 4 e 3; começar sempre pelo maior falharia.
 - O número de posições diminui, garantindo terminação, mas há até $2^n$ subconjuntos. Terminar não implica ser eficiente.
-
-## Trabalho repetido
-
-A recursão direta de Fibonacci repete subproblemas: para `fib(4)`, `fib(2)` corre duas vezes. Um ciclo conserva só os dois valores anteriores:
-
-<CodeSnippet language="python" code={fibonacciIterativo} />
-
-Para inteiro não negativo `n`, devolve 0 em `n = 0` e 3 em `n = 4`. Escolhe recursão pela estrutura; verifica profundidade, repetição e cópias, como fatias `xs[1:]` criadas em cada chamada.
+- A recursão direta de Fibonacci repete subproblemas (`fib(2)` corre duas vezes para `fib(4)`). Um ciclo com os dois valores anteriores evita a repetição; escolhe recursão pela estrutura e verifica profundidade, repetição e cópias.

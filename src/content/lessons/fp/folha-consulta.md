@@ -41,27 +41,30 @@ As tabelas reúnem operações, condições e casos limite. As ligações levam 
 
 ## Funções, âmbito e efeitos
 
-`def` define; `f(argumento)` chama; `f` passa a função como valor. `return` termina a chamada e entrega o resultado. `print` escreve e devolve `None`; uma função sem retorno explícito também devolve `None`.
-
-Passar um objeto não o copia. Reatribuir o parâmetro muda o nome local; alterar uma lista recebida muda o objeto partilhado. Define o domínio, o resultado, os casos limite e os efeitos no contrato. Os valores por defeito são avaliados quando `def` executa. Para uma lista nova por chamada, usa `None` e cria-a no corpo.
-
-Uma função pura depende dos valores recebidos e não produz efeitos observáveis fora do cálculo. Um acumulador local não implica, por si só, um efeito no chamador; um enunciado que exige ausência de atribuições pode impor uma restrição adicional.
+| Decisão             | Regra                                                                                                                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Definir ou chamar   | `def` define; `f(argumento)` chama; `f` passa a função como valor.                                                                                                    |
+| Devolver ou mostrar | `return` termina a chamada e entrega o resultado. `print` escreve e devolve `None`; sem `return` explícito, também devolve `None`.                                    |
+| Passar um objeto    | Não o copia. Reatribuir o parâmetro muda o nome local; alterar uma lista recebida muda o objeto partilhado.                                                           |
+| Escrever o contrato | Define domínio, resultado, casos limite e efeitos.                                                                                                                    |
+| Valor por defeito   | Avaliado quando `def` executa. Para uma lista nova por chamada, usa `None` e cria-a no corpo.                                                                         |
+| Manter pureza       | Depende dos valores recebidos, sem efeitos observáveis fora do cálculo. Um acumulador local não é, por si só, um efeito no chamador; sem atribuições é mais restrito. |
 
 [Retorno e saída](/cadeiras/fp/funcoes/#return-e-print). [Passagem de argumentos](/cadeiras/fp/funcoes/#passagem-de-argumentos-e-efeitos). [Valores por defeito](/cadeiras/fp/funcoes/#argumentos-por-nome-e-valores-por-defeito). [Pureza](/cadeiras/fp/programacao-funcional/#funções-livres-de-efeitos).
 
 ## Escolher uma coleção
 
-| Tipo    | Conserva                            | Armadilha                                                                                                    |
-| ------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `str`   | Texto ordenado, imutável            | Índice inválido falha; fatia ajusta limites. Métodos devolvem texto novo.                                    |
-| `tuple` | Sequência imutável                  | `(x,)` tem um elemento; um elemento mutável interior pode mudar.                                             |
-| `list`  | Ordem, repetições, alterações       | `append` acrescenta um objeto; `extend` percorre outro iterável. Métodos mutadores costumam devolver `None`. |
-| `dict`  | Chave para valor, ordem de inserção | Chaves são hashable. `in` testa chaves. `get` não cria a chave.                                              |
-| `set`   | Elementos únicos, sem posição       | `set()` é vazio; `{}` é dicionário. Não uses ordem do conjunto como saída.                                   |
+- **`str`:** texto ordenado e imutável. Índice inválido falha; fatia ajusta limites. `upper` e `replace` devolvem texto sem alterar a string.
+- **`tuple`:** sequência imutável. `(x,)` tem um elemento; um elemento mutável interior pode mudar.
+- **`list`:** conserva ordem e repetições, e pode mudar. `append` acrescenta um objeto; `extend` percorre outro iterável. Métodos mutadores costumam devolver `None`.
+- **`dict`:** associa chaves a valores e conserva a ordem de inserção. Chaves são hashable; `in` testa chaves; `get` não cria a chave.
+- **`set`:** elementos únicos, sem posição. `set()` é vazio; `{}` é dicionário. Não uses a ordem do conjunto como saída.
 
-`b = a` cria um alias. `a.copy()` copia só o recipiente. Numa matriz, as linhas podem continuar partilhadas. `[[0] * c] * r` repete a mesma linha; `[[0] * c for _ in range(r)]` cria linhas independentes. `sorted(xs)` devolve outra lista; `xs.sort()` altera a existente.
-
-`A | B` é união; `A & B`, interseção; `A - B`, diferença com direção; `A ^ B`, diferença simétrica. `A <= B` testa subconjunto. `zip` termina no iterável mais curto por defeito.
+- `b = a` cria um alias. `a.copy()` copia só o recipiente. Numa matriz, as linhas podem continuar partilhadas.
+- `[[0] * c] * r` repete a mesma linha; `[[0] * c for _ in range(r)]` cria linhas independentes.
+- `sorted(xs)` devolve outra lista; `xs.sort()` altera a existente.
+- `A | B` é união; `A & B`, interseção; `A - B`, diferença com direção; `A ^ B`, diferença simétrica. `A <= B` testa subconjunto.
+- `zip` termina no iterável mais curto por defeito; valida comprimentos iguais se o contrato exigir.
 
 [Fatias](/cadeiras/fp/strings/#fatias). [Alias e cópia](/cadeiras/fp/tuplos-listas/#alias-contra-cópia-igualdade-contra-identidade). [Cópia superficial](/cadeiras/fp/tuplos-listas/#listas-de-listas-e-cópia-superficial). [Conjuntos](/cadeiras/fp/dicionarios-conjuntos/#conjuntos-e-pertença).
 
@@ -76,13 +79,17 @@ Uma função pura depende dos valores recebidos e não produz efeitos observáve
 | Chave de ordenação  | `sorted(registos, key=lambda r: (-r[1], r[0]))` ordena pelo segundo campo decrescente e pelo primeiro crescente.                                                                                     |
 | Devolver uma função | Uma closure conserva acesso ao âmbito envolvente. O contexto não é automaticamente uma cópia de cada valor.                                                                                          |
 
-Um iterador consumido não recomeça. `(f(x) for x in xs)` é gerador; `yield` entrega um valor e suspende; o próximo pedido retoma depois de `yield`; `return` termina. Usa lista para índices e vários percursos, gerador para consumo progressivo. Filtrar positivos antes de elevar ao quadrado exclui negativos; filtrar os quadrados já não os exclui. A paridade de um inteiro, pelo contrário, mantém-se no seu quadrado.
+- Um iterador consumido não recomeça. Usa lista para índices e vários percursos; gerador para consumo progressivo.
+- `(f(x) for x in xs)` é gerador; `yield` entrega um valor e suspende; o próximo pedido retoma depois de `yield`; `return` termina.
+- Filtrar positivos antes de elevar ao quadrado exclui negativos; filtrar os quadrados já não os exclui. A paridade de um inteiro, pelo contrário, mantém-se no seu quadrado.
 
 [Compreensões](/cadeiras/fp/compreensoes-geradores/#compreensões-de-listas). [Geradores](/cadeiras/fp/compreensoes-geradores/#geradores-e-yield). [Map, filter e reduce](/cadeiras/fp/programacao-funcional/#map-filter-e-reduce). [Closures](/cadeiras/fp/programacao-funcional/#devolver-funções-e-âmbito-léxico).
 
 ## Recursão e pesquisa
 
-Na recursão, escreve o caso base e uma medida que diminui até ele. Devolve o resultado da chamada recursiva. Considera profundidade, chamadas repetidas e cópias de fatias. Python não elimina chamadas em posição terminal.
+- Escreve o caso base e uma medida que diminui até ele.
+- Devolve o resultado da chamada recursiva.
+- Considera profundidade, chamadas repetidas e cópias de fatias. Python não elimina chamadas em posição terminal.
 
 | Técnica                   | Pré-condição                  | Custo típico no pior caso |
 | ------------------------- | ----------------------------- | ------------------------- |
@@ -91,29 +98,45 @@ Na recursão, escreve o caso base e uma medida que diminui até ele. Devolve o r
 | Dois percursos sucessivos | Cada um visita $n$ entradas   | $O(n)$                    |
 | Todos os pares            | Há $n(n-1)/2$ pares distintos | $O(n^2)$                  |
 
-Escolhe uma convenção para ausência, como `None`, e não a uses como índice. Uma função binária que encontra uma ocorrência não garante a primeira. Pertença em dicionários e conjuntos tem custo médio esperado constante, não uma garantia de pior caso constante. Define `n` e o trabalho contado antes de usar Big-O.
+- Escolhe uma convenção para ausência, como `None`, e não a uses como índice.
+- Uma função binária que encontra uma ocorrência não garante a primeira.
+- Pertença em dicionários e conjuntos tem custo médio esperado constante, não uma garantia de pior caso constante.
+- Define `n` e o trabalho contado antes de usar Big-O.
 
 [Recursão](/cadeiras/fp/recursao/#o-modelo-da-recursão). [Pesquisas](/cadeiras/fp/algoritmos-complexidade/#pesquisa-linear-e-pesquisa-binária). [Custo](/cadeiras/fp/algoritmos-complexidade/#contar-operações).
 
 ## Construções para combinar
 
-- Ao extrair dígitos com divisões por uma base inteira `b >= 2`, os restos vêm do menos significativo para o mais significativo. Para apresentar texto, inverte essa ordem e representa zero por `"0"`. Um inteiro invertido não conserva zeros à esquerda.
-- Uma chamada recursiva pode devolver frequências. Soma as contagens da mesma chave para combinar ramos, em vez de as substituir. Numa árvore de expressões, avalia ambos os operandos e aplica o operador exterior na ordem recebida.
-- Ao explorar subconjuntos de preços positivos, retira a primeira posição nos ramos escolher e ignorar; só escolher reduz o alvo. Alvo zero é sucesso, negativo é falha. O número de posições garante terminação, mas podem existir $2^n$ escolhas.
-- `any` procura um verdadeiro; `all` procura um falso. `any([])` é `False` e `all([])` é `True`. Cada peça existir em alguma caixa difere de existir uma caixa com todas as peças. Percursos interiores repetidos exigem coleções reutilizáveis.
-- Para pares de posições distintos, usa `j > i`. Reservas semiabertas $[a,b[$ e $[c,d[$, com início menor que fim, conflituam se `max(a, c) < min(b, d)`; um contacto no extremo não conta.
+- Dígitos de um inteiro `n >= 0`, em base inteira `b >= 2`: repete `n % b` e `n //= b`. Os restos saem do menos para o mais significativo; inverte-os para escrever o número.
+- Representa zero por `"0"`. Um inteiro invertido não conserva zeros à esquerda.
+- Frequências de ramos diferentes: soma as contagens da mesma chave, sem as substituir. Uma sublista vazia contribui com `{}`.
+- Árvore de expressões: calcula os dois operandos antes de aplicar o operador, conservando a ordem.
+- Para somar exatamente um alvo com preços positivos, retira a primeira posição nos ramos escolher e ignorar; só escolher reduz o alvo.
+- Alvo zero aceita a escolha vazia; alvo negativo falha, pois os preços são positivos. Diminuir as posições garante terminação; $n$ posições admitem $2^n$ escolhas.
+- `any` procura um verdadeiro; `all` procura um falso. `any([])` é `False` e `all([])` é `True`.
+- «Cada peça existe em alguma caixa» difere de «uma caixa contém todas as peças»: a ordem dos percursos importa. Repetir percursos interiores exige coleções reutilizáveis, não iteradores consumidos.
+- Para pares de posições distintos, usa `j > i`.
+- Reservas semiabertas $[a,b[$ e $[c,d[$, com início menor que fim, conflituam se `max(a, c) < min(b, d)`; um contacto no extremo não conta. Intervalos fechados exigem outra condição.
 - Para gerar intervalos inteiros inclusivos, percorre cada par com `range(inicio, fim + 1)` e `yield valor`. Exige `inicio <= fim`; conserva a ordem e as repetições sem guardar todos os inteiros.
 
 [Dígitos e bases](/cadeiras/fp/condicoes-ciclos/#construir-um-número-a-partir-dos-dígitos). [Resultados recursivos](/cadeiras/fp/recursao/#combinar-resultados-recursivos). [Árvores de expressões](/cadeiras/fp/recursao/#expressões-como-árvores). [Any e all](/cadeiras/fp/programacao-funcional/#any-all-e-condições-sobre-coleções). [Fronteiras](/cadeiras/fp/compreensoes-geradores/#pares-de-posições-e-fronteiras).
 
 ## Ficheiros, falhas e verificação
 
-`with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair. `"w"` substitui o conteúdo; `"a"` acrescenta; `"x"` exige um ficheiro novo. Caminhos relativos partem da pasta de trabalho. `readline()` devolve `""` no fim; uma linha em branco é normalmente `"\n"`. Para CSV, usa `csv` e `newline=""`.
+| Decisão          | Regra                                                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Abrir e fechar   | `with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair. Caminhos relativos partem da pasta de trabalho. |
+| Escolher o modo  | `"w"` substitui o conteúdo; `"a"` acrescenta; `"x"` exige um ficheiro novo. Para CSV, usa `csv` e `newline=""`.            |
+| Distinguir o fim | `readline()` devolve `""` no fim; uma linha em branco é normalmente `"\n"`.                                                |
 
-`except Tipo` trata a falha esperada; `else` corre apenas se o `try` terminar normalmente, sem `return`, `break` ou `continue`; `finally` corre sempre na saída. `raise` comunica a falha ao chamador. Não escondas qualquer defeito com um tratador indiscriminado. `assert` verifica hipóteses internas e pode ser desativado. Entradas inválidas precisam de validação explícita.
+| Bloco              | Quando corre                                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `except Tipo`      | Trata a falha esperada; não escondas qualquer defeito com um tratador indiscriminado.                                                                 |
+| `else`             | Apenas se o `try` terminar normalmente, sem `return`, `break` ou `continue`.                                                                          |
+| `finally`          | Sempre na saída.                                                                                                                                      |
+| `raise` / `assert` | `raise` comunica a falha ao chamador. `assert` verifica hipóteses internas e pode ser desativado; entradas inválidas precisam de validação explícita. |
 
-Os tratadores são escolhidos por ordem de compatibilidade. `FileNotFoundError` também é um `OSError`: coloca o tratador específico antes do geral. Uma falha sem tratador compatível propaga-se ao chamador.
-
-Calcula o resultado esperado antes de executar. Testa limites, vazio, repetições e entradas inválidas conforme o contrato. Para uma falha, reduz a entrada e encontra a primeira instrução cujo estado diverge do esperado.
+- O primeiro tratador compatível ganha. Coloca `FileNotFoundError` antes de `OSError`, pois o primeiro é também um caso do segundo. Sem tratador compatível, a falha propaga-se ao chamador.
+- Calcula o resultado esperado antes de executar. Testa limites, vazio, repetições e entradas inválidas. Se falhar, reduz a entrada e localiza o primeiro estado que diverge do esperado.
 
 [Ficheiros](/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros). [Exceções](/cadeiras/fp/ficheiros-excecoes/#exceções-try-except-else-e-finally). [Testes](/cadeiras/fp/ficheiros-excecoes/#asserções-e-testes).
