@@ -123,18 +123,18 @@ As tabelas reúnem operações, condições e casos limite. As ligações levam 
 
 ## Ficheiros, falhas e verificação
 
-| Decisão          | Regra                                                                                                                      |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [Abrir e fechar](/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros)   | `with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair. Caminhos relativos partem da pasta de trabalho. |
-| Escolher o modo  | `"w"` substitui o conteúdo; `"a"` acrescenta; `"x"` exige um ficheiro novo. Para CSV, usa `csv` e `newline=""`.            |
-| Distinguir o fim | `readline()` devolve `""` no fim; uma linha em branco é normalmente `"\n"`.                                                |
+| Decisão                                                                     | Regra                                                                                                                      |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [Abrir e fechar](/cadeiras/fp/ficheiros-excecoes/#ler-e-escrever-ficheiros) | `with open(caminho, "r", encoding="utf-8") as f:` fecha o recurso ao sair. Caminhos relativos partem da pasta de trabalho. |
+| Escolher o modo                                                             | `"w"` substitui o conteúdo; `"a"` acrescenta; `"x"` exige um ficheiro novo. Para CSV, usa `csv` e `newline=""`.            |
+| Distinguir o fim                                                            | `readline()` devolve `""` no fim; uma linha em branco é normalmente `"\n"`.                                                |
 
-| Bloco              | Quando corre                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`except Tipo`](/cadeiras/fp/ficheiros-excecoes/#exceções-try-except-else-e-finally)      | Trata a falha esperada; não escondas qualquer defeito com um tratador indiscriminado.                                                                 |
-| `else`             | Apenas se o `try` terminar normalmente, sem `return`, `break` ou `continue`.                                                                          |
-| `finally`          | Sempre na saída.                                                                                                                                      |
-| `raise` / `assert` | `raise` comunica a falha ao chamador. `assert` verifica hipóteses internas e pode ser desativado; entradas inválidas precisam de validação explícita. |
+| Bloco                                                                                | Quando corre                                                                                                                                          |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`except Tipo`](/cadeiras/fp/ficheiros-excecoes/#exceções-try-except-else-e-finally) | Trata a falha esperada; não escondas qualquer defeito com um tratador indiscriminado.                                                                 |
+| `else`                                                                               | Apenas se o `try` terminar normalmente, sem `return`, `break` ou `continue`.                                                                          |
+| `finally`                                                                            | Sempre na saída.                                                                                                                                      |
+| `raise` / `assert`                                                                   | `raise` comunica a falha ao chamador. `assert` verifica hipóteses internas e pode ser desativado; entradas inválidas precisam de validação explícita. |
 
 - O primeiro tratador compatível ganha. Coloca `FileNotFoundError` antes de `OSError`, pois o primeiro é também um caso do segundo. Sem tratador compatível, a falha propaga-se ao chamador.
 - Calcula o resultado esperado antes de executar. [Testa](/cadeiras/fp/ficheiros-excecoes/#asserções-e-testes) limites, vazio, repetições e entradas inválidas. Se falhar, reduz a entrada e localiza o primeiro estado que diverge do esperado.
