@@ -27,13 +27,16 @@ num intervalo que não atravessa zero.
 Numa não homogénea, $y=y_h+y_p$.
 
 - Com coeficientes constantes e termo polinomial, exponencial ou trigonométrico, tenta uma particular da família completa e determina coeficientes por substituição.
-- Se o candidato coincide com soluções homogéneas, multiplica-o por uma potência de $x$ suficiente para remover essa coincidência.
+- Se o candidato coincide com soluções homogéneas, multiplica-o por $x^m$, onde $m$ é a multiplicidade da raiz associada ($m=1$ para raiz simples, $m=2$ para raiz dupla).
 
-Em $y''+y=\sin x$, seno e cosseno já pertencem à homogénea. Usa $y_p=x(A\cos x+B\sin x)$. Substituir dá $A=-1/2$, $B=0$, logo $y_p=-x\cos x/2$.
+| Hipótese            | Candidato                         |
+| ------------------- | --------------------------------- |
+| Sem coincidência    | Família completa, sem fator extra |
+| Ressonância simples | $x$ vezes a família               |
 
-Para um polinómio de grau $n$, inclui todos os coeficientes até ao termo constante no candidato. Numa soma de termos independentes, soma as particulares e acrescenta a homogénea uma única vez.
+Em $y''+y=\sin x$, seno e cosseno já pertencem à homogénea. Usa $y_p=x(A\cos x+B\sin x)$; substituir dá $A=-1/2$, $B=0$, logo $y_p=-x\cos x/2$. O caso de raiz dupla, com fator $x^2$, está na [lição](/cadeiras/am1/equacoes-segunda-ordem/#ressonância-com-raiz-dupla).
 
-Se a exponencial corresponde a uma raiz de multiplicidade $m$, usa o fator $x^m$. Em $y''-2y'+y=e^x$, a raiz $1$ é dupla: $xe^x$ ainda pertence à homogénea, e a particular é $x^2e^x/2$.
+Num polinómio, inclui todos os coeficientes até ao termo constante. Numa soma de termos independentes, soma as particulares e acrescenta a homogénea uma única vez.
 
 ## Variação dos parâmetros
 

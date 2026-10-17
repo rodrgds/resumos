@@ -11,7 +11,7 @@
 
 Para $(3x+1)/(x^2-1)$, a decomposição é $2/(x-1)+1/(x+1)$. A primitiva é $2\ln|x-1|+\ln|x+1|+C$, em intervalos que evitam $\pm1$.
 
-Num quadrático, separa a derivada do denominador e completa o quadrado. A primeira parte costuma dar logaritmo; a restante, arco-tangente. Para potências repetidas, é útil
+Num quadrático irredutível (sem raízes reais), separa primeiro a derivada do denominador: essa parte dá logaritmo. Completa o quadrado no resto para reconhecer o arco-tangente. Com raízes reais distintas, fatoriza em vez disso. Para potências repetidas, é útil
 
 $$
 \int\frac{dx}{(1+x^2)^2}

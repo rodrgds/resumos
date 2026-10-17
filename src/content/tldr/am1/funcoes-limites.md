@@ -31,7 +31,7 @@ $$
 - O limite não depende de $f(a)$. Se há domínio dos dois lados, o limite bilateral finito existe exatamente quando os laterais existem e coincidem.
 - $1/x^2\to+\infty$ em zero; $1/x$ tem limites laterais de sinais opostos.
 
-Numa prova não linear, limita primeiro os fatores que dependem de $x$. Para $x^2\to4$ em $2$, $|x-2|<1$ garante $|x+2|<5$, e $\delta=\min\{1,\varepsilon/5\}$ controla simultaneamente essa vizinhança e o erro.
+Numa prova não linear, limita primeiro os fatores que dependem de $x$. Para $x^2\to4$ em $2$, $|x-2|<1$ garante $|x+2|<5$; depois, $\delta=\min\{1,\varepsilon/5\}$ serve para a vizinhança e o erro.
 
 ## Cálculo e continuidade
 

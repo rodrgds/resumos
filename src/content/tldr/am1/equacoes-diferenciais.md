@@ -35,12 +35,6 @@ $$
 
 Resolve esta linear, regressa a $y$ e verifica as soluções excluídas pela divisão, bem como o domínio real da potência.
 
-Em $y'+y=y^2$, a substituição $v=1/y$ dá $v'-v=-1$. Assim,
-
-$$
-y=\frac1{1+Ce^x},
-$$
-
-em intervalos sem zeros do denominador. Acrescenta $y=0$; $y=1$ já aparece com $C=0$.
+Em $y'+y=y^2$, a substituição $v=1/y$ lineariza e dá $y=1/(1+Ce^x)$, em intervalos sem zeros do denominador. Acrescenta $y=0$; $y=1$ já aparece com $C=0$.
 
 [Segunda ordem e escolha de particulares](/cadeiras/am1/equacoes-segunda-ordem/#característica-e-problemas-de-valor-inicial).

@@ -45,6 +45,4 @@ $$
 - Se o integral inicial reaparece depois de partes, resolve a equação resultante.
 - Na versão definida, $\int_a^buv'=[uv]_a^b-\int_a^bu'v$.
 
-Em funções por ramos, ajusta constantes para continuidade da primitiva e verifica a derivada no ponto de união. No fim, derivar o resultado confirma a conta. Um integral definido é um número e não leva $+C$.
-
-[Exemplo de união de ramos](/cadeiras/am1/primitivas/#primitivas-de-funções-contínuas-definidas-por-ramos).
+Em funções por ramos, ajusta constantes para a primitiva ser contínua e verifica a derivada no ponto de união. Um integral definido é um número e não leva $+C$. [Exemplo de união de ramos](/cadeiras/am1/primitivas/#primitivas-de-funções-contínuas-definidas-por-ramos).

@@ -36,30 +36,30 @@ A tangente só existe quando $\cos x\ne0$. Também usamos $\cot x=\cos x/\sin x$
 
 As funções trigonométricas não são injetivas em todo o domínio. Para definir as inversas escolhemos uma restrição:
 
-| Inversa                  | Domínio                       | Valores da inversa             |
-| ------------------------ | ----------------------------- | ------------------------------ |
-| $\arcsin x$              | $[-1,1]$                      | $[-\pi/2,\pi/2]$               |
-| $\arccos x$              | $[-1,1]$                      | $[0,\pi]$                      |
-| $\arctan x$              | $\mathbb R$                   | $]-\pi/2,\pi/2[$               |
-| $\operatorname{arccot}x$ | $\mathbb R$                   | $]0,\pi[$                      |
-| $\operatorname{arcsec}x$ | $]-\infty,-1]\cup[1,+\infty[$ | $[0,\pi]\setminus\{\pi/2\}$    |
-| $\operatorname{arccsc}x$ | $]-\infty,-1]\cup[1,+\infty[$ | $[-\pi/2,\pi/2]\setminus\{0\}$ |
+| Inversa                  | Domínio     | Valores da inversa |
+| ------------------------ | ----------- | ------------------ |
+| $\arcsin x$              | $[-1,1]$    | $[-\pi/2,\pi/2]$   |
+| $\arccos x$              | $[-1,1]$    | $[0,\pi]$          |
+| $\arctan x$              | $\mathbb R$ | $]-\pi/2,\pi/2[$   |
+| $\operatorname{arccot}x$ | $\mathbb R$ | $]0,\pi[$          |
+
+Para arco-secante e arco-cossecante, com $|x|\ge1$, usamos $\operatorname{arcsec}x=\arccos(1/x)$ e $\operatorname{arccsc}x=\arcsin(1/x)$. Os intervalos de valores são $[0,\pi]\setminus\{\pi/2\}$ e $[-\pi/2,\pi/2]\setminus\{0\}$, respetivamente.
 
 Adotamos $\operatorname{arccot}x=\pi/2-\arctan x$. Assim, $\arcsin(\sin x)=x$ apenas no intervalo principal. Por exemplo, $\arcsin(\sin(3\pi/4))=\pi/4$, porque o arco-seno devolve um valor entre $-\pi/2$ e $\pi/2$.
-
-Com os ramos da tabela, $\operatorname{arcsec}x=\arccos(1/x)$ e $\operatorname{arccsc}x=\arcsin(1/x)$. As restrições de valores fazem parte da definição das inversas.
 
 As identidades $\sin(2x)=2\sin x\cos x$ e $\cos(2x)=1-2\sin^2x=2\cos^2x-1$ vão permitir simplificar integrais. Lembra também que $\ln(ab)=\ln a+\ln b$ exige $a,b>0$ e que $\ln(a+b)$ não se separa.
 
 ## Gráficos transformados
 
-A partir do gráfico de $f$, o gráfico de $f(x)+k$ desloca-se $k$ unidades na vertical, e o de $f(x-h)$ desloca-se $h$ unidades na horizontal. Multiplicar por $a>1$ estica; por $0<a<1$ comprime. Por exemplo, $\sqrt{x-2}$ é o gráfico da raiz deslocado duas unidades para a direita, com domínio $[2,+\infty[$. O sinal menos em $f(-x)$ espelha o gráfico no eixo vertical.
+A partir do gráfico de $f$, somar $k$ desloca-o $k$ unidades na vertical. Por exemplo, $f(x)+2$ sobe dois. Na horizontal, $f(x-h)$ desloca $h$ unidades para a direita: $\sqrt{x-2}$ é a raiz deslocada duas unidades para a direita, com domínio $[2,+\infty[$.
+
+Multiplicar por $a>1$ estica o gráfico; por $0<a<1$ comprime-o. O sinal menos em $f(-x)$ espelha o gráfico no eixo vertical.
 
 ## O que significa um limite
 
 Escrever $\lim_{x\to a}f(x)=L$ diz que os valores de $f(x)$ ficam tão perto de $L$ quanto quisermos quando $x$ está suficientemente perto de $a$, com $x\ne a$. O valor $f(a)$ pode ser diferente ou nem existir.
 
-O ponto $a$ deve poder ser aproximado por pontos do domínio diferentes de $a$. Se estiver isolado no domínio, esta definição não lhe atribui um limite.
+Isto só faz sentido se $a$ puder ser aproximado por pontos do domínio diferentes dele. Se $a$ estiver isolado no domínio, não lhe atribuímos limite por esta definição.
 
 Precisamente, para todo $\varepsilon>0$ existe $\delta>0$ tal que, para todo $x$ no domínio,
 
@@ -81,13 +81,15 @@ $$
 
 A escolha de $\delta$ depende de $\varepsilon$, não de $x$, e funciona para todos os pontos dessa vizinhança. Isto prova o limite pela definição.
 
-Numa função não linear, pode sobrar um fator que ainda depende de $x$. Para provar $x^2\to4$ quando $x\to2$, fatoramos $|x^2-4|=|x-2||x+2|$. Se impusermos primeiro $|x-2|<1$, temos $1<x<3$ e $|x+2|<5$. A escolha
+Numa função não linear, pode sobrar um fator que ainda depende de $x$. Para provar $x^2\to4$ quando $x\to2$, fatoramos $|x^2-4|=|x-2||x+2|$. O segundo fator varia com $x$, por isso limitamo-lo primeiro numa vizinhança fixa.
+
+Se impusermos $|x-2|<1$, temos $1<x<3$ e $|x+2|<5$. Escolhemos então
 
 $$
-\delta=\min\{1,\varepsilon/5\}
+\delta=\min\{1,\varepsilon/5\}.
 $$
 
-garante essa cota e também $|x-2|<\varepsilon/5$. Logo $|x^2-4|<5|x-2|<\varepsilon$. Não podemos escolher $\delta$ em função do próprio $x$: o mesmo $\delta$ tem de servir para todos os pontos da vizinhança.
+A primeira condição garante $|x+2|<5$; a segunda garante $|x-2|<\varepsilon/5$. Logo $|x^2-4|<5|x-2|<\varepsilon$. Não podemos escolher $\delta$ em função do próprio $x$: o mesmo $\delta$ tem de servir para todos os pontos da vizinhança.
 
 O limite pela esquerda usa $x<a$; o limite pela direita usa $x>a$. Se há domínio dos dois lados, o limite existe e é finito se e só se ambos os limites laterais existem e são iguais. Para $f(x)=|x|/x$, os limites em zero são $-1$ e $1$. O limite bilateral não existe.
 
@@ -112,13 +114,13 @@ $$
 =\frac{(\sqrt{1+x}-1)(\sqrt{1+x}+1)}{x(\sqrt{1+x}+1)}.
 $$
 
-O produto no numerador é $(1+x)-1=x$. Para $x\ne0$, cancelamos esse fator:
+O produto no numerador é $(1+x)-1=x$. Para $x\ne0$, cancelamos esse fator e o limite é $1/2$, porque a expressão final é contínua em zero:
 
 $$
 \frac{x}{x(\sqrt{1+x}+1)}=\frac1{\sqrt{1+x}+1}.
 $$
 
-O limite é $1/2$, porque a expressão final é contínua em zero. No infinito, divide pelo termo dominante. Por exemplo,
+No infinito, divide pelo termo dominante. Por exemplo,
 
 $$
 \lim_{x\to+\infty}\frac{3x^2-x+1}{2x^2+4}=\frac32.

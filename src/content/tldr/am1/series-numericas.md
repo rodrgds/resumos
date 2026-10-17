@@ -8,15 +8,14 @@ A série $\sum a_n$ converge se as somas parciais $S_N=\sum_{n=1}^Na_n$ tendem p
 
 ## Escolha de critérios
 
-| Critério              | Hipóteses e conclusão                                                                                                                |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Série $p$             | $\sum1/n^p$ converge exatamente para $p>1$                                                                                           |
-| Comparação            | $0\le a_n\le b_n$ eventualmente e $\sum b_n$ convergente implicam $\sum a_n$ convergente. Uma minorante divergente força divergência |
-| Comparação por limite | $a_n,b_n>0$ e $a_n/b_n\to L\in]0,+\infty[$ implicam a mesma natureza                                                                 |
-| Razão                 | $a_n\ne0$ eventualmente; calcula $L=\lim\vert a_{n+1}/a_n\vert $                                                                     |
-| Raiz                  | Calcula $L=\lim\sqrt[n]{\vert a_n\vert }$                                                                                            |
+| Critério              | Hipóteses e conclusão                                                                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Série $p$             | $\sum1/n^p$ converge exatamente para $p>1$                                                                                                               |
+| Comparação            | $0\le a_n\le b_n$ eventualmente e $\sum b_n$ convergente implicam $\sum a_n$ convergente. Uma minorante divergente força divergência                     |
+| Comparação por limite | $a_n,b_n>0$ e $a_n/b_n\to L\in]0,+\infty[$ implicam a mesma natureza                                                                                     |
+| Razão ou raiz         | $L=\lim\|a_{n+1}/a_n\|$ ou $\lim\sqrt[n]{\|a_n\|}$: $L<1$ converge absolutamente, $L>1$ diverge, $L=1$ não decide. A razão exige $a_n\ne0$ eventualmente |
 
-Na razão e na raiz, $L<1$ dá convergência absoluta; $L>1$ dá divergência; $L=1$ não decide. Fatoriais sugerem razão; potências de expoente $n$ sugerem raiz. Estes critérios não calculam geralmente a soma.
+Fatoriais sugerem razão; potências de expoente $n$ sugerem raiz. Estes critérios não calculam geralmente a soma.
 
 Para $a_n=3^n/n!$, $|a_{n+1}/a_n|=3/(n+1)\to0$, logo há convergência absoluta. A harmónica e $\sum1/n^2$ dão ambas razão com limite um, apesar de terem naturezas diferentes.
 
